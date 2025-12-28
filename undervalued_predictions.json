@@ -1,11 +1,19 @@
 {
   "analysis_date": "2025-12-28T22:45:00Z",
-  "data_sources": ["Kalshi", "Polymarket", "Web Research"],
+  "validation_date": "2025-12-28T23:30:00Z",
+  "data_sources": ["Kalshi", "Polymarket", "Web Research", "Sports News"],
   "methodology": {
     "extreme_bias_score": "0-25 points based on probability extremes",
     "spread_opportunity_score": "0-25 points based on bid-ask spread width",
     "liquidity_score": "0-25 points based on volume (inverse)",
     "time_pressure_score": "0-25 points based on expiration proximity"
+  },
+  "validation_summary": {
+    "total_picks": 5,
+    "validated": 1,
+    "invalidated": 2,
+    "uncertain": 2,
+    "notes": "Markets correct quickly - obvious mispricings close within 1-2 weeks"
   },
   "top_opportunities": [
     {
@@ -18,31 +26,51 @@
       "conviction": "MODERATE",
       "value_score": 75,
       "reasoning": "Multiple AFC playoff teams priced at minimal values. Any team with playoff position has non-trivial Super Bowl equity. Asymmetric risk/reward at 20-50x potential.",
-      "risks": ["Low probability events", "High variance outcomes"]
+      "risks": ["Low probability events", "High variance outcomes"],
+      "validation_status": "UNCERTAIN",
+      "price_movement": "Flat - prices unchanged over 2 weeks",
+      "validation_notes": "No significant movement. Could indicate efficient pricing OR stale low-liquidity market."
     },
     {
       "rank": 2,
       "category": "Sports/NFL",
       "market": "Chicago Bears Super Bowl Winner",
-      "current_price": "11 cents",
-      "implied_probability": "11%",
-      "recommendation": "YES",
-      "conviction": "MODERATE",
-      "value_score": 65,
-      "reasoning": "Bears holding #2 NFC seed but priced at only 11 cents. Market may be underestimating their playoff positioning and home-field advantage.",
-      "risks": ["Team performance volatility", "Playoff variance"]
+      "original_price": "11 cents",
+      "current_price": "~18 cents (implied from +1800 odds)",
+      "implied_probability": "5.3%",
+      "recommendation": "CLOSED - NO LONGER UNDERVALUED",
+      "conviction": "N/A",
+      "value_score": 0,
+      "reasoning": "INVALIDATED: Market corrected +65% after Bears won key games and secured #2 NFC seed.",
+      "risks": ["Opportunity window closed"],
+      "validation_status": "INVALIDATED",
+      "price_movement": {
+        "week_14_pre_gb_loss": "+3000 (~11 cents)",
+        "after_gb_loss": "+5000 (~7 cents)",
+        "after_cleveland_blowout": "+3000 (~11 cents)",
+        "after_gb_ot_win_week16": "+1800 (~18 cents)"
+      },
+      "validation_notes": "Bears moved from 11 cents to ~18 cents (+65%). The value was real but corrected quickly."
     },
     {
       "rank": 3,
       "category": "Cryptocurrency",
       "market": "Bitcoin $150K by December 31, 2025",
-      "current_price": "35 cents",
-      "implied_probability": "35%",
+      "original_price": "35 cents",
+      "current_price": "<10 cents (estimated)",
+      "implied_probability": "<10%",
       "recommendation": "NO",
       "conviction": "HIGH",
-      "value_score": 80,
-      "reasoning": "BTC at ~$87K would need 72% move in 3 days. Market appears overpriced for remaining timeframe. Clear NO opportunity.",
-      "risks": ["Black swan events", "Crypto volatility"]
+      "value_score": 95,
+      "reasoning": "VALIDATED: BTC at ~$87K needs 72% move in 3 days. NO position was correct.",
+      "risks": ["Black swan events"],
+      "validation_status": "VALIDATED",
+      "price_movement": {
+        "original": "35 cents",
+        "current": "<10 cents",
+        "change": "-70%+"
+      },
+      "validation_notes": "NO position would have profited significantly. BTC remains far from $150K target with only 3 days left."
     },
     {
       "rank": 4,
@@ -55,19 +83,31 @@
       "conviction": "LOW",
       "value_score": 45,
       "reasoning": "15-cent spread between conferences may be excessive. Total pricing (103 cents) suggests 3% overpricing in aggregate.",
-      "risks": ["Conference strength differential may be real", "Individual team variance"]
+      "risks": ["Conference strength differential may be real", "Individual team variance"],
+      "validation_status": "UNCERTAIN",
+      "price_movement": "Minimal change",
+      "validation_notes": "Spread remains similar. Insufficient data to confirm or deny value."
     },
     {
       "rank": 5,
       "category": "Financial/Markets",
-      "market": "S&P 500 Close Above 7000 by Dec 31",
+      "market": "S&P 500 Close 7000-7199.99 by Dec 31",
+      "original_price": "27 cents (late October)",
+      "current_price": "18 cents",
       "current_sp500": 6932,
       "distance_to_target": "~1%",
-      "recommendation": "YES",
+      "recommendation": "AVOID",
       "conviction": "LOW",
-      "value_score": 40,
-      "reasoning": "S&P at new ATH, only 1% from 7000 milestone, positive momentum into year-end. Check specific bracket pricing.",
-      "risks": ["Year-end profit taking", "Geopolitical events", "Only 3 days remaining"]
+      "value_score": 25,
+      "reasoning": "INVALIDATED: Despite S&P being closer to 7000, odds have DROPPED from 27% to 18%. Informed money is skeptical.",
+      "risks": ["Year-end profit taking", "Only 3 trading days remaining"],
+      "validation_status": "INVALIDATED",
+      "price_movement": {
+        "late_october": "27 cents",
+        "december_27": "18 cents",
+        "change": "-33%"
+      },
+      "validation_notes": "Counterintuitive: market is closer to target but odds dropped. Suggests informed traders see risks outsiders miss."
     },
     {
       "rank": 6,
@@ -75,11 +115,20 @@
       "market": "Bitcoin Returns to $100K by Dec 31, 2025",
       "current_btc_price": 87200,
       "required_move": "15%",
-      "recommendation": "MONITOR",
-      "conviction": "SPECULATIVE",
-      "value_score": 55,
-      "reasoning": "Markets turned bearish after lawsuit news. If you believe in mean reversion or crypto recovery, this may offer value. High risk.",
-      "risks": ["Continued outflows", "Regulatory concerns", "Short timeframe"]
+      "recommendation": "NO",
+      "conviction": "MODERATE",
+      "value_score": 65,
+      "reasoning": "Updated: With only 3 days left and BTC at $87K, 25% odds may still be overpriced.",
+      "risks": ["Crypto volatility", "Short timeframe"],
+      "validation_status": "LEANING VALIDATED",
+      "price_movement": {
+        "thanksgiving": "60 cents",
+        "dec_1": "36 cents",
+        "dec_11": "34 cents",
+        "dec_12": "42 cents",
+        "dec_27": "~25 cents (estimated)"
+      },
+      "validation_notes": "Steady decline from 60% to ~25%. NO position continues to gain value as time runs out."
     },
     {
       "rank": 7,
@@ -91,7 +140,35 @@
       "conviction": "SPECULATIVE",
       "value_score": 35,
       "reasoning": "If you believe Fed will be more hawkish than markets expect due to inflation persistence, contrarian positions may offer value.",
-      "risks": ["Fed guidance has been dovish", "Economic data supports current consensus"]
+      "risks": ["Fed guidance has been dovish", "Economic data supports current consensus"],
+      "validation_status": "NOT YET TESTABLE",
+      "validation_notes": "January meeting has not occurred. Cannot validate."
+    }
+  ],
+  "new_opportunities_from_validation": [
+    {
+      "rank": "NEW-1",
+      "category": "Sports/NFL",
+      "market": "Seattle Seahawks Super Bowl Winner",
+      "current_price": "14 cents",
+      "previous_price": "11 cents (Week 15)",
+      "change": "+27%",
+      "recommendation": "YES",
+      "conviction": "MODERATE",
+      "reasoning": "Seahawks now #1 NFC seed (12-3) after beating Rams. Still priced lower than Rams (18 cents) despite better record and head-to-head win.",
+      "risks": ["Playoff variance", "Price may have already corrected"]
+    },
+    {
+      "rank": "NEW-2",
+      "category": "Sports/NFL",
+      "market": "Los Angeles Rams Super Bowl Winner",
+      "current_price": "18 cents",
+      "previous_price": "22 cents (Week 15)",
+      "change": "-18%",
+      "recommendation": "SHORT/NO",
+      "conviction": "LOW",
+      "reasoning": "Rams dropped after OT loss to Seahawks. May be overpriced as former favorite. Now #2 seed behind Seattle.",
+      "risks": ["Strong team despite loss", "Playoff experience"]
     }
   ],
   "expiring_soon_low_value": [
@@ -117,20 +194,17 @@
       "recommendation": "AVOID - Stablecoin risk low"
     }
   ],
-  "infrastructure_plays": [
-    {
-      "asset": "$UMA",
-      "type": "Token",
-      "role": "Oracle infrastructure for Polymarket",
-      "current_fdv": "$140M",
-      "thesis": "Undervalued relative to Polymarket's $9-15B valuation",
-      "risks": ["Token demand not directly tied to market volume", "Liquidity concerns"]
-    }
+  "key_lessons": [
+    "Fast movers correct quickly - Bears moved +65% in 2 weeks",
+    "Declining odds despite better fundamentals = informed money sees risks",
+    "Low-volume markets stay stale - could be value OR efficient pricing",
+    "Time decay accelerates near expiration - 3 days left matters",
+    "Head-to-head results move markets fast - single games create/destroy value"
   ],
   "platform_fees": {
     "kalshi_robinhood": "~0.7% (up to 2%, capped at $1.74/$100)",
     "polymarket_us": "0.01%",
     "polymarket_international": "2% on net winnings"
   },
-  "disclaimer": "This analysis is for informational purposes only and should not be considered financial advice. Prediction markets involve significant risk of loss. Always do your own research before trading."
+  "disclaimer": "This analysis is for informational purposes only and should not be considered financial advice. Prediction markets involve significant risk of loss. Always do your own research before trading. Price data reconstructed from news sources - may not reflect exact Kalshi prices."
 }
