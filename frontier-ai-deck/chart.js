@@ -9,8 +9,8 @@ const W = 2960, H = 1308;               // 12.33in x 5.45in at 240dpi
 const mL = 170, mR = 54, mT = 118, mB = 104;
 const plotW = W - mL - mR, plotH = H - mT - mB;
 
-const X0 = 2017.85, X1 = 2028.15;       // year domain
-const LY0 = -1.15, LY1 = 4.28;          // log10(billions) domain: ~70M .. ~19T
+const X0 = 2022.55, X1 = 2028.15;       // year domain (starts at the ChatGPT era per review feedback)
+const LY0 = 1.55, LY1 = 4.28;           // log10(billions) domain: ~35B .. ~19T
 
 const x = (yr) => mL + ((yr - X0) / (X1 - X0)) * plotW;
 const y = (b) => mT + (1 - (Math.log10(b) - LY0) / (LY1 - LY0)) * plotH;
@@ -33,25 +33,23 @@ const SERIES = [
   {
     name: "OpenAI", color: C.openai,
     pts: [
-      { m: "GPT-1", v: "117M", yr: 2018.45, c: 0.117, status: "disclosed", lx: 0, ly: -100, la: "middle" },
-      { m: "GPT-2", v: "1.5B", yr: 2019.12, c: 1.5, status: "disclosed", lx: 0, ly: -100, la: "middle" },
-      { m: "GPT-3", v: "175B", yr: 2020.40, c: 175, status: "disclosed", lx: 0, ly: -100, la: "middle" },
-      { m: "GPT-4", v: "~1.8T est.", yr: 2023.20, c: 1800, lo: 1500, hi: 2000, status: "estimate", lx: -40, ly: -76, la: "end" },
-      { m: "GPT-4o", v: "~200B est.", yr: 2024.37, c: 200, lo: 150, hi: 300, status: "estimate", lx: 0, ly: 96, la: "middle" },
-      { m: "GPT-4.5", v: "~4–5T est.", yr: 2025.16, c: 4500, lo: 4000, hi: 5000, status: "estimate", ax: 2050, ay: 372, la: "middle" },
-      { m: "GPT-5", v: "~3–5T est.", yr: 2025.60, c: 4000, lo: 3000, hi: 5000, status: "estimate", ax: 2228, ay: 514, la: "middle" },
-      { m: "GPT-5.6", v: "undisclosed", yr: 2026.62, c: null, lo: 3000, hi: 8000, status: "unknown", ax: 2560, ay: 514, la: "middle" },
+      { m: "GPT-3.5", v: "~175B est.", yr: 2022.90, c: 175, status: "estimate", lx: -6, ly: -70, la: "end" },
+      { m: "GPT-4", v: "~1.8T est.", yr: 2023.20, c: 1800, lo: 1500, hi: 2000, status: "estimate", lx: 0, ly: 94, la: "middle" },
+      { m: "GPT-4o", v: "~200B est.", yr: 2024.37, c: 200, lo: 150, hi: 300, status: "estimate", lx: 0, ly: 110, la: "middle" },
+      { m: "GPT-4.5", v: "~4–5T est.", yr: 2025.16, c: 4500, lo: 4000, hi: 5000, status: "estimate", lx: 0, ly: -97, la: "middle" },
+      { m: "GPT-5", v: "~3–5T est.", yr: 2025.60, c: 4000, lo: 3000, hi: 5000, status: "estimate", lx: 0, ly: 187, la: "middle" },
+      { m: "GPT-5.6", v: "undisclosed", yr: 2026.62, c: null, lo: 3000, hi: 8000, status: "unknown", lx: 56, ly: -18, la: "start" },
     ],
   },
   {
     name: "Anthropic", color: C.anthropic,
     pts: [
-      { m: "RL-CAI 52B", v: "52B (paper)", yr: 2022.95, c: 52, status: "disclosed", lx: 0, ly: 92, la: "middle" },
-      { m: "Claude 2", v: "~130B est.", yr: 2023.55, c: 130, lo: 100, hi: 200, status: "estimate", lx: -36, ly: -64, la: "end" },
-      { m: "Claude 3 Opus", v: "~2T est.", yr: 2024.18, c: 2000, lo: 1000, hi: 2500, status: "estimate", lx: 0, ly: -78, la: "middle" },
-      { m: "Claude 3.5 Sonnet", v: "~400B est.", yr: 2024.47, c: 400, lo: 300, hi: 500, status: "estimate", lx: 52, ly: 16, la: "start" },
-      { m: "Claude Opus 4.6", v: "~5T est.", yr: 2026.10, c: 5000, lo: 4000, hi: 6000, status: "estimate", ax: 2350, ay: 372, la: "middle" },
-      { m: "Claude Fable 5", v: "~10T cited, unconfirmed", yr: 2026.34, c: 10000, lo: 8000, hi: 12000, status: "unconfirmed", lx: -26, ly: -64, la: "end" },
+      { m: "RL-CAI 52B", v: "52B (paper)", yr: 2022.95, c: 52, status: "disclosed", lx: 50, ly: 12, la: "start" },
+      { m: "Claude 2", v: "~130B est.", yr: 2023.55, c: 130, lo: 100, hi: 200, status: "estimate", lx: -36, ly: -150, la: "end" },
+      { m: "Claude 3 Opus", v: "~2T est.", yr: 2024.18, c: 2000, lo: 1000, hi: 2500, status: "estimate", lx: 52, ly: -87, la: "start" },
+      { m: "Claude 3.5 Sonnet", v: "~400B est.", yr: 2024.47, c: 400, lo: 300, hi: 500, status: "estimate", lx: 52, ly: 14, la: "start" },
+      { m: "Claude Opus 4.6", v: "~5T est.", yr: 2026.10, c: 5000, lo: 4000, hi: 6000, status: "estimate", lx: 0, ly: 141, la: "middle" },
+      { m: "Claude Fable 5", v: "~10T cited, unconfirmed", yr: 2026.34, c: 10000, lo: 8000, hi: 12000, status: "unconfirmed", lx: -26, ly: -110, la: "end" },
     ],
   },
 ];
@@ -63,7 +61,6 @@ svg.push(`<rect width="${W}" height="${H}" fill="${C.bg}"/>`);
 
 // ---------- gridlines + y labels ----------
 const gl = [
-  { b: 0.1, t: "100M" }, { b: 1, t: "1B" }, { b: 10, t: "10B" },
   { b: 100, t: "100B" }, { b: 1000, t: "1T" }, { b: 10000, t: "10T" },
 ];
 for (const g of gl) {
@@ -74,7 +71,7 @@ for (const g of gl) {
 // x axis baseline + ticks
 const yBase = mT + plotH;
 svg.push(`<line x1="${mL}" y1="${yBase}" x2="${W - mR}" y2="${yBase}" stroke="${C.axis}" stroke-width="3"/>`);
-for (let yr = 2018; yr <= 2028; yr++) {
+for (let yr = 2023; yr <= 2028; yr++) {
   const tx = x(yr);
   svg.push(`<line x1="${tx}" y1="${yBase}" x2="${tx}" y2="${yBase + 14}" stroke="${C.axis}" stroke-width="3"/>`);
   svg.push(`<text x="${tx}" y="${yBase + 58}" font-family="${FONT}" font-size="34" fill="${C.ink3}" text-anchor="middle">${yr}</text>`);
@@ -147,8 +144,8 @@ for (const s of SERIES) {
 }
 
 // ---------- 2024 efficiency-dip annotation ----------
-svg.push(`<text x="${x(2024.6)}" y="${790}" font-family="${FONT}" font-size="31" font-style="italic" fill="${C.ink3}" text-anchor="middle">2024: both labs also shipped smaller,</text>`);
-svg.push(`<text x="${x(2024.6)}" y="${828}" font-family="${FONT}" font-size="31" font-style="italic" fill="${C.ink3}" text-anchor="middle">cheaper frontier models — scale is not monotonic</text>`);
+svg.push(`<text x="${1750}" y="${880}" font-family="${FONT}" font-size="31" font-style="italic" fill="${C.ink3}" text-anchor="middle">2024: both labs also shipped smaller,</text>`);
+svg.push(`<text x="${1750}" y="${918}" font-family="${FONT}" font-size="31" font-style="italic" fill="${C.ink3}" text-anchor="middle">cheaper frontier models — scale is not monotonic</text>`);
 
 // ---------- stat chips (top-left, inside plot) ----------
 function chip(cx, cy, w, lines) {
@@ -158,8 +155,8 @@ function chip(cx, cy, w, lines) {
   });
 }
 chip(mL + 34, mT + 40, 780, [
-  `<tspan font-weight="bold" fill="${C.ink}">≈40,000×</tspan> growth in frontier total`,
-  `capacity, 2018 → 2026 (117M → ~5T est.)`,
+  `<tspan font-weight="bold" fill="${C.ink}">≈30×</tspan> frontier total-capacity growth`,
+  `since GPT-3.5, late 2022 (175B → ~5T est.)`,
 ]);
 chip(mL + 34, mT + 196, 780, [
   `Training compute: <tspan font-weight="bold" fill="${C.ink}">×4–5 / year</tspan> (Epoch AI)`,

@@ -1,164 +1,131 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="2960" height="1308" viewBox="0 0 2960 1308">
 <rect width="2960" height="1308" fill="#0B1220"/>
-<line x1="170" y1="1174" x2="2906" y2="1174" stroke="#232F4A" stroke-width="2"/>
-<text x="148" y="1185" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="end">100M</text>
-<line x1="170" y1="974" x2="2906" y2="974" stroke="#232F4A" stroke-width="2"/>
-<text x="148" y="985" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="end">1B</text>
-<line x1="170" y1="774" x2="2906" y2="774" stroke="#232F4A" stroke-width="2"/>
-<text x="148" y="785" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="end">10B</text>
-<line x1="170" y1="574" x2="2906" y2="574" stroke="#232F4A" stroke-width="2"/>
-<text x="148" y="585" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="end">100B</text>
-<line x1="170" y1="373.99999999999983" x2="2906" y2="373.99999999999983" stroke="#232F4A" stroke-width="2"/>
-<text x="148" y="384.99999999999983" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="end">1T</text>
-<line x1="170" y1="173.99999999999986" x2="2906" y2="173.99999999999986" stroke="#232F4A" stroke-width="2"/>
-<text x="148" y="184.99999999999986" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="end">10T</text>
+<line x1="170" y1="1024.9890109890111" x2="2906" y2="1024.9890109890111" stroke="#232F4A" stroke-width="2"/>
+<text x="148" y="1035.9890109890111" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="end">100B</text>
+<line x1="170" y1="627.1868131868133" x2="2906" y2="627.1868131868133" stroke="#232F4A" stroke-width="2"/>
+<text x="148" y="638.1868131868133" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="end">1T</text>
+<line x1="170" y1="229.38461538461547" x2="2906" y2="229.38461538461547" stroke="#232F4A" stroke-width="2"/>
+<text x="148" y="240.38461538461547" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="end">10T</text>
 <line x1="170" y1="1204" x2="2906" y2="1204" stroke="#3A4A6B" stroke-width="3"/>
-<line x1="209.8446601941982" y1="1204" x2="209.8446601941982" y2="1218" stroke="#3A4A6B" stroke-width="3"/>
-<text x="209.8446601941982" y="1262" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="middle">2018</text>
-<line x1="475.4757281553586" y1="1204" x2="475.4757281553586" y2="1218" stroke="#3A4A6B" stroke-width="3"/>
-<text x="475.4757281553586" y="1262" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="middle">2019</text>
-<line x1="741.1067961165189" y1="1204" x2="741.1067961165189" y2="1218" stroke="#3A4A6B" stroke-width="3"/>
-<text x="741.1067961165189" y="1262" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="middle">2020</text>
-<line x1="1006.7378640776792" y1="1204" x2="1006.7378640776792" y2="1218" stroke="#3A4A6B" stroke-width="3"/>
-<text x="1006.7378640776792" y="1262" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="middle">2021</text>
-<line x1="1272.3689320388396" y1="1204" x2="1272.3689320388396" y2="1218" stroke="#3A4A6B" stroke-width="3"/>
-<text x="1272.3689320388396" y="1262" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="middle">2022</text>
-<line x1="1538" y1="1204" x2="1538" y2="1218" stroke="#3A4A6B" stroke-width="3"/>
-<text x="1538" y="1262" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="middle">2023</text>
-<line x1="1803.6310679611604" y1="1204" x2="1803.6310679611604" y2="1218" stroke="#3A4A6B" stroke-width="3"/>
-<text x="1803.6310679611604" y="1262" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="middle">2024</text>
-<line x1="2069.262135922321" y1="1204" x2="2069.262135922321" y2="1218" stroke="#3A4A6B" stroke-width="3"/>
-<text x="2069.262135922321" y="1262" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="middle">2025</text>
-<line x1="2334.893203883481" y1="1204" x2="2334.893203883481" y2="1218" stroke="#3A4A6B" stroke-width="3"/>
-<text x="2334.893203883481" y="1262" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="middle">2026</text>
-<line x1="2600.5242718446416" y1="1204" x2="2600.5242718446416" y2="1218" stroke="#3A4A6B" stroke-width="3"/>
-<text x="2600.5242718446416" y="1262" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="middle">2027</text>
-<line x1="2866.1553398058018" y1="1204" x2="2866.1553398058018" y2="1218" stroke="#3A4A6B" stroke-width="3"/>
-<text x="2866.1553398058018" y="1262" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="middle">2028</text>
+<line x1="389.8571428571597" y1="1204" x2="389.8571428571597" y2="1218" stroke="#3A4A6B" stroke-width="3"/>
+<text x="389.8571428571597" y="1262" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="middle">2023</text>
+<line x1="878.4285714285763" y1="1204" x2="878.4285714285763" y2="1218" stroke="#3A4A6B" stroke-width="3"/>
+<text x="878.4285714285763" y="1262" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="middle">2024</text>
+<line x1="1366.999999999993" y1="1204" x2="1366.999999999993" y2="1218" stroke="#3A4A6B" stroke-width="3"/>
+<text x="1366.999999999993" y="1262" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="middle">2025</text>
+<line x1="1855.5714285714098" y1="1204" x2="1855.5714285714098" y2="1218" stroke="#3A4A6B" stroke-width="3"/>
+<text x="1855.5714285714098" y="1262" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="middle">2026</text>
+<line x1="2344.1428571428264" y1="1204" x2="2344.1428571428264" y2="1218" stroke="#3A4A6B" stroke-width="3"/>
+<text x="2344.1428571428264" y="1262" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="middle">2027</text>
+<line x1="2832.714285714243" y1="1204" x2="2832.714285714243" y2="1218" stroke="#3A4A6B" stroke-width="3"/>
+<text x="2832.714285714243" y="1262" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8CA0C4" text-anchor="middle">2028</text>
 <text x="16" y="72" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="30" fill="#6E7F9E">parameters</text>
 <text x="16" y="106" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="30" fill="#6E7F9E">(log scale)</text>
-<rect x="2573.9611650485494" y="173.99999999999986" width="286.88155339803416" height="19.382002601611276" fill="#8B7BF7" fill-opacity="0.22"/>
-<rect x="2573.9611650485494" y="173.99999999999986" width="286.88155339803416" height="19.382002601611276" fill="none" stroke="#8B7BF7" stroke-width="3" stroke-dasharray="10 8"/>
-<text x="2717.4019417475665" y="257.38200260161113" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="50" font-weight="bold" fill="#8B7BF7" text-anchor="middle">8–10T</text>
-<text x="2717.4019417475665" y="301.38200260161113" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="30" fill="#8CA0C4" text-anchor="middle">next-gen scenario</text>
-<text x="2717.4019417475665" y="337.38200260161113" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="30" fill="#8CA0C4" text-anchor="middle">(planning assumption,</text>
-<text x="2717.4019417475665" y="373.38200260161113" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="30" fill="#8CA0C4" text-anchor="middle">not a forecast)</text>
-<path d="M329.4,1160.4 L507.4,938.8 L847.4,525.4 L1591.1,322.9 L1901.9,513.8 L2111.8,243.4 L2228.6,253.6" fill="none" stroke="#18A184" stroke-width="5" stroke-opacity="0.5" stroke-linejoin="round"/>
-<circle cx="329.3786407767325" cy="1160.3628276507677" r="21" fill="#0B1220"/>
-<circle cx="329.3786407767325" cy="1160.3628276507677" r="17" fill="#18A184"/>
-<circle cx="507.3514563106688" cy="938.7817481888637" r="21" fill="#0B1220"/>
-<circle cx="507.3514563106688" cy="938.7817481888637" r="17" fill="#18A184"/>
-<circle cx="847.3592233010072" cy="525.3923902627412" r="21" fill="#0B1220"/>
-<circle cx="847.3592233010072" cy="525.3923902627412" r="17" fill="#18A184"/>
-<line x1="1591.1262135922443" y1="313.79400086720364" x2="1591.1262135922443" y2="338.7817481888636" stroke="#18A184" stroke-width="5"/>
-<line x1="1577.1262135922443" y1="338.7817481888636" x2="1605.1262135922443" y2="338.7817481888636" stroke="#18A184" stroke-width="5"/>
-<line x1="1577.1262135922443" y1="313.79400086720364" x2="1605.1262135922443" y2="313.79400086720364" stroke="#18A184" stroke-width="5"/>
-<circle cx="1591.1262135922443" cy="322.94549897933877" r="17" fill="#0B1220" stroke="#18A184" stroke-width="6"/>
-<line x1="1901.9145631067606" y1="478.5757490560675" x2="1901.9145631067606" y2="538.7817481888637" stroke="#18A184" stroke-width="5"/>
-<line x1="1887.9145631067606" y1="538.7817481888637" x2="1915.9145631067606" y2="538.7817481888637" stroke="#18A184" stroke-width="5"/>
-<line x1="1887.9145631067606" y1="478.5757490560675" x2="1915.9145631067606" y2="478.5757490560675" stroke="#18A184" stroke-width="5"/>
-<circle cx="1901.9145631067606" cy="513.7940008672037" r="17" fill="#0B1220" stroke="#18A184" stroke-width="6"/>
-<line x1="2111.7631067961283" y1="234.20599913279617" x2="2111.7631067961283" y2="253.58800173440733" stroke="#18A184" stroke-width="5"/>
-<line x1="2097.7631067961283" y1="253.58800173440733" x2="2125.7631067961283" y2="253.58800173440733" stroke="#18A184" stroke-width="5"/>
-<line x1="2097.7631067961283" y1="234.20599913279617" x2="2125.7631067961283" y2="234.20599913279617" stroke="#18A184" stroke-width="5"/>
-<circle cx="2111.7631067961283" cy="243.3574972449313" r="17" fill="#0B1220" stroke="#18A184" stroke-width="6"/>
-<line x1="2111.7631067961283" y1="265.5880017344073" x2="2050" y2="328" stroke="#44547A" stroke-width="2.5"/>
-<line x1="2228.640776698993" y1="234.20599913279617" x2="2228.640776698993" y2="278.57574905606737" stroke="#18A184" stroke-width="5"/>
-<line x1="2214.640776698993" y1="278.57574905606737" x2="2242.640776698993" y2="278.57574905606737" stroke="#18A184" stroke-width="5"/>
-<line x1="2214.640776698993" y1="234.20599913279617" x2="2242.640776698993" y2="234.20599913279617" stroke="#18A184" stroke-width="5"/>
-<circle cx="2228.640776698993" cy="253.58800173440733" r="17" fill="#0B1220" stroke="#18A184" stroke-width="6"/>
-<line x1="2228.640776698993" y1="290.57574905606737" x2="2228" y2="470" stroke="#44547A" stroke-width="2.5"/>
-<line x1="2499.5844660193716" y1="193.38200260161113" x2="2499.5844660193716" y2="278.57574905606737" stroke="#18A184" stroke-width="5" stroke-dasharray="12 10"/>
-<line x1="2485.5844660193716" y1="278.57574905606737" x2="2513.5844660193716" y2="278.57574905606737" stroke="#18A184" stroke-width="5"/>
-<line x1="2485.5844660193716" y1="193.38200260161113" x2="2513.5844660193716" y2="193.38200260161113" stroke="#18A184" stroke-width="5"/>
-<circle cx="2499.5844660193716" cy="235.97887582883925" r="21" fill="#0B1220" stroke="#18A184" stroke-width="5" stroke-dasharray="9 7"/>
-<text x="2499.5844660193716" y="247.97887582883925" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" font-weight="bold" fill="#18A184" text-anchor="middle">?</text>
-<line x1="2499.5844660193716" y1="290.57574905606737" x2="2560" y2="470" stroke="#44547A" stroke-width="2.5"/>
-<path d="M1524.7,630.8 L1684.1,551.2 L1851.4,313.8 L1928.5,453.6 L2361.5,234.2 L2425.2,174.0" fill="none" stroke="#CC6C38" stroke-width="5" stroke-opacity="0.5" stroke-linejoin="round"/>
-<circle cx="1524.7184466019542" cy="630.7993312730401" r="21" fill="#0B1220"/>
-<circle cx="1524.7184466019542" cy="630.7993312730401" r="17" fill="#CC6C38"/>
-<line x1="1684.0970873786262" y1="513.7940008672037" x2="1684.0970873786262" y2="574" stroke="#CC6C38" stroke-width="5"/>
-<line x1="1670.0970873786262" y1="574" x2="1698.0970873786262" y2="574" stroke="#CC6C38" stroke-width="5"/>
-<line x1="1670.0970873786262" y1="513.7940008672037" x2="1698.0970873786262" y2="513.7940008672037" stroke="#CC6C38" stroke-width="5"/>
-<circle cx="1684.0970873786262" cy="551.2113295386325" r="17" fill="#0B1220" stroke="#CC6C38" stroke-width="6"/>
-<line x1="1851.4446601941863" y1="294.4119982655924" x2="1851.4446601941863" y2="373.99999999999983" stroke="#CC6C38" stroke-width="5"/>
-<line x1="1837.4446601941863" y1="373.99999999999983" x2="1865.4446601941863" y2="373.99999999999983" stroke="#CC6C38" stroke-width="5"/>
-<line x1="1837.4446601941863" y1="294.4119982655924" x2="1865.4446601941863" y2="294.4119982655924" stroke="#CC6C38" stroke-width="5"/>
-<circle cx="1851.4446601941863" cy="313.79400086720364" r="17" fill="#0B1220" stroke="#CC6C38" stroke-width="6"/>
-<line x1="1928.477669902913" y1="434.20599913279625" x2="1928.477669902913" y2="478.5757490560675" stroke="#CC6C38" stroke-width="5"/>
-<line x1="1914.477669902913" y1="478.5757490560675" x2="1942.477669902913" y2="478.5757490560675" stroke="#CC6C38" stroke-width="5"/>
-<line x1="1914.477669902913" y1="434.20599913279625" x2="1942.477669902913" y2="434.20599913279625" stroke="#CC6C38" stroke-width="5"/>
-<circle cx="1928.477669902913" cy="453.58800173440744" r="17" fill="#0B1220" stroke="#CC6C38" stroke-width="6"/>
-<line x1="2361.456310679573" y1="218.36974992327112" x2="2361.456310679573" y2="253.58800173440733" stroke="#CC6C38" stroke-width="5"/>
-<line x1="2347.456310679573" y1="253.58800173440733" x2="2375.456310679573" y2="253.58800173440733" stroke="#CC6C38" stroke-width="5"/>
-<line x1="2347.456310679573" y1="218.36974992327112" x2="2375.456310679573" y2="218.36974992327112" stroke="#CC6C38" stroke-width="5"/>
-<circle cx="2361.456310679573" cy="234.20599913279617" r="17" fill="#0B1220" stroke="#CC6C38" stroke-width="6"/>
-<line x1="2361.456310679573" y1="265.5880017344073" x2="2350" y2="328" stroke="#44547A" stroke-width="2.5"/>
-<line x1="2425.207766990254" y1="158.16375079047492" x2="2425.207766990254" y2="193.38200260161113" stroke="#CC6C38" stroke-width="5"/>
-<line x1="2411.207766990254" y1="193.38200260161113" x2="2439.207766990254" y2="193.38200260161113" stroke="#CC6C38" stroke-width="5"/>
-<line x1="2411.207766990254" y1="158.16375079047492" x2="2439.207766990254" y2="158.16375079047492" stroke="#CC6C38" stroke-width="5"/>
-<circle cx="2425.207766990254" cy="173.99999999999986" r="17" fill="#0B1220" stroke="#CC6C38" stroke-width="6" stroke-dasharray="9 7"/>
-<text x="329.3786407767325" y="1060.3628276507677" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">GPT-1</text>
-<text x="329.3786407767325" y="1060.3628276507677" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="middle">GPT-1</text>
-<text x="329.3786407767325" y="1100.3628276507677" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">117M</text>
-<text x="329.3786407767325" y="1100.3628276507677" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="middle">117M</text>
-<text x="507.3514563106688" y="838.7817481888637" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">GPT-2</text>
-<text x="507.3514563106688" y="838.7817481888637" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="middle">GPT-2</text>
-<text x="507.3514563106688" y="878.7817481888637" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">1.5B</text>
-<text x="507.3514563106688" y="878.7817481888637" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="middle">1.5B</text>
-<text x="847.3592233010072" y="425.3923902627412" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">GPT-3</text>
-<text x="847.3592233010072" y="425.3923902627412" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="middle">GPT-3</text>
-<text x="847.3592233010072" y="465.3923902627412" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">175B</text>
-<text x="847.3592233010072" y="465.3923902627412" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="middle">175B</text>
-<text x="1551.1262135922443" y="246.94549897933877" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="end">GPT-4</text>
-<text x="1551.1262135922443" y="246.94549897933877" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="end">GPT-4</text>
-<text x="1551.1262135922443" y="286.94549897933877" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="end">~1.8T est.</text>
-<text x="1551.1262135922443" y="286.94549897933877" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="end">~1.8T est.</text>
-<text x="1901.9145631067606" y="609.7940008672037" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">GPT-4o</text>
-<text x="1901.9145631067606" y="609.7940008672037" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="middle">GPT-4o</text>
-<text x="1901.9145631067606" y="649.7940008672037" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">~200B est.</text>
-<text x="1901.9145631067606" y="649.7940008672037" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="middle">~200B est.</text>
-<text x="2050" y="372" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">GPT-4.5</text>
-<text x="2050" y="372" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="middle">GPT-4.5</text>
-<text x="2050" y="412" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">~4–5T est.</text>
-<text x="2050" y="412" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="middle">~4–5T est.</text>
-<text x="2228" y="514" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">GPT-5</text>
-<text x="2228" y="514" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="middle">GPT-5</text>
-<text x="2228" y="554" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">~3–5T est.</text>
-<text x="2228" y="554" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="middle">~3–5T est.</text>
-<text x="2560" y="514" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">GPT-5.6</text>
-<text x="2560" y="514" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="middle">GPT-5.6</text>
-<text x="2560" y="554" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">undisclosed</text>
-<text x="2560" y="554" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="middle">undisclosed</text>
-<text x="1524.7184466019542" y="722.7993312730401" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">RL-CAI 52B</text>
-<text x="1524.7184466019542" y="722.7993312730401" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="middle">RL-CAI 52B</text>
-<text x="1524.7184466019542" y="762.7993312730401" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">52B (paper)</text>
-<text x="1524.7184466019542" y="762.7993312730401" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="middle">52B (paper)</text>
-<text x="1648.0970873786262" y="487.2113295386325" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="end">Claude 2</text>
-<text x="1648.0970873786262" y="487.2113295386325" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="end">Claude 2</text>
-<text x="1648.0970873786262" y="527.2113295386325" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="end">~130B est.</text>
-<text x="1648.0970873786262" y="527.2113295386325" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="end">~130B est.</text>
-<text x="1851.4446601941863" y="235.79400086720364" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">Claude 3 Opus</text>
-<text x="1851.4446601941863" y="235.79400086720364" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="middle">Claude 3 Opus</text>
-<text x="1851.4446601941863" y="275.79400086720364" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">~2T est.</text>
-<text x="1851.4446601941863" y="275.79400086720364" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="middle">~2T est.</text>
-<text x="1980.477669902913" y="469.58800173440744" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="start">Claude 3.5 Sonnet</text>
-<text x="1980.477669902913" y="469.58800173440744" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="start">Claude 3.5 Sonnet</text>
-<text x="1980.477669902913" y="509.58800173440744" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="start">~400B est.</text>
-<text x="1980.477669902913" y="509.58800173440744" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="start">~400B est.</text>
-<text x="2350" y="372" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">Claude Opus 4.6</text>
-<text x="2350" y="372" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="middle">Claude Opus 4.6</text>
-<text x="2350" y="412" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">~5T est.</text>
-<text x="2350" y="412" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="middle">~5T est.</text>
-<text x="2399.207766990254" y="109.99999999999986" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="end">Claude Fable 5</text>
-<text x="2399.207766990254" y="109.99999999999986" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="end">Claude Fable 5</text>
-<text x="2399.207766990254" y="149.99999999999986" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="end">~10T cited, unconfirmed</text>
-<text x="2399.207766990254" y="149.99999999999986" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="end">~10T cited, unconfirmed</text>
-<text x="1963.0097087378324" y="790" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="31" font-style="italic" fill="#8CA0C4" text-anchor="middle">2024: both labs also shipped smaller,</text>
-<text x="1963.0097087378324" y="828" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="31" font-style="italic" fill="#8CA0C4" text-anchor="middle">cheaper frontier models — scale is not monotonic</text>
+<rect x="2295.2857142857292" y="229.38461538461547" width="527.6571428570946" height="38.55101616364436" fill="#8B7BF7" fill-opacity="0.22"/>
+<rect x="2295.2857142857292" y="229.38461538461547" width="527.6571428570946" height="38.55101616364436" fill="none" stroke="#8B7BF7" stroke-width="3" stroke-dasharray="10 8"/>
+<text x="2559.114285714277" y="331.93563154825983" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="50" font-weight="bold" fill="#8B7BF7" text-anchor="middle">8–10T</text>
+<text x="2559.114285714277" y="375.93563154825983" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="30" fill="#8CA0C4" text-anchor="middle">next-gen scenario</text>
+<text x="2559.114285714277" y="411.93563154825983" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="30" fill="#8CA0C4" text-anchor="middle">(planning assumption,</text>
+<text x="2559.114285714277" y="447.93563154825983" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="30" fill="#8CA0C4" text-anchor="middle">not a forecast)</text>
+<path d="M341.0,928.3 L487.6,525.6 L1059.2,905.2 L1445.2,367.3 L1660.1,387.7" fill="none" stroke="#18A184" stroke-width="5" stroke-opacity="0.5" stroke-linejoin="round"/>
+<circle cx="341.0000000000625" cy="928.3079410720457" r="17" fill="#0B1220" stroke="#18A184" stroke-width="6"/>
+<line x1="487.5714285714653" y1="507.4364193072955" x2="487.5714285714653" y2="557.1373233207071" stroke="#18A184" stroke-width="5"/>
+<line x1="473.5714285714653" y1="557.1373233207071" x2="501.5714285714653" y2="557.1373233207071" stroke="#18A184" stroke-width="5"/>
+<line x1="473.5714285714653" y1="507.4364193072955" x2="501.5714285714653" y2="507.4364193072955" stroke="#18A184" stroke-width="5"/>
+<circle cx="487.5714285714653" cy="525.6388496182453" r="17" fill="#0B1220" stroke="#18A184" stroke-width="6"/>
+<line x1="1059.199999999947" y1="835.189127243387" x2="1059.199999999947" y2="954.9395211229048" stroke="#18A184" stroke-width="5"/>
+<line x1="1045.199999999947" y1="954.9395211229048" x2="1073.199999999947" y2="954.9395211229048" stroke="#18A184" stroke-width="5"/>
+<line x1="1045.199999999947" y1="835.189127243387" x2="1073.199999999947" y2="835.189127243387" stroke="#18A184" stroke-width="5"/>
+<circle cx="1059.199999999947" cy="905.2386171094932" r="17" fill="#0B1220" stroke="#18A184" stroke-width="6"/>
+<line x1="1445.1714285714597" y1="349.13500926413326" x2="1445.1714285714597" y2="387.6860254277776" stroke="#18A184" stroke-width="5"/>
+<line x1="1431.1714285714597" y1="387.6860254277776" x2="1459.1714285714597" y2="387.6860254277776" stroke="#18A184" stroke-width="5"/>
+<line x1="1431.1714285714597" y1="349.13500926413326" x2="1459.1714285714597" y2="349.13500926413326" stroke="#18A184" stroke-width="5"/>
+<circle cx="1445.1714285714597" cy="367.3374395750833" r="17" fill="#0B1220" stroke="#18A184" stroke-width="6"/>
+<line x1="1660.1428571427987" y1="349.13500926413326" x2="1660.1428571427987" y2="437.3869294411893" stroke="#18A184" stroke-width="5"/>
+<line x1="1646.1428571427987" y1="437.3869294411893" x2="1674.1428571427987" y2="437.3869294411893" stroke="#18A184" stroke-width="5"/>
+<line x1="1646.1428571427987" y1="349.13500926413326" x2="1674.1428571427987" y2="349.13500926413326" stroke="#18A184" stroke-width="5"/>
+<circle cx="1660.1428571427987" cy="387.6860254277776" r="17" fill="#0B1220" stroke="#18A184" stroke-width="6"/>
+<line x1="2158.4857142856345" y1="267.93563154825983" x2="2158.4857142856345" y2="437.3869294411893" stroke="#18A184" stroke-width="5" stroke-dasharray="12 10"/>
+<line x1="2144.4857142856345" y1="437.3869294411893" x2="2172.4857142856345" y2="437.3869294411893" stroke="#18A184" stroke-width="5"/>
+<line x1="2144.4857142856345" y1="267.93563154825983" x2="2172.4857142856345" y2="267.93563154825983" stroke="#18A184" stroke-width="5"/>
+<circle cx="2158.4857142856345" cy="352.66128049472456" r="21" fill="#0B1220" stroke="#18A184" stroke-width="5" stroke-dasharray="9 7"/>
+<text x="2158.4857142856345" y="364.66128049472456" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" font-weight="bold" fill="#18A184" text-anchor="middle">?</text>
+<path d="M365.4,1138.0 L658.6,979.7 L966.4,507.4 L1108.1,785.5 L1904.4,349.1 L2021.7,229.4" fill="none" stroke="#CC6C38" stroke-width="5" stroke-opacity="0.5" stroke-linejoin="round"/>
+<circle cx="365.4285714286111" cy="1137.9635050595634" r="21" fill="#0B1220"/>
+<circle cx="365.4285714286111" cy="1137.9635050595634" r="17" fill="#CC6C38"/>
+<line x1="658.5714285714166" y1="905.2386171094932" x2="658.5714285714166" y2="1024.9890109890111" stroke="#CC6C38" stroke-width="5"/>
+<line x1="644.5714285714166" y1="1024.9890109890111" x2="672.5714285714166" y2="1024.9890109890111" stroke="#CC6C38" stroke-width="5"/>
+<line x1="644.5714285714166" y1="905.2386171094932" x2="672.5714285714166" y2="905.2386171094932" stroke="#CC6C38" stroke-width="5"/>
+<circle cx="658.5714285714166" cy="979.6620950164012" r="17" fill="#0B1220" stroke="#CC6C38" stroke-width="6"/>
+<line x1="966.3714285714625" y1="468.88540314365116" x2="966.3714285714625" y2="627.1868131868133" stroke="#CC6C38" stroke-width="5"/>
+<line x1="952.3714285714625" y1="627.1868131868133" x2="980.3714285714625" y2="627.1868131868133" stroke="#CC6C38" stroke-width="5"/>
+<line x1="952.3714285714625" y1="468.88540314365116" x2="980.3714285714625" y2="468.88540314365116" stroke="#CC6C38" stroke-width="5"/>
+<circle cx="966.3714285714625" cy="507.4364193072955" r="17" fill="#0B1220" stroke="#CC6C38" stroke-width="6"/>
+<line x1="1108.0571428571557" y1="746.9372070663311" x2="1108.0571428571557" y2="835.189127243387" stroke="#CC6C38" stroke-width="5"/>
+<line x1="1094.0571428571557" y1="835.189127243387" x2="1122.0571428571557" y2="835.189127243387" stroke="#CC6C38" stroke-width="5"/>
+<line x1="1094.0571428571557" y1="746.9372070663311" x2="1122.0571428571557" y2="746.9372070663311" stroke="#CC6C38" stroke-width="5"/>
+<circle cx="1108.0571428571557" cy="785.4882232299755" r="17" fill="#0B1220" stroke="#CC6C38" stroke-width="6"/>
+<line x1="1904.428571428507" y1="317.6365355616714" x2="1904.428571428507" y2="387.6860254277776" stroke="#CC6C38" stroke-width="5"/>
+<line x1="1890.428571428507" y1="387.6860254277776" x2="1918.428571428507" y2="387.6860254277776" stroke="#CC6C38" stroke-width="5"/>
+<line x1="1890.428571428507" y1="317.6365355616714" x2="1918.428571428507" y2="317.6365355616714" stroke="#CC6C38" stroke-width="5"/>
+<circle cx="1904.428571428507" cy="349.13500926413326" r="17" fill="#0B1220" stroke="#CC6C38" stroke-width="6"/>
+<line x1="2021.6857142856516" y1="197.88614168215364" x2="2021.6857142856516" y2="267.93563154825983" stroke="#CC6C38" stroke-width="5"/>
+<line x1="2007.6857142856516" y1="267.93563154825983" x2="2035.6857142856516" y2="267.93563154825983" stroke="#CC6C38" stroke-width="5"/>
+<line x1="2007.6857142856516" y1="197.88614168215364" x2="2035.6857142856516" y2="197.88614168215364" stroke="#CC6C38" stroke-width="5"/>
+<circle cx="2021.6857142856516" cy="229.38461538461547" r="17" fill="#0B1220" stroke="#CC6C38" stroke-width="6" stroke-dasharray="9 7"/>
+<text x="335.0000000000625" y="858.3079410720457" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="end">GPT-3.5</text>
+<text x="335.0000000000625" y="858.3079410720457" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="end">GPT-3.5</text>
+<text x="335.0000000000625" y="898.3079410720457" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="end">~175B est.</text>
+<text x="335.0000000000625" y="898.3079410720457" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="end">~175B est.</text>
+<text x="487.5714285714653" y="619.6388496182453" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">GPT-4</text>
+<text x="487.5714285714653" y="619.6388496182453" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="middle">GPT-4</text>
+<text x="487.5714285714653" y="659.6388496182453" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">~1.8T est.</text>
+<text x="487.5714285714653" y="659.6388496182453" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="middle">~1.8T est.</text>
+<text x="1059.199999999947" y="1015.2386171094932" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">GPT-4o</text>
+<text x="1059.199999999947" y="1015.2386171094932" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="middle">GPT-4o</text>
+<text x="1059.199999999947" y="1055.2386171094931" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">~200B est.</text>
+<text x="1059.199999999947" y="1055.2386171094931" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="middle">~200B est.</text>
+<text x="1445.1714285714597" y="270.3374395750833" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">GPT-4.5</text>
+<text x="1445.1714285714597" y="270.3374395750833" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="middle">GPT-4.5</text>
+<text x="1445.1714285714597" y="310.3374395750833" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">~4–5T est.</text>
+<text x="1445.1714285714597" y="310.3374395750833" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="middle">~4–5T est.</text>
+<text x="1660.1428571427987" y="574.6860254277776" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">GPT-5</text>
+<text x="1660.1428571427987" y="574.6860254277776" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="middle">GPT-5</text>
+<text x="1660.1428571427987" y="614.6860254277776" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">~3–5T est.</text>
+<text x="1660.1428571427987" y="614.6860254277776" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="middle">~3–5T est.</text>
+<text x="2214.4857142856345" y="334.66128049472456" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="start">GPT-5.6</text>
+<text x="2214.4857142856345" y="334.66128049472456" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="start">GPT-5.6</text>
+<text x="2214.4857142856345" y="374.66128049472456" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="start">undisclosed</text>
+<text x="2214.4857142856345" y="374.66128049472456" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="start">undisclosed</text>
+<text x="415.4285714286111" y="1149.9635050595634" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="start">RL-CAI 52B</text>
+<text x="415.4285714286111" y="1149.9635050595634" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="start">RL-CAI 52B</text>
+<text x="415.4285714286111" y="1189.9635050595634" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="start">52B (paper)</text>
+<text x="415.4285714286111" y="1189.9635050595634" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="start">52B (paper)</text>
+<text x="622.5714285714166" y="829.6620950164012" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="end">Claude 2</text>
+<text x="622.5714285714166" y="829.6620950164012" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="end">Claude 2</text>
+<text x="622.5714285714166" y="869.6620950164012" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="end">~130B est.</text>
+<text x="622.5714285714166" y="869.6620950164012" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="end">~130B est.</text>
+<text x="1018.3714285714625" y="420.4364193072955" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="start">Claude 3 Opus</text>
+<text x="1018.3714285714625" y="420.4364193072955" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="start">Claude 3 Opus</text>
+<text x="1018.3714285714625" y="460.4364193072955" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="start">~2T est.</text>
+<text x="1018.3714285714625" y="460.4364193072955" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="start">~2T est.</text>
+<text x="1160.0571428571557" y="799.4882232299755" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="start">Claude 3.5 Sonnet</text>
+<text x="1160.0571428571557" y="799.4882232299755" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="start">Claude 3.5 Sonnet</text>
+<text x="1160.0571428571557" y="839.4882232299755" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="start">~400B est.</text>
+<text x="1160.0571428571557" y="839.4882232299755" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="start">~400B est.</text>
+<text x="1904.428571428507" y="490.13500926413326" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">Claude Opus 4.6</text>
+<text x="1904.428571428507" y="490.13500926413326" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="middle">Claude Opus 4.6</text>
+<text x="1904.428571428507" y="530.1350092641333" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="middle">~5T est.</text>
+<text x="1904.428571428507" y="530.1350092641333" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="middle">~5T est.</text>
+<text x="1995.6857142856516" y="119.38461538461547" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="end">Claude Fable 5</text>
+<text x="1995.6857142856516" y="119.38461538461547" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="38" font-weight="bold" fill="#F2F6FD" text-anchor="end">Claude Fable 5</text>
+<text x="1995.6857142856516" y="159.38461538461547" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" stroke="#0B1220" stroke-width="14" stroke-linejoin="round" fill="#0B1220" text-anchor="end">~10T cited, unconfirmed</text>
+<text x="1995.6857142856516" y="159.38461538461547" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="32" fill="#8CA0C4" text-anchor="end">~10T cited, unconfirmed</text>
+<text x="1750" y="880" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="31" font-style="italic" fill="#8CA0C4" text-anchor="middle">2024: both labs also shipped smaller,</text>
+<text x="1750" y="918" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="31" font-style="italic" fill="#8CA0C4" text-anchor="middle">cheaper frontier models — scale is not monotonic</text>
 <rect x="204" y="158" width="780" height="122" rx="16" fill="#121C30" stroke="#26334F" stroke-width="2.5"/>
-<text x="230" y="210" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#C6D2E8"><tspan font-weight="bold" fill="#F2F6FD">≈40,000×</tspan> growth in frontier total</text>
-<text x="230" y="254" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#C6D2E8">capacity, 2018 → 2026 (117M → ~5T est.)</text>
+<text x="230" y="210" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#C6D2E8"><tspan font-weight="bold" fill="#F2F6FD">≈30×</tspan> frontier total-capacity growth</text>
+<text x="230" y="254" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#C6D2E8">since GPT-3.5, late 2022 (175B → ~5T est.)</text>
 <rect x="204" y="314" width="780" height="78" rx="16" fill="#121C30" stroke="#26334F" stroke-width="2.5"/>
 <text x="230" y="366" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="34" fill="#C6D2E8">Training compute: <tspan font-weight="bold" fill="#F2F6FD">×4–5 / year</tspan> (Epoch AI)</text>
 <circle cx="191" cy="37" r="15" fill="#18A184"/>

@@ -1,4 +1,7 @@
-# Data & sources — frontier AI scale trajectory (draft v1, Aug 2026)
+# Data & sources — frontier AI scale trajectory (draft v2, Aug 2026)
+
+> v2: per review feedback, the slide-2 chart window now starts at GPT-3.5 (ChatGPT era).
+> Earlier models stay in this table as off-chart context.
 
 Every number plotted on slide 2, with its epistemic status. **Bold = disclosed by the lab**;
 everything else is a third-party estimate or an unconfirmed claim, and is drawn hollow /
@@ -9,9 +12,10 @@ experts; active-per-token counts are typically 5–10× lower.
 
 | Model | Date | Plotted (range) | Status | Source |
 |---|---|---|---|---|
-| **GPT-1** | Jun 2018 | **117M** | Disclosed (paper) | OpenAI GPT-1 paper |
-| **GPT-2** | Feb 2019 | **1.5B** | Disclosed | OpenAI GPT-2 report |
-| **GPT-3** | May 2020 | **175B** | Disclosed (paper) | Brown et al. 2020 |
+| **GPT-1** *(off-chart context)* | Jun 2018 | **117M** | Disclosed (paper) | OpenAI GPT-1 paper |
+| **GPT-2** *(off-chart context)* | Feb 2019 | **1.5B** | Disclosed | OpenAI GPT-2 report |
+| **GPT-3** *(off-chart context)* | May 2020 | **175B** | Disclosed (paper) | Brown et al. 2020 |
+| GPT-3.5 | Nov 2022 | ~175B | Estimate — undisclosed; plotted at its GPT-3 lineage size (turbo variants likely far smaller; a ~20B claim in a Microsoft paper was retracted) | GPT-3 paper lineage; press analyses |
 | GPT-4 | Mar 2023 | ~1.8T (1.5–2T) | Estimate — MoE, 16×111B experts, ~280B active/token | SemiAnalysis leak (Jul 2023), widely corroborated, never confirmed by OpenAI |
 | GPT-4o | May 2024 | ~200B (150–300B) | Estimate | Epoch AI, "Frontier language models have become much smaller" |
 | GPT-4.5 "Orion" | Feb 2025 | ~4.5T (4–5T) | Analyst estimate; OpenAI called it its largest model to date | Analyst reports (e.g., CometAPI roundup) |
