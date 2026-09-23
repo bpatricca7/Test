@@ -301,7 +301,7 @@ function slotPos(slot) {
   if (slot === 'lower') return { x: 0.14 * W, y: 0.845 * H, size: 34 };
   if (slot.startsWith('col')) {
     const i = +slot.slice(3);
-    return { x: 0.455 * W, y: 0.30 * H + i * 66, size: 32 };
+    return { x: 0.415 * W, y: 0.30 * H + i * 66, size: 32 };
   }
   return { x: 0.14 * W, y: 0.5 * H, size: 34 };
 }
@@ -911,9 +911,10 @@ window.renderFrame = function (t) {
   drawVoice(t);
   drawTitle(t);
   drawCredits(t);
-  drawText(t);
 
   ctx.globalAlpha = 1;
   ctx.drawImage(VIGNETTE, 0, 0);
+  // narration sits on top of the picture, untouched by the vignette
+  drawText(t);
   return true;
 };

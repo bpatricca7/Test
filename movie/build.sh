@@ -17,8 +17,8 @@ node movie/visuals/render.js
 "$FFMPEG" -y -loglevel warning -stats \
   -framerate 24 -i movie/build/frames/%05d.png \
   -i movie/build/soundtrack.wav \
-  -vf "noise=alls=5:allf=t,format=yuv420p" \
-  -c:v libx264 -preset slow -crf 20 -tune film \
+  -vf "noise=alls=3:allf=t,format=yuv420p" \
+  -c:v libx264 -preset medium -crf 21 -maxrate 5M -bufsize 10M \
   -c:a aac -b:a 256k \
   -movflags +faststart -shortest \
   movie/ECHO.mp4
