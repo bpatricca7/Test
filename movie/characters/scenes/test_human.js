@@ -16,6 +16,16 @@ export async function create(env) {
   const rim = new THREE.DirectionalLight(0xcfe0ff, 1.6); rim.position.set(-0.6, 0.8, -1.5); scene.add(rim);
   scene.add(new THREE.HemisphereLight(0x9aa6b8, 0x3a2e28, 0.55));
 
+  // profiling hook (test bench only)
+  const R = env.renderer;
+  const gl = R.getContext();
+  const origRender = R.render.bind(R);
+  R.render = (sc, cam) => {
+    const t0 = performance.now();
+    origRender(sc, cam);
+    gl.finish();
+    if (window.__prof) console.warn('render', sc === scene ? 'SCENE' : 'pass', (performance.now() - t0).toFixed(0), 'ms');
+  };
   const heads = {};
   for (const id of ['maya', 'sam']) {
     const rnd = U.mulberry32(id === 'maya' ? 7 : 11);

@@ -201,48 +201,50 @@ LEXICON = {
 # tremor (fear shake), whisper, breathy (almost a whisper), tones {phrase: tone},
 # creak (phrase-final fry), gasp (in-breaths in pauses), trail (drawn-out ending),
 # deliberate (0..1: less non-final shortening, small gaps before stressed words),
-# tempo_max (how far the tempo fit may slow the line).
+# tempo (natural pace for the delivery: >1 slower; clamped to the voice's
+# tempo_range and only sped up if the line would overrun its target).
 SCRIPT = {
     "d01": dict(markup="*Maya. **Maya! *Wake **up.",
-                style=dict(pitch=3.5, range=1.35, loud=3.0, rd=-0.15, pause=0.55)),
+                style=dict(pitch=3.5, range=1.35, loud=3.0, rd=-0.15, pause=0.55, tempo=0.9)),
     "d02": dict(markup="It's *three in the *morning, Sam.",
                 style=dict(pitch=-1.5, range=0.45, loud=-1.5, rd=0.3, breath=1.4, tones={0: "L"},
-                           final=-1.5, creak=True)),
+                           final=-1.5, creak=True, tempo=1.15)),
     "d03": dict(markup="*Something is *transmitting. *Right at **us.",
                 pron={"right": "R AY1 DX", "at": "AE0 DX"},
-                style=dict(pitch=2.0, range=1.15, loud=1.0, rd=0.25, breath=2.0, pause=1.7, gasp=True)),
+                style=dict(pitch=2.0, range=1.15, loud=1.0, rd=0.25, breath=2.0, pause=1.4, gasp=True,
+                           tempo=0.88)),
     "d04": dict(markup="*Two *tones. *On. *Off.",
-                style=dict(pitch=-0.5, range=0.75, loud=-3.0, pause=1.0)),
+                style=dict(pitch=-0.5, range=0.75, loud=-3.0, pause=1.0, tempo=1.0)),
     "d05": dict(markup="That's **not *noise. That's a **message.",
-                style=dict(range=1.0, pause=1.2)),
+                style=dict(range=1.0, pause=1.2, tempo=1.1)),
     "d06": dict(markup="*Sixteen *seventy-*nine *pulses. Then *nothing.",
                 pron={"sixteen": "S IH1 K S T IY2 N"},
-                style=dict(pitch=0.5, range=0.9, rd=0.1, trail=True)),
+                style=dict(pitch=0.5, range=0.9, rd=0.1, trail=True, tempo=1.0)),
     "d07": dict(markup="*Twenty-*three by *seventy-**three. **Fold it.",
-                style=dict(range=1.15, loud=1.0, rd=-0.1)),
+                style=dict(range=1.15, loud=1.0, rd=-0.1, tempo=0.95)),
     "d08": dict(markup="I *know this **picture.",
-                style=dict(range=0.8, loud=-4.0, breathy=True, rd=0.5)),
+                style=dict(range=0.8, loud=-4.0, breathy=True, rd=0.5, tempo=1.2)),
     "d09": dict(markup="We *sent it. In *nineteen *seventy-**four.",
                 pron={"sent": "S EH1 N DX", "we": "W IY0", "nineteen": "N AY1 N T IY2 N"},
-                style=dict(range=1.0, rd=0.15, pause=1.3)),
+                style=dict(range=1.0, rd=0.15, pause=1.3, tempo=1.15)),
     "d10": dict(markup="Then **who is *that? *Standing *next to **us?",
                 pron={"next": "N EH1 K S"},
-                style=dict(pitch=2.5, range=1.2, rd=0.3, breath=2.0, tremor=0.6, gasp=True)),
+                style=dict(pitch=2.5, range=1.2, rd=0.3, breath=2.0, tremor=0.6, gasp=True, tempo=0.95)),
     "d11": dict(markup="We *heard you."),
     "d12": dict(markup="*Maya...",
-                style=dict(whisper=True, loud=-5.0, trail=2.4, tempo_max=3.0)),
+                style=dict(whisper=True, loud=-5.0, trail=1.8, tempo=1.2)),
     "d13": dict(markup="*Who are you?",
-                style=dict(range=0.9, loud=-1.5, rd=0.1, deliberate=0.5)),
+                style=dict(range=0.9, loud=-1.5, rd=0.1, deliberate=0.5, tempo=1.1)),
     "d14": dict(markup="You *asked if *anyone was *out there."),
     "d15": dict(markup="We were *listening.", pron={"we": "W IY0"}),
     "d16": dict(markup="What do you *want?", pron={"you": "Y UW0"},
-                style=dict(range=0.9, loud=-1.0)),
+                style=dict(range=0.9, loud=-1.0, tempo=1.05)),
     "d17": dict(markup="To *answer. The *way *you did.", pron={"to": "T UW1"}),
     "d18": dict(markup="With a *picture of *ourselves."),
     "d19": dict(markup="What do we send *back?", pron={"we": "W IY0"},
-                style=dict(pitch=1.0, range=0.8, loud=-3.0, rd=0.35, breath=2.2, tremor=1.0)),
+                style=dict(pitch=1.0, range=0.8, loud=-3.0, rd=0.35, breath=2.2, tremor=1.0, tempo=1.1)),
     "d20": dict(markup="*Something *honest.",
-                style=dict(range=0.8, loud=-2.5, rd=0.3, breath=1.3, deliberate=0.6)),
+                style=dict(range=0.8, loud=-2.5, rd=0.3, breath=1.3, deliberate=0.6, tempo=1.2)),
 }
 
 # ---------------------------------------------------------------------------
@@ -274,7 +276,8 @@ VOICES = {
                     jitter=0.005, shimmer=0.05, b_scale=0.85, open_b1=V1.OPEN_PHASE_B1,
                     fnp=260.0, fnz=430.0, fric_scale=0.93,
                     f4=3400.0, f5=4150.0, high_poles=V1.HIGH_POLES,
-                    vot_scale=1.1, drift_st=0.0, layers=True, deliberate=1.0, tempo_max=2.9),
+                    vot_scale=1.1, drift_st=0.0, layers=True, deliberate=1.0,
+                    tempo=1.5, tempo_range=(1.0, 1.5)),
 }
 
 
@@ -857,16 +860,22 @@ def layout(line, f):
 
 
 def fit_timing(line):
+    """Natural pace for the delivery; `target` is only a ceiling. The tempo factor
+    stays inside the voice's range (humans 0.85-1.2, the Visitor 1.0-1.5) and is
+    only sped up (down to the range's floor) if the line would overrun its target."""
     duration_rules(line)
-    lo, hi = 0.55, 3.0
-    for _ in range(50):
-        mid = 0.5 * (lo + hi)
-        if layout(line, mid) > line.target:
-            hi = mid
-        else:
-            lo = mid
-    f = 0.5 * (lo + hi)
-    f = float(np.clip(f, 0.70, line.style.get("tempo_max", VOICES[line.speaker].get("tempo_max", 2.4))))
+    voice = VOICES[line.speaker]
+    lo, hi = voice.get("tempo_range", (0.85, 1.2))
+    f = float(np.clip(line.style.get("tempo", voice.get("tempo", 1.0)), lo, hi))
+    if layout(line, f) > line.target:
+        a, b = lo, f
+        for _ in range(50):
+            mid = 0.5 * (a + b)
+            if layout(line, mid) > line.target:
+                b = mid
+            else:
+                a = mid
+        f = a
     line.tempo = f
     line.spoken = layout(line, f)
     segs = line.segs
