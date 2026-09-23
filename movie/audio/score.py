@@ -752,9 +752,9 @@ def render_signal(room_ir):
     gate = ramp_db([(t_a, -120), (r0 - 0.02, -120), (r0 + 0.02, 0), (r1 - 0.015, 0), (r1 + 0.025, -120)], n, t_a)
     x *= gate
 
+    # keep the tones centred: any inter-channel delay comb-filters them away
+    # in a mono fold-down (phone speakers); the tiny room gives the width
     st = np.stack([x, x])
-    # a hint of width: very short decorrelation + tiny room
-    st[1] = np.roll(st[1], int(0.0004 * SR))
     st = st + 0.12 * convolve_stereo(st, room_ir, n)
     st *= gate  # keep the cut at 53.2 hard, even for the room
     out = np.zeros((2, N))
