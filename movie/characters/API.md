@@ -73,6 +73,8 @@ maya.heights                                    // { standEye, sitEye } in metre
 | `energy` 0..1 | how animated the idle/secondary motion is (0 = asleep/still, 1 = keyed up): scales breathing, weight shifts, fidgets and the follow-through on hair, headphones, cardigan and hood |
 | `startle` 0..1 | a whole-body flinch (shoulders up, head back, hands lift); the director keys it as a quick 0→1→0 |
 | `nod`, `shake` | extra head-motion amplitudes 0..1; the director supplies the phase through `head` or `t` |
+| `past` | `dt => state`: the same character's full state at `t - dt` (non-recursive, no `past` inside), so the rig can run deterministic follow-through springs over the recent motion. Also passed to the Visitor. |
+| `walk.stride` | metres per step (the director passes the real distance / steps); a phase running backwards walks backwards |
 
 **Motion quality matters as much as the look. The user specifically asked for characters that are
 "really cool and move around and talk, not just static".** Design the rig for lively acting:

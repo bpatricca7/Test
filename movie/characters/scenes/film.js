@@ -102,7 +102,8 @@ export async function create(env) {
       if (w.gait === 'tri') phase = (t - w.start) / (w.end - w.start) * (w.steps / 3) - 1 / 6;   // plants at 0, 1/3, 2/3
       else { const cyc = (t - w.start) / (2 * d); phase = w.backward ? 0.5 - cyc : cyc; }
       const amount = smooth(w.start, w.start + d * 0.35, t) * (1 - smooth(w.end - d * 0.35, w.end, t));
-      return { pos, yaw, walk: { phase, amount } };
+      const stride = a.pos.distanceTo(b.pos) / w.steps;
+      return { pos, yaw, walk: { phase, amount, stride } };
     }
     return null;
   }
@@ -514,6 +515,10 @@ export async function create(env) {
     // two passes so gaze targets use this frame's eye positions
     sam.set(sP); maya.set(mP); visitor.set(vP);
     const sP2 = perfSam(t), mP2 = perfMaya(t), vP2 = perfVisitor(t);
+    // `past` lets the rigs run follow-through (hair, clothes, hands) from the real recent motion
+    sP2.past = dt => perfSam(t - dt);
+    mP2.past = dt => perfMaya(t - dt);
+    vP2.past = dt => perfVisitor(t - dt);
     sam.set(sP2); maya.set(mP2); visitor.set(vP2);
 
     const surge = U.window01(t, B.surge.start, B.surge.end, 0.15, 0.6);
