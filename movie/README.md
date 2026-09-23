@@ -4,7 +4,10 @@ A 2½-minute sci-fi short, built entirely in code. No footage, no samples, no AI
 
 > A radio signal arrived at 03:14 UTC. Nobody was listening for it.
 
-The film is **[`ECHO.mp4`](ECHO.mp4)**.
+There are two cuts:
+
+- **[`ECHO_animated.mp4`](ECHO_animated.mp4)**: the animated cut (3:05). Real-time 3D: a 1974 prologue at a giant valley dish, a journey from Earth to the galaxy, a 3D observatory and spectrogram flyover, the bitstream folding into the picture, and the visitor stepping out of it. Source in [`animated/`](animated/).
+- **[`ECHO.mp4`](ECHO.mp4)**: the first cut (2:35), a quieter 2D version.
 
 ## How it's made
 
@@ -30,3 +33,16 @@ pip install numpy scipy imageio-ffmpeg
 ```
 
 Intermediate files go to `movie/build/` (ignored by git).
+
+## The animated cut
+
+Same method, in 3D with three.js, rendered in headless Chromium (software WebGL):
+
+| Part | File |
+| --- | --- |
+| Timeline | `animated/timeline.py` |
+| Compositor (bloom, narration, subtitles, fades) | `animated/main.js`, `animated/lib/util.js` |
+| Scenes | `animated/scenes/valley.js`, `journey.js`, `observatory.js`, `signal.js`, `grid.js`, `ending.js` |
+| Score, sound design, mix | `animated/audio/score.py`, `instruments.py`, `mix.py` |
+| Capture | `animated/render.js` (4,440 frames at 24 fps) |
+| Build | `animated/build.sh` (run `npm install` in `movie/animated` first; it does this for you) |

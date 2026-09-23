@@ -864,7 +864,8 @@ export async function create(env) {
     return { az, el };
   }
   const hash1 = n => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
-  const FIRST_HIT = ARR.start + RING_TRAVEL;
+  // the first ring lands on the arrival cue, where the score's impact hits
+  const FIRST_HIT = ARR.start;
 
   // C1 keyframe spline (Catmull-Rom tangents): keys = [[t, v], ...]
   function spline(keys) {
@@ -936,7 +937,7 @@ export async function create(env) {
     focusW.copy(FOCUS).applyMatrix4(dishG.matrixWorld);
 
     // --- arrival
-    const a0 = ARR.start;
+    const a0 = ARR.start - RING_TRAVEL;
     let hits = 0;
     for (let i = 0; i < RING_N; i++) {
       const s = a0 + i * RING_GAP;
