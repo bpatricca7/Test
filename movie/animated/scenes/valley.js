@@ -333,10 +333,11 @@ void main() {
   scene3.add(terrain);
   {
     const TI = globalThis.__VDBG_INIT || {};
-    const NR = TI.NR || 210, NA = TI.NA || 416, r0 = DISH_A, r1 = 9500;
+    const NR = TI.NR || 190, NA = TI.NA || 352, r0 = DISH_A, r1 = 9500;
     const ringR = i => r0 * Math.pow(r1 / r0, i / (NR - 1));
     const NV = NR * NA;
-    const pos = new Float32Array(NV * 3), det = new Float32Array(NV * 4);
+    const pos = new Float32Array(NV * 3), det = new Float32Array(NV * 4), clump = new Float32Array(NV * 2);
+    const mlx = MOON_DIR.x / Math.hypot(MOON_DIR.x, MOON_DIR.z), mlz = MOON_DIR.z / Math.hypot(MOON_DIR.x, MOON_DIR.z);
     for (let i = 0; i < NR; i++) {
       const r = ringR(i);
       for (let j = 0; j < NA; j++) {
@@ -352,6 +353,11 @@ void main() {
         det[k * 4 + 1] = U.fbm3(x * 0.006, 4.4, z * 0.006, 3);
         det[k * 4 + 2] = P.valley;
         det[k * 4 + 3] = 1 - U.smooth(156.5, 159.5, r);
+        // clumps of trees (~35 m) and their slope toward the moon
+        const ca = U.clamp(1 - P.spacing / 30);
+        const c0 = U.fbm3(x * 0.028, 7.7, z * 0.028, 3), c1 = U.fbm3((x + mlx * 6) * 0.028, 7.7, (z + mlz * 6) * 0.028, 3);
+        clump[k * 2] = U.lerp(0.5, c0, ca);
+        clump[k * 2 + 1] = (c0 - c1) * 4.0 * ca;
       }
     }
     const quadIdx = (i, j) => {
@@ -380,6 +386,7 @@ uniform float uDbg, uValley, uPixAng;
 uniform vec3 uVegA, uVegB;
 uniform sampler2D uCanopy;
 attribute vec4 aDet;
+attribute vec2 aClump;
 varying vec4 vA;       // world x, world z, crown texture lod, fog multiply
 varying vec3 vAlb;     // albedo (canopy clumps, colour patches, rim walkway)
 varying vec3 vFogAdd;
@@ -395,21 +402,15 @@ void main() {
   // widened at grazing angles
   float cosv = abs(dot(vv / dist, normal));
   float lod = log2(max(dist * uPixAng / 0.54 / sqrt(max(cosv, 0.08)), 1e-3));
-  // clumps of trees (~35 m) are sampled per vertex; their slope toward the
-  // moon from a second sample
-  vec2 cuv = w.xz * 0.00045 + 0.37;
-  float cl = max(lod - 3.0, 0.0);
-  float c0 = textureLod(uNoise, cuv, cl).r;
-  float c1 = textureLod(uNoise, cuv + normalize(uMoonDir.xz) * 0.0027, cl).r;
-  float canopy = aDet.x * 0.3 + c0 * 0.7;
+  // clumps of trees (~35 m) and their slope toward the moon (baked)
+  float canopy = aDet.x * 0.3 + aClump.x * 0.7;
   vAlb = mix(mix(uVegA, uVegB, aDet.y) * (0.6 + 0.8 * canopy), vec3(0.07, 0.075, 0.08), aDet.w);
-  vB = vec2((c0 - c1) * 3.5, 1.0) * (1.0 - aDet.w);
+  vB = vec2(aClump.y, 1.0) * (1.0 - aDet.w);
   float fm; vec3 fa;
   atmos(w.xyz, 1.0, fm, fa);
   // ground mist pooled in the valleys between the hills, drifting slowly
-  float pn = texture2D(uNoise, w.xz * 0.00022 + vec2(uTime * 0.0011, uTime * 0.0004)).a;
-  float pn2 = texture2D(uNoise, w.xz * 0.0009 - vec2(uTime * 0.0020, 0.0)).r;
-  float patchv = smoothstep(0.3, 0.75, pn) * (0.45 + 0.55 * pn2);
+  vec4 pm = textureLod(uNoise, w.xz * 0.00022 + vec2(uTime * 0.0011, uTime * 0.0004), 0.0);
+  float patchv = smoothstep(0.3, 0.75, pm.a) * (0.45 + 0.55 * pm.g);
   float clear = smoothstep(220.0, 700.0, length(w.xz));
   vec3 rd = vv / dist;
   float thick = aDet.z * patchv * clear;
@@ -435,11 +436,14 @@ void main() {
   // once they are smaller than a pixel use their average
   // tree crowns (~8 m): sharp texture up close, a blurred copy further
   // out, their average beyond that
-  vec4 ca = textureLod(uCanopy, vA.xy * 0.0036, 0.0);
   float midF = smoothstep(0.3, 1.6, vA.z), farF = smoothstep(1.8, 3.6, vA.z);
-  vec2 cr = mix(ca.rg, ca.ba, midF);
-  float crownH = mix(cr.x, 0.62, farF);
-  float delta = (cr.y - 0.5) * 2.0 * (1.0 - farF);
+  float crownH = 0.62, delta = 0.0;
+  if (farF < 1.0) {
+    vec4 ca = textureLod(uCanopy, vA.xy * 0.0036, 0.0);
+    vec2 cr = mix(ca.rg, ca.ba, midF);
+    crownH = mix(cr.x, 0.62, farF);
+    delta = (cr.y - 0.5) * 2.0 * (1.0 - farF);
+  }
   float bump = delta * 1.1 * vB.y + vB.x;
   float ao = 0.25 + 0.75 * crownH;
   float lit = clamp(dot(N, uMoonDir) + bump, 0.0, 1.3);
@@ -467,12 +471,13 @@ void main() {
       const i0 = bands[b], i1 = bands[b + 1];
       for (let s = 0; s < NSEC; s++) {
         const rows = i1 - i0 + 1, cols = SC + 1;
-        const p = new Float32Array(rows * cols * 3), nn = new Float32Array(rows * cols * 3), dd = new Float32Array(rows * cols * 4);
+        const p = new Float32Array(rows * cols * 3), nn = new Float32Array(rows * cols * 3), dd = new Float32Array(rows * cols * 4), cc = new Float32Array(rows * cols * 2);
         let cx = 0, cy = 0, cz = 0;
         for (let i = 0; i < rows; i++) for (let j = 0; j < cols; j++) {
           const src = (i0 + i) * NA + (s * SC + j) % NA, dst = i * cols + j;
           for (let c = 0; c < 3; c++) { p[dst * 3 + c] = pos[src * 3 + c]; nn[dst * 3 + c] = nrm[src * 3 + c]; }
           for (let c = 0; c < 4; c++) dd[dst * 4 + c] = det[src * 4 + c];
+          cc[dst * 2] = clump[src * 2]; cc[dst * 2 + 1] = clump[src * 2 + 1];
           cx += p[dst * 3]; cy += p[dst * 3 + 1]; cz += p[dst * 3 + 2];
         }
         const nv = rows * cols;
@@ -487,6 +492,7 @@ void main() {
         geo.setAttribute('position', new THREE.BufferAttribute(p, 3));
         geo.setAttribute('normal', new THREE.BufferAttribute(nn, 3));
         geo.setAttribute('aDet', new THREE.BufferAttribute(dd, 4));
+        geo.setAttribute('aClump', new THREE.BufferAttribute(cc, 2));
         geo.setIndex(ind);
         geo.computeBoundingSphere();
         const m = new THREE.Mesh(geo, terrainMat);
@@ -551,10 +557,10 @@ void main() {
   }
   gl_FragColor = vec4(c, 1.0);
 }`,
-      side: THREE.BackSide, depthWrite: false, depthTest: false,
+      side: THREE.BackSide, depthWrite: false, depthTest: true,
     });
     const m = new THREE.Mesh(new THREE.SphereGeometry(30000, 48, 24), mat);
-    m.renderOrder = -10;
+    m.renderOrder = 10;   // after the opaque scene: only uncovered pixels are shaded
     m.frustumCulled = false;
     m.name = 'skydome';
     sky.add(m);
@@ -1419,6 +1425,10 @@ void main() {
     if (dbg) scene3.traverse(o => { if (o.name) o.visible = !(dbg.hide || []).includes(o.name); });
     if (dbg && dbg.u) for (const k in dbg.u) C[k].value = dbg.u[k];
     terrainMat.uniforms.uDbg.value = dbg && dbg.tdbg || 0;
+    if (!globalThis.__minMat) globalThis.__minMat = new THREE.ShaderMaterial({
+      vertexShader: 'varying float vY; void main() { vY = position.y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      fragmentShader: 'varying float vY; void main() { gl_FragColor = vec4(vec3(0.01 + vY * 0.0001), 1.0); }' });
+    for (const m of terrain.children) m.material = dbg && dbg.minmat ? globalThis.__minMat : terrainMat;
     if (dbg && dbg.minf !== undefined) {
       const t = terrainMat.uniforms.uCanopy.value;
       const f = [THREE.LinearMipmapLinearFilter, THREE.LinearMipmapNearestFilter, THREE.LinearFilter, THREE.NearestMipmapNearestFilter][dbg.minf];

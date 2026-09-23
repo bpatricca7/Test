@@ -113,10 +113,13 @@ export async function create(env) {
   const pos = new Float32Array(NV * 3);
   const glowA = new Float32Array(NV), litA = new Float32Array(NV), tauA = new Float32Array(NV);
   for (let r = 0; r < NR; r++) for (let c = 0; c < NC; c++) pos[(r * NC + c) * 3] = XS[c];
+  // triangles are stored nearest row first, so early depth testing rejects
+  // the far terrain hidden behind near ridges (big win on SwiftShader)
   const idx = new Uint32Array((NR - 1) * (NC - 1) * 6);
+  const ROW_TRIS = (NC - 1) * 6;
   {
     let q = 0;
-    for (let r = 0; r < NR - 1; r++) {
+    for (let r = NR - 2; r >= 0; r--) {
       for (let c = 0; c < NC - 1; c++) {
         const a = r * NC + c, b = a + 1, d = a + NC, e = d + 1;
         idx[q++] = a; idx[q++] = d; idx[q++] = b;
@@ -167,19 +170,17 @@ export async function create(env) {
       uniform vec3 uCol;
       varying vec3 vW; varying float vG, vL, vTau, vFade;
       ${GRID_GLSL}
+      float gl1(float v, float w) { return clamp(1.0 - abs(fract(v + 0.5) - 0.5) / w, 0.0, 1.0) * clamp(2.0 - 4.0 * w, 0.0, 1.0); }
       void main() {
         float f100 = (vW.x - uXMin) / uXStep;
-        float wx = fwidth(f100);
+        float wx = fwidth(f100) * 1.3;
         float t4 = vTau * 4.0;
-        float wt = fwidth(t4);
-        float lx = gridLineW(f100, wx, 1.2) * 0.55 + gridLineW(f100 * 0.2, wx * 0.2, 1.6);
-        float lt = gridLineW(t4, wt, 1.2) * 0.6 + gridLineW(vTau, wt * 0.25, 1.6);
-        float lit = vL;
+        float wt = fwidth(t4) * 1.3;
+        float lines = (gl1(f100, wx) * 0.55 + gl1(f100 * 0.2, wx * 0.25)) * 0.10 + (gl1(t4, wt) * 0.6 + gl1(vTau, wt * 0.3)) * 0.07;
         float hN = clamp(vW.y * 0.22, 0.0, 1.0);
-        vec3 col = uCol * (0.006 + 0.10 * smoothstep(0.02, 0.45, vW.y)) * lit;
-        col += uCol * (lx * 0.10 + lt * 0.07) * uLine;
-        float g = vG;
-        col += uCol * g * (0.5 + 1.7 * hN) * (0.55 + 0.45 * lit) + vec3(0.85, 1.0, 0.95) * pow(g * hN, 3.0) * 1.6;
+        float gh = vG * hN;
+        vec3 col = uCol * ((0.006 + 0.10 * clamp(vW.y * 2.3 - 0.05, 0.0, 1.0)) * vL + lines * uLine + vG * (0.5 + 1.7 * hN) * (0.55 + 0.45 * vL))
+                 + vec3(0.85, 1.0, 0.95) * (gh * gh * gh * 1.6);
         gl_FragColor = vec4(col * vFade, 1.0);
       }`,
   }));
@@ -276,7 +277,7 @@ export async function create(env) {
     const Pn = P(t);
     // rows behind the camera are never seen: skip them entirely
     rowsUsed = Math.max(2, Math.min(NR, Math.ceil((camZ + 3 - Z_HEAD) / DZ) + 3));
-    geo.setDrawRange(0, (rowsUsed - 1) * (NC - 1) * 6);
+    geo.setDrawRange((NR - rowsUsed) * ROW_TRIS, (rowsUsed - 1) * ROW_TRIS);
     const tNow = Math.min(t, T_STOP);
     const kH = Math.floor(Pn / DZ);
     const dec = DECAY(t);
@@ -439,7 +440,7 @@ export async function create(env) {
     terrain.visible = !HIDE.includes('terrain'); future.visible = !HIDE.includes('future');
     if (HIDE.includes('tsimple')) { if (!terrain.userData.m0) { terrain.userData.m0 = terrain.material; terrain.userData.m1 = new THREE.MeshBasicMaterial({ color: 0x113322 }); } terrain.material = terrain.userData.m1; }
     else if (terrain.userData.m0) terrain.material = terrain.userData.m0;
-    if (HIDE.includes('halfrows')) geo.setDrawRange(0, Math.floor(rowsUsed / 2) * (NC - 1) * 6);
+    if (HIDE.includes('halfrows')) geo.setDrawRange((NR - rowsUsed / 2) * ROW_TRIS, Math.floor(rowsUsed / 2) * ROW_TRIS);
     sparks.visible = !HIDE.includes('sparks'); head.visible = !HIDE.includes('head');
     if (HIDE.includes('norender')) return;
     aa.render(scene, camera, t);
