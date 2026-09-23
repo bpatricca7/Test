@@ -7,6 +7,7 @@ A sci-fi short, built entirely in code. No footage, no samples, no AI voice API.
 There are two cuts:
 
 - **[`ECHO_animated.mp4`](ECHO_animated.mp4)**: the animated cut (3:05). Real-time 3D: a 1974 prologue at a giant valley dish, a journey from Earth to the galaxy, a 3D observatory and spectrogram flyover, the bitstream folding into the picture, and the visitor stepping out of it. Source in [`animated/`](animated/).
+- **[`ECHO_animated_phone.mp4`](ECHO_animated_phone.mp4)**: the animated cut at 720p (26 MB), for phones.
 - **[`ECHO.mp4`](ECHO.mp4)**: the first cut (2:35), a quieter 2D version.
 
 ## How it's made
