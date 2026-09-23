@@ -220,6 +220,18 @@ def tv_filter(x, fc, q=0.707, kind="lp", block=128):
     return y
 
 
+def high_shelf(x, f0, gain_db, fs=SR):
+    """RBJ high-shelf biquad (shelf slope S = 1)."""
+    A = 10 ** (gain_db / 40.0)
+    w0 = TAU * f0 / fs
+    cw, sw = np.cos(w0), np.sin(w0)
+    alpha = sw / 2.0 * np.sqrt(2.0)
+    sa = 2.0 * np.sqrt(A) * alpha
+    b = [A * ((A + 1) + (A - 1) * cw + sa), -2 * A * ((A - 1) + (A + 1) * cw), A * ((A + 1) + (A - 1) * cw - sa)]
+    a = [(A + 1) - (A - 1) * cw + sa, 2 * ((A - 1) - (A + 1) * cw), (A + 1) - (A - 1) * cw - sa]
+    return sps.lfilter(np.array(b) / a[0], np.array(a) / a[0], x, axis=-1)
+
+
 def one_pole_smooth(x, tau):
     """Zero-phase-ish exponential smoothing via lfilter (forward only)."""
     a = np.exp(-1.0 / (tau * SR))

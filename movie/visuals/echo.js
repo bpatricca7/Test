@@ -690,7 +690,7 @@ function drawGrid(t) {
   const fadeOut = 1 - smooth(124.0, 126.0, t);
   const cell = L.pitch * 0.78;
   const scan = TL.scan;
-  const scanP = easeInOut(clamp((t - scan.start) / (scan.end - scan.start)));
+  const scanP = clamp((t - scan.start) / (scan.end - scan.start)); // linear, to match the scan blips in the score
   const scanRow = t >= scan.start ? scanP * ROWS : -1;
   const voice = envAt('voice_rms', t);
   const zoomP = easeInOut(clamp((t - TL.zoom.start) / (TL.zoom.end - TL.zoom.start)));

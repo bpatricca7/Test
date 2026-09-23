@@ -279,7 +279,7 @@ def music_seg1(ir):
     ]
     for i, (t0, spec, bass, dur, att) in enumerate(obs):
         p = pad(chord(spec), dur + 1.5, att=att, rel=2.6, voices=5, detune=9, seed=100 + i,
-                fc=[(0, 650), (dur * 0.6, 1500), (dur + 1.5, 900)])
+                fc=[(0, 900), (dur * 0.6, 2400), (dur + 1.5, 1300)])
         bus.add(p, t0, gain=db(-17), send=0.6)
         bus.add(sub(hz(bass), dur + 1.5, 2.0, 2.4), t0, gain=db(-27), send=0.05)
         top = [2 * hz(x) for x in spec.split()[-2:]]
@@ -299,7 +299,7 @@ def music_seg1(ir):
     dur = cut - s0 + 0.2
     p = pad(chord("B1 F#2 B2 F#3"), dur, att=2.5, rel=0.05, voices=6, detune=14, seed=300, q=1.1,
             fc=[(0, 240), (8, 420), (14, 900), (17.5, 2200), (dur, 4200)])
-    p *= ramp_db([(0, -24), (6, -22), (12, -19), (17, -14), (dur, -9)], p.shape[1])
+    p *= ramp_db([(0, -24), (6, -22), (12, -19), (17, -15), (dur, -11.5)], p.shape[1])
     bus.add(p, s0, send=0.35)
 
     # tension cluster: B / C / F / F# tremolo strings (the tritone of the signal)
@@ -307,7 +307,7 @@ def music_seg1(ir):
     dur = cut - c0 + 0.2
     p = pad(chord("B3 C4 F4 F#4 C5"), dur, att=4.0, rel=0.05, voices=4, detune=16, seed=301, q=0.9,
             fc=[(0, 700), (dur * 0.7, 2000), (dur, 5000)], trem=([(0, 5.0), (dur, 17.0)], 0.55))
-    p *= ramp_db([(0, -34), (7, -28), (11, -21), (dur, -13)], p.shape[1])
+    p *= ramp_db([(0, -34), (7, -28), (11, -22), (dur, -15.5)], p.shape[1])
     bus.add(p, c0, send=0.45)
 
     # accelerating low pulses, one per eight signal pulses, merging into a growl
@@ -325,7 +325,7 @@ def music_seg1(ir):
     r0 = 46.5
     dur = cut - r0 + 0.1
     sr = shepard_rise(dur, hz("B2"), seed=302, fc=(700, 6000))
-    sr *= ramp_db([(0, -46), (dur * 0.7, -30), (dur, -19)], sr.shape[1])
+    sr *= ramp_db([(0, -46), (dur * 0.7, -31), (dur, -21)], sr.shape[1])
     bus.add(sr, r0, send=0.4)
 
     gate = [(0, 0), (cut - 0.02, 0), (cut + 0.03, -34), (cut + 0.9, -120)]
@@ -356,7 +356,7 @@ def arp_every(k):
 
 
 def arp_gain(k):
-    return float(np.interp(k, [-48, -32, 0, 48, 73, 90, 104], [-32, -29, -26, -22, -21, -26, -40]))
+    return float(np.interp(k, [-48, -32, 0, 48, 73, 90, 104], [-31, -28, -24.5, -20.5, -19.5, -25, -40]))
 
 
 def music_seg2(ir):
@@ -375,11 +375,11 @@ def music_seg2(ir):
         t0, t1 = kt(k), kt(k_end)
         dur = t1 - t0 + 1.6
         p = pad(chord(spec), dur, att=1.8 if i else 2.8, rel=1.6, voices=5, detune=8, seed=400 + i,
-                fc=[(0, 700), (dur * 0.5, 1300), (dur, 800)], q=0.9)
+                fc=[(0, 1000), (dur * 0.5, 2000), (dur, 1200)], q=0.9)
         tt = tvec(p.shape[1], t0)
         phase = np.mod(tt - K0, 2 * STEP)
         pump = 1.0 - 0.3 * np.exp(-phase / 0.09) if k >= -16 else 1.0
-        bus.add(p * pump, t0, gain=db([-23.5, -22, -20.5, -18.5, -19, -20][i]), send=0.45)
+        bus.add(p * pump, t0, gain=db([-22.5, -21, -19, -17, -17.5, -19][i]), send=0.45)
         bus.add(sub(hz(root), dur, 0.8, 1.4), t0, gain=db(-28))
 
         # arpeggio
@@ -429,7 +429,7 @@ def music_seg2(ir):
     gains = [-20, -19.5, -19, -18, -16.5, -15.5]
     for i, (t0, spec, bass, dur) in enumerate(rec):
         p = pad(chord(spec), dur + 2.4, att=1.6 if i else 2.2, rel=2.4, voices=6, detune=9, seed=500 + i,
-                fc=[(0, 1100), (dur, 2400), (dur + 2.4, 1500)])
+                fc=[(0, 1500), (dur, 3500), (dur + 2.4, 2000)])
         bus.add(p, t0, gain=db(gains[i]), send=0.55)
         bus.add(sub(hz(bass), dur + 2.4, 1.2, 2.0), t0, gain=db(-25))
         # soft rolled piano chord
@@ -497,7 +497,7 @@ def music_seg3(ir):
     rv = CUES["reveal"]
     st = pad(chord("B1 B2 F3 G#3 C4 F4"), 3.2, att=0.012, rel=2.8, voices=6, detune=14, seed=902, q=1.3,
              fc=[(0, 400), (0.08, 3500), (0.6, 1200), (3.2, 350)])
-    bus.add(st, rv, gain=db(-13), send=0.7)
+    bus.add(st, rv, gain=db(-14.5), send=0.7)
     bus.add(thump(110, 52, 3.0, tau_pitch=0.06, tau_amp=0.9, noise=0.3, seed=903), rv, gain=db(-14), send=0.5)
 
     # after the reveal: slow tritone pulse B1 / F2
@@ -559,9 +559,9 @@ def music_seg4(ir):
 
     # B major (Picardy): awe, decaying into the fade to black
     dur = 126.4 - b1
-    st = pad(chord("B2 F#3 D#4 F#4 C#5 D#5 B5"), dur, att=0.9, rel=3.8, voices=7, detune=11, seed=1010,
-             spread=0.95, fc=[(0, 2500), (1.5, 3800), (dur, 900)])
-    bus.add(st, b1, gain=db(-9.5), send=0.65)
+    st = pad(chord("B2 F#3 D#4 F#4 C#5 D#5 B5"), dur, att=0.9, rel=4.2, voices=7, detune=11, seed=1010,
+             spread=0.95, fc=[(0, 2500), (1.2, 3800), (dur, 800)])
+    bus.add(st, b1, gain=db(-11), send=0.6)
     bus.add(choir(chord("B3 D#4 F#4 C#5 D#5 F#5"), dur, att=1.0, rel=3.8, seed=1011), b1, gain=db(-12), send=0.85)
     br = pad(chord("B1 B2 F#3"), dur, att=0.8, rel=3.6, voices=4, detune=7, seed=1012, q=0.9,
              fc=[(0, 400), (1.0, 900), (dur, 300)], spread=0.3)
@@ -573,7 +573,7 @@ def music_seg4(ir):
 
     fb = CUES["fade_to_black"]
     gate = [(t0, -120), (t0 + 0.05, 0), (fb, 0), (125.0, -8), (126.0, -40), (126.3, -120)]
-    return bus.render(ir, gate=gate, echo_delay=0.41, echo_fb=0.45) * db(-2.0)
+    return bus.render(ir, gate=gate, echo_delay=0.41, echo_fb=0.45) * db(-4.0)
 
 
 # ---------------------------------------------------------------------------
@@ -596,7 +596,7 @@ def music_seg5(ir):
     for i, (tt, spec, bass, dur, g, att) in enumerate(chords5):
         rel = 2.6 if i < len(chords5) - 1 else 3.5
         p = pad(chord(spec), dur + rel * 0.8, att=att, rel=rel, voices=5, detune=9, seed=1100 + i,
-                fc=[(0, 700), (dur * 0.5, 1300), (dur + rel, 700)])
+                fc=[(0, 1000), (dur * 0.5, 2000), (dur + rel, 900)])
         bus.add(p, tt, gain=db(g), send=0.6)
         bus.add(sub(hz(bass), dur + rel * 0.8, 1.5, rel), tt, gain=db(-28 if i != 3 else -24))
         if i in (3, 5):
@@ -676,9 +676,10 @@ def render_typing(room_ir):
     for cue in TL["text"]:
         base_pan = SLOT_PAN.get(cue["slot"], 0.18)
         heavy = cue.get("style") == "emph"
+        lvl = db(2.0) if cue.get("scene") == "cold" else 1.0
         for ch, tt in zip(cue["text"], cue["char_times"]):
             y = key_click(rng, heavy=heavy, space=(ch == " "))
-            st = to_stereo(y, float(np.clip(base_pan + rng.uniform(-0.22, 0.22), -1, 1))) * 0.45
+            st = to_stereo(y, float(np.clip(base_pan + rng.uniform(-0.22, 0.22), -1, 1))) * 0.45 * lvl
             place(out, st, tt)
             place(wet, st * 0.35, tt)
     out += convolve_stereo(wet, room_ir, N)
@@ -932,7 +933,7 @@ def render_sfx(hall_ir, room_ir):
     # reveal impact at 110
     rv = CUES["reveal"]
     add(reverse_swell(0.9, rng, 300, 4000) * db(-30), rv - 0.9)
-    add(boom(6.0, 80.0, 34.0, seed=11), rv, gain=db(-15), hall=0.35)
+    add(boom(6.0, 80.0, 34.0, seed=11), rv, gain=db(-17), hall=0.35)
 
     # zoom riser (cut just before the voice)
     z0, z1 = TL["zoom"]["start"], TL["zoom"]["end"]
@@ -949,7 +950,7 @@ def render_sfx(hall_ir, room_ir):
     # title: reverse swell -> deep boom -> shimmering tail
     th = TL["title_card"]["start"]
     add(reverse_swell(1.6, rng, 250, 6000) * db(-27), th - 1.6)
-    add(boom(8.0, 72.0, 27.0, seed=13), th, gain=db(-7.5), hall=0.3)
+    add(boom(8.0, 72.0, 27.0, seed=13), th, gain=db(-10), hall=0.3)
     sh = shimmer([hz(x) for x in ["B5", "F#6", "C#7", "E6", "G#6", "B6", "D#7"]], 9.0, seed=14)
     add(sh, th + 0.02, gain=db(-19), hall=0.9)
 
