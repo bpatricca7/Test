@@ -36,9 +36,10 @@ class Bus:
         self.rev = np.zeros((2, self.n))
         self.space = np.zeros((2, self.n))
         self.echo = np.zeros((2, self.n))
+        self.level = 1.0  # section trim applied to everything added while it is set
 
     def add(self, sig, t, gain=1.0, pan=0.0, send=0.0, space=0.0, echo=0.0):
-        st = to_stereo(np.asarray(sig, dtype=float), pan) * gain
+        st = to_stereo(np.asarray(sig, dtype=float), pan) * (gain * self.level)
         s = int(round((t - self.t0) * SR))
         a, b = max(0, s), min(self.n, s + st.shape[1])
         if b <= a:
@@ -281,7 +282,7 @@ def braam(notes, dur=4.0, seed=0, drive=2.2, fc=((0, 160), (0.12, 2600), (0.9, 1
     """Huge low brass 'braam': wide saw stack, snapping filter, tanh drive."""
     p = pad(notes, dur, att=att, rel=rel, fc=[(a, b) for a, b in fc if a <= dur] + [(dur, fc[-1][1])],
             q=1.25, voices=voices, detune=detune, seed=seed, spread=0.95)
-    p = np.tanh(drive * p * 3.0) / np.tanh(drive)
+    p = np.tanh(drive * p) / np.tanh(drive)
     n = p.shape[1]
     return p * (0.45 + 0.55 * np.exp(-tvec(n) / 1.4)) * fade_env(n, att, rel)
 
@@ -422,7 +423,6 @@ def whoosh(dur, seed=0, f_lo=180.0, f_hi=2600.0, center=0.62, pan0=-0.8, pan1=0.
         if m > 0:
             th = thump(80.0, 38.0, m / SR, tau_pitch=0.08, tau_amp=0.35, noise=0.0)
             wh[n - m:] = th[:m]
-        wh += 0.0
         y += low * np.stack([wh, wh]) * 0.7
     return y * fade_env(n, 0.02, 0.1)
 
@@ -496,7 +496,7 @@ def frogs(dur, seed=0, rate=0.8):
         f0 = rng.uniform(70, 120)
         pulses = (np.mod(f0 * tt, 1.0) < 0.12).astype(float)
         y = bp(pulses, 350, 700) + 0.5 * bp(pulses, 1000, 1500)
-        env = np.sin(np.pi * tt / tt[-1]) ** 0.7
+        env = np.clip(np.sin(np.pi * tt / tt[-1]), 0, None) ** 0.7
         reps = rng.integers(1, 4)
         seg = np.concatenate([y * env] * reps + [np.zeros(int(0.05 * SR))])
         seg = lp(seg, 2500.0)

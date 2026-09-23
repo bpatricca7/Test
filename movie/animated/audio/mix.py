@@ -1,0 +1,227 @@
+#!/usr/bin/env python3
+"""ECHO (animated cut) — final mix and master.
+
+Reads the four stems rendered by movie/animated/audio/score.py plus the
+alien voice (movie/build/voice.wav, 48 kHz mono, shared with the first cut
+and never regenerated here), places the voice at voice.start (153.5 s) in
+the centre, ducks music and effects under it with a smooth look-ahead
+sidechain envelope, sums, masters to about -16 LUFS integrated (ITU-R
+BS.1770 K-weighted, gated) with true peaks below -1 dBTP through a gentle
+look-ahead limiter, and writes:
+
+  movie/animated/build/soundtrack.wav   48 kHz, stereo, 16-bit, exactly 185.0 s
+  movie/animated/build/audio_env.json   per-frame envelopes for the visuals
+
+If voice.wav is missing, a placeholder buzz is synthesized in memory only
+(never written to disk) so the pipeline can be tested; a warning is printed.
+
+Run:  python3 movie/animated/audio/mix.py
+"""
+
+import json
+import os
+import sys
+import time
+
+import numpy as np
+from scipy import signal as sps
+from scipy.ndimage import maximum_filter1d
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ANIM = os.path.dirname(HERE)
+MOVIE = os.path.dirname(ANIM)
+sys.path.insert(0, os.path.join(MOVIE, "audio"))
+from dsp import (SR, TAU, db, to_db, hp, bp, read_wav, write_wav_16, integrated_loudness,  # noqa: E402
+                 block_loudness, true_peak, limiter, make_ir, high_shelf, convolve_stereo,
+                 one_pole_smooth, _moving_avg)
+
+BUILD = os.path.join(ANIM, "build")
+STEMS = os.path.join(BUILD, "stems")
+VOICE_PATH = os.path.join(MOVIE, "build", "voice.wav")
+with open(os.path.join(BUILD, "timeline.json")) as _f:
+    TL = json.load(_f)
+N = int(round(float(TL["duration"]) * SR))
+
+TARGET_LUFS = -16.0
+CEILING_DBTP = -1.3          # limiter ceiling (true-peak detection); report must be < -1.0
+VOICE_MASTER_LUFS = -13.0    # voice loudness in the final master while it speaks (90th pct momentary)
+STEM_GAIN_DB = {"music": 0.0, "typing": -8.0, "signal": -18.0, "sfx": -3.0}
+DUCK_DB = {"music": 5.0, "sfx": 3.0}
+
+
+def placeholder_voice():
+    """2 s formant-ish buzz, only for testing the mix when voice.wav is missing."""
+    n = int(2.0 * SR)
+    t = np.arange(n) / SR
+    f0 = 95 * (1 + 0.08 * np.sin(TAU * 0.7 * t)) * (1 - 0.1 * t / 2.0)
+    src = sps.sawtooth(TAU * np.cumsum(f0) / SR)
+    y = sum(g * bp(src, fc * 0.85, fc * 1.15) for fc, g in ((600, 1.0), (1100, 0.6), (2500, 0.25)))
+    syll = np.clip(np.sin(np.pi * np.clip(t / 0.55, 0, 3.6)) ** 2, 0, 1)
+    y *= syll * np.clip(t / 0.03, 0, 1) * np.clip((2.0 - t) / 0.2, 0, 1)
+    return y / np.max(np.abs(y)) * 0.5
+
+
+def load_voice(path=None):
+    path = path or VOICE_PATH
+    if os.path.exists(path):
+        v, sr = read_wav(path)
+        v = v.mean(axis=0)
+        if sr != SR:
+            from math import gcd
+            g = gcd(int(sr), SR)
+            v = sps.resample_poly(v, SR // g, int(sr) // g)
+        return v, False
+    print(f"WARNING: {path} not found -- using an in-memory placeholder voice "
+          "(nothing is written to disk). Re-run mix.py once the real voice exists.")
+    return placeholder_voice(), True
+
+
+def load_stem(name):
+    d, sr = read_wav(os.path.join(STEMS, f"{name}.wav"))
+    assert sr == SR, (name, sr)
+    if d.shape[0] == 1:
+        d = np.vstack([d, d])
+    if d.shape[1] < N:
+        d = np.pad(d, ((0, 0), (0, N - d.shape[1])))
+    return d[:, :N]
+
+
+def duck_envelope(voice_track, depth_db):
+    """Sidechain-style gain curve: smooth, anticipatory, holds between words, ignores tails."""
+    env = np.sqrt(one_pole_smooth(voice_track ** 2, 0.015) + 1e-20)
+    lvl = to_db(env / (env.max() + 1e-20))
+    key = np.clip((lvl + 32.0) / 18.0, 0.0, 1.0)          # 0 below -32 dB (tails), 1 above -14 dB
+    key = maximum_filter1d(key, size=int(0.25 * SR))       # hold through short gaps
+    red = depth_db * key
+    red = _moving_avg(red[::-1], int(0.12 * SR))[::-1]     # ~120 ms anticipatory attack
+    red = _moving_avg(red, int(0.35 * SR))                 # ~350 ms release
+    return db(-red)
+
+
+def frame_rms(x, fps, frames):
+    p = np.mean(np.atleast_2d(x) ** 2, axis=0)
+    hop = SR / fps
+    out = np.zeros(frames)
+    for i in range(frames):
+        a, b = int(round(i * hop)), int(round((i + 1) * hop))
+        out[i] = np.sqrt(np.mean(p[a:b])) if b > a else 0.0
+    m = out.max()
+    return [round(float(v), 4) for v in (out / m if m > 0 else out)]
+
+
+def main(voice_path=None, out_dir=BUILD):
+    t_all = time.time()
+    stems = {k: load_stem(k) for k in ("music", "typing", "signal", "sfx")}
+    for k, g in STEM_GAIN_DB.items():
+        stems[k] *= db(g)
+
+    voice, is_placeholder = load_voice(voice_path)
+    v_start = float(TL["voice"]["start"])
+    s = int(round(v_start * SR))
+    vtrack = np.zeros(N)
+    m = min(len(voice), N - s)
+    vtrack[s:s + m] = voice[:m]
+    vtrack = hp(vtrack, 35.0, order=2)
+    active = vtrack[s:s + m]
+    L_v, _, _ = block_loudness(np.vstack([active, active]) / np.sqrt(2), block=0.4, step=0.1)
+    L_v = L_v[L_v > -70]
+    v_loud = float(np.percentile(L_v, 90)) if len(L_v) else -30.0
+
+    for k, d in DUCK_DB.items():
+        stems[k] *= duck_envelope(vtrack, d)
+    bed = hp(sum(stems.values()), 22.0, order=4)
+
+    # the voice is set relative to the final master level
+    gain_db = TARGET_LUFS - integrated_loudness(bed)
+    v_gain = db(VOICE_MASTER_LUFS - gain_db - v_loud)
+    vtrack *= v_gain
+    voice_st = np.vstack([vtrack, vtrack]) / np.sqrt(2)
+    room = make_ir(1.6, rt_low=1.0, rt_mid=0.9, rt_high=0.45, predelay=0.012, seed=31, width=0.9)
+    voice_st = voice_st + 0.12 * convolve_stereo(voice_st, room, N)
+    mixed = bed + hp(voice_st, 22.0, order=4)
+    mixed = high_shelf(mixed, 6000.0, 2.0)
+
+    gain_db = TARGET_LUFS - integrated_loudness(mixed)
+    for _ in range(4):
+        y, g = limiter(mixed * db(gain_db), ceiling_db=CEILING_DBTP, attack=0.006, release=0.15, hold=0.03)
+        L = integrated_loudness(y)
+        if abs(L - TARGET_LUFS) < 0.1:
+            break
+        gain_db += TARGET_LUFS - L
+    y[:, :int(0.005 * SR)] *= np.linspace(0, 1, int(0.005 * SR))
+    y[:, -int(0.02 * SR):] *= np.linspace(1, 0, int(0.02 * SR))
+    tp = true_peak(y)
+    L = integrated_loudness(y)
+    assert y.shape == (2, N) and np.all(np.isfinite(y))
+    os.makedirs(out_dir, exist_ok=True)
+    write_wav_16(os.path.join(out_dir, "soundtrack.wav"), y)
+
+    fps = int(TL["fps"])
+    frames = int(round(TL["duration"] * fps))
+    env = {
+        "fps": fps,
+        "voice_rms": frame_rms(vtrack, fps, frames),
+        "signal_rms": frame_rms(stems["signal"], fps, frames),
+        "music_rms": frame_rms(stems["music"], fps, frames),
+        "master_rms": frame_rms(y, fps, frames),
+    }
+    vw = sps.resample_poly(voice, 1, SR // 2400)  # polyphase FIR: anti-aliased decimation
+    vw = vw / (np.max(np.abs(vw)) + 1e-12)
+    env["voice_wave"] = {"start": v_start, "rate": 2400, "samples": [round(float(v), 3) for v in vw]}
+    if is_placeholder:
+        env["voice_placeholder"] = True
+    with open(os.path.join(out_dir, "audio_env.json"), "w") as f:
+        json.dump(env, f, separators=(",", ":"))
+
+    # --- report
+    red = -to_db(g)
+    print(f"master gain {gain_db:+.2f} dB, voice gain {20 * np.log10(v_gain):+.1f} dB "
+          f"(voice loudness {v_loud:.1f} LUFS raw){' [PLACEHOLDER VOICE]' if is_placeholder else ''}")
+    print(f"integrated loudness {L:.2f} LUFS | true peak {20 * np.log10(tp):.2f} dBTP | "
+          f"sample peak {20 * np.log10(np.max(np.abs(y))):.2f} dBFS | max limiter GR {red.max():.2f} dB")
+    hot = red > 1.0
+    if hot.any():
+        edges = np.flatnonzero(np.diff(np.concatenate([[0], hot.astype(int), [0]])))
+        merged = []
+        for a, b in zip(edges[::2], edges[1::2]):
+            a, b, r = a / SR, b / SR, float(red[a:b].max())
+            if merged and a - merged[-1][1] < 0.5:
+                merged[-1] = (merged[-1][0], b, max(merged[-1][2], r))
+            else:
+                merged.append((a, b, r))
+        print("limiter > 1 dB: " + ", ".join(f"{a:.1f}-{b:.1f}s ({r:.1f} dB)" for a, b, r in merged))
+    else:
+        print("limiter never exceeds 1 dB of gain reduction")
+    Lm, tm, _ = block_loudness(y)
+    print(f"{'scene':<13}{'start':>7}{'end':>7}{'RMS dBFS':>10}{'LUFS':>8}{'max M':>8}")
+    for sc in TL["scenes"]:
+        a, b = int(sc["start"] * SR), int(sc["end"] * SR)
+        seg = y[:, a:b]
+        sel = (tm >= sc["start"]) & (tm + 0.4 <= sc["end"])
+        print(f"{sc['id']:<13}{sc['start']:7.1f}{sc['end']:7.1f}{20 * np.log10(np.sqrt(np.mean(seg ** 2)) + 1e-12):10.1f}"
+              f"{integrated_loudness(seg):8.1f}{Lm[sel].max():8.1f}")
+    c = TL["cues"]
+    moments = [
+        ("power-up", c["power_up"], c["transmit"]), ("launch", c["transmit"], c["transmit"] + 3.0),
+        ("journey climax", 43.0, 45.5), ("black: 52 yrs later", 47.2, 53.8),
+        ("slew", TL["observatory"]["slew"]["start"], TL["observatory"]["slew"]["end"]),
+        ("arrival", c["arrival"], c["arrival"] + 3.0), ("signal climax", c["pulses_end"] - 3.0, c["silence"]),
+        ("after the cut", c["silence"] + 0.1, 95.9), ("fold landings", 106.1, c["fold_complete"]),
+        ("grid lock", c["fold_complete"], c["fold_complete"] + 2.0),
+        ("recognition swell", c["came_back_in_52"] - 5.0, c["came_back_in_52"] - 1.4),
+        ("'came back in 52'", c["came_back_in_52"], c["came_back_in_52"] + 3.5),
+        ("reveal stab", c["reveal"], c["reveal"] + 2.0), ("push-in", 147.0, c["step_out"]),
+        ("assembling", c["step_out"], 153.2), ("voice", c["voice"], c["voice"] + 2.3),
+        ("bloom", c["voice"] + 2.3, 160.0), ("title boom", 173.3, 176.3), ("last second", c["end"] - 1.0, c["end"]),
+    ]
+    print(f"{'moment':<21}{'window':>15}{'RMS dBFS':>10}{'max M':>8}")
+    for name, a, b in moments:
+        seg = y[:, int(a * SR):int(b * SR)]
+        sel = (tm >= a) & (tm + 0.4 <= b)
+        mm = f"{Lm[sel].max():8.1f}" if sel.any() else f"{'-':>8}"
+        print(f"{name:<21}{a:7.1f}-{b:6.1f}s{20 * np.log10(np.sqrt(np.mean(seg ** 2)) + 1e-12):10.1f}{mm}")
+    print(f"wrote {os.path.join(out_dir, 'soundtrack.wav')} and audio_env.json in {time.time() - t_all:.1f}s")
+
+
+if __name__ == "__main__":
+    main()
