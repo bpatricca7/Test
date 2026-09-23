@@ -33,8 +33,8 @@ from dsp import (SR, N, TAU, BUILD, STEMS, load_timeline, db, to_db, hp, lp, bp,
 
 TARGET_LUFS = -16.0
 CEILING_DBTP = -1.3          # limiter ceiling (true-peak detection); report must be < -1.0
-VOICE_TARGET_LUFS = -15.0    # voice loudness (pre-master scale) while it speaks
-STEM_GAIN_DB = {"music": 0.0, "typing": -5.0, "signal": -13.0, "sfx": -2.0}
+VOICE_MASTER_LUFS = -13.0    # voice loudness in the final master while it speaks (90th pct momentary)
+STEM_GAIN_DB = {"music": 0.0, "typing": -5.0, "signal": -14.0, "sfx": -2.0}
 DUCK_DB = {"music": 5.0, "sfx": 2.5}
 
 TL = load_timeline()
@@ -124,18 +124,21 @@ def main():
     L_v, _, _ = block_loudness(np.vstack([active, active]) / np.sqrt(2), block=0.4, step=0.1)
     L_v = L_v[L_v > -70]
     v_loud = float(np.percentile(L_v, 90)) if len(L_v) else -30.0
-    v_gain = db(VOICE_TARGET_LUFS - v_loud)
-    vtrack *= v_gain
-    voice_st = np.vstack([vtrack, vtrack]) / np.sqrt(2)
-    room = make_ir(1.6, rt_low=1.0, rt_mid=0.9, rt_high=0.45, predelay=0.012, seed=31, width=0.9)
-    voice_st = voice_st + 0.12 * convolve_stereo(voice_st, room, N)
 
     # --- sidechain ducking under the voice
     for k, d in DUCK_DB.items():
         stems[k] *= duck_envelope(vtrack, d)
+    bed = hp(sum(stems.values()), 22.0, order=4)  # subsonic / DC
 
-    mixed = sum(stems.values()) + voice_st
-    mixed = hp(mixed, 22.0, order=4)  # subsonic / DC
+    # the voice is set relative to the final master level, so its loudness in
+    # the finished film does not depend on the voice file's own level
+    gain_db = TARGET_LUFS - integrated_loudness(bed)
+    v_gain = db(VOICE_MASTER_LUFS - gain_db - v_loud)
+    vtrack *= v_gain
+    voice_st = np.vstack([vtrack, vtrack]) / np.sqrt(2)
+    room = make_ir(1.6, rt_low=1.0, rt_mid=0.9, rt_high=0.45, predelay=0.012, seed=31, width=0.9)
+    voice_st = voice_st + 0.12 * convolve_stereo(voice_st, room, N)
+    mixed = bed + hp(voice_st, 22.0, order=4)
 
     # --- master: loudness normalize, then true-peak limiter, iterate to land on target
     gain_db = TARGET_LUFS - integrated_loudness(mixed)

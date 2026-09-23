@@ -573,7 +573,7 @@ def music_seg4(ir):
 
     fb = CUES["fade_to_black"]
     gate = [(t0, -120), (t0 + 0.05, 0), (fb, 0), (125.0, -8), (126.0, -40), (126.3, -120)]
-    return bus.render(ir, gate=gate, echo_delay=0.41, echo_fb=0.45)
+    return bus.render(ir, gate=gate, echo_delay=0.41, echo_fb=0.45) * db(-2.0)
 
 
 # ---------------------------------------------------------------------------
