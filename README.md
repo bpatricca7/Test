@@ -52,6 +52,10 @@ Markets are scored on four dimensions (0-25 points each, max 100):
 
 This analysis is for **informational purposes only** and should not be considered financial advice. Prediction markets involve significant risk of loss. Past performance does not guarantee future results. Always do your own research before trading.
 
+## ECHO (short film)
+
+`movie/` contains **ECHO**, a 2½-minute sci-fi short made entirely in code: procedural visuals, a synthesized score, and a from-scratch speech synthesizer. See [`movie/README.md`](movie/README.md).
+
 ## License
 
 MIT
