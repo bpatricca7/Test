@@ -46,9 +46,10 @@ from instruments import (SR, TAU, hz, chord, db, tvec, ramp_db, fade_env, smooth
 from dsp import make_ir, write_wav_float  # noqa: E402
 
 BUILD = os.path.join(CHAR, "build")
-STEMS = os.path.join(BUILD, "stems")
-DIALOGUE_DIR = os.path.join(BUILD, "dialogue")
-with open(os.path.join(BUILD, "timeline.json")) as _f:
+# ECHO_TIMELINE / ECHO_STEMS override the inputs/outputs (used to test re-timed dialogue)
+STEMS = os.environ.get("ECHO_STEMS", os.path.join(BUILD, "stems"))
+DIALOGUE_DIR = os.environ.get("ECHO_DIALOGUE", os.path.join(BUILD, "dialogue"))
+with open(os.environ.get("ECHO_TIMELINE", os.path.join(BUILD, "timeline.json"))) as _f:
     TL = json.load(_f)
 DUR = float(TL["duration"])
 N = int(round(DUR * SR))
@@ -91,6 +92,24 @@ DEMAT = span("dematerialize")
 LIGHTS = float(B["lights_return"])
 TITLE = float(TL["title_card"]["start"])
 CRED = (float(TL["credits"]["start"]), float(TL["credits"]["end"]))
+
+
+def pinkf(shape, rng):
+    """dsp.pink at an FFT-friendly length, truncated (awkward lengths make numpy's FFT crawl)."""
+    from scipy.fft import next_fast_len
+    shape = (shape,) if np.isscalar(shape) else tuple(shape)
+    return pink(shape[:-1] + (next_fast_len(shape[-1]),), rng)[..., :shape[-1]]
+
+
+def brownf(shape, rng):
+    from scipy.fft import next_fast_len
+    shape = (shape,) if np.isscalar(shape) else tuple(shape)
+    return brown(shape[:-1] + (next_fast_len(shape[-1]),), rng)[..., :shape[-1]]
+
+
+def arch(u, p=1.0):
+    """Half-sine window on u in [0, 1], raised to p; never NaN at the ends."""
+    return np.clip(np.sin(np.pi * np.clip(u, 0.0, 1.0)), 0.0, 1.0) ** p
 
 
 def mark_x(name):
@@ -140,7 +159,7 @@ def creak(dur, seed, f_rate=(25.0, 55.0), res=(260.0, 720.0, 1500.0), q=14.0):
     imp[idx] = rng.uniform(0.3, 1.0, len(idx))
     y = sum(tv_filter(imp, f * (1 + 0.04 * np.sin(TAU * rng.uniform(0.5, 2) * t)), q, kind="bp") * g
             for f, g in zip(res, (1.0, 0.6, 0.3)))
-    env = np.sin(np.pi * np.clip(t / dur, 0, 1)) ** 0.7
+    env = arch(t / dur, 0.7)
     y = y * env
     return y / (np.max(np.abs(y)) + 1e-9) * fade_env(n, 0.01, 0.05)
 
@@ -153,7 +172,7 @@ def squeak(dur, seed, f0=780.0):
     f = f0 * (1 + 0.14 * t / dur) * (1 + 0.01 * np.sin(TAU * 43 * t))
     ph = np.cumsum(f) / SR
     y = (np.sin(TAU * ph) + 0.4 * np.sin(TAU * 2 * ph) + 0.15 * np.sin(TAU * 3 * ph))
-    y *= (0.6 + 0.4 * np.sin(TAU * rng.uniform(35, 55) * t) ** 2) * np.sin(np.pi * t / dur) ** 1.5
+    y *= (0.6 + 0.4 * np.sin(TAU * rng.uniform(35, 55) * t) ** 2) * arch(t / dur, 1.5)
     y += 0.8 * thump(420, 180, dur, tau_pitch=0.01, tau_amp=0.02, noise=0.4, seed=seed)
     return y / (np.max(np.abs(y)) + 1e-9) * fade_env(n, 0.005, 0.05)
 
@@ -163,10 +182,10 @@ def casters(dur, seed):
     rng = np.random.default_rng(seed)
     n = int(dur * SR)
     t = tvec(n)
-    speed = np.sin(np.pi * np.clip(t / dur, 0, 1)) ** 0.8
+    speed = arch(t / dur, 0.8)
     wheel = np.cumsum(6.0 + 14.0 * speed) / SR
-    y = bp(pink(n, rng), 150.0, 2400.0) * (0.55 + 0.45 * np.sin(TAU * wheel) ** 2) * speed
-    y += 0.4 * lp(brown(n, rng), 200.0) * speed
+    y = bp(pinkf(n, rng), 150.0, 2400.0) * (0.55 + 0.45 * np.sin(TAU * wheel) ** 2) * speed
+    y += 0.4 * lp(brownf(n, rng), 200.0) * speed
     for c in rng.uniform(0.2, 0.8, 2) * dur:
         i = int(c * SR)
         m = int(0.05 * SR)
@@ -253,8 +272,8 @@ def render_typing(room):
 def inside_mask(n, t0=0.0, fade=0.03):
     t = tvec(n, t0)
     m = ((t >= INT0) & (t < INT1)).astype(float)
-    k = max(1, int(fade * SR))
-    return np.convolve(m, np.ones(k) / k, mode="same")
+    from scipy.ndimage import uniform_filter1d
+    return uniform_filter1d(m, size=max(1, int(fade * SR)), mode="nearest")
 
 
 def render_amb(hall, room):
@@ -267,9 +286,9 @@ def render_amb(hall, room):
     # wind: full outside; through the walls (dark, low) inside
     w0 = e0 - 1.5
     nw = N - int(w0 * SR)
-    src = pink((2, nw), rng)
+    src = pinkf((2, nw), rng)
     wind = tv_filter(src, 320 + 480 * smooth_noise(nw, 0.12, rng), 0.9, kind="bp")
-    wind += 0.6 * lp(brown((2, nw), rng), 220.0)
+    wind += 0.6 * lp(brownf((2, nw), rng), 220.0)
     wind += 0.2 * tv_filter(rng.standard_normal((2, nw)), 1100 + 300 * smooth_noise(nw, 0.1, rng), 9.0,
                             kind="bp") * smooth_noise(nw, 0.2, rng)
     wind *= 0.35 + 0.65 * smooth_noise(nw, 0.18, rng) ** 1.5
@@ -289,14 +308,14 @@ def render_amb(hall, room):
     out += ins_all * db(-33)
 
     # room tone, fans, equipment hum (B1), fridge: inside only
-    tone = lp(pink((2, N), rng), 900.0) * db(-55)
+    tone = lp(pinkf((2, N), rng), 900.0) * db(-55)
     s0, s1 = SURGE
     power = ramp_db([(0, 0), (s0, 0), (s0 + 0.35, -20), (LIGHTS, -20), (LIGHTS + 0.7, 0), (DUR, 0)], N)
     hum = electric_hum(DUR, hz("B1"), seed=12, bright=0.6) * db(-47)
     hum = np.stack([hum, hum]) * power
     spin = np.interp(t, [0, s0, s0 + 2.0, LIGHTS, LIGHTS + 1.5, DUR], [1, 1, 0.25, 0.25, 1, 1])
     fan_ph = np.cumsum(2350.0 * spin) / SR
-    fans = bp(pink((2, N), rng), 300.0, 4000.0) * db(-58) * spin
+    fans = bp(pinkf((2, N), rng), 300.0, 4000.0) * db(-58) * spin
     fans += np.stack([np.sin(TAU * fan_ph), np.sin(TAU * fan_ph)]) * db(-66) * spin
     fr_on = ramp_db([(0, 0), (s0, 0), (s0 + 0.12, -120), (LIGHTS + 1.1, -120), (LIGHTS + 1.6, 0), (DUR, 0)], N)
     fph = np.cumsum(118.0 * (1 + 0.004 * smooth_noise(N, 2.0, rng, -1, 1))) / SR
@@ -405,14 +424,14 @@ def render_monitor(room):
             ramp = 0.5 - 0.5 * np.cos(np.linspace(0, np.pi, a + 2)[1:-1])
             env[:a] = ramp
             env[m - a:] = ramp[::-1]
-        x[s:s + m] += 0.5 * np.sin(TAU * f * tk) * env
+        x[s:s + m] += 0.28 * np.sin(TAU * f * tk) * env
     stop = times[-1] + lengths[-1]
     idx = np.clip(np.searchsorted(times, t, side="right") - 1, 0, len(times) - 1)
     fi = one_pole_smooth(np.where(bits[idx] == 1, f_one, f_zero).astype(float), 0.00025)
     stream = np.sin(TAU * np.cumsum(fi) / SR)
     rate = 1.0 / iv[idx]
     blend = np.clip((rate - 250.0) / 600.0, 0, 1) * ((t >= p0) & (t < stop))
-    stream *= 0.45 * blend
+    stream *= 0.25 * blend
     kk = int(0.004 * SR)
     si = int(stop * SR)
     stream[si - kk:si] *= np.linspace(1, 0, kk)
@@ -436,7 +455,7 @@ def render_monitor(room):
     nz = int((z1 - z0) * SR)
     tz = tvec(nz)
     fz = 180.0 * (6.0 ** (tz / tz[-1]))
-    wh = saw_blep(np.cumsum(fz) / SR, fz / SR) * np.sin(np.pi * tz / tz[-1]) ** 0.5 * 0.18
+    wh = saw_blep(np.cumsum(fz) / SR, fz / SR) * arch(tz / tz[-1], 0.5) * 0.18
     wh = np.round(wh * 24) / 24                                          # a little bit-crush
     s = int(z0 * SR)
     x[s:s + nz] += wh
@@ -561,7 +580,7 @@ def render_fx(hall, space, room):
     groan = sum(np.sin(TAU * k * ph + k) / k ** 0.6 for k in range(1, 12)) + 0.5 * np.sin(TAU * 0.5 * ph)
     groan = np.tanh(2.5 * groan) * (0.7 + 0.3 * smooth_noise(n, 9.0, rng))
     groan *= ramp_db([(0, -40), (0.15, 0), (s1 - s0, -2), (ds, -120)], n)
-    add(lp(groan, 1500.0), s0, -21, pan=room_pan(1.2), room_s=0.5)
+    add(lp(groan, 1500.0), s0, -18, pan=room_pan(1.2), room_s=0.5)
     flick = np.zeros(n)
     tt = 0.0
     while tt < s1 - s0:
@@ -573,12 +592,12 @@ def render_fx(hall, space, room):
     bph = np.cumsum(np.full(n, 2 * hz("B1"))) / SR
     buzz = sum(np.sin(TAU * k * bph) / k for k in range(1, 30) if k * 2 * hz("B1") < 9000)
     buzz = hp(buzz, 150.0) * flick
-    add(buzz, s0, -30, pan=0.0, room_s=0.6)
+    add(buzz, s0, -27, pan=0.0, room_s=0.6)
     for k in range(10):
         ta = s0 + rng.uniform(0.0, s1 - s0)
         m = int(rng.uniform(0.01, 0.05) * SR)
         arc = hp(rng.standard_normal(m), 2500.0) * np.exp(-tvec(m) / 0.008)
-        add(arc, ta, -30 + rng.uniform(-4, 2), pan=rng.uniform(-0.3, 0.4), room_s=0.6)
+        add(arc, ta, -27 + rng.uniform(-4, 2), pan=rng.uniform(-0.3, 0.4), room_s=0.6)
     add(thump(85, 32, 1.4, tau_pitch=0.08, tau_amp=0.45, noise=0.2, seed=42), s0, -22, room_s=0.3)
 
     # materialize: voxels pour out of the screen and assemble, crystalline, accelerating
@@ -597,8 +616,8 @@ def render_fx(hall, space, room):
         k += 1
     npour = int((m1 - m0) * SR)
     tp = tvec(npour)
-    pour = tv_filter(pink((2, npour), rng), 2500 + 3000 * (tp / tp[-1]), 1.2, kind="bp")
-    pour *= (0.6 + 0.4 * np.sin(TAU * 11.0 * tp) ** 2) * np.sin(np.pi * np.clip(tp / tp[-1] * 1.1, 0, 1)) ** 1.2
+    pour = tv_filter(pinkf((2, npour), rng), 2500 + 3000 * (tp / tp[-1]), 1.2, kind="bp")
+    pour *= (0.6 + 0.4 * np.sin(TAU * 11.0 * tp) ** 2) * arch(tp / tp[-1] * 1.1, 1.2)
     add(pour * fade_env(npour, 0.4, 0.4), m0, -34, pan=room_pan(0.4), hall_s=0.4, space_s=0.3)
     add(reverse_swell(1.2, rng, 800, 9000) * db(-34), m1 - 1.2, hall_s=0.3)
     for j, note in enumerate(("B6", "D#7", "F#7")):
@@ -615,8 +634,8 @@ def render_fx(hall, space, room):
         tm = tvec(nm)
         fm = hz(f_a) * (hz(f_b) / hz(f_a)) ** (tm / tm[-1])
         mv = sum(np.sin(TAU * np.cumsum(fm * r) / SR + r) for r in (1.0, 1.5, 2.0)) / 3
-        mv *= (0.6 + 0.4 * np.sin(TAU * 3.1 * tm) ** 2) * np.sin(np.pi * tm / tm[-1]) ** 1.5
-        mv += 0.5 * tv_filter(pink(nm, rng), fm * 2, 2.0, kind="bp") * np.sin(np.pi * tm / tm[-1]) ** 2
+        mv *= (0.6 + 0.4 * np.sin(TAU * 3.1 * tm) ** 2) * arch(tm / tm[-1], 1.5)
+        mv += 0.5 * tv_filter(pinkf(nm, rng), fm * 2, 2.0, kind="bp") * arch(tm / tm[-1], 2)
         add(mv, a, g, pan=room_pan(vis_x), hall_s=0.5, space_s=0.5)
 
     # the hand: a warm high glint rising
@@ -642,7 +661,7 @@ def render_fx(hall, space, room):
         k += 1
     ne = int((LIGHTS - d0) * SR)
     te = tvec(ne)
-    exhale = tv_filter(pink((2, ne), rng), 3000.0 * (0.12 ** (te / te[-1])), 0.9, kind="lp")
+    exhale = tv_filter(pinkf((2, ne), rng), 3000.0 * (0.12 ** (te / te[-1])), 0.9, kind="lp")
     exhale *= (1 - np.exp(-te / 0.5)) * np.exp(-te / ((LIGHTS - d0) * 0.35)) * fade_env(ne, 0.2, 0.6)
     add(exhale, d0, -27, pan=room_pan(1.8), space_s=0.4)
 
@@ -662,7 +681,7 @@ def render_fx(hall, space, room):
 
     # the title: reverse swell, deep boom, shimmering tail
     add(reverse_swell(1.5, rng, 250, 7000) * db(-27), TITLE - 1.5)
-    add(boom(8.0, 72.0, 27.0, seed=95), TITLE, -12, hall_s=0.3, space_s=0.2)
+    add(boom(8.0, 72.0, 27.0, seed=95), TITLE, -13, hall_s=0.3, space_s=0.2)
     add(shimmer([hz(x) for x in ("B5", "F#6", "C#7", "E6", "G#6", "B6", "D#7")], 9.0, seed=96), TITLE + 0.02,
         -20, hall_s=0.6, space_s=0.6)
 
@@ -707,14 +726,18 @@ def music_signal(hall, space):
     bus.add(sub(hz("B1"), dur, 3.0, 0.1), d04, gain=db(-30))
     bus.add(pad([hz("F#6")], dur, att=3.0, rel=0.1, voices=3, detune=5, seed=20, fc=6000.0), d04, gain=db(-38),
             send=0.6, space=0.3)
+    last = -1.0
     for i in range(0, len(times), 16):
         tt = times[i]
-        g = -34 + 12 * (tt - p0) / (p1 - p0)
+        if tt - last < 0.09:          # once the pulses blur, keep the low pulse from turning into a growl
+            continue
+        last = tt
+        g = -38 + 10 * (tt - p0) / (p1 - p0)
         bus.add(thump(hz("B2"), hz("B1"), 0.6, tau_pitch=0.03, tau_amp=0.18, noise=0.05, seed=i), tt, gain=db(g), send=0.1)
     dc = p1 - p0
     p = pad(chord("B3 C4 F4"), dc, att=2.5, rel=0.05, voices=3, detune=12, seed=21, q=0.9,
             fc=[(0, 900), (dc, 3000)], trem=([(0, 5.0), (dc, 14.0)], 0.5))
-    p *= ramp_db([(0, -40), (dc, -27)], p.shape[1])
+    p *= ramp_db([(0, -42), (dc, -31)], p.shape[1])
     bus.add(p, p0, send=0.4)
     gate = [(t0, 0), (p1 - 0.03, 0), (p1 + 0.03, -120)]
     return bus.render(hall, space, gate=gate), t0
@@ -735,14 +758,14 @@ def music_fold(hall, space):
         a = f0 + i * q
         p = pad(chord(pd), q + 1.2, att=0.8 if i else 1.2, rel=1.2, voices=4, detune=8, seed=30 + i,
                 fc=[(0, 900), (q, 1600), (q + 1.2, 1000)])
-        bus.add(p, a, gain=db(-27), send=0.45)
+        bus.add(p, a, gain=db(-25), send=0.45)
     ARP = [0, 2, 4, 5, 3, 1, 4, 2]
     for r in range(0, len(rows), 2):
         tt = rows[r]
         i = min(3, int((tt - f0) / q))
         tones = [hz(x) for x in fold_chords[i][1].split()]
         bus.add(pluck(tones[ARP[(r // 2) % 8] % len(tones)], 0.8, decay=0.25), tt,
-                gain=db(-31 + 3 * (tt - f0) / (f1 - f0)), pan=0.35 * np.sin(r * 0.4), send=0.35, echo=0.15)
+                gain=db(-28 + 3 * (tt - f0) / (f1 - f0)), pan=0.35 * np.sin(r * 0.4), send=0.35, echo=0.15)
     # the motif on bells as the picture completes, finishing just before "I know this picture."
     for i, note in enumerate(("F#5", "B5", "C#6", "D6")):
         bus.add(bell(hz(note), 3.5, decay=1.5, idx=1.0), d08 - 1.1 + 0.33 * i, gain=db(-28), pan=0.2,
@@ -780,13 +803,13 @@ def music_visitor(hall, space):
     bus = Bus(t0, LIGHTS + 0.3)
     # materialize: a swell toward a soft, awe-struck presence chord
     dm = m1 - m0
-    bus.add(choir(chord("B2 F#3 C#4 D#4 F#4"), dm + 3.5, att=dm, rel=3.5, seed=50), m0, gain=db(-23), space=0.8)
-    bus.add(pad(chord("B2 F#3 D#4 C#5"), dm + 3.5, att=dm, rel=3.5, voices=5, detune=9, seed=51,
-                fc=[(0, 600), (dm, 2600), (dm + 3.5, 900)]), m0, gain=db(-24), send=0.5, space=0.5)
+    bus.add(choir(chord("B2 F#3 C#4 D#4 F#4"), dm + 2.2, att=dm, rel=2.2, seed=50), m0, gain=db(-23), space=0.8)
+    bus.add(pad(chord("B2 F#3 D#4 C#5"), dm + 2.2, att=dm, rel=2.2, voices=5, detune=9, seed=51,
+                fc=[(0, 600), (dm, 2600), (dm + 2.2, 900)]), m0, gain=db(-24), send=0.5, space=0.5)
     bus.add(shimmer([hz(x) for x in ("B5", "D#6", "F#6", "A#6", "C#7")], dm + 4.0, seed=52), m0 + 0.4,
             gain=db(-27), space=0.9)
     for j, note in enumerate(("B5", "D#6", "F#6", "B6")):
-        bus.add(bell(hz(note), 5.0, decay=2.4, idx=0.7), m1 + 0.06 * j, gain=db(-29), pan=-0.2 + 0.15 * j,
+        bus.add(bell(hz(note), 5.0, decay=2.4, idx=0.7), m1 + 0.06 * j, gain=db(-31), pan=-0.2 + 0.15 * j,
                 send=0.6, space=0.4)
     bus.add(sub(hz("B1"), 4.0, 0.8, 3.0), m1, gain=db(-27))
     # under the Visitor's lines: a low B pedal and high glass, the middle left free for the voices
@@ -802,10 +825,10 @@ def music_visitor(hall, space):
             dur = max(1.5, nxt - a + 1.6)
             g = shimmer([hz(x) for x in top], dur, seed=60 + k)
             bus.add(g * fade_env(g.shape[1], 1.2, 1.5), a - 0.3, gain=db(-30), space=0.8)
-    # the hand raise: the motif answered in the major (D#), soft bells
+    # the hand raise: the motif answered in the major (D#), soft bells above the voice's formants
     h0, _ = span("visitor_raises_hand")
-    for i, note in enumerate(("F#5", "B5", "C#6", "D#6")):
-        bus.add(bell(hz(note), 3.5, decay=1.6, idx=0.8), h0 + 0.1 + 0.42 * i, gain=db(-29),
+    for i, note in enumerate(("F#6", "B6", "C#7", "D#7")):
+        bus.add(bell(hz(note), 3.5, decay=1.6, idx=0.6), h0 + 0.1 + 0.42 * i, gain=db(-33),
                 pan=0.2 - 0.1 * i, send=0.5, space=0.4, echo=0.3)
     # dissolve: the choir breathes out
     dd = LIGHTS - d0
@@ -852,9 +875,9 @@ def music_end(hall, space):
         bus.add(timpani(hz("F#1"), 2.0, vel=0.4 + 0.6 * u, seed=900 + i), tt, gain=db(-30 + 12 * u), send=0.3)
         tt += 0.11 - 0.05 * u + rng.uniform(-0.01, 0.01)
         i += 1
-    bus.add(taiko(1.35, seed=97), TITLE, gain=db(-17), space=0.5)
+    bus.add(taiko(1.35, seed=97), TITLE, gain=db(-19), space=0.5)
     bus.add(braam(chord("B1 B2 F#3"), 4.0, seed=98, drive=1.3, att=0.05, rel=2.5,
-                  fc=((0, 300), (0.2, 1400), (1.5, 700), (4.0, 300))), TITLE, gain=db(-21), send=0.3, space=0.5)
+                  fc=((0, 300), (0.2, 1400), (1.5, 700), (4.0, 300))), TITLE, gain=db(-23), send=0.3, space=0.5)
     th = CRED[0] - TITLE
     bus.add(pad(chord("B1 B2 F#3 C#4 F#4 B4"), th + 1.0, att=0.6, rel=1.8, voices=6, detune=9, seed=100,
                 fc=[(0, 1000), (th * 0.5, 2000), (th + 1.0, 900)]), TITLE, gain=db(-22), send=0.6, space=0.4)
