@@ -204,6 +204,29 @@ def footstep(kind, seed, backward=False):
     return hp(y, 60.0) * fade_env(n, 0.0005, 0.1)
 
 
+def holo_step(seed):
+    """The Visitor's footfall: no weight, just light touching the floor."""
+    rng = np.random.default_rng(seed)
+    n = int(0.6 * SR)
+    t = tvec(n)
+    y = 0.5 * glass(hz(rng.choice(["F#5", "B5", "C#6"])) * rng.uniform(0.998, 1.002), 0.6, decay=0.12, seed=seed)
+    y += 0.5 * thump(110, 70, 0.6, tau_pitch=0.03, tau_amp=0.06, noise=0.0)
+    y += 0.25 * bp(rng.standard_normal(n), 2000.0, 7000.0) * np.exp(-t / 0.02)
+    return y * fade_env(n, 0.003, 0.1)
+
+
+def keypress(seed):
+    """A chunky keyboard key: the click of the switch, the bottom-out, the release."""
+    rng = np.random.default_rng(seed)
+    n = int(0.25 * SR)
+    t = tvec(n)
+    y = 0.6 * bp(rng.standard_normal(n), 1800.0, 7000.0) * np.exp(-t / 0.002)
+    y += 0.8 * thump(420, 220, 0.25, tau_pitch=0.004, tau_amp=0.012, noise=0.4, seed=seed)
+    d = int(0.09 * SR)
+    y[d:] += 0.3 * bp(rng.standard_normal(n - d), 2000.0, 6000.0) * np.exp(-t[:n - d] / 0.0015)
+    return y * fade_env(n, 0.0003, 0.05)
+
+
 # ---------------------------------------------------------------------------
 # Typing
 # ---------------------------------------------------------------------------
@@ -484,17 +507,29 @@ def render_foley(room):
     add(squeak(0.28, 141, 700), stand - 0.1, -30, sam_x)
     add(creak(0.4, 142, f_rate=(35, 60), res=(300.0, 800.0, 1700.0), q=12.0), stand, -32, sam_x)
     add(rustle(0.9, 143, "hoodie"), stand - 0.2, -28, sam_x)
-    # footsteps, exactly on TL.footsteps
+    # Maya leans over Sam and hits the key that folds the picture
+    if "maya_reach_key" in B:
+        k0, k1 = span("maya_reach_key")
+        add(rustle(k1 - k0, 145, "knit"), k0, -31, mark_x("maya_desk"))
+        add(keypress(146), k1 - 0.4, -24, mark_x("sam_chair"))
+    if "maya_raises_hand" in B:
+        a, b_ = span("maya_raises_hand")
+        add(rustle(b_ - a, 147, "knit"), a, -32, mark_x("maya_closer") if "maya_closer" in TL["marks"] else 0.3)
+    # footsteps, exactly on TL.footsteps (the Visitor's are light touching the floor)
     walks = TL["walks"]
     for i, f in enumerate(TL["footsteps"]):
-        w = next((w for w in walks if w["who"] == f["who"] and w["start"] <= f["t"] <= w["end"]), None)
+        w = next((w for w in walks if w["who"] == f["who"] and w["start"] - 1e-6 <= f["t"] <= w["end"] + 1e-6), None)
         back = bool(w and w.get("backward"))
         x = mark_x(w["to"]) if w else 0.0
-        kind = "flat" if f["who"] == "maya" else "sneaker"
-        add(footstep(kind, 200 + i, backward=back), f["t"], -21 if kind == "flat" else -20, x)
-    for name in ("maya_steps_forward", "maya_to_window"):
-        a, b_ = span(name)
-        add(rustle(b_ - a, 150 + len(name), "knit"), a, -33, mark_x("maya_forward"))
+        if f["who"] == "visitor":
+            add(holo_step(200 + i), f["t"], -29, x)
+        else:
+            kind = "flat" if f["who"] == "maya" else "sneaker"
+            add(footstep(kind, 200 + i, backward=back), f["t"], -21 if kind == "flat" else -20, x)
+    for i, w in enumerate(walks):
+        if w["who"] in ("maya", "sam"):
+            add(rustle(w["end"] - w["start"] + 0.2, 160 + i, "knit" if w["who"] == "maya" else "hoodie"),
+                w["start"] - 0.1, -33, mark_x(w["to"]))
     return out + convolve_stereo(wet, room, N) * 0.6
 
 
@@ -570,6 +605,19 @@ def render_fx(hall, space, room):
         add(glass(hz(note), 3.0, decay=1.1, seed=380 + j), m1 + 0.03 * j, -31, pan=room_pan(vis_x) + 0.1 * (j - 1),
             hall_s=0.6, space_s=0.5)
     add(thump(90, 45, 2.0, tau_pitch=0.1, tau_amp=0.6, noise=0.05, seed=390), m1, -27, space_s=0.3)
+
+    # the Visitor folds down to eye level, and gestures: soft glassy movement
+    for name, f_a, f_b, g in (("visitor_crouch", "F#6", "B5", -36), ("visitor_gesture", "C#6", "F#6", -38)):
+        if name not in B:
+            continue
+        a, b_ = span(name)
+        nm = int((b_ - a) * SR)
+        tm = tvec(nm)
+        fm = hz(f_a) * (hz(f_b) / hz(f_a)) ** (tm / tm[-1])
+        mv = sum(np.sin(TAU * np.cumsum(fm * r) / SR + r) for r in (1.0, 1.5, 2.0)) / 3
+        mv *= (0.6 + 0.4 * np.sin(TAU * 3.1 * tm) ** 2) * np.sin(np.pi * tm / tm[-1]) ** 1.5
+        mv += 0.5 * tv_filter(pink(nm, rng), fm * 2, 2.0, kind="bp") * np.sin(np.pi * tm / tm[-1]) ** 2
+        add(mv, a, g, pan=room_pan(vis_x), hall_s=0.5, space_s=0.5)
 
     # the hand: a warm high glint rising
     h0, h1 = span("visitor_raises_hand")
