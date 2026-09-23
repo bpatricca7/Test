@@ -1,0 +1,8 @@
+{
+  "name": "echo-animated",
+  "private": true,
+  "description": "ECHO (animated cut): renderer dependencies",
+  "dependencies": {
+    "three": "0.186.0"
+  }
+}
