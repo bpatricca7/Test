@@ -56,7 +56,8 @@ export async function createVisitor(env) {
   const skinColor = new THREE.ShaderMaterial(Object.assign({ vertexShader: SKIN_VERT, fragmentShader: SKIN_FRAG, uniforms: skinUni,
     transparent: true, depthWrite: false, depthFunc: THREE.LessEqualDepth, side: THREE.FrontSide }, PREMUL));
   const boneMat = new THREE.ShaderMaterial({ vertexShader: BONE_VERT, fragmentShader: BONE_FRAG, uniforms: uni,
-    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.FrontSide });
+    transparent: true, depthWrite: false, side: THREE.FrontSide,
+    blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneFactor, blendEquation: THREE.AddEquation });
 
   const g = body.buf.geometry;
   const mDepth = new THREE.Mesh(g, skinDepth); mDepth.renderOrder = 11; mDepth.frustumCulled = false;

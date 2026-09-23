@@ -10,8 +10,8 @@ It grows out of the first cut's movie/audio/voice.py ("We heard you.").
                   punctuation = phrase boundaries and boundary tones)
   durations       Klatt (1979) duration rules (phrase-final lengthening, stress,
                   polysyllabic and cluster shortening, postvocalic voicing),
-                  stop closures + bursts + VOT, pauses at punctuation, and one
-                  tempo factor per line fitted to the line's target length
+                  stop closures + bursts + VOT, pauses at punctuation, and a
+                  natural tempo per delivery (each line's target is only a ceiling)
   intonation      declining baseline, H* pitch accents (downstepped), emphatic
                   accents, L-L% falls (statements, wh-questions), L* H-H% rises
                   (yes/no questions), continuation rises, microprosody
@@ -216,7 +216,7 @@ SCRIPT = {
     "d04": dict(markup="*Two *tones. *On. *Off.",
                 style=dict(pitch=-0.5, range=0.75, loud=-3.0, pause=1.0, tempo=1.0)),
     "d05": dict(markup="That's **not *noise. That's a **message.",
-                style=dict(range=1.0, pause=1.2, tempo=1.1)),
+                style=dict(range=1.0, pause=1.0, tempo=1.1)),
     "d06": dict(markup="*Sixteen *seventy-*nine *pulses. Then *nothing.",
                 pron={"sixteen": "S IH1 K S T IY2 N"},
                 style=dict(pitch=0.5, range=0.9, rd=0.1, trail=True, tempo=1.0)),

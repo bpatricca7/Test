@@ -80,7 +80,7 @@ export function createParticles(THREE, U, buf, opts) {
     vertexShader: PART_VERT, fragmentShader: PART_FRAG,
     uniforms: { uPx: { value: 1000 }, uFlick: opts.uniforms.uFlick },
     transparent: true, depthWrite: false, depthTest: true,
-    blending: THREE.AdditiveBlending,
+    blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneFactor, blendEquation: THREE.AddEquation,
   });
   const points = new THREE.Points(g, mat);
   points.frustumCulled = false;
