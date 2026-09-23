@@ -103,7 +103,9 @@ export async function create(env) {
     for (let k = 0; k < NK; k++) {
       for (let c = 0; c < NC; c++) {
         const x = XS[c];
-        const smoothN = U.vnoise3(x * 0.55, k * 0.21, 3.7);
+        // sampled on a circle in the row direction so the table wraps seamlessly
+        const a = k / NK * Math.PI * 2, R = NK * 0.21 / (Math.PI * 2);
+        const smoothN = U.vnoise3(x * 0.55, Math.cos(a) * R + 40, Math.sin(a) * R + 40);
         const fine = rnd();
         NOISE[k * NC + c] = (0.55 * smoothN * smoothN + 0.45 * fine * fine * fine) * band[c];
       }
@@ -113,8 +115,8 @@ export async function create(env) {
   const pos = new Float32Array(NV * 3);
   const glowA = new Float32Array(NV), litA = new Float32Array(NV), tauA = new Float32Array(NV);
   for (let r = 0; r < NR; r++) for (let c = 0; c < NC; c++) pos[(r * NC + c) * 3] = XS[c];
-  // triangles are stored nearest row first, so early depth testing rejects
-  // the far terrain hidden behind near ridges (big win on SwiftShader)
+  // triangles are stored nearest row first, so early depth testing can reject
+  // far terrain hidden behind near ridges
   const idx = new Uint32Array((NR - 1) * (NC - 1) * 6);
   const ROW_TRIS = (NC - 1) * 6;
   {
@@ -144,7 +146,6 @@ export async function create(env) {
   const PH = new THREE.Color(143 / 255, 247 / 255, 208 / 255).convertSRGBToLinear();   // phosphor
   const PHV = new V3(PH.r, PH.g, PH.b);
   const terrU = {
-    uP: { value: 0 }, uS0: { value: S0 }, uAl: { value: AL }, uE0: { value: E0 }, uT0: { value: T0 },
     uHeadZ: { value: Z_HEAD }, uCol: { value: PHV }, uFade: { value: 1 }, uLine: { value: 1 },
     uXMin: { value: X_MIN }, uXStep: { value: 100 * KX },
   };
@@ -155,7 +156,7 @@ export async function create(env) {
     }
     float gridLine(float v, float wpx) { return gridLineW(v, fwidth(v), wpx); }`;
   const terrain = new THREE.Mesh(geo, new THREE.ShaderMaterial({
-    uniforms: terrU, side: THREE.DoubleSide,
+    uniforms: terrU,
     vertexShader: /* glsl */`
       uniform float uFade;
       attribute float aG, aL, aTau;
@@ -179,8 +180,8 @@ export async function create(env) {
         float lines = (gl1(f100, wx) * 0.55 + gl1(f100 * 0.2, wx * 0.25)) * 0.10 + (gl1(t4, wt) * 0.6 + gl1(vTau, wt * 0.3)) * 0.07;
         float hN = clamp(vW.y * 0.22, 0.0, 1.0);
         float gh = vG * hN;
-        vec3 col = uCol * ((0.006 + 0.10 * clamp(vW.y * 2.3 - 0.05, 0.0, 1.0)) * vL + lines * uLine + vG * (0.5 + 1.7 * hN) * (0.55 + 0.45 * vL))
-                 + vec3(0.85, 1.0, 0.95) * (gh * gh * gh * 1.6);
+        vec3 col = uCol * ((0.006 + 0.10 * clamp(vW.y * 2.3 - 0.05, 0.0, 1.0)) * vL + lines * uLine + vG * (0.4 + 1.25 * hN) * (0.55 + 0.45 * vL))
+                 + vec3(0.85, 1.0, 0.95) * (gh * gh * gh * 1.1);
         gl_FragColor = vec4(col * vFade, 1.0);
       }`,
   }));
@@ -211,7 +212,7 @@ export async function create(env) {
   scene.background = new THREE.Color(0, 0, 0);
   scene.add(terrain, future);
   const camera = new THREE.PerspectiveCamera(46, W / H, 0.1, 600);
-  const aa = makeAA(THREE, renderer, W, H, { grain: 0.05, dither: 0.0006, scan: 0.08 });
+  const aa = makeAA(THREE, renderer, W, H, { dither: 0.0006, scan: 0.08 });
 
   // the write head: a bright bar across the terrain + a faint curtain above it
   const glowTex = U.makeGlowTexture(THREE, 128, 0.2);
@@ -226,10 +227,10 @@ export async function create(env) {
         float y = vP.y;
         float edge = 1.0 - smoothstep(0.0, 1.0, abs(vP.x) / 41.0);
         float bar = exp(-y * y / 0.004) * 1.4 + exp(-y / 0.35) * 0.25;
-        float curtain = exp(-y / 2.8) * 0.035;
+        float curtain = exp(-y / 2.8) * 0.035 * (1.0 - smoothstep(5.0, 8.8, y));
         float l0 = exp(-pow((vP.x - uL0) / 0.9, 2.0)), l1 = exp(-pow((vP.x - uL1) / 0.9, 2.0));
         float act = (l0 * uAct.x + l1 * uAct.y);
-        float a = (bar + curtain * (1.0 + 4.0 * act) + act * exp(-y / 1.6) * 0.25) * edge * uA;
+        float a = (bar + curtain * (1.0 + 4.0 * act) + act * exp(-y / 1.6) * 0.25 * (1.0 - smoothstep(5.0, 8.8, y))) * edge * uA;
         gl_FragColor = vec4(mix(uCol, vec3(1.0), 0.25) * a, 1.0);
       }`,
   }));
@@ -294,8 +295,9 @@ export async function create(env) {
       const hF = (0.66 + 0.34 * fresh) * hScale;
       const gF = (0.45 + 0.55 * fresh) * gScale;
       const v = [0, 0];
+      let dens = 0;
       if (tb > T_START - 0.01 && ta < T_LAST + 0.1) {
-        const dens = smooth(80, 300, RATE(Math.min(tc, T_LAST)));
+        dens = smooth(80, 300, RATE(Math.min(tc, T_LAST)));
         for (let l = 0; l < 2; l++) {
           const L = lanes[l];
           const span = Math.max(tb - ta, 1e-6);
@@ -315,7 +317,7 @@ export async function create(env) {
         const sk = v[0] * skirt[0][c] + v[1] * skirt[1][c];
         pos[i * 3 + 1] = NOISE[noiseRow + c] * nAmp + rfi[c] * (0.6 + 0.4 * NOISE[noiseRow + c]) + (lane * A_H + sk * 0.35) * hF;
         pos[i * 3 + 2] = z;
-        glowA[i] = (lane + sk * 0.08) * gF + rfi[c] * 0.12 + NOISE[noiseRow + c] * 0.05 * dec;
+        glowA[i] = (lane + sk * 0.06) * gF * (1 - 0.4 * dens) + rfi[c] * 0.12 + NOISE[noiseRow + c] * 0.05 * dec;
       }
     }
     // per-vertex relief lighting from the height field
@@ -335,7 +337,6 @@ export async function create(env) {
     for (const [attr, k] of [[posAttr, 3], [glowAttr, 1], [litAttr, 1], [tauAttr, 1]]) {
       attr.clearUpdateRanges(); attr.addUpdateRange(0, nU * k); attr.needsUpdate = true;
     }
-    terrU.uP.value = Pn;
   }
 
   function writeSparks(t) {
@@ -383,13 +384,15 @@ export async function create(env) {
   const camPos = new V3(), camTgt = new V3();
   function cameraAt(t) {
     const tc = Math.min(t, T_STOP) + 0.25 * (1 - Math.exp(-Math.max(0, t - T_STOP) / 0.25));   // stops dead, with a tiny settle
-    const a = ease(prog(tc, 74, 83)), b = ease(prog(tc, 82, 89)), c = U.easeIn(prog(tc, 88.2, 93.0));
-    // glide low between the lanes, climb and bank out to the left, then push in
-    let x = lerp(0.4, -1.8, a), y = lerp(1.6, 3.2, a), z = lerp(8, 4, a);
+    const a = ease(prog(tc, 74, 83)), b = ease(prog(tc, 81.5, 88)), c = ease(prog(tc, 87.5, 91.5)), d = U.easeIn(prog(tc, 89.5, 93.0));
+    // glide low between the lanes, climb and bank out to the left, swoop back
+    // down into the canyon between the two walls, then push in at the head
+    let x = lerp(-2.4, -2.6, a), y = lerp(1.9, 3.3, a), z = lerp(3, 1.5, a);
     x = lerp(x, -13.0, b); y = lerp(y, 9.5, b); z = lerp(z, 2, b);
-    x = lerp(x, -6.0, c); y = lerp(y, 5.5, c); z = lerp(z, -14, c);
+    x = lerp(x, -0.6, c); y = lerp(y, 2.6, c); z = lerp(z, 0, c);
+    z = lerp(z, -13, d); y = lerp(y, 2.1, d);
     camPos.set(x, y, z);
-    camTgt.set(lerp(lerp(0, 3.5, b), 1.5, c), lerp(lerp(0.4, -2.2, b), 0.6, c), lerp(-30, lerp(-26, -32, c), b));
+    camTgt.set(lerp(lerp(lerp(-3.2, -0.8, a), 3.5, b), 0.2, c), lerp(lerp(0.5, -2.2, b), 1.3, c), -30);
     // shake grows with the rate; nothing after the stop
     const sh = t < T_STOP ? 0.012 * smooth(80, 84, t) + 0.20 * Math.pow(smooth(86.5, 93.0, t), 2) : 0;
     if (sh > 0) {
@@ -402,27 +405,24 @@ export async function create(env) {
     // slow drift keeps it alive
     camTgt.x += (U.vnoise3(tc * 0.3, 2.0, 9.0) - 0.5) * 0.8;
     camTgt.y += (U.vnoise3(tc * 0.3, 7.0, 9.0) - 0.5) * 0.4;
-    const roll = deg(lerp(lerp(0, -7, b), -2.5, c)) + (sh > 0 ? (U.vnoise3(t * 11, 0.0, 6.0) - 0.5) * sh * 0.08 : 0);
+    const roll = deg(lerp(lerp(0, -7, b), 0, c)) + (sh > 0 ? (U.vnoise3(t * 11, 0.0, 6.0) - 0.5) * sh * 0.1 : 0);
     return roll;
   }
 
   // ------------------------------------------------------------------ update
   const hudProj = { l0: new V3(), l1: new V3() };
   function update(t) {
-    const _t0 = performance.now();
     const roll = cameraAt(t);
     writeTerrain(t, camPos.z);
-    const _t1 = performance.now();
     writeSparks(t);
-    if (window.__PROF) console.warn('# terrain js ms', (_t1 - _t0).toFixed(1), 'sparks', (performance.now() - _t1).toFixed(1));
     const act = laneActivity(t);
     const dec = DECAY(t);
     headU.uAct.value.set(act[0], act[1]);
     const stopFlick = t > T_STOP ? (t < T_STOP + 0.35 ? (Math.floor((t - T_STOP) * 30) % 2 ? 0.25 : 0.9) : 0.12 * dec) : 1;
     headU.uA.value = (0.8 + 0.25 * Math.min(1, (act[0] + act[1]) * 0.5)) * stopFlick;
     for (let l = 0; l < 2; l++) {
-      flares[l].material.opacity = Math.min(1, act[l] * 0.8);
-      flares[l].scale.setScalar(2.2 + 2.6 * act[l]);
+      flares[l].material.opacity = Math.min(0.75, act[l] * 0.6);
+      flares[l].scale.setScalar(1.0 + 1.4 * Math.min(1, act[l]));
     }
     terrU.uFade.value = 0.35 + 0.65 * dec;
     terrU.uLine.value = 1.0;
@@ -436,13 +436,6 @@ export async function create(env) {
     hudProj.l1.set(LX[1], A_H + 0.6, Z_HEAD).project(camera);
 
     aa.uniforms.uLow.value.set(0.74, 0.55);
-    const HIDE = window.__HIDE || [];
-    terrain.visible = !HIDE.includes('terrain'); future.visible = !HIDE.includes('future');
-    if (HIDE.includes('tsimple')) { if (!terrain.userData.m0) { terrain.userData.m0 = terrain.material; terrain.userData.m1 = new THREE.MeshBasicMaterial({ color: 0x113322 }); } terrain.material = terrain.userData.m1; }
-    else if (terrain.userData.m0) terrain.material = terrain.userData.m0;
-    if (HIDE.includes('halfrows')) geo.setDrawRange((NR - rowsUsed / 2) * ROW_TRIS, Math.floor(rowsUsed / 2) * ROW_TRIS);
-    sparks.visible = !HIDE.includes('sparks'); head.visible = !HIDE.includes('head');
-    if (HIDE.includes('norender')) return;
     aa.render(scene, camera, t);
   }
 
@@ -516,16 +509,27 @@ export async function create(env) {
   }
 
   function overlay(t, g) {
-    if ((window.__HIDE || []).includes('overlay')) return;
     // power-on flicker
     const boot = t < 74.9 ? ((Math.floor((t - 74) * 26) % 3) === 1 ? 0.3 : 1) * smooth(74.0, 74.7, t) : 1;
     const A = boot;
     g.save();
     g.textBaseline = 'middle';
 
+    // dark glass behind the header and the right-hand panel keeps the HUD legible
+    const hg = g.createLinearGradient(0, 0, 0, 170);
+    hg.addColorStop(0, `rgba(0,0,0,${0.75 * A})`); hg.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = hg; g.fillRect(0, 0, W, 170);
+    g.fillStyle = `rgba(0,6,4,${0.62 * A})`;
+    g.fillRect(1430, 142, 430, 396);
     // header + clock
     text(g, 'RX-3 // L-BAND 1420.405 MHz // BW 2.0 kHz', 80, 66, 26, 0.9 * A, 'left', 'bold', 1);
-    text(g, 'FEED L1  //  AZ 152.4°  EL 38.1°  //  TRACKING  //  FFT 4096', 80, 100, 17, 0.5 * A, 'left', 'normal');
+    const FEED = 'FEED L1  //  AZ 141.2\u00b0  EL 36.4\u00b0  //  FFT 4096  //  ';
+    text(g, FEED, 80, 100, 17, 0.5 * A, 'left', 'normal');
+    g.font = `normal 17px ${FONT}`;
+    const sx = 80 + g.measureText(FEED).width;
+    const status = t < T_START ? 'SCANNING' : t <= T_STOP ? 'SIGNAL LOCK' : 'LOCK LOST';
+    const sOn = t < T_START ? (Math.floor(t / 0.4) % 2 === 0 ? 0.75 : 0.3) : t <= T_STOP ? 0.95 : (Math.floor(t / 0.4) % 2 === 0 ? 0.95 : 0.4);
+    text(g, status, sx, 100, 17, sOn * A, 'left', 'bold');
     text(g, utcString(t), 1840, 66, 28, 0.9 * A, 'right', 'bold', 1);
     g.strokeStyle = PHS(0.28 * A);
     g.lineWidth = 1;
@@ -558,11 +562,14 @@ export async function create(env) {
 
     // lane labels hang over the lanes at the head
     const lab = [['1000 Hz', hudProj.l0, 'right'], ['1420 Hz', hudProj.l1, 'left']];
-    for (const [s, p, al] of lab) {
+    for (let [s, p, al] of lab) {
       if (p.z > 1) continue;
       const px = (p.x * 0.5 + 0.5) * W, py = (-p.y * 0.5 + 0.5) * H;
-      if (py > H * 0.76 || py < 150 || px < 40 || px > 1400) continue;
-      const dx = al === 'left' ? 1 : -1;
+      if (py > H * 0.76 || py < 150 || px < 40 || px > 1415) continue;
+      // keep clear of the right-hand panel: hang the label to the left instead
+      const flip = al === 'left' && px > 1250 && py - 42 < 560;
+      const dx = al === 'left' && !flip ? 1 : -1;
+      al = dx > 0 ? 'left' : 'right';
       g.strokeStyle = PHS(0.5 * A);
       g.lineWidth = 1;
       g.beginPath(); g.moveTo(px, py); g.lineTo(px + dx * 26, py - 26); g.lineTo(px + dx * 96, py - 26); g.stroke();
@@ -599,7 +606,7 @@ export async function create(env) {
     scene: aa.scene, camera: aa.camera, update, overlay,
     bloom(t) {
       const b = smooth(84, 93, t) * (1 - smooth(93.1, 94.5, t));
-      return { strength: 0.8 + 0.35 * b, radius: 0.5 + 0.12 * b, threshold: 0.32 + 0.08 * b };
+      return { strength: 0.75 + 0.25 * b, radius: 0.5 + 0.1 * b, threshold: 0.36 + 0.12 * b };
     },
   };
 }

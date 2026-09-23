@@ -11,20 +11,26 @@
 //   this is several times cheaper than a multisampled target.
 // mode 'msaa': a 4x multisampled target, resolved by three.js.
 //
-// The quad also adds a little film grain / dither (seeded by film time, so it
-// stays deterministic), which hides banding in dark gradients.
+// The quad also adds a static ordered dither, which hides banding in dark
+// gradients, and optionally film grain (seeded by film time, so deterministic).
+
+// Only one scene renders per frame, so modules can share the (large) target.
+const SHARED = new Map();
 
 export function makeAA(THREE, renderer, W, H, opts = {}) {
   const mode = opts.mode || 'fxaa';
-  const rt = new THREE.WebGLRenderTarget(W, H, {
+  const key = `${W}x${H}:${mode}`;
+  if (!SHARED.has(renderer)) SHARED.set(renderer, {});
+  const cache = SHARED.get(renderer);
+  const rt = cache[key] || (cache[key] = new THREE.WebGLRenderTarget(W, H, {
     type: THREE.HalfFloatType, samples: mode === 'msaa' ? 4 : 0, depthBuffer: true,
     minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, generateMipmaps: false,
-  });
+  }));
   const uniforms = {
     tex: { value: rt.texture },
     uInv: { value: new THREE.Vector2(1 / W, 1 / H) },
     uSeed: { value: 0 },
-    uGrain: { value: opts.grain ?? 0.035 },
+    uGrain: { value: opts.grain ?? 0.0 },
     uDither: { value: opts.dither ?? 0.0006 },
     // darken the bottom of the frame (narration band): (start y from top 0..1, amount)
     uLow: { value: new THREE.Vector2(0.72, 0.0) },
@@ -45,6 +51,7 @@ export function makeAA(THREE, renderer, W, H, opts = {}) {
       varying vec2 vUv;
       // perceptual luma of an HDR linear colour
       float pl(vec3 c) { float l = dot(c, vec3(0.299, 0.587, 0.114)); return sqrt(l / (1.0 + l)); }
+      const float BAYER[16] = float[16](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0);
       float hash(vec2 p) { p = fract(p * vec2(443.897, 441.423)); p += dot(p, p.yx + 19.19); return fract((p.x + p.y) * p.x); }
       void main() {
         vec3 rgbM = texture2D(tex, vUv).rgb;
@@ -73,10 +80,15 @@ export function makeAA(THREE, renderer, W, H, opts = {}) {
         if (uScan.x > 0.0) col *= 1.0 - uScan.x * (0.5 + 0.5 * cos(6.2831853 * gl_FragCoord.y / uScan.y));
         float low = smoothstep(uLow.x, 1.0, 1.0 - vUv.y);
         col *= 1.0 - uLow.y * low * (2.0 - low);
-        vec2 fc = gl_FragCoord.xy + vec2(uSeed * 17.13, uSeed * 7.77);
-        float n1 = hash(fc), n2 = hash(fc + 31.7);
-        col *= 1.0 + (n1 - 0.5) * 2.0 * uGrain;
-        col += (n1 + n2 - 1.0) * uDither;
+        // optional animated film grain (off by default: random noise makes the
+        // PNG frames incompressible, which costs ~0.3 s per frame to encode)
+        if (uGrain > 0.0) {
+          vec2 fc = gl_FragCoord.xy + vec2(uSeed * 17.13, uSeed * 7.77);
+          col *= 1.0 + (hash(fc) - 0.5) * 2.0 * uGrain;
+        }
+        // static 4x4 ordered dither against banding in dark gradients
+        ivec2 bp = ivec2(mod(gl_FragCoord.xy, 4.0));
+        col += (BAYER[bp.x + bp.y * 4] / 16.0 - 0.47) * uDither;
         gl_FragColor = vec4(max(col, 0.0), 1.0);
       }`,
   }));

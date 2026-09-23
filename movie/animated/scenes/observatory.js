@@ -24,8 +24,8 @@ export async function create(env) {
   scene.background = new THREE.Color(0, 0, 0);
   const HAZE = new THREE.Color(0.016, 0.023, 0.036);          // linear; horizon mist
   scene.fog = new THREE.FogExp2(HAZE.clone(), 0.0008);
-  const camera = new THREE.PerspectiveCamera(50, W / H, 0.5, 40000);
-  const aa = makeAA(THREE, renderer, W, H, { grain: 0.03, dither: 0.0005 });
+  const camera = new THREE.PerspectiveCamera(54, W / H, 0.5, 40000);
+  const aa = makeAA(THREE, renderer, W, H, { dither: 0.0005 });
 
   // =========================================================================
   // sky frame: galactic frame -> world, wheeling about the celestial pole
@@ -44,7 +44,7 @@ export async function create(env) {
   const skyQ = t => spinQ(t).multiply(qB);
 
   // where the dish ends up pointing (at T_REF): the cluster
-  const AZ_F = deg(152), EL_F = deg(38);
+  const AZ_F = deg(141), EL_F = deg(36);
   const dirAzEl = (az, el) => new V3(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el));
   const TARGET_REF = dirAzEl(AZ_F, EL_F);
   const CLUSTER_GAL = TARGET_REF.clone().applyQuaternion(qB.clone().invert());
@@ -132,7 +132,7 @@ export async function create(env) {
         }
         void main() {
           vec3 c1 = tile(vUv), c2 = tile(vUv * 2.0 + vec2(0.37, 0.11));
-          float den = smoothstep(0.50, 0.84, c1.r * 0.72 + c2.g * 0.45) * (0.5 + 0.5 * c1.b);
+          float den = smoothstep(0.44, 0.80, c1.r * 0.72 + c2.g * 0.45) * (0.45 + 0.55 * c1.b);
           gl_FragColor = vec4(den, den, den, 1.0);
         }`,
     }));
@@ -165,9 +165,10 @@ export async function create(env) {
   };
   const sky = new THREE.Mesh(new THREE.SphereGeometry(20000, 128, 96), new THREE.ShaderMaterial({
     uniforms: skyU, side: THREE.BackSide, depthWrite: false, fog: false,
+    // everything smooth is done per vertex; the fragment shader only samples
     vertexShader: /* glsl */`
       uniform vec3 uTown, uHaze;
-      varying vec3 vDir; varying vec3 vBase;
+      varying vec3 vDir; varying vec3 vBase; varying float vAlt, vTownC;
       void main() {
         vDir = position;
         vec3 d = normalize(position);
@@ -179,30 +180,31 @@ export async function create(env) {
         float town = max(dot(hd, uTown), 0.0);
         col += vec3(0.040, 0.017, 0.006) * pow(town, 5.0) * exp(-h / 0.09);      // distant town
         vBase = col;
+        vAlt = alt;
+        vTownC = pow(town, 3.0) * (1.0 - smoothstep(0.05, 0.4, alt));
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }`,
     fragmentShader: /* glsl */`
       uniform samplerCube tMW; uniform mat3 uW2G; uniform float uMW, uFlash, uCloudLit;
-      uniform vec3 uFlashDir, uTown;
-      varying vec3 vDir; varying vec3 vBase;
-      ${CLOUD_GLSL}
+      uniform vec3 uFlashDir;
+      uniform sampler2D tC; uniform vec2 uCloudOff; uniform float uCloudH, uCloudScale;
+      varying vec3 vDir; varying vec3 vBase; varying float vAlt, vTownC;
       void main() {
-        vec3 d = normalize(vDir);
-        vec3 mw = textureCube(tMW, uW2G * d).rgb;
-        vec3 col = vBase + mw * mw * (8.0 * uMW * smoothstep(-0.02, 0.30, d.y));
-        float fd = max(dot(d, uFlashDir), 0.0);
-        vec3 fl = vec3(0.0);
-        if (uFlash > 0.0) fl = vec3(0.30, 0.85, 1.0) * uFlash * (pow(fd, 300.0) * 0.5 + pow(fd, 40.0) * 0.05 + pow(fd, 6.0) * 0.006);
+        vec3 mw = textureCube(tMW, uW2G * vDir).rgb;
+        vec3 col = vBase + mw * mw * (8.0 * uMW * smoothstep(-0.02, 0.30, vAlt));
         float den = 0.0;
-        if (d.y > 0.04) {
-          vec2 p = cloudUV(d, cameraPosition);
-          den = cloudDen(texture2D(tC, p), d);
+        if (vAlt > 0.04) {
+          vec2 p = (cameraPosition.xz + vDir.xz * (uCloudH / vDir.y)) * uCloudScale + uCloudOff;
+          den = texture2D(tC, p).r * smoothstep(0.04, 0.2, vAlt);
         }
-        vec3 hd = normalize(vec3(d.x, 0.0, d.z) + 1e-5);
-        vec3 cc = vec3(0.0075, 0.010, 0.016) + vec3(0.022, 0.010, 0.004) * pow(max(dot(hd, uTown), 0.0), 3.0) * (1.0 - smoothstep(0.05, 0.4, d.y));
-        cc += vec3(0.2, 0.7, 0.8) * uCloudLit * pow(fd, 3.0);
-        col = mix(col, cc, den * 0.85) + fl * (1.0 - den * 0.6);
-        gl_FragColor = vec4(col, 1.0);
+        vec3 cc = vec3(0.011, 0.014, 0.021) * (0.7 + 0.6 * den) + vec3(0.026, 0.012, 0.005) * vTownC;
+        vec3 fl = vec3(0.0);
+        if (uFlash > 0.0) {
+          float q = 1.0 - max(dot(normalize(vDir), uFlashDir), 0.0);
+          fl = vec3(0.30, 0.85, 1.0) * uFlash * (exp(-300.0 * q) * 0.5 + exp(-40.0 * q) * 0.04 + exp(-12.0 * q) * 0.004);
+          cc += vec3(0.2, 0.7, 0.8) * uCloudLit * exp(-3.0 * q);
+        }
+        gl_FragColor = vec4(mix(col, cc, den * 0.8) + fl * (1.0 - den * 0.6), 1.0);
       }`,
   }));
   sky.renderOrder = -10;
@@ -854,29 +856,44 @@ export async function create(env) {
     const se = slewP(prog(t, SLEW.start + 0.35, SLEW.end - 0.3));
     let az = pAz + wrapPi(tAz - pAz) * sa;
     let el = lerp(pEl, tEl, se);
-    const dt = t - SLEW.end;           // the structure rings down when the brakes bite
-    if (dt > 0) el += deg(0.35) * Math.exp(-dt / 0.45) * Math.sin(dt * 2 * Math.PI * 1.6);
-    const dt2 = t - (SLEW.end - 0.3);
-    if (dt2 > 0) az += deg(0.25) * Math.exp(-dt2 / 0.5) * Math.sin(dt2 * 2 * Math.PI * 1.3);
-    const ds = t - SLEW.start;         // and shudders as the drives engage
-    if (ds > 0) el += deg(0.12) * Math.exp(-ds / 0.25) * Math.sin(ds * 2 * Math.PI * 5.0);
+    // the structure rings down when the brakes bite, and shudders as the drives engage
+    const ring = (dt, amp, tau, hz) => dt > 0 ? amp * (1 - Math.exp(-dt / 0.12)) * Math.exp(-dt / tau) * Math.sin(dt * 2 * Math.PI * hz) : 0;
+    el += ring(t - (SLEW.end - 0.3), deg(0.3), 0.5, 1.6);
+    az += ring(t - (SLEW.end - 0.25), deg(0.22), 0.55, 1.3);
+    el += ring(t - SLEW.start, deg(0.1), 0.3, 4.0);
     return { az, el };
   }
   const hash1 = n => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
   const FIRST_HIT = ARR.start + RING_TRAVEL;
 
-  // camera: a low, slow orbit, looking up at the dish
-  const P = Object.assign({ th0: -14, th1: 8, th2: 42, R0: 60, R1: 56, R2: 72, look0: 21, look1: 27, look2: 20 }, window.__P || {});
+  // C1 keyframe spline (Catmull-Rom tangents): keys = [[t, v], ...]
+  function spline(keys) {
+    const n = keys.length;
+    const m = keys.map((k, i) => {
+      const a = keys[Math.max(0, i - 1)], b = keys[Math.min(n - 1, i + 1)];
+      return (b[1] - a[1]) / (b[0] - a[0]);
+    });
+    return t => {
+      if (t <= keys[0][0]) return keys[0][1] + m[0] * (t - keys[0][0]);
+      if (t >= keys[n - 1][0]) return keys[n - 1][1] + m[n - 1] * (t - keys[n - 1][0]);
+      let i = 0;
+      while (t > keys[i + 1][0]) i++;
+      const [t0, v0] = keys[i], [t1, v1] = keys[i + 1], h = t1 - t0, u = (t - t0) / h;
+      const u2 = u * u, u3 = u2 * u;
+      return (2 * u3 - 3 * u2 + 1) * v0 + (u3 - 2 * u2 + u) * h * m[i] + (-2 * u3 + 3 * u2) * v1 + (u3 - u2) * h * m[i + 1];
+    };
+  }
+  // camera: a low, slow orbit, looking up at the dish; always moving
+  const camTh = spline([[54, 16], [58, 10], [62, 2], [65, -5], [68, -13], [71, -23], [74.8, -36]]);
+  const camR = spline([[54, 62], [60, 60], [65, 60], [68, 61], [71, 64], [74.8, 66]]);
+  const camH = spline([[54, 2.0], [60, 1.9], [65, 2.2], [68, 3.0], [71, 4.8], [74.8, 6.5]]);
+  const camLook = spline([[54, 21], [59, 21.5], [62, 23], [64.5, 25], [66.5, 24.5], [68.5, 19.5], [71, 16], [74.8, 14]]);
   const camPos = new V3(), camTgt = new V3();
   function cameraAt(t) {
-    const a = ease(prog(t, 54, 65)), b = ease(prog(t, 65, 74.8));
-    const th = deg(t < 65 ? lerp(P.th0, P.th1, prog(t, 54, 65) * 0.5 + a * 0.5) : lerp(P.th1, P.th2, prog(t, 65, 74.8) * 0.5 + b * 0.5));
-    const R = t < 65 ? lerp(P.R0, P.R1, a) : lerp(P.R1, P.R2, b);
-    const h = 1.9 - 0.3 * a + 6.0 * b;
-    camPos.set(Math.sin(th) * R, h, Math.cos(th) * R);
+    const th = deg(camTh(t)), R = camR(t);
+    camPos.set(Math.sin(th) * R, camH(t), Math.cos(th) * R);
     camPos.y += groundH(camPos.x, camPos.z);
-    const look = t < 65 ? lerp(P.look0, P.look1, smooth(60, 64.5, t)) : lerp(P.look1, P.look2, b);
-    camTgt.set(-1.5, look, 0);
+    camTgt.set(-1.5, camLook(t), 0);
     // shake: a hit when the first wavefront lands, then a rumble
     const amp = smooth(FIRST_HIT - 0.04, FIRST_HIT + 0.04, t) * (0.7 * Math.exp(-(t - FIRST_HIT) / 0.3) + 0.22 * (1 - smooth(FIRST_HIT + 0.4, ARR.end + 0.4, t)))
       + 0.03 * smooth(ARR.start - 0.2, ARR.start + 0.5, t) * (1 - smooth(ARR.end, ARR.end + 1, t));
@@ -904,7 +921,7 @@ export async function create(env) {
     starGroup.matrixWorldNeedsUpdate = true;
     skyU.uW2G.value.setFromMatrix4(tmpM).transpose();
     starU.uTime.value = t;
-    skyU.uCloudOff.value.set(0.31 + t * 0.00042, 0.57 + t * 0.00013);
+    skyU.uCloudOff.value.set(0.31 + t * 0.0009, 0.57 + t * 0.00028);
     const clDir = targetAt(t);
     clusterGlow.position.copy(clDir).multiplyScalar(18000);
     clusterGlow.scale.setScalar(18000 * 0.03);
@@ -950,7 +967,7 @@ export async function create(env) {
     feedGlow.material.opacity = clamp(G * 1.2);
     feedGlow.scale.setScalar(2.5 + 7 * G + 3 * Math.min(1, hits));
     feedLight.intensity = 1600 * G;
-    const pre = smooth(62.8, 64.2, t);
+    const pre = smooth(62.8, 64.2, t) * (1 - 0.65 * smooth(66.5, 70, t));
     skyU.uFlash.value = pre * 0.4 + wave * 0.8 + 0.3 * Math.min(1, hits);
     skyU.uFlashDir.value.copy(clDir);
     skyU.uCloudLit.value = 0.03 * (pre + wave);
@@ -1022,15 +1039,6 @@ export async function create(env) {
     const narr = Math.max(U.window01(t, 55.3, 62.4, 0.6, 0.8), U.window01(t, 67.3, 73.2, 0.6, 0.8));
     aa.uniforms.uLow.value.set(0.70, 0.45 + 0.25 * narr);
 
-    const HIDE = window.__HIDE || [];
-    if (HIDE.length) {
-      const DBG = { sky, stars: starGroup, dish: dishG, hut: hutG, az: azG };
-      for (const k in DBG) DBG[k].visible = !HIDE.includes(k);
-      terrainMeshes.forEach(o => { o.visible = !HIDE.includes('terrain'); });
-      mountainMeshes.forEach(o => { o.visible = !HIDE.includes('mountains'); });
-      if (HIDE.includes('rings')) rings.forEach(r => { r.visible = false; });
-      if (HIDE.includes('beam')) { beam.visible = false; sparks.visible = false; }
-    }
     aa.render(scene, camera, t);
   }
 
