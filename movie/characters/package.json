@@ -1,0 +1,8 @@
+{
+  "name": "echo-characters",
+  "private": true,
+  "description": "ECHO (characters cut): renderer dependencies",
+  "dependencies": {
+    "three": "0.186.0"
+  }
+}

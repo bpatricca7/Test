@@ -2,3 +2,4 @@ movie/build/
 __pycache__/
 movie/animated/build/
 node_modules/
+movie/characters/build/
