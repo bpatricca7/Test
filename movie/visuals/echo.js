@@ -353,8 +353,11 @@ function drawText(t) {
 
 function drawObservatory(t) {
   const sc = TL.scenes.find(s => s.id === 'observatory');
-  const a = window01(t, sc.start, sc.end, 3.0, 1.6);
-  if (a <= 0) return;
+  const fade = window01(t, sc.start, sc.end, 3.0, 1.6);
+  if (fade <= 0) return;
+  // draw at full strength and fade the finished picture, so layers never
+  // show through each other mid-fade
+  const a = 1;
   const p = clamp((t - sc.start) / (sc.end - sc.start));
   const push = lerp(1.0, 1.075, easeInOut(p));
   const lift = lerp(0, -18, easeInOut(p));
@@ -470,6 +473,9 @@ function drawObservatory(t) {
   lowg.addColorStop(1, 'rgba(0,0,0,0.6)');
   ctx.fillStyle = lowg;
   ctx.fillRect(0, H * 0.72, W, H * 0.28);
+  ctx.globalAlpha = 1 - fade;
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
   ctx.restore();
 }
 
@@ -504,8 +510,9 @@ function hud(text, x, y, size, alpha, align = 'left') {
 
 function drawSignal(t) {
   const sc = TL.scenes.find(s => s.id === 'signal');
-  const a = window01(t, sc.start, sc.end, 1.0, 1.0);
-  if (a <= 0) return;
+  const fade = window01(t, sc.start, sc.end, 1.0, 1.0);
+  if (fade <= 0) return;
+  const a = 1;
   const pt = TL.pulses.times, bits = TL.pulses.bits;
   const tEnd = pt[pt.length - 1] + pulseDur(pt.length - 1);
   const tv = Math.min(t, tEnd + 0.25); // the display freezes when the signal stops
@@ -633,6 +640,9 @@ function drawSignal(t) {
   lowg.addColorStop(1, 'rgba(0,0,0,0.75)');
   ctx.fillStyle = lowg;
   ctx.fillRect(0, H * 0.78, W, H * 0.22);
+  ctx.globalAlpha = 1 - fade;
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
   ctx.restore();
 }
 
