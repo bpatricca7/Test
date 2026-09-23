@@ -9,10 +9,11 @@
 //                      each row of 23 bits is one turn of a rising helix
 //   tilt_up  20.0–27.0 the camera rises and tilts to look straight up the beam
 //
-// Everything is a pure function of film time t. The 3D scene renders into our
-// own HDR target, and the compositor gets a full-screen quad that samples it
-// with FXAA (the compositor's buffers have no MSAA, and MSAA is too slow on
-// SwiftShader); cables are analytic anti-aliased ribbons.
+// Everything is a pure function of film time t. Performance notes (SwiftShader):
+// per-pixel noise and mipmapped texture sampling are very expensive there, so
+// the terrain bakes most of its detail per vertex, uses one non-mipmapped
+// texture fetch for tree crowns, and the sky is drawn after the opaque scene.
+// The compositor has no MSAA; cables are analytic anti-aliased ribbons.
 
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
@@ -33,13 +34,13 @@ const FOCAL_R = DISH_R / 2;
 const focalY = x => DISH_CY - Math.sqrt(FOCAL_R * FOCAL_R - x * x);
 const ARM_AZ = 25 * Math.PI / 180;
 
-const MOON_AZ = 306 * Math.PI / 180, MOON_EL = 22 * Math.PI / 180;
+const MOON_AZ = 318 * Math.PI / 180, MOON_EL = 21 * Math.PI / 180;
 
 const BEAM_R = 20;            // visible column radius
 const BEAM_HALO = 70;         // halo cylinder radius
 const BIT_Y0 = DISH_BOTTOM + 4, BIT_V0 = 110, BIT_ACC = 95;  // bit flight
 const BIT_RH = 15;            // helix radius: each row of 23 bits is one turn
-const BIT_TRAIL = 0.2;        // s of trail behind every bit
+const BIT_TRAIL = 0.11;       // s of trail behind every bit
 
 export async function create(env) {
   const { THREE, TL, W, H, renderer, U } = env;
@@ -132,17 +133,17 @@ export async function create(env) {
   function makeCanopyTexture(size) {
     const data = new Uint8Array(size * size * 4);
     const L = MOON_DIR;
-    const l = Math.hypot(L.x, L.z), lx = L.x / l, lz = L.z / l;
     const wrap = v => ((v % size) + size) % size;
     // crowns
     const CELLS = 36, cs = size / CELLS;
     const rnd = U.mulberry32(777);
     // two crowns per cell: a big one and a smaller one filling the gaps
-    const jx = [], jy = [], jr = [];
+    const jx = [], jy = [], jr = [], jv = [];
     for (let i = 0; i < CELLS * CELLS; i++) {
       jx.push(0.15 + 0.7 * rnd(), rnd()); jy.push(0.15 + 0.7 * rnd(), rnd()); jr.push(0.5 + 0.55 * rnd(), 0.3 + 0.25 * rnd());
+      jv.push(0.6 + 0.4 * rnd(), 0.55 + 0.45 * rnd());   // crown-to-crown brightness
     }
-    const leaf = periodicNoise(size, 96, 2, 91);
+    const leaf = periodicNoise(size, 128, 2, 91);
     const hgt = new Float32Array(size * size);
     for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
       const gx = (x + 0.5) / cs, gy = (y + 0.5) / cs, ix = Math.floor(gx), iy = Math.floor(gy);
@@ -153,10 +154,10 @@ export async function create(env) {
         for (let k = 2 * c; k < 2 * c + 2; k++) {
           const R = jr[k];
           const d2 = ((gx - cx - jx[k]) ** 2 + (gy - cy - jy[k]) ** 2) / (R * R);
-          if (d2 < 1) best = Math.max(best, R * Math.sqrt(1 - d2));
+          if (d2 < 1) best = Math.max(best, R * Math.sqrt(1 - d2) * jv[k]);
         }
       }
-      hgt[y * size + x] = best + 0.07 * leaf[y * size + x];
+      hgt[y * size + x] = best + 0.12 * leaf[y * size + x];
     }
     const hs = (x, y) => hgt[wrap(y) * size + wrap(x)];
     for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
@@ -210,7 +211,7 @@ export async function create(env) {
     uMoonGlow: { value: new THREE.Vector3(0.18, 0.23, 0.36) },
     uMistCol: { value: graded(0x22324d) },
     uBeamCol: { value: new THREE.Vector3(0.55, 0.8, 1.0) },
-    uFogDens: { value: 0.00017 },
+    uFogDens: { value: 0.00012 },
     uMistDens: { value: 0.0016 },
     uMistH: { value: 24.0 },
     uMistBase: { value: -30.0 },
@@ -219,6 +220,7 @@ export async function create(env) {
     uShock: { value: -1 },    // seconds since the transmit shockwave
     uWork: { value: 0 },      // platform work lights
     uRed: { value: 0 },       // aviation beacons (blink envelope)
+    uPowerR: { value: 0 },    // radius the power-up sheen has spread to
   };
 
   const COMMON = /* glsl */`
@@ -248,7 +250,7 @@ void atmos(vec3 wp, float mistMul, out float fmul, out vec3 fadd) {
   float fm = 1.0 - exp(-m * uMistDens * mistMul);
   float mu = max(dot(rd, uMoonDir), 0.0);
   vec3 mc = uMistCol * (0.6 + 0.9 * mu * mu * mu);
-  mc += uBeamCol * min(uBeam, 1.0) * 0.12 * exp(-length(wp.xz) / 220.0);
+  mc += uBeamCol * min(uBeam, 1.0) * 0.07 * exp(-length(wp.xz) / 200.0);
   float fa = 1.0 - exp(-dist * uFogDens);
   fmul = (1.0 - fm) * (1.0 - fa);
   fadd = mc * fm * (1.0 - fa) + skyColor(rd) * fa;
@@ -332,8 +334,7 @@ void main() {
   terrain.name = 'terrain';
   scene3.add(terrain);
   {
-    const TI = globalThis.__VDBG_INIT || {};
-    const NR = TI.NR || 190, NA = TI.NA || 352, r0 = DISH_A, r1 = 9500;
+    const NR = 190, NA = 352, r0 = DISH_A, r1 = 9500;
     const ringR = i => r0 * Math.pow(r1 / r0, i / (NR - 1));
     const NV = NR * NA;
     const pos = new Float32Array(NV * 3), det = new Float32Array(NV * 4), clump = new Float32Array(NV * 2);
@@ -377,88 +378,81 @@ void main() {
     const canopyTex = makeCanopyTexture(512);
     terrainMat = new THREE.ShaderMaterial({
       uniforms: {
-        ...C, uDbg: { value: 0 }, uCanopy: { value: canopyTex }, uValley: { value: 1.6 }, uPixAng: { value: 1 / PX_SCALE },
-        uVegA: { value: new THREE.Vector3(0.030, 0.050, 0.030) }, uVegB: { value: new THREE.Vector3(0.050, 0.058, 0.040) },
+        ...C, uCanopy: { value: canopyTex }, uValley: { value: 1.6 }, uPixAng: { value: 1 / PX_SCALE },
+        uVeg: { value: new THREE.Vector3(0.040, 0.054, 0.035) },
       },
+      // few varyings on purpose: on SwiftShader the per-pixel cost of the
+      // terrain is dominated by interpolating them
       vertexShader: /* glsl */`
 ${COMMON}
-uniform float uDbg, uValley, uPixAng;
-uniform vec3 uVegA, uVegB;
-uniform sampler2D uCanopy;
+uniform float uValley, uPixAng;
+uniform vec3 uVeg;
 attribute vec4 aDet;
 attribute vec2 aClump;
-varying vec4 vA;       // world x, world z, crown texture lod, fog multiply
-varying vec3 vAlb;     // albedo (canopy clumps, colour patches, rim walkway)
-varying vec3 vFogAdd;
-varying vec3 vN;
-varying vec2 vB;       // clump slope toward the moon, crown-bump weight
+varying vec4 vA;       // crown texture uv, crown LOD, crown-bump weight
+varying vec3 vL;       // moon light scale, ambient scale (both incl. albedo and fog), N.L + clump slope
+varying vec3 vFogAdd;  // in-scattered fog / mist + beam light
 void main() {
   vec4 w = modelMatrix * vec4(position, 1.0);
   gl_Position = projectionMatrix * viewMatrix * w;
-  vN = normal;
   vec3 vv = w.xyz - uCamPos;
   float dist = length(vv);
-  // texture LOD for the crown texture (0.93 m texels): pixel footprint,
+  vec3 rd = vv / dist;
+  // texture LOD for the crown texture (0.39 m texels): pixel footprint,
   // widened at grazing angles
-  float cosv = abs(dot(vv / dist, normal));
-  float lod = log2(max(dist * uPixAng / 0.54 / sqrt(max(cosv, 0.08)), 1e-3));
-  // clumps of trees (~35 m) and their slope toward the moon (baked)
+  float cosv = abs(dot(rd, normal));
+  float lod = log2(max(dist * uPixAng / 0.39 / sqrt(max(cosv, 0.08)), 1e-3)) + 0.22;
+  // albedo brightness: tree clumps (baked), colour patches, rim walkway
   float canopy = aDet.x * 0.3 + aClump.x * 0.7;
-  vAlb = mix(mix(uVegA, uVegB, aDet.y) * (0.6 + 0.8 * canopy), vec3(0.07, 0.075, 0.08), aDet.w);
-  vB = vec2(aClump.y, 1.0) * (1.0 - aDet.w);
+  float alb = mix((0.8 + 0.4 * aDet.y) * (0.6 + 0.8 * canopy), 1.6, aDet.w);
   float fm; vec3 fa;
   atmos(w.xyz, 1.0, fm, fa);
   // ground mist pooled in the valleys between the hills, drifting slowly
   vec4 pm = textureLod(uNoise, w.xz * 0.00022 + vec2(uTime * 0.0011, uTime * 0.0004), 0.0);
   float patchv = smoothstep(0.3, 0.75, pm.a) * (0.45 + 0.55 * pm.g);
   float clear = smoothstep(220.0, 700.0, length(w.xz));
-  vec3 rd = vv / dist;
   float thick = aDet.z * patchv * clear;
   float vm = 1.0 - exp(-thick * uValley * (0.5 + 0.5 / (0.25 + abs(rd.y))));
   float mu = max(dot(rd, uMoonDir), 0.0);
   vec3 mc = uMistCol * (0.8 + 0.8 * mu * mu);
-  vA = vec4(w.x, w.z, lod + 0.22, fm * (1.0 - vm));
-  vFogAdd = fa + mc * vm * fm;
+  float fmul = fm * (1.0 - vm);
+  vec3 add = fa + mc * vm * fm;
+  if (uBeam > 0.0) {
+    // light from the beam spills onto the ground around the dish, and the
+    // shockwave rolls over the canopy
+    float r = length(w.xz);
+    vec3 lb = normalize(vec3(-w.x, 80.0, -w.z));
+    add += uVeg * alb * uBeamCol * min(uBeam, 1.0) * 0.28 / (1.0 + r * r / 7000.0) * max(0.2 + 0.8 * dot(normal, lb), 0.0) * fmul;
+    float rs = 150.0 + uShock * 420.0;
+    float x = (r - rs) / (40.0 + uShock * 25.0);
+    add += uBeamCol * exp(-x * x) * exp(-uShock * 1.5) * 0.05 * fmul;
+  }
+  vL = vec3(alb * 1.55 * fmul, alb * (0.5 + 0.5 * normal.y) * 1.8 * fmul, dot(normal, uMoonDir) + aClump.y * (1.0 - aDet.w));
+  vA = vec4(w.xz * 0.005, lod, 1.0 - aDet.w);
+  vFogAdd = add;
 }`,
       fragmentShader: /* glsl */`
 ${COMMON}
 uniform sampler2D uCanopy;
-uniform float uDbg;
+uniform vec3 uVeg;
 varying vec4 vA;
-varying vec3 vAlb;
+varying vec3 vL;
 varying vec3 vFogAdd;
-varying vec3 vN;
-varying vec2 vB;
 void main() {
-  if (uDbg > 0.5 && uDbg < 1.5 || uDbg > 2.5) { gl_FragColor = vec4(vN * 0.05 + vFogAdd, 1.0); return; }
-  vec3 N = normalize(vN);
-  // tree crowns (~10 m): height -> dark gaps, lighting delta toward the moon;
-  // once they are smaller than a pixel use their average
   // tree crowns (~8 m): sharp texture up close, a blurred copy further
   // out, their average beyond that
   float midF = smoothstep(0.3, 1.6, vA.z), farF = smoothstep(1.8, 3.6, vA.z);
   float crownH = 0.62, delta = 0.0;
   if (farF < 1.0) {
-    vec4 ca = textureLod(uCanopy, vA.xy * 0.0036, 0.0);
+    vec4 ca = textureLod(uCanopy, vA.xy, 0.0);
     vec2 cr = mix(ca.rg, ca.ba, midF);
     crownH = mix(cr.x, 0.62, farF);
-    delta = (cr.y - 0.5) * 2.0 * (1.0 - farF);
+    delta = (cr.y - 0.5) * 2.2 * (1.0 - farF) * vA.w;
   }
-  float bump = delta * 1.1 * vB.y + vB.x;
-  float ao = 0.25 + 0.75 * crownH;
-  float lit = clamp(dot(N, uMoonDir) + bump, 0.0, 1.3);
-  vec3 alb = vAlb * ao;
-  vec3 col = alb * (uMoonCol * lit * 1.55 + uAmb * (0.5 + 0.5 * N.y) * 1.8);
-  if (uBeam > 0.0) {
-    // light from the beam spills onto the ground around the dish
-    float r2 = dot(vA.xy, vA.xy);
-    col += alb * uBeamCol * uBeam * 0.5 / (1.0 + r2 / 9000.0) * max(0.2 + 0.8 * dot(N, normalize(vec3(-vA.x, 80.0, -vA.y))), 0.0);
-    // the shockwave rolls over the canopy
-    float rs = 150.0 + uShock * 420.0;
-    float x = (sqrt(r2) - rs) / (40.0 + uShock * 25.0);
-    col += uBeamCol * exp(-x * x) * exp(-uShock * 1.2) * 0.12 * (0.3 + ao);
-  }
-  gl_FragColor = vec4(col * vA.w + vFogAdd, 1.0);
+  float lit = clamp(vL.z + delta, 0.0, 1.3);
+  float ao = 0.4 + 0.6 * crownH;
+  vec3 col = uVeg * ao * (uMoonCol * (vL.x * lit) + uAmb * vL.y);
+  gl_FragColor = vec4(col + vFogAdd, 1.0);
 }`,
     });
 
@@ -666,10 +660,11 @@ void main() {
     geo.setIndex(idx);
     geo.computeVertexNormals();
     const mat = new THREE.ShaderMaterial({
-      uniforms: { ...C },
+      uniforms: { ...C, uPowerR: C.uPowerR },
       vertexShader: VS_WORLD,
       fragmentShader: /* glsl */`
 ${COMMON}
+uniform float uPowerR;
 varying vec3 vWorld;
 varying vec3 vNormal;
 float h21(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -702,18 +697,19 @@ void main() {
   col += skyColor(R) * 0.3 + uMoonCol * (0.10 * mr16 + 0.5 * pow(mr, 250.0)) * (0.6 + 0.8 * mix(hq, 0.5, far));
   col *= 1.0 - 0.5 * line;
   // transmitter power-up: a faint sheen with slow rings flowing outward
-  float ripple = 0.7 + 0.3 * sin(rho * 0.11 - uTime * 3.2);
-  vec3 energy = uBeamCol * uPower * (0.02 + 0.07 * exp(-rho / 55.0)) * ripple;
-  energy += uBeamCol * uPower * line * 0.04 * (1.0 - far);
+  float ripple = 0.6 + 0.4 * sin(rho * 0.09 - uTime * 3.0);
+  float wake = smoothstep(uPowerR, uPowerR - 30.0, rho);   // the sheen spreads out from the centre
+  vec3 energy = uBeamCol * uPower * wake * (0.025 + 0.08 * exp(-rho / 55.0)) * ripple;
+  energy += uBeamCol * uPower * wake * line * 0.05 * (1.0 - far);
   // beam base
-  energy += uBeamCol * uBeam * (0.06 * exp(-rho / 45.0) + 0.5 * exp(-rho * rho / 150.0));
+  energy += uBeamCol * uBeam * (0.05 * exp(-rho / 45.0) + 0.3 * exp(-rho * rho / 150.0));
   // transmit shockwave across the reflector
   if (uShock > 0.0) {
     float rs = ${DISH_A.toFixed(2)} * (1.0 - pow(1.0 - clamp(uShock / 1.3, 0.0, 1.0), 2.5));
     float x = (rho - rs) / 6.0;
     float wv = exp(-x * x) * (1.0 - smoothstep(0.9, 1.5, uShock));
-    float wake = smoothstep(rs, rs - 60.0, rho) * exp(-uShock * 2.0);
-    energy += uBeamCol * (2.2 * wv + 0.18 * wake) * (0.6 + 0.4 * line);
+    float trail = smoothstep(rs, rs - 60.0, rho) * exp(-uShock * 2.0);
+    energy += uBeamCol * (2.2 * wv + 0.18 * trail) * (0.6 + 0.4 * line);
   }
   col += energy;
   col = applyAtmos(col, vWorld);
@@ -1056,7 +1052,7 @@ void main() {
     const rnd = U.mulberry32(99);
     for (let s = 0; s < 3; s++) {
       const [ax, az] = corner[s], [bx, bz] = corner[(s + 1) % 3];
-      for (const f of [0.0, 0.25, 0.5, 0.75]) add([U.lerp(ax, bx, f) * 1.02, PLAT_Y0 - 0.5, U.lerp(az, bz, f) * 1.02], [1.0, 0.86, 0.66], 3.2, 1, rnd());
+      for (const f of [0.0, 0.25, 0.5, 0.75]) add([U.lerp(ax, bx, f) * 1.02, PLAT_Y0 - 0.5, U.lerp(az, bz, f) * 1.02], [1.0, 0.86, 0.66], 4.5, 1, rnd());
     }
     const ax = Math.cos(ARM_AZ), az = Math.sin(ARM_AZ);
     for (const x of [-44, -30, -10, 10, 30, 44]) add([ax * x, focalY(x) + 1.5, az * x], [1.0, 0.9, 0.75], 2.6, 1, rnd());
@@ -1085,7 +1081,7 @@ void main() {
   else {
     float on = uTime - (uTPow + 0.25 + aPhase * 0.9);
     float flick = on < 0.0 ? 0.0 : (on < 0.35 ? step(0.45, fract(sin(floor(uTime * 24.0) * 12.9898 + aPhase * 78.233) * 43758.5453)) : 1.0);
-    I = uWork * flick * 5.0;
+    I = uWork * flick * 6.0;
   }
   float px = aSize * uPx / max(-mv.z, 1.0);
   float ps = clamp(px, 3.0, 64.0);
@@ -1152,9 +1148,9 @@ void main() {
   float I = core * 0.5 + col * (0.022 + 0.06 * n * n2 * 2.0) + halo * 0.008;
   // path length through the column grows as we look up it (capped)
   I *= min(1.0 / max(sinT, 1e-3), 2.0);
-  float vert = smoothstep(${DISH_BOTTOM.toFixed(1)}, ${(DISH_BOTTOM + 25).toFixed(1)}, y) * (1.0 - smoothstep(uFront - 800.0, uFront, y));
+  float vert = smoothstep(${DISH_BOTTOM.toFixed(1)}, ${(DISH_BOTTOM + 25).toFixed(1)}, y) * (1.0 - smoothstep(uFront - 150.0 - 0.3 * (uFront - ${DISH_BOTTOM.toFixed(1)}), uFront, y));
   vert *= 0.5 + 0.5 * exp(-max(y, 0.0) / 1500.0);
-  float py = (y - uPulseY) / 180.0;
+  float py = (y - uPulseY) / (60.0 + 0.1 * (uPulseY - ${DISH_BOTTOM.toFixed(1)}));
   float pulse = exp(-py * py);
   vec3 c = uBeamCol * (I * vert * uBeam + pulse * (core + col * 0.3) * 1.2 * vert);
   gl_FragColor = vec4(c, 1.0);
@@ -1205,7 +1201,7 @@ void main() {
   float ps = clamp(px, 3.0, 40.0);
   float e = min(px * px / (ps * ps) * 3.0, 1.0);
   vec3 c = aBit > 0.5 ? vec3(0.85, 0.93, 1.0) * 2.8 : vec3(0.35, 0.55, 1.0) * 0.45;
-  vC = c * e * smoothstep(0.0, 0.45, age);
+  vC = c * e * smoothstep(0.05, 0.9, age);
   gl_PointSize = ps;
 }`,
       fragmentShader: /* glsl */`
@@ -1274,7 +1270,7 @@ void main() {
   c.xy += (nrm * aSide * ps + (aEnd < 0.5 ? dir * ps : vec2(0.0))) / (uRes * 0.5) * c.w;
   gl_Position = c;
   vec3 col = aBit > 0.5 ? vec3(0.7, 0.85, 1.0) * 0.8 : vec3(0.3, 0.5, 1.0) * 0.15;
-  vC = col * min(px / ps, 1.0) * (aEnd < 0.5 ? 1.0 : 0.0) * smoothstep(0.05, 0.5, age);
+  vC = col * min(px / ps, 1.0) * (aEnd < 0.5 ? 1.0 : 0.0) * smoothstep(0.1, 0.9, age);
   vU = aSide;
 }`,
       fragmentShader: /* glsl */`
@@ -1304,10 +1300,13 @@ void main() {
     return [Math.atan2(-dx, -dz), Math.asin(dy / l)];
   }
   const KEYS = [];
-  function key(t, phi, r, y, look, dyaw = 0, dpitch = 0) {
+  // key(t, azimuth, radius, height, look target | view azimuth, yaw offset,
+  //     pitch offset, absolute pitch)
+  function key(t, phi, r, y, look, dyaw = 0, dpitch = 0, pitchAbs = null) {
     const p = polar(phi, r, y);
     let [yaw, pitch] = Array.isArray(look) ? yawPitchTo(p, look) : [Math.atan2(-Math.cos(look * D2R), -Math.sin(look * D2R)), 0];
     yaw += dyaw * D2R; pitch += dpitch * D2R;
+    if (pitchAbs !== null) pitch = pitchAbs * D2R;
     if (KEYS.length) {
       const prev = KEYS[KEYS.length - 1][4];
       while (yaw - prev > Math.PI) yaw -= 2 * Math.PI;
@@ -1315,78 +1314,47 @@ void main() {
     }
     KEYS.push([t, ...p, yaw, pitch]);
   }
-  key(9.0, 150, 1900, 560, 332, 0, 3);
-  key(11.5, 158, 1500, 470, [0, 0, 0], 4, 6);
-  key(14.0, 180, 1020, 340, [0, 40, 0], 6, 2);
-  key(16.0, 204, 640, 235, [0, 60, 0], 3, 0);
-  key(17.5, 222, 440, 180, [0, 70, 0], 2, 0);
-  key(19.5, 240, 350, 160, [0, 92, 0], 0, 3);
-  key(22.0, 254, 270, 190, [0, 92, 0], 0, 26);
-  key(24.5, 266, 170, 285, [0, 285, 0], 0, 52);
-  key(27.0, 278, 75, 560, [0, 560, 0], 0, 86);
-  function camAt(t) {
-    const K = KEYS;
-    t = U.clamp(t, K[0][0], K[K.length - 1][0]);
-    let i = 0;
-    while (i < K.length - 2 && t > K[i + 1][0]) i++;
-    const k0 = K[i], k1 = K[i + 1];
-    const h = k1[0] - k0[0], s = (t - k0[0]) / h;
-    const tan = (j, c) => {
-      const a = K[Math.max(j - 1, 0)], b = K[Math.min(j + 1, K.length - 1)];
-      return (b[c] - a[c]) / (b[0] - a[0]);
+  key(9.0, 150, 1900, 560, 336, 0, 7);
+  key(11.0, 155, 1640, 500, 338, 0, 3);
+  key(12.8, 166, 1260, 400, [0, 0, 0], 5, 3);
+  key(14.5, 184, 900, 305, [0, 40, 0], 4, 1);
+  key(16.0, 204, 640, 245, [0, 50, 0], 3, 0);
+  key(17.5, 222, 450, 215, [0, 35, 0], 2, 0);
+  key(19.5, 240, 380, 235, [0, 40, 0], 0, 0, -26);
+  key(22.0, 252, 300, 285, [0, 285, 0], 16, 0, 2);
+  key(24.5, 264, 190, 385, [0, 385, 0], 24, 0, 46);
+  key(27.0, 276, 80, 600, [0, 600, 0], 22, 0, 86);
+  // natural cubic splines through the keys (C2: no kinks in speed), in time
+  function naturalSpline(ts, ys) {
+    const n = ts.length, h = [], al = [], l = [1], mu = [0], z = [0], c = new Array(n).fill(0), b = [], d = [];
+    for (let i = 0; i < n - 1; i++) h[i] = ts[i + 1] - ts[i];
+    for (let i = 1; i < n - 1; i++) al[i] = 3 / h[i] * (ys[i + 1] - ys[i]) - 3 / h[i - 1] * (ys[i] - ys[i - 1]);
+    for (let i = 1; i < n - 1; i++) {
+      l[i] = 2 * (ts[i + 1] - ts[i - 1]) - h[i - 1] * mu[i - 1];
+      mu[i] = h[i] / l[i];
+      z[i] = (al[i] - h[i - 1] * z[i - 1]) / l[i];
+    }
+    for (let j = n - 2; j >= 0; j--) {
+      c[j] = z[j] - mu[j] * c[j + 1];
+      b[j] = (ys[j + 1] - ys[j]) / h[j] - h[j] * (c[j + 1] + 2 * c[j]) / 3;
+      d[j] = (c[j + 1] - c[j]) / (3 * h[j]);
+    }
+    return t => {
+      t = U.clamp(t, ts[0], ts[n - 1]);
+      let j = 0;
+      while (j < n - 2 && t > ts[j + 1]) j++;
+      const x = t - ts[j];
+      return ys[j] + b[j] * x + c[j] * x * x + d[j] * x * x * x;
     };
-    const h00 = 2 * s ** 3 - 3 * s ** 2 + 1, h10 = s ** 3 - 2 * s ** 2 + s, h01 = -2 * s ** 3 + 3 * s ** 2, h11 = s ** 3 - s ** 2;
-    const out = [];
-    for (let c = 1; c <= 5; c++) out.push(h00 * k0[c] + h10 * h * tan(i, c) + h01 * k1[c] + h11 * h * tan(i + 1, c));
-    return out;
   }
+  const CAM = [1, 2, 3, 4, 5].map(c => naturalSpline(KEYS.map(k => k[0]), KEYS.map(k => k[c])));
+  const camAt = t => CAM.map(f => f(t));
   // sanity: the camera must stay clear of the hills
   for (let t = 9; t <= 27; t += 0.25) {
     const [x, y, z] = camAt(t);
     const g = height(x, z);
     if (y - g < 25) console.warn(`valley: camera only ${(y - g).toFixed(1)} m above ground at t=${t}`);
   }
-
-  // -------------------------------------------------------------------------
-  // render target + FXAA display quad for the compositor
-  // -------------------------------------------------------------------------
-  const rt = new THREE.WebGLRenderTarget(W, H, { type: THREE.HalfFloatType, depthBuffer: true });
-  rt.texture.minFilter = rt.texture.magFilter = THREE.LinearFilter;
-  const dispScene = new THREE.Scene();
-  const dispCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-  const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({
-    uniforms: { tex: { value: rt.texture }, inv: { value: new THREE.Vector2(1 / W, 1 / H) }, uFxaa: { value: 1 } },
-    vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
-    fragmentShader: /* glsl */`
-uniform sampler2D tex;
-uniform vec2 inv;
-uniform float uFxaa;
-varying vec2 vUv;
-float luma(vec3 c) { c = c / (1.0 + c); return dot(c, vec3(0.299, 0.587, 0.114)); }
-void main() {
-  vec3 rgbM = texture2D(tex, vUv).rgb;
-  if (uFxaa < 0.5) { gl_FragColor = vec4(rgbM, 1.0); return; }
-  vec3 rgbNW = texture2D(tex, vUv + vec2(-1.0, -1.0) * inv).rgb;
-  vec3 rgbNE = texture2D(tex, vUv + vec2(1.0, -1.0) * inv).rgb;
-  vec3 rgbSW = texture2D(tex, vUv + vec2(-1.0, 1.0) * inv).rgb;
-  vec3 rgbSE = texture2D(tex, vUv + vec2(1.0, 1.0) * inv).rgb;
-  float lNW = luma(rgbNW), lNE = luma(rgbNE), lSW = luma(rgbSW), lSE = luma(rgbSE), lM = luma(rgbM);
-  float lMin = min(lM, min(min(lNW, lNE), min(lSW, lSE)));
-  float lMax = max(lM, max(max(lNW, lNE), max(lSW, lSE)));
-  if (lMax - lMin < max(0.012, lMax * 0.1)) { gl_FragColor = vec4(rgbM, 1.0); return; }
-  vec2 dir = vec2(-((lNW + lNE) - (lSW + lSE)), (lNW + lSW) - (lNE + lSE));
-  float red = max((lNW + lNE + lSW + lSE) * 0.03125, 1.0 / 128.0);
-  float rcp = 1.0 / (min(abs(dir.x), abs(dir.y)) + red);
-  dir = clamp(dir * rcp, vec2(-8.0), vec2(8.0)) * inv;
-  vec3 rgbA = 0.5 * (texture2D(tex, vUv + dir * (1.0 / 3.0 - 0.5)).rgb + texture2D(tex, vUv + dir * (2.0 / 3.0 - 0.5)).rgb);
-  vec3 rgbB = rgbA * 0.5 + 0.25 * (texture2D(tex, vUv - dir * 0.5).rgb + texture2D(tex, vUv + dir * 0.5).rgb);
-  float lB = luma(rgbB);
-  gl_FragColor = vec4((lB < lMin || lB > lMax) ? rgbA : rgbB, 1.0);
-}`,
-    depthTest: false, depthWrite: false,
-  }));
-  quad.frustumCulled = false;
-  dispScene.add(quad);
 
   // -------------------------------------------------------------------------
   // per-frame state
@@ -1409,8 +1377,9 @@ void main() {
     C.uCamPos.value.copy(cam.position);
     sky.position.copy(cam.position);
 
-    C.uPower.value = U.smooth(T_POWER, T_POWER + 2.2, t) * (1 - 0.35 * U.smooth(T_TX0 + 0.5, T_TX0 + 3, t));
+    C.uPower.value = U.smooth(T_POWER, T_POWER + 2.2, t) * (1 - 0.6 * U.smooth(T_TX0 + 0.3, T_TX0 + 3, t));
     C.uWork.value = t >= T_POWER ? 1 : 0;
+    C.uPowerR.value = 190 * U.easeOut(U.prog(t, T_POWER, T_POWER + 1.8));
     // aviation beacons: ~40 flashes a minute, soft incandescent ramp
     if (t >= T_POWER + 0.1) {
       const ph = ((t - T_POWER - 0.1) / 1.5) % 1;
@@ -1418,28 +1387,10 @@ void main() {
     } else C.uRed.value = 0;
     C.uBeam.value = beamLevel(t);
     C.uShock.value = t - T_TX0;
-    beamMat.uniforms.uFront.value = t < T_TX0 ? -1e5 : DISH_BOTTOM + 5200 * (1 - Math.exp(-(t - T_TX0) * 0.9)) + 2600 * (t - T_TX0);
-    beamMat.uniforms.uPulseY.value = t < T_TX0 ? -1e5 : DISH_BOTTOM + 3200 * (t - T_TX0);
-
-    const dbg = globalThis.__VDBG;
-    if (dbg) scene3.traverse(o => { if (o.name) o.visible = !(dbg.hide || []).includes(o.name); });
-    if (dbg && dbg.u) for (const k in dbg.u) C[k].value = dbg.u[k];
-    terrainMat.uniforms.uDbg.value = dbg && dbg.tdbg || 0;
-    if (!globalThis.__minMat) globalThis.__minMat = new THREE.ShaderMaterial({
-      vertexShader: 'varying float vY; void main() { vY = position.y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-      fragmentShader: 'varying float vY; void main() { gl_FragColor = vec4(vec3(0.01 + vY * 0.0001), 1.0); }' });
-    for (const m of terrain.children) m.material = dbg && dbg.minmat ? globalThis.__minMat : terrainMat;
-    if (dbg && dbg.minf !== undefined) {
-      const t = terrainMat.uniforms.uCanopy.value;
-      const f = [THREE.LinearMipmapLinearFilter, THREE.LinearMipmapNearestFilter, THREE.LinearFilter, THREE.NearestMipmapNearestFilter][dbg.minf];
-      if (t.minFilter !== f) { t.minFilter = f; t.needsUpdate = true; }
-    }
-    quad.material.uniforms.uFxaa.value = dbg && dbg.nofxaa ? 0 : 1;
-    renderer.setRenderTarget(rt);
-    renderer.setClearColor(0x000000, 1);
-    renderer.clear();
-    renderer.render(scene3, cam);
-    renderer.setRenderTarget(null);
+    // the column climbs out of the dish, accelerating away, a bright pulse at its head
+    const front = DISH_BOTTOM + 1400 * sa + 2500 * sa * sa;
+    beamMat.uniforms.uFront.value = t < T_TX0 ? -1e5 : front;
+    beamMat.uniforms.uPulseY.value = t < T_TX0 ? -1e5 : front - 120;
   }
 
   function bloom(t) {
@@ -1464,5 +1415,5 @@ void main() {
     g.fillRect(0, H * 0.64, W, H * 0.36);
   }
 
-  return { scene: dispScene, camera: dispCam, update, bloom, overlay };
+  return { scene: scene3, camera: cam, update, bloom, overlay };
 }
