@@ -1,6 +1,6 @@
 # ECHO
 
-A 2½-minute sci-fi short, built entirely in code. No footage, no samples, no AI voice API.
+A sci-fi short, built entirely in code. No footage, no samples, no AI voice API.
 
 > A radio signal arrived at 03:14 UTC. Nobody was listening for it.
 
@@ -45,4 +45,4 @@ Same method, in 3D with three.js, rendered in headless Chromium (software WebGL)
 | Scenes | `animated/scenes/valley.js`, `journey.js`, `observatory.js`, `signal.js`, `grid.js`, `ending.js` |
 | Score, sound design, mix | `animated/audio/score.py`, `instruments.py`, `mix.py` |
 | Capture | `animated/render.js` (4,440 frames at 24 fps) |
-| Build | `animated/build.sh` (run `npm install` in `movie/animated` first; it does this for you) |
+| Build | `animated/build.sh` (installs three.js with npm, then renders and encodes) |
