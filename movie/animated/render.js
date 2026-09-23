@@ -47,9 +47,18 @@ async function openPage(browser, timeline, env, only) {
   return { page, loaded };
 }
 
+const cdpSessions = new WeakMap();
+
 async function capture(page, t, file, W, H) {
   await page.evaluate(tt => window.renderFrame(tt), t);
-  await page.screenshot({ path: file, type: 'png', clip: { x: 0, y: 0, width: W, height: H } });
+  // CDP capture with optimizeForSpeed: same pixels as page.screenshot, a
+  // faster PNG encoder (bigger files)
+  let cdp = cdpSessions.get(page);
+  if (!cdp) { cdp = await page.context().newCDPSession(page); cdpSessions.set(page, cdp); }
+  const { data } = await cdp.send('Page.captureScreenshot', {
+    format: 'png', clip: { x: 0, y: 0, width: W, height: H, scale: 1 }, optimizeForSpeed: true,
+  });
+  fs.writeFileSync(file, Buffer.from(data, 'base64'));
 }
 
 (async () => {
