@@ -14,7 +14,7 @@ No TTS engine, no voice API, no samples, no models. This is a source-filter
   phonetics        [w iː] [h ɝː d] [j uː]: phone targets joined by coarticulated
                    transitions; /h/ = aspiration through the next vowel's tract;
                    /d/ = voice-bar closure, release burst, F2 locus transition.
-  character        vocal tract ~9 % longer than an adult male, a coherent
+  character        vocal tract ~10 % longer than an adult male, a coherent
                    sub-octave "second throat", a faint whispered shadow and a
                    slow chorus.
   transmission     radio band-limit, mild saturation, ionospheric fading and
@@ -47,7 +47,7 @@ PRE_ROLL = 0.05          # s of silence before the first sound
 TOTAL_LEN = 4.0          # s, length of voice.wav
 PEAK_DBFS = -3.0
 
-FORMANT_SCALE = 0.91     # < 1: a vocal tract ~9 % longer than an adult male's
+FORMANT_SCALE = 0.91     # < 1: a vocal tract ~10 % longer than an adult male's
 SUB_FORMANT_SCALE = 0.78  # the sub-octave layer's even larger "second throat"
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -127,7 +127,7 @@ SEGMENTS = [("W", 0.00, 0.12), ("I", 0.12, 0.59), ("H", 0.64, 0.79),
             ("ER", 0.79, 1.24), ("D", 1.24, 1.37), ("J", 1.37, 1.52),
             ("U", 1.52, 2.20)]
 
-# Level calibration (tuned by measuring the dry render; see report)
+# Level calibration (tuned by measuring renders: formant levels, /h/ and burst re vowel)
 ASP_GAIN = 0.45          # unmodulated aspiration (/h/, offsets)
 BREATH = 0.035           # pitch-synchronous breath noise mixed into voicing
 VBAR_GAIN = 0.10
@@ -136,6 +136,7 @@ SUB_DB = -13.0           # sub-octave layer re main layer (RMS)
 WHISPER_DB = -21.0
 CHORUS_DB = -12.0
 SOURCE_SHELF_DB = 8.0
+OPEN_PHASE_B1 = 45.0     # Hz added to B1 during the glottal open phase
 
 # Radio / space
 RADIO_DRIVE = 2.0        # tanh overdrive of the transmitter
@@ -304,9 +305,12 @@ def resonate(x, freq, bw):
 HIGH_POLES = ((4950.0, 450.0), (5900.0, 650.0))
 
 
-def cascade(x, ft, bw_scale=1.0, scale=FORMANT_SCALE):
+def cascade(x, ft, bw_scale=1.0, scale=FORMANT_SCALE, b1_add=0.0):
+    """F1..F5 (time-varying) then the fixed high poles. `b1_add` widens B1
+    sample by sample (open-glottis damping)."""
     for k in range(1, 6):
-        x = resonate(x, ft["F%d" % k], ft["B%d" % k] * bw_scale)
+        bw = ft["B%d" % k] * bw_scale + (b1_add if k == 1 else 0.0)
+        x = resonate(x, ft["F%d" % k], bw)
     for f, b in HIGH_POLES:
         x = resonate(x, np.full(len(x), f * scale), np.full(len(x), b))
     return x
@@ -367,7 +371,8 @@ def synthesize_voice():
     excitation = (av * src
                   + BREATH * av * gate * noise
                   + ASP_GAIN * ah * noise)
-    main = cascade(excitation, ft)
+    # while the glottis is open the subglottal airway damps F1 (pitch-synchronous B1)
+    main = cascade(excitation, ft, b1_add=OPEN_PHASE_B1 * flow)
 
     # --- /d/: voice bar through the closed tract, then the release burst
     vbar = resonate(src * avb * VBAR_GAIN, np.full(n, 190.0), np.full(n, 110.0))
@@ -488,7 +493,7 @@ def radio_space(dry, active):
     x = x / np.max(np.abs(x))
     a = np.exp(-1.0 / (0.045 * FS))
     env = np.sqrt(signal.lfilter([1 - a], [1, -a], x * x)) + 1e-9
-    thresh = 1.0 * rms(x[active])
+    thresh = rms(x[active])
     x = x * np.minimum(1.0, (env / thresh) ** (1.0 / COMP_RATIO - 1.0))
     x = x / np.max(np.abs(x))
     x = np.tanh(RADIO_DRIVE * x) / np.tanh(RADIO_DRIVE)
@@ -579,7 +584,7 @@ _GLYPHS = {
     "Y": "101101010010010", "Z": "111001010100111", ".": "000000000000010",
     "-": "000000111000000", "/": "001001010100100", ":": "000010000010000",
     "+": "000010111010000", "(": "010100100100010", ")": "010001001001010",
-    "=": "000111000111000", " ": "000000000000000",
+    "=": "000111000111000", "_": "000000000000111", " ": "000000000000000",
 }
 
 
@@ -710,13 +715,15 @@ def main():
     write_wav(os.path.join(BUILD, "voice_dry.wav"), dry_out)
     render_png(os.path.join(BUILD, "voice_spectrogram.png"), dry_out, final, info)
 
+    off = len(pre)
     act = np.flatnonzero(info["active"])
-    first, last = (act[0] + len(pre)) / FS, (act[-1] + len(pre)) / FS
-    thr = 10 ** (-60 / 20)
-    audible = np.flatnonzero(np.abs(final) > thr)
-    print("voice.wav      %.3f s, peak %.2f dBFS, first sound %.3f s, voice %.3f-%.3f s (%.2f s)"
-          % (len(final) / FS, 20 * np.log10(np.max(np.abs(final))), audible[0] / FS,
-             first, last, last - first))
+    voiced = np.flatnonzero(info["av"] > 1e-3)
+    audible = np.flatnonzero(np.abs(final) > 10 ** (-60 / 20))
+    print("voice.wav      %.3f s, peak %.2f dBFS, first sample above -60 dBFS at %.3f s, tail to %.3f s"
+          % (len(final) / FS, 20 * np.log10(np.max(np.abs(final))), audible[0] / FS, audible[-1] / FS))
+    print("phrase         sources active %.3f-%.3f s, voicing %.3f-%.3f s (%.2f s)"
+          % ((act[0] + off) / FS, (act[-1] + off) / FS, (voiced[0] + off) / FS,
+             (voiced[-1] + off) / FS, (voiced[-1] - voiced[0]) / FS))
     print("voice_dry.wav  %.3f s, peak %.2f dBFS" % (len(dry_out) / FS, 20 * np.log10(np.max(np.abs(dry_out)))))
     print("wrote", BUILD)
 

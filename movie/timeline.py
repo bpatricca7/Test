@@ -279,6 +279,9 @@ GRID_MOVE = {"start": 78.0, "end": 81.5}
 SCAN = {"start": 105.5, "end": 108.5}
 ZOOM = {"start": 113.5, "end": 116.5}
 VOICE = {"start": 117.0, "text": "We heard you."}
+# word onsets measured from build/voice.wav, so the subtitle lands on the voice
+VOICE["words"] = [{"w": w, "t": round(VOICE["start"] + dt, 3)}
+                  for w, dt in (("WE", 0.05), ("HEARD", 0.69), ("YOU.", 1.39))]
 TITLE = {"start": 138.5, "in": 2.0, "hold_until": 144.5, "out": 1.5, "text": "ECHO"}
 CREDITS = {
     "start": 146.5,
