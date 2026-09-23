@@ -142,9 +142,9 @@ FRIC = {
     "Z":  (-18.0, 3000, [(4700, 900, -4), (6100, 1200, 0), (7800, 1800, -3)]),
     "SH": (-8.0, 1500, [(2750, 500, 0), (3500, 700, -1), (5000, 1500, -8), (6600, 2000, -14)]),
     "ZH": (-15.0, 1500, [(2750, 500, 0), (3500, 700, -1), (5000, 1500, -8), (6600, 2000, -14)]),
-    "F":  (-25.0, 900, [(3000, 3000, -6), (7200, 4000, 0)]),
+    "F":  (-22.0, 900, [(3000, 3000, -6), (7200, 4000, 0)]),
     "V":  (-30.0, 900, [(3000, 3000, -6), (7200, 4000, 0)]),
-    "TH": (-26.0, 1100, [(4200, 3000, -4), (7600, 3500, 0)]),
+    "TH": (-23.0, 1100, [(4200, 3000, -4), (7600, 3500, 0)]),
     "DH": (-31.0, 1100, [(4200, 3000, -4), (7600, 3500, 0)]),
     "CH": (-8.0, 1500, [(2750, 500, 0), (3500, 700, -1), (5000, 1500, -8), (6600, 2000, -14)]),
     "JH": (-15.0, 1500, [(2750, 500, 0), (3500, 700, -1), (5000, 1500, -8), (6600, 2000, -14)]),
@@ -196,9 +196,12 @@ LEXICON = {
 # Prosodic markup: *word = pitch accent on its stressed syllable, **word = emphatic
 # accent; parts of hyphenated words take their own marks. Punctuation ends a
 # phrase: . ! = L-L% fall, ? = fall for wh-questions / L* H-H% rise for yes/no,
-# , = continuation. style: pitch (st), range (x accent size), loud (dB), rd (+Rd,
-# laxer/breathier), breath (x), pause (x), final (st of the final fall), tremor,
-# whisper, breathy, tones {phrase: tone}, creak.
+# , = continuation. style: pitch (st), range (x accent size), loud (dB re -20 LUFS),
+# rd (+Rd, laxer/breathier), breath (x), pause (x), final (st of the final fall),
+# tremor (fear shake), whisper, breathy (almost a whisper), tones {phrase: tone},
+# creak (phrase-final fry), gasp (in-breaths in pauses), trail (drawn-out ending),
+# deliberate (0..1: less non-final shortening, small gaps before stressed words),
+# tempo_max (how far the tempo fit may slow the line).
 SCRIPT = {
     "d01": dict(markup="*Maya. **Maya! *Wake **up.",
                 style=dict(pitch=3.5, range=1.35, loud=3.0, rd=-0.15, pause=0.55)),

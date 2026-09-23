@@ -79,9 +79,10 @@ export async function create(env) {
     let label = '';
     if (t < 9) {                                   // turntable
       const u = t / 8;
-      orbit(u * Math.PI * 2, 3.3, 1.25, 1.08, 42);
-      s.lookAt = camera.position.toArray();
-      s.headFollow = 0.2;
+      s.yaw = MARK.yaw + u * Math.PI * 2;
+      orbit(0, 2.9, 1.2, 1.06, 43);
+      s.lookAt = [MARK.pos[0] + Math.sin(s.yaw) * 3, 1.85, MARK.pos[2] + Math.cos(s.yaw) * 3];
+      s.headFollow = 0.5;
       label = 'turntable';
     } else if (t < 25) {                           // visemes, 1 s each
       const k = Math.min(14, Math.floor(t - 10));

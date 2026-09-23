@@ -29,7 +29,9 @@ export async function create(env) {
   function faceShot(h, st, view = 'front') {
     const c = faceControls(st, h.persona);
     const gz = st.gaze || { yaw: 0, pitch: 0 };
+    const t0 = performance.now();
     h.setFace(c, { L: gz, R: gz }, null);
+    if (window.__prof) console.warn('setFace ms', (performance.now() - t0).toFixed(1));
     h.group.visible = true;
     const E = h.L.eyeL;
     if (view === 'front') { camera.position.set(0.0, -0.01, 0.62); camera.lookAt(0, -0.025, 0.05); camera.fov = 20; }
@@ -43,9 +45,22 @@ export async function create(env) {
   return {
     scene, camera,
     update(t) {
+      window.__prof = true;
       for (const k in heads) heads[k].group.visible = false;
       const mode = Math.floor(t + 1e-6);
       const fr = t - mode;
+      if (mode >= 1300 && mode < 1310) {
+        const h = heads.maya;
+        faceShot(h, {}, 'front');
+        const v = mode - 1300;
+        h.skin.material.envMap = v === 1 ? null : h.skin.material.envMap;
+        if (v === 1) h.skin.material.needsUpdate = true;
+        if (v === 2) h.group.visible = false;
+        if (v === 3) { h.skin.visible = false; }
+        if (v === 4) { h.group.traverse(o => { if (o.isMesh && o !== h.skin) o.visible = false; }); }
+        if (v === 5) { h.skin.material = new THREE.MeshLambertMaterial({ color: 0x8a5a40 }); }
+        return;
+      }
       if (mode >= 1100 && mode < 1200) {
         const who = mode < 1150 ? 'maya' : 'sam';
         const i = (mode - 1100) % 50;

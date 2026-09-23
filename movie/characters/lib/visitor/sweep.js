@@ -62,9 +62,23 @@ const e0 = [0, 0, 0], e3 = [0, 0, 0], tmp = [0, 0, 0], rad = [0, 0, 0, 0];
  * shape(theta, u, out) -> radial multiplier (optional)
  * opts: { capStart: n rings, capEnd: n rings, blend: joint blend fraction }
  */
-export function sweep(buf, patch, pts, fronts, prof, shape, opts = {}) {
+export function sweep(buf, patch, pts0, fronts0, prof, shape, opts = {}) {
   const { nu, nv, cols, off } = patch;
   const P = buf.pos;
+  let pts = pts0, fronts = fronts0;
+  if (opts.tight) {
+    // keep bones straight: extra points near each interior joint, so the curve only fillets the joint
+    pts = [pts0[0]]; fronts = [];
+    const r = opts.tight;
+    for (let k = 0; k < pts0.length - 1; k++) {
+      const a = pts0[k], b = pts0[k + 1];
+      const L = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
+      const d = Math.min(r, L * 0.3) / (L || 1);
+      if (k > 0) { pts.push([a[0] + (b[0] - a[0]) * d, a[1] + (b[1] - a[1]) * d, a[2] + (b[2] - a[2]) * d]); fronts.push(fronts0[k]); }
+      if (k < pts0.length - 2) { pts.push([b[0] + (a[0] - b[0]) * d, b[1] + (a[1] - b[1]) * d, b[2] + (a[2] - b[2]) * d]); fronts.push(fronts0[k]); }
+      pts.push(b); fronts.push(fronts0[k]);
+    }
+  }
   const n = pts.length;
   // segment chord lengths
   const len = [], cum = [0];
@@ -76,8 +90,10 @@ export function sweep(buf, patch, pts, fronts, prof, shape, opts = {}) {
   const L = cum[n - 1];
   // ring arc positions with hemispherical caps
   const cs = opts.capStart || 0, ce = opts.capEnd || 0;
-  const r0 = cs ? prof(0.0, 0, L, rad)[0] : 0, cLen0 = cs ? (opts.capLenStart || Math.max(rad[0], rad[1])) : 0;
-  const r1 = ce ? prof(1.0, L, L, rad)[0] : 0, cLen1 = ce ? (opts.capLenEnd || Math.max(rad[0], rad[1])) : 0;
+  let rr = cs ? prof(0.0, 0, L, rad) : null;
+  const cLen0 = cs ? (opts.capLenStart || Math.max(rr[0], rr[1])) : 0;
+  rr = ce ? prof(1.0, L, L, rad) : null;
+  const cLen1 = ce ? (opts.capLenEnd || Math.max(rr[0], rr[1])) : 0;
   const body = nv - cs - ce;
   for (let j = 0; j < nv; j++) {
     let s, cf = 1;
@@ -126,8 +142,8 @@ export function sweep(buf, patch, pts, fronts, prof, shape, opts = {}) {
   const [ct, st] = cosT[key];
   for (let j = 0; j < nv; j++) {
     const s = S[j], u = L > 0 ? s / L : 0;
-    prof(u, s, L, rad);
-    const rz = rad[0] * CF[j], rx = rad[1] * CF[j];
+    const rp = prof(u, s, L, rad);
+    const rz = rp[0] * CF[j], rx = rp[1] * CF[j];
     const t = T[j], f = F[j], c = C[j];
     // A1 = front orthogonalised to the tangent, A2 = T x A1
     let d = f[0] * t[0] + f[1] * t[1] + f[2] * t[2];
@@ -144,7 +160,7 @@ export function sweep(buf, patch, pts, fronts, prof, shape, opts = {}) {
     const row = off + j * cols;
     for (let i = 0; i < nu; i++) {
       const th = i / nu * TAU;
-      const m = shape ? shape(th, u, s, rad) : 1;
+      const m = shape ? shape(th, u, s) : 1;
       const cz = ct[i] * rz * m, sx = st[i] * rx * m;
       const o = (row + i) * 3;
       P[o] = c[0] + a1x * cz + a2x * sx;

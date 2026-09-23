@@ -262,7 +262,7 @@ export function createBody(THREE, skull, hd) {
           r *= 1 + 0.07 * bump(th, Math.PI, 0.5) * sm(sE - 0.03, sE, s) * (1 - sm(sE + 0.02, sE + 0.05, s));  // elbow point
           return r;
         },
-        { capStart: 0, capEnd: 3 });
+        { capStart: 0, capEnd: 3, tight: 0.045, blend: 0.45 });
       // palm
       const pp = [add(W, mul(hand.Y, -0.012)), add(W, mul(hand.Y, 0.028)), add(W, mul(hand.Y, 0.062)), add(W, mul(hand.Y, 0.09))];
       sweep(buf, P.palms[ai], pp, [hand.Z, hand.Z, hand.Z], (u) => profile(PALM, u, tmpR),
@@ -271,7 +271,7 @@ export function createBody(THREE, skull, hd) {
         sweep(buf, P.fingers[ai * 3 + fi], f.pts, f.fronts.slice(1),
           (u) => { profile(FINGER, u, tmpR); const sc = fi === 0 ? 0.92 : 1; tmpR[0] *= sc; tmpR[1] *= sc; return tmpR; },
           (th, u) => 1 + 0.1 * bump(th, Math.PI, 0.7) * (bump(u * 7, 1.9, 0.5) + bump(u * 7, 3.6, 0.5)),
-          { capStart: 0, capEnd: 4, capLenEnd: 0.0065 });
+          { capStart: 0, capEnd: 4, capLenEnd: 0.0065, tight: 0.007, blend: 0.45 });
       });
     });
 
@@ -293,7 +293,7 @@ export function createBody(THREE, skull, hd) {
           r *= 1 + 0.1 * bump(th, Math.PI, 0.3) * sm(sA - 0.02, sA, s) * (1 - sm(sA + 0.01, sA + 0.03, s));         // heel spur
           return r;
         },
-        { capStart: 0, capEnd: 4, capLenEnd: 0.012 });
+        { capStart: 0, capEnd: 4, capLenEnd: 0.012, tight: 0.05, blend: 0.45 });
     });
 
     for (const p of buf.patches) buf.normals(p);
