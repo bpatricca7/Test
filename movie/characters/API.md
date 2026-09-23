@@ -68,6 +68,21 @@ maya.heights                                    // { standEye, sitEye } in metre
 | `armL`, `armR` | pose weights, blended: `{ rest, desk, overEyes, point, gesture, raise, pocket, chin }` (0..1 each). `desk` = hands on the desk or keyboard; `overEyes` = forearm across the eyes; `chin` = hand to chin, thinking |
 | `pointAt [x,y,z]` | target for `point` |
 | `gesturePhase` | drives the `gesture` motion (open-palm explaining beat) |
+| more arm poses (same blend dict) | `shrug`, `hips` (hands on hips), `cross` (arms folded), `reach` (hand to `reachAt [x,y,z]`, e.g. a key on the keyboard), `wave`, `lean` (both hands planted on the desk, bearing weight), `scratch` (hand to back of head), `beat` (a quick emphatic downward hand beat) |
+| `reachAt [x,y,z]` | target for `reach` |
+| `energy` 0..1 | how animated the idle/secondary motion is (0 = asleep/still, 1 = keyed up): scales breathing, weight shifts, fidgets and the follow-through on hair, headphones, cardigan and hood |
+| `startle` 0..1 | a whole-body flinch (shoulders up, head back, hands lift); the director keys it as a quick 0→1→0 |
+| `nod`, `shake` | extra head-motion amplitudes 0..1; the director supplies the phase through `head` or `t` |
+
+**Motion quality matters as much as the look. The user specifically asked for characters that are
+"really cool and move around and talk, not just static".** Design the rig for lively acting:
+- **Overlapping action and follow-through:** hair, bun, headphones, hood and the cardigan hem lag
+  and settle after head and body moves. Keep it deterministic: derive it from `t`, walk phase,
+  gesture phase and the pose values themselves.
+- **Walking:** believable weight transfer, hip sway, bounce and counter-rotation of shoulders against
+  hips. Arms swing unless another arm pose is weighted in.
+- **Talking:** secondary head motion is natural when combined with the director's nods and beats.
+- **Faces:** asymmetric where possible (a slightly lopsided smile reads alive). Keep the eyes wet and bright.
 
 Characters (see `timeline.py` CAST):
 - **maya**: early 50s radio astronomer. Brown skin, dark curly hair with grey streaks in a loose
@@ -98,6 +113,12 @@ v.getEye(out) / v.getHead(out)
 width, height}` (the main monitor screen: voxels and light pour out of it and assemble the body),
 `dissolve` 0..1 (it breaks into light that streams toward `dissolveTo [x,y,z]`, the window),
 `flicker` 0..1 (hologram instability).
+More motion (the Visitor must feel alive, curious and graceful, never a statue):
+`walk {phase, amount}` (a three-legged gait: feet plant at phase 0, 1/3, 2/3), `lean` −1..1,
+`crouch` 0..1 (folds its long legs to bring its head down to a human's eye level, about 1.6 m),
+`gesture` 0..1 with `gesturePhase` (a slow, elegant open-hand gesture with its long fingers),
+`reachAt [x,y,z]` + `reach` 0..1 (extends a hand toward a point), `tilt` (curious head tilt, rad),
+plus continuous idle life: a gentle float and sway, crest and finger micro-motion, and breathing light.
 
 Design (see CAST): tall (about 2.1 m) and slender, an elongated skull with a swept-back crest, very
 large dark almond eyes with a faint inner glow, no nose, a small delicate mouth, long three-fingered

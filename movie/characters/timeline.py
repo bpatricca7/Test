@@ -128,12 +128,13 @@ TEXT = [
 BEATS = {
     "exterior": {"start": 7.0, "end": 15.0},        # establishing: dish on the ridge, push toward the lit hut window
     "alarm": 12.0,                                  # hut alarm starts beeping (heard outside first)
-    "sam_wakes": {"start": 15.8, "end": 17.4},      # head up off the desk, blinks, looks at the screen
+    "sam_wakes": {"start": 15.8, "end": 17.4},      # jolts awake (startle at 15.85), head up, blinks, looks at the screen
     "maya_arm_off_eyes": 23.0,                      # Maya lifts her forearm off her eyes near the end of d02
     "maya_sits_forward": {"start": 27.0, "end": 28.6},  # out of the armchair's recline
     "maya_stands": {"start": 28.9, "end": 30.1},
     "maya_walks": {"start": 30.1, "end": 33.1},     # armchair -> behind Sam's chair at the desk
     "pulses": {"start": 39.0, "end": 45.5},         # on the main monitor: 1,679 pulses, accelerating
+    "maya_reach_key": {"start": 46.3, "end": 47.7},  # Maya leans over Sam and hits the key that folds it
     "fold": {"start": 48.0, "end": 55.5},           # the picture assembles row by row on the monitor
     "sam_points": {"start": 63.2, "end": 66.0},
     "zoom_visitor": {"start": 64.5, "end": 66.5},   # monitor zooms to the added figure
@@ -141,7 +142,10 @@ BEATS = {
     "sam_backs_off": {"start": 67.0, "end": 69.5},  # chair rolls back, he stands, steps back
     "materialize": {"start": 67.8, "end": 73.4},    # voxels lift out of the screen and assemble the Visitor
     "maya_steps_forward": {"start": 78.2, "end": 79.6},
+    "visitor_crouch": {"start": 84.3, "end": 88.6},  # folds down to Maya's eye level for "We were listening."
+    "visitor_gesture": {"start": 89.3, "end": 92.3},
     "visitor_raises_hand": {"start": 92.6, "end": 94.0},
+    "maya_raises_hand": {"start": 93.2, "end": 94.7},  # she answers the gesture: the two figures of the picture
     "dematerialize": {"start": 95.2, "end": 99.6},  # the Visitor dissolves into light that streams out of the window
     "lights_return": 99.2,
     "maya_to_window": {"start": 102.8, "end": 106.4},
@@ -155,20 +159,28 @@ BEATS = {
 MARKS = {
     "sam_chair":      {"pos": [-0.50, 0, -0.85], "yaw": math.pi},        # facing the main monitor (-Z)
     "sam_chair_back": {"pos": [-0.50, 0, -0.45], "yaw": math.pi * 0.8},  # after rolling back from the desk
-    "sam_retreat":    {"pos": [-1.10, 0, 0.15], "yaw": math.pi * 0.72},  # backed away, facing the Visitor
+    "sam_retreat":    {"pos": [-1.10, 0, 0.15], "yaw": math.pi * 0.58},  # backed away, facing the Visitor
+    "sam_behind_maya": {"pos": [-0.45, 0, 0.30], "yaw": math.pi * 0.64}, # edges in behind Maya
+    "sam_mid":        {"pos": [0.10, 0, 0.55], "yaw": math.pi * 0.54},   # follows her toward the window
     "maya_armchair":  {"pos": [-1.85, 0, 0.95], "yaw": math.pi * 0.78},  # armchair in the corner, facing the desk
     "maya_stand":     {"pos": [-1.55, 0, 0.55], "yaw": math.pi * 0.78},
     "maya_desk":      {"pos": [-0.05, 0, -0.42], "yaw": math.pi},         # behind Sam's right shoulder, facing the monitor
-    "maya_forward":   {"pos": [0.30, 0, -0.05], "yaw": math.pi * 0.5},    # stepped toward the Visitor (+X)
+    "maya_forward":   {"pos": [0.30, 0, -0.05], "yaw": math.pi * 0.63},   # stepped toward the Visitor
+    "maya_closer":    {"pos": [0.55, 0, -0.22], "yaw": math.pi * 0.61},   # one more step, face to face
     "maya_window":    {"pos": [1.90, 0, 0.30], "yaw": math.pi * 0.5},     # at the window, looking out (+X)
-    "visitor":        {"pos": [1.30, 0, -0.50], "yaw": -math.pi * 0.42},  # stands between the desk and the window
+    "visitor":        {"pos": [1.30, 0, -0.50], "yaw": -math.pi * 0.42},  # forms between the desk and the window
+    "visitor_step":   {"pos": [1.12, 0, -0.38], "yaw": -math.pi * 0.41},  # a few curious steps toward them
 }
 
 WALKS = [
     {"who": "maya", "start": 30.1, "end": 33.1, "from": "maya_stand", "to": "maya_desk", "steps": 5},
     {"who": "sam", "start": 68.4, "end": 69.5, "from": "sam_chair_back", "to": "sam_retreat", "steps": 3, "backward": True},
+    {"who": "visitor", "start": 75.9, "end": 77.1, "from": "visitor", "to": "visitor_step", "steps": 3, "gait": "tri"},
     {"who": "maya", "start": 78.2, "end": 79.6, "from": "maya_desk", "to": "maya_forward", "steps": 2},
-    {"who": "maya", "start": 102.8, "end": 106.0, "from": "maya_forward", "to": "maya_window", "steps": 5},
+    {"who": "sam", "start": 79.9, "end": 81.1, "from": "sam_retreat", "to": "sam_behind_maya", "steps": 3},
+    {"who": "maya", "start": 85.0, "end": 86.2, "from": "maya_forward", "to": "maya_closer", "steps": 2},
+    {"who": "sam", "start": 100.4, "end": 101.9, "from": "sam_behind_maya", "to": "sam_mid", "steps": 3},
+    {"who": "maya", "start": 102.8, "end": 106.0, "from": "maya_closer", "to": "maya_window", "steps": 5},
 ]
 # a footfall lands at the middle of each step interval (film.js drives the walk
 # cycle so the feet plant exactly there; the score puts footsteps on them)
@@ -196,9 +208,11 @@ SHOTS = [
     ("visitor_cu_1",    73.8, 77.0, "CU the Visitor: 'We heard you.'"),
     ("sam_reaction",    77.0, 78.6, "MCU Sam, terrified."),
     ("maya_ots_visitor", 78.6, 81.0, "Over the Visitor's shoulder onto Maya stepping forward."),
-    ("visitor_cu_2",    81.0, 87.0, "CU the Visitor, gentle."),
+    ("visitor_cu_2",    81.0, 84.4, "CU the Visitor, gentle."),
+    ("arc_two",         84.4, 87.0, "Arcing two-shot: the Visitor crouches to Maya's eye level, face to face in profile."),
     ("maya_cu_3",       87.0, 89.2, "CU Maya."),
-    ("visitor_ms",      89.2, 95.0, "MS the Visitor; it raises its hand like the figure in the picture."),
+    ("visitor_ms",      89.2, 93.0, "MS the Visitor, gesturing; it begins to raise its hand."),
+    ("hands_two",       93.0, 95.0, "Wide two-shot: the Visitor's hand up, and Maya slowly raising hers. The picture, made real."),
     ("dissolve_wide",   95.0, 100.6, "Wide: the Visitor dissolves; light streams out through the window."),
     ("sam_cu_after",    100.6, 102.8, "MCU Sam in the dark room."),
     ("maya_window",     102.8, 109.3, "Maya walks to the window; profile CU lit by starlight and the dish outside."),

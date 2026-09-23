@@ -98,8 +98,9 @@ export async function create(env) {
       const dir = Math.atan2(b.pos.x - a.pos.x, b.pos.z - a.pos.z);
       const heading = w.backward ? a.yaw : dir;
       const yaw = u < 0.2 ? angLerp(a.yaw, heading, smooth(0, 0.2, u)) : u > 0.8 ? angLerp(heading, b.yaw, smooth(0.8, 1, u)) : heading;
-      const cyc = (t - w.start) / (2 * d);
-      const phase = w.backward ? 0.5 - cyc : cyc;
+      let phase;
+      if (w.gait === 'tri') phase = (t - w.start) / (w.end - w.start) * (w.steps / 3) - 1 / 6;   // plants at 0, 1/3, 2/3
+      else { const cyc = (t - w.start) / (2 * d); phase = w.backward ? 0.5 - cyc : cyc; }
       const amount = smooth(w.start, w.start + d * 0.35, t) * (1 - smooth(w.end - d * 0.35, w.end, t));
       return { pos, yaw, walk: { phase, amount } };
     }
@@ -173,79 +174,146 @@ export async function create(env) {
   const tmp = new THREE.Vector3();
   const eyeOf = (c) => { const v = new THREE.Vector3(); c.getEye(v); return v; };
 
+  // speech-driven head motion: small nods on stressed syllables, a slow sway,
+  // and a settle at the end of the line
+  function talkHead(who, t, amt = 1) {
+    let pitch = 0, yaw = 0, roll = 0;
+    for (const d of TL.dialogue) {
+      if (d.speaker !== who) continue;
+      const dur = d.duration || d.target;
+      const k = U.window01(t, d.start - 0.1, d.start + dur + 0.5, 0.15, 0.5);
+      if (k <= 0) continue;
+      const lt = t - d.start;
+      const env = Math.max(loud(who, t), 0.5 * visemesFor(who, t).talking);
+      pitch += k * amt * (0.05 * env * Math.sin(lt * 9.0) + 0.035 * Math.sin(lt * 2.3 + d.start));
+      yaw += k * amt * 0.06 * Math.sin(lt * 1.7 + d.start * 3);
+      roll += k * amt * 0.03 * Math.sin(lt * 1.3 + d.start);
+      // a little downward nod as the line lands
+      pitch += amt * 0.07 * U.window01(t, d.start + dur - 0.25, d.start + dur + 0.45, 0.15, 0.3);
+    }
+    return { pitch, yaw, roll };
+  }
+  // a listener's nods while the other person talks
+  function listenNods(who, t, amt = 1) {
+    let p = 0;
+    for (const d of TL.dialogue) {
+      if (d.speaker === who) continue;
+      const dur = d.duration || d.target;
+      p += amt * 0.05 * U.window01(t, d.start + dur * 0.55, d.start + dur + 0.6, 0.2, 0.35) * Math.sin((t - d.start) * 6);
+    }
+    return p;
+  }
+  // a quick 0 -> 1 -> 0 pulse
+  const pulse = (t, at, up = 0.12, down = 0.5) => t < at ? 0 : t < at + up ? (t - at) / up : Math.max(0, 1 - (t - at - up) / down);
+  const addArm = (arm, k, v) => { arm[k] = Math.max(arm[k] || 0, v); };
+  function normArm(arm) {
+    let s = 0;
+    for (const k in arm) if (k !== 'rest') s += arm[k];
+    arm.rest = Math.max(0, 1 - s);
+  }
+
   function perfSam(t) {
     const s = { t, sit: 1, seatHeight: 0.47, brows: {}, eyes: {}, mouth: {}, armL: {}, armR: {} };
     const chair = mark('sam_chair');
-    // chair position: rolls back in the surge
     const rollU = smooth(B.sam_backs_off.start, B.sam_backs_off.start + 0.6, t);
     const chairPos = chair.pos.clone().lerp(mark('sam_chair_back').pos, rollU);
-    // swivel toward Maya for d01-d03, back to the screen as she comes over
-    let yaw = keys(t, [[17.6, Math.PI], [18.4, Math.PI + 1.25], [26.8, Math.PI + 1.25], [27.8, Math.PI + 0.35], [30.5, Math.PI + 0.35], [31.6, Math.PI]]);
+    // spins the chair round to Maya for d01-d03, back to the screen as she comes over,
+    // a nervous little swivel while the pulses run
+    let yaw = keys(t, [[16.9, Math.PI], [17.9, Math.PI + 1.3], [26.8, Math.PI + 1.3], [27.8, Math.PI + 0.4], [30.4, Math.PI + 0.4], [31.4, Math.PI]]);
+    yaw += 0.08 * Math.sin(t * 1.1) * U.window01(t, 39, 45.5, 1, 1);
     yaw = angLerp(yaw, mark('sam_chair_back').yaw, rollU);
     s.position = chairPos.toArray();
     s.yaw = yaw;
     s.chair = { pos: chairPos.toArray(), yaw };
 
-    // asleep on the desk -> wakes
-    const wake = smooth(B.sam_wakes.start, B.sam_wakes.end, t);
-    s.lean = lerp(0.95, 0.15, wake);
+    // asleep face-down on the desk -> jolts awake
+    const wake = smooth(B.sam_wakes.start + 0.05, B.sam_wakes.end, t);
+    s.startle = pulse(t, B.sam_wakes.start, 0.1, 0.55) + pulse(t, B.surge.start + 0.05, 0.1, 0.8);
+    s.energy = lerp(0, 0.85, wake);
+    s.lean = lerp(0.95, 0.1, wake);
     s.head = { pitch: lerp(0.55, 0, wake), yaw: 0, roll: lerp(0.25, 0, wake) };
-    s.armL.desk = lerp(1, 0.2, wake); s.armR.desk = lerp(1, 0.2, wake);
-    s.armL.rest = 1 - s.armL.desk; s.armR.rest = 1 - s.armR.desk;
-    let asleep = 1 - smooth(B.sam_wakes.start + 0.3, B.sam_wakes.start + 0.9, t);
+    addArm(s.armL, 'desk', 1 - wake); addArm(s.armR, 'desk', 1 - wake);
+    const asleep = 1 - smooth(B.sam_wakes.start + 0.1, B.sam_wakes.start + 0.5, t);
 
-    // working at the desk while Maya reads the screen
+    // "Maya. Maya! Wake up." - an arm flung out toward her
+    addArm(s.armR, 'point', 0.6 * U.window01(t, 18.9, 20.3, 0.25, 0.5));
+    // d03: both hands up, excited
+    addArm(s.armL, 'gesture', 0.8 * U.window01(t, 24.2, 26.8, 0.25, 0.5));
+    addArm(s.armR, 'gesture', 0.9 * U.window01(t, 24.2, 26.8, 0.2, 0.5));
+
+    // at the desk while Maya reads the screen; a head scratch on "then nothing"
     const atDesk = smooth(30.8, 32, t) * (1 - smooth(B.sam_backs_off.start - 0.3, B.sam_backs_off.start, t));
-    s.lean = lerp(s.lean, 0.35, atDesk);
-    s.armL.desk = Math.max(s.armL.desk, atDesk); s.armR.desk = Math.max(s.armR.desk, atDesk);
+    s.lean = lerp(s.lean, 0.35 + 0.1 * Math.sin(t * 0.7), atDesk);
+    const scratch = U.window01(t, 43.2, 45.0, 0.3, 0.4);
+    addArm(s.armL, 'desk', atDesk * (1 - scratch)); addArm(s.armR, 'desk', atDesk);
+    addArm(s.armL, 'scratch', scratch);
+    // d06 reading off the counter: a quick emphatic beat
+    addArm(s.armR, 'beat', 0.7 * U.window01(t, 41.3, 42.6, 0.15, 0.3));
+    // Maya reaches over him; he leans out of the way
+    const dodge = U.window01(t, B.maya_reach_key.start - 0.2, B.maya_reach_key.end + 0.2, 0.3, 0.4);
+    s.lean -= 0.25 * dodge;
 
-    // points at the screen
-    const pt = U.window01(t, B.sam_points.start, B.sam_points.end, 0.4, 0.5);
-    s.armR.point = pt; s.armR.desk *= 1 - pt;
-    s.pointAt = screen.center.clone().add(new THREE.Vector3(0.1, -0.05, 0)).toArray();
+    // "Then who is that?" - points hard at the screen
+    const pt = U.window01(t, B.sam_points.start, B.sam_points.end, 0.3, 0.5);
+    addArm(s.armR, 'point', pt); s.armR.desk = (s.armR.desk || 0) * (1 - pt);
+    s.pointAt = screen.center.clone().add(new THREE.Vector3(0.12, -0.06, 0)).toArray();
+    s.lean += 0.25 * pt;
 
-    // stands up and backs away from the forming Visitor
+    // the surge: shoves back from the desk, stands, backs away, then edges in behind Maya
     const stand = smooth(B.sam_backs_off.start + 0.6, B.sam_backs_off.start + 1.4, t);
     s.sit = 1 - stand;
     const walk = walkState('sam', t);
     if (walk) { s.position = walk.pos.toArray(); s.yaw = walk.yaw; s.walk = walk.walk; }
     else if (t > B.sam_backs_off.end) { const m = lastMark('sam', t, 'sam_chair_back'); s.position = m.pos.toArray(); s.yaw = m.yaw; }
-    else if (stand > 0) {
-      // standing up out of the chair, still facing the screen area
-      s.yaw = angLerp(yaw, mark('sam_retreat').yaw, stand);
-    }
+    else if (stand > 0) s.yaw = angLerp(yaw, mark('sam_retreat').yaw, stand);
     if (stand > 0) {
-      s.armL.desk *= 1 - stand; s.armR.desk *= 1 - stand;
-      s.armL.rest = stand; s.armR.rest = stand;
-      s.lean = lerp(s.lean, -0.15, stand);
+      s.armL.desk = (s.armL.desk || 0) * (1 - stand); s.armR.desk = (s.armR.desk || 0) * (1 - stand);
+      s.lean = lerp(s.lean, -0.2, stand);
+      // hands half-raised, defensive, while it forms
+      addArm(s.armL, 'raise', 0.35 * U.window01(t, 67.8, 76.5, 0.5, 1.5));
+      addArm(s.armR, 'raise', 0.25 * U.window01(t, 67.8, 76.5, 0.5, 1.5));
     }
+    // later: arms crossed, hugging himself; hands in the hoodie pocket at the end
+    addArm(s.armL, 'cross', 0.8 * U.window01(t, 81.6, 99.5, 1.0, 1.0));
+    addArm(s.armR, 'cross', 0.8 * U.window01(t, 81.6, 99.5, 1.0, 1.0));
+    addArm(s.armR, 'gesture', 0.6 * U.window01(t, 101.0, 102.9, 0.3, 0.5));
+    addArm(s.armL, 'pocket', U.window01(t, 103.2, 126, 0.8, 1));
+    addArm(s.armR, 'pocket', U.window01(t, 103.6, 126, 0.8, 1));
+    s.gesturePhase = t * 1.4;
+    s.reachAt = null;
 
     // gaze
-    const vHead = new THREE.Vector3(1.3, 1.95, -0.5);
+    const vHead = eyeOf(visitor);
     let look = screen.center.clone();
     const mayaEye = eyeOf(maya);
-    if (t > 17.8 && t < 27.6) look = mayaEye;
-    if (t > 36.2 && t < 36.9) look = mayaEye;                  // glance at her on "message"
+    if (t > 17.7 && t < 27.6) look = mayaEye;
+    if (t > 36.2 && t < 36.9) look = mayaEye;
+    if (t > 45.1 && t < 46.0) look = mayaEye;
     if (t > 58.6 && t < 59.4) look = mayaEye;
     if (t > 66.3) look = vHead;
-    if (t > 77.0 && t < 78.4) look = mayaEye;                  // "Maya..."
+    if (t > 77.0 && t < 78.4) look = mayaEye;
     if (t > 95.2) look = windowPt.clone().lerp(vHead, 1 - smooth(95.2, 98.5, t));
-    if (t > 100.4) look = mayaEye;
-    s.lookAt = look.clone().add(saccade(101, t, 0.04)).toArray();
-    s.headFollow = t > 66.3 && t < 95 ? 0.55 : 0.45;
+    if (t > 100.2) look = mayaEye;
+    s.lookAt = look.clone().add(saccade(101, t, 0.04 + 0.03 * U.window01(t, 66, 96, 1, 1))).toArray();
+    s.headFollow = t > 66.3 && t < 95 ? 0.6 : 0.5;
+    const th = talkHead('sam', t, 1.3);
+    s.head.pitch += th.pitch + listenNods('sam', t, 0.8);
+    s.head.yaw += th.yaw;
+    s.head.roll += th.roll;
+    s.shake = 0.5 * U.window01(t, 77.2, 78.3, 0.2, 0.3);
 
     // face
-    const fear = U.window01(t, 66.6, 96, 0.6, 2.0);
-    s.eyes.wide = 0.7 * fear + 0.3 * U.window01(t, 16.4, 19, 0.2, 1.5);
-    s.brows.raise = 0.6 * fear + 0.4 * U.window01(t, 62.3, 66, 0.3, 0.5) + 0.3 * U.window01(t, 18.6, 21, 0.2, 0.6);
-    s.brows.sad = 0.3 * U.window01(t, 100.6, 104, 0.4, 1.0);
-    s.mouth.smile = 0.25 * U.window01(t, 106.8, 113, 1.0, 1.0);
+    const fear = U.window01(t, 66.6, 96, 0.4, 2.0);
+    s.eyes.wide = 0.8 * fear + 0.4 * U.window01(t, 16.0, 19, 0.1, 1.5) + 0.5 * U.window01(t, 62.3, 66.3, 0.3, 0.4);
+    s.brows.raise = 0.6 * fear + 0.5 * U.window01(t, 62.3, 66, 0.3, 0.5) + 0.4 * U.window01(t, 18.6, 21, 0.2, 0.6) + 0.3 * U.window01(t, 24.2, 27, 0.2, 0.5);
+    s.brows.sad = 0.35 * U.window01(t, 100.6, 104, 0.4, 1.0) + 0.3 * fear;
+    s.brows.furrow = 0.35 * U.window01(t, 40.8, 45.0, 0.5, 0.8);
+    s.mouth.smile = 0.35 * U.window01(t, 106.8, 126, 1.0, 1.0) + 0.2 * U.window01(t, 33.0, 36.5, 0.8, 0.8);
     const lip = visemesFor('sam', t);
     s.visemes = lip.visemes;
-    s.mouth.jaw = 0.12 * fear * (1 - lip.talking);                // mouth slightly open in fear
-    s.blink = Math.max(asleep, blinkAt('sam', t, [16.1, 16.45, 66.6]));
-    if (isSpeaking('sam', t)) s.armR.gesture = Math.max(s.armR.gesture || 0, 0.35 * (1 - pt) * (1 - (s.armR.desk || 0)));
-    s.gesturePhase = t * 1.3;
+    s.mouth.jaw = 0.14 * fear * (1 - lip.talking) + 0.2 * U.window01(t, 66.8, 73.5, 0.3, 1.5) * (1 - lip.talking);
+    s.blink = Math.max(asleep, blinkAt('sam', t, [16.25, 16.55, 66.62]));
+    normArm(s.armL); normArm(s.armR);
     return s;
   }
 
@@ -253,15 +321,16 @@ export async function create(env) {
     const s = { t, sit: 1, seatHeight: 0.42, brows: {}, eyes: {}, mouth: {}, armL: {}, armR: {} };
     const chair = mark('maya_armchair');
     s.position = chair.pos.toArray(); s.yaw = chair.yaw;
-    // asleep in the armchair, forearm over the eyes
     const armOff = smooth(B.maya_arm_off_eyes, B.maya_arm_off_eyes + 0.9, t);
     s.recline = 1 - smooth(B.maya_sits_forward.start, B.maya_sits_forward.end, t);
-    s.armL.overEyes = 1 - armOff;
-    s.armL.rest = armOff; s.armR.rest = 1;
-    s.lean = 0.35 * U.window01(t, B.maya_sits_forward.start, B.maya_stands.end, 0.6, 0.5);
+    addArm(s.armL, 'overEyes', 1 - armOff);
+    s.lean = 0.4 * U.window01(t, B.maya_sits_forward.start, B.maya_stands.end, 0.6, 0.5);
     const stand = smooth(B.maya_stands.start, B.maya_stands.end, t);
     s.sit = 1 - stand;
+    s.energy = lerp(0.05, 0.55, smooth(22.5, 28, t)) + 0.3 * U.window01(t, 66.5, 97, 1, 2);
     if (stand > 0) s.position = chair.pos.clone().lerp(mark('maya_stand').pos, stand).toArray();
+    // stretches and rubs her neck as she gets up
+    addArm(s.armR, 'scratch', 0.7 * U.window01(t, 28.4, 30.0, 0.4, 0.4));
 
     const walk = walkState('maya', t);
     if (walk) { s.position = walk.pos.toArray(); s.yaw = walk.yaw; s.walk = walk.walk; s.sit = 0; s.recline = 0; }
@@ -270,24 +339,36 @@ export async function create(env) {
       s.position = m.pos.toArray(); s.yaw = m.yaw; s.sit = 0; s.recline = 0;
     }
 
-    // at the desk: leans in to read, one hand on the back of Sam's chair
+    // at the desk: hands planted, leaning in to read; hand to chin; the explaining beat;
+    // then she reaches over Sam and hits the key
     const desk = U.window01(t, B.maya_walks.end - 0.2, B.maya_steps_forward.start, 0.6, 0.4);
-    s.lean = Math.max(s.lean, 0.25 * desk);
-    s.armR.chin = 0.8 * U.window01(t, 36.4, 40.5, 0.5, 0.6);
-    s.armR.gesture = 0.7 * U.window01(t, 44.9, 47.4, 0.3, 0.6);
-    s.gesturePhase = (t - 44.9) * 1.6;
-    s.armL.desk = 0.6 * desk;
-    s.armR.rest = 1 - (s.armR.chin + s.armR.gesture);
-    s.armL.rest = Math.max(0, s.armL.rest - s.armL.desk);
-    // step toward the Visitor; later to the window
-    if (t > B.maya_to_window.end) { s.armL.rest = 1; s.armR.rest = 0.6; s.armR.chin = 0; }
+    const reach = U.window01(t, B.maya_reach_key.start, B.maya_reach_key.end, 0.45, 0.45);
+    const chin = 0.85 * U.window01(t, 36.4, 40.8, 0.5, 0.6);
+    const explain = 0.8 * U.window01(t, 44.9, B.maya_reach_key.start + 0.2, 0.25, 0.3);
+    addArm(s.armL, 'lean', desk * (1 - chin * 0.2) * (1 - reach) * 0.9);
+    addArm(s.armR, 'lean', desk * (1 - chin) * (1 - explain) * (1 - reach) * 0.9);
+    addArm(s.armR, 'chin', chin);
+    addArm(s.armR, 'gesture', explain);
+    addArm(s.armR, 'reach', reach);
+    s.reachAt = [screen.center.x + 0.05, 0.78, screen.center.z + 0.28];
+    s.lean = Math.max(s.lean, 0.3 * desk + 0.35 * reach);
+    s.gesturePhase = (t - 44.9) * 1.7;
+    // awe at the picture: hand to mouth-ish (chin), then steps back a touch
+    addArm(s.armL, 'chin', 0.6 * U.window01(t, 56.4, 61.5, 0.6, 0.8));
+    // facing the Visitor: arms slightly out, open; gestures on her questions
+    addArm(s.armR, 'gesture', 0.55 * U.window01(t, 78.9, 80.6, 0.3, 0.5) + 0.6 * U.window01(t, 87.2, 88.9, 0.3, 0.5));
+    s.gesturePhase = t > 70 ? (t - 78.9) * 1.2 : s.gesturePhase;
+    // she raises her hand to answer its gesture
+    addArm(s.armR, 'raise', U.window01(t, B.maya_raises_hand.start, B.dematerialize.start + 1.5, 1.2, 1.0));
+    // at the window: a hand on the sill... on her hip, looking out
+    addArm(s.armL, 'hips', 0.7 * U.window01(t, 106.0, 126, 0.8, 1));
 
     // gaze
-    const vHead = new THREE.Vector3(1.3, 1.95, -0.5);
+    const vHead = eyeOf(visitor);
     const samEye = eyeOf(sam);
     let look = samEye;
-    if (t > 23.4 && t < 27.4) look = samEye;
     if (t > 30.6) look = screen.center.clone();
+    if (t > 45.2 && t < 46.2) look = samEye;
     if (t > 58.4 && t < 59.2) look = samEye;
     if (t > 63.2 && t < 64.2) look = samEye;
     if (t > 67.0) look = vHead;
@@ -295,34 +376,49 @@ export async function create(env) {
     if (t > 101.0 && t < 102.9) look = samEye;
     if (t > 102.9) look = dishOutside;
     s.lookAt = look.clone().add(saccade(202, t, 0.035)).toArray();
-    s.headFollow = 0.45;
+    s.headFollow = 0.5;
+    const th = talkHead('maya', t, 1.0);
+    s.head = { pitch: th.pitch + listenNods('maya', t, 1.0), yaw: th.yaw, roll: th.roll + 0.12 * U.window01(t, 84.4, 88.6, 0.8, 0.8) };
+    s.nod = 0.4 * U.window01(t, 86.2, 87.0, 0.2, 0.3);
 
     // face
-    const asleep = 1 - smooth(B.maya_arm_off_eyes + 0.3, B.maya_arm_off_eyes + 0.8, t);
-    s.blink = Math.max(asleep * (t < B.maya_arm_off_eyes + 1 ? 1 : 0), blinkAt('maya', t, [23.5, 56.5, 67.5]));
-    s.eyes.squint = 0.4 * U.window01(t, 23, 27, 0.5, 1.2) + 0.25 * U.window01(t, 33.5, 44, 0.8, 1);
-    s.eyes.wide = 0.5 * U.window01(t, 56.2, 60, 0.5, 1.5) + 0.55 * U.window01(t, 66.8, 76, 0.6, 2.5);
-    s.brows.furrow = 0.5 * U.window01(t, 33.5, 44, 0.8, 1.0);
-    s.brows.raise = 0.6 * U.window01(t, 56.2, 61, 0.5, 1.5) + 0.5 * U.window01(t, 66.8, 76, 0.6, 3.0);
-    s.mouth.smile = 0.18 * U.window01(t, 21.2, 23.8, 0.3, 0.8) + 0.55 * U.window01(t, 107.0, 113, 0.8, 1.0)
-      + 0.2 * U.window01(t, 84.6, 88, 0.6, 1.0);
+    const asleep = t < B.maya_arm_off_eyes + 1 ? 1 - smooth(B.maya_arm_off_eyes + 0.3, B.maya_arm_off_eyes + 0.8, t) : 0;
+    s.blink = Math.max(asleep, blinkAt('maya', t, [23.6, 56.5, 67.5]));
+    s.eyes.squint = 0.45 * U.window01(t, 23, 27, 0.5, 1.2) + 0.3 * U.window01(t, 33.5, 44, 0.8, 1);
+    s.eyes.wide = 0.55 * U.window01(t, 56.2, 60, 0.5, 1.5) + 0.6 * U.window01(t, 66.8, 76, 0.4, 2.5);
+    s.brows.furrow = 0.55 * U.window01(t, 33.5, 44, 0.8, 1.0);
+    s.brows.raise = 0.7 * U.window01(t, 56.2, 61, 0.5, 1.5) + 0.55 * U.window01(t, 66.8, 76, 0.4, 3.0) + 0.3 * U.window01(t, 21.4, 23.2, 0.3, 0.6);
+    s.brows.sad = 0.35 * U.window01(t, 93.0, 99.5, 1.0, 1.5);
+    s.mouth.smile = 0.22 * U.window01(t, 21.2, 23.8, 0.3, 0.8) + 0.6 * U.window01(t, 107.0, 126, 0.8, 1.0)
+      + 0.3 * U.window01(t, 84.6, 88, 0.6, 1.0) + 0.35 * U.window01(t, 93.4, 96, 0.6, 1.0);
     const lip = visemesFor('maya', t);
     s.visemes = lip.visemes;
+    s.mouth.jaw = 0.12 * U.window01(t, 56.2, 58.5, 0.3, 0.6) * (1 - lip.talking);
+    normArm(s.armL); normArm(s.armR);
     return s;
   }
 
   function perfVisitor(t) {
-    const m = mark('visitor');
+    const m = lastMark('visitor', t, 'visitor');
     const s = { t, position: m.pos.toArray(), yaw: m.yaw };
+    const walk = walkState('visitor', t);
+    if (walk) { s.position = walk.pos.toArray(); s.yaw = walk.yaw; s.walk = walk.walk; }
     s.materialize = smooth(B.materialize.start, B.materialize.end, t);
     s.materializeFrom = { center: screen.center.toArray(), width: screen.width, height: screen.height };
     s.dissolve = smooth(B.dematerialize.start, B.dematerialize.end, t);
     s.dissolveTo = windowPt.toArray();
-    s.flicker = 0.15 + 0.6 * U.window01(t, B.surge.start, B.materialize.end, 0.2, 1.5) + 0.4 * s.dissolve;
+    s.flicker = 0.12 + 0.6 * U.window01(t, B.surge.start, B.materialize.end, 0.2, 1.5) + 0.4 * s.dissolve;
     const look = t < 76.5 ? eyeOf(sam).lerp(eyeOf(maya), 0.5) : t < 78.2 ? eyeOf(sam) : eyeOf(maya);
     s.lookAt = look.add(saccade(303, t, 0.02)).toArray();
-    s.headFollow = 0.55;
-    s.head = { roll: 0.08 * Math.sin(t * 0.4) + 0.12 * U.window01(t, 84.6, 88.6, 0.8, 1) };
+    s.headFollow = 0.6;
+    const th = talkHead('visitor', t, 0.8);
+    // curious tilts while it listens and looks them over
+    s.tilt = 0.18 * Math.sin(t * 0.35 + 1) * U.window01(t, 73, 95, 1.5, 1.5) + 0.25 * U.window01(t, 79.0, 80.8, 0.5, 0.6);
+    s.head = { pitch: th.pitch, yaw: th.yaw, roll: th.roll };
+    s.crouch = U.window01(t, B.visitor_crouch.start, B.visitor_crouch.end, 1.0, 1.1);
+    s.lean = 0.3 * s.crouch + 0.15 * U.window01(t, 76.0, 78.0, 0.6, 0.8);
+    s.gesture = U.window01(t, B.visitor_gesture.start, B.visitor_gesture.end, 0.6, 0.5) + 0.4 * U.window01(t, 81.2, 83.6, 0.5, 0.5);
+    s.gesturePhase = t * 0.9;
     s.blink = blinkAt('visitor', t, [80.2, 91.6]);
     s.raiseHand = U.window01(t, B.visitor_raises_hand.start, B.dematerialize.start + 1.2, 1.1, 1.0);
     const lip = visemesFor('visitor', t);
@@ -359,7 +455,8 @@ export async function create(env) {
     int_wide: (t, u) => { P.set(lerp(2.15, 1.9, u), 1.72, lerp(1.75, 1.5, u)); T.set(-0.95, 0.95, -0.55); return 52; },
     maya_chair_cu: (t, u) => faceShot(maya, MK.maya_armchair.yaw, t, u, { dist: 0.78, side: -0.12, up: 0.05, fov: 32, seed: 3 }),
     sam_mcu: (t, u) => faceShot(sam, 0, t, u, { dist: 1.05, side: 0.2, up: -0.02, fov: 34, lookFrom: eyeOf(maya), seed: 5 }),
-    int_wide_up: (t, u) => { P.set(lerp(1.95, 1.7, u), 1.62, lerp(1.6, 1.35, u)); T.set(lerp(-1.3, -0.6, easeInOut(u)), 1.0, lerp(0.3, -0.5, easeInOut(u))); return 50; },
+    int_wide_up: (t, u) => { P.set(lerp(1.95, 1.55, u), 1.6, lerp(1.6, 1.25, u)).add(hand(t, 0.008, 8));
+      T.copy(eyeOf(maya)).add(new THREE.Vector3(0.1, -0.35, 0)); return 50; },   // tracks her across the room
     screen_ots: (t, u) => { P.set(lerp(0.55, 0.45, u), 1.55, lerp(0.55, 0.35, u)).add(hand(t, 0.008, 7)); T.copy(screen.center).add(new THREE.Vector3(0.05, 0.02, 0)); return 38; },
     screen_insert: (t, u) => { P.copy(screen.center).add(new THREE.Vector3(0, 0, lerp(0.52, 0.44, u))).add(hand(t, 0.002, 9)); T.copy(screen.center); return 40; },
     maya_cu_1: (t, u) => faceShot(maya, 0, t, u, { dist: 0.62, side: 0.1, up: 0.0, fov: 30, lookFrom: screen.center, seed: 11 }),
@@ -374,6 +471,19 @@ export async function create(env) {
       P.copy(v).addScaledVector(f, -0.45).addScaledVector(r, -0.35).add(new THREE.Vector3(0, -0.12, 0)).add(hand(t, 0.006, 25)); T.copy(m).add(new THREE.Vector3(0, -0.05, 0)); return 38; },
     visitor_cu_2: (t, u) => faceShot(visitor, MK.visitor.yaw, t, u, { dist: 0.8, side: -0.14, up: -0.04, fov: 29, lookFrom: eyeOf(maya), seed: 27, push: 0.08 }),
     maya_cu_3: (t, u) => faceShot(maya, 0, t, u, { dist: 0.66, side: -0.12, up: 0.0, fov: 30, lookFrom: eyeOf(visitor), seed: 29 }),
+    arc_two: (t, u) => {
+      // orbit around the space between them as it folds down to her eye level
+      const v = eyeOf(visitor), m = eyeOf(maya), mid = v.clone().lerp(m, 0.5);
+      const axis = v.clone().sub(m).setY(0).normalize(); const side = new THREE.Vector3(axis.z, 0, -axis.x); if (side.z < 0) side.negate();   // the open side of the room
+      const ang = lerp(-0.55, 0.35, easeInOut(u));
+      const dir = side.clone().multiplyScalar(Math.cos(ang)).addScaledVector(axis, Math.sin(ang));
+      P.copy(mid).addScaledVector(dir, 1.55).add(new THREE.Vector3(0, -0.05, 0)); T.copy(mid).add(new THREE.Vector3(0, -0.06, 0)); return 36;
+    },
+    hands_two: (t, u) => {
+      const v = eyeOf(visitor), m = eyeOf(maya), mid = v.clone().lerp(m, 0.5);
+      const axis = v.clone().sub(m).setY(0).normalize(); const side = new THREE.Vector3(axis.z, 0, -axis.x); if (side.z < 0) side.negate();   // the open side of the room
+      P.copy(mid).addScaledVector(side, lerp(2.05, 1.9, u)).add(new THREE.Vector3(0, -0.25, 0)); T.copy(mid).add(new THREE.Vector3(0, -0.2, 0)); return 42;
+    },
     visitor_ms: (t, u) => { const v = eyeOf(visitor); const f = facing(MK.visitor.yaw);
       P.copy(v).addScaledVector(f, lerp(2.3, 2.0, u)).add(new THREE.Vector3(0, -0.45, 0)).add(hand(t, 0.008, 31)); T.copy(v).add(new THREE.Vector3(0, -0.45, 0)); return 38; },
     dissolve_wide: (t, u) => { P.set(-1.85, 1.45, lerp(-1.0, -0.8, u)).add(hand(t, 0.008, 33)); T.set(lerp(1.3, 2.2, smooth(0.2, 0.9, u)), 1.3, lerp(-0.4, 0.2, u)); return 50; },
