@@ -89,12 +89,12 @@ FORMANT_KEYS = [
 
 # Voicing amplitude (linear, 1 = vowel nucleus)
 AV_KEYS = [
-    (0.000, 0.0), (0.035, 0.30), (0.090, 0.55), (0.200, 0.92), (0.300, 1.0),
-    (0.450, 0.92), (0.530, 0.45), (0.590, 0.0),
+    (0.000, 0.0), (0.035, 0.45), (0.090, 0.85), (0.200, 1.45), (0.300, 1.58),
+    (0.450, 1.45), (0.530, 0.65), (0.590, 0.0),
     (0.740, 0.0), (0.795, 0.60), (0.865, 1.0), (1.100, 0.95), (1.195, 0.70),
     (1.240, 0.0),
-    (1.345, 0.0), (1.362, 0.55), (1.420, 0.78), (1.600, 0.96), (1.850, 0.86),
-    (2.050, 0.35), (2.180, 0.0), (2.300, 0.0),
+    (1.345, 0.0), (1.362, 0.65), (1.420, 0.95), (1.600, 1.22), (1.850, 1.08),
+    (2.050, 0.42), (2.180, 0.0), (2.300, 0.0),
 ]
 
 # Unmodulated aspiration (/h/, breathy offsets, release aspiration of /d/)
@@ -128,7 +128,7 @@ SEGMENTS = [("W", 0.00, 0.12), ("I", 0.12, 0.59), ("H", 0.64, 0.79),
             ("U", 1.52, 2.20)]
 
 # Level calibration (tuned by measuring the dry render; see report)
-ASP_GAIN = 0.75          # unmodulated aspiration (/h/, offsets)
+ASP_GAIN = 0.45          # unmodulated aspiration (/h/, offsets)
 BREATH = 0.035           # pitch-synchronous breath noise mixed into voicing
 VBAR_GAIN = 0.10
 BURST_GAIN = 0.22
@@ -139,11 +139,12 @@ SOURCE_SHELF_DB = 8.0
 
 # Radio / space
 RADIO_DRIVE = 2.0        # tanh overdrive of the transmitter
+COMP_RATIO = 3.0         # transmitter AGC
 STATIC_DB = -30.0        # static re voice RMS
-CARRIER_DB = -33.0
+CARRIER_DB = -37.0
 THROW_FROM = 1.38        # s (phrase time): "you" is thrown into the echo
 ECHO_TAPS = ((0.56, -8.0, 2000.0), (1.12, -15.0, 1400.0))   # (delay s, dB, lowpass Hz)
-REVERB_DB = -9.0
+REVERB_DB = -12.0
 
 
 # ---------------------------------------------------------------------------
@@ -433,9 +434,11 @@ def peaking_eq(f0, gain_db, q):
 
 def reverb_ir(rng, length=3.2, predelay=0.05):
     """Dark cavern: exponentially decaying noise whose highs die first,
-    a slow diffuse build-up and a few sparse early reflections."""
+    a slow diffuse build-up and a few sparse early reflections. Normalized
+    so its mean power gain over the radio band (250-3500 Hz) is 0 dB."""
     n = int(length * FS)
     t = np.arange(n) / FS
+    white = rng.standard_normal(n)
     ir = np.zeros(n)
     bands = [(None, 450, 2.9), (450, 1000, 2.6), (1000, 2000, 1.9),
              (2000, 3500, 1.2), (3500, None, 0.6)]          # (lo, hi, RT60 s)
@@ -446,14 +449,17 @@ def reverb_ir(rng, length=3.2, predelay=0.05):
             sos = signal.butter(4, lo, "highpass", fs=FS, output="sos")
         else:
             sos = signal.butter(4, [lo, hi], "bandpass", fs=FS, output="sos")
-        band = signal.sosfiltfilt(sos, rng.standard_normal(n))
-        ir += band / rms(band) * 10 ** (-3.0 * t / rt)
+        ir += signal.sosfiltfilt(sos, white) * 10 ** (-3.0 * t / rt)
+    ir = one_pole_lp(ir, 2500.0)                           # a dark room
     ir *= 1.0 - np.exp(-t / 0.07)                          # cavernous swell-in
     for d, g in [(0.011, 0.9), (0.023, -0.7), (0.037, 0.6), (0.058, -0.45), (0.083, 0.35)]:
         k = int(d * FS)
-        ir[k:k + 48] += g * np.hanning(48) * 3.0
+        ir[k:k + 48] += g * np.hanning(48)
     ir = np.concatenate([np.zeros(int(predelay * FS)), ir])
-    return ir / np.sqrt(np.sum(ir ** 2))
+    spec = np.abs(np.fft.rfft(ir)) ** 2
+    f = np.fft.rfftfreq(len(ir), 1 / FS)
+    band = (f >= 250) & (f <= 3500)
+    return ir / np.sqrt(np.mean(spec[band]))
 
 
 def envelope_follower(gate, attack_s, release_s):
@@ -475,12 +481,18 @@ def radio_space(dry, active):
     t = np.arange(n) / FS
     sos = lambda order, f, kind: signal.butter(order, f, kind, fs=FS, output="sos")
 
-    # 1. transmitter: overdriven a little, then squeezed into a narrow channel
-    x = dry / np.max(np.abs(dry))
-    x = np.tanh(RADIO_DRIVE * x) / np.tanh(RADIO_DRIVE)
-    x = signal.sosfilt(sos(3, 250.0, "highpass"), x)
+    # 1. transmitter: narrow channel, slow AGC-style compression, soft overdrive
+    x = signal.sosfilt(sos(3, 230.0, "highpass"), dry)
     x = signal.sosfilt(sos(5, 3500.0, "lowpass"), x)
     x = signal.lfilter(*peaking_eq(1400.0, 3.0, 0.8), x)       # small-speaker "honk"
+    x = x / np.max(np.abs(x))
+    a = np.exp(-1.0 / (0.045 * FS))
+    env = np.sqrt(signal.lfilter([1 - a], [1, -a], x * x)) + 1e-9
+    thresh = 1.0 * rms(x[active])
+    x = x * np.minimum(1.0, (env / thresh) ** (1.0 / COMP_RATIO - 1.0))
+    x = x / np.max(np.abs(x))
+    x = np.tanh(RADIO_DRIVE * x) / np.tanh(RADIO_DRIVE)
+    x = signal.sosfilt(sos(4, 3500.0, "lowpass"), x)           # channel filter
 
     # 2. path: slow fading and a second, drifting ray (moving multipath notches)
     x = x * (1.0 + 0.08 * smooth_noise(n, 3.0, rng))

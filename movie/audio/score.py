@@ -356,7 +356,7 @@ def arp_every(k):
 
 
 def arp_gain(k):
-    return float(np.interp(k, [-48, -32, 0, 48, 73, 90, 104], [-31, -29, -27, -24, -23, -27, -40]))
+    return float(np.interp(k, [-48, -32, 0, 48, 73, 90, 104], [-32, -29, -26, -22, -21, -26, -40]))
 
 
 def music_seg2(ir):
@@ -379,7 +379,7 @@ def music_seg2(ir):
         tt = tvec(p.shape[1], t0)
         phase = np.mod(tt - K0, 2 * STEP)
         pump = 1.0 - 0.3 * np.exp(-phase / 0.09) if k >= -16 else 1.0
-        bus.add(p * pump, t0, gain=db(-22), send=0.45)
+        bus.add(p * pump, t0, gain=db([-23.5, -22, -20.5, -18.5, -19, -20][i]), send=0.45)
         bus.add(sub(hz(root), dur, 0.8, 1.4), t0, gain=db(-28))
 
         # arpeggio
@@ -497,8 +497,8 @@ def music_seg3(ir):
     rv = CUES["reveal"]
     st = pad(chord("B1 B2 F3 G#3 C4 F4"), 3.2, att=0.012, rel=2.8, voices=6, detune=14, seed=902, q=1.3,
              fc=[(0, 400), (0.08, 3500), (0.6, 1200), (3.2, 350)])
-    bus.add(st, rv, gain=db(-9), send=0.7)
-    bus.add(thump(110, 52, 3.0, tau_pitch=0.06, tau_amp=0.9, noise=0.3, seed=903), rv, gain=db(-11), send=0.5)
+    bus.add(st, rv, gain=db(-13), send=0.7)
+    bus.add(thump(110, 52, 3.0, tau_pitch=0.06, tau_amp=0.9, noise=0.3, seed=903), rv, gain=db(-14), send=0.5)
 
     # after the reveal: slow tritone pulse B1 / F2
     for i, tb in enumerate(np.arange(rv + 1.3, 113.4, 0.66)):
@@ -539,8 +539,8 @@ def music_seg4(ir):
     bus.add(np.sin(TAU * hz("D6") * tvec(int(2.5 * SR))) * fade_env(int(2.5 * SR), 1.2, 1.0), v + 0.3,
             gain=db(-56), send=0.9)
 
-    b0 = v + 1.9  # 118.9: the swell begins
-    b1 = b0 + 2.5  # 121.4: bVI -> I (B major)
+    b0 = v + 2.1  # 119.1: the swell begins as the last word ends
+    b1 = b0 + 2.4  # 121.5: bVI -> I (B major)
     # G major 9: strings, choir, low brass, sub, timpani, a cascade of bells
     st = pad(chord("G2 D3 B3 F#4 A4 D5 B5"), b1 - b0 + 2.6, att=1.1, rel=2.4, voices=7, detune=11,
              seed=1000, spread=0.95, fc=[(0, 700), (1.2, 4200), (3.5, 3000)])
@@ -549,10 +549,10 @@ def music_seg4(ir):
             b0, gain=db(-11), send=0.8)
     br = pad(chord("G1 G2 D3"), b1 - b0 + 2.4, att=0.9, rel=2.2, voices=4, detune=7, seed=1002, q=0.9,
              fc=[(0, 250), (1.0, 900), (3.0, 500)], spread=0.3)
-    bus.add(br, b0, gain=db(-9), send=0.4)
-    bus.add(sub(hz("G1"), b1 - b0 + 2.4, 0.9, 2.2), b0, gain=db(-13))
+    bus.add(br, b0, gain=db(-10), send=0.4)
+    bus.add(sub(hz("G1"), b1 - b0 + 2.4, 0.9, 2.2), b0, gain=db(-16))
     bus.add(thump(98, 49, 3.5, tau_pitch=0.07, tau_amp=1.1, noise=0.25, seed=1003), b0 + 0.05,
-            gain=db(-12), send=0.5)
+            gain=db(-15), send=0.5)
     for j, note in enumerate(["G5", "B5", "D6", "F#6", "A6", "B6"]):
         bus.add(bell(hz(note), 4.0, decay=1.8, idx=1.0), b0 + 0.35 + 0.17 * j, gain=db(-25),
                 pan=-0.6 + 0.24 * j, send=0.6, echo=0.35)
@@ -561,12 +561,12 @@ def music_seg4(ir):
     dur = 126.4 - b1
     st = pad(chord("B2 F#3 D#4 F#4 C#5 D#5 B5"), dur, att=0.9, rel=3.8, voices=7, detune=11, seed=1010,
              spread=0.95, fc=[(0, 2500), (1.5, 3800), (dur, 900)])
-    bus.add(st, b1, gain=db(-8), send=0.65)
-    bus.add(choir(chord("B3 D#4 F#4 C#5 D#5 F#5"), dur, att=1.0, rel=3.8, seed=1011), b1, gain=db(-11), send=0.85)
+    bus.add(st, b1, gain=db(-9.5), send=0.65)
+    bus.add(choir(chord("B3 D#4 F#4 C#5 D#5 F#5"), dur, att=1.0, rel=3.8, seed=1011), b1, gain=db(-12), send=0.85)
     br = pad(chord("B1 B2 F#3"), dur, att=0.8, rel=3.6, voices=4, detune=7, seed=1012, q=0.9,
              fc=[(0, 400), (1.0, 900), (dur, 300)], spread=0.3)
-    bus.add(br, b1, gain=db(-10), send=0.4)
-    bus.add(sub(hz("B1"), dur, 0.8, 3.6), b1, gain=db(-13))
+    bus.add(br, b1, gain=db(-11), send=0.4)
+    bus.add(sub(hz("B1"), dur, 0.8, 3.6), b1, gain=db(-16))
     for j, note in enumerate(["B5", "D#6", "F#6", "C#7"]):
         bus.add(bell(hz(note), 4.0, decay=2.0, idx=0.8), b1 + 0.1 + 0.21 * j, gain=db(-27),
                 pan=0.5 - 0.3 * j, send=0.7, echo=0.35)
@@ -619,6 +619,9 @@ def music_seg5(ir):
     return bus.render(ir, gate=gate, echo_delay=0.7, echo_fb=0.45)
 
 
+MUSIC_TRIM_DB = -4.5
+
+
 def render_music(ir):
     out = np.zeros((2, N))
     for name, fn in [("seg1", music_seg1), ("seg2", music_seg2), ("seg3", music_seg3),
@@ -627,7 +630,7 @@ def render_music(ir):
         seg = fn(ir)
         start = {"seg1": 0.0, "seg2": CUES["silence"], "seg3": CUES["came_back_in_52"] - 0.9,
                  "seg4": TL["zoom"]["end"] + 0.1, "seg5": 125.8}[name]
-        place(out, seg, start)
+        place(out, seg * db(MUSIC_TRIM_DB), start)
         print(f"  music {name}: {time.time() - t:5.1f}s")
     return out
 
@@ -647,7 +650,6 @@ def key_click(rng, heavy=False, space=False):
     if space:
         y = 0.5 * np.sin(TAU * 150 * p * t) * np.exp(-t / 0.014)
         y += 0.3 * lp(noise, 1500.0) * np.exp(-t / 0.003)
-        y *= 0.35
     else:
         tr = hp(noise, 2500.0) * np.exp(-t / 0.0006)
         f1 = rng.uniform(2300, 3300) * p
@@ -663,7 +665,8 @@ def key_click(rng, heavy=False, space=False):
             y *= db(2.0)
     y *= fade_env(n, 0.00015, 0.01)
     y = hp(y, 100.0)
-    return y * db(rng.uniform(-2.5, 2.5))
+    y /= np.max(np.abs(y)) + 1e-12
+    return y * db(rng.uniform(-2.5, 2.5)) * (0.3 if space else 1.0)
 
 
 def render_typing(room_ir):
@@ -675,7 +678,7 @@ def render_typing(room_ir):
         heavy = cue.get("style") == "emph"
         for ch, tt in zip(cue["text"], cue["char_times"]):
             y = key_click(rng, heavy=heavy, space=(ch == " "))
-            st = to_stereo(y, float(np.clip(base_pan + rng.uniform(-0.22, 0.22), -1, 1))) * 0.5
+            st = to_stereo(y, float(np.clip(base_pan + rng.uniform(-0.22, 0.22), -1, 1))) * 0.45
             place(out, st, tt)
             place(wet, st * 0.35, tt)
     out += convolve_stereo(wet, room_ir, N)
@@ -929,7 +932,7 @@ def render_sfx(hall_ir, room_ir):
     # reveal impact at 110
     rv = CUES["reveal"]
     add(reverse_swell(0.9, rng, 300, 4000) * db(-30), rv - 0.9)
-    add(boom(6.0, 80.0, 34.0, seed=11), rv, gain=db(-12), hall=0.35)
+    add(boom(6.0, 80.0, 34.0, seed=11), rv, gain=db(-15), hall=0.35)
 
     # zoom riser (cut just before the voice)
     z0, z1 = TL["zoom"]["start"], TL["zoom"]["end"]
@@ -939,14 +942,14 @@ def render_sfx(hall_ir, room_ir):
     add(zr, z0, hall=0.1)
 
     # breath in before the bloom, and a soft sub landing
-    b0 = CUES["voice"] + 1.9
+    b0 = CUES["voice"] + 2.1
     add(reverse_swell(1.3, rng, 200, 5000) * db(-31), b0 - 1.3 + 0.05, hall=0.3)
-    add(boom(5.0, 60.0, 30.0, seed=12), b0 + 0.05, gain=db(-17), hall=0.3)
+    add(boom(5.0, 60.0, 30.0, seed=12), b0 + 0.05, gain=db(-20), hall=0.3)
 
     # title: reverse swell -> deep boom -> shimmering tail
     th = TL["title_card"]["start"]
     add(reverse_swell(1.6, rng, 250, 6000) * db(-27), th - 1.6)
-    add(boom(8.0, 72.0, 27.0, seed=13), th, gain=db(-6), hall=0.3)
+    add(boom(8.0, 72.0, 27.0, seed=13), th, gain=db(-7.5), hall=0.3)
     sh = shimmer([hz(x) for x in ["B5", "F#6", "C#7", "E6", "G#6", "B6", "D#7"]], 9.0, seed=14)
     add(sh, th + 0.02, gain=db(-19), hall=0.9)
 
