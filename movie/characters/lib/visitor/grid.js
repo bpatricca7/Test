@@ -35,6 +35,8 @@ export class SkinBuffer {
     this.nrm = new Float32Array(n * 3);
     this.tex = new Float32Array(n * 3);   // texture coords: (u, v, 0) in tiles, or rest xyz for triplanar
     this.info = new Float32Array(n * 4);  // part id, crease, ambient occlusion, vein/glow mask
+    this.spot = new Float32Array(n * 4);  // bioluminescent dot lines: lateral dist (m), along (m), radius (m), spacing (m)
+    for (let k = 0; k < n; k++) { this.spot[k * 4] = 0.05; this.spot[k * 4 + 2] = 0.001; this.spot[k * 4 + 3] = 1; }
     const g = new THREE.BufferGeometry();
     this.posAttr = new THREE.BufferAttribute(this.pos, 3);
     this.nrmAttr = new THREE.BufferAttribute(this.nrm, 3);
@@ -46,6 +48,8 @@ export class SkinBuffer {
     g.setAttribute('normal', this.nrmAttr);
     g.setAttribute('aTex', this.texAttr);
     g.setAttribute('aInfo', this.infoAttr);
+    this.spotAttr = new THREE.BufferAttribute(this.spot, 4);
+    g.setAttribute('aSpot', this.spotAttr);
     g.setIndex(n > 65535 ? new THREE.Uint32BufferAttribute(this.idx, 1) : new THREE.Uint16BufferAttribute(this.idx, 1));
     g.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 1.1, 0), 3);
     this.geometry = g;

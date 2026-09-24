@@ -69,6 +69,9 @@ export async function create(env) {
         if (v === 3) { h.skin.visible = false; }
         if (v === 4) { h.group.traverse(o => { if (o.isMesh && o !== h.skin) o.visible = false; }); }
         if (v === 5) { h.skin.material = new THREE.MeshLambertMaterial({ color: 0x8a5a40 }); }
+        if (v === 6) { h.skin.material = new THREE.MeshBasicMaterial({ map: h.skinMat.map }); }
+        if (v === 7) { h.skin.material = new THREE.MeshStandardMaterial({ color: 0x9a6a50, normalMap: h.skinMat.normalMap, roughness: 0.6 }); }
+        if (v === 8) { h.skin.material = new THREE.MeshStandardMaterial({ map: h.skinMat.map, roughness: 0.6 }); }
         return;
       }
       if (mode >= 1100 && mode < 1200) {

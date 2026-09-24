@@ -66,7 +66,7 @@ export function createFaceRig(hm, H, opt = {}) {
   // how much a vertex belongs to the lips (1 on the vermilion and inner roll)
   const lipCore = v => {
     const r = ringM[v];
-    if (r <= -1) return r >= -2 ? 1 : r === -3 ? 0.55 : r === -4 ? 0.15 : 0;
+    if (r <= -1) return r >= -3 ? 1 : r === -4 ? 0.5 : r === -5 ? 0.12 : 0;
     if (r < 99) return r <= 5 ? 1 : Math.exp(-(((r - 5) / 2.2) ** 2));
     const q = mc(v);
     const d = Math.hypot(q.dxo, Math.max(0, Math.abs(q.dy) - q.h));
@@ -96,13 +96,13 @@ export function createFaceRig(hm, H, opt = {}) {
   // ----------------------------------------------------------- lip fields
   addField('pucker', v => {
     const q = mc(v); const c = lipCore(v), p = perioral(v, 0.014, 0.012, 0.014);
-    const bagDeep = ringM[v] < -2 ? 0.4 : 1;
+    const bagDeep = ringM[v] < -3 ? 0.4 : 1;
     return [-q.x * 0.42 * p, -q.dy * 0.18 * c, (0.0055 * c + 0.0025 * p) * (1 - 0.35 * q.s * q.s) * bagDeep];
   });
   addField('funnel', v => {
     const q = mc(v); const c = lipCore(v), p = perioral(v, 0.014, 0.012, 0.014);
     const r = ringM[v];
-    const flare = r >= 0 && r <= 5 ? 1 - r / 6 : r < 0 && r >= -2 ? 1 : 0;
+    const flare = r >= 0 && r <= 5 ? 1 - r / 6 : r < 0 && r >= -3 ? 1 : 0;
     const sgn = q.up >= 0.5 ? 1 : q.up > 0 ? 0 : -1;
     const cen = 1 - Math.min(1, q.s * q.s);
     return [-q.x * 0.22 * p, sgn * (0.0026 * c * cen + 0.0012 * flare * cen), 0.0035 * c + 0.0018 * flare + 0.0015 * p];
@@ -169,17 +169,24 @@ export function createFaceRig(hm, H, opt = {}) {
     const c = lipCore(v);
     const below = Math.exp(-((Math.max(0, -q.dy - q.h) / 0.008) ** 2)) * Math.exp(-((q.dxo / 0.007) ** 2)) * frontMask(q.z);
     const wgt = Math.max(c, 0.6 * below) * (1 - 0.55 * Math.min(1, q.s * q.s));
-    const curl = r <= 3 && r >= -2 ? 1 - Math.max(0, r) / 4 : 0;
+    const curl = r <= 3 && r >= -3 ? 1 - Math.max(0, r) / 4 : 0;
     return [0, 0.0034 * wgt + 0.0012 * curl, -0.0040 * wgt - 0.0022 * curl];
   });
   addField('press', v => {
     const q = mc(v);
     const c = lipCore(v);
     const r = ringM[v];
-    const roll = r >= 0 && r <= 4 ? 1 - r / 5 : r < 0 && r >= -2 ? 1 : 0;
+    const roll = r >= 0 && r <= 4 ? 1 - r / 5 : r < 0 && r >= -3 ? 1 : 0;
     const sgn = q.up >= 0.5 ? 1 : q.up > 0 ? 0 : -1;
     const cen = 1 - 0.6 * Math.min(1, q.s * q.s);
     return [-q.x * 0.04 * c, -sgn * 0.0009 * c * cen, (-0.0010 * c - 0.0012 * roll) * cen];
+  });
+  // as the jaw drops the corners draw in and the lips round off
+  addField('jawCorner', v => {
+    const q = mc(v); const p = perioral(v, 0.014, 0.01, 0.012);
+    const lat = Math.min(1.2, Math.abs(q.s));
+    const nearLine = Math.exp(-((q.dy / 0.006) ** 2));
+    return [-q.x * 0.16 * p * lat * lat, -0.0012 * p * nearLine * lat * lat, 0.0012 * p * lat];
   });
   addField('shift', v => {
     const p = perioral(v, 0.02, 0.016, 0.02);
@@ -300,6 +307,7 @@ export function createFaceRig(hm, H, opt = {}) {
     apply('frownL', c.frownL); apply('frownR', c.frownR);
     apply('upperUp', c.upperUp); apply('lowerDown', c.lowerDown);
     apply('tuck', c.tuck); apply('press', c.press); apply('shift', c.shift);
+    apply('jawCorner', clamp(c.jaw || 0, 0, 1.2) * (1 - 0.6 * clamp((c.stretchL || 0) + (c.stretchR || 0), 0, 1)));
     apply('cheekL', c.cheekL); apply('cheekR', c.cheekR);
     apply('sneerL', c.sneerL); apply('sneerR', c.sneerR);
     apply('browInnerL', c.browInnerL); apply('browInnerR', c.browInnerR);
@@ -325,7 +333,7 @@ export function createFaceRig(hm, H, opt = {}) {
     // 3. seal: bring the two lips together along matching rings
     const seal = clamp(c.seal || 0);
     if (seal > 0) {
-      const wk = { [-3]: 0.35, [-2]: 1, [-1]: 1, 0: 1, 1: 1, 2: 0.85, 3: 0.55, 4: 0.28, 5: 0.1 };
+      const wk = { [-4]: 0.35, [-3]: 1, [-2]: 1, [-1]: 1, 0: 1, 1: 1, 2: 0.85, 3: 0.55, 4: 0.28, 5: 0.1 };
       const r0 = mouthRings[0];
       for (let j = 1; j < MM / 2; j++) {
         const jl = MM - j;

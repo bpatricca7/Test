@@ -155,3 +155,39 @@ export function bakeDetailTexture(THREE, U, size = 1024) {
   tex.needsUpdate = true;
   return tex;
 }
+
+// flowing data glyphs: columns of Arecibo-like 5x5 pixel glyphs with gaps (R),
+// and a sparse fine dot lattice (G)
+export function bakeGlyphTexture(THREE, U, size = 512) {
+  const rnd = U.mulberry32(1974);
+  const data = new Uint8Array(size * size * 4);
+  const cell = 16, n = size / cell;
+  for (let cx = 0; cx < n; cx++) {
+    let run = 0, on = rnd() < 0.5;
+    for (let cy = 0; cy < n; cy++) {
+      if (run <= 0) { on = !on; run = on ? 2 + Math.floor(rnd() * 9) : 1 + Math.floor(rnd() * 6); }
+      run--;
+      if (!on) continue;
+      const lvl = 0.45 + 0.55 * rnd();
+      // symmetric glyphs read as designed symbols
+      const bits = [];
+      for (let y = 0; y < 5; y++) { const row = []; for (let x = 0; x < 3; x++) row.push(rnd() < 0.5 ? 1 : 0); bits.push([row[0], row[1], row[2], row[1], row[0]]); }
+      for (let y = 0; y < 5; y++) for (let x = 0; x < 5; x++) {
+        if (!bits[y][x]) continue;
+        for (let py = 0; py < 2; py++) for (let px = 0; px < 2; px++) {
+          const X = cx * cell + 3 + x * 2 + px, Y = cy * cell + 3 + y * 2 + py;
+          data[(Y * size + X) * 4] = Math.round(255 * lvl);
+        }
+      }
+    }
+  }
+  for (let y = 0; y < size; y += 8) for (let x = 0; x < size; x += 8) if (rnd() < 0.3) data[(y * size + x) * 4 + 1] = 255;
+  const tex = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.magFilter = THREE.LinearFilter;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.generateMipmaps = true;
+  tex.colorSpace = THREE.NoColorSpace;
+  tex.needsUpdate = true;
+  return tex;
+}

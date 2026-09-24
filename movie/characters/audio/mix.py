@@ -59,8 +59,9 @@ DIALOGUE_LUFS = -17.0        # the humans' own gated loudness, before the final 
 VISITOR_LUFS = -18.0         # the Visitor: slow and low, and its processed lines are peakier
 STEM_GAIN_DB = {"music": -1.0, "typing": -6.0, "monitor": -9.0, "foley": 0.0, "amb": 0.0,
                 "alarm": -13.0, "fx": -2.0}
-DUCK_DB = {"music": 7.0, "typing": 0.0, "monitor": 5.0, "foley": 1.5, "amb": 4.0, "alarm": 9.0, "fx": 3.0}
+DUCK_DB = {"music": 7.0, "typing": 0.0, "monitor": 6.0, "foley": 1.5, "amb": 4.0, "alarm": 9.0, "fx": 3.0}
 ROOM_WET = 0.55              # human lines: image-source room level relative to the dry voice
+TAIL_FADE = 0.25             # a line's tail (Visitor echo, room/space reverb) fades out under the next line
 SPEAKERS = ("maya", "sam", "visitor")
 
 
@@ -271,6 +272,7 @@ def main(dialogue_dir=None, out_dir=None):
     proc = {s: np.zeros((2, N)) for s in SPEAKERS}    # processed, placed
     placed, missing = [], []
     space_ir = make_ir(2.6, rt_low=2.2, rt_mid=1.9, rt_high=1.0, predelay=0.03, seed=77, width=1.0)
+    starts = sorted(float(d["start"]) for d in TL["dialogue"])
     for d in TL["dialogue"]:
         info = manifest.get(d["id"])
         if not info:
@@ -288,7 +290,6 @@ def main(dialogue_dir=None, out_dir=None):
         if m <= 0:
             continue
         v = v[:m]
-        dry[who][s:s + m] += v
         src = position(TL, who, float(d["start"]) + 0.5 * m / SR)
         ir = room_ir(src, listener_for(src), seed=int(d["id"][1:]))
         if who == "visitor":
@@ -306,9 +307,27 @@ def main(dialogue_dir=None, out_dir=None):
             xx = np.concatenate([x, np.zeros(tail)])
             stx = np.vstack([xx, xx]) / np.sqrt(2)
             out = stx + ROOM_WET * convolve_stereo(stx, ir, len(xx))
+        # the tail must not ring into the next line: fade it from the next line's start
+        # (never before this line's own speech has ended)
+        st0 = float(d["start"])
+        nxt = next((t for t in starts if t > st0 + 1e-6), None)
+        speech_end = st0 + float(info.get("duration", m / SR))
+        eff = m / SR
+        if nxt is not None:
+            f0 = int(round((max(nxt, speech_end) - st0) * SR))
+            fl = int(TAIL_FADE * SR)
+            fade = np.ones(out.shape[1])
+            if f0 < len(fade):
+                seg = fade[f0:f0 + fl]
+                fade[f0:f0 + fl] = (0.5 + 0.5 * np.cos(np.linspace(0, np.pi, fl)))[:len(seg)]
+                fade[f0 + fl:] = 0.0
+            out = out * fade
+            v = v * fade[:m]
+            eff = min(eff, (f0 + fl) / SR)
+        dry[who][s:s + m] += v
         e = min(N, s + out.shape[1])
         proc[who][:, s:e] += out[:, :e - s]
-        placed.append((d["id"], who, float(d["start"]), m / SR))
+        placed.append((d["id"], who, st0, eff))
 
     have_dialogue = bool(placed)
     if have_dialogue:

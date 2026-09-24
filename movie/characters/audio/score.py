@@ -431,7 +431,7 @@ def render_monitor(room):
     stream = np.sin(TAU * np.cumsum(fi) / SR)
     rate = 1.0 / iv[idx]
     blend = np.clip((rate - 250.0) / 600.0, 0, 1) * ((t >= p0) & (t < stop))
-    stream *= 0.25 * blend
+    stream *= 0.18 * blend
     kk = int(0.004 * SR)
     si = int(stop * SR)
     stream[si - kk:si] *= np.linspace(1, 0, kk)
@@ -803,9 +803,9 @@ def music_visitor(hall, space):
     bus = Bus(t0, LIGHTS + 0.3)
     # materialize: a swell toward a soft, awe-struck presence chord
     dm = m1 - m0
-    bus.add(choir(chord("B2 F#3 C#4 D#4 F#4"), dm + 2.2, att=dm, rel=2.2, seed=50), m0, gain=db(-23), space=0.8)
+    bus.add(choir(chord("B2 F#3 C#4 D#4 F#4"), dm + 2.2, att=dm, rel=2.2, seed=50), m0, gain=db(-26), space=0.8)
     bus.add(pad(chord("B2 F#3 D#4 C#5"), dm + 2.2, att=dm, rel=2.2, voices=5, detune=9, seed=51,
-                fc=[(0, 600), (dm, 2600), (dm + 2.2, 900)]), m0, gain=db(-24), send=0.5, space=0.5)
+                fc=[(0, 600), (dm, 2600), (dm + 2.2, 900)]), m0, gain=db(-27), send=0.5, space=0.5)
     bus.add(shimmer([hz(x) for x in ("B5", "D#6", "F#6", "A#6", "C#7")], dm + 4.0, seed=52), m0 + 0.4,
             gain=db(-27), space=0.9)
     for j, note in enumerate(("B5", "D#6", "F#6", "B6")):
@@ -824,7 +824,7 @@ def music_visitor(hall, space):
             nxt = VIS_LINES[k + 1][0] if k + 1 < len(VIS_LINES) else v1
             dur = max(1.5, nxt - a + 1.6)
             g = shimmer([hz(x) for x in top], dur, seed=60 + k)
-            bus.add(g * fade_env(g.shape[1], 1.2, 1.5), a - 0.3, gain=db(-30), space=0.8)
+            bus.add(g * fade_env(g.shape[1], 1.2, 1.5), a - 0.3, gain=db(-32), space=0.8)
     # the hand raise: the motif answered in the major (D#), soft bells above the voice's formants
     h0, _ = span("visitor_raises_hand")
     for i, note in enumerate(("F#6", "B6", "C#7", "D#7")):

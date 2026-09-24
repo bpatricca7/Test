@@ -15,10 +15,10 @@
 // undefined). v.light is NOT parented to v.root: add it to the scene; set()
 // writes its world position.
 
-import { makeSkull, buildHead, mouthParams, HEAD } from './visitor/head.js';
+import { makeSkull, buildHead, mouthParams, HEAD, HS } from './visitor/head.js';
 import { createBody } from './visitor/body.js';
 import { solvePose, followThrough, mv } from './visitor/rig.js';
-import { bakeDetailTexture } from './visitor/textures.js';
+import { bakeDetailTexture, bakeGlyphTexture } from './visitor/textures.js';
 import { SKIN_VERT, SKIN_FRAG, EYE_VERT, EYE_FRAG, BONE_VERT, BONE_FRAG } from './visitor/shaders.js';
 import { createParticles, buildFrontY, MAT, DIS } from './visitor/particles.js';
 
@@ -36,6 +36,7 @@ export async function createVisitor(env) {
   const hd = buildHead(skull, 112);
   const body = createBody(THREE, skull, hd);
   const detail = bakeDetailTexture(THREE, U);
+  const glyphs = bakeGlyphTexture(THREE, U);
 
   // ---- shared uniforms ----
   const uni = {
@@ -45,7 +46,8 @@ export async function createVisitor(env) {
     uGlow: { value: 0 }, uPulse: { value: 0 },
   };
   const skinUni = Object.assign({}, uni, {
-    uDetail: { value: detail },
+    uDetail: { value: detail }, uGlyph: { value: glyphs },
+    uAxis: { value: new THREE.Vector2() }, uHeadC: { value: new THREE.Vector3() },
     uCore: { value: new THREE.Vector3(0, 1.32, 0.03) }, uThroat: { value: new THREE.Vector3(0, 1.75, 0.05) },
     uHeadRot: { value: new THREE.Matrix3() },
   });
@@ -71,7 +73,9 @@ export async function createVisitor(env) {
   root.add(headGroup);
   const eyeGeo = new THREE.SphereGeometry(1, 48, 32);
   const eyes = skull.eyes.map(e => {
-    const eu = Object.assign({}, uni, { uGaze: { value: new THREE.Vector3(0, 0, 1) }, uIris: { value: 0.5 }, uPupil: { value: 0.2 }, uRootInv: { value: new THREE.Matrix4() } });
+    const rm = Math.max(...e.r);
+    const eu = Object.assign({}, uni, { uGaze: { value: new THREE.Vector3(0, 0, 1) }, uIris: { value: 0.4 }, uPupil: { value: 0.15 },
+      uEyeS: { value: new THREE.Vector3(e.r[0] / rm, e.r[1] / rm, e.r[2] / rm) }, uRootInv: { value: new THREE.Matrix4() }, uRoot: { value: new THREE.Matrix4() } });
     const dm = new THREE.ShaderMaterial({ vertexShader: EYE_VERT, fragmentShader: EYE_FRAG, uniforms: eu, defines: { DEPTH_ONLY: 1 },
       transparent: true, colorWrite: false, depthWrite: true });
     const cm = new THREE.ShaderMaterial(Object.assign({ vertexShader: EYE_VERT, fragmentShader: EYE_FRAG, uniforms: eu,
@@ -133,7 +137,7 @@ export async function createVisitor(env) {
     let tgt;
     if (pose.lookLocal) {
       const d = [pose.lookLocal[0] - hc[0], pose.lookLocal[1] - hc[1], pose.lookLocal[2] - hc[2]];
-      tgt = [Rh[0] * d[0] + Rh[3] * d[1] + Rh[6] * d[2], Rh[1] * d[0] + Rh[4] * d[1] + Rh[7] * d[2], Rh[2] * d[0] + Rh[5] * d[1] + Rh[8] * d[2]];
+      tgt = [(Rh[0] * d[0] + Rh[3] * d[1] + Rh[6] * d[2]) / HS, (Rh[1] * d[0] + Rh[4] * d[1] + Rh[7] * d[2]) / HS, (Rh[2] * d[0] + Rh[5] * d[1] + Rh[8] * d[2]) / HS];
     } else tgt = [0, 0, 3];
     // micro-saccade drift (small, deterministic)
     const sk = Math.floor(t / 0.9);
@@ -160,12 +164,12 @@ export async function createVisitor(env) {
     face = { mouth, lids: lidsArr, eyes: skull.eyes };
 
     // ---- eyes ----
-    const Mh = new THREE.Matrix4().set(Rh[0], Rh[1], Rh[2], hc[0], Rh[3], Rh[4], Rh[5], hc[1], Rh[6], Rh[7], Rh[8], hc[2], 0, 0, 0, 1);
+    const Mh = new THREE.Matrix4().set(Rh[0] * HS, Rh[1] * HS, Rh[2] * HS, hc[0], Rh[3] * HS, Rh[4] * HS, Rh[5] * HS, hc[1], Rh[6] * HS, Rh[7] * HS, Rh[8] * HS, hc[2], 0, 0, 0, 1);
     headGroup.matrix.copy(Mh);
     headGroup.matrixWorldNeedsUpdate = true;
     root.updateMatrixWorld(true);
     const rootInv = root.matrixWorld.clone().invert();
-    eyes.forEach((E, i) => { E.uni.uGaze.value.set(...gazes[i]); E.uni.uRootInv.value.copy(rootInv); E.uni.uPupil.value = 0.19 + 0.02 * Math.sin(t * 0.7 + i); });
+    eyes.forEach((E, i) => { E.uni.uGaze.value.set(...gazes[i]); E.uni.uRootInv.value.copy(rootInv); E.uni.uRoot.value.copy(root.matrixWorld); E.uni.uPupil.value = 0.15 + 0.012 * Math.sin(t * 0.7 + i) - 0.02 * glow; });
     // head rotation in world for triplanar weights
     const c = Math.cos(yaw), sn = Math.sin(yaw);
     const Ry = [c, 0, sn, 0, 1, 0, -sn, 0, c];
@@ -204,9 +208,11 @@ export async function createVisitor(env) {
     uni.uDissT.value = d <= 0 ? -100 : dissT(d);
     const dissLaunch = o => DIS.d0 + (o - omin + DIS.band) / range * (DIS.d1 - DIS.d0);
     // chest core & throat (object space)
-    const core = pose.spine[3], thr = [hc[0] + Rh[1] * -0.06 + Rh[2] * 0.02, hc[1] + Rh[4] * -0.06 + Rh[5] * 0.02, hc[2] + Rh[7] * -0.06 + Rh[8] * 0.02];
+    const core = pose.spine[3], thr = [hc[0] + (Rh[1] * -0.06 + Rh[2] * 0.02) * HS, hc[1] + (Rh[4] * -0.06 + Rh[5] * 0.02) * HS, hc[2] + (Rh[7] * -0.06 + Rh[8] * 0.02) * HS];
     skinUni.uCore.value.set(core[0], core[1] + 0.02, core[2] + 0.02);
     skinUni.uThroat.value.set(thr[0], thr[1], thr[2]);
+    skinUni.uAxis.value.set(pose.pelvis[0], pose.pelvis[2]);
+    skinUni.uHeadC.value.set(hc[0], hc[1], hc[2]);
 
     const visible = m > 0 && d < 1;
     mDepth.visible = mColor.visible = mBones.visible = headGroup.visible = visible;
@@ -274,7 +280,8 @@ export async function createVisitor(env) {
     set,
     prepare: build,
     getEye(out) {
-      const e = pose ? [pose.headC[0] + pose.Rhead[1] * 0.004 + pose.Rhead[2] * 0.062, pose.headC[1] + pose.Rhead[4] * 0.004 + pose.Rhead[5] * 0.062, pose.headC[2] + pose.Rhead[7] * 0.004 + pose.Rhead[8] * 0.062] : [0, 1.9, 0.06];
+      const R = pose ? pose.Rhead : null, oy = 0.004 * HS, oz = 0.062 * HS;
+      const e = pose ? [pose.headC[0] + R[1] * oy + R[2] * oz, pose.headC[1] + R[4] * oy + R[5] * oz, pose.headC[2] + R[7] * oy + R[8] * oz] : [0, 1.9, 0.06];
       const w = toWorld(e);
       return out.set(w[0], w[1], w[2]);
     },

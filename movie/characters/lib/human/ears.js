@@ -66,6 +66,9 @@ export function createEars(H, skinMat, colorFn, s = 1) {
   g.setAttribute('color', new THREE.BufferAttribute(col, 3));
   g.setAttribute('ao', new THREE.BufferAttribute(ao, 1));
   g.setAttribute('wet', new THREE.BufferAttribute(wet, 1));
+  const uvA = new Float32Array(n * 2);
+  for (let i = 0; i < n; i++) { uvA[2 * i] = 1 - 12 / 2048; uvA[2 * i + 1] = 1 - 12 / 2048; }
+  g.setAttribute('uv', new THREE.BufferAttribute(uvA, 2));
   g.setIndex(m.indices);
   g.computeVertexNormals();
   const ears = [];

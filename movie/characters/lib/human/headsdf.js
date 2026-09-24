@@ -162,7 +162,7 @@ export function buildHeadSDF(P) {
     const ax = Math.abs(x);
     const ly = mouth.lineY(x), lz = mouth.lineZ(x);
     const open = Math.max(0, z - lz);
-    const half = 0.00012 + 0.32 * open;
+    const half = 0.00010 + 0.13 * open;
     return Math.max(Math.abs(y - ly) - half, lz - z, ax - M.w * 0.995);
   };
 

@@ -2,7 +2,7 @@
 
 import { SkinBuffer } from './grid.js';
 import { sweep, sweepTex, profile, bump } from './sweep.js';
-import { deformHead, writeLid, LID } from './head.js';
+import { deformHead, HS } from './head.js';
 import { mmul, mv } from './rig.js';
 
 const TAU = Math.PI * 2;
@@ -24,7 +24,7 @@ const TORSO = [
   [0.0, 0.07, 0.1], [0.08, 0.083, 0.12], [0.17, 0.082, 0.118], [0.29, 0.068, 0.09], [0.38, 0.062, 0.08],
   [0.5, 0.07, 0.094], [0.62, 0.082, 0.112], [0.74, 0.086, 0.122], [0.85, 0.078, 0.138], [0.93, 0.064, 0.112], [1.0, 0.05, 0.07],
 ];
-const NECK = [[0, 0.064, 0.082], [0.14, 0.05, 0.06], [0.3, 0.036, 0.041], [0.55, 0.032, 0.035], [0.8, 0.036, 0.039], [1.0, 0.04, 0.044]];
+const NECK = [[0, 0.066, 0.084], [0.14, 0.052, 0.062], [0.3, 0.04, 0.045], [0.55, 0.037, 0.04], [0.8, 0.042, 0.046], [1.0, 0.048, 0.052]];
 const PALM = [[0, 0.011, 0.016], [0.35, 0.0115, 0.022], [0.75, 0.0105, 0.026], [1.0, 0.0085, 0.024]];
 const FINGER = [[0, 0.0074, 0.0082], [0.14, 0.0078, 0.0086], [0.36, 0.0063, 0.0069], [0.52, 0.0066, 0.0072], [0.7, 0.0054, 0.006], [0.87, 0.0064, 0.0071], [1.0, 0.006, 0.0066]];
 const tmpR = [0, 0, 0, 0];
@@ -33,11 +33,6 @@ export function createBody(THREE, skull, hd) {
   const buf = new SkinBuffer();
   const P = {};
   P.head = buf.add(hd.NA, hd.nv, { wrap: true, flip: true, name: 'head' });
-  P.lids = [];
-  for (let e = 0; e < 2; e++) {
-    P.lids.push(buf.add(LID.nu, LID.nv, { wrap: false, flip: true, name: 'lidU' }));
-    P.lids.push(buf.add(LID.nu, LID.nv, { wrap: false, flip: false, name: 'lidL' }));
-  }
   P.crest = [buf.add(10, 44, { name: 'crest' }), buf.add(8, 30, { name: 'crestL' }), buf.add(8, 30, { name: 'crestR' })];
   P.torso = buf.add(44, 46, { name: 'torso' });
   P.neck = buf.add(32, 30, { name: 'neck' });
@@ -56,14 +51,11 @@ export function createBody(THREE, skull, hd) {
       buf.tex[o * 3] = hd.rest[k * 3]; buf.tex[o * 3 + 1] = hd.rest[k * 3 + 1]; buf.tex[o * 3 + 2] = hd.rest[k * 3 + 2];
       const inner = j < hd.K;
       const b = j >= hd.K && j < hd.K + hd.NG ? hd.bs[j - hd.K] : 1;
-      buf.info[o * 4] = inner ? 2 : b < 0.0045 ? 7 : 6;
-      buf.info[o * 4 + 1] = j === hd.K ? 0.85 : j === hd.K + 1 ? 0.35 : 0;
+      buf.info[o * 4] = inner ? 2 : b < 0.0062 ? 7 : 6;
+      buf.info[o * 4 + 1] = j === hd.K ? 0.85 : j === hd.K + 1 ? 0.35 : (inner ? 0 : 0.28 * Math.exp(-(((b - 0.0062) / 0.0008) ** 2)));
       buf.info[o * 4 + 2] = hd.ao[k];
       buf.info[o * 4 + 3] = inner ? (hd.K - j) / hd.K : 0;
     }
-  }
-  for (const lp of P.lids) {
-    sweepTexGrid(buf, lp, 0.09, 0.03, 3, (u, v) => 0, (u, v) => v > 0.93 ? 0.75 : v > 0.86 ? 0.2 : 0);
   }
   sweepTexGrid(buf, P.crest[0], 0.06, 0.3, 1, (u, v) => Math.pow(Math.max(0, Math.cos(u * TAU)), 2));
   sweepTexGrid(buf, P.crest[1], 0.03, 0.2, 1, (u, v) => Math.pow(Math.max(0, Math.cos(u * TAU)), 2));
@@ -74,11 +66,73 @@ export function createBody(THREE, skull, hd) {
   for (const a of P.palms) sweepTex(buf, a, 0.13, 0.1, 0.15, 4);
   for (const f of P.fingers) sweepTex(buf, f, 0.045, 0.14, 0.09, 4);
   for (const l of P.legs) sweepTex(buf, l, 0.3, 1.25, 0.3, 0);
+  // ---- bioluminescent dot lines ----
+  // sweeps: fn(theta, u) -> [lateral angle offset from the line (rad), radius m, spacing m] or null
+  function spotSweep(p, circ, length, fn) {
+    const { nu, nv, cols, off } = p;
+    const R = circ / TAU;
+    for (let j = 0; j < nv; j++) for (let i = 0; i < cols; i++) {
+      const o = off + j * cols + i, th = (i / nu) * TAU, u = j / (nv - 1);
+      const r = fn(th, u);
+      if (!r) continue;
+      buf.spot[o * 4] = Math.abs(r[0]) * R; buf.spot[o * 4 + 1] = u * length; buf.spot[o * 4 + 2] = r[1]; buf.spot[o * 4 + 3] = r[2];
+    }
+  }
+  const nearest = (th, lines) => { let best = 9; for (const l of lines) { let d = th - l; d = Math.atan2(Math.sin(d), Math.cos(d)); if (Math.abs(d) < Math.abs(best)) best = d; } return best; };
+  spotSweep(P.neck, 0.24, 0.42, (th, u) => u > 0.22 && u < 0.86 ? [nearest(th, [1.45, -1.45]), 0.0021, 0.0105] : null);
+  spotSweep(P.torso, 0.6, 0.7, (th, u) => {
+    if (u > 0.2 && u < 0.93) {
+      const d = nearest(th, [Math.PI]);
+      if (Math.abs(d) < 0.3) return [d, 0.0026, 0.016];
+    }
+    if (u > 0.55 && u < 0.86) {           // a collar of dots curving from the shoulders to the sternum
+      const c = 0.35 + (u - 0.55) * 2.2;
+      return [nearest(th, [c, -c]), 0.0022, 0.012];
+    }
+    return null;
+  });
+  for (let a = 0; a < 2; a++) spotSweep(P.arms[a], 0.18, 0.8, (th, u) => u > 0.16 && u < 0.9 ? [nearest(th, [Math.PI]), 0.0019, 0.013] : null);
+  for (let l = 0; l < 3; l++) spotSweep(P.legs[l], 0.3, 1.25, (th, u) => u > 0.06 && u < 0.72 ? [nearest(th, [Math.PI * 0.5, -Math.PI * 0.5]), 0.0022, 0.015] : null);
+  {
+    // head: dot lines projected onto the skull (head space, rest pose)
+    const proj = q => { const d = norm(q); return mul(d, skull.raycast(d[0], d[1], d[2])); };
+    const lines = [];
+    const addLine = (pts, r, sp) => { for (const sx of [1, -1]) lines.push({ pts: pts.map(p => proj([p[0] * sx, p[1], p[2]])), r, sp }); };
+    addLine([[0.068, 0.018, 0.04], [0.08, 0.04, -0.01], [0.08, 0.066, -0.06], [0.07, 0.086, -0.11], [0.058, 0.098, -0.15]], 0.0017, 0.0072);
+    addLine([[0.022, -0.036, 0.07], [0.045, -0.03, 0.062], [0.066, -0.014, 0.046]], 0.0012, 0.0056);
+    lines.push({ pts: [[0, 0.03, 0.08], [0, 0.06, 0.075], [0, 0.085, 0.062], [0, 0.105, 0.04]].map(proj), r: 0.0014, sp: 0.0068 });
+    const p = P.head, { cols, nv, off } = p;
+    for (let j = hd.K + 3; j < nv; j++) for (let i = 0; i < cols; i++) {
+      const k = j * cols + i, o = off + k;
+      const x = hd.rest[k * 3], y = hd.rest[k * 3 + 1], z = hd.rest[k * 3 + 2];
+      let best = 0.05, along = 0, L = null;
+      for (const ln of lines) {
+        let acc = 0;
+        for (let q = 0; q < ln.pts.length - 1; q++) {
+          const a = ln.pts[q], b = ln.pts[q + 1];
+          const ab = sub(b, a), ap = [x - a[0], y - a[1], z - a[2]];
+          const ll = dot(ab, ab);
+          const h = Math.max(0, Math.min(1, dot(ap, ab) / ll));
+          const dd = len(sub(ap, mul(ab, h)));
+          if (dd < best) { best = dd; along = acc + h * Math.sqrt(ll); L = ln; }
+          acc += Math.sqrt(ll);
+        }
+      }
+      if (L) { buf.spot[o * 4] = best; buf.spot[o * 4 + 1] = along + L.sp * 0.5; buf.spot[o * 4 + 2] = L.r; buf.spot[o * 4 + 3] = L.sp; }
+    }
+  }
+  // finger pads glow (hand part, info.w)
+  for (const fp of P.fingers) {
+    const { nu, nv, cols, off } = fp;
+    for (let j = 0; j < nv; j++) for (let i = 0; i < cols; i++) {
+      const o = off + j * cols + i, th = (i / nu) * TAU, u = j / (nv - 1);
+      buf.info[o * 4 + 3] = Math.exp(-(((u - 0.9) / 0.07) ** 2)) * Math.pow(Math.max(0, Math.cos(th)), 2);
+    }
+  }
+  buf.spotAttr.needsUpdate = true;
   buf.texAttr.needsUpdate = true; buf.infoAttr.needsUpdate = true;
 
   // lid row distribution: dense toward the edge
-  const lidRows = [];
-  for (let j = 0; j < LID.nv; j++) { const x = j / (LID.nv - 1); lidRows.push(1 - Math.pow(1 - x, 1.7)); }
 
   // ---- crest paths (head space) ----
   const surfPt = (dir) => {
@@ -161,22 +215,12 @@ export function createBody(THREE, skull, hd) {
     {
       const p = P.head, base = p.off * 3, n = hd.nVerts, R = Rhead;
       for (let k = 0; k < n; k++) {
-        const x = headWork[k * 3], y = headWork[k * 3 + 1], z = headWork[k * 3 + 2];
+        const x = headWork[k * 3] * HS, y = headWork[k * 3 + 1] * HS, z = headWork[k * 3 + 2] * HS;
         pos[base + k * 3] = headC[0] + R[0] * x + R[1] * y + R[2] * z;
         pos[base + k * 3 + 1] = headC[1] + R[3] * x + R[4] * y + R[5] * z;
         pos[base + k * 3 + 2] = headC[2] + R[6] * x + R[7] * y + R[8] * z;
       }
     }
-    // --- lids ---
-    face.eyes.forEach((e, ei) => {
-      // eye matrix in root space: Rhead * (Reye * S), centre headC + Rhead * c
-      const RS = [e.R[0] * e.r[0], e.R[1] * e.r[1], e.R[2] * e.r[2], e.R[3] * e.r[0], e.R[4] * e.r[1], e.R[5] * e.r[2], e.R[6] * e.r[0], e.R[7] * e.r[1], e.R[8] * e.r[2]];
-      const M = mmul(Rhead, RS);
-      const c = add(headC, mv(Rhead, e.c));
-      const eyeM = M.concat(c);
-      writeLid(buf, P.lids[ei * 2], eyeM, true, e.side, face.lids[ei], lidRows);
-      writeLid(buf, P.lids[ei * 2 + 1], eyeM, false, e.side, face.lids[ei], lidRows);
-    });
     // --- crest (head space, bent by follow-through, then to root space) ---
     const bend = pose.crestBend;
     [crestC, crestL, crestR].forEach((c, ci) => {
@@ -186,7 +230,7 @@ export function createBody(THREE, skull, hd) {
         const u = k / (n - 1);
         const w = u * u * (ci === 0 ? 1 : 0.6);
         const p = [c.pts[k][0] + bend[0] * w * 0.9, c.pts[k][1] + bend[1] * w * 0.9, c.pts[k][2]];
-        pts.push(add(headC, mv(Rhead, p)));
+        pts.push(add(headC, mv(Rhead, mul(p, HS))));
         fronts.push(mv(Rhead, c.fronts[k]));
       }
       const keys = c.keys;
@@ -218,13 +262,26 @@ export function createBody(THREE, skull, hd) {
         r *= 1 - 0.04 * bump(th, Math.PI, 0.14) * sm(0.15, 0.3, u) * (1 - sm(0.88, 0.95, u));
         r *= 1 + 0.035 * (bump(th, Math.PI - 0.72, 0.32) + bump(th, Math.PI + 0.72, 0.32)) * sm(0.64, 0.72, u) * (1 - sm(0.84, 0.9, u));
         r *= 1 + 0.03 * (bump(th, Math.PI / 2, 0.3) + bump(th, -Math.PI / 2, 0.3)) * sm(0.05, 0.12, u) * (1 - sm(0.18, 0.26, u));
+        // ribs: slanted ridges round the flanks
+        const side = Math.abs(Math.sin(th)), fr = Math.cos(th);
+        const ribZone = sm(0.46, 0.52, u) * (1 - sm(0.7, 0.77, u)) * sm(0.25, 0.65, side) * (0.4 + 0.6 * sm(-0.6, 0.2, fr));
+        const rib = Math.pow(0.5 + 0.5 * Math.cos((u * 21 - fr * 0.9) * TAU), 3);
+        r *= 1 + 0.02 * ribZone * rib;
+        // sternum plate, slightly raised with a keel
+        const plate = sm(0.54, 0.58, u) * (1 - sm(0.8, 0.84, u));
+        r *= 1 + plate * (0.016 * bump(th, 0, 0.36) + 0.008 * bump(th, 0, 0.08));
+        // abdominal segments
+        const abz = sm(0.2, 0.24, u) * (1 - sm(0.45, 0.49, u)) * bump(th, 0, 0.65);
+        r *= 1 - 0.011 * abz * Math.pow(0.5 + 0.5 * Math.cos(u * 14 * TAU), 4);
+        // collarbones
+        r *= 1 + 0.03 * (bump(th, 0.85, 0.45) + bump(th, -0.85, 0.45)) * Math.exp(-(((u - 0.855) / 0.022) ** 2));
         return r;
       },
       { capStart: 5, capEnd: 4 });
 
     // --- neck ---
     const nk = pose.neck;
-    const into = add(headC, mv(Rhead, [0, -0.045, -0.03]));
+    const into = add(headC, mv(Rhead, mul([0, -0.05, -0.018], HS)));
     const nPts = [add(sp[4], mv(sR[4], [0, 0.0, -0.005])), nk[0], nk[1], nk[2], into];
     const nFr = [col(sR[4], 2), col(pose.neckR[0], 2), col(pose.neckR[1], 2), col(Rhead, 2)];
     sweep(buf, P.neck, nPts, nFr, (u) => profile(NECK, u, tmpR),
@@ -233,6 +290,8 @@ export function createBody(THREE, skull, hd) {
         r *= 1 + 0.12 * (bump(th, 0.8, 0.22) + bump(th, -0.8, 0.22)) * sm(0.2, 0.32, u) * (1 - sm(0.72, 0.85, u));
         r *= 1 - 0.05 * bump(th, Math.PI, 0.3) * sm(0.3, 0.5, u);
         r *= 1 + 0.06 * bump(th, 0, 0.18) * sm(0.55, 0.62, u) * (1 - sm(0.7, 0.76, u));   // a small larynx ridge
+        r *= 1 + 0.05 * (bump(th, 1.75, 0.2) + bump(th, -1.75, 0.2)) * sm(0.15, 0.3, u) * (1 - sm(0.8, 0.9, u));   // side cords
+        r *= 1 + 0.018 * bump(th, 0, 0.55) * Math.pow(0.5 + 0.5 * Math.cos(u * 26 * TAU), 3) * sm(0.2, 0.3, u) * (1 - sm(0.5, 0.56, u));  // trachea rings
         return r;
       },
       { capStart: 0, capEnd: 4 });
@@ -260,6 +319,8 @@ export function createBody(THREE, skull, hd) {
         (th, u, s) => {
           let r = 1 + 0.06 * bump(th, 0, 0.9) * sm(sS + 0.08, sS + 0.14, s) * (1 - sm(sE - 0.1, sE - 0.03, s));   // biceps-ish
           r *= 1 + 0.07 * bump(th, Math.PI, 0.5) * sm(sE - 0.03, sE, s) * (1 - sm(sE + 0.02, sE + 0.05, s));  // elbow point
+          r *= 1 + 0.08 * (bump(th, 0.45, 0.2) + bump(th, -0.45, 0.2)) * sm(sW - 0.14, sW - 0.1, s) * (1 - sm(sW - 0.02, sW, s));  // wrist tendons
+          r *= 1 + 0.05 * bump(th, Math.PI * 0.6, 0.5) * sm(sE + 0.02, sE + 0.06, s) * (1 - sm(sE + 0.14, sE + 0.2, s));  // forearm muscle
           return r;
         },
         { capStart: 0, capEnd: 3, tight: 0.045, blend: 0.45 });
@@ -291,6 +352,9 @@ export function createBody(THREE, skull, hd) {
           r *= 1 + 0.12 * bump(th, 0, 0.35) * sm(sK - 0.03, sK, s) * (1 - sm(sK + 0.02, sK + 0.05, s));             // knee cap
           r *= 1 + 0.07 * bump(th, Math.PI, 0.7) * sm(sK + 0.04, sK + 0.1, s) * (1 - sm(sK + 0.2, sK + 0.28, s));   // calf
           r *= 1 + 0.1 * bump(th, Math.PI, 0.3) * sm(sA - 0.02, sA, s) * (1 - sm(sA + 0.01, sA + 0.03, s));         // heel spur
+          r *= 1 + 0.08 * bump(th, 0, 0.22) * sm(sK + 0.04, sK + 0.08, s) * (1 - sm(sA - 0.1, sA - 0.04, s));       // shin ridge
+          r *= 1 + 0.1 * bump(th, Math.PI, 0.25) * sm(sA + 0.02, sA + 0.05, s) * (1 - sm(sB - 0.06, sB - 0.02, s)); // meta tendon
+          r *= 1 + 0.06 * (bump(th, 1.2, 0.3) + bump(th, -1.2, 0.3)) * sm(sB - 0.02, sB, s);                        // toe pads
           return r;
         },
         { capStart: 0, capEnd: 4, capLenEnd: 0.012, tight: 0.05, blend: 0.45 });

@@ -58,9 +58,10 @@ function patchLights(src, wrapExpr) {
 export function makeSkinMaterial(opts = {}) {
   const wrap = opts.wrap || [0.55, 0.24, 0.15];
   const mat = new THREE.MeshStandardMaterial({
-    color: 0xffffff, vertexColors: true, roughness: opts.roughness ?? 0.52, metalness: 0,
-    envMap: envTexture(), envMapIntensity: opts.envIntensity ?? 0.35,
+    color: 0xffffff, vertexColors: true, roughness: opts.roughness ?? 0.6, metalness: 0,
+    map: opts.map || null, normalMap: opts.normalMap || null,
   });
+  if (opts.normalMap) mat.normalScale = new THREE.Vector2(opts.normalScale ?? 1, opts.normalScale ?? 1);
   mat.userData.uniforms = {
     uFuzz: { value: new THREE.Color(opts.fuzz || 0x3a2a24) },
     uWetRough: { value: opts.wetRough ?? 0.22 },
@@ -86,6 +87,10 @@ uniform float uAOStrength;
 #define SKIN_DIRECT_AO mix( 1.0, vAO, 0.55 * uAOStrength )
 #define SKIN_FUZZ uFuzz`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+#ifdef USE_MAP
+  roughnessFactor = mix( 0.28, 0.9, sampledDiffuseColor.a );
+  diffuseColor.a = opacity;
+#endif
 roughnessFactor = mix( roughnessFactor, uWetRough, vWet );`)
       .replace('#include <aomap_fragment>', `#include <aomap_fragment>
 {

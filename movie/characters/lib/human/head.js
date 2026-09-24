@@ -11,21 +11,29 @@ import { createEars } from './ears.js';
 import { createBrows, browDensity, BROW_SHAPES } from './brows.js';
 import { makeSkinMaterial, makeHairMaterial, srgb } from './materials.js';
 import { gradient, fieldAO, clamp, mix, sstep } from './sdf.js';
+import { headUV, bakeHeadSkin, NEUTRAL_UV } from './skintex.js';
 
 const lin = hex => { const c = srgb(hex); return [c.r, c.g, c.b]; };
 const mix3 = (a, b, t) => [mix(a[0], b[0], t), mix(a[1], b[1], t), mix(a[2], b[2], t)];
 
 export const SKIN = {
   maya: {
-    base: 0x8a563a, cheek: 0x985640, forehead: 0x8e5c40, under: 0x6f4533, lid: 0x7a4a38, nose: 0x925840,
-    lip: 0x6e3a33, lipIn: 0x9a4b48, rim: 0xa8645c, scalp: 0x2a1b14, neck: 0x7e4e34, brow: 0x2c1a12,
-    browHair: 0x1d120c, grey: 0x9a918a, fuzz: 0x40302a, wrap: [0.55, 0.25, 0.16],
+    base: 0xa06a4a, cheek: 0xa8674c, forehead: 0xa26e4e, under: 0x85543f, lid: 0x8e5a44, nose: 0xa6674b,
+    lip: 0x7e4539, lipIn: 0xa8554e, rim: 0xa8645c, scalp: 0x2a1b14, neck: 0x7e4e34, brow: 0x2c1a12,
+    browHair: 0x1d120c, grey: 0x9a918a, fuzz: 0x40302a, wrap: [0.42, 0.2, 0.13],
   },
   sam: {
-    base: 0x5a3622, cheek: 0x603823, forehead: 0x5e3a25, under: 0x4a2c1d, lid: 0x4f2f20, nose: 0x5f3824,
-    lip: 0x4a2a24, lipIn: 0x7c3c3a, rim: 0x8a4a44, scalp: 0x15100c, neck: 0x533120, brow: 0x1c120c,
-    browHair: 0x120b08, grey: 0x777069, fuzz: 0x2e2420, wrap: [0.6, 0.26, 0.17],
+    base: 0x6e4430, cheek: 0x74462f, forehead: 0x714733, under: 0x5a3727, lid: 0x5f3a2a, nose: 0x754630,
+    lip: 0x55302a, lipIn: 0x8a4442, rim: 0x8a4a44, scalp: 0x15100c, neck: 0x533120, brow: 0x1c120c,
+    browHair: 0x120b08, grey: 0x777069, fuzz: 0x2e2420, wrap: [0.45, 0.21, 0.14],
   },
+};
+
+export const SKIN_FEATURES = {
+  maya: { age: 1, spots: 26, moles: [[0.029, -0.047, 0.0011, 0.8], [-0.041, -0.012, 0.0007, 0.6]], lipLines: 30,
+    nasolabial: 1.25, neckLines: 1, redness: 0.5, stubble: 0, poreCount: 24000, normalStrength: 1.0 },
+  sam: { age: 0, spots: 4, moles: [[-0.034, -0.052, 0.0008, 0.7]], lipLines: 34, nasolabial: 0.55, neckLines: 0.3,
+    redness: 0.35, stubble: 0.8, foreheadLine: 0.6, poreCount: 26000, normalStrength: 1.0 },
 };
 
 export const PERSONA = {
@@ -95,11 +103,11 @@ export function createHead(id, { rnd, log } = {}) {
     if (inZone || (Math.abs(x) < mo.w * 1.1 && Math.abs(dy) < 0.012 && z > 0.06)) {
       const edge = 0.00045;
       const lipT = sstep(hh + edge, hh - edge, Math.abs(dy)) * sstep(mo.w * 1.02, mo.w * 0.9, Math.abs(x));
-      if (k === 3 && r <= 1) { c = mix3(C.lip, C.lipIn, 0.55); wt = 0.8; }
+      if (k === 3 && r === 0) { c = mix3(C.lip, C.lipIn, 0.5); wt = 0.7; }
       else { c = mix3(c, C.lip, lipT); wt = 0.32 * lipT; }
     }
     if (k === 4 || k === 5) {
-      const deep = k === 5 ? 1 : clamp((-r - 1) / 3);
+      const deep = k === 5 ? 1 : clamp((-r - 3) / 3);
       c = mix3(C.lipIn, [0.03, 0.008, 0.008], Math.pow(deep, 0.6));
       wt = 0.9 - 0.4 * deep;
     }
@@ -126,15 +134,53 @@ export function createHead(id, { rnd, log } = {}) {
     wet[v] = wt; ao[v] = a;
   }
 
+  // ------------------------------------------------ UVs + baked skin maps
+  const uv = new Float32Array(n * 2), bakeMask = new Uint8Array(n);
+  for (let v = 0; v < n; v++) {
+    const k = M.kind[v];
+    if (k === 0 || k === 1 || k === 3) {
+      const q = headUV(pos[3 * v], pos[3 * v + 1], pos[3 * v + 2]);
+      uv[2 * v] = q[0]; uv[2 * v + 1] = q[1]; bakeMask[v] = 1;
+    }
+  }
+  // interior vertices borrow the uv of their partner on the lid margin / lip line
+  const partnerOf = new Int32Array(n).fill(-1);
+  for (const [key] of [['L'], ['R']]) {
+    const rings = hm.eyeRings[key];
+    for (let k = -3; k < 0; k++) rings[k].forEach((v, j) => { partnerOf[v] = rings[0][j]; });
+  }
+  for (let k = -hm.bagRings; k < 0; k++) hm.mouthRings[k].forEach((v, j) => { partnerOf[v] = hm.mouthRings[0][j]; });
+  for (let v = 0; v < n; v++) {
+    if (M.kind[v] === 5) partnerOf[v] = hm.mouthRings[0][hm.MM / 4];
+    const pv = partnerOf[v];
+    if (pv >= 0) { uv[2 * v] = uv[2 * pv]; uv[2 * v + 1] = uv[2 * pv + 1]; }
+  }
+  // the texture carries the outer skin colour; interior vertex colours become ratios
+  const vcol = new Float32Array(n * 3).fill(1);
+  for (let v = 0; v < n; v++) {
+    const pv = partnerOf[v];
+    if (pv < 0) continue;
+    for (let i = 0; i < 3; i++) vcol[3 * v + i] = col[3 * v + i] / Math.max(0.01, col[3 * pv + i]);
+  }
+  const tb0 = performance.now();
+  const tmpG = new THREE.BufferGeometry();
+  tmpG.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  tmpG.setIndex(hm.indices);
+  tmpG.computeVertexNormals();
+  const tex = bakeHeadSkin({ positions: pos, normals: tmpG.attributes.normal.array, indices: hm.indices, uvs: uv, colors: col, bakeMask },
+    SKIN_FEATURES[id], L, mo, rnd);
+  if (log) log(`skin bake ${id}: ${(performance.now() - tb0).toFixed(0)} ms`);
+
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(Float32Array.from(pos), 3));
   geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
-  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(vcol, 3));
+  geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
   geo.setAttribute('wet', new THREE.BufferAttribute(wet, 1));
   geo.setAttribute('ao', new THREE.BufferAttribute(ao, 1));
   geo.setIndex(hm.indices);
   geo.computeVertexNormals();
-  const skinMat = makeSkinMaterial({ wrap: S.wrap, fuzz: S.fuzz });
+  const skinMat = makeSkinMaterial({ wrap: S.wrap, fuzz: S.fuzz, map: tex.map, normalMap: tex.normalMap });
   const skin = new THREE.Mesh(geo, skinMat);
   skin.name = 'skinHead';
   skin.frustumCulled = false;

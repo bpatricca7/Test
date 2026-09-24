@@ -52,18 +52,20 @@ export function euler3(yaw, pitch, roll) {
 // ---------------------------------------------------------------------------
 export const HEAD = {
   cran: { c: [0, 0.03, -0.045], r: [0.084, 0.097, 0.128], tilt: 0.5 },
-  face: { c: [0, -0.018, 0.026], r: [0.068, 0.083, 0.072] },
-  jawA: [0, -0.04, 0.028], jawB: [0, -0.114, 0.056], jawRa: 0.046, jawRb: 0.012,
-  cheek: { c: [0.047, -0.036, 0.047], r: [0.024, 0.019, 0.027] },
-  brow: { c: [0, 0.034, 0.047], r: [0.078, 0.034, 0.055] },
-  muzzle: { c: [0, -0.069, 0.066], r: [0.024, 0.02, 0.023] },
+  face: { c: [0, -0.016, 0.024], r: [0.068, 0.078, 0.07] },
+  jawA: [0, -0.04, 0.028], jawB: [0, -0.104, 0.052], jawRa: 0.046, jawRb: 0.0145,
+  cheek: { c: [0.047, -0.036, 0.045], r: [0.024, 0.018, 0.026] },
+  brow: { c: [0, 0.038, 0.04], r: [0.074, 0.03, 0.05] },
+  muzzle: { c: [0, -0.066, 0.062], r: [0.024, 0.019, 0.022] },
   temple: { c: [0.083, 0.004, 0.012], r: [0.018, 0.026, 0.03] },
+  ridge: { a: [0.028, 0.07, 0.055], b: [0.05, 0.1, -0.12], r: 0.006 },
   // eye (left; the right is mirrored): almond ellipsoid, yawed out, outer corner up
-  eye: { c: [0.041, 0.004, 0.061], r: [0.03, 0.0175, 0.019], yaw: 0.36, roll: 0.24, pitch: -0.06 },
-  sock: { grow: [1.16, 1.3, 1.0], fwd: 0.0035, k: 0.009 },
-  mouthDir: [0, -0.071, 0.088],
-  W0: 0.0162,          // half-width of the mouth slit
+  eye: { c: [0.041, 0.004, 0.05], r: [0.034, 0.0198, 0.021], yaw: 0.42, roll: 0.26, pitch: -0.04 },
+  lid: { grow: 1.065, k: 0.013 },    // skin over the eyeball: the lids are this bulge, cut open in the shader
+  mouthDir: [0, -0.068, 0.084],
+  W0: 0.0158,          // half-width of the mouth slit
 };
+export const HS = 1.14;   // head scale (head space -> root space)
 
 export function makeSkull() {
   const H = HEAD;
@@ -74,7 +76,7 @@ export function makeSkull() {
     return { side, c: [side * e.c[0], e.c[1], e.c[2]], R, r: e.r.slice() };
   });
   const eL = eyes[0];
-  const sock = H.sock;
+  const lidG = H.lid.grow;
   // local coords of point in eye frame (left eye; callers mirror x)
   function eyeLocal(e, x, y, z) {
     const dx = x - e.c[0], dy = y - e.c[1], dz = z - e.c[2], R = e.R;
@@ -92,10 +94,9 @@ export function makeSkull() {
     d = smin(d, sdEll(x - H.brow.c[0], y - H.brow.c[1], z - H.brow.c[2], ...H.brow.r), 0.03);
     d = smin(d, sdEll(x - H.muzzle.c[0], y - H.muzzle.c[1], z - H.muzzle.c[2], ...H.muzzle.r), 0.016);
     d = smax(d, -sdEll(ax - H.temple.c[0], y - H.temple.c[1], z - H.temple.c[2], ...H.temple.r), 0.02);
-    // eye socket (mirrored)
+    // the lids: skin bulging over the almond eyeball (mirrored); the opening is cut per-pixel
     const l = eyeLocal(eL, ax, y, z);
-    const s = sdEll(l[0], l[1], l[2] - sock.fwd, eL.r[0] * sock.grow[0], eL.r[1] * sock.grow[1], eL.r[2] * sock.grow[2]);
-    d = smax(d, -s, sock.k);
+    d = smin(d, sdEll(l[0], l[1], l[2], eL.r[0] * lidG, eL.r[1] * lidG, eL.r[2] * lidG), H.lid.k);
     return d;
   }
   function sdEye(x, y, z) {
@@ -334,7 +335,7 @@ export function deformHead(hd, m, out) {
     const b = rowB[j];
     const fl = Math.exp(-((b / 0.0095) ** 2));           // lip region falloff
     const fw = Math.exp(-((b / 0.016) ** 2));            // width falloff (reaches the cheeks)
-    const bulge = -0.0007 * Math.exp(-((b / 0.0009) ** 2)) + 0.0013 * Math.exp(-(((b - 0.0024) / 0.0019) ** 2));
+    const bulge = -0.0009 * Math.exp(-((b / 0.0009) ** 2)) + 0.0021 * Math.exp(-(((b - 0.0026) / 0.0019) ** 2)) - 0.00045 * Math.exp(-(((b - 0.0056) / 0.0011) ** 2));
     for (let i = 0; i < NA; i++) {
       const k = j * cols + i;
       let X = planar[k * 2], Y = planar[k * 2 + 1];
@@ -348,11 +349,21 @@ export function deformHead(hd, m, out) {
       if (up) Y += lift * shape * fl;
       if (down) Y += (0.0032 * m.tuck + 0.0006 * m.press) * shape * fl;
       surf(X, Y, tmpA);
-      let dz = bulge * (1 - 0.55 * m.press) * (1 - 0.35 * xn * xn);
+      // lips: upper a little fuller in the middle (cupid's bow), lower fuller overall
+      const lipShape = up ? (1 - 0.3 * xn * xn) * (1 + 0.12 * Math.exp(-(((Math.abs(xn) - 0.3) / 0.18) ** 2))) : (1.15 - 0.45 * xn * xn);
+      let dz = bulge * (1 - 0.55 * m.press) * lipShape * (1 + 0.5 * m.pout);
       dz += 0.0055 * m.pout * fl * (0.4 + 0.6 * shape);
       if (down) dz -= 0.0026 * m.tuck * fl * shape;
       if (up) dz += 0.0005 * m.tuck * fl * shape;
       dz -= 0.0006 * m.press * fl;
+      // corner dimples (commissures)
+      const cx = Math.abs(X) - W0 * kx;
+      dz -= 0.0009 * Math.exp(-((cx / 0.0022) ** 2) - ((Y / 0.0028) ** 2)) * (1 - 0.6 * m.round);
+      // philtrum: a soft groove with two ridges above the upper lip
+      if (up && b > 0.0035) {
+        const ph = Math.exp(-(((b - 0.0085) / 0.004) ** 2));
+        dz += ph * (-0.0006 * Math.exp(-((X / 0.0022) ** 2)) + 0.0004 * Math.exp(-(((Math.abs(X) - 0.0036) / 0.0016) ** 2)));
+      }
       const o = k * 3;
       out[o] = tmpA[0] + A[0] * dz; out[o + 1] = tmpA[1] + A[1] * dz; out[o + 2] = tmpA[2] + A[2] * dz;
     }
@@ -403,7 +414,7 @@ export function deformHead(hd, m, out) {
 // eyelids: shells over the almond eyeball, generated in the eye's unit-sphere
 // space so they conform to it; the edge rolls in to meet the eyeball
 // ---------------------------------------------------------------------------
-export const LID = { nu: 30, nv: 12, phiE: 1.85, phiC: 1.02, top: 1.35, corner: -0.06, openU: 0.6, openL: -0.5, thick: 0.075 };
+export const LID = { nu: 34, nv: 14, phiE: 1.95, phiC: 1.18, top: 1.4, corner: -0.07, openU: 0.8, openL: -0.62, thick: 0.07 };
 
 export function lidEdges(phi, side, lids) {
   // returns [upperEdge, lowerEdge] elevation (rad) at azimuth phi
@@ -436,7 +447,9 @@ export function writeLid(buf, patch, eyeM, upper, side, lids, rows) {
       const e = top + (edge - top) * w;
       // thickness: full above, rolling in over the last rows
       const roll = w < 0.8 ? 0 : (w - 0.8) / 0.2;
-      const rf = 1 + L.thick * (1 - roll * roll) - 0.012 * roll * roll;
+      let rf = 1 + L.thick * (1 - roll * roll) - 0.012 * roll * roll;
+      // lid fold: a soft crease line above the margin
+      rf += (upper ? 0.035 : 0.02) * Math.exp(-(((w - 0.6) / 0.09) ** 2)) - (upper ? 0.02 : 0.01) * Math.exp(-(((w - 0.72) / 0.05) ** 2));
       const ce = Math.cos(e);
       const lx = Math.sin(phi) * ce * rf, ly = Math.sin(e) * rf, lz = Math.cos(phi) * ce * rf;
       const M = eyeM;

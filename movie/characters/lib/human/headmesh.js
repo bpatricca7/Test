@@ -151,8 +151,9 @@ export function buildHeadMesh(H, id, opt = {}) {
     }
   }
   // the mouth bag: lips roll in, then a pouch behind the teeth
+  // [dyUp, dz, scale, dyLow, dzLow]; negative dy curls the lip edge past the contact line
   const bag = [
-    [0.00055, 0.0018, 1.0], [0.0034, 0.0034, 1.02], [0.0098, 0.0052, 1.06, 0.0085, 0.0062],
+    [-0.00035, 0.0011, 1.0], [0.0012, 0.0027, 1.01], [0.0045, 0.0038, 1.03], [0.0098, 0.0054, 1.06, 0.0085, 0.0064],
     [0.0128, 0.0125, 1.1], [0.0100, 0.024, 1.0], [0.0042, 0.032, 0.62],
   ];
   const z0 = mo.lineZ(0);
