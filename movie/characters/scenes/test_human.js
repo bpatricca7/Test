@@ -43,8 +43,10 @@ const CLIPS = {
   talk: tt => ({ t: 60 + tt, energy: 0.7, visemes: visAt(tt), lookAt: tt < 1.3 ? [0.05, 1.55, 2] : [1.3, 1.5, 1.0], mouth: { smile: 0.15 } }),
   gaze: tt => ({ t: 70 + tt, energy: 0.6, lookAt: tt < 0.5 ? [-1.5, 1.6, 1.5] : [1.6, 1.7, 1.2] }),
   recline: tt => ({ t: 80 + tt, energy: 0.5, sit: 1, seatHeight: 0.42, recline: 1 - smooth(0.3, 1.2, tt), lookAt: tt > 0.6 ? [0.3, 1.2, 2.5] : null }),
+  idle: tt => ({ t: 90 + tt, energy: 0.6, lookAt: [0.2, 1.55, 3], armL: {}, armR: {} }),
+  sitdown: tt => ({ t: 100 + tt, energy: 0.6, sit: smooth(0.4, 1.5, tt), seatHeight: 0.47, lookAt: [0.2, 1.3, 3] }),
 };
-const CLIP_KEYS = ['walk', 'sitstand', 'startle', 'talk', 'gaze', 'recline'];
+const CLIP_KEYS = ['walk', 'sitstand', 'startle', 'talk', 'gaze', 'recline', 'idle', 'sitdown'];
 
 export async function create(env) {
   const scene = new THREE.Scene();
@@ -183,12 +185,13 @@ export async function create(env) {
         who.set(st);
         const e = who.getEye(new THREE.Vector3());
         const key = CLIP_KEYS[v];
-        props.visible = key === 'sitstand' || key === 'recline';
+        props.visible = key === 'sitstand' || key === 'recline' || key === 'sitdown';
         desk.visible = false;
         seatA.visible = props.visible; seatB.visible = false;
         seatA.position.set(0, (key === 'recline' ? 0.42 : 0.47) - 0.03, -0.2);
         if (key === 'walk') { const zc = tt < 2 ? 0.3 : 2.2; camera.position.set(2.7, 0.95, zc); camera.lookAt(0, 0.85, zc); camera.fov = 40; }
-        if (key === 'sitstand' || key === 'recline') { camera.position.set(2.4, 1.05, 0.9); camera.lookAt(0, 0.95, 0.05); camera.fov = 40; }
+        if (key === 'sitstand' || key === 'recline' || key === 'sitdown') { camera.position.set(2.7, 1.0, 0.15); camera.lookAt(0, 0.92, 0.15); camera.fov = 40; }
+        if (key === 'idle') { camera.position.set(0.35, 1.0, 3.3); camera.lookAt(0, 0.9, 0); camera.fov = 36; }
         if (key === 'startle') { camera.position.set(0.45, 1.45, 1.55); camera.lookAt(0, 1.42, 0); camera.fov = 30; }
         if (key === 'talk' || key === 'gaze') { camera.position.set(e.x + 0.08, e.y + 0.01, e.z + 0.72); camera.lookAt(e.x, e.y - 0.03, e.z); camera.fov = 24; }
         camera.updateProjectionMatrix();

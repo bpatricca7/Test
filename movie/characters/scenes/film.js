@@ -29,7 +29,7 @@ export async function create(env) {
   // keep the monitor's reflection in Maya's lenses subtle, so her eyes stay readable
   if (maya.setScreen) maya.setScreen({ intensity: 0.18 });
   // soften the lens gloss so point lights don't punch white hotspots over her eyes
-  maya.root.traverse(o => { if (o.material && o.material.userData && o.material.userData.uniforms && o.material.userData.uniforms.uScrI) o.material.roughness = 0.42; });
+  maya.root.traverse(o => { if (o.material && o.material.userData && o.material.userData.uniforms && o.material.userData.uniforms.uScrI) { o.material.roughness = 0.42; o.material.envMapIntensity = 0.06; } });
 
   const interior = new THREE.Scene();
   interior.background = new THREE.Color(0x000000);

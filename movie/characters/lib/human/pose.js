@@ -61,7 +61,7 @@ export function normalizeState(st = {}) {
  * fear), occasional posture resets.
  */
 export function idleLife(t, seed, E, fear = 0) {
-  const w = Math.tanh(2.8 * fbm(t, seed + 1, 0.05, 2));
+  const w = Math.tanh(4.2 * fbm(t, seed + 1, 0.065, 2));
   const sway = fbm(t, seed + 2, 0.28, 3);
   const ph1 = 0.235 * t + 0.9 * fbm(t, seed + 4, 0.022, 2);
   const depth = 0.8 + 0.28 * fbm(t, seed + 5, 0.07, 2);
@@ -130,7 +130,7 @@ export const gaitU = (phase, side) => { const p0 = side > 0 ? 0.25 : 0.75; retur
 function standPrint(id, side, life, idleAmt) {
   const B = BODY[id];
   const unw = clamp(-side * life.w) * idleAmt; // this foot is unweighted
-  return { x: side * (B.ankle[0] + 0.012 + 0.012 * unw), z: B.ankle[2] + 0.005 + 0.032 * unw, yaw: side * (0.12 + 0.06 * unw), pitch: 0.12 * unw };
+  return { x: side * (B.ankle[0] + 0.012 + 0.014 * unw), z: B.ankle[2] + 0.005 + 0.04 * unw, yaw: side * (0.12 + 0.08 * unw), pitch: 0.16 * unw };
 }
 /**
  * Where a foot's print is (char space) for state S at gait fraction uRef
@@ -230,13 +230,13 @@ export function solvePose(S, ctx, fx = {}) {
   hipsPos.y += (0.017 * bob - 0.013) * wa * stepVar;
   hipsPos.x += 0.022 * swayX * wa;
   const idleAmt = (1 - sit) * (1 - wa) * (0.35 + 0.65 * E);
-  hipsPos.x += (0.026 * life.w + 0.005 * life.sway) * idleAmt;
-  hipsPos.y -= 0.005 * Math.abs(life.w) * idleAmt;
+  hipsPos.x += (0.04 * life.w + 0.006 * life.sway) * idleAmt;
+  hipsPos.y -= 0.008 * Math.abs(life.w) * idleAmt;
   hipsPos.y -= 0.032 * st.body * (1 - sit);
   hipsPos.y -= fx.dip || 0;
   if (fx.rootLag) { const lx = clamp(fx.rootLag.x, -0.08, 0.08), lz = clamp(fx.rootLag.z, -0.08, 0.08); hipsPos.x += lx; hipsPos.z += lz; hipsPos.y -= 0.25 * Math.hypot(lx, lz); }
   const pelvisTilt = 0.18 * sit + 0.25 * rec - 0.02 * wa;
-  const pelvisRoll = hipDrop + 0.05 * life.w * idleAmt;
+  const pelvisRoll = hipDrop + 0.075 * life.w * idleAmt;
   setLocal('root', new THREE.Quaternion());
   setLocal('hips', qEuler(-pelvisTilt, pelvisYawW, pelvisRoll), hipsPos.clone().sub(hipsBind));
 
@@ -252,7 +252,7 @@ export function solvePose(S, ctx, fx = {}) {
   const walkCounter = -pelvisYawW * 1.35;
   const idleSway = life.sway * 0.012 * idleAmt;
   const startleBack = -0.14 * st.body;
-  const contra = -0.05 * life.w * idleAmt; // shoulders tilt against the hips
+  const contra = -0.075 * life.w * idleAmt; // shoulders tilt against the hips
   const spineRoll = idleSway - hipDrop * 0.6 + contra * 0.9 + 0.02 * tr(1);
   const chestRoll = idleSway * 0.6 - hipDrop * 0.3 + contra * 0.6 + 0.02 * tr(2);
   setLocal('spine', qEuler(leanF * 0.38 + reclineBack * 0.45 + pelvisTilt * 0.55 + startleBack * 0.3 + 0.03 * tr(3), tw * 0.3 + walkCounter * 0.4, spineRoll));
@@ -338,7 +338,7 @@ export function solvePose(S, ctx, fx = {}) {
       let w = wts.rest;
       const swing = wa * 0.95 * stepVar * (s > 0 ? 1 : -1) * Math.cos(TAU * (ph - 0.75 - 0.05));
       const sw = fbm(t, seed + 11 + s, 0.3, 3) * 0.012 * idleAmt;
-      const ang = 0.34 * swing;
+      const ang = 0.42 * swing;
       const hang = armLen * (0.955 - 0.045 * Math.max(0, swing));
       const dirS = cdir(s * 0.07 + sw, -Math.cos(ang), Math.sin(ang) + 0.045);
       const stand = shoulder.clone().addScaledVector(dirS, hang).add(coff(s * 0.012, 0.0, 0.0));

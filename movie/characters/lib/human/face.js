@@ -425,7 +425,7 @@ export function coarticulate(win) {
     for (const v in VISEMES) sum += vis[v] || 0;
     for (const v in VISEMES) {
       let w = vis[v] || 0;
-      if (v === 'sil') w = Math.max(w, 1 - Math.min(1, sum));
+      if (v === 'sil' && sum > 0) w = Math.max(w, 1 - Math.min(1, sum));
       if (w <= 0) continue;
       const V = VISEMES[v];
       const a = kl * DOM_LIP[v] * w, b = kj * DOM_JAW[v] * w, c = kt * w;
@@ -434,15 +434,18 @@ export function coarticulate(win) {
       for (const ch of LIP_CH) ln[ch] += a * (V[ch] || 0);
       for (const ch of TONGUE_CH) tn[ch] += c * (V[ch] || 0);
     }
-    if (Math.abs(dt) <= 0.026) { pp = Math.max(pp, vis.PP || 0); ff = Math.max(ff, vis.FF || 0); }
+    const kc = Math.exp(-(dt * dt) / (2 * 0.028 * 0.028));
+    pp = Math.max(pp, (vis.PP || 0) * kc); ff = Math.max(ff, (vis.FF || 0) * kc);
   }
   out.jaw = jd > 0 ? jn / jd : 0;
   for (const ch of LIP_CH) out[ch] = ld > 0 ? ln[ch] / ld : 0;
   for (const ch of TONGUE_CH) out[ch] = td > 0 ? tn[ch] / td : 0;
-  // closures reach contact
-  out.press = Math.max(out.press, pp); out.seal = Math.max(out.seal, pp);
-  out.jaw *= 1 - 0.92 * pp;
-  out.tuck = Math.max(out.tuck, ff); out.jaw = mix(out.jaw, Math.min(out.jaw, 0.12), ff);
+  // closures reach contact, even for a quick P/B/M or F/V squeezed between vowels
+  const cl = sstep(0.08, 0.55, pp), fc = sstep(0.08, 0.55, ff);
+  out.press = Math.max(out.press, cl); out.seal = Math.max(out.seal, cl);
+  out.jaw *= 1 - 0.95 * cl;
+  for (const ch of ['pucker', 'funnel', 'stretch', 'upperUp', 'lowerDown']) out[ch] *= 1 - 0.6 * cl;
+  out.tuck = Math.max(out.tuck, fc); out.jaw = mix(out.jaw, Math.min(out.jaw, 0.12), fc);
   return out;
 }
 
