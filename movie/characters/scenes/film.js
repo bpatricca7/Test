@@ -26,6 +26,10 @@ export async function create(env) {
   const maya = await load('../lib/human.js', 'createHuman', createStandInHuman, 'maya');
   const sam = await load('../lib/human.js', 'createHuman', createStandInHuman, 'sam');
   const visitor = await load('../lib/visitor.js', 'createVisitor', createStandInVisitor);
+  // keep the monitor's reflection in Maya's lenses subtle, so her eyes stay readable
+  if (maya.setScreen) maya.setScreen({ intensity: 0.18 });
+  // soften the lens gloss so point lights don't punch white hotspots over her eyes
+  maya.root.traverse(o => { if (o.material && o.material.userData && o.material.userData.uniforms && o.material.userData.uniforms.uScrI) o.material.roughness = 0.42; });
 
   const interior = new THREE.Scene();
   interior.background = new THREE.Color(0x000000);
@@ -498,13 +502,17 @@ export async function create(env) {
       P.copy(m).addScaledVector(f, -lerp(1.15, 1.0, u)).addScaledVector(right, 0.42).add(new THREE.Vector3(0, 0.12, 0)).add(hand(t, 0.005, 39));
       T.copy(m).lerp(v, 0.62).add(new THREE.Vector3(0, 0.12, 0)); return 44;
     },
-    visitor_ms: (t, u) => { const v = eyeOf(visitor); const f = facing(MK.visitor.yaw);
-      P.copy(v).addScaledVector(f, lerp(2.3, 2.0, u)).add(new THREE.Vector3(0, -0.45, 0)).add(hand(t, 0.008, 31)); T.copy(v).add(new THREE.Vector3(0, -0.45, 0)); return 38; },
+    visitor_ms: (t, u) => {
+      // from the front of the room, clear of Sam: the Visitor gesturing, Maya at frame left
+      const v = eyeOf(visitor);
+      P.set(lerp(0.15, 0.3, u), 1.5, lerp(1.45, 1.3, u)).add(hand(t, 0.006, 31));
+      T.copy(v).add(new THREE.Vector3(-0.15, -0.4, 0)); return 40;
+    },
     dissolve_wide: (t, u) => { P.set(-1.85, 1.45, lerp(-1.0, -0.8, u)).add(hand(t, 0.008, 33)); T.set(lerp(1.3, 2.2, smooth(0.2, 0.9, u)), 1.3, lerp(-0.4, 0.2, u)); return 50; },
     sam_cu_after: (t, u) => faceShot(sam, 0, t, u, { dist: 1.0, side: 0.1, up: 0.0, fov: 32, lookFrom: new THREE.Vector3(1.2, 1.55, 1.7), seed: 35 }),
     maya_window: (t, u) => {
       const walkU = smooth(B.maya_to_window.start, B.maya_to_window.end, t);
-      if (walkU < 1) { P.set(lerp(-0.4, 0.2, walkU), 1.5, lerp(1.6, 1.4, walkU)); T.copy(eyeOf(maya)).add(new THREE.Vector3(0, -0.2, 0)); return 42; }
+      if (walkU < 1) { P.set(lerp(1.35, 1.55, walkU), 1.5, lerp(1.8, 1.65, walkU)); T.copy(eyeOf(maya)).add(new THREE.Vector3(0, -0.2, 0)); return 42; }
       return faceShot(maya, 0, t, u, { dist: 0.62, side: -0.05, up: 0.0, fov: 30, lookFrom: new THREE.Vector3(2.35, 1.5, -0.35), seed: 37, push: 0.05 });
     },
     ext_dish: (t, u) => {
@@ -548,7 +556,8 @@ export async function create(env) {
 
     const fov = (SHOT_FN[shot.id] || SHOT_FN.int_wide)(t, u);
     const close = /_cu|_mcu|reaction|_ots|arc_two|maya_window/.test(shot.id);
-    faceFill.position.copy(P).add(new THREE.Vector3(0, 0.25, 0));
+    // above and to the side of the lens, so glasses and eyes don't mirror it straight back
+    faceFill.position.copy(P).add(new THREE.Vector3(0, 0.55, 0)).add(new THREE.Vector3().subVectors(T, P).cross(new THREE.Vector3(0, 1, 0)).setLength(0.45));
     faceFill.intensity = isExt ? 0 : (close ? 0.9 : 0.3) * (0.55 + 0.45 * (1 - U.window01(t, B.surge.start, B.lights_return, 0.3, 0.6)));
     camera.position.copy(P);
     camera.lookAt(T);
