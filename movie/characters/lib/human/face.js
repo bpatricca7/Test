@@ -13,6 +13,7 @@
 // deformers run once, so the jaw and lids stay rigid and exact.
 
 import { clamp, mix, sstep } from './sdf.js';
+import { fbm } from './noise.js';
 
 const DEG = Math.PI / 180;
 
@@ -396,8 +397,57 @@ export function createFaceRig(hm, H, opt = {}) {
   return { deform, rest, out, wJaw, lidAngle, lidU, lidL, lidSide, eyes, fields, jawPivot, JAW_MAX, isUpperV, ringM };
 }
 
+// ------------------------------------------------------ co-articulation ---
+// Dominance model (Cohen-Massaro style): every viseme in a short window around
+// t pulls each channel toward its own value with a strength = its weight x its
+// dominance for that channel group x a temporal kernel. Lip shape (rounding,
+// spreading) is dominated by the rounded/labial visemes and anticipates the
+// next sound; the jaw is dominated by the open vowels; the tongue is local.
+// Closures (P/B/M, F/V) always reach full contact, even when fast.
+const DOM_LIP = { sil: 0.25, PP: 1.0, FF: 0.9, TH: 0.35, DD: 0.25, kk: 0.2, CH: 0.8, SS: 0.55, nn: 0.25, RR: 0.65, aa: 0.45, E: 0.5, I: 0.55, O: 0.9, U: 1.0 };
+const DOM_JAW = { sil: 0.5, PP: 0.8, FF: 0.6, TH: 0.5, DD: 0.45, kk: 0.45, CH: 0.5, SS: 0.7, nn: 0.45, RR: 0.4, aa: 1.0, E: 0.8, I: 0.6, O: 0.85, U: 0.6 };
+const LIP_CH = ['seal', 'press', 'tuck', 'upperUp', 'lowerDown', 'pucker', 'funnel', 'stretch', 'smile'];
+const TONGUE_CH = ['tipUp', 'tongueOut', 'back'];
+/** win: [{dt (s, + = future), vis: {viseme: weight}}] -> viseme control values */
+export function coarticulate(win) {
+  const out = { jaw: 0 };
+  for (const c of LIP_CH) out[c] = 0;
+  for (const c of TONGUE_CH) out[c] = 0;
+  const K = (dt, sP, sF) => { const s = dt > 0 ? sF : sP; return Math.exp(-(dt * dt) / (2 * s * s)); };
+  let jn = 0, jd = 0, ld = 0, td = 0;
+  const ln = {}, tn = {};
+  for (const c of LIP_CH) ln[c] = 0;
+  for (const c of TONGUE_CH) tn[c] = 0;
+  let pp = 0, ff = 0;
+  for (const { dt, vis } of win) {
+    const kl = K(dt, 0.04, 0.058), kj = K(dt, 0.034, 0.034), kt = K(dt, 0.022, 0.022);
+    let sum = 0;
+    for (const v in VISEMES) sum += vis[v] || 0;
+    for (const v in VISEMES) {
+      let w = vis[v] || 0;
+      if (v === 'sil') w = Math.max(w, 1 - Math.min(1, sum));
+      if (w <= 0) continue;
+      const V = VISEMES[v];
+      const a = kl * DOM_LIP[v] * w, b = kj * DOM_JAW[v] * w, c = kt * w;
+      ld += a; jd += b; td += c;
+      jn += b * (V.jaw || 0);
+      for (const ch of LIP_CH) ln[ch] += a * (V[ch] || 0);
+      for (const ch of TONGUE_CH) tn[ch] += c * (V[ch] || 0);
+    }
+    if (Math.abs(dt) <= 0.026) { pp = Math.max(pp, vis.PP || 0); ff = Math.max(ff, vis.FF || 0); }
+  }
+  out.jaw = jd > 0 ? jn / jd : 0;
+  for (const ch of LIP_CH) out[ch] = ld > 0 ? ln[ch] / ld : 0;
+  for (const ch of TONGUE_CH) out[ch] = td > 0 ? tn[ch] / td : 0;
+  // closures reach contact
+  out.press = Math.max(out.press, pp); out.seal = Math.max(out.seal, pp);
+  out.jaw *= 1 - 0.92 * pp;
+  out.tuck = Math.max(out.tuck, ff); out.jaw = mix(out.jaw, Math.min(out.jaw, 0.12), ff);
+  return out;
+}
+
 /** blend viseme weights + expression layer into the rig's control values */
-export function faceControls(st, persona = {}) {
+export function faceControls(st, persona = {}, life = null) {
   const c = {
     jaw: 0, seal: 0, press: 0, tuck: 0, upperUp: 0, lowerDown: 0, pucker: 0, funnel: 0,
     stretchL: 0, stretchR: 0, smileL: 0, smileR: 0, frownL: 0, frownR: 0, shift: 0,
@@ -408,15 +458,25 @@ export function faceControls(st, persona = {}) {
   };
   const vis = st.visemes || {};
   let sum = 0;
-  for (const k in VISEMES) {
-    const wv = vis[k] || 0;
-    if (!wv) continue;
-    sum += wv;
-    const V = VISEMES[k];
-    for (const p in V) {
-      if (p === 'stretch') { c.stretchL += V[p] * wv; c.stretchR += V[p] * wv; }
-      else if (p === 'smile') { c.smileL += V[p] * wv; c.smileR += V[p] * wv; }
-      else c[p] += V[p] * wv;
+  if (life && life.visCtl) {
+    const v = life.visCtl;
+    for (const p in v) {
+      if (p === 'stretch') { c.stretchL += v[p]; c.stretchR += v[p]; }
+      else if (p === 'smile') { c.smileL += v[p]; c.smileR += v[p]; }
+      else if (p in c) c[p] += v[p];
+    }
+    for (const k in vis) if (k !== 'sil') sum += vis[k] || 0;
+  } else {
+    for (const k in VISEMES) {
+      const wv = vis[k] || 0;
+      if (!wv) continue;
+      sum += wv;
+      const V = VISEMES[k];
+      for (const p in V) {
+        if (p === 'stretch') { c.stretchL += V[p] * wv; c.stretchR += V[p] * wv; }
+        else if (p === 'smile') { c.smileL += V[p] * wv; c.smileR += V[p] * wv; }
+        else c[p] += V[p] * wv;
+      }
     }
   }
   const mouth = st.mouth || {};
@@ -442,11 +502,30 @@ export function faceControls(st, persona = {}) {
   c.browInnerL -= furrow * 0.25; c.browInnerR -= furrow * 0.25;
   const ey = st.eyes || {};
   const blink = clamp(st.blink || 0);
+  // ---- emotion leaks into the lids, cheeks and nasolabial area
+  const fear = life ? clamp(life.fear || 0) : 0;
+  c.browInnerL += fear * 0.45; c.browInnerR += fear * 0.45; c.browOuterL += fear * 0.25; c.browOuterR += fear * 0.25;
+  c.stretchL += fear * 0.35; c.stretchR += fear * 0.35; c.lowerDown += fear * 0.12; c.jaw += fear * 0.05;
+  c.sneerL += smile * 0.12 * (1 + asym) + furrow * 0.12; c.sneerR += smile * 0.12 * (1 - asym) + furrow * 0.12;
+  c.press += furrow * 0.15;
+  c.frownL += sad * 0.18; c.frownR += sad * 0.18;
+  // ---- never perfectly still: slow drift in brows, lids and mouth corners (+ speech emphasis)
+  let sqL = 0, sqR = 0;
+  if (life) {
+    const t = life.t, sd = life.seed || 0, dA = 0.35 + 0.65 * (life.E ?? 0.5);
+    const com = fbm(t, sd + 200, 0.18, 3);
+    c.browInnerL += dA * (0.035 * com + 0.03 * fbm(t, sd + 201, 0.26, 2)); c.browInnerR += dA * (0.035 * com + 0.03 * fbm(t, sd + 202, 0.26, 2));
+    c.browOuterL += dA * (0.03 * fbm(t, sd + 203, 0.21, 2)); c.browOuterR += dA * (0.03 * fbm(t, sd + 204, 0.21, 2));
+    c.smileL += dA * 0.022 * fbm(t, sd + 205, 0.16, 2); c.smileR += dA * 0.022 * fbm(t, sd + 206, 0.16, 2);
+    sqL = dA * 0.03 * (0.5 + 0.5 * fbm(t, sd + 207, 0.2, 2)); sqR = dA * 0.03 * (0.5 + 0.5 * fbm(t, sd + 208, 0.2, 2));
+    const em = clamp(life.emph || 0);
+    c.browInnerL += em * 0.3; c.browInnerR += em * 0.3; c.browOuterL += em * 0.3 * (1 + bAsym); c.browOuterR += em * 0.3 * (1 - bAsym);
+  }
   for (const s of ['L', 'R']) {
     const e = c.eyes[s];
-    e.blink = blink;
-    e.squint = clamp((ey.squint || 0) + smile * 0.35 * (s === 'L' ? 1 + asym : 1 - asym));
-    e.wide = clamp((ey.wide || 0) + up * 0.25);
+    e.blink = life && life['blink' + s] !== undefined ? clamp(life['blink' + s]) : blink;
+    e.squint = clamp((ey.squint || 0) + smile * 0.35 * (s === 'L' ? 1 + asym : 1 - asym) + furrow * 0.2 + sad * 0.08 + (s === 'L' ? sqL : sqR));
+    e.wide = clamp((ey.wide || 0) + up * 0.25 + fear * 0.6);
     e.droop = persona.lidDroop || 0;
   }
   c.cheekL += (ey.squint || 0) * 0.4; c.cheekR += (ey.squint || 0) * 0.4;

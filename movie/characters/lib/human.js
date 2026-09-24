@@ -10,7 +10,7 @@
 
 import * as THREE from 'three';
 import { createHead } from './human/head.js';
-import { faceControls } from './human/face.js';
+import { faceControls, coarticulate } from './human/face.js';
 import { createSkeleton, handBindInfo, BODY } from './human/rig.js';
 import { solvePose, applyPose, normalizeState } from './human/pose.js';
 import { buildBody, torsoSection, cardiganOpenAt } from './human/body.js';
@@ -19,6 +19,7 @@ import { makeSkinMaterial } from './human/materials.js';
 import { createMayaHair, createSamHair } from './human/hair.js';
 import { createGlasses, createHeadphones, createHoodGeoms, createDrawstrings, createKangaroo, createCardiganBits, createWatch, createShirtCollar, skinFromNearest } from './human/props.js';
 import { computeSecondary } from './human/secondary.js';
+import { computePerformance } from './human/motion.js';
 import { knitTexture, weaveTexture, twillTexture, fleeceTexture, leatherTexture, plainTexture, makeClothMaterial } from './human/fabric.js';
 
 const clamp = (x, a = 0, b = 1) => (x < a ? a : x > b ? b : x);
@@ -153,9 +154,11 @@ export async function createHuman(env, id) {
 
   function set(state = {}) {
     const S = normalizeState(state);
-    const pose = solvePose(S, ctx);
-    // ---- secondary motion (springs over sampled past poses, or procedural)
-    const sec = computeSecondary(state, S, pose, ctx);
+    // ---- performance filter: lagging head, hand springs, planted feet, startle, blinks...
+    const perf = computePerformance(state, S, ctx);
+    const pose = solvePose(S, ctx, perf.fx);
+    // ---- secondary motion (springs over the sampled past poses, or procedural)
+    const sec = computeSecondary(state, S, pose, ctx, perf.samples);
     // hem follow-through: rotate the hem bone against the hips' lag
     {
       const l = sec.hips;
@@ -182,24 +185,32 @@ export async function createHuman(env, id) {
     root.updateMatrixWorld(true);
     // ---- face
     const st2 = { ...state };
-    // startle widens the eyes and lifts the brows
-    if (S.startle > 0) {
-      st2.eyes = { ...(state.eyes || {}), wide: clamp((state.eyes?.wide || 0) + S.startle) };
-      st2.brows = { ...(state.brows || {}), raise: clamp((state.brows?.raise || 0) + S.startle * 0.8, -1, 1) };
-      st2.mouth = { ...(state.mouth || {}), jaw: (state.mouth?.jaw || 0) + S.startle * 0.25 };
+    // startle widens the eyes and lifts the brows (fast attack, slower release)
+    const stl = perf.face.startle;
+    if (stl > 0) {
+      st2.eyes = { ...(state.eyes || {}), wide: clamp((state.eyes?.wide || 0) + stl) };
+      st2.brows = { ...(state.brows || {}), raise: clamp((state.brows?.raise || 0) + stl * 0.8, -1, 1) };
+      st2.mouth = { ...(state.mouth || {}), jaw: (state.mouth?.jaw || 0) + stl * 0.25 };
     }
-    const c = faceControls(st2, head.persona);
+    const visCtl = coarticulate(perf.face.visWindow);
+    const c = faceControls(st2, head.persona, {
+      t: S.t, seed, E: S.energy, emph: perf.face.emph, fear: perf.face.fear, visCtl,
+      blinkL: perf.face.blinkL, blinkR: perf.face.blinkR,
+    });
     // gaze: eyes aim at lookAt (world), else straight ahead
     const inv = tmpM.copy(head.group.matrixWorld).invert();
     const gaze = { L: { yaw: 0, pitch: 0 }, R: { yaw: 0, pitch: 0 } };
     if (S.lookAt) {
       const tgt = new THREE.Vector3(...S.lookAt).applyMatrix4(inv);
       for (const k of ['L', 'R']) {
-        const d = tgt.clone().sub(eyeLocal[k]);
+        const d = tgt.clone().sub(eyeLocal[k]); // per eye: vergence on near targets
         gaze[k].yaw = Math.atan2(d.x, d.z);
         gaze[k].pitch = Math.atan2(d.y, Math.hypot(d.x, d.z));
       }
     }
+    // micro-saccades and drift while fixating
+    const go = perf.face.gazeOff, ga = S.lookAt ? 1 : 0.6;
+    for (const k of ['L', 'R']) { gaze[k].yaw += go.yaw * ga; gaze[k].pitch += go.pitch * ga; }
     // the neck: rotation of the head relative to the chest (for the neck skin blend)
     const neckQ = new THREE.Quaternion();
     rig.bones.chest.getWorldQuaternion(tmpQ);

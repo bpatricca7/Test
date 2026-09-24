@@ -8,6 +8,44 @@ import { createHuman } from '../lib/human.js';
 
 const VIS = ['sil', 'PP', 'FF', 'TH', 'DD', 'kk', 'CH', 'SS', 'nn', 'RR', 'aa', 'E', 'I', 'O', 'U'];
 
+// ---- naturalism test clips (pure functions of clip time, with past(dt) like film.js)
+const clamp01 = x => Math.max(0, Math.min(1, x));
+const smooth = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t); };
+const pulse = (t, at, up = 0.12, down = 0.5) => t < at ? 0 : t < at + up ? (t - at) / up : Math.max(0, 1 - (t - at - up) / down);
+const PHON = [['SS', 0.1, 0.2], ['E', 0.2, 0.33], ['PP', 0.33, 0.41], ['nn', 0.55, 0.62], ['U', 0.62, 0.72], ['kk', 0.72, 0.8], ['E', 0.8, 0.9], ['DD', 0.9, 0.96],
+  ['TH', 0.96, 1.02], ['I', 1.02, 1.1], ['SS', 1.1, 1.25], ['I', 1.45, 1.52], ['DD', 1.52, 1.57], ['SS', 1.57, 1.66], ['PP', 1.66, 1.72], ['U', 1.72, 1.84],
+  ['FF', 1.84, 1.9], ['I', 1.9, 1.97], ['kk', 1.97, 2.08], ['aa', 2.2, 2.38], ['O', 2.38, 2.5], ['PP', 2.5, 2.56], ['E', 2.56, 2.7]];
+function visAt(tt) {
+  const w = Object.fromEntries(VIS.map(k => [k, 0]));
+  const lt = tt + 0.045;
+  for (const [v, a0, a1] of PHON) {
+    const ramp = Math.min(0.07, (a1 - a0) * 0.6);
+    const a = smooth(a0 - ramp, a0 + ramp * 0.3, lt) * (1 - smooth(a1 - ramp * 0.3, a1 + ramp, lt));
+    if (a > 0) w[v] += a;
+  }
+  let s = 0; for (const k of VIS) s += w[k];
+  if (s > 1) for (const k of VIS) w[k] /= s;
+  w.sil = Math.max(w.sil, 1 - Math.min(1, s));
+  return w;
+}
+const CLIPS = {
+  walk: tt => {
+    const t0 = 0.6, d = 0.55, steps = 6, L = 2.4, T1 = t0 + steps * d;
+    const st = { t: 30 + tt, energy: 0.6, lookAt: [0, 1.5, 8] };
+    if (tt < t0 || tt > T1) { st.position = [0, 0, tt < t0 ? 0 : L]; return st; }
+    const u = (tt - t0) / (T1 - t0);
+    st.position = [0, 0, u * L];
+    st.walk = { phase: (tt - t0) / (2 * d), amount: smooth(t0, t0 + d * 0.35, tt) * (1 - smooth(T1 - d * 0.35, T1, tt)), stride: L / steps };
+    return st;
+  },
+  sitstand: tt => ({ t: 40 + tt, energy: 0.6, sit: 1 - smooth(0.4, 1.4, tt), seatHeight: 0.47, lookAt: [0.2, 1.4, 3], position: [0, 0, 0] }),
+  startle: tt => ({ t: 50 + tt, energy: 0.8, startle: pulse(tt, 0.5, 0.1, 0.55), lookAt: [0.3, 1.6, 3] }),
+  talk: tt => ({ t: 60 + tt, energy: 0.7, visemes: visAt(tt), lookAt: tt < 1.3 ? [0.05, 1.55, 2] : [1.3, 1.5, 1.0], mouth: { smile: 0.15 } }),
+  gaze: tt => ({ t: 70 + tt, energy: 0.6, lookAt: tt < 0.5 ? [-1.5, 1.6, 1.5] : [1.6, 1.7, 1.2] }),
+  recline: tt => ({ t: 80 + tt, energy: 0.5, sit: 1, seatHeight: 0.42, recline: 1 - smooth(0.3, 1.2, tt), lookAt: tt > 0.6 ? [0.3, 1.2, 2.5] : null }),
+};
+const CLIP_KEYS = ['walk', 'sitstand', 'startle', 'talk', 'gaze', 'recline'];
+
 export async function create(env) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x2a2d33);
@@ -133,6 +171,29 @@ export async function create(env) {
         else face(who, base, 'front');
         return;
       }
+      if (t >= 2000 && t < 2200) {
+        // naturalism clips: t = 2000 + 20*v + (0/10 for maya/sam) + clip time (0..10 s)
+        const v = Math.floor((t - 2000) / 20), rem = t - 2000 - 20 * v;
+        const who = rem < 10 ? maya : sam, other = who === maya ? sam : maya;
+        const tt = rem < 10 ? rem : rem - 10;
+        const clip = CLIPS[CLIP_KEYS[v]];
+        other.set({ position: [6, 0, 6] });
+        hut.visible = false; for (const l of studio) l.visible = true; scene.background.set(0x2a2d33);
+        const st = clip(tt); st.past = dt => clip(tt - dt);
+        who.set(st);
+        const e = who.getEye(new THREE.Vector3());
+        const key = CLIP_KEYS[v];
+        props.visible = key === 'sitstand' || key === 'recline';
+        desk.visible = false;
+        seatA.visible = props.visible; seatB.visible = false;
+        seatA.position.set(0, (key === 'recline' ? 0.42 : 0.47) - 0.03, -0.2);
+        if (key === 'walk') { const zc = tt < 2 ? 0.3 : 2.2; camera.position.set(2.7, 0.95, zc); camera.lookAt(0, 0.85, zc); camera.fov = 40; }
+        if (key === 'sitstand' || key === 'recline') { camera.position.set(2.4, 1.05, 0.9); camera.lookAt(0, 0.95, 0.05); camera.fov = 40; }
+        if (key === 'startle') { camera.position.set(0.45, 1.45, 1.55); camera.lookAt(0, 1.42, 0); camera.fov = 30; }
+        if (key === 'talk' || key === 'gaze') { camera.position.set(e.x + 0.08, e.y + 0.01, e.z + 0.72); camera.lookAt(e.x, e.y - 0.03, e.z); camera.fov = 24; }
+        camera.updateProjectionMatrix();
+        return;
+      }
       if (mode >= 1200 && mode < 1250) {
         // 1200/1201 hero 3/4 (maya/sam), 1202/1203 hero front, 1204/1205 hero profile-ish,
         // 1210+k both full-body turntable (yaw k*45), 1220+k maya head turntable, 1235+k sam (yaw k*60)
@@ -170,15 +231,23 @@ export async function create(env) {
         // perf probes: 1600 none, 1601 maya, 1602 sam, 1603 both (medium shot), 1604 both CU maya
         const v = mode - 1600;
         const tA = performance.now();
-        maya.set({ t: 2, position: [-0.35, 0, 0], lookAt: [0, 1.5, 2] });
-        sam.set({ t: 2, position: [0.35, 0, 0], lookAt: [0, 1.5, 2] });
+        if (v === 9) {
+          // with past(): Maya talking, Sam walking (the film's worst case)
+          const ca = CLIPS.talk, cb = CLIPS.walk, tt = 1.1 + fr;
+          const sa = ca(tt); sa.past = dt => ca(tt - dt); sa.position = [-0.35, 0, 0];
+          const sb = cb(tt + 1); sb.past = dt => cb(tt + 1 - dt);
+          maya.set(sa); sam.set(sb);
+        } else {
+          maya.set({ t: 2, position: [-0.35, 0, 0], lookAt: [0, 1.5, 2] });
+          sam.set({ t: 2, position: [0.35, 0, 0], lookAt: [0, 1.5, 2] });
+        }
         window.__setMs = performance.now() - tA;
         if (window.__gpuLog && window.__gpuLog.length) console.warn('prev frame:', window.__gpuLog[0], 'last', window.__gpuLog[window.__gpuLog.length - 1], 'frame total', (window.__lastRenderEnd - window.__frameStart).toFixed(0));
         window.__frameStart = tA;
         window.__gpuLog = []; window.__gpuProbe = true;
         console.warn('set() both ms', window.__setMs.toFixed(1));
         maya.root.visible = v === 1 || v === 3 || v === 4 || v >= 5;
-        sam.root.visible = v === 2 || v === 3 || v === 4;
+        sam.root.visible = v === 2 || v === 3 || v === 4 || v === 9;
         // component bisect on maya: 5 head only, 6 body only, 7 hair hidden, 8 head skin only
         maya.root.traverse(o => { if (o.isMesh) o.visible = true; });
         if (v === 5) maya.meshes.forEach(m => { m.visible = false; });

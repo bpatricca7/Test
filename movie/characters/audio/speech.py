@@ -31,9 +31,14 @@ Run from the repo root:
     python3 movie/characters/audio/speech.py d05 d10    # just these lines (manifest merged)
     python3 movie/characters/audio/speech.py --no-sheets
 
-Writes movie/characters/build/dialogue/<id>.wav (48 kHz mono 16-bit, 20 ms pre-roll)
-and manifest.json (see API.md), plus analysis sheets in
-movie/characters/build/voice_sheets/. Deterministic: every noise source is seeded.
+The film's dialogue is now voiced by voices_ai.py (Kokoro). This from-scratch
+renderer is kept as-is and, by default, writes to its own folders so it never
+overwrites those files:
+    movie/characters/build/dialogue_formant/<id>.wav + manifest.json
+    movie/characters/build/voice_sheets_formant/
+Pass --into-dialogue to write into movie/characters/build/dialogue/ instead (this
+REPLACES the Kokoro renders). 48 kHz mono 16-bit, 20 ms pre-roll, API.md manifest
+format. Deterministic: every noise source is seeded.
 """
 
 import importlib.util
@@ -50,8 +55,9 @@ from scipy.optimize import brentq
 HERE = os.path.dirname(os.path.abspath(__file__))
 CHAR_DIR = os.path.normpath(os.path.join(HERE, ".."))
 MOVIE_DIR = os.path.normpath(os.path.join(CHAR_DIR, ".."))
-OUT_DIR = os.path.join(CHAR_DIR, "build", "dialogue")
-SHEET_DIR = os.path.join(CHAR_DIR, "build", "voice_sheets")
+DIALOGUE_DIR = os.path.join(CHAR_DIR, "build", "dialogue")          # the film's dialogue (voices_ai.py)
+OUT_DIR = os.path.join(CHAR_DIR, "build", "dialogue_formant")       # default: this renderer's own folder
+SHEET_DIR = os.path.join(CHAR_DIR, "build", "voice_sheets_formant")
 
 sys.dont_write_bytecode = True     # leave no caches next to the shipped first-cut code
 sys.path.insert(0, os.path.join(MOVIE_DIR, "audio"))
@@ -1727,6 +1733,10 @@ def render_sheet(path, line, out, info):
 # ---------------------------------------------------------------------------
 
 def main(argv):
+    global OUT_DIR, SHEET_DIR
+    if "--into-dialogue" in argv:                     # explicit opt-in: replaces the Kokoro renders
+        OUT_DIR = DIALOGUE_DIR
+        SHEET_DIR = os.path.join(CHAR_DIR, "build", "voice_sheets")
     only = [a for a in argv if a.startswith("d")]
     sheets = "--no-sheets" not in argv
     os.makedirs(OUT_DIR, exist_ok=True)

@@ -246,8 +246,8 @@ ROW_TIMES = [round(BEATS["fold"]["start"] + r * (BEATS["fold"]["end"] - BEATS["f
 
 TITLE = {"start": 113.6, "in": 1.6, "hold_until": 118.2, "out": 1.0, "text": "ECHO"}
 CREDITS = {"start": 119.4, "end": 125.6, "lines": [
-    "Written, animated, voiced and scored entirely in code.",
-    "No footage. No samples. No AI voice API.",
+    "Written, animated and scored entirely in code. No footage.",
+    "Voices: Kokoro-82M, an open-source speech model, run locally.",
     "Made with Claude Code"]}
 
 SCENES = [
