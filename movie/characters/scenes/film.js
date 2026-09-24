@@ -47,7 +47,8 @@ export async function create(env) {
   // a soft bounce near the lens, as a cinematographer would add, so faces read in the dark hut
   const faceFill = new THREE.PointLight(0xffe2c4, 0, 3.2, 2);
   interior.add(faceFill);
-  const out = { scene: interior, camera, update, bloom };
+  let dofState = null;
+  const out = { scene: interior, camera, update, bloom, dof: () => dofState };
 
   const B = TL.beats, MK = TL.marks;
   const V3 = (a) => new THREE.Vector3(a[0], a[1], a[2]);
@@ -215,6 +216,29 @@ export async function create(env) {
     }
     return p;
   }
+  // small head beats on the stressed words of the speaker's own lines (from the word timings)
+  function wordBeats(who, t, amt = 1) {
+    let p = 0;
+    for (const d of TL.dialogue) {
+      if (d.speaker !== who || !d.words) continue;
+      const dur = d.duration || d.target;
+      if (t < d.start - 0.1 || t > d.start + dur + 0.6) continue;
+      for (const w of d.words) {
+        const len = w.end - w.start;
+        if (len < 0.2 || w.w.length < 3) continue;          // content words only
+        const at = d.start + w.start;
+        p += amt * 0.045 * Math.min(1, len / 0.4) * (t < at ? 0 : t < at + 0.09 ? (t - at) / 0.09 : Math.max(0, 1 - (t - at - 0.09) / 0.32));
+      }
+    }
+    return p;
+  }
+  // an in-breath before speaking: lips part, chin lifts a touch
+  function preBreath(who, t) {
+    let b = 0;
+    for (const d of TL.dialogue) if (d.speaker === who) b = Math.max(b, U.window01(t, d.start - 0.5, d.start + 0.05, 0.3, 0.12));
+    return b;
+  }
+
   // a quick 0 -> 1 -> 0 pulse
   const pulse = (t, at, up = 0.12, down = 0.5) => t < at ? 0 : t < at + up ? (t - at) / up : Math.max(0, 1 - (t - at - up) / down);
   const addArm = (arm, k, v) => { arm[k] = Math.max(arm[k] || 0, v); };
@@ -324,7 +348,13 @@ export async function create(env) {
     const lip = visemesFor('sam', t);
     s.visemes = lip.visemes;
     s.mouth.jaw = 0.14 * fear * (1 - lip.talking) + 0.2 * U.window01(t, 66.8, 73.5, 0.3, 1.5) * (1 - lip.talking);
-    s.blink = Math.max(asleep, blinkAt('sam', t, [16.25, 16.55, 66.62]));
+    s.blink = Math.max(asleep, blinkAt('sam', t, [16.25, 16.55, 66.62, 77.1]));
+    s.speechEnergy = Math.max(loud('sam', t), 0.6 * lip.talking);
+    const br = preBreath('sam', t);
+    s.mouth.jaw += 0.1 * br * (1 - lip.talking);
+    s.head.pitch += wordBeats('sam', t, 1.3) - 0.03 * br;
+    // a faint tremor while he's frightened
+    s.head.yaw += 0.008 * fear * Math.sin(t * 21.0) * Math.sin(t * 3.7);
     normArm(s.armL); normArm(s.armR);
     return s;
   }
@@ -374,6 +404,12 @@ export async function create(env) {
     addArm(s.armR, 'raise', U.window01(t, B.maya_raises_hand.start, B.dematerialize.start + 1.5, 1.2, 1.0));
     // at the window: a hand on the sill... on her hip, looking out
     addArm(s.armL, 'hips', 0.7 * U.window01(t, 106.0, 126, 0.8, 1));
+    // hand drifts to her mouth as the Visitor assembles
+    addArm(s.armL, 'chin', 0.7 * U.window01(t, 69.2, 74.6, 0.6, 1.0));
+    // as it streams away she reaches after the light
+    const reachLight = 0.55 * U.window01(t, 96.6, 100.2, 0.9, 1.3);
+    addArm(s.armR, 'reach', reachLight);
+    if (t > 90) s.reachAt = windowPt.clone().add(new THREE.Vector3(-0.6, 0.1, 0)).toArray();
 
     // gaze
     const vHead = eyeOf(visitor);
@@ -392,10 +428,12 @@ export async function create(env) {
     const th = talkHead('maya', t, 1.0);
     s.head = { pitch: th.pitch + listenNods('maya', t, 1.0), yaw: th.yaw, roll: th.roll + 0.12 * U.window01(t, 84.4, 88.6, 0.8, 0.8) };
     s.nod = 0.4 * U.window01(t, 86.2, 87.0, 0.2, 0.3);
+    // a slow shake of disbelief through "We sent it. In nineteen seventy-four."
+    s.shake = 0.35 * U.window01(t, 59.3, 61.4, 0.4, 0.5);
 
     // face
     const asleep = t < B.maya_arm_off_eyes + 1 ? 1 - smooth(B.maya_arm_off_eyes + 0.3, B.maya_arm_off_eyes + 0.8, t) : 0;
-    s.blink = Math.max(asleep, blinkAt('maya', t, [23.6, 56.5, 67.5]));
+    s.blink = Math.max(asleep, blinkAt('maya', t, [23.6, 56.5, 67.5, 78.6, 86.9, 107.0]));
     s.eyes.squint = 0.45 * U.window01(t, 23, 27, 0.5, 1.2) + 0.3 * U.window01(t, 33.5, 44, 0.8, 1);
     s.eyes.wide = 0.55 * U.window01(t, 56.2, 60, 0.5, 1.5) + 0.6 * U.window01(t, 66.8, 76, 0.4, 2.5);
     s.brows.furrow = 0.55 * U.window01(t, 33.5, 44, 0.8, 1.0);
@@ -405,7 +443,12 @@ export async function create(env) {
       + 0.3 * U.window01(t, 84.6, 88, 0.6, 1.0) + 0.35 * U.window01(t, 93.4, 96, 0.6, 1.0);
     const lip = visemesFor('maya', t);
     s.visemes = lip.visemes;
-    s.mouth.jaw = 0.12 * U.window01(t, 56.2, 58.5, 0.3, 0.6) * (1 - lip.talking);
+    s.mouth.jaw = 0.12 * U.window01(t, 56.2, 58.5, 0.3, 0.6) * (1 - lip.talking)
+      + 0.1 * U.window01(t, 72.0, 76.0, 0.6, 1.2) * (1 - lip.talking);            // lips part in awe
+    s.speechEnergy = Math.max(loud('maya', t), 0.6 * lip.talking);
+    const br = preBreath('maya', t);
+    s.mouth.jaw += 0.09 * br * (1 - lip.talking);
+    s.head.pitch += wordBeats('maya', t, 1.0) - 0.025 * br;
     normArm(s.armL); normArm(s.armR);
     return s;
   }
@@ -521,6 +564,16 @@ export async function create(env) {
       P.copy(d).add(new THREE.Vector3(lerp(34, 30, u), lerp(4, 14, easeInOut(u)), lerp(22, 18, u))); T.copy(d).add(new THREE.Vector3(0, lerp(2, 12, easeInOut(u)), 0)); return 42; },
   };
 
+  const FOCUS = {
+    int_wide: ['sam', 0.0012], maya_chair_cu: ['maya', 0.006], sam_mcu: ['sam', 0.005],
+    int_wide_up: ['maya', 0.0015], screen_ots: ['screen', 0.003], maya_cu_1: ['maya', 0.006],
+    maya_cu_2: ['maya', 0.006], two_shot: ['speaker', 0.004], surge_wide: ['visitor', 0.0015],
+    visitor_cu_1: ['visitor', 0.005], sam_reaction: ['sam', 0.005], maya_ots_visitor: ['maya', 0.005],
+    visitor_cu_2: ['visitor', 0.005], arc_two: ['mid', 0.003], maya_cu_3: ['maya', 0.006],
+    visitor_ms: ['visitor', 0.003], hands_two: ['visitor', 0.0025], dissolve_wide: ['visitor', 0.0015],
+    sam_cu_after: ['sam', 0.005], maya_window: ['maya', 0.005],
+  };
+
   function shotAt(t) {
     for (const s of TL.shots) if (t >= s.start && t < s.end) return s;
     return TL.shots[TL.shots.length - 1];
@@ -562,7 +615,23 @@ export async function create(env) {
     camera.position.copy(P);
     camera.lookAt(T);
     camera.fov = fov;
+    camera.far = isExt ? 4000 : 60;
     camera.updateProjectionMatrix();
+
+    // focus pulls: which subject each shot holds sharp, and how shallow the depth is
+    const F = FOCUS[shot.id];
+    if (!F) dofState = null;
+    else {
+      const [who, aperture] = F;
+      let target;
+      if (who === 'screen') target = screen.center;
+      else if (who === 'mid') target = eyeOf(maya).lerp(eyeOf(visitor), 0.5);
+      else if (who === 'speaker') {
+        const d = TL.dialogue.find(x => t >= x.start - 0.3 && t <= x.start + (x.duration || x.target) + 0.6);
+        target = eyeOf(d ? ({ maya, sam, visitor })[d.speaker] : sam);
+      } else target = eyeOf(({ maya, sam, visitor })[who]);
+      dofState = { focus: camera.position.distanceTo(target), aperture, maxblur: 0.009 };
+    }
   }
 
   function bloom(t) {

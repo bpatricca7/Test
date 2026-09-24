@@ -14,6 +14,8 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import * as U from './lib/util.js';
 
 const W = 1920, H = 1080;
@@ -21,7 +23,25 @@ const FONT = '"FreeMono", "Courier New", monospace';
 const SUB_FONT = '"DejaVu Sans", "Liberation Sans", sans-serif';
 const MODULES = { film: 'film' };
 
-let TL, ENV, renderer, composer, renderPass, bloomPass, g, VIGNETTE, TEST = null;
+let TL, ENV, renderer, composer, renderPass, bloomPass, bokehPass, gradePass, g, VIGNETTE, TEST = null;
+const LETTERBOX = Math.round((H - W / 2.39) / 2);   // 2.39:1 scope bars
+
+// film grade, in display space: teal-leaning shadows, warm highlights, a gentle S-curve
+const GradeShader = {
+  uniforms: { tDiffuse: { value: null }, uAmt: { value: 1.0 } },
+  vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `
+    uniform sampler2D tDiffuse; uniform float uAmt; varying vec2 vUv;
+    void main() {
+      vec3 c = texture2D(tDiffuse, vUv).rgb;
+      float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+      vec3 g = c + vec3(-0.010, 0.006, 0.020) * (1.0 - smoothstep(0.0, 0.45, l))
+                 + vec3(0.022, 0.010, -0.016) * smoothstep(0.35, 1.0, l);
+      g = mix(g, g * g * (3.0 - 2.0 * g), 0.22);
+      g = mix(vec3(dot(g, vec3(0.2126, 0.7152, 0.0722))), g, 1.04);
+      gl_FragColor = vec4(mix(c, clamp(g, 0.0, 1.0), uAmt), 1.0);
+    }`,
+};
 const instances = {};
 
 function buildVignette() {
@@ -83,10 +103,10 @@ function drawSubtitles(t) {
     if (a <= 0) continue;
     g.save();
     g.globalAlpha = a;
-    g.font = `600 40px ${SUB_FONT}`;
+    g.font = `600 38px ${SUB_FONT}`;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    const y = H * 0.9;
+    const y = H - LETTERBOX / 2;
     g.lineJoin = 'round';
     g.lineWidth = 7;
     g.strokeStyle = 'rgba(0,0,0,0.85)';
@@ -170,9 +190,14 @@ window.init = async function (timeline, audioEnv, only) {
   composer.setSize(W, H);
   renderPass = new RenderPass(new THREE.Scene(), new THREE.PerspectiveCamera());
   composer.addPass(renderPass);
+  bokehPass = new BokehPass(new THREE.Scene(), new THREE.PerspectiveCamera(), { focus: 1.0, aperture: 0.002, maxblur: 0.008 });
+  bokehPass.enabled = false;
+  composer.addPass(bokehPass);
   bloomPass = new UnrealBloomPass(new THREE.Vector2(W / 2, H / 2), 0.6, 0.4, 0.8);
   composer.addPass(bloomPass);
   composer.addPass(new OutputPass());
+  gradePass = new ShaderPass(GradeShader);
+  composer.addPass(gradePass);
 
   g = document.getElementById('ui').getContext('2d');
   VIGNETTE = buildVignette();
@@ -204,6 +229,17 @@ window.renderFrame = function (t) {
     bloomPass.threshold = b.threshold;
     renderPass.scene = inst.scene;
     renderPass.camera = inst.camera;
+    // depth of field: the scene says what to focus on (distance in metres) and how shallow
+    const d = inst.dof ? inst.dof(t, sc.id) : null;
+    bokehPass.enabled = !!d;
+    if (d) {
+      bokehPass.scene = inst.scene;
+      bokehPass.camera = inst.camera;
+      bokehPass.uniforms.focus.value = d.focus;
+      bokehPass.uniforms.aperture.value = d.aperture;
+      bokehPass.uniforms.maxblur.value = d.maxblur ?? 0.008;
+    }
+    gradePass.uniforms.uAmt.value = inst.grade === false ? 0 : 1;
     composer.render();
     if (inst.overlay) inst.overlay(t, g, sc.id);
   } else {
@@ -219,6 +255,11 @@ window.renderFrame = function (t) {
     g.globalAlpha = 1;
   }
   if (inst) g.drawImage(VIGNETTE, 0, 0);
+  if (!TEST && inst && sc.id === 'film') {
+    g.fillStyle = '#000';
+    g.fillRect(0, 0, W, LETTERBOX);
+    g.fillRect(0, H - LETTERBOX, W, LETTERBOX);
+  }
   if (!TEST) {
     drawTypewriter(t);
     drawSubtitles(t);
