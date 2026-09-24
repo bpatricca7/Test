@@ -37,9 +37,9 @@ export const SKIN_FEATURES = {
 };
 
 export const PERSONA = {
-  maya: { lashLen: 0.0068, lashW: 0.00024, lashCount: 64, lowerLashes: 14, lashColor: 0x120c09, smileAsym: 0.18, browAsym: 0.12,
+  maya: { lashLen: 0.006, lashW: 0.00023, lashCount: 56, lowerLashes: 14, lashColor: 0x120c09, smileAsym: 0.18, browAsym: 0.12,
     lidDroop: 0.12, teeth: 0xd9cfbd, gum: 0x9c4c4a, tongue: 0xb05654 },
-  sam: { lashLen: 0.0056, lashW: 0.00024, lashCount: 58, lowerLashes: 12, lashColor: 0x0d0907, smileAsym: -0.2, browAsym: -0.1,
+  sam: { lashLen: 0.0046, lashW: 0.00022, lashCount: 48, lowerLashes: 12, lashColor: 0x0d0907, smileAsym: -0.2, browAsym: -0.1,
     lidDroop: 0.0, teeth: 0xddd4c4, gum: 0x8e4442, tongue: 0xa84e4e },
 };
 

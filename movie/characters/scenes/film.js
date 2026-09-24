@@ -31,9 +31,13 @@ export async function create(env) {
   interior.background = new THREE.Color(0x000000);
   interior.add(set.interior.root, maya.root, sam.root, visitor.root);
   if (visitor.light) interior.add(visitor.light);
-  const exterior = new THREE.Scene();
-  exterior.background = new THREE.Color(0x000000);
-  exterior.add(set.exterior.root);
+  // the set provides a ready exterior scene (sky, fog); fall back to wrapping its root
+  let exterior = set.exterior.scene;
+  if (!exterior) {
+    exterior = new THREE.Scene();
+    exterior.background = new THREE.Color(0x000000);
+    exterior.add(set.exterior.root);
+  }
 
   const camera = new THREE.PerspectiveCamera(35, 16 / 9, 0.03, 4000);
   const out = { scene: interior, camera, update, bloom };
@@ -450,7 +454,9 @@ export async function create(env) {
   }
 
   const SHOT_FN = {
-    ext_push: (t, u) => { const a = set.exterior.anchors || {}; const w = V3(a.hutWindow || [0, 2, 0]); const look = V3(a.lookAt || a.hutWindow || [0, 2, 0]);
+    ext_push: (t, u) => {
+      const sh = set.exterior.anchors && set.exterior.anchors.shots && set.exterior.anchors.shots.ext_push;
+      if (sh) { const e = easeInOut(u); P.copy(V3(sh.from)).lerp(V3(sh.to), e); T.copy(V3(sh.lookFrom)).lerp(V3(sh.lookTo), e); return sh.fov || 40; } const a = set.exterior.anchors || {}; const w = V3(a.hutWindow || [0, 2, 0]); const look = V3(a.lookAt || a.hutWindow || [0, 2, 0]);
       const from = V3(a.pushFrom || [look.x + 38, look.y + 7, look.z + 30]);
       P.copy(from).lerp(w.clone().add(new THREE.Vector3(6, 1.2, 6)), easeInOut(u) * 0.8); T.copy(look).lerp(w, easeInOut(u)); return 40; },
     int_wide: (t, u) => { P.set(lerp(2.15, 1.9, u), 1.72, lerp(1.75, 1.5, u)); T.set(-0.95, 0.95, -0.55); return 52; },
@@ -498,7 +504,9 @@ export async function create(env) {
       if (walkU < 1) { P.set(lerp(-0.4, 0.2, walkU), 1.5, lerp(1.6, 1.4, walkU)); T.copy(eyeOf(maya)).add(new THREE.Vector3(0, -0.2, 0)); return 42; }
       return faceShot(maya, 0, t, u, { dist: 0.7, side: 0.0, up: 0.0, fov: 30, lookFrom: new THREE.Vector3(1.5, 1.5, 1.4), seed: 37, push: 0.05 });
     },
-    ext_dish: (t, u) => { const a = set.exterior.anchors || {}; const d = V3(a.dish || [0, 10, 0]);
+    ext_dish: (t, u) => {
+      const sh = set.exterior.anchors && set.exterior.anchors.shots && set.exterior.anchors.shots.ext_dish;
+      if (sh) { const e = easeInOut(u); P.copy(V3(sh.from)).lerp(V3(sh.to), e); T.copy(V3(sh.lookFrom)).lerp(V3(sh.lookTo), e); return sh.fov || 42; } const a = set.exterior.anchors || {}; const d = V3(a.dish || [0, 10, 0]);
       P.copy(d).add(new THREE.Vector3(lerp(34, 30, u), lerp(4, 14, easeInOut(u)), lerp(22, 18, u))); T.copy(d).add(new THREE.Vector3(0, lerp(2, 12, easeInOut(u)), 0)); return 42; },
   };
 

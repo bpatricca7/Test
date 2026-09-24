@@ -120,16 +120,18 @@ export function createFaceRig(hm, H, opt = {}) {
       const q = mc(v);
       const sw = sideW(q.x, sgn);
       const cx = sgn * w;
-      const dc2 = ((q.x - cx) / 0.016) ** 2 + ((q.y - mo.lineY(clamp(q.x, -w, w))) / 0.016) ** 2;
+      const dyl = q.y - mo.lineY(clamp(q.x, -w, w));
+      const dc2 = ((q.x - cx) / 0.021) ** 2 + (dyl / 0.019) ** 2;
       const corner = Math.exp(-dc2) * frontMask(q.z);
       const lat = clamp(Math.abs(q.s), 0, 1.3);
-      const p = perioral(v, 0.02, 0.014, 0.016) * lat;
-      // cheek apple lifts and bunches
-      const ch = Math.exp(-(((q.x - sgn * 0.034) / 0.017) ** 2) - (((q.y + 0.026) / 0.015) ** 2)) * frontMask(q.z);
+      const p = perioral(v, 0.022, 0.016, 0.018) * lat;
+      const lipC = lipCore(v) * lat * lat;
+      // cheek apple lifts and bunches up under the eye
+      const ch = Math.exp(-(((q.x - sgn * 0.034) / 0.019) ** 2) - (((q.y + 0.022) / 0.018) ** 2)) * frontMask(q.z);
       return [
-        sw * (sgn * 0.0038 * (corner + 0.5 * p)),
-        sw * (0.0052 * corner + 0.0022 * p + 0.0026 * ch),
-        sw * (-0.0022 * corner + 0.0012 * ch),
+        sw * (sgn * 0.0042 * (corner + 0.5 * p)),
+        sw * (0.0058 * corner + 0.0026 * p + 0.0022 * lipC + 0.0042 * ch),
+        sw * (-0.0024 * corner + 0.002 * ch),
       ];
     });
   }
@@ -138,8 +140,10 @@ export function createFaceRig(hm, H, opt = {}) {
       const q = mc(v);
       const sw = sideW(q.x, sgn);
       const cx = sgn * w;
-      const corner = Math.exp(-(((q.x - cx) / 0.015) ** 2) - (((q.y - mo.lineY(clamp(q.x, -w, w))) / 0.016) ** 2)) * frontMask(q.z);
-      return [sw * sgn * 0.0012 * corner, -0.0046 * corner * sw, -0.0006 * corner * sw];
+      const corner = Math.exp(-(((q.x - cx) / 0.019) ** 2) - (((q.y - mo.lineY(clamp(q.x, -w, w))) / 0.018) ** 2)) * frontMask(q.z);
+      // mentalis: the chin bunches and pushes the lower lip up in the middle
+      const chin = Math.exp(-((q.x / 0.014) ** 2) - (((q.dy + mo.loH(0) + 0.009) / 0.009) ** 2)) * frontMask(q.z) * (q.up < 0.5 ? 1 : 0);
+      return [sw * sgn * 0.0014 * corner, -0.0068 * corner * sw + 0.0014 * chin, -0.0008 * corner * sw + 0.0012 * chin];
     });
   }
   addField('upperUp', v => {
@@ -240,19 +244,19 @@ export function createFaceRig(hm, H, opt = {}) {
   for (const [sfx, sgn] of [['L', 1], ['R', -1]]) {
     addField('browInner' + sfx, v => {
       const x = rest[3 * v], y = rest[3 * v + 1], z = rest[3 * v + 2];
-      const b = Math.exp(-(((x - sgn * 0.017) / 0.012) ** 2) - (((y - 0.026) / 0.016) ** 2)) * frontMask(z) * sstep(0.004, 0.016, y) * browMask(v);
-      return [sgn * 0.0006 * b, 0.0048 * b, 0.0004 * b];
+      const b = Math.exp(-(((x - sgn * 0.018) / 0.014) ** 2) - (((y - 0.027) / 0.018) ** 2)) * frontMask(z) * sstep(0.004, 0.016, y) * browMask(v);
+      return [sgn * 0.0008 * b, 0.0075 * b, 0.0006 * b];
     });
     addField('browOuter' + sfx, v => {
       const x = rest[3 * v], y = rest[3 * v + 1], z = rest[3 * v + 2];
-      const b = Math.exp(-(((x - sgn * 0.046) / 0.014) ** 2) - (((y - 0.024) / 0.015) ** 2)) * frontMask(z - 0.01) * sstep(0.004, 0.016, y) * browMask(v);
-      return [0, 0.0042 * b, 0.0002 * b];
+      const b = Math.exp(-(((x - sgn * 0.046) / 0.016) ** 2) - (((y - 0.025) / 0.017) ** 2)) * frontMask(z - 0.01) * sstep(0.004, 0.016, y) * browMask(v);
+      return [0, 0.0062 * b, 0.0003 * b];
     });
     addField('browDown' + sfx, v => {
       const x = rest[3 * v], y = rest[3 * v + 1], z = rest[3 * v + 2];
       const b = Math.exp(-(((x - sgn * 0.024) / 0.016) ** 2) - (((y - 0.022) / 0.013) ** 2)) * frontMask(z) * sstep(0.002, 0.014, y) * browMask(v);
       const inner = Math.exp(-(((x - sgn * 0.012) / 0.01) ** 2) - (((y - 0.018) / 0.012) ** 2)) * frontMask(z);
-      return [-sgn * 0.0022 * b, -0.0034 * b - 0.0008 * inner, 0.0010 * b + 0.0006 * inner];
+      return [-sgn * 0.0036 * b, -0.0055 * b - 0.0012 * inner, 0.0016 * b + 0.001 * inner];
     });
   }
 
