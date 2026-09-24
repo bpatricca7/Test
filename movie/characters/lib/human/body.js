@@ -15,9 +15,9 @@ const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
 // torso sections: [y, a, bF, bB, cz, n, mat]
 const TORSO = {
   maya: [
-    [0.79, 0.07, 0.05, 0.055, -0.004, 2.1, 1],
-    [0.815, 0.128, 0.078, 0.086, -0.006, 2.2, 1],
-    [0.845, 0.166, 0.092, 0.108, -0.008, 2.35, 1],
+    [0.8, 0.1, 0.05, 0.06, -0.004, 2.1, 1],
+    [0.815, 0.15, 0.074, 0.084, -0.006, 2.3, 1],
+    [0.845, 0.17, 0.09, 0.104, -0.008, 2.4, 1],
     [0.875, 0.176, 0.098, 0.118, -0.01, 2.4, 1],
     [0.925, 0.180, 0.098, 0.118, -0.012, 2.4, 1],
     [0.975, 0.160, 0.094, 0.100, -0.012, 2.35, 1],
@@ -27,19 +27,20 @@ const TORSO = {
     [1.17, 0.156, 0.120, 0.090, -0.010, 2.3, 0],
     [1.22, 0.163, 0.130, 0.092, -0.012, 2.4, 0],
     [1.27, 0.168, 0.116, 0.095, -0.018, 2.5, 0],
-    [1.31, 0.176, 0.098, 0.098, -0.026, 2.5, 0],
-    [1.34, 0.178, 0.086, 0.09, -0.029, 2.45, 0],
-    [1.362, 0.172, 0.078, 0.083, -0.031, 2.4, 0],
-    [1.38, 0.156, 0.07, 0.075, -0.033, 2.3, 0],
-    [1.393, 0.122, 0.064, 0.068, -0.034, 2.2, 0],
+    [1.31, 0.184, 0.098, 0.098, -0.026, 2.5, 0],
+    [1.335, 0.2, 0.088, 0.091, -0.029, 2.45, 0],
+    [1.356, 0.198, 0.08, 0.085, -0.031, 2.4, 0],
+    [1.374, 0.182, 0.072, 0.077, -0.033, 2.3, 0],
+    [1.388, 0.152, 0.066, 0.07, -0.034, 2.2, 0],
+    [1.398, 0.114, 0.062, 0.066, -0.034, 2.1, 0],
     [1.406, 0.074, 0.058, 0.062, -0.034, 2.0, 0],
     [1.412, 0.058, 0.05, 0.056, -0.032, 2.0, 0],
     [1.404, 0.05, 0.044, 0.05, -0.032, 2.0, 0],
   ],
   sam: [
-    [0.86, 0.074, 0.056, 0.06, -0.006, 2.1, 1],
-    [0.885, 0.135, 0.084, 0.09, -0.007, 2.2, 1],
-    [0.915, 0.164, 0.098, 0.108, -0.008, 2.35, 1],
+    [0.872, 0.105, 0.056, 0.062, -0.006, 2.1, 1],
+    [0.887, 0.155, 0.08, 0.088, -0.007, 2.3, 1],
+    [0.915, 0.168, 0.096, 0.106, -0.008, 2.4, 1],
     [0.945, 0.172, 0.100, 0.112, -0.01, 2.4, 1],
     [0.965, 0.172, 0.100, 0.110, -0.01, 2.4, 1],
     [0.975, 0.168, 0.098, 0.106, -0.01, 2.4, 1],
@@ -52,11 +53,12 @@ const TORSO = {
     [1.24, 0.186, 0.128, 0.108, -0.018, 2.55, 0],
     [1.31, 0.192, 0.124, 0.110, -0.022, 2.7, 0],
     [1.37, 0.198, 0.114, 0.108, -0.026, 2.55, 0],
-    [1.42, 0.198, 0.098, 0.100, -0.030, 2.5, 0],
-    [1.452, 0.2, 0.092, 0.097, -0.034, 2.5, 0],
-    [1.476, 0.192, 0.084, 0.09, -0.036, 2.45, 0],
-    [1.494, 0.17, 0.076, 0.083, -0.038, 2.3, 0],
-    [1.507, 0.13, 0.07, 0.076, -0.039, 2.2, 0],
+    [1.42, 0.206, 0.098, 0.100, -0.030, 2.5, 0],
+    [1.447, 0.226, 0.093, 0.097, -0.034, 2.5, 0],
+    [1.468, 0.222, 0.086, 0.092, -0.036, 2.45, 0],
+    [1.486, 0.2, 0.079, 0.086, -0.037, 2.35, 0],
+    [1.5, 0.16, 0.073, 0.079, -0.038, 2.25, 0],
+    [1.511, 0.12, 0.069, 0.075, -0.039, 2.15, 0],
     [1.52, 0.084, 0.066, 0.072, -0.040, 2.0, 0],
     [1.526, 0.064, 0.058, 0.064, -0.038, 2.0, 0],
     [1.518, 0.056, 0.05, 0.058, -0.038, 2.0, 0],
@@ -103,7 +105,7 @@ export function buildBody(id, rig, mats, rnd) {
     const r = T[i];
     let o = 0;
     if (id === 'sam' && r[6] === 0) o += 0.0025 * Math.sin(th * 7 + r[0] * 30) * sstep(1.3, 1.0, r[0]) + 0.002 * Math.sin(th * 3 + 1.1);
-    if (id === 'maya' && r[6] === 0) o += 0.001 * Math.sin(th * 9 + r[0] * 20);
+    if (id === 'maya' && r[6] === 0) o += (0.0016 * Math.sin(th * 11 + r[0] * 14) + 0.0012 * Math.sin(th * 5 + 1.3 + r[0] * 6)) * sstep(1.38, 1.25, r[0]);
     return o;
   };
   const torsoColor = (i, th, p) => {
@@ -126,7 +128,7 @@ export function buildBody(id, rig, mats, rnd) {
     // hem sits at the hips, slightly flared
     const cst = [];
     const hemY = 0.855;
-    const rowsY = [hemY, 0.875, 0.905, 0.94, 0.975, 1.01, 1.05, 1.1, 1.15, 1.2, 1.245, 1.285, 1.315, 1.345, 1.368, 1.388];
+    const rowsY = [hemY, 0.875, 0.905, 0.94, 0.975, 1.01, 1.05, 1.1, 1.15, 1.2, 1.245, 1.27, 1.31, 1.335, 1.356, 1.374, 1.388, 1.396];
     void cardRows;
     const interp = y => {
       let k = 0; while (k < T.length - 2 && T[k + 1][0] < y) k++;
@@ -136,9 +138,10 @@ export function buildBody(id, rig, mats, rnd) {
     for (const y of rowsY) {
       const r = interp(y);
       const flare = y < 0.95 ? (0.95 - y) * 0.18 : 0;
-      const slack = y > 1.1 ? 0.004 : 0.008;
+      const slack = (y > 1.1 ? 0.004 : 0.008) + 0.004 * sstep(1.33, 1.37, y) - 0.008 * sstep(1.385, 1.396, y);
       const isRib = y < hemY + 0.04 ? 1 : 0;
-      cst.push({ c: V3(0, y, r[4]), X: V3(1, 0, 0), Z: V3(0, 0, 1),
+      // lift the rows over the sloping shoulder tops so the knit clears the shirt along the normal
+      cst.push({ c: V3(0, y + 0.006 * sstep(1.33, 1.37, y), r[4]), X: V3(1, 0, 0), Z: V3(0, 0, 1),
         shape: torsoShape(r[1] + off + flare + slack, r[2] + off + flare * 0.6, r[3] + off + flare * 0.5 + slack, Math.min(r[5], 2.6)), mat: isRib, y });
     }
     // open front: the gap widens into a V at the neck
@@ -169,6 +172,28 @@ export function buildBody(id, rig, mats, rnd) {
       });
       const band = loft(bst, { M: 10, rRef: 0.006, weights: (i, th, p) => cardW(i, th, p), color: () => [0.93, 0.93, 0.93] });
       addPart('knitRib', band);
+    }
+    // back-neck rib: a rolled band joining the two front bands round the back of the neck
+    {
+      const top = cst[cst.length - 1], o0 = openAt(cst.length - 1);
+      const NB = 30, nst = [];
+      for (let j = 0; j <= NB; j++) {
+        const th = o0 + (Math.PI * 2 - 2 * o0) * j / NB;
+        const [dx, dz] = top.shape(th);
+        const out = V3(dx, 0, dz).normalize();
+        nst.push({ c: top.c.clone().add(V3(dx, 0.001, dz)), X: V3(0, 1, 0), Z: out, shape: t => [0.0062 * Math.sin(t), 0.0046 * Math.cos(t) - 0.001], mat: 0 });
+      }
+      const nband = loft(nst, { M: 10, rRef: 0.006, weights: (i, th, p) => cardW(cst.length - 1, th, p), color: () => [0.93, 0.93, 0.93] });
+      addPart('knitRib', nband);
+    }
+    // shirt placket down the centre front
+    {
+      const pst = [];
+      for (let y = 0.99; y <= 1.392; y += 0.02) {
+        const [dx, dz, cz] = torsoSection(id, y, 0, 0.0008);
+        pst.push({ c: V3(dx, y, cz + dz), X: V3(1, 0, 0), Z: V3(0, 0, 1), shape: t => [0.0115 * sgnpow(Math.sin(t), 0.25), 0.0011 * Math.cos(t)], mat: 0 });
+      }
+      addPart('shirt', loft(pst, { M: 12, rRef: 0.012, weights: (i, th, p) => torsoWeights(i, th, p), color: (i, th) => { const k = Math.abs(Math.sin(th)) > 0.97 ? 0.82 : 0.97; return [k, k, k]; } }));
     }
   }
 
@@ -226,9 +251,9 @@ export function buildBody(id, rig, mats, rnd) {
     const X = V3(1, 0, 0), Z = V3(0, 0, 1);
     // [param 0..2 (0 hip, 1 knee, 2 ankle), rx, rzF, rzB, cx]
     const prof = id === 'maya'
-      ? [[-0.12, 0.075, 0.08, 0.09, -0.01], [0.0, 0.09, 0.09, 0.102, 0.004], [0.15, 0.084, 0.082, 0.086, 0.0], [0.45, 0.074, 0.072, 0.072, 0.0], [0.8, 0.062, 0.06, 0.058, 0],
+      ? [[-0.12, 0.084, 0.084, 0.094, -0.004], [0.0, 0.094, 0.092, 0.104, 0.006], [0.15, 0.084, 0.082, 0.086, 0.0], [0.45, 0.074, 0.072, 0.072, 0.0], [0.8, 0.062, 0.06, 0.058, 0],
         [1.0, 0.058, 0.057, 0.055, 0], [1.2, 0.057, 0.055, 0.062, 0], [1.5, 0.056, 0.052, 0.058, 0], [1.85, 0.056, 0.055, 0.056, 0], [1.97, 0.057, 0.058, 0.058, 0], [1.99, 0.052, 0.052, 0.052, 0]]
-      : [[-0.12, 0.078, 0.084, 0.094, -0.01], [0.0, 0.092, 0.092, 0.102, 0.004], [0.15, 0.084, 0.082, 0.084, 0.0], [0.45, 0.074, 0.07, 0.07, 0.0], [0.8, 0.064, 0.062, 0.06, 0],
+      : [[-0.12, 0.086, 0.086, 0.096, -0.004], [0.0, 0.096, 0.094, 0.104, 0.006], [0.15, 0.084, 0.082, 0.084, 0.0], [0.45, 0.074, 0.07, 0.07, 0.0], [0.8, 0.064, 0.062, 0.06, 0],
         [1.0, 0.062, 0.062, 0.06, 0], [1.2, 0.06, 0.058, 0.062, 0], [1.5, 0.058, 0.055, 0.058, 0], [1.8, 0.058, 0.057, 0.058, 0], [1.92, 0.062, 0.064, 0.062, 0], [1.95, 0.056, 0.056, 0.056, 0]];
     const pos = u => u <= 1 ? hip.clone().addScaledVector(d1, u * l1) : knee.clone().addScaledVector(d2, (u - 1) * l2);
     const lst = prof.map(([u, rx, rzF, rzB, cx]) => ({ c: pos(u).add(V3(s * cx, 0, 0)), X, Z, shape: th => [rx * Math.sin(th) * (1 + (Math.sin(th) * s < 0 ? -0.05 : 0.02)), (Math.cos(th) >= 0 ? rzF : rzB) * Math.cos(th)], mat: 0, u }));
@@ -276,13 +301,47 @@ export function buildBody(id, rig, mats, rnd) {
       }, mat: 0,
     }));
     const shoeW = (i) => { const u = ss[i].u; const wt = sstep(0.62, 0.8, u); return [[bi('foot' + k), 1 - wt], [bi('toe' + k), wt]]; };
-    const shoe = loft(ss, { M: 24, rRef: 0.04, weights: shoeW, capStart: true, capEnd: true, flip: true });
+    // sneakers: orange heel counter (matches the headphones), a darker welt line above the sole
+    const shoeCol = (i, th) => {
+      if (!sneaker) { const k = 0.92 + 0.08 * Math.cos(th); return [k, k, k]; }
+      const u = ss[i].u, c = Math.cos(th);
+      if (u < 0.2 && c < 0.75) return [1.0, 0.5, 0.28];
+      if (c < 0.12) return [0.82, 0.82, 0.84];
+      return [1, 1, 1];
+    };
+    const shoe = loft(ss, { M: 32, rRef: 0.04, weights: shoeW, capStart: true, capEnd: true, flip: true, color: shoeCol });
     addPart(sneaker ? 'sneaker' : 'shoe', shoe);
-    // soles
-    const so = ss.map(st => ({ c: st.c.clone().add(V3(0, 0.0, 0)), X: st.X, Z: st.Z, u: st.u,
-      shape: th => { const c = Math.cos(th), sn = Math.sin(th); return [(st.w + 0.003) * sgnpow(sn, 0.35), (sneaker ? 0.014 : 0.006) * (c * 0.5 + 0.5) - 0.002]; }, mat: 0 }));
-    const sole = loft(so, { M: 20, rRef: 0.04, weights: shoeW, capStart: true, capEnd: true, flip: true });
+    // soles: a rounded slab with a ledge round the upper (no coplanar faces), foxing stripe on sneakers
+    const SH = sneaker ? 0.02 : 0.009;
+    const so = ss.map(st => ({ c: st.c.clone(), X: st.X, Z: st.Z, u: st.u,
+      shape: th => { const c = Math.cos(th), sn = Math.sin(th); return [(st.w + (sneaker ? 0.0045 : 0.003)) * sgnpow(sn, 0.22), c >= 0 ? SH * Math.pow(c, 0.28) : -0.002 * Math.pow(-c, 0.3)]; }, mat: 0 }));
+    const soleCol = (i, th) => { const c = Math.cos(th); if (!sneaker) return [1, 1, 1]; const k = (c > 0.0015 && c < 0.035) ? 0.55 : (c < 0 ? 0.7 : 1); return [k, k * 0.98, k * 0.95]; };
+    const sole = loft(so, { M: 36, rRef: 0.04, weights: shoeW, capStart: true, capEnd: true, flip: true, color: soleCol });
     addPart(sneaker ? 'sole' : 'soleDark', sole);
+    if (sneaker) {
+      // laces: five crossings over the tongue, and a tongue pad
+      const hAt = u => { let k = 0; while (k < pr.length - 2 && pr[k + 1][0] < u) k++; const f = clamp((u - pr[k][0]) / (pr[k + 1][0] - pr[k][0])); return [mix(pr[k][1], pr[k + 1][1], f), mix(pr[k][2], pr[k + 1][2], f)]; };
+      const ptAt = (u, xo, lift) => { const [w, h] = hAt(u); const y = h * Math.pow(Math.max(0, 1 - Math.pow(Math.abs(xo) / w, 1.8)), 0.7 / 1.8) + lift; return V3(heel.x + s * 0.004 * Math.sin(u * 3) + xo, y, heel.z + u * len); };
+      const seg = (p0, p1, r) => {
+        const d = p1.clone().sub(p0), L = d.length(); d.normalize();
+        const X = new THREE.Vector3().crossVectors(d, V3(0, 1, 0)).normalize(), Z = new THREE.Vector3().crossVectors(X, d).normalize();
+        const st = [0, 0.5, 1].map(t => ({ c: p0.clone().addScaledVector(d, L * t).addScaledVector(Z, 0.0012 * Math.sin(Math.PI * t)), X, Z, shape: th => [r * Math.sin(th), r * 0.7 * Math.cos(th)], mat: 0 }));
+        return loft(st, { M: 6, rRef: 0.002, weights: () => [[bi('foot' + k), 1]] });
+      };
+      const Ls = [0.36, 0.42, 0.48, 0.54, 0.6];
+      for (const u0 of Ls) {
+        const u1 = u0 + 0.05;
+        addPart('sole', seg(ptAt(u0, -0.016, 0.0022), ptAt(u1, 0.016, 0.0026), 0.0019));
+        addPart('sole', seg(ptAt(u0, 0.016, 0.0022), ptAt(u1, -0.016, 0.0026), 0.0019));
+      }
+      // tongue: a padded strip rising out of the throat
+      const tst = [];
+      for (let u = 0.3; u <= 0.7; u += 0.05) {
+        const pc = ptAt(u, 0, 0.0008 + 0.003 * sstep(0.45, 0.32, u));
+        tst.push({ c: pc, X: V3(1, 0, 0), Z: V3(0, 1, 0), shape: th => [0.019 * sgnpow(Math.sin(th), 0.3), 0.002 * Math.cos(th)], mat: 0 });
+      }
+      addPart('sneaker', loft(tst, { M: 12, rRef: 0.02, weights: () => [[bi('foot' + k), 1]], color: () => [0.9, 0.9, 0.92] }));
+    }
   }
 
   // ------------------------------------------------------------ build

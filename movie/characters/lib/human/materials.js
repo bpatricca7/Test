@@ -218,7 +218,7 @@ export function bakeIrisTexture(opts) {
 
 /** eyeball: iris texture + soft lid shadow + corner darkening (socket space) */
 export function makeEyeballMaterial(tex) {
-  const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.42, metalness: 0, envMap: envTexture(), envMapIntensity: 0.2 });
+  const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.22, metalness: 0, envMap: envTexture(), envMapIntensity: 0.2 });
   mat.userData.uniforms = {
     uGaze: { value: new THREE.Matrix3() },
     uLidU: { value: new Float32Array(8) }, uLidL: { value: new Float32Array(8) },

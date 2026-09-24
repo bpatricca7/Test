@@ -39,7 +39,7 @@ export async function create(env) {
   const t2 = performance.now();
   console.warn(`create maya ${(t1 - t0).toFixed(0)} ms, sam ${(t2 - t1).toFixed(0)} ms`);
   for (const h of [maya, sam]) {
-    console.warn(`${h.id}: head ${h.stats.headTris} ears ${h.stats.earTris} body ${h.stats.bodyTris} hair ${h.stats.hairTris} heights ${JSON.stringify(h.heights)}`);
+    console.warn(`${h.id}: total ${h.stats.totalTris} head ${h.stats.headTris} ears ${h.stats.earTris} body ${h.stats.bodyTris} hair ${h.stats.hairTris} props ${h.stats.propTris} heights ${JSON.stringify(h.heights)}`);
     scene.add(h.root);
   }
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(8, 8), new THREE.MeshStandardMaterial({ color: 0x4a4440, roughness: 0.9 }));
@@ -133,6 +133,39 @@ export async function create(env) {
         else face(who, base, 'front');
         return;
       }
+      if (mode >= 1200 && mode < 1250) {
+        // 1200/1201 hero 3/4 (maya/sam), 1202/1203 hero front, 1204/1205 hero profile-ish,
+        // 1210+k both full-body turntable (yaw k*45), 1220+k maya head turntable, 1235+k sam (yaw k*60)
+        const v = mode - 1200;
+        const e = new THREE.Vector3();
+        if (v < 10) {
+          const who = v % 2 === 0 ? maya : sam, other = who === maya ? sam : maya;
+          other.set({ position: [6, 0, 6] });
+          const camOff = v < 2 ? [0.42, 0.02, 1.02] : v < 4 ? [0.0, 0.02, 1.1] : [0.95, 0.02, 0.45];
+          const hero = who === maya
+            ? { t: 4.2 + fr, mouth: { smile: 0.45 }, brows: { raise: 0.25 }, eyes: { squint: 0.1 }, head: { roll: -0.05 } }
+            : { t: 4.2 + fr, mouth: { smile: 0.3 }, brows: { raise: 0.1, furrow: 0.15 }, head: { roll: 0.04 } };
+          who.set({ ...hero });
+          who.getEye(e);
+          const C = new THREE.Vector3(e.x + camOff[0], e.y + camOff[1], e.z + camOff[2]);
+          who.set({ ...hero, lookAt: [C.x, C.y, C.z], headFollow: 0.35 });
+          who.getEye(e);
+          camera.position.copy(C); camera.lookAt(e.x, e.y - 0.06, e.z); camera.fov = 30;
+        } else if (v < 20) {
+          const k = v - 10, yaw = k * Math.PI / 4;
+          maya.set({ t: 3, position: [-0.45, 0, 0], yaw });
+          sam.set({ t: 3, position: [0.45, 0, 0], yaw });
+          camera.position.set(0, 1.05, 4.6); camera.lookAt(0, 0.92, 0); camera.fov = 30;
+        } else {
+          const k = v < 35 ? v - 20 : v - 35, who = v < 35 ? maya : sam, other = who === maya ? sam : maya;
+          other.set({ position: [6, 0, 6] });
+          who.set({ t: 3, yaw: k * Math.PI / 3 });
+          who.getEye(e);
+          camera.position.set(0, e.y + 0.02, 1.25); camera.lookAt(0, e.y - 0.07, 0); camera.fov = 22;
+        }
+        camera.updateProjectionMatrix();
+        return;
+      }
       if (mode >= 1600 && mode < 1610) {
         // perf probes: 1600 none, 1601 maya, 1602 sam, 1603 both (medium shot), 1604 both CU maya
         const v = mode - 1600;
@@ -168,6 +201,7 @@ export async function create(env) {
         alarm.intensity = (v === 3 || v === 7) ? 9 * (0.5 + 0.5 * Math.cos(fr * 6.28)) : 0;
         holo.intensity = (v === 4 || v === 8) ? 7 : 0;
         lamp.intensity = v === 6 ? 0 : 3.2;
+        moon.intensity = v === 5 ? 1.6 : 0.35;
         const e = new THREE.Vector3();
         // 0 sam MCU from the monitor side; 1 maya CU; 2 two-shot; 3 alarm on sam; 4 hologram on maya; 5 maya profile moonlight; 6 no lamp
         if (v === 0 || v === 3) {

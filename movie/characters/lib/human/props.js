@@ -141,7 +141,7 @@ export function makeLensMaterial() {
     blending: THREE.AdditiveBlending, depthWrite: false, envMap: envTexture(), envMapIntensity: 0.35, side: THREE.DoubleSide });
   mat.userData.uniforms = {
     uScrC: { value: new THREE.Vector3(-0.5, 1.12, -1.7) }, uScrR: { value: new THREE.Vector3(1, 0, 0) }, uScrU: { value: new THREE.Vector3(0, 1, 0) },
-    uScrSize: { value: new THREE.Vector2(0.62, 0.35) }, uScrColor: { value: new THREE.Color(0.35, 0.75, 1.0) }, uScrI: { value: 0.9 },
+    uScrSize: { value: new THREE.Vector2(0.62, 0.35) }, uScrColor: { value: new THREE.Color(0.35, 0.75, 1.0) }, uScrI: { value: 0.6 },
     uScrTex: { value: null }, uUseTex: { value: 0 },
   };
   mat.onBeforeCompile = sh => {
@@ -168,8 +168,8 @@ uniform sampler2D uScrTex; uniform float uUseTex;`)
       vec2 uv = vec2(dot(hit, uScrR) / uScrSize.x, dot(hit, uScrU) / uScrSize.y) + 0.5;
       if (uv.x > 0.0 && uv.x < 1.0 && uv.y > 0.0 && uv.y < 1.0) {
         vec3 sc = uUseTex > 0.5 ? texture2D(uScrTex, uv).rgb : uScrColor;
-        float edge = smoothstep(0.0, 0.04, min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y)));
-        outgoingLight += sc * uScrI * (0.25 + fres) * edge;
+        float edge = smoothstep(0.0, 0.14, min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y)));
+        outgoingLight += sc * uScrI * (0.09 + fres) * edge;
       }
     }
   }
@@ -194,45 +194,67 @@ export function createHeadphones(id, rnd, torsoAt) {
   const meshMat = new THREE.MeshStandardMaterial({ color: 0x1d1e21, roughness: 0.9 });
   let tris = 0;
   const count = g => { tris += g.index ? g.index.count / 3 : g.attributes.position.count / 3; return g; };
-  const yCup = B.neck[1] - 0.012;
-  const cups = [];
+  // cups rest on the collarbones either side of the neck, cushions against the chest,
+  // shells facing out and up; the band runs up over the trapezius and round the back of the neck
+  const nb = V3(...B.neck);
+  const yCup = nb.y - 0.036;
+  const cups = [], apex = [], frames = [];
   for (const s of [1, -1]) {
+    let th = 0, sp = null;
+    for (let k = 0; k < 60; k++) {
+      th = s * k * 0.02;
+      const [dx, dz, cz] = torsoAt(yCup, th, 0.014);
+      sp = [dx, dz, cz];
+      if (Math.abs(dx) >= 0.084) break;
+    }
+    const S = V3(sp[0], yCup, sp[2] + sp[1]);
+    const out = V3(sp[0], 0, sp[1]).normalize();
+    const A = out.clone().multiplyScalar(-0.8).add(V3(0, -0.6, 0)).normalize(); // cushion direction
+    const U0 = V3(s * 0.35, 1, -0.6);
+    const U = U0.clone().addScaledVector(A, -U0.dot(A)).normalize();
+    const W = new THREE.Vector3().crossVectors(U, A);
+    const C = S.clone().addScaledVector(A, -0.021);
     const cup = new THREE.Group();
-    cup.position.set(s * 0.088, yCup - C0.y, B.neck[2] + 0.035 - C0.z);
-    // cushions face each other across the neck, tipped up a little
-    const up = V3(-s * 0.85, 0.42, 0.1).normalize();
-    cup.quaternion.setFromUnitVectors(V3(0, 1, 0), up);
+    cup.position.set(C.x, C.y - C0.y, C.z - C0.z);
+    cup.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(U, A, W));
     const shellG = count(new THREE.CylinderGeometry(0.043, 0.047, 0.03, 28, 1)); shellG.scale(1, 1, 0.86);
     const sm = new THREE.Mesh(shellG, shellMat); sm.position.y = -0.011; cup.add(sm);
-    const cap = new THREE.Mesh(count(new THREE.CylinderGeometry(0.03, 0.035, 0.006, 24)), accent); cap.position.y = -0.028; cup.add(cap);
-    const logo = new THREE.Mesh(count(new THREE.CylinderGeometry(0.011, 0.011, 0.002, 12)), metal); logo.position.y = -0.032; cup.add(logo);
+    const rimG = count(new THREE.TorusGeometry(0.044, 0.0035, 6, 32)); rimG.rotateX(Math.PI / 2); rimG.scale(1, 1, 0.86);
+    const rim = new THREE.Mesh(rimG, metal); rim.position.y = -0.025; cup.add(rim);
+    const cap = new THREE.Mesh(count(new THREE.CylinderGeometry(0.031, 0.036, 0.006, 28)), accent); cap.scale.set(1, 1, 0.86); cap.position.y = -0.028; cup.add(cap);
+    const logo = new THREE.Mesh(count(new THREE.CylinderGeometry(0.011, 0.011, 0.002, 16)), metal); logo.position.y = -0.0315; cup.add(logo);
     const padG = count(new THREE.TorusGeometry(0.034, 0.012, 10, 30)); padG.rotateX(Math.PI / 2); padG.scale(1, 0.72, 0.86);
     const pad = new THREE.Mesh(padG, padMat); pad.position.y = 0.009; cup.add(pad);
-    const cl = new THREE.Mesh(count(new THREE.CircleGeometry(0.027, 20).rotateX(-Math.PI / 2)), meshMat); cl.position.y = 0.004; cup.add(cl);
-    const yoke = count(new THREE.TorusGeometry(0.049, 0.0028, 6, 20, Math.PI)); yoke.rotateY(Math.PI / 2);
-    const yk = new THREE.Mesh(yoke, metal); yk.position.y = -0.006; cup.add(yk);
+    const cl = new THREE.Mesh(count(new THREE.CircleGeometry(0.027, 20).rotateX(-Math.PI / 2)), meshMat); cl.scale.set(1, 1, 0.86); cl.position.y = 0.004; cup.add(cl);
+    // fork: an arc round the rim from one pivot to the other, apex toward the band
+    const yoke = count(new THREE.TorusGeometry(0.05, 0.003, 6, 22, Math.PI)); yoke.rotateX(Math.PI / 2); yoke.rotateY(Math.PI / 2);
+    const yk = new THREE.Mesh(yoke, metal); yk.position.y = -0.008; cup.add(yk);
+    for (const sz of [1, -1]) { const pv = new THREE.Mesh(count(new THREE.SphereGeometry(0.0045, 8, 6)), shellMat); pv.position.set(0, -0.008, sz * 0.05); cup.add(pv); }
     cup.traverse(o => { if (o.isMesh) o.castShadow = true; });
     group.add(cup);
     cups.push(cup);
+    apex.push(C.clone().addScaledVector(U, 0.05).addScaledVector(A, -0.008));
+    frames.push({ C, U, A, W });
   }
-  // headband: from each cup's yoke, up over the shoulders and round the back of the neck
-  const nb = V3(...B.neck);
-  const bandPts = [];
-  for (let i = 0; i <= 18; i++) {
-    const a = -Math.PI * 0.62 + i / 18 * Math.PI * 1.24; // 0 = back of the neck
-    const r = 0.092 - 0.006 * Math.cos(a);
-    bandPts.push(V3(Math.sin(a) * r, nb.y + 0.03 + 0.012 * Math.cos(a) - C0.y, nb.z - Math.cos(a) * r * 0.95 + 0.02 - C0.z));
-  }
+  // headband: from each fork apex, up over the shoulder and round the back of the neck
+  let lo = nb.y - 0.08, hi = nb.y + 0.06;
+  for (let it = 0; it < 30; it++) { const m = (lo + hi) / 2; const [dx] = torsoAt(m, Math.PI / 2, 0); if (Math.abs(dx) > 0.09) lo = m; else hi = m; }
+  const yTop = (lo + hi) / 2;
+  const rel = v => V3(v.x, v.y - C0.y, v.z - C0.z);
+  const half = (k, s) => [apex[k], apex[k].clone().addScaledVector(frames[k].U, 0.022),
+    V3(s * 0.108, yTop + 0.03, nb.z + 0.01), V3(s * 0.09, yTop + 0.034, nb.z - 0.06)];
+  const Lh = half(0, 1), Rh = half(1, -1);
+  const bandPts = [...Lh, V3(0, yTop + 0.034, nb.z - 0.1), ...Rh.reverse()].map(rel);
   const bc = new THREE.CatmullRomCurve3(bandPts);
-  const bandG = count(new THREE.TubeGeometry(bc, 44, 0.005, 8)); bandG.scale(1, 1, 1);
+  const bandG = count(new THREE.TubeGeometry(bc, 60, 0.0052, 8)); bandG.scale(1, 1, 1);
   group.add(new THREE.Mesh(bandG, shellMat));
-  const padC = new THREE.CatmullRomCurve3(bandPts.slice(5, 14));
-  const bp = count(new THREE.TubeGeometry(padC, 26, 0.0085, 8));
+  const padC = new THREE.CatmullRomCurve3(bandPts.slice(2, 7));
+  const bp = count(new THREE.TubeGeometry(padC, 30, 0.0085, 8));
   group.add(new THREE.Mesh(bp, padMat));
   // cable: left cup, down the chest into the kangaroo pocket
-  const c0 = cups[0].position;
+  const cb = rel(frames[0].C.clone().addScaledVector(frames[0].U, -0.047).addScaledVector(frames[0].A, -0.01));
   const [, dzP, czP] = torsoAt(B.hips[1] + 0.19, 0.12);
-  const cable = new THREE.CatmullRomCurve3([c0.clone().add(V3(0.01, -0.03, 0.0)), c0.clone().add(V3(0.004, -0.09, 0.01)),
+  const cable = new THREE.CatmullRomCurve3([cb, cb.clone().add(V3(0.004, -0.06, 0.012)),
     V3(0.05, B.hips[1] + 0.32 - C0.y, czP + dzP + 0.015 - C0.z), V3(0.035, B.hips[1] + 0.2 - C0.y, czP + dzP + 0.01 - C0.z)]);
   group.add(new THREE.Mesh(count(new THREE.TubeGeometry(cable, 36, 0.0017, 5)), shellMat));
   group.traverse(o => { if (o.isMesh) o.castShadow = true; });
@@ -254,7 +276,7 @@ export function createHoodGeoms(id, torsoAt) {
     for (let i = 0; i <= nu; i++) {
       const u = (i / nu - 0.5) * 2;
       const th = Math.PI + u * halfW;
-      const bulge = 0.01 + 0.03 * Math.sin(Math.PI * Math.min(1, v * 1.25)) * Math.pow(1 - u * u, 0.6) + 0.004 * Math.sin(u * 7 + v * 5) * (1 - u * u);
+      const bulge = 0.008 + 0.017 * Math.sin(Math.PI * Math.min(1, v * 1.25)) * Math.pow(1 - u * u, 0.6) + 0.004 * Math.sin(u * 7 + v * 5) * (1 - u * u) + 0.0035 * Math.sin(u * 13 + 1.7) * sstep(0.2, 0.8, v) * (1 - u * u);
       const edge = Math.min(1, (1 - Math.abs(u)) * 5) * Math.min(1, v * 6);
       const [dx, dz, cz] = torsoAt(y, th, 0.004 + bulge * edge);
       P.push(dx, y - 0.012 * (1 - edge), cz + dz);
@@ -275,18 +297,22 @@ export function createHoodGeoms(id, torsoAt) {
   pouch.computeVertexNormals();
   // neckline roll: round the neck, crossing to a V at the front
   const rP = [], rUV = [], rC = [], rI = [];
-  const NA = 40, NS = 10;
+  const NA = 72, NS = 10;
   const ring = [];
+  // height where the torso's half-width is ~9 cm: the top of the trapezius beside the neck
+  let lo = yN - 0.08, hi = yN + 0.06;
+  for (let it = 0; it < 30; it++) { const m = (lo + hi) / 2; const [dx] = torsoAt(m, Math.PI / 2, 0); if (Math.abs(dx) > 0.09) lo = m; else hi = m; }
+  const yTop = (lo + hi) / 2;
   for (let i = 0; i <= NA; i++) {
     const a = -Math.PI * 0.9 + i / NA * Math.PI * 1.8; // 0 = back
     const front = Math.max(0, -Math.cos(a));
-    const y = yN - 0.004 - 0.055 * front * front;
-    const th = Math.PI - a;
-    // sit on the torso surface around the neck opening, lying flatter at the front
-    const r = 0.013 + 0.01 * (1 - front);
-    const [dx, dz, cz] = torsoAt(y, th, r * (0.3 + 0.5 * front));
-    const k = 0.82 + 0.18 * front;
-    ring.push({ p: V3(dx * k, y + r * 0.3 * (1 - front), cz + dz * (0.9 + 0.1 * front)), r });
+    // hugs the neck at the back and sides, crossing down to a V on the chest at the front
+    const y = yTop - 0.004 - (yTop - (yN - 0.059)) * Math.pow(front, 1.6);
+    const xt = 0.092 * Math.sin(a) * (1 - 0.8 * front * front), zt = -0.082 * Math.cos(a);
+    const th = Math.atan2(xt, zt);
+    const r = 0.012 + 0.009 * (1 - front);
+    const [dx, dz, cz] = torsoAt(y, th, r * (0.3 + 0.4 * front));
+    ring.push({ p: V3(dx, y + r * 0.45 * (1 - front), cz + dz), r });
   }
   for (let i = 0; i <= NA; i++) {
     const cur = ring[i], prv = ring[Math.max(0, i - 1)], nxt = ring[Math.min(NA, i + 1)];
@@ -404,6 +430,16 @@ export function createCardiganBits(openAtY, sectionAt) {
     b.translate(dx + out.x * 0.002 + 0.004, y, cz + dz + out.z * 0.002);
     geoms.buttons.push(b);
   }
+  // small shirt buttons on the placket
+  geoms.shirtButtons = [];
+  for (let i = 0; i < 5; i++) {
+    const y = 1.365 - i * 0.078;
+    const [dx, dz, cz] = sectionAt(y, 0, 0.0025);
+    const g = new THREE.CylinderGeometry(0.0042, 0.0042, 0.0018, 12);
+    g.rotateX(Math.PI / 2);
+    g.translate(dx, y, cz + dz);
+    geoms.shirtButtons.push(g);
+  }
   // patch pockets at hip level, both sides
   for (const s of [1, -1]) {
     const P = [], UV = [], idx = [];
@@ -474,13 +510,19 @@ export function createShirtCollar(id, torsoAt) {
     const stand = 0.021 - 0.008 * front;
     const fall = 0.03 + 0.028 * Math.pow(front, 3);
     // cross-section: base -> stand top -> fold -> fall tip
+    // at the back and sides the fall drapes down onto the shoulders, over the cardigan's neckline
+    const tipF = base.clone().add(V3(0, stand - fall, 0)).addScaledVector(out, 0.015 + 0.012 * front);
+    const [tx, tz, tcz] = torsoAt(yN + 0.005, Math.PI - a, 0.016);
+    const tipB = V3(tx, yN + 0.005, tcz + tz);
+    const wB = 1 - sstep(0.35, 0.8, front);
+    const tip = tipF.clone().lerp(tipB, wB);
+    const top = base.clone().add(V3(0, stand + 0.003, 0)).addScaledVector(out, 0.007);
+    const mid = top.clone().lerp(tip, 0.5).addScaledVector(out, 0.004 + 0.003 * wB);
     const sec = [
       base.clone(),
       base.clone().add(V3(0, stand * 0.55, 0)).addScaledVector(out, 0.001),
       base.clone().add(V3(0, stand, 0)).addScaledVector(out, 0.002),
-      base.clone().add(V3(0, stand + 0.003, 0)).addScaledVector(out, 0.007),
-      base.clone().add(V3(0, stand - fall * 0.45, 0)).addScaledVector(out, 0.012 + 0.004 * front),
-      base.clone().add(V3(0, stand - fall, 0)).addScaledVector(out, 0.015 + 0.012 * front),
+      top, mid, tip,
     ];
     for (let k2 = 0; k2 < NS; k2++) { P.push(sec[k2].x, sec[k2].y, sec[k2].z); UV.push(i / NA * 0.4, k2 / NS * 0.05); const e = k2 === NS - 1 ? 0.9 : 1; C.push(e, e, e); }
   }

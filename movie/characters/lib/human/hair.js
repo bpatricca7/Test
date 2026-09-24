@@ -95,11 +95,11 @@ function geomFrom(out) {
 // ------------------------------------------------------------------ maya ---
 export function createMayaHair(H, rnd) {
   const f = H.f, L = H.landmarks;
-  const dark = lin(0x1c140f), dark2 = lin(0x2a1d15), grey1 = lin(0x7e7872), grey2 = lin(0x96908a), grey = grey1;
+  const dark = lin(0x1c140f), dark2 = lin(0x2a1d15), grey1 = lin(0x77716b), grey2 = lin(0x8c867f), grey = grey1;
   const group = new THREE.Group(); group.name = 'hairMaya';
   // bun placement: high at the back of the head
-  const bunC = new THREE.Vector3(0.0, 0.1, -0.088);
-  const bunAxis = new THREE.Vector3(0, 0.95, -0.8).normalize(); // points out of the head
+  const bunC = new THREE.Vector3(0.0, 0.116, -0.08);
+  const bunAxis = new THREE.Vector3(0, 1.0, -0.62).normalize(); // points out of the head
   // hair region mask (1 = hair)
   const mask = (x, y, z) => hairline('maya', x, y, z);
   // sweep direction: from the hairline back toward the bun, along the scalp
@@ -153,9 +153,11 @@ export function createMayaHair(H, rnd) {
     const nClumps = Math.max(4, Math.round(len / 0.0055));
     const front = Math.cos(ls.az) > 0.3;
     // colour per lock: grey streak from the left temple, greying at the temples, a few grey strands
-    const streak = Math.exp(-(((ls.az - 0.95) / 0.22) ** 2));
+    const streak = Math.max(Math.exp(-(((ls.az - 0.95) / 0.26) ** 2)), 0.8 * Math.exp(-(((ls.az + 0.42) / 0.1) ** 2)), 0.7 * Math.exp(-(((ls.az + 2.3) / 0.12) ** 2)));
     const temple = Math.exp(-(((Math.abs(ls.az) - 1.1) / 0.3) ** 2)) * 0.35;
-    const isGreyLock = streak > 0.35 || rnd() < 0.03 + temple * 0.35;
+    // continuous greyness per lock (blended smoothly over the mesh below): the silver streak,
+    // plus salt-and-pepper at the temples
+    const gLock = clamp(streak * 1.5) * (0.85 + 0.15 * rnd()) + temple * 0.9 * rnd();
     const tone = rnd();
     const phase = rnd() * Math.PI * 2;
     for (let k = 0; k < nClumps; k++) {
@@ -170,8 +172,9 @@ export function createMayaHair(H, rnd) {
       const wave = Math.sin(u * len / 0.016 * Math.PI * 2 + phase) * 0.0028 * sstep(0, 0.15, u);
       const pos = q.p.clone().addScaledVector(side, wave).addScaledVector(q.n, 0.0012 * Math.cos(u * len / 0.016 * Math.PI * 2 + phase));
       const cdir = dir.clone().addScaledVector(side, Math.cos(u * len / 0.016 * Math.PI * 2 + phase) * 0.6).normalize();
-      const grey = isGreyLock && (rnd() < 0.95);
-      const col = grey ? (tone < 0.5 ? grey1 : grey2) : (rnd() < 0.3 ? dark2 : dark);
+      const gk = clamp(gLock * (0.85 + 0.3 * rnd()));
+      const base = rnd() < 0.3 ? dark2 : dark, gc = tone < 0.5 ? grey1 : grey2;
+      const col = [mix(base[0], gc[0], gk), mix(base[1], gc[1], gk), mix(base[2], gc[2], gk)];
       clumps.push({ x: pos.x, y: pos.y, z: pos.z, n: q.n, s: cdir, r: 0.0046 + 0.0012 * rnd(), len: 0.0055, col, lock: lockId });
     }
   }
@@ -188,7 +191,10 @@ export function createMayaHair(H, rnd) {
     const tan = bunX.clone().multiplyScalar(-Math.sin(a)).addScaledVector(bunY, Math.cos(a)).normalize();
     const nrm = p.clone().sub(bunC).normalize();
     const g = rnd();
-    const col = g < 0.06 ? grey1 : (rnd() < 0.5 ? dark : dark2);
+    // a few silver strands wound through the bun, stronger on the streak's side
+    const gb = clamp((g < 0.12 ? 0.45 : 0) * (0.6 + 0.8 * Math.max(0, Math.cos(a - 0.6))));
+    const b0 = rnd() < 0.5 ? dark : dark2;
+    const col = [mix(b0[0], grey1[0], gb), mix(b0[1], grey1[1], gb), mix(b0[2], grey1[2], gb)];
     const c = { x: p.x, y: p.y, z: p.z, n: nrm, s: tan, r: 0.0095 + 0.0035 * rnd(), len: 0.015, col, bun: true };
     bunClumps.push(c);
   }
@@ -229,7 +235,7 @@ export function createMayaHair(H, rnd) {
     // keep hair off the face and ears
     return d;
   };
-  const min = [-0.105, -0.085, -0.15], max = [0.105, 0.17, 0.105];
+  const min = [-0.105, -0.085, -0.15], max = [0.105, 0.19, 0.105];
   const vs = 0.0036;
   const res = [0, 1, 2].map(i => Math.round((max[i] - min[i]) / vs) + 1);
   const m = surfaceNets(hairSDF, min, max, res, { snap: 1 });
@@ -241,8 +247,15 @@ export function createMayaHair(H, rnd) {
     const k = Math.floor(x / HS) * 73856093 ^ Math.floor(y / HS) * 19349663 ^ Math.floor(z / HS) * 83492791;
     const arr = hgrid.get(k);
     let best = null, bd = 1e9;
-    if (arr) for (const c of arr) { const d = (x - c.x) ** 2 + (y - c.y) ** 2 + (z - c.z) ** 2; if (d < bd) { bd = d; best = c; } }
-    const col = best ? best.col : dark;
+    // colour: inverse-distance blend of the nearby clumps (no blocky per-clump patches)
+    let cr = 0, cg = 0, cb = 0, cw = 0;
+    if (arr) for (const c of arr) {
+      const d = (x - c.x) ** 2 + (y - c.y) ** 2 + (z - c.z) ** 2;
+      if (d < bd) { bd = d; best = c; }
+      const w = 1 / (d + 2.5e-5) ** 2;
+      cr += c.col[0] * w; cg += c.col[1] * w; cb += c.col[2] * w; cw += w;
+    }
+    const col = cw > 0 ? [cr / cw, cg / cw, cb / cw] : dark;
     // occlusion toward the scalp: deeper = darker
     const depth = clamp((f(x, y, z) - 0.002) / 0.012);
     const ao = 0.45 + 0.55 * depth;
@@ -269,10 +282,10 @@ export function createMayaHair(H, rnd) {
   const out = { P: [], N: [], UV: [], T: [], C: [], I: [] };
   const rings = [
     [0.058, 0.036, 0.03, 0.05, 1], [-0.06, 0.034, 0.028, 0.046, 0], [0.066, 0.02, 0.0, 0.04, 0],
-    [0.03, -0.055, -0.078, 0.04, 0], [-0.028, -0.056, -0.08, 0.036, 0], [0.012, 0.11, -0.13, 0.04, 1], [-0.02, 0.1, -0.138, 0.035, 0],
+    [0.03, -0.055, -0.078, 0.04, 0], [-0.028, -0.056, -0.08, 0.036, 0], 
   ];
   // flyaways: short springy curls escaping along the hairline and off the bun
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 0; i++) {
     let x, y, z;
     if (i < 0) {
       const az = (i / 22 - 0.5) * 2 * 2.4 + (rnd() - 0.5) * 0.15;

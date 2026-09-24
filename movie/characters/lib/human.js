@@ -25,7 +25,7 @@ const clamp = (x, a = 0, b = 1) => (x < a ? a : x > b ? b : x);
 
 const WARDROBE = {
   maya: rnd => ({
-    shirt: makeClothMaterial(weaveTexture({ color: 0xe6dcc6, rnd }), { roughness: 0.8, sheen: 0x1a1612 }),
+    shirt: makeClothMaterial(weaveTexture({ color: 0xd6cab2, rnd }), { roughness: 0.8, sheen: 0x1a1612 }),
     knit: makeClothMaterial(knitTexture({ color: 0x5f6e3a, color2: 0x4f5c30, heather: 0.18, rnd }), { roughness: 0.95, sheen: 0x303820, normalScale: 1.4 }),
     knitRib: makeClothMaterial(knitTexture({ color: 0x566433, color2: 0x4a572c, heather: 0.15, rib: true, rnd }), { roughness: 0.95, sheen: 0x303820, normalScale: 1.4 }),
     trousers: makeClothMaterial(twillTexture({ warp: 0x2e2a2c, weft: 0x3a3436, tile: 0.02, threads: 80, rnd }), { roughness: 0.82, sheen: 0x141216 }),
@@ -114,6 +114,9 @@ export async function createHuman(env, id) {
     const btn = mergeGeoms(bits.buttons);
     skinFromNearest(btn, [geoms.knitRib]);
     addSkinned(btn, btnMat, 'buttons');
+    const sbtn = mergeGeoms(bits.shirtButtons);
+    skinFromNearest(sbtn, [geoms.shirt]);
+    addSkinned(sbtn, new THREE.MeshStandardMaterial({ color: 0xe8e2d6, roughness: 0.3 }), 'shirtButtons');
     for (const pg of bits.pockets) { skinFromNearest(pg, [geoms.knit]); addSkinned(pg, mats.knit, 'pocket'); }
     const collar = createShirtCollar(id, (y, th, off = 0) => torsoSection('maya', y, th, off));
     skinFromNearest(collar, [geoms.shirt]);
@@ -233,7 +236,9 @@ export async function createHuman(env, id) {
   set({ sit: 1, seatHeight: 0.47 }); heights.sitEye = getEye(eyeW).y;
   set({});
 
-  const stats = { headTris: head.tris, earTris: head.ears.tris * 2, bodyTris, hairTris: hair.tris, propTris };
+  let totalTris = 0;
+  root.traverse(o => { if (o.isMesh && o.geometry) { const g = o.geometry; totalTris += (g.index ? g.index.count : g.attributes.position.count) / 3; } });
+  const stats = { headTris: head.tris, earTris: head.ears.tris * 2, bodyTris, hairTris: hair.tris, propTris, totalTris: Math.round(totalTris) };
   return { root, set, getEye, getHead, heights, setScreen, setEyeLight, head, hair, rig, meshes, stats, id, get last() { return last; } };
 }
 

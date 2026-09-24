@@ -40,6 +40,9 @@ export async function create(env) {
   }
 
   const camera = new THREE.PerspectiveCamera(35, 16 / 9, 0.03, 4000);
+  // a soft bounce near the lens, as a cinematographer would add, so faces read in the dark hut
+  const faceFill = new THREE.PointLight(0xffe2c4, 0, 3.2, 2);
+  interior.add(faceFill);
   const out = { scene: interior, camera, update, bloom };
 
   const B = TL.beats, MK = TL.marks;
@@ -460,7 +463,7 @@ export async function create(env) {
       const from = V3(a.pushFrom || [look.x + 38, look.y + 7, look.z + 30]);
       P.copy(from).lerp(w.clone().add(new THREE.Vector3(6, 1.2, 6)), easeInOut(u) * 0.8); T.copy(look).lerp(w, easeInOut(u)); return 40; },
     int_wide: (t, u) => { P.set(lerp(2.15, 1.9, u), 1.72, lerp(1.75, 1.5, u)); T.set(-0.95, 0.95, -0.55); return 52; },
-    maya_chair_cu: (t, u) => faceShot(maya, MK.maya_armchair.yaw, t, u, { dist: 0.78, side: -0.12, up: 0.05, fov: 32, seed: 3 }),
+    maya_chair_cu: (t, u) => faceShot(maya, MK.maya_armchair.yaw, t, u, { dist: 1.0, side: -0.22, up: 0.1, fov: 32, seed: 3 }),
     sam_mcu: (t, u) => faceShot(sam, 0, t, u, { dist: 1.05, side: 0.2, up: -0.02, fov: 34, lookFrom: eyeOf(maya), seed: 5 }),
     int_wide_up: (t, u) => { P.set(lerp(1.95, 1.55, u), 1.6, lerp(1.6, 1.25, u)).add(hand(t, 0.008, 8));
       T.copy(eyeOf(maya)).add(new THREE.Vector3(0.1, -0.35, 0)); return 50; },   // tracks her across the room
@@ -469,7 +472,7 @@ export async function create(env) {
     maya_cu_1: (t, u) => faceShot(maya, 0, t, u, { dist: 0.62, side: 0.1, up: 0.0, fov: 30, lookFrom: screen.center, seed: 11 }),
     fold_insert: (t, u) => { P.copy(screen.center).add(new THREE.Vector3(0, 0, lerp(0.5, 0.36, easeInOut(u)))).add(hand(t, 0.002, 13)); T.copy(screen.center); return 40; },
     maya_cu_2: (t, u) => faceShot(maya, 0, t, u, { dist: 0.6, side: -0.08, up: 0.01, fov: 29, lookFrom: screen.center, seed: 15, push: 0.1 }),
-    two_shot: (t, u) => { P.set(lerp(0.05, 0.12, u), 1.28, -1.3).add(hand(t, 0.006, 17)); T.set(-0.35, 1.18, -0.55); return 44; },
+    two_shot: (t, u) => { P.set(lerp(-0.08, -0.02, u), 1.44, -1.52).add(hand(t, 0.005, 17)); T.copy(eyeOf(sam)).lerp(eyeOf(maya), 0.5).add(new THREE.Vector3(0, -0.06, 0)); return 42; },
     surge_wide: (t, u) => { P.set(lerp(-1.95, -1.8, u), 1.5, lerp(1.55, 1.35, u)).add(hand(t, 0.01 + 0.02 * U.window01(t, B.surge.start, B.surge.end, 0.1, 0.4), 19));
       T.set(lerp(-0.2, 0.7, smooth(B.materialize.start, B.materialize.end, t)), 1.15, -0.75); return 48; },
     visitor_cu_1: (t, u) => faceShot(visitor, MK.visitor.yaw, t, u, { dist: 0.85, side: 0.12, up: -0.05, fov: 30, seed: 21 }),
@@ -477,7 +480,7 @@ export async function create(env) {
     maya_ots_visitor: (t, u) => { const v = eyeOf(visitor), m = eyeOf(maya); const f = m.clone().sub(v).setY(0).normalize(); const r = new THREE.Vector3(f.z, 0, -f.x);
       P.copy(v).addScaledVector(f, -0.45).addScaledVector(r, -0.35).add(new THREE.Vector3(0, -0.12, 0)).add(hand(t, 0.006, 25)); T.copy(m).add(new THREE.Vector3(0, -0.05, 0)); return 38; },
     visitor_cu_2: (t, u) => faceShot(visitor, MK.visitor.yaw, t, u, { dist: 0.8, side: -0.14, up: -0.04, fov: 29, lookFrom: eyeOf(maya), seed: 27, push: 0.08 }),
-    maya_cu_3: (t, u) => faceShot(maya, 0, t, u, { dist: 0.66, side: -0.12, up: 0.0, fov: 30, lookFrom: eyeOf(visitor), seed: 29 }),
+    maya_cu_3: (t, u) => faceShot(maya, 0, t, u, { dist: 0.72, side: 0.0, up: 0.0, fov: 30, lookFrom: eyeOf(visitor).add(new THREE.Vector3(-0.1, 0, 0.75)), seed: 29 }),
     arc_two: (t, u) => {
       // orbit around the space between them as it folds down to her eye level
       const v = eyeOf(visitor), m = eyeOf(maya), mid = v.clone().lerp(m, 0.5);
@@ -498,11 +501,11 @@ export async function create(env) {
     visitor_ms: (t, u) => { const v = eyeOf(visitor); const f = facing(MK.visitor.yaw);
       P.copy(v).addScaledVector(f, lerp(2.3, 2.0, u)).add(new THREE.Vector3(0, -0.45, 0)).add(hand(t, 0.008, 31)); T.copy(v).add(new THREE.Vector3(0, -0.45, 0)); return 38; },
     dissolve_wide: (t, u) => { P.set(-1.85, 1.45, lerp(-1.0, -0.8, u)).add(hand(t, 0.008, 33)); T.set(lerp(1.3, 2.2, smooth(0.2, 0.9, u)), 1.3, lerp(-0.4, 0.2, u)); return 50; },
-    sam_cu_after: (t, u) => faceShot(sam, 0, t, u, { dist: 0.95, side: 0.15, up: 0.0, fov: 32, lookFrom: eyeOf(maya), seed: 35 }),
+    sam_cu_after: (t, u) => faceShot(sam, 0, t, u, { dist: 1.0, side: 0.1, up: 0.0, fov: 32, lookFrom: new THREE.Vector3(1.2, 1.55, 1.7), seed: 35 }),
     maya_window: (t, u) => {
       const walkU = smooth(B.maya_to_window.start, B.maya_to_window.end, t);
       if (walkU < 1) { P.set(lerp(-0.4, 0.2, walkU), 1.5, lerp(1.6, 1.4, walkU)); T.copy(eyeOf(maya)).add(new THREE.Vector3(0, -0.2, 0)); return 42; }
-      return faceShot(maya, 0, t, u, { dist: 0.7, side: 0.0, up: 0.0, fov: 30, lookFrom: new THREE.Vector3(1.5, 1.5, 1.4), seed: 37, push: 0.05 });
+      return faceShot(maya, 0, t, u, { dist: 0.62, side: -0.05, up: 0.0, fov: 30, lookFrom: new THREE.Vector3(2.35, 1.5, -0.35), seed: 37, push: 0.05 });
     },
     ext_dish: (t, u) => {
       const sh = set.exterior.anchors && set.exterior.anchors.shots && set.exterior.anchors.shots.ext_dish;
@@ -536,7 +539,7 @@ export async function create(env) {
     const surge = U.window01(t, B.surge.start, B.surge.end, 0.15, 0.6);
     const lights = 1 - 0.65 * smooth(B.surge.start, B.surge.end, t) * (1 - smooth(B.lights_return - 0.4, B.lights_return + 0.6, t));
     set.update(t, {
-      alarm: t >= B.alarm && t < (B.alarm_dies ?? B.lights_return) ? 1 - 0.8 * U.window01(t, B.surge.start, B.alarm_dies, 0.05, 0.05) * (Math.sin(t * 90) > 0 ? 1 : 0) : 0,
+      alarm: t >= B.alarm && t < (B.alarm_dies ?? B.lights_return) ? 0.5 - 0.4 * U.window01(t, B.surge.start, B.alarm_dies, 0.05, 0.05) * (Math.sin(t * 90) > 0 ? 1 : 0) : 0,
       surge, lights,
       hologram: 0.5 * (vP2.materialize || 0) * (1 - (vP2.dissolve || 0)) * (0.8 + 0.4 * (vP2.glow || 0)),
       samChair: sP2.chair,
@@ -544,6 +547,9 @@ export async function create(env) {
     });
 
     const fov = (SHOT_FN[shot.id] || SHOT_FN.int_wide)(t, u);
+    const close = /_cu|_mcu|reaction|_ots|arc_two|maya_window/.test(shot.id);
+    faceFill.position.copy(P).add(new THREE.Vector3(0, 0.25, 0));
+    faceFill.intensity = isExt ? 0 : (close ? 0.9 : 0.3) * (0.55 + 0.45 * (1 - U.window01(t, B.surge.start, B.lights_return, 0.3, 0.6)));
     camera.position.copy(P);
     camera.lookAt(T);
     camera.fov = fov;
@@ -553,7 +559,7 @@ export async function create(env) {
   function bloom(t) {
     const v = U.envAt(ENV, 'visitor_rms', t);
     const holo = smooth(B.materialize.start, B.materialize.end, t) * (1 - smooth(B.dematerialize.start, B.dematerialize.end, t));
-    return { strength: 0.45 + 0.35 * holo + 0.25 * v, radius: 0.45, threshold: 0.78 - 0.1 * holo };
+    return { strength: 0.3 + 0.35 * holo + 0.2 * v, radius: 0.4, threshold: 0.9 - 0.1 * holo };
   }
 
   return out;
