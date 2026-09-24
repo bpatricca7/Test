@@ -7,7 +7,7 @@ FFMPEG=$(python3 -c "import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe(
 export NODE_PATH=${NODE_PATH:-$(npm root -g)}
 
 python3 movie/timeline.py >/dev/null            # the shared 1,679-bit picture
-python3 movie/characters/audio/speech.py --no-sheets
+python3 movie/characters/audio/voices_ai.py --no-sheets      # Kokoro-82M, run locally (see voices_ai.py for setup)
 python3 movie/characters/timeline.py            # picks up the real line durations and phonemes
 python3 movie/characters/audio/score.py
 python3 movie/characters/audio/mix.py

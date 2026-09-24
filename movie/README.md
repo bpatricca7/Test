@@ -1,12 +1,12 @@
 # ECHO
 
-A sci-fi short, built entirely in code. No footage, no samples, no AI voice API.
+A sci-fi short, built entirely in code. No footage. The first two cuts use no AI voice at all; the characters cut voices its cast with an open-source speech model run locally.
 
 > A radio signal arrived at 03:14 UTC. Nobody was listening for it.
 
 There are three cuts:
 
-- **[`ECHO_characters.mp4`](ECHO_characters.mp4)**: the characters cut (2:06). Two astronomers and the Visitor, fully animated and talking: sculpted and rigged faces with lip-sync, voices from a speech synthesizer written from scratch, a detailed observatory hut. Phone copy: [`ECHO_characters_phone.mp4`](ECHO_characters_phone.mp4). Source in [`characters/`](characters/).
+- **[`ECHO_characters.mp4`](ECHO_characters.mp4)**: the characters cut (2:06). Two astronomers and the Visitor, fully animated and talking: sculpted and rigged faces with lip-sync, naturalistic motion, human-sounding voices from Kokoro-82M (open-source, run locally, no API), a widescreen film look with depth of field, and a detailed observatory hut. Phone copy: [`ECHO_characters_phone.mp4`](ECHO_characters_phone.mp4). Source in [`characters/`](characters/).
 - **[`ECHO_animated.mp4`](ECHO_animated.mp4)**: the animated cut (3:05). Real-time 3D: a 1974 prologue at a giant valley dish, a journey from Earth to the galaxy, a 3D observatory and spectrogram flyover, the bitstream folding into the picture, and the visitor stepping out of it. Source in [`animated/`](animated/).
 - **[`ECHO_animated_phone.mp4`](ECHO_animated_phone.mp4)**: the animated cut at 720p (26 MB), for phones.
 - **[`ECHO.mp4`](ECHO.mp4)**: the first cut (2:35), a quieter 2D version.
@@ -56,8 +56,9 @@ Built by five specialists working to one contract ([`characters/API.md`](charact
 | Part | File |
 | --- | --- |
 | Script, timeline, blocking, shots | `characters/timeline.py` |
-| Voices: Klatt-style formant speech synthesizer, three voices, phoneme timing for lip-sync | `characters/audio/speech.py` |
-| Maya and Sam: SDF-sculpted heads, 15-viseme face rig, IK body rig, baked skin/fabric textures | `characters/lib/human.js`, `characters/lib/human/` |
+| Voices: Kokoro-82M run locally (Maya, Sam; the Visitor through an eerie processing chain), phoneme timing from the model's own durations | `characters/audio/voices_ai.py` |
+| The earlier from-scratch formant synthesizer (kept for reference) | `characters/audio/speech.py` |
+| Maya and Sam: SDF-sculpted heads, 15-viseme face rig with co-articulation, IK body rig with a naturalistic motion filter, baked skin/fabric textures | `characters/lib/human.js`, `characters/lib/human/` |
 | The Visitor: hologram creature with face rig, materialize/dissolve | `characters/lib/visitor.js`, `characters/lib/visitor/` |
 | The hut and exterior, live monitor screens | `characters/lib/set.js`, `characters/lib/set/` |
 | Direction: acting, walks, gaze, blinks, lip-sync, cameras | `characters/scenes/film.js` |
