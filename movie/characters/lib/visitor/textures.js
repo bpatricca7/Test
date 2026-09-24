@@ -60,17 +60,19 @@ export function bakeDetailTexture(THREE, U, size = 1024) {
   function walk(x, y, ang, w, len, depth) {
     let px = x, py = y;
     for (let i = 0; i < len; i++) {
-      ang += (rnd() - 0.5) * 0.5;
+      // vessels run mostly along the limb (texture v), meandering gently
+      const target = Math.sin(ang) >= 0 ? Math.PI / 2 : -Math.PI / 2;
+      ang += (rnd() - 0.5) * 0.35 + (target - ang) * 0.06;
       const step = 6 + rnd() * 6;
       const nx = px + Math.cos(ang) * step, ny = py + Math.sin(ang) * step;
       segs.push([px, py, nx, ny, w]);
       px = nx; py = ny;
       w *= 0.985;
-      if (depth < 3 && rnd() < 0.06) walk(px, py, ang + (rnd() < 0.5 ? -1 : 1) * (0.5 + rnd() * 0.6), w * 0.7, Math.floor(len * 0.55), depth + 1);
+      if (depth < 3 && rnd() < 0.045) walk(px, py, ang + (rnd() < 0.5 ? -1 : 1) * (0.35 + rnd() * 0.4), w * 0.68, Math.floor(len * 0.5), depth + 1);
       if (w < 0.6) break;
     }
   }
-  for (let i = 0; i < 16; i++) walk(rnd() * size, rnd() * size, rnd() * Math.PI * 2, 3.2 + rnd() * 2.5, 60 + Math.floor(rnd() * 50), 0);
+  for (let i = 0; i < 14; i++) walk(rnd() * size, rnd() * size, (rnd() < 0.5 ? 1 : -1) * Math.PI / 2 + (rnd() - 0.5) * 0.6, 3.0 + rnd() * 2.2, 60 + Math.floor(rnd() * 50), 0);
   // soft wide pass, blurred once, then a sharp core on top
   const wc = document.createElement('canvas');
   wc.width = wc.height = size;
@@ -150,7 +152,6 @@ export function bakeDetailTexture(THREE, U, size = 1024) {
   tex.magFilter = THREE.LinearFilter;
   tex.minFilter = THREE.LinearMipmapLinearFilter;
   tex.generateMipmaps = true;
-  tex.anisotropy = 4;
   tex.colorSpace = THREE.NoColorSpace;
   tex.needsUpdate = true;
   return tex;

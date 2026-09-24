@@ -12,6 +12,7 @@ export function buildInterior(env, T, screens) {
   const root = new THREE.Group();
   root.name = 'set.interior';
   const rnd = U.mulberry32(2718);
+  const tube = (pts, r, seg = 40) => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(p => new V3(...p))), seg, r, 6, false);
 
   // -------------------------------------------------------------------------
   // environment map for glossy things: a dim warm room with a lamp, a cyan
@@ -36,66 +37,101 @@ export function buildInterior(env, T, screens) {
   // materials
   // -------------------------------------------------------------------------
   const glossy = [];     // materials whose envMapIntensity follows the room light
-  const std = (o, env = 0) => { const m = new THREE.MeshStandardMaterial(o); if (env > 0) { m.envMap = envMap; m.envMapIntensity = env; m.userData.env = env; glossy.push(m); } return m; };
+  // SwiftShader shades every rasterized fragment, so most surfaces are Lambert (diffuse)
+  // or Phong (a lamp highlight); only small metal parts get a PBR material + env map.
+  const met = (o, env = 0.8) => { const m = new THREE.MeshStandardMaterial(o); m.envMap = envMap; m.envMapIntensity = env; m.userData.env = env; glossy.push(m); return m; };
   const lam = o => new THREE.MeshLambertMaterial(o);
+  const pho = (o, shininess = 30, spec = 0x222222) => new THREE.MeshPhongMaterial(Object.assign({ shininess, specular: new THREE.Color(spec) }, o));
+  const N = (tex, s = 1) => ({ normalMap: tex, normalScale: new THREE.Vector2(s, s) });
+  // moonlight through the window panes, computed analytically (used by the floor)
+  const moonU = { uMoonDir: { value: new V3(1, 0.5, 0).normalize() }, uMoonCol: { value: new THREE.Color(0, 0, 0) }, uWin: { value: new THREE.Vector4(-0.2, 0.8, 1.0, 1.8) }, uWinX: { value: 2.6 }, uWinM: { value: new THREE.Vector2(0.3, 1.4) } };
+  const withMoon = m => {
+    m.onBeforeCompile = sh => {
+      Object.assign(sh.uniforms, moonU);
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vMoonP;')
+        .replace('#include <project_vertex>', '#include <project_vertex>\nvMoonP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+        varying vec3 vMoonP;
+        uniform vec3 uMoonDir, uMoonCol; uniform vec4 uWin; uniform float uWinX; uniform vec2 uWinM;
+        float moonMask(vec3 p) {
+          float t = (uWinX - p.x) / uMoonDir.x;
+          vec3 q = p + uMoonDir * t;
+          float e = 0.012;
+          float m = smoothstep(uWin.x - e, uWin.x + e, q.z) * (1.0 - smoothstep(uWin.y - e, uWin.y + e, q.z))
+                  * smoothstep(uWin.z - e, uWin.z + e, q.y) * (1.0 - smoothstep(uWin.w - e, uWin.w + e, q.y));
+          m *= smoothstep(0.016, 0.03, abs(q.z - uWinM.x)) * smoothstep(0.016, 0.03, abs(q.y - uWinM.y));
+          return t > 0.0 ? m : 0.0;
+        }`).replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
+        reflectedLight.directDiffuse += BRDF_Lambert(diffuseColor.rgb) * uMoonCol * moonMask(vMoonP) * max(dot(normal, uMoonDir), 0.0);`);
+    };
+    return m;
+  };
   const M = {
-    pine: std({ map: T.pine, bumpMap: T.pineBump, bumpScale: 1.2, roughness: 0.62, color: 0xffffff }, 0.25),
-    paint: lam({ map: T.paint, color: 0xffffff }),
-    floor: std({ map: T.floor, bumpMap: T.floorBump, bumpScale: 1.0, roughness: 0.5, color: 0xffffff }, 0.35),
-    ceiling: lam({ map: T.ceiling, color: 0xffffff }),
-    beam: std({ map: T.beam, roughness: 0.7 }),
-    trim: std({ map: T.beam, roughness: 0.55, color: 0xd8c0a0 }, 0.2),
-    desk: std({ map: T.desk, roughness: 0.42 }, 0.4),
-    enamel: std({ map: T.enamel, roughness: 0.42, metalness: 0.25 }, 0.5),
-    enamelDark: std({ map: T.enamel, color: 0x6a7068, roughness: 0.45, metalness: 0.3 }, 0.5),
-    rackMetal: std({ map: T.rackMetal, roughness: 0.55, metalness: 0.4 }, 0.4),
-    rackFront: std({ map: T.rack, roughness: 0.5, metalness: 0.3 }, 0.35),
-    black: std({ color: 0x19191b, roughness: 0.42, metalness: 0.0 }, 0.5),
-    rubber: std({ color: 0x121212, roughness: 0.6 }),
-    charcoal: std({ color: 0x2a2b2e, roughness: 0.38, metalness: 0.05 }, 0.6),
-    beige: std({ map: T.beige, roughness: 0.5 }, 0.35),
-    chrome: std({ color: 0xc8c8cc, roughness: 0.22, metalness: 1.0 }, 1.0),
-    steel: std({ color: 0x9a9ca0, roughness: 0.4, metalness: 0.9 }, 0.8),
-    brass: std({ color: 0xb08a48, roughness: 0.35, metalness: 1.0 }, 0.8),
-    lampGreen: std({ color: 0x24493a, roughness: 0.35, metalness: 0.4 }, 0.8),
-    armFabric: std({ map: T.armFabric, roughness: 0.9 }),
-    chairFabric: std({ map: T.chairFabric, roughness: 0.85 }),
-    blanket: std({ map: T.blanket, roughness: 0.95, side: THREE.DoubleSide }),
-    rug: std({ map: T.rug, roughness: 0.95 }),
-    darkWood: std({ map: T.beam, color: 0x8a6a50, roughness: 0.5 }, 0.3),
-    paper: std({ map: T.paper, roughness: 0.85, side: THREE.DoubleSide }),
-    greenbar: std({ map: T.greenbar, roughness: 0.85, side: THREE.DoubleSide }),
-    cork: std({ map: T.cork, roughness: 0.85 }),
-    books: std({ map: T.books, roughness: 0.7 }, 0.15),
-    keyboard: std({ map: T.keyboard, roughness: 0.55 }, 0.3),
-    mugs: std({ map: T.mugs, roughness: 0.25 }, 0.8),
-    coffee: std({ color: 0x1a0d06, roughness: 0.1 }, 1.0),
-    whiteboard: std({ map: T.whiteboard, roughness: 0.25 }, 0.6),
-    poster: std({ map: T.poster, roughness: 0.6 }),
-    sign: std({ map: T.sign, roughness: 0.6 }),
-    fridge: std({ map: T.fridge, roughness: 0.35 }, 0.6),
-    white: std({ color: 0xdedbd2, roughness: 0.4 }, 0.5),
-    door: std({ map: T.enamel, color: 0x8f9a92, roughness: 0.5 }, 0.3),
-    cardboard: std({ color: 0x9a7650, roughness: 0.9 }),
-    receiver: std({ map: T.receiver, roughness: 0.55, metalness: 0.3 }, 0.4),
-    red: std({ color: 0xa3221c, roughness: 0.35 }, 0.5),
-    plant: std({ color: 0x3f6a34, roughness: 0.7 }),
-    terracotta: std({ color: 0x9c5a3a, roughness: 0.8 }),
-    coat: std({ color: 0x7a2e22, roughness: 0.8 }),
-    coat2: std({ color: 0x2e3b4a, roughness: 0.85 }),
-    clock: std({ map: T.clock, roughness: 0.3 }, 0.5),
-    navy: std({ color: 0x1f2c48, roughness: 0.6 }),
+    pine: lam({ map: T.pine, ...N(T.pineN, 0.8) }),
+    paint: lam({ map: T.paint }),
+    floor: withMoon(pho({ map: T.floor, ...N(T.floorN, 0.7), specularMap: T.floorRough }, 24, 0x3a3228)),
+    ceiling: lam({ map: T.ceiling }),
+    beam: lam({ map: T.beam, ...N(T.beamN, 0.8) }),
+    trim: lam({ map: T.beam, color: 0xd8c0a0 }),
+    desk: pho({ map: T.desk, ...N(T.deskN, 0.5) }, 40, 0x2a2622),
+    enamel: pho({ map: T.enamel }, 30, 0x1a1a1a),
+    enamelDark: pho({ map: T.enamel, color: 0x6a7068 }, 30, 0x1a1a1a),
+    rackMetal: lam({ map: T.rackMetal, ...N(T.crinkleN, 0.6) }),
+    rackFront: pho({ map: T.rack }, 30, 0x161616),
+    black: pho({ color: 0x19191b }, 40, 0x202020),
+    rubber: lam({ color: 0x121212 }),
+    charcoal: pho({ color: 0x2a2b2e }, 50, 0x262626),
+    beige: pho({ map: T.beige }, 30, 0x1c1c1a),
+    chrome: met({ color: 0xc8c8cc, roughness: 0.22, metalness: 1.0 }, 1.0),
+    steel: met({ color: 0x9a9ca0, roughness: 0.4, metalness: 0.9 }, 0.8),
+    brass: met({ color: 0xb08a48, roughness: 0.35, metalness: 1.0 }, 0.8),
+    lampGreen: pho({ color: 0x24493a }, 70, 0x303030),
+    armFabric: lam({ map: T.armFabric, ...N(T.armFabricN, 0.9) }),
+    chairFabric: lam({ map: T.chairFabric }),
+    blanket: lam({ map: T.blanket, ...N(T.blanketN, 1.0), side: THREE.DoubleSide }),
+    rug: lam({ map: T.rug }),
+    darkWood: lam({ map: T.beam, color: 0x8a6a50 }),
+    paper: lam({ map: T.paper, side: THREE.DoubleSide }),
+    greenbar: lam({ map: T.greenbar, side: THREE.DoubleSide }),
+    cork: lam({ map: T.cork, ...N(T.corkN, 0.8) }),
+    books: lam({ map: T.books }),
+    keyboard: pho({ map: T.keyboard }, 30, 0x181818),
+    mugs: pho({ map: T.mugs }, 90, 0x404040),
+    coffee: pho({ color: 0x1a0d06 }, 120, 0x505050),
+    whiteboard: pho({ map: T.whiteboard }, 80, 0x404040),
+    poster: lam({ map: T.poster }),
+    poster2: lam({ map: T.poster2 }),
+    sign: lam({ map: T.sign }),
+    doorSign: pho({ map: T.doorSign }, 40, 0x222222),
+    fridge: pho({ map: T.fridge }, 50, 0x2a2a2a),
+    white: pho({ color: 0xdedbd2 }, 30, 0x1a1a1a),
+    door: lam({ map: T.enamel, color: 0x8f9a92 }),
+    cardboard: lam({ color: 0x9a7650 }),
+    receiver: pho({ map: T.receiver }, 30, 0x1c1c1c),
+    red: pho({ color: 0xa3221c }, 40, 0x222222),
+    plant: lam({ color: 0x3f6a34 }),
+    terracotta: lam({ color: 0x9c5a3a }),
+    coat: lam({ color: 0x7a2e22 }),
+    coat2: lam({ color: 0x2e3b4a }),
+    clock: pho({ map: T.clock }, 60, 0x2a2a2a),
+    navy: lam({ color: 0x1f2c48 }),
+    yellow: pho({ color: 0xd8b02a }, 40, 0x222222),
+    glassGreen: pho({ color: 0x2b4a36 }, 100, 0x606060),
+    beige2: pho({ map: T.beige, color: 0x9a9284 }, 20, 0x111111),
   };
   const E = {   // emissive / unlit practicals (values set in update)
+    shade: new THREE.MeshBasicMaterial({ color: 0xffb070 }),
+    shadeIn: new THREE.MeshBasicMaterial({ color: 0xffc890, side: THREE.BackSide }),
+    bulb2: new THREE.MeshBasicMaterial({ color: 0xffffff }),
     lampInner: new THREE.MeshBasicMaterial({ color: 0xffd9a0, side: THREE.BackSide }),
     bulb: new THREE.MeshBasicMaterial({ color: 0xffffff }),
     dial: new THREE.MeshBasicMaterial({ map: T.dial }),
     meter: new THREE.MeshBasicMaterial({ color: 0xffc070 }),
     led: new THREE.MeshBasicMaterial({ color: 0xffffff }),
-    beaconDome: new THREE.MeshStandardMaterial({ color: 0x5a0a06, emissive: 0xff1a0a, emissiveIntensity: 0, roughness: 0.2, transparent: true, opacity: 0.88 }),
-    fluoro: new THREE.MeshStandardMaterial({ color: 0xd8d8d0, roughness: 0.6, emissive: 0xc8e0ff, emissiveIntensity: 0 }),
+    beaconDome: new THREE.MeshPhongMaterial({ color: 0x7a0c06, emissive: 0xff1a0a, emissiveMap: T.fresnel, map: T.fresnel, emissiveIntensity: 0, shininess: 110, specular: 0x886666, transparent: true, opacity: 0.62, depthWrite: false }),
+    exit: new THREE.MeshBasicMaterial({ map: T.exit, color: new THREE.Color(1.4, 1.4, 1.4) }),
+    fluoro: new THREE.MeshLambertMaterial({ color: 0xd8d8d0 }),
   };
-  E.beaconDome.envMap = envMap; E.beaconDome.envMapIntensity = 0.6;
 
   // -------------------------------------------------------------------------
   // the shell
@@ -326,15 +362,26 @@ export function buildInterior(env, T, screens) {
   }
   // papers: loose sheets (atlas cells are 0.25 x 0.25 in uv)
   const cellUV = (i, j) => [i * 0.25 + 0.004, 1 - (j + 1) * 0.25 + 0.004, (i + 1) * 0.25 - 0.004, 1 - j * 0.25 - 0.004];
-  const sheet = (i, j, pos, rot, w = 0.21, h = 0.297) => add(M.paper, quad(w, h, cellUV(i, j)), pos, [-PI / 2, 0, rot]);
-  sheet(0, 0, [-0.98, DESK.y + 0.031, -1.5], 0.12);
-  sheet(1, 0, [-1.02, DESK.y + 0.033, -1.48], -0.06);
+  // a sheet of paper with a slight curl (lies in xz, faces up)
+  const sheetGeo = (w, h, uvr, curl = 0.006, seed = 1) => {
+    const g = quad(w, h, uvr, [6, 8]);
+    const p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i) / (w / 2), y = p.getY(i) / (h / 2);
+      p.setZ(i, curl * (Math.pow(Math.abs(x), 3) * (0.6 + 0.4 * Math.sin(seed * 3.1)) + Math.pow(Math.max(0, y * Math.cos(seed)), 4) + 0.3 * Math.max(0, x * y * Math.sin(seed * 1.7))));
+    }
+    g.computeVertexNormals();
+    return g;
+  };
+  const sheet = (i, j, pos, rot, w = 0.21, h = 0.297, curl = 0.006) => add(M.paper, sheetGeo(w, h, cellUV(i, j), curl, i * 7 + j * 3 + rot), pos, [-PI / 2, 0, rot]);
+  sheet(0, 0, [-0.98, DESK.y + 0.031, -1.5], 0.12, 0.21, 0.297, 0.004);          // observing log on the stack
+  sheet(2, 0, [-1.02, DESK.y + 0.034, -1.47], -0.06, 0.21, 0.297, 0.008);        // memo
   { const g = box(0.215, 0.028, 0.3); K.boxUVAll(g, 0.005, 0.76, 0.06, 0.99); add(M.paper, g, [-1.0, DESK.y + 0.015, -1.49], [0, 0.03, 0]); }   // the stack under them
-  sheet(0, 1, [0.12, DESK.y + 0.002, -1.43], -0.35);                                          // legal pad by the mug
-  sheet(1, 1, [-0.28, DESK.y + 0.003, -1.33], 0.25);
-  sheet(2, 3, [0.5, DESK.y + 0.002, -1.4], 0.5, 0.18, 0.18);
-  sheet(1, 3, [-1.52, DESK.y + 0.002, -1.35], -0.2);
-  sheet(3, 0, [-0.7, DESK.y + 0.004, -1.33], 1.3);
+  sheet(0, 1, [0.14, DESK.y + 0.003, -1.36], -0.35, 0.216, 0.28, 0.01);          // legal pad by the mug
+  sheet(1, 0, [-0.3, DESK.y + 0.003, -1.33], 0.25, 0.21, 0.297, 0.012);          // spectrum plot
+  sheet(3, 0, [-0.72, DESK.y + 0.005, -1.34], 1.3, 0.21, 0.297, 0.01);           // the hex dump with the red circle
+  sheet(1, 1, [-1.5, DESK.y + 0.002, -1.33], -0.2, 0.21, 0.297, 0.01);           // graph paper
+  sheet(2, 1, [0.47, DESK.y + 0.063, -1.62], 0.2, 0.127, 0.076, 0.002);          // index card on the manuals
   // sticky notes on the main bezel and the desk
   for (const [i, x, y, r] of [[0, SCR.w / 2 + 0.03, 0.08, 0.1], [2, SCR.w / 2 + 0.028, -0.03, -0.12], [1, -SCR.w / 2 - 0.02, SCR.h / 2 + 0.02, 0.15]]) {
     add(M.paper, quad(0.065, 0.065, cellUV(i, 2)), [SCR.c.x + x, SCR.c.y + y, SCR.c.z + 0.012], [0, 0, r]);
@@ -373,20 +420,25 @@ export function buildInterior(env, T, screens) {
     for (let k = 0; k < 6; k++) add(M.greenbar, quad(0.28, 0.3, [0, 0.1 * k, 1, 0.1 * k + 0.3]), [-1.26 + (k % 2) * 0.01, 0.004 + k * 0.004, -0.55 + (k % 2) * 0.02], [-PI / 2, 0, 0.05 * (k % 3)]);
   }
   // mugs
-  function mug(x, z, which, fill = 0.07, handleRot = 0) {
+  // mug atlas: 4 cells of 0.5 x 0.5 (uv); in each, the top 1/8 of the atlas height is the stained inside
+  function mugGeo(which, seg = 24) {
     const prof = [[0, 0], [0.036, 0], [0.039, 0.004], [0.041, 0.09], [0.0405, 0.096], [0.037, 0.096], [0.036, 0.09], [0.035, 0.01], [0, 0.01]].map(([r, y]) => new THREE.Vector2(r, y));
-    const g = new THREE.LatheGeometry(prof, 24);
+    const g = new THREE.LatheGeometry(prof, seg);
     const uv = g.attributes.uv;
-    const u0 = (which % 2) * 0.5, v0 = 1 - (Math.floor(which / 2) + 1) * 0.5;
+    const u0 = (which % 2) * 0.5, vTop = 1 - Math.floor(which / 2) * 0.5, vBot = vTop - 0.5, vIn = vTop - 0.125;
     for (let i = 0; i < uv.count; i++) {
       const v = uv.getY(i);
-      const vv = v <= 3 / 8 + 1e-3 ? v / (3 / 8) : 0.02;
-      uv.setXY(i, u0 + uv.getX(i) * 0.5, v0 + vv * 0.5);
+      const vv = v <= 3 / 8 + 1e-3 ? vBot + 0.01 + (v / (3 / 8)) * (vIn - vBot - 0.02) : vTop - 0.005 - (v - 4 / 8) / (4 / 8) * 0.115;
+      uv.setXY(i, u0 + uv.getX(i) * 0.5, vv);
     }
-    at([x, DESK.y, z], [0, handleRot, 0], () => {
+    return { g, u0, vBot };
+  }
+  function mug(x, z, which, fill = 0.07, handleRot = 0, y = DESK.y) {
+    const { g, u0, vBot } = mugGeo(which);
+    at([x, y, z], [0, handleRot, 0], () => {
       add(M.mugs, g);
       const h = new THREE.TorusGeometry(0.024, 0.0065, 6, 12, PI);
-      const uvh = h.attributes.uv; for (let i = 0; i < uvh.count; i++) uvh.setXY(i, u0 + 0.01, v0 + 0.01);
+      const uvh = h.attributes.uv; for (let i = 0; i < uvh.count; i++) uvh.setXY(i, u0 + 0.01, vBot + 0.02);
       add(M.mugs, h, [0.041, 0.05, 0], [0, 0, -PI / 2]);
       if (fill > 0) add(M.coffee, new THREE.CircleGeometry(0.035, 20), [0, fill, 0], [-PI / 2, 0, 0]);
     });
@@ -404,7 +456,7 @@ export function buildInterior(env, T, screens) {
   add(M.white, rbox(0.21, 0.03, 0.28, 0.004), [0.52, DESK.y + 0.055, -1.62], [0, 0.1, 0]);
 
   // desk lamp (anglepoise): base on the desk, head over the keyboard/mug area
-  const LAMP = { base: new V3(0.48, DESK.y, -1.8), elbow: new V3(0.44, 1.3, -1.72), head: new V3(0.24, 1.22, -1.5), aim: new V3(-0.12, DESK.y, -1.38) };
+  const LAMP = { base: new V3(0.48, DESK.y, -1.8), elbow: new V3(0.45, 1.34, -1.74), head: new V3(0.2, 1.3, -1.52), aim: new V3(-0.32, DESK.y, -1.4) };
   const lampAxis = LAMP.aim.clone().sub(LAMP.head).normalize();
   {
     add(M.lampGreen, cyl(0.07, 0.08, 0.025, 28), [LAMP.base.x, DESK.y + 0.0125, LAMP.base.z]);
@@ -419,7 +471,7 @@ export function buildInterior(env, T, screens) {
     // shade: a cone opening along the lamp axis
     const q = new THREE.Quaternion().setFromUnitVectors(new V3(0, -1, 0), lampAxis);
     const e = new THREE.Euler().setFromQuaternion(q);
-    const prof = [[0.018, 0.02], [0.03, 0.0], [0.05, -0.05], [0.07, -0.11], [0.078, -0.13]].map(([r, y]) => new THREE.Vector2(r, y));
+    const prof = [[0.078, -0.13], [0.07, -0.11], [0.05, -0.05], [0.03, 0.0], [0.018, 0.02]].map(([r, y]) => new THREE.Vector2(r, y));
     add(M.lampGreen, new THREE.LatheGeometry(prof, 28), [LAMP.head.x, LAMP.head.y, LAMP.head.z], [e.x, e.y, e.z]);
     add(E.lampInner, new THREE.LatheGeometry(prof.map(v => new THREE.Vector2(v.x * 0.97, v.y)), 28), [LAMP.head.x, LAMP.head.y, LAMP.head.z], [e.x, e.y, e.z]);
     add(E.bulb, new THREE.SphereGeometry(0.026, 16, 10), [LAMP.head.x + lampAxis.x * 0.06, LAMP.head.y + lampAxis.y * 0.06, LAMP.head.z + lampAxis.z * 0.06]);
@@ -474,10 +526,11 @@ export function buildInterior(env, T, screens) {
     // books standing
     x = -0.45;
     for (let i = 0; i < 9; i++) {
-      const w = 0.025 + ((i * 7) % 5) * 0.007, h = 0.18 + ((i * 3) % 4) * 0.025, s = (i * 5 + 3) % 31;
+      const w = 0.025 + ((i * 7) % 5) * 0.007, h = 0.18 + ((i * 3) % 4) * 0.025, s = (i * 5 + 3) % T.bookCount;
       const g = box(w, h, 0.16);
-      K.boxUVAll(g, 31 / 32 + 0.002, 0.05, 1 - 0.002, 0.95);
-      K.boxFaceUV(g, 4, s / 32 + 0.002, 0.03, (s + 1) / 32 - 0.002, 0.97);
+      K.boxUVAll(g, T.pagesU0 + 0.002, 0.05, 1 - 0.002, 0.95);
+      K.boxFaceUV(g, 4, s * T.bookU + 0.001, 0.02, (s + 1) * T.bookU - 0.001, 0.98);
+      for (const f of [0, 1]) K.boxFaceUV(g, f, (s + 0.24) * T.bookU, 0.3, (s + 0.33) * T.bookU, 0.6);
       add(M.books, g, [x + w / 2, sy + 0.0125 + h / 2, sz + 0.02]);
       x += w + 0.002;
     }
@@ -511,6 +564,7 @@ export function buildInterior(env, T, screens) {
   // equipment rack with the alarm beacon (x 0.9..1.5, back wall)
   // -------------------------------------------------------------------------
   const RACK = { x0: 0.9, x1: 1.5, z0: -2.0, z1: -1.42, h: 1.86 };
+  const RACK_TOP = () => RACK.h + 0.01;
   const leds = [];
   let scopeMesh, counterMesh;
   {
@@ -539,6 +593,38 @@ export function buildInterior(env, T, screens) {
     for (let i = 0; i < 3; i++) addLed(60 + i * 30, 60, [0x30ff40, 0x30ff40, 0xffb020][i], 0, 1, 0);
     addLed(460, 1480, 0x30ff40, 0, 1, 0);
     addLed(430, 1480, 0xffb020, 0.5, 0.5, 0);
+    // 3D controls on the units: knobs, toggles, BNC jacks and patch cords, tape reels
+    const zf = RACK.z1 - 0.03;
+    const knob = (u, v, r, mat = M.black) => { add(mat, cyl(r, r * 1.1, 0.014, 16), [u2x(u), u2y(v), zf + 0.007], [PI / 2, 0, 0]); add(M.chrome, cyl(r * 0.45, r * 0.45, 0.004, 12), [u2x(u), u2y(v), zf + 0.0155], [PI / 2, 0, 0]); add(M.white, box(0.0015, r * 0.8, 0.001), [u2x(u), u2y(v) + r * 0.45, zf + 0.016], [0, 0, (u * 0.37) % 2 - 1]); };
+    for (let i = 0; i < 6; i++) knob(300 + (i % 3) * 60, 110 + 50 + Math.floor(i / 3) * 60, 0.011);
+    for (let i = 0; i < 4; i++) knob(300 + i * 45, 410 + 115, 0.009);
+    const toggle = (u, v, up) => { add(M.chrome, cyl(0.005, 0.005, 0.006, 10), [u2x(u), u2y(v), zf + 0.003], [PI / 2, 0, 0]); add(M.chrome, rod([u2x(u), u2y(v), zf + 0.005], [u2x(u), u2y(v) + (up ? 0.008 : -0.008), zf + 0.02], 0.0018, 6)); };
+    for (let i = 0; i < 4; i++) toggle(360 + i * 30, 20 + 76, i !== 2);
+    for (let i = 0; i < 3; i++) toggle(380 + i * 30, 290 + 104, i === 0);
+    for (let i = 0; i < 16; i++) for (const vv of [560 + 30, 560 + 60]) add(M.chrome, cyl(0.0045, 0.0045, 0.012, 10), [u2x(150 + i * 20), u2y(vv), zf + 0.006], [PI / 2, 0, 0]);
+    const cordCols = [M.red, M.navy, M.black, M.yellow, M.plant];
+    for (let k = 0; k < 5; k++) {
+      const a = 2 + ((k * 5) % 14), b = 3 + ((k * 7 + 3) % 13);
+      const p0 = new V3(u2x(150 + a * 20), u2y(k % 2 ? 590 : 620), zf + 0.012), p1 = new V3(u2x(150 + b * 20), u2y(k % 2 ? 620 : 590), zf + 0.012);
+      const mid = p0.clone().lerp(p1, 0.5).add(new V3(0, -0.05 - 0.02 * k, 0.03));
+      add(cordCols[k], tube([p0.toArray(), [p0.x, p0.y - 0.01, p0.z + 0.012], mid.toArray(), [p1.x, p1.y - 0.01, p1.z + 0.012], p1.toArray()], 0.0028, 20));
+    }
+    add(M.black, rbox(0.02, 0.012, 0.008, 0.003), [u2x(440), u2y(1300), zf + 0.004]);
+    add(M.red, rbox(0.028, 0.016, 0.01, 0.003), [u2x(440), u2y(1330), zf + 0.005]);
+    // tape reels (turn while recording)
+    const reels = [];
+    for (const u of [140, 360]) {
+      const g = new THREE.Group();
+      g.position.set(u2x(u), u2y(1010 + 140), zf + 0.012);
+      const rm = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.004, 40).rotateX(PI / 2), M.black);
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.034, 0.012, 20).rotateX(PI / 2), M.charcoal);
+      const tape = new THREE.Mesh(new THREE.CylinderGeometry(u === 140 ? 0.07 : 0.05, u === 140 ? 0.07 : 0.05, 0.008, 36).rotateX(PI / 2), M.navy);
+      g.add(rm, hub, tape);
+      for (let k = 0; k < 3; k++) { const w = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.05, 0.006), M.steel); w.position.set(Math.cos(k * 2.094) * 0.055, Math.sin(k * 2.094) * 0.055, 0.004); w.rotation.z = k * 2.094 + PI / 2; g.add(w); }
+      root.add(g);
+      reels.push(g);
+    }
+    RACK.reels = reels;
     // scope + counter screens (canvas textures from screens.js)
     const [sx, sy, sw, sh] = T.rackLayout.oscope;
     scopeMesh = new THREE.Mesh(quad((sw / 512) * (w - 0.05), (sh / 1536) * (RACK.h - 0.12)), screens.scopeMaterial);
@@ -554,19 +640,31 @@ export function buildInterior(env, T, screens) {
   }
   const BEACON = new V3((RACK.x0 + RACK.x1) / 2, RACK.h, (RACK.z0 + RACK.z1) / 2 + 0.05);
   const beaconSpin = new THREE.Group();
+  let beaconFlare;
   {
-    add(M.black, cyl(0.07, 0.075, 0.04, 24), [BEACON.x, BEACON.y + 0.02, BEACON.z]);
-    const dome = new THREE.Mesh(new THREE.CapsuleGeometry(0.058, 0.07, 6, 20), E.beaconDome);
-    dome.position.set(BEACON.x, BEACON.y + 0.04 + 0.093, BEACON.z);
-    dome.scale.set(1, 1, 1);
+    // ribbed black base, clear red fresnel dome, a rotating mirror and bulb inside
+    add(M.black, cyl(0.072, 0.078, 0.035, 28), [BEACON.x, BEACON.y + 0.0175, BEACON.z]);
+    add(M.black, cyl(0.064, 0.068, 0.012, 28), [BEACON.x, BEACON.y + 0.041, BEACON.z]);
+    for (let k = 0; k < 4; k++) add(M.steel, cyl(0.004, 0.004, 0.006, 8), [BEACON.x + Math.cos(k * 1.57 + 0.4) * 0.066, BEACON.y + 0.047, BEACON.z + Math.sin(k * 1.57 + 0.4) * 0.066]);
+    const prof = [];
+    for (let i = 0; i <= 12; i++) { const a = i / 12 * Math.PI / 2; prof.push(new THREE.Vector2(0.058 * Math.cos(a) + 0.0001, 0.085 + 0.058 * Math.sin(a))); }
+    prof.unshift(new THREE.Vector2(0.058, 0.0));
+    const dome = new THREE.Mesh(new THREE.LatheGeometry(prof, 36), E.beaconDome);
+    dome.position.set(BEACON.x, BEACON.y + 0.047, BEACON.z);
+    dome.renderOrder = 2;
     root.add(dome);
-    beaconSpin.position.set(BEACON.x, BEACON.y + 0.12, BEACON.z);
-    const refl = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.06, 16, 1, true, -PI / 2, PI), new THREE.MeshStandardMaterial({ color: 0xffd0c0, metalness: 1, roughness: 0.15, envMap, envMapIntensity: 1.5, side: THREE.DoubleSide }));
+    beaconSpin.position.set(BEACON.x, BEACON.y + 0.047 + 0.07, BEACON.z);
+    const refl = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.042, 0.075, 18, 1, true, -PI / 2, PI), new THREE.MeshPhongMaterial({ color: 0x802010, emissive: 0x401008, shininess: 120, specular: 0xffc0a0, side: THREE.DoubleSide }));
     beaconSpin.add(refl);
-    const lampS = new THREE.Mesh(new THREE.SphereGeometry(0.014, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    const lampS = new THREE.Mesh(new THREE.SphereGeometry(0.013, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
     lampS.name = 'beaconBulb';
     beaconSpin.add(lampS);
     root.add(beaconSpin);
+    beaconFlare = new THREE.Sprite(new THREE.SpriteMaterial({ map: U.makeGlowTexture(THREE, 64, 0.2), color: 0xff2010, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0 }));
+    beaconFlare.position.set(BEACON.x, BEACON.y + 0.12, BEACON.z);
+    beaconFlare.scale.setScalar(0.35);
+    beaconFlare.renderOrder = 5;
+    root.add(beaconFlare);
   }
   const ledMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(0.0035, 8, 6), E.led, leds.length);
   {
@@ -575,17 +673,40 @@ export function buildInterior(env, T, screens) {
     root.add(ledMesh);
   }
 
-  // back-right corner: printer table, dot-matrix printer, a box of paper, UPS
+  // back-right corner: the kitchenette — small fridge, kettle, coffee, mugs, a bin
   {
-    const tx = 2.0, tz = -1.72;
-    add(M.darkWood, box(0.9, 0.03, 0.5), [tx, 0.7, tz], [0, 0, 0], 1, { uv: 'world', tile: [0.5, 0.5] });
-    for (const [dx, dz] of [[-0.42, -0.22], [0.42, -0.22], [-0.42, 0.22], [0.42, 0.22]]) add(M.steel, cyl(0.014, 0.014, 0.69, 8), [tx + dx, 0.345, tz + dz]);
-    add(M.beige, rbox(0.5, 0.14, 0.34, 0.02), [tx - 0.05, 0.785, tz], [0, 0.05, 0]);
-    add(M.black, box(0.36, 0.01, 0.06), [tx - 0.05, 0.86, tz - 0.08], [0, 0.05, 0]);
-    add(M.greenbar, quad(0.3, 0.3, [0, 0.2, 1, 0.5]), [tx - 0.05, 0.93, tz - 0.13], [-0.3, 0.05, 0]);
-    add(M.cardboard, box(0.4, 0.25, 0.3), [tx + 0.1, 0.125, tz], [0, -0.1, 0]);
-    add(M.greenbar, box(0.34, 0.12, 0.25), [tx + 0.1, 0.26, tz], [0, -0.1, 0]);
-    add(M.black, rbox(0.2, 0.3, 0.42, 0.01), [tx - 0.3, 0.15, tz], [0, 0.05, 0]);
+    const fx = 1.9, fz = -1.71;
+    const g = box(0.55, 0.86, 0.56);
+    K.boxUVAll(g, 0.9, 0.9, 0.95, 0.95);
+    K.boxFaceUV(g, 4, 0, 0, 1, 1);
+    add(M.fridge, g, [fx, 0.45, fz]);
+    add(M.black, box(0.52, 0.02, 0.54), [fx, 0.01, fz]);
+    add(M.steel, rbox(0.025, 0.25, 0.03, 0.01), [fx - 0.23, 0.62, fz + 0.29]);
+    add(M.black, box(0.53, 0.005, 0.005), [fx, 0.75, fz + 0.281]);            // door gasket line
+    // a tea towel over the handle
+    add(M.navy, rbox(0.05, 0.22, 0.012, 0.004), [fx - 0.2, 0.52, fz + 0.305], [0, 0, 0.05]);
+    add(M.white, box(0.052, 0.012, 0.013), [fx - 0.2, 0.48, fz + 0.306], [0, 0, 0.05]);
+    // kettle on its base
+    at([fx - 0.1, 0.88, fz + 0.02], [0, 2.3, 0], () => {
+      const prof = [[0, 0], [0.08, 0], [0.085, 0.02], [0.085, 0.16], [0.065, 0.2], [0.03, 0.21], [0, 0.21]].map(([r, y]) => new THREE.Vector2(r, y));
+      add(M.steel, new THREE.LatheGeometry(prof, 24));
+      add(M.black, new THREE.TorusGeometry(0.07, 0.012, 8, 16, PI), [0, 0.19, 0], [0, PI / 2, 0]);
+      add(M.steel, rod([0.08, 0.06, 0], [0.13, 0.17, 0], 0.012));
+      add(M.black, cyl(0.1, 0.1, 0.015, 20), [0, -0.008, 0]);
+      add(M.black, rod([-0.1, -0.008, 0], [-0.16, -0.012, 0.05], 0.004));
+    });
+    // coffee jar, sugar, a box of tea, two upturned mugs, a spoon
+    add(M.glassGreen, cyl(0.045, 0.045, 0.12, 16), [fx + 0.1, 0.94, fz - 0.06]);
+    add(M.brass, cyl(0.047, 0.047, 0.02, 16), [fx + 0.1, 1.01, fz - 0.06]);
+    add(M.white, cyl(0.04, 0.04, 0.09, 16), [fx + 0.2, 0.925, fz + 0.03]);
+    add(M.cardboard, box(0.16, 0.08, 0.08), [fx + 0.16, 0.92, fz + 0.16], [0, 0.3, 0]);
+    mug(fx + 0.06, fz + 0.14, 1, 0, 0.7, 0.88);
+    mug(fx - 0.2, fz - 0.16, 0, 0, 2.6, 0.88);
+    add(M.steel, box(0.12, 0.003, 0.012), [fx + 0.02, 0.882, fz + 0.2], [0, 0.4, 0]);
+    // bin with crumpled paper
+    add(M.charcoal, cyl(0.13, 0.11, 0.32, 20, true), [2.33, 0.16, -1.25]);
+    add(M.charcoal, cyl(0.11, 0.11, 0.01, 20), [2.33, 0.005, -1.25]);
+    for (let k = 0; k < 4; k++) { const g2 = new THREE.IcosahedronGeometry(0.045, 1); const p2 = g2.attributes.position; for (let i = 0; i < p2.count; i++) { const f = 0.75 + 0.5 * U.vnoise3(p2.getX(i) * 60 + k, p2.getY(i) * 60, p2.getZ(i) * 60); p2.setXYZ(i, p2.getX(i) * f, p2.getY(i) * f, p2.getZ(i) * f); } g2.computeVertexNormals(); add(M.white, g2, [2.33 + (k % 2 - 0.5) * 0.08, 0.26 + (k > 1 ? 0.05 : 0), -1.25 + (k - 1.5) * 0.04], [k, k * 2, 0]); }
   }
 
   // back-left corner: filing cabinet with boxes and an old desk fan on top
@@ -630,20 +751,24 @@ export function buildInterior(env, T, screens) {
         if (r < 0.14 && lim - z > 0.25) {       // a lying stack
           let yy = y;
           for (let k = 0; k < 2 + Math.floor(br() * 3); k++) {
-            const th = 0.025 + br() * 0.025, s2 = Math.floor(br() * 31);
+            const th = 0.025 + br() * 0.025, s2 = Math.floor(br() * T.bookCount);
             const g = box(0.2 + br() * 0.04, th, 0.15 + br() * 0.05);
-            K.boxUVAll(g, 31 / 32 + 0.002, 0.05, 1 - 0.002, 0.95);
-            K.boxFaceUV(g, 1, s2 / 32 + 0.002, 0.2, (s2 + 1) / 32 - 0.002, 0.8);
+            K.boxUVAll(g, T.pagesU0 + 0.002, 0.05, 1 - 0.002, 0.95);
+            // spine faces the room (+x): rotate the spine strip to run along the lying book
+            { const uv = g.attributes.uv; const u0 = s2 * T.bookU + 0.001, u1 = (s2 + 1) * T.bookU - 0.001; uv.setXY(0, u0, 0.02); uv.setXY(1, u0, 0.98); uv.setXY(2, u1, 0.02); uv.setXY(3, u1, 0.98); }
+            for (const f of [2, 3]) K.boxFaceUV(g, f, (s2 + 0.24) * T.bookU, 0.3, (s2 + 0.33) * T.bookU, 0.6);
             add(M.books, g, [bx + 0.01, yy + th / 2, z + 0.1], [0, (br() - 0.5) * 0.3, 0]);
             yy += th;
           }
           z += 0.24;
           continue;
         }
-        const t = 0.02 + br() * 0.045, h = 0.17 + br() * 0.14, dd = 0.14 + br() * 0.1, s2 = Math.floor(br() * 31);
+        const t = 0.02 + br() * 0.045, h = 0.17 + br() * 0.14, dd = 0.14 + br() * 0.1, s2 = Math.floor(br() * T.bookCount);
         const g = box(dd, h, t);
-        K.boxUVAll(g, 31 / 32 + 0.002, 0.05, 1 - 0.002, 0.95);
-        K.boxFaceUV(g, 0, s2 / 32 + 0.002, 0.03, (s2 + 1) / 32 - 0.002, 0.97);
+        K.boxUVAll(g, T.pagesU0 + 0.002, 0.05, 1 - 0.002, 0.95);
+        // +x face: u runs along -z, v along y; rotate so the spine text runs up the book
+        { const uv = g.attributes.uv; const u0 = s2 * T.bookU + 0.001, u1 = (s2 + 1) * T.bookU - 0.001; uv.setXY(0, u0, 0.98); uv.setXY(1, u1, 0.98); uv.setXY(2, u0, 0.02); uv.setXY(3, u1, 0.02); }
+        for (const f of [4, 5]) K.boxFaceUV(g, f, (s2 + 0.24) * T.bookU, 0.3, (s2 + 0.33) * T.bookU, 0.6);
         const lean = (z + t > lim - 0.05 || br() < 0.05) ? 0.25 : 0;
         add(M.books, g, [-W + 0.02 + (bd - 0.02) - dd / 2 - 0.005, y + h / 2 * Math.cos(lean), z + t / 2 + (lean ? h * 0.12 : 0)], [lean, 0, 0]);
         z += t + 0.002 + (lean ? h * 0.25 : 0);
@@ -657,8 +782,8 @@ export function buildInterior(env, T, screens) {
     add(M.paper, quad(0.22, 0.17, cellUV(3, 1)), [bx - 0.038, 1.995, -0.85], [0, PI / 2, 0.08]);
   }
   // left wall: poster above the armchair side, and a framed star chart
-  add(M.poster, quad(0.46, 0.646), [-W + 0.006, 1.62, 0.55], [0, PI / 2, 0]);
-  add(M.darkWood, box(0.012, 0.67, 0.48), [-W + 0.004, 1.62, 0.55]);
+  add(M.poster2, quad(0.6, 0.6), [-W + 0.012, 1.62, 0.55], [0, PI / 2, 0]);
+  add(M.black, box(0.016, 0.63, 0.63), [-W + 0.004, 1.62, 0.55]);
 
   // -------------------------------------------------------------------------
   // Maya's corner: armchair (static), blanket, side table, rug, floor lamp
@@ -681,28 +806,66 @@ export function buildInterior(env, T, screens) {
     }
     // arms, toed in at the back (tub shape)
     for (const s of [-1, 1]) add(M.armFabric, rbox(0.11, 0.36, 0.6, 0.05, 3), [s * 0.305, 0.44, -0.26], [0, s * -0.16, 0], 1, fab);
-    // curved, reclined back: three panels
-    at([0, 0.3, -0.53], [-0.3, 0, 0], () => {
-      add(M.armFabric, rbox(0.44, 0.66, 0.13, 0.05, 3), [0, 0.33, -0.02], [0, 0, 0], 1, fab);
-      for (const s of [-1, 1]) add(M.armFabric, rbox(0.2, 0.58, 0.12, 0.05, 3), [s * 0.27, 0.29, 0.06], [0, s * 0.75, 0], 1, fab);
-      add(M.armFabric, rbox(0.4, 0.42, 0.12, 0.055, 3), [0, 0.3, 0.1], [0.05, 0, 0], 1, fab);
+    // curved tub back, reclined, with a rolled top edge and a loose back cushion
+    at([0, 0.28, -0.16], [-0.24, 0, 0], () => {
+      const th0 = -1.28, th1 = 1.28, hB = 0.62;
+      for (const [r, side] of [[0.33, THREE.BackSide], [0.43, THREE.FrontSide]]) {
+        const g = new THREE.CylinderGeometry(r, r, hB, 28, 3, true, Math.PI + th0, th1 - th0);
+        const p = g.attributes.position;
+        for (let i = 0; i < p.count; i++) { const y = p.getY(i); const k = 1 + 0.06 * (y / hB) + 0.03 * Math.sin(Math.atan2(p.getX(i), p.getZ(i)) * 6) * (r > 0.4 ? 1 : 0); p.setX(i, p.getX(i) * k); p.setZ(i, p.getZ(i) * k); }
+        if (side === THREE.BackSide) { const idx = g.index.array; for (let i = 0; i < idx.length; i += 3) { const t = idx[i + 1]; idx[i + 1] = idx[i + 2]; idx[i + 2] = t; } }
+        g.computeVertexNormals();
+        add(M.armFabric, g, [0, hB / 2, 0], [0, 0, 0], 1, fab);
+      }
+      // rolled top
+      const tg = new THREE.TorusGeometry(0.38, 0.058, 10, 28, th1 - th0);
+      add(M.armFabric, tg, [0, hB, 0], [PI / 2, 0, PI / 2 + th0 + PI], 1, fab);
+      // end caps
+      for (const s of [-1, 1]) {
+        const a = s > 0 ? th1 : th0;
+        add(M.armFabric, rbox(0.12, hB, 0.07, 0.03, 2), [Math.sin(a) * 0.38, hB / 2, -Math.cos(a) * 0.38], [0, -a, 0], 1, fab);
+      }
+      // loose back cushion
+      const cg = rbox(0.46, 0.44, 0.13, 0.055, 3);
+      const cp = cg.attributes.position;
+      for (let i = 0; i < cp.count; i++) { const x = cp.getX(i) / 0.23, y = cp.getY(i) / 0.22; cp.setZ(i, cp.getZ(i) * (0.55 + 0.45 * (1 - 0.5 * x * x) * (1 - 0.5 * y * y)) - 0.05 * x * x); }
+      cg.computeVertexNormals();
+      add(M.armFabric, cg, [0, 0.3, -0.26], [0.04, 0, 0], 1, fab);
+      for (const [x, y] of [[-0.1, 0.42], [0.1, 0.42], [0, 0.26]]) add(M.armFabric, new THREE.SphereGeometry(0.011, 8, 6), [x, y, -0.2]);
     });
-    // blanket folded over the right arm (local -x), knit throw
+    // piping along the cushion's front edge and the arm fronts; tufting buttons on the back
+    const pipe = (pts, r = 0.007) => add(M.armFabric, tube(pts, r, 24));
+    pipe([[-0.25, 0.405, 0.035], [0, 0.4, 0.045], [0.25, 0.405, 0.035]]);
+    for (const s of [-1, 1]) pipe([[s * 0.305 + s * 0.045, 0.3, 0.045], [s * 0.305 + s * 0.05, 0.55, 0.045], [s * 0.305, 0.625, 0.045], [s * 0.305 - s * 0.05, 0.55, 0.045], [s * 0.305 - s * 0.045, 0.32, 0.045]], 0.006);
+    // a squashed cushion against the left arm
     {
-      const nx = 26, nz = 22, pos = [], uv = [], idx = [];
+      const g = rbox(0.38, 0.34, 0.12, 0.06, 3);
+      const p = g.attributes.position;
+      for (let i = 0; i < p.count; i++) { const x = p.getX(i) / 0.19, y = p.getY(i) / 0.17; p.setZ(i, p.getZ(i) * (0.35 + 0.65 * (1 - x * x * 0.6) * (1 - y * y * 0.6))); p.setY(i, p.getY(i) - 0.02 * x * x); }
+      g.computeVertexNormals();
+      add(M.blanket, g, [0.2, 0.56, -0.38], [-0.35, -1.0, 0.25], 1);
+    }
+    // crumpled knit throw, dumped over the right arm and spilling to the floor
+    {
+      const nx = 40, nz = 34, pos = [], uv = [], idx = [];
+      const fb = (a, b, c) => U.fbm3(a, b, c, 3) - 0.5;
       for (let j = 0; j <= nz; j++) {
         for (let i = 0; i <= nx; i++) {
           const u = i / nx, v = j / nz;
-          const s = (u - 0.42) * 0.8;          // across the arm (outward = +s)
-          const zz = -0.5 + v * 0.62;
+          const s = (u - 0.38) * 1.05;          // across the arm (outward = +s)
+          const zz = -0.52 + v * 0.7;
           const top = 0.64;
-          let x = -0.305 - s, y = top + 0.012;
-          const out = Math.max(0, s - 0.055), inn = Math.max(0, -s - 0.055);
-          if (out > 0) { x = -0.305 - 0.055 - out * 0.22 - 0.015; y = top + 0.012 - out * 0.95; }
-          if (inn > 0) { x = -0.305 + 0.055 + inn * 0.35; y = top + 0.012 - inn * 0.6; y = Math.max(y, 0.44); }
-          y += 0.008 * Math.sin(v * 13 + u * 4) + 0.006 * Math.sin(v * 31);
-          x += 0.004 * Math.sin(v * 17);
-          pos.push(x, y, zz); uv.push(u * 1.2, v * 1.0);
+          let x = -0.305 - s, y = top + 0.014;
+          const out = Math.max(0, s - 0.06), inn = Math.max(0, -s - 0.06);
+          if (out > 0) { x = -0.305 - 0.06 - Math.min(out, 0.3) * 0.18 - 0.018 - Math.max(0, out - 0.3) * 0.5; y = top + 0.014 - Math.min(out, 0.62) * 0.95; }
+          if (y < 0.012) y = 0.012 + 0.01 * Math.max(0, out - 0.62);
+          if (inn > 0) { x = -0.305 + 0.06 + inn * 0.4; y = top + 0.014 - inn * 0.55; y = Math.max(y, 0.44 + 0.02 * Math.sin(v * 9)); }
+          // folds and crumples
+          const cr = fb(u * 5, v * 5, 1.3), cr2 = fb(u * 13, v * 11, 4.1);
+          y += 0.045 * cr + 0.014 * cr2 + 0.014 * Math.sin(v * 17 + u * 6) * (0.4 + out * 3);
+          x += 0.022 * fb(u * 4 + 7, v * 6, 2.2) * (0.3 + out * 3) + (0.012 + 0.03 * Math.min(out, 0.5)) * Math.sin(v * 26 + 1.3 * Math.sin(u * 5)) + 0.004 * Math.sin(v * 21);
+          const zzz = zz + 0.03 * fb(u * 3, v * 3 + 5, 9.0) * (0.2 + out * 2);
+          pos.push(x, y, zzz); uv.push(u * 1.6, v * 1.3);
           if (i < nx && j < nz) { const a = j * (nx + 1) + i; idx.push(a, a + nx + 1, a + 1, a + 1, a + nx + 1, a + nx + 2); }
         }
       }
@@ -720,41 +883,38 @@ export function buildInterior(env, T, screens) {
     add(M.darkWood, cyl(0.02, 0.025, 0.54, 10), [tx, 0.27, tz]);
     add(M.darkWood, cyl(0.14, 0.16, 0.02, 20), [tx, 0.01, tz]);
     add(M.red, rbox(0.15, 0.03, 0.22, 0.004), [tx + 0.02, 0.578, tz + 0.02], [0, 0.4, 0]);
-    add(M.paper, quad(0.14, 0.2, [0.985, 0.1, 0.995, 0.9]), [tx + 0.02, 0.5935, tz + 0.02], [-PI / 2, 0, 0.4]);
+    add(M.white, box(0.14, 0.022, 0.2), [tx + 0.02, 0.582, tz + 0.02], [0, 0.4, 0]);
     mugAt(tx - 0.08, tz - 0.08);
+    add(M.brass, new THREE.TorusGeometry(0.03, 0.003, 6, 16), [tx + 0.1, 0.567, tz - 0.08], [PI / 2, 0, 0]);   // reading glasses (folded)
+    add(M.brass, new THREE.TorusGeometry(0.03, 0.003, 6, 16), [tx + 0.1, 0.567, tz - 0.02], [PI / 2, 0, 0]);
+    // floor lamp (on, low): brass stand, fabric drum shade
     add(M.brass, cyl(0.1, 0.12, 0.02, 20), [-2.28, 0.01, 1.78]);
     add(M.brass, cyl(0.01, 0.01, 1.45, 8), [-2.28, 0.74, 1.78]);
-    add(M.white, cyl(0.16, 0.2, 0.25, 24, true), [-2.28, 1.5, 1.78]);
+    add(M.brass, rod([-2.28, 1.38, 1.78], [-2.28, 1.4, 1.78], 0.012));
+    add(E.shade, cyl(0.16, 0.2, 0.25, 28, true), [-2.28, 1.5, 1.78]);
+    add(E.shadeIn, cyl(0.158, 0.198, 0.25, 28, true), [-2.28, 1.5, 1.78]);
+    add(E.bulb2, new THREE.SphereGeometry(0.03, 12, 8), [-2.28, 1.44, 1.78]);
   }
-  function mugAt(x, z) {
-    const prof = [[0, 0], [0.036, 0], [0.039, 0.004], [0.041, 0.09], [0.0405, 0.096], [0.037, 0.096], [0.036, 0.09], [0.035, 0.01], [0, 0.01]].map(([r, y]) => new THREE.Vector2(r, y));
-    const g = new THREE.LatheGeometry(prof, 20);
-    const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, 0.51 + uv.getX(i) * 0.48, 0.02);
-    add(M.mugs, g, [x, 0.5625, z]);
-  }
+  function mugAt(x, z) { mug(x, z, 3, 0.03, 2.0, 0.5625); }
   add(M.rug, box(1.7, 0.008, 1.25), [-1.55, 0.004, 0.95], [0, 0.12, 0]);
 
   // -------------------------------------------------------------------------
-  // front wall: fridge + kettle, whiteboard, poster, coats; right wall: radiator, extinguisher, sign
+  // front wall: printer table with the dot-matrix printer; whiteboard, poster, coats; right wall: radiator, extinguisher, sign
   // -------------------------------------------------------------------------
   {
-    const fx = -0.05, fz = 1.71;
-    const g = box(0.55, 0.86, 0.56);
-    K.boxUVAll(g, 0.9, 0.9, 0.95, 0.95);
-    K.boxFaceUV(g, 5, 0, 0, 1, 1);
-    add(M.fridge, g, [fx, 0.43 + 0.02, fz]);
-    add(M.black, box(0.52, 0.02, 0.54), [fx, 0.01, fz]);
-    add(M.steel, rbox(0.025, 0.25, 0.03, 0.01), [fx + 0.23, 0.62, fz - 0.29]);
-    // kettle
-    at([fx - 0.12, 0.88, fz - 0.05], [0, 0.4, 0], () => {
-      const prof = [[0, 0], [0.08, 0], [0.085, 0.02], [0.085, 0.16], [0.065, 0.2], [0.03, 0.21], [0, 0.21]].map(([r, y]) => new THREE.Vector2(r, y));
-      add(M.steel, new THREE.LatheGeometry(prof, 24));
-      add(M.black, new THREE.TorusGeometry(0.07, 0.012, 8, 16, PI), [0, 0.19, 0], [0, PI / 2, 0]);
-      add(M.steel, rod([0.08, 0.06, 0], [0.13, 0.17, 0], 0.012));
-      add(M.black, cyl(0.1, 0.1, 0.015, 20), [0, -0.008, 0]);
+    const tx = 0.15, tz = 1.73;
+    add(M.darkWood, box(0.8, 0.03, 0.46), [tx, 0.7, tz], [0, 0, 0], 1, { uv: 'world', tile: [0.5, 0.5] });
+    for (const [dx, dz] of [[-0.37, -0.2], [0.37, -0.2], [-0.37, 0.2], [0.37, 0.2]]) add(M.steel, cyl(0.014, 0.014, 0.69, 8), [tx + dx, 0.345, tz + dz]);
+    add(M.steel, box(0.76, 0.02, 0.42), [tx, 0.18, tz]);
+    at([tx - 0.02, 0.715, tz], [0, PI + 0.05, 0], () => {
+      add(M.beige2, rbox(0.5, 0.13, 0.34, 0.02), [0, 0.065, 0]);
+      add(M.black, box(0.36, 0.012, 0.07), [0, 0.13, 0.06]);
+      add(M.beige, cyl(0.022, 0.022, 0.03, 12), [0.27, 0.08, 0.05], [0, 0, PI / 2]);
+      for (let k = 0; k < 3; k++) add(M.black, rbox(0.015, 0.008, 0.01, 0.002), [-0.17 + k * 0.025, 0.1, 0.171]);
+      add(M.greenbar, quad(0.3, 0.26, [0, 0.2, 1, 0.45]), [0, 0.2, 0.1], [-0.25, 0, 0]);
     });
-    add(M.brass, cyl(0.05, 0.05, 0.13, 16), [fx + 0.08, 0.945, fz + 0.05]);
-    add(M.cardboard, box(0.16, 0.08, 0.08), [fx + 0.14, 0.92, fz - 0.14], [0, 0.3, 0]);
+    add(M.cardboard, box(0.4, 0.2, 0.3), [tx + 0.05, 0.29, tz], [0, 0.1, 0]);
+    add(M.greenbar, box(0.34, 0.1, 0.25), [tx + 0.05, 0.4, tz], [0, 0.1, 0]);
   }
   add(M.whiteboard, quad(0.9, 0.56), [-0.9, 1.4, D - 0.012], [0, PI, 0]);
   add(M.steel, box(0.94, 0.6, 0.012), [-0.9, 1.4, D - 0.005]);
@@ -790,29 +950,238 @@ export function buildInterior(env, T, screens) {
   });
 
   // -------------------------------------------------------------------------
-  // cables
+  // cables: bundles with ties, single runs, a power strip
   // -------------------------------------------------------------------------
+  const tieMat = M.black;
+  function bundle(pts, n = 4, r = 0.005, spread = 0.011, ties = 0.22, mats = [M.rubber, M.rubber, M.navy, M.rubber, M.white]) {
+    const curve = new THREE.CatmullRomCurve3(pts.map(p => new V3(...p)));
+    const len = curve.getLength(), N = Math.max(12, Math.round(len / 0.03));
+    const frames = curve.computeFrenetFrames(N, false);
+    for (let k = 0; k < n; k++) {
+      const a = k / n * PI * 2 + 0.3, rr = k === 0 ? 0 : spread;
+      const off = [];
+      for (let i = 0; i <= N; i++) {
+        const tw = a + i * 0.08;
+        const pnt = curve.getPointAt(i / N).clone().addScaledVector(frames.normals[i], Math.cos(tw) * rr).addScaledVector(frames.binormals[i], Math.sin(tw) * rr);
+        off.push([pnt.x, pnt.y, pnt.z]);
+      }
+      add(mats[k % mats.length], tube(off, r * (k === 0 ? 1.3 : 1), N));
+    }
+    for (let d = ties * 0.5; d < len; d += ties) {
+      const u = d / len, pnt = curve.getPointAt(u), tg = curve.getTangentAt(u);
+      const q = new THREE.Quaternion().setFromUnitVectors(new V3(0, 0, 1), tg);
+      const e = new THREE.Euler().setFromQuaternion(q);
+      add(tieMat, new THREE.TorusGeometry(spread + r + 0.002, 0.0022, 4, 10), [pnt.x, pnt.y, pnt.z], [e.x, e.y, e.z]);
+      add(tieMat, box(0.006, 0.006, 0.008), [pnt.x + 0.0, pnt.y + spread + r + 0.004, pnt.z], [e.x, e.y, e.z]);
+    }
+  }
+  bundle([[0.93, 0.08, -1.93], [0.8, 0.02, -1.95], [0.4, 0.02, -1.96], [0.0, 0.05, -1.965], [-0.2, 0.35, -1.97], [-0.3, 0.72, -1.96]], 5, 0.005, 0.012, 0.2);
+  bundle([[-1.2, 0.72, -1.97], [-1.0, 0.42, -1.98], [-0.6, 0.34, -1.985], [-0.15, 0.4, -1.98], [0.15, 0.72, -1.97]], 4, 0.004, 0.009, 0.18);
+  bundle([[1.2, RACK_TOP(), -1.9], [1.2, H - 0.24, -1.9], [0.2, H - 0.24, -1.9], [-1.2, H - 0.24, -1.9]], 3, 0.006, 0.013, 0.3);
+  add(M.rubber, tube([[-0.5, 0.77, -1.5], [-0.52, 0.76, -1.62], [-0.55, 0.755, -1.75], [-0.6, 0.76, -1.9]], 0.003));
+  add(M.rubber, tube([[0.48, 0.76, -1.85], [0.55, 0.74, -1.95], [0.62, 0.3, -1.98], [0.66, 0.02, -1.95], [0.8, 0.01, -1.9]], 0.004));
+  add(M.rubber, tube([[-0.07, 0.76, -1.4], [-0.1, 0.755, -1.6], [-0.2, 0.76, -1.75], [-0.35, 0.76, -1.9]], 0.0025));
+  add(M.white, rbox(0.35, 0.04, 0.06, 0.01), [-0.1, 0.02, -1.85], [0, 0.2, 0]);
+  for (let k = 0; k < 4; k++) add(M.black, rbox(0.035, 0.03, 0.04, 0.006), [-0.2 + k * 0.07, 0.05, -1.85 + k * 0.014], [0, 0.2, 0]);
+  add(M.red, box(0.012, 0.012, 0.012), [-0.29, 0.042, -1.87]);
+  // an extension lead snaking to the printer
+  add(M.charcoal, tube([[0.66, 0.012, -1.3], [0.9, 0.01, -0.6], [0.6, 0.01, 0.3], [0.5, 0.01, 1.2], [0.4, 0.01, 1.6]], 0.004, 60));
+
+  // outlets: double socket plates, some with plugs
+  function outlet(pos, ry, plugs = 0) {
+    at(pos, [0, ry, 0], () => {
+      add(M.white, rbox(0.15, 0.085, 0.012, 0.004), [0, 0, 0.006]);
+      for (const sx of [-0.037, 0.037]) {
+        add(M.black, box(0.022, 0.03, 0.002), [sx, 0.004, 0.0125]);
+        add(M.white, rbox(0.012, 0.008, 0.004, 0.002), [sx + 0.02, -0.022, 0.013]);
+      }
+      for (let k = 0; k < plugs; k++) {
+        const sx = k ? 0.037 : -0.037;
+        add(M.black, rbox(0.03, 0.045, 0.026, 0.006), [sx, 0.0, 0.026]);
+        add(M.rubber, tube([[sx, -0.02, 0.03], [sx + 0.005, -0.06, 0.035], [sx + 0.01, -0.2, 0.02]], 0.0035, 10));
+      }
+    });
+  }
+  outlet([-1.03, 0.9, -D], 0, 2);
+  outlet([-W, 0.3, 0.05], PI / 2, 0);
+  outlet([W, 0.3, -1.1], -PI / 2, 1);
+  outlet([0.72, 0.3, D], PI, 1);
+  outlet([2.25, 0.3, -D], 0, 1);
+  // light switch toggle, thermostat, first-aid box
+  add(M.white, box(0.012, 0.03, 0.012), [DOOR.x0 - 0.2, 1.2, D - 0.016], [0.3, 0, 0]);
+  at([DOOR.x0 - 0.2, 1.5, D], [0, PI, 0], () => {
+    add(M.beige, rbox(0.1, 0.13, 0.03, 0.01), [0, 0, 0.015]);
+    add(M.white, cyl(0.03, 0.03, 0.012, 20), [0, 0.01, 0.034], [PI / 2, 0, 0]);
+    add(M.red, box(0.002, 0.02, 0.002), [0, 0.02, 0.041], [0, 0, 0.6]);
+  });
+  at([2.2, 1.45, D], [0, PI, 0], () => {
+    add(M.plant, rbox(0.26, 0.2, 0.09, 0.012), [0, 0, 0.045]);
+    add(M.white, box(0.08, 0.025, 0.003), [0, 0, 0.091]); add(M.white, box(0.025, 0.08, 0.003), [0, 0, 0.091]);
+  });
+  // framed photos above the desk shelf
+  for (const [x, y, w, h, cu] of [[-0.18, 1.98, 0.24, 0.19, [3, 1]], [-0.58, 1.97, 0.2, 0.26, [2, 0]]]) {
+    add(M.black, box(w + 0.03, h + 0.03, 0.015), [x, y, -D + 0.008]);
+    add(M.white, box(w, h, 0.002), [x, y, -D + 0.016]);
+    add(M.paper, quad(w - 0.03, h - 0.03, cellUV(...cu)), [x, y, -D + 0.018]);
+  }
+
+  // cork board pins (3D) at the pin points baked with the texture
   {
-    const tube = (pts, r, seg = 40) => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(p => new V3(...p))), seg, r, 6, false);
-    add(M.rubber, tube([[0.92, 0.05, -1.95], [0.7, 0.012, -1.97], [0.3, 0.012, -1.98], [-0.2, 0.3, -1.98], [-0.5, 0.74, -1.97]], 0.008));
-    add(M.rubber, tube([[0.92, 0.12, -1.9], [0.75, 0.015, -1.9], [0.2, 0.015, -1.94], [-0.3, 0.25, -1.97], [-0.4, 0.74, -1.96]], 0.006));
-    add(M.rubber, tube([[-1.1, 0.74, -1.97], [-0.9, 0.4, -1.98], [-0.5, 0.33, -1.985], [-0.1, 0.4, -1.985], [0.2, 0.74, -1.97]], 0.007));
-    add(M.rubber, tube([[-1.3, 0.74, -1.97], [-1.1, 0.5, -1.99], [-0.8, 0.45, -1.99], [-0.6, 0.6, -1.98]], 0.005));
-    add(M.rubber, tube([[-0.5, 0.77, -1.5], [-0.52, 0.76, -1.62], [-0.55, 0.755, -1.75], [-0.6, 0.76, -1.9]], 0.003));
-    add(M.rubber, tube([[0.48, 0.76, -1.85], [0.55, 0.74, -1.95], [0.62, 0.3, -1.98], [0.66, 0.02, -1.95], [0.8, 0.01, -1.9]], 0.004));
-    // power strip on the floor under the desk
-    add(M.white, rbox(0.35, 0.04, 0.06, 0.01), [-0.1, 0.02, -1.85], [0, 0.2, 0]);
-    for (let k = 0; k < 4; k++) add(M.black, rbox(0.035, 0.03, 0.04, 0.006), [-0.2 + k * 0.07, 0.05, -1.85 + k * 0.014], [0, 0.2, 0]);
+    const pinMats = { '#d22': M.red, '#2a6': M.plant, '#26c': M.navy, '#dd2': M.yellow, '#22d': M.navy };
+    for (const [u, v, col] of T.corkPins) {
+      const x = -1.36 + (u - 0.5) * 0.8, y = 1.64 + (0.5 - v) * 0.5;
+      add(M.steel, cyl(0.0012, 0.0012, 0.012, 4), [x, y, -D + 0.018], [PI / 2, 0, 0]);
+      add(pinMats[col] || M.red, cyl(0.0055, 0.0045, 0.012, 10), [x, y, -D + 0.026], [PI / 2, 0, 0]);
+      add(pinMats[col] || M.red, new THREE.SphereGeometry(0.0062, 10, 6), [x, y, -D + 0.034]);
+    }
+  }
+
+  // door hardware: hinges, deadbolt, closer, sign
+  {
+    for (const y of [0.25, 1.02, 1.8]) {
+      add(M.brass, cyl(0.008, 0.008, 0.1, 10), [DOOR.x0 + 0.012, y, D - 0.004]);
+      add(M.brass, box(0.03, 0.09, 0.002), [DOOR.x0 + 0.03, y, D + 0.0165]);
+    }
+    add(M.steel, cyl(0.028, 0.028, 0.01, 20), [DOOR.x1 - 0.09, 1.25, D + 0.011], [PI / 2, 0, 0]);
+    add(M.steel, rbox(0.012, 0.035, 0.014, 0.004), [DOOR.x1 - 0.09, 1.25, D + 0.0], [0, 0, 0.0]);
+    add(M.charcoal, rbox(0.26, 0.055, 0.06, 0.01), [DOOR.x0 + 0.2, DOOR.y1 - 0.06, D + 0.0]);
+    add(M.charcoal, box(0.25, 0.015, 0.02), [DOOR.x0 + 0.3, DOOR.y1 + 0.01, D - 0.02], [0, 0.4, 0]);
+    add(M.doorSign, quad(0.22, 0.11), [(DOOR.x0 + DOOR.x1) / 2, 1.62, D + 0.0115], [0, PI, 0]);
+  }
+
+  // window: sash latch on the meeting rail, pull handles, rolled-up blind, things on the sill
+  {
+    const fx = W + 0.1 - 0.032, zc = (WIN.z0 + WIN.z1) / 2, yc = (WIN.y0 + WIN.y1) / 2;
+    at([fx, yc + 0.02, zc], [0, -PI / 2, 0], () => {
+      add(M.brass, rbox(0.07, 0.018, 0.02, 0.004), [0, 0, 0.005]);
+      add(M.brass, cyl(0.009, 0.009, 0.012, 12), [0.015, 0, 0.018], [PI / 2, 0, 0]);
+      add(M.brass, rbox(0.05, 0.008, 0.006, 0.003), [-0.005, 0.0, 0.026], [0, 0, 0.35]);
+      add(M.brass, rbox(0.03, 0.014, 0.018, 0.004), [0.055, -0.03, 0.004]);
+    });
+    for (const z of [WIN.z0 + 0.2, WIN.z1 - 0.2]) {
+      add(M.brass, rod([fx, WIN.y0 + 0.07, z - 0.03], [fx - 0.025, WIN.y0 + 0.07, z - 0.03], 0.003));
+      add(M.brass, rod([fx, WIN.y0 + 0.07, z + 0.03], [fx - 0.025, WIN.y0 + 0.07, z + 0.03], 0.003));
+      add(M.brass, rod([fx - 0.025, WIN.y0 + 0.07, z - 0.03], [fx - 0.025, WIN.y0 + 0.07, z + 0.03], 0.003));
+    }
+    // roller blind rolled up under the head
+    add(M.white, cyl(0.022, 0.022, WIN.z1 - WIN.z0 + 0.04, 16), [W + 0.04, WIN.y1 - 0.03, zc], [PI / 2, 0, 0]);
+    add(M.beige, cyl(0.03, 0.03, WIN.z1 - WIN.z0 - 0.02, 16), [W + 0.04, WIN.y1 - 0.035, zc], [PI / 2, 0, 0]);
+    add(M.white, box(0.006, 0.01, WIN.z1 - WIN.z0 - 0.02), [W + 0.012, WIN.y1 - 0.07, zc]);
+    add(M.white, rod([W + 0.012, WIN.y1 - 0.075, WIN.z1 - 0.12], [W + 0.01, WIN.y1 - 0.3, WIN.z1 - 0.12], 0.0012, 4));
+    add(M.white, new THREE.TorusGeometry(0.012, 0.0025, 6, 12), [W + 0.01, WIN.y1 - 0.315, WIN.z1 - 0.12], [0, PI / 2, 0]);
+    // binoculars and a small cactus on the stool
+    at([W - 0.07, WIN.y0 + 0.01, WIN.z0 + 0.22], [0, 0.4, 0], () => {
+      for (const s of [-1, 1]) {
+        add(M.black, cyl(0.022, 0.022, 0.1, 14), [s * 0.028, 0.022, 0], [PI / 2, 0, 0]);
+        add(M.black, cyl(0.026, 0.026, 0.035, 14), [s * 0.028, 0.026, 0.055], [PI / 2, 0, 0]);
+        add(M.glassGreen, new THREE.CircleGeometry(0.02, 14), [s * 0.028, 0.026, 0.0735]);
+      }
+      add(M.black, box(0.03, 0.012, 0.05), [0, 0.03, 0.0]);
+      add(M.rubber, tube([[-0.05, 0.02, -0.03], [-0.09, 0.005, 0.02], [-0.04, 0.003, 0.09], [0.05, 0.004, 0.08]], 0.0025, 16));
+    });
+    add(M.terracotta, cyl(0.035, 0.028, 0.06, 14), [W - 0.08, WIN.y0 + 0.04, WIN.z1 - 0.12]);
+    { const g = new THREE.SphereGeometry(0.03, 12, 10); const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const a = Math.atan2(p.getZ(i), p.getX(i)); const f = 1 + 0.12 * Math.cos(a * 8); p.setX(i, p.getX(i) * f); p.setZ(i, p.getZ(i) * f); p.setY(i, p.getY(i) * 1.4); } g.computeVertexNormals(); add(M.plant, g, [W - 0.08, WIN.y0 + 0.1, WIN.z1 - 0.12]); }
+  }
+
+  // desk clutter: telephone, stapler, tape dispenser, notebook + pen, crumpled paper, a thumb drive
+  {
+    at([-1.58, DESK.y, -1.86], [0, 0.35, 0], () => {
+      const g = box(0.19, 0.07, 0.21);
+      const p = g.attributes.position;
+      for (let i = 0; i < p.count; i++) if (p.getY(i) > 0 && p.getZ(i) > 0) p.setY(i, p.getY(i) - 0.03);
+      g.computeVertexNormals();
+      add(M.beige, g, [0, 0.035, 0]);
+      for (let k = 0; k < 12; k++) add(M.white, rbox(0.022, 0.006, 0.018, 0.003), [-0.035 + (k % 3) * 0.035, 0.058 - Math.floor(k / 3) * 0.006, 0.065 - Math.floor(k / 3) * 0.022], [-0.28, 0, 0]);
+      add(M.beige, rbox(0.21, 0.035, 0.05, 0.015), [0, 0.085, -0.05]);
+      add(M.beige, rbox(0.05, 0.03, 0.055, 0.012), [-0.08, 0.1, -0.05]); add(M.beige, rbox(0.05, 0.03, 0.055, 0.012), [0.08, 0.1, -0.05]);
+      const coil = [];
+      for (let i = 0; i <= 160; i++) { const u = i / 160; coil.push([-0.12 - 0.08 * u + 0.012 * Math.cos(u * 70), 0.012 + 0.012 * Math.sin(u * 70), -0.05 + 0.25 * u]); }
+      add(M.beige, tube(coil, 0.0025, 200));
+    });
+    at([-0.02, DESK.y, -1.61], [0, -0.4, 0], () => {
+      add(M.black, rbox(0.035, 0.022, 0.15, 0.008), [0, 0.011, 0]);
+      add(M.black, rbox(0.032, 0.02, 0.14, 0.008), [0, 0.036, 0.004], [-0.06, 0, 0]);
+      add(M.chrome, box(0.02, 0.003, 0.03), [0, 0.047, 0.06]);
+    });
+    at([0.6, DESK.y, -1.36], [0, 0.6, 0], () => {
+      add(M.charcoal, rbox(0.07, 0.045, 0.13, 0.015), [0, 0.022, 0]);
+      add(M.white, cyl(0.03, 0.03, 0.02, 20), [0, 0.04, 0.01], [0, 0, PI / 2]);
+    });
+    at([-0.97, DESK.y + 0.058, -1.47], [0, -0.1, 0], () => { add(M.navy, cyl(0.004, 0.004, 0.14, 8), [0.06, 0.004, 0.02], [PI / 2, 0.3, 0]); add(M.chrome, box(0.003, 0.004, 0.03), [0.07, 0.009, -0.03], [0, 0.3, 0]); });
+    add(M.red, rbox(0.018, 0.008, 0.05, 0.003), [0.3, DESK.y + 0.004, -1.48], [0, 1.1, 0]);
+    for (const [x, y, z, sc] of [[-0.25, DESK.y + 0.03, -1.3, 1], [-1.2, 0.035, -0.9, 1.1], [0.95, 0.03, -1.1, 0.9]]) {
+      const g2 = new THREE.IcosahedronGeometry(0.035 * sc, 1);
+      const p2 = g2.attributes.position;
+      for (let i = 0; i < p2.count; i++) { const f = 0.7 + 0.55 * U.vnoise3(p2.getX(i) * 80 + x * 9, p2.getY(i) * 80, p2.getZ(i) * 80); p2.setXYZ(i, p2.getX(i) * f, p2.getY(i) * f, p2.getZ(i) * f); }
+      g2.computeVertexNormals();
+      add(M.white, g2, [x, y, z], [x, z, 0]);
+    }
+    // Sam's backpack slumped against the desk pedestal
+    at([-1.55, 0, -1.12], [0, 0.35, 0], () => {
+      const g = K.rbox(0.3, 0.42, 0.18, 0.07, 3);
+      const p = g.attributes.position;
+      for (let i = 0; i < p.count; i++) { const y = p.getY(i); p.setZ(i, p.getZ(i) * (1 + 0.25 * Math.sin((y + 0.2) * 5))); p.setX(i, p.getX(i) * (1 - 0.15 * Math.max(0, y) * 4)); }
+      g.computeVertexNormals();
+      add(M.coat2, g, [0, 0.2, 0], [-0.22, 0, 0.05]);
+      add(M.coat2, K.rbox(0.22, 0.16, 0.06, 0.03, 2), [0, 0.12, 0.11], [-0.22, 0, 0.05]);
+      add(M.black, tube([[-0.1, 0.4, -0.05], [-0.12, 0.2, -0.14], [-0.1, 0.02, -0.12]], 0.012, 12));
+      add(M.black, tube([[0.1, 0.4, -0.05], [0.13, 0.2, -0.16], [0.12, 0.02, -0.1]], 0.012, 12));
+      add(M.yellow, box(0.02, 0.05, 0.01), [0.05, 0.3, 0.1], [-0.22, 0, 0.3]);
+    });
+    // a little green alien toy on the shelf (someone's joke)
+    at([0.16, 1.6325, -1.86], [0, -0.5, 0], () => {
+      add(M.plant, cyl(0.012, 0.016, 0.04, 10), [0, 0.02, 0]);
+      const hg = new THREE.SphereGeometry(0.02, 14, 10); hg.scale(1, 1.25, 1); add(M.plant, hg, [0, 0.06, 0]);
+      for (const s of [-1, 1]) { const eg = new THREE.SphereGeometry(0.008, 10, 6); eg.scale(1, 1.5, 0.6); add(M.black, eg, [s * 0.009, 0.064, 0.016], [0, 0, s * 0.4]); }
+    });
+  }
+
+  // EXIT sign over the door (on the battery circuit), sheets taped to the wall by the monitor
+  add(M.white, rbox(0.36, 0.15, 0.06, 0.01), [(DOOR.x0 + DOOR.x1) / 2, DOOR.y1 + 0.2, D - 0.03]);
+  add(E.exit, quad(0.32, 0.12), [(DOOR.x0 + DOOR.x1) / 2, DOOR.y1 + 0.2, D - 0.061], [0, PI, 0]);
+  for (const [x, y, r, cu] of [[0.2, 1.3, 0.03, [2, 0]], [0.46, 1.24, -0.05, [0, 0]]]) {
+    add(M.paper, sheetGeo(0.21, 0.297, cellUV(...cu), 0.004, x * 10), [x, y, -D + 0.006], [0, 0, r]);
+    for (const [dx, dy] of [[-0.09, 0.14], [0.09, 0.14]]) add(M.paper, quad(0.04, 0.015, [0.005, 0.76, 0.05, 0.99]), [x + dx, y + dy, -D + 0.009], [0, 0, r + 0.3 * dx]);
   }
 
   // -------------------------------------------------------------------------
   // merge everything static
   // -------------------------------------------------------------------------
-  const castMats = new Set([M.black, M.charcoal, M.beige, M.keyboard, M.paper, M.greenbar, M.mugs, M.lampGreen, M.steel, M.chrome, M.receiver, M.navy, M.red, M.darkWood, M.desk, M.enamel, M.rackMetal, M.armFabric, M.blanket, M.books, M.plant, M.terracotta, M.brass, M.coffee, M.white, M.cardboard]);
+  // shadow casters for the desk lamp (things on and around the desk); big surfaces
+  // are drawn last so early depth testing rejects what the furniture hides
+  const castMats = new Set([M.black, M.charcoal, M.beige, M.keyboard, M.paper, M.greenbar, M.mugs, M.lampGreen, M.steel, M.chrome, M.receiver, M.navy, M.red, M.desk, M.brass, M.coffee, M.white, M.rubber, M.yellow, M.plant, M.terracotta]);
+  const shellMats = new Set([M.pine, M.paint, M.floor, M.ceiling]);
   const flags = new Map();
-  for (const m of Object.values(M)) flags.set(m, { cast: castMats.has(m), receive: true });
+  for (const m of Object.values(M)) flags.set(m, { cast: castMats.has(m), receive: true, renderOrder: shellMats.has(m) ? 3 : 0 });
   for (const m of Object.values(E)) flags.set(m, { cast: false, receive: false });
   const meshes = K.build(root, flags);
+
+  // steam off Sam's coffee: a camera-facing sheet of scrolling wisps, glowing in the lamp light
+  const steamU = { tNoise: { value: T.steam }, uTime: { value: 0 }, uAmt: { value: 1 } };
+  const steam = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.26).translate(0, 0.13, 0), new THREE.ShaderMaterial({
+    uniforms: steamU, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: /* glsl */`
+      uniform sampler2D tNoise; uniform float uTime, uAmt; varying vec2 vUv;
+      void main() {
+        vec2 uv = vUv;
+        float sway = 0.12 * sin(uv.y * 5.0 + uTime * 1.1) * uv.y;
+        float n = texture2D(tNoise, vec2(uv.x * 0.7 + sway + 0.1, uv.y * 0.6 - uTime * 0.11)).r;
+        float n2 = texture2D(tNoise, vec2(uv.x * 1.2 - sway * 0.6 + 0.43, uv.y * 0.9 - uTime * 0.17)).r;
+        float w = smoothstep(0.0, 0.3, uv.x) * smoothstep(1.0, 0.7, uv.x) * pow(1.0 - uv.y, 1.6) * smoothstep(0.0, 0.08, uv.y);
+        float a = max(0.0, n * n2 * 2.6 - 0.12) * w * uAmt;
+        gl_FragColor = vec4(vec3(1.0, 0.93, 0.85) * a * 0.22, 1.0);
+      }`,
+  }));
+  steam.position.set(0.06, DESK.y + 0.085, -1.47);
+  steam.renderOrder = 6;
+  steam.onBeforeRender = (r, sc, cam) => {
+    const cp = new V3().setFromMatrixPosition(cam.matrixWorld);
+    steam.rotation.set(0, Math.atan2(cp.x - steam.position.x, cp.z - steam.position.z), 0);
+    steam.updateMatrixWorld(true);
+  };
+  steam.userData.u = steamU;
+  root.add(steam);
 
   // -------------------------------------------------------------------------
   // Sam's office chair (moves): origin under the front edge of the seat, +z forward
@@ -922,8 +1291,8 @@ export function buildInterior(env, T, screens) {
     blobAt(1.2, -1.7, 0.9, 0.9);               // rack
     blobAt(-2.19, -1.69, 0.8, 0.85);           // filing cabinet
     blobAt(-2.33, -0.65, 0.5, 1.3);            // bookshelf
-    blobAt(-0.05, 1.71, 0.8, 0.8);             // fridge
-    blobAt(2.0, -1.72, 1.1, 0.7);              // printer table
+    blobAt(1.9, -1.71, 0.8, 0.8);              // fridge
+    blobAt(0.15, 1.73, 1.0, 0.65);             // printer table
     blobAt(-2.02, 1.17, 1.0, 1.0, 0.7);        // armchair
     // under the desk: dark wall behind the knee space
     Ka.add(aoMat, strip(1.9, 0.6), [-0.29, 0.44, -D + 0.02], [0, 0, 0]);
@@ -958,17 +1327,19 @@ export function buildInterior(env, T, screens) {
   alarm.position.set(BEACON.x, BEACON.y + 0.12, BEACON.z);
   root.add(alarm, alarm.target);
 
-  const holo = new THREE.PointLight(0x5fe6ff, 0, 0, 2);
-  holo.position.set(1.2, 1.35, -0.45);
-  root.add(holo);
+  // one light, three roles over the film (set.js): Maya's reading lamp, the hologram's
+  // cyan fill, then moonlight through the window once the Visitor has gone
+  const aux = new THREE.PointLight(0xffb070, 0.8, 0, 2);
+  aux.position.set(-2.28, 1.42, 1.78);
+  root.add(aux);
 
   const hemi = new THREE.HemisphereLight(0x1a2233, 0x120c08, 1.0);
   root.add(hemi);
 
   return {
     root, M, E, meshes, envMap, glossy,
-    parts: { mainScreen, secondScreen, chair, chairBase, hHour, hMin, hSec, beaconSpin, ledMesh, leds, meterNeedle, scopeMesh, counterMesh },
-    lights: { lamp, monitor, alarm, holo, hemi },
+    parts: { steam, beaconFlare, reels: RACK.reels, mainScreen, secondScreen, chair, chairBase, hHour, hMin, hSec, beaconSpin, ledMesh, leds, meterNeedle, scopeMesh, counterMesh },
+    lights: { lamp, monitor, alarm, aux, hemi }, moonU,
     dims: { W, D, H, WIN, DOOR, DESK, SCR, LAMP, bulbPos, lampAxis, BEACON, CLOCK, RX, RACK, ARM },
   };
 }

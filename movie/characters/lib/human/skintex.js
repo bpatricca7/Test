@@ -12,13 +12,17 @@ import * as THREE from 'three';
 import { clamp, mix, sstep } from './sdf.js';
 
 export const UV_O = [0, -0.02, -0.02];
-const UV_TMAX = 2.3;
+const UV_TMAX = 2.75;
 
+// the projection axis tilts up so its singular antipode sits at the nape
+const TILT = 0.62;
+const CT = Math.cos(TILT), ST = Math.sin(TILT);
 export function headUV(x, y, z) {
-  const dx = x - UV_O[0], dy = y - UV_O[1], dz = z - UV_O[2];
+  const dx = x - UV_O[0], dy0 = y - UV_O[1], dz0 = z - UV_O[2];
+  const dy = dy0 * CT - dz0 * ST, dz = dy0 * ST + dz0 * CT;
   const l = Math.hypot(dx, dy, dz) || 1;
   const th = Math.acos(clamp(dz / l, -1, 1));
-  const r = Math.min(th / UV_TMAX, 0.999);
+  const r = Math.min(Math.tanh(0.75 * th) / Math.tanh(0.75 * UV_TMAX), 0.999);
   const ph = Math.atan2(dy, dx);
   return [0.5 + 0.5 * r * Math.cos(ph), 0.5 + 0.5 * r * Math.sin(ph)];
 }
@@ -79,7 +83,7 @@ export function bakeHeadSkin({ positions, normals, indices, uvs, colors, bakeMas
   }
   for (const m of (F.moles || [])) spots.push({ x: m[0], y: m[1], r: m[2], d: m[3] });
   const spotAt = (x, y, z) => {
-    if (z < 0.03) return 0;
+    if (z < 0.03 || y > 0.01 || y < -0.06) return 0;
     let s = 0;
     for (const sp of spots) {
       const d2 = ((x - sp.x) ** 2 + (y - sp.y) ** 2) / (sp.r * sp.r);
@@ -102,6 +106,16 @@ export function bakeHeadSkin({ positions, normals, indices, uvs, colors, bakeMas
   function texel(i, x, y, z, nx, ny, nz, cr, cg, cb, u, v) {
     const ax = Math.abs(x);
     const tu = u * N, tv = v * N;
+    if (z < -0.005 || y > 0.085) {
+      // back of the head / scalp: pores and mottling only
+      const pr0 = tsamp(pores, PT, tu, tv);
+      const m0 = tfbm(tileB, T, tu * 0.02, tv * 0.02, 3) - 0.5;
+      const k0 = 1 + m0 * 0.14;
+      col[3 * i] = cr * k0; col[3 * i + 1] = cg * k0; col[3 * i + 2] = cb * k0;
+      height[i] = pr0 * 0.00002;
+      rough[i] = 0.6 + m0 * 0.1;
+      return;
+    }
     let h = 0;
     let dark = 0; // multiplicative darkening
     let red = 0;
@@ -155,11 +169,11 @@ export function bakeHeadSkin({ positions, normals, indices, uvs, colors, bakeMas
           const ang = Math.atan2(dv, Math.max(du, 1e-5));
           let cf = 0;
           for (const [a0, st] of [[-0.75, 0.8], [-0.35, 1], [0.05, 1], [0.42, 0.85], [0.8, 0.5]]) {
-            const wig = a0 + 0.06 * Math.sin(rr * 700 + a0 * 10);
-            cf = Math.max(cf, st * groove((ang - wig) * rr, 0.00045));
+            const wig = a0 + 0.025 * Math.sin(rr * 420 + a0 * 10);
+            cf = Math.max(cf, st * groove((ang - wig) * rr, 0.00035) * sstep(0.02, 0.008, rr));
           }
           cf *= sstep(0.0025, 0.006, rr) * sstep(0.024, 0.012, rr);
-          h -= age * cf * 0.00007; dark += age * cf * 0.07;
+          h -= age * cf * 0.00005; dark += age * cf * 0.035;
         }
       }
     }
@@ -245,6 +259,8 @@ export function bakeHeadSkin({ positions, normals, indices, uvs, colors, bakeMas
     const ua = uvs[2 * a] * N, va = uvs[2 * a + 1] * N, ub = uvs[2 * b] * N, vb = uvs[2 * b + 1] * N, uc = uvs[2 * c] * N, vc = uvs[2 * c + 1] * N;
     const area = (ub - ua) * (vc - va) - (uc - ua) * (vb - va);
     if (Math.abs(area) < 1e-9) continue;
+    // triangles wrapping around the back pole of the projection span the disc: skip
+    if (Math.max(Math.abs(ub - ua), Math.abs(uc - ua), Math.abs(vb - va), Math.abs(vc - va)) > N * 0.06) continue;
     // world units per texel along u and v for this triangle (Jacobian)
     const e1 = [P[3 * b] - P[3 * a], P[3 * b + 1] - P[3 * a + 1], P[3 * b + 2] - P[3 * a + 2]];
     const e2 = [P[3 * c] - P[3 * a], P[3 * c + 1] - P[3 * a + 1], P[3 * c + 2] - P[3 * a + 2]];
@@ -295,8 +311,17 @@ export function bakeHeadSkin({ positions, normals, indices, uvs, colors, bakeMas
   // ---- pack colour (sRGB) + roughness
   const cdata = new Uint8Array(N * N * 4);
   const toS = c => { c = clamp(c, 0, 1); return Math.round(255 * (c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055)); };
+  // uncovered texels (the projection's rim/pole) take the mean colour of the outer ring
+  let fr = 0, fg = 0, fb = 0, fn = 0;
+  for (let py = 0; py < N; py += 2) for (let px = 0; px < N; px += 2) {
+    const i = py * N + px; if (covered[i] !== 1) continue;
+    const r = Math.hypot(px / N - 0.5, py / N - 0.5) * 2;
+    if (r < 0.82 || r > 0.97) continue;
+    fr += col[3 * i]; fg += col[3 * i + 1]; fb += col[3 * i + 2]; fn++;
+  }
+  if (fn) { fr /= fn; fg /= fn; fb /= fn; }
   for (let i = 0; i < N * N; i++) {
-    if (!covered[i]) { cdata[4 * i] = cdata[4 * i + 1] = cdata[4 * i + 2] = 255; cdata[4 * i + 3] = 150; continue; }
+    if (!covered[i]) { cdata[4 * i] = toS(fr); cdata[4 * i + 1] = toS(fg); cdata[4 * i + 2] = toS(fb); cdata[4 * i + 3] = 150; continue; }
     cdata[4 * i] = toS(col[3 * i]); cdata[4 * i + 1] = toS(col[3 * i + 1]); cdata[4 * i + 2] = toS(col[3 * i + 2]);
     cdata[4 * i + 3] = Math.round(rough[i] * 255);
   }

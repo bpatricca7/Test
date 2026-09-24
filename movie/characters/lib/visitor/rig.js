@@ -109,16 +109,16 @@ export const SK = {
   spine: [[0, 0.11, 0.004], [0, 0.13, 0.016], [0, 0.125, 0.008], [0, 0.105, -0.012], [0, 0.07, -0.014]],
   neck: [[0, 0.14, 0.006], [0, 0.135, 0.02]],
   headFromAtlas: [0, 0.106, 0.036],
-  shoulder: [0.166, 0.018, -0.01], clav: [0.055, 0.036, 0.0],
+  shoulder: [0.164, -0.004, -0.01], clav: [0.098, 0.004, -0.006],
   upperArm: 0.335, foreArm: 0.325,
   hips: [[0.09, -0.036, 0.004], [-0.09, -0.036, 0.004], [0, -0.062, -0.075]],
-  thigh: 0.41, shin: 0.43, meta: 0.245, toe: 0.085,
+  thigh: 0.385, shin: 0.4, meta: 0.225, toe: 0.085,
   feet: [[0.19, 0, 0.1], [-0.19, 0, 0.1], [0, 0, -0.2]],
   fingers: [
     // [thumb-side offset, along palm, palm-normal offset, spread (rad, + toward thumb), lengths]
-    [0.02, 0.028, 0.006, 0.72, [0.034, 0.027, 0.022]],
-    [0.003, 0.086, 0.0, 0.04, [0.05, 0.04, 0.033]],
-    [-0.016, 0.078, 0.0, -0.16, [0.045, 0.036, 0.029]],
+    [0.024, 0.03, 0.006, 0.5, [0.036, 0.029, 0.024]],
+    [0.004, 0.088, 0.0, 0.06, [0.05, 0.04, 0.034]],
+    [-0.018, 0.08, 0.0, -0.14, [0.046, 0.037, 0.03]],
   ],
   plantOrder: [0, 1, 2],   // L at phase 0, R at 1/3, C at 2/3
 };
@@ -194,7 +194,7 @@ export function solvePose(st, ft, toLocal) {
   // ---- pelvis ----
   const pelvis = [
     swayX * (1 - 0.5 * wAmt) + wsx + 0.25 * sideLag,
-    SK.pelvisY + floatY + bob - 0.345 * crouch - 0.02 * Math.max(0, lagCrouch) + 0.004 * breathe,
+    SK.pelvisY + floatY + bob - 0.25 * crouch - 0.02 * Math.max(0, lagCrouch) + 0.004 * breathe,
     -0.02 + swayZ + wsz - 0.045 * crouch - 0.05 * lean + 0.3 * fwdLag,
   ];
   const pRoll = -swayX * 1.4 - wsx * 2.5 + 0.02 * Math.sin(t * 0.41);
@@ -282,16 +282,17 @@ export function solvePose(st, ft, toLocal) {
     layers.push([wRest, [side * 0.062 + drift[0], -0.628 + drift[1] + 0.05 * crouch, 0.05 + drift[2] + 0.06 * crouch],
       [side * 0.25, -0.1, -1], [side * 0.06, -1, 0.14], [-side, 0.0, -0.25], [0.32, 0.42, 0.3], 0.0]);
     if (wRaise > 0) {
-      layers.push([wRaise, [side * 0.335, 0.285, 0.1], [side * 1, -0.75, -0.35], [side * 0.1, 1, 0.02], [0.08 * -side, 0.0, 1], [0.05, 0.05, 0.03], 0.22 + 0.12 * Math.max(0, lagRaise)]);
+      layers.push([wRaise, [side * 0.41, 0.25, 0.15], [side * 1, -0.75, -0.35], [side * 0.1, 1, 0.02], [0.08 * -side, 0.0, 1], [0.1, 0.14, 0.08], 0.04 + 0.12 * Math.max(0, lagRaise)]);
     }
     if (wGest > 0) {
-      const ph = gPh * 1.55 + (isR ? 1.9 : 0);
-      const g = [side * (0.2 + 0.07 * Math.sin(ph)), -0.3 + 0.06 * Math.sin(2 * ph + 0.5), 0.3 + 0.06 * Math.cos(ph)];
-      const roll = 0.35 * Math.sin(ph + 0.8);
-      const fd = norm([side * (0.35 + 0.15 * Math.sin(ph)), 0.12 + 0.1 * Math.cos(ph), 1]);
-      const pn = norm([side * (0.25 + roll), 0.8, 0.45 - 0.3 * roll]);
-      const wave = k => 0.22 + 0.28 * Math.sin(ph * 1.4 - k * 0.8);
-      layers.push([wGest, g, [side * 0.9, -1, -0.2], fd, pn, [wave(0), wave(1), wave(2)], 0.12 + 0.1 * Math.sin(ph * 0.7)]);
+      const ph = gPh * 1.4 + (isR ? 2.2 : 0);
+      const sw = 0.5 + 0.5 * Math.sin(ph);
+      const g = [side * (0.24 + 0.14 * sw), -0.13 + 0.05 * Math.sin(2 * ph + 0.5) + 0.05 * sw, 0.24 + 0.05 * Math.cos(ph)];
+      const roll = 0.35 * sw;
+      const fd = norm([side * (0.6 + 0.3 * sw), 0.12 + 0.08 * Math.cos(ph), 0.75 - 0.25 * sw]);
+      const pn = norm([side * (0.15 + roll), 0.85, 0.45]);
+      const wave = k => 0.12 + 0.3 * (0.5 + 0.5 * Math.sin(ph * 1.3 - k * 0.9));
+      layers.push([wGest, g, [side * 0.9, -1, -0.5], fd, pn, [wave(0), wave(1), wave(2)], 0.12 + 0.2 * sw]);
     }
     if (wReach > 0) {
       // target in the upper frame, relative to the shoulder
@@ -309,6 +310,10 @@ export function solvePose(st, ft, toLocal) {
       curl = madd(curl, L[5], w); spread += L[6] * w;
     }
     W = mul(W, 1 / wsum); curl = mul(curl, 1 / wsum); spread /= wsum;
+    {
+      const wr = wRest / wsum, arc = 4 * wr * (1 - wr);
+      W = add(W, [side * 0.07 * arc * (wRaise > 0 ? 1.6 : 1), 0, 0.12 * arc * (wRaise > 0 ? 0.5 : 1)]);
+    }
     // the hand trails the arm a little on the raise (drag), then overshoots
     if (isR && raise > 0) {
       const extra = clamp(wRaiseHand - raise, -0.3, 0.3);

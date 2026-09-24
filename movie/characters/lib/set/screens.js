@@ -4,7 +4,7 @@
 //  - the rack's oscilloscope and frequency counter
 // Every draw is a pure function of film time t.
 
-export function makeScreens(env) {
+export function makeScreens(env, T = {}) {
   const { THREE, TL, U, FONT } = env;
   const { clamp, lerp, smooth } = U;
   const B = TL.beats;
@@ -71,7 +71,7 @@ export function makeScreens(env) {
   const sg = scratch.getContext('2d');
   const mainTex = new THREE.CanvasTexture(mainC);
   mainTex.colorSpace = THREE.SRGBColorSpace;
-  mainTex.anisotropy = 4;
+  mainTex.anisotropy = 1;
 
   const SW = 640, SH = 480;
   const secC = document.createElement('canvas'); secC.width = SW; secC.height = SH;
@@ -93,9 +93,9 @@ export function makeScreens(env) {
   const AMB = a => `rgba(255,176,64,${a})`;
 
   // --------------------------------------------------------------- layout
-  const WF = { x: 40, y: 292, w: 1060, h: 540 };      // waterfall
-  const SP = { x: 40, y: 140, w: 1060, h: 136 };      // spectrum trace
-  const RP = { x: 1136, y: 140, w: 424, h: 692 };     // right panel
+  const WF = { x: 60, y: 292, w: 1030, h: 500 };      // waterfall
+  const SP = { x: 60, y: 140, w: 1030, h: 136 };      // spectrum trace
+  const RP = { x: 1122, y: 140, w: 418, h: 692 };     // right panel
   const F_MAX = 2400;
   const fx = f => WF.x + WF.w * f / F_MAX;
   const LANE_X = [fx(FREQ[0]), fx(FREQ[1])];
@@ -159,7 +159,7 @@ export function makeScreens(env) {
     if (halo > 0) {
       ctx.lineJoin = 'round';
       ctx.strokeStyle = col.replace(/[\d.]+\)$/, m => `${parseFloat(m) * 0.12 * halo})`);
-      ctx.lineWidth = size * 0.3; ctx.strokeText(s, x, y);
+      ctx.lineWidth = Math.min(size * 0.3, 9); ctx.strokeText(s, x, y);
     }
     ctx.fillStyle = col;
     ctx.fillText(s, x, y);
@@ -177,31 +177,31 @@ export function makeScreens(env) {
 
   // ------------------------------------------------------------ main: parts
   function header(t, status, statusOn, fkey) {
-    text('KESTREL RIDGE RO  //  RX-3  L-BAND 1420.405 MHz', 40, 46, 30, ph(0.92), 'left', 'bold', 1);
-    text(`${utc(t)} UTC`, MW - 40, 46, 30, ph(0.92), 'right', 'bold', 1);
+    text('KESTREL RIDGE RO  //  RX-3  L-BAND 1420.405 MHz', 60, 50, 30, ph(0.92), 'left', 'bold', 1);
+    text(`${utc(t)} UTC`, MW - 60, 50, 30, ph(0.92), 'right', 'bold', 1);
     const feed = 'FEED L1  //  AZ 141.2°  EL 36.4°  //  FFT 4096  //  ';
-    text(feed, 40, 88, 19, ph(0.55), 'left', 'normal');
+    text(feed, 60, 90, 19, ph(0.55), 'left', 'normal');
     g.font = `normal 19px ${MONO}`;
     const w = g.measureText(feed).width;
-    text(status, 40 + w, 88, 19, ph(statusOn), 'left', 'bold');
+    text(status, 60 + w, 90, 19, ph(statusOn), 'left', 'bold');
     // REC dot
     const rec = Math.floor(t / 0.5) % 2 === 0;
     g.fillStyle = rec ? 'rgba(255,72,56,0.95)' : 'rgba(255,72,56,0.25)';
-    g.beginPath(); g.arc(MW - 110, 88, 8, 0, 7); g.fill();
-    text('REC', MW - 94, 88, 19, ph(0.8), 'left', 'bold');
+    g.beginPath(); g.arc(MW - 130, 90, 8, 0, 7); g.fill();
+    text('REC', MW - 114, 90, 19, ph(0.8), 'left', 'bold');
     // ruler
     g.strokeStyle = ph(0.3); g.lineWidth = 1.5;
-    g.beginPath(); g.moveTo(40, 112.5); g.lineTo(MW - 40, 112.5);
-    for (let i = 0; i <= 38; i++) { const xx = 40 + i * (MW - 80) / 38; g.moveTo(xx, 112); g.lineTo(xx, i % 5 ? 117 : 123); }
+    g.beginPath(); g.moveTo(60, 112.5); g.lineTo(MW - 60, 112.5);
+    for (let i = 0; i <= 37; i++) { const xx = 60 + i * (MW - 120) / 37; g.moveTo(xx, 112); g.lineTo(xx, i % 5 ? 117 : 123); }
     g.stroke();
     // function keys
     const keys = ['F1 WFALL', 'F2 DEMOD', 'F3 FOLD', 'F4 LOG', 'F5 ARCH', 'F10 HALT'];
     for (let i = 0; i < keys.length; i++) {
-      const x = 40 + i * 190, y = 866;
+      const x = 60 + i * 186, y = 856;
       const on = fkey === i;
-      if (on) { g.fillStyle = ph(0.85); g.fillRect(x, y - 15, 170, 30); }
+      if (on) { g.fillStyle = ph(0.62); g.fillRect(x, y - 15, 170, 30); }
       else { g.strokeStyle = ph(0.3); g.lineWidth = 1.5; g.strokeRect(x + 0.5, y - 14.5, 169, 29); }
-      text(keys[i], x + 10, y + 1, 18, on ? 'rgba(2,12,8,1)' : ph(0.55), 'left', 'bold');
+      text(keys[i], x + 10, y + 1, 18, on ? 'rgba(0,6,3,1)' : ph(0.55), 'left', 'bold');
     }
   }
 
@@ -359,8 +359,8 @@ export function makeScreens(env) {
       const sp = '|/-\\'[Math.floor(t * 6) % 4];
       text(`SCANNING  ${sp}`, x + 20, y + 36, 30, ph(0.85), 'left', 'bold', 0.6);
     } else if (t < T_P1 + 0.2) {
-      if (blinkOn || t > T_P0) { g.fillStyle = ph(0.88); g.fillRect(x, y, w, 70); text('▲ SIGNAL DETECTED', x + 18, y + 36, 30, 'rgba(2,14,9,1)', 'left', 'bold'); }
-      else { bracket(x, y, w, 70, 14, ph(0.8)); text('▲ SIGNAL DETECTED', x + 18, y + 36, 30, ph(0.9), 'left', 'bold', 1); }
+      if (blinkOn || t > T_P0) { g.fillStyle = ph(0.6); g.fillRect(x, y, w, 70); text('▲ SIGNAL DETECTED', x + 16, y + 36, 32, 'rgba(0,5,3,1)', 'left', 'bold'); }
+      else { bracket(x, y, w, 70, 14, ph(0.8)); text('▲ SIGNAL DETECTED', x + 16, y + 36, 32, ph(0.9), 'left', 'bold', 0.5); }
     } else {
       bracket(x, y, w, 70, 14, ph(0.6));
       text('LOCK LOST', x + 20, y + 36, 30, ph(Math.floor(t / 0.4) % 2 ? 0.45 : 0.95), 'left', 'bold', 1);
@@ -388,7 +388,7 @@ export function makeScreens(env) {
     const done = t > T_LAST + 0.05;
     const blink = !done || Math.floor((t - T_LAST) / 0.4) % 2 === 0;
     if (t < T_P0) text('----', X2 - 4, cy + 72, 108, ph(0.3), 'right', 'bold');
-    else if (blink) text(String(count).padStart(4, '0'), X2 - 4, cy + 72, 108, hot(0.97), 'right', 'bold', 1.2);
+    else if (blink) text(String(count).padStart(4, '0'), X2 - 4, cy + 72, 108, hot(0.95), 'right', 'bold', 0.5);
     // rate
     const r = RATE(t);
     text('RATE', x + 4, cy + 160, 19, ph(0.6), 'left', 'normal');
@@ -403,8 +403,8 @@ export function makeScreens(env) {
     if (t > T_P1 + 0.35) {
       const m1 = '1679 = 23 × 73';
       const n = typedN(m1, T_P1 + 0.35, t, 18);
-      text(m1.slice(0, n), x + 4, y + 666, 30, hot(0.95), 'left', 'bold', 1);
-      if (t > T_P1 + 1.3) { const m2 = 'SEMIPRIME: 2-D RASTER?'; text(m2.slice(0, typedN(m2, T_P1 + 1.3, t, 26)), x + 4, y + 700, 18, ph(0.75), 'left', 'normal'); }
+      text(m1.slice(0, n), x + 4, y + 640, 30, hot(0.95), 'left', 'bold', 0.4);
+      if (t > T_P1 + 1.3) { const m2 = 'SEMIPRIME: 2-D RASTER?'; text(m2.slice(0, typedN(m2, T_P1 + 1.3, t, 26)), x + 4, y + 674, 18, ph(0.75), 'left', 'normal'); }
     }
   }
 
@@ -514,29 +514,30 @@ export function makeScreens(env) {
     while (rowsDone < ROWS && t >= ROW_T[rowsDone]) rowsDone++;
     const bits = Math.min(1679, rowsDone * COLS);
     const a = smooth(T_KEY, T_KEY + 0.4, t);
-    text('FOLD', 90, 170, 44, hot(0.95 * a), 'left', 'bold', 1);
-    text('1679 = 23 × 73', 90, 222, 30, ph(0.9 * a), 'left', 'bold');
-    text('ROW', 90, 300, 20, ph(0.55 * a), 'left', 'normal');
-    text(`${String(rowsDone).padStart(2, '0')} / 73`, 520, 300, 30, ph(0.95 * a), 'right', 'bold');
-    text('BITS', 90, 340, 20, ph(0.55 * a), 'left', 'normal');
-    text(`${String(bits).padStart(4, '0')} / 1679`, 520, 340, 30, ph(0.95 * a), 'right', 'bold');
+    const LX = 250, RX = 640;
+    text('FOLD', LX, 170, 44, hot(0.95 * a), 'left', 'bold', 0.4);
+    text('1679 = 23 × 73', LX, 222, 30, ph(0.9 * a), 'left', 'bold');
+    text('ROW', LX, 300, 20, ph(0.55 * a), 'left', 'normal');
+    text(`${String(rowsDone).padStart(2, '0')} / 73`, RX, 300, 30, ph(0.95 * a), 'right', 'bold');
+    text('BITS', LX, 340, 20, ph(0.55 * a), 'left', 'normal');
+    text(`${String(bits).padStart(4, '0')} / 1679`, RX, 340, 30, ph(0.95 * a), 'right', 'bold');
     // the wrong fold, struck out
     const y0 = 420;
-    text('73 × 23', 90, y0, 22, ph(0.6 * a), 'left', 'bold');
+    text('73 × 23', LX, y0, 22, ph(0.6 * a), 'left', 'bold');
     const cs = 5;
     for (let r = 0; r < 23; r++) for (let c = 0; c < 73; c += 1) {
       const i = r * 73 + c;
       const b = RET[Math.floor(i / COLS)][i % COLS];
-      if (b) { g.fillStyle = ph(0.35 * a); g.fillRect(90 + c * cs, y0 + 22 + r * cs, cs - 1, cs - 1); }
+      if (b) { g.fillStyle = ph(0.35 * a); g.fillRect(LX + c * cs, y0 + 22 + r * cs, cs - 1, cs - 1); }
     }
     g.strokeStyle = ro(0.8 * a); g.lineWidth = 3;
-    g.beginPath(); g.moveTo(84, y0 + 16); g.lineTo(90 + 73 * cs + 6, y0 + 22 + 23 * cs + 6); g.stroke();
-    text('NOISE', 90 + 73 * cs + 12, y0 + 80, 18, ro(0.8 * a), 'left', 'bold');
-    text('23 × 73', 90, y0 + 190, 22, ph(0.6 * a), 'left', 'bold');
+    g.beginPath(); g.moveTo(LX - 6, y0 + 16); g.lineTo(LX + 73 * cs + 6, y0 + 22 + 23 * cs + 6); g.stroke();
+    text('NOISE', LX + 40, y0 + 160, 18, ro(0.8 * a), 'left', 'bold');
+    text('23 × 73', LX, y0 + 210, 22, ph(0.6 * a), 'left', 'bold');
     const good = rowsDone >= ROWS ? (Math.floor(t / 0.4) % 2 === 0 ? 0.95 : 0.6) : 0.4;
-    text(rowsDone >= ROWS ? 'IMAGE  ✔' : 'IMAGE ?', 90, y0 + 222, 26, hot(good * a), 'left', 'bold', rowsDone >= ROWS ? 1 : 0);
+    text(rowsDone >= ROWS ? 'IMAGE  ✔' : 'IMAGE ?', LX, y0 + 244, 26, hot(good * a), 'left', 'bold', rowsDone >= ROWS ? 0.4 : 0);
     // right: stream rows (next rows to be folded)
-    const sx = 1000, sy = 170;
+    const sx = 960, sy = 170;
     text('STREAM', sx, sy, 20, ph(0.55 * a), 'left', 'normal');
     for (let k = 0; k < 20; k++) {
       const r = rowsDone + k;
@@ -552,12 +553,12 @@ export function makeScreens(env) {
     // left: the 1974 outbound picture, differences in red-orange
     const a = smooth(T_MATCH, T_MATCH + 0.5, t);
     if (a <= 0) return;
-    const cs = 5.2, x0 = 150, y0 = 470 - ROWS * cs / 2 + 60;
+    const cs = 5.0, x0 = 300, y0 = 470 - ROWS * cs / 2 + 40;
     const n = typedN('ARCHIVE MATCH', T_MATCH, t, 24);
-    text('ARCHIVE MATCH'.slice(0, n), 90, 170, 34, hot(0.95 * a), 'left', 'bold', 1);
-    text('OUTBOUND  1974-11-16', 90, 214, 20, ph(0.8 * a), 'left', 'normal');
-    text(`${matchBits} / 1679 BITS`, 90, 250, 22, ph(0.9 * a), 'left', 'bold');
-    text(`${(matchBits / 1679 * 100).toFixed(1)} %`, 90, 284, 30, hot(0.95 * a), 'left', 'bold');
+    text('ARCHIVE MATCH'.slice(0, n), 250, 170, 34, hot(0.95 * a), 'left', 'bold', 0.4);
+    text('OUTBOUND  1974-11-16', 250, 212, 20, ph(0.8 * a), 'left', 'normal');
+    text(`${matchBits} / 1679 BITS`, 250, 246, 22, ph(0.9 * a), 'left', 'bold');
+    text(`${(matchBits / 1679 * 100).toFixed(1)} %`, 250, 280, 30, hot(0.95 * a), 'left', 'bold');
     const reveal = clamp((t - T_MATCH) / 0.8);
     for (let r = 0; r < ROWS * reveal; r++) for (let c = 0; c < COLS; c++) {
       if (!SENT[r][c] && !isDiff(r, c)) continue;
@@ -570,13 +571,13 @@ export function makeScreens(env) {
     text('TX 1974', x0 + COLS * cs / 2, y0 + 20 + ROWS * cs + 26, 16, ph(0.7 * a), 'center', 'bold');
     if (t > T_DIFF - 0.8) {
       const b = smooth(T_DIFF - 0.8, T_DIFF - 0.3, t);
-      text('DIFF: 1 REGION', 1000, 640, 24, ro(0.95 * b), 'left', 'bold', 1);
-      text(`ROWS ${VB.r0}-${VB.r1}  COLS ${VB.c0}-${VB.c1}`, 1000, 676, 18, ro(0.8 * b), 'left', 'normal');
-      text('NOT IN ORIGINAL', 1000, 708, 18, ro(0.8 * b), 'left', 'normal');
+      text('DIFF: 1 REGION', 960, 640, 24, ro(0.95 * b), 'left', 'bold', 0.4);
+      text(`ROWS ${VB.r0}-${VB.r1}  COLS ${VB.c0}-${VB.c1}`, 960, 676, 18, ro(0.8 * b), 'left', 'normal');
+      text('NOT IN ORIGINAL', 960, 708, 18, ro(0.8 * b), 'left', 'normal');
     }
     // right: RX picture label
-    text('RX  TONIGHT', 1000, 170, 22, ph(0.8 * a), 'left', 'bold');
-    text(`${utcS(T_F1)} UTC  //  23 × 73`, 1000, 204, 18, ph(0.6 * a), 'left', 'normal');
+    text('RX  TONIGHT', 960, 170, 22, ph(0.8 * a), 'left', 'bold');
+    text(`${utcS(T_F1)} UTC  //  23 × 73`, 960, 204, 18, ph(0.6 * a), 'left', 'normal');
   }
 
   function zoomLabels(t, V) {
@@ -587,11 +588,11 @@ export function makeScreens(env) {
     const bx = X(VB.c1 + 1) + 24, by = Y(VB.r0);
     g.strokeStyle = ro(0.9 * a); g.lineWidth = 2;
     g.beginPath(); g.moveTo(X(VB.c1 + 1) + 6, by + 20); g.lineTo(bx + 20, by + 20); g.stroke();
-    text('UNKNOWN', bx + 28, by + 20, 34, ro(0.95 * a), 'left', 'bold', 1);
+    text('UNKNOWN', bx + 28, by + 20, 34, ro(0.95 * a), 'left', 'bold', 0.4);
     text(`H ${VB.r1 - VB.r0 + 1} ROWS  //  3 LEGS`, bx + 28, by + 62, 20, ro(0.8 * a), 'left', 'normal');
     text('NOT IN TX 1974', bx + 28, by + 94, 20, ro(0.8 * a), 'left', 'normal');
     // the human for scale, at the left edge
-    text('◀ HUMAN', 60, Y(46) + 20, 22, ph(0.6 * a), 'left', 'bold');
+    text('HUMAN', X(8.5), Y(46) - 18, 22, ph(0.7 * a), 'center', 'bold');
   }
 
   // --------------------------------------------------------------- glitches
@@ -698,14 +699,16 @@ export function makeScreens(env) {
         eot(t);
       }
     } else {
-      header(t, t < T_F1 ? 'DECODE' : t < T_Z0 ? 'DECODED' : 'DIFF', 1, t < T_MATCH ? 2 : 4);
       // key press flash
       const kf = Math.exp(-Math.max(0, t - T_KEY) / 0.12);
       if (kf > 0.02) { g.fillStyle = hot(0.25 * kf); g.fillRect(0, 0, MW, MH); }
+      g.save(); g.beginPath(); g.rect(0, 126, MW, 708); g.clip();
       const V = drawGrid(t);
       if (t < T_MATCH) foldPanels(t);
       else if (t < T_Z0 + 0.3) archivePanel(t);
       if (t >= T_Z0) zoomLabels(t, V);
+      g.restore();
+      header(t, t < T_F1 ? 'DECODE' : t < T_Z0 ? 'DECODED' : 'DIFF', 1, t < T_MATCH ? 2 : 4);
     }
     glitch(t, surge);
   }
@@ -833,7 +836,9 @@ export function makeScreens(env) {
     uniform sampler2D map;
     uniform float uBright, uCurv, uFlick, uRoll, uJit, uTime;
     uniform vec2 uLines, uGlow;
-    uniform vec3 uBlack, uRefl;
+    uniform vec3 uBlack, uRefl, uSmudge;
+    uniform sampler2D tSmudge;
+    uniform vec4 uSmudgeUV;
     varying vec2 vUv;
     void main() {
       vec2 p = vUv * 2.0 - 1.0;
@@ -841,7 +846,6 @@ export function makeScreens(env) {
       vec2 uv = p * 0.5 + 0.5;
       uv.y = fract(uv.y + uRoll);
       uv.x += uJit * sin(uv.y * 40.0 + uTime * 60.0) * 0.004;
-      float edge = smoothstep(0.0, 0.006, uv.x) * smoothstep(0.0, 0.006, 1.0 - uv.x) * smoothstep(0.0, 0.01, vUv.y * 2.0 - 1.0 + 1.0) ;
       vec2 q = abs(p);
       float mask = (1.0 - smoothstep(0.985, 1.0, q.x)) * (1.0 - smoothstep(0.975, 1.0, q.y));
       vec3 c = texture2D(map, uv).rgb;
@@ -855,9 +859,11 @@ export function makeScreens(env) {
       c *= 1.0 - amt * (1.0 - sl);
       float vig = 1.0 - 0.28 * dot(p * 0.8, p * 0.8);
       c = c * vig * mask * uBright * uFlick + uBlack * mask;
-      // soft glass reflection: a dim warm sheen top-right
+      // glass: fingerprints and dust catch the room light; a soft warm sheen from the lamp
+      float sm = texture2D(tSmudge, vUv * uSmudgeUV.xy + uSmudgeUV.zw).r;
+      c = c * (1.0 - 0.1 * sm) + uSmudge * sm;
       vec2 r = vUv - vec2(0.78, 0.8);
-      c += uRefl * exp(-dot(r, r) * 9.0);
+      c += uRefl * exp(-dot(r, r) * 9.0) * (1.0 + 2.0 * sm);
       gl_FragColor = vec4(c, 1.0);
     }`;
   const crtMat = (tex, o) => new THREE.ShaderMaterial({
@@ -865,11 +871,12 @@ export function makeScreens(env) {
       map: { value: tex }, uBright: { value: o.bright }, uCurv: { value: o.curv }, uFlick: { value: 1 }, uRoll: { value: 0 }, uJit: { value: 0 }, uTime: { value: 0 },
       uLines: { value: new THREE.Vector2(o.lines, o.scan) }, uGlow: { value: new THREE.Vector2(o.glow1, o.glow2) },
       uBlack: { value: new THREE.Vector3(...o.black) }, uRefl: { value: new THREE.Vector3(0, 0, 0) },
+      tSmudge: { value: T.smudge || null }, uSmudge: { value: new THREE.Vector3(0, 0, 0) }, uSmudgeUV: { value: new THREE.Vector4(...(o.smudgeUV || [1, 1, 0, 0])) },
     },
     vertexShader: crtVert, fragmentShader: crtFrag,
   });
-  const mainMaterial = crtMat(mainTex, { bright: 1.25, curv: 0.03, lines: 330, scan: 0.35, glow1: 0.45, glow2: 0.5, black: [0.004, 0.009, 0.008] });
-  const secondMaterial = crtMat(secTex, { bright: 1.1, curv: 0.06, lines: 240, scan: 0.4, glow1: 0.5, glow2: 0.5, black: [0.008, 0.005, 0.002] });
+  const mainMaterial = crtMat(mainTex, { bright: 1.25, curv: 0.03, lines: 330, scan: 0.35, glow1: 0.3, glow2: 0.38, black: [0.004, 0.009, 0.008] });
+  const secondMaterial = crtMat(secTex, { bright: 1.1, curv: 0.06, lines: 240, scan: 0.4, glow1: 0.4, glow2: 0.4, black: [0.008, 0.005, 0.002], smudgeUV: [0.55, 0.7, 0.3, 0.2] });
   const scopeMaterial = new THREE.MeshBasicMaterial({ map: scopeTex, color: new THREE.Color(1.3, 1.3, 1.3) });
   const counterMaterial = new THREE.MeshBasicMaterial({ map: ctrTex, color: new THREE.Color(1.6, 1.6, 1.6) });
 
@@ -910,6 +917,9 @@ export function makeScreens(env) {
       const refl = 0.012 * (st.lights ?? 1);
       mainMaterial.uniforms.uRefl.value.set(refl * 1.0, refl * 0.75, refl * 0.5);
       secondMaterial.uniforms.uRefl.value.set(refl * 1.0, refl * 0.75, refl * 0.5);
+      const smg = 0.05 * (st.lights ?? 1) + 0.02;
+      mainMaterial.uniforms.uSmudge.value.set(smg * 0.95, smg * 0.9, smg * 0.8);
+      secondMaterial.uniforms.uSmudge.value.set(smg * 0.95, smg * 0.9, smg * 0.8);
       this.level = L.lv * flick;
       this.color.setRGB(...L.col);
       this.secondLevel = (t >= T_S0 + 0.9 && t < T_RET + 0.3) ? 0.03 : 0.3 * flick;

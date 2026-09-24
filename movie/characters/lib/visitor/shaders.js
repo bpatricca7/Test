@@ -25,8 +25,10 @@ float hash13(vec3 p3) {
 }
 float hash11(float p) { p = fract(p * 0.1031); p *= p + 33.33; p *= p + p; return fract(p); }
 
+uniform float uRevealOn;     // 0 when fully formed and not dissolving: skip the voxel logic
 // x: keep (>= 0 visible), y: voxel amount
 vec2 reveal(vec3 obj) {
+  if (uRevealOn < 0.5) return vec2(1.0, 0.0);
   vec3 cell = floor(obj / VOX);
   float h = hash13(cell);
   vec3 cc = (cell + 0.5) * VOX;
@@ -90,6 +92,10 @@ uniform vec3 uThroat;       // throat point (object space)
 uniform vec2 uAxis;         // body axis (object space x, z)
 uniform vec3 uHeadC;        // head centre (object space)
 uniform mat3 uHeadRot;      // head rotation (world), for triplanar weights
+uniform mat3 uHeadInv;      // object -> head space (rotation^T / scale)
+uniform mat3 uEyeM[2];      // head -> lid-ellipsoid unit space
+uniform vec3 uEyeC[2];
+uniform vec4 uLid[2];       // upper adjust, lower adjust, blink, side
 varying vec3 vW;
 varying vec3 vN;
 varying vec3 vObj;
@@ -97,8 +103,36 @@ varying vec3 vTex;
 varying vec4 vInfo;
 varying vec4 vSpot;
 
-vec3 perturb(vec3 N, vec3 pos, float h, float scale) {
-  vec3 dpx = dFdx(pos), dpy = dFdy(pos);
+#define PHIC 1.02
+#define CORNER -0.05
+#define OPENU 1.05
+#define OPENL -0.72
+// x: > 0 inside the almond opening; y: elevation above the upper edge; z: above the lower edge; w: radius (unit)
+vec4 eyeOpen(vec3 hp, mat3 M, vec3 C, vec4 L) {
+  vec3 l = M * (hp - C);
+  float rl = length(l);
+  if (rl > 1.45) return vec4(-1.0, 1.0, -1.0, rl);
+  vec3 n = l / max(rl, 1e-5);
+  float phi = atan(n.x, n.z);
+  float eps = asin(clamp(n.y, -1.0, 1.0));
+  float s = phi / PHIC;
+  float q = max(0.0, 1.0 - s * s);
+  float lat = s * L.w;
+  // teardrop almond: full and high on the inner side, tapering to a lifted outer point
+  float inner = max(0.0, -lat), outer = max(0.0, lat);
+  float cornerE = CORNER + 0.16 * outer * outer;
+  float up = cornerE + (OPENU + L.x - cornerE) * pow(q, 0.72) * (1.0 + 0.3 * inner - 0.12 * outer);
+  float lo = cornerE - (cornerE - (OPENL + L.y)) * pow(q, 0.8) * (1.0 + 0.18 * inner - 0.25 * outer);
+  float bl = L.z * L.z * (3.0 - 2.0 * L.z);
+  float closed = mix(lo, cornerE, 0.3) - 0.012;
+  up = max(up - bl * (OPENU + 0.9) * pow(q, 0.35), closed);
+  up = mix(up, closed, smoothstep(0.85, 1.0, L.z));
+  float inside = min(up - eps, eps - lo);
+  if (n.z < 0.0 || abs(s) > 1.0) inside = -1.0;
+  return vec4(inside, eps - up, eps - lo, rl);
+}
+
+vec3 perturb(vec3 N, vec3 dpx, vec3 dpy, float h, float scale) {
   float dhx = dFdx(h) * scale, dhy = dFdy(h) * scale;
   vec3 r1 = cross(dpy, N), r2 = cross(N, dpx);
   float det = dot(dpx, r1);
@@ -114,17 +148,39 @@ float segDist(vec3 p, vec3 a, vec3 b) {
 void main() {
   vec2 rv = reveal(vObj);
   if (rv.x < 0.0) discard;
+  float part = vInfo.x;
+  // eyelids: cut the almond opening out of the lid bulge; keep margin info for shading
+  float lash = 0.0, fold = 0.0, rim = 0.0;
+  if (part > 5.5 && part < 6.5) {
+    vec3 hp = uHeadInv * (vObj - uHeadC);
+    for (int i = 0; i < 2; i++) {
+      vec4 e = eyeOpen(hp, uEyeM[i], uEyeC[i], uLid[i]);
+      if (e.w < 1.45) {
+        if (e.x > 0.0 && e.w < 1.1) discard;
+        float nearE = 1.0 - smoothstep(1.12, 1.3, e.w);
+        float front = e.x > -0.5 ? 1.0 : 0.0;
+        // upper margin: dark lash line, a bright rolled rim above it, a soft fold higher up
+        float onLid = 1.0 - smoothstep(1.08, 1.14, e.w);
+        lash = max(lash, onLid * front * (1.0 - smoothstep(0.0, 0.045, e.y)) * step(-0.01, e.y));
+        lash = max(lash, onLid * front * (1.0 - smoothstep(0.0, 0.035, -e.z)) * step(-0.01, -e.z) * 0.6);
+        rim = max(rim, nearE * front * exp(-pow((e.y - 0.1) / 0.035, 2.0)));
+        rim = max(rim, nearE * front * exp(-pow((-e.z - 0.08) / 0.03, 2.0)) * 0.6);
+        fold = max(fold, nearE * front * exp(-pow((e.y - 0.34) / 0.05, 2.0)));
+        fold = max(fold, nearE * front * exp(-pow((-e.z - 0.3) / 0.06, 2.0)) * 0.5);
+      }
+    }
+  }
 #ifdef DEPTH_ONLY
   gl_FragColor = vec4(0.0);
 #else
   float vox = rv.y;
-  float part = vInfo.x;
-  float crease = vInfo.y;
+  float crease = max(vInfo.y, lash * 0.9 + fold * 0.25);
   float ao = vInfo.z;
   bool isHead = part > 5.5;
   vec3 N0 = normalize(vN);
   vec3 V = normalize(cameraPosition - vW);
-  vec3 Nf = normalize(cross(dFdx(vW), dFdy(vW)));
+  vec3 dpx = dFdx(vW), dpy = dFdy(vW);
+  vec3 Nf = normalize(cross(dpx, dpy));
   if (dot(Nf, V) < 0.0) Nf = -Nf;
   N0 = normalize(mix(N0, Nf, vox * 0.85));
   float ndv0 = clamp(dot(N0, V), 0.0, 1.0);
@@ -133,17 +189,22 @@ void main() {
   vec4 d;
   if (isHead) {
     vec3 nh = abs(normalize(vN) * uHeadRot);
-    vec3 w = nh * nh; w *= w; w /= (w.x + w.y + w.z);
-    vec3 q = vTex * 5.2;
-    d = texture2D(uDetail, q.yz) * w.x + texture2D(uDetail, q.xz) * w.y + texture2D(uDetail, q.xy) * w.z;
+    vec3 w = nh * nh; w *= w;
+    vec3 q = vTex * 6.5;
+    // two strongest projections only
+    vec2 qa, qb; float wa, wb;
+    if (w.x < w.y && w.x < w.z) { qa = q.xz; wa = w.y; qb = q.xy; wb = w.z; }
+    else if (w.y < w.z) { qa = q.yz; wa = w.x; qb = q.xy; wb = w.z; }
+    else { qa = q.yz; wa = w.x; qb = q.xz; wb = w.y; }
+    d = (texture2D(uDetail, qa) * wa + texture2D(uDetail, qb) * wb) / (wa + wb);
   } else {
     d = texture2D(uDetail, vTex.xy);
   }
   bool isLid = part > 2.5 && part < 3.5;
   if (isLid) d.g = 0.0;
   float hgt = d.r * 0.55 + d.a * 0.45;
-  float bumpS = (isHead ? 0.0012 : 0.0017) * (1.0 - vox) * smoothstep(0.08, 0.45, ndv0);
-  vec3 N = perturb(N0, vW, hgt, bumpS);
+  float bumpS = (isHead ? 0.0009 : 0.0017) * (1.0 - vox) * smoothstep(0.08, 0.45, ndv0) * (part > 6.5 || (part > 1.5 && part < 2.5) ? 0.0 : 1.0) * mix(0.3, 1.0, ao);
+  vec3 N = bumpS > 0.0 ? perturb(N0, dpx, dpy, hgt, bumpS) : N0;
 
   float ndv = clamp(mix(ndv0, dot(N, V), 0.45), 0.0, 1.0);
   float fres = pow(1.0 - ndv, 3.0);
@@ -156,17 +217,18 @@ void main() {
   float glow = uGlow;
   float dc = length(vObj - uCore);
   float dt = segDist(vObj, uCore, uThroat);
-  float inner = exp(-dc * dc / 0.01) * (0.28 + 0.2 * uPulse + 1.0 * glow) + exp(-dt * dt / 0.0008) * (0.06 + 0.8 * glow);
+  float inner = exp(-dc * dc / 0.01) * (0.24 + 0.2 * uPulse + 1.0 * glow) + exp(-dt * dt / 0.0022) * (0.15 * glow);
 
-  vec3 deep = vec3(0.03, 0.2, 0.33);
-  vec3 cyan = vec3(0.28, 0.82, 1.0);
-  vec3 white = vec3(0.72, 0.95, 1.0);
+  vec3 deep = vec3(0.02, 0.165, 0.29);
+  vec3 cyan = vec3(0.24, 0.8, 1.0);
+  vec3 white = vec3(0.6, 0.92, 1.0);
+  vec3 rimC = vec3(0.36, 0.84, 1.0);
   float cells = 0.66 + 0.46 * d.r + 0.14 * d.a;
   vec3 col = deep * (0.28 + 0.85 * lamb) * cells * mix(1.0, ao, 0.9);
-  col += white * fres * (1.05 + 0.35 * glow) * mix(0.5, 1.0, ao);
+  col += rimC * fres * (0.95 + 0.35 * glow) * mix(0.5, 1.0, ao);
   col += white * spec * 0.2 * ao;
-  float veinA = d.g * (0.04 + 0.22 * uPulse + 0.8 * glow) * (1.0 - fres * 0.6);
-  col += cyan * veinA * (isHead ? 0.45 : 0.9);
+  float veinA = pow(d.g, 1.6) * (0.03 + 0.12 * uPulse + 0.75 * glow) * (1.0 - fres * 0.6);
+  col += cyan * veinA * (isHead ? 0.12 : 0.5);
   col += cyan * d.b * (isHead ? 0.03 : 0.08) * (0.6 + 0.4 * sin(uTime * 1.3 + vObj.y * 6.0));
   col += cyan * inner;
 
@@ -179,24 +241,32 @@ void main() {
   col += vec3(0.45, 0.95, 1.0) * spot * (0.35 + 0.25 * uPulse + 0.9 * glow) * sparkle;
 
   // flowing data glyphs (Arecibo-like pixel symbols), fading out when too small to read
-  vec2 gp = isHead ? vObj.xz - uHeadC.xz : vObj.xz - uAxis;
-  float ang = atan(gp.x, gp.y);
-  vec2 gq = vec2(ang * 3.8197, vObj.y / 0.011 + uTime * 1.1);
-  float gfw = fwidth(gq.y);
-  float gly = texture2D(uGlyph, gq / 32.0).r * (1.0 - smoothstep(0.25, 0.6, gfw));
-  float band = smoothstep(0.2, 0.8, sin(gq.x * 0.9 + uTime * 0.15) * sin(vObj.y * 3.0 - uTime * 0.37));
-  col += cyan * gly * band * (isHead ? 0.05 : 0.14) * (1.0 - fres);
+  if (!isHead) {
+    // glyph columns wrap round the body at a fixed physical size (11 mm cells)
+    vec2 gp = vObj.xz - uAxis;
+    float ang = atan(gp.x, gp.y);
+    float rad = max(length(gp), 0.02);
+    vec2 gq = vec2(ang * rad / 0.011, vObj.y / 0.011 + uTime * 1.1);
+    vec2 gfw2 = fwidth(gq);
+    float gfw = max(gfw2.x, gfw2.y);
+    float band = smoothstep(0.2, 0.8, sin(ang * 5.0 + uTime * 0.15) * sin(vObj.y * 3.0 - uTime * 0.37));
+    float gfade = (1.0 - smoothstep(0.25, 0.6, gfw)) * band * (1.0 - fres);
+    if (gfade > 0.001) {
+      float gly = texture2D(uGlyph, gq / 32.0).r;
+      col += cyan * gly * gfade * 0.14;
+    }
+  }
 
   float alpha = 0.52 + 0.4 * fres + 0.08 * lamb;
   // parts
   if (part > 1.5 && part < 2.5) {           // mouth interior
     float depth = vInfo.w;
-    col = vec3(0.004, 0.02, 0.03) + vec3(0.25, 0.85, 1.0) * depth * depth * (0.06 + 1.6 * glow);
-    alpha = 0.92;
+    col = vec3(0.002, 0.008, 0.013) + vec3(0.25, 0.85, 1.0) * pow(depth, 5.0) * (0.02 + 0.45 * glow);
+    alpha = 0.95;
   }
   if (part > 6.5) {                          // lips: a touch denser and cooler, fine vertical lines
-    col *= vec3(0.9, 1.0, 1.07) * (0.92 + 0.12 * d.r);
-    alpha = min(1.0, alpha + 0.1);
+    col = deep * (0.3 + 0.9 * lamb) * mix(1.0, ao, 0.9) * vec3(0.95, 1.0, 1.08) + white * fres * 0.9 + white * spec * 0.35;
+    alpha = min(1.0, alpha + 0.12);
   }
   if (part > 0.5 && part < 1.5) {            // crest: bright edge along the blade
     col += white * pow(vInfo.w, 3.0) * 0.45;
@@ -204,6 +274,7 @@ void main() {
   if (part > 3.5 && part < 4.5) {            // hands: glowing finger pads (vInfo.w)
     col += vec3(0.4, 0.95, 1.0) * vInfo.w * (0.4 + 0.3 * uPulse + 0.8 * glow);
   }
+  col += white * rim * 0.22;
   // creases: lip line and lash line read dark
   col *= 1.0 - 0.8 * crease;
   alpha = min(1.0, alpha + 0.35 * crease);
@@ -214,7 +285,7 @@ void main() {
   float scan = mix(0.5 + 0.5 * cos(sy * 6.2831853), 0.5, smoothstep(0.3, 0.7, fw));
   col *= 0.82 + 0.26 * scan;
   float bnd = fract(vW.y * 0.42 - uTime * 0.21);
-  col += white * 0.16 * exp(-pow((bnd - 0.5) * 30.0, 2.0));
+  col += cyan * 0.1 * exp(-pow((bnd - 0.5) * 30.0, 2.0));
   // interference
   float intf = 0.5 + 0.5 * cos(vW.y * 43.0 - uTime * 8.3) * cos(vW.y * 6.1 + uTime * 2.1);
   col *= (1.0 - uFlicker * 0.45 * intf * intf) * uFlick;
@@ -309,18 +380,19 @@ void main() {
   float iris = 1.0 - smoothstep(0.93, 1.02, r);
   float pupil = 1.0 - smoothstep(pr - 0.03, pr + 0.02, r);
   float limbal = exp(-pow((r - 0.96) / 0.07, 2.0));
-  vec3 base = vec3(0.003, 0.009, 0.016);
-  float lum = 0.5 + 0.25 * uPulse + 0.9 * uGlow;
-  vec3 irisCol = mix(vec3(0.012, 0.07, 0.1), vec3(0.05, 0.3, 0.42), fib * (0.5 + 0.5 * r)) * (1.0 - 0.45 * crypt);
+  vec3 base = vec3(0.003, 0.008, 0.014);
+  float lum = 0.55 + 0.25 * uPulse + 0.9 * uGlow;
+  // a large, dark iris: faint luminous fibres, a glowing collarette, soft limbus
+  vec3 irisCol = mix(vec3(0.004, 0.02, 0.032), vec3(0.02, 0.1, 0.15), fib * (0.35 + 0.65 * r)) * (1.0 - 0.5 * crypt);
   irisCol *= lum;
-  irisCol += vec3(0.25, 0.85, 1.0) * coll * 0.35 * lum;
+  irisCol += vec3(0.2, 0.75, 0.95) * coll * 0.22 * lum;
   irisCol *= iris * (1.0 - pupil);
-  irisCol *= 1.0 - 0.85 * limbal;
-  vec3 halo = vec3(0.1, 0.5, 0.7) * exp(-pow((r - 1.08) / 0.06, 2.0)) * 0.25 * lum;
+  irisCol *= 1.0 - 0.7 * limbal;
+  vec3 halo = vec3(0.06, 0.35, 0.5) * exp(-pow((r - 1.02) / 0.05, 2.0)) * 0.3 * lum;
   // deep glow behind the pupil
   vec3 Dd = P + T * 0.95 * uEyeS.z;
   float angD = acos(clamp(dot(normalize(Dd), G), -1.0, 1.0));
-  vec3 deep = vec3(0.15, 0.62, 0.9) * exp(-angD * angD / 0.018) * (0.18 + 0.12 * uPulse + 0.55 * uGlow);
+  vec3 deep = vec3(0.15, 0.62, 0.9) * exp(-angD * angD / (uPupil * uPupil * 0.5)) * (0.14 + 0.1 * uPulse + 0.5 * uGlow);
   // wet lens reflections: two catchlights and a soft sky
   vec3 R = reflect(-V, N);
   float key = pow(clamp(dot(R, normalize(vec3(-0.35, 0.55, 0.76))), 0.0, 1.0), 420.0);

@@ -28,7 +28,7 @@ export function buildExterior(env) {
   const dirAzEl = (az, el) => new V3(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el));
   const RIDGE_AZ = deg(45);
   const RIDGE = dirAzEl(RIDGE_AZ, 0);
-  const HUT_DIST = 62;
+  const HUT_DIST = 75;
   const HUT_POS = RIDGE.clone().multiplyScalar(-HUT_DIST);
   // window normal: the dish appears ~16 deg to the right (toward interior +z) of straight out
   const WIN_OFF = deg(16);
@@ -206,10 +206,10 @@ export function buildExterior(env) {
     h += (U.fbm3(x * 0.3, 7.5, z * 0.3, 2) - 0.5) * 0.25 * smooth(12, 20, r);
     // the hut's pad and the track between hut and dish are levelled
     const hr = Math.hypot(x - HUT_POS.x, z - HUT_POS.z);
-    const padH = -1.6;
+    // the hut sits on a shoulder of the ridge a few metres above the dish
+    const padH = 2.0;
+    h += 2.0 * smooth(18, HUT_DIST - 6, -u) * (1 - smooth(6, 14, hr));
     h = lerp(h, padH, 1 - smooth(6, 14, hr));
-    // slope down from the dish toward the hut
-    h -= 1.6 * smooth(10, HUT_DIST, -u) * (1 - smooth(6, 14, hr));
     return h;
   }
   const HUT_Y = groundH(HUT_POS.x, HUT_POS.z) + 0.3;          // hut floor, on a low plinth
@@ -282,9 +282,7 @@ export function buildExterior(env) {
       attribute float aN; varying float vY; varying float vN;
       void main() {
         vY = position.y; vN = aN;
-        vec3 d = position;
-        gl_Position = projectionMatrix * viewMatrix * vec4(cameraPosition + d, 1.0);
-        gl_Position.z = gl_Position.w * ${FAR_MTN};
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }`,
     fragmentShader: /* glsl */`
       uniform vec3 uCol, uMist; uniform float uY0, uY1;
@@ -301,9 +299,10 @@ export function buildExterior(env) {
     { r: 5400, base: 60, amp: 1100, seed: 4, col: [0.012, 0.016, 0.025], mist: [0, 800] },
     { r: 9000, base: 200, amp: 1700, seed: 5, col: [0.014, 0.020, 0.031], mist: [100, 1500] },
   ];
-  // everything is scaled to a 1 km shell around the camera (only angles matter)
+  // real geometry, compressed to 1.25 - 3.5 km (angles seen from the ridge are kept)
+  const RADII = [1250, 1700, 2250, 2850, 3500];
   LAYERS.forEach((L, li) => {
-    const S = 1000 / L.r;
+    const R = RADII[li], S = R / L.r;
     const N = 900, pos = [], an = [], idx = [];
     for (let i = 0; i <= N; i++) {
       const a = i / N * PI * 2;
@@ -318,7 +317,7 @@ export function buildExterior(env) {
       hh /= norm;
       const top = (L.base + L.amp * Math.pow(hh, 1.5)) * S;
       const nn = U.vnoise3(cx * 9 + L.seed, cz * 9, 2.0) - 0.5;
-      pos.push(cx * 1000, top, cz * 1000, cx * 1000, -900 * S, cz * 1000);
+      pos.push(cx * R, top, cz * R, cx * R, -900 * S, cz * R);
       an.push(nn, nn);
     }
     for (let i = 0; i < N; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 2, a + 1, a + 3); }
@@ -328,8 +327,7 @@ export function buildExterior(env) {
     g.setIndex(idx);
     const mesh = new THREE.Mesh(g, mountainMat(new V3(...L.col), L.mist[0] * S, L.mist[1] * S, li));
     mesh.frustumCulled = false;
-    mesh.renderOrder = -9 + (LAYERS.length - 1 - li);    // far first; nearer layers overwrite (same pinned depth)
-    mesh.material.depthFunc = THREE.LessEqualDepth;
+    mesh.renderOrder = -5 + li;       // near first so far ones fail the depth test
     root.add(mesh);
   });
 
@@ -437,7 +435,7 @@ export function buildExterior(env) {
     for (let ri = 0; ri <= 6; ri++) { x.beginPath(); x.moveTo(0, ri * 512 / 6); x.lineTo(2048, ri * 512 / 6); x.stroke(); }
     const tex = new THREE.CanvasTexture(c);
     tex.colorSpace = THREE.SRGBColorSpace;
-    tex.anisotropy = 4;
+    tex.anisotropy = 2;
     dishG.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0xd5d8de, map: tex, roughness: 0.5, metalness: 0.3, side: THREE.DoubleSide })));
     dishG.add(new THREE.Mesh(new THREE.TorusGeometry(RD, 0.16, 8, 160).rotateX(PI / 2).translate(0, RD * RD / (4 * F), 0), paintMat));
   }
@@ -650,16 +648,17 @@ export function buildExterior(env) {
     root.add(sp);
     beacons.push(sp);
   }
-  // cable tray from the hut to the pedestal
+  // cable tray from the back of the hut (behind the rack) to the pedestal, clear of the window view
   {
     const parts = [];
-    const a = HUT_POS.clone().addScaledVector(RIDGE, 3.4), b = RIDGE.clone().multiplyScalar(-3.6);
-    for (let i = 0; i <= 14; i++) {
-      const p = a.clone().lerp(b, i / 14);
-      parts.push(box(0.12, 0.7, 0.12, p.x, groundH(p.x, p.z) + 0.35, p.z));
-    }
-    for (let i = 0; i < 14; i++) {
-      const p = a.clone().lerp(b, i / 14), q = a.clone().lerp(b, (i + 1) / 14);
+    const hutPt = (x, z) => new V3(x, 0, z).applyAxisAngle(new V3(0, 1, 0), HUT_YAW).add(HUT_POS);
+    const pts = [hutPt(1.2, -2.5), hutPt(5.5, -6.0), RIDGE.clone().multiplyScalar(-3.6).addScaledVector(new V3(RIDGE.z, 0, -RIDGE.x), -3.5)];
+    const segs = [];
+    for (let k = 0; k < pts.length - 1; k++) { const n = Math.max(2, Math.round(pts[k].distanceTo(pts[k + 1]) / 5)); for (let i = 0; i < n; i++) segs.push(pts[k].clone().lerp(pts[k + 1], i / n)); }
+    segs.push(pts[pts.length - 1]);
+    for (const p of segs) parts.push(box(0.12, 0.7, 0.12, p.x, groundH(p.x, p.z) + 0.35, p.z));
+    for (let i = 0; i < segs.length - 1; i++) {
+      const p = segs[i], q = segs[i + 1];
       parts.push(strut(new V3(p.x, groundH(p.x, p.z) + 0.72, p.z), new V3(q.x, groundH(q.x, q.z) + 0.72, q.z), 0.12, 4));
     }
     root.add(new THREE.Mesh(merge(parts), darkMat));
@@ -693,13 +692,28 @@ export function buildExterior(env) {
     hut: [HUT_POS.x, HUT_Y, HUT_POS.z],
     hutDoor: toWorld(1.5, 1.0, 2.2).toArray(),
     beacon: [MAST.x, MAST.y + MAST_H + 0.15, MAST.z],
-    // a good look-at between the dish and the hut, and a push start that keeps
-    // the dish silhouette against the Milky Way on the way in to the window
-    lookAt: winCenter.clone().lerp(DISH_BASE.clone().add(new V3(0, 12, 0)), 0.35).toArray(),
-    pushFrom: DISH_BASE.clone().addScaledVector(RIDGE, 22).addScaledVector(new V3(RIDGE.z, 0, -RIDGE.x), 22).add(new V3(0, 3.2, 0)).toArray(),
+    // ext_push: start beyond the dish (its back and the Milky Way ahead), looking up at it,
+    // then push toward the lit window (see anchors.shots for a full suggested move)
+    lookAt: DISH_BASE.clone().add(new V3(0, 17, 0)).toArray(),
+    pushFrom: DISH_BASE.clone().addScaledVector(RIDGE, 36).addScaledVector(new V3(RIDGE.z, 0, -RIDGE.x), 11).add(new V3(0, 2.6, 0)).toArray(),
     moonDir: MOON_DIR.toArray(),
     dishRest: { az: 0, el: EL_REST },                        // state.dish is relative: az 0 = rest heading
   };
+  {
+    const side = new V3(RIDGE.z, 0, -RIDGE.x);
+    const wn = winNormal.clone();
+    anchors.shots = {
+      ext_push: {   // position lerps from -> to (ease in-out), target lerps lookFrom -> lookTo
+        from: anchors.pushFrom, to: winCenter.clone().addScaledVector(wn, 8.5).add(new V3(0, 0.35, 0)).addScaledVector(side, 1.2).toArray(),
+        lookFrom: anchors.lookAt, lookTo: winCenter.clone().add(new V3(0, 0.1, 0)).toArray(), fov: 40,
+      },
+      ext_dish: {   // crane up in front of the dish while it turns to the sky; the hut glows behind it
+        from: DISH_BASE.clone().addScaledVector(RIDGE, 34).addScaledVector(side, -14).add(new V3(0, 3, 0)).toArray(),
+        to: DISH_BASE.clone().addScaledVector(RIDGE, 30).addScaledVector(side, -12).add(new V3(0, 13, 0)).toArray(),
+        lookFrom: DISH_BASE.clone().add(new V3(0, 12, 0)).toArray(), lookTo: DISH_BASE.clone().add(new V3(0, 21, 0)).toArray(), fov: 42,
+      },
+    };
+  }
 
   // =========================================================================
   // update

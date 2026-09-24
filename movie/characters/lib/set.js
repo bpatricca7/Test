@@ -25,7 +25,7 @@ export async function createSet(env) {
   const PI = Math.PI;
 
   const T = makeTextures(env);
-  const screens = makeScreens(env);
+  const screens = makeScreens(env, T);
   const ext = buildExterior(env);
   const int = buildInterior(env, T, screens);
   const { W, D, WIN, SCR } = int.dims;
@@ -126,36 +126,18 @@ export async function createSet(env) {
   };
 
   // -------------------------------------------------------------------------
-  // moonlight through the window: a spot far outside with a cookie of the panes
+  // moonlight through the window: the floor shader computes the pane pattern
+  // analytically (no light, no shadow map); the aux light takes over as the
+  // moon for the characters at the end
   // -------------------------------------------------------------------------
   const moonLocal = ext.moonLocal;              // hut frame == room frame
-  const moon = new THREE.SpotLight(0x9fb4ff, 0.9, 0, 0.09, 0.0, 0);
-  moon.position.copy(winC).addScaledVector(moonLocal, 14);
-  moon.target.position.copy(winC);
-  moon.shadow.mapSize.set(512, 512);
-  int.root.add(moon, moon.target);
   {
-    int.root.updateMatrixWorld(true);
-    moon.updateMatrixWorld(true); moon.target.updateMatrixWorld(true);
-    moon.shadow.updateMatrices(moon);
-    const S = 512, c = document.createElement('canvas');
-    c.width = c.height = S;
-    const g = c.getContext('2d');
-    g.fillStyle = '#000'; g.fillRect(0, 0, S, S);
-    const proj = (y, z) => { const v = new THREE.Vector4(winC.x, y, z, 1).applyMatrix4(moon.shadow.matrix); return [v.x / v.w * S, (1 - v.y / v.w) * S]; };
-    const pane = (za, zb, ya, yb) => {
-      g.beginPath();
-      [[za, ya], [zb, ya], [zb, yb], [za, yb]].forEach(([z, y], i) => { const [px, py] = proj(y, z); if (i) g.lineTo(px, py); else g.moveTo(px, py); });
-      g.fill();
-    };
-    const zm = (WIN.z0 + WIN.z1) / 2, ym = (WIN.y0 + WIN.y1) / 2, f = 0.05, m = 0.0175;
-    g.fillStyle = '#fff';
-    g.filter = 'blur(2px)';
-    pane(WIN.z0 + f, zm - m, WIN.y0 + f, ym - m); pane(zm + m, WIN.z1 - f, WIN.y0 + f, ym - m);
-    pane(WIN.z0 + f, zm - m, ym + m, WIN.y1 - f); pane(zm + m, WIN.z1 - f, ym + m, WIN.y1 - f);
-    g.filter = 'none';
-    const tex = new THREE.CanvasTexture(c);
-    moon.map = tex;
+    const mu = int.moonU;
+    mu.uMoonDir.value.copy(moonLocal);
+    mu.uWin.value.set(WIN.z0 + 0.05, WIN.z1 - 0.05, WIN.y0 + 0.05, WIN.y1 - 0.05);
+    mu.uWinX.value = W + 0.1;
+    mu.uWinM.value.set((WIN.z0 + WIN.z1) / 2, (WIN.y0 + WIN.y1) / 2);
+    mu.uMoonCol.value.setRGB(0.30, 0.38, 0.62);
   }
 
   // -------------------------------------------------------------------------
@@ -187,7 +169,10 @@ export async function createSet(env) {
   // -------------------------------------------------------------------------
   // per frame
   // -------------------------------------------------------------------------
-  const { lamp, monitor, alarm, holo, hemi } = int.lights;
+  const { lamp, monitor, alarm, aux, hemi } = int.lights;
+  const AUX_READ = new V3(-2.28, 1.42, 1.78), AUX_HOLO = new V3(1.2, 1.35, -0.45);
+  const AUX_MOON = winC.clone().addScaledVector(ext.moonLocal, 1.6).add(new V3(0, -0.2, 0));
+  const cRead = new THREE.Color(1.0, 0.66, 0.36), cHolo = new THREE.Color(0.37, 0.9, 1.0), cMoon = new THREE.Color(0.55, 0.66, 1.0);
   const P = int.parts;
   const lampWarm = new THREE.Color(1.0, 0.70, 0.40), lampDim = new THREE.Color(1.0, 0.45, 0.16);
   const tmpC = new THREE.Color(), tmpC2 = new THREE.Color();
@@ -222,9 +207,14 @@ export async function createSet(env) {
     const lampF = lights * flick;
     tmpC.copy(lampWarm).lerp(lampDim, clamp(1 - lampF));
     lamp.color.copy(tmpC);
-    lamp.intensity = 5.5 * lampF;
-    int.E.bulb.color.copy(tmpC).multiplyScalar(8 * lampF + 0.02);
-    int.E.lampInner.color.copy(tmpC).multiplyScalar(2.2 * lampF);
+    lamp.intensity = 1.7 * lampF;
+    int.E.bulb.color.copy(tmpC).multiplyScalar(4 * lampF + 0.02);
+    int.E.lampInner.color.copy(tmpC).multiplyScalar(0.55 * lampF);
+    // Maya's reading lamp (low), on the same circuit; its bulb blows in the surge
+    const readF = t < B.surge.start + 0.9 ? lampF : 0;
+    int.E.shade.color.copy(tmpC).multiplyScalar(0.42 * readF + 0.03);
+    int.E.shadeIn.color.copy(tmpC).multiplyScalar(0.9 * readF);
+    int.E.bulb2.color.copy(tmpC).multiplyScalar(3 * readF + 0.02);
     int.E.dial.color.setScalar(1.3 * (0.25 + 0.75 * lampF) * (t >= B.surge.start + 0.3 && t < B.lights_return ? 0.15 : 1));
     int.E.meter.color.setRGB(1.0, 0.72, 0.38).multiplyScalar(1.1 * (0.3 + 0.7 * lampF));
 
@@ -237,18 +227,23 @@ export async function createSet(env) {
     const dir = new V3(Math.sin(spin), -0.28, Math.cos(spin));
     alarm.target.position.copy(alarm.position).add(dir);
     alarm.target.updateMatrixWorld();
-    alarm.intensity = 14 * alarmA;
+    alarm.intensity = 9 * alarmA;
     P.beaconSpin.rotation.y = spin;
     const facing = Math.pow(Math.max(0, Math.cos(spin - roomCentreAz)), 2);
-    int.E.beaconDome.emissiveIntensity = alarmA * (0.8 + 5 * facing);
-    P.beaconSpin.children[1].material.color.setRGB(1, 0.35, 0.25).multiplyScalar(alarmA * (2 + 12 * facing) + 0.05);
+    int.E.beaconDome.emissiveIntensity = alarmA * (0.25 + 1.3 * facing);
+    P.beaconSpin.children[1].material.color.setRGB(1, 0.3, 0.2).multiplyScalar(alarmA * (1.5 + 5 * facing) + 0.05);
+    P.beaconFlare.material.opacity = alarmA * Math.pow(facing, 3) * 0.9;
+    P.beaconFlare.scale.setScalar(0.25 + 0.25 * facing);
 
-    // hologram fill
-    holo.intensity = 3.2 * holoA;
+    // the aux light: reading lamp -> hologram fill -> moonlight
+    const moonA = smooth(B.dematerialize.end - 0.6, B.dematerialize.end + 1.2, t);
+    if (t < B.surge.start + 0.9) { aux.position.copy(AUX_READ); aux.color.copy(cRead); aux.intensity = 0.5 * readF; }
+    else if (holoA > 0.001 && t < B.dematerialize.end) { aux.position.copy(AUX_HOLO); aux.color.copy(cHolo); aux.intensity = 3.2 * holoA; }
+    else { aux.position.copy(AUX_MOON); aux.color.copy(cMoon); aux.intensity = 0.9 * moonA; }
 
     // bounce / ambient
-    const sky = tmpC.setRGB(0.050, 0.060, 0.090).multiplyScalar(0.5 + 0.5 * lights);
-    sky.r += 0.07 * lampF; sky.g += 0.045 * lampF; sky.b += 0.022 * lampF;
+    const sky = tmpC.setRGB(0.11, 0.125, 0.18).multiplyScalar(0.5 + 0.5 * lights);
+    sky.r += 0.16 * lampF; sky.g += 0.105 * lampF; sky.b += 0.055 * lampF;
     sky.r += 0.02 * screens.level; sky.g += 0.05 * screens.level; sky.b += 0.045 * screens.level;
     sky.r += 0.10 * alarmA * (0.3 + facing); sky.g += 0.008 * alarmA; sky.b += 0.005 * alarmA;
     sky.r += 0.03 * holoA; sky.g += 0.11 * holoA; sky.b += 0.13 * holoA;
@@ -282,10 +277,56 @@ export async function createSet(env) {
       P.ledMesh.setColorAt(i, col);
     });
     P.ledMesh.instanceColor.needsUpdate = true;
+    // steam off the coffee (it cools: thinner by the end), lit by the lamp
+    P.steam.userData.u.uTime.value = t;
+    P.steam.userData.u.uAmt.value = (0.35 + 0.65 * lampF) * (1 - 0.5 * smooth(20, 110, t));
+    // tape reels turn while the recorder has power
+    {
+      const d0 = B.surge.start + 0.6, d1 = B.lights_return;
+      const eff = t < d0 ? t : t < d1 ? d0 : t - (d1 - d0);
+      P.reels[0].rotation.z = -eff * 0.9;
+      P.reels[1].rotation.z = -eff * 1.35;
+    }
     // receiver S-meter
     const sig = t > B.alarm && t < TL.pulses.times[TL.pulses.times.length - 1] + 0.3 ? 0.7 + 0.2 * U.vnoise3(t * 6, 1, 0) : 0.12 + 0.1 * U.vnoise3(t * 3, 2, 0);
     P.meterNeedle.rotation.z = lerp(0.8, -0.8, sig * lampF);
   }
+
+  // -------------------------------------------------------------------------
+  // insert shots: when the main screen fills the frame, skip drawing the rest of
+  // the room behind it (SwiftShader shades hidden fragments, so this matters)
+  // -------------------------------------------------------------------------
+  const culler = new THREE.Mesh(new THREE.PlaneGeometry(0.001, 0.001), new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false, depthTest: false }));
+  culler.frustumCulled = false;
+  culler.renderOrder = -1e9;
+  int.root.add(culler);
+  const scrCorners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => new V3(SCR.c.x + a * SCR.w / 2, SCR.c.y + b * SCR.h / 2, SCR.c.z));
+  const cullList = [];
+  int.root.traverse(o => { if ((o.isMesh || o.isPoints) && o !== P.mainScreen && o !== culler && o.geometry) cullList.push(o); });
+  let culled = false;
+  const cv = new V3();
+  culler.onBeforeRender = (rdr, scene, camera) => {
+    if (culled) { for (const o of cullList) o.geometry.setDrawRange(0, Infinity); culled = false; }
+    let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+    for (const c of scrCorners) {
+      cv.copy(c).applyMatrix4(int.root.matrixWorld).applyMatrix4(camera.matrixWorldInverse);
+      if (cv.z > -0.01) return;
+      cv.applyMatrix4(camera.projectionMatrix);
+      x0 = Math.min(x0, cv.x); x1 = Math.max(x1, cv.x); y0 = Math.min(y0, cv.y); y1 = Math.max(y1, cv.y);
+    }
+    // the curved screen's corners are inset a little: require a margin
+    if (x0 < -1.04 && x1 > 1.04 && y0 < -1.04 && y1 > 1.04) {
+      for (const o of cullList) o.geometry.setDrawRange(0, 0);
+      culled = true;
+    }
+  };
+  // restore at the very end of the frame (a transparent no-op drawn last), so shadow
+  // passes and other renders always see the full room
+  const uncull = new THREE.Mesh(new THREE.PlaneGeometry(0.001, 0.001), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, depthTest: false }));
+  uncull.frustumCulled = false;
+  uncull.renderOrder = 1e9;
+  uncull.onBeforeRender = () => { if (culled) { for (const o of cullList) o.geometry.setDrawRange(0, Infinity); culled = false; } };
+  int.root.add(uncull);
 
   // lazily draw the canvases only when their screens are actually rendered
   P.mainScreen.onBeforeRender = () => screens.drawMainIfNeeded();

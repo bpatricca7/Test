@@ -481,9 +481,13 @@ export async function create(env) {
       P.copy(mid).addScaledVector(dir, 1.55).add(new THREE.Vector3(0, -0.05, 0)); T.copy(mid).add(new THREE.Vector3(0, -0.06, 0)); return 36;
     },
     hands_two: (t, u) => {
-      const v = eyeOf(visitor), m = eyeOf(maya), mid = v.clone().lerp(m, 0.5);
-      const axis = v.clone().sub(m).setY(0).normalize(); const side = new THREE.Vector3(axis.z, 0, -axis.x); if (side.z < 0) side.negate();   // the open side of the room
-      P.copy(mid).addScaledVector(side, lerp(2.05, 1.9, u)).add(new THREE.Vector3(0, -0.25, 0)); T.copy(mid).add(new THREE.Vector3(0, -0.2, 0)); return 42;
+      // over Maya's shoulder: her raised hand on one side of frame, the Visitor's on the other,
+      // the two figures of the picture made real
+      const v = eyeOf(visitor), m = eyeOf(maya);
+      const f = v.clone().sub(m).setY(0).normalize();
+      const right = new THREE.Vector3(-f.z, 0, f.x); if (right.z < 0) right.negate();
+      P.copy(m).addScaledVector(f, -lerp(1.15, 1.0, u)).addScaledVector(right, 0.42).add(new THREE.Vector3(0, 0.12, 0)).add(hand(t, 0.005, 39));
+      T.copy(m).lerp(v, 0.62).add(new THREE.Vector3(0, 0.12, 0)); return 44;
     },
     visitor_ms: (t, u) => { const v = eyeOf(visitor); const f = facing(MK.visitor.yaw);
       P.copy(v).addScaledVector(f, lerp(2.3, 2.0, u)).add(new THREE.Vector3(0, -0.45, 0)).add(hand(t, 0.008, 31)); T.copy(v).add(new THREE.Vector3(0, -0.45, 0)); return 38; },
@@ -526,7 +530,7 @@ export async function create(env) {
     set.update(t, {
       alarm: t >= B.alarm && t < B.lights_return ? 1 : 0,
       surge, lights,
-      hologram: (vP2.materialize || 0) * (1 - (vP2.dissolve || 0)) * (0.8 + 0.4 * (vP2.glow || 0)),
+      hologram: 0.5 * (vP2.materialize || 0) * (1 - (vP2.dissolve || 0)) * (0.8 + 0.4 * (vP2.glow || 0)),
       samChair: sP2.chair,
       dish: { az: keys(t, [[B.dish_turns.start, 0], [B.dish_turns.end, 0.35]]), el: keys(t, [[B.dish_turns.start, 0.55], [B.dish_turns.end, 1.2]]) },
     });

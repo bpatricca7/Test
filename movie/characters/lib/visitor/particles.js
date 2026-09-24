@@ -38,7 +38,7 @@ export function createParticles(THREE, U, buf, opts) {
       const ux = P[b * 3] - P[a * 3], uy = P[b * 3 + 1] - P[a * 3 + 1], uz = P[b * 3 + 2] - P[a * 3 + 2];
       const vx = P[c * 3] - P[a * 3], vy = P[c * 3 + 1] - P[a * 3 + 1], vz = P[c * 3 + 2] - P[a * 3 + 2];
       w = 0.5 * Math.hypot(uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx);
-      if (part >= 6) w *= 2.2;          // denser on the face
+      if (part >= 6) w *= 1.15;         // a little denser on the face
       if (part === 4) w *= 1.6;         // and the hands
     }
     acc += w; cdf[t] = acc;
@@ -131,8 +131,8 @@ export function createParticles(THREE, U, buf, opts) {
           pos[o3] = f.axis[0] + Math.cos(ang) * rad;
           pos[o3 + 1] = 0.05 + ph * 2.3;
           pos[o3 + 2] = f.axis[1] + Math.sin(ang) * rad;
-          bright = presence * (1 - d) * 0.5 * Math.sin(Math.PI * ph) * (0.5 + 0.5 * Math.sin(t * 3 + i));
-          size = 0.004;
+          bright = presence * (1 - d) * 0.22 * Math.sin(Math.PI * ph) * (0.5 + 0.5 * Math.sin(t * 3 + i));
+          size = 0.003;
         }
         data[o2] = size; data[o2 + 1] = bright;
         if (bright > 0) any = true;
@@ -157,27 +157,27 @@ export function createParticles(THREE, U, buf, opts) {
           const S = f.screen;
           // off the screen: a pixel of the image lifting off
           for (let k = 0; k < 3; k++) B0[k] = S.c[k] + S.right[k] * SU[i] * S.w + S.up[k] * SV[i] * S.h;
-          for (let k = 0; k < 3; k++) B1[k] = B0[k] + S.n[k] * (0.35 + 0.3 * R4[i]) + (k === 1 ? 0.12 * (R1[i] - 0.3) : 0);
+          for (let k = 0; k < 3; k++) B1[k] = B0[k] + S.n[k] * (0.25 + 0.55 * R4[i]) + S.up[k] * 0.35 * (R1[i] - 0.3) + S.right[k] * 0.35 * (R2[i] - 0.5);
           // round the column where it will stand
           const ta = Math.atan2(tgt[2] - f.axis[1], tgt[0] - f.axis[0]) + (1.2 + 1.5 * R2[i]);
-          const rr = 0.4 + 0.3 * R3[i];
+          const rr = 0.3 + 0.5 * R3[i];
           B2[0] = f.axis[0] + Math.cos(ta) * rr; B2[1] = tgt[1] + 0.35 * (R4[i] - 0.3); B2[2] = f.axis[1] + Math.sin(ta) * rr;
           B3[0] = tgt[0]; B3[1] = tgt[1]; B3[2] = tgt[2];
           const se = s < 0.5 ? 2 * s * s : 1 - 2 * (1 - s) * (1 - s);
           let x = bez(B0, B1, B2, B3, se, 0), y = bez(B0, B1, B2, B3, se, 1), z = bez(B0, B1, B2, B3, se, 2);
           // swirl about the body axis, unwinding onto the target
-          const sw = (1 - se) * (1 - se) * (1.6 + 1.2 * R1[i]) * se * 2.2;
+          const sw = Math.pow(1 - se, 1.6) * se * (5.5 + 5.0 * R1[i]);
           const dx = x - f.axis[0], dz = z - f.axis[1];
           const cs = Math.cos(sw), sn = Math.sin(sw);
           x = f.axis[0] + dx * cs - dz * sn; z = f.axis[1] + dx * sn + dz * cs;
           pos[o3] = x; pos[o3 + 1] = y; pos[o3 + 2] = z;
-          bright = (1.1 + 0.9 * R3[i]) * sstep(0, 0.06, s) * (isFree ? 1 - sstep(0.6, 0.95, s) : 1);
+          bright = (0.2 + 0.2 * R3[i]) * sstep(0, 0.06, s) * (isFree ? 1 - sstep(0.6, 0.95, s) : 1) * (1 + 1.5 * Math.exp(-s / 0.05));
           size = 0.007 + 0.006 * R4[i];
         } else if (!isFree) {
           // landed: a flash, then it becomes the surface
           const since = m - arrive;
           pos[o3] = tgt[0]; pos[o3 + 1] = tgt[1]; pos[o3 + 2] = tgt[2];
-          bright = 2.4 * Math.exp(-since / 0.025) + 0.55 * (1 - sstep(0.0, 0.16, since));
+          bright = 0.7 * Math.exp(-since / 0.02) + 0.18 * (1 - sstep(0.0, 0.14, since));
           bright *= 1 - sstep(0.9, 1.0, m);
           size = 0.006 + 0.003 * R4[i];
         }
@@ -194,7 +194,7 @@ export function createParticles(THREE, U, buf, opts) {
         if (d < launch) {
           // still part of the body: a few sparkle near the front
           const near = launch - d;
-          bright = near < 0.05 && !isFree ? 0.9 * (1 - near / 0.05) : 0;
+          bright = near < 0.05 && !isFree ? 0.35 * (1 - near / 0.05) : 0;
           pos[o3] = tgt[0]; pos[o3 + 1] = tgt[1]; pos[o3 + 2] = tgt[2];
           size = 0.005;
         } else {
@@ -213,7 +213,7 @@ export function createParticles(THREE, U, buf, opts) {
           }
           const se = s * s * (3 - 2 * s) * 0.6 + s * 0.4;
           pos[o3] = bez(B0, B1, B2, B3, se, 0); pos[o3 + 1] = bez(B0, B1, B2, B3, se, 1); pos[o3 + 2] = bez(B0, B1, B2, B3, se, 2);
-          bright = (1.3 + 0.8 * R3[i]) * (1 + 1.2 * Math.exp(-(d - launch) / 0.02)) * (1 - sstep(0.7, 1.0, s));
+          bright = (0.2 + 0.18 * R3[i]) * (1 + 0.5 * Math.exp(-(d - launch) / 0.02)) * (0.55 + 0.45 * sstep(0.0, 0.3, s + 0.1 * (1 - hn))) * (1 - sstep(0.7, 1.0, s));
           size = 0.006 + 0.006 * R4[i];
         }
       }

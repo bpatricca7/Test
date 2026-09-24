@@ -6,9 +6,9 @@ import { rayEnter, gradient, clamp, mix, sstep } from './sdf.js';
 
 export const BROW_SHAPES = {
   maya: { inner: [0.0132, 0.0205], peak: [0.0405, 0.0322], tail: [0.0585, 0.0245], peakU: 0.62,
-    th: [0.0062, 0.0042, 0.0016], count: 78, len: [0.0062, 0.0085, 0.0062], width: 0.00030, grey: 0.12 },
+    th: [0.0064, 0.0044, 0.0017], count: 170, len: [0.0056, 0.0078, 0.0058], width: 0.00044, grey: 0.12 },
   sam: { inner: [0.0128, 0.0215], peak: [0.0400, 0.0300], tail: [0.0580, 0.0255], peakU: 0.58,
-    th: [0.0078, 0.0056, 0.0024], count: 104, len: [0.0066, 0.0088, 0.0066], width: 0.00034, grey: 0 },
+    th: [0.0080, 0.0058, 0.0025], count: 220, len: [0.0060, 0.0080, 0.0060], width: 0.00048, grey: 0 },
 };
 
 function browCurve(B, u) {

@@ -13,17 +13,17 @@ export const HEAD_PARAMS = {
     forehead: [0, 0.036, 0.020, 0.062, 0.060, 0.063],
     brow: { y: 0.027, z: 0.064, x: 0.029, r: [0.026, 0.009, 0.0155], k: 0.012 },
     midface: [0, -0.030, 0.030, 0.058, 0.054, 0.051],
-    cheek: { x: 0.039, y: -0.029, z: 0.055, r: [0.025, 0.021, 0.024], k: 0.014 },
+    cheek: { x: 0.040, y: -0.024, z: 0.054, r: [0.025, 0.020, 0.024], k: 0.014 },
     zyg: { a: [0.050, -0.012, 0.034], b: [0.060, -0.010, 0.000], r: 0.009 },
-    jaw: [0, -0.068, 0.034, 0.046, 0.034, 0.050],
+    jaw: [0, -0.069, 0.034, 0.042, 0.033, 0.050],
     chin: [0, -0.093, 0.069, 0.017, 0.015, 0.016],
     tmj: [0.054, -0.022, -0.014], jawAngle: [0.047, -0.066, -0.006], chinSide: [0.016, -0.097, 0.058], jawR: [0.011, 0.013, 0.011],
     neck: { top: [0, -0.055, -0.028], bot: [0, -0.215, -0.034], r: [0.048, 0.053] },
-    eye: { x: 0.0325, y: 0.0, z: 0.058, R: 0.0145, lid: 0.0017 },
+    eye: { x: 0.0325, y: 0.0, z: 0.0568, R: 0.0145, lid: 0.0017 },
     socket: { c: [0.034, 0.003, 0.071], r: [0.0175, 0.0125, 0.0135], k: 0.005 },
     pad: [0.034, 0.0128, 0.0635, 0.0165, 0.0062, 0.0085], medial: [0.0132, 0.002, 0.0668, 0.0048, 0.0105, 0.0072],
-    nose: { bridgeTop: [0, 0.009, 0.073], tip: [0, -0.022, 0.097], rb: 0.0068, rt: 0.0088, tipR: 0.0108,
-      alaX: 0.0122, alaY: -0.0295, alaZ: 0.0865, alaR: 0.0082, bottom: -0.0355 },
+    nose: { bridgeTop: [0, 0.009, 0.072], tip: [0, -0.0225, 0.0965], rb: 0.0060, rt: 0.0080, tipR: 0.0094,
+      alaX: 0.0118, alaY: -0.0292, alaZ: 0.0842, alaR: 0.0074, bottom: -0.0352 },
     mouth: { w: 0.0235, y: -0.0585, z: 0.0915, wrap: 0.013, cornerUp: 0.0012,
       upH: 0.0068, upBow: 0.0010, upT: 0.0070, loH: 0.0092, loT: 0.0082 },
     muzzle: [0, -0.057, 0.062, 0.032, 0.028, 0.027],
@@ -42,11 +42,11 @@ export const HEAD_PARAMS = {
     chin: [0, -0.105, 0.067, 0.019, 0.016, 0.017],
     tmj: [0.057, -0.022, -0.014], jawAngle: [0.052, -0.074, -0.008], chinSide: [0.020, -0.108, 0.056], jawR: [0.013, 0.016, 0.013],
     neck: { top: [0, -0.055, -0.030], bot: [0, -0.235, -0.036], r: [0.052, 0.057] },
-    eye: { x: 0.0330, y: 0.0, z: 0.058, R: 0.0150, lid: 0.0016 },
+    eye: { x: 0.0330, y: 0.0, z: 0.0568, R: 0.0150, lid: 0.0016 },
     socket: { c: [0.0345, 0.003, 0.071], r: [0.018, 0.013, 0.0135], k: 0.005 },
     pad: [0.0345, 0.0135, 0.0632, 0.017, 0.0062, 0.0085], medial: [0.0134, 0.002, 0.0666, 0.005, 0.011, 0.0072],
-    nose: { bridgeTop: [0, 0.009, 0.072], tip: [0, -0.026, 0.096], rb: 0.0068, rt: 0.0102, tipR: 0.0118,
-      alaX: 0.0148, alaY: -0.0335, alaZ: 0.0850, alaR: 0.0094, bottom: -0.0395 },
+    nose: { bridgeTop: [0, 0.009, 0.071], tip: [0, -0.0262, 0.0955], rb: 0.0064, rt: 0.0092, tipR: 0.0106,
+      alaX: 0.0142, alaY: -0.0332, alaZ: 0.0830, alaR: 0.0086, bottom: -0.0392 },
     mouth: { w: 0.0255, y: -0.0635, z: 0.0915, wrap: 0.013, cornerUp: 0.0008,
       upH: 0.0076, upBow: 0.0010, upT: 0.0076, loH: 0.0100, loT: 0.0088 },
     muzzle: [0, -0.062, 0.061, 0.034, 0.030, 0.028],
@@ -106,8 +106,13 @@ export function buildHeadSDF(P) {
   const bt = N.bridgeTop, tp = N.tip;
   const bridge = roundCone(bt[0], bt[1], bt[2], tp[0], tp[1] + 0.004, tp[2] - 0.004, N.rb, N.rt);
   const tip = sphere(tp[0], tp[1], tp[2], N.tipR);
-  const alaL = ellipsoidR(N.alaX, N.alaY, N.alaZ, N.alaR * 0.8, N.alaR * 0.8, N.alaR * 1.15, 0.55, 0, 0);
-  const alaR = ellipsoidR(-N.alaX, N.alaY, N.alaZ, N.alaR * 0.8, N.alaR * 0.8, N.alaR * 1.15, -0.55, 0, 0);
+  // lower nose: one wide flattened base (the alar lobules) under the tip
+  const noseBase = ellipsoidR(0, N.alaY - 0.0005, (N.alaZ + tp[2]) * 0.5 - 0.001, N.alaX + 0.0045, N.alaR * 0.92, N.alaR * 1.45, 0, 0.18, 0);
+  const alaL = ellipsoidR(N.alaX, N.alaY, N.alaZ, N.alaR * 0.62, N.alaR * 0.8, N.alaR * 1.2, 0.5, 0.15, 0);
+  const alaR = ellipsoidR(-N.alaX, N.alaY, N.alaZ, N.alaR * 0.62, N.alaR * 0.8, N.alaR * 1.2, -0.5, 0.15, 0);
+  // alar crease: where the wing meets the cheek
+  const creaseL = roundCone(N.alaX + N.alaR * 0.62, N.alaY + N.alaR * 0.9, N.alaZ - 0.004, N.alaX + N.alaR * 0.5, N.alaY - N.alaR * 0.7, N.alaZ - 0.001, 0.0011, 0.0009);
+  const creaseR = roundCone(-N.alaX - N.alaR * 0.62, N.alaY + N.alaR * 0.9, N.alaZ - 0.004, -N.alaX - N.alaR * 0.5, N.alaY - N.alaR * 0.7, N.alaZ - 0.001, 0.0011, 0.0009);
   const nostrilL = ellipsoidR(N.alaX * 0.52, N.bottom - 0.0005, tp[2] - 0.006, 0.0042, 0.0026, 0.0056, 0.35, 0.25, 0);
   const nostrilR = ellipsoidR(-N.alaX * 0.52, N.bottom - 0.0005, tp[2] - 0.006, 0.0042, 0.0026, 0.0056, -0.35, 0.25, 0);
   // philtrum ridges
@@ -170,8 +175,8 @@ export function buildHeadSDF(P) {
   // Maya: soft under-eye fullness and cheek pads that make gentle smile folds
   const bagL = ellipsoidR(E.x + 0.002, E.y - 0.0145, E.z + 0.009, 0.012, 0.0045, 0.009, 0.1, 0.35, 0);
   const bagR = ellipsoidR(-E.x - 0.002, E.y - 0.0145, E.z + 0.009, 0.012, 0.0045, 0.009, -0.1, 0.35, 0);
-  const padL = ellipsoidR(0.030, -0.046, 0.068, 0.014, 0.017, 0.013, 0.5, 0.2, -0.3);
-  const padR = ellipsoidR(-0.030, -0.046, 0.068, 0.014, 0.017, 0.013, -0.5, 0.2, 0.3);
+  const padL = ellipsoidR(0.031, -0.044, 0.066, 0.011, 0.014, 0.011, 0.5, 0.2, -0.3);
+  const padR = ellipsoidR(-0.031, -0.044, 0.066, 0.011, 0.014, 0.011, -0.5, 0.2, 0.3);
 
   // conservative culling: a group only changes the field where its bounding
   // sphere comes within reach of the current value (+ blend radius)
@@ -211,8 +216,9 @@ export function buildHeadSDF(P) {
     const ln = lb(gNose, x, y, z);
     if (ln < d + 0.011) {
       d = smin(d, bridge(x, y, z), 0.011);
-      d = smin(d, tip(x, y, z), 0.008);
-      d = smin(d, Math.min(alaL(x, y, z), alaR(x, y, z)), 0.006);
+      d = smin(d, smin(tip(x, y, z), noseBase(x, y, z), 0.007), 0.008);
+      d = smin(d, Math.min(alaL(x, y, z), alaR(x, y, z)), 0.005);
+      d = smax(d, -Math.min(creaseL(x, y, z), creaseR(x, y, z)), 0.0018);
     }
     if (ln < 0.002 - d) d = smax(d, -Math.min(nostrilL(x, y, z), nostrilR(x, y, z)), 0.002);
     // lips: hard union between them keeps the crease crisp

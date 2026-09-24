@@ -46,7 +46,7 @@ function earSDF(s = 1) {
 
 export function createEars(H, skinMat, colorFn, s = 1) {
   const f = earSDF(s);
-  const vs = 0.00125 * s;
+  const vs = 0.0019 * s;
   const min = [-0.007 * s, -0.036 * s, -0.022 * s], max = [0.013 * s, 0.036 * s, 0.018 * s];
   const res = [0, 1, 2].map(i => Math.round((max[i] - min[i]) / vs) + 1);
   const m = surfaceNets(f, min, max, res, { snap: 2 });

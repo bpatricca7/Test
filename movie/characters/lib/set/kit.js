@@ -1,7 +1,7 @@
 // Geometry kit for the set: parts are placed in nested local frames, given
 // world-scaled UVs where needed, and merged into one mesh per material.
 
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 export function makeKit(THREE) {
@@ -20,11 +20,15 @@ export function makeKit(THREE) {
     fn();
     frame = prev;
   }
+  // indexed geometry: SwiftShader has no post-transform cache for non-indexed draws
   function clean(g) {
-    let h = g.index ? g.toNonIndexed() : g;
+    let h = g;
     for (const k of Object.keys(h.attributes)) if (!['position', 'normal', 'uv'].includes(k)) h.deleteAttribute(k);
+    h.morphAttributes = {};
     if (!h.attributes.uv) h.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(h.attributes.position.count * 2), 2));
     if (!h.attributes.normal) h.computeVertexNormals();
+    if (!h.index) h = mergeVertices(h);
+    h.clearGroups();
     return h;
   }
   /** world box-projected UVs: s = metres per texture tile (u, v) */

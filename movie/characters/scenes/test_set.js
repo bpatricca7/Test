@@ -64,16 +64,24 @@ export async function create(env) {
     { t: 106.5, P: [0.7, 1.5, 1.2], T: [2.5, 1.55, 0.05], fov: 45, maya: 'maya_window' },               // 5 window view
     { t: 67.3, P: [-1.9, 1.5, 1.5], T: [0.2, 1.15, -0.75], fov: 48 },                                    // 6 surge
     { t: 85.0, P: [-1.85, 1.45, -0.9], T: [1.5, 1.3, -0.2], fov: 50, maya: 'maya_forward' },             // 7 hologram fill
-    ext(8.0, A.pushFrom, A.lookAt, 40),                                                                   // 8 ext push start
-    ext(14.6, null, null, 40),                                                                            // 9 ext push end
-    ext(112.5, null, null, 42),                                                                           // 10 ext dish turn
+    { t: 8.0, ext: true, shot: 'ext_push', u: 0.0 },                                                      // 8 ext push start
+    { t: 13.5, ext: true, shot: 'ext_push', u: 0.8 },                                                     // 9 ext push, near the end (alarm)
+    { t: 110.5, ext: true, shot: 'ext_dish', u: 0.3 },                                                    // 10 ext dish turn
     { t: 22.0, P: [-1.2, 1.2, 0.2], T: [-1.9, 0.75, 1.1], fov: 34 },                                     // 11 armchair CU
     { t: 64.0, P: [0.1, 1.28, -1.3], T: [-0.35, 1.18, -0.55], fov: 44, maya: 'maya_desk' },              // 12 two_shot (front wall behind)
     { t: 107.0, P: [1.55, 1.52, 0.95], T: [2.6, 1.55, 0.1], fov: 36, maya: 'maya_window' },              // 13 maya at the window
     { t: 45.5, P: [-0.35, 1.35, -1.25], T: [0.0, 1.35, 1.5], fov: 42, maya: 'maya_desk' },               // 14 reverse: front wall
     { t: 75.0, P: [0.45, 1.75, -0.2], T: [1.6, 1.6, -0.75], fov: 34, maya: 'maya_forward' },             // 15 visitor CU background
     { t: 99.8, P: [2.1, 1.6, 1.7], T: [-0.6, 1.0, -1.0], fov: 55 },                                      // 16 lights return, wide
-    ext(112.9, null, null, 42),                                                                           // 17 ext dish end
+    { t: 112.9, ext: true, shot: 'ext_dish', u: 1.0 },                                                    // 17 ext dish end
+    ext(14.9, null, null, 40),                                                                            // 18 director's current ext_push formula, u = 1
+    { t: 104.0, P: [2.05, 1.58, 0.45], T: [3.5, 1.75, 0.55], fov: 50 },                                   // 19 through the window, Maya's eyeline
+    { t: 20.0, P: [-0.9, 1.25, 0.55], T: [-1.95, 0.6, 1.2], fov: 40, hide: true },                       // 20 armchair, empty, 3/4
+    { t: 36.0, P: [-0.45, 1.3, -0.95], T: [-0.3, 0.9, -1.75], fov: 50, hide: true },                     // 21 desk close, from Sam's seat
+    { t: 16.0, P: [0.6, 1.5, -0.6], T: [1.25, 1.6, -1.7], fov: 45, hide: true },                         // 22 rack + beacon + kitchenette
+    { t: 30.0, P: [0.3, 1.45, -0.3], T: [1.0, 1.2, 1.95], fov: 50, hide: true },                         // 23 front wall: door, printer, whiteboard
+    { t: 24.0, P: [-1.2, 1.25, 0.0], T: [-2.4, 1.2, -1.0], fov: 45, hide: true },                        // 24 bookshelf + back-left corner
+    { t: 16.0, P: [-0.55, 1.2, -1.2], T: [-0.5, 1.12, -1.7], fov: 55, hide: true },                     // 25 main monitor, bezel and glass
   ];
 
   function update(t) {
@@ -92,11 +100,16 @@ export async function create(env) {
     if (v.ext) {
       out.scene = exterior;
       let P = v.P, T = v.T;
-      if (vi === 9) { // the director's push formula at u = 1
+      if (v.shot) {
+        const S = A.shots[v.shot], e = U.easeInOut(v.u + (t - vi) * 0.1);
+        P = new THREE.Vector3(...S.from).lerp(new THREE.Vector3(...S.to), e).toArray();
+        T = new THREE.Vector3(...S.lookFrom).lerp(new THREE.Vector3(...S.lookTo), e).toArray();
+      }
+      if (vi === 18) { // the director's push formula at u = 1
         const w = new THREE.Vector3(...A.hutWindow), from = new THREE.Vector3(...A.pushFrom);
         P = from.clone().lerp(w.clone().add(V3(6, 1.2, 6)), 0.8).toArray(); T = A.hutWindow;
       }
-      if (vi === 10 || vi === 17) {
+      if (false) {
         const d = new THREE.Vector3(...A.dish), u = vi === 10 ? 0.86 : 1;
         P = d.clone().add(V3(U.lerp(34, 30, u), U.lerp(4, 14, U.easeInOut(u)), U.lerp(22, 18, u))).toArray();
         T = d.clone().add(V3(0, U.lerp(2, 12, U.easeInOut(u)), 0)).toArray();
@@ -106,7 +119,7 @@ export async function create(env) {
       out.scene = interior;
       camera.position.set(...v.P); camera.lookAt(...v.T);
     }
-    camera.fov = v.fov;
+    camera.fov = v.fov || (v.shot ? A.shots[v.shot].fov : 40);
     camera.updateProjectionMatrix();
   }
   function bloom(t) {

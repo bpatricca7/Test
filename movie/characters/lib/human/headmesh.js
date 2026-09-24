@@ -15,8 +15,8 @@ import { rayExit, rayEnter, gradient, clamp, mix, sstep } from './sdf.js';
 const DEG = Math.PI / 180;
 
 export const LID_SHAPES = {
-  maya: { phiIn: -53, phiOut: 55, thIn: -3, thOut: 2.5, U: 23, tU: 0.45, Lo: 21, tL: 0.58 },
-  sam: { phiIn: -53, phiOut: 55, thIn: -3, thOut: 1.5, U: 27, tU: 0.47, Lo: 23, tL: 0.56 },
+  maya: { phiIn: -53, phiOut: 55, thIn: -3, thOut: 3.5, U: 19, tU: 0.44, Lo: 24, tL: 0.58 },
+  sam: { phiIn: -53, phiOut: 55, thIn: -3, thOut: 2.0, U: 22, tU: 0.46, Lo: 25, tL: 0.56 },
 };
 
 function bump(t, tp, p = 0.75) {

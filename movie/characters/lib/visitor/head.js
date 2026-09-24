@@ -10,8 +10,13 @@
 // mouth a real opening that can part, widen, round and press, while the rest
 // of the face stays a single smooth surface.
 //
+// The eyelids are part of the skull: the skin bulges over each almond eyeball
+// (a closed-lid shape) and the shader cuts the almond opening per pixel with
+// analytic lid edges (see eyeOpen() in shaders.js), so lid margins, lash lines
+// and folds stay crisp at any distance and blinks close the opening.
+//
 // Head space: origin at the skull centre at eye level, +X the Visitor's left,
-// +Y up, +Z forward (out of the face).
+// +Y up, +Z forward (out of the face). HS scales head space into root space.
 
 const TAU = Math.PI * 2;
 
@@ -52,22 +57,21 @@ export function euler3(yaw, pitch, roll) {
 // ---------------------------------------------------------------------------
 export const HEAD = {
   cran: { c: [0, 0.03, -0.045], r: [0.084, 0.097, 0.128], tilt: 0.5 },
-  face: { c: [0, -0.016, 0.024], r: [0.068, 0.078, 0.07] },
-  jawA: [0, -0.04, 0.028], jawB: [0, -0.104, 0.052], jawRa: 0.046, jawRb: 0.0145,
+  face: { c: [0, -0.03, 0.016], r: [0.068, 0.07, 0.066] },
+  jawA: [0, -0.04, 0.028], jawB: [0, -0.099, 0.05], jawRa: 0.047, jawRb: 0.016,
   cheek: { c: [0.047, -0.036, 0.045], r: [0.024, 0.018, 0.026] },
-  brow: { c: [0, 0.038, 0.04], r: [0.074, 0.03, 0.05] },
-  muzzle: { c: [0, -0.066, 0.062], r: [0.024, 0.019, 0.022] },
+  brow: { c: [0, 0.075, -0.01], r: [0.07, 0.03, 0.05] },
+  muzzle: { c: [0, -0.062, 0.06], r: [0.026, 0.019, 0.022] },
   temple: { c: [0.083, 0.004, 0.012], r: [0.018, 0.026, 0.03] },
-  ridge: { a: [0.028, 0.07, 0.055], b: [0.05, 0.1, -0.12], r: 0.006 },
   // eye (left; the right is mirrored): almond ellipsoid, yawed out, outer corner up
-  eye: { c: [0.041, 0.004, 0.05], r: [0.034, 0.0198, 0.021], yaw: 0.42, roll: 0.26, pitch: -0.04 },
-  lid: { grow: 1.065, k: 0.013 },    // skin over the eyeball: the lids are this bulge, cut open in the shader
-  mouthDir: [0, -0.068, 0.084],
+  eye: { c: [0.041, 0.009, 0.06], r: [0.034, 0.0205, 0.017], yaw: 0.65, roll: 0.1, pitch: -0.14 },
+  lid: { grow: 1.07, k: 0.01, sock: [1.14, 1.35, 1.15], sockK: 0.014 },    // skin over the eyeball: the lids are this bulge, cut open in the shader
+  mouthDir: [0, -0.064, 0.086],
   W0: 0.0158,          // half-width of the mouth slit
 };
 export const HS = 1.14;   // head scale (head space -> root space)
 
-export function makeSkull() {
+export function makeSkull(opt = {}) {
   const H = HEAD;
   const cr = Math.cos(H.cran.tilt), sr = Math.sin(H.cran.tilt);
   const eyes = [1, -1].map(side => {
@@ -95,7 +99,10 @@ export function makeSkull() {
     d = smin(d, sdEll(x - H.muzzle.c[0], y - H.muzzle.c[1], z - H.muzzle.c[2], ...H.muzzle.r), 0.016);
     d = smax(d, -sdEll(ax - H.temple.c[0], y - H.temple.c[1], z - H.temple.c[2], ...H.temple.r), 0.02);
     // the lids: skin bulging over the almond eyeball (mirrored); the opening is cut per-pixel
+    if (opt.noEyes) return d;
     const l = eyeLocal(eL, ax, y, z);
+    const sg = H.lid.sock;
+    d = smax(d, -sdEll(l[0], l[1], l[2], eL.r[0] * sg[0], eL.r[1] * sg[1], eL.r[2] * sg[2]), H.lid.sockK);
     d = smin(d, sdEll(l[0], l[1], l[2], eL.r[0] * lidG, eL.r[1] * lidG, eL.r[2] * lidG), H.lid.k);
     return d;
   }
@@ -345,7 +352,7 @@ export function deformHead(hd, m, out) {
       const shape = Math.pow(Math.max(0, 1 - xn * xn), 0.55 - 0.25 * m.round);
       X *= 1 + (kx - 1) * fw;
       // resting curve: corners tucked up very slightly, more when smiling
-      Y += (0.0009 + 0.0028 * m.smile) * xn * xn * fw - 0.0006 * m.smile * fl;
+      Y += (0.0003 + 0.0028 * m.smile) * xn * xn * fw - 0.0006 * m.smile * fl;
       if (up) Y += lift * shape * fl;
       if (down) Y += (0.0032 * m.tuck + 0.0006 * m.press) * shape * fl;
       surf(X, Y, tmpA);
@@ -362,7 +369,7 @@ export function deformHead(hd, m, out) {
       // philtrum: a soft groove with two ridges above the upper lip
       if (up && b > 0.0035) {
         const ph = Math.exp(-(((b - 0.0085) / 0.004) ** 2));
-        dz += ph * (-0.0006 * Math.exp(-((X / 0.0022) ** 2)) + 0.0004 * Math.exp(-(((Math.abs(X) - 0.0036) / 0.0016) ** 2)));
+        dz += ph * (-0.0004 * Math.exp(-((X / 0.0026) ** 2)) + 0.00015 * Math.exp(-(((Math.abs(X) - 0.0036) / 0.0018) ** 2)));
       }
       const o = k * 3;
       out[o] = tmpA[0] + A[0] * dz; out[o + 1] = tmpA[1] + A[1] * dz; out[o + 2] = tmpA[2] + A[2] * dz;
@@ -408,55 +415,4 @@ export function deformHead(hd, m, out) {
   }
   for (let j = 0; j < nv; j++) { const a = j * cols * 3, b = (j * cols + NA) * 3; out[b] = out[a]; out[b + 1] = out[a + 1]; out[b + 2] = out[a + 2]; }
   return out;
-}
-
-// ---------------------------------------------------------------------------
-// eyelids: shells over the almond eyeball, generated in the eye's unit-sphere
-// space so they conform to it; the edge rolls in to meet the eyeball
-// ---------------------------------------------------------------------------
-export const LID = { nu: 34, nv: 14, phiE: 1.95, phiC: 1.18, top: 1.4, corner: -0.07, openU: 0.8, openL: -0.62, thick: 0.07 };
-
-export function lidEdges(phi, side, lids) {
-  // returns [upperEdge, lowerEdge] elevation (rad) at azimuth phi
-  const L = LID;
-  const s = phi / L.phiC;
-  const lat = s * side;                     // + toward the outer corner
-  let up = L.corner, lo = L.corner;
-  if (Math.abs(s) < 1) {
-    const q = 1 - s * s;
-    const peak = 1 + 0.12 * (-lat);          // upper lid peaks a little toward the inner side
-    up = L.corner + (L.openU + lids.upper - L.corner) * Math.pow(q, 0.62) * peak;
-    lo = L.corner - (L.corner - (L.openL + lids.lower)) * Math.pow(q, 0.85) * (1 + 0.08 * lat);
-  }
-  // blink: upper edge travels down to just above the lower edge
-  const b = lids.blink;
-  up = up + (Math.max(lo + 0.025, L.corner - 0.02) - up) * b;
-  return [up, lo];
-}
-
-export function writeLid(buf, patch, eyeM, upper, side, lids, rows) {
-  // eyeM: 12-array: 3x3 rotation*scale (row-major, local->head) + centre
-  const L = LID, P = buf.pos, { nu, nv, off } = patch;
-  for (let i = 0; i < nu; i++) {
-    const phi = -L.phiE + (2 * L.phiE) * i / (nu - 1);
-    const [eu, el] = lidEdges(phi, side, lids);
-    const edge = upper ? eu : el;
-    const top = upper ? L.top : -L.top;
-    for (let j = 0; j < nv; j++) {
-      const w = rows[j];
-      const e = top + (edge - top) * w;
-      // thickness: full above, rolling in over the last rows
-      const roll = w < 0.8 ? 0 : (w - 0.8) / 0.2;
-      let rf = 1 + L.thick * (1 - roll * roll) - 0.012 * roll * roll;
-      // lid fold: a soft crease line above the margin
-      rf += (upper ? 0.035 : 0.02) * Math.exp(-(((w - 0.6) / 0.09) ** 2)) - (upper ? 0.02 : 0.01) * Math.exp(-(((w - 0.72) / 0.05) ** 2));
-      const ce = Math.cos(e);
-      const lx = Math.sin(phi) * ce * rf, ly = Math.sin(e) * rf, lz = Math.cos(phi) * ce * rf;
-      const M = eyeM;
-      const o = (off + j * nu + i) * 3;
-      P[o] = M[0] * lx + M[1] * ly + M[2] * lz + M[9];
-      P[o + 1] = M[3] * lx + M[4] * ly + M[5] * lz + M[10];
-      P[o + 2] = M[6] * lx + M[7] * ly + M[8] * lz + M[11];
-    }
-  }
 }

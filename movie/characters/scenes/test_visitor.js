@@ -158,11 +158,29 @@ export async function create(env) {
       s.headFollow = 0.7;
       label = 'portrait';
     } else if (t < 80) {                           // reach + flicker
-      s.reach = U.smooth(72, 74, t); s.reachAt = [MARK.pos[0] + f.x * 0.7 + 0.2, 1.1, MARK.pos[2] + f.z * 0.7];
+      s.reach = U.smooth(72, 74, t); s.reachAt = [MARK.pos[0] + f.x * 0.55 - right.x * 0.3, 1.25, MARK.pos[2] + f.z * 0.55 - right.z * 0.3];
       s.flicker = t > 76 ? 0.9 : 0.1;
       orbit(0.4, 2.8, 1.3, 1.1, 40);
       s.lookAt = s.reachAt;
       label = 'reach/flicker';
+    } else if (t >= 90 && t < 95) {                // torso / chest detail
+      v.getEye(eye);
+      camera.position.set(MARK.pos[0], 1.3, MARK.pos[2]).addScaledVector(f, 1.0).addScaledVector(right, 0.25 * Math.sin(t));
+      camera.lookAt(MARK.pos[0], 1.28, MARK.pos[2]);
+      camera.fov = 38;
+      s.glow = t > 92 ? 0.8 : 0;
+      s.lookAt = camera.position.toArray();
+      label = 'torso';
+    } else if (t >= 95 && t < 100) {               // raised hand close-up
+      s.raiseHand = 1;
+      s.past = dt => ({ t: t - dt, position: MARK.pos, yaw: MARK.yaw, raiseHand: 1 });
+      v.set(s);
+      const hp = new THREE.Vector3(); v.getEye(hp);
+      camera.position.set(MARK.pos[0], hp.y - 0.05, MARK.pos[2]).addScaledVector(f, 0.9).addScaledVector(right, -0.35);
+      camera.lookAt(hp.x - right.x * 0.38, hp.y - 0.02, hp.z - right.z * 0.38);
+      camera.fov = 30;
+      s.lookAt = camera.position.toArray();
+      label = 'hand';
     } else {                                       // side profile close-up
       faceCam(0.0, 0.0, 0.0, 30);
       v.getHead(head);
@@ -175,11 +193,27 @@ export async function create(env) {
   }
 
   function update(t) {
+    // t >= 1000: same as t - 1000 with the Visitor hidden (for timing the rest of the frame)
+    // t >= 1000: timing modes (1: hidden, 2: no colour pass, 3: no depth pass, 4: no eyes, 5: no bones)
+    const mode = Math.floor(t / 1000);
+    const hide = mode === 1;
+    t -= mode * 1000;
+    const a = performance.now();
     // two passes, like the director: the first positions the head for the camera
     let r = stateAt(t);
     v.set(r.s);
     r = stateAt(t);
     v.set(r.s);
+    v.prepare();
+    window.__visMs = performance.now() - a;
+    v.root.visible = !hide;
+    if (v._parts && mode >= 2) {
+      const P = v._parts;
+      if (mode === 2) P.mColor.visible = false;
+      if (mode === 3) P.mDepth.visible = false;
+      if (mode === 4) for (const e of P.eyes) { e[0].visible = false; e[1].visible = false; }
+      if (mode === 5) P.mBones.visible = false;
+    }
     camera.updateProjectionMatrix();
     scrMat.color.setRGB(0.1, 0.35, 0.42).multiplyScalar(1 - 0.7 * U.window01(t, 30, 40, 0.2, 0.5));
   }

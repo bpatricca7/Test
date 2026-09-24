@@ -5,7 +5,8 @@
 
 import * as THREE from 'three';
 
-const srgb = hex => new THREE.Color(hex).convertSRGBToLinear();
+// THREE.Color(hex) already converts sRGB hex to the linear working space
+const srgb = hex => new THREE.Color(hex);
 
 let _envTex = null;
 /** a tiny procedural room environment for glossy things (eyes, glasses, lips) */
@@ -325,7 +326,7 @@ vHairT = normalize( normalMatrix * hairTangent );`);
 		float s1 = pow( sqrt( max( 0.0, 1.0 - th1 * th1 ) ), 90.0 );
 		float s2 = pow( sqrt( max( 0.0, 1.0 - th2 * th2 ) ), 22.0 );
 		float wrapD = saturate( dot( geometryNormal, directLight.direction ) * 0.5 + 0.5 );
-		reflectedLight.directSpecular += directLight.color * wrapD * ( s1 * uSpec * 0.55 + s2 * uSpec * material.diffuseColor * 2.2 );
+		reflectedLight.directSpecular += directLight.color * wrapD * ( s1 * uSpec * 0.4 + s2 * uSpec * material.diffuseColor * 1.2 );
 	}`);
     }
     sh.fragmentShader = sh.fragmentShader

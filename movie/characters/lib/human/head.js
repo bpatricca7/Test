@@ -37,9 +37,9 @@ export const SKIN_FEATURES = {
 };
 
 export const PERSONA = {
-  maya: { lashLen: 0.0078, lashW: 0.00016, lashCount: 48, lowerLashes: 18, lashColor: 0x120c09, smileAsym: 0.18, browAsym: 0.12,
+  maya: { lashLen: 0.0068, lashW: 0.00024, lashCount: 64, lowerLashes: 14, lashColor: 0x120c09, smileAsym: 0.18, browAsym: 0.12,
     lidDroop: 0.12, teeth: 0xe9e1d2, gum: 0x9c4c4a, tongue: 0xb05654 },
-  sam: { lashLen: 0.0066, lashW: 0.00017, lashCount: 44, lowerLashes: 16, lashColor: 0x0d0907, smileAsym: -0.2, browAsym: -0.1,
+  sam: { lashLen: 0.0056, lashW: 0.00024, lashCount: 58, lowerLashes: 12, lashColor: 0x0d0907, smileAsym: -0.2, browAsym: -0.1,
     lidDroop: 0.0, teeth: 0xefe9de, gum: 0x8e4442, tongue: 0xa84e4e },
 };
 
@@ -77,7 +77,7 @@ export function createHead(id, { rnd, log } = {}) {
     c = mix3(c, C.lid, lidz * 0.6);
     // brow base tint
     const bd = browDensity(B, x, y) * sstep(0.05, 0.07, z);
-    c = mix3(c, C.brow, bd * 0.45);
+    c = mix3(c, C.brow, bd * 0.62);
     // scalp under the hair
     if (region !== 'ear') {
       const hl = hairline(id, x, y, z);
@@ -103,7 +103,7 @@ export function createHead(id, { rnd, log } = {}) {
     if (inZone || (Math.abs(x) < mo.w * 1.1 && Math.abs(dy) < 0.012 && z > 0.06)) {
       const edge = 0.00045;
       const lipT = sstep(hh + edge, hh - edge, Math.abs(dy)) * sstep(mo.w * 1.02, mo.w * 0.9, Math.abs(x));
-      if (k === 3 && r === 0) { c = mix3(C.lip, C.lipIn, 0.5); wt = 0.7; }
+      if (k === 3 && r === 0) { c = mix3(C.lip, [0.02, 0.006, 0.005], 0.55); wt = 0.2; }
       else { c = mix3(c, C.lip, lipT); wt = 0.32 * lipT; }
     }
     if (k === 4 || k === 5) {
@@ -162,6 +162,15 @@ export function createHead(id, { rnd, log } = {}) {
     if (pv < 0) continue;
     for (let i = 0; i < 3; i++) vcol[3 * v + i] = col[3 * v + i] / Math.max(0.01, col[3 * pv + i]);
   }
+  if (log) {
+    let nanC = 0, nanU = 0, zero = 0;
+    for (let v = 0; v < n; v++) {
+      if (!(col[3 * v] >= 0)) nanC++;
+      if (!(uv[2 * v] >= 0)) nanU++;
+      if (M.kind[v] === 0 && col[3 * v] < 0.02) zero++;
+    }
+    log(`colour check ${id}: nanCol ${nanC} nanUV ${nanU} darkBg ${zero} sample ${Array.from(col.slice(3 * (n - 5), 3 * (n - 4))).map(q => q.toFixed(3))}`);
+  }
   const tb0 = performance.now();
   const tmpG = new THREE.BufferGeometry();
   tmpG.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -196,7 +205,7 @@ export function createHead(id, { rnd, log } = {}) {
   const lashes = createLashes(hm, rig, L, persona, rnd);
   group.add(lashes.mesh);
   const brows = createBrows(id, H.f, rig, rnd, { brow: lin(S.browHair), grey: lin(S.grey) });
-  const browMat = makeHairMaterial({ roughness: 0.6, spec: 0x6a5a4a, side: THREE.DoubleSide });
+  const browMat = makeHairMaterial({ roughness: 0.7, spec: 0x2e2620, side: THREE.DoubleSide });
   const browMesh = new THREE.Mesh(brows.geometry, browMat);
   browMesh.frustumCulled = false;
   group.add(browMesh);
@@ -297,18 +306,23 @@ export function createHead(id, { rnd, log } = {}) {
     tris: hm.indices.length / 3 };
 }
 
+/** hairline height as a function of azimuth around the head (0 front, pi back) */
+const HL = {
+  // [azimuth, y] control points; the hair is above y
+  maya: [[0, 0.066], [0.45, 0.06], [0.8, 0.046], [1.05, 0.033], [1.3, 0.026], [1.62, 0.022], [1.9, 0.004], [2.15, -0.035], [2.5, -0.058], [Math.PI, -0.062]],
+  sam: [[0, 0.07], [0.45, 0.064], [0.8, 0.05], [1.05, 0.036], [1.3, 0.026], [1.62, 0.02], [1.9, 0.0], [2.2, -0.04], [2.5, -0.055], [Math.PI, -0.06]],
+  samTop: [[0, 0.066], [0.5, 0.062], [0.9, 0.058], [1.3, 0.054], [1.7, 0.05], [2.2, 0.045], [2.7, 0.038], [Math.PI, 0.035]],
+};
+export function hairlineY(key, x, z) {
+  const a = Math.abs(Math.atan2(x, z - 0.0));
+  const H = HL[key];
+  for (let i = 1; i < H.length; i++) {
+    if (a <= H[i][0]) { const t = (a - H[i - 1][0]) / (H[i][0] - H[i - 1][0]); const e = t * t * (3 - 2 * t); return H[i - 1][1] + (H[i][1] - H[i - 1][1]) * e; }
+  }
+  return H[H.length - 1][1];
+}
 /** where the hair covers the scalp (1 = under hair) */
 export function hairline(id, x, y, z) {
-  if (id === 'maya') {
-    // soft hairline around the forehead, temples and nape
-    const front = sstep(0.056, 0.068, y + 0.18 * Math.max(0, -z + 0.06) - 0.05 * (x / 0.07) ** 2 * 0);
-    const temple = sstep(0.03, 0.05, y + 0.3 * Math.max(0, 0.05 - z));
-    const back = sstep(0.03, -0.01, z) * sstep(-0.075, -0.05, y);
-    return clamp(Math.max(front * sstep(0.08, 0.02, z) + (z < 0.02 ? temple : 0), back));
-  }
-  // sam: a short hairline with a slight fade at the sides
-  const front = sstep(0.06, 0.072, y + 0.12 * Math.max(0, 0.06 - z));
-  const side = sstep(0.012, 0.03, y + 0.22 * Math.max(0, 0.04 - z)) * sstep(0.05, 0.0, z);
-  const back = sstep(0.02, -0.02, z) * sstep(-0.07, -0.045, y);
-  return clamp(Math.max(front, side * 0.85, back * 0.85));
+  const hy = hairlineY(id, x, z);
+  return sstep(hy - 0.004, hy + 0.005, y);
 }

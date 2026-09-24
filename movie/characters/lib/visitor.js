@@ -43,13 +43,23 @@ export async function createVisitor(env) {
     uTime: { value: 0 }, uFlicker: { value: 0 }, uFlick: { value: 1 }, uPresence: { value: 1 },
     uBuildY: { value: 100 }, uBuildBand: { value: MAT.band }, uVoxAmt: { value: 0 }, uVoxQ: { value: 1 },
     uDissT: { value: -100 }, uDissBand: { value: DIS.band }, uDissO: { value: new THREE.Vector3() }, uDissD: { value: new THREE.Vector3(0, -1, 0) },
-    uGlow: { value: 0 }, uPulse: { value: 0 },
+    uGlow: { value: 0 }, uPulse: { value: 0 }, uRevealOn: { value: 0 },
   };
   const skinUni = Object.assign({}, uni, {
     uDetail: { value: detail }, uGlyph: { value: glyphs },
     uAxis: { value: new THREE.Vector2() }, uHeadC: { value: new THREE.Vector3() },
     uCore: { value: new THREE.Vector3(0, 1.32, 0.03) }, uThroat: { value: new THREE.Vector3(0, 1.75, 0.05) },
-    uHeadRot: { value: new THREE.Matrix3() },
+    uHeadRot: { value: new THREE.Matrix3() }, uHeadInv: { value: new THREE.Matrix3() },
+    uEyeM: { value: [new THREE.Matrix3(), new THREE.Matrix3()] }, uEyeC: { value: [new THREE.Vector3(), new THREE.Vector3()] },
+    uLid: { value: [new THREE.Vector4(), new THREE.Vector4()] },
+  });
+  // static: head -> lid-ellipsoid unit space for each eye
+  skull.eyes.forEach((e, i) => {
+    const g = HEAD.lid.grow, R = e.R;
+    const a = 1 / (e.r[0] * g), b = 1 / (e.r[1] * g), c = 1 / (e.r[2] * g);
+    // M = diag(a,b,c) * R^T
+    skinUni.uEyeM.value[i].set(R[0] * a, R[3] * a, R[6] * a, R[1] * b, R[4] * b, R[7] * b, R[2] * c, R[5] * c, R[8] * c);
+    skinUni.uEyeC.value[i].set(e.c[0], e.c[1], e.c[2]);
   });
   const PREMUL = { blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor, blendEquation: THREE.AddEquation,
     blendSrcAlpha: THREE.OneFactor, blendDstAlpha: THREE.OneMinusSrcAlphaFactor };
@@ -74,7 +84,7 @@ export async function createVisitor(env) {
   const eyeGeo = new THREE.SphereGeometry(1, 48, 32);
   const eyes = skull.eyes.map(e => {
     const rm = Math.max(...e.r);
-    const eu = Object.assign({}, uni, { uGaze: { value: new THREE.Vector3(0, 0, 1) }, uIris: { value: 0.4 }, uPupil: { value: 0.15 },
+    const eu = Object.assign({}, uni, { uGaze: { value: new THREE.Vector3(0, 0, 1) }, uIris: { value: 0.74 }, uPupil: { value: 0.3 },
       uEyeS: { value: new THREE.Vector3(e.r[0] / rm, e.r[1] / rm, e.r[2] / rm) }, uRootInv: { value: new THREE.Matrix4() }, uRoot: { value: new THREE.Matrix4() } });
     const dm = new THREE.ShaderMaterial({ vertexShader: EYE_VERT, fragmentShader: EYE_FRAG, uniforms: eu, defines: { DEPTH_ONLY: 1 },
       transparent: true, colorWrite: false, depthWrite: true });
@@ -129,7 +139,7 @@ export async function createVisitor(env) {
     const vis = s.visemes || null;
     const mouthX = s.mouth || {};
     const eyesX = s.eyes || {};
-    const mouth = mouthParams(vis, { smile: (mouthX.smile || 0) + 0.12, jaw: mouthX.jaw || 0 });
+    const mouth = mouthParams(vis, { smile: (mouthX.smile || 0) + 0.04, jaw: mouthX.jaw || 0 });
     // talking: the face stays alive (a hint of lid lift on loud syllables)
     const blink = s.blink !== undefined && s.autoBlink !== true ? clamp(s.blink) : Math.max(clamp(s.blink || 0), s.autoBlink === false ? 0 : autoBlink(t));
     // gaze (head space) per eye
@@ -150,7 +160,7 @@ export async function createVisitor(env) {
       const pitchG = clamp(Math.atan2(d[1], Math.hypot(d[0], d[2])), -0.4, 0.4);
       gazePitchAvg += pitchG * 0.5;
       const r = e.side * HEAD.eye.roll;
-      const ph = yawG * 1.25, el = pitchG * 1.1;
+      const ph = yawG * 1.2 - e.side * 0.36, el = pitchG * 1.1;
       const phi = ph * Math.cos(r) + el * Math.sin(r), eps = -ph * Math.sin(r) + el * Math.cos(r);
       return [Math.sin(phi) * Math.cos(eps), Math.sin(eps), Math.cos(phi) * Math.cos(eps)];
     });
@@ -162,6 +172,8 @@ export async function createVisitor(env) {
       });
     }
     face = { mouth, lids: lidsArr, eyes: skull.eyes };
+    lidsArr.forEach((L, i) => skinUni.uLid.value[i].set(L.upper, L.lower, L.blink, skull.eyes[i].side));
+    skinUni.uHeadInv.value.set(Rh[0] / HS, Rh[3] / HS, Rh[6] / HS, Rh[1] / HS, Rh[4] / HS, Rh[7] / HS, Rh[2] / HS, Rh[5] / HS, Rh[8] / HS);
 
     // ---- eyes ----
     const Mh = new THREE.Matrix4().set(Rh[0] * HS, Rh[1] * HS, Rh[2] * HS, hc[0], Rh[3] * HS, Rh[4] * HS, Rh[5] * HS, hc[1], Rh[6] * HS, Rh[7] * HS, Rh[8] * HS, hc[2], 0, 0, 0, 1);
@@ -169,7 +181,7 @@ export async function createVisitor(env) {
     headGroup.matrixWorldNeedsUpdate = true;
     root.updateMatrixWorld(true);
     const rootInv = root.matrixWorld.clone().invert();
-    eyes.forEach((E, i) => { E.uni.uGaze.value.set(...gazes[i]); E.uni.uRootInv.value.copy(rootInv); E.uni.uRoot.value.copy(root.matrixWorld); E.uni.uPupil.value = 0.15 + 0.012 * Math.sin(t * 0.7 + i) - 0.02 * glow; });
+    eyes.forEach((E, i) => { E.uni.uGaze.value.set(...gazes[i]); E.uni.uRootInv.value.copy(rootInv); E.uni.uRoot.value.copy(root.matrixWorld); E.uni.uPupil.value = 0.3 + 0.02 * Math.sin(t * 0.7 + i) - 0.03 * glow; });
     // head rotation in world for triplanar weights
     const c = Math.cos(yaw), sn = Math.sin(yaw);
     const Ry = [c, 0, sn, 0, 1, 0, -sn, 0, c];
@@ -190,6 +202,7 @@ export async function createVisitor(env) {
     uni.uGlow.value = glow;
     uni.uPulse.value = 0.5 + 0.5 * Math.sin(t * 2 * Math.PI / 5.3 - 0.7);
     uni.uBuildY.value = m >= 1 ? 100 : buildFrontY(m);
+    uni.uRevealOn.value = (m < 1 || d > 0) ? 1 : 0;
     uni.uVoxAmt.value = Math.max(m < 1 ? 1 - sstep(0.86, 0.985, m) : 0, 0.5 * sstep(0.0, 0.1, d));
     uni.uPresence.value = m <= 0 ? 0 : (0.62 + 0.38 * sstep(0.7, 1.0, m)) * (1 - 0.25 * d);
     // dissolve ordering: from the top and the side facing the window, down to the feet
@@ -221,7 +234,7 @@ export async function createVisitor(env) {
     const pres = sstep(0.25, 0.95, m) * (1 - sstep(0.05, 0.85, d));
     const level = pres * (0.78 + 0.32 * glow + 0.06 * uni.uPulse.value) * uni.uFlick.value;
     v.lightLevel = level;
-    light.intensity = 2.4 * level;
+    light.intensity = 1.1 * level;
     const lp = toWorld([pose.spine[3][0], pose.spine[3][1] + 0.08, pose.spine[3][2] + 0.25]);
     if (light.parent && !light.parent.isScene) {
       light.parent.updateWorldMatrix(true, false);
@@ -254,7 +267,6 @@ export async function createVisitor(env) {
     if (!dirty || !pose) return;
     dirty = false;
     if (cur.m > 0 && cur.d < 1) body.write(pose, face);
-    else if ((cur.m > 0 && cur.m < 1) || (cur.d > 0 && cur.d < 1)) body.write(pose, face);
     if (particles && partFrame) {
       if ((partFrame.m > 0 && partFrame.m < 1) || (partFrame.d > 0 && partFrame.d < 1) || partFrame.presence > 0.02) particles.update(partFrame);
       else particles.points.visible = false;
@@ -297,6 +309,7 @@ export async function createVisitor(env) {
   body.write(pose, face);
   const particles = createParticles(THREE, U, body.buf, { surface: 24000, free: 5000, motes: 500, uniforms: uni });
   root.add(particles.points);
+  v._parts = { mDepth, mColor, mBones, eyes: eyes.map(E => [E.md, E.mc]), points: particles.points };
   v.triangles = body.triangles + eyeGeo.index.count / 3 * 2;
   v.particleCount = particles.count;
   return v;
