@@ -170,7 +170,7 @@ export function createFaceRig(hm, H, opt = {}) {
     const below = Math.exp(-((Math.max(0, -q.dy - q.h) / 0.008) ** 2)) * Math.exp(-((q.dxo / 0.007) ** 2)) * frontMask(q.z);
     const wgt = Math.max(c, 0.6 * below) * (1 - 0.55 * Math.min(1, q.s * q.s));
     const curl = r <= 3 && r >= -3 ? 1 - Math.max(0, r) / 4 : 0;
-    return [0, 0.0034 * wgt + 0.0012 * curl, -0.0040 * wgt - 0.0022 * curl];
+    return [0, 0.0048 * wgt + 0.0016 * curl, -0.0052 * wgt - 0.003 * curl];
   });
   addField('press', v => {
     const q = mc(v);
@@ -271,16 +271,17 @@ export function createFaceRig(hm, H, opt = {}) {
     wj *= sstep(-0.03, 0.02, z) * sstep(-0.16, -0.105, y - 0.25 * Math.max(0, 0.02 - z));
     const r = ringM[v];
     if (r < 99) {
-      const up = isUpperV[v];
-      // exact split along the lip rings, smoothed around the corners
+      // exact split along the lip rings; toward the corners both lips share the
+      // jaw so the opening is a lens, not a box
       const j = M.seg[v], MM = hm.MM;
       const a = 2 * Math.PI * j / MM;
-      const sa = Math.sin(a);
-      const split = 0.5 - 0.5 * Math.tanh(sa / 0.16) * (r === -hm.bagRings - 1 ? 0 : 1);
+      const sa = Math.sin(a), ca = Math.cos(a);
+      const sgn = Math.tanh(sa / 0.08);
+      const cornerK = sstep(0.98, 0.42, Math.abs(ca)); // 0 at the corners, 1 in the middle
+      const split = 0.5 - 0.5 * sgn * (r === -hm.bagRings - 1 ? 0 : 1) * (0.25 + 0.75 * cornerK);
       const g = r <= 3 ? 0 : sstep(3, 9, r);
       wj = mix(split, wj, g);
       if (M.kind[v] === 5) wj = 0.5;
-      void up;
     }
     wJaw[v] = clamp(wj);
   }

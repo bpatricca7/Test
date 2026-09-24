@@ -56,24 +56,42 @@ export function euler3(yaw, pitch, roll) {
 // the skull
 // ---------------------------------------------------------------------------
 export const HEAD = {
-  cran: { c: [0, 0.03, -0.045], r: [0.084, 0.097, 0.128], tilt: 0.5 },
-  face: { c: [0, -0.03, 0.016], r: [0.068, 0.07, 0.066] },
-  jawA: [0, -0.04, 0.028], jawB: [0, -0.099, 0.05], jawRa: 0.047, jawRb: 0.016,
-  cheek: { c: [0.047, -0.036, 0.045], r: [0.024, 0.018, 0.026] },
-  brow: { c: [0, 0.075, -0.01], r: [0.07, 0.03, 0.05] },
-  muzzle: { c: [0, -0.062, 0.06], r: [0.026, 0.019, 0.022] },
-  temple: { c: [0.083, 0.004, 0.012], r: [0.018, 0.026, 0.03] },
-  // eye (left; the right is mirrored): almond ellipsoid, yawed out, outer corner up
-  eye: { c: [0.041, 0.009, 0.06], r: [0.034, 0.0205, 0.017], yaw: 0.65, roll: 0.1, pitch: -0.14 },
-  lid: { grow: 1.07, k: 0.01, sock: [1.14, 1.35, 1.15], sockK: 0.014 },    // skin over the eyeball: the lids are this bulge, cut open in the shader
+  // an elongated cranium sweeping up and back into the crest
+  cran: { c: [0, 0.032, -0.058], r: [0.081, 0.095, 0.138], tilt: 0.5 },
+  occ: { c: [0, 0.08, -0.15], r: [0.05, 0.052, 0.095], tilt: 0.85, k: 0.045 },
+  // skull base: a broad root for the neck
+  base: { c: [0, -0.086, -0.06], r: [0.046, 0.064, 0.05], k: 0.05 },
+  face: { c: [0, -0.022, 0.02], r: [0.058, 0.068, 0.064], k: 0.04 },
+  // sculpted planes: brow ridge, high cheekbones with hollows below, a narrow V jaw
+  brow: { a: [0.014, 0.032, 0.068], b: [0.058, 0.036, 0.03], r: 0.0048, k: 0.02 },
+  cheekbone: { a: [0.028, -0.024, 0.058], b: [0.066, -0.008, 0.008], r: 0.0105, k: 0.014 },
+  hollow: { c: [0.066, -0.058, 0.03], r: [0.012, 0.022, 0.02], k: 0.026 },
+  jaw: { a: [0.041, -0.046, -0.008], b: [0.0065, -0.1, 0.044], ra: 0.016, rb: 0.0085, k: 0.02 },
+  chin: { c: [0, -0.096, 0.038], r: [0.0085, 0.0085, 0.0085], k: 0.02 },
+  muzzle: { c: [0, -0.061, 0.046], r: [0.018, 0.016, 0.017], k: 0.016 },
+  temple: { c: [0.08, 0.006, 0.002], r: [0.016, 0.024, 0.028], k: 0.02 },
+  // eye (left; the right is mirrored): a long almond lens, outer corner lifted
+  eye: { c: [0.035, 0.002, 0.058], r: [0.037, 0.0185, 0.017], yaw: 0.78, roll: 0.36, pitch: -0.04 },
+  lid: { grow: 1.035, k: 0.006 },    // skin wrapping the lens tightly; the opening is cut per-pixel
   mouthDir: [0, -0.064, 0.086],
-  W0: 0.0158,          // half-width of the mouth slit
+  W0: 0.0132,          // half-width of the mouth slit
 };
 export const HS = 1.14;   // head scale (head space -> root space)
 
+function sdCapsule(px, py, pz, a, b, r) {
+  const bax = b[0] - a[0], bay = b[1] - a[1], baz = b[2] - a[2];
+  const pax = px - a[0], pay = py - a[1], paz = pz - a[2];
+  const h = Math.max(0, Math.min(1, (pax * bax + pay * bay + paz * baz) / (bax * bax + bay * bay + baz * baz)));
+  return Math.hypot(pax - bax * h, pay - bay * h, paz - baz * h) - r;
+}
+function tiltedEll(x, y, z, E) {
+  const c = Math.cos(E.tilt), s = Math.sin(E.tilt);
+  const cx = x - E.c[0], cy = y - E.c[1], cz = z - E.c[2];
+  return sdEll(cx, cy * c + cz * s, -cy * s + cz * c, E.r[0], E.r[1], E.r[2]);
+}
+
 export function makeSkull(opt = {}) {
   const H = HEAD;
-  const cr = Math.cos(H.cran.tilt), sr = Math.sin(H.cran.tilt);
   const eyes = [1, -1].map(side => {
     const e = H.eye;
     const R = euler3(side * e.yaw, e.pitch, side * e.roll);
@@ -86,23 +104,22 @@ export function makeSkull(opt = {}) {
     const dx = x - e.c[0], dy = y - e.c[1], dz = z - e.c[2], R = e.R;
     return [R[0] * dx + R[3] * dy + R[6] * dz, R[1] * dx + R[4] * dy + R[7] * dz, R[2] * dx + R[5] * dy + R[8] * dz];
   }
+  const E = (x, y, z, P) => sdEll(x - P.c[0], y - P.c[1], z - P.c[2], P.r[0], P.r[1], P.r[2]);
   function sdf(x, y, z) {
     const ax = Math.abs(x);
-    // cranium, long axis tilted up at the back
-    let cx = x - H.cran.c[0], cy = y - H.cran.c[1], cz = z - H.cran.c[2];
-    const ly = cy * cr + cz * sr, lz = -cy * sr + cz * cr;
-    let d = sdEll(cx, ly, lz, H.cran.r[0], H.cran.r[1], H.cran.r[2]);
-    d = smin(d, sdEll(x - H.face.c[0], y - H.face.c[1], z - H.face.c[2], ...H.face.r), 0.04);
-    d = smin(d, sdRoundCone(x, y, z, H.jawA, H.jawB, H.jawRa, H.jawRb), 0.03);
-    d = smin(d, sdEll(ax - H.cheek.c[0], y - H.cheek.c[1], z - H.cheek.c[2], ...H.cheek.r), 0.022);
-    d = smin(d, sdEll(x - H.brow.c[0], y - H.brow.c[1], z - H.brow.c[2], ...H.brow.r), 0.03);
-    d = smin(d, sdEll(x - H.muzzle.c[0], y - H.muzzle.c[1], z - H.muzzle.c[2], ...H.muzzle.r), 0.016);
-    d = smax(d, -sdEll(ax - H.temple.c[0], y - H.temple.c[1], z - H.temple.c[2], ...H.temple.r), 0.02);
-    // the lids: skin bulging over the almond eyeball (mirrored); the opening is cut per-pixel
+    let d = tiltedEll(x, y, z, H.cran);
+    d = smin(d, tiltedEll(x, y, z, H.occ), H.occ.k);
+    d = smin(d, E(x, y, z, H.base), H.base.k);
+    d = smin(d, E(x, y, z, H.face), H.face.k);
+    d = smin(d, sdRoundCone(ax, y, z, H.jaw.a, H.jaw.b, H.jaw.ra, H.jaw.rb), H.jaw.k);
+    d = smin(d, E(x, y, z, H.chin), H.chin.k);
+    d = smin(d, E(x, y, z, H.muzzle), H.muzzle.k);
+    d = smin(d, sdCapsule(ax, y, z, H.cheekbone.a, H.cheekbone.b, H.cheekbone.r), H.cheekbone.k);
+    d = smin(d, sdCapsule(ax, y, z, H.brow.a, H.brow.b, H.brow.r), H.brow.k);
+    d = smax(d, -E(ax, y, z, H.temple), H.temple.k);
     if (opt.noEyes) return d;
+    // the lids: skin wrapping the almond lens (mirrored); the opening is cut per-pixel
     const l = eyeLocal(eL, ax, y, z);
-    const sg = H.lid.sock;
-    d = smax(d, -sdEll(l[0], l[1], l[2], eL.r[0] * sg[0], eL.r[1] * sg[1], eL.r[2] * sg[2]), H.lid.sockK);
     d = smin(d, sdEll(l[0], l[1], l[2], eL.r[0] * lidG, eL.r[1] * lidG, eL.r[2] * lidG), H.lid.k);
     return d;
   }
@@ -265,11 +282,14 @@ export function buildHead(skull, NA = 112) {
       const k = j * cols + i;
       const X = planar[k * 2], Y = planar[k * 2 + 1];
       const s = Math.sin(thetas[i]);
-      const below = Math.pow(Math.max(0, -s), 0.6);
+      const bb = bs[g];
+      const below = Math.pow(Math.max(0, -s), 1.15 - 0.55 * Math.min(1, Math.max(0, (bb - 0.003) / 0.01)));
       const rho = Math.hypot(X, Y);
       const lat = 1 - smooth01(0.028, 0.058, Math.abs(X));
       const far = 1 - smooth01(0.07, 0.125, rho);
-      jawW[k] = below * lat * far;
+      const xc = Math.min(1, Math.abs(X) / W0);
+      const corner = 0.4 * Math.pow(xc, 3) * Math.exp(-((Y / 0.0045) ** 2)) * Math.exp(-(((Math.abs(X) - W0) / 0.008) ** 2) * (Math.abs(X) > W0 ? 1 : 0));
+      jawW[k] = Math.max(below * lat * far, corner);
     }
   }
   // back of the jaw (below the ear line) moves a little too, via the rest positions
@@ -332,51 +352,85 @@ function restNormals(P, NA, cols, nv) {
 // per-frame deformation of the head (head space, written to `out`)
 // ---------------------------------------------------------------------------
 const tmpA = [0, 0, 0];
+// Lip heights along the mouth (s = x / half-width): a Cupid's bow on the upper lip,
+// a fuller lower lip, both tapering into the corners.
+export function lipHeights(s) {
+  const q = Math.max(0, 1 - s * s);
+  const a = Math.abs(s);
+  const hU = 0.0031 * Math.pow(q, 0.5) * (1 - 0.16 * Math.exp(-((s / 0.11) ** 2))) * (1 + 0.14 * Math.exp(-(((a - 0.3) / 0.14) ** 2)));
+  const hL = 0.0036 * Math.pow(q, 0.62);
+  return [hU, hL];
+}
+// depth offset (m, along the mouth axis) of the rest surface at mouth-plane (X, Y)
+export function lipDepth(X, Y, up, down, W0) {
+  const sN = X / W0;
+  const [hU, hL] = lipHeights(Math.max(-1, Math.min(1, sN)));
+  const ay = Math.abs(Y);
+  let dz = 0;
+  if (up || (!down && Y >= 0)) {
+    const t = ay / Math.max(hU, 0.00035);
+    // vermilion dome, rolled in at the contact line, a fine ridge at the border
+    if (t < 1.4) dz += 0.0014 * Math.max(0, Math.sin(Math.PI * Math.min(1, t) ** 0.85)) * (Math.abs(sN) < 1 ? 1 : 0);
+    dz -= 0.00045 * Math.exp(-((t / 0.16) ** 2));
+    dz += 0.00022 * Math.exp(-(((t - 1.0) / 0.09) ** 2)) * Math.max(0, 1 - sN * sN);
+    // philtrum: a soft groove between two low ridges above the upper lip
+    const tp = ay - hU;
+    if (tp > 0) {
+      const ph = Math.exp(-(((tp - 0.005) / 0.0035) ** 2));
+      dz += ph * (-0.00035 * Math.exp(-((X / 0.0024) ** 2)) + 0.00018 * Math.exp(-(((Math.abs(X) - 0.0034) / 0.0014) ** 2)));
+    }
+  } else {
+    const t = ay / Math.max(hL, 0.00035);
+    if (t < 1.4) dz += 0.0017 * Math.max(0, Math.sin(Math.PI * Math.min(1, t) ** 0.75)) * (Math.abs(sN) < 1 ? 1 : 0);
+    dz -= 0.0004 * Math.exp(-((t / 0.14) ** 2));
+    dz += 0.00018 * Math.exp(-(((t - 1.0) / 0.1) ** 2)) * Math.max(0, 1 - sN * sN);
+    // the groove under the lower lip
+    const tg = ay - hL;
+    dz -= 0.00055 * Math.exp(-(((tg - 0.0035) / 0.0022) ** 2)) * Math.exp(-((X / 0.009) ** 2));
+  }
+  // corners (commissures): a small tuck
+  const cx = Math.abs(X) - W0;
+  dz -= 0.0007 * Math.exp(-((cx / 0.0018) ** 2) - ((Y / 0.0022) ** 2));
+  return dz;
+}
 export function deformHead(hd, m, out) {
   const { NA, cols, nv, K, rest, planar, rowB, thetas, jawW, lipRows, A, W0, surf } = hd;
   out.set(rest);
   const kx = 1 + 0.26 * m.wide - 0.36 * m.round + 0.08 * m.smile;
-  const lift = 0.0036 * m.lift + 0.0016 * m.round;
-  // lip rows: re-project deformed mouth-plane coords onto the skull
+  const lift = 0.0052 * m.lift + 0.0016 * m.round;
+  // lip rows: re-project deformed mouth-plane coords onto the skull, then give the lips
+  // their sculpted volume relative to a real lip outline (see lipDepth)
   for (const j of lipRows) {
     const b = rowB[j];
     const fl = Math.exp(-((b / 0.0095) ** 2));           // lip region falloff
     const fw = Math.exp(-((b / 0.016) ** 2));            // width falloff (reaches the cheeks)
-    const bulge = -0.0009 * Math.exp(-((b / 0.0009) ** 2)) + 0.0021 * Math.exp(-(((b - 0.0026) / 0.0019) ** 2)) - 0.00045 * Math.exp(-(((b - 0.0056) / 0.0011) ** 2));
     for (let i = 0; i < NA; i++) {
       const k = j * cols + i;
-      let X = planar[k * 2], Y = planar[k * 2 + 1];
+      const X0 = planar[k * 2], Y0 = planar[k * 2 + 1];
+      let X = X0, Y = Y0;
       const s = Math.sin(thetas[i]);
       const up = s > 1e-6, down = s < -1e-6;
       const xn = Math.max(-1, Math.min(1, X / (W0 * 1.05)));
-      const shape = Math.pow(Math.max(0, 1 - xn * xn), 0.55 - 0.25 * m.round);
+      // the parted upper lip lifts in a soft arch; rounding makes the opening an O
+      const shapeU = Math.pow(Math.max(0, 1 - xn * xn), 0.9 - 0.4 * m.round);
+      const shapeL = Math.pow(Math.max(0, 1 - xn * xn), 0.8 - 0.3 * m.round);
       X *= 1 + (kx - 1) * fw;
-      // resting curve: corners tucked up very slightly, more when smiling
-      Y += (0.0003 + 0.0028 * m.smile) * xn * xn * fw - 0.0006 * m.smile * fl;
-      if (up) Y += lift * shape * fl;
-      if (down) Y += (0.0032 * m.tuck + 0.0006 * m.press) * shape * fl;
+      // resting line: neutral; a smile lifts and draws the corners
+      Y += (0.0026 * m.smile - 0.0012) * xn * xn * fw - 0.0005 * m.smile * fl;
+      if (up) Y += lift * shapeU * fl;
+      if (down) Y += (0.0032 * m.tuck + 0.0006 * m.press) * shapeL * fl;
       surf(X, Y, tmpA);
-      // lips: upper a little fuller in the middle (cupid's bow), lower fuller overall
-      const lipShape = up ? (1 - 0.3 * xn * xn) * (1 + 0.12 * Math.exp(-(((Math.abs(xn) - 0.3) / 0.18) ** 2))) : (1.15 - 0.45 * xn * xn);
-      let dz = bulge * (1 - 0.55 * m.press) * lipShape * (1 + 0.5 * m.pout);
-      dz += 0.0055 * m.pout * fl * (0.4 + 0.6 * shape);
-      if (down) dz -= 0.0026 * m.tuck * fl * shape;
-      if (up) dz += 0.0005 * m.tuck * fl * shape;
+      let dz = lipDepth(X0, Y0, up, down, W0) * (1 - 0.5 * m.press) * (1 + 0.45 * m.pout);
+      dz += 0.005 * m.pout * fl * (0.4 + 0.6 * shapeU);
+      if (down) dz -= 0.0026 * m.tuck * fl * shapeL;
+      if (up) dz += 0.0005 * m.tuck * fl * shapeU;
       dz -= 0.0006 * m.press * fl;
-      // corner dimples (commissures)
-      const cx = Math.abs(X) - W0 * kx;
-      dz -= 0.0009 * Math.exp(-((cx / 0.0022) ** 2) - ((Y / 0.0028) ** 2)) * (1 - 0.6 * m.round);
-      // philtrum: a soft groove with two ridges above the upper lip
-      if (up && b > 0.0035) {
-        const ph = Math.exp(-(((b - 0.0085) / 0.004) ** 2));
-        dz += ph * (-0.0004 * Math.exp(-((X / 0.0026) ** 2)) + 0.00015 * Math.exp(-(((Math.abs(X) - 0.0036) / 0.0018) ** 2)));
-      }
       const o = k * 3;
       out[o] = tmpA[0] + A[0] * dz; out[o + 1] = tmpA[1] + A[1] * dz; out[o + 2] = tmpA[2] + A[2] * dz;
     }
   }
   // jaw: rotate the lower face about a hinge behind the cheeks
-  const ang = 0.135 * m.jaw + 0.012 * m.tongue;
+  const ang = 0.105 * m.jaw + 0.01 * m.tongue;
   if (ang > 1e-5) {
     const py = -0.035, pz = -0.035;
     for (let j = K; j < K + hd.NG; j++) {

@@ -24,10 +24,12 @@ export async function createSet(env) {
   const B = TL.beats, MK = TL.marks;
   const PI = Math.PI;
 
-  const T = makeTextures(env);
-  const screens = makeScreens(env, T);
-  const ext = buildExterior(env);
-  const int = buildInterior(env, T, screens);
+  const tm = [performance.now()];
+  const T = makeTextures(env); tm.push(performance.now());
+  const screens = makeScreens(env, T); tm.push(performance.now());
+  const ext = buildExterior(env); tm.push(performance.now());
+  const int = buildInterior(env, T, screens); tm.push(performance.now());
+  if (env.debugSet) console.warn(`set: textures ${(tm[1] - tm[0]) | 0} ms, screens ${(tm[2] - tm[1]) | 0}, exterior ${(tm[3] - tm[2]) | 0}, interior ${(tm[4] - tm[3]) | 0}`);
   const { W, D, WIN, SCR } = int.dims;
 
   // own scene for the exterior until someone else adopts the root
@@ -137,7 +139,7 @@ export async function createSet(env) {
     mu.uWin.value.set(WIN.z0 + 0.05, WIN.z1 - 0.05, WIN.y0 + 0.05, WIN.y1 - 0.05);
     mu.uWinX.value = W + 0.1;
     mu.uWinM.value.set((WIN.z0 + WIN.z1) / 2, (WIN.y0 + WIN.y1) / 2);
-    mu.uMoonCol.value.setRGB(0.30, 0.38, 0.62);
+    mu.uMoonCol.value.setRGB(0.5, 0.85, 1.75);
   }
 
   // -------------------------------------------------------------------------
@@ -212,8 +214,8 @@ export async function createSet(env) {
     int.E.lampInner.color.copy(tmpC).multiplyScalar(0.55 * lampF);
     // Maya's reading lamp (low), on the same circuit; its bulb blows in the surge
     const readF = t < B.surge.start + 0.9 ? lampF : 0;
-    int.E.shade.color.copy(tmpC).multiplyScalar(0.42 * readF + 0.03);
-    int.E.shadeIn.color.copy(tmpC).multiplyScalar(0.9 * readF);
+    int.E.shade.color.copy(tmpC).multiplyScalar(0.26 * readF + 0.02);
+    int.E.shadeIn.color.copy(tmpC).multiplyScalar(0.5 * readF);
     int.E.bulb2.color.copy(tmpC).multiplyScalar(3 * readF + 0.02);
     int.E.dial.color.setScalar(1.3 * (0.25 + 0.75 * lampF) * (t >= B.surge.start + 0.3 && t < B.lights_return ? 0.15 : 1));
     int.E.meter.color.setRGB(1.0, 0.72, 0.38).multiplyScalar(1.1 * (0.3 + 0.7 * lampF));
@@ -249,15 +251,16 @@ export async function createSet(env) {
     sky.r += 0.03 * holoA; sky.g += 0.11 * holoA; sky.b += 0.13 * holoA;
     hemi.color.copy(sky);
     hemi.groundColor.copy(sky).multiplyScalar(0.55);
-    hemi.intensity = 1.0;
+    hemi.intensity = 1.5;
     for (const m of int.glossy) m.envMapIntensity = m.userData.env * (0.25 + 0.75 * lampF) + 0.1 * holoA;
     glassU.uRefl.value.set(0.020, 0.013, 0.008).multiplyScalar(lampF);
 
     // chair
     const ch = st.samChair;
-    P.chair.position.set(ch.pos[0], 0, ch.pos[2]);
-    P.chair.rotation.y = ch.yaw;
-    P.chairBase.rotation.y = 0.35 - ch.yaw + 0.8 * (ch.pos[2] - MK.sam_chair.pos[2]);
+    const cpos = ch.pos || MK.sam_chair.pos, cyaw = Number.isFinite(ch.yaw) ? ch.yaw : MK.sam_chair.yaw;
+    P.chair.position.set(cpos[0], 0, cpos[2]);
+    P.chair.rotation.y = cyaw;
+    P.chairBase.rotation.y = 0.35 - cyaw + 0.8 * (cpos[2] - MK.sam_chair.pos[2]);
 
     // clock: 03:14:00 at t = 7, real time
     const secs = 3 * 3600 + 14 * 60 + (t - 7);
@@ -329,7 +332,15 @@ export async function createSet(env) {
   int.root.add(uncull);
 
   // lazily draw the canvases only when their screens are actually rendered
-  P.mainScreen.onBeforeRender = () => screens.drawMainIfNeeded();
+  const lodA = new V3(), lodB = new V3(), lodS = new THREE.Vector2();
+  P.mainScreen.onBeforeRender = (rdr, scene, camera) => {
+    // projected screen height in pixels decides the canvas size
+    lodA.set(SCR.c.x, SCR.c.y + SCR.h / 2, SCR.c.z).applyMatrix4(int.root.matrixWorld).project(camera);
+    lodB.set(SCR.c.x, SCR.c.y - SCR.h / 2, SCR.c.z).applyMatrix4(int.root.matrixWorld).project(camera);
+    const tgt = rdr.getRenderTarget();
+    const hpx = tgt ? tgt.height : rdr.getDrawingBufferSize(lodS).y;
+    screens.drawMainIfNeeded(Math.abs(lodA.y - lodB.y) * 0.5 * hpx > 380);
+  };
   P.secondScreen.onBeforeRender = () => screens.drawSecondIfNeeded();
   P.scopeMesh.onBeforeRender = () => screens.drawRackIfNeeded();
   P.counterMesh.onBeforeRender = () => screens.drawRackIfNeeded();

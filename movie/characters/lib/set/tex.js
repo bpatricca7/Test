@@ -13,7 +13,7 @@ export function makeTextures(env) {
   const canvas = (w, h) => {
     const c = document.createElement('canvas');
     c.width = w; c.height = h;
-    return [c, c.getContext('2d')];
+    return [c, c.getContext('2d', { willReadFrequently: true })];
   };
   const tex = (c, { srgb = true, aniso = maxAniso, mips = true } = {}) => {
     const t = new THREE.CanvasTexture(c);
@@ -184,6 +184,8 @@ export function makeTextures(env) {
   }
 
   const T = {};
+  const TT = []; let tt0 = performance.now();
+  const mark = n => { const x = performance.now(); TT.push(`${n} ${(x - tt0) | 0}`); tt0 = x; };
 
   // wainscot: honey pine, vertical boards, 8 per metre; dirt and scuffs near the floor
   {
@@ -201,6 +203,7 @@ export function makeTextures(env) {
     }
     for (let i = 0; i < 12; i++) { const x = rnd() * 1024, y = rnd() * 600; g.fillStyle = 'rgba(20,14,8,0.8)'; g.beginPath(); g.arc(x, y, 1.6, 0, 7); g.fill(); gb.fillStyle = '#202020'; gb.beginPath(); gb.arc(x, y, 1.6, 0, 7); gb.fill(); }   // nail holes
     T.pine = tex(c); T.pineN = normalMap(b, 3.0, 0.6);
+    mark('pine');
   }
   // floor: stained oak planks (14 cm) along X, 2 m tile; scuffs, caster swirls, worn varnish
   {
@@ -232,6 +235,7 @@ export function makeTextures(env) {
     blob(gr2, 256, 256, 8, 23, v => { const k = 90 + 110 * v; return [k, k, k, 255]; });
     grain(gr2, 256, 256, 30, 24);
     T.floorRough = tex(cr, { srgb: false });
+    mark('floorRough');
   }
   // painted upper wall: warm grey-green, roller texture, faint marks
   {
@@ -251,16 +255,19 @@ export function makeTextures(env) {
     blob(gb, 512, 512, 60, 34, v => { const k = 100 + 60 * v; return [k, k, k, 255]; });
     grain(gb, 512, 512, 30, 36);
     T.paintN = normalMap(cb, 1.2, 0.5);
+    mark('paintN');
   }
   // ceiling boards: painted off-white, 10 cm
   {
     const [c, b] = woodBoards({ w: 512, h: 512, boards: 10, base: [196, 190, 176], spread: 0.06, seed: 41, knots: 0, grooveDark: 0.5, grainDark: 0.93 });
     T.ceiling = tex(c); T.ceilingN = normalMap(b, 2.0, 0.5);
+    mark('ceiling');
   }
   // beams / trim: dark stained, dinged
   {
     const [c, b] = woodBoards({ w: 256, h: 512, boards: 1, base: [86, 56, 34], spread: 0.1, seed: 51, knots: 2, grooveDark: 0 });
     T.beam = tex(c); T.beamN = normalMap(b, 2.0, 0.5);
+    mark('beam');
   }
   // desk top: worn walnut laminate, rings, scratches, worn front edge
   {
@@ -291,6 +298,7 @@ export function makeTextures(env) {
     const bgr = g2.createRadialGradient(300, 150, 1, 300, 150, 14); bgr.addColorStop(0, 'rgba(20,10,5,0.8)'); bgr.addColorStop(1, 'rgba(20,10,5,0)');
     g2.fillStyle = bgr; g2.beginPath(); g2.ellipse(300, 150, 18, 8, 0.3, 0, 7); g2.fill();
     T.desk = tex(c2); T.deskN = normalMap(b2, 2.0, 0.5);
+    mark('desk');
   }
 
   // -------------------------------------------------------------------------
@@ -341,10 +349,12 @@ export function makeTextures(env) {
     const rnd = U.mulberry32(73);
     for (let i = 0; i < 5; i++) { const x = rnd() * 512, y = rnd() * 512; const gr = g.createRadialGradient(x, y, 1, x, y, 40 + rnd() * 30); gr.addColorStop(0, 'rgba(70,40,25,0.35)'); gr.addColorStop(1, 'rgba(70,40,25,0)'); g.fillStyle = gr; g.fillRect(x - 80, y - 80, 160, 160); }   // old stains
     T.armFabric = tex(c); T.armFabricN = normalMap(b, 2.5, 0.8);
+    mark('armFabric');
   }
   {
     const [c, b] = fabric({ w: 256, h: 256, base: [44, 46, 50], seed: 72, weave: 2, wear: 0.15, fleck: 800 });
     T.chairFabric = tex(c); T.chairFabricN = normalMap(b, 2.0, 0.4);
+    mark('chairFabric');
   }
   // rug: faded kilim with worn pile
   {
@@ -377,6 +387,7 @@ export function makeTextures(env) {
     for (let y = 0; y < 256; y += 4) { gb.fillStyle = '#404040'; gb.fillRect(0, y, 256, 1.5); }
     grain(gb, 256, 256, 60, 85);
     T.rugN = normalMap(cb, 1.5, 0.3);
+    mark('rugN');
   }
   // blanket: knitted tartan throw (stitches in the height map)
   {
@@ -403,6 +414,7 @@ export function makeTextures(env) {
     }
     grain(g, 512, 512, 18, 91);
     T.blanket = tex(c); T.blanketN = normalMap(cb, 2.5, 0.5);
+    mark('blanket');
   }
 
   // -------------------------------------------------------------------------
@@ -417,6 +429,7 @@ export function makeTextures(env) {
     T.rackMetal = tex(c);
     const [cb, gb] = canvas(256, 256); gb.fillStyle = '#808080'; gb.fillRect(0, 0, 256, 256); grain(gb, 256, 256, 90, 103);
     T.crinkleN = normalMap(cb, 1.2, 0.6);
+    mark('crinkleN');
   }
   {
     const [c, g] = canvas(256, 256);
@@ -428,6 +441,7 @@ export function makeTextures(env) {
     for (let i = 0; i < 25; i++) { g.fillStyle = `rgba(60,50,40,${0.05 + rnd() * 0.1})`; g.beginPath(); g.ellipse(rnd() * 256, rnd() * 256, 3 + rnd() * 6, 2 + rnd() * 4, rnd() * 3, 0, 7); g.fill(); }   // grubby finger marks
     grain(g, 256, 256, 8, 112);
     T.beige = tex(c);
+    mark('beige');
   }
   {
     const [c, g] = canvas(256, 256);
@@ -440,6 +454,7 @@ export function makeTextures(env) {
     for (let i = 0; i < 6; i++) { g.fillStyle = `rgba(120,70,40,${0.2 + rnd() * 0.2})`; g.beginPath(); g.arc(rnd() * 256, rnd() * 256, 1 + rnd() * 2.5, 0, 7); g.fill(); }  // rust spots
     grain(g, 256, 256, 8, 123);
     T.enamel = tex(c);
+    mark('enamel');
   }
 
   // -------------------------------------------------------------------------
@@ -606,6 +621,7 @@ export function makeTextures(env) {
       g.fillStyle = gr; g.fillRect(80, 230, 140, 140);       // coffee ring
     });
     T.paper = tex(c);
+    mark('paper');
   }
   // continuous-feed "greenbar" printout (512 x 1024 = one long sheet), dot-matrix text
   {
@@ -629,6 +645,7 @@ export function makeTextures(env) {
     print(g, lines, 84, 26, 13.3, `bold 12.5px ${MONO}`, 'rgba(30,30,60,0.62)');
     g.restore();
     T.greenbar = tex(c);
+    mark('greenbar');
   }
   // cork board with pinned star charts, photos, index cards (pins are 3D in the scene)
   {
@@ -697,6 +714,7 @@ export function makeTextures(env) {
     sheet(120, 520, 150, 110, 0.1, (w, h) => { g.fillStyle = rgb(255, 234, 110); g.fillRect(0, 0, w, h); hand(g, rnd, 'CAL every', 12, 45, 22, 'rgba(20,20,40,0.85)'); hand(g, rnd, '2 hrs!', 12, 80, 22, 'rgba(20,20,40,0.85)'); }, '#22d');
     sheet(360, 560, 130, 100, -0.12, (w, h) => { g.fillStyle = rgb(170, 236, 150); g.fillRect(0, 0, w, h); hand(g, rnd, 'wow?', 20, 60, 30, 'rgba(20,20,40,0.85)'); }, '#d22');
     T.cork = tex(c); T.corkN = normalMap(cb, 2.0, 0.3); T.corkPins = pins;
+    mark('cork');
   }
   // books: 48 spines (42 x 512 px) + pages strip; titles in vertical text
   {
@@ -732,6 +750,7 @@ export function makeTextures(env) {
     g.fillStyle = 'rgba(0,0,0,0.12)'; for (let y = 0; y < 512; y += 2) g.fillRect(2016, y, 32, 1);
     grain(g, 2048, 512, 10, 162);
     T.books = tex(c);
+    mark('books');
     T.bookCount = 48; T.bookU = 42 / 2048; T.pagesU0 = 2016 / 2048;
   }
   // wall clock face
@@ -749,6 +768,7 @@ export function makeTextures(env) {
     g.font = `18px ${SANS}`; g.fillStyle = '#444'; g.fillText('QUARTZ', 256, 340);
     g.font = `italic 14px ${SERIF}`; g.fillText('Kestrel Ridge', 256, 180);
     T.clock = tex(c);
+    mark('clock');
   }
   // keyboard keycaps with legends (0.46 x 0.165 m -> 1024 x 368)
   {
@@ -775,6 +795,7 @@ export function makeTextures(env) {
     // crumbs and grime between the keys
     for (let i = 0; i < 80; i++) { g.fillStyle = `rgba(60,40,20,${0.3 + rnd() * 0.4})`; g.fillRect(rnd() * 1024, rnd() * 368, 1.5 + rnd() * 2, 1.5 + rnd() * 2); }
     T.keyboard = tex(c);
+    mark('keyboard');
   }
   // window-glass dirt (alpha) and monitor-glass fingerprints/dust (grey)
   {
@@ -813,6 +834,7 @@ export function makeTextures(env) {
     const gr = g.createLinearGradient(0, 0, 0, 450); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(1, 'rgba(255,255,255,0.08)');
     g.fillStyle = gr; g.fillRect(0, 0, 800, 450);
     T.smudge = tex(c, { srgb: false });
+    mark('smudge');
   }
   // posters and signs
   {
@@ -833,6 +855,7 @@ export function makeTextures(env) {
     g.fillStyle = 'rgba(255,245,220,0.12)'; g.fillRect(0, 0, 512, 720);
     g.fillStyle = 'rgba(0,0,0,1)'; g.beginPath(); g.moveTo(512, 0); g.lineTo(470, 0); g.lineTo(512, 36); g.fill();
     T.poster = tex(c);
+    mark('poster');
   }
   {
     // "the northern sky": planisphere poster on cream paper
@@ -868,6 +891,7 @@ export function makeTextures(env) {
     // tape at the corners, a curl of age
     g.fillStyle = 'rgba(240,230,190,0.6)'; for (const [x, y, r] of [[30, 20, 0.6], [738, 20, -0.6], [30, 748, -0.6], [738, 748, 0.6]]) { g.save(); g.translate(x, y); g.rotate(r); g.fillRect(-30, -10, 60, 20); g.restore(); }
     T.poster2 = tex(c);
+    mark('poster2');
   }
   {
     const [c, g] = canvas(256, 320);
@@ -908,6 +932,7 @@ export function makeTextures(env) {
     g.strokeStyle = 'rgba(40,40,40,0.13)'; g.lineWidth = 34;
     g.beginPath(); g.moveTo(500, 560); g.quadraticCurveTo(700, 500, 960, 580); g.stroke();
     T.whiteboard = tex(c);
+    mark('whiteboard');
   }
   // rack front panels (0.55 x 1.74 m -> 512 x 1536): units, Dymo labels, vents
   {
@@ -954,6 +979,7 @@ export function makeTextures(env) {
     // a stuck-on warning sticker
     g.save(); g.translate(400, 1440); g.rotate(-0.08); g.fillStyle = '#e8c21a'; g.fillRect(-50, -18, 100, 36); g.fillStyle = '#111'; g.font = `bold 11px ${SANS}`; g.textAlign = 'center'; g.fillText('HIGH VOLTAGE', 0, 4); g.restore();
     T.rack = tex(c);
+    mark('rack');
     T.rackLayout = { oscope: [60, 20 + 90 + 20, 200, 140], counter: [60, 20 + 90 + 180 + 30, 260, 60], units };
   }
   // receiver front panel (0.42 x 0.2 m -> 512 x 244) and dial
@@ -982,6 +1008,7 @@ export function makeTextures(env) {
     }
     g2.fillStyle = 'rgba(200,30,20,0.9)'; g2.fillRect(250, 4, 2.5, 128);      // the pointer
     T.dial = tex(c2);
+    mark('dial');
   }
   // fridge door (magnets, notes, a photo)
   {
@@ -999,6 +1026,7 @@ export function makeTextures(env) {
     mag(135, 84, '#d33'); mag(320, 64, '#36c'); mag(340, 224, '#3a3');
     g.fillStyle = '#b4b0a6'; g.fillRect(470, 150, 16, 200);
     T.fridge = tex(c);
+    mark('fridge');
   }
   // mug atlas: 4 mugs; each strip: outside print + drips (v 0..0.75), inside stain rings (v 0.75..1)
   {
@@ -1024,6 +1052,7 @@ export function makeTextures(env) {
       for (let k = 0; k < 5; k++) { g.fillStyle = `rgba(90,50,20,${0.15 + rnd() * 0.3})`; g.fillRect(x, y + 14 + k * 9 + rnd() * 4, 512, 2 + rnd() * 3); }
     }
     T.mugs = tex(c);
+    mark('mugs');
   }
   // steam wisps (tileable vertically) and the beacon's fresnel lens ribs
   {
@@ -1051,5 +1080,6 @@ export function makeTextures(env) {
     g.beginPath(); g.moveTo(22, 48); g.lineTo(52, 26); g.lineTo(52, 40); g.lineTo(70, 40); g.lineTo(70, 56); g.lineTo(52, 56); g.lineTo(52, 70); g.fill();
     T.exit = tex(c);
   }
+  if (env.debugSet) console.warn('tex: ' + TT.join(', '));
   return T;
 }

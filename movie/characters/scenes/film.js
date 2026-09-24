@@ -528,7 +528,7 @@ export async function create(env) {
     const surge = U.window01(t, B.surge.start, B.surge.end, 0.15, 0.6);
     const lights = 1 - 0.65 * smooth(B.surge.start, B.surge.end, t) * (1 - smooth(B.lights_return - 0.4, B.lights_return + 0.6, t));
     set.update(t, {
-      alarm: t >= B.alarm && t < B.lights_return ? 1 : 0,
+      alarm: t >= B.alarm && t < (B.alarm_dies ?? B.lights_return) ? 1 - 0.8 * U.window01(t, B.surge.start, B.alarm_dies, 0.05, 0.05) * (Math.sin(t * 90) > 0 ? 1 : 0) : 0,
       surge, lights,
       hologram: 0.5 * (vP2.materialize || 0) * (1 - (vP2.dissolve || 0)) * (0.8 + 0.4 * (vP2.glow || 0)),
       samChair: sP2.chair,

@@ -9,7 +9,7 @@ export async function create(env) {
   const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
   const MK = TL.marks, B = TL.beats;
   const t0 = performance.now();
-  const set = await createSet(env);
+  const set = await createSet(Object.assign({ debugSet: true }, env));
   const buildMs = performance.now() - t0;
   console.warn(`test_set: createSet ${buildMs.toFixed(0)} ms`);
 
@@ -82,12 +82,18 @@ export async function create(env) {
     { t: 30.0, P: [0.3, 1.45, -0.3], T: [1.0, 1.2, 1.95], fov: 50, hide: true },                         // 23 front wall: door, printer, whiteboard
     { t: 24.0, P: [-1.2, 1.25, 0.0], T: [-2.4, 1.2, -1.0], fov: 45, hide: true },                        // 24 bookshelf + back-left corner
     { t: 16.0, P: [-0.55, 1.2, -1.2], T: [-0.5, 1.12, -1.7], fov: 55, hide: true },                     // 25 main monitor, bezel and glass
+    { t: 0, scale: 100, P: [scr[0], scr[1], scr[2] + 0.45], T: scr, fov: 40, hide: true },              // 26 insert at film time (t-26)*100
+    { t: 0, scale: 100, P: [-1.0, 1.35, -0.6], T: [-1.3, 1.05, -1.7], fov: 40, hide: true },           // 27 second monitor at film time (t-27)*100
+    { t: 104.0, P: [-0.9, 1.9, 1.2], T: [0.9, 0.0, -0.7], fov: 55, hide: true },                        // 28 moonlight on the floor
+    { t: 21.5, P: [-1.35, 1.0, 0.25], T: [-1.95, 0.75, 1.15], fov: 32 },                                  // 29 maya_chair_cu-ish with stand-in
+    { t: 16.0, empty: true, P: [0, 1.5, 0], T: [0, 1.5, -1], fov: 40 },                                   // 30 empty scene (pipeline baseline)
   ];
+  const emptyScene = new THREE.Scene();
 
   function update(t) {
     const vi = Math.max(0, Math.min(VIEWS.length - 1, Math.floor(t)));
     const v = VIEWS[vi];
-    const ft = v.t + (t - vi);          // fractional part = seconds after the view's film time
+    const ft = v.t + (t - vi) * (v.scale || 1);          // fractional part = seconds after the view's film time
     set.update(ft, {});
     const hide = !!v.hide;
     sam.visible = maya.visible = !hide && ft < B.sam_backs_off.start;
@@ -116,7 +122,7 @@ export async function create(env) {
       }
       camera.position.set(...P); camera.lookAt(...T);
     } else {
-      out.scene = interior;
+      out.scene = v.empty ? emptyScene : interior;
       camera.position.set(...v.P); camera.lookAt(...v.T);
     }
     camera.fov = v.fov || (v.shot ? A.shots[v.shot].fov : 40);
@@ -124,7 +130,7 @@ export async function create(env) {
   }
   function bloom(t) {
     const v = VIEWS[Math.max(0, Math.min(VIEWS.length - 1, Math.floor(t)))];
-    const ft = v.t + (t - Math.floor(t));
+    const ft = v.t + (t - Math.floor(t)) * (v.scale || 1);
     const holo = U.smooth(B.materialize.start, B.materialize.end, ft) * (1 - U.smooth(B.dematerialize.start, B.dematerialize.end, ft));
     return { strength: 0.45 + 0.35 * holo, radius: 0.45, threshold: 0.78 - 0.1 * holo };
   }

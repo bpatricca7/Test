@@ -177,8 +177,8 @@ export function createMouthParts(H, persona) {
     const tipUp = clamp(c.tipUp || 0), out = clamp(c.tongueOut || 0), back = clamp(c.back || 0);
     // tip target
     const tip = [0,
-      tipRest[1] + tipUp * 0.0095 + out * 0.0028,
-      tipRest[2] + tipUp * 0.0005 + out * 0.0085];
+      tipRest[1] + tipUp * 0.0095 + out * 0.0032,
+      tipRest[2] + tipUp * 0.0005 + out * 0.0125];
     const mid = [0, mix(tipRest[1], backRest[1], 0.5) + back * 0.009 - tipUp * 0.001 + 0.002, mix(tip[2], backRest[2], 0.45)];
     const bk = [0, backRest[1] + back * 0.006, backRest[2]];
     for (let i = 0; i < NU; i++) {

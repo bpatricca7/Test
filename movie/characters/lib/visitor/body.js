@@ -2,7 +2,7 @@
 
 import { SkinBuffer } from './grid.js';
 import { sweep, sweepTex, profile, bump } from './sweep.js';
-import { deformHead, HS } from './head.js';
+import { deformHead, HS, lipHeights } from './head.js';
 import { mmul, mv } from './rig.js';
 
 const TAU = Math.PI * 2;
@@ -22,9 +22,9 @@ const sm = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
 const TORSO = [
   // u, r-front, r-side
   [0.0, 0.072, 0.104], [0.08, 0.086, 0.124], [0.17, 0.084, 0.12], [0.29, 0.073, 0.098], [0.38, 0.068, 0.09],
-  [0.5, 0.076, 0.1], [0.62, 0.092, 0.122], [0.74, 0.096, 0.134], [0.85, 0.084, 0.142], [0.93, 0.066, 0.11], [1.0, 0.05, 0.07],
+  [0.5, 0.076, 0.1], [0.62, 0.092, 0.122], [0.74, 0.096, 0.132], [0.85, 0.084, 0.132], [0.93, 0.064, 0.104], [1.0, 0.05, 0.07],
 ];
-const NECK = [[0, 0.068, 0.086], [0.14, 0.055, 0.066], [0.3, 0.044, 0.049], [0.55, 0.041, 0.045], [0.8, 0.047, 0.052], [1.0, 0.054, 0.058]];
+const NECK = [[0, 0.068, 0.086], [0.14, 0.057, 0.068], [0.3, 0.049, 0.054], [0.55, 0.048, 0.052], [0.78, 0.054, 0.06], [1.0, 0.06, 0.066]];
 const PALM = [[0, 0.0115, 0.017], [0.35, 0.0125, 0.024], [0.75, 0.0115, 0.029], [1.0, 0.0095, 0.027]];
 const FINGER = [[0, 0.0098, 0.0106], [0.14, 0.0102, 0.011], [0.3, 0.0085, 0.0092], [0.46, 0.009, 0.0097], [0.62, 0.0076, 0.0082], [0.76, 0.0079, 0.0085], [0.9, 0.0084, 0.0089], [1.0, 0.0077, 0.0082]];
 const tmpR = [0, 0, 0, 0];
@@ -37,6 +37,7 @@ export function createBody(THREE, skull, hd) {
   P.torso = buf.add(56, 54, { name: 'torso' });
   P.neck = buf.add(40, 34, { name: 'neck' });
   P.traps = [buf.add(20, 18, { name: 'trapL' }), buf.add(20, 18, { name: 'trapR' })];
+  P.clav = [buf.add(12, 22, { name: 'clavL' }), buf.add(12, 22, { name: 'clavR' })];
   P.arms = [buf.add(24, 58, { name: 'armL' }), buf.add(24, 58, { name: 'armR' })];
   P.palms = [buf.add(22, 16, { name: 'palmL' }), buf.add(22, 16, { name: 'palmR' })];
   P.fingers = [];
@@ -52,8 +53,16 @@ export function createBody(THREE, skull, hd) {
       buf.tex[o * 3] = hd.rest[k * 3]; buf.tex[o * 3 + 1] = hd.rest[k * 3 + 1]; buf.tex[o * 3 + 2] = hd.rest[k * 3 + 2];
       const inner = j < hd.K;
       const b = j >= hd.K && j < hd.K + hd.NG ? hd.bs[j - hd.K] : 1;
-      buf.info[o * 4] = inner ? 2 : b < 0.0062 ? 7 : 6;
-      buf.info[o * 4 + 1] = j === hd.K ? 0.85 : j === hd.K + 1 ? 0.35 : (inner ? 0 : 0.28 * Math.exp(-(((b - 0.0062) / 0.0008) ** 2)));
+      // lips: inside the lip outline (Cupid's bow upper, fuller lower)
+      let lipT = 9;
+      if (!inner && b < 0.03) {
+        const X = hd.planar[k * 2], Y = hd.planar[k * 2 + 1];
+        const [hU, hL] = lipHeights(Math.max(-1, Math.min(1, X / hd.W0)));
+        const h = Math.sin(hd.thetas[i % hd.NA]) >= 0 ? hU : hL;
+        lipT = Math.abs(Y) / Math.max(h, 0.00035) + (Math.abs(X) > hd.W0 ? 9 : 0);
+      }
+      buf.info[o * 4] = inner ? 2 : lipT < 1.02 ? 7 : 6;
+      buf.info[o * 4 + 1] = j === hd.K ? 0.8 : j === hd.K + 1 ? 0.2 : 0;
       buf.info[o * 4 + 2] = hd.ao[k];
       buf.info[o * 4 + 3] = inner ? (hd.K - j) / hd.K : 0;
     }
@@ -64,6 +73,7 @@ export function createBody(THREE, skull, hd) {
   sweepTex(buf, P.torso, 0.62, 0.7, 0.3, 0);
   sweepTex(buf, P.neck, 0.28, 0.4, 0.3, 0);
   for (const tp of P.traps) sweepTex(buf, tp, 0.26, 0.18, 0.3, 0);
+  for (const q of P.clav) sweepTex(buf, q, 0.05, 0.16, 0.1, 0);
   for (const a of P.arms) sweepTex(buf, a, 0.2, 0.8, 0.3, 0);
   for (const a of P.palms) sweepTex(buf, a, 0.13, 0.1, 0.15, 4);
   for (const f of P.fingers) sweepTex(buf, f, 0.045, 0.14, 0.09, 4);
@@ -260,7 +270,7 @@ export function createBody(THREE, skull, hd) {
       },
       (th, u) => {
         const c = Math.cos(th), s = Math.sin(th);
-        const n = 2.35;
+        const n = 2.35 - 0.3 * sm(0.74, 0.86, u);
         let r = Math.pow(Math.pow(Math.abs(c), n) + Math.pow(Math.abs(s), n), -1 / n);
         r *= 1 - 0.035 * bump(th, 0, 0.16) * sm(0.48, 0.6, u) * (1 - sm(0.84, 0.9, u));
         r *= 1 + 0.03 * (bump(th, 0.6, 0.34) + bump(th, -0.6, 0.34)) * sm(0.58, 0.68, u) * (1 - sm(0.8, 0.86, u));
@@ -280,20 +290,23 @@ export function createBody(THREE, skull, hd) {
         const abz = sm(0.2, 0.24, u) * (1 - sm(0.45, 0.49, u)) * bump(th, 0, 0.65);
         r *= 1 - 0.02 * abz * Math.pow(0.5 + 0.5 * Math.cos(u * 14 * TAU), 4);
         // collarbones
-        r *= 1 + 0.05 * (bump(th, 0.8, 0.45) + bump(th, -0.8, 0.45)) * Math.exp(-(((u - 0.855) / 0.02) ** 2));
+        r *= 1 - 0.02 * bump(th, 0, 0.25) * Math.exp(-(((u - 0.9) / 0.03) ** 2));   // sternal notch
         return r;
       },
       { capStart: 5, capEnd: 4 });
 
     // --- neck ---
     const nk = pose.neck;
-    const into = add(headC, mv(Rhead, mul([0, -0.05, -0.018], HS)));
+    const into = add(headC, mv(Rhead, mul([0, -0.08, -0.058], HS)));
     const nPts = [add(sp[4], mv(sR[4], [0, 0.0, -0.005])), nk[0], nk[1], nk[2], into];
     const nFr = [col(sR[4], 2), col(pose.neckR[0], 2), col(pose.neckR[1], 2), col(Rhead, 2)];
     sweep(buf, P.neck, nPts, nFr, (u) => profile(NECK, u, tmpR),
       (th, u) => {
         let r = 1 - 0.03 * bump(th, 0, 0.5) * sm(0.2, 0.35, u);
-        r *= 1 + 0.12 * (bump(th, 0.8, 0.22) + bump(th, -0.8, 0.22)) * sm(0.2, 0.32, u) * (1 - sm(0.72, 0.85, u));
+        // sternocleidomastoids: diagonal cords from the top of the sternum round to behind the jaw
+        const uc = Math.max(0, Math.min(1, (u - 0.12) / 0.8)), thc = 0.28 + 1.35 * uc;
+        r *= 1 + 0.075 * (bump(th, thc, 0.24) + bump(th, -thc, 0.24)) * sm(0.1, 0.22, u) * (1 - sm(0.84, 0.95, u));
+        r *= 1 - 0.03 * bump(th, 0, 0.22) * sm(0.1, 0.2, u) * (1 - sm(0.3, 0.4, u));   // the notch between them
         r *= 1 - 0.05 * bump(th, Math.PI, 0.3) * sm(0.3, 0.5, u);
         r *= 1 + 0.025 * bump(th, 0, 0.25) * sm(0.55, 0.62, u) * (1 - sm(0.7, 0.76, u));   // a small larynx ridge
         r *= 1 + 0.05 * (bump(th, 1.75, 0.2) + bump(th, -1.75, 0.2)) * sm(0.15, 0.3, u) * (1 - sm(0.8, 0.9, u));   // side cords
@@ -313,6 +326,19 @@ export function createBody(THREE, skull, hd) {
         (u) => { tmpR[0] = 0.034 + 0.014 * Math.sin(u * Math.PI); tmpR[1] = 0.034 + 0.016 * Math.sin(u * Math.PI); return tmpR; },
         (th) => 1 - 0.12 * Math.pow(Math.max(0, Math.cos(th)), 2),
         { capStart: 4, capEnd: 4, blend: 0.45 });
+    });
+
+    // --- neck cords (from behind the jaw to the top of the sternum) and collarbones ---
+    const R4 = sR[4];
+    pose.arms.forEach((arm, ai) => {
+      const side = arm.side;
+      const cm = add(sp[4], mv(R4, [side * 0.022, 0.054, 0.058]));
+      const cmid = add(sp[4], mv(R4, [side * 0.085, 0.052, 0.048]));
+      const cl = add(arm.S, mv(R4, [side * -0.012, 0.028, 0.006]));
+      const up = col(R4, 1);
+      sweep(buf, P.clav[ai], [cm, cmid, cl], [up, up],
+        (u) => { tmpR[0] = 0.005 + 0.001 * Math.cos(u * Math.PI * 2); tmpR[1] = 0.0062 + 0.001 * Math.cos(u * Math.PI * 2); return tmpR; },
+        null, { capStart: 3, capEnd: 3 });
     });
 
     // --- arms, palms, fingers ---

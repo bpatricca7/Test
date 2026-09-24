@@ -74,7 +74,7 @@ function tube(pts, radii, sides, out, color, uvScaleV = 1, twistTan = true) {
   const tip = pts[n - 1];
   const ti = out.P.length / 3;
   const tdir = pts[n - 1].clone().sub(pts[n - 2]).normalize();
-  const tp = tip.clone().addScaledVector(tdir, radii[n - 1] * 0.8);
+  const tp = tip.clone().addScaledVector(tdir, radii[n - 1] * 0.6);
   out.P.push(tp.x, tp.y, tp.z); out.N.push(tdir.x, tdir.y, tdir.z); out.UV.push(0.5, vAcc * uvScaleV); out.T.push(tdir.x, tdir.y, tdir.z);
   const c = typeof color === 'function' ? color(1) : color; out.C.push(c[0], c[1], c[2]);
   const last = base + (n - 1) * (sides + 1);
@@ -95,11 +95,11 @@ function geomFrom(out) {
 // ------------------------------------------------------------------ maya ---
 export function createMayaHair(H, rnd) {
   const f = H.f, L = H.landmarks;
-  const dark = lin(0x1c140f), dark2 = lin(0x2c1e15), grey1 = lin(0x6e6862), grey2 = lin(0x8e8880), grey = grey1;
+  const dark = lin(0x1c140f), dark2 = lin(0x2a1d15), grey1 = lin(0x7e7872), grey2 = lin(0x96908a), grey = grey1;
   const group = new THREE.Group(); group.name = 'hairMaya';
   // bun placement: high at the back of the head
-  const bunC = new THREE.Vector3(0.0, 0.084, -0.094);
-  const bunAxis = new THREE.Vector3(0, 0.55, -1).normalize(); // points out of the head
+  const bunC = new THREE.Vector3(0.0, 0.1, -0.088);
+  const bunAxis = new THREE.Vector3(0, 0.95, -0.8).normalize(); // points out of the head
   // hair region mask (1 = hair)
   const mask = (x, y, z) => hairline('maya', x, y, z);
   // sweep direction: from the hairline back toward the bun, along the scalp
@@ -155,13 +155,13 @@ export function createMayaHair(H, rnd) {
     // colour per lock: grey streak from the left temple, greying at the temples, a few grey strands
     const streak = Math.exp(-(((ls.az - 0.95) / 0.22) ** 2));
     const temple = Math.exp(-(((Math.abs(ls.az) - 1.1) / 0.3) ** 2)) * 0.35;
-    const isGreyLock = rnd() < 0.06 + streak * 0.9 + temple * 0.5;
+    const isGreyLock = streak > 0.35 || rnd() < 0.03 + temple * 0.35;
     const tone = rnd();
     const phase = rnd() * Math.PI * 2;
     for (let k = 0; k < nClumps; k++) {
       const u = k / (nClumps - 1);
       const lin3 = p0.clone().lerp(target, u);
-      const thick = mix(0.0035, 0.009, sstep(0.0, 0.5, u)) * (ls.inner ? 1.1 : 1) * (front ? 0.85 : 1);
+      const thick = mix(0.005, 0.015, sstep(0.0, 0.55, u)) * (ls.inner ? 1.1 : 1) * (front ? 0.9 : 1);
       const q = surf(lin3, thick);
       // direction of travel along the surface
       const ahead = surf(p0.clone().lerp(target, Math.min(1, u + 0.05)), thick).p;
@@ -170,7 +170,7 @@ export function createMayaHair(H, rnd) {
       const wave = Math.sin(u * len / 0.016 * Math.PI * 2 + phase) * 0.0028 * sstep(0, 0.15, u);
       const pos = q.p.clone().addScaledVector(side, wave).addScaledVector(q.n, 0.0012 * Math.cos(u * len / 0.016 * Math.PI * 2 + phase));
       const cdir = dir.clone().addScaledVector(side, Math.cos(u * len / 0.016 * Math.PI * 2 + phase) * 0.6).normalize();
-      const grey = isGreyLock && (rnd() < 0.8);
+      const grey = isGreyLock && (rnd() < 0.95);
       const col = grey ? (tone < 0.5 ? grey1 : grey2) : (rnd() < 0.3 ? dark2 : dark);
       clumps.push({ x: pos.x, y: pos.y, z: pos.z, n: q.n, s: cdir, r: 0.0046 + 0.0012 * rnd(), len: 0.0055, col, lock: lockId });
     }
@@ -179,17 +179,17 @@ export function createMayaHair(H, rnd) {
   const bunX = new THREE.Vector3().crossVectors(bunAxis, new THREE.Vector3(1, 0, 0)).normalize();
   const bunY = new THREE.Vector3().crossVectors(bunAxis, bunX).normalize();
   const bunClumps = [];
-  for (let i = 0; i < 150; i++) {
-    const a = i / 150 * Math.PI * 2 * 3.0 + rnd() * 0.3;
-    const layer = i / 150;
-    const R = 0.028 - 0.014 * layer;
-    const h = 0.012 * layer + 0.004;
+  for (let i = 0; i < 190; i++) {
+    const a = i / 190 * Math.PI * 2 * 3.4 + rnd() * 0.3;
+    const layer = i / 190;
+    const R = 0.034 - 0.018 * layer;
+    const h = 0.024 * Math.sin(layer * Math.PI * 0.8) + 0.004;
     const p = bunC.clone().addScaledVector(bunX, Math.cos(a) * R).addScaledVector(bunY, Math.sin(a) * R).addScaledVector(bunAxis, h);
     const tan = bunX.clone().multiplyScalar(-Math.sin(a)).addScaledVector(bunY, Math.cos(a)).normalize();
     const nrm = p.clone().sub(bunC).normalize();
     const g = rnd();
-    const col = g < 0.16 ? (g < 0.07 ? grey2 : grey1) : (rnd() < 0.5 ? dark : dark2);
-    const c = { x: p.x, y: p.y, z: p.z, n: nrm, s: tan, r: 0.0085 + 0.003 * rnd(), len: 0.014, col, bun: true };
+    const col = g < 0.06 ? grey1 : (rnd() < 0.5 ? dark : dark2);
+    const c = { x: p.x, y: p.y, z: p.z, n: nrm, s: tan, r: 0.0095 + 0.0035 * rnd(), len: 0.015, col, bun: true };
     bunClumps.push(c);
   }
   const all = clumps.concat(bunClumps);
@@ -229,8 +229,8 @@ export function createMayaHair(H, rnd) {
     // keep hair off the face and ears
     return d;
   };
-  const min = [-0.1, -0.085, -0.145], max = [0.1, 0.155, 0.105];
-  const vs = 0.0031;
+  const min = [-0.105, -0.085, -0.15], max = [0.105, 0.17, 0.105];
+  const vs = 0.0036;
   const res = [0, 1, 2].map(i => Math.round((max[i] - min[i]) / vs) + 1);
   const m = surfaceNets(hairSDF, min, max, res, { snap: 1 });
   const n = m.positions.length / 3;
@@ -271,15 +271,29 @@ export function createMayaHair(H, rnd) {
     [0.058, 0.036, 0.03, 0.05, 1], [-0.06, 0.034, 0.028, 0.046, 0], [0.066, 0.02, 0.0, 0.04, 0],
     [0.03, -0.055, -0.078, 0.04, 0], [-0.028, -0.056, -0.08, 0.036, 0], [0.012, 0.11, -0.13, 0.04, 1], [-0.02, 0.1, -0.138, 0.035, 0],
   ];
+  // flyaways: short springy curls escaping along the hairline and off the bun
+  for (let i = 0; i < 10; i++) {
+    let x, y, z;
+    if (i < 0) {
+      const az = (i / 22 - 0.5) * 2 * 2.4 + (rnd() - 0.5) * 0.15;
+      x = Math.sin(az) * 0.08; z = Math.cos(az) * 0.08 + 0.0; y = hairlineY('maya', x, z) + 0.006;
+    } else {
+      const a = rnd() * Math.PI * 2;
+      const p = bunC.clone().addScaledVector(bunX, Math.cos(a) * 0.036).addScaledVector(bunY, Math.sin(a) * 0.036).addScaledVector(bunAxis, 0.012);
+      x = p.x; y = p.y; z = p.z;
+    }
+    rings.push([x, y, z, 0.01 + 0.01 * rnd(), 0, true]);
+  }
   const ringlets = [];
-  for (const [x, y, z, len, gr] of rings) {
+  for (const [x, y, z, len, gr, fly] of rings) {
     // root on the hair surface near (x,y,z)
     const p = [x, y, z]; project(hairSDF, p, 6);
     gradient(hairSDF, p[0], p[1], p[2], g3);
     const nrm = new THREE.Vector3(...g3);
-    const down = new THREE.Vector3(0, -1, 0).addScaledVector(nrm, 0.5).normalize();
+    const down = fly ? nrm.clone().add(new THREE.Vector3((rnd() - 0.5) * 0.8, (rnd() - 0.3) * 0.8, (rnd() - 0.5) * 0.8)).normalize()
+      : new THREE.Vector3(0, -1, 0).addScaledVector(nrm, 0.5).normalize();
     const pts = [], radii = [];
-    const turns = 3 + rnd() * 1.5, R = 0.004 + 0.001 * rnd();
+    const turns = fly ? 1.2 + rnd() * 1.2 : 3 + rnd() * 1.5, R = fly ? 0.0025 + 0.0015 * rnd() : 0.004 + 0.001 * rnd();
     const ax = new THREE.Vector3().crossVectors(down, nrm).normalize();
     const ay = new THREE.Vector3().crossVectors(down, ax).normalize();
     for (let i = 0; i <= 26; i++) {
@@ -287,15 +301,15 @@ export function createMayaHair(H, rnd) {
       const a = u * turns * Math.PI * 2;
       const q = new THREE.Vector3(...p).addScaledVector(nrm, -0.002).addScaledVector(down, u * len)
         .addScaledVector(ax, Math.cos(a) * R * sstep(0, 0.2, u)).addScaledVector(ay, Math.sin(a) * R * sstep(0, 0.2, u));
-      pts.push(q); radii.push(0.0022 * (1 - 0.4 * u) + 0.0005);
+      pts.push(q); radii.push((fly ? 0.0014 : 0.0028) * (1 - 0.4 * u) + 0.0004);
     }
-    const col = gr ? grey2 : dark2;
+    const col = gr ? grey1 : dark2;
     const start = out.P.length / 3;
     tube(pts, radii, 5, out, u => col.map(q => q * (0.8 + 0.3 * u)), 40);
     ringlets.push({ start, end: out.P.length / 3, root: new THREE.Vector3(...p) });
   }
   const rg = geomFrom(out);
-  const ringMesh = new THREE.Mesh(rg, makeHairMaterial({ roughness: 0.65, spec: 0x3a3028, map: st.map, normalMap: st.normalMap }));
+  const ringMesh = new THREE.Mesh(rg, makeHairMaterial({ roughness: 0.8, spec: 0x241e18, normalMap: st.normalMap }));
   ringMesh.name = 'ringlets';
   group.add(ringMesh);
   const restRing = Float32Array.from(rg.attributes.position.array);
@@ -343,13 +357,13 @@ export function createSamHair(H, rnd) {
   const f = H.f;
   const group = new THREE.Group(); group.name = 'hairSam';
   const out = { P: [], N: [], UV: [], T: [], C: [], I: [] };
-  const base = lin(0x16100c), base2 = lin(0x22170f), tipC = lin(0x3a2616);
+  const base = lin(0x120d0a), base2 = lin(0x1a120d), tipC = lin(0x2a1b10);
   const g3 = [0, 0, 0];
   const O = [0, 0.0, -0.01];
   const roots = [];
   const ga = Math.PI * (3 - Math.sqrt(5));
   const NC = 9000;
-  const sp = 0.0074;
+  const sp = 0.0068;
   for (let i = 0; i < NC; i++) {
     const yy = 1 - 2 * (i + 0.5) / NC, r = Math.sqrt(1 - yy * yy), th = ga * i;
     const d = [Math.cos(th) * r, yy, Math.sin(th) * r];
@@ -365,25 +379,25 @@ export function createSamHair(H, rnd) {
     gradient(f, x, y, z, g3);
     const nrm = new THREE.Vector3(...g3);
     // twists stand up, lean back a touch and droop at the sides
-    const dir = nrm.clone().multiplyScalar(0.55).add(new THREE.Vector3(0, 0.75, -0.18)).normalize();
+    const dir = nrm.clone().multiplyScalar(0.85).add(new THREE.Vector3((rnd() - 0.5) * 0.5, 0.35, -0.2 + (rnd() - 0.5) * 0.4)).normalize();
     const topY = hairlineY('samTop', x, z);
     const inner = sstep(topY, topY + 0.035, y);
-    const len = (0.012 + 0.022 * inner + 0.006 * rnd()) * (z > 0.05 ? 0.9 : 1);
+    const len = (0.01 + 0.02 * inner + 0.006 * rnd()) * (z > 0.05 ? 0.85 : 1);
     const pts = [], radii = [];
-    const bend = new THREE.Vector3((rnd() - 0.5) * 0.35, -0.2 - 0.3 * (1 - inner), (rnd() - 0.5) * 0.3 - 0.1);
+    const bend = new THREE.Vector3((rnd() - 0.5) * 0.5, -0.35 - 0.3 * (1 - inner), (rnd() - 0.5) * 0.4 - 0.1);
     const segs = 6;
     for (let i = 0; i <= segs; i++) {
       const u = i / segs;
       const q = new THREE.Vector3(x, y, z).addScaledVector(nrm, -0.003).addScaledVector(dir, (len + 0.003) * u).addScaledVector(bend, len * u * u * 0.6);
       pts.push(q);
-      radii.push(0.0043 * (1 - 0.28 * u) + 0.0004 * Math.sin(u * 20));
+      radii.push(0.0047 * (1 - 0.08 * u) + 0.00035 * Math.sin(u * 22));
     }
     const shade = 0.8 + 0.4 * rnd();
-    tube(pts, radii, 6, out, u => { const c = u < 0.8 ? (rnd() < 0.5 ? base : base2) : tipC; return [c[0] * shade, c[1] * shade, c[2] * shade].map((q, k) => mix(q, tipC[k] * shade, sstep(0.6, 1, u) * 0.6)); }, 55);
+    tube(pts, radii, 5, out, u => { const c = u < 0.8 ? (rnd() < 0.5 ? base : base2) : tipC; return [c[0] * shade, c[1] * shade, c[2] * shade].map((q, k) => mix(q, tipC[k] * shade, sstep(0.6, 1, u) * 0.6)); }, 55);
   }
   const g = geomFrom(out);
   const st = strandTexture(rnd, { twists: 2 });
-  const mat = makeHairMaterial({ roughness: 0.7, spec: 0x2e2620, shift: 0.08, map: st.map, normalMap: st.normalMap, normalScale: 1.2 });
+  const mat = makeHairMaterial({ roughness: 0.75, spec: 0x1e1814, shift: 0.08, normalMap: st.normalMap, normalScale: 1.2 });
   const mesh = new THREE.Mesh(g, mat);
   mesh.name = 'twists';
   group.add(mesh);

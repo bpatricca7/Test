@@ -782,8 +782,8 @@ export function buildInterior(env, T, screens) {
     add(M.paper, quad(0.22, 0.17, cellUV(3, 1)), [bx - 0.038, 1.995, -0.85], [0, PI / 2, 0.08]);
   }
   // left wall: poster above the armchair side, and a framed star chart
-  add(M.poster2, quad(0.6, 0.6), [-W + 0.012, 1.62, 0.55], [0, PI / 2, 0]);
-  add(M.black, box(0.016, 0.63, 0.63), [-W + 0.004, 1.62, 0.55]);
+  add(M.poster2, quad(0.6, 0.6), [-W + 0.016, 1.62, 0.55], [0, PI / 2, 0]);
+  add(M.black, box(0.012, 0.63, 0.63), [-W + 0.006, 1.62, 0.55]);
 
   // -------------------------------------------------------------------------
   // Maya's corner: armchair (static), blanket, side table, rug, floor lamp
@@ -1170,7 +1170,7 @@ export function buildInterior(env, T, screens) {
         float n2 = texture2D(tNoise, vec2(uv.x * 1.2 - sway * 0.6 + 0.43, uv.y * 0.9 - uTime * 0.17)).r;
         float w = smoothstep(0.0, 0.3, uv.x) * smoothstep(1.0, 0.7, uv.x) * pow(1.0 - uv.y, 1.6) * smoothstep(0.0, 0.08, uv.y);
         float a = max(0.0, n * n2 * 2.6 - 0.12) * w * uAmt;
-        gl_FragColor = vec4(vec3(1.0, 0.93, 0.85) * a * 0.22, 1.0);
+        gl_FragColor = vec4(vec3(1.0, 0.93, 0.85) * a * 0.55, 1.0);
       }`,
   }));
   steam.position.set(0.06, DESK.y + 0.085, -1.47);

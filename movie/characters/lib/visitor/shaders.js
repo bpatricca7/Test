@@ -150,31 +150,46 @@ void main() {
   if (rv.x < 0.0) discard;
   float part = vInfo.x;
   // eyelids: cut the almond opening out of the lid bulge; keep margin info for shading
-  float lash = 0.0, fold = 0.0, rim = 0.0;
+  float lash = 0.0, fold = 0.0, rim = 0.0, lidNear = 0.0;
   if (part > 5.5 && part < 6.5) {
     vec3 hp = uHeadInv * (vObj - uHeadC);
     for (int i = 0; i < 2; i++) {
       vec4 e = eyeOpen(hp, uEyeM[i], uEyeC[i], uLid[i]);
       if (e.w < 1.45) {
-        if (e.x > 0.0 && e.w < 1.1) discard;
+        if (e.x > 0.0 && e.w < 1.08) discard;
         float nearE = 1.0 - smoothstep(1.12, 1.3, e.w);
         float front = e.x > -0.5 ? 1.0 : 0.0;
         // upper margin: dark lash line, a bright rolled rim above it, a soft fold higher up
-        float onLid = 1.0 - smoothstep(1.08, 1.14, e.w);
-        lash = max(lash, onLid * front * (1.0 - smoothstep(0.0, 0.045, e.y)) * step(-0.01, e.y));
-        lash = max(lash, onLid * front * (1.0 - smoothstep(0.0, 0.035, -e.z)) * step(-0.01, -e.z) * 0.6);
-        rim = max(rim, nearE * front * exp(-pow((e.y - 0.1) / 0.035, 2.0)));
-        rim = max(rim, nearE * front * exp(-pow((-e.z - 0.08) / 0.03, 2.0)) * 0.6);
-        fold = max(fold, nearE * front * exp(-pow((e.y - 0.34) / 0.05, 2.0)));
-        fold = max(fold, nearE * front * exp(-pow((-e.z - 0.3) / 0.06, 2.0)) * 0.5);
+        float onLid = 1.0 - smoothstep(1.05, 1.09, e.w);
+        lidNear = max(lidNear, 1.0 - smoothstep(1.02, 1.3, e.w));
+        lash = max(lash, onLid * front * (1.0 - smoothstep(0.0, 0.028, e.y)) * step(-0.01, e.y));
+        lash = max(lash, onLid * front * (1.0 - smoothstep(0.0, 0.022, -e.z)) * step(-0.01, -e.z) * 0.6);
+        rim = max(rim, onLid * front * exp(-pow((e.y - 0.045) / 0.018, 2.0)));
+        rim = max(rim, onLid * front * exp(-pow((-e.z - 0.04) / 0.016, 2.0)) * 0.7);
+        fold = max(fold, nearE * front * exp(-pow((e.y - 0.3) / 0.05, 2.0)) * 0.6);
       }
+    }
+  }
+  // two fine slit nostrils, angled like a V, halfway between the eyes and the mouth
+  float nostril = 0.0, nostrilRim = 0.0;
+  if (part > 5.5 && part < 6.5) {
+    vec3 hp = uHeadInv * (vObj - uHeadC);
+    if (hp.z > 0.03 && abs(hp.x) < 0.012 && hp.y < -0.02 && hp.y > -0.05) {
+      vec2 q = vec2(abs(hp.x), hp.y);
+      vec2 a = vec2(0.0046, -0.0395), b = vec2(0.0026, -0.0335);
+      vec2 pa = q - a, ba = b - a;
+      float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+      float dd = length(pa - ba * h);
+      float w = 0.00055 * (1.0 - 0.6 * h);
+      nostril = 1.0 - smoothstep(w * 0.6, w * 1.4, dd);
+      nostrilRim = exp(-pow((dd - w * 1.9) / (w * 0.8), 2.0)) * step(0.0, dot(pa, vec2(-ba.y, ba.x)) * sign(-1.0));
     }
   }
 #ifdef DEPTH_ONLY
   gl_FragColor = vec4(0.0);
 #else
   float vox = rv.y;
-  float crease = max(vInfo.y, lash * 0.9 + fold * 0.25);
+  float crease = max(vInfo.y, max(lash * 0.9 + fold * 0.25, nostril * 0.85));
   float ao = vInfo.z;
   bool isHead = part > 5.5;
   vec3 N0 = normalize(vN);
@@ -203,11 +218,11 @@ void main() {
   bool isLid = part > 2.5 && part < 3.5;
   if (isLid) d.g = 0.0;
   float hgt = d.r * 0.55 + d.a * 0.45;
-  float bumpS = (isHead ? 0.0009 : 0.0017) * (1.0 - vox) * smoothstep(0.08, 0.45, ndv0) * (part > 6.5 || (part > 1.5 && part < 2.5) ? 0.0 : 1.0) * mix(0.3, 1.0, ao);
+  float bumpS = (isHead ? 0.0009 : 0.0017) * (1.0 - vox) * smoothstep(0.08, 0.45, ndv0) * (part > 6.5 || (part > 1.5 && part < 2.5) ? 0.0 : 1.0) * mix(0.3, 1.0, ao) * (1.0 - 0.85 * lidNear);
   vec3 N = bumpS > 0.0 ? perturb(N0, dpx, dpy, hgt, bumpS) : N0;
 
   float ndv = clamp(mix(ndv0, dot(N, V), 0.45), 0.0, 1.0);
-  float fres = pow(1.0 - ndv, 3.0);
+  float fres = pow(1.0 - ndv, 3.0) * (1.0 - 0.75 * lidNear);
   vec3 up = vec3(0.0, 1.0, 0.0);
   vec3 Lk = normalize(up * 0.9 + V * 0.55 + cross(V, up) * 0.3);
   float lamb = clamp(dot(N, Lk) * 0.6 + 0.4, 0.0, 1.0);
@@ -274,7 +289,7 @@ void main() {
   if (part > 3.5 && part < 4.5) {            // hands: glowing finger pads (vInfo.w)
     col += vec3(0.4, 0.95, 1.0) * vInfo.w * (0.4 + 0.3 * uPulse + 0.8 * glow);
   }
-  col += white * rim * 0.22;
+  col += white * (rim * 0.16 + nostrilRim * 0.08);
   // creases: lip line and lash line read dark
   col *= 1.0 - 0.8 * crease;
   alpha = min(1.0, alpha + 0.35 * crease);
@@ -311,8 +326,7 @@ void main() {
 export const EYE_VERT = /* glsl */`
 ${COMMON}
 varying vec3 vLocal;
-varying vec3 vNv;
-varying vec3 vVv;
+varying vec3 vNw;
 varying vec3 vVl;
 varying vec3 vObj;
 varying vec3 vW;
@@ -325,30 +339,55 @@ void main() {
   vObj = obj;
   vec3 wp = (uRoot * vec4(glitch(obj, obj), 1.0)).xyz;
   vW = wp;
-  vec4 mv = viewMatrix * vec4(wp, 1.0);
-  vNv = normalize(normalMatrix * normal);
-  vVv = -mv.xyz;
   mat3 M = mat3(modelMatrix);
+  vNw = normalize(transpose(inverse(M)) * normal);
   mat3 Rw = mat3(normalize(M[0]), normalize(M[1]), normalize(M[2]));
   vVl = transpose(Rw) * (cameraPosition - w.xyz);
-  gl_Position = projectionMatrix * mv;
+  gl_Position = projectionMatrix * viewMatrix * vec4(wp, 1.0);
 }
 `;
 
+// The eye: a deep, glossy dark lens. What you see is (1) reflections of the
+// real room (the scene's strongest lights as glints, the monitor screen and
+// the window as soft rectangles, a dim room gradient), weighted by fresnel,
+// and (2) far behind the gloss, a faint luminous iris: two refracted layers
+// of fibres and rings around a soft pupil, centred on the gaze direction.
 export const EYE_FRAG = /* glsl */`
 ${COMMON}
-uniform vec3 uGaze;         // iris centre direction in the eye's unit-sphere space
-uniform vec3 uEyeS;         // normalised radii of the almond
+uniform vec3 uGaze;         // gaze direction in the eye's (physical) local frame
+uniform vec3 uEyeS;         // normalised radii of the almond lens
 uniform float uGlow;
 uniform float uPulse;
-uniform float uIris;        // iris angular radius (physical)
+uniform float uIris;        // iris angular radius
 uniform float uPupil;
+uniform vec4 uLP[4];        // light world position (w = 1) or direction toward the light (w = 0)
+uniform vec3 uLC[4];        // light colour * strength
+uniform vec3 uRC[2];        // reflected rectangles: centre, normal, half-axes (world)
+uniform vec3 uRN[2];
+uniform vec3 uRU[2];
+uniform vec3 uRV[2];
+uniform vec3 uRCol[2];
 varying vec3 vLocal;
-varying vec3 vNv;
-varying vec3 vVv;
+varying vec3 vNw;
 varying vec3 vVl;
 varying vec3 vObj;
 varying vec3 vW;
+
+vec3 irisLayer(vec3 P, vec3 T, float depth, vec3 G, vec3 t1, vec3 t2, float seed) {
+  vec3 D = normalize(P + T * depth);
+  float ang = acos(clamp(dot(D, G), -1.0, 1.0));
+  float phi = atan(dot(D, t2), dot(D, t1));
+  float r = ang / uIris;
+  float pr = uPupil / uIris;
+  float fib = pow(0.5 + 0.5 * sin(phi * 38.0 + seed + 2.5 * sin(phi * 7.0 + r * 6.0)), 3.0);
+  fib += 0.6 * pow(0.5 + 0.5 * sin(phi * 71.0 - r * 9.0 + seed * 2.0), 6.0);
+  float rings = pow(0.5 + 0.5 * cos(r * 23.0 + seed), 4.0) * smoothstep(pr, pr + 0.2, r);
+  float body = smoothstep(1.05, 0.55, r) * smoothstep(pr * 0.85, pr * 1.3, r);
+  float halo = exp(-pow((r - pr * 1.25) / 0.08, 2.0));
+  float glow = exp(-r * r * 2.2);
+  return vec3(fib * body, rings * body, halo + 0.3 * glow);
+}
+
 void main() {
   vec2 rv = reveal(vObj);
   if (rv.x < 0.0) discard;
@@ -356,63 +395,65 @@ void main() {
   gl_FragColor = vec4(0.0);
 #else
   vec3 p = normalize(vLocal);
-  vec3 P = p * uEyeS;                         // physical point on the lens
-  vec3 Nl = normalize(p / uEyeS);             // lens normal (local)
+  vec3 P = p * uEyeS;
+  vec3 Nl = normalize(p / uEyeS);
   vec3 Vl = normalize(vVl);
-  vec3 N = normalize(vNv);
-  vec3 V = normalize(vVv);
+  vec3 N = normalize(vNw);
+  vec3 V = normalize(cameraPosition - vW);
   float ndv = clamp(dot(N, V), 0.0, 1.0);
-  vec3 G = normalize(uGaze * uEyeS);          // gaze centre direction (physical)
-  // refract into the lens: the iris sits deeper than the surface
-  vec3 T = refract(-Vl, Nl, 0.75);
-  vec3 D = P + T * 0.42 * uEyeS.z;
-  vec3 dirI = normalize(D);
-  float ang = acos(clamp(dot(dirI, G), -1.0, 1.0));
+
+  // ---- deep iris, seen through the lens ----
+  vec3 G = normalize(uGaze);
   vec3 t1 = normalize(cross(G, vec3(0.0, 1.0, 0.0)) + vec3(1e-4));
   vec3 t2 = cross(G, t1);
-  float phi = atan(dot(dirI, t2), dot(dirI, t1));
-  float r = ang / uIris;                       // 0 centre .. 1 limbus
-  // iris fibres: fine radial strands, crypts and a wavy collarette
-  float fib = 0.5 + 0.28 * sin(phi * 47.0 + 2.0 * sin(phi * 9.0 + r * 6.0)) + 0.22 * sin(phi * 83.0 - r * 11.0);
-  float crypt = smoothstep(0.55, 0.9, 0.5 + 0.5 * sin(phi * 13.0 + 3.0 * r) * sin(r * 17.0 + phi * 3.0));
-  float pr = uPupil / uIris;
-  float coll = exp(-pow((r - pr * 1.55 - 0.03 * sin(phi * 11.0)) / 0.05, 2.0));
-  float iris = 1.0 - smoothstep(0.93, 1.02, r);
-  float pupil = 1.0 - smoothstep(pr - 0.03, pr + 0.02, r);
-  float limbal = exp(-pow((r - 0.96) / 0.07, 2.0));
-  vec3 base = vec3(0.003, 0.008, 0.014);
-  float lum = 0.55 + 0.25 * uPulse + 0.9 * uGlow;
-  // a large, dark iris: faint luminous fibres, a glowing collarette, soft limbus
-  vec3 irisCol = mix(vec3(0.004, 0.02, 0.032), vec3(0.02, 0.1, 0.15), fib * (0.35 + 0.65 * r)) * (1.0 - 0.5 * crypt);
-  irisCol *= lum;
-  irisCol += vec3(0.2, 0.75, 0.95) * coll * 0.22 * lum;
-  irisCol *= iris * (1.0 - pupil);
-  irisCol *= 1.0 - 0.7 * limbal;
-  vec3 halo = vec3(0.06, 0.35, 0.5) * exp(-pow((r - 1.02) / 0.05, 2.0)) * 0.3 * lum;
-  // deep glow behind the pupil
-  vec3 Dd = P + T * 0.95 * uEyeS.z;
-  float angD = acos(clamp(dot(normalize(Dd), G), -1.0, 1.0));
-  vec3 deep = vec3(0.15, 0.62, 0.9) * exp(-angD * angD / (uPupil * uPupil * 0.5)) * (0.14 + 0.1 * uPulse + 0.5 * uGlow);
-  // wet lens reflections: two catchlights and a soft sky
+  vec3 T = refract(-Vl, Nl, 0.7);
+  float lum = 0.4 + 0.25 * uPulse + 1.1 * uGlow;
+  vec3 L1 = irisLayer(P, T, 0.35, G, t1, t2, 0.0);
+  vec3 L2 = irisLayer(P, T, 0.75, G, t1, t2, 1.7);
+  vec3 cyan = vec3(0.2, 0.72, 1.0);
+  vec3 col = vec3(0.0012, 0.0035, 0.007);
+  col += cyan * (L1.x * 0.09 + L1.y * 0.04 + L2.x * 0.06 + L2.z * 0.09) * lum;
+  col += vec3(0.4, 0.9, 1.0) * L1.z * 0.07 * lum;
+
+  // ---- reflections of the room ----
   vec3 R = reflect(-V, N);
-  float key = pow(clamp(dot(R, normalize(vec3(-0.35, 0.55, 0.76))), 0.0, 1.0), 420.0);
-  float key2 = pow(clamp(dot(R, normalize(vec3(0.45, 0.28, 0.85))), 0.0, 1.0), 1400.0);
-  float soft = pow(clamp(dot(R, normalize(vec3(-0.2, 0.7, 0.6))), 0.0, 1.0), 12.0);
-  float fres = pow(1.0 - ndv, 4.0);
-  vec3 col = base + irisCol + halo + deep;
-  col += vec3(0.85, 0.97, 1.0) * (key * 6.0 + key2 * 3.0);
-  col += vec3(0.25, 0.55, 0.7) * (soft * 0.12 + fres * 0.5);
+  float F = 0.05 + 0.95 * pow(1.0 - ndv, 5.0);
+  // dim room: a faint horizon band and floor
+  vec3 env = vec3(0.02, 0.03, 0.04) * (0.4 + 0.6 * smoothstep(-0.3, 0.2, R.y)) + vec3(0.05, 0.07, 0.085) * smoothstep(0.35, 0.95, R.y);
+  for (int i = 0; i < 2; i++) {
+    float dn = dot(R, uRN[i]);
+    if (dn < -1e-3) {
+      float tt = dot(uRC[i] - vW, uRN[i]) / dn;
+      if (tt > 0.0) {
+        vec3 h = vW + R * tt - uRC[i];
+        float u = dot(h, uRU[i]) / dot(uRU[i], uRU[i]);
+        float v = dot(h, uRV[i]) / dot(uRV[i], uRV[i]);
+        float m = max(abs(u), abs(v));
+        float inside = 1.0 - smoothstep(0.92, 1.05, m);
+        // window bars (only drawn for the second rectangle)
+        float bars = float(i) * (1.0 - smoothstep(0.02, 0.05, abs(u))) * 0.8 + float(i) * (1.0 - smoothstep(0.03, 0.06, abs(v))) * 0.8;
+        env += uRCol[i] * inside * (1.0 - min(bars, 0.9)) * (0.85 + 0.15 * v);
+      }
+    }
+  }
+  col += env * F * 6.0;
+  // glints of the actual lights
+  for (int i = 0; i < 4; i++) {
+    vec3 Ld = uLP[i].w > 0.5 ? normalize(uLP[i].xyz - vW) : normalize(uLP[i].xyz);
+    float c = dot(R, Ld);
+    float g = exp(-(1.0 - c) * 3500.0) + 0.25 * exp(-(1.0 - c) * 300.0);
+    col += uLC[i] * g * (0.3 + F);
+  }
+  // hologram texture on the lens: faint scanlines, flicker
   float sy = vW.y * 360.0 - uTime * 1.7;
   float scan = mix(0.5 + 0.5 * cos(sy * 6.2831853), 0.5, smoothstep(0.3, 0.7, fwidth(sy)));
-  col *= 0.9 + 0.16 * scan;
-  col *= uFlick;
+  col *= (0.92 + 0.12 * scan) * uFlick;
   float vox = rv.y;
   if (vox > 0.001) {
     float h = hash13(floor(vObj / VOX));
     col = mix(col, vec3(0.28, 0.82, 1.0) * (0.25 + 0.9 * h), vox * 0.85);
   }
-  float alpha = 0.95 * uPresence;
-  gl_FragColor = vec4(col * uPresence, alpha);
+  gl_FragColor = vec4(col * uPresence, 0.97 * uPresence);
 #endif
 }
 `;

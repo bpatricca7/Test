@@ -139,6 +139,7 @@ BEATS = {
     "sam_points": {"start": 63.2, "end": 66.0},
     "zoom_visitor": {"start": 64.5, "end": 66.5},   # monitor zooms to the added figure
     "surge": {"start": 66.5, "end": 68.2},          # lights brown out and flicker, monitors glitch
+    "alarm_dies": 67.4,                             # the alarm dies in the brown-out and stays silent
     "sam_backs_off": {"start": 67.0, "end": 69.5},  # chair rolls back, he stands, steps back
     "materialize": {"start": 67.8, "end": 73.4},    # voxels lift out of the screen and assemble the Visitor
     "maya_steps_forward": {"start": 78.2, "end": 79.6},

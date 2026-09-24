@@ -199,7 +199,9 @@ export function solvePose(S, ctx) {
   // ---------------------------------------------------------------- arms
   const headW = W.head;
   const hq = headW.q;
-  const hl = (x, y, z) => v3(x, y, z).applyQuaternion(hq).add(headW.p);
+  // head-local points are measured from the eye-level head origin, not the head bone
+  const hoff = v3(B.headOrigin[0] - B.headBone[0], B.headOrigin[1] - B.headBone[1], B.headOrigin[2] - B.headBone[2]);
+  const hl = (x, y, z) => v3(x, y, z).add(hoff).applyQuaternion(hq).add(headW.p);
   const hdir = (x, y, z) => v3(x, y, z).applyQuaternion(hq).normalize();
   const cq = W.chest.q;
   const cdir = (x, y, z) => v3(x, y, z).applyQuaternion(cq).normalize();
@@ -268,7 +270,7 @@ export function solvePose(S, ctx) {
     }
     // over the eyes: forearm across the face (asleep)
     if (wts.overEyes) {
-      const wrist = hl(-s * 0.075, 0.035, 0.1);
+      const wrist = hl(-s * 0.072, 0.012, 0.115);
       add(wts.overEyes, wrist, hdir(-s * 1, 0.25, 0.1), hdir(0, 0.35, 1), hdir(s * 1, -0.4, 0.5), 'relaxed');
     }
     // point at a world target with the index finger
@@ -325,7 +327,7 @@ export function solvePose(S, ctx) {
     }
     // chin: hand to chin, thinking
     if (wts.chin) {
-      const wrist = hl(s * 0.012, -0.175, 0.07);
+      const wrist = hl(s * 0.018, -0.155, 0.075);
       add(wts.chin, wrist, hdir(-s * 0.15, 1, 0.25), hdir(-s * 0.2, 0.1, -1), cdir(s * 0.3, -1, 0.3), 'loose');
     }
     // shrug: palms up, forearms out
@@ -346,7 +348,7 @@ export function solvePose(S, ctx) {
     // scratch the back of the head
     if (wts.scratch) {
       const sc = Math.sin(t * TAU * 3.2) * 0.008;
-      const wrist = hl(s * 0.06 + sc, 0.06, -0.075);
+      const wrist = hl(s * 0.06 + sc, 0.075, -0.07);
       add(wts.scratch, wrist, hdir(-s * 0.35, 0.35, -1), hdir(-s * 0.6, -0.4, 0.6), cdir(s * 1, 0.3, 0.4), 'loose');
     }
     // startle: hands jerk up toward the chest

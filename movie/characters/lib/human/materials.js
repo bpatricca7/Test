@@ -47,6 +47,8 @@ function patchLights(src, wrapExpr) {
 	vec3 irradianceWrap = clamp( ( vec3( dotNLraw ) + wrapW ) / ( 1.0 + wrapW ), 0.0, 1.0 );
 	irradianceWrap *= irradianceWrap * ( 3.0 - 2.0 * irradianceWrap ) * 0.35 + 0.65;
 	irradianceWrap *= directLight.color * SKIN_DIRECT_AO;`);
+  s = s.replace('reflectedLight.directSpecular += irradiance * specularBRDF * material.multiScatteringCompensation;',
+    'reflectedLight.directSpecular += irradiance * specularBRDF * material.multiScatteringCompensation * SKIN_SPEC_AO;');
   s = s.replace(b, `reflectedLight.directDiffuse += irradianceWrap * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );
 	reflectedLight.directDiffuse += directLight.color * SKIN_FUZZ * pow( 1.0 - saturate( dot( geometryNormal, geometryViewDir ) ), 3.0 ) * saturate( dotNLraw + 0.35 );`);
   return src.replace('#include <lights_physical_pars_fragment>', s);
@@ -86,6 +88,7 @@ uniform vec3 uFuzz;
 uniform float uWetRough;
 uniform float uAOStrength;
 #define SKIN_DIRECT_AO mix( 1.0, vAO, 0.55 * uAOStrength )
+#define SKIN_SPEC_AO ( vAO * vAO )
 #define SKIN_FUZZ uFuzz`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
 #ifdef USE_MAP
@@ -124,7 +127,7 @@ vDepth = depth;`);
 varying float vDepth;
 uniform float uOpen;`)
       .replace('#include <opaque_fragment>', `
-  float occ = mix( 0.22, 1.0, smoothstep( 0.0, 0.6, uOpen ) );
+  float occ = mix( 0.16, 0.72, smoothstep( 0.0, 0.8, uOpen ) );
   occ *= mix( 1.0, 0.08, smoothstep( 0.0, 1.0, vDepth ) );
   outgoingLight *= occ;
 #include <opaque_fragment>`);

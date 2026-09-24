@@ -216,7 +216,7 @@ export function buildExterior(env) {
   {
     const NR = 150, NS = 256, RMAX = 1150;
     const pos = [], colr = [], idx = [];
-    const cGrass = new THREE.Color(0.034, 0.038, 0.027), cRock = new THREE.Color(0.06, 0.06, 0.062), cPad = new THREE.Color(0.12, 0.12, 0.115);
+    const cGrass = new THREE.Color(0.06, 0.066, 0.045), cRock = new THREE.Color(0.09, 0.09, 0.092), cPad = new THREE.Color(0.14, 0.14, 0.13);
     const c = new THREE.Color();
     // rings centred between dish and hut so both have fine detail
     const CEN = HUT_POS.clone().multiplyScalar(0.5);
@@ -364,7 +364,20 @@ export function buildExterior(env) {
   const F = 10.0, RD = 12.5, AXIS_Y = 15.5, VERTEX_OFF = 3.4;
   const paintMat = new THREE.MeshStandardMaterial({ color: 0xc9ccd2, roughness: 0.55, metalness: 0.25 });
   const darkMat = new THREE.MeshStandardMaterial({ color: 0x3b3e44, roughness: 0.7, metalness: 0.4 });
-  const concreteMat = new THREE.MeshLambertMaterial({ color: 0x7a7b7d });
+  // weathered concrete: formwork pour lines, rain streaks, bolt holes
+  const concreteTex = (() => {
+    const c = document.createElement('canvas'); c.width = 512; c.height = 512;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    const rnd = U.mulberry32(404);
+    x.fillStyle = '#8a8b8c'; x.fillRect(0, 0, 512, 512);
+    for (let i = 0; i < 9000; i++) { const v = 110 + rnd() * 60; x.fillStyle = `rgba(${v},${v},${v * 1.02},0.35)`; x.fillRect(rnd() * 512, rnd() * 512, 1 + rnd() * 3, 1 + rnd() * 3); }
+    for (let y = 0; y < 512; y += 64) { x.fillStyle = 'rgba(40,40,40,0.35)'; x.fillRect(0, y, 512, 2); x.fillStyle = 'rgba(255,255,255,0.08)'; x.fillRect(0, y + 2, 512, 1); }
+    for (let k = 0; k < 40; k++) { const px = rnd() * 512, py = rnd() * 512, l = 40 + rnd() * 200; const gr = x.createLinearGradient(0, py, 0, py + l); gr.addColorStop(0, 'rgba(50,45,40,0.25)'); gr.addColorStop(1, 'rgba(50,45,40,0)'); x.fillStyle = gr; x.fillRect(px, py, 3 + rnd() * 10, l); }
+    for (let y = 32; y < 512; y += 64) for (let px = 16; px < 512; px += 64) { x.fillStyle = 'rgba(30,30,30,0.6)'; x.beginPath(); x.arc(px + (y % 128 ? 32 : 0), y, 3, 0, 7); x.fill(); }
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(6, 2);
+    return t;
+  })();
+  const concreteMat = new THREE.MeshLambertMaterial({ color: 0x9a9b9d, map: concreteTex });
   const trussMat = new THREE.MeshStandardMaterial({ color: 0xa8acb3, roughness: 0.6, metalness: 0.35 });
   const glowTex = U.makeGlowTexture(THREE, 128, 0.18);
   const additive = (color, extra = {}) => new THREE.SpriteMaterial(Object.assign({ map: glowTex, color, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false }, extra));
@@ -384,12 +397,31 @@ export function buildExterior(env) {
     door.rotation.y = doorDir;
     dishRoot.add(door);
   }
+  {
+    const a = doorDir + 1.9, parts = [];
+    for (const s of [-0.25, 0.25]) {
+      const p0 = new V3(Math.sin(a) * 3.35 + Math.cos(a) * s, 0.4, Math.cos(a) * 3.35 - Math.sin(a) * s);
+      const p1 = new V3(Math.sin(a) * 2.6 + Math.cos(a) * s, 10.6, Math.cos(a) * 2.6 - Math.sin(a) * s);
+      parts.push(strut(p0, p1, 0.035, 5));
+    }
+    for (let k = 0; k < 30; k++) {
+      const f = k / 29, rr = lerp(3.35, 2.6, f), y = lerp(0.4, 10.6, f);
+      parts.push(strut(new V3(Math.sin(a) * rr + Math.cos(a) * -0.25, y, Math.cos(a) * rr - Math.sin(a) * -0.25), new V3(Math.sin(a) * rr + Math.cos(a) * 0.25, y, Math.cos(a) * rr - Math.sin(a) * 0.25), 0.02, 4));
+    }
+    for (let k = 0; k < 12; k++) {
+      const f = (k + 3) / 32, rr = lerp(3.35, 2.6, f) + 0.45, y = lerp(0.4, 10.6, f);
+      parts.push(new THREE.TorusGeometry(0.4, 0.02, 4, 12, Math.PI).rotateX(PI / 2).rotateY(a + PI / 2).translate(Math.sin(a) * (rr - 0.4), y + 1.2, Math.cos(a) * (rr - 0.4)));
+    }
+    // conduits and a junction box on the pedestal
+    parts.push(box(0.6, 0.8, 0.25, Math.sin(doorDir - 0.7) * 3.2, 1.8, Math.cos(doorDir - 0.7) * 3.2));
+    dishRoot.add(new THREE.Mesh(merge(parts), darkMat));
+  }
   const lampPos = new V3(Math.sin(doorDir) * 3.3, 3.1, Math.cos(doorDir) * 3.3);
-  const lampSprite = new THREE.Sprite(additive(new THREE.Color(1.0, 0.55, 0.2).multiplyScalar(2.0)));
+  const lampSprite = new THREE.Sprite(additive(new THREE.Color(1.0, 0.55, 0.2).multiplyScalar(0.5)));
   lampSprite.position.copy(lampPos);
-  lampSprite.scale.setScalar(1.5);
+  lampSprite.scale.setScalar(1.0);
   dishRoot.add(lampSprite);
-  const pedLamp = new THREE.PointLight(0xff9a48, 30, 30, 2);
+  const pedLamp = new THREE.PointLight(0xff9a48, 14, 30, 2);
   pedLamp.position.copy(lampPos).add(new V3(Math.sin(doorDir) * 0.6, 0, Math.cos(doorDir) * 0.6));
   dishRoot.add(pedLamp);
 
@@ -580,9 +612,9 @@ export function buildExterior(env) {
       fragmentShader: /* glsl */`
         uniform sampler2D map; uniform float uWarm, uRed, uPh; varying vec2 vUv;
         void main() {
-          vec3 c = texture2D(map, vUv).rgb * uWarm * 1.6;
+          vec3 c = texture2D(map, vUv).rgb * uWarm * 0.95;
           float sweep = pow(0.5 + 0.5 * cos((vUv.x - 0.5) * 3.0 + uPh), 6.0);
-          c += vec3(1.0, 0.07, 0.03) * uRed * (0.25 + 1.4 * sweep) * (0.6 + 0.4 * vUv.y);
+          c += vec3(1.0, 0.07, 0.03) * uRed * (0.12 + 0.9 * sweep) * (0.6 + 0.4 * vUv.y);
           vec2 q = abs(vUv - 0.5) * 2.0;
           c += vec3(0.02, 0.03, 0.05) * (1.0 - q.y);
           gl_FragColor = vec4(c, 1.0);
@@ -591,8 +623,8 @@ export function buildExterior(env) {
     const pane = new THREE.Mesh(new THREE.PlaneGeometry(zw1 - zw0, yw1 - yw0), winMat);
     pane.position.set(2.58, (yw0 + yw1) / 2, (zw0 + zw1) / 2); pane.rotation.y = PI / 2;
     hutExterior.add(pane);
-    winGlowS = new THREE.Sprite(additive(new THREE.Color(1.0, 0.55, 0.22), { opacity: 0.3 }));
-    winGlowS.position.set(2.9, 1.4, 0.3); winGlowS.scale.set(3.2, 2.2, 1);
+    winGlowS = new THREE.Sprite(additive(new THREE.Color(1.0, 0.55, 0.22), { opacity: 0.2 }));
+    winGlowS.position.set(2.9, 1.4, 0.3); winGlowS.scale.set(2.4, 1.7, 1);
     hutExterior.add(winGlowS);
     winLight = new THREE.PointLight(0xffa04a, 5, 14, 2);
     winLight.position.set(3.4, 1.4, 0.3);
@@ -608,6 +640,36 @@ export function buildExterior(env) {
     porchLight = new THREE.PointLight(0xffa860, 6, 12, 2);
     porchLight.position.set(1.5, 2.1, Z + 0.5);
     hutG.add(porchLight);
+    // weathering details: gutter and downpipes, a vent, conduit and meter box, a sign
+    {
+      const galv = new THREE.MeshStandardMaterial({ color: 0x8a8f93, roughness: 0.5, metalness: 0.6 });
+      const parts = [];
+      parts.push(new THREE.CylinderGeometry(0.06, 0.06, 2 * X + 0.4, 10, 1, false).rotateZ(PI / 2).translate(0, H1 - 0.05, -Z - 0.22));
+      for (const x of [-X + 0.1, X - 0.1]) parts.push(new THREE.CylinderGeometry(0.04, 0.04, H1 - H0, 8).translate(x, (H1 + H0) / 2 - 0.1, -Z - 0.08));
+      parts.push(box(0.05, 0.4, 0.4, X + 0.03, 2.3, -1.3));
+      parts.push(box(0.12, 0.34, 0.26, X + 0.06, 0.9, -1.6));
+      parts.push(new THREE.CylinderGeometry(0.02, 0.02, 1.1, 6).translate(X + 0.05, 0.3, -1.6));
+      parts.push(new THREE.CylinderGeometry(0.018, 0.018, 1.8, 6).rotateX(PI / 2).translate(X + 0.04, 1.08, -0.8));
+      hutExterior.add(new THREE.Mesh(merge(parts), galv));
+      for (let k = 0; k < 6; k++) hutExterior.add(new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.012, 0.36).translate(X + 0.06, 2.14 + k * 0.05, -1.3), darkMat));
+      const sc = document.createElement('canvas'); sc.width = 256; sc.height = 128;
+      const sx = sc.getContext('2d');
+      sx.fillStyle = '#e8e4d8'; sx.fillRect(0, 0, 256, 128); sx.fillStyle = '#1d4f8a'; sx.fillRect(0, 0, 256, 34);
+      sx.fillStyle = '#fff'; sx.font = 'bold 22px "DejaVu Sans", sans-serif'; sx.textAlign = 'center'; sx.fillText('KRRO  HUT 1', 128, 25);
+      sx.fillStyle = '#222'; sx.font = 'bold 15px "DejaVu Sans", sans-serif'; sx.fillText('CONTROL ROOM', 128, 64); sx.fillText('RADIO QUIET ZONE', 128, 92);
+      const st = new THREE.CanvasTexture(sc); st.colorSpace = THREE.SRGBColorSpace;
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.25), new THREE.MeshLambertMaterial({ map: st }));
+      sign.position.set(X + 0.005, 1.55, -1.0); sign.rotation.y = PI / 2;
+      hutExterior.add(sign);
+      // gravel apron (darker, speckled) around the plinth
+      const gc = document.createElement('canvas'); gc.width = gc.height = 256;
+      const gx = gc.getContext('2d'); const rr = U.mulberry32(88);
+      gx.fillStyle = '#403c38'; gx.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 5000; i++) { const v = 40 + rr() * 80; gx.fillStyle = `rgb(${v},${v * 0.96},${v * 0.9})`; gx.fillRect(rr() * 256, rr() * 256, 1 + rr() * 2, 1 + rr() * 2); }
+      const gt = new THREE.CanvasTexture(gc); gt.colorSpace = THREE.SRGBColorSpace; gt.wrapS = gt.wrapT = THREE.RepeatWrapping; gt.repeat.set(4, 4);
+      const apron = new THREE.Mesh(new THREE.PlaneGeometry(2 * X + 3, 2 * Z + 3).rotateX(-PI / 2).translate(0, -0.27, 0), new THREE.MeshLambertMaterial({ map: gt, color: 0x9a9a9a, polygonOffset: true, polygonOffsetFactor: -1 }));
+      hutExterior.add(apron);
+    }
     // rooftop details: small dish, AC unit, antenna
     const p2 = [];
     for (let i = 0; i <= 8; i++) { const r = 0.05 + 0.45 * i / 8; p2.push(new THREE.Vector2(r, r * r / 0.8)); }
@@ -666,9 +728,9 @@ export function buildExterior(env) {
 
   // =========================================================================
   // moonlight direction: fixed in the hut frame (comes in through the window,
-  // from local +x, 34 deg up, angled toward local -z)
+  // from local +x, 36 deg up, angled toward local +z, so the pane pattern lands by the rack)
   // =========================================================================
-  const MOON_LOCAL = new V3(Math.cos(deg(28)) * Math.cos(deg(34)), Math.sin(deg(34)), -Math.sin(deg(28)) * Math.cos(deg(34)));
+  const MOON_LOCAL = new V3(Math.cos(deg(30)) * Math.cos(deg(36)), Math.sin(deg(36)), Math.sin(deg(30)) * Math.cos(deg(36)));
   root.updateMatrixWorld(true);
   MOON_DIR.copy(MOON_LOCAL).applyQuaternion(hutG.quaternion);
   moon.position.copy(MOON_DIR).multiplyScalar(200);
@@ -753,7 +815,7 @@ export function buildExterior(env) {
     winMat.uniforms.uWarm.value = win;
     winMat.uniforms.uRed.value = alarm * 0.8;
     winMat.uniforms.uPh.value = ph;
-    winGlowS.material.opacity = 0.25 * win + 0.3 * sweep;
+    winGlowS.material.opacity = 0.14 * win + 0.22 * sweep;
     winGlowS.material.color.setRGB(1.0, lerp(0.55, 0.1, sweep / (win + sweep + 1e-3)), lerp(0.22, 0.06, sweep / (win + sweep + 1e-3)));
     winLight.intensity = 5 * win + 7 * sweep;
     winLight.color.setRGB(1.0, lerp(0.63, 0.12, sweep / (win + sweep + 1e-3)), lerp(0.29, 0.08, sweep / (win + sweep + 1e-3)));

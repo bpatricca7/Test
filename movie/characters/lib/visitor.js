@@ -82,9 +82,16 @@ export async function createVisitor(env) {
   headGroup.matrixAutoUpdate = false;
   root.add(headGroup);
   const eyeGeo = new THREE.SphereGeometry(1, 48, 32);
+  const V3 = () => new THREE.Vector3();
+  const eyeEnv = {
+    uLP: { value: [0, 1, 2, 3].map(() => new THREE.Vector4(0, 10, 0, 1)) }, uLC: { value: [0, 1, 2, 3].map(V3) },
+    uRC: { value: [V3(), V3()] }, uRN: { value: [new THREE.Vector3(0, 0, 1), new THREE.Vector3(-1, 0, 0)] },
+    uRU: { value: [new THREE.Vector3(0.31, 0, 0), new THREE.Vector3(0, 0, 0.55)] }, uRV: { value: [new THREE.Vector3(0, 0.175, 0), new THREE.Vector3(0, 0.45, 0)] },
+    uRCol: { value: [new THREE.Vector3(0.22, 0.5, 0.6), new THREE.Vector3(0.09, 0.13, 0.24)] },
+  };
   const eyes = skull.eyes.map(e => {
     const rm = Math.max(...e.r);
-    const eu = Object.assign({}, uni, { uGaze: { value: new THREE.Vector3(0, 0, 1) }, uIris: { value: 0.74 }, uPupil: { value: 0.3 },
+    const eu = Object.assign({}, uni, eyeEnv, { uGaze: { value: new THREE.Vector3(0, 0, 1) }, uIris: { value: 0.72 }, uPupil: { value: 0.2 },
       uEyeS: { value: new THREE.Vector3(e.r[0] / rm, e.r[1] / rm, e.r[2] / rm) }, uRootInv: { value: new THREE.Matrix4() }, uRoot: { value: new THREE.Matrix4() } });
     const dm = new THREE.ShaderMaterial({ vertexShader: EYE_VERT, fragmentShader: EYE_FRAG, uniforms: eu, defines: { DEPTH_ONLY: 1 },
       transparent: true, colorWrite: false, depthWrite: true });
@@ -96,8 +103,48 @@ export async function createVisitor(env) {
     const md = new THREE.Mesh(eyeGeo, dm), mc = new THREE.Mesh(eyeGeo, cm);
     for (const m of [md, mc]) { m.matrixAutoUpdate = false; m.matrix.copy(m4); m.frustumCulled = false; headGroup.add(m); }
     md.renderOrder = 11; mc.renderOrder = 12;
+    mc.onBeforeRender = (renderer, scene) => gatherLights(scene);
     return { e, uni: eu, md, mc };
   });
+
+  // the eyes reflect the scene's strongest lights (found once per scene, read every frame)
+  let litScene = null, litList = [], litFrame = -1;
+  const _lp = new THREE.Vector3(), _lt = new THREE.Vector3(), _eyeW = new THREE.Vector3();
+  function gatherLights(scene) {
+    if (!scene) return;
+    if (scene !== litScene) {
+      litScene = scene; litList = [];
+      scene.traverse(o => { if ((o.isPointLight || o.isSpotLight || o.isDirectionalLight) && o !== light) litList.push(o); });
+    }
+    const fr = Math.round(cur.t * 1000);
+    if (fr === litFrame) return;
+    litFrame = fr;
+    headGroup.getWorldPosition(_eyeW);
+    const cand = [];
+    for (const o of litList) {
+      if (!o.visible || !(o.intensity > 0)) continue;
+      let vis = true; for (let q = o.parent; q; q = q.parent) if (!q.visible) { vis = false; break; }
+      if (!vis) continue;
+      o.getWorldPosition(_lp);
+      const c = o.color;
+      if (o.isDirectionalLight) {
+        o.target.getWorldPosition(_lt);
+        const d = _lp.clone().sub(_lt).normalize();
+        const k = Math.min(1.5, o.intensity) * 2.5;
+        cand.push({ score: k, p: [d.x, d.y, d.z, 0], c: [c.r * k, c.g * k, c.b * k] });
+      } else {
+        const d2 = Math.max(0.3, _lp.distanceToSquared(_eyeW));
+        const k = Math.min(1.5, o.intensity / d2) * 5;
+        cand.push({ score: k, p: [_lp.x, _lp.y, _lp.z, 1], c: [c.r * k, c.g * k, c.b * k] });
+      }
+    }
+    cand.sort((a, b) => b.score - a.score);
+    for (let i = 0; i < 4; i++) {
+      const L = cand[i];
+      if (L) { eyeEnv.uLP.value[i].set(...L.p); eyeEnv.uLC.value[i].set(...L.c); }
+      else { eyeEnv.uLP.value[i].set(0, 1, 0, 0); eyeEnv.uLC.value[i].set(0, 0, 0); }
+    }
+  }
 
   // ---- light ----
   const light = new THREE.PointLight(new THREE.Color(0.45, 0.88, 1.0), 0, 6.5, 2);
@@ -139,7 +186,7 @@ export async function createVisitor(env) {
     const vis = s.visemes || null;
     const mouthX = s.mouth || {};
     const eyesX = s.eyes || {};
-    const mouth = mouthParams(vis, { smile: (mouthX.smile || 0) + 0.04, jaw: mouthX.jaw || 0 });
+    const mouth = mouthParams(vis, { smile: mouthX.smile || 0, jaw: mouthX.jaw || 0 });
     // talking: the face stays alive (a hint of lid lift on loud syllables)
     const blink = s.blink !== undefined && s.autoBlink !== true ? clamp(s.blink) : Math.max(clamp(s.blink || 0), s.autoBlink === false ? 0 : autoBlink(t));
     // gaze (head space) per eye
@@ -156,13 +203,13 @@ export async function createVisitor(env) {
     let gazePitchAvg = 0;
     const gazes = skull.eyes.map(e => {
       const d = [tgt[0] - e.c[0], tgt[1] - e.c[1], tgt[2] - e.c[2]];
-      const yawG = clamp(Math.atan2(d[0], d[2]), -0.55, 0.55);
-      const pitchG = clamp(Math.atan2(d[1], Math.hypot(d[0], d[2])), -0.4, 0.4);
+      // limit the gaze to a cone around the head's forward direction
+      let yawG = Math.atan2(d[0], d[2]), pitchG = Math.atan2(d[1], Math.hypot(d[0], d[2]));
+      yawG = clamp(yawG, -0.6, 0.6); pitchG = clamp(pitchG, -0.45, 0.45);
       gazePitchAvg += pitchG * 0.5;
-      const r = e.side * HEAD.eye.roll;
-      const ph = yawG * 1.2 - e.side * 0.36, el = pitchG * 1.1;
-      const phi = ph * Math.cos(r) + el * Math.sin(r), eps = -ph * Math.sin(r) + el * Math.cos(r);
-      return [Math.sin(phi) * Math.cos(eps), Math.sin(eps), Math.cos(phi) * Math.cos(eps)];
+      const dh = [Math.sin(yawG) * Math.cos(pitchG), Math.sin(pitchG), Math.cos(yawG) * Math.cos(pitchG)];
+      const R = e.R;   // head -> eye local: R^T
+      return [R[0] * dh[0] + R[3] * dh[1] + R[6] * dh[2], R[1] * dh[0] + R[4] * dh[1] + R[7] * dh[2], R[2] * dh[0] + R[5] * dh[1] + R[8] * dh[2]];
     });
     for (const e of skull.eyes) {
       lidsArr.push({
@@ -181,7 +228,7 @@ export async function createVisitor(env) {
     headGroup.matrixWorldNeedsUpdate = true;
     root.updateMatrixWorld(true);
     const rootInv = root.matrixWorld.clone().invert();
-    eyes.forEach((E, i) => { E.uni.uGaze.value.set(...gazes[i]); E.uni.uRootInv.value.copy(rootInv); E.uni.uRoot.value.copy(root.matrixWorld); E.uni.uPupil.value = 0.3 + 0.02 * Math.sin(t * 0.7 + i) - 0.03 * glow; });
+    eyes.forEach((E, i) => { E.uni.uGaze.value.set(...gazes[i]); E.uni.uRootInv.value.copy(rootInv); E.uni.uRoot.value.copy(root.matrixWorld); E.uni.uPupil.value = 0.2 + 0.015 * Math.sin(t * 0.7 + i) - 0.02 * glow; });
     // head rotation in world for triplanar weights
     const c = Math.cos(yaw), sn = Math.sin(yaw);
     const Ry = [c, 0, sn, 0, 1, 0, -sn, 0, c];
@@ -234,12 +281,30 @@ export async function createVisitor(env) {
     const pres = sstep(0.25, 0.95, m) * (1 - sstep(0.05, 0.85, d));
     const level = pres * (0.78 + 0.32 * glow + 0.06 * uni.uPulse.value) * uni.uFlick.value;
     v.lightLevel = level;
-    light.intensity = 1.1 * level;
+    light.intensity = 0.55 * level;
     const lp = toWorld([pose.spine[3][0], pose.spine[3][1] + 0.08, pose.spine[3][2] + 0.25]);
     if (light.parent && !light.parent.isScene) {
       light.parent.updateWorldMatrix(true, false);
       light.position.set(...lp).applyMatrix4(light.parent.matrixWorld.clone().invert());
     } else light.position.set(...lp);
+
+    // ---- what the eyes reflect: the monitor screen and the window ----
+    {
+      const scr0 = s.materializeFrom || { center: [-0.5, 1.12, -1.7], width: 0.62, height: 0.35 };
+      const n0 = scr0.normal || [0, 0, 1];
+      eyeEnv.uRC.value[0].set(...scr0.center);
+      eyeEnv.uRN.value[0].set(...n0);
+      const r0 = new THREE.Vector3(0, 1, 0).cross(eyeEnv.uRN.value[0]).normalize();
+      eyeEnv.uRU.value[0].copy(r0).multiplyScalar((scr0.width || 0.62) / 2);
+      eyeEnv.uRV.value[0].set(0, (scr0.height || 0.35) / 2, 0);
+      const w0 = s.dissolveTo || [2.5, 1.4, 0.3];
+      const dx = rootPos[0] - w0[0], dz = rootPos[2] - w0[2];
+      const wn = Math.abs(dx) > Math.abs(dz) ? [Math.sign(dx), 0, 0] : [0, 0, Math.sign(dz)];
+      eyeEnv.uRC.value[1].set(...w0);
+      eyeEnv.uRN.value[1].set(...wn);
+      eyeEnv.uRU.value[1].set(-wn[2], 0, wn[0]).multiplyScalar(0.55);
+      eyeEnv.uRV.value[1].set(0, 0.45, 0);
+    }
 
     // ---- particles (built with the geometry) ----
     const scr = s.materializeFrom || { center: [-0.5, 1.12, -1.7], width: 0.62, height: 0.35 };

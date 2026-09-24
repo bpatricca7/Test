@@ -339,7 +339,7 @@ def render_amb(hall, room):
 def render_alarm(hall, room):
     rng = np.random.default_rng(21)
     a0 = float(B["alarm"])
-    a1 = LIGHTS
+    a1 = float(B.get("alarm_dies", LIGHTS))     # dies in the brown-out, before the Visitor forms
     n = int((a1 - a0 + 0.5) * SR)
     x = np.zeros(n)
     k = 0
@@ -357,8 +357,7 @@ def render_alarm(hall, room):
     # settles into the background as the scene goes on; very low while the Visitor is present
     d03 = LINES.get("d03", (INT0 + 9, INT0 + 11))[1]
     lvl = ramp_db([(a0, -3), (INT0 - 0.01, 0), (INT0, 0), (d03, -3), (span("maya_walks")[1], -6),
-                   (span("pulses")[0], -8), (SURGE[0], -8), (MAT[0], -10), (DEMAT[0], -11),
-                   (a1, -11)], n, a0)
+                   (span("pulses")[0], -8), (SURGE[0], -8), (a1, -9)], n, a0)
     # the surge: brown-out stutter
     s0, s1 = SURGE
     flick = np.ones(n)

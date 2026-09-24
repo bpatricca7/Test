@@ -17,7 +17,7 @@ import { buildBody, torsoSection, cardiganOpenAt } from './human/body.js';
 import { buildHands } from './human/hand.js';
 import { makeSkinMaterial } from './human/materials.js';
 import { createMayaHair, createSamHair } from './human/hair.js';
-import { createGlasses, createHeadphones, createHood, createKangaroo, createCardiganBits, createWatch, skinFromNearest } from './human/props.js';
+import { createGlasses, createHeadphones, createHoodGeoms, createDrawstrings, createKangaroo, createCardiganBits, createWatch, createShirtCollar, skinFromNearest } from './human/props.js';
 import { computeSecondary } from './human/secondary.js';
 import { knitTexture, weaveTexture, twillTexture, fleeceTexture, leatherTexture, plainTexture, makeClothMaterial } from './human/fabric.js';
 
@@ -115,14 +115,23 @@ export async function createHuman(env, id) {
     skinFromNearest(btn, [geoms.knitRib]);
     addSkinned(btn, btnMat, 'buttons');
     for (const pg of bits.pockets) { skinFromNearest(pg, [geoms.knit]); addSkinned(pg, mats.knit, 'pocket'); }
+    const collar = createShirtCollar(id, (y, th, off = 0) => torsoSection('maya', y, th, off));
+    skinFromNearest(collar, [geoms.shirt]);
+    const collarMat = mats.shirt.clone(); collarMat.side = THREE.DoubleSide;
+    collarMat.onBeforeCompile = mats.shirt.onBeforeCompile; collarMat.customProgramCacheKey = mats.shirt.customProgramCacheKey; collarMat.userData = mats.shirt.userData;
+    addSkinned(collar, collarMat, 'collar');
     const w = createWatch(rig.J, rig.list.indexOf(rig.bones.twistL));
     addSkinned(w.band, new THREE.MeshStandardMaterial({ color: 0x3a2217, roughness: 0.55 }), 'watchBand');
     addSkinned(w.face, new THREE.MeshStandardMaterial({ color: 0xc9a45a, roughness: 0.25, metalness: 0.8 }), 'watchFace');
   } else {
-    phones = createHeadphones(id, rnd);
+    const torsoAt = (y, th, off = 0) => torsoSection('sam', y, th, off);
+    phones = createHeadphones(id, rnd, torsoAt);
     chestPivot.add(phones.group);
     propTris += phones.tris;
-    hood = createHood(id, mats);
+    const hg = createHoodGeoms(id, torsoAt);
+    skinFromNearest(hg.pouch, [geoms.hoodie]); addSkinned(hg.pouch, mats.hoodie, 'hood');
+    skinFromNearest(hg.roll, [geoms.hoodie]); addSkinned(hg.roll, mats.hoodie, 'hoodRoll');
+    hood = createDrawstrings(id, torsoAt);
     chestPivot.add(hood.group);
     propTris += hood.tris;
     const kg = createKangaroo(id, (y, th) => torsoSection('sam', y, th, 0));
@@ -158,7 +167,6 @@ export async function createHuman(env, id) {
       chestPivot.rotation.set(0, 0, 0);
       if (phones) phones.group.rotation.set(clamp(l.z * 3.0, -0.2, 0.2), 0, clamp(-l.x * 3.0, -0.2, 0.2));
       if (hood) {
-        hood.group.rotation.set(clamp(l.z * 1.2, -0.08, 0.08), 0, clamp(-l.x * 1.2, -0.08, 0.08));
         hood.strings.forEach((sp, i) => sp.rotation.set(clamp(l.z * 9 + 0.05, -0.6, 0.6), 0, clamp(-l.x * 9 + (i ? 0.03 : -0.03), -0.6, 0.6)));
       }
     }

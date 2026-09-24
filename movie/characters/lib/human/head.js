@@ -38,9 +38,9 @@ export const SKIN_FEATURES = {
 
 export const PERSONA = {
   maya: { lashLen: 0.0068, lashW: 0.00024, lashCount: 64, lowerLashes: 14, lashColor: 0x120c09, smileAsym: 0.18, browAsym: 0.12,
-    lidDroop: 0.12, teeth: 0xe9e1d2, gum: 0x9c4c4a, tongue: 0xb05654 },
+    lidDroop: 0.12, teeth: 0xd9cfbd, gum: 0x9c4c4a, tongue: 0xb05654 },
   sam: { lashLen: 0.0056, lashW: 0.00024, lashCount: 58, lowerLashes: 12, lashColor: 0x0d0907, smileAsym: -0.2, browAsym: -0.1,
-    lidDroop: 0.0, teeth: 0xefe9de, gum: 0x8e4442, tongue: 0xa84e4e },
+    lidDroop: 0.0, teeth: 0xddd4c4, gum: 0x8e4442, tongue: 0xa84e4e },
 };
 
 export function createHead(id, { rnd, log } = {}) {
@@ -103,13 +103,14 @@ export function createHead(id, { rnd, log } = {}) {
     if (inZone || (Math.abs(x) < mo.w * 1.1 && Math.abs(dy) < 0.012 && z > 0.06)) {
       const edge = 0.00045;
       const lipT = sstep(hh + edge, hh - edge, Math.abs(dy)) * sstep(mo.w * 1.02, mo.w * 0.9, Math.abs(x));
-      if (k === 3 && r === 0) { c = mix3(C.lip, [0.02, 0.006, 0.005], 0.55); wt = 0.2; }
+      if (k === 3 && r <= 1) { c = mix3(C.lip, [0.02, 0.006, 0.005], r === 0 ? 0.6 : 0.3); wt = 0; }
       else { c = mix3(c, C.lip, lipT); wt = 0.32 * lipT; }
     }
     if (k === 4 || k === 5) {
-      const deep = k === 5 ? 1 : clamp((-r - 3) / 3);
-      c = mix3(C.lipIn, [0.03, 0.008, 0.008], Math.pow(deep, 0.6));
-      wt = 0.9 - 0.4 * deep;
+      const deep = k === 5 ? 1 : clamp((-r - 2) / 2.5);
+      const inner = mix3(C.lip, C.lipIn, 0.4).map(q => q * 0.6);
+      c = mix3(inner, [0.012, 0.003, 0.003], Math.pow(deep, 0.5));
+      wt = 0.3 * (1 - deep);
     }
     if (k === 2) { c = C.rim; wt = 0.95; }
     if (k === 1 && r <= 1) { c = mix3(c, C.rim, r === 0 ? 0.35 : 0.1); wt = r === 0 ? 0.5 : 0.1; }
@@ -124,11 +125,12 @@ export function createHead(id, { rnd, log } = {}) {
     wt = Math.max(wt, 0.12 * Math.exp(-((x / 0.012) ** 2) - (((y + 0.024) / 0.01) ** 2)) * sstep(0.095, 0.105, z));
     // cavity AO from the field
     let a = 1;
-    if (k === 0 || k === 1 || k === 3) {
+    if (k === 3 && r <= 1) a = r === 0 ? 0.15 : 0.35;
+    else if (k === 0 || k === 1 || k === 3) {
       gradient(H.f, x, y, z, g3);
       a = fieldAO(H.f, x, y, z, g3[0], g3[1], g3[2], 0.009, 4);
       a = 0.3 + 0.7 * a;
-    } else if (k === 4 || k === 5) a = 0.2;
+    } else if (k === 4 || k === 5) a = r >= -1 ? 0.35 : r >= -3 ? 0.5 : 0.1;
     else if (k === 2) a = 0.55;
     col[3 * v] = c[0]; col[3 * v + 1] = c[1]; col[3 * v + 2] = c[2];
     wet[v] = wt; ao[v] = a;
@@ -311,7 +313,7 @@ const HL = {
   // [azimuth, y] control points; the hair is above y
   maya: [[0, 0.066], [0.45, 0.06], [0.8, 0.046], [1.05, 0.033], [1.3, 0.026], [1.62, 0.022], [1.9, 0.004], [2.15, -0.035], [2.5, -0.058], [Math.PI, -0.062]],
   sam: [[0, 0.07], [0.45, 0.064], [0.8, 0.05], [1.05, 0.036], [1.3, 0.026], [1.62, 0.02], [1.9, 0.0], [2.2, -0.04], [2.5, -0.055], [Math.PI, -0.06]],
-  samTop: [[0, 0.066], [0.5, 0.062], [0.9, 0.058], [1.3, 0.054], [1.7, 0.05], [2.2, 0.045], [2.7, 0.038], [Math.PI, 0.035]],
+  samTop: [[0, 0.064], [0.5, 0.06], [0.9, 0.054], [1.3, 0.048], [1.7, 0.044], [2.2, 0.04], [2.7, 0.034], [Math.PI, 0.03]],
 };
 export function hairlineY(key, x, z) {
   const a = Math.abs(Math.atan2(x, z - 0.0));

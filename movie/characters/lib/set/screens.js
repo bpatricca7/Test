@@ -66,12 +66,24 @@ export function makeScreens(env, T = {}) {
   // --------------------------------------------------------------- canvases
   const MW = 1600, MH = 900;
   const mainC = document.createElement('canvas'); mainC.width = MW; mainC.height = MH;
-  const g = mainC.getContext('2d');
+  // level of detail: the full canvas (no mipmaps) when the screen is big on screen,
+  // a half-size canvas (mipmapped) when it is small; a tiny copy feeds the phosphor glow
+  const gBig = mainC.getContext('2d', { willReadFrequently: true });
+  const mainCs = document.createElement('canvas'); mainCs.width = MW / 2; mainCs.height = MH / 2;
+  const gSmall = mainCs.getContext('2d', { willReadFrequently: true });
+  let g = gBig, curC = mainC;
   const scratch = document.createElement('canvas'); scratch.width = MW; scratch.height = MH;
   const sg = scratch.getContext('2d');
   const mainTex = new THREE.CanvasTexture(mainC);
   mainTex.colorSpace = THREE.SRGBColorSpace;
-  mainTex.anisotropy = 1;
+  mainTex.generateMipmaps = false; mainTex.minFilter = THREE.LinearFilter;
+  const mainTexS = new THREE.CanvasTexture(mainCs);
+  mainTexS.colorSpace = THREE.SRGBColorSpace;
+  const glowC = document.createElement('canvas'); glowC.width = 200; glowC.height = 112;
+  const glowG = glowC.getContext('2d', { willReadFrequently: true });
+  glowG.imageSmoothingEnabled = true; glowG.imageSmoothingQuality = 'high';
+  const glowTex = new THREE.CanvasTexture(glowC);
+  glowTex.colorSpace = THREE.SRGBColorSpace; glowTex.generateMipmaps = false; glowTex.minFilter = THREE.LinearFilter;
 
   const SW = 640, SH = 480;
   const secC = document.createElement('canvas'); secC.width = SW; secC.height = SH;
@@ -388,7 +400,7 @@ export function makeScreens(env, T = {}) {
     const done = t > T_LAST + 0.05;
     const blink = !done || Math.floor((t - T_LAST) / 0.4) % 2 === 0;
     if (t < T_P0) text('----', X2 - 4, cy + 72, 108, ph(0.3), 'right', 'bold');
-    else if (blink) text(String(count).padStart(4, '0'), X2 - 4, cy + 72, 108, hot(0.95), 'right', 'bold', 0.5);
+    else if (blink) text(String(count).padStart(4, '0'), X2 - 4, cy + 72, 108, hot(0.85), 'right', 'bold', 0.3);
     // rate
     const r = RATE(t);
     text('RATE', x + 4, cy + 160, 19, ph(0.6), 'left', 'normal');
@@ -419,7 +431,7 @@ export function makeScreens(env, T = {}) {
     g.fillStyle = `rgba(0,0,0,${0.72 * a})`;
     g.fillRect(cx - fw / 2 - 40, cy - 60, fw + 80, 128);
     bracket(cx - fw / 2 - 40, cy - 60, fw + 80, 128, 18, ph(0.8 * a));
-    text(msg.slice(0, n), cx - fw / 2, cy - 12, 58, hot(a), 'left', 'bold', 1.2);
+    text(msg.slice(0, n), cx - fw / 2, cy - 12, 58, hot(0.92 * a), 'left', 'bold', 0.35);
     const on2 = Math.floor((t - T_LAST - 0.25) / 0.5) % 2 === 0;
     if (on2 || n < msg.length) {
       g.font = `bold 58px ${MONO}`;
@@ -601,7 +613,7 @@ export function makeScreens(env, T = {}) {
     const f = Math.floor(t * 24);
     const rnd = U.mulberry32(9000 + f);
     sg.clearRect(0, 0, MW, MH);
-    sg.drawImage(mainC, 0, 0);
+    sg.drawImage(curC, 0, 0, MW, MH);
     // tearing bands
     const nb = 3 + Math.floor(rnd() * 6 * amt);
     for (let i = 0; i < nb; i++) {
@@ -648,8 +660,10 @@ export function makeScreens(env, T = {}) {
   const T_BOOT = T_RET + 0.25, T_IDLE2 = T_RET + 1.6;
   let mode = 'idle', level = 0.4, color = new THREE.Color(0.55, 1.0, 0.85);
 
-  function drawMain(t, surge) {
-    g.setTransform(1, 0, 0, 1, 0, 0);
+  function drawMain(t, surge, big = true) {
+    g = big ? gBig : gSmall; curC = big ? mainC : mainCs;
+    const sc = big ? 1 : 0.5;
+    g.setTransform(sc, 0, 0, sc, 0, 0);
     g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
     g.fillStyle = '#020806'; g.fillRect(0, 0, MW, MH);
     const dark0 = T_S1, dark1 = T_RET;
@@ -679,7 +693,7 @@ export function makeScreens(env, T = {}) {
       return;
     }
     const fade = t >= T_IDLE2 ? smooth(T_IDLE2, T_IDLE2 + 0.4, t) : 1;
-    const inFold = t >= T_KEY;
+    const inFold = t >= T_KEY && t < T_RET;
     if (!inFold) {
       const status = t < T_ALARM ? 'SCANNING' : t < T_P0 ? 'CANDIDATE' : t <= T_LAST + 0.1 ? 'SIGNAL LOCK' : 'LOCK LOST';
       const sOn = t < T_ALARM ? (Math.floor(t / 0.5) % 2 ? 0.4 : 0.8) : Math.floor(t / 0.3) % 2 ? 0.5 : 1;
@@ -833,7 +847,7 @@ export function makeScreens(env, T = {}) {
     varying vec2 vUv;
     void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
   const crtFrag = /* glsl */`
-    uniform sampler2D map;
+    uniform sampler2D map, tGlow;
     uniform float uBright, uCurv, uFlick, uRoll, uJit, uTime;
     uniform vec2 uLines, uGlow;
     uniform vec3 uBlack, uRefl, uSmudge;
@@ -849,8 +863,9 @@ export function makeScreens(env, T = {}) {
       vec2 q = abs(p);
       float mask = (1.0 - smoothstep(0.985, 1.0, q.x)) * (1.0 - smoothstep(0.975, 1.0, q.y));
       vec3 c = texture2D(map, uv).rgb;
-      vec3 g1 = texture2D(map, uv, 2.5).rgb;
-      vec3 g2 = texture2D(map, uv, 4.5).rgb;
+      vec3 g1 = texture2D(tGlow, uv).rgb;
+      vec3 g2 = (texture2D(tGlow, uv + vec2(0.012, 0.0)).rgb + texture2D(tGlow, uv - vec2(0.012, 0.0)).rgb
+               + texture2D(tGlow, uv + vec2(0.0, 0.02)).rgb + texture2D(tGlow, uv - vec2(0.0, 0.02)).rgb) * 0.25;
       c += g1 * uGlow.x + g2 * uGlow.y;
       float ln = uv.y * uLines.x;
       float w = fwidth(ln);
@@ -868,15 +883,15 @@ export function makeScreens(env, T = {}) {
     }`;
   const crtMat = (tex, o) => new THREE.ShaderMaterial({
     uniforms: {
-      map: { value: tex }, uBright: { value: o.bright }, uCurv: { value: o.curv }, uFlick: { value: 1 }, uRoll: { value: 0 }, uJit: { value: 0 }, uTime: { value: 0 },
+      map: { value: tex }, tGlow: { value: o.glowTex || tex }, uBright: { value: o.bright }, uCurv: { value: o.curv }, uFlick: { value: 1 }, uRoll: { value: 0 }, uJit: { value: 0 }, uTime: { value: 0 },
       uLines: { value: new THREE.Vector2(o.lines, o.scan) }, uGlow: { value: new THREE.Vector2(o.glow1, o.glow2) },
       uBlack: { value: new THREE.Vector3(...o.black) }, uRefl: { value: new THREE.Vector3(0, 0, 0) },
       tSmudge: { value: T.smudge || null }, uSmudge: { value: new THREE.Vector3(0, 0, 0) }, uSmudgeUV: { value: new THREE.Vector4(...(o.smudgeUV || [1, 1, 0, 0])) },
     },
     vertexShader: crtVert, fragmentShader: crtFrag,
   });
-  const mainMaterial = crtMat(mainTex, { bright: 1.25, curv: 0.03, lines: 330, scan: 0.35, glow1: 0.3, glow2: 0.38, black: [0.004, 0.009, 0.008] });
-  const secondMaterial = crtMat(secTex, { bright: 1.1, curv: 0.06, lines: 240, scan: 0.4, glow1: 0.4, glow2: 0.4, black: [0.008, 0.005, 0.002], smudgeUV: [0.55, 0.7, 0.3, 0.2] });
+  const mainMaterial = crtMat(mainTex, { glowTex, bright: 1.25, curv: 0.03, lines: 330, scan: 0.35, glow1: 0.3, glow2: 0.38, black: [0.004, 0.009, 0.008] });
+  const secondMaterial = crtMat(secTex, { bright: 1.1, curv: 0.06, lines: 240, scan: 0.4, glow1: 0.12, glow2: 0.12, black: [0.008, 0.005, 0.002], smudgeUV: [0.55, 0.7, 0.3, 0.2] });
   const scopeMaterial = new THREE.MeshBasicMaterial({ map: scopeTex, color: new THREE.Color(1.3, 1.3, 1.3) });
   const counterMaterial = new THREE.MeshBasicMaterial({ map: ctrTex, color: new THREE.Color(1.6, 1.6, 1.6) });
 
@@ -926,11 +941,16 @@ export function makeScreens(env, T = {}) {
     },
     level: 0.4, color: new THREE.Color(0.55, 1.0, 0.86), secondLevel: 0.3,
     /** draw the main canvas for the pending time (idempotent) */
-    drawMainIfNeeded() {
-      if (pendingT === null || drawnT === pendingT) return;
-      drawnT = pendingT;
-      drawMain(pendingT, pendingState.surge || 0);
-      mainTex.needsUpdate = true;
+    drawMainIfNeeded(big = true) {
+      const key = pendingT + (big ? 'B' : 'S');
+      if (pendingT === null || drawnT === key) return;
+      drawnT = key;
+      drawMain(pendingT, pendingState.surge || 0, big);
+      (big ? mainTex : mainTexS).needsUpdate = true;
+      mainMaterial.uniforms.map.value = big ? mainTex : mainTexS;
+      glowG.clearRect(0, 0, 200, 112);
+      glowG.drawImage(curC, 0, 0, 200, 112);
+      glowTex.needsUpdate = true;
     },
     _second: null,
     drawSecondIfNeeded() {
