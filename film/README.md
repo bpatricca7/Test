@@ -2,7 +2,7 @@
 
 *An animated short film made entirely with code.*
 
-**▶ Watch: [`bolt-and-luma.mp4`](bolt-and-luma.mp4)** (2:39, 1080p, with sound)
+**▶ Watch: [`bolt-and-luma.mp4`](bolt-and-luma.mp4)** (2:39, 1080p, with sound) · smaller 720p copy: [`bolt-and-luma-720p.mp4`](bolt-and-luma-720p.mp4)
 
 ![Bolt and Luma under the blossom tree](poster.jpg)
 
