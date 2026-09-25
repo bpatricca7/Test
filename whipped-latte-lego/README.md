@@ -178,9 +178,9 @@ comes from an August 2026 Rebrickable snapshot and Pick a Brick listings from 20
 and late 2025. With internet access, `node ../lego-kit/pab_check.cjs .` checks every
 element live.
 
-The renders draw every clear surface as half-opaque white (the LDraw library's
-colour for trans-clear), so the latte looks pale in the pictures. For a listing, use
-photos of a real build.
+The renders draw the clear parts lighter than the renderer's default
+(`clear_alpha` in `design.py`), so the latte shows through the glass as it does in
+real clear parts. For a listing, use photos of a real build.
 
 ## Disclaimer
 

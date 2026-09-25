@@ -138,9 +138,9 @@ code to the PDF.
   - Sell it as a display kit for ages 14 and up. In the US, toys for children
     12 and under need third-party safety testing.
   - Put a small-parts warning on the box.
-- **Photos.** LeoCAD draws every clear surface half-transparent (LDraw's
-  Trans-Clear has alpha 128), so the drink looks paler in these renders than
-  through real clear parts. Photograph a real build for your listing.
+- **Photos.** The renders draw the clear parts lighter than the renderer's
+  default (`clear_alpha` in `design.py`), so the drink shows through the glass as
+  it does in real clear parts. Still, photograph a real build for your listing.
 - **Clear parts.** Bag the clear panels on their own so they don't get scratched.
 
 ## Building notes

@@ -83,6 +83,7 @@ PROJECT = dict(
                  ("Orange", "Bright Orange", "Orange"),
                  ("Reddish Brown", "Reddish Brown", "Reddish Brown")],
     bestseller_only=True,
+    clear_alpha=48,                   # draw the clear glass more see-through in renders
     batch_sizes=[10, 25],
 )
 

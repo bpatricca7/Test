@@ -2,8 +2,11 @@
 
 The shared toolkit behind [`../riviera-lego`](../riviera-lego),
 [`../house-lego`](../house-lego), [`../grand-floridian-lego`](../grand-floridian-lego),
-[`../boardwalk-lego`](../boardwalk-lego) and
-[`../pumpkin-spice-latte-lego`](../pumpkin-spice-latte-lego).
+[`../boardwalk-lego`](../boardwalk-lego), and the drink kits
+[`../pumpkin-spice-latte-lego`](../pumpkin-spice-latte-lego),
+[`../pumpkin-spice-latte-clear-lego`](../pumpkin-spice-latte-clear-lego),
+[`../whipped-latte-lego`](../whipped-latte-lego) and
+[`../iced-pumpkin-latte-lego`](../iced-pumpkin-latte-lego).
 A model is written as Python on the stud grid. The kit checks that it is buildable,
 renders the steps, maps every part to LEGO element IDs, and prints an instruction
 booklet and shopping lists.
@@ -54,6 +57,15 @@ Options in `PROJECT` for a kit you make many copies of (see
   `parts/kit_cost.csv` with the cost of one copy.
 - `main_parts_label`: the name of the main model's own parts in
   `parts_by_section.csv`.
+- `clear_alpha=48`: draws Trans-Clear parts more see-through in the renders
+  (LeoCAD's default alpha is 128). The renders go through a linked copy of the
+  LDraw library in `build/ldraw` with that one colour changed. Use it for clear glass
+  builds, so what's inside shows as it does in real clear parts.
+
+Clear parts that are Bestsellers include the 1×6×5, 1×4×3, 1×2×3 and 1×2×2 panels
+(`panel1x6x5` and so on), the 1×2×5 brick and the 1×2 brick without bottom tube.
+The clear 1×1 round brick, 1×2 plate, 1×1 tile and 1×1 round tile are Bestsellers
+too. The flat side of a panel is at the back at rotation 0.
 
 ## Requirements
 
