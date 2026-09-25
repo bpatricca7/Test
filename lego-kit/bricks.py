@@ -195,6 +195,13 @@ def _init_parts():
     P("tile_round2", "14769.dat", "Tile Round 2 x 2")
     P("tile_quarter", "25269.dat", "Tile Round 1 x 1 Quarter")
     P("stick", "3957b.dat", "Antenna 1 x 4 with Flat Top (stick)", studs=[])
+    # clear glass: panels have a thin wall on one long side
+    P("panel1x6x5", "59349.dat", "Panel 1 x 6 x 5")
+    P("panel1x4x3", "60581.dat", "Panel 1 x 4 x 3")
+    P("panel1x2x3", "87544.dat", "Panel 1 x 2 x 3")
+    P("panel1x2x2", "87552.dat", "Panel 1 x 2 x 2")
+    P("b1x2x5", "46212.dat", "Brick 1 x 2 x 5")
+    P("b1x2_open", "3065.dat", "Brick 1 x 2 without Bottom Tube")
 
 
 _init_parts()
@@ -513,6 +520,11 @@ ALLOWED = {
     ("p", 1): _sizes("1x2 1x4 1x6"),
     ("t", 84): _sizes("1x1 2x2"),
     ("p", 84): _sizes("1x1 1x2"),
+    # Trans-Clear: only these plate/tile sizes (use the panels, round1, headlight
+    # and b1x2_open for walls; clear 3004/3010 bricks are out of production)
+    ("p", 47): _sizes("1x2"),
+    ("t", 47): _sizes("1x1"),
+    ("b", 47): _sizes(""),
     ("p", 25): _sizes("1x1 1x2 1x4 1x6 2x2 2x3 2x4 2x6"),
     ("b", 25): _sizes("1x1 1x2 1x4 2x2 2x3 2x4"),
     ("t", 25): _sizes("1x1 1x2 2x2"),
