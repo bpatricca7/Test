@@ -1,5 +1,9 @@
 """Write the shopping lists for the model.
 
+  ../parts/pick_a_brick_upload.csv  ready for Pick a Brick's "Upload list" (elementId,quantity)
+  ../parts/pick_a_brick_upload_retry.csv  same parts with each element's newest
+                                    alternate ID, for anything the first upload misses
+  ../parts/pick_a_brick_mapping.csv how each part maps to Pick a Brick, with evidence
   ../parts/pick_a_brick_list.csv    element IDs and quantities for LEGO Pick a Brick
   ../parts/bricklink_wanted_list.xml  BrickLink "Upload wanted list" format
   ../parts/rebrickable_parts.csv    Rebrickable part-list import (Part,Color,Quantity)
@@ -31,6 +35,62 @@ def price(r):
     return float(p) if p else None
 
 
+PAB_SEARCH = "https://www.lego.com/en-us/pick-and-build/pick-a-brick?query={}"
+ORDER_CAP_STANDARD = 10     # many "Standard" range elements: max 10 per order (2025+)
+
+
+def newest_alt(r):
+    """Newest element ID for the same part and colour, if newer than the main one.
+
+    LEGO re-issues element IDs (for example the 2025 change of white), and Pick a
+    Brick may list the newer number.
+    """
+    alts = [a for a in r["alt_element_ids"].split()
+            if a.isdigit() and int(a) > int(r["element_id"])]
+    return max(alts, key=int) if alts else ""
+
+
+def evidence(r):
+    if r["pab_2025"]:
+        return "On Pick a Brick (late-2025 listing)"
+    if r["pab_2022"]:
+        return "In Pick a Brick Bestseller range (2022 listing); still in LEGO sets in %s" % r["last_set_year"]
+    return "Not on the Pick a Brick listings checked; in LEGO sets in %s" % r["last_set_year"]
+
+
+def write_pick_a_brick(rows, el):
+    """Pick a Brick upload files and the part-by-part mapping."""
+    with open(os.path.join(OUT, "pick_a_brick_upload.csv"), "w", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(["elementId", "quantity"])
+        for (dat, color), n in rows:
+            w.writerow([el[(dat, color)]["element_id"], n])
+    with open(os.path.join(OUT, "pick_a_brick_upload_retry.csv"), "w", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(["elementId", "quantity"])
+        for (dat, color), n in rows:
+            alt = newest_alt(el[(dat, color)])
+            if alt:
+                w.writerow([alt, n])
+    with open(os.path.join(OUT, "pick_a_brick_mapping.csv"), "w", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(["Line", "Element ID", "Quantity", "Pick a Brick name", "LEGO colour",
+                    "Design ID", "Part (booklet name)", "Evidence", "Last Pick a Brick price (USD)",
+                    "Price seen", "Over 10 needed", "If not found, try element ID",
+                    "Other element IDs", "Backup: BrickLink item / colour", "Pick a Brick search"])
+        for i, ((dat, color), n) in enumerate(rows, start=1):
+            r = el[(dat, color)]
+            p25, p22 = r["pab_price_2025"], r["pab_price_2022"]
+            price, when = (p25, "late 2025") if p25 else ((p22, "2022") if p22 else ("", ""))
+            alt = newest_alt(r)
+            others = " ".join(a for a in r["alt_element_ids"].split() if a != alt)
+            w.writerow([i, r["element_id"], n, r["pab_name"] or "(not listed)", r["lego_color"],
+                        r["design_id"], NAMES[dat], evidence(r), price, when,
+                        "yes" if n > ORDER_CAP_STANDARD else "", alt, others,
+                        f'{r["bricklink_part"]} / {r["bricklink_color"]}',
+                        PAB_SEARCH.format(r["element_id"])])
+
+
 def main():
     main_m, models, problems = riviera.main()
     assert not problems
@@ -57,6 +117,8 @@ def main():
             w.writerow([r["element_id"], n, NAMES[dat], r["lego_color"], r["design_id"],
                         r["bricklink_part"], r["bricklink_color"], r["alt_element_ids"],
                         r["last_set_year"], r["availability"], "" if p is None else f"{p:.2f}"])
+
+    write_pick_a_brick(rows, el)
 
     with open(os.path.join(OUT, "bricklink_wanted_list.xml"), "w") as fh:
         fh.write("<INVENTORY>\n")

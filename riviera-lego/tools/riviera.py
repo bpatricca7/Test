@@ -181,18 +181,18 @@ def build_tower():
     fill_cells(m, "t", LBG, roof, top)
     m.step()
     for x in range(TOWER_W):
-        m.add("slope65", ROOF, x, 0, top, rot=FACE["front"])
-        m.add("slope65", ROOF, x, 4, top, rot=FACE["back"])
+        m.add("slope75", ROOF, x, 0, top, rot=FACE["front"])
+        m.add("slope75", ROOF, x, 4, top, rot=FACE["back"])
     for z in (2, 3):
-        m.add("slope65", ROOF, 0, z, top, rot=FACE["left"])
-        m.add("slope65", ROOF, 4, z, top, rot=FACE["right"])
+        m.add("slope75", ROOF, 0, z, top, rot=FACE["left"])
+        m.add("slope75", ROOF, 4, z, top, rot=FACE["right"])
     m.step()
-    m.add("p4x4", ROOF, 1, 1, top + 6)
-    cap = m.add("dish2", ROOF, 2, 2, top + 7)
+    m.add("p4x4", ROOF, 1, 1, top + 9)
+    cap = m.add("dish2", ROOF, 2, 2, top + 10)
     m.step()
     # lantern on the dish's centre stud, half a stud off the grid
     cx, cz = 20 * 3, 20 * 3
-    y = -8 * (top + 7 + PARTS["dish2"].height)
+    y = -8 * (top + 10 + PARTS["dish2"].height)
     lan = m.add_raw("round1", WHITE, (cx, y - PARTS["round1"].bmax_y, cz), rot_matrix(0),
                     attach_to=cap)
     m.add_raw("cone1", ROOF, (cx, y - 24 - PARTS["cone1"].bmax_y, cz), rot_matrix(0),
@@ -216,32 +216,37 @@ def build_central():
     fill_rect(m, "p", WALL, 0, 0, CEN_W, CEN_D, top, along="z")
     m.step()
     L = top + 1
-    # --- mansard roof, lower steep part (two bricks tall) ---
+    # --- mansard roof: 75-degree slopes, three bricks tall, with dormers ---
     front = "SDSDS" + "CC" + "SDSDS"
     for x, c in enumerate(front):
         if c == "S":
-            m.add("slope65", ROOF, x, 0, L, rot=FACE["front"])
-    for x, c in enumerate(front):
-        if c == "D":
-            m.add("tech1x1", WHITE, x, 0, L)
-            m.add("b1x1", ROOF, x, 1, L)
+            m.add("slope75", ROOF, x, 0, L, rot=FACE["front"])
+        elif c == "D":
+            m.add("b1x2", ROOF, x, 0, L, rot=90)
     m.add("b1x2", BLACK, 5, 0, L)
     m.add("b1x2", ROOF, 5, 1, L)
     m.step()
     for x, c in enumerate(front):
         if c == "D":
-            m.add("slope45", ROOF, x, 0, L + 3, rot=FACE["front"])
+            m.add("tech1x1", WHITE, x, 0, L + 3)
+            m.add("b1x1", ROOF, x, 1, L + 3)
     m.add("tech1x2", WHITE, 5, 0, L + 3)
     m.add("b1x2", ROOF, 5, 1, L + 3)
     m.step()
+    for x, c in enumerate(front):
+        if c == "D":
+            m.add("slope45", ROOF, x, 0, L + 6, rot=FACE["front"])
+    m.add("b1x2", WHITE, 5, 0, L + 6)
+    m.add("b1x2", ROOF, 5, 1, L + 6)
+    m.step()
     for z in range(2, CEN_D - 2):
-        m.add("slope65", ROOF, 0, z, L, rot=FACE["left"])
-        m.add("slope65", ROOF, CEN_W - 2, z, L, rot=FACE["right"])
+        m.add("slope75", ROOF, 0, z, L, rot=FACE["left"])
+        m.add("slope75", ROOF, CEN_W - 2, z, L, rot=FACE["right"])
     for x in range(CEN_W):
-        m.add("slope65", ROOF, x, CEN_D - 2, L, rot=FACE["back"])
+        m.add("slope75", ROOF, x, CEN_D - 2, L, rot=FACE["back"])
     m.step()
     # --- flat top of the mansard ---
-    T = L + 6
+    T = L + 9
     top_cells = {(x, z) for x in range(1, CEN_W - 1) for z in range(1, CEN_D - 1)}
     fill_rect(m, "p", ROOF, 1, 1, CEN_W - 2, CEN_D - 2, T, along="x")
     m.add("p1x2", WHITE, 5, 0, T)
@@ -316,10 +321,10 @@ def build_main(wing, tower, central, palm):
                rect(*CENTRAL, CEN_W, CEN_D))
     claim(modules)
 
-    # drive: 2x4 tiles running front-to-back so they bridge the base seam at z=16
+    # drive: 1x4 tiles running front-to-back so they bridge the base seam at z=16
     claim(rect(0, 14, BASE_W, 4))
-    for x in range(0, BASE_W, 2):
-        place_rect(m, "t", LBG, x, 14, 2, 4, 1)
+    for x in range(BASE_W):
+        place_rect(m, "t", LBG, x, 14, 1, 4, 1)
     m.step()
 
     # porte-cochere footings (tan plates under the arch legs)
@@ -435,15 +440,18 @@ def build_porte_cochere(m):
     m.add("b1x1", WHITE, 17, 18, 2)
     m.add("b1x1", WHITE, 30, 18, 2)
     m.step()
-    # arches
+    # side arches on the front; extra leg bricks for the taller arches
     m.add("arch1x4", WHITE, 17, 12, 5)
     m.add("arch1x4", WHITE, 27, 12, 5)
-    m.add("arch1x6x2", WHITE, 21, 12, 5)
-    m.add("arch1x6x2", WHITE, 17, 13, 5, rot=90)
-    m.add("arch1x6x2", WHITE, 30, 13, 5, rot=90)
+    for x, z in ((21, 12), (26, 12), (17, 13), (17, 18), (30, 13), (30, 18)):
+        m.add("b1x1", WHITE, x, z, 5)
     m.step()
+    # raised 1x6 arches: the main entrance and the drive-through arches
     m.add("b1x4", WHITE, 17, 12, 8)
     m.add("b1x4", WHITE, 27, 12, 8)
+    m.add("arch1x6r", WHITE, 21, 12, 8)
+    m.add("arch1x6r", WHITE, 17, 13, 8, rot=90)
+    m.add("arch1x6r", WHITE, 30, 13, 8, rot=90)
     m.step()
     # canopy slab
     for (x, z, sx, sz) in [(17, 12, 8, 2), (25, 12, 6, 2), (17, 14, 6, 2), (23, 14, 8, 2),
@@ -465,7 +473,7 @@ def build_porte_cochere(m):
         m.add("slope45", ROOF, 29, z, 12, rot=FACE["right"])
     m.step()
     # roof deck
-    for (x, z, sx, sz) in [(18, 13, 6, 4), (24, 13, 6, 4), (18, 17, 12, 2), (18, 19, 12, 1)]:
+    for (x, z, sx, sz) in [(18, 13, 6, 4), (24, 13, 6, 4), (18, 17, 12, 2), (18, 19, 8, 1), (26, 19, 4, 1)]:
         place_rect(m, "p", ROOF, x, z, sx, sz, 15)
     m.step()
     # upper tier and tiles

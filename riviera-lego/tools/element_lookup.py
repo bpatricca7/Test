@@ -55,7 +55,8 @@ def load(src):
     pab25 = {}
     for fam in json.load(open(os.path.join(src, "pab2025.json"))):
         for c in fam["colors"]:
-            pab25[c["element_id"]] = (fam["element_id"], c["color_name"], c.get("price"))
+            if c.get("element_id"):
+                pab25[c["element_id"]] = (fam["brick_type"], c["color_name"], c.get("price"))
     bl = {}
     studio = os.path.join(src, "repos", "vaultcrest_moc-source", "cache",
                           "studio_reference_files", "ElementId.json")
@@ -106,7 +107,7 @@ def main(src, combos):
                    bricklink_color=bl_name, rebrickable_part="", design_id="",
                    element_id="", alt_element_ids="", last_set_year="", sets_since_2024="",
                    pab_2025="", pab_2022="", pab_price_2025="", pab_price_2022="",
-                   availability="")
+                   pab_name="", availability="")
         if best:
             (_, rbk, eid, design, last, n) = best
             alts = sorted({e for k in cands[(dat, color)] for e, _ in elements.get(k, [])} - {eid})
@@ -116,6 +117,10 @@ def main(src, combos):
                        pab_2022="yes" if eid in pab22 else "",
                        pab_price_2025=(pab25.get(eid) or (None, None, ""))[2] or "",
                        pab_price_2022=(pab22.get(eid) or [None] * 4)[3] or "")
+            if eid in pab22:
+                row["pab_name"] = pab22[eid][2]
+            elif eid in pab25:
+                row["pab_name"] = pab25[eid][0]
             if eid in bl:
                 bl_part, bl_col = bl[eid]
                 if bl_col != bl_color:

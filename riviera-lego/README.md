@@ -10,65 +10,95 @@ World). It includes:
 - two guest wings with red awnings
 - the lawn, lined with palms
 
-Every part is a real LEGO element in current production. Each one is listed with
-its LEGO Element ID, so you can order it from LEGO Pick a Brick on lego.com.
+Every part is a real LEGO element in current production. Each one is mapped to its
+LEGO Pick a Brick Element ID. You can upload one file to Pick a Brick on lego.com to
+fill your bag.
 
 | | |
 |---|---|
-| Pieces | **1,746** (87 kinds, 10 colours) |
+| Pieces | **1,771** (87 kinds, 10 colours) |
 | Footprint | 48 × 32 studs (38.4 × 25.6 cm) |
 | Height | 16 cm at the domes |
 | Scale | about 1:250 (1 stud ≈ 2 m, one storey = 4 plates) |
-| Instructions | 74-page PDF, 94 steps, 6 sections |
-| Estimated cost | about US$205 for the 1,628 pieces with a known Pick a Brick price (2022–2025 prices); allow about US$220–240 in total |
+| Instructions | 74-page PDF, 95 steps, 6 sections |
+| Estimated cost | about US$228 at 2022–2025 Pick a Brick prices (1,769 of the 1,771 pieces have a known price). LEGO raised about a third of Pick a Brick prices in 2026, so expect more. |
 
 ## What's in this folder
 
 | Path | What it is |
 |---|---|
-| [`instructions/Riviera_Resort_Instructions.pdf`](instructions/Riviera_Resort_Instructions.pdf) | **The instruction booklet**: cover, section intros with parts lists, 94 numbered steps with parts callouts, gallery, full inventory with Element IDs, ordering guide |
-| [`parts/pick_a_brick_list.csv`](parts/pick_a_brick_list.csv) | Shopping list for **LEGO Pick a Brick**: Element ID, quantity, description, LEGO colour, design ID, alternate IDs, availability notes, last price seen |
+| [`instructions/Riviera_Resort_Instructions.pdf`](instructions/Riviera_Resort_Instructions.pdf) | **The instruction booklet**: cover, section intros with parts lists, 95 numbered steps with parts callouts, gallery, full inventory with Element IDs, ordering guide |
+| [`parts/pick_a_brick_upload.csv`](parts/pick_a_brick_upload.csv) | **Upload this to Pick a Brick** (Upload list). It holds all 87 element IDs with their quantities (`elementId,quantity`) |
+| [`parts/pick_a_brick_upload_retry.csv`](parts/pick_a_brick_upload_retry.csv) | Second upload for anything the first one misses. It uses LEGO's newer IDs for the same parts (31 lines, mostly white) |
+| [`parts/pick_a_brick_mapping.csv`](parts/pick_a_brick_mapping.csv) | Part-by-part Pick a Brick mapping: Element ID, Pick a Brick's own item name, LEGO colour, design ID, evidence it's sold, last price seen, whether you need more than 10, the ID to try if not found, and a BrickLink backup |
+| [`parts/pick_a_brick_list.csv`](parts/pick_a_brick_list.csv) | Full parts list with element IDs, design IDs, alternates, production years and availability notes |
 | [`parts/bricklink_wanted_list.xml`](parts/bricklink_wanted_list.xml) | BrickLink wanted list (BrickLink → Want → Upload) |
 | [`parts/rebrickable_parts.csv`](parts/rebrickable_parts.csv) | Rebrickable part-list import (`Part,Color,Quantity`) |
 | [`parts/parts_by_section.csv`](parts/parts_by_section.csv) | Parts for each section, to pre-sort before you build |
 | [`model/riviera_resort.mpd`](model/riviera_resort.mpd) | The digital model (LDraw MPD with build steps and submodels). Opens in BrickLink Studio, LeoCAD, LDCad and LDView |
 | [`data/elements.csv`](data/elements.csv) | How each LDraw part and colour maps to a LEGO Element ID, BrickLink item, Rebrickable part and production data |
-| `tools/` | The generator: design, validation, rendering, element lookup, booklet |
+| `tools/` | The generator: design, validation, rendering, element lookup, booklet, and `pab_check.cjs`, a live Pick a Brick check |
 
-## Ordering the parts
+## Ordering the parts from Pick a Brick
 
-1. Open **lego.com → Pick and Build → Pick a Brick**.
-2. Work down `parts/pick_a_brick_list.csv`. Search each **Element ID** and add the
-   quantity. The same list, with pictures, is at the back of the booklet.
-3. If an ID doesn't show up, try the IDs in the *Alternate element IDs* column. For
-   example, LEGO gave many white parts new IDs in 2025. You can also search by
-   design ID and colour.
-4. For anything Pick a Brick doesn't have, upload `parts/bricklink_wanted_list.xml`
-   to BrickLink, or import `parts/rebrickable_parts.csv` into Rebrickable and
-   compare stores.
+1. Open **lego.com → Pick and Build → Pick a Brick** and choose **Upload list**.
+2. Upload [`parts/pick_a_brick_upload.csv`](parts/pick_a_brick_upload.csv). It
+   holds all 87 element IDs and quantities, well under Pick a Brick's 400-item
+   upload limit.
+3. If some lines aren't matched, upload
+   [`parts/pick_a_brick_upload_retry.csv`](parts/pick_a_brick_upload_retry.csv).
+   LEGO gave many white parts new element IDs in 2025 (for example the white 1×1
+   brick 300501 → 6552096), and Pick a Brick may list either number.
+4. Anything still missing: look it up in
+   [`parts/pick_a_brick_mapping.csv`](parts/pick_a_brick_mapping.csv) and search
+   Pick a Brick by design ID and colour. Or order it from BrickLink with
+   `parts/bricklink_wanted_list.xml`.
 
-The biggest line items are 378 white and 360 black 1×1 bricks (3005). If Pick a
-Brick caps the quantity per element, split them across two orders. Order a few
-spares of the small parts.
+**Quantity limits.** Pick a Brick's *Bestseller* range sells up to 999 of an
+element per order. Many *Standard* elements are capped at 10 per order. This model
+needs more than 10 of 30 elements, for example 384 white and 360 black 1×1 bricks
+and 64 dark grey 75° slopes. All 30 were in the Bestseller range, so one order
+should cover them. If Pick a Brick caps one of them, split it across orders or
+buy the rest on BrickLink.
 
-### How confident the IDs are
+### How the parts map to Pick a Brick
 
-Every element was checked against an August 2026 snapshot of Rebrickable's element
-database. Every element in the model appears in LEGO sets released in 2026, so all
-of them are in current production.
-- **21 line items** were listed on Pick a Brick in a late-2025 scrape. That scrape
-  only covers bricks and plates.
-- **The other 66** are current parts, most of them also listed in a 2022 Pick a
-  Brick scrape. They are marked *likely*.
+The model was designed to use only elements that were in Pick a Brick's Bestseller
+range. Three parts were swapped to make that true:
+- steep 2×1 slopes 60481 became 75° slopes 4460;
+- 2×4 tiles became 1×N and 2×2 tiles;
+- the 1×6×2 arch became the 1×6 raised arch 92950.
 
-Pick a Brick stock changes all the time, so none of this guarantees it has a part
-today.
+| Evidence | Line items |
+|---|---|
+| Listed on Pick a Brick in late 2025 | 22 |
+| In Pick a Brick's Bestseller range in 2022, and still in LEGO sets in 2026 | 63 |
+| Not on the Pick a Brick listings checked (the two 2×2 flags, design 80326) | 2 |
 
-Two substitutions to know about:
+The mapping file also gives Pick a Brick's own item names (for example
+"ROOF TILE 1X2X3/73°" for the 75° slope). Those names help when searching by hand.
+
+**Not yet checked live.** lego.com could not be reached from the environment this
+was made in. The mapping is built from an August 2026 Rebrickable snapshot and
+Pick a Brick listings from 2022 and late 2025. With internet access, run the live
+check:
+
+```bash
+NODE_PATH=$(npm root -g) node tools/pab_check.cjs    # needs Playwright + Chromium
+```
+
+It writes `parts/pick_a_brick_live.csv` with, for each element, whether Pick a
+Brick has it, the current price, Bestseller or Standard, stock, and the per-order
+limit if the site reports one. It uses the page's own GraphQL query, taken from the
+open-source LegoSharp client. It has not been run against the live site yet, so the
+query may need adjusting if LEGO has changed its API.
+
+Two more notes:
 - **Flags**: the model draws the 2×2 flag with LDraw part 2335, the old mould.
-  Order the current flag, **design 80326** (Red 6365459, Blue 6365486).
-- **Domes**: the tower domes are built from steep slopes (60481), a 4×4 plate and
-  a 2×2 dish, instead of the retired dark grey 4×4 dish.
+  Order the current flag, **design 80326** (Red 6365459, Blue 6365486). BrickLink
+  has it if Pick a Brick doesn't.
+- **Domes**: the tower domes are built from 75° slopes, a 4×4 plate and a 2×2
+  dish, because the dark grey 4×4 dish is retired.
 
 ## Building notes
 
@@ -120,8 +150,9 @@ file is used.
 
 - [Rebrickable](https://rebrickable.com/downloads/) database dump: elements,
   parts, sets and inventories (August 2026 snapshot).
-- Two community scrapes of LEGO Pick a Brick, from 2022 and late 2025, used for
-  "was it listed" and the prices.
+- Two community scrapes of LEGO Pick a Brick: 2022 (about 1,400 Bestseller
+  elements) and late 2025 (bricks and plates). They show whether an element was
+  listed, its Pick a Brick name and its price.
 - The BrickLink Studio element map, used for BrickLink item numbers.
 
 ## Disclaimer

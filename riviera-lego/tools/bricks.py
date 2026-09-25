@@ -119,12 +119,13 @@ def _init_parts():
     P("leaves1", "32607.dat", "Plant Plate Round 1 x 1 with 3 Leaves",
       cells=[(0, 0)], solid=True)
     # tiles
-    for (a, b), d in {(1, 1): "3070b", (1, 2): "3069b", (1, 4): "2431", (1, 6): "6636",
+    for (a, b), d in {(1, 1): "3070b", (1, 2): "3069b", (1, 3): "63864", (1, 4): "2431", (1, 6): "6636",
                       (1, 8): "4162", (2, 2): "3068b", (2, 4): "87079"}.items():
         P(f"t{a}x{b}", f"{d}.dat", f"Tile {a} x {b}")
     # slopes and roof parts
     P("slope45", "3040b.dat", "Slope 45 2 x 1")
     P("slope65", "60481.dat", "Slope 65 2 x 1 x 2")
+    P("slope75", "4460b.dat", "Slope 75 2 x 1 x 3")
     P("curve2x1", "11477.dat", "Slope Curved 2 x 1")
     P("cheese", "54200.dat", "Slope 30 1 x 1 x 2/3")
     P("dish4", "3960.dat", "Dish 4 x 4 Inverted",
@@ -134,6 +135,7 @@ def _init_parts():
     # arches: only the legs clutch the studs below
     P("arch1x4", "3659.dat", "Arch 1 x 4", bottom=[(-30, 0), (30, 0)])
     P("arch1x6x2", "15254.dat", "Arch 1 x 6 x 2", bottom=[(-50, 0), (50, 0)])
+    P("arch1x6r", "92950.dat", "Arch 1 x 6 Raised", bottom=[(-50, 0), (50, 0)])
     # accessories that do not sit on the grid
     P("bar3", "87994.dat", "Bar 3L", cells=[(0, 0)], bottom=[], height=0,
       solid=False, studs=[])
@@ -362,7 +364,7 @@ def validate(model, verbose=True):
 # --------------------------------------------------------------------------
 PLATE_1XN = [12, 10, 8, 6, 4, 3, 2, 1]
 BRICK_1XN = [8, 6, 4, 3, 2, 1]
-TILE_1XN = [8, 6, 4, 2, 1]
+TILE_1XN = [8, 6, 4, 3, 2, 1]
 
 
 def split_length(L, sizes, avoid=()):
@@ -420,7 +422,8 @@ def row(model, kind, color, x0, z0, length, layer, axis="x", avoid=(), sizes=Non
 
 
 # Plate/tile/brick sizes allowed per colour: only elements in current
-# production (seen in 2024+ sets and/or recent Pick a Brick listings).
+# production that were also in LEGO Pick a Brick's Bestseller range (the
+# range that sells up to 999 of an element per order).
 def _sizes(s):
     return {tuple(sorted(map(int, t.split("x")))) for t in s.split()}
 
@@ -431,12 +434,12 @@ ALLOWED = {
     ("p", 2): _sizes("1x1 1x2 1x3 1x4 1x6 1x8 2x2 2x3 2x4 2x6 2x8 2x10 4x4 4x6 4x8 6x8"),
     ("p", 71): _sizes("1x1 1x2 1x3 1x4 1x6 1x8 1x10 1x12 2x2 2x3 2x4 2x6 2x8 2x10 2x12 "
                       "4x4 4x6 4x8 4x10 4x12 6x6 6x8 6x10 6x12"),
-    ("p", 72): _sizes("1x1 1x2 1x3 1x4 1x6 1x8 1x10 1x12 2x2 2x3 2x4 2x6 2x8 2x10 2x12 "
+    ("p", 72): _sizes("1x1 1x2 1x3 1x4 1x6 1x8 1x10 2x2 2x3 2x4 2x6 2x8 2x10 2x12 "
                       "4x4 4x6 4x8 6x8 6x10 6x12 16x16"),
     ("p", 19): _sizes("1x1 1x2 1x4 2x4"),
     ("p", 288): _sizes("1x1 1x2 1x3 1x4 2x4"),
-    ("t", 71): _sizes("1x1 1x2 1x4 1x6 1x8 2x2 2x4"),
-    ("t", 72): _sizes("1x1 1x2 1x4 1x6 1x8 2x2 2x4"),
+    ("t", 71): _sizes("1x1 1x2 1x3 1x4 1x6 1x8 2x2"),
+    ("t", 72): _sizes("1x1 1x2 1x3 1x4 1x6 1x8 2x2"),
     ("t", 19): _sizes("1x1 1x2 1x4 1x6 2x2"),
     ("b", 15): _sizes("1x1 1x2 1x3 1x4 1x6 1x8"),
 }
@@ -450,7 +453,7 @@ def allowed(kind, color, a, b):
 # sizes available per strip width (studs), long side listed
 PLATE_SIZES = {1: [12, 10, 8, 6, 4, 3, 2, 1], 2: [16, 12, 10, 8, 6, 4, 3, 2],
                4: [12, 10, 8, 6, 4], 6: [12, 10, 8, 6], 8: [16, 8], 16: [16]}
-TILE_SIZES = {1: [8, 6, 4, 2, 1], 2: [4, 2]}
+TILE_SIZES = {1: [8, 6, 4, 3, 2, 1], 2: [4, 2]}
 
 
 def rect_key(kind, sx, sz, color=None):

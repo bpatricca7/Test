@@ -19,7 +19,8 @@ Section,Element ID,Quantity,Description,LEGO colour
 "Grounds, porte-cochere, flowers and flags",4116671,4,Plate 4 x 6,Dark Green
 "Grounds, porte-cochere, flowers and flags",4507311,10,Plate 6 x 8,Dark Green
 "Grounds, porte-cochere, flowers and flags",4211088,3,Brick 1 x 2,Dark Stone Grey
-"Grounds, porte-cochere, flowers and flags",6133611,1,Plate 1 x 12,Dark Stone Grey
+"Grounds, porte-cochere, flowers and flags",4211001,1,Plate 1 x 4,Dark Stone Grey
+"Grounds, porte-cochere, flowers and flags",4210998,1,Plate 1 x 8,Dark Stone Grey
 "Grounds, porte-cochere, flowers and flags",6004927,6,Plate 16 x 16,Dark Stone Grey
 "Grounds, porte-cochere, flowers and flags",4211067,1,Plate 2 x 12,Dark Stone Grey
 "Grounds, porte-cochere, flowers and flags",4211115,2,Plate 4 x 6,Dark Stone Grey
@@ -27,18 +28,18 @@ Section,Element ID,Quantity,Description,LEGO colour
 "Grounds, porte-cochere, flowers and flags",4211135,18,Slope 45 2 x 1,Dark Stone Grey
 "Grounds, porte-cochere, flowers and flags",6029948,8,Slope Curved 2 x 1,Dark Stone Grey
 "Grounds, porte-cochere, flowers and flags",4211053,1,Tile 1 x 4,Dark Stone Grey
+"Grounds, porte-cochere, flowers and flags",4210651,4,Tile 1 x 6,Dark Stone Grey
 "Grounds, porte-cochere, flowers and flags",4211008,1,Tile 1 x 8,Dark Stone Grey
-"Grounds, porte-cochere, flowers and flags",4211055,2,Tile 2 x 2,Dark Stone Grey
-"Grounds, porte-cochere, flowers and flags",4560184,6,Tile 2 x 4,Dark Stone Grey
+"Grounds, porte-cochere, flowers and flags",4211055,8,Tile 2 x 2,Dark Stone Grey
 "Grounds, porte-cochere, flowers and flags",6055169,2,Plate 1 x 1,Earth Green
 "Grounds, porte-cochere, flowers and flags",6013102,1,Plate 1 x 2,Earth Green
 "Grounds, porte-cochere, flowers and flags",6013975,2,Plate 1 x 3,Earth Green
 "Grounds, porte-cochere, flowers and flags",6020923,17,Plate 1 x 4,Earth Green
 "Grounds, porte-cochere, flowers and flags",4211412,2,Brick Round 1 x 1,Medium Stone Grey
-"Grounds, porte-cochere, flowers and flags",4560183,24,Tile 2 x 4,Medium Stone Grey
+"Grounds, porte-cochere, flowers and flags",4211356,48,Tile 1 x 4,Medium Stone Grey
 "Grounds, porte-cochere, flowers and flags",365901,2,Arch 1 x 4,White
-"Grounds, porte-cochere, flowers and flags",6548280,3,Arch 1 x 6 x 2,White
-"Grounds, porte-cochere, flowers and flags",300501,2,Brick 1 x 1,White
+"Grounds, porte-cochere, flowers and flags",4620761,3,Arch 1 x 6 Raised,White
+"Grounds, porte-cochere, flowers and flags",300501,8,Brick 1 x 1,White
 "Grounds, porte-cochere, flowers and flags",300401,4,Brick 1 x 2,White
 "Grounds, porte-cochere, flowers and flags",301001,2,Brick 1 x 4,White
 "Grounds, porte-cochere, flowers and flags",302401,2,Plate 1 x 1,White
@@ -50,18 +51,19 @@ Central pavilion,300526,32,Brick 1 x 1,Black
 Central pavilion,300426,9,Brick 1 x 2,Black
 Central pavilion,4504379,6,Slope 30 1 x 1 x 2/3,Bright Red
 Central pavilion,4211098,4,Brick 1 x 1,Dark Stone Grey
-Central pavilion,4211088,2,Brick 1 x 2,Dark Stone Grey
+Central pavilion,4211088,7,Brick 1 x 2,Dark Stone Grey
 Central pavilion,4257526,1,Plate 1 x 10,Dark Stone Grey
 Central pavilion,4210678,1,Plate 2 x 10,Dark Stone Grey
 Central pavilion,4211114,1,Plate 6 x 10,Dark Stone Grey
 Central pavilion,4211135,4,Slope 45 2 x 1,Dark Stone Grey
-Central pavilion,6013658,32,Slope 65 2 x 1 x 2,Dark Stone Grey
+Central pavilion,4221745,32,Slope 75 2 x 1 x 3,Dark Stone Grey
 Central pavilion,4210848,4,Tile 1 x 1,Dark Stone Grey
 Central pavilion,4211053,2,Tile 1 x 4,Dark Stone Grey
-Central pavilion,4560184,10,Tile 2 x 4,Dark Stone Grey
+Central pavilion,4211008,10,Tile 1 x 8,Dark Stone Grey
 Central pavilion,4211396,6,Plate 2 x 3,Medium Stone Grey
 Central pavilion,4211406,6,Plate 2 x 8,Medium Stone Grey
 Central pavilion,300501,64,Brick 1 x 1,White
+Central pavilion,300401,1,Brick 1 x 2,White
 Central pavilion,301001,8,Brick 1 x 4,White
 Central pavilion,300801,24,Brick 1 x 8,White
 Central pavilion,302401,22,Plate 1 x 1,White
@@ -82,10 +84,9 @@ Domed corner pavilion (build 2),300526,120,Brick 1 x 1,Black
 Domed corner pavilion (build 2),4529240,2,Cone 1 x 1,Dark Stone Grey
 Domed corner pavilion (build 2),4211010,2,Dish 2 x 2 Inverted,Dark Stone Grey
 Domed corner pavilion (build 2),4243831,2,Plate 4 x 4,Dark Stone Grey
-Domed corner pavilion (build 2),6013658,32,Slope 65 2 x 1 x 2,Dark Stone Grey
+Domed corner pavilion (build 2),4221745,32,Slope 75 2 x 1 x 3,Dark Stone Grey
 Domed corner pavilion (build 2),4211400,2,Plate 6 x 12,Medium Stone Grey
-Domed corner pavilion (build 2),4211413,2,Tile 2 x 2,Medium Stone Grey
-Domed corner pavilion (build 2),4560183,8,Tile 2 x 4,Medium Stone Grey
+Domed corner pavilion (build 2),4211549,12,Tile 1 x 6,Medium Stone Grey
 Domed corner pavilion (build 2),300501,120,Brick 1 x 1,White
 Domed corner pavilion (build 2),300401,20,Brick 1 x 2,White
 Domed corner pavilion (build 2),300901,60,Brick 1 x 6,White
@@ -101,8 +102,7 @@ Guest wing (build 2),4211399,2,Plate 1 x 1,Medium Stone Grey
 Guest wing (build 2),4211425,2,Plate 1 x 8,Medium Stone Grey
 Guest wing (build 2),4211396,10,Plate 2 x 3,Medium Stone Grey
 Guest wing (build 2),4211452,10,Plate 2 x 6,Medium Stone Grey
-Guest wing (build 2),4211415,18,Tile 1 x 1,Medium Stone Grey
-Guest wing (build 2),4211414,18,Tile 1 x 2,Medium Stone Grey
+Guest wing (build 2),4558169,18,Tile 1 x 3,Medium Stone Grey
 Guest wing (build 2),4211481,18,Tile 1 x 8,Medium Stone Grey
 Guest wing (build 2),300501,192,Brick 1 x 1,White
 Guest wing (build 2),362201,16,Brick 1 x 3,White

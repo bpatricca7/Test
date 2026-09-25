@@ -506,24 +506,25 @@ def ordering_pages(bk, man, el):
         <h2>Ordering the parts</h2>
         <h3>1 &middot; LEGO Pick a Brick (lego.com)</h3>
         <ol>
-          <li>Go to <b>lego.com &rarr; Pick and Build &rarr; Pick a Brick</b>.</li>
-          <li>Search for each <b>Element ID</b> from the inventory (for example
-          <b>{e(el.get(("3005.dat", 15), {}).get("element_id", "300501"))}</b> is a white 1&times;1 brick) and add the quantity.</li>
-          <li>Pick a Brick has two ranges, <i>Bestseller</i> and <i>Standard</i>, which can ship at different speeds.
-          Stock changes often. If an element is missing, search by its design number and colour instead.</li>
-          <li>If Pick a Brick caps the quantity of an element per order, split the 1&times;1 bricks across two orders.</li>
+          <li>Go to <b>lego.com &rarr; Pick and Build &rarr; Pick a Brick</b> and choose <b>Upload list</b>.</li>
+          <li>Upload <code>parts/pick_a_brick_upload.csv</code>. It lists all {len(man['parts'])} kinds of element by Element ID
+          with their quantities, and fills your bag in one go.</li>
+          <li>If anything isn't matched, upload <code>pick_a_brick_upload_retry.csv</code>. It has LEGO's newer
+          IDs for the same parts; many white parts got new IDs in 2025. Or search the inventory's design number and colour.</li>
+          <li>Bestseller elements can be ordered up to 999 at a time. Many Standard elements are limited to 10 per order.
+          Every element this model needs more than 10 of was in the Bestseller range.</li>
         </ol>
         <h3>2 &middot; BrickLink or Rebrickable (backup)</h3>
         <p>The files in <code>parts/</code> cover anything Pick a Brick does not stock:</p>
         <ul>
           <li><code>bricklink_wanted_list.xml</code>: BrickLink &rarr; Want &rarr; Upload.</li>
           <li><code>rebrickable_parts.csv</code>: import it as a Rebrickable part list, then compare stores.</li>
-          <li><code>pick_a_brick_list.csv</code>: the full list with element IDs, design numbers and colours.</li>
+          <li><code>pick_a_brick_mapping.csv</code>: how each part maps to Pick a Brick, with the evidence, the last price seen and a BrickLink backup.</li>
         </ul>
         <h3>What it costs</h3>
         <p>At Pick a Brick prices seen in 2022&ndash;2025, the {priced:,} elements with a known price
-        come to about <b>US${cost:.0f}</b>. Allow roughly <b>US$220&ndash;240</b> in total, plus
-        shipping. Prices change, so check the current ones.</p>
+        come to about <b>US${cost:.0f}</b>, plus shipping. LEGO raised prices on about a third of
+        Pick a Brick elements in 2026, so expect to pay more. The bag total after uploading shows the current price.</p>
         <p>Order a few spare 1&times;1 bricks and plates, because small parts go missing easily.</p>
       </div>
       <div>
@@ -532,7 +533,7 @@ def ordering_pages(bk, man, el):
           <li><b>Base:</b> six 16&times;16 plates. You can swap in any plates that cover 48&times;32 studs, or a 48&times;48 grey baseplate.</li>
           <li><b>Lawn:</b> any green plates. Keep the joints away from the joints in the base plates below.</li>
           <li><b>Hidden plates:</b> the plates inside the buildings can be any colour.</li>
-          <li><b>Flags:</b> any colour. Add stickers if you like.</li>
+          <li><b>Flags:</b> any colour. The current 2&times;2 flag (design 80326) wasn't on the Pick a Brick listings checked; BrickLink has it.</li>
         </ul>
         <h3>Colour names</h3>
         <table>
