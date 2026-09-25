@@ -42,7 +42,8 @@ float bloomMask(vec3 wp, float soft) {
 float bloomFront(vec3 wp) {
   float d = length(wp.xz - uBloomCenter);
   float edge = uBloomRadius + (gNoise(wp.xz * 0.22) - 0.5) * 5.0;
-  return exp(-pow((d - edge) / 1.6, 2.0));
+  float q = (d - edge) / 1.6;
+  return exp(-q * q);
 }
 `;
 

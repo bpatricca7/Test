@@ -525,8 +525,8 @@ const SHOTS_RAW = [
       S.fx.sparkles(t, top, { count: 30, radius: 0.16, color: [0.75, 1, 0.55], size: 0.02, alpha: 0.4 + 0.5 * alive, seed: 5 });
       S.fx.sparkles(t, top, { count: 24, radius: 0.1 + 0.2 * alive, color: [1, 1, 0.7], size: 0.03, alpha: pulse(t, BEAT.alive, BEAT.alive + 1.2, 0.05, 0.8), rise: 0.3, seed: 12 });
       const k = k01(t, 63.3, 67.4);
-      const cam = [canPos.x + lerp(0.2, 0.13, k), canPos.y + lerp(0.2, 0.16, k), canPos.z - lerp(0.5, 0.36, k)];
-      S.cam(cam, [canPos.x, canPos.y + 0.13, canPos.z + 0.02], 30);
+      const cam = [canPos.x + lerp(0.2, 0.14, k), canPos.y + lerp(0.22, 0.2, k), canPos.z - lerp(0.52, 0.43, k)];
+      S.cam(cam, [canPos.x, canPos.y + 0.16, canPos.z + 0.02], 30);
       S.dof(Math.hypot(cam[0] - canPos.x, cam[1] - canPos.y - 0.13, cam[2] - canPos.z), 0.03, 0.012);
       S.shake(0.15);
       S.shadowFocus(BOLT_PILE[0], BOLT_PILE[1], 2);
@@ -564,7 +564,7 @@ const SHOTS_RAW = [
       S.fx.puff(t, BEAT.impact, [L[0], gy, L[1]], { count: 90, size: 1.3, spread: 5.5, up: 0.4, life: 4.0, ring: true, alpha: 0.6, seed: 30 });
       S.fx.puff(t, BEAT.impact, [L[0], gy, L[1]], { count: 60, size: 1.6, spread: 2.2, up: 2.4, life: 4.5, alpha: 0.55, seed: 31 });
       if (t > BEAT.impact) lumaPose(S, { x: L[0], y: gy + 0.9, z: L[1], glow: 1.5, light: 2, eyes: 'closed', blink: false });
-      S.cam([-3.05, 0.55, -2.1], [1.0, lerp(2.4, 1.1, smoothstep(70.8, 71.8, t)), -8.0], 42);
+      S.cam([-2.25, 0.58, -1.45], [0.7, lerp(2.4, 1.1, smoothstep(70.8, 71.8, t)), -7.2], 42);
       S.shake(0.35 + 4 * pulse(t, BEAT.impact, BEAT.impact + 0.8, 0.01, 0.75), 1.6);
       S.shadowFocus(-0.5, -6, 9);
       motes(S);
@@ -589,7 +589,7 @@ const SHOTS_RAW = [
       sproutInCan(S, handsPos(S).add(new THREE.Vector3(0, -0.05, 0)), toL, { glow: 0.2 });
       const L = LAYOUT.lumaLand;
       const k = k01(t, 73.3, 78.6);
-      const lp = [lerp(L[0], 2.3, k), lerp(S.ground(L[0], L[1]) + 0.9, 1.3, k01(t, 73.3, 74.4)), lerp(L[1], -7.5, k)];
+      const lp = [lerp(L[0], 2.0, k), lerp(S.ground(L[0], L[1]) + 0.9, 1.3, k01(t, 73.3, 74.4)), lerp(L[1], -7.4, k)];
       const scanYaw = heading([lp[0], lp[2]], HIDE) + Math.PI + Math.sin(t * 1.1) * 0.9 * (1 - pulse(t, 76.7, 77.9, 0.3, 0.3)) + Math.PI * (1 - pulse(t, 76.7, 77.9, 0.3, 0.3));
       lumaPose(S, {
         x: lp[0], y: lp[1], z: lp[2], rotY: scanYaw, eyes: 'scan', beam: smoothstep(73.8, 74.2, t), glow: 1, light: 1.2,
@@ -612,7 +612,7 @@ const SHOTS_RAW = [
       const out = k01(t, 79.0, 79.9, 'inOutCubic');
       const bp = spline([[HIDE[0], HIDE[1]], [HIDE_MID[0], HIDE_MID[1]], [REVEAL[0], REVEAL[1]]], out);
       const bx = bp[0], bz = bp[1];
-      const lumaSpot = [lerp(2.3, 1.75, k01(t, 81.2, 82.0)) - 0.4 * k01(t, 84.8, 85.8), lerp(-7.5, -7.2, k01(t, 81.2, 82.0))];
+      const lumaSpot = [lerp(2.0, 1.6, k01(t, 81.2, 82.0)) - 0.3 * k01(t, 84.8, 85.8), lerp(-7.4, -7.15, k01(t, 81.2, 82.0))];
       const toLuma = heading([bx, bz], lumaSpot);
       const waveB = win(t, 83.3, 84.6) ? Math.sin((t - 83.3) * 15) * 0.4 : 0;
       const bothUp = pulse(t, 83.3, 84.6, 0.15, 0.25);
@@ -655,7 +655,7 @@ const SHOTS_RAW = [
         else { S.can.root.visible = false; S.sprout.root.visible = false; }
       }
       const mid = [(bx + lumaSpot[0]) / 2, (bz + lumaSpot[1]) / 2];
-      S.cam([mid[0] - 1.1, 1.1, mid[1] - 4.6], [mid[0], 1.0, mid[1]], 38);
+      S.cam([mid[0] - 0.95, 1.08, mid[1] - 4.1], [mid[0], 0.98, mid[1]], 36);
       S.shake(0.3);
       S.shadowFocus(mid[0], mid[1], 5);
       motes(S);
@@ -925,6 +925,7 @@ const SHOTS_RAW = [
         glow: 1 - 0.35 * nestle + 0.1 * Math.sin(t * 1.5), light: 1.6 - 0.4 * nestle, bob: 0.6,
       });
       sproutPlanted(S, { glow: 0.35 });
+      S.fx.zzz(t, 117.1, 119.6, headPos(S, 0.25).toArray());
       // shooting star
       const ss = clamp((t - BEAT.shootingStar) / 0.9);
       if (ss > 0 && ss < 1) {
@@ -954,6 +955,7 @@ const SHOTS_RAW = [
         armL: [-0.25, 0.05, -0.5, 0.1], armR: [-0.25, 0.05, -0.5, 0.1],
       });
       lumaPose(S, { x: SIT_L[0] - 0.22, y: 1.0, z: SIT_L[1], rotY: -0.25, roll: 0.12, eyes: 'closed', blink: false, glow: 0.6, light: 0.5, bob: 0.5 });
+      S.fx.zzz(t, 117.1, 121.3, headPos(S, 0.25).toArray(), { size: 0.1 });
       const glow = smoothstep(BEAT.glowUp, BEAT.pulse, t);
       sproutPlanted(S, { glow: 0.3 + 2.2 * glow, scale: 1.35 + 0.25 * glow, unfurl: 1 + 0.25 * glow });
       const sp = [P[0], S.ground(P[0], P[1]) + 0.12, P[1]];

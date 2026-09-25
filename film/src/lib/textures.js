@@ -346,3 +346,16 @@ export function barkTexture() {
   }
   return toTexture(c);
 }
+
+export function letterSprite(ch = 'Z', size = 128) {
+  const [c, ctx] = canvas(size);
+  ctx.font = `700 ${size * 0.8}px Fredoka, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = size * 0.08;
+  ctx.strokeStyle = 'rgba(40,60,120,0.8)';
+  ctx.strokeText(ch, size / 2, size / 2 + size * 0.05);
+  ctx.fillStyle = 'white';
+  ctx.fillText(ch, size / 2, size / 2 + size * 0.05);
+  return toTexture(c, { srgb: false });
+}

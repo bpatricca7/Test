@@ -77,10 +77,15 @@ scene.add(wcan.root);
 
 // Hero junk cubes Bolt makes and stacks (animated individually).
 const heroCubes = [];
+// Bolt's fresh cubes are a little brighter and warmer than the old towers.
+const heroMat = junk.matA.clone();
+heroMat.color.setRGB(1.35, 1.2, 1.05);
+heroMat.onBeforeCompile = junk.matA.onBeforeCompile;
+heroMat.customProgramCacheKey = () => 'junkHero';
 {
   const geo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
   for (let i = 0; i < 6; i++) {
-    const m = new THREE.Mesh(geo, junk.matA);
+    const m = new THREE.Mesh(geo, heroMat);
     m.castShadow = m.receiveShadow = true;
     scene.add(m);
     heroCubes.push(m);
@@ -132,6 +137,12 @@ bokeh.enabled = false;
 composer.addPass(bokeh);
 const bloomPass = new UnrealBloomPass(new THREE.Vector2(W / 2, H / 2), 0.55, 0.55, 0.82);
 composer.addPass(bloomPass);
+// A single NaN pixel would be smeared over the whole frame by the bloom blur; drop it at the source.
+bloomPass.materialHighPassFilter.fragmentShader = bloomPass.materialHighPassFilter.fragmentShader.replace(
+  'vec4 texel = texture2D( tDiffuse, vUv );',
+  'vec4 texel = texture2D( tDiffuse, vUv ); if (any(isnan(texel)) || any(isinf(texel))) texel = vec4(0.0);',
+);
+bloomPass.materialHighPassFilter.needsUpdate = true;
 composer.addPass(new OutputPass());
 const fxaa = new ShaderPass(FXAAShader);
 fxaa.uniforms.resolution.value.set(1 / W, 1 / H);

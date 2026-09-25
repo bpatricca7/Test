@@ -59,7 +59,7 @@ function flowerHead() {
     const ca = Math.cos(a), sa = Math.sin(a);
     const px = (x, z, y = 0) => [x * ca - z * sa, y, x * sa + z * ca];
     const quad = [px(0.05, 0, 0.02), px(0.45, -0.2, 0.08), px(0.8, 0, 0.12), px(0.45, 0.2, 0.08)];
-    for (const tri of [[0, 1, 2], [0, 2, 3]]) for (const k of tri) { pos.push(...quad[k]); col.push(1, 1, 1); }
+    for (const tri of [[0, 2, 1], [0, 3, 2]]) for (const k of tri) { pos.push(...quad[k]); col.push(1, 1, 1); }
   }
   const c = [[0, 0.14, 0], [0.16, 0.03, 0], [0, 0.03, 0.16], [-0.16, 0.03, 0], [0, 0.03, -0.16]];
   for (const tri of [[0, 2, 1], [0, 3, 2], [0, 4, 3], [0, 1, 4]]) for (const k of tri) { pos.push(...c[k]); col.push(1.0, 0.8, 0.15); }
@@ -92,7 +92,11 @@ export function buildNature(scene) {
       float sway = sin(uTime * 1.8 + iPos.x * 0.35 + iPos.z * 0.27) * 0.5 + sin(uTime * 3.1 + iPos.x * 1.3) * 0.2;
       transformed.z += hk * hk * (0.12 + sway * 0.1) * uWind;
       transformed.x += hk * hk * sway * 0.05 * uWind;`,
-    fragReplace: {},
+    fragReplace: {
+      '#include <normal_fragment_begin>': `float faceDirection = gl_FrontFacing ? 1.0 : -1.0;
+        vec3 normal = normalize(vNormal);
+        vec3 nonPerturbedNormal = normal;`,
+    },
   });
   const grass = new THREE.InstancedMesh(blade, grassMat, N);
   const grow = new Float32Array(N * 2);
@@ -131,6 +135,11 @@ export function buildNature(scene) {
       transformed *= max(grow, 0.0001);
       float fs = sin(uTime * 1.6 + iPos.x * 0.5 + iPos.z * 0.4);
       transformed.x += fs * 0.25 * uWind;`,
+    fragReplace: {
+      '#include <normal_fragment_begin>': `float faceDirection = gl_FrontFacing ? 1.0 : -1.0;
+        vec3 normal = normalize(vNormal);
+        vec3 nonPerturbedNormal = normal;`,
+    },
   });
   const flowers = new THREE.InstancedMesh(flowerHead(), flowerMat, FN);
   const fgrow = new Float32Array(FN * 2);

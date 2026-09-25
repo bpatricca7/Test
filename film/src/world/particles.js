@@ -1,6 +1,6 @@
 // Point-sprite particle clouds. Every effect is a pure function of time.
 import * as THREE from 'three';
-import { glowSprite, puffSprite, sparkleSprite, starShapeSprite, heartSprite } from '../lib/textures.js';
+import { glowSprite, puffSprite, sparkleSprite, starShapeSprite, heartSprite, letterSprite } from '../lib/textures.js';
 import { hash1, clamp, ease, smoothstep } from '../lib/anim.js';
 
 const vert = /* glsl */ `
@@ -75,7 +75,8 @@ export class Effects {
     this.dust = new SpriteCloud(scene, 3000, puffSprite(), false);
     this.stars = new SpriteCloud(scene, 200, starShapeSprite(), false);
     this.hearts = new SpriteCloud(scene, 100, heartSprite(), false);
-    this.all = [this.glow, this.sparkle, this.dust, this.stars, this.hearts];
+    this.zs = new SpriteCloud(scene, 12, letterSprite('Z'), false);
+    this.all = [this.glow, this.sparkle, this.dust, this.stars, this.hearts, this.zs];
   }
   begin() { for (const c of this.all) c.begin(); }
   end(camera, height) { for (const c of this.all) c.end(camera, height); }
@@ -163,6 +164,21 @@ export class Effects {
       const y = center[1] + Math.sin(a * 2) * 0.03;
       this.stars.add(x, y, z, 0.12 * amount, 1.0, 0.85, 0.2, amount, t * 3 + i);
       this.glow.add(x, y, z, 0.2 * amount, 1.0, 0.8, 0.3, 0.4 * amount);
+    }
+  }
+
+  // Sleepy Zzz floating up from a snoozing robot.
+  zzz(t, t0, t1, pos, { every = 0.9, life = 2.4, size = 0.12 } = {}) {
+    if (t < t0) return;
+    const n = Math.floor((Math.min(t, t1) - t0) / every) + 1;
+    for (let i = Math.max(0, n - 4); i < n; i++) {
+      const age = t - (t0 + i * every);
+      if (age < 0 || age > life) continue;
+      const k = age / life;
+      const x = pos[0] + 0.12 * k + Math.sin(age * 2.5 + i) * 0.06;
+      const y = pos[1] + k * 0.55;
+      const a = Math.sin(Math.min(1, k * 1.3) * Math.PI) * 0.95;
+      this.zs.add(x, y, pos[2], size * (0.6 + 0.7 * k), 0.85, 0.92, 1.0, a, -0.25 + Math.sin(age * 3 + i) * 0.2);
     }
   }
 
