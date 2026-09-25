@@ -1,8 +1,9 @@
 # lego-kit: from a design script to a LEGO instruction booklet
 
 The shared toolkit behind [`../riviera-lego`](../riviera-lego),
-[`../house-lego`](../house-lego), [`../grand-floridian-lego`](../grand-floridian-lego) and
-[`../boardwalk-lego`](../boardwalk-lego).
+[`../house-lego`](../house-lego), [`../grand-floridian-lego`](../grand-floridian-lego),
+[`../boardwalk-lego`](../boardwalk-lego) and
+[`../pumpkin-spice-latte-lego`](../pumpkin-spice-latte-lego).
 A model is written as Python on the stud grid. The kit checks that it is buildable,
 renders the steps, maps every part to LEGO element IDs, and prints an instruction
 booklet and shopping lists.
@@ -17,7 +18,7 @@ booklet and shopping lists.
 | `preview.py` | Quick check while designing: builds, validates and renders the finished model (or one submodel) from five angles |
 | `render.py` | Renders every step, part and finished view with LeoCAD; writes `build/manifest.json` |
 | `element_lookup.py` | Maps each LDraw part and colour to a LEGO element ID, a BrickLink item, a Rebrickable part, production years and Pick a Brick evidence |
-| `export_parts.py` | Pick a Brick upload and retry files, mapping, BrickLink XML, Rebrickable CSV, parts per section |
+| `export_parts.py` | Pick a Brick upload and retry files, mapping, BrickLink XML, Rebrickable CSV, parts per section; for kits, upload files for several copies and a cost sheet |
 | `make_booklet.py` | Lays out the booklet in HTML and prints it to PDF with headless Chromium |
 | `pab_check.cjs` | Checks every element against Pick a Brick live (needs lego.com access; not yet run against the live site) |
 
@@ -39,6 +40,16 @@ slopes and mounts parts on side studs (the gold lettering).
 
 While designing, `python3 ../lego-kit/preview.py . [submodel.ldr]` renders quick
 views into `build/preview/`.
+
+Options in `PROJECT` for a kit you make many copies of (see
+`pumpkin-spice-latte-lego/design.py`):
+- `bestseller_only=True`: `export_parts.py` stops with a list of parts that aren't
+  in Pick a Brick's Bestseller range or aren't in 2025 or later sets.
+- `batch_sizes=[10, 25]`: also writes `parts/pick_a_brick_upload_x10.csv` and
+  `_x25.csv`, prints how many copies fit under the 999-per-element limit, and writes
+  `parts/kit_cost.csv` with the cost of one copy.
+- `main_parts_label`: the name of the main model's own parts in
+  `parts_by_section.csv`.
 
 ## Requirements
 

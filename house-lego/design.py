@@ -22,6 +22,7 @@ TRIM = WHITE
 ROOF = BLACK
 
 PROJECT = dict(
+    main_parts_label="Lot, garden and car placement",
     model_name="family_home",
     pdf_name="Family_Home_Instructions.pdf",
     title="Family Home",

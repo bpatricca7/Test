@@ -10,6 +10,7 @@ from bricks import (Model, PARTS, row, fill_rect, fill_cells, place_rect,
                     WHITE, BLACK, DBG, LBG, RED, GREEN, DKGREEN, TAN, RBROWN, BLUE)
 
 PROJECT = dict(
+    main_parts_label="Grounds, porte-cochere, flowers and flags",
     model_name="riviera_resort",
     pdf_name="Riviera_Resort_Instructions.pdf",
     title="Riviera Resort",

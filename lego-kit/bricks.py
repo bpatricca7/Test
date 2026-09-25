@@ -25,6 +25,7 @@ WHITE, BLACK, DBG, LBG, RED, GREEN, DKGREEN, TAN, RBROWN, BLUE, DTAN, BRGREEN = 
 PINK, MLAVENDER, TYELLOW, TCLEAR, TRED = 29, 30, 46, 47, 36
 DKRED = 320
 CREAM, GOLD = 226, 297
+BRORANGE, NOUGAT = 25, 84
 
 COLOR_NAMES = {
     15: "White", 0: "Black", 72: "Dark Bluish Gray", 71: "Light Bluish Gray",
@@ -32,6 +33,7 @@ COLOR_NAMES = {
     1: "Blue", 28: "Dark Tan", 10: "Bright Green", 29: "Bright Pink",
     30: "Medium Lavender", 46: "Trans-Yellow", 47: "Trans-Clear", 36: "Trans-Red",
     320: "Dark Red", 226: "Bright Light Yellow", 297: "Pearl Gold",
+    25: "Orange", 84: "Medium Nougat",
 }
 
 # Rotation (degrees about the vertical axis) that makes a slope face a side.
@@ -47,8 +49,13 @@ def rot_xz(deg, x, z):
 
 
 def rot_matrix(deg):
-    c = round(math.cos(math.radians(deg)))
-    s = round(math.sin(math.radians(deg)))
+    """LDraw rotation about the vertical axis (exact for any angle)."""
+    if deg % 90 == 0:
+        c = round(math.cos(math.radians(deg)))
+        s = round(math.sin(math.radians(deg)))
+    else:                                   # e.g. a leaf turned 45 degrees on its stud
+        c = round(math.cos(math.radians(deg)), 6)
+        s = round(math.sin(math.radians(deg)), 6)
     return (c, 0, s, 0, 1, 0, -s, 0, c)
 
 
@@ -178,6 +185,16 @@ def _init_parts():
     P("slope45inv", "3665b.dat", "Slope 45 2 x 1 Inverted", bottom=[(0, 0)])
     P("curve2inv", "24201.dat", "Slope Curved 2 x 1 Inverted", bottom=[(0, 20)])
     P("curve3", "50950.dat", "Slope Curved 3 x 1")
+    # latte kit parts
+    P("macaroni", "85080.dat", "Brick Round Corner 2 x 2 Macaroni",
+      cells=[(0, -20), (20, 0), (20, -20)], bottom=[(0, -20), (20, 0)])
+    P("b2x3", "3002.dat", "Brick 2 x 3")
+    P("log1x4", "30137.dat", "Brick 1 x 4 Log")
+    P("round_p2", "4032a.dat", "Plate Round 2 x 2 with Axle Hole")
+    P("round_p4", "60474.dat", "Plate Round 4 x 4 with Hole")
+    P("tile_round2", "14769.dat", "Tile Round 2 x 2")
+    P("tile_quarter", "25269.dat", "Tile Round 1 x 1 Quarter")
+    P("stick", "3957b.dat", "Antenna 1 x 4 with Flat Top (stick)", studs=[])
 
 
 _init_parts()
@@ -471,7 +488,7 @@ ALLOWED = {
                       "4x4 4x6 4x8 4x10 4x12 6x6 6x8 6x10 6x12"),
     ("p", 72): _sizes("1x1 1x2 1x3 1x4 1x6 1x8 1x10 2x2 2x3 2x4 2x6 2x8 2x10 2x12 "
                       "4x4 4x6 4x8 6x8 6x10 6x12 16x16"),
-    ("p", 19): _sizes("1x1 1x2 1x4 2x4"),
+    ("p", 19): _sizes("1x1 1x2 1x4 2x4 2x8 8x16"),
     ("p", 288): _sizes("1x1 1x2 1x3 1x4 2x4"),
     ("t", 71): _sizes("1x1 1x2 1x3 1x4 1x6 1x8 2x2"),
     ("t", 72): _sizes("1x1 1x2 1x3 1x4 1x6 1x8 2x2"),
@@ -494,6 +511,11 @@ ALLOWED = {
     ("b", 2): _sizes("1x1 1x2 1x3 1x4"),
     ("p", 10): _sizes("1x1 1x2 2x2 2x4"),
     ("p", 1): _sizes("1x2 1x4 1x6"),
+    ("t", 84): _sizes("1x1 2x2"),
+    ("p", 84): _sizes("1x1 1x2"),
+    ("p", 25): _sizes("1x1 1x2 1x4 1x6 2x2 2x3 2x4 2x6"),
+    ("b", 25): _sizes("1x1 1x2 1x4 2x2 2x3 2x4"),
+    ("t", 25): _sizes("1x1 1x2 2x2"),
 }
 
 

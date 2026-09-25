@@ -8,6 +8,13 @@
   <project>/parts/bricklink_wanted_list.xml  BrickLink "Upload wanted list" format
   <project>/parts/rebrickable_parts.csv    Rebrickable part-list import (Part,Color,Quantity)
   <project>/parts/parts_by_section.csv     what each instruction section uses
+  <project>/parts/pick_a_brick_upload_x<N>.csv  N copies of the model in one order, for
+                                    each N in the project's "batch_sizes"
+  <project>/parts/kit_cost.csv             cost of one copy at the last Pick a Brick prices
+
+A project can set "bestseller_only": True. The export then stops if any part was
+not in Pick a Brick's Bestseller range (2022 listing) or has not been in a LEGO
+set since 2025, so everything ships from the fast warehouse.
 """
 import csv
 import os
@@ -100,6 +107,53 @@ def write_pick_a_brick(rows, el):
                         PAB_SEARCH.format(r["element_id"])])
 
 
+BESTSELLER_SINCE = 2025      # last year in a LEGO set for "still current"
+PAB_MAX_PER_ELEMENT = 999    # more than this per element needs LEGO customer service
+
+
+def check_bestseller_only(rows, el):
+    """Stop if any part is outside the Bestseller range or no longer in sets."""
+    bad = []
+    for (dat, color), n in rows:
+        r = el[(dat, color)]
+        last = int(r["last_set_year"] or 0)
+        if not r["pab_2022"] or last < BESTSELLER_SINCE:
+            bad.append(f"{NAMES[dat]} / {r['lego_color']} ({r['element_id'] or 'no ID'}, "
+                       f"last set {last or 'none'})")
+    if bad:
+        raise SystemExit("not Bestseller-only:\n  " + "\n  ".join(bad))
+
+
+def write_batches(rows, el, sizes):
+    """Upload files for N copies; returns the most copies one order can hold."""
+    most = max(n for _, n in rows)
+    for k in sizes:
+        with open(os.path.join(OUT, f"pick_a_brick_upload_x{k}.csv"), "w", newline="") as fh:
+            w = csv.writer(fh)
+            w.writerow(["elementId", "quantity"])
+            for (dat, color), n in rows:
+                w.writerow([el[(dat, color)]["element_id"], n * k])
+    return PAB_MAX_PER_ELEMENT // most
+
+
+def write_kit_cost(rows, el):
+    with open(os.path.join(OUT, "kit_cost.csv"), "w", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(["Element ID", "Quantity", "Description", "LEGO colour",
+                    "Unit price (USD)", "Price seen", "Line cost (USD)"])
+        total = 0.0
+        for (dat, color), n in rows:
+            r = el[(dat, color)]
+            p = price(r)
+            when = "late 2025" if r["pab_price_2025"] else ("2022" if p is not None else "")
+            cost = (p or 0.0) * n
+            total += cost
+            w.writerow([r["element_id"], n, NAMES[dat], r["lego_color"],
+                        "" if p is None else f"{p:.2f}", when, f"{cost:.2f}"])
+        w.writerow(["", sum(n for _, n in rows), "Total for one copy", "", "", "", f"{total:.2f}"])
+    return total
+
+
 def main(proj):
     global ROOT, OUT
     ROOT, OUT = proj.root, proj.parts_dir
@@ -109,6 +163,8 @@ def main(proj):
     counts = main_m.parts_count()
     rows = sorted(counts.items(), key=lambda kv: (el[kv[0]]["lego_color"], NAMES[kv[0][0]]))
     os.makedirs(OUT, exist_ok=True)
+    if proj.meta.get("bestseller_only"):
+        check_bestseller_only(rows, el)
 
     total_price, priced, unpriced = 0.0, 0, []
     with open(os.path.join(OUT, "pick_a_brick_list.csv"), "w", newline="") as fh:
@@ -130,6 +186,11 @@ def main(proj):
                         r["last_set_year"], r["availability"], "" if p is None else f"{p:.2f}"])
 
     write_pick_a_brick(rows, el)
+    if proj.meta.get("batch_sizes"):
+        per_order = write_batches(rows, el, proj.meta["batch_sizes"])
+        print(f"batch files for {proj.meta['batch_sizes']} copies; up to {per_order} copies "
+              f"fit in one order ({PAB_MAX_PER_ELEMENT} per element)")
+        write_kit_cost(rows, el)
 
     with open(os.path.join(OUT, "bricklink_wanted_list.xml"), "w") as fh:
         fh.write("<INVENTORY>\n")
@@ -158,7 +219,8 @@ def main(proj):
         w = csv.writer(fh)
         w.writerow(["Section", "Element ID", "Quantity", "Description", "LEGO colour"])
         sections = [(m.title, m, uses.get(m.name, 1)) for m in models if m is not main_m]
-        sections.insert(0, ("Grounds, porte-cochere, flowers and flags", main_m, 1))
+        sections.insert(0, (proj.meta.get("main_parts_label", "Base and parts added on it"),
+                            main_m, 1))
         for title, m, mult in sections:
             c = Counter()
             for it in m.items:

@@ -24,6 +24,7 @@ LAWN = GREEN
 HEDGE = DKGREEN
 
 PROJECT = dict(
+    main_parts_label="Grounds and flower bed",
     model_name="boardwalk_entrance",
     pdf_name="BoardWalk_Entrance_Instructions.pdf",
     title="BoardWalk Inn",

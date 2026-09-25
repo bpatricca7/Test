@@ -23,6 +23,7 @@ WINDOW = BLACK
 PLINTH = LBG
 
 PROJECT = dict(
+    main_parts_label="Grounds, porte-cochere and gardens",
     model_name="grand_floridian",
     pdf_name="Grand_Floridian_Instructions.pdf",
     title="Grand Floridian Resort",

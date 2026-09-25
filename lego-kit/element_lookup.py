@@ -34,7 +34,7 @@ COLORS = {
     31: ("Lavender", 154, "Lavender"), 30: ("Medium Lavender", 157, "Medium Lavender"),
     25: ("Bright Orange", 4, "Orange"), 14: ("Bright Yellow", 3, "Yellow"),
     320: ("New Dark Red", 59, "Dark Red"), 226: ("Cool Yellow", 103, "Bright Light Yellow"),
-    297: ("Warm Gold", 115, "Pearl Gold"),
+    297: ("Warm Gold", 115, "Pearl Gold"), 84: ("Medium Nougat", 150, "Medium Nougat"),
 }
 # LDraw part -> Rebrickable part numbers to consider (first = preferred)
 RB_ALIASES = {"3023b": ["3023"], "3040b": ["3040b", "3040a", "3040"], "6141": ["6141", "4073"],
