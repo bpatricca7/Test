@@ -1,0 +1,7 @@
+numpy
+scipy
+soundfile
+librosa
+pyworld
+kokoro-onnx
+imageio-ffmpeg

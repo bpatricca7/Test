@@ -1,0 +1,177 @@
+{
+  "voices": {
+    "narrator": {
+      "voice": "af_heart",
+      "speed": 0.86,
+      "pitch": 0,
+      "fx": "narrator"
+    },
+    "bolt": {
+      "voice": "am_michael",
+      "speed": 1.0,
+      "pitch": 5,
+      "formant": 1.1,
+      "fx": "bolt"
+    },
+    "luma": {
+      "voice": "af_bella",
+      "speed": 1.0,
+      "pitch": 4,
+      "formant": 1.08,
+      "fx": "luma"
+    }
+  },
+  "lines": [
+    {
+      "id": "n01",
+      "who": "narrator",
+      "text": "Once upon a time, on a quiet, dusty little world, far, far away... the wind whistled through great big mountains of junk."
+    },
+    {
+      "id": "n02",
+      "who": "narrator",
+      "text": "And way down at the bottom of those mountains, there lived a little robot, named Bolt."
+    },
+    {
+      "id": "b01",
+      "who": "bolt",
+      "text": "Hi! I'm Bolt!"
+    },
+    {
+      "id": "n03",
+      "who": "narrator",
+      "text": "Every single day, Bolt had one very important job."
+    },
+    {
+      "id": "n04",
+      "who": "narrator",
+      "text": "Scoop the junk... squish the junk... and stack, stack, stack!"
+    },
+    {
+      "id": "b02",
+      "who": "bolt",
+      "text": "Oh no, oh no!"
+    },
+    {
+      "id": "b03",
+      "who": "bolt",
+      "text": "Oopsie!"
+    },
+    {
+      "id": "n05",
+      "who": "narrator",
+      "text": "Bolt was a very hard worker. But when the sun went down, at the end of each day... Bolt felt a little bit lonely."
+    },
+    {
+      "id": "b04",
+      "who": "bolt",
+      "text": "Hello? Anybody?",
+      "echo": true
+    },
+    {
+      "id": "n06",
+      "who": "narrator",
+      "text": "Then one morning, Bolt found something he had never, ever seen before."
+    },
+    {
+      "id": "b05",
+      "who": "bolt",
+      "text": "Wow... so pretty!"
+    },
+    {
+      "id": "n07",
+      "who": "narrator",
+      "text": "Something small. Something green. Something... alive!"
+    },
+    {
+      "id": "n08",
+      "who": "narrator",
+      "text": "But before Bolt could show anybody... whoosh! Something came zooming down from the sky!"
+    },
+    {
+      "id": "l01",
+      "who": "luma",
+      "text": "Scanning. Scanning."
+    },
+    {
+      "id": "b06",
+      "who": "bolt",
+      "text": "Hello?"
+    },
+    {
+      "id": "l02",
+      "who": "luma",
+      "text": "Oh! Hello there! I'm Luma!"
+    },
+    {
+      "id": "b07",
+      "who": "bolt",
+      "text": "Hi! I'm Bolt!"
+    },
+    {
+      "id": "l03",
+      "who": "luma",
+      "text": "Wait... is that a plant? You found a real, live plant!"
+    },
+    {
+      "id": "n09",
+      "who": "narrator",
+      "text": "Luma had flown across the whole wide sky, looking for a sign of life. And Bolt... well, Bolt had been waiting his whole life for a friend."
+    },
+    {
+      "id": "n10",
+      "who": "narrator",
+      "text": "So together, they found the perfect spot... and planted the little sprout in the ground."
+    },
+    {
+      "id": "b08",
+      "who": "bolt",
+      "text": "Grow... please grow!"
+    },
+    {
+      "id": "n11",
+      "who": "narrator",
+      "text": "They waited, and waited, all through the long, starry night."
+    },
+    {
+      "id": "n12",
+      "who": "narrator",
+      "text": "And when the sun came up... something magical happened!"
+    },
+    {
+      "id": "b09",
+      "who": "bolt",
+      "text": "Whoa, look!"
+    },
+    {
+      "id": "l04",
+      "who": "luma",
+      "text": "Yay! Hooray!"
+    },
+    {
+      "id": "n13",
+      "who": "narrator",
+      "text": "Because when you take care of something small, with lots and lots of love... it grows, and grows, and grows!"
+    },
+    {
+      "id": "n14",
+      "who": "narrator",
+      "text": "And Bolt was never, ever lonely again."
+    },
+    {
+      "id": "b10",
+      "who": "bolt",
+      "text": "Friend!"
+    },
+    {
+      "id": "l05",
+      "who": "luma",
+      "text": "Best friends!"
+    },
+    {
+      "id": "n15",
+      "who": "narrator",
+      "text": "The End."
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Bolt &amp; Luma</title>
+<style>
+  @font-face { font-family: 'Fredoka'; font-weight: 400; src: url('/node_modules/@fontsource/fredoka/files/fredoka-latin-400-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Fredoka'; font-weight: 600; src: url('/node_modules/@fontsource/fredoka/files/fredoka-latin-600-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Fredoka'; font-weight: 700; src: url('/node_modules/@fontsource/fredoka/files/fredoka-latin-700-normal.woff2') format('woff2'); }
+  html, body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+  #stage { position: relative; }
+  #stage canvas { display: block; }
+  .card { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none;
+          font-family: 'Fredoka', sans-serif; color: #fff8ec; opacity: 0; text-align: center; }
+  .title { font-weight: 700; letter-spacing: 0.02em; line-height: 0.95;
+           text-shadow: 0 0.04em 0 #c2552a, 0 0.08em 0 #8a3418, 0 0.12em 0.3em rgba(40,10,0,0.55), 0 0 0.6em rgba(255,190,120,0.55); }
+  .title .amp { color: #7fe9ff; text-shadow: 0 0.04em 0 #2a8ca6, 0 0.08em 0 #135a6e, 0 0.12em 0.3em rgba(0,20,40,0.55), 0 0 0.6em rgba(120,230,255,0.6); }
+  .sub { font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #fff3de; text-shadow: 0 2px 10px rgba(0,0,0,0.6); }
+  .credit { font-weight: 400; color: #f4ecdf; text-shadow: 0 2px 10px rgba(0,0,0,0.7); }
+</style>
+<script type="importmap">{"imports":{"three":"/node_modules/three/build/three.module.js","three/addons/":"/node_modules/three/examples/jsm/"}}</script>
+</head>
+<body>
+<div id="stage"></div>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
