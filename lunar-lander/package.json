@@ -1,0 +1,23 @@
+{
+  "name": "apollo-lunar-landing",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Apollo CSM + Lunar Module flight simulator: fly both spacecraft and land on the Moon.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test test/",
+    "shot": "node tools/shot.mjs"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.56.1",
+    "vite": "^8.3.1",
+    "vite-plugin-singlefile": "^2.3.3"
+  }
+}

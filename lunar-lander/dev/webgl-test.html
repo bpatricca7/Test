@@ -1,0 +1,11 @@
+<!doctype html><html><body style="margin:0;background:#000"><script type="module">
+import * as THREE from 'three';
+const r = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
+r.setSize(innerWidth, innerHeight); document.body.appendChild(r.domElement);
+const s = new THREE.Scene(); const c = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 1e8);
+c.position.set(0, 0, 5);
+const m = new THREE.Mesh(new THREE.TorusKnotGeometry(1, 0.3, 200, 32), new THREE.MeshStandardMaterial({ color: 0xd4a017, metalness: 0.8, roughness: 0.3 }));
+s.add(m); const l = new THREE.DirectionalLight(0xffffff, 3); l.position.set(3, 4, 5); s.add(l); s.add(new THREE.AmbientLight(0x404040));
+const gl = r.getContext(); console.log('renderer', gl.getParameter(gl.VERSION), r.capabilities.isWebGL2, 'reversedDepth', r.capabilities.reversedDepthBuffer);
+let n = 0; function f() { m.rotation.y += 0.02; r.render(s, c); if (++n === 10) window.__READY = true; requestAnimationFrame(f); } f();
+</script></body></html>

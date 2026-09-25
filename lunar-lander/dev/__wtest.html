@@ -1,0 +1,4 @@
+<!doctype html><html><body><script type="module">
+import W from '../src/__wtest.worker.js?worker&inline';
+const w = new W(); w.onmessage = (e) => { console.log('worker says', e.data); window.__READY = true; }; w.postMessage(21);
+</script></body></html>
