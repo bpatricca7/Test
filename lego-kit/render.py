@@ -218,10 +218,12 @@ def main(proj, only=None):
     manifest = OrderedDict(models=OrderedDict(), parts=OrderedDict(), totals=[])
 
     all_jobs = []
+    kept = []                  # step images reused from an earlier run
     for m in models:
         is_main = m is main_m
         jobs, scales = step_jobs(m, is_main)
         if only and m.name not in only:
+            kept += [out for out, _ in jobs]
             jobs = []
         all_jobs += jobs
         steps = []
@@ -273,6 +275,9 @@ def main(proj, only=None):
     for (out, *_), size in zip(all_jobs + final_jobs + [(o, a) for o, a, _ in pj], sizes):
         rel = os.path.relpath(out, BUILD)
         manifest.setdefault("sizes", {})[rel] = size
+    for out in kept:
+        with Image.open(out) as im:
+            manifest.setdefault("sizes", {})[os.path.relpath(out, BUILD)] = im.size
     with open(os.path.join(BUILD, "manifest.json"), "w") as fh:
         json.dump(manifest, fh, indent=1)
     print("done")

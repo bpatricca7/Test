@@ -21,7 +21,7 @@ to LEGO Pick a Brick element IDs, and one file uploads the whole list.
 | Footprint | 48 × 32 studs (38.4 × 25.6 cm) |
 | Height | 13 cm to the roof ridge |
 | Scale | about 1:76 (1 stud = 2 ft, one storey = 4 bricks) |
-| Instructions | 54-page PDF, 45 steps, 5 sections |
+| Instructions | 55-page PDF, 47 steps, 5 sections |
 | Estimated cost | about US$115 at 2022–2025 Pick a Brick prices for the 668 pieces with a known price, roughly US$125 with the windows. LEGO raised about a third of Pick a Brick prices in 2026, so expect more. |
 
 ![Front view](images/house_front.jpg)
@@ -30,7 +30,7 @@ to LEGO Pick a Brick element IDs, and one file uploads the whole list.
 
 | Path | What it is |
 |---|---|
-| [`instructions/Family_Home_Instructions.pdf`](instructions/Family_Home_Instructions.pdf) | **The instruction booklet**: cover, section intros with parts lists, 45 numbered steps with parts callouts, gallery, full inventory with element IDs, ordering guide |
+| [`instructions/Family_Home_Instructions.pdf`](instructions/Family_Home_Instructions.pdf) | **The instruction booklet**: cover, section intros with parts lists, 47 numbered steps with parts callouts, gallery, full inventory with element IDs, ordering guide |
 | [`parts/pick_a_brick_upload.csv`](parts/pick_a_brick_upload.csv) | **Upload this to Pick a Brick** (Upload list). It holds all 96 element IDs with their quantities |
 | [`parts/pick_a_brick_upload_retry.csv`](parts/pick_a_brick_upload_retry.csv) | Newer element IDs for the same parts (15 lines, mostly white), for anything the first upload misses |
 | [`parts/pick_a_brick_mapping.csv`](parts/pick_a_brick_mapping.csv) | Part-by-part mapping: Pick a Brick name, LEGO colour, design ID, evidence it's sold, last price seen, whether you need more than 10, the ID to try next, and a BrickLink backup |
@@ -89,6 +89,9 @@ element live (see [`../lego-kit/README.md`](../lego-kit/README.md)).
 - **Roof**: the side-gable main roof (33° slopes) is crossed by the steep stone
   gable (45° slopes). They meet in a stepped valley. The white slopes along the
   gable edges form the rake trim.
+- **Hidden supports**: where the stone gable meets the main roof, a few black 1×1
+  bricks go under the slopes, in a step of their own just before the slopes that
+  rest on them.
 - **Interior**: the house is hollow. A floor ring between the storeys and a full
   plate deck under the roof tie it together.
 

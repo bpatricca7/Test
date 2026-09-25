@@ -23,12 +23,14 @@ from ldraw_geom import geometry
 WHITE, BLACK, DBG, LBG, RED, GREEN, DKGREEN, TAN, RBROWN, BLUE, DTAN, BRGREEN = (
     15, 0, 72, 71, 4, 2, 288, 19, 70, 1, 28, 10)
 PINK, MLAVENDER, TYELLOW, TCLEAR, TRED = 29, 30, 46, 47, 36
+DKRED = 320
 
 COLOR_NAMES = {
     15: "White", 0: "Black", 72: "Dark Bluish Gray", 71: "Light Bluish Gray",
     4: "Red", 2: "Green", 288: "Dark Green", 19: "Tan", 70: "Reddish Brown",
     1: "Blue", 28: "Dark Tan", 10: "Bright Green", 29: "Bright Pink",
     30: "Medium Lavender", 46: "Trans-Yellow", 47: "Trans-Clear", 36: "Trans-Red",
+    320: "Dark Red",
 }
 
 # Rotation (degrees about the vertical axis) that makes a slope face a side.
@@ -165,6 +167,12 @@ def _init_parts():
       height=0, solid=False, studs=[])
     P("flag2x2", "2335.dat", "Flag 2 x 2 Square (80326)", cells=[(0, 0)], bottom=[],
       height=0, solid=False, studs=[])
+    # resort parts
+    P("leaves6x5", "2417.dat", "Plant Leaves 6 x 5", cells=[(0, 0)], studs=[(0, 0)],
+      height=1)
+    P("cone2", "3942c.dat", "Cone 2 x 2 x 2")
+    P("arch1x8", "16577.dat", "Arch 1 x 8 x 2 Raised", bottom=[(-70, 0), (70, 0)])
+    P("round2", "3941.dat", "Brick 2 x 2 Round")
 
 
 _init_parts()
@@ -471,6 +479,12 @@ ALLOWED = {
     ("p", 70): _sizes("1x1 1x2 1x3 1x4 1x6 1x8 2x2 2x4 2x6 2x8 4x6"),
     ("t", 0): _sizes("1x1 1x2 1x4 1x6 1x8 2x2"),
     ("t", 15): _sizes("1x1 1x2 1x4 1x6 2x2"),
+    ("b", 4): _sizes("1x1 1x2 1x3 1x4 1x6 1x8"),
+    ("p", 4): _sizes("1x1 1x2 1x3 1x4 1x6 1x8 2x2 2x3 2x4 2x6"),
+    ("t", 4): _sizes("1x1 1x2 1x3 1x4 1x6 1x8 2x2 2x4"),
+    ("p", 320): _sizes("1x1 1x2 1x4 2x2 2x4"),
+    ("t", 320): _sizes("1x1 1x2 1x4"),
+    ("b", 288): _sizes("1x1 1x2 1x4"),
 }
 
 

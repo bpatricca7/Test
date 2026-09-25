@@ -1,17 +1,19 @@
 # lego-kit: from a design script to a LEGO instruction booklet
 
-The shared toolkit behind [`../riviera-lego`](../riviera-lego) and
-[`../house-lego`](../house-lego). A model is written as Python on the stud grid.
-The kit checks that it is buildable, renders the steps, maps every part to LEGO
-element IDs, and prints an instruction booklet and shopping lists.
+The shared toolkit behind [`../riviera-lego`](../riviera-lego),
+[`../house-lego`](../house-lego) and [`../grand-floridian-lego`](../grand-floridian-lego).
+A model is written as Python on the stud grid. The kit checks that it is buildable,
+renders the steps, maps every part to LEGO element IDs, and prints an instruction
+booklet and shopping lists.
 
 | File | Purpose |
 |---|---|
 | `bricks.py` | Part catalogue (read from the LDraw library), `Model` with steps, sections and submodels, `Offset` for building a submodel in parent coordinates, fill helpers, colour/size rules, and `validate()` (no overlaps, every part attached by at least one stud) |
 | `walls.py` | Brick courses around a right-angled outline, with interlocking corners, staggered joints, openings and mixed-colour masonry |
-| `roofs.py` | Gable roofs from 33° or 45° slopes; overlapping blocks form valleys, gable-end walls, trim-coloured rake slopes, ridge caps and hidden supports |
+| `roofs.py` | Gable and hipped roofs from 33° or 45° slopes. Overlapping blocks form valleys, and a block can start higher up (a dormer on a roof slope). Also builds gable-end walls, trim-coloured rake slopes, ridge caps (with open cells for a chimney or turret) and hidden supports, in a step of their own just before the slopes they hold up |
 | `ldraw_geom.py` | Reads LDraw part geometry (bounding boxes, stud positions) |
 | `project.py` | Loads a project folder and writes its LDraw `.mpd` |
+| `preview.py` | Quick check while designing: builds, validates and renders the finished model (or one submodel) from five angles |
 | `render.py` | Renders every step, part and finished view with LeoCAD; writes `build/manifest.json` |
 | `element_lookup.py` | Maps each LDraw part and colour to a LEGO element ID, a BrickLink item, a Rebrickable part, production years and Pick a Brick evidence |
 | `export_parts.py` | Pick a Brick upload and retry files, mapping, BrickLink XML, Rebrickable CSV, parts per section |
@@ -29,7 +31,12 @@ my-model/
 
 `./build.sh` writes `model/`, `build/` (renders, ignored by git), `data/elements.csv`,
 `parts/` and `instructions/`. See `house-lego/design.py` for a full example with
-walls, windows, crossing roofs, a porch, landscaping and a car.
+walls, windows, crossing roofs, a porch, landscaping and a car, and
+`grand-floridian-lego/design.py` for verandas, hipped roofs with gables and dormers,
+a cupola and chimneys.
+
+While designing, `python3 ../lego-kit/preview.py . [submodel.ldr]` renders quick
+views into `build/preview/`.
 
 ## Requirements
 

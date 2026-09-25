@@ -49,12 +49,22 @@ def newest_alt(r):
     return max(alts, key=int) if alts else ""
 
 
+SNAPSHOT_YEAR = 2026        # the Rebrickable data also lists some sets announced for later
+
+
+def _sets_year(y):
+    if y and int(y) > SNAPSHOT_YEAR:
+        return "%d (including sets listed for %s)" % (SNAPSHOT_YEAR, y)
+    return y
+
+
 def evidence(r):
     if r["pab_2025"]:
         return "On Pick a Brick (late-2025 listing)"
     if r["pab_2022"]:
-        return "In Pick a Brick Bestseller range (2022 listing); still in LEGO sets in %s" % r["last_set_year"]
-    return "Not on the Pick a Brick listings checked; in LEGO sets in %s" % r["last_set_year"]
+        return ("In Pick a Brick Bestseller range (2022 listing); still in LEGO sets in %s"
+                % _sets_year(r["last_set_year"]))
+    return "Not on the Pick a Brick listings checked; in LEGO sets in %s" % _sets_year(r["last_set_year"])
 
 
 def write_pick_a_brick(rows, el):
