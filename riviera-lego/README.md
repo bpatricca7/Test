@@ -37,7 +37,7 @@ fill your bag.
 | [`parts/parts_by_section.csv`](parts/parts_by_section.csv) | Parts for each section, to pre-sort before you build |
 | [`model/riviera_resort.mpd`](model/riviera_resort.mpd) | The digital model (LDraw MPD with build steps and submodels). Opens in BrickLink Studio, LeoCAD, LDCad and LDView |
 | [`data/elements.csv`](data/elements.csv) | How each LDraw part and colour maps to a LEGO Element ID, BrickLink item, Rebrickable part and production data |
-| `tools/` | The generator: design, validation, rendering, element lookup, booklet, and `pab_check.cjs`, a live Pick a Brick check |
+| [`design.py`](design.py) | The design, written as code on the stud grid; built with the shared kit in [`../lego-kit`](../lego-kit) |
 
 ## Ordering the parts from Pick a Brick
 
@@ -84,7 +84,7 @@ Pick a Brick listings from 2022 and late 2025. With internet access, run the liv
 check:
 
 ```bash
-NODE_PATH=$(npm root -g) node tools/pab_check.cjs    # needs Playwright + Chromium
+NODE_PATH=$(npm root -g) node ../lego-kit/pab_check.cjs .    # needs Playwright + Chromium
 ```
 
 It writes `parts/pick_a_brick_live.csv` with, for each element, whether Pick a
@@ -124,7 +124,8 @@ Two more notes:
 
 ## How it was made (and how to change it)
 
-The model is written as code (`tools/riviera.py`) on a stud grid. `tools/bricks.py`
+The model is written as code ([`design.py`](design.py)) on a stud grid. The shared kit
+([`../lego-kit`](../lego-kit))
 reads each part's real shape from the official LDraw parts library. Before any
 files are written, it checks two things:
 - no two elements overlap;
@@ -140,7 +141,7 @@ To rebuild after changing the design:
 sudo apt-get install leocad ldraw-parts xvfb fonts-inter   # Ubuntu 24.04
 pip install numpy pillow pymupdf
 # node + playwright (with Chromium) are used to print the PDF
-DATA_DIR=/path/to/element-data tools/build_all.sh
+DATA_DIR=/path/to/element-data ./build.sh
 ```
 
 `DATA_DIR` is only needed to refresh `data/elements.csv`. Without it, the existing

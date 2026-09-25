@@ -1,13 +1,13 @@
 """Write the shopping lists for the model.
 
-  ../parts/pick_a_brick_upload.csv  ready for Pick a Brick's "Upload list" (elementId,quantity)
-  ../parts/pick_a_brick_upload_retry.csv  same parts with each element's newest
+  <project>/parts/pick_a_brick_upload.csv  ready for Pick a Brick's "Upload list" (elementId,quantity)
+  <project>/parts/pick_a_brick_upload_retry.csv  same parts with each element's newest
                                     alternate ID, for anything the first upload misses
-  ../parts/pick_a_brick_mapping.csv how each part maps to Pick a Brick, with evidence
-  ../parts/pick_a_brick_list.csv    element IDs and quantities for LEGO Pick a Brick
-  ../parts/bricklink_wanted_list.xml  BrickLink "Upload wanted list" format
-  ../parts/rebrickable_parts.csv    Rebrickable part-list import (Part,Color,Quantity)
-  ../parts/parts_by_section.csv     what each instruction section uses
+  <project>/parts/pick_a_brick_mapping.csv how each part maps to Pick a Brick, with evidence
+  <project>/parts/pick_a_brick_list.csv    element IDs and quantities for LEGO Pick a Brick
+  <project>/parts/bricklink_wanted_list.xml  BrickLink "Upload wanted list" format
+  <project>/parts/rebrickable_parts.csv    Rebrickable part-list import (Part,Color,Quantity)
+  <project>/parts/parts_by_section.csv     what each instruction section uses
 """
 import csv
 import os
@@ -15,12 +15,11 @@ import sys
 from collections import Counter
 from xml.sax.saxutils import escape
 
-sys.path.insert(0, os.path.dirname(__file__))
-import riviera
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import project as projects
 from bricks import PARTS, SubRef
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-OUT = os.path.join(ROOT, "parts")
+ROOT = OUT = None                  # set by main() for the project
 NAMES = {p.dat: p.name for p in PARTS.values()}
 NAMES["2335.dat"] = "Flag 2 x 2 Square (design 80326)"
 
@@ -91,8 +90,10 @@ def write_pick_a_brick(rows, el):
                         PAB_SEARCH.format(r["element_id"])])
 
 
-def main():
-    main_m, models, problems = riviera.main()
+def main(proj):
+    global ROOT, OUT
+    ROOT, OUT = proj.root, proj.parts_dir
+    main_m, models, problems = proj.build(verbose=False)
     assert not problems
     el = load_elements()
     counts = main_m.parts_count()
@@ -164,4 +165,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(projects.load(sys.argv))

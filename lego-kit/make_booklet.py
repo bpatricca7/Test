@@ -1,9 +1,10 @@
 """Lay out the instruction booklet (HTML) and print it to PDF.
 
-Inputs:  ../build/manifest.json   (from render.py)
-         ../data/elements.csv     (LEGO element IDs / BrickLink mapping)
-Output:  ../instructions/Riviera_Resort_Instructions.pdf
-         ../build/booklet.html
+Usage:   python3 lego-kit/make_booklet.py <project folder>
+Inputs:  <project>/build/manifest.json   (from render.py)
+         <project>/data/elements.csv     (LEGO element IDs / BrickLink mapping)
+         PROJECT texts in <project>/design.py
+Output:  <project>/instructions/<pdf_name>, <project>/build/booklet.html
 """
 import csv
 import html
@@ -15,15 +16,17 @@ from collections import Counter, OrderedDict
 
 from PIL import Image
 
-sys.path.insert(0, os.path.dirname(__file__))
-import riviera
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import project as projects
 from bricks import PARTS, COLOR_NAMES, SubRef
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-BUILD = os.path.join(ROOT, "build")
-IMG = os.path.join(BUILD, "booklet_img")
-OUT_DIR = os.path.join(ROOT, "instructions")
-PDF = os.path.join(OUT_DIR, "Riviera_Resort_Instructions.pdf")
+ROOT = BUILD = IMG = None          # set by setup() for the project being laid out
+
+
+def setup(proj):
+    global ROOT, BUILD, IMG
+    ROOT, BUILD = proj.root, proj.build_dir
+    IMG = os.path.join(BUILD, "booklet_img")
 
 PX2IN = 0.0036           # part render pixels -> inches in callouts
 CAP_IN_PER_LDU = 0.02    # never draw models larger than this (1 stud = 0.4 in)
@@ -32,19 +35,9 @@ HALF_ART = (4.65, 5.8)   # art box of a half-page step
 DAT_NAMES = {p.dat: p.name for p in PARTS.values()}
 COLOR_HEX = {15: "#F4F4F4", 0: "#1B2A34", 72: "#6C6E68", 71: "#A0A5A9", 4: "#C91A09",
              2: "#237841", 288: "#184632", 19: "#E4CD9E", 70: "#582A12", 1: "#0055BF",
-             28: "#958A73", 10: "#4B9F4A"}
-
-SUB_INFO = {
-    "central.ldr": ("The central pavilion",
-                    "Eight storeys of French-style windows under a steep mansard "
-                    "roof with oval dormers. The top floor has the red awnings."),
-    "tower.ldr": ("The domed pavilions",
-                  "Two identical ten-storey pavilions flank the centre. Each is topped "
-                  "by a grey dome and a lantern."),
-    "wing.ldr": ("The guest wings",
-                 "Two identical eight-storey wings. Their top floor also has red awnings."),
-    "palm.ldr": ("Palm tree", ""),
-}
+             28: "#958A73", 10: "#4B9F4A", 5: "#C870A0", 26: "#923978", 29: "#E4ADC8",
+             308: "#352100", 47: "#FCFCFC", 46: "#F5CD2F", 31: "#CDA4DE", 30: "#AC78BA",
+             25: "#FE8A18", 14: "#F2CD37"}
 
 
 def e(s):
@@ -348,54 +341,46 @@ def model_parts(models_by_name, name, steps=None, mult=1):
     return c
 
 
-def build(man, elements):
-    main_m, models, _ = riviera.main()
+def build(proj, man, elements):
+    P = proj.meta
+    main_m, models, _ = proj.build(verbose=False)
+    main_name = main_m.name
     by_name = {m.name: m for m in models}
     bk = Booklet(man, elements)
     total = sum(p["qty"] for p in man["parts"].values())
     n_colors = len({p["color"] for p in man["parts"].values()})
 
     # ---------------- cover ----------------
-    hero, _ = prep_image("renders/final/cover_front_right.png", max_px=2200, jpeg=False)
+    hero, _ = prep_image(f"renders/final/{P['cover_view']}.png", max_px=2200, jpeg=False)
+    big, small = P["cover_stats"]
     bk.page(f"""
       <div class="title"><div class="kicker">Build instructions</div>
-        <h1>Riviera Resort</h1>
-        <div class="sub">A micro-scale display model in LEGO&reg; bricks</div></div>
+        <h1>{P['title']}</h1>
+        <div class="sub">{P['subtitle']}</div></div>
       <div class="stats"><div class="stat"><b>{total:,}</b>pieces</div>
-        <div class="stat" style="margin-top:8px"><b>38 &times; 26 cm</b>48 &times; 32 studs</div></div>
+        <div class="stat" style="margin-top:8px"><b>{big}</b>{small}</div></div>
       <div class="heroimg"><img src="{hero}"></div>
-      <div class="agebadge">Unofficial fan design</div>
-      <div class="fine">An unofficial fan-designed model (MOC), inspired by Disney's Riviera Resort
-        at Walt Disney World. It is not affiliated with, sponsored or endorsed by The LEGO Group
-        or Disney. LEGO&reg; is a trademark of The LEGO Group.</div>""", "cover")
+      <div class="agebadge">{P['badge']}</div>
+      <div class="fine">{P['fine_print']}</div>""", "cover")
 
     # ---------------- intro ----------------
-    legend_img, _ = prep_image(man["models"]["palm.ldr"]["steps"][1]["image"], max_px=600)
-    secs = []
+    lg_model, lg_step = P["legend"]
+    legend_img, _ = prep_image(man["models"][lg_model]["steps"][lg_step]["image"], max_px=600)
+    facts = "".join(f"<tr><th>{k}</th><td>{v}</td></tr>" for k, v in P["facts"])
+    org = "".join(f"<li>{x}</li>" for x in P["organisation"])
+    tips = "".join(f"<li>{x}</li>" for x in P["tips"])
     bk.page(f"""
       <div>
         <h2>About this model</h2>
-        <p>This model shows the grand entrance of the Riviera Resort: the arched porte-cochere,
-        the mansard-roofed central pavilion with its oval dormers, two domed corner pavilions,
-        and the guest wings with red awnings, all set in a lawn lined with palms.</p>
+        <p>{P['about']}</p>
         <table>
           <tr><th>Pieces</th><td>{total:,} elements, {len(man['parts'])} kinds, {n_colors} colours</td></tr>
-          <tr><th>Size</th><td>48 &times; 32 studs (38.4 &times; 25.6 cm), 16 cm tall at the domes</td></tr>
-          <tr><th>Scale</th><td>about 1:250 (one storey = 4 plates)</td></tr>
-          <tr><th>Build time</th><td>about 6 to 8 hours</td></tr>
-          <tr><th>Model files</th><td><code>riviera_resort.mpd</code> (LDraw). Opens in BrickLink Studio, LeoCAD and LDCad.</td></tr>
+          {facts}
+          <tr><th>Model files</th><td><code>{P['model_name']}.mpd</code> (LDraw). Opens in BrickLink Studio, LeoCAD and LDCad.</td></tr>
         </table>
         <h3>How the build is organised</h3>
-        <ol>
-          <li>The grounds: base, drive, lawn and hedges</li>
-          <li>The central pavilion</li>
-          <li>The domed pavilions (build 2)</li>
-          <li>The guest wings (build 2)</li>
-          <li>The porte-cochere</li>
-          <li>Palms, flowers and flags</li>
-        </ol>
-        <p>Each building is built on its own and then set on the base. Every section starts with
-        a list of the parts it needs, so you can sort them before you start.</p>
+        <ol>{org}</ol>
+        <p>{P['organisation_note']}</p>
       </div>
       <div>
         <h2>Reading the steps</h2>
@@ -404,15 +389,7 @@ def build(man, elements):
         step and how many of each you need. Part pictures are drawn to scale; plates longer
         than 8 studs are drawn at half size.</p></div>
         <h3>Tips</h3>
-        <ul>
-          <li>The facades use a lot of 1&times;1 bricks: 1 black brick for every window and 1 white
-          brick for every pillar between windows. Keep black and white in separate trays.</li>
-          <li>Each floor is one course of bricks topped with a band of white plates. Check the
-          window pattern against the picture before you add the band.</li>
-          <li>A <b>&ldquo;Build 2&rdquo;</b> badge means you build that module twice. Build both at
-          the same time, one step at a time.</li>
-          <li>Push the palms and flags down firmly. The flags clip onto the black bars.</li>
-        </ul>
+        <ul>{tips}</ul>
         <h3>Getting the parts</h3>
         <p>Every element is listed with its LEGO Element ID in the inventory at the back, and in
         <code>parts/</code> as CSV and BrickLink XML files. See &ldquo;Ordering the parts&rdquo; on
@@ -420,7 +397,7 @@ def build(man, elements):
       </div>""", "text")
 
     # ---------------- sections and steps ----------------
-    main_steps = man["models"]["riviera_resort.ldr"]["steps"]
+    main_steps = man["models"][main_name]["steps"]
     built = set()
     sec_no = 0
     main_sections = main_m.sections
@@ -432,11 +409,17 @@ def build(man, elements):
         end = later[0] if later else 10 ** 6
         return set(range(start, end))
 
+    def section_image(title):
+        for prefix, view in P["section_images"].items():
+            if title.startswith(prefix):
+                return prep_image(f"renders/final/{view}.png", max_px=1400)
+        return prep_image(f"renders/final/{P['section_image_default']}.png", max_px=1400)
+
     buffer = []
 
     def flush():
         if buffer:
-            bk.steps_pages(list(buffer), "riviera_resort.ldr", header)
+            bk.steps_pages(list(buffer), main_name, header)
             buffer.clear()
 
     for st in main_steps:
@@ -446,20 +429,14 @@ def build(man, elements):
             sec_no += 1
             title, blurb = main_sections[s]
             rng = main_range(s)
-            counter = model_parts(by_name, "riviera_resort.ldr", rng)
+            counter = model_parts(by_name, main_name, rng)
             # small submodels placed in this section are listed here too
             for st2 in main_steps:
                 if st2["step"] in rng:
                     for sub in st2["subs"]:
                         if len(by_name[sub["model"]].steps()) <= 3:
                             counter.update(model_parts(by_name, sub["model"], mult=sub["qty"]))
-            if title.startswith("The porte"):
-                img = prep_image("renders/final/cover_front.png", max_px=1400)
-            elif title.startswith("The grounds"):
-                img = prep_image("renders/final/cover_high.png", max_px=1400)
-            else:
-                img = prep_image("renders/final/cover_front_left.png", max_px=1400)
-            bk.section_intro(sec_no, title, blurb, img, counter)
+            bk.section_intro(sec_no, title, blurb, section_image(title), counter)
             header = title
         for sub in st["subs"]:
             name = sub["model"]
@@ -471,7 +448,7 @@ def build(man, elements):
             mult = sub["qty"]
             if len(sm["steps"]) > 3:
                 sec_no += 1
-                title, blurb = SUB_INFO[name]
+                title, blurb = P["sub_info"][name]
                 bk.section_intro(sec_no, title, blurb, bk.sub_img[name],
                                  model_parts(by_name, name, mult=mult), mult=mult)
                 header = title
@@ -480,18 +457,16 @@ def build(man, elements):
     flush()
 
     # ---------------- gallery ----------------
-    g = [prep_image(f"renders/final/{n}.png", max_px=1600)[0] for n in
-         ("cover_front", "cover_front_left", "cover_high", "back")]
-    bk.page(f'<div class="g"><img src="{g[0]}"></div><div class="g"><img src="{g[1]}"></div>'
-            f'<div class="g"><img src="{g[2]}"></div><div class="g"><img src="{g[3]}"></div>',
+    g = [prep_image(f"renders/final/{n}.png", max_px=1600)[0] for n in P["gallery"]]
+    bk.page("".join(f'<div class="g"><img src="{x}"></div>' for x in g),
             "gallery", header=("The finished model", None))
 
     bk.inventory_pages()
-    ordering_pages(bk, man, elements)
+    ordering_pages(bk, man, elements, P)
     return bk
 
 
-def ordering_pages(bk, man, el):
+def ordering_pages(bk, man, el, P):
     priced, cost = 0, 0.0
     for p in man["parts"].values():
         info = el.get((p["dat"], p["color"]), {})
@@ -512,7 +487,7 @@ def ordering_pages(bk, man, el):
           <li>If anything isn't matched, upload <code>pick_a_brick_upload_retry.csv</code>. It has LEGO's newer
           IDs for the same parts; many white parts got new IDs in 2025. Or search the inventory's design number and colour.</li>
           <li>Bestseller elements can be ordered up to 999 at a time. Many Standard elements are limited to 10 per order.
-          Every element this model needs more than 10 of was in the Bestseller range.</li>
+          {P.get("order_cap_note", "")}</li>
         </ol>
         <h3>2 &middot; BrickLink or Rebrickable (backup)</h3>
         <p>The files in <code>parts/</code> cover anything Pick a Brick does not stock:</p>
@@ -529,21 +504,11 @@ def ordering_pages(bk, man, el):
       </div>
       <div>
         <h2>Substitutions</h2>
-        <ul>
-          <li><b>Base:</b> six 16&times;16 plates. You can swap in any plates that cover 48&times;32 studs, or a 48&times;48 grey baseplate.</li>
-          <li><b>Lawn:</b> any green plates. Keep the joints away from the joints in the base plates below.</li>
-          <li><b>Hidden plates:</b> the plates inside the buildings can be any colour.</li>
-          <li><b>Flags:</b> any colour. The current 2&times;2 flag (design 80326) wasn't on the Pick a Brick listings checked; BrickLink has it.</li>
-        </ul>
+        <ul>{"".join(f"<li>{x}</li>" for x in P["substitutions"])}</ul>
         <h3>Colour names</h3>
         <table>
           <tr><th>In this booklet</th><th>LEGO name</th><th>BrickLink</th></tr>
-          <tr><td>Light Bluish Gray</td><td>Medium Stone Grey</td><td>Light Bluish Gray</td></tr>
-          <tr><td>Dark Bluish Gray</td><td>Dark Stone Grey</td><td>Dark Bluish Gray</td></tr>
-          <tr><td>Green</td><td>Dark Green</td><td>Green</td></tr>
-          <tr><td>Dark Green</td><td>Earth Green</td><td>Dark Green</td></tr>
-          <tr><td>Tan</td><td>Brick Yellow</td><td>Tan</td></tr>
-          <tr><td>Red / Blue</td><td>Bright Red / Bright Blue</td><td>Red / Blue</td></tr>
+          {"".join(f"<tr><td>{a}</td><td>{b}</td><td>{c}</td></tr>" for a, b, c in P["colour_rows"])}
         </table>
       </div>""", "text", header=("Ordering the parts", None))
 
@@ -564,20 +529,22 @@ const {{ chromium }} = require('playwright');
     subprocess.run(["node", "-e", js], check=True, env=env)
 
 
-def main():
+def main(proj):
+    setup(proj)
     with open(os.path.join(BUILD, "manifest.json")) as fh:
         man = json.load(fh)
     el = load_elements()
-    bk = build(man, el)
-    html_s = render_html(bk, "Riviera Resort - Build instructions")
+    bk = build(proj, man, el)
+    html_s = render_html(bk, f"{proj.meta['title']} - Build instructions")
     hp = os.path.join(BUILD, "booklet.html")
     with open(hp, "w") as fh:
         fh.write(html_s)
-    os.makedirs(OUT_DIR, exist_ok=True)
-    print_pdf(hp, PDF)
-    print(f"{len(bk.pages)} pages, {bk.step_no} steps -> {PDF} "
-          f"({os.path.getsize(PDF) / 1e6:.1f} MB)")
+    os.makedirs(proj.instr_dir, exist_ok=True)
+    pdf = os.path.join(proj.instr_dir, proj.meta["pdf_name"])
+    print_pdf(hp, pdf)
+    print(f"{len(bk.pages)} pages, {bk.step_no} steps -> {pdf} "
+          f"({os.path.getsize(pdf) / 1e6:.1f} MB)")
 
 
 if __name__ == "__main__":
-    main()
+    main(projects.load(sys.argv))

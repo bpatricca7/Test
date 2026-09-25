@@ -5,7 +5,10 @@ inventories) and two scrapes of LEGO Pick a Brick (2022 and late 2025) to
 choose the most current element ID and to flag how likely each element is
 to be stocked by Pick a Brick.
 
-  python3 element_lookup.py <dir with rb/*.csv, pab2022.json, pab2025.json>
+  python3 lego-kit/element_lookup.py <project folder> <data dir> [part.dat:colour ...]
+
+The data dir holds rb/*.csv (Rebrickable dump), pab2022.json, pab2025.json and
+repos/vaultcrest_moc-source/cache/studio_reference_files/ElementId.json.
 """
 import csv
 import json
@@ -13,9 +16,8 @@ import os
 import sys
 from collections import defaultdict
 
-sys.path.insert(0, os.path.dirname(__file__))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 # LDraw colour -> (LEGO colour name, BrickLink colour id, BrickLink name)
 COLORS = {
@@ -26,6 +28,11 @@ COLORS = {
     288: ("Earth Green", 80, "Dark Green"), 19: ("Brick Yellow", 2, "Tan"),
     70: ("Reddish Brown", 88, "Reddish Brown"), 1: ("Bright Blue", 7, "Blue"),
     28: ("Sand Yellow", 69, "Dark Tan"), 10: ("Bright Green", 36, "Bright Green"),
+    5: ("Bright Purple", 47, "Dark Pink"), 26: ("Bright Reddish Violet", 71, "Magenta"),
+    29: ("Light Purple", 104, "Bright Pink"), 308: ("Dark Brown", 120, "Dark Brown"),
+    47: ("Transparent", 12, "Trans-Clear"), 46: ("Transparent Yellow", 19, "Trans-Yellow"),
+    31: ("Lavender", 154, "Lavender"), 30: ("Medium Lavender", 157, "Medium Lavender"),
+    25: ("Bright Orange", 4, "Orange"), 14: ("Bright Yellow", 3, "Yellow"),
 }
 # LDraw part -> Rebrickable part numbers to consider (first = preferred)
 RB_ALIASES = {"3023b": ["3023"], "3040b": ["3040b", "3040a", "3040"], "6141": ["6141", "4073"],
@@ -143,13 +150,15 @@ def main(src, combos):
 
 
 if __name__ == "__main__":
-    import riviera
-    m, models, _ = riviera.main()
+    import project as projects
+    proj = projects.load(sys.argv)
+    m, models, _ = proj.build(verbose=False)
     combos = sorted(m.parts_count())
-    extra = [tuple(x.split(":")) for x in sys.argv[2:]]
+    extra = [tuple(x.split(":")) for x in sys.argv[3:]]
     combos += [(d, int(c)) for d, c in extra]
-    rows = main(sys.argv[1], combos)
-    out = os.path.join(ROOT, "data", "elements.csv")
+    rows = main(sys.argv[2], combos)
+    os.makedirs(proj.data_dir, exist_ok=True)
+    out = os.path.join(proj.data_dir, "elements.csv")
     with open(out, "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(rows[0]))
         w.writeheader()

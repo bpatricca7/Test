@@ -5,7 +5,8 @@ that step, with the new elements highlighted, from a camera framed on the
 step.  It also renders one image per element (for the parts callouts) at a
 common scale, and one image of each finished submodel.
 
-Output: ../build/renders/... and ../build/manifest.json
+Usage:  python3 lego-kit/render.py <project folder> [model.ldr ...]
+Output: <project>/build/renders/... and <project>/build/manifest.json
 """
 import json
 import math
@@ -17,16 +18,18 @@ from concurrent.futures import ThreadPoolExecutor
 
 from PIL import Image
 
-sys.path.insert(0, os.path.dirname(__file__))
-import riviera
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import project as projects
 from bricks import PARTS, COLOR_NAMES, SubRef
 from ldraw_geom import geometry
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-BUILD = os.path.join(ROOT, "build")
-RENDERS = os.path.join(BUILD, "renders")
-MPD = os.path.join(ROOT, "model", "riviera_resort.mpd")
+BUILD = RENDERS = MPD = None       # set by setup() for the project being rendered
 LDRAW = "/usr/share/ldraw"
+
+
+def setup(proj):
+    global BUILD, RENDERS, MPD
+    BUILD, RENDERS, MPD = proj.build_dir, proj.renders, proj.mpd
 
 LAT, LON = 28, 32          # camera: 28 deg above, 32 deg to the right of front
 FOV = 22
@@ -206,8 +209,9 @@ def run_jobs(jobs, workers=4):
         return list(ex.map(one, jobs))
 
 
-def main(only=None):
-    main_m, models, problems = riviera.main()
+def main(proj, only=None):
+    setup(proj)
+    main_m, models, problems = proj.build()
     if problems:
         raise SystemExit("model has problems; not rendering")
     by_name = {m.name: m for m in models}
@@ -247,9 +251,7 @@ def main(only=None):
             args += ["-s", m.name]
         args += camera_for(*model_bbox(m)) + [MPD]
         final_jobs.append((out, args))
-    hero = [("cover_front_right", 24, 32), ("cover_front_left", 24, -32),
-            ("cover_front", 12, 0), ("cover_high", 50, 20), ("back", 26, 150)]
-    for name, la, lo in hero:
+    for name, la, lo in proj.meta["hero_views"]:
         out = os.path.join(RENDERS, "final", name + ".png")
         args = ["-i", out, "-w", "2400", "-h", "1600", "--shading", "full", "--aa-samples", "8"]
         args += camera_for(*model_bbox(main_m), lat=la, lon=lo, margin=0.93) + [MPD]
@@ -277,4 +279,4 @@ def main(only=None):
 
 
 if __name__ == "__main__":
-    main(set(sys.argv[1:]) or None)
+    main(projects.load(sys.argv), set(sys.argv[2:]) or None)

@@ -22,11 +22,13 @@ from ldraw_geom import geometry
 # --------------------------------------------------------------------------
 WHITE, BLACK, DBG, LBG, RED, GREEN, DKGREEN, TAN, RBROWN, BLUE, DTAN, BRGREEN = (
     15, 0, 72, 71, 4, 2, 288, 19, 70, 1, 28, 10)
+PINK, MLAVENDER, TYELLOW, TCLEAR, TRED = 29, 30, 46, 47, 36
 
 COLOR_NAMES = {
     15: "White", 0: "Black", 72: "Dark Bluish Gray", 71: "Light Bluish Gray",
     4: "Red", 2: "Green", 288: "Dark Green", 19: "Tan", 70: "Reddish Brown",
-    1: "Blue", 28: "Dark Tan", 10: "Bright Green",
+    1: "Blue", 28: "Dark Tan", 10: "Bright Green", 29: "Bright Pink",
+    30: "Medium Lavender", 46: "Trans-Yellow", 47: "Trans-Clear", 36: "Trans-Red",
 }
 
 # Rotation (degrees about the vertical axis) that makes a slope face a side.
@@ -126,6 +128,11 @@ def _init_parts():
     P("slope45", "3040b.dat", "Slope 45 2 x 1")
     P("slope65", "60481.dat", "Slope 65 2 x 1 x 2")
     P("slope75", "4460b.dat", "Slope 75 2 x 1 x 3")
+    P("s45x2", "3039.dat", "Slope 45 2 x 2")
+    P("s45x4", "3037.dat", "Slope 45 2 x 4")
+    P("s33x1", "4286.dat", "Slope 33 3 x 1")
+    P("s33x2", "3298.dat", "Slope 33 3 x 2")
+    P("s33x4", "3297.dat", "Slope 33 3 x 4")
     P("curve2x1", "11477.dat", "Slope Curved 2 x 1")
     P("cheese", "54200.dat", "Slope 30 1 x 1 x 2/3")
     P("dish4", "3960.dat", "Dish 4 x 4 Inverted",
@@ -139,6 +146,21 @@ def _init_parts():
     # accessories that do not sit on the grid
     P("bar3", "87994.dat", "Bar 3L", cells=[(0, 0)], bottom=[], height=0,
       solid=False, studs=[])
+    # house parts
+    P("masonry", "98283.dat", "Brick 1 x 2 with Masonry Profile")
+    P("b1x1x3", "14716.dat", "Brick 1 x 1 x 3")
+    P("fence1x4", "3633.dat", "Fence 1 x 4 x 1")
+    P("fence_sp", "15332.dat", "Fence Spindled 1 x 4 x 2")
+    P("headlight", "4070.dat", "Brick 1 x 1 with Headlight")
+    P("stud_side", "87087.dat", "Brick 1 x 1 with Stud on 1 Side", cells=[(0, 0)])
+    P("tile_round1", "98138.dat", "Tile Round 1 x 1")
+    P("flower1", "24866.dat", "Plant Flower 1 x 1", cells=[(0, 0)])
+    P("win122", "60592.dat", "Window 1 x 2 x 2 Frame")
+    P("win123", "60593.dat", "Window 1 x 2 x 3 Frame")
+    P("glass122", "60601.dat", "Glass for Window 1 x 2 x 2", cells=[(0, 0)], bottom=[],
+      height=0, solid=False, studs=[])
+    P("glass123", "60602.dat", "Glass for Window 1 x 2 x 3", cells=[(0, 0)], bottom=[],
+      height=0, solid=False, studs=[])
     P("bar4", "30374.dat", "Bar 4L (Light Sword Blade)", cells=[(0, 0)], bottom=[],
       height=0, solid=False, studs=[])
     P("flag2x2", "2335.dat", "Flag 2 x 2 Square (80326)", cells=[(0, 0)], bottom=[],
@@ -442,6 +464,13 @@ ALLOWED = {
     ("t", 72): _sizes("1x1 1x2 1x3 1x4 1x6 1x8 2x2"),
     ("t", 19): _sizes("1x1 1x2 1x4 1x6 2x2"),
     ("b", 15): _sizes("1x1 1x2 1x3 1x4 1x6 1x8"),
+    ("b", 72): _sizes("1x1 1x2 1x3 1x4 1x6 1x8"),
+    ("b", 0): _sizes("1x1 1x2 1x3 1x4"),
+    ("b", 71): _sizes("1x1 1x2 1x4"),
+    ("p", 0): _sizes("1x1 1x2 1x3 1x4 1x6 2x2 2x4 2x6 2x8 4x6"),
+    ("p", 70): _sizes("1x1 1x2 1x3 1x4 1x6 1x8 2x2 2x4 2x6 2x8 4x6"),
+    ("t", 0): _sizes("1x1 1x2 1x4 1x6 1x8 2x2"),
+    ("t", 15): _sizes("1x1 1x2 1x4 1x6 2x2"),
 }
 
 
@@ -539,3 +568,34 @@ def fill_cells(model, kind, color, cells, layer, sizes=None, prefer=None):
                 break
         else:
             raise ValueError(f"cannot cover cell {(x, z)}")
+
+
+class Offset:
+    """Build into a submodel using the parent's grid coordinates.
+
+    The submodel is later placed with parent.sub(model, dx, dz, dl); the wrapper
+    subtracts that offset so design code can use one coordinate system.
+    """
+
+    def __init__(self, model, dx, dz, dl):
+        self.model, self.dx, self.dz, self.dl = model, dx, dz, dl
+
+    def add(self, key, color, x, z, layer, rot=0, ldraw=None):
+        return self.model.add(key, color, x - self.dx, z - self.dz, layer - self.dl, rot)
+
+    def add_raw(self, key, color, pos, matrix, attach_to=None):
+        p = (pos[0] - 20 * self.dx, pos[1] + 8 * self.dl, pos[2] - 20 * self.dz)
+        return self.model.add_raw(key, color, p, matrix, attach_to=attach_to)
+
+    def step(self, note=None):
+        self.model.step(note)
+
+    def section(self, title, blurb=""):
+        self.model.section(title, blurb)
+
+    def sub(self, model, x, z, layer, rot=0):
+        return self.model.sub(model, x - self.dx, z - self.dz, layer - self.dl, rot)
+
+    def place(self, x, z, layer):
+        """Arguments for parent.sub() that put this submodel in place."""
+        return self.model, self.dx, self.dz, self.dl

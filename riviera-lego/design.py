@@ -1,21 +1,77 @@
 """Design of the Riviera Resort display model (micro scale, about 1:250).
 
-Run:  python3 riviera.py   -> writes ../model/riviera_resort.mpd and a JSON
-build description used by the instruction renderer.
+Build with the shared kit:  ./build.sh   (or python3 ../lego-kit/render.py . etc.)
 
 Scale: 1 stud = 2 m of building, 1 plate = 0.8 m, one storey = 4 plates.
 Footprint 48 x 32 studs (38 x 26 cm); the domes reach 49 plates (16 cm).
 """
-import json
-import os
-import sys
-
-sys.path.insert(0, os.path.dirname(__file__))
-from bricks import (Model, PARTS, validate, row, fill_rect, fill_cells, place_rect,
-                    split_length, seams, rot_matrix, FACE,
+from bricks import (Model, PARTS, row, fill_rect, fill_cells, place_rect,
+                    rot_matrix, FACE,
                     WHITE, BLACK, DBG, LBG, RED, GREEN, DKGREEN, TAN, RBROWN, BLUE)
 
-OUT = os.path.join(os.path.dirname(__file__), "..", "model")
+PROJECT = dict(
+    model_name="riviera_resort",
+    pdf_name="Riviera_Resort_Instructions.pdf",
+    title="Riviera Resort",
+    subtitle="A micro-scale display model in LEGO&reg; bricks",
+    cover_stats=("38 &times; 26 cm", "48 &times; 32 studs"),
+    badge="Unofficial fan design",
+    fine_print=("An unofficial fan-designed model (MOC), inspired by Disney's Riviera Resort "
+                "at Walt Disney World. It is not affiliated with, sponsored or endorsed by The "
+                "LEGO Group or Disney. LEGO&reg; is a trademark of The LEGO Group."),
+    about=("This model shows the grand entrance of the Riviera Resort: the arched porte-cochere, "
+           "the mansard-roofed central pavilion with its oval dormers, two domed corner "
+           "pavilions, and the guest wings with red awnings, all set in a lawn lined with palms."),
+    facts=[("Size", "48 &times; 32 studs (38.4 &times; 25.6 cm), 16 cm tall at the domes"),
+           ("Scale", "about 1:250 (one storey = 4 plates)"),
+           ("Build time", "about 6 to 8 hours")],
+    organisation=["The grounds: base, drive, lawn and hedges", "The central pavilion",
+                  "The domed pavilions (build 2)", "The guest wings (build 2)",
+                  "The porte-cochere", "Palms, flowers and flags"],
+    organisation_note=("Each building is built on its own and then set on the base. Every "
+                       "section starts with a list of the parts it needs, so you can sort "
+                       "them before you start."),
+    tips=["The facades use a lot of 1&times;1 bricks: 1 black brick for every window and 1 "
+          "white brick for every pillar between windows. Keep black and white in separate trays.",
+          "Each floor is one course of bricks topped with a band of white plates. Check the "
+          "window pattern against the picture before you add the band.",
+          "A <b>&ldquo;Build 2&rdquo;</b> badge means you build that module twice. Build both "
+          "at the same time, one step at a time.",
+          "Push the palms and flags down firmly. The flags clip onto the black bars."],
+    legend=("palm.ldr", 1),
+    sub_info={
+        "central.ldr": ("The central pavilion",
+                        "Eight storeys of French-style windows under a steep mansard "
+                        "roof with oval dormers. The top floor has the red awnings."),
+        "tower.ldr": ("The domed pavilions",
+                      "Two identical ten-storey pavilions flank the centre. Each is topped "
+                      "by a grey dome and a lantern."),
+        "wing.ldr": ("The guest wings",
+                     "Two identical eight-storey wings. Their top floor also has red awnings."),
+        "palm.ldr": ("Palm tree", ""),
+    },
+    section_images={"The porte": "cover_front", "The grounds": "cover_high"},
+    section_image_default="cover_front_left",
+    hero_views=[("cover_front_right", 24, 32), ("cover_front_left", 24, -32),
+                ("cover_front", 12, 0), ("cover_high", 50, 20), ("back", 26, 150)],
+    cover_view="cover_front_right",
+    gallery=["cover_front", "cover_front_left", "cover_high", "back"],
+    substitutions=[
+        "<b>Base:</b> six 16&times;16 plates. You can swap in any plates that cover "
+        "48&times;32 studs, or a 48&times;48 grey baseplate.",
+        "<b>Lawn:</b> any green plates. Keep the joints away from the joints in the base "
+        "plates below.",
+        "<b>Hidden plates:</b> the plates inside the buildings can be any colour.",
+        "<b>Flags:</b> any colour. The current 2&times;2 flag (design 80326) wasn't on the "
+        "Pick a Brick listings checked; BrickLink has it."],
+    order_cap_note="Every element this model needs more than 10 of was in the Bestseller range.",
+    colour_rows=[("Light Bluish Gray", "Medium Stone Grey", "Light Bluish Gray"),
+                 ("Dark Bluish Gray", "Dark Stone Grey", "Dark Bluish Gray"),
+                 ("Green", "Dark Green", "Green"),
+                 ("Dark Green", "Earth Green", "Dark Green"),
+                 ("Tan", "Brick Yellow", "Tan"),
+                 ("Red / Blue", "Bright Red / Bright Blue", "Red / Blue")],
+)
 
 WALL = WHITE
 WINDOW = BLACK
@@ -293,7 +349,7 @@ def build_main(wing, tower, central, palm):
     m = Model("riviera_resort.ldr", "Riviera Resort - micro-scale display model")
     m.header_notes = [
         "Unofficial fan design inspired by Disney's Riviera Resort; not affiliated with",
-        "the LEGO Group or Disney. Generated by tools/riviera.py.",
+        "the LEGO Group or Disney. Generated by design.py (lego-kit).",
         "The 2x2 flags are drawn as 2335 (older mould, same shape). Order the current",
         "version, design 80326 (see parts/pick_a_brick_list.csv).",
     ]
@@ -488,25 +544,7 @@ def build_porte_cochere(m):
     m.step()
 
 
-def main():
+def build():
     wing, tower, central, palm = build_wing(), build_tower(), build_central(), build_palm()
     main_m = build_main(wing, tower, central, palm)
-    problems = validate(main_m)
-    for sm in (wing, tower, central, palm):
-        validate(sm)
-    os.makedirs(OUT, exist_ok=True)
-    models = [main_m, central, tower, wing, palm]
-    lines = []
-    for mm in models:
-        lines += mm.ldraw_lines()
-        lines.append("")
-    path = os.path.join(OUT, "riviera_resort.mpd")
-    with open(path, "w", newline="\r\n") as fh:
-        fh.write("\n".join(lines))
-    total = main_m.parts_count()
-    print("total elements:", sum(total.values()), "unique part/colour:", len(total))
-    return main_m, models, problems
-
-
-if __name__ == "__main__":
-    main()
+    return main_m, [main_m, central, tower, wing, palm]

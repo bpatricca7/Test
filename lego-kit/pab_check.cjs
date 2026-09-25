@@ -5,7 +5,7 @@
 // reports one. Results go to parts/pick_a_brick_live.csv.
 //
 // Needs network access to www.lego.com, Node, and Playwright with Chromium:
-//   NODE_PATH=$(npm root -g) node tools/pab_check.cjs [en-us]
+//   NODE_PATH=$(npm root -g) node lego-kit/pab_check.cjs <project folder> [en-us]
 //
 // It loads the Pick a Brick page in a real browser (for cookies), then calls the
 // same GraphQL endpoint the page uses. That query was taken from the open-source
@@ -16,8 +16,8 @@ const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
 
-const ROOT = path.resolve(__dirname, '..');
-const LOCALE = process.argv[2] || 'en-us';
+const ROOT = path.resolve(process.argv[2] || '.');
+const LOCALE = process.argv[3] || 'en-us';
 const PAGE = `https://www.lego.com/${LOCALE}/pick-and-build/pick-a-brick`;
 
 const VARIANT = (extra) => `
