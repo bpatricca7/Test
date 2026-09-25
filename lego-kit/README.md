@@ -41,6 +41,10 @@ slopes and mounts parts on side studs (the gold lettering).
 While designing, `python3 ../lego-kit/preview.py . [submodel.ldr]` renders quick
 views into `build/preview/`.
 
+Steps are drawn from the front right. A model that is best seen from another side can
+set `model.camera = (lat, lon)`, for example `(28, -32)` for the front left (see
+`whipped-latte-lego/design.py`, whose handle and bowl are on the left).
+
 Options in `PROJECT` for a kit you make many copies of (see
 `pumpkin-spice-latte-lego/design.py`):
 - `bestseller_only=True`: `export_parts.py` stops with a list of parts that aren't
