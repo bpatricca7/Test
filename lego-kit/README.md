@@ -1,7 +1,8 @@
 # lego-kit: from a design script to a LEGO instruction booklet
 
 The shared toolkit behind [`../riviera-lego`](../riviera-lego),
-[`../house-lego`](../house-lego) and [`../grand-floridian-lego`](../grand-floridian-lego).
+[`../house-lego`](../house-lego), [`../grand-floridian-lego`](../grand-floridian-lego) and
+[`../boardwalk-lego`](../boardwalk-lego).
 A model is written as Python on the stud grid. The kit checks that it is buildable,
 renders the steps, maps every part to LEGO element IDs, and prints an instruction
 booklet and shopping lists.
@@ -33,7 +34,8 @@ my-model/
 `parts/` and `instructions/`. See `house-lego/design.py` for a full example with
 walls, windows, crossing roofs, a porch, landscaping and a car, and
 `grand-floridian-lego/design.py` for verandas, hipped roofs with gables and dormers,
-a cupola and chimneys.
+a cupola and chimneys. `boardwalk-lego/design.py` builds a round arch from inverted
+slopes and mounts parts on side studs (the gold lettering).
 
 While designing, `python3 ../lego-kit/preview.py . [submodel.ldr]` renders quick
 views into `build/preview/`.

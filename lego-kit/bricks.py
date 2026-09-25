@@ -24,13 +24,14 @@ WHITE, BLACK, DBG, LBG, RED, GREEN, DKGREEN, TAN, RBROWN, BLUE, DTAN, BRGREEN = 
     15, 0, 72, 71, 4, 2, 288, 19, 70, 1, 28, 10)
 PINK, MLAVENDER, TYELLOW, TCLEAR, TRED = 29, 30, 46, 47, 36
 DKRED = 320
+CREAM, GOLD = 226, 297
 
 COLOR_NAMES = {
     15: "White", 0: "Black", 72: "Dark Bluish Gray", 71: "Light Bluish Gray",
     4: "Red", 2: "Green", 288: "Dark Green", 19: "Tan", 70: "Reddish Brown",
     1: "Blue", 28: "Dark Tan", 10: "Bright Green", 29: "Bright Pink",
     30: "Medium Lavender", 46: "Trans-Yellow", 47: "Trans-Clear", 36: "Trans-Red",
-    320: "Dark Red",
+    320: "Dark Red", 226: "Bright Light Yellow", 297: "Pearl Gold",
 }
 
 # Rotation (degrees about the vertical axis) that makes a slope face a side.
@@ -173,6 +174,10 @@ def _init_parts():
     P("cone2", "3942c.dat", "Cone 2 x 2 x 2")
     P("arch1x8", "16577.dat", "Arch 1 x 8 x 2 Raised", bottom=[(-70, 0), (70, 0)])
     P("round2", "3941.dat", "Brick 2 x 2 Round")
+    # boardwalk parts
+    P("slope45inv", "3665b.dat", "Slope 45 2 x 1 Inverted", bottom=[(0, 0)])
+    P("curve2inv", "24201.dat", "Slope Curved 2 x 1 Inverted", bottom=[(0, 20)])
+    P("curve3", "50950.dat", "Slope Curved 3 x 1")
 
 
 _init_parts()
@@ -485,6 +490,10 @@ ALLOWED = {
     ("p", 320): _sizes("1x1 1x2 1x4 2x2 2x4"),
     ("t", 320): _sizes("1x1 1x2 1x4"),
     ("b", 288): _sizes("1x1 1x2 1x4"),
+    ("b", 226): _sizes("1x1 1x2 1x4"),
+    ("b", 2): _sizes("1x1 1x2 1x3 1x4"),
+    ("p", 10): _sizes("1x1 1x2 2x2 2x4"),
+    ("p", 1): _sizes("1x2 1x4 1x6"),
 }
 
 
