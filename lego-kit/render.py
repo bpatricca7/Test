@@ -157,6 +157,7 @@ def step_jobs(model, is_main):
     """
     jobs, scales = [], {}
     fixed = None if is_main else model_bbox(model)
+    lat, lon = getattr(model, "camera", (LAT, LON))   # a model may set its own view
     for s in model.steps():
         upto = [it for it in model.items if it.step <= s]
         new = [it for it in model.items if it.step == s]
@@ -180,7 +181,7 @@ def step_jobs(model, is_main):
             args += ["--highlight", "--highlight-color", HIGHLIGHT]
         if not is_main:
             args += ["-s", model.name]
-        args += camera_for(bmin, bmax) + [MPD]
+        args += camera_for(bmin, bmax, lat=lat, lon=lon) + [MPD]
         jobs.append((out, args))
         scales[s] = px_per_ldu(bmin, bmax)
     return jobs, scales
@@ -273,7 +274,7 @@ def main(proj, only=None):
                 "--aa-samples", "8"]
         if m is not main_m:
             args += ["-s", m.name]
-        args += camera_for(*model_bbox(m)) + [MPD]
+        args += camera_for(*model_bbox(m), *getattr(m, "camera", (LAT, LON))) + [MPD]
         final_jobs.append((out, args))
     for name, la, lo in proj.meta["hero_views"]:
         out = os.path.join(RENDERS, "final", name + ".png")
