@@ -10,6 +10,7 @@ Output: <project>/build/renders/... and <project>/build/manifest.json
 """
 import json
 import math
+import re
 import os
 import subprocess
 import sys
@@ -28,8 +29,29 @@ LDRAW = "/usr/share/ldraw"
 
 
 def setup(proj):
-    global BUILD, RENDERS, MPD
+    global BUILD, RENDERS, MPD, LDRAW
     BUILD, RENDERS, MPD = proj.build_dir, proj.renders, proj.mpd
+    alpha = proj.meta.get("clear_alpha")
+    if alpha:
+        LDRAW = clear_library(os.path.join(BUILD, "ldraw"), alpha)
+
+
+def clear_library(path, alpha):
+    """A copy of the LDraw library (by links) that draws Trans-Clear more
+    see-through, so what is inside a clear build shows in the renders.
+    Real clear parts are much clearer than LeoCAD's default 50%."""
+    src = "/usr/share/ldraw"
+    os.makedirs(path, exist_ok=True)
+    for name in os.listdir(src):
+        link = os.path.join(path, name)
+        if name != "LDConfig.ldr" and not os.path.lexists(link):
+            os.symlink(os.path.join(src, name), link)
+    with open(os.path.join(src, "LDConfig.ldr")) as fh:
+        lines = [re.sub(r"ALPHA \d+", f"ALPHA {int(alpha)}", ln) if " CODE  47 " in ln else ln
+                 for ln in fh]
+    with open(os.path.join(path, "LDConfig.ldr"), "w") as fh:
+        fh.writelines(lines)
+    return path
 
 LAT, LON = 28, 32          # camera: 28 deg above, 32 deg to the right of front
 FOV = 22

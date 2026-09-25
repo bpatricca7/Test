@@ -202,6 +202,7 @@ def _init_parts():
     P("panel1x2x2", "87552.dat", "Panel 1 x 2 x 2")
     P("b1x2x5", "46212.dat", "Brick 1 x 2 x 5")
     P("b1x2_open", "3065.dat", "Brick 1 x 2 without Bottom Tube")
+    P("p8x8", "41539.dat", "Plate 8 x 8")
 
 
 _init_parts()
@@ -495,7 +496,7 @@ ALLOWED = {
                       "4x4 4x6 4x8 4x10 4x12 6x6 6x8 6x10 6x12"),
     ("p", 72): _sizes("1x1 1x2 1x3 1x4 1x6 1x8 1x10 2x2 2x3 2x4 2x6 2x8 2x10 2x12 "
                       "4x4 4x6 4x8 6x8 6x10 6x12 16x16"),
-    ("p", 19): _sizes("1x1 1x2 1x4 2x4 2x8 8x16"),
+    ("p", 19): _sizes("1x1 1x2 1x4 2x4 2x8 8x8 8x16"),
     ("p", 288): _sizes("1x1 1x2 1x3 1x4 2x4"),
     ("t", 71): _sizes("1x1 1x2 1x3 1x4 1x6 1x8 2x2"),
     ("t", 72): _sizes("1x1 1x2 1x3 1x4 1x6 1x8 2x2"),
