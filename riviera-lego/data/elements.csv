@@ -1,0 +1,88 @@
+ldraw_part,ldraw_color,lego_color,bricklink_part,bricklink_color_id,bricklink_color,rebrickable_part,design_id,element_id,alt_element_ids,last_set_year,sets_since_2024,pab_2025,pab_2022,pab_price_2025,pab_price_2022,availability
+11477.dat,15,White,11477,1,White,11477,11477,6034044,6548276 6552145,2026,200,,yes,,0.06,"likely (current, listed 2022)"
+11477.dat,72,Dark Stone Grey,11477,85,Dark Bluish Gray,11477,11477,6029948,,2026,119,,yes,,0.06,"likely (current, listed 2022)"
+15254.dat,15,White,15254,1,White,15254,15254,6548280,6047006 6106183,2026,23,,,,,likely (in current sets)
+2335.dat,1,Bright Blue,80326,7,Blue,80326,80326,6365486,,2026,6,,,,,likely (in current sets)
+2335.dat,4,Bright Red,80326,5,Red,80326,80326,6365459,,2026,13,,,,,likely (in current sets)
+2431.dat,19,Brick Yellow,2431,2,Tan,2431,2431,4550324,243105 4114025 4219765 4541238 4542398,2026,110,,yes,,0.13,"likely (current, listed 2022)"
+2431.dat,72,Dark Stone Grey,2431,85,Dark Bluish Gray,2431,2431,4211053,,2026,126,,yes,,0.13,"likely (current, listed 2022)"
+2445.dat,15,White,2445,1,White,2445,2445,244501,6552091,2026,49,,yes,,0.35,"likely (current, listed 2022)"
+2445.dat,72,Dark Stone Grey,2445,85,Dark Bluish Gray,2445,2445,4211067,,2026,77,,yes,,0.35,"likely (current, listed 2022)"
+3004.dat,0,Black,3004,11,Black,3004,3004,300426,,2026,198,yes,yes,0.1,0.11,listed on Pick a Brick (2025)
+3004.dat,15,White,3004,1,White,3004,3004,300401,4613964 6548257,2026,249,yes,yes,0.1,0.11,listed on Pick a Brick (2025)
+3004.dat,72,Dark Stone Grey,3004,85,Dark Bluish Gray,3004,3004,4211088,,2026,141,yes,yes,0.1,0.11,listed on Pick a Brick (2025)
+3005.dat,0,Black,3005,11,Black,3005,3005,300526,,2026,200,yes,yes,0.07,0.07,listed on Pick a Brick (2025)
+3005.dat,15,White,3005,1,White,3005,3005,300501,300551 6548258 6552096,2026,234,yes,yes,0.07,0.07,listed on Pick a Brick (2025)
+3005.dat,72,Dark Stone Grey,3005,85,Dark Bluish Gray,3005,3005,4211098,,2026,142,yes,yes,0.07,0.07,listed on Pick a Brick (2025)
+3008.dat,15,White,3008,1,White,3008,3008,300801,6550134,2026,66,,yes,,0.29,"likely (current, listed 2022)"
+3009.dat,15,White,3009,1,White,3009,3009,300901,300951 6548259 6552097,2026,134,,yes,,0.25,"likely (current, listed 2022)"
+3010.dat,15,White,3010,1,White,3010,3010,301001,6550135,2026,186,yes,yes,0.16,0.15,listed on Pick a Brick (2025)
+3021.dat,2,Dark Green,3021,6,Green,3021,3021,302128,,2026,81,,yes,,0.14,"likely (current, listed 2022)"
+3021.dat,15,White,3021,1,White,3021,3021,302101,6550136,2026,285,,yes,,0.14,"likely (current, listed 2022)"
+3021.dat,71,Medium Stone Grey,3021,86,Light Bluish Gray,3021,3021,4211396,,2026,243,,yes,,0.14,"likely (current, listed 2022)"
+3023b.dat,2,Dark Green,3023,6,Green,3023,3023,302328,,2026,158,yes,yes,0.07,0.07,listed on Pick a Brick (2025)
+3023b.dat,15,White,3023,1,White,3023,3023,302301,6548261 6552100,2026,520,yes,yes,0.07,0.07,listed on Pick a Brick (2025)
+3023b.dat,19,Brick Yellow,3023,2,Tan,3023,3023,4113917,302305,2026,309,yes,yes,0.07,0.07,listed on Pick a Brick (2025)
+3023b.dat,288,Earth Green,3023,80,Dark Green,3023,3023,6013102,4264404 6013797 6618076,2026,63,yes,yes,0.07,0.07,listed on Pick a Brick (2025)
+3024.dat,2,Dark Green,3024,6,Green,3024,3024,302428,,2026,82,yes,yes,0.05,0.06,listed on Pick a Brick (2025)
+3024.dat,15,White,3024,1,White,3024,3024,302401,6548262,2026,338,yes,yes,0.05,0.06,listed on Pick a Brick (2025)
+3024.dat,19,Brick Yellow,3024,2,Tan,3024,3024,4159553,302405,2026,193,yes,yes,0.05,0.06,listed on Pick a Brick (2025)
+3024.dat,71,Medium Stone Grey,3024,86,Light Bluish Gray,3024,3024,4211399,,2026,263,yes,yes,0.05,0.06,listed on Pick a Brick (2025)
+3024.dat,288,Earth Green,3024,80,Dark Green,3024,3024,6055169,4245579 4271440 6013796 6618077,2026,56,yes,,0.05,,listed on Pick a Brick (2025)
+3028.dat,71,Medium Stone Grey,3028,86,Light Bluish Gray,3028,3028,4211400,,2026,13,,yes,,1.34,"likely (current, listed 2022)"
+3029.dat,15,White,3029,1,White,3029,3029,4168072,302901,2026,20,,yes,,0.7,"likely (current, listed 2022)"
+3031.dat,72,Dark Stone Grey,3031,85,Dark Bluish Gray,3031,3031,4243831,4211089,2026,100,,yes,,0.21,"likely (current, listed 2022)"
+3032.dat,2,Dark Green,3032,6,Green,3032,3032,4116671,,2026,45,,yes,,0.43,"likely (current, listed 2022)"
+3032.dat,72,Dark Stone Grey,3032,85,Dark Bluish Gray,3032,3032,4211115,3032199,2026,85,,yes,,0.43,"likely (current, listed 2022)"
+3033.dat,72,Dark Stone Grey,3033,85,Dark Bluish Gray,3033,3033,4211114,,2026,48,,yes,,0.86,"likely (current, listed 2022)"
+3034.dat,15,White,3034,1,White,3034,3034,303401,6552101,2026,120,,yes,,0.25,"likely (current, listed 2022)"
+3034.dat,71,Medium Stone Grey,3034,86,Light Bluish Gray,3034,3034,4211406,,2026,150,,yes,,0.25,"likely (current, listed 2022)"
+3035.dat,72,Dark Stone Grey,3035,85,Dark Bluish Gray,3035,3035,4211061,,2026,88,,yes,,0.46,"likely (current, listed 2022)"
+3036.dat,2,Dark Green,3036,6,Green,3036,3036,4507311,303628 303678,2026,24,,yes,,0.67,"likely (current, listed 2022)"
+30374.dat,0,Black,30374,11,Black,30374,21462,6116604,3037426 4140303,2026,125,,yes,,0.06,"likely (current, listed 2022)"
+3040b.dat,72,Dark Stone Grey,3040,85,Dark Bluish Gray,3040b,3040,4211135,,2026,97,,yes,,0.11,"likely (current, listed 2022)"
+3062b.dat,15,White,3062,1,White,3062b,3062,306201,6619283,2026,127,,yes,,0.06,"likely (current, listed 2022)"
+3062b.dat,70,Reddish Brown,3062,88,Reddish Brown,3062b,3062,4211183,,2026,112,,yes,,0.06,"likely (current, listed 2022)"
+3062b.dat,71,Medium Stone Grey,3062,86,Light Bluish Gray,3062b,3062,4211412,,2026,83,,yes,,0.06,"likely (current, listed 2022)"
+3068b.dat,19,Brick Yellow,3068,2,Tan,3068b,3068,4185177,306805 4114002,2026,114,,yes,,0.08,"likely (current, listed 2022)"
+3068b.dat,71,Medium Stone Grey,3068,86,Light Bluish Gray,3068b,3068,4211413,,2026,139,,yes,,0.08,"likely (current, listed 2022)"
+3068b.dat,72,Dark Stone Grey,3068,85,Dark Bluish Gray,3068b,3068,4211055,,2026,117,,yes,,0.08,"likely (current, listed 2022)"
+3069b.dat,19,Brick Yellow,3069,2,Tan,3069b,3069,4114026,,2027,181,,yes,,0.07,"likely (current, listed 2022)"
+3069b.dat,71,Medium Stone Grey,3069,86,Light Bluish Gray,3069b,3069,4211414,,2026,212,,yes,,0.07,"likely (current, listed 2022)"
+3070b.dat,19,Brick Yellow,3070,2,Tan,3070b,3070,4125253,,2026,98,,yes,,0.06,"likely (current, listed 2022)"
+3070b.dat,71,Medium Stone Grey,3070,86,Light Bluish Gray,3070b,3070,4211415,,2026,172,,yes,,0.06,"likely (current, listed 2022)"
+3070b.dat,72,Dark Stone Grey,3070,85,Dark Bluish Gray,3070b,3070,4210848,,2026,153,,yes,,0.06,"likely (current, listed 2022)"
+32607.dat,2,Dark Green,32607,6,Green,32607,32607,6229130,,2026,138,,yes,,0.06,"likely (current, listed 2022)"
+3460.dat,2,Dark Green,3460,6,Green,3460,3460,346028,,2026,37,,yes,,0.18,"likely (current, listed 2022)"
+3460.dat,15,White,3460,1,White,3460,3460,346001,6550141,2026,152,,yes,,0.18,"likely (current, listed 2022)"
+3460.dat,71,Medium Stone Grey,3460,86,Light Bluish Gray,3460,3460,4211425,,2026,154,,yes,,0.18,"likely (current, listed 2022)"
+3622.dat,15,White,3622,1,White,3622,3622,362201,6550143,2026,121,yes,yes,0.14,0.14,listed on Pick a Brick (2025)
+3623.dat,15,White,3623,1,White,3623,3623,362301,6550144 6552105,2026,238,yes,yes,0.07,0.07,listed on Pick a Brick (2025)
+3623.dat,288,Earth Green,3623,80,Dark Green,3623,3623,6013975,4245567 6013798 6618081,2026,28,yes,yes,0.07,0.07,listed on Pick a Brick (2025)
+3659.dat,15,White,3659,1,White,3659,3659,365901,6550145,2026,37,,yes,,0.14,"likely (current, listed 2022)"
+3666.dat,2,Dark Green,3666,6,Green,3666,3666,366628,,2026,58,,yes,,0.14,"likely (current, listed 2022)"
+3666.dat,15,White,3666,1,White,3666,3666,366601,6548265 6552107,2026,245,,yes,,0.14,"likely (current, listed 2022)"
+3700.dat,15,White,3700,1,White,3700,3700,370001,6619284,2026,64,,yes,,0.11,"likely (current, listed 2022)"
+3710.dat,15,White,3710,1,White,3710,3710,371001,371051 6548266 6552108,2026,363,yes,yes,0.1,0.11,listed on Pick a Brick (2025)
+3710.dat,288,Earth Green,3710,80,Dark Green,3710,3710,6020923,4245568 6013799 6618083,2026,38,yes,yes,0.1,0.11,listed on Pick a Brick (2025)
+3795.dat,15,White,3795,1,White,3795,3795,379501,6550146,2027,214,,yes,,0.19,"likely (current, listed 2022)"
+3795.dat,71,Medium Stone Grey,3795,86,Light Bluish Gray,3795,3795,4211452,3795194,2026,227,,yes,,0.19,"likely (current, listed 2022)"
+3832.dat,2,Dark Green,3832,6,Green,3832,3832,383228,,2026,18,,yes,,0.25,"likely (current, listed 2022)"
+3832.dat,72,Dark Stone Grey,3832,85,Dark Bluish Gray,3832,3832,4210678,,2026,98,,yes,,0.25,"likely (current, listed 2022)"
+3958.dat,15,White,3958,1,White,3958,3958,4144012,395801 6552116,2026,38,,yes,,0.5,"likely (current, listed 2022)"
+4162.dat,71,Medium Stone Grey,4162,86,Light Bluish Gray,4162,4162,4211481,,2026,99,,yes,,0.14,"likely (current, listed 2022)"
+4162.dat,72,Dark Stone Grey,4162,85,Dark Bluish Gray,4162,4162,4211008,5210651,2026,81,,yes,,0.14,"likely (current, listed 2022)"
+4477.dat,15,White,4477,1,White,4477,4477,447701,6550148 6552113,2026,97,,yes,,0.18,"likely (current, listed 2022)"
+4477.dat,72,Dark Stone Grey,4477,85,Dark Bluish Gray,4477,4477,4257526,4210816,2026,98,,yes,,0.18,"likely (current, listed 2022)"
+4589.dat,72,Dark Stone Grey,4589,85,Dark Bluish Gray,59900,59900,4529240,4210647 4518486,2026,62,,yes,,0.07,"likely (current, listed 2022)"
+4740.dat,72,Dark Stone Grey,4740,85,Dark Bluish Gray,4740,4740,4211010,,2026,27,,yes,,0.07,"likely (current, listed 2022)"
+54200.dat,4,Bright Red,54200,5,Red,54200,54200,4504379,4244371 5074621,2026,124,,yes,,0.06,"likely (current, listed 2022)"
+60479.dat,15,White,60479,1,White,60479,60479,4514842,6548269 6552130,2026,59,,yes,,0.25,"likely (current, listed 2022)"
+60479.dat,72,Dark Stone Grey,60479,85,Dark Bluish Gray,60479,60479,6133611,4666604,2026,75,,,,,likely (in current sets)
+60481.dat,72,Dark Stone Grey,60481,85,Dark Bluish Gray,60481,60481,6013658,,2026,52,,,,,likely (in current sets)
+6141.dat,4,Bright Red,4073,5,Red,6141,6141,614121,,2026,127,,yes,,0.06,"likely (current, listed 2022)"
+6541.dat,15,White,6541,1,White,6541,6541,654101,6609542,2026,45,,yes,,0.07,"likely (current, listed 2022)"
+6636.dat,19,Brick Yellow,6636,2,Tan,6636,6636,4157277,4108151,2026,74,,yes,,0.14,"likely (current, listed 2022)"
+87079.dat,71,Medium Stone Grey,87079,86,Light Bluish Gray,87079,87079,4560183,,2026,143,,,,,likely (in current sets)
+87079.dat,72,Dark Stone Grey,87079,85,Dark Bluish Gray,87079,87079,4560184,,2026,107,,,,,likely (in current sets)
+91405.dat,72,Dark Stone Grey,91405,85,Dark Bluish Gray,91405,91405,6004927,,2026,13,,yes,,3.04,"likely (current, listed 2022)"
