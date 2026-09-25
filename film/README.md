@@ -2,6 +2,10 @@
 
 *An animated short film made entirely with code.*
 
+**▶ Watch: [`bolt-and-luma.mp4`](bolt-and-luma.mp4)** (2:39, 1080p, with sound)
+
+![Bolt and Luma under the blossom tree](poster.jpg)
+
 On a quiet, dusty world full of junk, a little trash-compacting robot named **Bolt** works
 alone every day. One morning he finds something he has never seen before: a tiny green
 sprout. Then a glowing explorer robot named **Luma** zooms down from the sky, and a small
