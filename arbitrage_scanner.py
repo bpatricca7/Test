@@ -44,9 +44,14 @@ BASE_URL = "https://api.elections.kalshi.com/trade-api/v2"
 
 HUNDRED = Decimal(100)
 
-# Kalshi taker fee per order: round_up(rate x C x P x (1 - P)) to the next cent,
-# with P the price in dollars and C the number of contracts.
+# Kalshi taker fee per order: round_up(M x rate x C x P x (1 - P)) to the next
+# cent, with P the price in dollars, C the number of contracts and M the
+# series' fee multiplier (1 by default; e.g. 0.5 for S&P 500 index markets).
 DEFAULT_TAKER_FEE_RATE = Decimal("0.07")
+
+# Series fee_type values priced by the formula above. Makers may also pay a fee
+# under "quadratic_with_maker_fees", but this scanner only ever takes.
+KNOWN_FEE_TYPES = {"quadratic", "quadratic_with_maker_fees"}
 
 # Market statuses that accept orders ("open" is the query filter name,
 # "active" is what market objects report).
@@ -233,9 +238,11 @@ class Opportunity:
 class FeeModel:
     rate: Decimal = DEFAULT_TAKER_FEE_RATE
     extra_per_contract: Decimal = Decimal(0)
+    multiplier: Decimal = Decimal(1)
 
     def fee(self, price: Decimal, contracts: int) -> Decimal:
-        return taker_fee_cents(price, contracts, self.rate, self.extra_per_contract)
+        return taker_fee_cents(price, contracts, self.rate * self.multiplier,
+                               self.extra_per_contract)
 
     def priced(self, opp: Opportunity, contracts: int) -> Opportunity:
         """Return `opp` sized to `contracts` with every leg's fee recomputed."""
@@ -339,6 +346,31 @@ def find_strike_ladders(event_ticker: str, title: str, quotes: list, contracts: 
             if opp.profit > 0:
                 found.append(opp)
     return found
+
+
+def fee_multiplier(event: dict, client, series_cache: dict) -> Optional[Decimal]:
+    """Taker fee multiplier for an event: its own override, else its series'.
+
+    Returns None when the multiplier cannot be confirmed, so no opportunity is
+    ever reported as locked-in profit on a guessed fee.
+    """
+    override = to_decimal(event.get("fee_multiplier_override"))
+    if override is not None:
+        return override
+    series_ticker = event.get("series_ticker")
+    if not series_ticker:
+        return None
+    if series_ticker not in series_cache:
+        try:
+            series_cache[series_ticker] = client.get_series(series_ticker)
+        except requests.exceptions.RequestException:
+            series_cache[series_ticker] = {}
+    series = series_cache[series_ticker]
+    fee_type = series.get("fee_type")
+    if fee_type is not None and fee_type not in KNOWN_FEE_TYPES:
+        return None
+    multiplier = to_decimal(series.get("fee_multiplier"))
+    return multiplier if multiplier is not None and multiplier >= 0 else None
 
 
 def _latest_close(quotes: list) -> Optional[datetime]:
@@ -467,6 +499,9 @@ class KalshiPublicClient:
             event["markets"] = data["markets"]
         return event
 
+    def get_series(self, series_ticker: str) -> dict:
+        return self._get(f"/series/{series_ticker}").get("series") or {}
+
     def get_orderbook(self, ticker: str) -> dict:
         return self._get(f"/markets/{ticker}/orderbook")
 
@@ -492,6 +527,9 @@ class FixtureClient:
     def get_event(self, event_ticker: str) -> dict:
         return self.data.get("events", {}).get(event_ticker, {})
 
+    def get_series(self, series_ticker: str) -> dict:
+        return self.data.get("series", {}).get(series_ticker, {})
+
     def get_orderbook(self, ticker: str) -> dict:
         return self.data.get("orderbooks", {}).get(ticker, {})
 
@@ -502,9 +540,15 @@ class FixtureClient:
 
 def scan(client, contracts: int = 10, fees: Optional[FeeModel] = None,
          closing_within_hours: Optional[float] = None, max_pages: int = 20,
-         depth_check: bool = True, now: Optional[datetime] = None) -> list:
-    """Return profitable opportunities, best first."""
+         depth_check: bool = True, now: Optional[datetime] = None,
+         skipped: Optional[list] = None) -> list:
+    """Return profitable opportunities, best first.
+
+    Events whose fee multiplier cannot be confirmed are left out and their
+    tickers appended to `skipped`, if given.
+    """
     fees = fees or FeeModel()
+    no_fees = FeeModel(rate=Decimal(0))
     now = now or datetime.now(timezone.utc)
     max_close_ts = None
     if closing_within_hours is not None:
@@ -517,29 +561,42 @@ def scan(client, contracts: int = 10, fees: Optional[FeeModel] = None,
             continue
         by_event[quote.event_ticker].append(quote)
 
-    candidates = []
+    candidates, event_fees, series_cache = [], {}, {}
     for event_ticker, quotes in by_event.items():
         title = quotes[0].title
-        candidates += find_strike_ladders(event_ticker, title, quotes, contracts, fees)
+        # Pre-fee screens first, so event and series details are only fetched
+        # for the few events that could possibly pay.
+        maybe_ladder = bool(find_strike_ladders(event_ticker, title, quotes, contracts, no_fees))
+        maybe_basket = basket_prescreen(quotes)
+        if not (maybe_ladder or maybe_basket):
+            continue
 
-        if not basket_prescreen(quotes):
-            continue
         event = client.get_event(event_ticker)
-        if not event.get("mutually_exclusive"):
+        multiplier = fee_multiplier(event, client, series_cache)
+        if multiplier is None:
+            if skipped is not None:
+                skipped.append(event_ticker)
             continue
+        event_fees[event_ticker] = replace(fees, multiplier=multiplier)
         title = event.get("title") or title
-        no_basket = find_no_basket(event_ticker, title, quotes, contracts, fees)
-        if no_basket:
-            candidates.append(no_basket)
-        # A YES basket is only safe over the event's complete market list, which
-        # `quotes` may not be (time window, page limit), so use the event's own.
-        all_quotes = [parse_quote(m) for m in event.get("markets") or []]
-        yes_basket = find_yes_basket(event_ticker, title, all_quotes, contracts, fees)
-        if yes_basket:
-            candidates.append(yes_basket)
+        found = []
+
+        if maybe_ladder:
+            found += find_strike_ladders(event_ticker, title, quotes, contracts,
+                                         event_fees[event_ticker])
+        if maybe_basket and event.get("mutually_exclusive"):
+            found.append(find_no_basket(event_ticker, title, quotes, contracts,
+                                        event_fees[event_ticker]))
+            # A YES basket is only safe over the event's complete market list, which
+            # `quotes` may not be (time window, page limit), so use the event's own.
+            all_quotes = [parse_quote(m) for m in event.get("markets") or []]
+            found.append(find_yes_basket(event_ticker, title, all_quotes, contracts,
+                                         event_fees[event_ticker]))
+        candidates += [opp for opp in found if opp]
 
     if depth_check:
-        candidates = [c for c in (check_depth(c, client, fees) for c in candidates) if c]
+        candidates = [c for c in (check_depth(c, client, event_fees[c.event_ticker])
+                                  for c in candidates) if c]
 
     candidates.sort(key=lambda o: (o.kind == "yes_basket", -o.profit))
     return candidates
@@ -583,26 +640,30 @@ def main(argv=None) -> int:
                         help="pages of 1000 markets to fetch (default 20)")
     parser.add_argument("--no-depth-check", action="store_true",
                         help="skip re-pricing candidates from live order books")
+    parser.add_argument("--base-url", default=BASE_URL,
+                        help=f"Kalshi API base URL (default {BASE_URL})")
     parser.add_argument("--fixture", help="read market data from a JSON file instead of the API")
     parser.add_argument("--json", dest="json_path", help="also write results to this JSON file")
     args = parser.parse_args(argv)
 
-    client = FixtureClient.from_file(args.fixture) if args.fixture else KalshiPublicClient()
+    client = (FixtureClient.from_file(args.fixture) if args.fixture
+              else KalshiPublicClient(base_url=args.base_url))
     fees = FeeModel(rate=args.fee_rate, extra_per_contract=args.extra_fee_cents)
     now = datetime.now(timezone.utc)
 
+    skipped = []
     try:
         opportunities = scan(client, contracts=args.contracts, fees=fees,
                              closing_within_hours=args.closing_within_hours,
                              max_pages=args.max_pages, depth_check=not args.no_depth_check,
-                             now=now)
+                             now=now, skipped=skipped)
     except requests.exceptions.RequestException as e:
         print(f"Error fetching Kalshi data: {e}", file=sys.stderr)
         return 1
 
     print("=" * 80)
     print(f"KALSHI ARBITRAGE SCAN - {now.strftime('%Y-%m-%d %H:%M UTC')}")
-    print(f"Fees: {args.fee_rate} x C x P x (1-P), rounded up per order"
+    print(f"Fees: series multiplier x {args.fee_rate} x C x P x (1-P), rounded up per order"
           + (f", plus {args.extra_fee_cents}c/contract broker fee" if args.extra_fee_cents else ""))
     print("=" * 80)
     if not opportunities:
@@ -611,11 +672,15 @@ def main(argv=None) -> int:
     for rank, opp in enumerate(opportunities, 1):
         print()
         print(format_opportunity(rank, opp, now))
+    if skipped:
+        print(f"\nSkipped {len(skipped)} possible event(s) whose fee multiplier could not be "
+              f"confirmed: {', '.join(skipped[:10])}{' ...' if len(skipped) > 10 else ''}")
 
     if args.json_path:
         with open(args.json_path, "w") as f:
             json.dump({"scanned_at": now.isoformat(),
-                       "opportunities": [o.to_dict(now) for o in opportunities]}, f, indent=2)
+                       "opportunities": [o.to_dict(now) for o in opportunities],
+                       "skipped_unconfirmed_fees": skipped}, f, indent=2)
         print(f"\nSaved to {args.json_path}")
 
     print("\nPrices move between the scan and your order. Place limit orders at the")

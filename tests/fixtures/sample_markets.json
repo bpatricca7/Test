@@ -1,73 +1,409 @@
 {
   "_note": "SYNTHETIC data for tests and the offline demo. These are NOT real Kalshi markets or prices.",
   "markets": [
-    {"ticker": "DEMO-PRES-A", "event_ticker": "DEMO-PRES", "title": "Demo election: candidate A wins", "status": "active",
-     "yes_bid_dollars": "0.4500", "yes_ask_dollars": "0.4700", "no_bid_dollars": "0.5300", "no_ask_dollars": "0.5500",
-     "close_time": "2030-01-01T00:00:00Z"},
-    {"ticker": "DEMO-PRES-B", "event_ticker": "DEMO-PRES", "title": "Demo election: candidate B wins", "status": "active",
-     "yes_bid_dollars": "0.4000", "yes_ask_dollars": "0.4200", "no_bid_dollars": "0.5800", "no_ask_dollars": "0.6000",
-     "close_time": "2030-01-01T00:00:00Z"},
-    {"ticker": "DEMO-PRES-C", "event_ticker": "DEMO-PRES", "title": "Demo election: candidate C wins", "status": "active",
-     "yes_bid_dollars": "0.3000", "yes_ask_dollars": "0.3300", "no_bid_dollars": "0.6700", "no_ask_dollars": "0.7000",
-     "close_time": "2030-01-01T00:00:00Z"},
-    {"ticker": "DEMO-PRES-D", "event_ticker": "DEMO-PRES", "title": "Demo election: candidate D wins", "status": "active",
-     "yes_bid_dollars": "0.0100", "yes_ask_dollars": "0.0200", "no_bid_dollars": "0.9800", "no_ask_dollars": "0.9900",
-     "close_time": "2030-01-01T00:00:00Z"},
-
-    {"ticker": "DEMO-RAIN-LOW", "event_ticker": "DEMO-RAIN", "title": "Demo rainfall: under 1 inch", "status": "active",
-     "yes_bid": 28, "yes_ask": 30, "no_bid": 70, "no_ask": 72, "close_time": "2030-01-01T00:00:00Z"},
-    {"ticker": "DEMO-RAIN-MID", "event_ticker": "DEMO-RAIN", "title": "Demo rainfall: 1 to 2 inches", "status": "active",
-     "yes_bid": 28, "yes_ask": 30, "no_bid": 70, "no_ask": 72, "close_time": "2030-01-01T00:00:00Z"},
-    {"ticker": "DEMO-RAIN-HIGH", "event_ticker": "DEMO-RAIN", "title": "Demo rainfall: over 2 inches", "status": "active",
-     "yes_bid": 33, "yes_ask": 35, "no_bid": 65, "no_ask": 67, "close_time": "2030-01-01T00:00:00Z"},
-
-    {"ticker": "DEMO-BTC-T60000", "event_ticker": "DEMO-BTC", "title": "Demo BTC above $60,000", "status": "active",
-     "strike_type": "greater", "floor_strike": 60000,
-     "yes_bid": 68, "yes_ask": 70, "no_bid": 30, "no_ask": 32, "close_time": "2030-01-01T00:00:00Z"},
-    {"ticker": "DEMO-BTC-T61000", "event_ticker": "DEMO-BTC", "title": "Demo BTC above $61,000", "status": "active",
-     "strike_type": "greater", "floor_strike": 61000,
-     "yes_bid": 75, "yes_ask": 77, "no_bid": 23, "no_ask": 25, "close_time": "2030-01-01T00:00:00Z"},
-    {"ticker": "DEMO-BTC-T62000", "event_ticker": "DEMO-BTC", "title": "Demo BTC above $62,000", "status": "active",
-     "strike_type": "greater", "floor_strike": 62000,
-     "yes_bid": 40, "yes_ask": 42, "no_bid": 58, "no_ask": 60, "close_time": "2030-01-01T00:00:00Z"},
-
-    {"ticker": "DEMO-SPX-B4000", "event_ticker": "DEMO-SPX", "title": "Demo S&P below 4,000", "status": "active",
-     "strike_type": "less", "cap_strike": 4000,
-     "yes_bid": 28, "yes_ask": 30, "no_bid": 70, "no_ask": 72, "close_time": "2030-01-01T00:00:00Z"},
-    {"ticker": "DEMO-SPX-B4100", "event_ticker": "DEMO-SPX", "title": "Demo S&P below 4,100", "status": "active",
-     "strike_type": "less", "cap_strike": 4100,
-     "yes_bid": 48, "yes_ask": 50, "no_bid": 50, "no_ask": 52, "close_time": "2030-01-01T00:00:00Z"}
+    {
+      "ticker": "DEMO-PRES-A",
+      "event_ticker": "DEMO-PRES",
+      "title": "Demo election: candidate A wins",
+      "status": "active",
+      "yes_bid_dollars": "0.4500",
+      "yes_ask_dollars": "0.4700",
+      "no_bid_dollars": "0.5300",
+      "no_ask_dollars": "0.5500",
+      "close_time": "2030-01-01T00:00:00Z"
+    },
+    {
+      "ticker": "DEMO-PRES-B",
+      "event_ticker": "DEMO-PRES",
+      "title": "Demo election: candidate B wins",
+      "status": "active",
+      "yes_bid_dollars": "0.4000",
+      "yes_ask_dollars": "0.4200",
+      "no_bid_dollars": "0.5800",
+      "no_ask_dollars": "0.6000",
+      "close_time": "2030-01-01T00:00:00Z"
+    },
+    {
+      "ticker": "DEMO-PRES-C",
+      "event_ticker": "DEMO-PRES",
+      "title": "Demo election: candidate C wins",
+      "status": "active",
+      "yes_bid_dollars": "0.3000",
+      "yes_ask_dollars": "0.3300",
+      "no_bid_dollars": "0.6700",
+      "no_ask_dollars": "0.7000",
+      "close_time": "2030-01-01T00:00:00Z"
+    },
+    {
+      "ticker": "DEMO-PRES-D",
+      "event_ticker": "DEMO-PRES",
+      "title": "Demo election: candidate D wins",
+      "status": "active",
+      "yes_bid_dollars": "0.0100",
+      "yes_ask_dollars": "0.0200",
+      "no_bid_dollars": "0.9800",
+      "no_ask_dollars": "0.9900",
+      "close_time": "2030-01-01T00:00:00Z"
+    },
+    {
+      "ticker": "DEMO-RAIN-LOW",
+      "event_ticker": "DEMO-RAIN",
+      "title": "Demo rainfall: under 1 inch",
+      "status": "active",
+      "yes_bid": 28,
+      "yes_ask": 30,
+      "no_bid": 70,
+      "no_ask": 72,
+      "close_time": "2030-01-01T00:00:00Z"
+    },
+    {
+      "ticker": "DEMO-RAIN-MID",
+      "event_ticker": "DEMO-RAIN",
+      "title": "Demo rainfall: 1 to 2 inches",
+      "status": "active",
+      "yes_bid": 28,
+      "yes_ask": 30,
+      "no_bid": 70,
+      "no_ask": 72,
+      "close_time": "2030-01-01T00:00:00Z"
+    },
+    {
+      "ticker": "DEMO-RAIN-HIGH",
+      "event_ticker": "DEMO-RAIN",
+      "title": "Demo rainfall: over 2 inches",
+      "status": "active",
+      "yes_bid": 33,
+      "yes_ask": 35,
+      "no_bid": 65,
+      "no_ask": 67,
+      "close_time": "2030-01-01T00:00:00Z"
+    },
+    {
+      "ticker": "DEMO-BTC-T60000",
+      "event_ticker": "DEMO-BTC",
+      "title": "Demo BTC above $60,000",
+      "status": "active",
+      "strike_type": "greater",
+      "floor_strike": 60000,
+      "yes_bid": 68,
+      "yes_ask": 70,
+      "no_bid": 30,
+      "no_ask": 32,
+      "close_time": "2030-01-01T00:00:00Z"
+    },
+    {
+      "ticker": "DEMO-BTC-T61000",
+      "event_ticker": "DEMO-BTC",
+      "title": "Demo BTC above $61,000",
+      "status": "active",
+      "strike_type": "greater",
+      "floor_strike": 61000,
+      "yes_bid": 75,
+      "yes_ask": 77,
+      "no_bid": 23,
+      "no_ask": 25,
+      "close_time": "2030-01-01T00:00:00Z"
+    },
+    {
+      "ticker": "DEMO-BTC-T62000",
+      "event_ticker": "DEMO-BTC",
+      "title": "Demo BTC above $62,000",
+      "status": "active",
+      "strike_type": "greater",
+      "floor_strike": 62000,
+      "yes_bid": 40,
+      "yes_ask": 42,
+      "no_bid": 58,
+      "no_ask": 60,
+      "close_time": "2030-01-01T00:00:00Z"
+    },
+    {
+      "ticker": "DEMO-SPX-B4000",
+      "event_ticker": "DEMO-SPX",
+      "title": "Demo S&P below 4,000",
+      "status": "active",
+      "strike_type": "less",
+      "cap_strike": 4000,
+      "yes_bid": 28,
+      "yes_ask": 30,
+      "no_bid": 70,
+      "no_ask": 72,
+      "close_time": "2030-01-01T00:00:00Z"
+    },
+    {
+      "ticker": "DEMO-SPX-B4100",
+      "event_ticker": "DEMO-SPX",
+      "title": "Demo S&P below 4,100",
+      "status": "active",
+      "strike_type": "less",
+      "cap_strike": 4100,
+      "yes_bid": 48,
+      "yes_ask": 50,
+      "no_bid": 50,
+      "no_ask": 52,
+      "close_time": "2030-01-01T00:00:00Z"
+    }
   ],
   "events": {
-    "DEMO-PRES": {"event_ticker": "DEMO-PRES", "title": "Demo election winner", "mutually_exclusive": true,
+    "DEMO-PRES": {
+      "event_ticker": "DEMO-PRES",
+      "title": "Demo election winner",
+      "mutually_exclusive": true,
       "markets": [
-        {"ticker": "DEMO-PRES-A", "status": "active", "yes_ask_dollars": "0.4700", "yes_bid_dollars": "0.4500"},
-        {"ticker": "DEMO-PRES-B", "status": "active", "yes_ask_dollars": "0.4200", "yes_bid_dollars": "0.4000"},
-        {"ticker": "DEMO-PRES-C", "status": "active", "yes_ask_dollars": "0.3300", "yes_bid_dollars": "0.3000"},
-        {"ticker": "DEMO-PRES-D", "status": "active", "yes_ask_dollars": "0.0200", "yes_bid_dollars": "0.0100"}
-      ]},
-    "DEMO-RAIN": {"event_ticker": "DEMO-RAIN", "title": "Demo rainfall bucket", "mutually_exclusive": true,
+        {
+          "ticker": "DEMO-PRES-A",
+          "status": "active",
+          "yes_ask_dollars": "0.4700",
+          "yes_bid_dollars": "0.4500"
+        },
+        {
+          "ticker": "DEMO-PRES-B",
+          "status": "active",
+          "yes_ask_dollars": "0.4200",
+          "yes_bid_dollars": "0.4000"
+        },
+        {
+          "ticker": "DEMO-PRES-C",
+          "status": "active",
+          "yes_ask_dollars": "0.3300",
+          "yes_bid_dollars": "0.3000"
+        },
+        {
+          "ticker": "DEMO-PRES-D",
+          "status": "active",
+          "yes_ask_dollars": "0.0200",
+          "yes_bid_dollars": "0.0100"
+        }
+      ],
+      "series_ticker": "DEMOPRES"
+    },
+    "DEMO-RAIN": {
+      "event_ticker": "DEMO-RAIN",
+      "title": "Demo rainfall bucket",
+      "mutually_exclusive": true,
       "markets": [
-        {"ticker": "DEMO-RAIN-LOW", "event_ticker": "DEMO-RAIN", "status": "active", "yes_bid": 28, "yes_ask": 30,
-         "close_time": "2030-01-01T00:00:00Z"},
-        {"ticker": "DEMO-RAIN-MID", "event_ticker": "DEMO-RAIN", "status": "active", "yes_bid": 28, "yes_ask": 30,
-         "close_time": "2030-01-01T00:00:00Z"},
-        {"ticker": "DEMO-RAIN-HIGH", "event_ticker": "DEMO-RAIN", "status": "active", "yes_bid": 33, "yes_ask": 35,
-         "close_time": "2030-01-01T00:00:00Z"}
-      ]},
-    "DEMO-BTC": {"event_ticker": "DEMO-BTC", "title": "Demo BTC price", "mutually_exclusive": false},
-    "DEMO-SPX": {"event_ticker": "DEMO-SPX", "title": "Demo S&P level", "mutually_exclusive": false}
+        {
+          "ticker": "DEMO-RAIN-LOW",
+          "event_ticker": "DEMO-RAIN",
+          "status": "active",
+          "yes_bid": 28,
+          "yes_ask": 30,
+          "close_time": "2030-01-01T00:00:00Z"
+        },
+        {
+          "ticker": "DEMO-RAIN-MID",
+          "event_ticker": "DEMO-RAIN",
+          "status": "active",
+          "yes_bid": 28,
+          "yes_ask": 30,
+          "close_time": "2030-01-01T00:00:00Z"
+        },
+        {
+          "ticker": "DEMO-RAIN-HIGH",
+          "event_ticker": "DEMO-RAIN",
+          "status": "active",
+          "yes_bid": 33,
+          "yes_ask": 35,
+          "close_time": "2030-01-01T00:00:00Z"
+        }
+      ],
+      "series_ticker": "DEMORAIN"
+    },
+    "DEMO-BTC": {
+      "event_ticker": "DEMO-BTC",
+      "title": "Demo BTC price",
+      "mutually_exclusive": false,
+      "series_ticker": "DEMOBTC"
+    },
+    "DEMO-SPX": {
+      "event_ticker": "DEMO-SPX",
+      "title": "Demo S&P level",
+      "mutually_exclusive": false,
+      "series_ticker": "DEMOSPX"
+    }
   },
   "orderbooks": {
-    "DEMO-PRES-A": {"orderbook_fp": {"yes_dollars": [["0.4400", "500.00"], ["0.4500", "250.00"]],
-                                     "no_dollars": [["0.5200", "100.00"], ["0.5300", "80.00"]]}},
-    "DEMO-PRES-B": {"orderbook": {"yes": [[39, 300], [40, 120]], "no": [[58, 90]]}},
-    "DEMO-PRES-C": {"orderbook": {"yes": [[29, 400], [30, 6]], "no": [[67, 50]]}},
-    "DEMO-PRES-D": {"orderbook": {"yes": [[1, 1000]], "no": [[98, 500]]}},
-    "DEMO-RAIN-LOW": {"orderbook": {"yes": [[28, 50]], "no": [[70, 50]]}},
-    "DEMO-RAIN-MID": {"orderbook": {"yes": [[28, 50]], "no": [[70, 50]]}},
-    "DEMO-RAIN-HIGH": {"orderbook": {"yes": [[33, 50]], "no": [[65, 50]]}},
-    "DEMO-BTC-T60000": {"orderbook": {"yes": [[68, 100]], "no": [[30, 40]]}},
-    "DEMO-BTC-T61000": {"orderbook": {"yes": [[75, 15]], "no": [[23, 100]]}}
+    "DEMO-PRES-A": {
+      "orderbook_fp": {
+        "yes_dollars": [
+          [
+            "0.4400",
+            "500.00"
+          ],
+          [
+            "0.4500",
+            "250.00"
+          ]
+        ],
+        "no_dollars": [
+          [
+            "0.5200",
+            "100.00"
+          ],
+          [
+            "0.5300",
+            "80.00"
+          ]
+        ]
+      }
+    },
+    "DEMO-PRES-B": {
+      "orderbook": {
+        "yes": [
+          [
+            39,
+            300
+          ],
+          [
+            40,
+            120
+          ]
+        ],
+        "no": [
+          [
+            58,
+            90
+          ]
+        ]
+      }
+    },
+    "DEMO-PRES-C": {
+      "orderbook": {
+        "yes": [
+          [
+            29,
+            400
+          ],
+          [
+            30,
+            6
+          ]
+        ],
+        "no": [
+          [
+            67,
+            50
+          ]
+        ]
+      }
+    },
+    "DEMO-PRES-D": {
+      "orderbook": {
+        "yes": [
+          [
+            1,
+            1000
+          ]
+        ],
+        "no": [
+          [
+            98,
+            500
+          ]
+        ]
+      }
+    },
+    "DEMO-RAIN-LOW": {
+      "orderbook": {
+        "yes": [
+          [
+            28,
+            50
+          ]
+        ],
+        "no": [
+          [
+            70,
+            50
+          ]
+        ]
+      }
+    },
+    "DEMO-RAIN-MID": {
+      "orderbook": {
+        "yes": [
+          [
+            28,
+            50
+          ]
+        ],
+        "no": [
+          [
+            70,
+            50
+          ]
+        ]
+      }
+    },
+    "DEMO-RAIN-HIGH": {
+      "orderbook": {
+        "yes": [
+          [
+            33,
+            50
+          ]
+        ],
+        "no": [
+          [
+            65,
+            50
+          ]
+        ]
+      }
+    },
+    "DEMO-BTC-T60000": {
+      "orderbook": {
+        "yes": [
+          [
+            68,
+            100
+          ]
+        ],
+        "no": [
+          [
+            30,
+            40
+          ]
+        ]
+      }
+    },
+    "DEMO-BTC-T61000": {
+      "orderbook": {
+        "yes": [
+          [
+            75,
+            15
+          ]
+        ],
+        "no": [
+          [
+            23,
+            100
+          ]
+        ]
+      }
+    }
+  },
+  "series": {
+    "DEMOPRES": {
+      "ticker": "DEMOPRES",
+      "fee_type": "quadratic",
+      "fee_multiplier": 1
+    },
+    "DEMORAIN": {
+      "ticker": "DEMORAIN",
+      "fee_type": "quadratic",
+      "fee_multiplier": 1
+    },
+    "DEMOBTC": {
+      "ticker": "DEMOBTC",
+      "fee_type": "quadratic",
+      "fee_multiplier": 1
+    },
+    "DEMOSPX": {
+      "ticker": "DEMOSPX",
+      "fee_type": "quadratic",
+      "fee_multiplier": 1
+    }
   }
 }

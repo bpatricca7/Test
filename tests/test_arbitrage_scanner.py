@@ -220,6 +220,30 @@ class ScanTests(unittest.TestCase):
         opps = arb.scan(arb.FixtureClient(data), contracts=10, now=NOW)
         self.assertNotIn("yes_basket", [o.kind for o in opps])
 
+    def test_series_fee_multiplier_applied(self):
+        data = dict(self.client.data)
+        data["series"] = dict(data["series"], DEMOBTC={"fee_type": "quadratic", "fee_multiplier": 2})
+        opps = arb.scan(arb.FixtureClient(data), contracts=10, now=NOW)
+        # Doubled fees: YES 70c -> 30c fee, NO 25c -> 27c fee; 950 + 57 = 1007c > $10.
+        self.assertNotIn("strike_ladder", [o.kind for o in opps])
+
+    def test_event_override_beats_series_multiplier(self):
+        data = dict(self.client.data)
+        data["events"] = dict(data["events"])
+        data["events"]["DEMO-BTC"] = dict(data["events"]["DEMO-BTC"], fee_multiplier_override="0.5")
+        ladder = next(o for o in arb.scan(arb.FixtureClient(data), contracts=10, now=NOW)
+                      if o.kind == "strike_ladder")
+        # Halved fees: 0.035 x 10 x 0.70 x 0.30 -> 8c, 0.035 x 10 x 0.25 x 0.75 -> 7c.
+        self.assertEqual(ladder.profit, Decimal(50 - 15))
+
+    def test_unconfirmed_fees_are_skipped_not_guessed(self):
+        data = dict(self.client.data)
+        data["series"] = dict(data["series"], DEMOBTC={}, DEMOPRES={"fee_type": "flat", "fee_multiplier": 1})
+        skipped = []
+        opps = arb.scan(arb.FixtureClient(data), contracts=10, now=NOW, skipped=skipped)
+        self.assertEqual([o.kind for o in opps], ["yes_basket"])
+        self.assertEqual(sorted(skipped), ["DEMO-BTC", "DEMO-PRES"])
+
     def test_cli_runs_offline(self):
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
