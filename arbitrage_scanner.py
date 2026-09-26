@@ -139,9 +139,10 @@ def parse_time(value) -> Optional[datetime]:
     if not value:
         return None
     try:
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
     except ValueError:
         return None
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
 
 
 def underlying_key(raw: dict) -> str:
@@ -345,7 +346,8 @@ def find_strike_ladders(event_ticker: str, title: str, quotes: list, contracts: 
     """
     groups = defaultdict(list)
     for q in unique_by_ticker(quotes):
-        if q.is_open and q.strike_type in ABOVE_STRIKE_TYPES | BELOW_STRIKE_TYPES:
+        if (q.is_open and q.close_time
+                and q.strike_type in ABOVE_STRIKE_TYPES | BELOW_STRIKE_TYPES):
             groups[(q.strike_type, q.close_time, q.underlying)].append(q)
 
     found = []
@@ -383,7 +385,7 @@ def fee_multiplier(event: dict, client, series_cache: dict) -> Optional[Decimal]
     """
     override = to_decimal(event.get("fee_multiplier_override"))
     if override is not None:
-        return override
+        return override if override > 0 else None
     series_ticker = event.get("series_ticker")
     if not series_ticker:
         return None
@@ -397,7 +399,7 @@ def fee_multiplier(event: dict, client, series_cache: dict) -> Optional[Decimal]
     if fee_type is not None and fee_type not in KNOWN_FEE_TYPES:
         return None
     multiplier = to_decimal(series.get("fee_multiplier"))
-    return multiplier if multiplier is not None and multiplier >= 0 else None
+    return multiplier if multiplier is not None and multiplier > 0 else None
 
 
 def _latest_close(quotes: list) -> Optional[datetime]:
@@ -425,7 +427,7 @@ def best_bid(levels) -> Optional[tuple]:
     """Highest (price_cents, quantity) among [[price, qty], ...] levels."""
     parsed = []
     for level in levels or []:
-        if len(level) < 2:
+        if not isinstance(level, (list, tuple)) or len(level) < 2:
             continue
         price, qty = to_decimal(level[0]), to_decimal(level[1])
         if price is not None and qty is not None and qty > 0:
@@ -466,12 +468,39 @@ def check_depth(opp: Opportunity, client, fees: FeeModel) -> Optional[Opportunit
             return None
         legs.append(replace(leg, price=ask[0], depth=ask[1]))
 
-    max_sets = int(min(leg.depth for leg in legs).to_integral_value(rounding=ROUND_FLOOR))
-    size = min(opp.contracts, max_sets)
+    if opp.kind == "no_basket":
+        return best_no_basket(opp, legs, fees)
+
+    size = min(opp.contracts, min(whole(leg.depth) for leg in legs))
     if size <= 0:
         return None
     checked = fees.priced(replace(opp, legs=legs, depth_checked=True), size)
     return checked if checked.profit > 0 else None
+
+
+def best_no_basket(opp: Opportunity, legs: list, fees: FeeModel) -> Optional[Opportunity]:
+    """Choose the size and legs that earn the most from what the books offer.
+
+    Any subset of a mutually exclusive event is still mutually exclusive, so
+    dropping a thin leg keeps the basket safe instead of capping its size.
+    """
+    best = None
+    for size in sorted({min(opp.contracts, whole(leg.depth)) for leg in legs}, reverse=True):
+        if size <= 0:
+            continue
+        kept = [replace(leg, fee=fees.fee(leg.price, size)) for leg in legs if leg.depth >= size]
+        kept = [leg for leg in kept if (HUNDRED - leg.price) * size - leg.fee > 0]
+        if len(kept) < 2:
+            continue
+        basket = replace(opp, legs=kept, payout_per_set=(len(kept) - 1) * HUNDRED,
+                         contracts=size, depth_checked=True)
+        if basket.profit > 0 and (best is None or basket.profit > best.profit):
+            best = basket
+    return best
+
+
+def whole(contracts: Decimal) -> int:
+    return int(contracts.to_integral_value(rounding=ROUND_FLOOR))
 
 
 def allocate_depth(opps: list, event_fees: dict) -> list:
@@ -485,7 +514,7 @@ def allocate_depth(opps: list, event_fees: dict) -> list:
     allocated = []
     for opp in opps:
         left = min(leg.depth - used[(leg.ticker, leg.side)] for leg in opp.legs)
-        size = min(opp.contracts, int(left.to_integral_value(rounding=ROUND_FLOOR)))
+        size = min(opp.contracts, whole(left))
         if size <= 0:
             continue
         if size != opp.contracts:
@@ -595,8 +624,8 @@ def scan(client, contracts: int = 10, fees: Optional[FeeModel] = None,
          skipped: Optional[list] = None) -> list:
     """Return profitable opportunities, best first.
 
-    Events whose fee multiplier cannot be confirmed are left out and their
-    tickers appended to `skipped`, if given.
+    Events whose details or fee multiplier cannot be confirmed are left out
+    and their tickers appended to `skipped`, if given.
     """
     fees = fees or FeeModel()
     no_fees = FeeModel(rate=Decimal(0))
@@ -623,7 +652,10 @@ def scan(client, contracts: int = 10, fees: Optional[FeeModel] = None,
         if not (maybe_ladder or maybe_basket):
             continue
 
-        event = client.get_event(event_ticker)
+        try:
+            event = client.get_event(event_ticker)
+        except requests.exceptions.RequestException:
+            event = {}
         multiplier = fee_multiplier(event, client, series_cache)
         if multiplier is None:
             if skipped is not None:
@@ -649,9 +681,16 @@ def scan(client, contracts: int = 10, fees: Optional[FeeModel] = None,
     def rank(opp):
         return (not opp.guaranteed, -opp.profit)
 
+    def depth_checked(opp):
+        try:
+            return check_depth(opp, client, event_fees[opp.event_ticker])
+        except requests.exceptions.RequestException:
+            if skipped is not None:
+                skipped.append(opp.event_ticker)
+            return None
+
     if depth_check:
-        candidates = [c for c in (check_depth(c, client, event_fees[c.event_ticker])
-                                  for c in candidates) if c]
+        candidates = [c for c in map(depth_checked, candidates) if c]
         candidates = allocate_depth(sorted(candidates, key=rank), event_fees)
 
     return sorted(candidates, key=rank)
@@ -683,17 +722,41 @@ def format_opportunity(rank: int, opp: Opportunity, now: datetime) -> str:
     return "\n".join(lines)
 
 
+def positive_int(text: str) -> int:
+    value = int(text)
+    if value < 1:
+        raise argparse.ArgumentTypeError("must be at least 1")
+    return value
+
+
+def non_negative_decimal(text: str) -> Decimal:
+    try:
+        value = Decimal(text)
+    except InvalidOperation:
+        raise argparse.ArgumentTypeError(f"not a number: {text!r}")
+    if not value.is_finite() or value < 0:
+        raise argparse.ArgumentTypeError("must be zero or more")
+    return value
+
+
+def positive_float(text: str) -> float:
+    value = float(text)
+    if not 0 < value < float("inf"):
+        raise argparse.ArgumentTypeError("must be a finite number above zero")
+    return value
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--contracts", type=int, default=10,
+    parser.add_argument("--contracts", type=positive_int, default=10,
                         help="sets to size each opportunity for (default 10)")
-    parser.add_argument("--fee-rate", type=Decimal, default=DEFAULT_TAKER_FEE_RATE,
+    parser.add_argument("--fee-rate", type=non_negative_decimal, default=DEFAULT_TAKER_FEE_RATE,
                         help="Kalshi taker fee coefficient (default 0.07)")
-    parser.add_argument("--extra-fee-cents", type=Decimal, default=Decimal(0),
+    parser.add_argument("--extra-fee-cents", type=non_negative_decimal, default=Decimal(0),
                         help="broker fee per contract on top of Kalshi's, in cents")
-    parser.add_argument("--closing-within-hours", type=float, default=None,
+    parser.add_argument("--closing-within-hours", type=positive_float, default=None,
                         help="only markets that close within this many hours")
-    parser.add_argument("--max-pages", type=int, default=20,
+    parser.add_argument("--max-pages", type=positive_int, default=20,
                         help="pages of 1000 markets to fetch (default 20)")
     parser.add_argument("--no-depth-check", action="store_true",
                         help="skip re-pricing candidates from live order books")
@@ -731,7 +794,7 @@ def main(argv=None) -> int:
         print()
         print(format_opportunity(rank, opp, now))
     if skipped:
-        print(f"\nSkipped {len(skipped)} possible event(s) whose fee multiplier could not be "
+        print(f"\nSkipped {len(skipped)} possible event(s) whose details or fees could not be "
               f"confirmed: {', '.join(skipped[:10])}{' ...' if len(skipped) > 10 else ''}")
 
     if args.json_path:

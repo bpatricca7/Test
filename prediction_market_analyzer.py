@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from typing import Optional
 import time
 
-from arbitrage_scanner import price_cents
+from arbitrage_scanner import parse_time, price_cents, to_decimal
 
 
 # Kalshi API base URL (provides data for Robinhood prediction markets)
@@ -43,9 +43,14 @@ class Market:
     result: Optional[str]
 
     @property
+    def has_quote(self) -> bool:
+        return any(0 < p < 100 for p in (self.yes_bid, self.yes_ask))
+
+    @property
     def implied_probability(self) -> float:
-        """Convert yes price to implied probability."""
-        return self.yes_price / 100
+        """Midpoint of the YES bid and ask (or whichever one is quoted)."""
+        quotes = [p for p in (self.yes_bid, self.yes_ask) if 0 < p < 100]
+        return sum(quotes) / len(quotes) / 100 if quotes else 0
 
     @property
     def spread(self) -> float:
@@ -129,15 +134,16 @@ def _cents(raw: dict, name: str) -> float:
     return float(value) if value is not None else 0
 
 
+def _count(raw: dict, name: str) -> int:
+    """Contract count from either the `<name>_fp` string or the integer field."""
+    value = to_decimal(raw.get(f"{name}_fp"))
+    if value is None:
+        value = to_decimal(raw.get(name))
+    return int(value) if value is not None else 0
+
+
 def parse_market(raw: dict) -> Market:
     """Parse raw API response into Market object."""
-    close_time = None
-    if raw.get('close_time'):
-        try:
-            close_time = datetime.fromisoformat(raw['close_time'].replace('Z', '+00:00'))
-        except ValueError:
-            pass
-
     return Market(
         ticker=raw.get('ticker', ''),
         title=raw.get('title', ''),
@@ -147,10 +153,10 @@ def parse_market(raw: dict) -> Market:
         no_price=_cents(raw, 'no_bid'),
         yes_bid=_cents(raw, 'yes_bid'),
         yes_ask=_cents(raw, 'yes_ask'),
-        volume=raw.get('volume', 0) or 0,
-        volume_24h=raw.get('volume_24h', 0) or 0,
-        open_interest=raw.get('open_interest', 0) or 0,
-        close_time=close_time,
+        volume=_count(raw, 'volume'),
+        volume_24h=_count(raw, 'volume_24h'),
+        open_interest=_count(raw, 'open_interest'),
+        close_time=parse_time(raw.get('close_time')),
         status=raw.get('status', ''),
         result=raw.get('result')
     )
@@ -281,12 +287,15 @@ class UndervaluedAnalyzer:
         """
         prob = market.implied_probability
 
+        if not market.has_quote:
+            return "NO QUOTE - nothing to evaluate"
         if prob <= 0.15:
             return ("AVOID YES - longshot; contracts this cheap have historically lost "
-                    "most of their cost. The expensive NO side is the one the data favors.")
+                    "most of their cost. The expensive NO side is the one the data favors, "
+                    "though near 99c fees can erase its small edge.")
         if prob >= 0.85:
             return ("AVOID NO - the NO side is the longshot here. The expensive YES side "
-                    "is the one the data favors; check fees before acting.")
+                    "is the one the data favors, though near 99c fees can erase its small edge.")
         if total_score >= 40:
             return "WATCH - irregular pricing (wide spread or thin volume); needs a fundamental view"
         return "HOLD - Market appears efficiently priced"
@@ -380,7 +389,7 @@ def main():
 
         # Display results
         print("\n" + "=" * 80)
-        print("TOP 25 POTENTIALLY UNDERVALUED PREDICTIONS")
+        print("TOP 25 FLAGGED MARKETS (irregular pricing - not buy signals)")
         print("=" * 80)
 
         for i, analysis in enumerate(opportunities, 1):
@@ -389,7 +398,7 @@ def main():
 
         # Summary by category
         print("\n" + "=" * 80)
-        print("OPPORTUNITIES BY CATEGORY")
+        print("FLAGGED MARKETS BY CATEGORY")
         print("=" * 80)
 
         categories = {}
@@ -402,7 +411,7 @@ def main():
         for cat, analyses in sorted(categories.items(), key=lambda x: -len(x[1])):
             top_score = max(a['total_score'] for a in analyses)
             high_value = len([a for a in analyses if a['total_score'] >= 40])
-            print(f"  {cat}: {len(analyses)} markets, {high_value} high-value opportunities (top score: {top_score})")
+            print(f"  {cat}: {len(analyses)} markets, {high_value} flagged (top score: {top_score})")
 
         # Statistical summary
         print("\n" + "=" * 80)
@@ -415,8 +424,8 @@ def main():
 
         print(f"  Total Markets Analyzed: {len(analyzer.analyzed)}")
         print(f"  Average Value Score: {sum(all_scores)/len(all_scores):.1f}")
-        print(f"  High Value Opportunities (score >= 40): {len(high_value)}")
-        print(f"  Extreme Value Opportunities (score >= 60): {len(extreme_value)}")
+        print(f"  Flagged for a closer look (score >= 40): {len(high_value)}")
+        print(f"  Strongly flagged (score >= 60): {len(extreme_value)}")
 
         # Save detailed results to JSON
         output_data = {

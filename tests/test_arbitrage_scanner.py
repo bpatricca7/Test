@@ -11,6 +11,7 @@ from decimal import Decimal
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import arbitrage_scanner as arb  # noqa: E402
+import requests  # noqa: E402
 
 FIXTURE = os.path.join(os.path.dirname(__file__), "fixtures", "sample_markets.json")
 NOW = datetime(2026, 9, 26, 12, 0, tzinfo=timezone.utc)
@@ -104,6 +105,18 @@ class NoBasketTests(unittest.TestCase):
         qs = quotes(market("A", no_ask=55), market("A", no_ask=55), market("B", no_ask=60))
         self.assertIsNone(arb.find_no_basket("EV", "t", qs, 1, FEES))
 
+    def test_thin_leg_dropped_instead_of_capping_the_basket(self):
+        legs = [arb.Leg("A", "no", Decimal(40), depth=Decimal(100)),
+                arb.Leg("B", "no", Decimal(55), depth=Decimal(100)),
+                arb.Leg("D", "no", Decimal(97), depth=Decimal(1))]
+        opp = arb.Opportunity("no_basket", "EV", "t", legs, Decimal(200), 10, None)
+        best = arb.best_no_basket(opp, legs, FEES)
+        # All three legs fit only 1 set (3c profit); A and B alone fill 10 sets:
+        # (60 x 10 - 17) + (45 x 10 - 18) - 1000 = 15c.
+        self.assertEqual([leg.ticker for leg in best.legs], ["A", "B"])
+        self.assertEqual((best.contracts, best.payout_per_set, best.profit),
+                         (10, Decimal(100), Decimal(15)))
+
     def test_closed_markets_ignored(self):
         qs = quotes(market("A", no_ask=55), market("B", no_ask=60, status="closed"))
         self.assertIsNone(arb.find_no_basket("EV", "t", qs, 1, FEES))
@@ -175,6 +188,15 @@ class LadderTests(unittest.TestCase):
         )
         self.assertEqual(len(arb.find_strike_ladders("EV", "t", qs, 1, FEES)), 1)
 
+    def test_unknown_expiry_never_paired(self):
+        qs = quotes(
+            market("T60", strike_type="greater", floor_strike=60000, yes_ask=70, no_ask=32,
+                   close_time=None),
+            market("T61", strike_type="greater", floor_strike=61000, yes_ask=77, no_ask=25,
+                   close_time=None),
+        )
+        self.assertEqual(arb.find_strike_ladders("EV", "t", qs, 1, FEES), [])
+
     def test_different_expiries_never_paired(self):
         qs = quotes(
             market("T60", strike_type="greater", floor_strike=60000, yes_ask=70, no_ask=32),
@@ -194,6 +216,10 @@ class OrderbookTests(unittest.TestCase):
         ob = {"orderbook_fp": {"yes_dollars": [["0.4000", "100.00"]],
                                "no_dollars": [["0.5300", "7.00"]]}}
         self.assertEqual(arb.best_ask_from_orderbook(ob, "yes"), (Decimal("47.00"), Decimal("7.00")))
+
+    def test_malformed_levels_ignored(self):
+        ob = {"orderbook_fp": {"no_dollars": ["0.5300", {"price": 1}, [None, "5"], ["0.5000", "4.00"]]}}
+        self.assertEqual(arb.best_ask_from_orderbook(ob, "yes"), (Decimal("50.00"), Decimal("4.00")))
 
     def test_empty_side_has_no_ask(self):
         self.assertIsNone(arb.best_ask_from_orderbook({"orderbook": {"yes": None, "no": []}}, "yes"))
@@ -288,6 +314,45 @@ class ScanTests(unittest.TestCase):
         opps = arb.scan(arb.FixtureClient(data), contracts=10, now=NOW, skipped=skipped)
         self.assertEqual([o.kind for o in opps], ["yes_basket"])
         self.assertEqual(sorted(skipped), ["DEMO-BTC", "DEMO-PRES"])
+
+    def test_zero_or_negative_fee_override_is_not_trusted(self):
+        for override in ("0", "-1"):
+            data = dict(self.client.data)
+            data["events"] = dict(data["events"])
+            data["events"]["DEMO-BTC"] = dict(data["events"]["DEMO-BTC"],
+                                              fee_multiplier_override=override)
+            skipped = []
+            arb.scan(arb.FixtureClient(data), contracts=10, now=NOW, skipped=skipped)
+            self.assertIn("DEMO-BTC", skipped)
+
+    def test_request_error_skips_event_instead_of_aborting(self):
+        class Flaky(arb.FixtureClient):
+            def get_event(self, event_ticker):
+                if event_ticker == "DEMO-PRES":
+                    raise requests.exceptions.ConnectionError("boom")
+                return super().get_event(event_ticker)
+
+            def get_orderbook(self, ticker):
+                if ticker == "DEMO-RAIN-HIGH":
+                    raise requests.exceptions.HTTPError("503")
+                return super().get_orderbook(ticker)
+
+        skipped = []
+        opps = arb.scan(Flaky(self.client.data), contracts=10, now=NOW, skipped=skipped)
+        self.assertEqual([o.kind for o in opps], ["strike_ladder"])
+        self.assertEqual(sorted(skipped), ["DEMO-PRES", "DEMO-RAIN"])
+
+    def test_naive_close_time_is_utc(self):
+        data = dict(self.client.data)
+        data["markets"] = [dict(m, close_time="2030-01-01T00:00:00") for m in data["markets"]]
+        self.assertTrue(arb.scan(arb.FixtureClient(data), contracts=10, now=NOW))
+
+    def test_cli_rejects_values_that_would_fake_profit(self):
+        for bad in (["--contracts", "0"], ["--extra-fee-cents", "-1"], ["--fee-rate", "nan"],
+                    ["--closing-within-hours", "inf"], ["--max-pages", "-3"]):
+            with self.subTest(bad=bad), contextlib.redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit):
+                    arb.main(["--fixture", FIXTURE] + bad)
 
     def test_cli_runs_offline(self):
         out = io.StringIO()
