@@ -1,0 +1,131 @@
+ladder observations: 58383; hours: 529; markets: 12524; per coin: {'BTC': 529, 'ETH': 269}
+
+=== minute 1 of 60: calibration by mid-price bucket (both coins) ===
+                   n    mid  realised  spread_c  ev_yes_c  ev_no_c  vol_in_min
+bucket                                                                        
+(0.0, 0.03]   3244.0  0.011     0.017     1.518    -0.341   -1.333     190.440
+(0.03, 0.06]   616.0  0.044     0.067     2.005     0.893   -3.493     970.951
+(0.06, 0.1]    526.0  0.079     0.127     2.587     3.008   -6.610    1127.669
+(0.1, 0.2]     806.0  0.149     0.164     4.305    -1.609   -4.430    1580.351
+(0.2, 0.3]    1092.0  0.228     0.171    24.078   -19.212   -6.988     628.844
+(0.3, 0.4]     885.0  0.373     0.216    40.111   -37.122   -5.174     633.829
+(0.4, 0.5]     508.0  0.442     0.439    18.258   -11.052  -10.164     895.013
+(0.5, 0.6]     400.0  0.554     0.655     9.255     3.948  -16.450    1007.175
+(0.6, 0.7]     473.0  0.650     0.723     3.850     3.886  -10.874    1115.471
+(0.7, 0.8]     566.0  0.756     0.816     6.532     1.650  -10.702    1388.867
+(0.8, 0.9]     721.0  0.856     0.872     2.078    -0.207   -3.588    1482.320
+(0.9, 0.94]    501.0  0.923     0.948     1.806     1.205   -4.017    1382.615
+(0.94, 0.97]   614.0  0.957     0.946     1.782    -2.235   -0.124     939.181
+(0.97, 1.0]    823.0  0.982     0.981     1.215    -0.801   -0.671     438.326
+
+=== minute 15 of 60: calibration by mid-price bucket (both coins) ===
+                   n    mid  realised  spread_c  ev_yes_c  ev_no_c  vol_in_min
+bucket                                                                        
+(0.0, 0.03]   2975.0  0.011     0.014     1.240    -0.357   -1.031     113.170
+(0.03, 0.06]   637.0  0.043     0.068     1.647     1.234   -3.469     631.374
+(0.06, 0.1]    530.0  0.078     0.115     1.562     2.350   -4.930     789.170
+(0.1, 0.2]     723.0  0.145     0.183     2.550     1.537   -5.812    1318.635
+(0.2, 0.3]     526.0  0.246     0.260     5.209    -2.567   -5.183    2033.550
+(0.3, 0.4]     434.0  0.352     0.336     8.687    -7.483   -4.215    2187.865
+(0.4, 0.5]     372.0  0.447     0.457     5.320    -3.379   -5.291    2728.701
+(0.5, 0.6]     353.0  0.552     0.581     3.048    -0.353   -6.112    2841.749
+(0.6, 0.7]     391.0  0.650     0.696     1.522     2.244   -6.952    2332.772
+(0.7, 0.8]     465.0  0.754     0.809     1.647     3.411   -7.655    1666.157
+(0.8, 0.9]     687.0  0.854     0.884     1.719     1.284   -4.745    1183.348
+(0.9, 0.94]    495.0  0.922     0.931     1.610    -0.362   -2.257     760.320
+(0.94, 0.97]   692.0  0.958     0.965     1.451    -0.188   -1.839     532.094
+(0.97, 1.0]    865.0  0.981     0.988     1.110     0.080   -1.454     250.191
+
+=== minute 30 of 60: calibration by mid-price bucket (both coins) ===
+                   n    mid  realised  spread_c  ev_yes_c  ev_no_c  vol_in_min
+bucket                                                                        
+(0.0, 0.03]   3467.0  0.010     0.015     1.221    -0.165   -1.192     121.609
+(0.03, 0.06]   575.0  0.044     0.063     1.645     0.710   -2.948     687.448
+(0.06, 0.1]    426.0  0.079     0.099     1.664     0.607   -3.292    1181.903
+(0.1, 0.2]     620.0  0.145     0.152     2.584    -1.526   -2.778    1613.305
+(0.2, 0.3]     410.0  0.247     0.254     5.120    -3.225   -4.435    2030.040
+(0.3, 0.4]     344.0  0.353     0.328     4.326    -6.183   -1.269    3036.779
+(0.4, 0.5]     291.0  0.448     0.522     1.907     4.717  -10.072    3768.006
+(0.5, 0.6]     282.0  0.552     0.553     2.199    -2.674   -2.969    3633.612
+(0.6, 0.7]     335.0  0.653     0.734     1.746     5.739  -10.652    2759.774
+(0.7, 0.8]     369.0  0.752     0.791     1.797     1.792   -6.195    2453.908
+(0.8, 0.9]     580.0  0.855     0.891     1.728     1.950   -5.408    1566.107
+(0.9, 0.94]    399.0  0.923     0.942     1.426     0.731   -3.155    1236.041
+(0.94, 0.97]   592.0  0.958     0.971     1.527     0.350   -2.450     598.096
+(0.97, 1.0]    898.0  0.981     0.989     1.091     0.135   -1.491     291.172
+
+=== minute 45 of 60: calibration by mid-price bucket (both coins) ===
+                   n    mid  realised  spread_c  ev_yes_c  ev_no_c  vol_in_min
+bucket                                                                        
+(0.0, 0.03]   3970.0  0.008     0.011     1.159    -0.431   -0.845     195.297
+(0.03, 0.06]   417.0  0.043     0.070     1.659     1.463   -3.707    1757.026
+(0.06, 0.1]    316.0  0.080     0.079     1.842    -1.566   -1.311    2009.848
+(0.1, 0.2]     440.0  0.146     0.157     2.970    -1.369   -3.333    2691.651
+(0.2, 0.3]     320.0  0.245     0.206     6.350    -8.436   -0.433    3379.027
+(0.3, 0.4]     263.0  0.351     0.289     8.194   -11.933    0.715    4645.577
+(0.4, 0.5]     234.0  0.451     0.423     2.910    -5.931   -0.409    5320.262
+(0.5, 0.6]     209.0  0.549     0.636     3.005     5.512  -11.950    4712.986
+(0.6, 0.7]     248.0  0.652     0.742     2.319     6.249  -11.731    4662.676
+(0.7, 0.8]     300.0  0.753     0.823     2.150     4.714   -9.461    3969.367
+(0.8, 0.9]     402.0  0.856     0.893     1.980     1.868   -5.565    2639.599
+(0.9, 0.94]    288.0  0.923     0.958     1.698     2.250   -4.950    2256.349
+(0.94, 0.97]   412.0  0.958     0.954     1.553    -1.386   -0.743    1582.398
+(0.97, 1.0]    748.0  0.982     0.991     1.084     0.264   -1.605     820.640
+
+=== minute 55 of 60: calibration by mid-price bucket (both coins) ===
+                   n    mid  realised  spread_c  ev_yes_c  ev_no_c  vol_in_min
+bucket                                                                        
+(0.0, 0.03]   4558.0  0.007     0.002     1.086    -1.109   -0.069     405.196
+(0.03, 0.06]   246.0  0.043     0.069     1.923     1.285   -3.791    4085.686
+(0.06, 0.1]    204.0  0.078     0.098     1.740     0.563   -3.319    4856.572
+(0.1, 0.2]     284.0  0.147     0.187     3.602     1.214   -6.546    5471.795
+(0.2, 0.3]     229.0  0.251     0.249     8.607    -5.910   -5.229    6897.250
+(0.3, 0.4]     184.0  0.355     0.266    12.576   -16.723    1.215    6310.061
+(0.4, 0.5]     163.0  0.450     0.454     4.607    -3.623   -4.360    8599.754
+(0.5, 0.6]     140.0  0.554     0.679     3.586     8.970  -15.965    9629.780
+(0.6, 0.7]     143.0  0.653     0.699     1.783     2.194   -7.151    9055.821
+(0.7, 0.8]     181.0  0.754     0.840     2.867     5.919  -11.366    7325.974
+(0.8, 0.9]     272.0  0.859     0.912     2.232     3.399   -7.321    5645.365
+(0.9, 0.94]    170.0  0.923     0.965     1.606     2.945   -5.555    6229.143
+(0.94, 0.97]   239.0  0.958     0.975     1.703     0.615   -2.888    4234.888
+(0.97, 1.0]    428.0  0.982     0.993     1.072     0.446   -1.766    2833.309
+
+=== strategies, held to settlement (clustered by hour) ===
+minute 1: buy NO on strikes with YES ask <= 0.10 (sell the upper tail)     n=  4310 hours= 499  ROI/contract= -0.85c  t=-2.18 p=0.0295
+minute 1: buy YES on strikes with YES bid >= 0.90 (sell the lower tail)    n=  1909 hours= 485  ROI/contract= -0.86c  t=-1.17 p=0.2428
+minute 1: buy NO when NO price 0.80-0.95                                   n=  1454 hours= 512  ROI/contract= -6.43c  t=-4.30 p=0.0000
+minute 1: buy YES when YES ask 0.80-0.95                                   n=  1803 hours= 517  ROI/contract= -4.38c  t=-3.30 p=0.0010
+minute 1: buy YES on longshots (ask 0.03-0.15)                             n=  2289 hours= 489  ROI/contract= +0.81c  t=+0.79 p=0.4290
+minute 1: buy YES near the money (ask 0.40-0.60)                           n=  1471 hours= 472  ROI/contract= -7.54c  t=-3.85 p=0.0001
+minute 15: buy NO on strikes with YES ask <= 0.10 (sell the upper tail)    n=  4105 hours= 512  ROI/contract= -1.46c  t=-2.63 p=0.0088
+minute 15: buy YES on strikes with YES bid >= 0.90 (sell the lower tail)   n=  2029 hours= 514  ROI/contract= -0.46c  t=-0.74 p=0.4612
+minute 15: buy NO when NO price 0.80-0.95                                  n=  1406 hours= 510  ROI/contract= -3.93c  t=-2.84 p=0.0047
+minute 15: buy YES when YES ask 0.80-0.95                                  n=  1373 hours= 510  ROI/contract= +0.77c  t=+0.67 p=0.5044
+minute 15: buy YES on longshots (ask 0.03-0.15)                            n=  2131 hours= 518  ROI/contract= +0.56c  t=+0.55 p=0.5810
+minute 15: buy YES near the money (ask 0.40-0.60)                          n=   803 hours= 440  ROI/contract= -0.88c  t=-0.40 p=0.6920
+minute 30: buy NO on strikes with YES ask <= 0.10 (sell the upper tail)    n=  4434 hours= 513  ROI/contract= -1.12c  t=-2.21 p=0.0273
+minute 30: buy YES on strikes with YES bid >= 0.90 (sell the lower tail)   n=  1875 hours= 510  ROI/contract= -0.36c  t=-0.56 p=0.5725
+minute 30: buy NO when NO price 0.80-0.95                                  n=  1184 hours= 496  ROI/contract= -1.94c  t=-1.43 p=0.1523
+minute 30: buy YES when YES ask 0.80-0.95                                  n=  1125 hours= 495  ROI/contract= +0.69c  t=+0.58 p=0.5590
+minute 30: buy YES on longshots (ask 0.03-0.15)                            n=  1892 hours= 513  ROI/contract= -0.02c  t=-0.02 p=0.9803
+minute 30: buy YES near the money (ask 0.40-0.60)                          n=   643 hours= 398  ROI/contract= +0.25c  t=+0.11 p=0.9157
+minute 45: buy NO on strikes with YES ask <= 0.10 (sell the upper tail)    n=  4669 hours= 513  ROI/contract= -0.78c  t=-1.73 p=0.0844
+minute 45: buy YES on strikes with YES bid >= 0.90 (sell the lower tail)   n=  1439 hours= 500  ROI/contract= -0.01c  t=-0.01 p=0.9892
+minute 45: buy NO when NO price 0.80-0.95                                  n=   847 hours= 439  ROI/contract= +0.52c  t=+0.40 p=0.6864
+minute 45: buy YES when YES ask 0.80-0.95                                  n=   789 hours= 429  ROI/contract= +0.48c  t=+0.37 p=0.7102
+minute 45: buy YES on longshots (ask 0.03-0.15)                            n=  1394 hours= 495  ROI/contract= -1.68c  t=-1.90 p=0.0582
+minute 45: buy YES near the money (ask 0.40-0.60)                          n=   520 hours= 331  ROI/contract= -2.89c  t=-1.11 p=0.2662
+
+--- BTC, minute 15 ---
+  buy NO on strikes with YES ask <= 0.10                                   n=  3494 hours= 512  ROI/contract= -1.32c  t=-2.45 p=0.0145
+  buy YES on strikes with YES bid >= 0.90                                  n=  1594 hours= 513  ROI/contract= -0.61c  t=-0.90 p=0.3660
+  buy the favourite side priced 0.80-0.95 (either side)                    n=  2099 hours= 519  ROI/contract= -2.40c  t=-2.46 p=0.0142
+
+--- ETH, minute 15 ---
+  buy NO on strikes with YES ask <= 0.10                                   n=   611 hours= 267  ROI/contract= -1.52c  t=-1.47 p=0.1437
+  buy YES on strikes with YES bid >= 0.90                                  n=   435 hours= 256  ROI/contract= +0.82c  t=+0.95 p=0.3448
+  buy the favourite side priced 0.80-0.95 (either side)                    n=   680 hours= 261  ROI/contract= +0.14c  t=+0.11 p=0.9135
+
+=== implied vs realised one-hour moves (minute 1, hours with >= 6 quoted strikes) ===
+BTC: hours=484  settle inside implied 80% band: 0.820 (calibrated = 0.80)  above implied median: 0.548  implied 80% half-width 38 bp vs realised median |move| 16 bp
+ETH: hours=199  settle inside implied 80% band: 0.814 (calibrated = 0.80)  above implied median: 0.593  implied 80% half-width 50 bp vs realised median |move| 25 bp

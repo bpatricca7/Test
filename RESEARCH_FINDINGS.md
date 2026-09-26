@@ -176,23 +176,58 @@ p ~ 0.35). By the final two minutes the effect reverses: quotes widen and the 97
 maker-style buyer of mid-window favourites, worth paper-trading with `research/kalshi_live_screener.py`,
 not yet a proven one.** Everything else in these markets is efficient net of fees.
 
-### 5.2 Hourly BTC/ETH strike ladders (sampled hours; 529 BTC and 269 ETH hours so far)
+### 5.2 Hourly BTC/ETH strike ladders (529 BTC hours and 269 ETH hours sampled; 12,524 strike markets)
 
 Each hour Kalshi lists 20+ strikes ("BTC at 16:00 >= $84,400?"), i.e. a full implied distribution.
 Bought at the ask at minute 1 / 15 / 30 / 45 and held to settlement, clustered by hour:
 
-* Selling the upper tail (buy NO on strikes asked <= 10c): -0.6c to -1.0c per contract at every minute (t -1.5 to -2.2).
-* Selling the lower tail (buy YES on strikes bid >= 90c): -0.4c to -1.5c (not significant).
-* Buying longshots (asked 3-15c): +1.0c at minute 1, +0.4c at minute 15, -0.2c / -1.5c later (none significant).
-* Near-the-money contracts at minute 1: -8.5c (t=-4.0); the quoted spread is 5-10c at the open.
-* The implied 80% interval contained the settle 83.5% of the time (BTC, 430 hours), so implied volatility is
-  slightly too high, but no strike bucket is mispriced by more than the spread plus fee.
+| Strategy | minute 1 | minute 15 | minute 30 | minute 45 |
+|---|---|---|---|---|
+| Sell the upper tail (buy NO on strikes asked <= 10c) | -0.85c (t -2.2) | -1.46c (t -2.6) | -1.12c (t -2.2) | -0.78c (t -1.7) |
+| Sell the lower tail (buy YES on strikes bid >= 90c) | -0.86c | -0.46c | -0.36c | -0.01c |
+| Buy longshots (asked 3-15c) | +0.81c (t 0.8) | +0.56c | -0.02c | -1.68c (t -1.9) |
+| Buy near-the-money (asked 40-60c) | -7.54c (t -3.9) | -0.88c | +0.25c | -2.89c |
+| Buy the favourite side priced 80-95c | -4.4c / -6.4c (t -3.3 / -4.3) | +0.8c / -3.9c | +0.7c / -1.9c | +0.5c / +0.5c |
 
-Verdict: no edge. These ladders are priced as well as their spreads allow.
+The implied 80% interval contained the settle 82.0% of the time for BTC (484 hours) and 81.4% for ETH
+(199 hours): the ladders are calibrated. Tails are, if anything, slightly under-priced (the 6-10c bucket
+settles yes 12% of the time), which is why "selling volatility" loses here. Near-the-money quotes at the
+open carry 5-10c spreads that no bucket's mispricing covers. **Verdict: no edge.**
 
-### 5.3 Sports game markets and long-dated markets
+### 5.3 Sports game markets, pregame (48,514 markets with a quote about an hour before the start)
 
-Filled in from the pregame (hourly-candle) and days-to-close (daily-candle) pulls; see the end of this file.
+Every Sports-category game/match/fight market with >= $5k volume (tennis, MLB, NCAAF, soccer leagues, cricket,
+esports, NBA summer league, UFC, etc.), quoted from hourly candles roughly one hour before the scheduled start.
+Median bid-ask spread: 1c.
+
+| Pregame mid | n | realised | fee-adjusted EV of buying YES at ask | ... NO at 1-bid |
+|---|---|---|---|---|
+| 0-10c | 2,392 | 6.0% | -1.5c | -1.0c |
+| 10-20c | 4,555 | 18.2% | +0.4c | -4.6c |
+| 20-30c | 8,003 | 27.3% | -0.4c | -4.6c |
+| 30-40c | 6,783 | 36.3% | -2.0c | -4.3c |
+| 40-50c | 7,273 | 45.7% | -3.0c | -4.3c |
+| 50-60c | 6,791 | 55.0% | -3.6c | -3.4c |
+| 60-70c | 5,249 | 64.4% | -3.6c | -2.9c |
+| 70-80c | 3,530 | 75.2% | -2.6c | -3.2c |
+| 80-90c | 2,487 | 83.0% | -4.1c | -0.4c |
+| 90-100c | 1,451 | 94.1% | -0.6c | -2.0c |
+
+* Buy every YES pregame: -2.1% (t=-10.5). Buy favourites (>= 60c): -4.0% to -4.9% (t=-11 to -17).
+  Heavy favourites (80-97c): -3.9%. Longshots (<= 30c): -0.2% (n.s.); (<= 15c): -1.2%.
+* Unlike bookmakers, Kalshi's sports prices show **no favourite-longshot bias**: longshots are fairly priced
+  and favourites cost the full spread plus fee. The per-sport tables (ATP, WTA, MLB, T20, esports, soccer
+  leagues) show the same picture; the few positive cells (NBA summer league 80-90c, Dota 10-20c) have n < 60.
+* **NFL vs the sportsbook closing line** (62 sides, weeks 1-3 of 2026): Kalshi's pregame mid and the
+  de-vigged closing moneyline differ by 0.9c on average (correlation 0.998), and only one side was more than
+  2c cheaper on Kalshi. There is no Kalshi-vs-Vegas arbitrage in NFL winners; Kalshi's log-loss (0.666) is
+  indistinguishable from Vegas (0.664).
+
+Verdict: no edge in Kalshi sports game markets at the pregame quote.
+
+### 5.4 Long-dated markets, 1 / 7 / 30 days before close (all categories)
+
+Filled in from the daily-candle pull; see the end of this file.
 
 ## 6. Crypto underlying (reconstructed from settled Kalshi markets, 2026-07-18 to 2026-09-26)
 
