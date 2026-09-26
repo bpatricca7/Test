@@ -1,0 +1,1467 @@
+{
+  "title": "94 Steps Back to the Riviera",
+  "concept": "One we stayed in. One we built. (Real vs Brick, told by the parent behind the camera)",
+  "tagline": "94 steps back to the Riviera.",
+  "duration": 30.0,
+  "fps": 30,
+  "width": 1080,
+  "height": 1920,
+  "bpm": 120,
+  "beat_offset": 0.0,
+  "key": "D major",
+  "thumbnail_t": 2.2,
+  "palette": {
+    "navy": "#14304F",
+    "sky_top": "#A9CBEA",
+    "sky_bottom": "#EEF4FA",
+    "cream": "#FBF6EC",
+    "paper": "#F7F9FC",
+    "grid": "#DCE8F5",
+    "white": "#FFFFFF",
+    "real_blue": "#2F6FC4",
+    "brick_red": "#C4161C",
+    "booklet_blue": "#1F5FA8",
+    "stud_highlight": "#3C7BC6",
+    "orange": "#F29A2E",
+    "marker_red": "#E23B2E",
+    "lilac": "#CDB8E8",
+    "lawn_green": "#1F7A33",
+    "tan": "#D9C28A",
+    "muted": "#7F8FA6"
+  },
+  "fonts": {
+    "slam": "Anton",
+    "label": "Bebas Neue",
+    "stat": "Archivo Black",
+    "serif": "Playfair Display",
+    "hand": "Caveat",
+    "marker": "Permanent Marker",
+    "body": "Montserrat"
+  },
+  "font_notes": "Weights: Playfair Display 700 italic and 900 italic; Montserrat 800 (value lines, URL bug) and 600 (disclaimer); others 400. All woff2 files are latin subsets: à × – … · “ ” are present, but ✓ and → are NOT - draw check marks and arrows as inline SVG strokes, never as glyphs. No emoji anywhere.",
+  "safe_zone": {
+    "x": [
+      80,
+      940
+    ],
+    "y": [
+      290,
+      1495
+    ],
+    "notes": "All key text sits inside x 80-940, y 290-1495 (inside the 9:16 UI-safe box and inside the 4:5 band). Only imagery goes outside."
+  },
+  "asset_rules": [
+    "Paths are relative to riviera-ad/assets/.",
+    "photos/resort-balcony-view.jpg: never show source y < 540 except the sky-only plate (source y 0-430); the theme-park dome and the large building sit at y~450-520. Never show x > 1075 between y 690 and 750 (bus). Applies to every Ken Burns keyframe and every blurred copy.",
+    "photos/resort-arrival.jpg: always start crops at source y >= 32 (30 px white strip at the top). No push-ins on the seated bystanders (~x 540-690, y 690-800) or the resort signage (~x 585-730, y 510-580).",
+    "instructions/pages/page-01.jpg: only ever shown cropped to source y 0-1192 (removes the fine print naming Disney / Walt Disney World).",
+    "Never show pages/page-74.jpg (prices, ordering) or page-02.jpg.",
+    "Steps 89 and 90 do not exist. step-03..06 use a different camera; step-81..88 and step-92..94 are close-ups with hard-cropped edges - show them only cropped inside a card/window (s1 bottom half, s8 card), never floating on a background.",
+    "Full-model frames (step-01/02/07-10, 34, 60, 80, 91, cover.webp) are registered on the baseplate (see s7).",
+    "Keep photo upscaling <= 1.6x of source pixels unless the layer is being brickified.",
+    "Copy rules: say 'Riviera Resort brick model'; never 'set', 'kit', 'box', 'included', 'official', 'replica', price, Disney, LEGO or BrickLink in our own copy. The only LEGO mention is the disclaimer (and the booklet cover's own small subtitle as incidental art)."
+  ],
+  "voice": {
+    "id": "af_heart",
+    "speed": 1.05,
+    "notes": "One narrator: the parent who took the photos (never seen, behind the camera). Warm, smiling, first-person, like showing friends the holiday photos; softer on the memory line (vo3), a little conspiratorial on 'home', proud on the product name, playful on 'shelf' and on the kid quote, warm and confident on the CTA. Generate every line as its own clip, trim leading/trailing silence, and place the first audible sample exactly at 'start'. Each clip must fit inside [start, start+max_dur]; max_dur already carries >= 0.3 s slack over a 3.4 words/s budget. Only French flourish: ff_siwis 'Voilà !' on the 8.00 drop. Measured with kokoro-onnx v1.0 at speed 1.05 (trimmed): vo1 0.92 s, vo2 0.77, vo3 1.86, vo4 1.46, vo5 0.55 (ff_siwis 1.0), vo6 1.69, vo7 1.32, vo8 1.29, vo9 1.00, vo10 1.29, vo11 1.04, vo12 1.92, vo13 2.19 - all inside their windows. Numbers are spelled out in the TTS input; the URL uses tts_text (phonemizes as bɹˈɪkkˈuːdəl dˈɑːt kˈɑːm)."
+  },
+  "vo": [
+    {
+      "id": "vo1",
+      "start": 0.02,
+      "text": "One we stayed in.",
+      "max_dur": 1.48,
+      "caption": "designed",
+      "caption_text": "ONE WE STAYED IN.",
+      "delivery": "warm, smiling, first-person; starts on frame 1"
+    },
+    {
+      "id": "vo2",
+      "start": 1.5,
+      "text": "One we built.",
+      "max_dur": 1.2,
+      "caption": "designed",
+      "caption_text": "ONE WE BUILT.",
+      "delivery": "proud little punch on 'built'; lands with the 1.50 brick snap"
+    },
+    {
+      "id": "vo3",
+      "start": 2.72,
+      "text": "Nobody wanted to leave the Riviera.",
+      "max_dur": 2.25,
+      "caption": "designed",
+      "caption_text": "nobody wanted to leave the Riviera.",
+      "delivery": "softer, nostalgic, close to the mic"
+    },
+    {
+      "id": "vo4",
+      "start": 5.0,
+      "text": "So we took a little piece of it home.",
+      "max_dur": 2.95,
+      "caption": "designed",
+      "caption_text": "So we took a little piece of it home.",
+      "delivery": "warm, conspiratorial, leaning on 'home'"
+    },
+    {
+      "id": "vo5",
+      "start": 8.0,
+      "text": "Voilà !",
+      "voice": "ff_siwis",
+      "speed": 1.0,
+      "lang": "fr-fr",
+      "max_dur": 0.8,
+      "caption": "designed",
+      "caption_text": "Voilà !",
+      "delivery": "bright, delighted, native French; exactly on the drop"
+    },
+    {
+      "id": "vo6",
+      "start": 8.8,
+      "text": "The Riviera Resort brick model.",
+      "max_dur": 2.05,
+      "caption": "designed",
+      "caption_text": "The Riviera Resort BRICK MODEL",
+      "delivery": "proud, clear product name"
+    },
+    {
+      "id": "vo7",
+      "start": 13.05,
+      "text": "This one fits on a shelf.",
+      "max_dur": 2.1,
+      "caption": "designed",
+      "caption_text": "This one fits on a shelf.",
+      "delivery": "playful, a little wink on 'shelf'"
+    },
+    {
+      "id": "vo8",
+      "start": 15.2,
+      "text": "Every step illustrated.",
+      "max_dur": 1.65,
+      "caption": "designed",
+      "caption_text": "Every step illustrated.",
+      "delivery": "crisp, confident"
+    },
+    {
+      "id": "vo9",
+      "start": 16.85,
+      "text": "Every part listed.",
+      "max_dur": 1.35,
+      "caption": "designed",
+      "caption_text": "Every part listed.",
+      "delivery": "crisp, confident"
+    },
+    {
+      "id": "vo10",
+      "start": 18.2,
+      "text": "Six to eight hours of…",
+      "tts_text": "Six to eight hours of...",
+      "max_dur": 1.78,
+      "caption": "designed",
+      "caption_text": "6–8 HOURS OF…",
+      "delivery": "relaxed and amused, trailing off"
+    },
+    {
+      "id": "vo11",
+      "start": 20.0,
+      "text": "pass me the red one!",
+      "max_dur": 1.8,
+      "caption": "designed",
+      "caption_text": "“pass me the red one!”",
+      "delivery": "playful, quoting her kid mid-build"
+    },
+    {
+      "id": "vo12",
+      "start": 22.15,
+      "text": "Ninety-four steps back to the Riviera.",
+      "max_dur": 2.6,
+      "caption": "designed",
+      "caption_text": "94 steps back to the Riviera.",
+      "delivery": "warm emotional peak, landing softly on 'Riviera'"
+    },
+    {
+      "id": "vo13",
+      "start": 25.0,
+      "text": "Step one starts at brickcoodle dot com.",
+      "tts_text": "Step one starts at brick-koodle dot com.",
+      "max_dur": 2.7,
+      "caption": "designed",
+      "caption_text": "Step 1 starts at brickcoodle.com",
+      "delivery": "warm, confident, lift on 'one'; say it BRICK-KOO-dul (check by ear; plain 'brickcoodle' also phonemizes correctly)"
+    }
+  ],
+  "music": {
+    "style": "French Riviera pop-house, 120 BPM, D major (1 beat = 0.5 s, 1 bar = 2 s; bar n starts at 2(n-1) s; every scene cut is on a beat). Chords D – Bm – G – A, one per bar, looping. Instruments (numpy): plucky nylon-style synth arp on 8ths; accordion-style musette pad (two detuned saws ±6 cents, lowpass ~1.8 kHz, 5 Hz tremolo); whistle-like sine lead with 5 Hz vibrato, hook motif A4–D5–F#5–E5 | D5–B4–A4 (2 bars); glockenspiel sparkles; round sine/triangle bass on 8ths; soft kick, claps on 2 and 4, shaker; brick clicks used as percussion (they come from the SFX track). Music ducks ~8 dB under every VO clip (mix.py does the side-chain). Master target -14 LUFS, -1 dBTP. The last half-bar resolves into the intro arp so the loop back to 0.00 is seamless.",
+    "sections": [
+      {
+        "start": 0.0,
+        "end": 2.5,
+        "energy": "low",
+        "notes": "Intro: low-passed (~1.2 kHz) pluck arp + a single glock D6 on 0.00 under the shutter. No drums. A pluck/glock accent on 1.50 under the brick snap."
+      },
+      {
+        "start": 2.5,
+        "end": 5.0,
+        "energy": "low",
+        "notes": "Memory: the accordion pad enters with the whistle motif (nostalgic), soft shaker on 8ths. Still no kick."
+      },
+      {
+        "start": 5.0,
+        "end": 7.5,
+        "energy": "mid",
+        "notes": "Riser under the print push and brickify: 16th-note plucks, filtered-noise sweep (lowpass 900 Hz -> 8 kHz), snare roll 1/8 (5.0-6.0) -> 1/16 (6.0-7.0) -> 1/32 (7.0-7.5), pitch rising. Everything cuts dead at 7.50."
+      },
+      {
+        "start": 7.5,
+        "end": 8.0,
+        "energy": "stop",
+        "notes": "STOP-DOWN #1: total music silence except one quiet sustained glock A5; the brick-click cascade (SFX) carries the transformation. A reverse-cymbal suck-in 7.70-8.00 at -18 dB."
+      },
+      {
+        "start": 8.0,
+        "end": 15.0,
+        "energy": "high",
+        "notes": "DROP on 'Voilà !' (bar 5 downbeat): crash, sub boom, four-on-the-floor kick, claps 2+4, bass octaves, accordion chord stabs on the off-beats, whistle hook. Ducked under vo6/vo7. Clap accents line up with the rally snaps at 11.50 and 13.00."
+      },
+      {
+        "start": 15.0,
+        "end": 18.0,
+        "energy": "mid",
+        "notes": "Booklet: lighter groove - kick on 1 and 3 only, claps, pad, pluck; whistle drops out so the page flips read."
+      },
+      {
+        "start": 18.0,
+        "end": 20.0,
+        "energy": "high",
+        "notes": "Build montage: full kick returns; the 7 brick clicks (SFX, rising pitch) sit on the 8ths like a hi-hat; bass walks up D-E-F#-A. Completion chime at 19.50."
+      },
+      {
+        "start": 20.0,
+        "end": 21.5,
+        "energy": "mid",
+        "notes": "Kick drops out; pad + pluck + a music-box statement of the motif under 'pass me the red one!'."
+      },
+      {
+        "start": 21.5,
+        "end": 22.0,
+        "energy": "stop",
+        "notes": "STOP-DOWN #2: silence (comic beat after the kid quote) with a reverse cymbal 21.60-22.00."
+      },
+      {
+        "start": 22.0,
+        "end": 28.0,
+        "energy": "high",
+        "notes": "Final chorus / CTA: crash + full D chord on 22.00, accordion takes the hook, full groove, heavily ducked under vo12 and vo13."
+      },
+      {
+        "start": 28.0,
+        "end": 29.5,
+        "energy": "mid",
+        "notes": "Outro: final D-major chord on 28.00 ringing, thin pad + pluck, kick out."
+      },
+      {
+        "start": 29.5,
+        "end": 30.0,
+        "energy": "low",
+        "notes": "Loop bridge: downward whoosh (SFX), low-pass closes back to ~1.2 kHz and the pluck arp pickup leads straight into bar 1 on replay."
+      }
+    ],
+    "hits": [
+      {
+        "t": 0.0,
+        "type": "stinger",
+        "notes": "soft glock D6 with the camera shutter - music starts on frame 1"
+      },
+      {
+        "t": 1.5,
+        "type": "stinger",
+        "notes": "pluck + glock accent under the brick snap / 'ONE WE BUILT.' slam"
+      },
+      {
+        "t": 7.5,
+        "type": "riser_end",
+        "notes": "riser peaks and cuts dead"
+      },
+      {
+        "t": 7.5,
+        "type": "stop",
+        "notes": "stop-down #1 (7.50-8.00)"
+      },
+      {
+        "t": 8.0,
+        "type": "drop",
+        "notes": "DROP on ff_siwis 'Voilà !' + match cut to the brick model"
+      },
+      {
+        "t": 11.5,
+        "type": "stinger",
+        "notes": "clap + snap accent on rally round-1 reveal"
+      },
+      {
+        "t": 13.0,
+        "type": "stinger",
+        "notes": "rally round-2 reveal: 4-note glock arpeggio D5-F#5-A5-D6 on 16ths"
+      },
+      {
+        "t": 19.5,
+        "type": "stinger",
+        "notes": "build-complete chime (D6 + A6)"
+      },
+      {
+        "t": 21.5,
+        "type": "stop",
+        "notes": "stop-down #2 (21.50-22.00)"
+      },
+      {
+        "t": 22.0,
+        "type": "drop",
+        "notes": "CTA hit: crash + full D chord (bar 12 downbeat) with the end card"
+      },
+      {
+        "t": 25.0,
+        "type": "button",
+        "notes": "URL brick button lands"
+      },
+      {
+        "t": 26.0,
+        "type": "button",
+        "notes": "button press-click as 'brickcoodle' is spoken"
+      },
+      {
+        "t": 28.0,
+        "type": "stinger",
+        "notes": "final D-major chord, rings to 29.5"
+      },
+      {
+        "t": 29.9,
+        "type": "button",
+        "notes": "divider lands for the loop; tiny snap then the bar-1 pickup"
+      }
+    ]
+  },
+  "sfx": [
+    {
+      "t": 0.0,
+      "type": "shutter",
+      "gain": 0.8,
+      "notes": "camera shutter click on frame 1 (no visual flash)"
+    },
+    {
+      "t": 1.5,
+      "type": "brick_click",
+      "gain": 1.0,
+      "notes": "crisp two-layer brick SNAP as the slider handle bounces and 'ONE WE BUILT.' slams"
+    },
+    {
+      "t": 2.4,
+      "type": "whoosh",
+      "gain": 0.45,
+      "notes": "pre-lap whoosh; the split halves part at 2.50"
+    },
+    {
+      "t": 2.58,
+      "type": "thud",
+      "gain": 0.35,
+      "notes": "soft paper drop - arrival print lands"
+    },
+    {
+      "t": 3.5,
+      "type": "whoosh",
+      "gain": 0.3,
+      "notes": "paper slide - promenade print slides in from the right"
+    },
+    {
+      "t": 3.78,
+      "type": "thud",
+      "gain": 0.22,
+      "notes": "promenade print settles"
+    },
+    {
+      "t": 4.92,
+      "type": "whoosh",
+      "gain": 0.4,
+      "notes": "old prints slide off"
+    },
+    {
+      "t": 5.0,
+      "type": "thud",
+      "gain": 0.5,
+      "notes": "balcony print drops onto the table"
+    },
+    {
+      "t": 5.0,
+      "type": "riser",
+      "gain": 0.55,
+      "notes": "filtered-noise riser 5.00-7.50 (2.5 s), cut dead at 7.50",
+      "dur": 2.5
+    },
+    {
+      "t": 7.0,
+      "type": "brick_click",
+      "gain": 0.22,
+      "pan": -0.8,
+      "notes": "brickify cascade click 1/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.075,
+      "type": "brick_click",
+      "gain": 0.23,
+      "pan": -0.75,
+      "notes": "brickify cascade click 2/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.141,
+      "type": "brick_click",
+      "gain": 0.24,
+      "pan": -0.69,
+      "notes": "brickify cascade click 3/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.199,
+      "type": "brick_click",
+      "gain": 0.25,
+      "pan": -0.64,
+      "notes": "brickify cascade click 4/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.25,
+      "type": "brick_click",
+      "gain": 0.26,
+      "pan": -0.59,
+      "notes": "brickify cascade click 5/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.294,
+      "type": "brick_click",
+      "gain": 0.28,
+      "pan": -0.53,
+      "notes": "brickify cascade click 6/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.334,
+      "type": "brick_click",
+      "gain": 0.29,
+      "pan": -0.48,
+      "notes": "brickify cascade click 7/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.369,
+      "type": "brick_click",
+      "gain": 0.3,
+      "pan": -0.43,
+      "notes": "brickify cascade click 8/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.399,
+      "type": "brick_click",
+      "gain": 0.31,
+      "pan": -0.37,
+      "notes": "brickify cascade click 9/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.426,
+      "type": "brick_click",
+      "gain": 0.32,
+      "pan": -0.32,
+      "notes": "brickify cascade click 10/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.45,
+      "type": "brick_click",
+      "gain": 0.33,
+      "pan": -0.27,
+      "notes": "brickify cascade click 11/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.472,
+      "type": "brick_click",
+      "gain": 0.34,
+      "pan": -0.21,
+      "notes": "brickify cascade click 12/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.494,
+      "type": "brick_click",
+      "gain": 0.35,
+      "pan": -0.16,
+      "notes": "brickify cascade click 13/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.516,
+      "type": "brick_click",
+      "gain": 0.36,
+      "pan": -0.11,
+      "notes": "brickify cascade click 14/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.538,
+      "type": "brick_click",
+      "gain": 0.37,
+      "pan": -0.05,
+      "notes": "brickify cascade click 15/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.56,
+      "type": "brick_click",
+      "gain": 0.39,
+      "pan": 0.0,
+      "notes": "brickify cascade click 16/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.582,
+      "type": "brick_click",
+      "gain": 0.4,
+      "pan": 0.05,
+      "notes": "brickify cascade click 17/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.604,
+      "type": "brick_click",
+      "gain": 0.41,
+      "pan": 0.11,
+      "notes": "brickify cascade click 18/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.626,
+      "type": "brick_click",
+      "gain": 0.42,
+      "pan": 0.16,
+      "notes": "brickify cascade click 19/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.648,
+      "type": "brick_click",
+      "gain": 0.43,
+      "pan": 0.21,
+      "notes": "brickify cascade click 20/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.67,
+      "type": "brick_click",
+      "gain": 0.44,
+      "pan": 0.27,
+      "notes": "brickify cascade click 21/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.692,
+      "type": "brick_click",
+      "gain": 0.45,
+      "pan": 0.32,
+      "notes": "brickify cascade click 22/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.714,
+      "type": "brick_click",
+      "gain": 0.46,
+      "pan": 0.37,
+      "notes": "brickify cascade click 23/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.736,
+      "type": "brick_click",
+      "gain": 0.47,
+      "pan": 0.43,
+      "notes": "brickify cascade click 24/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.758,
+      "type": "brick_click",
+      "gain": 0.48,
+      "pan": 0.48,
+      "notes": "brickify cascade click 25/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.78,
+      "type": "brick_click",
+      "gain": 0.49,
+      "pan": 0.53,
+      "notes": "brickify cascade click 26/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.802,
+      "type": "brick_click",
+      "gain": 0.51,
+      "pan": 0.59,
+      "notes": "brickify cascade click 27/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.824,
+      "type": "brick_click",
+      "gain": 0.52,
+      "pan": 0.64,
+      "notes": "brickify cascade click 28/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.846,
+      "type": "brick_click",
+      "gain": 0.53,
+      "pan": 0.69,
+      "notes": "brickify cascade click 29/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.868,
+      "type": "brick_click",
+      "gain": 0.54,
+      "pan": 0.75,
+      "notes": "brickify cascade click 30/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.89,
+      "type": "brick_click",
+      "gain": 0.55,
+      "pan": 0.8,
+      "notes": "brickify cascade click 31/31 (tiny 1x1 stud snaps, accelerating)"
+    },
+    {
+      "t": 7.93,
+      "type": "whoosh",
+      "gain": 0.35,
+      "notes": "air-suck into the white flash"
+    },
+    {
+      "t": 8.0,
+      "type": "thud",
+      "gain": 1.0,
+      "notes": "DROP: big brick SNAP-CLACK + sub boom (layer with the next click)"
+    },
+    {
+      "t": 8.0,
+      "type": "brick_click",
+      "gain": 1.0,
+      "notes": "top layer of the drop snap"
+    },
+    {
+      "t": 8.0,
+      "type": "whoosh",
+      "gain": 0.6,
+      "notes": "whip-zoom out on the model"
+    },
+    {
+      "t": 8.05,
+      "type": "pop",
+      "gain": 0.5,
+      "notes": "brick-confetti burst (plastic rattle tail to 9.2)"
+    },
+    {
+      "t": 8.6,
+      "type": "brick_click",
+      "gain": 0.12,
+      "notes": "piece-counter tick 1/13 (very small, high pitch)"
+    },
+    {
+      "t": 8.7,
+      "type": "brick_click",
+      "gain": 0.12,
+      "notes": "piece-counter tick 2/13 (very small, high pitch)"
+    },
+    {
+      "t": 8.8,
+      "type": "brick_click",
+      "gain": 0.12,
+      "notes": "piece-counter tick 3/13 (very small, high pitch)"
+    },
+    {
+      "t": 8.9,
+      "type": "brick_click",
+      "gain": 0.12,
+      "notes": "piece-counter tick 4/13 (very small, high pitch)"
+    },
+    {
+      "t": 9.0,
+      "type": "brick_click",
+      "gain": 0.12,
+      "notes": "piece-counter tick 5/13 (very small, high pitch)"
+    },
+    {
+      "t": 9.1,
+      "type": "brick_click",
+      "gain": 0.12,
+      "notes": "piece-counter tick 6/13 (very small, high pitch)"
+    },
+    {
+      "t": 9.2,
+      "type": "brick_click",
+      "gain": 0.12,
+      "notes": "piece-counter tick 7/13 (very small, high pitch)"
+    },
+    {
+      "t": 9.3,
+      "type": "brick_click",
+      "gain": 0.12,
+      "notes": "piece-counter tick 8/13 (very small, high pitch)"
+    },
+    {
+      "t": 9.4,
+      "type": "brick_click",
+      "gain": 0.12,
+      "notes": "piece-counter tick 9/13 (very small, high pitch)"
+    },
+    {
+      "t": 9.5,
+      "type": "brick_click",
+      "gain": 0.12,
+      "notes": "piece-counter tick 10/13 (very small, high pitch)"
+    },
+    {
+      "t": 9.6,
+      "type": "brick_click",
+      "gain": 0.12,
+      "notes": "piece-counter tick 11/13 (very small, high pitch)"
+    },
+    {
+      "t": 9.7,
+      "type": "brick_click",
+      "gain": 0.12,
+      "notes": "piece-counter tick 12/13 (very small, high pitch)"
+    },
+    {
+      "t": 9.8,
+      "type": "brick_click",
+      "gain": 0.12,
+      "notes": "piece-counter tick 13/13 (very small, high pitch)"
+    },
+    {
+      "t": 9.8,
+      "type": "sparkle",
+      "gain": 0.55,
+      "notes": "counter lands on 1,746 (bell ding)"
+    },
+    {
+      "t": 10.5,
+      "type": "whoosh",
+      "gain": 0.45,
+      "notes": "comparison window pops in"
+    },
+    {
+      "t": 11.0,
+      "type": "whoosh",
+      "gain": 0.35,
+      "notes": "slider sweeps left to right"
+    },
+    {
+      "t": 11.5,
+      "type": "brick_click",
+      "gain": 0.9,
+      "notes": "SNAP on round-1 reveal (tally stud 1 fills)"
+    },
+    {
+      "t": 11.55,
+      "type": "pop",
+      "gain": 0.3,
+      "notes": "marker callout 'Mansard roof' stamps in"
+    },
+    {
+      "t": 12.0,
+      "type": "shutter",
+      "gain": 0.45,
+      "notes": "window content cut (shutter blink inside the window)"
+    },
+    {
+      "t": 12.5,
+      "type": "whoosh",
+      "gain": 0.35,
+      "notes": "slider drops top to bottom"
+    },
+    {
+      "t": 13.0,
+      "type": "brick_click",
+      "gain": 0.9,
+      "notes": "SNAP on round-2 reveal (tally stud 2 fills)"
+    },
+    {
+      "t": 13.2,
+      "type": "thud",
+      "gain": 0.25,
+      "notes": "shelf plank slides in under the model (wood knock)"
+    },
+    {
+      "t": 13.35,
+      "type": "whoosh",
+      "gain": 0.25,
+      "notes": "dimension line zips across (tape-measure zip)"
+    },
+    {
+      "t": 15.0,
+      "type": "whoosh",
+      "gain": 0.45,
+      "notes": "booklet stage slides up"
+    },
+    {
+      "t": 15.0,
+      "type": "pop",
+      "gain": 0.2,
+      "notes": "small URL bug pops in bottom-left"
+    },
+    {
+      "t": 15.35,
+      "type": "thud",
+      "gain": 0.25,
+      "notes": "booklet cover lands on the table"
+    },
+    {
+      "t": 15.5,
+      "type": "page_flip",
+      "gain": 0.6,
+      "notes": "page-21 dealt from the right"
+    },
+    {
+      "t": 16.75,
+      "type": "page_flip",
+      "gain": 0.6,
+      "notes": "page-71 dealt from the left"
+    },
+    {
+      "t": 18.0,
+      "type": "brick_click",
+      "gain": 0.75,
+      "pitch": 0,
+      "notes": "build-montage snap on the swap to step-01 (pitch +0 semitones)"
+    },
+    {
+      "t": 18.25,
+      "type": "brick_click",
+      "gain": 0.75,
+      "pitch": 2,
+      "notes": "build-montage snap on the swap to step-10 (pitch +2 semitones)"
+    },
+    {
+      "t": 18.5,
+      "type": "brick_click",
+      "gain": 0.75,
+      "pitch": 4,
+      "notes": "build-montage snap on the swap to step-34 (pitch +4 semitones)"
+    },
+    {
+      "t": 18.75,
+      "type": "brick_click",
+      "gain": 0.75,
+      "pitch": 5,
+      "notes": "build-montage snap on the swap to step-60 (pitch +5 semitones)"
+    },
+    {
+      "t": 19.0,
+      "type": "brick_click",
+      "gain": 0.75,
+      "pitch": 7,
+      "notes": "build-montage snap on the swap to step-80 (pitch +7 semitones)"
+    },
+    {
+      "t": 19.25,
+      "type": "brick_click",
+      "gain": 0.75,
+      "pitch": 9,
+      "notes": "build-montage snap on the swap to step-91 (pitch +9 semitones)"
+    },
+    {
+      "t": 19.5,
+      "type": "brick_click",
+      "gain": 0.95,
+      "pitch": 12,
+      "notes": "build-montage snap on the swap to cover (step 94) (pitch +12 semitones); heavier two-layer snap - build complete"
+    },
+    {
+      "t": 19.52,
+      "type": "sparkle",
+      "gain": 0.55,
+      "notes": "sparkle on the finished model's flags"
+    },
+    {
+      "t": 20.0,
+      "type": "whoosh",
+      "gain": 0.5,
+      "notes": "punch-in to the step-94 card"
+    },
+    {
+      "t": 20.4,
+      "type": "pop",
+      "gain": 0.35,
+      "notes": "handwritten label pops on"
+    },
+    {
+      "t": 20.7,
+      "type": "sparkle",
+      "gain": 0.45,
+      "notes": "glint on the red flag"
+    },
+    {
+      "t": 21.6,
+      "type": "riser",
+      "gain": 0.4,
+      "notes": "reverse cymbal 21.60-22.00 into the CTA hit",
+      "dur": 0.4
+    },
+    {
+      "t": 22.0,
+      "type": "thud",
+      "gain": 1.0,
+      "notes": "CTA hit: sub + big snap"
+    },
+    {
+      "t": 22.0,
+      "type": "brick_click",
+      "gain": 0.9,
+      "notes": "triple brick snap layer on the CTA hit"
+    },
+    {
+      "t": 22.03,
+      "type": "pop",
+      "gain": 0.45,
+      "notes": "small confetti burst"
+    },
+    {
+      "t": 22.5,
+      "type": "whoosh",
+      "gain": 0.3,
+      "notes": "polaroid slides in"
+    },
+    {
+      "t": 25.0,
+      "type": "brick_click",
+      "gain": 0.9,
+      "notes": "blue 1x6 URL brick drops and snaps into place (lands 25.12)"
+    },
+    {
+      "t": 26.0,
+      "type": "brick_click",
+      "gain": 0.55,
+      "notes": "press-down click on the button as 'brickcoodle' is spoken"
+    },
+    {
+      "t": 29.5,
+      "type": "whoosh",
+      "gain": 0.55,
+      "notes": "downward whoosh - divider drops for the loop"
+    },
+    {
+      "t": 29.9,
+      "type": "brick_click",
+      "gain": 0.7,
+      "notes": "divider lands; leads into the 0.00 shutter on replay"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "s1_hook",
+      "start": 0.0,
+      "end": 2.5,
+      "visual": "HOOK - REAL vs BRICK split. Frame 0 is the finished thumbnail: no flash, no fade, no black frame, text already on. TOP HALF: photos/resort-balcony-view.jpg source rect x 100-900, y 540-1251 (800x711; never above source y 540, so the theme-park dome at y~450-500 cannot appear; x <= 900 keeps the bus at x >= 1080 out) drawn at scale 1.35 into the top half (x 0-1080, y 0-960); the real porte-cochere canopy centre (source 505,780) sits at ~(547, 324). BOTTOM HALF: vertical sky gradient #A9CBEA->#EEF4FA, then instructions/cutouts/step-88.webp source rect x 250-1050, y 260-971 (800x711) at scale 1.35 into the bottom half (x 0-1080, y 960-1920); the brick porte-cochere canopy (source ~635,590) sits at ~(520, 1406), its roof top at ~y 1183; the image's cut edges are all outside the crop or below the frame. DIVIDER: 8 px white bar at y 956-964 across the full width, soft shadow; on it a red #C4161C 2x2-brick slider handle (76x76, four round studs with top-left highlight) centred at (905, 960). CAMERA: both halves push 1.00->1.05 over 0.00-2.50 (easeInOutSine), each anchored on its own canopy centre and clipped to its half; frame 0 is exactly scale 1.00. 1.50: handle snap-bounce 1.00->1.18->1.00 (0.15 s) and the bottom half gets a 3% scale punch (1.03->1.00 over 4 frames) with the brick snap. Thumbnail/cover still: t = 2.2 s (both lines on screen).",
+      "text": [
+        {
+          "content": "REAL",
+          "role": "label",
+          "size_px": 52,
+          "color": "#FFFFFF on #2F6FC4 pill (radius 10, padding 6/18)",
+          "start": 0.0,
+          "end": 2.5,
+          "animation": "static from frame 0",
+          "position": "left x=80, y 745-805"
+        },
+        {
+          "role": "slam",
+          "size_px": 104,
+          "color": "#FFFFFF on a #14304F chip at 88% opacity (radius 16, padding 8/22)",
+          "content": "ONE WE STAYED IN.",
+          "start": 0.0,
+          "end": 2.5,
+          "animation": "on screen from frame 0, no entrance (caption for vo1)",
+          "position": "left x=80, y 820-938 (just above the divider), max width 860"
+        },
+        {
+          "role": "slam",
+          "size_px": 104,
+          "color": "#FFFFFF on a #14304F chip at 88% opacity (radius 16, padding 8/22)",
+          "content": "ONE WE BUILT.",
+          "start": 1.5,
+          "end": 2.5,
+          "animation": "slam: scale 1.30->1.00 over 4 frames + 6 px shake, on the 1.50 snap (caption for vo2)",
+          "position": "left x=80, y 982-1100 (just below the divider), max width 860"
+        },
+        {
+          "content": "BRICK",
+          "role": "label",
+          "size_px": 52,
+          "color": "#FFFFFF on #C4161C pill (radius 10, padding 6/18)",
+          "start": 0.0,
+          "end": 2.5,
+          "animation": "static from frame 0",
+          "position": "left x=80, y 1115-1175"
+        }
+      ],
+      "transition_in": {
+        "type": "cold_open",
+        "dur": 0.0
+      },
+      "notes": "Hook lands by 1.5 s: product (brick half) and place (real half) both visible at frame 0; vo1 starts at 0.02. The last frame of the ad (s10) rebuilds this exact layout for the loop."
+    },
+    {
+      "id": "s2_trip",
+      "start": 2.5,
+      "end": 5.0,
+      "visual": "THE TRIP (real photos). 2.50-2.75: the split parts - top half slides up off-frame (translateY 0->-960) and the bottom half slides down (0->+960), easeInCubic; divider and handle leave with the top half. Underneath: a Memory Cream #FBF6EC table with 2% paper grain. Instant prints: white borders, soft shadow 0 18px 40px rgba(20,48,79,0.28). PRINT A = photos/resort-arrival.jpg source rect x 0-1171, y 32-1621 (drops the 30 px white strip at the top) as a 560x760 image, border 20 px top/left/right + 60 px bottom (print 600x840), centred (360, 930), rotated -3 deg; lands 2.55-2.85 (scale 1.12->1.00, easeOutExpo). PRINT B = photos/resort-promenade.jpg full frame as a 470x502 image, border 18/18/18 + 56 bottom (print 506x594), centred (760, 1150), rotated +4 deg, with a lilac #CDB8E8 washi-tape strip (130x34, 70% opacity, rotated -8 deg) across its top edge; slides in from the right 3.50-3.80 (x +700->0, easeOutBack). B overlaps only A's lower-right corner (stroller wheels / dad's legs): the girl in lilac and the dad's head and shoulders stay visible. CAMERA: the whole table pushes 1.00->1.04 over 2.50-5.00 about (540, 950). No push toward the seated bystanders or the resort signage.",
+      "text": [
+        {
+          "content": "nobody wanted to leave / the Riviera.",
+          "role": "hand",
+          "size_px": 72,
+          "color": "#14304F",
+          "start": 2.72,
+          "end": 4.97,
+          "animation": "pen write-on left to right, word by word in sync with vo3; fades out 4.85-4.97",
+          "position": "left x=100, y 300-460, two lines ('nobody wanted to leave' / 'the Riviera.'), over the cream table"
+        }
+      ],
+      "transition_in": {
+        "type": "split_apart",
+        "dur": 0.25
+      },
+      "notes": "Story beat 1: our family trip, told by the parent behind the camera. Family seen from behind only; no names."
+    },
+    {
+      "id": "s3_home",
+      "start": 5.0,
+      "end": 8.0,
+      "visual": "TAKE A PIECE HOME + BRICKIFY. 5.00-5.30: print A slides out left (x -700) and print B out right (x +800), easeInCubic, while PRINT C drops in: photos/resort-balcony-view.jpg source rect x 0-1075, y 560-1430 (below the horizon: no theme-park dome; x <= 1075: no bus) as a 780x631 image, border 24/24/24 + 80 bottom (print 828x735), centred (540, 1000), rotated -1.5 deg, landing scale 1.15->1.00 in 0.25 s. The real canopy (source 505,780) sits at ~(516, 816). 5.75-7.50 PUSH: camera scales 1.00->1.60 about the canopy (easeInOutSine) while moving the canopy from (516, 816) to (540, 900); the print's rotation eases -1.5->0 deg. (Photo upscale stays <= 1.16x source.) 6.75-7.20 BRICKIFY (canvas, inside the print's image area only, border stays white): redraw the photo as a 1x1 stud mosaic; cell size grows 4->24 screen px (easeInQuad); each cell = a square plate in the cell's average colour + a round stud (radius 0.36 x cell) with a top-left highlight (+18% lightness) and a bottom-right shadow (-22%). 7.20-7.50: colours snap to the nearest model colour (#F4F4F4, #A0A5A9, #6B6E70, #1B2A34, #237841, #184D2E, #D9BB7B, #5C3A1E, #1F5FBF, #C4161C) in a radial wave from the canopy outward, each stud popping 1.15->1.00. 7.50-7.90 STOP-DOWN: the mosaic freezes with a slow 1.00->1.02 breathe. 7.90-8.00: white flash rises 0->100% (3 frames).",
+      "text": [
+        {
+          "content": "So we took a little piece / of it home.",
+          "role": "serif",
+          "size_px": 80,
+          "color": "Playfair Display 700 italic #14304F",
+          "start": 5.0,
+          "end": 7.8,
+          "animation": "each word rises 12 px + fades in at its vo4 onset; block fades out 7.65-7.80",
+          "position": "left x=80, y 300-480, two lines, over the cream table (print C's top border stays below y ~606 during the push)"
+        }
+      ],
+      "transition_in": {
+        "type": "print_drop",
+        "dur": 0.3
+      },
+      "notes": "Story beat 2: 'we wanted to take a little piece of it home' (the client's own words). The transformation plays with no VO (vo4 ends ~6.5 s) so the stop-down carries it."
+    },
+    {
+      "id": "s4_reveal",
+      "start": 8.0,
+      "end": 10.5,
+      "visual": "VOILÀ - THE RENDERING. 8.00 DROP + MATCH CUT. Background: vertical gradient #A9CBEA->#EEF4FA plus a dome-free cloud plate = photos/resort-balcony-view.jpg source rect x 0-1206, y 0-430 ONLY (sky and clouds), cover-scaled across y 0-900, blur 14 px, 30% opacity, drifting up 10 px/s. The white flash decays 8.00-8.10. instructions/pages/cover.webp (the rendering, transparent; same view as the client's render). REST POSE: scale 0.64 (995x682) at x 43-1038, y 560-1242; its porte-cochere canopy (cover px ~785,560) then sits at ~(545, 918). ENTRY: at 8.00 it appears at scale 1.81 with that canopy locked at (540, 900) - the exact spot and size the brickified real canopy just had - and whip-zooms out to the rest pose 8.00-8.45 (easeOutExpo, radial motion blur on the first 4 frames). 8.45-10.50: slow drift scale 1.00->1.04 + rotateY sway -3->+2 deg, soft contact-shadow ellipse under the base. 8.00-9.40: brick confetti - 48 studded 1x1/1x2/2x2 bricks (#C4161C, #1F5FA8, #FFFFFF, #1F7A33, #D9C28A) burst from behind the model, 3D spin, gravity, all off-frame by 9.40.",
+      "text": [
+        {
+          "content": "Voilà !",
+          "role": "serif",
+          "size_px": 150,
+          "color": "Playfair Display 900 italic #14304F (U+00A0 before '!')",
+          "start": 8.02,
+          "end": 8.8,
+          "animation": "scale-pop 0.85->1.06->1.00 (0.2 s), 0.1 s fade out",
+          "position": "centred on x=510, y 300-470"
+        },
+        {
+          "content": "The Riviera Resort",
+          "role": "serif",
+          "size_px": 84,
+          "color": "Playfair Display 700 italic #14304F",
+          "start": 8.8,
+          "end": 10.5,
+          "animation": "words rise in with vo6",
+          "position": "centred on x=510, y 300-400"
+        },
+        {
+          "content": "BRICK MODEL",
+          "role": "label",
+          "size_px": 60,
+          "color": "#1F5FA8, letter-spacing 0.18em",
+          "start": 9.75,
+          "end": 10.5,
+          "animation": "fade + 8 px rise as 'brick model' is spoken",
+          "position": "centred on x=510, y 410-470"
+        },
+        {
+          "content": "1,746",
+          "role": "stat",
+          "size_px": 130,
+          "color": "#14304F, tabular figures",
+          "start": 8.6,
+          "end": 10.5,
+          "animation": "counts 0 -> 1,746 from 8.60 to 9.80 (easeOutCubic), 1.00->1.06->1.00 pulse at 9.80",
+          "position": "left x=80, y 1285-1415"
+        },
+        {
+          "content": "PIECES",
+          "role": "label",
+          "size_px": 60,
+          "color": "#1F5FA8",
+          "start": 8.6,
+          "end": 10.5,
+          "animation": "fades in with the counter",
+          "position": "left x=84, y 1420-1480"
+        }
+      ],
+      "transition_in": {
+        "type": "match_cut_whip_zoom_out",
+        "dur": 0.45
+      },
+      "notes": "Story beat 3: the Riviera Resort brick model (the rendering). Full hero on screen at 8.0 s."
+    },
+    {
+      "id": "s5_real_vs_brick",
+      "start": 10.5,
+      "end": 15.0,
+      "visual": "REAL vs BRICK proof (two rounds, the hook's canopy counts as the first match) + shelf payoff. Background: the same sky gradient with a faint white stud-dot grid at 6% (never a blurred photo copy). COMPARISON WINDOW 900x1013 at x 90-990, y 380-1393, radius 28, 6 px white border, shadow 0 24px 60px rgba(20,48,79,0.30); pops in at 10.50 (scale 1.06->1.00, 4 frames). Inside: a REAL layer over a BRICK layer (sky gradient behind the render), revealed by a clip-path slider = 10 px white bar carrying the red 2x2 handle. Registration is approximate (aerial photo vs 3/4 render): align centres and scale, let the wipe hide the rest. ROUND 1 'Mansard roof' 10.50-12.00: REAL = photos/resort-arrival.jpg source x 0-600, y 32-707 (scale 1.5; push 1.00->1.03 anchored on the dormers at source 400,90). BRICK = instructions/cutouts/finished-view-2.webp source x 330-980, y 0-731 (scale 1.385): domed tower with lantern, central mansard with oval dormers, red awnings. 11.00-11.50 vertical slider sweeps LEFT->RIGHT (easeInOutCubic). 11.50 SNAP: chip flips REAL->BRICK, tally stud 1 fills #F29A2E, and an 8 px #E23B2E marker ellipse draws round the brick dormers (centre ~(630, 670), rx 210, ry 70) 11.55-11.85. ROUND 2 'the whole facade' 12.00-13.00: 2-frame white shutter blink inside the window only; REAL = photos/resort-arrival.jpg source x 0-1171, y 32-1350 (scale 0.769; the family walking toward the facade; push 1.00->1.02 anchored on the facade top, source 585,200). BRICK = instructions/cutouts/finished-view-2.webp full, 860 px wide (860x457) at x 110-970, y 622-1079. 12.50-13.00 the slider turns HORIZONTAL and drops TOP->BOTTOM. 13.00 SNAP: chip flips, tally stud 2 fills. SHELF 13.00-15.00: 13.05-13.35 window frame, chip, header and tally fade and scale away (1.00->1.04), leaving the brick facade on the gradient; finished-view-2 eases to 840 px wide at x 120-960, y 700-1147 (13.05-13.45, easeOutCubic). 13.20: a shelf plank (#D9C28A, 960x18 at x 60-1020, y 1147-1165, darker 1 px top edge, soft shadow below) slides in from the left under it. 13.35-13.80: a #14304F 4 px dimension line with end ticks draws left to right at y 1195 from x 120 to 960. 13.05-15.00 slow push 1.00->1.03. TALLY graphic: a white 1x2 brick (130x56, two studs) at x 810-940, y 298-354 whose studs fill orange on each snap.",
+      "text": [
+        {
+          "content": "REAL vs BRICK",
+          "role": "label",
+          "size_px": 60,
+          "color": "#14304F",
+          "start": 10.5,
+          "end": 13.15,
+          "animation": "pops in with the window; fades 13.00-13.15",
+          "position": "left x=90, y 295-355"
+        },
+        {
+          "content": "REAL",
+          "role": "label",
+          "size_px": 52,
+          "color": "#FFFFFF on #2F6FC4 pill (radius 10, padding 6/18)",
+          "start": 10.5,
+          "end": 13.15,
+          "animation": "rotateX flip to 'BRICK' (#C4161C) at 11.50 and 13.00; resets to 'REAL' at 12.00",
+          "position": "left x=114, y 404-462 (inside the window's top-left)"
+        },
+        {
+          "content": "Mansard roof",
+          "role": "marker",
+          "size_px": 64,
+          "color": "#E23B2E",
+          "start": 11.52,
+          "end": 12.0,
+          "animation": "writes on left to right over 6 frames, then a drawn SVG check mark stamps in (the fonts have no ✓ glyph)",
+          "position": "left x=90, y 1410-1485 (below the window)"
+        },
+        {
+          "content": "This one fits / on a shelf.",
+          "role": "serif",
+          "size_px": 92,
+          "color": "Playfair Display 700 italic #14304F",
+          "start": 13.05,
+          "end": 15.0,
+          "animation": "words rise in with vo7",
+          "position": "left x=80, y 300-520, two lines"
+        },
+        {
+          "content": "38 × 26 cm · 16 cm tall",
+          "role": "stat",
+          "size_px": 46,
+          "color": "#14304F",
+          "start": 13.6,
+          "end": 15.0,
+          "animation": "fade + 10 px rise",
+          "position": "centred on x=510, y 1215-1270"
+        }
+      ],
+      "transition_in": {
+        "type": "hard_cut_window_pop",
+        "dur": 0.13
+      },
+      "notes": "Proof that it looks like the place, framed as a joke ('the only difference: this one fits on a shelf'), never as 'exact replica'. No red block with yellow anywhere."
+    },
+    {
+      "id": "s6_booklet",
+      "start": 15.0,
+      "end": 18.0,
+      "visual": "THE INSTRUCTIONS - the booklet. The whole booklet stage slides up from below over 0.35 s (easeOutCubic), pushing s5 up and out. Background: booklet paper #F7F9FC with a #DCE8F5 stud-dot grid (24 px pitch). Pages are physical cards: radius 14, shadow 0 18px 40px rgba(20,48,79,0.25), perspective 2200 px. 15.00-15.35: instructions/pages/page-01.jpg CROPPED to source x 0-1650, y 0-1192 (removes the fine-print line that names Disney / Walt Disney World; keeps 'BUILD INSTRUCTIONS / Riviera Resort / 1,746 pieces / 38 × 26 cm' and the 'Unofficial fan design' badge) as a 900x650 card centred (540, 880), rotated -3 deg, rising from below (translateY +1100->0, rotateX 18->0 deg, easeOutBack). 15.50: instructions/pages/page-21.jpg (steps 23-24 with 'parts for this step' boxes and orange new-part outlines) as a 900x695 card dealt from the right (x +900->0, rotateY 25->0 deg, 0.3 s), settling at +2 deg centred (600, 1010) so page-01's title band stays visible above it. 15.80-16.20: a 5 px #F29A2E rounded box traces page-21's step-24 parts callout (source x 996-1597, y 45-333). 16.75: instructions/pages/page-71.jpg (parts inventory with element IDs) dealt from the left, settling at -1 deg centred (520, 1050). 17.00-17.40: the orange box traces the first row of its parts grid (source x 53-1597, y 112-287). The stack pushes 1.00->1.04 over 15.0-18.0. Never use page-74 (prices) or page-02.",
+      "text": [
+        {
+          "content": "Every step illustrated.",
+          "role": "stat",
+          "size_px": 62,
+          "color": "#14304F on a white chip (radius 14, padding 10/20, soft shadow)",
+          "start": 15.2,
+          "end": 18.0,
+          "animation": "words pop in with vo8 (scale 0.9->1.0, 3 frames)",
+          "position": "left x=80, y 300-385"
+        },
+        {
+          "content": "Every part listed.",
+          "role": "stat",
+          "size_px": 62,
+          "color": "#14304F on a white chip (radius 14, padding 10/20, soft shadow)",
+          "start": 16.85,
+          "end": 18.0,
+          "animation": "words pop in with vo9",
+          "position": "left x=80, y 400-485"
+        },
+        {
+          "content": "brickcoodle.com",
+          "role": "body",
+          "size_px": 38,
+          "color": "Montserrat 800 #FFFFFF on #1F5FA8 pill (radius 26, padding 8/22)",
+          "start": 15.0,
+          "end": 18.0,
+          "animation": "pops in 0.8->1.0 at 15.00, then static",
+          "position": "left x=80, y 1440-1492"
+        }
+      ],
+      "transition_in": {
+        "type": "slide_up",
+        "dur": 0.35
+      },
+      "notes": "Story beat 4a: it comes with step-by-step instructions and a full parts list. LEGO® appears only as the booklet cover's own small descriptive subtitle (incidental art, never in our copy)."
+    },
+    {
+      "id": "s7_build",
+      "start": 18.0,
+      "end": 20.0,
+      "visual": "THE BUILD COMING TOGETHER. Hard cut on the downbeat. Background booklet paper #F7F9FC + stud-dot grid; soft contact-shadow ellipse under the base. Cumulative-build flipbook with hard cuts on 1/8 notes (max 4 swaps/s). Every frame is REGISTERED ON THE BASEPLATE: scale s = 900 / (baseRight - baseLeft) so the baseplate is always 900 px wide; place the base's left corner at x = 90 and its lowest front corner at y = 1330. Base data (source px, left / right / lowest y): step-01 4 / 1280 / 571; step-10 2 / 1291 / 584; step-34 3 / 1289 / 829; step-60 3 / 1201 / 853; step-80 4 / 1203 / 845; step-91 4 / 1203 / 845; pages/cover.webp 13 / 1541 / 1052. FRAMES: 18.00 instructions/cutouts/step-01.webp (bare grey base) -> 18.25 step-10.webp (drive, lawn, hedges) -> 18.50 step-34.webp (central pavilion) -> 18.75 step-60.webp (domed pavilions) -> 19.00 step-80.webp (guest wings) -> 19.25 step-91.webp (porte-cochere + palms, palms outlined orange) -> 19.50 instructions/pages/cover.webp (finished, flags) held to 20.00 with a 1.00->1.03 push toward the red flag. On every swap the model does a 4 px press-down bounce (1 frame down, 3 back) and the orange new-part outlines flash to 1.2 brightness for 2 frames. 19.52 sparkle on the flags. Do NOT use steps 03-06, 81-88 or 92-94 here (different camera / cropped close-ups); 89 and 90 do not exist.",
+      "text": [
+        {
+          "content": "6–8 HOURS OF…",
+          "role": "slam",
+          "size_px": 120,
+          "color": "#14304F",
+          "start": 18.2,
+          "end": 20.0,
+          "animation": "slams in word by word with vo10 (scale 1.2->1.0, 3 frames); stays through s8",
+          "position": "left x=80, y 290-420"
+        },
+        {
+          "content": "STEP",
+          "role": "label",
+          "size_px": 44,
+          "color": "#1F5FA8",
+          "start": 18.0,
+          "end": 20.0,
+          "animation": "static",
+          "position": "left x=80, y 450-495"
+        },
+        {
+          "content": "01 / 10 / 34 / 60 / 80 / 91 / 94  +  '/94'",
+          "role": "stat",
+          "size_px": 120,
+          "color": "digits #14304F; '/94' 52 px #7F8FA6, turning #F29A2E at 19.50",
+          "start": 18.0,
+          "end": 20.0,
+          "animation": "3-frame vertical odometer roll on every swap, showing the step number of the frame on screen",
+          "position": "left x=80, y 495-615 ('/94' baseline-aligned right after the digits)"
+        },
+        {
+          "content": "brickcoodle.com",
+          "role": "body",
+          "size_px": 38,
+          "color": "Montserrat 800 #FFFFFF on #1F5FA8 pill (radius 26, padding 8/22)",
+          "start": 18.0,
+          "end": 20.0,
+          "animation": "continues from s6, no re-entry",
+          "position": "left x=80, y 1440-1492"
+        }
+      ],
+      "transition_in": {
+        "type": "hard_cut",
+        "dur": 0.0
+      },
+      "notes": "Story beat 4b: the build coming together, step 1 to 94. Only one info layer besides the VO line: the step counter."
+    },
+    {
+      "id": "s8_red_one",
+      "start": 20.0,
+      "end": 22.0,
+      "visual": "'PASS ME THE RED ONE'. Punch-in cut on the downbeat (scale 1.12->1.00 over 4 frames). Background booklet paper. An instruction CARD (white, radius 28, 3 px #DCE3EE border, shadow) at x 70-1010, y 440-1266 holding instructions/cutouts/step-94.webp cropped to source x 200-1200, y 138-1011 at scale 0.9 inside 20 px padding (the card clips the render, so its cut-off building edges never show): the arched porte-cochere, the red and blue flags outlined orange as the final step, palms and red flower beds. Slow push 1.00->1.10 anchored on the red flag (source ~508,460 -> screen ~(367, 750)). 20.40: a white paper label (620x130, radius 6, shadow) with a lilac #CDB8E8 washi-tape strip on its top edge pops in rotated -4 deg at x 310-930, y 1262-1392 (scale 0.6->1.05->1.0). 20.55-20.85: a hand-drawn #14304F 7 px SVG arrow draws from the label's top-left to the red flag, ending at ~(390, 800). 20.70: sparkle on the red flag. 21.50-22.00 music stop-down; the frame simply holds.",
+      "text": [
+        {
+          "content": "6–8 HOURS OF…",
+          "role": "slam",
+          "size_px": 120,
+          "color": "#14304F",
+          "start": 20.0,
+          "end": 22.0,
+          "animation": "continues from s7 in the same position",
+          "position": "left x=80, y 290-420"
+        },
+        {
+          "content": "STEP 94",
+          "role": "stat",
+          "size_px": 44,
+          "color": "#FFFFFF on a #1F5FA8 pill (radius 22, padding 6/18)",
+          "start": 20.0,
+          "end": 22.0,
+          "animation": "static",
+          "position": "left x=100, y 470-530 (card's top-left corner)"
+        },
+        {
+          "content": "“pass me the red one!”",
+          "role": "hand",
+          "size_px": 64,
+          "color": "#14304F",
+          "start": 20.4,
+          "end": 22.0,
+          "animation": "pen write-on 20.40-21.10 in sync with vo11",
+          "position": "inside the label: x 340-910, y 1290-1370"
+        },
+        {
+          "content": "brickcoodle.com",
+          "role": "body",
+          "size_px": 38,
+          "color": "Montserrat 800 #FFFFFF on #1F5FA8 pill (radius 26, padding 8/22)",
+          "start": 20.0,
+          "end": 22.0,
+          "animation": "continues, no re-entry",
+          "position": "left x=80, y 1440-1492"
+        }
+      ],
+      "transition_in": {
+        "type": "punch_in",
+        "dur": 0.13
+      },
+      "notes": "The family moment: the 6-8 hour build is something you do together. The kid quote is a feeling, not a claim."
+    },
+    {
+      "id": "s9_end_card",
+      "start": 22.0,
+      "end": 29.5,
+      "visual": "END CARD. 22.00 HIT: 2-frame white flash, then background = sky gradient #A9CBEA->#EEF4FA + the dome-free cloud plate (photos/resort-balcony-view.jpg source y 0-430 only, blur 6 px, 35% opacity). The client's rendering instructions/cutouts/brick-model-render.webp (transparent) lands at 760 px wide (760x519) at x 160-920, y 560-1079 (scale 1.12->1.00, easeOutBack 0.35 s), then floats ±6 px (2 s period) with rotateY ±3 deg and a soft contact shadow. 22.00-23.20 small brick-confetti burst (30 pieces). 22.50 POLAROID slides in from the left (x -400->0, rotation -20->-8 deg, easeOutBack 0.4 s): photos/resort-promenade.jpg square crop source x 0-1206, y 82-1288 as a 202x202 image in a white frame 230x276 (14 px border, 60 px bottom lip, nothing written on it), leaning at x 60-290, y 790-1066 against the model's front-left lawn, drop shadow. 25.00 CTA BUTTON: a booklet-blue #1F5FA8 1x6 brick = rounded rect 800x112 at x 120-920, y 1278-1390 (radius 22) with six studs (88x18, #1F5FA8 with a #3C7BC6 top highlight) along its top edge (y 1260-1278); it falls from y -60 relative, squashes (scaleY 0.92) and snaps at 25.12. 25.50-26.00: a 6 px #F29A2E outline traces the button perimeter clockwise (the booklet's 'new part' highlight), then pulses on every beat (opacity 0.35->1->0.35) until 30.00. 26.00: press-down click (scale 0.95->1.00 over 0.12 s) as 'brickcoodle' is spoken. DISCLAIMER STRIP 22.00 (0.2 s fade) to 30.00: white at 75% opacity, full width, y 1400-1500. No red block with white type and no yellow on the end card (keeps clear of LEGO trade dress).",
+      "text": [
+        {
+          "content": "94 steps back",
+          "role": "stat",
+          "size_px": 92,
+          "color": "#14304F with '94' in #C4161C",
+          "start": 22.15,
+          "end": 29.5,
+          "animation": "stamps in word by word with vo12 (scale 1.2->1.0, 3 frames)",
+          "position": "centred on x=510, y 290-390"
+        },
+        {
+          "content": "to the Riviera.",
+          "role": "serif",
+          "size_px": 104,
+          "color": "Playfair Display 900 italic #14304F",
+          "start": 22.9,
+          "end": 29.5,
+          "animation": "stamps in with vo12",
+          "position": "centred on x=510, y 395-520"
+        },
+        {
+          "content": "Step-by-step instructions / + full parts list",
+          "role": "body",
+          "size_px": 44,
+          "color": "Montserrat 800 #14304F",
+          "start": 24.2,
+          "end": 29.5,
+          "animation": "fade + 12 px rise (0.25 s)",
+          "position": "centred on x=510, y 1095-1195, two lines"
+        },
+        {
+          "content": "Step 1 starts at",
+          "role": "hand",
+          "size_px": 64,
+          "color": "#14304F",
+          "start": 25.0,
+          "end": 29.5,
+          "animation": "pen write-on 25.00-25.60 with vo13",
+          "position": "left x=120, y 1200-1262"
+        },
+        {
+          "content": "brickcoodle.com",
+          "role": "stat",
+          "size_px": 70,
+          "color": "#FFFFFF on the blue brick button",
+          "start": 25.0,
+          "end": 29.5,
+          "animation": "rides the button (drop, squash, press); stays pinned through s10 to 30.00",
+          "position": "centred on x=520, y 1300-1372"
+        },
+        {
+          "content": "Unofficial fan design. Not affiliated with or endorsed by / The LEGO Group or Disney.",
+          "role": "body",
+          "size_px": 24,
+          "color": "Montserrat 600 #14304F on the 75% white strip",
+          "start": 22.0,
+          "end": 29.5,
+          "animation": "0.2 s fade in, then static; stays pinned through s10 to the last frame",
+          "position": "centred on x=510, two lines, y 1412-1488"
+        }
+      ],
+      "transition_in": {
+        "type": "flash_hit",
+        "dur": 0.07
+      },
+      "notes": "Story beat 5: tagline + CTA. URL on screen 25.00-30.00 (5 s), disclaimer 22.00-30.00 (8 s), end card 7.5 s."
+    },
+    {
+      "id": "s10_loop",
+      "start": 29.5,
+      "end": 30.0,
+      "visual": "LOOP BRIDGE back to frame 0. 29.50-29.70: tagline, model, polaroid, value lines and 'Step 1 starts at' fade out. 29.50-29.90: the 8 px white divider with the red 2x2 handle (at x 905) drops from y -8 to y 956-964 (easeOutBack, settled by 29.93); above it a clip-path wipe reveals the s1 TOP image exactly as at frame 0 (photos/resort-balcony-view.jpg source rect x 100-900, y 540-1251 (800x711; never above source y 540, so the theme-park dome at y~450-500 cannot appear; x <= 900 keeps the bus at x >= 1080 out) drawn at scale 1.35 into the top half (x 0-1080, y 0-960); the real porte-cochere canopy centre (source 505,780) sits at ~(547, 324), push scale 1.00). Below the divider the s1 BOTTOM image (vertical sky gradient #A9CBEA->#EEF4FA, then instructions/cutouts/step-88.webp source rect x 250-1050, y 260-971 (800x711) at scale 1.35 into the bottom half (x 0-1080, y 960-1920); the brick porte-cochere canopy (source ~635,590) sits at ~(520, 1406), its roof top at ~y 1183; the image's cut edges are all outside the crop or below the frame, scale 1.00) slides up from y 1920 to 960 (easeOutCubic), covering the end card. The CTA button with 'brickcoodle.com' and the disclaimer strip stay pinned on top to the last frame. 29.83: REAL/BRICK chips pop back (0.6->1.0). 29.90: 'ONE WE STAYED IN.' pops in, so the last frame (29.967) matches frame 0 except for the pinned CTA and disclaimer - the replay is seamless.",
+      "text": [
+        {
+          "content": "REAL",
+          "role": "label",
+          "size_px": 52,
+          "color": "#FFFFFF on #2F6FC4 pill (radius 10, padding 6/18)",
+          "start": 29.83,
+          "end": 30.0,
+          "animation": "pop 0.6->1.0 (3 frames)",
+          "position": "left x=80, y 745-805"
+        },
+        {
+          "role": "slam",
+          "size_px": 104,
+          "color": "#FFFFFF on a #14304F chip at 88% opacity (radius 16, padding 8/22)",
+          "content": "ONE WE STAYED IN.",
+          "start": 29.9,
+          "end": 30.0,
+          "animation": "pop 0.9->1.0 (2 frames)",
+          "position": "left x=80, y 820-938"
+        },
+        {
+          "content": "BRICK",
+          "role": "label",
+          "size_px": 52,
+          "color": "#FFFFFF on #C4161C pill (radius 10, padding 6/18)",
+          "start": 29.83,
+          "end": 30.0,
+          "animation": "pop 0.6->1.0 (3 frames)",
+          "position": "left x=80, y 1115-1175"
+        },
+        {
+          "content": "brickcoodle.com",
+          "role": "stat",
+          "size_px": 70,
+          "color": "#FFFFFF on the blue brick button (pinned)",
+          "start": 29.5,
+          "end": 30.0,
+          "animation": "pinned, keeps pulsing",
+          "position": "centred on x=520, y 1300-1372"
+        },
+        {
+          "content": "Unofficial fan design. Not affiliated with or endorsed by / The LEGO Group or Disney.",
+          "role": "body",
+          "size_px": 24,
+          "color": "Montserrat 600 #14304F on the 75% white strip (pinned)",
+          "start": 29.5,
+          "end": 30.0,
+          "animation": "pinned",
+          "position": "centred on x=510, two lines, y 1412-1488"
+        }
+      ],
+      "transition_in": {
+        "type": "divider_drop_wipe",
+        "dur": 0.4
+      },
+      "notes": "Last frame ~= frame 0; audio ends on the divider snap and the music pickup that leads into bar 1."
+    }
+  ],
+  "captions": {
+    "enabled": true,
+    "mode": "designed",
+    "style": "Designed captions: every VO line is already rendered once as designed on-screen type in its scene (vo[].caption == 'designed', vo[].caption_text = what is shown; the matching scene text item carries the same words). Do NOT draw a second subtitle for designed lines - no word appears twice. Entrances land within 2 frames of the matching VO word (use the placed VO clip's start; per-word timings may be derived from the clip's duration). Numbers are shown as digits (94, 1,746, 6–8, Step 1) and the URL always as 'brickcoodle.com'. Fallback style (only for a line whose caption == 'pill'; none in this cut): Montserrat 800 52 px sentence case, white on a #14304F pill at 85% (radius 22, padding 14/26), active word #F29A2E, max 2 lines of ~26 characters, 120 ms fade + 8 px rise.",
+    "position": "Designed captions sit where each scene's text item says. Fallback pill: left edge x 80, max width 860, bottom-anchored at y 1480, never below y 1495 or right of x 940."
+  },
+  "end_card": {
+    "cta": "Step 1 starts at brickcoodle.com",
+    "url": "brickcoodle.com",
+    "disclaimer": "Unofficial fan design. Not affiliated with or endorsed by The LEGO Group or Disney.",
+    "details": "s9 22.00-29.50 (+ pinned CTA and disclaimer through the s10 loop bridge to 30.00). Tagline '94 steps back / to the Riviera.' over the client's rendering (brick-model-render.webp) with a trip polaroid leaning on it; value lines 'Step-by-step instructions / + full parts list'; Caveat 'Step 1 starts at' over a booklet-blue 1x6-brick button reading exactly 'brickcoodle.com' (white Archivo Black 70 px), orange new-part outline pulsing on the beat; URL on screen 25.00-30.00. Disclaimer (exact text, Montserrat 600 24 px navy on a 75% white strip, y 1412-1488) on screen 22.00-30.00. VO says the URL once."
+  },
+  "variant_4x5": "1080x1350 feed cut from the same scene graph: draw the 9:16 layout and crop the band y 200-1550 (translateY -200). Every key text block sits at 9:16 y 290-1495, so it lands at 4:5 y 90-1295. Exceptions: (1) s1 and s10 split screen - keep two equal halves by moving the divider to 4:5 y 675 (9:16 y 875): each half is 675 px tall, re-crop both images around the same focal points (real canopy / brick canopy) with the same source-rect limits, and move the chip + hook-line block up 85 px with the divider. (2) Full-frame backgrounds (gradients, cloud plate, stud grid, cream table) are regenerated to fill 1350 px instead of cropped. (3) Confetti spawn/fall ranges scale 0.7 vertically. Everything else (prints, window, cards, model placements, end-card stack) keeps its 9:16 coordinates minus 200."
+}

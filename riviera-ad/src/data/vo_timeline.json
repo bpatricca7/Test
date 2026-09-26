@@ -1,0 +1,455 @@
+{
+ "sample_rate": 48000,
+ "lines": [
+  {
+   "id": "vo1",
+   "start": 0.02,
+   "end": 0.993,
+   "text": "One we stayed in.",
+   "voice": "af_heart",
+   "speed": 1.05,
+   "words": [
+    {
+     "text": "One",
+     "start": 0.02,
+     "end": 0.244
+    },
+    {
+     "text": "we",
+     "start": 0.244,
+     "end": 0.469
+    },
+    {
+     "text": "stayed",
+     "start": 0.469,
+     "end": 0.843
+    },
+    {
+     "text": "in.",
+     "start": 0.843,
+     "end": 0.993
+    }
+   ]
+  },
+  {
+   "id": "vo2",
+   "start": 1.5,
+   "end": 2.308,
+   "text": "One we built.",
+   "voice": "af_heart",
+   "speed": 1.05,
+   "words": [
+    {
+     "text": "One",
+     "start": 1.5,
+     "end": 1.742
+    },
+    {
+     "text": "we",
+     "start": 1.742,
+     "end": 1.985
+    },
+    {
+     "text": "built.",
+     "start": 1.985,
+     "end": 2.308
+    }
+   ]
+  },
+  {
+   "id": "vo3",
+   "start": 2.72,
+   "end": 4.627,
+   "text": "Nobody wanted to leave the Riviera.",
+   "voice": "af_heart",
+   "speed": 1.05,
+   "words": [
+    {
+     "text": "Nobody",
+     "start": 2.72,
+     "end": 3.19
+    },
+    {
+     "text": "wanted",
+     "start": 3.19,
+     "end": 3.687
+    },
+    {
+     "text": "to",
+     "start": 3.687,
+     "end": 3.864
+    },
+    {
+     "text": "leave",
+     "start": 3.864,
+     "end": 4.099
+    },
+    {
+     "text": "the",
+     "start": 4.099,
+     "end": 4.216
+    },
+    {
+     "text": "Riviera.",
+     "start": 4.216,
+     "end": 4.627
+    }
+   ]
+  },
+  {
+   "id": "vo4",
+   "start": 5.0,
+   "end": 6.503,
+   "text": "So we took a little piece of it home.",
+   "voice": "af_heart",
+   "speed": 1.05,
+   "words": [
+    {
+     "text": "So",
+     "start": 5.0,
+     "end": 5.161
+    },
+    {
+     "text": "we",
+     "start": 5.161,
+     "end": 5.322
+    },
+    {
+     "text": "took",
+     "start": 5.322,
+     "end": 5.483
+    },
+    {
+     "text": "a",
+     "start": 5.483,
+     "end": 5.59
+    },
+    {
+     "text": "little",
+     "start": 5.59,
+     "end": 5.859
+    },
+    {
+     "text": "piece",
+     "start": 5.859,
+     "end": 6.074
+    },
+    {
+     "text": "of",
+     "start": 6.074,
+     "end": 6.181
+    },
+    {
+     "text": "it",
+     "start": 6.181,
+     "end": 6.288
+    },
+    {
+     "text": "home.",
+     "start": 6.288,
+     "end": 6.503
+    }
+   ]
+  },
+  {
+   "id": "vo5",
+   "start": 8.0,
+   "end": 8.61,
+   "text": "Voil\u00e0 !",
+   "voice": "ff_siwis",
+   "speed": 1.0,
+   "words": [
+    {
+     "text": "Voil\u00e0",
+     "start": 8.0,
+     "end": 8.508
+    },
+    {
+     "text": "!",
+     "start": 8.508,
+     "end": 8.61
+    }
+   ]
+  },
+  {
+   "id": "vo6",
+   "start": 8.8,
+   "end": 10.544,
+   "text": "The Riviera Resort brick model.",
+   "voice": "af_heart",
+   "speed": 1.05,
+   "words": [
+    {
+     "text": "The",
+     "start": 8.8,
+     "end": 8.922
+    },
+    {
+     "text": "Riviera",
+     "start": 8.922,
+     "end": 9.35
+    },
+    {
+     "text": "Resort",
+     "start": 9.35,
+     "end": 9.933
+    },
+    {
+     "text": "brick",
+     "start": 9.933,
+     "end": 10.178
+    },
+    {
+     "text": "model.",
+     "start": 10.178,
+     "end": 10.544
+    }
+   ]
+  },
+  {
+   "id": "vo7",
+   "start": 13.05,
+   "end": 14.416,
+   "text": "This one fits on a shelf.",
+   "voice": "af_heart",
+   "speed": 1.05,
+   "words": [
+    {
+     "text": "This",
+     "start": 13.05,
+     "end": 13.278
+    },
+    {
+     "text": "one",
+     "start": 13.278,
+     "end": 13.505
+    },
+    {
+     "text": "fits",
+     "start": 13.505,
+     "end": 13.809
+    },
+    {
+     "text": "on",
+     "start": 13.809,
+     "end": 13.961
+    },
+    {
+     "text": "a",
+     "start": 13.961,
+     "end": 14.113
+    },
+    {
+     "text": "shelf.",
+     "start": 14.113,
+     "end": 14.416
+    }
+   ]
+  },
+  {
+   "id": "vo8",
+   "start": 15.2,
+   "end": 16.54,
+   "text": "Every step illustrated.",
+   "voice": "af_heart",
+   "speed": 1.05,
+   "words": [
+    {
+     "text": "Every",
+     "start": 15.2,
+     "end": 15.482
+    },
+    {
+     "text": "step",
+     "start": 15.482,
+     "end": 15.764
+    },
+    {
+     "text": "illustrated.",
+     "start": 15.764,
+     "end": 16.54
+    }
+   ]
+  },
+  {
+   "id": "vo9",
+   "start": 16.85,
+   "end": 17.899,
+   "text": "Every part listed.",
+   "voice": "af_heart",
+   "speed": 1.05,
+   "words": [
+    {
+     "text": "Every",
+     "start": 16.85,
+     "end": 17.13
+    },
+    {
+     "text": "part",
+     "start": 17.13,
+     "end": 17.479
+    },
+    {
+     "text": "listed.",
+     "start": 17.479,
+     "end": 17.899
+    }
+   ]
+  },
+  {
+   "id": "vo10",
+   "start": 18.2,
+   "end": 19.547,
+   "text": "Six to eight hours of\u2026",
+   "voice": "af_heart",
+   "speed": 1.05,
+   "words": [
+    {
+     "text": "Six",
+     "start": 18.2,
+     "end": 18.537
+    },
+    {
+     "text": "to",
+     "start": 18.537,
+     "end": 18.79
+    },
+    {
+     "text": "eight",
+     "start": 18.79,
+     "end": 19.042
+    },
+    {
+     "text": "hours",
+     "start": 19.042,
+     "end": 19.379
+    },
+    {
+     "text": "of\u2026",
+     "start": 19.379,
+     "end": 19.547
+    }
+   ]
+  },
+  {
+   "id": "vo11",
+   "start": 20.0,
+   "end": 21.087,
+   "text": "pass me the red one!",
+   "voice": "af_heart",
+   "speed": 1.05,
+   "words": [
+    {
+     "text": "pass",
+     "start": 20.0,
+     "end": 20.233
+    },
+    {
+     "text": "me",
+     "start": 20.233,
+     "end": 20.466
+    },
+    {
+     "text": "the",
+     "start": 20.466,
+     "end": 20.621
+    },
+    {
+     "text": "red",
+     "start": 20.621,
+     "end": 20.854
+    },
+    {
+     "text": "one!",
+     "start": 20.854,
+     "end": 21.087
+    }
+   ]
+  },
+  {
+   "id": "vo12",
+   "start": 22.15,
+   "end": 24.118,
+   "text": "Ninety-four steps back to the Riviera.",
+   "voice": "af_heart",
+   "speed": 1.05,
+   "words": [
+    {
+     "text": "Ninety-four",
+     "start": 22.15,
+     "end": 22.806
+    },
+    {
+     "text": "steps",
+     "start": 22.806,
+     "end": 23.134
+    },
+    {
+     "text": "back",
+     "start": 23.134,
+     "end": 23.331
+    },
+    {
+     "text": "to",
+     "start": 23.331,
+     "end": 23.527
+    },
+    {
+     "text": "the",
+     "start": 23.527,
+     "end": 23.659
+    },
+    {
+     "text": "Riviera.",
+     "start": 23.659,
+     "end": 24.118
+    }
+   ]
+  },
+  {
+   "id": "vo13",
+   "start": 25.0,
+   "end": 27.234,
+   "text": "Step one starts at brickcoodle dot com.",
+   "voice": "af_heart",
+   "speed": 1.05,
+   "words": [
+    {
+     "text": "Step",
+     "start": 25.0,
+     "end": 25.263
+    },
+    {
+     "text": "one",
+     "start": 25.263,
+     "end": 25.46
+    },
+    {
+     "text": "starts",
+     "start": 25.46,
+     "end": 25.92
+    },
+    {
+     "text": "at",
+     "start": 25.92,
+     "end": 26.051
+    },
+    {
+     "text": "brickcoodle",
+     "start": 26.051,
+     "end": 26.708
+    },
+    {
+     "text": "dot",
+     "start": 26.708,
+     "end": 26.971
+    },
+    {
+     "text": "com.",
+     "start": 26.971,
+     "end": 27.234
+    }
+   ]
+  }
+ ]
+}
