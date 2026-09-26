@@ -76,6 +76,16 @@ Kalshi pays for resting orders near the top of the book, even if they never fill
   - Historical fill cost is about $5/hour per strike.
   - The reviewer's planning estimate is **$30–70/hour with $500**, needing an API bot (10 new markets an hour, re-posting after sweeps).
 - **Unverified:** that Kalshi credits such orders in practice, and that reward credits are withdrawable cash. Kalshi's app shows a live "liquidity earnings estimate" per resting order, which is a cheap way to check.
+- **Payout facts from Kalshi's help center (checked 2026-09-26):**
+  - Article 16076644: rewards are "not credited in real time." Final scoring happens after a program ends, and "payment follows in a later processing run. Timing can vary."
+  - While a program runs, the market's Rewards popover shows a live estimate. After payment the reward appears under Account → Activity → Credits, with the event, payment date and amount.
+  - Minimum payout is $1 per program, rounded down to the cent. An SSN is needed above the IRS reporting threshold (article 13823851).
+  - Our own payout records showed programs ending before about 10:00Z paid by 16:02Z the same day. That is one observation, not a promise.
+  - **Cash vs. credit is still not stated anywhere official.** Kalshi calls these "reward credits" and lists them under Credits.
+  - Sibling programs are explicitly not cash. Referral credits "aren't cash" and expire in 7 days (13823783). Perps promo credits "cannot be withdrawn" (16071412). The sports-combo-leg liquidity program pays a monthly "trade credit ('Bonus Credit')" (17184676).
+  - The volume program is described as "cashback" (13823850).
+  - Treat withdrawability as unknown until a first payout shows up in the Cash balance.
+- **Hourly Temp (including KXTEMPMIAH) has one Designated Liquidity Provider** under Kalshi's separate paid market-maker program (article 15410219). It did not fill the empty sides during our measurement hour, but it could start.
 - **Not eligible through Robinhood:** the program excludes customers trading via an FCM or introducing broker. Use Kalshi directly.
 - **Risks:** Kalshi can change or end the program at any time, and can revoke participants it judges abusive; competition will split the pool; fills lose small amounts.
 
