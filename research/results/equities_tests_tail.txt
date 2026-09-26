@@ -1,0 +1,45 @@
+VIX in [40,100): n=  204  next-day  +19.7 bp (t=+0.77)  next-21d +2.63% (t=+0.50)
+Long S&P only when VIX > 20                      n=  8308  CAGR= +3.18%  vol= 16.1%  Sharpe=+0.28  MaxDD= -55.6%  t=+1.58  p=0.1139
+Long S&P only when VIX <= 20                     n=  8308  CAGR= +2.69%  vol=  8.8%  Sharpe=+0.35  MaxDD= -33.4%  t=+1.99  p=0.0461
+Long S&P only when VIX > 25                      n=  8308  CAGR= +2.65%  vol= 13.9%  Sharpe=+0.26  MaxDD= -46.1%  t=+1.48  p=0.1396
+Long S&P only when VIX <= 25                     n=  8308  CAGR= +3.62%  vol= 11.9%  Sharpe=+0.36  MaxDD= -52.5%  t=+2.06  p=0.0393
+Long S&P only when VIX > 30                      n=  8308  CAGR= +2.72%  vol= 11.8%  Sharpe=+0.29  MaxDD= -46.1%  t=+1.65  p=0.1000
+Long S&P only when VIX <= 30                     n=  8308  CAGR= +3.94%  vol= 14.0%  Sharpe=+0.35  MaxDD= -57.8%  t=+1.99  p=0.0468
+after VIX 1-day spike >20%: n=116, next-5d S&P +0.26% (t=+0.77), next-21d +0.15% (t=+0.27)
+Vol-target 10% (cap 1x) on S&P                   n=  8312  CAGR= +5.33%  vol= 10.1%  Sharpe=+0.56  MaxDD= -36.2%  t=+3.23  p=0.0012
+    voltarget: first-half Sharpe +0.54 / second-half Sharpe +0.58
+Vol-target 15% (cap 2x, financing ignored)       n=  8312  CAGR= +7.94%  vol= 16.1%  Sharpe=+0.56  MaxDD= -49.9%  t=+3.19  p=0.0014
+
+=== CROSS-SECTIONAL 12-1 MOMENTUM, 20 large caps, monthly long top-quartile / short bottom-quartile ===
+XS momentum long-short (20 stocks)               n=   382  CAGR= -1.30%  vol= 29.3%  Sharpe=+0.11  MaxDD= -79.0%  t=+0.64  p=0.5239
+1-month reversal long-short (20 stocks)          n=   393  CAGR= -8.70%  vol= 24.6%  Sharpe=-0.24  MaxDD= -96.9%  t=-1.39  p=0.1666
+
+=== FX TIME-SERIES MOMENTUM (22 currencies vs USD, 1990-01-01 -> 2026-09-18) ===
+FX 12-1 TS momentum, equal weight, monthly       n=   428  CAGR= +3.84%  vol=  7.6%  Sharpe=+0.53  MaxDD= -23.5%  t=+3.16  p=0.0017
+    FX mom: first-half Sharpe +4.08 / second-half Sharpe +1.88
+FX 3-1 TS momentum, equal weight, monthly        n=   437  CAGR= +5.06%  vol=  7.3%  Sharpe=+0.71  MaxDD=  -8.1%  t=+4.29  p=0.0000
+
+=== COMMODITIES (spot series; NOTE: no roll yield, so futures results will differ) ===
+WTI buy & hold (spot, monthly)                   n=   488  CAGR= +4.00%  vol= 37.9%  Sharpe=+0.29  MaxDD= -86.3%  t=+1.83  p=0.0674
+WTI 12-month momentum long/flat (spot)           n=   488  CAGR= +2.72%  vol= 23.6%  Sharpe=+0.23  MaxDD= -57.4%  t=+1.48  p=0.1406
+WTI 12-month momentum long/short (spot)          n=   476  CAGR= -7.86%  vol= 36.8%  Sharpe=+0.01  MaxDD= -98.4%  t=+0.09  p=0.9278
+Gold buy & hold (monthly, 1971+)                 n=   667  CAGR= +8.93%  vol= 17.1%  Sharpe=+0.58  MaxDD= -62.1%  t=+4.34  p=0.0000
+Gold 12-month momentum long/flat                 n=   667  CAGR= +9.62%  vol= 14.9%  Sharpe=+0.69  MaxDD= -31.8%  t=+5.12  p=0.0000
+
+=== SHILLER CAPE (1881-2023) ===
+12m fwd price return when CAPE in top expanding-quintile: +4.41% (n=642) vs otherwise +7.57% (n=1071)
+S&P price return, out of market when CAPE in top quintile n=  1712  CAGR= +2.61%  vol= 12.1%  Sharpe=+0.27  MaxDD= -73.4%  t=+3.26  p=0.0011
+S&P price return buy & hold (same sample)        n=  1712  CAGR= +4.73%  vol= 14.2%  Sharpe=+0.40  MaxDD= -84.8%  t=+4.73  p=0.0000
+
+Tests run in this file: 33; best Bonferroni-adjusted p: 0.0000
+                                                    label    n      cagr    sharpe    max_dd          t             p  bonferroni_p
+               Overnight only net of 0.10%/day round trip 5104 -0.217554 -5.482498 -0.993639 -24.673659 4.427328e-127 1.461018e-125
+                         Gold 12-month momentum long/flat  667  0.096157  0.686979 -0.317744   5.121720  3.969017e-07  1.309776e-05
+                S&P price return buy & hold (same sample) 1712  0.047293  0.396227 -0.847604   4.732663  2.398241e-06  7.914196e-05
+                         Gold buy & hold (monthly, 1971+)  667  0.089299  0.582134 -0.620741   4.340056  1.645762e-05  5.431014e-04
+                FX 3-1 TS momentum, equal weight, monthly  437  0.050551  0.710167 -0.081196   4.285590  2.244808e-05  7.407867e-04
+                             Faber 10-month SMA (monthly) 8312  0.074380  0.654381 -0.226006   3.758231  1.722908e-04  5.685597e-03
+                            12-month time-series momentum 8312  0.072752  0.612046 -0.254516   3.515090  4.419474e-04  1.458427e-02
+S&P price return, out of market when CAPE in top quintile 1712  0.026123  0.272829 -0.733817   3.258758  1.140957e-03  3.765158e-02
+                           Vol-target 10% (cap 1x) on S&P 8312  0.053334  0.562837 -0.362318   3.232473  1.232024e-03  4.065681e-02
+               Vol-target 15% (cap 2x, financing ignored) 8312  0.079425  0.555503 -0.499355   3.190354  1.426268e-03  4.706684e-02

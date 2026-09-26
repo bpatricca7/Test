@@ -1,0 +1,10 @@
+favourites >=70% at best odds, bucketed by best/average price premium:
+best price 0%-1% above average                             n=  1252  ROI= +2.79%  95%CI=[ -0.02%, +5.50%]  t=+2.00  p=0.0460  seasons+=16/22  (same bets at avg odds: +2.33%)
+best price 1%-2% above average                             n=  1998  ROI= +1.21%  95%CI=[ -0.93%, +3.28%]  t=+1.11  p=0.2679  seasons+=14/22  (same bets at avg odds: -0.42%)
+best price 2%-3% above average                             n=  4273  ROI= +1.13%  95%CI=[ -0.52%, +2.73%]  t=+1.35  p=0.1781  seasons+=13/22  (same bets at avg odds: -1.38%)
+best price 3%-5% above average                             n=  5351  ROI= +1.79%  95%CI=[ +0.32%, +3.23%]  t=+2.42  p=0.0155  seasons+=16/22  (same bets at avg odds: -1.91%)
+best price 5%-8% above average                             n=  1818  ROI= +6.51%  95%CI=[ +4.07%, +8.88%]  t=+5.24  p=0.0000  seasons+=20/22  (same bets at avg odds: +0.57%)
+best price 8%-100% above average                           n=   245  ROI= +2.71%  95%CI=[ -4.47%, +9.49%]  t=+0.76  p=0.4465  seasons+=14/21  (same bets at avg odds: -5.91%)
+
+If you could only get the 2nd-best price (approximated as average + 50% of the premium):
+fav>=70% at halfway-to-best price                          n= 14958  ROI= +0.63%  95%CI=[ -0.23%, +1.49%]  t=+1.47  p=0.1426  seasons+=16/22

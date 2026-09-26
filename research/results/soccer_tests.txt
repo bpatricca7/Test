@@ -1,0 +1,96 @@
+matches: 238854  seasons 2000-2026
+
+=== 1X2 ROI by implied-probability bucket at AVERAGE odds ===
+Odd 1X2 implied [0.0, 0.1)                                 n=  8664  ROI=-36.78%  95%CI=[-42.85%,-30.92%]  t=-11.81  p=0.0000  seasons+=0/27  halves=-42.1%/-31.3%
+Odd 1X2 implied [0.1, 0.2)                                 n= 55435  ROI=-15.06%  95%CI=[-16.86%,-13.28%]  t=-16.09  p=0.0000  seasons+=0/27  halves=-15.3%/-14.8%
+Odd 1X2 implied [0.2, 0.3)                                 n=218935  ROI= -9.76%  95%CI=[-10.42%, -9.05%]  t=-28.00  p=0.0000  seasons+=0/27  halves=-10.4%/-8.9%
+Odd 1X2 implied [0.3, 0.4)                                 n=203462  ROI= -6.93%  95%CI=[ -7.56%, -6.32%]  t=-22.43  p=0.0000  seasons+=0/27  halves=-8.2%/-5.7%
+Odd 1X2 implied [0.4, 0.5)                                 n= 99747  ROI= -6.09%  95%CI=[ -6.76%, -5.44%]  t=-17.20  p=0.0000  seasons+=0/27  halves=-6.9%/-5.1%
+Odd 1X2 implied [0.5, 0.6)                                 n= 66629  ROI= -4.81%  95%CI=[ -5.48%, -4.12%]  t=-13.45  p=0.0000  seasons+=0/27  halves=-5.6%/-3.9%
+Odd 1X2 implied [0.6, 0.7)                                 n= 32895  ROI= -4.21%  95%CI=[ -5.04%, -3.41%]  t=-10.12  p=0.0000  seasons+=1/27  halves=-5.1%/-3.2%
+Odd 1X2 implied [0.7, 0.8)                                 n= 13704  ROI= -2.11%  95%CI=[ -3.13%, -1.10%]  t=-4.10  p=0.0000  seasons+=6/27  halves=-2.6%/-1.6%
+Odd 1X2 implied [0.8, 1.01)                                n=  7961  ROI= -1.00%  95%CI=[ -1.96%, -0.07%]  t=-2.04  p=0.0416  seasons+=7/27  halves=-1.0%/-1.0%
+
+=== 1X2 ROI by implied-probability bucket at BEST odds ===
+Max 1X2 implied [0.0, 0.1)                                 n= 12866  ROI=-16.75%  95%CI=[-22.81%,-10.82%]  t=-5.49  p=0.0000  seasons+=2/22  halves=-19.1%/-14.2%
+Max 1X2 implied [0.1, 0.2)                                 n= 64554  ROI= -2.64%  95%CI=[ -4.38%, -0.92%]  t=-2.87  p=0.0041  seasons+=8/22  halves=-0.4%/-5.0%
+Max 1X2 implied [0.2, 0.3)                                 n=243731  ROI= -2.64%  95%CI=[ -3.31%, -2.03%]  t=-7.76  p=0.0000  seasons+=0/22  halves=-2.9%/-2.3%
+Max 1X2 implied [0.3, 0.4)                                 n=139515  ROI= -1.01%  95%CI=[ -1.77%, -0.33%]  t=-2.69  p=0.0072  seasons+=6/22  halves=-1.0%/-1.0%
+Max 1X2 implied [0.4, 0.5)                                 n= 83511  ROI= -0.40%  95%CI=[ -1.10%, +0.35%]  t=-1.04  p=0.2996  seasons+=11/22  halves=-0.2%/-0.7%
+Max 1X2 implied [0.5, 0.6)                                 n= 50811  ROI= +0.47%  95%CI=[ -0.31%, +1.25%]  t=+1.16  p=0.2477  seasons+=10/22  halves=+0.5%/+0.4%
+Max 1X2 implied [0.6, 0.7)                                 n= 23637  ROI= +0.54%  95%CI=[ -0.37%, +1.48%]  t=+1.11  p=0.2649  seasons+=16/22  halves=-0.2%/+1.3%
+Max 1X2 implied [0.7, 0.8)                                 n= 10152  ROI= +2.25%  95%CI=[ +1.10%, +3.34%]  t=+3.92  p=0.0001  seasons+=16/22  halves=+1.9%/+2.7%
+Max 1X2 implied [0.8, 1.01)                                n=  4846  ROI= +2.11%  95%CI=[ +0.91%, +3.29%]  t=+3.52  p=0.0004  seasons+=18/22  halves=+3.2%/+0.8%
+
+=== by outcome type ===
+Odd all Home                                               n=235806  ROI= -6.33%  95%CI=[ -6.78%, -5.87%]  t=-26.00  p=0.0000  seasons+=0/27  halves=-6.7%/-6.0%
+Max all Home                                               n=211208  ROI= -0.72%  95%CI=[ -1.25%, -0.16%]  t=-2.58  p=0.0100  seasons+=9/22  halves=-0.0%/-1.5%
+Odd all Draw                                               n=235813  ROI= -7.86%  95%CI=[ -8.46%, -7.24%]  t=-24.36  p=0.0000  seasons+=0/27  halves=-9.0%/-6.6%
+Max all Draw                                               n=211208  ROI= -2.17%  95%CI=[ -2.88%, -1.43%]  t=-5.96  p=0.0000  seasons+=2/22  halves=-3.2%/-1.1%
+Odd all Away                                               n=235813  ROI=-10.43%  95%CI=[-11.06%, -9.73%]  t=-31.24  p=0.0000  seasons+=0/27  halves=-11.1%/-9.7%
+Max all Away                                               n=211207  ROI= -2.47%  95%CI=[ -3.23%, -1.68%]  t=-6.27  p=0.0000  seasons+=2/22  halves=-1.9%/-3.1%
+Max: heavy favourites (>=70% implied)                      n= 14998  ROI= +2.21%  95%CI=[ +1.35%, +3.05%]  t=+5.08  p=0.0000  seasons+=18/22  halves=+2.3%/+2.1%
+Max: longshots (<15% implied)                              n= 37475  ROI= -8.56%  95%CI=[-11.47%, -5.52%]  t=-5.67  p=0.0000  seasons+=3/22  halves=-6.3%/-11.2%
+Max: favourites >=60% in top5                              n=  9950  ROI= +1.56%  95%CI=[ +0.23%, +2.80%]  t=+2.40  p=0.0164  seasons+=14/22  halves=+1.4%/+1.8%
+Max: favourites >=60% in other                             n= 28685  ROI= +1.06%  95%CI=[ +0.28%, +1.87%]  t=+2.65  p=0.0080  seasons+=16/22  halves=+0.6%/+1.6%
+
+=== ARBITRAGE (sum of 1/best odds < 1): 47880 of 211207 matches (22.7%), mean guaranteed profit 1.25%, median 0.76%, p90 2.80%
+season                2005      2006       2007       2008       2009       2010       2011        2012        2013        2014        2015        2016        2017        2018       2019        2020        2021        2022        2023       2024       2025      2026
+n                7322.0000  6389.000  7142.0000  7239.0000  6846.0000  7192.0000  8364.0000  11488.0000  11831.0000  12193.0000  12144.0000  12299.0000  12184.0000  12047.0000  9657.0000  12648.0000  12697.0000  12334.0000  12137.0000  8766.0000  7634.0000  654.0000
+arb_share           0.0470     0.018     0.0448     0.0920     0.0855     0.1007     0.1981      0.2929      0.3717      0.4657      0.3463      0.3721      0.3182      0.2225     0.2042      0.2830      0.2961      0.2173      0.1664     0.0686     0.0088    0.0122
+mean_arb_profit     0.0186     0.037     0.0112     0.0111     0.0083     0.0079     0.0103      0.0120      0.0132      0.0134      0.0135      0.0127      0.0130      0.0108     0.0103      0.0107      0.0120      0.0133      0.0144     0.0120     0.0292    0.0769
+arb share by tier: {'other': 0.2094, 'top5': 0.306}
+O/U 2.5 arbitrage share at best prices: 4.71% of 156684; mean profit 0.89%
+
+=== WALK-FORWARD VALUE BETTING at BEST odds (train on all prior seasons, test season by season, 2010+) ===
+model elo_only     out-of-sample log-loss 1.0113   (market devigged avg odds: 0.9940)
+model market_only  out-of-sample log-loss 0.9939   (market devigged avg odds: 0.9940)
+model market+elo   out-of-sample log-loss 0.9938   (market devigged avg odds: 0.9940)
+elo_only: bet best odds when model EV > 0%                 n=137001  ROI= -3.19%  95%CI=[ -4.07%, -2.26%]  t=-6.72  p=0.0000  seasons+=0/17  halves=-3.0%/-3.5%
+elo_only: bet best odds when model EV > 3%                 n=113186  ROI= -3.33%  95%CI=[ -4.43%, -2.29%]  t=-6.22  p=0.0000  seasons+=1/17  halves=-3.3%/-3.4%
+elo_only: bet best odds when model EV > 6%                 n= 92189  ROI= -3.65%  95%CI=[ -4.85%, -2.49%]  t=-5.96  p=0.0000  seasons+=2/17  halves=-3.4%/-3.9%
+elo_only: bet best odds when model EV > 10%                n= 69376  ROI= -4.13%  95%CI=[ -5.56%, -2.75%]  t=-5.62  p=0.0000  seasons+=1/17  halves=-3.6%/-4.8%
+market_only: bet best odds when model EV > 0%              n= 99724  ROI= +0.81%  95%CI=[ -0.04%, +1.70%]  t=+1.79  p=0.0742  seasons+=11/17  halves=+0.8%/+0.9%
+market_only: bet best odds when model EV > 3%              n= 27673  ROI= +1.87%  95%CI=[ -0.07%, +3.73%]  t=+1.97  p=0.0492  seasons+=11/17  halves=+2.4%/+1.1%
+market_only: bet best odds when model EV > 6%              n=  6651  ROI= +8.01%  95%CI=[ +3.34%,+12.96%]  t=+3.27  p=0.0011  seasons+=14/17  halves=+6.0%/+10.3%
+market_only: bet best odds when model EV > 10%             n=  1418  ROI=+17.79%  95%CI=[ +4.04%,+32.70%]  t=+2.51  p=0.0123  seasons+=14/17  halves=+2.9%/+35.0%
+market+elo: bet best odds when model EV > 0%               n=106573  ROI= +1.50%  95%CI=[ +0.67%, +2.39%]  t=+3.35  p=0.0008  seasons+=14/17  halves=+1.7%/+1.2%
+market+elo: bet best odds when model EV > 3%               n= 35841  ROI= +3.25%  95%CI=[ +1.60%, +4.89%]  t=+3.86  p=0.0001  seasons+=14/17  halves=+4.3%/+1.9%
+market+elo: bet best odds when model EV > 6%               n=  9938  ROI= +5.15%  95%CI=[ +1.54%, +8.91%]  t=+2.73  p=0.0063  seasons+=11/17  halves=+4.2%/+6.2%
+market+elo: bet best odds when model EV > 10%              n=  2189  ROI=+14.21%  95%CI=[ +4.23%,+24.62%]  t=+2.72  p=0.0065  seasons+=13/17  halves=+8.1%/+22.4%
+line-shop: consensus prob x best odds > 1+0% (no model)    n=113741  ROI= -0.51%  95%CI=[ -1.36%, +0.29%]  t=-1.14  p=0.2544  seasons+=9/22  halves=-0.7%/-0.2%
+   ... in top5 leagues                                     n= 43093  ROI= -0.80%  95%CI=[ -2.22%, +0.70%]  t=-1.09  p=0.2744  seasons+=8/22  halves=-1.4%/-0.2%
+   ... in other leagues                                    n= 70648  ROI= -0.33%  95%CI=[ -1.38%, +0.75%]  t=-0.58  p=0.5592  seasons+=9/22  halves=-0.4%/-0.3%
+line-shop: consensus prob x best odds > 1+2% (no model)    n= 48369  ROI= -0.15%  95%CI=[ -1.64%, +1.31%]  t=-0.19  p=0.8478  seasons+=13/22  halves=-0.6%/+0.5%
+   ... in top5 leagues                                     n= 16733  ROI= -1.08%  95%CI=[ -3.63%, +1.43%]  t=-0.81  p=0.4177  seasons+=8/22  halves=-1.8%/-0.1%
+   ... in other leagues                                    n= 31636  ROI= +0.35%  95%CI=[ -1.48%, +2.11%]  t=+0.38  p=0.7018  seasons+=14/22  halves=+0.1%/+0.8%
+line-shop: consensus prob x best odds > 1+5% (no model)    n= 14472  ROI= +2.32%  95%CI=[ -0.99%, +5.64%]  t=+1.38  p=0.1672  seasons+=14/22  halves=-1.4%/+6.1%
+   ... in top5 leagues                                     n=  4670  ROI= -1.65%  95%CI=[ -7.56%, +4.55%]  t=-0.53  p=0.5937  seasons+=7/22  halves=-6.5%/+4.5%
+   ... in other leagues                                    n=  9802  ROI= +4.21%  95%CI=[ +0.42%, +8.32%]  t=+2.11  p=0.0348  seasons+=14/22  halves=+2.3%/+6.3%
+
+=== OVER/UNDER 2.5 at best odds ===
+O/U: always over 2.5 (best odds)                           n=156684  ROI= -2.16%  95%CI=[ -2.63%, -1.64%]  t=-8.41  p=0.0000  seasons+=2/22  halves=-2.3%/-2.0%
+O/U: always under 2.5 (best odds)                          n=156684  ROI= -1.90%  95%CI=[ -2.39%, -1.45%]  t=-7.59  p=0.0000  seasons+=2/22  halves=-1.3%/-2.5%
+O/U: over when over implied in [0,0.4)                     n=  9843  ROI= -4.51%  95%CI=[ -7.01%, -1.82%]  t=-3.49  p=0.0005  seasons+=8/22  halves=-5.3%/-3.6%
+O/U: under when over implied in [0,0.4)                    n=  9843  ROI= -0.52%  95%CI=[ -2.04%, +0.93%]  t=-0.70  p=0.4857  seasons+=11/22  halves=+0.1%/-1.3%
+O/U: over when over implied in [0.4,0.5)                   n= 73214  ROI= -2.52%  95%CI=[ -3.35%, -1.77%]  t=-6.22  p=0.0000  seasons+=3/22  halves=-2.8%/-2.2%
+O/U: under when over implied in [0.4,0.5)                  n= 73214  ROI= -1.35%  95%CI=[ -1.98%, -0.72%]  t=-4.12  p=0.0000  seasons+=6/22  halves=-1.0%/-1.8%
+O/U: over when over implied in [0.5,0.6)                   n= 56278  ROI= -1.56%  95%CI=[ -2.30%, -0.75%]  t=-4.00  p=0.0001  seasons+=4/22  halves=-1.3%/-1.8%
+O/U: under when over implied in [0.5,0.6)                  n= 56278  ROI= -2.07%  95%CI=[ -2.96%, -1.21%]  t=-4.67  p=0.0000  seasons+=5/22  halves=-1.8%/-2.3%
+O/U: over when over implied in [0.6,1.01)                  n= 17349  ROI= -1.25%  95%CI=[ -2.36%, -0.17%]  t=-2.23  p=0.0259  seasons+=7/22  halves=-2.0%/-0.3%
+O/U: under when over implied in [0.6,1.01)                 n= 17349  ROI= -4.51%  95%CI=[ -6.51%, -2.55%]  t=-4.54  p=0.0000  seasons+=6/22  halves=-2.8%/-6.6%
+
+Tests run in this file: 59; best Bonferroni-adjusted p: 0.0000
+                           label      n       roi          t             p  bonferroni_p
+                    Odd all Away 235813 -0.104291 -31.236808 9.247565e-214 5.456063e-212
+      Odd 1X2 implied [0.2, 0.3) 218935 -0.097587 -27.997213 3.543864e-172 2.090880e-170
+                    Odd all Home 235806 -0.063258 -25.996678 8.767634e-149 5.172904e-147
+                    Odd all Draw 235813 -0.078554 -24.360786 6.476913e-131 3.821379e-129
+      Odd 1X2 implied [0.3, 0.4) 203462 -0.069318 -22.434089 2.500212e-111 1.475125e-109
+      Odd 1X2 implied [0.4, 0.5)  99747 -0.060868 -17.204147  3.082104e-66  1.818441e-64
+      Odd 1X2 implied [0.1, 0.2)  55435 -0.150604 -16.089382  4.102762e-58  2.420629e-56
+      Odd 1X2 implied [0.5, 0.6)  66629 -0.048070 -13.452665  3.361837e-41  1.983484e-39
+      Odd 1X2 implied [0.0, 0.1)   8664 -0.367830 -11.805694  6.402478e-32  3.777462e-30
+      Odd 1X2 implied [0.6, 0.7)  32895 -0.042142 -10.116066  5.084312e-24  2.999744e-22
+O/U: always over 2.5 (best odds) 156684 -0.021608  -8.413235  4.021437e-17  2.372648e-15
+      Max 1X2 implied [0.2, 0.3) 243731 -0.026376  -7.761079  8.453427e-15  4.987522e-13

@@ -1,0 +1,58 @@
+=== (1) FAVOURITES AT BEST ODDS: every 1X2 outcome with best-odds implied prob >= 0.70 ===
+fav>=70% @best odds, all                                   n= 14958  ROI= +2.20%  95%CI=[ +1.33%, +3.05%]  t=+5.07  p=0.0000  seasons+=18/22
+fav>=70% @AVERAGE odds (no line shopping)                  n= 14958  ROI= -0.95%  95%CI=[ -1.78%, -0.11%]  t=-2.25  p=0.0243  seasons+=6/22
+fav>=70% @best, Home favourites                            n= 12495  ROI= +2.30%  95%CI=[ +1.38%, +3.25%]  t=+4.89  p=0.0000  seasons+=18/22
+fav>=70% @best, Away favourites                            n=  2463  ROI= +1.70%  95%CI=[ -0.51%, +3.74%]  t=+1.52  p=0.1298  seasons+=14/22
+best-odds implied in [0.70,0.75) -> realised 0.742         n=  6123  ROI= +2.55%  95%CI=[ +1.10%, +4.05%]  t=+3.30  p=0.0010  seasons+=16/22
+best-odds implied in [0.75,0.80) -> realised 0.784         n=  4006  ROI= +1.84%  95%CI=[ +0.08%, +3.52%]  t=+2.18  p=0.0290  seasons+=14/22
+best-odds implied in [0.80,0.85) -> realised 0.839         n=  3270  ROI= +2.25%  95%CI=[ +0.72%, +3.77%]  t=+2.87  p=0.0042  seasons+=16/22
+best-odds implied in [0.85,0.90) -> realised 0.883         n=  1127  ROI= +1.46%  95%CI=[ -0.76%, +3.55%]  t=+1.32  p=0.1870  seasons+=15/22
+best-odds implied in [0.90,1.01) -> realised 0.938         n=   432  ROI= +2.20%  95%CI=[ -0.45%, +4.54%]  t=+1.72  p=0.0855  seasons+=15/21
+
+per-season ROI, favourites >=70% at best odds:
+season     2005     2006     2007     2008     2009     2010     2011     2012     2013     2014     2015     2016     2017    2018     2019    2020     2021     2022     2023     2024     2025    2026
+n       487.000  497.000  457.000  431.000  502.000  456.000  536.000  697.000  796.000  795.000  791.000  875.000  974.000  940.00  766.000  860.00  916.000  895.000  907.000  713.000  616.000  51.000
+roi       0.022   -0.032    0.021    0.004    0.034    0.016    0.011    0.039    0.044    0.029    0.023    0.031    0.025    0.03   -0.006   -0.02    0.029    0.052    0.031    0.021    0.029  -0.041
+
+by league (n>=300):
+        n    roi    hit
+div                    
+EC    308  0.072  0.808
+G1    767  0.061  0.842
+CHN   414  0.056  0.841
+P1   1071  0.055  0.831
+B1    586  0.044  0.794
+SP1  1042  0.036  0.821
+IRL   344  0.029  0.799
+T1    559  0.025  0.782
+F1    589  0.025  0.789
+I1    975  0.024  0.785
+SC0   848  0.009  0.794
+D1    766  0.004  0.782
+E0   1262  0.003  0.778
+N1   1290 -0.013  0.779
+AUT   304 -0.043  0.747
+
+=== (2) WALK-FORWARD market+Elo model, bets at BEST odds when EV > 3% (out-of-sample 2010-2026) ===
+EV>3% @best odds, all                                      n= 35841  ROI= +3.25%  95%CI=[ +1.61%, +4.92%]  t=+3.86  p=0.0001  seasons+=14/17
+same selections but paid AVERAGE odds                      n= 35841  ROI= -5.94%  95%CI=[ -7.41%, -4.56%]  t=-8.08  p=0.0000  seasons+=1/17
+EV>3% computed on AVERAGE odds, paid average (no line shop) n=   132  ROI=-11.14%  95%CI=[-34.52%,+12.42%]  t=-0.93  p=0.3537  seasons+=6/13
+EV>3% @best, Home                                          n= 17677  ROI= +3.57%  95%CI=[ +1.58%, +5.59%]  t=+3.39  p=0.0007  seasons+=13/17
+EV>3% @best, Draw                                          n= 10113  ROI= +3.41%  95%CI=[ +0.33%, +6.55%]  t=+2.11  p=0.0348  seasons+=13/17
+EV>3% @best, Away                                          n=  8051  ROI= +2.35%  95%CI=[ -1.97%, +6.63%]  t=+1.09  p=0.2741  seasons+=11/17
+EV>3% @best, top5 leagues                                  n= 12777  ROI= +2.95%  95%CI=[ +0.07%, +5.76%]  t=+2.03  p=0.0426  seasons+=11/17
+EV>3% @best, other leagues                                 n= 23064  ROI= +3.42%  95%CI=[ +1.38%, +5.41%]  t=+3.31  p=0.0009  seasons+=13/17
+EV>3% @best, best-odds implied in [0,0.2)                  n=  3881  ROI= +3.62%  95%CI=[ -5.07%,+12.57%]  t=+0.80  p=0.4239  seasons+=10/17
+EV>3% @best, best-odds implied in [0.2,0.35)               n= 16574  ROI= +4.36%  95%CI=[ +1.80%, +6.84%]  t=+3.41  p=0.0007  seasons+=14/17
+EV>3% @best, best-odds implied in [0.35,0.5)               n=  7759  ROI= -0.39%  95%CI=[ -3.00%, +2.27%]  t=-0.29  p=0.7684  seasons+=7/17
+EV>3% @best, best-odds implied in [0.5,0.7)                n=  5556  ROI= +4.43%  95%CI=[ +2.18%, +6.67%]  t=+3.90  p=0.0001  seasons+=14/17
+EV>3% @best, best-odds implied in [0.7,1.01)               n=  2071  ROI= +4.19%  95%CI=[ +1.91%, +6.33%]  t=+3.72  p=0.0002  seasons+=11/17
+EV>3% @best, seasons 2019-2026 only                        n=  9235  ROI= +1.85%  95%CI=[ -1.35%, +4.98%]  t=+1.13  p=0.2575  seasons+=6/8
+
+per-season: n bets and ROI (EV>3% @best):
+season      2010      2011      2012      2013      2014      2015      2016      2017      2018      2019      2020      2021      2022     2023     2024      2025    2026
+n       2008.000  2294.000  2963.000  3121.000  3749.000  2887.000  3307.000  3349.000  2928.000  1358.000  2108.000  1837.000  1208.000  859.000  649.000  1127.000  89.000
+roi        0.054    -0.012     0.056     0.029     0.067     0.035     0.055     0.024     0.015     0.021     0.018     0.038     0.011   -0.028    0.072     0.007  -0.095
+
+bankroll sim over 35841 bets, 2010-2026: flat 1% -> 135681 (max DD -75.0%), quarter-Kelly capped 5% -> 8085533 (max DD -56.2%)
+that is +56.6%/yr flat and +102.0%/yr quarter-Kelly, before bookmaker limits

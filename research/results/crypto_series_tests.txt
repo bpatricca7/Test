@@ -1,0 +1,234 @@
+15-minute markets:          n                     start                       end       vol_usd
+coin                                                                        
+BNB   6596 2026-07-18 23:45:00+00:00 2026-09-26 16:15:00+00:00  1.065898e+08
+BTC   6599 2026-07-18 23:45:00+00:00 2026-09-26 16:15:00+00:00  1.310209e+10
+DOGE  6593 2026-07-18 23:45:00+00:00 2026-09-26 16:00:00+00:00  1.713564e+08
+ETH   6596 2026-07-18 23:45:00+00:00 2026-09-26 16:15:00+00:00  6.473535e+08
+HYPE  6594 2026-07-18 23:45:00+00:00 2026-09-26 16:15:00+00:00  1.711958e+08
+SOL   6600 2026-07-18 23:45:00+00:00 2026-09-26 16:15:00+00:00  2.355307e+08
+XRP   6596 2026-07-18 23:45:00+00:00 2026-09-26 16:15:00+00:00  2.805459e+08
+
+hourly settlement prices:          n                     start                       end
+coin                                                          
+BTC   1633 2026-07-19 00:00:00+00:00 2026-09-26 16:00:00+00:00
+ETH   1633 2026-07-19 00:00:00+00:00 2026-09-26 16:00:00+00:00
+XRP   1632 2026-07-19 00:00:00+00:00 2026-09-26 15:00:00+00:00
+
+consistency check: share of markets where (p_close >= p_open) == (result yes): 0.9998
+
+===== BNB: 15-minute series, 6596 bars, 2026-07-18 23:45:00+00:00 -> 2026-09-26 16:15:00+00:00 =====
+P(up)=0.5077  mean ret +0.43 bp  sd 19.7 bp  (ann. vol ~37%)  skew -1.19  kurt 35.3
+autocorr lags 1-4: [-0.0084 -0.0437 -0.0147  0.006 ]  (negative = short-term reversal)
+BNB 15m: next return after an UP bar                             n=  3296 mean=  +0.59bp  95%CI=[-0.14,+1.29]bp  t=+1.62 p=0.1045
+BNB 15m: next return after a DOWN bar                            n=  3246 mean=  +0.24bp  95%CI=[-0.41,+0.91]bp  t=+0.74 p=0.4594
+BNB 15m: next return after big UP bar (top-decile |move|)        n=   335 mean=  +2.66bp  95%CI=[-0.95,+6.35]bp  t=+1.45 p=0.1489
+BNB 15m: next return after big DOWN bar                          n=   325 mean=  +1.20bp  95%CI=[-1.92,+4.26]bp  t=+0.76 p=0.4452
+   P(next bar UP | after DOWN bar) = 0.5169  (n=3246)
+   P(next bar UP | after UP bar  ) = 0.4985  (n=3296)
+   P(next bar UP | after big DOWN) = 0.5600  (n=325)
+   P(next bar UP | after big UP  ) = 0.5284  (n=335)
+hour-of-day (UTC) mean 15m return, bp (t): {0: '+1.8(+1.6)', 1: '-0.2(-0.2)', 2: '+1.5(+1.1)', 3: '+0.0(+0.0)', 4: '+0.0(+0.0)', 5: '+0.5(+0.3)', 6: '-0.8(-0.8)', 7: '-1.1(-0.9)', 8: '+2.1(+1.5)', 9: '-1.2(-1.1)', 10: '+1.4(+1.5)', 11: '+1.3(+1.2)', 12: '+0.5(+0.4)', 13: '+0.3(+0.2)', 14: '+0.2(+0.1)', 15: '+2.8(+1.8)', 16: '+2.3(+2.0)', 17: '-0.5(-0.5)', 18: '-0.1(-0.1)', 19: '-0.1(-0.1)', 20: '-0.1(-0.2)', 21: '-0.4(-0.4)', 22: '-0.7(-0.7)', 23: '+0.6(+0.7)'}
+day-of-week mean bp (t): {0: '+0.2(+0.4)', 1: '+0.1(+0.2)', 2: '+0.1(+0.2)', 3: '+1.1(+1.8)', 4: '+0.6(+0.8)', 5: '+0.8(+1.1)', 6: '+0.1(+0.2)'}
+   hourly: n=1653 mean +1.9bp sd 39bp autocorr1 -0.007 autocorr2 -0.015
+BNB hourly: next return after UP period                          n=   851 mean=  +2.09bp  95%CI=[-0.55,+4.77]bp  t=+1.50 p=0.1352
+BNB hourly: next return after DOWN period                        n=   799 mean=  +1.77bp  95%CI=[-0.78,+4.39]bp  t=+1.34 p=0.1810
+   4-hourly: n=419 mean +7.6bp sd 77bp autocorr1 +0.028 autocorr2 -0.024
+BNB 4-hourly: next return after UP period                        n=   221 mean=  +9.32bp  95%CI=[-1.16,+20.18]bp  t=+1.70 p=0.0898
+BNB 4-hourly: next return after DOWN period                      n=   197 mean=  +5.81bp  95%CI=[-4.38,+15.94]bp  t=+1.12 p=0.2623
+   daily: n=70 mean +45.5bp sd 193bp autocorr1 +0.002 autocorr2 +0.035
+BNB daily: next return after UP period                           n=    43 mean= +29.37bp  95%CI=[-26.57,+87.44]bp  t=+0.99 p=0.3255
+BNB daily: next return after DOWN period                         n=    26 mean= +73.70bp  95%CI=[+3.33,+149.42]bp  t=+1.93 p=0.0654
+
+===== BTC: 15-minute series, 6599 bars, 2026-07-18 23:45:00+00:00 -> 2026-09-26 16:15:00+00:00 =====
+P(up)=0.4999  mean ret +0.37 bp  sd 18.2 bp  (ann. vol ~34%)  skew +0.67  kurt 18.9
+autocorr lags 1-4: [ 0.0302 -0.0152 -0.0086 -0.012 ]  (negative = short-term reversal)
+BTC 15m: next return after an UP bar                             n=  3299 mean=  +0.60bp  95%CI=[-0.03,+1.24]bp  t=+1.84 p=0.0659
+BTC 15m: next return after a DOWN bar                            n=  3299 mean=  +0.13bp  95%CI=[-0.48,+0.72]bp  t=+0.42 p=0.6719
+BTC 15m: next return after big UP bar (top-decile |move|)        n=   351 mean=  +3.79bp  95%CI=[+0.19,+7.50]bp  t=+2.02 p=0.0439
+BTC 15m: next return after big DOWN bar                          n=   309 mean=  +1.21bp  95%CI=[-1.79,+4.20]bp  t=+0.79 p=0.4328
+   P(next bar UP | after DOWN bar) = 0.5026  (n=3299)
+   P(next bar UP | after UP bar  ) = 0.4971  (n=3299)
+   P(next bar UP | after big DOWN) = 0.5502  (n=309)
+   P(next bar UP | after big UP  ) = 0.5071  (n=351)
+hour-of-day (UTC) mean 15m return, bp (t): {0: '+0.2(+0.2)', 1: '+0.1(+0.1)', 2: '+0.6(+0.6)', 3: '-0.6(-0.8)', 4: '+0.8(+1.2)', 5: '+0.1(+0.1)', 6: '-0.3(-0.3)', 7: '-1.0(-1.0)', 8: '+2.7(+1.7)', 9: '-0.4(-0.4)', 10: '+0.6(+0.9)', 11: '+0.7(+0.8)', 12: '-0.4(-0.3)', 13: '+0.9(+0.5)', 14: '+2.3(+1.3)', 15: '+2.4(+1.4)', 16: '+1.0(+0.9)', 17: '-0.3(-0.3)', 18: '-0.9(-0.8)', 19: '+0.4(+0.5)', 20: '+0.4(+0.6)', 21: '+0.1(+0.2)', 22: '-1.6(-1.8)', 23: '+0.9(+1.1)'}
+day-of-week mean bp (t): {0: '+0.9(+1.4)', 1: '-0.4(-0.7)', 2: '+0.7(+1.0)', 3: '+0.7(+1.1)', 4: '+0.4(+0.6)', 5: '+0.0(+0.0)', 6: '+0.2(+0.7)'}
+   hourly: n=1653 mean +1.7bp sd 38bp autocorr1 +0.023 autocorr2 -0.026
+BTC hourly: next return after UP period                          n=   836 mean=  +1.70bp  95%CI=[-1.23,+4.77]bp  t=+1.14 p=0.2548
+BTC hourly: next return after DOWN period                        n=   816 mean=  +1.61bp  95%CI=[-0.64,+3.87]bp  t=+1.42 p=0.1547
+   4-hourly: n=419 mean +6.5bp sd 75bp autocorr1 +0.079 autocorr2 +0.016
+BTC 4-hourly: next return after UP period                        n=   218 mean=  +8.85bp  95%CI=[-2.32,+21.02]bp  t=+1.50 p=0.1359
+BTC 4-hourly: next return after DOWN period                      n=   200 mean=  +4.08bp  95%CI=[-4.08,+11.93]bp  t=+0.98 p=0.3267
+   daily: n=70 mean +39.6bp sd 217bp autocorr1 +0.074 autocorr2 +0.119
+BTC daily: next return after UP period                           n=    36 mean= +36.94bp  95%CI=[-39.85,+123.16]bp  t=+0.87 p=0.3889
+BTC daily: next return after DOWN period                         n=    33 mean= +44.22bp  95%CI=[-10.13,+107.09]bp  t=+1.44 p=0.1606
+
+===== DOGE: 15-minute series, 6593 bars, 2026-07-18 23:45:00+00:00 -> 2026-09-26 16:00:00+00:00 =====
+P(up)=0.5045  mean ret +0.54 bp  sd 35.8 bp  (ann. vol ~67%)  skew -0.12  kurt 45.4
+autocorr lags 1-4: [ 0.017  -0.0432 -0.0488 -0.0032]  (negative = short-term reversal)
+DOGE 15m: next return after an UP bar                            n=  3334 mean=  +1.36bp  95%CI=[+0.13,+2.62]bp  t=+2.19 p=0.0287
+DOGE 15m: next return after a DOWN bar                           n=  3257 mean=  -0.31bp  95%CI=[-1.56,+0.91]bp  t=-0.49 p=0.6254
+DOGE 15m: next return after big UP bar (top-decile |move|)       n=   354 mean=  +3.24bp  95%CI=[-3.53,+10.60]bp  t=+0.91 p=0.3658
+DOGE 15m: next return after big DOWN bar                         n=   306 mean=  -3.46bp  95%CI=[-11.01,+3.45]bp  t=-0.92 p=0.3587
+   P(next bar UP | after DOWN bar) = 0.5149  (n=3257)
+   P(next bar UP | after UP bar  ) = 0.4943  (n=3334)
+   P(next bar UP | after big DOWN) = 0.4967  (n=306)
+   P(next bar UP | after big UP  ) = 0.4633  (n=354)
+hour-of-day (UTC) mean 15m return, bp (t): {0: '+2.4(+1.3)', 1: '-0.5(-0.3)', 2: '+2.2(+1.1)', 3: '+0.9(+0.4)', 4: '+0.4(+0.2)', 5: '-1.3(-0.4)', 6: '-0.0(-0.0)', 7: '-1.6(-0.9)', 8: '+1.3(+0.6)', 9: '-2.1(-1.1)', 10: '+1.5(+1.0)', 11: '+1.2(+0.8)', 12: '+1.7(+0.8)', 13: '-0.1(-0.0)', 14: '+1.1(+0.4)', 15: '+2.5(+0.9)', 16: '+6.5(+3.1)', 17: '+1.6(+0.5)', 18: '-3.6(-1.7)', 19: '-1.3(-0.9)', 20: '+2.7(+1.5)', 21: '-0.9(-0.4)', 22: '-2.3(-1.2)', 23: '+0.4(+0.2)'}
+day-of-week mean bp (t): {0: '+1.0(+0.9)', 1: '-0.5(-0.5)', 2: '-0.5(-0.5)', 3: '+0.9(+0.8)', 4: '+1.8(+1.5)', 5: '+1.2(+0.8)', 6: '-0.0(-0.1)'}
+   hourly: n=1653 mean +2.1bp sd 71bp autocorr1 -0.006 autocorr2 -0.020
+DOGE hourly: next return after UP period                         n=   839 mean=  +3.29bp  95%CI=[-1.91,+8.52]bp  t=+1.24 p=0.2158
+DOGE hourly: next return after DOWN period                       n=   812 mean=  +0.86bp  95%CI=[-3.53,+5.22]bp  t=+0.39 p=0.7003
+   4-hourly: n=419 mean +8.2bp sd 131bp autocorr1 +0.102 autocorr2 -0.045
+DOGE 4-hourly: next return after UP period                       n=   215 mean= +19.68bp  95%CI=[-0.90,+40.01]bp  t=+1.91 p=0.0571
+DOGE 4-hourly: next return after DOWN period                     n=   203 mean=  -3.91bp  95%CI=[-18.75,+10.84]bp  t=-0.52 p=0.6002
+   daily: n=70 mean +50.5bp sd 374bp autocorr1 +0.057 autocorr2 -0.054
+DOGE daily: next return after UP period                          n=    37 mean= +28.49bp  95%CI=[-92.00,+161.44]bp  t=+0.44 p=0.6652
+DOGE daily: next return after DOWN period                        n=    32 mean= +78.00bp  95%CI=[-33.53,+207.55]bp  t=+1.24 p=0.2256
+
+===== ETH: 15-minute series, 6596 bars, 2026-07-18 23:45:00+00:00 -> 2026-09-26 16:15:00+00:00 =====
+P(up)=0.5065  mean ret +0.57 bp  sd 25.2 bp  (ann. vol ~47%)  skew +1.52  kurt 40.4
+autocorr lags 1-4: [ 0.044  -0.0009 -0.0183  0.0012]  (negative = short-term reversal)
+ETH 15m: next return after an UP bar                             n=  3335 mean=  +1.07bp  95%CI=[+0.21,+1.92]bp  t=+2.39 p=0.0167
+ETH 15m: next return after a DOWN bar                            n=  3254 mean=  +0.03bp  95%CI=[-0.80,+0.85]bp  t=+0.07 p=0.9424
+ETH 15m: next return after big UP bar (top-decile |move|)        n=   354 mean=  +2.43bp  95%CI=[-2.44,+7.43]bp  t=+0.96 p=0.3377
+ETH 15m: next return after big DOWN bar                          n=   306 mean=  +1.55bp  95%CI=[-3.02,+5.72]bp  t=+0.70 p=0.4830
+   P(next bar UP | after DOWN bar) = 0.5117  (n=3254)
+   P(next bar UP | after UP bar  ) = 0.5010  (n=3335)
+   P(next bar UP | after big DOWN) = 0.5784  (n=306)
+   P(next bar UP | after big UP  ) = 0.4633  (n=354)
+hour-of-day (UTC) mean 15m return, bp (t): {0: '+0.5(+0.4)', 1: '-0.5(-0.4)', 2: '+0.1(+0.0)', 3: '-0.1(-0.1)', 4: '+0.2(+0.2)', 5: '+0.7(+0.5)', 6: '+0.2(+0.2)', 7: '-1.3(-1.0)', 8: '+2.5(+1.6)', 9: '-1.2(-0.9)', 10: '+0.3(+0.4)', 11: '+1.6(+1.3)', 12: '-0.8(-0.4)', 13: '+1.3(+0.5)', 14: '+0.9(+0.4)', 15: '+4.0(+1.8)', 16: '+2.9(+1.9)', 17: '+0.2(+0.1)', 18: '-1.2(-0.7)', 19: '+1.2(+1.1)', 20: '+1.9(+0.9)', 21: '+1.4(+0.9)', 22: '-2.4(-1.8)', 23: '+1.2(+1.0)'}
+day-of-week mean bp (t): {0: '+0.6(+0.7)', 1: '-0.5(-0.7)', 2: '+1.8(+1.8)', 3: '+0.5(+0.6)', 4: '+1.0(+1.0)', 5: '-0.1(-0.2)', 6: '+0.6(+1.0)'}
+   hourly: n=1653 mean +2.4bp sd 51bp autocorr1 +0.049 autocorr2 -0.058
+ETH hourly: next return after UP period                          n=   838 mean=  +2.14bp  95%CI=[-1.39,+6.03]bp  t=+1.12 p=0.2618
+ETH hourly: next return after DOWN period                        n=   812 mean=  +2.60bp  95%CI=[-0.56,+5.88]bp  t=+1.57 p=0.1180
+   4-hourly: n=419 mean +9.3bp sd 102bp autocorr1 -0.009 autocorr2 +0.098
+ETH 4-hourly: next return after UP period                        n=   232 mean=  +6.67bp  95%CI=[-7.68,+21.94]bp  t=+0.89 p=0.3729
+ETH 4-hourly: next return after DOWN period                      n=   186 mean= +12.53bp  95%CI=[+0.59,+25.31]bp  t=+1.97 p=0.0508
+   daily: n=70 mean +57.0bp sd 303bp autocorr1 -0.025 autocorr2 +0.215
+ETH daily: next return after UP period                           n=    41 mean= +52.60bp  95%CI=[-53.45,+175.41]bp  t=+0.90 p=0.3757
+ETH daily: next return after DOWN period                         n=    28 mean= +63.65bp  95%CI=[+7.05,+123.70]bp  t=+2.12 p=0.0434
+
+===== HYPE: 15-minute series, 6594 bars, 2026-07-18 23:45:00+00:00 -> 2026-09-26 16:15:00+00:00 =====
+P(up)=0.5002  mean ret +0.70 bp  sd 39.1 bp  (ann. vol ~73%)  skew +0.97  kurt 25.8
+autocorr lags 1-4: [ 0.0024 -0.0344 -0.0352 -0.011 ]  (negative = short-term reversal)
+HYPE 15m: next return after an UP bar                            n=  3297 mean=  +0.12bp  95%CI=[-1.10,+1.36]bp  t=+0.19 p=0.8484
+HYPE 15m: next return after a DOWN bar                           n=  3295 mean=  +1.26bp  95%CI=[-0.14,+2.69]bp  t=+1.76 p=0.0790
+HYPE 15m: next return after big UP bar (top-decile |move|)       n=   339 mean=  +2.58bp  95%CI=[-2.54,+7.80]bp  t=+0.93 p=0.3517
+HYPE 15m: next return after big DOWN bar                         n=   321 mean=  +2.46bp  95%CI=[-3.93,+8.74]bp  t=+0.76 p=0.4503
+   P(next bar UP | after DOWN bar) = 0.5126  (n=3295)
+   P(next bar UP | after UP bar  ) = 0.4877  (n=3297)
+   P(next bar UP | after big DOWN) = 0.5514  (n=321)
+   P(next bar UP | after big UP  ) = 0.4838  (n=339)
+hour-of-day (UTC) mean 15m return, bp (t): {0: '-1.4(-0.7)', 1: '+1.2(+0.6)', 2: '+2.3(+1.0)', 3: '-1.2(-0.6)', 4: '+2.2(+1.3)', 5: '+0.6(+0.3)', 6: '+2.8(+1.5)', 7: '-0.5(-0.2)', 8: '+1.4(+0.6)', 9: '-0.3(-0.2)', 10: '+1.4(+0.7)', 11: '+0.4(+0.2)', 12: '+1.8(+0.7)', 13: '+1.7(+0.6)', 14: '+0.1(+0.0)', 15: '-0.4(-0.2)', 16: '+4.0(+1.5)', 17: '-1.7(-0.7)', 18: '-1.6(-0.7)', 19: '+4.2(+1.1)', 20: '-0.8(-0.3)', 21: '-1.7(-0.8)', 22: '-1.0(-0.5)', 23: '+2.9(+1.5)'}
+day-of-week mean bp (t): {0: '+0.8(+0.6)', 1: '-0.6(-0.6)', 2: '+2.0(+1.2)', 3: '+1.8(+1.3)', 4: '-0.7(-0.5)', 5: '+1.4(+1.2)', 6: '+0.4(+0.5)'}
+   hourly: n=1653 mean +2.9bp sd 78bp autocorr1 -0.007 autocorr2 -0.014
+HYPE hourly: next return after UP period                         n=   867 mean=  +1.87bp  95%CI=[-3.61,+7.70]bp  t=+0.66 p=0.5105
+HYPE hourly: next return after DOWN period                       n=   785 mean=  +3.98bp  95%CI=[-1.00,+9.01]bp  t=+1.57 p=0.1179
+   4-hourly: n=419 mean +11.4bp sd 151bp autocorr1 +0.012 autocorr2 -0.049
+HYPE 4-hourly: next return after UP period                       n=   230 mean= +15.07bp  95%CI=[-5.24,+37.76]bp  t=+1.38 p=0.1694
+HYPE 4-hourly: next return after DOWN period                     n=   188 mean=  +6.44bp  95%CI=[-12.14,+24.90]bp  t=+0.67 p=0.5047
+   daily: n=70 mean +68.9bp sd 396bp autocorr1 +0.014 autocorr2 +0.107
+HYPE daily: next return after UP period                          n=    39 mean= +35.17bp  95%CI=[-78.94,+153.37]bp  t=+0.59 p=0.5620
+HYPE daily: next return after DOWN period                        n=    30 mean=+109.78bp  95%CI=[-18.93,+270.21]bp  t=+1.40 p=0.1735
+
+===== SOL: 15-minute series, 6600 bars, 2026-07-18 23:45:00+00:00 -> 2026-09-26 16:15:00+00:00 =====
+P(up)=0.4997  mean ret +0.70 bp  sd 29.7 bp  (ann. vol ~56%)  skew +0.16  kurt 32.0
+autocorr lags 1-4: [ 0.0134 -0.0855 -0.0127 -0.0312]  (negative = short-term reversal)
+SOL 15m: next return after an UP bar                             n=  3296 mean=  +1.27bp  95%CI=[+0.20,+2.35]bp  t=+2.37 p=0.0181
+SOL 15m: next return after a DOWN bar                            n=  3301 mean=  +0.15bp  95%CI=[-0.81,+1.13]bp  t=+0.30 p=0.7663
+SOL 15m: next return after big UP bar (top-decile |move|)        n=   362 mean=  +4.18bp  95%CI=[-1.76,+10.42]bp  t=+1.34 p=0.1822
+SOL 15m: next return after big DOWN bar                          n=   298 mean=  +0.86bp  95%CI=[-5.16,+6.52]bp  t=+0.29 p=0.7695
+   P(next bar UP | after DOWN bar) = 0.5053  (n=3301)
+   P(next bar UP | after UP bar  ) = 0.4942  (n=3296)
+   P(next bar UP | after big DOWN) = 0.5537  (n=298)
+   P(next bar UP | after big UP  ) = 0.4807  (n=362)
+hour-of-day (UTC) mean 15m return, bp (t): {0: '+1.3(+0.7)', 1: '-0.6(-0.4)', 2: '+1.0(+0.6)', 3: '+0.3(+0.2)', 4: '+1.4(+0.6)', 5: '+0.2(+0.1)', 6: '-1.0(-0.8)', 7: '-2.1(-1.4)', 8: '+2.6(+1.4)', 9: '-1.0(-0.6)', 10: '+0.8(+0.6)', 11: '+1.9(+1.3)', 12: '-0.2(-0.1)', 13: '+2.3(+1.0)', 14: '+2.5(+0.9)', 15: '+2.5(+1.2)', 16: '+2.7(+1.6)', 17: '-0.0(-0.0)', 18: '-1.4(-0.8)', 19: '+1.1(+0.8)', 20: '+1.1(+0.8)', 21: '+0.4(+0.2)', 22: '-0.9(-0.6)', 23: '+1.6(+1.1)'}
+day-of-week mean bp (t): {0: '+1.3(+1.4)', 1: '-1.0(-1.1)', 2: '+1.3(+1.4)', 3: '+1.0(+1.0)', 4: '+1.4(+1.3)', 5: '+0.3(+0.3)', 6: '+0.5(+0.7)'}
+   hourly: n=1653 mean +3.0bp sd 57bp autocorr1 -0.022 autocorr2 -0.019
+SOL hourly: next return after UP period                          n=   845 mean=  +2.79bp  95%CI=[-1.29,+6.95]bp  t=+1.35 p=0.1766
+SOL hourly: next return after DOWN period                        n=   806 mean=  +3.26bp  95%CI=[-0.54,+7.13]bp  t=+1.70 p=0.0896
+   4-hourly: n=419 mean +12.0bp sd 111bp autocorr1 +0.054 autocorr2 -0.011
+SOL 4-hourly: next return after UP period                        n=   218 mean= +10.61bp  95%CI=[-4.07,+25.56]bp  t=+1.39 p=0.1657
+SOL 4-hourly: next return after DOWN period                      n=   200 mean= +13.26bp  95%CI=[-2.11,+28.76]bp  t=+1.72 p=0.0864
+   daily: n=70 mean +73.0bp sd 315bp autocorr1 -0.045 autocorr2 +0.014
+SOL daily: next return after UP period                           n=    39 mean=+100.16bp  95%CI=[-9.86,+222.58]bp  t=+1.64 p=0.1096
+SOL daily: next return after DOWN period                         n=    30 mean= +36.16bp  95%CI=[-31.62,+112.34]bp  t=+0.97 p=0.3411
+
+===== XRP: 15-minute series, 6596 bars, 2026-07-18 23:45:00+00:00 -> 2026-09-26 16:15:00+00:00 =====
+P(up)=0.5143  mean ret +0.52 bp  sd 37.5 bp  (ann. vol ~70%)  skew -2.11  kurt 67.3
+autocorr lags 1-4: [ 0.0078 -0.0288 -0.0339  0.0042]  (negative = short-term reversal)
+XRP 15m: next return after an UP bar                             n=  3247 mean=  +1.17bp  95%CI=[-0.22,+2.54]bp  t=+1.63 p=0.1024
+XRP 15m: next return after a DOWN bar                            n=  3203 mean=  -0.02bp  95%CI=[-1.25,+1.17]bp  t=-0.03 p=0.9745
+XRP 15m: next return after big UP bar (top-decile |move|)        n=   348 mean=  +0.73bp  95%CI=[-8.35,+9.76]bp  t=+0.16 p=0.8756
+XRP 15m: next return after big DOWN bar                          n=   312 mean=  -0.41bp  95%CI=[-7.85,+7.02]bp  t=-0.11 p=0.9135
+   P(next bar UP | after DOWN bar) = 0.5198  (n=3203)
+   P(next bar UP | after UP bar  ) = 0.5112  (n=3247)
+   P(next bar UP | after big DOWN) = 0.5385  (n=312)
+   P(next bar UP | after big UP  ) = 0.4684  (n=348)
+hour-of-day (UTC) mean 15m return, bp (t): {0: '+1.2(+0.5)', 1: '-0.4(-0.2)', 2: '+2.5(+1.2)', 3: '+0.8(+0.5)', 4: '+3.4(+1.7)', 5: '-2.1(-0.6)', 6: '+0.9(+0.5)', 7: '-1.5(-0.7)', 8: '+1.7(+0.6)', 9: '-1.9(-1.0)', 10: '+0.3(+0.2)', 11: '+1.6(+0.9)', 12: '+1.2(+0.5)', 13: '+5.2(+1.9)', 14: '+0.1(+0.0)', 15: '+2.4(+0.9)', 16: '+2.7(+1.2)', 17: '+0.1(+0.0)', 18: '-4.0(-1.3)', 19: '-0.4(-0.2)', 20: '+0.4(+0.2)', 21: '-0.2(-0.1)', 22: '-2.3(-1.2)', 23: '+0.4(+0.2)'}
+day-of-week mean bp (t): {0: '+0.8(+0.7)', 1: '-0.8(-0.7)', 2: '+0.3(+0.3)', 3: '+1.3(+1.0)', 4: '+1.2(+0.9)', 5: '+0.6(+0.4)', 6: '+0.3(+0.3)'}
+   hourly: n=1653 mean +2.4bp sd 77bp autocorr1 -0.017 autocorr2 +0.006
+XRP hourly: next return after UP period                          n=   820 mean=  +3.33bp  95%CI=[-2.63,+9.11]bp  t=+1.10 p=0.2704
+XRP hourly: next return after DOWN period                        n=   816 mean=  +1.28bp  95%CI=[-3.15,+5.87]bp  t=+0.54 p=0.5875
+   4-hourly: n=419 mean +9.3bp sd 147bp autocorr1 +0.059 autocorr2 -0.050
+XRP 4-hourly: next return after UP period                        n=   201 mean= +15.54bp  95%CI=[-5.44,+37.62]bp  t=+1.38 p=0.1680
+XRP 4-hourly: next return after DOWN period                      n=   216 mean=  +2.81bp  95%CI=[-14.56,+21.32]bp  t=+0.31 p=0.7585
+   daily: n=70 mean +57.2bp sd 397bp autocorr1 +0.196 autocorr2 +0.157
+XRP daily: next return after UP period                           n=    36 mean=  -2.90bp  95%CI=[-135.88,+144.03]bp  t=-0.04 p=0.9689
+XRP daily: next return after DOWN period                         n=    33 mean=+123.12bp  95%CI=[+16.90,+244.56]bp  t=+2.06 p=0.0473
+
+=== Fee hurdle for Kalshi 15-minute up/down contracts ===
+buy YES at 0.30: fee 2c -> need P(yes) > 0.320 to break even (edge needed over price: 2.0 pts)
+buy YES at 0.40: fee 2c -> need P(yes) > 0.420 to break even (edge needed over price: 2.0 pts)
+buy YES at 0.50: fee 2c -> need P(yes) > 0.520 to break even (edge needed over price: 2.0 pts)
+buy YES at 0.60: fee 2c -> need P(yes) > 0.620 to break even (edge needed over price: 2.0 pts)
+buy YES at 0.70: fee 2c -> need P(yes) > 0.720 to break even (edge needed over price: 2.0 pts)
+
+===== BTC: hourly settlement series, 1632 bars, 2026-07-19 00:00:00+00:00 -> 2026-09-26 16:00:00+00:00 =====
+mean +1.67 bp  sd 39 bp  autocorr1-3 [np.float64(0.0231), np.float64(-0.0262), np.float64(-0.0255)]
+BTC hourly: next hour after UP hour                              n=   823 mean=  +1.80bp  95%CI=[-1.10,+4.83]bp  t=+1.18 p=0.2389
+BTC hourly: next hour after DOWN hour                            n=   808 mean=  +1.56bp  95%CI=[-0.60,+3.72]bp  t=+1.37 p=0.1708
+BTC hourly: next hour after big UP                               n=    92 mean=  +8.90bp  95%CI=[-6.57,+26.04]bp  t=+1.05 p=0.2973
+BTC hourly: next hour after big DOWN                             n=    72 mean=  +5.40bp  95%CI=[-3.28,+14.16]bp  t=+1.19 p=0.2380
+daily from hourly settles: n=69 mean +40.7bp sd 222bp autocorr1 +0.077
+daily day-of-week mean bp (t): {0: '+83.1(+1.0)', 1: '-32.8(-0.7)', 2: '+40.4(+0.5)', 3: '+114.0(+1.5)', 4: '+47.3(+0.4)', 5: '-1.2(-0.1)', 6: '+33.2(+1.4)'}
+   7-day momentum long/flat: mean +21.0bp/day vs B&H +40.7bp/day; Sharpe +2.23 vs +3.50
+   14-day momentum long/flat: mean +35.2bp/day vs B&H +40.7bp/day; Sharpe +3.61 vs +3.50
+   30-day momentum long/flat: mean +30.1bp/day vs B&H +40.7bp/day; Sharpe +3.00 vs +3.50
+
+===== ETH: hourly settlement series, 1632 bars, 2026-07-19 00:00:00+00:00 -> 2026-09-26 16:00:00+00:00 =====
+mean +2.39 bp  sd 52 bp  autocorr1-3 [np.float64(0.0466), np.float64(-0.0588), np.float64(-0.004)]
+ETH hourly: next hour after UP hour                              n=   826 mean=  +2.23bp  95%CI=[-1.50,+6.11]bp  t=+1.15 p=0.2496
+ETH hourly: next hour after DOWN hour                            n=   803 mean=  +2.58bp  95%CI=[-0.88,+5.88]bp  t=+1.54 p=0.1251
+ETH hourly: next hour after big UP                               n=    92 mean=  +7.63bp  95%CI=[-12.76,+30.67]bp  t=+0.67 p=0.5048
+ETH hourly: next hour after big DOWN                             n=    72 mean=  +1.99bp  95%CI=[-10.78,+13.76]bp  t=+0.32 p=0.7509
+daily from hourly settles: n=69 mean +57.5bp sd 311bp autocorr1 -0.018
+daily day-of-week mean bp (t): {0: '+40.4(+0.5)', 1: '-53.3(-0.8)', 2: '+158.9(+0.9)', 3: '+91.3(+1.4)', 4: '+99.8(+0.8)', 5: '-14.4(-0.3)', 6: '+82.5(+1.5)'}
+   7-day momentum long/flat: mean +20.9bp/day vs B&H +57.5bp/day; Sharpe +1.43 vs +3.53
+   14-day momentum long/flat: mean +38.0bp/day vs B&H +57.5bp/day; Sharpe +2.57 vs +3.53
+   30-day momentum long/flat: mean +53.7bp/day vs B&H +57.5bp/day; Sharpe +3.47 vs +3.53
+
+===== XRP: hourly settlement series, 1631 bars, 2026-07-19 00:00:00+00:00 -> 2026-09-26 15:00:00+00:00 =====
+mean +2.43 bp  sd 78 bp  autocorr1-3 [np.float64(-0.0177), np.float64(0.0082), np.float64(-0.0725)]
+XRP hourly: next hour after UP hour                              n=   808 mean=  +3.04bp  95%CI=[-2.93,+9.17]bp  t=+0.98 p=0.3272
+XRP hourly: next hour after DOWN hour                            n=   806 mean=  +1.64bp  95%CI=[-3.05,+6.26]bp  t=+0.70 p=0.4859
+XRP hourly: next hour after big UP                               n=    90 mean= +17.67bp  95%CI=[-22.72,+58.14]bp  t=+0.85 p=0.4001
+XRP hourly: next hour after big DOWN                             n=    73 mean=  +1.76bp  95%CI=[-19.52,+23.54]bp  t=+0.16 p=0.8722
+daily from hourly settles: n=69 mean +57.9bp sd 411bp autocorr1 +0.175
+daily day-of-week mean bp (t): {0: '+71.6(+0.5)', 1: '-82.5(-0.7)', 2: '-19.8(-0.2)', 3: '+223.0(+1.3)', 4: '+99.3(+0.5)', 5: '+78.4(+2.6)', 6: '+32.4(+0.6)'}
+   7-day momentum long/flat: mean +17.7bp/day vs B&H +57.9bp/day; Sharpe +0.98 vs +2.69
+   14-day momentum long/flat: mean +23.6bp/day vs B&H +57.9bp/day; Sharpe +1.38 vs +2.69
+   30-day momentum long/flat: mean +20.4bp/day vs B&H +57.9bp/day; Sharpe +1.23 vs +2.69
+
+Tests: 82; smallest Bonferroni p: 1.0000
+                                                    label    n      roi        t        p  bonferroni_p
+                     ETH 15m: next return after an UP bar 3335 0.000107 2.394688 0.016689           1.0
+                     SOL 15m: next return after an UP bar 3296 0.000127 2.365362 0.018070           1.0
+                    DOGE 15m: next return after an UP bar 3334 0.000136 2.188955 0.028669           1.0
+                 ETH daily: next return after DOWN period   28 0.006365 2.119074 0.043427           1.0
+BTC 15m: next return after big UP bar (top-decile |move|)  351 0.000379 2.022350 0.043900           1.0
+                 XRP daily: next return after DOWN period   33 0.012312 2.063295 0.047276           1.0
+              ETH 4-hourly: next return after DOWN period  186 0.001253 1.965988 0.050796           1.0
+               DOGE 4-hourly: next return after UP period  215 0.001968 1.912747 0.057115           1.0
+                 BNB daily: next return after DOWN period   26 0.007370 1.926911 0.065430           1.0
+                     BTC 15m: next return after an UP bar 3299 0.000060 1.839675 0.065906           1.0
