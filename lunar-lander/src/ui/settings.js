@@ -4,7 +4,8 @@
 //
 // URL parameters win over stored values (?hud=0, ?audio=0, ?quality=...), so tests and shared
 // links behave predictably. The render quality cannot change at run time (the renderer is built
-// with it), so the UI reloads the page with ?quality=<q> instead — see qualityURL().
+// with it): the UI stores the new quality and reloads the page (no query string needed, so it also
+// works inside hosts that drop URL parameters); with a ?quality= parameter present it rewrites that.
 
 export const STORAGE_KEY = 'apollo-lunar-landing.settings.v1';
 
@@ -21,6 +22,9 @@ export const PERSISTED = {
   filmGrain: { def: true, ok: (v) => typeof v === 'boolean' },
   exposureComp: { def: 0, ok: (v) => Number.isFinite(v) && v >= -2 && v <= 2 },
   flightTips: { def: true, ok: (v) => typeof v === 'boolean', param: 'tips' },
+  // Graphics quality: read by main.js before the renderer is built (no default here: main.js picks
+  // one per device when nothing is stored).
+  quality: { def: undefined, ok: (v) => v === 'low' || v === 'medium' || v === 'high', param: 'quality' },
 };
 
 /**
@@ -53,7 +57,7 @@ export function getStorage() {
 
 /** Add any missing UI-owned settings (filmGrain, exposureComp) with their defaults. */
 export function ensureDefaults(settings) {
-  for (const [k, d] of Object.entries(PERSISTED)) if (settings[k] === undefined) settings[k] = d.def;
+  for (const [k, d] of Object.entries(PERSISTED)) if (settings[k] === undefined && d.def !== undefined) settings[k] = d.def;
   return settings;
 }
 

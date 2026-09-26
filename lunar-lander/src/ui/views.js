@@ -299,10 +299,16 @@ export function createSettingsView(game, cb = {}) {
       row('Graphics quality', h('span', null, 'Changing it reloads the page.', qualityNote), seg('quality', [['low', 'Low'], ['medium', 'Medium'], ['high', 'High']], {
         onPick(q) {
           if (q === S.quality) return;
-          saveSettings(S);
+          const prev = S.quality;
+          S.quality = q;
+          const stored = saveSettings(S);
           try {
-            window.location.replace(qualityURL(window.location.href, q));
+            // a ?quality= parameter would override the stored value: rewrite it; otherwise just reload
+            if (new URL(window.location.href).searchParams.has('quality')) window.location.replace(qualityURL(window.location.href, q));
+            else if (stored) window.location.reload();
+            else throw new Error('no storage');
           } catch {
+            S.quality = prev;
             qualityNote.textContent = ` Could not reload here — add ?quality=${q} to the address.`;
           }
         },

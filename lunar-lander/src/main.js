@@ -18,6 +18,48 @@ import { createInput } from './input/input.js';
 import { createAudio } from './audio/audio.js';
 import { createUI } from './ui/ui.js';
 import { createWarmup } from './core/warmup.js';
+import { loadSettings } from './ui/settings.js';
+
+/** Default graphics quality for this device: 'low' on phones/tablets (small GPU memory budgets). */
+function autoQuality() {
+  try {
+    const ua = navigator.userAgent || '';
+    const mobileUA = /Android|iPhone|iPad|iPod|Mobile|Silk|Kindle/i.test(ua) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(ua));
+    const coarse = window.matchMedia?.('(pointer: coarse)').matches && !window.matchMedia?.('(pointer: fine)').matches;
+    const small = Math.max(screen.width || 0, screen.height || 0) < 1100;
+    return mobileUA || coarse || small ? 'low' : 'high';
+  } catch {
+    return 'high';
+  }
+}
+
+/**
+ * A cockpit that is only built when it is first needed. Each cabin carries hundreds of MB of panel
+ * textures, so a mission that never enters a cockpit (or never enters Columbia's) should not pay for it.
+ * Same interface as the cabin factories: { root, update(frame, vessel), setActive(on) } plus `created`.
+ */
+function lazyCabin(create, ctx) {
+  let real = null;
+  const ensure = () => real || (real = create(ctx));
+  return {
+    get created() {
+      return !!real;
+    },
+    get root() {
+      return ensure().root;
+    },
+    get instance() {
+      return real;
+    },
+    setActive(on) {
+      if (on) ensure().setActive(true);
+      else if (real) real.setActive(false);
+    },
+    update(f, v) {
+      if (real) real.update(f, v);
+    },
+  };
+}
 
 const FIXED_DT = 1 / 60;
 
@@ -25,6 +67,11 @@ async function boot() {
   const params = readParams();
   const game = createGameState(params);
   window.game = game; // debugging & tests
+
+  // Stored settings (including the graphics quality, which must be known before the renderer is
+  // built). URL parameters win. With no stored or URL quality, phones and tablets start on 'low'.
+  const applied = loadSettings(game.settings, params);
+  if (!params.quality && !applied.includes('quality')) game.settings.quality = autoQuality();
 
   const canvas = document.getElementById('scene');
   const uiRoot = document.getElementById('ui');
@@ -62,8 +109,8 @@ async function boot() {
   const lmModel = createLMModel(ctx);
   const csmModel = createCSMModel(ctx);
   ctx.scene.add(lmModel.root, csmModel.root);
-  const lmCabin = createLMCabin(ctx);
-  const csmCabin = createCSMCabin(ctx);
+  const lmCabin = lazyCabin(createLMCabin, ctx);
+  const csmCabin = lazyCabin(createCSMCabin, ctx);
   // Cabins are only attached to the scene while in use (see setCabins): ~1,150 hidden meshes would
   // otherwise be walked by every updateMatrixWorld / render-list traversal.
   const fx = createEffects(ctx);
@@ -91,6 +138,7 @@ async function boot() {
       ['CSM', csmCabin],
     ]) {
       const on = ivaId === id;
+      if (!on && !cabin.created) continue; // never built: nothing to detach
       cabin.setActive(on);
       if (on && cabin.root.parent !== ctx.scene) ctx.scene.add(cabin.root);
       else if (!on && cabin.root.parent === ctx.scene) ctx.scene.remove(cabin.root);
@@ -149,7 +197,9 @@ async function boot() {
     R,
     ctx,
     game,
-    enabled: params.warmup ?? !params.fixedStep,
+    // Off at 'low' quality: warming up builds both cockpits and uploads all their textures at once,
+    // which small GPUs (phones) cannot afford; there the first cockpit entry just takes a moment longer.
+    enabled: params.warmup ?? (!params.fixedStep && game.settings.quality !== 'low'),
     cabins: { LM: lmCabin, CSM: csmCabin },
     models: { LM: lmModel, CSM: csmModel },
     setCabins,
@@ -178,7 +228,8 @@ async function boot() {
     if (game.started) warmup.update(f);
 
     // IVA: own exterior model becomes a shadow-only "ghost"; cabins only render when used
-    const ivaId = game.view.mode === 'iva' ? game.view.ivaVessel : null;
+    // (no cockpit behind the title screen: building one there would cost memory for nothing)
+    const ivaId = game.started && game.view.mode === 'iva' ? game.view.ivaVessel : null;
     setCabins(ivaId);
 
     // The title screen covers the canvas completely: skip the world until a mission is loaded.
