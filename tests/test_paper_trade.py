@@ -13,8 +13,8 @@ import arbitrage_scanner as arb  # noqa: E402
 import paper_trade as pt  # noqa: E402
 
 NOW = datetime(2026, 9, 26, 12, 0, tzinfo=timezone.utc)
-RULE = pt.Rule(side="yes", min_ask=Decimal(40), max_ask=Decimal(70), max_spread=Decimal(2),
-               hours_before=1.0)
+RULE = pt.Rule(sides=("yes",), min_ask=Decimal(40), max_ask=Decimal(70), max_spread=Decimal(2),
+               hours_before=(1.0,))
 
 
 def raw_market(minutes=60, bid="0.5400", ask="0.5500", status="active", early=False,
@@ -28,7 +28,9 @@ def raw_market(minutes=60, bid="0.5400", ask="0.5500", status="active", early=Fa
 
 
 def entry_for(raw, rule=RULE, multiplier=Decimal(1)):
-    return pt.rule_entry(raw, arb.parse_quote(raw), rule, multiplier, NOW)
+    entries = pt.rule_entries(raw, arb.parse_quote(raw), rule, multiplier, NOW)
+    assert len(entries) <= 1
+    return entries[0] if entries else None
 
 
 class RuleTests(unittest.TestCase):
@@ -62,12 +64,23 @@ class RuleTests(unittest.TestCase):
         self.assertIsNone(entry_for(raw))
 
     def test_no_side_uses_no_prices(self):
-        rule = pt.Rule(side="no", min_ask=Decimal(40), max_ask=Decimal(50))
+        rule = pt.Rule(sides=("no",), min_ask=Decimal(40), max_ask=Decimal(50))
         entry = entry_for(raw_market(), rule)
         self.assertEqual((entry["side"], entry["ask"], entry["bid"]), ("no", 46.0, 45.0))
 
     def test_series_multiplier_scales_fee(self):
         self.assertAlmostEqual(entry_for(raw_market(), multiplier=Decimal("0.5"))["fee"], 0.87)
+
+    def test_both_sides_and_several_horizons(self):
+        rule = pt.Rule(sides=("yes", "no"), min_ask=Decimal(95), max_ask=Decimal(100),
+                       max_spread=Decimal(2), hours_before=(2.0, 4.0))
+        expensive_yes = raw_market(minutes=120, bid="0.9600", ask="0.9700")
+        cheap_yes = raw_market(minutes=240, bid="0.0200", ask="0.0300")
+        [yes] = pt.rule_entries(expensive_yes, arb.parse_quote(expensive_yes), rule, Decimal(1), NOW)
+        [no] = pt.rule_entries(cheap_yes, arb.parse_quote(cheap_yes), rule, Decimal(1), NOW)
+        self.assertEqual((yes["side"], yes["ask"], yes["hours_before"]), ("yes", 97.0, 2.0))
+        self.assertEqual((no["side"], no["ask"], no["hours_before"]), ("no", 98.0, 4.0))
+        self.assertNotEqual(pt.entry_key(yes), pt.entry_key(dict(yes, hours_before=4.0)))
 
 
 class ScoreTests(unittest.TestCase):

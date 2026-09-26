@@ -6,14 +6,14 @@ Forward-tests a rule on live markets without placing orders: every few
 minutes it records a hypothetical buy for each market that meets the rule,
 then scores those entries once the markets settle.
 
-A rule buys one side at the ask when the market is a set time from its end,
-the ask is in a price band and the spread is tight. As in backtest.py, markets
+A rule buys a side at the ask when the market is a set time from its end, the
+ask is in a price band and the spread is tight. As in backtest.py, markets
 that can close early (e.g. a prop that closes the moment a player scores) are
 timed from their scheduled event time, never from their close time.
 
-    python paper_trade.py --name weather-no --side no --min-ask 80 --max-ask 90 \
-        --hours-before 24 --category "Climate and Weather"
-    python paper_trade.py --name weather-no --report
+    python paper_trade.py --name h2 --side both --min-ask 95 --max-ask 100 \
+        --hours-before 2 4 --category Economics Financials Commodities
+    python paper_trade.py --name h2 --report
 
 Entries are logged to data/paper/<name>.jsonl. Nothing here places orders.
 
@@ -46,12 +46,12 @@ WINDOW_MINUTES = 5          # enter within +/- this many minutes of the target t
 
 @dataclass
 class Rule:
-    side: str = "yes"
+    sides: tuple = ("yes",)
     min_ask: Decimal = Decimal(40)
     max_ask: Decimal = Decimal(70)
     max_spread: Decimal = Decimal(2)
-    hours_before: float = 1.0
-    category: Optional[str] = None
+    hours_before: tuple = (1.0,)
+    categories: Optional[tuple] = None
 
 
 def side_prices(quote, side: str):
@@ -71,24 +71,34 @@ def reference_time(raw: dict, quote):
     return None
 
 
-def rule_entry(raw: dict, quote, rule: Rule, multiplier: Decimal, now: datetime):
-    """The hypothetical entry for this market, or None if the rule does not apply."""
+def rule_entries(raw: dict, quote, rule: Rule, multiplier: Decimal, now: datetime) -> list:
+    """Hypothetical entries for this market now: one per side and horizon that applies."""
     reference = reference_time(raw, quote)
     if not quote.is_open or not reference:
-        return None
+        return []
     minutes = (reference - now).total_seconds() / 60
-    if abs(minutes - rule.hours_before * 60) > WINDOW_MINUTES:
-        return None
-    ask, bid = side_prices(quote, rule.side)
-    if not (tradable(ask) and tradable(bid)):
-        return None
-    if not (rule.min_ask <= ask < rule.max_ask and ask - bid <= rule.max_spread):
-        return None
-    fee = taker_fee_cents(ask, FEE_ORDER_SIZE, DEFAULT_TAKER_FEE_RATE * multiplier)
-    return {"ticker": quote.ticker, "event_ticker": quote.event_ticker, "title": quote.title,
-            "side": rule.side, "entry_ts": int(now.timestamp()),
-            "reference_ts": int(reference.timestamp()), "ask": float(ask), "bid": float(bid),
-            "fee": float(fee) / FEE_ORDER_SIZE, "result": None}
+    entries = []
+    for hours in rule.hours_before:
+        if abs(minutes - hours * 60) > WINDOW_MINUTES:
+            continue
+        for side in rule.sides:
+            ask, bid = side_prices(quote, side)
+            if not (tradable(ask) and tradable(bid)):
+                continue
+            if not (rule.min_ask <= ask < rule.max_ask and ask - bid <= rule.max_spread):
+                continue
+            fee = taker_fee_cents(ask, FEE_ORDER_SIZE, DEFAULT_TAKER_FEE_RATE * multiplier)
+            entries.append({"ticker": quote.ticker, "event_ticker": quote.event_ticker,
+                            "title": quote.title, "side": side, "hours_before": hours,
+                            "entry_ts": int(now.timestamp()),
+                            "reference_ts": int(reference.timestamp()), "ask": float(ask),
+                            "bid": float(bid), "fee": float(fee) / FEE_ORDER_SIZE,
+                            "result": None})
+    return entries
+
+
+def entry_key(entry: dict) -> tuple:
+    return (entry["ticker"], entry.get("side", "yes"), entry.get("hours_before"))
 
 
 def log_path(name: str) -> str:
@@ -148,9 +158,13 @@ def candidate_markets(client: KalshiPublicClient, rule: Rule, now: datetime) -> 
     early list a far-off latest close, so they are scanned among everything
     closing within the following days and filtered by their event time.
     """
-    target = now + timedelta(hours=rule.hours_before)
-    windows = [(target - timedelta(minutes=WINDOW_MINUTES), target + timedelta(minutes=WINDOW_MINUTES)),
-               (target, target + timedelta(days=3))]
+    windows = []
+    for hours in rule.hours_before:
+        target = now + timedelta(hours=hours)
+        windows.append((target - timedelta(minutes=WINDOW_MINUTES),
+                        target + timedelta(minutes=WINDOW_MINUTES)))
+    earliest = now + timedelta(hours=min(rule.hours_before))
+    windows.append((earliest, earliest + timedelta(days=3)))
     markets = {}
     for low, high in windows:
         cursor = None
@@ -171,14 +185,13 @@ def candidate_markets(client: KalshiPublicClient, rule: Rule, now: datetime) -> 
 def scan_once(client: KalshiPublicClient, rule: Rule, entries: list, events: dict,
               series: dict, now: datetime) -> int:
     """Record new entries for `rule`; return how many were added."""
-    seen = {e["ticker"] for e in entries}
+    seen = {entry_key(e) for e in entries}
     added = 0
     for raw in candidate_markets(client, rule, now):
         quote = parse_quote(raw)
-        if quote.ticker in seen:
-            continue
         # Cheap timing and price check before any event/series lookups.
-        if not rule_entry(raw, quote, rule, Decimal(1), now):
+        if not [e for e in rule_entries(raw, quote, rule, Decimal(1), now)
+                if entry_key(e) not in seen]:
             continue
         if quote.event_ticker not in events:
             try:
@@ -186,16 +199,16 @@ def scan_once(client: KalshiPublicClient, rule: Rule, entries: list, events: dic
             except requests.exceptions.RequestException:
                 continue
         event = events[quote.event_ticker]
-        if rule.category and series_category(client, event, series) != rule.category:
+        if rule.categories and series_category(client, event, series) not in rule.categories:
             continue
         multiplier = fee_multiplier(event, client, series)
         if multiplier is None:
             continue
-        entry = rule_entry(raw, quote, rule, multiplier, now)
-        if entry:
-            entries.append(entry)
-            seen.add(entry["ticker"])
-            added += 1
+        for entry in rule_entries(raw, quote, rule, multiplier, now):
+            if entry_key(entry) not in seen:
+                entries.append(entry)
+                seen.add(entry_key(entry))
+                added += 1
     return added
 
 
@@ -229,14 +242,15 @@ def settle(client: KalshiPublicClient, entries: list, now: datetime) -> int:
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--name", required=True, help="log name, e.g. weather-no")
-    parser.add_argument("--side", choices=("yes", "no"), default="yes")
+    parser.add_argument("--name", required=True, help="log name, e.g. h2")
+    parser.add_argument("--side", choices=("yes", "no", "both"), default="yes")
     parser.add_argument("--min-ask", type=Decimal, default=Decimal(40))
     parser.add_argument("--max-ask", type=Decimal, default=Decimal(70))
     parser.add_argument("--max-spread", type=Decimal, default=Decimal(2))
-    parser.add_argument("--hours-before", type=float, default=1.0,
+    parser.add_argument("--hours-before", type=float, nargs="+", default=[1.0],
                         help="hours before the close (or scheduled event, for early-close markets)")
-    parser.add_argument("--category", help="only this series category, e.g. 'Climate and Weather'")
+    parser.add_argument("--category", nargs="+",
+                        help="only these series categories, e.g. 'Climate and Weather'")
     parser.add_argument("--report", action="store_true", help="print results so far and exit")
     parser.add_argument("--every", type=float, default=240, help="seconds between scans")
     args = parser.parse_args(argv)
@@ -247,8 +261,9 @@ def main(argv=None) -> int:
         print(summarize(entries))
         return 0
 
-    rule = Rule(args.side, args.min_ask, args.max_ask, args.max_spread, args.hours_before,
-                args.category)
+    sides = ("yes", "no") if args.side == "both" else (args.side,)
+    rule = Rule(sides, args.min_ask, args.max_ask, args.max_spread, tuple(args.hours_before),
+                tuple(args.category) if args.category else None)
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(line_buffering=True)
     client = KalshiPublicClient()
