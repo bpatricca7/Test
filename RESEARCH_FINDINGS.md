@@ -15,7 +15,7 @@ equity indices, volatility, FX, commodities.  Every number below is net of the c
 | 1 | Club soccer (1X2) | Bet **favourites (>=70% implied) at the best available price** across bookmakers | **+2.2% per bet** (n=14,958; 95% CI +1.3% to +3.1%; t=5.1) | 18 of 22 seasons positive; both halves of the sample positive; monotone across the 70-100% buckets; robust to which bookmaker is best | At average odds the same bets lose 0.95%. You need accounts at many books and to always take the top price. Soft books limit winners. |
 | 2 | Club soccer (1X2) | Walk-forward **market-recalibration + Elo model**, bet at best price when model EV > 3% | **+3.3% per bet** (n=35,841; CI +1.6% to +4.9%; t=3.9) | Out-of-sample season by season 2010-2026, 14/17 seasons positive; EV>6% subset +5.2%; EV>10% subset +14% | Same picks paid at average odds: **-5.9%**. Weaker since 2019 (+1.9%, t=1.1). Edge is line-shopping plus longshot-bias correction, not football insight. |
 | 3 | Club soccer (1X2) | **Cross-bookmaker arbitrage** (sum of 1/best odds < 1) | 1.25% locked-in per arb (median 0.76%) on 22.7% of matches since 2005 | Mechanical; no forecasting needed | Requires 10+ funded accounts, fast execution, and tolerance for stale "ghost" lines and account closures. Treat the 22.7% as an upper bound. |
-| 4 | Kalshi 15-minute crypto markets | *(pending full candle data)* favourite-longshot bias in the final minutes | see Section 5 | see Section 5 | thin liquidity at 95-99c; taker fees |
+| 4 | Kalshi 15-minute crypto markets | Buy the side priced 85-99c at **minutes 5-7** of the window (mid-window favourite underpricing) | **+1.1 to +1.5c per contract** (~1.2% per 10-minute hold; n=4,670-8,723; t=2.8) | Positive in all 3 months and 4 coins, but not robust to the ~60 cells tested (adj. p~0.35); reverses in the last 2 minutes | Needs a live paper-trade before real size; 2,500+ contracts trade per qualifying minute, so capacity is real |
 | 5 | NFL totals | **Under when recorded wind >= 15 mph** | +10.0% (n=684; CI +2.7% to +17.2%; t=2.8) | 17/27 seasons; monotone in wind; +13.7% / +3.5% / +11.0% across three eras | Does not survive a 56-test Bonferroni correction (adj. p=0.33). Uses wind recorded at kickoff, not the pre-game forecast. About 25 bets per season. |
 | 6 | Equity indices | 10-month SMA trend filter / vol targeting on S&P 500 | same CAGR as buy-and-hold (7.4%) at 2/3 the volatility; max drawdown -23% vs -57% | 33 years; both halves positive | This is risk management, not alpha. Taxable turnover. |
 
@@ -140,7 +140,59 @@ risk management on long-only exposure, which is a different claim.
 
 ## 5. Kalshi prediction markets
 
-*(Sections 5.1-5.3 are filled from the Kalshi downloads; see below.)*
+Data: every settled market Kalshi's public API returns (4.4M+ markets, but the API only serves roughly the
+last ten weeks: 2026-07-18 to 2026-09-26 for nearly every series), plus 1-minute candlesticks for 26,367
+fifteen-minute crypto markets, 1-minute candlesticks for sampled hourly BTC/ETH strike ladders, and hourly
+candlesticks for sports game markets. Fees: taker 0.07 x P x (1-P) per contract (100-contract orders).
+Standard errors are clustered by timestamp because the coins move together.
+
+### 5.1 Fifteen-minute crypto up/down markets (BTC, ETH, SOL, XRP; 26,367 markets, 6,598 timestamps)
+
+These are the most liquid contracts on the exchange (BTC alone traded about $13B notional in the window; a
+median of 2,500-3,200 contracts trade in a single mid-window minute).
+
+| Test (buy at the quoted ask, hold to settlement) | n | ROI / contract | t (clustered) |
+|---|---|---|---|
+| Buy YES at minute 1, every market (baseline) | 26,367 | -1.85c | -3.8 |
+| Buy NO at minute 1, every market | 26,367 | -2.75c | -5.7 |
+| After a top-decile DOWN bar: buy YES at minute 1 (the reversal signal from Section 6) | 2,658 | +0.13c | +0.1 |
+| After a top-decile UP bar: buy NO at minute 1 | 2,680 | -2.02c | -1.6 |
+| Favourite side priced 0.85-0.99 at **minute 5** | 4,670 | **+1.50c** | +2.8 |
+| Favourite side priced 0.85-0.99 at **minute 7** | 8,723 | **+1.07c** | +2.8 |
+| Favourite side priced 0.85-0.99 at minute 10 | 14,176 | +0.35c | +1.3 |
+| Favourite side priced 0.85-0.99 at minute 13 | 10,954 | -1.20c | -4.6 |
+| Favourite side priced 0.85-0.99 at minute 14 | 6,089 | -1.05c | -3.3 |
+| Longshot YES asked <= 0.10 at minute 10 / 13 / 14 | 5,335 / 5,088 / 3,012 | -1.06c / -0.87c / -0.39c | -2.8 / -3.1 / -1.1 |
+
+Reading: the baseline loses exactly the fee, so the market is fair on average at the open. The 15-minute
+reversal in the underlying is fully priced in (the next window opens at 52c, not 50c). Longshots are
+overpriced at every minute (classic favourite-longshot bias), and the mirror image exists **mid-window**:
+at minutes 5-7 the side priced 85-99c settles in the money more often than its price implies (at minute 5
+contracts asked at 93c pay out 96.4% of the time). The cell is positive in each of the three months
+(+2.5c, +1.2c, +1.3c) and in all four coins (XRP +2.3c, BTC +1.7c, SOL +0.8c, ETH +0.0c), but only the pooled
+estimate is significant, and the +1.5c must be discounted for the roughly 60 cells examined here (Bonferroni
+p ~ 0.35). By the final two minutes the effect reverses: quotes widen and the 97c favourite settles yes only
+93-94% of the time. **Verdict: a plausible ~1c-per-contract (about 1.2% per 10-minute hold) edge for a
+maker-style buyer of mid-window favourites, worth paper-trading with `research/kalshi_live_screener.py`,
+not yet a proven one.** Everything else in these markets is efficient net of fees.
+
+### 5.2 Hourly BTC/ETH strike ladders (sampled hours; 529 BTC and 269 ETH hours so far)
+
+Each hour Kalshi lists 20+ strikes ("BTC at 16:00 >= $84,400?"), i.e. a full implied distribution.
+Bought at the ask at minute 1 / 15 / 30 / 45 and held to settlement, clustered by hour:
+
+* Selling the upper tail (buy NO on strikes asked <= 10c): -0.6c to -1.0c per contract at every minute (t -1.5 to -2.2).
+* Selling the lower tail (buy YES on strikes bid >= 90c): -0.4c to -1.5c (not significant).
+* Buying longshots (asked 3-15c): +1.0c at minute 1, +0.4c at minute 15, -0.2c / -1.5c later (none significant).
+* Near-the-money contracts at minute 1: -8.5c (t=-4.0); the quoted spread is 5-10c at the open.
+* The implied 80% interval contained the settle 83.5% of the time (BTC, 430 hours), so implied volatility is
+  slightly too high, but no strike bucket is mispriced by more than the spread plus fee.
+
+Verdict: no edge. These ladders are priced as well as their spreads allow.
+
+### 5.3 Sports game markets and long-dated markets
+
+Filled in from the pregame (hourly-candle) and days-to-close (daily-candle) pulls; see the end of this file.
 
 ## 6. Crypto underlying (reconstructed from settled Kalshi markets, 2026-07-18 to 2026-09-26)
 

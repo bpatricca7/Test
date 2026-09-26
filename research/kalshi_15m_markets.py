@@ -17,7 +17,8 @@ M15 = {"KXBTC15M": "BTC", "KXETH15M": "ETH", "KXSOL15M": "SOL", "KXXRP15M": "XRP
 
 # ---- markets
 rows = []
-with open(os.path.join(KD, "markets.jsonl")) as f:
+for _fn in sorted(glob.glob(os.path.join(KD, "markets*.jsonl"))):
+  with open(_fn) as f:
     for line in f:
         if '"series_ticker": "KX' not in line or '15M"' not in line: continue
         m = json.loads(line)

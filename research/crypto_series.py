@@ -7,7 +7,7 @@ that is a genuine 15-minute price series.  Hourly KXBTCD-style markets carry the
 Tests: drift, autocorrelation (momentum vs reversal), hour-of-day and day-of-week seasonality, and whether any
 of it clears the Kalshi fee hurdle for the 15-minute up/down contracts.
 """
-import os, sys, json, math
+import os, sys, glob, json, math
 import numpy as np, pandas as pd
 sys.path.insert(0, os.path.dirname(__file__))
 from lib.stats import tstat, pvalue_two_sided, bootstrap_mean_ci, kalshi_fee, TestRegistry
@@ -19,7 +19,8 @@ M15 = {"KXBTC15M": "BTC", "KXETH15M": "ETH", "KXSOL15M": "SOL", "KXXRP15M": "XRP
 HOURLY = {"KXBTCD": "BTC", "KXETHD": "ETH", "KXSOLD": "SOL", "KXXRPD": "XRP"}
 
 rows15, rowsH = [], []
-with open(os.path.join(KD, "markets.jsonl")) as f:
+for _fn in sorted(glob.glob(os.path.join(KD, "markets*.jsonl"))):
+  with open(_fn) as f:
     for line in f:
         st = line[line.find('"series_ticker": "') + 18: line.find('"series_ticker": "') + 30].split('"')[0] if '"series_ticker"' in line else ""
         if st in M15:

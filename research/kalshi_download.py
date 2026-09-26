@@ -9,7 +9,7 @@ Phase 4: daily candlesticks for the highest-volume markets in every other catego
 
 Everything is written as JSONL under DATA_DIR so the job can be resumed.
 """
-import json, os, sys, time, datetime as dt
+import json, os, sys, time, glob, datetime as dt
 import requests
 
 BASE = "https://api.elections.kalshi.com/trade-api/v2"
@@ -90,11 +90,16 @@ def phase1():
                 break
         json.dump(series, open(sp, "w"))
     log(f"phase1: {len(series)} series")
-    done = load_done("series_done.txt")
-    order = {"Crypto": 0, "Sports": 1, "Financials": 2, "Economics": 3, "Politics": 4, "Elections": 5,
-             "Climate and Weather": 6, "Entertainment": 7}
+    suffix = os.environ.get("KALSHI_SHARD", "").replace("/", "of")
+    done = set()
+    for fn in glob.glob(os.path.join(DATA_DIR, "series_done*.txt")):
+        done |= set(l.strip() for l in open(fn))
+    order = {"Crypto": 0, "Sports": 1, "Economics": 2, "Politics": 3, "Elections": 4, "Entertainment": 5,
+             "Climate and Weather": 6, "Science and Technology": 7, "Companies": 8, "World": 9, "Financials": 10}
     series.sort(key=lambda s: order.get(s.get("category"), 9))
-    out = open(os.path.join(DATA_DIR, "markets.jsonl"), "a")
+    if os.environ.get("KALSHI_SHARD"):
+        i_, n_ = map(int, os.environ["KALSHI_SHARD"].split("/")); series = [s for s in series if sum(map(ord, s["ticker"])) % n_ == i_]
+    out = open(os.path.join(DATA_DIR, f"markets{('_' + suffix) if suffix else ''}.jsonl"), "a")
     n_total = 0
     for i, s in enumerate(series):
         t = s["ticker"]
@@ -116,7 +121,7 @@ def phase1():
             if not cursor:
                 break
         out.flush()
-        mark_done("series_done.txt", t)
+        mark_done(f"series_done{('_' + suffix) if suffix else ''}.txt", t)
         n_total += n
         if n or i % 200 == 0:
             log(f"  [{i}/{len(series)}] {t} ({s.get('category')}): {n} settled markets (running total {n_total})")
@@ -125,9 +130,10 @@ def phase1():
 
 
 def iter_markets():
-    with open(os.path.join(DATA_DIR, "markets.jsonl")) as f:
-        for line in f:
-            yield json.loads(line)
+    for fn in sorted(glob.glob(os.path.join(DATA_DIR, "markets*.jsonl"))):
+        with open(fn) as f:
+            for line in f:
+                yield json.loads(line)
 
 
 def ts(iso):

@@ -6,7 +6,7 @@ before kickoff.  Tests: calibration of pregame YES price vs outcome, favourite-l
 fee-adjusted return of buying the favourite / the longshot pregame and holding to settlement.
 For NFL, Kalshi pregame prices are also compared with the sportsbook closing moneyline (nflverse).
 """
-import os, sys, json, re, glob, datetime as dt
+import os, sys, glob, json, re, glob, datetime as dt
 import numpy as np, pandas as pd
 sys.path.insert(0, os.path.dirname(__file__))
 from lib.stats import kalshi_fee, tstat, pvalue_two_sided, american_to_prob, devig_power, summarize_bets, fmt_bets
@@ -31,7 +31,8 @@ def sport_family(st):
     return "other"
 DUR = {}
 mk = {}
-with open(os.path.join(KD, "markets.jsonl")) as f:
+for _fn in sorted(glob.glob(os.path.join(KD, "markets*.jsonl"))):
+  with open(_fn) as f:
     for line in f:
         if '"series_ticker": "KX' not in line: continue
         st = line.split('"series_ticker": "')[1].split('"')[0]

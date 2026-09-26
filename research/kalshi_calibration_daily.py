@@ -6,7 +6,7 @@ ending at least h days before close.  Reports calibration and the fee-adjusted r
 at that horizon and holding to settlement, by category and by price bucket.  Because capital is locked
 for h days, the per-day return is also shown.
 """
-import os, sys, json, glob, datetime as dt
+import os, sys, glob, json, glob, datetime as dt
 import numpy as np, pandas as pd
 sys.path.insert(0, os.path.dirname(__file__))
 from lib.stats import kalshi_fee, summarize_bets, fmt_bets, tstat
@@ -17,7 +17,8 @@ need = set()
 for fn in glob.glob(os.path.join(KD, "candles_daily*.jsonl")):
     for line in open(fn): need.add(json.loads(line)["ticker"])
 mk = {}
-with open(os.path.join(KD, "markets.jsonl")) as f:
+for _fn in sorted(glob.glob(os.path.join(KD, "markets*.jsonl"))):
+  with open(_fn) as f:
     for line in f:
         t = line.split('"ticker": "')[1].split('"')[0]
         if t in need: mk[t] = json.loads(line)

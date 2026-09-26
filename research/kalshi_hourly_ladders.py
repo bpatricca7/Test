@@ -8,7 +8,7 @@ For every sampled hour, each strike market's YES ask/bid at minute k gives P(pri
   (3) implied vs realised 1-hour move size.
 Standard errors are clustered by hour (strikes within an hour are one bet on the same outcome).
 """
-import os, sys, json, glob, math
+import os, sys, glob, json, glob, math
 import numpy as np, pandas as pd
 sys.path.insert(0, os.path.dirname(__file__))
 from lib.stats import kalshi_fee, tstat, pvalue_two_sided
@@ -19,7 +19,8 @@ for fn in glob.glob(os.path.join(KD, "candles_hourly*.jsonl")):
     for line in open(fn):
         j = json.loads(line); need[j["ticker"]] = j["candlesticks"]
 mk = {}
-with open(os.path.join(KD, "markets.jsonl")) as f:
+for _fn in sorted(glob.glob(os.path.join(KD, "markets*.jsonl"))):
+  with open(_fn) as f:
     for line in f:
         if '"series_ticker": "KXBTCD"' not in line and '"series_ticker": "KXETHD"' not in line: continue
         t = line.split('"ticker": "')[1].split('"')[0]
