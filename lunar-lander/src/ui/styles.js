@@ -511,7 +511,7 @@ export const CSS = /* css */ `
 .aui .tmsg.warn { border-color: rgba(255,201,77,0.45); color: #ffe1a0 !important; }
 .aui .tmsg.alarm { border-color: rgba(255,77,64,0.6); background: rgba(40,6,4,0.72); color: #ffc2bb !important; }
 .aui .tmsg .cnt { margin-left: 0.5em; font: 600 0.8em/1 var(--mono); color: var(--dim); }
-.aui .tcap { background: rgba(0,0,0,0.55); border-color: transparent; font-family: var(--serif); font-style: italic; font-size: 1.02em; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.aui .tcap { background: rgba(0,0,0,0.64); border-color: transparent; font-family: var(--serif); font-style: italic; font-size: 1.02em; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
 .aui .tcap .who { font: 700 0.62em/1 var(--sans); font-style: normal; letter-spacing: 0.18em; padding: 0.3em 0.45em 0.25em; border-radius: 0.25em; margin-right: 0.7em; vertical-align: 0.18em; color: #0b0d10; background: var(--fg-2); }
 .aui .tcap .who.CDR { background: #ffd08a; }
 .aui .tcap .who.LMP { background: #9fd3ff; }

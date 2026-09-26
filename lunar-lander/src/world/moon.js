@@ -508,6 +508,17 @@ for (let vi = 0; vi < 14; vi++) {
   v.c5 = Math.cos(v.p5); v.s5 = Math.sin(v.p5);
   v.c7 = Math.cos(v.p7); v.s7 = Math.sin(v.p7);
   v.ct = Math.cos(v.pt); v.st = Math.sin(v.pt);
+  // no peanut outlines: a concave waist reads as a notch/cleft through the rock
+  let emin = 2;
+  for (let j = 0; j < 90; j++) {
+    const th = (j / 90) * 6.2832;
+    const e = 1 + v.a2 * Math.cos(2 * th - v.p2) + v.a3 * Math.cos(3 * th - v.p3) + v.a5 * Math.cos(5 * th - v.p5) + v.a7 * Math.cos(7 * th - v.p7);
+    if (e < emin) emin = e;
+  }
+  if (emin < 0.8) {
+    const f = 0.2 / (1 - emin);
+    v.a2 *= f; v.a3 *= f; v.a5 *= f; v.a7 *= f;
+  }
   for (let l = 0; l < 3; l++) {
     const a = rnd() * 6.2832;
     const f = cls.lf * (0.9 + 0.5 * rnd()) * (1 + 0.7 * l);

@@ -174,7 +174,8 @@ export const LUNAR_GLSL = /* glsl */ `
     }
   }
 
-  void craterBand(vec3 x, vec3 up, vec3 Lt, float tanE, vec3 Vt, float tanV, float dens, float dens2, float young, float w, inout vec3 grad, inout float shadow, inout float bright, inout float cavity) {
+  // nc: candidates per 2x2x2 block (8: one per cell, 16: two, 24: three - a denser, saturated band)
+  void craterBand(vec3 x, vec3 up, vec3 Lt, float tanE, vec3 Vt, float tanV, float dens, float dens2, float young, float w, int nc, inout vec3 grad, inout float shadow, inout float bright, inout float cavity) {
     vec3 b = floor(x - 0.5);
     vec3 l = x - b;                        // in [0.5, 1.5)
     float best = 1.0;
@@ -185,13 +186,17 @@ export const LUNAR_GLSL = /* glsl */ `
     vec4 br2 = vec4(0.0);
     float brho2 = 0.25;
     float brho22 = 0.25;
-    for (int k = 0; k < 16; k++) {
-      // two candidates per cell (the second derived from the same hash): dense, overlapping craters
+    for (int k = 0; k < 24; k++) {
+      if (k >= nc) break;
+      // up to three candidates per cell (the others derived from the same hash): dense, overlapping craters
       int kc = k & 7;
       vec3 o = vec3(float(kc & 1), float((kc >> 1) & 1), float(kc >> 2));
       vec4 r = cellRand(b + o);
       float dd = dens;
-      if (k >= 8) {
+      if (k >= 16) {
+        r = fract(r.wzyx * 3.913 + vec4(0.271, 0.859, 0.462, 0.953));
+        dd = dens2;
+      } else if (k >= 8) {
         r = fract(r.zxwy * 5.371 + vec4(0.618, 0.337, 0.791, 0.143));
         dd = dens2;
       }
