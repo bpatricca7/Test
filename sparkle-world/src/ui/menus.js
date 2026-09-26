@@ -1,127 +1,260 @@
-// Menus: title screen, New World wizard, My Worlds list and the pause panel.
-// The Menus team adds the live 3D title backdrop, export/import and more polish.
+// Menus: the title screen (live 3D island backdrop with the player's avatar waving), the New
+// World wizard (painted biome cards), My Worlds (thumbnails, rename, delete, save to a file,
+// open a file), the pause panel and the cute loading messages.
 
-import { icon } from './icons.js';
+import { icon2, button2 } from './menus/icons2.js';
+import { TitleBackdrop } from './menus/backdrop.js';
+import { paintBiomeArt, sizeArt } from './menus/biome-art.js';
+import { prepareDownloads, saveFile, safeFileName, pickTextFile } from './menus/files.js';
 
 const CSS = /* css */ `
-.sw-title { position: absolute; inset: 0; overflow: hidden; background: linear-gradient(180deg, #6EC3FF 0%, #A9DEFF 38%, #FFE0F0 78%, #FFD1E6 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: calc(20px + var(--sw-safe-t)) 16px calc(20px + var(--sw-safe-b)); }
-.sw-cloud { position: absolute; width: 180px; height: 56px; border-radius: 40px; background: #fff; opacity: .92; animation: sw-drift linear infinite; box-shadow: 0 10px 0 rgba(255,255,255,.4); }
-.sw-cloud::before, .sw-cloud::after { content: ''; position: absolute; background: #fff; border-radius: 50%; }
-.sw-cloud::before { width: 80px; height: 80px; left: 26px; top: -40px; }
-.sw-cloud::after { width: 64px; height: 64px; left: 88px; top: -28px; }
-.sw-hills { position: absolute; left: 0; right: 0; bottom: 0; height: 34%; pointer-events: none; }
-.sw-hills svg { width: 100%; height: 100%; display: block; }
-.sw-logo { position: relative; z-index: 2; text-align: center; line-height: .92; margin: 0; font-weight: 700; font-size: clamp(56px, 12vw, 128px); letter-spacing: 2px; animation: sw-pop .6s var(--sw-bounce); }
+/* ---------- title ---------- */
+.sw-title2 { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.sw-title2 > * { pointer-events: auto; }
+.sw-title2.sw-flat { background: linear-gradient(180deg, #6EC3FF 0%, #A9DEFF 45%, #FFE0F0 80%, #FFD1E6 100%); }
+.sw-title-glow { position: absolute; inset: 0; pointer-events: none !important; background: radial-gradient(ellipse 46% 70% at 21% 52%, rgba(255,255,255,.62), rgba(255,255,255,.18) 60%, rgba(255,255,255,0) 78%); }
+.sw-title-col { position: absolute; top: 0; bottom: 0; left: calc(max(20px, 3.5vw) + var(--sw-safe-l)); width: min(460px, 42vw); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(8px, 1.8vh, 16px); padding: calc(12px + var(--sw-safe-t)) 0 calc(12px + var(--sw-safe-b)); pointer-events: none !important; }
+.sw-title-col > * { pointer-events: auto; }
+.sw-logo { position: relative; text-align: center; line-height: .9; margin: 0 0 4px; font-weight: 700; font-size: clamp(44px, min(6.6vw, 12vh), 104px); letter-spacing: 1px; animation: sw-pop .6s var(--sw-bounce); pointer-events: none; }
 .sw-logo .sw-word { display: block; white-space: nowrap; }
-.sw-logo .sw-l { display: inline-block; -webkit-text-stroke: 12px #fff; paint-order: stroke fill; text-shadow: 0 9px 0 rgba(58,31,77,.16); animation: sw-float 3s ease-in-out infinite; }
-.sw-logo-sparkle { position: absolute; color: var(--sw-sun); width: 44px; height: 44px; animation: sw-twinkle 1.8s ease-in-out infinite; filter: drop-shadow(0 3px 0 #fff); }
-.sw-tagline { position: relative; z-index: 2; font-size: clamp(18px, 3vw, 26px); font-weight: 600; color: var(--sw-ink); background: rgba(255,255,255,.85); padding: 6px 20px; border-radius: 999px; border: 3px solid #fff; box-shadow: 0 4px 12px var(--sw-shadow); }
-.sw-title-buttons { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: stretch; gap: 12px; width: min(360px, 88vw); margin-top: 6px; }
-.sw-title-small { position: relative; z-index: 2; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-.sw-floaty { position: absolute; width: 64px; height: 64px; animation: sw-float 3.4s ease-in-out infinite; filter: drop-shadow(0 8px 10px rgba(58,31,77,.2)); z-index: 1; }
+.sw-logo .sw-l { display: inline-block; -webkit-text-stroke: .13em #fff; paint-order: stroke fill; text-shadow: 0 .09em 0 rgba(58,31,77,.18); animation: sw-float 3s ease-in-out infinite; }
+.sw-logo-sparkle { position: absolute; color: var(--sw-sun); width: .42em; height: .42em; animation: sw-twinkle 1.8s ease-in-out infinite; filter: drop-shadow(0 3px 0 #fff); }
+.sw-logo-sparkle svg { width: 100%; height: 100%; }
+.sw-title-buttons { display: flex; flex-direction: column; align-items: stretch; gap: clamp(8px, 1.4vh, 12px); width: min(360px, 100%); }
+.sw-title-buttons .sw-btn { width: 100%; }
+.sw-title-last { margin: -4px auto 0; max-width: 100%; font-size: 15px; font-weight: 600; color: var(--sw-ink); background: rgba(255,255,255,.88); border-radius: 999px; padding: 2px 14px; box-shadow: 0 3px 8px var(--sw-shadow); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sw-title-last[hidden], .sw-app .sw-btn[hidden] { display: none; }
+.sw-title-tiles { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 2px; }
+.sw-tile.sw-btn { flex-direction: column; gap: 2px; width: 96px; min-height: 90px; padding: 8px 4px 6px; border-radius: 26px; font-size: 16px; }
+.sw-tile.sw-btn svg { width: 38px; height: 38px; }
+.sw-tile.sw-tile--lav svg { color: var(--sw-lav); }
+.sw-tile.sw-tile--sun svg { color: #F5A300; }
+.sw-tile.sw-tile--sky svg { color: #3AAEF0; }
+.sw-tile.sw-tile--mint svg { color: #22BF95; }
+.sw-hello { position: absolute; left: 0; top: 0; transform: translate(-9999px, 0); padding: 8px 18px 8px 14px; border-radius: 22px; background: #fff; color: var(--sw-ink); font-size: clamp(18px, 2.4vw, 26px); font-weight: 700; white-space: nowrap; box-shadow: 0 6px 16px var(--sw-shadow); border: 4px solid var(--sw-pink-soft); display: flex; align-items: center; gap: 8px; pointer-events: none !important; will-change: transform; }
+.sw-hello svg { width: 1.1em; height: 1.1em; color: var(--sw-pink); animation: sw-beat 1.2s ease-in-out infinite; }
+.sw-hello::after { content: ''; position: absolute; left: 50%; bottom: -13px; margin-left: -10px; border: 10px solid transparent; border-top: 11px solid #fff; border-bottom: 0; filter: drop-shadow(0 3px 0 var(--sw-pink-soft)); }
+.sw-hello-in { display: inline-block; animation: sw-pop .5s var(--sw-bounce) both; }
+@keyframes sw-beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.22); } }
 
-.sw-field-label { font-size: 19px; font-weight: 700; color: var(--sw-lav); margin: 10px 0 8px; display: flex; align-items: center; gap: 8px; }
-.sw-field-label svg { width: 22px; height: 22px; }
-.sw-biomes { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
-.sw-biome { position: relative; border-radius: 22px; border: 4px solid #fff; padding: 12px 10px 12px; cursor: pointer; text-align: center; box-shadow: 0 5px 14px var(--sw-shadow); transition: transform .18s var(--sw-bounce), box-shadow .18s; font-family: var(--sw-font); color: var(--sw-ink); }
-.sw-biome img { width: 70px; height: 70px; display: block; margin: 0 auto 4px; filter: drop-shadow(0 5px 6px rgba(58,31,77,.2)); }
-.sw-biome-name { font-size: 18px; font-weight: 700; }
-.sw-biome-desc { font-size: 13px; opacity: .8; line-height: 1.15; margin-top: 2px; }
-.sw-biome.sw-sel { border-color: var(--sw-pink); transform: scale(1.04); box-shadow: 0 0 0 4px #fff, 0 8px 22px rgba(255,95,162,.45); }
-.sw-biome .sw-check { position: absolute; top: -10px; right: -10px; width: 34px; height: 34px; border-radius: 50%; background: var(--sw-pink); color: #fff; border: 3px solid #fff; display: none; place-items: center; }
-.sw-biome.sw-sel .sw-check { display: grid; }
+@media (max-aspect-ratio: 1/1) {
+  .sw-title-glow { background: linear-gradient(180deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,0) 26%, rgba(255,255,255,0) 58%, rgba(255,255,255,.55) 100%); }
+  .sw-title-col { left: 0; right: 0; width: auto; justify-content: space-between; padding: calc(4vh + var(--sw-safe-t)) 16px calc(3vh + var(--sw-safe-b)); }
+  .sw-logo { font-size: clamp(48px, 13vw, 110px); }
+  .sw-title-bottom { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+  .sw-title-buttons { width: min(440px, 100%); display: grid; grid-template-columns: 1fr 1fr; }
+  .sw-title-buttons .sw-btn--big, .sw-title-buttons .sw-title-last { grid-column: 1 / -1; }
+  .sw-title-buttons .sw-btn:not(.sw-btn--big) { font-size: 18px; padding: 6px 10px; }
+}
+@media (min-aspect-ratio: 1/1) { .sw-title-bottom { display: contents; } }
+@media (max-height: 520px) and (min-aspect-ratio: 1/1) {
+  .sw-tile.sw-btn { width: 78px; min-height: 64px; font-size: 13px; border-radius: 20px; }
+  .sw-tile.sw-btn svg { width: 26px; height: 26px; }
+  .sw-title-buttons .sw-btn { min-height: 44px; font-size: 17px; }
+  .sw-title-buttons .sw-btn--big { min-height: 52px; font-size: 21px; }
+  .sw-title-last { display: none; }
+}
+@media (max-width: 420px) {
+  .sw-tile.sw-btn { width: 84px; min-height: 78px; font-size: 14px; }
+  .sw-tile.sw-btn svg { width: 30px; height: 30px; }
+}
+
+/* ---------- shared form bits ---------- */
+.sw-field-label { font-size: 20px; font-weight: 700; color: var(--sw-lav); margin: 14px 0 8px; display: flex; align-items: center; gap: 8px; }
+.sw-field-label:first-child { margin-top: 2px; }
+.sw-field-label svg { width: 24px; height: 24px; }
+
+/* ---------- new world ---------- */
+.sw-nw-name { display: flex; gap: 10px; align-items: stretch; }
+.sw-nw-name .sw-input { flex: 1; min-width: 0; font-size: 24px; }
+.sw-biomes { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+.sw-biome { position: relative; border-radius: 24px; border: 5px solid #fff; padding: 0 0 10px; cursor: pointer; text-align: center; box-shadow: 0 6px 14px var(--sw-shadow); transition: transform .18s var(--sw-bounce), box-shadow .18s; font-family: var(--sw-font); color: var(--sw-ink); overflow: visible; }
+.sw-biome:hover { transform: translateY(-3px); }
+.sw-biome:active { transform: scale(.96); }
+.sw-biome-art { display: block; width: 100%; aspect-ratio: 288 / 176; border-radius: 19px 19px 12px 12px; image-rendering: pixelated; image-rendering: crisp-edges; background: #DDF4FF; margin-bottom: 6px; }
+.sw-biome-name { font-size: 19px; font-weight: 700; padding: 0 8px; }
+.sw-biome-desc { font-size: 14px; opacity: .8; line-height: 1.15; margin-top: 2px; padding: 0 10px; }
+.sw-biome.sw-sel { border-color: var(--sw-pink); transform: scale(1.04); box-shadow: 0 0 0 4px #fff, 0 10px 24px rgba(255,95,162,.45); z-index: 1; }
+.sw-biome .sw-check { position: absolute; top: -12px; right: -12px; width: 38px; height: 38px; border-radius: 50%; background: var(--sw-pink); color: #fff; border: 4px solid #fff; display: none; place-items: center; box-shadow: 0 3px 8px var(--sw-shadow); }
+.sw-biome.sw-sel .sw-check { display: grid; animation: sw-pop .3s var(--sw-bounce); }
 .sw-biome .sw-check svg { width: 20px; height: 20px; }
-.sw-sizes { display: flex; gap: 10px; flex-wrap: wrap; }
-.sw-toggle.sw-sel { --c: var(--sw-lav); --fg: #fff; border-color: #fff; }
-.sw-create-row { display: flex; justify-content: center; margin-top: 18px; }
+.sw-sizes { display: flex; gap: 14px; flex-wrap: wrap; }
+.sw-size { display: flex; align-items: center; gap: 12px; padding: 8px 18px 8px 8px; border-radius: 22px; border: 5px solid #fff; background: #fff; box-shadow: 0 5px 12px var(--sw-shadow); cursor: pointer; font-family: var(--sw-font); color: var(--sw-ink); transition: transform .18s var(--sw-bounce); min-height: 88px; }
+.sw-size svg { width: 96px; height: 76px; border-radius: 14px; }
+.sw-size-name { font-size: 22px; font-weight: 700; text-align: left; }
+.sw-size-sub { font-size: 14px; font-weight: 600; color: var(--sw-lav); text-align: left; }
+.sw-size.sw-sel { border-color: var(--sw-lav); box-shadow: 0 0 0 4px #fff, 0 8px 20px rgba(156,123,255,.45); transform: scale(1.03); }
+.sw-create-row { display: flex; justify-content: center; margin-top: 20px; }
+.sw-create.sw-btn { min-width: 260px; }
 
-.sw-worlds { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
-.sw-world { background: #fff; border-radius: 22px; border: 4px solid var(--sw-pink-soft); overflow: hidden; box-shadow: 0 5px 14px var(--sw-shadow); display: flex; flex-direction: column; }
-.sw-world-thumb { aspect-ratio: 16 / 10; background: linear-gradient(135deg, #BDF5C6, #9FD8FF); display: grid; place-items: center; overflow: hidden; }
+/* ---------- my worlds ---------- */
+.sw-worlds-bar { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin: 0 0 12px; }
+.sw-worlds-bar[hidden] { display: none; }
+.sw-worlds { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+.sw-world { background: #fff; border-radius: 24px; border: 4px solid var(--sw-pink-soft); overflow: hidden; box-shadow: 0 5px 14px var(--sw-shadow); display: flex; flex-direction: column; animation: sw-pop .35s var(--sw-bounce) both; }
+.sw-world.sw-new { border-color: var(--sw-mint); box-shadow: 0 0 0 4px #fff, 0 0 0 8px rgba(63,216,176,.5), 0 8px 20px var(--sw-shadow); }
+.sw-world-thumb { position: relative; aspect-ratio: 16 / 10; background: linear-gradient(135deg, #BDF5C6, #9FD8FF); overflow: hidden; }
 .sw-world-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.sw-world-thumb svg { width: 48px; height: 48px; color: #fff; }
-.sw-world-info { padding: 8px 12px 4px; }
-.sw-world-name { font-size: 19px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sw-world-meta { font-size: 14px; color: var(--sw-lav); font-weight: 600; }
-.sw-world-actions { display: flex; gap: 6px; padding: 6px 10px 12px; align-items: center; }
-.sw-world-actions .sw-btn--pink { flex: 1; }
-.sw-empty { text-align: center; padding: 24px; font-size: 20px; color: var(--sw-lav); display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.sw-world-thumb img.sw-art { image-rendering: pixelated; }
+.sw-world-badge { position: absolute; left: 8px; top: 8px; display: inline-flex; align-items: center; gap: 5px; padding: 3px 11px 3px 4px; border-radius: 999px; border: 3px solid #fff; font-size: 14px; font-weight: 700; color: var(--sw-ink); box-shadow: 0 3px 8px var(--sw-shadow); }
+.sw-world-badge img { width: 22px !important; height: 22px !important; object-fit: contain; }
+.sw-world-info { padding: 8px 14px 2px; }
+.sw-world-name { font-size: 20px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sw-world-meta { font-size: 14px; color: var(--sw-lav); font-weight: 600; display: flex; align-items: center; gap: 5px; }
+.sw-world-meta svg { width: 16px; height: 16px; }
+.sw-world-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 8px 12px 12px; }
+.sw-world-actions .sw-btn--pink { grid-column: 1 / -1; min-height: 50px; }
+.sw-mini.sw-btn { flex-direction: column; gap: 1px; min-width: 0; min-height: 54px; padding: 3px 4px; border-radius: 16px; border-width: 3px; font-size: 13px; font-weight: 700; }
+.sw-mini.sw-btn svg { width: 22px; height: 22px; }
+.sw-mini.sw-btn .sw-btn-label { line-height: 1.05; }
+.sw-empty { text-align: center; padding: 10px 16px 24px; font-size: 21px; font-weight: 600; color: var(--sw-lav); display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.sw-empty img { width: min(320px, 80%); border-radius: 24px; border: 5px solid #fff; box-shadow: 0 8px 20px var(--sw-shadow); image-rendering: pixelated; }
+.sw-empty-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
 
-.sw-pause { display: flex; flex-direction: column; gap: 12px; align-items: stretch; width: min(380px, 100%); margin: 0 auto; }
+/* ---------- pause ---------- */
+.sw-pause { display: flex; flex-direction: column; gap: 12px; align-items: stretch; width: min(400px, 100%); margin: 0 auto; }
 .sw-pause-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.sw-pause-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sw-pause-grid .sw-btn { font-size: 18px; padding: 6px 10px; min-width: 0; }
+.sw-pause-grid .sw-btn:only-child { grid-column: 1 / -1; }
+
+/* ---------- loading ---------- */
+.sw-loading-sub { font-size: 21px; font-weight: 600; color: var(--sw-lav); background: rgba(255,255,255,.85); padding: 6px 20px; border-radius: 999px; box-shadow: 0 4px 12px var(--sw-shadow); min-height: 1.4em; text-align: center; }
+.sw-loading-sub span { display: inline-block; animation: sw-msg .35s var(--sw-bounce); }
+@keyframes sw-msg { from { transform: translateY(6px) scale(.85); opacity: .35; } to { transform: none; opacity: 1; } }
+.sw-loading-hearts { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.sw-loading-hearts span { position: absolute; bottom: -40px; width: 30px; height: 30px; color: #fff; opacity: .8; animation: sw-rise linear infinite; }
+.sw-loading-hearts svg { width: 100%; height: 100%; }
+@keyframes sw-rise { from { transform: translateY(0) rotate(-10deg); } to { transform: translateY(-115vh) rotate(14deg); } }
+
 @media (max-width: 600px) {
   .sw-biomes { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  .sw-biome img { width: 54px; height: 54px; }
+  .sw-biome-name { font-size: 16px; }
   .sw-biome-desc { display: none; }
-  .sw-floaty { width: 44px; height: 44px; }
-  .sw-logo .sw-l { -webkit-text-stroke: 9px #fff; }
+  .sw-nw-name { flex-wrap: wrap; justify-content: flex-end; }
+  .sw-nw-name .sw-input { font-size: 20px; flex-basis: 100%; }
+  .sw-nw-name .sw-dice.sw-btn { min-height: 44px; font-size: 17px; padding: 4px 16px; }
+  .sw-sizes { flex-wrap: nowrap; gap: 10px; }
+  .sw-size { flex: 1 1 0; min-width: 0; flex-direction: column; gap: 4px; padding: 6px 6px 8px; min-height: 0; }
+  .sw-size svg { width: 100%; max-width: 110px; height: 64px; }
+  .sw-size-name, .sw-size-sub { text-align: center; }
+  .sw-size-name { font-size: 19px; }
+  .sw-worlds { grid-template-columns: 1fr; }
 }
 `;
 
 const LOGO_COLORS = ['#FF5FA2', '#FFA43B', '#FFC94D', '#3FD8B0', '#6CC6FF', '#9C7BFF', '#FF7EB6'];
 
 const NAME_IDEAS = {
-  meadow: ['Rainbow Meadow', 'Flower Valley', 'Bunny Hill'],
-  flat: ['Dream Town', 'Sparkle City', 'Happy Street'],
-  candy: ['Candy Land', 'Cupcake Kingdom', 'Lollipop Hills'],
-  beach: ['Seashell Island', 'Sunny Beach', 'Mermaid Lagoon'],
-  snow: ['Snowflake Village', 'Frosty Peaks', 'Winter Wonderland'],
-  fairy: ['Fairy Forest', 'Glow Garden', 'Moonlight Woods'],
+  meadow: ['Rainbow Meadow', 'Flower Valley', 'Bunny Hill', 'Blossom Park', 'Buttercup Fields', 'Petal Hollow'],
+  flat: ['Dream Town', 'Sparkle City', 'Happy Street', 'Cupcake Village', 'Starlight Town', 'Sunny Square'],
+  candy: ['Candy Land', 'Cupcake Kingdom', 'Lollipop Hills', 'Gumdrop Valley', 'Sugar Castle', 'Sprinkle Town'],
+  beach: ['Seashell Island', 'Sunny Beach', 'Mermaid Lagoon', 'Coconut Cove', 'Starfish Bay', 'Sandcastle Shore'],
+  snow: ['Snowflake Village', 'Frosty Peaks', 'Winter Wonderland', 'Cocoa Mountain', 'Twinkle Snow', 'Igloo Hills'],
+  fairy: ['Fairy Forest', 'Glow Garden', 'Moonlight Woods', 'Pixie Hollow', 'Crystal Glade', 'Firefly Grove'],
 };
+const ADJECTIVES = ['Rainbow', 'Sparkly', 'Sunny', 'Dreamy', 'Cozy', 'Magic', 'Twinkle', 'Bubblegum', 'Starlight', 'Honey', 'Glitter', 'Happy'];
+const NOUNS = ['Meadow', 'Island', 'Valley', 'Garden', 'Kingdom', 'Village', 'Hills', 'Paradise', 'Land', 'Castle', 'Town', 'Park'];
+
+const NEW_WORLD_MSGS = ['Planting flowers…', 'Painting the sky…', 'Fluffing the clouds…', 'Growing cherry trees…', 'Hiding sparkly gems…', 'Filling the pond…', 'Sprinkling glitter…', 'Waking up the butterflies…'];
+const OPEN_WORLD_MSGS = ['Waking up your world…', 'Watering the flowers…', 'Fluffing the pillows…', 'Finding your things…', 'Saying hello to the butterflies…'];
 
 function relativeDay(ms) {
-  if (!ms) return '';
+  if (!ms) return 'New!';
   const days = Math.floor((Date.now() - ms) / 86400000);
   if (days <= 0) return 'Played today';
   if (days === 1) return 'Played yesterday';
-  return `Played ${days} days ago`;
+  if (days < 14) return `Played ${days} days ago`;
+  return `Played ${Math.round(days / 7)} weeks ago`;
 }
 
 function hillsSvg() {
-  return `<svg viewBox="0 0 1200 300" preserveAspectRatio="none" aria-hidden="true">
+  return `<svg viewBox="0 0 1200 300" preserveAspectRatio="none" aria-hidden="true" style="position:absolute;left:0;right:0;bottom:0;width:100%;height:34%">
     <path d="M0 150 C 180 60 360 60 520 130 C 700 210 860 70 1040 90 C 1120 100 1170 130 1200 140 V300 H0Z" fill="#A6E7A0"/>
     <path d="M0 210 C 220 130 420 170 600 200 C 800 235 980 150 1200 190 V300 H0Z" fill="#86D67A"/>
-    <path d="M0 262 C 300 225 520 255 760 245 C 950 238 1080 250 1200 240 V300 H0Z" fill="#74CC6C"/>
   </svg>`;
 }
 
 export function install(game) {
   const ui = game.ui;
   ui.addStyles(CSS);
-  const playerName = () => (game.profile.look && game.profile.look.name) || 'My';
+  prepareDownloads();
+  const playerName = () => {
+    const p = game.profile;
+    return (p.playerName && String(p.playerName).trim()) || (p.look && p.look.name) || 'friend';
+  };
+  const tallQuery = typeof matchMedia === 'function' ? matchMedia('(max-aspect-ratio: 1/1)') : null;
+  const isTall = () => (tallQuery ? tallQuery.matches : window.innerHeight > window.innerWidth);
 
-  // ---------- title ----------
-  let playBtn;
-  let smallRow;
+  // =====================================================================================
+  // title
+  // =====================================================================================
+  let backdrop = null;
+  let titleEl, playBtn, lastChip, tilesRow, hello, helloText;
+  const helloAt = { x: 0, y: 0 };
+
+  const loadingOpen = () => ui.loadingEl && ui.loadingEl.classList.contains('sw-open');
+
+  let backdropFailed = false;
+  function ensureBackdrop() {
+    if (backdrop || backdropFailed || game.world || game.mode !== 'title' || loadingOpen() || !game.blockMaterials) return;
+    try {
+      backdrop = new TitleBackdrop(game);
+      backdrop.setLayout(isTall() ? 'tall' : 'wide');
+      if (titleEl) titleEl.classList.remove('sw-flat');
+      // a pleasant morning for the title island
+      game.time.dayTime = 0.31;
+    } catch (err) {
+      console.error('[menus] title backdrop failed', err);
+      backdropFailed = true; // the painted sky and hills stand in; do not retry every frame
+      backdrop = null;
+      if (titleEl) titleEl.classList.add('sw-flat');
+    }
+  }
+
+  function dropBackdrop() {
+    if (!backdrop) return;
+    try { backdrop.dispose(); } catch (err) { console.warn('[menus] backdrop dispose failed', err); }
+    backdrop = null;
+  }
+
+  game.addSystem({
+    name: 'menus-title',
+    update(dt) {
+      if (game.world || game.mode === 'play' || loadingOpen()) {
+        dropBackdrop();
+        return;
+      }
+      if (!backdrop && ui.current && (ui.current === 'title' || ['newworld', 'worlds', 'settings', 'dressup', 'stickers', 'help'].includes(ui.current))) ensureBackdrop();
+      if (!backdrop) return;
+      backdrop.setLayout(isTall() ? 'tall' : 'wide');
+      backdrop.update(dt);
+      if (hello && ui.current === 'title') {
+        const at = backdrop.headScreen(helloAt);
+        if (at) hello.style.transform = `translate(calc(${Math.round(at.x)}px - 50%), calc(${Math.round(at.y)}px - 100%))`;
+      }
+    },
+    onWorldLoad() {
+      dropBackdrop();
+    },
+  });
+
+  const refreshLook = () => {
+    if (backdrop) backdrop.setLook(game.profile.look);
+    if (helloText) helloText.textContent = `Hi, ${playerName()}!`;
+  };
+  game.events.on('avatar:changed', refreshLook);
+  game.events.on('outfit:changed', refreshLook);
+  game.events.on('profile:changed', () => { refreshLook(); refreshTitle(); });
+  game.events.on('ui:close', ({ panel }) => { if (panel === 'dressup' && game.mode === 'title') { refreshLook(); if (backdrop) backdrop.cheer('twirl'); } });
+
   ui.registerPanel('title', {
     fullscreen: true,
     closable: false,
     build(container) {
-      const t = ui.el('div', 'sw-title');
-      for (let i = 0; i < 5; i++) {
-        const c = ui.el('div', 'sw-cloud');
-        c.style.top = `${6 + i * 11}%`;
-        c.style.animationDuration = `${38 + i * 9}s`;
-        c.style.animationDelay = `${-i * 11}s`;
-        c.style.transform = `scale(${0.6 + (i % 3) * 0.25})`;
-        t.appendChild(c);
-      }
-      const hills = ui.el('div', 'sw-hills');
-      hills.innerHTML = hillsSvg();
-      t.appendChild(hills);
-
-      // floating blocks around the logo
-      const floaties = [['grass', 12, 20], ['planks_pink', 82, 16], ['wool_sky', 8, 62], ['leaves_cherry', 86, 58], ['lamp_block', 20, 84], ['glass_pink', 76, 84]];
-      floaties.forEach(([key, x, y], i) => {
-        if (!game.registry.blocks.has(key)) return;
-        const img = ui.el('img', 'sw-floaty');
-        img.alt = '';
-        img.style.left = `${x}%`;
-        img.style.top = `${y}%`;
-        img.style.animationDelay = `${-i * 0.6}s`;
-        game.registry.blocks.iconFor(key).then((url) => { img.src = url; });
-        t.appendChild(img);
-      });
+      titleEl = ui.el('div', 'sw-title2');
+      titleEl.appendChild(ui.el('div', 'sw-title-glow'));
+      const col = ui.el('div', 'sw-title-col');
 
       const logo = ui.el('h1', 'sw-logo');
       logo.setAttribute('aria-label', 'Sparkle World');
@@ -137,41 +270,64 @@ export function install(game) {
         }
         logo.appendChild(w);
       }
-      for (const [x, y, d] of [[-6, 4, 0], [96, 38, 0.6], [44, 92, 1.1]]) {
+      for (const [x, y, d] of [[-8, 4, 0], [96, 36, 0.6], [40, 90, 1.1]]) {
         const s = ui.el('span', 'sw-logo-sparkle');
-        s.innerHTML = icon('sparkle');
+        s.innerHTML = icon2('sparkle');
         s.style.left = `${x}%`;
         s.style.top = `${y}%`;
         s.style.animationDelay = `${d}s`;
         logo.appendChild(s);
       }
-      const tagline = ui.el('div', 'sw-tagline', 'Build your dream world!');
 
+      const bottom = ui.el('div', 'sw-title-bottom');
       const buttons = ui.el('div', 'sw-title-buttons');
-      playBtn = ui.button({ icon: 'play', label: 'Play', variant: 'pink', size: 'big', onClick: () => continueLast() });
-      const newBtn = ui.button({ icon: 'plus', label: 'New World', variant: 'mint', onClick: () => ui.open('newworld') });
-      const worldsBtn = ui.button({ icon: 'world', label: 'My Worlds', variant: 'lav', onClick: () => ui.open('worlds') });
-      buttons.append(playBtn, newBtn, worldsBtn);
+      playBtn = button2(ui, { icon: 'play', label: 'Play', variant: 'pink', size: 'big', className: 'sw-title-play', onClick: () => continueLast() });
+      lastChip = ui.el('div', 'sw-title-last');
+      lastChip.hidden = true;
+      const newBtn = button2(ui, { icon: 'plus', label: 'New World', variant: 'mint', onClick: () => ui.open('newworld') });
+      const worldsBtn = button2(ui, { icon: 'world', label: 'My Worlds', variant: 'lav', onClick: () => ui.open('worlds') });
+      buttons.append(playBtn, lastChip, newBtn, worldsBtn);
+      tilesRow = ui.el('div', 'sw-title-tiles');
+      bottom.append(buttons, tilesRow);
+      col.append(logo, bottom);
 
-      smallRow = ui.el('div', 'sw-title-small');
-      t.append(logo, tagline, buttons, smallRow);
-      container.appendChild(t);
+      hello = ui.el('div', 'sw-hello');
+      hello.innerHTML = icon2('heart');
+      helloText = ui.el('span', 'sw-hello-in', `Hi, ${playerName()}!`);
+      hello.prepend(helloText);
+
+      titleEl.append(col, hello);
+      container.appendChild(titleEl);
     },
     onOpen() {
+      ensureBackdrop();
+      if (!backdrop) titleEl.classList.add('sw-flat');
+      if (titleEl.classList.contains('sw-flat') && !titleEl.querySelector('svg[preserveAspectRatio]')) titleEl.insertAdjacentHTML('afterbegin', hillsSvg());
+      hello.style.transform = 'translate(-9999px, 0)';
+      helloText.textContent = `Hi, ${playerName()}!`;
+      // restart the pop so the greeting bounces in every time
+      helloText.style.animation = 'none';
+      void helloText.offsetWidth;
+      helloText.style.animation = '';
+      if (backdrop) backdrop.cheer('wave');
+      if (game.audio.setMood) game.audio.setMood('menu');
       refreshTitle();
     },
   });
 
   async function refreshTitle() {
     if (!playBtn) return;
-    smallRow.innerHTML = '';
-    if (game.actions.has('dressup')) smallRow.appendChild(ui.button({ icon: 'dress', label: 'Dress Up', variant: 'white', size: 'small', onClick: () => game.runAction('dressup') }));
-    if (game.actions.has('stickers')) smallRow.appendChild(ui.button({ icon: 'sticker', label: 'Stickers', variant: 'white', size: 'small', onClick: () => game.runAction('stickers') }));
-    if (ui.hasPanel('settings')) smallRow.appendChild(ui.button({ icon: 'settings', label: 'Settings', variant: 'white', size: 'small', onClick: () => ui.open('settings') }));
+    tilesRow.innerHTML = '';
+    if (game.actions.has('dressup')) tilesRow.appendChild(button2(ui, { icon: 'dress', label: 'Dress Up', variant: 'white', className: 'sw-tile sw-tile--lav', onClick: () => game.runAction('dressup') }));
+    if (game.actions.has('stickers')) tilesRow.appendChild(button2(ui, { icon: 'sticker', label: 'Stickers', variant: 'white', className: 'sw-tile sw-tile--sun', onClick: () => game.runAction('stickers') }));
+    if (ui.hasPanel('settings')) tilesRow.appendChild(button2(ui, { icon: 'settings', label: 'Settings', variant: 'white', className: 'sw-tile sw-tile--sky', onClick: () => ui.open('settings') }));
+    if (game.actions.has('help') && tilesRow.childElementCount < 3) tilesRow.appendChild(button2(ui, { icon: 'help', label: 'Help', variant: 'white', className: 'sw-tile sw-tile--mint', onClick: () => game.runAction('help') }));
     const worlds = await game.store.listWorlds();
-    playBtn.hidden = worlds.length === 0;
+    const last = worlds.find((w) => w.id === game.profile.lastWorldId) || worlds[0];
+    playBtn.hidden = !last;
+    lastChip.hidden = !last;
+    if (last) lastChip.textContent = last.name;
   }
-  game.events.on('profile:changed', refreshTitle);
 
   async function continueLast() {
     const worlds = await game.store.listWorlds();
@@ -183,13 +339,78 @@ export function install(game) {
     await game.loadWorld(last.id);
   }
 
-  // ---------- new world ----------
+  // =====================================================================================
+  // loading card: rotating cute messages + rising hearts
+  // =====================================================================================
+  if (ui.loadingEl) {
+    const sub = ui.el('div', 'sw-loading-sub');
+    const hearts = ui.el('div', 'sw-loading-hearts');
+    for (let i = 0; i < 12; i++) {
+      const h = ui.el('span');
+      h.innerHTML = icon2(i % 3 === 0 ? 'star' : 'heart');
+      h.style.left = `${4 + ((i * 37) % 92)}%`;
+      h.style.animationDuration = `${6 + (i % 4) * 1.6}s`;
+      h.style.animationDelay = `${-i * 0.9}s`;
+      h.style.transform = `scale(${0.7 + (i % 3) * 0.25})`;
+      h.style.color = ['#FFFFFF', '#FFB8D6', '#FFE38A', '#C9B8FF'][i % 4];
+      hearts.appendChild(h);
+    }
+    ui.loadingEl.prepend(hearts);
+    const bar = ui.loadingEl.querySelector('.sw-loading-bar');
+    if (bar) bar.after(sub);
+    else ui.loadingEl.appendChild(sub);
+    let timer = 0, idx = 0, list = NEW_WORLD_MSGS;
+    const show = () => {
+      sub.innerHTML = '';
+      sub.appendChild(ui.el('span', '', list[idx++ % list.length]));
+    };
+    const obs = new MutationObserver(() => {
+      const open = ui.loadingEl.classList.contains('sw-open');
+      if (open && !timer) {
+        const text = (ui._loadingText && ui._loadingText.textContent) || '';
+        list = /open/i.test(text) ? OPEN_WORLD_MSGS : NEW_WORLD_MSGS;
+        idx = Math.floor(Math.random() * 3);
+        show();
+        timer = setInterval(show, 1100);
+      } else if (!open && timer) {
+        clearInterval(timer);
+        timer = 0;
+      }
+    });
+    obs.observe(ui.loadingEl, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  // =====================================================================================
+  // new world wizard
+  // =====================================================================================
   let nameInput, biomeGrid, sizeRow;
-  let choice = { biome: 'meadow', size: 'cozy' };
+  const choice = { biome: 'meadow', size: 'cozy' };
   let nameTouched = false;
-  const suggestName = () => {
-    const ideas = NAME_IDEAS[choice.biome] || NAME_IDEAS.meadow;
-    return `${playerName()}'s ${ideas[0]}`;
+  let lastIdea = '';
+  const artCache = new Map();
+  const biomeArt = (key, def) => {
+    let url = artCache.get(key);
+    if (!url) {
+      try { url = paintBiomeArt(game, key, def); } catch (err) { console.warn('[menus] biome art failed', key, err); url = ''; }
+      artCache.set(key, url);
+    }
+    return url;
+  };
+
+  const ideasFor = (biome) => NAME_IDEAS[biome] || NAME_IDEAS.meadow;
+  const suggestName = (fresh = false) => {
+    const ideas = ideasFor(choice.biome);
+    let idea = ideas[0];
+    if (fresh) {
+      for (let i = 0; i < 8; i++) {
+        idea = Math.random() < 0.6
+          ? ideas[Math.floor(Math.random() * ideas.length)]
+          : `${ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)]} ${NOUNS[Math.floor(Math.random() * NOUNS.length)]}`;
+        if (idea !== lastIdea) break;
+      }
+    }
+    lastIdea = idea;
+    return `${playerName()}'s ${idea}`;
   };
 
   const renderBiomes = () => {
@@ -197,19 +418,24 @@ export function install(game) {
     for (const [key, b] of game.registry.biomes) {
       const card = ui.el('button', 'sw-biome' + (key === choice.biome ? ' sw-sel' : ''));
       card.type = 'button';
+      card.dataset.biome = key;
       const colors = b.colors || ['#FFFFFF', '#FFD1E6'];
-      card.style.background = `linear-gradient(160deg, ${colors[0]}, ${colors[1]})`;
-      const img = ui.el('img');
+      card.style.background = `linear-gradient(170deg, ${colors[0]}, ${colors[1]})`;
+      const img = ui.el('img', 'sw-biome-art');
       img.alt = '';
-      if (b.iconBlock && game.registry.blocks.has(b.iconBlock)) game.registry.blocks.iconFor(b.iconBlock).then((u) => { img.src = u; });
+      img.draggable = false;
+      const url = biomeArt(key, b);
+      if (url) img.src = url;
+      else if (b.iconBlock && game.registry.blocks.has(b.iconBlock)) game.registry.blocks.iconFor(b.iconBlock).then((u) => { img.src = u; });
       const check = ui.el('span', 'sw-check');
-      check.innerHTML = icon('check');
+      check.innerHTML = icon2('check');
       card.append(check, img, ui.el('div', 'sw-biome-name', b.name || key), ui.el('div', 'sw-biome-desc', b.description || ''));
       card.addEventListener('click', () => {
+        if (choice.biome === key) return;
         choice.biome = key;
         game.audio.play('pop');
         if (!nameTouched) nameInput.value = suggestName();
-        renderBiomes();
+        for (const el of biomeGrid.children) el.classList.toggle('sw-sel', el.dataset.biome === key);
       });
       biomeGrid.appendChild(card);
     }
@@ -217,47 +443,67 @@ export function install(game) {
 
   const renderSizes = () => {
     sizeRow.innerHTML = '';
-    for (const [key, label] of [['cozy', 'Cozy'], ['big', 'Big']]) {
-      const b = ui.button({
-        icon: key === 'cozy' ? 'home' : 'world', label, variant: 'white', className: 'sw-toggle' + (choice.size === key ? ' sw-sel' : ''),
-        onClick: () => { choice.size = key; renderSizes(); },
+    for (const [key, label, sub] of [['cozy', 'Cozy', 'Just right'], ['big', 'Big', 'Lots of room']]) {
+      const b = ui.el('button', 'sw-size' + (choice.size === key ? ' sw-sel' : ''));
+      b.type = 'button';
+      b.setAttribute('aria-label', label);
+      b.innerHTML = sizeArt(key === 'big');
+      const words = ui.el('div');
+      words.append(ui.el('div', 'sw-size-name', label), ui.el('div', 'sw-size-sub', sub));
+      b.appendChild(words);
+      b.addEventListener('click', () => {
+        choice.size = key;
+        game.audio.play('pop', { pitch: key === 'big' ? 0.8 : 1.15 });
+        renderSizes();
       });
       sizeRow.appendChild(b);
     }
   };
 
+  const label = (ic, text) => {
+    const l = ui.el('div', 'sw-field-label');
+    l.innerHTML = icon2(ic);
+    l.appendChild(document.createTextNode(text));
+    return l;
+  };
+
   ui.registerPanel('newworld', {
     title: 'New World',
     icon: 'sparkle',
-    width: 820,
+    width: 900,
     back: (g) => (g.mode === 'title' ? 'title' : null),
     build(container) {
-      const nameLabel = ui.el('div', 'sw-field-label');
-      nameLabel.innerHTML = icon('pencil');
-      nameLabel.appendChild(document.createTextNode('World name'));
       nameInput = ui.el('input', 'sw-input');
       nameInput.maxLength = 40;
       nameInput.autocomplete = 'off';
       nameInput.spellcheck = false;
+      nameInput.setAttribute('aria-label', 'World name');
       nameInput.addEventListener('input', () => { nameTouched = true; });
-      const biomeLabel = ui.el('div', 'sw-field-label');
-      biomeLabel.innerHTML = icon('world');
-      biomeLabel.appendChild(document.createTextNode('Pick a world'));
+      nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); nameInput.blur(); } });
+      const dice = button2(ui, {
+        icon: 'dice', label: 'New idea', variant: 'sun', className: 'sw-dice',
+        onClick: () => {
+          nameInput.value = suggestName(true);
+          nameTouched = true; // her pick now: changing the world type keeps it
+          game.audio.play('sparkle');
+          dice.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(-14deg) scale(1.08)' }, { transform: 'rotate(10deg)' }, { transform: 'rotate(0)' }], { duration: 380 });
+        },
+      });
+      const nameRow = ui.el('div', 'sw-nw-name');
+      nameRow.append(nameInput, dice);
       biomeGrid = ui.el('div', 'sw-biomes');
-      const sizeLabel = ui.el('div', 'sw-field-label');
-      sizeLabel.innerHTML = icon('build');
-      sizeLabel.appendChild(document.createTextNode('How big?'));
       sizeRow = ui.el('div', 'sw-sizes');
       const row = ui.el('div', 'sw-create-row');
-      const create = ui.button({
+      const create = button2(ui, {
         icon: 'sparkle', label: 'Create!', variant: 'pink', size: 'big', className: 'sw-create',
         onClick: () => {
           const name = nameInput.value.trim() || suggestName();
+          game.audio.play('magic');
           game.newWorld({ name, biome: choice.biome, size: choice.size });
         },
       });
       row.appendChild(create);
-      container.append(nameLabel, nameInput, biomeLabel, biomeGrid, sizeLabel, sizeRow, row);
+      container.append(label('pencil', 'Name your world'), nameRow, label('world', 'Pick a world'), biomeGrid, label('island', 'How big?'), sizeRow, row);
     },
     onOpen() {
       if (!game.registry.biomes.has(choice.biome)) choice.biome = game.registry.biomes.keys().next().value;
@@ -268,46 +514,82 @@ export function install(game) {
     },
   });
 
-  // ---------- my worlds ----------
-  let worldsList;
+  // =====================================================================================
+  // my worlds
+  // =====================================================================================
+  let worldsList, worldsBar;
+  let highlightId = null;
+
   const renderWorlds = async () => {
     const worlds = await game.store.listWorlds();
     worldsList.innerHTML = '';
-    worldsList.className = worlds.length ? 'sw-worlds' : '';
+    worldsBar.hidden = worlds.length === 0;
     if (!worlds.length) {
+      worldsList.className = '';
       const empty = ui.el('div', 'sw-empty');
-      empty.appendChild(ui.el('div', '', 'No worlds yet. Let\'s make one!'));
-      empty.appendChild(ui.button({ icon: 'plus', label: 'New World', variant: 'mint', onClick: () => ui.open('newworld') }));
+      const pic = ui.el('img');
+      pic.alt = '';
+      pic.src = biomeArt('meadow', game.registry.biomes.get('meadow') || {});
+      const row = ui.el('div', 'sw-empty-row');
+      row.append(
+        button2(ui, { icon: 'plus', label: 'New World', variant: 'mint', onClick: () => ui.open('newworld') }),
+        button2(ui, { icon: 'open', label: 'Open a file', variant: 'sky', onClick: () => importWorld() }),
+      );
+      empty.append(pic, ui.el('div', '', 'No worlds yet. Let\'s make one!'), row);
       worldsList.appendChild(empty);
       return;
     }
-    for (const w of worlds) {
-      const card = ui.el('div', 'sw-world');
+    worldsList.className = 'sw-worlds';
+    worlds.forEach((w, i) => {
+      const card = ui.el('div', 'sw-world' + (w.id === highlightId ? ' sw-new' : ''));
+      card.style.animationDelay = `${Math.min(i, 8) * 0.04}s`;
+      card.dataset.world = w.id;
       const thumb = ui.el('div', 'sw-world-thumb');
-      if (w.thumbnail) {
-        const img = ui.el('img');
-        img.alt = '';
-        img.src = w.thumbnail;
-        thumb.appendChild(img);
-      } else {
-        thumb.innerHTML = icon('world');
-      }
-      const info = ui.el('div', 'sw-world-info');
       const biome = game.registry.biomes.get(w.biome);
-      info.append(ui.el('div', 'sw-world-name', w.name), ui.el('div', 'sw-world-meta', `${biome ? biome.name : w.biome} · ${relativeDay(w.updatedAt)}`));
+      const img = ui.el('img');
+      img.alt = '';
+      img.draggable = false;
+      if (w.thumbnail) img.src = w.thumbnail;
+      else {
+        img.className = 'sw-art';
+        img.src = biomeArt(w.biome, biome || {});
+      }
+      thumb.appendChild(img);
+      const badge = ui.el('div', 'sw-world-badge');
+      const colors = (biome && biome.colors) || ['#FFFFFF', '#FFD1E6'];
+      badge.style.background = `linear-gradient(135deg, ${colors[0]}, ${colors[1]})`;
+      if (biome && biome.iconBlock && game.registry.blocks.has(biome.iconBlock)) {
+        const bi = ui.el('img');
+        bi.alt = '';
+        game.registry.blocks.iconFor(biome.iconBlock).then((u) => { bi.src = u; });
+        badge.appendChild(bi);
+      }
+      badge.appendChild(ui.el('span', '', biome ? biome.name : (w.biome || 'World')));
+      thumb.appendChild(badge);
+      const info = ui.el('div', 'sw-world-info');
+      const meta = ui.el('div', 'sw-world-meta');
+      meta.innerHTML = icon2('clock');
+      meta.appendChild(document.createTextNode(relativeDay(w.updatedAt)));
+      info.append(ui.el('div', 'sw-world-name', w.name), meta);
       const actions = ui.el('div', 'sw-world-actions');
       actions.append(
-        ui.button({ icon: 'play', label: 'Play', variant: 'pink', size: 'small', onClick: () => game.loadWorld(w.id) }),
-        ui.button({ icon: 'pencil', variant: 'white', size: 'icon', title: 'Rename', onClick: () => renameWorld(w) }),
-        ui.button({ icon: 'trash', variant: 'white', size: 'icon', title: 'Delete', onClick: () => deleteWorld(w) }),
+        button2(ui, { icon: 'play', label: 'Play', variant: 'pink', onClick: () => game.loadWorld(w.id) }),
+        button2(ui, { icon: 'pencil', label: 'Rename', variant: 'white', className: 'sw-mini', onClick: () => renameWorld(w) }),
+        button2(ui, { icon: 'download', label: 'Save', title: 'Save to a file', variant: 'white', className: 'sw-mini', onClick: () => exportWorld(w) }),
+        button2(ui, { icon: 'trash', label: 'Delete', variant: 'white', className: 'sw-mini', onClick: () => deleteWorld(w) }),
       );
       card.append(thumb, info, actions);
       worldsList.appendChild(card);
+    });
+    if (highlightId) {
+      const el = worldsList.querySelector('.sw-new');
+      if (el) requestAnimationFrame(() => el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
+      highlightId = null;
     }
   };
 
   async function renameWorld(meta) {
-    const name = await ui.textInput({ title: 'Rename world', value: meta.name, suggestions: (NAME_IDEAS[meta.biome] || NAME_IDEAS.meadow).map((s) => `${playerName()}'s ${s}`), ok: 'Save' });
+    const name = await ui.textInput({ title: 'Rename world', value: meta.name, suggestions: ideasFor(meta.biome).slice(0, 3).map((s) => `${playerName()}'s ${s}`), ok: 'Save' });
     if (!name) return;
     const save = await game.store.loadWorld(meta.id);
     if (!save) return;
@@ -332,21 +614,60 @@ export function install(game) {
     renderWorlds();
   }
 
+  async function exportWorld(meta) {
+    const text = await game.store.exportWorld(meta.id);
+    if (!text) {
+      game.toast('Oops! Could not find that world.', { icon: 'sparkle' });
+      return;
+    }
+    const res = await saveFile({ filename: `${safeFileName(meta.name)}.json`, data: text, mime: 'application/json' });
+    if (res === 'saved') {
+      game.toast('Saved to a file!', { icon: 'download', color: 'mint' });
+      game.audio.play('success');
+    } else if (res === 'failed') {
+      game.toast('Oops! Saving a file does not work here.', { icon: 'sparkle' });
+    }
+  }
+
+  async function importWorld() {
+    const text = await pickTextFile('.json,application/json,text/plain');
+    if (!text) return;
+    const res = await game.store.importWorld(text);
+    if (res && res.ok) {
+      highlightId = res.id;
+      game.toast('Your world is here!', { icon: 'world', color: 'mint', big: true });
+      game.audio.play('magic');
+      if (ui.isOpen('worlds')) renderWorlds();
+      else ui.open('worlds');
+      refreshTitle();
+    } else {
+      game.toast('Hmm, that file is not a Sparkle World.', { icon: 'sparkle', color: 'pink' });
+      game.audio.play('click', { pitch: 0.6 });
+    }
+  }
+
   ui.registerPanel('worlds', {
     title: 'My Worlds',
     icon: 'world',
-    width: 860,
+    width: 900,
     back: (g) => (g.mode === 'title' ? 'title' : null),
     build(container) {
+      worldsBar = ui.el('div', 'sw-worlds-bar');
+      worldsBar.append(
+        button2(ui, { icon: 'plus', label: 'New World', variant: 'mint', size: 'small', onClick: () => ui.open('newworld') }),
+        button2(ui, { icon: 'open', label: 'Open a file', variant: 'sky', size: 'small', className: 'sw-open-file', onClick: () => importWorld() }),
+      );
       worldsList = ui.el('div', 'sw-worlds');
-      container.appendChild(worldsList);
+      container.append(worldsBar, worldsList);
     },
     onOpen() {
       renderWorlds();
     },
   });
 
-  // ---------- pause ----------
+  // =====================================================================================
+  // pause
+  // =====================================================================================
   let pauseToggles;
   const renderToggles = () => {
     pauseToggles.innerHTML = '';
@@ -354,7 +675,7 @@ export function install(game) {
     const musicOn = s.music > 0;
     const sfxOn = s.sfx > 0;
     pauseToggles.append(
-      ui.button({
+      button2(ui, {
         icon: musicOn ? 'music' : 'mute', label: musicOn ? 'Music on' : 'Music off', variant: 'white', size: 'small',
         onClick: () => {
           s.music = musicOn ? 0 : 0.5;
@@ -364,7 +685,7 @@ export function install(game) {
           renderToggles();
         },
       }),
-      ui.button({
+      button2(ui, {
         icon: sfxOn ? 'sound' : 'mute', label: sfxOn ? 'Sounds on' : 'Sounds off', variant: 'white', size: 'small',
         onClick: () => {
           s.sfx = sfxOn ? 0 : 0.8;
@@ -373,7 +694,7 @@ export function install(game) {
           renderToggles();
         },
       }),
-      ui.button({
+      button2(ui, {
         icon: 'camera3d', label: game.cameraRig && game.cameraRig.mode === 'first' ? 'My eyes' : 'Behind me', variant: 'white', size: 'small',
         onClick: () => {
           game.runAction('camera');
@@ -390,10 +711,13 @@ export function install(game) {
     build(container) {
       const col = ui.el('div', 'sw-pause');
       col.append(
-        ui.button({ icon: 'play', label: 'Resume', variant: 'pink', size: 'big', onClick: () => ui.close() }),
-        ui.button({ icon: 'home', label: 'Save & Exit', variant: 'lav', onClick: () => game.exitToTitle() }),
+        button2(ui, { icon: 'play', label: 'Resume', variant: 'pink', size: 'big', onClick: () => ui.close() }),
+        button2(ui, { icon: 'home', label: 'Save & Exit', variant: 'lav', onClick: () => game.exitToTitle() }),
       );
-      if (ui.hasPanel('settings')) col.appendChild(ui.button({ icon: 'settings', label: 'Settings', variant: 'sky', onClick: () => ui.open('settings') }));
+      const row = ui.el('div', 'sw-pause-grid');
+      if (ui.hasPanel('settings')) row.appendChild(button2(ui, { icon: 'settings', label: 'Settings', variant: 'sky', onClick: () => ui.open('settings') }));
+      if (game.actions.has('help')) row.appendChild(button2(ui, { icon: 'help', label: 'How to play', variant: 'mint', onClick: () => game.runAction('help') }));
+      if (row.childElementCount) col.appendChild(row);
       pauseToggles = ui.el('div', 'sw-pause-row');
       col.appendChild(pauseToggles);
       container.appendChild(col);
