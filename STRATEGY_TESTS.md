@@ -63,6 +63,22 @@ Near-certain contracts are roughly break-even after fees, not an edge. Its paper
 
 - **Kalshi's Liquidity Incentive Program:** Kalshi pays for resting orders near the top of the book, even unfilled; $911k of pools were active on 2026-09-26. Being measured: what share a small participant would get, what fills cost, and when rewards pay out.
 
+## Kalshi's Liquidity Incentive Program: the most promising lead (2026-09-26)
+
+Kalshi pays for resting orders near the top of the book, even if they never fill. Each second, a random snapshot scores each participant's share of the qualifying orders on each side, and a pool is split by those shares. The rules are at help.kalshi.com article 13823851, and the CFTC filing is at kalshi.com/regulatory/notices.
+
+- **Scale:** about $249k/day of pools recently, up roughly 3x in six weeks; $5.2M over the last 30 days. Pools pay in daily batches (cutoff about 6am ET).
+- **Deep markets pay a newcomer about 1%.** With 48,000–66,000 contracts at the best bid, joining the back of the queue earns cents an hour.
+- **Hand-sized, one time:** tonight's Alaska diesel program is worth about $25–40 with $500. Fills would lock money until October 7.
+- **The standout is hourly Miami temperature (KXTEMPMIAH).** It pays $100 per strike per hour, 10 strikes, around the clock. Most strikes are pinned at 98–99¢ with one side empty, so their snapshots don't count and about $700/hour goes unpaid.
+  - A ~1,020-contract bid at 1¢ on the empty side (about $10 of capital) completes the side. Under the published rules that side's whole score, about $50/hour per strike, goes to the completer.
+  - One observed completer already had 1,800 contracts at 1¢ on T88.99, so shares split as others join.
+  - Historical fill cost is about $5/hour per strike.
+  - The reviewer's planning estimate is **$30–70/hour with $500**, needing an API bot (10 new markets an hour, re-posting after sweeps).
+- **Unverified:** that Kalshi credits such orders in practice, and that reward credits are withdrawable cash. Kalshi's app shows a live "liquidity earnings estimate" per resting order, which is a cheap way to check.
+- **Not eligible through Robinhood:** the program excludes customers trading via an FCM or introducing broker. Use Kalshi directly.
+- **Risks:** Kalshi can change or end the program at any time, and can revoke participants it judges abusive; competition will split the pool; fills lose small amounts.
+
 ## The pattern so far
 
 Using only Kalshi's own prices, no simple rule beats the market after fees and spreads: not price bands, momentum, near-certain contracts (H2), passive maker orders, a volatility model or relative value. Where money exists, it comes from information the market lacks, or from Kalshi paying for liquidity.
