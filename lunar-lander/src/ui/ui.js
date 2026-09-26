@@ -40,7 +40,7 @@ const PROGRAM_LABEL = {
   P47: 'Thrust monitor',
   P63: 'Braking',
   P64: 'Approach',
-  P66: 'Rate of descent',
+  P66: 'Landing',
   P67: 'Manual',
   P70: 'DPS abort',
   P71: 'APS abort',
@@ -632,7 +632,7 @@ export function createUI(game, rootEl, api) {
       progKey = key;
       progBtns.clear();
       progGrid.replaceChildren(...list.map((p) => {
-        const b = h('button.pbtn', { type: 'button', dataset: { program: p } }, h('b', null, p), h('small', null, PROGRAM_LABEL[p] || PROGRAM_NAMES[p] || ''));
+        const b = h('button.pbtn', { type: 'button', title: `${p} · ${PROGRAM_NAMES[p] || PROGRAM_LABEL[p] || ''}`, dataset: { program: p } }, h('b', null, p), h('small', null, PROGRAM_LABEL[p] || PROGRAM_NAMES[p] || ''));
         b.addEventListener('click', () => selectProgram(p));
         progBtns.set(p, b);
         return b;

@@ -466,12 +466,15 @@ const FILLET_W = 0.12; // fillet reach beyond the outline (x outline radius)
 const FILLET_IN = 0.06; // the fillet starts this far inside the outline (a concave crease)
 const FILLET_H = 0.05; // fillet height (x rock height)
 const BOULDER_CLASSES = [
-  // p, ex: base dome (a superellipsoid the fracture faces are carved from); lump amplitude/frequency;
-  // cuts: number of planar fracture faces; k: edge rounding radius; hs: height scale (slabs are low)
-  { name: 'subrounded', p: 2.2, ex: 0.55, lump: 0.08, lf: 2.2, cuts: 3, k: 0.2, hs: 0.9 },
-  { name: 'block', p: 3.0, ex: 0.42, lump: 0.04, lf: 2.6, cuts: 6, k: 0.08, hs: 1.0 },
-  { name: 'slab', p: 4.0, ex: 0.32, lump: 0.03, lf: 2.0, cuts: 4, k: 0.06, hs: 0.55 },
-  { name: 'knobbly', p: 2.6, ex: 0.5, lump: 0.13, lf: 3.2, cuts: 4, k: 0.14, hs: 0.85 },
+  // p, ex: base dome (superellipsoid the faces are carved from); lump amplitude/frequency;
+  // top: height of the (tilted) top face below the dome crown, tilt: its slope; roof: chance of a second
+  // top face (a broken, ridged top); sides: number of steep fracture faces [min, max], slope range, r0:
+  // radius range where a side face reaches the ground; k: edge rounding radius; hs: height scale
+  { name: 'subrounded', p: 2.2, ex: 0.62, lump: 0.05, lf: 2.4, top: 0.8, tilt: 0.18, roof: 0, sides: [2, 3], sl: [1.4, 2.4], r0: [0.9, 1.05], k: 0.22, hs: 0.85 },
+  { name: 'block', p: 3.2, ex: 0.42, lump: 0.035, lf: 2.6, top: 0.8, tilt: 0.3, roof: 0.4, sides: [4, 6], sl: [2.2, 4.5], r0: [0.72, 0.95], k: 0.09, hs: 1.0 },
+  { name: 'slab', p: 4.0, ex: 0.32, lump: 0.025, lf: 2.0, top: 0.82, tilt: 0.14, roof: 0, sides: [4, 5], sl: [1.6, 3.0], r0: [0.78, 0.98], k: 0.07, hs: 0.5 },
+  { name: 'knobbly', p: 2.6, ex: 0.5, lump: 0.06, lf: 4.0, top: 0.82, tilt: 0.2, roof: 0, sides: [3, 4], sl: [1.6, 3.0], r0: [0.8, 1.0], k: 0.16, hs: 0.8 },
+  { name: 'angular', p: 3.0, ex: 0.45, lump: 0.03, lf: 2.4, top: 0.85, tilt: 0.45, roof: 0.9, sides: [4, 5], sl: [2.5, 5.0], r0: [0.7, 0.92], k: 0.05, hs: 1.1 },
 ];
 function variantRand(seed) {
   let h = seed >>> 0;
@@ -481,18 +484,19 @@ function variantRand(seed) {
   };
 }
 const BOULDER_VARIANTS = [];
-for (let vi = 0; vi < 12; vi++) {
-  const cls = BOULDER_CLASSES[[0, 1, 0, 2, 1, 3, 0, 1, 2, 3, 1, 1][vi]];
+for (let vi = 0; vi < 14; vi++) {
+  const cls = BOULDER_CLASSES[[0, 1, 4, 2, 1, 3, 0, 4, 2, 1, 0, 1, 3, 4][vi]];
   const rnd = variantRand(0x5eed + vi * 7919);
+  const lerp = (r) => r[0] + (r[1] - r[0]) * rnd();
   const v = {
     cls: cls.name,
     a2: 0.08 + 0.14 * rnd(), p2: rnd() * 6.2832,
-    a3: 0.04 + 0.09 * rnd(), p3: rnd() * 6.2832,
-    a5: 0.02 + 0.05 * rnd(), p5: rnd() * 6.2832,
-    a7: 0.01 + 0.025 * rnd(), p7: rnd() * 6.2832,
+    a3: 0.04 + 0.08 * rnd(), p3: rnd() * 6.2832,
+    a5: 0.02 + 0.04 * rnd(), p5: rnd() * 6.2832,
+    a7: 0.01 + 0.02 * rnd(), p7: rnd() * 6.2832,
     p: cls.p * (0.9 + 0.2 * rnd()),
     ex: cls.ex * (0.9 + 0.2 * rnd()),
-    tilt: 0.05 + 0.25 * rnd(), pt: rnd() * 6.2832,
+    tilt: 0.04 + 0.12 * rnd(), pt: rnd() * 6.2832,
     lumps: [],
     cuts: [],
     k: cls.k,
@@ -506,22 +510,34 @@ for (let vi = 0; vi < 12; vi++) {
   v.ct = Math.cos(v.pt); v.st = Math.sin(v.pt);
   for (let l = 0; l < 3; l++) {
     const a = rnd() * 6.2832;
-    const f = cls.lf * (0.7 + 0.8 * rnd()) * (l + 1) * 0.75;
-    v.lumps.push({ kx: f * Math.cos(a), ky: f * Math.sin(a), ph: rnd() * 6.2832, amp: (cls.lump * (1.2 - 0.3 * l)) * (0.6 + 0.8 * rnd()) });
+    const f = cls.lf * (0.9 + 0.5 * rnd()) * (1 + 0.7 * l);
+    v.lumps.push({ kx: f * Math.cos(a), ky: f * Math.sin(a), ph: rnd() * 6.2832, amp: cls.lump * (1 - 0.25 * l) * (0.6 + 0.6 * rnd()) });
   }
-  // fracture faces: planes h = c0 + g . (u, w) sloping down toward azimuth a; each passes through a point
-  // at radius r0 along a, somewhat below the dome there, so it shaves a corner/flank off the dome.
-  // Low slopes near the centre make tilted top faces, steep ones make the sides; together they give
-  // the irregular polyhedral blocks of the Apollo photographs, rounded by the smooth minimum.
+  // Fracture faces: planes h = c0 + g . (u, w). One (or, for a broken "roof", two) nearly flat top faces
+  // that shave the crown off the dome, and a ring of steep side faces that each reach the ground at radius
+  // r0 along their azimuth. The smooth minimum rounds every edge with radius ~k: the sub-rounded to
+  // angular, flat-faced blocks of the Apollo surface photographs (no peaks, no cones).
+  const ta = rnd() * 6.2832;
+  const tsl = cls.tilt * (0.4 + 0.6 * rnd());
+  const top = cls.top * (0.94 + 0.08 * rnd());
+  v.cuts.push({ gx: -tsl * Math.cos(ta), gy: -tsl * Math.sin(ta), c0: top });
+  if (rnd() < cls.roof) {
+    // second top face tilted the other way; the crease lies off-centre (0.2-0.45 toward ta)
+    const ta2 = ta + Math.PI + (rnd() - 0.5) * 1.2;
+    const tsl2 = cls.tilt * (0.7 + 0.6 * rnd());
+    const xc = 0.2 + 0.25 * rnd();
+    // both faces meet at the crease point P = xc (cos ta, sin ta)
+    const h1 = top - tsl * xc;
+    const d2 = Math.cos(ta2 - ta) * xc; // P . dir(ta2)
+    v.cuts.push({ gx: -tsl2 * Math.cos(ta2), gy: -tsl2 * Math.sin(ta2), c0: h1 + tsl2 * d2 });
+  }
+  const ns = cls.sides[0] + Math.floor(rnd() * (cls.sides[1] - cls.sides[0] + 1));
   const a0 = rnd() * 6.2832;
-  for (let c = 0; c < cls.cuts; c++) {
-    const a = a0 + (c / cls.cuts) * 6.2832 + (rnd() - 0.5) * 1.3;
-    const top = c === 0 || (c === 3 && cls.cuts > 4);
-    const sl = top ? 0.1 + 0.5 * rnd() : 0.8 + 1.6 * rnd();
-    const r0 = top ? 0.15 + 0.3 * rnd() : 0.45 + 0.4 * rnd();
-    const hd = Math.pow(1 - Math.pow(r0, v.p), v.ex);
-    const c0 = hd * (top ? 0.7 + 0.2 * rnd() : 0.5 + 0.3 * rnd()) + sl * r0;
-    v.cuts.push({ gx: -sl * Math.cos(a), gy: -sl * Math.sin(a), c0 });
+  for (let c = 0; c < ns; c++) {
+    const a = a0 + (c / ns) * 6.2832 + (rnd() - 0.5) * (4.0 / ns);
+    const sl = lerp(cls.sl);
+    const r0 = lerp(cls.r0);
+    v.cuts.push({ gx: -sl * Math.cos(a), gy: -sl * Math.sin(a), c0: sl * r0 });
   }
   BOULDER_VARIANTS.push(v);
 }

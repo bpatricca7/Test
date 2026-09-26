@@ -138,7 +138,7 @@ export const BINDINGS = [
   // ---- engine
   { group: 'Engine', keys: ['R', 'F'], action: 'Throttle up / down (hold; Shift = fine)', gamepad: 'RT / LT' },
   { group: 'Engine', keys: ['Z'], action: 'Full throttle' },
-  { group: 'Engine', keys: ['X'], action: 'ENGINE STOP — cuts the throttle and latches: the engine stays off, even under guidance, until ENGINE START' },
+  { group: 'Engine', keys: ['X'], action: 'ENGINE STOP — cuts the throttle and latches: the engine stays off, even under guidance, until ENGINE START (X again with the engine off also resets it)' },
   { group: 'Engine', keys: ['Shift+X'], action: 'ENGINE START — reset the ENGINE STOP latch (then throttle up to relight)' },
   { group: 'Engine', keys: ['R', 'F'], action: 'In P66 with auto throttle: rate-of-descent switch, one click = 1 ft/s (F = descend faster)', gamepad: 'RT / LT' },
   { group: 'Engine', keys: ['Backspace ×2'], action: 'ABORT STAGE — separate the ascent stage (press twice within 1 s)' },
