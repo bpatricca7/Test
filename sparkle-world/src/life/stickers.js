@@ -1,6 +1,12 @@
 // Stickers (achievements): the sticker registry (game.registry.stickers), progress counters in
-// profile.stats and game.stickers.award(id). Awarding shows a big toast and emits
-// 'sticker:earned'. The Environment & Stickers team adds sticker art and the Sticker Book.
+// profile.stats and game.stickers.award(id). Every sticker in DESIGN.md is wired to its event
+// here. Awarding pops a big glossy sticker picture ("New sticker!") that flies off toward the
+// Sticker Book, plays a jingle with confetti, and emits 'sticker:earned' { sticker }.
+// game.stickers: { has, award, count, total, all(), canvas(id, { locked }), shape(id),
+// image(id, { locked, size }), unseen(), markSeen() }. Other modules may add stickers:
+// registry.stickers.set(id, { id, name, hint, icon, art?(ctx) }) and call game.award(id).
+
+import { stickerImage, stickerCanvas, stickerShape } from './sticker-art.js';
 
 const STICKERS = [
   ['first_block', 'First Block', 'Place your very first block', 'star'],
@@ -26,6 +32,30 @@ const STICKERS = [
   ['sky_high', 'Sky High', 'Fly above the clouds', 'fly'],
 ];
 
+const CSS = /* css */ `
+.sw-stkpop { position: absolute; left: 50%; top: calc(16% + var(--sw-safe-t)); z-index: 45; pointer-events: none !important;
+  display: flex; flex-direction: column; align-items: center; transform: translateX(-50%); }
+.sw-stkpop-art { position: relative; width: 170px; height: 170px; display: grid; place-items: center; animation: sw-stkpop-in .7s var(--sw-bounce) both; }
+/* rays + a soft glow; only transform / opacity animate, so the compositor does the work */
+.sw-stkpop-rays { position: absolute; left: -46px; top: -46px; width: calc(100% + 92px); height: calc(100% + 92px); will-change: transform; animation: sw-stkpop-spin 8s linear infinite; }
+.sw-stkpop-art .sw-stk-art { position: relative; width: 170px; height: 170px; will-change: transform; animation: sw-stkpop-wiggle 1.6s ease-in-out .7s infinite; }
+.sw-stkpop-label { margin-top: 2px; padding: 8px 22px 10px; border-radius: 999px; text-align: center; line-height: 1.05;
+  background: linear-gradient(#FFFDF2, #FFF1C9); border: 4px solid var(--sw-sun); box-shadow: 0 6px 18px var(--sw-shadow);
+  animation: sw-pop .45s var(--sw-bounce) .25s both; }
+.sw-stkpop-label small { display: block; font-size: 15px; font-weight: 700; color: #E08A00; letter-spacing: .5px; }
+.sw-stkpop-label b { display: block; font-size: 27px; color: var(--sw-ink); font-weight: 700; }
+.sw-stkpop.sw-away { animation: sw-stkpop-away .75s cubic-bezier(.6,-0.3,.7,.4) forwards; }
+@keyframes sw-stkpop-in { 0% { transform: scale(.1) rotate(-30deg); opacity: 0; } 70% { transform: scale(1.12) rotate(6deg); opacity: 1; } 100% { transform: scale(1) rotate(-3deg); } }
+@keyframes sw-stkpop-spin { to { transform: rotate(360deg); } }
+@keyframes sw-stkpop-wiggle { 0%, 100% { transform: rotate(-3deg) scale(1); } 50% { transform: rotate(3deg) scale(1.04); } }
+@keyframes sw-stkpop-away { 0% { transform: translateX(-50%) scale(1); opacity: 1; } 100% { transform: translate(34vw, -22vh) scale(.12); opacity: 0; } }
+@media (max-width: 600px) {
+  .sw-stkpop { top: calc(20% + var(--sw-safe-t)); }
+  .sw-stkpop-art, .sw-stkpop-art .sw-stk-art { width: 130px; height: 130px; }
+  .sw-stkpop-label b { font-size: 22px; }
+}
+`;
+
 export function install(game) {
   const reg = game.registry.stickers;
   for (const [id, name, hint, icon] of STICKERS) {
@@ -39,6 +69,80 @@ export function install(game) {
     return s[key];
   };
 
+  // ---------- the "New sticker!" pop ----------
+  const queue = [];
+  let showing = false;
+  let rays = null;
+  /** Soft pastel sun rays behind the sticker, painted once (a canvas: no pixel read-back). */
+  const raysCanvas = () => {
+    if (!rays) {
+      const S = 256;
+      rays = document.createElement('canvas');
+      rays.width = rays.height = S;
+      const g = rays.getContext('2d');
+      const cols = ['rgba(255,226,120,0.8)', 'rgba(200,184,255,0.7)', 'rgba(255,190,225,0.75)'];
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2;
+        g.fillStyle = cols[i % 3];
+        g.beginPath();
+        g.moveTo(S / 2, S / 2);
+        g.arc(S / 2, S / 2, S / 2, a - 0.13, a + 0.13);
+        g.closePath();
+        g.fill();
+      }
+      // fade the rays out toward the edge and add a warm glow in the middle
+      g.globalCompositeOperation = 'destination-in';
+      const fade = g.createRadialGradient(S / 2, S / 2, S * 0.1, S / 2, S / 2, S / 2);
+      fade.addColorStop(0, 'rgba(0,0,0,1)');
+      fade.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = fade;
+      g.fillRect(0, 0, S, S);
+      g.globalCompositeOperation = 'source-over';
+      const glow = g.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S * 0.36);
+      glow.addColorStop(0, 'rgba(255,252,230,0.95)');
+      glow.addColorStop(1, 'rgba(255,245,210,0)');
+      g.fillStyle = glow;
+      g.fillRect(0, 0, S, S);
+    }
+    const c = document.createElement('canvas');
+    c.width = c.height = rays.width;
+    c.className = 'sw-stkpop-rays';
+    c.getContext('2d').drawImage(rays, 0, 0);
+    return c;
+  };
+  const showNext = () => {
+    const ui = game.ui;
+    if (showing || !queue.length || !ui) return;
+    const def = queue.shift();
+    showing = true;
+    let el = null;
+    try {
+      el = ui.el('div', 'sw-stkpop');
+      const art = ui.el('div', 'sw-stkpop-art');
+      art.appendChild(raysCanvas());
+      const img = stickerCanvas(def.id, def);
+      art.appendChild(img);
+      const label = ui.el('div', 'sw-stkpop-label');
+      label.append(ui.el('small', '', 'NEW STICKER!'), ui.el('b', '', def.name));
+      el.append(art, label);
+      ui.root.appendChild(el);
+    } catch (err) {
+      console.warn('[stickers] popup failed', err);
+      const bang = /[!?.]$/.test(def.name) ? '' : '!';
+      ui.toast(`New sticker: ${def.name}${bang}`, { icon: def.icon || 'sticker', big: true, color: 'sun' });
+    }
+    setTimeout(() => {
+      if (el) el.classList.add('sw-away');
+      setTimeout(() => {
+        if (el) el.remove();
+        showing = false;
+        showNext();
+      }, 760);
+    }, 2900);
+  };
+
+  const all = () => [...reg.values()].map((d) => ({ id: d.id, name: d.name, hint: d.hint, icon: d.icon, earned: game.profile.stickers[d.id] || null }));
+
   game.stickers = {
     has: (id) => !!game.profile.stickers[id],
     /** Give a sticker once. Returns true when it is new. */
@@ -47,8 +151,10 @@ export function install(game) {
       if (!def || game.profile.stickers[id]) return false;
       game.profile.stickers[id] = new Date().toISOString();
       game.saveProfile();
-      const bang = /[!?.]$/.test(def.name) ? '' : '!'; // 'Splash!' should not become 'Splash!!'
-      game.toast(`New sticker: ${def.name}${bang}`, { icon: def.icon || 'sticker', big: true, color: 'sun' });
+      // paint the picture now (not later, in the middle of whatever she is doing then)
+      try { stickerCanvas(def.id, def); } catch { /* the pop falls back to a toast */ }
+      queue.push(def);
+      showNext();
       game.audio.play('success');
       if (game.player) {
         const p = game.player.position;
@@ -57,8 +163,30 @@ export function install(game) {
       game.events.emit('sticker:earned', { sticker: def });
       return true;
     },
-    count: () => Object.keys(game.profile.stickers).length,
+    count: () => Object.keys(game.profile.stickers).filter((id) => reg.has(id)).length,
+    total: () => reg.size,
+    all,
+    /** Sticker picture (glossy die-cut, or a silhouette when locked) as a data URL. */
+    /** A new <canvas> with the sticker (or its locked silhouette): quick, never stalls. */
+    canvas: (id, opts = {}) => stickerCanvas(id, reg.get(id) || null, opts),
+    /** A new <canvas> with the sticker's outline in white (shine effects). */
+    shape: (id, opts = {}) => stickerShape(id, reg.get(id) || null, opts),
+    /** The sticker as a PNG data URL (reads pixels back: fine in menus, avoid mid-play). */
+    image: (id, opts = {}) => stickerImage(id, reg.get(id) || null, opts),
+    /** Earned stickers the Sticker Book has not shown yet. */
+    unseen() {
+      const seen = game.profile.stickersSeen || {};
+      return all().filter((s) => s.earned && !seen[s.id]).map((s) => s.id);
+    },
+    markSeen() {
+      const seen = (game.profile.stickersSeen = game.profile.stickersSeen || {});
+      let changed = false;
+      for (const s of all()) if (s.earned && !seen[s.id]) { seen[s.id] = 1; changed = true; }
+      if (changed) game.saveProfile();
+    },
   };
+
+  if (game.ui) game.ui.addStyles(CSS);
 
   const ev = game.events;
   ev.on('block:place', ({ key }) => {
@@ -78,7 +206,11 @@ export function install(game) {
   });
   ev.on('player:sleep', () => bump('sleeps'));
   ev.on('player:swim', () => game.award('splash'));
-  ev.on('time:night', () => { if (game.mode === 'play') game.award('night_owl'); });
+  // Night Owl: when night falls (time:night), she earns it after a few seconds out under the
+  // stars (awake, playing, with a clear enough sky), so the sticker comes while stars twinkle
+  let stargazing = -1;
+  ev.on('time:night', () => { if (game.mode === 'play' && !game.stickers.has('night_owl')) stargazing = 0; });
+  ev.on('world:unload', () => { stargazing = -1; });
   ev.on('pet:adopt', () => game.award('best_friends'));
   ev.on('pet:pet', () => { if (bump('petsPetted') >= 10) game.award('pet_lover'); });
   ev.on('pet:ride', ({ pet }) => { if (pet && (pet.species === 'unicorn' || pet.kind === 'unicorn')) game.award('unicorn_rider'); });
@@ -88,15 +220,17 @@ export function install(game) {
     const key = recipe && (recipe.key || recipe);
     if (key) s.recipesCooked[key] = (s.recipesCooked[key] || 0) + 1;
     game.award('little_chef');
-    const all = [...game.registry.recipes.keys()];
-    if (all.length && all.every((k) => s.recipesCooked[k])) game.award('master_chef');
+    const allRecipes = [...game.registry.recipes.keys()];
+    if (allRecipes.length && allRecipes.every((k) => s.recipesCooked[k])) game.award('master_chef');
   });
   ev.on('garden:harvest', () => game.award('green_thumb'));
   ev.on('outfit:changed', () => { if (bump('outfitChanges') >= 5) game.award('fashionista'); });
-  ev.on('gem:collect', ({ total }) => {
+  // gem:collect { count: found in this world, total: gems in this world }
+  ev.on('gem:collect', ({ count, total }) => {
     const n = bump('gems');
     if (n >= 10) game.award('gem_hunter');
-    if (total && game.world && game.world.gemTotal && total >= game.world.gemTotal) game.award('gem_master');
+    const allGems = total || (game.world && game.world.gemTotal) || 0;
+    if (allGems && count >= allGems) game.award('gem_master');
   });
   ev.on('piano:note', () => { if (bump('notesPlayed') >= 20) game.award('musician'); });
   ev.on('photo:taken', () => game.award('photographer'));
@@ -114,6 +248,17 @@ export function install(game) {
   game.addSystem({
     name: 'stickers',
     update(dt) {
+      if (stargazing >= 0 && game.mode === 'play' && !game.paused && game.player) {
+        const tod = game.timeOfDay;
+        const dark = tod ? tod.night > 0.5 : true;
+        const clear = !game.weather || game.weather.fx.overcast < 0.7;
+        const awake = game.player.state !== 'sleep';
+        if (!dark) stargazing = -1; // morning came first
+        else if (awake && clear && (stargazing += dt) >= 4) {
+          stargazing = -1;
+          game.award('night_owl');
+        }
+      }
       check -= dt;
       if (check > 0 || !game.player || !game.world) return;
       check = 1;
