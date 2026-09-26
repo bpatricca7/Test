@@ -136,8 +136,10 @@ sparkle-world/
   src/main.js             boot: new Game(), install every module in order, start title screen
   src/core/               game.js events.js input.js audio.js storage.js util.js noise.js
                           thumbs.js (offscreen 3D thumbnail renderer)
+                          registry.js (BlockRegistry, ItemRegistry, Bag tab list)
+                          models.js (shared box/cyl/ball/mat/canvasTexture helpers)
   src/world/              world.js blocks.js textures.js mesher.js light.js chunks.js
-                          raycast.js physics.js worldgen.js
+                          raycast.js physics.js worldgen.js material.js (block shader)
   src/player/             player.js camera.js avatar.js wardrobe-data.js emotes.js
   src/things/             entities.js furniture.js furniture-models.js prefabs.js
                           pets.js garden.js cooking.js food-models.js
@@ -156,11 +158,16 @@ reach into another feature module's internals — only through `game` APIs, regi
 // src/main.js (order matters: registries before world load)
 import { Game } from './core/game.js';
 const game = new Game(document.getElementById('app'));
-for (const m of [theme, ui, blocks, worldgen, avatar, player, entities, furniture, prefabs,
-                 pets, garden, cooking, daynight, weather, particles, collectibles, stickers,
-                 hud, inventory, dressup, touch, settings, photo, stickerbook, menus]) m.install(game);
-game.start();   // builds texture atlas, opens title screen
+for (const m of [theme, ui, blocks, worldgen, avatar, player, emotes, entities, furniture,
+                 prefabs, pets, garden, cooking, daynight, weather, particles, collectibles,
+                 stickers, hud, inventory, dressup, touch, settings, photo, stickerbook, menus])
+  m.install(game);
+game.start();   // builds texture atlas, loads the profile, opens title screen
 ```
+`icons.js`, `dialogs.js`, `furniture-models.js`, `food-models.js`, `registry.js`, `models.js`
+and `material.js` are helper modules imported by others (not in the install list). Blocks,
+tiles, items and biomes must be registered during `install` (the texture atlas is built once
+in `game.start()`).
 
 ### `Game` (src/core/game.js)
 
@@ -209,9 +216,13 @@ class Game {
 }
 ```
 
-Game loop: `requestAnimationFrame`; `dt` clamped to 0.05 s. Order per frame: input → player →
-systems (registration order) → chunk rebuilds (time-sliced, ≤ 6 ms per frame) → render. When
-the tab is hidden, loop pauses and a save is triggered.
+Game loop: `requestAnimationFrame`; `dt` clamped to 0.05 s. Order per frame: input → (play
+mode) advance `game.time` → player → systems (registration order) → camera rig → target pick
++ hint → chunk rebuilds (time-sliced, ≤ 6 ms per frame; 40 ms while the loading screen shows)
+→ queued thumbnails → render. When the tab is hidden, loop pauses and a save is triggered.
+System `update(dt)` runs every frame in every mode (check `game.world`); on world load each
+system gets `onWorldLoad(world, save)` and then `deserialize(save.systems[name])` if present.
+See §3 for the full as-built API.
 
 ### Events (payload shapes)
 ```
@@ -234,7 +245,11 @@ the tab is hidden, loop pauses and a save is triggered.
 'tool:change'       { tool }                 'hotbar:change'  { index, key }
 'time:night'        {}                       'weather:change' { weather }
 'emote'             { name }
+'game:ready'        {}                       'profile:changed' { profile }
+'history:change'    { size }                 'thumbnail:before' {}  'thumbnail:after' {}
 ```
+`block:place` / `block:remove` payloads also carry `key` (block key). `world.set(..., {record:
+false})` (worldgen, undo, prefabs) emits nothing.
 
 ### Blocks (src/world/blocks.js, registry in core)
 ```js
@@ -257,6 +272,19 @@ game.registry.blocks.byKey(key) -> def with numeric `id`; byId(id)
 ```
 Numeric ids are assigned at registration (0 = air). Saves store a `palette` (id → key) so ids
 may change between versions. Up to 255 block types (Uint8).
+Extra def fields: `replaceable` (default true for air, liquids and `cross` sprites: blocks and
+furniture placed there replace it), `lightOpacity` 0..15 (default 15 opaque cube, 1
+translucent, 0 otherwise; leaves use 1), `sound` (audio name, default 'place'), `hint`
+(Hand-tool text when `onUse` is set). `blocks.tile(key, painter, { animated })` — animated
+tiles (water) get the shader's gentle wobble. `blocks.idOf(key)` → id or −1,
+`blocks.iconFor(key)` → Promise<isometric PNG dataURL>, `blocks.props` (after start) holds
+typed lookup arrays by id (`shape pass opaque solid emit opacity replaceable selectable
+faceLayer`). Painter helpers are exported from `src/world/blocks.js`: `px rect speckle voronoi
+paintWool paintPlanks`.
+Core ships: grass dirt stone cobble sand water snow ice log_oak leaves_oak leaves_cherry
+flower_rose flower_daisy flower_tulip grass_tall planks_oak planks_pink planks_white slab_oak
+glass glass_pink wool_{pink,white,purple,sky,yellow,lime,red} carpet_pink carpet_white
+lamp_block (`slab_oak` is an extra, non-canonical key).
 
 Core ships the ~20 essential blocks (air, grass, dirt, stone, sand, water, wood logs, leaves,
 planks, glass, a few colors). `src/world/blocks.js` (Blocks & Worldgen owner) grows the full
@@ -284,7 +312,11 @@ game.registry.items.register({
 });
 ```
 Bag tabs (ids): `nature building colors candy glass lights bedroom living kitchen bathroom
-garden fun pets food houses`.
+garden fun pets food houses` (labels in `ITEM_CATEGORIES`, `src/core/registry.js`).
+Items may also set `kind` ('block' | 'furniture' | 'other'), `hidden`, and blocks/furniture
+set `block` / `furniture` keys. `items.get(key)`, `items.byCategory(tab)`,
+`items.iconFor(key)` → Promise<dataURL> (cached, never rejects). `use` returns true when it did
+something (false plays a soft "nope" click).
 
 ### World (src/world/world.js)
 - Size `{ x: 144|208, y: 64, z: 144|208 }` (Cozy/Big), chunk 16×64×16.
@@ -294,6 +326,12 @@ garden fun pets food houses`.
 - Serialization: RLE → base64, plus `palette`.
 - Water is static (no flow). Out-of-bounds reads return air above y=0 ground; the world edge has
   an invisible wall and the ocean/fog hides it.
+- Also: `world.setKey(x,y,z,key)`, `world.defAt`, `world.surfaceAt(x,z)` (highest non-air),
+  `heightAt` = highest *solid* block (−1 if none), `getSky/getBlockLight`,
+  `world.batch(fn)` (many `set`s, one relight over the touched columns — use for prefabs),
+  `world.meta` `{ id, name, biome, seed, createdAt, sizeName, spawn }`, `world.waterLevel`,
+  `world.outside` `{ block, surface }` (the flat horizon ring drawn around the world; set by
+  the biome's `generate`).
 
 ### Rendering & light
 - `light.js`: two 4-bit channels per voxel: **sky** (flood from open sky, −1 per step,
@@ -307,7 +345,13 @@ garden fun pets food houses`.
 - One `ShaderMaterial` (GLSL3, `sampler2DArray`) with uniforms `uDaylight` (0.15..1),
   `uSkyColor`, `uBlockLightColor` (warm), `uFogColor`, `uFogNear/Far`, `uTime` (water wobble).
   Final light = max(sky × daylight, block × warm) with an ambient floor so interiors are never
-  pitch black (daytime indoor ≥ 0.45).
+  pitch black (daytime indoor ≥ 0.45). Extra uniforms: `uAmbient` (the floor), `uOpacity`.
+  Uniform colors are raw sRGB (the shader writes without output conversion). `layer` ≥ 1024
+  marks an animated tile. Material variants: opaque, cutout (`CUTOUT`, DoubleSide), translucent
+  (`TRANSLUCENT`, blended, no depth write) share `game.blockUniforms`.
+- Furniture/avatars use `MeshLambertMaterial` lit by `game.lights.hemi/sun` (driven by
+  daynight) and a pool of 4 warm PointLights that entities.js assigns to the lit furniture
+  nearest the camera (constant light count: no shader recompiles).
 - `textures.js` builds a `DataArrayTexture` (16×16 per layer, mipmaps on, nearest-mipmap-linear)
   from all registered tile painters, deterministic via seeded RNG.
 
@@ -315,9 +359,12 @@ garden fun pets food houses`.
 Ray from camera through pointer (touch/mouse) or screen center (keyboard play), max 8 blocks
 from the player. Tests voxels (DDA) and `game.pickables` (Box3/ray), returns the nearest:
 ```js
-{ type: 'block', x, y, z, id, face: [nx,ny,nz], point: Vector3, place: [x,y,z] }
-{ type: 'pickable', pickable, point: Vector3, distance }
+{ type: 'block', x, y, z, id, key, face: [nx,ny,nz], point: Vector3, place: [x,y,z], distance }
+{ type: 'pickable', pickable, point: Vector3, distance, face, place }
 ```
+Pickables may also define `onRemove(game, hit)` (Remove tool), `onBuild(game, hit, item,
+opts) -> bool` (Build tool; return true if handled, else the item is placed at `hit.place`)
+and `hint(game, hit)`. Reach is `game.reach` (8) from the player's head.
 
 ### Player (src/player/player.js)
 - Capsule-ish AABB 0.6 × 1.7 × 0.6. Walk 4.3 m/s, run (Shift / joystick push) 6.5, jump
@@ -331,7 +378,15 @@ from the player. Tests voxels (DDA) and `game.pickables` (Box3/ray), returns the
   `player.yaw`.
 - Camera (camera.js): third person by default (distance 4.5, orbit with drag/right side touch,
   wheel/pinch zoom 2–9, collision pull-in), first person toggle (V key / Settings). Camera never
-  clips into blocks.
+  clips into blocks. `game.cameraRig` = `{ yaw, pitch, distance, mode, setMode(m),
+  toggleMode(), snap() }`; yaw 0 looks toward +Z. Movement is camera-relative. Portrait
+  screens widen the vertical fov (70° + (1 − aspect)·40°).
+- Player extras: `setFlying(on)`, `toggleFly()`, `emote(name)`, `findStandSpot(x,y,z,entity)`,
+  `overlapsCell(x,y,z)`, `serialize()` (saves a standing spot when sitting/sleeping),
+  `seatEntity`, `mountPet`. Riding: `mount(pet)` puts the player on `pet.object3d` (or
+  `pet.group`) at `pet.seatHeight` (default 0.9) every frame; the pets module moves the pet and
+  reads `game.input` while `player.state === 'ride'`. `game.createPlayer(saved)` (set by
+  player.js) builds the player and `game.cameraRig`.
 
 ### Avatar (src/player/avatar.js)
 ```js
@@ -346,6 +401,11 @@ createAvatar(look) -> {
 ```
 Blocky "chibi" proportions (big head, big sparkly eyes, blush), clothes are canvas textures on
 body/arm/leg boxes plus extra geometry for skirts, dresses, hair styles, wings, hats.
+Poses: when `sitting` the group origin is the seat surface (hips rest there); when `sleeping`
+the origin is the mattress-top centre and the body lies along local Z, head toward −Z.
+`playEmote` returns its duration in seconds; `avatar.look` is the normalized look.
+avatar.js sets `game.createAvatar` and `game.defaultLook`. wardrobe-data.js exports the option
+lists as `[{ key, name }]` plus `normalizeLook(look)` and `randomLook(rand, name)`.
 
 `look` schema (defaults in `src/player/wardrobe-data.js`, persisted in profile):
 ```js
@@ -396,6 +456,23 @@ entity = { uid, key, x, y, z, rot, color, data, object3d, def }
 ```
 Entities occupy grid cells (blocks cannot be placed into occupied cells), register colliders,
 pickables, light sources, and are saved in the world save via the `entities` system.
+As built:
+- Register with `game.entities.define(def)` (adds to `game.registry.furniture` and registers
+  the Bag item `furn:<key>` with a `game.thumbs` icon). Extra def fields: `lightPos`
+  (model units), `defaultData`, `update(entity, dt, game)`.
+- Model convention: `build(color, data)` returns a Group in block units spanning
+  [0,w]×[0,h]×[0,d] (origin = footprint min corner), front facing +Z.
+- Anchor: the tapped cell is the front-row middle cell; the footprint extends away from the
+  front. rot 0..3 turns the front to +Z, +X, −Z, −X; Build-tool placement turns the front toward
+  the player (wall items: out of the wall) and tries other turns if it does not fit.
+  Furniture may share its bottom cell with a carpet (raised 1/16).
+- Actions: `game.entities.registerAction(name, { run(game, entity, hit), hint?(game, entity) })`;
+  Hand-tap runs `def.actions[0]` and emits `entity:use`. Core actions: `sit`, `sleep`, `lamp`.
+- Also: `place(key,x,y,z,rot,color,data,{history,events,fx,uid,force})`, `rotate(entity)`,
+  `setData(entity, patch)` (rebuilds model + light), `refresh(entity)`, `placeFromHit(key, hit,
+  color)`, `canPlace`, `footprint`, `localToWorld(entity, lx, ly, lz)`, `byUid(uid)`.
+  entity adds `cells, colliders, pickable, lightCell, yOffset, frontCell()`.
+- Build tool on a placed piece with the same item selected rotates it; Remove tool removes it.
 
 Canonical furniture keys (prefabs and other modules may reference these):
 Bedroom: `bed_single bed_double bed_canopy bed_bunk bed_heart bed_cloud crib pet_bed
@@ -432,6 +509,10 @@ igloo, bakery, pet_shop, modern_house, barn.
 - `daynight.js`: sky dome gradient shader, sun + moon sprites, stars (points, twinkle), clouds
   (voxel-ish flat cloud layer drifting), sets `uDaylight`, fog color, ambient; emits
   `time:morning` / `time:night`. `game.time.dayLength` = 720 s. Settings can freeze time.
+  The core advances `game.time` each play frame (`t` always, `dayTime` unless
+  `settings.timeFrozen`); daynight detects clock crossings (0.25 / 0.78) and emits the events.
+  `game.setDayTime(v)` and `game.skipToMorning()` move the clock. Biomes may give
+  `sky: { top, horizon }` day colors.
 - `weather.js`: sunny, cloudy, rain, snow, rainbow (big arc in sky + sparkles).
 - `particles.js`: `game.particles.emit(kind, position, opts)`; kinds: sparkle, heart, star,
   bubble, splash, zzz, note, leaf, petal, confetti, rainbow_trail, smoke_puff. Ambient spawners:
@@ -451,12 +532,25 @@ ui.open(name, args) / ui.close() / ui.isOpen(name)   // one modal panel at a tim
 ui.button({ icon, label, onClick, variant })          // consistent chunky button element
 ui.confirm({ title, text, yes, no }) -> Promise<bool> // in-page confirm dialog (dialogs.js)
 ui.textInput({ title, value, placeholder, suggestions }) -> Promise<string|null>
+// as built, also:
+ui.el(tag, cls, text); ui.icon(name) -> svg string; ui.hasPanel(name); ui.toggle(name);
+ui.back()      // Close/Esc: opens def.back(game) if it returns a panel name, else closes
+ui.closeAll(); ui.setTitle(name, text); ui.current; ui.dialogOpen; ui.hudLayer
+ui.loading(text, progress)   // loading card; loading(null) hides, undefined text keeps it
+ui.transition({ text, stars, hold }, midFn) -> Promise   // dreamy fade (used by sleep)
+// registerPanel def extras: title, icon, width, closable (default true), back(game)
+// button({ ..., size: 'big'|'small'|'icon', title, className })
 ```
+Named actions: `game.registerAction(name, fn)` / `game.runAction(name)`. Core registers
+`build remove hand undo bag menu fly camera`; keys P → `photo`, G → `emotes`; HUD Dress Up →
+`dressup`, Stickers → `stickers` (buttons stay hidden until a module registers the action).
 Panel names: `title newworld worlds dressup bag stickers settings pause cooking piano tv basket
 pets adopt photo`.
 
 ### Input (src/core/input.js)
-Unified: `input.move` {x,z} (−1..1), `input.look` {dx,dy} consumed per frame, `input.jump`,
+Unified: `input.move` {x,z} (−1..1; x +1 = right, z +1 = forward), `input.look` {dx,dy}
+(pixels) consumed per frame, `input.zoom` (+ = out) and `input.turn` (−1..1, arrow keys)
+consumed per frame, `input.jump`,
 `input.down`, `input.run`, `input.pointer` {x,y} (normalized device coords of the last
 tap/cursor, or null = screen center), `input.on('tap', fn)` (click/tap without drag),
 `input.on('hold', fn)`, `input.on('key', fn)`. Mouse: left-click = use current tool; right-click
@@ -464,6 +558,10 @@ tap/cursor, or null = screen center), `input.on('tap', fn)` (click/tap without d
 Shift, 1–9, E (hand/interact), Q (remove), B (bag), F (fly), V (camera), P (photo),
 G (emotes), Z (undo, also Ctrl+Z), Esc (menu / close panel). Touch: joystick (left 40% of
 screen), look drag (right side), taps act at the tap point.
+As built: ↑/↓ also move, ←/→ turn the camera; R = Build tool; E uses the target directly (or
+switches to Hand). Hold still ≥ 0.42 s then drag = paint/erase a line (`hold` events with
+`phase: 'start'|'move'|'end'`). `input.press('jump'|'down'|'run', bool)` for HUD buttons,
+`input.touchMode` + `touchmode` event, `gesture` event (first user gesture unlocks audio).
 
 ### Audio (src/core/audio.js)
 WebAudio, created on first user gesture. `audio.play(name, { volume, pitch })` synthesized
@@ -474,14 +572,19 @@ music-box loop (day theme, soft night theme). Volumes in `profile.settings`.
 ### Storage (src/core/storage.js)
 `SaveStore` with two backends; every call is async and never throws to callers (errors are
 logged and reported as `{ ok:false }`).
-- **Local**: IndexedDB `sparkle-world` (stores `worlds`, `profile`), fallback `localStorage`,
-  fallback in-memory.
+- **Local**: IndexedDB `sparkle-world` (stores `worlds`, `metas` (small list entries),
+  `profile`), fallback `localStorage` (`sparkle-world:*` keys), fallback in-memory.
 - **Cloud (claude.ai Artifact)**: when `window.claude?.use` exists, `await claude.use('db')` and
   `await claude.use('user')` (user id via `await user.id()`). Layout:
   `data/users/<uid>/profile` (profile doc), `.../profile/worlds/<worldId>` (meta + `parts` count),
   `.../profile/worldparts/<worldId>-<i>` (`{ data: <≤180000 chars> }`). Writes: parts first,
   then meta; one write at a time per doc; cloud writes throttled to ≥ 60 s apart except on
   exit/visibility change. Load picks the newest `updatedAt` between local and cloud.
+  Doc bodies: profile `{ profile, updatedAt }`, world meta `{ id, name, biome, size,
+  createdAt, updatedAt, thumbnail, parts }`, part `{ data }` (the save JSON split in
+  ≤ 180000-char pieces). `store.init()` waits ≤ 1.5 s for the cloud; a later arrival fires
+  `store.onCloudReady(fn)` (the game reloads a newer cloud profile on the title screen).
+  `store.flush()` pushes pending cloud writes now; `store.backendName` e.g. 'indexedDB+cloud'.
 - `store.listWorlds()`, `store.loadWorld(id)`, `store.saveWorld(save)`, `store.deleteWorld(id)`,
   `store.loadProfile()`, `store.saveProfile(profile)`, `store.exportWorld(id) -> string`,
   `store.importWorld(string)`.
@@ -502,6 +605,11 @@ logged and reported as `{ ok:false }`).
   systems: { entities: [...], pets: [...], garden: [...], collectibles: {...},
              weather: {...}, ... }, thumbnail: 'data:image/jpeg;base64,...' }
 ```
+As built: `updatedAt` is epoch ms (profile too). RLE = per run: id byte + LEB128 length.
+World saves also hold `sizeName` ('cozy'|'big'), `waterLevel`, `outside`, `spawn: [x,y,z]`
+and `hotbar: { slots: [itemKey|null ×9], colors: [swatch|null ×9], index }` (the hotbar is
+per world; `game.hotbar.colors` holds the chosen swatch per slot).
+`entities` system data: `[{ uid, key, x, y, z, rot, color, data }]`.
 
 ### Performance budget
 60 fps on a 2019 iPad / mid laptop: chunk meshing time-sliced (≤ 6 ms/frame), no per-frame
@@ -514,4 +622,66 @@ ratio and particle counts.
 - Debug API on `window.__game`: `debug.newWorld(opts)`, `debug.place(key,x,y,z)`,
   `debug.teleport(x,y,z)`, `debug.setTime(dayTime)`, `debug.select(itemKey)`,
   `debug.useAt(x,y,z)` (simulate a Build-tool tap at a block), `debug.interact(entityUid)`,
-  `debug.screenshot()`.
+  `debug.screenshot()`. Also: `loadWorld(id)`, `exitToTitle()`, `save()`,
+  `getBlock(x,y,z)` → key, `heightAt(x,z)`, `entities()`, `info()` (mode, fps, draw calls,
+  pending chunks, storage…), `waitIdle(ms)` → Promise<bool>. `place` accepts block keys and
+  furniture keys (`furn:bed_single` or `bed_single`); `useAt(x,y,z, face=[0,1,0])`.
+- `tools/smoke.mjs [--biome=meadow] [--shots-prefix=core] [--only=desktop|touch] [--headed]`.
+  It exports `launch, openGame, attachErrorCollectors, waitForTitle, waitForPlay, waitIdle,
+  startWorld, startWorldViaUI, shot, settle, finish` for team scenario scripts.
+
+---
+
+## 3. Core as built — extra shared APIs
+
+The core added these on `Game` (feature modules may rely on them):
+
+```js
+game.lights            // { hemi: HemisphereLight, sun: DirectionalLight } (daynight drives them)
+game.blockUniforms     // shared block shader uniforms; game.blockMaterials { opaque, cutout, translucent }
+game.physics           // Physics (world + game.colliders): bodyBlocked(x,y,z,halfW,h), liquidAt, move(body, dt)
+game.chunks            // ChunkRenderer: pending, update(budgetMs, camX, camZ), rebuild(chunk)
+game.colliders         // Set<Box3>, world-space solid boxes from entities
+game.entities / game.particles / game.stickers / game.cameraRig / game.createAvatar / game.createPlayer
+game.loading           // true while the loading card meshes a world
+game.reach             // 8
+game.hotbar.colors     // chosen swatch per slot
+game.setTool(tool); game.selectSlot(i); game.setSlot(i|null, itemKey, color); game.selectedItem()
+game.placeBlock(x,y,z,key,{ history=true, fx=true }) -> bool    // undoable, sparkle + sound
+game.removeBlock(x,y,z,{ history=true, fx=true }) -> bool
+game.placeBlockFromHit(hit, key, opts)   // what block items' use() calls
+game.removeTarget(hit)                   // Remove tool (right-click on desktop)
+game.setDayTime(v); game.skipToMorning()
+game.saveProfile(immediate=false)        // debounced 400 ms
+game.applySettings()                     // volumes, quality (pixel ratio), camera mode
+game.captureThumbnail() -> jpeg dataURL  // 240×150
+game.flushSave()                         // save now + push cloud writes (tab hidden / pagehide)
+game.registerAction(name, fn); game.runAction(name, ...args)
+```
+
+Shared helpers: `src/core/models.js` — `box(w,h,d,color|material,x,y,z)` (min-corner placed,
+shared unit geometry), `cyl`, `ball`, `mat(color, { emissive, emissiveIntensity, opacity, side
+})` (cached Lambert), `canvasTexture(w,h,paint)`, `disposeObject(root)` (skips
+`userData.shared`). `src/core/util.js` — `mulberry32 hashString hash3 clamp lerp smoothstep
+randInt pick angleDelta makeId hexToRgb rgbToHex mixHex shade jitter rgba hexToUnit nextFrame
+sleep escapeHtml`. `src/core/noise.js` — `new Noise(seed)`: `n2 n3 fbm2 fbm3 ridge2`.
+`thumbs.get(key, build, { dir, zoom })` renders with a small second WebGLRenderer.
+
+Biome def (`game.registry.biomes.set(key, def)`): `{ key, name, description, iconBlock,
+colors: [cssTop, cssBottom] (New World card), sky?: { top, horizon }, generate(world, rand,
+noise), spawn?(world) -> [x,y,z] }`. `generate` writes `world.blocks` directly (helpers in
+`src/world/worldgen.js`: `idOf put peek fillColumn growTree defaultSpawn`) and sets
+`world.waterLevel` and `world.outside`. Light is computed after generation.
+
+Particles: every kind in §2 exists in the core pool (simple sprites);
+`particles.emit(kind, pos, { count, color, spread, scale })`.
+Stickers: `game.registry.stickers` entries `{ id, name, hint, icon }`; `game.stickers.award(id)
+/ has(id) / count()`. The core wires every sticker in §1 to its event (counters in
+`profile.stats`); `gem_master` compares against `world.gemTotal` (set by collectibles).
+
+Core-owned modules: everything in `src/core`, `src/world`, `player.js camera.js avatar.js
+(placeholder) wardrobe-data.js`, `entities.js furniture.js furniture-models.js (starter set)`,
+`daynight.js particles.js stickers.js (minimal)`, `theme.js icons.js ui.js dialogs.js hud.js
+menus.js inventory.js (minimal Bag)`. Stubs that export `install(game) {}`: emotes, prefabs,
+pets, garden, cooking, food-models, weather, collectibles, dressup, touch, settings, photo,
+stickerbook.

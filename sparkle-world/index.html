@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Sparkle World (dev)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap">
+  <style>
+    html, body { margin: 0; height: 100%; background: #BDE6FF; overflow: hidden; }
+    #app { position: fixed; inset: 0; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <!-- served from memory by `npm run dev` (esbuild serve) -->
+  <script src="dev/main.js"></script>
+  <script>
+    // live reload when esbuild rebuilds
+    try { new EventSource('/esbuild').addEventListener('change', () => location.reload()); } catch (e) { /* not served by esbuild */ }
+  </script>
+</body>
+</html>
