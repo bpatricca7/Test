@@ -38,7 +38,7 @@ SKIP_AUDIO=1 bash src/build.sh   # re-render video only
 | Voice | `src/voice.py` | Kokoro neural TTS (`af_heart`, plus `ff_siwis` for "Voilà !"). Each line is placed on its storyboard time; writes `src/data/vo_timeline.json` with word timings |
 | Music | `src/music.py` | 120 BPM D-major "French Riviera pop-house" synthesized in numpy (nylon pluck, accordion pad, whistle hook, glockenspiel, drums) |
 | SFX | `src/sfx.py` | 93 synthesized foley cues: brick snaps (tuned to the key in the build montage), shutter, whooshes, page flips, confetti |
-| Mix | `src/mix.py` | Ducks the music under the voice and masters to -14 LUFS / -1.5 dBTP |
+| Mix | `src/mix.py` | Ducks the music under the voice and masters to -14 LUFS with a -2 dBTP ceiling |
 | Picture | `src/ad.html`, `src/ad.js` | Deterministic `renderFrame(t)` motion graphics in HTML/CSS/canvas |
 | Capture | `src/capture.mjs` | Headless Chromium renders every frame in parallel and pipes it to ffmpeg |
 | QA | `src/review_tools.py` | Contact sheets with platform safe-zone overlays, audio lane charts |

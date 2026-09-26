@@ -563,7 +563,7 @@ def build_arrangement():
     A["pad"] += [dict(t=2.5, dur=1.5, ch="Bm", vel=0.75, fc=1500, att=0.45, rel=0.12),
                  dict(t=4.0, dur=1.0, ch="G", vel=0.72, fc=1650, att=0.1, rel=0.1),
                  dict(t=5.0, dur=1.0, ch="G", vel=0.42, fc=1500, att=0.04, rel=0.1, swell=4.0),
-                 dict(t=6.0, dur=1.6, ch="A", vel=0.48, fc=2600, att=0.04, rel=0.1, swell=12.0)]
+                 dict(t=6.0, dur=1.6, ch="A", vel=0.48, fc=2600, att=0.04, rel=0.1, swell=3.0)]
     for i in range(10, 20):
         t = i * E8
         A["shaker"].append((hum(t, 3), (0.5 if i % 2 else 0.32) * vr(0.1)))
@@ -572,8 +572,10 @@ def build_arrangement():
         return [(t0 + s * E8, d * E8, midi(nm) + 12, v) for s, d, nm in notes8]
     CALL = [(0, 1, "A4"), (1, 2, "D5"), (3, 3, "F#5"), (6, 2, "E5"), (8, 3, "D5"), (11, 1, "B4"), (12, 4, "A4")]
     A["whistle"].append(hook(2.5, CALL[:-1] + [(12, 2, "A4")], 0.78))   # softer first statement, ends as the riser starts
-    # --- 5.0-7.5 riser: climbing 16th plucks, noise sweep 900 Hz->8 kHz, snare roll 8->16->32 with
-    #     rising pitch, pad swell; no bass (the low end arrives with the drop). Cut dead at 7.50.
+    # --- 5.0-7.5 riser: climbing 16th plucks, snare roll 8->16->32 with rising pitch, pad swell;
+    #     no bass (the low end arrives with the drop). Cut dead at 7.50. The build tops out below
+    #     the 8.00 drop (plucks peak at vel 0.74, snare 0.58, pad swell +3 dB): with the voice
+    #     ducking the drop, a louder riser would make the payoff sound smaller than the build.
     climb = [(5.0, ["G3", "B3", "D4", "G4"]), (5.5, ["B3", "D4", "G4", "B4"]),
              (6.0, ["A3", "C#4", "E4", "A4"]), (6.5, ["C#4", "E4", "A4", "C#5"]),
              (7.0, ["E4", "A4", "C#5", "E5"])]
@@ -581,22 +583,23 @@ def build_arrangement():
     for tb, notes in climb:
         for j, nm in enumerate(notes):
             t = tb + j * S16
-            pl(t, nm, (0.32 + 0.68 * (k / 19) ** 1.3) * (1.0 if j == 0 else 0.82), dur=0.34, t60=0.55)
+            pl(t, nm, (0.32 + 0.42 * (k / 19) ** 1.3) * (1.0 if j == 0 else 0.82), dur=0.34, t60=0.55)
             k += 1
-    A["sweep"].append((5.0, 7.5, 900.0, 8000.0))
+    # (no music noise sweep: the storyboard SFX riser at 5.00 is the single noise riser; it is cut
+    #  dead at 7.50 and micro-ducked under the brickify clicks, so a second sweep only masked it)
     rolls = [(5.0, 6.0, E8), (6.0, 7.0, S16), (7.0, 7.5, T32)]
     for a0, a1, step in rolls:
         for i in range(int(round((a1 - a0) / step))):
             t = a0 + i * step
             u = (t - 5.0) / 2.5
-            A["snare"].append((t, (0.12 + 0.88 * u ** 1.6) * vr(0.05), 185.0 * 2 ** (u * 1.0)))
+            A["snare"].append((t, (0.08 + 0.5 * u ** 1.6) * vr(0.05), 185.0 * 2 ** (u * 1.0)))
     # --- 7.5-8.0 STOP-DOWN #1: only a quiet sustained glock A5 + reverse cymbal 7.70-8.00 (-18 dB)
     A["glock"].append((7.5, "A5", 0.24, 2.2, "X"))
     A["revcym"].append((STOP1[1], 0.30, -18.0))
-    # --- 8.0-15.0 DROP: crash, sub boom, 4otf kick, claps 2+4 (+ accents 11.5 / 13.0),
-    #     octave bass, accordion off-beat stabs, whistle hook + answer, glock sparkles
+    # --- 8.0-15.0 DROP: crash + full D chord hit (pad + strum), 4otf kick, claps 2+4 (+ accents
+    #     11.5 / 13.0), octave bass, accordion off-beat stabs, whistle hook + answer, glock sparkles
     A["crash"].append((8.0, 1.0))
-    A["sub"].append((8.0, 0.8))
+    # (no music sub boom on 8.00: the SFX impact, which settles on D1, carries the boom alone)
     for i in range(16, 30):
         A["kick"].append((i * BEAT, 1.0))
     for t in (8.5, 9.5, 10.5, 11.5, 12.5, 13.0, 13.5, 14.5):
@@ -613,7 +616,10 @@ def build_arrangement():
     for i in range(64, 120):
         t = i * S16
         A["shaker"].append((hum(t, 2.5), [0.42, 0.22, 0.6, 0.28][i % 4] * vr(0.1)))
-    arp8(8.0, 15.0, 0.62)
+    A["pad"].append(dict(t=8.0, dur=1.9, ch="D", vel=1.15, fc=2600, att=0.004, rel=0.1, hit=(0.6, 0.25)))
+    for j, nm in enumerate(["D3", "A3", "D4", "F#4", "A4", "D5"]):     # D-major strum on the drop
+        pl(8.0 + j * 0.011, nm, 0.75, dur=1.2, t60=1.8)
+    arp8(8.0, 15.0, 0.62, skip=(8.0,))
     ANSWER = [(0, 1, "B4"), (1, 2, "D5"), (3, 3, "G5"), (6, 2, "F#5"), (8, 2, "E5"), (10, 1, "C#5"), (11, 1, "A4")]
     A["whistle"].append(hook(8.0, CALL) + hook(12.0, ANSWER))
     A["glock"] += [(11.75, "D6", 0.3, 1.0, None, 0.4), (11.875, "F#6", 0.26, 1.0, None, 0.4),
@@ -651,7 +657,7 @@ def build_arrangement():
     # --- 21.5-22.0 STOP-DOWN #2: digital silence (reverse cymbal 21.60 comes from the SFX track)
     # --- 22.0-28.0 final chorus: crash + full D chord, accordion takes the hook, full groove
     A["crash"].append((22.0, 1.0))
-    A["sub"].append((22.0, 0.72))
+    # (no music sub boom on 22.00: see 8.00)
     A["pad"].append(dict(t=22.0, dur=1.9, ch="D", vel=1.15, fc=2600, att=0.004, rel=0.1, hit=(0.6, 0.25)))
     for j, nm in enumerate(["D3", "A3", "D4", "F#4", "A4", "D5"]):
         pl(22.0 + j * 0.011, nm, 0.75, dur=1.2, t60=1.8)
@@ -666,7 +672,9 @@ def build_arrangement():
         m = root if i % 2 == 0 else root[:-1] + str(int(root[-1]) + 1)
         A["bass"].append((hum(t, 1.0) if i % 2 else t, m, 0.21, 0.95 if i % 2 == 0 else 0.8))
         if i % 2:
-            A["stab"].append((hum(t, 1.5), chord_at(t), (0.8 if (i // 2) % 2 else 0.68) * vr(0.05)))
+            stab = (hum(t, 1.5), chord_at(t), (0.8 if (i // 2) % 2 else 0.68) * vr(0.05))
+            if not 26.0 <= t < 27.25:        # no accordion chords in the gaps of "brickcoodle dot com"
+                A["stab"].append(stab)
             A["hat"].append((hum(t, 1.5), 0.55 * vr(0.08)))
     for i in range(176, 224):
         t = i * S16
@@ -675,7 +683,9 @@ def build_arrangement():
     ACC_ANSWER = [(26.0, 0.25, "B4"), (26.25, 0.25, "D5"), (26.5, 0.5, "G5"), (27.0, 0.25, "F#5"),
                   (27.25, 0.25, "E5"), (27.5, 0.25, "C#5"), (27.75, 0.25, "E5"), (28.0, 1.3, "D5")]
     acc_call = [(t, d, m - 12) for t, d, m, _ in hook(22.0, CALL)]       # accordion plays at written pitch
-    A["acc"].append(acc_call + [(t, d, midi(nm)) for t, d, nm in ACC_ANSWER])
+    # the answer phrase enters at 27.25 (E5-C#5-E5 | D5 on 28.00), after "...brickcoodle dot com."
+    # (25.00-27.23), so no accordion melody sits under the spoken URL
+    A["acc"].append(acc_call + [(t, d, midi(nm)) for t, d, nm in ACC_ANSWER if t >= 27.25])
     A["glock"] += [(23.75, "A5", 0.28, 1.0, None, -0.4), (23.875, "D6", 0.3, 1.0, None, -0.4),
                    (25.75, "D6", 0.28, 1.0, None, 0.4), (25.875, "F#6", 0.3, 1.0, None, 0.4)]
     # --- 28.0-29.5 outro: final D chord rings (strum + thin pad + bass + glock + accordion D5)

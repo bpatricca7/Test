@@ -22,7 +22,7 @@
 
   const SRC = {
     balcony: '/assets/photos/resort-balcony-view.jpg',
-    arrival: '/assets/photos/resort-arrival.jpg',
+    arrival: '/assets/photos/resort-arrival-retouched.jpg', // copy of resort-arrival.jpg with the unreleased bystanders' heads blurred
     promenade: '/assets/photos/resort-promenade.jpg',
     cover: '/assets/instructions/pages/cover.webp',
     render: '/assets/instructions/cutouts/brick-model-render.webp',
@@ -403,6 +403,19 @@
   }
 
   // ---------------------------------------------------------- S1 / S10 split screen
+  // step-88 with the booklet's orange "new part" outlines on the canopy roof turned into dark-grey seams
+  // (source box x 430-905, y 395-615), so the hero reads as a finished model rather than a wireframe
+  function cleanS88() {
+    const im = IMG.s88, c = cnv(im.naturalWidth, im.naturalHeight), x = c.getContext('2d', { willReadFrequently: true })
+    x.drawImage(im, 0, 0)
+    const d = x.getImageData(430, 395, 476, 221), p = d.data
+    for (let i = 0; i < p.length; i += 4) {
+      const r = p[i], g = p[i + 1], b = p[i + 2]
+      if (p[i + 3] > 100 && r - b > 25 && r >= g && g >= b) p[i] = p[i + 1] = p[i + 2] = Math.round(0.6 * (0.299 * r + 0.587 * g + 0.114 * b))
+    }
+    x.putImageData(d, 430, 395)
+    return c
+  }
   function buildSplit() {
     const L = (S.split = div(stage, null, 'layer'))
     const divY = V45 ? 875 : 960
@@ -416,7 +429,7 @@
     S.botBox = div(L, { left: 0, top: divY, width: 1080, height: botH }, 'clip')
     div(S.botBox, { width: 1080, height: botH, background: SKY() })
     div(S.botBox, { width: 1080, height: botH, background: 'radial-gradient(90% 60% at 50% 45%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 70%)' })
-    S.botImg = natImg(S.botBox, 's88')
+    S.botImg = canvasImg(S.botBox, cleanS88(), { width: IMG.s88.naturalWidth, height: IMG.s88.naturalHeight, transformOrigin: '0 0' })
     S.botVig = div(S.botBox, { width: 1080, height: botH, background: 'radial-gradient(130% 100% at 50% 40%, rgba(0,0,0,0) 60%, rgba(10,28,50,0.16) 100%)' })
     S.botTopShade = div(S.botBox, { width: 1080, height: 40, background: 'linear-gradient(180deg, rgba(10,28,50,0.22), rgba(10,28,50,0))' })
     S.divider = div(L, { left: 0, top: 0, width: 1080, height: 8, background: '#fff', boxShadow: '0 0 22px rgba(10,28,50,0.35), 0 2px 4px rgba(10,28,50,0.28)' })
@@ -625,7 +638,7 @@
       let best = pal[0], bd = 1e9
       for (const p of pal) { const dl = (lab[0] - p.lab[0]) * 0.85, da = lab[1] - p.lab[1], db = lab[2] - p.lab[2]; const dd = dl * dl + da * da + db * db; if (dd < bd) { bd = dd; best = p } }
       const dist = Math.hypot(i - ci, j - cj) / dmax
-      cells.push({ i, j, avg: `rgb(${r},${gg},${b})`, pal: best.h, ts: 7.2 + 0.27 * Math.pow(dist, 0.9) })
+      cells.push({ i, j, avg: `rgb(${r},${gg},${b})`, pal: best.h, ts: 7.2 + 0.68 * Math.pow(dist, 0.9) })
     }
     BK.g = g; BK.cells = cells
   }
@@ -685,14 +698,14 @@
     T(S.rvShadow, 'translate(0px, 26px)')
     S.rvContact = contactShadow(S.rvModel, 1500, 180, 790, 1010, 0.30)
     S.rvGhosts = []
-    for (let i = 0; i < 4; i++) S.rvGhosts.push(natImg(S.rvModel, 'cover', { transformOrigin: `${COV.cx}px ${COV.cy}px` }))
+    for (let i = 0; i < 10; i++) S.rvGhosts.push(natImg(S.rvModel, 'cover', { transformOrigin: `${COV.cx}px ${COV.cy}px` }))
     S.rvImg = natImg(S.rvModel, 'cover')
     S.rvConfF = canvasEl(L, cnv(1080, 1920), { width: 1080, height: 1920 })
     S.rvVoila = textBlock(L, { x: 10, w: 1000, y: 300, align: 'center', font: [FAM.serif, 150, 900, 'italic'], lh: 170, lines: ['Voilà !'] })
     S.rvVoila.box.style.transformOrigin = '500px 95px'
     S.rvName = textBlock(L, { x: 10, w: 1000, y: 300, align: 'center', font: [FAM.serif, 84, 700, 'italic'], lh: 100, lines: ['The Riviera Resort'] })
     S.rvBM = textBlock(L, { x: 10 + 0.09 * 60, w: 1000, y: 410, align: 'center', font: [FAM.label, 60], lh: 60, color: C.booklet_blue, ls: '0.18em', lines: ['BRICK MODEL'] })
-    S.rvNameW = vwords('vo6', ['the', 'riviera', 'resort', 'brick'], 8.8)
+    S.rvNameW = vwords('vo6', ['the', 'riviera', 'resort', 'brick'], 8.75)
     // counter with fixed-width digit cells
     const f = fcss(FAM.stat, 130)
     const dw = Math.max(...'0123456789'.split('').map(d => textW(f, d))), cw = textW(f, ',')
@@ -721,15 +734,15 @@
     const cx = lerp(540, COV.x, u), cy = lerp(900, COV.y, u)
     const base = `translate(${cx.toFixed(2)}px, ${cy.toFixed(2)}px) perspective(1800px) rotateY(${ry.toFixed(3)}deg)`
     T(S.rvModel, `${base} scale(${sc.toFixed(5)}) translate(${-COV.cx}px, ${-COV.cy}px)`)
-    // radial motion-blur ghosts on the first 4 frames
+    // radial motion blur on the first 4 frames: 10 equal-weight ghosts spaced FR/12 apart read as a smooth smear
     const gOn = t < 8.0 + 4 * FR - 1e-6
     S.rvGhosts.forEach((g, i) => {
       vis(g, gOn)
       if (!gOn) return
-      const tp = Math.max(8.0, t - ((i + 1) * FR) / 6)
+      const tp = Math.max(8.0, t - ((i + 1) * FR) / 12)
       const r = whip(E.outExpo(seg(tp, 8.0, 8.45))) / sc
       T(g, `scale(${r.toFixed(4)})`)
-      O(g, 0.3 - i * 0.06)
+      O(g, 0.08)
     })
     O(S.rvImg, 1)
     // confetti
@@ -737,15 +750,15 @@
     vis(S.rvConfB, cOn); vis(S.rvConfF, cOn)
     if (cOn) drawConfetti(S.rvConfB, S.rvConfF, S.rvConf, t, 8.05)
     // texts
-    const vOn = t >= 8.02 && t < 8.8
+    const vOn = t >= 8.02 && t < 8.72
     vis(S.rvVoila.box, vOn)
     if (vOn) {
       const s = kf(t, [[8.02, 0.85], [8.14, 1.06, E.outCubic], [8.22, 1.0, E.inOutSine]])
-      T(S.rvVoila.box, `scale(${s.toFixed(4)})`); O(S.rvVoila.box, Math.min(seg(t, 8.02, 8.07), 1 - seg(t, 8.7, 8.8)))
+      T(S.rvVoila.box, `scale(${s.toFixed(4)})`); O(S.rvVoila.box, Math.min(seg(t, 8.02, 8.07), 1 - seg(t, 8.62, 8.72)))
     }
-    const nOn = t >= 8.75
+    const nOn = t >= 8.72
     vis(S.rvName.box, nOn)
-    if (nOn) S.rvName.ws.forEach((sp, i) => riseIn(sp, t, Math.max(8.8, S.rvNameW[i].start - 0.02), 14, 0.3))
+    if (nOn) S.rvName.ws.forEach((sp, i) => riseIn(sp, t, Math.max(8.72, S.rvNameW[i].start - 0.02), 14, 0.3))
     const bt = Math.max(9.6, S.rvNameW[3].start - 0.02)
     vis(S.rvBM.box, t >= bt)
     if (t >= bt) { const p = seg(t, bt, bt + 0.28); O(S.rvBM.box, E.outQuad(p)); T(S.rvBM.box, `translateY(${(8 * (1 - E.outCubic(p))).toFixed(2)}px)`) }
@@ -882,9 +895,12 @@
       S.r2.style.clipPath = `inset(${Y.toFixed(2)}px 0 0 0)`
       T(S.slH, `translateY(${Y.toFixed(2)}px)`)
       hx = 540; hy = WIN.y + Y
-      hs = kf(t, [[13.0, 1], [13.075, 1.18, E.outQuad], [13.15, 1, E.inOutSine]])
+      // round 2: the handle pops in at top centre once the 2-frame blink has passed
+      hs = t < 12.5 ? lerp(0.6, 1, E.outBack(seg(t, 12.0 + 2 * FR, 12.0 + 5 * FR))) : kf(t, [[13.0, 1], [13.075, 1.18, E.outQuad], [13.15, 1, E.inOutSine]])
     }
     T(S.handle5, `translate(${(hx - 38).toFixed(2)}px, ${(hy - 38).toFixed(2)}px) scale(${hs.toFixed(4)})`)
+    // hidden during the round-1 -> round-2 white blink, so the jump across the window is never seen
+    vis(S.handle5, !(t >= 12.0 && t < 12.0 + 2 * FR - 1e-6))
     O(S.wBlink, t >= 12.0 && t < 12.0 + 2 * FR - 1e-6 ? (t < 12.0 + FR - 1e-6 ? 1 : 0.55) : 0)
     chipFlip(S.chip5, t, [[11.5, 'BRICK'], [12.0, 'REAL', true], [13.0, 'BRICK']])
     O(S.chip5.e, 1 - seg(t, 13.1, 13.2))
@@ -1008,6 +1024,8 @@
       T(S.c21, `translate(${(600 - 450 + x).toFixed(2)}px, ${(1045 - 347.5 - 30 * (1 - e)).toFixed(2)}px)${u < 1 ? ` perspective(2200px) rotateY(${ry.toFixed(2)}deg)` : ''} rotate(${rz.toFixed(3)}deg)`)
       const p = E.inOutSine(seg(t, 15.8, 16.2))
       draw(S.tr21.p, S.tr21.len, p); draw(S.tr21.glow, S.tr21.len, p)
+      // page 21's trace fades as the inventory page is dealt on top (no orphan bracket beside page 71)
+      O(S.tr21.s, 1 - seg(t, 16.85, 17.0))
     }
     const d71 = t >= 16.75
     vis(S.c71, d71)
@@ -1045,13 +1063,24 @@
     MCTX.font = f
     const x = MCTX.measureText('x').actualBoundingBoxAscent
     S.bug.inner.style.top = (x / 2 - (m.A - m.D) / 2 + 1).toFixed(1) + 'px'
+    S.bugW = S.bug.e.offsetWidth
   }
   function renderBug(t) {
-    const on = t >= 15.0 && t < 22.0
+    const on = t >= 15.0 && t < 25.12
     vis(S.bug.e, on)
     if (!on) return
-    const s = kf(t, [[15.0, 0.8], [15.12, 1.04, E.outCubic], [15.2, 1.0, E.inOutSine]])
-    T(S.bug.e, `scale(${s.toFixed(4)})`); O(S.bug.e, seg(t, 15.0, 15.04))
+    if (t < 22.0) {
+      const s = kf(t, [[15.0, 0.8], [15.12, 1.04, E.outCubic], [15.2, 1.0, E.inOutSine]])
+      S.bug.e.style.transformOrigin = '0% 50%'
+      T(S.bug.e, `scale(${s.toFixed(4)})`); O(S.bug.e, seg(t, 15.0, 15.04))
+      return
+    }
+    // end card: the URL stays up, centred in the CTA slot, until the 1x6 brick button lands on it at 25.12
+    const dx = 540 - S.bugW / 2 - 80, dy = 1300 - 1440
+    const s = kf(t, [[22.12, 0.7], [22.26, 1.06, E.outCubic], [22.36, 1.0, E.inOutSine]])
+    S.bug.e.style.transformOrigin = '50% 50%'
+    T(S.bug.e, `translate(${dx.toFixed(1)}px, ${dy}px) scale(${s.toFixed(4)})`)
+    O(S.bug.e, Math.min(seg(t, 22.12, 22.18), 1 - seg(t, 25.04, 25.12)))
   }
 
   // ---------------------------------------------------------- S7 build flipbook
@@ -1132,7 +1161,8 @@
     const L = (S.red = div(stage, null, 'layer'))
     const bg = div(L, { top: OFF, width: 1080, height: VH, background: C.paper, willChange: 'transform' })
     gridBg(bg, { width: 1080, height: VH }, 24, 2.8, C.grid)
-    S.redCam = div(L, { width: 1080, height: 1920, transformOrigin: '540px 900px' })
+    // punch-in anchored on the card's top edge (y 440) so it grows downward and never covers the headline
+    S.redCam = div(L, { width: 1080, height: 1920, transformOrigin: '540px 440px' })
     S.card8 = div(S.redCam, { left: 70, top: 440, width: 940, height: 826, background: '#fff', borderRadius: 28, boxShadow: '0 22px 50px rgba(20,48,79,0.22), 0 3px 8px rgba(20,48,79,0.10)' })
     S.card8win = div(S.card8, { left: 20, top: 20, width: 900, height: 786, borderRadius: 14, background: `linear-gradient(180deg, ${shade(C.sky_top, 0.06)}, ${C.sky_bottom})` }, 'clip')
     S.card8img = natImg(S.card8win, 's94')
@@ -1213,13 +1243,14 @@
     div(pw, { width: 202, height: 202, background: 'linear-gradient(128deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 45%)' })
     // texts
     const f94 = fcss(FAM.stat, 92)
+    S.kicker = textBlock(L, { x: 10 + 0.07 * 50, w: 1000, y: 228, align: 'center', font: [FAM.label, 50], lh: 50, color: C.booklet_blue, ls: '0.14em', lines: ['THE RIVIERA RESORT BRICK MODEL'] })
     S.tag1 = textBlock(L, { x: 10, w: 1000, y: 290, align: 'center', font: [FAM.stat, 92], lh: 100, lines: ['94 steps back'] })
     S.tag1.ws[0].style.color = C.brick_red
     S.tag2 = textBlock(L, { x: 10, w: 1000, y: 395, align: 'center', font: [FAM.serif, 104, 900, 'italic'], lh: 125, lines: ['to the Riviera.'] })
     const w12 = vwords('vo12', ['ninety', 'steps', 'back', 'to', 'the', 'riviera'], 22.15)
     S.tag1W = w12.slice(0, 3); S.tag2W = w12.slice(3)
     S.val = textBlock(L, { x: 10, w: 1000, y: 1090, align: 'center', font: [FAM.body, 44, 800], lh: 48, lines: ['Step-by-step instructions', '+ full parts list'] })
-    S.s1at = textBlock(L, { x: 120, y: 1186, font: [FAM.hand, 64], lh: 62, lines: ['Step 1 starts at'], pen: true })
+    S.s1at = textBlock(L, { x: 120, y: 1178, font: [FAM.hand, 64], lh: 62, lines: ['Step 1 starts at'], pen: true })
     S.s1atW = vwords('vo13', ['step', 'one', 'starts', 'at'], 25.0)
     S.endConf = makeConfetti(777, 30, 22.0, 23.2, { x0: 360, x1: 720, y0: 640, y1: 820 }, 1900)
     // pinned layer (above the loop split): CTA button + disclaimer
@@ -1264,9 +1295,14 @@
     vis(S.end, on)
     vis(S.pin, on)
     if (!on) return
+    // CTA button + disclaimer fade out over the last 3 frames so the loop wraps cleanly onto frame 0
+    O(S.pin, 1 - E.inOutSine(seg(t, 29.83, 29.93)))
     // end-card content fades 29.50-29.70 for the loop bridge
     const fo = 1 - E.inOutSine(seg(t, 29.5, 29.7))
     O(S.endGroup, fo); O(S.tag1.box, fo); O(S.tag2.box, fo); O(S.val.box, fo); O(S.s1at.box, fo)
+    // product-name kicker rises in with the hit
+    const kp = seg(t, 22.08, 22.4)
+    O(S.kicker.box, Math.min(fo, E.outQuad(kp))); T(S.kicker.box, `translateY(${(10 * (1 - E.outCubic(kp))).toFixed(2)}px)`)
     // model lands + floats
     const land = seg(t, 22.0, 22.35)
     const ls = lerp(1.12, 1, E.outBack(land))
@@ -1385,6 +1421,7 @@
     makeSprites()
     S.grainTiles = [1, 2, 3, 4].map(s => noiseTile(s))
     buildTable(); buildReveal(); buildCompare(); buildBooklet(); buildBuild(); buildRed(); buildHours(); buildBug(); buildEnd(); buildSplit(); buildFx()
+    stage.appendChild(S.bug.e) // URL pill stays above the end card (22.0-25.12)
     prepBrickify()
     await Promise.all(domImgs.map(im => (im.complete && im.naturalWidth ? im.decode().catch(() => {}) : new Promise(r => { im.onload = () => im.decode().then(r, r); im.onerror = r }))))
     renderFrame(0)

@@ -173,36 +173,36 @@
   },
   {
    "id": "vo6",
-   "start": 8.8,
-   "end": 10.544,
+   "start": 8.75,
+   "end": 10.494,
    "text": "The Riviera Resort brick model.",
    "voice": "af_heart",
    "speed": 1.05,
    "words": [
     {
      "text": "The",
-     "start": 8.8,
-     "end": 8.922
+     "start": 8.75,
+     "end": 8.872
     },
     {
      "text": "Riviera",
-     "start": 8.922,
-     "end": 9.35
+     "start": 8.872,
+     "end": 9.3
     },
     {
      "text": "Resort",
-     "start": 9.35,
-     "end": 9.933
+     "start": 9.3,
+     "end": 9.883
     },
     {
      "text": "brick",
-     "start": 9.933,
-     "end": 10.178
+     "start": 9.883,
+     "end": 10.128
     },
     {
      "text": "model.",
-     "start": 10.178,
-     "end": 10.544
+     "start": 10.128,
+     "end": 10.494
     }
    ]
   },
@@ -333,36 +333,36 @@
   },
   {
    "id": "vo11",
-   "start": 20.0,
-   "end": 21.087,
+   "start": 20.4,
+   "end": 21.487,
    "text": "pass me the red one!",
    "voice": "af_heart",
    "speed": 1.05,
    "words": [
     {
      "text": "pass",
-     "start": 20.0,
-     "end": 20.233
+     "start": 20.4,
+     "end": 20.633
     },
     {
      "text": "me",
-     "start": 20.233,
-     "end": 20.466
+     "start": 20.633,
+     "end": 20.866
     },
     {
      "text": "the",
-     "start": 20.466,
-     "end": 20.621
+     "start": 20.866,
+     "end": 21.021
     },
     {
      "text": "red",
-     "start": 20.621,
-     "end": 20.854
+     "start": 21.021,
+     "end": 21.254
     },
     {
      "text": "one!",
-     "start": 20.854,
-     "end": 21.087
+     "start": 21.254,
+     "end": 21.487
     }
    ]
   },

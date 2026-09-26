@@ -59,6 +59,11 @@ TAU = 2.0 * np.pi
 BASE_SEED = 0x5F1C0DE
 MASTER_DB = -0.3   # fixed headroom so the 8.00 drop stack (impact + snap + whip) stays under -1 dBFS
 
+def effective_cues(sb, quiet=True):
+    """The storyboard sfx cues as rendered (copies; the storyboard dict is not modified)."""
+    return [dict(c) for c in sb["sfx"]]
+
+
 # peak level (dBFS) of a cue at gain 1.0, per variant
 REF_DB = {
     "snap": -3.0, "tiny": -2.0, "tick": 1.0, "montage": -3.0, "triple": -3.0, "urlbrick": -3.0,
@@ -461,7 +466,7 @@ def g_impact(rng):
     """DROP / CTA hit: pitch-swept sub boom (+harmonics for phones) + low plastic snap-clack."""
     n = n_(1.1)
     t = tvec(n)
-    f = 44.0 + 82.0 * np.exp(-t / 0.045)
+    f = 36.71 + 89.0 * np.exp(-t / 0.045)   # settles on D1 (the key), same 126 Hz start as before
     ph = TAU * np.cumsum(f) / SR
     env = np.minimum(1.0, t / 0.0015) * np.exp(-t / 0.2)
     sub = np.sin(ph) * env
@@ -1051,6 +1056,7 @@ def main():
     ap.add_argument("--out", default=OUT)
     args = ap.parse_args()
     sb = json.load(open(os.path.join(ROOT, "storyboard.json")))
+    sb["sfx"] = effective_cues(sb, quiet=False)
     track, placed, trim = render(sb)
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     sf.write(args.out, track, SR, subtype="FLOAT")
