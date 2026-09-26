@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>LM exterior model studio</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  #scene { width: 100vw; height: 100vh; display: block; }
+  #info { position: fixed; left: 8px; top: 6px; color: #9f9; font: 12px monospace; white-space: pre; pointer-events: none; text-shadow: 0 0 3px #000; }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div id="info"></div>
+<!--
+  LM-MODEL studio harness. URL parameters:
+    view     = three (default) | front | side | rear | top | under | window | quad | foil | leg | pad | aft | top3 | hatch
+    sunaz    = sun azimuth in degrees, 0 = from the front (-Z), +90 = from the right (+X)   (default per view)
+    sunel    = sun elevation in degrees (default 12)
+    exposure = tone-mapping exposure (default 0.55)
+    ground=0 = no lunar ground plane (space look)
+    staged=1 = ascent stage lifted 5 m off the descent stage
+    compress = gear stroke 0..0.81 m on all legs;  fold=1 = probes folded (landed)
+    iva=1    = setIVA(true) (only ivaVisible meshes should remain)
+    cam=x,y,z&target=x,y,z&fov=deg = custom camera
+    anim=1   = orbit the camera slowly (interactive use)
+-->
+<script type="module" src="./lm-model.js"></script>
+</body>
+</html>

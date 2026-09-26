@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>LM cabin harness</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  #scene { width: 100vw; height: 100vh; display: block; }
+  #info { position: fixed; left: 8px; top: 6px; color: #9f9; font: 12px monospace; white-space: pre; pointer-events: none; text-shadow: 0 0 3px #000; }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div id="info"></div>
+<!--
+  LM-CABIN harness: the LM crew compartment at a fake Tranquility Base (bright ground plane + Sun),
+  camera at the station eye point, animated fake vessel (controls, DSKY, C&W, instruments).
+  URL parameters:
+    station = CDR | LMP | OVERHEAD      eye point (default CDR)
+    yaw, pitch (deg), fov (deg)         head look (yaw + = left, pitch + = up), default 0 / -12 / 70
+    att     = p64 | landed | pdi | orbit  vehicle attitude preset (default p64)
+    alt     = altitude above the plane (m), default per att
+    t       = fake time (s) (deterministic), anim=0 freezes
+    post=0  plain render (no exposure / bloom); exposure=<EV> override
+    info=1  overlay stats; drag = look around
+-->
+<script type="module" src="./lm-cabin.js"></script>
+</body>
+</html>

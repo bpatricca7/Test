@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GNC Harness</title>
+<style>
+  :root { --bg: #111317; --panel: #2b2e33; --ink: #d9dde3; --dim: #7c838d; --el: #7dff9a; --amber: #ffb347; --grid: #262a30; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font: 13px/1.35 ui-monospace, Menlo, Consolas, monospace; }
+  .wrap { display: grid; grid-template-columns: 360px 1fr; gap: 16px; padding: 16px; }
+  canvas { display: block; background: #0b0d10; border: 1px solid #333; }
+  h2 { margin: 0 0 6px; font-size: 13px; color: var(--dim); font-weight: 600; letter-spacing: .05em; }
+  pre { margin: 8px 0 0; white-space: pre-wrap; color: var(--ink); }
+  .log { color: var(--dim); max-height: 190px; overflow: hidden; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div>
+    <h2>DSKY (vessel.agc)</h2>
+    <canvas id="dsky" width="360" height="420"></canvas>
+    <h2 style="margin-top:12px">FDAI error needles (vessel.gnc.attError)</h2>
+    <canvas id="fdai" width="360" height="200"></canvas>
+  </div>
+  <div>
+    <h2 id="title">Descent profile</h2>
+    <canvas id="plot" width="860" height="420"></canvas>
+    <pre id="state"></pre>
+    <pre id="log" class="log"></pre>
+  </div>
+</div>
+<script type="module">
+import { createGameState } from '/src/core/state.js';
+import { createSim } from '/src/sim/sim.js';
+import { createGNC } from '/src/gnc/gnc.js';
+import { FT } from '/src/core/constants.js';
+
+const q = new URLSearchParams(location.search);
+const scenario = q.get('scenario') || 'pdi';
+const runFor = +(q.get('t') || 0);
+const vid = q.get('vessel') || 'LM';
+const game = createGameState({ scenario: null, warp: 1 });
+game.settings.historicalAlarms = q.get('alarms') === '1';
+const gnc = createGNC(game);
+const sim = createSim(game, { gnc });
+const log = [];
+for (const t of ['callout', 'program', 'alarm', 'message']) game.events.on(t, (p) => log.push(`${(game.time.met - t0).toFixed(1).padStart(7)}  ${t.padEnd(8)} ${p.text || p.program || p.code}`));
+sim.loadScenario(scenario);
+const t0 = game.time.met;
+const track = [];
+const v = () => game.vessels[vid];
+const autoPro = q.get('pro') !== '0';
+let proDone = false;
+for (let i = 0; i < runFor * 60; i++) {
+  const L = game.vessels.LM;
+  const tig = L.gnc.tig;
+  if (autoPro && !proDone && Number.isFinite(tig) && game.time.met > tig - 4) {
+    game.events.emit('action', { name: 'PRO' });
+    proDone = true;
+  }
+  sim.step(1 / 60, { ignoreWarp: true });
+  if (i % 60 === 0) track.push({ t: game.time.met - t0, alt: L.tel.altitude, range: L.tel.rangeToSite, thr: L.mainEngine.throttle, prog: L.gnc.program });
+  if (L.landed && L.gnc.program === 'P68' && q.get('stop') !== '0') break;
+}
+
+// ---------------------------------------------------------------- DSKY
+function dsky() {
+  const c = document.getElementById('dsky').getContext('2d');
+  const a = v().agc;
+  c.fillStyle = '#4a4d52'; c.fillRect(0, 0, 360, 420);
+  // status lights (left)
+  const L = [['UPLINK ACTY', 'uplinkActy'], ['NO ATT', 'noAtt'], ['STBY', 'stby'], ['KEY REL', 'keyRel'], ['OPR ERR', 'oprErr'], ['TEMP', 'temp'], ['GIMBAL LOCK', 'gimbalLock'], ['PROG', 'prog'], ['RESTART', 'restart'], ['TRACKER', 'tracker'], ['ALT', 'alt'], ['VEL', 'vel']];
+  c.font = 'bold 9px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  L.forEach(([name, key], i) => {
+    const x = 12 + (i % 2) * 76, y = 14 + Math.floor(i / 2) * 44;
+    const on = a.lights[key];
+    const warn = ['temp', 'gimbalLock', 'prog', 'restart', 'tracker', 'alt', 'vel'].includes(key);
+    c.fillStyle = on ? (warn ? '#ffb000' : '#f4f4f0') : '#6b6e70'; c.fillRect(x, y, 70, 36);
+    c.fillStyle = '#222'; c.fillText(name, x + 35, y + 18);
+  });
+  // EL display (right)
+  const X = 170;
+  c.fillStyle = '#0a120c'; c.fillRect(X, 10, 180, 270);
+  const el = (txt, x, y, size = 30) => { c.font = `${size}px "DSEG7 Classic", ui-monospace, monospace`; c.fillStyle = '#7dff9a'; c.textAlign = 'right'; c.fillText(txt, x, y); };
+  const lab = (txt, x, y) => { c.fillStyle = '#7dff9a'; c.fillRect(x, y, 50, 14); c.fillStyle = '#0a120c'; c.font = 'bold 10px sans-serif'; c.textAlign = 'center'; c.fillText(txt, x + 25, y + 7); };
+  c.fillStyle = a.lights.compActy ? '#7dff9a' : '#16301d'; c.fillRect(X + 8, 18, 50, 40);
+  c.fillStyle = '#0a120c'; c.font = 'bold 10px sans-serif'; c.textAlign = 'center'; c.fillText('COMP', X + 33, 32); c.fillText('ACTY', X + 33, 45);
+  lab('PROG', X + 120, 18); el(a.prog, X + 170, 72);
+  const blink = a.flashVerbNoun && (Math.floor(performance.now() / 500) % 2 === 0);
+  lab('VERB', X + 8, 84); lab('NOUN', X + 120, 84);
+  if (!a.flashVerbNoun || true) { el(a.verb, X + 58, 138); el(a.noun, X + 170, 138); }
+  if (a.flashVerbNoun) { c.strokeStyle = '#ffb347'; c.lineWidth = 2; c.strokeRect(X + 4, 80, 172, 64); c.fillStyle = '#ffb347'; c.font = '10px sans-serif'; c.textAlign = 'center'; c.fillText('FLASHING', X + 90, 152); }
+  for (let i = 0; i < 3; i++) { c.fillStyle = '#7dff9a'; c.fillRect(X + 8, 160 + i * 40, 164, 2); el(a['r' + (i + 1)] || '', X + 172, 196 + i * 40, 28); }
+  // keys
+  const keys = ['VERB', 'NOUN', '+', '7', '8', '9', 'CLR', 'PRO', '-', '4', '5', '6', 'KEY REL', 'ENTR', '0', '1', '2', '3', 'RSET'];
+  c.font = 'bold 10px sans-serif';
+  keys.forEach((k, i) => { const x = 10 + (i % 7) * 49, y = 296 + Math.floor(i / 7) * 40; c.fillStyle = '#2a2c30'; c.fillRect(x, y, 44, 34); c.fillStyle = '#eee'; c.textAlign = 'center'; c.fillText(k, x + 22, y + 17); });
+}
+
+// ---------------------------------------------------------------- FDAI error needles
+function fdai() {
+  const c = document.getElementById('fdai').getContext('2d');
+  const e = v().gnc.attError;
+  c.fillStyle = '#0b0d10'; c.fillRect(0, 0, 360, 200);
+  const needle = (label, val, x) => {
+    c.strokeStyle = '#555'; c.strokeRect(x, 20, 100, 150);
+    for (let k = -5; k <= 5; k++) { c.fillStyle = '#444'; c.fillRect(x + 50 + k * 9, 92, 1, 16); }
+    const px = Math.max(-5, Math.min(5, val)) * 9;
+    c.fillStyle = '#ffb347'; c.fillRect(x + 49 + px, 40, 3, 110);
+    c.fillStyle = '#ccc'; c.font = '12px ui-monospace'; c.textAlign = 'center'; c.fillText(`${label} ${val.toFixed(2)}°`, x + 50, 188);
+  };
+  needle('PITCH', e.x, 10); needle('YAW', e.y, 130); needle('ROLL', e.z, 250);
+}
+
+// ---------------------------------------------------------------- profile plot
+function plot() {
+  const c = document.getElementById('plot').getContext('2d');
+  const W = 860, H = 420, m = 50;
+  c.fillStyle = '#0b0d10'; c.fillRect(0, 0, W, H);
+  if (track.length < 2) return;
+  const maxR = Math.max(...track.map((p) => p.range)), maxA = Math.max(...track.map((p) => p.alt)) * 1.08;
+  const X = (r) => W - m - (r / maxR) * (W - 2 * m);
+  const Y = (a) => H - m - (a / maxA) * (H - 2 * m);
+  c.strokeStyle = '#262a30';
+  for (let i = 0; i <= 5; i++) { c.beginPath(); c.moveTo(m, Y((maxA * i) / 5)); c.lineTo(W - m, Y((maxA * i) / 5)); c.stroke(); c.fillStyle = '#7c838d'; c.fillText(`${Math.round((maxA * i) / 5 / FT).toLocaleString()} ft`, 4, Y((maxA * i) / 5) + 4); }
+  const col = { P63: '#5aa0ff', P64: '#7dff9a', P66: '#ffb347', P67: '#ff7a7a', P68: '#ffffff', P12: '#c58bff' };
+  for (let i = 1; i < track.length; i++) {
+    const a = track[i - 1], b = track[i];
+    c.strokeStyle = col[b.prog] || '#999'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(X(a.range), Y(a.alt)); c.lineTo(X(b.range), Y(b.alt)); c.stroke();
+  }
+  c.fillStyle = '#7c838d'; c.fillText(`range to site: ${(maxR / 1000).toFixed(0)} km  →  0`, m, H - 12);
+  let lx = W - 360; for (const [k, cc] of Object.entries(col)) { c.fillStyle = cc; c.fillRect(lx, 12, 12, 12); c.fillStyle = '#ccc'; c.fillText(k, lx + 16, 22); lx += 56; }
+}
+
+function text() {
+  const L = v();
+  const t = L.tel, g = L.gnc;
+  document.getElementById('title').textContent = `${scenario} — ${vid} after ${(game.time.met - t0).toFixed(0)} s`;
+  document.getElementById('state').textContent =
+    `${g.program}  autopilot ${g.autopilot}  RCS ${g.rcsMode}  DAP ${g.dapPhase}  throttle ${L.gnc.throttleMode} cmd ${L.mainEngine.throttleCmd.toFixed(2)}` +
+    `\nalt ${(t.altitude / FT).toFixed(0)} ft   h-dot ${(t.vSpeed / FT).toFixed(1)} ft/s   ground speed ${(t.hSpeed / FT).toFixed(1)} ft/s   range ${(t.rangeToSite / 1852).toFixed(2)} nmi` +
+    `\nprop ${(L.propellant.main).toFixed(0)} kg (${(t.fuelFraction * 100).toFixed(1)} %)   RCS ${L.propellant.rcs.toFixed(1)} kg   tgo ${g.tgo?.toFixed?.(0) ?? '-'}   LPD ${g.lpdAngle?.toFixed?.(1) ?? '-'}°   ROD ${(g.rodCmd / FT).toFixed(1)} ft/s` +
+    (game.result ? `\nresult: ${game.result.outcome} ${game.result.rating} v ${game.result.vSpeed.toFixed(2)} m/s, ${game.result.distanceToTarget.toFixed(1)} m from target` : '');
+  document.getElementById('log').textContent = log.slice(-12).join('\n');
+}
+
+function frame() {
+  dsky(); fdai(); plot(); text();
+  requestAnimationFrame(frame);
+}
+frame();
+window.game = game;
+window.__READY = true;
+</script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>CSM cabin harness</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  #scene { width: 100vw; height: 100vh; display: block; }
+  #info { position: fixed; left: 8px; top: 6px; color: #9f9; font: 12px monospace; white-space: pre; pointer-events: none; text-shadow: 0 0 3px #000; }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div id="info"></div>
+<!--
+  CSM-CABIN harness: the Command Module crew compartment in a 111-km lunar orbit over a bright
+  fake Moon (sphere with Lommel-Seeliger shading + craters), real renderer (sunlight + IVA shadow
+  box) and post-processing, fake vessel state (controls, DSKY, C&W, instruments animated).
+  URL parameters:
+    station = CDR | CMP | LMP | RV          eye point (default CDR)
+    yaw, pitch (deg), fov (deg)             head look (yaw + = left, pitch + = up); default 0 / -8 / 75
+    sun     = sideLeft | sideRight | hatch | rvLeft | rvRight | none | x,y,z   body direction the Sun
+              shines FROM (default sideLeft: a sun patch enters through the CDR's side window)
+    moon    = hatch | fwd | left | right | aft | x,y,z   body direction toward the lunar surface (nadir)
+    sunEl   = Sun elevation above the local horizon at the spacecraft (deg, default 25)
+    lm=1    add the docked LM (LM exterior model) in front of the tunnel
+    t       fake time (s); anim=0 freezes; night=1 = floods + integral lighting only (no Sun)
+    post=0  plain render; exposure=<EV>; info=1 overlay stats; drag = look around
+-->
+<script type="module" src="./csm-cabin.js"></script>
+</body>
+</html>

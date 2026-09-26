@@ -1,23 +1,51 @@
-// STUB — owned by the SKY-FX agent. Contract: createSky(ctx) -> { update(frame) }
-import * as THREE from 'three';
-import { EARTH } from '../../core/constants.js';
+// Sky: stars, Milky Way, Sun, Earth and the reflection environment.
+// Contract (ARCHITECTURE.md §6): createSky(ctx) -> { update(frame) }
+//
+// Everything in the sky is drawn FIRST (large negative renderOrder, opaque list, no depth test / no
+// depth write) at proxy distances inside the far plane; terrain, spacecraft and cabins then simply
+// overwrite it, so the Moon and the vessels occlude stars, Sun and Earth exactly, at no depth cost.
+// Radiances are in the scene's linear units (SUN.intensity); post.js does exposure/tone mapping.
+//
+// Owned by the SKY-FX agent.
 
+import { createStars } from './stars.js';
+import { createMilkyWay } from './milkyWay.js';
+import { createSun } from './sun.js';
+import { createEarth } from './earth.js';
+import { createEnvironment } from './environment.js';
+import { createSkyTextures } from './skyTextures.js';
+
+/**
+ * Create the sky and add it to ctx.scene.
+ * @param {object} ctx RenderContext (see renderer.js)
+ * @returns {{update(frame): void, stars: object, earth: object, sun: object, environment: object, textures: object}}
+ */
 export function createSky(ctx) {
-  const n = 3000, pos = new Float32Array(n * 3);
-  for (let i = 0; i < n; i++) {
-    const u = Math.random() * 2 - 1, t = Math.random() * Math.PI * 2, s = Math.sqrt(1 - u * u);
-    pos.set([s * Math.cos(t) * 1e8, s * Math.sin(t) * 1e8, u * 1e8], i * 3);
-  }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const stars = new THREE.Points(g, new THREE.PointsMaterial({ color: 0x888888, size: 1.5, sizeAttenuation: false }));
-  stars.frustumCulled = false;
-  ctx.scene.add(stars);
-  const earth = new THREE.Mesh(new THREE.SphereGeometry(EARTH.radius / 38.44, 32, 16), new THREE.MeshStandardMaterial({ color: 0x3366aa }));
-  ctx.scene.add(earth);
+  const low = ctx.quality === 'low';
+  const textures = createSkyTextures({ earthW: low ? 512 : 1024, earthH: low ? 256 : 512, mwW: low ? 512 : 1024, mwH: low ? 256 : 512 });
+  const stars = createStars(ctx);
+  const milky = createMilkyWay(ctx, textures.milkyWay);
+  const sun = createSun(ctx);
+  const earth = createEarth(ctx, textures);
+  const environment = createEnvironment(ctx);
+  ctx.scene.add(milky.object, stars.object, sun.object, earth.group);
+
+  // a new scenario / vessel can teleport the camera: rebuild the environment immediately
+  ctx.game.events.on('scenario', () => environment.force());
+  ctx.game.events.on('vessel', () => environment.force());
+
   return {
+    stars,
+    earth,
+    sun,
+    environment,
+    textures,
     update(frame) {
-      earth.position.set(1e7, 0, 0);
+      textures.tick();
+      stars.update(frame);
+      sun.update(frame);
+      earth.update(frame);
+      environment.update(frame);
     },
   };
 }

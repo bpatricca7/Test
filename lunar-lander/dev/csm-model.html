@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>CSM exterior model studio</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  #scene { width: 100vw; height: 100vh; display: block; }
+  #info { position: fixed; left: 8px; top: 6px; color: #9f9; font: 12px monospace; white-space: pre; pointer-events: none; text-shadow: 0 0 3px #000; }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div id="info"></div>
+<!--
+  CSM-MODEL studio harness. URL parameters:
+    view     = three (default) | front | side | top | rear | windows | rv | hatch | quad | probe | sps | hga | nose | aft3
+    sunaz    = sun azimuth deg about the vertical (0 = from -Z / nose side, 90 = from +X)
+    sunel    = sun elevation deg (default 12)
+    exposure = tone-mapping exposure (default 0.6)
+    moon=0   = no bright lunar ground in the environment (pure black space)
+    docked=1 = probe retracted;  fire=1 = SPS nozzle hot;  gimbal=pitchDeg,yawDeg
+    iva=1    = setIVA(true)
+    roll     = rotate the CSM about its long axis (deg)
+    cam=x,y,z&target=x,y,z&fov=deg = custom camera
+-->
+<script type="module" src="./csm-model.js"></script>
+</body>
+</html>

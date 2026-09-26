@@ -1,28 +1,221 @@
-// STUB — owned by the CSM-MODEL agent. Contract: createCSMModel(ctx) -> { root, update(frame, vessel), setIVA(bool) }
-import * as THREE from 'three';
-import { LAYERS } from '../../../core/constants.js';
+// Apollo 11 Command/Service Module "Columbia" — exterior model. Owned by the CSM-MODEL agent.
+//
+// Contract (ARCHITECTURE.md §6): createCSMModel(ctx) -> { root, update(frame, vessel), setIVA(on) }
+//
+//   root        THREE.Group in the CSM body frame (-Z forward toward the probe, +Y head-up / side hatch,
+//               +X right, origin at the CM/SM interface plane). Geometry follows CSM in constants.js.
+//   update()    floating origin: root.position = vessel.pos - frame.origin, root.quaternion = vessel.quat.
+//               Also animates: docking-probe retraction while docked (the head seats in the LM drogue
+//               apex), SPS gimbal (vessel.mainEngine.gimbal) and nozzle-extension heat glow during long
+//               burns, S-band high-gain antenna tracking the Earth, flashing rendezvous beacon.
+//   setIVA(on)  own exterior -> LAYERS.GHOST (vessel-shadow pass only) except meshes tagged
+//               userData.ivaVisible (the docking probe and docking ring, seen from the rendezvous window).
+//
+// Everything is procedural: cm.js / sm.js (geometry), materials.js + textures.js + texgen.js (maps,
+// generated in a Web Worker).
 
+import * as THREE from 'three';
+import { CSM, EARTH, LAYERS } from '../../../core/constants.js';
+import { windowPocket } from './profile.js';
+import { PartBuilder } from './geom.js';
+import { createCSMMaterials } from './materials.js';
+import { buildCM, buildProbe } from './cm.js';
+import { buildSM, buildBeacon, buildSPS, buildHGA } from './sm.js';
+
+const RAD2DEG = 180 / Math.PI;
+const PROBE_RETRACT = 0.35; // m: extended tip -3.55 -> seated in the LM drogue apex at -3.20
+const SPS_PIVOT_Z = 4.72; // gimbal ring plane (m, body)
+const _v = new THREE.Vector3();
+const _q = new THREE.Quaternion();
+const _qi = new THREE.Quaternion();
+const _earth = new THREE.Vector3(EARTH.distance, 0, 0);
+const _z = new THREE.Vector3(0, 0, 1);
+const _axis = new THREE.Vector3();
+const HGA_LIMIT = (70 * Math.PI) / 180; // max boresight deflection from the boom axis
+
+/** Plain-array copy of a CSM.windows entry. */
+function winSpec(w) {
+  return { center: w.center.toArray(), normal: w.normal.toArray(), up: w.up.toArray(), width: w.width, height: w.height, round: !!w.round };
+}
+
+/**
+ * Create the CSM exterior model.
+ * @param {object} ctx RenderContext (uses ctx.quality, ctx.game?.events)
+ * @returns {{root: THREE.Group, update(frame: object, vessel: object): void, setIVA(on: boolean): void,
+ *   materials: Object<string, THREE.Material>, ready: Promise<void>, stats(): {triangles: number, meshes: number},
+ *   parts: object}}
+ */
 export function createCSMModel(ctx) {
+  const quality = ctx.quality || 'high';
+
+  // ---- window pockets (shared by the geometry and the foil atlas alpha holes)
+  const pockets = Object.entries(CSM.windows).map(([name, w]) => {
+    const rv = name.startsWith('rendezvous');
+    const p = windowPocket(winSpec(w), { recess: rv ? 0.025 : 0.03, frame: rv ? 0.02 : 0.018, segments: w.round ? 48 : 40 });
+    p.name = name;
+    return p;
+  });
+  const quadAzimuthsDeg = CSM.rcs.quadAngles.map((a) => a * RAD2DEG);
+  const { M, ready } = createCSMMaterials({ quality, holes: pockets.map((p) => p.footprintUV), quadAzimuthsDeg });
+
   const root = new THREE.Group();
   root.name = 'CSM';
-  const silver = new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.9, roughness: 0.25 });
-  const cm = new THREE.Mesh(new THREE.ConeGeometry(1.955, 2.95, 48), silver);
-  cm.rotation.x = -Math.PI / 2;
-  cm.position.z = -1.475;
-  const sm = new THREE.Mesh(new THREE.CylinderGeometry(1.955, 1.955, 4.95, 48), silver);
-  sm.rotation.x = Math.PI / 2;
-  sm.position.z = 2.525;
-  const nz = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 1.25, 2.8, 32, 1, true), new THREE.MeshStandardMaterial({ color: 0x333333, side: THREE.DoubleSide }));
-  nz.rotation.x = Math.PI / 2;
-  nz.position.z = 6.4;
-  root.add(cm, sm, nz);
-  root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.layers.set(LAYERS.VESSEL); } });
+
+  // ---- static structure (merged per material)
+  const B = new PartBuilder(M);
+  buildCM(B, pockets);
+  buildSM(B);
+  const structure = new THREE.Group();
+  structure.name = 'CSM structure';
+  B.build(structure);
+  root.add(structure);
+
+  // docking ring meshes stay visible in IVA (tag the ring material's mesh)
+  structure.traverse((o) => {
+    if (o.isMesh && o.material === M.ring) o.userData.ivaVisible = true;
+  });
+
+  // ---- docking probe (IVA-visible); the head/piston retracts when docked
+  const probe = new THREE.Group();
+  probe.name = 'CSM docking probe';
+  const probeHead = new THREE.Group();
+  probeHead.name = 'CSM probe piston';
+  const Bp = new PartBuilder(M);
+  const Bh = new PartBuilder(M);
+  buildProbe(Bp, Bh);
+  Bp.build(probe, { ivaVisible: true });
+  Bh.build(probeHead, { ivaVisible: true });
+  probe.add(probeHead);
+  root.add(probe);
+
+  // ---- SPS engine on its gimbal pivot
+  const spsPivot = new THREE.Group();
+  spsPivot.name = 'SPS gimbal';
+  spsPivot.position.set(0, 0, SPS_PIVOT_Z);
+  const spsBody = new THREE.Group();
+  spsBody.position.set(0, 0, -SPS_PIVOT_Z);
+  const Bs = new PartBuilder(M);
+  buildSPS(Bs);
+  Bs.build(spsBody);
+  spsPivot.add(spsBody);
+  root.add(spsPivot);
+
+  // ---- high-gain antenna: fixed boom + steerable dish cluster
+  const hgaFixed = new THREE.Group();
+  hgaFixed.name = 'HGA boom';
+  const hgaYoke = new THREE.Group();
+  hgaYoke.name = 'HGA dishes';
+  const Bf = new PartBuilder(M);
+  const By = new PartBuilder(M);
+  const hga = buildHGA(Bf, By);
+  Bf.build(hgaFixed);
+  By.build(hgaYoke);
+  hgaYoke.position.copy(hga.tip);
+  hgaYoke.quaternion.setFromUnitVectors(_z, hga.stow);
+  root.add(hgaFixed, hgaYoke);
+  const hgaStow = hga.stow.clone();
+  const hgaAim = hga.stow.clone();
+
+  // ---- flashing rendezvous beacon
+  const beacon = new THREE.Group();
+  beacon.name = 'CSM rendezvous beacon';
+  const Bb = new PartBuilder(M);
+  buildBeacon(Bb);
+  Bb.build(beacon);
+  root.add(beacon);
+
+  // ---- layers / shadows
+  const meshes = [];
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    meshes.push(o);
+    o.layers.set(LAYERS.VESSEL);
+    if (o.material.userData.noShadow) o.castShadow = false;
+  });
+  let iva = false;
+  function applyLayers() {
+    for (const m of meshes) m.layers.set(iva && !m.userData.ivaVisible ? LAYERS.GHOST : LAYERS.VESSEL);
+  }
+
+  // ---- animated state
+  let probeExt = 1; // 1 = extended, 0 = retracted
+  let nozzleHeat = 0; // 0..1 (radiation-cooled extension glow)
+  let clock = 0;
+  const resetState = () => {
+    nozzleHeat = 0;
+    probeExt = 1;
+  };
+  ctx.game?.events?.on?.('scenario', resetState);
+
+  function update(frame, v) {
+    if (!v) return;
+    root.position.copy(v.pos).sub(frame.origin);
+    root.quaternion.copy(v.quat);
+    const dt = Math.min(0.25, Math.max(0, frame.dt ?? 1 / 60));
+    const simDt = Math.max(0, frame.simDt ?? dt);
+    clock += dt;
+
+    // docking probe: retract once captured / hard-docked; re-extend after undocking
+    const target = v.docked ? 0 : 1;
+    const rate = 1 / 1.0; // full stroke in ~1 s (matches the sim's RETRACT_TIME)
+    probeExt += Math.max(-rate * dt, Math.min(rate * dt, target - probeExt));
+    if (frame.game && frame.game.time && frame.game.time.frame < 2) probeExt = target; // no animation on load
+    probeHead.position.z = (1 - probeExt) * PROBE_RETRACT;
+
+    // SPS gimbal (trim angles in rad: x = pitch about +X, y = yaw about +Y)
+    const e = v.mainEngine;
+    if (e && e.gimbal) spsPivot.rotation.set(e.gimbal.x || 0, e.gimbal.y || 0, 0);
+    // nozzle extension heat: glows dull red after ~15 s of firing, cools over a couple of minutes
+    const firing = e && e.firing && (e.throttle ?? 1) > 0;
+    if (firing) nozzleHeat += (1 - nozzleHeat) * (1 - Math.exp(-simDt / 25));
+    else nozzleHeat *= Math.exp(-simDt / 60);
+    const h = nozzleHeat;
+    M.spsOuter.emissiveIntensity = h > 0.01 ? Math.pow(h, 2) * 0.9 : 0;
+    M.spsInner.emissiveIntensity = h > 0.01 ? Math.pow(h, 2) * 0.35 : 0;
+
+    // HGA: point the dish cluster at the Earth (gimbal-limited to the hemisphere away from the SM)
+    _v.copy(_earth).sub(v.pos).normalize();
+    _qi.copy(v.quat).invert();
+    _v.applyQuaternion(_qi); // Earth direction in the body frame
+    // gimbal limit: at most HGA_LIMIT from the deployed boom direction; beyond it, the closest point
+    const ang = Math.acos(Math.max(-1, Math.min(1, _v.dot(hgaStow))));
+    if (ang > HGA_LIMIT) {
+      _axis.crossVectors(hgaStow, _v);
+      if (_axis.lengthSq() < 1e-8) _axis.set(1, 0, 0).cross(hgaStow);
+      _axis.normalize();
+      _v.copy(hgaStow).applyAxisAngle(_axis, HGA_LIMIT);
+    }
+    // slew at a finite rate (the real antenna drives at a few deg/s)
+    hgaAim.lerp(_v, Math.min(1, dt * 1.5)).normalize();
+    if (frame.game && frame.game.time && frame.game.time.frame < 2) hgaAim.copy(_v);
+    _q.setFromUnitVectors(_z, hgaAim);
+    hgaYoke.quaternion.copy(_q);
+
+    // rendezvous beacon: xenon flash ~ 1 per second (20 ms flash, rendered as a 2-frame pulse)
+    const ph = clock % 1.0;
+    M.lightBeacon.emissiveIntensity = ph < 0.06 ? 60 : 0;
+  }
+
+  function stats() {
+    let triangles = 0;
+    for (const m of meshes) {
+      const g = m.geometry;
+      triangles += (g.index ? g.index.count : g.attributes.position.count) / 3;
+    }
+    return { triangles, meshes: meshes.length };
+  }
+
   return {
     root,
-    setIVA(on) { root.traverse((o) => { if (o.isMesh) o.layers.set(on ? LAYERS.GHOST : LAYERS.VESSEL); }); },
-    update(frame, v) {
-      root.position.copy(v.pos).sub(frame.origin);
-      root.quaternion.copy(v.quat);
+    materials: M,
+    ready,
+    stats,
+    parts: { structure, probe, probeHead, spsPivot, hgaYoke, beacon, pockets },
+    update,
+    setIVA(on) {
+      if (on === iva) return;
+      iva = !!on;
+      applyLayers();
     },
   };
 }

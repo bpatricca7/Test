@@ -1,0 +1,112 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Terrain harness</title>
+<style>html,body{margin:0;height:100%;background:#000;overflow:hidden}#scene{width:100vw;height:100vh;display:block}#info{position:fixed;left:8px;top:6px;color:#8f8;font:12px monospace;white-space:pre}</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div id="info"></div>
+<script type="module">
+// Terrain-only harness (TERRAIN agent). URL params:
+//   lat, lon (deg; default = landing site offset by e/n metres), e, n (m east/north of the site),
+//   alt (m above terrain, or above reference sphere if ref=1), az (deg from north), pitch (deg, - = down),
+//   fov, exposure, quality
+import * as THREE from 'three';
+import { createGameState, readParams } from '../src/core/state.js';
+import { MOON, LANDING_SITE } from '../src/core/constants.js';
+import { latLonToVec, localENU, SITE_DIR } from '../src/core/frames.js';
+import { createRenderer } from '../src/render/renderer.js';
+import { createTerrain } from '../src/render/terrain/terrain.js';
+import { terrainHeight } from '../src/world/moon.js';
+
+const q = new URLSearchParams(location.search);
+const num = (k, d) => (q.has(k) ? +q.get(k) : d);
+const params = readParams('?quality=' + (q.get('quality') || 'high'));
+if (q.get('nowork') === '1') window.Worker = class { constructor() { throw new Error('workers disabled (test)'); } };
+const game = createGameState(params);
+window.game = game;
+const Rn = createRenderer(document.getElementById('scene'), game);
+const { ctx } = Rn;
+Rn.renderer.toneMappingExposure = num('exposure', 1);
+const terrain = createTerrain(ctx);
+const info = document.getElementById('info');
+
+const view = { lat: num('lat', NaN), lon: num('lon', NaN), e: num('e', 0), n: num('n', 0), alt: num('alt', 60), az: num('az', 270), pitch: num('pitch', -20), fov: num('fov', 60), ref: q.get('ref') === '1' };
+function applyView() {
+  let dir;
+  if (Number.isFinite(view.lat)) dir = latLonToVec(view.lat, view.lon);
+  else {
+    const { east, north } = localENU(SITE_DIR);
+    dir = SITE_DIR.clone().multiplyScalar(MOON.radius).addScaledVector(east, view.e).addScaledVector(north, view.n).normalize();
+  }
+  const h = view.ref ? 0 : terrainHeight(dir.x, dir.y, dir.z);
+  const pos = dir.clone().multiplyScalar(MOON.radius + h + view.alt);
+  const { east, north, up } = localENU(pos);
+  const az = view.az * Math.PI / 180, el = view.pitch * Math.PI / 180;
+  const fwd = north.clone().multiplyScalar(Math.cos(az)).addScaledVector(east, Math.sin(az)).multiplyScalar(Math.cos(el)).addScaledVector(up, Math.sin(el)).normalize();
+  const right = fwd.clone().cross(up).normalize();
+  const camUp = right.clone().cross(fwd).normalize();
+  const m = new THREE.Matrix4().makeBasis(right, camUp, fwd.clone().negate());
+  game.view.cameraMCI.copy(pos);
+  game.view.quat.setFromRotationMatrix(m);
+  game.view.fov = view.fov;
+  game.view.near = 0.05;
+  game.view.mode = 'chase';
+  game.vessels.LM.pos.copy(pos);
+  game.vessels.LM.tel.altitude = view.alt;
+}
+window.T = { terrain, game, ctx, view, set(v) { Object.assign(view, v); applyView(); },
+  // frame the k-th largest rendered boulder from `dist` metres, azimuth `az` (deg), eye height `h`
+  lookAtRock(k = 0, dist = 5, az = 180, h = 1.6) {
+    const rocks = [];
+    for (const n of terrain.debug.nodes.values()) {
+      if (!n.boulders) continue;
+      for (let i = 0; i < n.boulders.length; i += 10) rocks.push({ c: n.center, b: n.boulders.slice(i, i + 10) });
+    }
+    rocks.sort((a, b) => b.b[3] - a.b[3]);
+    const r = rocks[k];
+    if (!r) return 'no rocks';
+    const p = new THREE.Vector3(r.c.x + r.b[0], r.c.y + r.b[1], r.c.z + r.b[2]);
+    const { east, north, up } = localENU(p);
+    const a = az * Math.PI / 180;
+    const eye = p.clone().addScaledVector(north, Math.cos(a) * dist).addScaledVector(east, Math.sin(a) * dist);
+    const eh = MOON.radius + terrainHeight(...eye.clone().normalize().toArray()) + h;
+    eye.normalize().multiplyScalar(eh);
+    const tgt = p.clone().addScaledVector(up, r.b[4] * 0.5);
+    const f = tgt.clone().sub(eye).normalize();
+    const u2 = localENU(eye).up;
+    const right = f.clone().cross(u2).normalize();
+    const cu = right.clone().cross(f).normalize();
+    this.fixed = { pos: eye, quat: new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(right, cu, f.clone().negate())) };
+    return { r: r.b[3], H: r.b[4], variant: r.b[5] };
+  },
+};
+applyView();
+let frames = 0;
+let tPrev = performance.now();
+window.FT = [];
+function loop() {
+  const now = performance.now();
+  window.FT.push(now - tPrev);
+  if (window.FT.length > 30) window.FT.shift();
+  tPrev = now;
+  requestAnimationFrame(loop);
+  if (window.T.fixed) {
+    game.view.cameraMCI.copy(window.T.fixed.pos);
+    game.view.quat.copy(window.T.fixed.quat);
+    game.vessels.LM.pos.copy(window.T.fixed.pos);
+  }
+  const f = Rn.beginFrame({ realDt: Math.min(1, window.FT[window.FT.length - 1] / 1000 || 1 / 60), simDt: 0 });
+  terrain.update(f);
+  Rn.renderVesselShadow();
+  Rn.renderer.render(ctx.scene, ctx.camera);
+  frames++;
+  if (frames % 10 === 0) info.textContent = JSON.stringify(terrain.stats());
+  if (!window.__READY && terrain.isReady() && frames > 3) window.__READY = true;
+}
+loop();
+</script>
+</body>
+</html>
