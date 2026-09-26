@@ -45,19 +45,25 @@ The credit itself can't be withdrawn, and losing it costs you nothing of your ow
 
 Spreading the credit over several **independent** events (different games or cities, not strikes of one event) keeps the average about the same and makes an all-or-nothing result much less likely. Your own **$25 qualifying trade** is real money: put it on a tight-spread favorite, where losses are rarest.
 
-## Pre-registered: H2 (written 2026-09-26, before any holdout data was collected)
+## Pre-registered: H2 (written 2026-09-26, before any holdout data was collected) — FAILED
 
 > Buy whichever side's ask is 95–99.99¢, with a spread of at most 2¢, 2 or 4 hours before the scheduled close, in the **Economics, Financials and Commodities** categories. Pay the ask plus the series taker fee.
 
 It is judged on **June 1 – July 27, 2026** only, data no rule was fitted to. It passes only if returns are positive with a 95% event-clustered interval above zero **and** it stays profitable at the 95% upper bound on the loss rate.
 
+**Result:** H2 failed.
+
+- The first holdout pass looked like a win, **+1.33%** (+0.47% to +2.00%). But Kalshi's batch price endpoint only reaches back to mid-July, so it covered roughly the last week of July: about 5 events per commodity series.
+- After fetching the missing prices from the historical endpoint, the **untouched June 1 – July 16 slice** gave **−0.18%** (−1.41% to +0.89%, 378 events, 38 losses, worst case −0.87%).
+- The whole holdout gave +0.18% (−0.82% to +1.00%).
+
+Near-certain contracts are roughly break-even after fees, not an edge. Its paper trading was stopped.
+
 ## Still running
 
-- **H2 holdout, second pass:** the batch price endpoint only reaches back to mid-July, so the June 1 – July 16 holdout prices are being fetched from the historical endpoint. That slice hasn't been looked at.
-- **H2 live paper trading** (`python paper_trade.py --name h2 --report`).
 - **Kalshi's Liquidity Incentive Program:** Kalshi pays for resting orders near the top of the book, even unfilled; $911k of pools were active on 2026-09-26. Being measured: what share a small participant would get, what fills cost, and when rewards pay out.
 
 ## The pattern so far
 
-Using only Kalshi's own prices, no simple rule beats the market after fees and spreads: not price bands, momentum, passive maker orders, a volatility model or relative value. Where money exists, it comes from information the market lacks, or from Kalshi paying for liquidity.
+Using only Kalshi's own prices, no simple rule beats the market after fees and spreads: not price bands, momentum, near-certain contracts (H2), passive maker orders, a volatility model or relative value. Where money exists, it comes from information the market lacks, or from Kalshi paying for liquidity.
 - Ideas that need one more allowed domain: weather markets vs. NWS forecasts (`api.weather.gov`, `mesonet.agron.iastate.edu` for archived forecasts) and crypto ladders vs. a volatility model (`api.exchange.coinbase.com`).
