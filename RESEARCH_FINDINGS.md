@@ -228,24 +228,29 @@ Median bid-ask spread: 1c.
 
 Verdict: no edge in Kalshi sports game markets at the pregame quote.
 
-### 5.4 Long-dated markets, 1 / 7 / 30 days before scheduled expiration
+### 5.4 Long-dated markets, 1 / 7 / 30 days before scheduled expiration (all categories)
 
 A random sample (seeded, up to 40 per series) of markets with a lifetime of at least two days, quoted from
-daily candles. Two design points matter here: 55% of these markets **close early** once the outcome is
-known, so horizons are measured from the *scheduled* expiration and a market is only included if it was
-still open at the quote time (anchoring on the actual close, or picking markets by volume, manufactures a
-fake "longshots win" result of +13% -- that artefact was found and removed). Quotes wider than 15c are dropped.
-Sample so far: 12,150 markets (sports 12,583 observations, crypto 689; the politics / economics / entertainment
-part of the pull was still running when this was written).
+daily candles: 24,214 markets, 27,335 quotes (sports 21,659; financials 1,516; economics 1,120; entertainment
+1,041; crypto 689; politics 396; science and technology 334; commodities, elections, weather, mentions the rest).
+Two design points matter: 59% of these markets **close early** once the outcome is known, so horizons are
+measured from the *scheduled* expiration and a market is only included if it was still open at the quote
+time. (Anchoring on the actual close, or picking markets by volume, manufactures a fake "longshots win +13%"
+result; that artefact was found and removed.) Quotes wider than 15c are dropped.
 
-| Horizon | n | Calibration (mid vs realised) | Buy favourite (>= 80c) | Buy longshot (<= 20c) |
+| Horizon | n quotes | Calibration (mid vs realised) | Buy favourite (>= 80c) | Buy longshot (<= 20c) |
 |---|---|---|---|---|
-| 1 day | 11,860 | within 2 points in every bucket | -3.0% (t=-7.8) | -2.1% (t=-5.3) |
-| 7 days | 1,128 | within 3 points except thin buckets | -1.1% (t=-1.5); crypto +1.6% (n=179) | -3.9% (t=-5.8) |
-| 30 days | 284 | noisy (n < 30 per bucket) | -1.0% (t=-0.8) | -3.5% (t=-2.9) |
+| 1 day | 22,344 | within 1-2 points in every bucket | -2.9% (n=11,410; t=-11) | -2.1% (n=9,794; t=-8) |
+| 7 days | 4,133 | within 3 points except thin buckets | -1.1% (n=2,154; t=-2.4) | -3.7% (n=1,979; t=-9) |
+| 30 days | 2,798 | noisy | -1.1% (n=1,466; t=-1.8) | -3.4% (n=1,332; t=-6) |
 
-Median bid-ask spread at these horizons is 3-5c, which is what the buyer of either side loses.
-Verdict: no edge at the quoted prices; the only thing to harvest would be the spread itself (market making).
+By category, 1 day out, favourites >= 80c: sports -3.5%, financials -2.3%, crypto -2.3%, politics -2.1%,
+entertainment +0.2%, economics +0.4%, science +0.3%, weather +0.4%, commodities +1.6% (n=130, n.s.).
+Longshots lose in every category (-1.4% to -4.4%). Seven days out, a few non-sports cells are positive
+(commodities +5.5%, n=51; science +2.5%, n=89; elections +2.5%, n=46; crypto +1.6%, n=179) but they are
+samples in which almost every favourite paid; pooled non-sports favourites at 7 days are +0.3% (n=1,153),
+i.e. nothing after the 3-5c spread. Verdict: no edge at quoted prices at any horizon; the classic
+prediction-market longshot bias is present (longshots lose), but the favourite side only returns the fee and spread.
 
 ### 5.5 Kalshi summary
 
@@ -254,7 +259,7 @@ Verdict: no edge at the quoted prices; the only thing to harvest would be the sp
 | 15-minute crypto up/down | yes, except a marginal mid-window favourite underpricing (+1-1.5c, minutes 5-7) | 26,367 markets; reversal signal priced in; late favourites overpriced |
 | Hourly BTC/ETH strike ladders | yes | implied 80% band covers 82% of settles; tails slightly under-priced |
 | Sports game markets, pregame | yes | 59,511 markets; no favourite-longshot bias; NFL matches Vegas to 0.9c |
-| Long-dated markets, 1-30 days out | yes | calibrated within spread; both sides lose the spread |
+| Long-dated markets, 1-30 days out (all categories) | yes | calibrated within 1-3 points; longshots lose 2-4%, favourites lose the spread |
 
 ## 6. Crypto underlying (reconstructed from settled Kalshi markets, 2026-07-18 to 2026-09-26)
 
