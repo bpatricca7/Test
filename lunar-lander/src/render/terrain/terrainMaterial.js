@@ -474,7 +474,7 @@ function terrainFrag(vesselGLSL, rockGLSL) {
       gPixCell = fwP / cell;
       // young: exponent on the freshness; km-scale craters seen from orbit keep crisper rims
       float young = dmax < 8.0 ? 1.6 : mix(1.0, 0.55, smoothstep(150.0, 1500.0, dmax));
-      craterBand(x, up, Lt, tanE, Vt, tanV, dens, dens2, young, w, grad, shadow, bright, cavity);
+      craterBand(x, up, Lt, tanE, Vt, tanV, dens, dens2, young, w, 16, grad, shadow, bright, cavity);
     }
     // pebbles & clods within a few tens of metres (0.55 m cells: 3-14 cm; 0.23 m cells: 1-6 cm)
     float albedoMul = 1.0;

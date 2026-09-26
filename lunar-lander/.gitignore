@@ -2,5 +2,6 @@
 .progress/
 .scratch*/
 dist-*/
+dist/
 node_modules/
 shots/
