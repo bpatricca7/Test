@@ -59,8 +59,14 @@ KNOWN_FEE_TYPES = {"quadratic", "quadratic_with_maker_fees"}
 OPEN_STATUSES = {"active", "open"}
 
 # YES pays when the underlying ends above floor_strike / below cap_strike.
+# Kalshi also labels some "exactly N" markets "less" with floor == cap, so a
+# market only counts as a one-sided threshold when it has just one bound.
 ABOVE_STRIKE_TYPES = {"greater", "greater_or_equal"}
 BELOW_STRIKE_TYPES = {"less", "less_or_equal"}
+
+# A YES basket whose asks sum far below $1 is the market saying the listed
+# outcomes probably miss the winner (no "other" market), not free money.
+MIN_YES_BASKET_ASK_SUM = Decimal(90)
 
 
 # ---------------------------------------------------------------------------
@@ -319,6 +325,8 @@ def find_yes_basket(event_ticker: str, title: str, quotes: list, contracts: int,
     quotes = unique_by_ticker(quotes)
     if len(quotes) < 2 or any(not q.is_open or not tradable(q.yes_ask) for q in quotes):
         return None
+    if sum(q.yes_ask for q in quotes) < MIN_YES_BASKET_ASK_SUM:
+        return None
     legs = [Leg(q.ticker, "yes", q.yes_ask, fees.fee(q.yes_ask, contracts)) for q in quotes]
     opp = Opportunity(
         kind="yes_basket",
@@ -346,8 +354,7 @@ def find_strike_ladders(event_ticker: str, title: str, quotes: list, contracts: 
     """
     groups = defaultdict(list)
     for q in unique_by_ticker(quotes):
-        if (q.is_open and q.close_time
-                and q.strike_type in ABOVE_STRIKE_TYPES | BELOW_STRIKE_TYPES):
+        if q.is_open and q.close_time and one_sided_threshold(q):
             groups[(q.strike_type, q.close_time, q.underlying)].append(q)
 
     found = []
@@ -402,6 +409,15 @@ def fee_multiplier(event: dict, client, series_cache: dict) -> Optional[Decimal]
     return multiplier if multiplier is not None and multiplier > 0 else None
 
 
+def one_sided_threshold(q: Quote) -> bool:
+    """True for "above X" (floor only) or "below X" (cap only) markets."""
+    if q.strike_type in ABOVE_STRIKE_TYPES:
+        return q.floor_strike is not None and q.cap_strike is None
+    if q.strike_type in BELOW_STRIKE_TYPES:
+        return q.cap_strike is not None and q.floor_strike is None
+    return False
+
+
 def _latest_close(quotes: list) -> Optional[datetime]:
     times = [q.close_time for q in quotes if q.close_time]
     return max(times) if times else None
@@ -415,9 +431,10 @@ def no_basket_prescreen(quotes: list) -> bool:
 
 
 def yes_basket_prescreen(quotes: list) -> bool:
-    """Pre-fee check: every market has a YES offer and they sum under $1."""
+    """Pre-fee check: every market has a YES offer and they sum just under $1."""
     asks = [q.yes_ask for q in quotes if q.is_open]
-    return len(asks) >= 2 and all(tradable(p) for p in asks) and sum(asks) < HUNDRED
+    return (len(asks) >= 2 and all(tradable(p) for p in asks)
+            and MIN_YES_BASKET_ASK_SUM <= sum(asks) < HUNDRED)
 
 
 def one_way_ladder(quotes: list) -> bool:

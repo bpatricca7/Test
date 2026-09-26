@@ -137,6 +137,11 @@ class YesBasketTests(unittest.TestCase):
         self.assertEqual(opp.profit, Decimal(46))
         self.assertIn("every possible outcome", opp.caveat)
 
+    def test_deep_discount_means_missing_outcomes_not_profit(self):
+        # Asks summing to 12c: the market says the winner is probably not listed.
+        qs = quotes(market("A", yes_ask=5), market("B", yes_ask=4), market("C", yes_ask=3))
+        self.assertIsNone(arb.find_yes_basket("EV", "t", qs, 100, FEES))
+
     def test_requires_every_market_open_and_offered(self):
         qs = self.qs + quotes(market("X", yes_ask=100))
         self.assertIsNone(arb.find_yes_basket("EV", "t", qs, 100, FEES))
@@ -196,6 +201,21 @@ class LadderTests(unittest.TestCase):
                    close_time=None),
         )
         self.assertEqual(arb.find_strike_ladders("EV", "t", qs, 1, FEES), [])
+
+    def test_exact_value_markets_labeled_less_are_not_thresholds(self):
+        # Real Kalshi shape (KXSTARSHIPSPACE-26, 2026-09-26): "exactly N" markets carry
+        # strike_type "less" with floor == cap. YES "exactly 9" + NO "exactly 5" both
+        # lose if exactly 5 happens, so this must never be reported as a ladder.
+        rules = "If exactly {} Starship launches reach Space in 2026, then the market resolves to Yes."
+        qs = quotes(
+            market("S-5.0", strike_type="less", floor_strike=5, cap_strike=5,
+                   rules_primary=rules.format(5), yes_bid_dollars="0.4400", yes_ask_dollars="0.4900",
+                   no_ask_dollars="0.5600"),
+            market("S-9.0", strike_type="less", floor_strike=9, cap_strike=9,
+                   rules_primary=rules.format(9), yes_bid_dollars="0.0000", yes_ask_dollars="0.0100",
+                   no_ask_dollars="1.0000"),
+        )
+        self.assertEqual(arb.find_strike_ladders("EV", "t", qs, 100, FEES), [])
 
     def test_different_expiries_never_paired(self):
         qs = quotes(
