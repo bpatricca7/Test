@@ -30,6 +30,6 @@ render 9x16 1080 1920
 [ -z "${ONLY_9x16:-}" ] && render 4x5 1080 1350
 
 # cover / thumbnail frame
-node src/capture.mjs --page src/ad.html --query variant=9x16 --stills "${COVER_T:-12}" --outdir build/cover >/dev/null
+node src/capture.mjs --page src/ad.html --query variant=9x16 --stills "${COVER_T:-2.2}" --outdir build/cover >/dev/null
 cp build/cover/*.jpg out/riviera-ad-cover.jpg
 echo "done"

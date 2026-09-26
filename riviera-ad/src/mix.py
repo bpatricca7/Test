@@ -73,11 +73,11 @@ def main():
     gain = 10 ** (duck_db * amount / 20.0)
     music_d = music * gain[:, None]
 
-    mix = vo * 1.0 + music_d * 0.9 + sfx * 0.8
-    # gentle fade in/out so the loop point never clicks
-    f = int(0.012 * SR)
-    mix[:f] *= np.linspace(0, 1, f)[:, None]
-    mix[-f:] *= np.linspace(1, 0, f)[:, None]
+    mix = vo * 1.0 + music_d * 0.9 + sfx * float(os.environ.get("SFX_GAIN", 1.05))
+    # tiny fade-in (keeps the frame-0 shutter click) and a short fade-out so the loop never clicks
+    fi, fo = int(0.001 * SR), int(0.012 * SR)
+    mix[:fi] *= np.linspace(0, 1, fi)[:, None]
+    mix[-fo:] *= np.linspace(1, 0, fo)[:, None]
     pre = os.path.join(AUDIO, "mix_pre.wav")
     sf.write(pre, mix, SR, subtype="FLOAT")
 
