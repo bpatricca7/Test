@@ -148,30 +148,41 @@ def settled_markets_for_day(client: RateLimitedClient, day: datetime) -> list:
     return sample_per_series(markets)
 
 
-def historical_markets_by_day(client: RateLimitedClient, start: datetime, end: datetime) -> dict:
+def historical_markets_by_day(client: RateLimitedClient, start: datetime, end: datetime,
+                              series: list = None) -> dict:
     """Markets settled before Kalshi's historical cutoff, bucketed by close day.
 
     The historical listing has no date filter and comes back roughly newest
     first, so page until a whole page closed more than two days before `start`.
+    With `series`, list each series separately (much less to page through).
     """
-    by_day, cursor = defaultdict(list), None
+    by_day = defaultdict(list)
     floor_ts = int((start - timedelta(days=2)).timestamp())
-    while True:
-        params = {"limit": 1000, "mve_filter": "exclude"}
-        if cursor:
-            params["cursor"] = cursor
-        data = client.get("/historical/markets", params)
-        page = data.get("markets") or []
-        for m in page:
-            u = usable_market(m)
-            if u and start.timestamp() <= u["close_ts"] < end.timestamp():
-                day = datetime.fromtimestamp(u["close_ts"], timezone.utc).strftime("%Y-%m-%d")
-                by_day[day].append(u)
-        closes = [parse_time(m.get("close_time")) for m in page]
-        closes = [c.timestamp() for c in closes if c]
-        cursor = data.get("cursor")
-        if not cursor or not page or (closes and max(closes) < floor_ts):
-            break
+    for ticker in series or [None]:
+        cursor = None
+        while True:
+            # The series filter cannot be combined with mve_filter (400).
+            params = {"limit": 1000, "series_ticker": ticker} if ticker else \
+                {"limit": 1000, "mve_filter": "exclude"}
+            if cursor:
+                params["cursor"] = cursor
+            try:
+                data = client.get("/historical/markets", params)
+            except requests.exceptions.HTTPError as e:
+                if ticker and e.response is not None and e.response.status_code == 400:
+                    break                 # series the historical endpoint rejects
+                raise
+            page = data.get("markets") or []
+            for m in page:
+                u = usable_market(m)
+                if u and start.timestamp() <= u["close_ts"] < end.timestamp():
+                    day = datetime.fromtimestamp(u["close_ts"], timezone.utc).strftime("%Y-%m-%d")
+                    by_day[day].append(u)
+            closes = [parse_time(m.get("close_time")) for m in page]
+            closes = [c.timestamp() for c in closes if c]
+            cursor = data.get("cursor")
+            if not cursor or not page or (closes and max(closes) < floor_ts):
+                break
     return {day: sample_per_series(ms) for day, ms in by_day.items()}
 
 
@@ -271,7 +282,12 @@ def cmd_collect(args) -> int:
     days = [start + timedelta(days=i) for i in range((end - start).days)]
     listed = {}
     if args.historical:
-        listed = historical_markets_by_day(client, start, end)
+        series = None
+        if args.categories:
+            known = json.load(open(os.path.join(DATA_DIR, "series.json")))
+            series = sorted(t for t, info in known.items() if info["category"] in args.categories)
+            print(f"{len(series)} series in {', '.join(args.categories)}", flush=True)
+        listed = historical_markets_by_day(client, start, end, series)
         print(f"listed {sum(map(len, listed.values()))} historical markets", flush=True)
 
     def collect(day):
@@ -521,6 +537,37 @@ def cmd_h1(args) -> int:
     return 0
 
 
+H2_CATEGORIES = ("Economics", "Financials", "Commodities")
+
+
+def h2_trades(trades: list) -> list:
+    """Pre-registered rule H2 (2026-09-26): buy the side whose ask is 95-99.99c,
+    spread <= 2c, 2 or 4 hours before the scheduled close, in Economics,
+    Financials and Commodities."""
+    return [t for t in trades if t["horizon"] in (2, 4) and 95 <= t["price"] < 100
+            and t["spread"] is not None and t["spread"] <= 2 and t["category"] in H2_CATEGORIES]
+
+
+def cmd_h2(args) -> int:
+    markets = load_days(args.data_dir)
+    series = json.load(open(os.path.join(args.data_dir, "series.json")))
+    trades = h2_trades(trades_for(markets, series))
+    if not trades:
+        print("No H2 entries in this data.")
+        return 1
+    for label, group in (("both horizons", trades),
+                         ("2h", [t for t in trades if t["horizon"] == 2]),
+                         ("4h", [t for t in trades if t["horizon"] == 4])):
+        if not group:
+            continue
+        low, high = event_bootstrap(group, rounds=1000)
+        losses = sum(t["pnl"] < 0 for t in group)
+        print(f"H2 {label:13} {len(group):5} entries, {len({t['event'] for t in group}):4} events, "
+              f"{losses} lost  ROI {roi(group):+.2%}  [{low:+.2%}, {high:+.2%}]  "
+              f"worst case {worst_case_roi(group):+.2%}")
+    return 0
+
+
 def cmd_evaluate(args) -> int:
     markets = load_days(args.data_dir)
     series = json.load(open(os.path.join(args.data_dir, "series.json")))
@@ -598,6 +645,8 @@ def main(argv=None) -> int:
     c.add_argument("--workers", type=int, default=4)
     c.add_argument("--historical", action="store_true",
                    help="use Kalshi's historical endpoints (markets settled before its cutoff)")
+    c.add_argument("--categories", nargs="+",
+                   help="with --historical: only series in these categories (from data/series.json)")
     e = sub.add_parser("evaluate", help="test rules on the collected data")
     e.add_argument("--train-fraction", type=float, default=0.65)
     e.add_argument("--min-events", type=int, default=30)
@@ -605,11 +654,13 @@ def main(argv=None) -> int:
                    help="only markets that cannot close early (close time known in advance)")
     e.add_argument("--max-spread", type=float, default=None,
                    help="only enter when the bid-ask spread is at most this many cents")
-    h = sub.add_parser("h1", help="score the pre-registered H1 rule")
-    for p in (c, e, h):
+    h = sub.add_parser("h1", help="score the retracted H1 rule (kept for the record)")
+    h2 = sub.add_parser("h2", help="score the pre-registered H2 rule")
+    for p in (c, e, h, h2):
         p.add_argument("--data-dir", default=DATA_DIR)
     args = parser.parse_args(argv)
-    return {"collect": cmd_collect, "evaluate": cmd_evaluate, "h1": cmd_h1}[args.command](args)
+    return {"collect": cmd_collect, "evaluate": cmd_evaluate, "h1": cmd_h1,
+            "h2": cmd_h2}[args.command](args)
 
 
 if __name__ == "__main__":

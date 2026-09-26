@@ -156,6 +156,19 @@ class EvaluateTests(unittest.TestCase):
         self.assertGreater(bt.roi(trades), 0)
         self.assertLess(bt.worst_case_roi(trades), 0)
 
+    def test_h2_selects_expensive_tight_entries_in_its_categories(self):
+        base = dict(pnl=2.0, cost=97.2, price=97.0, category="Economics")
+        keep = self.trade("a", 0, horizon=2, **base)
+        keep["spread"] = 1.0
+        wrong_category = self.trade("b", 0, horizon=2, **dict(base, category="Sports"))
+        wrong_horizon = self.trade("c", 0, horizon=1, **base)
+        cheap = self.trade("d", 0, horizon=4, **dict(base, price=90.0))
+        wide = self.trade("e", 0, horizon=4, **base)
+        for t in (wrong_category, wrong_horizon, cheap):
+            t["spread"] = 1.0
+        wide["spread"] = 5.0
+        self.assertEqual(bt.h2_trades([keep, wrong_category, wrong_horizon, cheap, wide]), [keep])
+
     def test_price_bins(self):
         self.assertEqual(bt.price_bin(1.0), "01-05c")
         self.assertEqual(bt.price_bin(94.9), "90-95c")
