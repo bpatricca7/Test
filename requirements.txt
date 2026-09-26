@@ -1,1 +1,2 @@
 requests>=2.28.0
+cryptography>=41.0  # only for lip_bot.py (signing API requests)

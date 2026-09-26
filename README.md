@@ -10,6 +10,8 @@ The December 2025 picks in this repo (AFC teams at 1–8¢, Bears at 11¢, and s
 
 ## Contents
 
+- `lip_bot.py` collects Kalshi liquidity rewards by completing empty sides of pinned markets. It's a dry run unless you pass `--live`.
+- `backtest.py` and `paper_trade.py` backtest and forward-test trading rules; results are in `STRATEGY_TESTS.md`.
 - `arbitrage_scanner.py` finds sets of contracts that pay out more than they cost after fees, whatever the outcome. It reads public data only and never places orders.
 - `prediction_market_analyzer.py` scores markets for irregular pricing and flags longshots to avoid.
 - `MONEY_TODAY.md` covers same-day cash options, fees and withdrawal times.
@@ -36,6 +38,35 @@ python arbitrage_scanner.py --fixture tests/fixtures/sample_markets.json
 # Run the tests
 python -m unittest discover -s tests
 ```
+
+## Liquidity reward bot (`lip_bot.py`)
+
+Kalshi's Liquidity Incentive Program pays reward pools to resting orders near the top of the book. A snapshot only counts when both sides have the program's Target Size resting. In hourly Miami temperature markets, many strikes are "pinned": one side is bid at 97–98¢ and the other side is empty, so their pools go unpaid.
+
+The bot rests a post-only 1¢ bid, sized just above the Target (about $10 of collateral), on the empty side. Under the published scoring, the only order on a side earns that side's share: half the pool, about $50/hour per strike. See [STRATEGY_TESTS.md](STRATEGY_TESTS.md) for the measurements and caveats.
+
+**Unverified:** that Kalshi credits these orders as the rules imply, and that the rewards are withdrawable cash. The app's Rewards popover shows a live "liquidity earnings estimate" for your resting orders, so check it.
+
+```bash
+python lip_bot.py plan                        # what it would do right now; no account needed
+# Create an API key: Kalshi -> Account -> API Keys. Save the private key file.
+python lip_bot.py run --key-id YOUR_KEY_ID --key-file kalshi.pem            # dry run with your account
+python lip_bot.py run --key-id ... --key-file ... --demo --live              # Kalshi's demo exchange
+python lip_bot.py run --key-id ... --key-file ... --live --max-capital 30 --max-fill-spend 20
+```
+
+Safeguards:
+- It only places orders with `--live`, and you must type `LIVE` to confirm.
+- Orders are post-only, so they never pay the spread.
+- Resting collateral is capped (`--max-capital`, default $30).
+- It stops after `--max-fill-spend` dollars are spent through fills (default $20).
+- It only touches orders it created (IDs prefixed `lipbot-`) and cancels all of them when it stops (Ctrl-C).
+
+Rules to know:
+- US members trading on Kalshi directly only; customers of brokers such as Robinhood are excluded.
+- Payouts arrive in daily batches (about 6am ET).
+- Anything under $1 per program period isn't paid.
+- Kalshi can change or end the program, or revoke participants it judges abusive, at any time.
 
 ## What the scanner checks
 
