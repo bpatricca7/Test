@@ -42,6 +42,12 @@ The credit itself can't be withdrawn, and losing it costs you nothing of your ow
 
 Spreading the credit over several **independent** events (different games or cities, not strikes of one event) keeps the average about the same and makes an all-or-nothing result much less likely. Your own **$25 qualifying trade** is real money: put it on a tight-spread favorite, where losses are rarest.
 
+## Pre-registered: H2 (written 2026-09-26, before any holdout data was collected)
+
+> Buy whichever side's ask is 95–99.99¢, with a spread of at most 2¢, 2 or 4 hours before the scheduled close, in the **Economics, Financials and Commodities** categories. Pay the ask plus the series taker fee.
+
+It is judged on **June 1 – July 27, 2026** only, data no rule was fitted to. It passes only if returns are positive with a 95% event-clustered interval above zero **and** it stays profitable at the 95% upper bound on the loss rate.
+
 ## Still running
 
 - Three parallel tests, each reviewed by an independent skeptic agent: **liquidity provision** (resting limit orders instead of paying the spread, with fills simulated from Kalshi's public trade records), **crypto hourly ladders vs. a volatility model**, and **relative value inside one-winner events**.
