@@ -8,8 +8,10 @@ import { LM, CSM, lmRcsJets, csmRcsJets, lmFootpads } from './constants.js';
 import { SITE_DIR } from './frames.js';
 
 /**
- * Pilot control inputs for one vessel. Written by input/ (for the ACTIVE vessel only;
- * the other vessel's ctrl is zeroed), read by gnc/.
+ * Pilot control inputs for one vessel. Written by input/ (for the ACTIVE vessel only), read by gnc/.
+ * On a vessel switch the rotation/translation axes of the vessel left behind are zeroed; its throttle
+ * lever keeps its setting (a hovering LM must not drop). The sim sets the lever to 0 at ABORT STAGE
+ * hand-over and after automatic-throttle phases (bumpless automatic-to-manual hand-over).
  */
 export function createControls() {
   return {

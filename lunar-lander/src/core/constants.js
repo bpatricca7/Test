@@ -174,6 +174,10 @@ export const LM = {
     // Overhead docking window above the CDR: rectangle centre / outward normal / size
     overhead: { center: v(-0.42, 5.70, -0.72), normal: v(0, 1, 0), width: 0.32, height: 0.14 },
   },
+  // Landing Point Designator: the CDR window's LPD scale line lies this many degrees to the RIGHT of
+  // straight ahead (as seen from eyeCDR). P64 yaws the LM so the landing site sits on this line; the
+  // cabin draws the reticle from the same number.
+  lpdAzimuthDeg: 21,
   forwardHatch: { center: v(0, 3.86, -1.26), width: 0.81, height: 0.81 }, // square hatch below the DSKY/windows
   floorY: 3.46, // cabin floor height (crew stand on it)
 };
@@ -266,7 +270,7 @@ export const MISSION = {
   doiPerilune: 15200, // ~50,000 ft (PDI altitude)
   pdiRangeToSite: 480000, // m of ground track from PDI to the landing site
   // Descent guidance phase targets (landing-site-centred; downrange measured along the approach, negative = before the site)
-  highGate: { altitude: 2300, downrange: -7900, hSpeed: 150, vSpeed: -45 }, // P63 -> P64
+  highGate: { altitude: 2300, downrange: -10000, hSpeed: 150, vSpeed: -45 }, // P63 -> P64 (LGC high-gate target)
   lowGate: { altitude: 150, downrange: -400, hSpeed: 18, vSpeed: -5 }, // P64 -> P66
   // touchdown limits (LM structural design)
   touchdown: { maxVSpeed: 3.0, maxHSpeed: 1.2, maxTiltDeg: 12 },

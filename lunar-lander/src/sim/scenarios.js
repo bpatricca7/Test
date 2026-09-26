@@ -184,7 +184,7 @@ export const SCENARIOS = [
     station: 'CDR',
     met: TIMELINE.highGate,
     description:
-      'Pitch-over at High Gate: 2,300 m up, 7.9 km short of the site, closing at 150 m/s. The landing ' +
+      'Pitch-over at High Gate: 2,300 m up, 10 km short of the site, closing at 150 m/s. The landing ' +
       'site swings into the window. Read the LPD angle off the DSKY, sight it on the window reticle and ' +
       'redesignate if the computer is taking you into a boulder field.',
     tips: ['LPD: the DSKY shows where the computer is going — line it up on the window scale', 'Hand-controller clicks redesignate the landing point', 'Switch to P66 near 150 m'],

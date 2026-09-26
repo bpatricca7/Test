@@ -168,7 +168,9 @@ Modules may **add** fields; never rename or repurpose existing ones.
 | `ROD_UP`, `ROD_DOWN` | gnc | P66 rate-of-descent switch clicks (±1 ft/s) |
 | `LPD {dx, dy}` | gnc | P64 landing-point redesignation clicks |
 | `MASTER_ALARM_RESET` | gnc | clear master alarm |
-| `ENGINE_STOP` | gnc | ENGINE STOP (X): stops the engine even in auto-throttle programs |
+| `ENGINE_STOP` | gnc | ENGINE STOP (X): stops the engine even in auto-throttle programs; **latches** until `ENGINE_START` |
+| `ENGINE_START` | gnc | resets the ENGINE STOP latch (Shift+X) |
+| `GLANCE {id?}` | cameras | cockpit glance presets (O): flight displays, DSKY, CSM rendezvous window |
 | `CYCLE_CAMERA`, `SET_CAMERA {mode}`, `CYCLE_STATION`, `RESET_VIEW` | cameras | views |
 | `TOGGLE_HUD`, `HELP`, `MENU`, `TOGGLE_UNITS` | ui | interface |
 | `MUTE` | audio | sound |
@@ -261,3 +263,33 @@ under auto-exposure. Settings read by post: `game.settings.filmGrain`, `game.set
   `--page dev/<name>.html`).
 - Pure logic (physics, guidance, terrain functions): `node --test test/` with `node:test` + `node:assert`.
 - `npx vite build` must succeed (integrator runs it; don't run it concurrently yourself — use `--outDir dist-<you>` if you must).
+
+
+## 9. Contracts added during integration & QA
+
+- **Depth:** the renderer uses float **reversed-Z** (`EXT_clip_control`) when available and falls back to the
+  logarithmic depth buffer (`?depth=log` forces the fallback). `ctx.depthMode` is `'reversed'` or `'log'`.
+  Custom shaders keep the log-depth chunks (they compile to nothing in reversed mode) and must never write
+  `gl_FragDepth` or assume a depth convention (e.g. `gl_Position.z = gl_Position.w` is *near* in reversed-Z).
+  Any render target that renders the main scene needs a `FloatType` `DepthTexture` in reversed mode.
+- **Shadows:** in the cockpit the sun shadow map is cached while the attitude is steady; a module that moves a
+  visible shadow caster (hand controllers, hatches) calls `ctx.requestShadowUpdate()`. The vessel-shadow box
+  also covers the descent stage left on the surface when the ascent stage is nearby.
+- **Shader warm-up:** `src/core/warmup.js` compiles the cockpit/exterior programs over the first frames of a
+  mission (`?warmup=0` disables; off under `fixedstep=1`). Cabin roots are detached from the scene (parent null)
+  while not in use, and a cabin's `update()` may be called with `dt = 0` during warm-up.
+- **Post:** AgX tone mapping in post's own composite pass (`renderer.toneMapping = NoToneMapping`);
+  `ctx.exposureInfo = {ev, multiplier, sunVisible, starVisibility, valid}`; `ctx.exposureTexture` (1x1 GPU
+  adaptation state: r = EV, g = Sun visibility, a = star visibility). Bloom starts at ~9 in exposed units, so a
+  lamp that should glow needs emissive radiance ~10 at cockpit exposure.
+- **Model LOD:** spacecraft models hide their meshes below ~1.5 px and draw a single "speck" on `LAYERS.FX`
+  (`src/render/models/*/speck.js`).
+- **Sim:** `vessel.probeExtension` (CSM, 1 = extended → 0 = retracted during the ~6 s post-capture retraction);
+  scenario hook `gncInit(game, gnc)` runs after the GNC's first cycle; `src/sim/units.js` formats numbers in the
+  player's units (`fmtOrbit`, `fmtSpeed`, …) for messages; on a vessel switch the lever of the vessel left
+  behind keeps its setting and an LM left in P66/P67 is handed to P66 AUTO; warp drops to 1x from TIG−10 s.
+- **GNC:** LM P40 DOI program (PRO in P00 after undocking and 50 m clear) → coast → P63 with PRO at each flashing
+  V99; `vessel.gnc.tig` carries the planned ignition time; `PROGRAM {program}` is refused with an OPR ERR
+  message when not available. The LPD scale azimuth is `LM.lpdAzimuthDeg` (shared by GNC and the cabin).
+- **Game:** `game.ctx` is the render context (for modules that only receive `game`).
+- **Robustness:** WebGL context loss pauses the flight until the context is restored.

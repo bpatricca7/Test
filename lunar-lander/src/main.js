@@ -31,6 +31,27 @@ async function boot() {
 
   const R = createRenderer(canvas, game);
   const { ctx } = R;
+  game.ctx = ctx; // render context for modules that only receive `game` (instruments, UI)
+
+  // WebGL context loss (GPU reset, driver update, too many tabs): freeze the flight until the context
+  // comes back — otherwise the spacecraft keeps flying unseen. Modules rebuild their GPU data on restore.
+  let contextLost = false;
+  let pausedByContextLoss = false;
+  canvas.addEventListener('webglcontextlost', (e) => {
+    e.preventDefault(); // allow the browser to restore the context
+    contextLost = true;
+    if (game.started && !game.time.paused) {
+      game.time.paused = true;
+      pausedByContextLoss = true;
+    }
+    game.events.emit('message', { text: 'Graphics reset — waiting for the GPU…', level: 'warn', duration: 6 });
+  });
+  canvas.addEventListener('webglcontextrestored', () => {
+    contextLost = false;
+    if (pausedByContextLoss) game.time.paused = false;
+    pausedByContextLoss = false;
+    game.events.emit('message', { text: 'Graphics restored', level: 'good', duration: 3 });
+  });
 
   const gnc = createGNC(game);
   const sim = createSim(game, { gnc });
@@ -184,8 +205,10 @@ async function boot() {
     scene.updateMatrixWorld();
     scene.matrixWorldAutoUpdate = false;
     try {
-      R.renderVesselShadow();
-      post.render(f);
+      if (!contextLost) {
+        R.renderVesselShadow();
+        post.render(f);
+      }
     } finally {
       scene.matrixWorldAutoUpdate = true;
     }
