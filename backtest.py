@@ -584,8 +584,16 @@ def h2_trades(trades: list) -> list:
             and t["spread"] is not None and t["spread"] <= 2 and t["category"] in H2_CATEGORIES]
 
 
+def within(markets: list, start: str = None, until: str = None) -> list:
+    """Markets closing on or after `start` and before `until` (YYYY-MM-DD, UTC)."""
+    def ts(day):
+        return datetime.strptime(day, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp()
+    return [m for m in markets if (not start or m["close_ts"] >= ts(start))
+            and (not until or m["close_ts"] < ts(until))]
+
+
 def cmd_h2(args) -> int:
-    markets = load_days(args.data_dir)
+    markets = within(load_days(args.data_dir), args.start, args.until)
     series = json.load(open(os.path.join(args.data_dir, "series.json")))
     trades = h2_trades(trades_for(markets, series))
     if not trades:
@@ -694,6 +702,8 @@ def main(argv=None) -> int:
                    help="only enter when the bid-ask spread is at most this many cents")
     h = sub.add_parser("h1", help="score the retracted H1 rule (kept for the record)")
     h2 = sub.add_parser("h2", help="score the pre-registered H2 rule")
+    h2.add_argument("--from", dest="start", help="only markets closing on or after this day")
+    h2.add_argument("--until", help="only markets closing before this day")
     for p in (c, e, h, h2):
         p.add_argument("--data-dir", default=DATA_DIR)
     args = parser.parse_args(argv)

@@ -176,6 +176,16 @@ class EvaluateTests(unittest.TestCase):
         self.assertIsNone(bt.price_bin(0.5))
 
 
+class DateFilterTests(unittest.TestCase):
+    def test_within(self):
+        day = 86400
+        start = 1_780_272_000                       # 2026-06-01 00:00 UTC
+        ms = [{"close_ts": start - 1}, {"close_ts": start}, {"close_ts": start + 16 * day - 1},
+              {"close_ts": start + 16 * day}]
+        self.assertEqual(bt.within(ms, "2026-06-01", "2026-06-17"), ms[1:3])
+        self.assertEqual(bt.within(ms), ms)
+
+
 class CandleFormatTests(unittest.TestCase):
     def test_batch_and_historical_formats_both_parse_to_cents(self):
         batch = {"end_period_ts": 1, "yes_bid": {"close_dollars": "0.4100"},
