@@ -85,6 +85,9 @@ Kalshi pays for resting orders near the top of the book, even if they never fill
   - Sibling programs are explicitly not cash. Referral credits "aren't cash" and expire in 7 days (13823783). Perps promo credits "cannot be withdrawn" (16071412). The sports-combo-leg liquidity program pays a monthly "trade credit ('Bonus Credit')" (17184676).
   - The volume program is described as "cashback" (13823850).
   - Treat withdrawability as unknown until a first payout shows up in the Cash balance.
+- **The opening is intermittent (live poll, 2026-09-26, 19:27–20:42Z, every 15 s).** A strike is only completable while the full side's best bid is 97–98¢; small 99¢ bids (10–40 contracts) block it.
+  - In the 3pm ET hour (last 33 minutes), 60% of strike-checks were blocked by 99¢ and 10% were completable. At least one strike was open in 88% of poll cycles, two or more in 24%, so the bot could hold 1.1 sides on average.
+  - In the 4pm ET hour, strikes were completable in 47% of strike-checks (9% already had another 1¢ completer). At least one was open in every cycle and two or more in 83%, averaging 1.8 sides. Early in the hour most strikes are not yet pinned; blocking rises in the last 20 minutes.
 - **Hourly Temp (including KXTEMPMIAH) has one Designated Liquidity Provider** under Kalshi's separate paid market-maker program (article 15410219). It did not fill the empty sides during our measurement hour, but it could start.
 - **Not eligible through Robinhood:** the program excludes customers trading via an FCM or introducing broker. Use Kalshi directly.
 - **Risks:** Kalshi can change or end the program at any time, and can revoke participants it judges abusive; competition will split the pool; fills lose small amounts.
