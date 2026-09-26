@@ -1,0 +1,5 @@
+# Raw phone footage carries GPS metadata and personal video - never commit it.
+footage/
+build/
+out/
+__pycache__/
