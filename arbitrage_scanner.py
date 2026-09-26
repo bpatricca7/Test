@@ -393,7 +393,7 @@ def fee_multiplier(event: dict, client, series_cache: dict) -> Optional[Decimal]
         try:
             series_cache[series_ticker] = client.get_series(series_ticker)
         except requests.exceptions.RequestException:
-            series_cache[series_ticker] = {}
+            return None
     series = series_cache[series_ticker]
     fee_type = series.get("fee_type")
     if fee_type is not None and fee_type not in KNOWN_FEE_TYPES:
@@ -407,16 +407,24 @@ def _latest_close(quotes: list) -> Optional[datetime]:
     return max(times) if times else None
 
 
-def basket_prescreen(quotes: list) -> bool:
-    """Cheap pre-fee check so we only fetch event details for plausible baskets."""
+def no_basket_prescreen(quotes: list) -> bool:
+    """Pre-fee check: YES bids across the event sum past $1."""
     open_quotes = [q for q in quotes if q.is_open]
-    if len(open_quotes) < 2:
-        return False
-    no_edge = sum((HUNDRED - q.no_ask for q in open_quotes if tradable(q.no_ask)), Decimal(0))
-    if no_edge > HUNDRED:
-        return True
-    yes_asks = [q.yes_ask for q in open_quotes]
-    return all(tradable(p) for p in yes_asks) and sum(yes_asks) < HUNDRED
+    edge = sum((HUNDRED - q.no_ask for q in open_quotes if tradable(q.no_ask)), Decimal(0))
+    return len(open_quotes) >= 2 and edge > HUNDRED
+
+
+def yes_basket_prescreen(quotes: list) -> bool:
+    """Pre-fee check: every market has a YES offer and they sum under $1."""
+    asks = [q.yes_ask for q in quotes if q.is_open]
+    return len(asks) >= 2 and all(tradable(p) for p in asks) and sum(asks) < HUNDRED
+
+
+def one_way_ladder(quotes: list) -> bool:
+    """Only "above" (or only "below") strikes: several can be YES at once, so
+    the event cannot be mutually exclusive and baskets never apply."""
+    types = {q.strike_type for q in quotes}
+    return bool(types) and (types <= ABOVE_STRIKE_TYPES or types <= BELOW_STRIKE_TYPES)
 
 
 # ---------------------------------------------------------------------------
@@ -621,11 +629,12 @@ class FixtureClient:
 def scan(client, contracts: int = 10, fees: Optional[FeeModel] = None,
          closing_within_hours: Optional[float] = None, max_pages: int = 20,
          depth_check: bool = True, now: Optional[datetime] = None,
-         skipped: Optional[list] = None) -> list:
+         skipped: Optional[list] = None, cache: Optional[dict] = None) -> list:
     """Return profitable opportunities, best first.
 
     Events whose details or fee multiplier cannot be confirmed are left out
-    and their tickers appended to `skipped`, if given.
+    and their tickers appended to `skipped`, if given. Pass the same `cache`
+    dict to repeated scans to reuse event and series details between them.
     """
     fees = fees or FeeModel()
     no_fees = FeeModel(rate=Decimal(0))
@@ -641,21 +650,28 @@ def scan(client, contracts: int = 10, fees: Optional[FeeModel] = None,
             continue
         by_event[quote.event_ticker][quote.ticker] = quote
 
-    candidates, event_fees, series_cache = [], {}, {}
+    cache = cache if cache is not None else {}
+    events, series_cache = cache.setdefault("events", {}), cache.setdefault("series", {})
+    candidates, event_fees = [], {}
     for event_ticker, by_ticker in by_event.items():
         quotes = list(by_ticker.values())
         title = quotes[0].title
         # Pre-fee screens first, so event and series details are only fetched
         # for the few events that could possibly pay.
         maybe_ladder = bool(find_strike_ladders(event_ticker, title, quotes, contracts, no_fees))
-        maybe_basket = basket_prescreen(quotes)
-        if not (maybe_ladder or maybe_basket):
+        maybe_exclusive = not one_way_ladder(quotes)
+        maybe_no_basket = maybe_exclusive and no_basket_prescreen(quotes)
+        maybe_yes_basket = maybe_exclusive and yes_basket_prescreen(quotes)
+        if not (maybe_ladder or maybe_no_basket or maybe_yes_basket):
             continue
 
-        try:
-            event = client.get_event(event_ticker)
-        except requests.exceptions.RequestException:
-            event = {}
+        event, fresh = events.get(event_ticker), False
+        if event is None:
+            try:
+                event = events[event_ticker] = client.get_event(event_ticker)
+                fresh = True
+            except requests.exceptions.RequestException:
+                event = {}
         multiplier = fee_multiplier(event, client, series_cache)
         if multiplier is None:
             if skipped is not None:
@@ -668,11 +684,18 @@ def scan(client, contracts: int = 10, fees: Optional[FeeModel] = None,
         if maybe_ladder:
             found += find_strike_ladders(event_ticker, title, quotes, contracts,
                                          event_fees[event_ticker])
-        if maybe_basket and event.get("mutually_exclusive"):
+        exclusive = bool(event.get("mutually_exclusive"))
+        if maybe_no_basket and exclusive:
             found.append(find_no_basket(event_ticker, title, quotes, contracts,
                                         event_fees[event_ticker]))
-            # A YES basket is only safe over the event's complete market list, which
-            # `quotes` may not be (time window, page limit), so use the event's own.
+        if maybe_yes_basket and exclusive:
+            # A YES basket is only safe over the event's complete, current market
+            # list, which `quotes` may not be (time window, page limit).
+            if not fresh:
+                try:
+                    event = client.get_event(event_ticker)
+                except requests.exceptions.RequestException:
+                    event = {}
             all_quotes = [parse_quote(m) for m in event.get("markets") or []]
             found.append(find_yes_basket(event_ticker, title, all_quotes, contracts,
                                          event_fees[event_ticker]))
@@ -746,6 +769,33 @@ def positive_float(text: str) -> float:
     return value
 
 
+def opportunity_key(opp: Opportunity) -> tuple:
+    return (opp.kind,) + tuple((leg.ticker, leg.side) for leg in opp.legs)
+
+
+def report(opportunities: list, skipped: list, now: datetime) -> None:
+    if not opportunities:
+        print("No fee-adjusted arbitrage found. That is the normal result: these gaps are")
+        print("rare and close fast. Re-run near busy periods or when markets are about to close.")
+    for rank, opp in enumerate(opportunities, 1):
+        print()
+        print(format_opportunity(rank, opp, now))
+    if skipped:
+        print(f"\nSkipped {len(skipped)} possible event(s) whose details or fees could not be "
+              f"confirmed: {', '.join(skipped[:10])}{' ...' if len(skipped) > 10 else ''}")
+
+
+def save_json(path: str, opportunities: list, skipped: list, now: datetime) -> None:
+    with open(path, "w") as f:
+        json.dump({"scanned_at": now.isoformat(),
+                   "opportunities": [o.to_dict(now) for o in opportunities],
+                   "skipped_unconfirmed_fees": skipped}, f, indent=2)
+
+
+# How long repeated scans reuse event and series details (fees can change).
+CACHE_SECONDS = 30 * 60
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--contracts", type=positive_int, default=10,
@@ -760,50 +810,69 @@ def main(argv=None) -> int:
                         help="pages of 1000 markets to fetch (default 20)")
     parser.add_argument("--no-depth-check", action="store_true",
                         help="skip re-pricing candidates from live order books")
+    parser.add_argument("--repeat", type=positive_float, metavar="SECONDS",
+                        help="keep scanning every SECONDS and print only new opportunities "
+                             "(Ctrl-C to stop)")
     parser.add_argument("--base-url", default=BASE_URL,
                         help=f"Kalshi API base URL (default {BASE_URL})")
     parser.add_argument("--fixture", help="read market data from a JSON file instead of the API")
-    parser.add_argument("--json", dest="json_path", help="also write results to this JSON file")
+    parser.add_argument("--json", dest="json_path",
+                        help="also write the latest results to this JSON file")
     args = parser.parse_args(argv)
 
     client = (FixtureClient.from_file(args.fixture) if args.fixture
               else KalshiPublicClient(base_url=args.base_url))
     fees = FeeModel(rate=args.fee_rate, extra_per_contract=args.extra_fee_cents)
-    now = datetime.now(timezone.utc)
-
-    skipped = []
-    try:
-        opportunities = scan(client, contracts=args.contracts, fees=fees,
-                             closing_within_hours=args.closing_within_hours,
-                             max_pages=args.max_pages, depth_check=not args.no_depth_check,
-                             now=now, skipped=skipped)
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching Kalshi data: {e}", file=sys.stderr)
-        return 1
+    if args.repeat and hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(line_buffering=True)
 
     print("=" * 80)
-    print(f"KALSHI ARBITRAGE SCAN - {now.strftime('%Y-%m-%d %H:%M UTC')}")
+    print(f"KALSHI ARBITRAGE SCAN - {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"
+          + (f", repeating every {args.repeat:g}s" if args.repeat else ""))
     print(f"Fees: series multiplier x {args.fee_rate} x C x P x (1-P), rounded up per order"
           + (f", plus {args.extra_fee_cents}c/contract broker fee" if args.extra_fee_cents
              else " (trading on Kalshi directly; via Robinhood add --extra-fee-cents 2)"))
     print("=" * 80)
-    if not opportunities:
-        print("No fee-adjusted arbitrage found. That is the normal result: these gaps are")
-        print("rare and close fast. Re-run near busy periods or when markets are about to close.")
-    for rank, opp in enumerate(opportunities, 1):
-        print()
-        print(format_opportunity(rank, opp, now))
-    if skipped:
-        print(f"\nSkipped {len(skipped)} possible event(s) whose details or fees could not be "
-              f"confirmed: {', '.join(skipped[:10])}{' ...' if len(skipped) > 10 else ''}")
 
-    if args.json_path:
-        with open(args.json_path, "w") as f:
-            json.dump({"scanned_at": now.isoformat(),
-                       "opportunities": [o.to_dict(now) for o in opportunities],
-                       "skipped_unconfirmed_fees": skipped}, f, indent=2)
+    cache, cache_started, seen = {}, time.monotonic(), set()
+    try:
+        while True:
+            now, skipped = datetime.now(timezone.utc), []
+            try:
+                opportunities = scan(client, contracts=args.contracts, fees=fees,
+                                     closing_within_hours=args.closing_within_hours,
+                                     max_pages=args.max_pages,
+                                     depth_check=not args.no_depth_check,
+                                     now=now, skipped=skipped, cache=cache)
+            except requests.exceptions.RequestException as e:
+                print(f"Error fetching Kalshi data: {e}", file=sys.stderr)
+                if not args.repeat:
+                    return 1
+                opportunities = None
+
+            if opportunities is not None:
+                if args.json_path:
+                    save_json(args.json_path, opportunities, skipped, now)
+                if not args.repeat:
+                    report(opportunities, skipped, now)
+                else:
+                    new = [o for o in opportunities if opportunity_key(o) not in seen]
+                    seen.update(opportunity_key(o) for o in opportunities)
+                    print(f"{now.strftime('%H:%M:%S UTC')}  {len(opportunities)} live, "
+                          f"{len(new)} new")
+                    for opp in new:
+                        print(format_opportunity(opportunities.index(opp) + 1, opp, now))
+
+            if not args.repeat:
+                break
+            if time.monotonic() - cache_started > CACHE_SECONDS:
+                cache, cache_started = {}, time.monotonic()
+            time.sleep(args.repeat)
+    except KeyboardInterrupt:
+        print("\nStopped.")
+
+    if args.json_path and not args.repeat:
         print(f"\nSaved to {args.json_path}")
-
     print("\nPrices move between the scan and your order. Place limit orders at the")
     print("listed prices, fill the thinnest leg first, and never leave a set half-filled.")
     print("Payouts assume normal $0/$1 settlement; a voided or specially settled market")

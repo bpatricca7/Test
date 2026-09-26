@@ -354,6 +354,77 @@ class ScanTests(unittest.TestCase):
                 with self.assertRaises(SystemExit):
                     arb.main(["--fixture", FIXTURE] + bad)
 
+    def test_one_way_ladders_skip_basket_lookups(self):
+        calls = []
+
+        class Counting(arb.FixtureClient):
+            def get_event(self, event_ticker):
+                calls.append(event_ticker)
+                return super().get_event(event_ticker)
+
+        arb.scan(Counting(self.client.data), contracts=10, now=NOW)
+        # DEMO-SPX is all "below" strikes with no inverted pair: nothing to check.
+        self.assertNotIn("DEMO-SPX", calls)
+        self.assertIn("DEMO-BTC", calls)
+
+    def test_repeated_scans_reuse_event_and_series_details(self):
+        calls = []
+
+        class Counting(arb.FixtureClient):
+            def get_event(self, event_ticker):
+                calls.append(("event", event_ticker))
+                return super().get_event(event_ticker)
+
+            def get_series(self, series_ticker):
+                calls.append(("series", series_ticker))
+                return super().get_series(series_ticker)
+
+        client, cache = Counting(self.client.data), {}
+        first = arb.scan(client, contracts=10, now=NOW, cache=cache)
+        calls.clear()
+        second = arb.scan(client, contracts=10, now=NOW, cache=cache)
+        self.assertEqual([o.profit for o in first], [o.profit for o in second])
+        # Only the YES basket re-reads its event, for current prices.
+        self.assertEqual(calls, [("event", "DEMO-RAIN")])
+
+    def test_failed_series_lookup_is_retried_next_scan(self):
+        attempts = []
+
+        class FlakySeries(arb.FixtureClient):
+            def get_series(self, series_ticker):
+                attempts.append(series_ticker)
+                if len(attempts) == 1:
+                    raise requests.exceptions.ConnectionError("boom")
+                return super().get_series(series_ticker)
+
+        client, cache, skipped = FlakySeries(self.client.data), {}, []
+        arb.scan(client, contracts=10, now=NOW, cache=cache, skipped=skipped)
+        self.assertEqual(len(skipped), 1)
+        opps = arb.scan(client, contracts=10, now=NOW, cache=cache)
+        self.assertEqual(len(opps), 3)
+
+    def test_repeat_mode_prints_new_opportunities_then_stops_on_ctrl_c(self):
+        sleeps = []
+
+        def fake_sleep(seconds):
+            sleeps.append(seconds)
+            if len(sleeps) == 2:
+                raise KeyboardInterrupt
+
+        out = io.StringIO()
+        real_sleep, arb.time.sleep = arb.time.sleep, fake_sleep
+        try:
+            with contextlib.redirect_stdout(out):
+                self.assertEqual(arb.main(["--fixture", FIXTURE, "--repeat", "5"]), 0)
+        finally:
+            arb.time.sleep = real_sleep
+        text = out.getvalue()
+        self.assertEqual(sleeps, [5.0, 5.0])
+        self.assertIn("3 live, 3 new", text)
+        self.assertIn("3 live, 0 new", text)
+        self.assertEqual(text.count("[no_basket] DEMO-PRES"), 1)
+        self.assertIn("Stopped.", text)
+
     def test_cli_runs_offline(self):
         out = io.StringIO()
         with contextlib.redirect_stdout(out):

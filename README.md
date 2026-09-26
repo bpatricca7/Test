@@ -27,6 +27,9 @@ python arbitrage_scanner.py --closing-within-hours 12
 # Trading through Robinhood? Add its per-contract fees (conservative)
 python arbitrage_scanner.py --closing-within-hours 12 --extra-fee-cents 2
 
+# Keep watching: re-scan every 60 seconds, print only new opportunities (Ctrl-C to stop)
+python arbitrage_scanner.py --closing-within-hours 12 --repeat 60
+
 # Offline demo on made-up data
 python arbitrage_scanner.py --fixture tests/fixtures/sample_markets.json
 
@@ -46,6 +49,8 @@ Every candidate is:
 
 1. priced with Kalshi's taker fee, `round_up(M × 0.07 × C × P × (1−P))`, using the event's own series multiplier M. Events whose multiplier can't be confirmed are skipped and listed.
 2. re-priced from the live order book and sized to the contracts actually offered at the best price.
+
+Payload handling was checked against the live Kalshi API on 2026-09-26: `*_dollars` prices, `orderbook_fp` books, and the series `fee_type`/`fee_multiplier`.
 
 **Expect most scans to find nothing.** These gaps are rare, small, and usually closed by bots within seconds. When one does appear: use limit orders, fill the thinnest leg first, and never leave a set half-filled.
 
