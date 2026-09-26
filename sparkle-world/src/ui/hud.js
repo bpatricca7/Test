@@ -3,7 +3,7 @@
 // Menu, touch Jump / Up / Down buttons, crosshair, and the sparkly 3D target outline.
 
 import * as THREE from 'three';
-import { icon } from './icons.js';
+import { icon2 as icon } from './menus/icons2.js';
 
 const CSS = /* css */ `
 .sw-hud { position: absolute; inset: 0; pointer-events: none !important; display: none; }
@@ -18,6 +18,10 @@ const CSS = /* css */ `
 .sw-time svg { color: #FFB300; }
 .sw-time.sw-night svg { color: var(--sw-lav); }
 .sw-gems svg { color: var(--sw-mint); }
+.sw-coins svg { color: #F5A300; }
+.sw-pill[hidden], .sw-hud [hidden] { display: none !important; }
+.sw-round--small .sw-round-face { width: 46px; height: 46px; }
+.sw-round--small .sw-round-face svg { width: 26px; height: 26px; }
 
 .sw-hud-tr { position: absolute; top: calc(10px + var(--sw-safe-t)); right: calc(12px + var(--sw-safe-r)); display: flex; gap: 10px; }
 .sw-round { display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: 0; padding: 0; cursor: pointer; font-family: var(--sw-font); -webkit-user-select: none; user-select: none; touch-action: manipulation; }
@@ -35,6 +39,19 @@ const CSS = /* css */ `
 
 .sw-hud-right { position: absolute; right: calc(14px + var(--sw-safe-r)); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; align-items: center; }
 .sw-hud-right .sw-sep { height: 4px; width: 36px; border-radius: 4px; background: rgba(255,255,255,.7); margin: 2px 0; }
+.sw-hud-extras { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+
+/* touch: the tools hang from the top so the Jump button has the bottom-right corner; the
+   extra buttons sit in a row and Up / Down (while flying) side by side */
+.sw-hud.sw-touchmode .sw-hud-right { top: calc(100px + var(--sw-safe-t)); transform: none; gap: 8px; align-items: flex-end; }
+.sw-hud.sw-touchmode .sw-hud-right > .sw-round { min-width: 72px; }
+.sw-hud.sw-touchmode .sw-hud-right .sw-sep { align-self: flex-end; margin-right: 18px; }
+.sw-hud.sw-touchmode .sw-hud-extras { flex-direction: row; gap: 6px; align-items: flex-start; }
+.sw-hud.sw-touchmode .sw-hud-extras .sw-round-face { width: 52px; height: 52px; }
+.sw-hud.sw-touchmode .sw-hud-extras .sw-round-face svg { width: 28px; height: 28px; }
+.sw-hud.sw-touchmode .sw-hud-extras .sw-round-label { font-size: 13px; padding: 0 6px; }
+.sw-hud.sw-touchmode .sw-touch { flex-direction: row; align-items: flex-end; bottom: calc(104px + var(--sw-safe-b)); }
+.sw-hud.sw-touchmode .sw-touch .sw-flybtn .sw-round-face { width: 64px; height: 64px; }
 
 .sw-hud-bottom { position: absolute; left: 50%; bottom: calc(12px + var(--sw-safe-b)); transform: translateX(-50%); display: flex; align-items: flex-end; gap: 12px; }
 .sw-hotbar { display: flex; gap: 6px; padding: 7px; border-radius: 26px; background: rgba(255,255,255,.55); border: 4px solid rgba(255,255,255,.9); box-shadow: 0 8px 22px var(--sw-shadow); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
@@ -93,6 +110,14 @@ const CSS = /* css */ `
   .sw-touch { bottom: calc(150px + var(--sw-safe-b)); }
   .sw-joy { bottom: calc(230px + var(--sw-safe-b)); left: calc(78px + var(--sw-safe-l)); }
   .sw-hud-right { top: auto; bottom: calc(300px + var(--sw-safe-b)); transform: none; }
+  .sw-hud.sw-touchmode .sw-hud-right { top: auto; bottom: calc(296px + var(--sw-safe-b)); gap: 6px; }
+  .sw-hud.sw-touchmode .sw-touch { bottom: calc(150px + var(--sw-safe-b)); }
+  .sw-hud.sw-touchmode .sw-hud-extras .sw-round-face { width: 46px; height: 46px; }
+  .sw-hud.sw-touchmode .sw-hud-extras .sw-round-face svg { width: 25px; height: 25px; }
+  .sw-hud-tl { max-width: 40vw; }
+  .sw-hud-tl .sw-pill { max-width: 100%; }
+  .sw-hud-tr .sw-round--small .sw-round-face { width: 38px; height: 38px; }
+  .sw-hud-tr .sw-round--small .sw-round-face svg { width: 22px; height: 22px; }
 }
 `;
 
@@ -236,14 +261,21 @@ export function install(game) {
   gemPill.innerHTML = icon('gem');
   const gemText = ui.el('span', '', '0');
   gemPill.appendChild(gemText);
-  tl.append(namePill, gemPill);
+  const coinPill = ui.el('div', 'sw-pill sw-coins sw-passive');
+  coinPill.innerHTML = icon('coin');
+  const coinText = ui.el('span', '', '0');
+  coinPill.appendChild(coinText);
+  coinPill.hidden = true;
+  tl.append(namePill, gemPill, coinPill);
 
   // top-right: Dress Up, Stickers, Menu
   const tr = ui.el('div', 'sw-hud-tr');
   const dressBtn = roundButton(ui, { icon: 'dress', label: 'Dress Up', color: 'var(--sw-lav)', onClick: () => game.runAction('dressup') });
   const stickerBtn = roundButton(ui, { icon: 'sticker', label: 'Stickers', color: 'var(--sw-sun)', onClick: () => game.runAction('stickers') });
   const menuBtn = roundButton(ui, { icon: 'menu', label: 'Menu', color: 'var(--sw-sky)', onClick: () => game.runAction('menu') });
-  tr.append(dressBtn, stickerBtn, menuBtn);
+  const helpBtn = roundButton(ui, { icon: 'help', label: 'Help', color: 'var(--sw-mint)', onClick: () => game.runAction('help') });
+  helpBtn.classList.add('sw-round--small', 'sw-helpbtn');
+  tr.append(helpBtn, dressBtn, stickerBtn, menuBtn);
 
   // right: tools, then fly / emotes / photo
   const right = ui.el('div', 'sw-hud-right');
@@ -255,7 +287,9 @@ export function install(game) {
   const flyBtn = roundButton(ui, { icon: 'fly', label: 'Fly', color: 'var(--sw-sky)', onClick: () => game.runAction('fly') });
   const emoteBtn = roundButton(ui, { icon: 'emote', label: 'Emotes', color: 'var(--sw-sun)', onClick: () => game.runAction('emotes') });
   const photoBtn = roundButton(ui, { icon: 'photo', label: 'Photo', color: 'var(--sw-lav)', onClick: () => game.runAction('photo') });
-  right.append(tools.build, tools.remove, tools.hand, ui.el('div', 'sw-sep'), flyBtn, emoteBtn, photoBtn);
+  const extras = ui.el('div', 'sw-hud-extras');
+  extras.append(flyBtn, emoteBtn, photoBtn);
+  right.append(tools.build, tools.remove, tools.hand, ui.el('div', 'sw-sep'), extras);
 
   // bottom: bag, hotbar, undo
   const bottom = ui.el('div', 'sw-hud-bottom');
@@ -335,11 +369,27 @@ export function install(game) {
     stickerBtn.hidden = !game.actions.has('stickers');
     emoteBtn.hidden = !game.actions.has('emotes');
     photoBtn.hidden = !game.actions.has('photo');
+    helpBtn.hidden = !game.actions.has('help');
   };
   const refreshTouch = () => {
     touch.classList.toggle('sw-show', game.input.touchMode);
+    hud.classList.toggle('sw-touchmode', !!game.input.touchMode);
   };
   const refreshGems = () => { gemText.textContent = String(game.profile.stats.gems || 0); };
+  // Sparkle Coins (wave 2): shown once profile.coins is a number; 'coins:change' refreshes now
+  let lastCoins = null;
+  const refreshCoins = () => {
+    const c = game.profile.coins;
+    const has = typeof c === 'number' && Number.isFinite(c);
+    coinPill.hidden = !has;
+    if (!has || c === lastCoins) return;
+    if (lastCoins !== null && c > lastCoins) {
+      coinPill.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.18)' }, { transform: 'scale(1)' }], { duration: 380, easing: 'ease-out' });
+    }
+    lastCoins = c;
+    coinText.textContent = String(Math.floor(c));
+  };
+  game.events.on('coins:change', refreshCoins);
   let lastNight = null;
   const refreshTime = () => {
     const d = game.time.dayTime;
@@ -363,6 +413,8 @@ export function install(game) {
     refreshTools();
     refreshFly();
     refreshGems();
+    lastCoins = null;
+    refreshCoins();
     refreshTouch();
     refreshTime();
     hud.classList.add('sw-on');
@@ -385,6 +437,7 @@ export function install(game) {
       if (timer <= 0) {
         timer = 0.25;
         refreshTime();
+        refreshCoins();
       }
     },
   });

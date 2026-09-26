@@ -2,6 +2,10 @@
 // The AudioContext is created on the first user gesture (unlock()), as browsers require.
 
 const PENTA = [0, 2, 4, 7, 9]; // major pentatonic steps
+const MAJOR = [0, 2, 4, 5, 7, 9, 11];
+const ARP8 = [0, 1, 2, 1, 3, 2, 1, 2]; // arpeggio patterns: chord tone index (3 = root up an octave)
+const ARP3 = [0, 1, 2, 3, 2, 1];
+const MOOD_GAIN = 1.35; // level of the playing mood's bus (the others fade to silence)
 const midiToHz = (m) => 440 * Math.pow(2, (m - 69) / 12);
 
 export class AudioEngine {
@@ -15,7 +19,10 @@ export class AudioEngine {
     this._musicTimer = null;
     this._nextNoteTime = 0;
     this._step = 0;
-    this._melody = 7;
+    this._song = null;
+    this._playing = null;
+    this.forcedMood = null;
+    this.muted = false;
     this._lastPlay = new Map();
   }
 
@@ -38,6 +45,7 @@ export class AudioEngine {
         this.musicGain = this.ctx.createGain();
         this.musicGain.connect(this.master);
         this._applyVolumes();
+        if (this.muted) this.master.gain.value = 0;
         if (this.musicOn) this._startMusic();
       }
       if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
@@ -234,6 +242,15 @@ export class AudioEngine {
     }
   }
 
+  // ---------- music ----------
+  //
+  // A generative music box in moods that crossfade smoothly:
+  //   day          bright 4/4 music box: bass + arpeggio + a melody built from repeating phrases
+  //   night        slow 3/4 lullaby: soft pad chords, a sparse lower melody
+  //   menu / cozy  warm and gentle (title screen, indoors): pad + slow arpeggio + melody
+  // Each mood plays into its own gain node, so a change fades one out while the next fades in.
+  // setNight(bool) picks day/night by the clock; setMood('menu'|'cozy'|null) overrides it.
+
   /** Turn the music-box loop on/off. */
   music(on) {
     this.musicOn = !!on;
@@ -242,44 +259,223 @@ export class AudioEngine {
     else this._stopMusic();
   }
 
-  /** Night theme: slower, lower, softer. */
+  /** Night theme: slower, lower, softer (daynight calls this every frame; it is cheap). */
   setNight(night) {
     this.night = !!night;
   }
 
+  /** Force a mood: 'menu' (title), 'cozy' (indoors) or null (day / night by the clock). */
+  setMood(mood) {
+    this.forcedMood = mood || null;
+  }
+
+  /** The mood the music plays (or would play). */
+  get mood() {
+    return this.forcedMood || (this.night ? 'night' : 'day');
+  }
+
+  /** Silence everything (music and effects) without touching the volume settings. */
+  setMuted(on) {
+    this.muted = !!on;
+    if (!this.ctx) return;
+    this.master.gain.setTargetAtTime(this.muted ? 0 : 1, this.ctx.currentTime, 0.08);
+  }
+
+  _musicBus() {
+    if (this._musicBusReady) return;
+    const ctx = this.ctx;
+    this._musicBusReady = true;
+    this._moodGains = new Map();
+    // a soft echo-hall makes the music box dreamy: two feedback delays through a lowpass
+    // (much cheaper than a convolution reverb, which matters on older tablets)
+    try {
+      const input = ctx.createGain();
+      const tone = ctx.createBiquadFilter();
+      tone.type = 'lowpass';
+      tone.frequency.value = 2600;
+      input.connect(tone);
+      const wet = ctx.createGain();
+      wet.gain.value = 0.34;
+      for (const [time, fb] of [[0.137, 0.42], [0.229, 0.36]]) {
+        const d = ctx.createDelay(1);
+        d.delayTime.value = time;
+        const g = ctx.createGain();
+        g.gain.value = fb;
+        tone.connect(d);
+        d.connect(g).connect(d);
+        d.connect(wet);
+      }
+      wet.connect(this.musicGain);
+      this._verb = input;
+    } catch {
+      this._verb = null;
+    }
+  }
+
+  _moodOut(mood) {
+    let g = this._moodGains.get(mood);
+    if (!g) {
+      g = this.ctx.createGain();
+      g.gain.value = 0.0001;
+      g.connect(this.musicGain);
+      if (this._verb) g.connect(this._verb);
+      this._moodGains.set(mood, g);
+    }
+    return g;
+  }
+
   _startMusic() {
     if (this._musicTimer || !this.ctx) return;
-    this._nextNoteTime = this.ctx.currentTime + 0.2;
+    this._musicBus();
+    this._nextNoteTime = this.ctx.currentTime + 0.25;
+    this._playing = null; // start fresh in the current mood
     this._musicTimer = setInterval(() => this._scheduleMusic(), 90);
   }
 
   _stopMusic() {
     if (this._musicTimer) clearInterval(this._musicTimer);
     this._musicTimer = null;
+    if (this.ctx && this._moodGains) {
+      const t = this.ctx.currentTime;
+      for (const g of this._moodGains.values()) {
+        g.gain.cancelScheduledValues(t);
+        g.gain.setTargetAtTime(0.0001, t, 0.3);
+      }
+    }
+    this._playing = null;
+  }
+
+  /** Switch to a mood: fade its bus in and the others out, and start a new tune. */
+  _enterMood(mood) {
+    const t = this.ctx.currentTime;
+    this._moodOut(mood);
+    for (const [m, g] of this._moodGains) {
+      g.gain.cancelScheduledValues(t);
+      g.gain.setTargetAtTime(m === mood ? MOOD_GAIN : 0.0001, t, m === mood ? 0.9 : 0.6);
+    }
+    this._playing = mood;
+    this._step = 0;
+    this._song = this._newSong(mood);
+    this._nextNoteTime = Math.max(this._nextNoteTime, t + 0.12);
+  }
+
+  /** A little song: key, chord progression (scale degrees) and two melody phrases A and B. */
+  _newSong(mood, keepKey = null) {
+    const r = Math.random;
+    const cfgs = {
+      day: { beat: 0.3, perBar: 8, keys: [60, 62, 65, 67], progs: [[0, 5, 3, 4], [0, 3, 4, 3], [0, 5, 1, 4], [3, 4, 0, 0]], shift: 0, density: [0.9, 0.55, 0.25], pad: 0, arp: 0.075, bass: 0.2, bell: 0.15, ring: 1.3 },
+      night: { beat: 0.46, perBar: 6, keys: [55, 57, 53], progs: [[0, 3, 0, 4], [0, 5, 3, 4], [0, 3, 5, 4]], shift: -5, density: [0.7, 0.3, 0.08], pad: 0.05, arp: 0.045, bass: 0.14, bell: 0.12, ring: 1.8 },
+      menu: { beat: 0.36, perBar: 8, keys: [65, 60, 62], progs: [[0, 2, 3, 4], [0, 5, 3, 4], [3, 4, 2, 5]], shift: 0, density: [0.8, 0.4, 0.12], pad: 0.045, arp: 0.06, bass: 0.16, bell: 0.14, ring: 1.5 },
+      cozy: { beat: 0.4, perBar: 8, keys: [65, 67, 62], progs: [[0, 3, 0, 4], [0, 5, 3, 4]], shift: 0, density: [0.7, 0.35, 0.1], pad: 0.045, arp: 0.05, bass: 0.15, bell: 0.13, ring: 1.5 },
+    };
+    const c = cfgs[mood] || cfgs.day;
+    const key = keepKey ?? c.keys[Math.floor(r() * c.keys.length)] - 12;
+    const prog = c.progs[Math.floor(r() * c.progs.length)];
+    const scaleMidi = (deg) => key + 12 * Math.floor(deg / 7) + MAJOR[((deg % 7) + 7) % 7];
+    const chordDegs = (root) => [root, root + 2, root + 4];
+    const beatEvery = c.perBar === 6 ? 3 : 4;
+    const phrase = (barRoots) => {
+      const notes = [];
+      let deg = 9;
+      for (let s = 0; s < c.perBar * 2; s++) {
+        const strong = s % beatEvery === 0;
+        const p = strong ? c.density[0] : s % 2 === 0 ? c.density[1] : c.density[2];
+        if (r() > p) continue;
+        const root = barRoots[Math.floor(s / c.perBar) % barRoots.length];
+        if (strong) {
+          // strong beats land on the nearest chord tone
+          let best = deg, bestD = 99;
+          for (const d0 of chordDegs(root)) for (const d of [d0 + 7, d0 + 14]) if (Math.abs(d - deg) < bestD) { bestD = Math.abs(d - deg); best = d; }
+          deg = best;
+        } else {
+          deg += [-2, -1, -1, 1, 1, 2][Math.floor(r() * 6)];
+        }
+        deg = Math.max(5, Math.min(15, deg));
+        notes.push([s, deg]);
+      }
+      if (!notes.length) notes.push([0, 7]);
+      return notes;
+    };
+    return { ...c, key, prog, scaleMidi, chordDegs, A: phrase([prog[0], prog[1]]), B: phrase([prog[2], prog[3]]) };
+  }
+
+  /** Soft sustained chord voice (two detuned oscillators through a lowpass). */
+  _pad(midi, t, dur, vol, out) {
+    const ctx = this.ctx;
+    const when = ctx.currentTime + t;
+    const o1 = ctx.createOscillator(), o2 = ctx.createOscillator();
+    const f = ctx.createBiquadFilter();
+    const g = ctx.createGain();
+    o1.type = 'triangle';
+    o2.type = 'sine';
+    const hz = midiToHz(midi);
+    o1.frequency.value = hz;
+    o2.frequency.value = hz * 1.004;
+    f.type = 'lowpass';
+    f.frequency.value = 1300;
+    g.gain.setValueAtTime(0.0001, when);
+    g.gain.linearRampToValueAtTime(vol, when + Math.min(0.6, dur * 0.3));
+    g.gain.setTargetAtTime(0.0001, when + dur * 0.7, dur * 0.25);
+    o1.connect(f);
+    o2.connect(f);
+    f.connect(g).connect(out);
+    o1.start(when);
+    o2.start(when);
+    o1.stop(when + dur + 0.8);
+    o2.stop(when + dur + 0.8);
   }
 
   _scheduleMusic() {
     const ctx = this.ctx;
     if (!ctx || ctx.state !== 'running') return;
-    const beat = this.night ? 0.62 : 0.4; // seconds per eighth note
-    const chords = [0, -3, 5, 7]; // I vi IV V (as root offsets from C)
+    // after a pause (hidden tab, a busy moment) pick up from now instead of rushing to catch up
+    if (this._nextNoteTime < ctx.currentTime - 0.3) this._nextNoteTime = ctx.currentTime + 0.1;
+    const mood = this.mood;
+    if (mood !== this._playing) this._enterMood(mood);
+    const out = this._moodOut(mood);
     while (this._nextNoteTime < ctx.currentTime + 0.35) {
-      const t = this._nextNoteTime - ctx.currentTime;
+      const song = this._song;
+      const t = Math.max(0, this._nextNoteTime - ctx.currentTime);
       const step = this._step++;
-      const bar = Math.floor(step / 8) % 4;
-      const root = 60 + chords[bar] - (this.night ? 12 : 0);
-      if (step % 8 === 0) this._bell(root - 12, t, 0.22, 2.2, this.musicGain);
-      if (step % 8 === 4 && !this.night) this._bell(root - 5, t, 0.12, 1.6, this.musicGain);
-      // melody: random walk on the pentatonic scale, resting now and then
-      const rest = Math.random() < (this.night ? 0.45 : 0.25);
-      if (!rest) {
-        this._melody += Math.floor(Math.random() * 5) - 2;
-        this._melody = Math.max(3, Math.min(12, this._melody));
-        const oct = Math.floor(this._melody / 5), deg = this._melody % 5;
-        const m = 60 + (this.night ? 0 : 12) + oct * 12 + PENTA[deg] - 12;
-        this._bell(m, t, this.night ? 0.12 : 0.16, 1.3, this.musicGain);
+      const inBar = step % song.perBar;
+      const bar = Math.floor(step / song.perBar);
+      const root = song.prog[bar % 4];
+      const c0 = song.scaleMidi(root), c1 = song.scaleMidi(root + 2), c2 = song.scaleMidi(root + 4);
+      const barLen = song.beat * song.perBar;
+      // pad chord and bass on the downbeat
+      if (inBar === 0) {
+        if (song.pad > 0) { this._pad(c0, t, barLen, song.pad, out); this._pad(c1, t, barLen, song.pad, out); this._pad(c2, t, barLen, song.pad * 0.8, out); }
+        this._bell(c0 - 12, t, song.bass, 2.2, out);
+      } else if (song.perBar === 8 && inBar === 4 && mood !== 'night') {
+        this._bell(c2 - 12, t, song.bass * 0.6, 1.6, out);
       }
-      this._nextNoteTime += beat;
+      // arpeggio
+      if (mood !== 'night' || inBar % 2 === 0) {
+        const k = (song.perBar === 6 ? ARP3 : ARP8)[inBar];
+        const m = k === 0 ? c0 : k === 1 ? c1 : k === 2 ? c2 : c0 + 12;
+        this._bell(m, t, song.arp * (inBar === 0 ? 1.2 : 1), 0.9, out);
+      }
+      // melody: phrases A A B A (the last A ends on the home note)
+      const section = Math.floor(bar / 2) % 4;
+      const phrase = section === 2 ? song.B : song.A;
+      const s2 = step % (song.perBar * 2);
+      for (let i = 0; i < phrase.length; i++) {
+        if (phrase[i][0] !== s2) continue;
+        const home = section === 3 && i === phrase.length - 1;
+        this._bell(song.scaleMidi(home ? 14 : phrase[i][1]) + song.shift, t, song.bell, song.ring, out);
+      }
+      // a twinkle now and then
+      if (inBar === song.perBar - 1 && bar % 4 === 3 && mood !== 'night') {
+        this._bell(c2 + 24, t + song.beat * 0.5, 0.05, 0.6, out);
+        this._bell(c0 + 36, t + song.beat * 0.75, 0.04, 0.5, out);
+      }
+      // gentle swing on the day tune
+      this._nextNoteTime += song.beat * (mood === 'day' ? (inBar % 2 === 0 ? 1.06 : 0.94) : 1);
+      if (bar === 7 && inBar === song.perBar - 1) {
+        // after 8 bars a new tune in the same key, so it flows on
+        this._song = this._newSong(mood, song.key);
+        this._step = 0;
+      }
     }
   }
 }
