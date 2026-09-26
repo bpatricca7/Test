@@ -57,6 +57,16 @@ class FeeTests(unittest.TestCase):
                          Decimal(275))
 
 
+class TimeTests(unittest.TestCase):
+    def test_trimmed_fractional_seconds_parse_on_any_python(self):
+        # Kalshi drops trailing zeros; Python < 3.11 only accepts 3 or 6 digits.
+        self.assertEqual(arb.parse_time("2026-09-26T17:16:49.46391Z"),
+                         datetime(2026, 9, 26, 17, 16, 49, 463910, tzinfo=timezone.utc))
+        self.assertEqual(arb.parse_time("2026-09-26T17:16:49.1234567Z").microsecond, 123456)
+        self.assertEqual(arb.parse_time("2026-09-26T17:16:49Z").microsecond, 0)
+        self.assertIsNone(arb.parse_time("not a time"))
+
+
 class ParseTests(unittest.TestCase):
     def test_dollar_fields_preferred_over_cents(self):
         q = arb.parse_quote(market("X", yes_bid=10, yes_bid_dollars="0.4550"))

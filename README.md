@@ -52,15 +52,17 @@ python lip_bot.py plan                        # what it would do right now; no a
 # Create an API key: Kalshi -> Account -> API Keys. Save the private key file.
 python lip_bot.py run --key-id YOUR_KEY_ID --key-file kalshi.pem            # dry run with your account
 python lip_bot.py run --key-id ... --key-file ... --demo --live              # Kalshi's demo exchange
-python lip_bot.py run --key-id ... --key-file ... --live --max-capital 30 --max-fill-spend 20
+python lip_bot.py run --key-id ... --key-file ... --live --max-capital 25 --max-fill-spend 25
 ```
 
 Safeguards:
 - It only places orders with `--live`, and you must type `LIVE` to confirm.
 - Orders are post-only, so they never pay the spread.
-- Resting collateral is capped (`--max-capital`, default $30).
-- It stops after `--max-fill-spend` dollars are spent through fills (default $20).
-- It only touches orders it created (IDs prefixed `lipbot-`) and cancels all of them when it stops (Ctrl-C).
+- Every order expires on the exchange at its program's end.
+- Resting collateral never exceeds the smaller of `--max-capital` and the fill budget left (`--max-fill-spend` minus what fills have already cost). So even if every resting order filled at once, total fill spend stays within `--max-fill-spend`.
+- Each completion order ties up about $10.20, so the defaults ($25 and $25) allow two at a time. Raise both caps together to run more.
+- It only manages orders it created (IDs prefixed `lipbot-`) in the series it runs.
+- It cancels them on Ctrl-C, SIGTERM or a closed terminal, and lists anything it couldn't cancel.
 
 Rules to know:
 - US members trading on Kalshi directly only; customers of brokers such as Robinhood are excluded.

@@ -22,15 +22,19 @@ own Kalshi API key (Account -> API Keys); nothing is ever sent without it.
     python lip_bot.py run --key-id ID --key-file key.pem --demo --live   # demo money
     python lip_bot.py run --key-id ID --key-file key.pem --live          # real money
 
-Safeguards: post-only orders only; hard caps on resting collateral and on money
-spent through fills; the bot only touches orders it created (client_order_id
-prefix "lipbot-") and cancels all of them when it stops. Kalshi can change or
-end the program, or revoke participants it judges abusive, at any time.
+Safeguards:
+  * post-only orders only, each with an exchange-side expiry at its program's end;
+  * resting collateral never exceeds min(--max-capital, fill budget left), so even
+    if every resting order filled at once, spend stays within --max-fill-spend;
+  * it manages only its own orders (client_order_id prefix "lipbot-") in the
+    series it runs, and cancels them on exit, Ctrl-C, SIGTERM or SIGHUP.
+Kalshi can change or end the program, or revoke participants it judges abusive,
+at any time.
 """
 
 import argparse
 import base64
-import json
+import signal
 import sys
 import time
 import uuid
@@ -127,11 +131,21 @@ class KalshiClient:
             return response.json() if response.content else {}
         raise RuntimeError("unreachable")
 
+    def paged(self, path: str, params: dict, key: str, signed: bool = False) -> list:
+        items, cursor = [], None
+        while True:
+            page = dict(params, cursor=cursor) if cursor else dict(params)
+            data = self.request("GET", path, page, signed=signed)
+            items += data.get(key) or []
+            cursor = data.get("cursor") or data.get("next_cursor")
+            if not cursor:
+                return items
+
     # Public data
     def liquidity_programs(self) -> list:
-        data = self.request("GET", "/incentive_programs",
-                            {"status": "active", "type": "liquidity", "limit": 10000})
-        return data.get("incentive_programs") or []
+        return self.paged("/incentive_programs",
+                          {"status": "active", "type": "liquidity", "limit": 10000},
+                          "incentive_programs")
 
     def orderbook(self, ticker: str) -> dict:
         data = self.request("GET", f"/markets/{ticker}/orderbook")
@@ -139,23 +153,22 @@ class KalshiClient:
 
     # Signed portfolio calls
     def resting_orders(self) -> list:
-        orders, cursor = [], None
-        while True:
-            params = {"status": "resting", "limit": 1000}
-            if cursor:
-                params["cursor"] = cursor
-            data = self.request("GET", "/portfolio/orders", params, signed=True)
-            orders += data.get("orders") or []
-            cursor = data.get("cursor")
-            if not cursor:
-                return orders
+        return self.paged("/portfolio/orders", {"status": "resting", "limit": 1000}, "orders",
+                          signed=True)
+
+    def orders_since(self, min_ts: int) -> list:
+        """Orders of any status created since min_ts (resting, canceled or executed)."""
+        return self.paged("/portfolio/orders", {"min_ts": min_ts, "limit": 1000}, "orders",
+                          signed=True)
 
     def create_order(self, ticker: str, book_side: str, price: Decimal, count: int,
-                     client_order_id: str) -> dict:
+                     client_order_id: str, expiration_ts: int = None) -> dict:
         body = {"ticker": ticker, "client_order_id": client_order_id, "side": book_side,
                 "count": f"{count}.00", "price": f"{price:.4f}",
                 "time_in_force": "good_till_canceled", "post_only": True,
                 "self_trade_prevention_type": "taker_at_cross", "cancel_order_on_pause": True}
+        if expiration_ts:
+            body["expiration_time"] = int(expiration_ts)
         return self.request("POST", "/portfolio/events/orders", body=body, signed=True)
 
     def cancel_order(self, order_id: str, ticker: str) -> dict:
@@ -163,16 +176,8 @@ class KalshiClient:
                             {"market_ticker": ticker}, signed=True)
 
     def fills(self, min_ts: int) -> list:
-        fills, cursor = [], None
-        while True:
-            params = {"min_ts": min_ts, "limit": 1000}
-            if cursor:
-                params["cursor"] = cursor
-            data = self.request("GET", "/portfolio/fills", params, signed=True)
-            fills += data.get("fills") or []
-            cursor = data.get("cursor")
-            if not cursor:
-                return fills
+        return self.paged("/portfolio/fills", {"min_ts": min_ts, "limit": 1000}, "fills",
+                          signed=True)
 
 
 # ---------------------------------------------------------------------------
@@ -184,8 +189,10 @@ class Config:
     series: tuple = ("KXTEMPMIAH",)
     pin_threshold: Decimal = Decimal("0.97")   # other side's best bid must be at least this
     size_buffer: float = 0.02                  # order target x (1 + buffer)
-    max_capital: Decimal = Decimal(30)         # dollars of collateral in resting bot orders
-    max_fill_spend: Decimal = Decimal(20)      # dollars spent through fills before stopping
+    # Each completion order ties up about $10.20 (1,020 contracts at 1c), and resting
+    # collateral must fit in both caps, so the defaults allow two orders at once.
+    max_capital: Decimal = Decimal(25)         # dollars of collateral in resting bot orders
+    max_fill_spend: Decimal = Decimal(25)      # dollars that may ever be spent through fills
     end_buffer_s: int = 60                     # stop quoting this long before a program ends
 
 
@@ -198,11 +205,14 @@ class Program:
     end: datetime
 
     @classmethod
-    def from_api(cls, raw: dict) -> "Program":
-        start, end = parse_time(raw["start_date"]), parse_time(raw["end_date"])
-        hours = Decimal(str(max((end - start).total_seconds(), 1) / 3600))
-        return cls(raw["market_ticker"], int(Decimal(raw.get("target_size_fp") or "0")),
-                   Decimal(raw["period_reward"]) / 10000 / hours, start, end)
+    def from_api(cls, raw: dict) -> Optional["Program"]:
+        start, end = parse_time(raw.get("start_date")), parse_time(raw.get("end_date"))
+        target = to_decimal(raw.get("target_size_fp"))
+        reward = to_decimal(raw.get("period_reward"))
+        if not (start and end and target and reward is not None and end > start):
+            return None
+        hours = Decimal(str((end - start).total_seconds() / 3600))
+        return cls(raw["market_ticker"], int(target), reward / 10000 / hours, start, end)
 
 
 @dataclass
@@ -236,11 +246,16 @@ class Action:
     count: int = 0
     order_id: str = ""
     reason: str = ""
+    expires_ts: int = 0       # exchange-side expiry for placements
+
+    @property
+    def cost(self) -> Decimal:
+        return self.price * self.count
 
     def describe(self) -> str:
         if self.kind == "place":
             return (f"PLACE {self.ticker}: bid {self.count} {self.outcome.upper()} @ "
-                    f"{self.price * 100:.0f}c (${self.price * self.count:.2f} collateral) - {self.reason}")
+                    f"{self.price * 100:.0f}c (${self.cost:.2f} collateral) - {self.reason}")
         return f"CANCEL {self.ticker} order {self.order_id[:8]} - {self.reason}"
 
 
@@ -261,6 +276,7 @@ def plan_market(program: Program, book: dict, mine: list, config: Config,
     """Actions for one market: complete a pinned empty side, top up, or stand down."""
     actions = []
     ending = (program.end - now).total_seconds() <= config.end_buffer_s
+    expires_ts = int(program.end.timestamp()) - config.end_buffer_s
     for outcome, other in (("yes", "no"), ("no", "yes")):
         my_orders = [o for o in mine if o.outcome == outcome]
         my_size = sum(o.remaining for o in my_orders)
@@ -286,37 +302,41 @@ def plan_market(program: Program, book: dict, mine: list, config: Config,
             actions.append(Action("place", program.ticker, outcome, ONE_CENT, wanted - my_size,
                                   reason=f"{outcome.upper()} side has {better_depth:.0f} of "
                                          f"{program.target} above 1c while {other.upper()} is "
-                                         f"bid {other_best * 100:.0f}c"))
+                                         f"bid {other_best * 100:.0f}c",
+                                  expires_ts=expires_ts))
     return actions
 
 
-def within_caps(actions: list, resting: list, fill_spend: Decimal, config: Config):
-    """Drop placements that would break the caps; returns (allowed, refused)."""
-    if fill_spend >= config.max_fill_spend:
-        return [a for a in actions if a.kind == "cancel"], [a for a in actions if a.kind == "place"]
-    cancelled = {a.order_id for a in actions if a.kind == "cancel"}
-    capital = sum((o.collateral for o in resting if o.order_id not in cancelled), Decimal(0))
-    allowed, refused = [], []
-    for a in actions:
-        if a.kind == "place":
-            cost = a.price * a.count
-            if capital + cost > config.max_capital:
-                refused.append(a)
-                continue
-            capital += cost
-        allowed.append(a)
+def budget(config: Config, fill_spend: Decimal) -> Decimal:
+    """Most collateral that may rest at once. Every resting order could fill before
+    the next check, so resting collateral must also fit in the fill budget left."""
+    return max(Decimal(0), min(config.max_capital, config.max_fill_spend - fill_spend))
+
+
+def over_budget(resting: list, limit: Decimal) -> list:
+    """Orders to cancel, largest first, until resting collateral fits the limit."""
+    total = sum((o.collateral for o in resting), Decimal(0))
+    cancels = []
+    for o in sorted(resting, key=lambda o: o.collateral, reverse=True):
+        if total <= limit:
+            break
+        cancels.append(Action("cancel", o.ticker, o.outcome, order_id=o.order_id,
+                              reason="over budget"))
+        total -= o.collateral
+    return cancels
+
+
+def fits(placements: list, resting_collateral: Decimal, limit: Decimal):
+    """Split placements into (allowed, refused) so collateral stays within the limit."""
+    allowed, refused, total = [], [], resting_collateral
+    for a in placements:
+        if total + a.cost > limit:
+            refused.append(a)
+        else:
+            allowed.append(a)
+            total += a.cost
     return allowed, refused
 
-
-def estimated_reward_per_hour(programs: dict, resting: list) -> Decimal:
-    """Upper-bound estimate: half a program's pool for each side the bot completes."""
-    sides = {(o.ticker, o.outcome) for o in resting}
-    return sum((programs[t].reward_per_hour / 2 for t, _ in sides if t in programs), Decimal(0))
-
-
-# ---------------------------------------------------------------------------
-# Loop
-# ---------------------------------------------------------------------------
 
 def fill_spend(fills: list, bot_order_ids: set) -> Decimal:
     """Money spent buying contracts through fills of the bot's own orders."""
@@ -330,6 +350,16 @@ def fill_spend(fills: list, bot_order_ids: set) -> Decimal:
     return total
 
 
+def estimated_reward_per_hour(programs: dict, resting: list) -> Decimal:
+    """Upper-bound estimate: half a program's pool for each side the bot completes."""
+    sides = {(o.ticker, o.outcome) for o in resting}
+    return sum((programs[t].reward_per_hour / 2 for t, _ in sides if t in programs), Decimal(0))
+
+
+# ---------------------------------------------------------------------------
+# Loop
+# ---------------------------------------------------------------------------
+
 @dataclass
 class Bot:
     client: KalshiClient
@@ -342,6 +372,17 @@ class Bot:
     program_refresh_s: int = 60
     _raw_programs: list = field(default_factory=list)
     _fetched_at: Optional[datetime] = None
+    _programs: dict = field(default_factory=dict)
+
+    def say(self, message: str) -> None:
+        """Logging must never stop the bot (e.g. a closed pipe while shutting down)."""
+        try:
+            self.log(message)
+        except Exception:
+            pass
+
+    def in_scope(self, ticker: str) -> bool:
+        return ticker.startswith(self.config.series)
 
     def programs(self, now: datetime) -> dict:
         """Active programs in scope. The full list is large and changes a few minutes
@@ -351,37 +392,53 @@ class Bot:
             self._fetched_at = now
         found = {}
         for raw in self._raw_programs:
-            if not raw.get("market_ticker", "").startswith(self.config.series):
+            if not self.in_scope(raw.get("market_ticker", "")):
                 continue
             program = Program.from_api(raw)
-            if program.start <= now < program.end and program.target > 0:
+            if program and program.start <= now < program.end and program.target > 0:
                 found[program.ticker] = program
+        self._programs = found
         return found
 
     def my_orders(self) -> list:
+        """This series' resting bot orders (orders from other series are left alone)."""
         if not (self.client.key_id and self.client.signer):
             return []
-        return [o for o in map(BotOrder.from_api, self.client.resting_orders()) if o]
+        orders = [o for o in map(BotOrder.from_api, self.client.resting_orders()) if o]
+        return [o for o in orders if self.in_scope(o.ticker)]
 
     def track_fills(self, resting: list) -> None:
-        """Total spent through fills of this run's orders, including fully filled ones."""
+        """Money spent through fills of any bot order since start, including orders that
+        filled completely or whose create response was lost."""
         self.bot_order_ids.update(o.order_id for o in resting)
-        if self.live and self.bot_order_ids:
-            self.fill_spend = fill_spend(self.client.fills(self.started_ts), self.bot_order_ids)
-
-    def execute(self, action: Action) -> None:
-        self.log(("" if self.live else "[dry run] ") + action.describe())
         if not self.live:
             return
-        if action.kind == "place":
-            book_side = "bid" if action.outcome == "yes" else "ask"
-            price = action.price if action.outcome == "yes" else 1 - action.price
-            created = self.client.create_order(action.ticker, book_side, price, action.count,
-                                               f"{ORDER_PREFIX}{uuid.uuid4()}")
-            if created.get("order_id"):
-                self.bot_order_ids.add(created["order_id"])
-        else:
-            self.client.cancel_order(action.order_id, action.ticker)
+        for raw in self.client.orders_since(self.started_ts):
+            order = BotOrder.from_api(raw)
+            if order and self.in_scope(order.ticker):
+                self.bot_order_ids.add(order.order_id)
+        if self.bot_order_ids:
+            self.fill_spend = fill_spend(self.client.fills(self.started_ts), self.bot_order_ids)
+
+    def execute(self, action: Action) -> bool:
+        """Carry out one action; returns True if it succeeded (always True in a dry run)."""
+        self.say(("" if self.live else "[dry run] ") + action.describe())
+        if not self.live:
+            return True
+        try:
+            if action.kind == "place":
+                book_side = "bid" if action.outcome == "yes" else "ask"
+                price = action.price if action.outcome == "yes" else 1 - action.price
+                created = self.client.create_order(action.ticker, book_side, price, action.count,
+                                                   f"{ORDER_PREFIX}{uuid.uuid4()}", action.expires_ts)
+                if created.get("order_id"):
+                    self.bot_order_ids.add(created["order_id"])
+            else:
+                self.client.cancel_order(action.order_id, action.ticker)
+            return True
+        except requests.exceptions.RequestException as e:
+            self.say(f"  failed: {e}")
+            return False
 
     def step(self, now: datetime) -> dict:
         programs = self.programs(now)
@@ -390,40 +447,92 @@ class Bot:
         mine_by_ticker = {}
         for o in resting:
             mine_by_ticker.setdefault(o.ticker, []).append(o)
+
         actions = []
         for ticker, program in programs.items():
-            actions += plan_market(program, self.client.orderbook(ticker),
-                                   mine_by_ticker.get(ticker, []), self.config, now)
-        # Orders on markets whose program is over or not in scope anymore.
+            try:
+                book = self.client.orderbook(ticker)
+            except requests.exceptions.RequestException as e:
+                # Without data, leaving is always safe; placing is not.
+                self.say(f"  {ticker}: order book unavailable ({e})")
+                actions += [Action("cancel", ticker, o.outcome, order_id=o.order_id,
+                                   reason="market data unavailable")
+                            for o in mine_by_ticker.get(ticker, [])]
+                continue
+            actions += plan_market(program, book, mine_by_ticker.get(ticker, []), self.config, now)
         for o in resting:
             if o.ticker not in programs:
                 actions.append(Action("cancel", o.ticker, o.outcome, order_id=o.order_id,
                                       reason="no active program"))
-        allowed, refused = within_caps(actions, resting, self.fill_spend, self.config)
-        for action in allowed:
-            try:
-                self.execute(action)
-            except requests.exceptions.RequestException as e:
-                self.log(f"  failed: {e}")
-        for action in refused:
-            self.log(f"  refused by caps: {action.describe()}")
+
+        # Cancels first; only successful ones free up collateral.
+        cancelled = {a.order_id for a in actions if a.kind == "cancel" and self.execute(a)}
+        remaining = [o for o in resting if o.order_id not in cancelled]
+        limit = budget(self.config, self.fill_spend)
+        for a in over_budget(remaining, limit):
+            if self.execute(a):
+                remaining = [o for o in remaining if o.order_id != a.order_id]
+        placements = [a for a in actions if a.kind == "place"]
+        allowed, refused = fits(placements, sum((o.collateral for o in remaining), Decimal(0)), limit)
+        placed = [a for a in allowed if self.execute(a)]
+        for a in refused:
+            self.say(f"  refused by caps: {a.describe()}")
+
         # In a dry run nothing rests, so estimate from the orders it would have placed.
-        sides = resting if self.live else resting + [
-            BotOrder("planned", a.ticker, a.outcome, a.price, a.count) for a in allowed if a.kind == "place"]
-        return {"programs": len(programs), "resting": len(resting), "actions": len(allowed),
+        sides = remaining if self.live else remaining + [
+            BotOrder("planned", a.ticker, a.outcome, a.price, a.count) for a in placed]
+        return {"programs": len(programs), "resting": len(remaining), "actions": len(cancelled) + len(placed),
                 "refused": len(refused), "fill_spend": self.fill_spend,
                 "est_per_hour": estimated_reward_per_hour(programs, sides)}
 
-    def shutdown(self) -> None:
-        """Cancel every order this bot created (and nothing else)."""
-        for o in self.my_orders():
-            self.execute(Action("cancel", o.ticker, o.outcome, order_id=o.order_id,
-                                reason="bot stopping"))
+    def seconds_to_next_deadline(self, now: datetime) -> float:
+        """Time until the next program the bot quotes enters its end buffer."""
+        deadlines = [(p.end - now).total_seconds() - self.config.end_buffer_s
+                     for p in self._programs.values()]
+        return min([d for d in deadlines if d > 0], default=float("inf"))
+
+    def shutdown(self, attempts: int = 3) -> list:
+        """Cancel every bot order in this series. One failure never stops the others;
+        the list is re-fetched and retried. Returns the orders still resting."""
+        previous = signal.signal(signal.SIGINT, signal.SIG_IGN)   # a 2nd Ctrl-C must not interrupt
+        try:
+            left = []
+            for _ in range(attempts):
+                try:
+                    left = self.my_orders()
+                except requests.exceptions.RequestException as e:
+                    self.say(f"  could not list orders: {e}")
+                    continue
+                if not left:
+                    return []
+                for o in left:
+                    self.execute(Action("cancel", o.ticker, o.outcome, order_id=o.order_id,
+                                        reason="bot stopping"))
+            try:
+                left = self.my_orders()
+            except requests.exceptions.RequestException:
+                pass
+            if left:
+                self.say("STILL RESTING (cancel in the Kalshi app; they also expire at their program's "
+                         "end): " + ", ".join(f"{o.ticker} {o.order_id}" for o in left))
+            return left
+        finally:
+            signal.signal(signal.SIGINT, previous)
 
 
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
+
+def stop_on_signals() -> None:
+    """Treat SIGTERM and SIGHUP (closed terminal, kill, service stop) like Ctrl-C, so
+    the bot always runs its shutdown."""
+    def interrupt(signum, frame):
+        raise KeyboardInterrupt
+    for name in ("SIGTERM", "SIGHUP"):
+        if hasattr(signal, name):
+            signal.signal(getattr(signal, name), interrupt)
+
 
 def cmd_plan(args, config: Config) -> int:
     bot = Bot(KalshiClient(DEMO_URL if args.demo else PROD_URL), config, live=False)
@@ -455,30 +564,28 @@ def cmd_run(args, config: Config) -> int:
         if answer.strip() != "LIVE":
             print("Not confirmed; exiting.")
             return 1
+    stop_on_signals()
     bot = Bot(client, config, live=args.live)
-    print(f"{'LIVE' if args.live else 'DRY RUN'} on {client.base_url}, series {', '.join(config.series)}")
+    bot.say(f"{'LIVE' if args.live else 'DRY RUN'} on {client.base_url}, series {', '.join(config.series)}")
     try:
         while True:
             now = datetime.now(timezone.utc)
             try:
                 s = bot.step(now)
-                print(f"{now:%H:%M:%S} programs {s['programs']}, bot orders {s['resting']}, "
-                      f"actions {s['actions']}, refused {s['refused']}, fill spend "
-                      f"${s['fill_spend']:.2f}, est. up to ${s['est_per_hour']:.0f}/h")
+                bot.say(f"{now:%H:%M:%S} programs {s['programs']}, bot orders {s['resting']}, "
+                        f"actions {s['actions']}, refused {s['refused']}, fill spend "
+                        f"${s['fill_spend']:.2f}, est. up to ${s['est_per_hour']:.0f}/h")
             except requests.exceptions.RequestException as e:
-                print(f"{now:%H:%M:%S} request failed: {e}")
+                bot.say(f"{now:%H:%M:%S} request failed: {e}")
             if bot.fill_spend >= config.max_fill_spend:
-                print("Fill spend cap reached; stopping.")
+                bot.say("Fill spend cap reached; stopping.")
                 break
-            time.sleep(args.every)
+            time.sleep(max(1.0, min(args.every, bot.seconds_to_next_deadline(datetime.now(timezone.utc)))))
     except KeyboardInterrupt:
-        print("\nStopping...")
+        bot.say("\nStopping...")
     finally:
-        try:
-            bot.shutdown()
-        except requests.exceptions.RequestException as e:
-            print(f"Could not cancel all bot orders ({e}). Check the Kalshi app!", file=sys.stderr)
-    return 0
+        left = bot.shutdown()
+    return 1 if left else 0
 
 
 def main(argv=None) -> int:
@@ -496,7 +603,7 @@ def main(argv=None) -> int:
     run.add_argument("--max-capital", type=Decimal, default=Config.max_capital,
                      help="dollars of collateral the bot may keep in resting orders")
     run.add_argument("--max-fill-spend", type=Decimal, default=Config.max_fill_spend,
-                     help="stop after this many dollars are spent through fills")
+                     help="dollars that may ever be spent through fills (a hard cap)")
     run.add_argument("--every", type=float, default=10.0, help="seconds between checks")
     args = parser.parse_args(argv)
     config = Config(series=tuple(args.series), pin_threshold=args.pin_threshold)

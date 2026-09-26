@@ -144,8 +144,12 @@ class Quote:
 def parse_time(value) -> Optional[datetime]:
     if not value:
         return None
+    text = str(value).replace("Z", "+00:00")
+    # Kalshi trims trailing zeros from fractional seconds; Python < 3.11 only accepts
+    # exactly 3 or 6 digits, so normalize to 6.
+    text = re.sub(r"\.(\d{1,6})\d*(?=[+-]|$)", lambda m: "." + m.group(1).ljust(6, "0"), text)
     try:
-        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(text)
     except ValueError:
         return None
     return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
