@@ -20,24 +20,23 @@ The December 2025 picks in this repo (AFC teams at 1–8¢, Bears at 11¢, and s
 
 ## Quick Start
 
+Install the requirements (on Windows, type `py` instead of `python3` in every command here):
+
 ```bash
-python3 -m pip install -r requirements.txt     # Windows: py -m pip install -r requirements.txt
-
-# Scan live Kalshi markets that settle within the next 12 hours
-python arbitrage_scanner.py --closing-within-hours 12
-
-# Trading through Robinhood? Add its per-contract fees (conservative)
-python arbitrage_scanner.py --closing-within-hours 12 --extra-fee-cents 2
-
-# Keep watching: re-scan every 60 seconds, print only new opportunities (Ctrl-C to stop)
-python arbitrage_scanner.py --closing-within-hours 12 --repeat 60
-
-# Offline demo on made-up data
-python arbitrage_scanner.py --fixture tests/fixtures/sample_markets.json
-
-# Run the tests
-python -m unittest discover -s tests
+python3 -m pip install -r requirements.txt
 ```
+
+Scan live Kalshi markets that settle within the next 12 hours:
+
+```bash
+python3 arbitrage_scanner.py --closing-within-hours 12
+```
+
+Other options:
+- Add Robinhood's per-contract fees (conservative) with `--extra-fee-cents 2`.
+- Keep watching with `--repeat 60`: it re-scans every 60 seconds and prints only new opportunities (Ctrl-C to stop).
+- Try it offline on made-up data with `python3 arbitrage_scanner.py --fixture tests/fixtures/sample_markets.json`.
+- Run the tests with `python3 -m unittest discover -s tests`.
 
 ## Liquidity reward bot (`lip_bot.py`)
 
@@ -51,22 +50,49 @@ The bot rests a post-only 1¢ bid, sized just above the Target (about $10 of col
 
 ### Running a one-hour test
 
-You need a Mac or Windows PC that stays on and awake for the hour. A phone can't run it: iOS pauses apps in the background, and the bot must keep running to manage its orders.
+You need a Mac or Windows PC that stays on and awake for the hour. A phone can't run it: iOS pauses apps in the background, and the bot must keep running to manage its orders. You also need at least $21 of cash in your Kalshi account (two orders of about $10.50); the bot never plans on more than the account holds.
 
-1. **Create an API key** in a computer browser: kalshi.com/account/profile → API Keys → Create New API Key, with the default (read and write) access. Copy the Key ID. The private key downloads as a `.txt` file; move it into this folder and don't rename, edit or share it.
-2. **Install**: get Python 3 from python.org, then in this folder run `python3 -m pip install -r requirements.txt` (Mac) or `py -m pip install -r requirements.txt` (Windows).
-3. **Run** (Windows: type `py` instead of `python3`):
+**0. Get the files.** Download https://github.com/bpatricca7/Test/archive/refs/heads/claude/making-money-today-pykc4d.zip and unzip it. The GitHub page's own "Download ZIP" gives an older branch without the bot. Then open a terminal in the unzipped folder:
+- Mac: open Terminal, type `cd ` (with a space), drag the unzipped folder onto the window, and press Return.
+- Windows: open the unzipped folder, click the address bar, type `powershell` and press Enter.
+
+**1. Create an API key** in a computer browser: kalshi.com/account/profile → API Keys → Create New API Key. Name it `lipbot` (no spaces) and keep the default read-and-write access. Copy the Key ID. The private key downloads as `lipbot.txt`; move it into the unzipped folder, and don't edit or share it.
+
+**2. Install.** Get Python 3 from python.org (on Windows, tick "Add python.exe to PATH"). Then run this on a Mac:
 
 ```bash
-python3 lip_bot.py plan                                              # what it would do now; no key needed
-python3 lip_bot.py run --key-id YOUR_KEY_ID --key-file YOUR_KEY.txt         # checks the key, then a dry run
-python3 lip_bot.py run --key-id YOUR_KEY_ID --key-file YOUR_KEY.txt --live  # real money; type LIVE
+python3 -m pip install -r requirements.txt
 ```
 
-The key check prints `Key OK` and your cash on Kalshi's default exchange, or a plain message if the key is rejected. `--demo` needs a separate account and key from demo.kalshi.co, because production keys don't work there.
+On Windows, run this instead:
 
-4. **While it runs**: keep the computer plugged in and awake. On a Mac, run `caffeinate -dis` in a second Terminal window; on Windows, set sleep to Never. Keep a laptop's lid open. On Windows, don't click inside the window: that pauses the output, and the bot with it (press Esc if the title starts with "Select").
-5. **Stop** with Ctrl-C and wait for the prompt to return (up to about 30 seconds). If it prints `STILL RESTING` or `COULD NOT CONFIRM`, cancel the listed orders in the Kalshi app. Either way, check the app for open orders afterwards.
+```bash
+py -m pip install -r requirements.txt
+```
+
+**3. Run.** On Windows, type `py` wherever these commands say `python3`. First, see which strikes are open right now and how many the bot would take (no key needed):
+
+```bash
+python3 lip_bot.py plan
+```
+
+Then check your key and do a dry run, replacing YOUR_KEY_ID with the Key ID you copied. It should print `Key OK` and your cash; stop it with Ctrl-C.
+
+```bash
+python3 lip_bot.py run --key-id YOUR_KEY_ID --key-file lipbot.txt
+```
+
+Then run it for real. It asks you to type `LIVE`:
+
+```bash
+python3 lip_bot.py run --key-id YOUR_KEY_ID --key-file lipbot.txt --live
+```
+
+`--demo` needs a separate account and key from demo.kalshi.co, because production keys don't work there.
+
+**4. While it runs:** keep the computer plugged in and awake. On a Mac, open a second Terminal window and run `caffeinate -dis`; on Windows, set sleep to Never. Keep a laptop's lid open. On Windows, don't click inside the window: that pauses the output, and the bot with it (press Esc if the title starts with "Select").
+
+**5. Stop** with Ctrl-C and wait for the prompt to return. This usually takes a few seconds, but can take about a minute on a bad connection. Don't close the window meanwhile. If it prints `STILL RESTING` or `COULD NOT CONFIRM`, cancel the orders on the markets it names in the Kalshi app. Either way, check the app for open orders afterwards.
 
 Safeguards:
 - It only places orders with `--live`, and you must type `LIVE` to confirm.
@@ -75,9 +101,9 @@ Safeguards:
 - Resting collateral never exceeds the smaller of `--max-capital` and the fill budget left (`--max-fill-spend` minus what fills have already cost). So even if every resting order filled at once, total fill spend stays within `--max-fill-spend`.
 - Fills count from the start of the UTC day, so restarting the bot doesn't reset the fill cap.
 - Each completion order is 1,050 contracts at 1¢ (about $10.50), so the defaults ($25 and $25) allow two at a time. Raise both caps together to run more.
-- When the fill budget can't keep both orders at Target, it drops one so the other stays full. An order below Target earns nothing but can still be filled.
+- When the caps or the account's cash can't keep every order at Target, it drops one side at a time so the rest stay full. An order below Target earns nothing but can still be filled.
 - It only manages orders it created (IDs prefixed `lipbot-`) in the series it runs.
-- It cancels them on Ctrl-C, SIGTERM, SIGHUP (a closed Mac or Linux terminal) or Ctrl-Break, and says so if it couldn't. On Windows, closing the window may not leave time to cancel, so stop it with Ctrl-C.
+- It cancels them on Ctrl-C, SIGTERM, SIGHUP (a closed Mac or Linux terminal) or Ctrl-Break, and names the markets if it couldn't. On Windows, closing the window may not leave time to cancel, so stop it with Ctrl-C.
 
 Rules to know:
 - US members trading on Kalshi directly only; customers of brokers such as Robinhood are excluded.

@@ -108,6 +108,7 @@ class KalshiClient:
         self.key_id = key_id
         self.signer = signer
         self.pause = pause
+        self.timeout = 30
         self.session = requests.Session()
         self.session.headers.update({"Accept": "application/json"})
 
@@ -121,7 +122,7 @@ class KalshiClient:
         delay = 1.0
         for attempt in range(5):
             response = self.session.request(method, self.base_url + path, params=params,
-                                            json=body, headers=headers, timeout=30)
+                                            json=body, headers=headers, timeout=self.timeout)
             if response.status_code == 429 and attempt < 4:
                 time.sleep(delay)
                 delay *= 2
@@ -395,6 +396,7 @@ class Bot:
     retry_pause: float = 2.0
     shutdown_verified: bool = True
     _refused_logged: set = field(default_factory=set)
+    _last_resting: list = field(default_factory=list)
     _raw_programs: list = field(default_factory=list)
     _fetched_at: Optional[datetime] = None
     _programs: dict = field(default_factory=dict)
@@ -497,12 +499,19 @@ class Bot:
         for a in over_budget(remaining, limit):
             if self.execute(a):
                 remaining = [o for o in remaining if o.order_id != a.order_id]
-        # Top-ups keep sides we already hold at Target, so they go before new orders.
-        held = {(o.ticker, o.outcome) for o in remaining}
+        # Order of placement: top-ups that bring a held side back to Target, then buffer
+        # top-ups on held sides, then new orders.
+        held = {}
+        for o in remaining:
+            held[(o.ticker, o.outcome)] = held.get((o.ticker, o.outcome), 0) + o.remaining
         placements = sorted((a for a in actions if a.kind == "place"),
-                            key=lambda a: ((a.ticker, a.outcome) not in held, a.cost))
+                            key=lambda a: ((a.ticker, a.outcome) not in held,
+                                           held.get((a.ticker, a.outcome), 0) >= programs[a.ticker].target,
+                                           a.cost))
         allowed, refused = fits(placements, sum((o.collateral for o in remaining), Decimal(0)), limit)
-        placed = [a for a in allowed if self.execute(a)]
+        placed, failed = [], []
+        for a in allowed:
+            (placed if self.execute(a) else failed).append(a)
         refused_keys = set()
         for a in refused:
             key = (a.ticker, a.outcome, a.count)
@@ -510,24 +519,39 @@ class Bot:
             if key not in self._refused_logged:          # say it once, not every loop
                 self.say(f"  refused by caps: {a.describe()}")
         self._refused_logged = refused_keys
-        # A side that cannot be topped up back to Target scores nothing while still
-        # getting filled; leaving frees its collateral for a side that can stay full.
-        for a in refused:
-            if (a.ticker, a.outcome) not in held:
-                continue
+
+        # A held side whose top-up was refused by the caps or rejected by the exchange
+        # (e.g. not enough cash) stays below Target: it scores nothing while still getting
+        # filled. Drop such sides one at a time, biggest shortfall first, and after each
+        # drop retry the others with the collateral it freed.
+        def below_target(a):
             depth = sum(size for _, size in side_levels(books.get(a.ticker, {}), a.outcome))
-            if depth >= programs[a.ticker].target:
-                continue
+            return (a.ticker, a.outcome) in held and depth < programs[a.ticker].target
+        stuck = sorted((a for a in refused + failed if below_target(a)), key=lambda a: -a.count)
+        while stuck:
+            a = stuck.pop(0)
             for o in [o for o in remaining if (o.ticker, o.outcome) == (a.ticker, a.outcome)]:
                 if self.execute(Action("cancel", o.ticker, o.outcome, order_id=o.order_id,
-                                       reason="cannot keep side at Target within caps")):
+                                       reason="cannot keep side at Target")):
                     remaining.remove(o)
                     cancelled.add(o.order_id)
+            in_use = sum((o.collateral for o in remaining), Decimal(0)) + sum((b.cost for b in placed),
+                                                                              Decimal(0))
+            still = []
+            for b in stuck:
+                if in_use + b.cost <= limit and self.execute(b):
+                    placed.append(b)
+                    in_use += b.cost
+                else:
+                    still.append(b)
+            stuck = still
+        self._last_resting = remaining + [BotOrder("new", a.ticker, a.outcome, a.price, a.count)
+                                          for a in placed]
 
         # Orders just placed count too (in a dry run they are all there is).
         sides = remaining + [BotOrder("planned", a.ticker, a.outcome, a.price, a.count) for a in placed]
         return {"programs": len(programs), "resting": len(remaining) + (len(placed) if self.live else 0),
-                "actions": len(cancelled) + len(placed), "refused": len(refused),
+                "actions": len(cancelled) + len(placed), "refused": len(refused) + len(failed),
                 "fill_spend": self.fill_spend, "est_per_hour": estimated_reward_per_hour(programs, sides)}
 
     def seconds_to_next_deadline(self, now: datetime) -> float:
@@ -540,10 +564,16 @@ class Bot:
         """Cancel every bot order in this series. One failure never stops the others;
         the list is re-fetched and retried. Returns the orders still resting, and sets
         shutdown_verified to False if it could never confirm what is resting."""
+        self.shutdown_verified = True
+        if not self.live:                 # a dry run never placed anything
+            return []
         # A second Ctrl-C, or the second SIGHUP a closing terminal sends, must not interrupt.
         stop_signals = [getattr(signal, n) for n in ("SIGINT", "SIGTERM", "SIGHUP", "SIGBREAK")
                         if hasattr(signal, n)]
         previous = {s: signal.signal(s, signal.SIG_IGN) for s in stop_signals}
+        saved_timeout = getattr(self.client, "timeout", None)
+        if saved_timeout:
+            self.client.timeout = min(saved_timeout, 10)     # don't leave the user waiting minutes
         try:
             left, verified = [], False
             for attempt in range(attempts + 1):
@@ -563,13 +593,17 @@ class Bot:
                                         reason="bot stopping"))
             self.shutdown_verified = verified
             if not verified:
+                known = sorted({o.ticker for o in (left or self._last_resting)})
                 self.say("COULD NOT CONFIRM THE BOT'S ORDERS WERE CANCELLED. Open the Kalshi app and "
-                         "cancel any open orders on these markets; they also expire at their program's end.")
+                         "cancel any open orders on " + (", ".join(known) if known else "these markets")
+                         + "; they also expire at their program's end.")
             elif left:
                 self.say("STILL RESTING (cancel in the Kalshi app; they also expire at their program's "
                          "end): " + ", ".join(f"{o.ticker} {o.order_id}" for o in left))
             return left
         finally:
+            if saved_timeout:
+                self.client.timeout = saved_timeout
             for s, handler in previous.items():
                 signal.signal(s, handler)
 
@@ -593,13 +627,24 @@ def cmd_plan(args, config: Config) -> int:
     now = datetime.now(timezone.utc)
     programs = bot.programs(now)
     print(f"{now:%H:%M} UTC: {len(programs)} active liquidity programs in {', '.join(config.series)}")
-    total = Decimal(0)
+    sides = []
     for ticker, program in sorted(programs.items()):
         actions = plan_market(program, bot.client.orderbook(ticker), [], config, now)
         for a in actions:
-            print("  " + a.describe().replace("PLACE ", "would place ", 1))
-            total += program.reward_per_hour / 2
-    print(f"Unclaimed sides worth up to ${total:.0f}/hour if nobody else completes them.")
+            print("  " + a.describe().replace("PLACE ", "open: ", 1))
+            sides.append((program.reward_per_hour / 2, a.cost))
+    total = sum((r for r, _ in sides), Decimal(0))
+    print(f"{len(sides)} open sides, worth up to ${total:.0f}/hour if nobody else completes them.")
+    # What `run` can take with the default caps.
+    room, taken = min(config.max_capital, config.max_fill_spend), Decimal(0)
+    count = 0
+    for reward, cost in sorted(sides, key=lambda x: -x[0]):
+        if cost <= room:
+            room -= cost
+            taken += reward
+            count += 1
+    print(f"With the default caps (${config.max_capital} / ${config.max_fill_spend}) the bot would take "
+          f"{count} of them: up to ${taken:.0f}/hour, less if others complete the same sides.")
     return 0
 
 
@@ -638,9 +683,21 @@ def cmd_run(args, config: Config) -> int:
             print(f"Could not reach Kalshi to check the key: {e}", file=sys.stderr)
             return 2
         print(f"Key OK. Cash available on Kalshi's default exchange: ${cash:.2f}")
-        if args.live and cash < config.max_capital:
-            print(f"Warning: less than --max-capital (${config.max_capital}) is available, so "
-                  "fewer orders will fit.")
+    if args.live:
+        # Resting orders need cash; never plan on more than the account can pay for.
+        try:
+            own = sum((o.collateral for o in Bot(client, config, live=True).my_orders()), Decimal(0))
+        except requests.exceptions.RequestException as e:
+            print(f"Could not list your orders: {e}", file=sys.stderr)
+            return 2
+        usable = (cash + own).quantize(ONE_CENT)
+        one_order = ONE_CENT * int(1000 * (1 + config.size_buffer) + 0.999)
+        if usable < config.max_capital:
+            config.max_capital = usable
+            print(f"Only ${usable:.2f} is available, so the bot will keep at most that much in orders.")
+        if usable < one_order:
+            print(f"Warning: one order needs about ${one_order:.2f}; deposit more on Kalshi first "
+                  "(about $21 covers two orders).")
     if args.live:
         where = "DEMO" if args.demo else "REAL-MONEY"
         answer = input(f"Place {where} orders (collateral cap ${config.max_capital}, fill cap "

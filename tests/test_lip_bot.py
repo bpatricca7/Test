@@ -405,6 +405,62 @@ class BotTests(unittest.TestCase):
         self.assertTrue(seen and all(h == signal.SIG_IGN for h in seen[0]))
         self.assertEqual([signal.getsignal(getattr(signal, n)) for n in names], before)
 
+    def test_top_up_rejected_by_the_exchange_abandons_a_side_below_target(self):
+        # e.g. not enough cash: the exchange refuses the top-up, so the side stays below Target.
+        self.client.books = {T1: book(yes=[(98, 4000)], no=[(1, 990)]), T2: book(yes=[(90, 10)])}
+        self.client.resting = [raw_order("r1", T1, remaining=990)]
+        self.client.create_order = lambda *a, **k: (_ for _ in ()).throw(
+            requests.exceptions.HTTPError("400 insufficient_balance"))
+        self.bot().step(NOW)
+        self.assertEqual(self.client.cancelled, [("r1", T1)])
+
+    def test_dropping_one_side_frees_room_to_keep_the_other(self):
+        # $5.60 spent leaves $19.40; both sides at 960 ($19.20) need $0.90 each. Neither fits,
+        # but dropping one frees $9.60, so the other is topped up instead of dropped too.
+        self.client.books = {T1: book(yes=[(98, 4000)], no=[(1, 960)]),
+                             T2: book(no=[(98, 4000)], yes=[(1, 960)])}
+        self.client.resting = [raw_order("r1", T1, remaining=960), raw_order("r2", T2, "yes", remaining=960)]
+        self.client.history = [raw_order("gone", T1, remaining=0)]
+        self.client.fill_list = [{"order_id": "gone", "outcome_side": "no", "no_price_dollars": "0.0100",
+                                  "count_fp": "560.00"}]
+        summary = self.bot().step(NOW)
+        self.assertEqual(len(self.client.cancelled), 1)
+        self.assertEqual([(c[0], c[3]) for c in self.client.created],
+                         [(({T1, T2} - {self.client.cancelled[0][1]}).pop(), WANT - 960)])
+        self.assertEqual(summary["est_per_hour"], Decimal(50))
+
+    def test_top_up_back_to_target_goes_before_a_buffer_top_up(self):
+        # $0.80 of room: T1 at 1,020 (still at Target) wants $0.30; T2 at 990 (below) wants $0.60.
+        self.client.books = {T1: book(yes=[(98, 4000)], no=[(1, 1020)]),
+                             T2: book(no=[(98, 4000)], yes=[(1, 990)])}
+        self.client.resting = [raw_order("r1", T1, remaining=1020), raw_order("r2", T2, "yes", remaining=990)]
+        self.client.history = [raw_order("gone", T1, remaining=0)]
+        self.client.fill_list = [{"order_id": "gone", "outcome_side": "no", "no_price_dollars": "0.0100",
+                                  "count_fp": "419.00"}]
+        self.bot().step(NOW)
+        self.assertEqual([(c[0], c[3]) for c in self.client.created], [(T2, WANT - 990)])
+        self.assertEqual(self.client.cancelled, [])
+
+    def test_dry_run_shutdown_touches_nothing(self):
+        def down():
+            raise requests.exceptions.ConnectionError("network down")
+        self.client.resting_orders = down
+        bot = self.bot(live=False)
+        self.assertEqual(bot.shutdown(), [])
+        self.assertTrue(bot.shutdown_verified)
+        self.assertEqual(self.logs, [])
+
+    def test_unconfirmed_shutdown_names_the_markets_it_last_saw(self):
+        self.client.resting = [raw_order("r1", T1)]
+        bot = self.bot()
+        bot.step(NOW)
+
+        def down():
+            raise requests.exceptions.ConnectionError("network down")
+        self.client.resting_orders = down
+        bot.shutdown()
+        self.assertTrue(any("COULD NOT CONFIRM" in line and T1 in line for line in self.logs))
+
     def test_sleep_is_capped_by_the_next_end_buffer(self):
         bot = self.bot(live=False)
         bot.step(NOW)
@@ -457,6 +513,25 @@ class CliTests(unittest.TestCase):
             lb.KalshiClient.balance, lb.Signer.from_pem_file = originals
         self.assertEqual(code, 2)
         self.assertIn("Kalshi rejected the key", text)
+
+    def test_live_caps_are_lowered_to_the_cash_available(self):
+        originals = (lb.KalshiClient.balance, lb.KalshiClient.resting_orders,
+                     lb.Signer.__dict__["from_pem_file"])
+        lb.KalshiClient.balance = lambda client: Decimal("15.00")
+        lb.KalshiClient.resting_orders = lambda client: []
+        lb.Signer.from_pem_file = classmethod(lambda cls, path: cls(lambda m: b"s"))
+        answers = []
+        import builtins
+        original_input = builtins.input
+        builtins.input = lambda prompt="": answers.append(prompt) or "no"
+        try:
+            code, text = self.run_cli("--key-id", "abc", "--key-file", "key.txt", "--live")
+        finally:
+            (lb.KalshiClient.balance, lb.KalshiClient.resting_orders, lb.Signer.from_pem_file) = originals
+            builtins.input = original_input
+        self.assertEqual(code, 1)                                  # not confirmed
+        self.assertIn("Only $15.00 is available", text)
+        self.assertIn("collateral cap $15.00", answers[0])
 
     def test_balance_reads_dollars_from_the_default_exchange(self):
         client = lb.KalshiClient(lb.PROD_URL, "KEY", lb.Signer(lambda m: b"s"))
