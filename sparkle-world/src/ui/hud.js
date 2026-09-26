@@ -344,10 +344,14 @@ export function install(game) {
   const refreshTime = () => {
     const d = game.time.dayTime;
     const night = d < 0.23 || d > 0.77;
-    if (night === lastNight) return;
-    lastNight = night;
+    // game.timeOfDay (daynight.js, optional) gives a richer icon: sunrise, sunset, weather
+    const tod = game.timeOfDay;
+    const key = tod && tod.key ? tod.key : night;
+    if (key === lastNight) return;
+    lastNight = key;
     namePill.classList.toggle('sw-night', night);
-    namePill.querySelector('svg').outerHTML = icon(night ? 'moon' : 'sun');
+    if (tod && tod.phase) namePill.dataset.phase = tod.phase;
+    namePill.querySelector('svg').outerHTML = tod && tod.icon ? tod.icon() : icon(night ? 'moon' : 'sun');
   };
 
   game.events.on('hotbar:change', refreshHotbar);
