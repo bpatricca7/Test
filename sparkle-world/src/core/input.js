@@ -308,7 +308,10 @@ export class Input {
       return;
     }
     if (cancelled || p.moved) return;
-    if (performance.now() - p.t0 > TAP_MAX_MS) return;
+    // a long still press whose hold timer never got to run (a busy frame on a slow device
+    // delivered the release first) is still a slow, still press: act like a tap
+    const holdMissed = p.button === 0 && performance.now() - p.t0 >= HOLD_MS;
+    if (performance.now() - p.t0 > TAP_MAX_MS && !holdMissed) return;
     this.pointer = this.toNDC(p.x, p.y);
     this.events.emit('tap', { ...this.pointer, button: p.button, pointerType: p.type });
   }

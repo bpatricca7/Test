@@ -4,7 +4,10 @@
 //   { key, name, category, size: [w, h, d], colors: [...] | null,
 //     build(color, data) -> THREE.Group   model in block units spanning [0,w]x[0,h]x[0,d]
 //                                         (origin = footprint min corner), front faces +Z
-//     colliders: 'full' | 'none' | [[minx,miny,minz,maxx,maxy,maxz], ...] (model units)
+//     colliders: 'full' | 'none' | [[minx,miny,minz,maxx,maxy,maxz], ...] (model units), or a
+//                function (data, entity) returning one of those (doors: open ones let you pass)
+//     flat?: true  rugs & mats: other furniture may stand on the same cells (they only block
+//                  blocks and other flat pieces)
 //     light: 0..15 (while data.on !== false), lightPos?: [x,y,z] model units
 //     actions: ['sit'] ... first one runs on Hand-tap, seat?: [x,y,z], sleepPos?: [x,y,z],
 //     placeOn?: 'floor' | 'wall' | 'ceiling' | 'table', surface?: number,
@@ -41,6 +44,7 @@ export class EntityManager {
     game.registry.furniture = this.defs;
     this.map = new Map(); // uid -> entity
     this.occupied = new Map(); // voxel index -> entity
+    this.flats = new Map(); // voxel index -> flat entity (rugs, mats) that others may stand on
     this.nextUid = 1;
     this.group = new THREE.Group();
     this.group.name = 'entities';
@@ -56,6 +60,7 @@ export class EntityManager {
       game.scene.add(l);
     }
     this._lightTimer = 0;
+    this._lit = new Array(LIGHT_POOL).fill(null); // entity lit by each pool light
     this._tmp = new THREE.Vector3();
   }
 
@@ -137,7 +142,8 @@ export class EntityManager {
       // furniture may stand on a carpet that shares its bottom cell
       const thinFloor = cy === y && props.shape[id] === SHAPES.carpet;
       if (id !== 0 && !props.replaceable[id] && !thinFloor) return false;
-      const other = this.occupied.get(w.index(cx, cy, cz));
+      // flat pieces (rugs) only clash with other flat pieces; everything else ignores them
+      const other = (def.flat ? this.flats : this.occupied).get(w.index(cx, cy, cz));
       if (other && other !== ignore) return false;
       const standing = def.placeOn !== 'wall' && def.placeOn !== 'ceiling';
       if (def.colliders !== 'none' && standing && game.player && game.player.overlapsCell(cx, cy, cz)) return false;
@@ -248,9 +254,11 @@ export class EntityManager {
     entity.object3d = pivot;
 
     entity.cells = this.footprint(def, entity.x, entity.y, entity.z, entity.rot);
-    for (const [cx, cy, cz] of entity.cells) this.occupied.set(game.world.index(cx, cy, cz), entity);
+    const cellMap = def.flat ? this.flats : this.occupied;
+    for (const [cx, cy, cz] of entity.cells) cellMap.set(game.world.index(cx, cy, cz), entity);
 
-    const boxes = def.colliders === 'full' ? [[0, 0, 0, w, h, d]] : def.colliders === 'none' ? [] : def.colliders || [];
+    const spec = typeof def.colliders === 'function' ? def.colliders(entity.data || {}, entity) : def.colliders;
+    const boxes = spec === 'full' ? [[0, 0, 0, w, h, d]] : spec === 'none' ? [] : spec || [];
     entity.colliders = boxes.map((b) => {
       const a = this.localToWorld(entity, b[0], b[1], b[2]);
       const c = this.localToWorld(entity, b[3], b[4], b[5]);
@@ -296,9 +304,10 @@ export class EntityManager {
       disposeObject(entity.object3d);
       entity.object3d = null;
     }
+    const cellMap = entity.def.flat ? this.flats : this.occupied;
     for (const [cx, cy, cz] of entity.cells) {
       const k = game.world.index(cx, cy, cz);
-      if (this.occupied.get(k) === entity) this.occupied.delete(k);
+      if (cellMap.get(k) === entity) cellMap.delete(k);
     }
     entity.cells = [];
     for (const b of entity.colliders) game.colliders.delete(b);
@@ -437,10 +446,12 @@ export class EntityManager {
     return null;
   }
 
+  /** The entity in a cell (a rug only when nothing else stands there). */
   at(x, y, z) {
     const w = this.game.world;
     if (!w || !w.inBounds(x, y, z)) return null;
-    return this.occupied.get(w.index(x, y, z)) || null;
+    const i = w.index(x, y, z);
+    return this.occupied.get(i) || this.flats.get(i) || null;
   }
 
   byUid(uid) {
@@ -486,26 +497,29 @@ export class EntityManager {
         console.error('[entities] update failed', e.key, err);
       }
     }
-    this._lightTimer -= dt;
-    if (this._lightTimer > 0) return;
-    this._lightTimer = 0.25;
-    // give the few real point lights to the lit entities nearest the camera
-    const cam = game.camera.position;
-    const lit = [];
-    for (const e of this.map.values()) if (e.lightCell) lit.push(e);
-    lit.sort((a, b) => cam.distanceToSquared(a.object3d.position) - cam.distanceToSquared(b.object3d.position));
     const daylight = game.blockUniforms ? game.blockUniforms.uDaylight.value : 1;
     const strength = 6.5 * (1.15 - Math.min(1, daylight)); // ~4.9 at night, ~1 by day
-    for (let i = 0; i < this.lights.length; i++) {
-      const l = this.lights[i];
-      const e = lit[i];
-      if (!e) {
-        l.intensity = 0;
-        continue;
+    this._lightTimer -= dt;
+    if (this._lightTimer <= 0) {
+      this._lightTimer = 0.25;
+      // give the few real point lights to the lit entities nearest the camera
+      const cam = game.camera.position;
+      const lit = [];
+      for (const e of this.map.values()) if (e.lightCell) lit.push(e);
+      lit.sort((a, b) => cam.distanceToSquared(a.object3d.position) - cam.distanceToSquared(b.object3d.position));
+      for (let i = 0; i < this.lights.length; i++) {
+        const e = lit[i] || null;
+        this._lit[i] = e;
+        if (e) {
+          const [lx, ly, lz] = e.lightPoint;
+          this.lights[i].position.set(lx, ly + 0.1, lz);
+        }
       }
-      const [lx, ly, lz] = e.lightPoint;
-      l.position.set(lx, ly + 0.1, lz);
-      l.intensity = strength;
+    }
+    // every frame, so flickering lights (entity.lightScale: fireplaces, candles) look alive
+    for (let i = 0; i < this.lights.length; i++) {
+      const e = this._lit[i];
+      this.lights[i].intensity = e && e.lightCell ? strength * (e.lightScale ?? 1) : 0;
     }
   }
 
@@ -515,7 +529,9 @@ export class EntityManager {
     for (const e of this.map.values()) this._detach(e);
     this.map.clear();
     this.occupied.clear();
+    this.flats.clear();
     this.updaters.clear();
+    this._lit.fill(null);
     this.nextUid = 1;
     for (const l of this.lights) l.intensity = 0;
   }
