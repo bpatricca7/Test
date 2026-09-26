@@ -304,5 +304,13 @@ environment settings (Edit environment > Network access).
 * Multiple testing: every hypothesis is logged (`research/results/*_tests.csv`, column `bonferroni_p`).
   Roughly 300 hypotheses were evaluated in total; a nominal p of 0.05 means nothing here, and only results
   with p < 0.001 and consistency across sub-periods are treated as findings.
-* Reproduce: `pip install -r requirements.txt`, download the CSVs listed in `research/data_sources.md`,
-  run `python research/kalshi_download.py`, then each `research/*.py` with `DATA_DIR` / `KALSHI_DATA_DIR` set.
+* Reproduce: `pip install -r requirements.txt`; download the CSVs listed in `research/data_sources.md` into
+  `data/`; run `python research/kalshi_download.py 1` (settled markets), then phases `2` (15-minute candles),
+  `5` (hourly ladders), `3` (sports pregame candles) and `4` (daily candles), optionally sharded with
+  `KALSHI_SHARD=i/n`; then run each `research/*.py` with `DATA_DIR=data KALSHI_DATA_DIR=data/kalshi`.
+  Kalshi's public API serves only about ten weeks of settled history, so results will drift as the window rolls.
+* Live use: `python research/kalshi_live_screener.py` lists open markets that match the patterns above using
+  the saved calibration tables (`research/results/calibration_*.json`). It is read-only.
+* Combined hypothesis table with a global Bonferroni adjustment: `research/results/ALL_TESTS_combined.csv`
+  (234 logged hypotheses from the sports, equities and crypto-series files; the Kalshi candle studies add
+  roughly 150 more cells, which is why the 15-minute result is discounted in Section 5.1).
