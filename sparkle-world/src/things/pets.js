@@ -1,3 +1,695 @@
-// Pets (Pets/Garden/Cooking team): species in game.registry.pets, follow AI, petting, riding, per-world save.
+// Pets (Pets/Garden/Cooking team): species in game.registry.pets, adoption from the Bag's
+// Pets tab, follow AI, petting (hearts + voices), feeding (free treats or basket food),
+// riding the pony / unicorn (rainbow trail, gentle flying), sleeping in pet beds at night,
+// the Pets panel and per-world saves ('pets' system). See docs/teams/life.md.
+//
+// Events: 'pet:adopt' { pet }, 'pet:pet' { pet }, 'pet:feed' { pet, food }, 'pet:ride' { pet }
+// (pet.species is the species key). API: game.pets (see PetSystem below).
 
-export function install(game) {}
+import * as THREE from 'three';
+import { SPECIES, SPECIES_KEYS, variantOf } from './pets/species.js';
+import { Pet } from './pets/pet.js';
+import { RainbowTrail, ZzzPool } from './pets/fx.js';
+import { sfx } from './pets/sfx.js';
+import { installPetUI, petThumb } from './pets/ui.js';
+import { basketTake, basketCount, Kit } from './pets/kit.js';
+import { FOOD, foodModel, foodName } from './food-models.js';
+import { makeId, shade } from '../core/util.js';
+import { disposeObject } from '../core/models.js';
+
+export const MAX_PETS = 12;
+const _v = new THREE.Vector3();
+const _w = new THREE.Vector3();
+
+class PetSystem {
+  constructor(game) {
+    this.game = game;
+    this.max = MAX_PETS;
+    this.pets = [];
+    this.group = new THREE.Group();
+    this.group.name = 'pets';
+    this.zzz = new ZzzPool(this.group);
+    this.trails = []; // unicorns' RainbowTrails (pet.trail)
+    this.bedClaims = new Map(); // bed entity uid -> pet
+    this.snacks = [];
+    this.rider = null; // the pet being ridden
+    this.playerStillT = 0;
+    this._tickleAt = 0;
+    this._glowT = 0;
+    this._sparkT = 0;
+    this.ui = null;
+  }
+
+  // ---------- adopting & removing ----------
+
+  adopt(species, variant, name, spot, { fx = true } = {}) {
+    const g = this.game;
+    if (!g.world || !SPECIES[species]) return null;
+    if (this.pets.length >= MAX_PETS) {
+      g.toast(`You have ${MAX_PETS} pets! That's so much love!`, { icon: 'heart' });
+      return null;
+    }
+    let pos = spot;
+    if (!pos && g.player) {
+      const p = g.player.position;
+      pos = [p.x + Math.sin(g.player.yaw) * 2, p.y, p.z + Math.cos(g.player.yaw) * 2];
+    }
+    const data = {
+      id: makeId('pet'), species, variant: variantOf(species, variant).key, name, mode: 'follow',
+      x: pos[0], y: pos[1], z: pos[2], home: [pos[0], pos[1], pos[2]], adoptedAt: Date.now(),
+    };
+    if (g.player) data.yaw = Math.atan2(g.player.position.x - pos[0], g.player.position.z - pos[2]);
+    const pet = this._add(data);
+    if (fx) {
+      g.celebrate([pos[0], pos[1] + 0.8, pos[2]], 'confetti', { quiet: true });
+      g.celebrate([pos[0], pos[1] + 1.1, pos[2]], 'heart', { quiet: true, count: 10 });
+      sfx(g, 'tada');
+      setTimeout(() => this.voice(pet, 0.9), 350);
+      pet.trick('hop');
+      pet.anim.happy = 3;
+      pet.attention = 2.5;
+    }
+    g.events.emit('pet:adopt', { pet });
+    return pet;
+  }
+
+  _add(data) {
+    const pet = new Pet(this, data);
+    this.pets.push(pet);
+    this.group.add(pet.object3d);
+    this.game.pickables.add(pet.pickable);
+    if (pet.species === 'unicorn') {
+      pet.trail = new RainbowTrail(this.group);
+      pet.trail.pet = pet;
+      this.trails.push(pet.trail);
+    }
+    this._slots();
+    this._changed();
+    return pet;
+  }
+
+  remove(pet, { fx = false } = {}) {
+    const i = this.pets.indexOf(pet);
+    if (i < 0) return false;
+    if (this.rider === pet) this.dismount();
+    this.pets.splice(i, 1);
+    this.game.pickables.delete(pet.pickable);
+    this.releaseBed(pet);
+    if (fx) {
+      const p = pet.pos;
+      this.game.celebrate([p.x, p.y + 0.6, p.z], 'sparkle');
+      this.game.celebrate([p.x, p.y + 0.9, p.z], 'heart', { quiet: true });
+    }
+    if (pet.trail) {
+      pet.trail.dispose();
+      this.trails.splice(this.trails.indexOf(pet.trail), 1);
+      pet.trail = null;
+    }
+    pet.dispose();
+    this._slots();
+    this._changed();
+    return true;
+  }
+
+  _slots() {
+    let n = 0;
+    for (const p of this.pets) if (p.mode === 'follow') p.slot = n++;
+  }
+
+  _changed() {
+    if (this.ui) {
+      this.ui.refreshHud();
+      this.ui.refreshPanel();
+    }
+  }
+
+  byId(id) {
+    return this.pets.find((p) => p.id === id) || null;
+  }
+
+  /** Nearest pet to a point (within maxDist), or null. */
+  nearest(x, y, z, maxDist = 8) {
+    let best = null, bd = maxDist * maxDist;
+    for (const p of this.pets) {
+      const d = (p.pos.x - x) ** 2 + (p.pos.y - y) ** 2 + (p.pos.z - z) ** 2;
+      if (d < bd) { bd = d; best = p; }
+    }
+    return best;
+  }
+
+  // ---------- interactions ----------
+
+  petPet(pet) {
+    const g = this.game;
+    if (pet.riding) return false;
+    if (pet.state === 'sleep') {
+      // a sleepy pet just gets a gentle cuddle
+      pet.headPoint(_v);
+      g.celebrate(_v, 'heart', { quiet: true, count: 4 });
+      sfx(g, 'pet', { volume: 0.6 });
+      pet.love++;
+      g.events.emit('pet:pet', { pet });
+      return true;
+    }
+    pet.headPoint(_v);
+    g.celebrate([_v.x, _v.y + 0.25, _v.z], 'heart', { quiet: true, count: 8 });
+    sfx(g, 'pet');
+    this.voice(pet, 0.9, true);
+    pet.anim.happy = 2.6;
+    pet.attention = Math.max(pet.attention, 4);
+    if (pet.anim.trick === null && Math.random() < 0.7) pet.trick(Math.random() < 0.6 ? 'hop' : pet.spec.trick);
+    pet.love++;
+    g.events.emit('pet:pet', { pet });
+    if (this.ui) this.ui.showBubble(pet);
+    return true;
+  }
+
+  tickle(pet) {
+    const g = this.game;
+    pet.headPoint(_v);
+    g.celebrate(_v, 'heart', { quiet: true, count: 5 });
+    pet.anim.happy = 1.5;
+    pet.trick('shake');
+    this.voice(pet, 0.7, true);
+    if (performance.now() - this._tickleAt > 5000) {
+      this._tickleAt = performance.now();
+      g.toast(`Hee hee! ${pet.name} is ticklish!`, { icon: 'heart' });
+    }
+    return true;
+  }
+
+  onBuild(pet, item) {
+    if (item && item.key && item.key.startsWith('food:')) {
+      const key = item.key.slice(5);
+      if (FOOD[key] && FOOD[key].kind !== 'flower') return this.feed(pet, key);
+    }
+    return this.petPet(pet);
+  }
+
+  hintFor(pet, g) {
+    if (pet.riding) return null;
+    const tool = g.selectedTool;
+    if (tool === 'remove') return null;
+    if (tool === 'build') {
+      const item = g.selectedItem();
+      if (item && item.key.startsWith('food:') && FOOD[item.key.slice(5)] && FOOD[item.key.slice(5)].kind !== 'flower') return `Tap to feed ${pet.name}`;
+    }
+    if (pet.state === 'sleep') return `${pet.name} is sleeping`;
+    return `Tap to pet ${pet.name}`;
+  }
+
+  /** Feed a pet: key 'treat' (free, the species' favourite) or a food key from the basket. */
+  feed(pet, key = 'treat') {
+    const g = this.game;
+    let food = key;
+    if (key === 'treat') food = pet.spec.treat;
+    else if (!basketTake(g, key, 1)) {
+      g.toast(`No ${foodName(key, 2)} in your basket!`, { icon: 'heart' });
+      return false;
+    }
+    if (pet.state === 'sleep') pet.wake();
+    pet.stop();
+    pet.eatLeft = 2.2;
+    pet.anim.eat = 2.2;
+    pet.attention = 0;
+    this._snack(pet, food);
+    sfx(g, 'crunch');
+    setTimeout(() => {
+      if (!this.pets.includes(pet)) return;
+      pet.headPoint(_v);
+      g.celebrate([_v.x, _v.y + 0.2, _v.z], 'heart', { quiet: true, count: 10 });
+      pet.anim.happy = 3;
+      pet.trick('hop');
+      this.voice(pet, 0.9, true);
+    }, 2200);
+    g.events.emit('pet:feed', { pet, food: key === 'treat' ? 'treat' : key });
+    return true;
+  }
+
+  _snack(pet, key) {
+    const m = foodModel(key);
+    const f = pet.spec.rideable ? pet.ext * 0.95 : pet.ext * 0.8;
+    m.position.set(pet.pos.x + Math.sin(pet.yaw) * f, pet.pos.y + 0.02, pet.pos.z + Math.cos(pet.yaw) * f);
+    m.rotation.y = pet.yaw;
+    const s = pet.spec.rideable ? 1.7 : pet.species === 'panda' ? 1.1 : 0.9;
+    m.scale.setScalar(s);
+    this.group.add(m);
+    this.snacks.push({ m, life: 2.2, base: s, bites: 0, color: (FOOD[key] && FOOD[key].color) || '#FFFFFF' });
+  }
+
+  doTrick(pet) {
+    pet.trick(Math.random() < 0.35 ? 'hop' : pet.spec.trick);
+    pet.anim.happy = 2;
+    this.voice(pet, 0.8, true);
+    pet.headPoint(_v);
+    this.game.celebrate(_v, 'star', { quiet: true, count: 6 });
+  }
+
+  voice(pet, volume = 1, happy = false) {
+    const g = this.game;
+    let v = volume;
+    if (g.player) {
+      const d = pet.pos.distanceTo(g.player.position);
+      v *= Math.max(0, 1 - d / 22);
+    }
+    if (v < 0.03) return;
+    const pitch = pet.species === 'puppy' && pet.variant !== 'cocoa' ? 1.15 : 1;
+    sfx(g, happy ? pet.spec.happy : pet.spec.voice, { volume: v, pitch: pitch * (0.95 + Math.random() * 0.1) });
+  }
+
+  // ---------- modes ----------
+
+  setMode(pet, mode, { quiet = false } = {}) {
+    pet.mode = mode;
+    pet.idleFor = 0;
+    if (mode === 'stay') {
+      pet.stop();
+      pet.anim.happy = 1;
+      if (!quiet) this.game.toast(`${pet.name} will stay here!`, { icon: 'heart' });
+    } else if (mode === 'follow') {
+      if (pet.state === 'sleep') pet.wake();
+      pet.anim.happy = 1.5;
+      pet.trick('hop');
+      if (!quiet) this.game.toast(`${pet.name} is following you!`, { icon: 'heart' });
+    }
+    if (!quiet) this.voice(pet, 0.8, true);
+    this._slots();
+    this._changed();
+  }
+
+  /** Call a pet over to the player (pops next to her). */
+  call(pet, announce = true) {
+    const pl = this.game.player;
+    if (!pl) return;
+    if (this.rider === pet) return;
+    if (pet.state === 'sleep') pet.wake();
+    pet.mode = 'follow';
+    const p = pl.position;
+    pet.teleportNear(p.x, p.y, p.z, 1.3, 2.2);
+    pet.yaw = Math.atan2(p.x - pet.pos.x, p.z - pet.pos.z);
+    pet.anim.happy = 2.5;
+    pet.trick('hop');
+    pet.attention = 2;
+    this.game.celebrate([pet.pos.x, pet.pos.y + 1, pet.pos.z], 'heart', { quiet: true });
+    if (announce) this.game.toast(`${pet.name} is here!`, { icon: 'heart' });
+    this._slots();
+    this._changed();
+  }
+
+  sendHome(pet) {
+    if (this.rider === pet) this.dismount();
+    if (pet.state === 'sleep') pet.wake();
+    pet.mode = 'home';
+    const [x, y, z] = pet.home;
+    pet.teleportNear(x, y, z, 0, 1.2);
+    this.game.toast(`${pet.name} went home!`, { icon: 'home' });
+    this._slots();
+    this._changed();
+  }
+
+  // ---------- riding ----------
+
+  mount(pet) {
+    const g = this.game, pl = g.player;
+    if (!pl || !pet.spec.rideable || pet.riding) return false;
+    if (this.rider) this.dismount();
+    if (pl.flying) pl.setFlying(false);
+    if (pl.state === 'sit' || pl.state === 'sleep') pl.stand();
+    if (pet.state === 'sleep') pet.wake();
+    pet.stop();
+    pet.attention = 0;
+    pet.eatLeft = 0;
+    pet.riding = true;
+    pet.state = 'ride';
+    pet.anim.pose = 'stand';
+    this.rider = pet;
+    g.pickables.delete(pet.pickable);
+    pl.mount(pet);
+    pet.syncRider();
+    if (g.cameraRig) g.cameraRig.yaw = pet.yaw;
+    this.voice(pet, 1, true);
+    g.celebrate([pet.pos.x, pet.pos.y + 1.2, pet.pos.z], 'sparkle');
+    const touch = g.input.touchMode;
+    const fly = pet.spec.flies ? (touch ? ' Hold Jump to fly!' : ' Hold Space to fly!') : '';
+    g.toast(touch ? `Steer with the joystick!${fly}` : `Ride with W A S D!${fly}`, { icon: 'heart', duration: 4200 });
+    g.events.emit('pet:ride', { pet });
+    this._changed();
+    return true;
+  }
+
+  dismount() {
+    const pet = this.rider;
+    const pl = this.game.player;
+    if (pl && pl.state === 'ride') pl.stand();
+    if (pet) this.onDismounted(pet);
+  }
+
+  onDismounted(pet) {
+    if (!pet.riding) return;
+    pet.riding = false;
+    pet.state = 'idle';
+    pet.anim.flying = false;
+    pet.attention = 1.5;
+    if (this.rider === pet) this.rider = null;
+    if (this.pets.includes(pet)) this.game.pickables.add(pet.pickable);
+    this._changed();
+  }
+
+  // ---------- beds & sleep ----------
+
+  isNight() {
+    const d = this.game.time.dayTime;
+    return d < 0.23 || d > 0.8;
+  }
+
+  wantsSleep(pet) {
+    const pl = this.game.player;
+    if (pet.inBed) return this.isNight();
+    if (pl && pl.state === 'sleep' && pet.isNearPlayer(16)) return true;
+    if (!this.isNight()) return false;
+    if (pet.mode === 'stay' || pet.mode === 'home') return true;
+    return this.playerStillT > 10 && pet.isNearPlayer(7);
+  }
+
+  _beds() {
+    const E = this.game.entities;
+    if (!E) return [];
+    const out = [];
+    for (const e of E.all()) if (e.key === 'pet_bed' || (e.def && e.def.petBed)) out.push(e);
+    return out;
+  }
+
+  /** Where a pet lies on a bed entity: { x, y, z, yaw } or null. */
+  bedSpot(uid) {
+    const E = this.game.entities;
+    const e = E && uid !== null ? E.byUid(uid) : null;
+    if (!e) return null;
+    const def = e.def;
+    const [w, , d] = def.size || [1, 1, 1];
+    const s = def.petSpot || def.sleepPos || [w / 2, 0.14, d / 2];
+    E.localToWorld(e, s[0], s[1], s[2], _w);
+    return { x: _w.x, y: _w.y, z: _w.z, yaw: e.rot * (Math.PI / 2) };
+  }
+
+  claimBed(pet) {
+    if (pet.spec.rideable) return null; // ponies and unicorns are too big for pet beds
+    if (pet.bedUid !== null && this.bedSpot(pet.bedUid)) return this.bedSpot(pet.bedUid);
+    let best = null, bd = 40 * 40;
+    for (const e of this._beds()) {
+      const owner = this.bedClaims.get(e.uid);
+      if (owner && owner !== pet && this.pets.includes(owner)) continue;
+      const d = (e.x + 0.5 - pet.pos.x) ** 2 + (e.z + 0.5 - pet.pos.z) ** 2;
+      if (d < bd) { bd = d; best = e; }
+    }
+    if (!best) return null;
+    this.bedClaims.set(best.uid, pet);
+    pet.bedUid = best.uid;
+    return this.bedSpot(best.uid);
+  }
+
+  releaseBed(pet) {
+    if (pet.bedUid !== null && this.bedClaims.get(pet.bedUid) === pet) this.bedClaims.delete(pet.bedUid);
+    pet.bedUid = null;
+    pet.inBed = false;
+  }
+
+  // ---------- spots ----------
+
+  /** A free standing spot for this pet near (x, y, z), between rMin and rMax away. */
+  findSpot(pet, x, y, z, rMin = 1, rMax = 2.5) {
+    const g = this.game, ph = g.physics, w = g.world;
+    if (!ph || !w) return null;
+    const hw = pet.spec.halfW, h = pet.spec.height;
+    const tries = 28;
+    for (let i = 0; i < tries; i++) {
+      const a = (i / tries) * Math.PI * 2 * 3.1 + Math.random() * 0.3;
+      const r = i === 0 && rMin === 0 ? 0 : rMin + (rMax - rMin) * ((i % 5) / 4);
+      const px = x + Math.sin(a) * r, pz = z + Math.cos(a) * r;
+      if (px < 1 || pz < 1 || px > w.sx - 1 || pz > w.sz - 1) continue;
+      const y0 = Math.floor(y);
+      for (let yy = y0 + 3; yy >= y0 - 8; yy--) {
+        if (yy < 0) break;
+        if (ph.bodyBlocked(px, yy + 0.01, pz, hw, h)) continue;
+        if (!ph.bodyBlocked(px, yy - 0.25, pz, hw, 0.25)) continue;
+        if (!pet.spec.swims && ph.liquidAt(px, yy + 0.2, pz)) break;
+        return [px, yy + 0.01, pz];
+      }
+    }
+    return null;
+  }
+
+  // ---------- frame ----------
+
+  update(dt) {
+    const g = this.game;
+    if (!g.world || g.mode !== 'play' || g.loading) return;
+    if (g.paused) {
+      if (this.ui) this.ui.update(dt);
+      return;
+    }
+    const pl = g.player;
+    if (pl) {
+      const moving = Math.hypot(pl.velocity.x, pl.velocity.z) > 0.2 || pl.state === 'ride';
+      this.playerStillT = moving ? 0 : this.playerStillT + dt;
+    }
+    for (let i = 0; i < this.pets.length; i++) this.pets[i].update(dt);
+    this.zzz.update(dt);
+    // unicorn trails + sparkles
+    this._sparkT -= dt;
+    for (let i = 0; i < this.trails.length; i++) {
+      const trail = this.trails[i], pet = trail.pet;
+      const fast = pet.hs > 2.4 || (pet.riding && (!pet.onGround || pet.hs > 1.2));
+      if (fast) {
+        const s = Math.sin(pet.yaw), c = Math.cos(pet.yaw);
+        trail.push(pet.pos.x - s * 0.62, pet.pos.y + 0.98 + pet.rig.body.position.y - pet.rig.bodyY, pet.pos.z - c * 0.62);
+        if (this._sparkT <= 0 && g.particles) {
+          _v.set(pet.pos.x - s * 0.7, pet.pos.y + 1, pet.pos.z - c * 0.7);
+          g.particles.emit('sparkle', _v, { count: 2, spread: 0.4 });
+        }
+      }
+      trail.update(dt);
+    }
+    if (this._sparkT <= 0) this._sparkT = 0.12;
+    // horns glow softly
+    this._glowT += dt;
+    for (const pet of this.pets) {
+      if (pet.rig.horn) pet.rig.horn.children[0].material.emissiveIntensity = 0.45 + Math.sin(this._glowT * 2.4) * 0.2;
+    }
+    // snacks being nibbled
+    for (let i = this.snacks.length - 1; i >= 0; i--) {
+      const s = this.snacks[i];
+      s.life -= dt;
+      const bites = Math.floor((2.2 - s.life) / 0.55);
+      if (bites > s.bites && g.particles) {
+        s.bites = bites;
+        _v.copy(s.m.position);
+        _v.y += 0.12;
+        g.particles.emit('sparkle', _v, { count: 5, color: s.color, spread: 0.2, scale: 0.7 });
+      }
+      s.m.scale.setScalar(s.base * Math.max(0.05, s.life / 2.2));
+      if (s.life <= 0) {
+        this.group.remove(s.m);
+        disposeObject(s.m);
+        this.snacks.splice(i, 1);
+      }
+    }
+    if (this.ui) this.ui.update(dt);
+  }
+
+  // ---------- world lifecycle ----------
+
+  clear() {
+    if (this.rider) this.rider.riding = false;
+    this.rider = null;
+    for (const pet of this.pets) {
+      this.game.pickables.delete(pet.pickable);
+      pet.dispose();
+    }
+    this.pets = [];
+    for (const t of this.trails) t.dispose();
+    this.trails.length = 0;
+    this.bedClaims.clear();
+    for (const s of this.snacks) {
+      this.group.remove(s.m);
+      disposeObject(s.m);
+    }
+    this.snacks = [];
+    this.zzz.clear();
+  }
+
+  serialize() {
+    return this.pets.map((p) => p.serialize());
+  }
+
+  deserialize(list) {
+    if (!Array.isArray(list)) return;
+    for (const d of list.slice(0, MAX_PETS)) {
+      if (!d || !SPECIES[d.species]) continue;
+      const pet = this._add(d);
+      // saved inside something (a block built later)? pop out to a free spot
+      const ph = this.game.physics;
+      if (ph && ph.bodyBlocked(pet.pos.x, pet.pos.y + 0.01, pet.pos.z, pet.spec.halfW, pet.spec.height)) {
+        const s = this.findSpot(pet, pet.pos.x, pet.pos.y, pet.pos.z, 0.5, 3);
+        if (s) pet.pos.set(s[0], s[1], s[2]);
+      }
+      pet.groundY = pet.pos.y;
+    }
+  }
+}
+
+// ---------- Bag items: one adoption item per species ----------
+
+function spotFromHit(game, sys, species, hit) {
+  const props = game.registry.blocks.props;
+  let cell = hit.place;
+  if (hit.type === 'block' && props.replaceable[hit.id]) cell = [hit.x, hit.y, hit.z];
+  const probe = { spec: SPECIES[species] };
+  const x = cell[0] + 0.5, y = cell[1], z = cell[2] + 0.5;
+  const ph = game.physics;
+  if (ph && !ph.bodyBlocked(x, y + 0.01, z, probe.spec.halfW, probe.spec.height) && ph.bodyBlocked(x, y - 0.25, z, probe.spec.halfW, 0.25)) {
+    return [x, y + 0.01, z];
+  }
+  const s = sys.findSpot(probe, x, y + 1, z, 0, 2.2);
+  return s;
+}
+
+/** A cozy pet bed, only when the Furniture team has not registered 'pet_bed'. */
+function definePetBedFallback(game) {
+  const E = game.entities;
+  if (!E || game.registry.furniture.has('pet_bed')) return;
+  E.define({
+    key: 'pet_bed',
+    name: 'Pet Bed',
+    category: 'bedroom',
+    size: [1, 1, 1],
+    colors: ['#FF8CC6', '#C3A6FF', '#9FD8FF', '#8FE3C0', '#FFE38A'],
+    colliders: [[0.06, 0, 0.06, 0.94, 0.12, 0.94]],
+    petSpot: [0.5, 0.17, 0.5],
+    build: (color) => {
+      const g = new THREE.Group();
+      g.add(petBedMesh(color || '#FF8CC6'));
+      return g;
+    },
+  });
+}
+
+function petBedMesh(color) {
+  const k = new Kit();
+  const rim = color, light = shade(color, 0.45), deep = shade(color, -0.12);
+  // a round, puffy basket
+  k.cyl(0.46, 0.06, deep, 0.5, 0, 0.5, 20);
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2;
+    k.ball(0.11, i % 2 ? rim : shade(rim, 0.12), 0.5 + Math.cos(a) * 0.37, 0.14, 0.5 + Math.sin(a) * 0.37, 10, [1, 0.9, 1]);
+  }
+  // the cushion with little hearts
+  k.cyl(0.33, 0.1, light, 0.5, 0.04, 0.5, 18);
+  k.ball(0.3, shade(light, 0.2), 0.5, 0.12, 0.5, 16, [1, 0.22, 1]);
+  for (const [x, z] of [[0.38, 0.4], [0.62, 0.56], [0.44, 0.64]]) {
+    k.cbox(0.05, 0.012, 0.05, deep, x - 0.02, 0.19, z, [0, 0.785, 0]);
+    k.cbox(0.05, 0.012, 0.05, deep, x + 0.02, 0.19, z, [0, 0.785, 0]);
+  }
+  // a toy bone at the edge
+  k.cbox(0.16, 0.04, 0.04, '#FFF4E0', 0.78, 0.2, 0.2, [0, 0.6, 0]);
+  return k.mesh();
+}
+
+export function install(game) {
+  definePetBedFallback(game);
+  const sys = new PetSystem(game);
+  game.pets = sys;
+  for (const k of SPECIES_KEYS) game.registry.pets.set(k, SPECIES[k]);
+
+  for (const species of SPECIES_KEYS) {
+    const spec = SPECIES[species];
+    game.registry.items.register({
+      key: 'pet:' + species,
+      name: spec.name,
+      category: 'pets',
+      kind: 'other',
+      icon: () => petThumb(game, species, spec.variants[0].key),
+      use(g, hit) {
+        if (!hit) return false;
+        if (sys.pets.length >= MAX_PETS) {
+          g.toast(`You have ${MAX_PETS} pets! That's so much love!`, { icon: 'heart' });
+          return false;
+        }
+        const spot = spotFromHit(g, sys, species, hit);
+        if (!spot) {
+          g.toast('Tap on the ground!', { icon: 'heart' });
+          return false;
+        }
+        g.ui.open('adopt', { species, spot });
+        return true;
+      },
+    });
+  }
+
+  game.addSystem({
+    name: 'pets',
+    onWorldLoad() {
+      sys.clear();
+      game.scene.add(sys.group);
+    },
+    onWorldUnload() {
+      sys.clear();
+      game.scene.remove(sys.group);
+    },
+    update: (dt) => sys.update(dt),
+    serialize: () => sys.serialize(),
+    deserialize: (data) => sys.deserialize(data),
+  });
+
+  sys.ui = installPetUI(game, sys);
+  game.registerAction('pets', (g) => g.ui && g.ui.open('pets'));
+
+  // wake everyone up in the morning; curl up when she goes to sleep
+  game.events.on('time:morning', () => {
+    for (const p of sys.pets) {
+      if (p.state === 'sleep' || p.state === 'toBed') {
+        p.wake();
+        p.anim.happy = 2;
+      }
+    }
+  });
+  game.events.on('player:sleep', () => {
+    for (const p of sys.pets) if (!p.riding && p.isNearPlayer(16) && p.state !== 'sleep') {
+      p.state = 'sleep';
+      p.zzzT = 0.6;
+    }
+  });
+  // keyboard: E or X hops off while riding
+  let spaceAt = -1e9;
+  game.input.on('key', (e) => {
+    if (e.down && e.code === 'Space') spaceAt = performance.now();
+    if (!e.down || e.repeat || !sys.rider || game.paused) return;
+    if (e.code === 'KeyX' || e.code === 'KeyE') sys.dismount();
+  });
+  // a quick double-tap of Space (the player's fly shortcut) while riding is meant for the
+  // unicorn, not for hopping off: put her right back in the saddle
+  game.events.on('player:fly', ({ flying }) => {
+    const pet = sys.rider, pl = game.player;
+    if (!flying || !pet || !pl || performance.now() - spaceAt > 450) return;
+    pl.setFlying(false);
+    pl.mount(pet);
+    pet.syncRider();
+  });
+
+  // debug helpers for play tests
+  if (game.debug) {
+    game.debug.pets = {
+      list: () => sys.pets.map((p) => ({ id: p.id, species: p.species, variant: p.variant, name: p.name, mode: p.mode, state: p.state, x: p.pos.x, y: p.pos.y, z: p.pos.z })),
+      adopt: (species, variant, name, x, y, z) => {
+        const pet = sys.adopt(species, variant, name || SPECIES[species].names[0], x === undefined ? null : [x, y, z]);
+        return pet ? pet.id : null;
+      },
+      pet: (id) => { const p = sys.byId(id); return p ? sys.petPet(p) : false; },
+      feed: (id, key) => { const p = sys.byId(id); return p ? sys.feed(p, key) : false; },
+      ride: (id) => { const p = sys.byId(id); return p ? sys.mount(p) : false; },
+      dismount: () => sys.dismount(),
+      remove: (id) => { const p = sys.byId(id); return p ? sys.remove(p) : false; },
+      setMode: (id, mode) => { const p = sys.byId(id); if (p) sys.setMode(p, mode, { quiet: true }); return !!p; },
+    };
+  }
+  void basketCount;
+}
