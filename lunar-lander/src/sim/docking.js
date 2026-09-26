@@ -11,9 +11,11 @@
 // `vessel.stack = { mass, cg, inertia }` expressed in its OWN body axes for the GNC.
 //
 // Docking: automatic probe/drogue capture when the CSM probe tip reaches the drogue within
-// tolerances (closing < 0.6 m/s, lateral < 0.3 m, misalignment < 10 deg). Capture merges the
-// two bodies conserving linear and angular momentum; the probe then retracts for ~1 s, pulling
-// the LM into the hard-docked position, and the 12 docking latches fire ('dock' event).
+// tolerances (closing < 0.35 m/s — the Apollo probe was designed for 0.1-1.0 ft/s — lateral
+// < 0.3 m, misalignment < 10 deg). Capture merges the two bodies conserving linear and angular
+// momentum; the probe then retracts (nitrogen-powered, ~6 s), pulling the LM into the
+// hard-docked position, and the 12 ring latches ripple-fire ('dock' event).
+// vessel.probeExtension (CSM, 0 = retracted .. 1 = extended) follows the retraction for the model.
 // Undocking: the probe's extension spring pushes the vehicles apart at ~0.1 m/s.
 
 import * as THREE from 'three';
@@ -24,9 +26,9 @@ import { pointVelocity } from './physics.js';
 export const DOCK = {
   CAPTURE_AXIAL: 0.25, // m: probe tip within this distance of the drogue port plane
   CAPTURE_LATERAL: 0.3, // m: from the drogue axis
-  CAPTURE_CLOSING: 0.6, // m/s max closing speed
+  CAPTURE_CLOSING: 0.35, // m/s max closing speed (design envelope 0.1-1.0 ft/s, a little margin)
   CAPTURE_MISALIGN_DEG: 10,
-  RETRACT_TIME: 1.0, // s probe retraction from capture to hard dock
+  RETRACT_TIME: 6.0, // s probe retraction from capture to hard dock (latches fire at the end)
   SEP_SPEED: 0.1, // m/s relative separation speed at undocking
   RESTITUTION: 0.3, // bounce of a failed probe contact
 };
@@ -55,6 +57,7 @@ export function createStack() {
     relQ: REL_QUAT.clone(), // current LM->CSM relative attitude (capture interpolates it)
     relT: REL_POS.clone(),
     capture: null, // {t, q0, t0} while the probe retracts
+    probeExtension: 0, // 1 at capture -> 0 at hard dock
   };
 }
 
@@ -166,6 +169,7 @@ export function mergeStack(csm, lm, capture) {
   csm.pos.add(C.sub(cgNowW));
   if (capture) {
     st.capture = { t: 0, q0, t0 };
+    st.probeExtension = 1;
     st.relQ.copy(q0);
     st.relT.copy(t0);
   }
@@ -185,6 +189,7 @@ export function advanceCapture(st, h) {
   const e = s * s * (3 - 2 * s);
   st.relQ.slerpQuaternions(c.q0, REL_QUAT, e);
   st.relT.lerpVectors(c.t0, REL_POS, e);
+  st.probeExtension = 1 - e;
   if (s >= 1) {
     st.capture = null;
     st.relQ.copy(REL_QUAT);

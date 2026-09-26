@@ -39,7 +39,7 @@ export function buildLEB(mat, ctx = {}) {
   function panel(id, F, spec, mounts = []) {
     const holes = [...(spec.holes || [])];
     for (const m of mounts) holes.push({ x: m.x, y: m.y, w: m.inst.mountHole.w, h: m.inst.mountHole.h, corner: 0.002 });
-    const p = KIT.createPanel({ width: F.w - 0.004, height: F.h - 0.004, depth: 0.01, pxPerM: 2400, screws: 'dzus', name: `CM PANEL ${id}`, wear: 0.55, ...spec, holes });
+    const p = KIT.createPanel({ width: F.w - 0.004, height: F.h - 0.004, depth: 0.01, pxPerM: Math.round(2400 * (ctx.texScale ?? 1)), screws: 'dzus', name: `CM PANEL ${id}`, wear: 0.55, ...spec, holes });
     for (const m of mounts) {
       m.inst.object.position.set(m.x, m.y, 0);
       p.add(m.inst.object);

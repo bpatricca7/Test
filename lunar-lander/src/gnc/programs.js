@@ -13,6 +13,9 @@
 //   P12 powered ascent  (PRO at V99 N74) staging, APS ignition, 10-s vertical rise, pitch-over,
 //                       guidance to the Apollo 11 insertion target, cut-off, then LOCAL_VERTICAL.
 //   P70 / P71           DPS / APS abort to orbit (same ascent steering).
+//   P40 DOI             descent orbit insertion after undocking (PRO in P00): DPS retrograde burn
+//                       (~23 m/s: 10 % for 15 s, then 40 %) half an orbit before the PDI point; at
+//                       cut-off the LGC computes the PDI time and loads P63 ten minutes before it.
 //   P00 / P47           idle / thrust monitor (V16 N44 orbit, V16 N83 delta-V).
 // CSM (CMC "Colossus"): P00 / P47.
 //
@@ -20,7 +23,8 @@
 // guidance attitude S.guid (followed by the DAP when vessel.gnc.autopilot === 'GUIDANCE').
 
 import * as THREE from 'three';
-import { LM, FT, G0, MOON } from '../core/constants.js';
+import { LM, FT, G0, MOON, MISSION } from '../core/constants.js';
+import { terrainHeight } from '../world/moon.js';
 import { quatFromUpForward } from '../core/frames.js';
 import * as G from './guidance.js';
 import { controlMassProps } from './dap.js';
@@ -48,7 +52,8 @@ export const DESCENT = {
   lpdElevMin: 12,
   lpdElevMax: 72,
   lpdMaxShift: 6000, // m: max total redesignation distance
-  engineStopDelay: 5, // s after LUNAR CONTACT at most (P66): engine stop (normally at footpad contact)
+  engineStopDelay: 1.0, // s after LUNAR CONTACT (probe) the crew pushes ENGINE STOP (hands-off P66)
+  engineStopMax: 5, // s after LUNAR CONTACT at most (pilot-flown P66): engine stop at footpad contact
   // Apollo 11 program alarms (s after ignition) when game.settings.historicalAlarms
   alarms: [
     { t: 317, code: '1202' },
@@ -187,6 +192,12 @@ function descentCycle(v, S, tgt) {
   // down). Adding the local vertical keeps the reference well defined when the thrust axis is
   // horizontal (braking at PDI): it then selects windows exactly up or down.
   _a.copy(F.down).addScaledVector(up(v, _b), d.windowsUp ? 1 : -1);
+  // P64: yaw about the thrust axis so that the landing site sits on the LPD scale line of the
+  // CDR's window (the thrust vector is unchanged by this yaw)
+  if (tgt === G.DESCENT_TARGETS.approach && d.windowsUp) {
+    const eye = _b.copy(LM.eyeCDR).applyQuaternion(v.quat).add(v.pos);
+    if (G.lpdForward(d.dir, eye, F.origin, G.LPD_AZIMUTH, _c)) _a.copy(_c);
+  }
   quatFromUpForward(d.dir, _a, _q);
   setGuid(S, _q, 6 * D2R);
   compBurst(S.agc, 0.6 + Math.random() * 0.4);
@@ -283,8 +294,11 @@ export function startP64(v, S, ctx, fromP63) {
   makeFrame(v, d);
   d.windowsUp = true;
   d.gcyc = 0;
-  d.tgo = 100;
+  // time-to-go on the approach target from the current state (no fixed guess: a poor one made
+  // the first cycles command a throttle surge at the pitch-over)
+  d.tgo = G.solveTgo(G.toFramePos(d.F, cgPos(v, _cg), _rf).z, G.toFrameVec(d.F, v.vel, _vf).z, G.DESCENT_TARGETS.approach, 100);
   d.thr.ftp = false;
+  d.thr.throttledDown = true; // P64 is always flown in the throttleable range
   v.gnc.throttleMode = 'AUTO';
   if (!fromP63 && v.gnc.autopilot !== 'OFF') v.gnc.autopilot = 'GUIDANCE';
   setProgram(v, S, ctx, 'P64');
@@ -315,6 +329,7 @@ export function startP66(v, S, ctx, auto) {
   const d = S.descent;
   d.rodAuto = !!auto;
   d.rodTimer = 1;
+  d.p66Fwd = null;
   d.engineStop = false;
   d.prevVs = null;
   v.gnc.rodCmd = v.tel.vSpeed;
@@ -395,6 +410,9 @@ export function startAscent(v, S, ctx, kind, tig) {
     crossRange: 0,
   };
   if (S.descent) S.descent.active = false;
+  S.burn = null;
+  S.pdi = null;
+  S.engineStopLatched = false;
   S.guid.valid = false;
   v.gnc.throttleMode = 'AUTO';
   v.gnc.autopilot = 'GUIDANCE';
@@ -429,6 +447,19 @@ export function proKey(v, S, ctx) {
     } else ctx.message('PRO — engine ON enabled', 'good');
     return true;
   }
+  if (p === 'P40' && S.burn && !S.burn.ignited) {
+    const b = S.burn;
+    if (met < b.tig - 5.5) {
+      operatorError(v, S.agc, ctx.game, `no response requested yet — DOI ignition in ${mmss(b.tig - met)} (V99 N40 flashes 5 s before)`);
+      return false;
+    }
+    b.proAck = true;
+    if (met >= b.tig) {
+      b.lateIgnAt = met + 2;
+      ctx.message('PRO — late DOI ignition after 2 s of ullage', 'warn');
+    } else ctx.message('PRO — engine ON enabled', 'good');
+    return true;
+  }
   if ((p === 'P12' || p === 'P70' || p === 'P71') && S.ascent && !S.ascent.ignited) {
     if (met < S.ascent.tig - 5.5) {
       operatorError(v, S.agc, ctx.game, 'no response requested yet (V99 flashes 5 s before ignition)');
@@ -438,7 +469,7 @@ export function proKey(v, S, ctx) {
     ctx.message(met >= S.ascent.tig ? 'PRO — ascent engine ignition' : 'PRO — ascent engine ON enabled', 'good');
     return true;
   }
-  if ((p === 'P63' || p === 'P64' || p === 'P12' || p === 'P70' || p === 'P71') && v.gnc.autopilot !== 'GUIDANCE') {
+  if ((p === 'P63' || p === 'P64' || p === 'P12' || p === 'P70' || p === 'P71' || (p === 'P40' && S.burn && !S.burn.cutoff)) && v.gnc.autopilot !== 'GUIDANCE') {
     v.gnc.autopilot = 'GUIDANCE';
     ctx.message('PGNS AUTO — guidance steering re-engaged', 'good');
     return true;
@@ -449,7 +480,13 @@ export function proKey(v, S, ctx) {
     ctx.message('P66 AUTO — the LGC flies attitude and descent rate', 'good');
     return true;
   }
-  if (p === 'P68' && v.landed && !v.crashed) {
+  if (v.type === 'LM' && (p === 'P00' || p === 'P47') && !v.landed && !onSurface(v)) {
+    const why = doiUnavailable(v, S, ctx.game);
+    if (!why) return startDOI(v, S, ctx);
+    operatorError(v, S.agc, ctx.game, `PRO — ${why}`);
+    return false;
+  }
+  if (v.type === 'LM' && (p === 'P68' || p === 'P00') && onSurface(v) && !v.crashed) {
     startAscent(v, S, ctx, 'P12', met + 12);
     ctx.message('P12 loaded — ascent ignition in 12 s: PRO again at the flashing V99', 'info');
     return true;
@@ -468,7 +505,7 @@ export function lpdRedesignate(v, S, ctx, dx, dy) {
   const eye = _c.copy(LM.eyeCDR).applyQuaternion(v.quat).add(v.pos);
   const now = G.lpdAngles(v.quat, eye, d.F.origin, {});
   const elev = Math.max(DESCENT.lpdElevMin, Math.min(DESCENT.lpdElevMax, now.elev - (dy || 0) * DESCENT.lpdElevStep));
-  const az = Math.max(-40, Math.min(40, now.az + (dx || 0) * DESCENT.lpdAzStep));
+  const az = Math.max(G.LPD_AZIMUTH - 40, Math.min(G.LPD_AZIMUTH + 40, now.az + (dx || 0) * DESCENT.lpdAzStep));
   const dir = G.lpdRay(v.quat, eye, elev, az, new THREE.Vector3());
   if (!dir) return false;
   const shift = Math.acos(Math.min(1, dir.dot(d.origTarget))) * MOON.radius;
@@ -505,6 +542,7 @@ export function runProgram(v, S, ctx, h) {
     if (p === 'P67') return p67(v, S, ctx, h);
     if (p === 'P68') return p68(v, S, ctx, h);
     if (p === 'P12' || p === 'P70' || p === 'P71') return ascent(v, S, ctx, h);
+    if (p === 'P40') return p40(v, S, ctx, h);
   }
   return p00(v, S, ctx, h);
 }
@@ -518,14 +556,22 @@ function p63(v, S, ctx, h) {
   if (!d.ignited) {
     const dt = met - d.tig;
     S.throttle = 0;
-    // pre-ignition guidance cycles give the ignition attitude
-    if (dt > -30) {
+    // pre-ignition guidance cycles give the ignition attitude (after DOI the LM coasts in any
+    // attitude: the LGC turns it to the PDI attitude a few minutes early)
+    if (d.fromDOI && dt > -DOI.pdiAlign && !d.said.align) {
+      d.said.align = true;
+      v.gnc.rcsMode = 'RATE';
+      v.gnc.autopilot = 'GUIDANCE';
+      ctx.message('P63 — manoeuvring to the PDI ignition attitude: engine forward (retrograde), windows down', 'info', 6);
+    }
+    if (dt > (d.fromDOI ? -DOI.pdiAlign : -30)) {
       d.gcyc -= h;
       if (d.gcyc <= 0) {
         d.gcyc += DESCENT.cycle;
         descentCycle(v, S, G.DESCENT_TARGETS.braking);
       }
     }
+    if (d.fromDOI) d.said.go = true; // MCC's "go for powered descent" came when P63 was loaded
     if (!d.said.go && dt > -31) {
       d.said.go = true;
       ctx.say("Eagle, Houston. If you read, you're go for powered descent. Over.", 'CAPCOM', 0);
@@ -665,11 +711,16 @@ function p66(v, S, ctx, h) {
   const r = v.pos.length();
   let thr = G.rodThrottle({ mass: mp.mass, g: MOON.mu / (r * r), vUp: t.vSpeed, hSpeed: t.hSpeed, r, accUp: d.accUp, cosTilt: bUp.dot(u), vCmd: v.gnc.rodCmd, maxThrust: e.maxThrust });
   thr = Math.max(e.minThrottle, Math.min(e.maxThrottle, thr));
-  // LUNAR CONTACT (probe) -> ENGINE STOP when a footpad touches (or a moment later at most)
+  // LUNAR CONTACT (probe) -> ENGINE STOP. Hands-off (the LGC and the LMP fly), the crew pushes
+  // ENGINE STOP about a second after the contact light, as from Apollo 12 on ("Contact light.
+  // Okay. Engine stop."): the LM drops the last metre at 1-2 m/s. When the pilot flies P66 the
+  // button is his (X); if he does not push it, the stop comes at footpad contact.
   if (v.gear?.probeContact && d.contactTime == null) d.contactTime = met;
   const padDown = v.gear?.pads?.some((pd) => pd.contact);
-  if (d.contactTime != null && (padDown || met - d.contactTime >= DESCENT.engineStopDelay) && !d.engineStop) {
+  const handsOff = d.rodAuto && v.gnc.autopilot === 'GUIDANCE';
+  if (d.contactTime != null && !d.engineStop && (padDown || (handsOff && met - d.contactTime >= DESCENT.engineStopDelay) || met - d.contactTime >= DESCENT.engineStopMax)) {
     d.engineStop = true;
+    if (handsOff) ctx.say('Okay. Engine stop.', 'CDR', 0);
     ctx.message('Engine stop — ENGINE STOP pushed, DPS off', 'good');
   }
   S.throttle = d.engineStop ? 0 : thr;
@@ -706,7 +757,15 @@ function p66Attitude(v, S) {
   const aH = vCmd.sub(vh).multiplyScalar(1 / 2.5);
   if (aH.length() > maxA) aH.setLength(maxA);
   const dir = aH.addScaledVector(u, g);
-  quatFromUpForward(dir, _rf.copy(d.F.down).add(u), _q);
+  // keep the heading the LM had at P66 entry (P64 flies yawed to put the site on the LPD
+  // line; swinging back to the approach track at Low Gate would be a pointless yaw)
+  if (!d.p66Fwd) {
+    d.p66Fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(v.quat);
+    d.p66Fwd.addScaledVector(u, -d.p66Fwd.dot(u));
+    if (d.p66Fwd.lengthSq() < 1e-4) d.p66Fwd.copy(d.F.down);
+    d.p66Fwd.normalize();
+  }
+  quatFromUpForward(dir, _rf.copy(d.p66Fwd).add(u), _q);
   setGuid(S, _q, 5 * D2R);
   S.guid.step = 4 * D2R;
   d.p66Dist = dist;
@@ -827,10 +886,242 @@ function ascent(v, S, ctx, h) {
   }
 }
 
+// ------------------------------------------------------------------ P40 DOI
+
+/** Descent orbit insertion sequencing (Apollo 11: DOI at 101:36:14, 76.4 ft/s, 30 s of DPS). */
+export const DOI = {
+  minSep: 50, // m from Columbia before the DPS may fire
+  minLead: 150, // s: the next DOI point must be at least this far ahead (else one orbit later)
+  align: 240, // s before TIG: the LGC turns Eagle to the burn attitude
+  lowThrottle: 0.1, // first 15 s at 10 % (gimbal trim), then 40 %
+  lowTime: 15,
+  highThrottle: 0.4,
+  pdiLoad: 600, // s before PDI: P63 is loaded (V37E63E)
+  pdiAlign: 240, // s before PDI: P63 turns the LM to the ignition attitude
+};
+
+function mmss(t) {
+  const s = Math.max(0, Math.round(t));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const ss = String(s % 60).padStart(2, '0');
+  return h > 0 ? `${h} h ${String(m).padStart(2, '0')} min` : `${m}:${ss}`;
+}
+
+function getStr(met) {
+  const h = Math.floor(met / 3600);
+  const m = Math.floor((met % 3600) / 60);
+  const s = Math.floor(met % 60);
+  return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+/** LM sitting on the surface (landed, or the ascent stage still on the descent stage). */
+function onSurface(v) {
+  return !!(v.landed || v.phys?.sleeping || v.phys?.onPad);
+}
+
+/** Why a DOI cannot be loaded now (null = it can). */
+export function doiUnavailable(v, S, game) {
+  if (v.type !== 'LM') return 'DOI is an LM burn';
+  if (v.docked) return 'undock first (U)';
+  if (v.staged) return 'no descent stage';
+  if (v.landed || v.crashed || onSurface(v)) return 'not in orbit';
+  if (S.descent?.active && (v.gnc.program === 'P63' || v.gnc.program === 'P64' || v.gnc.program === 'P66')) return 'descent in progress';
+  if (S.pdi) return `DOI done — PDI at GET ${getStr(S.pdi.tig)}, P63 loads 10 min before`;
+  if (!(v.tel.periapsisAlt > 25000)) return 'DOI is flown from the 111-km orbit (perilune already low)';
+  if (!(v.propellant.main > 500)) return 'descent propellant too low';
+  const csm = game.vessels.CSM;
+  if (csm && !csm.crashed && csm.pos.distanceTo(v.pos) < DOI.minSep) return `too close to Columbia (${csm.pos.distanceTo(v.pos).toFixed(0)} m) — separate at least ${DOI.minSep} m first`;
+  return null;
+}
+
+/** P40: plan and load the DOI burn (TIG half an orbit before the PDI point). */
+export function startDOI(v, S, ctx) {
+  const game = ctx.game;
+  const met = game.time.met;
+  const site = v.gnc.targetDir;
+  const hHat = new THREE.Vector3().crossVectors(v.pos, v.vel).normalize();
+  let psi = G.PDI_ARC + Math.PI;
+  psi = Math.atan2(Math.sin(psi), Math.cos(psi));
+  const c = G.coastToArc(v.pos, v.vel, site, psi, DOI.minLead);
+  if (!c) {
+    operatorError(v, S.agc, game, 'P40 — no DOI solution (orbit does not pass over the landing site)');
+    return false;
+  }
+  const pdiDir = G.arcPoint(hHat, site, G.PDI_ARC, new THREE.Vector3());
+  const rp = MOON.radius + terrainHeight(pdiDir.x, pdiDir.y, pdiDir.z) + MISSION.doiPerilune;
+  const dv = G.doiTargetVelocity(c.pos, c.vel, rp, new THREE.Vector3()).sub(c.vel);
+  S.burn = {
+    kind: 'DOI',
+    tig: met + c.t,
+    dv: dv.clone(),
+    vgo: dv.clone(),
+    dvMag: dv.length(),
+    rp,
+    proAck: false,
+    ignited: false,
+    ignTime: null,
+    lateIgnAt: null,
+    noIgnMsg: false,
+    cutoff: false,
+    cutTime: null,
+    aligned: false,
+    gcyc: 0,
+    dvAcc: 0,
+    said: {},
+  };
+  S.pdi = null;
+  S.engineStopLatched = false;
+  S.guid.valid = false;
+  v.gnc.throttleMode = 'AUTO';
+  setProgram(v, S, ctx, 'P40');
+  ctx.message(
+    `P40 DOI loaded — ${S.burn.dvMag.toFixed(1)} m/s retrograde (perilune 15 km over the PDI point). TIG GET ${getStr(S.burn.tig)}, in ${mmss(c.t)}: time-warp is fine, PRO (Space) at the flashing V99`,
+    'good',
+    9,
+  );
+  return true;
+}
+
+/**
+ * Accelerometer (PIPA) model: the non-gravitational velocity change since the previous substep
+ * (DPS thrust and the ullage RCS) is taken off the velocity to be gained.
+ */
+function senseDV(v, b, h) {
+  if (b.prevVel) {
+    G.gravity(b.prevPos, _g);
+    const dv = _gf.copy(v.vel).sub(b.prevVel).addScaledVector(_g, -b.prevH);
+    b.vgo.sub(dv);
+    b.dvAcc += dv.length();
+  } else {
+    b.prevVel = new THREE.Vector3();
+    b.prevPos = new THREE.Vector3();
+  }
+  b.prevVel.copy(v.vel);
+  b.prevPos.copy(v.pos);
+  b.prevH = h;
+}
+
+/** Burn attitude: thrust axis along the velocity to be gained, windows down (landmarks). */
+function burnAttitude(v, S, vgo) {
+  const u = up(v, _b);
+  _a.copy(vgo).normalize();
+  quatFromUpForward(_a, _c.copy(u).negate(), _q);
+  setGuid(S, _q, 5 * D2R);
+}
+
+function p40(v, S, ctx, h) {
+  const b = S.burn;
+  const game = ctx.game;
+  const met = game.time.met;
+  if (!b || v.docked || v.staged) {
+    S.burn = null;
+    return startP00(v, S, ctx);
+  }
+  if (!b.ignited) {
+    const dt = met - b.tig;
+    S.throttle = 0;
+    if (dt > -DOI.align) {
+      if (!b.aligned) {
+        b.aligned = true;
+        v.gnc.rcsMode = 'RATE';
+        v.gnc.autopilot = 'GUIDANCE';
+        ctx.message('P40 — manoeuvring to the DOI attitude: engine forward (retrograde), windows down', 'info', 6);
+      }
+      b.gcyc -= h;
+      if (b.gcyc <= 0) {
+        b.gcyc += DESCENT.cycle;
+        burnAttitude(v, S, b.vgo);
+      }
+    }
+    if (game.active !== v && dt > -3) b.proAck = true;
+    if (dt < -5 || (b.proAck && dt < 0)) setDisp(S, '06', '40');
+    else setDisp(S, '99', '40', !b.proAck);
+    if (dt >= -5 && !b.proAck && !b.said.v99) {
+      b.said.v99 = true;
+      ctx.message('V99 N40 flashing — press PRO (Space) to enable the DPS for DOI', 'warn', 6);
+    }
+    S.ullage = (dt >= -DESCENT.ullage && dt < 0.5 && !b.noIgnMsg) || b.lateIgnAt != null;
+    S.powered = dt > -DOI.align;
+    if (dt >= 0 && S.engineStopLatched) {
+      S.ullage = false;
+      if (!b.said.latched) {
+        b.said.latched = true;
+        ctx.message('No DOI ignition — ENGINE STOP is latched (X again resets it)', 'alarm', 6);
+      }
+    } else if (dt >= 0) {
+      if (b.proAck && (b.lateIgnAt == null || met >= b.lateIgnAt)) {
+        b.ignited = true;
+        b.ignTime = met;
+        b.gcyc = 0;
+        ctx.say('Ignition.', 'LMP', 0);
+        ctx.message('DOI — DPS ignition, 10 % for 15 s then 40 %', 'good');
+      } else if (!b.proAck && !b.noIgnMsg) {
+        b.noIgnMsg = true;
+        S.ullage = false;
+        ctx.message('No ignition — V99 not answered. Press PRO (Space) to ignite late.', 'alarm', 8);
+      }
+    }
+    if (S.ullage) senseDV(v, b, h);
+    if (!b.ignited) return;
+  }
+  const e = v.mainEngine;
+  const mp = controlMassProps(v);
+  const bY = _rf.set(0, 1, 0).applyQuaternion(v.quat);
+  if (!b.cutoff) {
+    S.powered = true;
+    const t = met - b.ignTime;
+    senseDV(v, b, h);
+    const thr = t < DOI.lowTime ? DOI.lowThrottle : DOI.highThrottle;
+    S.throttle = thr;
+    S.ullage = t < 0.8;
+    b.gcyc -= h;
+    if (b.gcyc <= 0) {
+      b.gcyc += DESCENT.cycle;
+      if (b.vgo.length() > 3) burnAttitude(v, S, b.vgo);
+      compBurst(S.agc, 0.6);
+    }
+    const along = b.vgo.dot(bY);
+    const aCmd = (thr * e.maxThrust) / mp.mass;
+    if (S.engineStopLatched || (t > 2 && along <= aCmd * (h + 0.15))) {
+      if (S.engineStopLatched) ctx.message(`DOI cut short by ENGINE STOP — ${b.vgo.length().toFixed(1)} m/s still to go`, 'warn', 6);
+      b.cutoff = true;
+      b.cutTime = met;
+      S.throttle = 0;
+      const c = G.coastToArc(v.pos, v.vel, v.gnc.targetDir, G.PDI_ARC, 60);
+      if (c) S.pdi = { tig: met + c.t };
+      ctx.say('Shutdown.', 'LMP', 0.4);
+      const pdiTxt = c ? ` PDI at GET ${getStr(S.pdi.tig)} (in ${mmss(c.t)}); P63 loads 10 min before — time-warp until then.` : '';
+      ctx.message(`DOI complete — ${(b.dvAcc).toFixed(1)} m/s. Orbit ${(v.tel.apoapsisAlt / 1000).toFixed(0)} × ${(v.tel.periapsisAlt / 1000).toFixed(1)} km.${pdiTxt}`, 'good', 10);
+    }
+    setDisp(S, '06', '40');
+    return;
+  }
+  S.throttle = 0;
+  setDisp(S, '06', '40');
+  if (met - b.cutTime > 4) {
+    S.burn = null;
+    startP00(v, S, ctx);
+    if (v.gnc.autopilot === 'GUIDANCE') v.gnc.autopilot = 'OFF';
+  }
+}
+
 // ------------------------------------------------------------------ P00 / P47
 
 function p00(v, S, ctx, h) {
   const p = v.gnc.program;
+  if (S.pdi && v.type === 'LM') {
+    if (v.docked || v.staged || v.landed) S.pdi = null;
+    else if (ctx.game.time.met >= S.pdi.tig - DOI.pdiLoad) {
+      const tig = S.pdi.tig;
+      S.pdi = null;
+      startP63(v, S, ctx, tig);
+      S.descent.fromDOI = true;
+      ctx.message(`P63 loaded — braking phase. PDI in ${mmss(tig - ctx.game.time.met)}: the LGC aligns Eagle 4 min before; PRO (Space) at the flashing V99`, 'info', 8);
+      ctx.say("Eagle, Houston. If you read, you're go for powered descent. Over.", 'CAPCOM', 20);
+      return;
+    }
+  }
   const c = v.ctrl;
   const translating = Math.abs(c.transFwd) > 0.3 || Math.abs(c.transRight) > 0.3 || Math.abs(c.transUp) > 0.3;
   const thrusting = v.mainEngine.firing || translating;
@@ -857,6 +1148,8 @@ export function initPrograms(v, S, ctx) {
   const p = g.program || 'P00';
   S.descent = null;
   S.ascent = null;
+  S.burn = null;
+  S.pdi = null;
   v.gnc.program = p;
   if (v.type === 'LM') {
     if (p === 'P63' && Number.isFinite(g.tig)) return startP63Silent(v, S, ctx, g.tig);

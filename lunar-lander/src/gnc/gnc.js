@@ -15,7 +15,8 @@
 //
 // Crew actions ('action' events, applied to game.active): RCS_MODE_CYCLE, ATT_HOLD_TOGGLE,
 // KILL_ROT, AUTOPILOT {mode}, PRO, AUTO_TOGGLE, PROGRAM {program}, ROD_UP, ROD_DOWN,
-// LPD {dx, dy}, MASTER_ALARM_RESET, ENGINE_STOP.
+// LPD {dx, dy}, MASTER_ALARM_RESET, ENGINE_STOP (latching: a second press with the engine off,
+// or ENGINE_START, resets it).
 //
 // Added vessel.gnc fields: tig (ignition MET, when a burn is scheduled), rateCmd (deg/s, body
 // pitch/yaw/roll in pilot convention), dapPhase ('RATE'|'DAMP'|'HOLD'|'AUTO'|'FREE'), tgo (s),
@@ -45,6 +46,11 @@ function createState(v) {
     disp: { verb: '16', noun: '44', flash: false, blank: false },
     descent: null,
     ascent: null,
+    burn: null, // P40 DOI burn
+    pdi: null, // {tig}: PDI planned after DOI (P63 is loaded 10 min before)
+    engineStopLatched: false, // ENGINE STOP pushbutton latched (manual throttle ignored)
+    latchWarned: false,
+    sepHint: false,
     throttle: null,
     ullage: false,
     powered: false,
@@ -154,6 +160,12 @@ export function createGNC(game) {
       case 'ENGINE_STOP':
         engineStop(v, S);
         break;
+      case 'ENGINE_START':
+        if (S.engineStopLatched) {
+          S.engineStopLatched = false;
+          ctx.message('ENGINE STOP reset — throttle up to restart the engine', 'info');
+        }
+        break;
       default:
         break;
     }
@@ -164,17 +176,33 @@ export function createGNC(game) {
     if (!v) return;
     const S = stateOf(v);
     const p = v.gnc.program;
-    if (p === 'P12' || p === 'P71' || p === 'P70') return; // our own ignition sequence
+    S.engineStopLatched = false; // ABORT STAGE / ascent: the APS must be able to fire
+    // staging commanded by our own ignition sequence (P12 at TIG, P71 selection)
+    if ((p === 'P12' || p === 'P71') && S.ascent && (S.ascent.ignited || p === 'P71')) return;
     if (v.landed || v.phys?.sleeping || v.phys?.onPad) {
-      // manual staging on the surface: the crew lifts off with the throttle
+      // manual staging on the surface (also before a P12 TIG): the crew lifts off with the throttle
+      const hadP12 = p === 'P12';
+      S.ascent = null;
       P.startP00(v, S, ctx);
       v.gnc.autopilot = 'OFF';
-      ctx.message('Ascent stage free — throttle up (Z) for a manual liftoff, or select P12', 'info', 6);
+      ctx.message(`Ascent stage free${hadP12 ? ' — P12 cancelled' : ''}: throttle up (Z) for a manual liftoff, or PRO (Space) to load P12 guided ascent`, 'info', 7);
     } else {
       // ABORT STAGE in flight: P71 ascent guidance with the APS already lit by the sim
       P.startAscent(v, S, ctx, 'P71');
       S.ascent.proAck = true;
     }
+  });
+
+  game.events.on('undock', () => {
+    const lm = game.vessels.LM;
+    if (lm && !lm.staged) stateOf(lm).sepHint = true;
+  });
+  game.events.on('dock', () => {
+    const lm = game.vessels.LM;
+    if (!lm) return;
+    const S = stateOf(lm);
+    S.sepHint = false;
+    S.pdi = null;
   });
 
   function setAutopilot(v, S, mode) {
@@ -184,7 +212,7 @@ export function createGNC(game) {
     }
     const g = v.gnc;
     if (mode === 'GUIDANCE') {
-      const guided = ['P63', 'P64', 'P66', 'P12', 'P70', 'P71'].includes(g.program);
+      const guided = ['P40', 'P63', 'P64', 'P66', 'P12', 'P70', 'P71'].includes(g.program);
       if (!guided) {
         operatorError(v, S.agc, game, 'no guidance program running');
         return;
@@ -234,7 +262,8 @@ export function createGNC(game) {
     const table = {
       P00: ok,
       P47: () => !v.landed,
-      P63: () => false,
+      P40: () => lm && !P.doiUnavailable(v, S, game) && (p === 'P00' || p === 'P47'),
+      P63: () => lm && !!S.pdi && !v.docked && !v.staged,
       P64: () => lm && p === 'P63' && S.descent?.ignited,
       P66: () => lm && flying && !v.staged && (p === 'P63' || p === 'P64' || p === 'P67' || v.tel.altitude < MISSION.highGate.altitude + 700),
       P67: () => lm && flying && !v.staged,
@@ -245,7 +274,8 @@ export function createGNC(game) {
     };
     const check = table[prog];
     if (!check || !check()) {
-      operatorError(v, S.agc, game, `${prog || 'program'} not available now`);
+      const why = prog === 'P40' ? P.doiUnavailable(v, S, game) : prog === 'P63' && lm && !S.pdi ? 'fly DOI (P40) first' : null;
+      operatorError(v, S.agc, game, `${prog || 'program'} not available now${why ? ` — ${why}` : ''}`);
       return;
     }
     if (prog === 'P00') P.startP00(v, S, ctx);
@@ -254,6 +284,12 @@ export function createGNC(game) {
       S.p47Idle = 0;
       g.throttleMode = 'MANUAL';
       P.setProgram(v, S, ctx, 'P47');
+    } else if (prog === 'P40') P.startDOI(v, S, ctx);
+    else if (prog === 'P63') {
+      const tig = S.pdi.tig;
+      S.pdi = null;
+      P.startP63(v, S, ctx, tig);
+      S.descent.fromDOI = true;
     } else if (prog === 'P64') P.startP64(v, S, ctx, true);
     else if (prog === 'P66') P.startP66(v, S, ctx, false);
     else if (prog === 'P67') P.startP67(v, S, ctx);
@@ -268,6 +304,14 @@ export function createGNC(game) {
 
   function engineStop(v, S) {
     const p = v.gnc.program;
+    // the ENGINE STOP pushbutton latches; pushing it again (engine off) resets it
+    if (S.engineStopLatched && !v.mainEngine.firing) {
+      S.engineStopLatched = false;
+      ctx.message('ENGINE STOP reset — throttle up to restart the engine', 'info');
+      return;
+    }
+    S.engineStopLatched = true;
+    S.latchWarned = false;
     if (S.descent && (p === 'P63' || p === 'P64' || p === 'P66')) {
       S.descent.engineStop = true;
       if (p !== 'P66') P.startP67(v, S, ctx);
@@ -326,7 +370,15 @@ export function createGNC(game) {
 
     // ---- main engine
     const auto = g.throttleMode === 'AUTO' && S.throttle != null;
-    v.mainEngine.throttleCmd = auto ? Math.max(0, S.throttle) : Math.max(0, Math.min(1, c.throttle || 0));
+    let manual = Math.max(0, Math.min(1, c.throttle || 0));
+    if (S.engineStopLatched && !auto) {
+      if (manual > 0.05 && !S.latchWarned && game.active === v) {
+        S.latchWarned = true;
+        ctx.message('ENGINE STOP is latched — press X again to reset it, then throttle up', 'warn', 5);
+      }
+      manual = 0;
+    }
+    v.mainEngine.throttleCmd = auto ? Math.max(0, S.throttle) : manual;
 
     // ---- DAP
     const docked = v.docked && v.dockedTo;
@@ -381,9 +433,25 @@ export function createGNC(game) {
     g.navDeltaH = d ? d.deltaH : 0;
     g.radarLock = !!d?.radarLock;
     g.guidanceTarget = g.program === 'P63' ? 'HIGH GATE' : g.program === 'P64' ? 'LOW GATE' : S.ascent && !S.ascent.cutoff ? 'ORBIT' : null;
-    if (d && d.tig != null && !d.ignited) g.tig = d.tig;
+    if (d && d.tig != null && !d.ignited && g.program === 'P63') g.tig = d.tig;
     else if (S.ascent && !S.ascent.ignited) g.tig = S.ascent.tig;
+    else if (S.burn && !S.burn.ignited) g.tig = S.burn.tig;
+    else if (S.pdi) g.tig = S.pdi.tig;
     else g.tig = null;
+    if (S.burn && g.program === 'P40') {
+      const b = S.burn;
+      const aF = (P.DOI.highThrottle * v.mainEngine.maxThrust) / Math.max(1, v.mass || 1);
+      g.tgo = b.ignited && !b.cutoff ? b.vgo.length() / aF : null;
+    }
+
+    // after undocking: tell the crew how to start the descent once they are clear of Columbia
+    if (v.type === 'LM' && S.sepHint && !v.docked && game.active === v) {
+      const csm = game.vessels.CSM;
+      if (csm && csm.pos.distanceTo(v.pos) > P.DOI.minSep && !P.doiUnavailable(v, S, game) && (g.program === 'P00' || g.program === 'P47')) {
+        S.sepHint = false;
+        ctx.message(`Eagle is ${P.DOI.minSep} m clear of Columbia. PRO (Space) loads P40 — the DOI burn that starts the descent to Tranquility Base`, 'info', 9);
+      }
+    }
 
     updateAGC(v, S, game, h, S.powered);
   }

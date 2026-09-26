@@ -146,6 +146,7 @@ export function createDAPState() {
     phase: 'HOLD', // 'RATE' (stick) | 'DAMP' (rates nulling after release) | 'HOLD' | 'AUTO' | 'FREE'
     hold: null, // THREE.Quaternion attitude reference (body -> MCI) or null
     dampTime: 0,
+    dampLimit: 6, // s: DAMP -> HOLD time-out (from the stopping time at release)
     sets: null,
     setsKey: '',
     alt: [0, 0, 0], // alternating A/B jet pair per axis
@@ -228,6 +229,28 @@ function minBitRates(sets, I, minImp, out) {
     out[a] = (t * minImp) / I[a];
   }
   return out;
+}
+
+/** Axis angular acceleration available for braking (4-jet couple when there is one, rad/s^2). */
+function brakeAccel(sets, I, a) {
+  const r = sets.rot[a][0];
+  const set = r.four && r.four.idx.length > 2 ? r.four : r.two[0];
+  return Math.abs(set.torque.getComponent(a)) / I[a];
+}
+
+/** Attitude at which the current body rates will have been nulled at full braking. */
+const _sv = new THREE.Vector3();
+const _sq = new THREE.Quaternion();
+function stopAttitude(v, sets, I, out) {
+  const w = v.angVel;
+  for (let a = 0; a < 3; a++) {
+    const wa = w.getComponent(a);
+    _sv.setComponent(a, (wa * Math.abs(wa)) / (2 * Math.max(1e-6, brakeAccel(sets, I, a))));
+  }
+  const ang = _sv.length();
+  if (ang > 1e-9) _sq.setFromAxisAngle(_sv.divideScalar(ang), ang);
+  else _sq.identity();
+  return out.copy(v.quat).multiply(_sq);
 }
 
 /** Axis angular acceleration of the 2-jet couple (rad/s^2). */
@@ -406,15 +429,22 @@ function rateCycle(v, st, T, cfg, sets, stick, stickOn, io) {
     if (st.phase === 'RATE' || st.phase === 'AUTO' || st.phase === 'FREE') {
       st.phase = 'DAMP';
       st.dampTime = 0;
+      // time the jets need to null the current rates (low-authority vehicles such as the CSM
+      // or the docked stack take well over 6 s to stop a fast rotation): capture the hold only
+      // once the vehicle has stopped, so it does not brake past the reference and swing back
+      let tStop = 0;
+      for (let a = 0; a < 3; a++) tStop = Math.max(tStop, Math.abs(w.getComponent(a)) / Math.max(1e-6, brakeAccel(sets, I, a)));
+      st.dampLimit = Math.max(6, 1.5 * tStop + 2);
     }
     if (st.phase === 'DAMP') {
       st.dampTime += T;
       wt.set(0, 0, 0);
       st.err.set(0, 0, 0);
       const slow = Math.abs(w.x) < cfg.captureRate && Math.abs(w.y) < cfg.captureRate && Math.abs(w.z) < cfg.captureRate;
-      if (v.gnc.attHold !== false && (slow || st.dampTime > 6)) {
+      if (v.gnc.attHold !== false && (slow || st.dampTime > (st.dampLimit || 6))) {
         st.phase = 'HOLD';
-        st.hold = v.quat.clone();
+        // still turning (time-out): hold where the rotation will stop, not where it is now
+        st.hold = slow ? v.quat.clone() : stopAttitude(v, sets, I, st.hold || new THREE.Quaternion());
       }
     }
     if (st.phase === 'HOLD') {

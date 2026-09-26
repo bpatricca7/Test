@@ -25,9 +25,14 @@ const H_MIN_GLOBAL = -11000; // below the deepest basin floor (horizon-culling o
 const IN_FLIGHT = 4; // jobs queued per worker
 
 const QUALITY = {
-  low: { N: 25, maxLevel: 16, K: 2.2, Kdeep: 1.8, workers: 1, bands: 2, uploads: 3, budget: 1000 },
-  medium: { N: 33, maxLevel: 16, K: 2.8, Kdeep: 2.1, workers: 2, bands: 3, uploads: 4, budget: 1800 },
-  high: { N: 33, maxLevel: 17, K: 3.6, Kdeep: 2.4, workers: 3, bands: 3, uploads: 6, budget: 3200 },
+  low: { N: 25, maxLevel: 16, K: 2.2, Kdeep: 1.8, workers: 1, bands: 2, uploads: 3, budget: 1000, limb: 1 },
+  medium: { N: 33, maxLevel: 16, K: 2.8, Kdeep: 2.1, workers: 2, bands: 3, uploads: 4, budget: 1800, limb: 1.8 },
+  high: { N: 33, maxLevel: 17, K: 3.6, Kdeep: 2.4, workers: 3, bands: 3, uploads: 6, budget: 3200, limb: 2.5 },
+};
+
+const smoothstep = (a, b, x) => {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
 };
 
 const EMPTY = 0;
@@ -68,6 +73,8 @@ function buildIndex(N) {
   return new THREE.BufferAttribute(nV > 65535 ? new Uint32Array(idx) : new Uint16Array(idx), 1);
 }
 
+let nodeSerial = 0;
+
 class Node {
   constructor(f, level, i, j, parent) {
     this.f = f;
@@ -76,6 +83,7 @@ class Node {
     this.j = j;
     this.parent = parent;
     this.key = `${f}/${level}/${i}/${j}`;
+    this.id = ++nodeSerial;
     this.state = EMPTY;
     this.children = null;
     this.mesh = null;
@@ -118,6 +126,7 @@ export function createTerrain(ctx) {
   const material = createTerrainMaterial(ctx, lunar, { bands: Q.bands, meshK: 4.5 / (Q.Kdeep * (N - 1)), meshKFar: 4.5 / (Q.K * (N - 1)), minMeshD: 6 * finestSpacing });
   const group = new THREE.Group();
   group.name = 'terrain';
+  group.matrixAutoUpdate = false; // stays at the render origin; children carry their own matrices
   ctx.scene.add(group);
   const rocks = createRocks(ctx, lunar);
   const index = buildIndex(N);
@@ -131,6 +140,7 @@ export function createTerrain(ctx) {
 
   // ------------------------------------------------------------------ generation back-ends
   const pending = new Map(); // key -> node (wanted this frame, not yet dispatched)
+  let inVisit = false;
   const results = []; // generated chunk data waiting for upload
   const sun = [ctx.sunDir.x, ctx.sunDir.y, ctx.sunDir.z];
   const workers = [];
@@ -174,9 +184,11 @@ export function createTerrain(ctx) {
 
   function request(node, prio) {
     if (node.state !== EMPTY && node.state !== QUEUED) return;
+    const fresh = node.state === EMPTY || node.prio !== prio;
     node.state = QUEUED;
     node.prio = prio;
     pending.set(node.key, node);
+    if (fresh && !inVisit) heapPush(node); // (during LOD selection the heap is rebuilt afterwards)
   }
 
   // A chunk just arrived: if the last camera would split it, request its children right away
@@ -212,25 +224,72 @@ export function createTerrain(ctx) {
     };
   }
 
+  // Pending requests are served from a binary min-heap on `prio` (rebuilt once per frame from `pending`,
+  // speculative requests pushed in between): a worker message only pops a few entries instead of
+  // re-sorting the whole queue. Stale entries (already dispatched / dropped) are skipped when popped.
+  let heap = [];
+  function heapUp(a, i) {
+    const n = a[i];
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if (a[p].prio <= n.prio) break;
+      a[i] = a[p];
+      i = p;
+    }
+    a[i] = n;
+  }
+  function heapDown(a, i) {
+    const len = a.length;
+    const n = a[i];
+    for (;;) {
+      let c = 2 * i + 1;
+      if (c >= len) break;
+      if (c + 1 < len && a[c + 1].prio < a[c].prio) c++;
+      if (a[c].prio >= n.prio) break;
+      a[i] = a[c];
+      i = c;
+    }
+    a[i] = n;
+  }
+  function heapPush(n) {
+    heap.push(n);
+    heapUp(heap, heap.length - 1);
+  }
+  function heapPop() {
+    while (heap.length) {
+      const top = heap[0];
+      const last = heap.pop();
+      if (heap.length) {
+        heap[0] = last;
+        heapDown(heap, 0);
+      }
+      if (pending.get(top.key) === top && top.state === QUEUED) return top;
+    }
+    return null;
+  }
+  function rebuildHeap() {
+    heap = Array.from(pending.values());
+    for (let i = (heap.length >> 1) - 1; i >= 0; i--) heapDown(heap, i);
+  }
+
   function dispatch() {
     if (!pending.size) return;
-    const list = [...pending.values()].sort((a, b) => a.prio - b.prio);
-    let li = 0;
     if (!useFallback) {
       // keep up to IN_FLIGHT jobs queued per worker so workers never idle between (slow) frames
       for (let round = 0; round < IN_FLIGHT; round++) {
         for (const slot of workers) {
           if (slot.dead || slot.jobs.size > round) continue;
-          if (li >= list.length) return;
-          const node = list[li++];
+          const node = heapPop();
+          if (!node) return;
           pending.delete(node.key);
           node.state = WORKING;
           slot.jobs.add(node.key);
           slot.w.postMessage(makeReq(node));
         }
       }
-    } else if (!fallback && li < list.length) {
-      const node = list[li++];
+    } else if (!fallback) {
+      const node = heapPop();
+      if (!node) return;
       pending.delete(node.key);
       node.state = WORKING;
       fallback = { node, it: chunkJob(makeReq(node)) };
@@ -256,9 +315,26 @@ export function createTerrain(ctx) {
   function freeArray() {
     this.array = null;
   }
-  function onMorphRender() {
-    material.uniforms.uMorphRange.value.copy(this.userData.morph);
-    material.uniformsNeedUpdate = true;
+  // Geomorph range depends only on the level: one material per level, all sharing the base material's
+  // uniform OBJECTS (and its compiled program) except their own uMorphRange. No per-chunk uniform
+  // uploads; the renderer sorts opaque objects by material, so chunks are drawn grouped by level.
+  const levelMats = [];
+  function materialForLevel(level) {
+    let m = levelMats[level];
+    if (m) return m;
+    const kp = kOf(Math.max(0, level - 1));
+    const size = chunkSizeM(level);
+    // fully the parent's shape where the parent would merge back (distance 2 x its K x size)
+    const range = level === 0 ? new THREE.Vector2(1e30, 2e30) : new THREE.Vector2(kp * size * 1.3, kp * size * 1.95);
+    m = new THREE.ShaderMaterial({
+      vertexShader: material.vertexShader,
+      fragmentShader: material.fragmentShader,
+      extensions: material.extensions,
+    });
+    m.uniforms = Object.assign({}, material.uniforms, { uMorphRange: { value: range } });
+    m.name = `${material.name}/L${level}`;
+    levelMats[level] = m;
+    return m;
   }
 
   function upload(r) {
@@ -271,23 +347,21 @@ export function createTerrain(ctx) {
     g.setAttribute('aux', new THREE.BufferAttribute(r.aux, 4));
     g.setIndex(index);
     g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), r.radius);
-    // the GPU keeps the only copy of the vertex data we need (halves memory for large caches)
+    // the GPU keeps the only copy of the vertex data we need (halves memory for large caches); after a
+    // WebGL context loss every chunk is regenerated (see onContextRestored)
     for (const name of ['position', 'morph', 'normal', 'aux']) g.attributes[name].onUpload(freeArray);
-    const mesh = new THREE.Mesh(g, material);
+    const mesh = new THREE.Mesh(g, materialForLevel(node.level));
     mesh.layers.set(LAYERS.WORLD);
     mesh.frustumCulled = true;
-    mesh.visible = false;
+    // only drawn chunks are children of the group (see draw / update); their matrix is set in draw()
+    mesh.matrixAutoUpdate = false;
     // near-ground chunks cast into the renderer's (tight, vessel-centred) sunlight shadow map, so a
     // spacecraft standing in a crater's shadow or next to a hill is shaded too (the shadow camera
     // culls everything outside its few-metre box, so this costs almost nothing)
     mesh.castShadow = node.level >= 12;
-    // geomorph: fully the parent's shape where the parent would merge back (distance 2 x its K x size)
-    const kp = kOf(Math.max(0, node.level - 1));
-    mesh.userData.morph = new THREE.Vector2(kp * node.size * 1.3, kp * node.size * 1.95);
-    if (node.level === 0) mesh.userData.morph.set(1e30, 2e30);
-    mesh.onBeforeRender = onMorphRender;
     mesh.name = node.key;
-    group.add(mesh);
+    mesh.userData.level = node.level;
+    mesh.userData.drawnFrame = -1;
     node.mesh = mesh;
     node.center.set(r.center[0], r.center[1], r.center[2]);
     node.radius = r.radius;
@@ -314,6 +388,45 @@ export function createTerrain(ctx) {
     n.state = EMPTY;
   }
 
+  // ------------------------------------------------------------------ WebGL context loss
+  // Chunk vertex arrays are freed after their GPU upload, so after a context loss/restore (driver reset,
+  // GPU switch, sleep/wake) three.js cannot re-upload them: drop every chunk and regenerate the quadtree.
+  let contextRestored = false;
+  let contextLost = false;
+  const canvas = ctx.renderer && ctx.renderer.domElement;
+  if (canvas && canvas.addEventListener) {
+    canvas.addEventListener('webglcontextlost', () => {
+      contextLost = true;
+    });
+    canvas.addEventListener('webglcontextrestored', () => {
+      contextLost = false;
+      contextRestored = true;
+    });
+  }
+  function resetAll() {
+    contextRestored = false;
+    for (const r of roots) {
+      if (r.children) for (const c of r.children) disposeNode(c);
+      r.children = null;
+      if (r.mesh) {
+        group.remove(r.mesh);
+        r.mesh.geometry.index = null;
+        r.mesh.geometry.dispose();
+        r.mesh = null;
+      }
+      if (r.state === READY) r.state = EMPTY;
+    }
+    // results already received but not uploaded still hold their arrays: keep them for the roots,
+    // drop the rest (their nodes are gone); in-flight worker jobs for dropped nodes are ignored
+    for (let q = results.length - 1; q >= 0; q--) {
+      const n = nodes.get(results[q].key);
+      if (!n || n.state !== WORKING) results.splice(q, 1);
+    }
+    for (const [k, n] of pending) if (!nodes.has(k) || n.state !== QUEUED) pending.delete(k);
+    drawn = [];
+    readyFrames = 0;
+  }
+
   // ------------------------------------------------------------------ per-frame selection
   const frustum = new THREE.Frustum();
   const _pm = new THREE.Matrix4();
@@ -324,13 +437,20 @@ export function createTerrain(ctx) {
   let camR = R;
   let camH = 0;
   let horizonCam = 0;
+  let limbRefine = false;
   let frameNo = 0;
   let drawn = [];
   let drawnNext = [];
   let pendingVisible = 0;
   let boulderChunks = [];
   let readyFrames = 0;
-  const t0 = typeof performance !== 'undefined' ? performance.now() : 0;
+  // readiness fallback timer: starts at the first terrain frame (and again at every scenario load), not
+  // at construction (boot and shader compilation can take tens of seconds on slow machines)
+  let t0 = -1;
+  ctx.game?.events?.on?.('scenario', () => {
+    t0 = -1;
+    readyFrames = 0;
+  });
   const R_OCC = R + H_MIN_GLOBAL;
 
   function nodeDistance(n) {
@@ -373,8 +493,10 @@ export function createTerrain(ctx) {
 
   function draw(n) {
     const m = n.mesh;
-    m.visible = true;
     m.position.copy(n.center).sub(ctx.origin);
+    m.updateMatrix();
+    if (m.parent !== group) group.add(m);
+    m.userData.drawnFrame = frameNo;
     drawnNext.push(m);
   }
 
@@ -391,7 +513,17 @@ export function createTerrain(ctx) {
     if (n.boulders && dist < 2500) boulderChunks.push(n);
     const vis = visible(n);
     const hyst = n.children && n.children.every((c) => c.state === READY) ? 1.12 : 1;
-    const splitDist = kOf(n.level) * n.size * hyst;
+    let splitDist = kOf(n.level) * n.size * hyst;
+    // silhouette refinement: from orbit, chunks seen at grazing incidence near the limb are split
+    // further than their footprint suggests, so crater rims and massifs break the limb's arc
+    if (limbRefine && vis && n.level <= 9) {
+      const tx = n.center.x - cam.x;
+      const ty = n.center.y - cam.y;
+      const tz = n.center.z - cam.z;
+      const cl = Math.sqrt(tx * tx + ty * ty + tz * tz) * n.center.length();
+      const cosg = cl > 0 ? Math.abs(tx * n.center.x + ty * n.center.y + tz * n.center.z) / cl : 1;
+      if (cosg < 0.3) splitDist *= 1 + Q.limb * (1 - smoothstep(0.08, 0.3, cosg));
+    }
     if (n.level < maxLevel && dist < splitDist && (vis || dist < splitDist * 0.5)) {
       ensureChildren(n);
       let all = true;
@@ -445,12 +577,16 @@ export function createTerrain(ctx) {
     /** Per-frame update: LOD selection, generation dispatch, uploads, uniforms, rocks. */
     update(frame) {
       const tStart = performance.now();
+      if (t0 < 0) t0 = tStart;
       frameNo++;
+      if (contextRestored) resetAll();
       cam.copy(frame.cameraMCI);
       camR = cam.length();
       // approximate camera height above the reference sphere for LOD distances
       camH = camR - R;
       horizonCam = Math.sqrt(Math.max(0, camR * camR - R_OCC * R_OCC));
+      limbRefine = camH > 15000;
+      material.uniforms.uLimb.value = limbRefine ? Q.limb : 0;
       const camera = ctx.camera;
       _pm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
       frustum.setFromProjectionMatrix(_pm);
@@ -466,13 +602,12 @@ export function createTerrain(ctx) {
       const verySlow = wall > 0.2; // nothing left to protect: drain the queue
       let n = 0;
       const maxUp = verySlow ? 1e9 : slow ? Q.uploads * 8 : Q.uploads;
-      while (results.length && n < maxUp && performance.now() - tu < (verySlow ? 150 : slow ? 25 : 2.5)) {
+      while (!contextLost && results.length && n < maxUp && performance.now() - tu < (verySlow ? 150 : slow ? 25 : 2.5)) {
         if (upload(results.shift())) n++;
       }
       lastUploadMs = performance.now() - tu;
 
       // selection
-      for (const m of drawn) m.visible = false;
       drawnNext = [];
       pendingVisible = 0;
       boulderChunks = [];
@@ -480,9 +615,14 @@ export function createTerrain(ctx) {
         pending.delete(k);
         if (node.state === QUEUED) node.state = EMPTY;
       }
+      inVisit = true;
       for (const r of roots) visit(r);
+      inVisit = false;
+      // chunks drawn last frame but not this one leave the group (hidden chunks cost nothing per frame)
+      for (const m of drawn) if (m.userData.drawnFrame !== frameNo && m.parent === group) group.remove(m);
       drawn = drawnNext;
 
+      rebuildHeap();
       dispatch();
       // main-thread fallback: ~3 ms per frame in normal play (never a hitch); more while the initial
       // LOD loads or when frames are already very slow (software rendering)
@@ -493,7 +633,9 @@ export function createTerrain(ctx) {
       lunar.uCamMCI.value.copy(cam);
       lunar.uSunDir.value.copy(frame.sunDir);
       updateBandOffsets(material, cam);
-      rocks.update(frame, boulderChunks);
+      let bsig = boulderChunks.length;
+      for (const c of boulderChunks) bsig = (Math.imul(bsig ^ c.id, 0x9e3779b1) + c.id) | 0;
+      rocks.update(frame, boulderChunks, bsig);
 
       const ready = roots.every((r) => r.state === READY) && pendingVisible === 0 && results.length === 0;
       readyFrames = ready ? readyFrames + 1 : 0;
@@ -502,7 +644,11 @@ export function createTerrain(ctx) {
     /** True once the LOD around the camera has been built (or after a generous timeout). */
     isReady() {
       if (readyFrames >= 2) return true;
-      return roots.every((r) => r.state === READY) && performance.now() - t0 > 45000;
+      if (t0 < 0 || !roots.every((r) => r.state === READY)) return false;
+      // fallback: generation cannot keep up (e.g. the camera keeps moving); give up waiting for the
+      // last visible chunks once nothing is waiting for upload, or after a hard cap
+      const el = performance.now() - t0;
+      return (el > 45000 && results.length === 0) || el > 120000;
     },
     /** Debug handles (materials, rocks). */
     debug: { material, rocks, lunar, nodes },
@@ -527,7 +673,7 @@ export function createTerrain(ctx) {
         pendingVisible,
         rocks: rocks.count,
         fallback: useFallback,
-        maxDrawnLevel: drawn.reduce((m, x) => Math.max(m, +x.name.split('/')[1]), 0),
+        maxDrawnLevel: drawn.reduce((m, x) => Math.max(m, x.userData.level), 0),
         lastUploadMs,
         lastUpdateMs,
       };

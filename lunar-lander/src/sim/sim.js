@@ -10,9 +10,11 @@
 // <= 20 ms while thrusting / firing RCS / below 5 km / near the other vehicle, and up to 1 s
 // for a quiet orbital coast (velocity-Verlet keeps a 111-km orbit within metres at 1000x).
 // Warp ceilings: 10x while an engine fires, an ignition is < 45 s away, a vessel is below 5 km
-// or the two vehicles are within 1 km; 1x in active ground contact / docking capture. A landed,
-// sleeping LM does not limit warp. game.time.warpEffective reports the achieved rate when the
-// per-frame CPU budget truncates a very high warp.
+// or the two vehicles are within 1 km; 1x in active ground contact / docking capture, and 1x
+// from 10 s before a guidance ignition of the flown vessel until it lights (or 60 s after a
+// missed TIG) — the requested warp is then reset to 1x so it is never restored behind the
+// player's back. A landed, sleeping LM does not limit warp. game.time.warpEffective reports the
+// achieved rate when the per-frame CPU budget truncates a very high warp.
 //
 // Actions handled here: PAUSE, WARP_UP, WARP_DOWN, WARP_RESET, SWITCH_VESSEL {to?}, UNDOCK,
 // DOCK, STAGE, RESTART. See ARCHITECTURE.md §5.
@@ -21,13 +23,19 @@ import * as THREE from 'three';
 import { createLM, createCSM } from '../core/state.js';
 import { SCENARIOS } from './scenarios.js';
 import { createPhysState, updateEngine, applyRcs, integrateRigid, setDiagInertia, localG } from './physics.js';
-import { updateVesselMassProps } from './massprops.js';
+import { updateVesselMassProps, apsThrustLineCg } from './massprops.js';
 import { initContactState, lmContact, hullBelowGround } from './contact.js';
-import { updateLanding, crashVessel, stageLM, updateDescentStage } from './landing.js';
+import { updateLanding, crashVessel, stageLM, updateDescentStage, impactReason } from './landing.js';
+import { fmtSpeed, fmtLen } from './units.js';
 import { createStack, updateStackProps, slaveLM, dockingGeometry, mergeStack, advanceCapture, splitStack, bounce, DOCK } from './docking.js';
 import { updateTelemetry, updateCaution } from './telemetry.js';
 
 export const WARP_LEVELS = [1, 2, 5, 10, 50, 100, 1000];
+/** Time-warp handling around a guidance-program ignition (P63 PDI, P12/P70/P71 ascent). */
+export const WARP_IGN = {
+  STOP: 10, // s before TIG: warp drops to 1x (and the request is reset) for the active vessel
+  LATE: 60, // s after a missed TIG the late-PRO window keeps real time
+};
 export const STEP = {
   COAST: 1.0, // s, max substep for a quiet orbital coast
   ACTIVE: 0.02, // s, thrusting / RCS / low altitude / proximity operations
@@ -42,6 +50,7 @@ const _Fc = new THREE.Vector3();
 const _Tc = new THREE.Vector3();
 const _t = new THREE.Vector3();
 const _up = new THREE.Vector3();
+const APS_LINE = apsThrustLineCg();
 
 /**
  * Create the simulation.
@@ -61,6 +70,7 @@ export function createSim(game, { gnc } = {}) {
     stack: null,
     stackBody: null,
     timeline: [],
+    thrPrev: {}, // per vessel {mode, cmd} before the GNC cycle (throttle handover)
     rcsTimer: 0,
     noDockTimer: 0,
     lastBounceMsg: -1e9,
@@ -128,6 +138,7 @@ export function createSim(game, { gnc } = {}) {
     S.timeline = [];
     S.rcsTimer = 0;
     S.noDockTimer = 0;
+    S.thrPrev = {};
     game.time.met = sc.met;
     game.time.paused = false;
     game.result = null;
@@ -160,6 +171,7 @@ export function createSim(game, { gnc } = {}) {
     if (sc.station) game.view.station = sc.station;
     S.loadedOnce = true;
     gnc.reset?.();
+    S.gncInit = sc.gncInit ? () => sc.gncInit(game, gnc) : null;
     refreshTelemetry();
     game.events.emit('scenario', { id: sc.id });
   }
@@ -201,8 +213,11 @@ export function createSim(game, { gnc } = {}) {
   function setWarp(level) {
     const w = WARP_LEVELS.includes(level) ? level : 1;
     game.time.warp = w;
-    const { lim, reason } = warpLimit();
-    if (w > lim) message(`Time warp ${w}× requested — limited to ${lim}× (${reason})`, 'warn');
+    const { lim, reason, ignition } = warpLimit();
+    if (w > 1 && ignition) {
+      game.time.warp = 1; // not stored: nothing may restore a high warp after the ignition window
+      message(`Time warp held at 1× — ${reason}`, 'warn');
+    } else if (w > lim) message(`Time warp ${w}× requested — limited to ${lim}× (${reason})`, 'warn');
     else message(w === 1 ? 'Time warp off (1×)' : `Time warp ${w}×`, 'info');
   }
 
@@ -210,17 +225,44 @@ export function createSim(game, { gnc } = {}) {
     const target = to === 'LM' || to === 'CSM' ? to : game.activeId === 'LM' ? 'CSM' : 'LM';
     if (target === game.activeId) return;
     const prev = game.vessels[game.activeId];
+    const handover = leaveVessel(prev);
     zeroCtrl(prev.ctrl);
     game.activeId = target;
     game.events.emit('vessel', { id: target });
     const v = game.vessels[target];
     message(`Now flying ${v.name} (${target === 'LM' ? 'Lunar Module' : 'Command/Service Module'})`, 'info');
+    if (handover) message(handover.text, handover.level, 7);
   }
 
+  /**
+   * The crew of the vessel the player leaves keeps it flying. A powered LM descent in P66/P67
+   * (pilot flying attitude and/or throttle) is handed to the LGC's hands-off P66 AUTO, which
+   * nulls the drift and lets down to a landing; any other burn keeps its throttle lever setting.
+   * Must run while `prev` is still the active vessel (the actions below address game.active).
+   * @returns {{text:string, level:string}|null} message for the player
+   */
+  function leaveVessel(prev) {
+    const g = prev.gnc;
+    const e = prev.mainEngine;
+    const airborne = !prev.landed && !prev.crashed && !prev.docked && !prev.phys?.sleeping;
+    if (!airborne) return null;
+    if (prev.type === 'LM' && !prev.staged && e.firing && (g.program === 'P66' || g.program === 'P67') && !(g.program === 'P66' && g.autopilot === 'GUIDANCE')) {
+      if (g.program === 'P67') game.events.emit('action', { name: 'AUTO_TOGGLE' }); // P67 -> P66
+      if (g.program === 'P66') game.events.emit('action', { name: 'AUTOPILOT', mode: 'GUIDANCE' }); // hands-off ROD + attitude
+      if (g.program === 'P66' && g.autopilot === 'GUIDANCE') {
+        return { text: `${prev.name}: the LGC is flying P66 AUTO down to the surface while you are away`, level: 'warn' };
+      }
+    }
+    if (e.firing && g.throttleMode === 'MANUAL' && (prev.ctrl.throttle || 0) > 0) {
+      return { text: `${prev.name}: ${e.name} still firing at ${Math.round((e.throttle || prev.ctrl.throttle) * 100)} % — nobody is flying her now`, level: 'warn' };
+    }
+    return null;
+  }
+
+  /** Spring-loaded hand controllers return to detent; the throttle lever is a friction lever and stays put. */
   function zeroCtrl(c) {
     c.pitch = c.yaw = c.roll = 0;
     c.transFwd = c.transRight = c.transUp = 0;
-    c.throttle = 0;
     c.fine = false;
   }
 
@@ -233,7 +275,7 @@ export function createSim(game, { gnc } = {}) {
     S.stackBody = null;
     S.noDockTimer = 8;
     game.events.emit('undock', { a: 'CSM', b: 'LM' });
-    message('Undocked — probe spring separation 0.1 m/s', 'good');
+    message(`Undocked — probe spring separation ${fmtSpeed(game, DOCK.SEP_SPEED, 1)}`, 'good');
     if (!lm.staged) game.events.emit('callout', { text: 'The Eagle has wings.', voice: true, who: 'CDR' });
   }
 
@@ -254,16 +296,18 @@ export function createSim(game, { gnc } = {}) {
     if (S.stack) return message('Already docked', 'info');
     if (lm.crashed || csm.crashed) return;
     const g = dockingGeometry(csm, lm, {});
-    if (g.range < 1.0 && g.lateral < 0.5 && g.closing < 1.0 && g.closing > -0.3 && g.misalignDeg < 15) capture();
-    else message(`Docking out of tolerance — probe ${g.range.toFixed(1)} m from drogue, lateral ${g.lateral.toFixed(2)} m, closing ${g.closing.toFixed(2)} m/s, misalignment ${g.misalignDeg.toFixed(0)}°`, 'warn', 6);
+    if (g.range < 1.0 && g.lateral < 0.5 && g.closing < 2 * DOCK.CAPTURE_CLOSING && g.closing > -0.3 && g.misalignDeg < 15) capture();
+    else message(`Docking out of tolerance — probe ${fmtLen(game, g.range, 1)} from the drogue, ${fmtLen(game, g.lateral, 1)} off-centre, closing ${fmtSpeed(game, g.closing, 2)}, misalignment ${g.misalignDeg.toFixed(0)}°`, 'warn', 6);
   }
 
   function stage() {
     const lm = game.vessels.LM;
     const inFlight = !lm.landed && !lm.phys.sleeping;
     if (stageLM(S, lm) && inFlight) {
-      // ABORT STAGE also arms and starts the ascent engine
-      lm.ctrl.throttle = 1;
+      // ABORT STAGE also arms and starts the ascent engine; from now on P71 throttles it (AUTO).
+      // The TTCA lever only ever set the DPS: put it to OFF so the APS cannot relight at the old
+      // hover setting when P71 hands over to P00 (manual throttle) after insertion.
+      lm.ctrl.throttle = 0;
       lm.mainEngine.throttleCmd = 1;
     }
   }
@@ -321,6 +365,7 @@ export function createSim(game, { gnc } = {}) {
   function warpLimit() {
     let lim = Infinity;
     let reason = null;
+    let ign = false;
     const met = game.time.met;
     for (const v of Object.values(game.vessels)) {
       const ph = v.phys;
@@ -331,10 +376,21 @@ export function createSim(game, { gnc } = {}) {
           reason = `${v.mainEngine.name} firing`;
         }
       }
-      const tig = v.gnc.tig;
-      if (typeof tig === 'number' && tig > met && tig - met < 45 && lim > 10) {
-        lim = 10;
-        reason = 'ignition coming up';
+      const tig = v.gnc.tig; // set by the GNC only while an ignition is still pending
+      if (typeof tig === 'number' && Number.isFinite(tig)) {
+        const dt = tig - met;
+        if (v === game.active && dt < WARP_IGN.STOP && dt > -WARP_IGN.LATE) {
+          // real time for the V99 "please perform engine on" (flashes at TIG-5 s) and for a late
+          // PRO after a missed TIG: at any warp the window would last a fraction of a second
+          if (lim > 1) {
+            lim = 1;
+            ign = true;
+            reason = dt > 0 ? `${v.mainEngine.name} ignition in ${Math.ceil(dt)} s` : `${v.mainEngine.name} ignition pending (V99)`;
+          }
+        } else if (dt < 45 && dt > -WARP_IGN.LATE && lim > 10) {
+          lim = 10;
+          reason = 'ignition coming up';
+        }
       }
       if (!ph.sleeping && v.tel.altitude < 5000 && lim > 10) {
         lim = 10;
@@ -359,7 +415,7 @@ export function createSim(game, { gnc } = {}) {
       lim = 1;
       reason = 'docking capture';
     }
-    return { lim, reason };
+    return { lim, reason, ignition: ign };
   }
 
   function chooseH() {
@@ -431,14 +487,22 @@ export function createSim(game, { gnc } = {}) {
       ph.force.set(0, 0, 0);
       return;
     }
-    _Fc.addScaledVector(v.mainEngine.thrustDir, thrust); // through the CG (trim gimbal)
+    const me = v.mainEngine;
+    _Fc.addScaledVector(me.thrustDir, thrust); // DPS / SPS: through the CG (trim gimbal)
+    if (thrust > 0 && me.minThrottle >= me.maxThrottle - 1e-6) {
+      // the APS is fixed (no gimbal): its thrust line misses the moving CG by a few cm, a
+      // disturbance torque the RCS fights all the way to orbit (the ascent-stage "wallow")
+      const ax = APS_LINE; // the thrust line: parallel to +Y through the mid-burn CG (x, z)
+      _t.set(ax.x, me.nozzleThroat.y, ax.z).sub(v.cg); // lever arm from the CG to the thrust line
+      _Tc.add(_up.crossVectors(_t, me.thrustDir).multiplyScalar(thrust)); // r x F
+    }
     ph.force.copy(_Fc.applyQuaternion(v.quat));
     ph.torque.copy(_Tc);
     let c = null;
     if (v.type === 'LM') {
       c = lmContact(v, h, ev);
       if (c.crash) {
-        crashVessel(S, v, c.crash.outcome, c.crash.reason, true);
+        crashVessel(S, v, c.crash.outcome, impactReason(S, v, c.crash), true);
         return;
       }
     } else {
@@ -523,7 +587,12 @@ export function createSim(game, { gnc } = {}) {
       const c = bounce(csm, lm);
       if (c > 0 && game.time.met - S.lastBounceMsg > 2) {
         S.lastBounceMsg = game.time.met;
-        const why = g.closing >= DOCK.CAPTURE_CLOSING ? `closing ${g.closing.toFixed(2)} m/s > 0.6` : g.misalignDeg >= DOCK.CAPTURE_MISALIGN_DEG ? `misaligned ${g.misalignDeg.toFixed(0)}° > 10°` : `off-centre ${g.lateral.toFixed(2)} m`;
+        const why =
+          g.closing >= DOCK.CAPTURE_CLOSING
+            ? `closing ${fmtSpeed(game, g.closing, 2)} > ${fmtSpeed(game, DOCK.CAPTURE_CLOSING, 2)}`
+            : g.misalignDeg >= DOCK.CAPTURE_MISALIGN_DEG
+              ? `misaligned ${g.misalignDeg.toFixed(0)}° > ${DOCK.CAPTURE_MISALIGN_DEG}°`
+              : `off-centre ${fmtLen(game, g.lateral, 1)}`;
         game.events.emit('message', { text: `Probe contact — no capture (${why})`, level: 'warn' });
       }
     }
@@ -550,12 +619,45 @@ export function createSim(game, { gnc } = {}) {
 
   function refreshTelemetry() {
     const { LM: lm, CSM: csm } = game.vessels;
+    csm.probeExtension = S.stack ? S.stack.probeExtension ?? 0 : 1;
     updateTelemetry(lm, csm, S.stack);
     updateTelemetry(csm, lm, S.stack);
   }
 
+  /**
+   * Bumpless AUTO -> MANUAL throttle handover (P66 -> P67, P63 -> P00 / P47, P66 -> P68 after
+   * ENGINE STOP, P12/P71 -> P00 after insertion), for BOTH vessels whether flown or not: the
+   * throttle lever takes the throttle the computer commanded last, i.e. 0 after an engine stop
+   * or cut-off. Without this the first manual-throttle cycle would relight the engine at
+   * whatever the lever held before the automatic phase (e.g. an old hover setting).
+   */
+  function throttleHandover(v) {
+    const pv = S.thrPrev[v.id];
+    const mode = v.gnc.throttleMode;
+    if (pv.mode === 'AUTO' && mode === 'MANUAL') {
+      const lever = pv.cmd > 1e-4 && v.mainEngine.firing ? Math.min(1, pv.cmd) : 0;
+      v.ctrl.throttle = lever;
+      v.mainEngine.throttleCmd = lever;
+    }
+  }
+  function recordThrottle(v) {
+    const pv = S.thrPrev[v.id] || (S.thrPrev[v.id] = {});
+    pv.mode = v.gnc.throttleMode;
+    pv.cmd = v.mainEngine.throttleCmd || 0;
+  }
+
   function substep(h) {
+    const { LM: lm0, CSM: csm0 } = game.vessels;
+    recordThrottle(lm0);
+    recordThrottle(csm0);
     gnc.update(h);
+    if (S.gncInit) {
+      const f = S.gncInit;
+      S.gncInit = null;
+      f();
+    }
+    throttleHandover(lm0);
+    throttleHandover(csm0);
     autoStage();
     if (h > STEP.ACTIVE + 1e-9 && (jetsCommanded() || engineWanted(game.vessels.LM) || engineWanted(game.vessels.CSM))) {
       // something woke up during a long coast step: integrate it finely with the same commands
@@ -580,7 +682,12 @@ export function createSim(game, { gnc } = {}) {
     const ignoreWarp = !!opts.ignoreWarp;
     let actual = 1;
     if (!ignoreWarp) {
-      const { lim, reason } = warpLimit();
+      const { lim, reason, ignition } = warpLimit();
+      if (ignition && game.time.warp > 1) {
+        // drop the REQUEST too: a missed ignition must not bring 1000x back a moment later
+        game.time.warp = 1;
+        message(`Time warp stopped — ${reason}`, 'warn', 5);
+      }
       const req = Math.max(1, game.time.warp || 1);
       actual = Math.min(req, lim);
       if (actual !== S.lastWarpActual) {

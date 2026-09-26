@@ -12,6 +12,7 @@
 // Nouns implemented (R1 / R2 / R3):
 //   N09 alarm codes              first / second / last alarm (octal)
 //   N33 time of ignition         hours / minutes / seconds x100 (GET)
+//   N40 DOI burn (P40)           time from ignition mm ss / velocity to be gained ft/s x10 / delta-V ft/s x10
 //   N43 lat / long / alt         deg x100 / deg x100 / nmi x10       (P68 landing site)
 //   N44 orbit                    apolune nmi x10 / perilune nmi x10 / time from perilune mm ss
 //                                (-59 59 when the orbit is too circular for a perilune)
@@ -151,6 +152,15 @@ export function nounRegisters(v, S, game, noun) {
         out[1] = reg(mm);
         out[2] = reg(tig - hh * 3600 - mm * 60, 100);
       }
+      break;
+    }
+    case '40': {
+      // P40 (DOI): time from ignition, velocity to be gained, delta-V accumulated
+      const b = S.burn;
+      const tig = b?.tig ?? v.gnc.tig;
+      out[0] = regMinSec(Number.isFinite(tig) ? game.time.met - tig : NaN);
+      out[1] = reg((b ? b.vgo.length() : 0) / FT, 10);
+      out[2] = reg((b?.dvAcc || 0) / FT, 10);
       break;
     }
     case '43': {

@@ -35,60 +35,61 @@ export function createLMMaterials({ quality = 'high' } = {}) {
   const std = (p) => new THREE.MeshStandardMaterial(p);
 
   // ---- thermal blankets (descent stage, struts, ascent-stage underside) ----
-  // Aluminized Kapton: an amber polyimide film over vapour-deposited aluminium. Metallic, amber
-  // specular colour, mostly glossy — the crinkles do the rest.
+  // Aluminized Kapton: an amber polyimide film over vapour-deposited aluminium. Metallic, deep amber
+  // specular colour, satin (roughness map >= 0.3) — the 5-30 cm crinkle facets do the rest: broad
+  // amber-to-brown gradients and a few large highlights (one foil tile covers ~2.4 m).
   M.gold = std({
     name: 'LM gold Kapton',
-    color: new THREE.Color(0.96, 0.58, 0.2),
-    map: rep(foil.tint, 1.1),
+    color: new THREE.Color(0.9, 0.5, 0.15),
+    map: rep(foil.tint, 2.4),
     metalness: 0.92,
     roughness: 1.0,
-    roughnessMap: rep(foil.rough, 1.1),
-    normalMap: rep(foil.normal, 1.1),
+    roughnessMap: rep(foil.rough, 2.4),
+    normalMap: rep(foil.normal, 2.4),
     normalScale: new THREE.Vector2(1.0, 1.0),
   });
   // deeper, browner Kapton layers (thicker film / different lot) used on some panels
   M.bronze = std({
     name: 'LM bronze Kapton',
-    color: new THREE.Color(0.78, 0.42, 0.14),
-    map: rep(foil.tint, 0.95, 1.3),
+    color: new THREE.Color(0.72, 0.37, 0.1),
+    map: rep(foil.tint, 2.1, 1.3),
     metalness: 0.92,
     roughness: 1.0,
-    roughnessMap: rep(foil.rough, 0.95, 1.3),
-    normalMap: rep(foil.normal, 0.95, 1.3),
+    roughnessMap: rep(foil.rough, 2.1, 1.3),
+    normalMap: rep(foil.normal, 2.1, 1.3),
     normalScale: new THREE.Vector2(1.0, 1.0),
   });
   // gold wrap on the landing-gear struts: tighter crinkles
   M.goldWrap = std({
     name: 'LM strut gold wrap',
-    color: new THREE.Color(0.95, 0.57, 0.19),
-    map: rep(foil2.tint, 0.35),
+    color: new THREE.Color(0.9, 0.5, 0.15),
+    map: rep(foil2.tint, 0.8),
     metalness: 0.92,
     roughness: 1.0,
-    roughnessMap: rep(foil2.rough, 0.35),
-    normalMap: rep(foil2.normal, 0.35),
+    roughnessMap: rep(foil2.rough, 0.8),
+    normalMap: rep(foil2.normal, 0.8),
     normalScale: new THREE.Vector2(0.9, 0.9),
   });
   // footpad foil: same Kapton, but dulled (scuffed, dusty) so it does not flare
   M.padFoil = std({
     name: 'LM footpad foil',
     color: new THREE.Color(0.8, 0.5, 0.2),
-    map: rep(foil2.tint, 0.3),
+    map: rep(foil2.tint, 0.7),
     metalness: 0.85,
     roughness: 1.6,
-    roughnessMap: rep(foil2.rough, 0.3),
-    normalMap: rep(foil2.normal, 0.3),
+    roughnessMap: rep(foil2.rough, 0.7),
+    normalMap: rep(foil2.normal, 0.7),
     normalScale: new THREE.Vector2(0.8, 0.8),
   });
   // aluminized Mylar (silver) — MESA, quadrant bays
   M.silver = std({
     name: 'LM silver Mylar',
     color: new THREE.Color(0.86, 0.87, 0.88),
-    map: rep(foil.tint, 0.8, 0.7),
+    map: rep(foil.tint, 1.8, 0.7),
     metalness: 0.9,
     roughness: 1.0,
-    roughnessMap: rep(foil.rough, 0.8, 0.7),
-    normalMap: rep(foil.normal, 0.8, 0.7),
+    roughnessMap: rep(foil.rough, 1.8, 0.7),
+    normalMap: rep(foil.normal, 1.8, 0.7),
     normalScale: new THREE.Vector2(0.9, 0.9),
   });
   // black H-film (Kapton) outer layers on the lower descent stage: glossy black dielectric
@@ -97,19 +98,19 @@ export function createLMMaterials({ quality = 'high' } = {}) {
     color: new THREE.Color(0.018, 0.017, 0.016),
     metalness: 0.0,
     roughness: 1.0,
-    roughnessMap: rep(foil.rough, 0.9, 2.1),
-    normalMap: rep(foil.normal, 0.9, 2.1),
+    roughnessMap: rep(foil.rough, 2.0, 2.1),
+    normalMap: rep(foil.normal, 2.0, 2.1),
     normalScale: new THREE.Vector2(0.9, 0.9),
   });
   // Inconel foil (charcoal, metallic) around the descent-engine base heat shield
   M.inconel = std({
     name: 'LM Inconel foil',
     color: new THREE.Color(0.24, 0.22, 0.2),
-    map: rep(foil.tint, 0.7, 0.4),
+    map: rep(foil.tint, 1.6, 0.4),
     metalness: 0.9,
     roughness: 1.0,
-    roughnessMap: rep(foil.rough, 0.7, 0.4),
-    normalMap: rep(foil.normal, 0.7, 0.4),
+    roughnessMap: rep(foil.rough, 1.6, 0.4),
+    normalMap: rep(foil.normal, 1.6, 0.4),
     normalScale: new THREE.Vector2(0.8, 0.8),
   });
   // quilted black blankets (ascent stage top & aft, quad housings)

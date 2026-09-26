@@ -26,6 +26,8 @@
 //   createGlass(w, h, z, round)                 reflective cover glass
 //   getMaterial(name), createMaterial(name, overrides), createPaintedMaterial(painter)
 //   setLampBrightness(k), setIntegralLighting(level, color)
+//   setLampExposure(ctx.exposureInfo)            auto-exposure compensation of lamps/displays (per frame)
+//   useInstancedShadowDepth(instancedMesh)      own shadow depth material (keeps the shadow pass cheap)
 //   setCabinEnvironment(createCabinEnvironment(ctx.renderer, {windows})) — RECOMMENDED for every cabin:
 //     interior reflections for chrome/glass instead of the outdoor env (which shows the Sun through walls)
 import { LAYERS } from '../../../core/constants.js';
@@ -35,7 +37,7 @@ import * as cb from './breakers.js';
 import * as ctl from './controls.js';
 import * as plc from './placards.js';
 
-export { COLORS, LAMP_COLORS, LIGHTING, LAMP_INTENSITY, getMaterial, createMaterial, createPaintedMaterial, MATERIAL_NAMES, registerLamp, setLampLevel, setLampBrightness, setIntegralLighting, registerIntegral, setCabinEnvironment, createCabinEnvironment, glassSmudgeTexture } from './materials.js';
+export { COLORS, LAMP_COLORS, LIGHTING, LAMP_INTENSITY, getMaterial, createMaterial, createPaintedMaterial, MATERIAL_NAMES, registerLamp, setLampLevel, setLampBrightness, setIntegralLighting, registerIntegral, setCabinEnvironment, createCabinEnvironment, glassSmudgeTexture, useInstancedShadowDepth, setLampExposure, LAMP_EXPOSURE_REF } from './materials.js';
 export { createCanvasTexture, createPainter, drawText, measureText, FONT_STACK, MONO_STACK, MAX_TEX, rng, hashString, css, roundRectPath } from './canvas.js';
 export { TOGGLE_THROW, printToggleLegends, mergeSimple } from './switches.js';
 export { CB_POP, layoutBreakers } from './breakers.js';

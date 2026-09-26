@@ -18,7 +18,7 @@ import * as THREE from 'three';
 import { CSM } from '../../../core/constants.js';
 import {
   CONE_K, WALL_OFFSET, AFT_Z, FWD_Z, AFT_DOME, TUNNEL, innerRadius, rayCone, coneNormal, windowFrames, apertureOutline,
-  Frame,
+  Frame, HATCH,
 } from './layout.js';
 import { V, Batch, subtractConvex, polyArea, inConvex, stripBetween, cylBetween, beam, roundBox, tube, lathe, boxUV } from './geom.js';
 
@@ -167,12 +167,14 @@ function paneGeometry(frame, d, grow = 0) {
   const pts = apertureOutline(frame, grow, OUTLINE_N);
   const shape = new THREE.Shape(pts.map(([x, y]) => new THREE.Vector2(x, y)));
   const g = new THREE.ShapeGeometry(shape, 1);
-  // uv over the aperture
+  // physical-scale uv (0.25 m per texture tile), offset per pane so stacked panes never line up
   const p = g.attributes.position;
   const uv = new Float32Array(p.count * 2);
+  const ou = (d * 37.3 + frame.origin.x * 3.1) % 1;
+  const ov = (d * 21.7 + frame.origin.z * 2.3) % 1;
   for (let i = 0; i < p.count; i++) {
-    uv[i * 2] = p.getX(i) / frame.w + 0.5;
-    uv[i * 2 + 1] = p.getY(i) / frame.h + 0.5;
+    uv[i * 2] = p.getX(i) / 0.25 + ou;
+    uv[i * 2 + 1] = p.getY(i) / 0.25 + ov;
   }
   g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
   // face INTO the cabin (-n): flip x so the ShapeGeometry's +Z maps to -n
@@ -193,13 +195,14 @@ export function buildShell(mat) {
   const hatchWin = W.hatch;
 
   // ---------------------------------------------------------------- side hatch region (theta, z)
-  const HZ0 = -0.46; // aft edge
-  const HZ1 = -1.32; // forward edge
-  const HHW = 0.38; // half width (m, circumferential)
+  const HZ0 = HATCH.z0; // aft edge
+  const HZ1 = HATCH.z1; // forward edge
+  const HHW = HATCH.halfWidth; // half width (m, circumferential)
   const hatchTh = (R, z) => HHW / (R + CONE_K * z);
 
   // ---------------------------------------------------------------- windows: pockets, panes, frames
   const glassParts = [];
+  const deepParts = [];
   for (const [id, f] of Object.entries(W)) {
     const inHatch = id === 'hatch';
     const rimWall = rimOnCone(f, R_IN); // where the pocket meets the inner wall
@@ -220,8 +223,9 @@ export function buildShell(mat) {
     const minDepth = Math.min(...rimIn.map((p) => -V().subVectors(p, f.origin).dot(f.z)));
     const dOuter = 0.015;
     const dInner = Math.max(dOuter + 0.02, minDepth - 0.012);
-    glassParts.push(paneGeometry(f, dOuter, 0.004), paneGeometry(f, dInner, 0.004));
-    if (dInner - dOuter > 0.06) glassParts.push(paneGeometry(f, (dInner + dOuter) / 2, 0.004)); // middle pane
+    glassParts.push(paneGeometry(f, dInner, 0.004));
+    deepParts.push(paneGeometry(f, dOuter, 0.004));
+    if (dInner - dOuter > 0.06) deepParts.push(paneGeometry(f, (dInner + dOuter) / 2, 0.004)); // middle pane
     // thin dark retaining frames around each pane (seen edge-on through the glass)
     for (const d of [dOuter, dInner]) B.add('structDark', paneRing(f, d, 0.004, 0.012));
     // interior bezel around the cabin end of the pocket
@@ -245,7 +249,23 @@ export function buildShell(mat) {
       return conePoint(R, th, z);
     };
     const hole = { ...holeFor(hatchWin, 0.3), center: rimCentre(windows.hatch.rimIn) };
-    B.add('hatch', conePatch(R_HATCH, gp(R_HATCH), nu, nv, [hole], true));
+    const hp = conePatch(R_HATCH, gp(R_HATCH), nu, nv, [hole], true);
+    // uv in hatch coordinates for the painted inner face (textures.hatchTexture): u across (+X right
+    // of the canvas centre... canvas left = -X), v = 1 at the aft edge (read from the couches)
+    {
+      const p = hp.attributes.position;
+      const uv = new Float32Array(p.count * 2);
+      for (let i = 0; i < p.count; i++) {
+        const x = p.getX(i);
+        const y = p.getY(i);
+        const z = p.getZ(i);
+        const sArc = Math.atan2(x, y) * (R_HATCH + CONE_K * z);
+        uv[i * 2] = 0.5 + sArc / (2 * HHW);
+        uv[i * 2 + 1] = 1 - (HZ0 - z) / (HZ0 - HZ1);
+      }
+      hp.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    }
+    B.add('hatch', hp);
     // side walls of the raised panel (hatch edge) + a dark gasket line on the wall around it
     const ring = [];
     const ringW = [];
@@ -326,15 +346,21 @@ export function buildShell(mat) {
   // ---------------------------------------------------------------- outer skin: shadow-only occluder
   const skin = buildOuterSkin(W);
 
-  const group = B.build((k) => mat(k === 'hatch' ? 'structure' : k));
+  const group = B.build((k) => mat(k === 'hatch' ? 'hatchPanel' : k));
   group.add(skin);
   const glassGeo = mergeList(glassParts);
   const glassMesh = new THREE.Mesh(glassGeo, mat('pane'));
   glassMesh.name = 'CSMCabin:windowGlass';
   glassMesh.castShadow = false;
-  glassMesh.receiveShadow = false;
+  glassMesh.receiveShadow = true;
   glassMesh.renderOrder = 2;
   group.add(glassMesh);
+  const deepMesh = new THREE.Mesh(mergeList(deepParts), mat('paneDeep'));
+  deepMesh.name = 'CSMCabin:windowGlassDeep';
+  deepMesh.castShadow = false;
+  deepMesh.receiveShadow = true;
+  deepMesh.renderOrder = 2;
+  group.add(deepMesh);
   return { group, windows, glass: glassMesh, hatch: { z0: HZ0, z1: HZ1, halfWidth: HHW, radius: R_HATCH } };
 }
 

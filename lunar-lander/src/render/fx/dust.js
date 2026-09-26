@@ -73,23 +73,27 @@ const sheetFrag = /* glsl */ `
     vec2 q = vec2(dot(rel, uE1), dot(rel, uE2));
     float r = length(q);
     vec2 dir = q / max(r, 1e-3);
-    // radial structure: rays of dust (constant angular width) scrolling outward fast; the rays wander
-    // slightly and break up so the pattern never converges to a hard point
-    float n3 = vnoise(vec3(dir * 7.0 + 3.0, r * 0.05 - uTime * 2.0));
-    float ang = atan(dir.y, dir.x) + 0.035 * sin(r * 0.11 + n3 * 5.0);
+    // radial structure: broad, soft, variable-width rays of dust (constant angular width) scrolling
+    // outward fast, riding on a coarse density field that also streams outward, so the sheet reads as
+    // a flowing veil with streaks in it rather than hairlines painted on the ground
+    float n3 = vnoise(vec3(dir * 5.0 + 3.0, r * 0.05 - uTime * 2.0));
+    float ang = atan(dir.y, dir.x) + 0.05 * sin(r * 0.09 + n3 * 5.0);
     vec2 cs = vec2(cos(ang), sin(ang));
-    float n1 = vnoise(vec3(cs * 26.0, r * 0.2 - uTime * 11.0));
-    float n2 = vnoise(vec3(cs * 80.0 + 7.0, r * 0.5 - uTime * 27.0));
-    float streak = smoothstep(0.2, 0.95, n1) * (0.5 + 0.5 * n2) * (0.35 + 1.0 * n3);
+    float n1 = vnoise(vec3(cs * 9.0, r * 0.12 - uTime * 9.0));
+    float n2 = vnoise(vec3(cs * 30.0 + 7.0, r * 0.35 - uTime * 23.0));
+    float n4 = vnoise(vec3(q * 0.07 + 11.0, r * 0.06 - uTime * 5.0));
+    float streak = (0.5 + 0.65 * smoothstep(0.25, 0.85, n1)) * (0.75 + 0.25 * n2) * (0.55 + 0.6 * n3) * (0.6 + 0.8 * n4);
+    // where the rays converge they merge into one turbulent veil (no hard vanishing point)
+    streak = mix(0.75 * (0.6 + 0.8 * n4), streak, smoothstep(3.0, 14.0, r));
     // more dust downwind of a tilted plume
     float aniso = 1.0 + 1.6 * dot(dir, vec2(dot(uTilt, uE1), dot(uTilt, uE2)));
-    // radial profile: scoured centre, dense ring, long thin tail; a diffuse (streak-free) veil where
-    // the rays converge so there is no hard vanishing point
+    // radial profile: scoured centre, dense ring, long thin tail, and a thick diffuse veil near the
+    // impingement point that hides most of the surface below ~10 m (Apollo 11/12/15 film)
     float reach = uReach * max(0.3, aniso);
     float outer = 1.0 - smoothstep(0.75 * ${SHEET_R.toFixed(1)}, ${SHEET_R.toFixed(1)}, r);
-    float prof = smoothstep(1.0, 7.0, r) * exp(-r / reach) * outer;
-    float veil = 0.35 * smoothstep(0.3, 2.5, r) * exp(-r / (0.45 * reach)) * outer;
-    float a = clamp(uIntensity * (prof * streak + veil) * max(aniso, 0.0) * 1.1, 0.0, 0.6);
+    float prof = smoothstep(1.0, 6.0, r) * exp(-r / reach) * outer;
+    float veil = 0.75 * smoothstep(0.3, 2.5, r) * exp(-r / (0.6 * reach)) * (0.7 + 0.6 * n4) * outer;
+    float a = clamp(uIntensity * (prof * streak + veil) * max(aniso, 0.0) * 1.1, 0.0, 0.82);
     if (a < 0.002) discard;
     // single scattering of sunlight by the grains (fine regolith is strongly forward scattering)
     vec3 toEye = normalize(-vWorld);

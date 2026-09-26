@@ -107,15 +107,19 @@ export function updateEngine(v, h, events, cg = v.cg) {
   }
   // smooth thrust rise (chamber pressure build-up)
   const rise = s.state === 'starting' ? s.f * s.f * (3 - 2 * s.f) : s.f;
-  let thrust = e.maxThrust * s.thr * rise;
+  let thrust = v.propellant.main > 0 ? e.maxThrust * s.thr * rise : 0; // dry tanks: no tail-off thrust
   // propellant
   if (thrust > 0) {
     const dm = (thrust / (e.isp * G0)) * h;
     if (dm >= v.propellant.main) {
       thrust *= v.propellant.main / dm;
       v.propellant.main = 0;
-      if (s.state !== 'off') {
-        s.state = 'stopping';
+      // flame-out: the chamber empties at once. Announce it only on the transition (a shutdown
+      // already commanded that runs the tanks dry during its tail-off is not a depletion).
+      const wasOn = s.state === 'starting' || s.state === 'running';
+      s.state = 'off';
+      s.f = 0;
+      if (wasOn) {
         events.emit('engine', { vessel: v.id, engine: e.name, on: false });
         events.emit('message', { text: `${e.name} shutdown — propellant depleted`, level: 'alarm' });
       }

@@ -136,3 +136,89 @@ test('update: floating origin, gear stroke, staging', () => {
   assert.ok(m.root.getObjectByName('LM descent stage'));
   assert.equal(m.descentRoot.visible, false);
 });
+
+test('distance LOD: sub-pixel LM is replaced by a sunlit speck (not when shadows need it)', () => {
+  const scene = new THREE.Scene();
+  const vesselShadow = { enabled: false };
+  const ctx = {
+    scene,
+    quality: 'low',
+    LAYERS,
+    vesselShadow,
+    camera: { fov: 60 },
+    renderer: { getDrawingBufferSize: (v) => v.set(1920, 1080), getPixelRatio: () => 1 },
+  };
+  const m = createLMModel(ctx);
+  scene.add(m.root);
+  const R = 1737400 + 110000;
+  const v = {
+    pos: new THREE.Vector3(R, 0, 0),
+    quat: new THREE.Quaternion(),
+    staged: false,
+    descentStage: null,
+    landed: false,
+    tel: { altitude: 110000 },
+    gear: { pads: lmFootpads().map((p) => ({ ...p, compression: 0 })) },
+  };
+  const csm = { pos: new THREE.Vector3() };
+  const sunDir = new THREE.Vector3(1, 0, 0);
+  const frameAt = (dist, active = csm) => ({ origin: v.pos.clone().add(new THREE.Vector3(0, 0, dist)), time: 0.5, sunDir, active, viewMode: 'chase' });
+  const speck = () => m.root.children.find((o) => o.isPoints && o.visible);
+  const asc = m.root.getObjectByName('LM ascent stage') || m.root.children.find((o) => o.isGroup);
+
+  // close: resolved model, no speck
+  m.update(frameAt(200), v);
+  assert.equal(m.lod.culled, false);
+  assert.equal(speck(), undefined);
+  assert.ok(m.lod.lmPx > 50, `px at 200 m: ${m.lod.lmPx}`);
+
+  // 238 km (the CSM Solo case): < 1.5 px -> meshes hidden, speck shown, bright enough to see
+  m.update(frameAt(238500), v);
+  assert.ok(m.lod.lmPx < 0.1, `px at 238 km: ${m.lod.lmPx}`);
+  assert.equal(m.lod.culled, true);
+  assert.equal(asc.visible, false);
+  const s = speck();
+  assert.ok(s, 'speck visible');
+  assert.ok(s.layers.mask === 1 << LAYERS.FX, 'speck on the FX layer (not in the shadow passes)');
+  const U = s.material.uniforms;
+  assert.ok(U.uStar.value.x > 0.01, `perceptual brightness ${U.uStar.value.x}`);
+  assert.ok(U.uPhys.value.x < U.uStar.value.x);
+
+  // continuity at the hand-over distance: just past it, the perceptual term is capped at the
+  // physical brightness of the resolved model (the phase here is 90 deg, Sun along +X)
+  let dHand = 3000;
+  for (; dHand < 20000; dHand += 50) {
+    m.update(frameAt(dHand), v);
+    if (m.lod.culled) break;
+  }
+  assert.ok(dHand > 4000 && dHand < 12000, `hand-over at ${dHand} m`);
+  assert.ok(U.uStar.value.x <= U.uPhys.value.x * 1.15, `speck ${U.uStar.value.x} vs model ${U.uPhys.value.x}`);
+
+  // in the Moon's shadow: dark (the tracking light is off at t = 0.5 s)
+  v.pos.set(-R, 0, 0);
+  m.update(frameAt(238500), v);
+  assert.equal(m.lod.culled, true);
+  assert.equal(U.uPhys.value.x + U.uStar.value.x, 0);
+  v.pos.set(R, 0, 0);
+
+  // own vessel with the vessel-shadow pass enabled: always resolved
+  vesselShadow.enabled = true;
+  m.update(frameAt(238500, v), v);
+  assert.equal(m.lod.culled, false);
+  assert.equal(asc.visible, true);
+  vesselShadow.enabled = false;
+
+  // staged: the descent stage far away gets its own speck, the ascent stage stays resolved
+  v.staged = true;
+  v.descentStage = { pos: v.pos.clone().add(new THREE.Vector3(-300000, 0, 0)), quat: new THREE.Quaternion(), landed: true };
+  m.update(frameAt(100, v), v);
+  assert.equal(m.lod.culled, false);
+  assert.equal(m.lod.descentCulled, true);
+  assert.ok(m.descentRoot.children.find((o) => o.isPoints).visible);
+  assert.equal(m.descentRoot.getObjectByName('LM descent stage').visible, false);
+  // back close: meshes again
+  v.descentStage.pos.copy(v.pos).add(new THREE.Vector3(0, 0, 50));
+  m.update(frameAt(100, v), v);
+  assert.equal(m.lod.descentCulled, false);
+  assert.equal(m.descentRoot.getObjectByName('LM descent stage').visible, true);
+});

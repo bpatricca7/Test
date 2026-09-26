@@ -133,7 +133,7 @@ const REL_Q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0)
 const REL_P = CSM.docking.port.clone().sub(LM.docking.port.clone().applyQuaternion(REL_Q));
 
 // ---------------------------------------------------------------- cabin
-const cabin = createCSMCabin(ctx);
+const cabin = createCSMCabin(ctx, { merge: q.get('merge') !== '0' });
 scene.add(cabin.root);
 cabin.setActive(true);
 

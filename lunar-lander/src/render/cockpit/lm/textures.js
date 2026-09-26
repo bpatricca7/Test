@@ -464,18 +464,82 @@ export function wireTextures() {
 /** Velcro pile (dark grey, fuzzy). Tile = 0.05 m. */
 export function velcroTextures() {
   return cached('velcro', () => {
+    // Apollo hook-and-loop pile: off-white / beige nylon felt with a fuzzy loop texture, slightly
+    // soiled where hands press on it (same appearance as the CSM's patches)
     const S = 128;
     const c = canvas(S, S);
     const g = c.getContext('2d');
-    g.fillStyle = '#3a3a38';
+    g.fillStyle = '#c9c1ab';
     g.fillRect(0, 0, S, S);
-    noise(g, S, S, 60, 71);
+    blotches(g, S, S, 6, 73, 'rgba(120,108,84,A)', 10, 34, 0.22); // handling grime
+    blotches(g, S, S, 5, 74, 'rgba(236,232,220,A)', 8, 26, 0.18);
+    // loop pile: short random fibre strokes, light and dark
+    const r = rng(75);
+    for (let i = 0; i < 1400; i++) {
+      const x = r() * S;
+      const y = r() * S;
+      const a = r() * Math.PI * 2;
+      const l = 1 + r() * 2.5;
+      g.strokeStyle = r() < 0.55 ? `rgba(245,241,230,${(0.25 + r() * 0.35).toFixed(2)})` : `rgba(96,88,70,${(0.18 + r() * 0.25).toFixed(2)})`;
+      g.lineWidth = 0.6 + r() * 0.5;
+      g.beginPath();
+      g.moveTo(x, y);
+      g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l);
+      g.stroke();
+    }
+    noise(g, S, S, 22, 71);
     const b = canvas(S, S);
     const gb = b.getContext('2d');
     gb.fillStyle = 'rgb(128,128,128)';
     gb.fillRect(0, 0, S, S);
-    noise(gb, S, S, 160, 72);
+    noise(gb, S, S, 150, 72);
     return { map: tex(c, 0.05), bump: tex(b, 0.05, false) };
+  });
+}
+
+/**
+ * Floodlight lens: frosted prismatic diffuser (warm off-white, a grid of small pyramid prisms, frost
+ * noise, darker gasket at the rim). Clamped, one image per lens face (BoxGeometry face UVs 0..1).
+ */
+export function floodLensTextures() {
+  return cached('floodLens', () => {
+    const W = 64;
+    const H = 160;
+    const c = canvas(W, H);
+    const g = c.getContext('2d');
+    g.fillStyle = '#e6dcc6';
+    g.fillRect(0, 0, W, H);
+    // prism grid: each cell lit on one diagonal half, shaded on the other
+    const cw = 8;
+    const ch = 8;
+    for (let y = 0; y < H; y += ch) {
+      for (let x = 0; x < W; x += cw) {
+        g.fillStyle = 'rgba(255,250,236,0.35)';
+        g.beginPath();
+        g.moveTo(x, y);
+        g.lineTo(x + cw, y);
+        g.lineTo(x + cw / 2, y + ch / 2);
+        g.closePath();
+        g.fill();
+        g.fillStyle = 'rgba(120,104,80,0.16)';
+        g.beginPath();
+        g.moveTo(x, y + ch);
+        g.lineTo(x + cw, y + ch);
+        g.lineTo(x + cw / 2, y + ch / 2);
+        g.closePath();
+        g.fill();
+      }
+    }
+    noise(g, W, H, 26, 91);
+    blotches(g, W, H, 4, 92, 'rgba(150,130,96,A)', 6, 18, 0.12); // dust / heat discolouration
+    // rim gasket
+    g.strokeStyle = 'rgba(60,56,50,0.8)';
+    g.lineWidth = 3;
+    g.strokeRect(1.5, 1.5, W - 3, H - 3);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 4;
+    return { map: t };
   });
 }
 

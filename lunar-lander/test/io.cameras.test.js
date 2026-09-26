@@ -146,3 +146,72 @@ test('cabin vibration: engine rumble, ignition jolt and RCS thumps stay subtle a
   assert.ok(kick > before + 0.0002, `RCS thump ${kick}`);
   assert.ok(kick < 0.03, 'bounded');
 });
+
+test('cockpit glances: presets aim at the LM panels and the DSKY', async () => {
+  const { panelLayout } = await import('../src/render/cockpit/lm/layout.js');
+  const { glancesOf, aimAt } = await import('../src/render/camera/stations.js');
+  const P = panelLayout();
+  const cdr = getStation('LM', 'CDR');
+  const g = Object.fromEntries(glancesOf(cdr).map((x) => [x.id, x]));
+  assert.deepEqual(Object.keys(g), ['OUT', 'PANEL', 'DSKY']);
+  // default view: out of the window, far enough down that the X-pointer shows at the bottom
+  assert.equal(cdr.pitch, g.OUT.pitch);
+  assert.ok(cdr.pitch <= -20 && cdr.pitch >= -30);
+  // the DSKY glance looks straight at panel 4 (from the leaning eye)
+  const eye = cdr.eye.clone().add(g.DSKY.lean);
+  const toP4 = aimAt(eye, P.p4.frame.center);
+  near(g.DSKY.yaw, toP4.yaw, 6);
+  near(g.DSKY.pitch, toP4.pitch, 6);
+  // ... with the head tilted so the DSKY reads upright
+  const qd = headLookQuat(g.DSKY.yaw * D2R, g.DSKY.pitch * D2R).multiply(new THREE.Quaternion().setFromAxisAngle(V(0, 0, 1), g.DSKY.roll * D2R));
+  const upCam = P.p4.frame.up.clone().applyQuaternion(qd.clone().invert());
+  assert.ok(Math.abs(upCam.x) < 0.02 && upCam.y > 0.5, `DSKY up in view ${upCam.toArray()}`);
+  const rightCam = P.p4.frame.right.clone().applyQuaternion(qd.clone().invert());
+  assert.ok(rightCam.x > 0.5, 'not mirrored');
+  // the flight-display glance keeps panel 1B (FDAI, tapes) and the DSKY within its field of view
+  const dir = (yaw, pitch) => V(0, 0, -1).applyQuaternion(headLookQuat(yaw * D2R, pitch * D2R));
+  const look = dir(g.PANEL.yaw, g.PANEL.pitch);
+  for (const p of [P.p1B.frame.center, P.p4.frame.center]) {
+    const ang = look.angleTo(p.clone().sub(cdr.eye)) / D2R;
+    assert.ok(ang < g.PANEL.fov / 2, `panel within ${ang.toFixed(1)} deg`);
+  }
+  // LMP mirrors the CDR
+  const lmp = glancesOf(getStation('LM', 'LMP'));
+  near(lmp[1].yaw, -g.PANEL.yaw);
+  near(lmp[2].yaw, -g.DSKY.yaw, 1e-6);
+  for (const list of Object.values(STATIONS)) for (const st of list) for (const x of glancesOf(st)) assert.ok(x.fov >= 25 && x.fov <= 100);
+});
+
+test('cockpit glances: GLANCE action cycles presets, leans the head and resets', async () => {
+  const { createGameState } = await import('../src/core/state.js');
+  const { createSim } = await import('../src/sim/sim.js');
+  const { createCameras } = await import('../src/render/cameras.js');
+  const game = createGameState({ scenario: null, warp: 1, camera: 'iva', vessel: null });
+  const sim = createSim(game, { gnc: { update() {}, reset() {} } });
+  const cams = createCameras(game, null);
+  sim.loadScenario('lowgate');
+  game.view.mode = 'iva';
+  cams.update(1 / 60);
+  const eye0 = game.view.cameraMCI.clone();
+  assert.equal(cams.glanceId, 'OUT');
+  game.events.emit('action', { name: 'GLANCE' });
+  assert.equal(cams.glanceId, 'PANEL');
+  assert.match(game.view.label, /Flight displays/);
+  game.events.emit('action', { name: 'GLANCE' });
+  assert.equal(game.view.glance, 'DSKY');
+  for (let i = 0; i < 90; i++) cams.update(1 / 60);
+  // the head turned down-right toward the DSKY and leaned 10 cm
+  const fwd = V(0, 0, -1).applyQuaternion(game.view.quat).applyQuaternion(game.active.quat.clone().invert());
+  assert.ok(fwd.y < -0.8 && fwd.x > 0.1, `looking down-right ${fwd.toArray()}`);
+  const moved = game.view.cameraMCI.distanceTo(eye0);
+  assert.ok(moved > 0.05, `leaned ${moved}`);
+  game.events.emit('action', { name: 'GLANCE' });
+  assert.equal(cams.glanceId, 'OUT');
+  game.events.emit('action', { name: 'GLANCE', id: 'DSKY' });
+  game.events.emit('action', { name: 'RESET_VIEW' });
+  assert.equal(cams.glanceId, 'OUT');
+  assert.doesNotMatch(game.view.label, /DSKY/);
+  // a station without presets: glance() stays on its only view
+  cams.setStation('OVERHEAD');
+  assert.equal(cams.glance(), 'OUT');
+});

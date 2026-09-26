@@ -135,6 +135,7 @@ test('ascent-stage separation on the surface: masses, APS, descent stage left be
   let cmd = 0;
   const { sim, game, events } = makeSim((g) => {
     g.vessels.LM.mainEngine.throttleCmd = cmd;
+    g.vessels.LM.angVel.set(0, 0, 0); // ideal attitude hold (no DAP here; the fixed APS pushes a few cm off the CG)
   });
   sim.loadScenario('landed');
   const lm = game.vessels.LM;
@@ -160,12 +161,15 @@ test('ascent-stage separation on the surface: masses, APS, descent stage left be
 test('ABORT STAGE in flight: descent stage falls and comes to rest, ascent stage climbs', () => {
   const { sim, game } = makeSim((g) => {
     const lm = g.vessels.LM;
-    lm.mainEngine.throttleCmd = lm.ctrl.throttle;
+    // stand-in for P71: the guidance runs the APS (AUTO); before staging the lever flies the DPS
+    lm.mainEngine.throttleCmd = lm.staged ? 1 : lm.ctrl.throttle;
+    lm.angVel.set(0, 0, 0); // ideal attitude hold
   });
   sim.loadScenario('hover');
   const lm = game.vessels.LM;
   game.events.emit('action', { name: 'STAGE' });
   assert.equal(lm.staged, true);
+  assert.equal(lm.ctrl.throttle, 0, 'the TTCA lever (DPS only) goes to OFF at ABORT STAGE');
   assert.ok(lm.descentStage.falling);
   run(sim, 12);
   assert.equal(lm.descentStage.falling, false);

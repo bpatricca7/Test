@@ -42,10 +42,20 @@ three.js + WebGL2, bundled with Vite into a single offline HTML file.
   `object.position.copy(objMCI).sub(frame.origin)` **every frame**. Render axes = MCI axes (only translated),
   so directions/quaternions/`sunDir` need no conversion. Build large meshes relative to a local centre
   (e.g. terrain chunk vertices relative to the chunk centre) so float32 never sees 1.7e6-m coordinates.
-- **Depth:** `logarithmicDepthBuffer: true`, camera near 0.01 m, far 1e9 m. **Every custom `ShaderMaterial`
-  must include the log-depth chunks**: vertex `#include <common>`, `#include <logdepthbuf_pars_vertex>` and
+- **Depth:** camera near 0.01 m, far 1e9 m. `ctx.depthMode` is `'reversed'` (default when `EXT_clip_control`
+  exists: float reversed-Z, `reversedDepthBuffer: true`, depth 1 = near, 0 = far; keeps the hardware early depth
+  test) or `'log'` (fallback / `?depth=log`: `logarithmicDepthBuffer`, which writes `gl_FragDepth` in every
+  shader and so disables early-Z). **Every custom `ShaderMaterial` must still include the log-depth chunks**
+  (they compile to nothing in reversed mode): vertex `#include <common>`, `#include <logdepthbuf_pars_vertex>` and
   after `gl_Position` `#include <logdepthbuf_vertex>`; fragment `#include <logdepthbuf_pars_fragment>` and in
-  `main` `#include <logdepthbuf_fragment>`. (Built-in materials handle it automatically.)
+  `main` `#include <logdepthbuf_fragment>`. (Built-in materials handle it automatically.) Never write
+  `gl_FragDepth` yourself or assume a depth convention (e.g. `gl_Position.z = gl_Position.w` for "far" is
+  *near* in reversed-Z). A render target that renders the main scene must have a `FloatType` `DepthTexture`
+  in reversed mode (main.js adds it to post's HDR target); a 24-bit fixed-point depth loses precision with range.
+- **Draw order:** the terrain group has `renderOrder = 1` (group order), so it is drawn after every other
+  opaque object and early-Z skips terrain hidden behind the cabin or the spacecraft. The sky is drawn first
+  (depthTest off, renderOrder −1e6) in group order 0. Opaque objects that must draw *after* the terrain
+  (depthWrite-off decals on the ground) need their own group order ≥ 1 or must be transparent.
 - **Layers** (`LAYERS` in constants): `WORLD 0` terrain/sky/rocks, `VESSEL 1` exterior models,
   `GHOST 2` own exterior model while in IVA (drawn only into the vessel-shadow pass so the LM still casts its
   shadow on the ground while you look out of the window), `CABIN 3` interiors, `FX 4` plumes/particles.
@@ -58,13 +68,28 @@ three.js + WebGL2, bundled with Vite into a single offline HTML file.
     openings so sunlight patches through the windows are correct.
   - `ctx.fillLight` — `HemisphereLight` approximating sunlight bounced off the lunar surface (ground colour
     from below), updated each frame by the renderer.
+  - Both have `layers.enableAll()`: every render (main, vessel-shadow, warm-up) must collect the same light set,
+    otherwise three's light-state version changes between passes and every lit material re-runs getProgram().
+  - Cabin lights live under the cabin root, so each configuration (exterior, LM cockpit, CSM cockpit) has its own
+    light set and program variants; `src/core/warmup.js` precompiles all three right after a mission starts.
+  - **IVA sun-shadow cache:** in the cockpit the sunLight box is centred on a body-fixed cabin centre and the
+    shadow map is only re-rendered when the attitude changes (> ~0.02°), something nearby moves relative to the
+    cabin (other vessel, descent stage, terrain below 150 m), every 10th frame, or when a module calls
+    **`ctx.requestShadowUpdate()`** — cabins must call it when a moving part that casts a visible shadow moves
+    (hand controllers, hatches, stowage). `ctx.shadowStats` counts rendered / cached frames.
+  - Docked: the sunLight box (half 13 m) is centred on the stack centre (3 m ahead of the CSM origin), which covers
+    the LM and the SPS bell whichever vessel is active.
   - `scene.environment` — set by the sky module (PMREM of black sky + Sun + bright lunar ground) for
     reflections on foil, metal, glass.
   - Terrain uses its **own** shader lighting with `frame.sunDir` and lunar photometry (does not need three lights).
 - **Vessel shadow on the terrain:** the renderer renders spacecraft depth from the Sun into
   `ctx.vesselShadow` (layers VESSEL+GHOST). Terrain/rocks shaders add `ctx.vesselShadow.uniforms` to their
   uniforms (same objects — they update automatically) and paste `ctx.vesselShadow.glsl`, then call
-  `float s = vesselShadow(worldPosRender);` (1 = lit). Enabled below ~1.5 km altitude.
+  `float s = vesselShadow(worldPosRender);` (1 = lit; the GLSL matches `ctx.depthMode`). Enabled while the
+  shadowed subject is below ~1.5 km. After LM staging the box spans both stages while they are within 300 m
+  of each other across the Sun line (so the descent stage on the pad keeps its shadow), else it follows the stage
+  nearer the camera. The depth map is only re-rendered when a spacecraft moved (or every 20th frame);
+  `ctx.vesselShadow.stats` counts rendered / skipped frames.
 - **Tone mapping / exposure / bloom:** owned by `render/post.js`. The Sun intensity is `SUN.intensity` (7.0)
   in three.js units; a white Lambertian surface facing the Sun outputs ≈ 7/π before exposure.
 - **Performance:** target 60 fps at 1080p on a mid-range discrete GPU with `quality=high`; must stay usable on
@@ -80,26 +105,34 @@ three.js + WebGL2, bundled with Vite into a single offline HTML file.
 input.update(realDt)            -> writes game.active.ctrl, emits 'action' events
 sim.step(realDt) -> simDt       -> substeps: gnc.update(h); physics(h); telemetry; events
 cameras.update(realDt)          -> writes game.view (cameraMCI, quat, fov, near, far, mode, ivaVessel)
-frame = renderer.beginFrame()   -> floating origin, sunLight/fillLight, vessel-shadow matrix
-models.setIVA / cabins.setActive
+frame = renderer.beginFrame()   -> floating origin, sunLight/fillLight, shadow boxes & caches
+warmup.update(frame)            -> one-shot program warm-up after a mission starts (src/core/warmup.js)
+setCabins(ivaId)                -> models.setIVA; cabins.setActive; the cabin in use is ATTACHED to the scene,
+                                   the others are removed (not just hidden)
 terrain.update(frame); sky.update(frame); lmModel.update(frame, LM); csmModel.update(frame, CSM);
 lmCabin.update(frame, LM); csmCabin.update(frame, CSM); fx.update(frame)
+scene.updateMatrixWorld()       -> once; scene.matrixWorldAutoUpdate = false during the two scene renders:
 renderer.renderVesselShadow(); post.render(frame)
 ui.update(frame); audio.update(frame)
 ```
+World matrices are computed once per frame after all module updates: an object moved later (e.g. in
+`onBeforeRender`) must update its own `matrixWorld`. A cabin root's `parent` is null while the cabin is not in use.
 
 `frame` (FrameContext): `{ dt, simDt, time (MET s), origin, cameraMCI, cameraQuat, sunDir, viewMode,
 ivaVessel, active, vessels: {LM, CSM}, game, ctx }`.
 
 `ctx` (RenderContext): `{ THREE, renderer, scene, camera, sunLight, fillLight, origin, game, LAYERS, quality,
-qualitySettings, sunDir, vesselShadow, frame, toRender(mci,out), project(mci,out) }`.
+qualitySettings, depthMode, sunDir, vesselShadow, frame, toRender(mci,out), project(mci,out),
+requestShadowUpdate(), shadowStats }`.
 
 URL parameters (`src/core/state.js readParams`): `scenario`, `camera`, `vessel`, `fixedstep=1` (sim advances
 exactly 1/60 s per frame — use in headless tests), `quality`, `warp`, `hud=0`, `audio=0`, `t=<seconds>`
-(fast-forward after load), `debug=1`. Without `scenario` the title menu is shown.
+(fast-forward after load), `debug=1`, `depth=reversed|log`, `warmup=0|1` (shader warm-up at mission start;
+default on, off with `fixedstep=1` so headless shots stay fast). `camera`, `vessel`, `quality`, `depth` are
+case-insensitive; unknown values are ignored with a console warning. Without `scenario` the title menu is shown.
 
 Test hooks: `window.game` (state) and `window.game.debug` (`setCamera(mode)`, `setVessel(id)`,
-`startScenario(id)`, `advance(seconds)`, `modules`, `ctx`, `sim`, `gnc`, `cameras`). `window.__READY` is set
+`startScenario(id)`, `advance(seconds)`, `modules`, `ctx`, `sim`, `gnc`, `cameras`, `warmup.info`). `window.__READY` is set
 once the first frames have rendered and `terrain.isReady()` returns true.
 
 ## 4. Game state (src/core/state.js — the data contract)
@@ -151,7 +184,7 @@ module, code against its contract (stubs exist and run) and list the request in 
 
 | Owner | Files | Factory contract |
 |---|---|---|
-| integrator | `index.html`, `src/main.js`, `src/core/*`, `src/render/renderer.js`, `vite.config.js`, `tools/*`, `ARCHITECTURE.md` | — |
+| integrator | `index.html`, `src/main.js`, `src/core/*` (incl. `warmup.js`), `src/render/renderer.js`, `vite.config.js`, `tools/*`, `ARCHITECTURE.md` | — |
 | SIM-CORE | `src/sim/**`, `test/sim*.test.js` | `createSim(game, {gnc})` → `{ scenarios, loadScenario(id), step(realDt, {ignoreWarp}) → simDt }` |
 | GNC | `src/gnc/**`, `test/gnc*.test.js` | `createGNC(game)` → `{ reset(), update(h) }` (per physics substep, all vessels) |
 | TERRAIN | `src/world/**`, `src/render/terrain/**`, `test/moon*.test.js` | `world/moon.js`: pure `terrainHeight(x,y,z)`, `surfaceRadius`, `surfaceNormal(x,y,z,out)`, `albedo`; `createTerrain(ctx)` → `{ update(frame), isReady() }` |

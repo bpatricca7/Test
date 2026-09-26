@@ -180,7 +180,7 @@ export function createRocks(ctx, lunar) {
   const anchor = new THREE.Vector3(Infinity, 0, 0);
   const lastBuildCam = new THREE.Vector3(Infinity, 0, 0);
   let lastBuildT = 0;
-  let signature = '';
+  let signature = NaN;
   let count = 0;
 
   const _m = new THREE.Matrix4();
@@ -290,10 +290,13 @@ export function createRocks(ctx, lunar) {
     /**
      * @param {object} frame FrameContext
      * @param {Array} chunks boulder-owning chunks in use this frame
+     * @param {number} [sig] numeric signature of the chunk set (rebuild when it changes)
      */
-    update(frame, chunks) {
-      let sig = '';
-      for (const c of chunks) sig += c.key + ';';
+    update(frame, chunks, sig) {
+      if (sig === undefined) {
+        sig = chunks.length;
+        for (const c of chunks) sig = (Math.imul(sig ^ (c.id | 0), 0x9e3779b1) + (c.id | 0)) | 0;
+      }
       const now = performance.now();
       const moved = lastBuildCam.distanceTo(frame.cameraMCI);
       // rebuild when the set of rock chunks changes, or (throttled) when the camera has moved enough

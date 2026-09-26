@@ -32,6 +32,9 @@ export const CSS = /* css */ `
   position: absolute;
   inset: 0;
   overflow: hidden;
+  /* clip, not just hide: an overflow-hidden box can still be scrolled programmatically
+     (scrollIntoView, focus()) and that would slide the whole HUD layer off-screen */
+  overflow: clip;
   color: var(--fg);
   font-family: var(--sans);
   font-size: 14px;
@@ -60,6 +63,7 @@ export const CSS = /* css */ `
   opacity: 0; visibility: hidden; transition: opacity 0.45s var(--ease), visibility 0s linear 0.45s;
 }
 .aui .screen.open { opacity: 1; visibility: visible; transition: opacity 0.45s var(--ease), visibility 0s; }
+.aui .screen, .aui .shell { overflow: clip; }
 .aui .screen .bd { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .aui .screen .scrim { position: absolute; inset: 0; }
 .aui .screen.title .scrim {
@@ -169,6 +173,7 @@ export const CSS = /* css */ `
   background: rgba(255,201,77,0.07); color: var(--warn); font-size: 12.5px; line-height: 1.45;
 }
 .aui.touch .touchnote { display: block; }
+.aui.touch .kbonly { display: none; }
 
 /* buttons */
 .aui .btn {
@@ -201,15 +206,26 @@ export const CSS = /* css */ `
 .aui .fstatus div { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--faint); }
 .aui .fstatus b { display: block; margin-top: 4px; font: 500 14px/1.1 var(--mono); letter-spacing: 0; color: var(--fg-2); }
 
+/* settings / controls / about pages sit on a dark glass card (legible over the bright Moon) */
+.aui .screen .settings, .aui .screen .controls, .aui .screen .about {
+  padding: clamp(12px, 2vh, 20px) clamp(14px, 1.8vw, 22px);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+}
+.aui .screen.title .settings, .aui .screen.title .controls, .aui .screen.title .about { background: rgba(8,10,13,0.74); }
+
 /* settings */
 .aui .settings { width: 100%; padding-right: 6px; }
 .aui .sgroup { margin: 0 0 18px; }
 .aui .sgroup h3 { margin: 0 0 6px; font: 600 10.5px/1 var(--sans); letter-spacing: 0.26em; text-transform: uppercase; color: var(--amber); }
 .aui .srow { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px 18px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.aui .sgroup:last-of-type .srow:last-child { border-bottom: 0; }
 .aui .srow .sl { font-size: 13.5px; color: var(--fg); }
-.aui .srow .sd { display: block; margin-top: 2px; font-size: 11.5px; color: var(--faint); line-height: 1.35; }
+.aui .srow .sd { display: block; margin-top: 2px; font-size: 11.5px; color: var(--dim); line-height: 1.35; }
 .aui .seg { display: inline-flex; border: 1px solid var(--line-2); border-radius: 6px; overflow: hidden; }
-.aui .seg button { padding: 7px 12px; font: 600 10.5px/1 var(--sans); letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); transition: background 0.2s, color 0.2s; }
+.aui .seg { background: rgba(0,0,0,0.35); }
+.aui .seg button { padding: 7px 12px; font: 600 10.5px/1 var(--sans); letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-2); transition: background 0.2s, color 0.2s; }
 .aui .seg button + button { border-left: 1px solid var(--line-2); }
 .aui .seg button:hover { color: var(--fg); background: rgba(255,255,255,0.07); }
 .aui .seg button:focus-visible { color: var(--fg); background: rgba(255,255,255,0.1); outline: none; box-shadow: inset 0 0 0 2px var(--amber-2); }
@@ -298,7 +314,15 @@ export const CSS = /* css */ `
 .aui .result .ring .rv span { font: 600 10px/1 var(--sans); letter-spacing: 0.2em; color: var(--dim); margin-top: 4px; }
 .aui .result .rating { font: 600 10.5px/1 var(--sans); letter-spacing: 0.22em; text-transform: uppercase; color: var(--amber-2); text-align: center; }
 .aui .result .reason { grid-column: 1 / -1; margin: -4px 0 0; padding: 10px 12px; border-radius: 8px; background: rgba(255,77,64,0.08); border: 1px solid rgba(255,77,64,0.25); color: #ffb3aa; font-size: 12.5px; }
+.aui .result .autonote { grid-column: 1 / -1; margin: -4px 0 0; padding: 10px 12px; border-radius: 8px; background: rgba(255,179,71,0.07); border: 1px solid rgba(255,179,71,0.25); color: var(--amber-2); font-size: 12.5px; line-height: 1.45; }
 .aui .result .rfoot { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; padding: 14px clamp(18px, 3vw, 36px) clamp(16px, 3vh, 24px); border-top: 1px solid var(--line); background: rgba(255,255,255,0.02); }
+
+/* "This mission" section at the top of the F1 help */
+.aui .mhelp { margin: 0 0 16px; padding: 12px 14px 12px; border-radius: 8px; border: 1px solid rgba(255,179,71,0.28); background: linear-gradient(90deg, rgba(255,179,71,0.09), rgba(255,179,71,0.02)); }
+.aui .mhelp h3 { margin: 0 0 8px; font: 600 10.5px/1 var(--sans); letter-spacing: 0.26em; text-transform: uppercase; color: var(--amber); }
+.aui .mhelp .fkeys { font-size: 14px; max-width: 640px; }
+.aui .mhelp .fkt { font-size: 12.5px; }
+.aui .mhelp .tips { margin-top: 10px; }
 
 /* help card (above the result card if both are open) */
 .aui .modal.help { z-index: 32; }
@@ -344,7 +368,8 @@ export const CSS = /* css */ `
 .aui .h-clock .warp { font: 700 0.66em/1 var(--sans); letter-spacing: 0.14em; padding: 0.35em 0.5em 0.3em; border-radius: 0.3em; border: 1px solid rgba(255,255,255,0.2); color: var(--fg-2); }
 .aui .h-clock .warp.fast { color: #1a1104; background: var(--amber); border-color: var(--amber); }
 .aui .h-clock .warp.paused { color: #fff; background: rgba(255,255,255,0.18); }
-.aui .h-clock .cam { margin-top: 0.4em; font: 600 0.6em/1 var(--sans); letter-spacing: 0.24em; text-transform: uppercase; color: var(--faint); }
+.aui .h-clock .cam { margin-top: 0.4em; font: 600 0.6em/1 var(--sans); letter-spacing: 0.24em; text-transform: uppercase; color: var(--faint); display: flex; align-items: center; justify-content: center; gap: 0.7em; }
+.aui .h-clock .cam kbd { min-width: 0; margin: 0; padding: 0.2em 0.45em 0.12em; font-size: 1em; letter-spacing: 0; color: var(--dim); border-color: rgba(255,255,255,0.16); }
 
 /* ignition / PRO prompt */
 .aui .h-prompt { left: 50%; top: 5.6em; transform: translateX(-50%); text-align: center; padding: 0.55em 1.1em; border-color: rgba(255,179,71,0.45); background: rgba(30,20,6,0.62); }
@@ -352,6 +377,8 @@ export const CSS = /* css */ `
 .aui .h-prompt .ph { margin-top: 0.3em; font-size: 0.78em; color: var(--fg-2); }
 .aui .h-prompt .tig { font: 500 1.25em/1.1 var(--mono); color: #fff; margin-top: 0.15em; }
 .aui .h-prompt.flash { animation: aui-pulse 1s steps(2, jump-none) infinite; }
+.aui .h-prompt.calm { border-color: rgba(121,224,163,0.4); background: rgba(6,22,14,0.6); }
+.aui .h-prompt.calm .pt { color: var(--good); }
 .aui .h-prompt.alarmp { border-color: rgba(255,77,64,0.6); background: rgba(40,6,4,0.7); }
 .aui .h-prompt.alarmp .pt { color: var(--alarm); }
 @keyframes aui-pulse { 0% { box-shadow: 0 0 0 1px rgba(255,179,71,0.9), 0 0 24px rgba(255,179,71,0.35); } 100% { box-shadow: none; } }
@@ -365,7 +392,8 @@ export const CSS = /* css */ `
 .aui .lamp.ma { color: #fff; background: #d8281c; border-color: #ff7a6e; box-shadow: 0 0 1.6em rgba(255,60,40,0.6); }
 .aui .lamp.ma.blink { animation: aui-blink 0.5s steps(2, jump-none) infinite; }
 .aui .lamp.contact { color: #041424; background: var(--contact); border-color: #a9dcff; box-shadow: 0 0 1.4em rgba(98,185,255,0.55); }
-.aui .lamp.caution { color: #1a1104; background: var(--warn); border-color: #ffe29a; }
+.aui .lamp.caution { color: #1a1104; background: var(--warn); border-color: #ffe29a; display: flex; align-items: baseline; gap: 0.7em; }
+.aui .lamp.caution small { font: 600 0.92em/1 var(--sans); letter-spacing: 0.04em; text-transform: none; opacity: 0.78; }
 @keyframes aui-blink { 0% { opacity: 1; } 100% { opacity: 0.35; } }
 
 /* left-bottom: flight data */
@@ -433,8 +461,12 @@ export const CSS = /* css */ `
 .aui .mk.edge.l .lbl { left: 1.3em; right: auto; }
 
 /* message ticker & captions */
-.aui .ticker { position: absolute; z-index: 10; left: 50%; bottom: 7.5em; transform: translateX(-50%); width: min(44em, calc(100% - 2em)); display: flex; flex-direction: column; align-items: center; gap: 0.4em; font-size: var(--hud); }
-.aui .ticker.iva { bottom: 3.4em; }
+/* exterior views: top-centre under the clock (the spacecraft and the ground below it stay clear);
+   cockpit: low, over the panel edge */
+.aui .ticker { position: absolute; z-index: 10; left: 50%; top: 5.3em; transform: translateX(-50%); width: min(40em, calc(100% - 2em)); display: flex; flex-direction: column; align-items: center; gap: 0.4em; font-size: var(--hud); transition: top 0.3s var(--ease); }
+.aui .ticker.below { top: 10.4em; }
+.aui .ticker.nohud:not(.iva) { top: 1.2em; }
+.aui .ticker.iva { top: auto; bottom: 3.4em; }
 .aui .tmsg {
   max-width: 100%; padding: 0.48em 0.9em 0.5em; border-radius: 0.45em; background: rgba(6,8,11,0.66); border: 1px solid rgba(255,255,255,0.08);
   font-size: 0.92em; color: var(--fg); text-align: center; text-shadow: 0 1px 2px rgba(0,0,0,0.6);
@@ -445,13 +477,63 @@ export const CSS = /* css */ `
 .aui .tmsg.warn { border-color: rgba(255,201,77,0.45); color: #ffe1a0 !important; }
 .aui .tmsg.alarm { border-color: rgba(255,77,64,0.6); background: rgba(40,6,4,0.72); color: #ffc2bb !important; }
 .aui .tmsg .cnt { margin-left: 0.5em; font: 600 0.8em/1 var(--mono); color: var(--dim); }
-.aui .tcap { background: rgba(0,0,0,0.55); border-color: transparent; font-family: var(--serif); font-style: italic; font-size: 1.02em; }
+.aui .tcap { background: rgba(0,0,0,0.55); border-color: transparent; font-family: var(--serif); font-style: italic; font-size: 1.02em; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
 .aui .tcap .who { font: 700 0.62em/1 var(--sans); font-style: normal; letter-spacing: 0.18em; padding: 0.3em 0.45em 0.25em; border-radius: 0.25em; margin-right: 0.7em; vertical-align: 0.18em; color: #0b0d10; background: var(--fg-2); }
 .aui .tcap .who.CDR { background: #ffd08a; }
 .aui .tcap .who.LMP { background: #9fd3ff; }
 .aui .tcap .who.CMP { background: #c7b6ff; }
 .aui .tcap .who.CAPCOM { background: #a8e6bf; }
 @keyframes aui-in { from { opacity: 0; transform: translateY(0.5em); } to { opacity: 1; transform: none; } }
+
+/* flight card & hints (left-middle, between the identity and the flight-data panels) */
+.aui .ftips { position: absolute; z-index: 9; left: 1.4em; top: 44%; transform: translateY(-50%); width: 21em; font-size: var(--hud); transition: opacity 0.3s; }
+.aui .ftips.off { opacity: 0; visibility: hidden; }
+.aui .fcard {
+  padding: 0.85em 1em 0.8em; border-radius: 0.6em; background: linear-gradient(180deg, rgba(10,12,16,0.8), rgba(10,12,16,0.68));
+  border: 1px solid rgba(255,179,71,0.3); box-shadow: 0 0.8em 2.4em rgba(0,0,0,0.35); text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+  animation: aui-slide 0.6s var(--ease) both 0.3s; transition: opacity 0.6s, transform 0.6s var(--ease);
+}
+.aui .fcard.out { opacity: 0; transform: translateX(-1em); }
+.aui .fch { display: flex; align-items: center; justify-content: space-between; }
+.aui .fcl { font: 700 0.6em/1 var(--sans); letter-spacing: 0.26em; text-transform: uppercase; color: var(--amber); }
+.aui .fclose { width: 1.6em; height: 1.6em; margin: -0.3em -0.4em 0 0; border-radius: 50%; display: grid; place-items: center; color: var(--dim); font-size: 0.95em; line-height: 1; }
+.aui .fclose:hover { color: #fff; background: rgba(255,255,255,0.1); }
+.aui .ftt { margin-top: 0.35em; font: 400 1.15em/1.15 var(--display); letter-spacing: 0.03em; color: #fff; }
+.aui .fts { margin-top: 0.15em; font-size: 0.72em; letter-spacing: 0.06em; color: var(--amber-2); }
+.aui .fkeys { margin-top: 0.55em; display: grid; grid-template-columns: max-content minmax(0, 1fr); column-gap: 0.8em; align-items: baseline; }
+.aui .fk { display: contents; }
+.aui .fkk, .aui .fkt { padding: 0.28em 0 0.2em; border-top: 1px solid rgba(255,255,255,0.06); }
+.aui .fk:first-child > * { border-top: 0; }
+.aui .fkk kbd { font-size: 0.72em; margin-bottom: 0.1em; }
+.aui .fkt { font-size: 0.78em; line-height: 1.35; color: var(--fg-2); }
+.aui .ftips .tips { margin: 0.55em 0 0; gap: 0.3em; }
+.aui .ftips .tips li { font-size: 0.74em; padding-left: 1.2em; }
+.aui .fcn { margin-top: 0.6em; font-size: 0.64em; letter-spacing: 0.04em; color: var(--faint); }
+.aui .fhint {
+  display: flex; gap: 0.8em; align-items: baseline; margin-top: 0.6em; padding: 0.7em 0.9em; border-radius: 0.55em;
+  background: rgba(10,12,16,0.78); border: 1px solid rgba(98,185,255,0.35); border-left: 3px solid var(--contact);
+  font-size: 0.86em; line-height: 1.4; color: var(--fg); text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+  animation: aui-slide 0.5s var(--ease) both; transition: opacity 0.6s, transform 0.6s var(--ease);
+}
+.aui .fhint.out { opacity: 0; transform: translateX(-1em); }
+.aui .fhint b { font: 700 0.7em/1 var(--sans); letter-spacing: 0.22em; text-transform: uppercase; color: var(--contact); }
+@keyframes aui-slide { from { opacity: 0; transform: translateX(-1.2em); } to { opacity: 1; transform: none; } }
+
+/* mission title card */
+/* lower third: clear of the spacecraft (centre) and the markers above the horizon */
+.aui .intro { position: absolute; z-index: 8; left: 50%; bottom: 8.6em; transform: translateX(-50%); text-align: center; font-size: var(--hud); white-space: nowrap; text-shadow: 0 1px 3px rgba(0,0,0,0.95), 0 0 14px rgba(0,0,0,0.75), 0 0 32px rgba(0,0,0,0.5); opacity: 0; }
+.aui .intro.off { visibility: hidden; }
+.aui .intro.play { animation: aui-intro 6.2s var(--ease) both 0.4s; }
+.aui .intro .io { font: 600 0.7em/1 var(--sans); letter-spacing: 0.42em; margin-right: -0.42em; text-transform: uppercase; color: var(--amber); }
+.aui .intro .it { margin-top: 0.35em; font: 300 2.9em/1.05 var(--display); letter-spacing: 0.14em; margin-right: -0.14em; text-transform: uppercase; color: #fff; }
+.aui .intro .is { margin-top: 0.55em; font: 500 0.82em/1 var(--mono); letter-spacing: 0.08em; color: #fff; }
+.aui .intro .it::after { content: ""; display: block; width: 3.2em; height: 1px; margin: 0.35em auto 0; background: linear-gradient(90deg, transparent, var(--amber), transparent); }
+@keyframes aui-intro {
+  0% { opacity: 0; transform: translateX(-50%) translateY(0.4em); letter-spacing: 0.02em; }
+  14% { opacity: 1; transform: translateX(-50%); }
+  78% { opacity: 1; transform: translateX(-50%); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-0.3em); }
+}
 
 /* pause banner */
 .aui .pausebar { position: absolute; z-index: 10; left: 50%; top: 42%; transform: translate(-50%, -50%); padding: 0.8em 1.6em; border-radius: 0.6em; background: rgba(6,8,11,0.6); border: 1px solid rgba(255,255,255,0.12); text-align: center; font-size: var(--hud); }
@@ -478,8 +560,11 @@ export const CSS = /* css */ `
   .aui .tabs { gap: 16px; }
   .aui .tab { letter-spacing: 0.16em; font-size: 10.5px; }
   .aui .missions { flex-direction: column; align-items: stretch; overflow-y: auto; }
-  .aui .mlist { flex: none; padding-right: 0; }
+  .aui .missions > * { max-height: none; }
+  .aui .mlist { flex: none; padding-right: 0; overflow: visible; }
   .aui .brief { flex: none; }
+  .aui .brief .bbody { overflow: visible; }
+  .aui .brief .actions { position: sticky; bottom: -1px; z-index: 1; margin: 0 -14px -14px; padding: 12px 14px 14px; border-radius: 0 0 10px 10px; background: rgba(12,14,18,0.96); }
   .aui .crow { grid-template-columns: 96px 1fr; }
   .aui .result .rbody { grid-template-columns: 1fr; }
   .aui .result .rstats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -493,7 +578,12 @@ export const CSS = /* css */ `
   .aui .h-prompt { top: 9em; }
   .aui .h-nav { display: none; }
   .aui .h-strip { top: 0.6em; font-size: 0.8em; gap: 0.8em; max-width: calc(100% - 1em); overflow: hidden; }
-  .aui .ticker { bottom: 15em; }
+  .aui .ticker, .aui .ticker.below, .aui .ticker.nohud:not(.iva) { top: auto; bottom: 15em; }
+  .aui .ftips { top: 10.5em; transform: none; left: 0.8em; width: min(23em, calc(100% - 1.6em)); }
+  .aui.touch .ftips { display: none; }
+  .aui .ftips .tips, .aui .fcn { display: none; }
+  .aui .intro { bottom: 16em; }
+  .aui .intro .it { font-size: 2em; }
 }
 @media (max-width: 900px) and (min-width: 721px) {
   .aui .h-nav { top: auto; bottom: 14em; transform: none; }

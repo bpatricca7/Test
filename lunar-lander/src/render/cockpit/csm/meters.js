@@ -117,11 +117,13 @@ export function createMeterCluster(o) {
       mesh.scale.x = side;
       mesh.position.set(xs[i] + side * 0.0012, 0, 0.0008);
       mesh.castShadow = false;
+      mesh.userData.dynamic = true; // the only moving part: the rest of the case may be merged
       group.add(mesh);
       ptrs.push({ mesh, get: p.get, map: maps[i], val: NaN });
     });
   });
   setLayerRecursive(group, LAYERS.CABIN);
+  group.userData.mergeStatic = true; // see csmCabin.js: only userData.dynamic meshes move
   let acc = 0;
   const sysFn = o.systems || (() => null);
   function update(v, game, dt) {

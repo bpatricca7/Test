@@ -55,7 +55,7 @@ export function buildMDC(mat, ctx = {}) {
     const holes = [...(spec.holes || [])];
     for (const m of mounts) holes.push({ x: m.x, y: m.y, w: m.inst.mountHole.w, h: m.inst.mountHole.h, corner: 0.002 });
     const p = KIT.createPanel({
-      width: w - 0.003, height: h - 0.003, depth: 0.01, pxPerM: 2600, screws: 'dzus', screwInset: 0.006, name: `CM PANEL ${id}`, wear: 0.45, ...spec, holes,
+      width: w - 0.003, height: h - 0.003, depth: 0.01, pxPerM: Math.round(2600 * (ctx.texScale ?? 1)), screws: 'dzus', screwInset: 0.006, name: `CM PANEL ${id}`, wear: 0.45, ...spec, holes,
     });
     for (const m of mounts) {
       m.inst.object.position.set(m.x, m.y, 0);
@@ -563,6 +563,15 @@ export function buildMDC(mat, ctx = {}) {
     // hollow box: top, bottom, back, sides (no front — instruments sit in the cut-outs)
     const mk = (g, u, v, n) => B.add('structure', onFrame(g, F, u, v, n));
     mk(new THREE.BoxGeometry(F.w + 0.02, t, D), 0, hh + t / 2 + 0.001, -D / 2 + 0.006);
+    // painted top cover (seams, fastener rows, access cover, wear) — seen from the rendezvous station
+    if (ctx.coaming) {
+      const top = new THREE.PlaneGeometry(F.w + 0.02, D);
+      top.rotateX(-Math.PI / 2); // faces the panel's +y; uv v = 1 at the back edge
+      const row = ctx.coaming.row(['P1', 'P2', 'P3'].indexOf(k));
+      const uv = top.attributes.uv;
+      for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * row.u1, row.v0 + uv.getY(i) * row.dv);
+      B.add('coaming', onFrame(top, F, 0, hh + t + 0.0016, -D / 2 + 0.006));
+    }
     mk(new THREE.BoxGeometry(F.w + 0.02, t, D), 0, -hh - t / 2 - 0.001, -D / 2 + 0.006);
     B.add('structDark', onFrame(new THREE.BoxGeometry(F.w, F.h, 0.01), F, 0, 0, -D + 0.01));
     if (k !== 'P2') mk(new THREE.BoxGeometry(t, F.h + 0.024, D), (k === 'P1' ? -1 : 1) * (hw + t / 2), 0, -D / 2 + 0.006);

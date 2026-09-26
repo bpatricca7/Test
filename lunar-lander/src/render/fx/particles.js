@@ -28,6 +28,7 @@ const vert = /* glsl */ `
   uniform float uShutter;  // streak exposure time (s)
   uniform float uFadeIn;   // fraction of life
   uniform vec3 uSunLocal;  // Sun direction in the local frame (glints)
+  uniform float uThin;     // > 0: radiance falls as (size0/size)^uThin while a puff expands (thinning gas)
   #ifdef USE_VSHADOW
   uniform sampler2D uVesselShadowMap;
   uniform mat4 uVesselShadowMatrix;
@@ -83,6 +84,7 @@ const vert = /* glsl */ `
 
     float fade = smoothstep(0.0, uFadeIn, k) * (1.0 - smoothstep(0.55, 1.0, k));
     vColor = vec4(aC.rgb, aC.a * fade);
+    if (uThin > 0.0) vColor.a *= pow(clamp(aT.z / max(size, 1e-5), 0.0, 1.0), uThin);
     #ifdef STYLE_STREAK
       vColor.a *= mix(1.0, 0.55, stretch);
     #endif
@@ -156,9 +158,10 @@ export class ParticlePool {
    * @param {boolean} [o.vesselShadow=false] darken particles inside the spacecraft shadow
    * @param {number} [o.shutter=1/48] streak shutter time (s)
    * @param {number} [o.fadeIn=0.08] fade-in fraction of life
+   * @param {number} [o.thin=0] expanding puffs dim as (size0/size)^thin (optically thin, expanding gas)
    * @param {string} [o.name]
    */
-  constructor(ctx, { capacity, style = 'puff', additive = false, vesselShadow = false, shutter = 1 / 48, fadeIn = 0.08, name = 'particles' }) {
+  constructor(ctx, { capacity, style = 'puff', additive = false, vesselShadow = false, shutter = 1 / 48, fadeIn = 0.08, thin = 0, name = 'particles' }) {
     this.capacity = capacity;
     this.head = 0;
     this.time = 0;
@@ -198,6 +201,7 @@ export class ParticlePool {
       uFadeIn: { value: fadeIn },
       uIntensity: { value: 1 },
       uSunLocal: { value: new THREE.Vector3(0, 1, 0) },
+      uThin: { value: thin },
     };
     if (vesselShadow) Object.assign(uniforms, ctx.vesselShadow.uniforms);
     this.material = new THREE.ShaderMaterial({
@@ -275,6 +279,13 @@ export class ParticlePool {
         this.dirtyCount = this.capacity;
       }
     }
+  }
+
+  /** Free the GPU geometry and material. */
+  dispose() {
+    this.mesh.removeFromParent();
+    this.mesh.geometry.dispose();
+    this.material.dispose();
   }
 
   /** Remove every particle. */

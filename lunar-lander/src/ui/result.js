@@ -1,6 +1,14 @@
 // Landing result card: "The Eagle has landed" for a good landing, a hard-landing or crash card
 // otherwise. Shows the touchdown sink rate and ground speed (against the LM's structural limits),
 // tilt, propellant left, distance from the target, the rating and the 0-100 score.
+//
+// `info` (collected by ui.js while flying): flownByLGC — the LGC flew the touchdown hands-off
+// (P66 auto: guidance attitude + automatic rate of descent at contact); the card says so and the
+// rating is capped at "Good" (score at AUTOLAND_SCORE_CAP). flewP64 — the landing point came from
+// P64 (possibly redesignated with the LPD); otherwise the distance is to Tranquility Base.
+// canLiftoff — a good landing with the ascent stage ready: offers "Lift off · P12" (PRO).
+
+export const AUTOLAND_SCORE_CAP = 80;
 
 import { h, s } from './dom.js';
 import { fmtMET, fmtSpeed, fmtDist, num, RATING_LABEL, grade, FT } from './format.js';
@@ -8,7 +16,7 @@ import { MISSION } from '../core/constants.js';
 import { createPatch } from './patch.js';
 
 /**
- * @param {{onContinue():void, onRetry():void, onMissions():void}} cb
+ * @param {{onContinue():void, onRetry():void, onMissions():void, onLiftoff?():void}} cb
  */
 export function createResultCard(cb) {
   const kicker = h('div.rkicker');
@@ -28,14 +36,17 @@ export function createResultCard(cb) {
   const btnContinue = h('button.btn', { type: 'button', onclick: () => cb.onContinue() }, 'Continue exploring');
   const btnRetry = h('button.btn', { type: 'button', onclick: () => cb.onRetry() }, 'Retry');
   const btnMenu = h('button.btn', { type: 'button', onclick: () => cb.onMissions() }, 'Missions');
+  const btnLift = h('button.btn.hidden', { type: 'button', onclick: () => cb.onLiftoff?.() }, 'Lift off · P12', h('span.arrow', null, '▲'));
+  const autoNote = h('div.autonote.hidden');
   const card = h('div.card', { role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Landing result' },
     h('div.rhero', null, kicker, title, sub, patch),
     h('div.rbody', null,
       stats,
       h('div.rscore', null, h('div.ring', null, ringSvg, h('div.rv', null, scoreV, gradeV)), rating),
       reason,
+      autoNote,
     ),
-    h('div.rfoot', null, btnMenu, btnRetry, btnContinue),
+    h('div.rfoot', null, btnMenu, btnRetry, btnContinue, btnLift),
   );
   const el = h('div.modal.result.pe', null, h('div.veil'), card);
 
@@ -51,7 +62,7 @@ export function createResultCard(cb) {
    * Fill the card from game.result.
    * @returns {HTMLElement} the button to focus
    */
-  function fill(res, game) {
+  function fill(res, game, info = {}) {
     const units = game.settings.units;
     const lm = res.vessel !== 'CSM';
     const name = lm ? 'Eagle' : 'Columbia';
@@ -62,7 +73,7 @@ export function createResultCard(cb) {
     if (good) {
       kicker.textContent = `Tranquility Base · GET ${fmtMET(res.met)}`;
       title.textContent = 'The Eagle has landed.';
-      sub.textContent = res.rating === 'perfect' ? 'A perfect touchdown. Houston copies — you got a bunch of guys about to turn blue.' : 'Safe on the surface. Houston copies — we’re breathing again.';
+      sub.textContent = info.flownByLGC ? 'The LGC flew her down in P66 auto. Houston copies — we’re breathing again.' : res.rating === 'perfect' ? 'A perfect touchdown. Houston copies — you got a bunch of guys about to turn blue.' : 'Safe on the surface. Houston copies — we’re breathing again.';
     } else if (res.outcome === 'hard') {
       kicker.textContent = `Hard landing · GET ${fmtMET(res.met)}`;
       title.textContent = `${name} is down — hard.`;
@@ -89,15 +100,18 @@ export function createResultCard(cb) {
       stat('Ground speed', hs.v, hs.u, `limit ${hsLim}`, Number.isFinite(res.hSpeed) ? (res.hSpeed <= lim.maxHSpeed ? 'ok' : 'bad') : ''),
       stat('Tilt', Number.isFinite(res.tiltDeg) ? `${num(res.tiltDeg, 1)}°` : '—', '', Number.isFinite(res.maxTiltDeg) && res.maxTiltDeg > res.tiltDeg + 0.5 ? `max ${num(res.maxTiltDeg, 1)}° · limit ${lim.maxTiltDeg}°` : `limit ${lim.maxTiltDeg}°`, Number.isFinite(res.tiltDeg) ? (res.tiltDeg <= lim.maxTiltDeg ? 'ok' : 'bad') : ''),
       stat('Propellant left', Number.isFinite(res.fuelSeconds) ? num(res.fuelSeconds, 0) : '—', 'S', Number.isFinite(res.fuelKg) ? `${num(res.fuelKg, 0)} kg \u00b7 seconds at hover` : ''),
-      stat('From target', dist.v, dist.u, 'LPD landing point'),
+      stat(info.flewP64 ? 'From target' : 'From the site', dist.v, dist.u, info.flewP64 ? 'P64 landing point (LPD)' : 'Tranquility Base'),
       stat('Mission time', fmtMET(res.met), '', 'GET'),
     ];
     stats.replaceChildren(...list);
 
-    const score = Math.max(0, Math.min(100, Math.round(res.score || 0)));
+    const auto = good && !!info.flownByLGC;
+    const score = Math.max(0, Math.min(auto ? AUTOLAND_SCORE_CAP : 100, Math.round(res.score || 0)));
     scoreV.textContent = String(score);
     gradeV.textContent = `Grade ${grade(score)}`;
-    rating.textContent = RATING_LABEL[res.rating] && res.outcome !== 'crashed' && res.outcome !== 'tipped' ? RATING_LABEL[res.rating] : 'No landing';
+    rating.textContent = auto ? 'Flown by the LGC' : RATING_LABEL[res.rating] && res.outcome !== 'crashed' && res.outcome !== 'tipped' ? RATING_LABEL[res.rating] : 'No landing';
+    autoNote.classList.toggle('hidden', !auto);
+    autoNote.textContent = auto ? `Automatic landing: the computer flew attitude and descent rate at touchdown, so the score is capped at ${AUTOLAND_SCORE_CAP}. Fly P66 by hand (W/S/A/D, R/F) for a pilot's rating.` : '';
     ringFg.setAttribute('stroke', good ? '#ffb347' : '#ff4d40');
     // animate the score ring on open
     ringFg.style.transition = 'none';
@@ -109,8 +123,12 @@ export function createResultCard(cb) {
 
     btnContinue.classList.toggle('primary', good);
     btnRetry.classList.toggle('primary', !good);
-    btnContinue.textContent = good ? 'Continue exploring' : 'Look around';
-    return good ? btnContinue : btnRetry;
+    const lift = good && !!info.canLiftoff;
+    btnContinue.textContent = good && !lift ? 'Continue exploring' : 'Look around';
+    btnLift.classList.toggle('hidden', !lift);
+    btnLift.classList.toggle('primary', lift);
+    btnContinue.classList.toggle('primary', good && !lift);
+    return lift ? btnLift : good ? btnContinue : btnRetry;
   }
 
   return { el, fill };

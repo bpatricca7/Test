@@ -15,7 +15,8 @@
 //   setActive() visibility (only rendered in IVA of the LM).
 //
 // Build: lm/shell.js (structure), lm/panels.js (panels & instruments), lm/controls.js (ACA/TTCA),
-// lm/details.js (fittings), lm/lpdReticle.js (LPD on the CDR window), lm/lighting.js.
+// lm/details.js (fittings), lm/lpdReticle.js (LPD on the CDR window), lm/lighting.js, lm/optimize.js
+// (draw-call / texture budget: canvas atlas + static merge, per-quality resampling and shadow casters).
 import * as THREE from 'three';
 import { LAYERS } from '../../core/constants.js';
 import * as KIT from './kit/index.js';
@@ -28,6 +29,7 @@ import { buildLPDReticle } from './lm/lpdReticle.js';
 import { createCabinLighting } from './lm/lighting.js';
 import { lowPolyKitHardware } from './lm/lod.js';
 import { createLightField } from './lm/lightfield.js';
+import { optimizeCabin, CABIN_QUALITY } from './lm/optimize.js';
 
 /**
  * Create the LM crew compartment.
@@ -40,6 +42,7 @@ export function createLMCabin(ctx) {
   root.name = 'LMCabin';
   root.visible = false;
 
+  const Q = CABIN_QUALITY[ctx?.quality] || CABIN_QUALITY.high;
   const M = createCabinMaterials();
   const mat = (k) => M.get(k);
   const shell = buildShell(mat);
@@ -52,16 +55,17 @@ export function createLMCabin(ctx) {
 
   // everything on the cabin layer; shadows on for opaque geometry
   KIT.setLayerRecursive(root, LAYERS.CABIN);
-  // small non-instanced parts (instrument needles, lamp lenses, placards, knobs...) do not cast: they
-  // cannot throw a visible shadow but would double the shadow-pass draw calls. Instanced switch and
-  // breaker banks do cast (one draw each: their rows of little shadows in a sun patch are worth it).
+  // Small parts (instrument needles, lamp lenses, placards, knobs...) do not cast: they cannot throw
+  // a visible shadow at the shadow map's texel size. Instanced switch and breaker banks do cast (their
+  // rows of little shadows in a sun patch are worth it) except at quality=low. Transparent parts
+  // (cover glass, panes) only receive, so the Sun's glint on glass sitting in shadow is suppressed.
   root.updateMatrixWorld(true);
   const _s = new THREE.Vector3();
   root.traverse((o) => {
     if (!o.isMesh) return;
     const m = o.material;
     const transparent = m && (m.transparent || m.blending === THREE.AdditiveBlending);
-    o.receiveShadow = !transparent;
+    o.receiveShadow = true;
     if (transparent || m?.userData?.noShadow) {
       o.castShadow = false;
       return;
@@ -69,19 +73,44 @@ export function createLMCabin(ctx) {
     if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
     o.getWorldScale(_s);
     const r = o.geometry.boundingSphere.radius * Math.max(_s.x, _s.y, _s.z);
-    o.castShadow = o.isInstancedMesh || r > 0.03;
+    o.castShadow = o.isInstancedMesh ? Q.castInstanced : r > Q.castMin;
   });
 
-  const lighting = createCabinLighting(ctx, root, { floods: details.floods, materials: M });
+  // Draw-call / texture budget: painted canvases into shared atlas pages (resampled per quality),
+  // static parts merged per material; merged originals are watched and released if they ever move.
+  // known movers: the hand-controller grips and the switch levers (the watch would catch them too,
+  // but only after they first move)
+  const dynamic = new Set(controllers.pivots);
+  panels.group.traverse((o) => {
+    if (o.name === 'SwitchBank') for (const c of o.children) if (c.isInstancedMesh && c.material?.name === 'kit:chrome') dynamic.add(c);
+  });
+  let lighting = null;
+  let field = null;
+  const optimized = optimizeCabin(root, {
+    quality: Q,
+    dynamic,
+    pageSize: Math.min(4096, ctx?.renderer?.capabilities?.maxTextureSize || 4096),
+    registerIntegral: KIT.registerIntegral,
+    onChange: () => {
+      // a released part may bring back a material the cabin lighting has not seen yet
+      if (lighting) lighting.collectMaterials();
+      if (field) patchField();
+      ctx?.requestShadowUpdate?.();
+    },
+  });
+
+  lighting = createCabinLighting(ctx, root, { floods: details.floods, materials: M });
   lighting.collectMaterials();
   // shape the uniform indirect light (env + hemisphere fill) by position in the cabin
-  const field = createLightField();
-  root.traverse((o) => {
-    if (!o.isMesh) return;
-    for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
-      if (m && !String(m.name).startsWith('kit:')) field.patch(m);
-    }
-  });
+  field = createLightField();
+  const patchField = () =>
+    root.traverse((o) => {
+      if (!o.isMesh || o.layers.mask === 0) return;
+      for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+        if (m && !String(m.name).startsWith('kit:')) field.patch(m);
+      }
+    });
+  patchField();
 
   // ---- dynamic switch / button state
   const C = panels.controls;
@@ -123,7 +152,8 @@ export function createLMCabin(ctx) {
   let tSim = 0;
   const api = {
     root,
-    parts: { shell, panels, controllers, details, lpd, lighting, materials: M, lod, field },
+    parts: { shell, panels, controllers, details, lpd, lighting, materials: M, lod, field, optimized },
+    quality: Q,
     setActive(on) {
       on = !!on;
       if (on && !active) lighting.activate();
@@ -142,6 +172,8 @@ export function createLMCabin(ctx) {
       for (const inst of panels.instruments) inst.update(v, game, dt);
       controllers.update(v, dt);
       syncSwitches(v);
+      // merged parts moved by the instruments / switches this frame are released from their batch
+      optimized.update();
       lighting.update(frame, v, {
         flood: rotaryLevel('flood', [0, 0.45, 1]),
         integral: rotaryLevel('integral', [0, 0.22, 0.5]),
@@ -149,20 +181,40 @@ export function createLMCabin(ctx) {
       // sunlight entering the cabin brightens the aft midsection by inter-reflection
       field.uniforms.uFieldAft.value = 0.45 + 0.4 * Math.min(1, lighting.state.sunIn * 4);
     },
-    /** Triangle / draw statistics of the cabin (debug & tests). */
+    /**
+     * Triangle / draw statistics of the cabin (debug & tests). `meshes` counts every mesh in the graph
+     * (merged originals included), `drawables` only those actually drawn; `casters` the drawn shadow
+     * casters, `materials` / `maps` the distinct materials / textures drawn.
+     */
     stats() {
       let triangles = 0;
       let meshes = 0;
       let drawables = 0;
-      root.traverse((o) => {
+      let casters = 0;
+      const mats = new Set();
+      const maps = new Set();
+      root.traverseVisible((o) => {
         if (!o.isMesh || !o.geometry) return;
         meshes++;
+        if (o.layers.mask === 0) return;
         const n = o.geometry.index ? o.geometry.index.count / 3 : o.geometry.attributes.position.count / 3;
         const inst = o.isInstancedMesh ? o.count : 1;
         triangles += n * inst;
         drawables++;
+        if (o.castShadow) casters++;
+        mats.add(o.material);
+        for (const k of ['map', 'emissiveMap', 'roughnessMap', 'bumpMap', 'alphaMap', 'normalMap']) if (o.material?.[k]) maps.add(o.material[k]);
       });
-      return { triangles: Math.round(triangles), meshes, drawables };
+      let texels = 0;
+      for (const t of maps) texels += (t.image?.width || 0) * (t.image?.height || 0);
+      const a = optimized.atlas;
+      const mg = optimized.merge;
+      return {
+        triangles: Math.round(triangles), meshes, drawables, casters, materials: mats.size, maps: maps.size,
+        mpx: +(texels / 1e6).toFixed(2), quality: ctx?.quality || 'high',
+        atlas: { pages: a.pages, tiles: a.tiles, mpxBefore: +(a.pxBefore / 1e6).toFixed(2), mpxAfter: +(a.pxAfter / 1e6).toFixed(2), reverted: optimized.stats.reverted, skipped: a.reasons, buildMs: Math.round(optimized.stats.buildMs), maxUpdateMs: +optimized.stats.maxUpdateMs.toFixed(2) },
+        merge: { before: mg.meshesBefore, batches: mg.batches.length, shared: mg.materialsShared, released: mg.stats.released, rebuilds: mg.stats.rebuilds, skipped: mg.stats.skipped, releasedNames: mg.stats.releasedNames.slice() },
+      };
     },
   };
   return api;

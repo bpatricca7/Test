@@ -2,9 +2,10 @@
 // plus sunlit vapour puffs streaming away (GPU particles in the vessel body frame).
 //
 // What the Apollo footage shows for a 100-lbf hypergolic thruster in vacuum: every pulse starts with
-// a bright yellow-white flash (the fuel-rich start transient), then a pale, fast-expanding, short cone
-// of vapour that is gone ~0.2 s after the valve closes. Short DAP pulses (14 ms) still read as a
-// distinct flash + puff. Jets are drawn in the FX layer, so they are visible through the cockpit
+// a brief yellow-white flash (the fuel-rich start transient), then a faint, translucent, fast-expanding
+// cone of vapour that is gone ~0.1-0.2 s after the valve closes, within a metre or two. The vapour
+// never forms clumps that hang around: puffs expand several-fold during their ~0.1-s life and thin out
+// as they do (radiance ~ size0/size). Short DAP pulses (14 ms) still read as a distinct flash. Jets are drawn in the FX layer, so they are visible through the cockpit
 // windows as well as from outside.
 //
 // Owned by the SKY-FX agent.
@@ -13,16 +14,18 @@ import * as THREE from 'three';
 import { createPlumeMaterial, plumeGeometry } from './plume.js';
 import { ParticlePool } from './particles.js';
 
-const JET = { re: 0.07, tan: 0.5, len: 2.4, k: 2.0, fallPow: 1.0, inten: 0.3 };
+// fallPow > 1: the column brightness falls with distance (bright at the exit, gone within ~1.5 m)
+const JET = { re: 0.07, tan: 0.55, len: 1.7, k: 2.0, fallPow: 1.5, inten: 0.075 };
 
 /**
  * RCS effects for one vessel (16 jets).
  * @param {object} ctx RenderContext
  * @param {object} vessel game vessel (its rcs.jets table is read every frame)
- * @returns {{group: THREE.Group, update(frame, v, t, dt, sunLocal): void}}
+ * @returns {{group: THREE.Group, pool: ParticlePool, update(frame, v, t, dt, gain): void,
+ *   rebind(vessel): boolean, dispose(): void}}
  */
 export function createRcsEffects(ctx, vessel) {
-  const jets = vessel.rcs.jets;
+  let jets = vessel.rcs.jets;
   const n = jets.length;
   const group = new THREE.Group();
   group.name = `rcs-${vessel.id}`;
@@ -41,7 +44,7 @@ export function createRcsEffects(ctx, vessel) {
   u.uCoreHot.value = 0.35;
   u.uCoreColor.value.setRGB(1.0, 0.86, 0.62);
   u.uBodyColor.value.setRGB(0.85, 0.86, 0.9);
-  u.uFlashColor.value.setRGB(1.6, 1.25, 0.8);
+  u.uFlashColor.value.setRGB(4.2, 3.2, 2.0); // the onset flash stays the dominant cue
   const geo = plumeGeometry(16);
   const aJet = new THREE.InstancedBufferAttribute(new Float32Array(n * 4), 4);
   aJet.setUsage(THREE.DynamicDrawUsage);
@@ -67,7 +70,7 @@ export function createRcsEffects(ctx, vessel) {
   group.add(cones);
 
   // ---- vapour puffs (body frame)
-  const pool = new ParticlePool(ctx, { capacity: ctx.quality === 'low' ? 900 : 2400, style: 'puff', additive: true, fadeIn: 0.05, name: `rcs-vapour-${vessel.id}` });
+  const pool = new ParticlePool(ctx, { capacity: ctx.quality === 'low' ? 900 : 2400, style: 'puff', additive: true, fadeIn: 0.05, thin: 1, name: `rcs-vapour-${vessel.id}` });
   group.add(pool.mesh);
 
   const vis = new Float32Array(n);
@@ -95,6 +98,31 @@ export function createRcsEffects(ctx, vessel) {
     group,
     pool,
     /**
+     * Re-attach to a new jet table (a scenario reload recreates the vessels). Same layout -> the GPU
+     * objects are kept; returns false when the table differs in size (caller rebuilds).
+     */
+    rebind(v) {
+      const nj = v.rcs.jets;
+      if (!nj || nj.length !== n) return false;
+      jets = nj;
+      placeJets();
+      vis.fill(0);
+      flash.fill(0);
+      lastOn.fill(NaN);
+      accum.fill(0);
+      for (let i = 0; i < n; i++) aJet.array[i * 4] = aJet.array[i * 4 + 1] = 0;
+      aJet.needsUpdate = true;
+      pool.clear();
+      return true;
+    },
+    dispose() {
+      group.removeFromParent();
+      cones.geometry.dispose();
+      mat.dispose();
+      cones.dispose();
+      pool.dispose();
+    },
+    /**
      * @param {object} frame
      * @param {object} v vessel
      * @param {number} t fx clock
@@ -119,8 +147,8 @@ export function createRcsEffects(ctx, vessel) {
         }
         if (fired && vis[i] < 0.15 && dt > 0) {
           flash[i] = 1;
-          // start transient: a small burst of bright, fuel-rich vapour
-          for (let k = 0; k < 8; k++) emitPuff(j, 26, 0.75, 0.1, 1.1, 0.16, 0.16, true);
+          // start transient: a brief burst of warm, fuel-rich vapour that balloons and thins at once
+          for (let k = 0; k < 10; k++) emitPuff(j, 22, 0.8, 0.08, 1.3, 0.1, 0.07, true);
         }
         const target = fired ? Math.max(0.55, lvl) : 0;
         const tau = target > vis[i] ? 0.015 : 0.07;
@@ -130,7 +158,7 @@ export function createRcsEffects(ctx, vessel) {
           accum[i] += dt * (ctx.quality === 'low' ? 160 : 340) * Math.max(0.4, lvl);
           while (accum[i] >= 1) {
             accum[i] -= 1;
-            emitPuff(j, 34, 0.5, 0.05, 0.8, 0.17, 0.024, false);
+            emitPuff(j, 32, 0.55, 0.05, 0.9, 0.12, 0.016, false);
           }
         }
         aJet.array[i * 4] = vis[i] * 1.1;

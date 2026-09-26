@@ -232,6 +232,44 @@ export function pocketTexture() {
   return _pocket;
 }
 
+let _pane = null;
+/**
+ * Window-pane roughness map (G channel = roughness, 256 px tile ≈ 0.25 m of glass): clean polished
+ * glass (~0.09) with a very gentle haze variation and a few sparse dust specks. No wipe arcs or
+ * fingerprints: stretched over a 0.3 m pane those read as big concentric rings in the reflection.
+ */
+export function paneTexture() {
+  if (_pane) return _pane;
+  const N = 256;
+  const c = canvas(N, N);
+  const g = c.getContext('2d');
+  g.fillStyle = 'rgb(0,23,0)';
+  g.fillRect(0, 0, N, N);
+  const r = rng(777);
+  // soft haze blobs (wrap-around so the tile repeats without seams)
+  for (let i = 0; i < 14; i++) {
+    const x = r() * N;
+    const y = r() * N;
+    const rad = 30 + r() * 70;
+    const a = 0.03 + r() * 0.05;
+    for (const ox of [-N, 0, N]) {
+      for (const oy of [-N, 0, N]) {
+        const gr = g.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, rad);
+        gr.addColorStop(0, `rgba(0,60,0,${a})`);
+        gr.addColorStop(1, 'rgba(0,60,0,0)');
+        g.fillStyle = gr;
+        g.fillRect(x + ox - rad, y + oy - rad, rad * 2, rad * 2);
+      }
+    }
+  }
+  for (let i = 0; i < 40; i++) {
+    g.fillStyle = `rgba(0,${50 + r() * 60},0,${0.3 + r() * 0.4})`;
+    g.fillRect(r() * N, r() * N, 1, 1);
+  }
+  _pane = tex(c, { srgb: false, aniso: 4 });
+  return _pane;
+}
+
 let _noise = null;
 /** Soft grey noise (roughness variation / grime), 256 px. */
 export function noiseTexture() {
@@ -251,10 +289,11 @@ export function noiseTexture() {
  * stencilled locker number, contents placard, latch recesses, hinge line and wear.
  * Returns { texture, cell(i) -> {u0, v0, du, dv}, paint(i, spec), commit() }.
  */
-export function createLockerAtlas(cols = 6, rows = 6) {
-  const N = 2048;
-  const c = canvas(N, N);
+export function createLockerAtlas(cols = 6, rows = 6, scale = 1) {
+  const N = 2048; // logical size: painting is in these pixel units, the canvas is N × scale
+  const c = canvas(Math.round(N * scale), Math.round(N * scale));
   const g = c.getContext('2d');
+  g.scale(c.width / N, c.height / N);
   g.fillStyle = '#8f928e';
   g.fillRect(0, 0, N, N);
   const cw = N / cols;
@@ -361,4 +400,291 @@ export function remapUV(geom, cell) {
   }
   uv.needsUpdate = true;
   return geom;
+}
+
+// ------------------------------------------------------------------------------ painted details
+/** Dark-rimmed fastener head (screw / rivet) at (x, y) px, radius r px. */
+function fastener(g, x, y, r, slot = true, rot = 0) {
+  g.fillStyle = 'rgba(30,30,28,0.55)';
+  g.beginPath();
+  g.arc(x + r * 0.15, y + r * 0.2, r * 1.15, 0, Math.PI * 2);
+  g.fill();
+  const gr = g.createRadialGradient(x - r * 0.35, y - r * 0.35, 0, x, y, r);
+  gr.addColorStop(0, '#b9bbb6');
+  gr.addColorStop(1, '#6c6f6b');
+  g.fillStyle = gr;
+  g.beginPath();
+  g.arc(x, y, r, 0, Math.PI * 2);
+  g.fill();
+  if (slot) {
+    g.strokeStyle = 'rgba(25,25,25,0.8)';
+    g.lineWidth = Math.max(1, r * 0.28);
+    g.beginPath();
+    g.moveTo(x - Math.cos(rot) * r * 0.75, y - Math.sin(rot) * r * 0.75);
+    g.lineTo(x + Math.cos(rot) * r * 0.75, y + Math.sin(rot) * r * 0.75);
+    g.stroke();
+  }
+}
+
+/** Engraved panel seam (dark line with a light lower lip). */
+function seam(g, x0, y0, x1, y1, w) {
+  g.lineCap = 'round';
+  g.strokeStyle = 'rgba(255,255,250,0.16)';
+  g.lineWidth = w;
+  g.beginPath();
+  g.moveTo(x0 + w * 0.6, y0 + w * 0.6);
+  g.lineTo(x1 + w * 0.6, y1 + w * 0.6);
+  g.stroke();
+  g.strokeStyle = 'rgba(22,22,20,0.7)';
+  g.lineWidth = w;
+  g.beginPath();
+  g.moveTo(x0, y0);
+  g.lineTo(x1, y1);
+  g.stroke();
+}
+
+/** Scuffs / hand wear inside a rect (px). */
+function scuffs(g, r, x, y, w, h, n, alpha = 0.12) {
+  for (let k = 0; k < n; k++) {
+    const sx = x + r() * w;
+    const sy = y + r() * h;
+    g.strokeStyle = r() < 0.7 ? `rgba(40,40,38,${alpha * (0.4 + r())})` : `rgba(235,235,228,${alpha * 0.7 * (0.4 + r())})`;
+    g.lineWidth = 1 + r() * 2.5;
+    g.beginPath();
+    g.moveTo(sx, sy);
+    g.lineTo(sx + (r() - 0.5) * 60, sy + (r() - 0.5) * 18);
+    g.stroke();
+  }
+}
+
+/** Stencilled arrow along a circular arc (px), arrowhead at the end angle. */
+function arcArrow(g, cx, cy, rad, a0, a1, w, color) {
+  g.strokeStyle = color;
+  g.fillStyle = color;
+  g.lineWidth = w;
+  g.beginPath();
+  g.arc(cx, cy, rad, a0, a1, a1 < a0);
+  g.stroke();
+  const dir = a1 > a0 ? 1 : -1;
+  const ex = cx + Math.cos(a1) * rad;
+  const ey = cy + Math.sin(a1) * rad;
+  const tx = -Math.sin(a1) * dir;
+  const ty = Math.cos(a1) * dir;
+  const nx = Math.cos(a1);
+  const ny = Math.sin(a1);
+  const L = w * 4;
+  g.beginPath();
+  g.moveTo(ex + tx * L, ey + ty * L);
+  g.lineTo(ex + nx * L * 0.6, ey + ny * L * 0.6);
+  g.lineTo(ex - nx * L * 0.6, ey - ny * L * 0.6);
+  g.closePath();
+  g.fill();
+}
+
+/**
+ * Inner face of the unified side hatch, painted in hatch coordinates: s (m, arc length, +X) across and z
+ * along the cabin axis, read by the crew in their couches (canvas top = aft edge, left = -X).
+ * L: { z0 (aft edge), z1 (forward edge), halfWidth, gearbox{s,z}, handle{s,z}, pev{s,z}, window{s,z,r}, placard{s,z} }
+ * @returns {THREE.CanvasTexture}
+ */
+export function hatchTexture(L, scale = 1) {
+  const pxm = 1100 * scale;
+  const Wm = 2 * L.halfWidth;
+  const Hm = L.z0 - L.z1;
+  const W = Math.round(Wm * pxm);
+  const H = Math.round(Hm * pxm);
+  const c = canvas(W, H);
+  const g = c.getContext('2d');
+  const X = (s) => (0.5 + s / Wm) * W;
+  const Y = (z) => ((L.z0 - z) / Hm) * H;
+  const px = (m) => m * pxm;
+  const r = rng(1969);
+  g.fillStyle = '#8f928e';
+  g.fillRect(0, 0, W, H);
+  grain(g, W, H, 31, 10, 26);
+  // perimeter: seam of the inner structure panel + fastener row
+  const ins = px(0.03);
+  seam(g, ins, ins, W - ins, ins, px(0.0016));
+  seam(g, W - ins, ins, W - ins, H - ins, px(0.0016));
+  seam(g, W - ins, H - ins, ins, H - ins, px(0.0016));
+  seam(g, ins, H - ins, ins, ins, px(0.0016));
+  const pitch = px(0.042);
+  for (let x = ins + pitch / 2; x < W - ins; x += pitch) {
+    fastener(g, x, ins * 0.5, px(0.0032), true, r() * 3);
+    fastener(g, x, H - ins * 0.5, px(0.0032), true, r() * 3);
+  }
+  for (let y = ins + pitch / 2; y < H - ins; y += pitch) {
+    fastener(g, ins * 0.5, y, px(0.0032), true, r() * 3);
+    fastener(g, W - ins * 0.5, y, px(0.0032), true, r() * 3);
+  }
+  // doubler under the gearbox: seam + rivet rows
+  {
+    const x0 = X(L.gearbox.s - 0.175);
+    const x1 = X(L.gearbox.s + 0.175);
+    const y0 = Y(L.gearbox.z + 0.115);
+    const y1 = Y(L.gearbox.z - 0.115);
+    seam(g, x0, y0, x1, y0, px(0.0012));
+    seam(g, x1, y0, x1, y1, px(0.0012));
+    seam(g, x1, y1, x0, y1, px(0.0012));
+    seam(g, x0, y1, x0, y0, px(0.0012));
+    const rp = px(0.018);
+    for (let x = x0 + rp; x < x1 - rp * 0.5; x += rp) {
+      fastener(g, x, y0 + px(0.008), px(0.0017), false);
+      fastener(g, x, y1 - px(0.008), px(0.0017), false);
+    }
+    for (let y = y0 + rp; y < y1 - rp * 0.5; y += rp) {
+      fastener(g, x0 + px(0.008), y, px(0.0017), false);
+      fastener(g, x1 - px(0.008), y, px(0.0017), false);
+    }
+  }
+  // seam + rivet ring around the window bezel (the pocket meets the panel in an ellipse)
+  {
+    const cx = X(L.window.s);
+    const cy = Y(L.window.z);
+    const k = L.window.aspect ?? 1;
+    const rr = px(L.window.r + 0.03);
+    g.strokeStyle = 'rgba(22,22,20,0.55)';
+    g.lineWidth = px(0.0012);
+    g.beginPath();
+    g.ellipse(cx, cy, rr, rr * k, 0, 0, Math.PI * 2);
+    g.stroke();
+    const rv = rr + px(0.012);
+    for (let q = 0; q < 30; q++) {
+      const a = (q / 30) * Math.PI * 2;
+      fastener(g, cx + Math.cos(a) * rv, cy + Math.sin(a) * rv * k, px(0.0017), false);
+    }
+  }
+  // stringer seams either side of the window (the hatch's internal ribs)
+  for (const sx of [-0.29, 0.29]) seam(g, X(sx), Y(L.z0 - 0.07), X(sx), Y(L.z1 + 0.07), px(0.0011));
+  // stencils: black, condensed, as on the flight hatch
+  const ink = '#161615';
+  const t = (text, sx, z, size, o = {}) => drawText(g, text, X(sx), Y(z), px(size), { color: ink, condense: 0.8, ...o });
+  // actuator handle: UNLATCH / LATCH arcs around the drive socket, outside the gearbox housing
+  {
+    const cx = X(L.handle.s);
+    const cy = Y(L.handle.z);
+    const rad = px(0.165);
+    arcArrow(g, cx, cy, rad, -0.25, -0.85, px(0.003), ink);
+    arcArrow(g, cx, cy, rad, 0.25, 0.85, px(0.003), ink);
+    t('UNLATCH', L.handle.s + 0.2, L.handle.z + 0.1, 0.0115);
+    t('LATCH', L.handle.s + 0.2, L.handle.z - 0.1, 0.0115);
+  }
+  // pressure equalisation valve
+  {
+    const cx = X(L.pev.s);
+    const cy = Y(L.pev.z);
+    g.strokeStyle = ink;
+    g.lineWidth = px(0.002);
+    g.beginPath();
+    g.arc(cx, cy, px(0.05), 0, Math.PI * 2);
+    g.stroke();
+    t('PRESS EQUAL', L.pev.s, L.pev.z + 0.083, 0.009);
+    t('VALVE', L.pev.s, L.pev.z + 0.07, 0.009);
+    t('OPEN', L.pev.s - 0.03, L.pev.z - 0.064, 0.0085);
+    t('CLOSE', L.pev.s + 0.035, L.pev.z - 0.064, 0.0085);
+  }
+  // operating placard (white card, black text)
+  {
+    const cx = X(L.placard.s);
+    const cy = Y(L.placard.z);
+    const w = px(0.19);
+    const h = px(0.078);
+    g.fillStyle = 'rgba(0,0,0,0.35)';
+    g.fillRect(cx - w / 2 + 2, cy - h / 2 + 3, w, h);
+    g.fillStyle = '#e4e0d2';
+    g.fillRect(cx - w / 2, cy - h / 2, w, h);
+    g.strokeStyle = 'rgba(0,0,0,0.5)';
+    g.lineWidth = 1.5;
+    g.strokeRect(cx - w / 2 + px(0.003), cy - h / 2 + px(0.003), w - px(0.006), h - px(0.006));
+    const lines = ['HATCH OPERATION', '1. PRESS EQUAL VALVE - OPEN', '2. CABIN PRESS - EQUALIZED', '3. ACTUATOR HANDLE - UNLATCH', '4. PUSH HATCH OUTBOARD'];
+    lines.forEach((l, k) => drawText(g, l, cx - w / 2 + px(0.009), cy - h / 2 + px(0.015 + k * 0.0135), px(k ? 0.0078 : 0.0092), { color: ink, align: 'left', condense: 0.78, font: MONO_STACK }));
+  }
+  t('CAUTION - DO NOT USE AS HANDHOLD', 0.02, L.z0 - 0.058, 0.0082);
+  t('V16-601101', -L.halfWidth + 0.06, L.z1 + 0.075, 0.0065, { align: 'left', color: 'rgba(20,20,20,0.7)' });
+  t('LATCH LINKAGE', L.halfWidth - 0.06, L.z1 + 0.075, 0.0065, { align: 'right', color: 'rgba(20,20,20,0.7)' });
+  // hand wear around the handle, the PEV and along the edges
+  scuffs(g, r, X(L.handle.s - 0.05), Y(L.handle.z + 0.08), px(0.25), px(0.16), 50, 0.14);
+  scuffs(g, r, X(L.pev.s - 0.06), Y(L.pev.z + 0.06), px(0.12), px(0.12), 20, 0.12);
+  scuffs(g, r, 0, 0, W, px(0.06), 40, 0.1);
+  scuffs(g, r, 0, H - px(0.06), W, px(0.06), 40, 0.1);
+  return tex(c, { repeat: false });
+}
+
+/**
+ * Top covers of the Main Display Console sections (seen from the rendezvous station): one row per
+ * section in a single canvas. sizes: [{w, d}] (m, across × depth). Returns { texture, row(i) -> {v0, dv} }.
+ * Painted: sheet-metal seams, Dzus / screw rows along the edges, a hinged access cover, part-number
+ * stencils, dust and hand wear along the front lip.
+ */
+export function coamingTexture(sizes, scale = 1) {
+  const pxm = 1400 * scale;
+  const W = Math.round(Math.max(...sizes.map((s) => s.w)) * pxm);
+  const rowsH = sizes.map((s) => Math.round(s.d * pxm));
+  const H = rowsH.reduce((a, b) => a + b, 0) + 8 * sizes.length;
+  const c = canvas(W, H);
+  const g = c.getContext('2d');
+  const px = (m) => m * pxm;
+  g.fillStyle = '#8d908c';
+  g.fillRect(0, 0, W, H);
+  grain(g, W, H, 77, 12, 30);
+  const rows = [];
+  let y0 = 0;
+  sizes.forEach((sz, i) => {
+    const r = rng(500 + i * 17);
+    const w = Math.round(sz.w * pxm);
+    const h = rowsH[i];
+    // canvas row: top = back edge (toward the wall), bottom = front lip (toward the crew)
+    g.save();
+    g.beginPath();
+    g.rect(0, y0, w, h);
+    g.clip();
+    const e = px(0.012);
+    // edge fastener rows (front lip & back), screws every ~4 cm
+    const pitch = px(0.04);
+    for (let x = e + pitch / 2; x < w - e; x += pitch) {
+      fastener(g, x, y0 + e, px(0.0026), true, r() * 3);
+      fastener(g, x, y0 + h - e, px(0.0026), true, r() * 3);
+    }
+    // cross seams (sheet joints) and a hinged access cover with Dzus fasteners
+    const nSeg = Math.max(2, Math.round(sz.w / 0.28));
+    for (let k = 1; k < nSeg; k++) {
+      const x = (k / nSeg) * w;
+      seam(g, x, y0 + e * 1.8, x, y0 + h - e * 1.8, px(0.0012));
+      for (let yy = y0 + e * 2.8; yy < y0 + h - e * 2.5; yy += px(0.03)) {
+        fastener(g, x - px(0.007), yy, px(0.0016), false);
+        fastener(g, x + px(0.007), yy, px(0.0016), false);
+      }
+    }
+    seam(g, e * 1.8, y0 + e * 1.8, w - e * 1.8, y0 + e * 1.8, px(0.0012));
+    seam(g, e * 1.8, y0 + h - e * 1.8, w - e * 1.8, y0 + h - e * 1.8, px(0.0012));
+    {
+      const cw = Math.min(px(0.16), w * 0.3);
+      const ch = h * 0.46;
+      const cx = w * (i === 1 ? 0.5 : 0.36) - cw / 2;
+      const cy = y0 + h * 0.2;
+      seam(g, cx, cy, cx + cw, cy, px(0.0014));
+      seam(g, cx + cw, cy, cx + cw, cy + ch, px(0.0014));
+      seam(g, cx + cw, cy + ch, cx, cy + ch, px(0.0014));
+      seam(g, cx, cy + ch, cx, cy, px(0.0014));
+      for (const [fx, fy] of [[cx + px(0.012), cy + px(0.012)], [cx + cw - px(0.012), cy + px(0.012)], [cx + px(0.012), cy + ch - px(0.012)], [cx + cw - px(0.012), cy + ch - px(0.012)]]) {
+        fastener(g, fx, fy, px(0.0042), true, r() * 3);
+      }
+      drawText(g, 'ACCESS', cx + cw / 2, cy + ch / 2, px(0.0085), { color: '#1a1a19', condense: 0.8 });
+    }
+    drawText(g, `V36-${540 + i * 7}${(r() * 90 + 10) | 0}`, w - px(0.04), y0 + h * 0.3, px(0.0065), { color: 'rgba(20,20,20,0.65)', align: 'right', condense: 0.8 });
+    // dust and wear: darker grime toward the wall, hand polish & scuffs on the front lip
+    const gr = g.createLinearGradient(0, y0, 0, y0 + h);
+    gr.addColorStop(0, 'rgba(50,48,44,0.12)');
+    gr.addColorStop(0.5, 'rgba(50,48,44,0)');
+    gr.addColorStop(0.92, 'rgba(240,240,232,0.05)');
+    g.fillStyle = gr;
+    g.fillRect(0, y0, w, h);
+    scuffs(g, r, 0, y0 + h * 0.75, w, h * 0.25, Math.round(sz.w * 70), 0.14);
+    scuffs(g, r, 0, y0, w, h * 0.7, Math.round(sz.w * 25), 0.08);
+    g.restore();
+    rows.push({ v0: 1 - (y0 + h) / H, dv: h / H, u1: w / W });
+    y0 += h + 8;
+  });
+  const texture = tex(c, { repeat: false });
+  return { texture, row: (i) => rows[i] };
 }

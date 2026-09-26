@@ -9,6 +9,9 @@
 //               ctx.scene, placed at vessel.descentStage.{pos, quat}. Landing-gear pistons stroke by
 //               vessel.gear.pads[i].compression along the same axis the physics uses; the contact
 //               probes fold as they touch the ground (and stay bent).
+//               Distance LOD: when a stage would project to < SPECK_PX (1.5 px) its meshes are hidden and a
+//               sunlit point (speck.js) is drawn instead — unless the vessel-shadow pass needs the meshes
+//               (it is enabled and the stage is within 3 km of the active vessel).
 //   setIVA(on)  own exterior -> LAYERS.GHOST (only the vessel-shadow pass sees it) except meshes
 //               tagged userData.ivaVisible (the RCS quads, visible through the windows). A descent
 //               stage left on the surface stays on LAYERS.VESSEL (it is not "our" cabin any more).
@@ -21,10 +24,13 @@ import { createLMMaterials } from './materials.js';
 import { buildAscentStage } from './ascent.js';
 import { buildDescentStage } from './descent.js';
 import { texturesReady } from './textures.js';
+import { createSpeck, projectedPx, SPECK_PX } from './speck.js';
 
 const _w = new THREE.Vector3();
 const _up = new THREE.Vector3();
 const ZERO = new THREE.Vector3();
+const _cm = new THREE.Vector3();
+const SHADOW_KEEP = 3000; // m: stages this close to the active vessel may be in the vessel-shadow box
 
 /**
  * Create the LM exterior model.
@@ -48,6 +54,42 @@ export function createLMModel(ctx) {
   descentRoot.name = 'LM descent stage (staged)';
   descentRoot.visible = false;
   ctx.scene?.add(descentRoot);
+
+  // ---- distance LOD: bounding spheres (body frame) and the stand-in specks
+  const sphere = (...objs) => {
+    const b = new THREE.Box3();
+    for (const o of objs) b.expandByObject(o);
+    return b.getBoundingSphere(new THREE.Sphere());
+  };
+  root.updateMatrixWorld(true);
+  const sphLM = sphere(asc.group, des.group);
+  const sphAsc = sphere(asc.group);
+  const sphDes = sphere(des.group);
+  // mean projected areas (m^2): ascent ~4.3 x 3.8 m, descent body + gear, whole vehicle
+  const speckLM = createSpeck(ctx, { name: 'LM', radius: sphLM.radius, area: 22, flash: true });
+  const speckAsc = createSpeck(ctx, { name: 'LM ascent stage', radius: sphAsc.radius, area: 12, flash: true });
+  const speckDes = createSpeck(ctx, { name: 'LM descent stage', radius: sphDes.radius, area: 11 });
+  speckLM.points.position.copy(sphLM.center);
+  speckAsc.points.position.copy(sphAsc.center);
+  speckDes.points.position.copy(sphDes.center);
+  root.add(speckLM.points, speckAsc.points);
+  descentRoot.add(speckDes.points);
+  const lod = { lmPx: Infinity, descentPx: Infinity, culled: false, descentCulled: false };
+
+  /**
+   * Decide whether a stage is drawn as meshes (true) or as a speck. `centre` is its body-frame
+   * sphere centre, `pos`/`quat` its MCI pose.
+   */
+  function resolved(frame, sph, pos, quat, isActive) {
+    _cm.copy(sph.center).applyQuaternion(quat).add(pos);
+    const d = _cm.distanceTo(frame.origin);
+    const px = ctx.camera ? projectedPx(ctx, sph.radius, d) : Infinity;
+    if (px >= SPECK_PX) return { show: true, px, centre: _cm };
+    const act = frame.active;
+    const nearActive = isActive || (act && act.pos && pos.distanceTo(act.pos) < SHADOW_KEEP);
+    if (ctx.vesselShadow?.enabled && nearActive) return { show: true, px, centre: _cm };
+    return { show: false, px, centre: _cm };
+  }
 
   const ascMeshes = [];
   const desMeshes = [];
@@ -139,9 +181,38 @@ export function createLMModel(ctx) {
       const alt = v.tel?.altitude ?? 1e9;
       const orbitalOps = !v.landed && !v.crashed && (staged || alt > 20000);
       const t = frame.time || 0;
-      asc.trackingLight.visible = orbitalOps && t % 1 < 0.08;
+      const flash = orbitalOps && t % 1 < 0.08;
+      asc.trackingLight.visible = flash;
       for (const l of asc.dockingLights) l.visible = orbitalOps;
+
+      // distance LOD (see header): meshes below ~1.5 px are replaced by a sunlit speck
+      const isActive = frame.active ? frame.active === v : true;
+      const inIVA = frame.viewMode === 'iva' && frame.ivaVessel === 'LM';
+      const sphA = staged ? sphAsc : sphLM;
+      const rA = inIVA ? { show: true, px: Infinity } : resolved(frame, sphA, v.pos, v.quat, isActive);
+      lod.lmPx = rA.px;
+      lod.culled = !rA.show;
+      asc.group.visible = rA.show;
+      speckLM.points.visible = !staged && !rA.show;
+      speckAsc.points.visible = staged && !rA.show;
+      if (!rA.show) (staged ? speckAsc : speckLM).update(frame, rA.centre, flash);
+      if (!staged) {
+        des.group.visible = rA.show;
+        speckDes.points.visible = false;
+        lod.descentPx = rA.px;
+        lod.descentCulled = !rA.show;
+      } else if (v.descentStage) {
+        const ds = v.descentStage;
+        const rD = resolved(frame, sphDes, ds.pos, ds.quat, false);
+        lod.descentPx = rD.px;
+        lod.descentCulled = !rD.show;
+        des.group.visible = rD.show;
+        speckDes.points.visible = !rD.show;
+        if (!rD.show) speckDes.update(frame, rD.centre, false);
+      }
     },
+    /** Distance-LOD state of the last update (debug / tests): projected sizes (px) and culling. */
+    lod,
     /** Triangle / mesh counts (debug). */
     stats() {
       let triangles = 0;

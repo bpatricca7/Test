@@ -1,4 +1,5 @@
-// Triangle-budget optimiser for the Command Module cabin (CSM-CABIN agent).
+// Triangle- and draw-budget optimiser for the Command Module cabin (CSM-CABIN agent).
+// (mergeStatic, at the end: static meshes baked into one mesh per material.)
 //
 // The cockpit kit builds its hardware (toggle switches, circuit breakers, knobs, bezels...) at a
 // resolution meant for close-up inspection of a single panel. The CM carries ~540 toggles and ~270
@@ -378,4 +379,203 @@ export function updateLOD(lods, eye) {
     const g = l.center.distanceTo(eye) > LOD_DISTANCE ? l.far : l.near;
     if (l.mesh.geometry !== g) l.mesh.geometry = g;
   }
+}
+
+// ------------------------------------------------------------------------------ static merging
+//
+// Draw-call budget: the kit builds every bezel, well, placard and panel fastener as its own mesh
+// (hundreds of meshes, most sharing a handful of materials), and three.js issues one draw per mesh
+// per pass (main + sun shadow). Everything that never moves after the build is baked into cabin
+// space and merged into ONE mesh per (material, shadow flags, render order, layers, vertex layout).
+// Moving / toggling parts are protected by the caller (`dynamic`: instruments, hand controllers,
+// rotary knobs, thumbwheels, push buttons...), material-only changes (lamp glow, talkback flags,
+// integral lighting) are unaffected because the merged mesh keeps the very same material object.
+
+const _baseOnBeforeRender = new THREE.Object3D().onBeforeRender;
+const _m4 = new THREE.Matrix4();
+
+/**
+ * Parameter fingerprint of a material that can be shared by value (same textures, same parameters),
+ * or null if it must keep its identity (registered lamp / integral-lighting materials carry userData,
+ * patched shaders carry onBeforeCompile).
+ */
+function plainMaterialKey(m) {
+  if (!m.isMeshStandardMaterial || m.isMeshPhysicalMaterial || m.isShaderMaterial) return null;
+  if (m.onBeforeCompile && m.onBeforeCompile !== THREE.Material.prototype.onBeforeCompile) return null;
+  if (Object.keys(m.userData).length) return null;
+  const maps = ['map', 'emissiveMap', 'roughnessMap', 'metalnessMap', 'normalMap', 'bumpMap', 'aoMap', 'alphaMap', 'lightMap', 'envMap', 'displacementMap']
+    .map((k) => (m[k] ? m[k].uuid : '-')).join(',');
+  const c = (x) => x.getHexString();
+  return [m.type, maps, c(m.color), c(m.emissive), m.emissiveIntensity, m.roughness, m.metalness, m.side, m.shadowSide, m.flatShading, m.vertexColors,
+    m.envMapIntensity, m.bumpScale, m.opacity, m.transparent, m.blending, m.alphaTest, m.polygonOffset, m.polygonOffsetFactor, m.polygonOffsetUnits,
+    m.depthTest, m.depthWrite, m.colorWrite, m.wireframe, m.fog, m.toneMapped].join('|');
+}
+
+/** Vertex layout signature (attribute names, sizes, array types). */
+function layoutKey(g) {
+  return Object.keys(g.attributes).sort().map((k) => {
+    const a = g.attributes[k];
+    const arr = a.isInterleavedBufferAttribute ? a.data.array : a.array;
+    return `${k}${a.itemSize}${a.normalized ? 'n' : ''}${arr.constructor.name}`;
+  }).join(',');
+}
+
+/** Can this mesh be baked into a merged static batch? */
+function mergeable(o) {
+  if (!o.isMesh || o.isInstancedMesh || o.isSkinnedMesh || o.isLOD) return false;
+  if (o.children.length || o.userData.shadowOnly || o.userData.noMerge || o.userData.dynamic) return false;
+  if (o.onBeforeRender !== _baseOnBeforeRender) return false;
+  const m = o.material;
+  if (!m || Array.isArray(m) || m.userData?.noMerge) return false;
+  // opaque, or additive without depth writes (cover glass): the result does not depend on draw order
+  const additive = m.transparent && m.blending === THREE.AdditiveBlending && !m.depthWrite;
+  if (!additive && (m.transparent || m.blending !== THREE.NormalBlending)) return false;
+  const g = o.geometry;
+  if (!g?.attributes?.position || g.drawRange.count !== Infinity || g.drawRange.start !== 0) return false;
+  if (Object.keys(g.morphAttributes).length) return false;
+  return true;
+}
+
+/** Copy of `g` baked by matrix `m` (indexed, de-interleaved, no groups, winding kept for mirrored matrices). */
+function bakedCopy(g, m) {
+  const out = new THREE.BufferGeometry();
+  for (const k of Object.keys(g.attributes)) {
+    const a = g.attributes[k];
+    if (a.isInterleavedBufferAttribute) {
+      // de-interleave by hand (InterleavedBufferAttribute.clone() logs a notice)
+      const arr = new a.data.array.constructor(a.count * a.itemSize);
+      for (let i = 0; i < a.count; i++) for (let c = 0; c < a.itemSize; c++) arr[i * a.itemSize + c] = a.data.array[i * a.data.stride + a.offset + c];
+      out.setAttribute(k, new THREE.BufferAttribute(arr, a.itemSize, a.normalized));
+    } else out.setAttribute(k, a.clone());
+  }
+  if (g.index) out.setIndex(g.index.clone());
+  else {
+    const n = g.attributes.position.count;
+    const idx = n > 65535 ? new Uint32Array(n) : new Uint16Array(n);
+    for (let i = 0; i < n; i++) idx[i] = i;
+    out.setIndex(new THREE.BufferAttribute(idx, 1));
+  }
+  out.applyMatrix4(m);
+  if (m.determinant() < 0) {
+    const ix = out.index;
+    for (let i = 0; i + 2 < ix.count; i += 3) {
+      const b = ix.getX(i + 1);
+      ix.setX(i + 1, ix.getX(i + 2));
+      ix.setX(i + 2, b);
+    }
+  }
+  return out;
+}
+
+/** Concatenate indexed geometries with identical layouts (index widened to 32 bit when needed). */
+function concat(list) {
+  const out = new THREE.BufferGeometry();
+  let nv = 0;
+  let ni = 0;
+  for (const g of list) {
+    nv += g.attributes.position.count;
+    ni += g.index.count;
+  }
+  for (const k of Object.keys(list[0].attributes)) {
+    const a0 = list[0].attributes[k];
+    const arr = new a0.array.constructor(nv * a0.itemSize);
+    let o = 0;
+    for (const g of list) {
+      const a = g.attributes[k];
+      arr.set(a.array.subarray(0, a.count * a.itemSize), o);
+      o += a.count * a.itemSize;
+    }
+    out.setAttribute(k, new THREE.BufferAttribute(arr, a0.itemSize, a0.normalized));
+  }
+  const idx = nv > 65535 ? new Uint32Array(ni) : new Uint16Array(ni);
+  let vo = 0;
+  let io = 0;
+  for (const g of list) {
+    const ix = g.index;
+    for (let i = 0; i < ix.count; i++) idx[io++] = ix.getX(i) + vo;
+    vo += g.attributes.position.count;
+  }
+  out.setIndex(new THREE.BufferAttribute(idx, 1));
+  out.computeBoundingSphere();
+  out.computeBoundingBox();
+  return out;
+}
+
+/**
+ * Merge the static opaque meshes under `root` (see the section comment). Call once after the build,
+ * after layers and shadow flags are final, with the root at its build transform.
+ * @param {THREE.Object3D} root
+ * @param {{dynamic?: Set<THREE.Object3D>}} [o] subtrees to leave untouched
+ * @returns {{meshesBefore: number, meshesAfter: number, merged: THREE.Mesh[], materialsShared: number}}
+ */
+export function mergeStatic(root, o = {}) {
+  const dynamic = o.dynamic || new Set();
+  root.updateMatrixWorld(true);
+  const inv = new THREE.Matrix4().copy(root.matrixWorld).invert();
+  const plain = new Map(); // fingerprint -> representative material
+  let shared = 0;
+  const groups = new Map();
+  let meshesBefore = 0;
+  const visit = (obj) => {
+    if (dynamic.has(obj) || !obj.visible) {
+      obj.traverse((x) => { if (x.isMesh) meshesBefore++; });
+      return;
+    }
+    if (obj.isMesh) meshesBefore++;
+    if (mergeable(obj)) {
+      let mat = obj.material;
+      const fp = plainMaterialKey(mat);
+      if (fp) {
+        const rep = plain.get(fp);
+        if (!rep) plain.set(fp, mat);
+        else if (rep !== mat) {
+          mat = rep;
+          shared++;
+        }
+      }
+      const key = `${mat.uuid}|${obj.castShadow ? 1 : 0}${obj.receiveShadow ? 1 : 0}|${obj.renderOrder}|${obj.layers.mask}|${obj.frustumCulled ? 1 : 0}|${layoutKey(obj.geometry)}`;
+      let grp = groups.get(key);
+      if (!grp) groups.set(key, (grp = { mat, list: [] }));
+      grp.list.push(obj);
+      return;
+    }
+    for (const c of obj.children) visit(c);
+  };
+  for (const c of root.children) visit(c);
+
+  const merged = [];
+  let removed = 0;
+  for (const { mat, list } of groups.values()) {
+    if (list.length < 2) {
+      if (list[0].material !== mat) list[0].material = mat; // de-duplicated material still saves a program/uniform switch
+      continue;
+    }
+    const geos = [];
+    for (const mesh of list) {
+      _m4.multiplyMatrices(inv, mesh.matrixWorld);
+      if (Math.abs(_m4.determinant()) < 1e-18) continue;
+      geos.push(bakedCopy(mesh.geometry, _m4));
+    }
+    if (geos.length < 2) continue;
+    const g = concat(geos);
+    for (const x of geos) x.dispose();
+    const first = list[0];
+    const mesh = new THREE.Mesh(g, mat);
+    mesh.name = `${root.name || 'root'}:static:${mat.name || mat.type}`;
+    mesh.castShadow = first.castShadow;
+    mesh.receiveShadow = first.receiveShadow;
+    mesh.renderOrder = first.renderOrder;
+    mesh.layers.mask = first.layers.mask;
+    mesh.frustumCulled = first.frustumCulled;
+    mesh.userData.mergedFrom = list.length;
+    mesh.matrixAutoUpdate = false;
+    mesh.updateMatrix();
+    for (const x of list) {
+      x.removeFromParent();
+      removed++;
+    }
+    root.add(mesh);
+    merged.push(mesh);
+  }
+  return { meshesBefore, meshesAfter: meshesBefore - removed + merged.length, merged, materialsShared: shared };
 }

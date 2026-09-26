@@ -224,3 +224,31 @@ test('performance: terrainHeight full detail', () => {
   // generous bound so the test is robust on slow/shared CI machines
   assert.ok(us < 20, `${us} us/call`);
 });
+
+test('mare surfaces carry long wrinkle ridges (dorsa), but not at the landing site', () => {
+  // E-W traverses across northern Mare Tranquillitatis / Serenitatis: a ridge is a 100+ m rise above the
+  // local plain that is only a few km wide
+  const D2R = Math.PI / 180;
+  const dirLL = (la, lo) => [Math.cos(la * D2R) * Math.cos(lo * D2R), Math.cos(la * D2R) * Math.sin(lo * D2R), Math.sin(la * D2R)];
+  let ridges = 0;
+  for (let lat = 4; lat <= 26; lat += 2) {
+    const hs = [];
+    for (let lon = 20; lon <= 36; lon += 0.02) {
+      const d = dirLL(lat, lon);
+      if (mareMask(...d) < 0.99) {
+        hs.push(NaN);
+        continue;
+      }
+      hs.push(terrainHeightLOD(...d, 600));
+    }
+    // local prominence against the plain 12 km (~0.4 deg) to either side
+    for (let i = 20; i < hs.length - 20; i++) {
+      const p = hs[i] - 0.5 * (hs[i - 20] + hs[i + 20]);
+      if (p > 100) {
+        ridges++;
+        i += 40;
+      }
+    }
+  }
+  assert.ok(ridges >= 3, `ridge crossings found: ${ridges}`);
+});

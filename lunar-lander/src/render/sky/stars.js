@@ -3,9 +3,11 @@
 // Each star is drawn as a small sprite centred exactly on its (sub-pixel) projected position; the
 // fragment shader evaluates a normalised Gaussian PSF, so a star's integrated energy is the same no
 // matter where it falls on the pixel grid — no shimmering or popping while the camera turns.
-// Radiance is physical up to one art-directed constant: flux ~ 10^(-0.4 m). Auto-exposure in post.js
-// decides what is visible: bright stars remain barely visible over a sunlit landscape, the full
-// field (and the Milky Way) comes out when the view is dark.
+// Radiance is physical up to one art-directed constant: flux ~ 10^(-0.4 m) (the constant is far brighter
+// than nature, standing in for a dark-adapted eye / long exposure). Visibility follows the camera's
+// adaptation state computed on the GPU by post.js (ctx.exposureTexture .a): as in every Apollo photograph
+// and film, NO stars show while sunlit ground or a sunlit spacecraft is in the frame; the full field (and
+// the Milky Way) comes out only when the view is dark.
 //
 // Owned by the SKY-FX agent.
 
@@ -24,13 +26,16 @@ const vert = /* glsl */ `
   uniform float uPixelRatio;
   uniform float uGain;
   uniform float uZoom;      // > 1 when the camera zooms in (narrow FOV): fainter stars resolve better
+  uniform sampler2D tAdapt; // post.js adaptation state (a = star visibility)
+  uniform float uUseAdapt;
   varying vec3 vColor;
   varying float vSigma;     // PSF sigma in physical pixels
   varying float vSize;
   void main() {
     vec4 mv = viewMatrix * vec4(position * 1.0e8, 1.0);
     gl_Position = projectionMatrix * mv;
-    float flux = pow(10.0, -0.4 * aMag) * uGain * mix(1.0, uZoom, 0.5);
+    float vis = uUseAdapt > 0.5 ? clamp(texture2D(tAdapt, vec2(0.5)).a, 0.0, 1.0) : 1.0;
+    float flux = pow(10.0, -0.4 * aMag) * uGain * vis * mix(1.0, uZoom, 0.5);
     // brighter stars get a slightly wider core (film/eye saturation)
     float sigmaCss = clamp(0.62 + 0.16 * (2.5 - aMag), 0.62, 1.35);
     float sigma = sigmaCss * uPixelRatio;
@@ -80,6 +85,8 @@ export function createStars(ctx) {
       uPixelRatio: { value: 1 },
       uGain: { value: 1 },
       uZoom: { value: 1 },
+      tAdapt: { value: null },
+      uUseAdapt: { value: 0 },
     },
     blending: THREE.AdditiveBlending,
     depthTest: false,
@@ -99,6 +106,9 @@ export function createStars(ctx) {
       mat.uniforms.uPixelRatio.value = ctx.renderer.getPixelRatio();
       const fov = ctx.camera.fov || 60;
       mat.uniforms.uZoom.value = Math.max(1, 55 / fov);
+      const tex = ctx.exposureTexture || null;
+      mat.uniforms.tAdapt.value = tex;
+      mat.uniforms.uUseAdapt.value = tex ? 1 : 0;
     },
   };
 }

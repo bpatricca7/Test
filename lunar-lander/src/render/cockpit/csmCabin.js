@@ -18,7 +18,8 @@
 // Display Console panels 1-3), csm/sidePanels.js (panels 5, 8, 15, 16), csm/leb.js (Lower Equipment
 // Bay: G&N station, optics, DSKY 2), csm/couches.js, csm/controls.js (RHC/THC), csm/stowage.js
 // (lockers), csm/details.js (hatches' mechanisms, floods, hoses, COAS, cameras, checklists),
-// csm/dressing.js (pouches, cue cards, pencils on the walls), csm/optimize.js (triangle budget),
+// csm/dressing.js (pouches, cue cards, pencils on the walls), csm/optimize.js (triangle budget and the
+// static merge: one draw per material for everything that never moves),
 // csm/lighting.js, csm/systems.js (EPS/ECS/propulsion display model), csm/layout.js (geometry).
 import * as THREE from 'three';
 import { LAYERS } from '../../core/constants.js';
@@ -35,31 +36,52 @@ import { buildDetails } from './csm/details.js';
 import { buildDressing } from './csm/dressing.js';
 import { createCabinLighting } from './csm/lighting.js';
 import { createSystems, updateSystems } from './csm/systems.js';
-import { optimizeCabin, updateLOD } from './csm/optimize.js';
+import { optimizeCabin, updateLOD, mergeStatic } from './csm/optimize.js';
+
+/**
+ * Per-quality build settings: panel canvas resolution scale (texture memory ~ tex²) and the
+ * smallest part (bounding-sphere radius, m) that still casts a sun shadow.
+ */
+export const CABIN_QUALITY = {
+  low: { tex: 0.55, castMin: 0.02 },
+  medium: { tex: 0.8, castMin: 0.0075 },
+  high: { tex: 1, castMin: 0.0075 },
+};
+
+/**
+ * Controls whose state this module changes after the build (syncSwitches). Everything else is
+ * static and may be merged; add an id here before driving a new control.
+ */
+const DRIVEN = new Set([
+  'manRoll', 'manPitch', 'manYaw', 'cmcMode', 'scCont', 'rate', 'dvThrustA', 'dvThrustB', 'gmblP1', 'gmblY1', 'gmblP2', 'gmblY2',
+  'emsFunc', 'emsMode', 'probe1', 'probe2', 'tbProbe1', 'tbProbe2', 'lpIsol', 'lpIss', 'lpOpt', 'tbSpsHe1', 'tbSpsHe2',
+]);
 
 const _eye = new THREE.Vector3();
 const _qInv = new THREE.Quaternion();
 
 /**
  * Create the Command Module crew compartment.
- * @param {object} ctx RenderContext (uses ctx.renderer for the interior environment map)
+ * @param {object} ctx RenderContext (uses ctx.renderer for the interior environment map, ctx.quality)
+ * @param {{merge?: boolean}} [opts] merge=false keeps every part as its own mesh (debug / comparisons)
  * @returns {{root: THREE.Group, update(frame: object, vessel: object): void, setActive(on: boolean): void,
  *   parts: object, systems: object, stats(): {triangles: number, meshes: number, drawables: number}}}
  */
-export function createCSMCabin(ctx) {
+export function createCSMCabin(ctx, opts = {}) {
   const root = new THREE.Group();
   root.name = 'CSMCabin';
   root.visible = false;
 
-  const M = createCabinMaterials();
+  const Q = CABIN_QUALITY[ctx?.quality] || CABIN_QUALITY.high;
+  const M = createCabinMaterials({ texScale: Q.tex });
   const mat = (k) => (k === 'glass' ? KIT.getMaterial('glass') : M.get(k));
   const sys = createSystems();
   const sysFn = () => sys;
 
   const shell = buildShell(mat);
-  const mdc = buildMDC(mat, { systems: sysFn });
-  const side = buildSidePanels(mat);
-  const leb = buildLEB(mat, { systems: sysFn });
+  const mdc = buildMDC(mat, { systems: sysFn, texScale: Q.tex, coaming: M.coaming });
+  const side = buildSidePanels(mat, { texScale: Q.tex });
+  const leb = buildLEB(mat, { systems: sysFn, texScale: Q.tex });
   const couches = buildCouches(mat);
   const controllers = buildControllers(mat);
   const stowage = buildStowage(mat, M.atlas);
@@ -83,14 +105,54 @@ export function createCSMCabin(ctx) {
       // halves the triangles of the sunlight shadow pass (levers, guards and covers still cast)
       const g = o.geometry;
       if (!g.boundingSphere) g.computeBoundingSphere();
-      o.castShadow = !(g.boundingSphere && g.boundingSphere.radius < 0.0075);
+      o.castShadow = !(g.boundingSphere && g.boundingSphere.radius < Q.castMin);
       o.receiveShadow = true;
     } else {
       o.castShadow = false;
+      // cover glass / combiners / window panes only ADD reflections (additive blending) — they
+      // must still receive the cabin's shadow, or the Sun's specular glint shows on glass sitting
+      // in the dark behind the closed hull (e.g. a white blob on the COAS with the Sun astern)
+      if (transparent) o.receiveShadow = true;
     }
   });
+  // instrument parts that do not stand proud of the panel face (cases, backplates, face plates, balls,
+  // drums, needles lying on the dial under the glass) can only shadow what lies deeper in the same
+  // recess, and the protruding bezel around that recess already casts the same shadow edge. Only the
+  // proud parts (bezels, knobs, keys, guards) cast; everything keeps receiving.
+  {
+    const inv = new THREE.Matrix4();
+    const rel = new THREE.Matrix4();
+    const box = new THREE.Box3();
+    root.updateMatrixWorld(true);
+    for (const inst of [...mdc.instruments, ...leb.instruments]) {
+      const obj = inst.object;
+      if (!obj) continue;
+      inv.copy(obj.matrixWorld).invert();
+      obj.traverse((o) => {
+        if (!o.isMesh || !o.castShadow || o.isInstancedMesh) return;
+        const g = o.geometry;
+        if (!g.boundingBox) g.computeBoundingBox();
+        box.copy(g.boundingBox).applyMatrix4(rel.multiplyMatrices(inv, o.matrixWorld));
+        if (box.max.z < 0.0008) o.castShadow = false;
+      });
+    }
+  }
   // thin single-surface shell: cast from both faces so no light leaks at grazing angles
   M.get('wall').shadowSide = THREE.DoubleSide;
+
+  // draw-call budget: bake everything that never moves into one mesh per material. Instruments,
+  // the hand controllers and the controls this module drives (DRIVEN: switches, rotaries and
+  // talkbacks that follow the vehicle state) stay live; nothing else is ever touched after the build.
+  const dynamic = new Set([controllers.group]);
+  for (const inst of [...mdc.instruments, ...leb.instruments]) if (inst.object && !inst.object.userData.mergeStatic) dynamic.add(inst.object);
+  for (const map of [mdc.controls, side.controls, leb.controls]) {
+    for (const [id, h] of map) {
+      if (!DRIVEN.has(id)) continue;
+      const obj = h?.isObject3D ? h : h?.object?.isObject3D ? h.object : null;
+      if (obj) dynamic.add(obj);
+    }
+  }
+  const merged = opts.merge === false ? null : mergeStatic(root, { dynamic });
 
   const lighting = createCabinLighting(ctx, root, { floods: details.floods });
   lighting.collectMaterials();
@@ -102,6 +164,10 @@ export function createCSMCabin(ctx) {
   const last = new Map();
   const setSw = (id, st) => {
     if (last.get(id) === st) return;
+    if (!DRIVEN.has(id) && !last.has('!' + id)) {
+      last.set('!' + id, true);
+      console.warn(`csm cabin: control '${id}' is driven but not listed in DRIVEN (it may have been merged)`);
+    }
     const h = controls.get(id);
     if (!h) return;
     if (h.setState) h.setState(st);
@@ -169,6 +235,8 @@ export function createCSMCabin(ctx) {
     root,
     systems: sys,
     optimized,
+    merged,
+    quality: Q,
     parts: { shell, mdc, side, leb, couches, controllers, stowage, details, dressing, lighting, materials: M, controls },
     setActive(on) {
       on = !!on;
@@ -181,7 +249,7 @@ export function createCSMCabin(ctx) {
       if (!root.visible || !v) return;
       root.position.copy(v.pos).sub(frame.origin);
       root.quaternion.copy(v.quat);
-      root.updateMatrixWorld(true);
+      // (world matrices: main.js updates the scene graph once per frame after all modules)
       // eye in cabin coordinates -> distance LOD of the switch / breaker banks
       _qInv.copy(v.quat).invert();
       _eye.copy(frame.cameraMCI ?? frame.origin).sub(v.pos).applyQuaternion(_qInv);

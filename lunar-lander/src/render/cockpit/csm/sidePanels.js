@@ -19,7 +19,7 @@ const row = (y, x0, dx, specs) => specs.map((s, i) => ({ ...s, x: x0 + i * dx, y
  * @param {(key: string) => THREE.Material} mat
  * @returns {{group: THREE.Group, controls: Map, panels: object, frames: object}}
  */
-export function buildSidePanels(mat) {
+export function buildSidePanels(mat, opts = {}) {
   const F = sidePanels();
   const group = new THREE.Group();
   group.name = 'CSMCabin:sidePanels';
@@ -28,7 +28,7 @@ export function buildSidePanels(mat) {
   const B = new Batch('CSMCabin:sideBody');
 
   function panel(id, frame, spec) {
-    const p = KIT.createPanel({ width: frame.w, height: frame.h, depth: 0.01, pxPerM: 2600, screws: 'dzus', name: `CM PANEL ${id}`, wear: 0.5, ...spec });
+    const p = KIT.createPanel({ width: frame.w, height: frame.h, depth: 0.01, pxPerM: Math.round(2600 * (opts.texScale ?? 1)), screws: 'dzus', name: `CM PANEL ${id}`, wear: 0.5, ...spec });
     placeOnFrame(p, frame, 0, 0, 0);
     group.add(p);
     panels[id] = p;

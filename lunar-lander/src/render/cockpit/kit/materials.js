@@ -47,29 +47,53 @@ export const LIGHTING = {
   lamps: 1,
   integral: 0,
   integralColor: new THREE.Color(0.78, 0.9, 0.82),
+  /** Auto-exposure compensation of every lamp / display (see setLampExposure); 1 = uncompensated. */
+  exposureGain: 1,
 };
 /** Base emissive intensity of a lit lamp at LIGHTING.lamps = 1. */
 export const LAMP_INTENSITY = 1.2;
 const lampMats = new Set();
 const integralMats = new Set();
 
+const lampIntensity = (m) => (m.userData.lampBase ?? LAMP_INTENSITY) * LIGHTING.lamps * LIGHTING.exposureGain * (m.userData.lampOn ?? 1);
+
 /** Register a material whose emissiveIntensity should follow LIGHTING.lamps (base * lamps * on). */
 export function registerLamp(mat, base = LAMP_INTENSITY) {
   mat.userData.lampBase = base;
   if (mat.userData.lampOn == null) mat.userData.lampOn = 1;
-  mat.emissiveIntensity = base * LIGHTING.lamps * mat.userData.lampOn;
+  mat.emissiveIntensity = lampIntensity(mat);
   lampMats.add(mat);
   return mat;
 }
 /** Set a registered lamp material on (1) / off (0) / partial. */
 export function setLampLevel(mat, level) {
   mat.userData.lampOn = level;
-  mat.emissiveIntensity = (mat.userData.lampBase ?? LAMP_INTENSITY) * LIGHTING.lamps * level;
+  mat.emissiveIntensity = lampIntensity(mat);
 }
 /** Scale all lamps and displays (e.g. from the cabin's exposure or a dimmer knob). */
 export function setLampBrightness(k) {
   LIGHTING.lamps = k;
-  for (const m of lampMats) m.emissiveIntensity = (m.userData.lampBase ?? LAMP_INTENSITY) * k * (m.userData.lampOn ?? 1);
+  for (const m of lampMats) m.emissiveIntensity = lampIntensity(m);
+}
+
+/** Exposure multiplier at which lamps / displays show their nominal (tuned) brightness: a sunlit cabin. */
+export const LAMP_EXPOSURE_REF = 5;
+/**
+ * Auto-exposure compensation for self-luminous panel lights (ARCHITECTURE 7b: radiance ~ E^-0.5).
+ * The post chain opens the exposure up to ~120x in a dark cabin; uncompensated, every lamp and display
+ * then clips to a desaturated white/salmon blob. Scaling by sqrt(REF / multiplier) keeps them
+ * brighter the darker the cabin (as the dark-adapted eye sees them) without burning out.
+ * Cheap: only touches the materials when the gain moves by more than 1 %.
+ * @param {{multiplier: number, valid?: boolean}|null} info  ctx.exposureInfo
+ * @returns {number} the current gain
+ */
+export function setLampExposure(info) {
+  if (!info || info.valid === false || !(info.multiplier > 0)) return LIGHTING.exposureGain;
+  const g = Math.min(2, Math.max(0.12, Math.sqrt(LAMP_EXPOSURE_REF / info.multiplier)));
+  if (Math.abs(g - LIGHTING.exposureGain) <= 0.01 * LIGHTING.exposureGain) return LIGHTING.exposureGain;
+  LIGHTING.exposureGain = g;
+  for (const m of lampMats) m.emissiveIntensity = lampIntensity(m);
+  return g;
 }
 /**
  * Register a material for integral lighting: emissiveIntensity = LIGHTING.integral * userData.integralScale.
@@ -195,6 +219,41 @@ export function getMaterial(name) {
     cache.set(name, m);
   }
   return m;
+}
+
+/** Depth materials reserved for instanced shadow casters (see useInstancedShadowDepth). */
+let _instDepth = null;
+
+/**
+ * Give an InstancedMesh its own shadow depth material. Without it, three renders every shadow caster
+ * with ONE shared MeshDepthMaterial and re-checks/switches its program whenever consecutive casters
+ * differ in "instanced" or "has instanceColor" — which, with the kit's hundreds of instanced switch
+ * and breaker banks interleaved with ordinary meshes, happens on nearly every draw (more than half of
+ * the IVA shadow pass CPU). Two dedicated materials (plain / instanceColor) keep each program stable.
+ * The choice is made per render (getter), so instanceColor added later is handled.
+ * @param {THREE.InstancedMesh} mesh
+ * @returns {THREE.InstancedMesh} the same mesh
+ */
+export function useInstancedShadowDepth(mesh) {
+  if (!mesh?.isInstancedMesh) return mesh;
+  if (!_instDepth) {
+    _instDepth = [new THREE.MeshDepthMaterial(), new THREE.MeshDepthMaterial()];
+    _instDepth[0].name = 'kit:instancedDepth';
+    _instDepth[1].name = 'kit:instancedDepthColor';
+  }
+  const [plain, colored] = _instDepth;
+  Object.defineProperty(mesh, 'customDepthMaterial', {
+    configurable: true,
+    enumerable: false,
+    get() {
+      return this.instanceColor ? colored : plain;
+    },
+    set(v) {
+      // an explicit assignment (e.g. by a cabin) replaces the automatic choice
+      Object.defineProperty(this, 'customDepthMaterial', { value: v, writable: true, configurable: true });
+    },
+  });
+  return mesh;
 }
 
 /** Fresh (uncached) copy of a named material with property overrides. */

@@ -5,7 +5,7 @@ import {
   createPanel, createCanvasTexture, setLayerRecursive, registerLamp, setLampLevel, LAMP_COLORS,
   createGlass, drawText, getMaterial, COLORS,
 } from '../kit/index.js';
-import { registerIntegral } from '../kit/materials.js';
+import { registerIntegral, setLampExposure } from '../kit/materials.js';
 import { LAYERS } from '../../../core/constants.js';
 
 export const FT = 0.3048;
@@ -24,6 +24,16 @@ export function limiter(hz = 30) {
       return e;
     },
   };
+}
+
+/**
+ * Keep lamp / display brightness compensated for the post chain's auto-exposure (kit
+ * setLampExposure). The exposure read-back lives on the render context (ctx.exposureInfo), reached
+ * through the game's stable debug hook; cabins may also call KIT.setLampExposure(ctx.exposureInfo).
+ */
+function syncLampExposure(game) {
+  const info = game?.ctx?.exposureInfo ?? game?.debug?.ctx?.exposureInfo;
+  if (info) setLampExposure(info);
 }
 
 /**
@@ -46,7 +56,13 @@ export function finish(object, width, height, update, extra = {}) {
   });
   const depth = Math.max(0, -box.min.z);
   const frame = extra.frame ?? 0.006;
-  return { object, width, height, update, depth, mountHole: { w: width - frame, h: height - frame }, ...extra };
+  const upd = typeof update === 'function'
+    ? (vessel, game, dt) => {
+      syncLampExposure(game);
+      return update(vessel, game, dt);
+    }
+    : update;
+  return { object, width, height, update: upd, depth, mountHole: { w: width - frame, h: height - frame }, ...extra };
 }
 
 // ------------------------------------------------------------------------------ 7-segment glyphs

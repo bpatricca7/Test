@@ -201,41 +201,52 @@ function makePerlin(nx, ny, r) {
 
 /**
  * Crinkled foil set: { normal, rough, tint } tileable RGBA arrays. One tile is meant to cover
- * ~1 m of blanket. The height field is a sum of domain-warped RIDGED noise (1-|n|)^k at three
- * scales — long smooth folds that end in knife-edge creases, stretched vertically because blankets
- * hang — plus crumpled micro-facets (Voronoi cells with random tilts). Roughness and tint vary per
- * facet and along creases.
+ * ~2.4 m of blanket (see materials.js). Reference: the Apollo 11 LM (AS11-40-5863, -5927) — the
+ * Kapton is creased into facets of ~5-30 cm between long sags and fold lines, which gives broad
+ * amber-to-brown gradients and a few large highlights, not centimetre-scale glitter. So:
+ *   - height: domain-warped RIDGED noise (1-|n|)^k for the long sags (~1 m) and secondary ridges
+ *     (~40 cm), stretched vertically because blankets hang, plus short straight creases where the
+ *     film was folded flat once and opened again;
+ *   - facets: two tileable Voronoi mosaics carrying random tilts — the main crumple (~15 cm cells,
+ *     5-30 cm range) and a much weaker fine octave (~6 cm, ~0.2x the tilt) that only breaks up
+ *     the flat facets without turning them into mirrors;
+ *   - roughness never below 0.3 (micro-wrinkles below the texel scale), rougher along creases;
+ *   - tint varies per large facet and in broad patches (luminance mostly, a little hue), darker
+ *     in the creases.
  */
 export function genFoil(size = 1024, seed = 7) {
   const r = rng(seed);
   const N = size * size;
-  const warpA = makePerlin(3, 3, r);
-  const warpB = makePerlin(3, 3, r);
-  const n1 = makePerlin(4, 2, r); // long vertical folds
-  const n2 = makePerlin(9, 5, r);
-  const n3 = makePerlin(21, 15, r);
-  const n4 = makePerlin(3, 3, r);
-  // straight creases (tent profile): the foil was folded flat once and opened again
+  const warpA = makePerlin(4, 4, r);
+  const warpB = makePerlin(4, 4, r);
+  const n1 = makePerlin(3, 2, r); // long sags (~0.8-1.2 m), vertical bias
+  const n2 = makePerlin(7, 5, r); // secondary ridges (~35-50 cm)
+  const n3 = makePerlin(19, 15, r); // gentle ripple (~15 cm), low weight
+  const n4 = makePerlin(3, 3, r); // film colour patches
+  const n5 = makePerlin(5, 4, r); // broad tone (amber <-> brown)
+  // straight creases (tent profile): 12-50 cm long, 1.5-4 cm wide
   const lines = [];
-  for (let i = 0; i < 22; i++) {
+  for (let i = 0; i < 30; i++) {
     const a = (r() - 0.5) * Math.PI * (r() < 0.6 ? 0.5 : 1.0) + Math.PI / 2; // mostly near-vertical
-    lines.push({ cx: r(), cy: r(), ux: Math.cos(a), uy: Math.sin(a), len: 0.12 + r() * 0.3, w: 0.01 + r() * 0.025, amp: (0.012 + r() * 0.02) * (r() < 0.5 ? -1 : 1) });
+    const w = 0.006 + r() * 0.011;
+    lines.push({ cx: r(), cy: r(), ux: Math.cos(a), uy: Math.sin(a), len: 0.05 + r() * 0.16, w, amp: w * (0.25 + r() * 0.45) * (r() < 0.5 ? -1 : 1) });
   }
   const h = new Float32Array(N);
   const crease = new Float32Array(N);
   const patch = new Float32Array(N);
+  const tone = new Float32Array(N);
   for (let y = 0; y < size; y++) {
     const v = (y + 0.5) / size;
     for (let x = 0; x < size; x++) {
       const u = (x + 0.5) / size;
-      const wu = u + 0.06 * warpA(u, v);
-      const wv = v + 0.06 * warpB(u, v);
+      const wu = u + 0.05 * warpA(u, v);
+      const wv = v + 0.05 * warpB(u, v);
       const a1 = 1 - Math.abs(n1(wu, wv));
       const a2 = 1 - Math.abs(n2(wu, wv));
       const a3 = n3(wu, wv);
       const i = y * size + x;
-      let hh = 0.05 * a1 * a1 + 0.018 * a2 * a2 * a2 + 0.004 * a3;
-      let cr = Math.max(Math.pow(a1, 30), 0.6 * Math.pow(a2, 40));
+      let hh = 0.03 * a1 * a1 + 0.008 * a2 * a2 * a2 + 0.0008 * a3;
+      let cr = Math.max(Math.pow(a1, 40), 0.6 * Math.pow(a2, 50));
       for (const L of lines) {
         let dx = u - L.cx;
         let dy = v - L.cy;
@@ -253,26 +264,38 @@ export function genFoil(size = 1024, seed = 7) {
       h[i] = hh;
       crease[i] = cr;
       patch[i] = n4(u, v);
+      tone[i] = n5(wu, wv);
     }
   }
-  // micro facets (crumpling) as additive tilts
+  // crumpled facets as additive tilts: main mosaic + weak fine octave
   const tx = new Float32Array(N);
   const ty = new Float32Array(N);
   const facet = new Float32Array(N);
-  const vor = voronoi(size, 24, r, 0.8);
-  const ftx = new Float32Array(vor.count);
-  const fty = new Float32Array(vor.count);
-  const fv = new Float32Array(vor.count);
-  for (let k = 0; k < vor.count; k++) {
-    ftx[k] = gauss(r) * 0.08;
-    fty[k] = gauss(r) * 0.11;
-    fv[k] = r();
+  const vA = voronoi(size, 15, r, 0.65); // taller cells: the blankets hang
+  const vB = voronoi(size, 40, r, 0.8);
+  const aX = new Float32Array(vA.count);
+  const aY = new Float32Array(vA.count);
+  const aV = new Float32Array(vA.count);
+  for (let k = 0; k < vA.count; k++) {
+    aX[k] = gauss(r) * 0.1;
+    aY[k] = gauss(r) * 0.13;
+    aV[k] = r();
+  }
+  const bX = new Float32Array(vB.count);
+  const bY = new Float32Array(vB.count);
+  for (let k = 0; k < vB.count; k++) {
+    bX[k] = gauss(r) * 0.02;
+    bY[k] = gauss(r) * 0.026;
   }
   for (let i = 0; i < N; i++) {
-    const k = vor.id[i];
-    tx[i] = ftx[k];
-    ty[i] = fty[k];
-    facet[i] = fv[k];
+    const a = vA.id[i];
+    const b = vB.id[i];
+    tx[i] = aX[a] + bX[b];
+    ty[i] = aY[a] + bY[b];
+    facet[i] = aV[a];
+    // the facet boundaries of the main mosaic are creases too (thin, darker, rougher)
+    const e = vA.edge[i];
+    if (e < 0.018) crease[i] = Math.max(crease[i], 0.3 * (1 - e / 0.018));
   }
   const nrm = new Uint8Array(N * 4);
   heightToNormal(h, size, size * 1.0, nrm, tx, ty);
@@ -282,17 +305,18 @@ export function genFoil(size = 1024, seed = 7) {
     const o = i * 4;
     const f = facet[i];
     const c = crease[i];
-    const ro = 0.14 + 0.12 * f * f + 0.08 * (patch[i] * 0.5 + 0.5) + 0.25 * c;
-    rough[o + 1] = Math.round(Math.min(1, ro) * 255);
+    const p = patch[i];
+    const ro = 0.3 + 0.1 * f * f + 0.06 * (p * 0.5 + 0.5) + 0.22 * c;
+    rough[o + 1] = Math.round(Math.max(0.3, Math.min(0.8, ro)) * 255);
     rough[o + 2] = 255;
     rough[o + 3] = 255;
-    // tint: large patches of slightly different film colour, per-facet sparkle, darker creases
-    const p = patch[i];
-    const b = 0.9 + 0.1 * (f - 0.5) + 0.08 * p - 0.18 * c;
-    const warm = 0.06 * p;
-    tint[o] = Math.round(Math.max(0, Math.min(1, b * (1 + warm))) * 255);
-    tint[o + 1] = Math.round(Math.max(0, Math.min(1, b)) * 255);
-    tint[o + 2] = Math.round(Math.max(0, Math.min(1, b * (1 - 1.8 * warm))) * 255);
+    // tint: broad tone gradients, per-facet shade, darker creases; a little hue (warmer = browner)
+    const tn = tone[i];
+    const bb = 0.84 + 0.1 * (f - 0.5) + 0.1 * tn + 0.04 * p - 0.16 * c;
+    const warm = 0.05 * p + 0.03 * tn;
+    tint[o] = Math.round(Math.max(0, Math.min(1, bb * (1 + warm))) * 255);
+    tint[o + 1] = Math.round(Math.max(0, Math.min(1, bb)) * 255);
+    tint[o + 2] = Math.round(Math.max(0, Math.min(1, bb * (1 - 1.8 * warm))) * 255);
     tint[o + 3] = 255;
   }
   return { normal: nrm, rough, tint };

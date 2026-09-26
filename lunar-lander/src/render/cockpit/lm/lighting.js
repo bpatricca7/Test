@@ -79,7 +79,7 @@ export function createCabinLighting(ctx, root, o) {
   const envMats = new Map(); // material -> base intensity
   function collectMaterials() {
     root.traverse((obj) => {
-      if (!obj.isMesh) return;
+      if (!obj.isMesh || obj.layers.mask === 0) return; // (merged originals are not drawn)
       const list = Array.isArray(obj.material) ? obj.material : [obj.material];
       for (const m of list) {
         if (!m || !m.isMeshStandardMaterial || envMats.has(m)) continue;
@@ -93,7 +93,7 @@ export function createCabinLighting(ctx, root, o) {
     for (const nm of KIT_REFLECTIVE) envMats.set(KIT.getMaterial(nm), nm === 'glass' ? 0.8 : 1);
   }
 
-  const state = { envK: 0.6, floodLevel: 1, bounce: 0, sunIn: 0 };
+  const state = { envK: 0.6, floodLevel: 1, bounce: 0, sunIn: 0, lensGain: 0.5 };
   let integralSet = -1;
 
   return {
@@ -149,9 +149,15 @@ export function createCabinLighting(ctx, root, o) {
         m.envMapIntensity = base * state.envK;
         m.envMapRotation.setFromQuaternion(v.quat);
       }
+      // flood lenses: a dim frosted glow, partly exposure-compensated (radiance ~ E^-0.5,
+      // ARCHITECTURE 7b) so they neither burn out to white cards in the dark-adapted cabin nor vanish
+      // in a sunlit one
+      const ex = ctx.exposureInfo;
+      const gain = ex && ex.valid ? THREE.MathUtils.clamp(Math.pow(ex.multiplier, -0.5), 0.08, 1.2) : 0.5;
+      state.lensGain += (gain - state.lensGain) * Math.min(1, (frame.dt || 0.016) * 3);
       for (const f of floods) {
         f.light.intensity = 0.2 * f.k * floodLevel;
-        f.lens.material.emissiveIntensity = 1.1 * floodLevel;
+        f.lens.material.emissiveIntensity = 0.32 * floodLevel * state.lensGain;
       }
       const integ = settings?.integral ?? 0.25;
       if (Math.abs(integ - integralSet) > 1e-3) {

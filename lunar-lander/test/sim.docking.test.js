@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { createGameState } from '../src/core/state.js';
 import { createSim } from '../src/sim/sim.js';
+import { DOCK } from '../src/sim/docking.js';
 import { LM, CSM } from '../src/core/constants.js';
 
 // ---- helpers
@@ -111,8 +112,10 @@ test('automatic docking: slow aligned approach -> capture -> hard dock', () => {
   while (!lm.docked && t < 10) t += sim.step(1 / 60, { ignoreWarp: true });
   assert.ok(lm.docked, 'captured');
   assert.ok(events.some((e) => e.t === 'callout' && e.p.text === 'Capture.'));
-  run(sim, 1.5);
+  assert.equal(csm.probeExtension > 0.5, true, 'probe still extended just after capture');
+  run(sim, DOCK.RETRACT_TIME + 0.5);
   assert.ok(events.some((e) => e.t === 'dock'), 'hard dock');
+  assert.equal(csm.probeExtension, 0, 'probe retracted at hard dock');
   assert.ok(world(lm, LM.docking.port).distanceTo(world(csm, CSM.docking.port)) < 1e-6);
   assert.ok(axis(lm, 0, 1, 0).distanceTo(axis(csm, 0, 0, 1)) < 1e-9);
   // one rigid body: the CG velocities differ only by w x r

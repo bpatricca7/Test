@@ -12,12 +12,16 @@
 //
 // Keyboard in menus: arrow keys move the focus spatially, Enter activates, Esc goes back.
 //
+// In flight: a "flight card" with the mission's keys at the start of every mission and phase hints
+// (tips.js), a short title card, and after a good landing the P12 liftoff prompt.
+//
 // Extra methods on the returned object (tests / QA): openMenu(tab), closeMenu(), openHelp(),
-// showResult(), finishBackdrop().
+// showResult(), finishBackdrop(), tips (flight card), flight (per-mission landing bookkeeping).
 
 import { h, slot, setClass } from './dom.js';
 import { injectStyles } from './styles.js';
-import { ensureDefaults, loadSettings, saveSettings } from './settings.js';
+import { ensureDefaults, loadSettings, saveSettings, urlFlag } from './settings.js';
+import { createFlightTips, missionHelp } from './tips.js';
 import { createBackdrop } from './backdrop.js';
 import { createPatch } from './patch.js';
 import { createMissionsView, createSettingsView, createControlsView, createAboutView } from './views.js';
@@ -25,14 +29,16 @@ import { createHUD } from './hud.js';
 import { createMarkers } from './markers.js';
 import { createTicker } from './ticker.js';
 import { createResultCard } from './result.js';
-import { fmtMET, fmtAlt, fmtPct, fmtWarp, PROGRAM_NAMES } from './format.js';
+import { fmtMET, fmtAlt, fmtPct, fmtWarp, PROGRAM_NAMES, FT } from './format.js';
 
 const RESULT_DELAY_MS = { landed: 5200, hard: 3200, crashed: 2400, tipped: 3000 };
 
 export function createUI(game, rootEl, api) {
   injectStyles();
   ensureDefaults(game.settings);
-  loadSettings(game.settings, game.params || {});
+  const tipsParam = urlFlag('tips');
+  loadSettings(game.settings, { ...(game.params || {}), tips: tipsParam });
+  if (tipsParam != null) game.settings.flightTips = tipsParam;
 
   const root = h('div.aui');
   rootEl.appendChild(root);
@@ -54,7 +60,13 @@ export function createUI(game, rootEl, api) {
   const markers = api.ctx ? createMarkers(game, api.ctx) : null;
   const ticker = createTicker();
   const pauseBar = h('div.pausebar.hidden', null, h('b', null, 'PAUSED'), h('span', null, 'P to resume · Esc for the menu'));
-  root.append(...[markers?.el, hud.el, ticker.el, pauseBar].filter(Boolean));
+  const tips = createFlightTips(game, api.scenarios || []);
+  // mission title card (a few seconds at the start of each mission)
+  const introOver = h('div.io');
+  const introTitle = h('div.it');
+  const introSub = h('div.is');
+  const intro = h('div.intro.hidden', { 'aria-hidden': 'true' }, introOver, introTitle, introSub);
+  root.append(...[markers?.el, hud.el, tips.el, intro, ticker.el, pauseBar].filter(Boolean));
 
   // ---------------------------------------------------------------- title / menu screen
   const bdCanvas = h('canvas.bd');
@@ -136,6 +148,8 @@ export function createUI(game, rootEl, api) {
   const helpClose = h('button.close', { type: 'button', 'aria-label': 'Close' }, '×');
   const helpControls = createControlsView({ compact: true });
   helpControls.el.classList.add('scroll');
+  const helpMission = h('div.hmission');
+  helpControls.el.prepend(helpMission);
   const help = h('div.modal.help.pe', null,
     h('div.veil'),
     h('div.card', { role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Controls' },
@@ -156,6 +170,10 @@ export function createUI(game, rootEl, api) {
       closeResult();
       openMenu('missions');
     },
+    onLiftoff: () => {
+      closeResult();
+      if (game.activeId === 'LM') game.events.emit('action', { name: 'PRO' });
+    },
   });
   root.append(help, result.el);
 
@@ -170,6 +188,10 @@ export function createUI(game, rootEl, api) {
     resultToken: 0, // bumps on every scenario load
     resultShown: -1,
     statusT: 0,
+    introMet: 0,
+    introPending: null,
+    introWait: 0,
+    introTimer: 0,
   };
 
   function anyModal() {
@@ -228,6 +250,7 @@ export function createUI(game, rootEl, api) {
   function closeScreen() {
     if (!st.screen) return;
     st.screen = null;
+    resetScroll();
     setClass(screen, 'open', false);
     backdrop.stop();
     blurUI();
@@ -262,6 +285,9 @@ export function createUI(game, rootEl, api) {
   }
 
   function openHelp() {
+    const sc = game.started ? (api.scenarios || []).find((x) => x.id === game.scenarioId) : null;
+    helpMission.replaceChildren(...[missionHelp(sc)].filter(Boolean));
+    helpControls.el.scrollTop = 0;
     st.help = true;
     setClass(help, 'open', true);
     syncPause();
@@ -286,7 +312,7 @@ export function createUI(game, rootEl, api) {
     st.resultShown = st.resultToken;
     if (st.screen === 'menu') closeScreen();
     closeHelp(true);
-    const focusBtn = result.fill(res, game);
+    const focusBtn = result.fill(res, game, landingInfo(res));
     st.result = true;
     setClass(result.el, 'open', true);
     syncCapture();
@@ -301,9 +327,15 @@ export function createUI(game, rootEl, api) {
     blurUI();
   }
 
+  /** Undo any scrolling of the UI layer itself (it must never move the HUD). */
+  function resetScroll() {
+    for (const e of [root, screen, shell]) if (e.scrollTop || e.scrollLeft) e.scrollTop = e.scrollLeft = 0;
+  }
+
   function startScenario(id) {
     // let the sim own the pause state of the new mission
     st.pausedByUI = false;
+    resetScroll();
     closeHelp(true);
     closeResult();
     api.startScenario(id);
@@ -432,6 +464,33 @@ export function createUI(game, rootEl, api) {
   }
   window.addEventListener('keydown', onKeyDown);
 
+  // ---------------------------------------------------------------- landing bookkeeping
+  /** Per mission: programs the LM flew, and whether the LGC flew the touchdown hands-off. */
+  const flight = { programs: new Set(), autoAtContact: null };
+  function resetFlight() {
+    flight.programs.clear();
+    const lm = game.vessels?.LM;
+    if (lm?.gnc?.program) flight.programs.add(lm.gnc.program);
+    flight.autoAtContact = null;
+  }
+  game.events.on('program', (p) => {
+    if (p && p.vessel === 'LM' && p.program) flight.programs.add(p.program);
+  });
+  game.events.on('contact', (c) => {
+    const lm = game.vessels?.LM;
+    if (!lm || (c && c.vessel && c.vessel !== 'LM') || flight.autoAtContact != null) return;
+    flight.autoAtContact = lm.gnc.autopilot === 'GUIDANCE' && lm.gnc.throttleMode === 'AUTO';
+  });
+  function landingInfo(res) {
+    const lm = game.vessels?.LM;
+    const good = res.outcome === 'landed' && res.vessel !== 'CSM';
+    return {
+      flownByLGC: good && flight.autoAtContact === true,
+      flewP64: flight.programs.has('P64'),
+      canLiftoff: good && !!lm && !lm.staged && !lm.crashed && (lm.propellant?.ascent ?? 0) > 0,
+    };
+  }
+
   // ---------------------------------------------------------------- events
   game.events.on('action', (a) => {
     switch (a?.name) {
@@ -471,7 +530,12 @@ export function createUI(game, rootEl, api) {
     if (m && (m.text === 'Paused' || m.text === 'Resumed')) return;
     ticker.message(m);
   });
-  game.events.on('callout', (c) => ticker.callout(c));
+  game.events.on('callout', (c) => {
+    // final approach: calls come every few seconds — keep each caption short
+    const v = game.active;
+    const alt = v?.tel ? (Number.isFinite(v.tel.radarAltitude) ? v.tel.radarAltitude : v.tel.altitude) : Infinity;
+    ticker.callout(c, { fast: v?.type === 'LM' && !v.landed && alt < 100 * FT });
+  });
 
   const scheduleResult = (outcome) => {
     if (st.resultShown === st.resultToken) return;
@@ -486,6 +550,34 @@ export function createUI(game, rootEl, api) {
     closeResult();
     ticker.clear();
     if (st.screen === 'title') closeScreen();
+    resetFlight();
+    const id = game.scenarioId;
+    tips.onScenario(id);
+    st.introPending = id; // played on the first rendered frame of the mission
+  });
+
+  function playIntro(id) {
+    const list = api.scenarios || [];
+    const i = list.findIndex((x) => x.id === id);
+    const sc = list[i];
+    if (!sc) return;
+    introOver.textContent = `Apollo 11 · Mission ${String(i + 1).padStart(2, '0')}`;
+    introTitle.textContent = sc.title;
+    introSub.textContent = `${sc.subtitle || ''}${sc.subtitle ? ' · ' : ''}GET ${fmtMET(game.time.met)}`;
+    st.introMet = game.time.met;
+    setClass(intro, 'hidden', false);
+    intro.classList.remove('play');
+    void intro.offsetWidth; // restart the animation
+    intro.classList.add('play');
+    clearTimeout(st.introTimer);
+    st.introTimer = setTimeout(() => setClass(intro, 'hidden', true), 6500);
+  }
+
+  // the flight card fades a few seconds after the pilot starts flying
+  window.addEventListener('keydown', (e) => {
+    if (!game.started || anyModal() || e.repeat) return;
+    if (['Escape', 'F1', 'Tab', 'F3'].includes(e.code)) return;
+    tips.onInput();
   });
 
   // ---------------------------------------------------------------- in-flight menu status
@@ -520,11 +612,25 @@ export function createUI(game, rootEl, api) {
 
     const iva = game.view.mode === 'iva';
     const hudOn = game.started && !!game.settings.hud && !st.screen;
-    hud.update(frame, hudOn);
+    const v = game.active;
+    const liftoffHint = !!v && v.type === 'LM' && v.landed && !v.crashed && !v.staged && (v.gnc?.program === 'P68' || v.gnc?.program === 'P00') && !st.result && !st.pendingResult && game.result?.outcome === 'landed';
+    hud.update(frame, hudOn, { liftoffHint });
     markers?.update(hudOn && !iva);
     ticker.update();
     setClass(ticker.el, 'hidden', !game.started || st.screen === 'title');
-    setClass(ticker.el, 'iva', iva || !game.settings.hud);
+    setClass(ticker.el, 'iva', iva);
+    setClass(ticker.el, 'nohud', !game.settings.hud);
+    setClass(ticker.el, 'below', !iva && hud.promptShown);
+    tips.update(frame?.dt ?? 0.016, { visible: hudOn && !anyModal(), running: !game.time.paused });
+    setClass(intro, 'off', !hudOn || anyModal());
+    if (st.introPending && game.started && (window.__READY || st.introWait++ > 240)) {
+      const id = st.introPending;
+      st.introPending = null;
+      st.introWait = 0;
+      if (game.time.met - tips.startMet < 8) playIntro(id);
+    }
+    // a mission fast-forwarded on load (?t=) skips the title card
+    if (!intro.classList.contains('hidden') && game.time.met - st.introMet > 8) setClass(intro, 'hidden', true);
     setClass(pauseBar, 'hidden', !(game.started && game.time.paused && !anyModal()));
 
     if (st.screen === 'menu') {
@@ -544,6 +650,8 @@ export function createUI(game, rootEl, api) {
     openHelp,
     closeHelp,
     showResult,
+    tips,
+    flight,
     /** Finish the title backdrop synchronously (screenshots). */
     finishBackdrop: () => backdrop.finish(),
     get state() {

@@ -9,6 +9,8 @@
 //   iva     at the crew-station eye point of the active vessel (camera/stations.js) with mouse
 //           head-look (yaw ±150°, pitch ±80°), wheel FOV zoom 25–100°, cabin vibration from the
 //           engines and RCS jets (camera/shake.js). Shift+C / CYCLE_STATION changes station.
+//           O / GLANCE cycles the station's look presets (LM: window -> flight displays -> DSKY;
+//           CSM CDR: MDC -> rendezvous window); a glance may lean the head toward a panel.
 //   chase   orbits the vessel in a horizon-locked frame (never rolls or flips): default behind
 //           (opposite the horizontal velocity; the vessel's forward axis when hovering / landed)
 //           and ~16° above, wheel zoom 6 m .. 50 km, stays above the terrain.
@@ -20,7 +22,7 @@
 //   target  over the shoulder of the active vessel, looking at the other one (not when docked).
 // Switching between exterior modes (or vessels) blends smoothly (~0.9 s) in vessel-relative space.
 //
-// Actions: CYCLE_CAMERA, SET_CAMERA {mode}, CYCLE_STATION, RESET_VIEW.
+// Actions: CYCLE_CAMERA, SET_CAMERA {mode}, CYCLE_STATION, GLANCE {id?}, RESET_VIEW.
 // Events emitted: 'camera' {mode, station, label}.
 
 import * as THREE from 'three';
@@ -28,7 +30,7 @@ import { MOON } from '../core/constants.js';
 import { localENU } from '../core/frames.js';
 import { terrainHeight } from '../world/moon.js';
 import { D2R, R2D, smoothK, smoothstep, lookQuat, horizontalDir, slerpAboutAxis, orbitOffset, framingFov, headLookQuat } from './camera/math.js';
-import { LOOK_LIMITS, getStation, nextStation, mapStation, STATIONS } from './camera/stations.js';
+import { LOOK_LIMITS, getStation, nextStation, mapStation, glancesOf, STATIONS } from './camera/stations.js';
 import { createShake } from './camera/shake.js';
 import { createPointer } from './camera/pointer.js';
 
@@ -108,7 +110,7 @@ export function createCameras(game, ctx) {
   const focus = { pos: new THREE.Vector3(), radius: 5, dist: 25, vessel: null };
 
   // ---- per-mode state
-  const iva = { yaw: 0, pitch: -15, yawT: 0, pitchT: -15, fov: 66, fovT: 66 };
+  const iva = { yaw: 0, pitch: -25, yawT: 0, pitchT: -25, fov: 66, fovT: 66, roll: 0, rollT: 0, glance: 0, lean: new THREE.Vector3(), leanT: new THREE.Vector3() };
   const chase = { az: 0, el: CHASE.elevation, azT: 0, elT: CHASE.elevation, dist: 25, distT: 25, back: new THREE.Vector3(), backOk: false };
   const locked = { az: 0, el: 14, azT: 0, elT: 14, dist: 25, distT: 25 };
   const flyby = { pos: null, side: 1, zoom: 1, fov: 30 };
@@ -152,6 +154,25 @@ export function createCameras(game, ctx) {
     iva.yaw = iva.yawT = s.yaw;
     iva.pitch = iva.pitchT = s.pitch;
     iva.fov = iva.fovT = s.fov;
+    iva.roll = iva.rollT = 0;
+    iva.glance = 0;
+    iva.lean.set(0, 0, 0);
+    iva.leanT.set(0, 0, 0);
+    view.glance = glancesOf(s)[0].id;
+  }
+
+  /** Turn the head to a look preset of the current station (smoothly). */
+  function applyGlance(i) {
+    const list = glancesOf(station());
+    iva.glance = ((i % list.length) + list.length) % list.length;
+    const g = list[iva.glance];
+    iva.yawT = g.yaw;
+    iva.pitchT = g.pitch;
+    iva.fovT = g.fov;
+    iva.rollT = g.roll || 0;
+    if (g.lean) iva.leanT.copy(g.lean);
+    else iva.leanT.set(0, 0, 0);
+    view.glance = g.id;
   }
   function resetChase() {
     focusFor(game, game.active, focus);
@@ -184,7 +205,10 @@ export function createCameras(game, ctx) {
   }
 
   function announce() {
-    view.label = mode === 'iva' ? `${LABELS.iva} — ${station().label}` : LABELS[mode];
+    if (mode === 'iva') {
+      const g = glancesOf(station())[iva.glance];
+      view.label = `${LABELS.iva} — ${station().label}${iva.glance > 0 && g ? ` · ${g.label}` : ''}`;
+    } else view.label = LABELS[mode];
     game.events.emit('camera', { mode, station: view.station, label: view.label });
   }
 
@@ -252,6 +276,33 @@ export function createCameras(game, ctx) {
     },
     resetView() {
       resetView(mode);
+      if (mode === 'iva') announce();
+    },
+    /**
+     * Cockpit look presets: glance(id) turns the head to that preset of the current station,
+     * glance() to the next one (cycling back to the straight-ahead view). Switches to the cockpit
+     * view first when outside. Returns the preset id, or null when the id is unknown.
+     * opts.instant: jump there without the head movement (tests / QA).
+     */
+    glance(id, opts = {}) {
+      if (mode !== 'iva') api.setMode('iva');
+      const list = glancesOf(station());
+      const i = id == null ? iva.glance + 1 : list.findIndex((g) => g.id === id);
+      if (i < 0) return null;
+      applyGlance(i);
+      if (opts.instant) {
+        iva.yaw = iva.yawT;
+        iva.pitch = iva.pitchT;
+        iva.fov = iva.fovT;
+        iva.roll = iva.rollT;
+        iva.lean.copy(iva.leanT);
+      }
+      announce();
+      return view.glance;
+    },
+    /** Id of the current cockpit look preset. */
+    get glanceId() {
+      return glancesOf(station())[iva.glance]?.id ?? null;
     },
     /**
      * Set the look angles immediately (tests / QA). IVA: head yaw (+ right) / pitch (+ up) relative
@@ -298,6 +349,9 @@ export function createCameras(game, ctx) {
         break;
       case 'RESET_VIEW':
         api.resetView();
+        break;
+      case 'GLANCE':
+        api.glance(a.id);
         break;
       default:
         break;
@@ -374,6 +428,8 @@ export function createCameras(game, ctx) {
       iva.yawT += (look.x || 0) * 70 * dt * (iva.fov / 66);
       iva.pitchT += (look.y || 0) * 70 * dt * (iva.fov / 66);
     }
+    // a glance may tilt the head to read a panel upright; looking around straightens it again
+    if (input.dx || input.dy || look?.x || look?.y) iva.rollT = 0;
     iva.yawT = THREE.MathUtils.clamp(iva.yawT, -LOOK_LIMITS.yaw, LOOK_LIMITS.yaw);
     iva.pitchT = THREE.MathUtils.clamp(iva.pitchT, -LOOK_LIMITS.pitch, LOOK_LIMITS.pitch);
     if (input.wheel) iva.fovT = THREE.MathUtils.clamp(iva.fovT * Math.exp(input.wheel * 0.0012), LOOK_LIMITS.fovMin, LOOK_LIMITS.fovMax);
@@ -381,17 +437,20 @@ export function createCameras(game, ctx) {
     iva.yaw += (iva.yawT - iva.yaw) * k;
     iva.pitch += (iva.pitchT - iva.pitch) * k;
     iva.fov += (iva.fovT - iva.fov) * smoothK(dt, 0.1);
+    iva.lean.lerp(iva.leanT, smoothK(dt, 0.14));
+    iva.roll += (iva.rollT - iva.roll) * smoothK(dt, 0.12);
 
     // camera orientation relative to the body: station base * head look * vibration
     headLookQuat(iva.yaw * D2R, iva.pitch * D2R, _q1);
     _q2.copy(s.base).multiply(_q1);
+    if (iva.roll) _q2.multiply(_q1.setFromAxisAngle(_v1.set(0, 0, 1), iva.roll * D2R));
     const partner = v.docked ? game.vessels[v.dockedTo] : null;
     shake.update(dt, partner ? [v, partner] : [v], _q2, game.time.paused);
     const r = shake.rotation;
     _q1.setFromEuler(_e.set(r.x, r.y, r.z, 'YXZ'));
     _q2.multiply(_q1);
     // eye + head translation (camera frame -> body)
-    _v1.copy(shake.translation).applyQuaternion(_q2).add(s.eye);
+    _v1.copy(shake.translation).applyQuaternion(_q2).add(s.eye).add(iva.lean);
     cam.pos.copy(_v1).applyQuaternion(v.quat).add(v.pos);
     cam.quat.copy(v.quat).multiply(_q2).normalize();
     cam.fov = iva.fov;
@@ -602,7 +661,7 @@ export function createCameras(game, ctx) {
       lastVesselId = game.activeId; // switched without a 'vessel' event
       chase.backOk = false;
     }
-    if (input.reset) resetView(mode);
+    if (input.reset) api.resetView();
 
     // automatic fall-backs when a view stops making sense
     if (mode === 'target' && !available('target')) api.setMode('chase');

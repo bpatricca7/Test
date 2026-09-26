@@ -18,8 +18,10 @@
 import * as THREE from 'three';
 import { SUN } from '../../core/constants.js';
 
-/** Micro-crater bands: cell sizes shrink 2.4x from 48 km; each pixel evaluates up to 3 bands. */
-export const BAND_COUNT = 16;
+/** Detail bands: cell sizes shrink 2.4x from 48 km down to ~7 mm (regolith grain); micro-craters use the
+ * first CRATER_BANDS of them, each pixel evaluates up to 3 crater bands. */
+export const BAND_COUNT = 19;
+const CRATER_BANDS = 16;
 const BAND_CELL0 = 48000;
 export const BAND_CELLS = (() => {
   const a = [];
@@ -38,6 +40,7 @@ export const LUNAR_GLSL = /* glsl */ `
   uniform float uSunI;
   uniform vec3 uEarthDir;
   uniform vec3 uCamMCI;
+  float orbitK = 0.0; // 0 near the ground .. 1 from orbit (set by the terrain shader per pixel)
 
   // Lunar phase function incl. opposition surge (1 at alpha = 0).
   float lunarPhase(float alpha) {
@@ -102,26 +105,11 @@ export const LUNAR_GLSL = /* glsl */ `
 
   // One band of micro-craters. x: band coordinates (cells), up: local vertical,
   // Lt/tanE: tangential sun dir & tan(sun elevation). Accumulates slope (grad, per metre of lateral
-  // distance), shadow (multiplicative), brightness of fresh craters.
-  // Cheap pass over the 8 candidate cells picks the crater whose ball contains p most deeply; only that
-  // one is shaded (SIMD-friendly: the expensive part runs once per band).
-  void craterBand(vec3 x, vec3 up, vec3 Lt, float tanE, vec3 Vt, float tanV, float dens, float w, inout vec3 grad, inout float shadow, inout float bright, inout float cavity) {
-    vec3 b = floor(x - 0.5);
-    vec3 l = x - b;                        // in [0.5, 1.5)
-    float best = 1.0;
-    vec3 bq = vec3(0.0);
-    vec4 br = vec4(0.0);
-    float brho2 = 0.25;
-    for (int k = 0; k < 8; k++) {
-      vec3 o = vec3(float(k & 1), float((k >> 1) & 1), float(k >> 2));
-      vec4 r = cellRand(b + o);
-      vec3 q = o + r.xyz - l;            // p -> candidate (cells)
-      float sc = 0.55 + 0.45 * fract(r.w * 7.31 + r.y * 1.7); // ball radius scale (size spread)
-      float rho2 = 0.25 * sc * sc;
-      float score = dot(q, q) / rho2 + step(dens, r.w) * 2.0;
-      if (score < best) { best = score; bq = q; br = r; brho2 = rho2; }
-    }
-    if (best >= 1.0) return;
+  // distance), shadow (multiplicative), brightness of fresh/steep craters.
+  // Cheap pass over the 8 candidate cells picks the TWO craters whose balls contain p most deeply (so
+  // craters overlap and a band can approach saturation); only those are shaded.
+  // Sizes follow a steep power law inside each band (many small craters, few large ones).
+  void shadeCrater(vec3 bq, vec4 br, float brho2, vec3 up, vec3 Lt, float tanE, vec3 Vt, float tanV, float young, float w, inout vec3 grad, inout float shadow, inout float bright, inout float cavity) {
     float dp = dot(bq, up);
     float a2 = (brho2 - dp * dp) * 0.25;
     vec3 lat = bq - dp * up;               // p -> crater centre, lateral
@@ -144,12 +132,21 @@ export const LUNAR_GLSL = /* glsl */ `
     fr *= fr;
     fr *= fr;
     fr *= fr;                             // u^8: most small craters are old and subdued
+    fr = pow(fr, young);                  // metre-scale ones even more so (fast steady-state erosion)
     float h = craterH(t, fr);
     float dh = (craterH(t + 0.02, fr) - h) / 0.02;  // d h / d t (units of a)
     vec3 dirOut = -lat / sqrt(s2);                  // from centre toward p
     grad += w * dh * dirOut;                        // slope = dh/ds (a cancels)
     cavity += w * min(0.0, h) * 1.5;
     bright += w * fr * fr * (t < 1.0 ? 0.7 + 0.3 * t * t : max(0.0, 1.0 - (t - 1.0) / 0.9));
+    // steep walls and rim crests expose immature (brighter) soil even on fairly old craters: the main
+    // reason craters stay visible under a high Sun, when shading contrast is nearly gone
+    bright += w * smoothstep(0.05, 0.3, abs(dh)) * (0.22 + 0.5 * fr);
+    // seen from orbit every crater carries a slightly brighter wall/rim ring and a darker, mature floor
+    // (the albedo pattern that saturates highland photographs even under a high Sun)
+    float ring = smoothstep(0.4, 0.85, t) * (1.0 - smoothstep(1.0, 1.45, t));
+    bright += w * orbitK * ring * (0.16 + 0.5 * fr);
+    bright -= w * orbitK * (1.0 - smoothstep(0.3, 0.8, t)) * (1.0 - fr) * 0.13;
     // analytic shadow cast by the rim on the bowl, minus the part hidden from the viewer by the
     // near rim (looking down-sun, crater shadows hide behind the rims just like in Apollo photos)
     if (t < 1.0 && tanE < 3.0) {
@@ -167,45 +164,155 @@ export const LUNAR_GLSL = /* glsl */ `
     }
   }
 
-  // Pebbles & small clods (2-17 cm): rounded bumps that catch the Sun and cast their own long
-  // low-Sun shadows on the regolith (the ground point is shadowed when the ray toward the Sun passes
-  // under the pebble's profile). Same nearest-candidate scheme as the craters.
-  void pebbleBand(vec3 x, vec3 up, vec3 Lt, float tanE, float dens, float w, inout vec3 grad, inout float shadow, inout float albedoMul) {
+  void craterBand(vec3 x, vec3 up, vec3 Lt, float tanE, vec3 Vt, float tanV, float dens, float young, float w, inout vec3 grad, inout float shadow, inout float bright, inout float cavity) {
     vec3 b = floor(x - 0.5);
-    vec3 l = x - b;
+    vec3 l = x - b;                        // in [0.5, 1.5)
     float best = 1.0;
+    float best2 = 1.0;
     vec3 bq = vec3(0.0);
+    vec3 bq2 = vec3(0.0);
     vec4 br = vec4(0.0);
-    float brr = 1.0;
+    vec4 br2 = vec4(0.0);
+    float brho2 = 0.25;
+    float brho22 = 0.25;
     for (int k = 0; k < 8; k++) {
       vec3 o = vec3(float(k & 1), float((k >> 1) & 1), float(k >> 2));
-      vec4 r = cellRand(b + o + 101.0);
-      vec3 q = o + r.xyz - l;
-      float dp = dot(q, up);
-      float rho = 0.12 + 0.2 * fract(r.w * 5.73);
-      float rr2 = rho * rho - dp * dp;           // footprint radius^2 (ball ∩ surface)
-      vec3 lat = q - dp * up;
-      // reach: the pebble itself plus its shadow (up to ~5 radii down-sun)
-      float d2 = dot(lat, lat);
-      float score = (rr2 > 0.0 && r.w < dens) ? d2 / (rr2 * 36.0) : 2.0;
-      if (score < best) { best = score; bq = lat; br = r; brr = rr2; }
+      vec4 r = cellRand(b + o);
+      vec3 q = o + r.xyz - l;            // p -> candidate (cells)
+      float u = fract(r.w * 7.31 + r.y * 1.7);
+      float sc = 0.3 + 0.7 * u * u;      // ball radius scale: power-law size spread
+      float rho2 = 0.25 * sc * sc;
+      float score = dot(q, q) / rho2 + step(dens, r.w) * 2.0;
+      if (score < best) {
+        best2 = best; bq2 = bq; br2 = br; brho22 = brho2;
+        best = score; bq = q; br = r; brho2 = rho2;
+      } else if (score < best2) {
+        best2 = score; bq2 = q; br2 = r; brho22 = rho2;
+      }
     }
-    if (best >= 1.0) return;
-    float rp = sqrt(brr);                          // footprint radius (cells)
-    vec2 v = vec2(dot(-bq, Lt), dot(-bq, cross(up, Lt))) / rp; // p rel. centre, units of rp
-    float s = length(v);
-    float hr = 0.45 + 0.5 * fract(br.w * 17.1);   // height / radius
-    if (s < 1.0) {
-      // on the pebble: dome normal, a touch brighter/greyer than the soil
-      float zz = sqrt(max(1.0 - s * s, 0.02));
-      vec3 dirOut = s > 1e-4 ? -bq / (s * rp) : vec3(0.0);
-      grad += w * min(hr * s / zz, 3.0) * dirOut;
-      albedoMul *= mix(1.0, 1.25 + 0.3 * br.x, w);
-    } else if (v.x < 0.0 && abs(v.y) < 1.0) {
-      // on the ground down-sun of the pebble
-      float top = hr * sqrt(1.0 - v.y * v.y);
-      float ray = -v.x * tanE - (1.0 - sqrt(1.0 - v.y * v.y)) * tanE;
-      shadow *= 1.0 - w * 0.9 * smoothstep(-0.06, 0.06, top - ray);
+    if (best < 1.0) shadeCrater(bq, br, brho2, up, Lt, tanE, Vt, tanV, young, w, grad, shadow, bright, cavity);
+    if (best2 < 1.0) shadeCrater(bq2, br2, brho22, up, Lt, tanE, Vt, tanV, young, w, grad, shadow, bright, cavity);
+  }
+
+  // Pebbles & clods (1-15 cm): angular fragments, partly buried in the regolith, that catch the Sun and
+  // cast their own long low-Sun shadows. Each fragment is a (vertically flattened) ball cut by three
+  // random planes (flat fracture faces, sharp edges), sunk 10-90 % into the soil: the ball of radius rho
+  // around a 3D cell candidate intersects the local ground plane, the part above it is the visible clod.
+  // Shading uses the exact facet/dome normal; the shadow is an exact ray test of the ground point toward
+  // the Sun against the same convex body (rounded, tapering tips, facetted outlines). Candidates are
+  // gathered from three 2x2x2 blocks stepped toward the Sun, so shadows up to ~1.3 cells long are
+  // complete; the strongest occluder wins (no double counting between overlapping blocks).
+  // Body in "scaled" local coordinates (Lt, side, up*sc) with sc = 1/flattening: a ball of radius rho.
+  // Returns the entry/exit interval of the ray o + t d (t >= 0) through the body (miss: t0 >= t1).
+  vec2 clodRay(vec3 o, vec3 d, float rho, vec3 n1, vec3 n2, vec3 n3, vec3 hc) {
+    float bq = dot(o, d);
+    float cq = dot(o, o) - rho * rho;
+    float disc = bq * bq - cq;
+    if (disc <= 0.0) return vec2(1.0, 0.0);
+    float sq = sqrt(disc);
+    float t0 = max(-bq - sq, 0.0);
+    float t1 = -bq + sq;
+    // planar cuts n.x <= h
+    vec3 dn = vec3(dot(n1, d), dot(n2, d), dot(n3, d));
+    vec3 nu = hc - vec3(dot(n1, o), dot(n2, o), dot(n3, o));
+    for (int i = 0; i < 3; i++) {
+      float den = dn[i];
+      float num = nu[i];
+      if (abs(den) < 1e-5) { if (num < 0.0) return vec2(1.0, 0.0); continue; }
+      float tt = num / den;
+      if (den > 0.0) t1 = min(t1, tt); else t0 = max(t0, tt);
+    }
+    return vec2(t0, t1);
+  }
+  void pebbleBand(vec3 x, vec3 up, vec3 Lt, float tanE, float dens, float rmax, float w, inout vec3 grad, inout float shadow, inout float albedoMul) {
+    vec3 side = cross(up, Lt);
+    float tE = max(tanE, 0.1);
+    float bestTop = 0.0;     // tallest clod over p (scaled height above ground, in cells)
+    vec3 bestG = vec3(0.0);
+    float bestA = 1.0;
+    float occ = 0.0;         // strongest shadow
+    float ao = 0.0;          // contact darkening at the foot of clods
+    for (int blk = 0; blk < 3; blk++) {
+      vec3 xq = x + Lt * (0.5 * float(blk));
+      vec3 b = floor(xq - 0.5);
+      for (int k = 0; k < 8; k++) {
+        vec3 o8 = vec3(float(k & 1), float((k >> 1) & 1), float(k >> 2));
+        vec3 cc = b + o8;
+        vec4 r = cellRand(cc + 101.0);
+        if (r.w >= dens) continue;
+        vec3 q = cc + r.xyz - x;                    // p -> candidate (cells)
+        float dp = dot(q, up);
+        float u = fract(r.w * 5.73 + r.x * 3.1);
+        float rho = rmax * (0.25 + 0.75 * u * u * u); // power law: many small, few large
+        if (abs(dp) >= rho * 0.97) continue;
+        vec4 r2 = cellRand(cc + 211.0);
+        float hr = 0.5 + 0.45 * r2.x;               // flattening (height / width)
+        float sc = 1.0 / hr;
+        float sink = 0.1 + 0.8 * abs(dp) / rho;      // buried fraction of the (scaled) ball
+        float zg = sink * rho;                       // ground plane height above the centre (scaled)
+        vec3 lat = q - dp * up;
+        vec2 v = vec2(dot(-lat, Lt), dot(-lat, side)); // p rel. centre (cells)
+        float v2 = dot(v, v);
+        // three fracture planes (normals point outward; mostly sideways/up) at 55-85 % of rho
+        vec4 r3 = cellRand(cc + 307.0);
+        float a1 = r2.y * 6.2832;
+        float a2 = a1 + 2.1 + r2.z * 0.8;
+        float a3 = a2 + 1.8 + r3.x * 1.0;
+        float e1 = 0.15 + 0.9 * r3.y;
+        float e2 = 0.1 + 0.8 * r3.z;
+        float e3 = 0.6 + 0.7 * r3.w;
+        vec3 n1 = vec3(cos(e1) * cos(a1), cos(e1) * sin(a1), sin(e1));
+        vec3 n2 = vec3(cos(e2) * cos(a2), cos(e2) * sin(a2), sin(e2));
+        vec3 n3 = vec3(cos(e3) * cos(a3), cos(e3) * sin(a3), sin(e3));
+        vec3 hc = rho * vec3(0.62 + 0.25 * r2.w, 0.58 + 0.25 * fract(r2.w * 7.3), 0.6 + 0.3 * fract(r2.y * 5.1));
+        // --- on the clod: top of the body above p (vertical ray from below the ground)
+        float zs2 = rho * rho - v2;
+        if (zs2 > zg * zg) {
+          float zs = sqrt(zs2);                      // sphere top (scaled, rel. centre)
+          float ztop = zs;
+          vec2 gz = -v / max(zs, 1e-4 * rho);          // d ztop / d v
+          // planes: n.xy . v + n.z z <= h  ->  z <= (h - n.xy . v) / n.z
+          float zp = (hc.x - dot(n1.xy, v)) / n1.z;
+          if (zp < ztop) { ztop = zp; gz = -n1.xy / n1.z; }
+          zp = (hc.y - dot(n2.xy, v)) / n2.z;
+          if (zp < ztop) { ztop = zp; gz = -n2.xy / n2.z; }
+          zp = (hc.z - dot(n3.xy, v)) / n3.z;
+          if (zp < ztop) { ztop = zp; gz = -n3.xy / n3.z; }
+          float top = ztop - zg;
+          if (top > bestTop) {
+            bestTop = top;
+            // slope (real units): scaled height / sc, gradient with respect to lateral position
+            vec2 g2 = gz / sc;
+            float gl = length(g2);
+            if (gl > 4.0) g2 *= 4.0 / gl;
+            // v is measured toward p from the centre along (-lat): the gradient of height w.r.t. p
+            bestG = g2.x * Lt + g2.y * side;
+            bestA = 0.9 + 0.28 * r3.x * r3.y + 0.06 * (r2.z - 0.5);
+          }
+          continue;
+        }
+        // --- on the ground: contact darkening and the clod's shadow
+        float rf2 = rho * rho - zg * zg;              // footprint radius^2 (of the ball)
+        ao = max(ao, (1.0 - smoothstep(rf2, rf2 * 2.2, v2)) * (1.0 - sink) * 0.5);
+        vec3 o3 = vec3(v, zg);
+        vec3 d3 = normalize(vec3(1.0, 0.0, tE * sc));
+        vec2 tt = clodRay(o3, d3, rho, n1, n2, n3, hc);
+        float len = tt.y - tt.x;                       // chord through the body (soft penumbra)
+        if (len > 0.0) {
+          float s = smoothstep(0.0, 0.14 * rho, len);
+          // fade the tips of very long shadows before they reach the edge of the candidate blocks
+          s *= 1.0 - smoothstep(0.95, 1.3, tt.x * d3.x);
+          occ = max(occ, s);
+        }
+      }
+    }
+    if (bestTop > 0.0) {
+      grad += w * bestG;
+      albedoMul *= mix(1.0, bestA, w);
+      // a clod's own sunlit top is not shadowed by its own body
+    } else {
+      shadow *= 1.0 - w * 0.94 * occ;
+      albedoMul *= 1.0 - w * 0.22 * ao;
     }
   }
   // Bump mapping from screen-space derivatives of a height field (no tangents needed).
@@ -236,12 +343,21 @@ const TERRAIN_VERT = /* glsl */ `
   attribute vec3 morph;
   attribute vec4 aux;
   uniform vec2 uMorphRange;
+  uniform vec3 uCamMCI;
+  uniform float uLimb;        // silhouette refinement factor (terrain.js: chunks near the limb split later)
   varying vec3 vPos;
   varying vec3 vNrm;
   varying vec4 vAux;
   void main() {
     vec4 wp = modelMatrix * vec4(position, 1.0);
-    float m = smoothstep(uMorphRange.x, uMorphRange.y, length(wp.xyz));
+    float dv = length(wp.xyz);
+    float F = 1.0;
+    if (uLimb > 0.0) {
+      // same grazing factor as the CPU-side split (per vertex, so neighbouring chunks agree at edges)
+      float cosg = abs(dot(wp.xyz, normalize(uCamMCI + wp.xyz))) / max(dv, 1e-3);
+      F += uLimb * (1.0 - smoothstep(0.08, 0.3, cosg));
+    }
+    float m = smoothstep(uMorphRange.x * F, uMorphRange.y * F, dv);
     wp = modelMatrix * vec4(position + morph * m, 1.0);
     vPos = wp.xyz;
     vNrm = normalize(mat3(modelMatrix) * normal);
@@ -271,6 +387,8 @@ function terrainFrag(vesselGLSL) {
     #include <logdepthbuf_fragment>
     vec3 up = normalize(uCamMCI + vPos);
     vec3 N = safeNormalize(vNrm, up);
+    // resolved relief: steep slopes (crater walls, massifs, scarps) expose immature, brighter soil
+    float steep = smoothstep(0.015, 0.14, 1.0 - dot(N, up));
     vec3 V = safeNormalize(-vPos, up);
     vec3 L = uSunDir;
     float dist = length(vPos);
@@ -300,11 +418,12 @@ function terrainFrag(vesselGLSL) {
     float cavity = 0.0;
     float meshMin = max(dist * mix(uMeshK.x, uMeshK.y, smoothstep(12000.0, 40000.0, dist)), uMinMeshD);
     float fwP = length(fwidth(vPos)); // metres per pixel
+    orbitK = smoothstep(4000.0, 40000.0, dist);
     // first band whose largest craters (0.5 cell) are below the mesh resolution; then 3 bands down
-    int i0 = int(clamp(ceil(log(${(0.5 * BAND_CELL0).toFixed(1)} / meshMin) / log(2.4) - 0.3), 0.0, float(${BAND_COUNT} - 1)));
+    int i0 = int(clamp(ceil(log(${(0.5 * BAND_CELL0).toFixed(1)} / meshMin) / log(2.4) - 0.3), 0.0, float(${CRATER_BANDS} - 1)));
     for (int j = 0; j < 3; j++) {
       int i = i0 + j;
-      if (i >= ${BAND_COUNT} || float(j) >= uBands) break;
+      if (i >= ${CRATER_BANDS} || float(j) >= uBands) break;
       float cell = uBandCell[i];
       float dmax = 0.5 * cell;
       // band weight: only below mesh resolution, and only while craters span > ~2.5 px
@@ -312,52 +431,66 @@ function terrainFrag(vesselGLSL) {
       float wPix = smoothstep(2.5, 6.0, dmax / fwP);
       float w = wMesh * wPix;
       // crater density: highlands near saturation; maria have few large (post-flooding) craters
-      float mareDens = dmax > 3000.0 ? 0.12 : dmax > 600.0 ? 0.25 : dmax > 150.0 ? 0.45 : 0.72;
+      // (two craters per cell and a power-law size spread: these are per-candidate densities)
+      float mareDens = dmax > 3000.0 ? 0.3 : dmax > 600.0 ? 0.4 : dmax > 150.0 ? 0.45 : 0.6;
       float dens = mix(0.85, mareDens, mare);
       vec3 x = vPos / cell + uBandOff[i];
-      craterBand(x, up, Lt, tanE, Vt, tanV, dens, w, grad, shadow, bright, cavity);
+      craterBand(x, up, Lt, tanE, Vt, tanV, dens, dmax < 8.0 ? 1.6 : 1.0, w, grad, shadow, bright, cavity);
     }
-    // pebbles within a few tens of metres
+    // pebbles & clods within a few tens of metres (0.55 m cells: 3-14 cm; 0.23 m cells: 1-6 cm)
     float albedoMul = 1.0;
     if (fwP < 0.03) {
       float wp1 = smoothstep(0.03, 0.012, fwP);
-      pebbleBand(vPos / uBandCell[13] + uBandOff[13], up, Lt, tanE, mix(0.1, 0.3, mare), wp1, grad, shadow, albedoMul);
-      if (fwP < 0.008) {
-        float wp2 = smoothstep(0.008, 0.004, fwP);
-        pebbleBand(vPos / uBandCell[14] + uBandOff[14], up, Lt, tanE, 0.35, wp2, grad, shadow, albedoMul);
+      pebbleBand(vPos / uBandCell[13] + uBandOff[13], up, Lt, tanE, mix(0.45, 0.6, mare), 0.26, wp1, grad, shadow, albedoMul);
+      if (fwP < 0.01) {
+        float wp2 = smoothstep(0.01, 0.005, fwP);
+        pebbleBand(vPos / uBandCell[14] + uBandOff[14], up, Lt, tanE, 1.0, 0.26, wp2, grad, shadow, albedoMul);
       }
     }
     // perturbed normal (slopes add in the tangent plane)
     vec3 g = grad - dot(grad, up) * up;
     N = safeNormalize(N - g, up);
-    // fractal regolith roughness at the two scales just above the pixel footprint
+    // fractal regolith roughness at the scales just above the pixel footprint: three octaves pinned to
+    // the band lattice, cross-faded continuously with the footprint (no seams where the set changes).
+    // At grain scale (< ~3 cm) the relief gets rougher (granular soil instead of smooth clay).
     {
-      int m0 = int(clamp(floor(log(${BAND_CELL0.toFixed(1)} / (fwP * 5.0)) / log(2.4)), 1.0, float(${BAND_COUNT} - 1)));
+      float Lr = log(${BAND_CELL0.toFixed(1)} / (fwP * 5.0)) / log(2.4);
+      int m0 = int(clamp(floor(Lr), 2.0, float(${BAND_COUNT} - 1)));
+      float fr = clamp(Lr - float(m0), 0.0, 1.0);
       float Hb = 0.0;
-      for (int j = 0; j < 2; j++) {
+      for (int j = 0; j < 3; j++) {
         int i = m0 - j;
         float cell = uBandCell[i];
-        float wf = smoothstep(3.0, 8.0, cell / fwP);
-        Hb += wf * valueNoise(vPos / cell + uBandOff[i] + 57.0) * cell * 0.045;
+        float u = fr + float(j);
+        float wf = smoothstep(0.0, 1.0, u) * (1.0 - smoothstep(2.0, 3.0, u));
+        float amp = mix(0.045, 0.075, smoothstep(0.05, 0.012, cell));
+        Hb += wf * valueNoise(vPos / cell + uBandOff[i] + 57.0) * cell * amp;
       }
       N = bumpNormal(vPos, N, Hb);
     }
 
     // albedo mottling at every scale (immature ejecta, space-weathering patches, regolith grain):
-    // two noise octaves pinned to the band lattice just above the pixel footprint (no aliasing, and
-    // the pattern is fixed to the ground, not the screen)
+    // three noise octaves pinned to the band lattice just above the pixel footprint, cross-faded (no
+    // aliasing, no seams, and the pattern is fixed to the ground, not the screen)
     float mott = 0.0;
     {
-      int m0 = int(clamp(floor(log(${BAND_CELL0.toFixed(1)} / (fwP * 6.0)) / log(2.4)), 1.0, float(${BAND_COUNT} - 1)));
-      for (int j = 0; j < 2; j++) {
+      float Lr = log(${BAND_CELL0.toFixed(1)} / (fwP * 6.0)) / log(2.4);
+      int m0 = int(clamp(floor(Lr), 2.0, float(${BAND_COUNT} - 1)));
+      float fr = clamp(Lr - float(m0), 0.0, 1.0);
+      for (int j = 0; j < 3; j++) {
         int i = m0 - j;
         float cell = uBandCell[i];
-        float wf = smoothstep(3.0, 9.0, cell / fwP);
-        mott += wf * (valueNoise(vPos / cell + uBandOff[i]) - 0.5) * (j == 0 ? 0.06 : 0.09);
+        float u = fr + float(j);
+        float wf = smoothstep(0.0, 1.0, u) * (1.0 - smoothstep(2.0, 3.0, u));
+        float amp = mix(0.065, 0.13, smoothstep(0.1, 0.01, cell));
+        mott += wf * (valueNoise(vPos / cell + uBandOff[i]) - 0.5) * amp;
       }
     }
     float A = albedo * (1.0 + mott) * (1.0 + 0.9 * bright * (1.0 - 0.4 * freshV)) * albedoMul;
-    A *= 1.0 + 0.08 * cavity;
+    A *= max(1.0 + 0.08 * cavity, 0.6);
+    // (strongest from orbit, where it is what keeps craters visible under a high Sun; near the ground the
+    // sunward walls of small craters are already bright from the incidence angle alone)
+    A *= 1.0 + mix(0.12, 0.4, smoothstep(3000.0, 40000.0, dist)) * steep * (1.0 - 0.5 * freshV);
 
     // colour: mature mare is brownish-grey, highlands a lighter warm grey, fresh ejecta neutral/bluish
     vec3 tintMare = vec3(1.0, 0.965, 0.92);
@@ -405,6 +538,7 @@ export function createTerrainMaterial(ctx, lunar, opts) {
     ...lunar,
     ...ctx.vesselShadow.uniforms,
     uMorphRange: { value: new THREE.Vector2(1e30, 2e30) },
+    uLimb: { value: 0 },
     uBandOff: { value: bandOff },
     uBandCell: { value: BAND_CELLS.slice() },
     uMeshK: { value: new THREE.Vector2(opts.meshK, opts.meshKFar ?? opts.meshK) },

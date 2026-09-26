@@ -4,6 +4,8 @@
 //   wall        painted inner structure / close-out panels (seams, rivets)
 //   structure   grey painted brackets, frames, console boxes
 //   structDark  darker grey (console interiors, recesses)
+//   hatchPanel  side-hatch inner face (painted seams, fasteners, placards; hatch coordinates uv)
+//   coaming     MDC top covers (one canvas row per section, see mdc.js)
 //   locker      stowage locker doors (atlas, see textures.createLockerAtlas)
 //   beta        Beta-cloth covers (couch pads, hatch cover, harness covers)
 //   betaShade   slightly darker, grimier Beta cloth (window shades, bags)
@@ -20,16 +22,18 @@
 //   red         red paint (T-handles, caps)
 //   lens        floodlight lens (emissive, driven by lighting.js)
 //   paper       checklist pages
-//   pane        window panes (additive cover glass, see below)
+//   pane        cabin-side window panes (additive cover glass, see below)
+//   paneDeep    the outer / middle panes (much fainter reflections)
 import * as THREE from 'three';
-import { getMaterial, glassSmudgeTexture } from '../kit/index.js';
-import { wallTexture, betaTexture, strapTexture, pocketTexture, noiseTexture, createLockerAtlas } from './textures.js';
+import { getMaterial } from '../kit/index.js';
+import { wallTexture, betaTexture, strapTexture, pocketTexture, noiseTexture, paneTexture, createLockerAtlas, hatchTexture, coamingTexture } from './textures.js';
+import { HATCH, mdcSections, MDC } from './layout.js';
 
 /**
  * Create the cabin material set.
  * @returns {{get(key: string): THREE.Material, atlas: object, all(): THREE.Material[]}}
  */
-export function createCabinMaterials() {
+export function createCabinMaterials(o = {}) {
   const M = new Map();
   const std = (o) => new THREE.MeshStandardMaterial(o);
   const wall = wallTexture();
@@ -37,7 +41,12 @@ export function createCabinMaterials() {
   M.set('wall', std({ color: 0xc6c7c4, map: wall.map, roughnessMap: wall.rough, roughness: 1, bumpMap: wall.rough, bumpScale: 0.5, metalness: 0.02 }));
   M.set('structure', std({ color: 0x8c8f8b, roughness: 0.7, roughnessMap: noise, metalness: 0.08 }));
   M.set('structDark', std({ color: 0x2d2e2e, roughness: 0.8, metalness: 0.05 }));
-  const atlas = createLockerAtlas(6, 6);
+  // side hatch inner face (seams, fastener rows, stencils, placard) and the MDC top covers
+  M.set('hatchPanel', std({ color: 0xffffff, map: hatchTexture(HATCH, o.texScale ?? 1), roughness: 0.7, roughnessMap: noise, metalness: 0.08 }));
+  const S = mdcSections();
+  const coaming = coamingTexture(['P1', 'P2', 'P3'].map((k) => ({ w: S[k].w + 0.02, d: MDC.depth })), o.texScale ?? 1);
+  M.set('coaming', std({ color: 0xffffff, map: coaming.texture, roughness: 0.72, roughnessMap: noise, metalness: 0.08 }));
+  const atlas = createLockerAtlas(6, 6, o.texScale ?? 1);
   M.set('locker', std({ color: 0xffffff, map: atlas.texture, roughness: 0.66, metalness: 0.06 }));
   const beta = betaTexture();
   M.set('beta', std({ color: 0xe4dfd2, map: beta, roughness: 0.92, metalness: 0 }));
@@ -58,26 +67,33 @@ export function createCabinMaterials() {
   M.set('lens', lens);
   M.set('paper', std({ color: 0xeee8d6, roughness: 0.9, metalness: 0 }));
   // window panes: like the kit's additive cover glass (only reflections are added on top of what
-  // is behind), but a physical material with a lower specular level (the panes are coated, and six
-  // stacked surfaces would otherwise add up) and a slightly broader lobe (roughness x3 over the
-  // smudge map: ~0.18) so the floodlights 0.4 m away leave soft reflections instead of pin-point
-  // glints that bloom into white blobs; sunlight reaches the panes from behind and is unaffected.
+  // is behind), but a physical material with a low specular level (coated panes) and clean glass
+  // (paneTexture: no wipe arcs / fingerprints, which over a 0.3 m pane read as big concentric rings).
+  // Only the cabin-side pressure pane reflects at this level; the deeper panes ('paneDeep') add a
+  // barely visible second image, so looking out at black space shows ONE faint reflection of the
+  // lit cabin that fades toward normal incidence (Schlick Fresnel: F0 = 0.04 x specularIntensity).
+  const paneRough = paneTexture();
   const pane = new THREE.MeshPhysicalMaterial({
     color: 0x000000,
-    roughness: 3.0,
-    roughnessMap: glassSmudgeTexture(),
+    roughness: 1,
+    roughnessMap: paneRough,
     metalness: 0,
-    specularIntensity: 0.45,
+    specularIntensity: 0.3,
     transparent: true,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
   });
-  pane.userData.envScale = 0.3;
+  pane.userData.envScale = 0.14;
   pane.userData.noShadow = true;
+  const paneDeep = pane.clone();
+  paneDeep.specularIntensity = 0.1;
+  paneDeep.userData = { envScale: 0.05, noShadow: true };
+  M.set('paneDeep', paneDeep);
   M.set('pane', pane);
   for (const [k, m] of M) if (!m.name) m.name = 'csm:' + k;
   return {
     atlas,
+    coaming,
     get(key) {
       const m = M.get(key);
       if (!m) throw new Error(`csm cabin: unknown material '${key}'`);

@@ -182,18 +182,40 @@ function structuredCloneEngine(e) {
 /** Parse URL query parameters into game params. */
 export function readParams(search = typeof location !== 'undefined' ? location.search : '') {
   const q = new URLSearchParams(search);
+  // Normalise the enumerated parameters: a lower-case or unknown value must never break the boot
+  // (an unknown vessel id used to leave game.active undefined -> 'Failed to start').
+  const pick = (name, allowed, fold) => {
+    const raw = (q.get(name) || '').trim();
+    if (!raw) return null;
+    const v = fold === 'upper' ? raw.toUpperCase() : raw.toLowerCase();
+    if (allowed.includes(v)) return v;
+    console.warn(`Ignoring unknown ?${name}=${raw} (expected one of ${allowed.join(', ')})`);
+    return null;
+  };
+  const num = (name, def) => {
+    if (!q.has(name)) return def;
+    const v = +q.get(name);
+    return Number.isFinite(v) ? v : def;
+  };
+  const flag = (name) => (q.has(name) ? !['0', 'false', 'off', 'no'].includes(q.get(name).toLowerCase()) : null);
   return {
     scenario: q.get('scenario') || null, // null => show the menu
     autostart: q.get('autostart') === '1' || q.has('scenario'),
-    camera: q.get('camera') || null, // 'iva' | 'chase' | ...
-    vessel: q.get('vessel') || null, // 'LM' | 'CSM'
+    camera: pick('camera', ['iva', 'chase', 'locked', 'flyby', 'ground', 'target'], 'lower'),
+    vessel: pick('vessel', ['LM', 'CSM'], 'upper'),
     fixedStep: q.get('fixedstep') === '1', // advance the sim exactly 1/60 s per frame (tests)
-    quality: q.get('quality') || null, // 'low' | 'medium' | 'high'
-    warp: q.has('warp') ? +q.get('warp') : 1,
+    quality: pick('quality', ['low', 'medium', 'high'], 'lower'),
+    // shader / GPU-upload warm-up of the cockpit configurations at mission start (default: on,
+    // except in fixed-step test runs where it would only slow down headless screenshots)
+    warmup: flag('warmup'),
+    // depth buffer: 'reversed' (float reversed-Z, keeps early-Z; default when EXT_clip_control exists)
+    // or 'log' (logarithmic depth, gl_FragDepth writes)
+    depth: pick('depth', ['reversed', 'log'], 'lower'),
+    warp: num('warp', 1),
     hud: q.has('hud') ? q.get('hud') !== '0' : null,
     audio: q.has('audio') ? q.get('audio') !== '0' : null,
     debug: q.get('debug') === '1',
-    t: q.has('t') ? +q.get('t') : 0, // seconds to fast-forward after loading (tests)
+    t: Math.max(0, num('t', 0)), // seconds to fast-forward after loading (tests)
   };
 }
 

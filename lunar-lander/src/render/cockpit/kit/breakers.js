@@ -1,7 +1,7 @@
 // Apollo circuit breakers: black push-pull buttons in a thin bezel collar; a tripped / pulled
 // breaker stands ~4 mm proud and shows its white band. Instanced (hundreds per panel).
 import * as THREE from 'three';
-import { getMaterial } from './materials.js';
+import { getMaterial, useInstancedShadowDepth } from './materials.js';
 import { rng } from './canvas.js';
 
 /** Travel of a popped (open) breaker button, m. */
@@ -49,6 +49,7 @@ export function createBreakerBank(opts = {}) {
     m.castShadow = true;
     m.receiveShadow = true;
     m.frustumCulled = false;
+    useInstancedShadowDepth(m);
     group.add(m);
   }
   const M = new THREE.Matrix4();

@@ -14,8 +14,9 @@
 // How the surface is built (all in one pass, see evalSurface):
 //   1. Global shape: far-side highland bulge, South Pole–Aitken basin, highland relief (gradient noise).
 //   2. Maria: dark, smooth, low basalt plains at the real near-side positions. Each basin is a spherical
-//      cap whose shore is warped by noise; wrinkle ridges (dorsa) on the mare surface; raised, rugged
-//      basin rims (Montes Apenninus, Haemus, ...).
+//      cap whose shore is warped by noise down to ~2 km (fractal embayments, highland islands); long,
+//      sinuous wrinkle ridges (dorsa) on the mare surface; raised, rugged basin rims (Montes Apenninus,
+//      Haemus, ...).
 //   3. Named craters (Theophilus, Copernicus, Tycho, Maskelyne, Moltke, West crater ...) with real
 //      positions/diameters, ray systems for the young ones.
 //   4. Random craters from 150 km down to ~1.7 m in hash cells ("octaves" shrinking 2.4x in size;
@@ -383,7 +384,7 @@ const NAMED_Z = Float64Array.from(NAMED, (c) => c.z);
 const NAMED_COS = Float64Array.from(NAMED, (c) => c.cosInf);
 
 // Random crater octaves: cell size shrinks by 2.4x per octave. Candidate ball radius rho = s * cell/2
-// (s in {0.55, 0.7, 0.85, 1} per candidate, filling the size gaps between octaves), so the crater rim
+// (s in {0.38, 0.55, 0.75, 1} per candidate, filling the size gaps between octaves), so the crater rim
 // radius a = sqrt(rho^2 - d^2)/2 <= cell/4, i.e. D <= cell/2 and ejecta reach 1.9a < rho.
 const OCT_RATIO = 2.4;
 const OCT_CELL = [];
@@ -411,7 +412,8 @@ const OCT_SEED = new Int32Array(NOCT);
 const OCT_DH = new Float64Array(NOCT); // density highlands (0..1)
 const OCT_DM = new Float64Array(NOCT); // density maria
 const OCT_HLONLY = new Uint8Array(NOCT); // 1 = extra highland layer (skipped on maria)
-const RHO_SCALE2 = new Float64Array([0.55 * 0.55, 0.7 * 0.7, 0.85 * 0.85, 1]);
+// (a steep spread inside each octave: many small craters beside a few large ones, not one size per octave)
+const RHO_SCALE2 = new Float64Array([0.38 * 0.38, 0.55 * 0.55, 0.75 * 0.75, 1]);
 for (let o = 0; o < NOCT; o++) {
   const { c, layer, idx } = OCT_LIST[o];
   OCT_INV[o] = 1 / c;
@@ -423,7 +425,9 @@ for (let o = 0; o < NOCT; o++) {
   const D = 0.5 * c;
   // maria have few large craters (they post-date the basalt flooding)
   OCT_DH[o] = layer > 0 ? 0.9 : D > 20000 ? 0.97 : D > 1000 ? 0.95 : D > 100 ? 0.9 : 0.85;
-  OCT_DM[o] = layer > 0 ? 0 : D > 20000 ? 0.05 : D > 3000 ? 0.1 : D > 600 ? 0.22 : D > 150 ? 0.4 : D > 40 ? 0.62 : 0.78;
+  // (mare values follow the crater size-frequency of ~3.6 Gyr basalt, e.g. Mare Tranquillitatis:
+  // N(>1 km) ~ 1e-2 per km^2, i.e. sparse large craters but a well cratered plain at the km scale)
+  OCT_DM[o] = layer > 0 ? 0 : D > 20000 ? 0.06 : D > 3000 ? 0.16 : D > 600 ? 0.3 : D > 150 ? 0.42 : D > 40 ? 0.62 : 0.78;
 }
 // Cache of the mare mask at large-crater centres, keyed by the exact (octave, cell) so a hit is always
 // the same crater: deterministic, a cached value is exactly what a fresh evaluation returns.
@@ -513,8 +517,9 @@ const F_BLOCK = 4; // compute the "blockiness" field (boulder density driver) on
 
 // scratch for the mare evaluation (returned via module-level vars for speed)
 // [0] mare fraction, [1] mare floor height, [2] landing-site proximity, [3] distance inside the
-// fully-mare region (m, conservative), [4] albedo mare mask (wider shores) — typed array: no boxing
-const SCR = new Float64Array(5);
+// fully-mare region (m, conservative), [4] wide mare mask (gentle height contacts), [5] albedo mare mask
+// (sharper, fractal shoreline) — typed array: no boxing
+const SCR = new Float64Array(6);
 
 function evalMaria(x, y, z, lod) {
   // shore warp noise: lobate, irregular shorelines (relative to each basin's radius)
@@ -526,24 +531,31 @@ function evalMaria(x, y, z, lod) {
   if (lod < 60000) fine = noise3(px * 8.3, py * 8.3, pz * 8.3) * 0.5;
   if (lod < 15000) fine += noise3(px * 23, py * 23, pz * 23) * 0.3;
   if (lod < 5000) fine += noise3(px * 61, py * 61, pz * 61) * 0.15;
+  // fractal shoreline down to ~2 km: embayments, lobes and highland "islands" (kipukas)
+  let shore = 0;
+  if (lod < 4000) shore = noise3(px * 157 + 3.1, py * 157, pz * 157 - 1.7) * 0.9;
+  if (lod < 1500) shore += noise3(px * 409 - 0.3, py * 409 + 5.2, pz * 409) * 0.4;
   let m = 0;
   let hs = 0;
   let ws = 0;
   let mg = -1; // how far inside the fully-mare region (rad); < 0 outside
-  let ma = 0; // albedo mask: like m but with a ~3x wider shore transition (gradational contacts)
+  let ma = 0; // like m but with a ~3x wider shore transition (gradational height contacts)
+  let mb = 0; // albedo mask: ~1.6x wider than m
   for (let i = 0; i < NMARE; i++) {
     const d = x * MARE_X[i] + y * MARE_Y[i] + z * MARE_Z[i];
     if (d < MARE_COSR[i]) continue;
     const ang = Math.acos(d > 1 ? 1 : d);
     const r = MARE_R[i];
-    const edge = r * (1 + 0.36 * warp) + MARE_W[i] * fine * 1.8;
     const sw = 0.1 * MARE_W[i] + 0.002;
+    const edge = r * (1 + 0.36 * warp) + MARE_W[i] * fine * 1.8 + sw * shore;
     const k = smooth01((edge - ang) / sw + 0.5);
     const margin = edge - ang - 0.5 * sw;
     if (margin > mg) mg = margin;
     const ka = smooth01((edge - ang) / (3 * sw) + 0.5);
     if (ka <= 0) continue;
     if (ka > ma) ma = ka;
+    const kb = smooth01((edge - ang) / (1.6 * sw) + 0.5);
+    if (kb > mb) mb = kb;
     // floor height: weighted by the wide mask so it is defined wherever the basalt surface blends in
     hs += ka * MARE_H[i];
     ws += ka;
@@ -561,6 +573,8 @@ function evalMaria(x, y, z, lod) {
       const k = smooth01(band / 0.006 + 0.5) * ends;
       const ka = smooth01(band / 0.018 + 0.5) * ends;
       if (ka > ma) ma = ka;
+      const kb = smooth01(band / 0.01 + 0.5) * ends;
+      if (kb > mb) mb = kb;
       if (ka > 0) {
         if (k > m) m = k;
         hs += ka * -1500;
@@ -572,6 +586,7 @@ function evalMaria(x, y, z, lod) {
   SCR[1] = ws > 0 ? hs / ws : 0;
   SCR[3] = mg * R;
   SCR[4] = ma;
+  SCR[5] = mb;
 }
 
 // Global relief (highland topography, basins, far-side bulge) — no craters.
@@ -612,20 +627,32 @@ function evalBase(x, y, z, lod, m, mareH) {
   }
   // mare fill: the basalt surface is nearly level
   if (m > 0 || SCR[4] > 0) {
-    // wrinkle ridges (dorsa): sharp-crested ridges, ~100-250 m high, 5-15 km wide
-    // long, sinuous and widely spaced: a gated, domain-warped ridged noise (~25 km crest spacing) with a
-    // broad arch and a narrow crest on top
+    // wrinkle ridges (dorsa): long (50-300 km), sinuous ridge systems, 100-250 m high: a broad arch
+    // (~10 km) carrying a narrow, crenulated crest. Crests follow the zero contour of a low-frequency,
+    // domain-warped noise, stretched north-south (the dominant trend of near-side mare ridges), so they
+    // form long winding lines instead of closed loops; distance to the crest ~ |noise| / gradient.
     let ridge = 0;
     if (lod < 8000) {
-      const rx = x * 75;
-      const ry = y * 75;
-      const rz = z * 75;
-      const wn = noise3(rx * 0.3 + 4.1, ry * 0.3, rz * 0.3);
-      const rn = 1 - Math.abs(noise3(rx + wn * 1.6, ry - wn * 1.2, rz + wn));
-      const r2 = rn * rn;
-      const r4 = r2 * r2;
-      ridge = (r4 * 0.6 + r4 * r4 * r4 * 0.4) * 300;
-      ridge *= smooth01((noise3(x * 22 + 2.2, y * 22, z * 22 - 1.4) + 0.15) * 3);
+      const f = 21;
+      const wa = noise3(x * 9.3 + 4.1, y * 9.3, z * 9.3 - 2.3);
+      const wb = noise3(x * 9.3 - 1.9, y * 9.3 + 6.6, z * 9.3);
+      const rn = noise3(x * f + wa * 2.2, y * f + wb * 2.2, z * f * 0.45 + wa * 0.8);
+      const dm = (Math.abs(rn) / 1.1) * (R / f); // ~metres from the crest line
+      const q1 = dm / 8500;
+      if (q1 < 3) {
+        // crenulation: the crest wanders from side to side of the arch and varies in height
+        let cren = 1;
+        let off = 0;
+        if (lod < 3000) {
+          const cn = noise3(x * 190 + 1.3, y * 190, z * 190 - 0.7);
+          cren = 0.6 + 0.6 * Math.abs(cn);
+          off = 900 * cn;
+        }
+        const q2 = (dm + off) / 2300;
+        ridge = 120 * Math.exp(-q1 * q1) + (q2 < 3 && q2 > -3 ? 170 * cren * Math.exp(-q2 * q2) : 0);
+        // ridge systems: gated regionally (not every contour carries a ridge)
+        ridge *= smooth01((noise3(x * 9 + 2.2, y * 9, z * 9 - 1.4) + 0.12) * 2.6);
+      }
     }
     // gentle undulation of the lava plains
     let und = 0;
@@ -929,9 +956,10 @@ function craterOctaves(x, y, z, px, py, pz, lod, flags, m, mareInside, nearSite,
         t /= 1 + wob * fade;
       }
       const uf = (hh >>> 16) * INV_2_16;
-      // freshness: most craters are old and subdued (u^5: ~13% have fr > 0.5); large ones older still
+      // freshness: most craters are old and subdued (u^5: ~13% have fr > 0.5); large ones older still,
+      // and small ones (< 300 m, eroded fastest) mostly soft: only ~1 in 6 keeps a steep, shadowed bowl
       const u2 = uf * uf;
-      const fr = u2 * u2 * uf * (D > 5000 ? uf : 1);
+      const fr = u2 * u2 * uf * (D > 5000 ? uf : D < 300 ? u2 : 1);
       if (onlyBlock) {
         if (fr > 0.45 && D >= BLOCKY_D) {
           const q = (t - 1.02) / (0.35 + 0.25 * fr);
@@ -1063,7 +1091,7 @@ export function evalSurface(x, y, z, lod, flags, out) {
 
   // ---- random crater octaves
   const mareInside = SCR[3];
-  const mAlb = SCR[4]; // read before craterOctaves re-uses evalMaria for crater centres
+  const mAlb = SCR[5]; // read before craterOctaves re-uses evalMaria for crater centres
   const lodW = lod > 0 ? lod : 0;
   OCT_ACC[0] = alb;
   OCT_ACC[1] = fresh;
@@ -1089,7 +1117,9 @@ export function evalSurface(x, y, z, lod, flags, out) {
     const n3 = lod < 5000 ? noise3(x * 1700 - 2.2, y * 1700, z * 1700 + 0.4) : 0;
     // mare basalt units differ in maturity/titanium: regional variations of ~+-25%
     const n4 = noise3(x * 140 - 5.1, y * 140 + 2.9, z * 140);
-    const high = 0.15 + 0.028 * n1 + 0.018 * n2 + 0.012 * n3;
+    // highland mottling from overlapping ejecta blankets of different maturity (10-30 km patches)
+    const n5 = lod < 30000 ? noise3(x * 170 + 1.9, y * 170 - 4.4, z * 170) : 0;
+    const high = 0.15 + 0.028 * n1 + 0.024 * n2 + 0.014 * n3 + 0.022 * n5;
     const mare = 0.069 + 0.012 * n1 + 0.011 * n4 + 0.009 * n2 + 0.005 * n3;
     let A = high + (mare - high) * mAlb + alb;
     // South Pole–Aitken floor is slightly darker (mafic)

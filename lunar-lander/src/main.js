@@ -17,6 +17,7 @@ import { createCameras } from './render/cameras.js';
 import { createInput } from './input/input.js';
 import { createAudio } from './audio/audio.js';
 import { createUI } from './ui/ui.js';
+import { createWarmup } from './core/warmup.js';
 
 const FIXED_DT = 1 / 60;
 
@@ -42,9 +43,38 @@ async function boot() {
   ctx.scene.add(lmModel.root, csmModel.root);
   const lmCabin = createLMCabin(ctx);
   const csmCabin = createCSMCabin(ctx);
-  ctx.scene.add(lmCabin.root, csmCabin.root);
+  // Cabins are only attached to the scene while in use (see setCabins): ~1,150 hidden meshes would
+  // otherwise be walked by every updateMatrixWorld / render-list traversal.
   const fx = createEffects(ctx);
   const post = createPost(ctx);
+
+  // Reversed-Z needs a 32-bit float depth buffer in the HDR scene target (a 24-bit fixed-point one
+  // would lose precision with distance: rocks and far terrain would z-fight).
+  const hdr = post.targets?.hdr;
+  if (ctx.depthMode === 'reversed' && hdr && !hdr.depthTexture) {
+    hdr.depthTexture = new THREE.DepthTexture(hdr.width, hdr.height, THREE.FloatType);
+  }
+  // Draw order: the terrain (by far the most expensive fragment shader) goes last among the opaque
+  // objects, so with reversed-Z the early depth test rejects the terrain hidden behind the cabin panels
+  // and the spacecraft. (A Group's renderOrder is the sort key of its whole subtree. The sky is drawn
+  // first with depthTest off and stays in group order 0.)
+  const terrainGroup = ctx.scene.getObjectByName('terrain');
+  if (terrainGroup?.isGroup) terrainGroup.renderOrder = 1;
+
+  /** Which cabin is in use (null = exterior view): attach it, make the own exterior a shadow ghost. */
+  function setCabins(ivaId) {
+    lmModel.setIVA(ivaId === 'LM');
+    csmModel.setIVA(ivaId === 'CSM');
+    for (const [id, cabin] of [
+      ['LM', lmCabin],
+      ['CSM', csmCabin],
+    ]) {
+      const on = ivaId === id;
+      cabin.setActive(on);
+      if (on && cabin.root.parent !== ctx.scene) ctx.scene.add(cabin.root);
+      else if (!on && cabin.root.parent === ctx.scene) ctx.scene.remove(cabin.root);
+    }
+  }
   const cameras = createCameras(game, ctx);
   const input = createInput(game, canvas);
   const audio = createAudio(game);
@@ -92,6 +122,19 @@ async function boot() {
     if (params.t > 0) game.debug.advance(params.t);
   }
 
+  // Shader / upload warm-up of the cockpit configurations right after a mission starts, so the first
+  // switch into either cabin does not freeze the game while ~30 programs compile.
+  const warmup = createWarmup({
+    R,
+    ctx,
+    game,
+    enabled: params.warmup ?? !params.fixedStep,
+    cabins: { LM: lmCabin, CSM: csmCabin },
+    models: { LM: lmModel, CSM: csmModel },
+    setCabins,
+  });
+  game.debug.warmup = warmup;
+
   // --- main loop ---
   let last = performance.now();
   let readyFrames = 0;
@@ -110,12 +153,12 @@ async function boot() {
     cameras.update(realDt);
     const f = R.beginFrame({ realDt, simDt });
 
+    // one-shot shader warm-up (a no-op once done); it flips the cabins, setCabins() below restores them
+    if (game.started) warmup.update(f);
+
     // IVA: own exterior model becomes a shadow-only "ghost"; cabins only render when used
     const ivaId = game.view.mode === 'iva' ? game.view.ivaVessel : null;
-    lmModel.setIVA(ivaId === 'LM');
-    csmModel.setIVA(ivaId === 'CSM');
-    lmCabin.setActive(ivaId === 'LM');
-    csmCabin.setActive(ivaId === 'CSM');
+    setCabins(ivaId);
 
     // The title screen covers the canvas completely: skip the world until a mission is loaded.
     if (!game.started) {
@@ -135,8 +178,17 @@ async function boot() {
     csmCabin.update(f, game.vessels.CSM);
     fx.update(f);
 
-    R.renderVesselShadow();
-    post.render(f);
+    // All objects are placed for this frame: compute the world matrices once and let both scene
+    // renders (vessel-shadow depth + main pass) reuse them instead of walking the graph twice.
+    const scene = ctx.scene;
+    scene.updateMatrixWorld();
+    scene.matrixWorldAutoUpdate = false;
+    try {
+      R.renderVesselShadow();
+      post.render(f);
+    } finally {
+      scene.matrixWorldAutoUpdate = true;
+    }
 
     ui.update(f);
     audio.update(f);

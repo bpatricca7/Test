@@ -73,10 +73,13 @@ export function createEffects(ctx) {
         const v = frame.vessels[id];
         const pv = perVessel[id];
         if (v.rcs.jets !== pv.jets) {
-          // jet table replaced (e.g. a scenario reload recreated it): rebuild the RCS effects
-          pv.group.remove(pv.rcs.group);
-          pv.rcs = createRcsEffects(ctx, v);
-          pv.group.add(pv.rcs.group);
+          // jet table replaced (a scenario reload recreated the vessel): re-attach the RCS effects to it
+          // (same layout -> keep the GPU objects), or rebuild them, disposing the old ones
+          if (!pv.rcs.rebind(v)) {
+            pv.rcs.dispose();
+            pv.rcs = createRcsEffects(ctx, v);
+            pv.group.add(pv.rcs.group);
+          }
           pv.jets = v.rcs.jets;
         }
         pv.group.position.copy(v.pos).sub(frame.origin);

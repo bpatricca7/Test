@@ -30,7 +30,7 @@ for (let i = 0; i < 600; i++) {
   if (await page.evaluate(() => window.__READY === true)) break;
   await new Promise((r) => setTimeout(r, 250));
 }
-fs.mkdirSync(path.join(root, 'shots/lm-cabin'), { recursive: true });
+fs.mkdirSync(path.join(root, process.env.SHOT_DIR || 'shots/lm-cabin'), { recursive: true });
 const frames = () => page.evaluate(() => window.game.debug.renderFrames);
 for (const v of views) {
   if (v.eval) {
@@ -48,8 +48,8 @@ for (const v of views) {
     await new Promise((r) => setTimeout(r, 100));
   }
   await new Promise((r) => setTimeout(r, v.wait ?? +waitMs));
-  const out = path.join(root, 'shots/lm-cabin', `${prefix}-${v.name}.png`);
-  await page.screenshot({ path: out });
+  const out = path.join(root, process.env.SHOT_DIR || 'shots/lm-cabin', `${prefix}-${v.name}.png`);
+  await page.screenshot({ path: out, timeout: 240000 });
   console.log('saved', path.relative(root, out));
 }
 const info = await page.evaluate(() => {

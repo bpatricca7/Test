@@ -359,17 +359,19 @@ export function generateEarthRows(prep, y0, y1, albedo, clouds) {
       albedo[i4 + 3] = isLand ? 0 : 255;
 
       // ---- clouds (July climatology)
-      let cov = 0.45;
-      cov = mix(cov, 0.62, Math.exp(-(((lat - 8) / 6) ** 2))); // ITCZ
+      let cov = 0.43;
+      const itcz = Math.exp(-(((lat - 8 - 2.5 * Math.sin(lon * D2R * 2 + 1)) / 4.5) ** 2));
+      cov = mix(cov, 0.66, itcz * (0.45 + 0.9 * fbm(px * 5 + 2.2, py * 5, pz * 5 + 9.1, 2))); // ITCZ: a narrow, wavy band of convective clusters
       cov = mix(cov, 0.22, Math.exp(-(((alat - 24) / 7) ** 2))); // subtropical highs
-      cov = mix(cov, 0.68, smooth(38, 50, alat) * (1 - smooth(68, 80, alat))); // storm tracks
-      cov = mix(cov, 0.7, smooth(-45, -55, lat) * (1 - smooth(-66, -72, lat))); // Southern Ocean
+      cov = mix(cov, 0.65, smooth(38, 50, alat) * (1 - smooth(68, 80, alat))); // storm tracks
+      cov = mix(cov, 0.67, smooth(-45, -55, lat) * (1 - smooth(-66, -72, lat))); // Southern Ocean
       if (isLand) cov -= 0.45 * Math.max(0, aridity(lon, lat)) + 0.05;
       // stratocumulus decks and the monsoon
       const box = (l0, l1, b0, b1) => smooth(l0 - 5, l0 + 5, lon) * (1 - smooth(l1 - 5, l1 + 5, lon)) * smooth(b0 - 4, b0 + 4, lat) * (1 - smooth(b1 - 4, b1 + 4, lat));
       const sc = Math.max(box(-135, -118, 18, 36), box(-92, -74, -28, -6), box(-8, 12, -26, -8));
       cov = mix(cov, 0.72, sc);
-      cov = mix(cov, 0.75, box(70, 110, 8, 26));
+      const monsoon = box(70, 110, 8, 26);
+      cov = mix(cov, 0.75, monsoon);
       cov = mix(cov, 0.1, box(-20, 35, 17, 30) + box(40, 58, 16, 29));
       // spiral cyclones: rotate the noise lookup about each centre
       let qx = lon;
@@ -391,17 +393,44 @@ export function generateEarthRows(prep, y0, y1, albedo, clouds) {
         swirl = Math.max(swirl, Math.exp(-d * d * 1.5));
       }
       cov = mix(cov, 0.85, swirl * 0.6);
+      // frontal cloud bands trailing equatorward (and westward) from the mid-latitude lows: long,
+      // curved, narrow — the dominant large-scale structure in Apollo photographs of the Earth
+      let front = 0;
+      for (const [cx, cy, rad, tw] of CYCLONES) {
+        if (Math.abs(cy) < 30) continue;
+        let dx = lon - cx;
+        if (dx > 180) dx -= 360;
+        if (dx < -180) dx += 360;
+        dx *= cl;
+        const dy = (lat - cy) * -tw; // + toward the equator in both hemispheres
+        const len = rad * 3.6;
+        if (dy < -rad || dy > len + rad || Math.abs(dx) > len * 1.2) continue;
+        const sAlong = Math.max(0, dy) / len;
+        // the front curves west as it runs toward the equator
+        const cxLine = rad * 0.35 - len * (0.25 * sAlong + 0.45 * sAlong * sAlong);
+        const w = rad * (0.2 + 0.25 * sAlong);
+        const band = Math.exp(-(((dx - cxLine) / w) ** 2)) * smooth(-rad * 0.5, rad * 0.3, dy) * (1 - smooth(len * 0.7, len, dy));
+        front = Math.max(front, band);
+      }
+      cov = mix(cov, 0.8, front * 0.75);
       const qc = Math.cos(qy * D2R);
       const cx3 = qc * Math.cos(qx * D2R);
       const cy3 = qc * Math.sin(qx * D2R);
       const cz3 = Math.sin(qy * D2R);
       // stretch along longitude (zonal flow) outside the tropics
       const zonal = 1 + 1.4 * smooth(20, 45, alat);
+      // two-level domain warp: sheared, streaky structures instead of isotropic puffs
       const wq = fbm(cx3 * 6, cy3 * 6, cz3 * 6 * zonal, 3) - 0.5;
-      const cn = fbm(cx3 * 11 + wq * 2.2, cy3 * 11 + wq * 2.2, cz3 * 11 * zonal + wq * 1.5, 6, 2.1, 0.55);
-      const fine = fbm(cx3 * 70 + wq * 3, cy3 * 70, cz3 * 70 * zonal, 3);
-      let cd = smooth(1 - cov - 0.08, 1 - cov + 0.18, cn + (fine - 0.5) * 0.12 * (1 + sc));
-      cd *= 0.85 + 0.15 * fine;
+      const wq2 = fbm(cx3 * 17 + wq * 2.5, cy3 * 17 + 4.2, cz3 * 17 * zonal, 3) - 0.5;
+      const cn = fbm(cx3 * 11 + wq * 3.0 + wq2 * 0.9, cy3 * 11 + wq * 2.6, cz3 * 11 * zonal + wq * 1.8 + wq2 * 0.7, 6, 2.1, 0.55);
+      const fine = fbm(cx3 * 70 + wq * 3 + wq2 * 2, cy3 * 70, cz3 * 70 * zonal, 3);
+      let cd = smooth(1 - cov - 0.06, 1 - cov + 0.16, cn + (fine - 0.5) * 0.2 * (1 + sc));
+      cd *= 0.8 + 0.2 * fine;
+      // trade-wind / subtropical skies: scattered small cumulus, not solid blobs (except the ITCZ,
+      // the stratocumulus decks and the cyclones)
+      const trop = (1 - smooth(22, 32, alat)) * (1 - itcz * 0.8) * (1 - sc) * (1 - swirl) * (1 - monsoon);
+      const cu = fbm(cx3 * 55 + wq2 * 3, cy3 * 55, cz3 * 55, 3);
+      cd *= 1 - trop * (1 - smooth(0.36, 0.58, cu));
       const j4 = i4;
       clouds[j4] = Math.round(Math.min(1, Math.max(0, cd)) * 255);
       clouds[j4 + 1] = Math.round(Math.min(1, Math.max(0, (cn - (1 - cov)) * 2.5)) * 255);

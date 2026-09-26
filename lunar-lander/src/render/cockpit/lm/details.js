@@ -418,6 +418,21 @@ export function buildDetails(mat) {
     const d = ax === 'x' ? V(t, h, w) : ax === 'y' ? V(w, t, h) : V(w, h, t);
     b.add('velcro', boxFromTo(c.clone().sub(d.clone().multiplyScalar(0.5)), c.clone().add(d.clone().multiplyScalar(0.5))));
   }
+  // things stuck on some of them: a penlight (CDR wall), a pencil (aft bulkhead, LMP side) and a
+  // small cue card (LMP wall) — the patches are attachment points, not decoration
+  {
+    const x = -1.12 + 0.0015 + 0.0075;
+    b.add('black', cylBetween(V(x, 4.955, -0.665), V(x, 4.955, -0.575), 0.0075, 0.0075, 12));
+    b.add('metal', cylBetween(V(x, 4.955, -0.575), V(x, 4.955, -0.56), 0.0082, 0.0082, 12));
+    b.add('metal', boxFromTo(V(x + 0.006, 4.952, -0.655), V(x + 0.0085, 4.958, -0.615))); // pocket clip
+    b.add('yellow', cylBetween(V(0.885, 4.945, CAB.rearZ - 0.0065), V(1.015, 4.952, CAB.rearZ - 0.0065), 0.0038, 0.0038, 6));
+    b.add('rubber', cylBetween(V(1.015, 4.952, CAB.rearZ - 0.0065), V(1.03, 4.953, CAB.rearZ - 0.0065), 0.0036, 0.0036, 8));
+    const cc = KIT.createChecklistCard({ title: 'DAP DATA LOAD', width: 0.075, height: 0.095, lines: ['V48E', 'R1 11102', 'R2 01111', { rule: true }, 'V46E', 'WT 33,500 LB', 'CSM 36,600 LB'], seed: 21 });
+    // (the wall here leans inboard ~11 deg: the card follows it)
+    cc.position.set(1.1165, 4.935, -0.69);
+    cc.rotation.set(0.197, -Math.PI / 2, 0.04, 'YXZ');
+    group.add(cc);
+  }
 
   // ------------------------------------------------------------------ checklists & flight data file
   const card = (opts, pos, rotY, rotX = 0, rotZ = 0) => {

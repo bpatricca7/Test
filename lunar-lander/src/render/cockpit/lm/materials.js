@@ -6,7 +6,7 @@
 // own interior environment map (see lighting.js), rotated with the vessel each frame.
 import * as THREE from 'three';
 import { COLORS } from '../kit/index.js';
-import { liningTextures, quiltTextures, clothTextures, floorTextures, hoseTextures, wireTextures, velcroTextures, anodizedTextures } from './textures.js';
+import { liningTextures, quiltTextures, clothTextures, floorTextures, hoseTextures, wireTextures, velcroTextures, anodizedTextures, floodLensTextures } from './textures.js';
 
 /**
  * Create the cabin material set.
@@ -61,8 +61,10 @@ export function createCabinMaterials() {
   std('shade', { color: 0xc9c6bc, map: cl.map, roughness: 0.6, metalness: 0.3 });
   std('white', { color: 0xecebe6, roughness: 0.5, metalness: 0 });
   std('connector', { color: 0x9a8a5a, roughness: 0.35, metalness: 0.9 }); // gold-anodised/cadmium fittings
-  // floodlight lens: emissive, driven by lighting.js
-  std('floodLens', { color: 0x9a978e, emissive: 0xfff1d6, emissiveIntensity: 0, roughness: 0.4 }, { noShadow: true });
+  // floodlight lens: frosted prismatic diffuser in front of an incandescent lamp (warm), dimmable;
+  // emissive, driven by lighting.js
+  const fl2 = floodLensTextures();
+  std('floodLens', { color: 0xd8d0bf, map: fl2.map, emissive: 0xffd6a0, emissiveMap: fl2.map, emissiveIntensity: 0, roughness: 0.62 }, { noShadow: true }).userData.noAtlas = true;
   // window glass (inner pane): reflective only (additive), smudged
   const glass = std(
     'glass',

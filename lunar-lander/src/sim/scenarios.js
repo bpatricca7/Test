@@ -8,7 +8,8 @@
 // so Columbia trails Eagle by ~7 deg at PDI — as flown.
 //
 // Contract: SCENARIOS = [{ id, title, subtitle, description, difficulty, activeId, camera,
-//   station?, met, tips[], setup(game, util), settleLM? }]
+//   station?, met, tips[], setup(game, util), settleLM?, gncInit?(game, gnc) }]
+// gncInit runs once, right after the GNC's first cycle of the scenario (its program state exists).
 
 import * as THREE from 'three';
 import { MOON, MISSION, LM, CSM } from '../core/constants.js';
@@ -211,10 +212,24 @@ export const SCENARIOS = [
     station: 'CDR',
     met: TIMELINE.lowGate,
     description:
-      '150 m above the Sea of Tranquility, sinking at 5 m/s and still moving forward at 18 m/s. P66 ' +
-      'holds your rate of descent automatically — click the ROD switch to change it by 1 ft/s and fly ' +
-      'the attitude by hand to kill the forward speed. Touch down below 1 m/s.',
-    tips: ['ROD switch: each click changes the sink rate by 1 ft/s', 'Tilt back to stop forward drift', 'Contact light, then ENGINE STOP'],
+      '150 m above the Sea of Tranquility, sinking at 16 ft/s and still moving forward at 60 ft/s. P66 ' +
+      'flies the throttle: until you touch the ROD switch the LGC eases the sink rate off on the way ' +
+      'down, one 1 ft/s click at a time. Your job is the attitude — tilt back to kill the forward ' +
+      'speed, then stand her upright — and the last few feet: aim for 2–3 ft/s down at contact.',
+    tips: [
+      'Hands off the ROD switch and the LGC slows the descent for you; each R/F click (1 ft/s) takes over',
+      'She starts tilted back to brake: pitch forward (W) to level out as the forward speed dies',
+      'Contact light, then ENGINE STOP',
+    ],
+    /**
+     * After the GNC has initialised P66: hands-off rate-of-descent stepping (as at P64 exit),
+     * unless the pilot has already clicked the ROD switch.
+     */
+    gncInit(game, gnc) {
+      const lm = game.vessels.LM;
+      const d = gnc?.states?.get?.(lm)?.descent;
+      if (d && lm.gnc.program === 'P66' && Math.abs(lm.gnc.rodCmd - MISSION.lowGate.vSpeed) < 1e-6) d.rodAuto = true;
+    },
     setup(game) {
       const lm = game.vessels.LM;
       const csm = game.vessels.CSM;
@@ -275,7 +290,7 @@ export const SCENARIOS = [
       'Columbia and Eagle, docked, in a 111-km lunar orbit approaching the eastern limb — Earthrise is a ' +
       'few minutes ahead. Undock ("The Eagle has wings"), pirouette in front of Columbia\'s windows for ' +
       'inspection, and fly either spacecraft. Re-docking works too.',
-    tips: ['U: undock (0.1 m/s spring separation)', 'V: switch between Eagle and Columbia', 'Translate gently: docking needs < 0.6 m/s and < 10° misalignment'],
+    tips: ['U: undock (0.1 m/s spring separation)', 'V: switch between Eagle and Columbia', 'Translate gently: capture needs about 1 ft/s (0.3 m/s) closing or less and < 10° misalignment'],
     setup(game, util) {
       const lm = game.vessels.LM;
       const csm = game.vessels.CSM;
@@ -376,7 +391,7 @@ export const SCENARIOS = [
       'After the co-elliptic rendezvous Eagle\'s ascent stage is station-keeping 15 m in front of ' +
       'Columbia\'s probe, with the Earth hanging over the lunar horizon beyond. Line up the COAS on the ' +
       'drogue target and close at a few centimetres per second for capture.',
-    tips: ['Capture needs < 0.6 m/s closing, < 0.3 m off-centre, < 10° misalignment', 'Translate with the THC, keep attitude hold on', 'Hard dock follows ~1 s after capture'],
+    tips: ['Capture needs about 1 ft/s (0.3 m/s) closing or less, < 1 ft (0.3 m) off-centre, < 10° misalignment', 'Translate with the THC, keep attitude hold on', 'The probe retracts for ~6 s after capture, then the 12 latches fire: hard dock'],
     setup(game) {
       const lm = game.vessels.LM;
       const csm = game.vessels.CSM;

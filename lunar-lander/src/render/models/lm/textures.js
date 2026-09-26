@@ -153,7 +153,7 @@ function schedule(kind, size, seed, texs) {
 // ------------------------------------------------------------------ public texture sets
 
 /**
- * Crinkled foil set { normal, rough, tint } (tileable; one tile ~ 1 m of blanket).
+ * Crinkled foil set { normal, rough, tint } (tileable; one tile ~ 2.4 m of blanket, facets 5-30 cm).
  * @param {number} size texture size (power of two)
  * @param {number} seed variation seed
  */

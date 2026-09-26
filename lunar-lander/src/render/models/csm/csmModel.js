@@ -8,6 +8,11 @@
 //               Also animates: docking-probe retraction while docked (the head seats in the LM drogue
 //               apex), SPS gimbal (vessel.mainEngine.gimbal) and nozzle-extension heat glow during long
 //               burns, S-band high-gain antenna tracking the Earth, flashing rendezvous beacon.
+//               Distance LOD: when the CSM would project to < SPECK_PX (1.5 px) its meshes are hidden and
+//               a sunlit point (speck.js) is drawn instead — the moving "star" of the CSM seen from the LM
+//               hundreds of km away — unless we are in its cabin or the vessel-shadow pass needs the meshes
+//               (it is enabled and the CSM is the active vessel or within 3 km of it). The part animations
+//               are skipped while hidden (their state still integrates).
 //   setIVA(on)  own exterior -> LAYERS.GHOST (vessel-shadow pass only) except meshes tagged
 //               userData.ivaVisible (the docking probe and docking ring, seen from the rendezvous window).
 //
@@ -21,6 +26,7 @@ import { PartBuilder } from './geom.js';
 import { createCSMMaterials } from './materials.js';
 import { buildCM, buildProbe } from './cm.js';
 import { buildSM, buildBeacon, buildSPS, buildHGA } from './sm.js';
+import { createSpeck, projectedPx, SPECK_PX } from './speck.js';
 
 const RAD2DEG = 180 / Math.PI;
 const PROBE_RETRACT = 0.35; // m: extended tip -3.55 -> seated in the LM drogue apex at -3.20
@@ -32,6 +38,8 @@ const _earth = new THREE.Vector3(EARTH.distance, 0, 0);
 const _z = new THREE.Vector3(0, 0, 1);
 const _axis = new THREE.Vector3();
 const HGA_LIMIT = (70 * Math.PI) / 180; // max boresight deflection from the boom axis
+const SHADOW_KEEP = 3000; // m: the CSM this close to the active vessel may be in the vessel-shadow box
+const _cm = new THREE.Vector3();
 
 /** Plain-array copy of a CSM.windows entry. */
 function winSpec(w) {
@@ -132,6 +140,29 @@ export function createCSMModel(ctx) {
     o.layers.set(LAYERS.VESSEL);
     if (o.material.userData.noShadow) o.castShadow = false;
   });
+  // ---- distance LOD: bounding sphere (body frame) and the stand-in speck
+  const partGroups = [structure, probe, spsPivot, hgaFixed, hgaYoke, beacon];
+  root.updateMatrixWorld(true);
+  const sph = new THREE.Box3().setFromObject(root).getBoundingSphere(new THREE.Sphere());
+  const speck = createSpeck(ctx, { radius: sph.radius });
+  speck.points.position.copy(sph.center);
+  root.add(speck.points);
+  const lod = { px: Infinity, culled: false, radius: sph.radius };
+  let wasCulled = false;
+
+  /** true when the meshes must be drawn (else the speck); also fills lod.px and _cm (MCI centre). */
+  function resolved(frame, v) {
+    _cm.copy(sph.center).applyQuaternion(v.quat).add(v.pos);
+    const inIVA = frame.viewMode === 'iva' && frame.ivaVessel === 'CSM';
+    const px = ctx.camera && frame.origin ? projectedPx(ctx, sph.radius, _cm.distanceTo(frame.origin)) : Infinity;
+    lod.px = px;
+    if (inIVA || px >= SPECK_PX) return true;
+    const act = frame.active;
+    const isActive = act ? act === v : true;
+    const nearActive = isActive || (act && act.pos && v.pos.distanceTo(act.pos) < SHADOW_KEEP);
+    return !!(ctx.vesselShadow?.enabled && nearActive);
+  }
+
   let iva = false;
   function applyLayers() {
     for (const m of meshes) m.layers.set(iva && !m.userData.ivaVisible ? LAYERS.GHOST : LAYERS.VESSEL);
@@ -170,6 +201,22 @@ export function createCSMModel(ctx) {
     if (firing) nozzleHeat += (1 - nozzleHeat) * (1 - Math.exp(-simDt / 25));
     else nozzleHeat *= Math.exp(-simDt / 60);
     const h = nozzleHeat;
+
+    // distance LOD: below ~1.5 px draw the sunlit speck instead of the ~40 meshes
+    const show = resolved(frame, v);
+    lod.culled = !show;
+    for (const g of partGroups) g.visible = show;
+    speck.points.visible = !show;
+    const ph = clock % 1.0; // rendezvous beacon: xenon flash ~ 1 per second
+    const flash = ph < 0.06;
+    if (!show) {
+      speck.update(frame, _cm, flash);
+      wasCulled = true;
+      return; // part animations skipped while hidden
+    }
+    const snap = wasCulled || (frame.game && frame.game.time && frame.game.time.frame < 2);
+    wasCulled = false;
+
     M.spsOuter.emissiveIntensity = h > 0.01 ? Math.pow(h, 2) * 0.9 : 0;
     M.spsInner.emissiveIntensity = h > 0.01 ? Math.pow(h, 2) * 0.35 : 0;
 
@@ -187,13 +234,12 @@ export function createCSMModel(ctx) {
     }
     // slew at a finite rate (the real antenna drives at a few deg/s)
     hgaAim.lerp(_v, Math.min(1, dt * 1.5)).normalize();
-    if (frame.game && frame.game.time && frame.game.time.frame < 2) hgaAim.copy(_v);
+    if (snap) hgaAim.copy(_v); // no slew on load or when the model re-resolves from a speck
     _q.setFromUnitVectors(_z, hgaAim);
     hgaYoke.quaternion.copy(_q);
 
-    // rendezvous beacon: xenon flash ~ 1 per second (20 ms flash, rendered as a 2-frame pulse)
-    const ph = clock % 1.0;
-    M.lightBeacon.emissiveIntensity = ph < 0.06 ? 60 : 0;
+    // rendezvous beacon: xenon flash ~ 1 per second (20 ms flash, rendered as a few-frame pulse)
+    M.lightBeacon.emissiveIntensity = flash ? 60 : 0;
   }
 
   function stats() {
@@ -210,7 +256,10 @@ export function createCSMModel(ctx) {
     materials: M,
     ready,
     stats,
-    parts: { structure, probe, probeHead, spsPivot, hgaYoke, beacon, pockets },
+    parts: { structure, probe, probeHead, spsPivot, hgaYoke, beacon, pockets, speck: speck.points },
+    /** Distance-LOD state of the last update (debug / tests): projected diameter (px), culled. */
+    lod,
+    speck,
     update,
     setIVA(on) {
       if (on === iva) return;

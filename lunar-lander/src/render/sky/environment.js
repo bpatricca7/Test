@@ -9,7 +9,10 @@
 //   * the lunar ground: Lommel–Seeliger reflectance with the opposition surge (bright down-Sun, dark
 //     toward the Sun), lit only where the Sun is up (terminator/night side from orbit), limb and horizon
 //     at the true dip for the current altitude.
-// Rebuilt when the local vertical moves > 3 deg, the altitude changes by > 15 %, or every 10 s.
+// Rebuilt only when the local vertical moves > 3 deg or the altitude changes by > 15 % (the Sun is fixed
+// in MCI, so nothing else changes). The procedural scene is rendered into a cube target and filtered
+// into ONE persistent PMREM target: scene.environment keeps its identity, so the hundreds of PBR
+// materials never re-validate their programs on a rebuild.
 //
 // Owned by the SKY-FX agent.
 
@@ -101,23 +104,26 @@ export function createEnvironment(ctx) {
   envScene.add(new THREE.Mesh(new THREE.SphereGeometry(10, 96, 48), mat));
   const size = ctx.quality === 'low' ? 64 : 128;
 
+  const cubeRT = new THREE.WebGLCubeRenderTarget(size, { type: THREE.HalfFloatType, generateMipmaps: false, depthBuffer: false });
+  const cubeCam = new THREE.CubeCamera(0.1, 100, cubeRT);
+  envScene.add(cubeCam);
   let rt = null;
   const lastUp = new THREE.Vector3();
   let lastR = 0;
-  let lastTime = -1e9;
   let forced = true;
   const up = new THREE.Vector3();
 
   function rebuild() {
-    const next = pmrem.fromScene(envScene, 0, 0.1, 100, { size });
-    if (rt) rt.dispose();
-    rt = next;
-    scene.environment = rt.texture;
+    cubeCam.update(renderer, envScene);
+    rt = pmrem.fromCubemap(cubeRT.texture, rt); // reuses the same target after the first build
+    if (scene.environment !== rt.texture) scene.environment = rt.texture;
     api.texture = rt.texture;
+    api.rebuilds++;
   }
 
   const api = {
     texture: null,
+    rebuilds: 0,
     force() {
       forced = true;
     },
@@ -129,18 +135,16 @@ export function createEnvironment(ctx) {
       if (!(r > 0)) return;
       up.copy(p).multiplyScalar(1 / r);
       const R = Math.max(1.00001, r / MOON.radius);
-      const now = performance.now() / 1000;
       const moved = lastUp.lengthSq() === 0 || up.dot(lastUp) < Math.cos((3 * Math.PI) / 180);
       const altNow = Math.max(10, r - MOON.radius);
       const altThen = Math.max(10, lastR * MOON.radius - MOON.radius);
       const climbed = Math.abs(Math.log(altNow / altThen)) > 0.15 && Math.abs(altNow - altThen) > 50;
-      if (forced || moved || climbed || now - lastTime > 10) {
+      if (forced || moved || climbed) {
         mat.uniforms.uUp.value.copy(up);
         mat.uniforms.uRadius.value = R;
         mat.uniforms.uSunDir.value.copy(frame.sunDir);
         lastUp.copy(up);
         lastR = R;
-        lastTime = now;
         forced = false;
         rebuild();
       }

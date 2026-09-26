@@ -91,3 +91,48 @@ test('cross-pointer velocities are along body forward (-Z) and right (+X), in ft
   near(r.fwd, 3);
   near(r.lat, -2);
 });
+
+// ------------------------------------------------------------------------------ kit rendering state
+import { createSwitchBank } from '../src/render/cockpit/kit/switches.js';
+import { createBreakerBank } from '../src/render/cockpit/kit/breakers.js';
+import { LIGHTING, registerLamp, setLampLevel, setLampExposure, LAMP_EXPOSURE_REF } from '../src/render/cockpit/kit/materials.js';
+
+test('kit instanced banks carry their own shadow depth materials (plain vs instanceColor)', () => {
+  const bank = createSwitchBank({ switches: [{ x: 0, y: 0 }, { x: 0.02, y: 0, guard: 'red' }, { x: 0.04, y: 0, cover: 'red' }] });
+  const cbs = createBreakerBank({ breakers: [{ x: 0, y: 0 }, { x: 0.02, y: 0, popped: true }] });
+  const meshes = [...bank.object.children, ...cbs.object.children].filter((o) => o.isInstancedMesh && o.castShadow);
+  assert.ok(meshes.length >= 8);
+  const plain = new Set();
+  const colored = new Set();
+  for (const m of meshes) {
+    const d = m.customDepthMaterial;
+    assert.ok(d?.isMeshDepthMaterial, `${m.material.name} has a depth material`);
+    (m.instanceColor ? colored : plain).add(d);
+  }
+  assert.equal(plain.size, 1);
+  assert.equal(colored.size, 1);
+  assert.notEqual([...plain][0], [...colored][0]);
+  // follows instanceColor added later; an explicit assignment still wins
+  const lever = bank.object.children.find((o) => !o.instanceColor);
+  lever.setColorAt(0, new THREE.Color(1, 0, 0));
+  assert.equal(lever.customDepthMaterial, [...colored][0]);
+  const own = new THREE.MeshDepthMaterial();
+  lever.customDepthMaterial = own;
+  assert.equal(lever.customDepthMaterial, own);
+});
+
+test('lamp exposure compensation: nominal at the reference exposure, dimmer in a dark-adapted cabin', () => {
+  const m = registerLamp(new THREE.MeshStandardMaterial(), 1);
+  setLampLevel(m, 1);
+  setLampExposure({ multiplier: LAMP_EXPOSURE_REF, valid: true });
+  near(m.emissiveIntensity, LIGHTING.lamps, 0.02);
+  setLampExposure({ multiplier: 80, valid: true });
+  const exposedDark = m.emissiveIntensity * 80;
+  assert.ok(m.emissiveIntensity < 0.3, 'dimmed in absolute terms');
+  assert.ok(exposedDark > LAMP_EXPOSURE_REF && exposedDark < 25, `still brighter on screen, not burnt out (${exposedDark})`);
+  setLampExposure({ multiplier: 80, valid: false }); // invalid read-back: unchanged
+  assert.ok(m.emissiveIntensity < 0.3);
+  setLampExposure({ multiplier: LAMP_EXPOSURE_REF, valid: true });
+  setLampLevel(m, 0);
+  assert.equal(m.emissiveIntensity, 0);
+});

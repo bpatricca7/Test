@@ -215,6 +215,22 @@ export function windowPocket(f, grow = 0, n = 48) {
 
 // ------------------------------------------------------------------------------ Main Display Console
 /** MDC geometry parameters (see mdcSections). */
+/**
+ * Unified side hatch (inner structure panel) in hatch coordinates: s = arc length across (+X side
+ * positive), z along the cabin axis. The panel spans z0 (aft edge) .. z1 (forward edge), |s| <= halfWidth.
+ * Mechanism positions are shared by the geometry (details.js) and the painted placards (textures.js).
+ */
+export const HATCH = {
+  z0: -0.46,
+  z1: -1.32,
+  halfWidth: 0.38,
+  gearbox: { s: 0, z: -0.74 },
+  handle: { s: 0.05, z: -0.74 },
+  pev: { s: -0.28, z: -1.15 },
+  window: { s: 0, z: -1.005, r: 0.14, aspect: 0.84 }, // where the (slanted) window pocket meets the panel
+  placard: { s: -0.2, z: -0.59 },
+};
+
 export const MDC = {
   tiltDeg: 20, // panels lean back (top toward the apex) to face the crew's eyes
   wingDeg: 26, // wings fold toward the crew (concave console)

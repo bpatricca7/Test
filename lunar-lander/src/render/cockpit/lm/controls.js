@@ -135,6 +135,8 @@ export function buildControllers(mat) {
   const s = new THREE.Vector3();
   return {
     group,
+    /** The moving parts (grip / T-handle pivots), for the cabin's static-merge pass. */
+    pivots: moving.map((m) => m.pivot),
     /**
      * Animate the grips. The active vessel's ctrl moves BOTH stations' controllers (they are wired
      * in parallel; the crewman flying is the one whose hand is on it).

@@ -20,7 +20,22 @@ export const PERSISTED = {
   historicalAlarms: { def: false, ok: (v) => typeof v === 'boolean' },
   filmGrain: { def: true, ok: (v) => typeof v === 'boolean' },
   exposureComp: { def: 0, ok: (v) => Number.isFinite(v) && v >= -2 && v <= 2 },
+  flightTips: { def: true, ok: (v) => typeof v === 'boolean', param: 'tips' },
 };
+
+/**
+ * Boolean URL parameter read straight from the page address (for UI-only parameters such as
+ * ?tips=0 that core's readParams does not know): true / false, or null when absent.
+ */
+export function urlFlag(name, search = typeof location !== 'undefined' ? location.search : '') {
+  try {
+    const q = new URLSearchParams(search);
+    if (!q.has(name)) return null;
+    return !['0', 'false', 'off', 'no'].includes(String(q.get(name)).toLowerCase());
+  } catch {
+    return null;
+  }
+}
 
 /** Safe localStorage handle (null when unavailable). */
 export function getStorage() {

@@ -19,6 +19,33 @@ import { terrainHeight } from '../world/moon.js';
 import { GEAR, buildResult, tiltDeg, radialSpeed, horizSpeed, newTouchdownState, releasePads } from './contact.js';
 import { gravityAt, integrateQuat } from './physics.js';
 import { updateVesselMassProps } from './massprops.js';
+import { fmtSpeed } from './units.js';
+
+/** Impact classification: beyond these the gear/hull detail is irrelevant — it was an impact. */
+export const IMPACT = {
+  SPEED: 10, // m/s total speed
+  SINK: 6.1, // m/s sink rate: twice the 10 ft/s gear design limit
+};
+
+/**
+ * Player-facing crash reason for a contact.js crash record, in the player's units.
+ * High-energy impacts read as impacts (with total and vertical speed); gear failures in the
+ * 1.5-6 m/s band quote the vehicle's sink rate at touchdown, not the local pad-normal speed.
+ */
+export function impactReason(S, v, crash) {
+  const game = S.game;
+  const sink = Math.max(0, -radialSpeed(v), v.phys?.td?.phase !== 'air' ? v.phys?.td?.vSpeed || 0 : 0);
+  const tot = Math.max(v.vel.length(), sink);
+  const hs = horizSpeed(v);
+  if (tot > IMPACT.SPEED || sink > IMPACT.SINK) {
+    if (hs > 2 * sink && hs > IMPACT.SPEED) return `Impact with the surface at ${fmtSpeed(game, tot, 0)} (${fmtSpeed(game, sink, 0)} vertical)`;
+    return `Hit the surface at ${fmtSpeed(game, tot, 1)}${hs > 1 ? ` (${fmtSpeed(game, hs, 1)} across)` : ''}`;
+  }
+  const across = hs > 0.5 ? `, ${fmtSpeed(game, hs, 1)} across` : '';
+  if (crash?.kind === 'gear') return `Landing gear collapsed — ${crash.pad} strut bottomed (touchdown at ${fmtSpeed(game, sink, 1)} down${across})`;
+  if (crash?.kind === 'hull') return `The ${crash.what} struck the surface at ${fmtSpeed(game, crash.speed, 1)}`;
+  return crash?.reason || 'Impact with the surface';
+}
 
 const _a = new THREE.Vector3();
 const _b = new THREE.Vector3();
@@ -133,7 +160,7 @@ export function updateLanding(S, v, h, c) {
   const tilt = tiltDeg(v);
   if (tilt > td.maxTilt) td.maxTilt = tilt;
   if (tilt > GEAR.TIP_DEG) {
-    crashVessel(S, v, 'tipped', `tilt ${tilt.toFixed(0)}° after touchdown at ${td.hSpeed.toFixed(1)} m/s ground speed`, false);
+    crashVessel(S, v, 'tipped', `tilt ${tilt.toFixed(0)}° after touchdown at ${fmtSpeed(game, td.hSpeed, 1)} ground speed`, false);
     return;
   }
   // lift-off (hop or bounce)
@@ -198,8 +225,8 @@ function evaluateLanding(S, v) {
   const res = buildResult(v, game, hard ? 'hard' : 'landed');
   if (hard) {
     const why = [];
-    if (td.vSpeed > lim.maxVSpeed) why.push(`sink rate ${td.vSpeed.toFixed(1)} m/s`);
-    if (td.hSpeed > lim.maxHSpeed) why.push(`ground speed ${td.hSpeed.toFixed(1)} m/s`);
+    if (td.vSpeed > lim.maxVSpeed) why.push(`sink rate ${fmtSpeed(game, td.vSpeed, 1)}`);
+    if (td.hSpeed > lim.maxHSpeed) why.push(`ground speed ${fmtSpeed(game, td.hSpeed, 1)}`);
     if (tilt > lim.maxTiltDeg) why.push(`tilt ${tilt.toFixed(0)}°`);
     if (td.bottomed) why.push('gear strut bottomed');
     if (td.hullHard) why.push(`${td.hullWhat} touched the surface`);
@@ -217,7 +244,7 @@ function evaluateLanding(S, v) {
     score: res.score,
   });
   if (res.outcome === 'landed') {
-    ev.emit('message', { text: `Touchdown — ${res.rating === 'perfect' ? 'perfect landing' : 'good landing'} (${res.vSpeed.toFixed(2)} m/s down, ${res.hSpeed.toFixed(2)} m/s across)`, level: 'good', duration: 6 });
+    ev.emit('message', { text: `Touchdown — ${res.rating === 'perfect' ? 'perfect landing' : 'good landing'} (${fmtSpeed(game, res.vSpeed, 2)} down, ${fmtSpeed(game, res.hSpeed, 2)} across)`, level: 'good', duration: 6 });
     const at = Math.max(game.time.met + 1.0, (td.engineStopMet ?? game.time.met) + 3.0);
     S.schedule(at, () => ev.emit('callout', { text: 'Houston, Tranquility Base here. The Eagle has landed.', voice: true, who: 'CDR' }));
     S.schedule(at + 6.5, () => ev.emit('callout', { text: "Roger, Twan... Tranquility, we copy you on the ground. You got a bunch of guys about to turn blue. We're breathing again. Thanks a lot.", voice: true, who: 'CAPCOM' }));
@@ -323,6 +350,6 @@ export function updateDescentStage(S, ds, h) {
     ds.landed = true;
     ds.crashed = speed > 3;
     ds.impactSpeed = speed;
-    S.ev.emit('message', { text: ds.crashed ? `Descent stage impacted the surface at ${speed.toFixed(0)} m/s` : 'Descent stage came to rest on the surface', level: 'info' });
+    S.ev.emit('message', { text: ds.crashed ? `Descent stage impacted the surface at ${fmtSpeed(S.game, speed, 0)}` : 'Descent stage came to rest on the surface', level: 'info' });
   }
 }

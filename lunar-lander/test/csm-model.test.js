@@ -118,3 +118,80 @@ test('model part builders produce a reasonable triangle budget', () => {
   for (const m of B.build(g)) tris += m.geometry.attributes.position.count / 3;
   assert.ok(tris > 20000 && tris < 150000, `${tris} triangles`);
 });
+
+// ---- distance LOD (the whole model, built in node: the inline-worker import is stubbed by a loader hook)
+test('distance LOD: a sub-pixel CSM is replaced by a sunlit speck (not in its cabin / when shadows need it)', async () => {
+  const { register } = await import('node:module');
+  const hooks = `export async function resolve(spec, context, next) {
+    if (spec.includes('?worker')) return { url: 'data:text/javascript,export default class W {}', shortCircuit: true };
+    return next(spec, context);
+  }`;
+  register('data:text/javascript,' + encodeURIComponent(hooks));
+  const { createCSMModel } = await import('../src/render/models/csm/csmModel.js');
+  const { LAYERS } = await import('../src/core/constants.js');
+  const vesselShadow = { enabled: false };
+  const ctx = {
+    quality: 'low',
+    LAYERS,
+    vesselShadow,
+    camera: { fov: 60 },
+    renderer: { getDrawingBufferSize: (v) => v.set(1920, 1080), getPixelRatio: () => 1 },
+  };
+  const m = createCSMModel(ctx);
+  assert.ok(m.lod.radius > 5 && m.lod.radius < 9, `bounding radius ${m.lod.radius}`);
+  const R = 1737400 + 110000;
+  const v = { pos: new THREE.Vector3(R, 0, 0), quat: new THREE.Quaternion(), mainEngine: { gimbal: { x: 0, y: 0 }, firing: false }, docked: false };
+  const lm = { pos: new THREE.Vector3(1737400, 0, 0) };
+  const sunDir = new THREE.Vector3(1, 0, 0);
+  const frameAt = (dist, extra = {}) => ({ origin: v.pos.clone().add(new THREE.Vector3(0, 0, dist)), dt: 1 / 60, time: 0.5, sunDir, active: lm, viewMode: 'chase', ...extra });
+  const speck = m.parts.speck;
+  const U = speck.material.uniforms;
+  const structure = m.parts.structure;
+
+  // close: resolved model, no speck
+  m.update(frameAt(200), v);
+  assert.equal(m.lod.culled, false);
+  assert.equal(speck.visible, false);
+  assert.equal(structure.visible, true);
+  assert.ok(m.lod.px > 50, `px at 200 m: ${m.lod.px}`);
+
+  // 380 km (the LM hovering near the landing site): meshes hidden, speck shown, star-like brightness
+  m.update(frameAt(381500), v);
+  assert.ok(m.lod.px < 0.1, `px at 381 km: ${m.lod.px}`);
+  assert.equal(m.lod.culled, true);
+  assert.equal(speck.visible, true);
+  for (const g of [structure, m.parts.probe, m.parts.spsPivot, m.parts.hgaYoke, m.parts.beacon]) assert.equal(g.visible, false);
+  assert.equal(speck.layers.mask, 1 << LAYERS.FX, 'speck on the FX layer (not in the shadow passes)');
+  assert.ok(U.uStar.value.x > 0.01, `perceptual brightness ${U.uStar.value.x}`);
+  assert.ok(U.uPhys.value.x < U.uStar.value.x);
+  // apparent magnitude at 90 deg phase: a bright star (about 0 .. +1)
+  assert.ok(m.speck.info.mag > -1.5 && m.speck.info.mag < 1.5, `mag ${m.speck.info.mag}`);
+
+  // continuity at the hand-over distance: the perceptual term is capped at the resolved model's brightness
+  let dHand = 3000;
+  for (; dHand < 30000; dHand += 50) {
+    m.update(frameAt(dHand), v);
+    if (m.lod.culled) break;
+  }
+  assert.ok(dHand > 6000 && dHand < 20000, `hand-over at ${dHand} m`);
+  assert.ok(U.uStar.value.x <= U.uPhys.value.x * 1.15, `speck ${U.uStar.value.x} vs model ${U.uPhys.value.x}`);
+
+  // in the Moon's shadow: dark (the beacon is between flashes)
+  v.pos.set(-R, 0, 0);
+  m.update(frameAt(381500), v);
+  assert.equal(m.lod.culled, true);
+  if (U.uFlash.value.x === 0) assert.equal(U.uPhys.value.x + U.uStar.value.x, 0);
+  v.pos.set(R, 0, 0);
+
+  // own cabin: always resolved (the camera sits inside it)
+  m.update(frameAt(381500, { viewMode: 'iva', ivaVessel: 'CSM', active: v }), v);
+  assert.equal(m.lod.culled, false);
+  // active vessel with the vessel-shadow pass enabled: resolved; a far CSM with shadows on: speck
+  vesselShadow.enabled = true;
+  m.update(frameAt(381500, { active: v }), v);
+  assert.equal(m.lod.culled, false);
+  assert.equal(structure.visible, true);
+  m.update(frameAt(381500), v);
+  assert.equal(m.lod.culled, true);
+  vesselShadow.enabled = false;
+});

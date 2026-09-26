@@ -4,7 +4,7 @@
 //
 // Local frame: panel face = XY plane at z = 0, hardware extends toward +Z. Metres.
 import * as THREE from 'three';
-import { getMaterial, COLORS } from './materials.js';
+import { getMaterial, COLORS, useInstancedShadowDepth } from './materials.js';
 
 const DEG = Math.PI / 180;
 /** Lever throw from centre, per position (Apollo toggles throw ~±20°). */
@@ -191,6 +191,7 @@ export function createSwitchBank(opts = {}) {
     m.castShadow = true;
     m.receiveShadow = true;
     m.frustumCulled = false; // instances span the panel; bounding sphere is of one switch
+    useInstancedShadowDepth(m);
     group.add(m);
   }
   const M = new THREE.Matrix4();

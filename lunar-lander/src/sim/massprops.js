@@ -34,6 +34,16 @@ function ascentStageMass(ascProp, rcsProp, outCg) {
   return m;
 }
 
+/**
+ * Where the fixed APS thrust line crosses the ascent stage (x, z): the engine is installed
+ * canted (1.5 deg) so that the thrust passes near the CG of the ascent stage half-way through
+ * its burn. As the tanks drain the CG walks a few cm either side of this line and the RCS has to
+ * fight the resulting torque all the way to orbit.
+ */
+export function apsThrustLineCg(out = new THREE.Vector3()) {
+  return ascentStageMass(0.5 * LM.ascentPropMax, 0.85 * LM.rcsPropMax, out), out;
+}
+
 function descentStageMass(descProp, outCg) {
   const m = LM.descentDryMass + descProp;
   outCg.copy(LM.cgDescentDry).multiplyScalar(LM.descentDryMass).addScaledVector(LM.cgDescentProp, descProp).divideScalar(m);

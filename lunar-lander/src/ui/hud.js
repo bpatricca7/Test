@@ -21,6 +21,26 @@ const NUM_INTERVAL = 1 / 15; // s between numeric refreshes
 
 const VESSEL_TITLE = { LM: 'Lunar Module', CSM: 'Command / Service Module' };
 
+/** Programs in which "time to bingo" (hover propellant above the 20-s reserve) is meaningful. */
+const DESCENT_PROGRAMS = new Set(['P63', 'P64', 'P65', 'P66', 'P67']);
+
+/** Plain-language meaning of the caution & warning lights (shown next to the lamp name). */
+export const CAUTION_TEXT = {
+  ALT: 'Radar altitude not valid',
+  VEL: 'Radar velocity not valid',
+  'DES QTY': 'Descent propellant low',
+  'ASC QTY': 'Ascent propellant low',
+  RCS: 'RCS propellant low',
+  'RCS TCA': 'RCS thruster failure',
+  'ENG FIRE': 'Engine fire signal',
+  PGNS: 'Guidance computer caution',
+};
+
+/** Bingo applies while the LM's descent stage is flying a descent program below 16 km. */
+export function bingoApplies(v) {
+  return v.type === 'LM' && !v.staged && !v.landed && DESCENT_PROGRAMS.has(v.gnc?.program) && Number.isFinite(v.tel?.bingoSeconds) && v.tel.altitude < 16000;
+}
+
 /** Label + value + unit cell. */
 function cell(label, cls = '') {
   const v = h('span.hv');
@@ -53,8 +73,8 @@ export function createHUD(game) {
   const met = slot(h('span.met.num'));
   const warpEl = h('span.warp');
   const warp = slot(warpEl);
-  const cam = slot(h('div.cam'));
-  const clock = h('div.hp.h-clock', null, h('div.row', null, h('span.hl', null, 'GET'), met.el, warpEl), cam.el);
+  const cam = slot(h('span'));
+  const clock = h('div.hp.h-clock', null, h('div.row', null, h('span.hl', null, 'GET'), met.el, warpEl), h('div.cam', null, cam.el, h('kbd', { title: 'C: next camera' }, 'C')));
 
   // ignition / PRO prompt
   const prT = slot(h('div.pt'));
@@ -181,7 +201,7 @@ export function createHUD(game) {
     const key = list.join('|');
     if (key === lastCautions) return;
     lastCautions = key;
-    cautions.replaceChildren(...list.map((t) => h('div.lamp.caution', null, t)));
+    cautions.replaceChildren(...list.map((t) => h('div.lamp.caution', { title: CAUTION_TEXT[t] || t }, t, CAUTION_TEXT[t] ? h('small', null, CAUTION_TEXT[t]) : null)));
   }
 
   /** "42 s" under a minute, "18:40" above. */
@@ -216,7 +236,12 @@ export function createHUD(game) {
   let mode = null;
 
   // ---------------------------------------------------------------- update
-  function update(frame, visible) {
+  /**
+   * @param {object} frame
+   * @param {boolean} visible
+   * @param {{liftoffHint?: boolean}} [opt] liftoffHint: landed in P68 — prompt PRO for the P12 ascent
+   */
+  function update(frame, visible, opt = {}) {
     setClass(el, 'off', !visible);
     if (!visible) return;
     const v = game.active;
@@ -237,12 +262,14 @@ export function createHUD(game) {
     const pr = dskyPrompt(v.agc);
     const tig = Number.isFinite(g.tig) ? g.tig - tm.met : NaN;
     const showTig = tig > 0 && tig < 900;
-    setClass(prompt, 'hidden', !pr && !showTig);
-    if (pr || showTig) {
-      prT.set(pr ? pr.title : 'Ignition');
+    const lift = !pr && !showTig && !!opt.liftoffHint;
+    setClass(prompt, 'hidden', !pr && !showTig && !lift);
+    setClass(prompt, 'calm', lift);
+    if (pr || showTig || lift) {
+      prT.set(pr ? pr.title : lift ? 'On the surface · P68' : 'Ignition');
       prTig.set(showTig ? `TIG \u2212${fmtClock(tig)}` : '');
       setClass(prTig.el, 'hidden', !showTig);
-      prH.set(pr ? pr.hint : v.type === 'LM' ? 'Guidance will ask for PRO (Space) at 5 s' : '');
+      prH.set(pr ? pr.hint : lift ? 'Space (PRO): load P12 — lift off and return to Columbia' : v.type === 'LM' ? 'Guidance will ask for PRO (Space) at 5 s' : '');
       setClass(prH.el, 'hidden', !prH.el.textContent);
       setClass(prompt, 'flash', !!pr);
       setClass(prompt, 'alarmp', pr?.level === 'alarm');
@@ -274,9 +301,9 @@ export function createHUD(game) {
       sVs.set(`${vsx.v} ${vsx.u}`);
       const hsx = fmtSpeed(t.hSpeed, units);
       sHs.set(`${hsx.v} ${hsx.u}`);
-      const bingo = v.type === 'LM' && !v.staged && Number.isFinite(t.bingoSeconds);
+      const bingo = bingoApplies(v);
       sPropL.set('Prop');
-      sProp.set(`${fmtPct(t.fuelFraction)}${bingo && t.fuelFraction < 0.25 ? ` · BINGO ${t.bingoSeconds > 0 ? fmtDuration(t.bingoSeconds) + ' S' : 'NOW'}` : ''}`);
+      sProp.set(`${fmtPct(t.fuelFraction)}${bingo && t.fuelFraction < 0.25 ? ` · BINGO ${t.bingoSeconds > 0 ? secs(t.bingoSeconds) : 'NOW'}` : ''}`);
       setClass(sProp.el, 'warn', t.fuelFraction < 0.1);
       setClass(sVs.el, 'alarm', low && t.vSpeed < -3);
       return;
@@ -358,7 +385,7 @@ export function createHUD(game) {
     setW(propBar.fill, t.fuelFraction);
     setClass(propV.el, 'warn', t.fuelFraction < 0.1 && t.fuelFraction >= 0.03);
     setClass(propV.el, 'alarm', t.fuelFraction < 0.03);
-    if (v.type === 'LM' && !staged && Number.isFinite(t.bingoSeconds)) {
+    if (bingoApplies(v)) {
       bingoL.set('To bingo');
       bingoV.set(t.bingoSeconds > 0 ? secs(t.bingoSeconds) : 'BINGO');
       setClass(bingoV.el, 'alarm', t.bingoSeconds <= 0);
@@ -431,5 +458,12 @@ export function createHUD(game) {
     if (tgoOn) gTgo.v.set(fmtDuration(g.tgo));
   }
 
-  return { el, update };
+  return {
+    el,
+    update,
+    /** True while the ignition / PRO prompt under the clock is shown (the ticker moves below it). */
+    get promptShown() {
+      return !el.classList.contains('off') && !prompt.classList.contains('hidden');
+    },
+  };
 }

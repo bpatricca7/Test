@@ -149,7 +149,9 @@ export function createMissionsView(scenarios, cb) {
       else {
         select(i);
         // stacked (phone) layout: bring the briefing and its Start button into view
-        if (e.detail > 0 && window.innerWidth <= 720) brief.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // (scroll only the page's own scroll container: scrollIntoView would also scroll the
+        // overflow-hidden UI layer and push the in-flight HUD off-screen)
+        if (e.detail > 0 && window.innerWidth <= 720) revealBrief();
       }
     });
     row.addEventListener('dblclick', () => cb.onStart(s.id));
@@ -176,8 +178,19 @@ export function createMissionsView(scenarios, cb) {
       bTips,
       h('div.touchnote', null, 'Flying needs a keyboard or a gamepad. On a phone or tablet you can browse the missions, but connect a keyboard or controller to fly.'),
     ),
-    h('div.actions', null, start, h('span.kbnote', null, h('kbd', null, 'Enter'), ' to start')),
+    h('div.actions', null, start, h('span.kbnote.kbonly', null, h('kbd', null, 'Enter'), ' to start')),
   );
+
+  function revealBrief() {
+    const box = el;
+    if (!box || box.scrollHeight <= box.clientHeight + 1) return;
+    const top = box.scrollTop + brief.getBoundingClientRect().top - box.getBoundingClientRect().top - 8;
+    try {
+      box.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    } catch {
+      box.scrollTop = Math.max(0, top);
+    }
+  }
 
   function select(i) {
     sel = (i + scenarios.length) % scenarios.length;
@@ -279,6 +292,7 @@ export function createSettingsView(game, cb = {}) {
       h('h3', null, 'Display'),
       row('Units', 'Imperial feet and ft/s, as flown on Apollo — or metric.', seg('units', [['imperial', 'Imperial'], ['metric', 'Metric']])),
       row('Heads-up display', 'Tab toggles it in flight.', onOff('hud', 'Show', 'Hide')),
+      row('Flight tips', 'The key card at the start of each mission and hints at key moments of the landing.', onOff('flightTips', 'Show', 'Hide')),
       row('Film grain & vignette', 'Subtle photographic grain and lens falloff.', onOff('filmGrain')),
       row('Exposure compensation', 'Brighter or darker than the automatic exposure.', range('exposureComp', { min: -2, max: 2, step: 0.1, fmt: (v) => `${v > 0 ? '+' : v < 0 ? '−' : '±'}${Math.abs(v).toFixed(1)} EV` })),
       row('Graphics quality', h('span', null, 'Changing it reloads the page.', qualityNote), seg('quality', [['low', 'Low'], ['medium', 'Medium'], ['high', 'High']], {
@@ -311,7 +325,7 @@ export function createSettingsView(game, cb = {}) {
   );
 
   function resetDefaults() {
-    Object.assign(S, { units: 'imperial', hud: true, audio: true, volume: 0.8, callouts: true, invertPitch: false, mouseSensitivity: 1, historicalAlarms: false, filmGrain: true, exposureComp: 0 });
+    Object.assign(S, { units: 'imperial', hud: true, audio: true, volume: 0.8, callouts: true, invertPitch: false, mouseSensitivity: 1, historicalAlarms: false, filmGrain: true, exposureComp: 0, flightTips: true });
     saveSettings(S);
     cb.onChange?.('*');
     refresh();

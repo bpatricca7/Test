@@ -469,14 +469,45 @@ function legendCanvas(label, wPx, hPx, style, lit, colorName, tone = 'dark') {
 }
 
 /**
+ * Emissive colour of a lit lens. LAMP_COLORS reads as display (sRGB) values — the same way the
+ * annunciator and display canvases use them — so convert to linear here; using them raw as linear
+ * made a lit red lens salmon/orange and a blue one near-white once the tone curve desaturated them.
+ */
+function lampEmissive(colorName) {
+  return (LAMP_COLORS[colorName] || LAMP_COLORS.white).clone().convertSRGBToLinear();
+}
+
+/**
+ * Unlit coloured filter lenses (tone 'light'): the lens is dyed, so with no lamp behind it it reads
+ * as a dark, low-albedo tint of its colour (legend barely readable), clearly different from lit.
+ * Multiplied over the frosted light-grey face (#cfccc4). White lenses stay milky.
+ */
+const UNLIT_LENS = {
+  red: [84, 22, 18],
+  amber: [150, 96, 34],
+  yellow: [150, 132, 44],
+  blue: [44, 74, 138],
+  green: [52, 116, 64],
+  el: [52, 116, 64],
+};
+
+/**
+ * Base emissive intensity of lit 'block' lenses by colour. A dyed lens passes only its own band, so
+ * it is far less luminous than a white one; kept low enough that the tone curve does not wash a lit
+ * red MASTER ALARM out to orange/salmon or a blue LUNAR CONTACT to white at a sunlit-cabin exposure.
+ */
+const BLOCK_LENS_INTENSITY = { red: 0.2, blue: 0.22, green: 0.26, el: 0.26, amber: 0.3, yellow: 0.32, white: 0.8 };
+
+/**
  * Tint the "unlit" lens canvas by lamp colour (so an unlit red lens looks dark red).
  */
-function tintUnlit(c, colorName) {
+function tintUnlit(c, colorName, tone = 'dark') {
   const col = LAMP_COLORS[colorName] || LAMP_COLORS.white;
+  const lens = tone === 'light' ? UNLIT_LENS[colorName] : null;
   const g = c.getContext('2d');
   g.save();
   g.globalCompositeOperation = 'multiply';
-  g.fillStyle = `rgb(${Math.round(90 + col.r * 120)},${Math.round(90 + col.g * 120)},${Math.round(90 + col.b * 120)})`;
+  g.fillStyle = lens ? `rgb(${lens[0]},${lens[1]},${lens[2]})` : `rgb(${Math.round(90 + col.r * 120)},${Math.round(90 + col.g * 120)},${Math.round(90 + col.b * 120)})`;
   g.fillRect(0, 0, c.width, c.height);
   g.restore();
   return c;
@@ -489,7 +520,7 @@ function tintUnlit(c, colorName) {
 export function createLampFace(label, wM, hM, { style = 'block', color = 'white', pxPerM = 6000, intensity, tone = 'dark' } = {}) {
   const wPx = Math.max(32, Math.min(512, Math.round(wM * pxPerM)));
   const hPx = Math.max(32, Math.min(512, Math.round(hM * pxPerM)));
-  const off = tintUnlit(legendCanvas(label, wPx, hPx, style, false, color, tone), color);
+  const off = tintUnlit(legendCanvas(label, wPx, hPx, style, false, color, tone), color, tone);
   const on = legendCanvas(label, wPx, hPx, style, true, color);
   const mapT = new THREE.CanvasTexture(off);
   mapT.colorSpace = THREE.SRGBColorSpace;
@@ -499,11 +530,11 @@ export function createLampFace(label, wM, hM, { style = 'block', color = 'white'
   const material = new THREE.MeshStandardMaterial({
     map: mapT,
     emissiveMap: emT,
-    emissive: (LAMP_COLORS[color] || LAMP_COLORS.white).clone(),
+    emissive: lampEmissive(color),
     roughness: 0.32,
     metalness: 0,
   });
-  registerLamp(material, intensity ?? (style === 'block' ? 0.8 : 1.2));
+  registerLamp(material, intensity ?? (style === 'block' ? BLOCK_LENS_INTENSITY[color] ?? 0.8 : 1.2));
   const setLit = (v) => {
     const k = v === true ? 1 : v === false ? 0 : +v || 0;
     setLampLevel(material, k);
@@ -566,8 +597,8 @@ export function createLamp(opts = {}) {
   );
   bez.castShadow = bez.receiveShadow = true;
   grp.add(bez);
-  const col = LAMP_COLORS[opts.color || 'amber'] || LAMP_COLORS.amber;
-  const mat = new THREE.MeshStandardMaterial({ color: col.clone().multiplyScalar(0.25), emissive: col.clone(), roughness: 0.15 });
+  const col = lampEmissive(LAMP_COLORS[opts.color] ? opts.color : 'amber');
+  const mat = new THREE.MeshStandardMaterial({ color: col.clone().multiplyScalar(0.25), emissive: col, roughness: 0.15 });
   registerLamp(mat);
   const lens = new THREE.Mesh(new THREE.SphereGeometry(r, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2).rotateX(Math.PI / 2).scale(1, 1, 0.55).translate(0, 0, 0.003), mat);
   grp.add(lens);

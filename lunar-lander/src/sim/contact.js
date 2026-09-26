@@ -282,7 +282,8 @@ export function lmContact(v, h, ev) {
           ps.bottomed = true;
           pad.bottomed = true;
           ph.td.bottomed = true;
-          if (-vn > GEAR.BOTTOM_CRASH_SPEED) out.crash = { outcome: 'crashed', reason: `Landing gear collapsed (${pad.id} strut bottomed at ${(-vn).toFixed(1)} m/s)` };
+          // reason text: landing.js impactReason() (units, impact vs gear failure)
+          if (-vn > GEAR.BOTTOM_CRASH_SPEED) out.crash = { outcome: 'crashed', kind: 'gear', pad: pad.id, speed: -vn, reason: `Landing gear collapsed (${pad.id} strut bottomed)` };
         }
       }
       ps.pen = pen;
@@ -330,7 +331,7 @@ export function lmContact(v, h, ev) {
     if (!hp.inContact) {
       hp.inContact = true;
       if (-vn > GEAR.HULL_CRASH_SPEED && !out.crash) {
-        out.crash = { outcome: 'crashed', reason: `The ${hp.desc} struck the surface at ${(-vn).toFixed(1)} m/s` };
+        out.crash = { outcome: 'crashed', kind: 'hull', what: hp.desc, speed: -vn, reason: `The ${hp.desc} struck the surface` };
       }
       if (hp.label === 'nozzle' || hp.label === 'descent') {
         ph.td.hullHard = true;

@@ -77,6 +77,7 @@ export const ACTION_KEYS = {
   Enter: 'MASTER_ALARM_RESET',
   NumpadEnter: 'MASTER_ALARM_RESET',
   KeyC: 'CYCLE_CAMERA',
+  KeyO: 'GLANCE',
   Home: 'RESET_VIEW',
   Comma: 'WARP_DOWN',
   Period: 'WARP_UP',
@@ -155,6 +156,7 @@ export const BINDINGS = [
   // ---- views
   { group: 'Views', keys: ['C'], action: 'Next camera: cockpit → chase → locked → fly-by → ground → target', gamepad: 'Y' },
   { group: 'Views', keys: ['Shift+C'], action: 'Next crew station (cockpit view)' },
+  { group: 'Views', keys: ['O'], action: 'Cockpit glance: window → flight displays → DSKY (Columbia: console → rendezvous window)' },
   { group: 'Views', keys: ['Home'], action: 'Reset the view', gamepad: 'Right stick click' },
   { group: 'Views', keys: ['←', '↑', '→', '↓'], action: 'Look around (outside P64)' },
   { group: 'Views', keys: ['Mouse drag'], action: 'Look around / orbit the camera (double-click resets, middle-click = mouse look)' },

@@ -128,15 +128,18 @@ export function consoleFrame(center, tilt, yaw = 0) {
  */
 export function panelLayout() {
   const P = {};
-  // ---- front console (tilted 15 deg, facing the crew)
-  // panel 1B: inboard, low — FDAI + ALT/ALT RATE tapes directly in front of the CDR
-  P.p1B = { w: 0.37, h: 0.23, frame: consoleFrame(V(-0.245, 4.615, -1.09), 15) };
+  // ---- front console (facing the crew)
+  // panel 1B: inboard, low — FDAI + ALT/ALT RATE tapes directly in front of the CDR. The design eye
+  // stands only ~0.35 m behind the window apex, so the flight displays sit ~60-70 deg below the line
+  // of sight; tilting 1B/2B back 28 deg turns their faces up toward the eye (viewing angle to the face
+  // normal ~45 deg instead of ~58 deg), so the FDAI and tapes read with a downward glance.
+  P.p1B = { w: 0.37, h: 0.23, frame: consoleFrame(V(-0.245, 4.615, -1.09), 28) };
   // panel 1A: outboard, tall — X-pointer, C&W, MASTER ALARM, thrust, event timer, engine switches
   P.p1A = { w: 0.31, h: 0.53, frame: consoleFrame(V(-0.585, 4.762, -1.065), 8, 12) };
-  P.p2B = { w: 0.37, h: 0.23, frame: consoleFrame(V(0.245, 4.615, -1.09), 15) };
+  P.p2B = { w: 0.37, h: 0.23, frame: consoleFrame(V(0.245, 4.615, -1.09), 28) };
   P.p2A = { w: 0.31, h: 0.53, frame: consoleFrame(V(0.585, 4.762, -1.065), 8, -12) };
   // centre strip between panels 1 and 2: ABORT / ABORT STAGE
-  P.abort = { w: 0.12, h: 0.21, frame: consoleFrame(V(0, 4.625, -1.095), 15) };
+  P.abort = { w: 0.12, h: 0.21, frame: consoleFrame(V(0, 4.625, -1.095), 28) };
   // panel 3 halves: sloping shelf below panels 1/2 (tilted 40 deg back = faces up toward the crew)
   P.p3L = { w: 0.56, h: 0.165, frame: consoleFrame(V(-0.44, 4.441, -1.007), 40) };
   P.p3R = { w: 0.56, h: 0.165, frame: consoleFrame(V(0.44, 4.441, -1.007), 40) };

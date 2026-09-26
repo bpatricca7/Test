@@ -7,7 +7,7 @@ import { createGameState } from '../src/core/state.js';
 import { LM, FT, MISSION } from '../src/core/constants.js';
 import { createSim } from '../src/sim/sim.js';
 import { createGNC } from '../src/gnc/gnc.js';
-import { solveTgo, quadraticAccel, DESCENT_TARGETS, dpsThrottle, rodThrottle } from '../src/gnc/guidance.js';
+import { solveTgo, quadraticAccel, DESCENT_TARGETS, dpsThrottle, rodThrottle, LPD_AZIMUTH } from '../src/gnc/guidance.js';
 
 function makeSim(scenario, settings = {}) {
   const game = createGameState({ scenario: null, warp: 1 });
@@ -69,7 +69,11 @@ test('DPS throttle logic: FTP until the command drops below ~60 %, then throttli
   assert.equal(st.throttledDown, true);
   assert.equal(dpsThrottle(st, 0.05), 0.1);
   assert.equal(dpsThrottle(st, 0.64), 0.64);
-  assert.equal(dpsThrottle(st, 0.8), 1, 'command above 65 % -> FTP');
+  assert.equal(dpsThrottle(st, 0.8), 0.65, 'after throttle recovery: saturate at 65 %, no FTP surge');
+  assert.equal(dpsThrottle(st, 0.95), 0.65, 'one high cycle is not enough');
+  assert.equal(dpsThrottle(st, 0.5), 0.5);
+  assert.equal(dpsThrottle(st, 0.95), 0.65);
+  assert.equal(dpsThrottle(st, 0.97), 1, 'sustained demand above 90 % -> FTP');
 });
 
 test('P66 law: hover thrust at the commanded rate, more thrust when sinking too fast', () => {
@@ -89,6 +93,9 @@ test('full automatic descent from PDI: P63 -> P64 -> P66 reaches Low Gate near t
   const pdi = { hg: null, lg: null, thrDown: null };
   let pro = false;
   let lgState = null;
+  const p64 = { maxLpd: 0, maxAzErr: 0, maxThr: 0, n: 0 };
+  let contactMet = null;
+  game.events.on('contact', () => (contactMet ??= game.time.met));
   runUntil(sim, game, 900, () => lm.landed || lm.crashed, () => {
     if (!pro && game.time.met > tig - 4) {
       game.events.emit('action', { name: 'PRO' });
@@ -96,6 +103,15 @@ test('full automatic descent from PDI: P63 -> P64 -> P66 reaches Low Gate near t
     }
     if (pdi.thrDown == null && lm.gnc.throttleState === 'THROTTLE') pdi.thrDown = game.time.met - tig;
     if (pdi.hg == null && lm.gnc.program === 'P64') pdi.hg = game.time.met - tig;
+    if (lm.gnc.program === 'P64' && Number.isFinite(lm.gnc.lpdAngle)) {
+      p64.maxThr = Math.max(p64.maxThr, lm.mainEngine.throttleCmd);
+      if (game.time.met - tig - pdi.hg > 10) {
+        // after the pitch-over the site stays on the CDR's window reticle (scale line at 21 deg)
+        p64.maxLpd = Math.max(p64.maxLpd, lm.gnc.lpdAngle);
+        p64.maxAzErr = Math.max(p64.maxAzErr, Math.abs(lm.gnc.lpdAzimuth - LPD_AZIMUTH));
+        p64.n++;
+      }
+    }
     if (pdi.lg == null && lm.gnc.program === 'P66') {
       pdi.lg = game.time.met - tig;
       lgState = { alt: lm.tel.altitude, range: lm.tel.rangeToSite, vs: lm.tel.vSpeed, hs: lm.tel.hSpeed, prop: lm.propellant.main };
@@ -110,13 +126,19 @@ test('full automatic descent from PDI: P63 -> P64 -> P66 reaches Low Gate near t
   assert.ok(lgState.alt > 90 && lgState.alt < 250, `Low Gate altitude ${lgState.alt.toFixed(0)} m`);
   assert.ok(Math.abs(lgState.range - Math.abs(MISSION.lowGate.downrange)) < 250, `Low Gate range ${lgState.range.toFixed(0)} m`);
   assert.ok(lgState.vs < 0 && lgState.vs > -10 && lgState.hs < 30, `Low Gate velocity ${lgState.vs.toFixed(1)} / ${lgState.hs.toFixed(1)}`);
+  assert.ok(p64.n > 100 && p64.maxLpd < 52, `P64 LPD angle up to ${p64.maxLpd.toFixed(1)} deg (window reticle ends at ~53)`);
+  assert.ok(p64.maxAzErr < 3, `LPD azimuth off the reticle line by up to ${p64.maxAzErr.toFixed(1)} deg`);
+  assert.ok(p64.maxThr < 0.66, `P64 throttle stays in the throttleable range (max ${(p64.maxThr * 100).toFixed(0)} %)`);
   const margin = lgState.prop / LM.descentPropMax;
   assert.ok(margin >= 0.05, `descent propellant at Low Gate ${(margin * 100).toFixed(1)} %`);
   // hands-off P66 lands softly near the target
   assert.equal(lm.landed, true, lm.crashReason || 'landed');
   assert.notEqual(game.result.outcome, 'hard');
   assert.ok(game.result.distanceToTarget < 100, `touchdown ${game.result.distanceToTarget.toFixed(0)} m from the target`);
-  assert.ok(game.result.vSpeed < 1.5, `touchdown sink ${game.result.vSpeed.toFixed(2)} m/s`);
+  // ENGINE STOP about 1 s after the contact light; the LM drops the last metre (~1-2 m/s, as flown)
+  const stop = events.find((e) => e.t === 'message' && /ENGINE STOP pushed/.test(e.p.text));
+  assert.ok(stop && contactMet != null && stop.met - contactMet < 1.6, `engine stop ${(stop?.met - contactMet).toFixed(2)} s after contact light`);
+  assert.ok(game.result.vSpeed < 2.5, `touchdown sink ${game.result.vSpeed.toFixed(2)} m/s`);
   // Buzz Aldrin style callouts were made from the live telemetry
   const calls = events.filter((e) => e.t === 'callout').map((e) => e.p.text);
   assert.ok(calls.some((c) => /feet, (down|coming down|\d)/.test(c)), 'altitude/rate callouts');

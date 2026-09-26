@@ -11,7 +11,7 @@
 //   on its combiner glass; 16-mm data-acquisition camera on its bracket at the right rendezvous window
 import * as THREE from 'three';
 import * as KIT from '../kit/index.js';
-import { TUNNEL, windowFrame, mdcSections, lebFrames, innerRadius, stationEye, COUCH_X } from './layout.js';
+import { TUNNEL, windowFrame, mdcSections, lebFrames, innerRadius, stationEye, COUCH_X, HATCH, CONE_K } from './layout.js';
 import { V, Batch, roundBox, cylBetween, tube, hose, lathe, onFrame, placeOnFrame } from './geom.js';
 import { conePoint, R_HATCH } from './shell.js';
 import { ribbon } from './couches.js';
@@ -113,40 +113,85 @@ export function buildDetails(mat, shellInfo) {
   // ---------------------------------------------------------------- side hatch mechanism
   {
     const H = shellInfo.hatch;
-    const zc = (H.z0 + H.z1) / 2;
+    const L = HATCH;
     const pt = (th, z, off = 0) => conePoint(R_HATCH - off / Math.cos(0.576), th, z);
     const inward = (p) => V(-p.x, -p.y, 0).normalize().multiplyScalar(0.839).add(V(0, 0, 0.545)).normalize();
-    // latch rails along both long edges
-    for (const s of [-1, 1]) {
+    /** Point on the hatch face at (s arc length, z), `off` metres proud of it. */
+    const at = (sArc, z, off = 0) => pt(sArc / (R_HATCH + CONE_K * z), z, off);
+    /** Local basis on the hatch at (s, z): x = +s, y = toward aft (+z), z = into the cabin. */
+    const basis = (sArc, z, off = 0) => {
+      const p = at(sArc, z, off);
+      const n = inward(p);
+      const th = sArc / (R_HATCH + CONE_K * z);
+      const xs = V(Math.cos(th), -Math.sin(th), 0);
+      const ys = V().crossVectors(n, xs).normalize();
+      return new THREE.Matrix4().makeBasis(xs, ys, n).setPosition(p);
+    };
+    const put = (key, g, sArc, z, off) => B.add(key, g, basis(sArc, z, off));
+    /** Latch rod following the curved face (sampled so it never cuts into the cone). */
+    const rod = (pts, r) => B.add('alu', tube(pts, r, { radial: 8 }));
+    // latch rails along both long edges, with the latch housings
+    for (const sgn of [-1, 1]) {
       const pts = [];
       for (let k = 0; k <= 8; k++) {
         const z = H.z0 - 0.04 + ((H.z1 - H.z0 + 0.08) * k) / 8;
-        const th = (s * (H.halfWidth - 0.035)) / (R_HATCH + 0.649 * z);
-        pts.push(pt(th, z, 0.018));
+        pts.push(at(sgn * (H.halfWidth - 0.035), z, 0.018));
       }
-      B.add('alu', tube(pts, 0.009, { radial: 8 }));
-      for (let k = 1; k < 8; k += 2) B.add('structure', roundBox(0.03, 0.03, 0.02, 0.005).translate(pts[k].x, pts[k].y, pts[k].z));
+      rod(pts, 0.009);
+      for (let k = 1; k < 8; k += 2) {
+        const z = H.z0 - 0.04 + ((H.z1 - H.z0 + 0.08) * k) / 8;
+        put('structure', roundBox(0.03, 0.036, 0.024, 0.005), sgn * (H.halfWidth - 0.035), z, 0.016);
+        // latch hook tip reaching over the hatch edge
+        put('alu', roundBox(0.012, 0.02, 0.008, 0.003), sgn * (H.halfWidth - 0.012), z, 0.012);
+      }
     }
-    // gearbox housing below the window, ratchet actuator handle
-    const gb = pt(0, zc + 0.12, 0.03);
-    const n = inward(gb);
-    const gq = new THREE.Quaternion().setFromUnitVectors(V(0, 0, 1), n);
-    B.add('structure', roundBox(0.22, 0.13, 0.06, 0.015).applyQuaternion(gq).translate(gb.x, gb.y, gb.z));
-    const hA = gb.clone().addScaledVector(n, 0.035);
-    const hB = hA.clone().add(V(0.2, 0, 0.04));
-    B.add('alu', cylBetween(hA, hB, 0.011, 0.011, 12));
-    B.add('black', cylBetween(hB.clone().add(V(-0.06, 0, -0.012)), hB.clone().add(V(0.03, 0, 0.006)), 0.015, 0.015, 12));
+    // cross rods along the aft and forward edges, latch housings on them
+    for (const z of [H.z0 - 0.042, H.z1 + 0.042]) {
+      const pts = [];
+      for (let k = 0; k <= 10; k++) pts.push(at(-0.3 + (0.6 * k) / 10, z, 0.018));
+      rod(pts, 0.007);
+      for (const sArc of [-0.2, 0, 0.2]) put('structure', roundBox(0.036, 0.03, 0.022, 0.005), sArc, z, 0.016);
+    }
+    // gearbox: housing, machined cover plate with cap screws, drive socket
+    const G = L.gearbox;
+    put('structure', roundBox(0.26, 0.15, 0.06, 0.016), G.s, G.z, 0.03);
+    put('frame', roundBox(0.22, 0.115, 0.006, 0.01), G.s, G.z, 0.061);
+    for (const [dx, dz] of [[-0.098, -0.046], [0, -0.046], [0.098, -0.046], [-0.098, 0.046], [0, 0.046], [0.098, 0.046]]) {
+      put('alu', new THREE.CylinderGeometry(0.0045, 0.0045, 0.004, 10).rotateX(Math.PI / 2), G.s + dx, G.z + dz, 0.066);
+    }
+    // drive linkage: gearbox -> bell cranks at the rails, and up to the aft cross rod
+    for (const sgn of [-1, 1]) {
+      const pts = [];
+      for (let k = 0; k <= 4; k++) pts.push(at(sgn * (0.13 + (0.19 * k) / 4), G.z + 0.02, 0.03));
+      rod(pts, 0.006);
+      put('structure', roundBox(0.045, 0.05, 0.026, 0.006), sgn * 0.33, G.z + 0.02, 0.028);
+      put('alu', new THREE.CylinderGeometry(0.008, 0.008, 0.034, 12).rotateX(Math.PI / 2), sgn * 0.33, G.z + 0.02, 0.03);
+    }
+    rod([at(-0.06, G.z + 0.075, 0.03), at(-0.06, (G.z + H.z0) / 2, 0.026), at(-0.06, H.z0 - 0.042, 0.02)], 0.006);
+    // ratchet actuator handle on its socket (lever toward +s, black grip), ratchet selector
+    const Hn = L.handle;
+    put('alu', new THREE.CylinderGeometry(0.03, 0.032, 0.022, 24).rotateX(Math.PI / 2), Hn.s, Hn.z, 0.074);
+    put('alu', new THREE.CylinderGeometry(0.016, 0.016, 0.03, 16).rotateX(Math.PI / 2), Hn.s, Hn.z, 0.098);
+    const hA = at(Hn.s, Hn.z, 0.108);
+    const hB = at(Hn.s + 0.2, Hn.z + 0.035, 0.128);
+    B.add('alu', cylBetween(hA, hB, 0.011, 0.01, 12));
+    const hC = at(Hn.s + 0.29, Hn.z + 0.05, 0.136);
+    B.add('black', cylBetween(V().lerpVectors(hA, hB, 0.72), hC, 0.015, 0.015, 14));
+    B.add('black', new THREE.SphereGeometry(0.0155, 12, 8).translate(hC.x, hC.y, hC.z));
+    put('red', roundBox(0.034, 0.01, 0.01, 0.003), Hn.s - 0.03, Hn.z + 0.012, 0.104);
+    // pressure equalisation valve: body, bonnet, red T-handle
+    const P = L.pev;
+    put('structure', new THREE.CylinderGeometry(0.042, 0.044, 0.012, 24).rotateX(Math.PI / 2), P.s, P.z, 0.006);
+    put('alu', new THREE.CylinderGeometry(0.026, 0.03, 0.03, 20).rotateX(Math.PI / 2), P.s, P.z, 0.026);
+    put('alu', new THREE.CylinderGeometry(0.008, 0.008, 0.03, 10).rotateX(Math.PI / 2), P.s, P.z, 0.05);
+    put('red', roundBox(0.075, 0.016, 0.012, 0.005), P.s, P.z, 0.066);
     // counterbalance (gas-powered opening) cylinder along the left edge
     const c0 = pt(-0.2 / (R_HATCH - 0.4), H.z0 - 0.02, 0.05);
     const c1 = pt(-0.22 / (R_HATCH - 0.6), H.z1 + 0.1, 0.05);
     B.add('frame', cylBetween(c0, c1, 0.022, 0.022, 16));
     B.add('gold', cylBetween(V().lerpVectors(c0, c1, 0.1), V().lerpVectors(c0, c1, 0.15), 0.024, 0.024, 16));
-    // placard with the unlatching instructions
-    const pl = KIT.createPlacard({ text: 'HATCH OPERATION\n1. PRESS EQUALIZATION VALVE — OPEN\n2. ACTUATOR HANDLE — UNLATCH (CCW)\n3. PUSH OUTBOARD', width: 0.16, height: 0.05, size: 0.0052, align: 'left' });
-    const pp = pt(0.12 / R_HATCH, zc + 0.26, 0.004);
-    pl.position.copy(pp);
-    pl.quaternion.setFromRotationMatrix(new THREE.Matrix4().lookAt(V(), inward(pp).negate(), V(0, 0, -1)));
-    group.add(pl);
+    B.add('alu', cylBetween(V().lerpVectors(c0, c1, 0.62), c1.clone().lerp(c0, -0.08), 0.009, 0.009, 10));
+    // (operating placard, LATCH / UNLATCH and PEV legends are painted on the hatch face: textures.hatchTexture)
     // side-hatch handholds (either side of the hatch)
     for (const s of [-1, 1]) {
       const th = (s * (H.halfWidth + 0.08)) / 1.2;
