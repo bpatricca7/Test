@@ -1,14 +1,27 @@
-// World generation: the biome registry (game.registry.biomes) plus the core 'meadow' and
-// 'flat' biomes. Biome def:
-//   { name, description, iconBlock, colors: [cssTop, cssBottom],
-//     generate(world, rand, noise), spawn?(world) -> [x, y, z],
-//     sky?: { top, horizon }  (day colors, hex; daynight.js uses them) }
-// generate() writes world.blocks directly (use the helpers below) and should set
-// world.waterLevel and world.outside = { block, surface } for the horizon plane.
+// World generation: the biome registry (game.registry.biomes). Every biome lives in
+// src/world/biomes/<key>.js; this file registers them in New World order and keeps the small
+// helpers other modules import.
+//
+// Biome def:
+//   { key, name, description, iconBlock, colors: [cssTop, cssBottom],
+//     sky: { top, horizon, fog, sunset, nightTop, cloud }   (hex; daynight reads them)
+//     generate(world, rand, noise), spawn(world) -> [x, y, z] }
+// generate() writes world.blocks directly and sets world.waterLevel, world.outside
+// ({ block, surface } horizon ring), world.gemSpots ([[x, y, z] x 20-30 interesting air
+// cells]) and world.gemTotal. Light is computed after generation by the core.
 
-import { smoothstep, lerp, clamp } from '../core/util.js';
+import { WORLD_SIZES, World } from './world.js';
+import { mulberry32 } from '../core/util.js';
+import { Noise } from '../core/noise.js';
+import * as meadow from './biomes/meadow.js';
+import * as candy from './biomes/candy.js';
+import * as beach from './biomes/beach.js';
+import * as snow from './biomes/snow.js';
+import * as fairy from './biomes/fairy.js';
+import * as flat from './biomes/flat.js';
+import * as mix from './biomes/mix.js';
 
-// ---------- helpers for biome authors ----------
+// ---------- helpers for biome authors (kept for other modules) ----------
 
 /** Block id for a key (0 when unknown, so a missing block never breaks generation). */
 export function idOf(world, key) {
@@ -38,7 +51,7 @@ export function fillColumn(world, x, z, top, surfaceId, underId, stoneId) {
 }
 
 /**
- * Grow a tree whose trunk starts at (x, y, z) (the first air voxel above ground).
+ * Grow a simple tree whose trunk starts at (x, y, z) (the first air voxel above ground).
  * opts: { log, leaves, height, radii: [r per canopy layer from bottom], rand }
  */
 export function growTree(world, x, y, z, { log, leaves, height, radii, rand }) {
@@ -53,7 +66,6 @@ export function growTree(world, x, y, z, { log, leaves, height, radii, rand }) {
       for (let dx = -R; dx <= R; dx++) {
         const d2 = dx * dx + dz * dz;
         if (d2 > r * r) continue;
-        // ragged edge: drop some outermost leaves
         if (d2 > (r - 0.8) * (r - 0.8) && rand() < 0.35) continue;
         if (peek(world, x + dx, ly, z + dz) === 0) put(world, x + dx, ly, z + dz, leafId);
       }
@@ -64,147 +76,71 @@ export function growTree(world, x, y, z, { log, leaves, height, radii, rand }) {
 /** A safe standing spot near the world center: [x, y, z] (feet). */
 export function defaultSpawn(world) {
   const cx = Math.floor(world.sx / 2), cz = Math.floor(world.sz / 2);
-  const water = world.registry.idOf('water');
+  const reg = world.registry;
+  const liquid = (id) => reg.byId(id)?.shape === 'liquid';
   for (let r = 0; r < 40; r++) {
     for (let a = 0; a < 8; a++) {
       const x = Math.round(cx + Math.cos((a / 8) * Math.PI * 2) * r);
       const z = Math.round(cz + Math.sin((a / 8) * Math.PI * 2) * r);
       const h = world.heightAt(x, z);
       if (h < 0) continue;
-      if (world.get(x, h + 1, z) === water) continue;
+      if (liquid(world.get(x, h + 1, z))) continue;
       return [x + 0.5, h + 1, z + 0.5];
     }
   }
   return [cx + 0.5, world.heightAt(cx, cz) + 1, cz + 0.5];
 }
 
-// ---------- meadow ----------
-
-function generateMeadow(world, rand, noise) {
-  const { sx, sz } = world;
-  const sea = 20;
-  world.waterLevel = sea;
-  world.outside = { block: 'water', surface: sea + 0.875 };
-  const G = idOf(world, 'grass'), D = idOf(world, 'dirt'), S = idOf(world, 'stone');
-  const SAND = idOf(world, 'sand'), W = idOf(world, 'water');
-  const cx = sx / 2, cz = sz / 2;
-
-  // pond somewhere 18-26 blocks from the middle
-  const pa = rand() * Math.PI * 2;
-  const pd = 18 + rand() * 8;
-  const px = cx + Math.cos(pa) * pd, pz = cz + Math.sin(pa) * pd;
-  const pr = 7 + rand() * 3;
-
-  const heights = new Int16Array(sx * sz);
-  const spawnH = 24 + noise.fbm2(cx / 70, cz / 70, 4) * 3;
-  for (let z = 0; z < sz; z++) {
-    for (let x = 0; x < sx; x++) {
-      const n = noise.fbm2(x / 70, z / 70, 4);
-      const hills = Math.max(0, noise.fbm2(x / 38 + 100, z / 38 - 50, 3));
-      let h = 24 + n * 4 + hills * 9;
-      // flat, safe start area in the middle
-      const ds = Math.hypot(x - cx, z - cz);
-      h = lerp(spawnH, h, smoothstep(5, 14, ds));
-      // pond bowl
-      const dp = Math.hypot(x - px, z - pz) / pr;
-      if (dp < 1.6) h = lerp(Math.min(h, sea - 3 + dp * dp * 3.5), h, smoothstep(1.0, 1.6, dp));
-      // island edge slopes into the ocean
-      const e = Math.min(x, z, sx - 1 - x, sz - 1 - z);
-      h = lerp(sea - 5, h, smoothstep(2, 20, e + noise.n2(x / 20, z / 20) * 4));
-      heights[z * sx + x] = Math.round(clamp(h, 4, world.sy - 12));
-    }
+/** The spawn a biome's generate() chose (world._spawn), if it is still a safe spot. */
+export function biomeSpawn(world) {
+  const s = world._spawn;
+  if (s) {
+    const x = Math.floor(s[0]), y = Math.floor(s[1]), z = Math.floor(s[2]);
+    const solid = world.registry.props ? world.registry.props.solid : null;
+    const below = world.get(x, y - 1, z);
+    const free = (id) => id === 0 || (world.registry.props && world.registry.props.replaceable[id] && !(solid && solid[id]));
+    if (below && (!solid || solid[below]) && free(world.get(x, y, z)) && free(world.get(x, y + 1, z))) return s;
   }
-
-  for (let z = 0; z < sz; z++) {
-    for (let x = 0; x < sx; x++) {
-      const h = heights[z * sx + x];
-      const beach = h <= sea + 1;
-      fillColumn(world, x, z, h, beach ? SAND : G, beach ? SAND : D, S);
-      for (let y = h + 1; y <= sea; y++) put(world, x, y, z, W);
-    }
-  }
-
-  // trees, avoiding the start area, water and each other
-  const taken = new Uint8Array(sx * sz);
-  const tries = Math.floor((sx * sz) / 55);
-  for (let i = 0; i < tries; i++) {
-    const x = 3 + Math.floor(rand() * (sx - 6)), z = 3 + Math.floor(rand() * (sz - 6));
-    const h = heights[z * sx + x];
-    if (h <= sea + 1 || Math.hypot(x - cx, z - cz) < 9) continue;
-    const forest = noise.fbm2(x / 45 + 300, z / 45, 2);
-    if (rand() > 0.12 + Math.max(0, forest) * 0.8) continue;
-    let clear = true;
-    for (let dz = -3; dz <= 3 && clear; dz++) {
-      for (let dx = -3; dx <= 3; dx++) {
-        const k = (z + dz) * sx + (x + dx);
-        if (taken[k]) { clear = false; break; }
-      }
-    }
-    if (!clear) continue;
-    taken[z * sx + x] = 1;
-    const cherry = rand() < 0.35;
-    const height = 4 + Math.floor(rand() * 2);
-    growTree(world, x, h + 1, z, cherry
-      ? { log: 'log_oak', leaves: 'leaves_cherry', height, radii: [2.9, 2.9, 2.2, 1.2], rand }
-      : { log: 'log_oak', leaves: 'leaves_oak', height: height + 1, radii: [2.5, 2.5, 1.9, 1.1], rand });
-  }
-
-  // flowers and tall grass, in drifts
-  const flowers = ['flower_rose', 'flower_daisy', 'flower_tulip'].map((k) => idOf(world, k));
-  const tall = idOf(world, 'grass_tall');
-  for (let z = 1; z < sz - 1; z++) {
-    for (let x = 1; x < sx - 1; x++) {
-      const h = heights[z * sx + x];
-      if (peek(world, x, h, z) !== G || peek(world, x, h + 1, z) !== 0) continue;
-      const field = noise.fbm2(x / 16 + 40, z / 16 + 40, 2);
-      const r = rand();
-      if (r < (field > 0.25 ? 0.22 : 0.025)) {
-        const kind = Math.floor(((noise.n2(x / 9, z / 9) + 1) / 2) * flowers.length) % flowers.length;
-        put(world, x, h + 1, z, rand() < 0.8 ? flowers[kind] : flowers[Math.floor(rand() * flowers.length)]);
-      } else if (r < 0.12) {
-        put(world, x, h + 1, z, tall);
-      }
-    }
-  }
+  return defaultSpawn(world);
 }
 
-// ---------- flat ----------
+// ---------- registry ----------
 
-function generateFlat(world, rand) {
-  const { sx, sz } = world;
-  const ground = 16;
-  world.waterLevel = 0;
-  world.outside = { block: 'grass', surface: ground + 1 };
-  const G = idOf(world, 'grass'), D = idOf(world, 'dirt'), S = idOf(world, 'stone');
-  const flowers = ['flower_rose', 'flower_daisy', 'flower_tulip'].map((k) => idOf(world, k));
-  for (let z = 0; z < sz; z++) {
-    for (let x = 0; x < sx; x++) {
-      fillColumn(world, x, z, ground, G, D, S);
-      if (rand() < 0.012) put(world, x, ground + 1, z, flowers[Math.floor(rand() * flowers.length)]);
-    }
-  }
-}
+const ORDER = [meadow, candy, beach, snow, fairy, flat, mix];
 
 export function install(game) {
   const biomes = game.registry.biomes;
-  biomes.set('meadow', {
-    key: 'meadow',
-    name: 'Flower Meadow',
-    description: 'Hills, flowers, cherry trees and a pond',
-    iconBlock: 'grass',
-    colors: ['#BDF5C6', '#8EDB7E'],
-    sky: { top: '#5FB8FF', horizon: '#CDEFFF' },
-    generate: generateMeadow,
-    spawn: defaultSpawn,
-  });
-  biomes.set('flat', {
-    key: 'flat',
-    name: 'Builder Flat',
-    description: 'Perfectly flat grass for building towns',
-    iconBlock: 'planks_pink',
-    colors: ['#FFE3F0', '#B6EC8C'],
-    sky: { top: '#6CC6FF', horizon: '#DDF3FF' },
-    generate: generateFlat,
-    spawn: defaultSpawn,
-  });
+  for (const m of ORDER) {
+    biomes.set(m.biome.key, { ...m.biome, spawn: biomeSpawn });
+  }
+
+  /** Test helpers: generate a world off-screen and time it (used by tools/probe-blocks.mjs). */
+  game.worldgen = {
+    generate(biome = 'meadow', size = 'cozy', seed = 1) {
+      const def = biomes.get(biome);
+      const world = new World(WORLD_SIZES[size] || WORLD_SIZES.cozy, game.registry.blocks);
+      world.meta = { id: 'bench', name: 'Bench', biome, seed, createdAt: 0 };
+      def.generate(world, mulberry32(seed), new Noise(seed));
+      return world;
+    },
+    benchmark(biome = 'meadow', size = 'big', seed = 1) {
+      const t0 = performance.now();
+      const world = this.generate(biome, size, seed);
+      const t1 = performance.now();
+      world.computeAllLight();
+      const t2 = performance.now();
+      let hash = 2166136261;
+      const b = world.blocks;
+      for (let i = 0; i < b.length; i += 7) hash = Math.imul(hash ^ b[i], 16777619);
+      return {
+        biome, size, seed,
+        genMs: Math.round(t1 - t0), lightMs: Math.round(t2 - t1),
+        gems: world.gemSpots ? world.gemSpots.length : 0,
+        gemSpots: world.gemSpots || [],
+        spawn: biomeSpawn(world),
+        hash: hash >>> 0,
+        waterLevel: world.waterLevel, outside: world.outside,
+      };
+    },
+  };
 }
