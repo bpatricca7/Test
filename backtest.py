@@ -32,7 +32,7 @@ from decimal import Decimal
 import requests
 
 from arbitrage_scanner import (BASE_URL, DEFAULT_TAKER_FEE_RATE, KNOWN_FEE_TYPES, parse_time,
-                               price_cents, taker_fee_cents, to_decimal)
+                               taker_fee_cents, to_decimal)
 
 
 DATA_DIR = "data"
@@ -186,6 +186,29 @@ def historical_markets_by_day(client: RateLimitedClient, start: datetime, end: d
     return {day: sample_per_series(ms) for day, ms in by_day.items()}
 
 
+def candle_cents(quote: dict):
+    """A candle's closing bid or ask in cents. Batch responses use "close_dollars";
+    the historical endpoint uses "close", also in dollars."""
+    value = to_decimal(quote.get("close_dollars"))
+    if value is None:
+        value = to_decimal(quote.get("close"))
+    return float(value * 100) if value is not None else None
+
+
+def candle_points(candlesticks: list) -> list:
+    return [[c["end_period_ts"], candle_cents(c.get("yes_bid") or {}),
+             candle_cents(c.get("yes_ask") or {})] for c in candlesticks or []]
+
+
+def historical_candles(client: RateLimitedClient, market: dict) -> list:
+    """One market's hourly candles from the historical endpoint, which covers
+    older markets the batch endpoint no longer returns."""
+    data = client.get(f"/historical/markets/{market['ticker']}/candlesticks", {
+        "start_ts": market["close_ts"] - LOOKBACK_HOURS * 3600, "end_ts": market["close_ts"],
+        "period_interval": 60})
+    return candle_points(data.get("candlesticks"))
+
+
 def candles_for(client: RateLimitedClient, markets: list) -> dict:
     """Hourly (end_ts, yes_bid, yes_ask) in cents for each market's final hours."""
     out = {}
@@ -198,14 +221,7 @@ def candles_for(client: RateLimitedClient, markets: list) -> dict:
             "start_ts": start, "end_ts": end, "period_interval": 60,
             "include_latest_before_start": "true"})
         for entry in data.get("markets") or []:
-            points = []
-            for c in entry.get("candlesticks") or []:
-                bid = price_cents(c.get("yes_bid") or {}, "close")
-                ask = price_cents(c.get("yes_ask") or {}, "close")
-                points.append([c["end_period_ts"],
-                               float(bid) if bid is not None else None,
-                               float(ask) if ask is not None else None])
-            out[entry["market_ticker"]] = points
+            out[entry["market_ticker"]] = candle_points(entry.get("candlesticks"))
     return out
 
 
@@ -222,16 +238,36 @@ def close_time_batches(markets: list, size: int = 100, max_spread_hours: int = 2
     return batches + ([batch] if batch else [])
 
 
+def repair_day(client: RateLimitedClient, path: str) -> str:
+    """Fill in candles the batch endpoint did not return, from the historical endpoint."""
+    with open(path) as f:
+        markets = [json.loads(line) for line in f]
+    missing = [m for m in markets if not m.get("candles")]
+    for m in missing:
+        m["candles"] = historical_candles(client, m)
+    if missing:
+        tmp = path + ".tmp"
+        with open(tmp, "w") as f:
+            for m in markets:
+                f.write(json.dumps(m) + "\n")
+        os.replace(tmp, path)
+    return f"{os.path.basename(path)} repaired {len(missing)} markets"
+
+
 def collect_day(client: RateLimitedClient, day: datetime, data_dir: str = DATA_DIR,
-                markets: list = None) -> str:
+                markets: list = None, historical: bool = False, repair: bool = False) -> str:
     path = os.path.join(data_dir, "days", f"{day:%Y-%m-%d}.jsonl")
     if os.path.exists(path):
-        return f"{day:%Y-%m-%d} cached"
+        return repair_day(client, path) if repair else f"{day:%Y-%m-%d} cached"
     if markets is None:
         markets = settled_markets_for_day(client, day)
     candles = {}
     for batch in close_time_batches(markets):
         candles.update(candles_for(client, batch))
+    if historical:
+        for m in markets:
+            if not candles.get(m["ticker"]):
+                candles[m["ticker"]] = historical_candles(client, m)
     tmp = path + ".tmp"
     with open(tmp, "w") as f:
         for m in markets:
@@ -281,7 +317,7 @@ def cmd_collect(args) -> int:
     end = datetime.strptime(args.end, "%Y-%m-%d").replace(tzinfo=timezone.utc)
     days = [start + timedelta(days=i) for i in range((end - start).days)]
     listed = {}
-    if args.historical:
+    if args.historical and not args.repair:
         series = None
         if args.categories:
             known = json.load(open(os.path.join(DATA_DIR, "series.json")))
@@ -292,7 +328,7 @@ def cmd_collect(args) -> int:
 
     def collect(day):
         markets = listed.get(f"{day:%Y-%m-%d}", []) if args.historical else None
-        return collect_day(client, day, args.data_dir, markets)
+        return collect_day(client, day, args.data_dir, markets, args.historical, args.repair)
 
     with ThreadPoolExecutor(max_workers=args.workers) as pool:
         for line in pool.map(collect, days):
@@ -645,6 +681,8 @@ def main(argv=None) -> int:
     c.add_argument("--workers", type=int, default=4)
     c.add_argument("--historical", action="store_true",
                    help="use Kalshi's historical endpoints (markets settled before its cutoff)")
+    c.add_argument("--repair", action="store_true",
+                   help="with --historical: fill in missing candles in already-collected days")
     c.add_argument("--categories", nargs="+",
                    help="with --historical: only series in these categories (from data/series.json)")
     e = sub.add_parser("evaluate", help="test rules on the collected data")

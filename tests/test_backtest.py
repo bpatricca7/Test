@@ -176,6 +176,17 @@ class EvaluateTests(unittest.TestCase):
         self.assertIsNone(bt.price_bin(0.5))
 
 
+class CandleFormatTests(unittest.TestCase):
+    def test_batch_and_historical_formats_both_parse_to_cents(self):
+        batch = {"end_period_ts": 1, "yes_bid": {"close_dollars": "0.4100"},
+                 "yes_ask": {"close_dollars": "0.4300"}}
+        historical = {"end_period_ts": 2, "yes_bid": {"close": "0.4100"},
+                      "yes_ask": {"close": "0.4300"}}
+        empty = {"end_period_ts": 3, "yes_bid": {}, "yes_ask": {"close": None}}
+        self.assertEqual(bt.candle_points([batch, historical, empty]),
+                         [[1, 41.0, 43.0], [2, 41.0, 43.0], [3, None, None]])
+
+
 class BatchTests(unittest.TestCase):
     def test_batches_respect_size_and_close_time_spread(self):
         markets = [{"close_ts": i * 3600} for i in range(0, 30)] + \
