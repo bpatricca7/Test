@@ -1,5 +1,7 @@
 # Robinhood/Kalshi Prediction Markets: Undervalued Predictions Analysis
 
+> **Superseded (September 2026):** the YES-on-longshot picks below are the side that Kalshi's trade data shows losing money on average (contracts under 10¢ lost over 60%). Kept as a record only. See the README correction and MONEY_TODAY.md.
+
 **Analysis Date:** December 28, 2025
 **Data Sources:** Kalshi (powers Robinhood prediction markets), Polymarket, Web research
 
