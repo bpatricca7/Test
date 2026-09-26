@@ -1,119 +1,123 @@
-markets with daily candles: 40344; closed early (before scheduled expiration): 23982 (59.4%)
-observations: 27335 (markets 24214), categories: {'Sports': 21659, 'Financials': 1516, 'Economics': 1120, 'Entertainment': 1041, 'Crypto': 689, 'Politics': 396, 'Science and Technology': 334, 'Commodities': 220, 'Climate and Weather': 167, 'Elections': 124, 'Mentions': 69}
+markets with daily candles: 45663; closed early (before scheduled expiration): 27981 (61.3%)
+observations: 30666 (markets 26533), categories: {'Sports': 21659, 'Economics': 2131, 'Financials': 1921, 'Entertainment': 1832, 'Politics': 886, 'Crypto': 689, 'Science and Technology': 515, 'Commodities': 387, 'Elections': 261, 'Climate and Weather': 245, 'Mentions': 140}
 
-=== horizon: 1 day(s) before close (n=22344) — calibration of mid, fee-adjusted EV (cents/contract) of buying YES at ask / NO at 1-bid ===
+=== horizon: 1 day(s) before close (n=23863) — calibration of mid, fee-adjusted EV (cents/contract) of buying YES at ask / NO at 1-bid ===
                   n    mid  realised  spread_c  ev_yes_c  ev_no_c
 bucket                                                           
-(0.0, 0.05]  4054.0  0.021     0.026     2.861    -1.094   -2.047
-(0.05, 0.1]  2282.0  0.075     0.077     5.322    -3.095   -3.192
-(0.1, 0.2]   2956.0  0.152     0.160     4.452    -2.439   -3.807
-(0.2, 0.3]   3112.0  0.250     0.258     4.081    -2.651   -4.048
-(0.3, 0.4]   2229.0  0.350     0.355     4.225    -3.287   -4.114
-(0.4, 0.5]   2427.0  0.453     0.460     4.361    -3.198   -4.619
-(0.5, 0.6]   2100.0  0.549     0.552     4.033    -3.452   -4.038
-(0.6, 0.7]   1172.0  0.648     0.655     4.012    -2.848   -4.348
-(0.7, 0.8]    849.0  0.749     0.773     4.031    -0.914   -5.737
-(0.8, 0.9]    528.0  0.853     0.845     4.257    -3.685   -2.318
-(0.9, 0.95]   419.0  0.929     0.928     4.093    -2.463   -2.548
-(0.95, 1.0]   216.0  0.969     0.986     2.406     0.421   -3.257
+(0.0, 0.05]  4908.0  0.020     0.023     2.741    -1.281   -1.727
+(0.05, 0.1]  2388.0  0.075     0.076     5.322    -3.222   -3.064
+(0.1, 0.2]   3061.0  0.152     0.158     4.441    -2.610   -3.621
+(0.2, 0.3]   3173.0  0.250     0.258     4.067    -2.630   -4.055
+(0.3, 0.4]   2266.0  0.350     0.356     4.235    -3.223   -4.189
+(0.4, 0.5]   2474.0  0.453     0.463     4.376    -2.917   -4.915
+(0.5, 0.6]   2141.0  0.549     0.554     4.047    -3.229   -4.273
+(0.6, 0.7]   1211.0  0.648     0.659     4.029    -2.488   -4.726
+(0.7, 0.8]    883.0  0.749     0.777     4.009    -0.482   -6.148
+(0.8, 0.9]    579.0  0.853     0.846     4.220    -3.548   -2.415
+(0.9, 0.95]   481.0  0.930     0.927     4.083    -2.619   -2.377
+(0.95, 1.0]   298.0  0.969     0.966     2.349    -1.520   -1.258
 
 --- by category, buy the FAVOURITE (whichever side is priced >= 0.80) at 1d ---
 1d favourites >=0.80, Sports                               n=  9032  ROI= -3.50%  95%CI=[ -4.11%, -2.86%]  t=-10.83  p=0.0000  per-day ROI -3.496%
-1d favourites >=0.80, Entertainment                        n=   548  ROI= +0.17%  95%CI=[ -0.96%, +1.06%]  t=+0.34  p=0.7350  per-day ROI +0.171%
-1d favourites >=0.80, Financials                           n=   526  ROI= -2.32%  95%CI=[ -4.27%, -0.50%]  t=-2.47  p=0.0137  per-day ROI -2.324%
-1d favourites >=0.80, Crypto                               n=   458  ROI= -2.26%  95%CI=[ -4.27%, -0.52%]  t=-2.34  p=0.0196  per-day ROI -2.255%
-1d favourites >=0.80, Economics                            n=   309  ROI= +0.36%  95%CI=[ -1.37%, +1.84%]  t=+0.43  p=0.6658  per-day ROI +0.356%
-1d favourites >=0.80, Science and Technology               n=   159  ROI= +0.26%  95%CI=[ -1.98%, +1.94%]  t=+0.25  p=0.8015  per-day ROI +0.257%
-1d favourites >=0.80, Politics                             n=   158  ROI= -2.08%  95%CI=[ -6.03%, +1.28%]  t=-1.10  p=0.2714  per-day ROI -2.076%
-1d favourites >=0.80, Commodities                          n=   130  ROI= +1.59%  95%CI=[ -0.89%, +3.43%]  t=+1.45  p=0.1492  per-day ROI +1.594%
-1d favourites >=0.80, Climate and Weather                  n=    66  ROI= +0.42%  95%CI=[ +0.14%, +0.78%]  t=+2.55  p=0.0133  per-day ROI +0.424%
-1d favourites >=0.80, ALL                                  n= 11410  ROI= -2.95%  95%CI=[ -3.47%, -2.41%]  t=-11.06  p=0.0000  per-day ROI -2.946%
+1d favourites >=0.80, Entertainment                        n=   944  ROI= +0.09%  95%CI=[ -0.71%, +0.77%]  t=+0.24  p=0.8127  per-day ROI +0.088%
+1d favourites >=0.80, Financials                           n=   617  ROI= -3.04%  95%CI=[ -4.82%, -1.32%]  t=-3.27  p=0.0011  per-day ROI -3.042%
+1d favourites >=0.80, Economics                            n=   600  ROI= +0.02%  95%CI=[ -1.38%, +1.26%]  t=+0.03  p=0.9762  per-day ROI +0.020%
+1d favourites >=0.80, Crypto                               n=   458  ROI= -2.26%  95%CI=[ -4.20%, -0.48%]  t=-2.34  p=0.0196  per-day ROI -2.255%
+1d favourites >=0.80, Politics                             n=   387  ROI= -1.32%  95%CI=[ -3.50%, +0.66%]  t=-1.22  p=0.2240  per-day ROI -1.318%
+1d favourites >=0.80, Science and Technology               n=   258  ROI= +1.03%  95%CI=[ -0.44%, +2.16%]  t=+1.58  p=0.1147  per-day ROI +1.030%
+1d favourites >=0.80, Commodities                          n=   234  ROI= +0.95%  95%CI=[ -1.29%, +2.91%]  t=+0.88  p=0.3824  per-day ROI +0.946%
+1d favourites >=0.80, Climate and Weather                  n=    98  ROI= +0.39%  95%CI=[ +0.19%, +0.64%]  t=+3.26  p=0.0015  per-day ROI +0.390%
+1d favourites >=0.80, Mentions                             n=    33  ROI= -0.37%  95%CI=[ -7.03%, +3.57%]  t=-0.12  p=0.9062  per-day ROI -0.369%
+1d favourites >=0.80, ALL                                  n= 12689  ROI= -2.70%  95%CI=[ -3.20%, -2.23%]  t=-11.05  p=0.0000  per-day ROI -2.703%
 --- by category, buy the LONGSHOT (side priced <= 0.20) at 1d ---
-1d longshots <=0.20, Sports                                n=  7498  ROI= -1.85%  95%CI=[ -2.48%, -1.22%]  t=-5.74  p=0.0000
-1d longshots <=0.20, Entertainment                         n=   536  ROI= -2.64%  95%CI=[ -3.53%, -1.64%]  t=-5.37  p=0.0000
-1d longshots <=0.20, Financials                            n=   498  ROI= -2.90%  95%CI=[ -4.56%, -1.14%]  t=-3.29  p=0.0011
-1d longshots <=0.20, Crypto                                n=   447  ROI= -1.57%  95%CI=[ -3.35%, +0.39%]  t=-1.64  p=0.1012
-1d longshots <=0.20, Economics                             n=   298  ROI= -4.06%  95%CI=[ -5.55%, -2.38%]  t=-4.94  p=0.0000
-1d longshots <=0.20, Politics                              n=   152  ROI= -1.38%  95%CI=[ -4.86%, +2.50%]  t=-0.73  p=0.4656
-1d longshots <=0.20, Science and Technology                n=   150  ROI= -3.82%  95%CI=[ -5.26%, -1.94%]  t=-4.45  p=0.0000
-1d longshots <=0.20, Commodities                           n=   126  ROI= -4.36%  95%CI=[ -6.22%, -1.88%]  t=-3.85  p=0.0002
-1d longshots <=0.20, Climate and Weather                   n=    66  ROI= -3.25%  95%CI=[ -4.12%, -2.51%]  t=-7.76  p=0.0000
-1d longshots <=0.20, ALL                                   n=  9794  ROI= -2.07%  95%CI=[ -2.58%, -1.54%]  t=-7.97  p=0.0000
+1d longshots <=0.20, Sports                                n=  7498  ROI= -1.85%  95%CI=[ -2.48%, -1.21%]  t=-5.74  p=0.0000
+1d longshots <=0.20, Entertainment                         n=   930  ROI= -2.54%  95%CI=[ -3.24%, -1.80%]  t=-6.87  p=0.0000
+1d longshots <=0.20, Financials                            n=   586  ROI= -2.14%  95%CI=[ -3.82%, -0.29%]  t=-2.41  p=0.0162
+1d longshots <=0.20, Economics                             n=   574  ROI= -3.47%  95%CI=[ -4.74%, -2.11%]  t=-5.11  p=0.0000
+1d longshots <=0.20, Crypto                                n=   447  ROI= -1.57%  95%CI=[ -3.35%, +0.33%]  t=-1.64  p=0.1012
+1d longshots <=0.20, Politics                              n=   374  ROI= -1.44%  95%CI=[ -3.53%, +0.76%]  t=-1.31  p=0.1896
+1d longshots <=0.20, Science and Technology                n=   246  ROI= -4.56%  95%CI=[ -5.51%, -3.29%]  t=-8.21  p=0.0000
+1d longshots <=0.20, Commodities                           n=   225  ROI= -3.89%  95%CI=[ -5.81%, -1.79%]  t=-3.70  p=0.0003
+1d longshots <=0.20, Climate and Weather                   n=    98  ROI= -2.96%  95%CI=[ -3.56%, -2.40%]  t=-9.72  p=0.0000
+1d longshots <=0.20, Mentions                              n=    33  ROI= -1.23%  95%CI=[ -5.32%, +5.69%]  t=-0.39  p=0.6969
+1d longshots <=0.20, ALL                                   n= 11038  ROI= -2.10%  95%CI=[ -2.58%, -1.64%]  t=-8.88  p=0.0000
 
-=== horizon: 7 day(s) before close (n=2949) — calibration of mid, fee-adjusted EV (cents/contract) of buying YES at ask / NO at 1-bid ===
+=== horizon: 7 day(s) before close (n=3833) — calibration of mid, fee-adjusted EV (cents/contract) of buying YES at ask / NO at 1-bid ===
                   n    mid  realised  spread_c  ev_yes_c  ev_no_c
 bucket                                                           
-(0.0, 0.05]  1222.0  0.016     0.010     2.457    -2.089   -0.592
-(0.05, 0.1]   288.0  0.074     0.031     5.795    -7.851    1.103
-(0.1, 0.2]    292.0  0.147     0.151     5.799    -3.525   -4.008
-(0.2, 0.3]    275.0  0.253     0.244     4.606    -4.591   -2.647
-(0.3, 0.4]    156.0  0.344     0.288     5.138    -9.788    1.501
-(0.4, 0.5]    149.0  0.454     0.430     4.295    -6.332   -1.421
-(0.5, 0.6]    127.0  0.552     0.591     5.472    -0.554   -8.364
-(0.6, 0.7]     97.0  0.650     0.619     5.536    -7.485   -1.218
-(0.7, 0.8]     90.0  0.755     0.733     4.800    -5.782   -1.596
-(0.8, 0.9]     89.0  0.855     0.910     5.618     1.990   -9.325
-(0.9, 0.95]    83.0  0.930     0.964     5.607     0.318   -6.829
-(0.95, 1.0]    81.0  0.971     0.975     2.665    -0.986   -2.078
+(0.0, 0.05]  1624.0  0.017     0.010     2.459    -2.103   -0.582
+(0.05, 0.1]   367.0  0.074     0.035     5.853    -7.409    0.610
+(0.1, 0.2]    390.0  0.146     0.164     5.654    -2.039   -5.345
+(0.2, 0.3]    314.0  0.253     0.248     4.709    -4.183   -3.158
+(0.3, 0.4]    197.0  0.345     0.294     5.038    -9.228    1.037
+(0.4, 0.5]    179.0  0.454     0.441     4.469    -5.195   -2.731
+(0.5, 0.6]    147.0  0.551     0.599     5.408     0.309   -9.164
+(0.6, 0.7]    125.0  0.650     0.640     5.512    -5.273   -3.410
+(0.7, 0.8]    114.0  0.754     0.746     4.974    -4.571   -2.984
+(0.8, 0.9]    128.0  0.857     0.875     5.484    -1.663   -5.518
+(0.9, 0.95]   121.0  0.930     0.942     5.434    -1.762   -4.577
+(0.95, 1.0]   127.0  0.970     0.976     2.779    -0.823   -2.370
 
 --- by category, buy the FAVOURITE (whichever side is priced >= 0.80) at 7d ---
-7d favourites >=0.80, Sports                               n=   997  ROI= -2.72%  95%CI=[ -4.29%, -1.22%]  t=-3.51  p=0.0005  per-day ROI -0.388%
-7d favourites >=0.80, Economics                            n=   230  ROI= -1.33%  95%CI=[ -3.97%, +0.84%]  t=-1.09  p=0.2765  per-day ROI -0.190%
-7d favourites >=0.80, Entertainment                        n=   216  ROI= +0.17%  95%CI=[ -2.42%, +2.41%]  t=+0.14  p=0.8881  per-day ROI +0.025%
-7d favourites >=0.80, Financials                           n=   209  ROI= +1.43%  95%CI=[ -0.25%, +2.83%]  t=+1.76  p=0.0803  per-day ROI +0.205%
-7d favourites >=0.80, Crypto                               n=   179  ROI= +1.61%  95%CI=[ +0.36%, +2.55%]  t=+2.91  p=0.0041  per-day ROI +0.230%
-7d favourites >=0.80, Politics                             n=   100  ROI= -4.34%  95%CI=[-10.31%, +0.97%]  t=-1.50  p=0.1374  per-day ROI -0.620%
-7d favourites >=0.80, Science and Technology               n=    89  ROI= +2.53%  95%CI=[ +1.65%, +3.62%]  t=+5.04  p=0.0000  per-day ROI +0.361%
-7d favourites >=0.80, Commodities                          n=    51  ROI= +5.53%  95%CI=[ +4.13%, +6.96%]  t=+7.51  p=0.0000  per-day ROI +0.790%
-7d favourites >=0.80, Elections                            n=    46  ROI= +2.52%  95%CI=[ +1.49%, +3.71%]  t=+4.34  p=0.0001  per-day ROI +0.360%
-7d favourites >=0.80, Climate and Weather                  n=    33  ROI= -4.19%  95%CI=[-13.23%, +2.07%]  t=-1.03  p=0.3120  per-day ROI -0.599%
-7d favourites >=0.80, ALL                                  n=  2154  ROI= -1.07%  95%CI=[ -1.96%, -0.23%]  t=-2.43  p=0.0150  per-day ROI -0.153%
+7d favourites >=0.80, Sports                               n=   997  ROI= -2.72%  95%CI=[ -4.28%, -1.29%]  t=-3.51  p=0.0005  per-day ROI -0.388%
+7d favourites >=0.80, Economics                            n=   449  ROI= -2.48%  95%CI=[ -4.54%, -0.60%]  t=-2.44  p=0.0151  per-day ROI -0.354%
+7d favourites >=0.80, Entertainment                        n=   409  ROI= -1.37%  95%CI=[ -3.44%, +0.60%]  t=-1.33  p=0.1827  per-day ROI -0.196%
+7d favourites >=0.80, Financials                           n=   250  ROI= +1.38%  95%CI=[ -0.35%, +2.75%]  t=+1.74  p=0.0827  per-day ROI +0.198%
+7d favourites >=0.80, Politics                             n=   224  ROI= -3.59%  95%CI=[ -7.41%, -0.19%]  t=-1.94  p=0.0539  per-day ROI -0.512%
+7d favourites >=0.80, Crypto                               n=   179  ROI= +1.61%  95%CI=[ +0.34%, +2.50%]  t=+2.91  p=0.0041  per-day ROI +0.230%
+7d favourites >=0.80, Science and Technology               n=   138  ROI= +2.20%  95%CI=[ +1.53%, +2.92%]  t=+6.18  p=0.0000  per-day ROI +0.314%
+7d favourites >=0.80, Elections                            n=    91  ROI= -0.40%  95%CI=[ -3.62%, +1.92%]  t=-0.27  p=0.7858  per-day ROI -0.058%
+7d favourites >=0.80, Commodities                          n=    75  ROI= +5.72%  95%CI=[ +4.58%, +6.94%]  t=+9.39  p=0.0000  per-day ROI +0.818%
+7d favourites >=0.80, Climate and Weather                  n=    51  ROI= -4.22%  95%CI=[-11.31%, +1.46%]  t=-1.30  p=0.1994  per-day ROI -0.602%
+7d favourites >=0.80, ALL                                  n=  2876  ROI= -1.41%  95%CI=[ -2.20%, -0.63%]  t=-3.59  p=0.0003  per-day ROI -0.201%
 --- by category, buy the LONGSHOT (side priced <= 0.20) at 7d ---
-7d longshots <=0.20, Sports                                n=   886  ROI= -2.93%  95%CI=[ -4.24%, -1.58%]  t=-4.26  p=0.0000
-7d longshots <=0.20, Economics                             n=   224  ROI= -3.17%  95%CI=[ -5.28%, -0.72%]  t=-2.71  p=0.0072
-7d longshots <=0.20, Financials                            n=   194  ROI= -5.69%  95%CI=[ -6.77%, -4.34%]  t=-9.22  p=0.0000
-7d longshots <=0.20, Entertainment                         n=   191  ROI= -3.30%  95%CI=[ -5.32%, -0.89%]  t=-2.90  p=0.0042
-7d longshots <=0.20, Crypto                                n=   177  ROI= -4.68%  95%CI=[ -5.74%, -3.28%]  t=-7.69  p=0.0000
-7d longshots <=0.20, Politics                              n=    93  ROI= -2.63%  95%CI=[ -7.41%, +2.75%]  t=-0.99  p=0.3252
-7d longshots <=0.20, Science and Technology                n=    85  ROI= -4.68%  95%CI=[ -5.80%, -3.66%]  t=-8.32  p=0.0000
-7d longshots <=0.20, Commodities                           n=    49  ROI= -9.08%  95%CI=[-10.70%, -7.49%]  t=-10.74  p=0.0000
-7d longshots <=0.20, Elections                             n=    46  ROI= -5.10%  95%CI=[ -6.68%, -3.63%]  t=-6.36  p=0.0000
-7d longshots <=0.20, Climate and Weather                   n=    31  ROI= -0.35%  95%CI=[ -4.51%, +6.68%]  t=-0.11  p=0.9161
-7d longshots <=0.20, ALL                                   n=  1979  ROI= -3.65%  95%CI=[ -4.40%, -2.84%]  t=-9.40  p=0.0000
+7d longshots <=0.20, Sports                                n=   886  ROI= -2.93%  95%CI=[ -4.25%, -1.48%]  t=-4.26  p=0.0000
+7d longshots <=0.20, Economics                             n=   432  ROI= -2.09%  95%CI=[ -3.92%, -0.10%]  t=-2.13  p=0.0340
+7d longshots <=0.20, Entertainment                         n=   374  ROI= -1.67%  95%CI=[ -3.49%, +0.44%]  t=-1.67  p=0.0949
+7d longshots <=0.20, Financials                            n=   232  ROI= -5.64%  95%CI=[ -6.84%, -4.23%]  t=-8.55  p=0.0000
+7d longshots <=0.20, Politics                              n=   209  ROI= -1.87%  95%CI=[ -5.21%, +1.78%]  t=-1.05  p=0.2941
+7d longshots <=0.20, Crypto                                n=   177  ROI= -4.68%  95%CI=[ -5.75%, -3.37%]  t=-7.69  p=0.0000
+7d longshots <=0.20, Science and Technology                n=   134  ROI= -4.77%  95%CI=[ -5.66%, -3.94%]  t=-10.96  p=0.0000
+7d longshots <=0.20, Elections                             n=    90  ROI= -3.40%  95%CI=[ -5.30%, -0.79%]  t=-2.78  p=0.0067
+7d longshots <=0.20, Commodities                           n=    69  ROI= -9.27%  95%CI=[-10.59%, -7.95%]  t=-13.88  p=0.0000
+7d longshots <=0.20, Climate and Weather                   n=    49  ROI= +0.04%  95%CI=[ -4.42%, +6.35%]  t=+0.01  p=0.9901
+7d longshots <=0.20, ALL                                   n=  2662  ROI= -3.14%  95%CI=[ -3.83%, -2.42%]  t=-8.77  p=0.0000
 
-=== horizon: 30 day(s) before close (n=2042) — calibration of mid, fee-adjusted EV (cents/contract) of buying YES at ask / NO at 1-bid ===
+=== horizon: 30 day(s) before close (n=2970) — calibration of mid, fee-adjusted EV (cents/contract) of buying YES at ask / NO at 1-bid ===
                  n    mid  realised  spread_c  ev_yes_c  ev_no_c
 bucket                                                          
-(0.0, 0.05]  605.0  0.021     0.008     2.700    -2.903   -0.088
-(0.05, 0.1]  203.0  0.074     0.054     5.300    -5.214   -1.031
-(0.1, 0.2]   237.0  0.148     0.118     4.330    -6.138    0.055
-(0.2, 0.3]   151.0  0.252     0.232     4.854    -5.805   -1.672
-(0.3, 0.4]   116.0  0.350     0.233     4.948   -15.827    7.706
-(0.4, 0.5]    98.0  0.452     0.439     4.622    -5.364   -2.711
-(0.5, 0.6]    94.0  0.548     0.415     4.787   -17.371    9.129
-(0.6, 0.7]    93.0  0.651     0.591     5.129   -10.024    1.727
-(0.7, 0.8]   105.0  0.753     0.810     4.810     2.075   -9.478
-(0.8, 0.9]   129.0  0.855     0.822     4.690    -6.376   -0.041
-(0.9, 0.95]  108.0  0.928     0.917     4.357    -3.692   -1.590
-(0.95, 1.0]  103.0  0.972     1.000     2.097     1.614   -4.093
+(0.0, 0.05]  882.0  0.021     0.010     2.641    -2.664   -0.266
+(0.05, 0.1]  301.0  0.073     0.043     5.227    -6.246    0.077
+(0.1, 0.2]   331.0  0.147     0.124     4.437    -5.563   -0.622
+(0.2, 0.3]   218.0  0.250     0.239     4.844    -4.935   -2.520
+(0.3, 0.4]   161.0  0.347     0.267     4.745   -11.965    4.060
+(0.4, 0.5]   143.0  0.452     0.385     4.811   -10.868    2.604
+(0.5, 0.6]   143.0  0.550     0.406     4.916   -18.611   10.243
+(0.6, 0.7]   147.0  0.652     0.599     5.163    -9.472    1.146
+(0.7, 0.8]   155.0  0.754     0.768     5.077    -2.337   -5.325
+(0.8, 0.9]   180.0  0.856     0.822     4.806    -6.525    0.008
+(0.9, 0.95]  168.0  0.928     0.935     4.527    -1.938   -3.519
+(0.95, 1.0]  141.0  0.971     0.986     2.146     0.280   -2.823
 
 --- by category, buy the FAVOURITE (whichever side is priced >= 0.80) at 30d ---
-30d favourites >=0.80, Sports                              n=   408  ROI= -2.34%  95%CI=[ -4.71%, -0.19%]  t=-2.07  p=0.0393  per-day ROI -0.078%
-30d favourites >=0.80, Financials                          n=   371  ROI= +0.26%  95%CI=[ -2.30%, +2.61%]  t=+0.20  p=0.8393  per-day ROI +0.009%
-30d favourites >=0.80, Economics                           n=   329  ROI= -2.31%  95%CI=[ -5.30%, +0.37%]  t=-1.60  p=0.1110  per-day ROI -0.077%
-30d favourites >=0.80, Entertainment                       n=   156  ROI= +0.91%  95%CI=[ -1.85%, +3.13%]  t=+0.71  p=0.4761  per-day ROI +0.030%
-30d favourites >=0.80, Elections                           n=    56  ROI= -0.30%  95%CI=[ -5.47%, +3.49%]  t=-0.13  p=0.8996  per-day ROI -0.010%
-30d favourites >=0.80, Politics                            n=    48  ROI= -3.95%  95%CI=[-13.35%, +4.56%]  t=-0.83  p=0.4115  per-day ROI -0.132%
-30d favourites >=0.80, Climate and Weather                 n=    35  ROI= -1.08%  95%CI=[ -9.38%, +4.90%]  t=-0.29  p=0.7765  per-day ROI -0.036%
-30d favourites >=0.80, Mentions                            n=    33  ROI= +3.84%  95%CI=[ -5.48%,+10.30%]  t=+0.94  p=0.3529  per-day ROI +0.128%
-30d favourites >=0.80, Science and Technology              n=    30  ROI= +0.31%  95%CI=[ -8.90%, +7.31%]  t=+0.07  p=0.9442  per-day ROI +0.010%
-30d favourites >=0.80, ALL                                 n=  1466  ROI= -1.08%  95%CI=[ -2.31%, +0.12%]  t=-1.75  p=0.0801  per-day ROI -0.036%
+30d favourites >=0.80, Economics                           n=   594  ROI= -1.59%  95%CI=[ -3.56%, +0.29%]  t=-1.59  p=0.1119  per-day ROI -0.053%
+30d favourites >=0.80, Financials                          n=   479  ROI= +0.24%  95%CI=[ -2.15%, +2.31%]  t=+0.21  p=0.8326  per-day ROI +0.008%
+30d favourites >=0.80, Sports                              n=   408  ROI= -2.34%  95%CI=[ -4.71%, -0.26%]  t=-2.07  p=0.0393  per-day ROI -0.078%
+30d favourites >=0.80, Entertainment                       n=   281  ROI= -1.39%  95%CI=[ -3.89%, +0.80%]  t=-1.12  p=0.2620  per-day ROI -0.046%
+30d favourites >=0.80, Elections                           n=   119  ROI= -1.71%  95%CI=[ -5.41%, +1.40%]  t=-0.95  p=0.3420  per-day ROI -0.057%
+30d favourites >=0.80, Politics                            n=    87  ROI= -2.38%  95%CI=[ -9.03%, +3.47%]  t=-0.75  p=0.4580  per-day ROI -0.079%
+30d favourites >=0.80, Mentions                            n=    59  ROI= +3.60%  95%CI=[ -3.24%, +9.22%]  t=+1.13  p=0.2633  per-day ROI +0.120%
+30d favourites >=0.80, Climate and Weather                 n=    56  ROI= +1.13%  95%CI=[ -4.17%, +5.04%]  t=+0.47  p=0.6407  per-day ROI +0.038%
+30d favourites >=0.80, Science and Technology              n=    43  ROI= -0.22%  95%CI=[ -8.40%, +6.03%]  t=-0.06  p=0.9534  per-day ROI -0.007%
+30d favourites >=0.80, ALL                                 n=  2126  ROI= -1.09%  95%CI=[ -2.10%, -0.08%]  t=-2.14  p=0.0324  per-day ROI -0.036%
 --- by category, buy the LONGSHOT (side priced <= 0.20) at 30d ---
-30d longshots <=0.20, Sports                               n=   386  ROI= -1.94%  95%CI=[ -3.96%, +0.31%]  t=-1.73  p=0.0836
-30d longshots <=0.20, Financials                           n=   330  ROI= -4.09%  95%CI=[ -6.28%, -1.56%]  t=-3.41  p=0.0007
-30d longshots <=0.20, Economics                            n=   288  ROI= -2.92%  95%CI=[ -5.56%, +0.05%]  t=-2.05  p=0.0408
-30d longshots <=0.20, Entertainment                        n=   149  ROI= -4.51%  95%CI=[ -6.56%, -1.99%]  t=-3.87  p=0.0002
-30d longshots <=0.20, Elections                            n=    53  ROI= -5.79%  95%CI=[ -7.32%, -4.34%]  t=-7.47  p=0.0000
-30d longshots <=0.20, Politics                             n=    43  ROI= -1.78%  95%CI=[ -9.82%, +7.82%]  t=-0.39  p=0.6984
-30d longshots <=0.20, Climate and Weather                  n=    32  ROI= -4.34%  95%CI=[ -9.07%, +2.64%]  t=-1.36  p=0.1833
-30d longshots <=0.20, ALL                                  n=  1332  ROI= -3.40%  95%CI=[ -4.52%, -2.23%]  t=-5.80  p=0.0000
+30d longshots <=0.20, Economics                            n=   526  ROI= -4.00%  95%CI=[ -5.71%, -1.97%]  t=-4.23  p=0.0000
+30d longshots <=0.20, Financials                           n=   419  ROI= -4.04%  95%CI=[ -5.98%, -1.89%]  t=-3.78  p=0.0002
+30d longshots <=0.20, Sports                               n=   386  ROI= -1.94%  95%CI=[ -4.04%, +0.32%]  t=-1.73  p=0.0836
+30d longshots <=0.20, Entertainment                        n=   268  ROI= -2.32%  95%CI=[ -4.43%, +0.13%]  t=-1.98  p=0.0485
+30d longshots <=0.20, Elections                            n=   116  ROI= -2.37%  95%CI=[ -5.04%, +0.82%]  t=-1.57  p=0.1194
+30d longshots <=0.20, Politics                             n=    80  ROI= -2.99%  95%CI=[ -8.20%, +3.16%]  t=-1.02  p=0.3128
+30d longshots <=0.20, Climate and Weather                  n=    51  ROI= -5.51%  95%CI=[ -8.86%, -0.86%]  t=-2.68  p=0.0099
+30d longshots <=0.20, Mentions                             n=    43  ROI= -8.37%  95%CI=[-13.38%, -1.17%]  t=-2.60  p=0.0127
+30d longshots <=0.20, Science and Technology               n=    38  ROI= -4.52%  95%CI=[-10.09%, +3.16%]  t=-1.30  p=0.2031
+30d longshots <=0.20, ALL                                  n=  1927  ROI= -3.37%  95%CI=[ -4.28%, -2.37%]  t=-6.98  p=0.0000

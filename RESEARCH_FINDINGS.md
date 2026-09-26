@@ -231,18 +231,18 @@ Verdict: no edge in Kalshi sports game markets at the pregame quote.
 ### 5.4 Long-dated markets, 1 / 7 / 30 days before scheduled expiration (all categories)
 
 A random sample (seeded, up to 40 per series) of markets with a lifetime of at least two days, quoted from
-daily candles: 24,214 markets, 27,335 quotes (sports 21,659; financials 1,516; economics 1,120; entertainment
-1,041; crypto 689; politics 396; science and technology 334; commodities, elections, weather, mentions the rest).
-Two design points matter: 59% of these markets **close early** once the outcome is known, so horizons are
+daily candles: 26,533 markets, 30,666 quotes (sports 21,659; economics 2,131; financials 1,921; entertainment
+1,832; politics 886; crypto 689; science and technology 515; commodities 387; elections 261; weather and mentions the rest).
+Two design points matter: 61% of these markets **close early** once the outcome is known, so horizons are
 measured from the *scheduled* expiration and a market is only included if it was still open at the quote
 time. (Anchoring on the actual close, or picking markets by volume, manufactures a fake "longshots win +13%"
 result; that artefact was found and removed.) Quotes wider than 15c are dropped.
 
 | Horizon | n quotes | Calibration (mid vs realised) | Buy favourite (>= 80c) | Buy longshot (<= 20c) |
 |---|---|---|---|---|
-| 1 day | 22,344 | within 1-2 points in every bucket | -2.9% (n=11,410; t=-11) | -2.1% (n=9,794; t=-8) |
-| 7 days | 4,133 | within 3 points except thin buckets | -1.1% (n=2,154; t=-2.4) | -3.7% (n=1,979; t=-9) |
-| 30 days | 2,798 | noisy | -1.1% (n=1,466; t=-1.8) | -3.4% (n=1,332; t=-6) |
+| 1 day | 23,863 | within 1-2 points in every bucket | -2.7% (n=12,689; t=-11) | -2.1% (n=11,038; t=-9) |
+| 7 days | 3,833 | within 3 points except thin buckets | -1.4% (n=2,876; t=-3.6) | -3.1% (n=2,662; t=-9) |
+| 30 days | 2,970 | noisy | -1.1% (n=2,126; t=-2.1) | -3.4% (n=1,927; t=-7) |
 
 By category, 1 day out, favourites >= 80c: sports -3.5%, financials -2.3%, crypto -2.3%, politics -2.1%,
 entertainment +0.2%, economics +0.4%, science +0.3%, weather +0.4%, commodities +1.6% (n=130, n.s.).
