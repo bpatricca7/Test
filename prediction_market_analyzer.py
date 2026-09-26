@@ -17,6 +17,8 @@ from dataclasses import dataclass
 from typing import Optional
 import time
 
+from arbitrage_scanner import price_cents
+
 
 # Kalshi API base URL (provides data for Robinhood prediction markets)
 BASE_URL = "https://api.elections.kalshi.com/trade-api/v2"
@@ -121,13 +123,19 @@ class KalshiClient:
         return response.json()
 
 
+def _cents(raw: dict, name: str) -> float:
+    """Price in cents from either the `<name>_dollars` string or the cent field."""
+    value = price_cents(raw, name)
+    return float(value) if value is not None else 0
+
+
 def parse_market(raw: dict) -> Market:
     """Parse raw API response into Market object."""
     close_time = None
     if raw.get('close_time'):
         try:
             close_time = datetime.fromisoformat(raw['close_time'].replace('Z', '+00:00'))
-        except:
+        except ValueError:
             pass
 
     return Market(
@@ -135,10 +143,10 @@ def parse_market(raw: dict) -> Market:
         title=raw.get('title', ''),
         subtitle=raw.get('subtitle', ''),
         category=raw.get('category', ''),
-        yes_price=raw.get('yes_bid', 0) or 0,
-        no_price=raw.get('no_bid', 0) or 0,
-        yes_bid=raw.get('yes_bid', 0) or 0,
-        yes_ask=raw.get('yes_ask', 0) or 0,
+        yes_price=_cents(raw, 'yes_bid'),
+        no_price=_cents(raw, 'no_bid'),
+        yes_bid=_cents(raw, 'yes_bid'),
+        yes_ask=_cents(raw, 'yes_ask'),
         volume=raw.get('volume', 0) or 0,
         volume_24h=raw.get('volume_24h', 0) or 0,
         open_interest=raw.get('open_interest', 0) or 0,
@@ -172,15 +180,14 @@ class UndervaluedAnalyzer:
         scores = {}
 
         # 1. Extreme Probability Bias Score (0-25 points)
-        # Markets at extremes often overprice certainty
+        # Favorite-longshot bias: at extreme prices the cheap side is overpriced
         prob = market.implied_probability
         if prob <= 0.05 or prob >= 0.95:
-            # Very extreme - potential value in betting against certainty
             scores['extreme_bias'] = 25
-            scores['extreme_bias_note'] = "Very extreme probability - market may be overconfident"
+            scores['extreme_bias_note'] = "Very extreme probability - cheap side likely overpriced"
         elif prob <= 0.15 or prob >= 0.85:
             scores['extreme_bias'] = 15
-            scores['extreme_bias_note'] = "Extreme probability - some certainty premium likely"
+            scores['extreme_bias_note'] = "Extreme probability - longshot premium likely"
         elif prob <= 0.25 or prob >= 0.75:
             scores['extreme_bias'] = 5
             scores['extreme_bias_note'] = "Moderate probability skew"
@@ -264,27 +271,25 @@ class UndervaluedAnalyzer:
         }
 
     def _get_recommendation(self, market: Market, scores: dict, total_score: int) -> str:
-        """Generate trading recommendation based on analysis."""
+        """Generate trading recommendation based on analysis.
+
+        Kalshi shows a favorite-longshot bias: cheap contracts, on either side,
+        win far less often than their price implies, while expensive ones win
+        slightly more often (Burgi, Deng & Whelan, "Makers and Takers: The
+        Economics of the Kalshi Prediction Market"). An extreme price is
+        therefore a reason to avoid the cheap side, never a reason to buy it.
+        """
         prob = market.implied_probability
 
-        if total_score >= 60:
-            strength = "STRONG"
-        elif total_score >= 40:
-            strength = "MODERATE"
-        elif total_score >= 25:
-            strength = "WEAK"
-        else:
-            return "HOLD - Market appears efficiently priced"
-
-        # Determine direction based on extreme bias
+        if prob <= 0.15:
+            return ("AVOID YES - longshot; contracts this cheap have historically lost "
+                    "most of their cost. The expensive NO side is the one the data favors.")
         if prob >= 0.85:
-            direction = "Consider NO position - high certainty may be overpriced"
-        elif prob <= 0.15:
-            direction = "Consider YES position - market may be overly pessimistic"
-        else:
-            direction = "Analyze fundamentals to determine direction"
-
-        return f"{strength} OPPORTUNITY - {direction}"
+            return ("AVOID NO - the NO side is the longshot here. The expensive YES side "
+                    "is the one the data favors; check fees before acting.")
+        if total_score >= 40:
+            return "WATCH - irregular pricing (wide spread or thin volume); needs a fundamental view"
+        return "HOLD - Market appears efficiently priced"
 
     def analyze_all(self) -> list[dict]:
         """Analyze all markets and return sorted by value score."""
