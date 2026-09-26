@@ -47,7 +47,8 @@ export function install(game) {
       if (!def || game.profile.stickers[id]) return false;
       game.profile.stickers[id] = new Date().toISOString();
       game.saveProfile();
-      game.toast(`New sticker: ${def.name}!`, { icon: def.icon || 'sticker', big: true, color: 'sun' });
+      const bang = /[!?.]$/.test(def.name) ? '' : '!'; // 'Splash!' should not become 'Splash!!'
+      game.toast(`New sticker: ${def.name}${bang}`, { icon: def.icon || 'sticker', big: true, color: 'sun' });
       game.audio.play('success');
       if (game.player) {
         const p = game.player.position;

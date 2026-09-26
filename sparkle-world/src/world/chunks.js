@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { Mesher } from './mesher.js';
 import { CHUNK } from './world.js';
+import { SHAPES } from '../core/registry.js';
 
 const PASS_NAMES = [null, 'opaque', 'cutout', 'translucent'];
 
@@ -25,6 +26,7 @@ export class ChunkRenderer {
     this._camX = 0;
     this._camZ = 0;
     this.horizon = null;
+    this.seabed = null;
     this.buildHorizon();
   }
 
@@ -113,15 +115,60 @@ export class ChunkRenderer {
     }
   }
 
-  /** Flat textured ring around the world (ocean for island biomes, grass for flat land). */
+  /**
+   * Flat textured ring around the world (ocean for island biomes, grass for flat land).
+   * An ocean ring is drawn like the water inside the world: translucent, over a seabed ring
+   * at the depth, block and light of the world's own edge, so the edge has no seam.
+   */
   buildHorizon() {
     const w = this.world;
     const out = w.outside;
     if (!out || !out.block) return;
-    const def = w.registry.byKey(out.block);
+    const reg = w.registry;
+    const def = reg.byKey(out.block);
     if (!def) return;
-    const layer = w.registry.props.faceLayer[def.id * 6 + 2];
-    const y = out.surface;
+    const props = reg.props;
+    const liquid = props.shape[def.id] === SHAPES.liquid;
+    this.horizon = this._ring(props.faceLayer[def.id * 6 + 2], out.surface, 15, liquid ? this.materials.translucent : this.materials.opaque);
+    this.horizon.name = 'horizon';
+    if (liquid) {
+      // drawn before the in-world water (both blend without writing depth)
+      this.horizon.renderOrder = -1e6;
+      const bed = this._edgeSeabed(def.id);
+      if (bed) {
+        this.seabed = this._ring(props.faceLayer[bed.id * 6 + 2], bed.y + 1, bed.sky, this.materials.opaque);
+        this.seabed.name = 'horizon-seabed';
+      }
+    }
+  }
+
+  /** Typical seabed under the water along the world edge: { id, y, sky } or null. */
+  _edgeSeabed(waterId) {
+    const w = this.world;
+    const ys = [], skies = [], counts = new Map();
+    const sample = (x, z) => {
+      let y = w.sy - 1;
+      while (y >= 0 && w.get(x, y, z) === 0) y--;
+      if (y < 0 || w.get(x, y, z) !== waterId) return; // only columns that end in water
+      while (y >= 0 && w.get(x, y, z) === waterId) y--;
+      if (y < 0) return;
+      const id = w.get(x, y, z);
+      ys.push(y);
+      skies.push(w.getSky(x, y + 1, z));
+      counts.set(id, (counts.get(id) || 0) + 1);
+    };
+    for (let i = 0; i < w.sx; i += 2) { sample(i, 0); sample(i, w.sz - 1); }
+    for (let i = 0; i < w.sz; i += 2) { sample(0, i); sample(w.sx - 1, i); }
+    if (!ys.length) return null;
+    const median = (a) => a.sort((p, q) => p - q)[a.length >> 1];
+    let id = 0, best = 0;
+    for (const [k, n] of counts) if (n > best) { best = n; id = k; }
+    return { id, y: median(ys), sky: median(skies) };
+  }
+
+  /** One flat ring (four strips) at height y around the world. */
+  _ring(layer, y, sky, material) {
+    const w = this.world;
     const R = 420;
     const X0 = -R, Z0 = -R, X1 = w.sx + R, Z1 = w.sz + R;
     const rects = [
@@ -137,7 +184,7 @@ export class ChunkRenderer {
         uv.push(x, -z);
         lay.push(layer);
         shade.push(255);
-        light.push(255, 0);
+        light.push(sky * 17, 0);
       }
       idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
     }
@@ -148,11 +195,10 @@ export class ChunkRenderer {
     geo.setAttribute('shade', new THREE.BufferAttribute(new Uint8Array(shade), 1, true));
     geo.setAttribute('light', new THREE.BufferAttribute(new Uint8Array(light), 2, true));
     geo.setIndex(idx);
-    const mesh = new THREE.Mesh(geo, this.materials.opaque);
-    mesh.name = 'horizon';
+    const mesh = new THREE.Mesh(geo, material);
     mesh.frustumCulled = false;
-    this.horizon = mesh;
     this.group.add(mesh);
+    return mesh;
   }
 
   dispose() {
@@ -163,6 +209,7 @@ export class ChunkRenderer {
       }
     }
     if (this.horizon) this.horizon.geometry.dispose();
+    if (this.seabed) this.seabed.geometry.dispose();
     this.group.clear();
   }
 }

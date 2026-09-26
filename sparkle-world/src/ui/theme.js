@@ -30,6 +30,8 @@ html, body {
 .sw-ui { position: absolute; inset: 0; pointer-events: none; z-index: 10; font-family: var(--sw-font); }
 .sw-layer { position: absolute; inset: 0; pointer-events: none; }
 .sw-layer > * { pointer-events: auto; }
+/* the HUD is its own stacking context so nothing in it can paint over panels or dialogs */
+.sw-layer-hud { isolation: isolate; }
 
 /* chunky sticker buttons */
 .sw-btn {
@@ -119,7 +121,8 @@ html, body {
 
 /* dialogs */
 .sw-dialog-wrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 70; padding: 16px; }
-.sw-dialog { width: min(460px, 100%); background: #fff; border: 5px solid var(--sw-pink-soft); border-radius: 28px; padding: 22px; text-align: center; box-shadow: 0 22px 60px rgba(58,31,77,.4); animation: sw-pop .3s var(--sw-bounce); }
+/* positioned so the card paints above its own dim .sw-backdrop (which is absolute) */
+.sw-dialog { position: relative; z-index: 1; width: min(460px, 100%); background: #fff; border: 5px solid var(--sw-pink-soft); border-radius: 28px; padding: 22px; text-align: center; box-shadow: 0 22px 60px rgba(58,31,77,.4); animation: sw-pop .3s var(--sw-bounce); }
 .sw-dialog h3 { margin: 0 0 8px; font-size: 28px; color: var(--sw-pink); }
 .sw-dialog p { margin: 0 0 18px; font-size: 19px; }
 .sw-dialog-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
@@ -148,6 +151,10 @@ html, body {
   .sw-card-body { padding: 6px 14px 16px; }
   .sw-toast { font-size: 16px; }
   .sw-toast--big { font-size: 19px; }
+}
+/* phones in play: keep toasts below the world name / Menu row instead of covering them */
+@media (max-width: 480px) {
+  .sw-app.sw-playing .sw-toasts { top: calc(112px + var(--sw-safe-t)); }
 }
 `;
 

@@ -23,7 +23,8 @@ const CSS = /* css */ `
 .sw-round { display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: 0; padding: 0; cursor: pointer; font-family: var(--sw-font); -webkit-user-select: none; user-select: none; touch-action: manipulation; }
 .sw-round-face { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; background: var(--c, var(--sw-pink)); color: #fff; border: 4px solid #fff; box-shadow: 0 5px 0 rgba(58,31,77,.14), 0 8px 18px var(--sw-shadow), inset 0 -5px 0 rgba(0,0,0,.08), inset 0 4px 0 rgba(255,255,255,.3); transition: transform .18s var(--sw-bounce); }
 .sw-round-face svg { width: 32px; height: 32px; filter: drop-shadow(0 2px 0 rgba(58,31,77,.15)); }
-.sw-round-label { position: relative; z-index: 1; font-size: 13px; font-weight: 700; color: var(--sw-ink); background: rgba(255,255,255,.92); padding: 1px 8px; border-radius: 999px; box-shadow: 0 2px 6px var(--sw-shadow); }
+/* positioned (no z-index) so it paints after the face, which gets a transform when active */
+.sw-round-label { position: relative; font-size: 15px; font-weight: 700; color: var(--sw-ink); background: rgba(255,255,255,.92); padding: 1px 8px; border-radius: 999px; box-shadow: 0 2px 6px var(--sw-shadow); }
 .sw-round:hover .sw-round-face { transform: scale(1.06); }
 .sw-round:active .sw-round-face { transform: scale(.9); }
 .sw-round.sw-active .sw-round-face { box-shadow: 0 0 0 5px var(--sw-sun), 0 8px 22px var(--sw-shadow), inset 0 -5px 0 rgba(0,0,0,.08); transform: scale(1.1); }
@@ -72,7 +73,7 @@ const CSS = /* css */ `
   .sw-round-face svg { width: 27px; height: 27px; }
   .sw-round--big .sw-round-face { width: 58px; height: 58px; }
   .sw-round--big .sw-round-face svg { width: 32px; height: 32px; }
-  .sw-round-label { font-size: 11px; }
+  .sw-round-label { font-size: 13px; }
   .sw-pill { height: 40px; font-size: 16px; padding: 0 12px 0 8px; }
   .sw-pill svg { width: 24px; height: 24px; }
   .sw-hud-right { gap: 6px; }

@@ -193,8 +193,9 @@ export class ItemRegistry {
   }
 
   /**
-   * item = { key, name, category, icon: () => Promise<dataURL>, colors?, use(game, hit, opts) -> bool,
-   *          kind?: 'block'|'furniture'|'other', hidden? }
+   * item = { key, name, category, icon: (color?) => Promise<dataURL>, colors?,
+   *          use(game, hit, opts) -> bool, kind?: 'block'|'furniture'|'other', hidden? }
+   * icon(color) should picture the item in that swatch color when it has `colors`.
    */
   register(item) {
     if (!item || !item.key) throw new Error('item needs a key');
@@ -209,7 +210,7 @@ export class ItemRegistry {
       ...item,
     };
     this.map.set(full.key, full);
-    this._icons.delete(full.key);
+    for (const k of [...this._icons.keys()]) if (k === full.key || k.startsWith(full.key + '|')) this._icons.delete(k);
     return full;
   }
 
@@ -232,18 +233,22 @@ export class ItemRegistry {
     return out;
   }
 
-  /** Cached icon data URL for an item ('' when it has none). Never rejects. */
-  iconFor(key) {
-    let p = this._icons.get(key);
+  /**
+   * Cached icon data URL for an item ('' when it has none), optionally in one of its swatch
+   * colors. Never rejects.
+   */
+  iconFor(key, color = null) {
+    const cacheKey = color ? `${key}|${color}` : key;
+    let p = this._icons.get(cacheKey);
     if (!p) {
       const it = this.get(key);
       p = Promise.resolve()
-        .then(() => (it && it.icon ? it.icon() : ''))
+        .then(() => (it && it.icon ? (color ? it.icon(color) : it.icon()) : ''))
         .catch((err) => {
           console.warn('[items] icon failed for', key, err);
           return '';
         });
-      this._icons.set(key, p);
+      this._icons.set(cacheKey, p);
     }
     return p;
   }

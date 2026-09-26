@@ -1,7 +1,11 @@
 // SaveStore: profile + worlds, persisted locally (IndexedDB -> localStorage -> memory) and,
 // inside a claude.ai Artifact with the db capability, also in the viewer's private cloud
 // subtree. Every public method is async and never throws: reads resolve null/[] on failure,
-// writes resolve { ok: false, error }.
+// writes resolve { ok, backend, persistent, error? }.
+//
+// If a local write fails later on (quota, the browser evicting storage, a broken database),
+// that save falls through to the next backend (localStorage, then memory) instead of being
+// dropped, and reads look in every backend that has been written to (newest copy wins).
 
 import { sleep } from './util.js';
 
@@ -50,6 +54,14 @@ class LocalStorageBackend {
   }
   _set(key, value) {
     this.ls.setItem(LS_PREFIX + key, JSON.stringify(value));
+  }
+  /** Does this browser already hold Sparkle World saves here? */
+  hasData() {
+    try {
+      return this.ls.getItem(LS_PREFIX + 'metas') !== null || this.ls.getItem(LS_PREFIX + 'profile') !== null;
+    } catch {
+      return false;
+    }
   }
   async getProfile() { return this._get('profile'); }
   async putProfile(p) { this._set('profile', p); }
@@ -241,7 +253,9 @@ async function detectCloud() {
 
 export class SaveStore {
   constructor() {
-    this.local = new MemoryBackend();
+    this.local = new MemoryBackend(); // primary local backend, picked by init()
+    this._spares = null; // fallback backends for failed writes (created on first need)
+    this._usedSpares = new Set(); // spares that hold data and must be read too
     this.cloud = null;
     this._pendingWorlds = new Map(); // id -> save waiting for its cloud slot
     this._pendingProfile = null;
@@ -265,6 +279,8 @@ export class SaveStore {
       } catch (err) {
         console.warn('[storage] local storage unavailable, using memory', err);
       }
+      // saves that fell back to localStorage in an earlier session must still be found
+      for (const b of this._spareBackends()) if (b.kind === 'localStorage' && b.hasData()) this._usedSpares.add(b);
       const cloudPromise = detectCloud().then((backend) => {
         this.cloud = backend;
         if (backend) for (const fn of this._cloudListeners) fn();
@@ -285,6 +301,55 @@ export class SaveStore {
     return this.local.kind + (this.cloud ? '+cloud' : '');
   }
 
+  /** Will saves survive closing the page? (false: memory only, e.g. a sandboxed frame) */
+  get persistent() {
+    return this.local.kind !== 'memory' || !!this.cloud;
+  }
+
+  _spareBackends() {
+    if (!this._spares) {
+      this._spares = [];
+      if (this.local.kind === 'indexedDB') {
+        const ls = probeLocalStorage();
+        if (ls) this._spares.push(new LocalStorageBackend(ls));
+      }
+      if (this.local.kind !== 'memory') this._spares.push(new MemoryBackend());
+    }
+    return this._spares;
+  }
+
+  /** Local backends that may hold data: the primary plus any spare written to. */
+  _readers() {
+    return [this.local, ...this._usedSpares];
+  }
+
+  /**
+   * Run write(backend) on the primary local backend, falling through to the spares.
+   * Resolves { ok, backend, error? }.
+   */
+  async _writeLocal(label, write) {
+    let lastErr = null;
+    for (const b of [this.local, ...this._spareBackends()]) {
+      try {
+        await write(b);
+        if (b !== this.local) this._usedSpares.add(b);
+        return { ok: true, backend: b };
+      } catch (err) {
+        lastErr = err;
+        console.warn(`[storage] ${label} failed (${b.kind})`, err);
+      }
+    }
+    return { ok: false, backend: null, error: String(lastErr) };
+  }
+
+  _result(local) {
+    const ok = local.ok || !!this.cloud;
+    const persistent = (local.ok && local.backend.kind !== 'memory') || !!this.cloud;
+    const res = { ok, backend: local.ok ? local.backend.kind : null, persistent };
+    if (!local.ok) res.error = local.error;
+    return res;
+  }
+
   async _safe(label, fn, fallback) {
     try {
       return await fn();
@@ -298,7 +363,11 @@ export class SaveStore {
 
   async loadProfile() {
     await this.init();
-    const local = await this._safe('local profile', () => this.local.getProfile(), null);
+    let local = null;
+    for (const b of this._readers()) {
+      const p = await this._safe('local profile', () => b.getProfile(), null);
+      if (p && (!local || (p.updatedAt || 0) > (local.updatedAt || 0))) local = p;
+    }
     const cloud = this.cloud ? await this._safe('cloud profile', () => this.cloud.getProfile(), null) : null;
     if (local && cloud) return (cloud.updatedAt || 0) > (local.updatedAt || 0) ? cloud : local;
     return cloud || local || null;
@@ -308,17 +377,12 @@ export class SaveStore {
     await this.init();
     if (!profile.updatedAt) profile.updatedAt = Date.now();
     const copy = JSON.parse(JSON.stringify(profile));
-    try {
-      await this.local.putProfile(copy);
-    } catch (err) {
-      console.warn('[storage] profile save failed', err);
-      return { ok: false, error: String(err) };
-    }
+    const local = await this._writeLocal('profile save', (b) => b.putProfile(copy));
     if (this.cloud) {
       this._pendingProfile = copy;
       this._scheduleCloud('profile');
     }
-    return { ok: true };
+    return this._result(local);
   }
 
   // ----- worlds -----
@@ -334,14 +398,18 @@ export class SaveStore {
         if (!cur || (m.updatedAt || 0) > (cur.updatedAt || 0)) byId.set(m.id, { ...m, source });
       }
     };
-    add(await this._safe('list local', () => this.local.listMetas(), []), this.local.kind);
+    for (const b of this._readers()) add(await this._safe('list local', () => b.listMetas(), []), b.kind);
     if (this.cloud) add(await this._safe('list cloud', () => this.cloud.listMetas(), []), 'cloud');
     return [...byId.values()].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   }
 
   async loadWorld(id) {
     await this.init();
-    const local = await this._safe('load local world', () => this.local.getWorld(id), null);
+    let local = null;
+    for (const b of this._readers()) {
+      const w = await this._safe('load local world', () => b.getWorld(id), null);
+      if (w && (!local || (w.updatedAt || 0) > (local.updatedAt || 0))) local = w;
+    }
     if (!this.cloud) return local;
     const metas = await this._safe('cloud metas', () => this.cloud.listMetas(), []);
     const cm = metas.find((m) => m.id === id);
@@ -356,28 +424,29 @@ export class SaveStore {
     await this.init();
     if (!save || !save.id) return { ok: false, error: 'no id' };
     if (!save.updatedAt) save.updatedAt = Date.now();
-    try {
-      await this.local.putWorld(save);
-    } catch (err) {
-      console.warn('[storage] world save failed', err);
-      return { ok: false, error: String(err) };
+    const local = await this._writeLocal('world save', (b) => b.putWorld(save));
+    if (local.ok && local.backend === this.local) {
+      // the primary works again: drop older fallback copies (they only use up space)
+      for (const b of this._usedSpares) this._safe('drop fallback copy', () => b.deleteWorld(save.id), null);
     }
     if (this.cloud) {
       this._pendingWorlds.set(save.id, save);
       this._scheduleCloud(save.id);
     }
-    return { ok: true };
+    return this._result(local);
   }
 
   async deleteWorld(id) {
     await this.init();
     this._pendingWorlds.delete(id);
     let ok = true;
-    try {
-      await this.local.deleteWorld(id);
-    } catch (err) {
-      console.warn('[storage] delete failed', err);
-      ok = false;
+    for (const b of this._readers()) {
+      try {
+        await b.deleteWorld(id);
+      } catch (err) {
+        console.warn('[storage] delete failed', b.kind, err);
+        if (b === this.local) ok = false;
+      }
     }
     if (this.cloud) {
       try {

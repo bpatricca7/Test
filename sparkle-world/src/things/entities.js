@@ -7,9 +7,15 @@
 //     colliders: 'full' | 'none' | [[minx,miny,minz,maxx,maxy,maxz], ...] (model units)
 //     light: 0..15 (while data.on !== false), lightPos?: [x,y,z] model units
 //     actions: ['sit'] ... first one runs on Hand-tap, seat?: [x,y,z], sleepPos?: [x,y,z],
-//     placeOn?: 'floor' | 'wall' | 'ceiling', defaultData?: {}, update?(entity, dt, game) }
+//     placeOn?: 'floor' | 'wall' | 'ceiling' | 'table', surface?: number,
+//     defaultData?: {}, update?(entity, dt, game) }
 // Placement: the tapped cell is the anchor (front row, middle); the rest of the footprint
 // extends away from the front. rot 0..3 turns the front to +Z, +X, -Z, -X.
+//   'wall'    tapped on a wall face: faces out of the wall.
+//   'ceiling' hangs in the cell under a solid block (tap the ceiling, or the floor below it);
+//             the model hangs from the top of its box.
+//   'table'   stands on top of furniture that declares `surface` (the height of its top in
+//             model units, e.g. 0.82 for a table); on the floor otherwise.
 
 import * as THREE from 'three';
 import { disposeObject } from '../core/models.js';
@@ -26,6 +32,7 @@ function rotXZ(x, z, rot) {
 }
 
 const LIGHT_POOL = 4;
+const CEILING_SEARCH = 8; // a ceiling item tapped on the floor looks this far up for a ceiling
 
 export class EntityManager {
   constructor(game) {
@@ -41,7 +48,9 @@ export class EntityManager {
     this.updaters = new Set();
     this.lights = [];
     for (let i = 0; i < LIGHT_POOL; i++) {
-      const l = new THREE.PointLight(0xffc98a, 0, 9, 1.4);
+      // decay 1 with a generous range so Lambert furniture near a lamp warms up like the
+      // block-lit walls do (physical units: intensity is set per frame from the daylight)
+      const l = new THREE.PointLight(0xffc98a, 0, 10, 1);
       l.visible = true;
       this.lights.push(l);
       game.scene.add(l);
@@ -75,8 +84,8 @@ export class EntityManager {
       kind: 'furniture',
       furniture: def.key,
       colors: def.colors,
-      icon: () => {
-        const c = def.colors ? def.colors[0] : null;
+      icon: (color) => {
+        const c = color || (def.colors ? def.colors[0] : null);
         return game.thumbs.get(`furn:${def.key}:${c}`, () => def.build(c, { ...def.defaultData }));
       },
       use: (g, hit, opts) => !!this.placeFromHit(def.key, hit, opts && opts.color),
@@ -130,9 +139,35 @@ export class EntityManager {
       if (id !== 0 && !props.replaceable[id] && !thinFloor) return false;
       const other = this.occupied.get(w.index(cx, cy, cz));
       if (other && other !== ignore) return false;
-      if (def.colliders !== 'none' && game.player && game.player.overlapsCell(cx, cy, cz) && def.placeOn === 'floor') return false;
+      const standing = def.placeOn !== 'wall' && def.placeOn !== 'ceiling';
+      if (def.colliders !== 'none' && standing && game.player && game.player.overlapsCell(cx, cy, cz)) return false;
     }
+    if (def.placeOn === 'ceiling' && !this._solidAt(x, y + this._dims(def).h, z)) return false;
     return true;
+  }
+
+  _solidAt(x, y, z) {
+    const w = this.game.world;
+    const id = w.get(x, y, z);
+    const props = this.game.registry.blocks.props;
+    return id !== 0 && props.solid[id] === 1 && !props.replaceable[id];
+  }
+
+  /** Furniture with a top surface (def.surface) directly under cell (x,y,z), or null. */
+  surfaceBelow(x, y, z) {
+    const below = this.at(x, y - 1, z);
+    return below && typeof below.def.surface === 'number' ? below : null;
+  }
+
+  /** Entities with placeOn 'table' standing on top of this one. */
+  itemsOnTop(entity) {
+    if (typeof entity.def.surface !== 'number') return [];
+    const out = new Set();
+    for (const [cx, cy, cz] of entity.cells) {
+      const e = this.at(cx, cy + 1, cz);
+      if (e && e !== entity && e.def.placeOn === 'table' && e.restsOn === entity.uid) out.add(e);
+    }
+    return [...out];
   }
 
   // ---------- placing & removing ----------
@@ -155,6 +190,10 @@ export class EntityManager {
       const id = w.get(cx, cy, cz);
       if (id !== 0 && props.replaceable[id] && props.shape[id] !== SHAPES.liquid) w.set(cx, cy, cz, 0, { record: false });
     }
+    // table-top items sit on the surface of the furniture below them
+    const table = def.placeOn === 'table' ? this.surfaceBelow(x, y, z) : null;
+    let yOffset = props.shape[w.get(x, y, z)] === SHAPES.carpet ? 1 / 16 : 0;
+    if (table) yOffset = table.y + (table.yOffset || 0) + table.def.surface - y;
     const entity = {
       uid: uid || this.nextUid++,
       key, x, y, z, rot,
@@ -166,7 +205,9 @@ export class EntityManager {
       colliders: [],
       pickable: null,
       lightCell: null,
-      yOffset: props.shape[w.get(x, y, z)] === SHAPES.carpet ? 1 / 16 : 0,
+      lightPoint: null,
+      yOffset,
+      restsOn: table ? table.uid : null,
     };
     if (entity.uid >= this.nextUid) this.nextUid = entity.uid + 1;
     entity.frontCell = () => {
@@ -242,6 +283,7 @@ export class EntityManager {
       const lp = def.lightPos || [w / 2, Math.min(h, 1) * 0.5, d / 2];
       const p = this.localToWorld(entity, lp[0], lp[1], lp[2]);
       entity.lightCell = [Math.floor(p.x), Math.floor(p.y), Math.floor(p.z)];
+      entity.lightPoint = [p.x, p.y, p.z];
       game.world.addLightSource(entity.lightCell[0], entity.lightCell[1], entity.lightCell[2], def.light);
     }
     if (def.update) this.updaters.add(entity);
@@ -267,6 +309,7 @@ export class EntityManager {
       const [lx, ly, lz] = entity.lightCell;
       game.world.removeLightSource(lx, ly, lz, entity.def.light);
       entity.lightCell = null;
+      entity.lightPoint = null;
     }
     this.updaters.delete(entity);
   }
@@ -275,6 +318,17 @@ export class EntityManager {
     const { history = true, events = true, fx = true } = opts;
     if (!entity || !this.map.has(entity.uid)) return false;
     const game = this.game;
+    const riders = this.itemsOnTop(entity);
+    if (riders.length) {
+      // a lamp on a table goes with the table; one Undo brings both back
+      game.beginHistoryGroup();
+      try {
+        for (const r of riders) this.remove(r, { history, events, fx: false });
+        return this.remove(entity, opts);
+      } finally {
+        game.endHistoryGroup();
+      }
+    }
     const player = game.player;
     if (player && player.seatEntity === entity) player.stand();
     const center = this.localToWorld(entity, this._dims(entity.def).w / 2, 0.5, this._dims(entity.def).d / 2);
@@ -349,6 +403,22 @@ export class EntityManager {
     let [x, y, z] = hit.place;
     if (hit.type === 'block' && (props.replaceable[hit.id] || (props.shape[hit.id] === SHAPES.carpet && hit.face[1] === 1))) {
       [x, y, z] = [hit.x, hit.y, hit.z];
+    }
+    if (def.placeOn === 'ceiling') {
+      const h = this._dims(def).h;
+      let top = -1;
+      if (hit.face[1] === -1) top = y; // tapped the underside of a block
+      else {
+        for (let k = 0; k < CEILING_SEARCH; k++) {
+          if (this._solidAt(x, y + k, z)) break;
+          if (this._solidAt(x, y + k + 1, z)) { top = y + k; break; }
+        }
+      }
+      if (top < 0) {
+        game.toast('Hang it under a ceiling!', { icon: 'home' });
+        return null;
+      }
+      y = top - (h - 1);
     }
     let rot;
     if (def.placeOn === 'wall' && hit.face[1] === 0) {
@@ -425,7 +495,7 @@ export class EntityManager {
     for (const e of this.map.values()) if (e.lightCell) lit.push(e);
     lit.sort((a, b) => cam.distanceToSquared(a.object3d.position) - cam.distanceToSquared(b.object3d.position));
     const daylight = game.blockUniforms ? game.blockUniforms.uDaylight.value : 1;
-    const strength = 2.2 * (1.15 - Math.min(1, daylight));
+    const strength = 6.5 * (1.15 - Math.min(1, daylight)); // ~4.9 at night, ~1 by day
     for (let i = 0; i < this.lights.length; i++) {
       const l = this.lights[i];
       const e = lit[i];
@@ -433,8 +503,8 @@ export class EntityManager {
         l.intensity = 0;
         continue;
       }
-      const [lx, ly, lz] = e.lightCell;
-      l.position.set(lx + 0.5, ly + 0.6, lz + 0.5);
+      const [lx, ly, lz] = e.lightPoint;
+      l.position.set(lx, ly + 0.1, lz);
       l.intensity = strength;
     }
   }
@@ -456,7 +526,13 @@ export class EntityManager {
 
   deserialize(list) {
     if (!Array.isArray(list)) return;
-    for (const s of list) {
+    // tables before the lamps and cakes that stand on them
+    const order = list.slice().sort((a, b) => {
+      const ta = this.defs.get(a.key)?.placeOn === 'table' ? 1 : 0;
+      const tb = this.defs.get(b.key)?.placeOn === 'table' ? 1 : 0;
+      return ta - tb;
+    });
+    for (const s of order) {
       if (!this.defs.has(s.key)) continue;
       this.place(s.key, s.x, s.y, s.z, s.rot, s.color, s.data || {}, { history: false, events: false, fx: false, uid: s.uid, force: true });
     }

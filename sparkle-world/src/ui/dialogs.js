@@ -9,8 +9,11 @@ function make(tag, cls, text) {
   return el;
 }
 
-/** Shared shell: a centered card over a dim layer; resolves with close(value). */
-function openDialog(ui, build) {
+/**
+ * Shared shell: a centered card over a dim layer; resolves with close(value). An aborted
+ * `signal` (AbortSignal) closes it as if cancelled.
+ */
+function openDialog(ui, build, signal = null) {
   return new Promise((resolve) => {
     const wrap = make('div', 'sw-dialog-wrap');
     const dim = make('div', 'sw-backdrop');
@@ -31,17 +34,33 @@ function openDialog(ui, build) {
     };
     const handlers = build(card, close);
     const onKey = (e) => {
-      if (e.key === 'Escape') { e.stopPropagation(); close(handlers.cancelValue); }
-      else if (e.key === 'Enter' && handlers.onEnter) { e.stopPropagation(); handlers.onEnter(); }
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        close(handlers.cancelValue);
+      } else if (e.key === 'Enter') {
+        e.stopPropagation();
+        // a focused button answers for itself (the browser clicks it), so Enter on
+        // "No, keep it" never turns into "Yes"
+        const active = document.activeElement;
+        if (active && active.tagName === 'BUTTON' && card.contains(active)) return;
+        if (handlers.onEnter) {
+          e.preventDefault();
+          handlers.onEnter();
+        }
+      }
     };
     window.addEventListener('keydown', onKey, true);
     dim.addEventListener('pointerdown', () => close(handlers.cancelValue));
+    if (signal) {
+      if (signal.aborted) close(handlers.cancelValue);
+      else signal.addEventListener('abort', () => close(handlers.cancelValue), { once: true });
+    }
     if (handlers.focus) setTimeout(() => handlers.focus.focus(), 30);
   });
 }
 
 /** Yes/No question. Resolves true for yes. */
-export function confirmDialog(ui, { title = 'Are you sure?', text = '', yes = 'Yes', no = 'No', yesVariant = 'pink', icon: ic = null } = {}) {
+export function confirmDialog(ui, { title = 'Are you sure?', text = '', yes = 'Yes', no = 'No', yesVariant = 'pink', icon: ic = null, signal = null } = {}) {
   return openDialog(ui, (card, close) => {
     const h = make('h3');
     if (ic) h.innerHTML = icon(ic, { size: 30 }) + ' ';
@@ -53,12 +72,13 @@ export function confirmDialog(ui, { title = 'Are you sure?', text = '', yes = 'Y
     const yesBtn = ui.button({ label: yes, variant: yesVariant, icon: 'check', onClick: () => close(true) });
     row.append(noBtn, yesBtn);
     card.appendChild(row);
-    return { cancelValue: false, onEnter: () => close(true), focus: noBtn };
-  });
+    // no onEnter: Enter only activates the focused button (No, by default)
+    return { cancelValue: false, onEnter: null, focus: noBtn };
+  }, signal);
 }
 
 /** Ask for a short text. Resolves the trimmed string, or null when cancelled. */
-export function textInputDialog(ui, { title = 'Name', value = '', placeholder = '', suggestions = [], ok = 'OK', maxLength = 40 } = {}) {
+export function textInputDialog(ui, { title = 'Name', value = '', placeholder = '', suggestions = [], ok = 'OK', maxLength = 40, signal = null } = {}) {
   return openDialog(ui, (card, close) => {
     card.appendChild(make('h3', '', title));
     const input = make('input', 'sw-input');
@@ -89,5 +109,5 @@ export function textInputDialog(ui, { title = 'Name', value = '', placeholder = 
     );
     card.appendChild(row);
     return { cancelValue: null, onEnter: submit, focus: input };
-  });
+  }, signal);
 }

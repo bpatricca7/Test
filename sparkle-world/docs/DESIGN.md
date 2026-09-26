@@ -25,7 +25,8 @@ this doc disagree, fix one of them in the same change.
 
 ### Screens / flow
 1. **Title screen** — big "Sparkle World" logo over a live 3D backdrop (a pretty generated world,
-   slow orbiting camera, the player's avatar waving in front). Buttons: **Play** (continue last
+   slow orbiting camera, the player's avatar waving in front). *Not built yet (Menus team): the
+   core title uses a CSS sky/hills backdrop with floating block icons.* Buttons: **Play** (continue last
    world), **My Worlds**, **New World**, **Dress Up**, **Stickers**, **Settings**.
 2. **New World wizard** — type a world name (suggestion pre-filled, e.g. "Lily's Rainbow Meadow"),
    pick a world type from big picture cards, pick a size (Cozy / Big), tap **Create!**.
@@ -53,7 +54,9 @@ this doc disagree, fix one of them in the same change.
    - Touch: left thumb joystick, right side drag = look, Jump button, Fly up/down when flying.
 5. **Bag (catalog)** — tabs with pictures: Nature, Building, Colors, Candy, Glass & Windows,
    Lights, Bedroom, Living Room, Kitchen, Bathroom, Garden, Fun & Toys, Pets, Food, Magic Houses.
-   Tap an item to put it in the selected hotbar slot. Furniture shows a color swatch row.
+   Tap an item to put it in the selected hotbar slot. Items with colors (furniture) show little
+   color dots; tapping one opens a "Pick a color!" step with a big picture of the item in every
+   color (≥ 88 px buttons), the current slot's color marked.
 6. **Dress-Up Studio** — full-screen: big 3D avatar on a turntable (drag to spin) with sparkly
    backdrop; category tabs (Skin, Hair, Eyes & Face, Tops, Bottoms, Dresses, Shoes, Hats &
    Ears, Glasses, Wings & Backpacks, Necklaces, Hand); each item a thumbnail; color swatches;
@@ -65,8 +68,8 @@ this doc disagree, fix one of them in the same change.
 ### Things you can do in the world
 | Activity | How |
 |---|---|
-| Build | Pick a block, tap a block face with Build tool. Hold/drag to place a line (desktop hold). |
-| Remove | Remove tool, tap a block or a piece of furniture. Undo button (last 20 actions). |
+| Build | Pick a block, tap a block face with Build tool. Press and hold still (0.42 s), then drag: a line of blocks on the layer you pressed (never climbing toward the camera); one Undo takes the whole line back. A slow, still press is just a tap. |
+| Remove | Remove tool, tap a block, water or a piece of furniture (hold + drag erases a line on one layer). The solid bottom layer (y = 0) stays. Undo button (last 20 actions). |
 | Magic Houses | Bag → Magic Houses → tap ground: a whole furnished house appears (cottage, princess castle, treehouse, candy house, beach hut, igloo, pet shop, bakery). Undo removes it. |
 | Furniture | Beds, sofas, chairs, tables, lamps, wardrobes, rugs, TV, piano, kitchen, bathroom… placed facing you; tap with Build again on the same spot rotates. Colorable. |
 | Sleep | Hand-tap a bed: avatar lies down, screen dims with stars and "Zzz", time skips to morning, "Good morning, <name>!" |
@@ -205,14 +208,17 @@ class Game {
   exitToTitle() -> Promise<void>                            // saves first
   pickables;     // Set of { object3d, kind: 'entity'|'pet'|'other', ref, onUse(game, hit),
                  //          hint(game) -> string|null, box?: THREE.Box3 (world-space) }
-  pick() -> PickResult|null                                 // from screen center / pointer
+  pick(ndc?, { liquids?, reuse? }) -> PickResult|null      // from screen center / pointer
   useTarget()        // performs current tool on game.target
   interact(hit)      // Hand tool
-  toast(text, { icon, color, big } = {})   // shortcut to ui.toast
+  toast(text, { icon, color, big, duration } = {})   // shortcut to ui.toast
   celebrate(position, kind='sparkle')       // shortcut: particles + sound
   award(stickerId)   // shortcut to stickers system
-  undo()             // pops game.history (array of { undo(), redo() }), max 20
+  undo()             // pops game.history (array of { undo(), redo() }), max 20; afterwards
+                     // steps the player out of anything that was put back around her
   pushHistory(entry)
+  beginHistoryGroup(); endHistoryGroup()    // everything pushed in between = ONE Undo (nests)
+  historyGroup(fn)   // same, around fn(); use for multi-step actions (strokes, prefabs...)
 }
 ```
 
@@ -227,7 +233,7 @@ See §3 for the full as-built API.
 ### Events (payload shapes)
 ```
 'world:load'        { world, save }          'world:unload'   {}
-'world:created'     { world }                'world:saved'    { id }
+'world:created'     { world }                'world:saved'    { id, persistent }
 'block:place'       { x, y, z, id, prev }    'block:remove'   { x, y, z, id }
 'entity:place'      { entity }               'entity:remove'  { entity }
 'entity:use'        { entity, action }       // action: 'sit'|'sleep'|'door'|'lamp'|'piano'|...
@@ -306,7 +312,8 @@ game.registry.items.register({
   key: 'furn:bed_canopy',        // blocks are auto-registered as 'block:<key>'
   name: 'Princess Bed',
   category: 'bedroom',           // Bag tab id
-  icon: () => Promise<dataURL>,  // blocks: tile image; others: game.thumbs
+  icon: (color?) => Promise<dataURL>, // blocks: tile image; others: game.thumbs; with
+                                 // colors, icon(color) pictures that color (Bag color picker)
   colors: ['#FFB6D9', ...] | null, // optional variant swatches (furniture)
   use(game, hit, opts) -> bool   // called by Build tool; opts.color = chosen swatch
 });
@@ -315,7 +322,7 @@ Bag tabs (ids): `nature building colors candy glass lights bedroom living kitche
 garden fun pets food houses` (labels in `ITEM_CATEGORIES`, `src/core/registry.js`).
 Items may also set `kind` ('block' | 'furniture' | 'other'), `hidden`, and blocks/furniture
 set `block` / `furniture` keys. `items.get(key)`, `items.byCategory(tab)`,
-`items.iconFor(key)` → Promise<dataURL> (cached, never rejects). `use` returns true when it did
+`items.iconFor(key, color?)` → Promise<dataURL> (cached per color, never rejects). `use` returns true when it did
 something (false plays a soft "nope" click).
 
 ### World (src/world/world.js)
@@ -342,22 +349,34 @@ something (false plays a soft "nope" click).
   **translucent** (blended, depthWrite false, sorted by chunk distance). Attributes: `position`,
   `uv`, `layer` (texture array layer), `shade` (AO × face shade), `light` (vec2 sky/block).
   Face culling against neighbours (cross-chunk). `cross` shapes are two diagonal quads.
-- One `ShaderMaterial` (GLSL3, `sampler2DArray`) with uniforms `uDaylight` (0.15..1),
-  `uSkyColor`, `uBlockLightColor` (warm), `uFogColor`, `uFogNear/Far`, `uTime` (water wobble).
-  Final light = max(sky × daylight, block × warm) with an ambient floor so interiors are never
-  pitch black (daytime indoor ≥ 0.45). Extra uniforms: `uAmbient` (the floor), `uOpacity`.
+- One `ShaderMaterial` (GLSL3, `sampler2DArray`) with uniforms `uDaylight` (0.4 night ..1 day,
+  set by daynight), `uSkyColor`, `uBlockLightColor` (warm), `uFogColor`, `uFogNear/Far`, `uTime`
+  (water wobble). Final light = max(sky × daylight, block × warm) with an ambient floor so
+  interiors are never pitch black (`uAmbient` 0.22 at night .. 0.6 by day). Extra uniform:
+  `uOpacity`. Fog is pushed out while the camera is high above the ground (flying), so the
+  island stays clear from above.
   Uniform colors are raw sRGB (the shader writes without output conversion). `layer` ≥ 1024
   marks an animated tile. Material variants: opaque, cutout (`CUTOUT`, DoubleSide), translucent
   (`TRANSLUCENT`, blended, no depth write) share `game.blockUniforms`.
 - Furniture/avatars use `MeshLambertMaterial` lit by `game.lights.hemi/sun` (driven by
-  daynight) and a pool of 4 warm PointLights that entities.js assigns to the lit furniture
-  nearest the camera (constant light count: no shader recompiles).
+  daynight) and a pool of 4 warm PointLights (range 10, decay 1, intensity ≈ 4.9 at night,
+  ≈ 1 by day) that entities.js puts at the lamp of the lit furniture nearest the camera
+  (constant light count: no shader recompiles).
+- The horizon ring (`world.outside`) for an ocean is drawn like in-world water: translucent,
+  over a seabed ring at the depth, block and sky light of the world's own edge; the mesher
+  treats out-of-bounds cells below the ocean surface as that water (no water walls at the
+  edge).
 - `textures.js` builds a `DataArrayTexture` (16×16 per layer, mipmaps on, nearest-mipmap-linear)
   from all registered tile painters, deterministic via seeded RNG.
 
 ### Picking (`game.pick()`)
 Ray from camera through pointer (touch/mouse) or screen center (keyboard play), max 8 blocks
-from the player. Tests voxels (DDA) and `game.pickables` (Box3/ray), returns the nearest:
+from the player. Tests voxels (DDA) and `game.pickables` (Box3/ray), returns the nearest.
+Liquids are hit only with `{ liquids: true }` — the default while the Remove tool is selected
+(and for right-click remove), so water can be erased while Build aims through it. The frame
+loop's own target pick uses `{ reuse: true }`: `game.target` is a scratch object overwritten
+every frame (copy what you need to keep). `raycastVoxels(..., accept, out)` also fills a
+reusable `makeVoxelHit()` object.
 ```js
 { type: 'block', x, y, z, id, key, face: [nx,ny,nz], point: Vector3, place: [x,y,z], distance }
 { type: 'pickable', pickable, point: Vector3, distance, face, place }
@@ -376,9 +395,12 @@ and `hint(game, hit)`. Reach is `game.reach` (8) from the player's head.
   'ride'|'emote'. `player.sitOn(entity, seatPos, yaw)`, `player.sleepIn(entity, pos, yaw)`,
   `player.stand()`, `player.mount(pet)`, `player.teleport(x,y,z)`, `player.position`,
   `player.yaw`.
-- Camera (camera.js): third person by default (distance 4.5, orbit with drag/right side touch,
-  wheel/pinch zoom 2–9, collision pull-in), first person toggle (V key / Settings). Camera never
-  clips into blocks. `game.cameraRig` = `{ yaw, pitch, distance, mode, setMode(m),
+- Camera (camera.js): third person by default, **over the shoulder**: the orbit pivot sits
+  0.75 to the camera's right of the head (less on portrait phones, 0 in bed) and 0.3 above it,
+  so the avatar stands left of centre and the screen-centre target is not hidden behind her
+  (distance 4.5, orbit with drag/right side touch, wheel/pinch zoom 2–9, collision pull-in;
+  the pivot also pulls in beside walls). The avatar is hidden when the camera is within 1.15
+  of her head. First person toggle (V key / Settings). Camera never clips into blocks. `game.cameraRig` = `{ yaw, pitch, distance, mode, setMode(m),
   toggleMode(), snap() }`; yaw 0 looks toward +Z. Movement is camera-relative. Portrait
   screens widen the vertical fov (70° + (1 − aspect)·40°).
 - Player extras: `setFlying(on)`, `toggleFly()`, `emote(name)`, `findStandSpot(x,y,z,entity)`,
@@ -446,7 +468,8 @@ def = {
   actions: ['sleep'] | ['sit'] | ['door'] | ['lamp'] | ['piano'] | ['tv'] | ['cook'] |
            ['wardrobe'] | ['bath'] | ['sink'] | ['swing'] | ['read'] | ['feed'] ...,
   seat?: [x,y,z], sleepPos?: [x,y,z],
-  placeOn?: 'floor' | 'wall' | 'ceiling' | 'table'
+  placeOn?: 'floor' | 'wall' | 'ceiling' | 'table',
+  surface?: number               // height of a top that 'table' items stand on (model units)
 }
 game.entities.place(key, x, y, z, rot, color, data) -> entity   // rot 0..3 (90° steps)
 game.entities.remove(entity)
@@ -473,6 +496,18 @@ As built:
   color)`, `canPlace`, `footprint`, `localToWorld(entity, lx, ly, lz)`, `byUid(uid)`.
   entity adds `cells, colliders, pickable, lightCell, yOffset, frontCell()`.
 - Build tool on a placed piece with the same item selected rotates it; Remove tool removes it.
+- `placeOn` (as built):
+  - `'floor'` (default) stands in the tapped cell.
+  - `'wall'` tapped on a wall's side faces out of it (on a floor it stands like a floor item).
+  - `'ceiling'` hangs in the cell under a solid block: tap the underside of a block, or the
+    floor below a ceiling (looks up to 8 cells). No ceiling → "Hang it under a ceiling!".
+    Build the model hanging from the top of its [0,h] box.
+  - `'table'` stands on top of furniture that declares `surface` (e.g. `table_round` 0.82):
+    it takes the cell above and `yOffset = surface − 1`, recorded as `entity.restsOn` (uid).
+    Elsewhere it stands on the floor. Removing the table removes what stands on it (one Undo
+    brings both back); saves load tables first.
+  Helpers: `entities.surfaceBelow(x,y,z)`, `entities.itemsOnTop(entity)`. entity also has
+  `lightPoint` (world [x,y,z] of its light).
 
 Canonical furniture keys (prefabs and other modules may reference these):
 Bedroom: `bed_single bed_double bed_canopy bed_bunk bed_heart bed_cloud crib pet_bed
@@ -511,7 +546,9 @@ igloo, bakery, pet_shop, modern_house, barn.
   `time:morning` / `time:night`. `game.time.dayLength` = 720 s. Settings can freeze time.
   The core advances `game.time` each play frame (`t` always, `dayTime` unless
   `settings.timeFrozen`); daynight detects clock crossings (0.25 / 0.78) and emits the events.
-  `game.setDayTime(v)` and `game.skipToMorning()` move the clock. Biomes may give
+  `game.setDayTime(v)` and `game.skipToMorning()` move the clock; a night slept through with
+  `skipToMorning()` is quiet (it sets `game.time.quietNight`): `time:morning` fires,
+  `time:night` does not. Biomes may give
   `sky: { top, horizon }` day colors.
 - `weather.js`: sunny, cloudy, rain, snow, rainbow (big arc in sky + sparkles).
 - `particles.js`: `game.particles.emit(kind, position, opts)`; kinds: sparkle, heart, star,
@@ -526,12 +563,15 @@ igloo, bakery, pet_shop, modern_house, barn.
 ui.root                // HTMLElement overlay (pointer-events managed)
 ui.addStyles(css)      // inject a <style>
 ui.toast(text, opts)   // bouncy toast, queued
-ui.hint(text|null)     // context bubble near center
+ui.hint(text|null, at?)  // context bubble just below `at` {x,y} (CSS px; the game passes the
+                         // projected target point), else below the screen centre
 ui.registerPanel(name, { build(container, game), onOpen?(args), onClose?(), fullscreen? })
 ui.open(name, args) / ui.close() / ui.isOpen(name)   // one modal panel at a time, sets game.paused
 ui.button({ icon, label, onClick, variant })          // consistent chunky button element
-ui.confirm({ title, text, yes, no }) -> Promise<bool> // in-page confirm dialog (dialogs.js)
-ui.textInput({ title, value, placeholder, suggestions }) -> Promise<string|null>
+ui.confirm({ title, text, yes, no, signal? }) -> Promise<bool> // in-page confirm (dialogs.js)
+ui.textInput({ title, value, placeholder, suggestions, signal? }) -> Promise<string|null>
+// dialogs: Enter activates the focused button (confirm focuses "No"), or submits the text
+// field; Esc / tapping outside cancels; an aborted AbortSignal closes them as cancelled
 // as built, also:
 ui.el(tag, cls, text); ui.icon(name) -> svg string; ui.hasPanel(name); ui.toggle(name);
 ui.back()      // Close/Esc: opens def.back(game) if it returns a panel name, else closes
@@ -557,10 +597,15 @@ tap/cursor, or null = screen center), `input.on('tap', fn)` (click/tap without d
 = remove (desktop shortcut); drag (either button, > 6 px) = look. Keys: WASD/arrows, Space,
 Shift, 1–9, E (hand/interact), Q (remove), B (bag), F (fly), V (camera), P (photo),
 G (emotes), Z (undo, also Ctrl+Z), Esc (menu / close panel). Touch: joystick (left 40% of
-screen), look drag (right side), taps act at the tap point.
+screen), look drag (right side), taps act at the tap point. Touches that start on the resting
+joystick (its radius + 36 px) only steer; a quick (< 0.28 s), still (< 10 px) touch elsewhere
+in the joystick zone still acts as a tap.
 As built: ↑/↓ also move, ←/→ turn the camera; R = Build tool; E uses the target directly (or
 switches to Hand). Hold still ≥ 0.42 s then drag = paint/erase a line (`hold` events with
-`phase: 'start'|'move'|'end'`). `input.press('jump'|'down'|'run', bool)` for HUD buttons,
+`phase: 'start'|'move'|'end'`; `end` carries `dragged` and `cancelled`). A hold that never
+dragged is a slow tap: the game runs a normal tap on release unless the hold painted.
+`input.press('jump'|'down'|'run', bool)` for HUD buttons (a press shorter than a frame still
+counts for one frame),
 `input.touchMode` + `touchmode` event, `gesture` event (first user gesture unlocks audio).
 
 ### Audio (src/core/audio.js)
@@ -588,8 +633,20 @@ logged and reported as `{ ok:false }`).
 - `store.listWorlds()`, `store.loadWorld(id)`, `store.saveWorld(save)`, `store.deleteWorld(id)`,
   `store.loadProfile()`, `store.saveProfile(profile)`, `store.exportWorld(id) -> string`,
   `store.importWorld(string)`.
+- Write failures later in a session (quota, eviction, a broken database): that save falls
+  through IndexedDB → localStorage → memory instead of being dropped. Reads merge every local
+  backend that holds data (newest `updatedAt` wins; localStorage copies left by an earlier
+  session are found at `init()`); a later successful primary write drops the older fallback
+  copy. `saveWorld`/`saveProfile` resolve `{ ok, backend, persistent, error? }` —
+  `persistent` is false when the data only lives in memory (no cloud). `store.persistent`
+  says the same for the store as a whole (false in a sandboxed frame without storage or
+  cloud). The game toasts "Oh no! This device can't save your world right now." on entering a
+  world when not persistent and after a non-persistent save (at most every 4 minutes).
 - Export: "Save to a file" in My Worlds uses `claude.use('downloads')` when present, else an
-  `<a download>` blob link; Import uses a file input.
+  `<a download>` blob link; Import uses a file input. *Not built yet (Menus team): only
+  `store.exportWorld/importWorld` exist.*
+- Publishing as a claude.ai Artifact: declare the capabilities `db` and `user` (cloud saves)
+  and `downloads` (for "Save to a file" once it exists).
 
 ### Save formats
 ```js
@@ -628,7 +685,11 @@ ratio and particle counts.
   furniture keys (`furn:bed_single` or `bed_single`); `useAt(x,y,z, face=[0,1,0])`.
 - `tools/smoke.mjs [--biome=meadow] [--shots-prefix=core] [--only=desktop|touch] [--headed]`.
   It exports `launch, openGame, attachErrorCollectors, waitForTitle, waitForPlay, waitIdle,
-  startWorld, startWorldViaUI, shot, settle, finish` for team scenario scripts.
+  startWorld, startWorldViaUI, shot, settle, finish, screenPoint` for team scenario scripts.
+  Besides building, sleeping, saving and reloading it checks (through the real UI): a slow
+  Hand press on a bed sleeps, a hold-drag stroke is one layer and one Undo, typing in the
+  Rename dialog works, taps on the joystick never act, and no HUD button shows through the
+  open Bag on a phone.
 
 ---
 
@@ -648,14 +709,17 @@ game.reach             // 8
 game.hotbar.colors     // chosen swatch per slot
 game.setTool(tool); game.selectSlot(i); game.setSlot(i|null, itemKey, color); game.selectedItem()
 game.placeBlock(x,y,z,key,{ history=true, fx=true }) -> bool    // undoable, sparkle + sound
-game.removeBlock(x,y,z,{ history=true, fx=true }) -> bool
+game.removeBlock(x,y,z,{ history=true, fx=true }) -> bool       // refuses solid blocks at y = 0
 game.placeBlockFromHit(hit, key, opts)   // what block items' use() calls
 game.removeTarget(hit)                   // Remove tool (right-click on desktop)
 game.setDayTime(v); game.skipToMorning()
 game.saveProfile(immediate=false)        // debounced 400 ms
 game.applySettings()                     // volumes, quality (pixel ratio), camera mode
-game.captureThumbnail() -> jpeg dataURL  // 240×150
+game.captureThumbnail() -> jpeg dataURL  // 240×150; taken on world creation, exit and at
+                                         // most every 5 min by autosave (it costs a render)
 game.flushSave()                         // save now + push cloud writes (tab hidden / pagehide)
+// WebGL context loss: three.js restores the context itself; the game saves at once and, if
+// the picture has not returned after 2.5 s, offers "Wake up" (reload) in an in-page dialog.
 game.registerAction(name, fn); game.runAction(name, ...args)
 ```
 

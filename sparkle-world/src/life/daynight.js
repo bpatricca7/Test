@@ -200,20 +200,24 @@ export function install(game) {
       // block shader + scene fog share the horizon color (raw sRGB in the block shader)
       const bu = game.blockUniforms;
       const worldR = game.world ? Math.max(game.world.sx, game.world.sz) : 144;
-      const far = clamp(worldR * 0.95, 120, 200);
+      // flying high: push the fog out so the island below stays clear
+      const ground = game.world ? Math.max(game.world.waterLevel || 0, 16) : 20;
+      const lift = Math.max(0, cam.y - ground - 14);
+      const far = clamp(worldR * 0.95, 120, 200) + lift * 1.6;
+      const near = far * 0.3 + lift * 0.6;
       if (bu) {
-        // nights stay a gentle, readable indigo (no scary darkness)
+        // nights stay a gentle, readable indigo (no scary darkness); rooms stay cheerful by day
         bu.uDaylight.value = 0.4 + 0.6 * dayF;
-        bu.uAmbient.value = 0.2 + 0.25 * dayF;
+        bu.uAmbient.value = 0.22 + 0.38 * dayF;
         mixColor(tmp, moonTint, white, dayF);
         bu.uSkyColor.value.copy(mixColor(tmp, tmp, warm, dusk * 0.6));
         bu.uFogColor.value.copy(horizon);
-        bu.uFogNear.value = far * 0.3;
+        bu.uFogNear.value = near;
         bu.uFogFar.value = far;
       }
       // horizon is raw sRGB; convert for three's color-managed fog/background
       game.scene.fog.color.setRGB(horizon.r, horizon.g, horizon.b, THREE.SRGBColorSpace);
-      game.scene.fog.near = far * 0.3;
+      game.scene.fog.near = near;
       game.scene.fog.far = far;
       if (game.scene.background && game.scene.background.isColor) game.scene.background.copy(game.scene.fog.color);
 
@@ -227,13 +231,15 @@ export function install(game) {
       cloudMat.map.offset.x += dt * 0.0015;
       game.audio.setNight(dayF < 0.4);
 
-      // morning / night events when the clock crosses them
+      // morning / night events when the clock crosses them (a night slept through with
+      // skipToMorning() is quiet: no time:night, so no "saw the stars" without stars)
       if (game.mode === 'play') {
         const abs = tm.day + d;
         if (lastAbs !== null && abs > lastAbs) {
           if (Math.floor(abs - MORNING_AT) > Math.floor(lastAbs - MORNING_AT)) game.events.emit('time:morning', { day: tm.day });
-          if (Math.floor(abs - NIGHT_AT) > Math.floor(lastAbs - NIGHT_AT)) game.events.emit('time:night', {});
+          if (Math.floor(abs - NIGHT_AT) > Math.floor(lastAbs - NIGHT_AT) && !tm.quietNight) game.events.emit('time:night', {});
         }
+        tm.quietNight = false;
         lastAbs = abs;
       }
     },

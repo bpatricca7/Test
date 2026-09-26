@@ -47,12 +47,27 @@ export function rayBox(ox, oy, oz, dx, dy, dz, minX, minY, minZ, maxX, maxY, max
   return Math.max(0, tmin);
 }
 
+/** A reusable hit object for raycastVoxels(..., out) in per-frame code. */
+export function makeVoxelHit() {
+  return { x: 0, y: 0, z: 0, id: 0, face: [0, 0, 0], distance: 0, point: [0, 0, 0] };
+}
+
+function writeHit(out, x, y, z, id, nx, ny, nz, t, ox, oy, oz, dx, dy, dz) {
+  const h = out || makeVoxelHit();
+  h.x = x; h.y = y; h.z = z; h.id = id;
+  h.face[0] = nx; h.face[1] = ny; h.face[2] = nz;
+  h.distance = t;
+  h.point[0] = ox + dx * t; h.point[1] = oy + dy * t; h.point[2] = oz + dz * t;
+  return h;
+}
+
 /**
  * Cast a ray through the voxel grid. Returns a hit object or null:
  * { x, y, z, id, face: [nx,ny,nz], distance, point: [px,py,pz] }.
  * `accept(id)` decides which voxels stop the ray (default: selectable blocks).
+ * `out` (from makeVoxelHit) is filled and returned instead of allocating a new hit.
  */
-export function raycastVoxels(world, ox, oy, oz, dx, dy, dz, maxDist, accept = null) {
+export function raycastVoxels(world, ox, oy, oz, dx, dy, dz, maxDist, accept = null, out = null) {
   const len = Math.hypot(dx, dy, dz) || 1;
   dx /= len; dy /= len; dz /= len;
   const props = world.registry.props;
@@ -73,22 +88,17 @@ export function raycastVoxels(world, ox, oy, oz, dx, dy, dz, maxDist, accept = n
   let first = true;
 
   while (t <= maxDist) {
-    if (y < 0 || y >= world.sy + 32) break;
+    // below the floor, or above the world and still climbing: nothing more to hit
+    // (a ray starting high above the world, e.g. from a flying camera, keeps descending)
+    if (y < 0 || (y >= world.sy && stepY > 0)) break;
     if (!first) {
       const id = world.get(x, y, z);
       if (id !== 0 && (accept ? accept(id) : selectable[id])) {
         const box = SHAPE_BOX[shapeOf[id]];
-        if (!box) {
-          return { x, y, z, id, face: [fx, fy, fz], distance: t, point: [ox + dx * t, oy + dy * t, oz + dz * t] };
-        }
+        if (!box) return writeHit(out, x, y, z, id, fx, fy, fz, t, ox, oy, oz, dx, dy, dz);
         const bt = rayBox(ox, oy, oz, dx, dy, dz,
           x + box[0], y + box[1], z + box[2], x + box[3], y + box[4], z + box[5], n);
-        if (bt >= 0 && bt <= maxDist) {
-          return {
-            x, y, z, id, face: [n[0], n[1], n[2]], distance: bt,
-            point: [ox + dx * bt, oy + dy * bt, oz + dz * bt],
-          };
-        }
+        if (bt >= 0 && bt <= maxDist) return writeHit(out, x, y, z, id, n[0], n[1], n[2], bt, ox, oy, oz, dx, dy, dz);
       }
     }
     first = false;

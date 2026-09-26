@@ -27,6 +27,8 @@ export class UI {
     this._toastQueue = [];
     this._toastCount = 0;
     this._hintText = null;
+    this._hintX = this._hintY = null;
+    this._hintW = 0;
   }
 
   /** Create an element with optional class and text. */
@@ -96,20 +98,43 @@ export class UI {
     }
   }
 
-  /** Context bubble near the crosshair ("Tap to sleep"). null hides it. */
-  hint(text) {
-    if (text === this._hintText) return;
-    this._hintText = text;
-    if (!text) {
-      this.hintEl.hidden = true;
+  /**
+   * Context bubble ("Tap to sleep") just below `at` ({ x, y } CSS px in the game area, e.g.
+   * the projected target point), or below the screen centre when `at` is null. null hides it.
+   */
+  hint(text, at = null) {
+    const el = this.hintEl;
+    if (text !== this._hintText) {
+      this._hintText = text;
+      if (!text) {
+        el.hidden = true;
+        return;
+      }
+      el.textContent = text;
+      el.hidden = false;
+      this._hintW = el.offsetWidth;
+      // restart the pop animation
+      el.style.animation = 'none';
+      void el.offsetWidth;
+      el.style.animation = '';
+    }
+    if (!text) return;
+    if (!at) {
+      if (this._hintX !== null) {
+        el.style.left = el.style.top = '';
+        this._hintX = this._hintY = null;
+      }
       return;
     }
-    this.hintEl.textContent = text;
-    this.hintEl.hidden = false;
-    // restart the pop animation
-    this.hintEl.style.animation = 'none';
-    void this.hintEl.offsetWidth;
-    this.hintEl.style.animation = '';
+    const w = this.root.clientWidth, h = this.root.clientHeight;
+    const half = (this._hintW || 160) / 2 + 10;
+    const x = Math.round(Math.min(Math.max(at.x, half), w - half));
+    const y = Math.round(Math.min(Math.max(at.y + 30, 70), h - 160));
+    if (x === this._hintX && y === this._hintY) return;
+    this._hintX = x;
+    this._hintY = y;
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
   }
 
   // ---------- panels ----------

@@ -127,10 +127,17 @@ export class Mesher {
       }
     }
 
-    // bounds-aware readers (world edges: air to the sides/above, solid below)
+    // bounds-aware readers (world edges: air to the sides/above, solid below). Beyond the
+    // sides of an ocean world the horizon ring's water continues, so water at the edge gets
+    // no side wall facing out of the world.
+    const out = w.outside;
+    const outId = out && out.block ? w.registry.idOf(out.block) : -1;
+    const seaId = outId > 0 && shapeOf[outId] === SHAPES.liquid ? outId : 0;
+    const seaTop = seaId ? Math.floor(out.surface) : -1;
     const idAt = (x, y, z) => {
       if (y < 0) return w.floorId;
-      if (x < 0 || z < 0 || x >= sx || z >= sz || y >= sy) return 0;
+      if (y >= sy) return 0;
+      if (x < 0 || z < 0 || x >= sx || z >= sz) return y <= seaTop ? seaId : 0;
       return blocks[(y * sz + z) * sx + x];
     };
     const occl = (x, y, z) => (opaque[idAt(x, y, z)] ? 1 : 0);

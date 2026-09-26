@@ -7,14 +7,14 @@ import { Input } from './input.js';
 import { AudioEngine } from './audio.js';
 import { SaveStore } from './storage.js';
 import { Thumbs } from './thumbs.js';
-import { BlockRegistry, ItemRegistry } from './registry.js';
+import { BlockRegistry, ItemRegistry, SHAPES } from './registry.js';
 import { mulberry32, makeId, nextFrame, clamp } from './util.js';
 import { Noise } from './noise.js';
 import { World, WORLD_SIZES } from '../world/world.js';
 import { buildBlockTexture } from '../world/textures.js';
 import { createBlockUniforms, createBlockMaterials } from '../world/material.js';
 import { ChunkRenderer } from '../world/chunks.js';
-import { raycastVoxels, rayBox } from '../world/raycast.js';
+import { raycastVoxels, rayBox, makeVoxelHit } from '../world/raycast.js';
 import { Physics } from '../world/physics.js';
 import { defaultSpawn } from '../world/worldgen.js';
 
@@ -24,7 +24,10 @@ export const DEFAULT_HOTBAR = [
 ];
 
 const AUTOSAVE_MS = 45000;
+const AUTOSAVE_THUMB_MS = 5 * 60000; // autosaves refresh the My Worlds picture this often
 const MAX_HISTORY = 20;
+const STROKE_MAX_CELLS = 96; // one hold-drag paints at most this many blocks
+const SAVE_WARN_MS = 4 * 60000; // repeat the "can't save here" note at most this often
 
 export function defaultProfile(look = {}) {
   return {
@@ -133,11 +136,28 @@ export class Game {
     this._center = new THREE.Vector2(0, 0);
     this._profileTimer = 0;
     this._autosaveTimer = 0;
-    this._holdKey = '';
+    this._lastThumb = null;
+    this._thumbAt = 0;
+    this._saveWarnAt = -Infinity;
+    this._bottomToastAt = -Infinity;
+    this._stroke = null; // current hold-drag paint stroke
+    this._group = null; // open history group (see beginHistoryGroup)
+    // reused per-frame pick results (game.target is overwritten every frame)
+    this._n = [0, 0, 0];
+    this._nBest = [0, 0, 0];
+    this._vhScratch = makeVoxelHit();
+    this._pickScratch = {
+      block: { type: 'block', x: 0, y: 0, z: 0, id: 0, key: '', face: [0, 0, 0], point: new THREE.Vector3(), place: [0, 0, 0], distance: 0 },
+      pickable: { type: 'pickable', pickable: null, point: new THREE.Vector3(), distance: 0, face: [0, 0, 0], place: [0, 0, 0] },
+    };
+    this._acceptWithLiquids = null;
+    this._hintV = new THREE.Vector3();
+    this._hintAt = { x: 0, y: 0 };
 
     this._registerCoreActions();
     this._bindInput();
     this._bindLifecycle();
+    this._bindContextLoss();
     this._resize();
     this.debug = createDebug(this);
     if (typeof window !== 'undefined') window.__game = this;
@@ -274,10 +294,14 @@ export class Game {
     this.time.dayTime = ((dayTime % 1) + 1) % 1;
   }
 
-  /** Sleep: skip ahead to early morning of the next day. */
+  /**
+   * Sleep: skip ahead to early morning of the next day. The skipped night is marked
+   * (time.quietNight) so daynight emits time:morning but not time:night for it.
+   */
   skipToMorning() {
     if (this.time.dayTime > 0.25) this.time.day += 1;
     this.time.dayTime = 0.26;
+    this.time.quietNight = true;
   }
 
   _resize() {
@@ -303,6 +327,36 @@ export class Game {
       }
     });
     window.addEventListener('pagehide', () => this.flushSave());
+  }
+
+  /**
+   * three.js restores a lost WebGL context by itself (textures and meshes re-upload); we
+   * save right away, and if the picture has not come back after a moment we offer a reload.
+   */
+  _bindContextLoss() {
+    const canvas = this.renderer.domElement;
+    const lost = () => this.renderer.getContext().isContextLost();
+    let timer = 0, asking = null;
+    canvas.addEventListener('webglcontextlost', () => {
+      this.flushSave();
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (!this.ui || !lost() || asking) return;
+        asking = new AbortController();
+        this.ui.confirm({
+          title: 'The picture fell asleep!',
+          text: 'Your world is saved. Tap to wake it up.',
+          yes: 'Wake up', no: 'Wait', yesVariant: 'mint', icon: 'sparkle', signal: asking.signal,
+        }).then((yes) => {
+          asking = null;
+          if (yes && lost()) location.reload();
+        });
+      }, 2500);
+    });
+    canvas.addEventListener('webglcontextrestored', () => {
+      clearTimeout(timer);
+      if (asking) asking.abort(); // the picture came back by itself
+    });
   }
 
   /** Save now (no thumbnail) and push pending cloud writes; used when the page may go away. */
@@ -426,7 +480,12 @@ export class Game {
     };
     this.selectedTool = 'build';
     this.history = [];
+    this._group = null;
+    this._stroke = null;
     this.target = null;
+    // this world's own picture, so an early save never reuses the previous world's
+    this._lastThumb = save.thumbnail || null;
+    this._thumbAt = save.thumbnail ? Date.now() : 0;
     this.pickables.clear();
     this.colliders.clear();
     this.physics = new Physics(world, this.colliders);
@@ -458,9 +517,12 @@ export class Game {
     if (this.ui) this.ui.closeAll();
     this._showLoading(null);
     this.events.emit('world:load', { world, save });
+    if (!this.store.persistent) this._warnSaveTrouble(true);
     clearInterval(this._autosaveTimer);
     this._autosaveTimer = setInterval(() => {
-      if (this.mode === 'play' && !this._busy) this.saveWorld({ thumbnail: true });
+      if (this.mode !== 'play' || this._busy) return;
+      // the picture needs an extra render + JPEG encode, so autosaves only refresh it now and then
+      this.saveWorld({ thumbnail: Date.now() - this._thumbAt > AUTOSAVE_THUMB_MS });
     }, AUTOSAVE_MS);
   }
 
@@ -483,6 +545,8 @@ export class Game {
     this.world = null;
     this.target = null;
     this.history = [];
+    this._group = null;
+    this._stroke = null;
     this.pickables.clear();
     this.colliders.clear();
     if (this.ui) this.ui.hint(null);
@@ -502,7 +566,10 @@ export class Game {
         console.error(`[game] system "${s.name}" failed to save`, err);
       }
     }
-    if (thumbnail) this._lastThumb = this.captureThumbnail() || this._lastThumb;
+    if (thumbnail) {
+      this._lastThumb = this.captureThumbnail() || this._lastThumb;
+      this._thumbAt = Date.now();
+    }
     const save = {
       v: 1,
       id: w.meta.id,
@@ -525,9 +592,18 @@ export class Game {
       thumbnail: this._lastThumb || null,
     };
     const res = await this.store.saveWorld(save);
-    if (res.ok) this.events.emit('world:saved', { id: save.id });
+    if (res.ok) this.events.emit('world:saved', { id: save.id, persistent: res.persistent !== false });
+    if (!res.ok || res.persistent === false) this._warnSaveTrouble(false);
     await this.saveProfile(true);
     return res;
+  }
+
+  /** Tell the player (gently, not too often) that this device is not keeping her world. */
+  _warnSaveTrouble(force) {
+    const now = performance.now();
+    if (!force && now - this._saveWarnAt < SAVE_WARN_MS) return;
+    this._saveWarnAt = now;
+    this.toast("Oh no! This device can't save your world right now.", { icon: 'sparkle', color: 'pink', duration: 6000 });
   }
 
   /** Small JPEG of the current view for the My Worlds list. */
@@ -611,8 +687,11 @@ export class Game {
    * Ray from the camera through ndc (default: input.pointer, else screen centre).
    * Returns { type:'block', x,y,z,id,key,face,point,place,distance } or
    * { type:'pickable', pickable, point, distance, face, place } or null.
+   * opts.liquids: water can be hit (default: while the Remove tool is selected, so water
+   * can be erased; Build aims through it). opts.reuse: fill and return shared scratch
+   * objects instead of allocating (per-frame targeting only; the result is overwritten).
    */
-  pick(ndc) {
+  pick(ndc, opts = {}) {
     if (!this.world) return null;
     const p = ndc === undefined ? this.input.pointer : ndc;
     this._raycaster.setFromCamera(p || this._center, this.camera);
@@ -622,33 +701,54 @@ export class Game {
     if (this.player) head.set(this.player.position.x, this.player.position.y + 1.4, this.player.position.z);
     else head.copy(o);
     const maxDist = o.distanceTo(head) + this.reach;
+    const reuse = !!opts.reuse;
+    const liquids = opts.liquids ?? this.selectedTool === 'remove';
 
     let best = null;
-    const vh = raycastVoxels(this.world, o.x, o.y, o.z, d.x, d.y, d.z, maxDist);
+    const vh = raycastVoxels(this.world, o.x, o.y, o.z, d.x, d.y, d.z, maxDist,
+      liquids ? this._liquidAccept() : null, reuse ? this._vhScratch : null);
     if (vh) {
-      best = {
-        type: 'block', x: vh.x, y: vh.y, z: vh.z, id: vh.id,
-        key: this.registry.blocks.byId(vh.id).key,
-        face: vh.face,
-        point: new THREE.Vector3(vh.point[0], vh.point[1], vh.point[2]),
-        place: [vh.x + vh.face[0], vh.y + vh.face[1], vh.z + vh.face[2]],
-        distance: vh.distance,
-      };
+      best = reuse ? this._pickScratch.block : { type: 'block', face: [0, 0, 0], point: new THREE.Vector3(), place: [0, 0, 0] };
+      best.x = vh.x; best.y = vh.y; best.z = vh.z; best.id = vh.id;
+      best.key = this.registry.blocks.byId(vh.id).key;
+      best.face[0] = vh.face[0]; best.face[1] = vh.face[1]; best.face[2] = vh.face[2];
+      best.point.set(vh.point[0], vh.point[1], vh.point[2]);
+      best.place[0] = vh.x + vh.face[0]; best.place[1] = vh.y + vh.face[1]; best.place[2] = vh.z + vh.face[2];
+      best.distance = vh.distance;
     }
-    const n = [0, 0, 0];
+    const n = this._n;
+    let bestPk = null, bestT = best ? best.distance : Infinity;
+    const nx = this._nBest;
     for (const pk of this.pickables) {
       const b = pk.box;
       if (!b) continue;
       const t = rayBox(o.x, o.y, o.z, d.x, d.y, d.z, b.min.x, b.min.y, b.min.z, b.max.x, b.max.y, b.max.z, n);
-      if (t < 0 || t > maxDist || (best && t >= best.distance)) continue;
-      const point = new THREE.Vector3(o.x + d.x * t, o.y + d.y * t, o.z + d.z * t);
-      best = {
-        type: 'pickable', pickable: pk, point, distance: t, face: [n[0], n[1], n[2]],
-        place: [Math.floor(point.x + n[0] * 0.5), Math.floor(point.y + n[1] * 0.5), Math.floor(point.z + n[2] * 0.5)],
-      };
+      if (t < 0 || t > maxDist || t >= bestT) continue;
+      bestT = t;
+      bestPk = pk;
+      nx[0] = n[0]; nx[1] = n[1]; nx[2] = n[2];
+    }
+    if (bestPk) {
+      best = reuse ? this._pickScratch.pickable : { type: 'pickable', point: new THREE.Vector3(), face: [0, 0, 0], place: [0, 0, 0] };
+      best.pickable = bestPk;
+      best.distance = bestT;
+      best.point.set(o.x + d.x * bestT, o.y + d.y * bestT, o.z + d.z * bestT);
+      best.face[0] = nx[0]; best.face[1] = nx[1]; best.face[2] = nx[2];
+      best.place[0] = Math.floor(best.point.x + nx[0] * 0.5);
+      best.place[1] = Math.floor(best.point.y + nx[1] * 0.5);
+      best.place[2] = Math.floor(best.point.z + nx[2] * 0.5);
     }
     if (best && this.player && best.point.distanceTo(head) > this.reach + 0.75) return null;
     return best;
+  }
+
+  /** accept() for raycastVoxels that also stops at liquids (Remove tool). */
+  _liquidAccept() {
+    if (!this._acceptWithLiquids) {
+      const props = this.registry.blocks.props;
+      this._acceptWithLiquids = (id) => props.selectable[id] === 1 || props.shape[id] === SHAPES.liquid;
+    }
+    return this._acceptWithLiquids;
   }
 
   _updateTarget() {
@@ -657,7 +757,7 @@ export class Game {
       if (this.ui) this.ui.hint(null);
       return;
     }
-    this.target = this.pick();
+    this.target = this.pick(undefined, { reuse: true });
     if (!this.ui) return;
     let hint = null;
     const t = this.target;
@@ -666,7 +766,17 @@ export class Game {
       const def = this.registry.blocks.byId(t.id);
       if (def && def.onUse) hint = def.hint || 'Tap to use';
     }
-    this.ui.hint(hint);
+    // show the bubble next to the thing it talks about
+    let at = null;
+    if (hint) {
+      const v = this._hintV.copy(t.point).project(this.camera);
+      if (v.z < 1) {
+        at = this._hintAt;
+        at.x = ((v.x + 1) / 2) * this.container.clientWidth;
+        at.y = ((1 - v.y) / 2) * this.container.clientHeight;
+      }
+    }
+    this.ui.hint(hint, at);
   }
 
   // ---------- acting ----------
@@ -753,12 +863,20 @@ export class Game {
     return true;
   }
 
-  /** Remove a block with undo + sound + sparkle. */
+  /** Remove a block with undo + sound + sparkle. The solid bottom layer (y = 0) stays. */
   removeBlock(x, y, z, { history = true, fx = true } = {}) {
     const w = this.world;
     if (!w || !w.inBounds(x, y, z)) return false;
     const prev = w.get(x, y, z);
     if (prev === 0) return false;
+    if (y === 0 && this.registry.blocks.props.solid[prev]) {
+      // digging through would show the empty space under the world
+      if (fx && performance.now() - this._bottomToastAt > 4000) {
+        this._bottomToastAt = performance.now();
+        this.toast("That's the very bottom of the world!", { icon: 'sparkle' });
+      }
+      return false;
+    }
     w.set(x, y, z, 0, { record: true });
     if (history) {
       this.pushHistory({
@@ -776,9 +894,44 @@ export class Game {
   // ---------- history ----------
 
   pushHistory(entry) {
+    if (this._group) {
+      this._group.entries.push(entry);
+      return;
+    }
     this.history.push(entry);
     if (this.history.length > MAX_HISTORY) this.history.shift();
     this.events.emit('history:change', { size: this.history.length });
+  }
+
+  /**
+   * Collect every pushHistory() until the matching endHistoryGroup() into ONE entry, so a
+   * single Undo takes back a whole paint stroke (or any multi-step action). Nests.
+   */
+  beginHistoryGroup() {
+    if (this._group) this._group.depth++;
+    else this._group = { entries: [], depth: 1 };
+  }
+
+  endHistoryGroup() {
+    const g = this._group;
+    if (!g || --g.depth > 0) return;
+    this._group = null;
+    const list = g.entries;
+    if (!list.length) return;
+    this.pushHistory(list.length === 1 ? list[0] : {
+      undo: () => { for (let i = list.length - 1; i >= 0; i--) list[i].undo(); },
+      redo: () => { for (const e of list) if (e.redo) e.redo(); },
+    });
+  }
+
+  /** Run fn() inside a history group; returns its result. */
+  historyGroup(fn) {
+    this.beginHistoryGroup();
+    try {
+      return fn();
+    } finally {
+      this.endHistoryGroup();
+    }
   }
 
   undo() {
@@ -792,9 +945,28 @@ export class Game {
     } catch (err) {
       console.error('[game] undo failed', err);
     }
+    this._unstickPlayer();
     this.audio.play('whoosh', { volume: 0.6 });
     this.events.emit('history:change', { size: this.history.length });
     return true;
+  }
+
+  /** After undo put blocks or furniture back, step the player out of them if needed. */
+  _unstickPlayer() {
+    const pl = this.player, ph = this.physics;
+    if (!pl || !ph || pl.state === 'sit' || pl.state === 'sleep' || pl.state === 'ride') return;
+    const pos = pl.position;
+    if (!ph.bodyBlocked(pos.x, pos.y + 0.01, pos.z, pl.halfW, pl.height)) return;
+    let spot = pl.findStandSpot(pos.x, pos.y, pos.z);
+    if (!spot) {
+      for (let y = Math.floor(pos.y) + 1; y < this.world.sy + 2; y++) {
+        if (!ph.bodyBlocked(pos.x, y + 0.01, pos.z, pl.halfW, pl.height)) { spot = [pos.x, y + 0.01, pos.z]; break; }
+      }
+    }
+    if (spot) {
+      pos.set(spot[0], spot[1], spot[2]);
+      pl.velocity.set(0, 0, 0);
+    }
   }
 
   // ---------- shortcuts ----------
@@ -856,27 +1028,11 @@ export class Game {
         this.audio.music(this.profile.settings.music > 0);
       }
     });
-    input.on('tap', (e) => {
-      if (this.mode !== 'play' || this.paused) return;
-      const hit = this.pick({ x: e.x, y: e.y });
-      this.target = hit;
-      if (!hit) return;
-      if (e.button === 2) this.removeTarget(hit);
-      else this.useTarget(hit);
-    });
+    input.on('tap', (e) => this._tapAt(e.x, e.y, e.button));
     input.on('hold', (e) => {
-      if (this.mode !== 'play' || this.paused || this.selectedTool === 'hand') return;
-      if (e.phase === 'end') {
-        this._holdKey = '';
-        return;
-      }
-      // hold + drag paints a line of blocks (or erases), one cell at a time
-      const hit = this.pick({ x: e.x, y: e.y });
-      if (!hit || hit.type !== 'block') return;
-      const key = this.selectedTool === 'remove' ? `${hit.x},${hit.y},${hit.z}` : hit.place.join(',');
-      if (key === this._holdKey) return;
-      this._holdKey = key;
-      this.useTarget(hit);
+      if (e.phase === 'start') this._strokeStart(e);
+      else if (e.phase === 'move') this._strokeMove(e);
+      else this._strokeEnd(e);
     });
     input.on('key', (e) => {
       if (!e.down || e.repeat) return;
@@ -904,6 +1060,110 @@ export class Game {
       else if (e.code === 'KeyG') this.runAction('emotes');
       else if (e.code === 'KeyZ') this.undo();
     });
+  }
+
+  // ---------- hold-drag painting ----------
+  //
+  // Press and hold still (0.42 s), then drag: with a block item the Build tool lays a line of
+  // blocks, the Remove tool erases one. The stroke is locked to the plane of the first face it
+  // touched (the ground layer, or the layer against a wall), so it never climbs toward the
+  // camera, and the whole stroke is one Undo. A slow press that never drags, and any hold with
+  // the Hand tool or on furniture, acts as a plain tap when released.
+
+  /** Tap (click / touch) at ndc: the current tool acts on what is there. */
+  _tapAt(x, y, button = 0) {
+    if (this.mode !== 'play' || this.paused) return;
+    const hit = this.pick({ x, y }, { liquids: button === 2 || this.selectedTool === 'remove' });
+    this.target = hit;
+    if (!hit) return;
+    if (button === 2) this.removeTarget(hit);
+    else this.useTarget(hit);
+  }
+
+  _strokeStart(e) {
+    this._stroke = null;
+    if (this.mode !== 'play' || this.paused) return;
+    const tool = this.selectedTool;
+    const hit = this.pick({ x: e.x, y: e.y });
+    const item = this.selectedItem();
+    const paints = hit && hit.type === 'block' &&
+      (tool === 'remove' || (tool === 'build' && item && item.kind === 'block'));
+    this._stroke = { paint: !!paints, cells: 0 };
+    if (!paints) return; // decided on release: a still press becomes a tap
+
+    const st = this._stroke;
+    const props = this.registry.blocks.props;
+    const f = hit.face;
+    let axis = f[0] !== 0 ? 0 : f[1] !== 0 ? 1 : 2;
+    const c = [hit.x, hit.y, hit.z];
+    if (tool === 'build' && props.replaceable[hit.id]) {
+      // painting over flowers / grass tufts / water: stay on that ground layer
+      axis = 1;
+      st.level = hit.y;
+      st.plane = hit.y;
+    } else {
+      const nrm = f[axis];
+      st.level = tool === 'build' ? c[axis] + nrm : c[axis];
+      st.plane = nrm > 0 ? c[axis] + 1 : c[axis]; // the face we pressed on
+    }
+    st.axis = axis;
+    st.tool = tool;
+    st.key = tool === 'build' ? item.block : null;
+    this.beginHistoryGroup();
+    st.open = true;
+    const cell = [hit.x, hit.y, hit.z];
+    if (tool === 'build') {
+      if (!props.replaceable[hit.id]) cell[axis] = st.level;
+      this.useTarget(hit);
+    } else {
+      this.removeTarget(hit);
+    }
+    st.last = cell;
+    st.cells = 1;
+  }
+
+  _strokeMove(e) {
+    const st = this._stroke;
+    if (!st || !st.paint || !this.world || this.mode !== 'play' || this.paused) return;
+    this._raycaster.setFromCamera({ x: e.x, y: e.y }, this.camera);
+    const { origin: o, direction: d } = this._raycaster.ray;
+    const oa = st.axis === 0 ? o.x : st.axis === 1 ? o.y : o.z;
+    const da = st.axis === 0 ? d.x : st.axis === 1 ? d.y : d.z;
+    if (Math.abs(da) < 1e-4) return;
+    const t = (st.plane - oa) / da;
+    if (t <= 0 || t > 60) return;
+    const cell = [Math.floor(o.x + d.x * t), Math.floor(o.y + d.y * t), Math.floor(o.z + d.z * t)];
+    cell[st.axis] = st.level;
+    const last = st.last;
+    if (cell[0] === last[0] && cell[1] === last[1] && cell[2] === last[2]) return;
+    // walk the straight line from the last cell so quick drags leave no gaps
+    const steps = Math.max(Math.abs(cell[0] - last[0]), Math.abs(cell[1] - last[1]), Math.abs(cell[2] - last[2]));
+    for (let i = 1; i <= steps; i++) {
+      const x = Math.round(last[0] + ((cell[0] - last[0]) * i) / steps);
+      const y = Math.round(last[1] + ((cell[1] - last[1]) * i) / steps);
+      const z = Math.round(last[2] + ((cell[2] - last[2]) * i) / steps);
+      this._strokeCell(st, x, y, z);
+    }
+    st.last = cell;
+  }
+
+  _strokeCell(st, x, y, z) {
+    if (st.cells >= STROKE_MAX_CELLS) return;
+    const pl = this.player;
+    if (pl) {
+      const dx = x + 0.5 - pl.position.x, dy = y + 0.5 - (pl.position.y + 1.4), dz = z + 0.5 - pl.position.z;
+      if (dx * dx + dy * dy + dz * dz > (this.reach + 1) ** 2) return;
+    }
+    const ok = st.tool === 'build' ? this.placeBlock(x, y, z, st.key) : this.removeBlock(x, y, z);
+    if (ok) st.cells++;
+  }
+
+  _strokeEnd(e) {
+    const st = this._stroke;
+    this._stroke = null;
+    if (st && st.open) this.endHistoryGroup();
+    // a slow, still press that did not paint: treat it exactly like a tap
+    if (st && !st.paint && !e.dragged && !e.cancelled) this._tapAt(e.x, e.y, 0);
   }
 }
 

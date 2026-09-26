@@ -26,10 +26,16 @@ function installActions(game) {
   });
 
   let sleeping = false;
+  const inThisBed = (g, entity) => !!g.player && g.player.state === 'sleep' && g.player.seatEntity === entity;
   E.registerAction('sleep', {
     run(g, entity) {
       const p = g.player;
       if (!p || sleeping) return false;
+      if (inThisBed(g, entity)) {
+        // already awake in bed after the night: tapping the bed again gets up
+        p.stand();
+        return true;
+      }
       const s = entity.def.sleepPos || [0.5, 0.55, 1];
       p.sleepIn(entity, E.localToWorld(entity, s[0], s[1], s[2]), frontYaw(entity));
       g.audio.play('chime');
@@ -49,7 +55,7 @@ function installActions(game) {
       }
       return true;
     },
-    hint: () => 'Tap to sleep',
+    hint: (g, entity) => (sleeping ? null : inThisBed(g, entity) ? 'Tap to get up' : 'Tap to sleep'),
   });
 
   E.registerAction('lamp', {
@@ -98,6 +104,7 @@ export function install(game) {
     colors: ['#E0B07A', '#FFFFFF', '#FFB7D2', '#C3A6FF'],
     build: (color) => tableRound(color),
     colliders: [[0.05, 0, 0.05, 0.95, 0.82, 0.95]],
+    surface: 0.82, // lamps, cakes and bowls (placeOn: 'table') stand on this top
   });
   E.define({
     key: 'table_lamp',
@@ -111,5 +118,6 @@ export function install(game) {
     lightPos: [0.5, 0.5, 0.5],
     actions: ['lamp'],
     defaultData: { on: true },
+    placeOn: 'table',
   });
 }
