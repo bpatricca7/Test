@@ -164,14 +164,21 @@ def phase2():
 
 
 # ---------------- Phase 3: sports game markets, hourly candles ----------------
-def phase3():
-    targets = {"KXNFLGAME", "KXMLBGAME", "KXNCAAFGAME", "KXNBAGAME", "KXNHLGAME", "KXWNBAGAME", "KXUFC", "KXCFBGAME"}
+def phase3(min_volume=5000):
+    """Every Sports-category game/match/fight market with at least $min_volume traded."""
+    series = {s["ticker"]: s for s in json.load(open(os.path.join(DATA_DIR, "series.json")))}
+    def is_game(st):
+        s = series.get(st, {})
+        return s.get("category") == "Sports" and any(k in st for k in ("GAME", "MATCH", "FIGHT", "BOUT")) and not st.startswith("KXMVE")
     done = load_done("candles_sports_done.txt")
-    out = open(os.path.join(DATA_DIR, "candles_sports.jsonl"), "a")
-    ms = [m for m in iter_markets() if m["series_ticker"] in targets and m["ticker"] not in done]
+    suffix = os.environ.get("KALSHI_SHARD", "").replace("/", "of")
+    out = open(os.path.join(DATA_DIR, f"candles_sports{('_' + suffix) if suffix else ''}.jsonl"), "a")
+    ms = [m for m in iter_markets() if is_game(m["series_ticker"]) and m["ticker"] not in done and float(m.get("volume_fp") or 0) >= min_volume]
+    if os.environ.get("KALSHI_SHARD"):
+        i, n = map(int, os.environ["KALSHI_SHARD"].split("/")); ms = [m for m in ms if sum(map(ord, m["ticker"])) % n == i]
     log(f"phase3: {len(ms)} sports markets need candles")
     for i, m in enumerate(ms):
-        fetch_candles(m["series_ticker"], m["ticker"], ts(m["open_time"]) - 3600, ts(m["close_time"]) + 3600, 60, out, "candles_sports_done.txt")
+        fetch_candles(m["series_ticker"], m["ticker"], ts(m["open_time"]) - 3600, ts(m["close_time"]) + 3600, 60, out, f"candles_sports_done{('_' + suffix) if suffix else ''}.txt")
         if i % 500 == 0:
             out.flush(); log(f"  phase3 {i}/{len(ms)}")
     out.close(); log("phase3 done")

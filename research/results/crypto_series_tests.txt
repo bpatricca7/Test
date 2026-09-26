@@ -12,6 +12,7 @@ hourly settlement prices:          n                     start                  
 coin                                                          
 BTC   1633 2026-07-19 00:00:00+00:00 2026-09-26 16:00:00+00:00
 ETH   1633 2026-07-19 00:00:00+00:00 2026-09-26 16:00:00+00:00
+SOL   1633 2026-07-19 00:00:00+00:00 2026-09-26 16:00:00+00:00
 XRP   1632 2026-07-19 00:00:00+00:00 2026-09-26 15:00:00+00:00
 
 consistency check: share of markets where (p_close >= p_open) == (result yes): 0.9998
@@ -178,11 +179,13 @@ XRP daily: next return after UP period                           n=    36 mean= 
 XRP daily: next return after DOWN period                         n=    33 mean=+123.12bp  95%CI=[+16.90,+244.56]bp  t=+2.06 p=0.0473
 
 === Fee hurdle for Kalshi 15-minute up/down contracts ===
-buy YES at 0.30: fee 2c -> need P(yes) > 0.320 to break even (edge needed over price: 2.0 pts)
-buy YES at 0.40: fee 2c -> need P(yes) > 0.420 to break even (edge needed over price: 2.0 pts)
-buy YES at 0.50: fee 2c -> need P(yes) > 0.520 to break even (edge needed over price: 2.0 pts)
-buy YES at 0.60: fee 2c -> need P(yes) > 0.620 to break even (edge needed over price: 2.0 pts)
-buy YES at 0.70: fee 2c -> need P(yes) > 0.720 to break even (edge needed over price: 2.0 pts)
+buy YES at 0.30 (100-contract taker order): fee 1.47c/contract -> need P(yes) > 0.3147 to break even
+buy YES at 0.40 (100-contract taker order): fee 1.69c/contract -> need P(yes) > 0.4169 to break even
+buy YES at 0.50 (100-contract taker order): fee 1.76c/contract -> need P(yes) > 0.5176 to break even
+buy YES at 0.60 (100-contract taker order): fee 1.69c/contract -> need P(yes) > 0.6169 to break even
+buy YES at 0.70 (100-contract taker order): fee 1.48c/contract -> need P(yes) > 0.7148 to break even
+buy YES at 0.90 (100-contract taker order): fee 0.63c/contract -> need P(yes) > 0.9063 to break even
+buy YES at 0.97 (100-contract taker order): fee 0.21c/contract -> need P(yes) > 0.9721 to break even
 
 ===== BTC: hourly settlement series, 1632 bars, 2026-07-19 00:00:00+00:00 -> 2026-09-26 16:00:00+00:00 =====
 mean +1.67 bp  sd 39 bp  autocorr1-3 [np.float64(0.0231), np.float64(-0.0262), np.float64(-0.0255)]
@@ -208,19 +211,31 @@ daily day-of-week mean bp (t): {0: '+40.4(+0.5)', 1: '-53.3(-0.8)', 2: '+158.9(+
    14-day momentum long/flat: mean +38.0bp/day vs B&H +57.5bp/day; Sharpe +2.57 vs +3.53
    30-day momentum long/flat: mean +53.7bp/day vs B&H +57.5bp/day; Sharpe +3.47 vs +3.53
 
+===== SOL: hourly settlement series, 1632 bars, 2026-07-19 00:00:00+00:00 -> 2026-09-26 16:00:00+00:00 =====
+mean +3.10 bp  sd 58 bp  autocorr1-3 [np.float64(-0.0211), np.float64(-0.024), np.float64(-0.0059)]
+SOL hourly: next hour after UP hour                              n=   835 mean=  +2.63bp  95%CI=[-1.47,+6.80]bp  t=+1.22 p=0.2212
+SOL hourly: next hour after DOWN hour                            n=   795 mean=  +3.55bp  95%CI=[-0.09,+7.34]bp  t=+1.88 p=0.0601
+SOL hourly: next hour after big UP                               n=    88 mean=  +5.48bp  95%CI=[-16.67,+28.17]bp  t=+0.47 p=0.6426
+SOL hourly: next hour after big DOWN                             n=    76 mean= +12.17bp  95%CI=[-2.30,+25.66]bp  t=+1.73 p=0.0880
+daily from hourly settles: n=69 mean +73.7bp sd 330bp autocorr1 -0.045
+daily day-of-week mean bp (t): {0: '+91.8(+0.9)', 1: '-77.9(-1.1)', 2: '+75.5(+0.6)', 3: '+183.1(+1.6)', 4: '+148.2(+0.9)', 5: '+24.3(+0.5)', 6: '+70.7(+1.1)'}
+   7-day momentum long/flat: mean +54.8bp/day vs B&H +73.7bp/day; Sharpe +3.53 vs +4.27
+   14-day momentum long/flat: mean +53.2bp/day vs B&H +73.7bp/day; Sharpe +3.82 vs +4.27
+   30-day momentum long/flat: mean +71.5bp/day vs B&H +73.7bp/day; Sharpe +4.40 vs +4.27
+
 ===== XRP: hourly settlement series, 1631 bars, 2026-07-19 00:00:00+00:00 -> 2026-09-26 15:00:00+00:00 =====
 mean +2.43 bp  sd 78 bp  autocorr1-3 [np.float64(-0.0177), np.float64(0.0082), np.float64(-0.0725)]
-XRP hourly: next hour after UP hour                              n=   808 mean=  +3.04bp  95%CI=[-2.93,+9.17]bp  t=+0.98 p=0.3272
-XRP hourly: next hour after DOWN hour                            n=   806 mean=  +1.64bp  95%CI=[-3.05,+6.26]bp  t=+0.70 p=0.4859
-XRP hourly: next hour after big UP                               n=    90 mean= +17.67bp  95%CI=[-22.72,+58.14]bp  t=+0.85 p=0.4001
-XRP hourly: next hour after big DOWN                             n=    73 mean=  +1.76bp  95%CI=[-19.52,+23.54]bp  t=+0.16 p=0.8722
+XRP hourly: next hour after UP hour                              n=   808 mean=  +3.04bp  95%CI=[-3.08,+9.01]bp  t=+0.98 p=0.3272
+XRP hourly: next hour after DOWN hour                            n=   806 mean=  +1.64bp  95%CI=[-2.96,+6.23]bp  t=+0.70 p=0.4859
+XRP hourly: next hour after big UP                               n=    90 mean= +17.67bp  95%CI=[-23.28,+58.66]bp  t=+0.85 p=0.4001
+XRP hourly: next hour after big DOWN                             n=    73 mean=  +1.76bp  95%CI=[-19.40,+23.53]bp  t=+0.16 p=0.8722
 daily from hourly settles: n=69 mean +57.9bp sd 411bp autocorr1 +0.175
 daily day-of-week mean bp (t): {0: '+71.6(+0.5)', 1: '-82.5(-0.7)', 2: '-19.8(-0.2)', 3: '+223.0(+1.3)', 4: '+99.3(+0.5)', 5: '+78.4(+2.6)', 6: '+32.4(+0.6)'}
    7-day momentum long/flat: mean +17.7bp/day vs B&H +57.9bp/day; Sharpe +0.98 vs +2.69
    14-day momentum long/flat: mean +23.6bp/day vs B&H +57.9bp/day; Sharpe +1.38 vs +2.69
    30-day momentum long/flat: mean +20.4bp/day vs B&H +57.9bp/day; Sharpe +1.23 vs +2.69
 
-Tests: 82; smallest Bonferroni p: 1.0000
+Tests: 86; smallest Bonferroni p: 1.0000
                                                     label    n      roi        t        p  bonferroni_p
                      ETH 15m: next return after an UP bar 3335 0.000107 2.394688 0.016689           1.0
                      SOL 15m: next return after an UP bar 3296 0.000127 2.365362 0.018070           1.0
@@ -230,5 +245,5 @@ BTC 15m: next return after big UP bar (top-decile |move|)  351 0.000379 2.022350
                  XRP daily: next return after DOWN period   33 0.012312 2.063295 0.047276           1.0
               ETH 4-hourly: next return after DOWN period  186 0.001253 1.965988 0.050796           1.0
                DOGE 4-hourly: next return after UP period  215 0.001968 1.912747 0.057115           1.0
+                    SOL hourly: next hour after DOWN hour  795 0.000355 1.882917 0.060077           1.0
                  BNB daily: next return after DOWN period   26 0.007370 1.926911 0.065430           1.0
-                     BTC 15m: next return after an UP bar 3299 0.000060 1.839675 0.065906           1.0

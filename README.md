@@ -48,6 +48,20 @@ Markets are scored on four dimensions (0-25 points each, max 100):
 - [Robinhood Prediction Markets](https://robinhood.com/us/en/prediction-markets/)
 - [Polymarket](https://polymarket.com/)
 
+
+## Market-edge research (2026-09-26)
+
+`RESEARCH_FINDINGS.md` reports a systematic search for profitable, statistically robust edges across
+Kalshi prediction markets, NFL and club-soccer betting, crypto, equity indices, volatility, FX and
+commodities, with every result net of costs and adjusted for the number of hypotheses tested.
+Code lives in `research/` (see `research/data_sources.md` for inputs and `research/results/` for raw output).
+
+```bash
+pip install -r requirements.txt
+python research/kalshi_download.py            # settled Kalshi markets + candlesticks (resumable)
+DATA_DIR=data KALSHI_DATA_DIR=data/kalshi python research/sports_soccer.py   # etc.
+```
+
 ## Disclaimer
 
 This analysis is for **informational purposes only** and should not be considered financial advice. Prediction markets involve significant risk of loss. Past performance does not guarantee future results. Always do your own research before trading.

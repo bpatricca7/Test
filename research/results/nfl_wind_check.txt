@@ -1,0 +1,16 @@
+NFL under bets by wind bucket (outdoor games only, wind as recorded in the game book):
+under, wind in [0,5) mph                                   n=  1067  ROI= -3.24%  95%CI=[ -8.96%, +2.55%]  t=-1.10  p=0.2714  seasons+=13/28  mean total_line 43.4, mean actual 44.9
+under, wind in [5,10) mph                                  n=  2258  ROI= -6.65%  95%CI=[-10.68%, -2.75%]  t=-3.30  p=0.0010  seasons+=8/28  mean total_line 42.9, mean actual 43.9
+under, wind in [10,15) mph                                 n=  1216  ROI= +4.44%  95%CI=[ -0.83%, +9.78%]  t=+1.61  p=0.1071  seasons+=18/28  mean total_line 42.5, mean actual 42.5
+under, wind in [15,20) mph                                 n=   497  ROI=+10.86%  95%CI=[ +2.54%,+19.08%]  t=+2.54  p=0.0113  seasons+=17/27  mean total_line 42.1, mean actual 40.5
+under, wind in [20,100) mph                                n=   187  ROI= +7.90%  95%CI=[ -6.09%,+22.29%]  t=+1.13  p=0.2587  seasons+=14/27  mean total_line 40.9, mean actual 39.9
+
+wind>=15 by era:
+  under, wind>=15, 1999-2008                               n=   307  ROI=+13.67%  95%CI=[ +2.83%,+24.37%]  t=+2.55  p=0.0112
+  under, wind>=15, 2009-2016                               n=   196  ROI= +3.47%  95%CI=[-11.08%,+16.94%]  t=+0.50  p=0.6183
+  under, wind>=15, 2017-2026                               n=   181  ROI=+11.03%  95%CI=[ -3.15%,+24.83%]  t=+1.56  p=0.1212
+
+wind>=15: does the market already adjust? mean total_line vs games with wind<10: 41.81 vs 43.07
+actual total minus line: -1.45 (wind>=15) vs 1.12 (wind<10)
+
+wind coverage by season: {1999: 197, 2000: 207, 2001: 208, 2002: 211, 2003: 208, 2004: 209, 2005: 214, 2006: 200, 2007: 201, 2008: 200, 2009: 187, 2010: 192, 2011: 191, 2012: 191, 2013: 194, 2014: 200, 2015: 201, 2016: 198, 2017: 200, 2018: 197, 2019: 196, 2020: 176, 2021: 191, 2022: 107, 2023: 158, 2024: 182, 2025: 189, 2026: 20}

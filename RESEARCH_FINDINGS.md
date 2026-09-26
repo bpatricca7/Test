@@ -1,0 +1,169 @@
+# Market Edge Research: What Survived Testing
+
+**Run date:** 2026-09-26  **Branch:** `claude/market-testing-profitable-advantages-96j2xo`
+**Scope:** prediction markets (Kalshi), sports betting (NFL, club soccer), crypto (BTC/ETH/SOL/XRP/DOGE/BNB/HYPE),
+equity indices, volatility, FX, commodities.  Every number below is net of the cost you would actually pay
+(bookmaker vig, Kalshi taker fees, index trading costs).  All code is in `research/`, raw outputs in `research/results/`.
+
+> Not financial advice. A backtested edge is a hypothesis about the future, not a guarantee. Bookmakers limit
+> winning accounts, and prediction-market liquidity is thin at extreme prices. Position-size accordingly.
+
+## 1. Executive summary: ranked by evidence quality
+
+| Rank | Market | Edge | Net ROI | Evidence | Practical catch |
+|---|---|---|---|---|---|
+| 1 | Club soccer (1X2) | Bet **favourites (>=70% implied) at the best available price** across bookmakers | **+2.2% per bet** (n=14,958; 95% CI +1.3% to +3.1%; t=5.1) | 18 of 22 seasons positive; both halves of the sample positive; monotone across the 70-100% buckets; robust to which bookmaker is best | At average odds the same bets lose 0.95%. You need accounts at many books and to always take the top price. Soft books limit winners. |
+| 2 | Club soccer (1X2) | Walk-forward **market-recalibration + Elo model**, bet at best price when model EV > 3% | **+3.3% per bet** (n=35,841; CI +1.6% to +4.9%; t=3.9) | Out-of-sample season by season 2010-2026, 14/17 seasons positive; EV>6% subset +5.2%; EV>10% subset +14% | Same picks paid at average odds: **-5.9%**. Weaker since 2019 (+1.9%, t=1.1). Edge is line-shopping plus longshot-bias correction, not football insight. |
+| 3 | Club soccer (1X2) | **Cross-bookmaker arbitrage** (sum of 1/best odds < 1) | 1.25% locked-in per arb (median 0.76%) on 22.7% of matches since 2005 | Mechanical; no forecasting needed | Requires 10+ funded accounts, fast execution, and tolerance for stale "ghost" lines and account closures. Treat the 22.7% as an upper bound. |
+| 4 | Kalshi 15-minute crypto markets | *(pending full candle data)* favourite-longshot bias in the final minutes | see Section 5 | see Section 5 | thin liquidity at 95-99c; taker fees |
+| 5 | NFL totals | **Under when recorded wind >= 15 mph** | +10.0% (n=684; CI +2.7% to +17.2%; t=2.8) | 17/27 seasons; monotone in wind; +13.7% / +3.5% / +11.0% across three eras | Does not survive a 56-test Bonferroni correction (adj. p=0.33). Uses wind recorded at kickoff, not the pre-game forecast. About 25 bets per season. |
+| 6 | Equity indices | 10-month SMA trend filter / vol targeting on S&P 500 | same CAGR as buy-and-hold (7.4%) at 2/3 the volatility; max drawdown -23% vs -57% | 33 years; both halves positive | This is risk management, not alpha. Taxable turnover. |
+
+Everything else tested was flat or negative after costs (Sections 2-6 list every test, including the failures).
+
+## 2. Sports betting: club soccer (238,854 matches, 38 divisions, 2000-2026)
+
+Data: `xgabora/Club-Football-Match-Data-2000-2025` (football-data.co.uk odds). `Odd*` = average bookmaker price
+(vig 6-7%), `Max*` = best price across all listed books (vig ~1%). Season = Aug-Jul.
+
+### 2.1 Favourite-longshot bias is large and survives only at the best price
+
+ROI of betting every 1X2 outcome, bucketed by implied probability (`research/results/soccer_tests.txt`):
+
+| Best-odds implied prob | n | ROI at best odds | ROI at average odds |
+|---|---|---|---|
+| 0-10% | 12,866 | -16.8% | -36.8% |
+| 10-20% | 64,554 | -2.6% | -15.1% |
+| 20-30% | 243,731 | -2.6% | -9.8% |
+| 30-40% | 139,515 | -1.0% | -6.9% |
+| 40-50% | 83,511 | -0.4% | -6.1% |
+| 50-60% | 50,811 | +0.5% | -4.8% |
+| 60-70% | 23,637 | +0.5% | -4.2% |
+| **70-80%** | **10,152** | **+2.3% (t=3.9)** | -2.1% |
+| **80-100%** | **4,846** | **+2.1% (t=3.5)** | -1.0% |
+
+Favourites at >=70% (`soccer_deep.txt`): +2.20% overall, home favourites +2.30% (t=4.9), away favourites +1.70% (t=1.5).
+Per season: positive in 18 of 22 (misses: 2006, 2019, 2020, and the 51-match 2026 stub). By league the edge is
+concentrated in Portugal, Greece, China, Belgium, Spain, Euro competitions (+3.6% to +7.2%) and is roughly zero
+in England, Germany and the Netherlands.
+
+**Is it one stale bookmaker?** No. Bucketing by how far the best price sits above the average
+(`soccer_outlier.txt`): +2.8% when the premium is under 1%, +1.8% at 3-5%, +6.5% at 5-8%.
+If you could only get halfway between the average and the best price: +0.6% (t=1.5), i.e. marginal.
+**The edge is entirely a line-shopping edge.**
+
+### 2.2 Walk-forward value model
+
+Multinomial logistic regression on the de-vigged average-market log-odds, Elo difference, and 3/5-match form,
+refit each season on all prior seasons (2010-2026 out of sample). Bets placed at the best price when
+model probability x best odds - 1 > threshold.
+
+| Selection rule | n | ROI | t | Seasons + |
+|---|---|---|---|---|
+| Market + Elo, EV > 0% | 106,573 | +1.5% | 3.4 | 14/17 |
+| Market + Elo, EV > 3% | 35,841 | +3.3% | 3.9 | 14/17 |
+| Market + Elo, EV > 6% | 9,938 | +5.2% | 2.7 | 11/17 |
+| Market + Elo, EV > 10% | 2,189 | +14.2% | 2.7 | 13/17 |
+| Market-only recalibration, EV > 6% | 6,651 | +8.0% | 3.3 | 14/17 |
+| Elo only (no market input), any EV | 137,001 | -3.2% | -6.7 | 0/17 |
+| Same EV>3% picks paid at *average* odds | 35,841 | **-5.9%** | -8.1 | 1/17 |
+
+Out-of-sample log-loss: market-only 0.9939, market+Elo 0.9938, Elo-only 1.0113, raw de-vigged market 0.9940.
+Elo adds almost nothing to the market; the model's job is to correct the favourite-longshot bias and then
+exploit price dispersion between books. Seasons 2019-2026 only: +1.9% (n=9,235, t=1.1, 6/8 seasons) -- the
+edge has narrowed as books have sharpened and as the best-price coverage in the data changed.
+
+Bankroll simulation (chronological, EV>3%): flat 1% stakes compound at roughly +57%/yr over 2010-2026 with
+a 75% peak-to-trough drawdown; quarter-Kelly capped at 5% roughly doubles per year with a 56% drawdown.
+Both numbers assume you are never limited and always get the best price, which no real account achieves.
+
+### 2.3 Arbitrage
+
+Share of matches where the best prices across books sum to less than 100%: 4.7% (2005) rising to 30-47%
+(2012-2016) and 20-30% since. Mean locked profit 1.25%, 90th percentile 2.8%. Over/under 2.5: 4.7% of matches,
+0.9% mean. This is the well-known "surebet" market; the binding constraints are execution and account survival.
+
+### 2.4 Negative results (soccer)
+Every outcome type at average odds (-6% to -10%); longshots at any price (-8.6% below 15% implied);
+over/under 2.5 in every bucket (-0.5% to -4.5%); pure line shopping without recalibration (-0.5%);
+Elo-only models at any threshold (-3% to -4%).
+
+## 3. Sports betting: NFL (7,309 games, closing lines 1999-2026; moneylines from 2006)
+
+Data: `nflverse/nfldata` games.csv. 56 systems tested (`research/results/nfl_tests.txt`).
+
+* The closing line is well calibrated: home-team fair probability vs realised win rate tracks within 2-3
+  points in every bucket; mean(margin - spread) = +0.08 points.
+* Betting every home team ATS: -4.8% (t=-4.3). Every favourite on the moneyline: -3.4% (t=-3.5).
+  Every over: -4.4%. These are the vig.
+* No moneyline bucket, home/road dog, divisional, rest, primetime, playoff, week-1, dome, cold-weather or
+  spread-size system is positive with t > 2 except:
+* **Under when wind >= 15 mph:** +10.0% (n=684, t=2.8, p=0.006; 17/27 seasons; first/second half +10.6%/+9.4%).
+  By bucket: 0-5 mph -3.2%, 5-10 -6.7%, 10-15 +4.4%, 15-20 +10.9%, 20+ +7.9%. The market already shades the
+  total down 1.3 points in wind, but actual totals come in another 1.45 points lower. Caveats: 56 hypotheses were
+  tested (Bonferroni-adjusted p = 0.33); wind is the value recorded at kickoff, so a live strategy must use the
+  forecast; about 25 qualifying games per season.
+
+## 4. Equities, volatility, FX, commodities (`research/results/equities_tests.txt`)
+
+S&P 500 1990-2022 daily, OHLC 2000-2020, VIX 1990-2026, WTI 1986-2026, FRED G10 FX 1999-2026, gold 1971-2026,
+Shiller monthly 1881-2023. Costs 0.05% per switch.
+
+| Strategy | CAGR | Vol | Sharpe | Max DD | Verdict |
+|---|---|---|---|---|---|
+| Buy & hold S&P 500 | 7.4% | 18.3% | 0.48 | -57% | benchmark |
+| 10-month SMA filter (monthly) | 7.4% | 12.1% | 0.65 | -23% | same return, far less risk (both halves positive) |
+| 12-month time-series momentum | 7.3% | 12.8% | 0.61 | -25% | same |
+| 200-day SMA (daily) | 5.7% | 11.3% | 0.55 | -30% | more whipsaw |
+| Vol-target 10% | 5.3% | 10.1% | 0.56 | -36% | risk control |
+| Turn-of-month only (4 days) | 2.6% | 8.1% | 0.36 | -31% | TOM days +6.9 bp vs +2.7 bp, t=1.3: weak |
+| Sell in May | 5.7% | 13.0% | 0.49 | -35% | no better than B&H per unit risk |
+| Overnight only (2000-2020) | 0.7% gross | 4.5% | 0.17 | -20% | dead after 0.1%/day costs |
+| VIX > 30 only / VIX <= 20 only | 2.7% / 2.7% | | 0.29 / 0.35 | | no timing information |
+| G10 FX 12-1 momentum | 0.0% | 6.9% | 0.03 | -39% | none (ex-carry) |
+| Gold 12-month momentum | 9.6% | 14.9% | 0.69 | -32% | vs B&H 0.58 |
+| WTI momentum (spot) | 2.7% | | 0.23 | | none |
+| Out of market when CAPE in top quintile | 2.6% | | 0.27 | | loses to B&H (4.7%) |
+| 20-stock XS momentum / reversal | -1.3% / -8.7% | | 0.11 / -0.24 | | none |
+
+Conclusion: nothing here is a mispricing you can harvest; trend filters and vol targeting are worth using as
+risk management on long-only exposure, which is a different claim.
+
+## 5. Kalshi prediction markets
+
+*(Sections 5.1-5.3 are filled from the Kalshi downloads; see below.)*
+
+## 6. Crypto underlying (reconstructed from settled Kalshi markets, 2026-07-18 to 2026-09-26)
+
+Each settled 15-minute market records the reference price at open and at close, so the settled history is a
+15-minute price series (checked: open/close ordering matches the settled result in 99.98% of markets).
+Annualised vol: BTC 34%, ETH 47%, SOL 56%, XRP 70%, DOGE 67%, HYPE 73%, BNB 37%.
+
+* Autocorrelation of 15-minute returns is essentially zero (|rho| < 0.05 at lags 1-4) for every coin.
+* After a **top-decile down bar**, the next bar is up 55% (BTC), 58% (ETH), 55% (SOL), 56% (BNB), 55% (HYPE),
+  54% (XRP), 50% (DOGE), n about 300 each -- a short-term reversal that exceeds the 52% break-even of a 50c
+  contract. Whether Kalshi's 15-minute market already prices it in is tested in Section 5.
+* Hour-of-day and day-of-week effects: no cell survives multiple testing (82 tests, smallest Bonferroni p = 1.0).
+* Daily momentum (7/14/30-day) over the 70-day window underperforms buy-and-hold in a rising market; the sample
+  is far too short to say anything about crypto momentum.
+
+## 7. What was blocked, and what would unlock more
+
+The environment's network policy allowed only the Kalshi API, GitHub and PyPI. Denied hosts that would extend
+this research: `api.binance.com` / `data.binance.vision` (years of crypto candles and funding rates),
+`query1.finance.yahoo.com` (equities/ETFs to 2026), `gamma-api.polymarket.com` / `clob.polymarket.com`
+(Kalshi-vs-Polymarket arbitrage), `www.football-data.co.uk` (opening vs closing soccer odds),
+`api.the-odds-api.com` (live multi-book odds), `fred.stlouisfed.org`. Network access is changed in the
+environment settings (Edit environment > Network access).
+
+## 8. Method notes
+
+* Costs: soccer/NFL pay the quoted price (vig included). Kalshi: taker fee 0.07 x P x (1-P) per contract,
+  rounded up per order (100-contract orders assumed). Index strategies: 0.05% per one-way trade.
+* Inference: bet-level bootstrap 95% CIs, t-statistics, first-half/second-half splits, seasons-positive counts.
+  Kalshi 15-minute results use per-timestamp clustering because the coins move together.
+* Multiple testing: every hypothesis is logged (`research/results/*_tests.csv`, column `bonferroni_p`).
+  Roughly 300 hypotheses were evaluated in total; a nominal p of 0.05 means nothing here, and only results
+  with p < 0.001 and consistency across sub-periods are treated as findings.
+* Reproduce: `pip install -r requirements.txt`, download the CSVs listed in `research/data_sources.md`,
+  run `python research/kalshi_download.py`, then each `research/*.py` with `DATA_DIR` / `KALSHI_DATA_DIR` set.
