@@ -23,6 +23,7 @@ render() { # $1 variant, $2 width, $3 height
        --workers "${WORKERS:-4}" --out "build/video-$1.mp4"
   "$FFMPEG" -y -hide_banner -loglevel error -i "build/video-$1.mp4" -i build/audio/mix.wav \
     -map 0:v -map 1:a -c:v libx264 -preset slow -crf 19 -profile:v high -pix_fmt yuv420p \
+    -colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range tv \
     -c:a aac -b:a 192k -ar 48000 -movflags +faststart -shortest "out/riviera-ad-$1.mp4"
   echo "   -> out/riviera-ad-$1.mp4"
 }
