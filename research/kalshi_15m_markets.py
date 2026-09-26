@@ -97,7 +97,24 @@ print("\n--- by month (walk-forward consistency), big-down reversal minute-1 YES
 x = cd[(cd.minute == 1) & cd.big_down].copy(); x["month"] = x.open_time.dt.to_period("M")
 for mo, d in x.groupby("month"): line(f"  {mo}", yes_pnl(d), d.open_time, d.ask.values)
 
-print("\n=== (C) Late-market favourites: buy the side priced >= X at minute k (tests the favourite-longshot bias inside 15 minutes) ===")
+print("\n=== (C) Mid/late-market favourites: buy the side priced in a band at minute k, hold to settlement (clustered by timestamp) ===")
+def both_sides(x, lo, hi):
+    """pnl of buying whichever side is priced in [lo, hi]: YES at ask, or NO at 1-bid."""
+    y = x[(x.ask >= lo) & (x.ask <= hi)]; n_ = x[((1 - x.bid) >= lo) & ((1 - x.bid) <= hi)]
+    return np.concatenate([yes_pnl(y), no_pnl(n_)]), np.concatenate([y.open_time.values, n_.open_time.values]), np.concatenate([y.ask.values, (1 - n_.bid).values]), pd.concat([y, n_])
+for k in [3, 5, 7, 10, 12, 13, 14]:
+    for lo, hi in [(0.80, 0.90), (0.90, 0.95), (0.95, 0.99), (0.85, 0.99)]:
+        pnl, ts_, pr, _ = both_sides(cd[cd.minute == k], lo, hi); line(f"minute {k:>2d}: buy favourite side priced in [{lo:.2f},{hi:.2f}]", pnl, pd.Series(ts_), pr)
+print("\n--- best early cell, minute 5 favourites in [0.85,0.99]: by coin, by month, and capacity ---")
+for coin in sorted(cd.coin.unique()):
+    pnl, ts_, pr, _ = both_sides(cd[(cd.minute == 5) & (cd.coin == coin)], 0.85, 0.99); line(f"  {coin}", pnl, pd.Series(ts_), pr)
+x5 = cd[cd.minute == 5].copy(); x5["month"] = x5.open_time.dt.strftime("%Y-%m")
+for mo in sorted(x5.month.unique()):
+    pnl, ts_, pr, _ = both_sides(x5[x5.month == mo], 0.85, 0.99); line(f"  {mo}", pnl, pd.Series(ts_), pr)
+for k in [3, 5, 7]:
+    _, _, _, sel = both_sides(cd[cd.minute == k], 0.85, 0.99)
+    print(f"  minute {k}: qualifying markets {len(sel)} ({len(sel)/cd.ticker.nunique()*100:.1f}% of markets); median contracts traded in that minute {sel.vol.median():,.0f}, mean {sel.vol.mean():,.0f}")
+print("\n--- old-style single-side view (YES at ask / NO at 1-bid), minutes 10-14 ---")
 for k in [10, 12, 13, 14]:
     for lo in [0.80, 0.90, 0.95]:
         x = cd[(cd.minute == k) & (cd.ask >= lo) & (cd.ask <= 0.99)]; line(f"minute {k}: buy YES when ask in [{lo:.2f},0.99]", yes_pnl(x), x.open_time, x.ask.values)

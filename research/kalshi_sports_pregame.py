@@ -109,7 +109,7 @@ if len(nfl):
         line("buy NO on Kalshi when NO price is >2c below Vegas fair", pnl)
         from sklearn.metrics import log_loss
         print(f"log-loss: Kalshi mid {log_loss(v.yes, v.kalshi_mid.clip(.01,.99)):.4f} vs Vegas fair {log_loss(v.yes, v.vegas_fair.clip(.01,.99)):.4f}")
-d.to_parquet(os.path.join(OUT, "kalshi_sports_pregame.parquet"))
+d.drop(columns=["bucket"]).to_parquet(os.path.join(OUT, "kalshi_sports_pregame.parquet"))
 edges = [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, .95, 1.0001]; cal = []
 for lo, hi in zip(edges[:-1], edges[1:]):
     y = d[(d.ask >= lo) & (d.ask < hi)]

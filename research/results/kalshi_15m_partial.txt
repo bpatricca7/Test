@@ -1,0 +1,137 @@
+markets with candles: 22166 of 46174 settled 15M markets; coins: ['BTC', 'ETH', 'SOL', 'XRP']
+date range with candles: 2026-07-18 23:45:00+00:00 -> 2026-09-26 16:15:00+00:00
+
+=== (A) Market calibration by minute: realised P(yes) vs ask price, fee-adjusted EV of buying YES / NO (all 15M markets, pooled) ===
+
+minute 1:
+                 n    ask  realised  ev_yes_c  ev_no_c
+ask_bucket                                            
+(0.0, 0.1]     2.0  0.081     0.000    -8.625    6.825
+(0.1, 0.2]   125.0  0.177     0.168    -1.943   -1.201
+(0.2, 0.3]  1076.0  0.268     0.255    -2.673   -1.199
+(0.3, 0.4]  3462.0  0.362     0.355    -2.332   -2.113
+(0.4, 0.5]  6226.0  0.458     0.458    -1.800   -2.971
+(0.5, 0.6]  6380.0  0.552     0.554    -1.570   -3.228
+(0.6, 0.7]  3631.0  0.648     0.649    -1.532   -2.937
+(0.7, 0.8]  1095.0  0.743     0.753    -0.430   -3.500
+(0.8, 0.9]   158.0  0.840     0.791    -5.864    2.595
+(0.9, 1.0]    10.0  0.917     0.800   -12.245   10.563
+
+minute 5:
+                 n    ask  realised  ev_yes_c  ev_no_c
+ask_bucket                                            
+(0.0, 0.1]   609.0  0.074     0.069    -0.974   -0.314
+(0.1, 0.2]  2068.0  0.159     0.124    -4.426    1.438
+(0.2, 0.3]  2586.0  0.256     0.235    -3.374   -0.492
+(0.3, 0.4]  2823.0  0.356     0.323    -4.898    0.367
+(0.4, 0.5]  2842.0  0.454     0.448    -2.410   -2.441
+(0.5, 0.6]  2707.0  0.554     0.550    -2.189   -2.674
+(0.6, 0.7]  2727.0  0.655     0.653    -1.828   -2.750
+(0.7, 0.8]  2695.0  0.754     0.771     0.412   -4.356
+(0.8, 0.9]  2188.0  0.852     0.868     0.703   -3.744
+(0.9, 1.0]   907.0  0.931     0.963     2.703   -3.994
+
+minute 10:
+                 n    ask  realised  ev_yes_c  ev_no_c
+ask_bucket                                            
+(0.0, 0.1]  3756.0  0.054     0.042    -1.550    0.505
+(0.1, 0.2]  2223.0  0.151     0.136    -2.421   -0.594
+(0.2, 0.3]  1630.0  0.253     0.228    -3.810   -0.276
+(0.3, 0.4]  1277.0  0.354     0.372     0.165   -4.867
+(0.4, 0.5]  1246.0  0.453     0.453    -1.639   -3.386
+(0.5, 0.6]  1272.0  0.555     0.568    -0.414   -4.599
+(0.6, 0.7]  1334.0  0.657     0.658    -1.503   -3.193
+(0.7, 0.8]  1552.0  0.756     0.760    -0.952   -3.128
+(0.8, 0.9]  2133.0  0.857     0.857    -0.897   -2.215
+(0.9, 1.0]  3709.0  0.948     0.958     0.649   -1.728
+
+minute 13:
+                 n    ask  realised  ev_yes_c  ev_no_c
+ask_bucket                                            
+(0.0, 0.1]  2775.0  0.049     0.044    -0.853   -0.286
+(0.1, 0.2]  1076.0  0.150     0.151    -0.774   -2.659
+(0.2, 0.3]   741.0  0.254     0.247    -1.999   -2.466
+(0.3, 0.4]   574.0  0.352     0.352    -1.625   -3.680
+(0.4, 0.5]   584.0  0.454     0.457    -1.439   -4.024
+(0.5, 0.6]   568.0  0.554     0.613     4.155   -9.553
+(0.6, 0.7]   611.0  0.656     0.671    -0.060   -5.000
+(0.7, 0.8]   722.0  0.756     0.758    -1.177   -3.433
+(0.8, 0.9]  1075.0  0.858     0.832    -3.484   -0.051
+(0.9, 1.0]  2467.0  0.952     0.933    -2.245    0.922
+
+minute 14:
+                 n    ask  realised  ev_yes_c  ev_no_c
+ask_bucket                                            
+(0.0, 0.1]  1566.0  0.048     0.050    -0.093   -1.415
+(0.1, 0.2]   518.0  0.150     0.125    -3.387   -0.626
+(0.2, 0.3]   393.0  0.251     0.249    -1.523   -3.560
+(0.3, 0.4]   302.0  0.353     0.334    -3.440   -2.350
+(0.4, 0.5]   289.0  0.457     0.536     6.236  -12.237
+(0.5, 0.6]   301.0  0.554     0.548    -2.277   -3.673
+(0.6, 0.7]   309.0  0.657     0.702     2.947   -8.687
+(0.7, 0.8]   395.0  0.757     0.780     1.027   -6.514
+(0.8, 0.9]   521.0  0.858     0.875     0.912   -5.002
+(0.9, 1.0]  1336.0  0.954     0.940    -1.672   -0.231
+
+=== (B) Simple contract-level strategies at minute 1 (pooled, clustered by timestamp) ===
+buy YES at minute-1 ask, every market (baseline: pays the fee)         n= 22166 (clusters  6598)  ROI/contract= -1.68c  t=-3.41 p=0.0007  avg price 0.508
+buy NO  at minute-1, every market                                      n= 22166 (clusters  6598)  ROI/contract= -2.90c  t=-5.88 p=0.0000
+after BIG DOWN prior bar: buy YES at minute-1 ask                      n=  2218 (clusters  1122)  ROI/contract= -0.22c  t=-0.16 p=0.8710  avg price 0.521
+after BIG DOWN prior bar: buy YES at minute-2 ask                      n=  2218 (clusters  1122)  ROI/contract= -0.52c  t=-0.40 p=0.6888  avg price 0.526
+after BIG DOWN prior bar: buy YES at minute-3 ask                      n=  2218 (clusters  1122)  ROI/contract= -0.87c  t=-0.70 p=0.4843  avg price 0.529
+after BIG DOWN prior bar: buy YES at minute-5 ask                      n=  2218 (clusters  1122)  ROI/contract= -1.46c  t=-1.25 p=0.2129  avg price 0.538
+after BIG UP prior bar: buy NO at minute-1                             n=  2260 (clusters  1170)  ROI/contract= -2.76c  t=-2.14 p=0.0328  avg price 0.510
+after BIG UP prior bar: buy NO at minute-2                             n=  2260 (clusters  1170)  ROI/contract= -2.92c  t=-2.31 p=0.0209  avg price 0.511
+after BIG UP prior bar: buy NO at minute-3                             n=  2260 (clusters  1170)  ROI/contract= -2.89c  t=-2.38 p=0.0173  avg price 0.509
+after BIG UP prior bar: buy NO at minute-5                             n=  2260 (clusters  1170)  ROI/contract= -2.32c  t=-2.08 p=0.0376  avg price 0.506
+after any DOWN prior bar: buy YES at minute-1 ask                      n= 10955 (clusters  4414)  ROI/contract= -2.04c  t=-3.15 p=0.0017  avg price 0.514
+after any UP prior bar: buy NO at minute-1                             n= 11000 (clusters  4438)  ROI/contract= -2.83c  t=-4.43 p=0.0000
+
+--- big-down reversal by coin (minute-1 YES) ---
+  BTC: after BIG DOWN, buy YES at minute-1 ask (P(yes)=0.529)          n=   660 (clusters   660)  ROI/contract= -0.73c  t=-0.38 p=0.7039  avg price 0.520
+  ETH: after BIG DOWN, buy YES at minute-1 ask (P(yes)=0.561)          n=   542 (clusters   542)  ROI/contract= +2.69c  t=+1.29 p=0.1989  avg price 0.518
+  SOL: after BIG DOWN, buy YES at minute-1 ask (P(yes)=0.538)          n=   329 (clusters   329)  ROI/contract= +0.75c  t=+0.28 p=0.7773  avg price 0.514
+  XRP: after BIG DOWN, buy YES at minute-1 ask (P(yes)=0.528)          n=   687 (clusters   687)  ROI/contract= -1.55c  t=-0.85 p=0.3933  avg price 0.528
+
+--- by month (walk-forward consistency), big-down reversal minute-1 YES, all coins ---
+  x = cd[(cd.minute == 1) & cd.big_down].copy(); x["month"] = x.open_time.dt.to_period("M")
+  2026-07                                                              n=   346 (clusters   174)  ROI/contract= -2.70c  t=-0.77 p=0.4450  avg price 0.522
+  2026-08                                                              n=   986 (clusters   534)  ROI/contract= -0.41c  t=-0.21 p=0.8330  avg price 0.511
+  2026-09                                                              n=   886 (clusters   414)  ROI/contract= +1.08c  t=+0.50 p=0.6181  avg price 0.532
+
+=== (C) Late-market favourites: buy the side priced >= X at minute k (tests the favourite-longshot bias inside 15 minutes) ===
+minute 10: buy YES when ask in [0.80,0.99]                             n=  6934 (clusters  3144)  ROI/contract= +0.37c  t=+0.89 p=0.3735  avg price 0.921
+minute 10: buy NO when NO price in [0.80,0.99]                         n=  6864 (clusters  3075)  ROI/contract= +0.20c  t=+0.48 p=0.6345
+minute 10: buy YES when ask in [0.90,0.99]                             n=  4836 (clusters  2355)  ROI/contract= +0.51c  t=+1.39 p=0.1644  avg price 0.953
+minute 10: buy NO when NO price in [0.90,0.99]                         n=  4724 (clusters  2303)  ROI/contract= +0.04c  t=+0.10 p=0.9221
+minute 10: buy YES when ask in [0.95,0.99]                             n=  2875 (clusters  1585)  ROI/contract= +0.57c  t=+1.72 p=0.0858  avg price 0.973
+minute 10: buy NO when NO price in [0.95,0.99]                         n=  2700 (clusters  1466)  ROI/contract= +0.78c  t=+2.40 p=0.0165
+minute 12: buy YES when ask in [0.80,0.99]                             n=  6464 (clusters  3329)  ROI/contract= -0.85c  t=-2.22 p=0.0265  avg price 0.935
+minute 12: buy NO when NO price in [0.80,0.99]                         n=  6442 (clusters  3258)  ROI/contract= -0.34c  t=-0.88 p=0.3782
+minute 12: buy YES when ask in [0.90,0.99]                             n=  5021 (clusters  2838)  ROI/contract= +0.07c  t=+0.23 p=0.8176  avg price 0.960
+minute 12: buy NO when NO price in [0.90,0.99]                         n=  5005 (clusters  2739)  ROI/contract= -0.05c  t=-0.14 p=0.8901
+minute 12: buy YES when ask in [0.95,0.99]                             n=  3480 (clusters  2195)  ROI/contract= +0.18c  t=+0.64 p=0.5191  avg price 0.976
+minute 12: buy NO when NO price in [0.95,0.99]                         n=  3365 (clusters  2107)  ROI/contract= +0.25c  t=+0.90 p=0.3698
+minute 13: buy YES when ask in [0.80,0.99]                             n=  5024 (clusters  2979)  ROI/contract= -1.48c  t=-3.49 p=0.0005  avg price 0.939
+minute 13: buy NO when NO price in [0.80,0.99]                         n=  5162 (clusters  3014)  ROI/contract= -0.99c  t=-2.45 p=0.0144
+minute 13: buy YES when ask in [0.90,0.99]                             n=  3970 (clusters  2527)  ROI/contract= -1.41c  t=-3.64 p=0.0003  avg price 0.963
+minute 13: buy NO when NO price in [0.90,0.99]                         n=  4138 (clusters  2591)  ROI/contract= -0.48c  t=-1.37 p=0.1701
+minute 13: buy YES when ask in [0.95,0.99]                             n=  2883 (clusters  2038)  ROI/contract= -0.74c  t=-2.16 p=0.0312  avg price 0.977
+minute 13: buy NO when NO price in [0.95,0.99]                         n=  2998 (clusters  2076)  ROI/contract= +0.07c  t=+0.24 p=0.8068
+minute 14: buy YES when ask in [0.80,0.99]                             n=  2775 (clusters  2098)  ROI/contract= -0.67c  t=-1.38 p=0.1689  avg price 0.944
+minute 14: buy NO when NO price in [0.80,0.99]                         n=  2823 (clusters  2082)  ROI/contract= -0.90c  t=-1.87 p=0.0620
+minute 14: buy YES when ask in [0.90,0.99]                             n=  2268 (clusters  1783)  ROI/contract= -1.45c  t=-3.06 p=0.0023  avg price 0.965
+minute 14: buy NO when NO price in [0.90,0.99]                         n=  2330 (clusters  1807)  ROI/contract= -0.88c  t=-1.99 p=0.0469
+minute 14: buy YES when ask in [0.95,0.99]                             n=  1722 (clusters  1431)  ROI/contract= -1.27c  t=-2.78 p=0.0055  avg price 0.978
+minute 14: buy NO when NO price in [0.95,0.99]                         n=  1804 (clusters  1475)  ROI/contract= -1.10c  t=-2.47 p=0.0136
+
+=== (D) Late-market longshots: buy the side priced <= X at minute k ===
+minute 10: buy YES when ask <= 0.05                                    n=  2624 (clusters  1405)  ROI/contract= -1.36c  t=-4.13 p=0.0000  avg price 0.029
+minute 10: buy YES when ask <= 0.10                                    n=  4455 (clusters  2191)  ROI/contract= -1.40c  t=-3.67 p=0.0002  avg price 0.048
+minute 10: buy YES when ask <= 0.20                                    n=  6678 (clusters  2987)  ROI/contract= -2.15c  t=-5.15 p=0.0000  avg price 0.082
+minute 13: buy YES when ask <= 0.05                                    n=  3195 (clusters  2172)  ROI/contract= -0.54c  t=-1.96 p=0.0503  avg price 0.023
+minute 13: buy YES when ask <= 0.10                                    n=  4333 (clusters  2668)  ROI/contract= -0.80c  t=-2.65 p=0.0082  avg price 0.036
+minute 13: buy YES when ask <= 0.20                                    n=  5409 (clusters  3122)  ROI/contract= -0.62c  t=-1.68 p=0.0922  avg price 0.059
+minute 14: buy YES when ask <= 0.05                                    n=  1954 (clusters  1577)  ROI/contract= -0.31c  t=-0.88 p=0.3791  avg price 0.022
+minute 14: buy YES when ask <= 0.10                                    n=  2555 (clusters  1962)  ROI/contract= -0.24c  t=-0.63 p=0.5295  avg price 0.034
+minute 14: buy YES when ask <= 0.20                                    n=  3073 (clusters  2236)  ROI/contract= -0.73c  t=-1.72 p=0.0853  avg price 0.054
