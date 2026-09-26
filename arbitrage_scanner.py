@@ -28,6 +28,7 @@ Usage:
 
 import argparse
 import json
+import re
 import sys
 import time
 from collections import defaultdict
@@ -127,6 +128,7 @@ class Quote:
     strike_type: Optional[str]
     floor_strike: Optional[Decimal]
     cap_strike: Optional[Decimal]
+    underlying: str = ""
 
     @property
     def is_open(self) -> bool:
@@ -140,6 +142,16 @@ def parse_time(value) -> Optional[datetime]:
         return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
     except ValueError:
         return None
+
+
+def underlying_key(raw: dict) -> str:
+    """The market's wording with every number removed.
+
+    Strikes of one ladder differ only in their numbers ("above 60,000" vs
+    "above 61,000"); markets on different underlyings differ in words too.
+    """
+    text = raw.get("rules_primary") or raw.get("title") or ""
+    return " ".join(re.sub(r"[\d.,$%]+", " ", text).lower().split())
 
 
 def parse_quote(raw: dict) -> Quote:
@@ -166,7 +178,13 @@ def parse_quote(raw: dict) -> Quote:
         strike_type=raw.get("strike_type"),
         floor_strike=to_decimal(raw.get("floor_strike")),
         cap_strike=to_decimal(raw.get("cap_strike")),
+        underlying=underlying_key(raw),
     )
+
+
+def unique_by_ticker(quotes: list) -> list:
+    """Drop repeated rows for one market, e.g. from overlapping result pages."""
+    return list({q.ticker: q for q in quotes}.values())
 
 
 @dataclass
@@ -199,6 +217,11 @@ class Opportunity:
         return self.payout_per_set * self.contracts
 
     @property
+    def guaranteed(self) -> bool:
+        """YES baskets pay only if the listed outcomes are exhaustive."""
+        return self.kind != "yes_basket"
+
+    @property
     def profit(self) -> Decimal:
         return self.payout - self.cost
 
@@ -224,7 +247,8 @@ class Opportunity:
                 for leg in self.legs
             ],
             "cost_cents": num(self.cost),
-            "guaranteed_payout_cents": num(self.payout),
+            "payout_cents": num(self.payout),
+            "payout_guaranteed": self.guaranteed,
             "profit_cents": num(self.profit),
             "return_pct": f"{self.return_pct:.2f}",
             "close_time": self.close_time.isoformat() if self.close_time else None,
@@ -263,7 +287,7 @@ def find_no_basket(event_ticker: str, title: str, quotes: list, contracts: int,
     minus 100 x C, so only legs whose term is positive are worth including.
     """
     legs = []
-    for q in quotes:
+    for q in unique_by_ticker(quotes):
         if not q.is_open or not tradable(q.no_ask):
             continue
         fee = fees.fee(q.no_ask, contracts)
@@ -291,6 +315,7 @@ def find_yes_basket(event_ticker: str, title: str, quotes: list, contracts: int,
     `quotes` must be the event's complete market list. Pays $1 only if the
     markets cover every possible outcome, which the API does not report.
     """
+    quotes = unique_by_ticker(quotes)
     if len(quotes) < 2 or any(not q.is_open or not tradable(q.yes_ask) for q in quotes):
         return None
     legs = [Leg(q.ticker, "yes", q.yes_ask, fees.fee(q.yes_ask, contracts)) for q in quotes]
@@ -315,14 +340,16 @@ def find_strike_ladders(event_ticker: str, title: str, quotes: list, contracts: 
     For "above" markets with strikes a < b: YES(>a) pays when the value is
     above a, NO(>b) pays when it is at or below b, so one always pays.
     For "below" markets with a < b: YES(<b) and NO(<a) cover everything.
+    Markets are only paired when their wording matches apart from numbers, so
+    two different underlyings in one event are never treated as one ladder.
     """
     groups = defaultdict(list)
-    for q in quotes:
+    for q in unique_by_ticker(quotes):
         if q.is_open and q.strike_type in ABOVE_STRIKE_TYPES | BELOW_STRIKE_TYPES:
-            groups[(q.strike_type, q.close_time)].append(q)
+            groups[(q.strike_type, q.close_time, q.underlying)].append(q)
 
     found = []
-    for (strike_type, close_time), group in groups.items():
+    for (strike_type, close_time, _), group in groups.items():
         above = strike_type in ABOVE_STRIKE_TYPES
         keyed = [(q.floor_strike if above else q.cap_strike, q) for q in group]
         keyed = sorted(((k, q) for k, q in keyed if k is not None), key=lambda kq: kq[0])
@@ -447,6 +474,30 @@ def check_depth(opp: Opportunity, client, fees: FeeModel) -> Optional[Opportunit
     return checked if checked.profit > 0 else None
 
 
+def allocate_depth(opps: list, event_fees: dict) -> list:
+    """Size depth-checked opportunities in rank order so shared legs fit the book.
+
+    Each (ticker, side) has only `depth` contracts at its best price; later
+    opportunities get what earlier ones left, and are dropped if that is no
+    longer enough to be profitable.
+    """
+    used = defaultdict(Decimal)
+    allocated = []
+    for opp in opps:
+        left = min(leg.depth - used[(leg.ticker, leg.side)] for leg in opp.legs)
+        size = min(opp.contracts, int(left.to_integral_value(rounding=ROUND_FLOOR)))
+        if size <= 0:
+            continue
+        if size != opp.contracts:
+            opp = event_fees[opp.event_ticker].priced(opp, size)
+            if opp.profit <= 0:
+                continue
+        for leg in opp.legs:
+            used[(leg.ticker, leg.side)] += size
+        allocated.append(opp)
+    return allocated
+
+
 # ---------------------------------------------------------------------------
 # API clients
 # ---------------------------------------------------------------------------
@@ -554,15 +605,16 @@ def scan(client, contracts: int = 10, fees: Optional[FeeModel] = None,
     if closing_within_hours is not None:
         max_close_ts = int((now + timedelta(hours=closing_within_hours)).timestamp())
 
-    by_event = defaultdict(list)
+    by_event = defaultdict(dict)
     for raw in client.get_open_markets(max_close_ts=max_close_ts, max_pages=max_pages):
         quote = parse_quote(raw)
         if quote.close_time and quote.close_time <= now:
             continue
-        by_event[quote.event_ticker].append(quote)
+        by_event[quote.event_ticker][quote.ticker] = quote
 
     candidates, event_fees, series_cache = [], {}, {}
-    for event_ticker, quotes in by_event.items():
+    for event_ticker, by_ticker in by_event.items():
+        quotes = list(by_ticker.values())
         title = quotes[0].title
         # Pre-fee screens first, so event and series details are only fetched
         # for the few events that could possibly pay.
@@ -594,12 +646,15 @@ def scan(client, contracts: int = 10, fees: Optional[FeeModel] = None,
                                          event_fees[event_ticker]))
         candidates += [opp for opp in found if opp]
 
+    def rank(opp):
+        return (not opp.guaranteed, -opp.profit)
+
     if depth_check:
         candidates = [c for c in (check_depth(c, client, event_fees[c.event_ticker])
                                   for c in candidates) if c]
+        candidates = allocate_depth(sorted(candidates, key=rank), event_fees)
 
-    candidates.sort(key=lambda o: (o.kind == "yes_basket", -o.profit))
-    return candidates
+    return sorted(candidates, key=rank)
 
 
 # ---------------------------------------------------------------------------
@@ -619,7 +674,9 @@ def format_opportunity(rank: int, opp: Opportunity, now: datetime) -> str:
         lines.append(f"      {leg.side.upper():3} {leg.ticker} @ {num(leg.price)}c "
                      f"(fee {dollars(leg.fee)}{depth})")
     lines += [
-        f"    Cost {dollars(opp.cost)} -> guaranteed payout {dollars(opp.payout)} "
+        f"    Cost {dollars(opp.cost)} -> "
+        f"{'guaranteed payout' if opp.guaranteed else 'payout IF outcomes are exhaustive'} "
+        f"{dollars(opp.payout)} "
         f"= profit {dollars(opp.profit)} ({opp.return_pct:.2f}%), closes in {closes}",
         f"    Caveat: {opp.caveat}",
     ]
@@ -664,7 +721,8 @@ def main(argv=None) -> int:
     print("=" * 80)
     print(f"KALSHI ARBITRAGE SCAN - {now.strftime('%Y-%m-%d %H:%M UTC')}")
     print(f"Fees: series multiplier x {args.fee_rate} x C x P x (1-P), rounded up per order"
-          + (f", plus {args.extra_fee_cents}c/contract broker fee" if args.extra_fee_cents else ""))
+          + (f", plus {args.extra_fee_cents}c/contract broker fee" if args.extra_fee_cents
+             else " (trading on Kalshi directly; via Robinhood add --extra-fee-cents 2)"))
     print("=" * 80)
     if not opportunities:
         print("No fee-adjusted arbitrage found. That is the normal result: these gaps are")
@@ -685,6 +743,8 @@ def main(argv=None) -> int:
 
     print("\nPrices move between the scan and your order. Place limit orders at the")
     print("listed prices, fill the thinnest leg first, and never leave a set half-filled.")
+    print("Payouts assume normal $0/$1 settlement; a voided or specially settled market")
+    print("can break the guarantee, so read each market's rules.")
     return 0
 
 
