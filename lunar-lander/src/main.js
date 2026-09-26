@@ -117,6 +117,16 @@ async function boot() {
     lmCabin.setActive(ivaId === 'LM');
     csmCabin.setActive(ivaId === 'CSM');
 
+    // The title screen covers the canvas completely: skip the world until a mission is loaded.
+    if (!game.started) {
+      ui.update(f);
+      audio.update(f);
+      game.time.frame++;
+      game.debug.renderFrames++;
+      if (!window.__READY && ++readyFrames > 3) window.__READY = true;
+      return;
+    }
+
     terrain.update(f);
     sky.update(f);
     lmModel.update(f, game.vessels.LM);

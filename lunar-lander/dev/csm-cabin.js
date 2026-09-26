@@ -195,12 +195,7 @@ function fake(t) {
 const station = (q.get('station') || 'CDR').toUpperCase();
 let eyeB = stationEye(station);
 const cam = { yaw: num('yaw', 0), pitch: num('pitch', -8) };
-if (station === 'RV' && !q.has('yaw')) {
-  // look along the rendezvous window normal
-  const n = CSM.windows.rendezvousLeft.normal.clone().normalize();
-  cam.yaw = Math.atan2(-n.x, -n.z) * THREE.MathUtils.RAD2DEG;
-  cam.pitch = Math.asin(n.y) * THREE.MathUtils.RAD2DEG;
-}
+if (station === 'RV' && !q.has('pitch')) cam.pitch = 0; // RV station looks straight along -Z (docking axis)
 game.view.mode = 'iva';
 game.view.ivaVessel = 'CSM';
 game.view.station = station;
@@ -265,4 +260,44 @@ window.H = {
     if (o.pitch != null) cam.pitch = +o.pitch;
     if (o.fov != null) game.view.fov = +o.fov;
   },
+};
+
+/** Triangle breakdown by geometry (debug): [{key, type, tris, uses}] sorted by total triangles. */
+window.H.breakdown = (n = 40) => {
+  const by = new Map();
+  cabin.root.traverse((o) => {
+    if (!o.isMesh || !o.geometry) return;
+    const g = o.geometry;
+    const t = (g.index ? g.index.count : g.attributes.position.count) / 3;
+    const k = g.uuid;
+    const e = by.get(k) || { key: `${g.type}:${o.name || o.parent?.name}`, per: t, uses: 0, tris: 0 };
+    const c = o.isInstancedMesh ? o.count : 1;
+    e.uses += c;
+    e.tris += t * c;
+    by.set(k, e);
+  });
+  // aggregate by key
+  const agg = new Map();
+  for (const e of by.values()) {
+    const a = agg.get(e.key) || { key: e.key, geoms: 0, uses: 0, tris: 0, per: e.per };
+    a.geoms++;
+    a.uses += e.uses;
+    a.tris += e.tris;
+    agg.set(e.key, a);
+  }
+  return [...agg.values()].sort((a, b) => b.tris - a.tris).slice(0, n).map((a) => `${Math.round(a.tris)} ${a.key} geoms=${a.geoms} uses=${a.uses} per=${Math.round(a.per)}`);
+};
+
+/** Debug: cabin-space hit point under screen pixel (x, y): {p, theta (deg, from +Y toward +X), z, name}. */
+window.H.pick = (x, y) => {
+  const rc = new THREE.Raycaster();
+  rc.layers.enableAll();
+  const cam = ctx.camera;
+  rc.setFromCamera(new THREE.Vector2((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1), cam);
+  const hits = rc.intersectObject(cabin.root, true).filter((h) => h.object.visible && !h.object.userData.shadowOnly);
+  if (!hits.length) return null;
+  const h = hits[0];
+  const p = cabin.root.worldToLocal(h.point.clone());
+  const r = (v) => Math.round(v * 1000) / 1000;
+  return { p: [r(p.x), r(p.y), r(p.z)], theta: Math.round(Math.atan2(p.x, p.y) * 57.2958), z: r(p.z), name: h.object.name || h.object.parent?.name };
 };

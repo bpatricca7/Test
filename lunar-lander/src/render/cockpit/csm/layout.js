@@ -321,14 +321,15 @@ export const CONTROLLERS = {
 
 /**
  * Eye points of the IVA stations (body frame). RV = close to the left rendezvous window, looking
- * through the COAS.
+ * forward (-Z, parallel to the docking axis) through the COAS.
  */
 export function stationEye(id) {
   if (id === 'CMP') return CSM.eyeCMP.clone();
   if (id === 'LMP') return CSM.eyeLMP.clone();
   if (id === 'RV') {
-    const f = windowFrame('rendezvousLeft');
-    return f.origin.clone().addScaledVector(f.z, -0.42);
+    // 0.42 m straight aft of the left rendezvous window centre, looking along the docking axis
+    // (-Z) through the COAS — the same eye point as the camera module's RV station
+    return CSM.windows.rendezvousLeft.center.clone().add(V(0, 0, 0.42));
   }
   return CSM.eyeCDR.clone();
 }

@@ -22,9 +22,8 @@ for (let i = 0; i < args.length; i++) {
 const [W, H] = opt.size.split('x').map(Number);
 
 // Default plan: every scenario in its main views, plus the special moments.
-const look = (yawDeg, pitchDeg) => `(() => { const c = game.debug.cameras; if (c.setLook) c.setLook(${yawDeg}, ${pitchDeg}); })()`;
 const DEFAULT_PLAN = [
-  { name: 'menu', query: '', wait: 1500 },
+  { name: 'menu', query: '', wait: 1500, evals: ['game.debug.modules.ui.finishBackdrop && game.debug.modules.ui.finishBackdrop()'] },
   { name: 'pdi-iva', query: 'scenario=pdi&camera=iva&fixedstep=1', wait: 2500 },
   { name: 'pdi-chase', query: 'scenario=pdi&camera=chase&fixedstep=1', wait: 2500 },
   { name: 'highgate-iva', query: 'scenario=highgate&camera=iva&fixedstep=1', wait: 2500 },
@@ -47,7 +46,6 @@ const DEFAULT_PLAN = [
 let plan = DEFAULT_PLAN;
 if (opt.plan) plan = JSON.parse(fs.readFileSync(path.resolve(root, opt.plan), 'utf8'));
 if (opt.only) plan = plan.filter((p) => opt.only.includes(p.name));
-void look;
 
 const server = await createServer({ root, logLevel: 'error', server: { port: 0, host: '127.0.0.1', hmr: false } });
 await server.listen();
@@ -82,7 +80,15 @@ for (const p of plan) {
     }
     for (const e of p.evals || []) await page.evaluate(e).catch((err) => errs.push('eval: ' + err.message));
     await new Promise((r) => setTimeout(r, p.wait ?? 2000));
-    await page.screenshot({ path: path.resolve(root, opt.out, `${p.name}.png`) });
+    // make sure at least two more frames have rendered since the waits (slow SwiftShader frames)
+    const f0 = await page.evaluate(() => window.game?.debug?.renderFrames ?? 0).catch(() => 0);
+    const tf = Date.now();
+    while (Date.now() - tf < 60000) {
+      const f1 = await page.evaluate(() => window.game?.debug?.renderFrames ?? 0).catch(() => 0);
+      if (f1 >= f0 + 2) break;
+      await new Promise((r) => setTimeout(r, 200));
+    }
+    await page.screenshot({ path: path.resolve(root, opt.out, `${p.name}.png`), timeout: 180000 });
     info = await page
       .evaluate(
         p.json ||

@@ -52,8 +52,9 @@ export function createLMCabin(ctx) {
 
   // everything on the cabin layer; shadows on for opaque geometry
   KIT.setLayerRecursive(root, LAYERS.CABIN);
-  // tiny parts (instrument internals, lamp lenses, screws...) do not cast: they cannot throw a
-  // visible shadow but would double the shadow pass draw calls
+  // small non-instanced parts (instrument needles, lamp lenses, placards, knobs...) do not cast: they
+  // cannot throw a visible shadow but would double the shadow-pass draw calls. Instanced switch and
+  // breaker banks do cast (one draw each: their rows of little shadows in a sun patch are worth it).
   root.updateMatrixWorld(true);
   const _s = new THREE.Vector3();
   root.traverse((o) => {
@@ -68,7 +69,7 @@ export function createLMCabin(ctx) {
     if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
     o.getWorldScale(_s);
     const r = o.geometry.boundingSphere.radius * Math.max(_s.x, _s.y, _s.z);
-    o.castShadow = o.isInstancedMesh || r > 0.012;
+    o.castShadow = o.isInstancedMesh || r > 0.03;
   });
 
   const lighting = createCabinLighting(ctx, root, { floods: details.floods, materials: M });

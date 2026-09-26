@@ -5,7 +5,7 @@
 // stringers, and the console housings behind every panel.
 import * as THREE from 'three';
 import { LM } from '../../../core/constants.js';
-import { CAB, envelopePlanes, triNormal, panelLayout } from './layout.js';
+import { CAB, SECTION, envelopePlanes, triNormal, panelLayout } from './layout.js';
 import {
   V, Batch, convexPolyhedron, polygonGeometry, offsetPolygon, ribbon, circlePts, boxFromTo, cylBetween, lathe, tube,
   roundBox, boxUV, invert,
@@ -25,13 +25,13 @@ const FACE_MAT = {
   ceilingEdgeL: 'lining',
   ceilingEdgeR: 'lining',
   ceiling: 'lining',
-  winL: 'console',
-  winR: 'console',
-  browL: 'console',
-  browR: 'console',
-  cheekL: 'console',
-  cheekR: 'console',
-  front: 'console',
+  winL: 'lining',
+  winR: 'lining',
+  browL: 'lining',
+  browR: 'lining',
+  cheekL: 'lining',
+  cheekR: 'lining',
+  front: 'lining',
   aft: 'quilt',
 };
 
@@ -297,18 +297,28 @@ export function buildShell(mat) {
 
   // ------------------------------------------------------------------ ring frames & stringers
   {
-    // ceiling ring frames (channel beams across the ceiling band and down the upper diagonals)
-    const path = [V(-1.0, 5.3, 0), V(-0.88, 5.5, 0), V(-0.64, 5.62, 0), V(0.64, 5.62, 0), V(0.88, 5.5, 0), V(1.0, 5.3, 0)];
-    for (const z of [-0.86, 0.66, 1.0]) {
+    // ceiling ring frames: channel beams (3 cm deep, 4.5 cm wide) lying FLUSH on the envelope across
+    // the ceiling band and down the upper diagonals (section vertices from layout.SECTION)
+    // right half of the section = SECTION.pts[0..6] (floor -> ceiling): take upperSide top .. ceiling edge
+    const right = SECTION.pts.slice(4, 7).map(([x, y]) => new THREE.Vector2(x, y));
+    const path = [...right.map((q) => new THREE.Vector2(-q.x, q.y)), ...right.slice().reverse()];
+    const axis = new THREE.Vector2(0, CAB.axisY);
+    // (the forward frame stands just ahead of circuit-breaker panels 11 / 16, which span z -0.875..-0.295)
+    for (const z of [-0.935, 0.66, 1.0]) {
       for (let i = 0; i < path.length - 1; i++) {
-        const a = path[i].clone().setZ(z);
-        const c = path[i + 1].clone().setZ(z);
-        const d = new THREE.Vector3().subVectors(c, a);
+        const a = path[i];
+        const c = path[i + 1];
+        if (z < 0 && Math.abs(a.x + c.x) < 1e-6) continue; // the AOT passes through the ceiling there
+        const d = new THREE.Vector2().subVectors(c, a);
         const len = d.length();
-        const beam = new THREE.BoxGeometry(len, 0.03, 0.045);
-        const q = new THREE.Quaternion().setFromUnitVectors(V(1, 0, 0), d.normalize());
-        beam.applyQuaternion(q);
-        beam.translate((a.x + c.x) / 2, (a.y + c.y) / 2 - 0.004, z);
+        d.normalize();
+        const mid = a.clone().add(c).multiplyScalar(0.5);
+        let nIn = new THREE.Vector2(-d.y, d.x);
+        if (nIn.dot(axis.clone().sub(mid)) < 0) nIn.negate();
+        const beam = new THREE.BoxGeometry(len + 0.02, 0.03, 0.045);
+        const m = new THREE.Matrix4().makeBasis(V(d.x, d.y, 0), V(nIn.x, nIn.y, 0), V(0, 0, 1));
+        m.setPosition(mid.x + nIn.x * 0.0155, mid.y + nIn.y * 0.0155, z);
+        beam.applyMatrix4(m);
         b.add('structure', boxUV(beam, 2));
       }
     }
@@ -363,7 +373,8 @@ export function buildShell(mat) {
       const hf = convexPolyhedron([...planes, ...env], new THREE.Box3(V(-1.4, 3.3, -1.4), V(1.4, 5.95, 1.4)));
       for (const f of hf) {
         if (f.tag === 'front' || f.tag === 'env') continue;
-        b.add('console', polygonGeometry(f.verts, [], f.n, 2));
+        // close-out sides read as riveted structure panels (the lining), the rest as panel grey
+        b.add(f.tag === 'side' && D > 0.1 ? 'lining' : 'console', polygonGeometry(f.verts, [], f.n, 1));
         // dark inside (seen through the instrument cut-outs)
         b.add('black', polygonGeometry(f.verts.slice().reverse(), [], f.n.clone().negate(), 2));
       }

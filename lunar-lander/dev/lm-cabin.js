@@ -20,7 +20,7 @@ const usePost = q.get('post') !== '0';
 const post = usePost ? createPost(ctx) : null;
 if (post && q.has('exposure')) post.exposure.override = +q.get('exposure');
 
-const att = q.get('att') || 'p64';
+let att = q.get('att') || 'p64';
 const LMv = game.vessels.LM;
 const alt0 = num('alt', { p64: 900, landed: 0, pdi: 14000, orbit: 110000 }[att] ?? 900);
 const siteR = MOON.radius;
@@ -185,8 +185,9 @@ function fake(t) {
 }
 
 // ---------------------------------------------------------------- camera
-const station = (q.get('station') || 'CDR').toUpperCase();
-const eyeB = station === 'LMP' ? LM.eyeLMP.clone() : station === 'OVERHEAD' ? new THREE.Vector3(-0.42, 5.3, -0.72) : LM.eyeCDR.clone();
+let station = (q.get('station') || 'CDR').toUpperCase();
+const eyeFor = (st) => (st === 'LMP' ? LM.eyeLMP.clone() : st === 'OVERHEAD' ? new THREE.Vector3(-0.42, 5.3, -0.72) : st === 'AFT' ? new THREE.Vector3(0, 5.15, -0.55) : LM.eyeCDR.clone());
+const eyeB = eyeFor(station);
 const cam = { yaw: num('yaw', 0), pitch: num('pitch', station === 'OVERHEAD' ? 80 : -12) };
 game.view.mode = 'iva';
 game.view.ivaVessel = 'LM';
@@ -236,4 +237,17 @@ function tick(now) {
   }
 }
 requestAnimationFrame(tick);
-window.H = { cabin, cam, game, ctx, R, LAYERS };
+/** Multishot hook: {station, yaw, pitch, fov, t, att, eye:[x,y,z]} */
+function setView(o = {}) {
+  if (o.station) {
+    station = o.station.toUpperCase();
+    eyeB.copy(eyeFor(station));
+  }
+  if (o.eye) eyeB.set(o.eye[0], o.eye[1], o.eye[2]);
+  if (o.yaw != null) cam.yaw = o.yaw;
+  if (o.pitch != null) cam.pitch = o.pitch;
+  if (o.fov != null) game.view.fov = o.fov;
+  if (o.t != null) T = o.t;
+  if (o.att) att = o.att;
+}
+window.H = { cabin, cam, game, ctx, R, LAYERS, setView, get frames() { return frames; } };

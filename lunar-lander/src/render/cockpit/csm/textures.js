@@ -138,6 +138,24 @@ export function wallTexture() {
     g.lineTo(x + Math.cos(ang) * l, y + Math.sin(ang) * l);
     g.stroke();
   }
+  // Velcro pile patches (off-white, fuzzy): the crew stuck checklists, pencils, cameras and food
+  // packs all over the cabin; the real walls are dotted with them
+  for (let k = 0; k < 5; k++) {
+    const w = 30 + r() * 60;
+    const h = 18 + r() * 22;
+    const x = 40 + r() * (N - 80 - w);
+    const y = 40 + r() * (N - 80 - h);
+    g.fillStyle = 'rgba(0,0,0,0.25)';
+    g.fillRect(x + 1.5, y + 2, w, h);
+    g.fillStyle = r() < 0.5 ? '#cdc7b5' : '#c2bdad';
+    g.fillRect(x, y, w, h);
+    for (let q = 0; q < w * h * 0.25; q++) {
+      g.fillStyle = r() < 0.5 ? 'rgba(90,85,70,0.18)' : 'rgba(255,255,248,0.25)';
+      g.fillRect(x + r() * w, y + r() * h, 1.2, 1.2);
+    }
+    ga.fillStyle = 'rgb(200,255,0)'; // raised (bump) and fully rough
+    ga.fillRect(x / 2, y / 2, w / 2, h / 2);
+  }
   // small stencilled part numbers
   g.globalAlpha = 0.55;
   for (let k = 0; k < 6; k++) drawText(g, `V36-${Math.floor(100 + r() * 800)}-${Math.floor(r() * 90)}`, 60 + r() * (N - 120), 40 + r() * (N - 80), 11, { color: '#303030', font: MONO_STACK, weight: 'normal' });
@@ -170,20 +188,25 @@ export function betaTexture() {
 }
 
 let _strap = null;
-/** Harness webbing (u across, v along), 128 px. */
+/**
+ * Harness webbing: u ALONG the strap (0.05 m per tile, see couches.ribbon), v across it (0..1).
+ * Fine twill ribs across the length, darker woven selvedges along both edges.
+ */
 export function strapTexture() {
   if (_strap) return _strap;
-  const c = canvas(64, 128);
+  const c = canvas(128, 64);
   const g = c.getContext('2d');
-  g.fillStyle = '#cfc9b6';
-  g.fillRect(0, 0, 64, 128);
-  for (let y = 0; y < 128; y += 3) {
-    g.fillStyle = `rgba(80,70,50,${0.1 + (y % 6 ? 0.05 : 0)})`;
-    g.fillRect(0, y, 64, 1);
+  g.fillStyle = '#cdc7b4';
+  g.fillRect(0, 0, 128, 64);
+  for (let x = 0; x < 128; x += 2) {
+    g.fillStyle = `rgba(80,70,50,${x % 4 ? 0.07 : 0.13})`;
+    g.fillRect(x, 0, 1, 64);
   }
-  g.fillStyle = 'rgba(70,60,45,0.35)';
-  g.fillRect(0, 0, 4, 128);
-  g.fillRect(60, 0, 4, 128);
+  // selvedges
+  g.fillStyle = 'rgba(70,60,45,0.28)';
+  g.fillRect(0, 0, 128, 4);
+  g.fillRect(0, 60, 128, 4);
+  grain(g, 128, 64, 21, 10, 0);
   _strap = tex(c);
   return _strap;
 }

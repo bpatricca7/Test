@@ -102,6 +102,10 @@ export function createCabinLighting(ctx, root, o) {
       KIT.setCabinEnvironment(env, { intensity: 1, glassIntensity: 0.8 });
       integralSet = -1;
     },
+    /** Leaving the CM: the kit's shared reflective materials go back to an unrotated environment. */
+    deactivate() {
+      for (const nm of KIT_REFLECTIVE) KIT.getMaterial(nm).envMapRotation.set(0, 0, 0);
+    },
     /**
      * @param {object} frame FrameContext
      * @param {object} v CSM vessel

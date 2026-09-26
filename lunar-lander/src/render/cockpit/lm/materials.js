@@ -29,9 +29,9 @@ export function createCabinMaterials() {
   const q = quiltTextures();
   std('quilt', { color: 0xffffff, map: q.map, bumpMap: q.bump, bumpScale: 3.0, roughness: 0.95, metalness: 0 });
   const cl = clothTextures('#d6cfbd');
-  std('beta', { color: 0xffffff, map: cl.map, bumpMap: cl.bump, bumpScale: 1.5, roughness: 0.93, metalness: 0 });
+  std('beta', { color: 0xffffff, map: cl.map, bumpMap: cl.bump, bumpScale: 0.8, roughness: 0.88, metalness: 0 });
   const cw = clothTextures('#dcd9d0', 37);
-  std('betaWhite', { color: 0xffffff, map: cw.map, bumpMap: cw.bump, bumpScale: 1.5, roughness: 0.9, metalness: 0 });
+  std('betaWhite', { color: 0xffffff, map: cw.map, bumpMap: cw.bump, bumpScale: 0.8, roughness: 0.86, metalness: 0 });
   const fl = floorTextures();
   std('floor', { color: 0xffffff, map: fl.map, bumpMap: fl.bump, bumpScale: 0.8, roughness: 0.78, metalness: 0.2 });
   std('structure', { color: 0x80837f, roughness: 0.55, metalness: 0.35 });
@@ -39,6 +39,8 @@ export function createCabinMaterials() {
   const an = anodizedTextures();
   std('frame', { color: 0xffffff, map: an.map, roughness: 0.72, metalness: 0.2 });
   std('console', { color: COLORS.panelGray, roughness: 0.58, metalness: 0.08 });
+  // handholds / grab bars: grey-painted aluminium tube, worn satin
+  std('handrail', { color: 0x8f9294, roughness: 0.42, metalness: 0.45 });
   std('metal', { color: 0xc9cac6, roughness: 0.3, metalness: 1.0 });
   std('darkMetal', { color: 0x505254, roughness: 0.42, metalness: 0.85 });
   std('rubber', { color: 0x1c1c1c, roughness: 0.9, metalness: 0 });
@@ -73,7 +75,9 @@ export function createCabinMaterials() {
       depthWrite: false,
       side: THREE.DoubleSide,
     },
-    { envScale: 0.9, noShadow: true },
+    // fused silica: ~4 % per surface at normal incidence. The panes must stay faint over the black
+    // sky (a stronger reflection reads as grey haze on the window).
+    { envScale: 0.3, noShadow: true },
   );
   glass.userData.glass = true;
   // The panes only show the (rough, Fresnel-weighted) interior environment: point-light glints of

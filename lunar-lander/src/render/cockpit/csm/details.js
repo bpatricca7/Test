@@ -179,47 +179,78 @@ export function buildDetails(mat, shellInfo) {
   }
 
   // ---------------------------------------------------------------- suit umbilical hoses
-  // CDR: from the ECS suit-circuit connectors on the LHEB wall; CMP & LMP: from the LEB suit-circuit
-  // outlets below their feet. Hoses end at the couch side at hip level (stowed, crew suits off).
+  // Six corrugated suit-circuit hoses (supply + return per crewman) leave the ECS suit-circuit
+  // connector panel on the left-hand equipment bay wall beside the CDR's knees and float in loose
+  // arcs across the front of the couches (no gravity: they keep the bends they were stowed with)
+  // to each couch, where the blue (supply) and red (return) connectors rest on the back pad at
+  // chest height, ready to be plugged into a suit.
   {
-    const src = V(-1.3, -0.45, -0.52);
+    // connector panel on the closeout wedge below panel 8 (plane through (-1.32,-0.62) and
+    // (-0.62,-1.24) in x/y, normal toward the cabin)
+    const wn = V(0.62, 0.7, 0).normalize();
+    const src = V(-1.16, -0.68, -0.5);
+    const hz = -0.235 - 0.055; // just in front of the couch back-pad surface
     const routes = [
-      [src, V(-1.12, -0.44, -0.5), V(COUCH_X.CDR - 0.36, -0.42, -0.42), V(COUCH_X.CDR - 0.3, -0.3, -0.36)],
-      [V(-0.18, -1.2, -0.42), V(-0.2, -1.02, -0.5), V(-0.25, -0.72, -0.46), V(-0.27, -0.45, -0.36)],
-      [V(0.2, -1.2, -0.42), V(0.24, -1.0, -0.5), V(COUCH_X.LMP - 0.37, -0.7, -0.45), V(COUCH_X.LMP - 0.3, -0.36, -0.36)],
+      // CDR: out under the THC, over his lap, up to the chest
+      [src, V(-1.0, -0.55, -0.62), V(-0.84, -0.42, -0.74), V(-0.68, -0.22, -0.62), V(COUCH_X.CDR + 0.07, -0.02, hz)],
+      // CMP: across the front of the CDR's legs, then up to the centre couch
+      [src, V(-0.98, -0.72, -0.7), V(-0.7, -0.72, -0.86), V(-0.36, -0.56, -0.8), V(-0.12, -0.28, -0.58), V(COUCH_X.CMP - 0.04, -0.06, hz)],
+      // LMP: the long one, in front of both left couches' legs and up the right couch
+      [src, V(-0.98, -0.8, -0.8), V(-0.6, -0.78, -0.94), V(0.0, -0.72, -0.96), V(0.38, -0.6, -0.86), V(0.52, -0.32, -0.6), V(COUCH_X.LMP - 0.05, -0.08, hz)],
     ];
-    for (const r of routes) {
-      for (const off of [-0.03, 0.03]) {
-        const pts = r.map((p, i) => p.clone().add(V(i === 0 ? off : off * 0.8, 0, i === 0 ? 0 : off * 0.5)));
-        B.add('hose', hose(pts, 0.017, 0.02, 8));
-        // blue (supply) / red (return) connectors at the couch end
+    const Zax = V(0, 0, 1);
+    routes.forEach((r, ri) => {
+      for (const s of [-1, 1]) {
+        // the pair runs side by side: offset each point perpendicular to the local direction
+        const pts = r.map((p, i) => {
+          const a = r[Math.max(0, i - 1)];
+          const b = r[Math.min(r.length - 1, i + 1)];
+          const t = V().subVectors(b, a).normalize();
+          let side = V().crossVectors(t, Zax);
+          if (side.lengthSq() < 1e-4) side = V(1, 0, 0);
+          side.normalize();
+          // twist the pair a little along the way so it does not look like a ribbon
+          const tw = Math.sin(i * 1.3 + ri) * 0.4;
+          const off = side.multiplyScalar(Math.cos(tw) * 0.022 * s).addScaledVector(V().crossVectors(t, side).normalize(), Math.sin(tw) * 0.022 * s);
+          return p.clone().add(off);
+        });
+        B.add('hose', hose(pts, 0.0155, 0.02, 8));
+        // connector at the couch end: anodised coupling + coloured locking ring
         const end = pts[pts.length - 1];
         const dir = V().subVectors(end, pts[pts.length - 2]).normalize();
-        B.add(off < 0 ? 'blueCon' : 'red', cylBetween(end, end.clone().addScaledVector(dir, 0.035), 0.021, 0.021, 14));
+        B.add('alu', cylBetween(end, end.clone().addScaledVector(dir, 0.028), 0.02, 0.02, 12));
+        B.add(s < 0 ? 'blueCon' : 'red', cylBetween(end.clone().addScaledVector(dir, 0.028), end.clone().addScaledVector(dir, 0.045), 0.023, 0.023, 12));
+        B.add('black', cylBetween(end.clone().addScaledVector(dir, 0.045), end.clone().addScaledVector(dir, 0.05), 0.014, 0.014, 10));
+        // coupling at the ECS panel
+        const st = pts[0];
+        const d0 = V().subVectors(pts[1], st).normalize();
+        B.add('alu', cylBetween(st.clone().addScaledVector(d0, -0.02), st.clone().addScaledVector(d0, 0.02), 0.021, 0.021, 12));
       }
-    }
-    // ECS connector plate on the wall, LEB outlets
-    B.add('structure', roundBox(0.1, 0.22, 0.03, 0.01).rotateY(Math.PI / 2 - 0.3).translate(src.x - 0.02, src.y + 0.05, src.z));
-    for (const x of [-0.18, 0.2]) B.add('structure', roundBox(0.12, 0.03, 0.08, 0.008).translate(x, -1.225, -0.42));
+    });
+    // ECS suit-circuit connector panel on the closeout wedge (faces the cabin), 6 ports
+    const q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(V(0, 0, 1).cross(wn).normalize(), V(0, 0, 1), wn));
+    const pc = src.clone().addScaledVector(wn, -0.045);
+    B.add('structure', roundBox(0.16, 0.3, 0.03, 0.012).applyQuaternion(q).translate(pc.x, pc.y, pc.z));
+    // hose restraint strap across the bundle just outside the panel
+    const sp = src.clone().addScaledVector(wn, 0.07);
+    B.add('strap', roundBox(0.2, 0.035, 0.07, 0.006).applyQuaternion(q).translate(sp.x, sp.y, sp.z));
   }
 
   // ---------------------------------------------------------------- structural ring frames on the cone wall
+  // Flat-faced ring frames (a 5 cm channel standing 2 cm off the wall, flanges following the cone)
   for (const z of [-0.2, -1.68]) {
-    // square-section ring (torus with 4 radial segments rotated 45°), sitting on the wall
-    const r0 = innerRadius(z);
-    const g = new THREE.TorusGeometry(r0 - 0.012, 0.024, 4, 128);
-    g.rotateZ(0);
-    const p = g.attributes.position;
-    // turn the diamond section into a flat-faced channel: squash radially
-    for (let i = 0; i < p.count; i++) {
-      const x = p.getX(i);
-      const y = p.getY(i);
-      const rr = Math.hypot(x, y);
-      const k = (r0 - 0.012 + (rr - (r0 - 0.012)) * 0.6) / rr;
-      p.setXY(i, x * k, y * k);
-    }
-    g.computeVertexNormals();
-    B.add('structure', g.translate(0, 0, z));
+    const rw = (zz) => innerRadius(zz) + 0.004; // flange roots tucked just behind the wall surface
+    // lathe profile [r, h] with h = -z (lathe axis +Y is rotated onto -Z below); h decreasing gives
+    // faces toward the axis (cabin side)
+    const prof = [
+      [rw(z - 0.028), -(z - 0.028)],
+      [innerRadius(z) - 0.016, -(z - 0.026)],
+      [innerRadius(z) - 0.02, -(z - 0.02)],
+      [innerRadius(z) - 0.02, -(z + 0.02)],
+      [innerRadius(z) - 0.016, -(z + 0.026)],
+      [rw(z + 0.028), -(z + 0.028)],
+    ];
+    B.add('structure', lathe(prof, 96).rotateX(-Math.PI / 2));
   }
 
   // ---------------------------------------------------------------- handholds (MDC, LEB)
@@ -279,11 +310,12 @@ export function buildDetails(mat, shellInfo) {
   // ---------------------------------------------------------------- COAS at the left rendezvous window
   const coas = {};
   {
+    // the COAS looks along the docking axis (-Z) from the RV eye point; combiner 0.16 m ahead
     const f = windowFrame('rendezvousLeft');
     const eye = stationEye('RV');
-    const axis = V().subVectors(f.origin, eye).normalize();
-    const cpos = eye.clone().addScaledVector(axis, 0.13);
-    const up = f.y.clone();
+    const axis = V(0, 0, -1);
+    const cpos = eye.clone().addScaledVector(axis, 0.16);
+    const up = V(0, 1, 0);
     const right = V().crossVectors(axis, up).normalize();
     const upO = V().crossVectors(right, axis).normalize();
     const basis = new THREE.Matrix4().makeBasis(right, upO, axis.clone().negate());

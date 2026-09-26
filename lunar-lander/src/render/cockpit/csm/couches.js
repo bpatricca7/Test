@@ -7,7 +7,7 @@
 // and shoulder straps lying loose on the empty couch, with the central buckle).
 import * as THREE from 'three';
 import { COUCH, COUCH_X, CONTROLLERS, AFT_Z, innerRadius } from './layout.js';
-import { V, Batch, roundBox, beam, cylBetween, stripBetween, tube } from './geom.js';
+import { V, Batch, roundBox, beam, cylBetween, stripBetween, tube, boxUV } from './geom.js';
 
 /** Scale a geometry's UVs (tiling textures on 0..1-mapped boxes). */
 function scaleUV(g, su, sv) {
@@ -29,7 +29,8 @@ function segMatrix(a, b, offBehind, x = 0) {
 /** Beta-cloth pad as a softly rounded box between a and b, width w (pad front toward the body). */
 function pad(B, a, b, w, t, x, key = 'beta') {
   const s = segMatrix(a, b, t / 2, x);
-  const g = scaleUV(roundBox(w, s.len, t, 0.02, 0.012, 4), w / 0.1, s.len / 0.1);
+  // box-projected UVs (0.1 m weave tile on every face: no streaks on the rounded edges)
+  const g = boxUV(roundBox(w, s.len, t, 0.02, 0.012, 4), 0.1);
   B.add(key, g, s.m);
   // stitched piping around the front face
   const e = 0.004;
@@ -66,7 +67,7 @@ export function buildCouches(mat) {
     // helmet side supports (angled wings on the headrest)
     for (const sx of [-1, 1]) {
       const s = segMatrix(headTop, head, t / 2, 0);
-      const g = scaleUV(roundBox(0.05, s.len * 0.8, 0.07, 0.015, 0.01, 3), 0.5, s.len * 8);
+      const g = boxUV(roundBox(0.05, s.len * 0.8, 0.07, 0.015, 0.01, 3), 0.1);
       const m = new THREE.Matrix4().makeRotationY(sx * 0.55);
       m.setPosition(sx * (W.head / 2 + 0.018), 0, -0.02);
       B.add('beta', g, s.m.clone().multiply(m));
@@ -119,7 +120,7 @@ export function buildCouches(mat) {
         const ax = xc + sx * 0.29;
         const e = V(ax, -0.315, -0.29);
         const h = V(ax, -0.315, -0.585);
-        B.add('beta', scaleUV(roundBox(0.07, 0.3, 0.032, 0.012, 0.008, 3), 0.7, 3), new THREE.Matrix4().makeBasis(V(1, 0, 0), V(0, 0, -1), V(0, 1, 0)).setPosition(V().addVectors(e, h).multiplyScalar(0.5)));
+        B.add('beta', boxUV(roundBox(0.07, 0.3, 0.032, 0.012, 0.008, 3), 0.1), new THREE.Matrix4().makeBasis(V(1, 0, 0), V(0, 0, -1), V(0, 1, 0)).setPosition(V().addVectors(e, h).multiplyScalar(0.5)));
         // support arm from the couch rail
         const r0 = V(xc + sx * (W.back / 2 - 0.02), -0.33, -0.27);
         B.add('frame', beam(r0, V(ax, -0.34, -0.3), 0.03, 0.02, V(0, 1, 0)));

@@ -18,6 +18,7 @@
 // Display Console panels 1-3), csm/sidePanels.js (panels 5, 8, 15, 16), csm/leb.js (Lower Equipment
 // Bay: G&N station, optics, DSKY 2), csm/couches.js, csm/controls.js (RHC/THC), csm/stowage.js
 // (lockers), csm/details.js (hatches' mechanisms, floods, hoses, COAS, cameras, checklists),
+// csm/dressing.js (pouches, cue cards, pencils on the walls), csm/optimize.js (triangle budget),
 // csm/lighting.js, csm/systems.js (EPS/ECS/propulsion display model), csm/layout.js (geometry).
 import * as THREE from 'three';
 import { LAYERS } from '../../core/constants.js';
@@ -31,8 +32,13 @@ import { buildCouches } from './csm/couches.js';
 import { buildControllers } from './csm/controls.js';
 import { buildStowage } from './csm/stowage.js';
 import { buildDetails } from './csm/details.js';
+import { buildDressing } from './csm/dressing.js';
 import { createCabinLighting } from './csm/lighting.js';
 import { createSystems, updateSystems } from './csm/systems.js';
+import { optimizeCabin, updateLOD } from './csm/optimize.js';
+
+const _eye = new THREE.Vector3();
+const _qInv = new THREE.Quaternion();
 
 /**
  * Create the Command Module crew compartment.
@@ -58,8 +64,12 @@ export function createCSMCabin(ctx) {
   const controllers = buildControllers(mat);
   const stowage = buildStowage(mat, M.atlas);
   const details = buildDetails(mat, shell);
-  root.add(shell.group, mdc.group, side.group, leb.group, couches.group, controllers.group, stowage.group, details.group);
+  const dressing = buildDressing(mat);
+  root.add(shell.group, mdc.group, side.group, leb.group, couches.group, controllers.group, stowage.group, details.group, dressing.group);
   M.atlas.commit();
+
+  // resolution-matched copies of the kit's parametric hardware + near/far LOD for instanced banks
+  const optimized = optimizeCabin(root);
 
   // everything on the cabin layer; shadows for opaque geometry
   KIT.setLayerRecursive(root, LAYERS.CABIN);
@@ -68,7 +78,12 @@ export function createCSMCabin(ctx) {
     const m = o.material;
     const transparent = m && (m.transparent || m.blending === THREE.AdditiveBlending);
     if (!transparent && !m?.userData?.noShadow) {
-      o.castShadow = true;
+      // parts smaller than ~a shadow-map texel pair (switch nuts, washers, bushings, breaker
+      // collars: < 7.5 mm) only receive: their shadows would be sub-texel noise, and skipping them
+      // halves the triangles of the sunlight shadow pass (levers, guards and covers still cast)
+      const g = o.geometry;
+      if (!g.boundingSphere) g.computeBoundingSphere();
+      o.castShadow = !(g.boundingSphere && g.boundingSphere.radius < 0.0075);
       o.receiveShadow = true;
     } else {
       o.castShadow = false;
@@ -131,6 +146,14 @@ export function createCSMCabin(ctx) {
         last.set(id, probeTb);
       }
     }
+    // LEB G&N condition lamps (panel 122) repeat the computer / inertial-subsystem cautions
+    const cwl = v.cw?.lights || {};
+    const lamps = { lpIsol: !!(cwl.CMC || v.agc?.alarmCode), lpIss: !!cwl.ISS, lpOpt: false };
+    for (const [id, on] of Object.entries(lamps)) {
+      if (last.get(id) === on) continue;
+      controls.get(id)?.setLit?.(on);
+      last.set(id, on);
+    }
     // SPS helium valves open (grey) while the engine is armed
     const heTb = armed ? 'grey' : 'barber';
     for (const id of ['tbSpsHe1', 'tbSpsHe2']) {
@@ -145,10 +168,12 @@ export function createCSMCabin(ctx) {
   const api = {
     root,
     systems: sys,
-    parts: { shell, mdc, side, leb, couches, controllers, stowage, details, lighting, materials: M, controls },
+    optimized,
+    parts: { shell, mdc, side, leb, couches, controllers, stowage, details, dressing, lighting, materials: M, controls },
     setActive(on) {
       on = !!on;
       if (on && !active) lighting.activate();
+      if (!on && active) lighting.deactivate();
       active = on;
       root.visible = on;
     },
@@ -157,6 +182,10 @@ export function createCSMCabin(ctx) {
       root.position.copy(v.pos).sub(frame.origin);
       root.quaternion.copy(v.quat);
       root.updateMatrixWorld(true);
+      // eye in cabin coordinates -> distance LOD of the switch / breaker banks
+      _qInv.copy(v.quat).invert();
+      _eye.copy(frame.cameraMCI ?? frame.origin).sub(v.pos).applyQuaternion(_qInv);
+      updateLOD(optimized.lods, _eye);
       const dt = frame.dt ?? 0.016;
       const game = frame.game;
       updateSystems(sys, v, game.time.met, dt);

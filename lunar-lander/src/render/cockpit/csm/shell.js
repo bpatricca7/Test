@@ -329,7 +329,7 @@ export function buildShell(mat) {
   const group = B.build((k) => mat(k === 'hatch' ? 'structure' : k));
   group.add(skin);
   const glassGeo = mergeList(glassParts);
-  const glassMesh = new THREE.Mesh(glassGeo, mat('glass'));
+  const glassMesh = new THREE.Mesh(glassGeo, mat('pane'));
   glassMesh.name = 'CSMCabin:windowGlass';
   glassMesh.castShadow = false;
   glassMesh.receiveShadow = false;

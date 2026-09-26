@@ -11,6 +11,9 @@ function canvas(w, h) {
   const c = document.createElement('canvas');
   c.width = w;
   c.height = h;
+  // generation reads pixels back (noise, folds): keep the canvas CPU-side. Later getContext('2d')
+  // calls return this same context.
+  c.getContext('2d', { willReadFrequently: true });
   return c;
 }
 
@@ -142,11 +145,11 @@ export function liningTextures() {
       gb.arc(X / 2, Y / 2, 4.5, 0, Math.PI * 2);
       gb.fill();
     }
-    // scuffs
-    g.globalAlpha = 0.18;
+    // scuffs (soft, low contrast: at 20 cm a hard stroke reads as a stray pen mark)
+    g.globalAlpha = 0.09;
     for (let i = 0; i < 60; i++) {
       g.strokeStyle = r() < 0.5 ? '#5a5b58' : '#b5b6b0';
-      g.lineWidth = 1 + r() * 2;
+      g.lineWidth = 2 + r() * 3;
       const x = r() * S;
       const y = r() * S;
       g.beginPath();
@@ -238,7 +241,12 @@ export function quiltTextures(color = '#d9d1bd') {
   });
 }
 
-/** Beta-cloth fabric for stowage bags / PLSS covers: weave, seams, soft folds. Tile = 0.25 m. */
+/**
+ * Beta-cloth fabric for stowage bags / PLSS covers: a fine basket weave, soft broad folds (the cloth
+ * is stretched over its container, so folds are long, shallow and roughly parallel), a stitched seam
+ * and faint handling grime. The folds are sums of sine waves with INTEGER frequencies per tile, so the
+ * tile is seamless. Tile = 0.25 m.
+ */
 export function clothTextures(color = '#e2dccb', seed = 31) {
   return cached('cloth' + color + seed, () => {
     const S = 512;
@@ -249,55 +257,75 @@ export function clothTextures(color = '#e2dccb', seed = 31) {
     g.fillRect(0, 0, S, S);
     const b = canvas(S, S);
     const gb = b.getContext('2d');
-    gb.fillStyle = 'rgb(128,128,128)';
-    gb.fillRect(0, 0, S, S);
     const r = rng(seed);
-    // soft folds / wrinkles
-    for (let i = 0; i < 18; i++) {
-      const x = r() * S;
-      const y = r() * S;
-      const a = r() * Math.PI;
-      const L = 60 + r() * 160;
-      const wdt = 8 + r() * 18;
-      for (const [ctx, col] of [[g, `rgba(${r() < 0.5 ? '255,255,250' : '90,80,60'},0.10)`], [gb, `rgba(${r() < 0.5 ? '200,200,200' : '70,70,70'},0.5)`]]) {
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(a);
-        const gr = ctx.createLinearGradient(0, -wdt, 0, wdt);
-        gr.addColorStop(0, 'rgba(0,0,0,0)');
-        gr.addColorStop(0.5, col);
-        gr.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = gr;
-        ctx.fillRect(-L / 2, -wdt, L, wdt * 2);
-        ctx.restore();
+    // ---- folds: height field h(x, y) in -1..1
+    const waves = [];
+    const main = r() < 0.5 ? [1, 0] : [0, 1]; // dominant fold direction
+    for (let k = 0; k < 5; k++) {
+      const n = main[0] * (1 + Math.floor(r() * 3)) + Math.floor(r() * 2);
+      const m = main[1] * (1 + Math.floor(r() * 3)) + Math.floor(r() * 2);
+      waves.push({ n: n || 1, m, a: 0.5 / (k + 1) + 0.15 * r(), ph: r() * 6.283, wn: Math.floor(r() * 5) - 2, wm: Math.floor(r() * 5) - 2, wph: r() * 6.283 });
+    }
+    const hf = new Float32Array(S * S);
+    let hMax = 1e-6;
+    for (let y = 0; y < S; y++) {
+      for (let x = 0; x < S; x++) {
+        const u = (x / S) * 6.2832;
+        const v = (y / S) * 6.2832;
+        let h = 0;
+        for (const w of waves) h += w.a * Math.sin(w.n * u + w.m * v + w.ph + 0.8 * Math.sin(w.wn * u + w.wm * v + w.wph));
+        hf[y * S + x] = h;
+        hMax = Math.max(hMax, Math.abs(h));
       }
     }
-    // weave
-    g.globalAlpha = 0.09;
-    for (let k = 0; k < S; k += 2) {
-      g.fillStyle = k % 4 ? '#000' : '#fff';
-      g.fillRect(k, 0, 1, S);
-      g.fillRect(0, k, S, 1);
+    const col = g.getImageData(0, 0, S, S);
+    const bump = gb.createImageData(S, S);
+    for (let y = 0; y < S; y++) {
+      for (let x = 0; x < S; x++) {
+        const i = y * S + x;
+        const h = hf[i] / hMax;
+        // slope toward the upper-left light gives the soft shading of the folds in the albedo
+        const sl = (hf[y * S + ((x + 1) % S)] - hf[y * S + ((x - 1 + S) % S)] + hf[((y + 1) % S) * S + x] - hf[((y - 1 + S) % S) * S + x]) / hMax;
+        const k = 1 + 0.03 * h - 0.3 * sl;
+        col.data[i * 4] *= k;
+        col.data[i * 4 + 1] *= k;
+        col.data[i * 4 + 2] *= k;
+        const bv = 128 + 60 * h;
+        bump.data[i * 4] = bump.data[i * 4 + 1] = bump.data[i * 4 + 2] = bv;
+        bump.data[i * 4 + 3] = 255;
+      }
     }
-    g.globalAlpha = 1;
-    // seam line with stitches
-    g.strokeStyle = 'rgba(120,108,85,0.7)';
-    g.lineWidth = 2;
+    g.putImageData(col, 0, 0);
+    gb.putImageData(bump, 0, 0);
+    // ---- basket weave (2 x 2 px threads) in both maps
+    for (let y = 0; y < S; y += 2) {
+      for (let x = 0; x < S; x += 2) {
+        const over = ((x >> 1) + (y >> 1)) & 1;
+        g.fillStyle = over ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
+        g.fillRect(x, y, 2, 2);
+        gb.fillStyle = over ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)';
+        gb.fillRect(x, y, 2, 2);
+      }
+    }
+    // ---- seam with stitches
+    g.strokeStyle = 'rgba(120,108,85,0.6)';
+    g.lineWidth = 1.5;
     g.setLineDash([4, 3]);
     g.beginPath();
     g.moveTo(0, S * 0.08);
     g.lineTo(S, S * 0.08);
     g.stroke();
     g.setLineDash([]);
-    gb.strokeStyle = 'rgb(70,70,70)';
+    gb.strokeStyle = 'rgba(60,60,60,0.8)';
     gb.lineWidth = 3;
     gb.beginPath();
     gb.moveTo(0, S * 0.08);
     gb.lineTo(S, S * 0.08);
     gb.stroke();
-    blotches(g, S, S, 10, seed + 1, 'rgba(110,100,80,A)', 20, 80, 0.10);
-    noise(g, S, S, 12, seed + 2);
-    noise(gb, S, S, 20, seed + 3);
+    // ---- faint handling grime
+    blotches(g, S, S, 8, seed + 1, 'rgba(110,100,80,A)', 30, 110, 0.07);
+    noise(g, S, S, 7, seed + 2);
+    noise(gb, S, S, 8, seed + 3);
     return { map: tex(c, tile), bump: tex(b, tile, false) };
   });
 }
@@ -407,18 +435,20 @@ export function wireTextures() {
     for (let y = 0; y < H; y += 4) {
       g.fillStyle = cols[Math.floor(r() * cols.length)];
       g.fillRect(0, y, W, 4);
-      g.fillStyle = 'rgba(0,0,0,0.25)';
+      g.fillStyle = 'rgba(0,0,0,0.14)';
       g.fillRect(0, y + 3, W, 1);
       gb.fillStyle = 'rgb(170,170,170)';
       gb.fillRect(0, y, W, 3);
       gb.fillStyle = 'rgb(60,60,60)';
       gb.fillRect(0, y + 3, W, 1);
     }
-    // lacing ties (dark waxed cord) — one per texture repeat
-    g.fillStyle = '#2a2622';
-    g.fillRect(W * 0.5 - 4, 0, 8, H);
+    // lacing ties (waxed flat lacing tape, natural colour, knot shadow either side) — one per repeat
+    g.fillStyle = 'rgba(40,36,30,0.55)';
+    g.fillRect(W * 0.5 - 5, 0, 10, H);
+    g.fillStyle = '#a79d86';
+    g.fillRect(W * 0.5 - 3, 0, 6, H);
     gb.fillStyle = 'rgb(230,230,230)';
-    gb.fillRect(W * 0.5 - 4, 0, 8, H);
+    gb.fillRect(W * 0.5 - 3, 0, 6, H);
     noise(g, W, H, 10, 62);
     const m = new THREE.CanvasTexture(c);
     const bb = new THREE.CanvasTexture(b);

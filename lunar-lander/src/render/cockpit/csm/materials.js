@@ -20,8 +20,9 @@
 //   red         red paint (T-handles, caps)
 //   lens        floodlight lens (emissive, driven by lighting.js)
 //   paper       checklist pages
+//   pane        window panes (additive cover glass, see below)
 import * as THREE from 'three';
-import { getMaterial } from '../kit/index.js';
+import { getMaterial, glassSmudgeTexture } from '../kit/index.js';
 import { wallTexture, betaTexture, strapTexture, pocketTexture, noiseTexture, createLockerAtlas } from './textures.js';
 
 /**
@@ -45,7 +46,7 @@ export function createCabinMaterials() {
   M.set('alu', std({ color: 0xc9cac8, roughness: 0.3, metalness: 1 }));
   M.set('black', std({ color: 0x151516, roughness: 0.55, metalness: 0.1 }));
   M.set('rubber', getMaterial('rubber'));
-  M.set('hose', std({ color: 0xb8bbb8, roughness: 0.55, metalness: 0.15 }));
+  M.set('hose', std({ color: 0xa3a9ad, roughness: 0.5, metalness: 0.1 }));
   M.set('strap', std({ color: 0xffffff, map: strapTexture(), roughness: 0.9, metalness: 0 }));
   M.set('velcro', std({ color: 0xd4cebd, roughness: 1, metalness: 0 }));
   M.set('pocket', std({ color: 0xffffff, map: pocketTexture(), roughness: 0.85, metalness: 0.05, side: THREE.DoubleSide }));
@@ -56,6 +57,24 @@ export function createCabinMaterials() {
   lens.userData.noShadow = true;
   M.set('lens', lens);
   M.set('paper', std({ color: 0xeee8d6, roughness: 0.9, metalness: 0 }));
+  // window panes: like the kit's additive cover glass (only reflections are added on top of what
+  // is behind), but a physical material with a lower specular level (the panes are coated, and six
+  // stacked surfaces would otherwise add up) and a slightly broader lobe (roughness x3 over the
+  // smudge map: ~0.18) so the floodlights 0.4 m away leave soft reflections instead of pin-point
+  // glints that bloom into white blobs; sunlight reaches the panes from behind and is unaffected.
+  const pane = new THREE.MeshPhysicalMaterial({
+    color: 0x000000,
+    roughness: 3.0,
+    roughnessMap: glassSmudgeTexture(),
+    metalness: 0,
+    specularIntensity: 0.45,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+  pane.userData.envScale = 0.3;
+  pane.userData.noShadow = true;
+  M.set('pane', pane);
   for (const [k, m] of M) if (!m.name) m.name = 'csm:' + k;
   return {
     atlas,

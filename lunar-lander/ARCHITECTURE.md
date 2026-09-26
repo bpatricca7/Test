@@ -135,6 +135,7 @@ Modules may **add** fields; never rename or repurpose existing ones.
 | `ROD_UP`, `ROD_DOWN` | gnc | P66 rate-of-descent switch clicks (±1 ft/s) |
 | `LPD {dx, dy}` | gnc | P64 landing-point redesignation clicks |
 | `MASTER_ALARM_RESET` | gnc | clear master alarm |
+| `ENGINE_STOP` | gnc | ENGINE STOP (X): stops the engine even in auto-throttle programs |
 | `CYCLE_CAMERA`, `SET_CAMERA {mode}`, `CYCLE_STATION`, `RESET_VIEW` | cameras | views |
 | `TOGGLE_HUD`, `HELP`, `MENU`, `TOGGLE_UNITS` | ui | interface |
 | `MUTE` | audio | sound |
@@ -178,6 +179,9 @@ Modes: `iva` (cockpit of the active vessel; stations LM `CDR`/`LMP`/`OVERHEAD`, 
 `chase` (orbits the vessel, horizon-locked), `locked` (fixed in the vessel body frame), `flyby`, `ground`
 (on the surface near the site), `target` (looks from the active vessel at the other one). The IVA camera sits
 at the station eye point from constants with free head-look (mouse), and FOV zoom.
+Camera API extras: `setLook(yawDeg, pitchDeg)`, `setStation(id)`, `cycleStation()`, `resetView()`, `setZoom(v)`,
+`available(mode)`, `labels`, `setMode(m, {blend:false})`. View extras: `game.view.label`, `game.view.lookInput`.
+Input exports `BINDINGS` (`src/input/bindings.js`); the UI sets `game.uiCapture` while an overlay owns the keyboard.
 
 ## 7. Cockpit kit & instruments (INSTRUMENTS agent; used by both cabins)
 

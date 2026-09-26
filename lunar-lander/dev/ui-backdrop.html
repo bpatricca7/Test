@@ -1,0 +1,13 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>UI backdrop harness</title>
+<style>html,body{margin:0;height:100%;background:#000;overflow:hidden}canvas{position:fixed;inset:0;width:100vw;height:100vh}</style></head>
+<body><canvas id="c"></canvas>
+<script type="module">
+import { createBackdrop } from '/src/ui/backdrop.js';
+const b = createBackdrop(document.getElementById('c'));
+b.start();
+const t = performance.now();
+b.finish();
+console.log('moon ms', (performance.now() - t).toFixed(0));
+window.__READY = true;
+</script></body></html>

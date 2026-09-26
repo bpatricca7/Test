@@ -144,8 +144,8 @@ export function panelLayout() {
   // (it stands proud of panels 1/2 so both crewmen can see it past the ABORT strip)
   P.p4 = { w: 0.27, h: 0.235, frame: consoleFrame(V(0, 4.409, -1.0026), 35) };
   // panels 5 & 6: knee level beside the forward hatch, turned toward their crewman
-  P.p5 = { w: 0.30, h: 0.46, frame: consoleFrame(V(-0.585, 4.03, -1.2), 8, 16) };
-  P.p6 = { w: 0.30, h: 0.46, frame: consoleFrame(V(0.585, 4.03, -1.2), 8, -16) };
+  P.p5 = { w: 0.30, h: 0.46, frame: consoleFrame(V(-0.585, 4.03, -1.176), 8, 16) };
+  P.p6 = { w: 0.30, h: 0.46, frame: consoleFrame(V(0.585, 4.03, -1.176), 8, -16) };
   // ---- side consoles
   // panel 8: CDR's left console at hip level, facing up and inboard; read with the head turned left
   P.p8 = { w: 0.42, h: 0.27, frame: makeFrame(V(-0.93, 4.44, -0.7), V(0, 0, -1), V(-0.77, 0.64, 0)) };

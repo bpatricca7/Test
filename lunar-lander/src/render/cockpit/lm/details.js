@@ -60,9 +60,14 @@ export function buildDetails(mat) {
   }
 
   // ------------------------------------------------------------------ handholds
-  const handhold = (pts, key = 'darkMetal', r = 0.011) => {
-    b.add(key, tube(pts, r, { tension: 0.05, radial: 10 }));
-    for (const p of [pts[0], pts[pts.length - 1]]) b.add('darkMetal', cylBetween(p, p.clone().add(V(0, 0, 0)).lerp(pts[1], -0.25), 0.018, 0.018, 12));
+  // grab bar: a bent tube whose first/last points sit on the wall, with flared mounting feet
+  const handhold = (pts, r = 0.0115) => {
+    b.add('handrail', tube(pts, r, { tension: 0.05, radial: 12 }));
+    for (const [p, q] of [[pts[0], pts[1]], [pts[pts.length - 1], pts[pts.length - 2]]]) {
+      const toWall = p.clone().sub(q).normalize();
+      // (runs 2 cm on into the wall so it always meets it)
+      b.add('darkMetal', cylBetween(p.clone().addScaledVector(toWall, -0.014), p.clone().addScaledVector(toWall, 0.02), r * 1.3, r * 2.1, 14));
+    }
   };
   for (const s of [-1, 1]) {
     // vertical grab bar on the front corner (cheek) outboard of panel 1A / 2A
@@ -107,7 +112,8 @@ export function buildDetails(mat) {
   const coas = new THREE.Group();
   {
     const ow = W.overhead;
-    const base = V(ow.center.x + ow.width / 2 + 0.045, CAB.ceilingY - 0.02, ow.center.z);
+    // stowed on its bracket on the OUTBOARD side of the window well (clear of the floodlight)
+    const base = V(ow.center.x - ow.width / 2 - 0.045, CAB.ceilingY - 0.02, ow.center.z);
     const cb = new Batch('coas');
     cb.add('darkMetal', boxFromTo(base.clone().add(V(-0.02, -0.02, -0.03)), base.clone().add(V(0.02, 0.02, 0.03))));
     const body0 = base.clone().add(V(0, -0.04, 0));
@@ -115,7 +121,7 @@ export function buildDetails(mat) {
     cb.add('console', cylBetween(body0, body1, 0.03, 0.03, 20));
     cb.add('black', cylBetween(body1, body1.clone().add(V(0, -0.03, 0)), 0.022, 0.022, 20));
     cb.add('darkMetal', cylBetween(body0, body0.clone().add(V(0, 0.02, 0)), 0.034, 0.034, 20));
-    cb.add('blackKnob', cylBetween(body0.clone().add(V(0.03, -0.06, 0)), body0.clone().add(V(0.045, -0.06, 0)), 0.012, 0.012, 14));
+    cb.add('blackKnob', cylBetween(body0.clone().add(V(-0.03, -0.06, 0)), body0.clone().add(V(-0.045, -0.06, 0)), 0.012, 0.012, 14));
     coas.add(cb.build((k) => (k === 'blackKnob' ? KIT.getMaterial('blackKnob') : mat(k))));
     group.add(coas);
   }
@@ -221,11 +227,11 @@ export function buildDetails(mat) {
   {
     const x = -CAB.rackX;
     const bagsL = [
-      [V(x + 0.07, 4.25, 0.35), 0.14, 0.62, 0.6, 'betaWhite', 0.03], // ISA
-      [V(x + 0.05, 4.95, 0.2), 0.1, 0.34, 0.5, 'beta', 0.022],
-      [V(x + 0.055, 4.93, 0.82), 0.11, 0.38, 0.52, 'beta', 0.025],
-      [V(x + 0.045, 5.3, 0.55), 0.09, 0.25, 0.9, 'betaWhite', 0.02],
-      [V(x + 0.045, 3.95, 0.95), 0.09, 0.35, 0.36, 'beta', 0.02],
+      [V(x + 0.07, 4.25, 0.35), 0.14, 0.62, 0.6, 'betaWhite', 0.014], // ISA
+      [V(x + 0.05, 4.95, 0.2), 0.1, 0.34, 0.5, 'beta', 0.01],
+      [V(x + 0.055, 4.93, 0.82), 0.11, 0.38, 0.52, 'beta', 0.01],
+      [V(x + 0.045, 5.3, 0.55), 0.09, 0.25, 0.9, 'betaWhite', 0.01],
+      [V(x + 0.045, 3.95, 0.95), 0.09, 0.35, 0.36, 'beta', 0.01],
     ];
     for (const [c, w, h, d, key, r] of bagsL) {
       const g = roundBox(d, h, w, r, 3); // extruded along Z: width d along x-local; rotate so depth is along X
@@ -293,8 +299,15 @@ export function buildDetails(mat) {
     // suit fan housing (cylindrical, with its motor) at the forward end
     const fan = V(x - 0.09, 4.8, -0.1);
     b.add('console', cylBetween(fan.clone().add(V(0, 0, -0.06)), fan.clone().add(V(0, 0, 0.06)), 0.07, 0.07, 24));
-    b.add('darkMetal', cylBetween(fan.clone().add(V(0, 0, -0.07)), fan.clone().add(V(0, 0, -0.06)), 0.074, 0.074, 24));
-    b.add('darkMetal', cylBetween(fan.clone().add(V(0, 0, 0.06)), fan.clone().add(V(0, 0, 0.07)), 0.074, 0.074, 24));
+    b.add('structure', cylBetween(fan.clone().add(V(0, 0, -0.07)), fan.clone().add(V(0, 0, -0.06)), 0.074, 0.074, 24));
+    b.add('structure', cylBetween(fan.clone().add(V(0, 0, 0.06)), fan.clone().add(V(0, 0, 0.07)), 0.074, 0.074, 24));
+    // motor end bell with its electrical connector, and two saddle brackets bolted to the rack face
+    b.add('console', cylBetween(fan.clone().add(V(0, 0, -0.07)), fan.clone().add(V(0, 0, -0.1)), 0.045, 0.04, 20));
+    b.add('connector', cylBetween(fan.clone().add(V(-0.02, 0.04, -0.085)), fan.clone().add(V(-0.02, 0.07, -0.085)), 0.011, 0.011, 10));
+    for (const dz of [-0.04, 0.04]) {
+      b.add('strap', new THREE.TorusGeometry(0.073, 0.004, 6, 28).translate(fan.x, fan.y, fan.z + dz));
+      b.add('darkMetal', boxFromTo(V(fan.x + 0.05, fan.y - 0.012, fan.z + dz - 0.008), V(x, fan.y + 0.012, fan.z + dz + 0.008)));
+    }
     const fanLab = KIT.createLabelStrip({ text: 'SUIT FAN', width: 0.05, height: 0.01 });
     fanLab.position.set(fan.x - 0.071, fan.y, fan.z);
     fanLab.rotation.y = -Math.PI / 2;
@@ -322,11 +335,11 @@ export function buildDetails(mat) {
   // aft bulkhead: two PLSS backpacks with the OPS on top, strapped down; lockers above
   for (const [s, who] of [[-1, 'CDR'], [1, 'LMP']]) {
     const c = V(s * 0.5, CAB.midFloorY + 0.34, CAB.aftZ - 0.15);
-    const plss = roundBox(0.46, 0.66, 0.24, 0.05, 4);
+    const plss = roundBox(0.46, 0.66, 0.24, 0.032, 4);
     plss.translate(c.x, c.y, c.z);
     b.add('betaWhite', boxUV(plss, 1));
     // OPS (oxygen purge system) on top
-    const ops = roundBox(0.4, 0.2, 0.22, 0.05, 4);
+    const ops = roundBox(0.4, 0.2, 0.22, 0.035, 4);
     ops.translate(c.x, c.y + 0.44, c.z + 0.005);
     b.add('betaWhite', boxUV(ops, 1));
     // OPS actuator / regulator and PLSS fittings (blue O2 / red water)
@@ -357,7 +370,7 @@ export function buildDetails(mat) {
   }
   // stowage beside the forward hatch at knee level (below panels 5 / 6)
   for (const s of [-1, 1]) {
-    const g = roundBox(0.28, 0.3, 0.12, 0.035, 3);
+    const g = roundBox(0.28, 0.3, 0.12, 0.014, 3);
     g.translate(s * 0.58, 3.63, CAB.frontZ + 0.08);
     b.add('beta', boxUV(g, 1));
     b.add('velcro', boxFromTo(V(s * 0.58 - 0.05, 3.72, CAB.frontZ + 0.14), V(s * 0.58 + 0.05, 3.74, CAB.frontZ + 0.1405)));

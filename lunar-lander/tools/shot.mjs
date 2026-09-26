@@ -96,7 +96,7 @@ try {
   fs.mkdirSync(path.dirname(path.resolve(root, opt.out)), { recursive: true });
   for (let i = 0; i < opt.shots; i++) {
     const out = opt.shots > 1 ? opt.out.replace(/\.png$/, `_${i}.png`) : opt.out;
-    await page.screenshot({ path: path.resolve(root, out) });
+    await page.screenshot({ path: path.resolve(root, out), timeout: 180000 });
     console.log(`saved ${out}`);
     if (i < opt.shots - 1) await new Promise((r) => setTimeout(r, opt.interval));
   }
