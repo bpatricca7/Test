@@ -535,7 +535,10 @@
   }
   function penReveal(span, t, w, lead = 0.03, minD = 0.14, maxD = 0.4) {
     const d = clamp(w.end - w.start, minD, maxD)
-    const p = seg(t, w.start - lead, w.start - lead + d)
+    // the inOutSine mask starts at -14% and inks nothing for the first ~22% of the sweep,
+    // so the sweep starts 0.22*d early and the first ink lands on the spoken word
+    const s0 = w.start - lead - 0.22 * d
+    const p = seg(t, s0, s0 + d)
     if (p <= 0) { span.style.opacity = 0; return }
     span.style.opacity = 1
     if (p >= 1) { span.style.webkitMaskImage = 'none'; span.style.maskImage = 'none'; return }
@@ -902,28 +905,34 @@
     // hidden during the round-1 -> round-2 white blink, so the jump across the window is never seen
     vis(S.handle5, !(t >= 12.0 && t < 12.0 + 2 * FR - 1e-6))
     O(S.wBlink, t >= 12.0 && t < 12.0 + 2 * FR - 1e-6 ? (t < 12.0 + FR - 1e-6 ? 1 : 0.55) : 0)
-    chipFlip(S.chip5, t, [[11.5, 'BRICK'], [12.0, 'REAL', true], [13.0, 'BRICK']])
-    O(S.chip5.e, 1 - seg(t, 13.1, 13.2))
+    // the chip turns as each wipe edge clears it (the wipes reveal the top-left corner first:
+    // round 1 at ~11.17, round 2 at ~12.64), not on the snaps; the snaps keep the handle pop,
+    // tally studs and SFX. Chip + header are gone by 13.05 so nothing sits under 'This' (vo7).
+    chipFlip(S.chip5, t, [[11.2, 'BRICK'], [12.0, 'REAL', true], [12.67, 'BRICK']])
+    O(S.chip5.e, 1 - seg(t, 12.95, 13.05))
     // header + tally
-    O(S.hdr5.box, 1 - seg(t, 13.0, 13.1)); T(S.hdr5.box, `translateY(${(-14 * E.inQuad(seg(t, 13.0, 13.1))).toFixed(2)}px)`)
+    O(S.hdr5.box, 1 - seg(t, 12.95, 13.05)); T(S.hdr5.box, `translateY(${(-14 * E.inQuad(seg(t, 12.95, 13.05))).toFixed(2)}px)`)
     S.tallyStuds.forEach((e, i) => {
       const ts = i ? 13.0 : 11.5
       vis(e, t >= ts)
       if (t >= ts) T(e, `scale(${lerp(1.5, 1, E.outBack(seg(t, ts, ts + 0.16))).toFixed(4)})`)
     })
     // marker + callout
-    const mOn = t >= 11.52 && t < 12.0
+    // starts once the round-1 wipe has cleared the dormer ellipse (x <= 840 at ~11.33), so the
+    // only sound-off explanation of round 1 stays readable ~0.45 s before the 12.0 blink
+    const mOn = t >= 11.34 && t < 12.0
     vis(S.mkSvg, mOn); vis(S.mkTxt.box, mOn)
     if (mOn) {
-      draw(S.mkEll, S.mkEllLen, E.inOutSine(seg(t, 11.55, 11.85)))
-      const p = seg(t, 11.52, 11.52 + 6 * FR)
+      draw(S.mkEll, S.mkEllLen, E.inOutSine(seg(t, 11.36, 11.62)))
+      const p = seg(t, 11.34, 11.34 + 6 * FR)
       const a = lerp(-14, 100, p)
       const m = p >= 1 ? 'none' : `linear-gradient(90deg, #000 ${a}%, rgba(0,0,0,0) ${a + 14}%)`
       S.mkTxt.ws.forEach(w => { w.style.opacity = 1; w.style.webkitMaskImage = 'none'; w.style.maskImage = 'none' })
       S.mkTxt.box.style.webkitMaskImage = m; S.mkTxt.box.style.maskImage = m
-      const cp = seg(t, 11.74, 11.74 + 3 * FR)
+      const cp = seg(t, 11.56, 11.56 + 3 * FR) // stamps on the 11.55 'pop' SFX
       draw(S.mkCheck, S.mkCheckLen, cp)
-      const cs = lerp(1.35, 1, E.outBack(seg(t, 11.74, 11.9)))
+      S.mkCheck.style.visibility = cp > 0 ? '' : 'hidden' // a zero-length dash still paints a round-cap dot
+      const cs = lerp(1.35, 1, E.outBack(seg(t, 11.56, 11.72)))
       S.mkCheck.style.transformOrigin = `${S.mkCheckC.x}px ${S.mkCheckC.y}px`
       S.mkCheck.style.transform = `scale(${cs.toFixed(3)})`
     }
@@ -954,7 +963,7 @@
     if (tOn) { const p = seg(t, 13.6, 13.9); O(S.dims.box, E.outQuad(p)); T(S.dims.box, `translateY(${(10 * (1 - E.outCubic(p))).toFixed(2)}px)`) }
     const hOn = t >= 13.0
     vis(S.shelfTxt.box, hOn)
-    if (hOn) S.shelfTxt.ws.forEach((sp, i) => riseIn(sp, t, Math.max(13.1, S.shelfW[i].start - 0.02), 14, 0.3))
+    if (hOn) S.shelfTxt.ws.forEach((sp, i) => riseIn(sp, t, Math.max(13.03, S.shelfW[i].start - 0.02), 14, 0.3))
   }
 
   // ---------------------------------------------------------- S6 booklet
@@ -1054,7 +1063,7 @@
     chipPop(S.e2, S.e2w, S.e2w[0].start - 0.02)
   }
 
-  // ---------------------------------------------------------- URL bug (15.0 - 22.0)
+  // ---------------------------------------------------------- URL bug (15.0 - 25.0)
   function buildBug() {
     S.bug = chip(stage, { x: 80, y: 1440, h: 52, font: [FAM.body, 38, 800], padX: 22, bg: C.booklet_blue, radius: 26, text: 'brickcoodle.com', dy: 0, shadow: '0 8px 20px rgba(20,48,79,0.28)' })
     S.bug.e.style.transformOrigin = '0% 50%'
@@ -1066,7 +1075,7 @@
     S.bugW = S.bug.e.offsetWidth
   }
   function renderBug(t) {
-    const on = t >= 15.0 && t < 25.12
+    const on = t >= 15.0 && t < 25.02
     vis(S.bug.e, on)
     if (!on) return
     if (t < 22.0) {
@@ -1075,12 +1084,13 @@
       T(S.bug.e, `scale(${s.toFixed(4)})`); O(S.bug.e, seg(t, 15.0, 15.04))
       return
     }
-    // end card: the URL stays up, centred in the CTA slot, until the 1x6 brick button lands on it at 25.12
+    // end card: the URL stays up, centred in the CTA slot, until the 1x6 brick button drops in at 25.0;
+    // it is cut on the first button frame (25.033) so the URL is never shown twice and never missing
     const dx = 540 - S.bugW / 2 - 80, dy = 1300 - 1440
     const s = kf(t, [[22.12, 0.7], [22.26, 1.06, E.outCubic], [22.36, 1.0, E.inOutSine]])
     S.bug.e.style.transformOrigin = '50% 50%'
     T(S.bug.e, `translate(${dx.toFixed(1)}px, ${dy}px) scale(${s.toFixed(4)})`)
-    O(S.bug.e, Math.min(seg(t, 22.12, 22.18), 1 - seg(t, 25.04, 25.12)))
+    O(S.bug.e, seg(t, 22.12, 22.18))
   }
 
   // ---------------------------------------------------------- S7 build flipbook
@@ -1184,7 +1194,7 @@
     S.quote = textBlock(S.label, { x: 30, y: 28, w: 570, align: 'center', font: [FAM.hand, 64], lh: 80, color: C.navy, lines: ['“pass me the red one!”'], pen: true })
     const w = vwords('vo11', ['pass', 'me', 'the', 'red', 'one'], 20.0)
     // write-on 20.40 -> end of vo11, keeping the VO rhythm
-    const v0 = w[0].start, v1 = w[w.length - 1].end, a = 20.42, b = Math.max(21.1, v1)
+    const v0 = w[0].start, v1 = w[w.length - 1].end, a = 20.40, b = Math.max(21.1, v1)
     S.quoteW = w.map(x => ({ start: a + ((x.start - v0) / (v1 - v0)) * (b - a), end: a + ((x.end - v0) / (v1 - v0)) * (b - a) }))
     S.redSpark = sparkle(S.redCam, 96)
   }
@@ -1243,10 +1253,11 @@
     div(pw, { width: 202, height: 202, background: 'linear-gradient(128deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 45%)' })
     // texts
     const f94 = fcss(FAM.stat, 92)
-    S.kicker = textBlock(L, { x: 10 + 0.07 * 50, w: 1000, y: 228, align: 'center', font: [FAM.label, 50], lh: 50, color: C.booklet_blue, ls: '0.14em', lines: ['THE RIVIERA RESORT BRICK MODEL'] })
-    S.tag1 = textBlock(L, { x: 10, w: 1000, y: 290, align: 'center', font: [FAM.stat, 92], lh: 100, lines: ['94 steps back'] })
+    // kicker ink starts at y >= 290 (9:16 safe box) = 90 in the 4:5 band; x nudged by half the trailing letter-spacing
+    S.kicker = textBlock(L, { x: 10 + 0.07 * 40, w: 1000, y: 288, align: 'center', font: [FAM.label, 40], lh: 40, color: C.booklet_blue, ls: '0.14em', lines: ['THE RIVIERA RESORT BRICK MODEL'] })
+    S.tag1 = textBlock(L, { x: 10, w: 1000, y: 322, align: 'center', font: [FAM.stat, 92], lh: 100, lines: ['94 steps back'] })
     S.tag1.ws[0].style.color = C.brick_red
-    S.tag2 = textBlock(L, { x: 10, w: 1000, y: 395, align: 'center', font: [FAM.serif, 104, 900, 'italic'], lh: 125, lines: ['to the Riviera.'] })
+    S.tag2 = textBlock(L, { x: 10, w: 1000, y: 422, align: 'center', font: [FAM.serif, 104, 900, 'italic'], lh: 125, lines: ['to the Riviera.'] })
     const w12 = vwords('vo12', ['ninety', 'steps', 'back', 'to', 'the', 'riviera'], 22.15)
     S.tag1W = w12.slice(0, 3); S.tag2W = w12.slice(3)
     S.val = textBlock(L, { x: 10, w: 1000, y: 1090, align: 'center', font: [FAM.body, 44, 800], lh: 48, lines: ['Step-by-step instructions', '+ full parts list'] })
@@ -1421,7 +1432,7 @@
     makeSprites()
     S.grainTiles = [1, 2, 3, 4].map(s => noiseTile(s))
     buildTable(); buildReveal(); buildCompare(); buildBooklet(); buildBuild(); buildRed(); buildHours(); buildBug(); buildEnd(); buildSplit(); buildFx()
-    stage.appendChild(S.bug.e) // URL pill stays above the end card (22.0-25.12)
+    stage.appendChild(S.bug.e) // URL pill stays above the end card (22.12-25.0); the pinned button takes over from 25.033
     prepBrickify()
     await Promise.all(domImgs.map(im => (im.complete && im.naturalWidth ? im.decode().catch(() => {}) : new Promise(r => { im.onload = () => im.decode().then(r, r); im.onerror = r }))))
     renderFrame(0)

@@ -723,8 +723,8 @@
   {
    "t": 9.8,
    "type": "sparkle",
-   "gain": 0.2,
-   "notes": "counter lands on 1,746 (bell ding)"
+   "gain": 0.1,
+   "notes": "counter lands on 1,746 (bell ding; kept at 0.1 so it sits under 'brick' in vo6)"
   },
   {
    "t": 10.5,
@@ -748,7 +748,7 @@
    "t": 11.55,
    "type": "pop",
    "gain": 0.3,
-   "notes": "marker callout 'Mansard roof' stamps in"
+   "notes": "check mark stamps in on the 'Mansard roof' callout (callout writes on from 11.34)"
   },
   {
    "t": 12.0,
@@ -1106,7 +1106,7 @@
    "id": "s5_real_vs_brick",
    "start": 10.5,
    "end": 15.0,
-   "visual": "REAL vs BRICK proof (two rounds, the hook's canopy counts as the first match) + shelf payoff. Background: the same sky gradient with a faint white stud-dot grid at 6% (never a blurred photo copy). COMPARISON WINDOW 900x1013 at x 90-990, y 380-1393, radius 28, 6 px white border, shadow 0 24px 60px rgba(20,48,79,0.30); pops in at 10.50 (scale 1.06->1.00, 4 frames). Inside: a REAL layer over a BRICK layer (sky gradient behind the render), revealed by a clip-path slider = 10 px white bar carrying the red 2x2 handle. Registration is approximate (aerial photo vs 3/4 render): align centres and scale, let the wipe hide the rest. ROUND 1 'Mansard roof' 10.50-12.00: REAL = photos/resort-arrival.jpg source x 0-600, y 32-707 (scale 1.5; push 1.00->1.03 anchored on the dormers at source 400,90). BRICK = instructions/cutouts/finished-view-2.webp source x 330-980, y 0-731 (scale 1.385): domed tower with lantern, central mansard with oval dormers, red awnings. 11.00-11.50 vertical slider sweeps LEFT->RIGHT (easeInOutCubic). 11.50 SNAP: chip flips REAL->BRICK, tally stud 1 fills #F29A2E, and an 8 px #E23B2E marker ellipse draws round the brick dormers (centre ~(630, 670), rx 210, ry 70) 11.55-11.85. ROUND 2 'the whole facade' 12.00-13.00: 2-frame white shutter blink inside the window only; REAL = photos/resort-arrival.jpg source x 0-1171, y 32-1350 (scale 0.769; the family walking toward the facade; push 1.00->1.02 anchored on the facade top, source 585,200). BRICK = instructions/cutouts/finished-view-2.webp full, 860 px wide (860x457) at x 110-970, y 622-1079. 12.50-13.00 the slider turns HORIZONTAL and drops TOP->BOTTOM. 13.00 SNAP: chip flips, tally stud 2 fills. SHELF 13.00-15.00: 13.05-13.35 window frame, chip, header and tally fade and scale away (1.00->1.04), leaving the brick facade on the gradient; finished-view-2 eases to 840 px wide at x 120-960, y 700-1147 (13.05-13.45, easeOutCubic). 13.20: a shelf plank (#D9C28A, 960x18 at x 60-1020, y 1147-1165, darker 1 px top edge, soft shadow below) slides in from the left under it. 13.35-13.80: a #14304F 4 px dimension line with end ticks draws left to right at y 1195 from x 120 to 960. 13.05-15.00 slow push 1.00->1.03. TALLY graphic: a white 1x2 brick (130x56, two studs) at x 810-940, y 298-354 whose studs fill orange on each snap.",
+   "visual": "REAL vs BRICK proof (two rounds, the hook's canopy counts as the first match) + shelf payoff. Background: the same sky gradient with a faint white stud-dot grid at 6% (never a blurred photo copy). COMPARISON WINDOW 900x1013 at x 90-990, y 380-1393, radius 28, 6 px white border, shadow 0 24px 60px rgba(20,48,79,0.30); pops in at 10.50 (scale 1.06->1.00, 4 frames). Inside: a REAL layer over a BRICK layer (sky gradient behind the render), revealed by a clip-path slider = 10 px white bar carrying the red 2x2 handle. Registration is approximate (aerial photo vs 3/4 render): align centres and scale, let the wipe hide the rest. ROUND 1 'Mansard roof' 10.50-12.00: REAL = photos/resort-arrival.jpg source x 0-600, y 32-707 (scale 1.5; push 1.00->1.03 anchored on the dormers at source 400,90). BRICK = instructions/cutouts/finished-view-2.webp source x 330-980, y 0-731 (scale 1.385): domed tower with lantern, central mansard with oval dormers, red awnings. 11.00-11.50 vertical slider sweeps LEFT->RIGHT (easeInOutCubic). The wipe reveals the chip corner first: 11.20 (the edge clears the chip at ~11.17) the chip flips REAL->BRICK (rotateX turn 11.17-11.31). 11.34 (the wipe has cleared the dormers, x <= 840, at ~11.33): an 8 px #E23B2E marker ellipse draws round the brick dormers (centre ~(630, 670), rx 210, ry 70) 11.36-11.62 while the 'Mansard roof' callout writes on. 11.50 SNAP: handle pop, tally stud 1 fills #F29A2E. ROUND 2 'the whole facade' 12.00-13.00: 2-frame white shutter blink inside the window only; REAL = photos/resort-arrival.jpg source x 0-1171, y 32-1350 (scale 0.769; the family walking toward the facade; push 1.00->1.02 anchored on the facade top, source 585,200). BRICK = instructions/cutouts/finished-view-2.webp full, 860 px wide (860x457) at x 110-970, y 622-1079. 12.50-13.00 the slider turns HORIZONTAL and drops TOP->BOTTOM. 12.67 (the edge clears the chip at ~12.64) the chip flips to BRICK (turn 12.64-12.78). 13.00 SNAP: handle pop, tally stud 2 fills. SHELF 13.00-15.00: 12.95-13.05 chip and header fade (header lifts 14 px), so neither sits under 'This' (vo7, 13.05); 13.05-13.35 window frame and tally fade and scale away (1.00->1.04), leaving the brick facade on the gradient; finished-view-2 eases to 840 px wide at x 120-960, y 700-1147 (13.05-13.45, easeOutCubic). 13.20: a shelf plank (#D9C28A, 960x18 at x 60-1020, y 1147-1165, darker 1 px top edge, soft shadow below) slides in from the left under it. 13.35-13.80: a #14304F 4 px dimension line with end ticks draws left to right at y 1195 from x 120 to 960. 13.05-15.00 slow push 1.00->1.03. TALLY graphic: a white 1x2 brick (130x56, two studs) at x 810-940, y 298-354 whose studs fill orange on each snap.",
    "text": [
     {
      "content": "REAL vs BRICK",
@@ -1114,8 +1114,8 @@
      "size_px": 60,
      "color": "#14304F",
      "start": 10.5,
-     "end": 13.15,
-     "animation": "pops in with the window; fades 13.00-13.15",
+     "end": 13.05,
+     "animation": "pops in with the window; fades and lifts 14 px 12.95-13.05",
      "position": "left x=90, y 295-355"
     },
     {
@@ -1124,8 +1124,8 @@
      "size_px": 52,
      "color": "#FFFFFF on #2F6FC4 pill (radius 10, padding 6/18)",
      "start": 10.5,
-     "end": 13.15,
-     "animation": "rotateX flip to 'BRICK' (#C4161C) at 11.50 and 13.00; resets to 'REAL' at 12.00",
+     "end": 13.05,
+     "animation": "rotateX flip to 'BRICK' (#C4161C) as each wipe edge clears the chip: 11.20 (turn 11.17-11.31) and 12.67 (turn 12.64-12.78); resets to 'REAL' on the 12.00 blink; fades 12.95-13.05",
      "position": "left x=114, y 404-462 (inside the window's top-left)"
     },
     {
@@ -1133,9 +1133,9 @@
      "role": "marker",
      "size_px": 64,
      "color": "#E23B2E",
-     "start": 11.52,
+     "start": 11.34,
      "end": 12.0,
-     "animation": "writes on left to right over 6 frames, then a drawn SVG check mark stamps in (the fonts have no ✓ glyph)",
+     "animation": "writes on left to right over 6 frames (11.34-11.54, readable from ~11.54), marker ellipse 11.36-11.62, then a drawn SVG check mark stamps in 11.56-11.66 with a scale pop 11.56-11.72 on the 11.55 pop SFX (the fonts have no ✓ glyph); removed by the 12.00 blink",
      "position": "left x=90, y 1410-1485 (below the window)"
     },
     {
@@ -1145,7 +1145,7 @@
      "color": "Playfair Display 700 italic #14304F",
      "start": 13.05,
      "end": 15.0,
-     "animation": "words rise in with vo7",
+     "animation": "words rise in with vo7 (0.3 s, 14 px; never before 13.03, after the chip and header are gone)",
      "position": "left x=80, y 300-520, two lines"
     },
     {
@@ -1294,7 +1294,7 @@
      "color": "#14304F",
      "start": 20.4,
      "end": 22.0,
-     "animation": "pen write-on 20.40-21.10 in sync with vo11",
+     "animation": "pen write-on 20.40-21.49, word by word in sync with vo11 (each word's first ink within ~1 frame of the spoken word; the label pops 20.40-20.45)",
      "position": "inside the label: x 340-910, y 1290-1370"
     },
     {
@@ -1321,6 +1321,16 @@
    "visual": "END CARD. 22.00 HIT: 2-frame white flash, then background = sky gradient #A9CBEA->#EEF4FA + the dome-free cloud plate (photos/resort-balcony-view.jpg source y 0-430 only, blur 6 px, 35% opacity). The client's rendering instructions/cutouts/brick-model-render.webp (transparent) lands at 760 px wide (760x519) at x 160-920, y 560-1079 (scale 1.12->1.00, easeOutBack 0.35 s), then floats ±6 px (2 s period) with rotateY ±3 deg and a soft contact shadow. 22.00-23.20 small brick-confetti burst (30 pieces). 22.50 POLAROID slides in from the left (x -400->0, rotation -20->-8 deg, easeOutBack 0.4 s): photos/resort-promenade.jpg square crop source x 0-1206, y 82-1288 as a 202x202 image in a white frame 230x276 (14 px border, 60 px bottom lip, nothing written on it), leaning at x 60-290, y 790-1066 against the model's front-left lawn, drop shadow. 25.00 CTA BUTTON: a booklet-blue #1F5FA8 1x6 brick = rounded rect 800x112 at x 120-920, y 1278-1390 (radius 22) with six studs (88x18, #1F5FA8 with a #3C7BC6 top highlight) along its top edge (y 1260-1278); it falls from y -60 relative, squashes (scaleY 0.92) and snaps at 25.12. 25.50-26.00: a 6 px #F29A2E outline traces the button perimeter clockwise (the booklet's 'new part' highlight), then pulses on every beat (opacity 0.35->1->0.35) until 30.00. 26.00: press-down click (scale 0.95->1.00 over 0.12 s) as 'brickcoodle' is spoken. DISCLAIMER STRIP 22.00 (0.2 s fade) to 30.00: white at 75% opacity, full width, y 1400-1500. No red block with white type and no yellow on the end card (keeps clear of LEGO trade dress).",
    "text": [
     {
+     "content": "THE RIVIERA RESORT BRICK MODEL",
+     "role": "label",
+     "size_px": 40,
+     "color": "Bebas Neue #1F5FA8, letter-spacing 0.14em",
+     "start": 22.08,
+     "end": 29.5,
+     "animation": "fades in with a 10 px rise over 22.08-22.40; fades 29.50-29.70 with the end card",
+     "position": "centred on x=510, line box y 288-328, ink y 291-320 (4:5: ink y 91-120)"
+    },
+    {
      "content": "94 steps back",
      "role": "stat",
      "size_px": 92,
@@ -1328,7 +1338,7 @@
      "start": 22.15,
      "end": 29.5,
      "animation": "stamps in word by word with vo12 (scale 1.2->1.0, 3 frames)",
-     "position": "centred on x=510, y 290-390"
+     "position": "centred on x=510, line box y 322-422, ink y 335-419"
     },
     {
      "content": "to the Riviera.",
@@ -1338,7 +1348,7 @@
      "start": 22.9,
      "end": 29.5,
      "animation": "stamps in with vo12",
-     "position": "centred on x=510, y 395-520"
+     "position": "centred on x=510, line box y 422-547, ink y 444-528 (29 px above the model's lantern tip at the top of its float, y 557)"
     },
     {
      "content": "Step-by-step instructions / + full parts list",
@@ -1357,8 +1367,18 @@
      "color": "#14304F",
      "start": 25.0,
      "end": 29.5,
-     "animation": "pen write-on 25.00-25.60 with vo13",
+     "animation": "pen write-on word by word with vo13 (first ink of each word within ~1 frame of the spoken word, 25.00-26.03)",
      "position": "left x=120, y 1200-1262"
+    },
+    {
+     "content": "brickcoodle.com",
+     "role": "body",
+     "size_px": 38,
+     "color": "Montserrat 800 #FFFFFF on #1F5FA8 pill (radius 26, padding 8/22)",
+     "start": 22.12,
+     "end": 25.0,
+     "animation": "the s6-s8 URL pill, hidden for the 22.00 hit flash, pops back in the CTA slot (scale 0.7->1.06->1.0 over 22.12-22.36, 0.06 s fade); cut on the button's first frame (25.033), so the URL is never shown twice or missing",
+     "position": "centred on x=540, y 1300-1352"
     },
     {
      "content": "brickcoodle.com",
@@ -1385,7 +1405,7 @@
     "type": "flash_hit",
     "dur": 0.07
    },
-   "notes": "Story beat 5: tagline + CTA. URL on screen 25.00-30.00 (5 s), disclaimer 22.00-30.00 (8 s), end card 7.5 s."
+   "notes": "Story beat 5: tagline + CTA. URL on screen ~15.0-29.93: pill 15.00-22.00 (s6-s8 corner) and 22.12-25.00 (centred in the CTA slot), button 25.03-29.93 (fades 29.83-29.93). Disclaimer 22.00-29.93 (~7.9 s), end card 7.5 s."
   },
   {
    "id": "s10_loop",
@@ -1461,7 +1481,7 @@
   "cta": "Step 1 starts at brickcoodle.com",
   "url": "brickcoodle.com",
   "disclaimer": "Unofficial fan design. Not affiliated with or endorsed by The LEGO Group or Disney.",
-  "details": "s9 22.00-29.50 (+ pinned CTA and disclaimer through the s10 loop bridge to 30.00). Tagline '94 steps back / to the Riviera.' over the client's rendering (brick-model-render.webp) with a trip polaroid leaning on it; value lines 'Step-by-step instructions / + full parts list'; Caveat 'Step 1 starts at' over a booklet-blue 1x6-brick button reading exactly 'brickcoodle.com' (white Archivo Black 70 px), orange new-part outline pulsing on the beat; URL on screen 25.00-30.00. Disclaimer (exact text, Montserrat 600 24 px navy on a 75% white strip, y 1412-1488) on screen 22.00-30.00. VO says the URL once."
+  "details": "s9 22.00-29.50 (+ pinned CTA and disclaimer through the s10 loop bridge to 30.00). Tagline '94 steps back / to the Riviera.' over the client's rendering (brick-model-render.webp) with a trip polaroid leaning on it; value lines 'Step-by-step instructions / + full parts list'; Caveat 'Step 1 starts at' over a booklet-blue 1x6-brick button reading exactly 'brickcoodle.com' (white Archivo Black 70 px), orange new-part outline pulsing on the beat; URL on screen ~15.0-29.93 (pill 15.00-25.00, button 25.03-29.93). Disclaimer (exact text, Montserrat 600 24 px navy on a 75% white strip, y 1412-1488) on screen 22.00-30.00. VO says the URL once."
  },
  "variant_4x5": "1080x1350 feed cut from the same scene graph: draw the 9:16 layout and crop the band y 200-1550 (translateY -200). Every key text block sits at 9:16 y 290-1495, so it lands at 4:5 y 90-1295. Exceptions: (1) s1 and s10 split screen - keep two equal halves by moving the divider to 4:5 y 675 (9:16 y 875): each half is 675 px tall, re-crop both images around the same focal points (real canopy / brick canopy) with the same source-rect limits, and move the chip + hook-line block up 85 px with the divider. (2) Full-frame backgrounds (gradients, cloud plate, stud grid, cream table) are regenerated to fill 1350 px instead of cropped. (3) Confetti spawn/fall ranges scale 0.7 vertically. Everything else (prints, window, cards, model placements, end-card stack) keeps its 9:16 coordinates minus 200."
 }

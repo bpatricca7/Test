@@ -14,7 +14,9 @@ Outputs:
 Mix:
   VO     a fast peak limiter on the >5 kHz band only (ceiling -14 dBFS) tames HF clicks/esses,
          so no single transient drives the master limiter; "Voila !" (vo5), the exclamation that
-         sits on the music drop, is lifted +3 dB over the level-matched narration lines
+         sits on the music drop, is lifted +3 dB over the level-matched narration lines, and the
+         product line (vo6, "The Riviera Resort brick model.", over the full groove and the
+         counter-landing bell) +2 dB so "Resort brick" clears the bed in the 0.8-4 kHz band
   music  line-based duck read from vo_timeline.json: 0 dB outside VO, -8 dB under vo1-vo5,
          -13 dB under vo6-vo13 ("heavily ducked" under the final lines), window
          [start-0.08, end+0.12]; smoothed in dB (60 ms toward more attenuation, 150 ms release),
@@ -54,7 +56,7 @@ HIT_MIN_GAIN, HIT_HOLD = 0.9, 0.040        # SFX hits that stay un-ducked, and f
 DUCK_ATT, DUCK_REL = 0.060, 0.150          # one-pole time constants of the duck gain (s)
 VO_HF_SPLIT, VO_HF_CEIL_DB = 5000.0, -14.0
 VO_HF_ATT, VO_HF_REL = 0.001, 0.040
-VO_LINE_DB = {"vo5": 3.0}                  # per-line lift in the mix ("Voila !" on the drop)
+VO_LINE_DB = {"vo5": 3.0, "vo6": 2.0}      # per-line lift in the mix ("Voila !" on the drop, product name)
 TARGET_LUFS = -14.0
 LIMIT = 0.78                               # alimiter ceiling at 192 kHz (-2.16 dBFS, so <= -2 dBTP)
 BED_HEADROOM_DB = 1.0                      # bed limiter ceiling above the master ceiling (post-gain)
