@@ -162,16 +162,23 @@ export function updateTelemetry(v, other, stack) {
 }
 
 /**
- * Landing radar altitude: slant range along the beam (body -Y from the antenna) to the terrain,
- * converted to altitude with the attitude and referenced to the footpad plane (reads ~0 at
- * touchdown). NaN when above 15 km, tilted > 60 deg from vertical, or after staging.
+ * Landing radar altitude: slant range along the beam to the terrain, converted to altitude and
+ * referenced to the footpad plane (reads ~0 at touchdown). NaN when above 15 km, when the beam is
+ * more than 60 deg from the local vertical, or after staging.
+ *
+ * The real LR antenna had two positions: the DESCENT position (beam tilted 24 deg from the thrust
+ * axis toward body +Z, i.e. toward the surface while the LM flies windows-up in P63) and the HOVER
+ * position along -Y, which the crew selected around high gate. P63 uses the descent position.
  */
+const LR_BEAM_DESCENT = new THREE.Vector3(0, -Math.cos((24 * Math.PI) / 180), Math.sin((24 * Math.PI) / 180));
+const LR_BEAM_HOVER = new THREE.Vector3(0, -1, 0);
+const _beam = new THREE.Vector3();
 function radarAltitude(v, t, bUp) {
   if (v.staged || t.altitude > 15000) return NaN;
-  const cosT = bUp.dot(_u);
+  const beam = _beam.copy(v.gnc.program === 'P63' ? LR_BEAM_DESCENT : LR_BEAM_HOVER).applyQuaternion(v.quat);
+  const cosT = -beam.dot(_u);
   if (cosT < 0.5) return NaN;
   const A = _r.copy(LR_ANTENNA).applyQuaternion(v.quat).add(v.pos);
-  const beam = _h.copy(bUp).negate();
   // iterate along the beam to the terrain it actually hits
   const ra = A.length();
   _b.copy(A).divideScalar(ra);
@@ -184,7 +191,7 @@ function radarAltitude(v, t, bUp) {
     s += hp / cosT;
     if (Math.abs(hp) < 0.01) break;
   }
-  return Math.max(0, s * cosT - LR_ANTENNA.y * cosT);
+  return Math.max(0, s * cosT - LR_ANTENNA.y * Math.max(0, bUp.dot(_u)));
 }
 
 // ------------------------------------------------------------------ caution & warning

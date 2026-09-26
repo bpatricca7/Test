@@ -12,7 +12,7 @@ import { SUN_DIR, localENU } from '../core/frames.js';
 const QUALITY = {
   low: { pixelRatio: 1, shadowMap: 1024, vesselShadowMap: 1024, antialias: false },
   medium: { pixelRatio: 1.25, shadowMap: 2048, vesselShadowMap: 2048, antialias: false },
-  high: { pixelRatio: 2, shadowMap: 4096, vesselShadowMap: 2048, antialias: false },
+  high: { pixelRatio: 1.5, shadowMap: 4096, vesselShadowMap: 2048, antialias: false },
 };
 
 export function createRenderer(canvas, game) {
@@ -94,19 +94,33 @@ export function createRenderer(canvas, game) {
       uniform mat4 uVesselShadowMatrix;
       uniform float uVesselShadowEnabled;
       uniform vec2 uVesselShadowTexel;
+      float vsTap(vec2 uv, float z) {
+        return step(z - 0.00005, texture2D(uVesselShadowMap, uv).x);
+      }
+      // bilinearly weighted 2x2 depth comparison (smooth edges instead of texel stair-steps)
+      float vsBilinear(vec2 uv, float z) {
+        vec2 st = uv / uVesselShadowTexel - 0.5;
+        vec2 f = fract(st);
+        vec2 c = (floor(st) + 0.5) * uVesselShadowTexel;
+        vec2 t = uVesselShadowTexel;
+        float a = vsTap(c, z);
+        float b = vsTap(c + vec2(t.x, 0.0), z);
+        float d = vsTap(c + vec2(0.0, t.y), z);
+        float e = vsTap(c + t, z);
+        return mix(mix(a, b, f.x), mix(d, e, f.x), f.y);
+      }
       float vesselShadow(vec3 worldPosRender) {
         if (uVesselShadowEnabled < 0.5) return 1.0;
         vec4 c = uVesselShadowMatrix * vec4(worldPosRender, 1.0);
         vec3 p = c.xyz / c.w * 0.5 + 0.5;
         if (p.x <= 0.0 || p.x >= 1.0 || p.y <= 0.0 || p.y >= 1.0 || p.z >= 1.0) return 1.0;
         float sum = 0.0;
-        for (int i = -2; i <= 2; i++) {
-          for (int j = -2; j <= 2; j++) {
-            float d = texture2D(uVesselShadowMap, p.xy + vec2(float(i), float(j)) * uVesselShadowTexel * 1.5).x;
-            sum += (p.z - 0.00005 > d) ? 0.0 : 1.0;
+        for (int i = -1; i <= 1; i++) {
+          for (int j = -1; j <= 1; j++) {
+            sum += vsBilinear(p.xy + vec2(float(i), float(j)) * uVesselShadowTexel * 1.25, p.z);
           }
         }
-        return sum / 25.0;
+        return sum / 9.0;
       }
     `,
   };
@@ -115,7 +129,6 @@ export function createRenderer(canvas, game) {
   const _v = new THREE.Vector3();
   const _enu = { east: new THREE.Vector3(), north: new THREE.Vector3(), up: new THREE.Vector3() };
   const _shadowMat = new THREE.Matrix4();
-  const _bias = new THREE.Matrix4().set(0.5, 0, 0, 0.5, 0, 0.5, 0, 0.5, 0, 0, 0.5, 0.5, 0, 0, 0, 1);
 
   const ctx = {
     THREE,

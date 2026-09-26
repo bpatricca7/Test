@@ -193,7 +193,26 @@ Instruments (`src/render/cockpit/instruments/index.js`): `createDSKY`, `createFD
 `createRangeTapes`, `createCrossPointer({size})`, `createMissionTimer`, `createEventTimer`,
 `createAnnunciatorPanel({labels, cols, cellW, cellH})`, `createMasterAlarm`, `createGauge(opts)`,
 `createThrustIndicator`, `createContactLights`, `createEMS`, `createGPI`, `createPropellantGauges`.
-Signatures and sizes are documented in the stub file; they are the contract.
+Signatures, options and sizes are documented (JSDoc) in those files; they are the contract.
+
+**Mounting rule.** Instruments are real 3D objects that extend *behind* their face plane by `inst.depth`
+(FDAI 0.16 m, tapes 0.053 m, EMS 0.048 m, most gauges/timers 0.033 m, DSKY 0.014 m). Mount each in a panel
+cut-out: `createPanel({ holes: [{ x, y, w: inst.mountHole.w, h: inst.mountHole.h }] })`, then place
+`inst.object` at `(x, y, 0)` on that panel; keep solid structure at least `inst.depth` behind it.
+Call `inst.update(vessel, game, dt)` every frame while the cabin is active (it rate-limits itself).
+
+**Extra kit factories:** `createSwitchBank` (alias `createToggleSwitchArray`), `createBreakerBank`,
+`createThumbwheel`, `createTalkback`, `createLamp`, `createChecklistCard`, `createLabelStrip`,
+`createPainter`, `createCabinEnvironment(renderer, {windows, up})` + `setCabinEnvironment(env)` (interior
+reflections instead of the outdoor lunar environment), `setIntegralLighting(0..1)`, `setLampBrightness(k)`.
+Extra instrument: `createDigitalReadout`. The DSKY exposes `pressKey(name)` and reacts to `PRO`,
+`MASTER_ALARM_RESET` and `PROGRAM` actions; `createDSKY({ variant: 'CM' })` for the Command Module.
+
+## 7b. Post-processing outputs
+
+`post.js` writes `ctx.exposureInfo = { ev, multiplier, sunVisible, valid }` (refreshed asynchronously every few
+frames). Self-luminous things (lamps, plumes, displays) may scale by `multiplier ** -0.5` to stay plausible
+under auto-exposure. Settings read by post: `game.settings.filmGrain`, `game.settings.exposureComp` (EV).
 
 ## 8. Testing
 

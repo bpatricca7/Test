@@ -175,6 +175,9 @@ export function applyRcs(v, h, scale, cg, Fc, Tc, R = null, t = null) {
     let lvl = j.cmd > 0 ? (j.cmd < 1 ? j.cmd : 1) : 0;
     if (!hasProp || v.crashed) lvl = 0;
     j.level = lvl;
+    // cumulative firing time: lets effects/audio catch 14-ms minimum-impulse pulses that start
+    // and end between two rendered frames
+    if (lvl > 0) j.onTime = (j.onTime || 0) + lvl * h;
     if (lvl <= 0) continue;
     const F = j.thrust * lvl * scale;
     total += F;
