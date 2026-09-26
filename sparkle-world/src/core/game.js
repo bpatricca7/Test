@@ -10,6 +10,7 @@ import { Thumbs } from './thumbs.js';
 import { BlockRegistry, ItemRegistry, SHAPES } from './registry.js';
 import { mulberry32, makeId, nextFrame, clamp } from './util.js';
 import { Noise } from './noise.js';
+import { Diagnostics } from './diag.js';
 import { World, WORLD_SIZES } from '../world/world.js';
 import { buildBlockTexture } from '../world/textures.js';
 import { createBlockUniforms, createBlockMaterials } from '../world/material.js';
@@ -63,6 +64,8 @@ export class Game {
   constructor(container) {
     this.container = container;
     container.classList.add('sw-app');
+    // first, so it also counts the WebGL contexts created below
+    this.diag = new Diagnostics(this);
 
     // three.js
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -183,9 +186,11 @@ export class Game {
 
   _updateSystems(dt) {
     const list = this.systems;
+    let slow = null;
     for (let i = 0; i < list.length; i++) {
       const s = list[i];
       if (!s.update) continue;
+      const t = performance.now();
       try {
         s.update(dt);
       } catch (err) {
@@ -194,8 +199,12 @@ export class Game {
           this._systemErrors.add(key);
           console.error(`[game] system "${s.name}" update failed`, err);
         }
+        this.diag.error('system:' + s.name, err);
       }
+      const d = performance.now() - t;
+      if (d > 20) (slow || (slow = {}))['sys:' + s.name] = Math.round(d);
     }
+    this._slowSystems = slow;
   }
 
   _callSystems(method, ...args) {
@@ -257,24 +266,76 @@ export class Game {
     this._last = now;
     if (dt > 0) this.fps += (1 / dt - this.fps) * 0.05;
     const playing = this.mode === 'play' && !!this.world;
+    // Every stage is guarded: one failing stage must never stop the others (especially render),
+    // otherwise the picture freezes while the buttons keep working.
+    const st = this._stageTimes || (this._stageTimes = { input: 0, player: 0, systems: 0, camera: 0, target: 0, chunks: 0, thumbs: 0, render: 0 });
+    let t0 = now, t1;
 
-    this.input.enabled = playing && !this.paused;
-    this.input.update();
+    try {
+      this.input.enabled = playing && !this.paused;
+      this.input.update();
+    } catch (err) { this._stageError('input', err); }
+    t1 = performance.now(); st.input = t1 - t0; t0 = t1;
+
     if (playing) {
-      this._advanceTime(dt);
-      if (this.player) this.player.update(dt);
+      try {
+        this._advanceTime(dt);
+        if (this.player) this.player.update(dt);
+      } catch (err) { this._stageError('player', err); }
     }
+    t1 = performance.now(); st.player = t1 - t0; t0 = t1;
+
     this._updateSystems(dt);
-    if (playing && this.cameraRig) this.cameraRig.update(dt);
-    if (this.blockUniforms) this.blockUniforms.uTime.value = this.time.t;
-    if (playing) this._updateTarget();
-    if (this.chunks) {
-      const budget = this.loading ? 40 : 6;
-      this.chunks.update(budget, this.camera.position.x, this.camera.position.z);
+    t1 = performance.now(); st.systems = t1 - t0; t0 = t1;
+
+    try {
+      if (playing && this.cameraRig) this.cameraRig.update(dt);
+      if (this.blockUniforms) this.blockUniforms.uTime.value = this.time.t;
+    } catch (err) { this._stageError('camera', err); }
+    t1 = performance.now(); st.camera = t1 - t0; t0 = t1;
+
+    try {
+      if (playing) this._updateTarget();
+    } catch (err) { this._stageError('target', err); }
+    t1 = performance.now(); st.target = t1 - t0; t0 = t1;
+
+    try {
+      if (this.chunks) {
+        const budget = this.loading ? 40 : 6;
+        this.chunks.update(budget, this.camera.position.x, this.camera.position.z);
+      }
+    } catch (err) { this._stageError('chunks', err); }
+    t1 = performance.now(); st.chunks = t1 - t0; t0 = t1;
+
+    try {
+      this.thumbs.update(this.loading ? 2 : 5);
+    } catch (err) { this._stageError('thumbs', err); }
+    t1 = performance.now(); st.thumbs = t1 - t0; t0 = t1;
+
+    try {
+      this.renderer.render(this.scene, this.camera);
+    } catch (err) { this._stageError('render', err); }
+    t1 = performance.now(); st.render = t1 - t0;
+
+    try { this.input.endFrame(); } catch (err) { this._stageError('input', err); }
+
+    const total = t1 - now;
+    if (total > 250 && !this.loading) {
+      const slow = {};
+      for (const k in st) if (st[k] > 20) slow[k] = Math.round(st[k]);
+      if (st.systems > 20) Object.assign(slow, this._slowSystems || {});
+      this.diag.longFrame(total, slow);
     }
-    this.thumbs.update(this.loading ? 2 : 5);
-    this.renderer.render(this.scene, this.camera);
-    this.input.endFrame();
+    this.diag.frameDone(t1);
+  }
+
+  _stageError(stage, err) {
+    const key = 'stage:' + stage + ':' + ((err && err.message) || err);
+    if (!this._systemErrors.has(key)) {
+      this._systemErrors.add(key);
+      console.error(`[game] ${stage} failed`, err);
+    }
+    if (this.diag) this.diag.error('stage:' + stage, err);
   }
 
   _advanceTime(dt) {
