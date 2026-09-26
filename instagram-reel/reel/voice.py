@@ -1,7 +1,8 @@
 """Cut the dialogue to the timeline and give it a broadcast-style polish.
 
-raw cut -> per-clip loudness match -> HPF / gentle denoise / EQ / de-ess /
-compression (ffmpeg) -> -16 LUFS -> soft gap attenuation. Writes build/voice.wav.
+(DeepFilterNet denoise, if the project asks for it, happens in analyze.py)
+raw cut -> per-clip loudness match -> HPF / project EQ / de-ess / compression
+(ffmpeg) -> -16 LUFS -> soft gap attenuation -> peak limit. Writes build/<project>/voice.wav.
 """
 import json, os, subprocess
 import numpy as np, soundfile as sf, pyloudnorm as pyln
@@ -13,9 +14,9 @@ FADE = int(0.006 * SR)
 
 
 def load_clip(clip):
-    y, sr = sf.read(os.path.join(C.BUILD, "wav", f"{clip}.48k.wav"))
+    y, sr = sf.read(C.voice_wav(clip))
     assert sr == SR
-    return y.mean(1)  # the two iPhone mics are well correlated; a mono voice sits centred
+    return y if y.ndim == 1 else y.mean(1)  # the two iPhone mics are well correlated; a mono voice sits centred
 
 
 def ramp(n):
@@ -54,10 +55,7 @@ def cut(tl):
 
 CHAIN = ",".join([
     "highpass=f=75:poles=2", "highpass=f=75:poles=2",          # 24 dB/oct rumble cut
-    "afftdn=nr=10:nf=-58:tn=1",                                  # light broadband denoise
-    "equalizer=f=190:t=q:w=0.9:g=-1.5",                          # a little less boom
-    "equalizer=f=3300:t=q:w=0.9:g=3.5",                          # presence / intelligibility
-    "equalizer=f=6500:t=q:w=1.0:g=3",                            # restore the phone-dulled top
+    *C.VOICE_EQ,                                                 # per-project tone (see projects/)
     "lowpass=f=15500",                                           # tame codec hash above
     "deesser=i=0.35:m=0.5:f=0.5:s=o",
     "acompressor=threshold=0.05:ratio=2.8:attack=8:release=120:knee=3:makeup=1",

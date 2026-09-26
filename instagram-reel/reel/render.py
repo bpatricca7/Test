@@ -14,8 +14,8 @@ from gfx import blit, pil_to_rgba, text_sprite, font, rounded_pill, emoji, split
 from gfx import ease_out_back, ease_out, ease_in_out, clamp01
 
 W, H, FPS = C.W, C.H, C.FPS
-OUT_NAME = "chelsea-packs-the-magic-intro"
-CAP_Y = 1420
+OUT_NAME = C.OUT_NAME
+CAP_Y = C.CAP_Y
 CAP_MAX_W = 960
 EMPHASIS = {"disney", "chelsea", "packs", "magic", "beignets"}
 
@@ -77,12 +77,12 @@ def camera(seg, tl_t):
         z = z1 + 0.03 * (tl_t - EV["freeze"]) / 2.5
     if seg.get("punch"):
         z *= 1 + 0.045 * (1 - ease_out((tl_t - seg["tl0"]) / 0.22))
-    face = TL["faces"][seg["clip"]]
+    face = seg["face"]
     s = 1.5 * z
     w, h = C.SRC_W / z, C.SRC_H / z
     x0 = min(max(face["cx"] - w / 2, 0), C.SRC_W - w)
-    pref = 0.3 if z0 <= 1.15 else 0.5                    # wider shots keep headroom for titles
-    chin = face["cy"] + C.CHIN_BELOW_FACE_CENTER
+    pref = C.TOP_HEADROOM if z0 <= 1.15 else max(C.TOP_HEADROOM, C.PUNCH_HEADROOM)
+    chin = face["cy"] + (C.CHIN_PX if C.CHIN_PX is not None else C.CHIN_RATIO * face["w"])
     y0 = max((C.SRC_H - h) * pref, chin - (C.CAPTION_TOP - 40) / s)
     y0 = min(max(y0, 0), C.SRC_H - h)
     return s, x0, y0
@@ -169,6 +169,8 @@ def emoji_sprite(e, size):
 def draw_captions(frame, t):
     if t >= EV["freeze"]:
         return
+    if C.NAME_CARD == "lower" and EV["name_clip_in"] <= t < EV["name_out"]:
+        return                                                   # the name card speaks for itself
     chunks = TL["chunks"]
     for ci, ch in enumerate(chunks):
         t_in = ch["words"][0]["t"] - 0.03
@@ -246,15 +248,24 @@ def wipe(spr, u, soft=60):
     return out
 
 
-NAME_Y, TAG_Y = 226, 372
+NAME_Y, TAG_Y = C.NAME_Y, C.TAG_Y
+
+
+@lru_cache(None)
+def hi_sprite():
+    return pil_to_rgba(text_sprite("Hi, I'm", font("Poppins-ExtraBold.ttf", 46), C.WHITE + (255,),
+                                   stroke=6, stroke_fill=C.INK + (255,), shadow=(0, 5, 9, 0.5)))
 
 
 def draw_name_card(frame, t):
     t0, t1 = EV["name_in"] - 0.04, EV["name_out"]
-    if not (t0 <= t < t1):
-        return
     fade = clamp01((t1 - t) / 0.2)
     lift = (1 - fade) * -20
+    if C.NAME_CARD == "lower" and EV["name_clip_in"] - 0.02 <= t < t1:
+        v = (t - EV["name_clip_in"] + 0.02) / 0.25
+        blit(frame, hi_sprite(), W / 2, NAME_Y - 122 + lift + 16 * (1 - ease_out(v)), alpha=clamp01(v * 2) * fade)
+    if not (t0 <= t < t1):
+        return
     spr = script_title(C.NAME, 150, (5, 7))
     u = (t - t0) / 0.45
     blit(frame, wipe(spr, u), W / 2, NAME_Y + lift, scale=0.94 + 0.06 * ease_out(u), alpha=fade)
@@ -276,7 +287,7 @@ def draw_list_header(frame, t):
     spr = pill(C.LIST_HEADER, "Poppins-ExtraBold.ttf", 40, C.RED, C.WHITE, emo="✨")
     u = (t - t0) / 0.3
     fade = clamp01((t1 - t) / 0.18)
-    blit(frame, spr, W / 2, 322 - 10 * (1 - fade), scale=0.7 + 0.3 * ease_out_back(u, 2.0), alpha=clamp01(u * 3) * fade)
+    blit(frame, spr, W / 2, C.LIST_HEADER_Y - 10 * (1 - fade), scale=0.7 + 0.3 * ease_out_back(u, 2.0), alpha=clamp01(u * 3) * fade)
 
 
 @lru_cache(None)
@@ -313,7 +324,7 @@ def end_card(frame, t):
 
 SPARKLES = gfx.Sparkles()
 SPARKLES.burst(EV["name_in"] - 0.02, W / 2, NAME_Y, 320, 70, 16, seed=1)
-SPARKLES.burst(EV["list_header_in"], W / 2, 322, 260, 40, 8, seed=2, size=(14, 34))
+SPARKLES.burst(EV["list_header_in"], W / 2, C.LIST_HEADER_Y, 260, 40, 8, seed=2, size=(14, 34))
 SPARKLES.burst(EV["reveal"], W / 2, CAP_Y, 400, 70, 16, seed=3)
 SPARKLES.burst(EV["freeze"] + 0.12, W / 2, 870, 430, 250, 34, seed=4, life=(0.9, 1.8))
 SPARKLES.burst(EV["final_chord"], W / 2, 950, 480, 330, 34, seed=5, life=(0.9, 1.9), spread_t=0.5)

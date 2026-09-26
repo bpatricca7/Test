@@ -16,8 +16,8 @@ _env_cache = {}
 def energy(clip):
     """5 ms speech-band energy envelope (dB) of a clip."""
     if clip not in _env_cache:
-        y, sr = sf.read(os.path.join(C.BUILD, "wav", f"{clip}.48k.wav"))
-        m = sosfilt(butter(4, [100, 8000], btype="band", fs=sr, output="sos"), y.mean(1))
+        y, sr = sf.read(C.voice_wav(clip))
+        m = sosfilt(butter(4, [100, 8000], btype="band", fs=sr, output="sos"), y if y.ndim == 1 else y.mean(1))
         hop = sr // 200
         n = len(m) // hop
         db = 20 * np.log10(np.sqrt((m[:n * hop].reshape(n, hop) ** 2).mean(1)) + 1e-9)
@@ -71,9 +71,10 @@ def align_words(clip, words_asr):
     sm = difflib.SequenceMatcher(None, [norm(w) for w in cap], [norm(w) for w in asr], autojunk=False)
     idx = [None] * len(cap)
     for tag, a0, a1, b0, b1 in sm.get_opcodes():
-        if tag == "equal" or (tag == "replace" and a1 - a0 == b1 - b0):
+        if tag in ("equal", "replace"):
+            # unequal replacements ("mom of three" vs "Mama 3") map proportionally
             for k in range(a1 - a0):
-                idx[a0 + k] = b0 + k
+                idx[a0 + k] = b0 + (k * (b1 - b0)) // (a1 - a0)
     starts = [words_asr[j]["s"] if j is not None else None for j in idx]
     ends = [words_asr[j]["e"] if j is not None else None for j in idx]
     # interpolate anything the aligner could not pair
@@ -193,15 +194,29 @@ def build():
                         return w["t"]
         raise KeyError(word)
 
-    name_clip = "IMG_3541"
+    # framing: the face median over each shot (or the whole clip)
+    for s in segs:
+        f = faces[s["clip"]]
+        tr = [r for r in f.get("track", []) if s["i"] * C.FPS <= r[0] < s["o"] * C.FPS]
+        if C.FACE_MODE == "segment" and len(tr) >= 3:
+            a = np.median(np.array(tr)[:, 1:], axis=0)
+            s["face"] = {"cx": float(a[0]), "cy": float(a[1]), "w": float(a[2])}
+        else:
+            s["face"] = {k: f[k] for k in ("cx", "cy", "w")}
+
+    name_clip = C.NAME_CLIP
     seg_name = [s for s in segs if s["clip"] == name_clip]
-    list_segs = [s for s in segs if s["clip"] == "IMG_3549"]
+    k_list = next(k for k, s in enumerate(segs) if s.get("section") == "list")
+    k_punch = next(k for k in range(k_list, len(segs)) if segs[k].get("punch"))
+    p = segs[k_punch]
     events = {
-        "name_in": chunk_word_t(name_clip, "Chelsea!"),
+        "name_in": chunk_word_t(name_clip, C.NAME_WORD),
         "name_out": seg_name[-1]["tl1"],
+        "name_clip_in": seg_name[0]["tl0"],
         "tags": [chunk_word_t(name_clip, w) for _, w in C.NAME_TAGS],
-        "list_header_in": list_segs[0]["tl0"] + 0.15,
-        "list_header_out": list_segs[-1]["tl0"],
+        "list_header_in": segs[k_list]["tl0"] + 0.15,
+        "list_header_out": p["tl0"],
+        "tada": p["tl0"] + speech_end(p["clip"], p["o"]) - p["i"] + 0.05,
         "reveal": reveal,
         "freeze": freeze,
         "final_chord": final_chord,

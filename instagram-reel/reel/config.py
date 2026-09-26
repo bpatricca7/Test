@@ -1,17 +1,15 @@
-"""Edit decision list and design constants for the intro reel.
-
-Times in SEGMENTS are seconds inside each source clip. The timeline builder
-tightens nothing on its own: pauses are controlled by where each segment's
-in/out points sit relative to the speech, and by the beat snapping of the
-segments that open a new musical section.
+"""Shared settings. The edit itself (segments, captions, layout tweaks) lives in
+projects/<name>.py and is selected with REEL_PROJECT (default: intro_v2).
+Every UPPER_CASE name a project defines overrides the default below.
 """
-import os
+import importlib, os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT = os.environ.get("REEL_PROJECT", "intro_v2")
 FOOTAGE = os.path.join(ROOT, "footage")
-BUILD = os.path.join(ROOT, "build")
-OUT = os.path.join(ROOT, "out")
-ASSETS = os.environ.get("REEL_ASSETS", "/tmp/claude-0")  # fonts/, emoji/, models/
+BUILD = os.path.join(ROOT, "build", PROJECT)
+OUT = os.path.join(ROOT, "out", PROJECT)
+ASSETS = os.environ.get("REEL_ASSETS", "/tmp/claude-0")  # fonts/, emoji/, models/, bin/
 
 FPS = 30
 W, H = 1080, 1920
@@ -19,54 +17,32 @@ SR = 48000
 BPM = 114
 BEAT = 60.0 / BPM
 
-# Source frame geometry (iPhone portrait 720x1280) and where the face sits.
+# Source frame geometry (iPhone portrait 720x1280)
 SRC_W, SRC_H = 720, 1280
-CHIN_BELOW_FACE_CENTER = 170   # px in source, face-detector centre -> chin
-CAPTION_TOP = 1330             # nothing of the face should sit below this line
 
-# Each segment: clip, in, out, zoom (1.0 = full frame), plus optional flags:
-#   section - this segment opens a musical section (its start is beat-snapped)
-#   anchor  - the word whose onset is snapped to the grid ("beat" or "eighth")
-#   punch   - a comedic punch-in (zoom overshoot + whoosh)
-#   push    - end zoom for a slow push-in across the segment
-SEGMENTS = [
-    dict(clip="IMG_3540", i=0.00, o=2.84, zoom=1.00, section="hook"),
-    dict(clip="IMG_3540", i=3.28, o=3.72, zoom=1.00),                  # "but"
-    dict(clip="IMG_3540", i=4.33, o=7.00, zoom=1.14),
-    dict(clip="IMG_3540", i=7.35, o=9.40, zoom=1.32, punch=True, section="stop"),
-    dict(clip="IMG_3541", i=0.14, o=2.50, zoom=1.00, section="groove", snap="beat"),
-    dict(clip="IMG_3541", i=3.12, o=5.34, zoom=1.08),
-    dict(clip="IMG_3544", i=0.00, o=3.20, zoom=1.00, section="story", snap="eighth"),
-    dict(clip="IMG_3544", i=3.20, o=6.97, zoom=1.12),
-    dict(clip="IMG_3544", i=6.97, o=9.50, zoom=1.26),
-    dict(clip="IMG_3544", i=9.79, o=13.05, zoom=1.00),
-    dict(clip="IMG_3546", i=0.00, o=1.54, zoom=1.14, section="build", snap="eighth"),
-    dict(clip="IMG_3546", i=2.09, o=4.95, zoom=1.00),
-    dict(clip="IMG_3549", i=0.00, o=3.36, zoom=1.10, section="list", snap="eighth"),
-    dict(clip="IMG_3549", i=3.36, o=6.18, zoom=1.00),
-    dict(clip="IMG_3549", i=6.18, o=7.85, zoom=1.32, punch=True),
-    dict(clip="IMG_3550", i=0.00, o=1.90, zoom=1.12, section="cta", snap="beat", anchor="Chelsea"),
-    dict(clip="IMG_3551", i=1.89, o=5.62, zoom=1.00, push=1.07),
+# ---- defaults a project may override -------------------------------------
+OUT_NAME = "chelsea-packs-the-magic-intro"
+FACE_MODE = "segment"        # frame each shot on the face median of that segment ("clip": whole clip)
+CHIN_PX = None               # fixed chin offset below the face centre (source px) ...
+CHIN_RATIO = 0.46            # ... or as a fraction of detected face width
+CAPTION_TOP = 1330           # nothing of the face should sit below this line (output px)
+TOP_HEADROOM = 0.3           # crop bias for wide shots: 0 keeps the top of frame, 0.5 centres
+PUNCH_HEADROOM = 0.5         # same, for the big punch-ins (zoom > 1.15)
+CAP_Y = 1420                 # caption centre line
+NAME_CARD = "top"            # "top": title above the head; "lower": replaces captions under the chin
+NAME_Y, TAG_Y = 226, 372
+LIST_HEADER_Y = 322
+DENOISE = False              # DeepFilterNet pass on the dialogue before anything else
+DENOISE_ATTEN_DB = 40
+MIN_SECTION_PAUSE = 0.20     # shortest silence allowed before a beat-snapped section
+END_TAIL = 1.9               # seconds after the final chord hits
+VOICE_EQ = [
+    "equalizer=f=190:t=q:w=0.9:g=-1.5",
+    "equalizer=f=3300:t=q:w=0.9:g=3.5",
+    "equalizer=f=6500:t=q:w=1.0:g=3",
 ]
-MIN_SECTION_PAUSE = 0.20   # shortest silence allowed before a beat-snapped section
-END_TAIL = 1.9             # seconds after the final chord hits
 
-# On-screen captions. "|" splits caption chunks; emoji ride on the chunk.
-# Words are aligned in order to the ASR words of the same clip, so spelling
-# fixes ("bomb" -> "mom") keep the recogniser's timing.
-CAPTIONS = {
-    "IMG_3540": "I can manage | a classroom full | of first graders, | but when it comes | to my three kids | in a Disney store 🛍️ | that is where | my skill ends. 😅",
-    "IMG_3541": "Hi, I'm Chelsea! 👋 | a mom of three, | a teacher, 🍎 | and a Disney mom ✨",
-    "IMG_3544": "The last few years | of work had been | pretty challenging, | and the one thing | that kept me going | and gave me | a little glimmer | of hope ✨ | was planning | a Disney vacation 🏰 | I look forward | to that time | with my family | so much 💖",
-    "IMG_3546": "So I wanted | to create a space | that I could share | a little bit | of that happiness 😊",
-    "IMG_3549": "Our family's | favorites ⭐ | tips for traveling | with littles 👶 | and the most | important questions | like... | where can I get | the best beignets? 🍩",
-    "IMG_3550": "If that sounds like | your kind of thing,",
-    "IMG_3551": "then welcome home | to Chelsea Packs | the Magic ✨",
-}
-
-# Name card: header words light up when these caption words are spoken.
 NAME = "Chelsea"
-NAME_TAGS = [("mom of 3", "three"), ("teacher", "teacher"), ("Disney mom", "Disney")]
 LIST_HEADER = "What you'll find here"
 BRAND_TOP, BRAND_SCRIPT, BRAND_BOTTOM = "welcome home to", "Chelsea", "PACKS THE MAGIC"
 FOLLOW_CTA = "Follow for Disney family tips"
@@ -77,3 +53,14 @@ WHITE = (255, 255, 255)
 INK = (22, 20, 24)
 GOLD = (255, 206, 92)
 GOLD_DEEP = (240, 164, 40)
+
+_p = importlib.import_module(f"projects.{PROJECT}")
+globals().update({k: v for k, v in vars(_p).items() if k.isupper()})
+
+CLIPS = sorted({s["clip"] for s in SEGMENTS})  # noqa: F821 (defined by the project)
+
+
+def voice_wav(clip):
+    """The dialogue source for a clip: denoised mono if the project denoises, else the camera track."""
+    suffix = "48k.dn" if DENOISE else "48k"
+    return os.path.join(BUILD, "wav", f"{clip}.{suffix}.wav")

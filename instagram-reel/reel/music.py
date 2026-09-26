@@ -199,14 +199,21 @@ def compose(tl):
     bt = lambda b: b * B
 
     stop_t = ev["stop"]
-    groove_b = round(beat(secs["groove"]))
-    story_b = round(beat(secs["story"]))
-    build_b = int(np.floor(beat(secs["build"]) + 1e-6))
-    list_b = round(beat(secs["list"]))
+    # music sections start on the beat at (or just before) the edit's section point
+    starts = {n: int(np.floor(beat(t) + 0.25)) for n, t in secs.items() if n not in ("hook", "stop", "cta")}
     cta_b = int(np.ceil(beat(tl["segments"][[s.get("section") for s in tl["segments"]].index("cta")]["tl0"]) - 0.25))
+    starts["cta"] = cta_b
+    order = sorted(starts.items(), key=lambda kv: kv[1])
+
+    def end_of(name):
+        i = [n for n, _ in order].index(name)
+        return order[i + 1][1]
+
+    groove_b = starts["groove"]
+    list_b = starts["list"]
     reveal_b = round(beat(ev["reveal"]))
     final_b = round(beat(ev["final_chord"]))
-    beig_b = int(np.ceil(beat(ev["punches"][-1]) + 2.5))   # after "...best beignets?"
+    beig_b = int(np.ceil(beat(ev["tada"])))   # right after "...best beignets?"
 
     M = Mix(total + 0.5)
 
@@ -288,47 +295,54 @@ def compose(tl):
                     glock_line([n for n in MOTIF[bar] if b0 + bar * 4 + n[0] < b1 - 0.25], bt(b0 + bar * 4), 0.7)
                 bar += 1
 
-    groove(groove_b, story_b, ["F", "C", "C"], glock=True)
+    g_end = end_of("groove")
+    groove(groove_b, g_end, ["F", "C", "C"] if g_end - groove_b <= 12 else ["F", "C/E", "Dm", "Bb", "F", "C", "Bb", "C"], glock=True)
 
     # ---- story: heartfelt; pad + celesta + soft bass
-    prog = ["Dm", "Bb", "F", "C", "Dm", "Bb", "Bb"]
-    for bar in range((build_b - story_b + 3) // 4):
-        b0 = story_b + bar * 4
-        if b0 >= build_b:
-            break
-        ch = prog[min(bar, len(prog) - 1)]
-        length = min(4, build_b - b0)
-        M.add("pad", pad([hz(n) for n in CHORDS[ch][1]], bt(length) + 0.1, 0.9, cutoff=1300), bt(b0), jitter=0)
-        M.add("bass", sub_bass(hz(CHORDS[ch][0]), bt(length) - 0.05, 0.55), bt(b0), jitter=0)
-        a = ARP[ch]
-        pattern = [0, 1, 2, 3, 2, 1, 2, 3] if bar % 2 == 0 else [0, 2, 1, 3, 2, 3, 1, 2]
-        for k in range(int(length * 2)):
-            M.add("cel", celesta(a[pattern[k % 8]] * 4, 0.42 if k % 2 == 0 else 0.3), bt(b0 + k * 0.5), pan=0.3 + 0.4 * (k % 2))
-        if bar >= 2:
+    if "story" in starts:
+        story_b, story_end = starts["story"], end_of("story")
+        prog = ["Dm", "Bb", "F", "C", "Dm", "Bb", "Bb"]
+        for bar in range((story_end - story_b + 3) // 4):
+            b0 = story_b + bar * 4
+            if b0 >= story_end:
+                break
+            ch = prog[min(bar, len(prog) - 1)]
+            length = min(4, story_end - b0)
+            M.add("pad", pad([hz(n) for n in CHORDS[ch][1]], bt(length) + 0.1, 0.9, cutoff=1300), bt(b0), jitter=0)
+            M.add("bass", sub_bass(hz(CHORDS[ch][0]), bt(length) - 0.05, 0.55), bt(b0), jitter=0)
+            a = ARP[ch]
+            pattern = [0, 1, 2, 3, 2, 1, 2, 3] if bar % 2 == 0 else [0, 2, 1, 3, 2, 3, 1, 2]
             for k in range(int(length * 2)):
-                M.add("perc", shaker(0.22 if k % 2 else 0.3), bt(b0 + k * 0.5), pan=0.8)
+                M.add("cel", celesta(a[pattern[k % 8]] * 4, 0.42 if k % 2 == 0 else 0.3), bt(b0 + k * 0.5), pan=0.3 + 0.4 * (k % 2))
+            if bar >= 2:
+                for k in range(int(length * 2)):
+                    M.add("perc", shaker(0.22 if k % 2 else 0.3), bt(b0 + k * 0.5), pan=0.8)
 
     # ---- build: IV - V, kick on quarters, strums, rising glock
-    prog = ["Bb", "C", "C"]
-    b = build_b
-    while b < list_b - 1e-6:
-        ch = chord_at(prog, build_b, b)
-        pos = (b - build_b) % 4
-        t = bt(b)
-        frac = (b - build_b) / max(1, list_b - build_b)
-        if pos % 1 == 0:
-            M.add("drums", kick(0.55 + 0.35 * frac), t, jitter=0.001)
-            strum(ch, t, 0.35 + 0.3 * frac)
-            pizz_bass(ch, t, 0.6 + 0.3 * frac, dur=0.25)
-        M.add("perc", shaker(0.2 + 0.25 * frac), t, pan=0.8)
-        a = ARP[ch]
-        M.add("glock", bell(a[int((b - build_b) * 2) % 4] * 2 * (2 if frac > 0.5 else 1), 0.25 + 0.3 * frac), t, pan=0.35)
-        b += 0.5
-    M.add("pad", pad([hz(n) for n in CHORDS["Bb"][1]], bt(4), 0.6, cutoff=1600), bt(build_b), jitter=0)
-    M.add("pad", pad([hz(n) for n in CHORDS["C"][1]], bt(list_b - build_b - 4), 0.7, cutoff=1900), bt(build_b + 4), jitter=0)
-    # small snare-ish lift in the last beat
-    for k in range(4):
-        M.add("drums", clap(0.25 + 0.12 * k), bt(list_b - 1 + k * 0.25), jitter=0.001)
+    if "build" in starts:
+        build_b, build_end = starts["build"], end_of("build")
+        prog = ["Bb", "C", "C"]
+        b = build_b
+        while b < build_end - 1e-6:
+            L = build_end - build_b
+            ch = chord_at(prog, build_b, b) if L > 4 else ("Bb" if b - build_b < L / 2 else "C")   # short build: IV-V in halves
+            pos = (b - build_b) % 4
+            t = bt(b)
+            frac = (b - build_b) / max(1, build_end - build_b)
+            if pos % 1 == 0:
+                M.add("drums", kick(0.55 + 0.35 * frac), t, jitter=0.001)
+                strum(ch, t, 0.35 + 0.3 * frac)
+                pizz_bass(ch, t, 0.6 + 0.3 * frac, dur=0.25)
+            M.add("perc", shaker(0.2 + 0.25 * frac), t, pan=0.8)
+            a = ARP[ch]
+            M.add("glock", bell(a[int((b - build_b) * 2) % 4] * 2 * (2 if frac > 0.5 else 1), 0.25 + 0.3 * frac), t, pan=0.35)
+            b += 0.5
+        half = 4 if build_end - build_b > 4 else (build_end - build_b) / 2
+        M.add("pad", pad([hz(n) for n in CHORDS["Bb"][1]], bt(half), 0.6, cutoff=1600), bt(build_b), jitter=0)
+        M.add("pad", pad([hz(n) for n in CHORDS["C"][1]], bt(build_end - build_b - half), 0.7, cutoff=1900), bt(build_b + half), jitter=0)
+        # small snare-ish lift in the last beat
+        for k in range(4):
+            M.add("drums", clap(0.25 + 0.12 * k), bt(build_end - 1 + k * 0.25), jitter=0.001)
 
     # ---- list: full groove again
     groove(list_b, cta_b, ["F", "C/E", "Dm", "Bb", "Bb"], glock=True)
