@@ -129,7 +129,7 @@ def build():
                 off = speech_onset(s["clip"], s["i"]) - s["i"]
             pause = (p["o"] - speech_end(p["clip"], p["o"])) + (speech_onset(s["clip"], s["i"]) - s["i"])
             grid = C.BEAT if s["snap"] == "beat" else C.BEAT / 2
-            anchor = t + off + max(0.0, C.MIN_SECTION_PAUSE - pause)
+            anchor = t + off + max(0.0, s.get("min_pause", C.MIN_SECTION_PAUSE) - pause)
             target = math.ceil(anchor / grid - 1e-6) * grid
             delta = target - (t + off)
             p["o"] += delta

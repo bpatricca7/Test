@@ -8,12 +8,13 @@ and encode the result. There are two cuts, each described by a project file in
 
 | Project | Clips | Length | Notes |
 |---|---|---|---|
+| `intro_v3` | IMG_3567, 3570, 3583, 3576 | about 32 s | intro_v2 with the "I wanted to create a space…" line swapped for the tighter retake IMG_3583. |
 | `intro_v2` (default) | IMG_3567, 3570, 3574, 3576 | about 33 s | Handheld, closer, noisier room. DeepFilterNet removes the background noise. Titles sit under the chin because the ears fill the top of frame. |
 | `intro_v1` | IMG_3540–3551 | about 47 s | Tripod, quiet room. Includes the "tough few years" story section. |
 
 The footage and the rendered videos are **not** in git. The clips carry GPS
 metadata and the repo is public. Put the clips in `footage/`, then run
-`./build.sh` (or `./build.sh intro_v1`).
+`./build.sh` (or `./build.sh intro_v1` / `./build.sh intro_v3`).
 
 ## What the edit does (intro_v2)
 
