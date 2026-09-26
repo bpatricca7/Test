@@ -673,7 +673,7 @@ def build_arrangement():
         A["bass"].append((hum(t, 1.0) if i % 2 else t, m, 0.21, 0.95 if i % 2 == 0 else 0.8))
         if i % 2:
             stab = (hum(t, 1.5), chord_at(t), (0.8 if (i // 2) % 2 else 0.68) * vr(0.05))
-            if not 26.0 <= t < 27.25:        # no accordion chords in the gaps of "brickcoodle dot com"
+            if not 26.0 <= t < 27.25:        # no accordion chords in the gaps of "brickoodle dot com"
                 A["stab"].append(stab)
             A["hat"].append((hum(t, 1.5), 0.55 * vr(0.08)))
     for i in range(176, 224):
@@ -683,7 +683,7 @@ def build_arrangement():
     ACC_ANSWER = [(26.0, 0.25, "B4"), (26.25, 0.25, "D5"), (26.5, 0.5, "G5"), (27.0, 0.25, "F#5"),
                   (27.25, 0.25, "E5"), (27.5, 0.25, "C#5"), (27.75, 0.25, "E5"), (28.0, 1.3, "D5")]
     acc_call = [(t, d, m - 12) for t, d, m, _ in hook(22.0, CALL)]       # accordion plays at written pitch
-    # the answer phrase enters at 27.25 (E5-C#5-E5 | D5 on 28.00), after "...brickcoodle dot com."
+    # the answer phrase enters at 27.25 (E5-C#5-E5 | D5 on 28.00), after "...brickoodle dot com."
     # (25.00-27.23), so no accordion melody sits under the spoken URL
     A["acc"].append(acc_call + [(t, d, midi(nm)) for t, d, nm in ACC_ANSWER if t >= 27.25])
     A["glock"] += [(23.75, "A5", 0.28, 1.0, None, -0.4), (23.875, "D6", 0.3, 1.0, None, -0.4),

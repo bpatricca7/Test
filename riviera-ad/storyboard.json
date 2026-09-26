@@ -64,7 +64,7 @@
  "voice": {
   "id": "af_heart",
   "speed": 1.05,
-  "notes": "One narrator: the parent who took the photos (never seen, behind the camera). Warm, smiling, first-person, like showing friends the holiday photos; softer on the memory line (vo3), a little conspiratorial on 'home', proud on the product name, playful on 'shelf' and on the kid quote, warm and confident on the CTA. Generate every line as its own clip, trim leading/trailing silence, and place the first audible sample exactly at 'start'. Each clip must fit inside [start, start+max_dur]; max_dur already carries >= 0.3 s slack over a 3.4 words/s budget. Only French flourish: ff_siwis 'Voilà !' on the 8.00 drop. Measured with kokoro-onnx v1.0 at speed 1.05 (trimmed): vo1 0.92 s, vo2 0.77, vo3 1.86, vo4 1.46, vo5 0.55 (ff_siwis 1.0), vo6 1.69, vo7 1.32, vo8 1.29, vo9 1.00, vo10 1.29, vo11 1.04, vo12 1.92, vo13 2.19 - all inside their windows. Numbers are spelled out in the TTS input; the URL uses tts_text (phonemizes as bɹˈɪkkˈuːdəl dˈɑːt kˈɑːm)."
+  "notes": "One narrator: the parent who took the photos (never seen, behind the camera). Warm, smiling, first-person, like showing friends the holiday photos; softer on the memory line (vo3), a little conspiratorial on 'home', proud on the product name, playful on 'shelf' and on the kid quote, warm and confident on the CTA. Generate every line as its own clip, trim leading/trailing silence, and place the first audible sample exactly at 'start'. Each clip must fit inside [start, start+max_dur]; max_dur already carries >= 0.3 s slack over a 3.4 words/s budget. Only French flourish: ff_siwis 'Voilà !' on the 8.00 drop. Measured with kokoro-onnx v1.0 at speed 1.05 (trimmed): vo1 0.92 s, vo2 0.77, vo3 1.86, vo4 1.46, vo5 0.55 (ff_siwis 1.0), vo6 1.69, vo7 1.32, vo8 1.29, vo9 1.00, vo10 1.29, vo11 1.04, vo12 1.92, vo13 2.19 - all inside their windows. Numbers are spelled out in the TTS input; the URL uses tts_text (phonemizes as bɹˈɪkˈuːdəl dˈɑːt kˈɑːm)."
  },
  "vo": [
   {
@@ -182,12 +182,12 @@
   {
    "id": "vo13",
    "start": 25.0,
-   "text": "Step one starts at brickcoodle dot com.",
-   "tts_text": "Step one starts at brick-koodle dot com.",
+   "text": "Step one starts at brickoodle dot com.",
+   "tts_text": "Step one starts at brick-oodle dot com.",
    "max_dur": 2.7,
    "caption": "designed",
-   "caption_text": "Step 1 starts at brickcoodle.com",
-   "delivery": "warm, confident, lift on 'one'; say it BRICK-KOO-dul (check by ear; plain 'brickcoodle' also phonemizes correctly)"
+   "caption_text": "Step 1 starts at brickoodle.com",
+   "delivery": "warm, confident, lift on 'one'; say it BRICK-OO-dul (check by ear; plain 'brickoodle' also phonemizes correctly)"
   }
  ],
  "music": {
@@ -325,7 +325,7 @@
    {
     "t": 26.0,
     "type": "button",
-    "notes": "button press-click as 'brickcoodle' is spoken"
+    "notes": "button press-click as 'brickoodle' is spoken"
    },
    {
     "t": 28.0,
@@ -924,7 +924,7 @@
    "t": 26.0,
    "type": "brick_click",
    "gain": 0.55,
-   "notes": "press-down click on the button as 'brickcoodle' is spoken"
+   "notes": "press-down click on the button as 'brickoodle' is spoken"
   },
   {
    "t": 29.5,
@@ -1192,7 +1192,7 @@
      "position": "left x=80, y 400-485"
     },
     {
-     "content": "brickcoodle.com",
+     "content": "brickoodle.com",
      "role": "body",
      "size_px": 38,
      "color": "Montserrat 800 #FFFFFF on #1F5FA8 pill (radius 26, padding 8/22)",
@@ -1245,7 +1245,7 @@
      "position": "left x=80, y 495-615 ('/94' baseline-aligned right after the digits)"
     },
     {
-     "content": "brickcoodle.com",
+     "content": "brickoodle.com",
      "role": "body",
      "size_px": 38,
      "color": "Montserrat 800 #FFFFFF on #1F5FA8 pill (radius 26, padding 8/22)",
@@ -1298,7 +1298,7 @@
      "position": "inside the label: x 340-910, y 1290-1370"
     },
     {
-     "content": "brickcoodle.com",
+     "content": "brickoodle.com",
      "role": "body",
      "size_px": 38,
      "color": "Montserrat 800 #FFFFFF on #1F5FA8 pill (radius 26, padding 8/22)",
@@ -1318,7 +1318,7 @@
    "id": "s9_end_card",
    "start": 22.0,
    "end": 29.5,
-   "visual": "END CARD. 22.00 HIT: 2-frame white flash, then background = sky gradient #A9CBEA->#EEF4FA + the dome-free cloud plate (photos/resort-balcony-view.jpg source y 0-430 only, blur 6 px, 35% opacity). The client's rendering instructions/cutouts/brick-model-render.webp (transparent) lands at 760 px wide (760x519) at x 160-920, y 560-1079 (scale 1.12->1.00, easeOutBack 0.35 s), then floats ±6 px (2 s period) with rotateY ±3 deg and a soft contact shadow. 22.00-23.20 small brick-confetti burst (30 pieces). 22.50 POLAROID slides in from the left (x -400->0, rotation -20->-8 deg, easeOutBack 0.4 s): photos/resort-promenade.jpg square crop source x 0-1206, y 82-1288 as a 202x202 image in a white frame 230x276 (14 px border, 60 px bottom lip, nothing written on it), leaning at x 60-290, y 790-1066 against the model's front-left lawn, drop shadow. 25.00 CTA BUTTON: a booklet-blue #1F5FA8 1x6 brick = rounded rect 800x112 at x 120-920, y 1278-1390 (radius 22) with six studs (88x18, #1F5FA8 with a #3C7BC6 top highlight) along its top edge (y 1260-1278); it falls from y -60 relative, squashes (scaleY 0.92) and snaps at 25.12. 25.50-26.00: a 6 px #F29A2E outline traces the button perimeter clockwise (the booklet's 'new part' highlight), then pulses on every beat (opacity 0.35->1->0.35) until 30.00. 26.00: press-down click (scale 0.95->1.00 over 0.12 s) as 'brickcoodle' is spoken. DISCLAIMER STRIP 22.00 (0.2 s fade) to 30.00: white at 75% opacity, full width, y 1400-1500. No red block with white type and no yellow on the end card (keeps clear of LEGO trade dress).",
+   "visual": "END CARD. 22.00 HIT: 2-frame white flash, then background = sky gradient #A9CBEA->#EEF4FA + the dome-free cloud plate (photos/resort-balcony-view.jpg source y 0-430 only, blur 6 px, 35% opacity). The client's rendering instructions/cutouts/brick-model-render.webp (transparent) lands at 760 px wide (760x519) at x 160-920, y 560-1079 (scale 1.12->1.00, easeOutBack 0.35 s), then floats ±6 px (2 s period) with rotateY ±3 deg and a soft contact shadow. 22.00-23.20 small brick-confetti burst (30 pieces). 22.50 POLAROID slides in from the left (x -400->0, rotation -20->-8 deg, easeOutBack 0.4 s): photos/resort-promenade.jpg square crop source x 0-1206, y 82-1288 as a 202x202 image in a white frame 230x276 (14 px border, 60 px bottom lip, nothing written on it), leaning at x 60-290, y 790-1066 against the model's front-left lawn, drop shadow. 25.00 CTA BUTTON: a booklet-blue #1F5FA8 1x6 brick = rounded rect 800x112 at x 120-920, y 1278-1390 (radius 22) with six studs (88x18, #1F5FA8 with a #3C7BC6 top highlight) along its top edge (y 1260-1278); it falls from y -60 relative, squashes (scaleY 0.92) and snaps at 25.12. 25.50-26.00: a 6 px #F29A2E outline traces the button perimeter clockwise (the booklet's 'new part' highlight), then pulses on every beat (opacity 0.35->1->0.35) until 30.00. 26.00: press-down click (scale 0.95->1.00 over 0.12 s) as 'brickoodle' is spoken. DISCLAIMER STRIP 22.00 (0.2 s fade) to 30.00: white at 75% opacity, full width, y 1400-1500. No red block with white type and no yellow on the end card (keeps clear of LEGO trade dress).",
    "text": [
     {
      "content": "THE RIVIERA RESORT BRICK MODEL",
@@ -1371,7 +1371,7 @@
      "position": "left x=120, y 1200-1262"
     },
     {
-     "content": "brickcoodle.com",
+     "content": "brickoodle.com",
      "role": "body",
      "size_px": 38,
      "color": "Montserrat 800 #FFFFFF on #1F5FA8 pill (radius 26, padding 8/22)",
@@ -1381,7 +1381,7 @@
      "position": "centred on x=540, y 1300-1352"
     },
     {
-     "content": "brickcoodle.com",
+     "content": "brickoodle.com",
      "role": "stat",
      "size_px": 70,
      "color": "#FFFFFF on the blue brick button",
@@ -1411,7 +1411,7 @@
    "id": "s10_loop",
    "start": 29.5,
    "end": 30.0,
-   "visual": "LOOP BRIDGE back to frame 0. 29.50-29.70: tagline, model, polaroid, value lines and 'Step 1 starts at' fade out. 29.50-29.90: the 8 px white divider with the red 2x2 handle (at x 905) drops from y -8 to y 956-964 (easeOutBack, settled by 29.93); above it a clip-path wipe reveals the s1 TOP image exactly as at frame 0 (photos/resort-balcony-view.jpg source rect x 100-900, y 540-1251 (800x711; never above source y 540, so the theme-park dome at y~450-500 cannot appear; x <= 900 keeps the bus at x >= 1080 out) drawn at scale 1.35 into the top half (x 0-1080, y 0-960); the real porte-cochere canopy centre (source 505,780) sits at ~(547, 324), push scale 1.00). Below the divider the s1 BOTTOM image (vertical sky gradient #A9CBEA->#EEF4FA, then instructions/cutouts/step-88.webp source rect x 250-1050, y 260-971 (800x711) at scale 1.35 into the bottom half (x 0-1080, y 960-1920); the brick porte-cochere canopy (source ~635,590) sits at ~(520, 1406), its roof top at ~y 1183; the image's cut edges are all outside the crop or below the frame, scale 1.00) slides up from y 1920 to 960 (easeOutCubic), covering the end card. The CTA button with 'brickcoodle.com' and the disclaimer strip stay pinned on top to the last frame. 29.83: REAL/BRICK chips pop back (0.6->1.0). 29.90: 'ONE WE STAYED IN.' pops in, so the last frame (29.967) matches frame 0 except for the pinned CTA and disclaimer - the replay is seamless.",
+   "visual": "LOOP BRIDGE back to frame 0. 29.50-29.70: tagline, model, polaroid, value lines and 'Step 1 starts at' fade out. 29.50-29.90: the 8 px white divider with the red 2x2 handle (at x 905) drops from y -8 to y 956-964 (easeOutBack, settled by 29.93); above it a clip-path wipe reveals the s1 TOP image exactly as at frame 0 (photos/resort-balcony-view.jpg source rect x 100-900, y 540-1251 (800x711; never above source y 540, so the theme-park dome at y~450-500 cannot appear; x <= 900 keeps the bus at x >= 1080 out) drawn at scale 1.35 into the top half (x 0-1080, y 0-960); the real porte-cochere canopy centre (source 505,780) sits at ~(547, 324), push scale 1.00). Below the divider the s1 BOTTOM image (vertical sky gradient #A9CBEA->#EEF4FA, then instructions/cutouts/step-88.webp source rect x 250-1050, y 260-971 (800x711) at scale 1.35 into the bottom half (x 0-1080, y 960-1920); the brick porte-cochere canopy (source ~635,590) sits at ~(520, 1406), its roof top at ~y 1183; the image's cut edges are all outside the crop or below the frame, scale 1.00) slides up from y 1920 to 960 (easeOutCubic), covering the end card. The CTA button with 'brickoodle.com' and the disclaimer strip stay pinned on top to the last frame. 29.83: REAL/BRICK chips pop back (0.6->1.0). 29.90: 'ONE WE STAYED IN.' pops in, so the last frame (29.967) matches frame 0 except for the pinned CTA and disclaimer - the replay is seamless.",
    "text": [
     {
      "content": "REAL",
@@ -1444,7 +1444,7 @@
      "position": "left x=80, y 1115-1175"
     },
     {
-     "content": "brickcoodle.com",
+     "content": "brickoodle.com",
      "role": "stat",
      "size_px": 70,
      "color": "#FFFFFF on the blue brick button (pinned)",
@@ -1474,14 +1474,14 @@
  "captions": {
   "enabled": true,
   "mode": "designed",
-  "style": "Designed captions: every VO line is already rendered once as designed on-screen type in its scene (vo[].caption == 'designed', vo[].caption_text = what is shown; the matching scene text item carries the same words). Do NOT draw a second subtitle for designed lines - no word appears twice. Entrances land within 2 frames of the matching VO word (use the placed VO clip's start; per-word timings may be derived from the clip's duration). Numbers are shown as digits (94, 1,746, 6–8, Step 1) and the URL always as 'brickcoodle.com'. Fallback style (only for a line whose caption == 'pill'; none in this cut): Montserrat 800 52 px sentence case, white on a #14304F pill at 85% (radius 22, padding 14/26), active word #F29A2E, max 2 lines of ~26 characters, 120 ms fade + 8 px rise.",
+  "style": "Designed captions: every VO line is already rendered once as designed on-screen type in its scene (vo[].caption == 'designed', vo[].caption_text = what is shown; the matching scene text item carries the same words). Do NOT draw a second subtitle for designed lines - no word appears twice. Entrances land within 2 frames of the matching VO word (use the placed VO clip's start; per-word timings may be derived from the clip's duration). Numbers are shown as digits (94, 1,746, 6–8, Step 1) and the URL always as 'brickoodle.com'. Fallback style (only for a line whose caption == 'pill'; none in this cut): Montserrat 800 52 px sentence case, white on a #14304F pill at 85% (radius 22, padding 14/26), active word #F29A2E, max 2 lines of ~26 characters, 120 ms fade + 8 px rise.",
   "position": "Designed captions sit where each scene's text item says. Fallback pill: left edge x 80, max width 860, bottom-anchored at y 1480, never below y 1495 or right of x 940."
  },
  "end_card": {
-  "cta": "Step 1 starts at brickcoodle.com",
-  "url": "brickcoodle.com",
+  "cta": "Step 1 starts at brickoodle.com",
+  "url": "brickoodle.com",
   "disclaimer": "Unofficial fan design. Not affiliated with or endorsed by The LEGO Group or Disney.",
-  "details": "s9 22.00-29.50 (+ pinned CTA and disclaimer through the s10 loop bridge to 30.00). Tagline '94 steps back / to the Riviera.' over the client's rendering (brick-model-render.webp) with a trip polaroid leaning on it; value lines 'Step-by-step instructions / + full parts list'; Caveat 'Step 1 starts at' over a booklet-blue 1x6-brick button reading exactly 'brickcoodle.com' (white Archivo Black 70 px), orange new-part outline pulsing on the beat; URL on screen ~15.0-29.93 (pill 15.00-25.00, button 25.03-29.93). Disclaimer (exact text, Montserrat 600 24 px navy on a 75% white strip, y 1412-1488) on screen 22.00-30.00. VO says the URL once."
+  "details": "s9 22.00-29.50 (+ pinned CTA and disclaimer through the s10 loop bridge to 30.00). Tagline '94 steps back / to the Riviera.' over the client's rendering (brick-model-render.webp) with a trip polaroid leaning on it; value lines 'Step-by-step instructions / + full parts list'; Caveat 'Step 1 starts at' over a booklet-blue 1x6-brick button reading exactly 'brickoodle.com' (white Archivo Black 70 px), orange new-part outline pulsing on the beat; URL on screen ~15.0-29.93 (pill 15.00-25.00, button 25.03-29.93). Disclaimer (exact text, Montserrat 600 24 px navy on a 75% white strip, y 1412-1488) on screen 22.00-30.00. VO says the URL once."
  },
  "variant_4x5": "1080x1350 feed cut from the same scene graph: draw the 9:16 layout and crop the band y 200-1550 (translateY -200). Every key text block sits at 9:16 y 290-1495, so it lands at 4:5 y 90-1295. Exceptions: (1) s1 and s10 split screen - keep two equal halves by moving the divider to 4:5 y 675 (9:16 y 875): each half is 675 px tall, re-crop both images around the same focal points (real canopy / brick canopy) with the same source-rect limits, and move the chip + hook-line block up 85 px with the divider. (2) Full-frame backgrounds (gradients, cloud plate, stud grid, cream table) are regenerated to fill 1350 px instead of cropped. (3) Confetti spawn/fall ranges scale 0.7 vertically. Everything else (prints, window, cards, model placements, end-card stack) keeps its 9:16 coordinates minus 200."
 }

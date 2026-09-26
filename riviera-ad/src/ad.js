@@ -1065,7 +1065,7 @@
 
   // ---------------------------------------------------------- URL bug (15.0 - 25.0)
   function buildBug() {
-    S.bug = chip(stage, { x: 80, y: 1440, h: 52, font: [FAM.body, 38, 800], padX: 22, bg: C.booklet_blue, radius: 26, text: 'brickcoodle.com', dy: 0, shadow: '0 8px 20px rgba(20,48,79,0.28)' })
+    S.bug = chip(stage, { x: 80, y: 1440, h: 52, font: [FAM.body, 38, 800], padX: 22, bg: C.booklet_blue, radius: 26, text: 'brickoodle.com', dy: 0, shadow: '0 8px 20px rgba(20,48,79,0.28)' })
     S.bug.e.style.transformOrigin = '0% 50%'
     // optical centring for lowercase: centre the x-height
     const f = fcss(FAM.body, 38, 800), m = metrics(f)
@@ -1278,7 +1278,7 @@
     }
     S.btnBody = div(S.btn, { left: 0, top: 18, width: 800, height: 112, borderRadius: 22, background: `linear-gradient(180deg, ${shade(C.booklet_blue, 0.06)} 0%, ${C.booklet_blue} 45%, ${shade(C.booklet_blue, -0.05)} 100%)`, boxShadow: `inset 0 3px 0 rgba(255,255,255,0.22), inset 0 -7px 0 rgba(0,0,0,0.16), inset 3px 0 0 rgba(255,255,255,0.08), 0 16px 34px rgba(20,48,79,0.35), 0 3px 6px rgba(20,48,79,0.25)` })
     const fb = fcss(FAM.stat, 70)
-    S.btnTxt = textBlock(S.btnBody, { x: 0, w: 800, y: 22 - 18 + 18, align: 'center', font: [FAM.stat, 70], lh: 72, color: '#fff', lines: ['brickcoodle.com'] })
+    S.btnTxt = textBlock(S.btnBody, { x: 0, w: 800, y: 22 - 18 + 18, align: 'center', font: [FAM.stat, 70], lh: 72, color: '#fff', lines: ['brickoodle.com'] })
     // centre the x-height of the lowercase URL in the body
     MCTX.font = fb
     const xh = MCTX.measureText('x').actualBoundingBoxAscent, mm = metrics(fb)

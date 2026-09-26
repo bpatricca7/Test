@@ -3,12 +3,12 @@
 ## The story (from the client, in their words)
 "We went to the Riviera Resort. Show the pictures from it, then: we wanted to take a little
 piece of the resort home with us, so we bought the French resort brick set from
-**brickcoodle.com**. It's awesome, it comes with the instructions. Make a very catchy ad for
+**brickoodle.com**. It's awesome, it comes with the instructions. Make a very catchy ad for
 social media about the product so we get buys and clicks. Show the brick set, the rendering
 of it, and the instructions."
 
 Goal: a scroll-stopping vertical social ad (Reels / TikTok / Shorts) that drives clicks to
-**brickcoodle.com**. Tone: warm family-vacation nostalgia that turns into "you can build this".
+**brickoodle.com**. Tone: warm family-vacation nostalgia that turns into "you can build this".
 The client said we don't have to literally say "awesome" and "amazing".
 
 ## Product facts (from the instruction booklet; the ONLY claims we may make)
@@ -35,7 +35,7 @@ The client said we don't have to literally say "awesome" and "amazing".
 - Do NOT quote a price. Do NOT claim bricks are "included in the box" (unverified; the booklet
   explains ordering the parts separately). Safe: "step-by-step instructions", "full parts list",
   "1,746 pieces", "94 steps", etc.
-- CTA destination text: **brickcoodle.com** (exactly this spelling).
+- CTA destination text: **brickoodle.com** (exactly this spelling).
 - The resort photos show the client's own family from behind (kids + a parent with a stroller).
   They are fine to use. Don't add names.
 

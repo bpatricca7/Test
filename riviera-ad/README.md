@@ -1,14 +1,14 @@
 # "94 Steps Back to the Riviera": social video ad
 
 A 30-second vertical video ad for the **Riviera Resort brick model** from
-**brickcoodle.com**. It tells the family's story:
+**brickoodle.com**. It tells the family's story:
 
 1. **One we stayed in, one we built.** A split screen puts the real resort (our balcony photo) against the brick model.
 2. **Nobody wanted to leave the Riviera.** The trip photos appear as instant prints on a scrapbook table.
 3. **So we took a little piece of it home.** The photo turns into bricks, then *"Voilà !"* reveals the full model with a 1,746-piece counter.
 4. **Real vs. brick.** A slider compares the real resort and the model, ending on "This one fits on a shelf" (38 × 26 cm · 16 cm tall).
 5. **Every step illustrated. Every part listed.** The instruction booklet appears, and the model builds itself from step 1 to 94.
-6. **94 steps back to the Riviera.** The end card says "Step 1 starts at brickcoodle.com".
+6. **94 steps back to the Riviera.** The end card says "Step 1 starts at brickoodle.com".
 
 ## Deliverables (`out/`)
 

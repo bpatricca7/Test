@@ -409,45 +409,45 @@
   {
    "id": "vo13",
    "start": 25.0,
-   "end": 27.234,
-   "text": "Step one starts at brickcoodle dot com.",
+   "end": 27.161,
+   "text": "Step one starts at brickoodle dot com.",
    "voice": "af_heart",
    "speed": 1.05,
    "words": [
     {
      "text": "Step",
      "start": 25.0,
-     "end": 25.263
+     "end": 25.262
     },
     {
      "text": "one",
-     "start": 25.263,
-     "end": 25.46
+     "start": 25.262,
+     "end": 25.458
     },
     {
      "text": "starts",
-     "start": 25.46,
-     "end": 25.92
+     "start": 25.458,
+     "end": 25.917
     },
     {
      "text": "at",
-     "start": 25.92,
-     "end": 26.051
+     "start": 25.917,
+     "end": 26.048
     },
     {
-     "text": "brickcoodle",
-     "start": 26.051,
-     "end": 26.708
+     "text": "brickoodle",
+     "start": 26.048,
+     "end": 26.637
     },
     {
      "text": "dot",
-     "start": 26.708,
-     "end": 26.971
+     "start": 26.637,
+     "end": 26.899
     },
     {
      "text": "com.",
-     "start": 26.971,
-     "end": 27.234
+     "start": 26.899,
+     "end": 27.161
     }
    ]
   }
