@@ -12,14 +12,31 @@ sys.path.insert(0, os.path.dirname(__file__))
 from lib.stats import kalshi_fee, tstat, pvalue_two_sided, american_to_prob, devig_power, summarize_bets, fmt_bets
 
 KD = os.environ.get("KALSHI_DATA_DIR", "data/kalshi"); DATA = os.environ.get("DATA_DIR", "data"); OUT = os.path.join(os.path.dirname(__file__), "results")
-DUR = {"KXNFLGAME": 3.25, "KXNCAAFGAME": 3.5, "KXCFBGAME": 3.5, "KXMLBGAME": 3.0, "KXNBAGAME": 2.5, "KXNHLGAME": 2.75, "KXWNBAGAME": 2.25}
-
+series = {s["ticker"]: s for s in json.load(open(os.path.join(KD, "series.json")))}
+KEYWORD_HOURS = [("NFL", 3.25), ("NCAAF", 3.5), ("CFB", 3.5), ("UFL", 3.25), ("MLB", 3.0), ("BASEBALL", 3.0), ("NBA", 2.5), ("WNBA", 2.25),
+                 ("BASKETBALL", 2.25), ("NCAAMB", 2.25), ("NHL", 2.75), ("HOCKEY", 2.75), ("SHL", 2.75), ("UFC", 0.6), ("FIGHT", 0.6), ("BOUT", 0.6),
+                 ("BOXING", 0.8), ("ATP", 2.5), ("WTA", 2.2), ("TENNIS", 2.5), ("T20", 3.5), ("ODI", 8.0), ("TEST", 120.0), ("CRICKET", 4.0),
+                 ("RUGBY", 2.0), ("VOLLEYBALL", 2.0), ("TT", 1.0), ("TABLE", 1.0), ("CSGO", 1.5), ("VALORANT", 1.5), ("LOL", 1.5), ("DOTA", 1.5),
+                 ("ESPORTS", 1.5), ("GOLF", 6.0), ("LACROSSE", 2.0), ("PICKLEBALL", 1.0)]
+def duration_hours(st):
+    for k, h in KEYWORD_HOURS:
+        if k in st: return h
+    return 2.0    # soccer and everything else
+def is_game(st):
+    s = series.get(st, {})
+    return s.get("category") == "Sports" and any(k in st for k in ("GAME", "MATCH", "FIGHT", "BOUT")) and not st.startswith("KXMVE")
+def sport_family(st):
+    for k in ("NFL", "NCAAF", "CFB", "MLB", "NBA", "WNBA", "NHL", "UFC", "ATP", "WTA", "CRICKET", "T20", "ODI", "MLS", "UEFA", "EPL", "LALIGA", "SERIEA", "BUNDESLIGA", "LIGUE1", "CSGO", "VALORANT", "LOL", "DOTA"):
+        if k in st: return k
+    return "other"
+DUR = {}
 mk = {}
 with open(os.path.join(KD, "markets.jsonl")) as f:
     for line in f:
         if '"series_ticker": "KX' not in line: continue
         st = line.split('"series_ticker": "')[1].split('"')[0]
-        if st not in DUR: continue
+        if not is_game(st): continue
+        DUR[st] = duration_hours(st)
         m = json.loads(line); mk[m["ticker"]] = m
 print(f"sports game markets settled: {len(mk)}  by series: {pd.Series([m['series_ticker'] for m in mk.values()]).value_counts().to_dict()}")
 
@@ -34,7 +51,7 @@ for fn in glob.glob(os.path.join(KD, "candles_sports*.jsonl")):
         if not cs: continue
         c = max(cs, key=lambda c: c["end_period_ts"])
         try:
-            rows.append({"ticker": m["ticker"], "series": m["series_ticker"], "yes": m["result"] == "yes", "price": float(c["price"]["close_dollars"]),
+            rows.append({"ticker": m["ticker"], "series": m["series_ticker"], "family": sport_family(m["series_ticker"]), "yes": m["result"] == "yes", "price": float(c["price"]["close_dollars"]),
                          "ask": float(c["yes_ask"]["close_dollars"]), "bid": float(c["yes_bid"]["close_dollars"]), "hours_before_close": (close - c["end_period_ts"]) / 3600,
                          "volume": float(m.get("volume_fp") or 0), "close_time": m["close_time"], "title": m["title"]})
         except (KeyError, ValueError, TypeError): pass
@@ -52,7 +69,8 @@ def line(label, pnl):
 print("\n=== calibration of pregame MID price (all sports) ===")
 d["bucket"] = pd.cut(d.mid, [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1.0])
 print(d.groupby("bucket", observed=True).apply(lambda x: pd.Series({"n": len(x), "mid": x.mid.mean(), "realised": x.yes.mean(), "ev_buy_yes_c": np.mean(yes_pnl(x)) * 100, "ev_buy_no_c": np.mean(no_pnl(x)) * 100})).round(3).to_string())
-for s, x in d.groupby("series"):
+for s, x in d.groupby("family"):
+    if len(x) < 200: continue
     print(f"\n--- {s}: n={len(x)} ---")
     print(x.groupby("bucket", observed=True).apply(lambda y: pd.Series({"n": len(y), "mid": y.mid.mean(), "realised": y.yes.mean(), "ev_buy_yes_c": np.mean(yes_pnl(y)) * 100, "ev_buy_no_c": np.mean(no_pnl(y)) * 100})).round(3).to_string())
 print("\n=== strategies (ROI per $1 of contract price paid is ROI/contract divided by price; shown per contract) ===")

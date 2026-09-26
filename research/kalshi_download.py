@@ -185,7 +185,7 @@ def phase3(min_volume=5000):
 
 
 # ---------------- Phase 4: top-volume markets elsewhere, daily candles ----------------
-def phase4(per_series=60, min_volume=2000):
+def phase4(per_series=40, min_volume=5000):
     skip_prefix = ("KXBTC15M", "KXETH15M", "KXSOL15M", "KXXRP15M", "KXBNB15M", "KXHYPE15M", "KXNEAR15M", "KXZEC15M", "KXDOGE15M")
     done = load_done("candles_daily_done.txt")
     by_series = {}
@@ -208,17 +208,49 @@ def phase4(per_series=60, min_volume=2000):
         lst.sort(key=lambda x: -x[0])
         ms += [m for _, m in lst[:per_series]]
     ms = [m for m in ms if m["ticker"] not in done]
+    suffix = os.environ.get("KALSHI_SHARD", "").replace("/", "of")
+    if os.environ.get("KALSHI_SHARD"):
+        i, n = map(int, os.environ["KALSHI_SHARD"].split("/")); ms = [m for m in ms if sum(map(ord, m["ticker"])) % n == i]
     log(f"phase4: {len(ms)} long-lived markets need daily candles")
-    out = open(os.path.join(DATA_DIR, "candles_daily.jsonl"), "a")
+    out = open(os.path.join(DATA_DIR, f"candles_daily{('_' + suffix) if suffix else ''}.jsonl"), "a")
     for i, m in enumerate(ms):
-        fetch_candles(m["series_ticker"], m["ticker"], ts(m["open_time"]) - 86400, ts(m["close_time"]) + 86400, 1440, out, "candles_daily_done.txt")
+        fetch_candles(m["series_ticker"], m["ticker"], ts(m["open_time"]) - 86400, ts(m["close_time"]) + 86400, 1440, out, f"candles_daily_done{('_' + suffix) if suffix else ''}.txt")
         if i % 500 == 0:
             out.flush(); log(f"  phase4 {i}/{len(ms)}")
     out.close(); log("phase4 done")
 
 
+# ---------------- Phase 5: hourly BTC/ETH strike ladders, 1-minute candles (sampled hours) ----------------
+def phase5(min_volume=50):
+    """KXBTCD every 3rd UTC hour, KXETHD every 6th hour: enough ladders to measure implied-vs-realised tails."""
+    done = load_done("candles_hourly_done.txt")
+    suffix = os.environ.get("KALSHI_SHARD", "").replace("/", "of")
+    ms = []
+    for m in iter_markets():
+        st = m["series_ticker"]
+        if st not in ("KXBTCD", "KXETHD") or m["ticker"] in done:
+            continue
+        try:
+            if float(m.get("volume_fp") or 0) < min_volume:
+                continue
+        except ValueError:
+            continue
+        hour = int(m["close_time"][11:13])
+        if (st == "KXBTCD" and hour % 3 == 0) or (st == "KXETHD" and hour % 6 == 0):
+            ms.append(m)
+    if os.environ.get("KALSHI_SHARD"):
+        i, n = map(int, os.environ["KALSHI_SHARD"].split("/")); ms = [m for m in ms if sum(map(ord, m["ticker"])) % n == i]
+    log(f"phase5{'[' + suffix + ']' if suffix else ''}: {len(ms)} hourly ladder markets need candles")
+    out = open(os.path.join(DATA_DIR, f"candles_hourly{('_' + suffix) if suffix else ''}.jsonl"), "a")
+    for i, m in enumerate(ms):
+        fetch_candles(m["series_ticker"], m["ticker"], ts(m["open_time"]) - 60, ts(m["close_time"]) + 60, 1, out, f"candles_hourly_done{('_' + suffix) if suffix else ''}.txt")
+        if i % 500 == 0:
+            out.flush(); log(f"  phase5 {i}/{len(ms)}")
+    out.close(); log("phase5 done")
+
+
 if __name__ == "__main__":
     phases = sys.argv[1:] or ["1", "2", "3", "4"]
     for p in phases:
-        {"1": phase1, "2": phase2, "3": phase3, "4": phase4}[p]()
+        {"1": phase1, "2": phase2, "3": phase3, "4": phase4, "5": phase5}[p]()
     log("ALL DONE")
