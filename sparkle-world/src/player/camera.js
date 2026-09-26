@@ -113,9 +113,15 @@ export class CameraRig {
 
     cam.position.set(tx - dx * this.current, ty - dy * this.current, tz - dz * this.current);
     cam.lookAt(tx, ty, tz);
-    if (this.player.avatar) {
+    const av = this.player.avatar;
+    if (av) {
       const near = Math.hypot(cam.position.x - hx, cam.position.y - hy, cam.position.z - hz);
-      this.player.avatar.group.visible = near > HIDE_AVATAR_WITHIN;
+      if (av.setOpacity) {
+        // avatars with their own materials fade out softly as the camera comes close
+        const o = clamp((near - HIDE_AVATAR_WITHIN * 0.65) / 0.8, 0, 1);
+        av.group.visible = o > 0.02;
+        av.setOpacity(o);
+      } else av.group.visible = near > HIDE_AVATAR_WITHIN;
     }
   }
 }
