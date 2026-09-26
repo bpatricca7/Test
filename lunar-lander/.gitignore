@@ -1,4 +1,5 @@
 *.log
+.progress/
 .scratch*/
 dist-*/
 node_modules/

@@ -15,6 +15,7 @@
 // Numbers refresh at ~15 Hz (readable, cheap); everything writes the DOM only on change.
 
 import { h, slot, setClass } from './dom.js';
+import { DOCK } from '../sim/docking.js';
 import { fmtMET, fmtClock, fmtAlt, fmtSpeed, fmtDist, fmtOrbitAlt, fmtBearing, fmtAngle, fmtPct, fmtWarp, fmtDuration, num, PROGRAM_NAMES, AUTOPILOT_NAMES, dskyPrompt, FT } from './format.js';
 
 const NUM_INTERVAL = 1 / 15; // s between numeric refreshes
@@ -170,14 +171,40 @@ export function createHUD(game) {
   const sProp = slot(h('span.hv'));
   const sAltL = slot(h('span.hl'));
   const sPropL = slot(h('span.hl'));
+  // phase row: the numbers that matter right now (TIG / TGO, P64 LPD, P66 ROD, rendezvous & docking)
+  const phName = slot(h('span.pname'));
+  const ph = {};
+  const phItem = (key, label) => {
+    const lab = slot(h('span.hl', null, label));
+    const v = slot(h('span.hv'));
+    const el = h('span.pi.hidden', null, lab.el, v.el);
+    ph[key] = { el, v, lab };
+    return el;
+  };
+  const phase = h('div.sphase.hidden', null,
+    phName.el,
+    phItem('tig', 'TIG'),
+    phItem('tgo', 'TGO'),
+    phItem('lpd', 'LPD'),
+    phItem('rod', 'ROD cmd'),
+    phItem('rng', 'Range'),
+    phItem('rate', 'Closing'),
+    phItem('lat', 'Lateral'),
+    phItem('mis', 'Misalign'),
+  );
   const strip = h('div.hp.h-strip.hidden', null,
-    sId.el, h('i.sep'),
-    h('span', null, h('span.hl', null, 'GET'), sMet.el, ' ', sWarp.el), h('i.sep'),
-    h('span', null, sAltL.el, sAlt.el), h('span', null, h('span.hl', null, 'Alt rate'), sVs.el), h('span', null, h('span.hl', null, 'H vel'), sHs.el), h('i.sep'),
-    h('span', null, sPropL.el, sProp.el),
+    h('div.srow', null,
+      sId.el, h('i.sep'),
+      h('span', null, h('span.hl', null, 'GET'), sMet.el, ' ', sWarp.el), h('i.sep'),
+      h('span', null, sAltL.el, sAlt.el), h('span', null, h('span.hl', null, 'Alt rate'), sVs.el), h('span', null, h('span.hl', null, 'H vel'), sHs.el), h('i.sep'),
+      h('span', null, sPropL.el, sProp.el),
+    ),
+    phase,
   );
 
-  const el = h('div.hud', null, idPanel, clock, prompt, cw, flight, prop, nav, guide, strip);
+  // cockpit: the strip and, right under it, the PRO prompt (whatever height the strip wraps to)
+  const ivaTop = h('div.h-ivatop.hidden', null, strip);
+  const el = h('div.hud', null, idPanel, clock, prompt, cw, flight, prop, nav, guide, ivaTop);
   const exterior = [idPanel, clock, cw, flight, prop, nav];
 
   function kv(parent, label) {
@@ -232,8 +259,88 @@ export function createHUD(game) {
     return { fwd: e * Math.sin(hd) + n * Math.cos(hd), lat: e * Math.cos(hd) - n * Math.sin(hd) };
   }
 
+  /** Show / hide one phase-row item and set its value (and warn / alarm tint). */
+  function phSet(key, on, value, level) {
+    const it = ph[key];
+    setClass(it.el, 'hidden', !on);
+    if (!on) return;
+    it.v.set(value);
+    setClass(it.v.el, 'warn', level === 'warn');
+    setClass(it.v.el, 'alarm', level === 'alarm');
+  }
+
+  /**
+   * Cockpit phase row: the few numbers the current phase is flown on, which the strip's first row
+   * does not carry — P63 TIG countdown / time to go, P64 LPD angle & time left, P66 commanded
+   * rate of descent, and within 1 km of the other spacecraft its range and closing rate (plus the
+   * probe-to-drogue lateral offset and misalignment on the final docking approach).
+   */
+  function updatePhase(v, units, tm) {
+    const g = v.gnc;
+    const t = v.tel;
+    const p = g.program || 'P00';
+    const lm = v.type === 'LM' && !v.landed && !v.crashed;
+    const tig = Number.isFinite(g.tig) ? g.tig - tm.met : NaN;
+    const tigOn = tig > 0 && tig < 3600;
+    const tgoOn = !tigOn && lm && (p === 'P63' || p === 'P64') && Number.isFinite(g.tgo) && g.tgo > 0;
+    const lpdOn = lm && p === 'P64' && Number.isFinite(g.lpdAngle);
+    const rodOn = lm && p === 'P66' && g.throttleMode === 'AUTO' && Number.isFinite(g.rodCmd);
+    phSet('tig', tigOn, `\u2212${fmtClock(tig)}`, tig < 10 ? 'warn' : null);
+    phSet('tgo', tgoOn, tgoOn ? fmtDuration(g.tgo) : '');
+    if (lpdOn) {
+      const left = Number.isFinite(g.lpdTimeLeft) ? Math.max(0, Math.round(g.lpdTimeLeft)) : null;
+      phSet('lpd', true, `${num(g.lpdAngle, 0)}°${left != null ? ` · ${left} s` : ''}`, left != null && left < 10 ? 'warn' : null);
+    } else phSet('lpd', false);
+    if (rodOn) {
+      const r = fmtSpeed(g.rodCmd, units, { plus: true });
+      phSet('rod', true, `${units === 'metric' ? r.v : num(g.rodCmd / FT, 0, { plus: true })} ${r.u}`, g.rodCmd < -5 * FT && pilotAltitude(v).m < 30 ? 'warn' : null);
+    } else phSet('rod', false);
+
+    // the other spacecraft within 1 km (not docked)
+    const other = game.inactive;
+    const rt = t.relTarget;
+    const near = !!rt && !v.docked && !!other && !other.crashed && Number.isFinite(rt.range) && rt.range < 1000;
+    const dk = near ? rt.dock : null;
+    // final docking approach: probe-to-drogue geometry is valid and the tip is within ~60 m
+    const docking = !!dk && Number.isFinite(dk.lateral) && Number.isFinite(dk.misalignDeg) && dk.range < 60;
+    if (near) {
+      ph.rng.lab.set(other.name);
+      const r = fmtDist(docking ? dk.range : rt.range, units);
+      phSet('rng', true, `${r.v} ${r.u}`);
+      const closing = docking && Number.isFinite(dk.closing) ? dk.closing : -(rt.rangeRate || 0);
+      const c = fmtSpeed(closing, units, { plus: true });
+      const hot = docking && dk.range < 15 && closing > DOCK.CAPTURE_CLOSING;
+      phSet('rate', true, `${c.v} ${c.u}`, hot ? (closing > DOCK.CAPTURE_CLOSING * 1.8 ? 'alarm' : 'warn') : null);
+    } else {
+      phSet('rng', false);
+      phSet('rate', false);
+    }
+    if (docking) {
+      const l = fmtDist(dk.lateral, units);
+      const lv = units === 'metric' ? num(dk.lateral, 2) : num(dk.lateral / FT, 1);
+      phSet('lat', true, `${lv} ${l.u}`, dk.range < 5 && dk.lateral > DOCK.CAPTURE_LATERAL ? 'warn' : null);
+      phSet('mis', true, `${num(dk.misalignDeg, 1)}°`, dk.misalignDeg > DOCK.CAPTURE_MISALIGN_DEG ? 'warn' : null);
+    } else {
+      phSet('lat', false);
+      phSet('mis', false);
+    }
+
+    const any = tigOn || tgoOn || lpdOn || rodOn || near;
+    setClass(phase, 'hidden', !any);
+    if (any) phName.set(docking ? 'Docking' : near && !lpdOn && !rodOn && !tgoOn ? 'Rendezvous' : tigOn && !tgoOn ? 'Ignition' : PROGRAM_NAMES[p] || p);
+  }
+
   let numT = 0;
   let mode = null;
+  let lastMet = NaN;
+  // a new mission or vessel (and a jump in mission time, e.g. debug.advance / ?t=) refreshes the
+  // numbers on the next frame instead of up to 1/15 s later
+  const refresh = () => {
+    numT = 0;
+  };
+  game.events.on('scenario', refresh);
+  game.events.on('vessel', refresh);
+  game.events.on('program', refresh);
 
   // ---------------------------------------------------------------- update
   /**
@@ -251,6 +358,9 @@ export function createHUD(game) {
       mode = iva;
       for (const p of exterior) setClass(p, 'hidden', iva);
       setClass(strip, 'hidden', !iva);
+      setClass(ivaTop, 'hidden', !iva);
+      if (iva) ivaTop.appendChild(prompt);
+      else el.insertBefore(prompt, cw);
       numT = 0;
     }
     const units = game.settings.units;
@@ -263,17 +373,20 @@ export function createHUD(game) {
     const tig = Number.isFinite(g.tig) ? g.tig - tm.met : NaN;
     const showTig = tig > 0 && tig < 900;
     const lift = !pr && !showTig && !!opt.liftoffHint;
-    setClass(prompt, 'hidden', !pr && !showTig && !lift);
+    // cockpit: a bare countdown lives in the strip's phase row; the box is for PRO prompts
+    const tigBox = showTig && (!iva || !!pr);
+    setClass(prompt, 'hidden', !pr && !tigBox && !lift);
+    setClass(prompt, 'iva', iva);
     setClass(prompt, 'calm', lift);
     if (pr || showTig || lift) {
       prT.set(pr ? pr.title : lift ? 'On the surface · P68' : 'Ignition');
+      // (cockpit: the countdown is in the strip's phase row just above)
       prTig.set(showTig ? `TIG \u2212${fmtClock(tig)}` : '');
-      setClass(prTig.el, 'hidden', !showTig);
-      prH.set(pr ? pr.hint : lift ? 'Space (PRO): load P12 — lift off and return to Columbia' : v.type === 'LM' ? 'Guidance will ask for PRO (Space) at 5 s' : '');
+      setClass(prTig.el, 'hidden', !showTig || iva);
+      prH.set(pr ? `${pr.hint}${iva ? ' · O: glance at the DSKY' : ''}` : lift ? 'Space (PRO): load P12 — lift off and return to Columbia' : v.type === 'LM' ? 'Guidance will ask for PRO (Space) at 5 s' : '');
       setClass(prH.el, 'hidden', !prH.el.textContent);
       setClass(prompt, 'flash', !!pr);
       setClass(prompt, 'alarmp', pr?.level === 'alarm');
-      prompt.style.top = iva ? '3.6em' : '';
     }
 
     // ---- master alarm & contact light (every frame)
@@ -282,6 +395,9 @@ export function createHUD(game) {
     setClass(lampContact, 'hidden', !contact);
 
     numT -= frame?.dt ?? 0.016;
+    // mission time moved by more than this frame's simulation step (debug.advance, ?t=): refresh now
+    if (Number.isFinite(lastMet) && Math.abs(tm.met - lastMet - (frame?.simDt || 0)) > 0.5) numT = 0;
+    lastMet = tm.met;
     if (numT > 0) return;
     numT = NUM_INTERVAL;
 
@@ -306,6 +422,7 @@ export function createHUD(game) {
       sProp.set(`${fmtPct(t.fuelFraction)}${bingo && t.fuelFraction < 0.25 ? ` · BINGO ${t.bingoSeconds > 0 ? secs(t.bingoSeconds) : 'NOW'}` : ''}`);
       setClass(sProp.el, 'warn', t.fuelFraction < 0.1);
       setClass(sVs.el, 'alarm', low && t.vSpeed < -3);
+      updatePhase(v, units, tm);
       return;
     }
 

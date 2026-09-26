@@ -215,3 +215,74 @@ test('cockpit glances: GLANCE action cycles presets, leans the head and resets',
   cams.setStation('OVERHEAD');
   assert.equal(cams.glance(), 'OUT');
 });
+
+test('establishing shot: sweeps outside, dips through black into the cockpit, then hands over', async () => {
+  const { createGameState } = await import('../src/core/state.js');
+  const { createSim } = await import('../src/sim/sim.js');
+  const { createCameras, INTRO } = await import('../src/render/cameras.js');
+  const { SUN_DIR } = await import('../src/core/frames.js');
+  const game = createGameState({ scenario: null, warp: 1, camera: 'iva', vessel: null });
+  const sim = createSim(game, { gnc: { update() {}, reset() {} } });
+  const cams = createCameras(game, null);
+  sim.loadScenario('lowgate');
+  game.view.mode = 'iva';
+  cams.update(1 / 60);
+  assert.equal(cams.introActive, false, 'no automatic intro outside a browser');
+  const eye = game.view.cameraMCI.clone();
+  assert.ok(cams.playIntro(5));
+  const lm = game.active;
+  const dt = 1 / 30;
+  let t = 0;
+  let sawBlack = false;
+  let sunSide = 0;
+  for (; t < 5 - INTRO.fade - 0.05; t += dt) {
+    cams.update(dt);
+    assert.equal(game.view.mode, 'chase', `exterior picture while the shot sweeps (t=${t.toFixed(2)})`);
+    assert.equal(game.view.ivaVessel, null);
+    assert.ok(game.view.intro && game.view.intro.T === 5);
+    assert.ok(game.view.cameraMCI.distanceTo(lm.pos) > 8, 'outside the spacecraft');
+    if (game.view.introFade > 0.9) sawBlack = true;
+    if (t > 1 && t < 2) {
+      const up = lm.pos.clone().normalize();
+      const off = game.view.cameraMCI.clone().sub(lm.pos);
+      const sunH = SUN_DIR.clone().addScaledVector(up, -SUN_DIR.dot(up)).normalize();
+      sunSide += off.addScaledVector(up, -off.dot(up)).normalize().dot(sunH);
+    }
+  }
+  assert.ok(sawBlack, 'dips to black before the cut');
+  assert.ok(sunSide > 0, 'camera on the sunlit side');
+  for (let i = 0; i < 40; i++) cams.update(dt);
+  assert.equal(cams.introActive, false);
+  assert.equal(game.view.intro, null);
+  assert.equal(game.view.introFade, 0);
+  assert.equal(game.view.mode, 'iva');
+  assert.equal(game.view.ivaVessel, 'LM');
+  assert.ok(game.view.cameraMCI.distanceTo(eye) < 0.2, `at the crew station (${game.view.cameraMCI.distanceTo(eye)})`);
+  // the view.mode the intro wrote is not taken for a request to change the camera
+  assert.equal(cams.mode, 'iva');
+});
+
+test('establishing shot into an exterior view ends exactly on that view; a key skips it', async () => {
+  const { createGameState } = await import('../src/core/state.js');
+  const { createSim } = await import('../src/sim/sim.js');
+  const { createCameras } = await import('../src/render/cameras.js');
+  const game = createGameState({ scenario: null, warp: 1, camera: 'chase', vessel: null });
+  const sim = createSim(game, { gnc: { update() {}, reset() {} } });
+  const cams = createCameras(game, null);
+  sim.loadScenario('landed');
+  game.view.mode = 'chase';
+  for (let i = 0; i < 5; i++) cams.update(1 / 30);
+  const ref = game.view.cameraMCI.clone();
+  cams.playIntro(3);
+  cams.update(1 / 30);
+  assert.ok(game.view.cameraMCI.distanceTo(ref) > 10, 'the shot starts elsewhere');
+  for (let i = 0; i < 95; i++) cams.update(1 / 30);
+  assert.equal(cams.introActive, false);
+  assert.ok(game.view.cameraMCI.distanceTo(ref) < 0.5, `ends on the chase view (${game.view.cameraMCI.distanceTo(ref)})`);
+  cams.playIntro(4, { at: 1 });
+  assert.ok(Math.abs(game.view.intro.t - 1) < 1e-9);
+  assert.ok(cams.skipIntro());
+  assert.equal(cams.introActive, false);
+  assert.equal(game.view.intro, null);
+  assert.equal(cams.skipIntro(), false);
+});

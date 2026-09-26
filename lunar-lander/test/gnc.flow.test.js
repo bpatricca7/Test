@@ -132,7 +132,9 @@ test('Lunar Orbit: undock, separate, PRO loads P40 DOI; the LGC then flies PDI a
   step(1 / 60);
   assert.ok(S.burn.dvMag > 18 && S.burn.dvMag < 28, `DOI delta-V ${S.burn.dvMag.toFixed(1)} m/s (Apollo 11: 23.3)`);
   assert.ok(Number.isFinite(lm.gnc.tig), 'TIG published for the warp limiter / displays');
-  for (let k = 0; k < 400000 && !lm.landed && !lm.crashed; k++) {
+  // generous step cap: at 1000x the sim stops each step at its wall-clock budget, so a loaded machine
+  // needs more steps for the same coast
+  for (let k = 0; k < 4000000 && !lm.landed && !lm.crashed; k++) {
     if (lm.agc.flashVerbNoun) act('PRO');
     const tig = lm.gnc.tig;
     game.time.warp = (!Number.isFinite(tig) || tig - game.time.met > 60) && !lm.mainEngine.firing && lm.tel.altitude > 20000 ? 1000 : 1;
@@ -142,7 +144,8 @@ test('Lunar Orbit: undock, separate, PRO loads P40 DOI; the LGC then flies PDI a
   for (const p of ['P40', 'P63', 'P64', 'P66', 'P68']) assert.ok(progs.includes(p), `${p} flown (${progs.join(' ')})`);
   const done = events.find((e) => e.t === 'message' && /DOI complete/.test(e.p.text));
   assert.ok(done, 'DOI complete message');
-  const peri = +/× ([\d.]+) km/.exec(done.p.text)[1];
+  // default units: Apollo's nautical miles
+  const peri = +/× ([\d.]+) nmi/.exec(done.p.text)[1] * 1.852;
   assert.ok(peri > 11 && peri < 19, `descent orbit perilune ${peri} km`);
   assert.equal(lm.landed, true, lm.crashReason || 'landed');
   assert.ok(game.result.distanceToTarget < 100, `touchdown ${game.result.distanceToTarget.toFixed(0)} m from the site`);

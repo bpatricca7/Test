@@ -63,7 +63,7 @@ window.T = { terrain, game, ctx, view, set(v) { Object.assign(view, v); applyVie
     const rocks = [];
     for (const n of terrain.debug.nodes.values()) {
       if (!n.boulders) continue;
-      for (let i = 0; i < n.boulders.length; i += 10) rocks.push({ c: n.center, b: n.boulders.slice(i, i + 10) });
+      for (let i = 0; i < n.boulders.length; i += 14) rocks.push({ c: n.center, b: n.boulders.slice(i, i + 14) });
     }
     rocks.sort((a, b) => b.b[3] - a.b[3]);
     const r = rocks[k];

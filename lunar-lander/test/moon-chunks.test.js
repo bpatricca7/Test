@@ -140,7 +140,7 @@ test('boulder chunks list rocks sitting on the surface, with valid parameters', 
     // base of the rock is on the surface (terrainHeight includes the rock itself, so it is >= base)
     assert.ok(terrainHeight(...d) >= l - R - 0.05);
     assert.ok(b[k + 3] > 0.04 && b[k + 3] <= 1.5 + 1e-6, 'footprint radius');
-    assert.ok(b[k + 4] > 0 && b[k + 4] < 2.0, 'height');
+    assert.ok(b[k + 4] > 0 && b[k + 4] < 2.5, 'height');
     assert.ok(Math.abs(Math.hypot(b[k + 6], b[k + 7]) - 1) < 1e-4, 'rotation');
   }
   void faceDir;

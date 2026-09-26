@@ -30,6 +30,7 @@ import { autopilotTarget, AUTOPILOT_MODES } from './attitude.js';
 import { createAGCState, updateAGC, resetAlarms, operatorError, compBurst } from './agc.js';
 import { createCalloutState } from './callouts.js';
 import * as P from './programs.js';
+import { fmtSpeed, fmtLen } from '../sim/units.js';
 
 const R2D = 180 / Math.PI;
 const RCS_MODES = ['RATE', 'PULSE', 'DIRECT'];
@@ -91,12 +92,30 @@ export function createGNC(game) {
     timeline.sort((a, b) => a.met - b.met);
   }
 
+  /**
+   * Per-vessel program context: messages about a vessel the player is not flying are prefixed
+   * with its name ("Eagle: ...").
+   */
+  function vesselCtx(v) {
+    return {
+      game,
+      vessel: v,
+      say: ctx.say,
+      later,
+      message(text, level = 'info', duration) {
+        const away = game.active !== v && v.name && !String(text).startsWith(`${v.name}:`);
+        ctx.message(away ? `${v.name}: ${text}` : text, level, duration);
+      },
+    };
+  }
+
   function stateOf(v) {
     let S = states.get(v);
     if (!S) {
       S = createState(v);
+      S.ctx = vesselCtx(v);
       states.set(v, S);
-      P.initPrograms(v, S, ctx);
+      P.initPrograms(v, S, S.ctx);
     }
     return S;
   }
@@ -130,7 +149,7 @@ export function createGNC(game) {
         break;
       case 'PRO':
         compBurst(S.agc, 0.3);
-        P.proKey(v, S, ctx);
+        P.proKey(v, S, S.ctx);
         break;
       case 'AUTO_TOGGLE':
         autoToggle(v, S);
@@ -147,11 +166,11 @@ export function createGNC(game) {
         g.rodCmd += (a.name === 'ROD_UP' ? 1 : -1) * FT;
         if (Math.abs(g.rodCmd) < 1e-6) g.rodCmd = 0;
         if (S.descent) S.descent.rodAuto = false;
-        ctx.message(`ROD ${g.rodCmd <= 0 ? 'down' : 'up'} ${Math.abs(g.rodCmd / FT).toFixed(0)} ft/s`, 'info', 1.2);
+        ctx.message(`ROD ${g.rodCmd <= 0 ? 'down' : 'up'} ${fmtSpeed(game, Math.abs(g.rodCmd), 1)}`, 'info', 1.2);
         break;
       }
       case 'LPD':
-        if (v.type === 'LM') P.lpdRedesignate(v, S, ctx, a.dx || 0, a.dy || 0);
+        if (v.type === 'LM') P.lpdRedesignate(v, S, S.ctx, a.dx || 0, a.dy || 0);
         break;
       case 'MASTER_ALARM_RESET':
         resetAlarms(v, S.agc);
@@ -183,12 +202,12 @@ export function createGNC(game) {
       // manual staging on the surface (also before a P12 TIG): the crew lifts off with the throttle
       const hadP12 = p === 'P12';
       S.ascent = null;
-      P.startP00(v, S, ctx);
+      P.startP00(v, S, S.ctx);
       v.gnc.autopilot = 'OFF';
-      ctx.message(`Ascent stage free${hadP12 ? ' — P12 cancelled' : ''}: throttle up (Z) for a manual liftoff, or PRO (Space) to load P12 guided ascent`, 'info', 7);
+      S.ctx.message(`Ascent stage free${hadP12 ? ' — P12 cancelled' : ''}: throttle up (Z) for a manual liftoff, or PRO (Space) to load P12 guided ascent`, 'info', 7);
     } else {
       // ABORT STAGE in flight: P71 ascent guidance with the APS already lit by the sim
-      P.startAscent(v, S, ctx, 'P71');
+      P.startAscent(v, S, S.ctx, 'P71');
       S.ascent.proAck = true;
     }
   });
@@ -242,14 +261,14 @@ export function createGNC(game) {
         operatorError(v, S.agc, game, 'engine not ignited');
         return;
       }
-      P.startP66(v, S, ctx, false);
-    } else if (p === 'P66') P.startP67(v, S, ctx);
+      P.startP66(v, S, S.ctx, false);
+    } else if (p === 'P66') P.startP67(v, S, S.ctx);
     else if (p === 'P67' || p === 'P00' || p === 'P47') {
       if (v.tel.altitude > MISSION.highGate.altitude + 700) {
         operatorError(v, S.agc, game, 'P66 needs to be below High Gate');
         return;
       }
-      P.startP66(v, S, ctx, false);
+      P.startP66(v, S, S.ctx, false);
     } else operatorError(v, S.agc, game, `no throttle mode change in ${p}`);
   }
 
@@ -278,27 +297,27 @@ export function createGNC(game) {
       operatorError(v, S.agc, game, `${prog || 'program'} not available now${why ? ` — ${why}` : ''}`);
       return;
     }
-    if (prog === 'P00') P.startP00(v, S, ctx);
+    if (prog === 'P00') P.startP00(v, S, S.ctx);
     else if (prog === 'P47') {
       S.agc.dv.set(0, 0, 0);
       S.p47Idle = 0;
       g.throttleMode = 'MANUAL';
-      P.setProgram(v, S, ctx, 'P47');
-    } else if (prog === 'P40') P.startDOI(v, S, ctx);
+      P.setProgram(v, S, S.ctx, 'P47');
+    } else if (prog === 'P40') P.startDOI(v, S, S.ctx);
     else if (prog === 'P63') {
       const tig = S.pdi.tig;
       S.pdi = null;
-      P.startP63(v, S, ctx, tig);
+      P.startP63(v, S, S.ctx, tig);
       S.descent.fromDOI = true;
-    } else if (prog === 'P64') P.startP64(v, S, ctx, true);
-    else if (prog === 'P66') P.startP66(v, S, ctx, false);
-    else if (prog === 'P67') P.startP67(v, S, ctx);
-    else if (prog === 'P68') P.startP68(v, S, ctx);
-    else if (prog === 'P12') P.startAscent(v, S, ctx, 'P12', game.time.met + 12);
-    else if (prog === 'P70') P.startAscent(v, S, ctx, 'P70');
+    } else if (prog === 'P64') P.startP64(v, S, S.ctx, true);
+    else if (prog === 'P66') P.startP66(v, S, S.ctx, false);
+    else if (prog === 'P67') P.startP67(v, S, S.ctx);
+    else if (prog === 'P68') P.startP68(v, S, S.ctx);
+    else if (prog === 'P12') P.startAscent(v, S, S.ctx, 'P12', game.time.met + 12);
+    else if (prog === 'P70') P.startAscent(v, S, S.ctx, 'P70');
     else if (prog === 'P71') {
       if (!v.staged) game.events.emit('action', { name: 'STAGE' });
-      if (g.program !== 'P71') P.startAscent(v, S, ctx, 'P71');
+      if (g.program !== 'P71') P.startAscent(v, S, S.ctx, 'P71');
     }
   }
 
@@ -314,7 +333,7 @@ export function createGNC(game) {
     S.latchWarned = false;
     if (S.descent && (p === 'P63' || p === 'P64' || p === 'P66')) {
       S.descent.engineStop = true;
-      if (p !== 'P66') P.startP67(v, S, ctx);
+      if (p !== 'P66') P.startP67(v, S, S.ctx);
     }
     if (S.ascent && !S.ascent.cutoff && S.ascent.ignited) {
       S.ascent.cutoff = true;
@@ -329,7 +348,7 @@ export function createGNC(game) {
     if (g.autopilot === 'OFF') return;
     if (g.autopilot === 'GUIDANCE') {
       if (g.program === 'P64') {
-        P.startP66(v, S, ctx, false);
+        P.startP66(v, S, S.ctx, false);
         ctx.message('P66 — manual attitude: the hand controller took over from P64', 'info');
         return;
       }
@@ -365,7 +384,7 @@ export function createGNC(game) {
     if (stickOn) stickOverride(v, S);
 
     // ---- program / guidance
-    P.runProgram(v, S, ctx, h);
+    P.runProgram(v, S, S.ctx, h);
     P.stepGuid(S, h);
 
     // ---- main engine
@@ -449,7 +468,7 @@ export function createGNC(game) {
       const csm = game.vessels.CSM;
       if (csm && csm.pos.distanceTo(v.pos) > P.DOI.minSep && !P.doiUnavailable(v, S, game) && (g.program === 'P00' || g.program === 'P47')) {
         S.sepHint = false;
-        ctx.message(`Eagle is ${P.DOI.minSep} m clear of Columbia. PRO (Space) loads P40 — the DOI burn that starts the descent to Tranquility Base`, 'info', 9);
+        ctx.message(`${v.name} is ${fmtLen(game, P.DOI.minSep, 0)} clear of ${csm.name}. PRO (Space) loads P40 — the DOI burn that starts the descent to Tranquility Base`, 'info', 9);
       }
     }
 

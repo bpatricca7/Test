@@ -18,6 +18,7 @@ import { FACES, faceDir, dirToFaceST } from './cubeSphere.js';
 import { chunkJob, chunkSizeM, BOULDER_LEVELS } from './chunkGen.js';
 import { createLunarUniforms, createTerrainMaterial, updateBandOffsets } from './terrainMaterial.js';
 import { createRocks } from './rocks.js';
+import { createRockShadow } from './rockShadow.js';
 import ChunkWorker from './chunk.worker.js?worker&inline';
 
 const R = MOON.radius;
@@ -25,9 +26,9 @@ const H_MIN_GLOBAL = -11000; // below the deepest basin floor (horizon-culling o
 const IN_FLIGHT = 4; // jobs queued per worker
 
 const QUALITY = {
-  low: { N: 25, maxLevel: 16, K: 2.2, Kdeep: 1.8, workers: 1, bands: 2, uploads: 3, budget: 1000, limb: 1 },
-  medium: { N: 33, maxLevel: 16, K: 2.8, Kdeep: 2.1, workers: 2, bands: 3, uploads: 4, budget: 1800, limb: 1.8 },
-  high: { N: 33, maxLevel: 17, K: 3.6, Kdeep: 2.4, workers: 3, bands: 3, uploads: 6, budget: 3200, limb: 2.5 },
+  low: { N: 25, maxLevel: 16, K: 2.2, Kdeep: 1.8, workers: 1, bands: 2, uploads: 3, budget: 1000, limb: 1, rockShadow: 1024 },
+  medium: { N: 33, maxLevel: 16, K: 2.8, Kdeep: 2.1, workers: 2, bands: 3, uploads: 4, budget: 1800, limb: 1.8, rockShadow: 2048 },
+  high: { N: 33, maxLevel: 17, K: 3.6, Kdeep: 2.4, workers: 3, bands: 3, uploads: 6, budget: 3200, limb: 2.5, rockShadow: 2048 },
 };
 
 const smoothstep = (a, b, x) => {
@@ -123,12 +124,14 @@ export function createTerrain(ctx) {
   const finestSpacing = chunkSizeM(maxLevel) / (N - 1);
 
   const lunar = createLunarUniforms(ctx);
-  const material = createTerrainMaterial(ctx, lunar, { bands: Q.bands, meshK: 4.5 / (Q.Kdeep * (N - 1)), meshKFar: 4.5 / (Q.K * (N - 1)), minMeshD: 6 * finestSpacing });
+  // boulder cast shadows (near cascade ~80 m across the Sun, far ~700 m)
+  const rockShadow = createRockShadow(ctx, { size: Q.rockShadow, halves: [40, 350] });
+  const material = createTerrainMaterial(ctx, lunar, { bands: Q.bands, meshK: 4.5 / (Q.Kdeep * (N - 1)), meshKFar: 4.5 / (Q.K * (N - 1)), minMeshD: 6 * finestSpacing, rockShadow });
   const group = new THREE.Group();
   group.name = 'terrain';
   group.matrixAutoUpdate = false; // stays at the render origin; children carry their own matrices
   ctx.scene.add(group);
-  const rocks = createRocks(ctx, lunar);
+  const rocks = createRocks(ctx, lunar, rockShadow);
   const index = buildIndex(N);
 
   const nodes = new Map();
@@ -636,6 +639,7 @@ export function createTerrain(ctx) {
       let bsig = boulderChunks.length;
       for (const c of boulderChunks) bsig = (Math.imul(bsig ^ c.id, 0x9e3779b1) + c.id) | 0;
       rocks.update(frame, boulderChunks, bsig);
+      rockShadow.update(frame, rocks.anchor, rocks.count, rocks.version);
 
       const ready = roots.every((r) => r.state === READY) && pendingVisible === 0 && results.length === 0;
       readyFrames = ready ? readyFrames + 1 : 0;
@@ -651,7 +655,7 @@ export function createTerrain(ctx) {
       return (el > 45000 && results.length === 0) || el > 120000;
     },
     /** Debug handles (materials, rocks). */
-    debug: { material, rocks, lunar, nodes },
+    debug: { material, rocks, rockShadow, lunar, nodes },
     /** Debug statistics. */
     stats() {
       let working = 0;

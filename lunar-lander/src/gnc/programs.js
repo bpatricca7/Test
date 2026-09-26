@@ -7,7 +7,13 @@
 //                       landing-radar lock and delta-h incorporation, optional 1201/1202 alarms.
 //   P64 approach        pitch-over, guidance to Low Gate, LPD angle (V06 N64) and redesignation.
 //   P66 rate of descent automatic throttle holding vessel.gnc.rodCmd (ROD switch +-1 ft/s), pilot
-//                       flies attitude (or, hands-off, the LGC nulls the horizontal velocity).
+//                       flies attitude. P66 AUTO (hands-off: at Low Gate from P64, a scenario
+//                       starting in P66, PRO, or an LM the player leaves in P66/P67) is a P65-like
+//                       automatic landing: braking-profile approach to the target, glide path
+//                       down to a 15-m hover gate, let-down at 3 then 1.5 ft/s, ENGINE STOP
+//                       with the pads just above the surface (see P66AUTO).
+//   Crew of a vessel the player is not flying answer a flashing V99 themselves after
+//   CREW_PRO_DELAY s; their messages are prefixed with the vessel name (gnc.js).
 //   P67 manual          throttle from the TTCA lever.
 //   P68 landing confirmation (V06 N43).
 //   P12 powered ascent  (PRO at V99 N74) staging, APS ignition, 10-s vertical rise, pitch-over,
@@ -31,6 +37,7 @@ import { controlMassProps } from './dap.js';
 import { cgPos } from './attitude.js';
 import { programAlarm, compBurst, operatorError } from './agc.js';
 import { landingCallouts } from './callouts.js';
+import { fmtSpeed, fmtLen, fmtOrbit } from '../sim/units.js';
 
 const D2R = Math.PI / 180;
 const R2D = 180 / Math.PI;
@@ -75,6 +82,35 @@ const _q = new THREE.Quaternion();
 const _cg = new THREE.Vector3();
 
 // ------------------------------------------------------------------ helpers
+
+/** Seconds the crew of a vessel the player is not flying take to answer a flashing V99. */
+export const CREW_PRO_DELAY = 2;
+
+/** Player's units are metric (same rule as sim/units.js; the default is imperial). */
+const metric = (game) => (game?.settings?.units ?? 'imperial') === 'metric';
+
+/** The player is not flying this vessel (its crew answer the DSKY themselves). */
+const away = (v, ctx) => ctx.game.active !== v;
+
+function crewOf(v) {
+  return v.type === 'LM' ? 'Armstrong and Aldrin' : 'Collins';
+}
+
+/**
+ * The crew of a vessel the player is not flying answer a pending V99 "please perform" request
+ * themselves, CREW_PRO_DELAY seconds after it starts flashing (or after the player left).
+ * Returns true on the substep they press PRO.
+ */
+function crewAnswers(v, S, ctx, pending, h) {
+  if (!pending || !away(v, ctx)) {
+    S.crewPro = 0;
+    return false;
+  }
+  S.crewPro = (S.crewPro || 0) + h;
+  if (S.crewPro < CREW_PRO_DELAY) return false;
+  S.crewPro = 0;
+  return true;
+}
 
 function setDisp(S, verb, noun, flash = false, blank = false) {
   const d = S.disp;
@@ -221,9 +257,10 @@ function radarCycle(v, S, ctx) {
   if (d.radarGood && !d.radarLock) {
     d.radarLock = true;
     d.lockTime = met;
-    const dh = Math.round(d.deltaH / FT / 100) * 100;
-    ctx.say(`Altitude light's out. Delta-H is ${dh < 0 ? 'minus' : 'plus'} ${Math.abs(dh).toLocaleString('en-US')}.`, 'LMP', 1.5);
-    ctx.message(`Landing radar lock — delta-H ${Math.round(d.deltaH / FT)} ft`, 'good');
+    const m = metric(ctx.game);
+    const dh = m ? Math.round(d.deltaH / 10) * 10 : Math.round(d.deltaH / FT / 100) * 100;
+    ctx.say(`Altitude light's out. Delta-H is ${dh < 0 ? 'minus' : 'plus'} ${Math.abs(dh).toLocaleString('en-US')}${m ? ' metres' : ''}.`, 'LMP', 1.5);
+    ctx.message(`Landing radar lock — delta-H ${fmtLen(ctx.game, d.deltaH, 0)}`, 'good');
   }
   d.radarVelGood = d.radarLock && d.radarGood && met - d.lockTime > DESCENT.radarVelDelay;
   if (d.radarLock && met - d.lockTime > DESCENT.incorporateDelay) {
@@ -305,9 +342,12 @@ export function startP64(v, S, ctx, fromP63) {
   if (fromP63) {
     ctx.say('P64.', 'LMP', 0.2);
     ctx.message('P64 — approach phase: pitch-over. LPD angle on the DSKY (V06 N64); redesignate with the hand controller', 'info');
-    const altFt = Math.round(v.tel.altitude / FT / 100) * 100;
     ctx.say("Eagle, Houston. You're go for landing. Over.", 'CAPCOM', 12);
-    ctx.say(`Roger. Understand. Go for landing. ${Math.max(1000, altFt - 1000).toLocaleString('en-US')} feet.`, 'LMP', 17);
+    // ~17 s later, about 1,000 ft lower
+    const alt = metric(ctx.game)
+      ? `${Math.max(300, Math.round(v.tel.altitude / 100) * 100 - 300).toLocaleString('en-US')} metres`
+      : `${Math.max(1000, Math.round(v.tel.altitude / FT / 100) * 100 - 1000).toLocaleString('en-US')} feet`;
+    ctx.say(`Roger. Understand. Go for landing. ${alt}.`, 'LMP', 17);
   }
 }
 
@@ -330,6 +370,8 @@ export function startP66(v, S, ctx, auto) {
   d.rodAuto = !!auto;
   d.rodTimer = 1;
   d.p66Fwd = null;
+  d.p66Capture = false;
+  d.p66Timer = 0;
   d.engineStop = false;
   d.prevVs = null;
   v.gnc.rodCmd = v.tel.vSpeed;
@@ -341,7 +383,7 @@ export function startP66(v, S, ctx, auto) {
   const was = v.gnc.program;
   setProgram(v, S, ctx, 'P66');
   if (was !== 'P66') {
-    ctx.message(auto ? 'P66 — Low Gate: the LGC is holding the descent rate and nulling drift. ROD clicks or the hand controller take over' : 'P66 — rate of descent: throttle automatic, ROD switch ±1 ft/s, fly attitude by hand (PRO: hand it to the LGC)', 'info', 7);
+    ctx.message(auto ? 'P66 — Low Gate: the LGC is holding the descent rate and nulling drift. ROD clicks or the hand controller take over' : `P66 — rate of descent: throttle automatic, ROD switch ±${fmtSpeed(ctx.game, FT, 1)}, fly attitude by hand (PRO: hand it to the LGC)`, 'info', 7);
   }
 }
 
@@ -576,12 +618,17 @@ function p63(v, S, ctx, h) {
       d.said.go = true;
       ctx.say("Eagle, Houston. If you read, you're go for powered descent. Over.", 'CAPCOM', 0);
     }
-    if (game.active !== v && dt > -3) d.proAck = true; // the crew answers the V99 themselves
+    // the crew answers the V99 themselves while the player flies Columbia
+    if (crewAnswers(v, S, ctx, dt >= -5 && !d.proAck, h)) {
+      d.proAck = true;
+      if (met >= d.tig) d.lateIgnAt = met + 2;
+      ctx.message(`V99 N62 — ${crewOf(v)} pressed PRO: ${met >= d.tig ? 'late ignition after 2 s of ullage' : 'DPS ignition enabled'}`, 'good');
+    }
     if (dt < -35) setDisp(S, '06', '62');
     else if (dt < -30) setDisp(S, '06', '62', false, true); // Average-G start: display blanks for 5 s
     else if (dt < -5 || (d.proAck && dt < 0)) setDisp(S, '06', '62');
     else setDisp(S, '99', '62', !d.proAck);
-    if (dt >= -5 && !d.proAck && !d.said.v99) {
+    if (dt >= -5 && !d.proAck && !d.said.v99 && !away(v, ctx)) {
       d.said.v99 = true;
       ctx.message('V99 N62 flashing — press PRO (Space) to enable DPS ignition', 'warn', 6);
     }
@@ -591,7 +638,7 @@ function p63(v, S, ctx, h) {
       else if (!d.proAck && !d.noIgnMsg) {
         d.noIgnMsg = true;
         S.ullage = false;
-        ctx.message('No ignition — the V99 "please perform engine on" request was not answered. Press PRO (Space) to ignite late.', 'alarm', 8);
+        ctx.message(away(v, ctx) ? `No ignition at TIG — ${crewOf(v)} are answering the V99 for a late ignition` : 'No ignition — the V99 "please perform engine on" request was not answered. Press PRO (Space) to ignite late.', 'alarm', 8);
       }
     }
     if (!d.ignited) return;
@@ -687,19 +734,23 @@ function p66(v, S, ctx, h) {
   // vertical acceleration estimate for the lag compensation
   if (d.prevVs != null && h > 0) d.accUp += ((t.vSpeed - d.prevVs) / h - d.accUp) * Math.min(1, h / 0.2);
   d.prevVs = t.vSpeed;
-  // hands-off: the LGC steps the ROD like a crew would (1 ft/s clicks)
-  if (d.rodAuto) {
+  const guided = v.gnc.autopilot === 'GUIDANCE';
+  const handsOff = d.rodAuto && guided;
+  if (guided) {
+    // LGC attitude (and, hands-off, the descent rate): P65-like automatic approach and landing
+    d.p66Timer -= h;
+    if (d.p66Timer <= 0) {
+      d.p66Timer += P66AUTO.cycle;
+      if (d.p66Timer <= 0) d.p66Timer = P66AUTO.cycle;
+      p66Auto(v, S, handsOff, P66AUTO.cycle);
+    }
+  } else if (d.rodAuto) {
+    // the pilot flies attitude; the LGC steps the ROD like a crew would (1 ft/s clicks)
     d.rodTimer -= h;
     if (d.rodTimer <= 0) {
       d.rodTimer = 0.45;
       const alt = Number.isFinite(t.radarAltitude) ? t.radarAltitude : t.gearAltitude;
-      let want = -Math.max(0.5, Math.min(5, 0.09 * alt));
-      // hands-off (P65-like): hold ~15 m until over the target and slow, then let down
-      if (v.gnc.autopilot === 'GUIDANCE' && alt < 40) {
-        const u = up(v, _a);
-        const vh = Math.sqrt(Math.max(0, v.vel.lengthSq() - v.vel.dot(u) ** 2));
-        if ((d.p66Dist ?? 0) > 8 || vh > 1.0) want = Math.max(want, -Math.max(0, (alt - 15) * 0.12));
-      }
+      const want = -Math.max(0.5, Math.min(5, 0.09 * alt));
       const diff = want - v.gnc.rodCmd;
       if (Math.abs(diff) > FT * 0.6) v.gnc.rodCmd += Math.sign(diff) * FT;
     }
@@ -711,52 +762,110 @@ function p66(v, S, ctx, h) {
   const r = v.pos.length();
   let thr = G.rodThrottle({ mass: mp.mass, g: MOON.mu / (r * r), vUp: t.vSpeed, hSpeed: t.hSpeed, r, accUp: d.accUp, cosTilt: bUp.dot(u), vCmd: v.gnc.rodCmd, maxThrust: e.maxThrust });
   thr = Math.max(e.minThrottle, Math.min(e.maxThrottle, thr));
-  // LUNAR CONTACT (probe) -> ENGINE STOP. Hands-off (the LGC and the LMP fly), the crew pushes
-  // ENGINE STOP about a second after the contact light, as from Apollo 12 on ("Contact light.
-  // Okay. Engine stop."): the LM drops the last metre at 1-2 m/s. When the pilot flies P66 the
-  // button is his (X); if he does not push it, the stop comes at footpad contact.
+  // LUNAR CONTACT (probe) -> ENGINE STOP. The 1.73-m probes touch first; a DPS cut right at the
+  // contact light drops the LM the full probe length (~2.4 m/s at the pads). Hands-off, the LGC
+  // keeps letting down at 1.5 ft/s and the crew pushes ENGINE STOP with the pads about half a
+  // foot up ("Contact light. Okay. Engine stop."), a 0.5-0.9 m/s touchdown. When the pilot flies
+  // P66 the button is his (X); if he does not push it, the stop comes at footpad contact.
   if (v.gear?.probeContact && d.contactTime == null) d.contactTime = met;
   const padDown = v.gear?.pads?.some((pd) => pd.contact);
-  const handsOff = d.rodAuto && v.gnc.autopilot === 'GUIDANCE';
-  if (d.contactTime != null && !d.engineStop && (padDown || (handsOff && met - d.contactTime >= DESCENT.engineStopDelay) || met - d.contactTime >= DESCENT.engineStopMax)) {
+  const gearAlt = Number.isFinite(t.gearAltitude) ? t.gearAltitude : Infinity;
+  if (d.contactTime != null && !d.engineStop && (padDown || (handsOff && gearAlt < P66AUTO.stopAlt) || met - d.contactTime >= DESCENT.engineStopMax)) {
     d.engineStop = true;
     if (handsOff) ctx.say('Okay. Engine stop.', 'CDR', 0);
     ctx.message('Engine stop — ENGINE STOP pushed, DPS off', 'good');
   }
   S.throttle = d.engineStop ? 0 : thr;
-  // hands-off attitude: null horizontal velocity while drifting to the target (P65-like)
-  if (v.gnc.autopilot === 'GUIDANCE') {
-    d.p66Timer -= h;
-    if (d.p66Timer <= 0) {
-      d.p66Timer = 0.5;
-      p66Attitude(v, S);
-    }
-  }
   setDisp(S, '06', '60');
   landingCallouts(v, S.callouts, ctx.game, null);
   if (v.landed) startP68(v, S, ctx);
 }
 
 /**
- * P66 hands-off attitude (P65-like): fly the horizontal velocity along a braking-feasible
- * profile toward the target and null it there. Tilt limited to 15 deg (5 deg in the last 8 m).
+ * Hands-off P66 AUTO (P65-like automatic landing) tuning.
+ * Horizontal: the commanded velocity points at the target with a braking-distance profile
+ * (constant deceleration aBrake far out, blending C1-continuously into v = kPos * d near the
+ * target), a velocity loop with attitude-lag lead, and an altitude-dependent tilt limit.
+ * Vertical: a glide path down to a hover gate over the target, then a straight let-down at
+ * 3 ft/s, 1.5 ft/s for the last metres, ENGINE STOP with the pads just above the surface.
  */
-function p66Attitude(v, S) {
+export const P66AUTO = {
+  cycle: 0.1, // s, guidance cycle
+  vMax: 12, // m/s, fastest approach speed commanded
+  aBrake: 0.15, // m/s^2, approach-profile deceleration (~5 deg of tilt)
+  kPos: 0.12, // 1/s, terminal position gain (critically damped with kVel)
+  kVel: 0.5, // 1/s, horizontal velocity loop gain
+  lead: 1.0, // s, attitude/thrust lag compensation of the velocity loop
+  tiltMax: 12, // deg, tilt limit above 40 m
+  tiltBrake: 16, // deg, above 60 m while braking an approach that is faster than the profile
+  tiltGate: 8, // deg at the hover gate (15 m)
+  tiltFinal: 3, // deg below finalAlt
+  slew: 6, // deg/s, max attitude command slew
+  gateAlt: 15, // m, hover gate height over the target
+  glide: 0.3, // glide-path slope to the gate (m of height per m of range, ~17 deg)
+  glideTau: 5, // s, glide-path height error time constant
+  maxSink: 5, // m/s
+  vDescent: 3 * FT, // m/s, let-down from the gate
+  vFinal: 1.5 * FT, // m/s, below finalAlt
+  finalAlt: 3, // m (footpad height)
+  capture: 2.5, // m: over the target (with < 0.4 m/s drift): let down
+  release: 5, // m: drifted off: hold height (above finalAlt) until back over the target
+  rodAccel: 1.0, // m/s^2, max change rate of the descent-rate command
+  stopAlt: 0.15, // m, footpad height for ENGINE STOP after the contact light
+};
+
+function lerpClamp(x, x0, x1, y0, y1) {
+  const k = Math.max(0, Math.min(1, (x - x0) / (x1 - x0)));
+  return y0 + (y1 - y0) * k;
+}
+
+/** Approach speed profile toward the target (m/s) at horizontal distance d (m). */
+export function p66ApproachSpeed(d, cfg = P66AUTO) {
+  const d1 = cfg.aBrake / (cfg.kPos * cfg.kPos); // linear region (decel k^2 d <= aBrake)
+  if (d <= d1) return Math.min(cfg.vMax, cfg.kPos * d);
+  const v1 = cfg.kPos * d1;
+  return Math.min(cfg.vMax, Math.sqrt(v1 * v1 + 2 * cfg.aBrake * (d - d1)));
+}
+
+/**
+ * One P66 AUTO guidance cycle: attitude (thrust direction) to fly the horizontal velocity toward
+ * the target and, hands-off, the descent-rate command (vessel.gnc.rodCmd).
+ */
+function p66Auto(v, S, handsOff, dt) {
   const d = S.descent;
+  const cfg = P66AUTO;
+  const t = v.tel;
   const u = up(v, _a);
   const r = v.pos.length();
   const g = MOON.mu / (r * r);
-  const alt = v.tel.gearAltitude ?? v.tel.altitude;
-  const maxA = g * Math.tan((alt < 8 ? 5 : 15) * D2R);
+  // height: radar (gear) altitude, but never more than the height above the target (craters)
+  const gearAlt = Number.isFinite(t.gearAltitude) ? t.gearAltitude : t.altitude;
+  const alt = Math.min(gearAlt, r - (d.F.siteRadius ?? r - gearAlt));
+  // horizontal geometry
   const site = _b.copy(d.F.origin).sub(v.pos);
-  site.addScaledVector(u, -site.dot(u)); // horizontal vector to the target
+  site.addScaledVector(u, -site.dot(u));
   const dist = site.length();
-  const speed = Math.min(12, 0.15 * dist, Math.sqrt(2 * 0.5 * maxA * dist));
-  const vCmd = site.multiplyScalar(dist > 0.05 ? speed / dist : 0);
+  const eDir = dist > 1e-3 ? site.multiplyScalar(1 / dist) : site.set(0, 0, 0);
   const vh = _c.copy(v.vel).addScaledVector(u, -v.vel.dot(u));
-  const aH = vCmd.sub(vh).multiplyScalar(1 / 2.5);
+  const vhMag = vh.length();
+  const closing = vh.dot(eDir);
+  // actual horizontal acceleration of the thrust now (lead for the attitude / throttle lag)
+  const e = v.mainEngine;
+  const mass = controlMassProps(v).mass;
+  const bUp = _vf.set(0, 1, 0).applyQuaternion(v.quat);
+  const aT = ((e.firing ? e.throttle : 0) * e.maxThrust) / Math.max(1, mass);
+  const aNow = _g.copy(bUp).addScaledVector(u, -bUp.dot(u)).multiplyScalar(aT);
+  // commanded velocity and acceleration
+  const vAlong = p66ApproachSpeed(dist, cfg);
+  const vCmd = _gf.copy(eDir).multiplyScalar(vAlong);
+  const aH = vCmd.sub(vh).addScaledVector(aNow, -cfg.lead).multiplyScalar(cfg.kVel);
+  // tilt limit: gentle near the ground, more to brake a fast approach from Low Gate
+  let tilt = alt >= 40 ? cfg.tiltMax : alt >= cfg.gateAlt ? lerpClamp(alt, cfg.gateAlt, 40, cfg.tiltGate, cfg.tiltMax) : lerpClamp(alt, cfg.finalAlt, cfg.gateAlt, cfg.tiltFinal, cfg.tiltGate);
+  if (alt > 60 && closing > 1.1 * vAlong && aH.dot(vh) < 0) tilt = cfg.tiltBrake;
+  else if (alt > 40 && closing > 1.1 * vAlong && aH.dot(vh) < 0) tilt = Math.max(tilt, lerpClamp(alt, 40, 60, cfg.tiltMax, cfg.tiltBrake));
+  const maxA = g * Math.tan(tilt * D2R);
   if (aH.length() > maxA) aH.setLength(maxA);
-  const dir = aH.addScaledVector(u, g);
+  const dir = aH.addScaledVector(u, g).normalize();
   // keep the heading the LM had at P66 entry (P64 flies yawed to put the site on the LPD
   // line; swinging back to the approach track at Low Gate would be a pointless yaw)
   if (!d.p66Fwd) {
@@ -767,8 +876,25 @@ function p66Attitude(v, S) {
   }
   quatFromUpForward(dir, _rf.copy(d.p66Fwd).add(u), _q);
   setGuid(S, _q, 5 * D2R);
-  S.guid.step = 4 * D2R;
+  // the smoothed guidance attitude reaches each new command within one cycle (slew-limited)
+  const gd = S.guid;
+  gd.step = Math.min(cfg.slew * D2R, Math.max(0.2 * D2R, gd.quat.angleTo(gd.cmd) / dt));
   d.p66Dist = dist;
+  if (!handsOff) return;
+  // ---- descent rate (hands-off)
+  if (!d.p66Capture && dist < cfg.capture && vhMag < 0.4) d.p66Capture = true;
+  else if (d.p66Capture && alt > cfg.finalAlt && (dist > cfg.release || vhMag > 0.8)) d.p66Capture = false;
+  let want;
+  if (d.p66Capture || alt <= cfg.finalAlt) {
+    want = -lerpClamp(alt, cfg.finalAlt, 8, cfg.vFinal, cfg.vDescent);
+  } else {
+    const hRef = cfg.gateAlt + cfg.glide * dist;
+    want = -cfg.glide * Math.max(0, closing) + (hRef - alt) / cfg.glideTau;
+    want = Math.max(want, -cfg.maxSink, -(alt - cfg.gateAlt) / cfg.glideTau);
+    want = Math.min(0, want); // never climb; hold the gate height until over the target
+  }
+  const step = cfg.rodAccel * dt;
+  v.gnc.rodCmd += Math.max(-step, Math.min(step, want - v.gnc.rodCmd));
 }
 
 /** Landing-radar data-good status once per second in P66 / P67. */
@@ -808,10 +934,13 @@ function ascent(v, S, ctx, h) {
   if (!a.ignited) {
     const dt = met - a.tig;
     S.throttle = 0;
-    if (game.active !== v && dt > -3) a.proAck = true;
+    if (crewAnswers(v, S, ctx, dt >= -5 && !a.proAck, h)) {
+      a.proAck = true;
+      ctx.message(`V99 N74 — ${crewOf(v)} pressed PRO: ascent engine ${dt >= 0 ? 'ignition' : 'ON enabled'}`, 'good');
+    }
     if (dt < -5 || (a.proAck && dt < 0)) setDisp(S, '06', '76');
     else setDisp(S, '99', '74', !a.proAck);
-    if (dt >= -5 && !a.proAck && !a.said) {
+    if (dt >= -5 && !a.proAck && !a.said && !away(v, ctx)) {
       a.said = true;
       ctx.message('V99 N74 flashing — press PRO (Space) for ascent engine ignition', 'warn', 6);
     }
@@ -821,10 +950,10 @@ function ascent(v, S, ctx, h) {
       a.ignTime = met;
       if (a.kind !== 'P70' && !v.staged) game.events.emit('action', { name: 'STAGE' });
       ctx.say(a.kind === 'P12' ? '9, 8, 7, 6, 5, abort stage, engine arm, ascent, proceed.' : 'Staging.', 'LMP', 0);
-      if (a.kind === 'P12') ctx.say("Beautiful. 26, 36 feet per second up. Be advised of the pitchover.", 'LMP', 6);
+      if (a.kind === 'P12') ctx.say(`Beautiful. ${metric(game) ? '8, 11 metres' : '26, 36 feet'} per second up. Be advised of the pitchover.`, 'LMP', 6);
     } else if (dt >= 0 && !a.noIgnMsg) {
       a.noIgnMsg = true;
-      ctx.message('No ignition — V99 not answered. Press PRO (Space) to ignite.', 'alarm', 8);
+      ctx.message(away(v, ctx) ? `No ignition at TIG — ${crewOf(v)} are answering the V99` : 'No ignition — V99 not answered. Press PRO (Space) to ignite.', 'alarm', 8);
     }
     if (!a.ignited) {
       // hold the pre-ignition attitude: upright, windows downrange
@@ -871,7 +1000,8 @@ function ascent(v, S, ctx, h) {
       a.cutoff = true;
       a.cutTime = met;
       S.throttle = 0;
-      ctx.message(`Insertion — engine cut-off. Orbit ${(v.tel.apoapsisAlt / 1000).toFixed(1)} × ${(v.tel.periapsisAlt / 1000).toFixed(1)} km`, 'good', 6);
+      v.ctrl.throttle = 0; // the lever too: nothing may relight the APS after insertion
+      ctx.message(`Insertion — engine cut-off. Orbit ${fmtOrbit(game, v.tel.apoapsisAlt, v.tel.periapsisAlt)}`, 'good', 6);
       ctx.say('Shutdown. We are in orbit.', 'LMP', 0.5);
       ctx.say('Roger, Eagle. Houston. We see a good orbit.', 'CAPCOM', 8);
     }
@@ -880,6 +1010,7 @@ function ascent(v, S, ctx, h) {
     S.throttle = 0;
     setDisp(S, '06', '94');
     if (met - a.cutTime > 5) {
+      v.ctrl.throttle = 0; // P00 hands the engine to the manual lever: keep it at zero
       startP00(v, S, ctx);
       v.gnc.autopilot = 'LOCAL_VERTICAL';
     }
@@ -908,6 +1039,14 @@ function mmss(t) {
   return h > 0 ? `${h} h ${String(m).padStart(2, '0')} min` : `${m}:${ss}`;
 }
 
+/** A round height for messages: "49,000 ft" / "15 km" (3 significant digits at most). */
+function roundedHeight(game, m) {
+  if (metric(game)) return m >= 1000 ? `${+(m / 1000).toPrecision(3)} km` : fmtLen(game, m, 0);
+  const ft = m / FT;
+  const step = ft >= 10000 ? 1000 : ft >= 1000 ? 100 : 10;
+  return fmtLen(game, (Math.round(ft / step) * step) * FT, 0);
+}
+
 function getStr(met) {
   const h = Math.floor(met / 3600);
   const m = Math.floor((met % 3600) / 60);
@@ -931,7 +1070,7 @@ export function doiUnavailable(v, S, game) {
   if (!(v.tel.periapsisAlt > 25000)) return 'DOI is flown from the 111-km orbit (perilune already low)';
   if (!(v.propellant.main > 500)) return 'descent propellant too low';
   const csm = game.vessels.CSM;
-  if (csm && !csm.crashed && csm.pos.distanceTo(v.pos) < DOI.minSep) return `too close to Columbia (${csm.pos.distanceTo(v.pos).toFixed(0)} m) — separate at least ${DOI.minSep} m first`;
+  if (csm && !csm.crashed && csm.pos.distanceTo(v.pos) < DOI.minSep) return `too close to ${csm.name || 'Columbia'} (${fmtLen(game, csm.pos.distanceTo(v.pos), 0)}) — separate at least ${fmtLen(game, DOI.minSep, 0)} first`;
   return null;
 }
 
@@ -976,7 +1115,7 @@ export function startDOI(v, S, ctx) {
   v.gnc.throttleMode = 'AUTO';
   setProgram(v, S, ctx, 'P40');
   ctx.message(
-    `P40 DOI loaded — ${S.burn.dvMag.toFixed(1)} m/s retrograde (perilune 15 km over the PDI point). TIG GET ${getStr(S.burn.tig)}, in ${mmss(c.t)}: time-warp is fine, PRO (Space) at the flashing V99`,
+    `P40 DOI loaded — ${fmtSpeed(game, S.burn.dvMag, 1)} retrograde (perilune ${roundedHeight(game, MISSION.doiPerilune)} over the PDI point). TIG GET ${getStr(S.burn.tig)}, in ${mmss(c.t)}: time-warp is fine, ${away(v, ctx) ? `${crewOf(v)} answer the V99` : 'PRO (Space) at the flashing V99'}`,
     'good',
     9,
   );
@@ -1034,10 +1173,14 @@ function p40(v, S, ctx, h) {
         burnAttitude(v, S, b.vgo);
       }
     }
-    if (game.active !== v && dt > -3) b.proAck = true;
+    if (crewAnswers(v, S, ctx, dt >= -5 && !b.proAck, h)) {
+      b.proAck = true;
+      if (met >= b.tig) b.lateIgnAt = met + 2;
+      ctx.message(`V99 N40 — ${crewOf(v)} pressed PRO: ${met >= b.tig ? 'late DOI ignition after 2 s of ullage' : 'DPS enabled for DOI'}`, 'good');
+    }
     if (dt < -5 || (b.proAck && dt < 0)) setDisp(S, '06', '40');
     else setDisp(S, '99', '40', !b.proAck);
-    if (dt >= -5 && !b.proAck && !b.said.v99) {
+    if (dt >= -5 && !b.proAck && !b.said.v99 && !away(v, ctx)) {
       b.said.v99 = true;
       ctx.message('V99 N40 flashing — press PRO (Space) to enable the DPS for DOI', 'warn', 6);
     }
@@ -1047,7 +1190,7 @@ function p40(v, S, ctx, h) {
       S.ullage = false;
       if (!b.said.latched) {
         b.said.latched = true;
-        ctx.message('No DOI ignition — ENGINE STOP is latched (X again resets it)', 'alarm', 6);
+        ctx.message(`No DOI ignition — ENGINE STOP is latched (${away(v, ctx) ? `switch to ${v.name}, then ` : ''}X again resets it)`, 'alarm', 6);
       }
     } else if (dt >= 0) {
       if (b.proAck && (b.lateIgnAt == null || met >= b.lateIgnAt)) {
@@ -1059,7 +1202,7 @@ function p40(v, S, ctx, h) {
       } else if (!b.proAck && !b.noIgnMsg) {
         b.noIgnMsg = true;
         S.ullage = false;
-        ctx.message('No ignition — V99 not answered. Press PRO (Space) to ignite late.', 'alarm', 8);
+        ctx.message(away(v, ctx) ? `No DOI ignition at TIG — ${crewOf(v)} are answering the V99 for a late ignition` : 'No ignition — V99 not answered. Press PRO (Space) to ignite late.', 'alarm', 8);
       }
     }
     if (S.ullage) senseDV(v, b, h);
@@ -1084,7 +1227,7 @@ function p40(v, S, ctx, h) {
     const along = b.vgo.dot(bY);
     const aCmd = (thr * e.maxThrust) / mp.mass;
     if (S.engineStopLatched || (t > 2 && along <= aCmd * (h + 0.15))) {
-      if (S.engineStopLatched) ctx.message(`DOI cut short by ENGINE STOP — ${b.vgo.length().toFixed(1)} m/s still to go`, 'warn', 6);
+      if (S.engineStopLatched) ctx.message(`DOI cut short by ENGINE STOP — ${fmtSpeed(game, b.vgo.length(), 1)} still to go`, 'warn', 6);
       b.cutoff = true;
       b.cutTime = met;
       S.throttle = 0;
@@ -1092,7 +1235,7 @@ function p40(v, S, ctx, h) {
       if (c) S.pdi = { tig: met + c.t };
       ctx.say('Shutdown.', 'LMP', 0.4);
       const pdiTxt = c ? ` PDI at GET ${getStr(S.pdi.tig)} (in ${mmss(c.t)}); P63 loads 10 min before — time-warp until then.` : '';
-      ctx.message(`DOI complete — ${(b.dvAcc).toFixed(1)} m/s. Orbit ${(v.tel.apoapsisAlt / 1000).toFixed(0)} × ${(v.tel.periapsisAlt / 1000).toFixed(1)} km.${pdiTxt}`, 'good', 10);
+      ctx.message(`DOI complete — ${fmtSpeed(game, b.dvAcc, 1)}. Orbit ${fmtOrbit(game, v.tel.apoapsisAlt, v.tel.periapsisAlt)}.${pdiTxt}`, 'good', 10);
     }
     setDisp(S, '06', '40');
     return;
@@ -1117,7 +1260,7 @@ function p00(v, S, ctx, h) {
       S.pdi = null;
       startP63(v, S, ctx, tig);
       S.descent.fromDOI = true;
-      ctx.message(`P63 loaded — braking phase. PDI in ${mmss(tig - ctx.game.time.met)}: the LGC aligns Eagle 4 min before; PRO (Space) at the flashing V99`, 'info', 8);
+      ctx.message(`P63 loaded — braking phase. PDI in ${mmss(tig - ctx.game.time.met)}: the LGC aligns ${v.name} 4 min before; ${away(v, ctx) ? `${crewOf(v)} answer the V99` : 'PRO (Space) at the flashing V99'}`, 'info', 8);
       ctx.say("Eagle, Houston. If you read, you're go for powered descent. Over.", 'CAPCOM', 20);
       return;
     }
@@ -1155,11 +1298,15 @@ export function initPrograms(v, S, ctx) {
     if (p === 'P63' && Number.isFinite(g.tig)) return startP63Silent(v, S, ctx, g.tig);
     if (p === 'P64') return startP64(v, S, ctx, false);
     if (p === 'P66') {
+      // a scenario starting in P66 (Low Gate) starts hands-off, as P64 hands over at Low Gate:
+      // the LGC flies attitude and descent rate until the pilot takes the hand controller (the
+      // LGC then keeps stepping the ROD) or clicks the ROD switch (the LGC keeps the attitude)
       const rod = g.rodCmd;
       g.program = 'P00'; // so that startP66 announces the mode
-      startP66(v, S, ctx, false);
+      g.autopilot = 'GUIDANCE';
+      g.rcsMode = 'RATE';
+      startP66(v, S, ctx, true);
       if (Number.isFinite(rod) && rod !== 0) g.rodCmd = rod;
-      g.autopilot = 'OFF';
       return;
     }
     if (p === 'P67') {

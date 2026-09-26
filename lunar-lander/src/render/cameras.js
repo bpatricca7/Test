@@ -22,6 +22,14 @@
 //   target  over the shoulder of the active vessel, looking at the other one (not when docked).
 // Switching between exterior modes (or vessels) blends smoothly (~0.9 s) in vessel-relative space.
 //
+// Intro: at mission start (the 'scenario' event) a ~5.5-s establishing shot (camera/intro.js) sweeps
+// around the active spacecraft from a 3/4-lit angle — opening on the Earth when it can — and hands
+// over to the mission's camera (a blend into exterior views; a push-in and a dip through black into
+// the cockpit). Any key or click skips it. Not played under ?fixedstep=1 or ?t= unless ?intro=1;
+// ?intro=0 disables it. API: playIntro(seconds), skipIntro(), introActive. While it plays
+// game.view.intro = {t, T, u} (UI: letterbox, HUD hidden) and game.view.introFade (0..1 black) are set;
+// game.view.mode reads 'chase' while an exterior intro precedes a cockpit start.
+//
 // Actions: CYCLE_CAMERA, SET_CAMERA {mode}, CYCLE_STATION, GLANCE {id?}, RESET_VIEW.
 // Events emitted: 'camera' {mode, station, label}.
 
@@ -33,6 +41,8 @@ import { D2R, R2D, smoothK, smoothstep, lookQuat, horizontalDir, slerpAboutAxis,
 import { LOOK_LIMITS, getStation, nextStation, mapStation, glancesOf, STATIONS } from './camera/stations.js';
 import { createShake } from './camera/shake.js';
 import { createPointer } from './camera/pointer.js';
+import { SUN_DIR } from '../core/frames.js';
+import { planIntro, introPose, easeInOut } from './camera/intro.js';
 
 export const CAMERA_MODES = ['iva', 'chase', 'locked', 'flyby', 'ground', 'target'];
 const LABELS = { iva: 'Cockpit', chase: 'Chase', locked: 'Locked', flyby: 'Fly-by', ground: 'Ground', target: 'Target' };
@@ -49,6 +59,19 @@ const CHASE = {
   headingTau: 1.4, // s smoothing of the "behind" direction
 };
 const BLEND_TIME = 0.9;
+/** Mission-start establishing shot: duration, blend into an exterior view, dip through black into the cockpit. */
+export const INTRO = { duration: 5.5, blend: 1.8, fade: 0.45, push: 1.3, fov: 50 };
+
+/** ?intro=1 forces the establishing shot, ?intro=0 disables it; null when not given. */
+function introParam() {
+  try {
+    const q = new URLSearchParams(window.location.search);
+    if (!q.has('intro')) return null;
+    return !['0', 'false', 'off', 'no'].includes(String(q.get('intro')).toLowerCase());
+  } catch {
+    return null;
+  }
+}
 const DEG_PER_PX = 0.22;
 
 const _v1 = new THREE.Vector3();
@@ -119,6 +142,10 @@ export function createCameras(game, ctx) {
   const blend = { active: false, t: 0, fromOff: new THREE.Vector3(), fromQuat: new THREE.Quaternion(), fromFov: 60 };
   let fresh = true; // no blend on the first frame after a scenario load
   let lastVesselId = game.activeId;
+  let writtenMode = null; // view.mode as we last wrote it (an intro writes an exterior mode)
+  const intro = { active: false, t: 0, T: INTRO.duration, wait: 0, plan: null, startedAt: 0, pose: { pos: new THREE.Vector3(), quat: new THREE.Quaternion(), fov: 50 } };
+  view.intro = null;
+  view.introFade = 0;
 
   // per-frame result
   const cam = { pos: new THREE.Vector3(), quat: new THREE.Quaternion(), fov: 60, near: 0.05 };
@@ -328,6 +355,37 @@ export function createCameras(game, ctx) {
       else if (mode === 'ground') ground.zoom = value;
       else if (mode === 'target') target.zoom = target.zoomT = value;
     },
+    /**
+     * Play the mission-start establishing shot now (seconds, default 5.5): a sweep around the active
+     * spacecraft that hands over to the current camera mode. Returns false without a vessel.
+     * opts.at: start that many seconds into the shot (QA stills).
+     */
+    playIntro(seconds = INTRO.duration, opts = {}) {
+      const v = game.active;
+      if (!v) return false;
+      focusFor(game, v, focus);
+      const alt = Number.isFinite(v.tel?.altitude) ? v.tel.altitude : v.pos.length() - MOON.radius;
+      intro.plan = planIntro(focus, SUN_DIR, _v1.set(0, 0, -1).applyQuaternion(v.quat), alt, { fov: INTRO.fov });
+      intro.active = true;
+      intro.T = THREE.MathUtils.clamp(Number(seconds) || INTRO.duration, 2, 15);
+      intro.t = THREE.MathUtils.clamp(Number(opts.at) || 0, 0, intro.T);
+      intro.wait = 0;
+      intro.startedAt = typeof performance !== 'undefined' ? performance.now() : 0;
+      blend.active = false;
+      view.intro = { t: intro.t, T: intro.T, u: intro.t / intro.T };
+      return true;
+    },
+    /** End the establishing shot now (exterior views glide over from where the shot was). */
+    skipIntro() {
+      if (!intro.active) return false;
+      const exterior = mode !== 'iva';
+      endIntro();
+      if (exterior && !fresh) startBlend();
+      return true;
+    },
+    get introActive() {
+      return intro.active;
+    },
     /** Current cabin-vibration offset (deg, magnitude) — QA hook. */
     get shakeDeg() {
       return shake.rotation.length() * R2D;
@@ -358,6 +416,23 @@ export function createCameras(game, ctx) {
     }
   });
 
+  function endIntro() {
+    intro.active = false;
+    view.intro = null;
+    view.introFade = 0;
+  }
+
+  // any key or click skips the establishing shot (not the click / key that started the mission)
+  if (typeof window !== 'undefined') {
+    const skip = (e) => {
+      if (!intro.active || e.repeat) return;
+      if (typeof performance !== 'undefined' && performance.now() - intro.startedAt < 250) return;
+      api.skipIntro();
+    };
+    window.addEventListener('keydown', skip, true);
+    window.addEventListener('pointerdown', skip, true);
+  }
+
   game.events.on('scenario', () => {
     const v = game.active;
     const other = v.type === 'LM' ? 'CSM' : 'LM';
@@ -372,6 +447,13 @@ export function createCameras(game, ctx) {
     shake.reset();
     lastVesselId = game.activeId;
     for (const m of CAMERA_MODES) resetView(m);
+    writtenMode = null;
+    endIntro();
+    // the establishing shot (headless fixed-step tests and ?t= fast-forwards skip it)
+    const forced = introParam();
+    const p = game.params || {};
+    const browser = typeof window !== 'undefined';
+    if (forced === true || (forced !== false && browser && !p.fixedStep && !(p.t > 0))) api.playIntro(INTRO.duration);
     announce();
   });
 
@@ -645,6 +727,56 @@ export function createCameras(game, ctx) {
     cam.near = 0.05;
   }
 
+  // ------------------------------------------------------------------ establishing shot
+  /**
+   * Overwrite `cam` with the intro pose (mixed with the mode's pose during the hand-over).
+   * @returns {boolean} true while the picture is an exterior shot (the cockpit is not rendered yet)
+   */
+  function updateIntro(dt) {
+    // hold the opening pose until the world is ready (terrain LOD) — at most a few seconds
+    const ready = typeof window === 'undefined' || window.__READY === true || intro.wait > 6;
+    if (ready) intro.t += dt;
+    else intro.wait += dt;
+    const T = intro.T;
+    const pose = intro.pose;
+    let fade = 0;
+    let exterior = true;
+    if (mode === 'iva') {
+      // sweep, push in and dip through black; the cockpit appears out of the black
+      const cutAt = T - INTRO.fade;
+      if (intro.t < cutAt) {
+        const push = (intro.t - (cutAt - INTRO.push)) / INTRO.push;
+        introPose(intro.plan, intro.t / cutAt, focus.pos, pose, lookQuat, Math.max(0, push));
+        cam.pos.copy(pose.pos);
+        cam.quat.copy(pose.quat);
+        cam.fov = pose.fov;
+        cam.near = 0.05;
+        keepAbove(cam.pos, CHASE.minClearance);
+        fade = easeInOut((intro.t - (cutAt - INTRO.fade)) / INTRO.fade);
+      } else {
+        exterior = false;
+        fade = 1 - easeInOut((intro.t - cutAt) / INTRO.fade);
+      }
+    } else {
+      introPose(intro.plan, Math.min(1, intro.t / T), focus.pos, pose, lookQuat);
+      const w = easeInOut((intro.t - (T - INTRO.blend)) / INTRO.blend);
+      _v1.subVectors(pose.pos, focus.pos).lerp(_v2.subVectors(cam.pos, focus.pos), w);
+      cam.pos.copy(focus.pos).add(_v1);
+      keepAbove(cam.pos, CHASE.minClearance);
+      _q1.copy(pose.quat).slerp(cam.quat, w);
+      cam.quat.copy(_q1);
+      cam.fov = pose.fov + (cam.fov - pose.fov) * w;
+      cam.near = Math.min(cam.near, 0.05);
+    }
+    view.introFade = fade;
+    if (view.intro) {
+      view.intro.t = intro.t;
+      view.intro.u = Math.min(1, intro.t / T);
+    }
+    if (intro.t >= T) endIntro();
+    return exterior;
+  }
+
   // ------------------------------------------------------------------ frame update
   function update(dt) {
     dt = Math.max(0, Math.min(0.25, dt || 0));
@@ -655,7 +787,7 @@ export function createCameras(game, ctx) {
 
     // the sim (scenario load) or another module may have written view.mode directly
     const ext = normalizeMode(view.mode);
-    if (ext && ext !== mode) api.setMode(ext, { blend: false });
+    if (ext && ext !== mode && view.mode !== writtenMode) api.setMode(ext, { blend: false });
     else if (!ext) view.mode = mode;
     if (game.activeId !== lastVesselId) {
       lastVesselId = game.activeId; // switched without a 'vessel' event
@@ -706,13 +838,16 @@ export function createCameras(game, ctx) {
       if (blend.t >= BLEND_TIME) blend.active = false;
     }
 
+    const exteriorIntro = intro.active ? updateIntro(dt) : false;
+
     view.cameraMCI.copy(cam.pos);
     view.quat.copy(cam.quat);
     view.fov = cam.fov;
     view.near = cam.near;
     view.far = 1e9;
-    view.mode = mode;
-    view.ivaVessel = mode === 'iva' ? v.id : null;
+    view.mode = exteriorIntro && mode === 'iva' ? 'chase' : mode;
+    writtenMode = view.mode;
+    view.ivaVessel = view.mode === 'iva' ? v.id : null;
     view.station = stations[v.type];
     if (!view.label) view.label = LABELS[mode];
     fresh = false;

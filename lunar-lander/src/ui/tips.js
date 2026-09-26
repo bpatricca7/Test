@@ -81,8 +81,20 @@ const GENERIC_KEYS = [
   [['C'], 'Change camera · F1 all controls'],
 ];
 
-export function missionKeys(id) {
-  return MISSION_KEYS[id] || GENERIC_KEYS;
+/** Cockpit flight cards (the landing missions flown from the window) add the glance key. */
+const GLANCE_MISSIONS = new Set(['pdi', 'highgate', 'lowgate', 'hover']);
+const GLANCE_ROW = [['O'], 'Glance at the instruments / DSKY (again: back out of the window)'];
+
+/**
+ * Key rows of a mission's flight card. `iva`: flown from the cockpit — the landing missions add
+ * O (glance at the instruments / DSKY) before the camera row.
+ */
+export function missionKeys(id, { iva = false } = {}) {
+  const rows = MISSION_KEYS[id] || GENERIC_KEYS;
+  if (!iva || !GLANCE_MISSIONS.has(id)) return rows;
+  const i = rows.findIndex(([k]) => k.length === 1 && k[0] === 'C');
+  const at = i < 0 ? rows.length : i;
+  return [...rows.slice(0, at), GLANCE_ROW, ...rows.slice(at)];
 }
 
 function keyRow([keys, text]) {
@@ -90,11 +102,11 @@ function keyRow([keys, text]) {
 }
 
 /** "This mission" block for the F1 help (null when no mission is loaded). */
-export function missionHelp(sc) {
+export function missionHelp(sc, { iva = false } = {}) {
   if (!sc) return null;
   return h('section.mhelp', null,
     h('h3', null, `This mission · ${sc.title}`),
-    h('div.fkeys', null, missionKeys(sc.id).map(keyRow)),
+    h('div.fkeys', null, missionKeys(sc.id, { iva }).map(keyRow)),
     sc.tips?.length ? h('ul.tips', null, sc.tips.map((t) => h('li', null, t))) : null,
   );
 }
@@ -156,7 +168,13 @@ export function createFlightTips(game, scenarios) {
   const hint = h('div.fhint.hidden', { role: 'status' }, h('b', null, 'Tip'), hintText);
   const el = h('div.ftips', null, card, hint);
 
-  const st = { open: false, t: 0, met0: 0, inputAt: null, fired: new Set(), hintT: 0, checkT: 0, first: true };
+  const st = { open: false, t: 0, met0: 0, inputAt: null, fired: new Set(), hintT: 0, checkT: 0, first: true, id: null, iva: null };
+
+  /** (Re)build the key rows for the current view (the cockpit adds the glance key). */
+  function renderKeys() {
+    st.iva = game.view?.mode === 'iva';
+    keys.replaceChildren(...missionKeys(st.id, { iva: st.iva }).map(keyRow));
+  }
 
   function fade() {
     if (!st.open) return;
@@ -185,7 +203,8 @@ export function createFlightTips(game, scenarios) {
     }
     title.textContent = sc.title;
     sub.textContent = sc.subtitle || '';
-    keys.replaceChildren(...missionKeys(sc.id).map(keyRow));
+    st.id = sc.id;
+    renderKeys();
     // the briefing tips live in the briefing and the F1 help; the card only adds the ones the key
     // list does not already cover
     tips.replaceChildren(...(MISSION_KEYS[sc.id] ? [] : sc.tips || []).slice(0, 3).map((t) => h('li', null, t)));
@@ -216,6 +235,7 @@ export function createFlightTips(game, scenarios) {
    */
   function update(dt, o) {
     setClass(el, 'off', !o.visible);
+    if (st.open && st.id && (game.view?.mode === 'iva') !== st.iva) renderKeys();
     if (o.running && o.visible) {
       st.t += dt;
       if (st.open) {

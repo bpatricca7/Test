@@ -451,24 +451,83 @@ const BOULDER_OCT = [
 /** Largest boulder feature size (diameter, m); LOD evaluations above this skip boulders. */
 export const BOULDER_MAX_SIZE = 3.0;
 
-// Boulder shape variants: outline harmonics & top tilt, so footprints are irregular blocks.
-// Each: [a2, phi2, a3, phi3, a5, phi5, tilt, phiTilt, exponent]
-const BOULDER_VARIANT_DEF = [
-  [0.16, 0.3, 0.1, 1.9, 0.05, 0.7, 0.18, 0.4, 0.45],
-  [0.22, 1.2, 0.06, 0.2, 0.07, 2.4, 0.1, 2.0, 0.35],
-  [0.1, 2.6, 0.14, 1.1, 0.04, 1.6, 0.25, 3.8, 0.55],
-  [0.2, 0.9, 0.12, 2.8, 0.08, 0.1, 0.15, 5.1, 0.3],
-  [0.08, 1.7, 0.08, 0.5, 0.1, 3.1, 0.3, 1.2, 0.5],
+// Boulder shape variants. Real lunar blocks (Apollo surface photography) are sub-rounded to angular with
+// rounded edges, lumpy, often flat slabs, and partly buried with a small regolith fillet banked against
+// their base. Each variant is a height field over the (irregular) footprint:
+//   outline  1 + a2 cos 2(th-phi2) + a3 cos 3(..) + a5 cos 5(..) + a7 cos 7(..)
+//   dome     (1 - q^p)^ex            p ~2 rounded ... 5 flat-topped block; ex < 1: steep sides that emerge
+//                                     from the soil (a partly buried rock, not a cone standing on it)
+//   tilt     one side higher;  lumps: three low-frequency undulations (knobbly surfaces)
+//   cuts     smooth-min with tilted planes: flat fracture faces joined by ROUNDED edges (k = edge radius)
+//   fillet   regolith banked against the base out to q = 1 + FILLET_W (part of the collision shape)
+// Variants are generated deterministically from a class and a seed; the profile is normalised so that its
+// maximum is exactly 1 (H is the true height of the rock). The class also scales the height (slabs).
+const FILLET_W = 0.12; // fillet reach beyond the outline (x outline radius)
+const FILLET_IN = 0.06; // the fillet starts this far inside the outline (a concave crease)
+const FILLET_H = 0.05; // fillet height (x rock height)
+const BOULDER_CLASSES = [
+  // p, ex: base dome (a superellipsoid the fracture faces are carved from); lump amplitude/frequency;
+  // cuts: number of planar fracture faces; k: edge rounding radius; hs: height scale (slabs are low)
+  { name: 'subrounded', p: 2.2, ex: 0.55, lump: 0.08, lf: 2.2, cuts: 3, k: 0.2, hs: 0.9 },
+  { name: 'block', p: 3.0, ex: 0.42, lump: 0.04, lf: 2.6, cuts: 6, k: 0.08, hs: 1.0 },
+  { name: 'slab', p: 4.0, ex: 0.32, lump: 0.03, lf: 2.0, cuts: 4, k: 0.06, hs: 0.55 },
+  { name: 'knobbly', p: 2.6, ex: 0.5, lump: 0.13, lf: 3.2, cuts: 4, k: 0.14, hs: 0.85 },
 ];
-/** Boulder shape variants (outline harmonics, top tilt, dome exponent) shared by collision and rendering. */
-export const BOULDER_VARIANTS = BOULDER_VARIANT_DEF.map((v) => ({
-  a2: v[0], c2: Math.cos(v[1]), s2: Math.sin(v[1]),
-  a3: v[2], c3: Math.cos(v[3]), s3: Math.sin(v[3]),
-  a5: v[4], c5: Math.cos(v[5]), s5: Math.sin(v[5]),
-  tilt: v[6], ct: Math.cos(v[7]), st: Math.sin(v[7]),
-  ex: v[8],
-}));
+function variantRand(seed) {
+  let h = seed >>> 0;
+  return () => {
+    h = remix(h + 0x9e3779b9);
+    return h / 4294967296;
+  };
+}
+const BOULDER_VARIANTS = [];
+for (let vi = 0; vi < 12; vi++) {
+  const cls = BOULDER_CLASSES[[0, 1, 0, 2, 1, 3, 0, 1, 2, 3, 1, 1][vi]];
+  const rnd = variantRand(0x5eed + vi * 7919);
+  const v = {
+    cls: cls.name,
+    a2: 0.08 + 0.14 * rnd(), p2: rnd() * 6.2832,
+    a3: 0.04 + 0.09 * rnd(), p3: rnd() * 6.2832,
+    a5: 0.02 + 0.05 * rnd(), p5: rnd() * 6.2832,
+    a7: 0.01 + 0.025 * rnd(), p7: rnd() * 6.2832,
+    p: cls.p * (0.9 + 0.2 * rnd()),
+    ex: cls.ex * (0.9 + 0.2 * rnd()),
+    tilt: 0.05 + 0.25 * rnd(), pt: rnd() * 6.2832,
+    lumps: [],
+    cuts: [],
+    k: cls.k,
+    hs: cls.hs,
+    norm: 1,
+  };
+  v.c2 = Math.cos(v.p2); v.s2 = Math.sin(v.p2);
+  v.c3 = Math.cos(v.p3); v.s3 = Math.sin(v.p3);
+  v.c5 = Math.cos(v.p5); v.s5 = Math.sin(v.p5);
+  v.c7 = Math.cos(v.p7); v.s7 = Math.sin(v.p7);
+  v.ct = Math.cos(v.pt); v.st = Math.sin(v.pt);
+  for (let l = 0; l < 3; l++) {
+    const a = rnd() * 6.2832;
+    const f = cls.lf * (0.7 + 0.8 * rnd()) * (l + 1) * 0.75;
+    v.lumps.push({ kx: f * Math.cos(a), ky: f * Math.sin(a), ph: rnd() * 6.2832, amp: (cls.lump * (1.2 - 0.3 * l)) * (0.6 + 0.8 * rnd()) });
+  }
+  // fracture faces: planes h = c0 + g . (u, w) sloping down toward azimuth a; each passes through a point
+  // at radius r0 along a, somewhat below the dome there, so it shaves a corner/flank off the dome.
+  // Low slopes near the centre make tilted top faces, steep ones make the sides; together they give
+  // the irregular polyhedral blocks of the Apollo photographs, rounded by the smooth minimum.
+  const a0 = rnd() * 6.2832;
+  for (let c = 0; c < cls.cuts; c++) {
+    const a = a0 + (c / cls.cuts) * 6.2832 + (rnd() - 0.5) * 1.3;
+    const top = c === 0 || (c === 3 && cls.cuts > 4);
+    const sl = top ? 0.1 + 0.5 * rnd() : 0.8 + 1.6 * rnd();
+    const r0 = top ? 0.15 + 0.3 * rnd() : 0.45 + 0.4 * rnd();
+    const hd = Math.pow(1 - Math.pow(r0, v.p), v.ex);
+    const c0 = hd * (top ? 0.7 + 0.2 * rnd() : 0.5 + 0.3 * rnd()) + sl * r0;
+    v.cuts.push({ gx: -sl * Math.cos(a), gy: -sl * Math.sin(a), c0 });
+  }
+  BOULDER_VARIANTS.push(v);
+}
 const NVAR = BOULDER_VARIANTS.length;
+/** Boulder shape variants shared by collision and rendering (see boulderProfile). */
+export { BOULDER_VARIANTS };
 
 /** Outline radius (x footprint radius) of variant `vi` in polar direction (cosT, sinT). */
 export function boulderEdge(vi, cosT, sinT) {
@@ -479,30 +538,65 @@ export function boulderEdge(vi, cosT, sinT) {
   const s3 = sinT * (3 - 4 * sinT * sinT);
   const c5 = c2 * c3 - s2 * s3;
   const s5 = s2 * c3 + c2 * s3;
-  return 1 + v.a2 * (c2 * v.c2 - s2 * v.s2) + v.a3 * (c3 * v.c3 - s3 * v.s3) + v.a5 * (c5 * v.c5 - s5 * v.s5);
+  const c7 = c2 * c5 - s2 * s5;
+  const s7 = s2 * c5 + c2 * s5;
+  return 1 + v.a2 * (c2 * v.c2 + s2 * v.s2) + v.a3 * (c3 * v.c3 + s3 * v.s3) + v.a5 * (c5 * v.c5 + s5 * v.s5) + v.a7 * (c7 * v.c7 + s7 * v.s7);
 }
+/** Largest outline radius of any variant incl. the fillet (x footprint radius). */
+let BOULDER_EDGE_MAX = 0;
+
+// Rock body (without fillet) at edge-normalised radius q and position (u, w) = q (cos, sin), unnormalised.
+function rockBody(v, q, u, w) {
+  if (q >= 1) return 0;
+  let h = Math.pow(1 - Math.pow(q, v.p), v.ex);
+  h *= 1 + v.tilt * (u * v.ct + w * v.st) - v.tilt * 0.5;
+  const L = v.lumps;
+  h *= 1 + L[0].amp * Math.cos(L[0].kx * u + L[0].ky * w + L[0].ph) + L[1].amp * Math.cos(L[1].kx * u + L[1].ky * w + L[1].ph) + L[2].amp * Math.cos(L[2].kx * u + L[2].ky * w + L[2].ph);
+  const k = v.k;
+  for (let i = 0; i < v.cuts.length; i++) {
+    const c = v.cuts[i];
+    const b = c.c0 + c.gx * u + c.gy * w;
+    // polynomial smooth minimum: rounded edge of radius ~k between dome and fracture face
+    const d = k - Math.abs(h - b);
+    h = (h < b ? h : b) - (d > 0 ? (d * d) / (4 * k) : 0);
+  }
+  return h > 0 ? h : 0;
+}
+for (const v of BOULDER_VARIANTS) {
+  let mx = 0;
+  for (let i = 0; i <= 40; i++) {
+    const q = i / 40;
+    for (let j = 0; j < 72; j++) {
+      const a = (j / 72) * Math.PI * 2;
+      const hb = rockBody(v, q, q * Math.cos(a), q * Math.sin(a));
+      if (hb > mx) mx = hb;
+    }
+    for (let j = 0; j < 72; j++) {
+      const a = (j / 72) * Math.PI * 2;
+      const e = boulderEdge(BOULDER_VARIANTS.indexOf(v), Math.cos(a), Math.sin(a));
+      if (e > BOULDER_EDGE_MAX) BOULDER_EDGE_MAX = e;
+    }
+  }
+  v.norm = 1 / mx;
+}
+BOULDER_EDGE_MAX *= 1 + FILLET_W;
+/** Fillet geometry (for the renderer): reach beyond the outline and height, in rock units. */
+export const BOULDER_FILLET = { reach: FILLET_W, inset: FILLET_IN, height: FILLET_H };
 
 /**
  * Normalised boulder height profile (0..1) for variant `vi` at normalised radius `rr` (distance /
- * footprint radius) and polar angle given by (cosT, sinT) in the boulder's own frame.
+ * footprint radius) and polar angle given by (cosT, sinT) in the boulder's own frame (theta from the
+ * boulder's x axis toward its y axis). Includes the regolith fillet around the base.
  * The rock renderer builds its meshes from exactly this function.
  */
 export function boulderProfile(vi, rr, cosT, sinT) {
   const v = BOULDER_VARIANTS[vi];
-  // cos/sin of 2θ, 3θ, 5θ via Chebyshev recurrences (no trig)
-  const c2 = cosT * cosT - sinT * sinT;
-  const s2 = 2 * cosT * sinT;
-  const c3 = cosT * (4 * cosT * cosT - 3);
-  const s3 = sinT * (3 - 4 * sinT * sinT);
-  const c5 = c2 * c3 - s2 * s3;
-  const s5 = s2 * c3 + c2 * s3;
-  const edge = 1 + v.a2 * (c2 * v.c2 - s2 * v.s2) + v.a3 * (c3 * v.c3 - s3 * v.s3) + v.a5 * (c5 * v.c5 - s5 * v.s5);
-  const q = rr / edge;
-  if (q >= 1) return 0;
-  const dome = Math.pow(1 - Math.pow(q, 2.4), v.ex);
-  // tilted top: one side higher (blocks are rarely symmetric)
-  const tilt = 1 + v.tilt * q * (cosT * v.ct - sinT * v.st);
-  return dome * tilt / (1 + v.tilt);
+  const q = rr / boulderEdge(vi, cosT, sinT);
+  if (q >= 1 + FILLET_W) return 0;
+  const hb = q < 1 ? rockBody(v, q, q * cosT, q * sinT) * v.norm : 0;
+  let f = 1 - (q - 1 + FILLET_IN) / (FILLET_W + FILLET_IN);
+  f = f >= 1 ? FILLET_H : FILLET_H * f * f;
+  return hb > f ? hb : f;
 }
 
 // ------------------------------------------------------------------------------------ evaluation
@@ -745,7 +839,7 @@ function craterBright(t) {
 
 // Ray pattern of a young crater: a diffuse bright halo plus many rays of varying width and length that
 // are clumpy along their length (chains of secondary-crater ejecta). t is the distance in crater radii.
-function rayPattern(c, x, y, z, t) {
+function rayPattern(c, x, y, z, t, wmul = 1) {
   // local tangent frame at the crater
   let ex = -c.y;
   let ey = c.x;
@@ -768,7 +862,7 @@ function rayPattern(c, x, y, z, t) {
     let da = ang - a0;
     da -= Math.PI * 2 * Math.round(da / (Math.PI * 2));
     // rays widen slightly with distance and taper toward their ends
-    const wdt = (0.012 + (((h >>> 16) & 255) / 255) * 0.05) * (0.7 + 0.12 * t);
+    const wdt = (0.012 + (((h >>> 16) & 255) / 255) * 0.05) * (0.7 + 0.12 * t) * wmul;
     const g = Math.exp(-(da * da) / (wdt * wdt));
     if (g < 0.01) continue;
     const taper = 1 - t / len;
@@ -778,6 +872,84 @@ function rayPattern(c, x, y, z, t) {
   const clump = 0.55 + 0.45 * noise3(x * 2600 + c.x * 50, y * 2600, z * 2600);
   const halo = t < 3.5 ? 0.45 * Math.exp(-(t - 1) * 1.2) : 0;
   return Math.min(1, s * clump + (t > 1 ? halo : 0.45));
+}
+
+// Young rayed craters (Copernican, 1.2-6 km): one candidate per 3D cell of RAY_CELL metres, existing with
+// probability RAY_P; each makes a fresh bowl (height) and a bright halo & ray system out to RAY_REACH
+// crater radii (albedo) - the sprinkling of small bright-rayed craters of LROC/Apollo orbital images.
+// As for the crater octaves, a candidate only exists when its whole reach lies inside the ball of radius
+// RAY_CELL/2 around it, so the 8-cell lookup around any point finds every crater that touches it.
+const RAY_CELL = 60000;
+const RAY_P = 0.55;
+const RAY_REACH = 7;
+const RAY_OUT = new Float64Array(2);
+const _rc = { x: 0, y: 0, z: 0, seed: 0 };
+function rayLayer(x, y, z, px, py, pz, lod, wantAlb) {
+  const inv = 1 / RAY_CELL;
+  const rho = 0.5 * RAY_CELL;
+  const fx = px * inv;
+  const fy = py * inv;
+  const fz = pz * inv;
+  let bx = Math.floor(fx);
+  let by = Math.floor(fy);
+  let bz = Math.floor(fz);
+  if (fx - bx < 0.5) bx--;
+  if (fy - by < 0.5) by--;
+  if (fz - bz < 0.5) bz--;
+  let h = 0;
+  let alb = 0;
+  let fresh = 0;
+  for (let k = 0; k < 8; k++) {
+    const cx = bx + (k & 1);
+    const cy = by + ((k >> 1) & 1);
+    const cz = bz + (k >> 2);
+    let hh = hash3(cx, cy, cz, 0x7a11c3);
+    if ((hh & 0xffff) * INV_2_16 >= RAY_P) continue;
+    hh = remix(hh);
+    const qx = (cx + (hh & 1023) * INV_2_10) * RAY_CELL;
+    const qy = (cy + ((hh >>> 10) & 1023) * INV_2_10) * RAY_CELL;
+    const qz = (cz + ((hh >>> 20) & 1023) * INV_2_10) * RAY_CELL;
+    // cheap reject: p must be within the ball
+    const ex = qx - px;
+    const ey = qy - py;
+    const ez = qz - pz;
+    if (ex * ex + ey * ey + ez * ez >= rho * rho) continue;
+    const ql = Math.sqrt(qx * qx + qy * qy + qz * qz);
+    const d0 = ql - R;
+    hh = remix(hh);
+    const u = (hh & 0xffff) * INV_2_16;
+    const a = 0.5 * (1200 + 4800 * u * u * u);
+    const reach = RAY_REACH * a;
+    if (reach * reach + d0 * d0 >= rho * rho) continue;
+    const ux = qx / ql;
+    const uy = qy / ql;
+    const uz = qz / ql;
+    const sx = x - ux;
+    const sy = y - uy;
+    const sz = z - uz;
+    const t = (Math.sqrt(sx * sx + sy * sy + sz * sz) * R) / a;
+    if (t >= RAY_REACH) continue;
+    // keep the landing-site region clear
+    const kx = ux * R - SITE_P[0];
+    const ky = uy * R - SITE_P[1];
+    const kz = uz * R - SITE_P[2];
+    const kl = reach + 20000;
+    if (kx * kx + ky * ky + kz * kz < kl * kl) continue;
+    if (t < 1.9 && 2 * a >= lod) h += craterProfile(t, 2 * a * 0.19, 2 * a * 0.036, 1, 0, 0, 0, 3);
+    if (wantAlb) {
+      _rc.x = ux;
+      _rc.y = uy;
+      _rc.z = uz;
+      _rc.seed = hh;
+      const k2 = 0.5 + 0.5 * (((hh >>> 16) & 255) / 255);
+      const rp = rayPattern(_rc, x, y, z, t * (9 / RAY_REACH), 2.2) * k2 * (1 - smooth01((t - 0.7 * RAY_REACH) / (0.3 * RAY_REACH)));
+      alb += 0.06 * rp + (t < 1.9 ? 0.05 * craterBright(t) : 0);
+      if (rp > fresh) fresh = rp;
+    }
+  }
+  RAY_OUT[0] = alb;
+  RAY_OUT[1] = fresh;
+  return h;
 }
 
 // Random crater octaves (large -> small). Returns the height contribution; albedo/freshness/blockiness
@@ -998,7 +1170,7 @@ function craterOctaves(x, y, z, px, py, pz, lod, flags, m, mareInside, nearSite,
         const fb = (fr - 0.35) / 0.65;
         const br = fb * fb * craterBright(t) * w;
         // brightness of small fresh craters is stronger on the dark maria (contrast of immature soil)
-        alb += br * (0.05 + 0.04 * m);
+        alb += br * (0.026 + 0.014 * m);
         if (br > fresh) fresh = br;
       }
     }
@@ -1077,7 +1249,7 @@ export function evalSurface(x, y, z, lod, flags, out) {
     if (wantAlb) {
       const fr = c.fresh * c.fresh * c.fresh;
       if (t < 1.9) {
-        alb += 0.11 * fr * craterBright(t);
+        alb += (c.local ? 0.045 : 0.09) * fr * craterBright(t);
         if (c.flooded > 0.5 && t < 0.95) alb -= 0.05 * c.flooded;
         if (fr * craterBright(t) > fresh) fresh = fr * craterBright(t);
       }
@@ -1086,6 +1258,15 @@ export function evalSurface(x, y, z, lod, flags, out) {
         alb += 0.12 * rp;
         if (rp * 0.7 > fresh) fresh = rp * 0.7;
       }
+    }
+  }
+
+  // ---- young rayed craters
+  if (!blockOnly) {
+    h += rayLayer(x, y, z, px, py, pz, lod, wantAlb);
+    if (wantAlb) {
+      alb += RAY_OUT[0];
+      if (RAY_OUT[1] > fresh) fresh = RAY_OUT[1];
     }
   }
 
@@ -1119,8 +1300,8 @@ export function evalSurface(x, y, z, lod, flags, out) {
     const n4 = noise3(x * 140 - 5.1, y * 140 + 2.9, z * 140);
     // highland mottling from overlapping ejecta blankets of different maturity (10-30 km patches)
     const n5 = lod < 30000 ? noise3(x * 170 + 1.9, y * 170 - 4.4, z * 170) : 0;
-    const high = 0.15 + 0.028 * n1 + 0.024 * n2 + 0.014 * n3 + 0.022 * n5;
-    const mare = 0.069 + 0.012 * n1 + 0.011 * n4 + 0.009 * n2 + 0.005 * n3;
+    const high = 0.15 + 0.03 * n1 + 0.03 * n2 + 0.016 * n3 + 0.034 * n5;
+    const mare = 0.069 + 0.012 * n1 + 0.015 * n4 + 0.01 * n2 + 0.006 * n3;
     let A = high + (mare - high) * mAlb + alb;
     // South Pole–Aitken floor is slightly darker (mafic)
     A = A < 0.035 ? 0.035 : A > 0.45 ? 0.45 : A;
@@ -1140,7 +1321,6 @@ function blockinessAt(x, y, z) {
 // Boulder candidate decode shared by terrainHeight and enumerateBoulders.
 // Returns false if the candidate does not produce a boulder; otherwise fills _bd.
 const _bd = { x: 0, y: 0, z: 0, r: 0, H: 0, vi: 0, cps: 1, sps: 0, ex: 0, ey: 0, ez: 0, nx: 0, ny: 0, nz: 0, w: 0 };
-const BOULDER_EDGE = 1.42; // max outline radius of any variant (x footprint radius)
 function cellHash(cx, cy, cz, seed) {
   let h = cmix(cmix(cmix(Math.imul(cx, 0x9e3779b1) ^ seed) ^ Math.imul(cy, 0x85ebca6b)) ^ Math.imul(cz, 0xc2b2ae35));
   h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d);
@@ -1167,7 +1347,7 @@ function decodeBoulder(oi, cx, cy, cz, px = 0, py = 0, pz = 0, lateral = false) 
     const lx = qx * k - px;
     const ly = qy * k - py;
     const lz = qz * k - pz;
-    const rmax = (rho * rho - d0 * d0) * BOULDER_EDGE * BOULDER_EDGE;
+    const rmax = (rho * rho - d0 * d0) * BOULDER_EDGE_MAX * BOULDER_EDGE_MAX;
     if (lx * lx + ly * ly + lz * lz >= rmax) return false;
   }
   const ux = qx / ql;
@@ -1186,14 +1366,16 @@ function decodeBoulder(oi, cx, cy, cz, px = 0, py = 0, pz = 0, lateral = false) 
   if (w <= 0) return false;
   if (w > 1) w = 1;
   hh = remix(hh);
-  const r = Math.sqrt(rho * rho - d0 * d0) * w;
+  // size inside the octave: steep power law (many cobbles, few large blocks)
+  const us = ((hh >>> 24) & 255) / 255;
+  const r = Math.sqrt(rho * rho - d0 * d0) * w * (0.32 + 0.68 * us * us);
   if (r < 0.05) return false;
   _bd.x = ux;
   _bd.y = uy;
   _bd.z = uz;
   _bd.r = r;
-  _bd.H = r * (0.55 + 0.6 * ((hh & 255) / 255));
   _bd.vi = ((hh >>> 8) & 255) % NVAR;
+  _bd.H = r * (0.75 + 0.65 * ((hh & 255) / 255)) * BOULDER_VARIANTS[_bd.vi].hs;
   const psi = ((hh >>> 16) & 1023) * INV_2_10 * Math.PI * 2;
   _bd.cps = Math.cos(psi);
   _bd.sps = Math.sin(psi);
@@ -1233,7 +1415,7 @@ function boulderHeight(x, y, z, px, py, pz, lodW, nearSite, siteD2) {
     const ly = fy - by;
     const lz = fz - bz;
     // relevance radius in cell units: lateral outline (1.42 r) combined with the vertical offset
-    const rr = (bo.rho * 1.75) * inv;
+    const rr = bo.rho * BOULDER_EDGE_MAX * 1.01 * inv;
     const rr2 = rr * rr;
     const mx0 = lx > 1 ? (lx - 1) * (lx - 1) : 0;
     const mx1 = lx < 1 ? (1 - lx) * (1 - lx) : 0;
@@ -1262,7 +1444,7 @@ function boulderHeight(x, y, z, px, py, pz, lodW, nearSite, siteD2) {
       const e = ex * _bd.ex + ey * _bd.ey + ez * _bd.ez;
       const n = ex * _bd.nx + ey * _bd.ny + ez * _bd.nz;
       const s = Math.sqrt(e * e + n * n);
-      if (s >= _bd.r * BOULDER_EDGE) continue;
+      if (s >= _bd.r * BOULDER_EDGE_MAX) continue;
       let ct = 1;
       let st = 0;
       if (s > 1e-9) {

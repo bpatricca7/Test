@@ -2,7 +2,8 @@
 // live telemetry (feet, ft/s): "750, coming down at 23", "400 feet, down at 9",
 // "100 feet, 3 1/2 down, 9 forward", "40 feet, down 2 1/2, picking up some dust",
 // "4 forward, drifting to the right a little". Emitted as 'callout' {text, voice:true, who:'LMP'},
-// rate-limited (>= 3 s apart, slower higher up).
+// rate-limited (>= 3 s apart, slower higher up). With game.settings.units === 'metric' the same
+// calls are made in metres and m/s ("120 metres, down at 3").
 
 import * as THREE from 'three';
 import { FT } from '../core/constants.js';
@@ -20,6 +21,12 @@ export function createCalloutState() {
 export function roundAltitude(ft) {
   const step = ft > 1000 ? 100 : ft > 200 ? 50 : ft > 100 ? 10 : 5;
   return Math.max(0, Math.round(ft / step) * step);
+}
+
+/** Round an altitude (m) for a metric callout. */
+export function roundAltitudeM(m) {
+  const step = m > 300 ? 50 : m > 60 ? 10 : m > 30 ? 5 : 1;
+  return Math.max(0, Math.round(m / step) * step);
 }
 
 /** "2,000" style number. */
@@ -40,23 +47,27 @@ export function spokenRate(fps) {
 
 /**
  * Build the altitude / rate / drift callout for the current state.
- * @param {object} s {altFt, downFps (+ = descending), fwdFps, rightFps, lpdDeg?, n (counter)}
+ * @param {object} s {altFt, downFps (+ = descending), fwdFps, rightFps, lpdDeg?, n (counter),
+ *   metric? (speak metres and m/s)}
  * @param {object} C callout state (one-time remarks)
  * @returns {string}
  */
 export function buildCallout(s, C) {
-  const alt = roundAltitude(s.altFt);
+  const m = !!s.metric;
+  const alt = m ? roundAltitudeM(s.altFt * FT) : roundAltitude(s.altFt);
   const altS = withCommas(alt);
+  const unit = m ? 'metres' : 'feet';
+  const sp = (fps) => spokenRate(m ? fps * FT : fps); // spoken speed in the player's units
   const n = s.n || 0;
   const parts = [];
-  const r = spokenRate(s.downFps);
+  const r = sp(s.downFps);
   // altitude and rate are separate phrases so remarks can go between them
   let pair;
-  if (s.downFps > 0.25) {
-    const forms = r === 'a half' ? [[`${altS} feet`, 'down a half'], [altS, 'down a half']] : [[`${altS} feet`, `down at ${r}`], [altS, `coming down at ${r}`], [`${altS} feet`, `${r} down`], [altS, `down ${r}`]];
+  if (s.downFps > 0.25 && r !== 'zero') {
+    const forms = r === 'a half' ? [[`${altS} ${unit}`, 'down a half'], [altS, 'down a half']] : [[`${altS} ${unit}`, `down at ${r}`], [altS, `coming down at ${r}`], [`${altS} ${unit}`, `${r} down`], [altS, `down ${r}`]];
     pair = forms[n % forms.length];
-  } else if (s.downFps < -0.25) pair = [`${altS} feet`, `up ${r}`];
-  else pair = [`${altS} feet`, 'holding'];
+  } else if (s.downFps < -0.25 && r !== 'zero') pair = [`${altS} ${unit}`, `up ${r}`];
+  else pair = [`${altS} ${unit}`, 'holding'];
   parts.push(pair[0]);
   if (!C.saidGood && s.altFt < 90 && s.altFt > 55 && s.downFps > 0 && s.downFps < 4.5 && Math.abs(s.fwdFps) < 12) {
     C.saidGood = true;
@@ -64,8 +75,8 @@ export function buildCallout(s, C) {
   }
   parts.push(pair[1]);
   if (s.lpdDeg != null && s.altFt > 400) parts.push(`${Math.round(s.lpdDeg)} degrees`);
-  if (s.altFt < 400 && Math.abs(s.fwdFps) >= 0.75) {
-    parts.push(s.fwdFps > 0 ? `${spokenRate(s.fwdFps)} forward` : `${spokenRate(s.fwdFps)} back`);
+  if (s.altFt < 400 && Math.abs(s.fwdFps) >= 0.75 && sp(s.fwdFps) !== 'zero') {
+    parts.push(s.fwdFps > 0 ? `${sp(s.fwdFps)} forward` : `${sp(s.fwdFps)} back`);
   }
   // one-time remarks, only when true
   if (!C.saidDust && s.dust && s.altFt < 60 && s.altFt > 20) {
@@ -108,6 +119,7 @@ export function landingCallouts(v, C, game, lpdDeg) {
     n: C.n,
     dust: v.mainEngine.firing && altM < 30,
     shadow: altM < 14,
+    metric: game.settings?.units === 'metric',
   };
   const text = buildCallout(s, C);
   C.n++;

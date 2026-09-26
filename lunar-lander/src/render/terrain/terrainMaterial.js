@@ -41,6 +41,8 @@ export const LUNAR_GLSL = /* glsl */ `
   uniform vec3 uEarthDir;
   uniform vec3 uCamMCI;
   float orbitK = 0.0; // 0 near the ground .. 1 from orbit (set by the terrain shader per pixel)
+  float gPixCell = 0.0; // pixel footprint in cells of the band being shaded
+  float gDeg = 0.22;    // depth of fully degraded craters (x fresh depth)
 
   // Lunar phase function incl. opposition surge (1 at alpha = 0).
   float lunarPhase(float alpha) {
@@ -87,7 +89,7 @@ export const LUNAR_GLSL = /* glsl */ `
   // Crater cross-section in units of the rim radius (a = 1). k = freshness (0 degraded .. 1 fresh).
   float craterH(float t, float k) {
     if (t >= 1.9) return 0.0;
-    float dep = 0.38 * (0.22 + 0.78 * k);
+    float dep = 0.38 * (gDeg + (1.0 - gDeg) * k);
     float rim = 0.072 * (0.25 + 0.75 * k);
     float hf;
     if (t < 1.0) {
@@ -141,12 +143,20 @@ export const LUNAR_GLSL = /* glsl */ `
     bright += w * fr * fr * (t < 1.0 ? 0.7 + 0.3 * t * t : max(0.0, 1.0 - (t - 1.0) / 0.9));
     // steep walls and rim crests expose immature (brighter) soil even on fairly old craters: the main
     // reason craters stay visible under a high Sun, when shading contrast is nearly gone
-    bright += w * smoothstep(0.05, 0.3, abs(dh)) * (0.22 + 0.5 * fr);
-    // seen from orbit every crater carries a slightly brighter wall/rim ring and a darker, mature floor
-    // (the albedo pattern that saturates highland photographs even under a high Sun)
-    float ring = smoothstep(0.4, 0.85, t) * (1.0 - smoothstep(1.0, 1.45, t));
-    bright += w * orbitK * ring * (0.16 + 0.5 * fr);
-    bright -= w * orbitK * (1.0 - smoothstep(0.3, 0.8, t)) * (1.0 - fr) * 0.13;
+    bright += w * smoothstep(0.05, 0.3, abs(dh)) * (0.22 + 0.5 * fr) * (1.0 - 0.6 * orbitK);
+    // seen from orbit every crater carries a crisp bright rim crest, brighter upper walls, a bright
+    // ejecta apron when fresh, and a darker, mature floor: the albedo pattern that keeps highland
+    // photographs saturated with craters even under a high Sun (when the shading is nearly gone).
+    // The crest is never narrower than ~1.5 px (no sparkle).
+    if (orbitK > 0.0) {
+      float cw = max(0.08, 1.5 * gPixCell / a);
+      float cq = (t - 1.0) / cw;
+      float crest = exp(-cq * cq);
+      float wall = smoothstep(0.5, 0.92, t) * (1.0 - smoothstep(0.92, 1.02, t));
+      float apron = t > 1.0 ? fr * max(0.0, 1.0 - (t - 1.0) / 0.7) : 0.0;
+      bright += w * orbitK * (crest * (0.06 + 0.75 * fr) + wall * (0.03 + 0.3 * fr) + apron * 0.45);
+      bright -= w * orbitK * (1.0 - smoothstep(0.25, 0.75, t)) * (1.0 - fr) * 0.12;
+    }
     // analytic shadow cast by the rim on the bowl, minus the part hidden from the viewer by the
     // near rim (looking down-sun, crater shadows hide behind the rims just like in Apollo photos)
     if (t < 1.0 && tanE < 3.0) {
@@ -164,7 +174,7 @@ export const LUNAR_GLSL = /* glsl */ `
     }
   }
 
-  void craterBand(vec3 x, vec3 up, vec3 Lt, float tanE, vec3 Vt, float tanV, float dens, float young, float w, inout vec3 grad, inout float shadow, inout float bright, inout float cavity) {
+  void craterBand(vec3 x, vec3 up, vec3 Lt, float tanE, vec3 Vt, float tanV, float dens, float dens2, float young, float w, inout vec3 grad, inout float shadow, inout float bright, inout float cavity) {
     vec3 b = floor(x - 0.5);
     vec3 l = x - b;                        // in [0.5, 1.5)
     float best = 1.0;
@@ -175,14 +185,21 @@ export const LUNAR_GLSL = /* glsl */ `
     vec4 br2 = vec4(0.0);
     float brho2 = 0.25;
     float brho22 = 0.25;
-    for (int k = 0; k < 8; k++) {
-      vec3 o = vec3(float(k & 1), float((k >> 1) & 1), float(k >> 2));
+    for (int k = 0; k < 16; k++) {
+      // two candidates per cell (the second derived from the same hash): dense, overlapping craters
+      int kc = k & 7;
+      vec3 o = vec3(float(kc & 1), float((kc >> 1) & 1), float(kc >> 2));
       vec4 r = cellRand(b + o);
+      float dd = dens;
+      if (k >= 8) {
+        r = fract(r.zxwy * 5.371 + vec4(0.618, 0.337, 0.791, 0.143));
+        dd = dens2;
+      }
       vec3 q = o + r.xyz - l;            // p -> candidate (cells)
       float u = fract(r.w * 7.31 + r.y * 1.7);
       float sc = 0.3 + 0.7 * u * u;      // ball radius scale: power-law size spread
       float rho2 = 0.25 * sc * sc;
-      float score = dot(q, q) / rho2 + step(dens, r.w) * 2.0;
+      float score = dot(q, q) / rho2 + step(dd, r.w) * 2.0;
       if (score < best) {
         best2 = best; bq2 = bq; br2 = br; brho22 = brho2;
         best = score; bq = q; br = r; brho2 = rho2;
@@ -367,11 +384,12 @@ const TERRAIN_VERT = /* glsl */ `
   }
 `;
 
-function terrainFrag(vesselGLSL) {
+function terrainFrag(vesselGLSL, rockGLSL) {
   return /* glsl */ `
   #include <common>
   #include <logdepthbuf_pars_fragment>
   ${vesselGLSL}
+  ${rockGLSL}
   ${LUNAR_GLSL}
   uniform vec3 uBandOff[${BAND_COUNT}];
   uniform float uBandCell[${BAND_COUNT}];
@@ -392,6 +410,7 @@ function terrainFrag(vesselGLSL) {
     vec3 V = safeNormalize(-vPos, up);
     vec3 L = uSunDir;
     float dist = length(vPos);
+    float sinV0 = dot(V, up);
     float albedo = vAux.x;
     float mare = vAux.z;
     float freshV = vAux.w;
@@ -417,13 +436,23 @@ function terrainFrag(vesselGLSL) {
     float bright = 0.0;
     float cavity = 0.0;
     float meshMin = max(dist * mix(uMeshK.x, uMeshK.y, smoothstep(12000.0, 40000.0, dist)), uMinMeshD);
-    float fwP = length(fwidth(vPos)); // metres per pixel
+    // metres per pixel (along the view, i.e. the larger footprint). From the smooth view ray and the
+    // sphere normal, NOT from fwidth(vPos): the derivatives of the faceted mesh jump from one triangle
+    // row to the next at grazing angles (a facet tilted by 1 deg changes the footprint 2-3x at a 2 deg
+    // grazing view), which switched detail octaves and band weights row by row = horizontal banding.
+    float fwP = dist * length(fwidth(V)) / max(abs(sinV0), 0.025);
     orbitK = smoothstep(4000.0, 40000.0, dist);
+    // km-scale craters seen from orbit: degraded ones keep more relief (wall shading carries them)
+    gDeg = mix(0.22, 0.42, orbitK);
     // first band whose largest craters (0.5 cell) are below the mesh resolution; then 3 bands down
+    // From orbit the mesh (a few vertices per km-sized crater) renders craters as soft lumps without crisp
+    // rims: let the shader draw sizes up to ~2x further above the mesh resolution, and one band more.
+    meshMin *= 1.0 + 1.2 * orbitK;
+    float nBands = uBands + step(0.3, orbitK);
     int i0 = int(clamp(ceil(log(${(0.5 * BAND_CELL0).toFixed(1)} / meshMin) / log(2.4) - 0.3), 0.0, float(${CRATER_BANDS} - 1)));
-    for (int j = 0; j < 3; j++) {
+    for (int j = 0; j < 4; j++) {
       int i = i0 + j;
-      if (i >= ${CRATER_BANDS} || float(j) >= uBands) break;
+      if (i >= ${CRATER_BANDS} || float(j) >= nBands) break;
       float cell = uBandCell[i];
       float dmax = 0.5 * cell;
       // band weight: only below mesh resolution, and only while craters span > ~2.5 px
@@ -433,9 +462,14 @@ function terrainFrag(vesselGLSL) {
       // crater density: highlands near saturation; maria have few large (post-flooding) craters
       // (two craters per cell and a power-law size spread: these are per-candidate densities)
       float mareDens = dmax > 3000.0 ? 0.3 : dmax > 600.0 ? 0.4 : dmax > 150.0 ? 0.45 : 0.6;
+      float mareDens2 = dmax > 3000.0 ? 0.08 : dmax > 600.0 ? 0.2 : dmax > 150.0 ? 0.3 : 0.45;
       float dens = mix(0.85, mareDens, mare);
+      float dens2 = mix(0.75, mareDens2, mare);
       vec3 x = vPos / cell + uBandOff[i];
-      craterBand(x, up, Lt, tanE, Vt, tanV, dens, dmax < 8.0 ? 1.6 : 1.0, w, grad, shadow, bright, cavity);
+      gPixCell = fwP / cell;
+      // young: exponent on the freshness; km-scale craters seen from orbit keep crisper rims
+      float young = dmax < 8.0 ? 1.6 : mix(1.0, 0.55, smoothstep(150.0, 1500.0, dmax));
+      craterBand(x, up, Lt, tanE, Vt, tanV, dens, dens2, young, w, grad, shadow, bright, cavity);
     }
     // pebbles & clods within a few tens of metres (0.55 m cells: 3-14 cm; 0.23 m cells: 1-6 cm)
     float albedoMul = 1.0;
@@ -463,7 +497,9 @@ function terrainFrag(vesselGLSL) {
         float cell = uBandCell[i];
         float u = fr + float(j);
         float wf = smoothstep(0.0, 1.0, u) * (1.0 - smoothstep(2.0, 3.0, u));
-        float amp = mix(0.045, 0.075, smoothstep(0.05, 0.012, cell));
+        // (metre-scale soil is smooth between craters: large, blobby noise bumps read as smeared
+        // streaks under the grazing Sun; the grain below a few cm is rough)
+        float amp = mix(0.012, 0.07, smoothstep(0.4, 0.02, cell));
         Hb += wf * valueNoise(vPos / cell + uBandOff[i] + 57.0) * cell * amp;
       }
       N = bumpNormal(vPos, N, Hb);
@@ -486,11 +522,14 @@ function terrainFrag(vesselGLSL) {
         mott += wf * (valueNoise(vPos / cell + uBandOff[i]) - 0.5) * amp;
       }
     }
-    float A = albedo * (1.0 + mott) * (1.0 + 0.9 * bright * (1.0 - 0.4 * freshV)) * albedoMul;
+    // fresh/steep crater brightening: moderate near the ground (immature soil is ~1.3-1.6x brighter, not
+    // 3x), stronger from orbit where albedo is what keeps craters visible under a high Sun
+    float kBright = mix(0.32, 0.9, orbitK);
+    float A = albedo * (1.0 + mott) * (1.0 + kBright * min(bright, 1.3) * (1.0 - 0.4 * freshV)) * albedoMul;
     A *= max(1.0 + 0.08 * cavity, 0.6);
     // (strongest from orbit, where it is what keeps craters visible under a high Sun; near the ground the
     // sunward walls of small craters are already bright from the incidence angle alone)
-    A *= 1.0 + mix(0.12, 0.4, smoothstep(3000.0, 40000.0, dist)) * steep * (1.0 - 0.5 * freshV);
+    A *= 1.0 + mix(0.06, 0.4, smoothstep(3000.0, 40000.0, dist)) * steep * (1.0 - 0.5 * freshV);
 
     // colour: mature mare is brownish-grey, highlands a lighter warm grey, fresh ejecta neutral/bluish
     vec3 tintMare = vec3(1.0, 0.965, 0.92);
@@ -500,6 +539,7 @@ function terrainFrag(vesselGLSL) {
 
     float direct = lunarReflectance(N, L, V) * vis * shadow;
     direct *= vesselShadow(vPos);
+    if (dist < 3000.0) direct *= rockShadow(vPos, 0.02);
     // light scattered from the sunlit surroundings into shadows (sky is black)
     float fill = uFill * max(sinE, 0.0) * (0.5 + 0.5 * dot(N, up));
     // earthshine on the night side (tiny)
@@ -537,6 +577,7 @@ export function createTerrainMaterial(ctx, lunar, opts) {
   const uniforms = {
     ...lunar,
     ...ctx.vesselShadow.uniforms,
+    ...opts.rockShadow.uniforms,
     uMorphRange: { value: new THREE.Vector2(1e30, 2e30) },
     uLimb: { value: 0 },
     uBandOff: { value: bandOff },
@@ -548,7 +589,7 @@ export function createTerrainMaterial(ctx, lunar, opts) {
   const mat = new THREE.ShaderMaterial({
     uniforms,
     vertexShader: TERRAIN_VERT,
-    fragmentShader: terrainFrag(ctx.vesselShadow.glsl),
+    fragmentShader: terrainFrag(ctx.vesselShadow.glsl, opts.rockShadow.glsl),
     extensions: { derivatives: true },
   });
   mat.name = 'LunarTerrain';

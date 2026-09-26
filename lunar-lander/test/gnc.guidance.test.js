@@ -135,10 +135,12 @@ test('full automatic descent from PDI: P63 -> P64 -> P66 reaches Low Gate near t
   assert.equal(lm.landed, true, lm.crashReason || 'landed');
   assert.notEqual(game.result.outcome, 'hard');
   assert.ok(game.result.distanceToTarget < 100, `touchdown ${game.result.distanceToTarget.toFixed(0)} m from the target`);
-  // ENGINE STOP about 1 s after the contact light; the LM drops the last metre (~1-2 m/s, as flown)
+  // ENGINE STOP a few seconds after the contact light, with the pads just above the surface
   const stop = events.find((e) => e.t === 'message' && /ENGINE STOP pushed/.test(e.p.text));
-  assert.ok(stop && contactMet != null && stop.met - contactMet < 1.6, `engine stop ${(stop?.met - contactMet).toFixed(2)} s after contact light`);
-  assert.ok(game.result.vSpeed < 2.5, `touchdown sink ${game.result.vSpeed.toFixed(2)} m/s`);
+  assert.ok(stop && contactMet != null && stop.met - contactMet < 5.1, `engine stop ${(stop?.met - contactMet).toFixed(2)} s after contact light`);
+  assert.ok(game.result.vSpeed < 1.5, `touchdown sink ${game.result.vSpeed.toFixed(2)} m/s`);
+  assert.ok(game.result.hSpeed < 0.3 && game.result.tiltDeg < 3, `touchdown drift ${game.result.hSpeed.toFixed(2)} m/s, tilt ${game.result.tiltDeg.toFixed(1)} deg`);
+  assert.ok(['good', 'perfect'].includes(game.result.rating), game.result.rating);
   // Buzz Aldrin style callouts were made from the live telemetry
   const calls = events.filter((e) => e.t === 'callout').map((e) => e.p.text);
   assert.ok(calls.some((c) => /feet, (down|coming down|\d)/.test(c)), 'altitude/rate callouts');
@@ -170,6 +172,7 @@ test('P66 holds the commanded rate of descent within 0.2 m/s (pilot on attitude 
   const { game, sim } = makeSim('lowgate');
   const lm = game.vessels.LM;
   assert.equal(lm.gnc.program, 'P66');
+  game.events.emit('action', { name: 'AUTOPILOT', mode: 'OFF' }); // the pilot holds the attitude
   for (let i = 0; i < 10; i++) game.events.emit('action', { name: 'ROD_UP' }); // -5 m/s + 10 ft/s
   const cmd = lm.gnc.rodCmd;
   assert.ok(Math.abs(cmd - (-5 + 10 * FT)) < 1e-9);
@@ -235,6 +238,7 @@ test('P12 ascent from Tranquility Base reaches orbit (perilune > 15 km)', () => 
       pro = true;
     }
     if (cut == null && !lm.mainEngine.firing && lm.staged && game.time.met > tig + 20) cut = game.time.met - tig;
+    if (lm.mainEngine.firing && game.time.met > tig + 100) lm.ctrl.throttle = 0.6; // lever left up: P12 ignores it
   });
   assert.equal(lm.staged, true);
   assert.ok(events.some((e) => e.t === 'stage'));
@@ -242,8 +246,14 @@ test('P12 ascent from Tranquility Base reaches orbit (perilune > 15 km)', () => 
   assert.ok(lm.tel.periapsisAlt > 15000, `perilune ${(lm.tel.periapsisAlt / 1000).toFixed(1)} km`);
   assert.ok(lm.tel.apoapsisAlt > 60000 && lm.tel.apoapsisAlt < 110000, `apolune ${(lm.tel.apoapsisAlt / 1000).toFixed(1)} km`);
   assert.equal(lm.gnc.autopilot, 'LOCAL_VERTICAL');
+  // insertion message in the player's (default: Apollo) units; the lever is zeroed at cut-off so
+  // the manual throttle of P00 cannot relight the APS
+  const ins = events.find((e) => e.t === 'message' && /^Insertion/.test(e.p.text));
+  assert.match(ins.p.text, /Orbit [\d.]+ × [\d.]+ nmi$/);
+  assert.equal(lm.ctrl.throttle, 0);
   runUntil(sim, game, 1);
   assert.equal(lm.agc.noun, '44');
+  assert.equal(lm.mainEngine.firing, false, 'no relight in P00');
 });
 
 test('CSM: P00 with V16 N44, P47 thrust monitor while translating', () => {

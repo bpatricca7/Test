@@ -66,7 +66,12 @@ test('bindings are conflict-free and avoid browser keys', () => {
     }
   }
   for (const code of Object.values(THROTTLE_KEYS)) assert.ok(!seen.has(code), `throttle key ${code} also bound elsewhere`);
-  for (const code of Object.keys(SHIFT_ACTION_KEYS)) assert.ok(ACTION_KEYS[code], 'shift variants extend a plain key');
+  for (const code of Object.keys(SHIFT_ACTION_KEYS)) assert.ok(ACTION_KEYS[code] || code === THROTTLE_KEYS.cut, 'shift variants extend a plain key');
+  // X = ENGINE STOP (latching), Shift+X = ENGINE START (resets the latch)
+  assert.equal(THROTTLE_KEYS.cut, 'KeyX');
+  assert.equal(SHIFT_ACTION_KEYS.KeyX, 'ENGINE_START');
+  assert.ok(BINDINGS.some((b) => b.keys.includes('Shift+X') && /ENGINE START/.test(b.action)));
+  assert.ok(BINDINGS.some((b) => b.keys.includes('X') && /latch/i.test(b.action)));
   for (const bad of ['F5', 'F11', 'F12', 'ControlLeft', 'MetaLeft', 'AltLeft']) assert.ok(!GAME_CODES.has(bad), `${bad} must stay with the browser`);
   // the required layout
   assert.deepEqual(AXIS_KEYS.KeyW, ['pitch', -1]);

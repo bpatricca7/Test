@@ -179,7 +179,7 @@ export function createInput(game, el) {
       return;
     }
     if (code === 'Backspace') return stagePress();
-    if (code === THROTTLE_KEYS.cut) return engineStop();
+    if (code === THROTTLE_KEYS.cut) return e.shiftKey ? emit('ENGINE_START') : engineStop();
     if ((code === THROTTLE_KEYS.up || code === THROTTLE_KEYS.down) && rodMode(v)) {
       // rate-of-descent switch: one click right away, update() repeats it while held
       const st = code === THROTTLE_KEYS.up ? rodUp : rodDown;

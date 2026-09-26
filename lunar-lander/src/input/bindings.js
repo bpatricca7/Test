@@ -10,7 +10,8 @@
 //   action  what it does, phrased for the player
 //
 // Guidance programs can also be selected with the 'action' event PROGRAM {program}
-// (P00, P47, P64, P66, P67, P68, P12, P70, P71) — there is no key for it; the UI may offer it.
+// (P00, P40, P47, P63, P64, P66, P67, P68, P12, P70, P71) — there is no key for it; the Esc menu's
+// Flight tab offers them (Guidance section).
 
 /** Continuous hand-controller axes: code -> [axis, sign]. */
 export const AXIS_KEYS = {
@@ -64,7 +65,8 @@ export const AUTOPILOT_KEYS = {
 /**
  * Discrete actions: code -> action name (plain key) — `shift` variants override with Shift held.
  * Handled specially in input.js: Backspace (STAGE needs a double press), KeyX (throttle cut +
- * ENGINE_STOP), CapsLock (fine control), Slash with Shift / '?' (HELP).
+ * ENGINE_STOP, which latches; Shift+X = ENGINE_START resets the latch), CapsLock (fine control),
+ * Slash with Shift / '?' (HELP).
  */
 export const ACTION_KEYS = {
   Space: 'PRO',
@@ -91,6 +93,7 @@ export const ACTION_KEYS = {
 };
 export const SHIFT_ACTION_KEYS = {
   KeyC: 'CYCLE_STATION',
+  KeyX: 'ENGINE_START', // resets the latched ENGINE STOP (X)
 };
 
 /** Keys that still work while a UI overlay captures input (so the same key closes it). */
@@ -135,7 +138,8 @@ export const BINDINGS = [
   // ---- engine
   { group: 'Engine', keys: ['R', 'F'], action: 'Throttle up / down (hold; Shift = fine)', gamepad: 'RT / LT' },
   { group: 'Engine', keys: ['Z'], action: 'Full throttle' },
-  { group: 'Engine', keys: ['X'], action: 'Throttle cut / ENGINE STOP' },
+  { group: 'Engine', keys: ['X'], action: 'ENGINE STOP — cuts the throttle and latches: the engine stays off, even under guidance, until ENGINE START' },
+  { group: 'Engine', keys: ['Shift+X'], action: 'ENGINE START — reset the ENGINE STOP latch (then throttle up to relight)' },
   { group: 'Engine', keys: ['R', 'F'], action: 'In P66 with auto throttle: rate-of-descent switch, one click = 1 ft/s (F = descend faster)', gamepad: 'RT / LT' },
   { group: 'Engine', keys: ['Backspace ×2'], action: 'ABORT STAGE — separate the ascent stage (press twice within 1 s)' },
   // ---- guidance computer

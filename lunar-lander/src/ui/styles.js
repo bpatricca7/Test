@@ -202,6 +202,27 @@ export const CSS = /* css */ `
 .aui .fitem small { font: 500 10.5px/1 var(--sans); letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint); }
 .aui .fitem:hover, .aui .fitem:focus-visible { background: rgba(255,179,71,0.1); border-color: rgba(255,179,71,0.3); color: #fff; outline: none; }
 .aui .fitem:hover small, .aui .fitem:focus-visible small { color: var(--amber-2); }
+/* in-flight menu: actions (left) and the guidance program selector (right; below on phones) */
+.aui .fpage { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 22px 34px; }
+.aui .fpage .fmenu { width: min(100%, 340px); }
+.aui .fguid { width: min(100%, 300px); padding: 14px 16px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.aui .fguid h3 { margin: 0 0 12px; font: 600 10.5px/1 var(--sans); letter-spacing: 0.24em; text-transform: uppercase; color: var(--amber); }
+.aui .fguid h3 span { color: var(--faint); letter-spacing: 0.16em; }
+.aui .pgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.aui .pbtn {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 5px; padding: 9px 10px 8px; border-radius: 6px;
+  border: 1px solid var(--line); background: rgba(255,255,255,0.03); color: var(--fg-2); text-align: left;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+.aui .pbtn b { font: 500 15px/1 var(--mono); letter-spacing: 0.02em; }
+.aui .pbtn small { font: 600 9px/1.2 var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); max-width: 100%; }
+.aui .pbtn:hover, .aui .pbtn:focus-visible { background: rgba(255,179,71,0.1); border-color: rgba(255,179,71,0.35); color: #fff; outline: none; }
+.aui .pbtn:hover small, .aui .pbtn:focus-visible small { color: var(--amber-2); }
+.aui .pbtn.on { border-color: rgba(255,179,71,0.7); background: rgba(255,179,71,0.14); color: var(--amber-2); box-shadow: inset 0 0 0 1px rgba(255,179,71,0.25); }
+.aui .pbtn.on small { color: var(--amber); }
+.aui .pnote { min-height: 1.3em; margin-top: 10px; font-size: 12px; line-height: 1.4; color: var(--dim); }
+.aui .pnote:empty::before { content: "Select a program — the computer refuses one that is not available now (OPR ERR)."; color: var(--faint); }
+.aui .pnote.warn { color: var(--warn); }
 .aui .fstatus { margin-top: 22px; display: grid; grid-template-columns: repeat(3, auto); justify-content: start; gap: 6px 28px; }
 .aui .fstatus div { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--faint); }
 .aui .fstatus b { display: block; margin-top: 4px; font: 500 14px/1.1 var(--mono); letter-spacing: 0; color: var(--fg-2); }
@@ -373,6 +394,9 @@ export const CSS = /* css */ `
 
 /* ignition / PRO prompt */
 .aui .h-prompt { left: 50%; top: 5.6em; transform: translateX(-50%); text-align: center; padding: 0.55em 1.1em; border-color: rgba(255,179,71,0.45); background: rgba(30,20,6,0.62); }
+/* cockpit: strip + prompt stacked at the top centre */
+.aui .h-ivatop { position: absolute; left: 50%; top: 0.9em; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 0.5em; max-width: calc(100% - 1em); }
+.aui .h-ivatop > .hp { position: relative; left: auto; top: auto; right: auto; bottom: auto; transform: none; }
 .aui .h-prompt .pt { font: 700 0.78em/1.2 var(--sans); letter-spacing: 0.22em; text-transform: uppercase; color: var(--amber); }
 .aui .h-prompt .ph { margin-top: 0.3em; font-size: 0.78em; color: var(--fg-2); }
 .aui .h-prompt .tig { font: 500 1.25em/1.1 var(--mono); color: #fff; margin-top: 0.15em; }
@@ -436,13 +460,23 @@ export const CSS = /* css */ `
 
 /* IVA compact strip */
 .aui .h-strip {
-  left: 50%; top: 0.9em; transform: translateX(-50%); display: flex; align-items: baseline; gap: 1.2em; padding: 0.45em 1em;
+  left: 50%; top: 0.9em; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; padding: 0.45em 1em;
   font-size: 0.9em; white-space: nowrap; background: rgba(6,8,11,0.55);
 }
+.aui .h-strip .srow { display: flex; align-items: baseline; justify-content: center; gap: 1.2em; }
 .aui .h-strip .hl { margin-right: 0.45em; }
 .aui .h-strip .hv { font-size: 1em; }
 .aui .h-strip .sid { font: 600 0.8em/1 var(--sans); letter-spacing: 0.2em; color: var(--amber); }
 .aui .h-strip .sep { width: 1px; align-self: stretch; background: rgba(255,255,255,0.12); }
+/* phase row: what the current phase is flown on (TIG / TGO, LPD, ROD, range / closing / docking) */
+.aui .h-strip .sphase {
+  display: flex; align-items: baseline; justify-content: center; flex-wrap: wrap; gap: 0.35em 1.35em; margin-top: 0.42em; padding-top: 0.42em;
+  border-top: 1px solid rgba(255,179,71,0.2); align-self: stretch;
+}
+.aui .h-strip .sphase .pname { font: 600 0.72em/1 var(--sans); letter-spacing: 0.24em; text-transform: uppercase; color: var(--amber); }
+.aui .h-strip .sphase .hv { font-size: 1.12em; color: var(--amber-2); }
+.aui .h-strip .sphase .hv.warn { color: var(--warn); }
+.aui .h-strip .sphase .hv.alarm { color: var(--alarm); }
 
 /* 3D markers */
 .aui .markers { position: absolute; inset: 0; z-index: 1; }
@@ -519,6 +553,14 @@ export const CSS = /* css */ `
 .aui .fhint b { font: 700 0.7em/1 var(--sans); letter-spacing: 0.22em; text-transform: uppercase; color: var(--contact); }
 @keyframes aui-slide { from { opacity: 0; transform: translateX(-1.2em); } to { opacity: 1; transform: none; } }
 
+/* establishing shot: letterbox bars (slide away when the shot hands over) and the dip to black */
+.aui .lbox { position: absolute; inset: 0; z-index: 6; overflow: hidden; }
+.aui .lbox i { position: absolute; left: 0; right: 0; height: min(11vh, 10vw); background: #000; transition: transform 0.9s var(--ease); }
+.aui .lbox .lt { top: 0; transform: translateY(-100%); }
+.aui .lbox .lb { bottom: 0; transform: translateY(100%); }
+.aui .lbox.on i { transform: none; transition-duration: 0.35s; }
+.aui .cfade { position: absolute; inset: 0; z-index: 7; background: #000; opacity: 0; }
+
 /* mission title card */
 /* lower third: clear of the spacecraft (centre) and the markers above the horizon */
 .aui .intro { position: absolute; z-index: 8; left: 50%; bottom: 8.6em; transform: translateX(-50%); text-align: center; font-size: var(--hud); white-space: nowrap; text-shadow: 0 1px 3px rgba(0,0,0,0.95), 0 0 14px rgba(0,0,0,0.75), 0 0 32px rgba(0,0,0,0.5); opacity: 0; }
@@ -577,8 +619,17 @@ export const CSS = /* css */ `
   .aui .h-cw { right: 0.8em; top: 5.2em; }
   .aui .h-prompt { top: 9em; }
   .aui .h-nav { display: none; }
-  .aui .h-strip { top: 0.6em; font-size: 0.8em; gap: 0.8em; max-width: calc(100% - 1em); overflow: hidden; }
-  .aui .ticker, .aui .ticker.below, .aui .ticker.nohud:not(.iva) { top: auto; bottom: 15em; }
+  .aui .h-strip { font-size: 0.8em; max-width: 100%; overflow: hidden; }
+  .aui .h-strip .srow { flex-wrap: wrap; gap: 0.3em 0.8em; white-space: nowrap; }
+  .aui .h-strip .srow .sep { display: none; }
+  .aui .h-strip .sid { flex-basis: 100%; text-align: center; }
+  .aui .h-ivatop { top: 0.6em; }
+  /* captions and messages: under the top HUD panels, above the spacecraft (never over it or the
+     touchdown area in the lower half of a chase view) */
+  .aui .ticker { top: 7em; width: calc(100% - 1.6em); }
+  .aui .ticker.below { top: 14em; }
+  .aui .ticker.nohud:not(.iva) { top: 0.8em; }
+  .aui .ticker.iva { top: auto; bottom: 3.4em; }
   .aui .ftips { top: 10.5em; transform: none; left: 0.8em; width: min(23em, calc(100% - 1.6em)); }
   .aui.touch .ftips { display: none; }
   .aui .ftips .tips, .aui .fcn { display: none; }

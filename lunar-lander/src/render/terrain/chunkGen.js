@@ -18,10 +18,10 @@
 //           chunks see casters near their shared edge identically (seamless shadows across chunks)
 //   mid   — up to 3 chunk sizes toward the Sun: a coarser grid on a global per-level lattice
 //   far   — beyond: 3x3 shared rays per chunk evaluated with terrainHeightLOD (features ~ s/6)
-// Boulders are included in the finest grids, so boulders cast their long low-Sun shadows.
+// Boulders are NOT in these grids: their long low-Sun shadows come from the rock shadow maps (rockShadow.js).
 
 import { MOON } from '../../core/constants.js';
-import { evalSurface, createSample, enumerateBoulders, BOULDER_MAX_SIZE, SURFACE_FLAGS } from '../../world/moon.js';
+import { evalSurface, createSample, enumerateBoulders, SURFACE_FLAGS } from '../../world/moon.js';
 import { FACES, faceDir, dirToFaceST, dirFace } from './cubeSphere.js';
 
 const R = MOON.radius;
@@ -89,8 +89,9 @@ export function* chunkJob(req) {
   // features below ~3 vertex spacings are left to the shader; the finest level keeps every crater so the
   // mesh under the footpads matches what physics collides with (boulders are separate instanced rocks)
   const lod = level >= (req.maxLevel ?? 99) ? Math.min(3 * sp, 1.5) : 3 * sp;
-  const withBoulders = lod < BOULDER_MAX_SIZE;
-  const flags = SURFACE_FLAGS.ALBEDO | (withBoulders ? SURFACE_FLAGS.BOULDERS : 0);
+  // (boulders are not part of the mesh, and their cast shadows come from the rock shadow maps, which
+  // are crisp: the per-vertex horizon only sees the terrain itself)
+  const flags = SURFACE_FLAGS.ALBEDO;
   const gd = cw / seg;
   // Fine grid = the vertices plus a 1-cell border (normals) plus FINE_EXT cells on the sides facing the
   // Sun, so that shadow casters just across a chunk edge are seen at the same resolution by both
@@ -376,7 +377,7 @@ function* computeHorizon(c) {
         const nt = Math.ceil((tB - tA) / md) + 1;
         mid = makeGrid(f, sA, tA, md, ns, nt);
         const mlod = 3 * (size / MID_RES);
-        const mflags = mlod < BOULDER_MAX_SIZE ? SURFACE_FLAGS.BOULDERS : 0;
+        const mflags = 0;
         for (let b = 0; b < nt; b++) {
           for (let a = 0; a < ns; a++) {
             faceDir(f, sA + a * md, tA + b * md, _d);
@@ -516,8 +517,9 @@ function* computeHorizon(c) {
 }
 
 // Boulders whose centres fall inside this chunk. Packed float32, stride BOULDER_STRIDE:
-// [x, y, z (base centre rel. chunk centre), r, H, variant, cos psi, sin psi, sun delta, tint]
-export const BOULDER_STRIDE = 10;
+// [x, y, z (base centre rel. chunk centre), r, H, variant, cos psi, sin psi, sun delta, tint 0..1,
+//  ground slope east, ground slope north (m/m, over the rock's footprint), ground albedo, curvature 1/m]
+export const BOULDER_STRIDE = 14;
 function collectBoulders(oi, f, s0, t0, cw, size, cx, cy, cz, march) {
   const cell = [12, 5, 2.2][oi];
   const n = Math.ceil(size / (cell * 0.45)) + 2;
@@ -532,13 +534,48 @@ function collectBoulders(oi, f, s0, t0, cw, size, cx, cy, cz, march) {
     return _st[0] >= s0 && _st[0] < s0 + cw && _st[1] >= t0 && _st[1] < t0 + cw;
   };
   enumerateBoulders(oi, samples, inside, (b) => {
-    // base height: full-detail surface without boulders at the centre
-    evalSurface(b.x, b.y, b.z, 0, 0, _o);
-    const r = R + _o.h;
+    // base height: full-detail surface without boulders at the centre (+ the soil albedo there)
+    evalSurface(b.x, b.y, b.z, 0, SURFACE_FLAGS.ALBEDO, _o);
+    const h0 = _o.h;
+    const alb = _o.albedo;
+    const r = R + h0;
+    // ground slope across the rock's footprint (the renderer drapes the mesh like the collision profile)
+    const bx = b.x;
+    const by = b.y;
+    const bz = b.z;
+    const ex = b.ex;
+    const ey = b.ey;
+    const ez = b.ez;
+    const nx = b.nx;
+    const ny = b.ny;
+    const nz = b.nz;
+    let ge = 0;
+    let gn = 0;
+    let curv = 0;
+    if (b.r > 0.12) {
+      const d = b.r;
+      const k = d / R;
+      const hAt = (u, v) => {
+        const x = bx + (ex * u + nx * v) * k;
+        const y = by + (ey * u + ny * v) * k;
+        const z = bz + (ez * u + nz * v) * k;
+        const l = Math.hypot(x, y, z);
+        return evalSurface(x / l, y / l, z / l, 0, 0, _o).h;
+      };
+      const he = hAt(1, 0);
+      const hw = hAt(-1, 0);
+      const hn = hAt(0, 1);
+      const hs = hAt(0, -1);
+      ge = Math.max(-0.7, Math.min(0.7, (he - hw) / (2 * d)));
+      gn = Math.max(-0.7, Math.min(0.7, (hn - hs) / (2 * d)));
+      // mean curvature (1/m): convex crater rims and bowls
+      curv = Math.max(-0.4, Math.min(0.4, (he + hw + hn + hs - 4 * h0) / (2 * d * d)));
+    }
     // sun horizon delta seen from half-way up the rock (its own march toward the Sun)
-    dirToFaceST(f, b.x, b.y, b.z, _st);
-    const hz = march(b.x, b.y, b.z, _o.h + 0.5 * b.H, (_st[0] - s0) / cw, (_st[1] - t0) / cw);
-    list.push(b.x * r - cx, b.y * r - cy, b.z * r - cz, b.r, b.H, b.vi, b.cps, b.sps, hz, (b.cps * 7.1 + b.sps * 3.3) % 1);
+    dirToFaceST(f, bx, by, bz, _st);
+    const hz = march(bx, by, bz, h0 + 0.5 * b.H, (_st[0] - s0) / cw, (_st[1] - t0) / cw);
+    const tint = (((b.cps * 7.1 + b.sps * 3.3) % 1) + 1) % 1;
+    list.push(bx * r - cx, by * r - cy, bz * r - cz, b.r, b.H, b.vi, b.cps, b.sps, hz, tint, ge, gn, alb, curv);
   });
   return list.length ? Float32Array.from(list) : null;
 }

@@ -33,6 +33,30 @@ import { fmtMET, fmtAlt, fmtPct, fmtWarp, PROGRAM_NAMES, FT } from './format.js'
 
 const RESULT_DELAY_MS = { landed: 5200, hard: 3200, crashed: 2400, tipped: 3000 };
 
+/** Short labels of the selectable programs (menu buttons). */
+const PROGRAM_LABEL = {
+  P00: 'Idle',
+  P40: 'DOI burn',
+  P47: 'Thrust monitor',
+  P63: 'Braking',
+  P64: 'Approach',
+  P66: 'Rate of descent',
+  P67: 'Manual',
+  P70: 'DPS abort',
+  P71: 'APS abort',
+  P12: 'Ascent',
+};
+
+/** Programs the crew can select on this vessel's computer (the GNC still checks each one). */
+export function programsFor(v) {
+  if (!v) return [];
+  if (v.type === 'CSM') return ['P00', 'P47'];
+  const list = ['P00'];
+  if (!v.docked) list.push('P40'); // DOI: after undocking
+  list.push('P63', 'P64', 'P66', 'P67', 'P70', 'P71', 'P12');
+  return list;
+}
+
 export function createUI(game, rootEl, api) {
   injectStyles();
   ensureDefaults(game.settings);
@@ -66,7 +90,11 @@ export function createUI(game, rootEl, api) {
   const introTitle = h('div.it');
   const introSub = h('div.is');
   const intro = h('div.intro.hidden', { 'aria-hidden': 'true' }, introOver, introTitle, introSub);
-  root.append(...[markers?.el, hud.el, tips.el, intro, ticker.el, pauseBar].filter(Boolean));
+  // establishing shot at mission start (render/cameras.js): letterbox bars and the dip through black
+  // into the cockpit; the HUD waits until the shot is over
+  const letterbox = h('div.lbox', { 'aria-hidden': 'true' }, h('i.lt'), h('i.lb'));
+  const cineFade = h('div.cfade', { 'aria-hidden': 'true' });
+  root.append(...[markers?.el, hud.el, tips.el, letterbox, cineFade, intro, ticker.el, pauseBar].filter(Boolean));
 
   // ---------------------------------------------------------------- title / menu screen
   const bdCanvas = h('canvas.bd');
@@ -112,19 +140,28 @@ export function createUI(game, rootEl, api) {
   const fRestartHint = slot(h('small'));
   const fRestart = h('button.fitem', { type: 'button' }, h('span', null, 'Restart mission'), fRestartHint.el);
   fRestart.addEventListener('click', () => restart());
-  const flightPage = h('div.fmenu', null,
-    fResume,
-    fRestart,
-    fItem('Change mission', `${(api.scenarios || []).length} missions`, () => setTab('missions')),
-    fItem('Settings', 'Units · sound · display', () => setTab('settings')),
-    fItem('Controls', 'F1', () => setTab('controls')),
-    h('div.fstatus', null,
-      ...['Vessel', 'Program', 'Altitude', 'Propellant', 'GET', 'Warp'].map((k) => {
-        const b = h('b');
-        fStatus[k] = slot(b);
-        return h('div', null, k, b);
-      }),
+  // Guidance: select a program of the active vessel's computer (PROGRAM action; the GNC refuses
+  // an unavailable one with OPR ERR, shown here)
+  const progGrid = h('div.pgrid', { role: 'group', 'aria-label': 'Guidance programs' });
+  const progHead = slot(h('span'));
+  const progNote = h('div.pnote', { role: 'status' });
+  const guidance = h('section.fguid', null, h('h3', null, 'Guidance', progHead.el), progGrid, progNote);
+  const flightPage = h('div.fpage', null,
+    h('div.fmenu', null,
+      fResume,
+      fRestart,
+      fItem('Change mission', `${(api.scenarios || []).length} missions`, () => setTab('missions')),
+      fItem('Settings', 'Units · sound · display', () => setTab('settings')),
+      fItem('Controls', 'F1', () => setTab('controls')),
+      h('div.fstatus', null,
+        ...['Vessel', 'Program', 'Altitude', 'Propellant', 'GET', 'Warp'].map((k) => {
+          const b = h('b');
+          fStatus[k] = slot(b);
+          return h('div', null, k, b);
+        }),
+      ),
     ),
+    guidance,
   );
 
   const pages = {
@@ -244,7 +281,10 @@ export function createUI(game, rootEl, api) {
     setTab(tab || (kind === 'menu' ? 'flight' : 'missions'), { focus: true });
     syncPause();
     syncCapture();
-    if (kind === 'menu') refreshStatus();
+    if (kind === 'menu') {
+      setNote('');
+      refreshStatus();
+    }
   }
 
   function closeScreen() {
@@ -286,7 +326,7 @@ export function createUI(game, rootEl, api) {
 
   function openHelp() {
     const sc = game.started ? (api.scenarios || []).find((x) => x.id === game.scenarioId) : null;
-    helpMission.replaceChildren(...[missionHelp(sc)].filter(Boolean));
+    helpMission.replaceChildren(...[missionHelp(sc, { iva: game.view.mode === 'iva' })].filter(Boolean));
     helpControls.el.scrollTop = 0;
     st.help = true;
     setClass(help, 'open', true);
@@ -580,6 +620,58 @@ export function createUI(game, rootEl, api) {
     tips.onInput();
   });
 
+  // ---------------------------------------------------------------- guidance program selector
+  let progKey = '';
+  const progBtns = new Map();
+  function renderPrograms() {
+    const v = game.active;
+    if (!v) return;
+    const list = programsFor(v);
+    const key = `${v.id}|${list.join(',')}`;
+    if (key !== progKey) {
+      progKey = key;
+      progBtns.clear();
+      progGrid.replaceChildren(...list.map((p) => {
+        const b = h('button.pbtn', { type: 'button', dataset: { program: p } }, h('b', null, p), h('small', null, PROGRAM_LABEL[p] || PROGRAM_NAMES[p] || ''));
+        b.addEventListener('click', () => selectProgram(p));
+        progBtns.set(p, b);
+        return b;
+      }));
+      progHead.set(` · ${v.name} ${v.type === 'LM' ? 'LGC' : 'CMC'}`);
+      setNote('');
+    }
+    for (const [p, b] of progBtns) {
+      const on = v.gnc?.program === p;
+      setClass(b, 'on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+  }
+  function setNote(text, level = '') {
+    progNote.textContent = text;
+    progNote.className = `pnote${level ? ' ' + level : ''}`;
+  }
+  function selectProgram(p) {
+    const v = game.active;
+    if (!v) return;
+    // the GNC answers synchronously: an OPR ERR 'message' during the emit is its refusal
+    let refusal = null;
+    const off = game.events.on('message', (m) => {
+      if (m && typeof m.text === 'string' && /^(\S+:\s*)?OPR ERR/.test(m.text)) refusal = m.text.replace(/^\S+:\s*/, '');
+    });
+    try {
+      game.events.emit('action', { name: 'PROGRAM', program: p });
+    } finally {
+      off();
+    }
+    if (refusal) {
+      setNote(refusal, 'warn');
+      renderPrograms();
+      return;
+    }
+    renderPrograms();
+    closeMenu(); // back to flying: the new program's displays and prompts take over
+  }
+
   // ---------------------------------------------------------------- in-flight menu status
   function refreshStatus() {
     const v = game.active;
@@ -592,6 +684,7 @@ export function createUI(game, rootEl, api) {
     fStatus.Propellant.set(fmtPct(v.tel.fuelFraction));
     fStatus.GET.set(fmtMET(game.time.met));
     fStatus.Warp.set(st.pausedByUI ? `${game.time.warp}×` : fmtWarp(game.time));
+    renderPrograms();
   }
 
   // initial screen
@@ -611,7 +704,13 @@ export function createUI(game, rootEl, api) {
     }
 
     const iva = game.view.mode === 'iva';
-    const hudOn = game.started && !!game.settings.hud && !st.screen;
+    const cine = game.started && !!game.view.intro;
+    const titleOn = game.started && !!game.settings.hud && !st.screen;
+    const hudOn = titleOn && !cine;
+    setClass(letterbox, 'on', cine && !st.screen);
+    const fade = cine ? Math.max(0, Math.min(1, game.view.introFade || 0)) : 0;
+    const fo = fade.toFixed(3);
+    if (cineFade.style.opacity !== fo) cineFade.style.opacity = fo;
     const v = game.active;
     const liftoffHint = !!v && v.type === 'LM' && v.landed && !v.crashed && !v.staged && (v.gnc?.program === 'P68' || v.gnc?.program === 'P00') && !st.result && !st.pendingResult && game.result?.outcome === 'landed';
     hud.update(frame, hudOn, { liftoffHint });
@@ -622,7 +721,7 @@ export function createUI(game, rootEl, api) {
     setClass(ticker.el, 'nohud', !game.settings.hud);
     setClass(ticker.el, 'below', !iva && hud.promptShown);
     tips.update(frame?.dt ?? 0.016, { visible: hudOn && !anyModal(), running: !game.time.paused });
-    setClass(intro, 'off', !hudOn || anyModal());
+    setClass(intro, 'off', !titleOn || anyModal());
     if (st.introPending && game.started && (window.__READY || st.introWait++ > 240)) {
       const id = st.introPending;
       st.introPending = null;
