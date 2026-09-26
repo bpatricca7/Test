@@ -110,3 +110,8 @@ if len(nfl):
         from sklearn.metrics import log_loss
         print(f"log-loss: Kalshi mid {log_loss(v.yes, v.kalshi_mid.clip(.01,.99)):.4f} vs Vegas fair {log_loss(v.yes, v.vegas_fair.clip(.01,.99)):.4f}")
 d.to_parquet(os.path.join(OUT, "kalshi_sports_pregame.parquet"))
+edges = [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, .95, 1.0001]; cal = []
+for lo, hi in zip(edges[:-1], edges[1:]):
+    y = d[(d.ask >= lo) & (d.ask < hi)]
+    if len(y) >= 30: cal.append({"lo": lo, "hi": hi, "n": int(len(y)), "ask": float(y.ask.mean()), "realised": float(y.yes.mean())})
+json.dump(cal, open(os.path.join(OUT, "calibration_sports.json"), "w"), indent=1)

@@ -99,10 +99,19 @@ Data: `nflverse/nfldata` games.csv. 56 systems tested (`research/results/nfl_tes
 * No moneyline bucket, home/road dog, divisional, rest, primetime, playoff, week-1, dome, cold-weather or
   spread-size system is positive with t > 2 except:
 * **Under when wind >= 15 mph:** +10.0% (n=684, t=2.8, p=0.006; 17/27 seasons; first/second half +10.6%/+9.4%).
-  By bucket: 0-5 mph -3.2%, 5-10 -6.7%, 10-15 +4.4%, 15-20 +10.9%, 20+ +7.9%. The market already shades the
-  total down 1.3 points in wind, but actual totals come in another 1.45 points lower. Caveats: 56 hypotheses were
-  tested (Bonferroni-adjusted p = 0.33); wind is the value recorded at kickoff, so a live strategy must use the
-  forecast; about 25 qualifying games per season.
+
+  | Recorded wind (outdoor games) | n | Under ROI | Seasons + | Total line | Actual total |
+  |---|---|---|---|---|---|
+  | 0-5 mph | 1,067 | -3.2% | 13/28 | 43.4 | 44.9 |
+  | 5-10 mph | 2,258 | -6.7% | 8/28 | 42.9 | 43.9 |
+  | 10-15 mph | 1,216 | +4.4% | 18/28 | 42.5 | 42.5 |
+  | 15-20 mph | 497 | +10.9% | 17/27 | 42.1 | 40.5 |
+  | 20+ mph | 187 | +7.9% | 14/27 | 40.9 | 39.9 |
+
+  By era (wind >= 15): 1999-2008 +13.7%, 2009-2016 +3.5%, 2017-2026 +11.0%. The market already shades the
+  total down about 1.3 points in wind, but actual totals come in another 1.45 points lower. Caveats: 56 hypotheses
+  were tested (Bonferroni-adjusted p = 0.33); wind is the value recorded at kickoff, so a live strategy must use
+  the forecast; about 25 qualifying games per season, so annual variance is large.
 
 ## 4. Equities, volatility, FX, commodities (`research/results/equities_tests.txt`)
 
@@ -147,7 +156,23 @@ Annualised vol: BTC 34%, ETH 47%, SOL 56%, XRP 70%, DOGE 67%, HYPE 73%, BNB 37%.
 * Daily momentum (7/14/30-day) over the 70-day window underperforms buy-and-hold in a rising market; the sample
   is far too short to say anything about crypto momentum.
 
-## 7. What was blocked, and what would unlock more
+## 7. How to act on the soccer findings (the only edges with strong evidence)
+
+1. **Accounts.** The edge is the gap between the best and the average price, so it needs accounts at 8-15
+   bookmakers plus an odds-comparison feed (Oddsportal-style, or a paid API). With one or two books the same
+   bets lose money (Section 2.1). Expect soft books to cut limits on a winning account within months; spread
+   volume, avoid round stakes, and accept that the edge has a shelf life per account.
+2. **Selection.** Simplest rule with the best evidence: any 1X2 outcome whose best available price implies
+   >= 70% (odds <= 1.43), taken only at the best price. Expect about 2% per bet, roughly 700 qualifying bets a
+   season across the 38 covered divisions, and a season ROI between -3% and +5%. The model-based rule
+   (Section 2.2) roughly doubles the number of bets and the per-bet edge but needs the Elo/market pipeline
+   rebuilt each week; its edge has been thinner since 2019.
+3. **Sizing.** Flat stakes of 1% of bankroll (or quarter-Kelly capped at 5%) were used in the simulation; even
+   then the historical drawdown from peak exceeded 50%. Halve the stake if you cannot tolerate that.
+4. **Verification before scaling.** Log every bet with the price obtained versus the best price at the time and
+   the closing price. If your realised prices sit closer to the average than to the best, the edge is gone.
+
+## 8. What was blocked, and what would unlock more
 
 The environment's network policy allowed only the Kalshi API, GitHub and PyPI. Denied hosts that would extend
 this research: `api.binance.com` / `data.binance.vision` (years of crypto candles and funding rates),
@@ -156,7 +181,7 @@ this research: `api.binance.com` / `data.binance.vision` (years of crypto candle
 `api.the-odds-api.com` (live multi-book odds), `fred.stlouisfed.org`. Network access is changed in the
 environment settings (Edit environment > Network access).
 
-## 8. Method notes
+## 9. Method notes
 
 * Costs: soccer/NFL pay the quoted price (vig included). Kalshi: taker fee 0.07 x P x (1-P) per contract,
   rounded up per order (100-contract orders assumed). Index strategies: 0.05% per one-way trade.

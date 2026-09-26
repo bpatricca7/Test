@@ -107,3 +107,11 @@ for k in [10, 13, 14]:
     for hi in [0.05, 0.10, 0.20]:
         x = cd[(cd.minute == k) & (cd.ask <= hi) & (cd.ask >= 0.01)]; line(f"minute {k}: buy YES when ask <= {hi:.2f}", yes_pnl(x), x.open_time, x.ask.values)
 cd.drop(columns=["ask_bucket"]).to_parquet(os.path.join(OUT, "kalshi_15m_candles_long.parquet"))
+# calibration table for the live screener: realised P(yes) by minute and ask bucket
+edges = [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, .95, .98, 1.0001]; cal = []
+for k in range(1, 16):
+    x = cd[(cd.minute == k) & cd.ask.between(0.005, 0.995)]
+    for lo, hi in zip(edges[:-1], edges[1:]):
+        y = x[(x.ask >= lo) & (x.ask < hi)]
+        if len(y) >= 30: cal.append({"minute": k, "lo": lo, "hi": hi, "n": int(len(y)), "ask": float(y.ask.mean()), "realised": float(y.yes.mean())})
+json.dump(cal, open(os.path.join(OUT, "calibration_15m.json"), "w"), indent=1)

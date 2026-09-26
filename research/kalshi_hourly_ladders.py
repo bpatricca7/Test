@@ -90,3 +90,9 @@ if len(r):
         print(f"{coin}: hours={len(g)}  settle inside implied 80% band: {g.inside80.mean():.3f} (calibrated = 0.80)  above implied median: {g.above_median.mean():.3f}"
               f"  implied 80% half-width {g.implied_halfwidth_bp.median():.0f} bp vs realised median |move| {g.abs_move_bp.median():.0f} bp")
 d.to_parquet(os.path.join(OUT, "kalshi_hourly_ladders.parquet"))
+edges = [0, .03, .06, .1, .2, .3, .4, .5, .6, .7, .8, .9, .94, .97, 1.0001]; cal = []
+x = d[d.k.isin([1, 5, 15, 30])]
+for lo, hi in zip(edges[:-1], edges[1:]):
+    y = x[(x.ask >= lo) & (x.ask < hi)]
+    if len(y) >= 30: cal.append({"lo": lo, "hi": hi, "n": int(len(y)), "ask": float(y.ask.mean()), "realised": float(y.yes.mean())})
+json.dump(cal, open(os.path.join(OUT, "calibration_hourly.json"), "w"), indent=1)
