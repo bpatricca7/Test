@@ -1,0 +1,75 @@
+markets with daily candles: 18869; closed early (before scheduled expiration): 10421 (55.2%)
+observations: 13272 (markets 12150), categories: {'Sports': 12583, 'Crypto': 689}
+
+=== horizon: 1 day(s) before close (n=11860) — calibration of mid, fee-adjusted EV (cents/contract) of buying YES at ask / NO at 1-bid ===
+                  n    mid  realised  spread_c  ev_yes_c  ev_no_c
+bucket                                                           
+(0.0, 0.05]  1791.0  0.022     0.034     2.991    -0.611   -2.679
+(0.05, 0.1]  1264.0  0.075     0.076     4.997    -3.076   -2.890
+(0.1, 0.2]   1679.0  0.153     0.158     4.340    -2.689   -3.454
+(0.2, 0.3]   1762.0  0.250     0.249     4.057    -3.535   -3.141
+(0.3, 0.4]   1233.0  0.350     0.356     4.339    -3.184   -4.330
+(0.4, 0.5]   1377.0  0.453     0.455     4.223    -3.638   -4.043
+(0.5, 0.6]   1193.0  0.549     0.545     3.823    -4.074   -3.206
+(0.6, 0.7]    601.0  0.648     0.661     3.907    -2.220   -4.874
+(0.7, 0.8]    442.0  0.750     0.776     4.090    -0.691   -6.015
+(0.8, 0.9]    250.0  0.851     0.832     3.628    -4.471   -0.926
+(0.9, 0.95]   196.0  0.929     0.929     3.520    -2.176   -2.265
+(0.95, 1.0]    72.0  0.966     0.986     2.056     0.783   -3.298
+
+--- by category, buy the FAVOURITE (whichever side is priced >= 0.80) at 1d ---
+1d favourites >=0.80, Sports                               n=  5305  ROI= -3.09%  95%CI=[ -3.89%, -2.29%]  t=-7.46  p=0.0000  per-day ROI -3.086%
+1d favourites >=0.80, Crypto                               n=   458  ROI= -2.26%  95%CI=[ -4.23%, -0.41%]  t=-2.34  p=0.0196  per-day ROI -2.255%
+1d favourites >=0.80, ALL                                  n=  5763  ROI= -3.02%  95%CI=[ -3.79%, -2.27%]  t=-7.78  p=0.0000  per-day ROI -3.020%
+--- by category, buy the LONGSHOT (side priced <= 0.20) at 1d ---
+1d longshots <=0.20, Sports                                n=  4451  ROI= -2.09%  95%CI=[ -2.87%, -1.28%]  t=-5.08  p=0.0000
+1d longshots <=0.20, Crypto                                n=   447  ROI= -1.57%  95%CI=[ -3.35%, +0.36%]  t=-1.64  p=0.1012
+1d longshots <=0.20, ALL                                   n=  4898  ROI= -2.05%  95%CI=[ -2.81%, -1.30%]  t=-5.32  p=0.0000
+
+=== horizon: 7 day(s) before close (n=1128) — calibration of mid, fee-adjusted EV (cents/contract) of buying YES at ask / NO at 1-bid ===
+                 n    mid  realised  spread_c  ev_yes_c  ev_no_c
+bucket                                                          
+(0.0, 0.05]  435.0  0.017     0.011     2.628    -2.082   -0.777
+(0.05, 0.1]  116.0  0.075     0.043     6.448    -7.085   -0.320
+(0.1, 0.2]   123.0  0.150     0.138     6.138    -5.232   -2.665
+(0.2, 0.3]   134.0  0.254     0.239     4.515    -5.167   -1.990
+(0.3, 0.4]    78.0  0.347     0.205     5.160   -18.400   10.079
+(0.4, 0.5]    64.0  0.458     0.531     4.156     3.553  -11.175
+(0.5, 0.6]    59.0  0.553     0.559     5.644    -3.938   -5.147
+(0.6, 0.7]    36.0  0.649     0.611     5.028    -7.816   -0.389
+(0.7, 0.8]    30.0  0.756     0.767     5.400    -2.792   -5.181
+(0.8, 0.9]    18.0  0.845     0.833     5.444    -4.661   -2.598
+(0.9, 0.95]   24.0  0.927     1.000     5.542     4.197  -10.674
+(0.95, 1.0]   11.0  0.966     1.000     3.545     1.522   -5.528
+
+--- by category, buy the FAVOURITE (whichever side is priced >= 0.80) at 7d ---
+7d favourites >=0.80, Sports                               n=   589  ROI= -1.93%  95%CI=[ -3.88%, -0.10%]  t=-1.99  p=0.0475  per-day ROI -0.275%
+7d favourites >=0.80, Crypto                               n=   179  ROI= +1.61%  95%CI=[ +0.33%, +2.49%]  t=+2.91  p=0.0041  per-day ROI +0.230%
+7d favourites >=0.80, ALL                                  n=   768  ROI= -1.10%  95%CI=[ -2.66%, +0.33%]  t=-1.46  p=0.1458  per-day ROI -0.157%
+--- by category, buy the LONGSHOT (side priced <= 0.20) at 7d ---
+7d longshots <=0.20, Sports                                n=   519  ROI= -3.60%  95%CI=[ -5.24%, -1.84%]  t=-4.14  p=0.0000
+7d longshots <=0.20, Crypto                                n=   177  ROI= -4.68%  95%CI=[ -5.78%, -3.37%]  t=-7.69  p=0.0000
+7d longshots <=0.20, ALL                                   n=   696  ROI= -3.88%  95%CI=[ -5.11%, -2.56%]  t=-5.81  p=0.0000
+
+=== horizon: 30 day(s) before close (n=284) — calibration of mid, fee-adjusted EV (cents/contract) of buying YES at ask / NO at 1-bid ===
+                 n    mid  realised  spread_c  ev_yes_c  ev_no_c
+bucket                                                          
+(0.0, 0.05]  131.0  0.018     0.000     2.710    -3.332    0.384
+(0.05, 0.1]   25.0  0.073     0.080     6.800    -3.351   -4.377
+(0.1, 0.2]    28.0  0.149     0.143     5.643    -4.488   -2.917
+(0.2, 0.3]    15.0  0.259     0.133     4.933   -16.419    8.817
+(0.3, 0.4]    12.0  0.353     0.167     3.917   -22.222   15.111
+(0.4, 0.5]    17.0  0.450     0.412     3.941    -7.561    0.168
+(0.5, 0.6]    12.0  0.539     0.500     3.833    -7.556    0.258
+(0.6, 0.7]     9.0  0.651     0.778     4.333     9.020  -16.526
+(0.7, 0.8]    12.0  0.759     1.000     3.917    20.961  -27.433
+(0.8, 0.9]     9.0  0.852     0.667     5.000   -21.756   15.001
+(0.9, 0.95]    9.0  0.941     1.000     5.556     2.898   -9.223
+(0.95, 1.0]    5.0  0.975     1.000     2.200     1.302   -3.844
+
+--- by category, buy the FAVOURITE (whichever side is priced >= 0.80) at 30d ---
+30d favourites >=0.80, Sports                              n=   217  ROI= -1.04%  95%CI=[ -3.78%, +1.38%]  t=-0.79  p=0.4324  per-day ROI -0.035%
+30d favourites >=0.80, ALL                                 n=   217  ROI= -1.04%  95%CI=[ -3.74%, +1.41%]  t=-0.79  p=0.4324  per-day ROI -0.035%
+--- by category, buy the LONGSHOT (side priced <= 0.20) at 30d ---
+30d longshots <=0.20, Sports                               n=   203  ROI= -3.54%  95%CI=[ -5.78%, -1.00%]  t=-2.89  p=0.0043
+30d longshots <=0.20, ALL                                  n=   203  ROI= -3.54%  95%CI=[ -5.83%, -0.90%]  t=-2.89  p=0.0043

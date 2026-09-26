@@ -20,6 +20,9 @@ equity indices, volatility, FX, commodities.  Every number below is net of the c
 | 6 | Equity indices | 10-month SMA trend filter / vol targeting on S&P 500 | same CAGR as buy-and-hold (7.4%) at 2/3 the volatility; max drawdown -23% vs -57% | 33 years; both halves positive | This is risk management, not alpha. Taxable turnover. |
 
 Everything else tested was flat or negative after costs (Sections 2-6 list every test, including the failures).
+In particular, Kalshi's sports game markets, hourly crypto strike ladders and long-dated markets are priced
+within their bid-ask spread (Section 5), NFL closing lines are efficient (Section 3), and no equity-index,
+VIX, FX or commodity timing rule produced alpha beyond risk reduction (Section 4).
 
 ## 2. Sports betting: club soccer (238,854 matches, 38 divisions, 2000-2026)
 
@@ -142,8 +145,8 @@ risk management on long-only exposure, which is a different claim.
 
 Data: every settled market Kalshi's public API returns (4.4M+ markets, but the API only serves roughly the
 last ten weeks: 2026-07-18 to 2026-09-26 for nearly every series), plus 1-minute candlesticks for 26,367
-fifteen-minute crypto markets, 1-minute candlesticks for sampled hourly BTC/ETH strike ladders, and hourly
-candlesticks for sports game markets. Fees: taker 0.07 x P x (1-P) per contract (100-contract orders).
+fifteen-minute crypto markets, 1-minute candlesticks for 12,524 sampled hourly BTC/ETH strike markets, hourly
+candlesticks for 66,889 sports game markets, and daily candlesticks for a random sample of long-dated markets. Fees: taker 0.07 x P x (1-P) per contract (100-contract orders).
 Standard errors are clustered by timestamp because the coins move together.
 
 ### 5.1 Fifteen-minute crypto up/down markets (BTC, ETH, SOL, XRP; 26,367 markets, 6,598 timestamps)
@@ -194,7 +197,7 @@ The implied 80% interval contained the settle 82.0% of the time for BTC (484 hou
 settles yes 12% of the time), which is why "selling volatility" loses here. Near-the-money quotes at the
 open carry 5-10c spreads that no bucket's mispricing covers. **Verdict: no edge.**
 
-### 5.3 Sports game markets, pregame (48,514 markets with a quote about an hour before the start)
+### 5.3 Sports game markets, pregame (59,511 markets with a quote about an hour before the start)
 
 Every Sports-category game/match/fight market with >= $5k volume (tennis, MLB, NCAAF, soccer leagues, cricket,
 esports, NBA summer league, UFC, etc.), quoted from hourly candles roughly one hour before the scheduled start.
@@ -202,19 +205,19 @@ Median bid-ask spread: 1c.
 
 | Pregame mid | n | realised | fee-adjusted EV of buying YES at ask | ... NO at 1-bid |
 |---|---|---|---|---|
-| 0-10c | 2,392 | 6.0% | -1.5c | -1.0c |
-| 10-20c | 4,555 | 18.2% | +0.4c | -4.6c |
-| 20-30c | 8,003 | 27.3% | -0.4c | -4.6c |
-| 30-40c | 6,783 | 36.3% | -2.0c | -4.3c |
-| 40-50c | 7,273 | 45.7% | -3.0c | -4.3c |
-| 50-60c | 6,791 | 55.0% | -3.6c | -3.4c |
-| 60-70c | 5,249 | 64.4% | -3.6c | -2.9c |
-| 70-80c | 3,530 | 75.2% | -2.6c | -3.2c |
-| 80-90c | 2,487 | 83.0% | -4.1c | -0.4c |
+| 0-10c | 3,062 | 6.0% | -1.4c | -1.1c |
+| 10-20c | 5,633 | 18.0% | +0.1c | -4.4c |
+| 20-30c | 9,863 | 27.4% | -0.4c | -4.7c |
+| 30-40c | 8,250 | 36.7% | -1.6c | -4.8c |
+| 40-50c | 8,820 | 45.7% | -3.1c | -4.4c |
+| 50-60c | 8,213 | 55.1% | -3.5c | -3.6c |
+| 60-70c | 6,422 | 64.2% | -3.8c | -2.8c |
+| 70-80c | 4,332 | 74.8% | -3.0c | -2.9c |
+| 80-90c | 3,090 | 82.8% | -4.3c | -0.3c |
 | 90-100c | 1,451 | 94.1% | -0.6c | -2.0c |
 
-* Buy every YES pregame: -2.1% (t=-10.5). Buy favourites (>= 60c): -4.0% to -4.9% (t=-11 to -17).
-  Heavy favourites (80-97c): -3.9%. Longshots (<= 30c): -0.2% (n.s.); (<= 15c): -1.2%.
+* Buy every YES pregame: -2.2% (t=-11.9). Buy favourites (>= 60c): -4.2% to -5.0% (t=-13 to -20).
+  Heavy favourites (80-97c): -4.3%. Longshots (<= 30c): -0.2% (n.s.); (<= 15c): -1.2%.
 * Unlike bookmakers, Kalshi's sports prices show **no favourite-longshot bias**: longshots are fairly priced
   and favourites cost the full spread plus fee. The per-sport tables (ATP, WTA, MLB, T20, esports, soccer
   leagues) show the same picture; the few positive cells (NBA summer league 80-90c, Dota 10-20c) have n < 60.
@@ -225,9 +228,33 @@ Median bid-ask spread: 1c.
 
 Verdict: no edge in Kalshi sports game markets at the pregame quote.
 
-### 5.4 Long-dated markets, 1 / 7 / 30 days before close (all categories)
+### 5.4 Long-dated markets, 1 / 7 / 30 days before scheduled expiration
 
-Filled in from the daily-candle pull; see the end of this file.
+A random sample (seeded, up to 40 per series) of markets with a lifetime of at least two days, quoted from
+daily candles. Two design points matter here: 55% of these markets **close early** once the outcome is
+known, so horizons are measured from the *scheduled* expiration and a market is only included if it was
+still open at the quote time (anchoring on the actual close, or picking markets by volume, manufactures a
+fake "longshots win" result of +13% -- that artefact was found and removed). Quotes wider than 15c are dropped.
+Sample so far: 12,150 markets (sports 12,583 observations, crypto 689; the politics / economics / entertainment
+part of the pull was still running when this was written).
+
+| Horizon | n | Calibration (mid vs realised) | Buy favourite (>= 80c) | Buy longshot (<= 20c) |
+|---|---|---|---|---|
+| 1 day | 11,860 | within 2 points in every bucket | -3.0% (t=-7.8) | -2.1% (t=-5.3) |
+| 7 days | 1,128 | within 3 points except thin buckets | -1.1% (t=-1.5); crypto +1.6% (n=179) | -3.9% (t=-5.8) |
+| 30 days | 284 | noisy (n < 30 per bucket) | -1.0% (t=-0.8) | -3.5% (t=-2.9) |
+
+Median bid-ask spread at these horizons is 3-5c, which is what the buyer of either side loses.
+Verdict: no edge at the quoted prices; the only thing to harvest would be the spread itself (market making).
+
+### 5.5 Kalshi summary
+
+| Market | Efficient? | Notes |
+|---|---|---|
+| 15-minute crypto up/down | yes, except a marginal mid-window favourite underpricing (+1-1.5c, minutes 5-7) | 26,367 markets; reversal signal priced in; late favourites overpriced |
+| Hourly BTC/ETH strike ladders | yes | implied 80% band covers 82% of settles; tails slightly under-priced |
+| Sports game markets, pregame | yes | 59,511 markets; no favourite-longshot bias; NFL matches Vegas to 0.9c |
+| Long-dated markets, 1-30 days out | yes | calibrated within spread; both sides lose the spread |
 
 ## 6. Crypto underlying (reconstructed from settled Kalshi markets, 2026-07-18 to 2026-09-26)
 
