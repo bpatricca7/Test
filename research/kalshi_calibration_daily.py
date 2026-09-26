@@ -14,7 +14,7 @@ from lib.stats import kalshi_fee, summarize_bets, fmt_bets, tstat
 KD = os.environ.get("KALSHI_DATA_DIR", "data/kalshi"); OUT = os.path.join(os.path.dirname(__file__), "results")
 series = {s["ticker"]: s for s in json.load(open(os.path.join(KD, "series.json")))}
 need = set()
-for fn in glob.glob(os.path.join(KD, "candles_daily*.jsonl")):
+for fn in glob.glob(os.path.join(KD, "candles_daily2*.jsonl")):
     for line in open(fn): need.add(json.loads(line)["ticker"])
 mk = {}
 for _fn in sorted(glob.glob(os.path.join(KD, "markets*.jsonl"))):
@@ -22,24 +22,34 @@ for _fn in sorted(glob.glob(os.path.join(KD, "markets*.jsonl"))):
     for line in f:
         t = line.split('"ticker": "')[1].split('"')[0]
         if t in need: mk[t] = json.loads(line)
-rows = []
-for fn in glob.glob(os.path.join(KD, "candles_daily*.jsonl")):
+rows = []; early = 0; total = 0
+for fn in glob.glob(os.path.join(KD, "candles_daily2*.jsonl")):
     for line in open(fn):
         j = json.loads(line); m = mk.get(j["ticker"])
         if not m or m["result"] not in ("yes", "no"): continue
         close = dt.datetime.fromisoformat(m["close_time"].replace("Z", "+00:00")).timestamp()
+        sched_iso = m.get("expected_expiration_time") or m.get("latest_expiration_time") or m["close_time"]
+        sched = dt.datetime.fromisoformat(sched_iso.replace("Z", "+00:00")).timestamp()
+        if sched < close: sched = close                     # settled after schedule: anchor on actual close
+        opened = dt.datetime.fromisoformat(m["open_time"].replace("Z", "+00:00")).timestamp()
+        total += 1; early += close < sched - 3600
         for h in (1, 7, 30):
-            cs = [c for c in j["candlesticks"] if c["end_period_ts"] <= close - h * 86400 and c.get("yes_ask", {}).get("close_dollars")]
+            t = sched - h * 86400
+            if t < opened or t > close:                      # the market must be OPEN at the quote time (known at t)
+                continue
+            cs = [c for c in j["candlesticks"] if c["end_period_ts"] <= t and c.get("yes_ask", {}).get("close_dollars")]
             if not cs: continue
             c = max(cs, key=lambda c: c["end_period_ts"])
+            if t - c["end_period_ts"] > 2 * 86400: continue  # stale quote
             try:
                 rows.append({"ticker": m["ticker"], "series": m["series_ticker"], "category": series.get(m["series_ticker"], {}).get("category", "?"), "h": h,
                              "yes": m["result"] == "yes", "ask": float(c["yes_ask"]["close_dollars"]), "bid": float(c["yes_bid"]["close_dollars"]),
-                             "volume": float(m.get("volume_fp") or 0), "days_before": (close - c["end_period_ts"]) / 86400})
+                             "volume": float(m.get("volume_fp") or 0), "days_before": (sched - c["end_period_ts"]) / 86400, "closed_early": close < sched - 3600})
             except (KeyError, ValueError, TypeError): pass
+print(f"markets with daily candles: {total}; closed early (before scheduled expiration): {early} ({early/max(total,1)*100:.1f}%)")
 d = pd.DataFrame(rows)
 if d.empty: print("no daily candles yet"); sys.exit()
-d = d[(d.ask > 0) & (d.ask < 1) & (d.bid >= 0) & (d.bid < 1)]; d["mid"] = (d.ask + d.bid) / 2
+d = d[(d.ask > 0) & (d.ask < 1) & (d.bid >= 0) & (d.bid < 1) & ((d.ask - d.bid) <= 0.15)]; d["mid"] = (d.ask + d.bid) / 2   # drop quotes wider than 15c
 print(f"observations: {len(d)} (markets {d.ticker.nunique()}), categories: {d.category.value_counts().to_dict()}")
 def yes_pnl(x): return np.where(x.yes, 1 - x.ask, -x.ask) - kalshi_fee(x.ask)
 def no_pnl(x): p = 1 - x.bid; return np.where(~x.yes, 1 - p, -p) - kalshi_fee(p)

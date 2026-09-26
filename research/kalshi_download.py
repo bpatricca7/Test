@@ -190,14 +190,20 @@ def phase3(min_volume=5000):
     out.close(); log("phase3 done")
 
 
-# ---------------- Phase 4: top-volume markets elsewhere, daily candles ----------------
-def phase4(per_series=40, min_volume=5000):
+# ---------------- Phase 4: long-lived markets in every category, daily candles ----------------
+def phase4(per_series=40, min_volume=100):
+    """RANDOM sample (seeded) of up to per_series markets per series with lifetime >= 2 days and any volume.
+    Do not pick by volume: contracts that end at 100c attract volume, which would bias calibration."""
+    import random
+    rnd = random.Random(20260926)
     skip_prefix = ("KXBTC15M", "KXETH15M", "KXSOL15M", "KXXRP15M", "KXBNB15M", "KXHYPE15M", "KXNEAR15M", "KXZEC15M", "KXDOGE15M")
-    done = load_done("candles_daily_done.txt")
+    done = set()
+    for fn in glob.glob(os.path.join(DATA_DIR, "candles_daily2_done*.txt")):
+        done |= set(l.strip() for l in open(fn))
     by_series = {}
     for m in iter_markets():
         st = m["series_ticker"]
-        if st in skip_prefix:
+        if st in skip_prefix or m.get("result") not in ("yes", "no"):
             continue
         try:
             v = float(m.get("volume_fp") or 0)
@@ -208,19 +214,19 @@ def phase4(per_series=40, min_volume=5000):
         life = ts(m["close_time"]) - ts(m["open_time"])
         if life < 2 * 86400:
             continue
-        by_series.setdefault(st, []).append((v, m))
+        by_series.setdefault(st, []).append(m)
     ms = []
     for st, lst in by_series.items():
-        lst.sort(key=lambda x: -x[0])
-        ms += [m for _, m in lst[:per_series]]
+        rnd.shuffle(lst)
+        ms += lst[:per_series]
     ms = [m for m in ms if m["ticker"] not in done]
     suffix = os.environ.get("KALSHI_SHARD", "").replace("/", "of")
     if os.environ.get("KALSHI_SHARD"):
         i, n = map(int, os.environ["KALSHI_SHARD"].split("/")); ms = [m for m in ms if sum(map(ord, m["ticker"])) % n == i]
-    log(f"phase4: {len(ms)} long-lived markets need daily candles")
-    out = open(os.path.join(DATA_DIR, f"candles_daily{('_' + suffix) if suffix else ''}.jsonl"), "a")
+    log(f"phase4{'[' + suffix + ']' if suffix else ''}: {len(ms)} long-lived markets need daily candles")
+    out = open(os.path.join(DATA_DIR, f"candles_daily2{('_' + suffix) if suffix else ''}.jsonl"), "a")
     for i, m in enumerate(ms):
-        fetch_candles(m["series_ticker"], m["ticker"], ts(m["open_time"]) - 86400, ts(m["close_time"]) + 86400, 1440, out, f"candles_daily_done{('_' + suffix) if suffix else ''}.txt")
+        fetch_candles(m["series_ticker"], m["ticker"], ts(m["open_time"]) - 86400, ts(m["close_time"]) + 86400, 1440, out, f"candles_daily2_done{('_' + suffix) if suffix else ''}.txt")
         if i % 500 == 0:
             out.flush(); log(f"  phase4 {i}/{len(ms)}")
     out.close(); log("phase4 done")
