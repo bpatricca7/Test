@@ -749,3 +749,39 @@ Core-owned modules: everything in `src/core`, `src/world`, `player.js camera.js 
 menus.js inventory.js (minimal Bag)`. Stubs that export `install(game) {}`: emotes, prefabs,
 pets, garden, cooking, food-models, weather, collectibles, dressup, touch, settings, photo,
 stickerbook.
+
+---
+
+## 4. Wave 2 — requests from the player (added 2026-09-26)
+
+Straight from her: "change the avatar's hair style to different ones; buy candy and ice cream, all different
+types; pets like dogs, cats, turtles and horses; zip lines and tree houses; really cool girls; really cool big
+trailers you can camp in and do things on the inside, like a dream camper or a house."
+
+1. **Hair styles** — already in the Dress-Up Studio (12+ styles). Add a **Hair Salon chair** furniture piece:
+   sit in it and the Dress-Up Studio opens on the Hair tab.
+2. **Candy & Ice Cream shops (buying things)**
+   - Currency: **Sparkle Coins**, stored in `profile.coins`, shown in the HUD. Earned generously: gems (+10),
+     harvesting (+3), cooking (+5), first sticker unlocks (+20), petting a pet (first time each day +2), daily gift
+     on first play each day (+25). New players start with 100. Never lose coins.
+   - Shop counters (furniture): `candy_shop`, `ice_cream_parlor`, `ice_cream_truck`. Hand-tap opens a shop panel.
+   - Candy (many kinds): lollipop, rainbow swirl lollipop, cotton candy (pink/blue), gummy bears, jelly beans,
+     chocolate bar, candy cane, gumdrops, rock candy, taffy, candy apple, macarons, donuts (sprinkles), marshmallow,
+     sour straws, bubblegum, caramel, heart chocolates.
+   - Ice cream: flavors vanilla, chocolate, strawberry, mint chip, cookie dough, bubblegum, cotton candy, rainbow
+     sherbet, mango, blueberry, birthday cake, unicorn; served as cone, cup, sundae, popsicle, milkshake, ice cream
+     sandwich; toppings sprinkles, cherry, whipped cream, chocolate sauce, gummy bears. Build-your-own with a live
+     3D preview.
+   - Bought treats go into the basket: eat, share with pets/friends, place on tables, or **hold it in your hand**.
+3. **More pets** — add **turtle** and **horse** (rideable, several coat colors) plus more dog and cat breeds.
+4. **Zip lines** — place a start tower and an end tower (auto-links the nearest), a cable between them; Hand-tap
+   the start to zip across with a whoosh (the avatar hangs from a handle). Works from treehouses.
+5. **Tree houses** — more treehouse Magic Builds (big two-tree house with a rope bridge, fairy treehouse, lookout
+   with a zip line) + treehouse parts (rope bridge, platform, ladder).
+6. **Cool girls (friends)** — NPC friends who live in the world: stylish girls with names and cool outfits
+   (built with `createAvatar` + curated looks), wander, wave, chat in speech bubbles, dance with you, follow you
+   when invited, sit on sofas, sleep in beds at night, can be dressed up too. "Invite a friend" from the Bag.
+7. **Big campers & camping** — Magic Builds: **Sparkle Camper** (big pink camper with bunk beds, kitchenette,
+   sofa, bathroom, rooftop deck with slide and a pop-out pool), **Retro Mini Trailer**, **Camper Van**. Camping
+   furniture: tent (sleep in it), campfire (roast marshmallows / s'mores), camping chairs, hammock, string lights,
+   picnic table, cooler.
