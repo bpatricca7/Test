@@ -1,3 +1,8 @@
 __pycache__/
 *.pyc
 data/
+# Kalshi API private keys must never be committed
+*.pem
+*.key
+*key*.txt
+lipbot*.txt

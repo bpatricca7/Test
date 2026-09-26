@@ -21,7 +21,7 @@ The December 2025 picks in this repo (AFC teams at 1–8¢, Bears at 11¢, and s
 ## Quick Start
 
 ```bash
-pip install -r requirements.txt
+python3 -m pip install -r requirements.txt     # Windows: py -m pip install -r requirements.txt
 
 # Scan live Kalshi markets that settle within the next 12 hours
 python arbitrage_scanner.py --closing-within-hours 12
@@ -45,30 +45,46 @@ Kalshi's Liquidity Incentive Program pays reward pools to resting orders near th
 
 The bot rests a post-only 1¢ bid, sized just above the Target (about $10 of collateral), on the empty side. Under the published scoring, the only order on a side earns that side's share: half the pool, about $50/hour per strike. See [STRATEGY_TESTS.md](STRATEGY_TESTS.md) for the measurements and caveats.
 
-**Unverified:** that Kalshi credits these orders as the rules imply, and that the rewards are withdrawable cash. The app's Rewards popover shows a live "liquidity earnings estimate" for your resting orders, so check it.
+**Unverified:** that Kalshi credits these orders as the rules imply, and that the rewards are withdrawable cash (Kalshi calls them "reward credits" and lists them under Activity → Credits). The Rewards popover on each market shows a live earnings estimate for your resting orders, so check it.
+
+**The opening comes and goes.** A strike can only be completed while the full side's best bid is 97–98¢. At 99¢, a 1¢ order would cross, so nothing can rest. On 2026-09-26 strikes were completable in about 60% of checks during one afternoon hour and about 14% during another. `plan` shows what is open right now.
+
+### Running a one-hour test
+
+You need a Mac or Windows PC that stays on and awake for the hour. A phone can't run it: iOS pauses apps in the background, and the bot must keep running to manage its orders.
+
+1. **Create an API key** in a computer browser: kalshi.com/account/profile → API Keys → Create New API Key, with the default (read and write) access. Copy the Key ID. The private key downloads as a `.txt` file; move it into this folder and don't rename, edit or share it.
+2. **Install**: get Python 3 from python.org, then in this folder run `python3 -m pip install -r requirements.txt` (Mac) or `py -m pip install -r requirements.txt` (Windows).
+3. **Run** (Windows: type `py` instead of `python3`):
 
 ```bash
-python lip_bot.py plan                        # what it would do right now; no account needed
-# Create an API key: Kalshi -> Account -> API Keys. Save the private key file.
-python lip_bot.py run --key-id YOUR_KEY_ID --key-file kalshi.pem            # dry run with your account
-python lip_bot.py run --key-id ... --key-file ... --demo --live              # Kalshi's demo exchange
-python lip_bot.py run --key-id ... --key-file ... --live --max-capital 25 --max-fill-spend 25
+python3 lip_bot.py plan                                              # what it would do now; no key needed
+python3 lip_bot.py run --key-id YOUR_KEY_ID --key-file YOUR_KEY.txt         # checks the key, then a dry run
+python3 lip_bot.py run --key-id YOUR_KEY_ID --key-file YOUR_KEY.txt --live  # real money; type LIVE
 ```
+
+The key check prints `Key OK` and your cash on Kalshi's default exchange, or a plain message if the key is rejected. `--demo` needs a separate account and key from demo.kalshi.co, because production keys don't work there.
+
+4. **While it runs**: keep the computer plugged in and awake. On a Mac, run `caffeinate -dis` in a second Terminal window; on Windows, set sleep to Never. Keep a laptop's lid open. On Windows, don't click inside the window: that pauses the output, and the bot with it (press Esc if the title starts with "Select").
+5. **Stop** with Ctrl-C and wait for the prompt to return (up to about 30 seconds). If it prints `STILL RESTING` or `COULD NOT CONFIRM`, cancel the listed orders in the Kalshi app. Either way, check the app for open orders afterwards.
 
 Safeguards:
 - It only places orders with `--live`, and you must type `LIVE` to confirm.
 - Orders are post-only, so they never pay the spread.
-- Every order expires on the exchange at its program's end.
+- Every order expires on the exchange 60 seconds before its program ends.
 - Resting collateral never exceeds the smaller of `--max-capital` and the fill budget left (`--max-fill-spend` minus what fills have already cost). So even if every resting order filled at once, total fill spend stays within `--max-fill-spend`.
-- Each completion order ties up about $10.20, so the defaults ($25 and $25) allow two at a time. Raise both caps together to run more.
+- Fills count from the start of the UTC day, so restarting the bot doesn't reset the fill cap.
+- Each completion order is 1,050 contracts at 1¢ (about $10.50), so the defaults ($25 and $25) allow two at a time. Raise both caps together to run more.
+- When the fill budget can't keep both orders at Target, it drops one so the other stays full. An order below Target earns nothing but can still be filled.
 - It only manages orders it created (IDs prefixed `lipbot-`) in the series it runs.
-- It cancels them on Ctrl-C, SIGTERM or a closed terminal, and lists anything it couldn't cancel.
+- It cancels them on Ctrl-C, SIGTERM, SIGHUP (a closed Mac or Linux terminal) or Ctrl-Break, and says so if it couldn't. On Windows, closing the window may not leave time to cancel, so stop it with Ctrl-C.
 
 Rules to know:
 - US members trading on Kalshi directly only; customers of brokers such as Robinhood are excluded.
-- Payouts arrive in daily batches (about 6am ET).
+- Payouts aren't real time. Kalshi scores a program after it ends and pays in a later processing run ("Timing can vary"); we once saw payment about 6 hours after a program ended. Paid rewards appear under Activity → Credits.
 - Anything under $1 per program period isn't paid.
 - Kalshi can change or end the program, or revoke participants it judges abusive, at any time.
+- After testing, you can delete the API key at kalshi.com/account/profile.
 
 ## What the scanner checks
 

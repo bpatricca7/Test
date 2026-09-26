@@ -1,10 +1,13 @@
 """Tests for lip_bot. Run with: python -m unittest discover -s tests"""
 
 import base64
+import io
 import os
 import signal
 import sys
+import time
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
@@ -18,6 +21,7 @@ NOW = datetime(2026, 9, 26, 18, 30, tzinfo=timezone.utc)
 CONFIG = lb.Config()
 ROOMY = lb.Config(max_capital=Decimal(50), max_fill_spend=Decimal(50))   # fits every test order
 T1, T2 = "KXTEMPMIAH-26SEP2615-T81.99", "KXTEMPMIAH-26SEP2615-T90.99"
+WANT = 1050   # Target 1000 plus the 5% buffer
 
 
 def program(ticker=T1, target=1000, minutes_left=30):
@@ -36,7 +40,7 @@ def mine(outcome, remaining, order_id="o1", ticker=T1):
     return lb.BotOrder(order_id, ticker, outcome, Decimal("0.01"), remaining)
 
 
-def raw_order(order_id, ticker, outcome="no", remaining=1020, prefix="lipbot-"):
+def raw_order(order_id, ticker, outcome="no", remaining=WANT, prefix="lipbot-"):
     return {"order_id": order_id, "ticker": ticker, "client_order_id": f"{prefix}{order_id}",
             "outcome_side": outcome, f"{outcome}_price_dollars": "0.0100",
             "remaining_count_fp": f"{remaining}.00"}
@@ -45,7 +49,7 @@ def raw_order(order_id, ticker, outcome="no", remaining=1020, prefix="lipbot-"):
 class PlanTests(unittest.TestCase):
     def test_completes_empty_no_side_when_yes_is_pinned(self):
         [a] = lb.plan_market(program(), book(yes=[(98, 4000)]), [], CONFIG, NOW)
-        self.assertEqual((a.kind, a.outcome, a.price, a.count), ("place", "no", Decimal("0.01"), 1020))
+        self.assertEqual((a.kind, a.outcome, a.price, a.count), ("place", "no", Decimal("0.01"), WANT))
 
     def test_placements_expire_at_the_program_end_buffer(self):
         [a] = lb.plan_market(program(), book(yes=[(98, 4000)]), [], CONFIG, NOW)
@@ -53,7 +57,7 @@ class PlanTests(unittest.TestCase):
 
     def test_completes_empty_yes_side_when_no_is_pinned(self):
         [a] = lb.plan_market(program(), book(no=[(97, 3000)]), [], CONFIG, NOW)
-        self.assertEqual((a.kind, a.outcome, a.count), ("place", "yes", 1020))
+        self.assertEqual((a.kind, a.outcome, a.count), ("place", "yes", WANT))
 
     def test_no_order_when_it_would_cross_or_side_is_not_pinned(self):
         self.assertEqual(lb.plan_market(program(), book(yes=[(99, 4000)]), [], CONFIG, NOW), [])
@@ -66,28 +70,28 @@ class PlanTests(unittest.TestCase):
     def test_tops_up_after_partial_fill(self):
         [a] = lb.plan_market(program(), book(yes=[(98, 4000)], no=[(1, 700)]),
                              [mine("no", 700)], CONFIG, NOW)
-        self.assertEqual((a.kind, a.count), ("place", 320))
+        self.assertEqual((a.kind, a.count), ("place", WANT - 700))
 
     def test_full_order_needs_nothing(self):
-        self.assertEqual(lb.plan_market(program(), book(yes=[(98, 4000)], no=[(1, 1020)]),
-                                        [mine("no", 1020)], CONFIG, NOW), [])
+        self.assertEqual(lb.plan_market(program(), book(yes=[(98, 4000)], no=[(1, WANT)]),
+                                        [mine("no", WANT)], CONFIG, NOW), [])
 
     def test_other_1c_completers_do_not_make_us_leave(self):
-        actions = lb.plan_market(program(), book(yes=[(98, 4000)], no=[(1, 2020)]),
-                                 [mine("no", 1020)], CONFIG, NOW)
+        actions = lb.plan_market(program(), book(yes=[(98, 4000)], no=[(1, 2050)]),
+                                 [mine("no", WANT)], CONFIG, NOW)
         self.assertEqual(actions, [])
 
     def test_real_liquidity_above_1c_makes_us_leave(self):
-        [a] = lb.plan_market(program(), book(yes=[(98, 4000)], no=[(2, 1500), (1, 1020)]),
-                             [mine("no", 1020)], CONFIG, NOW)
+        [a] = lb.plan_market(program(), book(yes=[(98, 4000)], no=[(2, 1500), (1, WANT)]),
+                             [mine("no", WANT)], CONFIG, NOW)
         self.assertEqual((a.kind, a.reason), ("cancel", "side complete without us"))
 
     def test_cancels_when_unpinned_or_ending(self):
-        [a] = lb.plan_market(program(), book(yes=[(80, 4000)], no=[(1, 1020)]),
-                             [mine("no", 1020)], CONFIG, NOW)
+        [a] = lb.plan_market(program(), book(yes=[(80, 4000)], no=[(1, WANT)]),
+                             [mine("no", WANT)], CONFIG, NOW)
         self.assertEqual((a.kind, a.reason), ("cancel", "no longer pinned"))
-        [b] = lb.plan_market(program(minutes_left=0.5), book(yes=[(98, 4000)], no=[(1, 1020)]),
-                             [mine("no", 1020)], CONFIG, NOW)
+        [b] = lb.plan_market(program(minutes_left=0.5), book(yes=[(98, 4000)], no=[(1, WANT)]),
+                             [mine("no", WANT)], CONFIG, NOW)
         self.assertEqual((b.kind, b.reason), ("cancel", "program ending"))
 
     def test_side_levels_accepts_cent_format(self):
@@ -232,7 +236,7 @@ class BotTests(unittest.TestCase):
         self.logs = []
 
     def bot(self, config=CONFIG, live=True):
-        return lb.Bot(self.client, config, live=live, log=self.logs.append)
+        return lb.Bot(self.client, config, live=live, log=self.logs.append, retry_pause=0)
 
     def test_dry_run_never_writes(self):
         summary = self.bot(ROOMY, live=False).step(NOW)
@@ -251,15 +255,15 @@ class BotTests(unittest.TestCase):
         bot = self.bot(ROOMY)
         bot.step(NOW)
         placed = {(t, side, price, count) for t, side, price, count, _, _ in self.client.created}
-        self.assertEqual(placed, {(T1, "ask", Decimal("0.99"), 1020),      # NO bid at 1c
-                                  (T2, "bid", Decimal("0.01"), 1020)})     # YES bid at 1c
+        self.assertEqual(placed, {(T1, "ask", Decimal("0.99"), WANT),      # NO bid at 1c
+                                  (T2, "bid", Decimal("0.01"), WANT)})     # YES bid at 1c
         self.assertTrue(all(c[4].startswith(lb.ORDER_PREFIX) and c[5] for c in self.client.created))
         # Only this series' stale bot order is cancelled: not the manual one, not other series.
         self.assertEqual(self.client.cancelled, [("stale", "KXTEMPMIAH-26SEP2614-T80.99")])
         self.assertIn("new1", bot.bot_order_ids)
 
     def test_failed_cancel_keeps_its_collateral_counted(self):
-        # Cap $15: the stale $10.20 order must really be gone before a new $10.20 order goes up.
+        # Cap $15: the stale $10.50 order must really be gone before a new $10.50 order goes up.
         self.client.fail_cancel = {"stale"}
         summary = self.bot(lb.Config(max_capital=Decimal(15), max_fill_spend=Decimal(20))).step(NOW)
         self.assertEqual(self.client.created, [])
@@ -281,7 +285,7 @@ class BotTests(unittest.TestCase):
         self.client.fill_list = [{"order_id": "r1", "outcome_side": "no", "no_price_dollars": "0.0100",
                                   "count_fp": "1500.00"}]
         self.bot(lb.Config(max_capital=Decimal(30), max_fill_spend=Decimal(20))).step(NOW)
-        # $15 spent of $20 leaves $5, but $20.40 rests
+        # $15 spent of $20 leaves $5, but $21.00 rests
         self.assertEqual({c[0] for c in self.client.cancelled}, {"r1", "r2"})
         self.assertEqual(self.client.created, [])
 
@@ -335,6 +339,72 @@ class BotTests(unittest.TestCase):
     def test_dry_run_estimates_planned_sides(self):
         self.assertEqual(self.bot(ROOMY, live=False).step(NOW)["est_per_hour"], Decimal(100))
 
+    def test_side_that_cannot_be_topped_up_to_target_is_abandoned(self):
+        # $4.40 spent of $25 leaves $20.60; two partly filled orders rest ($19.80).
+        # Only one $0.60 top-up fits: the other side stays below Target, scores nothing, and goes.
+        self.client.books = {T1: book(yes=[(98, 4000)], no=[(1, 990)]),
+                             T2: book(no=[(98, 4000)], yes=[(1, 990)])}
+        self.client.resting = [raw_order("r1", T1, remaining=990), raw_order("r2", T2, "yes", remaining=990)]
+        self.client.history = [raw_order("gone", T1, remaining=0)]
+        self.client.fill_list = [{"order_id": "gone", "outcome_side": "no", "no_price_dollars": "0.0100",
+                                  "count_fp": "440.00"}]
+        summary = self.bot().step(NOW)
+        self.assertEqual(len(self.client.created), 1)
+        kept = self.client.created[0][0]
+        dropped = ({T1, T2} - {kept}).pop()
+        self.assertEqual([c[1] for c in self.client.cancelled], [dropped])
+        self.assertTrue(any("cannot keep side at Target" in line for line in self.logs))
+        self.assertEqual(summary["est_per_hour"], Decimal(50))
+
+    def test_side_kept_at_target_by_other_completers_is_not_abandoned(self):
+        self.client.books = {T1: book(yes=[(98, 4000)], no=[(1, 2000)]), T2: book(yes=[(90, 10)])}
+        self.client.resting = [raw_order("r1", T1, remaining=990)]
+        self.bot(lb.Config(max_capital=Decimal("9.90"), max_fill_spend=Decimal(25))).step(NOW)
+        self.assertEqual((self.client.created, self.client.cancelled), ([], []))
+
+    def test_top_ups_go_before_new_orders(self):
+        self.client.books = {T1: book(yes=[(98, 4000)], no=[(1, 700)]), T2: book(no=[(98, 4000)])}
+        self.client.resting = [raw_order("r1", T1, remaining=700)]
+        self.bot(lb.Config(max_capital=Decimal(12), max_fill_spend=Decimal(25))).step(NOW)
+        self.assertEqual([(c[0], c[3]) for c in self.client.created], [(T1, WANT - 700)])
+
+    def test_refused_placements_are_logged_once(self):
+        self.client.programs.append(raw_program("KXTEMPMIAH-26SEP2615-T82.99"))
+        self.client.books["KXTEMPMIAH-26SEP2615-T82.99"] = book(yes=[(98, 4000)])
+        bot = self.bot(CONFIG, live=False)
+        bot.step(NOW)
+        bot.step(NOW + timedelta(seconds=10))
+        self.assertEqual(sum("refused by caps" in line for line in self.logs), 1)
+
+    def test_live_estimate_includes_orders_just_placed(self):
+        summary = self.bot(ROOMY).step(NOW)
+        self.assertEqual((summary["est_per_hour"], summary["resting"]), (Decimal(100), 2))
+
+    def test_fill_window_starts_at_the_utc_day_so_restarts_keep_the_cap(self):
+        bot = self.bot()
+        self.assertEqual(bot.started_ts % 86400, 0)
+        self.assertLessEqual(time.time() - bot.started_ts, 86400)
+
+    def test_shutdown_that_never_lists_orders_is_reported_unverified(self):
+        def down():
+            raise requests.exceptions.ConnectionError("network down")
+        self.client.resting_orders = down
+        bot = self.bot()
+        self.assertEqual(bot.shutdown(), [])
+        self.assertFalse(bot.shutdown_verified)
+        self.assertTrue(any("COULD NOT CONFIRM" in line for line in self.logs))
+
+    def test_shutdown_ignores_repeated_stop_signals(self):
+        names = [n for n in ("SIGINT", "SIGTERM", "SIGHUP") if hasattr(signal, n)]
+        seen = []
+        original = self.client.resting_orders
+        self.client.resting_orders = lambda: seen.append(
+            [signal.getsignal(getattr(signal, n)) for n in names]) or original()
+        before = [signal.getsignal(getattr(signal, n)) for n in names]
+        self.bot().shutdown()
+        self.assertTrue(seen and all(h == signal.SIG_IGN for h in seen[0]))
+        self.assertEqual([signal.getsignal(getattr(signal, n)) for n in names], before)
+
     def test_sleep_is_capped_by_the_next_end_buffer(self):
         bot = self.bot(live=False)
         bot.step(NOW)
@@ -353,6 +423,48 @@ class SignalTests(unittest.TestCase):
         finally:
             for name, handler in saved.items():
                 signal.signal(getattr(signal, name), handler)
+
+
+class CliTests(unittest.TestCase):
+    def run_cli(self, *argv):
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            code = lb.main(["run", *argv])
+        return code, out.getvalue() + err.getvalue()
+
+    def test_half_supplied_key_flags_are_refused(self):
+        self.assertEqual(self.run_cli("--key-id", "abc")[0], 2)
+        self.assertEqual(self.run_cli("--key-file", "x.txt")[0], 2)
+
+    def test_unreadable_key_file_gets_a_plain_message(self):
+        code, text = self.run_cli("--key-id", "abc", "--key-file", "no-such-file.txt")
+        self.assertEqual(code, 2)
+        self.assertIn("Can't read the key file", text)
+        self.assertNotIn("Traceback", text)
+
+    def test_rejected_key_stops_before_anything_else(self):
+        response = requests.Response()
+        response.status_code = 401
+
+        def reject(client):
+            raise requests.exceptions.HTTPError("401", response=response)
+        originals = lb.KalshiClient.balance, lb.Signer.__dict__["from_pem_file"]
+        lb.KalshiClient.balance = reject
+        lb.Signer.from_pem_file = classmethod(lambda cls, path: cls(lambda m: b"s"))
+        try:
+            code, text = self.run_cli("--key-id", "abc", "--key-file", "key.txt", "--live")
+        finally:
+            lb.KalshiClient.balance, lb.Signer.from_pem_file = originals
+        self.assertEqual(code, 2)
+        self.assertIn("Kalshi rejected the key", text)
+
+    def test_balance_reads_dollars_from_the_default_exchange(self):
+        client = lb.KalshiClient(lb.PROD_URL, "KEY", lb.Signer(lambda m: b"s"))
+        seen = []
+        client.request = lambda method, path, params=None, body=None, signed=False: (
+            seen.append((path, params, signed)) or {"balance": 10000, "balance_dollars": "100.00"})
+        self.assertEqual(client.balance(), Decimal("100.00"))
+        self.assertEqual(seen, [("/portfolio/balance", {"exchange_index": 0}, True)])
 
 
 if __name__ == "__main__":

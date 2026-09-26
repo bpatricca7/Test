@@ -15,19 +15,23 @@ the published scoring (help.kalshi.com article 13823851), the only order on a
 side receives that side's whole score: half the pool.
 
 Everything here is a DRY RUN unless you pass --live. Order placement uses your
-own Kalshi API key (Account -> API Keys); nothing is ever sent without it.
+own Kalshi API key (kalshi.com/account/profile -> API Keys -> Create New API Key;
+the private key downloads as a .txt file); nothing is ever sent without it.
 
-    python lip_bot.py plan                                  # what it would do now (no key needed)
-    python lip_bot.py run --key-id ID --key-file key.pem    # dry run with your account's orders
-    python lip_bot.py run --key-id ID --key-file key.pem --demo --live   # demo money
-    python lip_bot.py run --key-id ID --key-file key.pem --live          # real money
+    python3 lip_bot.py plan                                 # what it would do now (no key needed)
+    python3 lip_bot.py run --key-id ID --key-file key.txt   # checks the key, then a dry run
+    python3 lip_bot.py run --key-id ID --key-file key.txt --live         # real money
+
+(On Windows type "py" instead of "python3". --demo needs a separate account and key
+created at demo.kalshi.co: production keys do not work there.)
 
 Safeguards:
   * post-only orders only, each with an exchange-side expiry at its program's end;
   * resting collateral never exceeds min(--max-capital, fill budget left), so even
     if every resting order filled at once, spend stays within --max-fill-spend;
+  * fills count against --max-fill-spend for the whole UTC day, across restarts;
   * it manages only its own orders (client_order_id prefix "lipbot-") in the
-    series it runs, and cancels them on exit, Ctrl-C, SIGTERM or SIGHUP.
+    series it runs, and cancels them on exit, Ctrl-C, SIGTERM, SIGHUP or Ctrl-Break.
 Kalshi can change or end the program, or revoke participants it judges abusive,
 at any time.
 """
@@ -68,12 +72,13 @@ class Signer:
 
     @classmethod
     def from_pem_file(cls, path: str) -> "Signer":
+        with open(path, "rb") as f:          # a missing file is reported before any import
+            pem = f.read()
         from cryptography.hazmat.primitives import hashes, serialization
         from cryptography.hazmat.primitives.asymmetric import padding
         from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-        with open(path, "rb") as f:
-            key = serialization.load_pem_private_key(f.read(), password=None)
+        key = serialization.load_pem_private_key(pem, password=None)
         if isinstance(key, Ed25519PrivateKey):
             return cls(key.sign)
         return cls(lambda message: key.sign(
@@ -152,6 +157,12 @@ class KalshiClient:
         return data.get("orderbook_fp") or data.get("orderbook") or {}
 
     # Signed portfolio calls
+    def balance(self) -> Decimal:
+        """Cash available on the default exchange (index 0), where these markets trade."""
+        data = self.request("GET", "/portfolio/balance", {"exchange_index": 0}, signed=True)
+        dollars = to_decimal(data.get("balance_dollars"))
+        return dollars if dollars is not None else Decimal(data.get("balance") or 0) / 100
+
     def resting_orders(self) -> list:
         return self.paged("/portfolio/orders", {"status": "resting", "limit": 1000}, "orders",
                           signed=True)
@@ -188,11 +199,13 @@ class KalshiClient:
 class Config:
     series: tuple = ("KXTEMPMIAH",)
     pin_threshold: Decimal = Decimal("0.97")   # other side's best bid must be at least this
-    size_buffer: float = 0.02                  # order target x (1 + buffer)
-    # Each completion order ties up about $10.20 (1,020 contracts at 1c), and resting
+    # Order size is target x (1 + buffer). Small 99c bids (10-40 contracts seen) fill
+    # against our order; the buffer keeps the side at Target until the next top-up.
+    size_buffer: float = 0.05
+    # Each completion order ties up about $10.50 (1,050 contracts at 1c), and resting
     # collateral must fit in both caps, so the defaults allow two orders at once.
     max_capital: Decimal = Decimal(25)         # dollars of collateral in resting bot orders
-    max_fill_spend: Decimal = Decimal(25)      # dollars that may ever be spent through fills
+    max_fill_spend: Decimal = Decimal(25)      # dollars that may be spent through fills per UTC day
     end_buffer_s: int = 60                     # stop quoting this long before a program ends
 
 
@@ -351,9 +364,17 @@ def fill_spend(fills: list, bot_order_ids: set) -> Decimal:
 
 
 def estimated_reward_per_hour(programs: dict, resting: list) -> Decimal:
-    """Upper-bound estimate: half a program's pool for each side the bot completes."""
-    sides = {(o.ticker, o.outcome) for o in resting}
-    return sum((programs[t].reward_per_hour / 2 for t, _ in sides if t in programs), Decimal(0))
+    """Upper-bound estimate: half a program's pool for each side where the bot's orders
+    reach the Target (a side below Target scores nothing)."""
+    sizes = {}
+    for o in resting:
+        sizes[(o.ticker, o.outcome)] = sizes.get((o.ticker, o.outcome), 0) + o.remaining
+    return sum((programs[t].reward_per_hour / 2 for (t, _), size in sizes.items()
+                if t in programs and size >= programs[t].target), Decimal(0))
+
+
+def start_of_utc_day(ts: float) -> int:
+    return int(ts) // 86400 * 86400
 
 
 # ---------------------------------------------------------------------------
@@ -366,10 +387,14 @@ class Bot:
     config: Config
     live: bool = False
     fill_spend: Decimal = Decimal(0)
-    started_ts: int = field(default_factory=lambda: int(time.time()))
+    # Fills are counted from the start of the UTC day, so a restart cannot reset the cap.
+    started_ts: int = field(default_factory=lambda: start_of_utc_day(time.time()))
     bot_order_ids: set = field(default_factory=set)
     log: object = print
     program_refresh_s: int = 60
+    retry_pause: float = 2.0
+    shutdown_verified: bool = True
+    _refused_logged: set = field(default_factory=set)
     _raw_programs: list = field(default_factory=list)
     _fetched_at: Optional[datetime] = None
     _programs: dict = field(default_factory=dict)
@@ -448,10 +473,10 @@ class Bot:
         for o in resting:
             mine_by_ticker.setdefault(o.ticker, []).append(o)
 
-        actions = []
+        actions, books = [], {}
         for ticker, program in programs.items():
             try:
-                book = self.client.orderbook(ticker)
+                book = books[ticker] = self.client.orderbook(ticker)
             except requests.exceptions.RequestException as e:
                 # Without data, leaving is always safe; placing is not.
                 self.say(f"  {ticker}: order book unavailable ({e})")
@@ -472,18 +497,38 @@ class Bot:
         for a in over_budget(remaining, limit):
             if self.execute(a):
                 remaining = [o for o in remaining if o.order_id != a.order_id]
-        placements = [a for a in actions if a.kind == "place"]
+        # Top-ups keep sides we already hold at Target, so they go before new orders.
+        held = {(o.ticker, o.outcome) for o in remaining}
+        placements = sorted((a for a in actions if a.kind == "place"),
+                            key=lambda a: ((a.ticker, a.outcome) not in held, a.cost))
         allowed, refused = fits(placements, sum((o.collateral for o in remaining), Decimal(0)), limit)
         placed = [a for a in allowed if self.execute(a)]
+        refused_keys = set()
         for a in refused:
-            self.say(f"  refused by caps: {a.describe()}")
+            key = (a.ticker, a.outcome, a.count)
+            refused_keys.add(key)
+            if key not in self._refused_logged:          # say it once, not every loop
+                self.say(f"  refused by caps: {a.describe()}")
+        self._refused_logged = refused_keys
+        # A side that cannot be topped up back to Target scores nothing while still
+        # getting filled; leaving frees its collateral for a side that can stay full.
+        for a in refused:
+            if (a.ticker, a.outcome) not in held:
+                continue
+            depth = sum(size for _, size in side_levels(books.get(a.ticker, {}), a.outcome))
+            if depth >= programs[a.ticker].target:
+                continue
+            for o in [o for o in remaining if (o.ticker, o.outcome) == (a.ticker, a.outcome)]:
+                if self.execute(Action("cancel", o.ticker, o.outcome, order_id=o.order_id,
+                                       reason="cannot keep side at Target within caps")):
+                    remaining.remove(o)
+                    cancelled.add(o.order_id)
 
-        # In a dry run nothing rests, so estimate from the orders it would have placed.
-        sides = remaining if self.live else remaining + [
-            BotOrder("planned", a.ticker, a.outcome, a.price, a.count) for a in placed]
-        return {"programs": len(programs), "resting": len(remaining), "actions": len(cancelled) + len(placed),
-                "refused": len(refused), "fill_spend": self.fill_spend,
-                "est_per_hour": estimated_reward_per_hour(programs, sides)}
+        # Orders just placed count too (in a dry run they are all there is).
+        sides = remaining + [BotOrder("planned", a.ticker, a.outcome, a.price, a.count) for a in placed]
+        return {"programs": len(programs), "resting": len(remaining) + (len(placed) if self.live else 0),
+                "actions": len(cancelled) + len(placed), "refused": len(refused),
+                "fill_spend": self.fill_spend, "est_per_hour": estimated_reward_per_hour(programs, sides)}
 
     def seconds_to_next_deadline(self, now: datetime) -> float:
         """Time until the next program the bot quotes enters its end buffer."""
@@ -493,31 +538,40 @@ class Bot:
 
     def shutdown(self, attempts: int = 3) -> list:
         """Cancel every bot order in this series. One failure never stops the others;
-        the list is re-fetched and retried. Returns the orders still resting."""
-        previous = signal.signal(signal.SIGINT, signal.SIG_IGN)   # a 2nd Ctrl-C must not interrupt
+        the list is re-fetched and retried. Returns the orders still resting, and sets
+        shutdown_verified to False if it could never confirm what is resting."""
+        # A second Ctrl-C, or the second SIGHUP a closing terminal sends, must not interrupt.
+        stop_signals = [getattr(signal, n) for n in ("SIGINT", "SIGTERM", "SIGHUP", "SIGBREAK")
+                        if hasattr(signal, n)]
+        previous = {s: signal.signal(s, signal.SIG_IGN) for s in stop_signals}
         try:
-            left = []
-            for _ in range(attempts):
+            left, verified = [], False
+            for attempt in range(attempts + 1):
                 try:
                     left = self.my_orders()
+                    verified = True
                 except requests.exceptions.RequestException as e:
                     self.say(f"  could not list orders: {e}")
+                    verified = False
+                    if attempt < attempts:
+                        time.sleep(self.retry_pause)
                     continue
-                if not left:
-                    return []
+                if not left or attempt == attempts:
+                    break
                 for o in left:
                     self.execute(Action("cancel", o.ticker, o.outcome, order_id=o.order_id,
                                         reason="bot stopping"))
-            try:
-                left = self.my_orders()
-            except requests.exceptions.RequestException:
-                pass
-            if left:
+            self.shutdown_verified = verified
+            if not verified:
+                self.say("COULD NOT CONFIRM THE BOT'S ORDERS WERE CANCELLED. Open the Kalshi app and "
+                         "cancel any open orders on these markets; they also expire at their program's end.")
+            elif left:
                 self.say("STILL RESTING (cancel in the Kalshi app; they also expire at their program's "
                          "end): " + ", ".join(f"{o.ticker} {o.order_id}" for o in left))
             return left
         finally:
-            signal.signal(signal.SIGINT, previous)
+            for s, handler in previous.items():
+                signal.signal(s, handler)
 
 
 # ---------------------------------------------------------------------------
@@ -525,11 +579,11 @@ class Bot:
 # ---------------------------------------------------------------------------
 
 def stop_on_signals() -> None:
-    """Treat SIGTERM and SIGHUP (closed terminal, kill, service stop) like Ctrl-C, so
-    the bot always runs its shutdown."""
+    """Treat SIGTERM, SIGHUP (closed terminal, kill, service stop) and Windows' Ctrl-Break
+    like Ctrl-C, so the bot always runs its shutdown."""
     def interrupt(signum, frame):
         raise KeyboardInterrupt
-    for name in ("SIGTERM", "SIGHUP"):
+    for name in ("SIGTERM", "SIGHUP", "SIGBREAK"):
         if hasattr(signal, name):
             signal.signal(getattr(signal, name), interrupt)
 
@@ -552,12 +606,42 @@ def cmd_plan(args, config: Config) -> int:
 def cmd_run(args, config: Config) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(line_buffering=True)    # show the log as it happens
-    signer = Signer.from_pem_file(args.key_file) if args.key_file else None
-    client = KalshiClient(DEMO_URL if args.demo else PROD_URL, args.key_id, signer)
-    if args.live:
-        if not signer:
-            print("--live needs --key-id and --key-file", file=sys.stderr)
+    if bool(args.key_id) != bool(args.key_file):
+        print("Pass both --key-id and --key-file (or neither).", file=sys.stderr)
+        return 2
+    if args.live and not args.key_file:
+        print("--live needs --key-id and --key-file", file=sys.stderr)
+        return 2
+    signer = None
+    if args.key_file:
+        try:
+            signer = Signer.from_pem_file(args.key_file)
+        except (OSError, ValueError, TypeError) as e:
+            print(f"Can't read the key file '{args.key_file}' ({e}). Use the .txt file Kalshi "
+                  "downloaded, unchanged; type 'ls' (Mac) or 'dir' (Windows) to see its exact name.",
+                  file=sys.stderr)
             return 2
+    client = KalshiClient(DEMO_URL if args.demo else PROD_URL, args.key_id, signer)
+    if signer:
+        try:
+            cash = client.balance()
+        except requests.exceptions.HTTPError as e:
+            status = getattr(e.response, "status_code", None)
+            if status in (401, 403):
+                print("Kalshi rejected the key. Check the Key ID, that the key file is the one "
+                      "downloaded with it, and that this computer's clock is set automatically.",
+                      file=sys.stderr)
+                return 2
+            print(f"Could not check the key: {e}", file=sys.stderr)
+            return 2
+        except requests.exceptions.RequestException as e:
+            print(f"Could not reach Kalshi to check the key: {e}", file=sys.stderr)
+            return 2
+        print(f"Key OK. Cash available on Kalshi's default exchange: ${cash:.2f}")
+        if args.live and cash < config.max_capital:
+            print(f"Warning: less than --max-capital (${config.max_capital}) is available, so "
+                  "fewer orders will fit.")
+    if args.live:
         where = "DEMO" if args.demo else "REAL-MONEY"
         answer = input(f"Place {where} orders (collateral cap ${config.max_capital}, fill cap "
                        f"${config.max_fill_spend})? Type LIVE to continue: ")
@@ -585,7 +669,7 @@ def cmd_run(args, config: Config) -> int:
         bot.say("\nStopping...")
     finally:
         left = bot.shutdown()
-    return 1 if left else 0
+    return 1 if left or not bot.shutdown_verified else 0
 
 
 def main(argv=None) -> int:
@@ -598,12 +682,13 @@ def main(argv=None) -> int:
         p.add_argument("--pin-threshold", type=Decimal, default=Config.pin_threshold)
         p.add_argument("--demo", action="store_true", help="use Kalshi's demo environment")
     run.add_argument("--key-id", help="Kalshi API key ID")
-    run.add_argument("--key-file", help="path to the API key's private key (PEM)")
+    run.add_argument("--key-file", help="path to the private key file Kalshi downloaded (.txt)")
     run.add_argument("--live", action="store_true", help="actually place and cancel orders")
     run.add_argument("--max-capital", type=Decimal, default=Config.max_capital,
                      help="dollars of collateral the bot may keep in resting orders")
     run.add_argument("--max-fill-spend", type=Decimal, default=Config.max_fill_spend,
-                     help="dollars that may ever be spent through fills (a hard cap)")
+                     help="dollars that may be spent through fills per UTC day, counting "
+                          "earlier runs today (a hard cap)")
     run.add_argument("--every", type=float, default=10.0, help="seconds between checks")
     args = parser.parse_args(argv)
     config = Config(series=tuple(args.series), pin_threshold=args.pin_threshold)
