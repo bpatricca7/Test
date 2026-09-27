@@ -22,7 +22,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import net from 'node:net';
 import path from 'node:path';
 import { mkdir } from 'node:fs/promises';
-import { waitForTitle, settle, finish, ROOT, SHOTS, CHROMIUM, LAUNCH_ARGS } from './smoke.mjs';
+import { waitForTitle, settle, finish, ROOT, SHOTS, CHROMIUM, LAUNCH_ARGS, PAGE_URL } from './smoke.mjs';
 import {
   sleep, game, until, press, setupPage, hostMakesCode, guestTypesCode, hostLetsIn, waitLive, bringTo, closePanels,
 } from './net/mp-flows.mjs';
@@ -249,6 +249,31 @@ async function main() {
     args: [...LAUNCH_ARGS, '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'],
   });
   try {
+    // ----- where the walkie must not exist: alone from a file, inside claude.ai -----
+    log('no walkie alone (file://) or inside claude.ai (room transport)');
+    for (const [label, where, init] of [
+      ['alone (file://)', PAGE_URL, null],
+      // a stand-in for claude.ai's window.claude: the game picks the room transport
+      ['claude.ai', url, () => { window.claude = { use: async (n) => (n === 'room' ? { join: async () => { throw Object.assign(new Error('no'), { code: 'not_permitted' }); } } : null) }; }],
+    ]) {
+      const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+      if (init) await ctx.addInitScript(init);
+      const page = await ctx.newPage();
+      page.on('pageerror', (err) => errors.push(`[${label}] pageerror: ${err.message}`));
+      await page.goto(where);
+      await waitForTitle(page);
+      await page.waitForFunction(() => window.__game.net.available !== null, null, { timeout: 15000 });
+      const pl = { key: label, touch: false, page, context: ctx };
+      await press(pl, 'button.sw-tile:has-text("Settings")');
+      await page.waitForSelector('.sw-panel-wrap.sw-open .sw-set-row');
+      const r = await page.evaluate(() => ({
+        kind: window.__game.net.kind, row: !!document.querySelector('.sw-wk-setrow'),
+        exists: window.__game.debug.walkie.state().exists, btn: !document.querySelector('.sw-wk').hidden,
+      }));
+      check(!r.row && !r.exists && !r.btn, `${label}: transport ${r.kind}, no walkie (no Settings row, no button)`);
+      await ctx.close();
+    }
+
     const [lily, rosie, june] = [
       await openPlayer(browser, PLAYERS[0], url),
       await openPlayer(browser, PLAYERS[1], url),
