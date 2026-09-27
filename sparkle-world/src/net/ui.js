@@ -1317,7 +1317,9 @@ export function installNetUI(game, net, remote) {
   game.events.on('net:message', (m = {}) => {
     const code = m.code;
     if (!code || code === 'unavailable') return;
-    if (['kicked', 'denied', 'ended', 'version', 'full', 'host_gone'].includes(code)) clearLastJoin();
+    // (host_gone and fatal keep her "Join Lily" chip: her friend may be back with the same
+    // pictures in a moment; if she is not, the chip says so and goes, see below)
+    if (['kicked', 'denied', 'ended', 'version', 'full'].includes(code)) clearLastJoin();
     // a "Join Lily again" chip whose friend is not playing any more: say so, and the chip goes
     if (code === 'no_host' && lastAction && lastAction.kind === 'join' && lastAction.chip) {
       clearLastJoin();

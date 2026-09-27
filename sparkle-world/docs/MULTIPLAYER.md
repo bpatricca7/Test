@@ -1232,7 +1232,7 @@ function. Easel pictures (16×16 pixels) are the only free drawing; the host can
 | `busy` (limit) | "Lots of games right now! Try again in a minute." | card |
 | `transient` after retries | "The magic mail is slow. Try again?" [Try again] | card |
 | no host within 8 s | "Nobody is playing with those pictures. Check them with your friend!" (the keypad stays open with her pictures) | keypad |
-| no host for a **Join Lily** chip | "Lily isn't playing right now. Ask her for a new code!" (the chip goes) | card |
+| no host for a **Join Lily** chip | "Lily isn't playing right now. Ask her for a new code!" (the chip goes; it stays after "went home" and "Playing together stopped." in case she comes back with the same pictures) | card |
 | `pv` or `v` mismatch | "Your game needs a refresh!" [Refresh] (`location.reload()`) | card |
 | denied ("Not now") | "Lily can't play right now. Maybe later!" | card |
 | knock not answered in 90 s | "Lily didn't hear the knock. Knock again?" [Knock again] | card |
