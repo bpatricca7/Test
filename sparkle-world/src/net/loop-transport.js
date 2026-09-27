@@ -21,7 +21,8 @@ export class LoopTransport extends FrameTransport {
    * @param {object} o
    * @param {object} [o.hub]       NetHub (tests); without it a BroadcastChannel is used
    * @param {string} [o.uid]       my stable id (tests); default: a random per-page id
-   * @param {string|null} [o.by]   Sender.by the hub stamps (tests of `by` handling)
+   * @param {string|null} [o.by]   Sender.by the hub stamps (default: the uid, like a server
+   *                               stamp; pass null for a peer with no stamp)
    * @param {boolean} [o.canHost]  identity().canHost (default true)
    * @param {object} [o.clock]
    * @param {object} [o.limits]
@@ -31,7 +32,7 @@ export class LoopTransport extends FrameTransport {
     super({ clock: o.clock || realClock, limits: o.limits });
     this._hub = o.hub || null;
     this._uid = o.uid || null;
-    this._by = o.by ?? null;
+    this._by = 'by' in o ? o.by ?? null : undefined;
     this._canHost = o.canHost ?? true;
     this._faults = o.faults || {};
     this._link = null;
@@ -52,10 +53,13 @@ export class LoopTransport extends FrameTransport {
       down: () => this._onLinkDown(),
       fatal: (code) => this._onFatal(code),
     };
+    // the room's stamp: in tests the hub plays the server and stamps the test's uid; two tabs
+    // (?net=loop, a developer's tool with no server) announce their own
+    const by = this._by !== undefined ? this._by : this._uid || null;
     if (this._hub) {
-      this._link = this._hub.connect(roomName, sink, { by: this._by, name: this._name });
+      this._link = this._hub.connect(roomName, sink, { by, name: this._name });
     } else if (typeof BroadcastChannel === 'function') {
-      this._link = new BroadcastLink(roomName, sink, { clock: this.clock, faults: this._faults });
+      this._link = new BroadcastLink(roomName, sink, { clock: this.clock, faults: this._faults, by });
     } else {
       throw new NetError('unavailable', 'no hub and no BroadcastChannel');
     }
@@ -99,11 +103,12 @@ const HEARTBEAT = 2000;
 const PEER_TIMEOUT = 6500;
 
 class BroadcastLink {
-  constructor(room, sink, { clock, faults }) {
+  constructor(room, sink, { clock, faults, by = null }) {
     this.room = room;
     this.sink = sink;
     this.clock = clock;
     this.faults = faults;
+    this.by = by;
     this.peer = randomId(16);
     this.state = {};
     this.roster = new Map(); // peer -> { state, seen }
@@ -149,12 +154,14 @@ class BroadcastLink {
   _post(m) {
     m.room = this.room;
     m.from = this.peer;
+    m.by = this.by;
     this.ch.postMessage(m);
   }
 
   _sender(peer) {
     const self = peer === this.peer;
-    return { peer, by: null, isMe: self, sameTab: self, kind: 'viewer', guest: false };
+    const by = self ? this.by : this.roster.get(peer)?.by ?? null;
+    return { peer, by, isMe: self, sameTab: self, kind: 'viewer', guest: false };
   }
 
   _entry(peer, state, self) {
@@ -172,13 +179,13 @@ class BroadcastLink {
     if (frame.t === 'b' && f.dupRate && Math.random() < f.dupRate) setTimeout(go, d + 5);
   }
 
-  _add(peer, state) {
+  _add(peer, state, by = null) {
     const known = this.roster.get(peer);
     if (known) {
       known.seen = Date.now();
       return;
     }
-    this.roster.set(peer, { state: state || {}, seen: Date.now() });
+    this.roster.set(peer, { state: state || {}, seen: Date.now(), by: typeof by === 'string' ? by : null });
     this._deliver({ t: 'p', j: [this._entry(peer, state || {}, false)] });
   }
 
@@ -187,11 +194,11 @@ class BroadcastLink {
     const from = m.from;
     switch (m.t) {
       case 'join':
-        this._add(from, m.state);
+        this._add(from, m.state, m.by);
         this._post({ t: 'here', to: from, state: this.state });
         break;
       case 'here':
-        if (m.to === this.peer) this._add(from, m.state);
+        if (m.to === this.peer) this._add(from, m.state, m.by);
         break;
       case 'beat':
         if (!this.roster.has(from)) this._post({ t: 'who', to: from });

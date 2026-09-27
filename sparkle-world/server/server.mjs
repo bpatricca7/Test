@@ -9,11 +9,21 @@
 // Kid safety and privacy: no accounts, no chat text, no voice, no stored player data. Rooms
 // live only in memory while friends play; message contents are never logged.
 //
+// Identity: a player's `by` stamp is made HERE from a per-device secret the page sends when
+// it connects (?d=..., kept in the device's localStorage, never shown to anyone), hashed with
+// the room name. A page cannot choose or copy someone else's stamp, so "let in again", "sent
+// home" and "follow the host after a reload" can trust it (docs/MULTIPLAYER.md Addendum B).
+// Rooms are gated (rooms.mjs): until the host lets a player in, she sees only the public
+// presence keys and no messages.
+//
 // Limits (env overrides in brackets): 4 players per room [SW_MAX_PEERS], 3,900 B per message,
 // 4 KiB of presence per player, 40 messages/s per connection (burst 80), 500 rooms
-// [SW_MAX_ROOMS], 12 connections per IP [SW_MAX_PER_IP], rooms idle for 10 minutes are closed
-// [SW_IDLE_MS], WebSocket frames over 16 KiB are refused, Origin must be this site
-// [SW_ALLOWED_ORIGINS adds more, comma separated].
+// [SW_MAX_ROOMS], 12 connections per IP [SW_MAX_PER_IP], 6 live rooms made per IP
+// [SW_ROOMS_PER_IP], new connections per IP 1/s with a burst of 30 [SW_CONNECT_RATE,
+// SW_CONNECT_BURST], rooms idle for 10 minutes are closed [SW_IDLE_MS], WebSocket frames over
+// 16 KiB are refused, Origin must be this site [SW_ALLOWED_ORIGINS adds more, comma separated].
+// The client IP is the socket address, or behind a proxy (SW_TRUST_PROXY, on by default) the
+// right-most public address in X-Forwarded-For (what the proxy saw, not what the client wrote).
 
 import http from 'node:http';
 import { readFileSync, existsSync, statSync } from 'node:fs';
@@ -22,6 +32,7 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, WebSocket } from 'ws';
+import { isIP } from 'node:net';
 import { RoomRegistry, ROOM_NAME_RE } from './rooms.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -47,6 +58,52 @@ class Bucket {
     this.tokens -= 1;
     return true;
   }
+
+  /** Full again (nothing to remember about this address). */
+  idle() {
+    return this.tokens + ((Date.now() - this.at) * this.rate) / 1000 >= this.burst;
+  }
+}
+
+/** Loopback, private, link-local and carrier-grade NAT addresses: a proxy hop, not a client. */
+export function isInternalIp(ip) {
+  if (typeof ip !== 'string') return true;
+  const v4 = /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(ip);
+  if (v4) {
+    const [a, b] = [+v4[1], +v4[2]];
+    return a === 10 || a === 127 || a === 0 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) ||
+      (a === 169 && b === 254) || (a === 100 && b >= 64 && b <= 127);
+  }
+  const l = ip.toLowerCase();
+  return l === '::1' || l === '::' || l.startsWith('fc') || l.startsWith('fd') || l.startsWith('fe80');
+}
+
+/** '::ffff:1.2.3.4' -> '1.2.3.4'; strips ports and brackets; '' when not an IP. */
+export function normalizeIp(s) {
+  let t = String(s || '').trim();
+  if (t.startsWith('[')) t = t.slice(1, t.indexOf(']') > 0 ? t.indexOf(']') : undefined);
+  else if (/^\d+\.\d+\.\d+\.\d+:\d+$/.test(t)) t = t.slice(0, t.lastIndexOf(':'));
+  if (/^::ffff:\d+\.\d+\.\d+\.\d+$/i.test(t)) t = t.slice(7);
+  return isIP(t) ? t : '';
+}
+
+/**
+ * The address to count limits by. Without a trusted proxy (or when the socket peer is itself
+ * a public address) it is the socket peer. Behind a proxy (Railway's edge is a private hop)
+ * it is the right-most public entry of X-Forwarded-For: proxies append what they saw, so
+ * entries a client wrote itself sit further left and are never reached. Only internal
+ * entries: the socket peer.
+ */
+export function clientIpOf(remoteAddress, xff, trustProxy = true) {
+  const sock = normalizeIp(remoteAddress) || String(remoteAddress || '?');
+  if (!trustProxy || !isInternalIp(sock)) return sock;
+  const list = (Array.isArray(xff) ? xff.join(',') : typeof xff === 'string' ? xff : '').split(',');
+  for (let k = list.length - 1; k >= 0; k--) {
+    const ip = normalizeIp(list[k]);
+    if (!ip) continue;
+    if (!isInternalIp(ip)) return ip;
+  }
+  return sock;
 }
 
 /**
@@ -59,6 +116,9 @@ export function createServer(opts = {}) {
     maxRooms: opts.maxRooms ?? envInt('SW_MAX_ROOMS', 500),
     maxPeers: opts.maxPeers ?? envInt('SW_MAX_PEERS', 4),
     maxPerIp: opts.maxPerIp ?? envInt('SW_MAX_PER_IP', 12),
+    roomsPerIp: opts.roomsPerIp ?? envInt('SW_ROOMS_PER_IP', 6),
+    connectRate: opts.connectRate ?? envInt('SW_CONNECT_RATE', 1),
+    connectBurst: opts.connectBurst ?? envInt('SW_CONNECT_BURST', 30),
     idleMs: opts.idleMs ?? envInt('SW_IDLE_MS', 10 * 60 * 1000),
     graceMs: opts.graceMs ?? envInt('SW_GRACE_MS', 5000),
     msgBytes: opts.msgBytes ?? 3900,
@@ -75,20 +135,31 @@ export function createServer(opts = {}) {
   const page = loadPage(o.htmlPath);
   const registry = new RoomRegistry({
     maxRooms: o.maxRooms, maxPeers: o.maxPeers, msgBytes: o.msgBytes, stateBytes: o.stateBytes,
-    graceMs: o.graceMs, idleMs: o.idleMs,
+    graceMs: o.graceMs, idleMs: o.idleMs, roomsPerOwner: o.roomsPerIp, gate: true,
   });
   const conns = new Map(); // `${room}\n${peer}` -> conn
   const perIp = new Map();
-  const counters = { connections: 0, rejected: 0, rateDropped: 0 };
+  const connectBuckets = new Map(); // ip -> Bucket (new connections)
+  const counters = { connections: 0, rejected: 0, rateDropped: 0, connectLimited: 0, errors: 0 };
   let shuttingDown = false;
 
   const server = http.createServer((req, res) => handleHttp(req, res));
   const wss = new WebSocketServer({ noServer: true, maxPayload: o.maxFrame, perMessageDeflate: false });
 
+  // every answer carries these; the page may not be framed by another site, talks only to
+  // its own origin (fetch /api/net and the rooms), and loads no plugins or other bases
   function securityHeaders(res) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'no-referrer');
-    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), display-capture=()');
+    res.setHeader('Content-Security-Policy', "frame-ancestors 'none'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'");
+    res.setHeader('X-Frame-Options', 'DENY');
+  }
+
+  function sendText(res, status, text, head, extra = {}) {
+    securityHeaders(res);
+    res.writeHead(status, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', ...extra });
+    res.end(head || text === undefined ? undefined : text);
   }
 
   function sendJson(res, status, body, head) {
@@ -100,11 +171,7 @@ export function createServer(opts = {}) {
 
   function handleHttp(req, res) {
     const head = req.method === 'HEAD';
-    if (req.method !== 'GET' && !head) {
-      res.writeHead(405, { Allow: 'GET, HEAD' });
-      res.end();
-      return;
-    }
+    if (req.method !== 'GET' && !head) return sendText(res, 405, undefined, true, { Allow: 'GET, HEAD' });
     let pathname = '/';
     try {
       pathname = new URL(req.url, 'http://x').pathname;
@@ -117,11 +184,7 @@ export function createServer(opts = {}) {
       return sendJson(res, 200, { ok: !!page && !shuttingDown, version: pkg.version, build: page ? page.build : null }, head);
     }
     if (pathname === '/' || pathname === '/index.html' || pathname === '/sparkle-world.html') {
-      if (!page) {
-        res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' });
-        res.end(head ? undefined : 'Sparkle World is not built yet. Run: npm run build\n');
-        return;
-      }
+      if (!page) return sendText(res, 503, 'Sparkle World is not built yet. Run: npm run build\n', head);
       securityHeaders(res);
       res.setHeader('ETag', page.etag);
       res.setHeader('Cache-Control', 'no-cache');
@@ -141,26 +204,20 @@ export function createServer(opts = {}) {
       res.end(head ? undefined : body);
       return;
     }
-    if (pathname === '/favicon.ico') {
-      res.writeHead(204);
-      res.end();
-      return;
-    }
-    if (pathname.startsWith('/r/')) {
-      res.writeHead(426, { 'Content-Type': 'text/plain; charset=utf-8' });
-      res.end(head ? undefined : 'WebSocket only\n');
-      return;
-    }
-    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-    res.end(head ? undefined : 'Not found\n');
+    if (pathname === '/favicon.ico') return sendText(res, 204, undefined, true);
+    if (pathname.startsWith('/r/')) return sendText(res, 426, 'WebSocket only\n', head);
+    sendText(res, 404, 'Not found\n', head);
   }
 
   function clientIp(req) {
-    if (o.trustProxy) {
-      const xff = req.headers['x-forwarded-for'];
-      if (typeof xff === 'string' && xff) return xff.split(',')[0].trim();
-    }
-    return req.socket.remoteAddress || '?';
+    return clientIpOf(req.socket.remoteAddress, req.headers['x-forwarded-for'], o.trustProxy);
+  }
+
+  /** New connections per address (a scanner opening room after room is slowed down). */
+  function connectOk(ip) {
+    let b = connectBuckets.get(ip);
+    if (!b) connectBuckets.set(ip, (b = new Bucket(o.connectRate, o.connectBurst)));
+    return b.take();
   }
 
   function originOk(req) {
@@ -201,15 +258,30 @@ export function createServer(opts = {}) {
     if (!ROOM_NAME_RE.test(name)) return refuse(socket, 400, 'Bad Request');
     const secret = url.searchParams.get('s') || '';
     if (!/^[A-Za-z0-9_-]{16,64}$/.test(secret)) return refuse(socket, 400, 'Bad Request');
+    // the device secret (optional: an older page without it plays with no stamp, by:null)
+    const device = url.searchParams.get('d') || '';
+    if (device && !/^[A-Za-z0-9_-]{16,64}$/.test(device)) return refuse(socket, 400, 'Bad Request');
     if (!originOk(req)) return refuse(socket, 403, 'Forbidden');
     if (shuttingDown) return refuse(socket, 503, 'Service Unavailable');
     const ip = clientIp(req);
-    wss.handleUpgrade(req, socket, head, (ws) => onConnection(ws, name, secret, ip));
+    if (!connectOk(ip)) {
+      counters.connectLimited++;
+      return refuse(socket, 429, 'Too Many Requests');
+    }
+    try {
+      wss.handleUpgrade(req, socket, head, (ws) => onConnection(ws, name, secret, device, ip));
+    } catch (err) {
+      counters.errors++;
+      refuse(socket, 400, 'Bad Request');
+    }
   });
 
-  function onConnection(ws, name, secret, ip) {
+  function onConnection(ws, name, secret, device, ip) {
     counters.connections++;
     const peer = createHash('sha256').update(name + '\n' + secret).digest('hex').slice(0, 16);
+    // the server's stamp for this device in this room: the same device gets the same stamp
+    // every time it comes back to these pictures, and nobody can make someone else's
+    const by = device ? 'd' + createHash('sha256').update('sw-device\n' + name + '\n' + device).digest('base64url').slice(0, 16) : null;
     const ipCount = perIp.get(ip) || 0;
     if (ipCount >= o.maxPerIp) {
       safeSend(ws, { t: 'e', code: 'limit' });
@@ -235,16 +307,29 @@ export function createServer(opts = {}) {
       }
       ws.send(JSON.stringify(frame));
     };
-    const r = registry.join(name, peer, sink, { by: null, kind: 'viewer', guest: false });
+    const r = registry.join(name, peer, sink, { by, kind: 'viewer', guest: false, owner: ip });
     if (!r.ok) {
       safeSend(ws, { t: 'e', code: r.code });
       conn.bye = true;
-      ws.close(r.code === 'full' ? 4001 : r.code === 'rooms_full' ? 4002 : 4004, r.code);
+      ws.close(r.code === 'full' ? 4001 : r.code === 'rooms_full' ? 4002 : r.code === 'limit' ? 4029 : 4004, r.code);
     }
     ws.on('pong', () => {
       conn.alive = true;
     });
     ws.on('message', (data, isBinary) => {
+      // one bad frame must never take the relay (and every room) down
+      try {
+        onMessage(data, isBinary);
+      } catch (err) {
+        counters.errors++;
+        o.log(`unexpected error handling a frame: ${err && err.name ? err.name : 'Error'}`);
+        safeSend(ws, { t: 'e', code: 'bad_frame' });
+        try {
+          ws.close(1011, 'unexpected');
+        } catch {}
+      }
+    });
+    function onMessage(data, isBinary) {
       if (isBinary) return;
       if (!conn.bucket.take()) {
         counters.rateDropped++;
@@ -280,7 +365,7 @@ export function createServer(opts = {}) {
       }
       const err = registry.handle(name, peer, f);
       if (err) safeSend(ws, { t: 'e', code: err.code });
-    });
+    }
     ws.on('error', () => {});
     ws.on('close', (code) => {
       const n = (perIp.get(ip) || 1) - 1;
@@ -316,6 +401,8 @@ export function createServer(opts = {}) {
     }
   }, 25000);
   const roomTimer = setInterval(() => {
+    // forget connection buckets that are full again
+    for (const [ip, b] of connectBuckets) if (b.idle()) connectBuckets.delete(ip);
     for (const { name, peer } of registry.sweep()) {
       const conn = conns.get(name + '\n' + peer);
       if (conn) {
@@ -403,4 +490,11 @@ if (isMain) {
   };
   process.on('SIGTERM', () => stop('SIGTERM'));
   process.on('SIGINT', () => stop('SIGINT'));
+  // a bug must not end every room: say what kind of error (never any payload) and keep serving
+  process.on('uncaughtException', (err) => {
+    console.error(`unexpected error, still serving: ${err && err.name ? err.name : 'Error'}`);
+  });
+  process.on('unhandledRejection', (err) => {
+    console.error(`unexpected rejection, still serving: ${err && err.name ? err.name : 'Error'}`);
+  });
 }

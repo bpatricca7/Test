@@ -567,12 +567,18 @@ export class FrameTransport extends NetTransport {
     this._topics[key].emit(f.data, from.peer);
   }
 
+  /**
+   * A roster entry. `uid` is the room's own stamp (`by`) and nothing else: a peer's presence
+   * is written by that peer, so an id taken from it could be anybody's (docs/MULTIPLAYER.md
+   * Addendum B). `at` is the room's join order (null when the room gives none).
+   */
   _entry(p, state, now) {
     const st = state && typeof state === 'object' ? (Object.isFrozen(state) ? state : Object.freeze({ ...state })) : Object.freeze({});
     return Object.freeze({
       id: p.peer,
-      uid: p.by ?? (typeof st.uid === 'string' ? st.uid : null),
-      by: p.by ?? null,
+      uid: typeof p.by === 'string' ? p.by : null,
+      by: typeof p.by === 'string' ? p.by : null,
+      at: typeof p.at === 'number' && Number.isFinite(p.at) ? p.at : null,
       guest: !!p.guest,
       self: !!p.sameTab,
       state: st,
@@ -584,7 +590,7 @@ export class FrameTransport extends NetTransport {
     if (!this._self) return;
     const me = this._peers.get(this._self);
     if (!me) return;
-    const e = Object.freeze({ ...me, state: this._box.state, uid: me.by ?? (typeof this._box.state.uid === 'string' ? this._box.state.uid : null), updatedAt: this.clock.now() });
+    const e = Object.freeze({ ...me, state: this._box.state, updatedAt: this.clock.now() });
     this._peers.set(this._self, e);
     this._noteChange('updated', e);
   }
@@ -645,7 +651,7 @@ export class FrameTransport extends NetTransport {
         if (patch[k] === null) delete st[k];
         else st[k] = patch[k];
       }
-      const e = this._entry({ peer: old.id, by: old.by, guest: old.guest, sameTab: false }, st, now);
+      const e = this._entry({ peer: old.id, by: old.by, at: old.at, guest: old.guest, sameTab: false }, st, now);
       this._peers.set(old.id, e);
       this._noteChange('updated', e);
     }

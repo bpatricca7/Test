@@ -9,10 +9,20 @@
 // - roster: joined / left / updated, as frames.
 // - reconnect: a peer that loses its connection stays in the room for `graceMs`; if the same
 //   peer attaches again it gets the whole roster (reset) and nobody sees it leave.
+// - join order: every roster entry carries `at`, a number the room gives each member when it
+//   joins (earlier joiners have smaller numbers). Clients cannot choose it; guests use it to
+//   pick the room's real host (docs/MULTIPLAYER.md Addendum B).
+// - gate (the Railway relay only; claude.ai rooms have no such thing): a member that the
+//   room's host has not let in sees only the public presence keys of the others (GATE_PUBLIC:
+//   enough to find the host and hear yes / no) and gets no broadcasts at all; a gated
+//   member's broadcasts reach nobody. The room's host is the earliest-joined member whose
+//   presence says r:'h', together with every member stamped with the same `by` (her own
+//   reloaded page); the let-in members are the peers in those members' presence `adm`.
 // Nothing here stores anything beyond the live room, and nothing is logged.
 //
 // Frames out:  {t:'p', self?, reset?, j?:[entry], l?:[peer], u?:[[peer, patch]]}
 //              {t:'b', topic, data, from:{peer, by, isMe, sameTab, kind, guest}}
+//              entry = {peer, by, isMe, sameTab, kind, guest, at, state}
 // Frames in:   {t:'s', patch, replace?}  {t:'b', topic, data}
 
 export const ROOM_NAME_RE = /^[a-z0-9][a-z0-9_.-]{0,47}$/;
@@ -22,10 +32,50 @@ const BAD_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 /** Control and invisible format characters: the platform refuses them in presence strings. */
 export const INVISIBLE_RE = /[\u0000-\u001f\u007f-\u009f\u00ad\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff]/;
 
+/** Presence keys a gated member still sees of the others (finding the host, yes / no). */
+export const GATE_PUBLIC = Object.freeze(['v', 'pv', 'r', 'ep', 'hs', 'end', 'adm', 'no', 'kn']);
+const PUBLIC = new Set(GATE_PUBLIC);
+
+/** Deepest nesting a broadcast may have (the game's messages use at most 7). */
+export const MAX_DATA_DEPTH = 16;
+
 const enc = new TextEncoder();
+/** UTF-8 bytes of a value's JSON text; -1 when it cannot be measured (too deep to stringify). */
 export function jsonSize(v) {
-  const t = JSON.stringify(v);
+  let t;
+  try {
+    t = JSON.stringify(v);
+  } catch {
+    return -1;
+  }
   return t === undefined ? 0 : enc.encode(t).length;
+}
+
+/**
+ * Is `v` nested deeper than `max` levels ({} or [] is 1)? Iterative with an early exit, so a
+ * frame of 8,000 nested arrays costs nothing and never reaches JSON.stringify's recursion.
+ */
+export function tooDeep(v, max = MAX_DATA_DEPTH) {
+  if (v === null || typeof v !== 'object') return false;
+  const stack = [[v, 1]];
+  let seen = 0;
+  while (stack.length) {
+    const [o, d] = stack.pop();
+    if (d > max) return true;
+    if (++seen > 100000) return true; // absurdly wide: refuse rather than walk it
+    if (Array.isArray(o)) {
+      for (let k = 0; k < o.length; k++) {
+        const c = o[k];
+        if (c !== null && typeof c === 'object') stack.push([c, d + 1]);
+      }
+    } else {
+      for (const k in o) {
+        const c = o[k];
+        if (c !== null && typeof c === 'object') stack.push([c, d + 1]);
+      }
+    }
+  }
+  return false;
 }
 
 function utf8Len(s) {
@@ -69,7 +119,7 @@ export function checkPresenceValue(v, strBytes, maxDepth, depth = 0) {
 }
 
 class Member {
-  constructor(peer, sink, meta, now) {
+  constructor(peer, sink, meta, now, order) {
     this.peer = peer;
     this.sink = sink;
     this.by = meta.by ?? null;
@@ -78,14 +128,16 @@ class Member {
     this.state = {};
     this.detachedAt = sink ? 0 : now;
     this.joinedAt = now;
+    this.order = order;
   }
 }
 
 class Room {
-  constructor(name, now) {
+  constructor(name, now, owner) {
     this.name = name;
     this.members = new Map();
     this.lastActive = now;
+    this.owner = owner ?? null; // who made the room (the server passes the client's IP)
   }
 }
 
@@ -100,6 +152,8 @@ export class RoomRegistry {
    * @param {number} [o.maxDepth=8]
    * @param {number} [o.graceMs=5000]  reconnect grace
    * @param {number} [o.idleMs=600000] a room with no traffic this long is closed
+   * @param {number} [o.roomsPerOwner=Infinity] live rooms one owner (meta.owner) may have made
+   * @param {boolean} [o.gate=false] hide presence and broadcasts from members not let in
    * @param {() => number} [o.now]
    */
   constructor(o = {}) {
@@ -111,9 +165,13 @@ export class RoomRegistry {
     this.maxDepth = o.maxDepth ?? 8;
     this.graceMs = o.graceMs ?? 5000;
     this.idleMs = o.idleMs ?? 600000;
+    this.roomsPerOwner = o.roomsPerOwner ?? Infinity;
+    this.gate = !!o.gate;
     this.now = o.now ?? (() => Date.now());
     this.rooms = new Map();
-    this.counts = { joins: 0, leaves: 0, broadcasts: 0, states: 0, rejected: 0 };
+    this.owned = new Map(); // owner -> live rooms it made
+    this.joinSeq = 0;
+    this.counts = { joins: 0, leaves: 0, broadcasts: 0, states: 0, rejected: 0, gated: 0 };
   }
 
   get roomCount() {
@@ -133,7 +191,8 @@ export class RoomRegistry {
   /**
    * Put `peer` in room `name` with a delivery function sink(frame). A peer already in the
    * room (a reconnect) swaps its sink and gets the whole roster again.
-   * @returns {{ok:true, resumed:boolean} | {ok:false, code:'bad_name'|'full'|'rooms_full'}}
+   * meta: { by, kind, guest, owner } (owner: who is asking, for the rooms-per-owner cap).
+   * @returns {{ok:true, resumed:boolean} | {ok:false, code:'bad_name'|'full'|'rooms_full'|'limit'}}
    */
   join(name, peer, sink, meta = {}) {
     if (typeof name !== 'string' || !ROOM_NAME_RE.test(name)) return { ok: false, code: 'bad_name' };
@@ -149,8 +208,9 @@ export class RoomRegistry {
     }
     if (!room) {
       if (this.rooms.size >= this.maxRooms) return { ok: false, code: 'rooms_full' };
-      room = new Room(name, now);
-      this.rooms.set(name, room);
+      const owner = meta.owner ?? null;
+      if (owner !== null && (this.owned.get(owner) || 0) >= this.roomsPerOwner) return { ok: false, code: 'limit' };
+      room = this._newRoom(name, now, owner);
     }
     if (room.members.size >= this.maxPeers) {
       // a peer that lost its connection (in its reconnect grace) does not block a newcomer:
@@ -160,20 +220,38 @@ export class RoomRegistry {
       if (!gone) return { ok: false, code: 'full' };
       this.leave(name, gone.peer);
       room = this.rooms.get(name);
-      if (!room) {
-        room = new Room(name, now);
-        this.rooms.set(name, room);
-      }
+      if (!room) room = this._newRoom(name, now, meta.owner ?? null);
     }
-    const m = new Member(peer, sink, meta, now);
+    const before = this._openSet(room);
+    const m = new Member(peer, sink, meta, now, ++this.joinSeq);
     room.members.set(peer, m);
     room.lastActive = now;
     this.counts.joins++;
+    const after = this._openSet(room);
     this._deliver(m, { t: 'p', self: peer, reset: true, j: this._entries(room, m) });
     for (const o of room.members.values()) {
-      if (o !== m) this._deliver(o, { t: 'p', j: [this._entry(m, o)] });
+      if (o === m) continue;
+      if (this._flipped(o, before, after)) this._refresh(room, o);
+      else this._deliver(o, { t: 'p', j: [this._entry(m, o, after)] });
     }
     return { ok: true, resumed: false };
+  }
+
+  _newRoom(name, now, owner) {
+    const room = new Room(name, now, owner);
+    this.rooms.set(name, room);
+    if (owner !== null) this.owned.set(owner, (this.owned.get(owner) || 0) + 1);
+    return room;
+  }
+
+  _dropRoom(room) {
+    if (this.rooms.get(room.name) !== room) return;
+    this.rooms.delete(room.name);
+    if (room.owner !== null) {
+      const n = (this.owned.get(room.owner) || 1) - 1;
+      if (n <= 0) this.owned.delete(room.owner);
+      else this.owned.set(room.owner, n);
+    }
   }
 
   /** The connection is gone but the peer may come back within graceMs. */
@@ -188,10 +266,15 @@ export class RoomRegistry {
   leave(name, peer) {
     const room = this.rooms.get(name);
     if (!room || !room.members.has(peer)) return;
+    const before = this._openSet(room);
     room.members.delete(peer);
     this.counts.leaves++;
-    for (const o of room.members.values()) this._deliver(o, { t: 'p', l: [peer] });
-    if (room.members.size === 0) this.rooms.delete(name);
+    const after = this._openSet(room);
+    for (const o of room.members.values()) {
+      this._deliver(o, { t: 'p', l: [peer] });
+      if (this._flipped(o, before, after)) this._refresh(room, o);
+    }
+    if (room.members.size === 0) this._dropRoom(room);
   }
 
   /**
@@ -215,7 +298,7 @@ export class RoomRegistry {
       const why = checkPresenceValue(next, this.strBytes, this.maxDepth);
       if (why) return this._reject('bad_state', why);
       const size = jsonSize(next);
-      if (size > this.stateBytes) return this._reject('too_big', `presence ${size} B`);
+      if (size < 0 || size > this.stateBytes) return this._reject('too_big', `presence ${size} B`);
       // what actually changed, for the others
       let out = null;
       if (frame.replace) {
@@ -224,21 +307,42 @@ export class RoomRegistry {
       } else {
         for (const k in patch) (out ||= {})[k] = patch[k] === undefined ? null : patch[k];
       }
+      const before = this.gate ? this._openSet(room) : null;
       m.state = next;
       room.lastActive = now;
       this.counts.states++;
-      if (out) {
-        for (const o of room.members.values()) if (o !== m) this._deliver(o, { t: 'p', u: [[peer, out]] });
+      const after = this.gate ? this._openSet(room) : null;
+      for (const o of room.members.values()) {
+        if (o === m) {
+          if (this._flipped(o, before, after)) this._refresh(room, o); // she became the host
+          continue;
+        }
+        if (this._flipped(o, before, after)) {
+          this._refresh(room, o);
+          continue;
+        }
+        const seen = out && this._visible(o, after) ? out : out && publicPart(out);
+        if (seen) this._deliver(o, { t: 'p', u: [[peer, seen]] });
       }
       return null;
     }
     if (frame.t === 'b') {
       if (typeof frame.topic !== 'string' || !TOPIC_RE.test(frame.topic)) return this._reject('bad_topic');
+      // depth first: JSON.stringify of 8,000 nested arrays would throw (and take the relay down)
+      if (tooDeep(frame.data)) return this._reject('bad_frame', 'too deep');
       const size = jsonSize(frame.data);
+      if (size < 0) return this._reject('bad_frame', 'unmeasurable');
       if (size > this.msgBytes) return this._reject('too_big', `message ${size} B`);
       room.lastActive = now;
       this.counts.broadcasts++;
+      const open = this.gate ? this._openSet(room) : null;
+      const fromOpen = this._visible(m, open);
       for (const o of room.members.values()) {
+        // a gated member hears nothing but her own echo, and nobody hears her
+        if (o !== m && (!fromOpen || !this._visible(o, open))) {
+          this.counts.gated++;
+          continue;
+        }
         this._deliver(o, { t: 'b', topic: frame.topic, data: frame.data, from: this._sender(m, o) });
       }
       return null;
@@ -256,7 +360,7 @@ export class RoomRegistry {
     for (const room of Array.from(this.rooms.values())) {
       if (now - room.lastActive > this.idleMs) {
         for (const m of room.members.values()) out.push({ name: room.name, peer: m.peer, reason: 'idle' });
-        this.rooms.delete(room.name);
+        this._dropRoom(room);
         continue;
       }
       for (const m of Array.from(room.members.values())) {
@@ -285,16 +389,57 @@ export class RoomRegistry {
     };
   }
 
-  _entry(m, to) {
+  _entry(m, to, open) {
     const s = this._sender(m, to);
-    s.state = m.state;
+    s.at = m.order;
+    s.state = m === to || this._visible(to, open) ? m.state : publicPart(m.state) || {};
     return s;
   }
 
   _entries(room, to) {
+    const open = this._openSet(room);
     const list = [];
-    for (const m of room.members.values()) list.push(this._entry(m, to));
+    for (const m of room.members.values()) list.push(this._entry(m, to, open));
     return list;
+  }
+
+  // ---------- the gate (Railway relay) ----------
+
+  /**
+   * The members that see everything (null when the room has no gate): the room's host side
+   * (the earliest r:'h' member and every member with her `by` that also says r:'h') and the
+   * peers listed in the host side's `adm`.
+   */
+  _openSet(room) {
+    if (!this.gate || !room) return null;
+    let host = null;
+    for (const m of room.members.values()) if (m.state.r === 'h' && (!host || m.order < host.order)) host = m;
+    const open = new Set();
+    if (!host) return open;
+    for (const m of room.members.values()) {
+      if (m !== host && !(host.by !== null && m.by === host.by && m.state.r === 'h')) continue;
+      open.add(m.peer);
+      const adm = m.state.adm;
+      if (Array.isArray(adm)) for (const a of adm) if (Array.isArray(a) && typeof a[0] === 'string') open.add(a[0]);
+    }
+    return open;
+  }
+
+  _visible(m, open) {
+    return open === null || open === undefined || open.has(m.peer);
+  }
+
+  _flipped(m, before, after) {
+    if (!this.gate || !before || !after) return false;
+    return before.has(m.peer) !== after.has(m.peer);
+  }
+
+  /** Her view of the others changed (let in, or not any more): everyone's state again. */
+  _refresh(room, to) {
+    const open = this._openSet(room);
+    const j = [];
+    for (const m of room.members.values()) if (m !== to) j.push(this._entry(m, to, open));
+    if (j.length) this._deliver(to, { t: 'p', j });
   }
 
   _deliver(m, frame) {
@@ -305,4 +450,12 @@ export class RoomRegistry {
       // a broken sink is the connection layer's problem
     }
   }
+}
+
+/** The GATE_PUBLIC keys of a presence object or patch (null when none are there). */
+function publicPart(state) {
+  let out = null;
+  if (!state) return null;
+  for (const k in state) if (PUBLIC.has(k)) (out ||= {})[k] = state[k];
+  return out;
 }

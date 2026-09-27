@@ -7,10 +7,29 @@
 //   it the whole roster again; presence is re-asserted by FrameTransport.
 // - Reconnects back off 0.5, 1, 2, 4, 8, 8... s; after about a minute the session ends
 //   (onStatus fatal 'ended').
-// - identity(): a random per-device id (localStorage), canHost true. No accounts.
+// - Identity: a random per-device secret (localStorage, never in presence, never shown) goes
+//   with every connection (?d=...). The server turns it into this device's `by` stamp for the
+//   room, which nobody else can make. identity() has no uid to give (the stamp is the
+//   server's); canHost is true. No accounts.
 
 import { FrameTransport, NetError, realClock } from './transport.js';
-import { loadDeviceId } from './loop-transport.js';
+
+const DEVICE_KEY = 'sparkle-world:net-device';
+
+/** This device's secret for the relay (made once, kept in localStorage). */
+export function loadDeviceSecret(storage) {
+  try {
+    const ls = storage || globalThis.localStorage;
+    let v = ls?.getItem(DEVICE_KEY);
+    if (!v || !/^[A-Za-z0-9]{32}$/.test(v)) {
+      v = randomSecret(32);
+      ls?.setItem(DEVICE_KEY, v);
+    }
+    return v;
+  } catch {
+    return randomSecret(32); // no storage: a stamp for this page only
+  }
+}
 
 const BACKOFF = [500, 1000, 2000, 4000, 8000];
 const GIVE_UP_MS = 60000;
@@ -32,7 +51,8 @@ export class WsTransport extends FrameTransport {
   /**
    * @param {object} o
    * @param {string} [o.url]        base like 'ws://127.0.0.1:8080' (default: this page's origin)
-   * @param {string} [o.uid]        my stable id (default: a per-device id in localStorage)
+   * @param {string} [o.device]     the device secret (default: loadDeviceSecret())
+   * @param {string} [o.uid]        tests: a name for a device (the secret is made from it)
    * @param {object} [o.clock]
    * @param {Function} [o.WebSocket] constructor (default: globalThis.WebSocket)
    * @param {object} [o.faults]     tests: { dropRate, dupRate, delayMs, rand } on received broadcasts
@@ -40,7 +60,7 @@ export class WsTransport extends FrameTransport {
   constructor(o = {}) {
     super({ clock: o.clock || realClock, limits: o.limits });
     this._base = o.url || null;
-    this._uid = o.uid || null;
+    this._device = o.device || (o.uid ? ('dev_' + String(o.uid)).replace(/[^A-Za-z0-9_-]/g, '_').padEnd(16, '0').slice(0, 64) : null);
     this._WS = o.WebSocket || globalThis.WebSocket;
     this._faults = o.faults || null;
     this._secret = randomSecret();
@@ -57,8 +77,7 @@ export class WsTransport extends FrameTransport {
   get kind() { return 'ws'; }
 
   async identity() {
-    if (!this._uid) this._uid = loadDeviceId('ws');
-    return { uid: this._uid, canHost: true };
+    return { uid: null, canHost: true };
   }
 
   _urlFor(room) {
@@ -68,7 +87,8 @@ export class WsTransport extends FrameTransport {
       if (!loc) throw new NetError('unavailable', 'no location');
       base = (loc.protocol === 'https:' ? 'wss://' : 'ws://') + loc.host;
     }
-    return `${base.replace(/\/$/, '')}/r/${encodeURIComponent(room)}?s=${this._secret}`;
+    if (!this._device) this._device = loadDeviceSecret();
+    return `${base.replace(/\/$/, '')}/r/${encodeURIComponent(room)}?s=${this._secret}&d=${this._device}`;
   }
 
   async _linkOpen(roomName) {

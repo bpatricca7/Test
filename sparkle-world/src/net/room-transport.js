@@ -8,7 +8,8 @@
 //   are dropped. The platform drops emits while disconnected and past its own budget.
 // - setState(): merged locally, size-checked (throws too_big), sent as a diff patch at <= 10 Hz
 //   (30 ms after flushState()). The platform re-asserts presence after a reconnect.
-// - peers(): nr.peers() mapped: peer -> id, by -> uid (else presence.uid), presence -> state,
+// - peers(): nr.peers() mapped: peer -> id, by -> uid (null when the platform gives none; a
+//   uid is never read from presence, which the peer writes itself), presence -> state,
 //   isMe && sameTab -> self; agents are dropped.
 // - A room that ends (listener error upstream_error / limit_reached) is re-joined after 1, 2,
 //   4 and 8 s, then the session ends. Terminal codes end it at once.
@@ -297,8 +298,10 @@ export class RoomTransport extends NetTransport {
       const st = p.presence && typeof p.presence === 'object' ? p.presence : {};
       m = Object.freeze({
         id: p.peer,
-        uid: p.by ?? (typeof st.uid === 'string' ? st.uid : null),
-        by: p.by ?? null,
+        // the platform's stamp only: presence is written by the peer itself
+        uid: typeof p.by === 'string' ? p.by : null,
+        by: typeof p.by === 'string' ? p.by : null,
+        at: null,
         guest: !!p.guest,
         self: !!(p.isMe && p.sameTab),
         state: st,
