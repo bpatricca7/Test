@@ -129,6 +129,7 @@ export function install(game) {
 
   function ensureSound() {
     const a = game.audio;
+    if (sound && sound.ctx !== a.ctx) stopSound(); // the audio engine made a new context
     if (sound || !a.ctx || a.ctx.state !== 'running' || !a.sfxGain) return sound;
     try {
       const ctx = a.ctx;
@@ -157,7 +158,7 @@ export function install(game) {
       gain.gain.value = 0;
       src.connect(hp).connect(lp).connect(gain).connect(a.sfxGain);
       src.start();
-      sound = { src, lp, gain, vol: -1, roofed: null };
+      sound = { src, hp, lp, gain, ctx, vol: -1, roofed: null };
     } catch (err) {
       console.warn('[weather] rain sound unavailable', err);
       sound = null;
@@ -167,11 +168,10 @@ export function install(game) {
 
   function stopSound() {
     if (!sound) return;
-    try {
-      sound.src.stop();
-      sound.src.disconnect();
-      sound.gain.disconnect();
-    } catch { /* already stopped */ }
+    try { sound.src.stop(); } catch { /* already stopped */ }
+    for (const n of [sound.src, sound.hp, sound.lp, sound.gain]) {
+      try { if (n) n.disconnect(); } catch { /* already */ }
+    }
     sound = null;
   }
 
@@ -189,6 +189,7 @@ export function install(game) {
     g.gain.exponentialRampToValueAtTime(vol, t + 0.004);
     g.gain.exponentialRampToValueAtTime(0.0001, t + (sprinkly ? 0.35 : 0.07));
     o.connect(g).connect(a.sfxGain);
+    if (a.track) a.track(o, g); // disconnected when it ends
     o.start(t);
     o.stop(t + 0.4);
   }

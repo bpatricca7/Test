@@ -1,5 +1,9 @@
 // Synthesized sound effects and a gentle generative music-box loop (WebAudio, no files).
 // The AudioContext is created on the first user gesture (unlock()), as browsers require.
+// Every one-shot voice is disconnected, with the nodes that only served it, when it ends
+// (track()), so nothing piles up in the audio graph over a long session (older iPads). A
+// context that iOS left 'suspended' or 'interrupted' (a call, Siri, an alarm) is resumed on
+// the next tap.
 
 const PENTA = [0, 2, 4, 7, 9]; // major pentatonic steps
 const MAJOR = [0, 2, 4, 5, 7, 9, 11];
@@ -23,7 +27,9 @@ export class AudioEngine {
     this._playing = null;
     this.forcedMood = null;
     this.muted = false;
+    this._hiddenPause = false; // suspend(true) while the tab is hidden
     this._lastPlay = new Map();
+    this._stats = { started: 0, ended: 0 };
   }
 
   /** Create/resume the context. Safe to call on every gesture. */
@@ -48,7 +54,11 @@ export class AudioEngine {
         if (this.muted) this.master.gain.value = 0;
         if (this.musicOn) this._startMusic();
       }
-      if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+      // 'suspended' (autoplay rules) or 'interrupted' (iOS: a call, Siri, an alarm): every
+      // gesture retries, since iOS ignores a resume() that does not come from one. A context we
+      // paused ourselves for a hidden tab waits for the tab to come back.
+      const st = this.ctx.state;
+      if (st !== 'running' && st !== 'closed' && !this._hiddenPause) this.ctx.resume().catch(() => {});
     } catch (err) {
       console.warn('[audio] unavailable', err);
     }
@@ -56,6 +66,28 @@ export class AudioEngine {
 
   get ready() {
     return !!this.ctx && this.ctx.state === 'running';
+  }
+
+  /**
+   * A one-shot source: when it ends, disconnect it and the nodes that only served it (gains,
+   * filters). Modules that make their own sources on this context should use it too.
+   */
+  track(src, ...nodes) {
+    this._stats.started++;
+    src.onended = () => {
+      this._stats.ended++;
+      src.onended = null;
+      try { src.disconnect(); } catch { /* already */ }
+      for (const n of nodes) {
+        try { n.disconnect(); } catch { /* already */ }
+      }
+    };
+    return src;
+  }
+
+  /** Numbers for diagnostics and tests. */
+  stats() {
+    return { state: this.ctx ? this.ctx.state : 'none', live: this._stats.started - this._stats.ended, ...this._stats };
   }
 
   setVolumes({ music, sfx } = {}) {
@@ -71,9 +103,10 @@ export class AudioEngine {
     this.musicGain.gain.setTargetAtTime(this.musicVolume * 0.28, t, 0.3);
   }
 
-  /** Pause/resume all sound (e.g. hidden tab). */
+  /** Pause/resume all sound (e.g. hidden tab). A resume iOS refuses is retried on the next tap. */
   suspend(on) {
-    if (!this.ctx) return;
+    this._hiddenPause = !!on;
+    if (!this.ctx || this.ctx.state === 'closed') return;
     if (on) this.ctx.suspend().catch(() => {});
     else this.ctx.resume().catch(() => {});
   }
@@ -109,6 +142,7 @@ export class AudioEngine {
     if (f1) osc.frequency.exponentialRampToValueAtTime(f1, when + attack + decay);
     this._env(g, when, attack, vol, decay);
     osc.connect(g).connect(out || this.sfxGain);
+    this.track(osc, g);
     osc.start(when);
     osc.stop(when + attack + decay + 0.05);
     return osc;
@@ -127,6 +161,7 @@ export class AudioEngine {
     const g = ctx.createGain();
     this._env(g, when, 0.004, vol, decay);
     src.connect(f).connect(g).connect(this.sfxGain);
+    this.track(src, f, g);
     src.start(when, Math.random() * 0.5);
     src.stop(when + decay + 0.05);
   }
@@ -419,6 +454,9 @@ export class AudioEngine {
     o1.connect(f);
     o2.connect(f);
     f.connect(g).connect(out);
+    // both stop together: the first one's end also lets go of the shared filter and gain
+    this.track(o1, f, g);
+    this.track(o2);
     o1.start(when);
     o2.start(when);
     o1.stop(when + dur + 0.8);

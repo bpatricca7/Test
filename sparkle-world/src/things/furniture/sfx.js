@@ -16,6 +16,8 @@ export function createSfx(game) {
     }
     return noiseBuf;
   };
+  // a voice and the nodes that only served it are disconnected when it ends (audio.track)
+  const track = (src, ...nodes) => { if (A.track) A.track(src, ...nodes); };
   const env = (g, t, a, peak, d) => {
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), t + a);
@@ -31,6 +33,7 @@ export function createSfx(game) {
     if (f1) o.frequency.exponentialRampToValueAtTime(f1, when + a + d);
     env(g, when, a, vol, d);
     o.connect(g).connect(A.sfxGain);
+    track(o, g);
     o.start(when);
     o.stop(when + a + d + 0.05);
   }
@@ -47,6 +50,7 @@ export function createSfx(game) {
     const g = ctx.createGain();
     env(g, when, a, vol, d);
     src.connect(filt).connect(g).connect(A.sfxGain);
+    track(src, filt, g);
     src.start(when, Math.random() * 0.4);
     src.stop(when + a + d + 0.05);
   }
@@ -90,6 +94,8 @@ export function createSfx(game) {
       lfo.connect(lg).connect(o.frequency);
       env(g, when, 0.01, 0.35, 0.4);
       o.connect(g).connect(A.sfxGain);
+      track(o, g);
+      track(lfo, lg);
       o.start(when);
       lfo.start(when);
       o.stop(when + 0.5);
