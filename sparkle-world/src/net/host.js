@@ -203,6 +203,7 @@ export class NetHost {
         continue;
       }
       const known = uid && (this.seatedUids.has(uid) || this.resumeUids.has(uid));
+      this._reclaimSeat(uid);
       if (!this._freeSeatNumber(uid ? this.seatedUids.get(uid) : undefined)) {
         this._refuse(p.id, NO.FULL);
         continue;
@@ -227,6 +228,7 @@ export class NetHost {
     const p = this.peerMap.get(peer) || this.t.peers().find((x) => x.id === peer);
     if (!p || this.adm.has(peer)) return false;
     const uid = typeof p.uid === 'string' ? p.uid : null;
+    this._reclaimSeat(uid);
     const seat = this._freeSeatNumber(uid ? this.seatedUids.get(uid) : undefined);
     this.knocks.delete(peer);
     if (!seat) {
@@ -293,6 +295,14 @@ export class NetHost {
     this.rs.delete(s.peer);
     this.seats[seat] = null;
     this.session.emit('players', { reason: 'free', peer: s.peer, seat });
+  }
+
+  /** Her old page is gone (a reload): the seat held for it goes back to her at once. */
+  _reclaimSeat(uid) {
+    if (!uid) return;
+    const pref = this.seatedUids.get(uid);
+    const s = pref ? this.seats[pref] : null;
+    if (s && s.uid === uid && !this.peerMap.has(s.peer)) this._freeSeat(pref);
   }
 
   /** Seat to use: `prefer` when free, else the lowest free seat; 0 when full. */
