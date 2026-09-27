@@ -68,10 +68,25 @@ below.
 
 1. In **Settings → Networking**, click **Generate Domain**.
 2. Railway shows an address like `https://sparkle-world-production.up.railway.app`.
-3. Open it in Safari or Chrome. The Sparkle World title screen should appear.
-4. Optional check: add `/healthz` to the address. The page should say `{"ok":true}`.
+3. Open it in Safari or Chrome. The Sparkle World **home page** appears (the page for
+   grown-ups and kids that shows what's inside, with a big **Play now** button).
+4. Tap **Play now**: the game's title screen appears. The game's own address is the home page
+   address with `/play` at the end, for example
+   `https://sparkle-world-production.up.railway.app/play`.
+5. Optional check: add `/healthz` to the address. The page should say `{"ok":true}`.
 
-On an iPad you can tap the Share button → **Add to Home Screen** so it opens like an app.
+| Address | What it shows |
+|---|---|
+| `https://<your address>/` | the home page |
+| `https://<your address>/play` | the game |
+| `https://<your address>/parents` | safety and privacy, in plain words |
+| `https://<your address>/healthz` | `{"ok":true}` (Railway's health check) |
+
+On an iPad, open the game (**Play now**, or the `/play` address), then tap the Share button →
+**Add to Home Screen** so it opens like an app, straight into the game. If you added the plain
+address to the Home Screen before the home page existed, it now opens the home page: tap
+**Play now**, or add the icon again from `/play`. Her worlds are not affected: they are saved
+per website, and the home page and the game are the same website.
 
 ### Bring her worlds over from the claude.ai version (optional)
 
@@ -88,8 +103,8 @@ Her outfits and stickers stay with each website; she can dress up again in a min
 1. On the first device, on the title screen: **Play with Friends → Make a Code** (it opens
    the last world). Or, inside a world: **Menu → Invite Friends**. Four big pictures appear
    (for example *heart, star, moon, cat*). **Say it** reads them out loud.
-2. On the second device (same web address): **Play with Friends → Join a Code**, tap the same
-   4 pictures, **Go!**.
+2. On the second device, open the same web address and tap **Play now** (or open the `/play`
+   address directly), then **Play with Friends → Join a Code**, tap the same 4 pictures, **Go!**.
 3. The first device shows a card "**Mia** wants to play!": tap **Let in!** (or **Not now**).
 
 Up to 4 players can be in one world. Each device saves its own worlds in its browser, just like
@@ -127,8 +142,9 @@ version by itself (1–3 minutes). The old version keeps running until the new o
 
 - **Logs:** click the service → **Deployments** → the active deployment → **View Logs**.
   *Build Logs* show the build; *Deploy Logs* show the running server. You should see a line like
-  `Sparkle World server listening on port 8080 (build 1a2b3c4d, 564 KB gzip)` and, every 15
-  minutes when something changed, `rooms=1 players=2`. The server never writes down what
+  `Sparkle World server listening on port 8080 (build 1a2b3c4d, 564 KB gzip)`, then
+  `home page at /, the game at /play (…)` and, every 15 minutes when something changed,
+  `rooms=1 players=2`. The server never writes down what
   children do or say in the game.
 - **Usage:** the project's **Usage** page (or your account's **Usage**) shows this month's cost.
 - **Spending limit:** in your account's **Usage** page you can set a hard limit (for example
@@ -181,6 +197,7 @@ version by itself (1–3 minutes). The old version keeps running until the new o
 | Build fails right away with "no start command" or wrong files | Check **Root Directory** is exactly `sparkle-world` (step 3). |
 | Deployment fails at "Healthcheck" | Check the build command is `npm run build` (the game must be built before it starts). Look at the Deploy Logs for `dist/sparkle-world.html is missing`. |
 | The page opens but there is no **Play with Friends** button | Open `/api/net` on your address; it should show `{"ok":true,...}`. If it does, reload the game page. |
+| The address shows the game instead of the home page | The home page was not built (the Build Logs show a `dist/site/` line when it is). Check the build command is `npm run build`. The game still works at `/` and at `/play` meanwhile. |
 | "Lots of games right now!" | The server is at its limit (500 games, or 12 devices on one home connection). Wait a minute. |
 | "Your game needs a refresh!" | Reload the page on every device (a new version was published). |
 | Friends are "Reconnecting…" often | Usually home Wi-Fi. The game keeps working and catches up when the connection returns. |
@@ -210,9 +227,10 @@ npm run build
 npm start
 ```
 
-Then open **http://localhost:8080** twice: once in a normal browser window and once in a
-private (incognito) window, so the game treats them as two different devices. Make a code in
-one window and join it from the other. Friends on the same home Wi-Fi can use your computer's
+Then open **http://localhost:8080** for the home page, and **http://localhost:8080/play** for
+the game. Open the game twice: once in a normal browser window and once in a private
+(incognito) window, so the game treats them as two different devices. Make a code in one
+window and join it from the other. Friends on the same home Wi-Fi can use your computer's
 address instead of `localhost` (for example `http://192.168.1.20:8080`). Stop the server with
 Ctrl+C.
 
@@ -221,5 +239,6 @@ Automatic checks (for grown-ups who change the code):
 | Command | What it checks |
 |---|---|
 | `npm run test:net` | the multiplayer code on its own, with lost and late messages (about 2 minutes) |
+| `node tools/site-check.mjs` | builds, starts this same server, and checks the home page at phone, iPad and computer sizes (no errors, no sideways scrolling, every picture and link, the picture-code demo), that **Play now** opens the game at `/play`, and the page's headers. Screenshots go to `.shots/site-*.png`. About 3 minutes. |
 | `npm run probe:railway` | builds the game, starts this same server on a free port, and three headless browsers (a computer, an iPad and a phone) make a code, join it through the real screens and build together; then the server is killed and started again (everyone reconnects by themselves) and finally killed for good (everyone gets a friendly "Playing together stopped." card). About 6 minutes. |
 | `npm run probe:mp` | the same game inside claude.ai (a pretend claude.ai room): every screen, knocking, building, Undo building, Send home, sleep, pets, zip lines, reloads, a new version, lost messages, and the size and speed limits. About 25 minutes. |
