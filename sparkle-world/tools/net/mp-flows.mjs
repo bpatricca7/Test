@@ -62,6 +62,7 @@ export async function setupPage(pl) {
     look.name = name;
     g.profile.look = look;
     g.profile.playerName = name;
+    g.profile.nameSet = true; // she typed her name (a fresh profile is asked first)
     g.profile.tutorialDone = true;
     // SwiftShader renders on the CPU: draw the 3D at 1x (the UI stays sharp)
     g.profile.settings.quality = 'low';
@@ -95,7 +96,7 @@ export async function trace(pl) {
   return game(pl, () => (window.__netTrace || []).map(([t, s]) => `${(t / 1000).toFixed(1)}s ${s}`).join(', '));
 }
 
-/** Host: New World (biome card) -> Create! -> Menu -> Invite Friends; returns the code words. */
+/** Host: New World (biome card) -> Create! -> Menu -> Play Together -> Make a Code; returns the code words. */
 export async function hostMakesCode(host, { biome = 'flat', shot = null, log = () => {} } = {}) {
   const p = host.page;
   await press(host, 'button.sw-btn:has-text("New World")');
@@ -111,6 +112,11 @@ export async function hostMakesCode(host, { biome = 'flat', shot = null, log = (
   await settle(p, 1200);
   if (shot) await shot(host, 'pause-invite');
   await press(host, '.sw-panel-wrap.sw-open .sw-pause-invite');
+  // the Play with Friends card first (never a code at once), then Make a Code
+  await p.waitForSelector('.sw-panel-wrap.sw-open .sw-net-invite');
+  await settle(p, 1000);
+  if (shot) await shot(host, 'play-together-card');
+  await press(host, '.sw-panel-wrap.sw-open .sw-net-invite');
   await p.waitForSelector('.sw-panel-wrap.sw-open .sw-net-code-tiles:not(.sw-wait) .sw-net-tile[data-pic]', { timeout: 30000 });
   await settle(p, 800);
   return p.$$eval('.sw-panel-wrap.sw-open .sw-net-code-tiles .sw-net-tile[data-pic]', (els) => els.map((e) => e.dataset.pic));

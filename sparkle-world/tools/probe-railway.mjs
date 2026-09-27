@@ -119,7 +119,7 @@ async function openPlayer(browser, def, url) {
     // the optional Google Font (same rule as tools/smoke.mjs)
     if (/fonts\.(googleapis|gstatic)\.com/.test(text) || /fonts\.(googleapis|gstatic)\.com/.test(where)) return;
     // the browser's own line for a WebSocket that could not connect (the server is down)
-    if (/WebSocket connection to 'ws:\/\/[^']+\/r\/sw1-[a-z-]+\?s=[A-Za-z0-9]+' failed/.test(text) || /ERR_CONNECTION_REFUSED/.test(text)) {
+    if (/WebSocket connection to 'ws:\/\/[^']+\/r\/sw1-[a-z-]+\?s=[A-Za-z0-9]+(&d=[A-Za-z0-9_-]+)?' failed/.test(text) || /ERR_CONNECTION_REFUSED/.test(text)) {
       wsNoise++;
       return;
     }

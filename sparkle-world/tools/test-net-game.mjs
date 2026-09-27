@@ -125,6 +125,8 @@ async function compare(host, guests, label) {
 
 async function settleAndCompare(host, guests, label) {
   await quiet(host, guests, label);
+  const st = await host.evaluate(() => { const s = window.__game.debug.net.stats().host.stats; return `snapshots ${s.snapshots}, fixes ${s.fixes}, batches ${s.batches}`; });
+  log(`  ${label}: host ${st}`);
   return compare(host, guests, label);
 }
 
@@ -514,12 +516,28 @@ async function main() {
         return orig(save);
       };
     });
+    await gb.evaluate(() => {
+      const g = window.__game, t0 = performance.now();
+      window.__trace = [];
+      g.events.on('net:state', (s) => window.__trace.push([Math.round(performance.now() - t0), s.state]));
+      g.events.on('net:message', (m) => window.__trace.push([Math.round(performance.now() - t0), 'msg ' + m.code]));
+      g.events.on('net:progress', (p) => { if (p.have === p.of || p.have === 1) window.__trace.push([Math.round(performance.now() - t0), `chunks ${p.have}/${p.of}`]); });
+      g.events.on('world:load', () => window.__trace.push([Math.round(performance.now() - t0), 'world:load']));
+    });
     await gb.evaluate((c) => window.__game.net.join(c), code);
     const back2 = await until(gb, () => {
       const g = window.__game;
       return g.net.state === 'g.live' && g.mode === 'play' && !g.loading && !g._busy;
     }, null, 90000);
     check(back2, 'guest B is back after a reload (known friend: let in again without a knock card)');
+    log('  guest B after the reload: ' + JSON.stringify(await gb.evaluate(() => (window.__trace || []).map(([t, s]) => `${(t / 1000).toFixed(1)}s ${s}`).join(', '))));
+    if (!back2) {
+      log('  guest B: ' + JSON.stringify(await gb.evaluate(() => {
+        const g = window.__game, s = g.net.session;
+        return { state: s.state, msg: s.lastMessage, guest: s.guestCore ? s.guestCore.debug() : null, trace: window.__trace || null, mode: g.mode, loading: g.loading, busy: g._busy };
+      })));
+      log('  host: ' + JSON.stringify(await host.evaluate(() => ({ knocks: window.__game.debug.net.knocks(), host: window.__game.debug.net.stats().host }))));
+    }
     // she builds again after coming back (her uids must not clash with her earlier ones)
     const again = await gb.evaluate(({ x, z }) => {
       const g = window.__game, E = g.entities;

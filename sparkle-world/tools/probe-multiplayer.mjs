@@ -869,6 +869,8 @@ test('AT12', 'Lily\u2019s page reloads; "Keep playing" opens the door again; eve
   await converge([lily, rosie, june], 'AT12 before');
   await game(lily, () => window.__game.saveWorld({ thumbnail: false }));
   const ep0 = await game(rosie, () => window.__game.net.session.guestCore.epoch);
+  const backupAt = async () => game(lily, async () => (await window.__game.store.listBackups()).map((b) => b.backupAt).join(','));
+  const bk0 = await backupAt();
   // SwiftShader draws every page on the CPU: while Lily's page reloads, her friends' pages are
   // slowed down so her reload takes about as long as on a real tablet (her friends only wait
   // for 60 s before they are told she went home; that path is covered too, see guestReturns)
@@ -893,6 +895,8 @@ test('AT12', 'Lily\u2019s page reloads; "Keep playing" opens the door again; eve
   }
   const code2 = await game(lily, () => window.__game.net.code);
   check(JSON.stringify(code2) === JSON.stringify(CODE), 'the same code');
+  const bk1 = await backupAt();
+  check(bk0 && bk1 === bk0, `"Keep playing" keeps the copy from before friends came (backupAt ${bk0} -> ${bk1})`);
   check(await until(lily, () => window.__toasts.some((t) => /door is open again/.test(t)), null, 5000), 'Lily hears "Your door is open again!" (no panel over her world)');
   await settle(lily.page, 600);
   await shot(lily, 'lily-keep-playing');
