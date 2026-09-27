@@ -694,7 +694,11 @@ export class NetGuest {
         this.tmText = text;
         this.tmAt = now;
       }
-      this.a.applyTime(hs.tm, now - this.tmAt);
+      // her own sleep (intent 'z') already skipped her clock to morning: the host's clock from
+      // before her wish must not pull her back into the night. The host's answer (the ack) comes
+      // in the same presence as the host's new clock: morning for everyone, or back to night
+      // when the host said no.
+      if (!this._sleepPending()) this.a.applyTime(hs.tm, now - this.tmAt);
     }
     if (hs.wx && hs.wx !== this.wx) {
       this.wx = hs.wx;
@@ -707,6 +711,12 @@ export class NetGuest {
         this.a.applySamples({ pt: hs.pt, nx: hs.nx }, now - e.updatedAt);
       }
     }
+  }
+
+  /** Is her sleep (intent 'z') still waiting for the host's answer? */
+  _sleepPending() {
+    for (const kind of this.intents.values()) if (kind === 'z') return true;
+    return false;
   }
 
   get hostFrozen() {

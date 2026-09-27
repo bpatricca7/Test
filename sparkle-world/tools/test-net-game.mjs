@@ -415,11 +415,32 @@ async function main() {
     await host.evaluate(() => window.__game.debug.net.setRules({ build: 1 }));
     await until(ga, () => window.__game.net.mayEdit('build') === true, null, 10000);
     const dayBefore = await host.evaluate(() => window.__game.time.day);
-    await ga.evaluate(() => window.__game.skipToMorning());
+    // guest A sleeps; a watcher on her page remembers the earliest clock she shows after that
+    // (her own skip is at once: the host's older clock must not pull her back into the night)
+    const morningA = await ga.evaluate(() => {
+      const g = window.__game;
+      g.skipToMorning();
+      const m = g.time.day + g.time.dayTime;
+      window.__clockLow = m;
+      const watch = () => { window.__clockLow = Math.min(window.__clockLow, g.time.day + g.time.dayTime); };
+      window.__clockWatch = setInterval(watch, 20);
+      return m;
+    });
+    const tSlept = Date.now();
     const slept = await until(host, (d) => window.__game.time.day > d, dayBefore, 15000);
     check(slept, 'a guest going to sleep brings morning to the host');
-    const clocks = await Promise.all([host, ga, gb].map((pg) => pg.evaluate(() => window.__game.time.day + window.__game.time.dayTime)));
+    // the host's clock reaches every page with her next presence (a moment, not a frame)
+    const clockOf = () => window.__game.time.day + window.__game.time.dayTime;
+    let clocks = [];
+    for (const end = Date.now() + 10000; ;) {
+      clocks = await Promise.all([host, ga, gb].map((pg) => pg.evaluate(clockOf)));
+      if ((Math.abs(clocks[1] - clocks[0]) < 0.02 && Math.abs(clocks[2] - clocks[0]) < 0.02) || Date.now() > end) break;
+      await sleep(100);
+    }
+    log(`  every clock showed the morning ${((Date.now() - tSlept) / 1000).toFixed(2)} s after guest A slept`);
     check(Math.abs(clocks[1] - clocks[0]) < 0.02 && Math.abs(clocks[2] - clocks[0]) < 0.02, `every clock shows the same morning (${clocks.map((c) => c.toFixed(3)).join(', ')})`);
+    const lowA = await ga.evaluate(() => { clearInterval(window.__clockWatch); return window.__clockLow; });
+    check(lowA > morningA - 0.02, `the guest who slept never went back to the night while the host said yes (${morningA.toFixed(3)}, lowest ${lowA.toFixed(3)})`);
     await settleAndCompare(host, guests, 'rules and sleep');
 
     // ----- pets and NPC friends: host-owned, puppets on guests -----

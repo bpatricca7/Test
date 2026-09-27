@@ -937,7 +937,8 @@ export class NetHost {
         const v = [Math.round(tm[0] * 10000) / 10000, tm[1] | 0, tm[2] ? 1 : 0];
         this.tmSent = v;
         this.tmAt = now;
-        this._set(patch, 'tm', v);
+        // a jump (someone slept, the clock was set) reaches every friend at once
+        if (this._set(patch, 'tm', v) && jumped) urgent = true;
       }
     }
     const wx = a.weather();

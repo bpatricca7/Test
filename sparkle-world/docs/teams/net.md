@@ -221,6 +221,11 @@ a Flower Cottage fence survived the guest's Undo), and `avatarFields` sends the 
 - Derived changes during a friend's op (a host fence re-joining next to her block, a
   platform railing opening) are recorded with her seat as author, so she may later change
   those host pieces in careful mode, and Undo building reverts them too.
+- Sleep: a guest's `skipToMorning()` sends intent `z` and skips her own clock at once. While
+  that intent waits for the host's answer the guest does not follow the host's (older) clock,
+  so she never flickers back into the night; the ack arrives in the same presence as the
+  host's new clock (morning for everyone, or back to night when the host said no). The host
+  flushes a clock jump at once (urgent presence), not with the next 100 ms presence.
 
 ## Known limits (v1)
 
