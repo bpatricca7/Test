@@ -385,6 +385,36 @@ async function main() {
     const links = await host.evaluate(() => window.__game.outdoor.zip.links.length);
     check(links >= 1, `the host linked the guest's towers (${links} zip line)`);
 
+    // a guest's Lookout Treehouse: the host builds it (two zip towers inside it link up there)
+    const linksBefore = await host.evaluate(() => window.__game.outdoor.zip.links.length);
+    const lookout = await gb.evaluate(({ x, z }) => !!window.__game.prefabs.place('lookout_treehouse', x + 30, z - 40, { animate: true }), spot);
+    check(lookout, 'guest B starts the Lookout Treehouse magic');
+    const linked = await until(host, (n) => window.__game.outdoor.zip.links.length > n, linksBefore, 40000);
+    check(linked, 'the host built guest B\'s Lookout Treehouse and its zip line linked');
+    await settleAndCompare(host, guests, 'lookout treehouse');
+
+    // ----- building paused by the host; a guest sleeps -----
+    log('phase: rules and sleep');
+    await host.evaluate(() => window.__game.debug.net.setRules({ build: 0 }));
+    const paused = await until(ga, () => window.__game.net.mayEdit('build') === false, null, 10000);
+    check(paused, 'guest A sees that building is paused');
+    const placedWhilePaused = await ga.evaluate(({ x, z }) => {
+      const g = window.__game;
+      g.debug.select('block:planks_pink');
+      const h = g.world.heightAt(x + 1, z + 7);
+      return g.debug.useAt(x + 1, h, z + 7);
+    }, spot);
+    check(placedWhilePaused === false, 'the Build tool does nothing for a friend while building is paused');
+    await host.evaluate(() => window.__game.debug.net.setRules({ build: 1 }));
+    await until(ga, () => window.__game.net.mayEdit('build') === true, null, 10000);
+    const dayBefore = await host.evaluate(() => window.__game.time.day);
+    await ga.evaluate(() => window.__game.skipToMorning());
+    const slept = await until(host, (d) => window.__game.time.day > d, dayBefore, 15000);
+    check(slept, 'a guest going to sleep brings morning to the host');
+    const clocks = await Promise.all([host, ga, gb].map((pg) => pg.evaluate(() => window.__game.time.day + window.__game.time.dayTime)));
+    check(Math.abs(clocks[1] - clocks[0]) < 0.02 && Math.abs(clocks[2] - clocks[0]) < 0.02, `every clock shows the same morning (${clocks.map((c) => c.toFixed(3)).join(', ')})`);
+    await settleAndCompare(host, guests, 'rules and sleep');
+
     // ----- pets and NPC friends: host-owned, puppets on guests -----
     log('phase: pets and friends');
     const pets = await host.evaluate(({ x, y, z }) => {

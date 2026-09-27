@@ -830,3 +830,20 @@ trailers you can camp in and do things on the inside, like a dream camper or a h
    sofa, bathroom, rooftop deck with slide and a pop-out pool), **Retro Mini Trailer**, **Camper Van**. Camping
    furniture: tent (sleep in it), campfire (roast marshmallows / s'mores), camping chairs, hammock, string lights,
    picnic table, cooler.
+
+---
+
+## 5. Playing with friends (multiplayer)
+
+The whole design is in `docs/MULTIPLAYER.md` (the contract; its Addendum A: Railway hosting,
+no voice chat) and the game integration in `docs/teams/net.md`. The host's page is the only
+authority; friends' pages mirror it and send their own changes to the host. Rules every
+module follows from now on:
+
+- Every world-state change goes through `World.set`, `game.entities.*` (`place`, `remove`,
+  `rotate`, `setData`), the garden API or a registered actor (`game.net.actors`, kinds
+  `pet`, `npc`, `zip`). Never write `world.blocks` or `entity.data` directly.
+- No `update()` (or time listener) mutates world state on a guest (`game.net?.isGuest`).
+- Per-player listeners (stickers, stats, coins, basket, tips) check
+  `if (game.net?.remoteApplying) return;` first.
+- Host-only actions on a guest refuse with `game.net.refuse(kind)`.

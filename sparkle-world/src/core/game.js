@@ -774,7 +774,12 @@ export class Game {
   /** Serialize the current world and store it. Resolves when stored. */
   async saveWorld({ thumbnail = true } = {}) {
     // a friend's world (multiplayer guest) is never saved here: it lives at her house
-    if (this._isShared() || (this.net && this.net.isGuest)) return { ok: true, skipped: true };
+    if (this._isShared() || (this.net && this.net.isGuest)) {
+      clearTimeout(this._dirtyTimer);
+      this._dirtyTimer = 0;
+      this._dirtySince = 0;
+      return { ok: true, skipped: true };
+    }
     if (!this.world) return { ok: false };
     return this._storeWorld(this._serializeWorld({ thumbnail }));
   }
