@@ -195,6 +195,14 @@ export class NetGuest {
       return;
     }
     this.hostMissingSince = null;
+    if (this.hostUid) {
+      // her page reloaded while the old one is still fading out of the room: follow the new one
+      for (const p of this.t.peers()) {
+        if (p.id !== entry.id && !p.self && p.uid === this.hostUid && p.state.r === 'h' && p.state.end !== 1 &&
+          typeof p.state.ep === 'string' && p.state.ep && p.state.ep !== this.epoch && (p.state.hs || 0) > hs.hs &&
+          p.state.v === PROTOCOL && p.state.pv === this.build) return this._newEpoch(p, now);
+      }
+    }
     this.hostEntry = entry;
     this.host = hs;
     if (hs.nm) this.hostName = hs.nm;

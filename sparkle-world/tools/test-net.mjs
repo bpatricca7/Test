@@ -345,6 +345,10 @@ async function unitTests() {
     eq(reg.handle('sw1-heart-star-moon-cat', 'B', { t: 'b', topic: 'sw.op', data: { x: 'y'.repeat(4000) } }).code, 'too_big', 'message limit');
     assert(reg.join('sw1-heart-star-moon-cat', 'C', sink('c'), {}).ok, 'C joins');
     eq(reg.join('sw1-heart-star-moon-cat', 'D', sink('d'), {}).code, 'full', 'room cap');
+    reg.detach('sw1-heart-star-moon-cat', 'B');
+    assert(reg.join('sw1-heart-star-moon-cat', 'D', sink('d'), {}).ok, 'a peer in its grace does not block a newcomer');
+    assert(!reg.has('sw1-heart-star-moon-cat', 'B'), 'the gone peer left');
+    reg.leave('sw1-heart-star-moon-cat', 'D');
     reg.detach('sw1-heart-star-moon-cat', 'C');
     now = 500;
     reg.sweep();

@@ -153,8 +153,17 @@ export class RoomRegistry {
       this.rooms.set(name, room);
     }
     if (room.members.size >= this.maxPeers) {
-      if (room.members.size === 0) this.rooms.delete(name);
-      return { ok: false, code: 'full' };
+      // a peer that lost its connection (in its reconnect grace) does not block a newcomer:
+      // the longest-gone one leaves now (if it comes back it simply joins again)
+      let gone = null;
+      for (const m of room.members.values()) if (m.sink === null && (!gone || m.detachedAt < gone.detachedAt)) gone = m;
+      if (!gone) return { ok: false, code: 'full' };
+      this.leave(name, gone.peer);
+      room = this.rooms.get(name);
+      if (!room) {
+        room = new Room(name, now);
+        this.rooms.set(name, room);
+      }
     }
     const m = new Member(peer, sink, meta, now);
     room.members.set(peer, m);
