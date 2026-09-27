@@ -265,6 +265,15 @@ export class Friend {
       this.faceT -= dt;
       if (this.act === 'idle' && this.hs < 0.3 && this.emoteLeft <= 0) this.facePlayer(dt, 5);
     }
+    // emotes she started here (copying the player's dance, a wave hello), played locally
+    if (this.pendingEmote) {
+      this.pendingT -= dt;
+      if (this.pendingT <= 0) {
+        const n = this.pendingEmote;
+        this.pendingEmote = null;
+        if (this.act === 'idle') this.emoteLeft = this.avatar.playEmote(n) || 2;
+      }
+    }
     if (this.emoteLeft > 0) this.emoteLeft -= dt;
     this.group.rotation.y = this.yaw;
     if (animate) {

@@ -1083,6 +1083,8 @@ export function avatarFields(owner, patch, local, now) {
   }
   if (owner.emote) owner._set(patch, 'em', owner.emote);
   if (owner.phrase) owner._set(patch, 'ph', owner.phrase);
+  // optional: the treat held in her hand (an item key, never free text; §7 "Held treats")
+  if ('hi' in local) owner._set(patch, 'hi', typeof local.hi === 'string' && /^[a-z0-9_]{1,40}$/.test(local.hi) ? local.hi : null);
 }
 
 function angleDiff(a, b) {

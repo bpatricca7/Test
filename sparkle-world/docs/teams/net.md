@@ -176,8 +176,9 @@ The shops branch was not merged here (see the hand-off). Its contract with multi
 coin-earning listeners start with `if (game.net?.remoteApplying) return;` (the facade
 provides `remoteApplying`); shop counters are ordinary entities; buying, coins and the
 basket are per player and never synced; placing a bought treat is an `e+`. The held treat
-(`game.treats.held`) is **not** in presence yet: it needs the optional presence field `hi`
-(an item key, §7) added to `avatarFields` (net core) and drawn on remote avatars (Agent C).
+(`game.treats.held`, null or a `treat_*` key) goes into the optional presence field **`hi`**
+(`adapter.local().hi` -> `avatarFields`, only `[a-z0-9_]{1,40}` keys, null deletes it);
+Agent C draws it on remote avatars with `avatar.hold(game.treats.model(hi))`.
 
 ## For Agent C (UI, avatars, end-to-end)
 
@@ -196,6 +197,7 @@ basket are per player and never synced; placing a bought treat is an `e+`. The h
   (toasted by default until you pass `toastMessages: false`), `net:knock`, `net:knock-gone`,
   `net:players`, `net:reject`, `net:intent`, `net:resync`, `net:progress` `{have, of}`,
   `net:status` `{connected}`, `net:summary`, `net:snapshot-failed`, and `net:applied`.
+- Presence `hi` (held treat key or absent) comes with every player's avatar fields.
 - `game.debug.net`: `state role code seq ap pend outbox hash stats peers players knocks
   admit admitAll kick undoSeat setRules host join leave corruptCell`.
 - Host start: `game.net.host()` saves the world and its `.before` backup first
@@ -206,6 +208,12 @@ basket are per player and never synced; placing a bought treat is an `e+`. The h
 - The "sending…" sparkle: `game.net.session.sending()`.
 
 ## Notes for the net core (Agent A)
+
+Two small changes were made in `src/net/host.js` (both covered by `npm run test:net`):
+`_revertGroup` decides which of a group's added pieces go before removing any (removing one
+fence piece re-joins its neighbours, which made the rest look "changed since" and stay: half
+a Flower Cottage fence survived the guest's Undo), and `avatarFields` sends the optional
+`hi` (held treat) when the adapter's `local()` has it.
 
 - A friend's plant becomes protected (`p-` code 2) once the host's systems touched it (growth
   deletes `author.plants`, and plants have no "natural" fallback like cells): after it grows

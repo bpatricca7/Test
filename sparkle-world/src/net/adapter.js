@@ -530,7 +530,10 @@ export class GameAdapter {
         this._lk = '';
       }
     }
-    return { p, st, nm, lk: this._lk };
+    // the treat in her hand (shops: game.treats.held, null or a 'treat_*' key) -> presence hi
+    const tr = g.treats;
+    const hi = tr && typeof tr.held === 'string' ? tr.held : null;
+    return { p, st, nm, lk: this._lk, hi };
   }
 
   time() {
