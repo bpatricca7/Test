@@ -15,6 +15,7 @@ import { installPiano } from './furniture/panel-piano.js';
 import { installBook } from './furniture/panel-book.js';
 import { installEasel } from './furniture/panel-easel.js';
 import { SHAPES } from '../core/registry.js';
+import { install as installOutdoor } from './outdoor/index.js';
 
 /** Pool floats bob at the water line when placed on water (Build aims through water). */
 function patchPoolFloat(game) {
@@ -61,4 +62,6 @@ export function install(game) {
   }
   // a small handle for other modules and tests
   game.furniture = { sfx, panels, timeWords: life.timeWords, spawnToy: life.spawnToy };
+  // wave 2: zip lines, treehouse parts, camping & the salon chair (src/things/outdoor)
+  installOutdoor(game);
 }
