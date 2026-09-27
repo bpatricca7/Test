@@ -124,6 +124,17 @@ parts batch with the rest of the furniture), and saved with the world like any f
     `player.holder` is the current holder.
   - `sleepIn(entity, pos, yaw, { quiet })`: `quiet` skips `'player:sleep'` (a rest, not bedtime).
 
+## Found along the way (for core, not changed here)
+
+- **Touch Bag skips "Pick a color!"**: in `src/ui/inventory.js` an item card acts on
+  `pointerup` (and redraws the panel as the color grid), while the color cards listen for
+  `click`. On a touch screen the click the browser sends after the tap lands on the color card
+  now under the finger, so she gets that color and the Bag closes before she sees the step
+  (reproduced on the iPad viewport with the Camp Fire; probably any colorable item whose card
+  sits over a color card).
+  A likely fix: ignore color-card clicks for ~350 ms after the grid appears, or act on the
+  item card's `click` instead of `pointerup`.
+
 ## Tests
 
 `node tools/probe-outdoor.mjs [--only=zip,tree,camp,salon,touch]` (screenshots

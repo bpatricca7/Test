@@ -186,11 +186,14 @@ async function tapEntity(page, uid, { touch = false, local = null, stand = null 
     const spots = [];
     if (stand === 'front') {
       const [w, , d] = e.def.size;
+      const hover = []; // steep hill tops: float level with its base (a tap still lands her)
       for (const [lx, lz] of [[w / 2, d + 2.6], [w / 2, d + 3.6], [w + 2.6, d / 2], [-2.6, d / 2], [w / 2, -2.6], [w + 2, d + 2], [-2, d + 2], [w + 2, -2], [-2, -2]]) {
         const f = E.localToWorld(e, lx, 0, lz);
         const gy = g.world.heightAt(Math.floor(f.x), Math.floor(f.z)) + 1;
         if (Math.abs(gy - e.y) <= 2.5) spots.push([f.x, gy + 0.01, f.z]);
+        else if (gy < e.y) hover.push([f.x, e.y + 0.01, f.z, true]);
       }
+      spots.push(...hover);
     } else if (stand) spots.push(stand);
     else spots.push(null);
     if (!g.__tapRig) { g.__tapRig = g.cameraRig.update; g.cameraRig.update = () => {}; }
@@ -198,8 +201,9 @@ async function tapEntity(page, uid, { touch = false, local = null, stand = null 
     const nudges = [[0, 0], [0, 0.04], [0, -0.04], [0.04, 0], [-0.04, 0], [0, 0.09], [0, -0.09], [0.09, 0], [-0.09, 0], [0.15, 0.1], [-0.15, 0.1]];
     for (const s of spots) {
       if (s) {
-        if (g.player.flying) g.player.setFlying(false);
+        if (!!s[3] !== g.player.flying) g.player.setFlying(!!s[3]);
         g.player.teleport(s[0], s[1], s[2]);
+        g.player.velocity.set(0, 0, 0);
       }
       const p = g.player.position;
       const head = p.y + 1.6;
