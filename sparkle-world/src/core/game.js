@@ -90,7 +90,7 @@ export class Game {
     this.store = new SaveStore();
     this.thumbs = new Thumbs();
     this.ui = null; // set by ui.js
-    const items = new ItemRegistry();
+    const items = new ItemRegistry(this.thumbs);
     this.registry = {
       items,
       blocks: new BlockRegistry(items),

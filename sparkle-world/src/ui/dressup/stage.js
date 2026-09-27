@@ -6,12 +6,17 @@
 //   stage.attach(el) / detach()   the live preview canvas (the Studio draws the scene)
 //   stage.frame(dt)               called every frame by a game system
 //
-// Snapshots are drawn right before the preview in the same frame, so they never show.
+// Snapshots are drawn right before the preview in the same frame, so they never show. They
+// share a small time budget per frame: a snapshot that overran it (a first shader compile, a
+// new outfit's textures) makes the next ones wait about as long, so opening the emote wheel or
+// a Dress-Up tab never turns into a run of long frames.
 
 import * as THREE from 'three';
 import { createAvatar } from '../../player/avatar.js';
 
 const MAX_CACHE = 220;
+const SNAP_BUDGET_MS = 10; // snapshot work per frame (at least one snapshot when not resting)
+const SNAP_MAX_PER_FRAME = 8;
 
 /** Camera framings (avatar space) for thumbnails: centre height, vertical span, angles. */
 export const FRAMES = {
@@ -59,6 +64,9 @@ export class AvatarStage {
     this.snapAvatar = null;
     this._ro = null;
     this._size = { w: 0, h: 0 };
+    this._restUntil = 0; // performance.now() before which queued snapshots wait
+    this._lastJobMs = 0;
+    this.stats = { snapshots: 0, maxJobMs: 0, rests: 0 };
   }
 
   ensure() {
@@ -214,6 +222,38 @@ export class AvatarStage {
 
   // ---------- per frame ----------
 
+  /** Render queued snapshots within this frame's budget (see SNAP_BUDGET_MS). */
+  _snapJobs() {
+    const t0 = performance.now();
+    if (t0 < this._restUntil) return;
+    let n = 0;
+    while (this.jobs.length && n < SNAP_MAX_PER_FRAME) {
+      // one about as slow as the last would overshoot what is left of the budget: next frame
+      if (n > 0 && performance.now() - t0 + this._lastJobMs > SNAP_BUDGET_MS) break;
+      const job = this.jobs.shift();
+      const ts = performance.now();
+      let canvas = null;
+      try {
+        canvas = this._render(job);
+      } catch (err) {
+        console.warn('[dressup] snapshot failed', job.key, err);
+      }
+      this._lastJobMs = performance.now() - ts;
+      if (this._lastJobMs > this.stats.maxJobMs) this.stats.maxJobMs = this._lastJobMs;
+      this.stats.snapshots++;
+      job.entry.canvas = canvas;
+      if (!canvas) this.cache.delete(job.key);
+      job.resolve(canvas);
+      n++;
+    }
+    const spent = performance.now() - t0;
+    if (spent > SNAP_BUDGET_MS && this.jobs.length) {
+      // over budget: rest about as long as the overshoot before the next snapshot
+      this._restUntil = performance.now() + (spent - SNAP_BUDGET_MS);
+      this.stats.rests++;
+    }
+  }
+
   frame(dt) {
     if (!this.jobs.length && !this.attachedTo) return;
     if (!this.ensure()) {
@@ -222,23 +262,7 @@ export class AvatarStage {
       return;
     }
     const r = this.renderer;
-    if (this.jobs.length) {
-      const t0 = performance.now();
-      let n = 0;
-      while (this.jobs.length && (n === 0 || performance.now() - t0 < 10) && n < 8) {
-        const job = this.jobs.shift();
-        let canvas = null;
-        try {
-          canvas = this._render(job);
-        } catch (err) {
-          console.warn('[dressup] snapshot failed', job.key, err);
-        }
-        job.entry.canvas = canvas;
-        if (!canvas) this.cache.delete(job.key);
-        job.resolve(canvas);
-        n++;
-      }
-    }
+    if (this.jobs.length) this._snapJobs();
     if (this.attachedTo) {
       this._resize();
       if (this.onPreviewFrame) this.onPreviewFrame(dt);

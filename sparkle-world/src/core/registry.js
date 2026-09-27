@@ -187,9 +187,11 @@ export class BlockRegistry {
 }
 
 export class ItemRegistry {
-  constructor() {
+  /** thumbs: the game's Thumbs, so the icons asked for here jump its queue (they are on screen) */
+  constructor(thumbs = null) {
     this.map = new Map();
     this._icons = new Map();
+    this.thumbs = thumbs;
   }
 
   /**
@@ -235,20 +237,31 @@ export class ItemRegistry {
 
   /**
    * Cached icon data URL for an item ('' when it has none), optionally in one of its swatch
-   * colors. Never rejects.
+   * colors. Never rejects. The callers are the hotbar, the Bag and other visible UI, so the 3D
+   * thumbnails asked for here are drawn before queued background warm-ups ('high' priority).
    */
   iconFor(key, color = null) {
     const cacheKey = color ? `${key}|${color}` : key;
     let p = this._icons.get(cacheKey);
     if (!p) {
       const it = this.get(key);
-      p = Promise.resolve()
-        .then(() => (it && it.icon ? (color ? it.icon(color) : it.icon()) : ''))
+      const make = () => (it && it.icon ? (color ? it.icon(color) : it.icon()) : '');
+      let r;
+      try {
+        // called right away (not in a later microtask) so the thumbs.get() inside sees the priority
+        r = this.thumbs ? this.thumbs.withPriority('high', make) : make();
+      } catch (err) {
+        r = Promise.reject(err);
+      }
+      p = Promise.resolve(r)
+        .then((url) => url || '')
         .catch((err) => {
           console.warn('[items] icon failed for', key, err);
           return '';
         });
       this._icons.set(cacheKey, p);
+      // no picture this time: let a later call try again
+      p.then((url) => { if (!url && this._icons.get(cacheKey) === p) this._icons.delete(cacheKey); });
     }
     return p;
   }
