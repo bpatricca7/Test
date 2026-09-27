@@ -105,7 +105,7 @@ export function tent(color = TENT_COLORS[0]) {
   const GAP = 0.5;
   const dome = cached('tent-dome', () => new THREE.SphereGeometry(1, 22, 10, Math.PI / 2 + GAP, Math.PI * 2 - GAP * 2, 0, Math.PI / 2));
   const cap = cached('tent-cap', () => new THREE.SphereGeometry(1, 22, 4, 0, Math.PI * 2, 0, Math.PI / 5));
-  const R = 0.95, H = 1.42;
+  const R = 0.95, H = 1.32;
   // floor, lining, outer shell and a light rain-fly cap
   k.cyl(R, 0.03, mixHex(color, '#FFFFFF', 0.3), 1, 0, 1, 22);
   place(k, dome, material(`outdoor-tent-in|${inner}`, { color: inner, side: THREE.DoubleSide }), 1, 0.02, 1, R * 0.95, H * 0.95, R * 0.95);
@@ -114,18 +114,21 @@ export function tent(color = TENT_COLORS[0]) {
   // poles crossing over the top
   const arc = cached('tent-arc', () => new THREE.TorusGeometry(1, 0.026, 5, 24, Math.PI));
   for (const a of [Math.PI / 4, -Math.PI / 4]) place(k, arc, '#FFFFFF', 1, 0.02, 1, R * 1.03, H * 1.03, R * 1.03, 0, a, 0);
-  // rolled-up door flaps along both sides of the doorway
+  // rolled-up door flaps along both sides of the doorway, tied with little bows
   for (const side of [-1, 1]) {
     const phi = Math.PI / 2 + side * GAP;
-    for (let i = 0; i <= 9; i++) {
-      const th = (Math.PI / 2) * (1 - i / 10) + 0.06;
-      const x = 1 - R * Math.cos(phi) * Math.sin(th);
-      const z = 1 + R * Math.sin(phi) * Math.sin(th);
-      const y = 0.02 + H * Math.cos(th);
-      k.ball(0.075, light, x, y, z, { seg: 8 });
+    const pt = (th) => [1 - R * 1.02 * Math.cos(phi) * Math.sin(th), 0.02 + H * 1.02 * Math.cos(th), 1 + R * 1.02 * Math.sin(phi) * Math.sin(th)];
+    let prev = pt(Math.PI / 2 - 0.02);
+    for (let i = 1; i <= 8; i++) {
+      const cur = pt((Math.PI / 2) * (1 - i / 9));
+      k.stick(prev, cur, 0.12, light);
+      prev = cur;
     }
-    const tx = 1 - R * Math.cos(phi) * 0.9, tz = 1 + R * Math.sin(phi) * 0.9;
-    k.box(0.05, 0.05, 0.05, C.rose, tx - 0.025, 0.02 + H * 0.44, tz - 0.02);
+    for (const th of [1.05, 0.5]) {
+      const [x, y, z] = pt(th);
+      k.box(0.14, 0.05, 0.14, C.rose, x - 0.07, y - 0.025, z - 0.07);
+      k.ball(0.04, C.rose, x + side * 0.08, y, z + 0.03);
+    }
   }
   // guy ropes and stakes
   for (const [dx, dz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
@@ -177,14 +180,17 @@ export function campfire(color = '#E6E0F5') {
   // glowing embers
   for (const [x, z] of [[0.42, 0.45], [0.57, 0.52], [0.49, 0.6], [0.58, 0.4]]) k.box(0.07, 0.05, 0.07, glow('#FF8A3C', 0.9), x - 0.035, 0.02, z - 0.035);
   // flames (part 'flames' flickers; tongues move on their own)
-  const f = k.part('flames', 0.5, 0.06, 0.5);
-  f.ball(0.16, glow('#FF9A3C', 1), 0, 0.2, 0, { sy: 1.8, seg: 10 });
-  f.ball(0.11, glow('#FFD35C', 1), 0, 0.19, 0.02, { sy: 1.9, seg: 10 });
-  f.ball(0.06, glow('#FFF6C8', 1), 0, 0.14, 0.03, { sy: 1.8, seg: 8 });
-  const t1 = f.part('tongueA', 0.08, 0.06, 0.02);
-  t1.ball(0.07, glow('#FFB14A', 1), 0, 0.12, 0, { sy: 2.0, seg: 8 });
-  const t2 = f.part('tongueB', -0.08, 0.06, -0.03);
-  t2.ball(0.065, glow('#FFC45C', 1), 0, 0.11, 0, { sy: 2.0, seg: 8 });
+  const f = k.part('flames', 0.5, 0.04, 0.5);
+  f.ball(0.15, glow('#FF8A3C', 1), 0, 0.08, 0, { sy: 0.6, seg: 10 });
+  f.cone(0.16, 0.0, 0.52, glow('#FF9A3C', 1), 0, 0.02, 0, 9);
+  f.cone(0.11, 0.0, 0.4, glow('#FFD35C', 1), 0.01, 0.03, 0.03, 8);
+  f.cone(0.06, 0.0, 0.25, glow('#FFF6C8', 1), 0.01, 0.04, 0.05, 7);
+  const t1 = f.part('tongueA', 0.1, 0.04, 0.02);
+  t1.cone(0.07, 0.0, 0.3, glow('#FFB14A', 1), 0, 0, 0, 7);
+  const t2 = f.part('tongueB', -0.1, 0.04, -0.03);
+  t2.cone(0.065, 0.0, 0.27, glow('#FFC45C', 1), 0, 0, 0, 7);
+  const t3 = f.part('tongueC', 0.0, 0.04, -0.1);
+  t3.cone(0.06, 0.0, 0.24, glow('#FFB14A', 1), 0, 0, 0, 7);
   // a marshmallow stick leaning on the stones
   k.stick([0.95, 0.02, 0.8], [0.62, 0.42, 0.62], 0.025, '#C99A6B');
   k.ball(0.045, '#FFFFFF', 0.6, 0.44, 0.61, { sy: 1.2 });

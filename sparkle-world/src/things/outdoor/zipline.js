@@ -9,7 +9,7 @@
 // 'outdoor' calls serialize/deserialize); removing or undoing a tower unlinks it cleanly.
 
 import * as THREE from 'three';
-import { TOWER, HANDLE_DROP, trolley as trolleyModel, cableMesh } from './models-tree.js';
+import { TOWER, HANDLE, HANDLE_DROP, trolley as trolleyModel, cableMesh } from './models-tree.js';
 import { disposeObject } from '../../core/models.js';
 import { angleDelta, clamp } from '../../core/util.js';
 
@@ -17,10 +17,11 @@ export const ZIP_MAX = 48;
 const ZIP_MIN = 3;
 const RING = 0.81; // cable anchor: distance of the roof ring beam from the tower centre
 const G = 9.8 * 0.85;
-const VMIN = 3.2;
+const VMIN = 4.4;
 const VMAX = 12.5;
 const CLIMB_SPEED = 2.4;
 const WALK_SPEED = 2.3;
+const END = 0.25; // the trolley parks this far out along the cable from each roof beam
 
 const smooth = (t) => t * t * (3 - 2 * t);
 
@@ -84,6 +85,7 @@ export class ZipLines {
     this._bar = new THREE.Vector3();
     this._assistHold = 0;
     this._sweeps = [];
+    this.freeze = false; // probes: hold the ride still for a picture
   }
 
   // ---------- geometry helpers ----------
@@ -171,10 +173,10 @@ export class ZipLines {
     const cable = cableMesh(pts, cat.len);
     obj.add(cable);
     // little clamps tying the cable to both roof beams
-    const clampGeo = new THREE.BoxGeometry(0.12, 0.12, 0.12);
+    const clampGeo = new THREE.BoxGeometry(0.1, TOWER.BEAM - TOWER.ANCHOR + 0.04, 0.1);
     for (const P of [A, B]) {
       const m = new THREE.Mesh(clampGeo, cable.material);
-      m.position.set(P.x, P.y + 0.04, P.z);
+      m.position.set(P.x, P.y + (TOWER.BEAM - TOWER.ANCHOR) / 2, P.z);
       obj.add(m);
     }
     const tr = trolleyModel(ea.color || '#FF9CCB');
@@ -183,7 +185,7 @@ export class ZipLines {
     this.group.add(obj);
     const l = {
       a: ea.uid, b: eb.uid, obj, cable, clampGeo, trolley: tr, handle: tr.userData.parts.handle,
-      ...cat, parked, s: parked === 'a' ? 0 : cat.len, shuttle: null, cursor: 0, idle: 0,
+      ...cat, parked, s: parked === 'a' ? END : cat.len - END, shuttle: null, cursor: 0, idle: 0,
     };
     this.links.push(l);
     this._placeTrolley(l, l.s, 0);
@@ -257,7 +259,7 @@ export class ZipLines {
       out.y -= HANDLE_DROP;
       return out;
     }
-    return l.handle.localToWorld(out.set(0, -(HANDLE_DROP - 0.14), 0));
+    return l.handle.localToWorld(out.set(0, -HANDLE.STRAP, 0));
   }
 
   // ---------- riding ----------
@@ -321,7 +323,7 @@ export class ZipLines {
       p.yaw = face;
     }
     // the trolley comes over if it waits at the other end
-    const want = from === 'a' ? 0 : l.len;
+    const want = from === 'a' ? END : l.len - END;
     if (Math.abs(l.s - want) > 0.05) {
       l.shuttle = { from: l.s, to: want, t: 0, dur: clamp(l.len / 16, 0.8, 2.2) };
       this.sfx.whirr(l.shuttle.dur);
@@ -379,7 +381,7 @@ export class ZipLines {
     const l = r.link;
     if (this.links.includes(l)) {
       l.parked = l.s < l.len / 2 ? 'a' : 'b';
-      l.s = l.parked === 'a' ? 0 : l.len;
+      l.s = l.parked === 'a' ? END : l.len - END;
       l.shuttle = null;
       this._placeTrolley(l, l.s, 0);
     }
@@ -414,7 +416,7 @@ export class ZipLines {
       }
       if (sw.t >= 0.9) this._sweeps.splice(i, 1);
     }
-    if (this.ride) this._updateRide(dt);
+    if (this.ride) this._updateRide(this.freeze ? 0 : dt);
   }
 
   _updateRide(dt) {
@@ -492,13 +494,13 @@ export class ZipLines {
         p.velocity.set(0, 0, 0);
         p.onGround = false;
         r.s = 0; // distance travelled along her ride
-        this._placeTrolley(l, r.dirSign > 0 ? 0 : l.len, 0);
+        this._placeTrolley(l, r.dirSign > 0 ? END : l.len - END, 0);
         this.barPoint(l, this._bar);
         if (av) {
           // arc up from the deck to the bar: hands meet it at the end
           this._pose(av, 'hang', r.t, smooth(Math.min(1, k * 2.2)));
           const hands = this._hands(av);
-          const lift = Math.sin(k * Math.PI) * 0.25;
+          const lift = Math.sin(k * Math.PI) * 0.45;
           const tx = this._bar.x - (hands.x - av.group.position.x), ty = this._bar.y - (hands.y - av.group.position.y), tz = this._bar.z - (hands.z - av.group.position.z);
           const e = smooth(k);
           p.position.set(r.p0.x + (tx - r.p0.x) * e, r.p0.y + (ty - r.p0.y) * e + lift, r.p0.z + (tz - r.p0.z) * e);
@@ -507,7 +509,7 @@ export class ZipLines {
         if (k >= 1) {
           r.phase = 'zip';
           r.t = 0;
-          r.v = 1.4;
+          r.v = 2.2;
           this.sfx.windStart();
           if (g.furniture && g.furniture.sfx && g.furniture.sfx.whee) g.furniture.sfx.whee();
           else this.sfx.yay();
@@ -517,22 +519,23 @@ export class ZipLines {
         break;
       }
       case 'zip': {
-        const ab = r.dirSign > 0 ? r.s : l.len - r.s;
+        const rideLen = l.len - 2 * END;
+        const ab = r.dirSign > 0 ? END + r.s : l.len - END - r.s;
         const slopeAB = this.sample(l, ab, this._fx);
         const slope = slopeAB * r.dirSign; // dy/ds in her travel direction
-        const remaining = l.len - r.s;
-        let a = -G * (slope / Math.hypot(1, slope)) - 0.012 * r.v * r.v - 0.25;
+        const remaining = rideLen - r.s;
+        const a = -G * (slope / Math.hypot(1, slope)) - 0.01 * r.v * r.v - 0.15;
         r.vPrev = r.v;
         r.v = clamp(r.v + a * dt, VMIN, VMAX);
-        if (r.t < 0.6) r.v = Math.min(r.v, 1.4 + r.t * 9);
+        if (r.t < 0.6) r.v = Math.min(r.v, 2.2 + r.t * 9);
         r.v = Math.min(r.v, 1.3 + remaining * 2.3);
-        r.s = Math.min(l.len, r.s + r.v * dt);
+        r.s = Math.min(rideLen, r.s + r.v * dt);
         const acc = (r.v - r.vPrev) / Math.max(dt, 1e-3);
         // pendulum: she swings back as she speeds up, forward as she brakes
         // phi'' = -(g/L) sin(phi) + (a/L) cos(phi) - damping, L ~ 1.2 (hands to her middle)
         r.phiV += (-(G / 1.2) * Math.sin(r.phi) + (acc / 1.2) * Math.cos(r.phi) - 2.2 * r.phiV) * dt;
         r.phi = clamp(r.phi + r.phiV * dt, -0.45, 0.45);
-        const abNow = r.dirSign > 0 ? r.s : l.len - r.s;
+        const abNow = r.dirSign > 0 ? END + r.s : l.len - END - r.s;
         l.s = abNow;
         this._placeTrolley(l, abNow, r.phi * r.dirSign);
         this.barPoint(l, this._bar);
@@ -549,7 +552,7 @@ export class ZipLines {
         this.sfx.windSpeed(r.v);
         this._trail(p, dt, r);
         this._cameraAssist(dt, r.travelYaw);
-        if (r.s >= l.len - 0.02) {
+        if (r.s >= rideLen - 0.02) {
           r.phase = 'land';
           r.t = 0;
           r.dur = 0.5;
@@ -564,15 +567,21 @@ export class ZipLines {
         const e = smooth(k);
         p.yaw = r.travelYaw;
         p.velocity.set(0, 0, 0);
-        p.onGround = k > 0.7;
+        p.onGround = k > 0.8;
         if (av) {
           av.group.rotation.x = r.phi * (1 - e);
           av.group.rotation.z = 0;
           this._pose(av, 'hang', r.t, 1 - smooth(Math.min(1, k * 1.6)));
         }
-        const bounce = Math.sin(Math.min(1, k * 1.25) * Math.PI) * 0.18;
-        p.position.set(r.p0.x + (r.landing.x - r.p0.x) * e, r.p0.y + (r.landing.y - r.p0.y) * e + bounce * (1 - e), r.p0.z + (r.landing.z - r.p0.z) * e);
-        this._placeTrolley(l, r.dirSign > 0 ? l.len : 0, Math.sin(k * 7) * 0.3 * (1 - k));
+        // swing in over the railing first, then drop softly onto the deck
+        const eh = smooth(Math.min(1, k * 1.5));
+        const ev = k * k;
+        p.position.set(
+          r.p0.x + (r.landing.x - r.p0.x) * eh,
+          r.p0.y + (r.landing.y - r.p0.y) * ev + Math.sin(k * Math.PI) * 0.15,
+          r.p0.z + (r.landing.z - r.p0.z) * eh,
+        );
+        this._placeTrolley(l, r.dirSign > 0 ? l.len - END : END, Math.sin(k * 7) * 0.3 * (1 - k));
         if (k >= 1) this._finish(r);
         break;
       }
@@ -683,7 +692,10 @@ export class ZipLines {
     }
   }
 
-  /** Ease the camera round to look along the ride (unless she is turning it herself). */
+  /**
+   * Ease the camera round to a three-quarter side view of the ride (the towers never get
+   * between the camera and her), unless she is turning it herself.
+   */
   _cameraAssist(dt, yaw) {
     const g = this.game, rig = g.cameraRig, input = g.input;
     if (!rig || rig.mode === 'first') return;
@@ -692,7 +704,13 @@ export class ZipLines {
       this._assistHold -= dt;
       return;
     }
-    rig.yaw += angleDelta(rig.yaw, yaw) * Math.min(1, dt * 1.6);
-    rig.pitch += (0.3 - rig.pitch) * Math.min(1, dt * 1.2);
+    if (this._assistSide === undefined || this.ride.t < dt * 1.5) {
+      // keep to whichever side the camera already is on
+      this._assistSide = angleDelta(yaw, rig.yaw) >= 0 ? 1 : -1;
+    }
+    const want = yaw + this._assistSide * 0.95;
+    rig.yaw += angleDelta(rig.yaw, want) * Math.min(1, dt * 2.2);
+    rig.pitch += (0.22 - rig.pitch) * Math.min(1, dt * 1.5);
+    rig.distance += (Math.max(4.2, rig.distance) - rig.distance) * Math.min(1, dt);
   }
 }

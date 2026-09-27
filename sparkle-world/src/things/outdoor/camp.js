@@ -263,6 +263,10 @@ export function installCamp(game, sfx) {
         parts.tongueB.scale.y = 1 + 0.4 * Math.sin(t * 12.7 + 2);
         parts.tongueB.rotation.x = 0.25 * Math.sin(t * 4.3);
       }
+      if (parts.tongueC) {
+        parts.tongueC.scale.y = 1 + 0.45 * Math.sin(t * 14.1 + 4);
+        parts.tongueC.rotation.z = -0.22 * Math.sin(t * 3.7 + 1);
+      }
       e.lightScale = 0.82 + 0.14 * Math.sin(t * 11.3) + 0.08 * Math.sin(t * 5.1);
       const a = anim(e);
       a.ember = (a.ember || 0) - dt;

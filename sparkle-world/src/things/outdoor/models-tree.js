@@ -73,7 +73,7 @@ export function ropeMat() {
 // ---------- Zip Tower ----------
 
 /** Heights on the tower (model units): deck top, railing top, where the cable hangs. */
-export const TOWER = { DECK: 3.0, RAIL: 0.5, ANCHOR: 5.5, BEAM: 5.52, HALF: 0.9 };
+export const TOWER = { DECK: 3.0, RAIL: 0.42, ANCHOR: 5.56, BEAM: 5.72, HALF: 0.9 };
 const POSTS = [[0.08, 0.08], [1.7, 0.08], [0.08, 1.7], [1.7, 1.7]];
 
 export function zipTower(color = '#FF9CCB') {
@@ -153,8 +153,8 @@ export function zipTower(color = '#FF9CCB') {
   }
   // pointy pastel roof with a white scalloped eave and a heart on top
   k.box(2.24, 0.08, 2.24, white, -0.12, B + 0.2, -0.12);
-  placeGeo(k, pyramid(), trim, 1, B + 0.28, 1, 2.3, 0.95, 2.3);
-  placeGeo(k, pyramid(), shade(trim, 0.3), 1, B + 0.28 + 0.62, 1, 0.8, 0.33, 0.8);
+  placeGeo(k, pyramid(), trim, 1, B + 0.28, 1, 2.3, 0.78, 2.3);
+  placeGeo(k, pyramid(), shade(trim, 0.3), 1, B + 0.28 + 0.5, 1, 0.8, 0.28, 0.8);
   for (let i = 0; i < 8; i++) {
     const t = -0.08 + i * 0.3 + 0.03;
     k.ball(0.07, white, t + 0.1, B + 0.2, -0.12);
@@ -162,8 +162,8 @@ export function zipTower(color = '#FF9CCB') {
     k.ball(0.07, white, -0.12, B + 0.2, t + 0.1);
     k.ball(0.07, white, 2.12, B + 0.2, t + 0.1);
   }
-  k.box(0.03, 0.14, 0.03, white, 0.985, B + 1.2, 0.985);
-  k.pixels(['.X.X.', 'XXXXX', '.XXX.', '..X..'], 0.04, { X: C.rose }, 0.9, B + 1.3, 0.99, { depth: 0.03 });
+  k.box(0.03, 0.1, 0.03, white, 0.985, B + 1.04, 0.985);
+  k.pixels(['.X.X.', 'XXXXX', '.XXX.', '..X..'], 0.035, { X: C.rose }, 0.9125, B + 1.12, 0.99, { depth: 0.03 });
   return k.build();
 }
 
@@ -437,24 +437,35 @@ export function ropeBridgeColliders(data = {}) {
 
 // ---------- zip-line trolley & cable ----------
 
-/** The trolley: a pastel pulley riding on the cable; part 'handle' = straps + T-bar. */
-export const HANDLE_DROP = 0.5;
+/**
+ * The trolley: a little pastel pulley car riding on the cable (wheels on top), and part
+ * 'handle': two straps that splay out to a padded grip for each hand, beside her head (her
+ * raised hands only reach the middle of her big chibi head, so no bar across it).
+ */
+export const HANDLE = { TOP: 0.18, STRAP: 0.56, SPREAD: 0.375 };
+export const HANDLE_DROP = HANDLE.TOP + HANDLE.STRAP; // cable to the grips
 export function trolley(color = '#FF9CCB') {
   const k = new Kit();
-  const body = shade(color, -0.05);
-  k.box(0.14, 0.2, 0.34, body, -0.07, -0.16, -0.17);
-  k.box(0.16, 0.05, 0.3, mixHex(color, '#FFFFFF', 0.5), -0.08, 0.02, -0.15);
+  const body = shade(color, -0.04);
+  const light = mixHex(color, '#FFFFFF', 0.55);
+  k.box(0.46, 0.15, 0.36, body, -0.23, -HANDLE.TOP, -0.18);
+  k.box(0.5, 0.04, 0.4, light, -0.25, -HANDLE.TOP - 0.02, -0.2);
+  k.box(0.12, 0.05, 0.34, light, -0.06, -0.05, -0.17);
   for (const z of [-0.1, 0.1]) {
-    k.cyl(0.06, 0.05, '#8A86A0', -0.025, 0.0, z, 12, { rot: [0, 0, Math.PI / 2] });
-    k.cyl(0.02, 0.07, '#FFFFFF', -0.035, 0.0, z, 8, { rot: [0, 0, Math.PI / 2] });
+    k.cyl(0.07, 0.05, '#8A86A0', 0.025, 0.0, z, 14, { rot: [0, 0, Math.PI / 2] });
+    k.cyl(0.025, 0.07, '#FFFFFF', 0.035, 0.0, z, 8, { rot: [0, 0, Math.PI / 2] });
   }
-  k.pixels(['X.X', 'XXX', '.X.'], 0.03, { X: '#FFFFFF' }, 0.075, -0.1, -0.045, { depth: 0.01 });
-  const h = k.part('handle', 0, -0.14, 0);
-  const L = HANDLE_DROP - 0.14;
-  for (const x of [-0.26, 0.26]) h.box(0.035, L, 0.035, '#FFFFFF', x - 0.0175, -L, -0.0175);
-  h.stick([-0.26, 0, 0], [0.26, 0, 0], 0.04, '#FFFFFF');
-  h.cyl(0.035, 0.84, '#E8EEF6', -0.42, -L, 0, 10, { rot: [0, 0, -Math.PI / 2] });
-  for (const x of [-0.42, 0.22]) h.cyl(0.058, 0.2, color, x, -L, 0, 12, { rot: [0, 0, -Math.PI / 2] });
+  k.box(0.1, 0.04, 0.4, light, -0.05, 0.08, -0.2);
+  k.pixels(['.X.X.', 'XXXXX', '.XXX.', '..X..'], 0.03, { X: '#FFFFFF' }, -0.075, -0.17, 0.181, { depth: 0.01 });
+  k.pixels(['.X.X.', 'XXXXX', '.XXX.', '..X..'], 0.03, { X: '#FFFFFF' }, -0.075, -0.17, -0.191, { depth: 0.01 });
+  const h = k.part('handle', 0, -HANDLE.TOP, 0);
+  const L = HANDLE.STRAP;
+  for (const sx of [-1, 1]) {
+    h.stick([sx * 0.17, 0, 0], [sx * HANDLE.SPREAD, -L + 0.06, 0], 0.03, '#FFFFFF');
+    h.cyl(0.052, 0.22, color, sx * HANDLE.SPREAD, -L, -0.11, 12, { rot: [Math.PI / 2, 0, 0] });
+    h.cyl(0.058, 0.03, '#FFFFFF', sx * HANDLE.SPREAD, -L, -0.125, 12, { rot: [Math.PI / 2, 0, 0] });
+    h.cyl(0.058, 0.03, '#FFFFFF', sx * HANDLE.SPREAD, -L, 0.095, 12, { rot: [Math.PI / 2, 0, 0] });
+  }
   return k.build();
 }
 
