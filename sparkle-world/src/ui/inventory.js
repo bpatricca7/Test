@@ -3,7 +3,8 @@
 // row, big item cards with rendered icons, the "Pick a color!" step for colorful furniture and
 // a mini hotbar at the bottom.
 //   tap         -> put it in the selected hotbar slot and close
-//   long-press  -> put it in the slot, move to the next slot and keep browsing
+//   long-press  -> put it in the slot, move to the next slot and keep browsing (mouse: at once;
+//                  touch: when the finger lets go, so resting on a card and then swiping only scrolls)
 //   mouse drag  -> drop it on any hotbar slot (desktop)
 
 import { ITEM_CATEGORIES } from '../core/registry.js';
@@ -81,6 +82,7 @@ const CSS = /* css */ `
 .sw-item { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px; padding: 12px 6px 10px; border-radius: 24px; background: #fff; border: 4px solid #fff; box-shadow: 0 4px 0 rgba(58,31,77,.08), 0 6px 14px var(--sw-shadow); cursor: pointer; transition: transform .18s var(--sw-bounce), box-shadow .18s; font-family: var(--sw-font); -webkit-touch-callout: none; touch-action: pan-x pan-y; -webkit-user-select: none; user-select: none; }
 .sw-item:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 0 0 3px var(--sw-pink-soft), 0 10px 18px var(--sw-shadow); }
 .sw-item.sw-press { transform: scale(.93); }
+.sw-item.sw-ready { transform: scale(1.06); box-shadow: 0 0 0 5px var(--sw-sun), 0 8px 18px var(--sw-shadow); }
 .sw-item.sw-holding::after { content: ''; position: absolute; inset: -4px; border-radius: 26px; border: 4px solid var(--sw-sun); animation: sw-hold ${LONG_PRESS_MS}ms linear forwards; pointer-events: none; }
 @keyframes sw-hold { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 .sw-item img { width: 80px; height: 80px; pointer-events: none; -webkit-user-drag: none; }
@@ -180,7 +182,12 @@ export function install(game) {
     if (items.all().some((it) => !it.hidden && !known.has(it.category))) list.push(['more', 'More']);
     return list;
   };
-  const tabItems = (id) => (id === 'more' ? items.all().filter((it) => !it.hidden && !known.has(it.category)) : items.byCategory(id));
+  // Items come in registration order; an optional numeric `order` (lower first, default 0) moves
+  // things up. Seed packets and tools (the watering can) lead their tab: they are how gardening
+  // starts, and would otherwise sit below dozens of flower blocks.
+  const orderOf = (it) => (typeof it.order === 'number' ? it.order : /^(seed|tool):/.test(it.key) ? -10 : 0);
+  const sorted = (list) => (list.some((it) => orderOf(it) !== 0) ? list.sort((a, b) => orderOf(a) - orderOf(b)) : list);
+  const tabItems = (id) => sorted(id === 'more' ? items.all().filter((it) => !it.hidden && !known.has(it.category)) : items.byCategory(id));
   const tabLabel = (id) => (tabList().find(([k]) => k === id) || [id, id])[1];
 
   const recent = () => {
@@ -276,14 +283,17 @@ export function install(game) {
     const clearPress = () => {
       if (!press) return;
       clearTimeout(press.timer);
-      card.classList.remove('sw-press', 'sw-holding');
+      card.classList.remove('sw-press', 'sw-holding', 'sw-ready');
       press = null;
     };
+    // where the card's centre is on screen (press / hover scaling keeps the centre): if it moved
+    // between press and release, the list scrolled under the finger
+    const cardSpot = () => { const r = card.getBoundingClientRect(); return [(r.left + r.right) / 2, (r.top + r.bottom) / 2]; };
     card.addEventListener('contextmenu', (e) => e.preventDefault());
     card.addEventListener('pointerdown', (e) => {
       if (e.button !== undefined && e.button !== 0) return;
       clearPress();
-      press = { id: e.pointerId, x: e.clientX, y: e.clientY, type: e.pointerType, long: false, drag: false };
+      press = { id: e.pointerId, x: e.clientX, y: e.clientY, type: e.pointerType, long: false, drag: false, spot: cardSpot() };
       card.classList.add('sw-press');
       if (e.pointerType === 'mouse') { try { card.setPointerCapture(e.pointerId); } catch { /* ignore */ } }
       const p = press;
@@ -292,7 +302,10 @@ export function install(game) {
         if (press !== p || p.drag) return;
         p.long = true;
         card.classList.remove('sw-holding', 'sw-press');
-        keepGive();
+        // mouse: give now. Touch: only mark it ready and give on release: a finger that rests
+        // still and then swipes is scrolling (the browser cancels the pointer), not picking
+        if (p.type === 'mouse') keepGive();
+        else card.classList.add('sw-ready');
       }, LONG_PRESS_MS);
     });
     card.addEventListener('pointermove', (e) => {
@@ -327,9 +340,13 @@ export function install(game) {
         clearPress();
         return;
       }
-      const tap = !cancelled && !p.long;
+      const spot = cardSpot();
+      const scrolled = Math.abs(spot[0] - p.spot[0]) > 8 || Math.abs(spot[1] - p.spot[1]) > 8;
+      const tap = !cancelled && !p.long && !scrolled;
+      const held = !cancelled && p.long && p.type !== 'mouse' && !scrolled;
       clearPress();
       if (tap) choose();
+      else if (held) keepGive();
     };
     card.addEventListener('pointerup', (e) => end(e, false));
     card.addEventListener('pointercancel', (e) => end(e, true));
@@ -362,7 +379,8 @@ export function install(game) {
   const renderTabs = () => {
     tabsEl.innerHTML = '';
     for (const [id, label] of tabList()) {
-      const t = ui.el('button', 'sw-tab2' + (id === tab && !query ? ' sw-sel' : ''));
+      // .sw-tab (no styles of its own) is the stable hook other teams' probes use for Bag tabs
+      const t = ui.el('button', 'sw-tab2 sw-tab' + (id === tab && !query ? ' sw-sel' : ''));
       t.type = 'button';
       t.dataset.tab = id;
       t.style.setProperty('--tc', TAB_COLORS[id] || TAB_COLORS.more);

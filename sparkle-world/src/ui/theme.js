@@ -152,9 +152,19 @@ html, body {
   .sw-toast { font-size: 16px; }
   .sw-toast--big { font-size: 19px; }
 }
-/* phones in play: keep toasts below the world name / Menu row instead of covering them */
+/* in play, toasts sit below the world name / Help / Dress Up / Menu row instead of covering
+   it, narrow enough to stay clear of the tool buttons on the right. While the first-time tips
+   show, the tutorial sets --sw-toast-top to just below its card. While a "New sticker!" pop
+   celebrates (src/life/stickers.js), they wait below it. */
+.sw-app.sw-playing .sw-toasts { top: var(--sw-toast-top, calc(96px + var(--sw-safe-t))); max-width: min(92vw, calc(100vw - 220px), 640px); transition: top .3s var(--sw-bounce); }
+.sw-app.sw-playing .sw-toast { text-align: center; }
+.sw-app.sw-playing .sw-ui:has(> .sw-stkpop) .sw-toasts { top: calc(16% + 262px + var(--sw-safe-t)); }
+@media (max-width: 600px) {
+  .sw-app.sw-playing .sw-ui:has(> .sw-stkpop) .sw-toasts { top: calc(20% + 210px + var(--sw-safe-t)); }
+}
+/* phones: the top row is two pills tall; the tool buttons live lower down */
 @media (max-width: 480px) {
-  .sw-app.sw-playing .sw-toasts { top: calc(112px + var(--sw-safe-t)); }
+  .sw-app.sw-playing .sw-toasts { top: var(--sw-toast-top, calc(112px + var(--sw-safe-t))); max-width: 92vw; }
 }
 `;
 
