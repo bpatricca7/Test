@@ -173,7 +173,7 @@ export class NetHub {
     const peer = 'p' + (++this.nextPeer).toString(36).padStart(4, '0') + Math.floor(this.rand() * 36 ** 6).toString(36).padStart(6, '0');
     const link = new HubLink(this, room, peer, sink, meta);
     this.links.set(peer, link);
-    const r = this.registry.join(room, peer, link.inbox, { by: meta.by ?? null });
+    const r = this.registry.join(room, peer, link.inbox, { by: meta.by ?? null, guest: !!meta.guest });
     if (!r.ok) {
       this.clock.setTimeout(() => sink.deliver({ t: 'e', code: r.code }), 1);
       link.closed = true;
@@ -196,7 +196,7 @@ export class NetHub {
       l.up = true;
       l.gen++;
       l.resetQueue();
-      this.registry.join(l.room, l.peer, l.inbox, { by: l.meta.by ?? null });
+      this.registry.join(l.room, l.peer, l.inbox, { by: l.meta.by ?? null, guest: !!l.meta.guest });
     }, ms);
     return true;
   }

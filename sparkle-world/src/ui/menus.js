@@ -58,6 +58,16 @@ const CSS = /* css */ `
   .sw-tile.sw-btn { width: 84px; min-height: 78px; font-size: 14px; }
   .sw-tile.sw-btn svg { width: 30px; height: 30px; }
 }
+/* playing with friends (src/net/ui.js): the title button and the resume chips */
+.sw-title-friends.sw-btn[hidden], .sw-title-chips[hidden] { display: none; }
+.sw-title-chips { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.sw-title-chips .sw-net-chip.sw-btn { width: 100%; justify-content: flex-start; }
+@media (max-aspect-ratio: 1/1) {
+  .sw-title-buttons .sw-title-friends, .sw-title-buttons .sw-title-chips { grid-column: 1 / -1; }
+}
+.sw-pause-net:empty { display: none; }
+.sw-world-before { padding: 0 12px 12px; margin-top: -4px; }
+.sw-world-before .sw-btn { width: 100%; min-height: 46px; font-size: 16px; }
 
 /* ---------- shared form bits ---------- */
 .sw-field-label { font-size: 20px; font-weight: 700; color: var(--sw-lav); margin: 14px 0 8px; display: flex; align-items: center; gap: 8px; }
@@ -199,7 +209,7 @@ export function install(game) {
   // title
   // =====================================================================================
   let backdrop = null;
-  let titleEl, playBtn, lastChip, tilesRow, hello, helloText;
+  let titleEl, playBtn, lastChip, tilesRow, hello, helloText, friendsBtn, netChips;
   const helloAt = { x: 0, y: 0 };
 
   const loadingOpen = () => ui.loadingEl && ui.loadingEl.classList.contains('sw-open');
@@ -234,7 +244,7 @@ export function install(game) {
         dropBackdrop();
         return;
       }
-      if (!backdrop && ui.current && (ui.current === 'title' || ['newworld', 'worlds', 'settings', 'dressup', 'stickers', 'help'].includes(ui.current))) ensureBackdrop();
+      if (!backdrop && ui.current && (ui.current === 'title' || ['newworld', 'worlds', 'settings', 'dressup', 'stickers', 'help', 'mp-start', 'mp-join'].includes(ui.current))) ensureBackdrop();
       if (!backdrop) return;
       backdrop.setLayout(isTall() ? 'tall' : 'wide');
       backdrop.update(dt);
@@ -255,6 +265,9 @@ export function install(game) {
   game.events.on('avatar:changed', refreshLook);
   game.events.on('outfit:changed', refreshLook);
   game.events.on('profile:changed', () => { refreshLook(); refreshTitle(); });
+  // playing with friends: availability is known a moment after start; a session ending
+  // (or starting) changes the resume chips
+  game.events.on('net:state', () => { if (game.mode === 'title' && ui.isOpen('title')) refreshTitle(); });
   game.events.on('ui:close', ({ panel }) => { if (panel === 'dressup' && game.mode === 'title') { refreshLook(); if (backdrop) backdrop.cheer('twirl'); } });
 
   ui.registerPanel('title', {
@@ -295,7 +308,12 @@ export function install(game) {
       lastChip.hidden = true;
       const newBtn = button2(ui, { icon: 'plus', label: 'New World', variant: 'mint', onClick: () => ui.open('newworld') });
       const worldsBtn = button2(ui, { icon: 'world', label: 'My Worlds', variant: 'lav', onClick: () => ui.open('worlds') });
-      buttons.append(playBtn, lastChip, newBtn, worldsBtn);
+      // playing with friends (src/net/ui.js): "Keep playing" / "Join Lily" chips and the button
+      netChips = ui.el('div', 'sw-title-chips');
+      netChips.hidden = true;
+      friendsBtn = button2(ui, { icon: 'players', label: 'Play with Friends', variant: 'sky', className: 'sw-title-friends sw-tile--friends', onClick: () => game.runAction('mp-start') });
+      friendsBtn.hidden = true;
+      buttons.append(netChips, playBtn, lastChip, newBtn, worldsBtn, friendsBtn);
       // .sw-title-small (no styles) is the core title's hook for this row; probes still use it
       tilesRow = ui.el('div', 'sw-title-tiles sw-title-small');
       bottom.append(buttons, tilesRow);
@@ -332,6 +350,13 @@ export function install(game) {
     if (game.actions.has('stickers')) tilesRow.appendChild(button2(ui, { icon: 'sticker', label: 'Stickers', variant: 'white', className: 'sw-tile sw-tile--sun', onClick: () => game.runAction('stickers') }));
     if (ui.hasPanel('settings')) tilesRow.appendChild(button2(ui, { icon: 'settings', label: 'Settings', variant: 'white', className: 'sw-tile sw-tile--sky', onClick: () => ui.open('settings') }));
     if (game.actions.has('help') && tilesRow.childElementCount < 3) tilesRow.appendChild(button2(ui, { icon: 'help', label: 'Help', variant: 'white', className: 'sw-tile sw-tile--mint', onClick: () => game.runAction('help') }));
+    const net = game.net;
+    const canPlayTogether = !!(net && net.available && game.actions.has('mp-start'));
+    friendsBtn.hidden = !canPlayTogether;
+    netChips.innerHTML = '';
+    const chips = canPlayTogether && net.ui ? net.ui.resumeChips() : [];
+    for (const c of chips) netChips.appendChild(net.ui.chipButton(c));
+    netChips.hidden = chips.length === 0;
     const worlds = await game.store.listWorlds();
     const last = worlds.find((w) => w.id === game.profile.lastWorldId) || worlds[0];
     playBtn.hidden = !last;
@@ -554,6 +579,8 @@ export function install(game) {
 
   const renderWorlds = async () => {
     const worlds = await game.store.listWorlds();
+    // "Before friends": worlds with a copy from before friends came (less than 7 days old)
+    const befores = game.net && game.net.ui ? await game.net.ui.backups() : new Map();
     worldsList.innerHTML = '';
     worldsBar.hidden = worlds.length === 0;
     if (!worlds.length) {
@@ -611,6 +638,15 @@ export function install(game) {
         button2(ui, { icon: 'trash', label: 'Delete', variant: 'white', className: 'sw-mini', onClick: () => deleteWorld(w) }),
       );
       card.append(thumb, info, actions);
+      if (befores.has(w.id)) {
+        const row = ui.el('div', 'sw-world-before');
+        row.appendChild(button2(ui, {
+          icon: 'undo', label: 'Before friends', variant: 'sun', size: 'small', className: 'sw-net-before',
+          title: 'Go back to how it was before friends came',
+          onClick: async () => { if (await game.net.ui.restoreBefore(w.id)) renderWorlds(); },
+        }));
+        card.appendChild(row);
+      }
       worldsList.appendChild(card);
     });
     if (highlightId) {
@@ -748,15 +784,41 @@ export function install(game) {
     );
   };
 
+  // playing with friends: Invite Friends (not in a session), Players (in one); a visiting
+  // friend's Save & Exit is "Go home" (nothing of her friend's world is saved on her device);
+  // the host's Save & Exit says goodbye to her friends kindly first
+  let pauseNet, exitBtn;
+  const renderPauseNet = () => {
+    pauseNet.innerHTML = '';
+    const net = game.net;
+    const guest = !!(net && net.isGuest);
+    exitBtn.querySelector('.sw-btn-label').textContent = guest ? 'Go home' : 'Save & Exit';
+    exitBtn.setAttribute('aria-label', guest ? 'Go home' : 'Save & Exit');
+    if (!net || !net.ui) return;
+    if (net.active) {
+      if (game.actions.has('mp-players')) pauseNet.appendChild(button2(ui, { icon: 'players', label: 'Players', variant: 'mint', className: 'sw-pause-players', onClick: () => game.runAction('mp-players') }));
+    } else if (net.available && game.actions.has('mp-start') && game.world && !(game.world.meta && game.world.meta.shared)) {
+      pauseNet.appendChild(button2(ui, { icon: 'players', label: 'Invite Friends', variant: 'sky', className: 'sw-pause-invite', onClick: () => { ui.close(); net.ui.startHost(); } }));
+    }
+  };
+  const exitNow = () => {
+    const net = game.net;
+    if (net && net.isHost && net.ui) return net.ui.hostSaveAndExit();
+    return game.exitToTitle();
+  };
+
   ui.registerPanel('pause', {
     title: 'Paused',
     icon: 'menu',
     width: 480,
     build(container) {
       const col = ui.el('div', 'sw-pause');
+      exitBtn = button2(ui, { icon: 'home', label: 'Save & Exit', variant: 'lav', className: 'sw-pause-exit', onClick: () => exitNow() });
+      pauseNet = ui.el('div', 'sw-pause-net sw-pause-grid');
       col.append(
         button2(ui, { icon: 'play', label: 'Resume', variant: 'pink', size: 'big', onClick: () => ui.close() }),
-        button2(ui, { icon: 'home', label: 'Save & Exit', variant: 'lav', onClick: () => game.exitToTitle() }),
+        pauseNet,
+        exitBtn,
       );
       const row = ui.el('div', 'sw-pause-grid');
       if (ui.hasPanel('settings')) row.appendChild(button2(ui, { icon: 'settings', label: 'Settings', variant: 'sky', onClick: () => ui.open('settings') }));
@@ -768,6 +830,7 @@ export function install(game) {
     },
     onOpen() {
       renderToggles();
+      renderPauseNet();
     },
   });
 }

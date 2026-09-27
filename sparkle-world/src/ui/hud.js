@@ -24,6 +24,14 @@ const CSS = /* css */ `
 .sw-pill[hidden], .sw-hud [hidden] { display: none !important; }
 .sw-round--small .sw-round-face { width: 46px; height: 46px; }
 .sw-round--small .sw-round-face svg { width: 26px; height: 26px; }
+/* playing with friends: Players count badge and the connection pill */
+.sw-round .sw-count { position: absolute; top: -6px; right: -8px; min-width: 28px; height: 28px; padding: 0 6px; border-radius: 999px; background: var(--sw-pink); color: #fff; border: 3px solid #fff; font-size: 16px; font-weight: 700; line-height: 22px; text-align: center; box-shadow: 0 2px 6px var(--sw-shadow); pointer-events: none; }
+.sw-round.sw-playersbtn { position: relative; }
+/* with Say in a session the extras sit two by two (mouse layout), so the column stays clear of
+   the top-right buttons on a 800 px tall screen */
+.sw-hud.sw-in-session:not(.sw-touchmode) .sw-hud-extras { display: grid; grid-template-columns: repeat(2, auto); gap: 8px 6px; justify-items: center; }
+.sw-net-pill svg { color: var(--sw-sky); }
+.sw-net-pill.sw-sending svg { color: var(--sw-pink); animation: sw-twinkle 1.2s ease-in-out infinite; }
 
 .sw-hud-tr { position: absolute; top: calc(10px + var(--sw-safe-t)); right: calc(12px + var(--sw-safe-r)); display: flex; gap: 10px; }
 .sw-round { display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: 0; padding: 0; cursor: pointer; font-family: var(--sw-font); -webkit-user-select: none; user-select: none; touch-action: manipulation; }
@@ -130,6 +138,12 @@ const CSS = /* css */ `
   .sw-hud-tl .sw-pill { max-width: 100%; }
   .sw-hud-tr .sw-round--small .sw-round-face { width: 38px; height: 38px; }
   .sw-hud-tr .sw-round--small .sw-round-face svg { width: 22px; height: 22px; }
+  /* playing together on a phone: Players takes Help's place (Help stays in the Menu), and
+     "Reconnecting…" takes the gems' place for a moment (the column must not grow into the
+     pets / friends buttons under it) */
+  .sw-hud.sw-in-session .sw-hud-tr .sw-helpbtn { display: none; }
+  .sw-hud.sw-net-trouble .sw-hud-tl .sw-gems, .sw-hud.sw-net-trouble .sw-hud-tl .sw-coins { display: none !important; }
+  .sw-round .sw-count { min-width: 24px; height: 24px; font-size: 14px; line-height: 18px; top: -5px; right: -6px; }
 }
 `;
 
@@ -291,7 +305,13 @@ export function install(game) {
   const coinText = ui.el('span', '', '0');
   coinPill.appendChild(coinText);
   coinPill.hidden = true;
-  tl.append(namePill, gemPill, coinPill);
+  // playing with friends: "Reconnecting…" / "Sending…" while it matters
+  const netPill = ui.el('div', 'sw-pill sw-net-pill sw-passive');
+  netPill.innerHTML = icon('cloud');
+  const netText = ui.el('span', '', 'Reconnecting…');
+  netPill.appendChild(netText);
+  netPill.hidden = true;
+  tl.append(namePill, gemPill, coinPill, netPill);
 
   // top-right: Dress Up, Stickers, Menu
   const tr = ui.el('div', 'sw-hud-tr');
@@ -300,7 +320,14 @@ export function install(game) {
   const menuBtn = roundButton(ui, { icon: 'menu', label: 'Menu', color: 'var(--sw-sky)', onClick: () => game.runAction('menu') });
   const helpBtn = roundButton(ui, { icon: 'help', label: 'Help', color: 'var(--sw-mint)', onClick: () => game.runAction('help') });
   helpBtn.classList.add('sw-round--small', 'sw-helpbtn');
-  tr.append(helpBtn, dressBtn, stickerBtn, menuBtn);
+  // Players (real friends playing together; never "Friends", which are the NPC girls)
+  const playersBtn = roundButton(ui, { icon: 'players', label: 'Players', color: 'var(--sw-mint)', onClick: () => game.runAction('mp-players') });
+  playersBtn.classList.add('sw-playersbtn');
+  playersBtn.dataset.action = 'mp-players';
+  const playersCount = ui.el('span', 'sw-count', '1');
+  playersBtn.appendChild(playersCount);
+  playersBtn.hidden = true;
+  tr.append(helpBtn, dressBtn, stickerBtn, playersBtn, menuBtn);
 
   // right: tools, then fly / emotes / photo
   const right = ui.el('div', 'sw-hud-right');
@@ -312,8 +339,12 @@ export function install(game) {
   const flyBtn = roundButton(ui, { icon: 'fly', label: 'Fly', color: 'var(--sw-sky)', onClick: () => game.runAction('fly') });
   const emoteBtn = roundButton(ui, { icon: 'emote', label: 'Emotes', color: 'var(--sw-sun)', onClick: () => game.runAction('emotes') });
   const photoBtn = roundButton(ui, { icon: 'photo', label: 'Photo', color: 'var(--sw-lav)', onClick: () => game.runAction('photo') });
+  const sayBtn = roundButton(ui, { icon: 'talk', label: 'Say', color: 'var(--sw-pink)', onClick: () => game.runAction('mp-say') });
+  sayBtn.dataset.action = 'mp-say';
+  sayBtn.classList.add('sw-saybtn');
+  sayBtn.hidden = true;
   const extras = ui.el('div', 'sw-hud-extras');
-  extras.append(flyBtn, emoteBtn, photoBtn);
+  extras.append(flyBtn, emoteBtn, sayBtn, photoBtn);
   right.append(tools.build, tools.remove, tools.hand, ui.el('div', 'sw-sep'), extras);
 
   // bottom: bag, hotbar, undo
@@ -422,6 +453,45 @@ export function install(game) {
   };
   game.events.on('coins:change', refreshCoins);
   game.events.on('coins:shown', refreshCoins);
+  // playing with friends: Players (with how many are here) and Say show only in a session
+  let netUp = true;
+  let pillKind = null;
+  const refreshNet = () => {
+    const net = game.net;
+    const on = !!(net && net.active && game.mode === 'play');
+    playersBtn.hidden = !on || !game.actions.has('mp-players');
+    sayBtn.hidden = !on || !game.actions.has('mp-say');
+    hud.classList.toggle('sw-in-session', on);
+    if (on) {
+      const n = String(Math.max(1, net.players().length));
+      if (playersCount.textContent !== n) {
+        playersCount.textContent = n;
+        playersBtn.setAttribute('aria-label', `Players: ${n}`);
+      }
+    }
+    let kind = null;
+    if (on && !netUp) kind = 'up';
+    else if (on && net.isGuest && typeof net.session?.sending === 'function' && net.session.sending() > 20) kind = 'send';
+    netPill.hidden = !kind;
+    hud.classList.toggle('sw-net-trouble', !!kind);
+    if (kind !== pillKind) {
+      pillKind = kind;
+      if (kind) {
+        netPill.querySelector('svg').outerHTML = icon(kind === 'up' ? 'cloud' : 'sparkle');
+        netText.textContent = kind === 'up' ? 'Reconnecting…' : 'Sending…';
+        netPill.classList.toggle('sw-sending', kind === 'send');
+      }
+    }
+  };
+  game.events.on('net:state', (s) => {
+    if (!s || s.state === 'idle') netUp = true;
+    refreshNet();
+  });
+  game.events.on('net:players', refreshNet);
+  game.events.on('net:status', (s) => {
+    netUp = !s || s.connected !== false;
+    refreshNet();
+  });
   let lastNight = null;
   const refreshTime = () => {
     const d = game.time.dayTime;
@@ -454,6 +524,7 @@ export function install(game) {
     refreshGems();
     lastCoins = null;
     refreshCoins();
+    refreshNet();
     refreshTouch();
     refreshTime();
     hud.classList.add('sw-on');
@@ -477,6 +548,7 @@ export function install(game) {
         timer = 0.25;
         refreshTime();
         refreshCoins();
+        refreshNet();
       }
     },
   });

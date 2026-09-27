@@ -1,8 +1,9 @@
 # Putting Sparkle World on the internet (Railway)
 
 This guide puts Sparkle World on its own web address, so friends can play together from
-their own iPads or computers: one player taps **Friends → Invite** and reads out 4 pictures,
-the others tap **Friends → Join** and tap the same 4 pictures. No accounts are needed.
+their own iPads or computers: one player taps **Play with Friends → Make a Code** and reads out
+4 pictures, the others tap **Play with Friends → Join a Code** and tap the same 4 pictures. No
+accounts are needed.
 
 You do not need to know how to program. It takes about 20 minutes the first time.
 
@@ -74,13 +75,32 @@ On an iPad you can tap the Share button → **Add to Home Screen** so it opens l
 
 ## Step 6. Play together
 
-1. On the first device: start or load a world, then **Friends → Invite**. Four big pictures
-   appear (for example *heart, star, moon, cat*).
-2. On the second device (same web address): **Friends → Join**, tap the same 4 pictures, **Go**.
-3. The first device shows a card "**Mia** wants to play!": tap **Come in!**.
+1. On the first device, on the title screen: **Play with Friends → Make a Code** (it opens
+   the last world). Or, inside a world: **Menu → Invite Friends**. Four big pictures appear
+   (for example *heart, star, moon, cat*). **Say it** reads them out loud.
+2. On the second device (same web address): **Play with Friends → Join a Code**, tap the same
+   4 pictures, **Go!**.
+3. The first device shows a card "**Mia** wants to play!": tap **Let in!** (or **Not now**).
 
 Up to 4 players can be in one world. Each device saves its own worlds in its browser, just like
 before; nothing is saved on the server.
+
+While playing together:
+
+- The **Players** button (two kids, with how many are playing) shows the code again and who
+  is here, each in her own color. The player who invited can **Undo building** for one friend,
+  **Send home** a friend, switch **Friends can build** and **Careful friends** (on: friends
+  cannot change her things), and **Stop playing**.
+- **Say** (a speech bubble, or the T key) has 16 happy words ("Hi!", "Let's build!", "Thank
+  you!", ...). There is no typing and no voice.
+- After a reload (or a new version), the title shows **Keep playing** on the device that
+  invited and **Join Lily** (her name) on her friends' devices for a while: one tap each and
+  everyone is back together.
+- When she stops, her world is saved; **Before friends** (on the goodbye card, and on the
+  world in **My Worlds** for a week) puts the world back to how it was before friends came.
+
+The in-game "Friends" (the girls you can invite from the Bag) are something else: they live in
+your own world. Real people are always "Players".
 
 ## Step 7. Updates
 
@@ -118,7 +138,7 @@ version by itself (1–3 minutes). The old version keeps running until the new o
 ## Is it safe for kids?
 
 - **A code, then a yes.** A game is found with 4 pictures (20,736 possible codes). Knowing the
-  code is not enough: the player who invited must tap **Come in!** for each friend, one at a
+  code is not enough: the player who invited must tap **Let in!** for each friend, one at a
   time. She can **Send home** a friend at any time, and that friend cannot knock again in that
   game.
 - **Her world is protected.** By default ("Careful friends"), friends can build and change only
@@ -138,7 +158,7 @@ version by itself (1–3 minutes). The old version keeps running until the new o
 - **Limits.** At most 4 players per game, 500 games at a time, and 12 connections from one
   home internet address. Other websites cannot connect to your game server.
 - **The web address is public.** Anyone who has the address can open the game (just like any
-  website) and could try codes, but still needs a **Come in!** from the host. Share the
+  website) and could try codes, but still needs a **Let in!** from the host. Share the
   address only with the families you play with, and you can remove it any time (step 9).
 
 ---
@@ -150,7 +170,7 @@ version by itself (1–3 minutes). The old version keeps running until the new o
 | Build fails with `esbuild: not found` or `Cannot find module 'esbuild'` | In **Variables**, add `NPM_CONFIG_PRODUCTION` = `false`, then redeploy. |
 | Build fails right away with "no start command" or wrong files | Check **Root Directory** is exactly `sparkle-world` (step 3). |
 | Deployment fails at "Healthcheck" | Check the build command is `npm run build` (the game must be built before it starts). Look at the Deploy Logs for `dist/sparkle-world.html is missing`. |
-| The page opens but there is no **Friends** button | Open `/api/net` on your address; it should show `{"ok":true,...}`. If it does, reload the game page. |
+| The page opens but there is no **Play with Friends** button | Open `/api/net` on your address; it should show `{"ok":true,...}`. If it does, reload the game page. |
 | "Lots of games right now!" | The server is at its limit (500 games, or 12 devices on one home connection). Wait a minute. |
 | "Your game needs a refresh!" | Reload the page on every device (a new version was published). |
 | Friends are "Reconnecting…" often | Usually home Wi-Fi. The game keeps working and catches up when the connection returns. |
@@ -167,3 +187,29 @@ Add these in the service's **Variables** tab (then redeploy):
 | `SW_ALLOWED_ORIGINS` | *(empty)* | extra web addresses allowed to connect, comma separated (only needed if you serve the page from a different domain than the server) |
 
 Railway sets `PORT` by itself; do not change it.
+
+---
+
+## Try it on your own computer first (optional)
+
+You need Node.js 22 or newer. In a terminal, in the `sparkle-world` folder:
+
+```
+npm ci
+npm run build
+npm start
+```
+
+Then open **http://localhost:8080** twice: once in a normal browser window and once in a
+private (incognito) window, so the game treats them as two different devices. Make a code in
+one window and join it from the other. Friends on the same home Wi-Fi can use your computer's
+address instead of `localhost` (for example `http://192.168.1.20:8080`). Stop the server with
+Ctrl+C.
+
+Automatic checks (for grown-ups who change the code):
+
+| Command | What it checks |
+|---|---|
+| `npm run test:net` | the multiplayer code on its own, with lost and late messages (about 2 minutes) |
+| `npm run probe:railway` | builds the game, starts this same server on a free port, and three headless browsers (a computer, an iPad and a phone) make a code, join it through the real screens and build together; then the server is killed and started again (everyone reconnects by themselves) and finally killed for good (everyone gets a friendly "Playing together stopped." card). About 6 minutes. |
+| `npm run probe:mp` | the same game inside claude.ai (a pretend claude.ai room): every screen, knocking, building, Undo building, Send home, sleep, pets, zip lines, reloads, a new version, lost messages, and the size and speed limits. About 25 minutes. |
