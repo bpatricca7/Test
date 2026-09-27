@@ -89,9 +89,10 @@ unchanged (smoke and every team probe pass as before; no request is made at boot
   `ui/touch.js` (tutorial). Audited, nothing to guard: `friends/stickers.js` (invite, dance,
   sleepover are her own actions), the outdoor stickers (awarded in her own ride / tent /
   s'more code), `friend:*`, `zipline:ride`, `camp:marshmallow` reactions (local chatter).
-- **`core/storage.js`**: `listWorlds()` hides `<id>.before`; `listBackups()` (metas carry
-  `backupOf`, `backupAt`); `restoreBackup(id)` (the backup is kept); `deleteWorld(id)` also
-  deletes `id + '.before'`.
+- **`core/storage.js`**: `listWorlds()` hides `<id>.before` and `<id>.undo`;
+  `listBackups()` (metas carry `backupOf`, `backupAt`); `restoreBackup(id)` keeps the world
+  as it is as `<id>.undo`, restores the backup and deletes it (`{ok, id, undo}`);
+  `restoreUndo(id)` takes a restore back; `deleteWorld(id)` also deletes both side copies.
 - **`tools/build.mjs`**: `__SW_BUILD__` = sha1 of every `src/**` path and content plus the
   three.js version (8 hex; `dev-<hash>` for `--serve`); also writes `dist/build.json`, which
   the Railway server reports at `/api/net`.
@@ -118,10 +119,18 @@ unchanged (smoke and every team probe pass as before; no request is made at boot
 - **Uid ranges.** `attach` / `enterSnapshot` set `uidBase = seat * 1e6` and `nextUid =
   max(seat base + 1, highest uid of the range + 1, the page's previous nextUid when the seat
   is the same)`: `entities.clear()` (world load) resets them, so the adapter re-applies it.
-- **Snapshot.** `serializeWorld({ thumbnail: false, blocks: false })` minus player, hotbar and
-  picture, plus `actors` (the `[id, h]` handles of pets and friends); blocks as raw RLE bytes.
-  On entering: pet and friend names and the world name pass `sanitizeName`; gems are her own
-  copy (none found yet); weather auto stays off; hooks go onto the new World.
+- **Snapshot.** `serializeWorld({ thumbnail: false, blocks: false })` minus player, hotbar,
+  picture and `systems.netOwners`, plus `actors` (the `[id, h]` handles of pets and friends);
+  blocks as raw RLE bytes. On entering: pet and friend names and the world name pass
+  `sanitizeName`; gems are her own copy (the ones she found in this host world before stay
+  found: `profile.net.gems['<world id>@<createdAt>']`, 8 worlds kept, updated on
+  `gem:collect`); weather auto stays off; hooks go onto the new World.
+- **Rules helpers.** `isWatering(before, after)` (farmland → farmland_wet: allowed on anyone's
+  soil, changes no owner) and `isEdible(uid)` (`placeOn: 'table'` with the `eat_food`
+  action: anyone may eat it).
+- **Name.** `local().nm` is empty while the profile's name is still the default look's
+  ("Lily") and `profile.nameSet` is not set (dress-up, settings and the name step set it):
+  others see "Friend", never a borrowed "Lily".
 - **Time.** More than 0.01 day apart: snap (a forward snap over a morning sets
   `time.quietNight`); otherwise ease 10% of the gap per second. Frozen from the host.
 - **Weather.** A guest's `weather.auto = false`; `set(wx, { manual: false, announce: true })`.
@@ -199,13 +208,20 @@ she sees in her own hand (`remote-players.js`; `debug.net.remote()` lists `held`
 - Game events: `net:state` `{state, role, count}`, `net:message` `{code, text, vars}`
   (toasted by default until you pass `toastMessages: false`), `net:knock`, `net:knock-gone`,
   `net:players`, `net:reject`, `net:intent`, `net:resync`, `net:progress` `{have, of}`,
-  `net:status` `{connected}`, `net:summary`, `net:snapshot-failed`, and `net:applied`.
+  `net:status` `{connected}`, `net:summary`, `net:snapshot-failed`, `net:rules` `{build,
+  mine}` (guest: the host switched a rule), `net:tidied` `{n}` (guest: the host undid her
+  building), `net:restored` / `net:backup-dropped` `{id}`, and `net:applied`.
 - Presence `hi` (held treat key or absent) comes with every player's avatar fields.
 - `game.debug.net`: `state role code seq ap pend outbox hash stats peers players knocks
   admit admitAll kick undoSeat setRules host join leave corruptCell`.
-- Host start: `game.net.host()` saves the world and its `.before` backup first
-  (`backup_failed` otherwise); `profile.net.lastHost = {code, worldId, at, uids}` and
-  `profile.net.lastJoin = {code, hostName, at}` are saved for the resume chips.
+- Host start: `game.net.host()` saves the world and makes sure its `.before` backup is there
+  (`backup_failed` otherwise). A backup younger than 7 days is kept, never overwritten (a
+  resume, a second Invite); the facade deletes it once a change made **alone** in that
+  world is saved (block / entity / prefab / garden / pet / history events while no session
+  runs, then `world:saved`; event `net:backup-dropped`). `profile.net.lastHost = {code,
+  worldId, at, uids}` and `profile.net.lastJoin = {code, hostName, at}` are saved for the
+  resume chips. A system `netOwners` saves `hostCore.exportAuthors()` with the world while
+  hosting; `env.loadAuthors(code)` hands it to a resumed host.
 - Guests' presence `p` is feet (seat when sitting); `st` as above; remote pets / friends are
   real `Pet` / `Friend` objects on guests (no extra drawing needed).
 - The "sending…" sparkle: `game.net.session.sending()`.
@@ -218,12 +234,14 @@ fence piece re-joins its neighbours, which made the rest look "changed since" an
 a Flower Cottage fence survived the guest's Undo), and `avatarFields` sends the optional
 `hi` (held treat) when the adapter's `local()` has it.
 
-- A friend's plant becomes protected (`p-` code 2) once the host's systems touched it (growth
-  deletes `author.plants`, and plants have no "natural" fallback like cells): after it grows
-  she can still harvest it, but her Remove tool / Undo of her own planting is refused.
-- Derived changes during a friend's op (a host fence re-joining next to her block, a
-  platform railing opening) are recorded with her seat as author, so she may later change
-  those host pieces in careful mode, and Undo building reverts them too.
+- Owners (review fixes, MULTIPLAYER.md Addendum B): the author map holds owner keys (`'u:'`
+  + room stamp, `'p:'` + peer, `0` host), so a friend in a freed seat owns nothing of the
+  last one's; only adds and removes change an owner (growth, harvest, turning, data changes,
+  fence joins and railing openings do not), so a friend's plant stays hers as it grows and a
+  host's lamp stays the host's after a friend tapped it. Derived changes during a friend's op
+  are still in her Undo building group (the host's revert restores them).
+- `ed` patches from a guest lose `conn` (the host derives fence joins; `touchEnt` sends her
+  the record). Watering (`isWatering`) and eating (`isEdible`) pass careful mode.
 - Sleep: a guest's `skipToMorning()` sends intent `z` and skips her own clock at once. While
   that intent waits for the host's answer the guest does not follow the host's (older) clock,
   so she never flickers back into the night; the ack arrives in the same presence as the
@@ -235,8 +253,8 @@ a Flower Cottage fence survived the guest's Undo), and `avatarFields` sends the 
 - NPC friends' speech is not sent (`line` −1): each page's friends chat locally.
 - Which end a zip-line trolley waits at is not synced (cosmetic).
 - A guest reading the host's mailbox letter sends `{mail: false}`, which is not an
-  `ANY_FIELDS` toggle: in careful mode it is refused ("That's Lily's!") and the flag comes
-  back. Painting on the host's easel (`pic`) is refused the same way (her own easels work).
+  `ANY_FIELDS` toggle: in careful mode it is refused ("That's someone else's!") and the flag
+  comes back. Painting on the host's easel (`pic`) is refused the same way (her own easels work).
   Adding `mail` (and maybe `pic`) to `ANY_FIELDS` would change that.
 - Doors toggled by a friend swing on every page (the furniture's per-entity animation state
   survives the in-place record update); pieces placed anew by a record just appear.
@@ -251,8 +269,16 @@ a Flower Cottage fence survived the guest's Undo), and `avatarFields` sends the 
   Treehouse (zip towers linked by the host), garden (plant, water, host grows, guest
   harvests into her basket), zip towers placed by a guest, building paused, a guest's sleep
   bringing morning, pets and NPC friends (puppets, refusals, petting), Undo on both sides,
-  Undo building and the host's Undo of it, a guest reload and rejoin. Every phase ends with
+  Undo building and the host's Undo of it, a guest reload and rejoin (let in again by her device's room stamp). Every phase ends with
   equal block / entity / plant hashes and equal plants, pets, friends and zip links; no
   resyncs, no console errors, a guest never stores the host's world. About 5 minutes in
   SwiftShader.
-- `npm run test:net` (net core, Node) is unchanged.
+- `npm run test:net` (net core, Node) also covers the review fixes: the relay's depth check,
+  gate, join order and rooms per IP; identity from stamps only; careful-friends rules;
+  owners across a freed seat and a host reload; the kind messages; and, against the real
+  server, the crash frame, security headers, device stamps, X-Forwarded-For and pacing.
+- `node tools/probe-net-ux.mjs [--no-build] [--headed]` (about 5 minutes, real relay): the
+  name step on a new device, Play Together, the gate while knocking, building paused and on
+  again, Undo building heard by the friend, a reloaded host tapping Play ("Your friends are
+  waiting!", the same code, the backup kept), Before friends with its picture and Undo, and
+  building alone dropping the backup.

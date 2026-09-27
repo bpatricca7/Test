@@ -47,6 +47,7 @@ Click the new service (the box with the repository name), then open its **Settin
 | **Build → Custom Build Command** | `npm run build` |
 | **Deploy → Custom Start Command** | `npm start` |
 | **Deploy → Healthcheck Path** | `/healthz` |
+| **Deploy → Restart Policy** | `Always` (if the server ever stops, Railway starts it again, however often) |
 | **Deploy → Replicas** (if shown) | `1` (important: all friends in a game must reach the same server) |
 
 Railway saves each field when you click outside it or press the check mark. Then click
@@ -86,8 +87,10 @@ Her outfits and stickers stay with each website; she can dress up again in a min
 ## Step 6. Play together
 
 1. On the first device, on the title screen: **Play with Friends → Make a Code** (it opens
-   the last world). Or, inside a world: **Menu → Invite Friends**. Four big pictures appear
-   (for example *heart, star, moon, cat*). **Say it** reads them out loud.
+   the last world). Or, inside a world: **Menu → Play Together → Make a Code**. Four big
+   pictures appear (for example *heart, star, moon, cat*). **Say it** reads them out loud.
+   The first time a device plays together, it asks **"What's your name?"** so friends see
+   who is knocking.
 2. On the second device (same web address): **Play with Friends → Join a Code**, tap the same
    4 pictures, **Go!**.
 3. The first device shows a card "**Mia** wants to play!": tap **Let in!** (or **Not now**).
@@ -97,17 +100,22 @@ before; nothing is saved on the server.
 
 While playing together:
 
-- The **Players** button (two kids, with how many are playing) shows the code again and who
-  is here, each in her own color. The player who invited can **Undo building** for one friend,
-  **Send home** a friend, switch **Friends can build** and **Careful friends** (on: friends
-  cannot change her things), and **Stop playing**.
+- The **Players** button (a game pad, with how many are playing) shows the code again and
+  who is here, each in her own color. The player who invited can **Undo building** for one
+  player (that player is told kindly), **Send home** a player, switch **Players can build**
+  and **Careful players** (on: the others cannot change her things, but may still water her
+  garden and eat treats on her tables), and **Stop playing**.
 - **Say** (a speech bubble, or the T key) has 16 happy words ("Hi!", "Let's build!", "Thank
   you!", ...). There is no typing and no voice.
 - After a reload (or a new version), the title shows **Keep playing** on the device that
   invited and **Join Lily** (her name) on her friends' devices for a while: one tap each and
-  everyone is back together.
-- When she stops, her world is saved; **Before friends** (on the goodbye card, and on the
-  world in **My Worlds** for a week) puts the world back to how it was before friends came.
+  everyone is back together. If she taps **Play** instead, her world asks "Your friends are
+  waiting! Open your door again?".
+- When she stops, her world is saved; **Before friends** (on the goodbye card, and as a small
+  button on the world in **My Worlds**, with the day of the copy) puts the world back to how
+  it was before friends came, and an **Undo** on the card after takes that back. It is only
+  offered until she builds on her own in that world again (then going back would take her
+  own building away too), and for at most a week.
 
 The in-game "Friends" (the girls you can invite from the Bag) are something else: they live in
 your own world. Real people are always "Players".
@@ -149,8 +157,9 @@ version by itself (1–3 minutes). The old version keeps running until the new o
 
 - **A code, then a yes.** A game is found with 4 pictures (20,736 possible codes). Knowing the
   code is not enough: the player who invited must tap **Let in!** for each friend, one at a
-  time. She can **Send home** a friend at any time, and that friend cannot knock again in that
-  game.
+  time. Until then the server shows the knocking device nothing of the game (no names, no
+  world, no messages). She can **Send home** a friend at any time, and that device cannot
+  knock again in that game.
 - **Her world is protected.** By default ("Careful friends"), friends can build and change only
   their own things and natural ground, not the host's houses and furniture. The host can pause
   building, **Undo building** for any friend, and a copy of her world from *before friends
@@ -161,12 +170,17 @@ version by itself (1–3 minutes). The old version keeps running until the new o
 - **No voice, no camera.** The game never uses the microphone or camera, and the server tells
   browsers so (it sends a `Permissions-Policy` that turns them off for this site).
 - **No accounts, no personal data.** Nobody signs up; there are no emails or passwords. Each
-  device gets a random id so a friend who reloads can come back to her seat.
+  device keeps a random secret so a friend who reloads can come back to her seat; the
+  server turns it into a different stamp in every game, so no one can follow a device from
+  game to game, and no one can pretend to be another device.
 - **Nothing stored on the server.** A game room exists only in the server's memory while
   friends are playing, and disappears when they leave (or after 10 quiet minutes). The server
   does not save worlds, names, pictures or messages, and does not log what happens in games.
-- **Limits.** At most 4 players per game, 500 games at a time, and 12 connections from one
-  home internet address. Other websites cannot connect to your game server.
+- **Limits.** At most 4 players per game, 500 games at a time, 12 connections and 6 games
+  from one home internet address, and new connections are slowed down if one address keeps
+  opening them (someone trying code after code). Other websites cannot connect to your game
+  server or show the game inside their own pages. One broken or unkind message cannot stop
+  the server.
 - **The web address is public.** Anyone who has the address can open the game (just like any
   website) and could try codes, but still needs a **Let in!** from the host. Share the
   address only with the families you play with, and you can remove it any time (step 9).
@@ -181,7 +195,7 @@ version by itself (1–3 minutes). The old version keeps running until the new o
 | Build fails right away with "no start command" or wrong files | Check **Root Directory** is exactly `sparkle-world` (step 3). |
 | Deployment fails at "Healthcheck" | Check the build command is `npm run build` (the game must be built before it starts). Look at the Deploy Logs for `dist/sparkle-world.html is missing`. |
 | The page opens but there is no **Play with Friends** button | Open `/api/net` on your address; it should show `{"ok":true,...}`. If it does, reload the game page. |
-| "Lots of games right now!" | The server is at its limit (500 games, or 12 devices on one home connection). Wait a minute. |
+| "Lots of games right now!" | The server is at its limit (500 games, or 12 devices or 6 games on one home connection). Wait a minute. |
 | "Your game needs a refresh!" | Reload the page on every device (a new version was published). |
 | Friends are "Reconnecting…" often | Usually home Wi-Fi. The game keeps working and catches up when the connection returns. |
 
@@ -193,6 +207,9 @@ Add these in the service's **Variables** tab (then redeploy):
 |---|---|---|
 | `SW_MAX_ROOMS` | 500 | games at the same time |
 | `SW_MAX_PER_IP` | 12 | connections from one internet address |
+| `SW_ROOMS_PER_IP` | 6 | games one internet address may have started at the same time |
+| `SW_CONNECT_RATE` / `SW_CONNECT_BURST` | 1 / 30 | new connections per second from one address, and how many may come at once |
+| `SW_TRUST_PROXY` | on | set to `0` only if the server is NOT behind Railway's (or another) proxy; behind one, the address counted is the right-most public one in `X-Forwarded-For` (the one the proxy saw) |
 | `SW_IDLE_MS` | 600000 | close a game after this many quiet milliseconds (10 min) |
 | `SW_ALLOWED_ORIGINS` | *(empty)* | extra web addresses allowed to connect, comma separated (only needed if you serve the page from a different domain than the server) |
 
@@ -222,4 +239,5 @@ Automatic checks (for grown-ups who change the code):
 |---|---|
 | `npm run test:net` | the multiplayer code on its own, with lost and late messages (about 2 minutes) |
 | `npm run probe:railway` | builds the game, starts this same server on a free port, and three headless browsers (a computer, an iPad and a phone) make a code, join it through the real screens and build together; then the server is killed and started again (everyone reconnects by themselves) and finally killed for good (everyone gets a friendly "Playing together stopped." card). About 6 minutes. |
+| `node tools/probe-net-ux.mjs` | over this same server: the name question on a new device, Play Together, what a knocking device can see, building paused and on again, Undo building told kindly, a host reload ("Your friends are waiting!"), Before friends and its Undo. About 5 minutes. |
 | `npm run probe:mp` | the same game inside claude.ai (a pretend claude.ai room): every screen, knocking, building, Undo building, Send home, sleep, pets, zip lines, reloads, a new version, lost messages, and the size and speed limits. About 25 minutes. |

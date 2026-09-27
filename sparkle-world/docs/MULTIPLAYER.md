@@ -157,7 +157,8 @@ export class NetTransport {
                            // Throws NetError('too_big') synchronously if the merged object would
                            // exceed limits.stateBytes, and applies nothing (caller shrinks outbox)
   flushState() {}          // send the merged state within 30 ms (outbox/ack changes)
-  peers() {}               // [{ id, uid, guest, self, state, updatedAt }] frozen; viewers only
+  peers() {}               // [{ id, uid, by, at, guest, self, state, updatedAt }] frozen; viewers only
+                           // uid = the room's stamp (by) or null, never from presence; at = join order
   onPeers(fn) {}           // fn({ peers, joined, left, updated }) -> off
   send(topic, data, prio) {}  // topic 'op'|'bulk'|'ctl'; prio 0 (ctl) .. 3 (snapshot);
                               // -> 'sent' | 'queued' | 'dropped'  (never throws; never retried)
@@ -174,7 +175,7 @@ export class NetTransport {
 | `open(name)` | `room = await claude.use('room')` (null → `NetError('unavailable')`), then `nr = await room.join(name)`. Subscribe `nr.on('sw.op'|'sw.bulk'|'sw.ctl', …, onError)`, `nr.onPeers`, `nr.onConnection`. |
 | `send(topic, data)` | Only while `nr.connected()`; otherwise return `'dropped'`. JSON byte check ≤ `msgBytes`, else it is a bug: log it and return `'dropped'`. Then take a token from the bucket, or queue by priority. Queue items older than 2 s are dropped; a dropped `op` batch is repaired by §5.7. Sends `nr.emit('sw.' + topic, data)`. |
 | `setState(patch)` | Merge locally. Check `jsonBytes(merged) ≤ stateBytes` (throw `too_big`). A 100 ms timer, or 30 ms after `flushState()`, calls `nr.presence(diffPatch)` with one bucket token. |
-| `peers()` | Maps `nr.peers()`: `peer → id`, `by → uid` (falls back to `presence.uid` when `by` is null, as F6 and room.d.ts suggest), `presence → state`, `isMe && sameTab → self`; drops `kind !== 'viewer'`. |
+| `peers()` | Maps `nr.peers()`: `peer → id`, `by → uid` (null when `by` is null: presence is written by the peer itself, so a uid from it could be anyone's; Addendum B), `presence → state`, `isMe && sameTab → self`; drops `kind !== 'viewer'`. |
 | `probeSend()` | Waits for `connected()`, then `nr.emit('sw.ctl', { k: 'hi' })`: resolves → true; `not_permitted` → false. |
 
 **Budget.** There is one `TokenBucket(30/s, burst 60)` per page, shared by presence flushes and
@@ -305,7 +306,7 @@ Avatar fields are the same for hosts and guests.
 | `v` | all | `1` | protocol major (must match) |
 | `pv` | all | string | build id `__SW_BUILD__` (must match; §9.14) |
 | `r` | all | `'h'`\|`'g'` | role |
-| `uid` | all | string\|null | own `user.id()`, a fallback when `by` is null (F6) |
+| `uid` | all | null | no longer sent (Addendum B): identity is the room's `by` stamp only |
 | `nm` | all | string ≤ 12 | name for the tag, already `sanitizeName`d; receivers sanitize again |
 | `lk` | all | string ≤ 160 | `packLook(look)` (§5.13) |
 | `p` | all | `[x,y,z,yaw]` 2 dp | position (feet; seat surface when sitting; mattress when sleeping) |
@@ -458,7 +459,7 @@ Typical sizes and rates:
 | a gap older than the floor, or huge | `nd < fl` or > 48 KB | new snapshot (`rs`) |
 | a guest edit | it stays in the presence outbox until acked | none needed (exactly once) |
 | an ack in a lost batch | the fix carries the full ack table | pend cleared then |
-| host reload (new epoch) | `ep` changed on a host peer with the same uid | new snapshot; her unacked edits are dropped |
+| host reload (new epoch) | `ep` changed on a host peer with the same uid (room stamp) | new snapshot; her unacked edits are dropped |
 | brief disconnect | `connected()` / platform re-assert | the peer label is stable; everything resumes |
 
 ### 5.10 Why it converges
@@ -598,8 +599,10 @@ count }`.
 **Guest:**
 - `g.joining`: check `net.available`, then `open(room)`, then subscribe.
 - `g.finding`: wait ≤ 8 s for a viewer with `r:'h'`, `v === 1` and `pv === mine`. A `pv`
-  mismatch ends with a message.
-- `g.knocking`: presence `{v, pv, r:'g', uid, nm, lk, kn:1, zc, ep}`, then wait for `adm` or
+  mismatch ends with a message. With several, the one the room says joined first (`at`) is
+  the host; presence `hs` (written by each peer itself) only breaks ties where the room gives
+  no order (claude.ai).
+- `g.knocking`: presence `{v, pv, r:'g', nm, lk, kn:1, zc, ep}`, then wait for `adm` or
   `no`. On admission, `kn` is deleted.
 - `g.loading`: §5.8, then `game.enterSharedWorld(save)` (§9.2).
 - `g.live`: record, send, apply. This is the only state in which `mayEdit()` can be true.
@@ -618,12 +621,17 @@ count }`.
 - `g.waiting`: entered on host `zz:1`, or when the host peer is missing. A non-blocking card says
   "Lily is taking a little break…". She can walk and build: edits are predicted and queued.
 - `g.leaving`: `close()`, then `game.exitToTitle()` (which does not save the host world) and the
-  message.
+  message. `exitToTitle()` only when she was in the host's world: an ending before that
+  (wrong code, "Not now", no answer) leaves her where she was, the keypad open.
 
 **Resume after a reload or a new version.**
 - Host: if `profile.net.lastHost.at` is less than 30 min ago, the title shows the chip
   **Keep playing**. It runs `loadWorld(worldId)`, then `host({code, resume:true})`: the same
-  code, a new epoch, and the uids in `lastHost.uids` are auto-admitted.
+  code, a new epoch, and the uids in `lastHost.uids` are auto-admitted. The backup is kept
+  (§13) and who owned what comes back from the world's save (`systems.netOwners`, written
+  while hosting; Addendum B). Opening that world any other way (Play, My Worlds) while
+  `lastHost` is fresh asks "Your friends are waiting! Open your door again?", and hosting it
+  from the pause menu reuses the code.
 - Guest: `profile.net.lastJoin = {code, hostName, at}` shows the chip **Join Lily** for 2 h.
 - `profile.net` is part of the profile (via `mergeProfile` defaults) and is saved locally and in
   the cloud like any profile field.
@@ -698,14 +706,29 @@ applied: its cells, plus 1 for every non-cell op; a cost above the burst is capp
   plant || liquid` (from `prefabs/place.js`). This is the same notion of "not a player build"
   that the Magic House terrace ring already uses.
 
-The author map on the host covers cells, entity uids and plant cells:
-- An executed guest op sets `author[key] = seat`.
+The author map on the host covers cells, entity uids and plant cells. Its values are **owner
+keys** (Addendum B), not seats: `'u:' + uid` for a friend with a room stamp, `'p:' + peer`
+for one without, `0` for the host. `free(i, seat)` compares with the seat's owner key.
+- An executed guest op sets `author[key] = owner` for the cells it changed, and for the
+  entities and plants it **added**.
 - A host change **outside systems** (her taps, her Undo, a per-friend undo) sets
-  `author[key] = 0`. That is protected, so the host's own builds from this session are
-  protected, including natural-class blocks.
-- A host change **inside systems** (garden drying, rain, the end of her own Magic House
-  animation) deletes the key, so the cell falls back to the natural-block rule. The house's
-  building blocks are not natural, so they stay protected.
+  `author[key] = 0` for the cells it changed and the entities and plants it added. That is
+  protected, so the host's own builds from this session are protected, including
+  natural-class blocks.
+- A host change **inside systems** (rain, the end of her own Magic House animation) deletes
+  a changed cell's key and gives an added entity or plant no owner, so the cell falls back to
+  the natural-block rule. The house's building blocks are not natural, so they stay protected.
+- **Only adding or removing changes an entity's or plant's owner.** Turning a piece, a data
+  change (a tap on a lamp or door, a fence joining a neighbour, a railing opening for a
+  bridge) and a plant's growth or harvest leave the owner as it was, inside a friend's op or
+  not. Removing drops the key.
+- Soil getting wet (`farmland` → `farmland_wet`, a watering can) or drying out again changes
+  no owner either, and watering anyone's farmland is allowed in careful mode (like
+  harvesting). A treat on a table (`placeOn: 'table'`, action `eat_food`) may be eaten
+  (`e-`) by anyone.
+- `conn` (fence joins) in a guest's `ed` is dropped: the host works joins out itself when
+  blocks or pieces next to a fence change, and the entity goes back to the guest as a
+  record.
 
 Known limitation: pre-session host builds made of natural-class blocks (stone, dirt, sand,
 grass, snow) are not protected. The per-friend undo (§8.4) and the backup (§13) cover them.
@@ -721,13 +744,19 @@ and the world bounds.
 - **Friends can change my things** (default off; see §8.2).
 
 The guest reads `ru`: `net.mayEdit()` is false while building is paused, and the Build and
-Remove tools say "Lily paused building for a moment." Hand-tool toggles, sitting, sleeping,
-emotes and phrases always work.
+Remove tools say "Lily paused building." When the host switches building off or on again,
+the guest hears "Lily paused building." / "You can build again!" and, while it is off, a
+small "Lily paused building" pill stays under the top bar. Hand-tool toggles, sitting,
+sleeping, emotes and phrases always work. (In the Players panel the switches read
+**Players can build** and **Careful players**.)
 
 ### 8.4 Per-friend undo (the **Undo building** button)
 
-- **The seat log.** The host keeps `seatLog[seat]`: one group per executed entry, holding its
-  first before and last after values per key.
+- **The friend's log.** The host keeps one log per owner key (Addendum B; a friend who takes
+  a freed seat does not get the last friend's log): one group per executed entry, holding
+  its first before and last after values per key. The log is in memory: after the host's
+  page reloads, **Undo building** covers what the friend built since (the confirm says
+  "since you came back").
   - Cells are stored as `Int32Array` idx plus `Uint8Array` before/after, which keeps prefabs
     cheap.
   - Entity and plant records are stored whole.
@@ -737,7 +766,9 @@ emotes and phrases always work.
   the host's own Undo can bring it back. It walks the groups newest to oldest and restores every
   key whose current value still equals its `after`, which keeps later work by the host or other
   friends. Entities come back only if `canPlace`.
-- **Result.** The changes broadcast like any host change, and the seat log is cleared.
+- **Result.** The changes broadcast like any host change, and the log is cleared. The friend
+  hears it kindly: `ctl {k:'tidy', e, to, n, at:[[x,y,z]…]}` → "Lily tidied up. Let's build
+  something new together!" and sparkles at up to 6 of the places that went back.
 
 ### 8.5 Admission, full, deny, send home
 
@@ -745,7 +776,8 @@ emotes and phrases always work.
   - wrong `v` or `pv` → `no v`;
   - uid banned this session → `no k`;
   - uid seated before in this session, or listed in `lastHost.uids` on resume → auto-admit to
-    the same seat;
+    the same seat. The uid is the room's stamp (`by`) only, never a value from presence
+    (Addendum B): a peer cannot copy a friend's uid into her own presence to skip the card;
   - 3 seats taken → `no f`;
   - otherwise → queue a **knock card** (§11.4), one card at a time.
 - **Yes.** The host adds `adm [peer, lowest free seat]` and starts `lastLseq[peer] = 0`.
@@ -1090,8 +1122,19 @@ Two big cards. Each has an icon, a 1–2 word label and one small line under it:
   - else it shows "Make a world first!" and opens New World.
 
 Resume chips appear above the cards when valid:
-- **Keep playing** (host), with the small line "with your friends";
-- **Join Lily** (guest), with the small line "again".
+- **Keep playing** (host), with the small line "with your friends" (on the title it is the
+  big first button);
+- **Join Lily** (guest), with the small line "again". If nobody is playing with its code any
+  more: "Lily isn't playing right now. Ask her for a new code!" and the chip goes.
+
+The first time she uses Play with Friends while her name is still the game's starting one
+(`profile.nameSet` unset and the name equal to the default look's "Lily"), a "What's your
+name?" dialog comes first. Until then her presence `nm` is empty (others see "Friend").
+
+In a world, the pause menu's **Play Together** (`.sw-pause-invite`) opens this card; it never
+makes a code by itself. Make a Code there hosts the open world. While `lastHost` is fresh for
+the open world, hosting reuses its code and uids (a resume), and opening that world with
+**Play** asks "Your friends are waiting! Open your door again?" (`friends_waiting`).
 
 ### 11.2 Keypad (panel `mp-join`, `.sw-net-keypad`)
 
@@ -1104,11 +1147,14 @@ Resume chips appear above the cards when valid:
 ### 11.3 Joining cards (guest)
 
 - "Looking for your friend…"
-- "Knock knock! Waiting for Lily to say yes…" with **Cancel**
+- "Knock knock! Waiting for your friend to say yes…" with **Cancel** (on the Railway relay
+  the host's name is not shown to a player who is not let in yet: Addendum B)
 - "Flying to Lily's world…" (the loading card with chunk progress)
 - then play, with the toast "You're in Lily's world!"
 
-Other players see "Mia is here!" with a sparkle burst at her avatar.
+Other players see "Mia is here!" with a sparkle burst at her avatar once she has arrived
+(not while she is knocking or loading: her row says "Flying here…" until then). She does not
+get a "Lily is here!" for the host of the world she flew into.
 
 ### 11.4 Knock card (host, `.sw-net-knock`)
 
@@ -1117,19 +1163,24 @@ Other players see "Mia is here!" with a sparkle burst at her avatar.
   to play!", and in small print the account name from `user.profiles([by])` plus a "visitor"
   badge when `guest` is true, both set with `textContent`.
 - Two buttons: **Come in!** (`.sw-net-yes`) and **Not now** (`.sw-net-no`).
-- A queue shows one card at a time. The card disappears if the friend leaves.
+- A queue shows one card at a time. The card disappears if the friend leaves. A card that was
+  up for a minute or more and then went away (she gave up after 90 s) leaves the toast "Mia
+  knocked while you were busy. She can knock again!".
+- A name that someone playing already has is shown with a number ("Lily 2"), on the card and
+  in the Players list.
 
 ### 11.5 Friends panel (`mp-friends`, action `mp-friends`, width 520, fullscreen on phones)
 
 - **Host:**
-  - The code as 4 big picture tiles with their words, and "Tell your friend these pictures!".
+  - The code as 4 big picture tiles with their words, and "Say these pictures to play together!".
     For grown-ups, small print shows "sw1-heart-star-moon-cat".
   - One row per player (`.sw-net-row[data-seat]`): head, name, account name in small print,
     "visitor" badge, **Undo building** (`.sw-net-undo`, two-step), **Send home**
     (`.sw-net-kick`, two-step).
-  - Toggles **Friends can build** (`.sw-net-rule-build`) and **Friends can change my things**
-    (`.sw-net-rule-mine`).
-  - **Stop playing** (`.sw-net-stop`), with a two-step confirm: "Say goodbye to your friends?".
+  - Toggles **Players can build** (`.sw-net-rule-build`) and **Careful players**
+    (`.sw-net-rule-careful`, on = `mine 0`).
+  - **Stop playing** (`.sw-net-stop`), with a confirm: "Stop playing together?".
+  - The HUD's **Players** button shows a game pad (the NPC friends' button shows two girls).
 - **Guest:** the player list (the host marked with a crown) and **Go home**.
 
 ### 11.6 Say (quick phrases, panel `mp-say`, action `mp-say`, key T)
@@ -1146,19 +1197,24 @@ Other players see "Mia is here!" with a sparkle burst at her avatar.
 ### 11.7 End of session (host)
 
 A dialog: "Playing together is over! Everything is saved." with **Great!** and a small
-secondary **Before friends**. That restores the backup with a two-step confirm ("Go back to how
-it was before friends came?" **Yes, go back** / **No, keep it**) and reloads the world. The same
-**Before friends** button is on the world's card in My Worlds while a backup less than 7 days old
-exists.
+secondary **Before friends**. That restores the backup with a two-step confirm. The first shows
+the copy's picture and says what goes: "Your world goes back to this copy from today.
+Everything built since then goes away, also what you built." (**Yes, go back** / **No, keep
+it**). The world as it was is kept as `<id>.undo`, the backup is used up, and the card after it
+has **Undo** ("Changed your mind? Undo brings back what was there."). The same **Before
+friends** button is on the world's card in My Worlds as a small white button with "Copy from
+<day>", while the backup is younger than 7 days **and nothing was built alone since**: once a
+change she made alone in that world is saved, the backup is deleted (Addendum B, §13).
 
 ### 11.8 Names
 
 `sanitizeName(s)`:
 1. NFKC.
-2. Keep Unicode letters, space, `-` and `'`.
+2. Keep Unicode letters, space, `-` and `'`; drop the letters that draw nothing (U+115F,
+   U+1160, U+3164, U+FFA0) and keep at most 2 combining marks on a letter.
 3. Collapse spaces and trim to 12 characters.
 4. If the result is empty or in the blocklist (`src/net/names.js`, lowercase, compared without
-   spaces), use "Friend".
+   spaces and accents, Cyrillic / Greek look-alike letters read as Latin), use "Friend".
 
 It is applied to `nm`, remote pet names (falling back to the species name) and the guest's world
 name (`"<name>'s World"`). Nothing a child typed is shown to others unless it passed this
@@ -1175,25 +1231,33 @@ function. Easel pictures (16×16 pixels) are the only free drawing; the host can
 | join `no_rooms` | "Playing together isn't turned on for this account. Ask a grown-up!" | card |
 | `busy` (limit) | "Lots of games right now! Try again in a minute." | card |
 | `transient` after retries | "The magic mail is slow. Try again?" [Try again] | card |
-| no host within 8 s | "Nobody is playing with those pictures. Check them with your friend!" | keypad |
+| no host within 8 s | "Nobody is playing with those pictures. Check them with your friend!" (the keypad stays open with her pictures) | keypad |
+| no host for a **Join Lily** chip | "Lily isn't playing right now. Ask her for a new code!" (the chip goes) | card |
 | `pv` or `v` mismatch | "Your game needs a refresh!" [Refresh] (`location.reload()`) | card |
-| denied / knock gave up | "Lily can't play right now. Maybe later!" | card |
+| denied ("Not now") | "Lily can't play right now. Maybe later!" | card |
+| knock not answered in 90 s | "Lily didn't hear the knock. Knock again?" [Knock again] | card |
 | full | "Lily's world is full of friends right now!" | card |
 | snapshot failed twice | "The world got lost on the way. Let's try again!" [Try again] | card |
 | disconnected > 2 s | small cloud badge "Reconnecting…"; the world stays playable | HUD |
 | host `zz` or missing | "Lily is taking a little break…" (non-blocking) | card |
 | host gone 60 s / `end` | "Lily went home. Her world is saved at her house!" → title | card |
 | sent home | "Time to go home! Let's play in your own world." → title | card |
-| building paused | "Lily paused building for a moment." | toast |
+| building paused / on again | "Lily paused building." / "You can build again!" (+ a pill while paused) | toast |
 | rejected: conflict | "Oops! Someone else changed that." | toast (≤ 1 per 4 s) |
-| rejected: protected | "That's Lily's! Ask her first." | toast |
+| rejected: protected | "That's someone else's! Build your own next to it." | toast |
 | rejected: limit | "Slow down, sparkle builder!" | toast |
-| Magic House rejected | "The magic fizzled! Something of Lily's is in the way." | toast |
+| Magic House rejected (protected) | "The magic fizzled! Something of Lily's is in the way." | toast |
+| Magic House too soon (code 4) | "The magic needs a little rest! Try again in a moment." | toast |
+| Magic House: the place changed (1, 5) | "Oops! Something changed there." | toast |
+| the host's Undo building | "Lily tidied up. Let's build something new together!" + sparkles | toast |
 | pet/NPC action as guest | "That's Lily's pet! Ask her to help." | toast |
 | backup could not be written | "Your world couldn't make a safety copy, so friends can't come in right now." | card |
 | fatal (`revoked`, …) | "Playing together stopped." → single player | card |
 
-`Lily` here is the host's sanitized `nm`.
+`Lily` here is the host's sanitized `nm` ("your friend" while it is not known). Before a
+guest was ever in the host's world (wrong code, "Not now", no answer, full, version), the
+session ends quietly where she was (the keypad keeps her pictures); after, she goes back to
+the title.
 
 ---
 
@@ -1201,14 +1265,21 @@ function. Easel pictures (16×16 pixels) are the only free drawing; the host can
 
 1. **Guests never persist the host world.** The `saveWorld` guard, `enterSharedWorld` without
    store calls, and `profile.lastWorldId` untouched.
-2. **A backup before anyone joins** (`<id>.before`). Hosting does not start unless it was written.
+2. **A backup before anyone joins** (`<id>.before`). Hosting does not start unless it is there.
+   A backup that is still good (younger than 7 days) is **kept**, never overwritten: "Keep
+   playing" after a reload, a second Invite and a new code the same week all go back to the
+   world from before friends first came. Once a change she made **alone** in that world is
+   saved, the backup is deleted (restoring it would throw her own work away); the next
+   hosting makes a fresh one. A restore keeps the world as it was as `<id>.undo` (Undo on the
+   card) and uses the backup up.
 3. **Local saves every 15 s while hosting**, plus the existing `flushSave` on hidden and
    pagehide, and the existing 60 s cloud throttle. A crash loses at most 15 s, where
    single-player loses up to 45 s.
 4. **Every guest edit is checked.** Compare-and-set, careful-friends protection, rate limits,
    and a building pause switch.
 5. **Undo at three levels.** Each friend's own Undo is local and CAS-guarded. **Undo building**
-   works per friend and can itself be undone. **Before friends** restores the backup.
+   works per friend and can itself be undone. **Before friends** restores the backup, and
+   can itself be undone once.
 6. **Guest edits never enter the host's Undo stack** (`noHistory`), and the host's own Undo
    closures are CAS-guarded, so neither side's Undo blindly erases the other's later work.
 
@@ -1457,3 +1528,65 @@ Each criterion is scored 1–10. Total = mean.
    phrases and emotes only (already the rule in §11.6 and §17).
 3. The two-account spike (Task 0) needs the family's help: it can only be run by real people
    with two claude.ai accounts. The Railway path does not depend on it.
+
+## Addendum B: after the review (2026-09-27). Overrides the sections above where they differ.
+
+Three reviews (relay safety, kid UX, sync) found real holes; these are the rules now.
+
+1. **Identity is a stamp the room makes, never a value a page writes.**
+   - On the Railway relay each page sends a per-device secret with its connection
+     (`?d=`, 32 random characters kept in `localStorage['sparkle-world:net-device']`, never in
+     presence, never shown). The server stamps `by = 'd' + base64url(sha256('sw-device\n' +
+     room + '\n' + secret))[0..16]`: the same device gets the same stamp in the same room
+     (a reload, "Keep playing", "Join Lily"), a different one in another room (nobody can
+     follow a device across games), and nobody can make someone else's. On claude.ai `by`
+     is the platform's user id.
+   - `peers()[].uid` is `by` or null, never presence `uid` (which is no longer sent).
+     Auto-admit ("known" friends, `lastHost.uids`), bans ("Send home") and following a
+     reloaded host all use it; a peer with no stamp always gets a knock card.
+2. **The host is the one who was there first.** Roster entries carry `at`, the room's join
+   order. Guests pick the earliest `r:'h'` peer (hs only breaks ties where there is no `at`);
+   the host's rival check uses `at` and ignores her own page from before a reload (same uid).
+3. **The Railway relay is gated** (`rooms.mjs` `gate: true`; claude.ai rooms are not, the
+   test hub follows the room it plays). The room's host side is the earliest member whose
+   presence says `r:'h'` plus every member with her `by` that also says `r:'h'`; the let-in
+   members are the peers in those members' `adm`. Everybody else sees only the public
+   presence keys of the others (`v pv r ep hs end adm no kn`: enough to find the host and
+   hear yes or no, not her name, look or position) and gets **no messages**; their own
+   messages reach nobody. Being let in (or sent home) sends the member everyone's presence
+   again. So a code scanner learns only "someone is hosting", a later pretend host reaches
+   nobody, and the world snapshot never goes to a player who was not let in.
+4. **Relay limits.** A broadcast deeper than 16 levels is refused before it is measured (an
+   8,000-deep array made `JSON.stringify` throw and ended the process); each frame is handled
+   in try/catch (close 1011 on a surprise) and the process keeps serving on
+   `uncaughtException`, logging only the error's name. Per IP: 12 connections, 6 live rooms
+   made, new connections 1/s with a burst of 30 (HTTP 429). The IP behind a proxy is the
+   right-most public `X-Forwarded-For` entry (proxy hops in private / CGNAT ranges skipped),
+   so a client cannot pick its own. Every answer carries `Content-Security-Policy:
+   frame-ancestors 'none'; connect-src 'self'; object-src 'none'; base-uri 'none';
+   form-action 'none'` and `X-Frame-Options: DENY`. The 4-picture code stays (5 pictures
+   would make scanning slower but joining harder for a 7-year-old; the gate and the pacing
+   take away what scanning could find).
+5. **Ownership follows the friend** (§8.2, §8.4): owner keys instead of seats; only adding or
+   removing changes an owner; watering and eating are allowed; `conn` is the host's. Owners
+   are saved with the host's world while hosting (`systems.netOwners`, `NetHost
+   exportAuthors()`; the snapshot leaves it out) and taken up again on "Keep playing"
+   (`env.loadAuthors(code)`), so a friend can still change what she built after the host's
+   page reloads. Per-friend logs stay in memory.
+6. **Kind words** (§12): Undo building tells the friend (ctl `tidy`); an unanswered knock is
+   `no_answer`, not "Not now", and the host hears about it; building paused / on again is
+   told with a pill while paused; a refusal never tells her to "ask first"; a Magic Build
+   says why it did not happen; a wrong code keeps her on the keypad; "Lily is here!" is not
+   shown to the friend who just arrived, and a sent-home friend gets one goodbye.
+7. **"Before friends" never takes her own work by surprise** (§11.7, §13): kept on resume,
+   dropped once she builds alone, honest confirm with the copy's picture and day, undoable,
+   a small button. Hosting from the pause menu goes through the Play with Friends card
+   (**Play Together**), and a reloaded host who taps Play is asked to open her door again.
+8. **Names** (§11.1, §11.8): a device that never chose a name shows "Friend" and is asked
+   "What's your name?" the first time she plays together; duplicate names get a number;
+   invisible Hangul fillers, towers of accents and Cyrillic / Greek look-alikes are handled.
+9. **Small sync fixes.** A guest's bridge openings are worked out again when bridge pieces or
+   platforms come or go through `net:applied` (a refused bridge end no longer leaves her
+   railing open and a hash resync behind). A friend's found gems in a host world stay found
+   when she comes back (`profile.net.gems`, 8 worlds), so a rejoin does not pay their coins
+   again. On a visit, "Home Sweet Home" counts only her own pieces.
