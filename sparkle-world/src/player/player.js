@@ -21,7 +21,7 @@ export class Player {
     this.position = new THREE.Vector3(saved.x ?? 0, saved.y ?? 30, saved.z ?? 0);
     this.velocity = new THREE.Vector3();
     this.yaw = saved.yaw ?? 0;
-    this.state = 'walk'; // walk | sit | sleep | swim | fly | ride | emote
+    this.state = 'walk'; // walk | sit | sleep | swim | fly | ride | emote | hold
     this.flying = !!saved.flying;
     this.swimming = false;
     this.onGround = false;
@@ -29,6 +29,7 @@ export class Player {
     this.height = 1.7;
     this.seatEntity = null;
     this.mountPet = null;
+    this.holder = null; // what carries her while state === 'hold' (zip lines)
     this.body = { pos: this.position, vel: this.velocity, halfW: this.halfW, height: this.height, onGround: false };
     this._lastSpace = 0;
     this._stepTime = 0;
@@ -70,6 +71,11 @@ export class Player {
     const input = g.input;
     const moving = Math.abs(input.move.x) + Math.abs(input.move.z) > 0.2;
 
+    if (this.state === 'hold') {
+      // hold(): the holder moves her (and may pose the avatar); no walking, gravity or jumping
+      this._syncAvatar(dt);
+      return;
+    }
     if (this.state === 'sit' || this.state === 'sleep') {
       if (moving || (input.jump && this.state === 'sit')) this.stand();
       else {
@@ -193,7 +199,7 @@ export class Player {
   setFlying(on) {
     on = !!on;
     if (this.flying === on) return;
-    if (this.state === 'sit' || this.state === 'sleep' || this.state === 'ride') this.stand();
+    if (this.state === 'sit' || this.state === 'sleep' || this.state === 'ride' || this.state === 'hold') this.stand();
     this.flying = on;
     this.state = on ? 'fly' : 'walk';
     if (on) this.velocity.y = 3;
@@ -227,8 +233,11 @@ export class Player {
     this.game.events.emit('player:sit', { entity });
   }
 
-  /** Lie down: pos is the mattress top centre, yaw points from headboard to foot. */
-  sleepIn(entity, pos, yaw) {
+  /**
+   * Lie down: pos is the mattress top centre, yaw points from headboard to foot.
+   * opts.quiet: just lying down for a rest (a hammock), not going to bed: no 'player:sleep'.
+   */
+  sleepIn(entity, pos, yaw, { quiet = false } = {}) {
     this.state = 'sleep';
     this._landQuietly();
     this.seatEntity = entity;
@@ -236,17 +245,18 @@ export class Player {
     this.velocity.set(0, 0, 0);
     this.yaw = yaw;
     this._syncAvatar(0);
-    this.game.events.emit('player:sleep', {});
+    if (!quiet) this.game.events.emit('player:sleep', {});
   }
 
   /** Get up from a seat/bed/mount and step to a free spot nearby. */
   stand() {
     const was = this.state;
-    if (was !== 'sit' && was !== 'sleep' && was !== 'ride') return;
+    if (was !== 'sit' && was !== 'sleep' && was !== 'ride' && was !== 'hold') return;
     const e = this.seatEntity;
     this.state = 'walk';
     this.seatEntity = null;
     this.mountPet = null;
+    this.holder = null;
     const spot = this.findStandSpot(this.position.x, this.position.y, this.position.z, e);
     if (spot) this.position.set(spot[0], spot[1], spot[2]);
     this.velocity.set(0, 0, 0);
@@ -288,8 +298,33 @@ export class Player {
     this.velocity.set(0, 0, 0);
   }
 
+  /**
+   * Hold on to something that carries her (a zip-line handle...): until release(), `holder`
+   * moves this.position every frame (after player.update) and may pose the avatar. stand(),
+   * teleport() and flying let go too; the holder notices state !== 'hold'.
+   */
+  hold(holder) {
+    if (this.state === 'sit' || this.state === 'sleep' || this.state === 'ride') this.stand();
+    this._landQuietly();
+    this.state = 'hold';
+    this.holder = holder || null;
+    this.seatEntity = null;
+    this.velocity.set(0, 0, 0);
+    this.onGround = false;
+    return true;
+  }
+
+  /** Let go after hold(): she walks on from where the holder left her. */
+  release() {
+    if (this.state !== 'hold') return;
+    this.state = 'walk';
+    this.holder = null;
+    this.velocity.set(0, 0, 0);
+    this._syncAvatar(0);
+  }
+
   emote(name) {
-    if (!this.avatar || this.state === 'sit' || this.state === 'sleep' || this.state === 'ride') return;
+    if (!this.avatar || this.state === 'sit' || this.state === 'sleep' || this.state === 'ride' || this.state === 'hold') return;
     const dur = this.avatar.playEmote(name) || 2;
     this.state = 'emote';
     this._emoteUntil = performance.now() + dur * 1000;
@@ -297,10 +332,11 @@ export class Player {
   }
 
   teleport(x, y, z) {
-    if (this.state === 'sit' || this.state === 'sleep' || this.state === 'ride') {
+    if (this.state === 'sit' || this.state === 'sleep' || this.state === 'ride' || this.state === 'hold') {
       this.state = 'walk';
       this.seatEntity = null;
       this.mountPet = null;
+      this.holder = null;
     }
     this.position.set(x, y, z);
     this.velocity.set(0, 0, 0);
@@ -321,7 +357,7 @@ export class Player {
   serialize() {
     let p = this.position;
     // never save someone lying in bed or sitting: they come back standing next to it
-    if (this.state === 'sit' || this.state === 'sleep' || this.state === 'ride') {
+    if (this.state === 'sit' || this.state === 'sleep' || this.state === 'ride' || this.state === 'hold') {
       const spot = this.findStandSpot(p.x, p.y, p.z, this.seatEntity);
       if (spot) p = { x: spot[0], y: spot[1], z: spot[2] };
     }
