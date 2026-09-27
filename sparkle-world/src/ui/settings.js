@@ -354,6 +354,7 @@ export function install(game) {
           const v = await ui.textInput({ title: 'What is your name?', value: cur, ok: 'Save', maxLength: 20 });
           if (!v) return;
           game.profile.playerName = v;
+          game.profile.nameSet = true;
           if (game.profile.look) game.profile.look.name = v;
           game.saveProfile();
           name.textContent = v;

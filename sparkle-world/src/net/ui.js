@@ -6,14 +6,18 @@
 //   panel 'mp-join'     the 12-picture keypad (4 slots, Back, Clear, Go) and, after Go, the
 //                       joining cards: looking for your friend, knock knock, flying there.
 //   panel 'mp-players'  who's here (colors, crown for the host), the code as 4 big pictures,
-//                       and for the host: Undo building / Send home per friend, "Friends can
-//                       build", "Careful friends", Stop playing. Guests: Go home.
+//                       and for the host: Undo building / Send home per player, "Players can
+//                       build", "Careful players", Stop playing. Guests: Go home.
 //   panel 'mp-say'      16 quick phrases with little icons (never typed text).
 //   knock card          (host, non-modal, over everything) portrait, "Mia wants to play!",
 //                       the account name in small print on claude.ai, Let in / Not now.
 //   message cards       friendly texts for every session message (never error codes).
 //   summary             host: "Playing together is over! Everything is saved." + Before friends.
-//   status              "Lily is taking a little break…" and "Reconnecting…" pills.
+//   status              "Lily is taking a little break…", "Lily paused building" and
+//                       "Reconnecting…" pills.
+//   name step           the first time she plays together while her name is still the game's
+//                       starting one: "What's your name?" (so a friend's knock card never
+//                       says "Lily" for everyone).
 //
 // The words "Friends" and "My Friends" belong to the NPC friends (pals team); real players
 // are "Players" in the game and "Play with Friends" on the title, so a child never mixes
@@ -30,6 +34,15 @@ import { getStage } from '../ui/dressup/stage.js';
 const HOST_RESUME_MS = 30 * 60 * 1000; // "Keep playing" for 30 min (§6)
 const GUEST_RESUME_MS = 2 * 60 * 60 * 1000; // "Join Lily" for 2 h
 const BACKUP_DAYS = 7;
+const KNOCK_MISSED_MS = 60000; // a knock card up this long and gone: "she knocked while you were busy"
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/** 'today', 'yesterday' or the day's name (backups are at most 7 days old). */
+function dayWord(at) {
+  const d = new Date(at), now = new Date();
+  const days = Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
+  return days <= 0 ? 'today' : days === 1 ? 'yesterday' : 'on ' + DAY_NAMES[d.getDay()];
+}
 
 const CSS = /* css */ `
 .sw-net-layer { position: absolute; inset: 0; pointer-events: none; z-index: 30; }
@@ -188,6 +201,10 @@ const CSS = /* css */ `
 .sw-net-away svg { width: 28px; height: 28px; color: var(--sw-lav); flex: none; animation: sw-net-hop 2s ease-in-out infinite; }
 .sw-net-away span { overflow: hidden; text-overflow: ellipsis; }
 .sw-net-away[hidden] { display: none; }
+.sw-net-away.sw-net-paused svg { color: var(--sw-sun); animation: none; }
+
+/* ---------- "Before friends" confirm: the picture of the copy ---------- */
+.sw-net-before-pic { display: block; width: min(240px, 100%); aspect-ratio: 8 / 5; object-fit: cover; margin: 0 auto 6px; border-radius: 16px; border: 4px solid #fff; box-shadow: 0 4px 12px var(--sw-shadow); }
 
 @media (max-width: 760px) {
   .sw-net-keys { grid-template-columns: repeat(4, 80px); gap: 8px; }
@@ -353,6 +370,7 @@ export function installNetUI(game, net, remote) {
     no_host: { icon: 'help', c: 'var(--sw-sun)' },
     version: { icon: 'again', c: 'var(--sw-mint)' },
     denied: { icon: 'knock', c: 'var(--sw-lav)' },
+    no_answer: { icon: 'knock', c: 'var(--sw-sky)' },
     full: { icon: 'players', c: 'var(--sw-lav)' },
     snapshot_failed: { icon: 'world', c: 'var(--sw-sky)' },
     host_gone: { icon: 'home', c: 'var(--sw-pink)' },
@@ -428,6 +446,9 @@ export function installNetUI(game, net, remote) {
     } else if (code === 'no_host' && lastAction && lastAction.kind === 'join') {
       const again = lastAction;
       buttons.push({ label: 'Check the pictures', icon: 'grid', variant: 'sky', run: () => openJoin(again.code) }, { label: 'OK', icon: 'check', variant: 'white' });
+    } else if (code === 'no_answer' && lastAction && lastAction.kind === 'join') {
+      const again = lastAction;
+      buttons.push({ label: 'Knock again', icon: 'knock', variant: 'mint', run: () => startJoin(again.code, { chip: again.chip }) }, { label: 'Not now', icon: 'close', variant: 'white' });
     }
     return showCard({ text: t, small, icon: look.icon, color: look.c, buttons, code });
   }
@@ -439,9 +460,26 @@ export function installNetUI(game, net, remote) {
   let hosting = false;
   let pendingHost = null; // { at } set when "Make a Code" needs a new world first
 
+  /** profile.net.lastHost when it is fresh and for this world (her friends may be waiting). */
+  function freshLastHost(worldId) {
+    const h = game.profile && game.profile.net && game.profile.net.lastHost;
+    if (!h || !isCode(h.code) || !worldId || h.worldId !== worldId) return null;
+    return Date.now() - (h.at || 0) < HOST_RESUME_MS ? h : null;
+  }
+
   async function startHost({ code = null, resume = false, uids = [] } = {}) {
     if (hosting || net.active) return false;
     if (game.mode !== 'play' || !game.world || game._isShared?.()) return false;
+    // her friends from a moment ago (her page reloaded) still have these pictures: the same
+    // code again, and they come straight back in
+    if (!code && !resume) {
+      const h = freshLastHost(game.world.meta && game.world.meta.id);
+      if (h) {
+        code = h.code.slice();
+        resume = true;
+        uids = h.uids || [];
+      }
+    }
     hosting = true;
     lastAction = { kind: 'host', code, resume, uids };
     closeMessage();
@@ -463,7 +501,10 @@ export function installNetUI(game, net, remote) {
 
   /** Title: "Make a Code" opens the last world, then hosts; with no world, make one first. */
   async function hostFromTitle() {
-    if (game.mode === 'play' && game.world) return startHost();
+    if (game.mode === 'play' && game.world) {
+      ui.close();
+      return startHost();
+    }
     const worlds = await game.store.listWorlds();
     if (!worlds.length) {
       pendingHost = { at: performance.now() };
@@ -514,10 +555,10 @@ export function installNetUI(game, net, remote) {
   let joinView = null; // keypad panel parts
   const chosen = [];
 
-  async function startJoin(code) {
+  async function startJoin(code, { chip = null } = {}) {
     if (!isCode(code)) return false;
     if (net.active) return false;
-    lastAction = { kind: 'join', code: code.slice() };
+    lastAction = { kind: 'join', code: code.slice(), chip };
     closeMessage();
     if (!ui.isOpen('mp-join')) ui.open('mp-join', { code, go: false });
     showJoining('finding');
@@ -548,7 +589,7 @@ export function installNetUI(game, net, remote) {
     const j = n.lastJoin;
     if (j && isCode(j.code) && now - (j.at || 0) < GUEST_RESUME_MS) {
       const who = sanitizeName(j.hostName || '', '') || 'your friend';
-      out.push({ kind: 'guest', label: `Join ${who}`, sub: 'again', code: j.code, run: () => { ui.open('mp-join', { code: j.code }); startJoin(j.code); } });
+      out.push({ kind: 'guest', label: `Join ${who}`, sub: 'again', code: j.code, run: () => { ui.open('mp-join', { code: j.code }); startJoin(j.code, { chip: who }); } });
     }
     return out;
   }
@@ -581,6 +622,37 @@ export function installNetUI(game, net, remote) {
   // ======================================================================================
 
   let startChips, startWorld;
+  // ======================================================================================
+  // the name step: others read her name on their knock card and over her head
+  // ======================================================================================
+
+  /** Is her name still the game's own starting name (never chosen by her)? */
+  function nameUnset() {
+    const p = game.profile || {};
+    if (p.nameSet) return false;
+    const cur = p.playerName || (p.look && p.look.name) || '';
+    return !cur || cur === ((game.defaultLook && game.defaultLook.name) || 'Lily');
+  }
+
+  /** Ask once: "What's your name?" Resolves false when she closes it. */
+  async function ensureName() {
+    if (!nameUnset()) return true;
+    const v = await ui.textInput({
+      title: "What's your name?", placeholder: 'Your name', ok: 'That\'s me!', maxLength: 16,
+      suggestions: [],
+    });
+    if (!v) return false;
+    const p = game.profile;
+    p.playerName = v;
+    p.nameSet = true;
+    if (p.look) p.look.name = v;
+    game.saveProfile();
+    game.events.emit('avatar:changed', { look: p.look });
+    game.events.emit('profile:changed', { profile: p });
+    game.toast(`Hi, ${sanitizeName(v, 'friend')}!`, { icon: 'heart' });
+    return true;
+  }
+
   ui.registerPanel('mp-start', {
     title: 'Play with Friends',
     icon: 'players',
@@ -632,7 +704,10 @@ export function installNetUI(game, net, remote) {
       }
     },
   });
-  game.registerAction('mp-start', (g) => g.ui.open('mp-start'));
+  game.registerAction('mp-start', (g) => {
+    ensureName().then((ok) => { if (ok) g.ui.open('mp-start'); });
+    return true;
+  });
 
   // ======================================================================================
   // panel: the keypad (mp-join)
@@ -845,7 +920,7 @@ export function installNetUI(game, net, remote) {
     box.append(title, tiles);
     if (!waiting) {
       const row = ui.el('div', 'sw-net-code-row');
-      row.appendChild(ui.el('div', 'sw-net-ask', 'Tell your friends these pictures!'));
+      row.appendChild(ui.el('div', 'sw-net-ask', 'Say these pictures to play together!'));
       row.appendChild(button2(ui, {
         icon: 'speak', label: 'Say it', variant: 'white', size: 'small', className: 'sw-net-sayit',
         onClick: () => { if (typeof game.speak === 'function') game.speak(`Your code is ${codeWords(code)}`, true); },
@@ -875,10 +950,9 @@ export function installNetUI(game, net, remote) {
     return b;
   }
 
-  function playerRow(pl, isHostView) {
+  function playerRow(pl, isHostView, name) {
     const st = pl.state || {};
     const color = seatColor(pl.seat);
-    const name = pl.you ? playerName() : sanitizeName(typeof st.nm === 'string' ? st.nm : pl.name || '', 'Friend');
     const row = ui.el('div', 'sw-net-row');
     row.dataset.seat = String(pl.seat);
     row.dataset.peer = pl.peer || '';
@@ -893,7 +967,7 @@ export function installNetUI(game, net, remote) {
     let sub = pl.host ? "It's her world" : 'Visiting';
     if (pl.host && pl.you) sub = "It's your world";
     if (!pl.you && pl.away) sub = pl.host ? 'Taking a little break' : 'Coming back…';
-    else if (!pl.you && !pl.host && !Array.isArray(st.p)) sub = 'Flying here…';
+    else if (!pl.you && !pl.host && (!Array.isArray(st.p) || (st.rx && typeof st.rx === 'object'))) sub = 'Flying here…';
     who.append(nameLine, ui.el('div', 'sw-net-who-sub', sub));
     const acct = ui.el('div', 'sw-net-who-acct', '');
     who.appendChild(acct);
@@ -905,7 +979,9 @@ export function installNetUI(game, net, remote) {
         button2(ui, {
           icon: 'undo', label: 'Undo building', variant: 'white', className: 'sw-net-undo',
           onClick: async () => {
-            const ok = await ui.confirm({ title: `Undo ${name}'s building?`, text: `Everything ${name} built or changed goes back. You can press Undo to bring it back.`, yes: 'Yes, undo', no: 'No', icon: 'undo' });
+            // after her page came back (a reload), the list only knows what came after
+            const since = S.hostCore && S.hostCore.resumed ? ' since you came back' : '';
+            const ok = await ui.confirm({ title: `Undo ${name}'s building?`, text: `Everything ${name} built or changed${since} goes back. You can press Undo to bring it back.`, yes: 'Yes, undo', no: 'No', icon: 'undo' });
             if (!ok) return;
             const n = S.undoSeat(pl.seat);
             game.toast(n > 0 ? `${name}'s building went back.` : `${name} hasn't built anything yet.`, { icon: 'undo' });
@@ -916,6 +992,7 @@ export function installNetUI(game, net, remote) {
           onClick: async () => {
             const ok = await ui.confirm({ title: `Send ${name} home?`, text: `${name} goes back to her own world and can't come back in this game.`, yes: 'Yes, send home', no: 'No', icon: 'home' });
             if (!ok) return;
+            remote.hush(pl.peer); // one goodbye (this one), not a second when her avatar leaves
             S.kick(pl.peer);
             game.toast(`${name} went home.`, { icon: 'home' });
             renderPlayers(true);
@@ -925,6 +1002,19 @@ export function installNetUI(game, net, remote) {
       row.appendChild(btns);
     }
     return row;
+  }
+
+  /** The name each player shows as (a second "Lily" becomes "Lily 2", in seat order). */
+  function shownNames(players) {
+    const count = new Map();
+    return players.map((pl) => {
+      const st = pl.state || {};
+      const base = pl.you ? playerName() : sanitizeName(typeof st.nm === 'string' ? st.nm : pl.name || '', 'Friend');
+      const key = base.toLowerCase();
+      const n = (count.get(key) || 0) + 1;
+      count.set(key, n);
+      return n > 1 ? `${base} ${n}` : base;
+    });
   }
 
   function myLook() {
@@ -952,11 +1042,12 @@ export function installNetUI(game, net, remote) {
     const isHost = net.isHost;
     if (isHost) col.appendChild(codeBox(net.code, st === 'h.opening'));
     const rows = ui.el('div', 'sw-net-rows');
-    for (const pl of players) rows.appendChild(playerRow(pl, isHost));
+    const names = shownNames(players);
+    players.forEach((pl, k) => rows.appendChild(playerRow(pl, isHost, names[k])));
     if (isHost && players.length < 2) {
       const w = ui.el('div', 'sw-net-waiting');
       w.innerHTML = icon2('knock');
-      w.appendChild(ui.el('span', '', 'Waiting for friends to knock…'));
+      w.appendChild(ui.el('span', '', 'Waiting for players to knock…'));
       rows.appendChild(w);
     }
     col.appendChild(rows);
@@ -964,8 +1055,8 @@ export function installNetUI(game, net, remote) {
       const rules = S.rules;
       const box = ui.el('div', 'sw-net-rules');
       box.append(
-        ruleToggle('sw-net-rule-build', 'Friends can build', 'Blocks, furniture and gardens', rules.build === 1, (v) => S.setRules({ build: v ? 1 : 0 })),
-        ruleToggle('sw-net-rule-careful', 'Careful friends', "Friends can't change your things", rules.mine !== 1, (v) => S.setRules({ mine: v ? 0 : 1 })),
+        ruleToggle('sw-net-rule-build', 'Players can build', 'Blocks, furniture and gardens', rules.build === 1, (v) => S.setRules({ build: v ? 1 : 0 })),
+        ruleToggle('sw-net-rule-careful', 'Careful players', "They can't change your things", rules.mine !== 1, (v) => S.setRules({ mine: v ? 0 : 1 })),
       );
       col.appendChild(box);
     }
@@ -974,7 +1065,7 @@ export function installNetUI(game, net, remote) {
       bottom.appendChild(button2(ui, {
         icon: 'close', label: 'Stop playing', variant: 'lav', className: 'sw-net-stop',
         onClick: async () => {
-          const ok = await ui.confirm({ title: 'Say goodbye to your friends?', text: 'Your friends go home and your world is saved.', yes: 'Yes, stop', no: 'Keep playing', icon: 'home' });
+          const ok = await ui.confirm({ title: 'Stop playing together?', text: 'The other players go home and your world is saved.', yes: 'Yes, stop', no: 'Keep playing', icon: 'home' });
           if (!ok) return;
           clearLastHost();
           ui.close();
@@ -1082,7 +1173,11 @@ export function installNetUI(game, net, remote) {
     }
     const info = knocks[0];
     if (!info || !net.isHost) return;
-    const name = sanitizeName(info.name || '', 'Friend');
+    // a name someone playing already has gets a number, so she can tell them apart
+    const base = sanitizeName(info.name || '', 'Friend');
+    const taken = shownNames(S.players()).map((n) => n.toLowerCase());
+    let name = base;
+    for (let n = 2; taken.includes(name.toLowerCase()); n++) name = `${base} ${n}`;
     const card = ui.el('div', 'sw-net-knock');
     card.dataset.peer = info.peer;
     card.setAttribute('role', 'alertdialog');
@@ -1139,11 +1234,16 @@ export function installNetUI(game, net, remote) {
     knockEl.querySelector('.sw-net-knock-more')?.remove();
     knockEl.appendChild(ui.el('span', 'sw-net-knock-more', `+${knocks.length - 1} more`));
   });
-  game.events.on('net:knock-gone', ({ peer } = {}) => {
+  game.events.on('net:knock-gone', ({ peer, name, waited } = {}) => {
     const k = knocks.findIndex((x) => x.peer === peer);
     if (k < 0) return;
     knocks.splice(k, 1);
     if (knockPeer === peer) showNextKnock();
+    // her card was up a long time and nobody answered: tell the host kindly
+    if (net.isHost && waited >= KNOCK_MISSED_MS) {
+      const who = sanitizeName(name || '', 'A friend');
+      game.toast(`${who} knocked while you were busy. She can knock again!`, { icon: 'knock', duration: 6000 });
+    }
   });
 
   // ======================================================================================
@@ -1175,10 +1275,7 @@ export function installNetUI(game, net, remote) {
     if (st === 'g.finding' && ui.isOpen('mp-join')) showJoining('finding');
     if (st === 'g.loading' && ui.isOpen('mp-join')) showJoining('loading', { have: 0, of: 1 });
     if (st === 'g.live' && ui.isOpen('mp-join')) ui.close();
-    if (st === 'g.waiting') {
-      awayText.textContent = text('host_away', { host: hostName() });
-      away.hidden = false;
-    } else away.hidden = true;
+    refreshPill();
     if (st === 'idle') {
       knocks.length = 0;
       showNextKnock();
@@ -1191,6 +1288,28 @@ export function installNetUI(game, net, remote) {
     if (ui.isOpen('mp-players')) renderPlayers();
   });
 
+  /**
+   * The pill under the top bar: "Lily is taking a little break…" while she is away; for a
+   * visiting friend "Lily paused building" while building is switched off (else nothing).
+   */
+  function refreshPill() {
+    const st = S.state;
+    let t = '';
+    let paused = false;
+    if (st === 'g.waiting') t = text('host_away', { host: hostName() });
+    else if (st === 'g.live' && S.guestCore && S.guestCore.rules.build === 0) {
+      t = text('building_paused', { host: hostName() });
+      paused = true;
+    }
+    if (t && awayText.textContent !== t) awayText.textContent = t;
+    away.classList.toggle('sw-net-paused', paused);
+    away.innerHTML = '';
+    away.insertAdjacentHTML('afterbegin', icon2(paused ? 'build' : 'moon'));
+    away.appendChild(awayText);
+    away.hidden = !t;
+  }
+  game.events.on('net:rules', refreshPill);
+
   game.events.on('net:progress', (p) => {
     if (ui.isOpen('mp-join') && S.state === 'g.loading') showJoining('loading', p);
   });
@@ -1198,7 +1317,16 @@ export function installNetUI(game, net, remote) {
   game.events.on('net:message', (m = {}) => {
     const code = m.code;
     if (!code || code === 'unavailable') return;
-    if (['kicked', 'denied', 'ended', 'version', 'full'].includes(code)) clearLastJoin();
+    if (['kicked', 'denied', 'ended', 'version', 'full', 'host_gone'].includes(code)) clearLastJoin();
+    // a "Join Lily again" chip whose friend is not playing any more: say so, and the chip goes
+    if (code === 'no_host' && lastAction && lastAction.kind === 'join' && lastAction.chip) {
+      clearLastJoin();
+      const who = sanitizeName(lastAction.chip, '') || 'Your friend';
+      if (ui.isOpen('mp-join')) showKeypad();
+      showCard({ text: `${cap(who)} isn't playing right now. Ask her for a new code!`, icon: 'home', color: 'var(--sw-sun)', code: 'no_host_chip' });
+      return;
+    }
+    // wrong pictures: the "oops" right on the keypad, her pictures still there to fix
     if (code === 'no_host' && ui.isOpen('mp-join')) {
       showKeypad(text('no_host'));
       return;
@@ -1227,9 +1355,30 @@ export function installNetUI(game, net, remote) {
 
   // pending "Make a Code" / "Keep playing": host as soon as the world is ready; back on the
   // title without a world means "never mind"
-  game.events.on('world:load', () => {
+  game.events.on('world:load', ({ world } = {}) => {
     if (pendingHost && performance.now() - pendingHost.at > 10 * 60 * 1000) pendingHost = null;
+    // she opened the world her friends are waiting in (Play instead of "Keep playing"): ask
+    if (!pendingHost && world && world.meta && !world.meta.shared && !net.active) {
+      const h = freshLastHost(world.meta.id);
+      if (h) {
+        Promise.resolve(net.detect ? net.detect() : net.available)
+          .then((ok) => { if (ok) setTimeout(() => askToReopen(h, world), 400); })
+          .catch(() => {});
+      }
+    }
   });
+
+  /** "Your friends are waiting! Open your door again?" (the same code; they come straight in). */
+  function askToReopen(h, world) {
+    if (net.active || game.world !== world || game.mode !== 'play') return;
+    showCard({
+      text: 'Your friends are waiting!', small: 'Open your door again? They still have your pictures.', icon: 'players', color: 'var(--sw-mint)', code: 'friends_waiting',
+      buttons: [
+        { label: 'Yes, open my door', icon: 'check', variant: 'mint', cls: 'sw-net-reopen', run: () => startHost({ code: h.code, resume: true, uids: h.uids || [] }) },
+        { label: 'Not now', icon: 'close', variant: 'white', run: () => clearLastHost() },
+      ],
+    });
+  }
   game.events.on('ui:open', ({ panel } = {}) => {
     if (panel === 'title' && pendingHost && game.mode === 'title' && !game._busy) pendingHost = null;
   });
@@ -1261,7 +1410,11 @@ export function installNetUI(game, net, remote) {
     return (await backups()).get(worldId) || null;
   }
 
-  /** Two questions, then the world goes back to how it was before friends came. */
+  /**
+   * Two questions (with the copy's picture and day, and the honest words: everything since
+   * then goes, hers too), then the world goes back to how it was before friends came. The
+   * world as it was is kept, so an "Undo" on the card after brings it back.
+   */
   async function restoreBefore(worldId = null) {
     const id = worldId || (game.world && game.world.meta ? game.world.meta.id : null) || game.profile.lastWorldId;
     if (!id || typeof game.store.restoreBackup !== 'function') return false;
@@ -1270,25 +1423,63 @@ export function installNetUI(game, net, remote) {
       game.toast('There is no copy from before friends came.', { icon: 'world' });
       return false;
     }
-    const first = await ui.confirm({ title: 'Go back to how it was before friends came?', text: 'Everything built while playing together goes away.', yes: 'Yes, go back', no: 'No, keep it', icon: 'undo' });
+    const when = dayWord(b.backupAt || b.updatedAt || Date.now());
+    const first = await ui.confirm({
+      title: 'Go back to how it was before friends came?',
+      text: `Your world goes back to this copy from ${when}. Everything built since then goes away, also what you built.`,
+      image: b.thumbnail || null, imageClass: 'sw-net-before-pic', yes: 'Yes, go back', no: 'No, keep it', icon: 'undo',
+    });
     if (!first) return false;
-    const second = await ui.confirm({ title: 'Are you really sure?', text: 'Your world goes back in time.', yes: 'Yes, go back', no: 'No, keep it', icon: 'undo' });
+    const second = await ui.confirm({ title: 'Are you really sure?', text: `Everything built since ${when} goes away.`, yes: 'Yes, go back', no: 'No, keep it', icon: 'undo' });
     if (!second) return false;
-    if (net.active) await net.leave({ quiet: true });
-    const inIt = game.mode === 'play' && game.world && game.world.meta.id === id;
-    if (inIt) {
-      // leave without saving over the copy we are about to restore... then restore and reopen
-      await game.exitToTitle();
+    net._restoring = true; // (the save on the way out must not count as building alone)
+    let res;
+    try {
+      if (net.active) await net.leave({ quiet: true });
+      const inIt0 = game.mode === 'play' && game.world && game.world.meta.id === id;
+      // leave (the world as it is now is saved: it becomes the undo copy), then restore
+      if (inIt0) await game.exitToTitle();
+      res = await game.store.restoreBackup(id);
+      res.inIt = inIt0;
+    } finally {
+      net._restoring = false;
     }
-    const res = await game.store.restoreBackup(id);
+    const inIt = res.inIt;
     if (!res || !res.ok) {
       game.toast("Oops! That didn't work.", { icon: 'world' });
       return false;
     }
     game.audio.play('magic');
-    game.toast('Your world is back to how it was!', { icon: 'world', color: 'mint', big: true });
     if (inIt) await game.loadWorld(id);
     game.events.emit('net:restored', { id });
+    showCard({
+      text: 'Your world is back to how it was!', small: res.undo ? 'Changed your mind? Undo brings back what was there.' : '',
+      icon: 'world', color: 'var(--sw-mint)', code: 'restored',
+      buttons: [
+        { label: 'Great!', icon: 'check', variant: 'mint' },
+        ...(res.undo ? [{ label: 'Undo', icon: 'undo', variant: 'white', cls: 'sw-net-restore-undo', run: () => undoRestore(id) }] : []),
+      ],
+    });
+    return true;
+  }
+
+  /** Take a "Before friends" back: the world as it was just before comes back. */
+  async function undoRestore(id) {
+    if (typeof game.store.restoreUndo !== 'function') return false;
+    const inIt = game.mode === 'play' && game.world && game.world.meta.id === id;
+    if (inIt) {
+      // no save over the undo copy's world: the world now is the restored copy, nothing new
+      await game.exitToTitle();
+    }
+    const res = await game.store.restoreUndo(id);
+    if (!res || !res.ok) {
+      game.toast("Oops! That didn't work.", { icon: 'world' });
+      return false;
+    }
+    game.audio.play('magic');
+    game.toast('Everything is back!', { icon: 'world', color: 'mint' });
+    if (inIt) await game.loadWorld(id);
+    game.events.emit('net:restored', { id, undo: true });
     return true;
   }
 
@@ -1317,7 +1508,10 @@ export function installNetUI(game, net, remote) {
     update,
     resumeChips,
     chipButton,
-    openStart: () => ui.open('mp-start'),
+    openStart: () => game.runAction('mp-start'),
+    dayWord: (at) => dayWord(at).replace(/^on /, ''),
+    ensureName,
+    nameUnset,
     openJoin,
     startHost,
     startJoin,
@@ -1326,6 +1520,7 @@ export function installNetUI(game, net, remote) {
     backups,
     backupFor,
     restoreBefore,
+    undoRestore,
     showMessage,
     closeMessage,
     clearLastHost,

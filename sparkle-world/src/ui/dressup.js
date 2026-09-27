@@ -278,6 +278,7 @@ class Studio {
     const v = String(value || '').replace(/\s+/g, ' ').trimStart().slice(0, 16);
     if (!v.trim()) return;
     this.look = W.normalizeLook({ ...this.look, name: v });
+    this.game.profile.nameSet = true; // she typed it: others may see it (src/net)
     this._commit(false);
   }
 

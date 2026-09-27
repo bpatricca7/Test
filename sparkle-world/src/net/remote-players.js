@@ -199,6 +199,7 @@ export class RemotePlayers {
     this._wallAt = 0;
     this._wdt = 0;
     this._gone = new Map(); // uid -> when her avatar left (a reload comes back "is back!")
+    this._hushed = new Set(); // peers sent home: the host's own card already said goodbye
     game.events.on('world:load', () => {
       if (!this.group.parent) game.scene.add(this.group);
     });
@@ -215,6 +216,11 @@ export class RemotePlayers {
       this._lastState = s.state;
       if (s.state === 'idle') this.clear();
     });
+  }
+
+  /** No "went home" toast for this peer (the host sent her home and already said so). */
+  hush(peer) {
+    if (peer) this._hushed.add(peer);
   }
 
   /** Remote friend by peer id (tests, the Players panel). */
@@ -285,6 +291,9 @@ export class RemotePlayers {
       seen.add(pl.peer);
       if (pl.uid) uids.add(pl.uid);
       let f = this.friends.get(pl.peer);
+      // a friend still on her way (knocking, or her world is loading: `rx`) has no avatar
+      // here yet; her position is not in this world (it may be her own world's)
+      if (!f && !pl.host && pl.state && (pl.state.kn === 1 || (pl.state.rx && typeof pl.state.rx === 'object'))) continue;
       if (!f) {
         f = new Friend(this, pl.peer);
         this.friends.set(pl.peer, f);
@@ -300,7 +309,8 @@ export class RemotePlayers {
       // a page that reloaded comes back as a new peer with the same uid: no goodbye for that,
       // and the host's own comings and goings have their own cards
       const back = f.uid && uids.has(f.uid);
-      if (f.seen && f.avatar && !f.host && !back && now - this._liveAt > 2500) {
+      const hushed = this._hushed.delete(peer);
+      if (f.seen && f.avatar && !f.host && !back && !hushed && now - this._liveAt > 2500) {
         this.game.celebrate([f.pos.x, f.pos.y + 1, f.pos.z], 'sparkle');
         this.game.toast(`${f.name || 'Your friend'} went home.`, { icon: 'players', duration: 3000 });
       }
@@ -371,7 +381,9 @@ export class RemotePlayers {
         g.celebrate([f.pos.x, f.pos.y + 1, f.pos.z], 'sparkle');
         const left = f.uid ? this._gone.get(f.uid) : undefined;
         const again = left !== undefined && now - left < 3 * 60 * 1000;
-        if (!(f.host && again)) g.toast(again ? `${f.name || 'Your friend'} is back!` : `${f.name || 'A friend'} is here!`, { icon: 'players', color: 'mint' });
+        // the host of the world she just flew into is not "here": she already heard "You're
+        // in Lily's world!"; and the host coming back has its own card
+        if (!f.host) g.toast(again ? `${f.name || 'Your friend'} is back!` : `${f.name || 'A friend'} is here!`, { icon: 'players', color: 'mint' });
       }
     }
     const inst = dt > 0 ? Math.min(12, moved / dt) : 0;

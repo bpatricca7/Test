@@ -582,6 +582,7 @@ export class NetGuest {
       this.applyingSnapshot = true;
       this.applying = true;
       this.session.remoteApplying = true;
+      this.entered = true; // her own world is being left for the host's from here on
       let ok = false;
       try {
         ok = await this.a.enterSnapshot(json, rle);
@@ -608,7 +609,6 @@ export class NetGuest {
       this.t.flushState();
       for (const s of this.buffer.keys()) if (s <= this.ap) this.buffer.delete(s);
       const first = this.phase === 'loading' && !this.resyncing;
-      this.entered = true;
       if (this.phase === 'loading' || this.resyncing) {
         this.resyncing = false;
         this._setPhase(this.host?.zz === 1 ? 'waiting' : 'live');

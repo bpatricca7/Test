@@ -62,12 +62,17 @@ const CSS = /* css */ `
 .sw-title-friends.sw-btn[hidden], .sw-title-chips[hidden] { display: none; }
 .sw-title-chips { display: flex; flex-direction: column; gap: 8px; width: 100%; }
 .sw-title-chips .sw-net-chip.sw-btn { width: 100%; justify-content: flex-start; }
+/* "Keep playing" (her friends are waiting) is the big first button; Play comes second */
+.sw-title-chips .sw-net-chip--host.sw-btn { min-height: 78px; font-size: 25px; box-shadow: 0 0 0 4px rgba(255,255,255,.9), 0 8px 18px var(--sw-shadow); }
+.sw-title-chips .sw-net-chip--host .sw-net-chip-pics .sw-pic { width: 30px; height: 30px; }
 @media (max-aspect-ratio: 1/1) {
   .sw-title-buttons .sw-title-friends, .sw-title-buttons .sw-title-chips { grid-column: 1 / -1; }
 }
 .sw-pause-net:empty { display: none; }
-.sw-world-before { padding: 0 12px 12px; margin-top: -4px; }
-.sw-world-before .sw-btn { width: 100%; min-height: 46px; font-size: 16px; }
+.sw-world-before { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 4px 8px; padding: 0 12px 10px; margin-top: -4px; }
+.sw-world-before-when { font-size: 13px; font-weight: 600; color: var(--sw-lav); white-space: nowrap; }
+.sw-world-before .sw-btn { min-height: 38px; font-size: 14px; padding: 4px 12px; }
+.sw-world-before .sw-btn svg { width: 20px; height: 20px; }
 
 /* ---------- shared form bits ---------- */
 .sw-field-label { font-size: 20px; font-weight: 700; color: var(--sw-lav); margin: 14px 0 8px; display: flex; align-items: center; gap: 8px; }
@@ -268,6 +273,9 @@ export function install(game) {
   // playing with friends: availability is known a moment after start; a session ending
   // (or starting) changes the resume chips
   game.events.on('net:state', () => { if (game.mode === 'title' && ui.isOpen('title')) refreshTitle(); });
+  // "Before friends" (or its Undo) changed a world, or its copy went: the list shows it
+  game.events.on('net:restored', () => { if (ui.isOpen('worlds')) renderWorlds(); });
+  game.events.on('net:backup-dropped', () => { if (ui.isOpen('worlds')) renderWorlds(); });
   game.events.on('ui:close', ({ panel }) => { if (panel === 'dressup' && game.mode === 'title') { refreshLook(); if (backdrop) backdrop.cheer('twirl'); } });
 
   ui.registerPanel('title', {
@@ -639,9 +647,13 @@ export function install(game) {
       );
       card.append(thumb, info, actions);
       if (befores.has(w.id)) {
+        // a small grown-ups' button (not a second Play): "Before friends" asks twice and says
+        // what goes away; it is only here while nothing was built alone since friends came
         const row = ui.el('div', 'sw-world-before');
+        const b = befores.get(w.id);
+        row.appendChild(ui.el('span', 'sw-world-before-when', 'Copy from ' + (game.net.ui.dayWord ? game.net.ui.dayWord(b.backupAt || b.updatedAt) : 'before')));
         row.appendChild(button2(ui, {
-          icon: 'undo', label: 'Before friends', variant: 'sun', size: 'small', className: 'sw-net-before',
+          icon: 'undo', label: 'Before friends', variant: 'white', size: 'small', className: 'sw-net-before',
           title: 'Go back to how it was before friends came',
           onClick: async () => { if (await game.net.ui.restoreBefore(w.id)) renderWorlds(); },
         }));
@@ -784,7 +796,8 @@ export function install(game) {
     );
   };
 
-  // playing with friends: Invite Friends (not in a session), Players (in one); a visiting
+  // playing with friends: Play Together (not in a session: the Play with Friends card, never
+  // a code at once), Players (in one); a visiting
   // friend's Save & Exit is "Go home" (nothing of her friend's world is saved on her device);
   // the host's Save & Exit says goodbye to her friends kindly first
   let pauseNet, exitBtn;
@@ -798,7 +811,7 @@ export function install(game) {
     if (net.active) {
       if (game.actions.has('mp-players')) pauseNet.appendChild(button2(ui, { icon: 'players', label: 'Players', variant: 'mint', className: 'sw-pause-players', onClick: () => game.runAction('mp-players') }));
     } else if (net.available && game.actions.has('mp-start') && game.world && !(game.world.meta && game.world.meta.shared)) {
-      pauseNet.appendChild(button2(ui, { icon: 'players', label: 'Invite Friends', variant: 'sky', className: 'sw-pause-invite', onClick: () => { ui.close(); net.ui.startHost(); } }));
+      pauseNet.appendChild(button2(ui, { icon: 'players', label: 'Play Together', variant: 'sky', className: 'sw-pause-invite', onClick: () => { ui.close(); game.runAction('mp-start'); } }));
     }
   };
   const exitNow = () => {
