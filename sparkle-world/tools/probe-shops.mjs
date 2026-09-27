@@ -10,11 +10,13 @@
 //            treats on a table; save + reload; not enough coins
 //   touch    iPad 1024x768 with taps: Bag -> Shops -> Ice Cream Truck shows "Pick a color!"
 //            (the ghost click no longer picks one), place it, build a cone, buy, hold, eat
+//   gift     a browser that is not automated (navigator.webdriver off): the daily gift pops up
+//            by itself on entering a world, opens by itself, and only once a day
 //
-//   node tools/probe-shops.mjs [--only=desktop|touch] [--headed]
+//   node tools/probe-shops.mjs [--only=desktop|touch|gift] [--headed]
 // Screenshots: .shots/shops-*.png. Fails on any console error or failed check.
 
-import { launch, openGame, startWorld, waitIdle, shot, settle, finish } from './smoke.mjs';
+import { launch, openGame, startWorld, waitIdle, shot, settle, finish, attachErrorCollectors, waitForTitle, PAGE_URL } from './smoke.mjs';
 
 const P = 'shops';
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.replace(/^--/, '').split('=')));
@@ -687,11 +689,46 @@ async function touchPass(browser) {
   await context.close();
 }
 
+// =====================================================================================
+// the daily gift, as a real (not automated) browser sees it
+// =====================================================================================
+
+async function giftPass(browser) {
+  console.log('Gift pass (not automated, 1280x800)');
+  const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  await context.addInitScript(() => Object.defineProperty(Navigator.prototype, 'webdriver', { get: () => false }));
+  const page = await context.newPage();
+  attachErrorCollectors(page, errors, 'gift');
+  await page.goto(PAGE_URL);
+  await waitForTitle(page);
+  // a returning player (the first-time tips already done)
+  await page.evaluate(() => { const g = window.__game; g.profile.tutorialDone = true; g.saveProfile(true); });
+  await page.evaluate(() => window.__game.debug.newWorld({ biome: 'flat' }));
+  await until(page, () => window.__game.mode === 'play' && !window.__game.loading, null, 90000);
+  await waitIdle(page);
+  check(await until(page, () => !!document.querySelector('.sh-gift .sh-gift-box'), null, 20000), 'the daily gift pops up by itself');
+  await settle(page, 900);
+  await shot(page, '20-gift-auto', P);
+  const c0 = await coins(page);
+  check(await until(page, (c) => window.__game.profile.coins === c + 25, c0, 20000), 'untouched, it opens by itself: +25');
+  await until(page, () => !document.querySelector('.sh-gift'), null, 20000);
+  const worldId = await page.evaluate(async () => { await window.__game.debug.save(); return window.__game.world.meta.id; });
+  await page.evaluate(() => window.__game.debug.exitToTitle());
+  await until(page, () => window.__game.mode === 'title', null, 30000);
+  await page.evaluate((id) => window.__game.debug.loadWorld(id), worldId);
+  await until(page, () => window.__game.mode === 'play' && !window.__game.loading, null, 90000);
+  await waitIdle(page);
+  await settle(page, 3500);
+  check(!(await page.evaluate(() => !!document.querySelector('.sh-gift'))), 'no second gift the same day');
+  await context.close();
+}
+
 async function main() {
   const browser = await launch({ headed: 'headed' in args });
   try {
     if (want('desktop')) await desktopPass(browser);
     if (want('touch')) await touchPass(browser);
+    if (want('gift')) await giftPass(browser);
   } catch (err) {
     errors.push('[probe] ' + (err && err.stack ? err.stack : err));
   } finally {
