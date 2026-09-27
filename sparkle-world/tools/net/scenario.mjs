@@ -59,7 +59,7 @@ export async function scenario(seed, steps, net, { quietMs = 10000, maxQuietMs =
   const pick = (list) => list[ri(list.length)];
   const ctx = { clock: net.clock, rand, transport: net.transport };
   const startAt = net.clock.now();
-  const hostMaker = (adapter) => makeSession(ctx, 'Lily', 'u-host', { adapter, options: { autoAdmit: true } });
+  const hostMaker = (adapter) => makeSession(ctx, 'Lily', 'u-host', { adapter, options: { autoAdmit: true, ...(net.hostOptions || {}), ...(net.sessionOptions || {}) } });
   let H = hostMaker(null);
   const hostCores = [];
   const counters = { acted: 0, skipped: 0, kicks: 0, reloads: 0, restarts: 0, partitions: 0, resyncHash: 0, resyncRs: 0, epochs: 0 };
@@ -89,7 +89,7 @@ export async function scenario(seed, steps, net, { quietMs = 10000, maxQuietMs =
   let nextGuest = 1;
   const guestStats = [];
   const addGuest = async (uid, name) => {
-    const G = makeSession(ctx, name, uid, { guest: true });
+    const G = makeSession(ctx, name, uid, { guest: true, options: net.sessionOptions || {} });
     G.alive = true;
     G.session.on('resync', (r) => { if (r.reason === 'hash') counters.resyncHash++; else counters.resyncRs++; });
     await waitP(G.session.join(code));
@@ -380,13 +380,14 @@ export async function scenario(seed, steps, net, { quietMs = 10000, maxQuietMs =
   };
 }
 
-export function simNet(seed) {
+export function simNet(seed, hostOptions = null) {
   const clock = new SimClock();
   const hub = new NetHub({
     clock, rand: mulberry32(seed ^ 0x5bd1e995), dropRate: 0.3, dupRate: 0.05, delayMs: [0, 800], presenceDelayMs: [0, 120],
   });
   return {
     clock,
+    hostOptions,
     advance: (ms) => clock.advance(ms),
     transport: (uid) => new LoopTransport({ hub, clock, uid }),
     partition: (p, ms) => {

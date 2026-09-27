@@ -27,7 +27,7 @@ export class NetHost {
    * @param {() => number} ctx.rand
    * @param {string} ctx.build      presence `pv`
    * @param {string|null} ctx.uid   my identity().uid
-   * @param {object} [ctx.options]  { autoAdmit, compression, resumeUids, trackExec }
+   * @param {object} [ctx.options]  { autoAdmit, compression, resumeUids, trackExec, journalMaxKeys, fixMax }
    */
   constructor(ctx) {
     this.session = ctx.session;
@@ -45,7 +45,8 @@ export class NetHost {
 
     this.epoch = null;
     this.hs = 0;
-    this.journal = new Journal();
+    this.journal = new Journal({ maxKeys: o.journalMaxKeys || C.JOURNAL_MAX_KEYS });
+    this.fixMax = o.fixMax || C.FIX_MAX;
     this.blockHash = 0;
     this.live = false;
 
@@ -794,7 +795,7 @@ export class NetHost {
     const r = this.recentRejects.filter((x) => x.seat === seat).map((x) => [x.seat, x.lseq, x.code]);
     if (r.length) payload.r = r;
     const text = JSON.stringify(payload);
-    if (utf8Length(text) > C.FIX_MAX) {
+    if (utf8Length(text) > this.fixMax) {
       this.rs.add(peer);
       this.snapMinS0 = seq;
       this.stats.rsForced++;

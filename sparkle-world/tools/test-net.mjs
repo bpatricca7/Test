@@ -601,6 +601,20 @@ async function propertyTests() {
       }
     });
   }
+  console.log('\nProperty test with a tiny journal (floor rises, big gaps go to snapshots: rs resync path)');
+  for (let k = 0; k < Math.max(1, Math.round(SEEDS / 5)); k++) {
+    const seed = FIRST_SEED + 1000 + k;
+    await test(`property (journal 400 keys, fix max 6 KB) seed ${seed}`, async () => {
+      const net = simNet(seed, { journalMaxKeys: 400, fixMax: 6000 });
+      try {
+        const r = await scenario(seed, STEPS, net, { label: 'small-journal' });
+        assert(r.rsForced > 0, 'the rs path ran');
+        return `${r.executed} entries once each, rs forced ${r.rsForced}, resyncs ${r.resyncRs}, snapshots ${r.snapshots}, fixes ${r.fixes}, quiet ${(r.quietMs / 1000).toFixed(1)} s`;
+      } finally {
+        net.close();
+      }
+    });
+  }
   return rows;
 }
 
