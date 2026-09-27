@@ -9,7 +9,7 @@ import * as THREE from 'three';
 import { Kit } from '../furniture/kit.js';
 import { ATLAS_MAT } from '../furniture/atlas.js';
 import { woodMat, stoneMat, glow, material, paintTexture } from '../furniture/paint.js';
-import { C, flower } from '../furniture/palette.js';
+import { C } from '../furniture/palette.js';
 import { shade, mixHex } from '../../core/util.js';
 
 // ---------- shared shapes ----------
@@ -48,6 +48,17 @@ function pennant(k, x, y, z, color, alongX = true, size = 0.16) {
     if (alongX) k.box(w, h, 0.02, color, x - w / 2, y - (r + 1) * h, z - 0.01);
     else k.box(0.02, h, w, color, x - 0.01, y - (r + 1) * h, z - w / 2);
   }
+}
+
+/** A little 3D flower: five round petals round a sunny middle, on a short stem. */
+export function bloom(k, x, y, z, petal = C.rose, r = 0.05, stem = 0.1) {
+  if (stem > 0) k.box(0.02, stem, 0.02, C.leaf, x - 0.01, y - stem, z - 0.01);
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2;
+    k.ball(r * 0.62, petal, x + Math.cos(a) * r * 0.8, y, z + Math.sin(a) * r * 0.8, { seg: 8, sy: 0.6 });
+  }
+  k.ball(r * 0.45, C.butter, x, y + r * 0.15, z, { seg: 8 });
+  return k;
 }
 
 /** Soft twisted rope texture (16x16, shared -> furniture atlas). */
@@ -169,7 +180,9 @@ export function zipTower(color = '#FF9CCB') {
 
 /** Colliders: lower body, deck, railing, upper posts, roof (model units). */
 export function zipTowerColliders() {
-  const D = TOWER.DECK, R = TOWER.RAIL, B = TOWER.BEAM;
+  // railings collide 1.1 high: taller than the kid-friendly auto-hop (1.05), so she never
+  // hops over one by walking into it (a real jump still clears it)
+  const D = TOWER.DECK, R = 1.1, B = TOWER.BEAM;
   const out = [
     [0.08, 0, 0.08, 1.92, D - 0.18, 1.88],
     [0, D - 0.18, 0, 2, D, 2],
@@ -272,7 +285,9 @@ export function treePlatform(color = '#FF9CCB', data = {}) {
   k.box(0.04, 0.2, 0.04, C.woodDark, 0.04, railTop + 0.05, 2.92);
   k.box(0.2, 0.05, 0.2, shade(color, -0.1), -0.04, railTop + 0.2, 2.84);
   k.box(0.14, 0.18, 0.14, glow('#FFE7A0', 0.9), -0.01, railTop + 0.02, 2.87);
-  flower(k, 0.18, C.rose, 2.6, railTop + 0.04, 0.1, C.butter, 0.03);
+  k.box(0.2, 0.14, 0.2, shade(color, -0.05), 2.62, top, 0.14);
+  bloom(k, 2.67, top + 0.26, 0.2, C.rose, 0.06, 0.12);
+  bloom(k, 2.78, top + 0.22, 0.26, C.lav, 0.05, 0.08);
   // rope ladder down the front, under the open middle cell
   if (ladder > 0.3) {
     const rope = ropeMat();
@@ -290,7 +305,7 @@ export function treePlatformColliders(data = {}) {
   const open = data.open | 0;
   const legs = Math.max(0, +data.legs || 0);
   const out = [[0, top - 0.2, 0, 3, top, 3]];
-  const R = PLATFORM.RAIL;
+  const R = 1.1; // taller than the auto-hop, see zipTowerColliders
   for (let i = 0; i < 3; i++) {
     if (!(open & (1 << i))) out.push([i, top, 2.9, i + 1, top + R, 3]);
     if (!(open & (1 << (3 + i)))) out.push([2.9, top, 2 - i, 3, top + R, 3 - i]);
@@ -430,8 +445,8 @@ export function ropeBridgeColliders(data = {}) {
   const top = bridgeDeckY(i + 0.5, n);
   return [
     [0.06, top - 0.12, 0, 0.94, top, 1],
-    [0, top, 0, 0.07, top + 0.95, 1],
-    [0.93, top, 0, 1, top + 0.95, 1],
+    [0, top, 0, 0.07, top + 1.1, 1],
+    [0.93, top, 0, 1, top + 1.1, 1],
   ];
 }
 

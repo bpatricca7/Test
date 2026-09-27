@@ -101,7 +101,7 @@ export class Ladders {
       if (this.game.particles) this.game.particles.emit('sparkle', p.position, { count: 10, spread: 0.7 });
     }
     p.yaw = e.rot * (Math.PI / 2) + Math.PI;
-    this.auto = { e, until: performance.now() + 7000 };
+    this.auto = { e, t: 0 }; // game seconds (slow devices still get the whole climb)
     this.game.audio.play('jump', { volume: 0.5 });
     return true;
   }
@@ -124,7 +124,10 @@ export class Ladders {
       if (this.auto && p.state !== 'walk') this.auto = null;
       return;
     }
-    if (this.auto && (performance.now() > this.auto.until || !this.E.byUid(this.auto.e.uid))) this.auto = null;
+    if (this.auto) {
+      this.auto.t += dt;
+      if (this.auto.t > 8 || !this.E.byUid(this.auto.e.uid)) this.auto = null;
+    }
     for (const e of this.list) {
       const z = this.zone(e);
       if (!z) continue;

@@ -7,10 +7,10 @@
 import * as THREE from 'three';
 import { Kit } from '../furniture/kit.js';
 import { woodMat, quiltMat, stripeMat, fabricMat, glow, sheer, material, paintTexture } from '../furniture/paint.js';
-import { C, heart, pillow, flower, STAR_ROWS, HEART_ROWS } from '../furniture/palette.js';
+import { C, heart, pillow, STAR_ROWS, HEART_ROWS } from '../furniture/palette.js';
 import { shade, mixHex } from '../../core/util.js';
 import { haloPoints } from './glow.js';
-import { ropeMat } from './models-tree.js';
+import { ropeMat, bloom } from './models-tree.js';
 
 export const TENT_COLORS = ['#FF9CCB', '#C8B4FF', '#9BE8CF', '#A6D8FF', '#FFE38F', '#FFBFA0'];
 export const CAMP_FABRIC = ['#FF9CCB', '#A6D8FF', '#9BE8CF', '#C8B4FF', '#FFE38F', '#FFBFA0'];
@@ -264,7 +264,7 @@ export function hammock(color = CAMP_FABRIC[0]) {
   });
   place(b, net, rainbowMat(), 0, netY + 0.02, 0, 1, 1, 1);
   pillow(b, 0.26, 0.1, 0.44, '#FFFFFF', -1.12, netY - 0.1, -0.22);
-  flower(b, 0.14, C.rose, -0.95, netY + 0.06, 0.22, C.butter, 0.02);
+  bloom(b, -0.9, netY + 0.02, 0.2, C.rose, 0.05, 0);
   return k.build();
 }
 

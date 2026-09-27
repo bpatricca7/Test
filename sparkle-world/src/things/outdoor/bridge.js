@@ -189,6 +189,14 @@ export class Bridges {
     if (!pk || pk._outdoor) return;
     pk._outdoor = true;
     pk.onRemove = () => this.removeWhole(e);
+    const hint = pk.hint;
+    pk.hint = (g, hit) => {
+      if (g.selectedTool === 'build') {
+        const item = g.selectedItem();
+        if (item && item.key === 'furn:rope_bridge') return null; // no "Tap to turn it"
+      }
+      return hint ? hint(g, hit) : null;
+    };
     const onBuild = pk.onBuild;
     pk.onBuild = (g, hit, item, opts) => {
       if (item && item.key === 'furn:rope_bridge') {
