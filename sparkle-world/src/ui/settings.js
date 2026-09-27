@@ -365,6 +365,8 @@ export function install(game) {
       main.appendChild(line);
       list.appendChild(r);
     }
+    // rows other modules add (the walkie-talkie's grown-up switch: src/net/walkie/ui.js)
+    for (const add of game.settingsRows || []) add(list);
     // help
     if (game.actions.has('help') || game.actions.has('tutorial')) {
       const { row: r, main } = row('help', 'var(--sw-mint)', 'How to play');
