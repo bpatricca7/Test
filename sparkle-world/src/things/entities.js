@@ -36,6 +36,241 @@ function rotXZ(x, z, rot) {
 
 const LIGHT_POOL = 4;
 const CEILING_SEARCH = 8; // a ceiling item tapped on the floor looks this far up for a ceiling
+const BATCH = 16; // side (in blocks) of the squares whose static furniture shares draw calls
+
+const _bm = new THREE.Matrix4();
+const _bn = new THREE.Matrix3();
+
+// batch attribute arrays are only needed until the GPU has them (a batch is rebuilt from the
+// pieces' baked copies whenever it changes, and after a lost WebGL context comes back)
+function releaseArray() {
+  this.array = null;
+}
+
+/**
+ * Static batching. The furniture Kit merges a piece's static bits into one mesh per material
+ * (almost everything shares the atlas material, see furniture/atlas.js) and marks those
+ * meshes userData.batch. When a piece is placed, those meshes are baked into world space and
+ * taken out of its model; the baked copies of every piece in a BATCH x BATCH square of the
+ * world are merged into ONE mesh per material, so a furnished house costs a couple of draw
+ * calls instead of hundreds. Moving parts (doors, swings, flames...), see-through and
+ * per-piece materials (TV screens, easel pictures) stay in the piece's model, and so does the
+ * whole model of a def with `batch: false` (beanbag, trampoline: the whole model squishes).
+ * Batches rebuild lazily, right before the next render of the scene (frame, thumbnail,
+ * photo), when a piece in their square is placed, removed or rebuilt.
+ */
+class StaticBatcher {
+  constructor(manager) {
+    this.manager = manager;
+    this.group = new THREE.Group();
+    this.group.name = 'furniture-batches';
+    manager.group.add(this.group);
+    this.regions = new Map(); // "rx,rz" -> { key, items: Set<entity>, meshes: Map<material, Mesh>, dirty: Set<material> }
+    this.dirty = new Set(); // regions with dirty materials
+    this.stale = new WeakSet(); // batch geometries from before a lost WebGL context
+    this.failed = false;
+  }
+
+  /** Bake an attached entity's static meshes and queue them for its square's batches. */
+  add(entity) {
+    if (this.failed || entity.def.batch === false) return;
+    const pivot = entity.object3d;
+    const model = pivot && pivot.children[0];
+    if (!model) return;
+    let list = null;
+    for (const o of model.children) {
+      if (!o.isMesh || !o.userData.batch || !o.visible || !o.geometry || !o.geometry.attributes.position) continue;
+      const m = o.material;
+      if (!m || Array.isArray(m) || m.transparent || !(m.userData && m.userData.shared)) continue;
+      (list || (list = [])).push(o);
+    }
+    if (!list) return;
+    pivot.updateMatrix();
+    model.updateMatrix();
+    const pieces = [];
+    for (const o of list) {
+      pieces.push(this._bake(pivot, model, o));
+      model.remove(o);
+      o.geometry.dispose();
+    }
+    const key = Math.floor(entity.x / BATCH) + ',' + Math.floor(entity.z / BATCH);
+    let rec = this.regions.get(key);
+    if (!rec) {
+      rec = { key, items: new Set(), meshes: new Map(), dirty: new Set() };
+      this.regions.set(key, rec);
+    }
+    rec.items.add(entity);
+    entity._batch = { rec, pieces };
+    for (const pc of pieces) rec.dirty.add(pc.mat);
+    this.dirty.add(rec);
+  }
+
+  /** One static mesh in the entities group's space: positions and normals transformed; the
+   * other attributes (uv, color, atlas look) and the index are shared with the Kit geometry. */
+  _bake(pivot, model, o) {
+    o.updateMatrix();
+    _bm.multiplyMatrices(pivot.matrix, model.matrix).multiply(o.matrix);
+    _bn.getNormalMatrix(_bm);
+    const m = _bm.elements, q = _bn.elements;
+    const g = o.geometry;
+    const P = g.attributes.position, N = g.attributes.normal;
+    const n = P.count;
+    const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3);
+    for (let k = 0; k < n; k++) {
+      const x = P.getX(k), y = P.getY(k), z = P.getZ(k);
+      const i = k * 3;
+      pos[i] = m[0] * x + m[4] * y + m[8] * z + m[12];
+      pos[i + 1] = m[1] * x + m[5] * y + m[9] * z + m[13];
+      pos[i + 2] = m[2] * x + m[6] * y + m[10] * z + m[14];
+      if (N) {
+        const a = N.getX(k), b = N.getY(k), c = N.getZ(k);
+        const nx = q[0] * a + q[3] * b + q[6] * c;
+        const ny = q[1] * a + q[4] * b + q[7] * c;
+        const nz = q[2] * a + q[5] * b + q[8] * c;
+        const l = Math.hypot(nx, ny, nz) || 1;
+        nor[i] = nx / l; nor[i + 1] = ny / l; nor[i + 2] = nz / l;
+      } else {
+        nor[i + 1] = 1;
+      }
+    }
+    const attrs = { position: { size: 3, array: pos }, normal: { size: 3, array: nor } };
+    for (const name in g.attributes) {
+      if (name === 'position' || name === 'normal') continue;
+      const a = g.attributes[name];
+      if (a.isInterleavedBufferAttribute || !a.array) continue;
+      attrs[name] = { size: a.itemSize, array: a.array };
+    }
+    return { mat: o.material, n, attrs, index: g.index ? g.index.array : null };
+  }
+
+  /** Take a (detaching) entity out of its batches. */
+  remove(entity) {
+    const b = entity._batch;
+    if (!b) return;
+    entity._batch = null;
+    b.rec.items.delete(entity);
+    for (const pc of b.pieces) b.rec.dirty.add(pc.mat);
+    this.dirty.add(b.rec);
+  }
+
+  /** Rebuild every batch that changed (called just before the scene renders). */
+  flush() {
+    if (!this.dirty.size) return;
+    try {
+      for (const rec of this.dirty) {
+        for (const mat of rec.dirty) this._rebuild(rec, mat);
+        rec.dirty.clear();
+        if (!rec.items.size && !rec.meshes.size) this.regions.delete(rec.key);
+      }
+      this.dirty.clear();
+    } catch (err) {
+      // never lose furniture over this: rebuild every piece whole and draw them one by one
+      console.error('[entities] static batching failed; drawing pieces one by one', err);
+      this.failed = true;
+      const items = [];
+      for (const rec of this.regions.values()) for (const e of rec.items) items.push(e);
+      this.clear();
+      for (const e of items) {
+        e._batch = null;
+        this.manager.refresh(e);
+      }
+    }
+  }
+
+  /** Rebuild every batch (after a lost WebGL context came back: the GPU copies are gone). */
+  rebuildAll() {
+    for (const rec of this.regions.values()) {
+      for (const [mat, mesh] of rec.meshes) {
+        this.stale.add(mesh.geometry); // its buffers died with the old context
+        rec.dirty.add(mat);
+      }
+      this.dirty.add(rec);
+    }
+  }
+
+  _drop(geometry) {
+    if (!this.stale.has(geometry)) geometry.dispose();
+  }
+
+  _rebuild(rec, mat) {
+    let verts = 0, indices = 0, first = null;
+    for (const e of rec.items) {
+      for (const pc of e._batch.pieces) {
+        if (pc.mat !== mat) continue;
+        if (!first) first = pc;
+        verts += pc.n;
+        indices += pc.index ? pc.index.length : pc.n;
+      }
+    }
+    let mesh = rec.meshes.get(mat);
+    if (!verts) {
+      if (mesh) {
+        this.group.remove(mesh);
+        this._drop(mesh.geometry);
+        rec.meshes.delete(mat);
+      }
+      return;
+    }
+    const out = {};
+    for (const name in first.attrs) out[name] = new Float32Array(verts * first.attrs[name].size);
+    const index = verts > 65535 ? new Uint32Array(indices) : new Uint16Array(indices);
+    let v = 0, ii = 0;
+    for (const e of rec.items) {
+      for (const pc of e._batch.pieces) {
+        if (pc.mat !== mat) continue;
+        for (const name in out) {
+          const size = first.attrs[name].size;
+          const a = pc.attrs[name];
+          if (a && a.size === size) out[name].set(a.array.length > pc.n * size ? a.array.subarray(0, pc.n * size) : a.array, v * size);
+          else if (name === 'color') out[name].fill(1, v * size, (v + pc.n) * size);
+          else if (name === 'fLook') for (let k = 0; k < pc.n; k++) out[name][(v + k) * 2] = -1;
+        }
+        if (pc.index) {
+          const I = pc.index;
+          for (let k = 0; k < I.length; k++) index[ii++] = v + I[k];
+        } else {
+          for (let k = 0; k < pc.n; k++) index[ii++] = v + k;
+        }
+        v += pc.n;
+      }
+    }
+    const geo = new THREE.BufferGeometry();
+    for (const name in out) geo.setAttribute(name, new THREE.BufferAttribute(out[name], first.attrs[name].size).onUpload(releaseArray));
+    geo.setIndex(new THREE.BufferAttribute(index, 1).onUpload(releaseArray));
+    geo.computeBoundingSphere();
+    if (mesh) {
+      this._drop(mesh.geometry);
+      mesh.geometry = geo;
+    } else {
+      mesh = new THREE.Mesh(geo, mat);
+      mesh.name = 'furniture-batch';
+      mesh.matrixAutoUpdate = false;
+      rec.meshes.set(mat, mesh);
+      this.group.add(mesh);
+    }
+  }
+
+  /** Numbers for probes: squares, batch meshes and pieces drawn through them. */
+  info() {
+    let meshes = 0, pieces = 0;
+    for (const rec of this.regions.values()) {
+      meshes += rec.meshes.size;
+      pieces += rec.items.size;
+    }
+    return { regions: this.regions.size, meshes, pieces, failed: this.failed };
+  }
+
+  clear() {
+    for (const rec of this.regions.values()) {
+      for (const mesh of rec.meshes.values()) {
+        this.group.remove(mesh);
+        this._drop(mesh.geometry);
+      }
+    }
+    this.regions.clear();
+    this.dirty.clear();
+  }
+}
 
 export class EntityManager {
   constructor(game) {
@@ -62,6 +297,18 @@ export class EntityManager {
     this._lightTimer = 0;
     this._lit = new Array(LIGHT_POOL).fill(null); // entity lit by each pool light
     this._tmp = new THREE.Vector3();
+    this.batcher = new StaticBatcher(this);
+    // batches catch up right before every render of the scene (frame, thumbnail, photo), so a
+    // piece placed or removed from anywhere never shows twice or goes missing for a frame
+    const batcher = this.batcher;
+    const scene = game.scene;
+    const before = scene.onBeforeRender;
+    scene.onBeforeRender = function (renderer, sc, camera, target) {
+      before.call(this, renderer, sc, camera, target);
+      batcher.flush();
+    };
+    const canvas = game.renderer && game.renderer.domElement;
+    if (canvas) canvas.addEventListener('webglcontextrestored', () => batcher.rebuildAll());
   }
 
   // ---------- definitions & actions ----------
@@ -295,10 +542,12 @@ export class EntityManager {
       game.world.addLightSource(entity.lightCell[0], entity.lightCell[1], entity.lightCell[2], def.light);
     }
     if (def.update) this.updaters.add(entity);
+    this.batcher.add(entity);
   }
 
   _detach(entity) {
     const game = this.game;
+    this.batcher.remove(entity);
     if (entity.object3d) {
       this.group.remove(entity.object3d);
       disposeObject(entity.object3d);
@@ -413,6 +662,8 @@ export class EntityManager {
     if (hit.type === 'block' && (props.replaceable[hit.id] || (props.shape[hit.id] === SHAPES.carpet && hit.face[1] === 1))) {
       [x, y, z] = [hit.x, hit.y, hit.z];
     }
+    const top = def.placeOn === 'table' ? this._tableTopCell(hit) : null;
+    if (top) [x, y, z] = top;
     if (def.placeOn === 'ceiling') {
       const h = this._dims(def).h;
       let top = -1;
@@ -444,6 +695,27 @@ export class EntityManager {
     }
     game.toast('No room there!');
     return null;
+  }
+
+  /**
+   * A 'table' item tapped onto the top of furniture with a surface goes in the cell right
+   * above that piece, under the tapped spot. (The generic pick cell, floor(point.y + 0.5),
+   * is the piece's own cell for low tops like the coffee table, and its upper cell for tall
+   * pieces with a top inside them: the piano and the fireplace mantel.)
+   */
+  _tableTopCell(hit) {
+    if (!hit || hit.type !== 'pickable' || !hit.face || hit.face[1] !== 1) return null;
+    const ref = hit.pickable && hit.pickable.kind === 'entity' ? hit.pickable.ref : null;
+    if (!ref || typeof ref.def.surface !== 'number' || !this.map.has(ref.uid) || !ref.cells.length) return null;
+    const px = Math.floor(hit.point.x), pz = Math.floor(hit.point.z);
+    const y = ref.y + this._dims(ref.def).h;
+    let best = null, bestD = Infinity;
+    for (const [cx, cy, cz] of ref.cells) {
+      if (cy !== ref.y) continue;
+      const d = Math.abs(cx - px) + Math.abs(cz - pz);
+      if (d < bestD) { bestD = d; best = [cx, y, cz]; }
+    }
+    return best;
   }
 
   /** The entity in a cell (a rug only when nothing else stands there). */
@@ -531,6 +803,7 @@ export class EntityManager {
     this.occupied.clear();
     this.flats.clear();
     this.updaters.clear();
+    this.batcher.clear();
     this._lit.fill(null);
     this.nextUid = 1;
     for (const l of this.lights) l.intensity = 0;

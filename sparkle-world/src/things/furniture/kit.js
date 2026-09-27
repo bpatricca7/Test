@@ -1,8 +1,10 @@
 // Kit: a tiny model builder that merges every static sub-mesh of a furniture piece into one
-// mesh per material (plain colors share ONE vertex-colored material), so a detailed bed costs
-// a handful of draw calls instead of dozens. Moving bits (door leaves, swing seats, clock
-// hands...) go into named parts (child Kits) that end up as their own small Groups, reachable
-// as model.userData.parts[name].
+// mesh per material, so a detailed bed costs one or two draw calls instead of dozens. Plain
+// colors and the shared pixel-art materials of paint.js all land on ONE atlas material
+// (vertex colors + a texture array layer + a glow amount per vertex, see atlas.js); only
+// see-through and one-off materials (TV screens, pictures, mirrors) get meshes of their own.
+// Moving bits (door leaves, swing seats, clock hands...) go into named parts (child Kits) that
+// end up as their own small Groups, reachable as model.userData.parts[name].
 //
 // Coordinates are block units in the model's own space: [0,w] x [0,h] x [0,d], front = +Z.
 // A "paint" is a '#rrggbb' string (vertex color) or a THREE.Material (textured, emissive,
@@ -10,9 +12,9 @@
 // world-space UVs) or userData.uvFit (each face gets the whole image, 0..1).
 
 import * as THREE from 'three';
+import { ATLAS_MAT, atlasLook } from './atlas.js';
 
-const VC_MAT = new THREE.MeshLambertMaterial({ vertexColors: true });
-VC_MAT.userData.shared = true;
+const NO_UD = {};
 const HIT_MAT = new THREE.MeshBasicMaterial({ visible: false });
 HIT_MAT.userData.shared = true;
 const UNIT = new THREE.BoxGeometry(1, 1, 1);
@@ -52,15 +54,19 @@ const FIT_UV = [[0, 0], [1, 0], [1, 1], [0, 1]];
 class Bucket {
   constructor(material) {
     this.material = material;
-    this.vc = material === VC_MAT;
+    this.look = !!material.userData.atlas; // atlas material: per-vertex layer + glow
+    this.vc = this.look || !!material.vertexColors;
     this.pos = [];
     this.nor = [];
     this.uv = [];
     this.col = [];
+    this.lk = [];
     this.idx = [];
     this.count = 0;
   }
 }
+
+const WHITE = new THREE.Color(1, 1, 1);
 
 const _v = new THREE.Vector3();
 const _n = new THREE.Vector3();
@@ -80,21 +86,40 @@ export class Kit {
     this.objects = [];
   }
 
-  _resolve(paint) {
-    if (paint && paint.isMaterial) {
-      let b = this.buckets.get(paint.uuid);
-      if (!b) {
-        b = new Bucket(paint);
-        this.buckets.set(paint.uuid, b);
-      }
-      return { b, color: null };
-    }
-    let b = this.buckets.get('vc');
+  _bucket(material) {
+    let b = this.buckets.get(material.uuid);
     if (!b) {
-      b = new Bucket(VC_MAT);
-      this.buckets.set('vc', b);
+      b = new Bucket(material);
+      this.buckets.set(material.uuid, b);
     }
-    return { b, color: linearColor(paint || '#FFFFFF') };
+    return b;
+  }
+
+  /** paint -> { b: bucket, color, ud: uv settings, layer, glow } (reused result object). */
+  _resolve(paint) {
+    const r = this._r || (this._r = { b: null, color: null, ud: NO_UD, layer: -1, glow: 0 });
+    if (paint && paint.isMaterial) {
+      const look = atlasLook(paint);
+      if (look) {
+        r.b = this._bucket(look.mat);
+        r.color = look.color;
+        r.layer = look.layer;
+        r.glow = look.glow;
+      } else {
+        r.b = this._bucket(paint);
+        r.color = WHITE;
+        r.layer = -1;
+        r.glow = 0;
+      }
+      r.ud = paint.userData || NO_UD;
+      return r;
+    }
+    r.b = this._bucket(ATLAS_MAT);
+    r.color = linearColor(paint || '#FFFFFF');
+    r.ud = NO_UD;
+    r.layer = -1;
+    r.glow = 0;
+    return r;
   }
 
   /**
@@ -118,8 +143,7 @@ export class Kit {
       let fp = paint;
       if (opts && opts.faces && f.key in opts.faces) fp = opts.faces[f.key];
       if (fp === null) continue;
-      const { b, color } = this._resolve(fp);
-      const ud = b.material.userData || {};
+      const { b, color, ud, layer, glow } = this._resolve(fp);
       const fit = !!ud.uvFit;
       const s = ud.uvScale || 1;
       const base = b.count;
@@ -144,6 +168,7 @@ export class Kit {
         b.nor.push(_n.x, _n.y, _n.z);
         b.uv.push(uu, vv);
         if (b.vc) b.col.push(color.r, color.g, color.b);
+        if (b.look) b.lk.push(layer, glow);
       }
       b.idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
       b.count += 4;
@@ -153,11 +178,11 @@ export class Kit {
 
   /** Append any BufferGeometry transformed by matrix (Matrix4). */
   geo(geometry, paint, matrix = null) {
-    const { b, color } = this._resolve(paint);
+    const { b, color, ud, layer, glow } = this._resolve(paint);
     const pos = geometry.attributes.position;
     const nor = geometry.attributes.normal;
     const uv = geometry.attributes.uv;
-    const s = (b.material.userData && b.material.userData.uvScale) || 1;
+    const s = ud.uvScale || 1;
     if (matrix) _nm.getNormalMatrix(matrix);
     const base = b.count;
     for (let i = 0; i < pos.count; i++) {
@@ -173,6 +198,7 @@ export class Kit {
       if (uv) b.uv.push(uv.getX(i) * s, uv.getY(i) * s);
       else b.uv.push(0, 0);
       if (b.vc) b.col.push(color.r, color.g, color.b);
+      if (b.look) b.lk.push(layer, glow);
     }
     if (geometry.index) {
       const ix = geometry.index;
@@ -286,10 +312,12 @@ export class Kit {
       g.setAttribute('normal', new THREE.Float32BufferAttribute(b.nor, 3));
       g.setAttribute('uv', new THREE.Float32BufferAttribute(b.uv, 2));
       if (b.vc) g.setAttribute('color', new THREE.Float32BufferAttribute(b.col, 3));
+      if (b.look) g.setAttribute('fLook', new THREE.Float32BufferAttribute(b.lk, 2));
       g.setIndex(b.count > 65535 ? new THREE.Uint32BufferAttribute(b.idx, 1) : new THREE.Uint16BufferAttribute(b.idx, 1));
       g.computeBoundingSphere();
       const mesh = new THREE.Mesh(g, b.material);
       if (b.material.transparent) mesh.renderOrder = 2;
+      mesh.userData.batch = true; // static: placed pieces may merge it into a world batch (entities.js)
       group.add(mesh);
     }
     for (const o of this.objects) group.add(o);

@@ -4,7 +4,10 @@
 // doors, lamps, piano, storybook, TV, sleeping in the canopy and bunk beds, walking up
 // stairs, climbing ladders, bouncing on the trampoline, swinging, sliding, painting...
 //
-//   node tools/probe-furniture.mjs [--only=showroom|house|actions|touch] [--headed]
+// Also: an iPad and a phone pass (Bag, colors, taps, piano), and a candle and a cupcake put
+// on the top of every piece that declares a surface (coffee table, piano, fireplace mantel...).
+//
+//   node tools/probe-furniture.mjs [--only=showroom|house|actions|touch|tops] [--headed]
 
 import { launch, openGame, startWorld, waitIdle, shot, settle, finish, screenPoint } from './smoke.mjs';
 
@@ -808,8 +811,8 @@ async function touchPass(browser, errors) {
   await settle(page, 500);
   // the Bag: Bedroom tab with rendered thumbnails
   await page.locator('.sw-bagbtn').tap();
-  await page.waitForSelector('.sw-panel-wrap.sw-open .sw-tab');
-  await page.locator('.sw-tab', { hasText: 'Bedroom' }).tap();
+  await page.waitForSelector('.sw-panel-wrap.sw-open .sw-tab2');
+  await page.locator('.sw-tab2', { hasText: 'Bedroom' }).tap();
   await page.waitForFunction(() => [...document.querySelectorAll('.sw-item img')].filter((i) => i.src).length >= 10, null, { timeout: 20000 }).catch(() => {});
   await settle(page, 600);
   await shot(page, 'ipad-bag-bedroom', PREFIX);
@@ -826,11 +829,11 @@ async function touchPass(browser, errors) {
   // other tabs render too
   for (const tab of ['Living Room', 'Kitchen', 'Bathroom', 'Fun & Toys']) {
     await page.locator('.sw-bagbtn').tap();
-    await page.locator('.sw-tab', { hasText: tab }).tap();
+    await page.locator('.sw-tab2', { hasText: tab }).tap();
     await page.waitForFunction(() => [...document.querySelectorAll('.sw-item img')].every((i) => i.src), null, { timeout: 20000 }).catch(() => {});
     await settle(page, 300);
     if (tab === 'Living Room' || tab === 'Fun & Toys') await shot(page, `ipad-bag-${tab.split(' ')[0].toLowerCase()}`, PREFIX);
-    await page.locator('.sw-panel-wrap.sw-open .sw-close').tap();
+    await page.locator('.sw-panel-wrap.sw-open .sw-bag-close').tap();
   }
   // place the bed with a real tap on the ground (Build tool), 4 blocks ahead
   const ground = await page.evaluate(() => {
@@ -891,13 +894,109 @@ async function touchPass(browser, errors) {
   });
   check(errors, small.length === 0, `touch targets are big enough${small.length ? ' (' + small.slice(0, 4).join(', ') + ')' : ''}`);
   await context.close();
+
+  // a phone: the piano's song buttons stay inside their cards and each one can be tapped
+  console.log('Phone pass (390x844 touch): piano songs');
+  const phone = await openGame(browser, { errors, viewport: { width: 390, height: 844 }, touch: true, label: 'phone' });
+  await phone.page.evaluate(() => window.__game.debug.newWorld({ biome: 'flat', size: 'cozy' }));
+  await phone.page.waitForFunction(() => window.__game.mode === 'play' && !window.__game.loading, null, { timeout: 90000 });
+  await waitIdle(phone.page);
+  await phone.page.evaluate(() => {
+    const g = window.__game, y = g.world.heightAt(60, 60) + 1;
+    const e = g.entities.place('piano', 60, y, 64, 2, null, {}, { history: false });
+    g.debug.interact(e.uid);
+  });
+  await phone.page.waitForFunction(() => window.__game.ui.current === 'piano', null, { timeout: 5000 }).catch(() => {});
+  await settle(phone.page, 800);
+  const songBtns = await phone.page.evaluate(() => [...document.querySelectorAll('.sw-song')].flatMap((c) => {
+    const cr = c.getBoundingClientRect();
+    return [...c.querySelectorAll('button')].map((b) => {
+      b.scrollIntoView({ block: 'nearest' });
+      const r = b.getBoundingClientRect();
+      const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      const ok = r.left >= cr.left - 1 && r.right <= cr.right + 1 && r.left >= 0 && r.right <= innerWidth && b.contains(top);
+      return ok ? null : `${c.querySelector('.sw-song-name').textContent}/${b.textContent.trim()} ${Math.round(r.left)}-${Math.round(r.right)}`;
+    });
+  }).filter(Boolean));
+  check(errors, songBtns.length === 0, `phone piano: every song button sits inside its card and can be tapped${songBtns.length ? ' (' + songBtns.join(', ') + ')' : ''}`);
+  await phone.page.locator('.sw-song-turn[data-song="twinkle"]').tap();
+  await settle(phone.page, 300);
+  const following = await phone.page.evaluate(() => !!document.querySelector('.sw-wkey.sw-next, .sw-bkey.sw-next'));
+  check(errors, following, 'phone piano: tapping Twinkle Twinkle\'s "My turn" lights the first key');
+  await shot(phone.page, 'phone-piano', PREFIX);
+  await phone.context.close();
+}
+
+// ---------------- table tops: things stand on every surface ----------------
+
+async function tableTopsPass(browser, errors) {
+  console.log('Table tops: a candle and a cupcake on every piece with a top, by real clicks');
+  const { context, page } = await openGame(browser, { errors, label: 'tops' });
+  await setup(page);
+  const keys = await page.evaluate(() => [...window.__game.entities.defs.values()].filter((d) => typeof d.surface === 'number').map((d) => d.key));
+  const failed = [];
+  for (const key of keys) {
+    for (const item of ['furn:candle', 'food:cupcake']) {
+      const r = await page.evaluate(([key, item]) => {
+        const g = window.__game, E = g.entities;
+        for (const e of E.all()) E.remove(e, { history: false, fx: false, events: false });
+        g.setTool('build');
+        g.player.teleport(72.5, 17.02, 60.5);
+        const e = E.place(key, 72, 17, 63, 2, null, {}, { history: false, fx: false });
+        if (item.startsWith('food:') && g.debug.cooking) g.debug.cooking.give(item.slice(5), 1);
+        g.debug.select(item);
+        const b = e.pickable.box;
+        const t = [(b.min.x + b.max.x) / 2, b.max.y - 0.01, (b.min.z + b.max.z) / 2];
+        const p = g.player.position;
+        g.cameraRig.yaw = Math.atan2(t[0] - p.x, t[2] - p.z);
+        g.cameraRig.pitch = 0.8;
+        g.cameraRig.snap();
+        return { uid: e.uid, t };
+      }, [key, item]);
+      if (!r || !r.uid) { failed.push(`${key}: not placed`); continue; }
+      await settle(page, 350);
+      const at = await screenPoint(page, ...r.t);
+      const face = at && await page.evaluate(([x, y]) => {
+        const g = window.__game, rr = g.renderer.domElement.getBoundingClientRect();
+        const h = g.pick({ x: ((x - rr.left) / rr.width) * 2 - 1, y: -(((y - rr.top) / rr.height) * 2 - 1) });
+        return h && h.type === 'pickable' ? h.face[1] : null;
+      }, [at.x, at.y]);
+      if (!at || face !== 1) { failed.push(`${key}: could not aim at its top`); continue; }
+      await page.mouse.click(at.x, at.y);
+      await settle(page, 250);
+      const out = await page.evaluate(([uid, item]) => {
+        const g = window.__game, want = item === 'furn:candle' ? 'candle' : 'food_cupcake';
+        const e = g.entities.all().find((x) => x.key === want);
+        const table = g.entities.byUid(uid);
+        return e ? { on: e.restsOn === uid, feet: +(e.y + e.yOffset).toFixed(2), top: +(table.y + table.def.surface).toFixed(2) } : null;
+      }, [r.uid, item]);
+      if (!out || !out.on || Math.abs(out.feet - out.top) > 0.02) failed.push(`${key} <- ${item}: ${JSON.stringify(out)}`);
+    }
+  }
+  check(errors, !failed.length, `a candle and a cupcake stand on the top of all ${keys.length} pieces with a surface (${keys.join(' ')})${failed.length ? ': ' + failed.join('; ') : ''}`);
+  // a picture of the low and the tall ones with things on top
+  await page.evaluate(() => {
+    const g = window.__game, E = g.entities;
+    for (const e of E.all()) E.remove(e, { history: false, fx: false, events: false });
+    const row = [['coffee_table', 66], ['piano', 70], ['fireplace', 74], ['bookshelf_tall', 78]];
+    for (const [k, x] of row) {
+      const t = E.place(k, x, 17, 63, 0, null, {}, { history: false, fx: false });
+      const top = t.y + t.def.size[1];
+      E.place('candle', x, top, 63, 0, null, {}, { history: false, fx: false });
+      E.place('plant_pot', x + 1, top, 63, 0, null, {}, { history: false, fx: false });
+    }
+  });
+  await camera(page, [72.5, 21, 71.5], [72.5, 17.6, 63]);
+  await shot(page, 'table-tops', PREFIX);
+  await freeCameraOff(page);
+  await context.close();
 }
 
 async function main() {
   const errors = [];
   const browser = await launch({ headed: !!args.headed });
   try {
-    if (only !== 'touch') {
+    if (only !== 'touch' && only !== 'tops') {
     const { context, page } = await openGame(browser, { errors, label: 'furniture' });
     await setup(page);
     if (!only || only === 'showroom') await showroom(page, errors);
@@ -915,6 +1014,7 @@ async function main() {
     await context.close();
     }
     if (!only || only === 'touch') await touchPass(browser, errors);
+    if (!only || only === 'tops') await tableTopsPass(browser, errors);
   } catch (err) {
     errors.push('[probe] ' + (err.stack || err.message || String(err)));
   } finally {

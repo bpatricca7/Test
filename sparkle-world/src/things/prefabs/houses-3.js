@@ -245,9 +245,10 @@ export const modernHouse = {
     stairsBack(a, 3, 4, 9, 0, 5, W, true);
     a.air(3, 5, 5, 4, 5, 9);
     a.fill(5, 6, 5, 5, 6, 8, 'glass');
-    // bathroom behind a partition
+    // bathroom behind a partition; its door opens from the kitchen side, so the living-room
+    // wall stays free for the TV
     a.fill(11, 1, 3, 11, 4, 5, W).fill(11, 1, 6, 13, 4, 6, W);
-    a.door(12, 1, 6, { key: 'door', color: C.white });
+    a.door(11, 1, 4, { key: 'door', color: C.white, rot: L });
     a.put('sink_bath', 12, 1, 3, F, C.white).put('toilet', 13, 1, 3, F, C.white);
     a.put('shower', 13, 1, 5, L, C.sky);
     a.put('bath_mat', 12, 1, 4, F, C.mint);
@@ -261,8 +262,8 @@ export const modernHouse = {
       a.put(STOOL, x, 1, 7, B, C.mint);
     }
     a.furn('plant_pot', 8, 2, 6, F, C.mint);
-    // living room
-    a.put('tv', 12, 1, 7, F, C.white);
+    // living room (the TV faces the sofa across the coffee table)
+    a.put('tv', 11, 1, 7, F, C.white);
     a.put('rug_round', 11, 1, 9, F, C.mint);
     a.put('coffee_table', 11, 1, 9, F, C.white);
     a.put(SOFA, 12, 1, 11, B, C.mint);

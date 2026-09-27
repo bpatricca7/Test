@@ -84,10 +84,18 @@ export function createToolbar(game, { onTurn, onBuild }) {
   const build = roundButton(ui, { icon: WAND_ICON, label: 'Build!', color: 'var(--sw-pink)', className: 'sw-pf-go', onClick: () => onBuild() });
   bar.append(card, turn, build);
   ui.hudLayer.appendChild(bar);
+  // a mouse on the bar (on its way to Turn or Build!) must not drag the ghost along with it
+  let hover = false;
+  bar.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') hover = true; });
+  bar.addEventListener('pointerleave', () => { hover = false; });
 
   let shownKey = null, tipText = '';
   return {
     el: bar,
+    /** The mouse is over the (visible) bar. */
+    get hover() {
+      return hover && !bar.hidden;
+    },
     show(item, tipNow) {
       if (shownKey !== item.key) {
         shownKey = item.key;

@@ -49,12 +49,16 @@ const CSS = /* css */ `
 .sw-song { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 22px; background: #fff; border: 4px solid var(--sw-lav-soft); box-shadow: 0 5px 12px var(--sw-shadow); min-width: 190px; }
 .sw-song-name { font-size: 19px; font-weight: 700; color: var(--sw-lav); display: flex; align-items: center; gap: 6px; }
 .sw-song-name svg { width: 24px; height: 24px; color: var(--sw-pink); }
-.sw-song-btns { display: flex; gap: 8px; }
+.sw-song-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .sw-piano-status { text-align: center; font-size: 20px; font-weight: 700; color: var(--sw-pink); min-height: 28px; }
 @media (max-width: 600px) {
   .sw-wkey { font-size: 13px; margin: 0 1px; border-width: 2px; padding-bottom: 10px; }
   .sw-wkey .sw-dot { width: 10px; height: 10px; }
-  .sw-song { min-width: 0; flex: 1 1 140px; }
+  /* one song per row: its Listen and My turn buttons sit side by side inside its card */
+  .sw-piano-songs { gap: 8px; }
+  .sw-song { min-width: 0; flex: 1 1 100%; padding: 8px 10px; gap: 6px; }
+  .sw-song-name { font-size: 17px; }
+  .sw-song-btns .sw-btn { padding-left: 12px; padding-right: 12px; gap: 6px; }
 }
 `;
 

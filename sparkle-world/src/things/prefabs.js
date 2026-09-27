@@ -559,7 +559,10 @@ export function install(game) {
 
   function updateGhost(dt) {
     const item = game.mode === 'play' && !game.paused && !(job && !job.committed) ? selectedPrefab() : null;
-    const t = item ? aimGround() : null;
+    // while the mouse is on the house bar (reaching for Turn or Build!) the canvas has lost the
+    // cursor and the aim would jump to the screen centre: keep the ghost where she pointed
+    const hold = !!item && !!toolbar && toolbar.hover && !!ghost && ghost.group.visible && ghost.key === item.prefab;
+    const t = item ? (hold ? aim.hit : aimGround()) : null;
     if (t && justBuilt) {
       const b = justBuilt;
       if (t.x >= b.x0 - 1 && t.x <= b.x1 + 1 && t.z >= b.z0 - 1 && t.z <= b.z1 + 1) {
@@ -652,6 +655,19 @@ export function install(game) {
     turnHouse();
   });
   game.registerAction('turn_house', () => turnHouse());
+  // the see-through preview is a building aid, not part of her world: keep it out of the My
+  // Worlds pictures and her photos (both render between these two events). The pop-in of a
+  // house being built stays: that is the house appearing, and the world only changes at the end.
+  let ghostWasShown = false;
+  game.events.on('thumbnail:before', () => {
+    ghostWasShown = !!(ghost && ghost.group.visible);
+    if (ghostWasShown) ghost.group.visible = false;
+  });
+  game.events.on('thumbnail:after', () => {
+    if (ghostWasShown && ghost) ghost.group.visible = true;
+    ghostWasShown = false;
+  });
+
   // after an Undo the spot is free again: show the ghost there straight away
   let histSize = 0;
   game.events.on('history:change', ({ size }) => {
