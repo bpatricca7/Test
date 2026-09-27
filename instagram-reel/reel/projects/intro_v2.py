@@ -17,6 +17,7 @@ CAP_Y = 1440
 NAME_CARD = "lower"
 NAME_Y, TAG_Y = 1372, 1515
 LIST_HEADER_Y = 1318
+HOOK_GAP_SAFE = True         # a bare bass pluck in the 'first|grade' pause read as a cough
 
 SEGMENTS = [
     # hook: "I can manage a classroom full of first grade students ... that is where my skill set ends."

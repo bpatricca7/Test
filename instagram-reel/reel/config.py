@@ -36,6 +36,7 @@ DENOISE = False              # DeepFilterNet pass on the dialogue before anythin
 DENOISE_ATTEN_DB = 40
 MIN_SECTION_PAUSE = 0.20     # shortest silence allowed before a beat-snapped section
 END_TAIL = 1.9               # seconds after the final chord hits
+HOOK_GAP_SAFE = False        # hook bass without plucked attacks, and no notes dropped into her pauses
 VOICE_EQ = [
     "equalizer=f=190:t=q:w=0.9:g=-1.5",
     "equalizer=f=3300:t=q:w=0.9:g=3.5",

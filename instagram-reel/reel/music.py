@@ -100,6 +100,17 @@ def sub_bass(f, dur, vel=1.0):
     return vel * y * env
 
 
+def soft_bass(f, dur, vel=1.0):
+    """Round, attack-free bass (sine + a little 2nd/3rd harmonic, 25 ms fade-in)."""
+    n = int((dur + 0.12) * SR)
+    t = np.arange(n) / SR
+    y = np.sin(2 * np.pi * f * t) + 0.22 * np.sin(4 * np.pi * f * t) + 0.06 * np.sin(6 * np.pi * f * t)
+    env = np.minimum(1, t / 0.025) ** 2 * np.exp(-t / 0.6)
+    k = int(dur * SR)
+    env[k:] *= np.exp(-np.arange(n - k) / (0.05 * SR))
+    return vel * y * env
+
+
 def kick(vel=1.0):
     n = int(0.45 * SR)
     t = np.arange(n) / SR
@@ -199,6 +210,21 @@ def compose(tl):
     bt = lambda b: b * B
 
     stop_t = ev["stop"]
+    vpath = os.path.join(C.BUILD, "voice.wav")
+    vdb = None
+    if os.path.exists(vpath):
+        v, _ = sf.read(vpath)
+        hop = SR // 100
+        k = len(v) // hop
+        vdb = 20 * np.log10(np.sqrt((v[:k * hop].reshape(k, hop) ** 2).mean(1)) + 1e-12)
+
+    def voice_gap(t, span):
+        """True if the dialogue dips into a pause anywhere in [t, t+span] (so a note there would be exposed)."""
+        if vdb is None:
+            return False
+        a, z = int(t * 100), int((t + span) * 100) + 1
+        w = vdb[a:z]
+        return len(w) > 0 and w.min() < -38 and w.max() > -30   # a dip inside running speech
     # music sections start on the beat at (or just before) the edit's section point
     starts = {n: int(np.floor(beat(t) + 0.25)) for n, t in secs.items() if n not in ("hook", "stop", "cta")}
     cta_b = int(np.ceil(beat(tl["segments"][[s.get("section") for s in tl["segments"]].index("cta")]["tl0"]) - 0.25))
@@ -237,16 +263,21 @@ def compose(tl):
 
     # ---- hook: beats 0 .. stop  (F | C/E | Dm), tiptoe pizzicato
     prog = ["F", "C/E", "Dm", "Bb"]
+    gap_safe = C.HOOK_GAP_SAFE
     b = 0.0
     while bt(b) < stop_t - 0.02:
         ch = chord_at(prog, 0, b)
         pos = b % 4
         if pos in (0, 2):
-            pizz_bass(ch, bt(b), 0.9, dur=0.18)
+            if not gap_safe:
+                pizz_bass(ch, bt(b), 0.9, dur=0.18)
+            elif not voice_gap(bt(b), 0.22):
+                # no plucked attack: on a phone speaker a bare low pluck in a pause reads as a cough
+                M.add("bass", soft_bass(hz(CHORDS[ch][0]), 0.34, 0.8), bt(b), pan=0.5, jitter=0)
         if pos in (1, 3):
             M.add("perc", snap(0.8), bt(b), pan=0.6 if pos == 1 else 0.4)
         # staccato pizz chord tones on off-beats
-        if pos in (0.5, 1.5, 2.5, 3.5):
+        if pos in (0.5, 1.5, 2.5, 3.5) and not (gap_safe and voice_gap(bt(b), 0.12)):
             nm = CHORDS[ch][2][int(pos * 2) % 4]
             M.add("pizz", pluck(hz(nm), 0.09, 0.55, bright=0.55, decay=0.4, pos=0.25, damp=0.02), bt(b), pan=0.7)
         # celesta arp in 8ths, soft
