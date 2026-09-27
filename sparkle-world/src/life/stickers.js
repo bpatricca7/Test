@@ -293,7 +293,10 @@ export function install(game) {
   ev.on('prefab:place', () => { if (!remote()) game.award('magic_builder'); });
   ev.on('entity:place', ({ entity }) => {
     if (!game.entities || remote()) return;
-    const keys = new Set(game.entities.all().map((e) => e.key));
+    // visiting a friend's world (multiplayer guest): only the pieces she placed herself count
+    const E = game.entities;
+    const mine = game.net && game.net.isGuest ? E.all().filter((e) => E._ownUid(e.uid)) : E.all();
+    const keys = new Set(mine.map((e) => e.key));
     const hasBed = [...keys].some((k) => k.startsWith('bed_'));
     const hasDoor = [...keys].some((k) => k.startsWith('door'));
     if (entity && hasBed && hasDoor) game.award('home_sweet_home');

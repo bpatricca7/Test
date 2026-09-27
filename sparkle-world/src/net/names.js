@@ -5,9 +5,12 @@
 //
 //   1. NFKC (fancy look-alike letters become plain ones);
 //   2. keep Unicode letters (and their accents), spaces, '-' and '\'' only: no digits, no
-//      emoji, no symbols, no invisible characters;
+//      emoji, no symbols, no invisible characters. Letters that draw nothing (the Hangul
+//      fillers) go too, and a letter keeps at most 2 accents (no towers of marks);
 //   3. collapse spaces and cut to 12 characters;
-//   4. empty, or a word on the blocklist below -> the fallback ("Friend").
+//   4. empty, or a word on the blocklist below -> the fallback ("Friend"). The blocklist is
+//      checked on a copy where Cyrillic and Greek look-alike letters read as Latin ones
+//      ("fuсk" with a Cyrillic "с" is caught; "Настя" itself is still a fine name).
 //
 // The blocklist is short on purpose and was written for a family game: grown-ups can review
 // it here. It is compared in lower case with spaces, '-' and '\'' removed, both against the
@@ -35,7 +38,18 @@ const BLOCK = new Set([
 /** Also caught inside a longer name ("Lilyfuck" -> "Friend"); never part of a normal name. */
 const STRONG = ['fuck', 'shit', 'bitch', 'cunt', 'nigger', 'nigga', 'faggot', 'whore', 'slut', 'porn', 'wank', 'dildo', 'penis', 'vagina', 'rape', 'retard'];
 
-const squash = (s) => s.toLowerCase().replace(/[\s'\-]/g, '');
+/** Cyrillic and Greek letters that look like Latin ones (lower case), for the blocklist. */
+const LOOKALIKE = {
+  'а': 'a', 'в': 'b', 'е': 'e', 'ё': 'e', 'к': 'k', 'м': 'm', 'н': 'h', 'о': 'o', 'р': 'p', 'с': 'c',
+  'т': 't', 'у': 'y', 'х': 'x', 'і': 'i', 'ї': 'i', 'ј': 'j', 'ѕ': 's', 'ԁ': 'd', 'ԛ': 'q', 'ԝ': 'w',
+  'ɡ': 'g', 'α': 'a', 'β': 'b', 'ε': 'e', 'η': 'n', 'ι': 'i', 'κ': 'k', 'ν': 'v', 'ο': 'o', 'ρ': 'p',
+  'τ': 't', 'υ': 'u', 'χ': 'x', 'ү': 'y', 'һ': 'h', 'ӏ': 'l',
+};
+const LOOKALIKE_RE = new RegExp('[' + Object.keys(LOOKALIKE).join('') + ']', 'g');
+
+/** Lower case, look-alikes read as Latin, accents dropped, no spaces, '-' or '\''. */
+const squash = (s) => s.toLowerCase().replace(LOOKALIKE_RE, (c) => LOOKALIKE[c])
+  .normalize('NFD').replace(/\p{M}/gu, '').replace(/[\s'\-]/g, '');
 
 /** Is this (already cleaned) name unkind or pretending to be someone else? */
 export function isBlocked(name) {
@@ -63,6 +77,10 @@ export function sanitizeName(s, fallback = 'Friend') {
     // very old browsers: keep the text as it is (step 2 still removes everything unusual)
   }
   t = t.replace(/[^\p{L}\p{M} '\-]/gu, '');
+  // letters that draw nothing (a name tag must never look empty)
+  t = t.replace(/[\u115f\u1160\u3164\uffa0]/g, '');
+  // at most 2 accents on a letter, and none without a letter under them
+  t = t.replace(/^\p{M}+/u, '').replace(/(\P{M})(\p{M}{2})\p{M}+/gu, '$1$2').replace(/ \p{M}+/gu, ' ');
   t = t.replace(/\s+/g, ' ').trim();
   // at most one dash / apostrophe in a row, and none at the ends
   t = t.replace(/(['\-]){2,}/g, '$1').replace(/^['\-\s]+|['\-\s]+$/g, '');

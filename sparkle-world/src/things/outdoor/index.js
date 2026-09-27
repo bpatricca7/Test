@@ -168,18 +168,23 @@ export function install(game) {
 
   // multiplayer guest: pieces the host placed arrive silently (no entity events): keep the
   // ladders and whole-bridge Remove in step (the zip links follow the host's list, actors.js)
+  // A bridge piece or platform that came or went this way (also her own piece the host
+  // refused, taken back) opens or closes railings: work the openings out again from what is
+  // really there now, like the host does (else her railing stays open onto nothing).
   game.events.on('net:applied', ({ placed, removed }) => {
     if (!game.world) return;
     if (removed) {
       for (const e of removed) {
         if (e.key === 'zipline_tower' || e.key === 'tree_platform') ladders.untrack(e);
         if (e.key === 'zipline_tower' && !E.byUid(e.uid)) zip.onRemove(e);
+        if (e.key === 'rope_bridge' || e.key === 'tree_platform') bridges.dirty = true;
       }
     }
     if (placed) {
       for (const e of placed) {
         if (e.key === 'zipline_tower' || e.key === 'tree_platform') ladders.track(e);
         else if (e.key === 'rope_bridge') bridges.patch(e);
+        if (e.key === 'rope_bridge' || e.key === 'tree_platform') bridges.dirty = true;
       }
     }
   });
