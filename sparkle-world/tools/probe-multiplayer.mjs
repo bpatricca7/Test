@@ -454,17 +454,52 @@ test('AT17', 'Say bubbles and emotes show on the other page within a second', as
   await lily.page.keyboard.press('Escape');
 });
 
-test('HELD', 'a treat in Rosie’s hand shows in her avatar’s hand on Lily’s page', async () => {
-  await game(rosie, () => {
-    const g = window.__game;
-    // the Shops team's game.treats.held (a key); a stand-in when that module is not here
-    if (!g.treats) g.treats = { held: null };
-    try { g.treats.held = 'ice_cream'; } catch { /* a getter: the shop decides */ }
-  });
-  const held = await until(lily, () => window.__game.debug.net.remote().find((r) => r.name === 'Rosie' && r.held)?.held, null, 8000);
-  check(held === 'ice_cream', `Lily sees the ice cream in Rosie's hand (${held})`);
+test('HELD', 'a treat in Rosie’s hand shows in her avatar’s hand on Lily’s page, and Lily’s in hers on Rosie’s', async () => {
+  // the real shops: Rosie gets a Unicorn Dream sundae (its key has '-' between the flavors)
+  // and holds it; Lily (the host) holds a lollipop
+  const give = (pl, spec) => game(pl, (sp) => {
+    const g = window.__game, sh = g.debug.shops;
+    const key = typeof sp === 'string' ? sp : sh.key(sp);
+    window.__hotbarBefore = { slots: g.hotbar.slots.slice(), colors: g.hotbar.colors.slice(), index: g.hotbar.index };
+    g.profile.basket = g.profile.basket || {};
+    g.profile.basket[key] = (g.profile.basket[key] | 0) + 1;
+    g.events.emit('basket:change', { basket: g.profile.basket, key, delta: 1 });
+    return g.treats.hold(key, { quiet: true }) && g.treats.held === key ? key : null;
+  }, spec);
+  const rosieKey = await give(rosie, { style: 'sundae', flavors: ['uni', 'cotton', 'gum'], tops: 'scw' });
+  check(rosieKey === 'treat_ic_sundae_uni-cotton-gum_scw', `Rosie holds her Unicorn Dream (${rosieKey})`);
+  const seen = await until(lily, (k) => {
+    const r = window.__game.debug.net.remote().find((x) => x.name === 'Rosie');
+    return r && r.held === k && r.inHand === 'treat:' + k ? r : null;
+  }, rosieKey, 8000);
+  check(!!seen, `Lily sees the Unicorn Dream in Rosie's hand (${seen ? seen.held + ' / ' + seen.inHand : JSON.stringify(await game(lily, () => window.__game.debug.net.remote().map((x) => [x.name, x.held, x.inHand])))})`);
+  const lilyKey = await give(lily, 'treat_lollipop');
+  check(lilyKey === 'treat_lollipop', `Lily holds a lollipop (${lilyKey})`);
+  const seenL = await until(rosie, () => {
+    const r = window.__game.debug.net.remote().find((x) => x.name === 'Lily');
+    return r && r.held === 'treat_lollipop' && r.inHand === 'treat:treat_lollipop' ? r : null;
+  }, null, 8000);
+  check(!!seenL, `Rosie sees the lollipop in Lily's hand (${seenL ? seenL.inHand : JSON.stringify(await game(rosie, () => window.__game.debug.net.remote().map((x) => [x.name, x.held, x.inHand])))})`);
+  await settle(lily.page, 600);
   await shot(lily, 'lily-sees-held-treat');
-  await game(rosie, () => { try { window.__game.treats.held = null; } catch {} });
+  await shot(rosie, 'rosie-sees-held-treat');
+  // putting them away empties both hands on the other page too
+  const putAway = (pl) => game(pl, () => {
+    const g = window.__game, b = window.__hotbarBefore;
+    const ok = g.treats.putAway();
+    // her hotbar as it was before the test (the treat took the selected slot)
+    if (b) {
+      b.slots.forEach((k, i) => { if (g.hotbar.slots[i] !== k) g.setSlot(i, k, b.colors[i]); });
+      g.setSlot(b.index, b.slots[b.index], b.colors[b.index]);
+    }
+    return ok && g.treats.held === null;
+  });
+  check(await putAway(rosie), 'Rosie puts her sundae away');
+  check(await putAway(lily), 'Lily puts her lollipop away');
+  const gone = await until(lily, () => { const r = window.__game.debug.net.remote().find((x) => x.name === 'Rosie'); return r && !r.held && !r.inHand; }, null, 8000);
+  check(gone, 'Rosie put her sundae away: her hand is empty on Lily’s page');
+  const goneL = await until(rosie, () => { const r = window.__game.debug.net.remote().find((x) => x.name === 'Lily'); return r && !r.held && !r.inHand; }, null, 8000);
+  check(goneL, 'Lily put her lollipop away: her hand is empty on Rosie’s page');
 });
 
 test('AT18', 'time and weather: Lily sets rain and night; Rosie sleeps in her bed; morning for both', async () => {

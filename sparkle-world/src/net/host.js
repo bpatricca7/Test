@@ -7,7 +7,7 @@
 
 import {
   C, PRIO, REJECT, NO, ANY_FIELDS, RATE, PROTOCOL, randomEpoch,
-  isInt, isIntIn, isObj, isStr, isEntityKey, isColor, isPlainData, messageText, cleanText,
+  isInt, isIntIn, isObj, isStr, isEntityKey, isColor, isPlainData, messageText, cleanText, HELD_KEY_RE,
 } from './protocol.js';
 import { Journal, buildPayload } from './journal.js';
 import { unpackB, blockMix, blockHashOf, frameSnapshot, splitForJson, canDeflate, round2, utf8Length } from './codec.js';
@@ -1084,8 +1084,9 @@ export function avatarFields(owner, patch, local, now) {
   }
   if (owner.emote) owner._set(patch, 'em', owner.emote);
   if (owner.phrase) owner._set(patch, 'ph', owner.phrase);
-  // optional: the treat held in her hand (an item key, never free text; §7 "Held treats")
-  if ('hi' in local) owner._set(patch, 'hi', typeof local.hi === 'string' && /^[a-z0-9_]{1,40}$/.test(local.hi) ? local.hi : null);
+  // optional: the treat held in her hand (an item key, never free text; §7 "Held treats").
+  // Ice cream keys carry '-' between their flavors, so the key rule is HELD_KEY_RE.
+  if ('hi' in local) owner._set(patch, 'hi', typeof local.hi === 'string' && HELD_KEY_RE.test(local.hi) ? local.hi : null);
 }
 
 function angleDiff(a, b) {

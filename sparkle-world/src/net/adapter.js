@@ -532,9 +532,22 @@ export class GameAdapter {
       }
     }
     // the treat in her hand (shops: game.treats.held, null or a 'treat_*' key) -> presence hi
-    const tr = g.treats;
-    const hi = tr && typeof tr.held === 'string' ? tr.held : null;
-    return { p, st, nm, lk: this._lk, hi };
+    // (the host's and every guest's own avatarFields send it; the only writer of `hi`)
+    return { p, st, nm, lk: this._lk, hi: this.heldKey() };
+  }
+
+  /** The treat key in her hand (game.treats.held: a key, or null), or null. */
+  heldKey() {
+    const tr = this.game.treats;
+    if (!tr) return null;
+    let h = null;
+    try {
+      h = typeof tr.held === 'function' ? tr.held() : tr.held;
+    } catch {
+      return null;
+    }
+    const key = typeof h === 'string' ? h : h && typeof h.key === 'string' ? h.key : null;
+    return key || null;
   }
 
   time() {

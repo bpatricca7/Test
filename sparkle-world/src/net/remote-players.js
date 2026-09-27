@@ -20,6 +20,7 @@ import { hasFoodModel, foodModel } from '../things/food-models.js';
 import { disposeObject } from '../core/models.js';
 import { EMOTES } from '../player/wardrobe-data.js';
 import { unpackLook } from './codec.js';
+import { HELD_KEY_RE } from './protocol.js';
 import { sanitizeName } from './names.js';
 import { phraseText, phraseIcon, PHRASES } from './pictures.js';
 
@@ -32,7 +33,6 @@ const BUBBLE_S = 4;
 const RING = 12;
 const SNAP_DIST = 6; // blocks between two samples: a teleport, not a walk
 const EMOTE_NAMES = new Set(EMOTES.map((e) => e.key));
-const HELD_RE = /^[a-z0-9_:.-]{1,48}$/;
 
 /** Player colors by seat (0 = the host). Name tags, the Players list and the HUD use them. */
 export const SEAT_COLORS = ['#FF5FA2', '#3AAEF0', '#22BF95', '#9C7BFF'];
@@ -45,7 +45,11 @@ const angleLerp = (a, b, t) => {
   return a + d * t;
 };
 
-/** A treat model for a held item key (the Shops team's model when it has one). */
+/**
+ * A new Object3D of the treat for a held item key, posed for a hand: the Shops team's own
+ * model (game.treats.model: the same candy or ice cream she sees in her own hand), else a
+ * basket food's model; null for a key this page cannot draw (nothing goes in the hand).
+ */
 export function heldModel(game, key) {
   try {
     if (game.treats && typeof game.treats.model === 'function') {
@@ -55,9 +59,8 @@ export function heldModel(game, key) {
   } catch (err) {
     console.warn('[net] treat model failed', key, err);
   }
-  const k = String(key).replace(/^(food|treat):/, '');
-  if (hasFoodModel(k)) return foodModel(k);
-  return foodModel(/ice|cream|sundae|shake|pop|cone/.test(k) ? 'ice_cream' : 'cupcake');
+  const k = String(key).replace(/^food:/, '');
+  return hasFoodModel(k) ? foodModel(k) : null;
 }
 
 /** The zip line's hanging pose (src/things/outdoor/zipline.js 'hang'), blended by w. */
@@ -219,11 +222,15 @@ export class RemotePlayers {
     return this.friends.get(peer) || null;
   }
 
-  /** Where the friends are drawn now: [{ peer, seat, name, pos, visible, st, held }]. */
+  /**
+   * Where the friends are drawn now: [{ peer, seat, name, pos, visible, st, held, inHand }]
+   * (inHand: the name of the model in her avatar's hand, e.g. 'treat:treat_lollipop').
+   */
   list() {
     return Array.from(this.friends.values(), (f) => ({
       peer: f.peer, seat: f.seat, name: f.name, color: f.color, pos: [f.pos.x, f.pos.y, f.pos.z], yaw: f.yaw,
-      visible: f.visible, st: f.st, held: f.heldKey, bubble: f.bubbleLeft > 0 ? f.bubbleText : null,
+      visible: f.visible, st: f.st, held: f.heldKey, inHand: f.avatar && f.avatar.held ? f.avatar.held.name || 'held' : null,
+      bubble: f.bubbleLeft > 0 ? f.bubbleText : null,
       tag: !!(f.tag && f.tag.visible), emote: f.avatar ? f.avatar.emoting || null : null,
     }));
   }
@@ -332,7 +339,7 @@ export class RemotePlayers {
       const id = ph[0];
       if (Number.isInteger(id) && id >= 0 && id < PHRASES.length) this._say(f, id);
     }
-    const hi = typeof st.hi === 'string' && HELD_RE.test(st.hi) ? st.hi : null;
+    const hi = typeof st.hi === 'string' && HELD_KEY_RE.test(st.hi) ? st.hi : null;
     if (hi !== f.heldKey) this._setHeld(f, hi);
   }
 
@@ -390,14 +397,8 @@ export class RemotePlayers {
         sleeping: st === 'z',
         riding: st === 'h',
       });
+      // a held treat raises her arm in avatar.update (hidden while she sleeps or swims)
       if (st === 'l') hangPose(av, f.t, 1);
-      else if (f.held && st !== 'z') {
-        const b = av.bones;
-        if (b && b.armR) {
-          b.armR.rotation.x += -0.55;
-          b.elbowR.rotation.x += -0.7;
-        }
-      }
     }
     // name tag in her color, above her head (lower when sitting or lying down)
     if (!f.tag || f.tagText !== f.name || f.tagColor !== f.color) this._makeTag(f);
@@ -440,31 +441,29 @@ export class RemotePlayers {
     f.avatar.group.add(f.tag);
   }
 
+  /** The treat in her hand (presence hi): the real model through the avatar's hold() hook. */
   _setHeld(f, key, force = false) {
     if (!force && key === f.heldKey) return;
     f.heldKey = key;
-    if (f.held) {
-      if (f.held.parent) f.held.parent.remove(f.held);
-      disposeObject(f.held);
-      f.held = null;
-    }
-    if (!key || !f.avatar) return;
-    const b = f.avatar.bones;
-    if (!b || !b.elbowR) return;
+    this._letGo(f);
+    if (!key || !f.avatar || typeof f.avatar.hold !== 'function') return;
     const m = heldModel(this.game, key);
-    m.position.set(0, -0.25, 0.06);
-    m.scale.setScalar(0.92);
+    if (!m) return;
     m.userData.netHeld = key;
-    b.elbowR.add(m);
+    f.avatar.hold(m, 'hold');
     f.held = m;
   }
 
+  _letGo(f) {
+    if (!f.held) return;
+    if (f.avatar && typeof f.avatar.hold === 'function' && f.avatar.held === f.held) f.avatar.hold(null);
+    if (f.held.parent) f.held.parent.remove(f.held);
+    disposeObject(f.held);
+    f.held = null;
+  }
+
   _drop(f) {
-    if (f.held) {
-      if (f.held.parent) f.held.parent.remove(f.held);
-      disposeObject(f.held);
-      f.held = null;
-    }
+    this._letGo(f);
     if (f.tag) {
       disposeSprite(f.tag);
       f.tag = null;

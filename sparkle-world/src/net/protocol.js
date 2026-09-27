@@ -195,6 +195,11 @@ export const isIntIn = (v, lo, hi) => isInt(v) && v >= lo && v <= hi;
 export const isStr = (v, max = 1000) => typeof v === 'string' && v.length <= max;
 export const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 export const IDENT_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
+/**
+ * Presence `hi`, the treat in a player's hand: an item key, never free text. Shop treats are
+ * 'treat_<candy>' or 'treat_ic_<style>_<flavor-flavor-flavor>_<toppings>' (at most 47 chars).
+ */
+export const HELD_KEY_RE = /^[a-z0-9_-]{1,48}$/;
 
 /** Depth of a JSON value (a scalar is 0, {} or [] is 1). */
 export function jsonDepth(v, limit = 16) {

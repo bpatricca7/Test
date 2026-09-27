@@ -177,8 +177,11 @@ coin-earning listeners start with `if (game.net?.remoteApplying) return;` (the f
 provides `remoteApplying`); shop counters are ordinary entities; buying, coins and the
 basket are per player and never synced; placing a bought treat is an `e+`. The held treat
 (`game.treats.held`, null or a `treat_*` key) goes into the optional presence field **`hi`**
-(`adapter.local().hi` -> `avatarFields`, only `[a-z0-9_]{1,40}` keys, null deletes it);
-Agent C draws it on remote avatars with `avatar.hold(game.treats.model(hi))`.
+(`adapter.local().hi` -> `avatarFields`, the only writer; keys must match
+`HELD_KEY_RE` = `[a-z0-9_-]{1,48}` in `protocol.js`, since ice cream keys carry `-` between
+their flavors and reach 47 characters; anything else sends null, which deletes it). Every page
+draws it on remote avatars with `avatar.hold(game.treats.model(hi), 'hold')`, the same model
+she sees in her own hand (`remote-players.js`; `debug.net.remote()` lists `held` and `inHand`).
 
 ## For Agent C (UI, avatars, end-to-end)
 
