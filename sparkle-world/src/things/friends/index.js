@@ -147,16 +147,20 @@ class FriendSystem {
 
   // ---------- talking ----------
 
-  /** She says a line (kind: see chat.js). Shows a bubble, babbles, reads it aloud if asked. */
-  say(f, kind = 'chat') {
+  /**
+   * She says a line (kind: see chat.js). Shows a bubble, babbles, and reads it aloud when the
+   * Read Aloud setting is on (opts.speak: false for background chatter, so the voice is kept
+   * for lines she asked for and for the game's own tips).
+   */
+  say(f, kind = 'chat', opts = {}) {
     const g = this.game;
-    const line = pickLine(g, f, kind);
+    const line = pickLine(g, f, kind, opts.extra);
     const secs = Math.min(6.5, 2.6 + line.length * 0.055);
     if (this.ui) this.ui.showLine(f, line, secs);
     const d = f.distToPlayer();
     const vol = Math.max(0, 1 - d / 18);
     if (vol > 0.05) sfx(g, 'babble', { pitch: f.def.pitch, volume: vol });
-    if (g.speak && d < 10) g.speak(line);
+    if (g.speak && d < 10 && opts.speak !== false) g.speak(line);
     g.events.emit('friend:talk', { friend: f, line, kind });
     return line;
   }
@@ -166,6 +170,18 @@ class FriendSystem {
     f.faceT = 3;
     if (f.act !== 'sit' && Math.random() < 0.35) f.emote(Math.random() < 0.5 ? 'heart' : 'twirl');
     return this.say(f, 'chat');
+  }
+
+  /** A friend gives a pet nearby some love (hearts, a happy hop, a sweet word). */
+  lovePet(f, pet) {
+    const g = this.game;
+    f.yaw = Math.atan2(pet.pos.x - f.pos.x, pet.pos.z - f.pos.z);
+    f.emote('heart');
+    pet.headPoint(_v);
+    g.celebrate([_v.x, _v.y + 0.3, _v.z], 'heart', { quiet: true, count: 6 });
+    pet.anim.happy = 2.5;
+    if (Math.random() < 0.5) pet.trick('hop');
+    if (f.distToPlayer() < 9) this.say(f, 'pet', { speak: false, extra: { pet: pet.name } });
   }
 
   // ---------- hand tap, tickles, Build-tool taps ----------
@@ -548,7 +564,7 @@ class FriendSystem {
       const pl = g.player;
       if (pl && pl.state !== 'sleep') {
         const f = this.nearest(pl.position.x, pl.position.y, pl.position.z, 7);
-        if (f && f.eatT <= 0 && f.act !== 'toBed' && !(this.ui && this.ui.bubbleFriend === f)) this.say(f, 'chat');
+        if (f && f.eatT <= 0 && f.act !== 'toBed' && !(this.ui && this.ui.bubbleFriend === f)) this.say(f, 'chat', { speak: false });
       }
     }
     if (this.ui) this.ui.update(dt);
@@ -564,7 +580,7 @@ class FriendSystem {
     f.faceT = 3;
     setTimeout(() => {
       if (!this.friends.includes(f)) return;
-      this.say(f, 'event:' + eventName);
+      this.say(f, 'event:' + eventName, { speak: false });
       if (f.act !== 'sit' && f.act !== 'sleep' && Math.random() < 0.6) f.emote(Math.random() < 0.5 ? 'jump' : 'heart');
     }, 700);
     this.chatT = Math.max(this.chatT, 6);

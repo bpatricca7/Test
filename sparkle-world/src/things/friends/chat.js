@@ -198,7 +198,7 @@ function contextLines(game, friend) {
  * A line for a friend to say. kind: 'chat' (anything that fits, the default), or a key of
  * LINES ('greet', 'follow', 'dance', 'treat'...), or 'event:<name>'.
  */
-export function pickLine(game, friend, kind = 'chat') {
+export function pickLine(game, friend, kind = 'chat', extra = {}) {
   let pool;
   if (kind === 'chat') {
     const ctx = contextLines(game, friend);
@@ -215,7 +215,7 @@ export function pickLine(game, friend, kind = 'chat') {
     recent.push(line);
     if (recent.length > 8) recent.shift();
   }
-  return fill(line, game, friend);
+  return fill(line, game, friend, extra);
 }
 
 /** How many different lines friends can say (for the probe). */

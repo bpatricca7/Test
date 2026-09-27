@@ -316,7 +316,9 @@ async function desktop(browser) {
     p.teleport(x, g.world.heightAt(Math.floor(x), Math.floor(z)) + 1.01, z, false);
     return [p.pos.x, p.pos.y, p.pos.z];
   }, [turtle.id, horse.id]);
-  await faceTarget(page, tp[0], tp[1], tp[2], 2.2, 0.62, true);
+  await faceTarget(page, tp[0], tp[1], tp[2], 3.0, 0.5, true);
+  // let the sticker pops (Shell Buddy, Giddy Up!) fly away first, so the picture shows the turtle
+  await until(page, () => !document.querySelector('.sw-stkpop'), null, 20000);
   await tool(page, 'Remove');
   check(await tapBody(page, 'pet', turtle.id), 'Remove-tool tapped the turtle');
   await settle(page, 650);
@@ -639,7 +641,8 @@ async function touch(browser) {
   await settle(page, 500);
   // a friend from the Bag
   await inviteViaBag(page, 'nia', { tap: true });
-  await settle(page, 400);
+  await until(page, () => document.querySelectorAll('.sw-panel-wrap.sw-open .pl-invite img[src^="data:"]').length >= 10, null, 25000);
+  await settle(page, 300);
   await shot(page, 'touch-friends-panel', P);
   const nia = await pickFriendCard(page, 'nia', true);
   await settle(page, 1200);

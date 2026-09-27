@@ -529,7 +529,12 @@ export class Friend {
         return;
       }
     }
-    if (this.mode === 'home' && r < 0.55) {
+    const pets = this.game.pets;
+    const pet = r < 0.3 && pets ? pets.nearest(this.pos.x, this.pos.y, this.pos.z, 3.5) : null;
+    if (pet && !pet.riding && pet.state !== 'sleep') {
+      // a pet nearby gets some love
+      sys.lovePet(this, pet);
+    } else if (this.mode === 'home' && r < 0.55) {
       const ang = Math.random() * TAU, rad = 1 + Math.random() * 4;
       this.moveTo(ax + Math.sin(ang) * rad, ay, az + Math.cos(ang) * rad, false, true);
     } else if (r < 0.7) {

@@ -45,7 +45,12 @@ const CSS = /* css */ `
 .lf-name-row .sw-input { flex: 1; min-width: 0; }
 .lf-adopt .sw-chips { justify-content: flex-start; margin: 10px 0 4px; }
 .lf-adopt .sw-chip { font-size: 16px; padding: 7px 14px; min-height: 40px; }
-.lf-go { display: flex; justify-content: center; margin-top: 14px; }
+.lf-go { display: flex; justify-content: center; margin-top: 14px; position: sticky; bottom: -2px; z-index: 2; padding: 10px 0 4px;
+  background: linear-gradient(rgba(255,248,252,0), #FFF8FC 38%); }
+.lf-variants.lf-many { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+.lf-variants.lf-many .lf-variant { min-height: 90px; padding: 4px 3px 6px; }
+.lf-variants.lf-many .lf-variant img { width: 54px; height: 54px; }
+.lf-variants.lf-many .lf-variant span { font-size: 14px; }
 .lf-go .sw-btn { min-width: 220px; }
 
 .lf-pets { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
@@ -159,6 +164,7 @@ export function installPetUI(game, sys) {
   const renderVariants = () => {
     variantsEl.innerHTML = '';
     const all = SPECIES[adopt.species].variants;
+    variantsEl.classList.toggle('lf-many', all.length > 6);
     const grouped = all.some((v) => v.group === 'breeds');
     // colors first, then breeds (with a little heading each)
     const order = grouped ? [...all.filter((v) => v.group !== 'breeds'), ...all.filter((v) => v.group === 'breeds')] : all;
