@@ -321,7 +321,7 @@ async function desktop(browser) {
   await shot(page, 'settings-play', P);
   const s2 = await page.evaluate(() => ({ t: window.__game.time.dayTime, q: window.__game.profile.settings.quality, pr: window.__game.renderer.getPixelRatio() }));
   check(s2.t > 0.7 && s2.t < 0.76 && s2.q === 'low', `sunset + Fast quality (dayTime ${s2.t.toFixed(2)}, ${s2.q})`);
-  await page.locator('.sw-seg-btn', { hasText: 'Auto' }).click();
+  await page.locator('.sw-seg-btn', { hasText: 'Pretty' }).click();
   await page.keyboard.press('Escape'); // back to pause
   await page.waitForSelector('.sw-panel-wrap.sw-open[data-panel="pause"]');
   await btn(page, 'Save & Exit').click();

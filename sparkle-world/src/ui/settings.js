@@ -1,6 +1,6 @@
 // Settings panel ('settings'): music & sound sliders, a Quiet switch, "Read words out loud"
 // (speechSynthesis for toasts and hints), camera (behind me / my eyes), look speed, picture
-// quality (Auto / Pretty / Fast, with an automatic pixel-ratio step-down when frames drop),
+// quality (Pretty / Fast; the picture is never made less sharp unless she picks Fast),
 // the weather wand (game.weather, when present), time of day + freeze time, and the player's
 // name. Everything is saved in profile.settings (the name in profile.playerName + look.name).
 // Also runs the music mood: menu on the title, cozy under a roof, else day / night.
@@ -134,13 +134,6 @@ export function install(game) {
     return false;
   };
 
-  // =====================================================================================
-  // quality: Fast halves the pixel ratio (core), Auto steps down when frames drop
-  // =====================================================================================
-  let slowFor = 0;
-  const resetAuto = () => { slowFor = 0; };
-  game.events.on('world:load', resetAuto);
-
   game.addSystem({
     name: 'settings',
     update(dt) {
@@ -150,20 +143,6 @@ export function install(game) {
         moodTimer = 1;
         if (game.mode !== 'play' || !game.world) game.audio.setMood('menu');
         else game.audio.setMood(roofed() ? 'cozy' : null);
-      }
-      // automatic quality
-      const s = S();
-      if (s.quality !== 'auto' || game.mode !== 'play' || game.paused || game.loading) { slowFor = 0; return; }
-      if (game.fps < 30) slowFor += dt;
-      else slowFor = Math.max(0, slowFor - dt * 0.5);
-      if (slowFor > 6) {
-        slowFor = 0;
-        const r = game.renderer.getPixelRatio();
-        const next = Math.max(1, Math.round(r * 0.75 * 100) / 100);
-        if (next < r) {
-          game.renderer.setPixelRatio(next);
-          if (typeof game._resize === 'function') game._resize();
-        }
       }
     },
   });
@@ -312,10 +291,10 @@ export function install(game) {
     // quality
     {
       const { row: r, main } = row('sparkles', 'var(--sw-sun)', 'Pretty or fast?', 'Fast helps on older tablets');
-      const q = s.quality === 'low' ? 'low' : s.quality === 'high' ? 'high' : 'auto';
-      main.appendChild(seg([['auto', 'Auto', 'auto'], ['high', 'Pretty', 'quality'], ['low', 'Fast', 'fast']], q, (v) => {
+      // 'auto' (the default) and 'high' both keep full sharpness; only Fast lowers it
+      const q = s.quality === 'low' ? 'low' : 'high';
+      main.appendChild(seg([['high', 'Pretty', 'quality'], ['low', 'Fast', 'fast']], q, (v) => {
         s.quality = v;
-        resetAuto();
         game.applySettings();
         save();
       }, '#F5A300'));

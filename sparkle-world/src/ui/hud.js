@@ -10,6 +10,8 @@ const CSS = /* css */ `
 .sw-hud.sw-on { display: block; }
 .sw-hud * { pointer-events: auto; }
 .sw-hud .sw-passive, .sw-hud .sw-passive * { pointer-events: none; }
+/* layout containers let touches through their empty space; only what is inside them is tappable */
+.sw-hud .sw-hud-right, .sw-hud .sw-hud-extras, .sw-hud .sw-hud-tr, .sw-hud .sw-hud-tl, .sw-hud .sw-hud-bottom { pointer-events: none; }
 
 .sw-hud-tl { position: absolute; top: calc(12px + var(--sw-safe-t)); left: calc(12px + var(--sw-safe-l)); display: flex; gap: 8px; align-items: center; max-width: 52vw; }
 .sw-pill { display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 16px 0 10px; border-radius: 999px; background: rgba(255,255,255,.92); border: 4px solid #fff; box-shadow: 0 5px 14px var(--sw-shadow); font-size: 19px; font-weight: 600; color: var(--sw-ink); white-space: nowrap; min-width: 0; }
