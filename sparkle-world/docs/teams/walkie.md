@@ -114,12 +114,12 @@ reads `net.remote.get(peer)` positions, and the server reads room presence witho
   E, Q, R, F, V, P, G, Z, X, H, T, 1–9; the piano's keys are A–P and M is not among them).
 - **Playback volume** goes through the game's master gain, so the **Quiet** switch silences
   voices too; the music ducks while someone talks.
-- **Bandwidth**: 16 kHz IMA ADPCM, 80 ms frames: 8,101 B/s per talker measured (about 65 kbit/s),
+- **Bandwidth**: 16 kHz IMA ADPCM, 80 ms frames: 8,100 B/s per talker measured (about 65 kbit/s),
   relayed once per listener (≤ 3 listeners: ≤ 24 KB/s down from the server per talking game).
 
 ## Tests
 
-`npm run test:walkie` (about 8 minutes; `--unit-only` for the Node part only, `--no-build`,
+`npm run test:walkie` (about 10 minutes in SwiftShader; 131 checks in the last run; `--unit-only` for the Node part only, `--no-build`,
 `--headed`, `--shots-prefix=walkie`):
 
 - **Unit** (`tools/test-walkie-unit.mjs`): ADPCM round trip of 2 s of speech-like audio at
@@ -130,23 +130,27 @@ reads `net.remote.get(peer)` positions, and the server reads room presence witho
   frames reach only walkie-on players of the game (walkie-off friend, knocker, fake host,
   talker: 0 bytes); busy; floor released by the last frame and by `end`; 0.7 s cooldown; 15 s
   cap by audio length (15.12 s relayed) and by time; idle cuts (no first frame in 3 s, 1.5 s
-  silence); a 100-frame flood (12 relayed, 88 dropped); oversized / malformed frames; listener
+  silence); a 100-frame flood (24 relayed, 76 dropped) and frames 4× too fast for 3 s (56
+  relayed: the 12,000 B/s limit); oversized / malformed frames; listener
   mute (not sent); host mute of one friend (refused) and Mute everyone (cut at the next frame,
   host included); a friend sent home is cut and hears nothing; voice off; a talker's
   disconnect frees the floor.
 - **End to end** through the real server (`server/server.mjs` on a random port,
-  `SW_TEST_STATS=1`), Chromium with a fake microphone, three pages: Lily (host, desktop 1280×800),
-  Rosie (iPad 1024×768, touch), June (phone 390×844, touch, walkie **off**): Permissions-Policy;
+  `SW_TEST_STATS=1`), Chromium with a fake microphone: first, no walkie at all alone (file://)
+  or inside claude.ai (a stand-in `window.claude` room: room transport, no Settings row, no
+  button); then three pages: Lily (host, desktop 1280×800), Rosie (iPad 1024×768, touch), June
+  (phone 390×844, touch, walkie **off**): Permissions-Policy;
   grown-up checks with real taps (a wrong answer, then right) on desktop and iPad; no walkie UI
   before playing together; the button only for walkie-on players, June only gets the "Walkie
-  off" badge; the microphone card on the first press; **Lily holds 2 s** → 25 frames / 15,990 B
-  sent, Rosie receives 25 frames and schedules 25 buffers (1.97 s), **June receives 0 bytes**
+  off" badge; the microphone card on the first press; **Lily holds 2 s** → 25 frames / 16,176 B
+  sent, Rosie receives 25 frames and schedules 25 buffers (2.00 s), **June receives 0 bytes**
   (her page and the server's per-peer counters), the server relays exactly Lily's bytes once;
   every microphone track `ended` right after the release; Rosie pressing while Lily talks gets
   "Lily is talking" without opening her microphone; two real presses at once → one talks; the
   same millisecond → the server gives it to one and answers "busy" to the other; Rosie talks
-  from the iPad and Lily hears her; a long press is cut at 15.0 s (14.96 s sent) with the
-  button still held, the ring counting down; Rosie mutes Lily (nothing even sent to her); the
+  from the iPad and Lily hears her; a long press is cut at 15.1 s (14.96 s sent, 14.96 s played by Rosie) with the
+  button still held, the ring counting down; the open Players panel does not redraw by itself
+  (a redraw could swallow a tap); Rosie mutes Lily (nothing even sent to her); the
   host mutes Rosie (her walkie rests, nothing sent when she presses); Mute everyone (everyone's
   walkie rests, host included); June's grown-up turns hers on from the pause menu, June talks
   from the phone, Rosie hears her; phone sideways and iPad upright shots; turning off is one tap
@@ -165,3 +169,17 @@ Also re-run: `npm run test:net`, `node tools/probe-railway.mjs`, `node tools/smo
 - Real voices through echo cancellation on a tablet speaker (a friend's voice should not echo
   back when two devices are in the same room; if it does, move them apart).
 - Latency end to end (expected about 0.3–0.4 s: 80 ms frames + 160 ms jitter buffer + network).
+
+## Known limits
+
+- The page decides "voice on" after the grown-up check; the server trusts that declaration
+  (it cannot see the check). What the server does enforce is that a voice-on page must be a
+  player of that game, and that it never sends voice to a page that did not say "on".
+- Presence `adm` (the net core's list of let-in friends) is the server's truth for "in the
+  game". If the net core ever renames or reshapes it, the walkie fails **closed** (nobody is
+  in the game, nobody hears anything) and the unit tests fail.
+- Local mutes last for the session (keyed by the friend's device id); so do the host's mutes.
+- On a plain `http://` home-network address the browser offers no microphone; the page then
+  says "The walkie works on the game's https address."
+- On a heavily loaded machine SwiftShader can stall a page for seconds: the end-to-end test
+  therefore retries a screenshot or a Mute tap once when a page is slow (and logs the retry).

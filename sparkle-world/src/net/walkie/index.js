@@ -459,7 +459,10 @@ class Walkie {
       if (again) await this._probe();
     } else {
       this.micState = r === 'none' ? 'none' : 'unknown';
-      this.game.toast(r === 'none' ? 'No microphone found on this device.' : "The microphone didn't work. Try again!", { icon: 'mute' });
+      // browsers only offer the microphone on https (or localhost), not on http://192.168...
+      const insecure = typeof window !== 'undefined' && window.isSecureContext === false;
+      const text = insecure ? "The walkie works on the game's https address." : r === 'none' ? 'No microphone found on this device.' : "The microphone didn't work. Try again!";
+      this.game.toast(text, { icon: 'mute' });
     }
   }
 

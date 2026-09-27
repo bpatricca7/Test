@@ -1511,7 +1511,7 @@ bytes 8..  IMA ADPCM, 4 bits per sample, low nibble first; (length - 8) * 2 samp
   two 7 kHz low-pass biquads → an AudioWorklet tap (ScriptProcessor where AudioWorklet is
   missing) on the game's own AudioContext → linear resampler to **16 kHz mono** → IMA ADPCM.
 - **80 ms frames** (1,280 samples): 648 B each, 12.5 per second = **8.1 KB/s per talker**
-  (measured: 8,101 B/s). The server relays each frame once per listener (at most 3).
+  (measured: 8,100 B/s). The server relays each frame once per listener (at most 3).
 - Each frame carries its own decoder state, so frames decode on their own.
 - A frame is at most 1,032 B (128 ms); anything else is dropped by the server.
 
