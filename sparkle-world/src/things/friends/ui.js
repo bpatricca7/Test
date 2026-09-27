@@ -11,7 +11,7 @@ import { friendIcon } from './icons.js';
 import { FRIENDS, OUTFITS } from './looks.js';
 
 export const CSS = /* css */ `
-.pl-say { position: absolute; left: 0; top: 0; transform: translate(-50%, -100%); max-width: min(260px, 60vw); padding: 7px 14px 9px;
+.pl-say { position: absolute; left: 0; top: 0; transform: translate(-50%, -100%); width: max-content; max-width: min(260px, 60vw); padding: 7px 14px 9px;
   background: rgba(255,255,255,.97); border: 4px solid var(--c, var(--sw-pink)); border-radius: 20px; box-shadow: 0 6px 16px var(--sw-shadow);
   font: 700 17px/1.2 var(--sw-font); color: var(--sw-ink); text-align: center; pointer-events: none; z-index: 2; display: none; }
 .pl-say.pl-on { display: block; animation: pl-say-in .32s var(--sw-bounce) both; }
@@ -22,7 +22,7 @@ export const CSS = /* css */ `
 
 .pl-bubble { position: absolute; left: 0; top: 0; transform: translate(-50%, -100%); display: none; flex-direction: column; align-items: center; gap: 6px;
   padding: 8px 12px 10px; background: rgba(255,255,255,.97); border: 4px solid var(--c, var(--sw-pink)); border-radius: 28px;
-  box-shadow: 0 8px 22px var(--sw-shadow); z-index: 3; max-width: min(560px, 94vw); }
+  box-shadow: 0 8px 22px var(--sw-shadow); z-index: 3; width: max-content; max-width: min(560px, 94vw); }
 .pl-bubble.pl-on { display: flex; }
 .pl-bubble::after { content: ''; position: absolute; left: 50%; bottom: -14px; width: 20px; height: 20px; margin-left: -10px; background: #fff;
   border-right: 4px solid var(--c, var(--sw-pink)); border-bottom: 4px solid var(--c, var(--sw-pink)); transform: rotate(45deg); border-radius: 0 0 6px 0; }
@@ -39,6 +39,7 @@ export const CSS = /* css */ `
 .pl-bubble .pl-count { position: absolute; top: -4px; right: -2px; min-width: 24px; height: 24px; padding: 0 5px; border-radius: 12px; background: var(--sw-pink); color: #fff; font-size: 13px; font-weight: 700; display: grid; place-items: center; border: 2px solid #fff; }
 @media (max-width: 600px) { .pl-bubble .sw-round-face { width: 50px; height: 50px; } .pl-bubble .sw-round { min-width: 54px; } .pl-bubble-line { font-size: 16px; } }
 
+.pl-panel [hidden] { display: none !important; }
 .pl-panel .pl-section { font-size: 20px; font-weight: 700; color: var(--sw-lav); margin: 6px 0 10px; display: flex; align-items: center; gap: 8px; }
 .pl-panel .pl-section svg { width: 26px; height: 26px; }
 .pl-panel .pl-section small { font-size: 16px; color: var(--sw-pink); margin-left: auto; }
@@ -257,7 +258,9 @@ export function installFriendUI(game, sys) {
     if (bub.friend === friend) hideBubble();
   }
 
-  function position(e, friend, extra) {
+  const rects = []; // speech bubbles placed this frame (so they never cover each other)
+  const rectPool = [];
+  function position(e, friend, extra, avoid = false) {
     const p = friend.pos;
     const top = friend.act === 'sleep' ? 0.8 : friend.act === 'sit' ? 1.5 : 1.95;
     const s = toScreen(game, p.x, p.y + top + extra, p.z, at);
@@ -269,7 +272,16 @@ export function installFriendUI(game, sys) {
     const w = e.offsetWidth || 200, h = e.offsetHeight || 60;
     const W = game.container.clientWidth, H = game.container.clientHeight;
     const x = Math.max(w / 2 + 8, Math.min(W - w / 2 - 8, s.x));
-    const y = Math.max(h + 8, Math.min(H - 90, s.y));
+    let y = Math.max(h + 8, Math.min(H - 90, s.y));
+    if (avoid) {
+      // anchored at the bottom centre: step above any bubble already placed here
+      for (const r of rects) {
+        if (Math.abs(r.x - x) < (r.w + w) / 2 + 4 && y - h < r.y && r.y - r.h < y) y = r.y - r.h - 8;
+      }
+      const r = rectPool[rects.length] || (rectPool[rects.length] = { x: 0, y: 0, w: 0, h: 0 });
+      r.x = x; r.y = y; r.w = w; r.h = h;
+      rects.push(r);
+    }
     e.style.left = Math.round(x) + 'px';
     e.style.top = Math.round(y) + 'px';
   }
@@ -312,8 +324,8 @@ export function installFriendUI(game, sys) {
     const I = (n) => friendIcon(n, ui);
     if (bub.view === 'treat') {
       const cookie = img('');
-      foodIcon(game, 'cookies').then((u) => { cookie.src = u; });
-      row.appendChild(roundBtn('Cookie', 'var(--sw-sun)', cookie, () => { sys.giveTreat(f, 'cookies', true); hideBubble(); }));
+      foodIcon(game, 'star_cookie').then((u) => { cookie.src = u; });
+      row.appendChild(roundBtn('Cookie', 'var(--sw-sun)', cookie, () => { sys.giveTreat(f, 'star_cookie', true); hideBubble(); }));
       for (const k of sys.basketTreats().slice(0, 5)) {
         const pic = img('');
         sys.treatIcon(k).then((u) => { if (u) pic.src = u; });
@@ -362,7 +374,6 @@ export function installFriendUI(game, sys) {
       bub.line = line;
       const l = bubble.querySelector('.pl-bubble-line');
       if (l) l.textContent = line;
-      bub.idle = 0;
       position(bubble, friend, 0.3);
       return;
     }
@@ -505,11 +516,12 @@ export function installFriendUI(game, sys) {
     },
     renderBubble,
     update(dt) {
+      rects.length = 0;
       for (const [f, s] of says) {
         if (s.left <= 0) continue;
         s.left -= dt;
         if (s.left <= 0 || !sys.friends.includes(f)) s.el.classList.remove('pl-on');
-        else position(s.el, f, 0.36);
+        else position(s.el, f, 0.36, true);
       }
       const f = bub.friend;
       if (!f) return;

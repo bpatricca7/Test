@@ -717,7 +717,7 @@ export function install(game) {
       tap: (id) => { const f = sys.byId(id); return f ? sys.tap(f) : false; },
       dance: (id) => { const f = sys.byId(id); if (f) sys.danceTogether(f); return !!f; },
       setMode: (id, mode) => { const f = sys.byId(id); if (f) sys.setMode(f, mode, { quiet: true }); return !!f; },
-      treat: (id, key = 'cookies', free = true) => { const f = sys.byId(id); return f ? sys.giveTreat(f, key, free) : false; },
+      treat: (id, key = 'star_cookie', free = true) => { const f = sys.byId(id); return f ? sys.giveTreat(f, key, free) : false; },
       style: (id, how, key) => { const f = sys.byId(id); return f ? sys.style(f, how, key) : false; },
       sit: (id) => {
         const f = sys.byId(id);

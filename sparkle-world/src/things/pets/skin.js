@@ -96,9 +96,16 @@ export function mergeRig(rig, key) {
   root.position.set(0, 0, 0);
   root.rotation.set(0, 0, 0);
   root.scale.set(1, 1, 1);
-  root.updateMatrixWorld(true);
   const meshes = collect(rig);
   if (meshes.length < 2) return;
+  // hidden parts (happy / sleepy eyes) are scaled to 0: bake and bind them at full size (a
+  // zero scale would bake a collapsed part and give its bone a zero inverse), restore after
+  const saved = meshes.map((m) => {
+    const s = m.scale.clone();
+    if (s.x === 0 || s.y === 0 || s.z === 0) m.scale.set(1, 1, 1);
+    return s;
+  });
+  root.updateMatrixWorld(true);
   let entry = cache.get(key);
   if (!entry || entry.count !== meshes.length) {
     entry = { geo: bake(meshes), count: meshes.length };
@@ -125,6 +132,7 @@ export function mergeRig(rig, key) {
   root.add(mesh);
   mesh.updateMatrixWorld(true);
   mesh.bind(new THREE.Skeleton(bones), new THREE.Matrix4());
+  bones.forEach((b, i) => b.scale.copy(saved[i]));
   // object-level bounds (a skinned mesh would otherwise measure itself from bone matrices that
   // are not computed yet); a little extra room for hops, tricks and turned heads
   mesh.boundingBox = entry.geo.boundingBox.clone().expandByScalar(0.35);

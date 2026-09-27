@@ -63,7 +63,7 @@ const CSS = /* css */ `
 .lf-species { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
 .lf-empty { text-align: center; padding: 12px; font-size: 19px; color: var(--sw-lav); font-weight: 600; }
 
-.lf-bubble { position: absolute; left: 0; top: 0; transform: translate(-50%, -100%); display: none; flex-direction: column; align-items: center; gap: 6px;
+.lf-bubble { position: absolute; left: 0; top: 0; transform: translate(-50%, -100%); display: none; flex-direction: column; align-items: center; gap: 6px; width: max-content; max-width: 94vw;
   padding: 8px 12px 10px; background: rgba(255,255,255,.97); border: 4px solid var(--sw-pink-soft); border-radius: 26px;
   box-shadow: 0 8px 22px var(--sw-shadow); z-index: 3; }
 .lf-bubble.lf-on { display: flex; }

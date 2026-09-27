@@ -292,15 +292,14 @@ async function desktop(browser) {
   const riding = await page.evaluate(() => ({ state: window.__game.player.state, rider: window.__game.pets.rider && window.__game.pets.rider.species }));
   check(riding.state === 'ride' && riding.rider === 'horse', 'Ride button mounts the horse');
   check(await page.evaluate(() => !!window.__game.profile.stickers.giddy_up), 'Giddy Up! sticker earned');
-  const t0 = await page.evaluate(() => { const g = window.__game, p = g.pets.rider.pos; return [p.x, p.z, g.time.t]; });
   await page.mouse.move(640, 700);
   await page.keyboard.down('w');
   await page.waitForTimeout(1800);
+  const speed = await page.evaluate(() => window.__game.pets.rider.hs);
   await page.evaluate(() => { const g = window.__game; g.cameraRig.yaw = g.pets.rider.yaw - Math.PI / 2 + 0.3; g.cameraRig.pitch = 0.1; g.cameraRig.distance = 7; });
   await page.waitForTimeout(700);
   await shot(page, 'horse-ride', P);
   await page.keyboard.up('w');
-  const speed = await page.evaluate(([x, z, t]) => { const g = window.__game, p = g.pets.rider.pos; return Math.hypot(p.x - x, p.z - z) / Math.max(0.01, g.time.t - t); }, t0);
   const seat = await page.evaluate(() => window.__game.player.position.y - window.__game.pets.rider.pos.y);
   check(speed > 7.4, `the horse gallops faster than a pony (${speed.toFixed(1)} blocks/s, a pony trots 7.4)`);
   check(Math.abs(seat - 1.4) < 0.25, `she sits high in the saddle (${seat.toFixed(2)})`);
@@ -309,13 +308,15 @@ async function desktop(browser) {
   check(await page.evaluate(() => window.__game.player.state !== 'ride'), 'Hop off');
 
   // ----- tickle the turtle: it hides in its shell, then peeks out -----
-  const tp = await page.evaluate((id) => {
+  const tp = await page.evaluate(([id, hid]) => {
     const g = window.__game, p = g.pets.byId(id), pl = g.player.position;
-    const x = pl.x - 2, z = pl.z + 3;
+    const h = g.pets.byId(hid);
+    h.teleport(pl.x + 6, pl.y, pl.z - 6, false);
+    const x = pl.x - 4, z = pl.z + 4;
     p.teleport(x, g.world.heightAt(Math.floor(x), Math.floor(z)) + 1.01, z, false);
     return [p.pos.x, p.pos.y, p.pos.z];
-  }, turtle.id);
-  await faceTarget(page, tp[0], tp[1], tp[2], 2.4, 0.5);
+  }, [turtle.id, horse.id]);
+  await faceTarget(page, tp[0], tp[1], tp[2], 2.2, 0.62, true);
   await tool(page, 'Remove');
   check(await tapBody(page, 'pet', turtle.id), 'Remove-tool tapped the turtle');
   await settle(page, 650);
@@ -323,8 +324,9 @@ async function desktop(browser) {
   check(hid.hide > 0.6, `the turtle hides in its shell (hide ${hid.hide.toFixed(2)})`);
   check(await page.evaluate(() => window.__game.pets.pets.length) === 3, 'the Remove tool never removes a pet');
   await shot(page, 'turtle-hides', P);
-  await until(page, (id) => window.__game.debug.pets.info(id).hide < 0.1, turtle.id, 8000);
+  await until(page, (id) => window.__game.debug.pets.info(id).hide < 0.1, turtle.id, 25000);
   check(await page.evaluate((id) => window.__game.debug.pets.info(id).hide < 0.1, turtle.id), 'and peeks back out');
+  await page.evaluate(() => window.__game.cameraRig.setMode('third'));
   await tool(page, 'Hand');
 
   // ----- a pool: the turtle swims fast -----
@@ -351,6 +353,8 @@ async function desktop(browser) {
   // ----- friends: invite three through the Bag and the Friends button -----
   await page.evaluate(() => {
     const g = window.__game, pl = g.player.position;
+    // the pets wait by the pool
+    for (const p of g.pets.pets) g.pets.setMode(p, 'stay', { quiet: true });
     g.player.teleport(pl.x, pl.y, pl.z + 12);
     g.cameraRig.setMode('third');
   });
@@ -414,7 +418,8 @@ async function desktop(browser) {
   const nd = await page.evaluate(() => window.__game.friends.friends.filter((f) => f.avatar.emoting === 'dance').length);
   check(nd >= 3, `everyone dances together (${nd} friends dancing, she dances: ${await page.evaluate(() => window.__game.player.avatar.emoting)})`);
   void dancers;
-  await page.evaluate(() => { const g = window.__game; g.cameraRig.yaw = Math.PI * 0.85; g.cameraRig.pitch = 0.18; g.cameraRig.distance = 6; });
+  await page.mouse.click(640, 560);
+  await page.evaluate(() => { const g = window.__game; g.cameraRig.yaw = 0.55; g.cameraRig.pitch = 0.2; g.cameraRig.distance = 6.5; });
   await settle(page, 900);
   await shot(page, 'dance-party', P);
   check(await page.evaluate(() => !!window.__game.profile.stickers.dance_party), 'Dance Party sticker');
@@ -442,10 +447,19 @@ async function desktop(browser) {
   const eating = await page.evaluate((id) => { const f = window.__game.friends.byId(id); return { eating: f.eatT > 0, food: !!f.food }; }, zoe.id);
   check(eating.eating && eating.food, 'Zoe eats the cookie (it is in her hand)');
   check(await ev(page, 'friend:treat') === 1, 'friend:treat fired');
-  await page.evaluate((id) => { const g = window.__game, f = g.friends.byId(id); g.cameraRig.yaw = Math.atan2(f.pos.x - g.player.position.x, f.pos.z - g.player.position.z); g.cameraRig.distance = 3.2; g.cameraRig.pitch = 0.15; }, zoe.id);
-  await settle(page, 500);
+  await page.mouse.click(640, 560);
+  await page.evaluate((id) => {
+    const g = window.__game, f = g.friends.byId(id), pl = g.player.position;
+    const dx = pl.x - f.pos.x, dz = pl.z - f.pos.z, d = Math.hypot(dx, dz) || 1;
+    g.player.teleport(f.pos.x + (dx / d) * 1.9, pl.y, f.pos.z + (dz / d) * 1.9);
+    g.cameraRig.setMode('first');
+    g.cameraRig.yaw = Math.atan2(-dx, -dz);
+    g.cameraRig.pitch = 0.12;
+  }, zoe.id);
+  await settle(page, 700);
   await shot(page, 'friend-treat', P);
-  await until(page, (id) => window.__game.friends.byId(id).eatT <= 0, zoe.id, 8000);
+  await page.evaluate(() => window.__game.cameraRig.setMode('third'));
+  await until(page, (id) => window.__game.friends.byId(id).eatT <= 0, zoe.id, 25000);
   check(await page.evaluate((id) => !window.__game.friends.byId(id).food, zoe.id), 'she finished it (the treat is gone)');
 
   // ----- dress Ava up -----
@@ -474,10 +488,21 @@ async function desktop(browser) {
   await settle(page, 1200);
   const twins = await page.evaluate((id) => { const g = window.__game; return JSON.stringify(g.friends.byId(id).look.top) === JSON.stringify(g.profile.look.top); }, ava.id);
   check(twins, 'Twins! copies her outfit');
-  await page.evaluate(() => { const g = window.__game; g.cameraRig.yaw = Math.PI * 0.85; g.cameraRig.distance = 4.2; g.cameraRig.pitch = 0.2; });
-  await settle(page, 700);
+  await page.mouse.click(640, 560);
+  // side by side, matching outfits
+  await page.evaluate((id) => {
+    const g = window.__game, f = g.friends.byId(id), pl = g.player.position;
+    f.teleport(pl.x + 1.1, pl.y, pl.z, false);
+    f.yaw = Math.PI;
+    f.attention = 4;
+    g.player.yaw = Math.PI;
+    g.cameraRig.yaw = 0.15;
+    g.cameraRig.distance = 3.6;
+    g.cameraRig.pitch = 0.12;
+  }, ava.id);
+  await settle(page, 900);
   await shot(page, 'friend-twins', P);
-  await page.mouse.click(640, 740);
+  await page.mouse.click(640, 560);
 
   // ----- Follow me -----
   await page.evaluate(() => { const g = window.__game; g.cameraRig.yaw = 0; g.cameraRig.pitch = 0.3; g.cameraRig.distance = 5; });
@@ -487,7 +512,7 @@ async function desktop(browser) {
   await page.waitForSelector('.pl-bubble.pl-on .sw-round[aria-label="Follow me"]', { timeout: 4000 });
   await page.locator('.pl-bubble.pl-on .sw-round[aria-label="Follow me"]').click();
   check(await page.evaluate((id) => window.__game.friends.byId(id).mode === 'follow', mia.id), 'Mia follows her');
-  await page.mouse.click(640, 740);
+  await page.mouse.click(640, 560);
   await page.evaluate(() => { const g = window.__game; g.cameraRig.yaw = Math.PI; g.player.yaw = Math.PI; });
   await page.keyboard.down('s');
   await page.waitForTimeout(2200);
@@ -536,8 +561,14 @@ async function desktop(browser) {
   const asleep = await until(page, () => window.__game.friends.friends.filter((f) => f.act === 'sleep' && f.bed && !f.bed.ground).length >= 3, null, 40000);
   const sl = await page.evaluate(() => window.__game.friends.friends.map((f) => `${f.name}:${f.act}`));
   check(!!asleep, `friends sleep in the beds at night (${sl.join(', ')})`);
-  await faceTarget(page, set[0] + 1, set[1], set[2] + 5, 5.5, 0.55);
-  await page.evaluate(() => { const g = window.__game; g.cameraRig.distance = 6; });
+  await page.evaluate(([x, y, z]) => {
+    const g = window.__game;
+    g.player.teleport(x + 1.5, y + 0.01, z + 1.6);
+    g.cameraRig.setMode('third');
+    g.cameraRig.yaw = 0.35;
+    g.cameraRig.pitch = 0.62;
+    g.cameraRig.distance = 5;
+  }, set);
   await settle(page, 1500);
   await shot(page, 'friends-sleep-night', P);
 

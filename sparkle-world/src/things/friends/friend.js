@@ -255,8 +255,8 @@ export class Friend {
     this.food = model;
     this.food.userData.key = key;
     // in her right hand (the forearm bone), a little forward of the fingers
-    this.food.position.set(0, -0.24, 0.07);
-    this.food.scale.setScalar(0.85);
+    this.food.position.set(0, -0.25, 0.06);
+    this.food.scale.setScalar(0.72);
     this.avatar.bones.elbowR.add(this.food);
     this.eatT = 3.4;
     this.biteT = 0.9;
@@ -301,7 +301,8 @@ export class Friend {
     this._eatTick(dt);
     if (animate) {
       this.avatar.update(dt, {
-        speed: this.hs,
+        // a little nudge (making room for her) never cancels a dance
+        speed: this.emoteLeft > 0 && this.hs < 1.6 ? 0 : this.hs,
         onGround: this.onGround,
         swimming: this.swimming,
         flying: false,
