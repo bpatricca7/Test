@@ -7,11 +7,17 @@
   "scripts": {
     "build": "node tools/build.mjs",
     "dev": "node tools/build.mjs --serve",
-    "smoke": "node tools/build.mjs && node tools/smoke.mjs"
+    "smoke": "node tools/build.mjs && node tools/smoke.mjs",
+    "start": "node server/server.mjs",
+    "test:net": "node tools/test-net.mjs"
   },
   "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
   "dependencies": {
-    "three": "0.186.1"
+    "three": "0.186.1",
+    "ws": "8.22.0"
   },
   "devDependencies": {
     "esbuild": "0.28.2",
