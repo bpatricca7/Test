@@ -92,10 +92,6 @@ export class WsTransport extends FrameTransport {
     }
     this._ws = ws;
     this._lastRx = this.clock.now();
-    ws.onopen = () => {
-      this._attempt = 0;
-      this._downSince = 0;
-    };
     ws.onmessage = (ev) => {
       if (this._ws !== ws) return;
       this._lastRx = this.clock.now();
@@ -121,13 +117,26 @@ export class WsTransport extends FrameTransport {
   _onSocketClosed(code) {
     if (this._stopped || this._closed) return;
     const err = CLOSE_TO_ERROR[code];
-    if (err) {
-      if (this._welcome) this._failOpen(new NetError(err));
-      else this._onFatal('ended');
+    if (err && this._welcome) {
+      this._failOpen(new NetError(err));
       this._stopped = true;
       return;
     }
+    if (err === 'no_rooms' || err === 'invalid') {
+      this._stopped = true;
+      this._onFatal('ended');
+      return;
+    }
+    // after we were in: a full room or a busy server is a reason to keep trying (a friend's
+    // old page is still fading out of the room), until the give-up time
     this._scheduleRetry();
+  }
+
+  /** In the room again (the whole roster arrived): the retry schedule starts over. */
+  _onLinkUp() {
+    this._attempt = 0;
+    this._downSince = 0;
+    super._onLinkUp();
   }
 
   _scheduleRetry() {

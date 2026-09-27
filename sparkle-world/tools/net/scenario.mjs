@@ -293,12 +293,12 @@ export async function scenario(seed, steps, net, { quietMs = 10000, maxQuietMs =
   const snapshotState = () => {
     const hv = H.adapter.view();
     const issues = [];
-    if (H.session.state !== 'h.live') issues.push('host ' + H.session.state);
+    if (H.session.state !== 'h.live') issues.push(`host ${H.session.state} (messages: ${H.messages.join(', ') || 'none'})`);
     const core = H.session.hostCore;
     for (const g of live()) {
       const gc = g.session.guestCore;
       if (g.session.state !== 'g.live') {
-        issues.push(`${g.name} ${g.session.state}`);
+        issues.push(`${g.name} ${g.session.state} (messages: ${g.messages.join(', ') || 'none'})`);
         continue;
       }
       if (gc.outbox.length || gc.run) issues.push(`${g.name} outbox ${gc.outbox.length}`);
