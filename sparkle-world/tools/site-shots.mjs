@@ -1,31 +1,39 @@
 // Real game pictures for the home page (site/img/): staged with the debug API, rendered by
 // headless Chromium (SwiftShader WebGL2) at deviceScaleFactor 2, encoded to WebP in the page.
 //
-//   node tools/site-shots.mjs [--only=title,studio,...] [--no-build] [--keep-png]
+//   node tools/site-shots.mjs [--only=title,studio,...] [--no-build] [--keep-png] [--force-small]
 //
 // It builds the game (unless --no-build), starts server/server.mjs in-process on a free port
 // and opens the game at /play (so "Play with Friends" is there, like on Railway). Scenes:
 //
-//   title    the title screen (live 3D backdrop, "Hi, Lily!")
-//   studio   the Dress-Up Studio on the Hair tab (12 styles), in a princess look with wings
-//   bedroom  a furnished bedroom with the princess canopy bed, at golden hour, lamps on
-//   camper   the Sparkle Camper (rooftop deck, slide and pool) in a flower meadow
-//   zip      a zip line between two towers, caught mid-ride
-//   unicorn  riding the unicorn with its rainbow trail
-//   pets     puppies, kitties, a bunny, a turtle, a pony, a horse and the unicorn
-//   night    a cottage at night: stars, the moon, lamps glowing in the windows
-//   candy    Candy Land from the air
-//   icecream the Ice Cream Parlor's build-your-own sundae
-//   friends  friends from the Bag dancing together
-//   code     "Make a Code" (4 pictures), "Join a Code" keypad on a phone, and the knock card
-//   tiles    16x16 block textures for the page's CSS blocks (site/img/tiles/*.png)
+//   title          the title screen (live 3D backdrop, "Hi, Lily!")
+//   studio         the Dress-Up Studio on the Hair tab (12 styles), in a princess look with wings
+//   building       real play on an iPad (touch HUD: joystick, Bag, hotbar, Undo) half way
+//                  through a real hold-and-drag row of pink planks
+//   bedroom        a furnished bedroom with the princess canopy bed, at golden hour, lamps on
+//   camper         the Sparkle Camper (rooftop deck, slide and pool), close up
+//   camper-inside  inside it: the bunk beds and the kitchenette
+//   zip            a zip line between two towers, caught mid-ride
+//   unicorn        riding the unicorn with its rainbow trail
+//   pets           puppies, kitties, a bunny, a turtle, a pony, a horse and the unicorn (21:9)
+//   night          a cottage at night: stars, the moon, lamps glowing in the windows
+//   friends        friends from the Bag dancing together
+//   worlds         the seven world types as 4:5 postcards, 480x600 (world-meadow, -candy,
+//                  -beach, -snow, -fairy (by day, at its glowing mushrooms), -flat (a little
+//                  town on Builder Flat), -mix); fairy-dusk tries the Fairy Forest at dusk
+//   icecream       the Ice Cream Parlor's build-your-own sundae (just the sundae card)
+//   code           "Join a Code" keypad on a phone, and the real knock card on its own
+//   tiles          16x16 block textures for the page's CSS blocks (site/img/tiles/*.png)
+//   small          800 px wide copies (<name>-800.webp) for srcset, of pictures that have none
+//   share          img/share.jpg (1200x630 link preview) and img/icon-180.png (home-screen
+//                  icon), both from the built home page itself (needs dist/site/)
 //
 // Pictures go to site/img/<name>.webp. LOOK at them after a run.
 
 import { mkdir, writeFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
-import { launch, attachErrorCollectors, waitForTitle, waitForPlay, waitIdle, settle, ROOT, SHOTS } from './smoke.mjs';
+import { launch, attachErrorCollectors, waitForTitle, waitForPlay, waitIdle, settle, screenPoint, ROOT, SHOTS } from './smoke.mjs';
 import { createServer } from '../server/server.mjs';
 import { routeGoogleFonts } from './site-fonts.mjs';
 
@@ -134,38 +142,68 @@ async function freeCamOff(page) {
   });
 }
 
-/**
- * Screenshot (optionally a clip, in CSS px) -> WebP at `width` px wide, quality q, saved as
- * site/img/<name>.webp. Also keeps a PNG in .shots/ with --keep-png.
- */
-async function grab(page, name, { clip = null, width = 1400, q = 0.86, type = 'webp' } = {}) {
-  const png = await page.screenshot({ type: 'png', ...(clip ? { clip } : {}) });
-  if (arg('keep-png')) {
-    await mkdir(SHOTS, { recursive: true });
-    await writeFile(path.join(SHOTS, `site-src-${name}.png`), png);
-  }
-  const url = await encoder.evaluate(async ([b64, width, q, type]) => {
+/** Encode a PNG (buffer or data: URL) in the encoder page: scaled to `width` px wide, optionally
+ *  laid on a `bg` color with `pad` px around it; returns the encoded bytes. */
+async function encode(src, { width, q = 0.86, type = 'webp', pad = 0, bg = null, height = null }) {
+  const data = Buffer.isBuffer(src) ? 'data:image/png;base64,' + src.toString('base64') : src;
+  const mime = type === 'jpeg' ? 'image/jpeg' : type === 'png' ? 'image/png' : 'image/webp';
+  const url = await encoder.evaluate(async ([data, width, q, mime, pad, bg, height]) => {
     const img = new Image();
-    img.src = 'data:image/png;base64,' + b64;
+    img.src = data;
     await img.decode();
-    const w = Math.min(width, img.naturalWidth);
-    const h = Math.round((img.naturalHeight * w) / img.naturalWidth);
+    const inner = Math.min(width - 2 * pad, img.naturalWidth);
+    const ih = Math.round((img.naturalHeight * inner) / img.naturalWidth);
     const c = document.createElement('canvas');
-    c.width = w;
-    c.height = h;
+    c.width = inner + 2 * pad;
+    c.height = height || ih + 2 * pad;
     const x = c.getContext('2d');
+    if (bg) { x.fillStyle = bg; x.fillRect(0, 0, c.width, c.height); }
     x.imageSmoothingEnabled = true;
     x.imageSmoothingQuality = 'high';
-    x.drawImage(img, 0, 0, w, h);
-    return c.toDataURL(type === 'jpeg' ? 'image/jpeg' : 'image/webp', q);
-  }, [png.toString('base64'), width, q, type]);
-  const buf = Buffer.from(url.slice(url.indexOf(',') + 1), 'base64');
-  const file = path.join(OUT, `${name}.${type === 'jpeg' ? 'jpg' : 'webp'}`);
+    x.drawImage(img, pad, Math.round((c.height - ih) / 2), inner, ih);
+    return c.toDataURL(mime, q);
+  }, [data, width, q, mime, pad, bg, height]);
+  return Buffer.from(url.slice(url.indexOf(',') + 1), 'base64');
+}
+
+async function save(name, buf, ext = 'webp') {
+  const file = path.join(OUT, `${name}.${ext}`);
   await mkdir(path.dirname(file), { recursive: true });
   await writeFile(file, buf);
   sizes[name] = buf.length;
   console.log(`  ${path.relative(ROOT, file)}  ${(buf.length / 1024).toFixed(0)} KB`);
   return file;
+}
+
+/**
+ * Screenshot (optionally a clip, in CSS px) -> WebP at `width` px wide, quality q, saved as
+ * site/img/<name>.webp; with `small` also site/img/<name>-<small>.webp (for srcset, phones).
+ * Also keeps a PNG in .shots/ with --keep-png.
+ */
+async function grab(page, name, { clip = null, width = 1400, q = 0.86, type = 'webp', small = 0, pad = 0, bg = null, omitBackground = false } = {}) {
+  const png = await page.screenshot({ type: 'png', omitBackground, timeout: 180000, ...(clip ? { clip } : {}) });
+  if (arg('keep-png')) {
+    await mkdir(SHOTS, { recursive: true });
+    await writeFile(path.join(SHOTS, `site-src-${name}.png`), png);
+  }
+  const ext = type === 'jpeg' ? 'jpg' : type === 'png' ? 'png' : 'webp';
+  const file = await save(name, await encode(png, { width, q, type, pad, bg }), ext);
+  if (small) await save(`${name}-${small}`, await encode(png, { width: small, q: Math.min(q, 0.82), type, pad: Math.round((pad * small) / width), bg }), ext);
+  return file;
+}
+
+/** 4:5 postcard crop from the middle of the window (the world cards). */
+function cardClip(page) {
+  const vp = page.viewportSize();
+  const w = Math.round((vp.height * 4) / 5);
+  return { x: Math.round((vp.width - w) / 2), y: 0, width: w, height: vp.height };
+}
+
+/** A band crop (`ratio` = width / height) from the window, `at` = 0 top .. 1 bottom. */
+function bandClip(page, ratio, at = 0.5) {
+  const vp = page.viewportSize();
+  const h = Math.round(vp.width / ratio);
+  return { x: 0, y: Math.round((vp.height - h) * at), width: vp.width, height: h };
 }
 
 /** Find a patch of ground in a square that is as flat as possible (returns its center + height). */
@@ -196,7 +234,7 @@ async function sceneTitle(browser) {
   const { context, page } = await openPlay(browser);
   await page.waitForSelector('button.sw-title-friends:not([hidden])', { timeout: 15000 }).catch(() => {});
   await settle(page, 3500);
-  await grab(page, 'title', { width: 1600 });
+  await grab(page, 'title', { width: 1600, small: 800 });
   await context.close();
 }
 
@@ -222,19 +260,19 @@ async function sceneStudio(browser) {
     return pics.length > 0 && pics.every((p) => p.classList.contains('sw-ready'));
   }, null, { timeout: 40000, polling: 250 }).catch(() => console.log('  (some thumbnails still rendering)'));
   await settle(page, 2200);
-  await grab(page, 'studio', { width: 1600 });
+  await grab(page, 'studio', { width: 1600, small: 800 });
   await context.close();
 }
 
 /** The meadow scenes share one big world (different corners). */
 async function meadowScenes(browser) {
-  const names = ['bedroom', 'camper', 'zip', 'unicorn', 'pets', 'night', 'friends'].filter(want);
+  const names = ['bedroom', 'camper', 'camper-inside', 'zip', 'unicorn', 'pets', 'night', 'friends'].filter(want);
   if (!names.length) return;
   const { context, page } = await openPlay(browser);
   await newWorld(page, 'meadow', { seed: 7 });
   const size = await page.evaluate(() => ({ sx: window.__game.world.sx, sz: window.__game.world.sz }));
   console.log(`meadow world ${size.sx}x${size.sz}`);
-  if (want('camper')) await sceneCamper(page, size);
+  if (want('camper') || want('camper-inside')) await sceneCamper(page, size);
   if (want('bedroom')) await sceneBedroom(page, size);
   if (want('night')) await sceneNight(page, size);
   if (want('pets')) await scenePets(page, size);
@@ -335,10 +373,21 @@ async function sceneCamper(page, { sx, sz }) {
   const span = Math.max(res.plan.W, res.plan.D);
   console.log(`  camper ${res.plan.W}x${res.plan.H}x${res.plan.D} at ${cx},${y},${cz}`);
   await clean(page);
-  await freeCam(page, [b.x1 + span * 0.3, y + span * 0.42, b.z1 + span * 0.5], [cx, y + 1.4, cz], { fov: 54 });
+  // close in on the camper, the roof deck and the slide into the pool
+  await freeCam(page, [b.x1 + span * 0.06, y + span * 0.34, b.z1 + span * 0.52], [cx + 1.5, y + 3.2, cz], { fov: 50 });
   await meshed(page);
   await settle(page, 1400);
-  await grab(page, 'camper');
+  await grab(page, 'camper', { small: 800 });
+  // inside: the bunk beds and the kitchenette (the prefab's own "bunks" view, a little wider)
+  if (want('camper-inside')) {
+    const v = res.plan.view && res.plan.view.bunks;
+    const from = local(res, 14.6, 4.1, 8.9), to = local(res, 5.2, 2.5, 6.6);
+    if (v) console.log(`  camper inside from ${from.map((n) => n.toFixed(1))} to ${to.map((n) => n.toFixed(1))}`);
+    await freeCam(page, from, to, { fov: 74 });
+    await meshed(page);
+    await settle(page, 1400);
+    await grab(page, 'camper-inside', { small: 800 });
+  }
   await freeCamOff(page);
 }
 
@@ -394,7 +443,7 @@ async function sceneBedroom(page, { sx }) {
     await freeCam(page, [x0 + 5.4, Y + 4.4, z0 + 9.4], [x0 + 3.2, Y + 0.7, z0 + 2.6], { fov: 54 });
     await meshed(page);
     await settle(page, 1600);
-    await grab(page, name);
+    await grab(page, name, { small: 800 });
   }
   await freeCamOff(page);
   await page.evaluate(() => { const g = window.__game; for (const q of g.pets.pets.slice()) g.pets.remove(q); g.setDayTime(0.4); });
@@ -425,7 +474,7 @@ async function sceneNight(page, { sx, sz }) {
   await freeCam(page, [cx + span * 0.45, y + 2.6, b.z1 + span * 0.95], [cx, y + res.plan.maxY * 0.62, cz], { fov: 60 });
   await meshed(page);
   await settle(page, 1800);
-  await grab(page, 'night');
+  await grab(page, 'night', { small: 800 });
   await freeCamOff(page);
   await page.evaluate(() => window.__game.setDayTime(0.4));
 }
@@ -457,10 +506,11 @@ async function scenePets(page, { sx, sz }) {
   await settle(page, 2500);
   await page.evaluate(() => { for (const q of window.__game.pets.pets) q.anim.happy = 2; });
   await clean(page);
-  await freeCam(page, [p.cx + 0.3, p.y + 2.6, p.cz + 8.4], [p.cx, p.y + 0.6, p.cz - 0.4], { fov: 48 });
+  // a wide band (21:9) for the full-width Pets chapter: a little lower and wider than before
+  await freeCam(page, [p.cx + 0.3, p.y + 2.2, p.cz + 8.8], [p.cx, p.y + 1.1, p.cz - 0.4], { fov: 44 });
   await meshed(page);
   await settle(page, 600);
-  await grab(page, 'pets');
+  await grab(page, 'pets', { clip: bandClip(page, 21 / 9, 0.5), width: 2000, small: 800, q: 0.84 });
   await freeCamOff(page);
   await page.evaluate(() => { const g = window.__game; for (const q of g.pets.pets.slice()) g.pets.remove(q); });
 }
@@ -486,7 +536,7 @@ async function sceneFriends(page, { sx, sz }) {
   await clean(page);
   await freeCam(page, [p.x + 0.4, p.y + 2.0, p.z + 4.6], [p.x + 0.3, p.y + 1.0, p.z - 2.2], { fov: 55, player: true });
   await settle(page, 700);
-  await grab(page, 'friends');
+  await grab(page, 'friends', { small: 800 });
   await freeCamOff(page);
   await page.evaluate((ids) => { const d = window.__game.debug.friends; for (const id of ids) if (id) d.remove(id); }, p.ids);
 }
@@ -564,7 +614,7 @@ async function sceneZip(page, { sx, sz }) {
   // from the side and a little ahead, looking back along the cable
   await freeCam(page, [px + pose.s[0] * 4.2 + pose.f[0] * 2.4, py + 0.9, pz + pose.s[1] * 4.2 + pose.f[1] * 2.4], [px - pose.f[0] * 0.8, py + 1.2, pz - pose.f[1] * 0.8], { fov: 58, player: true });
   await settle(page, 1200);
-  await grab(page, 'zip');
+  await grab(page, 'zip', { small: 800 });
   await page.evaluate(() => { window.__game.outdoor.zip.freeze = false; });
   await freeCamOff(page);
   await page.waitForFunction(() => !window.__game.debug.outdoor.ride(), null, { timeout: 120000, polling: 250 }).catch(() => {});
@@ -601,7 +651,7 @@ async function sceneUnicorn(page, { sx, sz }) {
     await freeCam(page, [q.p[0] + sd[0] * 5.2 + f[0] * 3.2, q.p[1] + 1.7, q.p[2] + sd[1] * 5.2 + f[1] * 3.2], [q.p[0] - f[0] * 1.2, q.p[1] + 0.9, q.p[2] - f[1] * 1.2], { fov: 58, player: true });
     await page.waitForTimeout(120);
   }
-  await grab(page, 'unicorn');
+  await grab(page, 'unicorn', { small: 800 });
   await page.keyboard.up('w');
   void r;
   await freeCamOff(page);
@@ -609,23 +659,155 @@ async function sceneUnicorn(page, { sx, sz }) {
 }
 
 async function sceneCandy(browser) {
-  console.log('candy');
+  console.log('world-candy');
   const { context, page } = await openPlay(browser);
   await newWorld(page, 'candy', { seed: 11, name: "Lily's Candy Land", time: 0.42 });
   const size = await page.evaluate(() => ({ sx: window.__game.world.sx, sz: window.__game.world.sz }));
   const s = await flatSpot(page, { x0: 30, z0: 30, x1: size.sx - 30, z1: size.sz - 30, r: 7 });
   const res = await placeBuild(page, 'candy_house', s.x, s.z, 0);
+  await parkPlayer(page, 8, 8);
   await clean(page);
   const cx = res ? (res.bounds.x0 + res.bounds.x1) / 2 : s.x, cz = res ? (res.bounds.z0 + res.bounds.z1) / 2 : s.z;
   const y = res ? res.placement.y : s.y;
-  await freeCam(page, [cx + 24, y + 20, cz + 30], [cx, y + 2, cz], { fov: 55 });
+  // a postcard: the candy house in the middle, frosting hills around it
+  await freeCam(page, [cx + 13, y + 17, cz + 30], [cx - 1, y + 1, cz - 3], { fov: 56 });
   await meshed(page);
   await settle(page, 1500);
-  await grab(page, 'candy');
+  await grab(page, 'world-candy', { clip: cardClip(page), width: 480, q: 0.8 });
   await context.close();
 }
 
-/** A world type from a low flying view over its middle (fog pushed back a little). */
+/** Every stem base of a glowing giant mushroom, with how many others stand near it. */
+async function glowMushrooms(page) {
+  return page.evaluate(() => {
+    const g = window.__game, w = g.world, B = g.registry.blocks;
+    const stem = B.idOf('mushroom_stem'), cap = B.idOf('mushroom_cap_glow');
+    const bases = [];
+    for (let x = 12; x < w.sx - 12; x++) for (let z = 12; z < w.sz - 12; z++) {
+      for (let y = 12; y < 60; y++) {
+        if (w.get(x, y, z) !== stem || w.get(x, y - 1, z) === stem) continue;
+        let top = y;
+        while (w.get(x, top + 1, z) === stem) top++;
+        if (w.get(x, top + 1, z) === cap) bases.push({ x, y, z, top });
+      }
+    }
+    for (const b of bases) b.near = bases.filter((o) => o !== b && Math.hypot(o.x - b.x, o.z - b.z) < 13).length;
+    return { bases, sx: w.sx, sz: w.sz };
+  });
+}
+
+async function sceneFairy(browser, { time = 0.42, name = 'world-fairy' } = {}) {
+  console.log(name);
+  const { context, page } = await openPlay(browser);
+  await newWorld(page, 'fairy', { seed: 5, name: "Lily's Fairy Forest", time });
+  await parkPlayer(page, 8, 8);
+  const { bases, sx, sz } = await glowMushrooms(page);
+  if (!bases.length) {
+    errors.push('[site] no glowing mushrooms in the Fairy Forest');
+    await context.close();
+    return;
+  }
+  // the busiest patch of glowing mushrooms not too far from the middle
+  const mid = (b) => Math.hypot(b.x - sx / 2, b.z - sz / 2);
+  bases.sort((a, b) => (b.near - mid(b) / 25) - (a.near - mid(a) / 25));
+  const m = bases[0];
+  const others = bases.filter((o) => o !== m && Math.hypot(o.x - m.x, o.z - m.z) < 13);
+  const gx = others.reduce((a, o) => a + o.x, m.x) / (others.length + 1), gz = others.reduce((a, o) => a + o.z, m.z) / (others.length + 1);
+  // look at the patch from the side with the clearest view (fewest blocks in the way)
+  const target = [gx + 0.5, m.top - 1, gz + 0.5];
+  const dir = await page.evaluate(({ target, sx, sz }) => {
+    const g = window.__game, w = g.world, props = g.registry.blocks.props;
+    let best = null;
+    for (let k = 0; k < 16; k++) {
+      const a = (k / 16) * Math.PI * 2, dx = Math.cos(a), dz = Math.sin(a);
+      const cam = [target[0] + dx * 19, target[1] + 7, target[2] + dz * 19];
+      let blocked = 0;
+      for (let t = 0.12; t < 0.86; t += 0.02) {
+        const x = cam[0] + (target[0] - cam[0]) * t, y = cam[1] + (target[1] - cam[1]) * t, z = cam[2] + (target[2] - cam[2]) * t;
+        const id = w.get(Math.floor(x), Math.floor(y), Math.floor(z));
+        if (id && !props.replaceable[id]) blocked++;
+      }
+      const inward = -(dx * (sx / 2 - target[0]) + dz * (sz / 2 - target[2])) / 100; // prefer standing toward the middle
+      const score = blocked + inward;
+      if (!best || score < best.score) best = { dx, dz, blocked, score };
+    }
+    return best;
+  }, { target, sx, sz });
+  const dx = dir.dx, dz = dir.dz;
+  console.log(`  ${bases.length} glowing mushrooms; patch of ${others.length + 1} at ${gx.toFixed(0)},${gz.toFixed(0)}; view blocked ${dir.blocked}`);
+  await clean(page);
+  await page.evaluate(() => {
+    const g = window.__game, bu = g.blockUniforms, fog = g.scene.fog;
+    bu.uFogNear.value = 90; bu.uFogFar.value = 220; fog.near = 90; fog.far = 220;
+  });
+  const cam = [target[0] + dx * 19, target[1] + 7, target[2] + dz * 19];
+  await freeCam(page, cam, target, { fov: 60 });
+  await meshed(page);
+  await settle(page, 1800);
+  await grab(page, name, { clip: cardClip(page), width: 480, q: 0.82 });
+  await context.close();
+}
+
+/** Builder Flat: a little town (a street of Magic Houses, lamps, a garden and a playground). */
+async function sceneFlatTown(browser) {
+  console.log('world-flat');
+  const { context, page } = await openPlay(browser);
+  await newWorld(page, 'flat', { seed: 5, name: "Lily's Little Town", time: 0.4 });
+  await parkPlayer(page, 8, 8);
+  const c = await page.evaluate(() => {
+    const g = window.__game, w = g.world;
+    const x = Math.floor(w.sx / 2), z = Math.floor(w.sz / 2);
+    return { x, z, y: w.heightAt(x, z) };
+  });
+  const town = await page.evaluate(({ c }) => {
+    const g = window.__game, w = g.world, B = g.registry.blocks, E = g.entities;
+    const PATH = B.idOf('path');
+    const zs = c.z; // the street runs along x
+    w.batch(() => {
+      for (let x = c.x - 44; x <= c.x + 44; x++) for (let z = zs - 1; z <= zs + 1; z++) w.set(x, c.y, z, PATH, { record: false });
+    });
+    const placed = [];
+    // north side: houses facing the street
+    let x = c.x - 34;
+    for (const key of ['cottage', 'bakery', 'pet_shop', 'candy_house', 'modern_house']) {
+      const p = g.prefabs.plan(key);
+      if (!p) continue;
+      const px = x + p.ax, pz = zs - 3 - (p.D - 1) + p.az;
+      const r = g.prefabs.place(key, px, pz, { rot: 0 });
+      if (r) { placed.push({ key, b: r.bounds }); x = r.bounds.x1 + 4; } else x += p.W + 4;
+    }
+    // south side: a flower garden and a playground
+    x = c.x - 26;
+    for (const key of ['flower_garden', 'playground', 'flower_garden']) {
+      const p = g.prefabs.plan(key);
+      if (!p) continue;
+      const px = x + p.ax, pz = zs + 3 + p.az;
+      const r = g.prefabs.place(key, px, pz, { rot: 0 });
+      if (r) { placed.push({ key, b: r.bounds }); x = r.bounds.x1 + 6; } else x += p.W + 6;
+    }
+    // lamps along the street
+    for (let lx = c.x - 36; lx <= c.x + 36; lx += 8) {
+      E.place('lantern_post', lx, c.y + 1, zs - 2, 0, '#FF9CCB', {}, { history: false, fx: false });
+      E.place('lantern_post', lx + 4, c.y + 1, zs + 2, 0, '#C8B4FF', {}, { history: false, fx: false });
+    }
+    return placed;
+  }, { c });
+  console.log(`  town: ${town.map((t) => t.key).join(', ')}`);
+  await waitIdle(page);
+  await clean(page);
+  await page.evaluate(() => {
+    const g = window.__game, bu = g.blockUniforms, fog = g.scene.fog;
+    bu.uFogNear.value = 110; bu.uFogFar.value = 240; fog.near = 110; fog.far = 240;
+  });
+  // down the street from above one end
+  await freeCam(page, [c.x + 30, c.y + 20, c.z + 17], [c.x + 2, c.y + 2, c.z - 3], { fov: 58 });
+  await meshed(page);
+  await settle(page, 1800);
+  await grab(page, 'world-flat', { clip: cardClip(page), width: 480, q: 0.8 });
+  await context.close();
+}
+
+/** A world type from a low flying view over its middle (fog pushed back a little), as a 4:5 card. */
 async function sceneBiome(browser, biome, { time = 0.4, weather = 'sunny', seed = 5, name = 'World', view = null } = {}) {
   console.log(`world-${biome}`);
   const { context, page } = await openPlay(browser);
@@ -647,7 +829,96 @@ async function sceneBiome(browser, biome, { time = 0.4, weather = 'sunny', seed 
   await freeCam(page, v[0], v[1], { fov: 62 });
   await meshed(page);
   await settle(page, 1800);
-  await grab(page, `world-${biome}`, { width: 1200 });
+  await grab(page, `world-${biome}`, { clip: cardClip(page), width: 480, q: 0.8 });
+  await context.close();
+}
+
+/**
+ * Real play on an iPad (1024x768, touch): the on-screen joystick, the Bag, the hotbar and Undo,
+ * and a row of pink planks half way through a real hold-and-drag (the finger is still down).
+ */
+async function sceneBuilding(browser) {
+  console.log('building');
+  const { context, page } = await openPlay(browser, { viewport: { width: 1024, height: 768 }, touch: true });
+  await newWorld(page, 'meadow', { seed: 7, time: 0.4 });
+  await page.evaluate(() => {
+    const g = window.__game;
+    const slots = ['block:planks_pink', 'block:glass_heart', 'block:planks_white', 'block:roof_pink', 'block:lamp_block', 'block:wallpaper_hearts', 'furn:bed_canopy', 'furn:table_lamp', 'block:flower_tulip_pink'];
+    slots.forEach((k, i) => { if (g.registry.items.has(k)) g.setSlot(i, k); });
+    g.selectSlot(0);
+  });
+  const size = await page.evaluate(() => ({ sx: window.__game.world.sx, sz: window.__game.world.sz }));
+  const S = await flatSpot(page, { x0: 40, z0: 40, x1: size.sx - 40, z1: size.sz - 40, r: 10 });
+  // the house: 7 wide (x0..x1), 5 deep (z0..z1); she stands in front of it, a little to the left
+  const x0 = S.x - 2, x1 = S.x + 4, z0 = S.z - 4, z1 = S.z;
+  const G = await lot(page, S.x, S.z + 2, { rx: 16, rz: 14, flowers: 0.14, clear: [x0 - 4, z0 - 2, x1 + 4, z1 + 9], seed: 17 });
+  await clearTrees(page, x0 - 18, z0 - 16, x1 + 18, z1 + 16);
+  await page.evaluate(({ x0, x1, z0, z1, G }) => {
+    const g = window.__game, w = g.world, B = g.registry.blocks;
+    const set = (x, y, z, k) => w.set(x, y, z, B.idOf(k), { record: false });
+    w.batch(() => {
+      for (let x = x0 + 1; x < x1; x++) for (let z = z0 + 1; z < z1; z++) set(x, G, z, 'planks_white');
+      for (let y = G + 1; y <= G + 3; y++) {
+        for (let x = x0; x <= x1; x++) set(x, y, z0, 'planks_pink');
+        for (let z = z0; z <= z1; z++) set(x0, y, z, 'planks_pink');
+        if (y <= G + 2) for (let z = z0; z <= z1; z++) set(x1, y, z, 'planks_pink');
+      }
+      set(x0 + 2, G + 2, z0, 'glass_heart');
+      set(x0 + 4, G + 2, z0, 'glass_heart');
+      set(x0, G + 2, z0 + 2, 'glass_heart');
+      set(x0, G + 4, z0, 'lamp_block');
+      set(x1, G + 3, z0, 'lamp_block');
+    });
+  }, { x0, x1, z0, z1, G });
+  await waitIdle(page);
+  await page.evaluate(({ x, y, z }) => {
+    const g = window.__game;
+    g.player.setFlying(false);
+    g.player.teleport(x, y, z);
+    g.player.velocity.set(0, 0, 0);
+    g.cameraRig.setMode('third');
+    g.cameraRig.yaw = Math.PI - 0.16;
+    g.player.yaw = Math.PI - 0.16;
+    g.cameraRig.pitch = 0.5;
+    g.cameraRig.distance = 4.6;
+    g.cameraRig.snap();
+  }, { x: x0 - 0.3, y: G + 1.02, z: z1 + 4.2 });
+  await page.evaluate(() => {
+    const s = document.createElement('style');
+    s.textContent = '.sw-toasts, .sw-toast, .sw-hint, .sw-stkpop { display: none !important; }';
+    document.head.appendChild(s);
+  });
+  await meshed(page);
+  await settle(page, 1500);
+  // a real hold-and-drag along the front wall's first row, from the left corner
+  // (touches in the left 40% of an iPad screen steer the joystick, so the row starts right of that)
+  const pt = (x) => screenPoint(page, x + 0.5, G + 1, z1 + 0.5);
+  const a = await pt(x0 + 1), b = await pt(x0 + 3);
+  console.log(`  drag from ${a && a.x.toFixed(0)},${a && a.y.toFixed(0)} to ${b && b.x.toFixed(0)},${b && b.y.toFixed(0)}`);
+  if (!a || !b || a.x < 1024 * 0.42) {
+    errors.push('[site] building: the front row is not on the right part of the screen');
+    await context.close();
+    return;
+  }
+  const cdp = await context.newCDPSession(page);
+  const touch = (type, p) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: p ? [{ x: p.x, y: p.y, id: 1, radiusX: 8, radiusY: 8, force: 1 }] : [] });
+  await touch('touchStart', a);
+  await page.waitForTimeout(700);
+  for (let i = 1; i <= 12; i++) {
+    await touch('touchMove', { x: a.x + ((b.x - a.x) * i) / 12, y: a.y + ((b.y - a.y) * i) / 12 });
+    await page.waitForTimeout(60);
+  }
+  await settle(page, 900);
+  const row = await page.evaluate(({ x0, x1, z1, G }) => {
+    const g = window.__game;
+    let n = 0;
+    for (let x = x0 + 1; x < x1; x++) if (g.debug.getBlock(x, G + 1, z1) === 'planks_pink') n++;
+    return n;
+  }, { x0, x1, z1, G });
+  console.log(`  the drag laid ${row} of the front row's 5 blocks`);
+  if (row < 2) errors.push(`[site] building: the hold-and-drag laid ${row} blocks`);
+  await grab(page, 'building', { width: 1400, small: 800 });
+  await touch('touchEnd', null);
   await context.close();
 }
 
@@ -678,7 +949,13 @@ async function sceneIceCream(browser) {
   await page.locator('.sw-panel-wrap.sw-open .sh-opt[data-top="whipped"]').click();
   await page.locator('.sw-panel-wrap.sw-open .sh-opt[data-top="sauce"]').click();
   await settle(page, 2200);
-  await grab(page, 'icecream', { width: 1600 });
+  // just the sundae, its name and the price (the left card of the builder), on the panel's own pink
+  const box = await page.locator('.sw-panel-wrap.sw-open .sh-left').boundingBox();
+  if (box) {
+    const bg = await page.evaluate(() => getComputedStyle(document.querySelector('.sw-panel-wrap.sw-open .sw-card') || document.body).backgroundColor);
+    await grab(page, 'icecream', { clip: { x: Math.floor(box.x), y: Math.floor(box.y), width: Math.ceil(box.width), height: Math.ceil(box.height) }, width: 640, pad: 22, bg: bg && bg !== 'rgba(0, 0, 0, 0)' ? bg : '#FFF8FC', q: 0.86 });
+  }
+  else errors.push('[site] icecream: no sundae card');
   await context.close();
 }
 
@@ -717,22 +994,37 @@ async function sceneCode(browser) {
     g.saveProfile(true);
     g.events.emit('avatar:changed', { look });
   });
+  // (a click event: with two software-rendered games at once, a real touch can take too long
+  // to be answered; every one of these buttons acts on click)
+  const press = (loc) => loc.dispatchEvent('click');
   await gp.waitForSelector('button.sw-title-friends:not([hidden])', { timeout: 15000 });
-  await gp.locator('button.sw-title-friends').tap();
+  await press(gp.locator('button.sw-title-friends'));
   await gp.waitForSelector('.sw-panel-wrap.sw-open .sw-net-join');
-  await gp.locator('.sw-panel-wrap.sw-open .sw-net-join').tap();
+  await press(gp.locator('.sw-panel-wrap.sw-open .sw-net-join'));
   await gp.waitForSelector('.sw-panel-wrap.sw-open .sw-net-keypad:not([hidden])');
-  for (let k = 0; k < 3; k++) await gp.locator(`.sw-panel-wrap.sw-open .sw-net-key[data-pic="${code[k]}"]`).tap();
+  for (let k = 0; k < 3; k++) await press(gp.locator(`.sw-panel-wrap.sw-open .sw-net-key[data-pic="${code[k]}"]`));
   await settle(gp, 900);
   await grab(gp, 'code-keypad', { width: 780 });
-  await gp.locator(`.sw-panel-wrap.sw-open .sw-net-key[data-pic="${code[3]}"]`).tap();
-  await gp.locator('.sw-panel-wrap.sw-open .sw-net-go').tap();
+  await press(gp.locator(`.sw-panel-wrap.sw-open .sw-net-key[data-pic="${code[3]}"]`));
+  await press(gp.locator('.sw-panel-wrap.sw-open .sw-net-go'));
   // the knock card on Lily's screen
   const card = hp.locator('.sw-net-knock', { hasText: 'Mia' });
   await card.waitFor({ state: 'visible', timeout: 30000 });
   await settle(hp, 1400);
+  // only the card: everything else hidden, its corners on white, with even padding around it
+  await hp.evaluate(() => {
+    const s = document.createElement('style');
+    s.textContent = 'html, body { background: transparent !important; } body * { visibility: hidden !important; } ' +
+      '.sw-net-knock, .sw-net-knock * { visibility: visible !important; } .sw-net-knock { box-shadow: 0 0 0 4px var(--sw-pink) !important; animation: none !important; }';
+    document.head.appendChild(s);
+  });
+  await settle(hp, 700);
   const cb = await card.boundingBox();
-  if (cb) await grab(hp, 'code-knock-card', { clip: pad(cb, 20, hp), width: 1100 });
+  if (cb) {
+    // the pink ring is a 4 px box-shadow around the card
+    const clip = { x: Math.floor(cb.x) - 5, y: Math.floor(cb.y) - 5, width: Math.ceil(cb.width) + 11, height: Math.ceil(cb.height) + 11 };
+    await grab(hp, 'code-knock-card', { clip, width: 1100, pad: 36, bg: '#FFFFFF', omitBackground: true });
+  }
   await host.context.close();
   await guest.context.close();
 }
@@ -791,6 +1083,71 @@ async function sceneTiles(browser) {
   await context.close();
 }
 
+// ---------------------------------------------------------------- phone sizes, share picture, icon
+
+// the pictures that get an 800 px wide copy for phones (srcset)
+const SMALL = ['title', 'building', 'camper', 'camper-inside', 'bedroom', 'night', 'studio', 'pets', 'unicorn', 'friends', 'zip'];
+
+/** Make <name>-800.webp for every SMALL picture that has none yet (or all, with --force-small). */
+async function sceneSmall() {
+  console.log('small');
+  const { readFile, stat } = await import('node:fs/promises');
+  for (const name of SMALL) {
+    const src = path.join(OUT, `${name}.webp`);
+    const dst = path.join(OUT, `${name}-800.webp`);
+    const have = await stat(dst).then((d) => d, () => null);
+    const from = await stat(src).then((d) => d, () => null);
+    if (!from) continue;
+    if (have && have.mtimeMs >= from.mtimeMs && !arg('force-small')) continue;
+    const data = 'data:image/webp;base64,' + (await readFile(src)).toString('base64');
+    await save(`${name}-800`, await encode(data, { width: 800, q: 0.82 }));
+  }
+}
+
+/**
+ * The link preview (img/share.jpg, 1200x630) and the home-screen icon (img/icon-180.png), both
+ * from the built home page itself: the headline, the real title screen and the floating island.
+ */
+async function sceneShare(browser) {
+  console.log('share');
+  const context = await browser.newContext({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 2 });
+  const page = await context.newPage();
+  attachErrorCollectors(page, errors, 'share');
+  await page.goto(`${base}/`);
+  await page.evaluate(() => document.fonts.ready);
+  // the hero as a 1200x630 card: the headline, the real title screen, the island, the ground
+  const still = '.dio-world, .dio-shadow, .bob, .cloud { animation-play-state: paused !important; animation-delay: 0s !important; }';
+  await page.addStyleTag({ content: [
+    // (header.top: the island's top faces are .f.top too)
+    'header.top, .skip, .lede, .cta-row, .facts { display: none !important; }',
+    '.hero { height: 630px; padding-top: 44px; }',
+    '.hero-grid { padding-bottom: 0; grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr); align-items: start; }',
+    '.hero h1 { font-size: 82px; margin-top: 8px; }',
+    '.hero-art { padding-top: 26px; }',
+    '.hero > .ground { position: absolute; left: 0; right: 0; bottom: 0; }',
+    '.dio { --u: 27px; left: calc(var(--u) * -3); bottom: calc(var(--u) * -6.3); }',
+    '.cloud { opacity: .55; }',
+    still,
+  ].join('\n') });
+  await page.waitForFunction(() => [...document.querySelectorAll('.hero img')].every((i) => i.complete && i.naturalWidth > 0));
+  await settle(page, 600);
+  await grab(page, 'share', { clip: { x: 0, y: 0, width: 1200, height: 630 }, width: 1200, q: 0.86, type: 'jpeg' });
+  // the island alone, on the game's sky, for Add to Home Screen
+  await page.addStyleTag({ content: 'html, body, .hero { background: transparent !important; } body * { visibility: hidden !important; } .dio, .dio * { visibility: visible !important; } .dio-shadow { visibility: hidden !important; }' });
+  await settle(page, 300);
+  const box = await page.evaluate(() => {
+    const rs = [...document.querySelectorAll('.dio .f')].map((f) => f.getBoundingClientRect()).filter((r) => r.width);
+    const x0 = Math.min(...rs.map((r) => r.left)), y0 = Math.min(...rs.map((r) => r.top));
+    const x1 = Math.max(...rs.map((r) => r.right)), y1 = Math.max(...rs.map((r) => r.bottom));
+    return { x0, y0, x1, y1 };
+  });
+  const side = Math.max(box.x1 - box.x0, box.y1 - box.y0) + 8;
+  const cx = (box.x0 + box.x1) / 2, cy = (box.y0 + box.y1) / 2;
+  const png = await page.screenshot({ type: 'png', omitBackground: true, clip: { x: cx - side / 2, y: cy - side / 2, width: side, height: side } });
+  await save('icon-180', await encode(png, { width: 180, height: 180, pad: 14, bg: '#BDE6FF', type: 'png' }), 'png');
+  await context.close();
+}
+
 // ---------------------------------------------------------------- main
 
 async function main() {
@@ -809,14 +1166,19 @@ async function main() {
     if (want('title')) await sceneTitle(browser);
     if (want('studio')) await sceneStudio(browser);
     await meadowScenes(browser);
-    if (want('candy')) await sceneCandy(browser);
+    if (want('building')) await sceneBuilding(browser);
+    if (want('worlds') || want('world-candy')) await sceneCandy(browser);
+    if (want('worlds') || want('world-flat')) await sceneFlatTown(browser);
+    if (want('worlds') || want('world-fairy')) await sceneFairy(browser);
+    if (want('fairy-dusk')) await sceneFairy(browser, { time: 0.77, name: 'world-fairy-dusk' });
     if (want('worlds') || want('world-beach')) await sceneBiome(browser, 'beach', { name: "Lily's Beach Island", time: 0.42, view: (c, sy, i) => [[c + 10, sy + 12, i.sz - 6], [c, sy - 3, c + 8]] });
     if (want('worlds') || want('world-snow')) await sceneBiome(browser, 'snow', { name: "Lily's Snowy Wonderland", time: 0.42, weather: 'snow' });
-    if (want('worlds') || want('world-fairy')) await sceneBiome(browser, 'fairy', { name: "Lily's Fairy Forest", time: 0.9 });
     if (want('worlds') || want('world-mix')) await sceneBiome(browser, 'mix', { name: "Lily's Everything Land", time: 0.4 });
     if (want('worlds') || want('world-meadow')) await sceneBiome(browser, 'meadow', { name: "Lily's Flower Meadow", time: 0.4, seed: 7 });
     if (want('icecream')) await sceneIceCream(browser);
     if (want('code')) await sceneCode(browser);
+    if (want('small')) await sceneSmall();
+    if (want('share')) await sceneShare(browser);
   } finally {
     await browser.close();
     await app.close();
