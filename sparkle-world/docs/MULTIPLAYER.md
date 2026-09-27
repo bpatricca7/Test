@@ -1547,7 +1547,8 @@ room logic in `rooms.mjs` is untouched):
 - **Floor**: one talker per game; `req` → `go` or `busy`; a press ends with the last frame, `end`,
   a closed connection, 1.5 s without audio (3 s for the first frame), or the cap.
 - **Caps and limits**: 15 s + 1 s network slack by time; 15 s + one frame by audio length; per
-  talker 25 frames/s (burst 16) and 12,000 B/s (burst 8,000); frames over 1,032 B or with a bad
+  talker 25 frames/s (burst 24) and 12,000 B/s (burst 16,000: a tablet that stalled for a
+  moment may send about 1.5 s of frames at once); frames over 1,032 B or with a bad
   header are dropped; a frame that would wait behind a slow connection (> 64 KB buffered) is
   dropped for that listener (live audio is never queued). Control frames count against the
   connection's normal JSON budget (40/s).

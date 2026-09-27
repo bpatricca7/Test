@@ -55,8 +55,18 @@ function check(cond, message) {
 async function shot(pl, name) {
   await mkdir(SHOTS, { recursive: true });
   const file = path.join(SHOTS, `${PREFIX}-${name}.png`);
-  await pl.page.screenshot({ path: file });
-  console.log(`    screenshot ${path.relative(ROOT, file)}`);
+  // SwiftShader on a busy machine can take a while to paint a frame: wait longer, try twice
+  for (let k = 0; k < 2; k++) {
+    try {
+      await pl.page.screenshot({ path: file, timeout: 60000 });
+      console.log(`    screenshot ${path.relative(ROOT, file)}`);
+      return;
+    } catch (err) {
+      console.log(`    (screenshot ${name} slow: ${String(err.message).split('\n')[0]})`);
+      await sleep(2000);
+    }
+  }
+  errors.push(`[shot] could not take ${name}`);
 }
 
 // ---------- the server ----------
@@ -157,6 +167,26 @@ async function face(pl, name) {
   await settle(pl.page, 500);
 }
 
+/** Players panel -> the Mute button on `peer`'s row (opens the panel if needed). */
+async function tapMute(pl, peer) {
+  const sel = `.sw-panel-wrap.sw-open .sw-net-row[data-peer="${peer}"] .sw-wk-mute`;
+  for (let k = 0; k < 3; k++) {
+    const open = await game(pl, () => window.__game.ui.current === 'mp-players');
+    if (!open) await press(pl, '.sw-hud-tr button.sw-playersbtn');
+    try {
+      await pl.page.locator(sel).first().waitFor({ state: 'visible', timeout: 5000 });
+      await settle(pl.page, 300);
+      await press(pl, sel, { timeout: 5000 });
+      return;
+    } catch (err) {
+      const why = await game(pl, (p) => ({ current: window.__game.ui.current, state: window.__game.net.state, rows: [...document.querySelectorAll('.sw-net-row')].map((r) => [r.dataset.peer, !!r.querySelector('.sw-wk-mute')]), want: p }), peer);
+      console.log(`    (retry: Mute on ${peer} not ready: ${JSON.stringify(why)})`);
+      await shot(pl, `debug-mute-${k}`);
+    }
+  }
+  throw new Error(`${pl.key}: no Mute button for ${peer}`);
+}
+
 /** Center of the walkie button (page px). */
 async function buttonCenter(pl) {
   const box = await pl.page.locator('.sw-wk:not([hidden]) .sw-wk-btn').boundingBox();
@@ -220,6 +250,11 @@ async function grownUpTurnsOn(pl, { wrongFirst = true, shotName = null, fromPaus
   check(!!on, `${pl.name}: the right answer turns the walkie on for this device`);
   const saved = await game(pl, () => window.__game.profile.settings.walkie);
   check(saved && saved.on === true && typeof saved.at === 'number', `${pl.name}: saved as profile.settings.walkie ${JSON.stringify(saved)}`);
+  if (shotName) {
+    await p.locator('.sw-panel-wrap.sw-open .sw-wk-setrow').scrollIntoViewIfNeeded();
+    await settle(p, 500);
+    await shot(pl, `settings-on-${pl.key}`);
+  }
   await press(pl, '.sw-panel-wrap.sw-open .sw-close'); // back to the title / the pause menu
 }
 
@@ -525,11 +560,22 @@ async function main() {
 
     // ----- mutes -----
     log('mutes');
-    // Rosie mutes Lily for herself (Players panel)
+    // the Players panel must stay put while nothing changes (a redraw could swallow a tap)
     await press(rosie, '.sw-hud-tr button.sw-playersbtn');
-    await rosie.page.waitForSelector(`.sw-panel-wrap.sw-open .sw-net-row[data-peer="${lilyId}"] .sw-wk-mute`);
-    await settle(rosie.page, 500);
-    await press(rosie, `.sw-panel-wrap.sw-open .sw-net-row[data-peer="${lilyId}"] .sw-wk-mute`);
+    await rosie.page.waitForSelector('.sw-panel-wrap.sw-open .sw-net-players-body .sw-net-row');
+    await sleep(1200);
+    const redraws = await game(rosie, async () => {
+      const body = document.querySelector('.sw-panel-wrap.sw-open .sw-net-players-body');
+      let n = 0;
+      const mo = new MutationObserver((recs) => { n += recs.length; });
+      mo.observe(body, { childList: true });
+      await new Promise((r) => setTimeout(r, 3000));
+      mo.disconnect();
+      return n;
+    });
+    check(redraws === 0, `the open Players panel does not redraw by itself (${redraws} changes in 3 s)`);
+    // Rosie mutes Lily for herself (Players panel)
+    await tapMute(rosie, lilyId);
     await settle(rosie.page, 400);
     await shot(rosie, 'players-guest-muted-lily');
     await closePanels(rosie);
@@ -546,13 +592,10 @@ async function main() {
     const rp0 = s0.voicePeers.find((x) => x.peer === rosieId);
     const rp1 = s1.voicePeers.find((x) => x.peer === rosieId);
     check(m1.player.scheduled === m0.player.scheduled && m1.rx.frames === m0.rx.frames && rp1.bytesOut === rp0.bytesOut, `Rosie muted Lily: nothing played, nothing even sent to her (${rp1.bytesOut - rp0.bytesOut} B)`);
-    await press(rosie, '.sw-hud-tr button.sw-playersbtn');
-    await press(rosie, `.sw-panel-wrap.sw-open .sw-net-row[data-peer="${lilyId}"] .sw-wk-mute`);
+    await tapMute(rosie, lilyId);
     await closePanels(rosie);
     // the host mutes Rosie for everyone
-    await press(lily, '.sw-hud-tr button.sw-playersbtn');
-    await lily.page.waitForSelector(`.sw-panel-wrap.sw-open .sw-net-row[data-peer="${rosieId}"] .sw-wk-mute`);
-    await press(lily, `.sw-panel-wrap.sw-open .sw-net-row[data-peer="${rosieId}"] .sw-wk-mute`);
+    await tapMute(lily, rosieId);
     const rosieMuted = await until(rosie, () => window.__game.debug.walkie.state().view.state === 'muted', null, 4000, 100);
     check(!!rosieMuted, 'the host muted Rosie: Rosie\'s walkie rests ("Walkie resting")');
     await settle(lily.page, 600);
@@ -566,8 +609,7 @@ async function main() {
     await release();
     const rm1 = await WS(rosie);
     check(rm1.tx.frames === rm0.tx.frames && !(await W(rosie)).micLive, 'Rosie presses anyway: no microphone, nothing sent');
-    await press(lily, '.sw-hud-tr button.sw-playersbtn');
-    await press(lily, `.sw-panel-wrap.sw-open .sw-net-row[data-peer="${rosieId}"] .sw-wk-mute`);
+    await tapMute(lily, rosieId);
     // "Mute everyone"
     await press(lily, '.sw-panel-wrap.sw-open .sw-wk-muteall');
     const quiet = await until(rosie, () => window.__game.debug.walkie.state().view.state === 'quiet', null, 4000, 100);

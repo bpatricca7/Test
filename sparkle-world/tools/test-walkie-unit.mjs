@@ -241,7 +241,16 @@ function relayTests(check) {
   const dropped0 = relay.counts.rateDropped;
   for (let k = 0; k < 100; k++) H.link.binary(frame(0));
   const got = A.bin.length;
-  check(relay.counts.rateDropped - dropped0 > 80 && got <= W.FRAMES_BURST, `a flood of 100 frames at once: ${got} relayed, ${relay.counts.rateDropped - dropped0} dropped (per-talker rate limit)`);
+  check(relay.counts.rateDropped - dropped0 >= 100 - W.FRAMES_BURST && got <= W.FRAMES_BURST, `a flood of 100 frames at once: ${got} relayed, ${relay.counts.rateDropped - dropped0} dropped (per-talker rate limit)`);
+  // and the sustained rate: 3 s of frames 4x too fast
+  const d1 = relay.counts.rateDropped;
+  const g1 = A.bin.length;
+  for (let k = 0; k < 150; k++) {
+    clock += 20;
+    H.link.binary(frame(0));
+  }
+  const sent3s = A.bin.length - g1;
+  check(sent3s <= Math.ceil(3 * W.FRAMES_PER_S) + 2 && relay.counts.rateDropped - d1 > 60, `4x too fast for 3 s: ${sent3s} frames relayed (limits ${W.FRAMES_PER_S} frames/s, ${W.BYTES_PER_S} B/s), ${relay.counts.rateDropped - d1} dropped`);
   const bad0 = relay.counts.bad;
   H.link.binary(new Uint8Array(W.MAX_FRAME_BYTES + 100));
   const big = frame(0);

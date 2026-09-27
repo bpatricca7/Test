@@ -43,9 +43,9 @@ export const W = Object.freeze({
   IDLE_MS: 1500, // a talker who sends nothing this long loses the floor
   COOLDOWN_MS: 700, // the same talker may press again after this pause
   BYTES_PER_S: 12000, // per talker (a press needs about 8.1 KB/s)
-  BYTES_BURST: 8000,
+  BYTES_BURST: 16000, // a busy tablet may send about 1.5 s of frames at once after a stall
   FRAMES_PER_S: 25, // a press needs 12.5 frames/s
-  FRAMES_BURST: 16,
+  FRAMES_BURST: 24,
   MAX_MUTES: 8,
 });
 
