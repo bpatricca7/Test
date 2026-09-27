@@ -80,7 +80,7 @@ export class FakeAdapter {
     this.plants = new Map();
     this.actors = new Map();
     this.uidBase ??= 0; // kept across enterSnapshot (the real adapter must re-apply it too)
-    this.nextUid = 1;
+    this.nextUid ??= 1;
   }
 
   _terrain() {
@@ -121,9 +121,15 @@ export class FakeAdapter {
     this._resetAlloc();
   }
 
+  /**
+   * Next uid: max(existing in my range) + 1, and never lower than before while the seat stays
+   * the same (uids of my edits still in flight must not be handed out twice).
+   */
   _resetAlloc() {
     const lo = this.uidBase + 1, hi = this.uidBase + 1e6 - 1;
-    this.nextUid = Math.max(lo, this.maxUidInRange(lo, hi) + 1);
+    const keep = this.allocBase === this.uidBase ? this.nextUid : lo;
+    this.allocBase = this.uidBase;
+    this.nextUid = Math.max(lo, keep, this.maxUidInRange(lo, hi) + 1);
   }
 
   inSystems() {

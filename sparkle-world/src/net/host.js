@@ -14,6 +14,7 @@ import { unpackB, blockMix, blockHashOf, frameSnapshot, splitForJson, canDeflate
 import { TokenBucket, jsonBytes } from './transport.js';
 
 const ANY = new Set(ANY_FIELDS);
+const FIX_KEEP = 10000; // re-send the same fix for up to 10 s while she asks for the same gap
 const SEAT_LOG_BYTES = 2 * 1024 * 1024;
 
 export class NetHost {
@@ -67,6 +68,7 @@ export class NetHost {
     this.zAt = -Infinity;
     this.knocks = new Map(); // peer -> info (shown to the UI)
     this.lastFixAt = new Map();
+    this.fixCache = new Map(); // peer -> the last fix sent to her (re-sent as is while she asks the same)
     this.rs = new Set();
     this.snap = null;
     this.snapPending = false;
@@ -97,7 +99,7 @@ export class NetHost {
     this.execLog = this.trackExec ? new Map() : null;
     this.stats = {
       batches: 0, fixes: 0, fixParts: 0, snapshots: 0, chunks: 0, executed: 0, rejected: 0,
-      dupExec: 0, rsForced: 0, oversize: 0, sendDropped: 0,
+      dupExec: 0, rsForced: 0, oversize: 0, sendDropped: 0, fixRepeats: 0, rejectCodes: {}, executedKinds: {},
     };
 
     this.hooks = {
@@ -292,6 +294,7 @@ export class NetHost {
     this.adm.delete(s.peer);
     this.lastLseq.delete(s.peer);
     this.receivers.delete(s.peer);
+    this.fixCache.delete(s.peer);
     this.rs.delete(s.peer);
     this.seats[seat] = null;
     this.session.emit('players', { reason: 'free', peer: s.peer, seat });
@@ -349,6 +352,7 @@ export class NetHost {
       set.add(lseq);
     }
     this.stats.executed++;
+    this.stats.executedKinds[e[1]] = (this.stats.executedKinds[e[1]] || 0) + 1;
     this.execSeat = seat;
     this.execPeer = peer;
     this.group = { lseq, kind: e[1], cells: new Map(), ents: new Map(), plants: new Map() };
@@ -370,6 +374,8 @@ export class NetHost {
     this._closeGroup(seat);
     if (code) {
       this.stats.rejected++;
+      const key = e[1] + ':' + code;
+      this.stats.rejectCodes[key] = (this.stats.rejectCodes[key] || 0) + 1;
       this.flushRejects.push([seat, lseq, code]);
       this.recentRejects.push({ at: now, seat, lseq, code });
     }
@@ -750,36 +756,53 @@ export class NetHost {
       const st = p.state;
       if (st.ep !== this.epoch || isObj(st.rx)) continue;
       const nd = st.nd;
-      if (!isIntIn(nd, 0, seq - 1)) continue;
-      if (now - (this.lastFixAt.get(peer) ?? -Infinity) < C.FIX_REPEAT) continue;
+      if (!isIntIn(nd, 0, seq - 1)) {
+        this.fixCache.delete(peer);
+        continue;
+      }
+      // A repeat of the same request gets the very same fix (same id, same parts), so parts
+      // that arrived last time still count: under heavy loss a big fix completes in a few
+      // rounds instead of never. Re-sending a cached fix costs no rebuild, so it may repeat
+      // after 1 s; a new fix waits FIX_REPEAT (2 s). Rebuilt when she moves on or after FIX_KEEP.
+      let fx = this.fixCache.get(peer);
+      const reuse = !!fx && fx.from === nd && now - fx.at <= FIX_KEEP && fx.floor === this.journal.floor;
+      if (now - (this.lastFixAt.get(peer) ?? -Infinity) < (reuse ? C.FIX_REPEAT / 2 : C.FIX_REPEAT)) continue;
       this.lastFixAt.set(peer, now);
       if (nd < this.journal.floor) {
         this.rs.add(peer);
         this.stats.rsForced++;
         continue;
       }
-      const payload = buildPayload(this.a, this.journal.since(nd));
-      payload.a = this._ackTable();
-      const cut = now - C.REJECT_WINDOW;
-      while (this.recentRejects.length && this.recentRejects[0].at < cut) this.recentRejects.shift();
-      const r = this.recentRejects.filter((x) => x.seat === seat).map((x) => [x.seat, x.lseq, x.code]);
-      if (r.length) payload.r = r;
-      const text = JSON.stringify(payload);
-      if (utf8Length(text) > C.FIX_MAX) {
-        this.rs.add(peer);
-        this.snapMinS0 = seq;
-        this.stats.rsForced++;
-        continue;
-      }
-      const overhead = 150 + peer.length;
-      const pieces = splitForJson(text, C.MSG_BYTES - overhead, C.CHUNK_CHARS);
-      const id = 'f' + (++this.fixCounter).toString(36);
-      for (let i = 0; i < pieces.length; i++) {
-        this.t.send('bulk', { k: 'f', e: this.epoch, to: peer, id, from: nd, upto: seq, i, n: pieces.length, d: pieces[i] }, PRIO.fix);
+      if (!reuse) {
+        fx = this._buildFix(peer, seat, nd, seq, now);
+        if (!fx) continue;
+        this.fixCache.set(peer, fx);
+      } else this.stats.fixRepeats++;
+      for (let i = 0; i < fx.parts.length; i++) {
+        this.t.send('bulk', { k: 'f', e: this.epoch, to: peer, id: fx.id, from: fx.from, upto: fx.upto, i, n: fx.parts.length, d: fx.parts[i] }, PRIO.fix);
         this.stats.fixParts++;
       }
       this.stats.fixes++;
     }
+  }
+
+  _buildFix(peer, seat, nd, seq, now) {
+    const payload = buildPayload(this.a, this.journal.since(nd));
+    payload.a = this._ackTable();
+    const cut = now - C.REJECT_WINDOW;
+    while (this.recentRejects.length && this.recentRejects[0].at < cut) this.recentRejects.shift();
+    const r = this.recentRejects.filter((x) => x.seat === seat).map((x) => [x.seat, x.lseq, x.code]);
+    if (r.length) payload.r = r;
+    const text = JSON.stringify(payload);
+    if (utf8Length(text) > C.FIX_MAX) {
+      this.rs.add(peer);
+      this.snapMinS0 = seq;
+      this.stats.rsForced++;
+      return null;
+    }
+    const overhead = 150 + peer.length;
+    const parts = splitForJson(text, C.MSG_BYTES - overhead, C.CHUNK_CHARS);
+    return { id: 'f' + (++this.fixCounter).toString(36), from: nd, upto: seq, parts, at: now, floor: this.journal.floor };
   }
 
   // ---------- snapshot carousel (§5.8) ----------
