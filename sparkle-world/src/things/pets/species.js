@@ -6,13 +6,13 @@
 // shared by every pet of the same species + variant.
 
 import * as THREE from 'three';
-import { baked, VC_MAT, glowMat, blobShadow } from './kit.js';
+import { baked, VC_MAT, glowMat } from './kit.js';
 import { shade } from '../../core/util.js';
-
-const INK = '#2A1B33';
-const BLUSH = '#FF9EBE';
-const GOLD = '#FFD86B';
-const RAINBOW = ['#FF7A9A', '#FFB36B', '#FFE27A', '#8FE3A0', '#7CC7FF', '#B79CFF'];
+import { BLUSH, GOLD, RAINBOW, pivot, part, partL, eyeMesh, newRig } from './rig.js';
+import { buildBreedDog, buildBreedCatExtras, DOG_BREEDS, CAT_BREEDS } from './breeds.js';
+import { buildTurtle, TURTLE } from './turtle.js';
+import { buildBigHorse, HORSE } from './horse.js';
+import { mergeRig } from './skin.js';
 
 // ---------- species table ----------
 
@@ -27,6 +27,7 @@ export const SPECIES = {
       { key: 'spotty', name: 'Spotty', body: '#FFFDF8', light: '#FFFFFF', ear: '#6E4B3B', spots: '#6E4B3B', accent: '#FF5A5A' },
       { key: 'cocoa', name: 'Cocoa', body: '#B07A52', light: '#EFD2B2', ear: '#7F5236', accent: '#3FD8B0' },
       { key: 'candy', name: 'Candy', body: '#FFC6DD', light: '#FFF1F7', ear: '#FF96C0', accent: '#9C7BFF' },
+      ...DOG_BREEDS,
     ],
   },
   kitty: {
@@ -36,9 +37,10 @@ export const SPECIES = {
     variants: [
       { key: 'ginger', name: 'Ginger', body: '#FFB46E', light: '#FFEAD6', ear: '#FFB46E', stripes: '#EE8B42', eye: '#6ED39A', accent: '#FF6FA5' },
       { key: 'misty', name: 'Misty', body: '#B9B5CA', light: '#F6F4FA', ear: '#B9B5CA', stripes: '#9C97B0', eye: '#7CC7FF', accent: '#FFC94D' },
-      { key: 'calico', name: 'Calico', body: '#FFFBF4', light: '#FFFFFF', ear: '#FFA64D', patches: ['#FFA64D', '#4E4557'], eye: '#FFC24D', accent: '#9C7BFF' },
+      { key: 'calico', name: 'Calico', group: 'breeds', body: '#FFFBF4', light: '#FFFFFF', ear: '#FFA64D', patches: ['#FFA64D', '#4E4557'], eye: '#FFC24D', accent: '#9C7BFF' },
       { key: 'midnight', name: 'Midnight', body: '#4D4760', light: '#6A6380', ear: '#4D4760', eye: '#B6F07A', whisker: '#FFFFFF', accent: '#FF6FA5' },
       { key: 'lilac', name: 'Lilac', body: '#D9C8FF', light: '#F7F2FF', ear: '#D9C8FF', eye: '#FF8CC6', accent: '#3FD8B0' },
+      ...CAT_BREEDS,
     ],
   },
   bunny: {
@@ -100,6 +102,8 @@ export const SPECIES = {
       { key: 'sky', name: 'Sky', body: '#C3E6FF', wing: '#A6D6FF', beak: '#FFB347', accent: '#FFC94D' },
     ],
   },
+  turtle: TURTLE,
+  horse: HORSE,
 };
 
 export const SPECIES_KEYS = Object.keys(SPECIES);
@@ -109,102 +113,6 @@ export function variantOf(species, key) {
   const s = SPECIES[species];
   if (!s) return null;
   return s.variants.find((v) => v.key === key) || s.variants[0];
-}
-
-// ---------- rig helpers ----------
-
-/** A pivot group at world point w (root space), inside a parent whose world point is pw. */
-function pivot(parent, pw, w) {
-  const g = new THREE.Group();
-  g.position.set(w[0] - pw[0], w[1] - pw[1], w[2] - pw[2]);
-  g.userData.w = w;
-  parent.add(g);
-  return g;
-}
-
-/** Baked mesh drawn in ROOT coordinates, placed inside a pivot group at world w. */
-function part(group, key, draw, material = VC_MAT) {
-  const w = group.userData.w || [0, 0, 0];
-  const geo = baked(key, (kit) => {
-    const k = offsetKit(kit, w);
-    draw(k);
-  });
-  const m = new THREE.Mesh(geo, material);
-  group.add(m);
-  return m;
-}
-
-/** Baked mesh drawn in the pivot's OWN coordinates (for parts shared by several pivots). */
-function partL(group, key, draw, material = VC_MAT) {
-  const m = new THREE.Mesh(baked(key, (kit) => { draw(kit); }), material);
-  group.add(m);
-  return m;
-}
-
-/** Wrap a Kit so every position is given in root space and stored relative to w. */
-function offsetKit(kit, w) {
-  const [ox, oy, oz] = w;
-  return {
-    cbox: (sx, sy, sz, c, x, y, z, rot) => kit.cbox(sx, sy, sz, c, x - ox, y - oy, z - oz, rot),
-    cyl: (r, h, c, x, y, z, seg, rot, top) => kit.cyl(r, h, c, x - ox, y - oy, z - oz, seg, rot, top),
-    ball: (r, c, x, y, z, seg, sc) => kit.ball(r, c, x - ox, y - oy, z - oz, seg, sc),
-  };
-}
-
-/** Eye mesh centred on its own origin (so scale.y blinks around the middle), facing +Z. */
-function eyeMesh(parent, key, x, y, z, w, h, { iris = null, slit = false, lashes = 0, ring = false } = {}) {
-  const geo = baked(`eye:${key}:${w}:${h}:${iris}:${slit}:${lashes}:${ring}`, (kit) => {
-    const d = 0.02;
-    if (ring) kit.cbox(w + 0.035, h + 0.035, d, '#FFFFFF', 0, 0, -0.004);
-    kit.cbox(w, h, d, INK, 0, 0, 0);
-    if (iris) {
-      kit.cbox(w * 0.8, h * 0.52, d, iris, 0, -h * 0.17, 0.003);
-      kit.cbox(w * 0.8, h * 0.14, d, shade(iris, 0.35), 0, -h * 0.36, 0.004);
-    }
-    if (slit) kit.cbox(w * 0.26, h * 0.72, d, '#1B1022', 0, -h * 0.04, 0.005);
-    kit.cbox(w * 0.42, w * 0.42, d, '#FFFFFF', -w * 0.17, h * 0.2, 0.008);
-    kit.cbox(w * 0.2, w * 0.2, d, '#FFFFFF', w * 0.22, -h * 0.26, 0.008);
-    if (lashes) {
-      // a little flick at the outer top corner (lashes = +1 right eye, -1 left eye)
-      kit.cbox(w * 0.34, h * 0.13, d, INK, lashes * w * 0.52, h * 0.44, 0.002, [0, 0, lashes * 0.5]);
-      kit.cbox(w * 0.26, h * 0.11, d, INK, lashes * w * 0.58, h * 0.26, 0.002, [0, 0, lashes * 0.15]);
-    }
-  });
-  const m = new THREE.Mesh(geo, VC_MAT);
-  const pw = parent.userData.w || [0, 0, 0];
-  m.position.set(x - pw[0], y - pw[1], z - pw[2]);
-  parent.add(m);
-  // "^" happy eye (flipped upside down it is a sleepy closed eye)
-  const hc = ring ? '#FFFFFF' : INK;
-  const hg = baked(`eye-happy:${w}:${h}:${hc}`, (kit) => {
-    const t = Math.max(0.022, h * 0.2), len = w * 0.62;
-    kit.cbox(len, t, 0.02, hc, -w * 0.2, 0, 0.004, [0, 0, 0.62]);
-    kit.cbox(len, t, 0.02, hc, w * 0.2, 0, 0.004, [0, 0, -0.62]);
-  });
-  const hm = new THREE.Mesh(hg, VC_MAT);
-  hm.position.copy(m.position);
-  hm.visible = false;
-  parent.add(hm);
-  m.userData.happy = hm;
-  return m;
-}
-
-function newRig(species, variant) {
-  const root = new THREE.Group();
-  root.name = 'pet:' + species;
-  const jumper = new THREE.Group();
-  jumper.userData.w = [0, 0, 0];
-  root.add(jumper);
-  const spec = SPECIES[species];
-  const shadow = blobShadow(spec.shadow);
-  shadow.position.y = 0.02;
-  root.add(shadow);
-  return {
-    species, variant, spec, root, jumper, shadow,
-    body: null, head: null, eyes: [], ears: [], earBase: [], tail: null, tail2: null,
-    legs: [], front: [], back: [], wings: [], tongue: null, horn: null, mane: null,
-    bodyY: 0, legLen: 0.25, lashes: false,
-  };
 }
 
 // ---------- species builders ----------
@@ -281,8 +189,9 @@ function buildKitty(rig, v) {
     const leg = pivot(B, B.userData.w, [lx, hipY, lz]);
     const legColor = patchB && i === 1 ? patchB : v.body;
     part(leg, `${K}:leg${i === 1 ? 'b' : ''}`, (k) => {
-      k.cbox(0.1, 0.22, 0.11, legColor, lx, 0.11, lz);
-      k.cbox(0.12, 0.05, 0.13, v.light, lx, 0.025, lz + 0.012);
+      k.cbox(v.fluffy ? 0.12 : 0.1, 0.22, v.fluffy ? 0.13 : 0.11, legColor, lx, 0.11, lz);
+      if (v.points) k.cbox(0.108, 0.1, 0.118, v.points, lx, 0.06, lz);
+      k.cbox(0.12, 0.05, 0.13, v.points || v.light, lx, 0.025, lz + 0.012);
     });
     rig.legs.push(leg);
     (i < 2 ? rig.front : rig.back).push(leg);
@@ -308,7 +217,7 @@ function buildKitty(rig, v) {
     }
   });
   rig.tail = pivot(B, B.userData.w, [0, 0.42, -0.27]);
-  const tailColor = patchB || v.body;
+  const tailColor = v.points || patchB || v.body;
   part(rig.tail, `${K}:tail`, (k) => k.cbox(0.075, 0.075, 0.25, tailColor, 0, 0.518, -0.348, [0.9, 0, 0]));
   rig.tail2 = pivot(rig.tail, rig.tail.userData.w, [0, 0.62, -0.425]);
   part(rig.tail2, `${K}:tail2`, (k) => {
@@ -320,7 +229,8 @@ function buildKitty(rig, v) {
   part(H, `${K}:head`, (k) => {
     k.cbox(0.46, 0.38, 0.36, v.body, 0, 0.62, 0.24);
     k.cbox(0.54, 0.13, 0.27, v.body, 0, 0.52, 0.255);
-    k.cbox(0.2, 0.1, 0.03, v.light, 0, 0.535, 0.43);
+    if (v.points) k.cbox(0.26, 0.2, 0.012, v.points, 0, 0.585, 0.4235);
+    k.cbox(0.2, 0.1, 0.03, v.points ? shade(v.points, 0.12) : v.light, 0, 0.535, 0.43);
     k.cbox(0.062, 0.042, 0.03, '#FF8FB0', 0, 0.578, 0.447);
     k.cbox(0.046, 0.014, 0.01, '#5A3A4A', -0.022, 0.537, 0.448, [0, 0, -0.5]);
     k.cbox(0.046, 0.014, 0.01, '#5A3A4A', 0.022, 0.537, 0.448, [0, 0, 0.5]);
@@ -339,13 +249,14 @@ function buildKitty(rig, v) {
   );
   for (const s of [-1, 1]) {
     const ear = pivot(H, H.userData.w, [s * 0.14, 0.79, 0.22]);
-    const earColor = patchA ? (s < 0 ? patchA : patchB) : v.ear;
+    const earColor = v.points || (patchA ? (s < 0 ? patchA : patchB) : v.ear);
     part(ear, `${K}:ear${s}`, (k) => {
       k.cyl(0.125, 0.18, earColor, s * 0.14, 0.79, 0.22, 4, [0, Math.PI / 4, 0], 0);
       k.cyl(0.075, 0.11, '#FFB6CB', s * 0.14, 0.79, 0.262, 4, [0, Math.PI / 4, 0], 0);
     });
     rig.ears.push(ear);
   }
+  if (v.fluffy || v.bow) buildBreedCatExtras(rig, v, K);
 }
 
 function buildBunny(rig, v) {
@@ -608,36 +519,66 @@ function buildHorse(rig, v, unicorn) {
 }
 
 const BUILDERS = {
-  puppy: buildPuppy,
+  puppy: (rig, v) => (v.breed ? buildBreedDog(rig, v) : buildPuppy(rig, v)),
   kitty: buildKitty,
   bunny: buildBunny,
   panda: buildPanda,
   duckling: buildDuckling,
   pony: (rig, v) => buildHorse(rig, v, false),
   unicorn: (rig, v) => buildHorse(rig, v, true),
+  turtle: buildTurtle,
+  horse: buildBigHorse,
 };
 
-/** Build a fresh rig for a species + variant key. */
-export function buildRig(species, variantKey) {
+/** Per-pet options a species offers (the horse's braided mane), normalized. */
+export function petOpts(species, opts) {
+  const o = {};
+  if (species === 'horse' && opts && opts.braids) o.braids = true;
+  return o;
+}
+
+/** A short cache key for pet options ('' when there are none). */
+export function optsKey(opts) {
+  return opts && opts.braids ? 'braids' : '';
+}
+
+/**
+ * Build a fresh rig for a species + variant key. opts: { braids } (horse), merged: true bakes
+ * every vertex-colored part into ONE skinned mesh driven by the rig's pivots (live pets: one
+ * draw call instead of ~16); previews and thumbnails keep the separate meshes.
+ */
+export function buildRig(species, variantKey, opts = {}) {
   const spec = SPECIES[species] || SPECIES.puppy;
   const key = SPECIES[species] ? species : 'puppy';
   const v = variantOf(key, variantKey);
-  const rig = newRig(key, v);
-  BUILDERS[key](rig, v);
+  const rig = newRig(key, spec, v);
+  rig.opts = petOpts(key, opts);
+  BUILDERS[key](rig, v, rig.opts);
   rig.scale = spec.scale || 1;
   rig.jumper.scale.setScalar(rig.scale);
   rig.baseRot = rig.legs.map(() => 0);
   rig.headRest = rig.head.position.clone();
+  rig.legRest = rig.legs.map((l) => l.position.clone());
+  rig.tailRest = rig.tail ? rig.tail.position.clone() : null;
   rig.accent = v.accent;
-  void spec;
+  if (opts.merged) {
+    try {
+      mergeRig(rig, `${key}:${v.key}:${optsKey(rig.opts)}`);
+    } catch (err) {
+      console.warn('[pets] could not merge the pet model; drawing its parts one by one', err);
+    }
+  }
   return rig;
 }
 
 /** Thumbnail object for a species + variant (for game.thumbs / the Bag). */
-export function petThumbObject(species, variantKey) {
-  const rig = buildRig(species, variantKey);
+export function petThumbObject(species, variantKey, opts = {}) {
+  const rig = buildRig(species, variantKey, opts);
   rig.root.remove(rig.shadow);
-  if (rig.tongue) rig.tongue.visible = false;
+  if (rig.tongue) {
+    rig.tongue.visible = false;
+    rig.tongue.scale.setScalar(0);
+  }
   // a friendly three-quarter pose: head turned toward the viewer a little
   rig.head.rotation.y = 0.25;
   return rig.root;

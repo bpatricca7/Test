@@ -3,7 +3,7 @@
 // adopt more), the little action bubble over a pet after petting it (Ride / Feed / Stay),
 // and the HUD buttons (Pets, Hop off).
 
-import { SPECIES, SPECIES_KEYS, buildRig, petThumbObject } from './species.js';
+import { SPECIES, SPECIES_KEYS, buildRig, petThumbObject, optsKey } from './species.js';
 import { newAnim, animate, playTrick } from './anim.js';
 import { preview } from './preview.js';
 import { lifeButton, lifeHud, lifeIcon, toScreen, basketCount } from './kit.js';
@@ -26,7 +26,15 @@ const CSS = /* css */ `
   border-radius: 20px; background: #fff; border: 4px solid var(--sw-pink-soft); cursor: pointer; font-family: var(--sw-font);
   transition: transform .18s var(--sw-bounce), border-color .15s; }
 .lf-variant img { width: 66px; height: 66px; pointer-events: none; }
-.lf-variant span { font-size: 15px; font-weight: 700; color: var(--sw-ink); }
+.lf-variant span { font-size: 15px; font-weight: 700; color: var(--sw-ink); text-align: center; line-height: 1.05; }
+.lf-group { grid-column: 1 / -1; font-size: 16px; font-weight: 700; color: var(--sw-lav); margin: 4px 0 -2px; display: flex; align-items: center; gap: 6px; }
+.lf-group svg { width: 18px; height: 18px; color: var(--sw-pink); }
+.lf-opts { display: flex; gap: 10px; margin: 10px 0 4px; flex-wrap: wrap; }
+.lf-opt { display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 6px 16px 6px 8px; border-radius: 26px; background: #fff;
+  border: 4px solid var(--sw-pink-soft); font: 700 17px var(--sw-font); color: var(--sw-ink); cursor: pointer; transition: transform .18s var(--sw-bounce), border-color .15s; }
+.lf-opt img { width: 40px; height: 40px; }
+.lf-opt:active { transform: scale(.94); }
+.lf-opt.sw-sel { border-color: var(--sw-pink); box-shadow: 0 0 0 3px #fff, 0 5px 14px rgba(255,95,162,.4); }
 .lf-variant:hover { transform: translateY(-3px) scale(1.03); }
 .lf-variant:active { transform: scale(.94); }
 .lf-variant.sw-sel { border-color: var(--sw-pink); box-shadow: 0 0 0 4px #fff, 0 6px 18px rgba(255,95,162,.45); transform: scale(1.05); }
@@ -81,8 +89,9 @@ const CSS = /* css */ `
 
 const COMMON_NAMES = ['Biscuit', 'Luna', 'Sprinkles', 'Mochi', 'Coco', 'Daisy', 'Bubbles', 'Pudding', 'Marshmallow', 'Honey'];
 
-export function petThumb(game, species, variant) {
-  return game.thumbs.get(`pet:${species}:${variant}`, () => petThumbObject(species, variant), { dir: [0.95, 0.5, 1.5], zoom: 0.82 });
+export function petThumb(game, species, variant, opts = null) {
+  const ok = optsKey(opts);
+  return game.thumbs.get(`pet:${species}:${variant}${ok ? ':' + ok : ''}`, () => petThumbObject(species, variant, opts || {}), { dir: [0.95, 0.5, 1.5], zoom: 0.82 });
 }
 
 function img(ui, url) {
@@ -98,8 +107,10 @@ export function installPetUI(game, sys) {
   ui.addStyles(CSS);
 
   // ---------------- adoption panel ----------------
-  const adopt = { species: 'puppy', variant: null, spot: null, rig: null, anim: null, hopT: 0 };
-  let stage, variantsEl, nameInput, chipsEl, fallbackImg, goBtn;
+  const adopt = { species: 'puppy', variant: null, spot: null, rig: null, anim: null, hopT: 0, braids: false };
+  let stage, variantsEl, optsEl, nameInput, chipsEl, fallbackImg, goBtn, pickText;
+  const PICK_TEXT = { puppy: 'Pick a color or a breed', kitty: 'Pick a color or a breed', horse: 'Pick a coat', turtle: 'Pick a shell' };
+  const adoptOpts = () => (adopt.species === 'horse' && adopt.braids ? { braids: true } : {});
 
   const suggestions = (species) => {
     const own = SPECIES[species].names;
@@ -110,13 +121,13 @@ export function installPetUI(game, sys) {
 
   const showPreview = () => {
     const pv = preview(game);
-    const rig = buildRig(adopt.species, adopt.variant);
+    const rig = buildRig(adopt.species, adopt.variant, adoptOpts());
     adopt.rig = rig;
     adopt.anim = newAnim();
     adopt.hopT = 1.2;
     if (pv.failed || !pv.mount(stage, 280)) {
       fallbackImg.hidden = false;
-      petThumb(game, adopt.species, adopt.variant).then((url) => { fallbackImg.src = url; });
+      petThumb(game, adopt.species, adopt.variant, adoptOpts()).then((url) => { fallbackImg.src = url; });
       return;
     }
     fallbackImg.hidden = true;
@@ -138,15 +149,33 @@ export function installPetUI(game, sys) {
     });
   };
 
+  const groupLabel = (text, iconName) => {
+    const h = ui.el('div', 'lf-group');
+    h.innerHTML = lifeIcon(iconName);
+    h.appendChild(document.createTextNode(text));
+    return h;
+  };
+
   const renderVariants = () => {
     variantsEl.innerHTML = '';
-    for (const v of SPECIES[adopt.species].variants) {
+    const all = SPECIES[adopt.species].variants;
+    const grouped = all.some((v) => v.group === 'breeds');
+    // colors first, then breeds (with a little heading each)
+    const order = grouped ? [...all.filter((v) => v.group !== 'breeds'), ...all.filter((v) => v.group === 'breeds')] : all;
+    let lastGroup = null;
+    for (const v of order) {
+      const grp = v.group === 'breeds' ? 'breeds' : 'colors';
+      if (grouped && grp !== lastGroup) {
+        variantsEl.appendChild(groupLabel(grp === 'breeds' ? 'Breeds' : 'Colors', grp === 'breeds' ? 'paw' : 'sparkle'));
+        lastGroup = grp;
+      }
       const b = ui.el('button', 'lf-variant' + (v.key === adopt.variant ? ' sw-sel' : ''));
       b.type = 'button';
+      b.dataset.variant = v.key;
       b.setAttribute('aria-label', v.name);
       const pic = img(ui, '');
       pic.style.visibility = 'hidden';
-      petThumb(game, adopt.species, v.key).then((url) => { if (url) { pic.src = url; pic.style.visibility = 'visible'; } });
+      petThumb(game, adopt.species, v.key, adoptOpts()).then((url) => { if (url) { pic.src = url; pic.style.visibility = 'visible'; } });
       const check = ui.el('span', 'lf-check');
       check.innerHTML = ui.icon('check');
       b.append(pic, ui.el('span', '', v.name), check);
@@ -155,6 +184,7 @@ export function installPetUI(game, sys) {
         adopt.variant = v.key;
         sfx(game, 'pop', { pitch: 1.1 });
         renderVariants();
+        renderOpts();
         showPreview();
       });
       variantsEl.appendChild(b);
@@ -174,11 +204,36 @@ export function installPetUI(game, sys) {
     }
   };
 
+  // options a species offers (the horse's mane: flowing or braided)
+  const renderOpts = () => {
+    optsEl.innerHTML = '';
+    optsEl.hidden = adopt.species !== 'horse';
+    if (adopt.species !== 'horse') return;
+    for (const [braids, label] of [[false, 'Flowing Mane'], [true, 'Braided Mane']]) {
+      const b = ui.el('button', 'lf-opt' + (adopt.braids === braids ? ' sw-sel' : ''));
+      b.type = 'button';
+      b.dataset.braids = braids ? '1' : '0';
+      const pic = img(ui, '');
+      petThumb(game, 'horse', adopt.variant, braids ? { braids: true } : null).then((url) => { if (url) pic.src = url; });
+      b.append(pic, ui.el('span', '', label));
+      b.addEventListener('click', () => {
+        if (adopt.braids === braids) return;
+        adopt.braids = braids;
+        sfx(game, 'pop', { pitch: 1.15 });
+        renderOpts();
+        renderVariants();
+        showPreview();
+      });
+      optsEl.appendChild(b);
+    }
+  };
+
   const doAdopt = () => {
     const name = nameInput.value.trim() || suggestions(adopt.species)[0] || SPECIES[adopt.species].names[0];
     const spot = adopt.spot;
+    const opts = adoptOpts();
     ui.close();
-    const pet = sys.adopt(adopt.species, adopt.variant, name, spot);
+    const pet = sys.adopt(adopt.species, adopt.variant, name, spot, { opts });
     if (pet) game.toast(`Welcome home, ${pet.name}!`, { icon: 'heart', big: true, color: 'pink' });
   };
 
@@ -204,8 +259,11 @@ export function installPetUI(game, sys) {
       const side = ui.el('div', 'lf-side');
       const colorLabel = ui.el('div', 'sw-field-label');
       colorLabel.innerHTML = lifeIcon('sparkle');
-      colorLabel.appendChild(document.createTextNode('Pick a color'));
+      pickText = document.createTextNode('Pick a color');
+      colorLabel.appendChild(pickText);
       variantsEl = ui.el('div', 'lf-variants');
+      optsEl = ui.el('div', 'lf-opts');
+      optsEl.hidden = true;
       const nameLabel = ui.el('div', 'sw-field-label');
       nameLabel.innerHTML = ui.icon('pencil');
       nameLabel.appendChild(document.createTextNode('Name'));
@@ -230,7 +288,7 @@ export function installPetUI(game, sys) {
       const go = ui.el('div', 'lf-go');
       goBtn = lifeButton(ui, { icon: 'heart', label: 'Adopt!', variant: 'pink', size: 'big', className: 'lf-adopt-go', onClick: doAdopt });
       go.appendChild(goBtn);
-      side.append(colorLabel, variantsEl, nameLabel, row, chipsEl, go);
+      side.append(colorLabel, variantsEl, optsEl, nameLabel, row, chipsEl, go);
       wrap.append(stage, side);
       container.appendChild(wrap);
     },
@@ -238,10 +296,13 @@ export function installPetUI(game, sys) {
       adopt.species = SPECIES[args.species] ? args.species : 'puppy';
       adopt.spot = args.spot || null;
       adopt.variant = SPECIES[adopt.species].variants[0].key;
+      adopt.braids = false;
+      pickText.textContent = PICK_TEXT[adopt.species] || 'Pick a color';
       ui.setTitle('adopt', `Meet your ${SPECIES[adopt.species].name}!`);
       const s = suggestions(adopt.species);
       nameInput.value = s[0] || '';
       renderVariants();
+      renderOpts();
       renderChips();
       showPreview();
       sfx(game, SPECIES[adopt.species].voice, { volume: 0.7 });
@@ -269,7 +330,7 @@ export function installPetUI(game, sys) {
       const card = ui.el('div', 'lf-pet');
       const top = ui.el('div', 'lf-pet-top');
       const pic = img(ui, '');
-      petThumb(game, pet.species, pet.variant).then((url) => { pic.src = url; });
+      petThumb(game, pet.species, pet.variant, pet.opts).then((url) => { pic.src = url; });
       const words = ui.el('div');
       words.style.minWidth = '0';
       const meta = ui.el('div', 'lf-pet-meta');

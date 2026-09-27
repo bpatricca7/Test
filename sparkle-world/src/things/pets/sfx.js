@@ -62,7 +62,8 @@ function noise(a, { t = 0, decay = 0.2, vol = 0.2, type = 'bandpass', freq = 120
 
 /**
  * Play one of our sounds. Names: squeak peep quack mew purr yip unicorn plop stir ding
- * sizzle whirr freeze tick pour till harvest crunch slurp tada boing, or any core name.
+ * sizzle whirr freeze tick pour till harvest crunch slurp tada boing bloop shell whinny
+ * giggle babble hello nope, or any core name.
  */
 export function sfx(game, name, { volume = 1, pitch = 1 } = {}) {
   if (CORE.has(name)) {
@@ -156,6 +157,33 @@ export function sfx(game, name, { volume = 1, pitch = 1 } = {}) {
         break;
       case 'boing':
         tone(a, { f0: 220 * p, f1: 660 * p, type: 'sine', decay: 0.22, vol: 0.18 * v, vib: 40 });
+        break;
+      case 'bloop': // turtle: a soft bubbly hello
+        tone(a, { f0: 320 * p, f1: 620 * p, decay: 0.12, vol: 0.16 * v });
+        tone(a, { f0: 420 * p, f1: 820 * p, t: 0.13, decay: 0.12, vol: 0.12 * v });
+        break;
+      case 'shell': // tucking into the shell
+        tone(a, { f0: 700 * p, f1: 240 * p, type: 'triangle', decay: 0.16, vol: 0.16 * v });
+        noise(a, { decay: 0.06, vol: 0.08 * v, type: 'lowpass', freq: 900 });
+        break;
+      case 'whinny': // horse, happy
+        game.audio.play('neigh', { volume: v, pitch: 0.9 * p });
+        tone(a, { f0: 700 * p, f1: 520 * p, type: 'triangle', t: 0.05, attack: 0.05, decay: 0.4, vol: 0.05 * v, vib: 40 });
+        break;
+      case 'giggle': // a friend laughing
+        for (let i = 0; i < 5; i++) tone(a, { f0: (900 - i * 45) * p, f1: (1150 - i * 45) * p, type: 'triangle', t: i * 0.09, attack: 0.01, decay: 0.06, vol: 0.09 * v });
+        break;
+      case 'babble': { // a friend talking: a few sing-song syllables (pitch = her voice)
+        const scale = [0, 2, 4, 7, 9, 12];
+        const n = 3 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < n; i++) {
+          const m = 72 + scale[Math.floor(Math.random() * scale.length)];
+          tone(a, { f0: hz(m) * p, f1: hz(m + (Math.random() < 0.5 ? 2 : -1)) * p, type: 'triangle', t: i * 0.085, attack: 0.012, decay: 0.06, vol: 0.075 * v });
+        }
+        break;
+      }
+      case 'hello': // a friend arriving: sparkly rising notes
+        [76, 79, 83, 88].forEach((m, i) => tone(a, { f0: hz(m) * p, t: i * 0.07, decay: 0.4, vol: 0.09 * v, type: 'triangle' }));
         break;
       case 'nope':
         tone(a, { f0: 420 * p, f1: 300 * p, type: 'triangle', decay: 0.12, vol: 0.15 * v });

@@ -7,7 +7,9 @@
 // (pet.species is the species key). API: game.pets (see PetSystem below).
 
 import * as THREE from 'three';
-import { SPECIES, SPECIES_KEYS, variantOf } from './pets/species.js';
+import { SPECIES, SPECIES_KEYS, variantOf, petOpts } from './pets/species.js';
+import { installPetStickers } from './pets/stickers.js';
+import { install as installFriends } from './friends/index.js';
 import { Pet } from './pets/pet.js';
 import { RainbowTrail, ZzzPool } from './pets/fx.js';
 import { sfx } from './pets/sfx.js';
@@ -42,7 +44,7 @@ class PetSystem {
 
   // ---------- adopting & removing ----------
 
-  adopt(species, variant, name, spot, { fx = true } = {}) {
+  adopt(species, variant, name, spot, { fx = true, opts = null } = {}) {
     const g = this.game;
     if (!g.world || !SPECIES[species]) return null;
     if (this.pets.length >= MAX_PETS) {
@@ -57,6 +59,7 @@ class PetSystem {
     const data = {
       id: makeId('pet'), species, variant: variantOf(species, variant).key, name, mode: 'follow',
       x: pos[0], y: pos[1], z: pos[2], home: [pos[0], pos[1], pos[2]], adoptedAt: Date.now(),
+      opts: petOpts(species, opts),
     };
     if (g.player) data.yaw = Math.atan2(g.player.position.x - pos[0], g.player.position.z - pos[2]);
     const pet = this._add(data);
@@ -142,6 +145,11 @@ class PetSystem {
   petPet(pet) {
     const g = this.game;
     if (pet.riding) return false;
+    if (pet.anim.hideLeft > 0) {
+      // a gentle pat brings a shy turtle right back out
+      pet.anim.hideLeft = 0;
+      pet.anim.happy = 2;
+    }
     if (pet.state === 'sleep') {
       // a sleepy pet just gets a gentle cuddle
       pet.headPoint(_v);
@@ -167,6 +175,27 @@ class PetSystem {
   tickle(pet) {
     const g = this.game;
     pet.headPoint(_v);
+    if (pet.spec.hideOnTickle && pet.state !== 'sleep') {
+      // turtles are shy: they pop into their shell, then peek out with a happy wiggle
+      const was = pet.anim.hideLeft > 0;
+      pet.anim.hideLeft = 2.6;
+      pet.stop();
+      sfx(g, 'shell');
+      g.celebrate([pet.pos.x, pet.pos.y + 0.6, pet.pos.z], 'sparkle', { quiet: true, count: 6 });
+      if (!was) {
+        setTimeout(() => {
+          if (!this.pets.includes(pet) || pet.anim.hideLeft > 0.05) return;
+          pet.anim.happy = 2;
+          pet.trick('hop');
+          this.voice(pet, 0.8, true);
+        }, 2900);
+      }
+      if (performance.now() - this._tickleAt > 5000) {
+        this._tickleAt = performance.now();
+        g.toast(`Peekaboo! ${pet.name} is hiding in the shell!`, { icon: 'heart', key: 'pet-tickle' });
+      }
+      return true;
+    }
     g.celebrate(_v, 'heart', { quiet: true, count: 5 });
     pet.anim.happy = 1.5;
     pet.trick('shake');
@@ -231,7 +260,7 @@ class PetSystem {
     const f = pet.spec.rideable ? pet.ext * 0.95 : pet.ext * 0.8;
     m.position.set(pet.pos.x + Math.sin(pet.yaw) * f, pet.pos.y + 0.02, pet.pos.z + Math.cos(pet.yaw) * f);
     m.rotation.y = pet.yaw;
-    const s = pet.spec.rideable ? 1.7 : pet.species === 'panda' ? 1.1 : 0.9;
+    const s = pet.species === 'horse' ? 2.1 : pet.spec.rideable ? 1.7 : pet.species === 'panda' ? 1.1 : 0.9;
     m.scale.setScalar(s);
     this.group.add(m);
     this.snacks.push({ m, life: 2.2, base: s, bites: 0, color: (FOOD[key] && FOOD[key].color) || '#FFFFFF' });
@@ -253,7 +282,8 @@ class PetSystem {
       v *= Math.max(0, 1 - d / 22);
     }
     if (v < 0.03) return;
-    const pitch = pet.species === 'puppy' && pet.variant !== 'cocoa' ? 1.15 : 1;
+    const pitch = pet.species === 'puppy' && pet.variant !== 'cocoa' ? (pet.variant === 'husky' || pet.variant === 'retriever' ? 0.95 : 1.15)
+      : pet.species === 'horse' ? 0.82 : 1;
     sfx(g, happy ? pet.spec.happy : pet.spec.voice, { volume: v, pitch: pitch * (0.95 + Math.random() * 0.1) });
   }
 
@@ -599,6 +629,8 @@ export function install(game) {
   });
 
   sys.ui = installPetUI(game, sys);
+  installPetStickers(game);
+  installFriends(game);
   game.registerAction('pets', (g) => g.ui && g.ui.open('pets'));
 
   // wake everyone up in the morning; curl up when she goes to sleep
@@ -637,9 +669,17 @@ export function install(game) {
   if (game.debug) {
     game.debug.pets = {
       list: () => sys.pets.map((p) => ({ id: p.id, species: p.species, variant: p.variant, name: p.name, mode: p.mode, state: p.state, x: p.pos.x, y: p.pos.y, z: p.pos.z })),
-      adopt: (species, variant, name, x, y, z) => {
-        const pet = sys.adopt(species, variant, name || SPECIES[species].names[0], x === undefined ? null : [x, y, z]);
+      adopt: (species, variant, name, x, y, z, opts) => {
+        const pet = sys.adopt(species, variant, name || SPECIES[species].names[0], x === undefined || x === null ? null : [x, y, z], { opts });
         return pet ? pet.id : null;
+      },
+      tickle: (id) => { const p = sys.byId(id); return p ? sys.tickle(p) : false; },
+      info: (id) => {
+        const p = sys.byId(id);
+        if (!p) return null;
+        let meshes = 0;
+        p.object3d.traverse((o) => { if (o.isMesh || o.isSprite) meshes++; });
+        return { id: p.id, species: p.species, variant: p.variant, opts: p.opts, merged: !!p.rig.skinned, meshes, hide: p.anim.hide, riding: p.riding, swimming: p.swimming };
       },
       pet: (id) => { const p = sys.byId(id); return p ? sys.petPet(p) : false; },
       feed: (id, key) => { const p = sys.byId(id); return p ? sys.feed(p, key) : false; },
