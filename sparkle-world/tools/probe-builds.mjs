@@ -404,6 +404,32 @@ async function play(browser) {
   } else {
     console.log('  (no rope_bridge piece in this build: the plank bridge stands in)');
   }
+  // the camper van's ladder takes her up to the roof tent, where she can tuck into its bed
+  const van = await placeBuild(page, 'camper_van', 60, 100, 0);
+  const inVan = `(e) => e.x >= ${van.bounds.x0} && e.x <= ${van.bounds.x1} && e.z >= ${van.bounds.z0} && e.z <= ${van.bounds.z1}`;
+  const vanUp = await page.evaluate(([x, y, z, inVan]) => {
+    const g = window.__game, inside = eval(inVan);
+    const ladders = g.entities.all().filter((e) => e.key === 'ladder' && inside(e)).sort((a, b) => a.y - b.y);
+    if (!ladders.length) return { ok: false, why: 'no ladder' };
+    g.player.teleport(x, y, z);
+    return { ok: true, base: ladders[0].y, uid: ladders[0].uid };
+  }, [...local(van, van.plan, 0.5, 1.05, 7.5), inVan]);
+  if (vanUp.ok) {
+    await page.evaluate((uid) => window.__game.debug.interact(uid), vanUp.uid);
+    const up = await page.waitForFunction((base) => window.__game.player.position.y >= base + 3.9, vanUp.base, { timeout: 30000, polling: 100 }).then(() => true, () => false);
+    await settle(page, 1500);
+    const bed = await page.evaluate((inVan) => {
+      const g = window.__game, p = g.player.position, inside = eval(inVan);
+      const b = g.entities.all().filter((e) => e.key.startsWith('bed_') && inside(e))[0];
+      return { uid: b.uid, y: b.y, py: p.y, dist: Math.hypot(b.x + 0.5 - p.x, b.z + 0.5 - p.z) };
+    }, inVan);
+    check(up && bed.y > vanUp.base + 3 && bed.dist < 4.5, `the van ladder climbs up beside the roof tent bed (she is at ${bed.py.toFixed(1)}, the bed ${bed.dist.toFixed(1)} away)`);
+    await page.evaluate((uid) => window.__game.debug.interact(uid), bed.uid);
+    const slept = await page.waitForFunction((uid) => { const p = window.__game.player; return p.state === 'sleep' && p.seatEntity && p.seatEntity.uid === uid; }, bed.uid, { timeout: 15000, polling: 100 }).then(() => true, () => false);
+    check(slept, 'she can snuggle into the roof tent bed');
+    await page.evaluate(() => { const p = window.__game.player; if (p.state === 'sleep') p.stand(); });
+  } else check(false, `the camper van has a ladder (${vanUp.why})`);
+
   // telescope + zip line on the lookout
   const look = await placeBuild(page, 'lookout_treehouse', 60, 130, 0);
   check(look && look.scopes.length === 2, 'the Lookout Treehouse has its telescopes');
@@ -427,6 +453,30 @@ async function play(browser) {
     check(Math.abs(hts[0] - hts[1]) >= 8, `the zip line runs downhill from the deck (tower bases ${hts.join(' and ')})`);
     await view(page, local(look, look.plan, 26, 16, 16), local(look, look.plan, 20, 11, 5), 0.4);
     await shot(page, 'zipline');
+    // ride it from the treehouse deck: she climbs the tower, grabs the handle and zips down
+    if (pair) {
+      await walkMode(page);
+      const top = await page.evaluate((uids) => {
+        const g = window.__game, [a, b] = uids.map((u) => g.entities.byUid(u));
+        const start = a.y > b.y ? a : b, end = start === a ? b : a;
+        const p = g.entities.localToWorld(start, 1, 0.05, 3.2);
+        g.player.teleport(p.x, p.y, p.z);
+        return { start: start.uid, end: end.uid };
+      }, look.towers);
+      let rideEvent = null;
+      await page.evaluate(() => { window.__zipDone = null; window.__game.events.on('zipline:ride', (e) => { window.__zipDone = { from: e.from && e.from.uid, to: e.to && e.to.uid }; }); });
+      await page.evaluate((uid) => window.__game.debug.interact(uid), top.start);
+      await page.waitForFunction(() => { const r = window.__game.debug.outdoor.ride(); return r && r.s > r.len * 0.4; }, null, { timeout: 60000, polling: 50 }).catch(() => {});
+      await shot(page, 'zipline-ride');
+      await page.waitForFunction(() => !window.__game.debug.outdoor.ride(), null, { timeout: 90000, polling: 100 }).catch(() => {});
+      rideEvent = await page.evaluate(() => window.__zipDone);
+      const where = await page.evaluate((uid) => {
+        const g = window.__game, e = g.entities.byUid(uid), c = g.entities.localToWorld(e, 1, 0, 1);
+        return Math.hypot(g.player.position.x - c.x, g.player.position.z - c.z);
+      }, top.end);
+      check(!!rideEvent && rideEvent.from === top.start && where < 3, `a zip ride from the treehouse deck lands at the meadow tower (${JSON.stringify(rideEvent)}, ${where.toFixed(1)} from it)`);
+      await shot(page, 'zipline-landed');
+    }
     // undo takes both towers (and the cable) away
     await page.evaluate(() => window.__game.undo());
     const left = await page.evaluate(() => (window.__game.debug.outdoor ? window.__game.debug.outdoor.links().length : 0));

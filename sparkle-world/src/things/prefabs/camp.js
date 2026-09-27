@@ -162,8 +162,8 @@ export const sparkleCamper = {
     parasol(a, 27, 1, 13, 'wool_sky', 'wool_white');
 
     // ---- patio: string lights under the awning, a camp fire with chairs, a cooler ----
-    stringLights(a, 5, 1, 12, F, C.white);
     stringLights(a, 12, 1, 12, F, C.white);
+    a.furn(LANTERN, 5, 1, 12, F, C.sky);
     campfire(a, 7, 1, 14);
     campChair(a, 5, 1, 14, R, C.pink);
     campChair(a, 9, 1, 14, L, C.sky);
@@ -290,7 +290,7 @@ export const camperVan = {
     a.block(3, 6, 7, 'air').block(8, 6, 7, 'glass');
     a.block(6, 6, Z0 + 1, 'glass').block(6, 6, Z1 - 1, 'glass');
     a.at('bed_single|bed_double', 4, 6, 7, R, C.sky);
-    a.furn('fairy_lights', 7, 6, 7, F, C.pink);
+    a.furn(CEIL_LAMP, 7, 6, 7, F, C.pink);
     for (let y = 1; y <= 4; y++) a.furn('ladder', 1, y, 7, L, C.white);
     // surfboards on the front of the roof
     a.fill(10, 6, 6, 13, 6, 6, 'carpet_pink').block(11, 6, 6, 'carpet_white');
@@ -310,13 +310,12 @@ export const camperVan = {
     a.at('armchair|chair', 13, 2, 6, R, C.sun).at('armchair|chair', 13, 2, 8, R, C.sun);
     a.furn(CEIL_LAMP, 7, 4, 7, F, C.sun);
 
-    // outside: parasol picnic, camp chairs, string lights, cooler, a lamp
+    // outside: parasol picnic, camp chairs, string lights, a lamp
     parasol(a, 3, 1, 13, 'wool_sky', 'wool_white');
     a.at('picnic_blanket', 5, 1, 12, F, C.sky);
     campChair(a, 9, 1, 12, L, C.pink);
     campChair(a, 14, 1, 12, L, C.mint);
     stringLights(a, 12, 1, 2, F, C.white);
-    cooler(a, 8, 1, 14, F, C.pink);
     a.furn(LANTERN, 16, 1, 7, F, C.sun);
     a.flowers(0, 0, 16, 1, 1, FLOWERS, { density: 0.35, seed: 95 });
     a.flowers(0, 14, 16, 15, 1, FLOWERS, { density: 0.3, seed: 96 });
