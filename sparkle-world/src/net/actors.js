@@ -57,6 +57,8 @@ export class ActorRegistry {
     this.kinds = new Map();
     this.role = null;
     this.hooks = null;
+    this._samples = null; // the host's latest motion samples (guest)
+    this._newActors = false;
     this.registerBuiltins();
   }
 
@@ -88,6 +90,7 @@ export class ActorRegistry {
     }
     this.role = null;
     this.hooks = null;
+    this._samples = null;
   }
 
   _bindOne(kind, h) {
@@ -127,6 +130,7 @@ export class ActorRegistry {
   applyRecord(kind, id, rec) {
     const h = this.kinds.get(kind);
     if (!h) return;
+    if (rec && h.channel && !h.find(id)) this._newActors = true;
     try {
       h.applyRecord(id, rec && typeof rec === 'object' ? rec : null);
     } catch (err) {
@@ -136,6 +140,7 @@ export class ActorRegistry {
 
   /** Guest: the host's latest motion samples. */
   applySamples({ pt, nx } = {}) {
+    this._samples = { pt, nx };
     for (const h of this.kinds.values()) {
       const list = h.channel === 'pt' ? pt : h.channel === 'nx' ? nx : null;
       if (!Array.isArray(list)) continue;
@@ -170,6 +175,12 @@ export class ActorRegistry {
 
   /** Guest, after every applied payload (entities placed / removed silently). */
   afterApply(info) {
+    // a pet or friend that just arrived takes the latest motion at once (the samples only
+    // come again when something moves)
+    if (this._newActors) {
+      this._newActors = false;
+      if (this._samples) this.applySamples(this._samples);
+    }
     for (const h of this.kinds.values()) {
       try {
         if (h.afterApply) h.afterApply(info);

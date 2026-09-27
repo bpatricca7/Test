@@ -325,7 +325,8 @@ export class GameAdapter {
     const cur = E.byUid(uid);
     if (cur && cur.key === key && cur.x === x && cur.y === y && cur.z === z && cur.rot === rot) {
       const col = color || (def.colors ? def.colors[0] : null);
-      const same = cur.color === col && Math.abs((cur.yOffset || 0) - yOffset) < 1e-6 && stableStringify(cur.data || {}) === stableStringify(dataObj);
+      // (heights travel in thousandths: a carpet's 1/16 comes back as 0.063)
+      const same = cur.color === col && Math.abs((cur.yOffset || 0) - yOffset) < 0.002 && stableStringify(cur.data || {}) === stableStringify(dataObj);
       cur.restsOn = restsOn;
       if (!same) {
         // her own change came back as it was: nothing to rebuild (a door keeps swinging)
