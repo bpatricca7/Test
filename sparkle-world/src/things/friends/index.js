@@ -282,10 +282,10 @@ class FriendSystem {
     if (f.act === 'sit') f.standUp(true);
     f.faceT = 4;
     f.emote('dance', 0.1);
-    this.say(f, 'dance');
     // she dances too (and every friend nearby joins in through the 'emote' event)
     if (pl && pl.state !== 'sit' && pl.state !== 'sleep' && pl.state !== 'ride') pl.emote('dance');
     else this._mirror('dance', f);
+    this.say(f, 'dance');
   }
 
   /** Friends near her copy her emote (a dance party!). */
@@ -305,7 +305,7 @@ class FriendSystem {
       f.faceT = 5;
       if (f !== except) f.emote(name, 0.15 + Math.random() * 0.45);
       n++;
-      if (first && f !== except) {
+      if (first && f !== except && !(this.ui && this.ui.bubbleFriend === f)) {
         first = false;
         const kind = ['dance', 'wave', 'heart', 'twirl', 'cartwheel', 'jump', 'sit'].includes(name) ? name : 'dance';
         setTimeout(() => { if (this.friends.includes(f)) this.say(f, kind); }, 500);

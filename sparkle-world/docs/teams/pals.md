@@ -107,7 +107,9 @@ light to deep, twelve different hair styles and colors. Built with `game.createA
   goes to sleep, friends within 30 blocks tuck into free beds too; everyone wakes up at
   `time:morning` (one of them says good morning). A friend gets up when the player takes her
   spot ("Here, you can have my seat!") or when the seat / bed is removed. Eats treats in
-  three bites with the treat in her hand, then hearts and a thank you.
+  three bites with the treat in her hand, then hearts and a thank you. Now and then she gives
+  a pet nearby some love (heart hands, hearts over the pet, a happy hop, "Biscuit is so
+  cute!").
 - **Chat** (`chat.js`): 230+ short kind lines. They react to her outfit (tiara, wings, roller
   skates, hair style, rainbow hair...), pets near (by name and species), night, morning, rain,
   snow, rainbow, the world type, food in the basket, furniture nearby (piano, trampoline,

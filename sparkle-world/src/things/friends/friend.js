@@ -256,7 +256,7 @@ export class Friend {
     this.food.userData.key = key;
     // in her right hand (the forearm bone), a little forward of the fingers
     this.food.position.set(0, -0.25, 0.06);
-    this.food.scale.setScalar(0.72);
+    this.food.scale.setScalar(0.92);
     this.avatar.bones.elbowR.add(this.food);
     this.eatT = 3.4;
     this.biteT = 0.9;

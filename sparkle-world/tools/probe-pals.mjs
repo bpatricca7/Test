@@ -453,7 +453,7 @@ async function desktop(browser) {
   await page.evaluate((id) => {
     const g = window.__game, f = g.friends.byId(id), pl = g.player.position;
     const dx = pl.x - f.pos.x, dz = pl.z - f.pos.z, d = Math.hypot(dx, dz) || 1;
-    g.player.teleport(f.pos.x + (dx / d) * 1.9, pl.y, f.pos.z + (dz / d) * 1.9);
+    g.player.teleport(f.pos.x + (dx / d) * 2.6, pl.y, f.pos.z + (dz / d) * 2.6);
     g.cameraRig.setMode('first');
     g.cameraRig.yaw = Math.atan2(-dx, -dz);
     g.cameraRig.pitch = 0.12;
