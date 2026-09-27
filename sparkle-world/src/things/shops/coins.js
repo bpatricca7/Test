@@ -16,6 +16,7 @@ import { giftSvg, shopIcon } from './icons.js';
 
 export const START_COINS = 100;
 export const EARN = { gem: 10, harvest: 3, cook: 5, sticker: 20, pet: 2, gift: 25 };
+const STICKER_WAIT = 1.0; // seconds of clear world before a sticker's coins fly (its pop is up)
 
 const CSS = /* css */ `
 .sh-fly-layer { position: absolute; inset: 0; pointer-events: none !important; z-index: 62; overflow: hidden; }
@@ -37,7 +38,7 @@ const CSS = /* css */ `
 .sh-gift-lid { transform-box: fill-box; transform-origin: 50% 100%; transition: transform .55s var(--sw-bounce); }
 .sh-gift.sh-open .sh-gift-box { animation: sh-pop .5s var(--sw-bounce); pointer-events: none !important; }
 .sh-gift.sh-open .sh-gift-lid { transform: translate(18px, -46px) rotate(24deg); }
-.sh-gift-label { position: relative; margin-top: -4px; padding: 8px 22px 10px; border-radius: 999px; background: #fff; border: 4px solid #FFE27A; text-align: center; line-height: 1.05;
+.sh-gift-label { position: relative; margin-top: 8px; padding: 8px 22px 10px; border-radius: 999px; background: #fff; border: 4px solid #FFE27A; text-align: center; line-height: 1.05;
   box-shadow: 0 6px 16px rgba(58,31,77,.25); animation: sw-pop .4s var(--sw-bounce) .25s both; }
 .sh-gift-label small { display: block; font-size: 14px; font-weight: 700; color: #E08A00; letter-spacing: .6px; }
 .sh-gift-label b { display: block; font-size: 25px; color: var(--sw-ink); }
@@ -96,8 +97,10 @@ export function installCoins(game) {
     p.stats.coinsEarned = (p.stats.coinsEarned || 0) + n;
     game.saveProfile();
     ev.emit('coins:change', { coins: p.coins, delta: n, reason });
-    if (fly && game.mode === 'play' && !document.hidden) flyIn(n, at);
-    else setShown(p.coins);
+    if (!fly || game.mode !== 'play' || document.hidden) setShown(p.coins);
+    // a sticker's coins fly out of its "New sticker!" pop (it shows once the world is clear)
+    else if (reason === 'sticker') queued.push({ n, wait: STICKER_WAIT });
+    else flyIn(n, at);
     return p.coins;
   }
 
@@ -117,6 +120,7 @@ export function installCoins(game) {
   // ---------- flying coins ----------
   let layer = null;
   const flights = new Set();
+  const queued = []; // gains waiting for a clear world before they fly ({ n, wait })
   const rootRect = () => ui.root.getBoundingClientRect();
   const pillEl = () => ui.hudLayer.querySelector('.sw-hud .sw-coins');
 
@@ -198,6 +202,7 @@ export function installCoins(game) {
   // a missed landing (tab hidden, world left) never leaves the pill behind
   const catchUp = () => {
     flights.clear();
+    queued.length = 0;
     if (layer) layer.innerHTML = '';
     if (profile()) setShown(profile().coins);
   };
@@ -237,10 +242,11 @@ export function installCoins(game) {
 
   // ---------- the daily gift ----------
   let giftWanted = false, giftEl = null, clearFor = 0;
-  const blocked = () => !!(ui.current || ui.dialogOpen || document.hidden || game.loading || game.mode !== 'play' ||
+  /** Something covers the world (a panel, dialog, fade...); popsOk: a sticker pop does not count. */
+  const blocked = (popsOk = false) => !!(ui.current || ui.dialogOpen || document.hidden || game.loading || game.mode !== 'play' ||
     (game.container && game.container.classList.contains('sw-photo-mode')) ||
     (ui.fader && ui.fader.classList.contains('sw-on')) ||
-    ui.root.querySelector(':scope > .sw-stkpop') || ui.root.classList.contains('sw-tut-on'));
+    (!popsOk && (ui.root.querySelector(':scope > .sw-stkpop') || ui.root.classList.contains('sw-tut-on'))));
 
   // automated test browsers (navigator.webdriver) get it only when asked (debug / probe), like
   // the tutorial's tips, so other scenario scripts are never covered by a surprise present
@@ -288,12 +294,30 @@ export function installCoins(game) {
     return true;
   }
 
+  const stickerPoint = () => {
+    const pop = ui.root.querySelector(':scope > .sw-stkpop');
+    const rr = rootRect();
+    if (pop) {
+      const r = pop.getBoundingClientRect();
+      if (r.width) return { x: r.left - rr.left + r.width / 2, y: r.top - rr.top + r.height * 0.4, screen: true };
+    }
+    return { x: rr.width / 2, y: rr.height * 0.28, screen: true };
+  };
+
   game.addSystem({
     name: 'coins',
     update(dt) {
-      if (!giftWanted || !ui) return;
-      clearFor = blocked() ? 0 : clearFor + dt;
-      if (clearFor > 1.2) showGift();
+      if (!ui) return;
+      const busy = blocked(true);
+      clearFor = busy ? 0 : clearFor + dt;
+      if (queued.length && !busy) {
+        const q = queued[0];
+        if ((q.wait -= dt) <= 0) {
+          queued.shift();
+          flyIn(q.n, stickerPoint());
+        }
+      }
+      if (giftWanted && clearFor > 1.2 && !queued.length && !blocked()) showGift();
     },
   });
 
@@ -304,7 +328,7 @@ export function installCoins(game) {
     update(dt) {
       const p = profile();
       if (!p || typeof p.coins !== 'number') return;
-      if (shown === null || (shown !== p.coins && !flights.size)) {
+      if (shown === null || (shown !== p.coins && !flights.size && !queued.length)) {
         lag += dt;
         if (lag > 0.5 || shown === null) { lag = 0; setShown(p.coins); }
       } else lag = 0;

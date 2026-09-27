@@ -21,7 +21,7 @@ import { shopIcon, shopButton, scoopSvg, toppingSvg } from './icons.js';
 const CSS = /* css */ `
 .sh-shop { position: relative; display: flex; flex-direction: column; gap: 10px; }
 .sh-shop [hidden] { display: none !important; }
-.sh-top { display: flex; align-items: center; gap: 12px; }
+.sh-top { position: sticky; top: -8px; z-index: 4; display: flex; align-items: center; gap: 12px; margin: -8px -6px 0; padding: 8px 6px 8px; background: var(--sw-cream); border-radius: 0 0 22px 22px; }
 .sh-keeper { position: relative; flex: none; width: 96px; height: 96px; border-radius: 50%; overflow: hidden; border: 5px solid #fff; box-shadow: 0 5px 14px var(--sw-shadow);
   background: radial-gradient(circle at 50% 38%, #FFFFFF 0 30%, var(--kc, #FFD1E6) 72%); }
 .sh-keeper canvas, .sh-keeper > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -79,7 +79,7 @@ const CSS = /* css */ `
   box-shadow: 0 3px 8px rgba(58,31,77,.12); transition: transform .16s var(--sw-bounce); touch-action: manipulation; }
 .sh-opt:active { transform: scale(.94); }
 .sh-opt.sh-sel { border-color: var(--sw-pink); box-shadow: 0 0 0 3px #fff, 0 0 14px rgba(255,95,162,.55); }
-.sh-opt img { width: 78px; height: 78px; pointer-events: none; }
+.sh-opt > img { width: 78px; height: 78px; pointer-events: none; }
 .sh-opt-name { font-size: 16px; font-weight: 700; line-height: 1.05; text-align: center; }
 .sh-opt .sh-price { font-size: 14px; padding: 0 8px 0 4px; }
 .sh-opt .sh-price svg { width: 16px; height: 16px; }
@@ -100,7 +100,7 @@ const CSS = /* css */ `
 .sh-flavor:active { transform: scale(.92); }
 .sh-flavor.sh-in { border-color: var(--sw-pink-soft); background: #FFF6FA; }
 .sh-tops { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.sh-tops .sh-opt svg { width: 64px; height: 64px; }
+.sh-tops .sh-opt > svg { width: 64px; height: 64px; pointer-events: none; }
 .sh-nav { display: flex; justify-content: flex-end; gap: 10px; }
 
 .sh-sheet { position: sticky; bottom: 0; z-index: 3; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 14px; margin-top: 4px; border-radius: 26px; background: #fff; border: 4px solid var(--sw-mint);
@@ -265,7 +265,7 @@ export function installShopPanel(game, { treats, coins }) {
     const fallback = () => { if (!keeperEl.querySelector('canvas')) keeperEl.insertAdjacentHTML('afterbegin', shopIcon(k.icon)); };
     if (stage.failed) return fallback();
     const kind = st.kind;
-    stage.snapshot(`shopkeeper|${kind}`, k.look, { frame: { cy: 1.3, span: 1.16, yaw: 0.32, pitch: 0.05 }, pose: { emote: 'wave', t: 0.55 }, size: 200 })
+    stage.snapshot(`shopkeeper|${kind}`, k.look, { frame: { cy: 1.24, span: 1.34, yaw: 0.3, pitch: 0.05 }, pose: { emote: 'wave', t: 0.55 }, size: 200 })
       .then((c) => {
         if (st.kind !== kind || !ui.isOpen('shop')) return;
         if (!c) return fallback();
@@ -373,7 +373,7 @@ export function installShopPanel(game, { treats, coins }) {
 
   const framing = (() => {
     const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute([-0.24, 0, -0.24, 0.24, 0.66, 0.24], 3));
+    g.setAttribute('position', new THREE.Float32BufferAttribute([-0.22, 0, -0.22, 0.22, 0.6, 0.22], 3));
     return g;
   })();
   framing.userData.shared = true;
@@ -407,7 +407,7 @@ export function installShopPanel(game, { treats, coins }) {
     popT = key === lastSpecKey ? 1 : 0;
     lastSpecKey = key;
     pv.show(holder, {
-      spin: 0.55, yaw, dir: [0, 0.5, 1], zoom: 1.02, lift: 0.46,
+      spin: 0.55, yaw, dir: [0, 0.45, 1], zoom: 0.92, lift: 0.47,
       onFrame: (dt) => {
         popT = Math.min(1, popT + dt / 0.4);
         const s = popT < 1 ? 0.82 + 0.18 * (1 - Math.pow(1 - popT, 3)) + Math.sin(popT * Math.PI) * 0.12 : 1;
