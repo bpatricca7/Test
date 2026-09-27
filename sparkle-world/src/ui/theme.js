@@ -19,12 +19,18 @@ html, body {
   margin: 0; height: 100%; overflow: hidden; background: #BDE6FF;
   font-family: var(--sw-font); color: var(--sw-ink);
   -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none; touch-action: manipulation;
   overscroll-behavior: none; -webkit-text-size-adjust: 100%;
 }
-#app { position: fixed; inset: 0; overflow: hidden; background: #BDE6FF; }
+#app { position: fixed; inset: 0; overflow: hidden; background: #BDE6FF; overscroll-behavior: none; }
 .sw-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; outline: none; }
-.sw-app * { box-sizing: border-box; }
+.sw-app * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
 .sw-app button, .sw-app input { font-family: var(--sw-font); }
+/* touch: the game surface and the HUD take every gesture themselves (no page pan or zoom, no
+   double-tap zoom, no long-press callout or text selection); panels still scroll; text fields
+   stay selectable and editable */
+.sw-app .sw-canvas, .sw-app .sw-layer-hud { touch-action: none; }
+.sw-app input, .sw-app textarea, .sw-app [contenteditable="true"] { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
 
 /* layers */
 .sw-ui { position: absolute; inset: 0; pointer-events: none; z-index: 10; font-family: var(--sw-font); }

@@ -272,6 +272,12 @@ export class Game {
 
   _frame() {
     const now = performance.now();
+    // hidden page (another tab, the app in the background): no work at all; some embedded web
+    // views keep calling us. A save was triggered when it hid.
+    if (typeof document !== 'undefined' && document.hidden) {
+      this._last = now;
+      return;
+    }
     const dt = Math.min(0.05, Math.max(0, (now - this._last) / 1000));
     this._last = now;
     if (dt > 0) this.fps += (1 / dt - this.fps) * 0.05;
@@ -396,6 +402,8 @@ export class Game {
     if (typeof ResizeObserver === 'function') new ResizeObserver(() => this._resize()).observe(this.container);
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
+        // nothing may stay pressed while the page is away (a web view can swallow the release)
+        this.input.reset('hidden');
         this.audio.suspend(true);
         this.flushSave();
       } else {
@@ -403,7 +411,10 @@ export class Game {
         this._last = performance.now();
       }
     });
-    window.addEventListener('pagehide', () => this.flushSave({ unloading: true }));
+    window.addEventListener('pagehide', () => {
+      this.input.reset('pagehide');
+      this.flushSave({ unloading: true });
+    });
   }
 
   /**
