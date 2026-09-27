@@ -19,6 +19,8 @@ export const ROOM_NAME_RE = /^[a-z0-9][a-z0-9_.-]{0,47}$/;
 export const TOPIC_RE = /^[a-z][a-z0-9_.-]{0,47}$/;
 export const IDENT_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const BAD_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+/** Control and invisible format characters: the platform refuses them in presence strings. */
+export const INVISIBLE_RE = /[\u0000-\u001f\u007f-\u009f\u00ad\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff]/;
 
 const enc = new TextEncoder();
 export function jsonSize(v) {
@@ -41,13 +43,14 @@ function utf8Len(s) {
 }
 
 /**
- * Check one presence value: identifier keys at every level, strings <= strBytes, nesting
+ * Check one presence value: identifier keys at every level, strings <= strBytes and free of
+ * control / invisible characters, nesting
  * <= maxDepth, JSON-only values. Returns null when fine, else a short reason.
  */
 export function checkPresenceValue(v, strBytes, maxDepth, depth = 0) {
   if (v === null || typeof v === 'boolean') return null;
   if (typeof v === 'number') return Number.isFinite(v) ? null : 'number';
-  if (typeof v === 'string') return utf8Len(v) <= strBytes ? null : 'string';
+  if (typeof v === 'string') return utf8Len(v) > strBytes ? 'string' : INVISIBLE_RE.test(v) ? 'chars' : null;
   if (typeof v !== 'object') return 'type';
   if (depth >= maxDepth) return 'depth';
   if (Array.isArray(v)) {

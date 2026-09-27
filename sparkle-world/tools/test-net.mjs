@@ -374,6 +374,8 @@ async function unitTests() {
     assert(proto.parseBatch({ e: 'x', s: 3, c: '0000a01', E: [[1, 'bed', 1, 2, 3, 0, 0, 0, 0, 0], ['bad']] }).E.length === 1, 'drops bad records');
     eq(proto.parseBulk({ k: 's', e: 'x', id: 's1', i: 5, n: 5, s0: 1, z: 0, c: 'a', d: '' }), null, 'index out of range');
     eq(proto.messageText('denied', { host: 'Lily' }), "Lily can't play right now. Maybe later!", 'message text');
+    eq([proto.presenceSafe({ open: true, art: 'abc', n: [1, 2] }), proto.presenceSafe({ 'a-b': 1 }), proto.presenceSafe({ x: 'a\nb' }), proto.presenceSafe({ x: 'y'.repeat(1001) })], [true, false, false, false], 'presenceSafe');
+    eq(proto.cleanText('Mi\u200ba\n', 12), 'Mia', 'cleanText');
   });
 
   await roomTransportTests();

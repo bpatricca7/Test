@@ -7,7 +7,7 @@
 
 import {
   C, PRIO, REJECT, NO, ANY_FIELDS, RATE, PROTOCOL, randomEpoch,
-  isInt, isIntIn, isObj, isStr, isEntityKey, isColor, isPlainData, messageText,
+  isInt, isIntIn, isObj, isStr, isEntityKey, isColor, isPlainData, messageText, cleanText,
 } from './protocol.js';
 import { Journal, buildPayload } from './journal.js';
 import { unpackB, blockMix, blockHashOf, frameSnapshot, splitForJson, canDeflate, round2, utf8Length } from './codec.js';
@@ -126,7 +126,7 @@ export class NetHost {
     const local = this.a.local();
     this.t.setState({
       v: PROTOCOL, pv: this.build, r: 'h', uid: this.uid, ep: this.epoch, hs: this.hs,
-      nm: local.nm || '', lk: local.lk || '', hd: 0, fl: 0, ak: [], adm: [], no: [], rs: [], ru: [1, 0],
+      nm: cleanText(local.nm, 12), lk: cleanText(local.lk, 200), hd: 0, fl: 0, ak: [], adm: [], no: [], rs: [], ru: [1, 0],
       end: null, kn: null, ob: null, nd: null, rx: null,
     });
     this.t.flushState();
@@ -1072,10 +1072,10 @@ export function avatarFields(owner, patch, local, now) {
       owner._set(patch, 'p', [round2(p[0]), round2(p[1]), round2(p[2]), round2(p[3])]);
     }
   }
-  if (typeof local.st === 'string') owner._set(patch, 'st', local.st.slice(0, 1));
-  if (typeof local.nm === 'string') owner._set(patch, 'nm', local.nm.slice(0, 12));
+  if (typeof local.st === 'string') owner._set(patch, 'st', cleanText(local.st, 1));
+  if (typeof local.nm === 'string') owner._set(patch, 'nm', cleanText(local.nm, 12));
   if (typeof local.lk === 'string' && now - owner.lastLookAt >= C.LOOK_MIN_INTERVAL) {
-    if (owner._set(patch, 'lk', local.lk.slice(0, 200))) owner.lastLookAt = now;
+    if (owner._set(patch, 'lk', cleanText(local.lk, 200))) owner.lastLookAt = now;
   }
   if (owner.emote) owner._set(patch, 'em', owner.emote);
   if (owner.phrase) owner._set(patch, 'ph', owner.phrase);

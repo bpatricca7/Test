@@ -21,7 +21,7 @@
 //   'intent' {kind, lseq, ok}, 'resync' {reason}, 'progress' {have, of}, 'status' {connected},
 //   'summary' {} (host session over).
 
-import { C, PROTOCOL, roomNameFor, randomCode, isCode, messageText } from './protocol.js';
+import { C, PROTOCOL, roomNameFor, randomCode, isCode, messageText, cleanText } from './protocol.js';
 import { NetError, realClock, listenerSet } from './transport.js';
 import { NetHost } from './host.js';
 import { NetGuest } from './guest.js';
@@ -106,7 +106,7 @@ export class NetSession {
         await this._openWithRetry(t, roomNameFor(pick));
         const hs = this.clock.now();
         const local = this.adapter.local();
-        t.setState({ v: PROTOCOL, pv: this.build, r: 'h', hs, uid: id.uid ?? null, nm: (local.nm || '').slice(0, 12), ep: '' });
+        t.setState({ v: PROTOCOL, pv: this.build, r: 'h', hs, uid: id.uid ?? null, nm: cleanText(local.nm, 12), ep: '' });
         t.flushState();
         await this._sleep(C.HOST_PICK_WAIT);
         if (this.state !== 'h.opening') return this._abandon(t);

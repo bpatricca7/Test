@@ -216,6 +216,44 @@ export function isPlainData(v, maxDepth = 3) {
   return jsonDepth(v, maxDepth + 1) <= maxDepth;
 }
 
+const INVISIBLE_RE = /[\u0000-\u001f\u007f-\u009f\u00ad\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff]/;
+
+/**
+ * Whether a value may travel inside presence (room.d.ts): identifier keys at every level,
+ * strings <= 1,000 B without control or invisible characters, finite numbers, bounded depth.
+ * The guest checks entity data before it goes into her outbox: one bad key would make the
+ * platform refuse her whole presence.
+ */
+export function presenceSafe(v, depth = 0, maxDepth = 5) {
+  if (v === null || typeof v === 'boolean') return true;
+  if (typeof v === 'number') return Number.isFinite(v);
+  if (typeof v === 'string') return v.length <= C.STR_BYTES && !INVISIBLE_RE.test(v) && utf8Bytes(v) <= C.STR_BYTES;
+  if (typeof v !== 'object' || depth >= maxDepth) return false;
+  if (Array.isArray(v)) {
+    for (let k = 0; k < v.length; k++) if (!presenceSafe(v[k], depth + 1, maxDepth)) return false;
+    return true;
+  }
+  for (const k in v) {
+    if (!IDENT_RE.test(k) || k === '__proto__' || k === 'constructor' || k === 'prototype') return false;
+    if (!presenceSafe(v[k], depth + 1, maxDepth)) return false;
+  }
+  return true;
+}
+
+function utf8Bytes(s) {
+  let n = 0;
+  for (let k = 0; k < s.length; k++) {
+    const c = s.charCodeAt(k);
+    n += c < 0x80 ? 1 : c < 0x800 ? 2 : c >= 0xd800 && c <= 0xdbff ? (k++, 4) : 3;
+  }
+  return n;
+}
+
+/** Strip control and invisible characters (names and other short texts for presence). */
+export function cleanText(s, max) {
+  return typeof s === 'string' ? s.replace(new RegExp(INVISIBLE_RE.source, 'g'), '').slice(0, max) : '';
+}
+
 const ENT_KEY_RE = /^[a-z0-9_:.-]{1,64}$/;
 export const isEntityKey = (k) => typeof k === 'string' && ENT_KEY_RE.test(k);
 const COLOR_RE = /^#?[0-9A-Fa-f]{3,8}$/;

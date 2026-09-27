@@ -6,7 +6,7 @@
 // It reaches the network only through NetTransport and the game only through GameAdapter.
 
 import {
-  C, PROTOCOL, NO, messageText, parseBatch, parseBulk, parseCtl, parsePayload, readHostState,
+  C, PROTOCOL, NO, messageText, parseBatch, parseBulk, parseCtl, parsePayload, readHostState, presenceSafe, cleanText,
 } from './protocol.js';
 import { packB, blockMix, blockHashOf, unframeSnapshot, canDeflate, unpackCells, decodeRegion } from './codec.js';
 import { jsonBytes } from './transport.js';
@@ -164,7 +164,7 @@ export class NetGuest {
     this.hostMissingSince = null;
     const local = this.a.local();
     this.t.setState({
-      v: PROTOCOL, pv: this.build, r: 'g', uid: this.uid, nm: (local.nm || '').slice(0, 12), lk: local.lk || '',
+      v: PROTOCOL, pv: this.build, r: 'g', uid: this.uid, nm: cleanText(local.nm, 12), lk: cleanText(local.lk, 200),
       kn: 1, zc: this.zc, ep: this.epoch, ob: null, nd: null, rx: null, hs: null, hd: null, end: null,
     });
     this.t.flushState();
@@ -755,12 +755,14 @@ export class NetGuest {
     if (kind === 'add') {
       const rec = after;
       arr = ['e+', rec[0], rec[1], rec[2], rec[3], rec[4], rec[5], rec[6] || 0, rec[7] || 0];
-      if (jsonBytes(arr) > C.ENTRY_BYTES - 16) arr[8] = 0; // oversized data: the host keeps its default
+      // oversized or presence-unsafe data: send none (the host's record, with its defaults, comes back)
+      if (jsonBytes(arr) > C.ENTRY_BYTES - 16 || !presenceSafe(arr[8])) arr[8] = 0;
+      if (!presenceSafe(arr[7])) arr[7] = 0;
     } else if (kind === 'del') arr = ['e-', uid];
     else if (kind === 'rot') arr = ['er', uid, before, after];
     else if (kind === 'data') {
       const patch = after && typeof after === 'object' ? after : {};
-      arr = ['ed', uid, jsonBytes(patch) > C.ENTRY_BYTES - 32 ? {} : patch];
+      arr = ['ed', uid, jsonBytes(patch) > C.ENTRY_BYTES - 32 || !presenceSafe(patch) ? {} : patch];
     } else return;
     const lseq = this._push(arr);
     this._pend('e', uid, lseq);
@@ -774,7 +776,7 @@ export class NetGuest {
     else if (kind === 'harvest') op = 'ph';
     else return; // growth runs only on the host
     const crop = (after || before || [])[0];
-    if (typeof crop !== 'string') return;
+    if (typeof crop !== 'string' || !presenceSafe(crop)) return;
     this._closeRun();
     const [x, y, z] = this.a.coords(i);
     const lseq = this._push([op, x, y, z, crop]);
