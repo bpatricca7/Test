@@ -8,6 +8,8 @@
 // - Reconnects back off 0.5, 1, 2, 4, 8, 8... s; after about a minute the session ends
 //   (onStatus fatal 'ended').
 // - identity(): a random per-device id (localStorage), canHost true. No accounts.
+// - The walkie-talkie (src/net/walkie) shares the socket: binary frames and {t:'v'} frames go
+//   to `voiceIn`, `voiceUp` runs after every (re)connect, `sendVoice()` writes one frame.
 
 import { FrameTransport, NetError, realClock } from './transport.js';
 import { loadDeviceId } from './loop-transport.js';
@@ -52,6 +54,8 @@ export class WsTransport extends FrameTransport {
     this._lastRx = 0;
     this._blockUntil = 0;
     this._roomName = null;
+    this.voiceIn = null; // walkie-talkie: fn(ArrayBuffer | {t:'v', ...})
+    this.voiceUp = null; // walkie-talkie: fn() once the room answered after a (re)connect
   }
 
   get kind() { return 'ws'; }
@@ -92,9 +96,16 @@ export class WsTransport extends FrameTransport {
     }
     this._ws = ws;
     this._lastRx = this.clock.now();
+    try {
+      ws.binaryType = 'arraybuffer';
+    } catch {}
     ws.onmessage = (ev) => {
       if (this._ws !== ws) return;
       this._lastRx = this.clock.now();
+      if (typeof ev.data !== 'string') {
+        if (this.voiceIn) this.voiceIn(ev.data);
+        return;
+      }
       let f;
       try {
         f = JSON.parse(typeof ev.data === 'string' ? ev.data : String(ev.data));
@@ -102,6 +113,10 @@ export class WsTransport extends FrameTransport {
         return;
       }
       if (f && f.t === 'k') return;
+      if (f && f.t === 'v') {
+        if (this.voiceIn) this.voiceIn(f);
+        return;
+      }
       if (f && f.t === 'b' && this._faults) return this._faulty(f);
       this._onFrame(f);
     };
@@ -137,6 +152,25 @@ export class WsTransport extends FrameTransport {
     this._attempt = 0;
     this._downSince = 0;
     super._onLinkUp();
+    if (this.voiceUp && this._open) {
+      try {
+        this.voiceUp();
+      } catch (err) {
+        console.warn('[net] walkie link failed', err);
+      }
+    }
+  }
+
+  /** Walkie-talkie: send one binary frame (Uint8Array) or {t:'v'} object now; false if down. */
+  sendVoice(data) {
+    const ws = this._ws;
+    if (!ws || ws.readyState !== 1 || !this._rawUp || !this._open) return false;
+    try {
+      ws.send(data instanceof Uint8Array || data instanceof ArrayBuffer ? data : JSON.stringify(data));
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   _scheduleRetry() {

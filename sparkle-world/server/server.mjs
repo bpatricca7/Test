@@ -6,8 +6,10 @@
 //   uses it to know it can play with friends here),
 // - relays multiplayer rooms at wss://<host>/r/<roomName> with the room logic in rooms.mjs.
 //
-// Kid safety and privacy: no accounts, no chat text, no voice, no stored player data. Rooms
-// live only in memory while friends play; message contents are never logged.
+// Kid safety and privacy: no accounts, no chat text, no stored player data. Rooms live only in
+// memory while friends play; message contents are never logged. The walkie-talkie
+// (server/voice.mjs) relays live voice frames only between players of one game whose
+// grown-ups turned it on, and never records, stores or logs them.
 //
 // Limits (env overrides in brackets): 4 players per room [SW_MAX_PEERS], 3,900 B per message,
 // 4 KiB of presence per player, 40 messages/s per connection (burst 80), 500 rooms
@@ -23,6 +25,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, WebSocket } from 'ws';
 import { RoomRegistry, ROOM_NAME_RE } from './rooms.mjs';
+import { VoiceRelay } from './voice.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -70,6 +73,7 @@ export function createServer(opts = {}) {
     trustProxy: opts.trustProxy ?? process.env.SW_TRUST_PROXY !== '0',
     log: opts.log ?? ((...a) => console.log(...a)),
     sweepMs: opts.sweepMs ?? 5000,
+    testStats: opts.testStats ?? process.env.SW_TEST_STATS === '1', // GET /api/stats (tests only)
   };
   const pkg = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
   const page = loadPage(o.htmlPath);
@@ -77,6 +81,8 @@ export function createServer(opts = {}) {
     maxRooms: o.maxRooms, maxPeers: o.maxPeers, msgBytes: o.msgBytes, stateBytes: o.stateBytes,
     graceMs: o.graceMs, idleMs: o.idleMs,
   });
+  const voice = new VoiceRelay({ registry }); // walkie-talkie (server/voice.mjs)
+  voice.start();
   const conns = new Map(); // `${room}\n${peer}` -> conn
   const perIp = new Map();
   const counters = { connections: 0, rejected: 0, rateDropped: 0 };
@@ -88,7 +94,8 @@ export function createServer(opts = {}) {
   function securityHeaders(res) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'no-referrer');
-    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+    // the walkie-talkie may use the microphone on this site only (never in frames of others)
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(self), geolocation=(), payment=()');
   }
 
   function sendJson(res, status, body, head) {
@@ -113,6 +120,7 @@ export function createServer(opts = {}) {
       if (!page) return sendJson(res, 503, { ok: false, error: 'game not built' }, head);
       return sendJson(res, 200, { ok: true }, head);
     }
+    if (pathname === '/api/stats' && o.testStats) return sendJson(res, 200, { ...stats(), voicePeers: voice.peerStats() }, head);
     if (pathname === '/api/net') {
       return sendJson(res, 200, { ok: !!page && !shuttingDown, version: pkg.version, build: page ? page.build : null }, head);
     }
@@ -240,12 +248,21 @@ export function createServer(opts = {}) {
       safeSend(ws, { t: 'e', code: r.code });
       conn.bye = true;
       ws.close(r.code === 'full' ? 4001 : r.code === 'rooms_full' ? 4002 : 4004, r.code);
+    } else {
+      conn.voice = voice.link(name, peer, {
+        json: (f) => safeSend(ws, f),
+        // live voice: a frame that would wait behind a slow connection is dropped, not queued
+        binary: (b) => (ws.readyState === WebSocket.OPEN && ws.bufferedAmount < 64 * 1024 ? (ws.send(b, { binary: true }), true) : false),
+      });
     }
     ws.on('pong', () => {
       conn.alive = true;
     });
     ws.on('message', (data, isBinary) => {
-      if (isBinary) return;
+      if (isBinary) {
+        conn.voice?.binary(data); // walkie-talkie audio: its own limits (server/voice.mjs)
+        return;
+      }
       if (!conn.bucket.take()) {
         counters.rateDropped++;
         const now = Date.now();
@@ -272,6 +289,10 @@ export function createServer(opts = {}) {
         safeSend(ws, { t: 'k' });
         return;
       }
+      if (f.t === 'v') {
+        conn.voice?.control(f);
+        return;
+      }
       if (f.t === 'bye') {
         conn.bye = true;
         registry.leave(name, peer);
@@ -283,6 +304,7 @@ export function createServer(opts = {}) {
     });
     ws.on('error', () => {});
     ws.on('close', (code) => {
+      conn.voice?.close();
       const n = (perIp.get(ip) || 1) - 1;
       if (n <= 0) perIp.delete(ip);
       else perIp.set(ip, n);
@@ -338,6 +360,7 @@ export function createServer(opts = {}) {
 
   function close() {
     shuttingDown = true;
+    voice.stop();
     clearInterval(sweepTimer);
     clearInterval(roomTimer);
     for (const conn of conns.values()) {
@@ -356,10 +379,10 @@ export function createServer(opts = {}) {
   }
 
   function stats() {
-    return { rooms: registry.roomCount, peers: registry.peerCount(), connections: conns.size, ...counters, ...registry.counts };
+    return { rooms: registry.roomCount, peers: registry.peerCount(), connections: conns.size, ...counters, ...registry.counts, voice: voice.stats() };
   }
 
-  return { server, registry, listen, close, stats, page, options: o };
+  return { server, registry, voice, listen, close, stats, page, options: o };
 }
 
 function loadPage(file) {
