@@ -90,6 +90,7 @@ class Friend {
     this.peer = peer;
     this.seat = 0;
     this.host = false;
+    this.uid = null;
     this.name = '';
     this.color = SEAT_COLORS[0];
     this.avatar = null;
@@ -192,6 +193,9 @@ export class RemotePlayers {
     this._myBubble = null;
     this._myBubbleLeft = 0;
     this._lastState = 'idle';
+    this._wallAt = 0;
+    this._wdt = 0;
+    this._gone = new Map(); // uid -> when her avatar left (a reload comes back "is back!")
     game.events.on('world:load', () => {
       if (!this.group.parent) game.scene.add(this.group);
     });
@@ -237,13 +241,16 @@ export class RemotePlayers {
     const s = this.net.session;
     const inWorld = g.mode === 'play' && !!g.world && !g.loading;
     const live = s && (s.state === 'h.live' || s.state === 'g.live' || s.state === 'g.waiting');
+    // bubbles are UI (like toasts): they last 4 s of real time, even when frames are slow
+    const now = performance.now();
+    this._wdt = this._wallAt ? Math.min(1, (now - this._wallAt) / 1000) : 0;
+    this._wallAt = now;
     if (!inWorld || !live) {
       if (this.friends.size) this.clear();
-      this._updateMyBubble(dt);
+      this._updateMyBubble(this._wdt);
       return;
     }
     if (!this.group.parent) g.scene.add(this.group);
-    const now = performance.now();
     if (now - this._rosterAt > 120) {
       this._rosterAt = now;
       this._roster(now);
@@ -258,16 +265,18 @@ export class RemotePlayers {
       if (entry && entry.state !== f.stateRef) this._ingest(f, entry.state, now);
       this._frame(f, dt, renderT, cam);
     }
-    this._updateMyBubble(dt);
+    this._updateMyBubble(this._wdt);
   }
 
   /** Who is in the session (not me): add and remove friends. */
   _roster(now) {
     const players = this.net.session.players();
     const seen = new Set();
+    const uids = new Set();
     for (const pl of players) {
       if (pl.you || !pl.peer) continue;
       seen.add(pl.peer);
+      if (pl.uid) uids.add(pl.uid);
       let f = this.friends.get(pl.peer);
       if (!f) {
         f = new Friend(this, pl.peer);
@@ -275,15 +284,20 @@ export class RemotePlayers {
       }
       f.seat = pl.seat | 0;
       f.host = !!pl.host;
+      f.uid = pl.uid || null;
       f.color = seatColor(f.seat);
       f.away = !!pl.away;
     }
     for (const [peer, f] of this.friends) {
       if (seen.has(peer)) continue;
-      if (f.seen && f.avatar && now - this._liveAt > 2500) {
+      // a page that reloaded comes back as a new peer with the same uid: no goodbye for that,
+      // and the host's own comings and goings have their own cards
+      const back = f.uid && uids.has(f.uid);
+      if (f.seen && f.avatar && !f.host && !back && now - this._liveAt > 2500) {
         this.game.celebrate([f.pos.x, f.pos.y + 1, f.pos.z], 'sparkle');
         this.game.toast(`${f.name || 'Your friend'} went home.`, { icon: 'players', duration: 3000 });
       }
+      if (f.uid) this._gone.set(f.uid, now);
       this._drop(f);
       this.friends.delete(peer);
     }
@@ -302,26 +316,21 @@ export class RemotePlayers {
     const nm = sanitizeName(typeof st.nm === 'string' ? st.nm : '', 'Friend');
     if (nm !== f.name) f.name = nm;
     if (typeof st.lk === 'string' && st.lk !== f.lkWant) f.lkWant = st.lk;
-    // emote: play each new nonce (not the one she did before we arrived)
-    if (Array.isArray(st.em) && st.em.length >= 2) {
-      const n = st.em[1];
-      if (f.emN === null) f.emN = n;
-      else if (n !== f.emN) {
-        f.emN = n;
-        const name = st.em[0];
-        if (typeof name === 'string' && EMOTE_NAMES.has(name) && f.avatar) f.avatar.playEmote(name);
-      }
+    // emotes and phrases: play each NEW nonce. The first presence we see only tells what she
+    // did before we arrived (nothing yet is -1), so her very first wave still shows.
+    const em = Array.isArray(st.em) && st.em.length >= 2 ? st.em : null;
+    const ph = Array.isArray(st.ph) && st.ph.length >= 2 ? st.ph : null;
+    if (f.emN === null) f.emN = em ? em[1] : -1;
+    else if (em && em[1] !== f.emN) {
+      f.emN = em[1];
+      const name = em[0];
+      if (typeof name === 'string' && EMOTE_NAMES.has(name) && f.avatar) f.avatar.playEmote(name);
     }
-    if (Array.isArray(st.ph) && st.ph.length >= 2) {
-      const n = st.ph[1];
-      if (f.phN === null) {
-        f.phN = n;
-        // a phrase said just now (she joined with it) still shows
-      } else if (n !== f.phN) {
-        f.phN = n;
-        const id = st.ph[0];
-        if (Number.isInteger(id) && id >= 0 && id < PHRASES.length) this._say(f, id);
-      }
+    if (f.phN === null) f.phN = ph ? ph[1] : -1;
+    else if (ph && ph[1] !== f.phN) {
+      f.phN = ph[1];
+      const id = ph[0];
+      if (Number.isInteger(id) && id >= 0 && id < PHRASES.length) this._say(f, id);
     }
     const hi = typeof st.hi === 'string' && HELD_RE.test(st.hi) ? st.hi : null;
     if (hi !== f.heldKey) this._setHeld(f, hi);
@@ -350,9 +359,12 @@ export class RemotePlayers {
       f.seen = true;
       f.prev.copy(f.pos);
       // a friend who arrives after we are playing: a sparkle burst and a hello
-      if (performance.now() - this._liveAt > 2500) {
+      const now = performance.now();
+      if (now - this._liveAt > 2500) {
         g.celebrate([f.pos.x, f.pos.y + 1, f.pos.z], 'sparkle');
-        g.toast(`${f.name || 'A friend'} is here!`, { icon: 'players', color: 'mint' });
+        const left = f.uid ? this._gone.get(f.uid) : undefined;
+        const again = left !== undefined && now - left < 3 * 60 * 1000;
+        if (!(f.host && again)) g.toast(again ? `${f.name || 'Your friend'} is back!` : `${f.name || 'A friend'} is here!`, { icon: 'players', color: 'mint' });
       }
     }
     const inst = dt > 0 ? Math.min(12, moved / dt) : 0;
@@ -395,7 +407,7 @@ export class RemotePlayers {
       f.tag.position.set(0, top, 0);
       f.tag.visible = show && !this._hideTags && dist < TAG_HIDE;
     }
-    if (f.bubbleLeft > 0) this._placeBubble(f, dt);
+    if (f.bubbleLeft > 0) this._placeBubble(f, this._wdt);
   }
 
   _build(f) {

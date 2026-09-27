@@ -147,6 +147,8 @@ export class NetSession {
     const uids = [];
     for (const s of this.hostCore.seats) if (s && s.uid) uids.push(s.uid);
     for (const uid of this.hostCore.seatedUids.keys()) if (!uids.includes(uid)) uids.push(uid);
+    // friends of the session before a reload who have not come back yet keep their place too
+    for (const uid of this.hostCore.resumeUids) if (!uids.includes(uid)) uids.push(uid);
     Promise.resolve()
       .then(() => this.env.saveLastHost({ code: this.code, at: Date.now(), uids: uids.filter((u) => !this.hostCore.banned.has(u)) }))
       .catch(() => {});

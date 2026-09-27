@@ -449,7 +449,9 @@ export function installNetUI(game, net, remote) {
       if (ok) {
         game.audio.play('magic');
         game.celebrate([game.player.position.x, game.player.position.y + 1.2, game.player.position.z], 'sparkle');
-        ui.open('mp-players', { fresh: true });
+        // a new code: show it big; the same code again (Keep playing): her friends know it
+        if (resume) game.toast('Your door is open again! Your friends can come back.', { icon: 'players', color: 'mint', key: 'net-host' });
+        else ui.open('mp-players', { fresh: true });
       }
       return ok;
     } finally {
@@ -1217,9 +1219,13 @@ export function installNetUI(game, net, remote) {
     if (ui.isOpen('mp-players')) renderPlayers();
   });
 
-  // pending "Make a Code" / "Keep playing": host as soon as the world is ready
+  // pending "Make a Code" / "Keep playing": host as soon as the world is ready; back on the
+  // title without a world means "never mind"
   game.events.on('world:load', () => {
     if (pendingHost && performance.now() - pendingHost.at > 10 * 60 * 1000) pendingHost = null;
+  });
+  game.events.on('ui:open', ({ panel } = {}) => {
+    if (panel === 'title' && pendingHost && game.mode === 'title' && !game._busy) pendingHost = null;
   });
 
   // ======================================================================================

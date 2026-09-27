@@ -9,7 +9,9 @@
     "dev": "node tools/build.mjs --serve",
     "smoke": "node tools/build.mjs && node tools/smoke.mjs",
     "start": "node server/server.mjs",
-    "test:net": "node tools/test-net.mjs"
+    "test:net": "node tools/test-net.mjs",
+    "probe:mp": "node tools/build.mjs && node tools/probe-multiplayer.mjs",
+    "probe:railway": "node tools/probe-railway.mjs"
   },
   "license": "MIT",
   "engines": {
