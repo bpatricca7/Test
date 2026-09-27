@@ -658,10 +658,14 @@ export class NetHost {
   /** Restore every key of one group whose current value still equals its after value. */
   _revertGroup(g) {
     const a = this.a;
-    // entities that the group added go first (so blocks can come back where they stood)
+    // entities that the group added go first (so blocks can come back where they stood).
+    // Which ones is decided before any goes: taking one away can change its neighbours
+    // (a picket fence re-joins its rails), and they must not look "changed since" for that.
+    const drop = [];
     for (const [uid, before, after] of g.ents) {
-      if (before === null && after !== null && sameEnt(a.entityRecord(uid), after)) a.removeEntity(uid);
+      if (before === null && after !== null && sameEnt(a.entityRecord(uid), after)) drop.push(uid);
     }
+    for (const uid of drop) a.removeEntity(uid);
     const pairs = [];
     for (let k = 0; k < g.idx.length; k++) {
       if (a.getCell(g.idx[k]) === g.aft[k] && g.bef[k] !== g.aft[k]) pairs.push(g.idx[k], g.bef[k]);

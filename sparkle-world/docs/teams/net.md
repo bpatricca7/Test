@@ -214,6 +214,17 @@ basket are per player and never synced; placing a bought treat is an `e+`. The h
   platform railing opening) are recorded with her seat as author, so she may later change
   those host pieces in careful mode, and Undo building reverts them too.
 
+## Known limits (v1)
+
+- NPC friends' speech is not sent (`line` −1): each page's friends chat locally.
+- Which end a zip-line trolley waits at is not synced (cosmetic).
+- A guest reading the host's mailbox letter sends `{mail: false}`, which is not an
+  `ANY_FIELDS` toggle: in careful mode it is refused ("That's Lily's!") and the flag comes
+  back. Painting on the host's easel (`pic`) is refused the same way (her own easels work).
+  Adding `mail` (and maybe `pic`) to `ANY_FIELDS` would change that.
+- Doors toggled by a friend swing on every page (the furniture's per-entity animation state
+  survives the in-place record update); pieces placed anew by a record just appear.
+
 ## Tests
 
 - `node tools/test-net-game.mjs [--no-build] [--headed] [--keep]`: builds, starts

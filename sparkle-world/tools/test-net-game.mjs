@@ -469,8 +469,8 @@ async function main() {
     await host.evaluate(() => window.__game.undo());
     await settleAndCompare(host, guests, 'undo');
     for (const [pg, name] of [[host, 'host'], [ga, 'guest A'], [gb, 'guest B']]) {
-      const left = await pg.evaluate((list) => list.filter((u) => window.__game.entities.byUid(u)).length, cottageUids.concat(camperUids));
-      check(left === 0, `${name}: the guest's cottage and the host's camper are gone after their Undo (${left} pieces left)`);
+      const left = await pg.evaluate((list) => list.map((u) => window.__game.entities.byUid(u)).filter(Boolean).map((e) => e.key), cottageUids.concat(camperUids));
+      check(left.length === 0, `${name}: the guest's cottage and the host's camper are gone after their Undo (left: ${JSON.stringify(left)})`);
     }
     const undone = await host.evaluate(() => window.__game.debug.net.undoSeat(2));
     check(undone > 0, `the host took back guest B's building (${undone} groups)`);
