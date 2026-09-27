@@ -88,8 +88,9 @@ async function faceTarget(page, x, y, z, dist = 3.2, pitch = 0.35, first = false
 async function openBag(page, tab, tap = false) {
   const press = (l) => (tap ? l.tap() : l.click());
   await press(page.locator('.sw-bagbtn').first());
-  await page.waitForSelector('.sw-panel-wrap.sw-open[data-panel="bag"] .sw-tab');
-  await press(page.locator('.sw-panel-wrap.sw-open .sw-tab', { hasText: tab }).first());
+  // the merged Bag calls its tabs .sw-tab2 (the core Bag had .sw-tab)
+  await page.waitForSelector('.sw-panel-wrap.sw-open[data-panel="bag"] :is(.sw-tab, .sw-tab2)');
+  await press(page.locator('.sw-panel-wrap.sw-open :is(.sw-tab, .sw-tab2)', { hasText: tab }).first());
   await settle(page, 250);
 }
 
@@ -371,6 +372,28 @@ async function desktop(browser) {
   await settle(page, 2500);
   const awake = await page.evaluate(() => window.__game.pets.pets.every((p) => !p.inBed));
   check(awake, 'pets wake up in the morning');
+
+  // ----- the bed is removed while a pet sleeps in it: the pet hops out (no mid-air naps) -----
+  const bedGone = await page.evaluate(async () => {
+    const g = window.__game;
+    const until = async (fn, ms) => {
+      const t0 = performance.now();
+      while (performance.now() - t0 < ms) { if (fn()) return true; await new Promise((r) => setTimeout(r, 100)); }
+      return false;
+    };
+    g.debug.setTime(0.9);
+    const slept = await until(() => g.pets.pets.some((p) => p.inBed), 25000);
+    const pet = g.pets.pets.find((p) => p.inBed);
+    if (!slept || !pet) return { slept: false };
+    g.entities.remove(g.entities.byUid(pet.bedUid));
+    await until(() => !pet.inBed, 3000);
+    const s = { slept: true, inBed: pet.inBed, state: pet.state, bedUid: pet.bedUid, claims: g.pets.bedClaims.size };
+    g.debug.setTime(0.3);
+    return s;
+  });
+  check(bedGone.slept && !bedGone.inBed && bedGone.state !== 'sleep' && bedGone.bedUid === null && bedGone.claims === 0,
+    `a sleeping pet hops out when its bed is removed (${JSON.stringify(bedGone)})`);
+  await settle(page, 600);
 
   // ----- garden: plant through the Bag, water, grow, harvest -----
   await page.evaluate(() => {

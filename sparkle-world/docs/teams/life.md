@@ -19,8 +19,9 @@ No core files were changed.
   **Hop off** (only while riding), **Basket**, **Pets** (once you have a pet). Each button has
   `data-action="<name>"`. If the HUD team shows its own Basket / Pets button
   (`.sw-hud [data-action="basket"]` or `[aria-label="Basket"]`, same for Pets), ours hides.
-- `pets/preview.js`: one extra small WebGL canvas (created on first use) for the live 3D
-  previews in the adoption panel and the cooking result screen. Falls back to thumbnails.
+- `pets/preview.js`: the live 3D previews in the adoption panel and the cooking result
+  screen. They draw on the Avatar team's shared stage (`getStage()`), so no WebGL context of
+  our own; nothing touches WebGL until `mount()`. Falls back to thumbnails.
 - `pets/sfx.js`: `sfx(game, name)` synthesizes our sounds on the core audio context / sfx bus
   (`squeak peep quack mew purr yip unicorn plop stir ding sizzle whirr freeze tick pour till
   harvest crunch slurp tada boing nope`; core names pass through to `audio.play`).
@@ -53,11 +54,10 @@ height, rideable, flies, swims, seat, variants[{ key, name, ... }]`.
   Modes: `follow`, `stay`, `home` (wanders around its home spot).
 - **Pet beds**: at night each pet (not ponies/unicorns) claims the nearest free entity with
   key `pet_bed` (or any furniture def with `petBed: true`), walks there and sleeps curled up
-  with floating Z's; wakes up in the morning. Where it lies: `def.petSpot || def.sleepPos ||
-  [w/2, 0.14, d/2]` (model units). **Furniture team**: please give `pet_bed` a `petSpot`
-  (cushion top). If `pet_bed` is not registered when pets installs, pets registers a fallback
-  `pet_bed` (round cushion, colors) so the Bag always has one; furniture installs first, so
-  after the merge the Furniture team's bed wins.
+  with floating Z's; wakes up in the morning, or at once if the bed is removed (Remove tool,
+  Undo, a Magic House) and hops to a free spot. Where it lies: `def.petSpot || def.sleepPos ||
+  [w/2, 0.14, d/2]` (model units); the Furniture team's `pet_bed` has `petSpot: [0.5, 0.16, 0.5]`
+  (cushion top). The Bag's Pet Bed is the Furniture team's (pets no longer registers a fallback).
   Pets also curl up when she sleeps nearby, and when she stands still at night.
 - Pets panel **`pets`** + action **`pets`**: list (thumbnail, name, species, mode) with Call,
   Stay/Follow, Name (rename dialog), Home, Feed, Bye (double confirm); an "Adopt a new friend"

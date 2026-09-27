@@ -315,7 +315,8 @@ export function install(game) {
         game.celebrate([p.x, p.y + 2, p.z], 'confetti', { quiet: true });
       }
     } else {
-      game.toast(`Gem ${count} of ${total}!`, { icon: 'gem', color: 'mint' });
+      // one toast that counts up (key) instead of a stack when she finds gems close together
+      game.toast(`Gem ${count} of ${total}!`, { icon: 'gem', color: 'mint', key: 'gem-count' });
     }
   }
 

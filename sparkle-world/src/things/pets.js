@@ -12,9 +12,9 @@ import { Pet } from './pets/pet.js';
 import { RainbowTrail, ZzzPool } from './pets/fx.js';
 import { sfx } from './pets/sfx.js';
 import { installPetUI, petThumb } from './pets/ui.js';
-import { basketTake, basketCount, Kit } from './pets/kit.js';
+import { basketTake, basketCount } from './pets/kit.js';
 import { FOOD, foodModel, foodName } from './food-models.js';
-import { makeId, shade } from '../core/util.js';
+import { makeId } from '../core/util.js';
 import { disposeObject } from '../core/models.js';
 
 export const MAX_PETS = 12;
@@ -553,49 +553,7 @@ function spotFromHit(game, sys, species, hit) {
   return s;
 }
 
-/** A cozy pet bed, only when the Furniture team has not registered 'pet_bed'. */
-function definePetBedFallback(game) {
-  const E = game.entities;
-  if (!E || game.registry.furniture.has('pet_bed')) return;
-  E.define({
-    key: 'pet_bed',
-    name: 'Pet Bed',
-    category: 'bedroom',
-    size: [1, 1, 1],
-    colors: ['#FF8CC6', '#C3A6FF', '#9FD8FF', '#8FE3C0', '#FFE38A'],
-    colliders: [[0.06, 0, 0.06, 0.94, 0.12, 0.94]],
-    petSpot: [0.5, 0.17, 0.5],
-    build: (color) => {
-      const g = new THREE.Group();
-      g.add(petBedMesh(color || '#FF8CC6'));
-      return g;
-    },
-  });
-}
-
-function petBedMesh(color) {
-  const k = new Kit();
-  const rim = color, light = shade(color, 0.45), deep = shade(color, -0.12);
-  // a round, puffy basket
-  k.cyl(0.46, 0.06, deep, 0.5, 0, 0.5, 20);
-  for (let i = 0; i < 16; i++) {
-    const a = (i / 16) * Math.PI * 2;
-    k.ball(0.11, i % 2 ? rim : shade(rim, 0.12), 0.5 + Math.cos(a) * 0.37, 0.14, 0.5 + Math.sin(a) * 0.37, 10, [1, 0.9, 1]);
-  }
-  // the cushion with little hearts
-  k.cyl(0.33, 0.1, light, 0.5, 0.04, 0.5, 18);
-  k.ball(0.3, shade(light, 0.2), 0.5, 0.12, 0.5, 16, [1, 0.22, 1]);
-  for (const [x, z] of [[0.38, 0.4], [0.62, 0.56], [0.44, 0.64]]) {
-    k.cbox(0.05, 0.012, 0.05, deep, x - 0.02, 0.19, z, [0, 0.785, 0]);
-    k.cbox(0.05, 0.012, 0.05, deep, x + 0.02, 0.19, z, [0, 0.785, 0]);
-  }
-  // a toy bone at the edge
-  k.cbox(0.16, 0.04, 0.04, '#FFF4E0', 0.78, 0.2, 0.2, [0, 0.6, 0]);
-  return k.mesh();
-}
-
 export function install(game) {
-  definePetBedFallback(game);
   const sys = new PetSystem(game);
   game.pets = sys;
   for (const k of SPECIES_KEYS) game.registry.pets.set(k, SPECIES[k]);

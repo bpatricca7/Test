@@ -230,7 +230,9 @@ export class Pet {
 
     // ----- bedtime -----
     if (this.state === 'sleep') {
-      if (!sys.wantsSleep(this)) {
+      // morning came, or her bed is gone (Remove tool, Undo, a Magic House built over it):
+      // hop out to a free spot instead of sleeping on in mid-air
+      if (!sys.wantsSleep(this) || (this.inBed && !sys.bedSpot(this.bedUid))) {
         this.wake();
       } else {
         this.stop();
@@ -423,7 +425,10 @@ export class Pet {
         sz += (dz / d) * (r - d);
       }
     }
-    const inWater = ph.liquidAt(p.x, p.y + spec.height * 0.3, p.z);
+    // a floating duckling bobs right at the surface (its float point is about where this body
+    // point sits), so once swimming it stays swimming while its feet are wet: no flicker of the
+    // shadow and the paddling pose; it stops when it climbs out onto dry ground
+    const inWater = ph.liquidAt(p.x, p.y + spec.height * 0.3, p.z) || (this.swimming && ph.liquidAt(p.x, p.y + 0.02, p.z));
     this.swimming = inWater;
     if (inWater) speed *= spec.swims ? 0.9 : 0.6;
     const tvx = wx * speed + sx * 3, tvz = wz * speed + sz * 3;
@@ -432,8 +437,14 @@ export class Pet {
     v.z += (tvz - v.z) * k;
     if (inWater) {
       const floatAt = spec.swims ? 0.2 : spec.height * 0.55;
-      if (ph.liquidAt(p.x, p.y + floatAt, p.z)) v.y += (2.2 - v.y) * Math.min(1, 6 * dt);
-      else v.y -= 10 * dt;
+      const fy = p.y + floatAt;
+      if (ph.liquidAt(p.x, fy, p.z)) {
+        // rise toward the surface, slowing down near it, so a floating pet settles there
+        // instead of shooting out of the water and bouncing
+        const top = Math.floor(fy) + 1;
+        const depth = ph.liquidAt(p.x, top + 0.5, p.z) ? 1 : top - fy;
+        v.y += (Math.min(2.2, 0.15 + depth * 5) - v.y) * Math.min(1, 6 * dt);
+      } else v.y -= 10 * dt;
       v.y = Math.max(-3, Math.min(3, v.y));
     } else {
       v.y = Math.max(v.y - GRAVITY * dt, -30);
