@@ -34,7 +34,7 @@ function isPermanentCloudError(err) {
 
 /** World meta = the small part of a save used by the My Worlds list. */
 export function metaOf(save) {
-  return {
+  const m = {
     id: save.id,
     name: save.name,
     biome: save.biome,
@@ -43,6 +43,16 @@ export function metaOf(save) {
     updatedAt: save.updatedAt || 0,
     thumbnail: save.thumbnail || null,
   };
+  if (save.backupOf) {
+    m.backupOf = save.backupOf;
+    m.backupAt = save.backupAt || m.updatedAt;
+  }
+  return m;
+}
+
+/** "Before friends" backups are saved as '<world id>.before' (docs/MULTIPLAYER.md §13). */
+export function isBackupId(id) {
+  return typeof id === 'string' && id.endsWith('.before');
 }
 
 // ---------- local backends ----------
@@ -506,8 +516,35 @@ export class SaveStore {
 
   // ----- worlds -----
 
-  /** Metas of all worlds, newest first (merged local + cloud by updatedAt). */
+  /**
+   * Metas of all worlds, newest first (merged local + cloud by updatedAt). "Before friends"
+   * backups (ids ending '.before', docs/MULTIPLAYER.md §9.12) are not listed; see listBackups().
+   */
   async listWorlds() {
+    return (await this._listAll()).filter((m) => !isBackupId(m.id));
+  }
+
+  /** Metas of the "before friends" backups ({ id: '<world>.before', backupOf, backupAt, ... }). */
+  async listBackups() {
+    return (await this._listAll()).filter((m) => isBackupId(m.id));
+  }
+
+  /**
+   * Put a world back as it was before friends came: its '.before' backup becomes the world
+   * again (the backup itself is kept). Resolves { ok, id }.
+   */
+  async restoreBackup(id) {
+    if (!id || isBackupId(id)) return { ok: false, error: 'no world' };
+    const b = await this.loadWorld(id + '.before');
+    if (!b || !b.blocks) return { ok: false, error: 'no backup' };
+    const save = { ...b, id, updatedAt: Date.now() };
+    delete save.backupOf;
+    delete save.backupAt;
+    const res = await this.saveWorld(save);
+    return res.ok ? { ok: true, id } : res;
+  }
+
+  async _listAll() {
     await this.init();
     const byId = new Map();
     const add = (metas, source) => {
@@ -556,6 +593,15 @@ export class SaveStore {
   }
 
   async deleteWorld(id) {
+    // a world takes its "before friends" backup with it
+    if (id && !isBackupId(id)) {
+      const backups = await this.listBackups();
+      if (backups.some((m) => m.id === id + '.before')) await this._deleteOne(id + '.before');
+    }
+    return this._deleteOne(id);
+  }
+
+  async _deleteOne(id) {
     await this.init();
     this._pendingWorlds.delete(id);
     let ok = true;
