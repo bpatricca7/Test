@@ -224,6 +224,12 @@ a Flower Cottage fence survived the guest's Undo), and `avatarFields` sends the 
 - Derived changes during a friend's op (a host fence re-joining next to her block, a
   platform railing opening) are recorded with her seat as author, so she may later change
   those host pieces in careful mode, and Undo building reverts them too.
+- Device ids (walkie review, 2026-09-27; MULTIPLAYER.md Addendum A and §8.5): on Railway a
+  player's uid is the server's stamp of a per-device secret (`WsTransport` sends `&d=`, the
+  server passes `by = sha256('dev\n' + d)` to `registry.join`), so a uid read from presence
+  can no longer be used to be let in without a tap. `host.js` also never admits by uid while
+  another page in the room carries that uid (the knock waits up to 8 s for a fading page, then
+  becomes a normal knock card). Covered by `npm run test:net` and `npm run test:walkie`.
 - Sleep: a guest's `skipToMorning()` sends intent `z` and skips her own clock at once. While
   that intent waits for the host's answer the guest does not follow the host's (older) clock,
   so she never flickers back into the night; the ack arrives in the same presence as the

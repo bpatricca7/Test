@@ -13,14 +13,26 @@
 //
 // Limits (env overrides in brackets): 4 players per room [SW_MAX_PEERS], 3,900 B per message,
 // 4 KiB of presence per player, 40 messages/s per connection (burst 80), 500 rooms
-// [SW_MAX_ROOMS], 12 connections per IP [SW_MAX_PER_IP], rooms idle for 10 minutes are closed
-// [SW_IDLE_MS], WebSocket frames over 16 KiB are refused, Origin must be this site
-// [SW_ALLOWED_ORIGINS adds more, comma separated].
+// [SW_MAX_ROOMS], 12 connections per IP [SW_MAX_PER_IP], 3 new connections/s per IP (burst 20)
+// [SW_CONN_RATE, SW_CONN_BURST], 20 new rooms/minute per IP (burst 12) [SW_ROOMS_PER_MIN,
+// SW_ROOMS_BURST] (so the 20,736 codes cannot be scanned: a miss makes a new room), rooms
+// idle for 10 minutes are closed [SW_IDLE_MS], WebSocket frames over 16 KiB are refused,
+// Origin must be this site [SW_ALLOWED_ORIGINS adds more, comma separated].
+//
+// Device ids: each page sends a per-device secret with its connection (`d`, kept in the
+// device's own storage, never shown to anyone); the server stamps every player with
+// by = sha256('dev\n' + d) (16 hex). The net core uses that stamp as the player's device id
+// (seat reclaiming, "Keep playing"), so a stranger cannot copy a friend's id from presence to
+// be let in without a "Let in!" tap. A connection without a valid `d` gets a random stamp.
+//
+// The client's IP (for the per-IP limits) is the X-Forwarded-For entry the proxy appended:
+// the last one [SW_PROXY_HOPS=1 trusted proxies; SW_TRUST_PROXY=0 uses the socket address].
+// Entries before it are whatever the client sent and are ignored. IPv6 counts per /64.
 
 import http from 'node:http';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, WebSocket } from 'ws';
@@ -50,6 +62,53 @@ class Bucket {
     this.tokens -= 1;
     return true;
   }
+
+  /** Full again (nothing to remember). */
+  idle(now = Date.now()) {
+    return this.tokens + ((now - this.at) * this.rate) / 1000 >= this.burst;
+  }
+}
+
+/** One Bucket per client address, forgotten once full again. */
+class AddressBuckets {
+  constructor(rate, burst) {
+    this.rate = rate;
+    this.burst = burst;
+    this.map = new Map();
+  }
+
+  take(ip) {
+    let b = this.map.get(ip);
+    if (!b) this.map.set(ip, (b = new Bucket(this.rate, this.burst)));
+    return b.take();
+  }
+
+  sweep() {
+    const now = Date.now();
+    for (const [ip, b] of this.map) if (b.idle(now)) this.map.delete(ip);
+  }
+}
+
+/** A device id stamp from the page's device secret (or a random one). */
+export function deviceStamp(d) {
+  if (typeof d === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(d)) return createHash('sha256').update('dev\n' + d).digest('hex').slice(0, 16);
+  return randomBytes(8).toString('hex');
+}
+
+/** The key the per-address limits use: IPv4 as is, IPv6 by its /64 network. */
+export function addressKey(ip) {
+  let a = String(ip || '?').trim();
+  if (a.startsWith('[')) a = a.slice(1, a.indexOf(']') > 0 ? a.indexOf(']') : undefined);
+  const v4 = /^(?:::ffff:)?(\d+\.\d+\.\d+\.\d+)(?::\d+)?$/i.exec(a);
+  if (v4) return v4[1];
+  if (!a.includes(':')) return a;
+  const zone = a.indexOf('%');
+  if (zone >= 0) a = a.slice(0, zone);
+  const [head, tail = ''] = a.split('::');
+  const hs = head ? head.split(':') : [];
+  const ts = a.includes('::') ? (tail ? tail.split(':') : []) : [];
+  const groups = a.includes('::') ? [...hs, ...Array(Math.max(0, 8 - hs.length - ts.length)).fill('0'), ...ts] : hs;
+  return groups.slice(0, 4).map((g) => (g || '0').toLowerCase().replace(/^0+(?=.)/, '')).join(':') + '::/64';
 }
 
 /**
@@ -62,6 +121,11 @@ export function createServer(opts = {}) {
     maxRooms: opts.maxRooms ?? envInt('SW_MAX_ROOMS', 500),
     maxPeers: opts.maxPeers ?? envInt('SW_MAX_PEERS', 4),
     maxPerIp: opts.maxPerIp ?? envInt('SW_MAX_PER_IP', 12),
+    connRate: opts.connRate ?? envInt('SW_CONN_RATE', 3), // new connections per second per IP
+    connBurst: opts.connBurst ?? envInt('SW_CONN_BURST', 20),
+    roomsPerMin: opts.roomsPerMin ?? envInt('SW_ROOMS_PER_MIN', 20), // new rooms per minute per IP
+    roomsBurst: opts.roomsBurst ?? envInt('SW_ROOMS_BURST', 12),
+    proxyHops: opts.proxyHops ?? envInt('SW_PROXY_HOPS', 1),
     idleMs: opts.idleMs ?? envInt('SW_IDLE_MS', 10 * 60 * 1000),
     graceMs: opts.graceMs ?? envInt('SW_GRACE_MS', 5000),
     msgBytes: opts.msgBytes ?? 3900,
@@ -85,7 +149,9 @@ export function createServer(opts = {}) {
   voice.start();
   const conns = new Map(); // `${room}\n${peer}` -> conn
   const perIp = new Map();
-  const counters = { connections: 0, rejected: 0, rateDropped: 0 };
+  const connBuckets = new AddressBuckets(o.connRate, o.connBurst);
+  const roomBuckets = new AddressBuckets(o.roomsPerMin / 60, o.roomsBurst);
+  const counters = { connections: 0, rejected: 0, rateDropped: 0, connLimited: 0, roomLimited: 0, voiceKicked: 0 };
   let shuttingDown = false;
 
   const server = http.createServer((req, res) => handleHttp(req, res));
@@ -164,11 +230,15 @@ export function createServer(opts = {}) {
   }
 
   function clientIp(req) {
-    if (o.trustProxy) {
+    let ip = req.socket.remoteAddress || '?';
+    if (o.trustProxy && o.proxyHops > 0) {
+      // every trusted proxy APPENDS the address it saw: the client is proxyHops from the end;
+      // anything before that is whatever the client itself sent (never trusted)
       const xff = req.headers['x-forwarded-for'];
-      if (typeof xff === 'string' && xff) return xff.split(',')[0].trim();
+      const hops = typeof xff === 'string' ? xff.split(',').map((x) => x.trim()).filter(Boolean) : [];
+      if (hops.length) ip = hops[Math.max(0, hops.length - o.proxyHops)];
     }
-    return req.socket.remoteAddress || '?';
+    return addressKey(ip);
   }
 
   function originOk(req) {
@@ -212,18 +282,24 @@ export function createServer(opts = {}) {
     if (!originOk(req)) return refuse(socket, 403, 'Forbidden');
     if (shuttingDown) return refuse(socket, 503, 'Service Unavailable');
     const ip = clientIp(req);
-    wss.handleUpgrade(req, socket, head, (ws) => onConnection(ws, name, secret, ip));
+    const by = deviceStamp(url.searchParams.get('d'));
+    wss.handleUpgrade(req, socket, head, (ws) => onConnection(ws, name, secret, ip, by));
   });
 
-  function onConnection(ws, name, secret, ip) {
+  function limited(ws, counter) {
+    counters[counter]++;
+    safeSend(ws, { t: 'e', code: 'limit' });
+    ws.close(4029, 'too many connections');
+  }
+
+  function onConnection(ws, name, secret, ip, by) {
     counters.connections++;
     const peer = createHash('sha256').update(name + '\n' + secret).digest('hex').slice(0, 16);
     const ipCount = perIp.get(ip) || 0;
-    if (ipCount >= o.maxPerIp) {
-      safeSend(ws, { t: 'e', code: 'limit' });
-      ws.close(4029, 'too many connections');
-      return;
-    }
+    if (ipCount >= o.maxPerIp) return limited(ws, 'rejected');
+    // new connections and new rooms per address: trying codes one after another is slow
+    if (!connBuckets.take(ip)) return limited(ws, 'connLimited');
+    if (!registry.rooms.has(name) && !roomBuckets.take(ip)) return limited(ws, 'roomLimited');
     perIp.set(ip, ipCount + 1);
     const key = name + '\n' + peer;
     const conn = { ws, name, peer, ip, bucket: new Bucket(o.rate, o.burst), bye: false, replaced: false, alive: true, dropped: 0, droppedAt: 0 };
@@ -243,7 +319,7 @@ export function createServer(opts = {}) {
       }
       ws.send(JSON.stringify(frame));
     };
-    const r = registry.join(name, peer, sink, { by: null, kind: 'viewer', guest: false });
+    const r = registry.join(name, peer, sink, { by, kind: 'viewer', guest: false });
     if (!r.ok) {
       safeSend(ws, { t: 'e', code: r.code });
       conn.bye = true;
@@ -253,6 +329,11 @@ export function createServer(opts = {}) {
         json: (f) => safeSend(ws, f),
         // live voice: a frame that would wait behind a slow connection is dropped, not queued
         binary: (b) => (ws.readyState === WebSocket.OPEN && ws.bufferedAmount < 64 * 1024 ? (ws.send(b, { binary: true }), true) : false),
+        // too many voice frames that were not relayed: disconnected, like the JSON rate limit
+        kick: () => {
+          counters.voiceKicked++;
+          ws.close(4008, 'too fast');
+        },
       });
     }
     ws.on('pong', () => {
@@ -311,7 +392,11 @@ export function createServer(opts = {}) {
       if (conn.replaced) return;
       if (conns.get(key) === conn) conns.delete(key);
       if (!r.ok) return;
-      if (conn.bye || code === 1000 || code === 1001) registry.leave(name, peer);
+      // a page that never said anything (no presence) has nothing to come back to: it leaves at
+      // once instead of holding its room for the reconnect grace
+      const m = registry.rooms.get(name)?.members.get(peer);
+      const silent = !m || Object.keys(m.state).length === 0;
+      if (conn.bye || code === 1000 || code === 1001 || silent) registry.leave(name, peer);
       else registry.detach(name, peer);
     });
   }
@@ -338,6 +423,8 @@ export function createServer(opts = {}) {
     }
   }, 25000);
   const roomTimer = setInterval(() => {
+    connBuckets.sweep();
+    roomBuckets.sweep();
     for (const { name, peer } of registry.sweep()) {
       const conn = conns.get(name + '\n' + peer);
       if (conn) {

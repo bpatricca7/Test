@@ -17,7 +17,7 @@ import { SimClock, NetHub, mulberry32 } from './net/hub.mjs';
 import { makeSession, scenario, simNet, wsNet, setVerbose } from './net/scenario.mjs';
 import { FakeAdapter, B, BLOCKS, FURNITURE, CROPS } from './net/fake-adapter.mjs';
 import { LoopTransport } from '../src/net/loop-transport.js';
-import { WsTransport } from '../src/net/ws-transport.js';
+import { WsTransport, deviceStampOf } from '../src/net/ws-transport.js';
 import { NetSession } from '../src/net/session.js';
 import { Journal, buildPayload } from '../src/net/journal.js';
 import { TokenBucket, StateBox, Pacer, NetError, jsonBytes, realClock } from '../src/net/transport.js';
@@ -548,6 +548,43 @@ async function sessionTests() {
     hub.close();
   });
 
+  await test('session: a copied device id is not let in without a tap while its owner is here', async () => {
+    // LoopTransport puts the uid in presence (nothing attests it), so this is the copied-id
+    // attack as it would look without the server's device stamps
+    const { clock, hub } = simWorld(9, { presenceDelayMs: [5, 30], delayMs: [5, 60] });
+    const ctx = { clock, rand: mulberry32(9), transport: (uid) => new LoopTransport({ hub, clock, uid }) };
+    const H = makeSession(ctx, 'Lily', 'uH');
+    const knocks = [];
+    H.session.on('knock', (k) => knocks.push(k));
+    const h = track(H.session.host());
+    await runUntil(clock, () => h.done);
+    const code = H.session.code;
+    const G = makeSession(ctx, 'Rosie', 'u-rosie', { guest: true });
+    await simAwait(clock, G.session.join(code));
+    await runUntil(clock, () => knocks.length === 1);
+    H.session.admit(knocks[0].peer);
+    assert(await runUntil(clock, () => G.session.state === 'g.live'), 'Rosie live');
+    // a stranger with Rosie's id (read from presence) knocks
+    const X = makeSession(ctx, 'Rosie', 'u-rosie', { guest: true });
+    await simAwait(clock, X.session.join(code));
+    const xPeer = X.session.transport.selfId();
+    await runUntil(clock, () => false, 6000);
+    eq(H.session.players().some((p) => p.peer === xPeer), false, 'not let in while Rosie is here');
+    eq(knocks.length, 1, 'no card yet (it waits for a page that may be fading out)');
+    assert(await runUntil(clock, () => knocks.length === 2, 10000), 'then the host gets a normal knock card');
+    eq(knocks[1].peer, xPeer, 'the card is the stranger');
+    eq(H.session.players().some((p) => p.peer === xPeer), false, 'still not in without a tap');
+    H.session.deny(xPeer);
+    await runUntil(clock, () => X.session.state === 'idle');
+    // Rosie reloads: her old page is gone, so her id lets her back in without a tap
+    await simAwait(clock, G.session.abandon());
+    const G2 = makeSession(ctx, 'Rosie', 'u-rosie', { guest: true });
+    await simAwait(clock, G2.session.join(code));
+    assert(await runUntil(clock, () => G2.session.state === 'g.live', 20000), 'Rosie back after a reload, no tap');
+    eq(knocks.length, 2, 'no card for her reload');
+    hub.close();
+  });
+
   await test('session: host reload (new epoch) and a guest reload keep playing', async () => {
     const { clock, hub } = simWorld(5, { presenceDelayMs: [5, 30], delayMs: [5, 60] });
     const ctx = { clock, rand: mulberry32(5), transport: (uid) => new LoopTransport({ hub, clock, uid }) };
@@ -668,11 +705,11 @@ function get(port, p, headers = {}) {
 }
 
 /** A raw WebSocket client (Node 22 global WebSocket; `ws` when headers are needed). */
-async function rawWs(port, room, secret, headers) {
+async function rawWs(port, room, secret, headers, device = null) {
   const { WebSocket: WS } = await import('ws');
   return new Promise((resolve) => {
     const frames = [];
-    const ws = new WS(`ws://127.0.0.1:${port}/r/${room}?s=${secret}`, { headers });
+    const ws = new WS(`ws://127.0.0.1:${port}/r/${room}?s=${secret}${device ? '&d=' + device : ''}`, { headers });
     const box = { ws, frames, closed: null, error: null };
     ws.on('message', (d) => frames.push(JSON.parse(d.toString())));
     ws.on('close', (code) => (box.closed = code));
@@ -767,7 +804,7 @@ async function serverTests() {
       await waitFor(() => b.frames.some((f) => f.t === 'b'));
       const got = b.frames.filter((f) => f.t === 'b');
       eq(got.length, 1, 'oversized message not relayed');
-      eq(got[0].from.by, null, 'sender stamp by:null');
+      assert(/^[0-9a-f]{16}$/.test(got[0].from.by), 'sender stamp by: a device stamp from the server (' + got[0].from.by + ')');
       eq([got[0].from.kind, got[0].from.guest, got[0].from.isMe, got[0].from.sameTab], ['viewer', false, false, false], 'stamp');
       assert(a.frames.some((f) => f.t === 'e' && f.code === 'too_big'), 'too_big reported');
       assert(a.frames.some((f) => f.t === 'b' && f.from.sameTab && f.from.isMe), 'echo to sender');
@@ -807,6 +844,104 @@ async function serverTests() {
       assert(!/secret-number|yyyy|xxxx/.test(srv.output()), 'no payloads or secrets logged');
     } finally {
       for (const s of socks) try { s.ws.terminate(); } catch {}
+      await stopServer(srv);
+    }
+  });
+
+  await test('server: device stamps, new connections and new rooms per address, X-Forwarded-For, silent drops', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'sw-'));
+    const page = path.join(dir, 'page.html');
+    writeFileSync(page, '<!doctype html><title>Sparkle World</title>');
+    const srv = await startServerProcess({ SW_DIST: page, SW_MAX_PER_IP: '100', SW_GRACE_MS: '5000' });
+    const socks = [];
+    const open = async (...a) => {
+      const s = await rawWs(srv.port, ...a);
+      socks.push(s);
+      return s;
+    };
+    const selfEntry = (s) => {
+      const f = s.frames.find((x) => x.t === 'p' && x.self);
+      return f && f.j.find((e) => e.peer === f.self);
+    };
+    const xff = (v) => ({ 'X-Forwarded-For': v });
+    try {
+      // the server stamps each page with sha256('dev\n' + its device secret); nobody can pick it
+      const room = 'sw1-heart-heart-moon-cat';
+      const a = await open(room, 'secret-dev-aaaaaaaa', xff('10.1.0.1'), 'myDeviceSecret01');
+      const b = await open(room, 'secret-dev-bbbbbbbb', xff('10.1.0.2'), 'myDeviceSecret01');
+      const c = await open(room, 'secret-dev-cccccccc', xff('10.1.0.3'));
+      await waitFor(() => [a, b, c].every((x) => selfEntry(x)));
+      const [ea, eb, ec] = [a, b, c].map(selfEntry);
+      eq(ea.by, await deviceStampOf('myDeviceSecret01'), 'stamp = sha256("dev\\n" + secret), the same the page computes');
+      eq(eb.by, ea.by, 'the same device secret: the same stamp');
+      assert(/^[0-9a-f]{16}$/.test(ec.by) && ec.by !== ea.by, 'no device secret: a random stamp');
+      const d = await open(room, 'secret-dev-dddddddd', xff('10.1.0.4'), ea.by);
+      await waitFor(() => selfEntry(d));
+      assert(selfEntry(d).by !== ea.by, 'sending someone\'s stamp as the secret does not give her stamp');
+      // presence cannot change the stamp: `by` is what the net core uses as the device id
+      c.ws.send(JSON.stringify({ t: 's', patch: { uid: ea.by, by: ea.by } }));
+      await waitFor(() => a.frames.some((f) => f.t === 'p' && f.u));
+      const cSeenByA = [...a.frames].reverse().find((f) => f.t === 'p' && f.j && f.j.some((e) => e.peer === selfEntry(c).peer));
+      eq(cSeenByA.j.find((e) => e.peer === selfEntry(c).peer).by, ec.by, 'the roster keeps the server stamp');
+      const t = new WsTransport({ url: `ws://127.0.0.1:${srv.port}`, uid: 'myDeviceSecret01' });
+      eq((await t.identity()).uid, ea.by, 'WsTransport.identity().uid is the server stamp');
+      for (const x of [a, b, c, d]) x.ws.close(1000);
+      await waitFor(() => [a, b, c, d].every((x) => x.closed !== null));
+
+      // new connections per address (3/s, burst 20), and the address is the LAST
+      // X-Forwarded-For entry (the one the proxy appended): forged first entries change nothing
+      const burst = [];
+      for (let k = 0; k < 26; k++) burst.push(await open('sw1-rate-' + (k % 7), 'secret-rate-' + k + 'xxxxxx', xff(`10.9.${k}.1, 10.3.0.1`)));
+      await waitFor(() => burst.every((x) => x.closed !== null || x.frames.length > 0));
+      await waitFor(() => burst.filter((x) => x.closed === 4029).length >= 5, 3000);
+      const refused = burst.filter((x) => x.closed === 4029).length;
+      assert(refused >= 5 && refused <= 7, `26 connections at once from one address, each with another forged first X-Forwarded-For entry: ${refused} refused (burst 20)`);
+      assert(burst.filter((x) => x.closed === 4029).every((x) => x.frames.some((f) => f.t === 'e' && f.code === 'limit')), 'refused with {t:"e", code:"limit"}');
+      const other = await open('sw1-rate-other', 'secret-rate-otherxx', xff('10.3.0.1, 10.3.0.2'));
+      await waitFor(() => other.frames.length > 0 || other.closed !== null);
+      assert(other.closed === null && other.frames.length > 0, 'another address (last entry) is not affected');
+      for (const x of [...burst, other]) x.ws.close(1000);
+      await sleep(200);
+
+      // new rooms per address: 20/min, burst 12 (a code that nobody plays makes a new room)
+      const scan = [];
+      for (let k = 0; k < 16; k++) {
+        const x = await open('sw1-scan-' + k, 'secret-scan-' + k + 'xxxxxx', xff('10.4.0.1'));
+        await waitFor(() => x.closed !== null || x.frames.length > 0);
+        scan.push(x);
+        x.ws.close(1000);
+        await waitFor(() => x.closed !== null);
+      }
+      const scanRefused = scan.filter((x) => x.frames.some((f) => f.t === 'e' && f.code === 'limit')).length;
+      assert(scanRefused >= 3 && scanRefused <= 4, `trying 16 codes in a row from one address: ${scanRefused} refused (12 new rooms at once, then 1 every 3 s)`);
+      const hostThere = await open('sw1-live-room', 'secret-live-hostxxxx', xff('10.5.0.1'));
+      await waitFor(() => hostThere.frames.length > 0);
+      const guestThere = await open('sw1-live-room', 'secret-live-guestxxx', xff('10.4.0.1'));
+      await waitFor(() => guestThere.frames.length > 0 || guestThere.closed !== null);
+      assert(guestThere.closed === null && guestThere.frames.some((f) => f.t === 'p' && f.self), 'joining a game that exists is not a new room (not limited)');
+      for (const x of [hostThere, guestThere]) x.ws.close(1000);
+
+      // a connection that never said anything and drops: its room goes at once (no 5 s grace)
+      const silent = await open('sw1-silent-drop', 'secret-silent-xxxxxx', xff('10.6.0.1'));
+      await waitFor(() => silent.frames.length > 0);
+      const watcher = await open('sw1-silent-drop', 'secret-silent-watchx', xff('10.6.0.2'));
+      await waitFor(() => watcher.frames.length > 0);
+      watcher.ws.send(JSON.stringify({ t: 's', patch: { r: 'h' } }));
+      silent.ws.terminate();
+      await waitFor(() => watcher.frames.some((f) => f.t === 'p' && Array.isArray(f.l) && f.l.length));
+      assert(watcher.frames.some((f) => f.t === 'p' && Array.isArray(f.l) && f.l.includes(selfEntry(silent).peer)), 'a silent page that drops leaves at once');
+      const talker = await open('sw1-silent-drop', 'secret-silent-talker', xff('10.6.0.3'));
+      await waitFor(() => talker.frames.length > 0);
+      talker.ws.send(JSON.stringify({ t: 's', patch: { r: 'g' } }));
+      await sleep(100);
+      const n0 = watcher.frames.filter((f) => f.t === 'p' && f.l).length;
+      talker.ws.terminate();
+      await sleep(1000);
+      eq(watcher.frames.filter((f) => f.t === 'p' && f.l).length, n0, 'a page that set presence keeps its reconnect grace');
+      watcher.ws.close(1000);
+      assert(!/secret-|myDeviceSecret/.test(srv.output()), 'no secrets logged');
+    } finally {
+      for (const x of socks) try { x.ws.terminate(); } catch {}
       await stopServer(srv);
     }
   });

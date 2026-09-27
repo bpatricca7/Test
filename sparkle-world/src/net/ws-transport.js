@@ -7,12 +7,17 @@
 //   it the whole roster again; presence is re-asserted by FrameTransport.
 // - Reconnects back off 0.5, 1, 2, 4, 8, 8... s; after about a minute the session ends
 //   (onStatus fatal 'ended').
-// - identity(): a random per-device id (localStorage), canHost true. No accounts.
+// - The device: a random per-device SECRET (localStorage 'sparkle-world:net-dev', sent only to
+//   this server with each connection, never put in presence). The server stamps every player
+//   with by = sha256('dev\n' + secret) (16 hex), and the net core uses that stamp as her device
+//   id (seat reclaiming, "Keep playing"), so nobody can copy a friend's id from presence to be
+//   let in without a tap. identity().uid is the same stamp, computed here. No accounts.
 // - The walkie-talkie (src/net/walkie) shares the socket: binary frames and {t:'v'} frames go
 //   to `voiceIn`, `voiceUp` runs after every (re)connect, `sendVoice()` writes one frame.
 
 import { FrameTransport, NetError, realClock } from './transport.js';
-import { loadDeviceId } from './loop-transport.js';
+
+const DEVICE_KEY = 'sparkle-world:net-dev';
 
 const BACKOFF = [500, 1000, 2000, 4000, 8000];
 const GIVE_UP_MS = 60000;
@@ -30,11 +35,39 @@ function randomSecret(n = 24) {
   return s;
 }
 
+/** This device's secret (made once, kept in localStorage; a fresh one when storage is blocked). */
+export function loadDeviceSecret(storage) {
+  try {
+    const ls = storage || globalThis.localStorage;
+    let v = ls?.getItem(DEVICE_KEY);
+    if (!v || !/^[A-Za-z0-9]{24,64}$/.test(v)) {
+      v = randomSecret(24);
+      ls?.setItem(DEVICE_KEY, v);
+    }
+    return v;
+  } catch {
+    return randomSecret(24);
+  }
+}
+
+/** The server's stamp for a device secret: sha256('dev\n' + secret), 16 hex (null without WebCrypto). */
+export async function deviceStampOf(secret) {
+  const subtle = globalThis.crypto?.subtle;
+  if (!subtle || typeof secret !== 'string') return null;
+  try {
+    const buf = await subtle.digest('SHA-256', new TextEncoder().encode('dev\n' + secret));
+    return Array.from(new Uint8Array(buf).subarray(0, 8), (b) => b.toString(16).padStart(2, '0')).join('');
+  } catch {
+    return null;
+  }
+}
+
 export class WsTransport extends FrameTransport {
   /**
    * @param {object} o
    * @param {string} [o.url]        base like 'ws://127.0.0.1:8080' (default: this page's origin)
-   * @param {string} [o.uid]        my stable id (default: a per-device id in localStorage)
+   * @param {string} [o.device]     this device's secret (default: loadDeviceSecret())
+   * @param {string} [o.uid]        tests: the same as `device` (one fake device per uid)
    * @param {object} [o.clock]
    * @param {Function} [o.WebSocket] constructor (default: globalThis.WebSocket)
    * @param {object} [o.faults]     tests: { dropRate, dupRate, delayMs, rand } on received broadcasts
@@ -42,7 +75,8 @@ export class WsTransport extends FrameTransport {
   constructor(o = {}) {
     super({ clock: o.clock || realClock, limits: o.limits });
     this._base = o.url || null;
-    this._uid = o.uid || null;
+    this._device = o.device || (o.uid != null ? String(o.uid) : null);
+    this._uid = undefined;
     this._WS = o.WebSocket || globalThis.WebSocket;
     this._faults = o.faults || null;
     this._secret = randomSecret();
@@ -60,8 +94,14 @@ export class WsTransport extends FrameTransport {
 
   get kind() { return 'ws'; }
 
+  get _dev() {
+    if (!this._device) this._device = loadDeviceSecret();
+    return this._device;
+  }
+
   async identity() {
-    if (!this._uid) this._uid = loadDeviceId('ws');
+    // the id every player sees for this device is the server's stamp; the secret stays here
+    if (this._uid === undefined) this._uid = await deviceStampOf(this._dev);
     return { uid: this._uid, canHost: true };
   }
 
@@ -72,7 +112,7 @@ export class WsTransport extends FrameTransport {
       if (!loc) throw new NetError('unavailable', 'no location');
       base = (loc.protocol === 'https:' ? 'wss://' : 'ws://') + loc.host;
     }
-    return `${base.replace(/\/$/, '')}/r/${encodeURIComponent(room)}?s=${this._secret}`;
+    return `${base.replace(/\/$/, '')}/r/${encodeURIComponent(room)}?s=${this._secret}&d=${encodeURIComponent(this._dev)}`;
   }
 
   async _linkOpen(roomName) {

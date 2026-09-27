@@ -16,6 +16,9 @@ import { TokenBucket, jsonBytes } from './transport.js';
 const ANY = new Set(ANY_FIELDS);
 const FIX_KEEP = 10000; // re-send the same fix for up to 10 s while she asks for the same gap
 const SEAT_LOG_BYTES = 2 * 1024 * 1024;
+// a knock whose device id another page in the room still uses waits this long for that page
+// to go (a reload whose old page is fading out); then the host decides with a knock card
+const TWIN_WAIT = 8000;
 
 export class NetHost {
   /**
@@ -68,6 +71,7 @@ export class NetHost {
     this.pfAt = [-Infinity, -Infinity, -Infinity, -Infinity];
     this.zAt = -Infinity;
     this.knocks = new Map(); // peer -> info (shown to the UI)
+    this.twinSince = new Map(); // peer -> when her knock first met another page with her id
     this.lastFixAt = new Map();
     this.fixCache = new Map(); // peer -> the last fix sent to her (re-sent as is while she asks the same)
     this.rs = new Set();
@@ -177,6 +181,7 @@ export class NetHost {
     }
     // peers that left: forget their refusals (so a new knock is judged fresh) and knocks
     for (const peer of Array.from(this.no.keys())) if (!m.has(peer)) this.no.delete(peer);
+    for (const peer of Array.from(this.twinSince.keys())) if (!m.has(peer)) this.twinSince.delete(peer);
     for (const peer of Array.from(this.knocks.keys())) {
       const p = m.get(peer);
       if (!p || p.state.kn !== 1) {
@@ -205,7 +210,15 @@ export class NetHost {
         this._refuse(p.id, NO.KICK);
         continue;
       }
-      const known = uid && (this.seatedUids.has(uid) || this.resumeUids.has(uid));
+      let known = !!uid && (this.seatedUids.has(uid) || this.resumeUids.has(uid));
+      // a known device id is let in without a tap only while no other page in the room uses
+      // it: two pages with one id are never proof of anything (the host decides)
+      if (known && !this.autoAdmit && this._twin(p.id, uid)) {
+        if (!this.twinSince.has(p.id)) this.twinSince.set(p.id, now);
+        if (now - this.twinSince.get(p.id) < TWIN_WAIT) continue;
+        known = false;
+      }
+      this.twinSince.delete(p.id);
       this._reclaimSeat(uid);
       if (!this._freeSeatNumber(uid ? this.seatedUids.get(uid) : undefined)) {
         this._refuse(p.id, NO.FULL);
@@ -222,6 +235,12 @@ export class NetHost {
       this.knocks.set(p.id, info);
       this.session.emit('knock', info);
     }
+  }
+
+  /** Does another page in the room (me included) carry device id `uid`? */
+  _twin(peer, uid) {
+    for (const q of this.peerMap.values()) if (q.id !== peer && q.uid === uid) return true;
+    return false;
   }
 
   // ---------- admission API (UI) ----------
