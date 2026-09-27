@@ -1454,6 +1454,140 @@ Each criterion is scored 1–10. Total = mean.
      existing SaveStore fallbacks already do this with no code change. No server-side saves in
      v1, which keeps COPPA exposure minimal.
 2. **No voice chat, ever, unless a parent-gated design is explicitly requested later.** Quick
-   phrases and emotes only (already the rule in §11.6 and §17).
+   phrases and emotes only (already the rule in §11.6 and §17). *(The family asked for exactly
+   that later the same day: the parent-gated, push-to-talk walkie-talkie of Addendum B, on the
+   Railway version only. There is still no free-text chat anywhere.)*
 3. The two-account spike (Task 0) needs the family's help: it can only be run by real people
    with two claude.ai accounts. The Railway path does not depend on it.
+
+---
+
+## Addendum B: the walkie-talkie (family request, 2026-09-27)
+
+The dad's words: *"Can we make the walkie talkie feature also? Only to be used with a code for
+multiplayer and only used when pressed, it has to be confirmed by a parent with a
+multiplication problem."* Agreed details: everyone in the same game hears it (not by distance);
+nothing is ever recorded or stored; each device needs **its own** grown-up's OK to talk **and**
+to hear; the host can mute a player or everyone; each child can mute anyone for herself; at
+most 15 s per press; only on the Railway (WebSocket) version, because inside claude.ai the
+microphone is blocked (the walkie is hidden there). Picture quality is never lowered for it.
+Team notes, files and tests: `docs/teams/walkie.md`.
+
+### B.1 Rules
+
+| Rule | Where it is enforced |
+|---|---|
+| Exists only on Railway (`net.kind === 'ws'`); hidden in claude.ai, in `?net=loop`, and alone | page (`src/net/walkie/index.js` `exists`, `live`) |
+| Only while playing together with a code, only among the players of that one game (the host plus the friends she let in) | server (`server/voice.mjs` reads the host's presence `adm` for **every** frame), page |
+| Each device's grown-up passes the check (`profile.settings.walkie = {on, at}`); without it the page never says "voice on", so it neither talks nor receives a single voice byte | server (voice-on set), page |
+| Only while the button is held; the microphone opens on press and every track is stopped on release | page (`capture.js`) |
+| At most 15 s per press (time **and** audio length), one talker at a time (the "floor") | server (hard), page (countdown ring, stops itself) |
+| Host: **Mute** a friend (for everyone) and **Mute everyone** (all walkies rest, hers too); presence `wm` | server (cuts / refuses), every page (no playback, button rests) |
+| Each child: **Mute** anyone for herself | server (not even sent to her), page |
+| Nothing recorded, stored or logged; no free text | server keeps only counters; frames are passed on and forgotten |
+
+### B.2 Transport: the game's own WebSocket (no WebRTC)
+
+Voice is relayed by the Railway server over the socket the game already has. Peer-to-peer
+WebRTC was not used: it needs STUN/TURN servers (a TURN relay costs about what this server
+does), exposes each family's home IP address to the other players, and would put a second
+network path next to the one the host already controls. Through the relay, the server can
+enforce every rule above, and the IP addresses of the children stay private.
+
+**Audio frames** are BINARY WebSocket frames (`src/net/walkie/wire.js`, shared by page and
+server):
+
+```
+byte 0     0x57 'W' (audio frame, version 1)
+byte 1     flags: 1 = first frame of a press, 2 = last frame of a press
+bytes 2-3  seq, uint16 LE (per press)
+bytes 4-5  ADPCM predictor at the frame start, int16 LE
+byte 6     ADPCM step index at the frame start (0..88)
+byte 7     0 (reserved: 16 kHz mono)
+bytes 8..  IMA ADPCM, 4 bits per sample, low nibble first; (length - 8) * 2 samples
+```
+
+- Capture: `getUserMedia({audio: {echoCancellation, noiseSuppression, autoGainControl}})` →
+  two 7 kHz low-pass biquads → an AudioWorklet tap (ScriptProcessor where AudioWorklet is
+  missing) on the game's own AudioContext → linear resampler to **16 kHz mono** → IMA ADPCM.
+- **80 ms frames** (1,280 samples): 648 B each, 12.5 per second = **8.1 KB/s per talker**
+  (measured: 8,101 B/s). The server relays each frame once per listener (at most 3).
+- Each frame carries its own decoder state, so frames decode on their own.
+- A frame is at most 1,032 B (128 ms); anything else is dropped by the server.
+
+**Control** is small JSON frames `{t:'v', k, ...}` on the same socket (not presence, so the
+room logic in `rooms.mjs` is untouched):
+
+| Page → server | Meaning |
+|---|---|
+| `{k:'on', h:<host peer>}` | voice on: I am a player of the game this host runs (sent again after every reconnect) |
+| `{k:'off'}` | voice off (the grown-up switched it off) |
+| `{k:'req'}` | the button went down: may I talk? |
+| `{k:'end'}` | the button came up before any audio (a last frame with flag 2 also ends a press) |
+| `{k:'mute', p:[peer…]}` | the friends I muted for myself (≤ 8) |
+
+| Server → page | Meaning |
+|---|---|
+| `{k:'hi', ok, talk}` | answer to `on`: `ok` = the server counts me in the game; who talks now |
+| `{k:'go'}` | the floor is yours |
+| `{k:'busy', by}` | someone else is talking (the page plays a friendly "boop boop") |
+| `{k:'no', why}` | `off` / `group` / `quiet` (Mute everyone) / `muted` / `wait` (0.7 s pause after one's own press; the page asks again by itself) |
+| `{k:'talk', by}` | who talks now (`null` = nobody), sent to every voice-on player of the game |
+| `{k:'cut', why}` | your press ended: `cap` (15 s) / `idle` / `quiet` / `muted` / `group` |
+
+### B.3 The server (`server/voice.mjs`)
+
+- One `VoiceRelay` per server; one link per connection (`voice.link(name, peer, send)`), closed
+  with the socket. A reconnect is a new link: the page says `on` again (`WsTransport.voiceUp`).
+- **Who is in the game** is read, not stored: a page that said `on` with host `H` is in `H`'s
+  game when it is `H` itself, or listed in `H`'s presence `adm`, and `H`'s presence has no
+  `end:1`. Peer ids are made by the server from each page's secret, so nobody can claim to be
+  `H`. A knocking friend, a friend who was sent home, or a stranger who guessed the code is
+  never in the game: the unit tests (`tools/test-walkie-unit.mjs`) check all three.
+- **Floor**: one talker per game; `req` → `go` or `busy`; a press ends with the last frame, `end`,
+  a closed connection, 1.5 s without audio (3 s for the first frame), or the cap.
+- **Caps and limits**: 15 s + 1 s network slack by time; 15 s + one frame by audio length; per
+  talker 25 frames/s (burst 16) and 12,000 B/s (burst 8,000); frames over 1,032 B or with a bad
+  header are dropped; a frame that would wait behind a slow connection (> 64 KB buffered) is
+  dropped for that listener (live audio is never queued). Control frames count against the
+  connection's normal JSON budget (40/s).
+- Host mutes (presence `wm = [all 0/1, [peers ≤ 8]]`) are checked at every `req` and every frame.
+- `Permissions-Policy: camera=(), microphone=(self), geolocation=(), payment=()`: the page may
+  use the microphone; frames of other sites and the camera may not.
+- Counters only (`stats().voice`; `GET /api/stats` exists only with `SW_TEST_STATS=1`, for
+  tests). Nothing about voices is logged.
+
+### B.4 The page (`src/net/walkie/`)
+
+| File | What |
+|---|---|
+| `wire.js` | frame format, limits, control why-codes (shared with the server) |
+| `adpcm.js` | IMA ADPCM encoder / decoder, the 16 kHz resampler |
+| `capture.js` | `Mic`: getUserMedia only while held, worklet tap, `stop()` stops every track at once |
+| `player.js` | `VoicePlayer`: decode → AudioBuffer (16 kHz) → scheduled 160 ms behind the live edge (re-anchors after an underrun); squelch "kssh-bip" before, roger beep after; music ducks; `stop()` silences at once |
+| `gate.js` | the grown-up check: a random 13–19 × 6–9 on a number pad; a wrong answer gives a new problem; 3 wrong → 60 s wait (kept in `profile.settings.walkieLock`) |
+| `ui.js` | the HUD button (hold, countdown ring, "Mia is talking", resting), the speaking badge over a friend, the "Walkie off" badge, the microphone card, the Players panel controls, the Settings row |
+| `art.js` | the walkie-talkie pictures (SVG) |
+| `index.js` | `installWalkie(game, net)`: link, presence `wk` (my walkie is on) and `wm` (host mutes), press / release, 15 s, frames in / out, `debug.walkie` |
+
+- The button shows only when: playing together **and** the transport is `ws` **and** this
+  device's walkie is on. A device whose walkie is off sees a small **Walkie off** badge (only
+  while a friend's walkie is on), hears nothing and sends nothing.
+- Hold to talk: pointer / touch hold on the button, or hold **M** (free in play mode; `M` is not
+  used by the game, the piano or the HUD). The first press on a device shows the microphone
+  card ("Your walkie needs the microphone! Tap OK. If you are asked, tap Allow.").
+- iOS: the AudioContext is resumed inside the press, and getUserMedia is called inside it too.
+  Release, a hidden page, `pagehide`, a blur, leaving the world or the session all stop every
+  microphone track at once (the microphone indicator goes off).
+- Players panel: a badge per player (**walkie** / **walkie off** / **muted** / **talking**);
+  **Mute / Unmute** per player (the host's is for everyone, a friend's is for herself);
+  the host's **Mute everyone** switch.
+- Presence: `wk: 1` (my walkie is on; for badges), host `wm` (see B.3). Both are identifier
+  keys with small values; the net core ignores them.
+
+### B.5 Tests
+
+`npm run test:walkie` (`tools/test-walkie.mjs`): the Node unit tests (codec SNR 33 dB,
+resampler, frame format, relay gating / floor / caps / limits / mutes / kicks) and an end-to-end
+run through the real server with three pages (desktop host, iPad friend, phone friend without
+walkie). See `docs/teams/walkie.md` for the numbers.

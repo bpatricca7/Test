@@ -127,8 +127,15 @@ class Walkie {
     this._sync();
   }
 
+  /** The players of this game (cached for a moment: the HUD asks every frame). */
   players() {
-    return this.net.active ? this.net.players() : [];
+    if (!this.net.active) return [];
+    const now = performance.now();
+    if (!this._pl || now - this._plAt > 50) {
+      this._pl = this.net.players();
+      this._plAt = now;
+    }
+    return this._pl;
   }
 
   _keyOf(pl) {
@@ -203,6 +210,7 @@ class Walkie {
     const k = this._keyOf(pl);
     if (this.hostMutes.has(k)) this.hostMutes.delete(k);
     else this.hostMutes.add(k);
+    this._pl = null;
     this._sync();
   }
 
@@ -238,6 +246,7 @@ class Walkie {
     this.inGame = false;
     this.floorBy = null;
     this.sent = { wk: undefined, wm: undefined, mutes: undefined };
+    this._pl = null;
     t.voiceIn = (m) => this._in(m);
     t.voiceUp = () => {
       // a reconnect: the server forgot this connection's walkie; say it again
@@ -636,7 +645,11 @@ class Walkie {
   // ---------- per frame ----------
 
   update() {
-    if (this.exists || this.t) this._sync();
+    const now = performance.now();
+    if ((this.exists || this.t) && now - (this._syncAt || 0) >= 100) {
+      this._syncAt = now;
+      this._sync();
+    }
     if (this.talk === 'talking' && performance.now() - this.goAt >= W.BURST_MS) this._finish('cap');
     this.ui.update();
   }

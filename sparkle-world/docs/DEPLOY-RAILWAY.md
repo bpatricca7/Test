@@ -102,12 +102,35 @@ While playing together:
   **Send home** a friend, switch **Friends can build** and **Careful friends** (on: friends
   cannot change her things), and **Stop playing**.
 - **Say** (a speech bubble, or the T key) has 16 happy words ("Hi!", "Let's build!", "Thank
-  you!", ...). There is no typing and no voice.
+  you!", ...). There is no typing.
+- **Walkie-talkie** (only if a grown-up turned it on for that device, see below): hold the big
+  walkie button (or the M key) and talk; let go and it stops. Everyone in the game whose walkie
+  is on hears it, one talker at a time, at most 15 seconds per press.
 - After a reload (or a new version), the title shows **Keep playing** on the device that
   invited and **Join Lily** (her name) on her friends' devices for a while: one tap each and
   everyone is back together.
 - When she stops, her world is saved; **Before friends** (on the goodbye card, and on the
   world in **My Worlds** for a week) puts the world back to how it was before friends came.
+
+### The walkie-talkie (for grown-ups)
+
+The walkie-talkie is **off** until a grown-up turns it on, separately on each device:
+
+1. On the title screen (or **Menu** inside a world) tap **Settings**, scroll to
+   **Walkie-talkie (grown-ups)** and tap its switch.
+2. Answer the multiplication question on the number pad (for example *17 × 8*). Three wrong
+   answers make it wait one minute.
+3. The first time she presses the walkie button, a card explains the microphone; tap **OK**, and
+   **Allow** if the browser asks.
+
+Turning it off is one tap on the same switch (no question). A device whose walkie is off never
+receives anyone's voice and never sends any; she just sees a small "Walkie off" badge when her
+friends use theirs. In the **Players** panel every player can **Mute** anyone for herself, and
+the player who invited can **Mute** a friend for everyone or switch on **Mute everyone**.
+
+The microphone only works on the real web address (https) or on `localhost`; browsers block it
+on plain `http://192.168…` home-network addresses. The walkie-talkie does not exist in the
+claude.ai version of the game.
 
 The in-game "Friends" (the girls you can invite from the Bag) are something else: they live in
 your own world. Real people are always "Players".
@@ -158,8 +181,18 @@ version by itself (1–3 minutes). The old version keeps running until the new o
 - **No chat.** There is no typing to other players at all: only 16 fixed friendly phrases
   ("Hi!", "Let's build!", "Thank you!", …) and dance or wave emotes. Player names go through a
   filter before others see them.
-- **No voice, no camera.** The game never uses the microphone or camera, and the server tells
-  browsers so (it sends a `Permissions-Policy` that turns them off for this site).
+- **Voice only by walkie-talkie, only with a grown-up's OK on that device.** It is off until a
+  grown-up answers a multiplication question in Settings, and each device needs its own OK to
+  talk *and* to hear (a device without it receives no voice at all). The microphone is on only
+  while the button is held (at most 15 seconds, one talker at a time) and turns off the moment
+  it is let go. Voices go live only to the players of that one game: the player who invited
+  and the friends she let in, never to someone still knocking or sent home. **Nothing is
+  recorded or stored**, on the devices or on the server, and the server does not log voices.
+  The player who invited can mute a friend or everyone; every child can mute anyone for
+  herself.
+- **No camera.** The game never uses the camera; the server's `Permissions-Policy` allows the
+  microphone for this site only (for the walkie-talkie) and turns the camera, location and
+  payments off.
 - **No accounts, no personal data.** Nobody signs up; there are no emails or passwords. Each
   device gets a random id so a friend who reloads can come back to her seat.
 - **Nothing stored on the server.** A game room exists only in the server's memory while
@@ -221,5 +254,6 @@ Automatic checks (for grown-ups who change the code):
 | Command | What it checks |
 |---|---|
 | `npm run test:net` | the multiplayer code on its own, with lost and late messages (about 2 minutes) |
+| `npm run test:walkie` | the walkie-talkie: sound coding, the server's rules (who may hear, one talker, 15 seconds, mutes) and three browsers with a pretend microphone through this same server (about 8 minutes) |
 | `npm run probe:railway` | builds the game, starts this same server on a free port, and three headless browsers (a computer, an iPad and a phone) make a code, join it through the real screens and build together; then the server is killed and started again (everyone reconnects by themselves) and finally killed for good (everyone gets a friendly "Playing together stopped." card). About 6 minutes. |
 | `npm run probe:mp` | the same game inside claude.ai (a pretend claude.ai room): every screen, knocking, building, Undo building, Send home, sleep, pets, zip lines, reloads, a new version, lost messages, and the size and speed limits. About 25 minutes. |

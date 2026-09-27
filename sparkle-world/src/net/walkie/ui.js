@@ -14,22 +14,23 @@ import { walkieSvg, WAVES_SVG, REST_SVG } from './art.js';
 import { openGate, GATE_NOTE } from './gate.js';
 import { W } from './wire.js';
 
-const RING_C = 2 * Math.PI * 46; // countdown ring circumference (r = 46 in a 100 box)
+const RING_R = 45.5; // the countdown ring, just outside the face (in a 100 box)
+const RING_C = 2 * Math.PI * RING_R;
 
 const CSS = /* css */ `
 /* ---------- the HUD button ---------- */
 .sw-wk { position: absolute; left: calc(20px + var(--sw-safe-l)); bottom: calc(20px + var(--sw-safe-b)); display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none !important; z-index: 3; }
 .sw-wk[hidden], .sw-wk-off[hidden] { display: none !important; }
 .sw-wk > * { pointer-events: auto; }
-.sw-wk-btn { position: relative; width: 108px; height: 108px; border-radius: 50%; border: 0; padding: 0; margin: 0; background: none; cursor: pointer; touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; font-family: var(--sw-font); }
+.sw-wk-btn { position: relative; width: 116px; height: 116px; border-radius: 50%; border: 0; padding: 0; margin: 0; background: none; cursor: pointer; touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; font-family: var(--sw-font); }
 .sw-wk-btn:focus { outline: none; }
 .sw-wk-btn:focus-visible .sw-wk-face { box-shadow: 0 0 0 5px var(--sw-sky), 0 10px 22px var(--sw-shadow); }
-.sw-wk-face { position: absolute; inset: 9px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 34% 28%, #FFF9DA 0%, #FFDF7E 45%, #FFC94D 100%); border: 5px solid #fff; box-shadow: 0 6px 0 rgba(58,31,77,.16), 0 10px 22px var(--sw-shadow), inset 0 -6px 0 rgba(0,0,0,.06); transition: transform .18s var(--sw-bounce), background .2s; }
-.sw-wk-face .sw-wk-art { width: 66px; height: 66px; filter: drop-shadow(0 3px 0 rgba(58,31,77,.15)); transition: transform .2s var(--sw-bounce); }
+.sw-wk-face { position: absolute; inset: 12.5%; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 34% 28%, #FFF9DA 0%, #FFDF7E 45%, #FFC94D 100%); border: 5px solid #fff; box-shadow: 0 6px 0 rgba(58,31,77,.16), 0 10px 22px var(--sw-shadow), inset 0 -6px 0 rgba(0,0,0,.06); transition: transform .18s var(--sw-bounce), background .2s; }
+.sw-wk-face .sw-wk-art { width: 72%; height: 72%; filter: drop-shadow(0 3px 0 rgba(58,31,77,.15)); transition: transform .2s var(--sw-bounce); }
 .sw-wk-btn:hover .sw-wk-face { transform: scale(1.05); }
 .sw-wk-ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); pointer-events: none; overflow: visible; }
-.sw-wk-ring circle { fill: none; stroke-width: 8; }
-.sw-wk-ring-bg { stroke: transparent; }
+.sw-wk-ring circle { fill: none; stroke-width: 7.5; }
+.sw-wk-ring-bg { stroke: transparent; filter: drop-shadow(0 2px 3px rgba(58,31,77,.25)); }
 .sw-wk-ring-fg { stroke: var(--sw-mint); stroke-linecap: round; stroke-dasharray: ${RING_C.toFixed(1)}; stroke-dashoffset: 0; opacity: 0; transition: stroke .3s; }
 .sw-wk-waves { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
 .sw-wk-waves i { position: absolute; inset: 4px; border-radius: 50%; border: 5px solid var(--sw-pink); opacity: 0; }
@@ -72,32 +73,33 @@ const CSS = /* css */ `
 @keyframes sw-wk-listen { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-3px) rotate(-6deg); } }
 @keyframes sw-wk-nope { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-7px) rotate(-5deg); } 75% { transform: translateX(7px) rotate(5deg); } }
 
+/* the life column (Basket, Pets, ...) ends above the walkie on mouse screens */
+.sw-app.sw-wk-on:not(.sw-touch-hud) .lf-hud { bottom: calc(184px + var(--sw-safe-b)); }
+@media (max-height: 520px), (max-width: 480px) { .sw-app.sw-wk-on:not(.sw-touch-hud) .lf-hud { bottom: calc(104px + var(--sw-safe-b)); } }
+
 /* the small "Walkie off" badge (friends use walkies; this device's is off) */
 .sw-wk-off { position: absolute; left: calc(20px + var(--sw-safe-l)); bottom: calc(24px + var(--sw-safe-b)); display: flex; align-items: center; gap: 6px; padding: 4px 12px 4px 4px; border-radius: 999px; background: rgba(255,255,255,.92); border: 3px solid #fff; box-shadow: 0 3px 10px var(--sw-shadow); font-family: var(--sw-font); font-size: 15px; font-weight: 700; color: #8F7BBF; cursor: pointer; z-index: 3; }
 .sw-wk-off .sw-wk-art { width: 34px; height: 34px; }
 
 /* touch screens: beside Jump (or Up / Down), where the right thumb is */
 .sw-app.sw-touch-hud .sw-wk { left: auto; right: calc(176px + var(--sw-safe-r)); bottom: calc(100px + var(--sw-safe-b)); }
-.sw-app.sw-touch-hud .sw-wk-btn { width: 100px; height: 100px; }
-.sw-app.sw-touch-hud .sw-wk-face .sw-wk-art { width: 60px; height: 60px; }
+.sw-app.sw-touch-hud .sw-wk-btn { width: 108px; height: 108px; }
 .sw-app.sw-touch-hud .sw-wk-off { left: auto; right: calc(180px + var(--sw-safe-r)); bottom: calc(124px + var(--sw-safe-b)); }
 /* phones held upright: in the middle above the hotbar, between Bag and Undo; the label on top */
 @media (max-width: 480px) {
-  .sw-wk, .sw-app.sw-touch-hud .sw-wk { left: 50%; right: auto; transform: translateX(-50%); bottom: calc(58px + var(--sw-safe-b)); flex-direction: column-reverse; gap: 2px; }
-  .sw-wk-btn, .sw-app.sw-touch-hud .sw-wk-btn { width: 92px; height: 92px; }
-  .sw-wk-face .sw-wk-art, .sw-app.sw-touch-hud .sw-wk-face .sw-wk-art { width: 54px; height: 54px; }
+  .sw-wk, .sw-app.sw-touch-hud .sw-wk { left: 50%; right: auto; transform: translateX(-50%); bottom: calc(60px + var(--sw-safe-b)); flex-direction: column-reverse; gap: 2px; }
+  .sw-wk-btn, .sw-app.sw-touch-hud .sw-wk-btn { width: 100px; height: 100px; }
   .sw-wk-label { font-size: 14px; max-width: 170px; }
   .sw-wk-secs { min-width: 32px; height: 32px; line-height: 24px; font-size: 16px; }
   .sw-wk-off, .sw-app.sw-touch-hud .sw-wk-off { left: 50%; right: auto; transform: translateX(-50%); bottom: calc(76px + var(--sw-safe-b)); }
 }
-/* phones held sideways: left of the tools column, above the hotbar */
+/* phones held sideways: above the right end of the hotbar, left of Undo; the label on top */
 @media (max-height: 520px) and (min-width: 481px) {
-  .sw-wk, .sw-app.sw-touch-hud .sw-wk { left: auto; right: calc(150px + var(--sw-safe-r)); bottom: calc(66px + var(--sw-safe-b)); gap: 2px; }
-  .sw-wk-btn, .sw-app.sw-touch-hud .sw-wk-btn { width: 84px; height: 84px; }
-  .sw-wk-face .sw-wk-art, .sw-app.sw-touch-hud .sw-wk-face .sw-wk-art { width: 48px; height: 48px; }
+  .sw-wk, .sw-app.sw-touch-hud .sw-wk { left: auto; right: calc(224px + var(--sw-safe-r)); bottom: calc(70px + var(--sw-safe-b)); gap: 2px; flex-direction: column-reverse; }
+  .sw-wk-btn, .sw-app.sw-touch-hud .sw-wk-btn { width: 92px; height: 92px; }
   .sw-wk-label { font-size: 13px; max-width: 150px; }
   .sw-wk-secs { min-width: 30px; height: 30px; line-height: 22px; font-size: 15px; }
-  .sw-wk-off, .sw-app.sw-touch-hud .sw-wk-off { left: auto; right: calc(150px + var(--sw-safe-r)); bottom: calc(80px + var(--sw-safe-b)); }
+  .sw-wk-off, .sw-app.sw-touch-hud .sw-wk-off { left: auto; right: calc(224px + var(--sw-safe-r)); bottom: calc(80px + var(--sw-safe-b)); }
 }
 
 /* ---------- the speaking badge over a friend's avatar ---------- */
@@ -117,6 +119,7 @@ const CSS = /* css */ `
 .sw-wk-card .sw-wk-small { font-size: 15px; font-weight: 600; color: var(--sw-lav); margin: -6px 0 16px; line-height: 1.3; }
 
 /* ---------- Players panel ---------- */
+.sw-wk-badgeline { display: flex; margin-top: 3px; }
 .sw-wk-badge { flex: none; display: inline-flex; align-items: center; gap: 2px; height: 26px; padding: 0 8px 0 2px; border-radius: 999px; background: #FFF4D1; color: #7A5B00; font-size: 12px; font-weight: 700; }
 .sw-wk-badge .sw-wk-art { width: 24px; height: 24px; }
 .sw-wk-badge .sw-wk-wave { width: 18px; height: 18px; color: var(--sw-pink); animation: sw-wk-pulse .7s ease-in-out infinite; }
@@ -154,13 +157,14 @@ export class WalkieUI {
     const btn = ui.el('button', 'sw-wk-btn');
     btn.type = 'button';
     btn.setAttribute('aria-label', 'Walkie-talkie: hold to talk');
-    btn.innerHTML = `<svg class="sw-wk-ring" viewBox="0 0 100 100" aria-hidden="true"><circle class="sw-wk-ring-bg" cx="50" cy="50" r="46"/><circle class="sw-wk-ring-fg" cx="50" cy="50" r="46"/></svg>`;
     const waves = ui.el('span', 'sw-wk-waves');
     waves.append(ui.el('i'), ui.el('i'), ui.el('i'));
     const face = ui.el('span', 'sw-wk-face');
     face.innerHTML = walkieSvg();
     const secs = ui.el('span', 'sw-wk-secs', '15');
-    btn.append(waves, face, secs);
+    btn.append(waves, face);
+    btn.insertAdjacentHTML('beforeend', `<svg class="sw-wk-ring" viewBox="0 0 100 100" aria-hidden="true"><circle class="sw-wk-ring-bg" cx="50" cy="50" r="${RING_R}"/><circle class="sw-wk-ring-fg" cx="50" cy="50" r="${RING_R}"/></svg>`);
+    btn.appendChild(secs);
     const label = ui.el('span', 'sw-wk-label');
     root.append(btn, label);
     ui.hudLayer.appendChild(root);
@@ -226,13 +230,15 @@ export class WalkieUI {
     const v = this.wk.view();
     const g = this.game;
     const show = v.show === 'button';
-    if (this.root.hidden === show) this.root.hidden = !show;
+    if (this.root.hidden === show) {
+      this.root.hidden = !show;
+      g.container.classList.toggle('sw-wk-on', show);
+    }
     const badge = v.show === 'badge';
     if (this.off.hidden === badge) this.off.hidden = !badge;
     if (show) this._paint(v);
     this._speakBadges(v);
     if (!show && this.root.dataset.state !== 'idle') this.root.dataset.state = 'idle';
-    void g;
   }
 
   _paint(v) {
@@ -319,7 +325,7 @@ export class WalkieUI {
       }
       if (f) e.style.setProperty('--c', f.color);
       const st = f ? f.st : 'w';
-      const top = st === 'z' ? 1.55 : st === 's' || st === 'h' ? 2.25 : 2.8;
+      const top = st === 'z' ? 1.5 : st === 's' || st === 'h' ? 2.15 : 2.62;
       const s = f && f.visible && !g.paused ? toScreen(g, f.pos.x, f.pos.y + top, f.pos.z, this._at) : null;
       if (!s) {
         e.hidden = true;
@@ -337,7 +343,8 @@ export class WalkieUI {
   }
 
   clearSpeak() {
-    for (const e of this.speakEls.values()) e.hidden = true;
+    for (const e of this.speakEls.values()) e.remove();
+    this.speakEls.clear();
   }
 
   // ---------- the microphone card ----------
@@ -466,24 +473,37 @@ export class WalkieUI {
     const nameLine = row.querySelector('.sw-net-who-name');
     const badge = ui.el('span', 'sw-wk-badge');
     badge.dataset.peer = pl.peer || '';
+    const paintBadge = () => {
+      const hostMuted = wk.isHostMuted(pl);
+      const mine = !pl.you && wk.isLocalMuted(pl);
+      badge.className = 'sw-wk-badge';
+      if (!on) {
+        badge.classList.add('sw-wk-badge-off');
+        badge.innerHTML = walkieSvg({ off: true });
+        badge.appendChild(ui.el('span', '', 'walkie off'));
+      } else if (hostMuted || mine) {
+        badge.classList.add('sw-wk-badge-muted');
+        badge.innerHTML = walkieSvg({ off: true });
+        badge.appendChild(ui.el('span', '', 'muted'));
+      } else {
+        badge.innerHTML = walkieSvg();
+        if (!pl.you && wk.floorBy === pl.peer) {
+          badge.insertAdjacentHTML('beforeend', WAVES_SVG);
+          badge.classList.add('sw-wk-badge-talk');
+          badge.appendChild(ui.el('span', '', 'talking'));
+        } else badge.appendChild(ui.el('span', '', 'walkie'));
+      }
+    };
+    paintBadge();
     const hostMuted = wk.isHostMuted(pl);
-    if (!on) {
-      badge.classList.add('sw-wk-badge-off');
-      badge.innerHTML = walkieSvg({ off: true });
-      badge.appendChild(ui.el('span', '', 'walkie off'));
-    } else if (hostMuted) {
-      badge.classList.add('sw-wk-badge-muted');
-      badge.innerHTML = walkieSvg({ off: true });
-      badge.appendChild(ui.el('span', '', 'muted'));
-    } else {
-      badge.innerHTML = walkieSvg();
-      if (!pl.you && wk.floorBy === pl.peer) {
-        badge.insertAdjacentHTML('beforeend', WAVES_SVG);
-        badge.classList.add('sw-wk-badge-talk');
-        badge.appendChild(ui.el('span', '', 'talking'));
-      } else badge.appendChild(ui.el('span', '', 'walkie'));
-    }
-    if (nameLine) nameLine.appendChild(badge);
+    const who = row.querySelector('.sw-net-who');
+    if (who) {
+      const line = ui.el('div', 'sw-wk-badgeline');
+      line.appendChild(badge);
+      const sub = who.querySelector('.sw-net-who-sub');
+      if (sub && sub.nextSibling) who.insertBefore(line, sub.nextSibling);
+      else who.appendChild(line);
+    } else if (nameLine) nameLine.appendChild(badge);
     if (pl.you) return;
     // Mute: the host's mutes are for everyone; a friend's are for herself
     const forAll = isHostView;
@@ -508,6 +528,7 @@ export class WalkieUI {
         b.querySelector('svg').outerHTML = icon2(now ? 'sound' : 'mute');
         b.querySelector('.sw-btn-label').textContent = now ? 'Unmute' : 'Mute';
         b.setAttribute('aria-label', now ? 'Unmute' : 'Mute');
+        paintBadge();
       },
     });
     b.dataset.peer = pl.peer || '';

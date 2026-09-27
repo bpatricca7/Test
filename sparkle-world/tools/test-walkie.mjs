@@ -313,6 +313,8 @@ async function main() {
     const juneUI = await until(june, () => ({ btn: !document.querySelector('.sw-wk').hidden, off: !document.querySelector('.sw-wk-off').hidden }), null, 1000);
     const juneBadge = await until(june, () => !document.querySelector('.sw-wk-off').hidden, null, 8000, 150);
     check(!juneUI.btn && !!juneBadge, `June (walkie off): no walkie button, only the small "Walkie off" badge`);
+    await settle(june.page, 400);
+    await shot(june, 'hud-walkie-off-phone');
     const inGame = await until(rosie, () => window.__game.debug.walkie.state().inGame, null, 8000, 150);
     check(!!inGame, 'Rosie: the server counts her in Lily\'s game (voice on)');
     check(!(await W(june)).declared, 'June never told the server "voice on"');
@@ -332,16 +334,15 @@ async function main() {
     const t0 = Date.now();
     const talking = await until(lily, () => window.__game.debug.walkie.state().talk === 'talking', null, 4000, 50);
     check(!!talking, 'Lily: talking (the server gave her the walkie)');
-    check((await W(lily)).micLive === true, 'Lily: the microphone is open while she holds the button');
-    await sleep(900);
+    const micOn = await until(lily, () => window.__game.debug.walkie.state().micLive, null, 3000, 50);
+    check(!!micOn, 'Lily: the microphone is open while she holds the button');
+    await sleep(Math.max(0, 1000 - (Date.now() - t0)));
     const rosieSees = await until(rosie, () => {
       const s = window.__game.debug.walkie.state();
       const b = document.querySelector('.sw-wk-speak:not([hidden])');
       return s.view.state === 'busy' && b ? document.querySelector('.sw-wk-label').textContent : null;
     }, null, 3000, 100);
     check(/Lily is talking/.test(rosieSees || ''), `Rosie sees "${rosieSees}" and a speaking badge over Lily`);
-    await shot(lily, 'hud-talking-desktop');
-    await shot(rosie, 'speaking-badge-ipad');
     await sleep(Math.max(0, 2000 - (Date.now() - t0)));
     await release();
     const held = Date.now() - t0;
@@ -377,10 +378,16 @@ async function main() {
     check(relayed === txBytes, `server relayed exactly Lily's ${txBytes} B once (to Rosie only): ${relayed} B`);
     numbers.serverAfterFirstPress = { framesIn: sAfter.voice.framesIn, bytesIn: sAfter.voice.bytesIn, bytesRelayed: sAfter.voice.bytesRelayed };
 
-    // ----- two presses at once: the floor -----
-    log('two press at once');
+    // ----- pictures while Lily talks -----
+    await sleep(900);
     release = await hold(lily);
     await until(lily, () => window.__game.debug.walkie.state().talk === 'talking', null, 4000, 50);
+    await sleep(1200);
+    await shot(lily, 'hud-talking-desktop');
+    await shot(rosie, 'speaking-badge-ipad');
+
+    // ----- someone presses while Lily talks -----
+    log('Rosie presses while Lily talks');
     await until(rosie, () => window.__game.debug.walkie.state().floorBy !== null, null, 3000, 50);
     const rb = await WS(rosie);
     const rRelease = await hold(rosie);
@@ -391,7 +398,33 @@ async function main() {
     await rRelease();
     await sleep(400);
     await release();
-    await sleep(1000);
+    await sleep(1200);
+
+    // ----- two press at the same moment: the server picks one -----
+    log('Lily and Rosie press at the same moment');
+    const s2a = await serverStats(port);
+    const [relL, relR] = await Promise.all([hold(lily), hold(rosie)]);
+    await sleep(1500);
+    const both = [await W(lily), await W(rosie)];
+    const talkers = both.filter((x) => x.talk === 'talking').length;
+    const s2b = await serverStats(port);
+    const refused = (s2b.voice.busy - s2a.voice.busy) + ((await WS(lily)).tx.busy + (await WS(rosie)).tx.busy);
+    check(talkers === 1, `exactly one of them talks (${both.map((x) => x.talk).join(' / ')})`);
+    check(refused > 0 && both.filter((x) => x.micLive).length === 1, `the other one heard "busy" (server busy answers: ${s2b.voice.busy - s2a.voice.busy}) and has no microphone open`);
+    await relL();
+    await relR();
+    await sleep(1200);
+    // the exact same millisecond (scheduled in both pages): the server decides, one gets "busy"
+    const s3a = await serverStats(port);
+    const at = await game(lily, () => Date.now() + 700);
+    await Promise.all([lily, rosie].map((pl) => game(pl, (t) => { setTimeout(() => window.__game.debug.walkie.press('race'), Math.max(0, t - Date.now())); }, at)));
+    await sleep(2200);
+    const tie = [await W(lily), await W(rosie)];
+    const s3b = await serverStats(port);
+    check(tie.filter((x) => x.talk === 'talking').length === 1 && s3b.voice.busy - s3a.voice.busy === 1, `a tie at the same millisecond: the server gives the walkie to one (${tie.map((x) => x.talk).join(' / ')}) and answers "busy" to the other (${s3b.voice.busy - s3a.voice.busy})`);
+    check(tie.filter((x) => x.micLive).length === 1, 'only the talker\'s microphone is open');
+    for (const pl of [lily, rosie]) await game(pl, () => window.__game.debug.walkie.release('race'));
+    await sleep(1200);
 
     // ----- Rosie talks (iPad); Lily hears -----
     log('Rosie talks from the iPad');
@@ -528,6 +561,19 @@ async function main() {
     await shot(june, 'speaking-badge-phone');
     await release();
     await sleep(500);
+    // other screen shapes: a phone held sideways, an iPad held upright
+    for (const [pl, vp, name] of [[june, { width: 844, height: 390 }, 'hud-talking-phone-sideways'], [rosie, { width: 768, height: 1024 }, 'hud-talking-ipad-portrait']]) {
+      await pl.page.setViewportSize(vp);
+      await settle(pl.page, 900);
+      await sleep(900);
+      release = await hold(pl);
+      await until(pl, () => window.__game.debug.walkie.state().talk === 'talking', null, 4000, 50);
+      await sleep(1000);
+      await shot(pl, name);
+      await release();
+      await pl.page.setViewportSize(pl.viewport);
+      await settle(pl.page, 600);
+    }
     await press(june, '.sw-hud-tr button.sw-playersbtn');
     await settle(june.page, 700);
     await shot(june, 'players-phone');
