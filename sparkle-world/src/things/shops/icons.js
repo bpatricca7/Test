@@ -43,7 +43,6 @@ export function scoopSvg(f, size = 48) {
   return `<svg viewBox="0 0 48 48" width="${size}" height="${size}" aria-hidden="true">
     <ellipse cx="24" cy="42" rx="14" ry="3.2" fill="rgba(58,31,77,.12)"/>
     <path d="M7 30c0-10 7.6-18 17-18s17 8 17 18c0 2-1.6 3-3 2.2-1 2.6-4 2.8-5.2.8-1.4 2.6-4.8 2.6-6 0-1.4 2.6-4.8 2.6-6 0-1.2 2-4.2 1.8-5.2-.8C8.6 33 7 32 7 30Z" fill="${f.color}" stroke="rgba(58,31,77,.18)" stroke-width="1.4"/>
-    <path d="M14 30c-1 3 0 6 2 7.6h16c2-1.6 3-4.6 2-7.6Z" fill="${f.light}" opacity=".0"/>
     <ellipse cx="17" cy="19" rx="5" ry="3" fill="#fff" opacity=".55" transform="rotate(-24 17 19)"/>
     ${bits.join('')}
   </svg>`;

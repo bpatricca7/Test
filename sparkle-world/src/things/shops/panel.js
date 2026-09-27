@@ -322,7 +322,7 @@ export function installShopPanel(game, { treats, coins }) {
     say(pick(keeper().buy));
     game.events.emit('shop:buy', { item: key, price, shop: st.kind, name: FOOD[key].name });
     if (game.award) game.award('sweet_tooth');
-    showSheet(key, n);
+    if (sheetEl) showSheet(key, n); // (not before the panel was first built: debug buys)
     refreshCounts();
     return true;
   };

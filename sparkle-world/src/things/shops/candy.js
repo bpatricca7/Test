@@ -16,7 +16,7 @@ export const CANDY = [
   { key: 'treat_cotton_candy_blue', name: 'Blue Cotton Candy', plural: 'Blue Cotton Candies', price: 5, color: '#A8DDFF' },
   { key: 'treat_gummy_bears', name: 'Gummy Bears', plural: 'Gummy Bears', price: 4, color: '#FF6B8A' },
   { key: 'treat_jelly_beans', name: 'Jelly Beans', plural: 'Jelly Beans', price: 3, color: '#9BE58A' },
-  { key: 'treat_chocolate_bar', name: 'Chocolate Bar', plural: 'Chocolate Bars', price: 5, color: '#8B5A3C', hand: { rot: [-1.2, 0, 0], y: 0.02, s: 1 } },
+  { key: 'treat_chocolate_bar', name: 'Chocolate Bar', plural: 'Chocolate Bars', price: 5, color: '#8B5A3C', hand: { rot: [0, -Math.PI / 2, -Math.PI / 2], y: 0.1, s: 1 } },
   { key: 'treat_candy_cane', name: 'Candy Cane', plural: 'Candy Canes', price: 3, color: '#FF4F6D' },
   { key: 'treat_gumdrops', name: 'Gumdrops', plural: 'Gumdrops', price: 3, color: '#B892FF' },
   { key: 'treat_rock_candy', name: 'Rock Candy', plural: 'Rock Candies', price: 7, color: '#D6B8FF' },
@@ -248,12 +248,7 @@ export const CANDY_DRAW = {
     for (const [c, stripe, x, y, z, ry] of pieces) wrappedSweet(k, c, stripe, x, y, z, ry, '#FFF8EC');
   },
   treat_candy_apple(k) {
-    // on a pink paper doily, stick up (she holds it upside... by the stick, see hand)
-    k.cyl(0.15, 0.01, '#FFD1E6', 0, 0, 0, 20);
-    for (let i = 0; i < 16; i++) {
-      const a = (i / 16) * Math.PI * 2;
-      k.ball(0.02, '#FFE3F0', Math.cos(a) * 0.15, 0.006, Math.sin(a) * 0.15, 6, [1, 0.4, 1]);
-    }
+    // resting on its sprinkly bottom, stick up (in her hand it turns over: stick down)
     k.ball(0.115, '#E8203F', 0, 0.12, 0, 16, [1, 0.92, 1]);
     k.ball(0.1, '#FF3B5C', 0, 0.13, 0, 14);
     k.ball(0.03, '#FFB3C0', -0.05, 0.18, 0.06, 8);
