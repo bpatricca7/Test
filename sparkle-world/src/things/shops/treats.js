@@ -153,6 +153,7 @@ export function installTreats(game) {
   // ---------- holding ----------
 
   let heldKey = null, heldObj = null, heldAv = null; // what is in her hand, on which avatar
+  let seenAv = null; // the avatar the last sync looked at (a new one after a world load)
   let eating = null; // { key, t, dur, bites, obj }
   const _v = new THREE.Vector3();
 
@@ -179,6 +180,7 @@ export function installTreats(game) {
   function sync() {
     dirty = false;
     const av = avatar();
+    seenAv = av;
     if (eating) return;
     const k = canHold(av) ? wanted() : null;
     if (k === heldKey && av === heldAv) return;
@@ -311,7 +313,7 @@ export function installTreats(game) {
     update(dt) {
       if (eating) tickEating(dt);
       const av = avatar();
-      if (dirty || av !== heldAv || (heldKey && basketCount(game, heldKey) <= 0)) sync();
+      if (dirty || av !== seenAv || (heldKey && basketCount(game, heldKey) <= 0)) sync();
       showHud(!!heldKey && !eating && game.mode === 'play');
     },
     onWorldUnload() {

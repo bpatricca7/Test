@@ -495,6 +495,13 @@ async function desktopPass(browser) {
     g.player.teleport(f.x, g.world.heightAt(Math.floor(f.x), Math.floor(f.z)) + 1.01, f.z);
     g.player.yaw = Math.atan2(t.x - f.x, t.z - f.z);
   }, candy);
+  // Mia comes over now (her Best Friends Forever sticker pops while Biscuit eats)
+  const fid = await page.evaluate(() => {
+    const g = window.__game, p = g.player.position;
+    const a = g.player.yaw + 1.1;
+    return g.debug.friends.invite('mia', p.x + Math.sin(a) * 2.8, p.y, p.z + Math.cos(a) * 2.8);
+  });
+  await page.evaluate((id) => { const g = window.__game; g.debug.friends.setMode(id, 'stay'); const f = g.friends.byId(id); f.stop(); f.attention = 5; }, fid);
   await page.evaluate((id) => {
     const g = window.__game, pet = g.pets.byId(id), p = g.player.position;
     g.debug.pets.setMode(id, 'stay');
@@ -523,13 +530,16 @@ async function desktopPass(browser) {
   await shot(page, '16-feed-pet', P);
 
   // ----- give a friend a treat (her bubble -> Treat -> the macarons) -----
-  const fid = await page.evaluate(() => {
-    const g = window.__game, p = g.player.position;
-    const a = g.player.yaw + 0.7;
-    return g.debug.friends.invite('mia', p.x + Math.sin(a) * 2.8, p.y, p.z + Math.cos(a) * 2.8);
-  });
-  await page.evaluate((id) => { const g = window.__game; g.debug.friends.setMode(id, 'stay'); const f = g.friends.byId(id); f.stop(); f.attention = 5; }, fid);
-  await settle(page, 1500);
+  await until(page, () => !document.querySelector('.sw-stkpop') && window.__game.coins.shown === window.__game.profile.coins, null, 20000);
+  await page.evaluate((id) => {
+    const g = window.__game, f = g.friends.byId(id), p = g.player.position;
+    f.stop(); f.attention = 5;
+    g.player.yaw = Math.atan2(f.pos.x - p.x, f.pos.z - p.z);
+    g.cameraRig.yaw = g.player.yaw;
+    g.cameraRig.pitch = 0.25;
+    g.cameraRig.distance = 3.4;
+  }, fid);
+  await settle(page, 500);
   await useTool(page, 'Hand');
   check(await tapBody(page, 'friend', fid), 'Hand-tap on Mia');
   await page.waitForSelector('.pl-bubble.pl-on', { timeout: 5000 });
@@ -541,15 +551,21 @@ async function desktopPass(browser) {
   check(await page.evaluate((id) => { const f = window.__game.friends.byId(id); return !!f.food && f.food.name === 'treat:treat_macarons'; }, fid), 'she holds our macarons model (game.treats.model)');
   check(await count(page, 'treat_macarons') === 0, 'from the basket');
   await page.evaluate((id) => {
-    const g = window.__game, f = g.friends.byId(id);
-    g.cameraRig.yaw = Math.atan2(f.pos.x - g.player.position.x, f.pos.z - g.player.position.z) - 0.25;
-    g.cameraRig.pitch = 0.05;
-    g.cameraRig.distance = 2.2;
+    const g = window.__game, f = g.friends.byId(id), p = g.player.position;
+    g.cameraRig.yaw = Math.atan2(f.pos.x - p.x, f.pos.z - p.z) + 0.75;
+    g.cameraRig.pitch = 0.1;
+    g.cameraRig.distance = 3.2;
   }, fid);
-  await settle(page, 600);
+  await settle(page, 700);
   await shot(page, '17-friend-treat', P);
 
   // ----- treats on a table (a candy and a build-your-own ice cream) -----
+  // Biscuit and Mia step aside (so nothing stands in front of the table)
+  await page.evaluate(([pid, fid]) => {
+    const g = window.__game, p = g.player.position, pet = g.pets.byId(pid), f = g.friends.byId(fid);
+    pet.pos.set(p.x - 3, p.y, p.z - 3);
+    f.pos.set(p.x + 3, p.y, p.z - 3);
+  }, [petId, fid]);
   const table = await placeNear(page, 'table_long', 0, 3);
   check(!!table, 'a table');
   await standBefore(page, table.x + 0.5, table.y, table.z + 0.5, { dist: -2.6, pitch: 0.55, camDist: 3 });
