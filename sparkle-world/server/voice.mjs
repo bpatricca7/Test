@@ -2,13 +2,19 @@
 //
 // Voices go live, through this server, only:
 //   - within ONE room (a game code), and there only within one game: the host's player plus
-//     the friends the host let in (the host's presence `adm`, read from the room at the moment
-//     each frame arrives, so a friend who is sent home stops hearing at once);
-//   - to pages that said "voice on" ({t:'v', k:'on'}): each device needs its own grown-up's
-//     OK (the page only says "on" after the grown-up check), to talk AND to hear. A page that
-//     never said "on" receives no voice byte at all;
+//     the friends the host let in with a tap (the host's presence `adm`, read from the room
+//     at the moment each frame arrives, so a friend who is sent home stops hearing at once);
+//   - to pages that said "voice on" ({t:'v', k:'on'}) AND show it: their room presence has
+//     wk:1, the "walkie" badge every player (and the host) sees next to them. Each device
+//     needs its own grown-up's OK (the page only says "on" after the grown-up check), to talk
+//     AND to hear. A page that did not say "on", or whose badge says "walkie off", receives no
+//     voice byte at all and cannot talk, so the badges show exactly who can hear;
 //   - one talker at a time per game (the "floor"), at most 15 s per press (by time and by
-//     audio length), with per-talker byte and frame rate limits;
+//     audio length), with per-talker byte and frame rate limits; a friend who heard "busy"
+//     gets the next turn before the last talker can press again, and a press the server cut
+//     (15 s, silence) waits a little longer;
+//   - frames that are not relayed (bad header, no floor, over the rate) still cost the sender a
+//     budget; past it the connection is closed (send.kick), like the JSON rate limit;
 //   - never to someone muted: the host's presence `wm` = [all 0/1, [peers]] ("Mute everyone" /
 //     a muted friend) silences talkers here too, and a listener's own mutes ({k:'mute'}) keep
 //     those voices from being sent to her.
@@ -41,14 +47,17 @@ class Link {
     this.relay = relay;
     this.name = name;
     this.peer = peer;
-    this.send = send; // { json(obj), binary(bytes) }
+    this.send = send; // { json(obj), binary(bytes) -> false when dropped, kick() }
     this.on = false;
     this.host = null;
     this.mutes = new Set();
     this.closed = false;
-    this.lastEndAt = -Infinity;
+    this.coolUntil = -Infinity;
+    this.kicked = false;
     this.bytes = new Bucket(relay.L.BYTES_PER_S, relay.L.BYTES_BURST, now);
     this.frames = new Bucket(relay.L.FRAMES_PER_S, relay.L.FRAMES_BURST, now);
+    this.junk = new Bucket(relay.L.JUNK_PER_S, relay.L.JUNK_BURST, now);
+    this.junkBytes = new Bucket(relay.L.JUNK_BYTES_PER_S, relay.L.JUNK_BYTES_BURST, now);
     this.c = { framesIn: 0, bytesIn: 0, framesOut: 0, bytesOut: 0 };
   }
 
@@ -84,10 +93,11 @@ export class VoiceRelay {
     this.L = { ...W, ...limits };
     this.rooms = new Map(); // room name -> Set<Link>
     this.floors = new Map(); // room name + '\n' + host peer -> floor
+    this.after = new Map(); // same key -> { by, until, waiting } (who goes next after a press)
     this.timer = null;
     this.counts = {
       links: 0, framesIn: 0, bytesIn: 0, framesRelayed: 0, bytesRelayed: 0,
-      grants: 0, busy: 0, denied: 0, bad: 0, rateDropped: 0, noFloor: 0,
+      grants: 0, busy: 0, denied: 0, bad: 0, rateDropped: 0, noFloor: 0, kicked: 0, notShown: 0,
       cuts: { cap: 0, idle: 0, quiet: 0, muted: 0, group: 0, off: 0 },
     };
   }
@@ -125,6 +135,7 @@ export class VoiceRelay {
         if (why) this._release(fl, why);
       }
     }
+    for (const [key, af] of Array.from(this.after)) if (now >= af.until) this.after.delete(key);
   }
 
   stats() {
@@ -151,6 +162,15 @@ export class VoiceRelay {
     return room ? room.members.get(peer) || null : null;
   }
 
+  /**
+   * Does `peer` show its walkie as on (presence wk:1, the badge everyone sees)? Read from the
+   * room at every use, like `adm`; anything else (never set, cleared, reshaped) is "off".
+   */
+  _shown(name, peer) {
+    const m = this._member(name, peer);
+    return !!(m && m.state && m.state.wk === 1);
+  }
+
   /** Is `peer` a player of the game `host` runs in room `name` (the host, or let in by her)? */
   _inGame(name, host, peer) {
     if (!host || !this._member(name, peer)) return false;
@@ -173,7 +193,7 @@ export class VoiceRelay {
 
   /** Why this link may not talk now (null = it may). */
   _talkBlock(l) {
-    if (!l.on) return 'off';
+    if (!l.on || !this._shown(l.name, l.peer)) return 'off';
     if (!this._inGame(l.name, l.host, l.peer)) return 'group';
     const m = this._hostMute(l.name, l.host);
     if (m.all) return 'quiet';
@@ -186,7 +206,7 @@ export class VoiceRelay {
     const set = this.rooms.get(l.name);
     if (!set) return out;
     for (const o of set) {
-      if (o.on && !o.closed && o.host === l.host && this._inGame(o.name, o.host, o.peer)) out.push(o);
+      if (o.on && !o.closed && o.host === l.host && this._shown(o.name, o.peer) && this._inGame(o.name, o.host, o.peer)) out.push(o);
     }
     return out;
   }
@@ -236,6 +256,7 @@ export class VoiceRelay {
         const why = this._talkBlock(l);
         if (why) {
           this.counts.denied++;
+          if (why === 'off' && l.on) this.counts.notShown++; // said "on" but shows "walkie off"
           this._json(l, { t: 'v', k: 'no', why });
           return;
         }
@@ -243,6 +264,7 @@ export class VoiceRelay {
         const fl = this.floors.get(key);
         if (fl && fl.link !== l) {
           this.counts.busy++;
+          fl.waiting.add(l.peer); // she goes next (see _release)
           this._json(l, { t: 'v', k: 'busy', by: fl.link.peer });
           return;
         }
@@ -250,12 +272,13 @@ export class VoiceRelay {
           this._json(l, { t: 'v', k: 'go' });
           return;
         }
-        if (now - l.lastEndAt < this.L.COOLDOWN_MS) {
+        if (now < l.coolUntil || this._othersFirst(l, key, now)) {
           this.counts.denied++;
           this._json(l, { t: 'v', k: 'no', why: 'wait' });
           return;
         }
-        this.floors.set(key, { key, link: l, since: now, lastAt: now, frames: 0, samples: 0, bytes: 0 });
+        this.after.delete(key);
+        this.floors.set(key, { key, link: l, since: now, lastAt: now, frames: 0, samples: 0, bytes: 0, waiting: new Set() });
         this.counts.grants++;
         this._json(l, { t: 'v', k: 'go' });
         this._tellGroup(l, { t: 'v', k: 'talk', by: l.peer });
@@ -263,6 +286,17 @@ export class VoiceRelay {
       }
       default:
     }
+  }
+
+  /**
+   * Fairness: right after a press, a friend who heard "busy" during it goes first; the last
+   * talker waits (PRIORITY_MS) while such a friend is still a voice-on player of the game.
+   */
+  _othersFirst(l, key, now) {
+    const af = this.after.get(key);
+    if (!af || now >= af.until || af.by !== l.peer) return false;
+    for (const o of this._group(l)) if (o !== l && af.waiting.has(o.peer) && !this._talkBlock(o)) return true;
+    return false;
   }
 
   _leaveFloor(l, why) {
@@ -275,7 +309,12 @@ export class VoiceRelay {
     if (this.floors.get(fl.key) !== fl) return;
     this.floors.delete(fl.key);
     const l = fl.link;
-    l.lastEndAt = this.now();
+    const now = this.now();
+    // the same talker may press again after a short pause; a longer one after a cut
+    l.coolUntil = now + (why === 'cap' || why === 'idle' ? this.L.CUT_COOLDOWN_MS : this.L.COOLDOWN_MS);
+    fl.waiting.delete(l.peer);
+    if (fl.waiting.size) this.after.set(fl.key, { by: l.peer, until: now + this.L.PRIORITY_MS, waiting: fl.waiting });
+    else this.after.delete(fl.key);
     if (why !== 'end') {
       if (this.counts.cuts[why] !== undefined) this.counts.cuts[why]++;
       if (!l.closed) this._json(l, { t: 'v', k: 'cut', why });
@@ -293,6 +332,7 @@ export class VoiceRelay {
     const h = readHeader(buf);
     if (!h || len > this.L.MAX_FRAME_BYTES || h.samples > this.L.MAX_FRAME_SAMPLES) {
       this.counts.bad++;
+      this._junk(l, now, len);
       return;
     }
     l.c.framesIn++;
@@ -302,10 +342,12 @@ export class VoiceRelay {
     const fl = this.floors.get(this._floorKey(l));
     if (!l.on || !fl || fl.link !== l) {
       this.counts.noFloor++;
+      this._junk(l, now, len);
       return;
     }
     if (!l.frames.take(now) || !l.bytes.take(now, len)) {
       this.counts.rateDropped++;
+      this._junk(l, now, len);
       return;
     }
     const why = this._talkBlock(l);
@@ -317,10 +359,13 @@ export class VoiceRelay {
       this._release(fl, 'cap');
       return;
     }
-    fl.frames++;
+    // a frame with (almost) no audio is silence: it does not keep the floor
+    if (h.samples >= this.L.ACTIVE_SAMPLES) {
+      fl.frames++;
+      fl.lastAt = now;
+    }
     fl.samples += h.samples;
     fl.bytes += len;
-    fl.lastAt = now;
     for (const o of this._group(l)) {
       if (o === l || o.mutes.has(l.peer)) continue;
       try {
@@ -334,6 +379,17 @@ export class VoiceRelay {
       this.counts.bytesRelayed += len;
     }
     if (h.flags & F_END) this._release(fl, 'end');
+  }
+
+  /** A frame that was not relayed: it costs the sender; past the budget she is disconnected. */
+  _junk(l, now, len) {
+    if (l.junk.take(now) && l.junkBytes.take(now, len)) return;
+    if (l.kicked) return;
+    l.kicked = true;
+    this.counts.kicked++;
+    try {
+      l.send.kick?.();
+    } catch {}
   }
 
   _close(l) {

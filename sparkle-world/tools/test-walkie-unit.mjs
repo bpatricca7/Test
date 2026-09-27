@@ -1,11 +1,14 @@
 // Walkie-talkie unit tests (no browser): the ADPCM codec round trip (SNR), the resampler,
 // the frame format, and the relay (server/voice.mjs) over the real room logic
-// (server/rooms.mjs): voice-on gating, "only players of this game", floor arbitration, the
-// 15 s cap (time and audio length), idle timeouts, rate / size limits, host mutes, kicks,
-// listener mutes. Run by tools/test-walkie.mjs (or on its own: node tools/test-walkie-unit.mjs).
+// (server/rooms.mjs): voice-on gating (the "on" frame AND the visible presence wk:1), "only
+// players of this game", floor arbitration and fairness, the 15 s cap (time and audio length),
+// idle timeouts, rate / size limits and the junk budget, host mutes, kicks, listener mutes; the
+// playback leveller; the grown-up check's saved wrong answers. Run by tools/test-walkie.mjs
+// (or on its own: node tools/test-walkie-unit.mjs).
 
 import { W, F_START, F_END, packFrame, readHeader, frameData } from '../src/net/walkie/wire.js';
 import { AdpcmEncoder, decodeAdpcm, Downsampler } from '../src/net/walkie/adpcm.js';
+import { levelFrame, LEVEL } from '../src/net/walkie/player.js';
 import { RoomRegistry } from '../server/rooms.mjs';
 import { VoiceRelay } from '../server/voice.mjs';
 
@@ -120,6 +123,58 @@ export async function runUnit({ check, log = console.log }) {
     check(readHeader(new Uint8Array(5)) === null, 'a frame shorter than its header is refused');
   }
 
+  // ---------- the playback leveller ----------
+  {
+    const rmsDb = (a) => 10 * Math.log10(a.reduce((x, v) => x + v * v, 0) / a.length);
+    const peak = (a) => a.reduce((x, v) => Math.max(x, Math.abs(v)), 0);
+    // a full-scale blast, decoded from real ADPCM frames (what a modified page could send)
+    const enc = new AdpcmEncoder();
+    let g = 1;
+    let worstRms = -99;
+    let worstPeak = 0;
+    for (let k = 0; k < 10; k++) {
+      const e = enc.encode(new Int16Array(W.FRAME_SAMPLES).map((_, i) => (i % 16 < 8 ? 32767 : -32768)));
+      const pcm = decodeAdpcm(e.data, e.pred, e.index, W.FRAME_SAMPLES);
+      g = levelFrame(pcm, g);
+      worstRms = Math.max(worstRms, rmsDb(pcm));
+      worstPeak = Math.max(worstPeak, peak(pcm));
+    }
+    check(worstPeak <= LEVEL.PEAK_MAX + 1e-6 && worstRms <= -13.4, `a full-scale blast is turned down before it plays: peak ${worstPeak.toFixed(2)}, loudest frame ${worstRms.toFixed(1)} dBFS RMS (limits ${LEVEL.PEAK_MAX}, -14 dBFS)`);
+    // normal talking (about -20 dBFS) is not touched
+    const speech = new Float32Array(W.FRAME_SAMPLES).map((_, i) => 0.1 * Math.sin((2 * Math.PI * 220 * i) / 16000) + 0.05 * Math.sin((2 * Math.PI * 660 * i) / 16000));
+    const copy = speech.slice();
+    const gs = levelFrame(speech, 1);
+    check(gs === 1 && speech.every((v, i) => v === copy[i]), `talking at ${rmsDb(copy).toFixed(1)} dBFS plays exactly as sent`);
+    // after a scream the level comes back up gently (+2 dB per 80 ms frame)
+    let back = g;
+    let frames = 0;
+    while (back < 0.999 && frames < 40) {
+      back = levelFrame(speech.slice(), back);
+      frames++;
+    }
+    check(frames >= 5 && frames <= 20, `after the blast, talking is back to full level in ${frames} frames (${(frames * 0.08).toFixed(2)} s)`);
+  }
+
+  // ---------- the grown-up check's wrong answers (saved, so a reload does not reset them) ----------
+  {
+    const { noteWrong, wrongRecord } = await import('../src/net/walkie/gate.js').catch((err) => ({ err }));
+    if (!noteWrong) check(false, 'gate.js loads in Node');
+    else {
+      const S = {};
+      let t = 1_000_000;
+      noteWrong(S, t);
+      // "reload": the only thing that survives is the saved profile (S), passed on as JSON
+      const S2 = JSON.parse(JSON.stringify(S));
+      const lock1 = noteWrong(S2, (t += 5000));
+      const S3 = JSON.parse(JSON.stringify(S2));
+      const lock2 = noteWrong(S3, (t += 5000));
+      check(!lock1 && lock2 === t + 60000 && S3.walkieLock === lock2, `2 wrong answers, a reload, 1 more: locked for 60 s (${JSON.stringify(S3)})`);
+      for (let k = 0; k < 3; k++) noteWrong(S3, (t += 61000 + k));
+      check(S3.walkieLock - t === 120000, `the next 3 wrong answers lock for 2 minutes (${(S3.walkieLock - t) / 1000} s)`);
+      check(wrongRecord({ walkieWrong: { n: 2, at: t, locks: 1 } }, t + 11 * 60000).n === 0, 'wrong answers older than 10 minutes are forgotten');
+    }
+  }
+
   // ---------- the relay ----------
   results.relay = relayTests(check, log);
   return results;
@@ -128,14 +183,15 @@ export async function runUnit({ check, log = console.log }) {
 function relayTests(check) {
   let clock = 1000;
   const now = () => clock;
-  const reg = new RoomRegistry({ now });
+  // more than 4 pages (the real limit) so every case below is a real member of the room
+  const reg = new RoomRegistry({ now, maxPeers: 8 });
   const relay = new VoiceRelay({ registry: reg, now });
   const ROOM = 'sw1-heart-star-moon-cat';
   const pages = {};
   const mk = (peer) => {
-    const pg = { peer, json: [], bin: [], presence: [] };
-    reg.join(ROOM, peer, (fr) => pg.presence.push(fr), {});
-    pg.link = relay.link(ROOM, peer, { json: (o) => pg.json.push(o), binary: (b) => { pg.bin.push(b); return true; } });
+    const pg = { peer, json: [], bin: [], presence: [], kicks: 0 };
+    if (!reg.join(ROOM, peer, (fr) => pg.presence.push(fr), {}).ok) throw new Error('room join failed');
+    pg.link = relay.link(ROOM, peer, { json: (o) => pg.json.push(o), binary: (b) => { pg.bin.push(b); return true; }, kick: () => pg.kicks++ });
     pages[peer] = pg;
     return pg;
   };
@@ -145,11 +201,13 @@ function relayTests(check) {
   const B = mk('bbbbbbbbbbbbbbbb'); // let in, walkie OFF
   const K = mk('kkkkkkkkkkkkkkkk'); // knocking (not let in), says walkie on
   const M = mk('mmmmmmmmmmmmmmmm'); // another "host" in the same room, lets itself in
-  setState(H.peer, { r: 'h', adm: [[A.peer, 1], [B.peer, 2]] });
-  setState(A.peer, { r: 'g' });
+  const S = mk('ssssssssssssssss'); // let in, says "voice on" but shows "walkie off" (no wk)
+  setState(H.peer, { r: 'h', adm: [[A.peer, 1], [B.peer, 2], [S.peer, 3]], wk: 1 });
+  setState(A.peer, { r: 'g', wk: 1 });
   setState(B.peer, { r: 'g' });
-  setState(K.peer, { r: 'g', kn: 1 });
-  setState(M.peer, { r: 'h', adm: [[H.peer, 1], [A.peer, 2]] });
+  setState(K.peer, { r: 'g', kn: 1, wk: 1 });
+  setState(M.peer, { r: 'h', adm: [[H.peer, 1], [A.peer, 2]], wk: 1 });
+  setState(S.peer, { r: 'g' });
   const last = (pg, k) => [...pg.json].reverse().find((o) => o.k === k);
   const clear = () => { for (const p of Object.values(pages)) { p.json.length = 0; p.bin.length = 0; } };
   const enc = new AdpcmEncoder();
@@ -164,6 +222,7 @@ function relayTests(check) {
   A.link.control({ t: 'v', k: 'on', h: H.peer });
   K.link.control({ t: 'v', k: 'on', h: H.peer });
   M.link.control({ t: 'v', k: 'on', h: M.peer });
+  S.link.control({ t: 'v', k: 'on', h: H.peer });
   check(last(H, 'hi')?.ok === true && last(A, 'hi')?.ok === true, 'the host and a friend she let in are in the game');
   check(last(K, 'hi')?.ok === false, 'a knocking page (not let in) is not in the game, even with walkie on');
 
@@ -172,13 +231,28 @@ function relayTests(check) {
   H.link.control({ t: 'v', k: 'req' });
   check(last(H, 'go') !== undefined, 'the host presses: the floor is hers (go)');
   check(last(A, 'talk')?.by === H.peer, 'Rosie (walkie on) learns who is talking');
-  check(B.json.length === 0 && K.json.length === 0 && M.json.length === 0, 'the walkie-off friend, the knocker and the other "host" learn nothing');
+  check(B.json.length === 0 && K.json.length === 0 && M.json.length === 0 && S.json.length === 0, 'the walkie-off friend, the knocker, the other "host" and the page that hides its walkie learn nothing');
   for (let k = 0; k < 25; k++) {
     clock += 80;
     H.link.binary(frame(k === 0 ? F_START : 0));
   }
   check(A.bin.length === 25 && bytes(A) === 25 * (8 + 640), `Rosie received all 25 frames (${bytes(A)} B)`);
   check(bytes(B) === 0 && bytes(K) === 0 && bytes(M) === 0 && bytes(H) === 0, 'walkie-off friend, knocker, other "host" and the talker herself: zero voice bytes');
+  check(bytes(S) === 0, 'a friend whose page said "voice on" but whose badge says "walkie off" (no presence wk): zero voice bytes');
+  S.link.control({ t: 'v', k: 'req' });
+  check(last(S, 'no')?.why === 'off', 'and she cannot talk either ("off")');
+  // her badge turns on: now she hears; the badge goes off mid-press: she stops at once
+  setState(S.peer, { wk: 1 });
+  clock += 80;
+  H.link.binary(frame(0));
+  check(S.bin.length === 1, 'the same friend with wk:1 (badge "walkie") hears the next frame');
+  setState(S.peer, { wk: null });
+  clock += 80;
+  H.link.binary(frame(0));
+  check(S.bin.length === 1 && A.bin.length === 27, 'wk cleared mid-press: nothing more to her (Rosie still hears)');
+  setState(S.peer, { wk: 0 });
+  H.link.binary(frame(0));
+  check(S.bin.length === 1, 'wk:0 counts as off too (only wk === 1 is "on")');
   // someone else presses while the host talks
   A.link.control({ t: 'v', k: 'req' });
   check(last(A, 'busy')?.by === H.peer, 'Rosie presses while Lily talks: busy (by Lily)');
@@ -197,7 +271,7 @@ function relayTests(check) {
 
   // 15 s cap by audio length
   clear();
-  clock += 2000;
+  clock += 3000;
   H.link.control({ t: 'v', k: 'req' });
   let relayedSamples = 0;
   for (let k = 0; k < 220; k++) {
@@ -211,7 +285,7 @@ function relayTests(check) {
   check(relayedSamples <= W.BURST_SAMPLES + W.MAX_FRAME_SAMPLES && relayedSamples >= W.BURST_SAMPLES - W.FRAME_SAMPLES, 'no more than 15 s (+ one frame) of audio per press');
   // 15 s cap by time (slow frames that would stay under the sample cap)
   clear();
-  clock += 2000;
+  clock += W.CUT_COOLDOWN_MS + 10;
   H.link.control({ t: 'v', k: 'req' });
   for (let k = 0; k < 22; k++) {
     clock += 800;
@@ -222,12 +296,15 @@ function relayTests(check) {
 
   // idle: no first frame / a silent talker
   clear();
-  clock += 2000;
+  clock += W.CUT_COOLDOWN_MS + 10;
   H.link.control({ t: 'v', k: 'req' });
   clock += W.FIRST_FRAME_MS + 10;
   relay.tick();
   check(last(H, 'cut')?.why === 'idle', 'no audio 3 s after "go": the floor is freed');
-  clock += 2000;
+  clock += 1000;
+  H.link.control({ t: 'v', k: 'req' });
+  check(last(H, 'no')?.why === 'wait', `after a press the server cut, the same talker waits longer (${W.CUT_COOLDOWN_MS / 1000} s, not ${W.COOLDOWN_MS / 1000} s)`);
+  clock += W.CUT_COOLDOWN_MS;
   H.link.control({ t: 'v', k: 'req' });
   H.link.binary(frame(F_START));
   clock += W.IDLE_MS + 10;
@@ -236,7 +313,7 @@ function relayTests(check) {
 
   // rate and size limits
   clear();
-  clock += 2000;
+  clock += W.CUT_COOLDOWN_MS + 10;
   H.link.control({ t: 'v', k: 'req' });
   const dropped0 = relay.counts.rateDropped;
   for (let k = 0; k < 100; k++) H.link.binary(frame(0));
@@ -251,6 +328,7 @@ function relayTests(check) {
   }
   const sent3s = A.bin.length - g1;
   check(sent3s <= Math.ceil(3 * W.FRAMES_PER_S) + 2 && relay.counts.rateDropped - d1 > 60, `4x too fast for 3 s: ${sent3s} frames relayed (limits ${W.FRAMES_PER_S} frames/s, ${W.BYTES_PER_S} B/s), ${relay.counts.rateDropped - d1} dropped`);
+  check(H.kicks === 1, `a talker who floods frames past the rate is disconnected once (4008, like the JSON limit): ${H.kicks}`);
   const bad0 = relay.counts.bad;
   H.link.binary(new Uint8Array(W.MAX_FRAME_BYTES + 100));
   const big = frame(0);
@@ -302,6 +380,67 @@ function relayTests(check) {
   check(A.bin.length === 0, 'and hears nothing any more');
   H.link.binary(frame(F_END));
   setState(H.peer, { adm: [[A.peer, 1], [B.peer, 2]] });
+
+  // fairness: after a press, a friend who heard "busy" goes first
+  clear();
+  clock += 3000;
+  H.link.control({ t: 'v', k: 'req' });
+  H.link.binary(frame(F_START));
+  A.link.control({ t: 'v', k: 'req' });
+  check(last(A, 'busy')?.by === H.peer, 'fairness: Rosie presses while Lily talks (busy)');
+  clock += 80;
+  H.link.binary(frame(F_END));
+  clock += W.COOLDOWN_MS + 50;
+  H.link.control({ t: 'v', k: 'req' });
+  check(last(H, 'no')?.why === 'wait', 'Lily presses again after her pause: "wait", Rosie asked first');
+  A.link.control({ t: 'v', k: 'req' });
+  check(last(A, 'go') !== undefined, 'Rosie gets the next turn');
+  A.link.binary(frame(F_START | F_END));
+  clock += W.COOLDOWN_MS + 50;
+  H.link.control({ t: 'v', k: 'req' });
+  check(last(H, 'go') !== undefined, 'then Lily may talk again');
+  H.link.binary(frame(F_START));
+  A.link.control({ t: 'v', k: 'req' });
+  H.link.binary(frame(F_END));
+  clock += W.PRIORITY_MS + 10;
+  H.link.control({ t: 'v', k: 'req' });
+  check(last(H, 'go') !== undefined, `the head start lasts ${W.PRIORITY_MS / 1000} s; if Rosie does not press again, Lily may`);
+  // frames with no audio do not keep the floor
+  clear();
+  let tiny = 0;
+  for (let k = 0; k < 10 && relay.floors.size; k++) {
+    clock += 700;
+    H.link.binary(frame(k === 0 ? F_START : 0, 0));
+    tiny++;
+    relay.tick();
+  }
+  check(last(H, 'cut')?.why === 'idle' && tiny * 700 <= W.FIRST_FRAME_MS + 700, `header-only frames (0 samples) every 0.7 s: the floor is freed after ${((tiny * 700) / 1000).toFixed(1)} s (they are silence)`);
+  clock += W.CUT_COOLDOWN_MS + 10;
+  H.link.control({ t: 'v', k: 'req' });
+  H.link.binary(frame(F_START));
+  let held = 0;
+  for (let k = 0; k < 20 && relay.floors.size; k++) {
+    clock += 500;
+    H.link.binary(frame(0, 64));
+    held += 500;
+    relay.tick();
+  }
+  check(last(H, 'cut')?.why === 'idle' && held <= W.IDLE_MS + 500, `4 ms frames every 0.5 s after real audio: cut as silent after ${(held / 1000).toFixed(1)} s`);
+
+  // the junk budget: frames that are not relayed cost the sender
+  clear();
+  const kb = K.kicks;
+  for (let k = 0; k < W.JUNK_BURST - 5; k++) K.link.binary(frame(0));
+  check(K.kicks === kb, `${W.JUNK_BURST - 5} frames from a page without the floor: dropped, still connected`);
+  for (let k = 0; k < 20; k++) K.link.binary(new Uint8Array(900).fill(0x41));
+  check(K.kicks === kb + 1, `past ${W.JUNK_BURST} junk frames at once: disconnected (4008), once (${K.kicks - kb})`);
+  const A0 = A.kicks;
+  clock += 5000;
+  for (let k = 0; k < 20; k++) {
+    clock += 100;
+    A.link.binary(frame(0));
+  }
+  check(A.kicks === A0, 'a few frames after a press was cut (in flight): no harm');
 
   // voice off, closing while talking
   clear();

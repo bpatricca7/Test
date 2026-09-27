@@ -745,7 +745,10 @@ emotes and phrases always work.
   - wrong `v` or `pv` → `no v`;
   - uid banned this session → `no k`;
   - uid seated before in this session, or listed in `lastHost.uids` on resume → auto-admit to
-    the same seat;
+    the same seat, **but only while no other page in the room carries that uid** (two pages
+    with one uid prove nothing: the knock waits up to 8 s for the other page to fade out, as
+    after a reload, and then becomes a normal knock card). On Railway the uid is the server's
+    device stamp (Addendum A), so it cannot be copied from presence at all;
   - 3 seats taken → `no f`;
   - otherwise → queue a **knock card** (§11.4), one card at a time.
 - **Yes.** The host adds `adm [peer, lowest free seat]` and starts `lastLseq[peer] = 0`.
@@ -1442,10 +1445,21 @@ Each criterion is scored 1–10. Total = mean.
        runs in production.
      - Server-side limits: at most 4 peers per room, 3,900 B per message, 4 KiB of presence
        per peer, and a per-connection rate limit (about 40 per second, burst 80). It also
-       caps rooms (e.g. 500) and connections per IP, drops idle rooms after 10 minutes,
-       checks Origin, and never logs payloads.
+       caps rooms (e.g. 500) and connections per IP (12), new connections per IP (3/s, burst
+       20) and new rooms per IP (20/min, burst 12: trying codes one after another makes a new
+       room for every miss, so the 20,736 codes cannot be scanned quickly), drops idle rooms
+       after 10 minutes, removes at once a page that drops without ever setting presence,
+       checks Origin, and never logs payloads. The client's IP is the **last**
+       `X-Forwarded-For` entry (the one Railway's proxy appends; `SW_PROXY_HOPS`), never the
+       first one, which the client can write itself.
      - It stores **no** player data. There are no accounts; identity is a random per-device
-       id plus the sanitized in-game name.
+       id plus the sanitized in-game name. *(Walkie review, 2026-09-27:)* the page sends a
+       per-device **secret** with its connection (`&d=`, kept in `localStorage`, never in
+       presence) and the server stamps the player with `by = sha256('dev\n' + secret)` (16
+       hex). `peers()` uses `by` as the uid, so the id every page sees, the one that reclaims
+       a seat and that "Keep playing" remembers, cannot be copied from presence by someone who
+       guessed the code. Before this, the uid was a self-declared presence field, and a
+       stranger could knock with a seated friend's uid and be let in without a tap.
    - `railway.json` / `Procfile` and `package.json` scripts: `npm start` runs the server on
      `$PORT`, the build runs `npm run build`, and the health check is `/healthz`.
      `docs/DEPLOY-RAILWAY.md` has step-by-step instructions for a parent: connect the GitHub
@@ -1478,8 +1492,10 @@ Team notes, files and tests: `docs/teams/walkie.md`.
 | Rule | Where it is enforced |
 |---|---|
 | Exists only on Railway (`net.kind === 'ws'`); hidden in claude.ai, in `?net=loop`, and alone | page (`src/net/walkie/index.js` `exists`, `live`) |
-| Only while playing together with a code, only among the players of that one game (the host plus the friends she let in) | server (`server/voice.mjs` reads the host's presence `adm` for **every** frame), page |
+| Only while playing together with a code, only among the players of that one game (the host plus the friends she let in with a tap; device ids are stamped by the server, Addendum A) | server (`server/voice.mjs` reads the host's presence `adm` for **every** frame), host (§8.5), page |
 | Each device's grown-up passes the check (`profile.settings.walkie = {on, at}`); without it the page never says "voice on", so it neither talks nor receives a single voice byte | server (voice-on set), page |
+| Everyone sees who can hear: a page receives or sends voice only while its presence shows `wk:1` (the **walkie** badge in every Players panel); a page that hides it (**walkie off**) gets nothing | server (reads `wk` like `adm`, at every frame), page |
+| Never much louder than talking: every received frame is levelled (≤ −14 dBFS RMS, peaks ≤ 0.8) and the voice bus has its own peak limiter | page (`player.js`) |
 | Only while the button is held; the microphone opens on press and every track is stopped on release | page (`capture.js`) |
 | At most 15 s per press (time **and** audio length), one talker at a time (the "floor") | server (hard), page (countdown ring, stops itself) |
 | Host: **Mute** a friend (for everyone) and **Mute everyone** (all walkies rest, hers too); presence `wm` | server (cuts / refuses), every page (no playback, button rests) |
@@ -1531,7 +1547,7 @@ room logic in `rooms.mjs` is untouched):
 | `{k:'hi', ok, talk}` | answer to `on`: `ok` = the server counts me in the game; who talks now |
 | `{k:'go'}` | the floor is yours |
 | `{k:'busy', by}` | someone else is talking (the page plays a friendly "boop boop") |
-| `{k:'no', why}` | `off` / `group` / `quiet` (Mute everyone) / `muted` / `wait` (0.7 s pause after one's own press; the page asks again by itself) |
+| `{k:'no', why}` | `off` (no `on`, or presence `wk` is not 1) / `group` / `quiet` (Mute everyone) / `muted` / `wait` (0.7 s pause after one's own press, 2.5 s after a press the server cut, or a friend who heard "busy" goes first; the page asks again by itself while the button is held) |
 | `{k:'talk', by}` | who talks now (`null` = nobody), sent to every voice-on player of the game |
 | `{k:'cut', why}` | your press ended: `cap` (15 s) / `idle` / `quiet` / `muted` / `group` |
 
@@ -1543,15 +1559,30 @@ room logic in `rooms.mjs` is untouched):
   game when it is `H` itself, or listed in `H`'s presence `adm`, and `H`'s presence has no
   `end:1`. Peer ids are made by the server from each page's secret, so nobody can claim to be
   `H`. A knocking friend, a friend who was sent home, or a stranger who guessed the code is
-  never in the game: the unit tests (`tools/test-walkie-unit.mjs`) check all three.
+  not in the game: she would need the host's **Let in!** tap. (Until the review of
+  2026-09-27 that was not quite true: `adm` could be reached without a tap by knocking with a
+  let-in friend's device id copied from presence. Device ids are now stamped by the server
+  (Addendum A) and the host never admits by id while another page with that id is in the
+  room (§8.5); `tools/test-walkie.mjs` replays the attack against the real server and net
+  core: no admission, a normal knock card, 0 voice bytes.)
+- **Who hears is who shows it**: a member receives voice (and may talk) only while her room
+  presence has `wk:1`, read at every frame like `adm`. That is the badge every Players panel
+  shows (**walkie** / **walkie off**), so the host sees exactly who can hear; a page that says
+  `on` but hides its badge gets nothing (`no` `off`).
 - **Floor**: one talker per game; `req` → `go` or `busy`; a press ends with the last frame, `end`,
-  a closed connection, 1.5 s without audio (3 s for the first frame), or the cap.
+  a closed connection, 1.5 s without audio (3 s for the first frame; frames shorter than 20 ms
+  are silence and do not keep the floor), or the cap.
+- **Fairness**: whoever heard `busy` during a press goes first after it: the last talker gets
+  `wait` for 2.5 s while such a friend is still a voice-on player. The same talker waits 0.7 s
+  after her own press, and 2.5 s after a press the server cut (15 s, silence).
 - **Caps and limits**: 15 s + 1 s network slack by time; 15 s + one frame by audio length; per
   talker 25 frames/s (burst 24) and 12,000 B/s (burst 16,000: a tablet that stalled for a
   moment may send about 1.5 s of frames at once); frames over 1,032 B or with a bad
   header are dropped; a frame that would wait behind a slow connection (> 64 KB buffered) is
   dropped for that listener (live audio is never queued). Control frames count against the
-  connection's normal JSON budget (40/s).
+  connection's normal JSON budget (40/s). Binary frames that are **not** relayed (bad header,
+  no floor, over the rate) cost a separate budget (30 frames/s, burst 60; 16 KB/s, burst 64 KB);
+  past it the connection is closed with 4008, like the JSON path.
 - Host mutes (presence `wm = [all 0/1, [peers ≤ 8]]`) are checked at every `req` and every frame.
 - `Permissions-Policy: camera=(), microphone=(self), geolocation=(), payment=()`: the page may
   use the microphone; frames of other sites and the camera may not.
@@ -1565,8 +1596,8 @@ room logic in `rooms.mjs` is untouched):
 | `wire.js` | frame format, limits, control why-codes (shared with the server) |
 | `adpcm.js` | IMA ADPCM encoder / decoder, the 16 kHz resampler |
 | `capture.js` | `Mic`: getUserMedia only while held, worklet tap, `stop()` stops every track at once |
-| `player.js` | `VoicePlayer`: decode → AudioBuffer (16 kHz) → scheduled 160 ms behind the live edge (re-anchors after an underrun); squelch "kssh-bip" before, roger beep after; music ducks; `stop()` silences at once |
-| `gate.js` | the grown-up check: a random 13–19 × 6–9 on a number pad; a wrong answer gives a new problem; 3 wrong → 60 s wait (kept in `profile.settings.walkieLock`) |
+| `player.js` | `VoicePlayer`: decode → **level** (`levelFrame`: a frame over −14 dBFS RMS or with peaks over 0.8 is turned down at once, the level comes back +2 dB per frame; normal talking is untouched) → AudioBuffer (16 kHz) → scheduled 160 ms behind the live edge (re-anchors after an underrun) → voice bus (gain 1) → peak limiter (DynamicsCompressor −3 dB, 20:1, knee 0, 2 ms; a trim cancels its automatic make-up gain) → the game's master; squelch "kssh-bip" before, roger beep after; music ducks; `stop()` silences at once |
+| `gate.js` | the grown-up check: a random 13–19 × 6–9 on a number pad; a wrong answer gives a new problem; 3 wrong → 60 s wait, the next lock 2 min, up to 10 min; wrong answers (`profile.settings.walkieWrong`, forgotten after 10 quiet minutes or a right answer) and the lock (`walkieLock`) are saved at once, so a reload skips nothing |
 | `ui.js` | the HUD button (hold, countdown ring, "Mia is talking", resting), the speaking badge over a friend, the "Walkie off" badge, the microphone card, the Players panel controls, the Settings row |
 | `art.js` | the walkie-talkie pictures (SVG) |
 | `index.js` | `installWalkie(game, net)`: link, presence `wk` (my walkie is on) and `wm` (host mutes), press / release, 15 s, frames in / out, `debug.walkie` |
@@ -1583,8 +1614,9 @@ room logic in `rooms.mjs` is untouched):
 - Players panel: a badge per player (**walkie** / **walkie off** / **muted** / **talking**);
   **Mute / Unmute** per player (the host's is for everyone, a friend's is for herself);
   the host's **Mute everyone** switch.
-- Presence: `wk: 1` (my walkie is on; for badges), host `wm` (see B.3). Both are identifier
-  keys with small values; the net core ignores them.
+- Presence: `wk: 1` (my walkie is on: the badge, and what the server requires to send or
+  relay voice), host `wm` (see B.3). Both are identifier keys with small values; the net core
+  ignores them.
 
 ### B.5 Tests
 

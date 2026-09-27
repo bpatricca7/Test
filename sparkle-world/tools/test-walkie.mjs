@@ -16,6 +16,11 @@
 //     long press; per-player Mute (a friend for herself, the host for everyone) and the host's
 //     "Mute everyone". Zero console errors. Screenshots: the grown-up check, the HUD button
 //     while talking (desktop, iPad, phone), the speaking badge, the Players panel controls.
+//     Before the three pages: a stranger who guessed the code (the real net core and a raw
+//     socket, copying a friend's device id from presence) is never let in without a tap and
+//     gets 0 voice bytes; a let-in page that hides its walkie (no presence wk) gets 0 bytes;
+//     the grown-up check's wait survives reloads; the playback chain keeps a full-scale blast
+//     from clipping and close to the level of normal talking (an OfflineAudioContext render).
 
 import { chromium } from 'playwright-core';
 import { spawn, spawnSync } from 'node:child_process';
@@ -28,6 +33,13 @@ import {
   sleep, game, until, press, setupPage, hostMakesCode, guestTypesCode, hostLetsIn, waitLive, bringTo, closePanels,
 } from './net/mp-flows.mjs';
 import { runUnit } from './test-walkie-unit.mjs';
+import { NetSession } from '../src/net/session.js';
+import { WsTransport } from '../src/net/ws-transport.js';
+import { roomNameFor } from '../src/net/protocol.js';
+import { FakeAdapter } from './net/fake-adapter.mjs';
+import { W as WIRE, F_START, F_END, packFrame } from '../src/net/walkie/wire.js';
+import { AdpcmEncoder, decodeAdpcm } from '../src/net/walkie/adpcm.js';
+import { levelFrame, LIMITER, VOICE_GAIN, limiterTrim } from '../src/net/walkie/player.js';
 
 const argv = process.argv.slice(2);
 const arg = (k, d = null) => {
@@ -276,6 +288,277 @@ async function firstPressMicCard(pl, shotName = null) {
   check(tracks === false, `${pl.name}: the permission check left no microphone open`);
 }
 
+// ---------- a stranger who guessed the code (Node: the real net core over the real server) ----------
+
+async function strangerTests(port) {
+  log('a stranger who guessed the code copies a friend\'s device id');
+  const url = `ws://127.0.0.1:${port}`;
+  const mk = (name, device, guest) => {
+    const adapter = new FakeAdapter({ name, empty: !!guest, rand: Math.random });
+    const session = new NetSession({
+      adapter, build: 'test',
+      transport: () => new WsTransport({ url, uid: device }),
+      options: { compression: false, autoAdmit: false },
+    });
+    adapter.session = session;
+    return { name, adapter, session };
+  };
+  const H = mk('Lily', 'lilyDeviceSecret00000001', false);
+  const R = mk('Rosie', 'rosieDeviceSecret0000002', true);
+  const knocks = [];
+  H.session.on('knock', (k) => {
+    knocks.push(k);
+    if (knocks.length === 1 && k.name === 'Rosie') H.session.admit(k.peer); // the host taps "Let in!" for Rosie
+  });
+  const WSN = (await import('ws')).WebSocket;
+  let X = null;
+  try {
+    check(await H.session.host(), 'Lily hosts (real NetSession over WsTransport)');
+    await R.session.join(H.session.code);
+    const end = Date.now() + 20000;
+    while (R.session.state !== 'g.live' && Date.now() < end) await sleep(100);
+    check(R.session.state === 'g.live', 'Rosie is let in with a tap');
+    const ht = H.session.transport;
+    const rt = R.session.transport;
+    const hostPeer = ht.selfId();
+    const rosiePeer = rt.selfId();
+    const rosieUid = rt.peers().find((p) => p.self).uid;
+
+    // the stranger: a raw socket in the same room (she guessed the code), no device secret
+    X = { json: [], bin: 0, binBytes: 0, peers: new Map(), self: null, closed: null };
+    X.ws = new WSN(`${url}/r/${roomNameFor(H.session.code)}?s=strangerSecret${Math.random().toString(36).slice(2)}xxxx`);
+    X.ws.on('message', (d, isBinary) => {
+      if (isBinary) {
+        X.bin++;
+        X.binBytes += d.length;
+        return;
+      }
+      const f = JSON.parse(String(d));
+      X.json.push(f);
+      if (f.t !== 'p') return;
+      if (f.self) X.self = f.self;
+      if (f.reset) X.peers.clear();
+      for (const e of f.j || []) X.peers.set(e.peer, { ...e.state, _by: e.by });
+      for (const [p, patch] of f.u || []) {
+        const st = X.peers.get(p) || {};
+        for (const k in patch) if (patch[k] === null) delete st[k]; else st[k] = patch[k];
+        X.peers.set(p, st);
+      }
+    });
+    X.ws.on('close', (c) => (X.closed = c));
+    X.send = (o) => X.ws.send(o instanceof Uint8Array ? o : JSON.stringify(o));
+    const xEnd = Date.now() + 5000;
+    while (!(X.self && X.peers.has(rosiePeer)) && Date.now() < xEnd) await sleep(50);
+    const hs = X.peers.get(hostPeer);
+    const rs = X.peers.get(rosiePeer);
+    check(rs && (rs.uid === rosieUid || rs._by === rosieUid), `the stranger can read Rosie's device id (${rosieUid}) from the room`);
+    // she knocks with Rosie's id and name, and says "walkie on" without any grown-up check
+    X.send({ t: 's', patch: { v: hs.v, pv: hs.pv, r: 'g', uid: rosieUid, nm: 'Rosie', lk: '', kn: 1, zc: 0, ep: hs.ep, wk: 1 } });
+    X.send({ t: 'v', k: 'on', h: hostPeer });
+    const kEnd = Date.now() + 12000; // longer than the host's wait for a fading page (8 s)
+    while (Date.now() < kEnd && knocks.length < 2) await sleep(100);
+    await sleep(500);
+    const adm = X.peers.get(hostPeer)?.adm || [];
+    check(!adm.some((e) => e[0] === X.self), `with Rosie's copied device id the stranger is NOT let in (host adm ${JSON.stringify(adm.map((e) => e[1]))})`);
+    const card = knocks.find((k) => k.peer === X.self);
+    check(!!card && card.uid !== rosieUid, `the host gets a normal knock card for her instead (her device id is the server's stamp ${card && card.uid}, not Rosie's)`);
+    check(X.json.some((f) => f.t === 'v' && f.k === 'hi' && f.ok === false), 'the server does not count the stranger in the game (hi.ok false)');
+
+    // Rosie's page says "voice on" but does not show it (no presence wk): the badge would say "walkie off"
+    const hostJson = [];
+    ht.voiceIn = (m) => { if (!(m instanceof ArrayBuffer)) hostJson.push(m); };
+    let rBin = 0;
+    rt.voiceIn = (m) => { if (m instanceof ArrayBuffer) rBin++; };
+    ht.setState({ wk: 1 });
+    ht.flushState();
+    ht.sendVoice({ t: 'v', k: 'on', h: hostPeer });
+    rt.sendVoice({ t: 'v', k: 'on', h: hostPeer });
+    await sleep(400);
+    const press = async () => {
+      hostJson.length = 0;
+      ht.sendVoice({ t: 'v', k: 'req' });
+      await sleep(200);
+      const enc = new AdpcmEncoder();
+      for (let k = 0; k < 12; k++) {
+        const e = enc.encode(new Int16Array(WIRE.FRAME_SAMPLES).map((_, i) => Math.round(6000 * Math.sin(i / 7))));
+        ht.sendVoice(packFrame(k === 0 ? F_START : k === 11 ? F_END : 0, k, e.pred, e.index, e.data));
+        await sleep(80);
+      }
+      await sleep(400);
+      return hostJson.some((f) => f.k === 'go');
+    };
+    check(await press(), 'Lily talks (12 frames)');
+    check(rBin === 0, `Rosie's page said "voice on" but shows "walkie off" (no wk): she received ${rBin} frames`);
+    rt.setState({ wk: 1 });
+    rt.flushState();
+    await sleep(900);
+    check(await press(), 'Lily talks again');
+    check(rBin === 12, `with her walkie shown (wk:1), Rosie receives all ${rBin} frames`);
+    check(X.bin === 0 && X.binBytes === 0, `the stranger received ${X.bin} voice frames (${X.binBytes} B)`);
+    X.json.length = 0;
+    X.send({ t: 'v', k: 'req' });
+    await sleep(300);
+    const no = X.json.find((f) => f.t === 'v' && (f.k === 'no' || f.k === 'go'));
+    check(no && no.k === 'no' && no.why === 'group', `the stranger cannot talk (${JSON.stringify(no)})`);
+    const st = await serverStats(port);
+    const xp = st.voicePeers.find((p) => p.peer === X.self);
+    check(xp && xp.bytesOut === 0, `server: 0 voice bytes sent to the stranger (${JSON.stringify(xp)})`);
+    numbers.stranger = { knockCards: knocks.length, strangerFrames: X.bin, rosieFrames: rBin };
+  } finally {
+    try { X?.ws.close(); } catch {}
+    await R.session.leave({ quiet: true }).catch(() => {});
+    await H.session.leave({ quiet: true }).catch(() => {});
+    await sleep(300);
+  }
+}
+
+// ---------- the grown-up check's wait survives reloads ----------
+
+async function gateReloadTest(browser, url) {
+  log('the grown-up check: wrong answers are saved (a reload does not skip the wait)');
+  const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await context.newPage();
+  page.on('pageerror', (err) => errors.push(`[gate] pageerror: ${err.message}`));
+  page.on('console', (msg) => {
+    if (msg.type() !== 'error') return;
+    const where = (msg.location() && msg.location().url) || '';
+    if (/fonts\.(googleapis|gstatic)\.com/.test(msg.text()) || /fonts\.(googleapis|gstatic)\.com/.test(where)) return; // web fonts (offline here), as in openPlayer
+    errors.push(`[gate] console.error: ${msg.text()}`);
+  });
+  const pl = { key: 'gate', name: 'Gate', page, context, touch: false, seed: 5 };
+  const openGate = async () => {
+    await press(pl, 'button.sw-tile:has-text("Settings")');
+    await page.waitForSelector('.sw-panel-wrap.sw-open .sw-wk-setrow');
+    await press(pl, '.sw-panel-wrap.sw-open .sw-wk-setrow .sw-wk-switch');
+    await page.waitForSelector('.sw-gate .sw-gate-qtext');
+  };
+  const wrong = async () => {
+    const t = await page.locator('.sw-gate .sw-gate-qtext').textContent();
+    const m = /(\d+)\s*×\s*(\d+)/.exec(t);
+    for (const d of String(Number(m[1]) * Number(m[2]) + 1)) await press(pl, `.sw-gate .sw-gate-key[data-d="${d}"]`);
+    await press(pl, '.sw-gate .sw-gate-ok');
+    await sleep(200);
+  };
+  const reload = async () => {
+    await page.reload();
+    await waitForTitle(page);
+    await page.waitForFunction(() => window.__game && window.__game.net && window.__game.net.available !== null, null, { timeout: 15000 });
+  };
+  try {
+    await page.goto(url);
+    await waitForTitle(page);
+    await setupPage(pl);
+    await page.waitForFunction(() => window.__game.net.available !== null, null, { timeout: 15000 });
+    await openGate();
+    await wrong();
+    await wrong();
+    const saved = await game(pl, () => window.__game.profile.settings.walkieWrong);
+    check(saved && saved.n === 2, `2 wrong answers are saved at once (${JSON.stringify(saved)})`);
+    await reload();
+    await openGate();
+    await wrong();
+    const st = await game(pl, () => ({ lock: window.__game.profile.settings.walkieLock || 0, now: Date.now(), locked: !!document.querySelector('.sw-gate-key')?.disabled, msg: document.querySelector('.sw-gate-msg')?.textContent }));
+    check(st.locked && st.lock - st.now > 50000, `2 wrong, a reload, 1 more: the pad waits (${Math.round((st.lock - st.now) / 1000)} s, "${st.msg}")`);
+    await shot(pl, 'gate-wait');
+    await reload();
+    await openGate();
+    await sleep(300);
+    const again = await game(pl, () => ({ locked: !!document.querySelector('.sw-gate-key')?.disabled, enabled: window.__game.debug.walkie.state().enabled }));
+    check(again.locked && !again.enabled, 'after another reload the pad still waits, and the walkie is still off');
+  } finally {
+    await context.close().catch(() => {});
+  }
+}
+
+// ---------- the playback chain's loudness (Chromium OfflineAudioContext) ----------
+
+async function loudnessTest(browser) {
+  log('playback loudness: a full-scale blast vs. normal talking');
+  const rate = WIRE.RATE;
+  const n = rate; // 1 s
+  // what a modified page could send: a full-scale square wave, through the real codec and leveller
+  const enc = new AdpcmEncoder();
+  const blast = new Float32Array(n);
+  let g = 1;
+  for (let at = 0; at < n; at += WIRE.FRAME_SAMPLES) {
+    const e = enc.encode(new Int16Array(WIRE.FRAME_SAMPLES).map((_, i) => ((at + i) % 16 < 8 ? 32767 : -32768)));
+    const pcm = decodeAdpcm(e.data, e.pred, e.index, WIRE.FRAME_SAMPLES);
+    const raw = pcm.slice();
+    g = levelFrame(pcm, g);
+    blast.set(pcm.subarray(0, Math.min(pcm.length, n - at)), at);
+    if (at === 0) numbers.blastRawPeak = +Math.max(...raw.map(Math.abs)).toFixed(2);
+  }
+  // normal talking, about -20 dBFS (the leveller leaves it as it is)
+  const speech = new Float32Array(n);
+  for (let i = 0; i < n; i++) speech[i] = 0.1 * Math.sin((2 * Math.PI * 220 * i) / rate) + 0.05 * Math.sin((2 * Math.PI * 660 * i) / rate) + 0.03 * Math.sin((2 * Math.PI * 1320 * i) / rate);
+  for (let at = 0, gs = 1; at < n; at += WIRE.FRAME_SAMPLES) gs = levelFrame(speech.subarray(at, at + WIRE.FRAME_SAMPLES), gs);
+  // the raw blast without the leveller (what the old chain played)
+  const rawBlast = new Float32Array(n).map((_, i) => (i % 16 < 8 ? 1 : -1));
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  try {
+    const r = await page.evaluate(async ({ blast, speech, rawBlast, lim, trim, gain }) => {
+      async function run(data, voiceChain) {
+        const sr = 48000;
+        const len = Math.ceil((data.length / 16000) * sr);
+        const c = new OfflineAudioContext(1, len, sr);
+        // the game's master (src/core/audio.js): gain 1 -> compressor -12 dB, 4:1
+        const comp = c.createDynamicsCompressor();
+        comp.threshold.value = -12;
+        comp.ratio.value = 4;
+        comp.connect(c.destination);
+        const master = c.createGain();
+        master.connect(comp);
+        const bus = c.createGain();
+        if (voiceChain) {
+          bus.gain.value = gain;
+          const l = c.createDynamicsCompressor();
+          l.threshold.value = lim.threshold;
+          l.knee.value = lim.knee;
+          l.ratio.value = lim.ratio;
+          l.attack.value = lim.attack;
+          l.release.value = lim.release;
+          const t = c.createGain();
+          t.gain.value = trim;
+          bus.connect(l);
+          l.connect(t);
+          t.connect(master);
+        } else {
+          bus.gain.value = 1.35; // the chain before (VOICE_GAIN 1.35, no limiter)
+          bus.connect(master);
+        }
+        const buf = c.createBuffer(1, data.length, 16000);
+        buf.getChannelData(0).set(data);
+        const s = c.createBufferSource();
+        s.buffer = buf;
+        s.connect(bus);
+        s.start();
+        const out = (await c.startRendering()).getChannelData(0);
+        let pk = 0;
+        let ss = 0;
+        const from = Math.floor(out.length / 4);
+        for (let i = from; i < out.length; i++) {
+          pk = Math.max(pk, Math.abs(out[i]));
+          ss += out[i] * out[i];
+        }
+        return { peak: +pk.toFixed(3), rmsDb: +(10 * Math.log10(ss / (out.length - from))).toFixed(1) };
+      }
+      return {
+        blastBefore: await run(rawBlast, false), speechBefore: await run(speech, false),
+        blast: await run(blast, true), speech: await run(speech, true),
+      };
+    }, { blast: Array.from(blast), speech: Array.from(speech), rawBlast: Array.from(rawBlast), lim: LIMITER, trim: limiterTrim(), gain: VOICE_GAIN });
+    numbers.loudness = r;
+    const gap = r.blast.rmsDb - r.speech.rmsDb;
+    const gapBefore = r.blastBefore.rmsDb - r.speechBefore.rmsDb;
+    check(r.blast.peak < 1, `a full-scale blast no longer clips: peak ${r.blast.peak} (before: ${r.blastBefore.peak})`);
+    check(gap <= 9, `a blast is at most ${gap.toFixed(1)} dB louder than normal talking (before: ${gapBefore.toFixed(1)} dB)`);
+    check(Math.abs(r.speech.rmsDb - (r.speechBefore.rmsDb - 20 * Math.log10(1.35))) < 1.5, `normal talking keeps its level (${r.speech.rmsDb} dB; before ${r.speechBefore.rmsDb} dB with the old 1.35 gain)`);
+  } finally {
+    await ctx.close().catch(() => {});
+  }
+}
+
 // ---------- the run ----------
 
 async function main() {
@@ -299,6 +582,7 @@ async function main() {
   const head = await fetch(url, { method: 'HEAD' });
   const pp = head.headers.get('permissions-policy') || '';
   check(/microphone=\(self\)/.test(pp) && /camera=\(\)/.test(pp) && /geolocation=\(\)/.test(pp), `Permissions-Policy: "${pp}" (microphone for this site only; camera and the rest off)`);
+  await strangerTests(port);
 
   const browser = await chromium.launch({
     executablePath: CHROMIUM,
@@ -306,6 +590,9 @@ async function main() {
     args: [...LAUNCH_ARGS, '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'],
   });
   try {
+    await loudnessTest(browser);
+    await gateReloadTest(browser, url);
+
     // ----- where the walkie must not exist: alone from a file, inside claude.ai -----
     log('no walkie alone (file://) or inside claude.ai (room transport)');
     for (const [label, where, init] of [

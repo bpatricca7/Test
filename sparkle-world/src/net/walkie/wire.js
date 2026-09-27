@@ -16,7 +16,9 @@
 // Control travels as small JSON frames {t:'v', k, ...} on the same socket (never presence):
 //
 //   page -> server   {t:'v', k:'on', h:<host peer>}  my parent said yes: send me voices of
-//                                                    the game this host runs
+//                                                    the game this host runs (the server also
+//                                                    needs my presence wk:1, the badge every
+//                                                    player sees, to send me or relay me)
 //                    {t:'v', k:'off'}                 no voices for me (and none from me)
 //                    {t:'v', k:'req'}                 the button went down: may I talk?
 //                    {t:'v', k:'end'}                 the button came up (if no last frame did)
@@ -25,6 +27,7 @@
 //                    {t:'v', k:'go'}                  you may talk now (the floor is yours)
 //                    {t:'v', k:'busy', by}            someone else is talking
 //                    {t:'v', k:'no', why}             not now: off | group | quiet | muted | wait
+//                                                     (off: no voice-on, or presence wk is not 1)
 //                    {t:'v', k:'talk', by}            who talks now (null = nobody)
 //                    {t:'v', k:'cut', why}            your press ended: cap | idle | quiet | muted | group
 
@@ -40,12 +43,21 @@ export const W = Object.freeze({
   // server limits (server/voice.mjs)
   GRACE_MS: 1000, // network slack on top of BURST_MS before the server cuts
   FIRST_FRAME_MS: 3000, // the microphone may take this long to start after 'go'
-  IDLE_MS: 1500, // a talker who sends nothing this long loses the floor
+  IDLE_MS: 1500, // a talker who sends no audio this long loses the floor
+  ACTIVE_SAMPLES: 320, // a frame shorter than this (20 ms) is not "talking" for IDLE_MS / FIRST_FRAME_MS
   COOLDOWN_MS: 700, // the same talker may press again after this pause
+  CUT_COOLDOWN_MS: 2500, // ... after a press the server cut (15 s cap, silence)
+  PRIORITY_MS: 2500, // a friend who heard "busy" goes first: the last talker waits this long for her
   BYTES_PER_S: 12000, // per talker (a press needs about 8.1 KB/s)
   BYTES_BURST: 16000, // a busy tablet may send about 1.5 s of frames at once after a stall
   FRAMES_PER_S: 25, // a press needs 12.5 frames/s
   FRAMES_BURST: 24,
+  // frames that are not relayed (bad header, no floor, over the rate) still cost the sender:
+  // past this budget the server closes the connection (4008), like the JSON rate limit does
+  JUNK_PER_S: 30,
+  JUNK_BURST: 60,
+  JUNK_BYTES_PER_S: 16000,
+  JUNK_BYTES_BURST: 64000,
   MAX_MUTES: 8,
 });
 

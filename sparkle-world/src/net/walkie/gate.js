@@ -1,17 +1,44 @@
 // The grown-up check for the walkie-talkie (Settings -> "Walkie-talkie (grown-ups)").
 //
 // A random 2-digit x 1-digit multiplication (13-19 x 6-9, answers 78..171) on a big number
-// pad. A wrong answer brings a new problem; three wrong answers in a row lock the check for
-// 60 s (kept in profile.settings.walkieLock, so a reload does not skip the wait). Resolves
-// true when a grown-up answered right; false when cancelled.
+// pad. A wrong answer brings a new problem; three wrong answers lock the check for 60 s, and
+// each further lock (without a right answer in between) is twice as long, up to 10 minutes.
+// Both the wrong answers (profile.settings.walkieWrong = {n, at, locks}, forgotten after 10
+// quiet minutes or a right answer) and the lock (profile.settings.walkieLock) are saved at
+// once, so neither closing the check nor a reload skips the wait. Resolves true when a
+// grown-up answered right; false when cancelled.
 
 import { icon2 } from '../../ui/menus/icons2.js';
 import { walkieSvg } from './art.js';
 
 export const GATE_NOTE = 'Voices go live only to friends in this game, are never recorded, and stop when the button is let go.';
 const LOCK_MS = 60000;
+const LOCK_MAX_MS = 10 * 60000;
 const MAX_WRONG = 3;
-let wrongs = 0;
+const FORGET_MS = 10 * 60000; // wrong answers this old no longer count
+
+/** The saved wrong answers (a fresh record when there are none or they are old). */
+export function wrongRecord(S, now = Date.now()) {
+  const w = S && S.walkieWrong;
+  if (!w || typeof w !== 'object' || !(now - (Number(w.at) || 0) < FORGET_MS) || Number(w.at) > now + 60000) return { n: 0, at: 0, locks: 0 };
+  return { n: Math.max(0, Number(w.n) | 0), at: Number(w.at), locks: Math.max(0, Number(w.locks) | 0) };
+}
+
+/** Count one wrong answer; returns the lock end (ms) when it locks the check, else 0. */
+export function noteWrong(S, now = Date.now()) {
+  const w = wrongRecord(S, now);
+  w.n++;
+  w.at = now;
+  let until = 0;
+  if (w.n >= MAX_WRONG) {
+    w.n = 0;
+    w.locks++;
+    until = now + Math.min(LOCK_MAX_MS, LOCK_MS * 2 ** (w.locks - 1));
+    S.walkieLock = until;
+  }
+  S.walkieWrong = w;
+  return until;
+}
 
 const CSS = /* css */ `
 .sw-gate.sw-dialog { width: min(440px, 100%); padding: 18px 18px 16px; border-color: var(--sw-lav-soft); max-height: calc(100% - 8px); overflow: auto; }
@@ -137,7 +164,7 @@ export function openGate(game) {
       const left = Math.ceil(((S.walkieLock || 0) - Date.now()) / 1000);
       if (left <= 0) {
         S.walkieLock = 0;
-        game.saveProfile();
+        game.saveProfile(true);
         setLocked(false);
         msg.textContent = 'Ready for a new one!';
         msg.classList.add('sw-good');
@@ -147,13 +174,14 @@ export function openGate(game) {
         return;
       }
       msg.classList.remove('sw-good');
-      msg.textContent = `Let's wait a minute… ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+      msg.textContent = `${left > 60 ? "Let's wait a little…" : "Let's wait a minute…"} ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
       lockTimer = setTimeout(lockTick, 250);
     };
     const submit = () => {
       if (!typed) return;
       if (Number(typed) === problem[0] * problem[1]) {
-        wrongs = 0;
+        delete S.walkieWrong;
+        game.saveProfile(true);
         msg.textContent = 'Thank you!';
         msg.classList.add('sw-good');
         game.audio.play('magic');
@@ -161,17 +189,16 @@ export function openGate(game) {
         setTimeout(() => close(true), 450);
         return;
       }
-      wrongs++;
+      // saved at once: a reload (or closing the check) never skips the wait
+      const locked = noteWrong(S);
+      game.saveProfile(true);
       game.audio.play('pop', { pitch: 0.6 });
       card.classList.remove('sw-shake');
       void card.offsetWidth;
       card.classList.add('sw-shake');
       problem = newProblem();
       showProblem();
-      if (wrongs >= MAX_WRONG) {
-        wrongs = 0;
-        S.walkieLock = Date.now() + LOCK_MS;
-        game.saveProfile();
+      if (locked) {
         setLocked(true);
         lockTick();
       } else {

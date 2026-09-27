@@ -119,14 +119,18 @@ The walkie-talkie is **off** until a grown-up turns it on, separately on each de
 1. On the title screen (or **Menu** inside a world) tap **Settings**, scroll to
    **Walkie-talkie (grown-ups)** and tap its switch.
 2. Answer the multiplication question on the number pad (for example *17 × 8*). Three wrong
-   answers make it wait one minute.
+   answers make it wait one minute (the next time two minutes, up to ten). Closing the
+   question or reloading the page does not skip the wait.
 3. The first time she presses the walkie button, a card explains the microphone; tap **OK**, and
    **Allow** if the browser asks.
 
 Turning it off is one tap on the same switch (no question). A device whose walkie is off never
 receives anyone's voice and never sends any; she just sees a small "Walkie off" badge when her
-friends use theirs. In the **Players** panel every player can **Mute** anyone for herself, and
-the player who invited can **Mute** a friend for everyone or switch on **Mute everyone**.
+friends use theirs. In the **Players** panel every player has a badge: **walkie** (this device
+can hear and talk) or **walkie off** (it cannot; the server checks this badge before it sends a
+single voice). Every player can **Mute** anyone for herself, and the player who invited can
+**Mute** a friend for everyone or switch on **Mute everyone**. A friend's voice is never played
+much louder than normal talking: shouting or a loud noise is turned down before it plays.
 
 The microphone only works on the real web address (https) or on `localhost`; browsers block it
 on plain `http://192.168…` home-network addresses. The walkie-talkie does not exist in the
@@ -172,8 +176,11 @@ version by itself (1–3 minutes). The old version keeps running until the new o
 
 - **A code, then a yes.** A game is found with 4 pictures (20,736 possible codes). Knowing the
   code is not enough: the player who invited must tap **Let in!** for each friend, one at a
-  time. She can **Send home** a friend at any time, and that friend cannot knock again in that
-  game.
+  time. (A friend's device that was already let in comes back without a tap after a reload;
+  the server gives each device an id that cannot be copied, so another device cannot pretend
+  to be her.) She can **Send home** a friend at any time, and that friend cannot knock again in
+  that game. The server slows down anyone who tries codes one after another (a few new games
+  per minute from one internet address), so trying the codes from one home takes many hours.
 - **Her world is protected.** By default ("Careful friends"), friends can build and change only
   their own things and natural ground, not the host's houses and furniture. The host can pause
   building, **Undo building** for any friend, and a copy of her world from *before friends
@@ -182,27 +189,34 @@ version by itself (1–3 minutes). The old version keeps running until the new o
   ("Hi!", "Let's build!", "Thank you!", …) and dance or wave emotes. Player names go through a
   filter before others see them.
 - **Voice only by walkie-talkie, only with a grown-up's OK on that device.** It is off until a
-  grown-up answers a multiplication question in Settings, and each device needs its own OK to
-  talk *and* to hear (a device without it receives no voice at all). The microphone is on only
-  while the button is held (at most 15 seconds, one talker at a time) and turns off the moment
-  it is let go. Voices go live only to the players of that one game: the player who invited
-  and the friends she let in, never to someone still knocking or sent home. **Nothing is
-  recorded or stored**, on the devices or on the server, and the server does not log voices.
-  The player who invited can mute a friend or everyone; every child can mute anyone for
-  herself.
+  grown-up answers a multiplication question in Settings. The question protects **this
+  device**: each family's grown-up decides for their own child's device, and nobody else's
+  answer turns yours on. The server cannot see that question (a changed copy of the page could
+  skip it on its own device), so here is what the server itself checks: voices go only to
+  players who show **walkie** in the Players panel (a device
+  showing **walkie off** receives no voice at all and cannot talk), and only to the players of
+  that one game, the player who invited and the friends she let in with a tap, never to
+  someone still knocking or sent home. So the player who invited always sees who can hear,
+  and can **Mute** a friend for everyone or switch on **Mute everyone**; every child can mute
+  anyone for herself. The microphone is on only while the button is held (at most 15 seconds,
+  one talker at a time, and a friend who is waiting goes next) and turns off the moment it is
+  let go. **Nothing is recorded or stored**, on the devices or on the server, and the server
+  does not log voices. Loud shouting from a friend is turned down before it plays.
 - **No camera.** The game never uses the camera; the server's `Permissions-Policy` allows the
   microphone for this site only (for the walkie-talkie) and turns the camera, location and
   payments off.
 - **No accounts, no personal data.** Nobody signs up; there are no emails or passwords. Each
-  device gets a random id so a friend who reloads can come back to her seat.
+  device gets a random id so a friend who reloads can come back to her seat (the device keeps
+  a secret, and the server turns it into the id others see, so it cannot be copied).
 - **Nothing stored on the server.** A game room exists only in the server's memory while
   friends are playing, and disappears when they leave (or after 10 quiet minutes). The server
   does not save worlds, names, pictures or messages, and does not log what happens in games.
-- **Limits.** At most 4 players per game, 500 games at a time, and 12 connections from one
-  home internet address. Other websites cannot connect to your game server.
+- **Limits.** At most 4 players per game, 500 games at a time, 12 connections from one home
+  internet address, and only a few new connections and new games per second (or minute) from
+  one address. Other websites cannot connect to your game server.
 - **The web address is public.** Anyone who has the address can open the game (just like any
-  website) and could try codes, but still needs a **Let in!** from the host. Share the
-  address only with the families you play with, and you can remove it any time (step 9).
+  website) and could try codes, but still needs a **Let in!** from the host. **Share the
+  address only with the families you know**, and you can remove it any time (step 9).
 
 ---
 
@@ -214,7 +228,7 @@ version by itself (1–3 minutes). The old version keeps running until the new o
 | Build fails right away with "no start command" or wrong files | Check **Root Directory** is exactly `sparkle-world` (step 3). |
 | Deployment fails at "Healthcheck" | Check the build command is `npm run build` (the game must be built before it starts). Look at the Deploy Logs for `dist/sparkle-world.html is missing`. |
 | The page opens but there is no **Play with Friends** button | Open `/api/net` on your address; it should show `{"ok":true,...}`. If it does, reload the game page. |
-| "Lots of games right now!" | The server is at its limit (500 games, or 12 devices on one home connection). Wait a minute. |
+| "Lots of games right now!" | The server is at its limit (500 games, 12 devices on one home connection, or very many new games or wrong codes from one home connection in a short time). Wait a minute. |
 | "Your game needs a refresh!" | Reload the page on every device (a new version was published). |
 | Friends are "Reconnecting…" often | Usually home Wi-Fi. The game keeps working and catches up when the connection returns. |
 
@@ -226,6 +240,9 @@ Add these in the service's **Variables** tab (then redeploy):
 |---|---|---|
 | `SW_MAX_ROOMS` | 500 | games at the same time |
 | `SW_MAX_PER_IP` | 12 | connections from one internet address |
+| `SW_CONN_RATE` / `SW_CONN_BURST` | 3 / 20 | new connections per second from one internet address (and how many at once) |
+| `SW_ROOMS_PER_MIN` / `SW_ROOMS_BURST` | 20 / 12 | new games per minute from one internet address (a wrong code counts as a new game) |
+| `SW_PROXY_HOPS` | 1 | how many proxies add themselves to `X-Forwarded-For` in front of the server (Railway: 1); the player's address is that many entries from the end. `SW_TRUST_PROXY` = `0` ignores the header (only when nothing sits in front of the server) |
 | `SW_IDLE_MS` | 600000 | close a game after this many quiet milliseconds (10 min) |
 | `SW_ALLOWED_ORIGINS` | *(empty)* | extra web addresses allowed to connect, comma separated (only needed if you serve the page from a different domain than the server) |
 
