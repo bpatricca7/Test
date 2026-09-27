@@ -65,14 +65,17 @@ class Bucket {
   }
 }
 
-/** Loopback, private, link-local and carrier-grade NAT addresses: a proxy hop, not a client. */
+/**
+ * Loopback, private, link-local and 100.x addresses: a proxy hop, not a client. (Railway says
+ * its edge and internal proxies always use 100.0.0.0/8; that covers carrier-grade NAT too.)
+ */
 export function isInternalIp(ip) {
   if (typeof ip !== 'string') return true;
   const v4 = /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(ip);
   if (v4) {
     const [a, b] = [+v4[1], +v4[2]];
     return a === 10 || a === 127 || a === 0 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) ||
-      (a === 169 && b === 254) || (a === 100 && b >= 64 && b <= 127);
+      (a === 169 && b === 254) || a === 100;
   }
   const l = ip.toLowerCase();
   return l === '::1' || l === '::' || l.startsWith('fc') || l.startsWith('fd') || l.startsWith('fe80');

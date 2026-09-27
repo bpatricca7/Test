@@ -1561,7 +1561,8 @@ Three reviews (relay safety, kid UX, sync) found real holes; these are the rules
    in try/catch (close 1011 on a surprise) and the process keeps serving on
    `uncaughtException`, logging only the error's name. Per IP: 12 connections, 6 live rooms
    made, new connections 1/s with a burst of 30 (HTTP 429). The IP behind a proxy is the
-   right-most public `X-Forwarded-For` entry (proxy hops in private / CGNAT ranges skipped),
+   right-most public `X-Forwarded-For` entry (proxy hops in private ranges and Railway's
+   100.0.0.0/8 skipped),
    so a client cannot pick its own. Every answer carries `Content-Security-Policy:
    frame-ancestors 'none'; connect-src 'self'; object-src 'none'; base-uri 'none';
    form-action 'none'` and `X-Frame-Options: DENY`. The 4-picture code stays (5 pictures
