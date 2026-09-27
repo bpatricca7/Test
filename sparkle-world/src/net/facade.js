@@ -16,6 +16,16 @@ import { messageText, isCode } from './protocol.js';
 /* global __SW_BUILD__ */
 const BUILD = typeof __SW_BUILD__ === 'string' ? __SW_BUILD__ : 'dev';
 const REFUSE_GAP = 4000;
+/** A "before friends" backup is offered (and kept for the next hosting) this long. */
+export const BACKUP_MS = 7 * 86400000;
+/**
+ * Her own building (not with friends): after such a change is saved, the world's "before
+ * friends" copy would throw it away too, so the copy goes (docs/MULTIPLAYER.md §13).
+ */
+const SOLO_EDITS = [
+  'block:place', 'block:remove', 'entity:place', 'entity:remove', 'prefab:place', 'garden:plant',
+  'garden:harvest', 'pet:adopt', 'history:change',
+];
 
 /**
  * Install game.net and game.debug.net. opts (for the UI module / tests):
@@ -50,16 +60,62 @@ export function install(game, opts = {}) {
     return createTransport(kind);
   }
 
+  /** The world's "before friends" backup meta when one younger than BACKUP_MS is stored. */
+  async function backupMeta(worldId) {
+    const store = game.store;
+    if (!worldId || typeof store.listBackups !== 'function') return null;
+    try {
+      const b = (await store.listBackups()).find((m) => m.id === worldId + '.before');
+      return b && Date.now() - (b.backupAt || b.updatedAt || 0) < BACKUP_MS ? b : null;
+    } catch {
+      return null;
+    }
+  }
+
+  // who owned what while hosting, saved with the host's world so a reloaded page can pick it
+  // up ("Keep playing"); a world saved while nobody is hosting drops it
+  let savedAuthors = null;
+  const soloEdited = new Set(); // worlds changed by her alone since their last save (see below)
+  game.addSystem({
+    name: 'netOwners',
+    onWorldLoad() {
+      savedAuthors = null;
+    },
+    deserialize(data) {
+      savedAuthors = data && typeof data === 'object' ? data : null;
+    },
+    serialize() {
+      const h = session.hostCore;
+      if (!h || !session.code || !game.world || game._isShared()) return undefined;
+      return { code: session.code.join('-'), ...h.exportAuthors() };
+    },
+  });
+
   const env = {
-    /** Save the world, then its "before friends" backup; both must be stored. */
-    async prepareHost() {
+    /**
+     * Save the world, then make sure it has its "before friends" backup; both must be stored.
+     * A backup that is still good (younger than BACKUP_MS, and nothing built alone since: see
+     * SOLO_EDITS) is kept: the world from before friends first came stays the one to go back
+     * to, through "Keep playing" after a reload and a second Invite Friends alike.
+     */
+    async prepareHost({ resume = false } = {}) {
       if (game.mode !== 'play' || !game.world || game.loading || game._isShared()) return { ok: false };
       const save = game._serializeWorld({ thumbnail: true });
       const main = await game._storeWorld(save);
       if (!main || !main.ok) return { ok: false };
+      // her own building since the copy (saved or not) makes the copy stale: a fresh one
+      const stale = soloEdited.delete(save.id);
+      if (!stale && (await backupMeta(save.id))) return { ok: true, kept: true, resume };
       const backup = { ...save, id: save.id + '.before', backupOf: save.id, backupAt: Date.now() };
+      delete backup.systems?.netOwners;
       const res = await game.store.saveWorld(backup);
       return res && res.ok ? { ok: true } : { ok: false };
+    },
+    /** Resume: the owners saved with this world for these pictures (or null). */
+    loadAuthors(code) {
+      const a = savedAuthors;
+      if (!a || !Array.isArray(code) || a.code !== code.join('-')) return null;
+      return a;
     },
     async saveHost({ final = false } = {}) {
       if (game.mode !== 'play' || !game.world || game._isShared()) return;
@@ -152,7 +208,31 @@ export function install(game, opts = {}) {
       if (text) game.toast(text, { icon: 'heart' });
     },
   };
+  net.backupMeta = backupMeta;
   game.net = net;
+
+  // building alone after friends were here: once that is saved, "before friends" would take
+  // her own work away too, so its backup goes (and the next hosting makes a fresh one)
+  const onSoloEdit = () => {
+    if (session.state !== 'idle' || game.mode !== 'play' || game.loading || !game.world || game._isShared()) return;
+    if (session.remoteApplying) return;
+    soloEdited.add(game.world.meta.id);
+  };
+  for (const name of SOLO_EDITS) game.events.on(name, onSoloEdit);
+  game.events.on('world:saved', ({ id } = {}) => {
+    if (!id || !soloEdited.has(id) || session.state !== 'idle') return;
+    if (net._restoring) {
+      soloEdited.delete(id); // "Before friends" itself is saving on its way
+      return;
+    }
+    soloEdited.delete(id);
+    backupMeta(id).then((b) => {
+      if (b && typeof game.store.deleteWorld === 'function') {
+        return game.store.deleteWorld(id + '.before').then(() => game.events.emit('net:backup-dropped', { id }));
+      }
+      return null;
+    }).catch(() => {});
+  });
 
   // session -> game events (the UI listens to these)
   session.on('state', (s) => game.events.emit('net:state', s));
@@ -160,7 +240,7 @@ export function install(game, opts = {}) {
     game.events.emit('net:message', m);
     if (opts.toastMessages !== false && m && m.text) game.toast(m.text, { icon: 'heart', duration: 5000 });
   });
-  for (const name of ['knock', 'knock-gone', 'players', 'reject', 'intent', 'resync', 'progress', 'status', 'summary', 'snapshot-failed']) {
+  for (const name of ['knock', 'knock-gone', 'players', 'reject', 'intent', 'resync', 'progress', 'status', 'summary', 'snapshot-failed', 'rules', 'tidied']) {
     session.on(name, (p) => game.events.emit('net:' + name, p));
   }
   // the player's own emotes show on friends' pages

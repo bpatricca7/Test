@@ -60,12 +60,19 @@ function openDialog(ui, build, signal = null) {
 }
 
 /** Yes/No question. Resolves true for yes. */
-export function confirmDialog(ui, { title = 'Are you sure?', text = '', yes = 'Yes', no = 'No', yesVariant = 'pink', icon: ic = null, signal = null } = {}) {
+export function confirmDialog(ui, { title = 'Are you sure?', text = '', yes = 'Yes', no = 'No', yesVariant = 'pink', icon: ic = null, image = null, imageClass = '', signal = null } = {}) {
   return openDialog(ui, (card, close) => {
     const h = make('h3');
     if (ic) h.innerHTML = icon(ic, { size: 30 }) + ' ';
     h.appendChild(document.createTextNode(title));
     card.appendChild(h);
+    // optional picture (a world's thumbnail: what it goes back to)
+    if (image) {
+      const img = make('img', imageClass);
+      img.alt = '';
+      img.src = image;
+      card.appendChild(img);
+    }
     if (text) card.appendChild(make('p', '', text));
     const row = make('div', 'sw-dialog-buttons');
     const noBtn = ui.button({ label: no, variant: 'white', icon: 'close', onClick: () => close(false) });

@@ -55,6 +55,16 @@ export function isBackupId(id) {
   return typeof id === 'string' && id.endsWith('.before');
 }
 
+/** The world as it was just before a "Before friends" restore: '<world id>.undo' (§13). */
+export function isUndoId(id) {
+  return typeof id === 'string' && id.endsWith('.undo');
+}
+
+/** Copies that are not worlds of their own (never listed in My Worlds). */
+export function isSideCopyId(id) {
+  return isBackupId(id) || isUndoId(id);
+}
+
 // ---------- local backends ----------
 
 class MemoryBackend {
@@ -521,7 +531,7 @@ export class SaveStore {
    * backups (ids ending '.before', docs/MULTIPLAYER.md §9.12) are not listed; see listBackups().
    */
   async listWorlds() {
-    return (await this._listAll()).filter((m) => !isBackupId(m.id));
+    return (await this._listAll()).filter((m) => !isSideCopyId(m.id));
   }
 
   /** Metas of the "before friends" backups ({ id: '<world>.before', backupOf, backupAt, ... }). */
@@ -530,18 +540,49 @@ export class SaveStore {
   }
 
   /**
-   * Put a world back as it was before friends came: its '.before' backup becomes the world
-   * again (the backup itself is kept). Resolves { ok, id }.
+   * Put a world back as it was before friends came: the world as it is now is kept first as
+   * '<id>.undo' (restoreUndo() brings it back), then its '.before' backup becomes the world
+   * again and the backup goes (the next hosting makes a fresh one). Resolves { ok, id, undo }.
    */
   async restoreBackup(id) {
-    if (!id || isBackupId(id)) return { ok: false, error: 'no world' };
+    if (!id || isSideCopyId(id)) return { ok: false, error: 'no world' };
     const b = await this.loadWorld(id + '.before');
     if (!b || !b.blocks) return { ok: false, error: 'no backup' };
+    const cur = await this.loadWorld(id);
+    let undo = false;
+    if (cur && cur.blocks) {
+      const copy = { ...cur, id: id + '.undo', undoOf: id, updatedAt: Date.now() };
+      delete copy.backupOf;
+      delete copy.backupAt;
+      const u = await this.saveWorld(copy);
+      if (!u.ok) return { ok: false, error: 'no room for the undo copy' };
+      undo = true;
+    }
     const save = { ...b, id, updatedAt: Date.now() };
     delete save.backupOf;
     delete save.backupAt;
     const res = await this.saveWorld(save);
-    return res.ok ? { ok: true, id } : res;
+    if (!res.ok) return res;
+    await this._deleteOne(id + '.before');
+    return { ok: true, id, undo };
+  }
+
+  /** Take back a "Before friends" restore: the '.undo' copy becomes the world again. */
+  async restoreUndo(id) {
+    if (!id || isSideCopyId(id)) return { ok: false, error: 'no world' };
+    const u = await this.loadWorld(id + '.undo');
+    if (!u || !u.blocks) return { ok: false, error: 'no undo copy' };
+    const save = { ...u, id, updatedAt: Date.now() };
+    delete save.undoOf;
+    const res = await this.saveWorld(save);
+    if (!res.ok) return res;
+    await this._deleteOne(id + '.undo');
+    return { ok: true, id };
+  }
+
+  /** Is there a world as it was before the last "Before friends" restore? */
+  async hasUndo(id) {
+    return (await this._listAll()).some((m) => m.id === id + '.undo');
   }
 
   async _listAll() {
@@ -593,10 +634,10 @@ export class SaveStore {
   }
 
   async deleteWorld(id) {
-    // a world takes its "before friends" backup with it
-    if (id && !isBackupId(id)) {
-      const backups = await this.listBackups();
-      if (backups.some((m) => m.id === id + '.before')) await this._deleteOne(id + '.before');
+    // a world takes its "before friends" backup (and a restore's undo copy) with it
+    if (id && !isSideCopyId(id)) {
+      const all = await this._listAll();
+      for (const side of [id + '.before', id + '.undo']) if (all.some((m) => m.id === side)) await this._deleteOne(side);
     }
     return this._deleteOne(id);
   }
