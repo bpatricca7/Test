@@ -18,6 +18,7 @@
 export const ROOM_NAME_RE = /^[a-z0-9][a-z0-9_.-]{0,47}$/;
 export const TOPIC_RE = /^[a-z][a-z0-9_.-]{0,47}$/;
 export const IDENT_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const BAD_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
 const enc = new TextEncoder();
 export function jsonSize(v) {
@@ -57,7 +58,7 @@ export function checkPresenceValue(v, strBytes, maxDepth, depth = 0) {
     return null;
   }
   for (const k in v) {
-    if (!IDENT_RE.test(k) || k === '__proto__' || k === 'constructor' || k === 'prototype') return 'key';
+    if (!IDENT_RE.test(k) || BAD_KEYS.has(k)) return 'key';
     const r = checkPresenceValue(v[k], strBytes, maxDepth, depth + 1);
     if (r) return r;
   }
@@ -195,7 +196,7 @@ export class RoomRegistry {
       if (!patch || typeof patch !== 'object' || Array.isArray(patch)) return this._reject('bad_frame');
       const next = frame.replace ? {} : { ...m.state };
       for (const k in patch) {
-        if (!IDENT_RE.test(k)) return this._reject('bad_state', 'key');
+        if (!IDENT_RE.test(k) || BAD_KEYS.has(k)) return this._reject('bad_state', 'key');
         if (patch[k] === null || patch[k] === undefined) delete next[k];
         else next[k] = patch[k];
       }

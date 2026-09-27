@@ -41,7 +41,8 @@ export class LoopTransport extends FrameTransport {
   get kind() { return 'loop'; }
 
   async identity() {
-    if (!this._uid) this._uid = loadDeviceId('loop');
+    // per tab (sessionStorage): two tabs of one profile are two different friends in ?net=loop
+    if (!this._uid) this._uid = loadDeviceId('loop', globalThis.sessionStorage);
     return { uid: this._uid, canHost: this._canHost };
   }
 
@@ -77,10 +78,10 @@ export class LoopTransport extends FrameTransport {
 }
 
 /** A per-device id kept in localStorage (random, not an account). */
-export function loadDeviceId(kind) {
+export function loadDeviceId(kind, storage) {
   const key = 'sparkle-world:net-id';
   try {
-    const ls = globalThis.localStorage;
+    const ls = storage || globalThis.localStorage;
     let v = ls?.getItem(key);
     if (!v || !/^[a-z0-9]{12,32}$/.test(v)) {
       v = randomId(16);

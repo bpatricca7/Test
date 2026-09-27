@@ -641,6 +641,7 @@ export class FrameTransport extends NetTransport {
       const st = { ...old.state };
       const patch = u[1] || {};
       for (const k in patch) {
+        if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
         if (patch[k] === null) delete st[k];
         else st[k] = patch[k];
       }
