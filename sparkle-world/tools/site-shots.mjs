@@ -49,8 +49,8 @@ async function openPlay(browser, { viewport = { width: 1280, height: 800 }, touc
   await routeGoogleFonts(context);
   const page = await context.newPage();
   attachErrorCollectors(page, errors, name);
-  await page.goto(`${base}/play`);
-  await waitForTitle(page);
+  await page.goto(`${base}/play`, { timeout: 180000 });
+  await waitForTitle(page, 180000);
   await page.evaluate(() => document.fonts.ready);
   await page.evaluate(({ name, look }) => {
     const g = window.__game;
@@ -262,108 +262,167 @@ function local(res, lx, ly, lz) {
   return [res.placement.x + dx + 0.5, res.placement.y + ly, res.placement.z + dz + 0.5];
 }
 
+/**
+ * Flatten a lot: grass on top at height y (the median around it), dirt below, nothing above;
+ * flowers sprinkled near the edges (none in `clear` [x0, z0, x1, z1]). Returns y.
+ */
+async function lot(page, cx, cz, { rx = 14, rz = 14, flowers = 0.12, clear = null, seed = 1 } = {}) {
+  const y = await page.evaluate(({ cx, cz, rx, rz, flowers, clear, seed }) => {
+    const g = window.__game, w = g.world, B = g.registry.blocks;
+    const id = (k) => B.idOf(k);
+    const G = id('grass'), D = id('dirt'), AIR = 0;
+    const hs = [];
+    for (let x = cx - rx; x <= cx + rx; x += 2) for (let z = cz - rz; z <= cz + rz; z += 2) hs.push(w.heightAt(x, z));
+    hs.sort((a, b) => a - b);
+    const y = Math.max(hs[Math.floor(hs.length / 2)], (w.waterLevel || 0) + 1);
+    let r = seed >>> 0;
+    const rnd = () => ((r = (r * 1664525 + 1013904223) >>> 0) / 4294967296);
+    const F = ['flower_tulip_pink', 'flower_daisy', 'flower_lavender', 'flower_cosmos', 'flower_tulip_white', 'flower_forgetmenot', 'flower_tulip', 'grass_tall', 'grass_tall'].map(id).filter((v) => v > 0);
+    w.batch(() => {
+      for (let x = cx - rx; x <= cx + rx; x++) for (let z = cz - rz; z <= cz + rz; z++) {
+        const ex = Math.abs(x - cx) / rx, ez = Math.abs(z - cz) / rz;
+        if (ex > 0.92 && ez > 0.92) continue; // rounded corners
+        for (let yy = y + 1; yy < y + 40; yy++) if (w.get(x, yy, z) !== AIR) w.set(x, yy, z, AIR, { record: false });
+        w.set(x, y, z, G, { record: false });
+        for (let yy = y - 1; yy >= Math.max(1, y - 5); yy--) w.set(x, yy, z, D, { record: false });
+        const inClear = clear && x >= clear[0] && x <= clear[2] && z >= clear[1] && z <= clear[3];
+        const edge = Math.max(ex, ez);
+        if (!inClear && F.length && rnd() < flowers * (0.35 + edge)) w.set(x, y + 1, z, F[Math.floor(rnd() * F.length)], { record: false });
+      }
+    });
+    return y;
+  }, { cx, cz, rx, rz, flowers, clear, seed });
+  await waitIdle(page);
+  return y;
+}
+
+/** Remove every tree block (leaves, logs) in a box, above ground. */
+async function clearTrees(page, x0, z0, x1, z1) {
+  await page.evaluate(([x0, z0, x1, z1]) => {
+    const g = window.__game, w = g.world, B = g.registry.blocks;
+    const tree = /^(leaves|log|palm|pine|snow_leaves)/;
+    w.batch(() => {
+      for (let x = x0; x <= x1; x++) for (let z = z0; z <= z1; z++) for (let y = 1; y < 90; y++) {
+        const id = w.get(x, y, z);
+        if (id && tree.test((B.byId(id) || {}).key || '')) w.set(x, y, z, 0, { record: false });
+      }
+    });
+  }, [x0, z0, x1, z1]);
+  await waitIdle(page);
+}
+
+/** Park the player far away (hides name tags, keeps her out of the picture). */
+async function parkPlayer(page, x, z) {
+  await page.evaluate(([x, z]) => {
+    const g = window.__game;
+    g.player.setFlying(true);
+    g.player.teleport(x, g.world.heightAt(x, z) + 30, z);
+    g.player.velocity.set(0, 0, 0);
+  }, [x, z]);
+}
+
 async function sceneCamper(page, { sx, sz }) {
   console.log('camper');
-  const s = await flatSpot(page, { x0: 24, z0: 24, x1: Math.floor(sx / 2) - 10, z1: Math.floor(sz / 2) - 10, r: 8 });
+  const s = await flatSpot(page, { x0: 30, z0: 30, x1: Math.floor(sx / 2) - 16, z1: Math.floor(sz / 2) - 16, r: 10 });
+  await lot(page, s.x, s.z + 4, { rx: 20, rz: 22, flowers: 0.1, clear: [s.x - 12, s.z - 8, s.x + 12, s.z + 26], seed: 3 });
+  await clearTrees(page, s.x - 34, s.z - 20, s.x + 34, s.z + 46);
   const res = await placeBuild(page, 'sparkle_camper', s.x, s.z, 0);
   if (!res) return errors.push('[site] the Sparkle Camper did not place');
+  await parkPlayer(page, s.x + 60, s.z + 60);
   await page.evaluate(() => window.__game.setDayTime(0.4));
   const b = res.bounds;
   const cx = (b.x0 + b.x1 + 1) / 2, cz = (b.z0 + b.z1 + 1) / 2, y = res.placement.y;
   const span = Math.max(res.plan.W, res.plan.D);
+  console.log(`  camper ${res.plan.W}x${res.plan.H}x${res.plan.D} at ${cx},${y},${cz}`);
   await clean(page);
-  await freeCam(page, [b.x1 + span * 0.55, y + span * 0.42, b.z1 + span * 0.75], [cx, y + 1.5, cz], { fov: 50 });
+  await freeCam(page, [b.x1 + span * 0.3, y + span * 0.42, b.z1 + span * 0.5], [cx, y + 1.4, cz], { fov: 54 });
   await meshed(page);
-  await settle(page, 1200);
+  await settle(page, 1400);
   await grab(page, 'camper');
-  // the rooftop deck and pool, closer
-  const v = res.plan.view && (res.plan.view.deck || res.plan.view.pool);
-  if (v) {
-    await freeCam(page, local(res, v[0], v[1], v[2]), local(res, v[3], v[4], v[5]), { fov: 60 });
-    await settle(page, 900);
-    await grab(page, 'camper-deck', { width: 1200 });
-  }
   await freeCamOff(page);
 }
 
 async function sceneBedroom(page, { sx }) {
   console.log('bedroom');
-  const s = await flatSpot(page, { x0: Math.floor(sx / 2) + 8, z0: 24, x1: sx - 30, z1: 70, r: 7 });
-  const ids = await page.evaluate(({ x, y, z }) => {
+  const s = await flatSpot(page, { x0: Math.floor(sx / 2) + 12, z0: 30, x1: sx - 34, z1: 80, r: 8 });
+  const y = await lot(page, s.x, s.z, { rx: 11, rz: 11, flowers: 0.14, clear: [s.x - 6, s.z - 5, s.x + 6, s.z + 6], seed: 5 });
+  const R = await page.evaluate(({ x, z, y }) => {
     const g = window.__game, w = g.world, B = g.registry.blocks, E = g.entities;
     const set = (x, y, z, key) => w.set(x, y, z, B.idOf(key), { record: false });
     const Y = y + 1, x0 = x - 4, x1 = x + 4, z0 = z - 3, z1 = z + 4;
     w.batch(() => {
-      for (let xx = x0 - 3; xx <= x1 + 3; xx++) for (let zz = z0 - 3; zz <= z1 + 5; zz++) {
-        for (let yy = Y; yy < Y + 9; yy++) set(xx, yy, zz, 'air');
-        set(xx, Y - 1, zz, 'grass');
-      }
-      for (let xx = x0; xx <= x1; xx++) for (let zz = z0; zz <= z1; zz++) set(xx, Y - 1, zz, 'planks_pink');
-      for (let yy = Y; yy < Y + 4; yy++) {
+      for (let xx = x0; xx <= x1; xx++) for (let zz = z0; zz <= z1 + 1; zz++) set(xx, Y - 1, zz, 'planks_pink');
+      for (let yy = Y; yy < Y + 3; yy++) {
         for (let xx = x0; xx <= x1; xx++) set(xx, yy, z0, 'wallpaper_hearts');
         for (let zz = z0; zz <= z1; zz++) { set(x0, yy, zz, 'wallpaper_hearts'); set(x1, yy, zz, 'wallpaper_hearts'); }
       }
-      for (let xx = x0; xx <= x1; xx++) set(xx, Y + 4, z0, 'planks_white');
-      for (let zz = z0; zz <= z1; zz++) { set(x0, Y + 4, zz, 'planks_white'); set(x1, Y + 4, zz, 'planks_white'); }
-      // a window in the back wall and the side wall
-      for (const dx of [-1, 0]) for (const dy of [1, 2]) set(x + 2 + dx, Y + dy, z0, 'glass');
-      for (const dz of [1, 2]) for (const dy of [1, 2]) set(x0, Y + dy, z + dz, 'glass');
+      for (let xx = x0; xx <= x1; xx++) for (let zz = z0; zz <= z0 + 1; zz++) set(xx, Y + 3, zz, 'wallpaper_hearts');
+      set(x0 + 1, Y + 1, z0, 'air');
+      set(x0 + 6, Y + 1, z0, 'air');
     });
     const put = (key, x, y, z, rot = 0, color = null, data = {}) => {
       const e = E.place(key, x, y, z, rot, color, data, { history: false, fx: false });
+      if (!e) console.warn('bedroom: no ' + key);
       return e ? e.uid : null;
     };
-    const out = {};
-    out.canopy = put('bed_canopy', x - 2, Y, z0 + 1, 0, '#FF9CCB');
-    out.ns = put('nightstand', x, Y, z0 + 1, 0, '#FFFFFF');
-    out.lamp = put('table_lamp', x, Y + 1, z0 + 1, 0, '#FFE38F');
-    out.bunk = put('bed_bunk', x1 - 1, Y, z0 + 1, 0, '#C8B4FF');
-    out.wardrobe = put('wardrobe', x0 + 1, Y, z1 - 1, 1, '#FFFFFF');
-    out.rug = put('rug_heart', x - 1, Y, z + 1, 0, '#FF9CCB');
-    out.chest = put('toy_chest', x1 - 1, Y, z1 - 1, 3, '#9BE8CF');
-    out.shelf = put('bookshelf', x1 - 1, Y, z + 1, 3, '#FFFFFF');
-    out.teddy = put('teddy_bear', x1 - 1, Y + 1, z + 1, 3, '#E7BE8C');
-    out.picture = put('picture_frame', x + 1, Y + 1, z0 + 1, 0, '#FFFFFF', { art: 0 });
-    for (const xx of [x - 3, x - 1, x + 1, x + 3]) put('fairy_lights', xx, Y + 3, z0 + 1, 0, null);
-    out.floorLamp = put('floor_lamp', x0 + 1, Y, z0 + 1, 0, '#FF9CCB');
-    out.petBed = put('pet_bed', x + 1, Y, z1 - 1, 0, '#C8B4FF');
-    // a kitty napping on the rug
-    const kitty = g.pets.adopt('kitty', 'ginger', 'Mango', [x + 0.5, Y + 0.01, z + 2.2], { fx: false });
-    if (kitty) { kitty.yaw = Math.PI * 0.85; kitty._think = () => { kitty.anim.pose = 'sit'; kitty.lookAtPlayer = false; }; }
-    g.setDayTime(0.705);
-    return { ...out, X: x, Y, Z: z, x0, x1, z0, z1 };
-  }, s);
+    put('bed_canopy', x0 + 2, Y, z0 + 2, 0, '#FF9CCB');
+    put('nightstand', x0 + 4, Y, z0 + 1, 0, '#FFFFFF');
+    put('table_lamp', x0 + 4, Y + 1, z0 + 1, 0, '#FFE38F');
+    put('picture_frame', x0 + 5, Y + 1, z0 + 1, 0, '#FFFFFF', { art: 0 });
+    put('bed_bunk', x0 + 6, Y, z0 + 2, 0, '#C8B4FF');
+    put('wardrobe', x0 + 1, Y, z0 + 5, 1, '#FFFFFF');
+    put('rug_heart', x0 + 3, Y, z0 + 6, 0, '#FF9CCB');
+    put('toy_chest', x0 + 7, Y, z0 + 7, 3, '#9BE8CF');
+    put('bookshelf', x0 + 7, Y, z0 + 4, 3, '#FFFFFF');
+    put('teddy_bear', x0 + 7, Y + 1, z0 + 4, 3, '#E7BE8C');
+    put('window_frame', x0 + 1, Y + 1, z0, 0, '#FFFFFF');
+    put('window_frame', x0 + 6, Y + 1, z0, 0, '#FFFFFF');
+    for (const xx of [x0 + 1, x0 + 4, x0 + 5]) put('fairy_lights', xx, Y + 2, z0 + 1, 0, null);
+    put('pet_bed', x0 + 5, Y, z0 + 7, 0, '#C8B4FF');
+    put('floor_lamp', x0 + 1, Y, z0 + 7, 0, '#FF9CCB');
+    const kitty = g.pets.adopt('kitty', 'ginger', 'Mango', [x0 + 4.2, Y + 0.01, z0 + 6.3], { fx: false });
+    if (kitty) { kitty.yaw = Math.PI * 0.8; kitty._think = () => { kitty.anim.pose = 'sit'; kitty.lookAtPlayer = false; }; }
+    return { x0, z0, Y };
+  }, { x: s.x, z: s.z, y });
+  await parkPlayer(page, s.x + 60, s.z + 40);
   await waitIdle(page);
   await clean(page);
-  const { X, Y, z1 } = ids;
-  await freeCam(page, [X + 2.6, Y + 5.6, z1 + 3.2], [X - 0.6, Y + 0.6, ids.z0 + 1.4], { fov: 56 });
-  await meshed(page);
-  await settle(page, 1600);
-  await grab(page, 'bedroom');
+  const { x0, z0, Y } = R;
+  // looking down into the open-front room, the canopy bed in the middle
+  for (const [name, t] of [['bedroom', 0.735]]) {
+    await page.evaluate((t) => window.__game.setDayTime(t), t);
+    await freeCam(page, [x0 + 5.4, Y + 4.4, z0 + 9.4], [x0 + 3.2, Y + 0.7, z0 + 2.6], { fov: 54 });
+    await meshed(page);
+    await settle(page, 1600);
+    await grab(page, name);
+  }
   await freeCamOff(page);
-  await page.evaluate(() => window.__game.setDayTime(0.4));
+  await page.evaluate(() => { const g = window.__game; for (const q of g.pets.pets.slice()) g.pets.remove(q); g.setDayTime(0.4); });
 }
 
 async function sceneNight(page, { sx, sz }) {
   console.log('night');
-  const s = await flatSpot(page, { x0: 24, z0: Math.floor(sz / 2) + 8, x1: Math.floor(sx / 2) - 10, z1: sz - 34, r: 8 });
+  const s = await flatSpot(page, { x0: 34, z0: Math.floor(sz / 2) + 12, x1: Math.floor(sx / 2) - 14, z1: sz - 40, r: 9 });
+  await lot(page, s.x, s.z + 5, { rx: 18, rz: 20, flowers: 0.12, clear: [s.x - 9, s.z - 7, s.x + 9, s.z + 7], seed: 9 });
   const res = await placeBuild(page, 'cottage', s.x, s.z, 0);
   if (!res) return errors.push('[site] the cottage did not place');
   const b = res.bounds;
   const cx = (b.x0 + b.x1 + 1) / 2, cz = (b.z0 + b.z1 + 1) / 2, y = res.placement.y;
-  await page.evaluate(([b, y]) => {
+  await page.evaluate(([b]) => {
     const g = window.__game, E = g.entities;
     const put = (key, x, z, color) => E.place(key, x, g.world.heightAt(x, z) + 1, z, 0, color, {}, { history: false, fx: false });
-    put('lantern_post', b.x0 - 2, b.z1 + 3, '#C8B4FF');
-    put('lantern_post', b.x1 + 2, b.z1 + 3, '#C8B4FF');
-    put('string_lights', b.x0 + 1, b.z1 + 4, null);
-    void y;
-    g.setDayTime(0.93);
-  }, [b, y]);
+    put('lantern_post', b.x0 - 1, b.z1 + 3, '#C8B4FF');
+    put('lantern_post', b.x1 + 1, b.z1 + 3, '#C8B4FF');
+    put('campfire', b.x1 + 4, b.z1 + 6, null);
+    put('camp_chair', b.x1 + 2, b.z1 + 7, '#FF9CCB');
+    g.setDayTime(0.94);
+  }, [b]);
+  await parkPlayer(page, s.x - 50, s.z - 50);
   await waitIdle(page);
   await clean(page);
   const span = Math.max(res.plan.W, res.plan.D);
-  await freeCam(page, [cx + span * 0.5, y + 2.2, b.z1 + span * 1.05], [cx - 1, y + span * 0.5, cz], { fov: 62 });
+  console.log(`  cottage ${res.plan.W}x${res.plan.H}x${res.plan.D}`);
+  await freeCam(page, [cx + span * 0.45, y + 2.6, b.z1 + span * 0.95], [cx, y + res.plan.maxY * 0.62, cz], { fov: 60 });
   await meshed(page);
   await settle(page, 1800);
   await grab(page, 'night');
@@ -373,46 +432,34 @@ async function sceneNight(page, { sx, sz }) {
 
 async function scenePets(page, { sx, sz }) {
   console.log('pets');
-  const s = await flatSpot(page, { x0: Math.floor(sx / 2) + 8, z0: Math.floor(sz / 2) + 8, x1: sx - 30, z1: sz - 30, r: 7 });
+  const s = await flatSpot(page, { x0: Math.floor(sx / 2) + 12, z0: Math.floor(sz / 2) + 12, x1: sx - 34, z1: sz - 34, r: 8 });
+  const y = await lot(page, s.x, s.z, { rx: 16, rz: 16, flowers: 0.16, clear: [s.x - 8, s.z - 6, s.x + 8, s.z + 12], seed: 13 });
+  await parkPlayer(page, s.x - 60, s.z - 60);
   const p = await page.evaluate(({ x, y, z }) => {
     const g = window.__game;
     for (const q of g.pets.pets.slice()) g.pets.remove(q);
-    const list = [
-      ['puppy', 'retriever'], ['kitty', 'siamese'], ['bunny', 'snowball'], ['turtle', 'rainbow'], ['puppy', 'corgi'], ['kitty', 'calico'],
-    ];
+    const small = [['kitty', 'siamese'], ['puppy', 'retriever'], ['bunny', 'snowball'], ['turtle', 'rainbow'], ['puppy', 'corgi'], ['kitty', 'calico'], ['duckling', 'sunny']];
     const big = [['pony', 'strawberry'], ['unicorn', 'pearl'], ['horse', 'palomino']];
     const cx = x + 0.5, cz = z + 0.5;
     const place = (s, v, px, pz, yaw) => {
       const spec = g.registry.pets.get(s);
       const vv = spec.variants.find((q) => q.key === v) || spec.variants[0];
-      const hy = g.world.heightAt(Math.floor(px), Math.floor(pz)) + 1.01;
-      const pet = g.pets.adopt(s, vv.key, vv.name, [px, hy, pz], { fx: false, opts: s === 'horse' ? { braids: true } : null });
+      const pet = g.pets.adopt(s, vv.key, vv.name, [px, y + 1.01, pz], { fx: false, opts: s === 'horse' ? { braids: true } : null });
       if (!pet) return;
       pet.yaw = yaw;
       pet._think = () => { pet.anim.pose = 'stand'; pet.lookAtPlayer = false; };
     };
-    list.forEach(([s, v], i) => place(s, v, cx + (i - (list.length - 1) / 2) * 1.3, cz + (i % 2 ? 0.35 : 0), Math.PI + (i - 2.5) * 0.12));
-    big.forEach(([s, v], i) => place(s, v, cx + (i - 1) * 2.6, cz - 2.8, Math.PI + (i - 1) * 0.25));
-    // flowers around them
-    const flowers = ['flower_tulip_pink', 'flower_daisy', 'flower_lavender', 'flower_cosmos', 'flower_tulip_white'];
-    let k = 0;
-    for (let dx = -7; dx <= 7; dx++) for (let dz = -6; dz <= 4; dz++) {
-      const fx = x + dx, fz = z + dz;
-      if (Math.abs(dx) < 5 && dz > -5 && dz < 3) continue;
-      if ((dx * 7 + dz * 13) % 3) continue;
-      const h = g.world.heightAt(fx, fz);
-      const id = g.registry.blocks.idOf(flowers[k++ % flowers.length]);
-      if (id >= 0 && !g.world.get(fx, h + 1, fz)) g.world.set(fx, h + 1, fz, id, { record: false });
-    }
+    small.forEach(([s, v], i) => place(s, v, cx + (i - (small.length - 1) / 2) * 1.25, cz + 1.2 + (i % 2 ? -0.3 : 0.2), (i - 3) * -0.14));
+    big.forEach(([s, v], i) => place(s, v, cx + (i - 1) * 2.7, cz - 1.8, (i - 1) * -0.3));
     g.setDayTime(0.38);
-    return { cx, cz, y: g.world.heightAt(x, z) + 1 };
-  }, s);
+    return { cx, cz, y: y + 1 };
+  }, { x: s.x, y, z: s.z });
   await settle(page, 2500);
   await page.evaluate(() => { for (const q of window.__game.pets.pets) q.anim.happy = 2; });
   await clean(page);
-  await freeCam(page, [p.cx + 0.4, p.y + 2.1, p.cz + 6.6], [p.cx, p.y + 0.7, p.cz - 1.2], { fov: 50 });
+  await freeCam(page, [p.cx + 0.3, p.y + 2.6, p.cz + 8.4], [p.cx, p.y + 0.6, p.cz - 0.4], { fov: 48 });
   await meshed(page);
-  await settle(page, 500);
+  await settle(page, 600);
   await grab(page, 'pets');
   await freeCamOff(page);
   await page.evaluate(() => { const g = window.__game; for (const q of g.pets.pets.slice()) g.pets.remove(q); });
@@ -421,21 +468,23 @@ async function scenePets(page, { sx, sz }) {
 async function sceneFriends(page, { sx, sz }) {
   console.log('friends');
   const s = await flatSpot(page, { x0: Math.floor(sx / 2) - 20, z0: Math.floor(sz / 2) - 20, x1: Math.floor(sx / 2) + 20, z1: Math.floor(sz / 2) + 20, r: 6 });
-  const p = await page.evaluate(({ x, z }) => {
+  const ly = await lot(page, s.x, s.z, { rx: 12, rz: 12, flowers: 0.16, clear: [s.x - 5, s.z - 5, s.x + 5, s.z + 7], seed: 21 });
+  const p = await page.evaluate(({ x, z, ly }) => {
     const g = window.__game, d = g.debug.friends;
-    const y = g.world.heightAt(x, z) + 1;
-    g.player.teleport(x + 0.5, y + 0.02, z + 0.5);
-    g.player.yaw = Math.PI;
-    const keys = ['ava', 'mia', 'zoe', 'lilyrose'];
-    const ids = keys.map((k, i) => d.invite(k, x + 0.5 + (i - 1.5) * 1.5, y + 0.02, z - 2.2 - (i % 2) * 0.6));
+    const y = ly + 1;
+    g.player.setFlying(false);
+    g.player.teleport(x - 2.2, y + 0.02, z + 0.2);
+    g.player.yaw = Math.PI * 0.8;
+    const spots = [['ava', -1.6, -2.3], ['mia', -0.1, -3.0], ['zoe', 1.4, -2.7], ['lilyrose', 2.7, -1.9]];
+    const ids = spots.map(([k, dx, dz]) => d.invite(k, x + 0.5 + dx, y + 0.02, z + 0.5 + dz));
     g.setDayTime(0.4);
     return { x: x + 0.5, y, z: z + 0.5, ids };
-  }, s);
+  }, { x: s.x, z: s.z, ly });
   await settle(page, 1500);
   await page.evaluate((ids) => { const d = window.__game.debug.friends; if (ids[0]) d.dance(ids[0]); }, p.ids);
   await settle(page, 1400);
   await clean(page);
-  await freeCam(page, [p.x + 1.2, p.y + 2.3, p.z + 4.2], [p.x, p.y + 1.0, p.z - 2.2], { fov: 55, player: true });
+  await freeCam(page, [p.x + 0.4, p.y + 2.0, p.z + 4.6], [p.x + 0.3, p.y + 1.0, p.z - 2.2], { fov: 55, player: true });
   await settle(page, 700);
   await grab(page, 'friends');
   await freeCamOff(page);
@@ -474,6 +523,19 @@ async function sceneZip(page, { sx, sz }) {
     return null;
   }, { sx, sz });
   if (!spots) return errors.push('[site] no hill tops for the zip line');
+  // no trees in the way: clear leaves and logs around the cable
+  await page.evaluate(({ a, b }) => {
+    const g = window.__game, w = g.world, B = g.registry.blocks;
+    const x0 = Math.min(a[0], b[0]) - 9, x1 = Math.max(a[0], b[0]) + 9, z0 = Math.min(a[2], b[2]) - 9, z1 = Math.max(a[2], b[2]) + 9;
+    const tree = /^(leaves|log|palm|pine|snow_leaves)/;
+    w.batch(() => {
+      for (let x = x0; x <= x1; x++) for (let z = z0; z <= z1; z++) for (let y = 1; y < 90; y++) {
+        const id = w.get(x, y, z);
+        if (id && tree.test((B.byId(id) || {}).key || '')) w.set(x, y, z, 0, { record: false });
+      }
+    });
+  }, spots);
+  await waitIdle(page);
   const towers = await page.evaluate(({ a, b }) => {
     const g = window.__game, d = g.debug;
     d.select('furn:zipline_tower');
@@ -500,7 +562,7 @@ async function sceneZip(page, { sx, sz }) {
   await clean(page);
   const [px, py, pz] = pose.p;
   // from the side and a little ahead, looking back along the cable
-  await freeCam(page, [px + pose.s[0] * 4.2 + pose.f[0] * 2.4, py + 0.9, pz + pose.s[1] * 4.2 + pose.f[1] * 2.4], [px - pose.f[0] * 0.8, py + 1.2, pz - pose.f[1] * 0.8], { fov: 58, player: true });
+  await freeCam(page, [px + pose.s[0] * 4.6 + pose.f[0] * 2.2, py + 2.3, pz + pose.s[1] * 4.6 + pose.f[1] * 2.2], [px - pose.f[0] * 0.6, py + 0.6, pz - pose.f[1] * 0.6], { fov: 60, player: true });
   await settle(page, 1200);
   await grab(page, 'zip');
   await page.evaluate(() => { window.__game.outdoor.zip.freeze = false; });
@@ -563,6 +625,32 @@ async function sceneCandy(browser) {
   await context.close();
 }
 
+/** A world type from a low flying view over its middle (fog pushed back a little). */
+async function sceneBiome(browser, biome, { time = 0.4, weather = 'sunny', seed = 5, name = 'World', view = null } = {}) {
+  console.log(`world-${biome}`);
+  const { context, page } = await openPlay(browser);
+  await newWorld(page, biome, { seed, name, time, size: 'big' });
+  if (weather !== 'sunny') await page.evaluate((w) => window.__game.weather.set(w, { instant: true, manual: true, silent: true }), weather);
+  const info = await page.evaluate(() => {
+    const g = window.__game, w = g.world;
+    return { spawn: w.meta.spawn, sx: w.sx, sz: w.sz };
+  });
+  const c = info.sx / 2, sy = info.spawn[1];
+  await parkPlayer(page, 8, 8);
+  await clean(page);
+  await page.evaluate(() => {
+    const g = window.__game, bu = g.blockUniforms, fog = g.scene.fog;
+    g.__fog = [bu.uFogNear.value, bu.uFogFar.value, fog.near, fog.far];
+    bu.uFogNear.value = 120; bu.uFogFar.value = 260; fog.near = 120; fog.far = 260;
+  });
+  const v = view ? view(c, sy, info) : [[c + 4, sy + 13, c + 30], [c, sy + 1, c - 20]];
+  await freeCam(page, v[0], v[1], { fov: 62 });
+  await meshed(page);
+  await settle(page, 1800);
+  await grab(page, `world-${biome}`, { width: 1200 });
+  await context.close();
+}
+
 async function sceneIceCream(browser) {
   console.log('icecream');
   const { context, page } = await openPlay(browser);
@@ -577,7 +665,7 @@ async function sceneIceCream(browser) {
     return !!e;
   }, s);
   await settle(page, 600);
-  await page.evaluate(() => window.__game.debug.shops.open('icecream', 'build'));
+  await page.evaluate(() => window.__game.debug.shops.open('parlor', 'build'));
   await page.waitForSelector('.sw-panel-wrap.sw-open .sh-opt[data-style="sundae"]', { timeout: 15000 });
   await page.waitForFunction(() => document.querySelectorAll('.sw-panel-wrap.sw-open .sh-opt img[src^="data:"]').length >= 6, null, { timeout: 30000 }).catch(() => {});
   await page.locator('.sw-panel-wrap.sw-open .sh-opt[data-style="sundae"]').click();
@@ -617,8 +705,6 @@ async function sceneCode(browser) {
   await settle(hp, 1500);
   const code = await hp.$$eval('.sw-panel-wrap.sw-open .sw-net-code-tiles .sw-net-tile[data-pic]', (els) => els.map((e) => e.dataset.pic));
   console.log(`  code: ${code.join(' ')}`);
-  const panel = await hp.locator('.sw-panel-wrap.sw-open .sw-panel').first().boundingBox();
-  await grab(hp, 'code-make', panel ? { clip: pad(panel, 18, hp), width: 1200 } : { width: 1400 });
 
   // the guest on a phone types it
   const guest = await openPlay(browser, { viewport: { width: 390, height: 844 }, touch: true, name: 'Mia', look: null });
@@ -645,7 +731,6 @@ async function sceneCode(browser) {
   const card = hp.locator('.sw-net-knock', { hasText: 'Mia' });
   await card.waitFor({ state: 'visible', timeout: 30000 });
   await settle(hp, 1400);
-  await grab(hp, 'code-knock', { width: 1600 });
   const cb = await card.boundingBox();
   if (cb) await grab(hp, 'code-knock-card', { clip: pad(cb, 20, hp), width: 1100 });
   await host.context.close();
@@ -658,13 +743,14 @@ function pad(b, n, page) {
   return { x, y, width: Math.min(vp.width - x, b.width + 2 * n), height: Math.min(vp.height - y, b.height + 2 * n) };
 }
 
+// the stickers shown in the page's Sticker Book section
+const SITE_STICKERS = ['magic_builder', 'sweet_dreams', 'unicorn_rider', 'fashionista', 'little_chef', 'green_thumb', 'zip_zoom', 'smores_star', 'sleepover', 'night_owl', 'gem_hunter', 'splash'];
+
 async function sceneTiles(browser) {
   console.log('tiles');
   const { context, page } = await openPlay(browser);
-  const keys = ['grass_top', 'grass_side', 'dirt', 'planks_pink', 'planks_white', 'planks_lavender', 'planks_mint', 'brick_pink', 'glass_heart', 'glass_pink',
-    'leaves_cherry', 'log_cherry_side', 'lamp_block', 'star_block', 'cotton_candy', 'frosting_pink', 'grass_frosting_top', 'grass_frosting_side', 'cookie',
-    'wool_pink', 'wool_purple', 'wool_sky', 'wool_yellow', 'wool_cyan', 'roof_pink', 'wallpaper_hearts', 'gem_pink', 'gem_blue', 'glitter_gold', 'rainbow',
-    'water', 'sand', 'cloud', 'flower_tulip_pink', 'flower_daisy', 'crystal_pink', 'jelly_blue', 'gift_side', 'gift_top', 'toy_block_side', 'music_block'];
+  // the block textures the page uses (hero island, block strip, closing blocks)
+  const keys = ['cotton_candy', 'crystal_pink', 'dirt', 'frosting_pink', 'gem_blue', 'gem_pink', 'gift_side', 'gift_top', 'glass_heart', 'glitter_gold', 'grass_side', 'grass_top', 'jelly_blue', 'lamp_block', 'leaves_cherry', 'log_cherry_side', 'music_block', 'planks_pink', 'rainbow', 'roof_pink', 'star_block', 'wallpaper_hearts'];
   const tiles = await page.evaluate((keys) => {
     const B = window.__game.registry.blocks;
     return keys.map((k) => {
@@ -679,6 +765,29 @@ async function sceneTiles(browser) {
   await mkdir(path.join(OUT, 'tiles'), { recursive: true });
   for (const [k, url] of tiles) await writeFile(path.join(OUT, 'tiles', `${k}.png`), Buffer.from(url.slice(url.indexOf(',') + 1), 'base64'));
   console.log(`  ${tiles.length} tiles -> site/img/tiles/`);
+  // the game's own die-cut sticker art (Sticker Book), 240 px WebP with alpha
+  const stickers = await page.evaluate((SITE_STICKERS) => {
+    const g = window.__game;
+    return [...g.registry.stickers.keys()].filter((id) => SITE_STICKERS.includes(id)).map((id) => {
+      const d = g.registry.stickers.get(id);
+      return { id, name: d.name, hint: d.hint, url: g.stickers.image(id, { size: 240 }) };
+    });
+  }, SITE_STICKERS);
+  await mkdir(path.join(OUT, 'stickers'), { recursive: true });
+  for (const s of stickers) {
+    const url = await encoder.evaluate(async (src) => {
+      const img = new Image();
+      img.src = src;
+      await img.decode();
+      const c = document.createElement('canvas');
+      c.width = img.naturalWidth;
+      c.height = img.naturalHeight;
+      c.getContext('2d').drawImage(img, 0, 0);
+      return c.toDataURL('image/webp', 0.9);
+    }, s.url);
+    await writeFile(path.join(OUT, 'stickers', `${s.id}.webp`), Buffer.from(url.slice(url.indexOf(',') + 1), 'base64'));
+  }
+  console.log(`  ${stickers.length} stickers -> site/img/stickers/: ${stickers.map((s) => `${s.id} "${s.name}" (${s.hint})`).join('; ')}`);
   await context.close();
 }
 
@@ -701,6 +810,11 @@ async function main() {
     if (want('studio')) await sceneStudio(browser);
     await meadowScenes(browser);
     if (want('candy')) await sceneCandy(browser);
+    if (want('worlds') || want('world-beach')) await sceneBiome(browser, 'beach', { name: "Lily's Beach Island", time: 0.42, view: (c, sy, i) => [[c + 10, sy + 12, i.sz - 6], [c, sy - 3, c + 8]] });
+    if (want('worlds') || want('world-snow')) await sceneBiome(browser, 'snow', { name: "Lily's Snowy Wonderland", time: 0.42, weather: 'snow' });
+    if (want('worlds') || want('world-fairy')) await sceneBiome(browser, 'fairy', { name: "Lily's Fairy Forest", time: 0.9 });
+    if (want('worlds') || want('world-mix')) await sceneBiome(browser, 'mix', { name: "Lily's Everything Land", time: 0.4 });
+    if (want('worlds') || want('world-meadow')) await sceneBiome(browser, 'meadow', { name: "Lily's Flower Meadow", time: 0.4, seed: 7 });
     if (want('icecream')) await sceneIceCream(browser);
     if (want('code')) await sceneCode(browser);
   } finally {
