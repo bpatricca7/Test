@@ -349,7 +349,7 @@ export class Game {
     try { this.input.endFrame(); } catch (err) { this._stageError('input', err); }
 
     // multiplayer: a friend's recorder closes this frame's changes into her outbox
-    if (this.net !== null) {
+    if (this.net && typeof this.net.frameEnd === 'function') {
       try { this.net.frameEnd(); } catch (err) { this._stageError('net', err); }
     }
 
