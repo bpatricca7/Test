@@ -2,9 +2,11 @@
 //
 // Voices go live, through this server, only:
 //   - within ONE room (a game code), and there only to the players of its game: exactly the
-//     members the room's gate lets see the game (rooms.mjs gameOf: the earliest r:'h' member
-//     and her own reloaded page, plus the peers in their presence `adm`, i.e. the friends she
-//     let in with a tap), read from the room at the moment each frame arrives, so a friend who
+//     members the room's gate lets see the game (rooms.mjs gameOf: the host, i.e. the r:'h'
+//     member with the smallest `at`, whose place the room holds while her page reloads, and her
+//     own reloaded page, plus the peers in their presence `adm`, i.e. the friends she let in
+//     with a tap; no game once the host side says end:1), read from the room at the moment
+//     each frame arrives, so a friend who
 //     is sent home stops hearing at once; a knocking page, a stranger who guessed the code or a
 //     later "pretend host" gets 0 bytes. Peer ids and `by` stamps are made by the server;
 //     whatever host the page names in {k:'on'} is not trusted;

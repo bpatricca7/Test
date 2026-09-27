@@ -16,9 +16,10 @@
 // Control travels as small JSON frames {t:'v', k, ...} on the same socket (never presence):
 //
 //   page -> server   {t:'v', k:'on', h:<host peer>}  my parent said yes: send me voices of
-//                                                    the game this host runs (the server also
-//                                                    needs my presence wk:1, the badge every
-//                                                    player sees, to send me or relay me)
+//                                                    my game (the server decides which game
+//                                                    from the room's gate, not from h, and
+//                                                    also needs my presence wk:1, the badge
+//                                                    every player sees, to send me or relay me)
 //                    {t:'v', k:'off'}                 no voices for me (and none from me)
 //                    {t:'v', k:'req'}                 the button went down: may I talk?
 //                    {t:'v', k:'end'}                 the button came up (if no last frame did)

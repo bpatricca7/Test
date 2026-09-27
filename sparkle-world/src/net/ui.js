@@ -926,7 +926,8 @@ export function installNetUI(game, net, remote) {
         onClick: () => { if (typeof game.speak === 'function') game.speak(`Your code is ${codeWords(code)}`, true); },
       }));
       box.appendChild(row);
-      const where = net.kind === 'ws' && typeof location !== 'undefined' ? `open ${location.host} ` : 'open Sparkle World ';
+      // the game's own address (on the Railway site "/" is the home page, the game is "/play")
+      const where = net.kind === 'ws' && typeof location !== 'undefined' ? `open ${location.host}${location.pathname.replace(/\/(index\.html)?$/, '')} ` : 'open Sparkle World ';
       box.appendChild(ui.el('div', 'sw-net-note', `Grown-ups: friends ${where}and tap Play with Friends, then Join a Code. Code: ${code.join('-')}`));
     }
     return box;

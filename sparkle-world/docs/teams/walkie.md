@@ -170,7 +170,7 @@ code.
 
 ## Tests
 
-`npm run test:walkie` (about 11 minutes in SwiftShader; 173 checks in the last run; `--unit-only` for the Node part only, `--no-build`,
+`npm run test:walkie` (about 7 to 11 minutes in SwiftShader; 190 checks in the last run, after the merge with the review fixes; `--unit-only` for the Node part only, `--no-build`,
 `--headed`, `--shots-prefix=walkie`):
 
 - **Review fixes** (2026-09-27), in the same run: a **stranger** who guessed the code (a raw
