@@ -681,7 +681,8 @@ async function touch(browser) {
     await page.touchscreen.tap(gp.x, gp.y);
     await page.waitForSelector('.sw-panel-wrap.sw-open[data-panel="adopt"] .lf-variant');
     await settle(page, 900);
-    await page.locator('.sw-panel-wrap.sw-open .lf-variant').nth(3).tap();
+    // by name: since the pals team moved Calico to the kitty breeds, Midnight is no longer 4th
+    await page.locator('.sw-panel-wrap.sw-open .lf-variant[data-variant="midnight"]').tap();
     await settle(page, 700);
     await shot(page, 'ipad-adopt', P);
     await page.locator('.sw-panel-wrap.sw-open .sw-chip').nth(1).tap();
