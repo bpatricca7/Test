@@ -124,6 +124,22 @@ const CSS = /* css */ `
   .sh-keeper { width: 72px; height: 72px; }
   .sh-say { font-size: 16px; padding: 8px 12px; }
   .sh-wallet { height: 46px; font-size: 20px; padding: 0 12px 0 6px; }
+  .sh-tab { font-size: 16px; min-height: 46px; padding: 4px 14px 4px 8px; white-space: nowrap; }
+  .sh-stepbtn { font-size: 15px; min-height: 44px; padding: 3px 12px 3px 4px; gap: 5px; }
+  .sh-stepbtn b { width: 28px; height: 28px; font-size: 15px; }
+}
+@media (max-width: 520px) {
+  /* phones: shopkeeper and wallet on one row, her words under them, nothing sticky */
+  .sh-top { position: static; flex-wrap: wrap; margin: 0; padding: 0; }
+  .sh-keeper { width: 60px; height: 60px; }
+  .sh-keeper-name { font-size: 11px; }
+  .sh-wallet { margin-left: auto; }
+  .sh-say { order: 3; flex-basis: 100%; font-size: 15px; }
+  .sh-say::before { left: 26px; top: -16px; margin: 0; border: 9px solid transparent; border-bottom: 12px solid var(--kc, var(--sw-pink-soft)); border-top: 0; }
+  .sh-tabs { gap: 6px; }
+  .sh-tab svg { width: 22px; height: 22px; }
+  .sh-steps { gap: 4px; flex-wrap: nowrap; }
+  .sh-stepbtn { padding: 3px 9px 3px 3px; font-size: 14px; }
   .sh-grid { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); }
   .sh-item-pic, .sh-item-pic img { width: 72px; height: 72px; }
 }

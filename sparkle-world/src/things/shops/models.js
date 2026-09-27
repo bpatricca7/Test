@@ -356,7 +356,20 @@ export function iceCreamTruck(color = TRUCK_COLORS[0]) {
   k.box(2.95 - (wx1 + 0.06), wy1 - wy0, zf - zb, color, wx1 + 0.06, wy0, zb);
   k.box(wx1 - wx0 + 0.12, wy1 - wy0, zf - 0.3 - zb, color, wx0 - 0.06, wy0, zb);
   k.box(wx1 - wx0, wy1 - wy0, 0.04, '#FFE3F0', wx0, wy0, zf - 0.3);
-  for (let i = 0; i < 4; i++) k.box(0.18, 0.5, 0.03, TUBS[i + 1], wx0 + 0.12 + i * 0.36, wy0 + 0.08, zf - 0.27);
+  // inside: little pictures of treats on the back wall, tubs on a shelf, a string of bunting
+  const px = 0.035, zi = zf - 0.265;
+  k.pixels(['.PP.', 'PPPP', 'PPPP', 'TTTT', '.TT.', '.TT.', '..T.'], px, { P: '#FF9CCB', T: '#E9B26C' }, wx0 + 0.14, wy0 + 0.3, zi, { depth: 0.02 });
+  k.pixels(['.MM.', 'MMMM', 'MMMM', 'MMMM', 'MMMM', '.WW.', '.WW.'], px, { M: '#9BE8CF', W: '#EBC795' }, wx0 + 0.5, wy0 + 0.3, zi, { depth: 0.02 });
+  k.pixels(['CC.CC', 'CCCCC', 'CCCCC', '.CCC.', '..C..'], px, { C: '#FF6FA8' }, wx0 + 0.86, wy0 + 0.36, zi, { depth: 0.02 });
+  k.pixels(['.YY.', 'YYYY', 'YYYY', 'SSSS', 'SSSS', '.SS.'], px, { Y: '#FFE38F', S: '#C8B4FF' }, wx0 + 1.22, wy0 + 0.3, zi, { depth: 0.02 });
+  k.box(wx1 - wx0, 0.03, 0.12, '#FFFFFF', wx0, wy0 + 0.2, zf - 0.27);
+  for (let i = 0; i < 5; i++) {
+    const tx = wx0 + 0.18 + i * 0.3;
+    k.cyl(0.065, 0.07, '#FFFFFF', tx, wy0 + 0.23, zf - 0.21, 12);
+    k.ball(0.058, TUBS[i % TUBS.length], tx, wy0 + 0.3, zf - 0.21, { seg: 10, sy: 0.55 });
+  }
+  const flags = ['#FF9CCB', '#FFE38F', '#9BE8CF', '#C8B4FF', '#A6D8FF'];
+  for (let i = 0; i < 9; i++) k.pixels(['XXX', '.X.'], 0.045, { X: flags[i % 5] }, wx0 + 0.05 + i * 0.16, wy1 - 0.12, zi + 0.02, { depth: 0.015 });
   k.box(wx1 - wx0, 0.02, 0.28, '#FFFFFF', wx0, wy0, zf - 0.28);
   k.box(0.06, wy1 - wy0, 0.3, WHITE, wx0 - 0.06, wy0, zf - 0.28);
   k.box(0.06, wy1 - wy0, 0.3, WHITE, wx1, wy0, zf - 0.28);
@@ -371,8 +384,11 @@ export function iceCreamTruck(color = TRUCK_COLORS[0]) {
     const sw = (wx1 - wx0 + 0.2) / 6;
     k.box(sw, 0.05, aw, i % 2 ? WHITE : '#FF8FC8', wx0 - 0.1 + i * sw, wy1 + 0.1, zf, { rot: [0.35, 0, 0], pivot: [wx0 - 0.1 + i * sw, wy1 + 0.12, zf] });
   }
-  // the roof: white trim, a sign and a giant cone
+  // the roof: a rounded white top, bunting along the front, a sign and a giant cone
   k.box(2.1, 0.08, zf - zb + 0.06, WHITE, 0.88, 2.1, zb - 0.03);
+  k.box(2.06, 0.06, zf - zb - 0.24, light, 0.9, 2.18, zb + 0.12);
+  k.box(2.0, 0.05, zf - zb - 0.6, WHITE, 0.93, 2.24, zb + 0.3);
+  for (let i = 0; i < 12; i++) k.pixels(['XXXX', '.XX.'], 0.04, { X: flags[i % 5] }, 0.95 + i * 0.165, 1.99, zf + 0.01, { depth: 0.015 });
   k.box(1.5, 0.42, 0.08, dark, 0.95, 2.18, (zb + zf) / 2 + 0.1);
   k.box(1.42, 0.34, 0.02, signMat('truck', [['Ice', '#FF5FA2'], [' Cream', '#9C7BFF']]), 0.99, 2.22, (zb + zf) / 2 + 0.18, { faces: { px: null, nx: null, py: null, ny: null, nz: null } });
   giantCone(k, 2.62, 2.18, (zb + zf) / 2, 0.62);

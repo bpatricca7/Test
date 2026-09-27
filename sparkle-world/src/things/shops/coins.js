@@ -16,6 +16,7 @@ import { giftSvg, shopIcon } from './icons.js';
 
 export const START_COINS = 100;
 export const EARN = { gem: 10, harvest: 3, cook: 5, sticker: 20, pet: 2, gift: 25 };
+const GIFT_AFTER_TIPS = 90; // seconds of play before the gift shows even if the tips are still going
 const STICKER_WAIT = 1.0; // seconds of clear world before a sticker's coins fly (its pop is up)
 
 const CSS = /* css */ `
@@ -241,7 +242,7 @@ export function installCoins(game) {
   });
 
   // ---------- the daily gift ----------
-  let giftWanted = false, giftEl = null, clearFor = 0;
+  let giftWanted = false, giftEl = null, clearFor = 0, playFor = 0;
   /** Something covers the world (a panel, dialog, fade...); popsOk: a sticker pop does not count. */
   const blocked = (popsOk = false) => !!(ui.current || ui.dialogOpen || document.hidden || game.loading || game.mode !== 'play' ||
     (game.container && game.container.classList.contains('sw-photo-mode')) ||
@@ -252,7 +253,7 @@ export function installCoins(game) {
   // the tutorial's tips, so other scenario scripts are never covered by a surprise present
   ev.on('world:load', () => {
     if (remote()) return;
-    if (profile() && profile().coinGiftDay !== today() && !bot) giftWanted = true;
+    if (profile() && profile().coinGiftDay !== today() && !bot) { giftWanted = true; playFor = 0; }
   });
   ev.on('world:unload', () => { giftWanted = false; if (giftEl) { giftEl.remove(); giftEl = null; } });
 
@@ -307,7 +308,8 @@ export function installCoins(game) {
   game.addSystem({
     name: 'coins',
     update(dt) {
-      if (!ui) return;
+      if (!ui || (!queued.length && !giftWanted)) return;
+      if (game.mode === 'play' && !game.paused) playFor += dt;
       const busy = blocked(true);
       clearFor = busy ? 0 : clearFor + dt;
       if (queued.length && !busy) {
@@ -317,7 +319,9 @@ export function installCoins(game) {
           flyIn(q.n, stickerPoint());
         }
       }
-      if (giftWanted && clearFor > 1.2 && !queued.length && !blocked()) showGift();
+      // a first-time player finishes the tutorial tips first (or plays a while)
+      const tipsDone = profile().tutorialDone || playFor > GIFT_AFTER_TIPS;
+      if (giftWanted && tipsDone && clearFor > 1.2 && !queued.length && !blocked()) showGift();
     },
   });
 
