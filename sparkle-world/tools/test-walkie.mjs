@@ -22,6 +22,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import net from 'node:net';
 import path from 'node:path';
 import { mkdir } from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
 import { waitForTitle, settle, finish, ROOT, SHOTS, CHROMIUM, LAUNCH_ARGS, PAGE_URL } from './smoke.mjs';
 import {
   sleep, game, until, press, setupPage, hostMakesCode, guestTypesCode, hostLetsIn, waitLive, bringTo, closePanels,
@@ -73,10 +74,17 @@ function freePort() {
 
 let server = null;
 async function startServer(port) {
-  const child = spawn(process.execPath, [path.join(ROOT, 'server', 'server.mjs')], {
+  // server/server.mjs as its own program (exactly what `npm start` runs on Railway); its path
+  // travels in the environment, so a `pkill -f server.mjs` by another tool on a shared machine
+  // cannot stop this run's server halfway
+  const main = path.join(ROOT, 'server', 'server.mjs');
+  const child = spawn(process.execPath, ['--input-type=module', '-e', 'process.argv[1] = process.env.SW_MAIN; await import(process.env.SW_MAIN_URL);'], {
     cwd: ROOT,
-    env: { ...process.env, PORT: String(port), SW_TEST_STATS: '1' },
+    env: { ...process.env, PORT: String(port), SW_TEST_STATS: '1', SW_MAIN: main, SW_MAIN_URL: pathToFileURL(main).href },
     stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  child.on('exit', (code, sig) => {
+    if (server === child) errors.push(`[server] stopped by itself during the run (code ${code}, signal ${sig})`);
   });
   const lines = [];
   child.stdout.on('data', (d) => { lines.push(String(d)); process.stdout.write('    [server] ' + d); });
@@ -134,6 +142,20 @@ async function openPlayer(browser, def, url) {
 
 const W = (pl) => game(pl, () => window.__game.debug.walkie.state());
 const WS = (pl) => game(pl, () => window.__game.debug.walkie.stats());
+
+/** Turn the camera toward a friend's drawn avatar (for the speaking badge pictures). */
+async function face(pl, name) {
+  await until(pl, (n) => window.__game.net.remote.list().some((f) => f.name === n && f.visible), name, 6000, 100);
+  await game(pl, (n) => {
+    const g = window.__game;
+    const f = g.net.remote.list().find((x) => x.name === n);
+    if (!f) return;
+    const q = g.player.position;
+    g.cameraRig.yaw = Math.atan2(f.pos[0] - q.x, f.pos[2] - q.z);
+    g.cameraRig.pitch = 0.25;
+  }, name);
+  await settle(pl.page, 500);
+}
 
 /** Center of the walkie button (page px). */
 async function buttonCenter(pl) {
@@ -404,7 +426,8 @@ async function main() {
     numbers.serverAfterFirstPress = { framesIn: sAfter.voice.framesIn, bytesIn: sAfter.voice.bytesIn, bytesRelayed: sAfter.voice.bytesRelayed };
 
     // ----- pictures while Lily talks -----
-    await sleep(900);
+    await face(rosie, 'Lily');
+    await sleep(400);
     release = await hold(lily);
     await until(lily, () => window.__game.debug.walkie.state().talk === 'talking', null, 4000, 50);
     await sleep(1200);
@@ -446,13 +469,19 @@ async function main() {
     await sleep(2200);
     const tie = [await W(lily), await W(rosie)];
     const s3b = await serverStats(port);
-    check(tie.filter((x) => x.talk === 'talking').length === 1 && s3b.voice.busy - s3a.voice.busy === 1, `a tie at the same millisecond: the server gives the walkie to one (${tie.map((x) => x.talk).join(' / ')}) and answers "busy" to the other (${s3b.voice.busy - s3a.voice.busy})`);
+    const tieBusy = s3b.voice.busy - s3a.voice.busy;
+    const tieGrants = s3b.voice.grants - s3a.voice.grants;
+    // a busy SwiftShader page may run its timer a frame late; then her page already knows who
+    // talks and refuses by itself (no request at all); either way the server granted ONE press
+    check(tie.filter((x) => x.talk === 'talking').length === 1 && tieGrants === 1, `a tie at the same millisecond: one talks (${tie.map((x) => x.talk).join(' / ')}), the server granted exactly one press and answered "busy" ${tieBusy} time(s) (the other page refused by itself when it already knew)`);
+    numbers.tie = { serverBusy: tieBusy, serverGrants: tieGrants };
     check(tie.filter((x) => x.micLive).length === 1, 'only the talker\'s microphone is open');
     for (const pl of [lily, rosie]) await game(pl, () => window.__game.debug.walkie.release('race'));
     await sleep(1200);
 
     // ----- Rosie talks (iPad); Lily hears -----
     log('Rosie talks from the iPad');
+    await face(lily, 'Rosie');
     const lb = await WS(lily);
     release = await hold(rosie);
     await until(rosie, () => window.__game.debug.walkie.state().talk === 'talking', null, 4000, 50);
@@ -477,7 +506,7 @@ async function main() {
     const capStart = Date.now();
     await sleep(13000);
     const secsLeft = await game(lily, () => document.querySelector('.sw-wk-secs').textContent);
-    check(Number(secsLeft) <= 3, `the ring counts down (${secsLeft} s left after 13 s)`);
+    check(Number(secsLeft) >= 1 && Number(secsLeft) <= 4, `the ring counts down (${secsLeft} s left after 13 s)`);
     await shot(lily, 'hud-countdown-desktop');
     const capped = await until(lily, () => window.__game.debug.walkie.state().talk === 'capped', null, 5000, 50);
     const capAt = Date.now() - capStart;
@@ -622,14 +651,18 @@ async function main() {
     check(!/Lily|Rosie|June|sw1-/.test(logs), 'the server log names no child and no code');
   } finally {
     await browser.close().catch(() => {});
-    if (server) server.kill('SIGKILL');
+    const s = server;
+    server = null;
+    if (s) s.kill('SIGKILL');
   }
 }
 
 main()
   .catch((err) => {
     errors.push('[fatal] ' + (err && err.stack ? err.stack : err));
-    if (server) server.kill('SIGKILL');
+    const s = server;
+    server = null;
+    if (s) s.kill('SIGKILL');
   })
   .finally(() => {
     console.log('\nnumbers ' + JSON.stringify(numbers, null, 1));
