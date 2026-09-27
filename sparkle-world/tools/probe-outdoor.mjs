@@ -92,7 +92,13 @@ async function fromBag(page, tab, item, { touch = false, color = 0 } = {}) {
   await press(page.locator('.sw-panel-wrap.sw-open .sw-item', { hasText: item }).first());
   await settle(page, 300);
   const colorStep = await page.locator('.sw-panel-wrap.sw-open .sw-color-opt').count();
-  if (colorStep) await press(page.locator('.sw-panel-wrap.sw-open .sw-color-opt').nth(color));
+  // on touch the core Bag can pick a color by itself: the item card reacts on pointerup and
+  // the click the browser sends after the tap lands on the color card under the finger
+  // (src/ui/inventory.js, reported to core) - so the color step may already be gone
+  if (colorStep) {
+    const opt = page.locator('.sw-panel-wrap.sw-open .sw-color-opt').nth(color);
+    await (touch ? opt.tap({ timeout: 4000 }) : opt.click({ timeout: 4000 })).catch(() => {});
+  }
   // picking an item (or its color) closes the Bag by itself; close it only if it stays open
   const closed = await wait(page, () => !window.__game.ui.current, null, 2500).then(() => true, () => false);
   if (!closed) {
@@ -175,32 +181,45 @@ async function tapEntity(page, uid, { touch = false, local = null, stand = null 
     const g = window.__game, E = g.entities, e = E.byUid(uid);
     if (!e) return null;
     const t = local ? E.localToWorld(e, local[0], local[1], local[2]) : e.pickable.box.getCenter(g.camera.position.clone());
+    // where she stands: the given spot, or (stand 'front') a few steps from it on the ground,
+    // in front first, then round it (on a hill top the slope in front can hide it)
+    const spots = [];
     if (stand === 'front') {
-      // a few steps in front of it, on the ground
       const [w, , d] = e.def.size;
-      const f = E.localToWorld(e, w / 2, 0, d + 2.6);
-      const gy = g.world.heightAt(Math.floor(f.x), Math.floor(f.z)) + 1;
-      if (g.player.flying) g.player.setFlying(false);
-      g.player.teleport(f.x, gy + 0.01, f.z);
-    } else if (stand) g.player.teleport(stand[0], stand[1], stand[2]);
-    const p = g.player.position;
-    const head = p.y + 1.6;
-    g.cameraRig.distance = 3.4;
-    g.cameraRig.yaw = Math.atan2(t.x - p.x, t.z - p.z);
-    g.cameraRig.pitch = Math.max(-0.8, Math.min(1.2, Math.atan2(head - t.y, Math.hypot(t.x - p.x, t.z - p.z))));
-    g.cameraRig.snap();
-    g.camera.updateMatrixWorld(true);
+      for (const [lx, lz] of [[w / 2, d + 2.6], [w / 2, d + 3.6], [w + 2.6, d / 2], [-2.6, d / 2], [w / 2, -2.6], [w + 2, d + 2], [-2, d + 2], [w + 2, -2], [-2, -2]]) {
+        const f = E.localToWorld(e, lx, 0, lz);
+        const gy = g.world.heightAt(Math.floor(f.x), Math.floor(f.z)) + 1;
+        if (Math.abs(gy - e.y) <= 2.5) spots.push([f.x, gy + 0.01, f.z]);
+      }
+    } else if (stand) spots.push(stand);
+    else spots.push(null);
     if (!g.__tapRig) { g.__tapRig = g.cameraRig.update; g.cameraRig.update = () => {}; }
     const r = g.renderer.domElement.getBoundingClientRect();
-    const v = t.clone().project(g.camera);
     const nudges = [[0, 0], [0, 0.04], [0, -0.04], [0.04, 0], [-0.04, 0], [0, 0.09], [0, -0.09], [0.09, 0], [-0.09, 0], [0.15, 0.1], [-0.15, 0.1]];
-    for (const [dx, dy] of nudges) {
-      const ndc = { x: v.x + dx, y: v.y + dy };
-      const h = g.pick(ndc);
-      if (h && h.type === 'pickable' && h.pickable.ref && h.pickable.ref.uid === uid) {
-        const sx = r.left + ((ndc.x + 1) / 2) * r.width, sy = r.top + ((1 - ndc.y) / 2) * r.height;
-        if (document.elementFromPoint(sx, sy) !== g.renderer.domElement) continue;
-        return { x: sx, y: sy };
+    for (const s of spots) {
+      if (s) {
+        if (g.player.flying) g.player.setFlying(false);
+        g.player.teleport(s[0], s[1], s[2]);
+      }
+      const p = g.player.position;
+      const head = p.y + 1.6;
+      g.cameraRig.distance = 3.4;
+      g.cameraRig.yaw = Math.atan2(t.x - p.x, t.z - p.z);
+      g.cameraRig.pitch = Math.max(-0.8, Math.min(1.2, Math.atan2(head - t.y, Math.hypot(t.x - p.x, t.z - p.z))));
+      // snap() calls the (paused) update: run the real one directly
+      g.cameraRig.current = g.cameraRig.distance;
+      g.cameraRig.shoulder = 1;
+      g.__tapRig.call(g.cameraRig, 0, true);
+      g.camera.updateMatrixWorld(true);
+      const v = t.clone().project(g.camera);
+      for (const [dx, dy] of nudges) {
+        const ndc = { x: v.x + dx, y: v.y + dy };
+        const h = g.pick(ndc);
+        if (h && h.type === 'pickable' && h.pickable.ref && h.pickable.ref.uid === uid) {
+          const sx = r.left + ((ndc.x + 1) / 2) * r.width, sy = r.top + ((1 - ndc.y) / 2) * r.height;
+          if (document.elementFromPoint(sx, sy) !== g.renderer.domElement) continue;
+          return { x: sx, y: sy };
+        }
       }
     }
     return null;
