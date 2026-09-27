@@ -300,9 +300,11 @@ export function install(game) {
       }, '#F5A300'));
       list.appendChild(r);
     }
-    // weather wand
+    // weather wand (a friend visiting another world follows her friend's weather and clock:
+    // docs/MULTIPLAYER.md §7, so these controls are hidden for her)
+    const visiting = !!(game.net && game.net.isGuest);
     const W = game.weather;
-    if (W && Array.isArray(W.kinds) && typeof W.set === 'function' && W.kinds.length) {
+    if (!visiting && W && Array.isArray(W.kinds) && typeof W.set === 'function' && W.kinds.length) {
       const { row: r, main } = row('rainbow', '#6CC6FF', 'Weather wand');
       const opts = W.kinds.map((k) => {
         const key = typeof k === 'string' ? k : k.key || k.id;
@@ -317,7 +319,7 @@ export function install(game) {
       list.appendChild(r);
     }
     // time of day
-    {
+    if (!visiting) {
       const { row: r, main } = row('clock', '#9C7BFF', 'Time of day');
       const d = game.time.dayTime;
       const cur = d < 0.4 && d > 0.2 ? 'morning' : d >= 0.4 && d < 0.62 ? 'noon' : d >= 0.62 && d < 0.8 ? 'sunset' : 'night';

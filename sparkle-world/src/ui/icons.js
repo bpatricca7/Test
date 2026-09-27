@@ -72,6 +72,11 @@ const PATHS = {
   mute: `<path d="M3.5 9h3.8l5.2-4.4v14.8L7.3 15H3.5Z"/><path ${S} stroke-width="2.6" d="m16 9 5 6M21 9l-5 6"/>`,
   camera3d: `<circle cx="12" cy="7.5" r="4"/><path d="M4.5 21c0-4.2 3.4-7.2 7.5-7.2s7.5 3 7.5 7.2Z"/>`,
   download: `<path ${S} d="M12 3.5v11M7 10l5 5 5-5M4.5 20h15"/>`,
+  // playing with friends (src/net): two kids side by side, a speech bubble, a knocked door, a crown
+  players: `<circle cx="8.3" cy="6.6" r="3.7"/><path d="M1.6 21.5v-3.2a6.7 6.7 0 0 1 13.4 0v3.2Z"/><path d="M6.4 3.4 4.7 1.9 4.3 4.4Z M10.2 3.4l1.7-1.5.4 2.5Z"/><circle opacity=".72" cx="17.4" cy="9.2" r="3"/><path opacity=".72" d="M16.1 21.5v-2.9a5.3 5.3 0 0 1 6.3-5.2v8.1Z"/>`,
+  talk: `<path ${EO} d="M5 3.2h14a3.3 3.3 0 0 1 3.3 3.3v8.1a3.3 3.3 0 0 1-3.3 3.3h-7.4l-5.3 3.9v-3.9H5a3.3 3.3 0 0 1-3.3-3.3V6.5A3.3 3.3 0 0 1 5 3.2Z M7.6 9.3a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2Z M12 9.3a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2Z M16.4 9.3a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2Z"/>`,
+  knock: `<path ${EO} d="M3.6 21.6V9a6.4 6.4 0 0 1 12.8 0v12.6Z M12.4 13.2a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 1 0 0-2.6Z"/><path ${S} stroke-width="2.2" d="M19.4 6.6 21.8 5M19.8 11.4h2.8M19.4 16.2l2.4 1.6"/>`,
+  crown: `<path d="M3.2 17.4 2 6.6l5.4 4.3L12 3.6l4.6 7.3L22 6.6l-1.2 10.8Z"/><rect x="3.2" y="18.4" width="17.6" height="3" rx="1.5"/>`,
 };
 
 /** SVG markup for an icon (unknown names give a star). */

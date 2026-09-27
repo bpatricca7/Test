@@ -13,7 +13,7 @@
 // - A room that ends (listener error upstream_error / limit_reached) is re-joined after 1, 2,
 //   4 and 8 s, then the session ends. Terminal codes end it at once.
 
-import { LIMITS, TOPICS, C, isRoomName } from './protocol.js';
+import { LIMITS, TOPICS, C, isRoomName, cleanText } from './protocol.js';
 import { NetTransport, NetError, StateBox, Pacer, listenerSet, jsonBytes, realClock } from './transport.js';
 
 const TERMINAL = new Set(['revoked', 'not_granted', 'capability_disabled', 'capability_removed', 'transform_error']);
@@ -112,6 +112,29 @@ export class RoomTransport extends NetTransport {
     if (!user) return { uid: null, canHost: null };
     const [uid, can] = await Promise.all([user.id().catch(() => null), user.can('data.write').catch(() => null)]);
     return { uid: typeof uid === 'string' ? uid : null, canHost: can === true ? true : can === false ? false : null };
+  }
+
+  /**
+   * The platform account name of a viewer (user.profiles, scope 'profile'), for the small print
+   * grown-ups read on the knock card and in the Players list. '' when unknown. Cached.
+   */
+  async accountName(uid) {
+    if (typeof uid !== 'string' || !uid) return '';
+    this._names ||= new Map();
+    if (this._names.has(uid)) return this._names.get(uid);
+    let name = '';
+    try {
+      const user = await this._user();
+      if (user && typeof user.profiles === 'function') {
+        const r = await user.profiles([uid]);
+        const p = Array.isArray(r) ? r.find((x) => x && x.id === uid) : r && (r[uid] || (typeof r.get === 'function' ? r.get(uid) : null));
+        if (p && typeof p.name === 'string') name = cleanText(p.name, 60);
+      }
+    } catch {
+      name = '';
+    }
+    this._names.set(uid, name);
+    return name;
   }
 
   async open(roomName) {
