@@ -562,7 +562,7 @@ async function sceneZip(page, { sx, sz }) {
   await clean(page);
   const [px, py, pz] = pose.p;
   // from the side and a little ahead, looking back along the cable
-  await freeCam(page, [px + pose.s[0] * 4.6 + pose.f[0] * 2.2, py + 2.3, pz + pose.s[1] * 4.6 + pose.f[1] * 2.2], [px - pose.f[0] * 0.6, py + 0.6, pz - pose.f[1] * 0.6], { fov: 60, player: true });
+  await freeCam(page, [px + pose.s[0] * 4.2 + pose.f[0] * 2.4, py + 0.9, pz + pose.s[1] * 4.2 + pose.f[1] * 2.4], [px - pose.f[0] * 0.8, py + 1.2, pz - pose.f[1] * 0.8], { fov: 58, player: true });
   await settle(page, 1200);
   await grab(page, 'zip');
   await page.evaluate(() => { window.__game.outdoor.zip.freeze = false; });
