@@ -20,7 +20,7 @@ sit underneath. This file is what a child sees and how it is tested.
 ## Words a child sees (and why)
 
 - The NPC girls already own **Friends** (HUD button and panel `friends`, "My Friends"). Real
-  people are therefore **Players** in the game (HUD button with two kids and a count badge,
+  people are therefore **Players** in the game (HUD button with a game pad and a count badge,
   panel `mp-players`, action `mp-players`; the contract's `mp-friends` name was not used) and
   **Play with Friends** on the title, where there are no NPC friends to confuse them with.
 - Codes: **Make a Code** ("Friends come to your world") and **Join a Code** ("Visit a
@@ -28,7 +28,15 @@ sit underneath. This file is what a child sees and how it is tested.
   tells you"; each picture is read aloud when "Read words out loud" is on.
 - The host's knock card says "**Mia** wants to play!" with **Let in!** / **Not now** (the
   contract's "Come in!" read as if the host were the one arriving).
-- Rules: **Friends can build** and **Careful friends** ("Friends can't change your things").
+- Rules: **Players can build** and **Careful players** ("They can't change your things");
+  the panel says "Say these pictures to play together!" and "Waiting for players to knock…".
+- A device whose name was never chosen is asked "What's your name?" the first time she opens
+  Play with Friends (until then others see "Friend"); a name someone playing already has
+  gets a number ("Lily 2") on the knock card and in Players.
+- Refusals never ask for something she cannot do: "That's someone else's! Build your own next
+  to it."; the host's Undo building reaches the friend as "Lily tidied up. Let's build
+  something new together!" (with sparkles); a knock nobody answered in 90 s is "Lily didn't
+  hear the knock. Knock again?", and the host hears "Mia knocked while you were busy".
 - Every message is a card with a picture and one or two big buttons (§12 texts, host name
   filled in and capitalised). Nothing shows an error code.
 
@@ -43,8 +51,10 @@ sit underneath. This file is what a child sees and how it is tested.
 - **Keypad** (`mp-join`): 4 slots (the next one blinks), Back, Clear, a 6x2 grid of 88 px
   pictures (4x3 at 80 px on phones), Go!. After Go the same panel shows the joining cards:
   "Looking for your friend…" (the 4 pictures hop), "Knock knock! Waiting for Lily to say yes…"
-  (a knocking door, Cancel), "Flying to Lily's world…" (snapshot progress). "Nobody is playing
-  with those pictures" appears in the keypad with the pictures kept, so she can fix one.
+  (a knocking door, Cancel; on the Railway relay the host's name shows only once she is let
+  in, so it reads "your friend"), "Flying to Lily's world…" (snapshot progress). "Nobody is
+  playing with those pictures" appears in the keypad with the pictures kept, so she can fix
+  one; "Not now", no answer, full and version end on the keypad too (with their card).
 - **Knock card** (host, above everything, one at a time, "+1 more"): portrait from the shared
   avatar stage, name, account name in small print on claude.ai plus "visitor" for outside
   guests, knock-knock sound.
@@ -60,12 +70,18 @@ sit underneath. This file is what a child sees and how it is tested.
   button makes room while playing together (Help stays in the Menu); with a mouse the Fly /
   Emotes / Say / Photo buttons sit two by two so the column clears the top-right buttons.
   "Reconnecting…" (cloud) and "Sending…" (a guest with more than 20 waiting changes) pills.
-  "Lily is taking a little break…" pill while the host's tab is hidden or reloading.
-- **Pause**: **Invite Friends** (not in a session; hosts this world), **Players** (in one); a
-  guest's Save & Exit reads **Go home**; the host's Save & Exit says goodbye first (summary card).
+  "Lily is taking a little break…" pill while the host's tab is hidden or reloading, and on a
+  guest "Lily paused building" while building is switched off.
+- **Pause**: **Play Together** (not in a session; opens the Play with Friends card, where Make a
+  Code hosts this world, reusing a fresh "Keep playing" code), **Players** (in one); a guest's
+  Save & Exit reads **Go home**; the host's Save & Exit says goodbye first (summary card).
+- A reloaded host who opens that world with **Play** gets "Your friends are waiting! Open your
+  door again?" (the same code); the title shows **Keep playing** as the big first button.
 - **Summary** (host): "Playing together is over! Everything is saved." with **Great!** and a
-  small **Before friends** (two questions, then the backup comes back). **My Worlds** shows
-  **Before friends** on a world with a backup younger than 7 days.
+  small **Before friends** (two questions, the first with the copy's picture and day and "also
+  what you built"; then the backup comes back and a card offers **Undo**). **My Worlds** shows
+  a small white **Before friends** with "Copy from <day>" while the backup is younger than 7
+  days and nothing was built alone since (docs/MULTIPLAYER.md §13, Addendum B).
 - **Settings** on a guest: no weather wand, no time of day (she follows the host's).
 
 ## Friends' avatars

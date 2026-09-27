@@ -160,7 +160,7 @@ version by itself (1–3 minutes). The old version keeps running until the new o
   time. Until then the server shows the knocking device nothing of the game (no names, no
   world, no messages). She can **Send home** a friend at any time, and that device cannot
   knock again in that game.
-- **Her world is protected.** By default ("Careful friends"), friends can build and change only
+- **Her world is protected.** By default ("Careful players"), friends can build and change only
   their own things and natural ground, not the host's houses and furniture. The host can pause
   building, **Undo building** for any friend, and a copy of her world from *before friends
   came* is saved on her device.

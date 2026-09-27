@@ -1044,10 +1044,11 @@ exactly as in single-player.
     shown when `game.actions.has('mp-friends') && game.net.available`, and refreshes on
     `'net:state'`.
   - Title chips **Keep playing** and **Join Lily** (§6, §11.1).
-  - Pause panel: **Invite Friends** (not in a session), **Friends** (host), **Go home** (guest;
+  - Pause panel: **Play Together** (not in a session; Addendum B), **Players** (host), **Go home** (guest;
     this replaces the label of Save & Exit). Labels refresh `onOpen`.
-  - My Worlds card button **Before friends**, shown while a backup less than 7 days old exists,
-    with a two-step confirm.
+  - My Worlds card button **Before friends** (small, white, with the copy's day), shown while a
+    backup less than 7 days old exists and nothing was built alone since, with a two-step
+    confirm and an Undo after (§11.7, §13).
 - **`src/ui/hud.js`**:
   - A round **Friends** button (`[data-action="mp-friends"]`) with a count badge, in the
     top-right group before Menu.
