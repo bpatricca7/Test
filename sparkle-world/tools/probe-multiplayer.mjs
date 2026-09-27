@@ -487,7 +487,18 @@ test('HELD', 'a treat in Rosie’s hand shows in her avatar’s hand on Lily’s
     return r && r.held === 'treat_lollipop' && r.inHand === 'treat:treat_lollipop' ? r : null;
   }, null, 8000);
   check(!!seenL, `Rosie sees the lollipop in Lily's hand (${seenL ? seenL.inHand : JSON.stringify(await game(rosie, () => window.__game.debug.net.remote().map((x) => [x.name, x.held, x.inHand])))})`);
-  await settle(lily.page, 600);
+  // each camera turns to the friend, close, so the treat in her hand is in the picture
+  const face = (pl, name) => game(pl, (nm) => {
+    const g = window.__game, r = g.debug.net.remote().find((x) => x.name === nm);
+    if (!r) return false;
+    const p = g.player.position;
+    g.cameraRig.yaw = Math.atan2(r.pos[0] - p.x, r.pos[2] - p.z) + 0.35;
+    g.cameraRig.pitch = 0.15;
+    return true;
+  }, name);
+  await face(lily, 'Rosie');
+  await face(rosie, 'Lily');
+  await settle(lily.page, 900);
   await shot(lily, 'lily-sees-held-treat');
   await shot(rosie, 'rosie-sees-held-treat');
   // Eat and Put away join the life column while she holds a treat
