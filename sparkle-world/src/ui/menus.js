@@ -661,6 +661,16 @@ export function install(game) {
     }
   }
 
+  // "Save to a file" for the world she is in (the core offers it when this device can't keep
+  // her world): save it first so the file has everything, then hand it to the device
+  game.registerAction('saveToFile', async (g) => {
+    const w = g.world;
+    if (!w) return false;
+    await g.saveWorld({ thumbnail: false });
+    await exportWorld({ id: w.meta.id, name: w.meta.name });
+    return true;
+  });
+
   async function importWorld() {
     const text = await pickTextFile('.json,application/json,text/plain');
     if (!text) return;
