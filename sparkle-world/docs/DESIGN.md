@@ -595,7 +595,7 @@ consumed per frame, `input.jump`,
 tap/cursor, or null = screen center), `input.on('tap', fn)` (click/tap without drag),
 `input.on('hold', fn)`, `input.on('key', fn)`. Mouse: left-click = use current tool; right-click
 = remove (desktop shortcut); drag (either button, > 6 px) = look. Keys: WASD/arrows, Space,
-Shift, 1–9, E (hand/interact), Q (remove), B (bag), F (fly), V (camera), P (photo),
+Shift, 1–9, E (hand/interact), Q (remove), B (Bag; never over another open panel), F (fly), V (camera), P (photo),
 G (emotes), Z (undo, also Ctrl+Z), Esc (menu / close panel). Touch: joystick (left 40% of
 screen), look drag (right side), taps act at the tap point. Touches that start on the resting
 joystick (its radius + 36 px) only steer; a quick (< 0.28 s), still (< 10 px) touch elsewhere
@@ -606,13 +606,27 @@ switches to Hand). Hold still ≥ 0.42 s then drag = paint/erase a line (`hold` 
 dragged is a slow tap: the game runs a normal tap on release unless the hold painted.
 `input.press('jump'|'down'|'run', bool)` for HUD buttons (a press shorter than a frame still
 counts for one frame),
-`input.touchMode` + `touchmode` event, `gesture` event (first user gesture unlocks audio).
+`input.touchMode` + `touchmode` event, `gesture` event (first user gesture unlocks audio;
+also fired on pointerup / touchend / click, which is what iOS counts as a gesture).
+Nothing stays pressed: `input.reset(reason)` ends every press (keys, HUD buttons, joystick,
+look drags, holds; a hold ends with `cancelled: true`) and emits `reset` { reason, had }. The
+game calls it on window blur, a hidden page and pagehide; pointercancel / lostpointercapture
+end single presses, and touch pointers a web view never ended are found by comparing them with
+the fingers each touch event reports (`input.stats` counts resets / cancels / stale ones). iOS
+page pinch (`gesturestart/gesturechange`) is prevented. CSS (theme.js): the canvas and the HUD
+layer are `touch-action: none`, the page `manipulation` (no double-tap zoom), no long-press
+callout or tap highlight, `overscroll-behavior: none`; text fields stay selectable.
 
 ### Audio (src/core/audio.js)
 WebAudio, created on first user gesture. `audio.play(name, { volume, pitch })` synthesized
 sounds: pop, place, remove, click, sparkle, chime, whoosh, splash, jump, step, eat, pet, bark,
 meow, neigh, magic, success, page, camera, note:<midi>. `audio.music(on)` gentle generative
 music-box loop (day theme, soft night theme). Volumes in `profile.settings`.
+Every one-shot voice is disconnected, with the nodes that only served it, when it ends:
+`audio.track(src, ...nodes)` (modules that make their own sources on `audio.ctx` use it too);
+`audio.stats()` → `{ state, live, started, ended }`. `unlock()` (every gesture) resumes a
+context that is not running, including iOS `'interrupted'`, except while the game itself has
+suspended it for a hidden tab (`suspend(true)`).
 
 ### Storage (src/core/storage.js)
 `SaveStore` with two backends; every call is async and never throws to callers (errors are
@@ -630,6 +644,13 @@ logged and reported as `{ ok:false }`).
   ≤ 180000-char pieces). `store.init()` waits ≤ 1.5 s for the cloud; a later arrival fires
   `store.onCloudReady(fn)` (the game reloads a newer cloud profile on the title screen).
   `store.flush()` pushes pending cloud writes now; `store.backendName` e.g. 'indexedDB+cloud'.
+  Every cloud write times out after 10 s (so a db call that never settles cannot hold up the
+  writes behind it); cloud reads fall back to local data after 8 s (24 s for a whole world).
+  Cloud health: `store.cloudWritable` is false after a failed write until one succeeds; a
+  permanent refusal (invalid_argument, permission / denied, not_granted, read-only, 401/403…,
+  e.g. a view-only visitor) sets `store.cloudReadOnly`: cloud writes stop for the session with
+  one `console.info`, and `backendName` becomes e.g. 'memory+cloud(read-only)'.
+  `store.onStatus(fn)` reports every change of `persistent` as `fn({ persistent })`.
 - `store.listWorlds()`, `store.loadWorld(id)`, `store.saveWorld(save)`, `store.deleteWorld(id)`,
   `store.loadProfile()`, `store.saveProfile(profile)`, `store.exportWorld(id) -> string`,
   `store.importWorld(string)`.
@@ -638,15 +659,21 @@ logged and reported as `{ ok:false }`).
   backend that holds data (newest `updatedAt` wins; localStorage copies left by an earlier
   session are found at `init()`); a later successful primary write drops the older fallback
   copy. `saveWorld`/`saveProfile` resolve `{ ok, backend, persistent, error? }` —
-  `persistent` is false when the data only lives in memory (no cloud). `store.persistent`
-  says the same for the store as a whole (false in a sandboxed frame without storage or
-  cloud). The game toasts "Oh no! This device can't save your world right now." on entering a
-  world when not persistent and after a non-persistent save (at most every 4 minutes).
-- Export: "Save to a file" in My Worlds uses `claude.use('downloads')` when present, else an
-  `<a download>` blob link; Import uses a file input. *Not built yet (Menus team): only
-  `store.exportWorld/importWorld` exist.*
+  `persistent` is false when the data only lives in memory (no writable cloud).
+  `store.persistent` says the same for the store as a whole (false in a sandboxed frame
+  without storage or a cloud that takes writes). The game keeps saving (in memory) and says
+  so: on entering a world when not persistent, as soon as `onStatus` reports it during play,
+  and after a non-persistent save (at most every 4 minutes). The first time in a session it
+  asks "Oh no! This device can't keep your world" with **Save to a file** (the `saveToFile`
+  action, menus.js); later it toasts "Oh no! This device can't save your world right now."
+- Page closing: `store.journalWorld(save)` / `store.journalProfile(profile)` write a copy to
+  localStorage synchronously (pagehide: an IndexedDB write started then may be cut off by a
+  reload). The next session reads it like any fallback copy and the next normal save drops it.
+- Export: "Save to a file" in My Worlds (and the `saveToFile` action for the world she is
+  in) uses `claude.use('downloads')` when present, else an `<a download>` blob link; Import
+  uses a file input (`src/ui/menus/files.js`).
 - Publishing as a claude.ai Artifact: declare the capabilities `db` and `user` (cloud saves)
-  and `downloads` (for "Save to a file" once it exists).
+  and `downloads` (for "Save to a file").
 
 ### Save formats
 ```js
@@ -717,7 +744,12 @@ game.saveProfile(immediate=false)        // debounced 400 ms
 game.applySettings()                     // volumes, quality (pixel ratio), camera mode
 game.captureThumbnail() -> jpeg dataURL  // 240×150; taken on world creation, exit and at
                                          // most every 5 min by autosave (it costs a render)
-game.flushSave()                         // save now + push cloud writes (tab hidden / pagehide)
+game.flushSave({ unloading })            // save now + push cloud writes (tab hidden / pagehide;
+                                         // unloading also journals to localStorage, see Storage)
+// The world is also saved 5 s after a change (block, furniture, history, pets, garden, gems;
+// at most 20 s after the first unsaved change); the 45 s autosave stays as a backstop.
+// exitToTitle() awaits only the save on this device (the cloud flush runs in the background),
+// so the title always opens. The frame loop does no work while document.hidden.
 // WebGL context loss: three.js restores the context itself; the game saves at once and, if
 // the picture has not returned after 2.5 s, offers "Wake up" (reload) in an in-page dialog.
 game.registerAction(name, fn); game.runAction(name, ...args)
@@ -729,7 +761,20 @@ shared unit geometry), `cyl`, `ball`, `mat(color, { emissive, emissiveIntensity,
 `userData.shared`). `src/core/util.js` — `mulberry32 hashString hash3 clamp lerp smoothstep
 randInt pick angleDelta makeId hexToRgb rgbToHex mixHex shade jitter rgba hexToUnit nextFrame
 sleep escapeHtml`. `src/core/noise.js` — `new Noise(seed)`: `n2 n3 fbm2 fbm3 ridge2`.
-`thumbs.get(key, build, { dir, zoom })` renders with a small second WebGLRenderer.
+`thumbs.get(key, build, { dir, zoom, priority })` renders with a small second WebGLRenderer.
+`priority`: 'high' (on screen now; `items.iconFor` asks with it), 'normal' (default), 'low'
+(background warm-ups); `thumbs.withPriority(p, fn)` applies it to every `get()` made
+synchronously in fn; a queued key asked again higher moves up; `thumbs.queue` (read-only,
+highest first) / `thumbs.pending`. A job that overruns the frame budget makes the queue rest
+about as long ('high' jobs do not wait). Nothing is rendered or cached while its context is
+lost (a job drawn as it went is queued again; no restore within 3 s = a fresh renderer), and
+`items.iconFor` does not cache an empty picture. The Dress-Up stage's snapshots (Studio
+tiles, emote wheel) share a 10 ms budget per frame and rest after an overrun the same way.
+Diagnostics (`game.diag`, `src/core/diag.js`): errors, long frames, stalls, WebGL contexts
+(created / lost / restored / live / maxLive), live 2D canvases (count, MB, peaks) and audio
+stats; `diag.report()`. Inside a claude.ai Artifact the report uploads (small, at most once a
+minute) to the viewer's own `data/users/<uid>/profile/diag/<session>`, only while the save
+store has a writable cloud.
 
 Biome def (`game.registry.biomes.set(key, def)`): `{ key, name, description, iconBlock,
 colors: [cssTop, cssBottom] (New World card), sky?: { top, horizon }, generate(world, rand,
