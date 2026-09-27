@@ -147,7 +147,7 @@ async function main() {
   }
   const port = await freePort();
   await startServer(port);
-  const url = `http://localhost:${port}/`;
+  const url = `http://localhost:${port}/play`; // the home page is at /, the game at /play
   log(`server up: ${url}`);
   const info = await (await fetch(`http://127.0.0.1:${port}/api/net`)).json();
   check(info.ok === true && typeof info.build === 'string', `/api/net answers ${JSON.stringify(info)}`);
