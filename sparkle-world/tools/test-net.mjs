@@ -778,6 +778,7 @@ async function serverTests() {
       await sleep(400);
       const relayed = b.frames.length - before;
       assert(relayed >= 70 && relayed <= 110, 'rate limited: ' + relayed + ' of 300 relayed');
+      assert(a.frames.some((f) => f.t === 'e' && f.code === 'rate'), 'the sender hears it was too fast');
       // rooms cap (2): a second room is fine, a third is refused
       const r2 = await rawWs(srv.port, 'room-two', 'secret-number-r2xxxx');
       await waitFor(() => r2.frames.length > 0);

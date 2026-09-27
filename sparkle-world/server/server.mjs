@@ -249,6 +249,10 @@ export function createServer(opts = {}) {
       if (!conn.bucket.take()) {
         counters.rateDropped++;
         const now = Date.now();
+        if (now - (conn.rateNoticeAt || 0) > 1000) {
+          conn.rateNoticeAt = now;
+          safeSend(ws, { t: 'e', code: 'rate' }); // the client is over its budget (a bug worth seeing)
+        }
         if (now - conn.droppedAt > 10000) {
           conn.droppedAt = now;
           conn.dropped = 0;

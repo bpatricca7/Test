@@ -419,7 +419,7 @@ export function wsNet(port, seed) {
       for (const t of transports.keys()) {
         const s = t.stats();
         if (s.bigDropped) v.push({ kind: 'msg_bytes', n: s.bigDropped });
-        for (const code of ['too_big', 'bad_state', 'bad_frame', 'bad_topic']) if (s.errors[code]) v.push({ kind: code, n: s.errors[code] });
+        for (const code of ['too_big', 'bad_state', 'bad_frame', 'bad_topic', 'rate']) if (s.errors[code]) v.push({ kind: code, n: s.errors[code] });
       }
       return v;
     },
