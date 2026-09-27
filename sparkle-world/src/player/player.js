@@ -136,9 +136,11 @@ export class Player {
     if (physics) {
       const res = physics.move(this.body, dt, { step: !this.flying });
       this.onGround = res.onGround;
-      // walking into a 1-block ledge: hop up automatically
+      // walking into a 1-block ledge: hop up automatically. The hop starts after this frame's
+      // gravity step, so add back half a step: the peak (1.1) then no longer sinks below one
+      // block at low frame rates (it was 0.98 at 30 fps, 0.92 at 20 fps).
       if (res.ledge !== null && !this.flying && wishLen > 0.3 && this.onGround) {
-        this.velocity.y = JUMP_V * 0.92;
+        this.velocity.y = JUMP_V * 0.92 + GRAVITY * dt * 0.5;
       }
       if (this.flying && this.onGround && input.down) this.setFlying(false);
     }
@@ -203,10 +205,20 @@ export class Player {
     this.setFlying(!this.flying);
   }
 
+  /**
+   * Stop flying without the whoosh (sitting down, lying down, mounting): listeners such as
+   * the HUD's Fly / Up / Down / Jump buttons still hear 'player:fly'.
+   */
+  _landQuietly() {
+    if (!this.flying) return;
+    this.flying = false;
+    this.game.events.emit('player:fly', { flying: false });
+  }
+
   /** Sit on a seat: seatPos is the seat surface (world), yaw the direction to face. */
   sitOn(entity, seatPos, yaw) {
-    this.flying = false;
     this.state = 'sit';
+    this._landQuietly();
     this.seatEntity = entity;
     this.position.copy(seatPos);
     this.velocity.set(0, 0, 0);
@@ -217,8 +229,8 @@ export class Player {
 
   /** Lie down: pos is the mattress top centre, yaw points from headboard to foot. */
   sleepIn(entity, pos, yaw) {
-    this.flying = false;
     this.state = 'sleep';
+    this._landQuietly();
     this.seatEntity = entity;
     this.position.copy(pos);
     this.velocity.set(0, 0, 0);
@@ -270,8 +282,8 @@ export class Player {
 
   /** Ride a pet (the pets module moves it; pet.object3d and pet.seatHeight are used). */
   mount(pet) {
-    this.flying = false;
     this.state = 'ride';
+    this._landQuietly();
     this.mountPet = pet;
     this.velocity.set(0, 0, 0);
   }

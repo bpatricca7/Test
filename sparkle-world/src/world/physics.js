@@ -6,6 +6,9 @@ import { SHAPES } from '../core/registry.js';
 const EPS = 0.001;
 const STEP_HEIGHT = 0.55;
 const LEDGE_HEIGHT = 1.05;
+// While rising (a hop or jump) a body that is only this far below the top of what it walks
+// into steps onto it, so an auto-hop that peaks a hair short at a low frame rate still lands.
+const AIR_STEP = 0.3;
 
 export class Physics {
   /**
@@ -35,6 +38,8 @@ export class Physics {
     h.any = false;
     h.top = -Infinity; h.bottom = Infinity;
     h.minX = Infinity; h.maxX = -Infinity; h.minZ = Infinity; h.maxZ = -Infinity;
+    // a broken (non-finite or absurdly large) box would loop forever below: call it blocked
+    if (!(maxX - minX < 64 && maxY - minY < 64 && maxZ - minZ < 64)) return true;
     const w = this.world;
     const x0 = Math.floor(minX), x1 = Math.floor(maxX - 1e-9);
     const y0 = Math.floor(minY), y1 = Math.floor(maxY - 1e-9);
@@ -91,6 +96,15 @@ export class Physics {
     const p = body.pos, v = body.vel;
     const hw = body.halfW, ht = body.height;
     const w = this.world;
+    const m = hw + 0.02;
+    if (!Number.isFinite(v.x) || !Number.isFinite(v.y) || !Number.isFinite(v.z)) v.set(0, 0, 0);
+    if (!Number.isFinite(p.x) || !Number.isFinite(p.y) || !Number.isFinite(p.z)) {
+      // never loop on a broken position: drop the body back in from above the world centre
+      p.set(w.sx / 2, w.sy, w.sz / 2);
+      v.set(0, 0, 0);
+    }
+    if (p.x < m) p.x = m; else if (p.x > w.sx - m) p.x = w.sx - m;
+    if (p.z < m) p.z = m; else if (p.z > w.sz - m) p.z = w.sz - m;
     // sub-steps keep fast falls from tunnelling through thin floors
     const dist = Math.max(Math.abs(v.x), Math.abs(v.y), Math.abs(v.z)) * dt;
     const steps = Math.max(1, Math.ceil(dist / 0.35));
@@ -118,23 +132,28 @@ export class Physics {
         if (d === 0) continue;
         if (axis === 0) p.x += d; else p.z += d;
         if (!this.overlap(p.x - hw, p.y, p.z - hw, p.x + hw, p.y + ht, p.z + hw)) continue;
-        const top = this._hit.top;
+        // copy the wall's extent now: bodyBlocked() below reuses (and resets) this._hit
+        const hit = this._hit;
+        const top = hit.top;
+        const wallMin = axis === 0 ? hit.minX : hit.minZ;
+        const wallMax = axis === 0 ? hit.maxX : hit.maxZ;
         const rise = top - p.y;
         const grounded = wasOnGround || res.onGround;
-        // small obstacle (slab, carpet, bed edge): just step up onto it
-        if (step && grounded && rise > 0 && rise <= STEP_HEIGHT && !this.bodyBlocked(p.x, top + EPS, p.z, hw, ht)) {
+        // small obstacle (slab, carpet, bed edge): just step up onto it; while rising from a
+        // hop, also onto a ledge whose top is only a little above the feet
+        const stepUp = step && rise > 0 && (grounded ? rise <= STEP_HEIGHT : v.y > 0 && rise <= AIR_STEP);
+        if (stepUp && !this.bodyBlocked(p.x, top + EPS, p.z, hw, ht)) {
           p.y = top + EPS;
           continue;
         }
         if (grounded && rise > 0 && rise <= LEDGE_HEIGHT && !this.bodyBlocked(p.x, top + EPS, p.z, hw, ht)) {
           res.ledge = top;
         }
-        const h = this._hit;
         if (axis === 0) {
-          p.x = d > 0 ? h.minX - hw - EPS : h.maxX + hw + EPS;
+          p.x = d > 0 ? wallMin - hw - EPS : wallMax + hw + EPS;
           v.x = 0;
         } else {
-          p.z = d > 0 ? h.minZ - hw - EPS : h.maxZ + hw + EPS;
+          p.z = d > 0 ? wallMin - hw - EPS : wallMax + hw + EPS;
           v.z = 0;
         }
         res.hitWall = true;
@@ -145,7 +164,6 @@ export class Physics {
       res.onGround = this.overlap(p.x - hw, p.y - 0.02, p.z - hw, p.x + hw, p.y, p.z + hw);
     }
     // invisible wall at the world edge
-    const m = hw + 0.02;
     if (p.x < m) { p.x = m; v.x = 0; }
     if (p.z < m) { p.z = m; v.z = 0; }
     if (p.x > w.sx - m) { p.x = w.sx - m; v.x = 0; }
