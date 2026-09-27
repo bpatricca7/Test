@@ -4,7 +4,8 @@
 // ridden (pony / unicorn: steered with the player's own move input; unicorns fly gently).
 
 import * as THREE from 'three';
-import { SPECIES, buildRig, variantOf } from './species.js';
+import { SPECIES, buildRig, variantOf, petOpts } from './species.js';
+import { disposeRig } from './skin.js';
 import { newAnim, animate, playTrick } from './anim.js';
 import { nameTagSprite, disposeSprite } from './kit.js';
 import { angleDelta } from '../../core/util.js';
@@ -29,11 +30,12 @@ export class Pet {
     this.adoptedAt = data.adoptedAt || Date.now();
     this.love = data.love | 0;
 
-    this.rig = buildRig(this.species, this.variant);
+    this.opts = petOpts(this.species, data.opts);
+    this.rig = buildRig(this.species, this.variant, { ...this.opts, merged: true });
     this.object3d = this.rig.root;
     this.group = this.rig.root;
     this.seatHeight = this.spec.seat || 0.9;
-    this.tagY = this.spec.tagY * (this.rig.scale || 1);
+    this.tagY = (variantOf(this.species, this.variant).tagY || this.spec.tagY) * (this.rig.scale || 1);
     this.pos = this.object3d.position;
     this.pos.set(data.x || 0, data.y || 0, data.z || 0);
     this.vel = new THREE.Vector3();
@@ -46,7 +48,9 @@ export class Pet {
     this.object3d.position.set(0, 0, 0);
     this.object3d.rotation.y = 0;
     this.object3d.updateMatrixWorld(true);
-    _box.setFromObject(this.rig.jumper);
+    // a merged rig keeps its shape in one skinned geometry (baked in root space at rest)
+    if (this.rig.skinned) _box.copy(this.rig.skinned.geometry.boundingBox);
+    else _box.setFromObject(this.rig.jumper);
     this.pos.set(data.x || 0, data.y || 0, data.z || 0);
     this.object3d.rotation.y = this.yaw;
     this.ext = Math.max(-_box.min.x, _box.max.x, -_box.min.z, _box.max.z, this.spec.halfW) + 0.04;
@@ -121,15 +125,18 @@ export class Pet {
       // the saved spot is on the ground next to where we were riding
       y = this.groundY;
     }
-    return {
+    const out = {
       id: this.id, species: this.species, variant: this.variant, name: this.name, mode: this.mode,
       x: r(x), y: r(y), z: r(z), yaw: r(this.yaw), home: this.home.map(r), adoptedAt: this.adoptedAt, love: this.love,
     };
+    if (Object.keys(this.opts).length) out.opts = { ...this.opts };
+    return out;
   }
 
   dispose() {
     if (this.tag) disposeSprite(this.tag);
     this.tag = null;
+    disposeRig(this.rig);
     if (this.object3d.parent) this.object3d.parent.remove(this.object3d);
   }
 
@@ -216,6 +223,12 @@ export class Pet {
     this.lookAtPlayer = false;
     if (this.eatLeft > 0) {
       this.eatLeft -= dt;
+      this.stop();
+      this.anim.pose = 'stand';
+      return;
+    }
+    if (this.anim.hideLeft > 0) {
+      // a turtle tucked into its shell stays put until it peeks out again
       this.stop();
       this.anim.pose = 'stand';
       return;
@@ -430,7 +443,7 @@ export class Pet {
     // shadow and the paddling pose; it stops when it climbs out onto dry ground
     const inWater = ph.liquidAt(p.x, p.y + spec.height * 0.3, p.z) || (this.swimming && ph.liquidAt(p.x, p.y + 0.02, p.z));
     this.swimming = inWater;
-    if (inWater) speed *= spec.swims ? 0.9 : 0.6;
+    if (inWater) speed *= spec.swims ? (spec.swimBoost || 0.9) : 0.6;
     const tvx = wx * speed + sx * 3, tvz = wz * speed + sz * 3;
     const k = Math.min(1, (this.onGround || inWater ? 11 : 4) * dt);
     v.x += (tvx - v.x) * k;

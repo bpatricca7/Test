@@ -19,6 +19,7 @@ export function newAnim() {
     eat: 0, // seconds of nibbling left
     trick: null, trickT: 0, trickDur: 1,
     lookYaw: 0, lookPitch: 0, curYaw: 0, curPitch: 0,
+    hideLeft: 0, hide: 0, // turtles: seconds left inside the shell, and the blend weight
     blinkT: 1 + Math.random() * 3, blinkLeft: 0,
     earT: 2 + Math.random() * 3, earLeft: 0, earSide: 0,
     wag: 0.3,
@@ -27,6 +28,13 @@ export function newAnim() {
 }
 
 const TRICK_DUR = { hop: 0.75, spin: 1.5, groom: 2.4, binky: 0.8, roll: 1.5, flap: 1.3, rear: 1.4, shake: 0.7 };
+
+/** Show or hide a rig part: separate meshes use visible, merged rigs (bones) use scale 0. */
+function show(o, on, sy = 1) {
+  o.visible = on;
+  if (on) o.scale.set(1, sy, 1);
+  else o.scale.set(0, 0, 0);
+}
 
 /** Start a little trick animation ('hop' is the happy jump every species can do). */
 export function playTrick(a, name) {
@@ -47,10 +55,12 @@ export function animate(rig, a, dt) {
   const spec = rig.spec;
   const gait = spec.gait;
   const horse = gait === 'trot';
+  const crawl = gait === 'crawl';
+  const low = horse; // horses lie down instead of sitting (turtles just rest as they are)
 
   // ----- pose weights -----
-  const wantSit = a.pose === 'sit' && !horse ? 1 : 0;
-  const wantLie = a.pose === 'lie' || a.pose === 'sleep' || (a.pose === 'sit' && horse) ? 1 : 0;
+  const wantSit = a.pose === 'sit' && !low && !crawl ? 1 : 0;
+  const wantLie = a.pose === 'lie' || a.pose === 'sleep' || (a.pose === 'sit' && low) ? 1 : 0;
   a.sit = approach(a.sit, wantSit, 7, dt);
   a.lie = approach(a.lie, wantLie, 5, dt);
   a.sleep = approach(a.sleep, a.pose === 'sleep' ? 1 : 0, 3, dt);
@@ -60,7 +70,7 @@ export function animate(rig, a, dt) {
   const ws = a.sit, wl = a.lie, wz = a.sleep;
 
   // ----- reset -----
-  const J = rig.jumper, B = rig.body, H = rig.head;
+  const J = rig.jumper, B = rig.body, H = rig.head, L = rig.legs;
   J.position.set(0, 0, 0);
   J.rotation.set(0, 0, 0);
   B.position.y = rig.bodyY;
@@ -72,6 +82,18 @@ export function animate(rig, a, dt) {
   for (const e of rig.ears) e.rotation.set(0, 0, 0);
   for (const w of rig.wings) w.rotation.set(0, 0, 0);
   if (rig.mane) rig.mane.rotation.set(0, 0, 0);
+  if (rig.canHide) {
+    H.position.copy(rig.headRest);
+    H.scale.setScalar(1);
+    for (let i = 0; i < L.length; i++) {
+      L[i].position.copy(rig.legRest[i]);
+      L[i].scale.setScalar(1);
+    }
+    if (rig.tail) {
+      rig.tail.position.copy(rig.tailRest);
+      rig.tail.scale.setScalar(1);
+    }
+  }
 
   // ----- gait -----
   const legLen = rig.legLen;
@@ -79,8 +101,15 @@ export function animate(rig, a, dt) {
   const stepRate = Math.min(4.6, Math.max(1.7, 0.95 / legLen));
   a.phase += dt * (a.swim ? 9 : a.speed * stepRate + (move > 0.02 ? 0 : 0));
   const ph = a.phase;
-  const L = rig.legs;
-  if (a.swim && wl < 0.5) {
+  if (a.swim && wl < 0.5 && crawl) {
+    // flippers: long sweeping strokes, the back ones kicking
+    for (let i = 0; i < L.length; i++) {
+      const back = i > 1, side = i % 2 ? -1 : 1;
+      L[i].rotation.y = side * Math.sin(ph * 0.7 + (back ? 1.6 : 0)) * (back ? 0.45 : 0.7);
+      L[i].rotation.z = side * (0.25 + Math.sin(ph * 0.7) * 0.2);
+    }
+    H.rotation.x -= 0.12;
+  } else if (a.swim && wl < 0.5) {
     for (let i = 0; i < L.length; i++) L[i].rotation.x = Math.sin(ph + i * 1.7) * 0.55;
     B.rotation.x -= 0.12;
   } else if (gait === 'hop') {
@@ -100,8 +129,20 @@ export function animate(rig, a, dt) {
     J.rotation.z = Math.sin(ph) * 0.16 * move;
     J.position.y += Math.abs(Math.sin(ph)) * 0.025 * move;
     for (let i = 0; i < rig.wings.length; i++) rig.wings[i].rotation.z = (i ? -1 : 1) * (0.15 * move + Math.abs(Math.sin(ph)) * 0.25 * move);
+  } else if (crawl) {
+    // a slow, steady turtle walk: diagonal pairs, a gentle rock of the shell
+    const amp = move * 0.55;
+    const s = Math.sin(ph);
+    L[0].rotation.x = s * amp;
+    L[3].rotation.x = s * amp;
+    L[1].rotation.x = -s * amp;
+    L[2].rotation.x = -s * amp;
+    B.rotation.z = Math.sin(ph) * 0.05 * move;
+    H.rotation.y += Math.sin(ph * 0.5) * 0.08 * move;
+    B.position.y += Math.abs(Math.cos(ph)) * 0.012 * move;
   } else {
-    const amp = move * (horse ? 0.62 : 0.72);
+    const gallop = horse && spec.big ? clamp01((a.speed - spec.speed * 1.15) / 3) : 0;
+    const amp = move * (horse ? 0.62 : 0.72) + gallop * 0.25;
     const s = Math.sin(ph);
     L[0].rotation.x = s * amp;
     L[3].rotation.x = s * amp;
@@ -109,6 +150,11 @@ export function animate(rig, a, dt) {
     L[2].rotation.x = -s * amp;
     B.position.y += Math.abs(Math.cos(ph)) * 0.035 * move * (horse ? 1.6 : 1);
     H.rotation.x += Math.sin(ph * 2) * 0.05 * move;
+    if (gallop > 0) {
+      // a rocking-horse canter when she rides fast
+      B.rotation.x += Math.sin(ph) * 0.06 * gallop;
+      H.rotation.x -= Math.sin(ph) * 0.08 * gallop;
+    }
     if (rig.mane) rig.mane.rotation.z = Math.sin(ph) * 0.04 * move;
   }
 
@@ -257,6 +303,30 @@ export function animate(rig, a, dt) {
     if (u >= 1) a.trick = null;
   }
 
+  // ----- turtle: tucked into the shell -----
+  if (rig.canHide) {
+    if (a.hideLeft > 0) a.hideLeft = Math.max(0, a.hideLeft - dt);
+    a.hide = approach(a.hide, a.hideLeft > 0 ? 1 : 0, a.hideLeft > 0 ? 12 : 3.2, dt);
+    const h = a.hide;
+    if (h > 0.001) {
+      const k = 1 - 0.72 * h;
+      H.position.z -= 0.22 * h;
+      H.position.y -= 0.05 * h;
+      H.scale.setScalar(k);
+      for (let i = 0; i < L.length; i++) {
+        L[i].position.x *= 1 - 0.3 * h;
+        L[i].position.y += 0.06 * h;
+        L[i].scale.set(k, k, k);
+      }
+      if (rig.tail) {
+        rig.tail.position.z += 0.12 * h;
+        rig.tail.scale.setScalar(k);
+      }
+      B.position.y -= 0.1 * h;
+      J.rotation.z += Math.sin(t * 30) * 0.03 * h * (a.hideLeft > 0 && a.hideLeft < 0.5 ? 1 : 0);
+    }
+  }
+
   // ----- look -----
   const lookK = Math.min(1, 5 * dt);
   const maxYaw = horse ? 0.5 : 0.75;
@@ -270,17 +340,14 @@ export function animate(rig, a, dt) {
   }
 
   // ----- face -----
-  const sleepy = wz > 0.5;
+  const sleepy = wz > 0.5 || a.hide > 0.6;
   const joy = !sleepy && happy && a.eat <= 0;
   const ey = a.blinkLeft > 0 ? 0.12 : 1;
   for (const e of rig.eyes) {
-    const hm = e.userData.happy;
-    e.visible = !sleepy && !joy;
-    e.scale.y = ey;
-    if (hm) {
-      hm.visible = sleepy || joy;
-      hm.scale.y = sleepy ? -1 : 1;
-    }
+    const hm = e.userData.happy, sm = e.userData.sleepy;
+    show(e, !sleepy && !joy, ey);
+    if (hm) show(hm, joy);
+    if (sm) show(sm, sleepy);
   }
-  if (rig.tongue) rig.tongue.visible = (happy > 0 || (move > 0.6 && a.speed > spec.speed * 1.1)) && a.eat <= 0 && wz < 0.5;
+  if (rig.tongue) show(rig.tongue, (happy > 0 || (move > 0.6 && a.speed > spec.speed * 1.1)) && a.eat <= 0 && wz < 0.5);
 }
