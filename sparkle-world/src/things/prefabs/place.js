@@ -7,7 +7,7 @@ import { SHAPES } from '../../core/registry.js';
 import { rotXZ, frontVec } from './kit.js';
 
 export const RING = 3; // terrace ring width around the footprint
-const EDGE = RING + 1; // footprint keeps this far from the world edge
+export const EDGE = RING + 1; // footprint keeps this far from the world edge
 const TREE_LIMIT = 4000;
 
 const NATURAL = new Set([
@@ -384,6 +384,27 @@ export function computeDiff(game, plan, pl) {
   for (const [i, id] of map) { idx[k] = i; next[k] = id; k++; }
   const [ex, , ez] = toWorld(plan, pl, plan.ax, 0, plan.D + 1);
   return { idx, next, map, entities, furniture, bounds: b, entry: [ex, ez], oy };
+}
+
+/**
+ * Undo / Redo while playing with friends: write ids[k] only where the cell still holds
+ * expect[k] (someone may have built there since); one batch. Returns how many were written.
+ */
+export function writeCellsCas(world, idx, ids, expect) {
+  const { sx, sz } = world;
+  const layer = sx * sz;
+  let n = 0;
+  world.batch(() => {
+    for (let k = 0; k < idx.length; k++) {
+      const i = idx[k];
+      if (world.blocks[i] !== expect[k]) continue;
+      const y = Math.floor(i / layer);
+      const r = i - y * layer;
+      const z = Math.floor(r / sx);
+      if (world.set(r - z * sx, y, z, ids[k], { record: false })) n++;
+    }
+  });
+  return n;
 }
 
 /** Write ids into the world as one batch (one relight). Returns the previous ids. */

@@ -12,7 +12,7 @@ import * as THREE from 'three';
 import { hash3, clamp } from '../core/util.js';
 import { raycastVoxels, makeVoxelHit } from '../world/raycast.js';
 import { resolvePlan } from './prefabs/plan.js';
-import { placementFromHit, placementAt, computeDiff, writeCells, groundBelow, footprintBounds } from './prefabs/place.js';
+import { placementFromHit, placementAt, computeDiff, writeCells, writeCellsCas, groundBelow, footprintBounds, EDGE } from './prefabs/place.js';
 import { voxelGeometry, prefabMaterial, footprintMaterial } from './prefabs/mesh.js';
 import { createToolbar } from './prefabs/toolbar.js';
 import { PREFABS } from './prefabs/catalog.js';
@@ -333,10 +333,19 @@ export function install(game) {
     if (game.cameraRig) game.cameraRig.yaw = yaw;
   }
 
+  /**
+   * Undo / Redo of a house's blocks. Alone: exactly back (LIFO). While playing with friends,
+   * only cells that still hold what this house wrote change back (their later work stays).
+   */
+  function restoreCells(w, idx, to, expect) {
+    if (game.world !== w) return;
+    if (game.net && game.net.active) writeCellsCas(w, idx, to, expect);
+    else writeCells(w, idx, to);
+  }
+
   /** Apply a placement now (one Undo). Returns a result summary. */
-  function commit(plan, pl) {
+  function commit(plan, pl, diff = computeDiff(game, plan, pl)) {
     const w = game.world;
-    const diff = computeDiff(game, plan, pl);
     const res = {
       key: plan.key, name: plan.name, placement: { x: pl.ox, y: pl.oy, z: pl.oz, rot: pl.rot },
       bounds: diff.bounds, changed: diff.idx.length, removed: diff.entities.length,
@@ -347,8 +356,8 @@ export function install(game) {
       const { idx, next } = diff;
       const prev = writeCells(w, idx, next);
       game.pushHistory({
-        undo: () => { if (game.world === w) writeCells(w, idx, prev); },
-        redo: () => { if (game.world === w) writeCells(w, idx, next); },
+        undo: () => restoreCells(w, idx, prev, next),
+        redo: () => restoreCells(w, idx, next, prev),
       });
       moveOut(diff, plan, pl);
       if (game.entities) {
@@ -393,6 +402,7 @@ export function install(game) {
   function commitJob(j) {
     if (j.committed) return;
     j.committed = true;
+    if (j.visualOnly) return askHost(j);
     const i = game.history.indexOf(j.placeholder);
     if (i >= 0) game.history.splice(i, 1);
     try {
@@ -420,8 +430,91 @@ export function install(game) {
     if (job === j) job = null;
   }
 
+  // ---------- playing with friends (docs/MULTIPLAYER.md §9.5) ----------
+  //
+  // A friend (guest) never changes the host's world herself: her Magic House is an intent.
+  // She sees the magic pop-in as usual; when it ends, the house is asked for ('pf'). The
+  // host builds it (applyRemote) and sends the blocks and furniture back; the pop-in stays
+  // until they are drawn. Her Undo asks the host to take it back ('pu').
+
+  const pendingRemote = new Map(); // lseq -> job waiting for the host's answer
+  const REMOTE_WAIT = 10000;
+
+  /** The pop-in ended on a guest: ask the host for the house. */
+  function askHost(j) {
+    const net = game.net;
+    const lseq = net && net.isGuest ? net.intent('pf', [j.plan.key, j.pl.ox, j.pl.oy, j.pl.oz, j.pl.rot]) : 0;
+    if (!lseq) {
+      dropMesh(j);
+      dropPlaceholder(j);
+      if (job === j) job = null;
+      return;
+    }
+    j.lseq = lseq;
+    j.askedAt = performance.now();
+    pendingRemote.set(lseq, j);
+  }
+
+  function dropPlaceholder(j) {
+    const i = game.history.indexOf(j.placeholder);
+    if (i < 0) return;
+    game.history.splice(i, 1);
+    game.events.emit('history:change', { size: game.history.length });
+  }
+
+  /** Guest: the host answered the Magic House with this lseq (ok = built). */
+  function resolveRemote(lseq, ok) {
+    const j = pendingRemote.get(lseq);
+    if (!j) return false;
+    pendingRemote.delete(lseq);
+    if (!ok) {
+      dropMesh(j);
+      dropPlaceholder(j);
+      if (job === j) job = null;
+      return true;
+    }
+    j.resolvedAt = performance.now();
+    j.sawDirty = false;
+    celebrate(j.plan, { key: j.plan.key, bounds: j.bounds, placement: { x: j.pl.ox, y: j.pl.oy, z: j.pl.oz, rot: j.pl.rot } });
+    return true;
+  }
+
+  /** Host: build a friend's Magic House now (outside the host's Undo). */
+  function applyRemote(key, where, policy) {
+    const plan = planOf(key);
+    const w = game.world;
+    if (!plan || !w || !where) return { ok: false, code: 5 };
+    const ox = where.x | 0, oy = where.y | 0, oz = where.z | 0, rot = where.rot & 3;
+    const b = footprintBounds(plan, ox, oz, rot);
+    if (b.x0 < EDGE || b.z0 < EDGE || b.x1 > w.sx - 1 - EDGE || b.z1 > w.sz - 1 - EDGE) return { ok: false, code: 5 };
+    if (oy < 1 || oy > w.sy - plan.H - 1) return { ok: false, code: 5 };
+    const pl = { ox, oy, oz, rot, bounds: b };
+    const diff = computeDiff(game, plan, pl);
+    if (typeof policy === 'function') {
+      const cells = [];
+      for (let k = 0; k < diff.idx.length; k++) cells.push(diff.idx[k], w.blocks[diff.idx[k]], diff.next[k]);
+      const ents = [];
+      const add = (e) => {
+        if (ents.includes(e.uid)) return;
+        ents.push(e.uid);
+        for (const r of game.entities.itemsOnTop(e)) add(r);
+      };
+      for (const e of diff.entities) add(e);
+      if (!policy({ cells, ents })) return { ok: false, code: 2 };
+    }
+    const res = commit(plan, pl, diff);
+    const P = game.particles;
+    if (P) {
+      const cx = (b.x0 + b.x1 + 1) / 2, cz = (b.z0 + b.z1 + 1) / 2;
+      P.emit('confetti', new THREE.Vector3(cx, oy + plan.maxY + 1.5, cz), { count: 50, spread: 2.5 });
+      P.emit('sparkle', new THREE.Vector3(cx, oy + 1.5, cz), { count: 30, spread: Math.max(2, (b.x1 - b.x0) / 3) });
+    }
+    game.audio.play('magic', { volume: 0.6 });
+    return { ok: true, name: plan.name, result: res };
+  }
+
   /** Start the pop-in animation; the world changes when it ends (one Undo). */
-  function startJob(plan, pl) {
+  function startJob(plan, pl, { visualOnly = false } = {}) {
     const w = game.world;
     const diff = computeDiff(game, plan, pl);
     const maxLy = plan.maxY + 3;
@@ -437,6 +530,17 @@ export function install(game) {
       bounds: diff.bounds, result: null,
     };
     j.placeholder = { undo: () => cancelJob(j), redo: () => {} };
+    if (visualOnly) {
+      j.visualOnly = true;
+      // her Undo: before the host was asked, the magic just stops; after, the host takes it back
+      j.placeholder.undo = () => {
+        if (!j.lseq) return cancelJob(j);
+        pendingRemote.delete(j.lseq);
+        if (game.net && game.net.isGuest) game.net.intent('pu', [j.lseq]);
+        dropMesh(j);
+        if (job === j) job = null;
+      };
+    }
     game.pushHistory(j.placeholder);
     job = j;
     game.audio.play('magic');
@@ -476,6 +580,24 @@ export function install(game) {
     }
     // keep the animated copy until the real chunk meshes are rebuilt
     const w = game.world;
+    if (j.visualOnly) {
+      // a friend's house: wait for the host's answer, then for its blocks to be drawn
+      const now = performance.now();
+      if (!j.resolvedAt) {
+        if (now - j.askedAt > REMOTE_WAIT) {
+          dropMesh(j);
+          job = null;
+        }
+        return;
+      }
+      const clean = chunksClean(w, b);
+      if (!clean) j.sawDirty = true;
+      if ((j.sawDirty && clean) || now - j.resolvedAt > 3000) {
+        dropMesh(j);
+        job = null;
+      }
+      return;
+    }
     let clean = true;
     for (let cz = Math.max(0, (b.z0 - 1) >> 4); cz <= Math.min(w.czCount - 1, (b.z1 + 1) >> 4) && clean; cz++) {
       for (let cx = Math.max(0, (b.x0 - 1) >> 4); cx <= Math.min(w.cxCount - 1, (b.x1 + 1) >> 4); cx++) {
@@ -488,6 +610,15 @@ export function install(game) {
     }
   }
 
+  function chunksClean(w, b) {
+    for (let cz = Math.max(0, (b.z0 - 1) >> 4); cz <= Math.min(w.czCount - 1, (b.z1 + 1) >> 4); cz++) {
+      for (let cx = Math.max(0, (b.x0 - 1) >> 4); cx <= Math.min(w.cxCount - 1, (b.x1 + 1) >> 4); cx++) {
+        if (w.dirty[cz * w.cxCount + cx]) return false;
+      }
+    }
+    return true;
+  }
+
   /** Build a plan at a placement (animated unless told otherwise). */
   function build(plan, pl, { animate = true } = {}) {
     if (!plan || !pl || !game.world) return null;
@@ -495,6 +626,9 @@ export function install(game) {
     if (job) finishJob(job);
     justBuilt = pl.bounds;
     if (ghost) ghost.hide();
+    // a friend visiting (multiplayer guest): the magic plays here, the host builds it
+    const net = game.net;
+    if (net && net.isGuest && !net.remoteApplying) return startJob(plan, pl, { visualOnly: true });
     if (animate) return startJob(plan, pl);
     const res = commit(plan, pl);
     game.prefabs.lastResult = res;
@@ -634,6 +768,7 @@ export function install(game) {
     onWorldUnload() {
       if (job) cancelJob(job);
       job = null;
+      pendingRemote.clear();
       if (ghost) ghost.hide();
       if (toolbar) toolbar.hide();
     },
@@ -718,6 +853,8 @@ export function install(game) {
     },
     turn: turnHouse,
     buildHere,
+    applyRemote,
+    resolveRemote,
   };
   game.debug.prefabs = game.prefabs;
 }

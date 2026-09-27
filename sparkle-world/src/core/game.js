@@ -118,6 +118,10 @@ export class Game {
     this.stickers = null; // stickers.js
     this.defaultLook = {}; // wardrobe defaults (avatar.js)
     this.actions = new Map(); // named actions for keys & HUD buttons: name -> fn(game)
+    // multiplayer facade (src/net/facade.js; docs/MULTIPLAYER.md §9.1). Every hook below is
+    // inert while it is missing or not active, so playing alone is unchanged.
+    this.net = null;
+    this._inSystems = false; // true while systems update (their changes are not a player's)
 
     // state
     this.profile = defaultProfile();
@@ -196,6 +200,15 @@ export class Game {
 
   _updateSystems(dt) {
     const list = this.systems;
+    this._inSystems = true;
+    try {
+      this._runSystems(list, dt);
+    } finally {
+      this._inSystems = false;
+    }
+  }
+
+  _runSystems(list, dt) {
     let slow = null;
     for (let i = 0; i < list.length; i++) {
       const s = list[i];
@@ -335,6 +348,11 @@ export class Game {
 
     try { this.input.endFrame(); } catch (err) { this._stageError('input', err); }
 
+    // multiplayer: a friend's recorder closes this frame's changes into her outbox
+    if (this.net !== null) {
+      try { this.net.frameEnd(); } catch (err) { this._stageError('net', err); }
+    }
+
     const total = t1 - now;
     if (total > 250 && !this.loading) {
       const slow = {};
@@ -357,7 +375,9 @@ export class Game {
   _advanceTime(dt) {
     const t = this.time;
     t.t += dt;
-    if (!this.profile.settings.timeFrozen) {
+    // a friend visiting (multiplayer guest) follows the host's frozen clock, not her own setting
+    const frozen = this.net && this.net.isGuest ? this.net.hostFrozen : this.profile.settings.timeFrozen;
+    if (!frozen) {
       t.dayTime += dt / t.dayLength;
       if (t.dayTime >= 1) {
         t.dayTime -= 1;
@@ -376,6 +396,10 @@ export class Game {
    * (time.quietNight) so daynight emits time:morning but not time:night for it.
    */
   skipToMorning() {
+    // a friend (multiplayer guest) asks the host to sleep through the night; she skips ahead
+    // locally at once (the host's clock corrects her if the host says no)
+    const net = this.net;
+    if (net && net.isGuest && !net.remoteApplying) net.intent('z', []);
     if (this.time.dayTime > 0.25) this.time.day += 1;
     this.time.dayTime = 0.26;
     this.time.quietNight = true;
@@ -474,7 +498,7 @@ export class Game {
   flushSave({ unloading = false } = {}) {
     let done = Promise.resolve();
     try {
-      if (this.mode === 'play' && this.world && !this._busy) {
+      if (this.mode === 'play' && this.world && !this._busy && !this._isShared()) {
         if (unloading) {
           const save = this._serializeWorld({ thumbnail: false });
           this.store.journalWorld(save);
@@ -513,6 +537,9 @@ export class Game {
 
   /** Generate a new world and enter it. size: 'cozy' | 'big'. */
   async newWorld({ name, biome = 'meadow', size = 'cozy', seed } = {}) {
+    if (this._busy) return false;
+    // another world: playing together in this one ends first
+    if (this.net && this.net.active) await this.net.leave({ quiet: true });
     if (this._busy) return false;
     this._busy = true;
     try {
@@ -560,6 +587,8 @@ export class Game {
   /** Load a saved world by id and enter it. */
   async loadWorld(id) {
     if (this._busy) return false;
+    if (this.net && this.net.active) await this.net.leave({ quiet: true });
+    if (this._busy) return false;
     this._busy = true;
     try {
       this._showLoading('Opening your world…', 0.05);
@@ -595,7 +624,63 @@ export class Game {
     }
   }
 
-  async _enterWorld(world, save) {
+  /**
+   * Multiplayer guest: enter the host's world from a snapshot (docs/MULTIPLAYER.md §9.2).
+   * save: the host's serializeWorld() (no blocks, player, hotbar or thumbnail) plus net
+   * { host: [x, y, z, yaw] }; rle: the host's world.encodeBlocksBytes(). Nothing is stored:
+   * the world is marked shared (meta.shared) and saveWorld() never saves it. Resolves true
+   * once she is in (standing two blocks in front of the host).
+   */
+  async enterSharedWorld(save, rle) {
+    if (this._busy || !save || !save.size || !rle) return false;
+    this._busy = true;
+    try {
+      this._showLoading('Flying to your friend\u2019s world\u2026', 0.05);
+      await nextFrame();
+      if (this.world) await this._unloadWorld({ save: !this._isShared() });
+      const world = new World(save.size, this.registry.blocks);
+      const n = world.decodeBlocksBytes(rle, save.palette);
+      if (n !== world.blocks.length) throw new Error('world blocks do not fit');
+      const code = this.net && Array.isArray(this.net.code) ? this.net.code.join('-') : 'friend';
+      world.meta = {
+        id: 'net-' + code, name: save.name || 'Friend\u2019s World', biome: save.biome, seed: save.seed,
+        createdAt: save.createdAt || Date.now(), sizeName: save.sizeName || 'cozy', spawn: save.spawn || null, shared: true,
+      };
+      world.waterLevel = save.waterLevel || 0;
+      world.outside = save.outside || null;
+      this._showLoading(null, 0.25, true);
+      await nextFrame();
+      world.computeAllLight();
+      if (!world.meta.spawn) world.meta.spawn = defaultSpawn(world);
+      const host = save.net && Array.isArray(save.net.host) ? save.net.host : null;
+      let player;
+      if (host && host.length >= 4 && host.every(Number.isFinite)) {
+        const yaw = host[3];
+        const x = clamp(host[0] + Math.sin(yaw) * 2, 1, world.sx - 1), z = clamp(host[2] + Math.cos(yaw) * 2, 1, world.sz - 1);
+        player = { x, y: host[1] + 0.05, z, yaw: yaw + Math.PI, flying: false };
+      } else {
+        const sp = world.meta.spawn;
+        player = { x: sp[0], y: sp[1], z: sp[2], yaw: Math.PI, flying: false };
+      }
+      const entered = { ...save, player, hotbar: { slots: DEFAULT_HOTBAR.slice(), colors: Array(9).fill(null), index: 0 }, thumbnail: null };
+      await this._enterWorld(world, entered, { shared: true });
+      this.unstickPlayer();
+      return true;
+    } catch (err) {
+      console.warn('[game] could not enter the shared world', err);
+      this._showLoading(null);
+      return false;
+    } finally {
+      this._busy = false;
+    }
+  }
+
+  /** Is the current world a friend's (multiplayer guest)? It is never saved here. */
+  _isShared() {
+    return !!(this.world && this.world.meta && this.world.meta.shared);
+  }
+
+  async _enterWorld(world, save, opts = {}) {
     world.game = this;
     this.world = world;
     const t = save.time || {};
@@ -640,13 +725,16 @@ export class Game {
     }
     this.loading = false;
     this.mode = 'play';
-    this.profile.lastWorldId = world.meta.id;
-    this.saveProfile();
+    if (!opts.shared) {
+      this.profile.lastWorldId = world.meta.id;
+      this.saveProfile();
+    }
     if (this.ui) this.ui.closeAll();
     this._showLoading(null);
     this.events.emit('world:load', { world, save });
-    if (!this.store.persistent) this._warnSaveTrouble(true);
     clearInterval(this._autosaveTimer);
+    if (opts.shared) return; // a friend's world: nothing of it is saved on this device
+    if (!this.store.persistent) this._warnSaveTrouble(true);
     this._autosaveTimer = setInterval(() => {
       if (this.mode !== 'play' || this._busy) return;
       // the picture needs an extra render + JPEG encode, so autosaves only refresh it now and then
@@ -685,16 +773,28 @@ export class Game {
 
   /** Serialize the current world and store it. Resolves when stored. */
   async saveWorld({ thumbnail = true } = {}) {
+    // a friend's world (multiplayer guest) is never saved here: it lives at her house
+    if (this._isShared() || (this.net && this.net.isGuest)) return { ok: true, skipped: true };
     if (!this.world) return { ok: false };
     return this._storeWorld(this._serializeWorld({ thumbnail }));
   }
 
-  /** The current world as a save object (synchronous). Everything changed so far goes in. */
+  /** The current world as a save object for storing (clears the pending "save soon"). */
   _serializeWorld({ thumbnail = true } = {}) {
-    const w = this.world;
     clearTimeout(this._dirtyTimer);
     this._dirtyTimer = 0;
     this._dirtySince = 0;
+    return this.serializeWorld({ thumbnail });
+  }
+
+  /**
+   * The current world as a save object (synchronous, no side effects on saving). Everything
+   * changed so far goes in. opts: thumbnail (take a new picture), blocks (false: leave the
+   * base64 blocks out, blocks: ''; the multiplayer snapshot sends them as raw bytes).
+   */
+  serializeWorld({ thumbnail = true, blocks = true } = {}) {
+    const w = this.world;
+    if (!w) return null;
     const systems = {};
     for (const s of this.systems) {
       if (!s.serialize) continue;
@@ -720,7 +820,7 @@ export class Game {
       createdAt: w.meta.createdAt,
       updatedAt: Date.now(),
       palette: w.palette(),
-      blocks: w.encodeBlocks(),
+      blocks: blocks ? w.encodeBlocks() : '',
       waterLevel: w.waterLevel,
       outside: w.outside,
       spawn: w.meta.spawn,
@@ -792,6 +892,9 @@ export class Game {
    * on an empty sky with no buttons).
    */
   async exitToTitle() {
+    if (this._busy) return;
+    // playing together ends quietly first (a friend goes home; a host says goodbye and saves)
+    if (this.net && this.net.active) await this.net.leave({ quiet: true });
     if (this._busy) return;
     this._busy = true;
     try {
@@ -950,6 +1053,7 @@ export class Game {
     if (!hit || !this.world) return false;
     if (this.selectedTool === 'remove') return this.removeTarget(hit);
     if (this.selectedTool === 'hand') return this.interact(hit);
+    if (this._netRefuses('build')) return false;
     const item = this.selectedItem();
     if (!item) {
       if (hit.type === 'pickable') return this.interact(hit);
@@ -975,6 +1079,7 @@ export class Game {
   /** Remove tool: a block, or a pickable that supports onRemove. */
   removeTarget(hit = this.target) {
     if (!hit) return false;
+    if (this._netRefuses('remove')) return false;
     if (hit.type === 'pickable') {
       return hit.pickable.onRemove ? !!hit.pickable.onRemove(this, hit) : false;
     }
@@ -1013,11 +1118,13 @@ export class Game {
     if (prev !== 0 && !props.replaceable[prev]) return false;
     if (this.entities && this.entities.at(x, y, z)) return false;
     if (def.solid && this.player && this.player.overlapsCell(x, y, z)) return false;
+    // never build a friend in (multiplayer: her avatar stands there)
+    if (def.solid && this.net && this.net.active && this.net.cellHasFriend(x, y, z)) return false;
     w.set(x, y, z, def.id, { record: true });
     if (history) {
       this.pushHistory({
-        undo: () => w.set(x, y, z, prev, { record: false }),
-        redo: () => w.set(x, y, z, def.id, { record: false }),
+        undo: () => this._casSet(w, x, y, z, def.id, prev),
+        redo: () => this._casSet(w, x, y, z, prev, def.id),
       });
     }
     if (fx) {
@@ -1044,8 +1151,8 @@ export class Game {
     w.set(x, y, z, 0, { record: true });
     if (history) {
       this.pushHistory({
-        undo: () => w.set(x, y, z, prev, { record: false }),
-        redo: () => w.set(x, y, z, 0, { record: false }),
+        undo: () => this._casSet(w, x, y, z, 0, prev),
+        redo: () => this._casSet(w, x, y, z, prev, 0),
       });
     }
     if (fx) {
@@ -1055,9 +1162,30 @@ export class Game {
     return true;
   }
 
+  /**
+   * An Undo / Redo of one block: set id `to`. While playing with friends someone may have
+   * changed that cell since, so it only happens if the cell still holds `from` (the value
+   * this action wrote); otherwise it is skipped. Alone (LIFO undo) that is always the case.
+   */
+  _casSet(w, x, y, z, from, to) {
+    if (this.net && this.net.active && w.get(x, y, z) !== from) return false;
+    return w.set(x, y, z, to, { record: false });
+  }
+
+  /** Multiplayer: may the player use this tool now? If not: the soft "nope" and a friendly note. */
+  _netRefuses(tool) {
+    const net = this.net;
+    if (!net || !net.active || net.mayEdit(tool)) return false;
+    this.audio.play('click', { pitch: 0.6, volume: 0.6 });
+    if (typeof net.refuse === 'function') net.refuse('paused');
+    return true;
+  }
+
   // ---------- history ----------
 
   pushHistory(entry) {
+    // executing a friend's change (multiplayer host): it never enters the host's own Undo
+    if (this.net && this.net.noHistory) return;
     if (this._group) {
       this._group.entries.push(entry);
       return;
@@ -1072,11 +1200,13 @@ export class Game {
    * single Undo takes back a whole paint stroke (or any multi-step action). Nests.
    */
   beginHistoryGroup() {
+    if (this.net && this.net.noHistory) return;
     if (this._group) this._group.depth++;
     else this._group = { entries: [], depth: 1 };
   }
 
   endHistoryGroup() {
+    if (this.net && this.net.noHistory) return;
     const g = this._group;
     if (!g || --g.depth > 0) return;
     this._group = null;
@@ -1113,6 +1243,11 @@ export class Game {
     this.audio.play('whoosh', { volume: 0.6 });
     this.events.emit('history:change', { size: this.history.length });
     return true;
+  }
+
+  /** Step the player out of blocks or furniture that appeared around her (public alias). */
+  unstickPlayer() {
+    this._unstickPlayer();
   }
 
   /** After undo put blocks or furniture back, step the player out of them if needed. */
@@ -1251,6 +1386,10 @@ export class Game {
     this._stroke = null;
     if (this.mode !== 'play' || this.paused) return;
     const tool = this.selectedTool;
+    if (tool !== 'hand' && this._netRefuses(tool)) {
+      this._stroke = { paint: false, cells: 0, refused: true }; // nor a tap on release
+      return;
+    }
     const hit = this.pick({ x: e.x, y: e.y });
     const item = this.selectedItem();
     const paints = hit && hit.type === 'block' &&
@@ -1330,7 +1469,7 @@ export class Game {
     this._stroke = null;
     if (st && st.open) this.endHistoryGroup();
     // a slow, still press that did not paint: treat it exactly like a tap
-    if (st && !st.paint && !e.dragged && !e.cancelled) this._tapAt(e.x, e.y, 0);
+    if (st && !st.paint && !st.refused && !e.dragged && !e.cancelled) this._tapAt(e.x, e.y, 0);
   }
 }
 
