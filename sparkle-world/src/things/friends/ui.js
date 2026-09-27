@@ -518,6 +518,7 @@ export function installFriendUI(game, sys) {
         hideBubble();
         return;
       }
+      f.attention = Math.max(f.attention, 0.4);
       position(bubble, f, 0.3);
     },
     clear() {

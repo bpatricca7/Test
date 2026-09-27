@@ -63,6 +63,7 @@ export class Friend {
     this.pendingEmote = null;
     this.pendingT = 0;
     this.faceT = 0; // seconds left turning toward the player
+    this.attention = 0; // seconds left standing still for her (the bubble is open)
     this.stuckT = 0;
     this.progT = 0;
     this.progX = this.pos.x;
@@ -275,7 +276,10 @@ export class Friend {
   update(dt, animate) {
     this.actT += dt;
     this.greetT += dt;
-    if (this.faceT > 0) this.faceT -= dt;
+    if (this.faceT > 0) {
+      this.faceT -= dt;
+      if (this.act === 'idle' && !this.moving && this.emoteLeft <= 0) this.facePlayer(dt, 5);
+    }
     if (this.pendingEmote) {
       this.pendingT -= dt;
       if (this.pendingT <= 0) {
@@ -413,9 +417,15 @@ export class Friend {
       return;
     }
 
-    // ----- an emote in progress: stand still -----
+    // ----- an emote in progress, or she is talking to us: stand still -----
     if (this.emoteLeft > 0) {
       this.stop();
+      return;
+    }
+    if (this.attention > 0) {
+      this.attention -= dt;
+      this.stop();
+      this.facePlayer(dt, 5);
       return;
     }
 

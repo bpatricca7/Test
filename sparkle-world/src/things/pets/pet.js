@@ -48,7 +48,9 @@ export class Pet {
     this.object3d.position.set(0, 0, 0);
     this.object3d.rotation.y = 0;
     this.object3d.updateMatrixWorld(true);
-    _box.setFromObject(this.rig.jumper);
+    // a merged rig keeps its shape in one skinned geometry (baked in root space at rest)
+    if (this.rig.skinned) _box.copy(this.rig.skinned.geometry.boundingBox);
+    else _box.setFromObject(this.rig.jumper);
     this.pos.set(data.x || 0, data.y || 0, data.z || 0);
     this.object3d.rotation.y = this.yaw;
     this.ext = Math.max(-_box.min.x, _box.max.x, -_box.min.z, _box.max.z, this.spec.halfW) + 0.04;
