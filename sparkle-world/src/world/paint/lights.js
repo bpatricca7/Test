@@ -151,7 +151,7 @@ export function install(L) {
   const glow = { category: 'lights', sound: 'chime' };
   block({ key: 'lamp_block', name: 'Glow Lamp', ...glow, light: 15 });
   block({ key: 'lantern', name: 'Paper Lantern', ...glow, light: 14, tiles: { top: 'lantern_top', side: 'lantern_side', bottom: 'lantern_top' } });
-  block({ key: 'sea_lantern', name: 'Sea Lantern', ...glow, light: 15 });
+  block({ key: 'sea_lantern', name: 'Ocean Glow', ...glow, light: 15 });
   block({ key: 'star_block', name: 'Star Block', ...glow, light: 15 });
   block({ key: 'heart_lamp', name: 'Heart Lamp', ...glow, light: 13 });
   block({ key: 'moon_lamp', name: 'Moon Lamp', ...glow, light: 12 });

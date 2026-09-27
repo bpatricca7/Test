@@ -23,7 +23,7 @@ const common = {
   format: 'iife',
   target: 'es2020',
   charset: 'utf8',
-  legalComments: 'none',
+  legalComments: 'eof', // keep third-party license notices (Three.js is MIT)
   logLevel: 'warning',
   loader: { '.css': 'css' },
 };
