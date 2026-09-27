@@ -173,7 +173,7 @@ export function install(game) {
     if (removed) {
       for (const e of removed) {
         if (e.key === 'zipline_tower' || e.key === 'tree_platform') ladders.untrack(e);
-        if (e.key === 'zipline_tower') zip.onRemove(e);
+        if (e.key === 'zipline_tower' && !E.byUid(e.uid)) zip.onRemove(e);
       }
     }
     if (placed) {

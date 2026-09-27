@@ -773,8 +773,10 @@ export class Game {
 
   /** Serialize the current world and store it. Resolves when stored. */
   async saveWorld({ thumbnail = true } = {}) {
-    // a friend's world (multiplayer guest) is never saved here: it lives at her house
-    if (this._isShared() || (this.net && this.net.isGuest)) {
+    // a friend's world (multiplayer guest) is never saved here: it lives at her house. (The
+    // mark is on the world itself, so it holds after the session ended too, and her own world
+    // is still saved while she is knocking from inside it.)
+    if (this._isShared()) {
       clearTimeout(this._dirtyTimer);
       this._dirtyTimer = 0;
       this._dirtySince = 0;

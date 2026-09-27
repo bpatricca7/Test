@@ -48,8 +48,9 @@ unchanged (smoke and every team probe pass as before; no request is made at boot
   range a fresh uid of her own (later redo entries follow it).
 - **`core/game.js`**: public `serializeWorld({ thumbnail, blocks })` (no side effects;
   `_serializeWorld` also clears the "save soon" timer); `saveWorld` / `flushSave` never
-  store a shared world (`world.meta.shared`, also after the session ended) or anything while
-  a guest; `enterSharedWorld(save, rle)` (world id `net-<code>`, two blocks in front of the
+  store a shared world (the mark `world.meta.shared` is on the world itself, so it also holds
+  after the session ended; this is stricter than §9.2's `isGuest` line, and her own world is
+  still saved if she knocks from inside it); `enterSharedWorld(save, rle)` (world id `net-<code>`, two blocks in front of the
   host, default hotbar, no autosave, no `lastWorldId`); `_enterWorld(world, save, { shared })`;
   `_inSystems` around system updates; `net.frameEnd()` at the end of each frame; history
   calls are no-ops under `net.noHistory`; block Undo / Redo closures are compare-and-set

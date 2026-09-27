@@ -307,8 +307,8 @@ export class GameAdapter {
     }
     if (p.P && g.garden) for (const rec of p.P) g.garden.applyRemote(rec);
     if (p.K) for (const k of p.K) this.actors.applyRecord(k[0], k[1], k[2]);
-    this.actors.afterApply({ placed, removed });
     g.events.emit('net:applied', { cells: list, entities: ents, placed, removed });
+    this.actors.afterApply({ placed, removed });
     if (cells.length || placed.length) g.unstickPlayer();
     return { cells: cells.length >> 1, ents };
   }
@@ -517,7 +517,12 @@ export class GameAdapter {
     const p = pl && g.mode === 'play' ? [pl.position.x, pl.position.y, pl.position.z, pl.yaw] : null;
     const st = pl ? ST[pl.state] || 'w' : 'w';
     const prof = g.profile || {};
-    const nm = this.sanitizeName(prof.playerName || (prof.look && prof.look.name) || '', 'Friend');
+    const raw = prof.playerName || (prof.look && prof.look.name) || '';
+    if (raw !== this._nmRaw) {
+      this._nmRaw = raw;
+      this._nm = this.sanitizeName(raw, 'Friend');
+    }
+    const nm = this._nm;
     if (this._lk === null) {
       try {
         this._lk = packLook(prof.look || {});
