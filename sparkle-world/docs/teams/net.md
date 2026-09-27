@@ -1,6 +1,6 @@
 # Team "net": playing with friends, game integration (Agent B)
 
-docs/MULTIPLAYER.md is the contract (Addendum A overrides earlier sections). The net core
+docs/MULTIPLAYER.md is the contract (Addenda A, B and C override earlier sections). The net core
 (`src/net/{transport,room-transport,loop-transport,ws-transport,protocol,codec,journal,host,guest,session}.js`,
 `server/*`, Agent A) talks to the game only through the **GameAdapter**. This file is what
 Agent B built around it: the adapter, the actor registry, every hook in the game, a minimal
@@ -242,6 +242,16 @@ a Flower Cottage fence survived the guest's Undo), and `avatarFields` sends the 
   are still in her Undo building group (the host's revert restores them).
 - `ed` patches from a guest lose `conn` (the host derives fence joins; `touchEnt` sends her
   the record). Watering (`isWatering`) and eating (`isEdible`) pass careful mode.
+- Device ids and the walkie (merge of the walkie branch, 2026-09-27): the uid is the room's
+  stamp (`by`) only (MULTIPLAYER.md Addendum B item 1); the walkie branch's own fix for the
+  same hole (a global `sha256('dev\n' + secret)` stamp, `identity().uid` computed by the page,
+  and an 8 s wait before auto-admitting a uid that another page also carried) was dropped in
+  the merge, so `host.js` admissions are the review's. `WsTransport` also carries the
+  walkie's socket hooks (`voiceIn`, `voiceUp`, `sendVoice`, binary frames), and the relay's
+  voice uses the same gate as names and messages (`RoomRegistry.gameOf`, Addendum C.3). The
+  gate's host is ranked by the device's first join in the room (`at`) and her place is held
+  for 90 s while her page reloads (Addendum B items 2 and 3). Covered by `npm run test:net`
+  and `npm run test:walkie`.
 - Sleep: a guest's `skipToMorning()` sends intent `z` and skips her own clock at once. While
   that intent waits for the host's answer the guest does not follow the host's (older) clock,
   so she never flickers back into the night; the ack arrives in the same presence as the
@@ -274,9 +284,12 @@ a Flower Cottage fence survived the guest's Undo), and `avatarFields` sends the 
   resyncs, no console errors, a guest never stores the host's world. About 5 minutes in
   SwiftShader.
 - `npm run test:net` (net core, Node) also covers the review fixes: the relay's depth check,
-  gate, join order and rooms per IP; identity from stamps only; careful-friends rules;
-  owners across a freed seat and a host reload; the kind messages; and, against the real
-  server, the crash frame, security headers, device stamps, X-Forwarded-For and pacing.
+  gate, join order and rooms per IP (and a pretend host who is in the room while the host's
+  page reloads: she never becomes the host); identity from stamps only; careful-friends
+  rules; owners across a freed seat and a host reload; the kind messages; and, against the
+  real server, the crash frame, security headers (the microphone only on the game page),
+  device stamps, X-Forwarded-For, pacing of connections and of new rooms, IPv6 per /64 and
+  silent drops.
 - `node tools/probe-net-ux.mjs [--no-build] [--headed]` (about 5 minutes, real relay): the
   name step on a new device, Play Together, the gate while knocking, building paused and on
   again, Undo building heard by the friend, a reloaded host tapping Play ("Your friends are

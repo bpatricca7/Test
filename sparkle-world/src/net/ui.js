@@ -1001,6 +1001,7 @@ export function installNetUI(game, net, remote) {
       );
       row.appendChild(btns);
     }
+    if (net.walkie) net.walkie.decorateRow(row, pl, isHostView); // walkie badge + Mute
     return row;
   }
 
@@ -1029,7 +1030,7 @@ export function installNetUI(game, net, remote) {
     if (!playersBody) return;
     const st = S.state;
     const players = net.active ? S.players() : [];
-    const key = JSON.stringify([st, net.code, S.rules, players.map((p) => [p.peer, p.seat, p.away, p.state && p.state.nm, p.state && p.state.lk, p.state && Array.isArray(p.state.p)])]);
+    const key = JSON.stringify([st, net.code, S.rules, players.map((p) => [p.peer, p.seat, p.away, p.state && p.state.nm, p.state && p.state.lk, p.state && Array.isArray(p.state.p)]), net.walkie ? net.walkie.panelKey() : '']);
     if (!force && key === playersKey) return;
     playersKey = key;
     playersBody.innerHTML = '';
@@ -1060,6 +1061,7 @@ export function installNetUI(game, net, remote) {
       );
       col.appendChild(box);
     }
+    if (net.walkie) net.walkie.decoratePanel(col, isHost); // host: "Mute everyone"
     const bottom = ui.el('div', 'sw-net-bottom');
     if (isHost) {
       bottom.appendChild(button2(ui, {

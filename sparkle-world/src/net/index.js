@@ -18,6 +18,7 @@ import { install as installFacade } from './facade.js';
 import { sanitizeName } from './names.js';
 import { RemotePlayers } from './remote-players.js';
 import { installNetUI } from './ui.js';
+import { installWalkie } from './walkie/index.js';
 
 export function install(game, opts = {}) {
   const net = installFacade(game, { sanitizeName, toastMessages: false, ...opts });
@@ -25,6 +26,8 @@ export function install(game, opts = {}) {
   net.remote = remote;
   const ui = installNetUI(game, net, remote);
   net.ui = ui;
+  // the walkie-talkie (Railway only, parent-gated per device): src/net/walkie/index.js
+  net.walkie = installWalkie(game, net);
 
   game.addSystem({
     name: 'net',

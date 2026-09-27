@@ -845,8 +845,10 @@ trailers you can camp in and do things on the inside, like a dream camper or a h
 
 ## 5. Playing with friends (multiplayer)
 
-The whole design is in `docs/MULTIPLAYER.md` (the contract; its Addendum A: Railway hosting,
-no voice chat) and the game integration in `docs/teams/net.md`. The host's page is the only
+The whole design is in `docs/MULTIPLAYER.md` (the contract; its Addendum A: Railway hosting;
+Addendum B: the review's rules (server-stamped identity, the relay's gate, limits); Addendum C:
+the parent-gated walkie-talkie, Railway only, `docs/teams/walkie.md`) and the game
+integration in `docs/teams/net.md`. The host's page is the only
 authority; friends' pages mirror it and send their own changes to the host. Rules every
 module follows from now on:
 

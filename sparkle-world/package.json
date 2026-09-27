@@ -12,6 +12,7 @@
     "smoke": "node tools/build.mjs && node tools/smoke.mjs",
     "start": "node server/server.mjs",
     "test:net": "node tools/test-net.mjs",
+    "test:walkie": "node tools/test-walkie.mjs",
     "probe:mp": "node tools/build.mjs && node tools/probe-multiplayer.mjs",
     "probe:railway": "node tools/probe-railway.mjs"
   },

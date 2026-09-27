@@ -10,14 +10,21 @@
 // - reconnect: a peer that loses its connection stays in the room for `graceMs`; if the same
 //   peer attaches again it gets the whole roster (reset) and nobody sees it leave.
 // - join order: every roster entry carries `at`, a number the room gives each member when it
-//   joins (earlier joiners have smaller numbers). Clients cannot choose it; guests use it to
-//   pick the room's real host (docs/MULTIPLAYER.md Addendum B).
+//   joins (earlier joiners have smaller numbers). A page with a device stamp (`by`) gets the
+//   number of her device's FIRST join in this room, so a reloaded page keeps its place (the
+//   room remembers up to 64 devices while it lives). Clients cannot choose it; guests use it
+//   to pick the room's real host (docs/MULTIPLAYER.md Addendum B).
 // - gate (the Railway relay only; claude.ai rooms have no such thing): a member that the
 //   room's host has not let in sees only the public presence keys of the others (GATE_PUBLIC:
 //   enough to find the host and hear yes / no) and gets no broadcasts at all; a gated
-//   member's broadcasts reach nobody. The room's host is the earliest-joined member whose
-//   presence says r:'h', together with every member stamped with the same `by` (her own
-//   reloaded page); the let-in members are the peers in those members' presence `adm`.
+//   member's broadcasts reach nobody. The room's host is the member with the smallest `at`
+//   whose presence says r:'h', together with every member stamped with the same `by` (her own
+//   reloaded page); the let-in members are the peers in those members' presence `adm`. The
+//   room remembers the host's device (`by`): while none of its pages is here as host (a
+//   reload), nobody else becomes the host for `hostHoldMs` (90 s, longer than friends wait
+//   for her), so a pretend host who came in between never gets her friends.
+//   gameOf(name) gives that same answer (with or without the gate) to the walkie-talkie relay
+//   (server/voice.mjs), so voice reaches exactly the members the gate lets see the game.
 // Nothing here stores anything beyond the live room, and nothing is logged.
 //
 // Frames out:  {t:'p', self?, reset?, j?:[entry], l?:[peer], u?:[[peer, patch]]}
@@ -35,6 +42,11 @@ export const INVISIBLE_RE = /[\u0000-\u001f\u007f-\u009f\u00ad\u200b-\u200f\u202
 /** Presence keys a gated member still sees of the others (finding the host, yes / no). */
 export const GATE_PUBLIC = Object.freeze(['v', 'pv', 'r', 'ep', 'hs', 'end', 'adm', 'no', 'kn']);
 const PUBLIC = new Set(GATE_PUBLIC);
+
+/** Devices a room remembers the first join of (for `at`); later ones use their own join. */
+const SEEN_MAX = 64;
+/** How long a room keeps its host's place while none of her device's pages is here as host. */
+export const HOST_HOLD_MS = 90000;
 
 /** Deepest nesting a broadcast may have (the game's messages use at most 7). */
 export const MAX_DATA_DEPTH = 16;
@@ -119,7 +131,7 @@ export function checkPresenceValue(v, strBytes, maxDepth, depth = 0) {
 }
 
 class Member {
-  constructor(peer, sink, meta, now, order) {
+  constructor(peer, sink, meta, now, order, rank) {
     this.peer = peer;
     this.sink = sink;
     this.by = meta.by ?? null;
@@ -129,6 +141,7 @@ class Member {
     this.detachedAt = sink ? 0 : now;
     this.joinedAt = now;
     this.order = order;
+    this.rank = rank ?? order; // `at`: her device's first join in the room (or her own)
   }
 }
 
@@ -138,6 +151,9 @@ class Room {
     this.members = new Map();
     this.lastActive = now;
     this.owner = owner ?? null; // who made the room (the server passes the client's IP)
+    this.seen = new Map(); // device stamp (by) -> the join number of its first page here
+    this.hostBy = null; // the host's device (gate): only its pages can be the host...
+    this.hostAwayAt = 0; // ...and since when none of them is here as host (0 = she is)
   }
 }
 
@@ -154,6 +170,7 @@ export class RoomRegistry {
    * @param {number} [o.idleMs=600000] a room with no traffic this long is closed
    * @param {number} [o.roomsPerOwner=Infinity] live rooms one owner (meta.owner) may have made
    * @param {boolean} [o.gate=false] hide presence and broadcasts from members not let in
+   * @param {number} [o.hostHoldMs=90000] keep the host device's place while she reloads
    * @param {() => number} [o.now]
    */
   constructor(o = {}) {
@@ -167,6 +184,7 @@ export class RoomRegistry {
     this.idleMs = o.idleMs ?? 600000;
     this.roomsPerOwner = o.roomsPerOwner ?? Infinity;
     this.gate = !!o.gate;
+    this.hostHoldMs = o.hostHoldMs ?? HOST_HOLD_MS;
     this.now = o.now ?? (() => Date.now());
     this.rooms = new Map();
     this.owned = new Map(); // owner -> live rooms it made
@@ -223,10 +241,14 @@ export class RoomRegistry {
       if (!room) room = this._newRoom(name, now, meta.owner ?? null);
     }
     const before = this._openSet(room);
-    const m = new Member(peer, sink, meta, now, ++this.joinSeq);
+    const order = ++this.joinSeq;
+    const by = meta.by ?? null;
+    if (by !== null && !room.seen.has(by) && room.seen.size < SEEN_MAX) room.seen.set(by, order);
+    const m = new Member(peer, sink, meta, now, order, by !== null && room.seen.has(by) ? room.seen.get(by) : order);
     room.members.set(peer, m);
     room.lastActive = now;
     this.counts.joins++;
+    this._trackHost(room);
     const after = this._openSet(room);
     this._deliver(m, { t: 'p', self: peer, reset: true, j: this._entries(room, m) });
     for (const o of room.members.values()) {
@@ -269,6 +291,7 @@ export class RoomRegistry {
     const before = this._openSet(room);
     room.members.delete(peer);
     this.counts.leaves++;
+    this._trackHost(room);
     const after = this._openSet(room);
     for (const o of room.members.values()) {
       this._deliver(o, { t: 'p', l: [peer] });
@@ -311,6 +334,7 @@ export class RoomRegistry {
       m.state = next;
       room.lastActive = now;
       this.counts.states++;
+      this._trackHost(room);
       const after = this.gate ? this._openSet(room) : null;
       for (const o of room.members.values()) {
         if (o === m) {
@@ -366,6 +390,15 @@ export class RoomRegistry {
       for (const m of Array.from(room.members.values())) {
         if (m.sink === null && m.detachedAt && now - m.detachedAt > this.graceMs) this.leave(room.name, m.peer);
       }
+      // the host's device has been away too long: the room is free for a new host
+      if (this.rooms.get(room.name) === room && room.hostBy !== null && room.hostAwayAt && now - room.hostAwayAt > this.hostHoldMs) {
+        const before = this._openSet(room);
+        room.hostBy = null;
+        room.hostAwayAt = 0;
+        this._trackHost(room);
+        const after = this._openSet(room);
+        for (const o of room.members.values()) if (this._flipped(o, before, after)) this._refresh(room, o);
+      }
     }
     return out;
   }
@@ -391,7 +424,7 @@ export class RoomRegistry {
 
   _entry(m, to, open) {
     const s = this._sender(m, to);
-    s.at = m.order;
+    s.at = m.rank;
     s.state = m === to || this._visible(to, open) ? m.state : publicPart(m.state) || {};
     return s;
   }
@@ -406,23 +439,68 @@ export class RoomRegistry {
   // ---------- the gate (Railway relay) ----------
 
   /**
-   * The members that see everything (null when the room has no gate): the room's host side
-   * (the earliest r:'h' member and every member with her `by` that also says r:'h') and the
-   * peers listed in the host side's `adm`.
+   * Who plays the game in room `name`, by the gate's rule (computed whether or not this
+   * registry gates; the walkie-talkie relay asks it for every voice frame):
+   *   host: the member with the smallest `at` (then join) whose presence says r:'h' (null:
+   *     nobody hosts here),
+   *   side: the host and every member with her `by` that also says r:'h' (her reloaded page),
+   *   open: the side's peers plus the peers listed in the side's presence `adm`.
+   * Nothing is kept: it is read from the live room each time.
+   * @returns {{host: object|null, side: object[], open: Set<string>}}
    */
-  _openSet(room) {
-    if (!this.gate || !room) return null;
-    let host = null;
-    for (const m of room.members.values()) if (m.state.r === 'h' && (!host || m.order < host.order)) host = m;
+  gameOf(name) {
+    const room = this.rooms.get(name);
+    return room ? this._game(room) : { host: null, side: [], open: new Set() };
+  }
+
+  _game(room) {
+    const host = this._bestHost(room);
+    const side = [];
     const open = new Set();
-    if (!host) return open;
+    if (!host) return { host, side, open };
     for (const m of room.members.values()) {
       if (m !== host && !(host.by !== null && m.by === host.by && m.state.r === 'h')) continue;
+      side.push(m);
       open.add(m.peer);
       const adm = m.state.adm;
       if (Array.isArray(adm)) for (const a of adm) if (Array.isArray(a) && typeof a[0] === 'string') open.add(a[0]);
     }
-    return open;
+    return { host, side, open };
+  }
+
+  /**
+   * The room's host: the r:'h' member with the smallest `at` (then join). While the room holds
+   * its host device's place (room.hostBy), only that device's pages, or a device that was here
+   * before hers, can be the host.
+   */
+  _bestHost(room) {
+    const hold = room.hostBy !== null ? room.seen.get(room.hostBy) ?? Infinity : Infinity;
+    let host = null;
+    for (const m of room.members.values()) {
+      if (m.state.r !== 'h') continue;
+      if (room.hostBy !== null && m.by !== room.hostBy && !(m.rank < hold)) continue;
+      if (!host || m.rank < host.rank || (m.rank === host.rank && m.order < host.order)) host = m;
+    }
+    return host;
+  }
+
+  /**
+   * After every change: remember the host's device, and since when none of its pages is here
+   * as host (sweep() lets the room go after hostHoldMs). A page without a stamp (by:null)
+   * never holds a room.
+   */
+  _trackHost(room) {
+    const h = this._bestHost(room);
+    if (h) {
+      room.hostBy = h.by;
+      room.hostAwayAt = 0;
+    } else if (room.hostBy !== null && !room.hostAwayAt) room.hostAwayAt = this.now();
+  }
+
+  /** The members that see everything (null when the room has no gate): gameOf's `open`. */
+  _openSet(room) {
+    if (!this.gate || !room) return null;
+    return this._game(room).open;
   }
 
   _visible(m, open) {

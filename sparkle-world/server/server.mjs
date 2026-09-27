@@ -8,24 +8,32 @@
 //   uses it to know it can play with friends here),
 // - relays multiplayer rooms at wss://<host>/r/<roomName> with the room logic in rooms.mjs.
 //
-// Kid safety and privacy: no accounts, no chat text, no voice, no stored player data. Rooms
-// live only in memory while friends play; message contents are never logged.
+// Kid safety and privacy: no accounts, no chat text, no stored player data. Rooms live only in
+// memory while friends play; message contents are never logged. The walkie-talkie
+// (server/voice.mjs, docs/MULTIPLAYER.md Addendum C) relays live voice frames only between the
+// players of one game (the room's host and the friends she let in: the same gate as below)
+// whose grown-ups turned it on and whose badge shows it, and never records, stores or logs them.
 //
 // Identity: a player's `by` stamp is made HERE from a per-device secret the page sends when
 // it connects (?d=..., kept in the device's localStorage, never shown to anyone), hashed with
 // the room name. A page cannot choose or copy someone else's stamp, so "let in again", "sent
 // home" and "follow the host after a reload" can trust it (docs/MULTIPLAYER.md Addendum B).
 // Rooms are gated (rooms.mjs): until the host lets a player in, she sees only the public
-// presence keys and no messages.
+// presence keys, gets no messages and no voice.
 //
 // Limits (env overrides in brackets): 4 players per room [SW_MAX_PEERS], 3,900 B per message,
 // 4 KiB of presence per player, 40 messages/s per connection (burst 80), 500 rooms
 // [SW_MAX_ROOMS], 12 connections per IP [SW_MAX_PER_IP], 6 live rooms made per IP
 // [SW_ROOMS_PER_IP], new connections per IP 1/s with a burst of 30 [SW_CONNECT_RATE,
-// SW_CONNECT_BURST], rooms idle for 10 minutes are closed [SW_IDLE_MS], WebSocket frames over
-// 16 KiB are refused, Origin must be this site [SW_ALLOWED_ORIGINS adds more, comma separated].
+// SW_CONNECT_BURST], new rooms per IP 20/min with a burst of 12 [SW_ROOMS_PER_MIN,
+// SW_ROOMS_BURST] (a code nobody plays makes a new room, so trying codes one after another is
+// slow), rooms idle for 10 minutes are closed [SW_IDLE_MS], WebSocket frames over 16 KiB are
+// refused, Origin must be this site [SW_ALLOWED_ORIGINS adds more, comma separated]. Voice has
+// its own limits (server/voice.mjs). A page that drops without ever setting presence leaves
+// its room at once (it has nothing to come back to).
 // The client IP is the socket address, or behind a proxy (SW_TRUST_PROXY, on by default) the
-// right-most public address in X-Forwarded-For (what the proxy saw, not what the client wrote).
+// right-most public address in X-Forwarded-For (what the proxy saw, not what the client wrote);
+// an IPv6 address counts by its /64 network (one home gets a whole /64).
 
 import http from 'node:http';
 import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs';
@@ -36,6 +44,7 @@ import { fileURLToPath } from 'node:url';
 import { WebSocketServer, WebSocket } from 'ws';
 import { isIP } from 'node:net';
 import { RoomRegistry, ROOM_NAME_RE } from './rooms.mjs';
+import { VoiceRelay } from './voice.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -112,6 +121,23 @@ export function clientIpOf(remoteAddress, xff, trustProxy = true) {
 }
 
 /**
+ * The key the per-address limits count by: IPv4 as is, IPv6 by its /64 network (a home or a
+ * phone gets a whole /64, so counting single IPv6 addresses would let one device take as many
+ * as it likes). Anything else (not an IP) as is.
+ */
+export function addressKey(ip) {
+  let a = String(ip || '?').trim();
+  if (isIP(a) !== 6) return a;
+  const zone = a.indexOf('%');
+  if (zone >= 0) a = a.slice(0, zone);
+  const [head, tail = ''] = a.split('::');
+  const hs = head ? head.split(':') : [];
+  const ts = a.includes('::') ? (tail ? tail.split(':') : []) : [];
+  const groups = a.includes('::') ? [...hs, ...Array(Math.max(0, 8 - hs.length - ts.length)).fill('0'), ...ts] : hs;
+  return groups.slice(0, 4).map((g) => (g || '0').toLowerCase().replace(/^0+(?=.)/, '')).join(':') + '::/64';
+}
+
+/**
  * Create the server (not listening yet). Options mirror the env variables; tests pass them
  * directly. Returns { server, registry, listen(port, host) -> Promise<port>, close() -> Promise }.
  */
@@ -125,6 +151,8 @@ export function createServer(opts = {}) {
     roomsPerIp: opts.roomsPerIp ?? envInt('SW_ROOMS_PER_IP', 6),
     connectRate: opts.connectRate ?? envInt('SW_CONNECT_RATE', 1),
     connectBurst: opts.connectBurst ?? envInt('SW_CONNECT_BURST', 30),
+    roomsPerMin: opts.roomsPerMin ?? envInt('SW_ROOMS_PER_MIN', 20),
+    roomsBurst: opts.roomsBurst ?? envInt('SW_ROOMS_BURST', 12),
     idleMs: opts.idleMs ?? envInt('SW_IDLE_MS', 10 * 60 * 1000),
     graceMs: opts.graceMs ?? envInt('SW_GRACE_MS', 5000),
     msgBytes: opts.msgBytes ?? 3900,
@@ -136,6 +164,7 @@ export function createServer(opts = {}) {
     trustProxy: opts.trustProxy ?? process.env.SW_TRUST_PROXY !== '0',
     log: opts.log ?? ((...a) => console.log(...a)),
     sweepMs: opts.sweepMs ?? 5000,
+    testStats: opts.testStats ?? process.env.SW_TEST_STATS === '1', // GET /api/stats (tests only)
   };
   const pkg = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
   const page = loadPage(o.htmlPath);
@@ -144,21 +173,27 @@ export function createServer(opts = {}) {
     maxRooms: o.maxRooms, maxPeers: o.maxPeers, msgBytes: o.msgBytes, stateBytes: o.stateBytes,
     graceMs: o.graceMs, idleMs: o.idleMs, roomsPerOwner: o.roomsPerIp, gate: true,
   });
+  // the walkie-talkie: who may hear and talk is read from the registry's gate (rooms.mjs gameOf)
+  const voice = new VoiceRelay({ registry });
+  voice.start();
   const conns = new Map(); // `${room}\n${peer}` -> conn
   const perIp = new Map();
   const connectBuckets = new Map(); // ip -> Bucket (new connections)
-  const counters = { connections: 0, rejected: 0, rateDropped: 0, connectLimited: 0, errors: 0 };
+  const roomBuckets = new Map(); // ip -> Bucket (new rooms)
+  const counters = { connections: 0, rejected: 0, rateDropped: 0, connectLimited: 0, roomLimited: 0, errors: 0, voiceKicked: 0 };
   let shuttingDown = false;
 
   const server = http.createServer((req, res) => handleHttp(req, res));
   const wss = new WebSocketServer({ noServer: true, maxPayload: o.maxFrame, perMessageDeflate: false });
 
   // every answer carries these; the page may not be framed by another site, talks only to
-  // its own origin (fetch /api/net and the rooms), and loads no plugins or other bases
-  function securityHeaders(res) {
+  // its own origin (fetch /api/net and the rooms), and loads no plugins or other bases. Only
+  // the game page may use the microphone (the walkie-talkie), and only on this site; the
+  // camera stays off everywhere
+  function securityHeaders(res, game = false) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'no-referrer');
-    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), display-capture=()');
+    res.setHeader('Permissions-Policy', `camera=(), microphone=${game ? '(self)' : '()'}, geolocation=(), payment=(), usb=(), display-capture=()`);
     res.setHeader('Content-Security-Policy', "frame-ancestors 'none'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'");
     res.setHeader('X-Frame-Options', 'DENY');
   }
@@ -187,6 +222,7 @@ export function createServer(opts = {}) {
       if (!page) return sendJson(res, 503, { ok: false, error: 'game not built' }, head);
       return sendJson(res, 200, { ok: true }, head);
     }
+    if (pathname === '/api/stats' && o.testStats) return sendJson(res, 200, { ...stats(), voicePeers: voice.peerStats() }, head);
     if (pathname === '/api/net') {
       return sendJson(res, 200, { ok: !!page && !shuttingDown, version: pkg.version, build: page ? page.build : null }, head);
     }
@@ -196,7 +232,7 @@ export function createServer(opts = {}) {
     // ---- the game at "/play" ("/" too when the home page is not built) ----
     if (pathname === '/play' || pathname === '/play/' || pathname === '/sparkle-world.html' || (!site && (pathname === '/' || pathname === '/index.html'))) {
       if (!page) return sendText(res, 503, 'Sparkle World is not built yet. Run: npm run build\n', head);
-      securityHeaders(res);
+      securityHeaders(res, true);
       res.setHeader('ETag', page.etag);
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Vary', 'Accept-Encoding');
@@ -258,13 +294,13 @@ export function createServer(opts = {}) {
   }
 
   function clientIp(req) {
-    return clientIpOf(req.socket.remoteAddress, req.headers['x-forwarded-for'], o.trustProxy);
+    return addressKey(clientIpOf(req.socket.remoteAddress, req.headers['x-forwarded-for'], o.trustProxy));
   }
 
-  /** New connections per address (a scanner opening room after room is slowed down). */
-  function connectOk(ip) {
-    let b = connectBuckets.get(ip);
-    if (!b) connectBuckets.set(ip, (b = new Bucket(o.connectRate, o.connectBurst)));
+  /** One token from this address's bucket in `map` (made full on first use). */
+  function takeFrom(map, ip, rate, burst) {
+    let b = map.get(ip);
+    if (!b) map.set(ip, (b = new Bucket(rate, burst)));
     return b.take();
   }
 
@@ -312,8 +348,14 @@ export function createServer(opts = {}) {
     if (!originOk(req)) return refuse(socket, 403, 'Forbidden');
     if (shuttingDown) return refuse(socket, 503, 'Service Unavailable');
     const ip = clientIp(req);
-    if (!connectOk(ip)) {
+    // new connections, and new rooms, per address: a scanner opening room after room is slowed
+    // down (a code nobody plays makes a new room; joining a game that is there does not count)
+    if (!takeFrom(connectBuckets, ip, o.connectRate, o.connectBurst)) {
       counters.connectLimited++;
+      return refuse(socket, 429, 'Too Many Requests');
+    }
+    if (!registry.rooms.has(name) && !takeFrom(roomBuckets, ip, o.roomsPerMin / 60, o.roomsBurst)) {
+      counters.roomLimited++;
       return refuse(socket, 429, 'Too Many Requests');
     }
     try {
@@ -360,6 +402,18 @@ export function createServer(opts = {}) {
       safeSend(ws, { t: 'e', code: r.code });
       conn.bye = true;
       ws.close(r.code === 'full' ? 4001 : r.code === 'rooms_full' ? 4002 : r.code === 'limit' ? 4029 : 4004, r.code);
+    } else {
+      // the walkie-talkie link of this connection (server/voice.mjs decides who hears)
+      conn.voice = voice.link(name, peer, {
+        json: (f) => safeSend(ws, f),
+        // live voice: a frame that would wait behind a slow connection is dropped, not queued
+        binary: (b) => (ws.readyState === WebSocket.OPEN && ws.bufferedAmount < 64 * 1024 ? (ws.send(b, { binary: true }), true) : false),
+        // too many voice frames that were not relayed: disconnected, like the JSON rate limit
+        kick: () => {
+          counters.voiceKicked++;
+          ws.close(4008, 'too fast');
+        },
+      });
     }
     ws.on('pong', () => {
       conn.alive = true;
@@ -378,7 +432,10 @@ export function createServer(opts = {}) {
       }
     });
     function onMessage(data, isBinary) {
-      if (isBinary) return;
+      if (isBinary) {
+        conn.voice?.binary(data); // walkie-talkie audio: its own limits (server/voice.mjs)
+        return;
+      }
       if (!conn.bucket.take()) {
         counters.rateDropped++;
         const now = Date.now();
@@ -405,6 +462,10 @@ export function createServer(opts = {}) {
         safeSend(ws, { t: 'k' });
         return;
       }
+      if (f.t === 'v') {
+        conn.voice?.control(f); // walkie-talkie control
+        return;
+      }
       if (f.t === 'bye') {
         conn.bye = true;
         registry.leave(name, peer);
@@ -416,13 +477,18 @@ export function createServer(opts = {}) {
     }
     ws.on('error', () => {});
     ws.on('close', (code) => {
+      conn.voice?.close();
       const n = (perIp.get(ip) || 1) - 1;
       if (n <= 0) perIp.delete(ip);
       else perIp.set(ip, n);
       if (conn.replaced) return;
       if (conns.get(key) === conn) conns.delete(key);
       if (!r.ok) return;
-      if (conn.bye || code === 1000 || code === 1001) registry.leave(name, peer);
+      // a page that never said anything (no presence) has nothing to come back to: it leaves at
+      // once instead of holding its room for the reconnect grace
+      const m = registry.rooms.get(name)?.members.get(peer);
+      const silent = !m || Object.keys(m.state).length === 0;
+      if (conn.bye || code === 1000 || code === 1001 || silent) registry.leave(name, peer);
       else registry.detach(name, peer);
     });
   }
@@ -449,8 +515,8 @@ export function createServer(opts = {}) {
     }
   }, 25000);
   const roomTimer = setInterval(() => {
-    // forget connection buckets that are full again
-    for (const [ip, b] of connectBuckets) if (b.idle()) connectBuckets.delete(ip);
+    // forget address buckets that are full again
+    for (const map of [connectBuckets, roomBuckets]) for (const [ip, b] of map) if (b.idle()) map.delete(ip);
     for (const { name, peer } of registry.sweep()) {
       const conn = conns.get(name + '\n' + peer);
       if (conn) {
@@ -473,6 +539,7 @@ export function createServer(opts = {}) {
 
   function close() {
     shuttingDown = true;
+    voice.stop();
     clearInterval(sweepTimer);
     clearInterval(roomTimer);
     for (const conn of conns.values()) {
@@ -491,10 +558,10 @@ export function createServer(opts = {}) {
   }
 
   function stats() {
-    return { rooms: registry.roomCount, peers: registry.peerCount(), connections: conns.size, ...counters, ...registry.counts };
+    return { rooms: registry.roomCount, peers: registry.peerCount(), connections: conns.size, ...counters, ...registry.counts, voice: voice.stats() };
   }
 
-  return { server, registry, listen, close, stats, page, site, options: o };
+  return { server, registry, voice, listen, close, stats, page, site, options: o };
 }
 
 function loadPage(file) {

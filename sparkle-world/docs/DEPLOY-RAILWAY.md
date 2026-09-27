@@ -126,7 +126,10 @@ While playing together:
   and **Careful players** (on: the others cannot change her things, but may still water her
   garden and eat treats on her tables), and **Stop playing**.
 - **Say** (a speech bubble, or the T key) has 16 happy words ("Hi!", "Let's build!", "Thank
-  you!", ...). There is no typing and no voice.
+  you!", ...). There is no typing.
+- **Walkie-talkie** (only if a grown-up turned it on for that device, see below): hold the big
+  walkie button (or the M key) and talk; let go and it stops. Everyone in the game whose walkie
+  is on hears it, one talker at a time, at most 15 seconds per press.
 - After a reload (or a new version), the title shows **Keep playing** on the device that
   invited and **Join Lily** (her name) on her friends' devices for a while: one tap each and
   everyone is back together. If she taps **Play** instead, her world asks "Your friends are
@@ -136,6 +139,30 @@ While playing together:
   it was before friends came, and an **Undo** on the card after takes that back. It is only
   offered until she builds on her own in that world again (then going back would take her
   own building away too), and for at most a week.
+
+### The walkie-talkie (for grown-ups)
+
+The walkie-talkie is **off** until a grown-up turns it on, separately on each device:
+
+1. On the title screen (or **Menu** inside a world) tap **Settings**, scroll to
+   **Walkie-talkie (grown-ups)** and tap its switch.
+2. Answer the multiplication question on the number pad (for example *17 × 8*). Three wrong
+   answers make it wait one minute (the next time two minutes, up to ten). Closing the
+   question or reloading the page does not skip the wait.
+3. The first time she presses the walkie button, a card explains the microphone; tap **OK**, and
+   **Allow** if the browser asks.
+
+Turning it off is one tap on the same switch (no question). A device whose walkie is off never
+receives anyone's voice and never sends any; she just sees a small "Walkie off" badge when her
+friends use theirs. In the **Players** panel every player has a badge: **walkie** (this device
+can hear and talk) or **walkie off** (it cannot; the server checks this badge before it sends a
+single voice). Every player can **Mute** anyone for herself, and the player who invited can
+**Mute** a friend for everyone or switch on **Mute everyone**. A friend's voice is never played
+much louder than normal talking: shouting or a loud noise is turned down before it plays.
+
+The microphone only works on the real web address (https) or on `localhost`; browsers block it
+on plain `http://192.168…` home-network addresses. The walkie-talkie does not exist in the
+claude.ai version of the game.
 
 The in-game "Friends" (the girls you can invite from the Bag) are something else: they live in
 your own world. Real people are always "Players".
@@ -179,8 +206,10 @@ version by itself (1–3 minutes). The old version keeps running until the new o
 - **A code, then a yes.** A game is found with 4 pictures (20,736 possible codes). Knowing the
   code is not enough: the player who invited must tap **Let in!** for each friend, one at a
   time. Until then the server shows the knocking device nothing of the game (no names, no
-  world, no messages). She can **Send home** a friend at any time, and that device cannot
-  knock again in that game.
+  world, no messages, no voices). She can **Send home** a friend at any time, and that device
+  cannot knock again in that game. The server slows down anyone who tries codes one after
+  another (a few new games per minute from one internet address), so trying the codes from
+  one home takes many hours.
 - **Her world is protected.** By default ("Careful players"), friends can build and change only
   their own things and natural ground, not the host's houses and furniture. The host can pause
   building, **Undo building** for any friend, and a copy of her world from *before friends
@@ -188,24 +217,42 @@ version by itself (1–3 minutes). The old version keeps running until the new o
 - **No chat.** There is no typing to other players at all: only 16 fixed friendly phrases
   ("Hi!", "Let's build!", "Thank you!", …) and dance or wave emotes. Player names go through a
   filter before others see them.
-- **No voice chat, no camera.** The game never uses the microphone or camera, and the server
-  tells browsers so (it sends a `Permissions-Policy` that turns them off for this site). It can
-  read its own words out loud for early readers (Settings, *Read words out loud*, off at first).
+- **Voice only by walkie-talkie, only with a grown-up's OK on that device.** It is off until a
+  grown-up answers a multiplication question in Settings. The question protects **this
+  device**: each family's grown-up decides for their own child's device, and nobody else's
+  answer turns yours on. The server cannot see that question (a changed copy of the page could
+  skip it on its own device), so here is what the server itself checks: voices go only to
+  players who show **walkie** in the Players panel (a device showing **walkie off** receives
+  no voice at all and cannot talk), and only to the players of that one game, the player who
+  invited and the friends she let in with a tap (the same check that decides who may see
+  names and the world), never to someone still knocking or sent home. So the player who
+  invited always sees who can hear, and can **Mute** a friend for everyone or switch on
+  **Mute everyone**; every child can mute anyone for herself. The microphone is on only while
+  the button is held (at most 15 seconds, one talker at a time, and a friend who is waiting
+  goes next) and turns off the moment it is let go. **Nothing is recorded or stored**, on the
+  devices or on the server, and the server does not log voices. Loud shouting from a friend
+  is turned down before it plays. The walkie exists only on this website version, not inside
+  claude.ai. The game can also read its own words out loud for early readers (Settings,
+  *Read words out loud*, off at first).
+- **No camera.** The game never uses the camera. The server's `Permissions-Policy` turns the
+  camera, location and payments off for this site, and allows the microphone only on the
+  game page, only for this site (for the walkie-talkie); the home page may not use it.
 - **No accounts, no personal data.** Nobody signs up; there are no emails or passwords. Each
   device keeps a random secret so a friend who reloads can come back to her seat; the
   server turns it into a different stamp in every game, so no one can follow a device from
   game to game, and no one can pretend to be another device.
 - **Nothing stored on the server.** A game room exists only in the server's memory while
   friends are playing, and disappears when they leave (or after 10 quiet minutes). The server
-  does not save worlds, names, pictures or messages, and does not log what happens in games.
+  does not save worlds, names, pictures, messages or voices, and does not log what happens in
+  games.
 - **Limits.** At most 4 players per game, 500 games at a time, 12 connections and 6 games
-  from one home internet address, and new connections are slowed down if one address keeps
-  opening them (someone trying code after code). Other websites cannot connect to your game
-  server or show the game inside their own pages. One broken or unkind message cannot stop
-  the server.
+  from one home internet address, and new connections and new games are slowed down if one
+  address keeps opening them (someone trying code after code). Other websites cannot connect
+  to your game server or show the game inside their own pages. One broken or unkind message
+  cannot stop the server.
 - **The web address is public.** Anyone who has the address can open the game (just like any
-  website) and could try codes, but still needs a **Let in!** from the host. Share the
-  address only with the families you play with, and you can remove it any time (step 9).
+  website) and could try codes, but still needs a **Let in!** from the host. **Share the
+  address only with the families you know**, and you can remove it any time (step 9).
 
 ---
 
@@ -218,7 +265,7 @@ version by itself (1–3 minutes). The old version keeps running until the new o
 | Deployment fails at "Healthcheck" | Check the build command is `npm run build` (the game must be built before it starts). Look at the Deploy Logs for `dist/sparkle-world.html is missing`. |
 | The page opens but there is no **Play with Friends** button | Open `/api/net` on your address; it should show `{"ok":true,...}`. If it does, reload the game page. |
 | The address shows the game instead of the home page | The home page was not built (the Build Logs show a `dist/site/` line when it is). Check the build command is `npm run build`. The game still works at `/` and at `/play` meanwhile. |
-| "Lots of games right now!" | The server is at its limit (500 games, or 12 devices or 6 games on one home connection). Wait a minute. |
+| "Lots of games right now!" | The server is at its limit (500 games, 12 devices or 6 games on one home connection, or very many new games or wrong codes from one home connection in a short time). Wait a minute. |
 | "Your game needs a refresh!" | Reload the page on every device (a new version was published). |
 | Friends are "Reconnecting…" often | Usually home Wi-Fi. The game keeps working and catches up when the connection returns. |
 
@@ -232,7 +279,8 @@ Add these in the service's **Variables** tab (then redeploy):
 | `SW_MAX_PER_IP` | 12 | connections from one internet address |
 | `SW_ROOMS_PER_IP` | 6 | games one internet address may have started at the same time |
 | `SW_CONNECT_RATE` / `SW_CONNECT_BURST` | 1 / 30 | new connections per second from one address, and how many may come at once |
-| `SW_TRUST_PROXY` | on | set to `0` only if the server is NOT behind Railway's (or another) proxy; behind one, the address counted is the right-most public one in `X-Forwarded-For` (the one the proxy saw) |
+| `SW_ROOMS_PER_MIN` / `SW_ROOMS_BURST` | 20 / 12 | new games per minute from one address, and how many may come at once (a wrong code counts as a new game; joining a game that is there does not) |
+| `SW_TRUST_PROXY` | on | set to `0` only if the server is NOT behind Railway's (or another) proxy; behind one, the address counted is the right-most public one in `X-Forwarded-For` (the one the proxy saw). An IPv6 address counts by its /64 (one home) |
 | `SW_IDLE_MS` | 600000 | close a game after this many quiet milliseconds (10 min) |
 | `SW_ALLOWED_ORIGINS` | *(empty)* | extra web addresses allowed to connect, comma separated (only needed if you serve the page from a different domain than the server) |
 
@@ -263,6 +311,7 @@ Automatic checks (for grown-ups who change the code):
 |---|---|
 | `npm run test:net` | the multiplayer code on its own, with lost and late messages (about 2 minutes) |
 | `node tools/site-check.mjs` | builds, starts this same server, and checks the home page at phone (360 and 390 px wide), iPad and computer sizes, and on phones again with the font blocked (no errors, nothing loaded from other sites, no sideways scrolling, every picture and link, the picture-code demo), that **Play now** opens the game at `/play`, and the page's headers. Screenshots go to `.shots/site-*.png`. About 4 minutes. |
+| `npm run test:walkie` | the walkie-talkie: sound coding, the server's rules (who may hear, one talker, 15 seconds, mutes) and three browsers with a pretend microphone through this same server (about 10 minutes) |
 | `npm run probe:railway` | builds the game, starts this same server on a free port, and three headless browsers (a computer, an iPad and a phone) make a code, join it through the real screens and build together; then the server is killed and started again (everyone reconnects by themselves) and finally killed for good (everyone gets a friendly "Playing together stopped." card). About 6 minutes. |
 | `node tools/probe-net-ux.mjs` | over this same server: the name question on a new device, Play Together, what a knocking device can see, building paused and on again, Undo building told kindly, a host reload ("Your friends are waiting!"), Before friends and its Undo. About 5 minutes. |
 | `npm run probe:mp` | the same game inside claude.ai (a pretend claude.ai room): every screen, knocking, building, Undo building, Send home, sleep, pets, zip lines, reloads, a new version, lost messages, and the size and speed limits. About 25 minutes. |

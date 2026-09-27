@@ -666,6 +666,43 @@ async function safetyTests() {
     // sent home: public keys again
     reg.handle(R, 'H', { t: 's', patch: { adm: [] } });
     eq(box.G.at(-1).j.find((e) => e.peer === 'H').state.nm, undefined, 'sent home: names hidden again');
+    // while her page reloads, a pretend host who came in between does not take her place
+    let T = 1000;
+    const rr = new RoomRegistry({ gate: true, now: () => T, hostHoldMs: 90000 });
+    const b2 = { H: [], G: [], X: [], H2: [] };
+    const s2 = (k) => (f) => b2[k].push(f);
+    rr.join(R, 'H', s2('H'), { by: 'dH' });
+    rr.handle(R, 'H', { t: 's', patch: { r: 'h', ep: 'e1', adm: [['G', 1]] } });
+    rr.join(R, 'G', s2('G'), { by: 'dG' });
+    rr.handle(R, 'G', { t: 's', patch: { r: 'g', nm: 'Mia' } });
+    rr.join(R, 'X', s2('X'), { by: 'dX' });
+    rr.handle(R, 'X', { t: 's', patch: { r: 'h', hs: 0, ep: 'e9', adm: [['G', 1], ['X', 2]] } });
+    rr.leave(R, 'H');
+    eq(rr.gameOf(R).host, null, 'her page is gone: nobody is the host meanwhile (not the pretend host)');
+    rr.handle(R, 'X', { t: 'b', topic: 'sw.op', data: { s: 6 } });
+    assert(!b2.G.some((f) => f.t === 'b' && f.data.s === 6) && !b2.X.some((f) => (f.u || []).some((u) => u[1].nm)), 'the pretend host reaches nobody and sees no names');
+    rr.join(R, 'H2', s2('H2'), { by: 'dH' });
+    rr.handle(R, 'H2', { t: 's', patch: { r: 'h', ep: 'e2', adm: [['G', 1]] } });
+    eq(rr.gameOf(R).host.peer, 'H2', 'her reloaded page is the host again');
+    const xAt = b2.G.flatMap((f) => f.j || []).filter((e) => e.peer === 'X').at(-1).at;
+    const h2At = b2.G.flatMap((f) => f.j || []).filter((e) => e.peer === 'H2').at(-1).at;
+    assert(h2At < xAt, `and her \`at\` is still her device's first (${h2At} < ${xAt}), so guests and her own rival check agree`);
+    // she goes for good: after 90 s (friends wait 60 s for her) the room is free again
+    rr.leave(R, 'H2');
+    T += 60000;
+    rr.sweep();
+    eq(rr.gameOf(R).host, null, 'held for her after 60 s');
+    T += 31000;
+    rr.sweep();
+    eq(rr.gameOf(R).host?.peer, 'X', 'free after 90 s');
+    // two devices pick the same code at once: the one who was there first is the host, even
+    // when her r:'h' arrives second
+    const r3 = new RoomRegistry({ gate: true });
+    r3.join(R, 'A', () => {}, { by: 'dA' });
+    r3.join(R, 'B', () => {}, { by: 'dB' });
+    r3.handle(R, 'B', { t: 's', patch: { r: 'h' } });
+    r3.handle(R, 'A', { t: 's', patch: { r: 'h' } });
+    eq(r3.gameOf(R).host.peer, 'A', 'the first device wins the race');
     // rooms one address may make
     const r2 = new RoomRegistry({ roomsPerOwner: 2 });
     assert(r2.join('a1', 'p1', () => {}, { owner: 'ip' }).ok && r2.join('a2', 'p2', () => {}, { owner: 'ip' }).ok, 'two rooms');
@@ -1060,6 +1097,74 @@ async function serverTests() {
     }
   });
 
+  await test('server: new rooms per address, IPv6 counts per /64, silent drops', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'sw-'));
+    const page = path.join(dir, 'page.html');
+    writeFileSync(page, '<!doctype html><title>Sparkle World</title>');
+    const srv = await startServerProcess({ SW_DIST: page, SW_MAX_PER_IP: '100', SW_ROOMS_PER_IP: '100', SW_CONNECT_BURST: '1000', SW_GRACE_MS: '5000' });
+    const socks = [];
+    const open = async (...a) => {
+      const s = await rawWs(srv.port, ...a);
+      socks.push(s);
+      return s;
+    };
+    const xff = (v) => ({ 'X-Forwarded-For': v });
+    try {
+      // new rooms per address: 20/min, burst 12 (a code that nobody plays makes a new room)
+      const scan = [];
+      for (let k = 0; k < 16; k++) {
+        const x = await open('sw1-scan-' + k, 'secret-scan-' + k + 'xxxxxx', xff('198.51.100.7'));
+        if (!x.error) await waitFor(() => x.closed !== null || x.frames.length > 0);
+        scan.push(x);
+        if (!x.error) {
+          x.ws.close(1000);
+          await waitFor(() => x.closed !== null);
+        }
+      }
+      const scanRefused = scan.filter((x) => x.error === 429).length;
+      assert(scanRefused >= 3 && scanRefused <= 4, `trying 16 codes in a row from one address: ${scanRefused} refused with 429 (12 new rooms at once, then 1 every 3 s)`);
+      const hostThere = await open('sw1-live-room', 'secret-live-hostxxxx', xff('198.51.100.8'));
+      await waitFor(() => hostThere.frames.length > 0);
+      const guestThere = await open('sw1-live-room', 'secret-live-guestxxx', xff('198.51.100.7'));
+      await waitFor(() => guestThere.frames.length > 0 || guestThere.closed !== null || guestThere.error);
+      assert(!guestThere.error && guestThere.frames.some((f) => f.t === 'p' && f.self), 'joining a game that is there is not a new room (not limited)');
+      for (const x of [hostThere, guestThere]) x.ws.close(1000);
+      // IPv6: one home gets a whole /64, so the limits count the /64 (the last 64 bits vary)
+      const v6 = [];
+      for (let k = 0; k < 14; k++) v6.push(await open('sw1-six-' + k, 'secret-six-' + k + 'xxxxxxx', xff(`2001:db8:5:6:${(k + 1).toString(16)}::${k + 2}`)));
+      const v6Refused = v6.filter((x) => x.error === 429).length;
+      assert(v6Refused >= 1 && v6Refused <= 2, `new rooms from 14 addresses of one IPv6 /64: ${v6Refused} refused (they count as one address)`);
+      const v6other = await open('sw1-six-other', 'secret-six-otherxxxx', xff('2001:db8:5:7::1'));
+      await waitFor(() => v6other.frames.length > 0 || v6other.error);
+      assert(!v6other.error, 'another /64 is another address');
+      for (const x of [...v6, v6other]) if (!x.error) x.ws.close(1000);
+      await sleep(200);
+
+      // a connection that never said anything and drops: it leaves at once (no 5 s grace)
+      const silent = await open('sw1-silent-drop', 'secret-silent-xxxxxx', xff('198.51.100.9'));
+      await waitFor(() => silent.frames.length > 0);
+      const watcher = await open('sw1-silent-drop', 'secret-silent-watchx', xff('198.51.100.10'));
+      await waitFor(() => watcher.frames.length > 0);
+      watcher.ws.send(JSON.stringify({ t: 's', patch: { r: 'h' } }));
+      silent.ws.terminate();
+      await waitFor(() => watcher.frames.some((f) => f.t === 'p' && Array.isArray(f.l) && f.l.length));
+      assert(watcher.frames.some((f) => f.t === 'p' && Array.isArray(f.l) && f.l.includes(silent.frames[0].self)), 'a silent page that drops leaves at once');
+      const talker = await open('sw1-silent-drop', 'secret-silent-talker', xff('198.51.100.11'));
+      await waitFor(() => talker.frames.length > 0);
+      talker.ws.send(JSON.stringify({ t: 's', patch: { r: 'g' } }));
+      await sleep(100);
+      const n0 = watcher.frames.filter((f) => f.t === 'p' && f.l).length;
+      talker.ws.terminate();
+      await sleep(1000);
+      eq(watcher.frames.filter((f) => f.t === 'p' && f.l).length, n0, 'a page that set presence keeps its reconnect grace');
+      watcher.ws.close(1000);
+      assert(!/secret-/.test(srv.output()), 'no secrets logged');
+    } finally {
+      for (const x of socks) try { x.ws.terminate(); } catch {}
+      await stopServer(srv);
+    }
+  });
+
   await test('server: WsTransport reconnects as the same peer after a drop and after a server restart', async () => {
     const dir = mkdtempSync(path.join(tmpdir(), 'sw-'));
     const page = path.join(dir, 'page.html');
@@ -1129,6 +1234,15 @@ async function serverSafetyTests() {
       assert(/frame-ancestors 'none'/.test(home.headers['content-security-policy'] || ''), 'CSP frame-ancestors on the page');
       assert(/connect-src 'self'/.test(home.headers['content-security-policy'] || ''), 'CSP connect-src on the page');
       eq(home.headers['x-frame-options'], 'DENY', 'X-Frame-Options');
+      // only the game page may use the microphone (the walkie-talkie), only on this site; the
+      // camera never
+      const game = await get(srv.port, '/play');
+      const pp = game.headers['permissions-policy'] || '';
+      assert(/microphone=\(self\)/.test(pp) && /camera=\(\)/.test(pp) && /display-capture=\(\)/.test(pp), 'the game page: microphone for this site only, camera off (' + pp + ')');
+      for (const p of ['/healthz', '/nope']) {
+        const q = (await get(srv.port, p)).headers['permissions-policy'] || '';
+        assert(/microphone=\(\)/.test(q) && /camera=\(\)/.test(q), p + ': microphone and camera off');
+      }
       for (const [p, st] of [['/nope', 404], ['/r/sw1-heart-star-moon-cat', 426], ['/healthz', 200]]) {
         const r = await get(srv.port, p);
         eq(r.status, st, p);
@@ -1162,7 +1276,8 @@ async function serverSafetyTests() {
       const byOf = (s) => stamps.find((x) => x[0] === s.frames[0].self)[1];
       assert(byOf(a) && byOf(a) === byOf(b), 'the same device: the same stamp');
       assert(byOf(c) && byOf(c) !== byOf(a), 'another device: another stamp');
-      assert(stamps.every((x, k) => k === 0 || x[2] > stamps[k - 1][2]), 'join order');
+      const atOf = (s) => stamps.find((x) => x[0] === s.frames[0].self)[2];
+      assert(atOf(a) === atOf(b) && atOf(c) > atOf(a), 'join order: a device keeps its first place (its second page too), a later device comes after');
       for (const s of socks.splice(0)) s.ws.close(1000);
       await sleep(300);
       const other = await open('sw1-cat-cat-cat-cat', 'dddd-secret-0000000', {}, 'device-one-secret-000000');
@@ -1212,7 +1327,7 @@ async function wsPropertyTests() {
   const dir = mkdtempSync(path.join(tmpdir(), 'sw-'));
   const page = path.join(dir, 'page.html');
   writeFileSync(page, '<!doctype html><title>Sparkle World</title>');
-  const srv = await startServerProcess({ SW_DIST: page, SW_MAX_PER_IP: '50', SW_ROOMS_PER_IP: '50', SW_CONNECT_BURST: '100000' });
+  const srv = await startServerProcess({ SW_DIST: page, SW_MAX_PER_IP: '50', SW_ROOMS_PER_IP: '50', SW_CONNECT_BURST: '100000', SW_ROOMS_BURST: '100000' });
   const seeds = +(args.wsseeds || 1);
   try {
     for (let k = 0; k < seeds; k++) {
