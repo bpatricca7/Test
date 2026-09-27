@@ -1,12 +1,16 @@
 // Diagnostics "flight recorder": remembers errors, long frames, stalls and lost WebGL
 // contexts so a freeze on a real device can be understood afterwards. Inside a claude.ai
-// Artifact with the db capability the report is also saved to `diag/<session>` (small,
-// throttled) so it can be read back later; everywhere else it stays in memory and is
+// Artifact whose cloud saves work (db + user capabilities, see storage.js) the report is also
+// saved in the viewer's own subtree, `data/users/<uid>/profile/diag/<session>` (small,
+// throttled), so it can be read back later; everywhere else it stays in memory and is
 // reachable as window.__game.diag.report().
+// It also records how many WebGL contexts are alive at once and the live 2D canvases (count,
+// megabytes, peak): iOS caps both, so a device that runs short can be recognised afterwards.
 
 const MAX_ITEMS = 40;
 const UPLOAD_EVERY_MS = 60000;
 const STALL_MS = 3000;
+const CANVAS_SAMPLE_MS = 10000;
 
 export class Diagnostics {
   constructor(game) {
@@ -16,14 +20,16 @@ export class Diagnostics {
     this.errors = [];
     this.longFrames = [];
     this.stalls = [];
-    this.contexts = { created: 0, lost: 0, restored: 0 };
+    this.contexts = { created: 0, lost: 0, restored: 0, live: 0, maxLive: 0 };
+    // 2D canvases with a backing store, as weak references (counting never keeps one alive)
+    this.canvas = { created: 0, peakCount: 0, peakMB: 0 };
+    this._canvasRefs = [];
     this.lastFrameAt = performance.now();
     this.frames = 0;
     this._seen = new Set();
     this._dirty = false;
     this._uploading = false;
     this._lastUpload = 0;
-    this._db = undefined; // undefined = not asked yet, null = unavailable
     this._install();
   }
 
@@ -57,6 +63,30 @@ export class Diagnostics {
     if (ms > 1500) this._scheduleUpload();
   }
 
+  /**
+   * Live 2D canvases (collected ones drop out, 1x1 ones count as none): count, megabytes
+   * (4 bytes per pixel) and the peaks seen so far.
+   */
+  canvasStats() {
+    let count = 0, px = 0;
+    const keep = [];
+    for (const ref of this._canvasRefs) {
+      const c = ref.deref();
+      if (!c) continue;
+      keep.push(ref);
+      const a = (c.width | 0) * (c.height | 0);
+      if (a <= 1) continue;
+      count++;
+      px += a;
+    }
+    this._canvasRefs = keep;
+    const mb = +((px * 4) / 1048576).toFixed(1);
+    const C = this.canvas;
+    if (count > C.peakCount) C.peakCount = count;
+    if (mb > C.peakMB) C.peakMB = mb;
+    return { count, mb, peakCount: C.peakCount, peakMB: C.peakMB, created: C.created };
+  }
+
   frameDone(now) {
     this.lastFrameAt = now;
     this.frames++;
@@ -71,17 +101,32 @@ export class Diagnostics {
     const diag = this;
     const proto = HTMLCanvasElement.prototype;
     const getContext = proto.getContext;
+    const canWeak = typeof WeakRef === 'function';
     proto.getContext = function (type, ...rest) {
       const had = this.__swGL;
       const ctx = getContext.call(this, type, ...rest);
+      if (ctx && !this.__sw2d && canWeak && String(type) === '2d') {
+        this.__sw2d = true;
+        diag.canvas.created++;
+        diag._canvasRefs.push(new WeakRef(this));
+        if (diag._canvasRefs.length > 4000) diag.canvasStats(); // prune collected ones
+      }
       if (ctx && !had && /webgl/.test(String(type))) {
         this.__swGL = true;
-        diag.contexts.created++;
+        const C = diag.contexts;
+        C.created++;
+        C.live++;
+        C.maxLive = Math.max(C.maxLive, C.live);
         this.addEventListener('webglcontextlost', () => {
-          diag.contexts.lost++;
-          diag.error('webgl', `context lost (${diag.contexts.created} created)`);
+          C.lost++;
+          C.live--;
+          diag.error('webgl', `context lost (${C.created} created, ${C.live + 1} alive)`);
         });
-        this.addEventListener('webglcontextrestored', () => { diag.contexts.restored++; diag._dirty = true; });
+        this.addEventListener('webglcontextrestored', () => {
+          C.restored++;
+          C.live++;
+          diag._dirty = true;
+        });
       }
       return ctx;
     };
@@ -96,6 +141,8 @@ export class Diagnostics {
         this._scheduleUpload();
       }
     }, 1000);
+    // the canvas-memory peak (cheap: a few hundred weak references)
+    if (canWeak) setInterval(() => { try { this.canvasStats(); } catch { /* diagnostics only */ } }, CANVAS_SAMPLE_MS);
     document.addEventListener('visibilitychange', () => { this.lastFrameAt = performance.now(); if (document.hidden) this.upload(true); });
     setInterval(() => { if (this._dirty) this.upload(false); }, UPLOAD_EVERY_MS);
   }
@@ -115,9 +162,11 @@ export class Diagnostics {
       mode: g.mode,
       fps: Math.round(g.fps || 0),
       frames: this.frames,
-      world: g.world ? { biome: g.world.biome, size: g.world.sx, entities: g.entities ? g.entities.all().length : null } : null,
+      world: g.world ? { biome: g.world.meta ? g.world.meta.biome : null, size: g.world.sx, entities: g.entities ? g.entities.all().length : null } : null,
       gl: info ? { geometries: info.memory.geometries, textures: info.memory.textures, calls: info.render.calls, programs: info.programs ? info.programs.length : null } : null,
       contexts: this.contexts,
+      canvases: this._canvasRefs.length || this.canvas.created ? this.canvasStats() : null,
+      audio: g.audio && g.audio.stats ? g.audio.stats() : null,
       errors: this.errors.map(({ key, ...e }) => e),
       longFrames: this.longFrames,
       stalls: this.stalls,
@@ -129,14 +178,15 @@ export class Diagnostics {
     if (Date.now() - this._lastUpload > UPLOAD_EVERY_MS) setTimeout(() => this.upload(false), 5000);
   }
 
-  async _getDb() {
-    if (this._db !== undefined) return this._db;
-    this._db = null;
-    try {
-      const c = typeof window !== 'undefined' ? window.claude : null;
-      if (c && typeof c.use === 'function') this._db = (await c.use('db')) || null;
-    } catch { this._db = null; }
-    return this._db;
+  /**
+   * Where reports go: the viewer's own cloud subtree, only while the save store has a
+   * writable cloud with a user id (never a path other viewers of the artifact share).
+   */
+  _reportDoc() {
+    const store = this.game.store;
+    const cloud = store && store.cloud;
+    if (!cloud || !cloud.uid || !cloud.root || !store.cloudWritable) return null;
+    return cloud.root.collection('diag').doc(this.session);
   }
 
   /** Save the report to the artifact db (if any). Never throws. */
@@ -145,11 +195,11 @@ export class Diagnostics {
     if (!this.errors.length && !this.stalls.length && !this.longFrames.some((f) => f.ms > 1500)) return;
     this._uploading = true;
     try {
-      const db = await this._getDb();
-      if (!db) return;
+      const doc = this._reportDoc();
+      if (!doc) return;
       this._dirty = false;
       this._lastUpload = Date.now();
-      await db.doc(`diag/${this.session}`).set(this.report());
+      await Promise.race([doc.set(this.report()), new Promise((resolve) => setTimeout(resolve, 10000))]);
     } catch {
       // diagnostics must never cause trouble of their own
     } finally {

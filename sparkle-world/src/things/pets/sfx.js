@@ -12,6 +12,9 @@ function out(game) {
   return a;
 }
 
+// a voice and the nodes that only served it are disconnected when it ends (audio.track)
+const track = (a, src, ...nodes) => { if (a.track) a.track(src, ...nodes); };
+
 function env(g, t, attack, peak, decay) {
   g.gain.setValueAtTime(0.0001, t);
   g.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), t + attack);
@@ -29,11 +32,13 @@ function tone(a, { f0, f1 = null, type = 'sine', t = 0, attack = 0.006, decay = 
     l.frequency.value = 14;
     lg.gain.value = vib;
     l.connect(lg).connect(o.frequency);
+    track(a, l, lg);
     l.start(when);
     l.stop(when + attack + decay + 0.05);
   }
   env(g, when, attack, vol, decay);
   o.connect(g).connect(a.sfxGain);
+  track(a, o, g);
   o.start(when);
   o.stop(when + attack + decay + 0.06);
 }
@@ -56,6 +61,7 @@ function noise(a, { t = 0, decay = 0.2, vol = 0.2, type = 'bandpass', freq = 120
   const g = ctx.createGain();
   env(g, when, attack, vol, decay);
   s.connect(f).connect(g).connect(a.sfxGain);
+  track(a, s, f, g);
   s.start(when, Math.random() * 0.4);
   s.stop(when + attack + decay + 0.06);
 }

@@ -901,22 +901,23 @@ class Studio {
       p.idle = 0;
       if (moved > 8) this.hint.classList.add('sw-gone');
     });
-    const up = (e) => {
+    const up = (e, cancelled = false) => {
       const p = this.preview;
       if (!p || e.pointerId !== id) return;
       id = null;
       p.dragging = false;
       p.idle = 0;
       if (performance.now() - lt > 80) p.spinVel = 0;
-      if (moved < 8 && performance.now() - t0 < 500) {
+      if (!cancelled && moved < 8 && performance.now() - t0 < 500) {
         // a tap: a happy little reaction
         const list = ['wave', 'heart', 'dance', 'twirl', 'jump'];
         p.avatar.playEmote(list[Math.floor(Math.random() * list.length)]);
         this.game.audio.play('sparkle');
       }
     };
-    view.addEventListener('pointerup', up);
-    view.addEventListener('pointercancel', up);
+    view.addEventListener('pointerup', (e) => up(e));
+    view.addEventListener('pointercancel', (e) => up(e, true));
+    view.addEventListener('lostpointercapture', (e) => up(e, true)); // never stuck by a swallowed release
   }
 }
 

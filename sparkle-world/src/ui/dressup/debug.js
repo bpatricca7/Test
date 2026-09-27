@@ -50,5 +50,6 @@ export function installDebug(game) {
     hairStyles: () => HAIR_STYLES.map((h) => h.key),
     textures: cacheStats,
     look: () => normalizeLook(game.profile.look),
+    stage: () => getStage(), // snapshot queue + stats for probes
   };
 }

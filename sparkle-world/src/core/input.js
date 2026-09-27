@@ -1,6 +1,11 @@
 // Unified input: keyboard, mouse and touch. Gameplay code reads the per-frame state
 // (move, look, zoom, turn, jump, down, run, pointer) and listens for 'tap', 'hold', 'key',
-// 'gesture' and 'touchmode' events. No pointer lock: drag to look, click/tap to act.
+// 'gesture', 'touchmode' and 'reset' events. No pointer lock: drag to look, click/tap to act.
+//
+// Nothing may stay stuck (an iPhone/iPad web view, especially inside another app's frame, can
+// swallow the end of a touch): pointercancel, lostpointercapture, window blur, a hidden page
+// and pagehide all end every press (reset()), and touches the browser forgot to end are found
+// by comparing our pointers with the fingers each touch event reports (e.touches).
 
 import { Emitter } from './events.js';
 
@@ -41,6 +46,8 @@ export class Input {
     this.joy = { active: false, id: -1, cx: 0, cy: 0, x: 0, z: 0 };
     this.touchMode = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
     this._pinchDist = 0;
+    this._touchSnap = null; // fingers reported by the last touch event, checked next frame
+    this.stats = { resets: 0, cancels: 0, stale: 0 };
 
     this._buildJoystick();
     this._bind();
@@ -66,8 +73,70 @@ export class Input {
     };
   }
 
+  /**
+   * End every press now: keys, HUD buttons, joystick, look drags, holds (a hold in progress
+   * ends with cancelled: true, so a paint stroke closes as one Undo). reason is for diagnostics.
+   */
+  reset(reason = 'reset') {
+    const had = this.pointers.size + this.keys.size + (this.joy.active ? 1 : 0);
+    for (const p of [...this.pointers.values()]) this._cancel(p);
+    this.pointers.clear();
+    this.keys.clear();
+    this.virtual.jump = this.virtual.down = this.virtual.run = false;
+    this._latch.jump = this._latch.down = this._latch.run = false;
+    if (this.joy.active) {
+      this.joy.active = false;
+      this.joy.id = -1;
+      this.joy.x = this.joy.z = 0;
+      this._placeJoystick(null, null);
+    }
+    this.move.x = this.move.z = 0;
+    this.look.dx = this.look.dy = 0;
+    this.zoom = 0;
+    this.turn = 0;
+    this.jump = this.down = this.run = false;
+    this._pinchDist = 0;
+    this._touchSnap = null;
+    this.stats.resets++;
+    this.events.emit('reset', { reason, had });
+  }
+
+  /** End one pointer as cancelled (no tap). */
+  _cancel(p) {
+    if (!p) return;
+    this.stats.cancels++;
+    this._up({ pointerId: p.id }, true);
+  }
+
+  /** Touch pointers the browser never ended: more of ours than fingers it reports. */
+  _checkStaleTouches() {
+    const snap = this._touchSnap;
+    this._touchSnap = null;
+    if (!snap) return;
+    const old = [];
+    for (const p of this.pointers.values()) if (p.type !== 'mouse' && p.t0 <= snap.at) old.push(p);
+    if (old.length <= snap.pts.length) return;
+    const far = (p) => {
+      let best = Infinity;
+      for (const [x, y] of snap.pts) best = Math.min(best, Math.hypot(x - p.x, y - p.y));
+      return best;
+    };
+    old.sort((a, b) => far(b) - far(a));
+    for (let i = 0; i < old.length - snap.pts.length; i++) {
+      this.stats.stale++;
+      this._cancel(old[i]);
+    }
+  }
+
   /** Recompute held-state each frame (called by the game loop before the player). */
   update() {
+    this._checkStaleTouches();
+    if (this.joy.active && !this.pointers.has(this.joy.id)) {
+      // the joystick's finger is gone: let go
+      this.joy.active = false;
+      this.joy.x = this.joy.z = 0;
+      this._placeJoystick(null, null);
+    }
     const k = this.keys;
     let x = 0, z = 0, turn = 0;
     if (k.has('KeyW') || k.has('ArrowUp')) z += 1;
@@ -152,9 +221,29 @@ export class Input {
     window.addEventListener('pointermove', (e) => this._move(e), { passive: true });
     window.addEventListener('pointerup', (e) => this._up(e, false));
     window.addEventListener('pointercancel', (e) => this._up(e, true));
+    // capture lost while still pressed (the element moved, the web view took the touch): the
+    // release may never reach us, so end it now (after a normal release it is already gone)
+    el.addEventListener('lostpointercapture', (e) => {
+      if (this.pointers.has(e.pointerId)) this._up(e, true);
+    });
     el.addEventListener('pointerleave', (e) => {
       if (e.pointerType === 'mouse' && this.pointers.size === 0) this.pointer = null;
     });
+    // every touch event lists the fingers really on the screen; compare next frame (by then
+    // the matching pointer events have been handled, whatever order the browser used)
+    const snapTouches = (e) => {
+      const list = e.touches || [];
+      const pts = [];
+      for (let i = 0; i < list.length; i++) pts.push([list[i].clientX, list[i].clientY]);
+      this._touchSnap = { at: performance.now(), pts };
+    };
+    for (const type of ['touchstart', 'touchend', 'touchcancel']) {
+      window.addEventListener(type, snapTouches, { passive: true, capture: true });
+    }
+    // iOS: pinching the page (not the game) must not zoom it; pinch in the game zooms the camera
+    for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
+      document.addEventListener(type, (e) => e.preventDefault(), { passive: false });
+    }
     el.addEventListener('wheel', (e) => {
       e.preventDefault();
       this.zoom += Math.sign(e.deltaY) * Math.min(3, Math.abs(e.deltaY) / 60);
@@ -176,15 +265,18 @@ export class Input {
       if (isTyping(e)) return;
       this.events.emit('key', { code: e.code, key: e.key, down: false, repeat: false, ctrl: e.ctrlKey || e.metaKey, shift: e.shiftKey });
     });
-    window.addEventListener('blur', () => {
-      this.keys.clear();
-      this.virtual.jump = this.virtual.down = this.virtual.run = false;
-      this._latch.jump = this._latch.down = this._latch.run = false;
-    });
-    window.addEventListener('pointerdown', () => this.events.emit('gesture', {}), true);
+    // leaving the window (another app, the host page, a system sheet) ends every press
+    window.addEventListener('blur', () => this.reset('blur'));
+    // a user gesture (audio can only start or resume inside one; iOS wants touchend / click)
+    const gesture = () => this.events.emit('gesture', {});
+    for (const type of ['pointerdown', 'pointerup', 'touchend', 'click']) {
+      window.addEventListener(type, gesture, { capture: true, passive: true });
+    }
   }
 
   _down(e) {
+    // the same id again without a release in between: that earlier press is over
+    if (this.pointers.has(e.pointerId)) this._cancel(this.pointers.get(e.pointerId));
     const touch = e.pointerType === 'touch' || e.pointerType === 'pen';
     this._setTouchMode(touch);
     try { this.el.setPointerCapture(e.pointerId); } catch { /* not capturable */ }

@@ -67,7 +67,12 @@ export function install(game) {
       const th = game.thumbs;
       if (th.queue && th.queue.length) { warmIn = WARM_GAP; return; }
       while (warm.length && th.has('food:' + warm[0])) warm.shift();
-      if (warm.length) foodIcon(game, warm.shift());
+      // 'low': if the Basket or the Recipe Book asks for it meanwhile, their request moves it up
+      if (warm.length) {
+        const key = warm.shift();
+        if (th.withPriority) th.withPriority('low', () => foodIcon(game, key));
+        else foodIcon(game, key);
+      }
       warmIn = WARM_GAP;
     },
   });

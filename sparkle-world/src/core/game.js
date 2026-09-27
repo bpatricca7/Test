@@ -25,6 +25,14 @@ export const DEFAULT_HOTBAR = [
 ];
 
 const AUTOSAVE_MS = 45000;
+// after a change (a block, furniture, a pet...) the world is saved this soon, so a reload or a
+// closed frame loses seconds of building, not up to a whole autosave interval
+const DIRTY_SAVE_MS = 5000;
+const DIRTY_SAVE_MAX_MS = 20000; // ...and at the latest this long after the first unsaved change
+const DIRTY_EVENTS = [
+  'history:change', 'block:place', 'block:remove', 'entity:place', 'entity:remove', 'entity:use',
+  'prefab:place', 'pet:adopt', 'garden:plant', 'garden:harvest', 'gem:collect',
+];
 const AUTOSAVE_THUMB_MS = 5 * 60000; // autosaves refresh the My Worlds picture this often
 const MAX_HISTORY = 20;
 const STROKE_MAX_CELLS = 96; // one hold-drag paints at most this many blocks
@@ -90,7 +98,7 @@ export class Game {
     this.store = new SaveStore();
     this.thumbs = new Thumbs();
     this.ui = null; // set by ui.js
-    const items = new ItemRegistry();
+    const items = new ItemRegistry(this.thumbs);
     this.registry = {
       items,
       blocks: new BlockRegistry(items),
@@ -142,6 +150,8 @@ export class Game {
     this._lastThumb = null;
     this._thumbAt = 0;
     this._saveWarnAt = -Infinity;
+    this._dirtyTimer = 0;
+    this._dirtySince = 0;
     this._bottomToastAt = -Infinity;
     this._stroke = null; // current hold-drag paint stroke
     this._group = null; // open history group (see beginHistoryGroup)
@@ -262,6 +272,12 @@ export class Game {
 
   _frame() {
     const now = performance.now();
+    // hidden page (another tab, the app in the background): no work at all; some embedded web
+    // views keep calling us. A save was triggered when it hid.
+    if (typeof document !== 'undefined' && document.hidden) {
+      this._last = now;
+      return;
+    }
     const dt = Math.min(0.05, Math.max(0, (now - this._last) / 1000));
     this._last = now;
     if (dt > 0) this.fps += (1 / dt - this.fps) * 0.05;
@@ -376,10 +392,18 @@ export class Game {
   }
 
   _bindLifecycle() {
+    for (const name of DIRTY_EVENTS) this.events.on(name, () => this._markDirty());
+    // a cloud that stops taking writes (with no storage on this device) means nothing survives
+    // a reload: say so as soon as it happens, not only when entering the next world
+    this.store.onStatus(({ persistent }) => {
+      if (!persistent && this.mode === 'play') this._warnSaveTrouble(true);
+    });
     window.addEventListener('resize', () => this._resize());
     if (typeof ResizeObserver === 'function') new ResizeObserver(() => this._resize()).observe(this.container);
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
+        // nothing may stay pressed while the page is away (a web view can swallow the release)
+        this.input.reset('hidden');
         this.audio.suspend(true);
         this.flushSave();
       } else {
@@ -387,7 +411,10 @@ export class Game {
         this._last = performance.now();
       }
     });
-    window.addEventListener('pagehide', () => this.flushSave());
+    window.addEventListener('pagehide', () => {
+      this.input.reset('pagehide');
+      this.flushSave({ unloading: true });
+    });
   }
 
   /**
@@ -420,9 +447,49 @@ export class Game {
     });
   }
 
-  /** Save now (no thumbnail) and push pending cloud writes; used when the page may go away. */
-  flushSave() {
-    const done = this.mode === 'play' && this.world && !this._busy ? this.saveWorld({ thumbnail: false }) : Promise.resolve();
+  /** Something in the world changed: save soon (debounced, see DIRTY_SAVE_MS). */
+  _markDirty() {
+    if (this.mode !== 'play' || !this.world || this.loading) return;
+    const now = performance.now();
+    if (!this._dirtySince) this._dirtySince = now;
+    clearTimeout(this._dirtyTimer);
+    const wait = Math.max(0, Math.min(DIRTY_SAVE_MS, this._dirtySince + DIRTY_SAVE_MAX_MS - now));
+    this._dirtyTimer = setTimeout(() => this._saveDirty(), wait);
+  }
+
+  _saveDirty() {
+    this._dirtyTimer = 0;
+    if (!this._dirtySince) return;
+    if (this.mode !== 'play' || !this.world) { this._dirtySince = 0; return; }
+    if (this._busy || this.loading) { this._dirtyTimer = setTimeout(() => this._saveDirty(), 1000); return; }
+    this.saveWorld({ thumbnail: false }).catch((err) => console.warn('[game] save failed', err));
+  }
+
+  /**
+   * Save now (no thumbnail) and push pending cloud writes; used when the page may go away.
+   * unloading (pagehide): an IndexedDB write started now can be cut off by the reload or
+   * navigation, so a copy also goes into localStorage right away (synchronously); the next
+   * session finds it like any fallback copy, and the next normal save drops it.
+   */
+  flushSave({ unloading = false } = {}) {
+    let done = Promise.resolve();
+    try {
+      if (this.mode === 'play' && this.world && !this._busy) {
+        if (unloading) {
+          const save = this._serializeWorld({ thumbnail: false });
+          this.store.journalWorld(save);
+          done = this._storeWorld(save);
+        } else {
+          done = this.saveWorld({ thumbnail: false });
+        }
+      }
+      if (unloading) {
+        this.profile.updatedAt = Date.now();
+        this.store.journalProfile(this.profile);
+      }
+    } catch (err) {
+      console.warn('[game] save on leaving failed', err);
+    }
     done.then(() => this.store.flush()).catch(() => {});
     this.saveProfile(true);
   }
@@ -591,6 +658,9 @@ export class Game {
     if (!this.world) return;
     if (save) await this.saveWorld({ thumbnail: true });
     clearInterval(this._autosaveTimer);
+    clearTimeout(this._dirtyTimer);
+    this._dirtyTimer = 0;
+    this._dirtySince = 0;
     this.mode = 'title';
     this._callSystems('onWorldUnload');
     this.events.emit('world:unload', {});
@@ -615,8 +685,16 @@ export class Game {
 
   /** Serialize the current world and store it. Resolves when stored. */
   async saveWorld({ thumbnail = true } = {}) {
+    if (!this.world) return { ok: false };
+    return this._storeWorld(this._serializeWorld({ thumbnail }));
+  }
+
+  /** The current world as a save object (synchronous). Everything changed so far goes in. */
+  _serializeWorld({ thumbnail = true } = {}) {
     const w = this.world;
-    if (!w) return { ok: false };
+    clearTimeout(this._dirtyTimer);
+    this._dirtyTimer = 0;
+    this._dirtySince = 0;
     const systems = {};
     for (const s of this.systems) {
       if (!s.serialize) continue;
@@ -652,6 +730,10 @@ export class Game {
       systems,
       thumbnail: this._lastThumb || null,
     };
+    return save;
+  }
+
+  async _storeWorld(save) {
     const res = await this.store.saveWorld(save);
     if (res.ok) this.events.emit('world:saved', { id: save.id, persistent: res.persistent !== false });
     if (!res.ok || res.persistent === false) this._warnSaveTrouble(false);
@@ -659,11 +741,26 @@ export class Game {
     return res;
   }
 
-  /** Tell the player (gently, not too often) that this device is not keeping her world. */
+  /**
+   * Tell the player (gently, not too often) that this device is not keeping her world. The
+   * game keeps saving (in memory, and wherever it can); the first time in a session it also
+   * offers "Save to a file" (the 'saveToFile' action, from the menus module) so nothing is lost.
+   */
   _warnSaveTrouble(force) {
     const now = performance.now();
     if (!force && now - this._saveWarnAt < SAVE_WARN_MS) return;
+    if (now - this._saveWarnAt < 3000) return; // one note for one trouble (several paths report it)
     this._saveWarnAt = now;
+    const ui = this.ui;
+    if (!this._saveOffered && this.mode === 'play' && this.world && ui && ui.confirm && !ui.dialogOpen && this.actions.has('saveToFile')) {
+      this._saveOffered = true;
+      ui.confirm({
+        title: "Oh no! This device can't keep your world",
+        text: 'Keep playing! To keep your world safe, save it to a file.',
+        yes: 'Save to a file', no: 'Keep playing', yesVariant: 'mint', icon: 'download',
+      }).then((yes) => { if (yes) this.runAction('saveToFile'); });
+      return;
+    }
     this.toast("Oh no! This device can't save your world right now.", { icon: 'sparkle', color: 'pink', duration: 6000 });
   }
 
@@ -689,16 +786,22 @@ export class Game {
     }
   }
 
-  /** Save, leave the world and show the title screen. */
+  /**
+   * Save, leave the world and show the title screen. The save on this device is awaited; the
+   * cloud copy is pushed in the background (a host db that never answers must not leave her
+   * on an empty sky with no buttons).
+   */
   async exitToTitle() {
     if (this._busy) return;
     this._busy = true;
     try {
       await this._unloadWorld({ save: true });
-      await this.store.flush();
+    } catch (err) {
+      console.error('[game] leaving the world failed', err);
     } finally {
       this._busy = false;
     }
+    this.store.flush().catch(() => {});
     if (this.ui) {
       this.ui.closeAll();
       if (this.ui.hasPanel('title')) this.ui.open('title');
@@ -1105,7 +1208,10 @@ export class Game {
       }
       if (this.mode !== 'play') return;
       if (e.code === 'KeyB') {
-        this.runAction('bag');
+        // B toggles the Bag, but never swaps it in over another open panel (a cake baking in
+        // the cooking panel, a song on the piano, a half-filled adoption card...)
+        const open = this.ui && this.ui.current;
+        if (!open || open === 'bag') this.runAction('bag');
         return;
       }
       if (this.paused) return;

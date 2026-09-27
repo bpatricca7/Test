@@ -13,6 +13,24 @@ const DB_NAME = 'sparkle-world';
 const LS_PREFIX = 'sparkle-world:';
 const PART_CHARS = 180000;
 const CLOUD_MIN_INTERVAL = 60000;
+const CLOUD_WRITE_MS = 10000; // one cloud write that has not settled by then counts as failed
+const CLOUD_READ_MS = 8000; // cloud reads give up after this (local data is used instead)
+
+/** Resolve like `promise`, or reject after ms (the host's db may never answer). */
+function withTimeout(promise, ms, what) {
+  let timer = 0;
+  const limit = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${what} timed out after ${ms} ms`)), ms);
+  });
+  return Promise.race([promise, limit]).finally(() => clearTimeout(timer));
+}
+
+/** A rejection that will not go away by retrying (a view-only visitor, no permission...). */
+function isPermanentCloudError(err) {
+  const code = String((err && (err.code || err.name)) || '');
+  const text = code + ' ' + String((err && err.message) || err || '');
+  return /permission|denied|forbidden|unauthori[sz]ed|unauthenticated|invalid[_ ]argument|read[-_ ]?only|not[_ ]allowed|not[_ ]granted|capability[_ ](disabled|removed)|\b40[13]\b/i.test(text);
+}
 
 /** World meta = the small part of a save used by the My Worlds list. */
 export function metaOf(save) {
@@ -64,10 +82,13 @@ class LocalStorageBackend {
     }
   }
   async getProfile() { return this._get('profile'); }
-  async putProfile(p) { this._set('profile', p); }
+  async putProfile(p) { this.putProfileSync(p); }
   async listMetas() { return Object.values(this._get('metas') || {}); }
   async getWorld(id) { return this._get('world:' + id); }
-  async putWorld(save) {
+  async putWorld(save) { this.putWorldSync(save); }
+  // synchronous writes (throw on failure), for the page-closing journal
+  putProfileSync(p) { this._set('profile', p); }
+  putWorldSync(save) {
     this._set('world:' + save.id, save);
     const metas = this._get('metas') || {};
     metas[save.id] = metaOf(save);
@@ -172,14 +193,22 @@ function probeLocalStorage() {
 class CloudBackend {
   constructor(db, uid) {
     this.kind = 'cloud';
+    this.db = db;
+    this.uid = uid;
     this.root = db.doc(`data/users/${uid}/profile`);
     this._chains = new Map(); // doc path -> promise (one write at a time per doc)
     this._partCounts = new Map();
   }
+  /**
+   * One write at a time per doc. Each write gives up after CLOUD_WRITE_MS, so a db call that
+   * never settles cannot hold up the writes queued behind it (or whoever awaits them).
+   */
   _write(ref, fn) {
-    const prev = this._chains.get(ref.path) || Promise.resolve();
-    const next = prev.catch(() => {}).then(() => fn(ref));
-    this._chains.set(ref.path, next);
+    const key = ref.path || ref;
+    const prev = this._chains.get(key) || Promise.resolve();
+    const next = prev.catch(() => {}).then(() => withTimeout(Promise.resolve().then(() => fn(ref)), CLOUD_WRITE_MS, 'cloud write'));
+    this._chains.set(key, next);
+    next.catch(() => {}).then(() => { if (this._chains.get(key) === next) this._chains.delete(key); });
     return next;
   }
   async getProfile() {
@@ -262,6 +291,13 @@ export class SaveStore {
     this._lastCloudWrite = new Map(); // 'profile' | world id -> time
     this._timers = new Map();
     this._cloudListeners = [];
+    this._statusListeners = [];
+    // cloud health: a failed write makes the cloud stop counting as "persistent" until one
+    // succeeds again; a permanent refusal (e.g. a view-only visitor) switches cloud saves off
+    // for the session (no retries, no console noise)
+    this.cloudReadOnly = false;
+    this._cloudFailing = false;
+    this._lastPersistent = null;
     this.ready = null;
   }
 
@@ -297,13 +333,53 @@ export class SaveStore {
     this._cloudListeners.push(fn);
   }
 
+  /** fn({ persistent }) whenever `persistent` changes (e.g. the cloud starts refusing writes). */
+  onStatus(fn) {
+    this._statusListeners.push(fn);
+    return () => { this._statusListeners = this._statusListeners.filter((f) => f !== fn); };
+  }
+
   get backendName() {
-    return this.local.kind + (this.cloud ? '+cloud' : '');
+    return this.local.kind + (this.cloud ? (this.cloudReadOnly ? '+cloud(read-only)' : '+cloud') : '');
+  }
+
+  /** Is the cloud taking our writes? (present, not refused, the last write did not fail) */
+  get cloudWritable() {
+    return !!this.cloud && !this.cloudReadOnly && !this._cloudFailing;
   }
 
   /** Will saves survive closing the page? (false: memory only, e.g. a sandboxed frame) */
   get persistent() {
-    return this.local.kind !== 'memory' || !!this.cloud;
+    return this.local.kind !== 'memory' || this.cloudWritable;
+  }
+
+  _statusChanged() {
+    const now = this.persistent;
+    if (now === this._lastPersistent) return;
+    this._lastPersistent = now;
+    for (const fn of this._statusListeners) {
+      try { fn({ persistent: now }); } catch (err) { console.warn('[storage] status listener failed', err); }
+    }
+  }
+
+  /** Book-keeping after each cloud write (err = null when it worked). */
+  _cloudResult(key, err) {
+    if (!err) {
+      this._cloudFailing = false;
+    } else if (isPermanentCloudError(err)) {
+      if (!this.cloudReadOnly) {
+        console.info('[storage] cloud saves are not available for this viewer; saving on this device only.', String((err && err.message) || err));
+      }
+      this.cloudReadOnly = true;
+      for (const t of this._timers.values()) clearTimeout(t);
+      this._timers.clear();
+      this._pendingWorlds.clear();
+      this._pendingProfile = null;
+    } else {
+      if (!this._cloudFailing) console.warn('[storage] cloud write failed', key, err);
+      this._cloudFailing = true;
+    }
+    this._statusChanged();
   }
 
   _spareBackends() {
@@ -343,8 +419,9 @@ export class SaveStore {
   }
 
   _result(local) {
-    const ok = local.ok || !!this.cloud;
-    const persistent = (local.ok && local.backend.kind !== 'memory') || !!this.cloud;
+    const cloud = this.cloudWritable;
+    const ok = local.ok || cloud;
+    const persistent = (local.ok && local.backend.kind !== 'memory') || cloud;
     const res = { ok, backend: local.ok ? local.backend.kind : null, persistent };
     if (!local.ok) res.error = local.error;
     return res;
@@ -359,6 +436,48 @@ export class SaveStore {
     }
   }
 
+  // ----- page-closing journal -----
+
+  /** The localStorage backend (primary or spare), or null when this browser has none. */
+  _journalBackend() {
+    if (this.local.kind === 'localStorage') return this.local;
+    if (this.local.kind === 'memory') return null;
+    return this._spareBackends().find((b) => b.kind === 'localStorage') || null;
+  }
+
+  /**
+   * Keep a copy of a world save in localStorage synchronously (the page is going away and an
+   * IndexedDB write started now may be cut off). The next session reads it like any fallback
+   * copy (the newest copy wins) and the next normal save drops it. Returns true when written.
+   */
+  journalWorld(save) {
+    try {
+      const b = this._journalBackend();
+      if (!b || !save || !save.id) return false;
+      if (!save.updatedAt) save.updatedAt = Date.now();
+      b.putWorldSync(save);
+      if (b !== this.local) this._usedSpares.add(b);
+      return true;
+    } catch (err) {
+      console.warn('[storage] journal world failed', err);
+      return false;
+    }
+  }
+
+  /** Same for the profile. */
+  journalProfile(profile) {
+    try {
+      const b = this._journalBackend();
+      if (!b || !profile) return false;
+      b.putProfileSync(JSON.parse(JSON.stringify(profile)));
+      if (b !== this.local) this._usedSpares.add(b);
+      return true;
+    } catch (err) {
+      console.warn('[storage] journal profile failed', err);
+      return false;
+    }
+  }
+
   // ----- profile -----
 
   async loadProfile() {
@@ -368,7 +487,7 @@ export class SaveStore {
       const p = await this._safe('local profile', () => b.getProfile(), null);
       if (p && (!local || (p.updatedAt || 0) > (local.updatedAt || 0))) local = p;
     }
-    const cloud = this.cloud ? await this._safe('cloud profile', () => this.cloud.getProfile(), null) : null;
+    const cloud = this.cloud ? await this._safe('cloud profile', () => withTimeout(this.cloud.getProfile(), CLOUD_READ_MS, 'cloud read'), null) : null;
     if (local && cloud) return (cloud.updatedAt || 0) > (local.updatedAt || 0) ? cloud : local;
     return cloud || local || null;
   }
@@ -378,7 +497,7 @@ export class SaveStore {
     if (!profile.updatedAt) profile.updatedAt = Date.now();
     const copy = JSON.parse(JSON.stringify(profile));
     const local = await this._writeLocal('profile save', (b) => b.putProfile(copy));
-    if (this.cloud) {
+    if (this.cloud && !this.cloudReadOnly) {
       this._pendingProfile = copy;
       this._scheduleCloud('profile');
     }
@@ -399,7 +518,7 @@ export class SaveStore {
       }
     };
     for (const b of this._readers()) add(await this._safe('list local', () => b.listMetas(), []), b.kind);
-    if (this.cloud) add(await this._safe('list cloud', () => this.cloud.listMetas(), []), 'cloud');
+    if (this.cloud) add(await this._safe('list cloud', () => withTimeout(this.cloud.listMetas(), CLOUD_READ_MS, 'cloud read'), []), 'cloud');
     return [...byId.values()].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   }
 
@@ -411,10 +530,10 @@ export class SaveStore {
       if (w && (!local || (w.updatedAt || 0) > (local.updatedAt || 0))) local = w;
     }
     if (!this.cloud) return local;
-    const metas = await this._safe('cloud metas', () => this.cloud.listMetas(), []);
+    const metas = await this._safe('cloud metas', () => withTimeout(this.cloud.listMetas(), CLOUD_READ_MS, 'cloud read'), []);
     const cm = metas.find((m) => m.id === id);
     if (cm && (!local || (cm.updatedAt || 0) > (local.updatedAt || 0))) {
-      const cloud = await this._safe('load cloud world', () => this.cloud.getWorld(id), null);
+      const cloud = await this._safe('load cloud world', () => withTimeout(this.cloud.getWorld(id), CLOUD_READ_MS * 3, 'cloud read'), null);
       if (cloud) return cloud;
     }
     return local;
@@ -429,7 +548,7 @@ export class SaveStore {
       // the primary works again: drop older fallback copies (they only use up space)
       for (const b of this._usedSpares) this._safe('drop fallback copy', () => b.deleteWorld(save.id), null);
     }
-    if (this.cloud) {
+    if (this.cloud && !this.cloudReadOnly) {
       this._pendingWorlds.set(save.id, save);
       this._scheduleCloud(save.id);
     }
@@ -448,9 +567,9 @@ export class SaveStore {
         if (b === this.local) ok = false;
       }
     }
-    if (this.cloud) {
+    if (this.cloud && !this.cloudReadOnly) {
       try {
-        await this.cloud.deleteWorld(id);
+        await withTimeout(this.cloud.deleteWorld(id), CLOUD_WRITE_MS * 2, 'cloud delete');
       } catch (err) {
         console.warn('[storage] cloud delete failed', err);
         ok = false;
@@ -487,7 +606,7 @@ export class SaveStore {
   // ----- cloud throttling -----
 
   _scheduleCloud(key) {
-    if (this._timers.has(key)) return;
+    if (this.cloudReadOnly || this._timers.has(key)) return;
     const last = this._lastCloudWrite.get(key) || 0;
     const wait = Math.max(0, last + CLOUD_MIN_INTERVAL - Date.now());
     const timer = setTimeout(() => {
@@ -498,26 +617,31 @@ export class SaveStore {
   }
 
   async _pushCloud(key) {
-    if (!this.cloud) return;
+    if (!this.cloud || this.cloudReadOnly) return;
     this._lastCloudWrite.set(key, Date.now());
     try {
+      let wrote = false;
       if (key === 'profile') {
         const p = this._pendingProfile;
         this._pendingProfile = null;
-        if (p) await this.cloud.putProfile(p);
+        if (p) { wrote = true; await this.cloud.putProfile(p); }
       } else {
         const save = this._pendingWorlds.get(key);
         this._pendingWorlds.delete(key);
-        if (save) await this.cloud.putWorld(save);
+        if (save) { wrote = true; await this.cloud.putWorld(save); }
       }
+      if (wrote) this._cloudResult(key, null);
     } catch (err) {
-      console.warn('[storage] cloud write failed', key, err);
+      this._cloudResult(key, err);
     }
   }
 
-  /** Push every pending cloud write now (leaving the world, tab hidden, page closing). */
+  /**
+   * Push every pending cloud write now (leaving the world, tab hidden, page closing).
+   * Settles within the per-write timeouts even if the host's db never answers.
+   */
   async flush() {
-    if (!this.cloud) return { ok: true };
+    if (!this.cloud || this.cloudReadOnly) return { ok: true };
     const keys = [...this._timers.keys()];
     for (const k of keys) {
       clearTimeout(this._timers.get(k));

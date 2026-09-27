@@ -350,7 +350,61 @@ async function desktopPass(browser, opts, errors) {
   await settle(page, 400);
   await shot(page, '6-pause', opts.prefix);
   await page.keyboard.press('Escape');
+
+  await stepChecks(page, opts, errors);
   await context.close();
+}
+
+/**
+ * Walk (real keys, straight and diagonal) into a 1-block step: she must hop onto it and stay
+ * near it. (A physics bug once flung her to the world edge, or froze the page, right here.)
+ */
+async function stepChecks(page, opts, errors) {
+  for (const [keys, label] of [[['KeyW'], 'straight'], [['KeyW', 'KeyD'], 'diagonal']]) {
+    const pad = await page.evaluate(() => {
+      const g = window.__game, w = g.world, p = g.player.position;
+      g.debug.setTime(0.5);
+      // well away from what the desktop pass built around her
+      const x0 = Math.max(10, Math.min(w.sx - 12, Math.floor(p.x) + (p.x < w.sx / 2 ? 24 : -24)));
+      const z0 = Math.max(6, Math.min(w.sz - 14, Math.floor(p.z)));
+      const y = Math.max(2, Math.min(w.sy - 8, w.heightAt(x0, z0) + 1)); // the pad's floor level
+      // a flat stone pad with open sky above, and a 1-block plank step across it from z0 + 2
+      w.batch(() => {
+        for (let x = x0 - 5; x <= x0 + 5; x++) {
+          for (let z = z0 - 2; z <= z0 + 9; z++) {
+            w.setKey(x, y - 1, z, 'stone', { record: false });
+            for (let yy = y; yy < y + 6; yy++) w.setKey(x, yy, z, yy === y && z >= z0 + 2 ? 'planks_oak' : 'air', { record: false });
+          }
+        }
+      });
+      g.player.teleport(x0 + 0.5, y + 0.01, z0 + 0.5);
+      g.cameraRig.yaw = 0; // forward = +z
+      g.cameraRig.pitch = 0.35;
+      return { x0, z0, y, top: y + 1, frames: g.diag.frames };
+    });
+    await page.waitForFunction((f) => window.__game.diag.frames > f + 3, pad.frames, { timeout: 20000 });
+    for (const k of keys) await page.keyboard.down(k);
+    const frames0 = await page.evaluate(() => window.__game.diag.frames);
+    // until she stands on the step (or 150 frames: SwiftShader is slow, so wait on frames)
+    await page.waitForFunction(([top, f0]) => {
+      const g = window.__game, p = g.player;
+      return (p.onGround && p.position.y >= top - 0.01) || g.diag.frames > f0 + 150;
+    }, [pad.top, frames0], { timeout: 45000, polling: 50 }).catch(() => {});
+    for (const k of keys) await page.keyboard.up(k);
+    const end = await Promise.race([
+      page.evaluate(() => { const p = window.__game.player; return { x: p.position.x, y: p.position.y, z: p.position.z, onGround: p.onGround }; }),
+      new Promise((resolve) => setTimeout(() => resolve(null), 15000)),
+    ]);
+    if (!end) {
+      errors.push(`[check] walking ${label} into a 1-block step froze the page`);
+      return;
+    }
+    const moved = Math.hypot(end.x - (pad.x0 + 0.5), end.z - (pad.z0 + 0.5));
+    check(errors, end.y >= pad.top - 0.01 && moved < 6,
+      `walking ${label} into a 1-block step: hopped onto it (y ${end.y.toFixed(2)}, step top ${pad.top}, moved ${moved.toFixed(1)} blocks)`);
+    await settle(page, 300);
+    await shot(page, `6-step-${label}`, opts.prefix);
+  }
 }
 
 async function touchPass(browser, opts, errors) {
