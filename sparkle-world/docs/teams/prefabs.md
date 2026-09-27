@@ -5,7 +5,7 @@ Owner of `src/things/prefabs.js` and `src/things/prefabs/*`; probe `tools/probe-
 
 ## What she gets
 
-Bag → **Magic Houses** holds 18 builds, each pictured by a small 3D render of the real thing
+Bag → **Magic Houses** holds 20 builds, each pictured by a small 3D render of the real thing
 (textured like the world, on a little lawn):
 
 | key | name | highlights |
@@ -23,13 +23,7 @@ Bag → **Magic Houses** holds 18 builds, each pictured by a small 3D render of 
 | `rainbow_bridge` | Rainbow Bridge | 7-lane rainbow arch with cloud rails and lanterns; does NOT flatten the land (`options: { clear: 'none', level: false }`) |
 | `flower_garden` | Flower Garden | hedge garden, blossom arch, glowing fountain, flower beds of every kind, benches, wishing well, picnic |
 | `playground` | Playground | toy-block fence, play tower + slide, swings, trampoline, seesaw, merry-go-round, sandbox with sandcastle, hopscotch |
-| `sparkle_camper` | Sparkle Camper | (wave 2) big pink camper: bunk beds, kitchenette, sofa, bathroom, roof deck with loungers + parasol, pop-out pool with slide, camp fire |
-| `retro_trailer` | Retro Trailer | (wave 2) little silver trailer, double bed, tiny kitchen, awning, camp fire, picnic |
-| `camper_van` | Camper Van | (wave 2) sky-blue van, pop-up roof, bed, kitchen, surfboards, umbrella, picnic |
-| `friendship_treehouse` | Friendship Treehouse | (wave 2) two trees, two cabins (sleepover + playroom), rope bridge, stairs, rope ladders, swing |
-| `fairy_treehouse` | Fairy Treehouse | (wave 2) round lavender hut in a fairy tree, spiral stair, toadstools, glowing mushrooms, crystals, pond |
-
-The zip-line lookout from wave 2 is not built: zip-line towers are not canonical furniture yet.
+| wave 2 | 7 Magic Builds | Sparkle Camper, Retro Mini Trailer, Camper Van, Campground, Big Friendship Treehouse, Fairy Treehouse, Lookout Treehouse (with a zip line): see `docs/teams/builds.md` |
 
 ## Placing (the flow she sees)
 
