@@ -143,6 +143,23 @@ export function placementFromHit(game, plan, hit, turn = 0) {
   return pl;
 }
 
+/**
+ * Furniture data for one placement. String values starting with '@' are ids that must be
+ * unique per built copy (e.g. the rope bridge id `b` shared by every segment of one bridge):
+ * they get the placement's anchor and turn in front, so two copies of a build never share one.
+ */
+export function placedData(data, pl) {
+  if (!data) return data;
+  let out = null;
+  for (const k in data) {
+    const v = data[k];
+    if (typeof v !== 'string' || v[0] !== '@') continue;
+    if (!out) out = { ...data };
+    out[k] = `pf:${pl.ox},${pl.oy},${pl.oz},${pl.rot}${v}`;
+  }
+  return out || data;
+}
+
 /** Prefab-local (lx, ly, lz) -> world [x, y, z] for a placement. */
 export function toWorld(plan, pl, lx, ly, lz) {
   const [dx, dz] = rotXZ(lx - plan.ax, lz - plan.az, pl.rot);
@@ -358,7 +375,7 @@ export function computeDiff(game, plan, pl) {
       z += fz * (d - 1);
     }
     const [wx, wy, wz] = toWorld(plan, pl, x, f.y, z);
-    furniture.push({ key: f.key, x: wx, y: wy, z: wz, rot: (f.rot + pl.rot) & 3, color: f.color, data: f.data });
+    furniture.push({ key: f.key, x: wx, y: wy, z: wz, rot: (f.rot + pl.rot) & 3, color: f.color, data: placedData(f.data, pl) });
   }
 
   const n = map.size;

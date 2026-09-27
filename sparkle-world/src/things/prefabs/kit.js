@@ -59,12 +59,50 @@ export function hash2(x, z, seed = 0) {
  * The api handed to prefab build(api). The three DESIGN.md calls (block, fill, furn) plus
  * helpers. Coordinates are rounded; anything outside the prefab box is ignored.
  */
-export function makeApi(rec) {
+export function makeApi(rec, env = {}) {
   const api = {
     size: [rec.W, rec.H, rec.D],
     W: rec.W,
     H: rec.H,
     D: rec.D,
+
+    /**
+     * Is this furniture key registered? Builds use it to pick a look that works with or
+     * without pieces from other modules (a missing key is reported once, then skipped).
+     */
+    has(key) {
+      return env.has ? !!env.has(key) : true;
+    },
+
+    /** Footprint size [w, h, d] of a registered furniture key (no warning), else null. */
+    sizeOf(key) {
+      return env.size ? env.size(key) : null;
+    },
+
+    /**
+     * Furniture placed by its footprint: the piece covers the cells from (x0, z0) up (to +x
+     * and +z) whatever its turn. keys: 'a|b' (first registered wins; none = reported, skipped).
+     * Returns the key used, or null.
+     */
+    at(keys, x0, y, z0, rot = 0, color = null, data = null, opts = {}) {
+      const list = Array.isArray(keys) ? keys : String(keys).split('|');
+      const key = list.find((k) => api.sizeOf(k)) || null;
+      if (key && key !== list[0]) api.has(list[0]); // report the stand-in once
+      if (!key) {
+        api.furn(list, x0, y, z0, rot, color, data, opts); // reported + skipped (or orBlock)
+        return null;
+      }
+      const [w, , d] = api.sizeOf(key).map((v) => Math.max(1, v | 0));
+      const ai = Math.floor((w - 1) / 2);
+      let mx = Infinity, mz = Infinity;
+      for (const [i, k] of [[0, 0], [w - 1, 0], [0, d - 1], [w - 1, d - 1]]) {
+        const [ox, oz] = rotXZ(i - ai, k - (d - 1), rot);
+        mx = Math.min(mx, ox);
+        mz = Math.min(mz, oz);
+      }
+      api.furn(key, x0 - mx, y, z0 - mz, rot, color, data, opts);
+      return key;
+    },
 
     /** One block (key 'air' clears, null/undefined does nothing). */
     block(x, y, z, key) {

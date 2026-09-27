@@ -67,7 +67,17 @@ export function resolveFurnitureKey(game, keys) {
  */
 export function resolvePlan(game, def) {
   const rec = new PrefabRecorder(def.size);
-  const api = makeApi(rec);
+  const reg = game.registry.furniture;
+  const has = (key) => {
+    if (reg && reg.has(key)) return true;
+    report('furniture', key, 'skipped');
+    return false;
+  };
+  const size = (key) => {
+    const d = reg && reg.get(key);
+    return d && Array.isArray(d.size) ? d.size : null;
+  };
+  const api = makeApi(rec, { has, size });
   def.build(api);
   const { W, H, D } = rec;
   const blocks = game.registry.blocks;
