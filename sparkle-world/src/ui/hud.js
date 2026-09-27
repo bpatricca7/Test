@@ -433,6 +433,9 @@ export function install(game) {
   game.events.on('hotbar:change', refreshHotbar);
   game.events.on('tool:change', refreshTools);
   game.events.on('player:fly', refreshFly);
+  // sitting, lying down, standing up or riding can end a flight too: never leave Fly lit or
+  // Up / Down showing in place of Jump
+  for (const ev of ['player:sit', 'player:sleep', 'player:stand', 'pet:ride']) game.events.on(ev, refreshFly);
   game.events.on('gem:collect', refreshGems);
   game.input.on('touchmode', refreshTouch);
   game.events.on('world:load', ({ world }) => {
