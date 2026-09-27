@@ -34,6 +34,9 @@ export class World {
     this.waterLevel = 0; // set by world generation; used for the horizon plane
     this.outside = null; // { block, level } horizon filler, set by the biome
     this._batch = null;
+    // multiplayer (src/net/adapter.js): called on EVERY change of a cell, whatever caused it
+    // (record or not, inside batch(), undo, prefabs, garden, furniture clearing grass...)
+    this.onCell = null;
     const stone = registry.byKey('stone');
     this.floorId = stone ? stone.id : 1;
   }
@@ -79,6 +82,7 @@ export class World {
     const prev = this.blocks[i];
     if (prev === id) return false;
     this.blocks[i] = id;
+    if (this.onCell !== null) this.onCell(i, prev, id);
     if (this._batch) {
       const b = this._batch;
       if (x < b.x0) b.x0 = x; if (x > b.x1) b.x1 = x;
@@ -216,6 +220,11 @@ export class World {
 
   /** Block ids as RLE (id byte + LEB128 run length) encoded to base64. */
   encodeBlocks() {
+    return bytesToBase64(this.encodeBlocksBytes());
+  }
+
+  /** Block ids as RLE bytes: per run, the id byte + LEB128 run length. */
+  encodeBlocksBytes() {
     const src = this.blocks;
     let out = new Uint8Array(1 << 16);
     let o = 0;
@@ -239,12 +248,20 @@ export class World {
       put(r);
       i += run;
     }
-    return bytesToBase64(out.subarray(0, o));
+    return out.subarray(0, o);
   }
 
   /** Decode encodeBlocks() output, remapping ids through a saved palette of keys. */
   decodeBlocks(b64, palette) {
-    const bytes = base64ToBytes(b64);
+    this.decodeBlocksBytes(base64ToBytes(b64), palette);
+  }
+
+  /**
+   * Decode encodeBlocksBytes() output into this world (ids remapped through a palette of keys;
+   * no palette = same ids). Writes the array directly: no events, no onCell. Returns the number
+   * of cells covered.
+   */
+  decodeBlocksBytes(bytes, palette) {
     const remap = new Uint8Array(256);
     if (palette) {
       palette.forEach((key, oldId) => {
@@ -268,6 +285,7 @@ export class World {
       if (id !== 0) dst.fill(id, o, end);
       o = end;
     }
+    return o;
   }
 
   /** Current id -> key palette for saves. */

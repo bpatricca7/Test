@@ -126,6 +126,16 @@ class Garden {
     this._hintAt = 0;
     this._slept = false;
     this._clock = 0;
+    // multiplayer hook (src/net/adapter.js): (kind, idx, before, after) after every change;
+    // kind 'add' | 'del' | 'stage' | 'harvest', before / after = [crop, stage] | null
+    this.onChange = null;
+    this._harvesting = false;
+  }
+
+  /** Multiplayer: a guest follows the host's garden (no growing, drying or rain here). */
+  get _follower() {
+    const net = this.game.net;
+    return !!(net && net.isGuest);
   }
 
   get t() {
@@ -175,6 +185,7 @@ class Garden {
     g.pickables.add(plant.pickable);
     this.plants.set(idx, plant);
     this.list.push(plant);
+    if (this.onChange !== null) this.onChange('add', idx, null, [crop, stage]);
     return plant;
   }
 
@@ -190,6 +201,7 @@ class Garden {
     this.plants.delete(plant.idx);
     const li = this.list.indexOf(plant);
     if (li >= 0) this.list.splice(li, 1);
+    if (this.onChange !== null) this.onChange(this._harvesting ? 'harvest' : 'del', plant.idx, [plant.crop, plant.stage], null);
     if (fx) {
       this.game.celebrate([plant.x + 0.5, plant.y + 0.3, plant.z + 0.5], 'sparkle', { quiet: true });
       this.game.audio.play('remove');
@@ -211,10 +223,12 @@ class Garden {
 
   _setStage(plant, stage, fx = true) {
     if (plant.stage === stage) return;
+    const before = plant.stage;
     plant.stage = stage;
     plant.mesh.geometry = stageGeometry(plant.crop, stage);
     this._box(plant);
     plant.bounce = 0.55;
+    if (this.onChange !== null) this.onChange(this._harvesting ? 'harvest' : 'stage', plant.idx, [plant.crop, before], [plant.crop, stage]);
     if (fx && !plant.dormant) {
       const g = this.game;
       if (g.particles) {
@@ -387,13 +401,66 @@ class Garden {
     const what = c.kind === 'flower' ? `You picked a ${c.name} bouquet!` : `${n} ${foodName(c.food, n)} in your basket!`;
     g.toast(what, { icon: c.kind === 'flower' ? 'heart' : 'star' });
     const info = { crop: plant.crop, x: plant.x, y: plant.y, z: plant.z };
-    if (c.regrow) {
-      plant.progress = 2 / 3;
-      this._setStage(plant, 2, false);
-    } else {
-      this.removePlant(plant);
-    }
+    this.harvestState(plant);
     g.events.emit('garden:harvest', { plant: { ...info, name: c.name }, crop: c.food, count: n });
+    return true;
+  }
+
+  /** What a harvest does to the plant: a regrowing crop goes back to stage 2, others go. */
+  harvestState(plant) {
+    this._harvesting = true;
+    try {
+      if (CROPS[plant.crop].regrow) {
+        plant.progress = 2 / 3;
+        this._setStage(plant, 2, false);
+      } else {
+        this.removePlant(plant);
+      }
+    } finally {
+      this._harvesting = false;
+    }
+  }
+
+  /** Multiplayer host: a friend watered the soil at (x, y, z): it dries on the usual timer. */
+  adoptWet(x, y, z) {
+    const w = this.game.world;
+    if (!w || !w.inBounds(x, y, z) || w.defAt(x, y, z).key !== 'farmland_wet') return;
+    const until = this.t + WET_TIME;
+    this.wet.set(w.index(x, y, z), { x, y, z, until });
+    const p = this.plantAt(x, y + 1, z);
+    if (p) p.wetUntil = until;
+  }
+
+  /**
+   * Multiplayer guest: set a plant from the host's record [idx, crop, stage, wet] (crop 0 =
+   * none) silently: no history, events or fx. Returns true when something changed.
+   */
+  applyRemote(rec) {
+    const w = this.game.world;
+    if (!w || !Array.isArray(rec)) return false;
+    const [idx, crop, stage, wet] = rec;
+    if (!(idx >= 0 && idx < w.blocks.length)) return false;
+    const cur = this.plants.get(idx) || null;
+    const wetUntil = wet ? this.t + WET_TIME : 0;
+    if (!crop || !CROPS[crop]) {
+      return cur ? this.removePlant(cur) : false;
+    }
+    const st = Math.max(0, Math.min(3, stage | 0));
+    if (cur && cur.crop !== crop) this.removePlant(cur);
+    const p = this.plants.get(idx);
+    if (!p) {
+      const x = idx % w.sx, z = Math.floor(idx / w.sx) % w.sz, y = Math.floor(idx / (w.sx * w.sz));
+      const np = this.addPlant(crop, x, y, z, st >= 3 ? 1 : st / 3 + 0.01, wetUntil);
+      if (np) {
+        np.bounce = 0;
+        this._checkDormant();
+      }
+      return !!np;
+    }
+    p.wetUntil = wetUntil;
+    if (p.stage === st) return false;
+    p.progress = st >= 3 ? 1 : st / 3 + 0.01;
+    this._setStage(p, st);
     return true;
   }
 
@@ -455,8 +522,12 @@ class Garden {
     const g = this.game, w = g.world;
     if (!w || g.mode !== 'play' || g.loading) return;
     const now = this.t;
+    // a friend visiting (multiplayer guest) sees the host's garden: growing, drying and rain
+    // happen only in the host's world, and their results arrive from there
+    const follower = this._follower;
     // growth, a few times a second, from the game clock
     this._tick += dt;
+    if (follower) this._tick = 0;
     if (this._tick >= TICK) {
       const step = Math.max(0, now - this._clock);
       this._clock = now;
@@ -479,6 +550,7 @@ class Garden {
     }
     // soil dries out
     this._dryTick += dt;
+    if (follower) this._dryTick = 0;
     if (this._dryTick > 1) {
       this._dryTick = 0;
       let changed = false;
@@ -493,6 +565,7 @@ class Garden {
     }
     // rain waters the garden
     this._rainTick += dt;
+    if (follower) this._rainTick = 0;
     if (this._rainTick > 4) {
       this._rainTick = 0;
       const weather = g.weather && g.weather.current;
@@ -714,6 +787,7 @@ export function install(game) {
   game.events.on('time:morning', () => {
     if (!garden._slept) return;
     garden._slept = false;
+    if (garden._follower) return; // the host's garden grows overnight; a guest follows it
     let n = 0;
     for (const p of garden.plants.values()) if (!p.dormant && p.stage < 3) n++;
     garden.grow(90);

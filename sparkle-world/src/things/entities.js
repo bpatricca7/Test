@@ -281,6 +281,12 @@ export class EntityManager {
     this.occupied = new Map(); // voxel index -> entity
     this.flats = new Map(); // voxel index -> flat entity (rugs, mats) that others may stand on
     this.nextUid = 1;
+    // multiplayer (docs/MULTIPLAYER.md §5.2, §9.4): seat s allocates uids in
+    // [s * 1e6 + 1, (s + 1) * 1e6); nextUid only follows uids of its own range. 0 = solo / host.
+    this.uidBase = 0;
+    // multiplayer hook (src/net/adapter.js), called after every change:
+    //   ('add', e) | ('del', record) | ('rot', e, rotBefore) | ('data', e, patch, dataBefore)
+    this.onChange = null;
     this.group = new THREE.Group();
     this.group.name = 'entities';
     this.actions = new Map();
@@ -377,8 +383,25 @@ export class EntityManager {
     return out.set(entity.x + 0.5 + ox, entity.y + (entity.yOffset || 0) + ly, entity.z + 0.5 + oz);
   }
 
-  /** Can def go at this anchor/rotation? (inside the world, not in blocks, entities or you) */
-  canPlace(def, x, y, z, rot, ignore = null) {
+  /** The next free uid of this page's range. */
+  allocUid() {
+    if (this.nextUid <= this.uidBase) this.nextUid = this.uidBase + 1;
+    while (this.map.has(this.nextUid)) this.nextUid++;
+    return this.nextUid++;
+  }
+
+  /** Does uid belong to this page's range (so it may move nextUid)? */
+  _ownUid(uid) {
+    return Math.floor(uid / 1e6) === Math.floor(this.uidBase / 1e6);
+  }
+
+  /**
+   * Can def go at this anchor/rotation? (inside the world, not in blocks, entities or you)
+   * opts.players === false skips the player-overlap test (multiplayer: the host placing a
+   * friend's furniture where the host happens to stand).
+   */
+  canPlace(def, x, y, z, rot, ignore = null, opts = {}) {
+    const players = opts.players !== false;
     const game = this.game;
     const w = game.world;
     if (!w) return false;
@@ -393,7 +416,7 @@ export class EntityManager {
       const other = (def.flat ? this.flats : this.occupied).get(w.index(cx, cy, cz));
       if (other && other !== ignore) return false;
       const standing = def.placeOn !== 'wall' && def.placeOn !== 'ceiling';
-      if (def.colliders !== 'none' && standing && game.player && game.player.overlapsCell(cx, cy, cz)) return false;
+      if (players && def.colliders !== 'none' && standing && game.player && game.player.overlapsCell(cx, cy, cz)) return false;
     }
     if (def.placeOn === 'ceiling' && !this._solidAt(x, y + this._dims(def).h, z)) return false;
     return true;
@@ -426,8 +449,10 @@ export class EntityManager {
   // ---------- placing & removing ----------
 
   /**
-   * Place furniture. opts: { history = true, events = true, uid, fx = true, force = false }.
-   * force skips the fit check (used when loading a saved world). Returns the entity or null.
+   * Place furniture. opts: { history = true, events = true, uid, fx = true, force = false,
+   * players, yOffset, restsOn }. force skips the fit check (used when loading a saved world);
+   * players: false ignores the player in the fit check; yOffset / restsOn override the
+   * computed ones (multiplayer: a record from the host). Returns the entity or null.
    */
   place(key, x, y, z, rot = 0, color = null, data = {}, opts = {}) {
     const { history = true, events = true, fx = true, uid = null, force = false } = opts;
@@ -435,7 +460,7 @@ export class EntityManager {
     const def = this.defs.get(key);
     if (!def || !game.world) return null;
     rot = ((rot | 0) % 4 + 4) % 4;
-    if (!force && !this.canPlace(def, x, y, z, rot)) return null;
+    if (!force && !this.canPlace(def, x, y, z, rot, null, { players: opts.players })) return null;
     const w = game.world;
     const props = game.registry.blocks.props;
     // clear replaceable blocks (tall grass) out of the way
@@ -447,8 +472,11 @@ export class EntityManager {
     const table = def.placeOn === 'table' ? this.surfaceBelow(x, y, z) : null;
     let yOffset = props.shape[w.get(x, y, z)] === SHAPES.carpet ? 1 / 16 : 0;
     if (table) yOffset = table.y + (table.yOffset || 0) + table.def.surface - y;
+    if (typeof opts.yOffset === 'number') yOffset = opts.yOffset;
+    let restsOn = table ? table.uid : null;
+    if (opts.restsOn !== undefined) restsOn = opts.restsOn || null;
     const entity = {
-      uid: uid || this.nextUid++,
+      uid: uid || this.allocUid(),
       key, x, y, z, rot,
       color: color || (def.colors ? def.colors[0] : null),
       data: { ...def.defaultData, ...data },
@@ -460,9 +488,9 @@ export class EntityManager {
       lightCell: null,
       lightPoint: null,
       yOffset,
-      restsOn: table ? table.uid : null,
+      restsOn,
     };
-    if (entity.uid >= this.nextUid) this.nextUid = entity.uid + 1;
+    if (entity.uid >= this.nextUid && this._ownUid(entity.uid)) this.nextUid = entity.uid + 1;
     entity.frontCell = () => {
       const [ox, oz] = rotXZ(0, 1, entity.rot);
       return [entity.x + ox, entity.y, entity.z + oz];
@@ -480,6 +508,7 @@ export class EntityManager {
       game.audio.play('pop');
       game.celebrate(this.localToWorld(entity, this._dims(def).w / 2, 0.5, this._dims(def).d / 2), 'sparkle', { quiet: true });
     }
+    if (this.onChange !== null) this.onChange('add', entity);
     if (events) game.events.emit('entity:place', { entity });
     return entity;
   }
@@ -572,11 +601,15 @@ export class EntityManager {
     this.updaters.delete(entity);
   }
 
+  /**
+   * Remove an entity. opts: { history = true, events = true, fx = true, riders }: riders:
+   * false leaves the items standing on it (multiplayer apply: the host sends their own removals).
+   */
   remove(entity, opts = {}) {
     const { history = true, events = true, fx = true } = opts;
     if (!entity || !this.map.has(entity.uid)) return false;
     const game = this.game;
-    const riders = this.itemsOnTop(entity);
+    const riders = opts.riders === false ? [] : this.itemsOnTop(entity);
     if (riders.length) {
       // a lamp on a table goes with the table; one Undo brings both back
       game.beginHistoryGroup();
@@ -590,12 +623,13 @@ export class EntityManager {
     const player = game.player;
     if (player && player.seatEntity === entity) player.stand();
     const center = this.localToWorld(entity, this._dims(entity.def).w / 2, 0.5, this._dims(entity.def).d / 2);
+    const record = this.onChange !== null ? this._record(entity) : null;
     this._detach(entity);
     this.map.delete(entity.uid);
     if (history) {
       const s = { key: entity.key, x: entity.x, y: entity.y, z: entity.z, rot: entity.rot, color: entity.color, data: { ...entity.data }, uid: entity.uid };
       game.pushHistory({
-        undo: () => this.place(s.key, s.x, s.y, s.z, s.rot, s.color, s.data, { history: false, fx: false, uid: s.uid, force: true }),
+        undo: () => this._placeBack(s),
         redo: () => { const e = this.byUid(s.uid); if (e) this.remove(e, { history: false, fx: false }); },
       });
     }
@@ -603,8 +637,34 @@ export class EntityManager {
       game.audio.play('remove');
       game.celebrate(center, 'sparkle', { quiet: true });
     }
+    if (this.onChange !== null) this.onChange('del', record);
     if (events) game.events.emit('entity:remove', { entity });
     return true;
+  }
+
+  /**
+   * Undo of a removal: put the piece back. Solo: forced, exactly as it was (LIFO undo means
+   * nothing else can be there). While playing with friends someone may have built there
+   * since, so it comes back only if it fits (players ignored), else the Undo skips it; and a
+   * friend (guest) gives a piece that is not from her own uid range a fresh uid of her own
+   * (the host only accepts her uids), which later redo / undo entries then follow.
+   */
+  _placeBack(s) {
+    const net = this.game.net;
+    if (!net || !net.active) return this.place(s.key, s.x, s.y, s.z, s.rot, s.color, s.data, { history: false, fx: false, uid: s.uid, force: true });
+    if (this.byUid(s.uid)) return null;
+    const def = this.defs.get(s.key);
+    if (!def || !this.canPlace(def, s.x, s.y, s.z, s.rot, null, { players: false })) return null;
+    const uid = net.isGuest && !this._ownUid(s.uid) ? null : s.uid;
+    const e = this.place(s.key, s.x, s.y, s.z, s.rot, s.color, s.data, { history: false, fx: false, uid, players: false });
+    if (e) s.uid = e.uid;
+    return e;
+  }
+
+  /** [uid,key,x,y,z,rot,color|0,data|0,yo,ro] (the multiplayer wire record, data copied). */
+  _record(e) {
+    return [e.uid, e.key, e.x, e.y, e.z, e.rot, e.color || 0, e.data ? JSON.parse(JSON.stringify(e.data)) : 0,
+      Math.round((e.yOffset || 0) * 1000), e.restsOn || 0];
   }
 
   /** Turn an entity a quarter turn (keeps its anchor if it still fits). */
@@ -617,6 +677,7 @@ export class EntityManager {
       this._detach(entity);
       entity.rot = rot;
       this._attach(entity);
+      if (this.onChange !== null) this.onChange('rot', entity, before);
       this.game.audio.play('pop', { pitch: 1.2 });
       if (history) {
         const uid = entity.uid;
@@ -631,9 +692,11 @@ export class EntityManager {
   }
 
   _setRot(entity, rot) {
+    const before = entity.rot;
     this._detach(entity);
     entity.rot = rot;
     this._attach(entity);
+    if (this.onChange !== null && before !== rot) this.onChange('rot', entity, before);
   }
 
   /** Rebuild the model (after color/data changes). */
@@ -645,8 +708,10 @@ export class EntityManager {
 
   /** Merge data into an entity and rebuild it (lamps on/off, doors open/closed...). */
   setData(entity, patch) {
+    const before = this.onChange !== null ? JSON.parse(JSON.stringify(entity.data || {})) : null;
     Object.assign(entity.data, patch);
     this.refresh(entity);
+    if (this.onChange !== null) this.onChange('data', entity, patch, before);
   }
 
   /**
@@ -806,6 +871,7 @@ export class EntityManager {
     this.batcher.clear();
     this._lit.fill(null);
     this.nextUid = 1;
+    this.uidBase = 0;
     for (const l of this.lights) l.intensity = 0;
   }
 
