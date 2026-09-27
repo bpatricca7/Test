@@ -5,8 +5,9 @@
 //        node tools/build.mjs --serve  dev server with rebuild + live reload on :8000
 
 import * as esbuild from 'esbuild';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile, readFile, readdir } from 'node:fs/promises';
 import { gzipSync } from 'node:zlib';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -16,6 +17,35 @@ const TITLE = 'Sparkle World';
 const FONT_LINK = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" media="print" onload="this.media=\'all\'">';
 // shown before the JS runs (and keeps the page from flashing white)
 const BOOT_CSS = 'html,body{margin:0;height:100%;background:#BDE6FF;overflow:hidden}#app{position:fixed;inset:0;background:#BDE6FF}';
+
+/**
+ * The build id (docs/MULTIPLAYER.md §9.14): sha1 of every src/** file's path and content plus
+ * the three.js version, 8 hex. Friends can only play together on the same build (presence pv).
+ */
+async function buildId() {
+  const h = createHash('sha1');
+  const walk = async (dir) => {
+    const entries = (await readdir(dir, { withFileTypes: true })).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+    for (const e of entries) {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) await walk(full);
+      else if (e.isFile()) {
+        h.update(path.relative(root, full).split(path.sep).join('/'));
+        h.update('\0');
+        h.update(await readFile(full));
+        h.update('\0');
+      }
+    }
+  };
+  await walk(path.join(root, 'src'));
+  try {
+    const three = JSON.parse(await readFile(path.join(root, 'node_modules', 'three', 'package.json'), 'utf8'));
+    h.update('three@' + three.version);
+  } catch {
+    h.update('three@?');
+  }
+  return h.digest('hex').slice(0, 8);
+}
 
 const common = {
   entryPoints: [path.join(root, 'src/main.js')],
@@ -34,8 +64,9 @@ function escapeInline(code, tag) {
   return code.replace(re, (_, t) => `<\\/${t}`);
 }
 
-async function bundle() {
-  const result = await esbuild.build({ ...common, minify: true, write: false, outdir: path.join(root, 'dist', '.bundle') });
+async function bundle(build) {
+  const define = { __SW_BUILD__: JSON.stringify(build) };
+  const result = await esbuild.build({ ...common, define, minify: true, write: false, outdir: path.join(root, 'dist', '.bundle') });
   let js = '';
   let css = '';
   for (const f of result.outputFiles) {
@@ -85,20 +116,25 @@ function sizeLine(name, text) {
 
 async function buildOnce() {
   const t0 = Date.now();
-  const parts = await bundle();
+  const build = await buildId();
+  const parts = await bundle(build);
   const dist = path.join(root, 'dist');
   await mkdir(dist, { recursive: true });
   const full = fullDocument(parts);
   const frag = artifactFragment(parts);
   await writeFile(path.join(dist, 'sparkle-world.html'), full);
   await writeFile(path.join(dist, 'artifact.html'), frag);
-  console.log(`Built in ${Date.now() - t0} ms:`);
+  // the Railway server reports this id at /api/net (server/server.mjs reads dist/build.json)
+  await writeFile(path.join(dist, 'build.json'), JSON.stringify({ build }) + '\n');
+  console.log(`Built ${build} in ${Date.now() - t0} ms:`);
   console.log(sizeLine('dist/sparkle-world.html', full));
   console.log(sizeLine('dist/artifact.html', frag));
 }
 
 async function serve() {
-  const ctx = await esbuild.context({ ...common, sourcemap: 'inline', outdir: path.join(root, 'dev'), write: false });
+  // the dev bundle keeps one id per server start ('dev-' + the source hash)
+  const define = { __SW_BUILD__: JSON.stringify('dev-' + (await buildId())) };
+  const ctx = await esbuild.context({ ...common, define, sourcemap: 'inline', outdir: path.join(root, 'dev'), write: false });
   await ctx.watch();
   const { port } = await ctx.serve({ servedir: root, port: 8000 });
   console.log(`Sparkle World dev server: http://localhost:${port}/  (rebuilds on save, live reload)`);
