@@ -479,7 +479,7 @@ export function install(L) {
   block({ key: 'starfish', name: 'Starfish', category: 'nature', ...flat });
   block({ key: 'lily_pad', name: 'Lily Pad', category: 'nature', ...flat });
   block({ key: 'seaweed', name: 'Seaweed', category: 'nature', shape: 'cross', sound: 'pop' });
-  block({ key: 'candle', name: 'Candle', category: 'lights', shape: 'cross', light: 12, sound: 'chime' });
+  block({ key: 'candle', name: 'Little Candle', category: 'lights', shape: 'cross', light: 12, sound: 'chime' });
   block({ key: 'lollipop', name: 'Lollipop', category: 'candy', shape: 'cross', sound: 'pop' });
 }
 

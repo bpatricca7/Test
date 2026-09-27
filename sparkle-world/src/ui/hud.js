@@ -80,6 +80,16 @@ const CSS = /* css */ `
 .sw-joy.active { bottom: auto; transform: none; background: rgba(255,255,255,.36); }
 .sw-joy-thumb { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; border-radius: 50%; background: var(--sw-pink); border: 4px solid #fff; box-shadow: 0 4px 12px var(--sw-shadow); transform: translate(-50%, -50%); }
 
+/* the spacer only matters on phones (it pushes Bag / Undo apart above the hotbar) */
+.sw-hud-bottom .sw-spacer { display: none; }
+/* narrow tablets (iPad portrait 768 / 810 / 820 wide): slightly smaller slots and gaps so Bag
+   and Undo stay on screen next to the hotbar (the desktop row is ~764 px wide) */
+@media (max-width: 860px) {
+  .sw-slot { width: 54px; height: 54px; border-radius: 16px; }
+  .sw-slot img { width: 42px; height: 42px; }
+  .sw-hotbar { gap: 4px; padding: 6px; }
+  .sw-hud-bottom { gap: 8px; }
+}
 @media (max-width: 760px), (max-height: 520px) {
   .sw-slot { width: 44px; height: 44px; border-radius: 14px; border-width: 2px; }
   .sw-slot img { width: 34px; height: 34px; }
@@ -102,7 +112,7 @@ const CSS = /* css */ `
   .sw-slot img { width: 78%; height: 78%; }
   .sw-hud-bottom .sw-bagbtn, .sw-hud-bottom .sw-undobtn { order: 1; }
   .sw-hud-bottom .sw-undobtn { order: 2; }
-  .sw-hud-bottom .sw-spacer { order: 1; flex: 1; }
+  .sw-hud-bottom .sw-spacer { display: block; order: 1; flex: 1; }
   .sw-hud-tr .sw-round-label { display: none; }
   .sw-hud-tr { gap: 6px; }
   .sw-hud-tr .sw-round-face { width: 46px; height: 46px; }
@@ -175,11 +185,17 @@ class TargetOutline {
     this.faceMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.28, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
     this.face = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), this.faceMat);
     this.group.add(this.face);
-    this._key = '';
+    // what the outline was last built for (numbers only: update() runs every frame and must
+    // not allocate): [kind (0 none, 1 block, 2 pickable), six numbers], plus the tool
+    this._last = new Float64Array(7);
+    this._lastTool = null;
     this._min = new THREE.Vector3();
     this._max = new THREE.Vector3();
     this._t = 0;
     this._white = new THREE.Color(1, 1, 1);
+    // parsed once: Color.set('#hex') runs regexes, too costly for every frame
+    this._toolColors = {};
+    for (const [k, v] of Object.entries(TOOL_COLORS)) this._toolColors[k] = new THREE.Color(v);
     game.scene.add(this.group);
   }
 
@@ -211,35 +227,42 @@ class TargetOutline {
     }
   }
 
+  /** True when the outline already shows this target; otherwise remembers it and returns false. */
+  _same(kind, a, b, c, d, e, f, tool) {
+    const k = this._last;
+    if (k[0] === kind && k[1] === a && k[2] === b && k[3] === c && k[4] === d && k[5] === e && k[6] === f && this._lastTool === tool) return true;
+    k[0] = kind; k[1] = a; k[2] = b; k[3] = c; k[4] = d; k[5] = e; k[6] = f;
+    this._lastTool = tool;
+    return false;
+  }
+
   update(dt) {
     const g = this.game;
     const t = g.mode === 'play' && !g.paused ? g.target : null;
     if (!t || this.hidden) {
       this.group.visible = false;
-      this._key = '';
+      this._last[0] = 0;
       return;
     }
     this._t += dt;
     const tool = g.selectedTool;
-    let key;
     if (t.type === 'block') {
-      key = `b${t.x},${t.y},${t.z},${t.face.join('')},${tool}`;
-      if (key !== this._key) {
+      const f = t.face;
+      const faceCode = f ? (f[0] + 1) * 9 + (f[1] + 1) * 3 + (f[2] + 1) : -1;
+      if (!this._same(1, t.x, t.y, t.z, faceCode, t.id, 0, tool)) {
         const box = g.registry.blocks.byId(t.id);
         const shape = box ? box.shape : 'cube';
         const h = shape === 'slab' ? 0.5 : shape === 'carpet' ? 1 / 16 : 1;
         const inset = shape === 'cross' ? 0.15 : 0;
         this._min.set(t.x + inset, t.y, t.z + inset);
         this._max.set(t.x + 1 - inset, t.y + h * (shape === 'cross' ? 0.9 : 1), t.z + 1 - inset);
-        this.setBox(this._min, this._max, tool === 'build' ? t.face : null);
+        this.setBox(this._min, this._max, tool === 'build' ? f : null);
       }
     } else {
       const b = t.pickable.box;
-      key = `p${b.min.x},${b.min.y},${b.min.z},${b.max.x},${b.max.y},${tool}`;
-      if (key !== this._key) this.setBox(b.min, b.max, null);
+      if (!this._same(2, b.min.x, b.min.y, b.min.z, b.max.x, b.max.y, b.max.z, tool)) this.setBox(b.min, b.max, null);
     }
-    this._key = key;
-    this.mat.color.set(TOOL_COLORS[tool] || '#ffffff').lerp(this._white, 0.35 + 0.25 * Math.sin(this._t * 5));
+    this.mat.color.copy(this._toolColors[tool] || this._white).lerp(this._white, 0.35 + 0.25 * Math.sin(this._t * 5));
     this.mat.opacity = 0.75 + 0.2 * Math.sin(this._t * 5);
     this.group.visible = true;
   }
@@ -343,14 +366,17 @@ export function install(game) {
       const color = game.hotbar.colors[i];
       s.sw.style.display = color ? 'block' : 'none';
       if (color) s.sw.style.background = color;
-      if (s.key === key) return;
-      s.key = key;
       const item = key ? game.registry.items.get(key) : null;
+      // the slot shows the item in the color she picked (a new color alone refreshes it too)
+      const tint = color && item && item.colors ? color : null;
+      const k = item ? `${key}|${tint || ''}` : null;
+      if (s.key === k) return;
+      s.key = k;
       s.el.title = item ? item.name : 'Empty';
       s.img.style.visibility = 'hidden';
       if (!item) return;
-      game.registry.items.iconFor(key).then((url) => {
-        if (s.key !== key) return;
+      game.registry.items.iconFor(key, tint).then((url) => {
+        if (s.key !== k) return;
         if (url) { s.img.src = url; s.img.style.visibility = 'visible'; }
       });
     });

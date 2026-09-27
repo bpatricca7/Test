@@ -58,6 +58,9 @@ const CSS = /* css */ `
 .sw-tut-skip.sw-btn { min-height: 34px; font-size: 13px; padding: 2px 10px; }
 .sw-tut-ring { position: absolute; border-radius: 50%; border: 5px solid var(--sw-sun); box-shadow: 0 0 0 5px rgba(255,201,77,.35), 0 0 22px 6px rgba(255,201,77,.6); pointer-events: none; animation: sw-ring 1.1s ease-in-out infinite; }
 .sw-tut-ring[hidden] { display: none; }
+/* a "New sticker!" pop (src/life/stickers.js) shows in the same spot: the tip steps aside for it */
+.sw-tut-card, .sw-tut-ring { transition: opacity .25s, visibility .25s; }
+.sw-ui:has(> .sw-stkpop) .sw-tut-card, .sw-ui:has(> .sw-stkpop) .sw-tut-ring { opacity: 0; visibility: hidden; }
 @keyframes sw-ring { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.12); opacity: .75; } }
 @media (max-width: 480px) {
   /* phones: keep clear of the tool buttons on the right; buttons go under the words */
@@ -68,6 +71,8 @@ const CSS = /* css */ `
   .sw-tut-ic { width: 46px; height: 46px; }
   .sw-tut-ic svg { width: 26px; height: 26px; }
   .sw-tut-text { font-size: 17px; }
+  /* toasts under the tip card line up with it, clear of the tool buttons */
+  .sw-app.sw-playing .sw-ui.sw-tut-on .sw-toasts { left: 10px; transform: none; align-items: flex-start; max-width: calc(100vw - 112px); }
   .sw-help-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
   .sw-help-label { font-size: 15px; }
   .sw-key.sw-wide { min-width: 80px; }
@@ -259,6 +264,15 @@ export function install(game) {
     { id: 'save', icon: 'heart', color: 'var(--sw-sun)', text: () => 'Your world saves by itself!', target: () => null, last: true },
   ];
   let stepIdx = -1, stepDone = false, walkFrom = null, ringTimer = 0, running = false, doneTimer = 0;
+  // while the tip card shows, toasts go just below it (theme.js reads --sw-toast-top)
+  let toastTopPx = -1;
+  const setToastTop = (px) => {
+    if (px === toastTopPx) return;
+    toastTopPx = px;
+    ui.root.classList.toggle('sw-tut-on', px >= 0);
+    if (px < 0) ui.root.style.removeProperty('--sw-toast-top');
+    else ui.root.style.setProperty('--sw-toast-top', `${px}px`);
+  };
 
   const showStep = () => {
     const st = STEPS[stepIdx];
@@ -312,6 +326,7 @@ export function install(game) {
     running = false;
     tut.hidden = true;
     ring.hidden = true;
+    setToastTop(-1);
     if (!game.profile.tutorialDone) {
       game.profile.tutorialDone = true;
       game.saveProfile();
@@ -325,7 +340,7 @@ export function install(game) {
     const bot = typeof navigator !== 'undefined' && navigator.webdriver;
     if (!game.profile.tutorialDone && !bot) setTimeout(() => { if (game.mode === 'play' && !running) startTutorial(); }, 1400);
   });
-  game.events.on('world:unload', () => { running = false; tut.hidden = true; clearTimeout(doneTimer); });
+  game.events.on('world:unload', () => { running = false; tut.hidden = true; clearTimeout(doneTimer); setToastTop(-1); });
   game.events.on('block:place', () => complete('build'));
   game.events.on('entity:place', () => complete('build'));
   game.events.on('ui:open', ({ panel }) => { if (panel === 'bag') complete('bag'); });
@@ -338,7 +353,11 @@ export function install(game) {
       if (!running) return;
       const show = game.mode === 'play' && !game.paused;
       tut.hidden = !show;
-      if (!show) return;
+      if (!show) {
+        setToastTop(-1);
+        ringTimer = 0; // place the ring and the toasts again on the first frame back
+        return;
+      }
       const st = STEPS[stepIdx];
       if (st.id === 'walk' && walkFrom && game.player && !stepDone) {
         const p = game.player.position;
@@ -347,6 +366,7 @@ export function install(game) {
       ringTimer -= dt;
       if (ringTimer > 0) return;
       ringTimer = 0.25;
+      setToastTop(Math.round(card.offsetTop + card.offsetHeight + 10));
       const el = st.target();
       if (!el || !el.offsetParent) {
         ring.hidden = true;

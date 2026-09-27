@@ -393,7 +393,20 @@ async function touchDevice(browser, { name, viewport, deep = false }) {
     const g = window.__game;
     for (const a of ['dressup', 'stickers', 'emotes']) if (!g.actions.has(a)) g.registerAction(a, () => g.toast(a));
   });
-  await startWorld(page, 'meadow', { tap: true, onPanel: async (p) => { await settle(p, 500); await shot(p, `newworld-${name}`, P); } });
+  await startWorld(page, 'meadow', {
+    tap: true,
+    onPanel: async (p) => {
+      await settle(p, 500);
+      await shot(p, `newworld-${name}`, P);
+      // Create! is on screen without scrolling (it sticks to the bottom of the wizard card)
+      const cr = await p.evaluate(() => {
+        const r = document.querySelector('.sw-create').getBoundingClientRect();
+        const body = document.querySelector('.sw-panel-wrap.sw-open .sw-card-body').getBoundingClientRect();
+        return { top: Math.round(r.top), bottom: Math.round(r.bottom), limit: Math.round(Math.min(innerHeight, body.bottom)) };
+      });
+      check(cr.top >= 0 && cr.bottom <= cr.limit + 1, `${name}: Create! is on screen without scrolling (${cr.top}..${cr.bottom} of ${cr.limit})`);
+    },
+  });
   await settle(page, 900);
   await shot(page, `hud-${name}`, P);
   // flying swaps Jump for Up / Down
@@ -489,6 +502,7 @@ async function main() {
       await touchDevice(browser, { name: 'ipad', viewport: { width: 1024, height: 768 }, deep: true });
       await touchDevice(browser, { name: 'ipad-air', viewport: { width: 1180, height: 820 } });
       await touchDevice(browser, { name: 'ipad-portrait', viewport: { width: 820, height: 1180 } });
+      await touchDevice(browser, { name: 'ipad-mini-portrait', viewport: { width: 768, height: 1024 } });
       await touchDevice(browser, { name: 'phone', viewport: { width: 390, height: 844 }, deep: true });
     }
   } catch (err) {

@@ -68,7 +68,7 @@ const CSS = /* css */ `
 .sw-nw-name { display: flex; gap: 10px; align-items: stretch; }
 .sw-nw-name .sw-input { flex: 1; min-width: 0; font-size: 24px; }
 .sw-biomes { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
-.sw-biome { position: relative; border-radius: 24px; border: 5px solid #fff; padding: 0 0 10px; cursor: pointer; text-align: center; box-shadow: 0 6px 14px var(--sw-shadow); transition: transform .18s var(--sw-bounce), box-shadow .18s; font-family: var(--sw-font); color: var(--sw-ink); overflow: visible; }
+.sw-biome { position: relative; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; border-radius: 24px; border: 5px solid #fff; padding: 0 0 10px; cursor: pointer; text-align: center; box-shadow: 0 6px 14px var(--sw-shadow); transition: transform .18s var(--sw-bounce), box-shadow .18s; font-family: var(--sw-font); color: var(--sw-ink); overflow: visible; }
 .sw-biome:hover { transform: translateY(-3px); }
 .sw-biome:active { transform: scale(.96); }
 .sw-biome-art { display: block; width: 100%; aspect-ratio: 288 / 176; border-radius: 19px 19px 12px 12px; image-rendering: pixelated; image-rendering: crisp-edges; background: #DDF4FF; margin-bottom: 6px; }
@@ -84,8 +84,15 @@ const CSS = /* css */ `
 .sw-size-name { font-size: 22px; font-weight: 700; text-align: left; }
 .sw-size-sub { font-size: 14px; font-weight: 600; color: var(--sw-lav); text-align: left; }
 .sw-size.sw-sel { border-color: var(--sw-lav); box-shadow: 0 0 0 4px #fff, 0 8px 20px rgba(156,123,255,.45); transform: scale(1.03); }
-.sw-create-row { display: flex; justify-content: center; margin-top: 20px; }
+/* Create! stays in view at the bottom of the card while the world cards scroll under it
+   (on a landscape iPad the wizard is taller than the screen) */
+.sw-create-row { position: sticky; bottom: -22px; z-index: 2; display: flex; justify-content: center; margin: 14px -22px -22px; padding: 18px 22px 16px; border-radius: 0 0 25px 25px; background: linear-gradient(rgba(255,248,252,0), var(--sw-cream) 38%); pointer-events: none; }
+.sw-create-row > * { pointer-events: auto; }
 .sw-create.sw-btn { min-width: 260px; }
+@media (max-height: 520px) {
+  .sw-create-row { padding-top: 12px; padding-bottom: 8px; }
+  .sw-create.sw-btn { min-height: 54px; font-size: 22px; }
+}
 
 /* ---------- my worlds ---------- */
 .sw-worlds-bar { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin: 0 0 12px; }
@@ -140,6 +147,7 @@ const CSS = /* css */ `
   .sw-size-name, .sw-size-sub { text-align: center; }
   .sw-size-name { font-size: 19px; }
   .sw-worlds { grid-template-columns: 1fr; }
+  .sw-create-row { bottom: -16px; margin: 10px -14px -16px; padding: 14px 14px 12px; }
 }
 `;
 
@@ -152,6 +160,7 @@ const NAME_IDEAS = {
   beach: ['Seashell Island', 'Sunny Beach', 'Mermaid Lagoon', 'Coconut Cove', 'Starfish Bay', 'Sandcastle Shore'],
   snow: ['Snowflake Village', 'Frosty Peaks', 'Winter Wonderland', 'Cocoa Mountain', 'Twinkle Snow', 'Igloo Hills'],
   fairy: ['Fairy Forest', 'Glow Garden', 'Moonlight Woods', 'Pixie Hollow', 'Crystal Glade', 'Firefly Grove'],
+  mix: ['Everything Land', 'Wonder Island', 'Rainbow Kingdom', 'Dream Island', 'Surprise Valley', 'Patchwork Paradise'],
 };
 const ADJECTIVES = ['Rainbow', 'Sparkly', 'Sunny', 'Dreamy', 'Cozy', 'Magic', 'Twinkle', 'Bubblegum', 'Starlight', 'Honey', 'Glitter', 'Happy'];
 const NOUNS = ['Meadow', 'Island', 'Valley', 'Garden', 'Kingdom', 'Village', 'Hills', 'Paradise', 'Land', 'Castle', 'Town', 'Park'];
@@ -287,7 +296,8 @@ export function install(game) {
       const newBtn = button2(ui, { icon: 'plus', label: 'New World', variant: 'mint', onClick: () => ui.open('newworld') });
       const worldsBtn = button2(ui, { icon: 'world', label: 'My Worlds', variant: 'lav', onClick: () => ui.open('worlds') });
       buttons.append(playBtn, lastChip, newBtn, worldsBtn);
-      tilesRow = ui.el('div', 'sw-title-tiles');
+      // .sw-title-small (no styles) is the core title's hook for this row; probes still use it
+      tilesRow = ui.el('div', 'sw-title-tiles sw-title-small');
       bottom.append(buttons, tilesRow);
       col.append(logo, bottom);
 
@@ -383,7 +393,7 @@ export function install(game) {
   // =====================================================================================
   // new world wizard
   // =====================================================================================
-  let nameInput, biomeGrid, sizeRow;
+  let nameInput, biomeGrid, sizeRow, nwBody;
   const choice = { biome: 'meadow', size: 'cozy' };
   let nameTouched = false;
   let lastIdea = '';
@@ -479,6 +489,26 @@ export function install(game) {
       nameInput.spellcheck = false;
       nameInput.setAttribute('aria-label', 'World name');
       nameInput.addEventListener('input', () => { nameTouched = true; });
+      // The suggestion is selected when she taps the field, so typing her own name replaces it
+      // instead of being added to the end (or the middle). A click places the caret on mouse-up,
+      // so select again then (once) and once more after the tap has settled.
+      let selectOnUp = false;
+      const selectSuggestion = () => {
+        if (nameTouched || document.activeElement !== nameInput) return;
+        try { nameInput.setSelectionRange(0, nameInput.value.length); } catch { nameInput.select(); }
+      };
+      nameInput.addEventListener('focus', () => {
+        if (nameTouched) return;
+        selectOnUp = true;
+        selectSuggestion();
+        setTimeout(selectSuggestion, 0);
+      });
+      nameInput.addEventListener('mouseup', (e) => {
+        if (!selectOnUp) return;
+        selectOnUp = false;
+        if (!nameTouched) { e.preventDefault(); selectSuggestion(); }
+      });
+      nameInput.addEventListener('blur', () => { selectOnUp = false; });
       nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); nameInput.blur(); } });
       const dice = button2(ui, {
         icon: 'dice', label: 'New idea', variant: 'sun', className: 'sw-dice',
@@ -504,6 +534,7 @@ export function install(game) {
       });
       row.appendChild(create);
       container.append(label('pencil', 'Name your world'), nameRow, label('world', 'Pick a world'), biomeGrid, label('island', 'How big?'), sizeRow, row);
+      nwBody = container;
     },
     onOpen() {
       if (!game.registry.biomes.has(choice.biome)) choice.biome = game.registry.biomes.keys().next().value;
@@ -511,6 +542,7 @@ export function install(game) {
       nameInput.value = suggestName();
       renderBiomes();
       renderSizes();
+      nwBody.scrollTop = 0; // start at the name field every time
     },
   });
 
@@ -679,7 +711,9 @@ export function install(game) {
         icon: musicOn ? 'music' : 'mute', label: musicOn ? 'Music on' : 'Music off', variant: 'white', size: 'small',
         onClick: () => {
           s.music = musicOn ? 0 : 0.5;
-          game.applySettings();
+          // volumes only: game.applySettings() would also reset the pixel ratio that Auto
+          // quality lowered on a slow tablet
+          game.audio.setVolumes({ music: s.music });
           game.audio.music(s.music > 0);
           game.saveProfile();
           renderToggles();
@@ -689,7 +723,7 @@ export function install(game) {
         icon: sfxOn ? 'sound' : 'mute', label: sfxOn ? 'Sounds on' : 'Sounds off', variant: 'white', size: 'small',
         onClick: () => {
           s.sfx = sfxOn ? 0 : 0.8;
-          game.applySettings();
+          game.audio.setVolumes({ sfx: s.sfx });
           game.saveProfile();
           renderToggles();
         },

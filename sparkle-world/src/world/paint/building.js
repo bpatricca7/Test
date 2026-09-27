@@ -159,7 +159,7 @@ export function install(L) {
     }
     for (let y = 0; y < 16; y++) { p.set(0, y, dark); p.set(15, y, dark); }
   });
-  block({ key: 'bookshelf', name: 'Bookshelf', category: 'building', tiles: { top: 'planks_oak', side: 'bookshelf', bottom: 'planks_oak' } });
+  block({ key: 'bookshelf', name: 'Book Block', category: 'building', tiles: { top: 'planks_oak', side: 'bookshelf', bottom: 'planks_oak' } });
 
   // --- floor tiles ---
   tile('tile_kitchen', (p) => {

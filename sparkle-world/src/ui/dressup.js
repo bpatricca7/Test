@@ -32,6 +32,9 @@ const TABS = [
   { key: 'outfits', label: 'Outfits', zoom: 'full' },
 ];
 
+// the Studio's own stage picture keys start with one of these (`<tab>|...`, `outfits|slot|...`)
+const STUDIO_KEYS = new Set(TABS.map((t) => t.key));
+
 const ZOOMS = {
   full: { cy: 0.98, span: 2.4 },
   upper: { cy: 1.12, span: 1.9 },
@@ -224,6 +227,9 @@ class Studio {
     clearTimeout(this._emitTimer);
     this._emitTimer = 0;
     const changed = sig(this.look) !== this.openSig;
+    // drop the Studio's own queued thumbnails first, and only those: 'outfit:changed' below
+    // makes the emote wheel queue pictures of the new look on the same stage
+    this.stage.prune((k) => !STUDIO_KEYS.has(k.slice(0, k.indexOf('|'))));
     this._commit(true);
     if (changed) {
       const look = W.cloneLook(this.look);
@@ -231,7 +237,6 @@ class Studio {
       if (this.game.mode === 'play') this.game.toast('Looking great!', { icon: 'dress', color: 'pink' });
     }
     this._teardownPreview();
-    this.stage.prune(() => false);
   }
 
   // ---------- look changes ----------
