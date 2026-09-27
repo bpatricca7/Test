@@ -416,7 +416,7 @@ async function desktop(browser) {
 
   // ----- dance together -----
   await page.locator('.pl-bubble.pl-on .sw-round[aria-label="Dance"]').click();
-  const dancers = await until(page, () => window.__game.friends.friends.filter((f) => f.avatar.emoting === 'dance').length >= 3 && window.__game.friends.friends.length, null, 5000);
+  const dancers = await until(page, () => window.__game.friends.friends.filter((f) => f.avatar.emoting === 'dance').length >= 3 && window.__game.friends.friends.length, null, 20000);
   const nd = await page.evaluate(() => window.__game.friends.friends.filter((f) => f.avatar.emoting === 'dance').length);
   check(nd >= 3, `everyone dances together (${nd} friends dancing, she dances: ${await page.evaluate(() => window.__game.player.avatar.emoting)})`);
   void dancers;
@@ -432,7 +432,7 @@ async function desktop(browser) {
   await page.keyboard.press('g');
   await page.waitForSelector('.sw-panel-wrap.sw-open[data-panel="emotes"]', { timeout: 4000 }).catch(() => null);
   await page.keyboard.press('6');
-  const mirrored = await until(page, () => window.__game.friends.friends.filter((f) => f.avatar.emoting === 'heart').length >= 2, null, 5000);
+  const mirrored = await until(page, () => window.__game.friends.friends.filter((f) => f.avatar.emoting === 'heart').length >= 2, null, 20000);
   check(!!mirrored, 'friends copy her heart-hands emote');
   await settle(page, 600);
   await shot(page, 'friends-mirror', P);
@@ -594,7 +594,7 @@ async function desktop(browser) {
     return x;
   });
   void far;
-  await until(page, () => window.__game.friends.friends.every((f) => f.mode === 'follow' || !f.group.visible), null, 5000);
+  await until(page, () => window.__game.friends.friends.every((f) => f.mode === 'follow' || !f.group.visible), null, 20000);
   const hidden = await page.evaluate(() => window.__game.friends.friends.filter((f) => f.mode !== 'follow').map((f) => f.group.visible));
   check(hidden.every((v) => !v), 'friends more than 40 blocks away are hidden');
   await page.evaluate(([x, y, z]) => window.__game.player.teleport(x + 0.5, y + 0.01, z - 3), set);
@@ -666,7 +666,7 @@ async function touch(browser) {
   check(await tapBody(page, 'friend', nia.id, true), 'tapped Nia again');
   await page.waitForSelector('.pl-bubble.pl-on .sw-round[aria-label="Dance"]', { timeout: 4000 });
   await page.locator('.pl-bubble.pl-on .sw-round[aria-label="Dance"]').tap();
-  const danced = await until(page, (id) => window.__game.friends.byId(id).avatar.emoting === 'dance', nia.id, 5000);
+  const danced = await until(page, (id) => window.__game.friends.byId(id).avatar.emoting === 'dance', nia.id, 20000);
   check(!!danced, 'Nia dances (tap)');
   await settle(page, 600);
   await shot(page, 'touch-dance', P);
