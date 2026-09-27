@@ -110,10 +110,45 @@ export function install(game) {
     c.getContext('2d').drawImage(rays, 0, 0);
     return c;
   };
+  // The pop waits while anything covers the world (a panel such as the photo polaroid, the
+  // piano or the Bag, a dialog, the camera countdown, the loading card or a fade), then shows
+  // once the world has been clear for a moment, so it never sits on top of what she is looking
+  // at. Its jingle and confetti come with it. If a panel opens while it is up, it steps aside
+  // (and comes back later if she hardly saw it).
+  const SETTLE_MS = 500; // the world must be clear this long before a pop shows
+  const HOLD_MS = 2900; // how long a pop stays before it flies to the Sticker Book
+  const AWAY_MS = 760;
+  let cur = null; // { el, def, at, timer }
+  let clearSince = null;
+  const blocked = () => {
+    const ui = game.ui;
+    if (!ui) return true;
+    return !!(ui.current || ui.dialogOpen || document.hidden ||
+      (game.container && game.container.classList.contains('sw-photo-mode')) ||
+      (ui.loadingEl && ui.loadingEl.classList.contains('sw-open')) ||
+      (ui.fader && ui.fader.classList.contains('sw-on')));
+  };
+  const finishPop = (pop) => {
+    clearTimeout(pop.timer);
+    if (pop.el) pop.el.remove();
+    if (cur === pop) {
+      cur = null;
+      showing = false;
+    }
+  };
+  const flyAway = (pop) => {
+    clearTimeout(pop.timer);
+    if (!pop.el) return finishPop(pop);
+    pop.el.classList.add('sw-away');
+    pop.timer = setTimeout(() => finishPop(pop), AWAY_MS);
+  };
   const showNext = () => {
     const ui = game.ui;
     if (showing || !queue.length || !ui) return;
     const def = queue.shift();
+    // already admired in the Sticker Book (she opened it while the pop was waiting)
+    const seen = game.profile.stickersSeen || {};
+    if (seen[def.id]) return showNext();
     showing = true;
     let el = null;
     try {
@@ -128,17 +163,38 @@ export function install(game) {
       ui.root.appendChild(el);
     } catch (err) {
       console.warn('[stickers] popup failed', err);
+      el = null;
       const bang = /[!?.]$/.test(def.name) ? '' : '!';
       ui.toast(`New sticker: ${def.name}${bang}`, { icon: def.icon || 'sticker', big: true, color: 'sun' });
     }
-    setTimeout(() => {
-      if (el) el.classList.add('sw-away');
-      setTimeout(() => {
-        if (el) el.remove();
-        showing = false;
-        showNext();
-      }, 760);
-    }, 2900);
+    game.audio.play('success');
+    if (game.player && game.mode === 'play') {
+      const p = game.player.position;
+      game.celebrate([p.x, p.y + 2, p.z], 'confetti', { quiet: true });
+    }
+    const pop = { el, def, at: performance.now(), timer: 0 };
+    cur = pop;
+    pop.timer = setTimeout(() => flyAway(pop), HOLD_MS);
+  };
+  /** Every frame: show the next pop when the world is clear; step aside when it is not. */
+  const pumpPops = () => {
+    const now = performance.now();
+    if (blocked()) {
+      clearSince = null;
+      if (cur && cur.el && !cur.el.classList.contains('sw-away')) {
+        const pop = cur;
+        if (now - pop.at < 1200) {
+          // she hardly saw it: take it down and show it again later
+          finishPop(pop);
+          queue.unshift(pop.def);
+        } else {
+          flyAway(pop);
+        }
+      }
+      return;
+    }
+    if (clearSince === null) clearSince = now;
+    if (!showing && queue.length && now - clearSince >= SETTLE_MS) showNext();
   };
 
   const all = () => [...reg.values()].map((d) => ({ id: d.id, name: d.name, hint: d.hint, icon: d.icon, earned: game.profile.stickers[d.id] || null }));
@@ -153,13 +209,9 @@ export function install(game) {
       game.saveProfile();
       // paint the picture now (not later, in the middle of whatever she is doing then)
       try { stickerCanvas(def.id, def); } catch { /* the pop falls back to a toast */ }
+      // the pop (with its jingle and confetti) shows as soon as the world is clear
       queue.push(def);
-      showNext();
-      game.audio.play('success');
-      if (game.player) {
-        const p = game.player.position;
-        game.celebrate([p.x, p.y + 2, p.z], 'confetti', { quiet: true });
-      }
+      pumpPops();
       game.events.emit('sticker:earned', { sticker: def });
       return true;
     },
@@ -248,6 +300,7 @@ export function install(game) {
   game.addSystem({
     name: 'stickers',
     update(dt) {
+      pumpPops(); // cheap: a few flags, so the settle clock is always current
       if (stargazing >= 0 && game.mode === 'play' && !game.paused && game.player) {
         const tod = game.timeOfDay;
         const dark = tod ? tod.night > 0.5 : true;

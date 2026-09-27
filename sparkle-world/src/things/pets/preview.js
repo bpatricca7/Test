@@ -1,70 +1,98 @@
 // A small live 3D preview for our panels (the adoption panel's spinning pet, the cooking
-// panel's finished dish). ONE extra WebGL canvas, created on first use and moved between
-// panels; it only renders while mounted in the page. Drag to spin. If WebGL is not
-// available it reports `failed` and the panels show a thumbnail instead.
+// panel's finished dish). It draws on the Avatar team's shared stage (getStage(): the one
+// extra WebGL renderer the Dress-Up Studio and the emote pictures use), so it never adds a
+// WebGL context of its own: mount() attaches the stage canvas to a panel element and puts our
+// pivot into stage.previewScene; unmount() gives both back. Only one panel is open at a time,
+// so the Studio and our panels never need the stage together. Drag to spin. If WebGL is not
+// available `failed` is true (after the first mount) and the panels show a thumbnail instead.
+// preview(game) itself is cheap: nothing touches WebGL until mount().
 
 import * as THREE from 'three';
 import { disposeObject } from '../../core/models.js';
+import { getStage } from '../../ui/dressup/stage.js';
+
+const FOV = 30;
 
 class Preview {
   constructor(game) {
     this.game = game;
-    this.failed = false;
+    this.stage = getStage();
     this.object = null;
     this.onFrame = null;
     this.spin = 0.7;
     this.yaw = 0;
     this.t = 0;
     this._drag = null;
-    this.canvas = document.createElement('canvas');
-    this.canvas.className = 'lf-preview';
-    this.canvas.style.touchAction = 'none';
-    try {
-      this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, alpha: true, antialias: true });
-      this.renderer.setClearColor(0x000000, 0);
-      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    } catch (err) {
-      console.warn('[life] preview renderer unavailable', err);
-      this.failed = true;
-      return;
-    }
-    this.scene = new THREE.Scene();
-    this.scene.add(new THREE.HemisphereLight(0xffffff, 0xe6d6ff, 2.1));
-    const key = new THREE.DirectionalLight(0xfff4ea, 2.0);
-    key.position.set(3, 5, 4);
-    const rim = new THREE.DirectionalLight(0xdfe9ff, 0.9);
-    rim.position.set(-4, 2, -3);
-    this.scene.add(key, rim);
-    this.camera = new THREE.PerspectiveCamera(30, 1, 0.05, 100);
+    this.host = null; // the element the stage canvas is attached to while we use it
+    this._camWas = null; // the stage camera's lens before we borrowed it
     this.pivot = new THREE.Group();
-    this.scene.add(this.pivot);
-    this.size = 0;
-    const c = this.canvas;
-    c.addEventListener('pointerdown', (e) => {
+    this.pivot.name = 'life-preview';
+    // where the camera sits for the current object (applied to the stage camera every frame)
+    this.cam = { pos: new THREE.Vector3(0, 0.5, 3), ty: 0.5, near: 0.05, far: 50 };
+    this._frame = (dt) => this.update(dt);
+    this._down = (e) => {
       this._drag = { x: e.clientX, yaw: this.yaw };
-      try { c.setPointerCapture(e.pointerId); } catch { /* ignore */ }
-    });
-    c.addEventListener('pointermove', (e) => {
+      try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+    };
+    this._moveDrag = (e) => {
       if (this._drag) this.yaw = this._drag.yaw + (e.clientX - this._drag.x) * 0.012;
-    });
-    const up = () => { this._drag = null; };
-    c.addEventListener('pointerup', up);
-    c.addEventListener('pointercancel', up);
+    };
+    this._up = () => { this._drag = null; };
   }
 
-  /** Put the canvas into a container at size x size CSS px. */
-  mount(container, size = 240) {
-    if (this.failed) return false;
-    if (this.canvas.parentNode !== container) container.appendChild(this.canvas);
-    if (size !== this.size) {
-      this.size = size;
-      this.renderer.setSize(size, size, true);
+  get failed() {
+    return this.stage.failed;
+  }
+
+  /** The stage canvas while it is ours, else null. */
+  get canvas() {
+    return this.host && this.stage.renderer ? this.stage.renderer.domElement : null;
+  }
+
+  /** Put the preview into a container (the stage canvas fills it and follows its size). */
+  mount(container) {
+    const stage = this.stage;
+    if (this.host && this.host !== container) this.unmount();
+    const canvas = stage.attach(container);
+    if (!canvas) return false;
+    if (this.host !== container) {
+      this.host = container;
+      const cam = stage.previewCamera;
+      this._camWas = { fov: cam.fov, near: cam.near, far: cam.far };
+      container.addEventListener('pointerdown', this._down);
+      container.addEventListener('pointermove', this._moveDrag);
+      container.addEventListener('pointerup', this._up);
+      container.addEventListener('pointercancel', this._up);
     }
+    if (this.pivot.parent !== stage.previewScene) stage.previewScene.add(this.pivot);
+    stage.onPreviewFrame = this._frame;
     return true;
   }
 
   unmount() {
-    if (this.canvas.parentNode) this.canvas.parentNode.removeChild(this.canvas);
+    const stage = this.stage;
+    const host = this.host;
+    this.host = null;
+    this._drag = null;
+    if (this.pivot.parent) this.pivot.parent.remove(this.pivot);
+    if (!host) return;
+    host.removeEventListener('pointerdown', this._down);
+    host.removeEventListener('pointermove', this._moveDrag);
+    host.removeEventListener('pointerup', this._up);
+    host.removeEventListener('pointercancel', this._up);
+    // only hand the stage back if it is still ours (never detach the Dress-Up Studio)
+    if (stage.attachedTo === host) {
+      if (stage.onPreviewFrame === this._frame) stage.onPreviewFrame = null;
+      stage.detach();
+      const cam = stage.previewCamera, was = this._camWas;
+      if (was) {
+        cam.fov = was.fov;
+        cam.near = was.near;
+        cam.far = was.far;
+        cam.updateProjectionMatrix();
+      }
+    }
+    this._camWas = null;
   }
 
   /**
@@ -72,7 +100,6 @@ class Preview {
    * spin (rad/s), yaw, dir: camera direction, zoom, lift (look-at height share) }
    */
   show(object, { onFrame = null, spin = 0.7, yaw = 0.5, dir = [0, 0.42, 1], zoom = 1, lift = 0.5 } = {}) {
-    if (this.failed) return;
     this.clear();
     this.object = object;
     this.onFrame = onFrame;
@@ -88,15 +115,13 @@ class Preview {
     object.position.y -= box.min.y;
     const size = box.getSize(new THREE.Vector3());
     const radius = Math.max(size.x, size.y, size.z) * 0.62 + 0.05;
-    const fov = THREE.MathUtils.degToRad(this.camera.fov);
-    const dist = (radius / Math.sin(fov / 2)) * zoom;
+    const dist = (radius / Math.sin(THREE.MathUtils.degToRad(FOV) / 2)) * zoom;
     const d = new THREE.Vector3(...dir).normalize().multiplyScalar(dist);
     const ty = size.y * lift;
-    this.camera.position.set(d.x, ty + d.y, d.z);
-    this.camera.near = dist / 40;
-    this.camera.far = dist * 5;
-    this.camera.updateProjectionMatrix();
-    this.camera.lookAt(0, ty, 0);
+    this.cam.pos.set(d.x, ty + d.y, d.z);
+    this.cam.ty = ty;
+    this.cam.near = dist / 40;
+    this.cam.far = dist * 5;
   }
 
   clear() {
@@ -108,8 +133,9 @@ class Preview {
     }
   }
 
+  /** Called by the stage (stage.onPreviewFrame) right before it draws previewScene. */
   update(dt) {
-    if (this.failed || !this.object || !this.canvas.isConnected || !this.canvas.offsetParent) return;
+    if (!this.host || !this.object) return;
     this.t += dt;
     if (!this._drag) this.yaw += this.spin * dt;
     this.pivot.rotation.y = this.yaw;
@@ -121,19 +147,25 @@ class Preview {
         this.onFrame = null;
       }
     }
-    this.renderer.render(this.scene, this.camera);
+    // the stage camera is shared with the Studio: set all of it every frame
+    const cam = this.stage.previewCamera, c = this.cam;
+    cam.fov = FOV;
+    cam.near = c.near;
+    cam.far = c.far;
+    cam.position.copy(c.pos);
+    cam.updateProjectionMatrix();
+    cam.lookAt(0, c.ty, 0);
   }
 }
 
 const previews = new WeakMap();
 
-/** The shared preview for this game (created on first use; renders from a small system). */
+/** The shared preview for this game (no WebGL until it is mounted). */
 export function preview(game) {
   let p = previews.get(game);
   if (!p) {
     p = new Preview(game);
     previews.set(game, p);
-    game.addSystem({ name: 'life-preview', update: (dt) => p.update(dt) });
   }
   return p;
 }

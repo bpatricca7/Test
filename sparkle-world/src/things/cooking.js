@@ -11,6 +11,10 @@ import { installBasket } from './cooking/basket.js';
 import { lifeIcon, basketAdd, basketCount } from './pets/kit.js';
 import { FOOD, foodIcon } from './food-models.js';
 
+const WARM_START = 6; // seconds of play before the recipe pictures start warming up
+const WARM_GAP = 0.6; // seconds between two warm-up pictures
+const WARM_STILL = 0.5; // seconds the view must be still before a warm-up picture renders
+
 /** Swap a panel's title icon for one of ours (core icons have no basket / paw / book). */
 function titleIcon(game, panel, name) {
   const wrap = game.ui.panelLayer.querySelector(`.sw-panel-wrap[data-panel="${panel}"] .sw-card-title`);
@@ -35,11 +39,37 @@ export function install(game) {
     add: (key, n = 1) => basketAdd(game, key, n),
   };
 
-  // warm up the recipe pictures in the background so the book opens with them ready
-  game.events.on('world:load', () => {
-    const keys = new Set();
-    for (const r of RECIPES) { keys.add(r.food); for (const s of r.steps) keys.add(s); }
-    for (const k of keys) foodIcon(game, k);
+  // Warm up the recipe pictures in the background so the book opens with them ready, gently:
+  // a few seconds into play, one picture at a time, only while the thumbnail queue is empty
+  // (the hotbar / Bag icons she can see always go first) and only while the view is still
+  // (she stands and the camera does not turn, or a panel is open), so a picture's render never
+  // shows as a hitch while she moves. The Basket and the Recipe Book still ask for their own
+  // pictures when they open; the thumbnail cache lives for the whole session.
+  const warm = [];
+  for (const r of RECIPES) for (const k of [r.food, ...r.steps]) if (!warm.includes(k)) warm.push(k);
+  let warmIn = WARM_START, stillT = 0, lastYaw = 0, lastPitch = 0;
+  game.events.on('world:load', () => { warmIn = Math.max(warmIn, WARM_START); });
+  game.addSystem({
+    name: 'cooking-warmup',
+    update(dt) {
+      if (!warm.length || game.mode !== 'play' || game.loading || !game.thumbs) return;
+      const pl = game.player, rig = game.cameraRig;
+      let still = true;
+      if (rig) {
+        still = Math.abs(rig.yaw - lastYaw) < 1e-3 && Math.abs(rig.pitch - lastPitch) < 1e-3;
+        lastYaw = rig.yaw;
+        lastPitch = rig.pitch;
+      }
+      const v = pl && pl.velocity;
+      if (v && (Math.hypot(v.x, v.z) > 0.2 || Math.abs(v.y) > 0.5 || pl.state === 'ride')) still = false;
+      stillT = still || game.paused ? stillT + dt : 0;
+      if ((warmIn -= dt) > 0 || stillT < WARM_STILL) return;
+      const th = game.thumbs;
+      if (th.queue && th.queue.length) { warmIn = WARM_GAP; return; }
+      while (warm.length && th.has('food:' + warm[0])) warm.shift();
+      if (warm.length) foodIcon(game, warm.shift());
+      warmIn = WARM_GAP;
+    },
   });
 
   if (game.debug) {

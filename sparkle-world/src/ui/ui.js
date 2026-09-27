@@ -26,6 +26,7 @@ export class UI {
     this.dialogOpen = false;
     this._toastQueue = [];
     this._toastCount = 0;
+    this._keyedToasts = new Map(); // toast key -> { timer, update } while it is up
     this._hintText = null;
     this._hintX = this._hintY = null;
     this._hintW = 0;
@@ -71,8 +72,25 @@ export class UI {
 
   // ---------- toasts & hint ----------
 
-  /** Bouncy message at the top. opts: { icon, color: 'pink'|'sun'|..., big, duration } */
+  /**
+   * Bouncy message at the top. opts: { icon, color: 'pink'|'sun'|..., big, duration, key }
+   * key: while a toast with the same key is up (or waiting), it is updated in place (new text,
+   * fresh timer) instead of stacking another one, e.g. "Gem 7 of 24!" after "Gem 6 of 24!".
+   */
   toast(text, opts = {}) {
+    if (opts.key) {
+      const waiting = this._toastQueue.find((q) => q.opts.key === opts.key);
+      if (waiting) {
+        waiting.text = text;
+        waiting.opts = opts;
+        return;
+      }
+      const live = this._keyedToasts.get(opts.key);
+      if (live) {
+        live.update(text, opts);
+        return;
+      }
+    }
     this._toastQueue.push({ text, opts });
     this._pumpToasts();
   }
@@ -83,18 +101,32 @@ export class UI {
       const t = this.el('div', 'sw-toast' + (opts.big ? ' sw-toast--big' : ''));
       if (opts.color) t.style.borderColor = `var(--sw-${opts.color})`;
       t.innerHTML = icon(opts.icon || (opts.big ? 'star' : 'sparkle'));
-      t.appendChild(this.el('span', '', text));
+      const label = this.el('span', '', text);
+      t.appendChild(label);
       this.toastLayer.appendChild(t);
       this._toastCount++;
-      const life = opts.duration || (opts.big ? TOAST_MS + 900 : TOAST_MS);
-      setTimeout(() => {
+      const life = (o) => o.duration || (o.big ? TOAST_MS + 900 : TOAST_MS);
+      const leave = () => {
+        if (opts.key && this._keyedToasts.get(opts.key) === entry) this._keyedToasts.delete(opts.key);
         t.classList.add('sw-leave');
         setTimeout(() => {
           t.remove();
           this._toastCount--;
           this._pumpToasts();
         }, 300);
-      }, life);
+      };
+      const entry = {
+        timer: setTimeout(leave, life(opts)),
+        update: (text2, opts2) => {
+          label.textContent = text2;
+          clearTimeout(entry.timer);
+          entry.timer = setTimeout(leave, life(opts2));
+          t.style.animation = 'none'; // pop again
+          void t.offsetWidth;
+          t.style.animation = '';
+        },
+      };
+      if (opts.key) this._keyedToasts.set(opts.key, entry);
     }
   }
 

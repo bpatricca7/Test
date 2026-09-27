@@ -59,7 +59,7 @@ export function furnitureDefs() {
     { key: 'crib', name: 'Baby Crib', category: 'bedroom', size: [1, 2, 2], colors: SW.bedding, build: (c) => M.crib(c),
       colliders: [[0, 0, 0, 1, 1.0, 2]], actions: ['sleep'], sleepPos: [0.5, 0.44, 1.0] },
     { key: 'pet_bed', name: 'Pet Bed', category: 'bedroom', size: [1, 1, 1], colors: SW.bedding, build: (c) => M.petBed(c),
-      colliders: 'none', actions: ['pet_bed'] },
+      colliders: 'none', actions: ['pet_bed'], petSpot: [0.5, 0.16, 0.5] },
     { key: 'wardrobe', name: 'Wardrobe', category: 'bedroom', size: [2, 2, 1], colors: SW.wood.slice(1).concat(SW.wood[0]), build: (c) => M.wardrobe(c),
       colliders: 'full', actions: ['wardrobe'] },
     { key: 'dresser', name: 'Dresser', category: 'bedroom', size: [2, 1, 1], colors: SW.wood, build: (c) => M.dresser(c),
