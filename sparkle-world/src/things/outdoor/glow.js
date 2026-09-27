@@ -25,6 +25,7 @@ function haloTexture() {
 }
 
 const mats = new Map();
+const matList = []; // [size, material] pairs, walked every frame without allocating
 /** Shared additive halo material of a given world size. */
 export function haloMaterial(size) {
   let m = mats.get(size);
@@ -42,6 +43,7 @@ export function haloMaterial(size) {
     m.name = 'outdoor|halo|' + size;
     m.userData.shared = true;
     mats.set(size, m);
+    matList.push(size, m);
   }
   return m;
 }
@@ -68,7 +70,8 @@ export function haloPoints(list, size = 0.6) {
 
 /** 0 by day .. 1 at night: halos fade in as it gets dark. */
 export function setNightGlow(night, flicker = 1) {
-  for (const [size, m] of mats) {
+  for (let i = 0; i < matList.length; i += 2) {
+    const size = matList[i], m = matList[i + 1];
     const base = size > 1.5 ? 0.18 + night * 0.62 : 0.1 + night * 0.8;
     m.opacity = Math.min(1, base * (size > 1.5 ? flicker : 1));
   }

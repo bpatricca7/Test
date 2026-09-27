@@ -390,7 +390,8 @@ export class ZipLines {
   /** Per-frame: shuttles, link sparkles, the ride. */
   update(dt) {
     const g = this.game;
-    for (const l of this.links) {
+    for (let i = 0; i < this.links.length; i++) {
+      const l = this.links[i];
       if (!l.shuttle) continue;
       const sh = l.shuttle;
       sh.t += dt;

@@ -570,7 +570,7 @@ function installMarshmallow(game, sfx) {
   function tick(now) {
     st.raf = 0;
     if (ui.current !== 'marshmallow') return;
-    const dt = Math.min(0.05, Math.max(0, (now - (st.last || now)) / 1000));
+    const dt = Math.min(0.1, Math.max(0, (now - (st.last || now)) / 1000));
     st.last = now;
     st.t += dt;
     if (st.phase === 'roast') {
@@ -875,7 +875,7 @@ function installMarshmallow(game, sfx) {
   });
 
   game.marshmallow = {
-    get state() { return { phase: st.phase, level: st.level, result: st.result }; },
+    get state() { return { phase: st.phase, level: st.level, result: st.result, done: st.done }; },
     roast: () => startRoast(),
     pull: () => pullOut(),
     setLevel(v) { st.level = v; },

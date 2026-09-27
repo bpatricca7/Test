@@ -33,6 +33,7 @@ export class Ladders {
     this.game = game;
     this.E = game.entities;
     this.list = new Set();
+    this.arr = []; // the same entities, iterated each frame without allocating
     this.auto = null;
     this._l = { x: 0, z: 0, tmp: tmpVec };
     this._d = { x: 0, z: 0 };
@@ -40,16 +41,20 @@ export class Ladders {
   }
 
   track(e) {
-    if (e.key === 'zipline_tower' || e.key === 'tree_platform') this.list.add(e);
+    if ((e.key === 'zipline_tower' || e.key === 'tree_platform') && !this.list.has(e)) {
+      this.list.add(e);
+      this.arr.push(e);
+    }
   }
 
   untrack(e) {
-    this.list.delete(e);
+    if (this.list.delete(e)) this.arr.splice(this.arr.indexOf(e), 1);
     if (this.auto && this.auto.e === e) this.auto = null;
   }
 
   clear() {
     this.list.clear();
+    this.arr.length = 0;
     this.auto = null;
   }
 
@@ -128,7 +133,8 @@ export class Ladders {
       this.auto.t += dt;
       if (this.auto.t > 8 || !this.E.byUid(this.auto.e.uid)) this.auto = null;
     }
-    for (const e of this.list) {
+    for (let i = 0; i < this.arr.length; i++) {
+      const e = this.arr[i];
       const z = this.zone(e);
       if (!z) continue;
       const pos = p.position;

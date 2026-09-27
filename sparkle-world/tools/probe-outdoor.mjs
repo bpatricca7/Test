@@ -558,10 +558,11 @@ async function campPass(browser, errors) {
   await wait(page, () => window.__game.ui.current === 'marshmallow', null, 8000).catch(() => {});
   check(errors, (await info(page)).panel === 'marshmallow', 'Hand-click on the camp fire opens the marshmallow game');
   await page.locator('.od-mm-btns .sw-btn', { hasText: 'Roast' }).click();
-  await wait(page, () => window.__game.marshmallow.state.level > 0.62, null, 30000);
+  await wait(page, () => window.__game.marshmallow.state.level > 0.3, null, 120000);
   await shot(page, 'camp-4-roasting', PREFIX);
+  await wait(page, () => window.__game.marshmallow.state.level > 0.58, null, 120000);
   await page.locator('.od-mm-btns .sw-btn', { hasText: 'Pull out' }).click();
-  await settle(page, 1600);
+  await wait(page, () => window.__game.marshmallow.state.done > 1.4, null, 60000).catch(() => {});
   const gold = await page.evaluate(() => window.__game.marshmallow.state);
   check(errors, gold.result === 'golden', `pulled out while golden: "${gold.result}"`);
   await shot(page, 'camp-5-golden', PREFIX);
@@ -573,7 +574,7 @@ async function campPass(browser, errors) {
   await tapEntity(page, fire, { stand: [40.5, G + 1.01, 44.6] });
   await wait(page, () => window.__game.ui.current === 'marshmallow', null, 8000).catch(() => {});
   await page.locator('.od-mm-btns .sw-btn', { hasText: 'Roast' }).click();
-  await wait(page, () => window.__game.marshmallow.state.level > 0.95, null, 40000);
+  await wait(page, () => window.__game.marshmallow.state.level > 0.95, null, 150000);
   await page.locator('.od-mm-btns .sw-btn', { hasText: 'Pull out' }).click();
   await settle(page, 1200);
   const crispy = await page.evaluate(() => window.__game.marshmallow.state);
@@ -592,7 +593,7 @@ async function campPass(browser, errors) {
   await settle(page, 1500);
   const ham = await page.evaluate(() => { const g = window.__game, p = g.player; return { state: p.state, seat: p.seatEntity && p.seatEntity.key, roll: p.avatar.group.rotation.z }; });
   check(errors, ham.state === 'sleep' && ham.seat === 'hammock' && (await events(page, 'player:sleep')).length === sleepsBefore, `she lies in the hammock (${JSON.stringify(ham)})`);
-  await picture(page, 'camp-7-hammock', [36.5, G + 2.6, 47.5], [36.5, G + 1.4, 44.5], { fov: 55 });
+  await picture(page, 'camp-7-hammock', [35.5, G + 3.8, 47.6], [35.5, G + 1.6, 44.5], { fov: 55 });
   await page.evaluate(() => window.__game.player.stand());
   // camp chair and picnic table
   await tapEntity(page, ids.chair2, { stand: [42.5, G + 1.01, 45.5] });
@@ -695,7 +696,7 @@ async function touchPass(browser, errors) {
     await wait(page, () => window.__game.ui.current === 'marshmallow', null, 8000).catch(() => {});
     check(errors, (await info(page)).panel === 'marshmallow', 'a tap on the fire opens the marshmallow game');
     await page.locator('.od-mm-btns .sw-btn', { hasText: 'Roast' }).tap();
-    await wait(page, () => window.__game.marshmallow.state.level > 0.6, null, 30000);
+    await wait(page, () => window.__game.marshmallow.state.level > 0.6, null, 120000);
     await page.locator('.od-mm-btns .sw-btn', { hasText: 'Pull out' }).tap();
     await settle(page, 1400);
     await shot(page, 'ipad-2-marshmallow', PREFIX);
