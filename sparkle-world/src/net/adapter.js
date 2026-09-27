@@ -45,6 +45,35 @@ export class GameAdapter {
     game.events.on('avatar:changed', dropLook);
     game.events.on('outfit:changed', dropLook);
     game.events.on('profile:changed', dropLook);
+    // a visiting friend's own gems: the ones she found in this host's world stay found when
+    // she comes back (else a rejoin would hand out their coins again)
+    this._hostWorld = null;
+    game.events.on('gem:collect', () => {
+      if (this.role === 'guest' && this._hostWorld && game._isShared?.()) this._rememberGems();
+    });
+  }
+
+  /** profile.net.gems[host world] = indices of the gems she found there (8 worlds kept). */
+  _rememberGems() {
+    const g = this.game, list = g.gems && typeof g.gems.list === 'function' ? g.gems.list() : null;
+    if (!list) return;
+    const found = [];
+    list.forEach((gm, i) => { if (gm && gm.found) found.push(i); });
+    const p = g.profile;
+    const net = (p.net = p.net && typeof p.net === 'object' ? p.net : {});
+    const all = net.gems && typeof net.gems === 'object' ? { ...net.gems } : {};
+    delete all[this._hostWorld];
+    all[this._hostWorld] = found;
+    const keys = Object.keys(all);
+    for (let k = 0; k < keys.length - 8; k++) delete all[keys[k]];
+    net.gems = all;
+    if (typeof g.saveProfile === 'function') g.saveProfile();
+  }
+
+  _foundGems(worldKey) {
+    const all = this.game.profile && this.game.profile.net && this.game.profile.net.gems;
+    const v = all && typeof all === 'object' ? all[worldKey] : null;
+    return new Set(Array.isArray(v) ? v.filter((i) => Number.isInteger(i)) : []);
   }
 
   // ---------- lifecycle ----------
@@ -182,6 +211,20 @@ export class GameAdapter {
     return this.game.registry.blocks.props.solid[id] === 1;
   }
 
+  /** Dry garden soil getting wet (a watering can): helping, never "changing her things". */
+  isWatering(before, after) {
+    if (this._dryId === undefined) this._dryId = this.game.registry.blocks.idOf('farmland');
+    return before === this._dryId && after === this._wetId() && this._dryId > 0;
+  }
+
+  /** A treat or dish standing on a table (Hand: eat it): anyone may eat it. */
+  isEdible(uid) {
+    const E = this.game.entities;
+    const e = E && E.byUid(uid);
+    const def = e && e.def;
+    return !!def && def.placeOn === 'table' && Array.isArray(def.actions) && def.actions.includes('eat_food');
+  }
+
   occupied(i) {
     const E = this.game.entities;
     return !!E && (E.occupied.has(i) || E.flats.has(i));
@@ -217,6 +260,7 @@ export class GameAdapter {
     delete json.player;
     delete json.hotbar;
     delete json.thumbnail;
+    if (json.systems) delete json.systems.netOwners; // the host's own bookkeeping
     json.blocks = '';
     json.actors = this.actors.handles();
     return { json, rle: g.world.encodeBlocksBytes() };
@@ -228,6 +272,8 @@ export class GameAdapter {
     if (!json || !json.size || !(rle instanceof Uint8Array)) return false;
     const E = g.entities;
     const prev = E ? { base: E.uidBase, next: E.nextUid } : null;
+    // which host world this is, for her found gems (id and birthday: two worlds never share)
+    this._hostWorld = typeof json.id === 'string' ? `${json.id}@${json.createdAt | 0}`.slice(0, 80) : null;
     this._cleanSnapshot(json);
     const ok = await g.enterSharedWorld(json, rle);
     if (!ok) return false;
@@ -239,7 +285,7 @@ export class GameAdapter {
     return true;
   }
 
-  /** Names shown here pass the sanitizer; gems are her own copy (none found yet). */
+  /** Names shown here pass the sanitizer; gems are her own copy (the ones she found here). */
   _cleanSnapshot(json) {
     const s = json.systems || {};
     if (Array.isArray(s.pets)) {
@@ -252,7 +298,8 @@ export class GameAdapter {
     const fl = s.friends && Array.isArray(s.friends.list) ? s.friends.list : null;
     if (fl) for (const f of fl) if (f && typeof f === 'object') f.name = this.sanitizeName(f.name, 'Friend');
     if (s.collectibles && Array.isArray(s.collectibles.gems)) {
-      s.collectibles.gems = s.collectibles.gems.map((gm) => (Array.isArray(gm) ? [gm[0], gm[1], gm[2], gm[3], 0] : gm));
+      const mine = this._hostWorld ? this._foundGems(this._hostWorld) : new Set();
+      s.collectibles.gems = s.collectibles.gems.map((gm, i) => (Array.isArray(gm) ? [gm[0], gm[1], gm[2], gm[3], mine.has(i) ? 1 : 0] : gm));
     }
     if (typeof json.name === 'string') {
       const m = /^(.*)'s World$/.exec(json.name);
@@ -518,7 +565,9 @@ export class GameAdapter {
     const p = pl && g.mode === 'play' ? [pl.position.x, pl.position.y, pl.position.z, pl.yaw] : null;
     const st = pl ? ST[pl.state] || 'w' : 'w';
     const prof = g.profile || {};
-    const raw = prof.playerName || (prof.look && prof.look.name) || '';
+    let raw = prof.playerName || (prof.look && prof.look.name) || '';
+    // the game's own starting name is not hers until she says so (others see "Friend")
+    if (!prof.nameSet && raw === ((g.defaultLook && g.defaultLook.name) || 'Lily')) raw = '';
     if (raw !== this._nmRaw) {
       this._nmRaw = raw;
       this._nm = this.sanitizeName(raw, 'Friend');

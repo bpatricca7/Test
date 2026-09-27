@@ -162,6 +162,7 @@ async function main() {
       await pg.evaluate((n) => {
         const g = window.__game;
         g.profile.playerName = n;
+        g.profile.nameSet = true;
         g.profile.look.name = n;
         // storage spy: a guest must never store the host's world
         const orig = g.store.saveWorld.bind(g.store);

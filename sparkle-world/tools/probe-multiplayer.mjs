@@ -362,7 +362,7 @@ test('AT4', 'careful friends: Rosie opens Lily’s door (allowed) and tries to r
   log(`  the brick came back on Rosie's page ${((Date.now() - tRm) / 1000).toFixed(2)} s after her tap`);
   check(back, 'Lily’s brick came back on Rosie’s page');
   const ts = await game(rosie, () => window.__toasts.slice(window.__game.__t0));
-  check(ts.filter((t) => /That's Lily's! Ask her first/.test(t)).length === 1, `one "That's Lily's! Ask her first." toast (${JSON.stringify(ts)})`);
+  check(ts.filter((t) => /That's someone else's! Build your own next to it/.test(t)).length === 1, `one "That's someone else's! Build your own next to it." toast (${JSON.stringify(ts)})`);
   await settle(rosie.page, 200);
   await shot(rosie, 'rosie-protected');
   await game(rosie, () => window.__game.setTool('build'));

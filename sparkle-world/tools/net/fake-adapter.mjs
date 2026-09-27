@@ -34,6 +34,8 @@ export const FURNITURE = {
   door: { size: [1, 2, 1], data: { open: false } },
   lamp: { size: [1, 1, 1], data: { on: false } },
   cup: { size: [1, 1, 1], placeOn: 'table' },
+  cupcake: { size: [1, 1, 1], placeOn: 'table', edible: true },
+  fence: { size: [1, 1, 1], data: { conn: 0 } },
   easel: { size: [1, 2, 1], data: { art: '' } },
 };
 export const CROPS = ['carrot', 'tomato', 'strawberry'];
@@ -182,6 +184,15 @@ export class FakeAdapter {
 
   isSolid(id) {
     return !!SOLID[id];
+  }
+
+  isWatering(before, after) {
+    return before === B.farmland && after === B.farmland_wet;
+  }
+
+  isEdible(uid) {
+    const e = this.ents.get(uid);
+    return !!e && !!FURNITURE[e.key]?.edible;
   }
 
   occupied(i) {

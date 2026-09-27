@@ -21,7 +21,7 @@ import { WsTransport } from '../src/net/ws-transport.js';
 import { NetSession } from '../src/net/session.js';
 import { Journal, buildPayload } from '../src/net/journal.js';
 import { TokenBucket, StateBox, Pacer, NetError, jsonBytes, realClock } from '../src/net/transport.js';
-import { RoomRegistry } from '../server/rooms.mjs';
+import { RoomRegistry, tooDeep, jsonSize } from '../server/rooms.mjs';
 import * as codec from '../src/net/codec.js';
 import * as proto from '../src/net/protocol.js';
 import * as wardrobe from '../src/player/wardrobe-data.js';
@@ -384,6 +384,7 @@ async function unitTests() {
 
   await roomTransportTests();
   await sessionTests();
+  await safetyTests();
 }
 
 // ---------- RoomTransport against a contract-faithful fake room ----------
@@ -586,6 +587,248 @@ async function sessionTests() {
   });
 }
 
+// ---------- review fixes: the relay's gate, identity, ownership, kind messages ----------
+
+/** A host (auto-admit unless told) and live guests over the loop hub. */
+async function hostAndGuests(seed, names, { autoAdmit = true, env = {}, hubOpts = {} } = {}) {
+  const { clock, hub } = simWorld(seed, hubOpts);
+  const ctx = { clock, rand: mulberry32(seed), transport: (uid) => new LoopTransport({ hub, clock, uid }) };
+  const H = makeSession(ctx, 'Lily', 'uH', { options: { autoAdmit }, env });
+  const h = track(H.session.host());
+  await runUntil(clock, () => h.done);
+  assert(h.value === true, 'hosting');
+  const gs = [];
+  for (const [nm, uid] of names) gs.push(await guestJoins(clock, ctx, H, nm, uid));
+  return { clock, hub, ctx, H, gs };
+}
+
+async function guestJoins(clock, ctx, H, nm, uid, opts = {}) {
+  const G = makeSession(ctx, nm, uid, { guest: true, ...opts });
+  await simAwait(clock, G.session.join(H.session.code));
+  assert(await runUntil(clock, () => G.session.state === 'g.live'), nm + ' live');
+  return G;
+}
+
+async function act(clock, players, ms = 2500) {
+  for (const p of players) p.session.frameEnd();
+  await clock.advance(ms);
+}
+
+async function safetyTests() {
+  await test('rooms: a deeply nested broadcast is refused (never thrown); sizes are safe', () => {
+    const reg = new RoomRegistry({});
+    const got = [];
+    assert(reg.join('sw1-heart-star-moon-cat', 'A', (f) => got.push(f), {}).ok, 'joins');
+    let deep = [];
+    for (let k = 0; k < 8000; k++) deep = [deep];
+    eq(reg.handle('sw1-heart-star-moon-cat', 'A', { t: 'b', topic: 'x', data: deep }).code, 'bad_frame', '8,000 levels refused');
+    assert(tooDeep(deep) && !tooDeep({ a: [1, { b: [2] }] }) && !tooDeep('x'), 'depth check');
+    assert(jsonSize(deep) === -1 || jsonSize(deep) > 0, 'jsonSize never throws');
+    eq(got.filter((f) => f.t === 'b').length, 0, 'nothing relayed');
+  });
+
+  await test('rooms: the gate (Railway) - join order, public keys until let in, no messages, same-device host, rooms per address', () => {
+    const reg = new RoomRegistry({ gate: true });
+    const R = 'sw1-heart-star-moon-cat';
+    const box = { H: [], G: [], X: [], H2: [] };
+    const sink = (k) => (f) => box[k].push(f);
+    reg.join(R, 'H', sink('H'), { by: 'dH' });
+    reg.handle(R, 'H', { t: 's', patch: { v: 1, r: 'h', hs: 5, nm: 'Lily', lk: 'abc', ep: 'e1', adm: [], no: [] } });
+    reg.join(R, 'G', sink('G'), { by: 'dG' });
+    const w = box.G[0];
+    const hE = w.j.find((e) => e.peer === 'H');
+    eq(hE.state, { v: 1, r: 'h', hs: 5, ep: 'e1', adm: [], no: [] }, 'a newcomer sees only the public keys');
+    assert(hE.at < w.j.find((e) => e.peer === 'G').at, 'join order in every entry');
+    reg.handle(R, 'G', { t: 's', patch: { r: 'g', kn: 1, nm: 'Mia', lk: 'x' } });
+    eq(box.H.at(-1).u[0][1], { r: 'g', kn: 1, nm: 'Mia', lk: 'x' }, 'the host sees the knock in full');
+    reg.handle(R, 'H', { t: 'b', topic: 'sw.op', data: { s: 1 } });
+    assert(!box.G.some((f) => f.t === 'b'), 'no messages before she is let in');
+    reg.handle(R, 'G', { t: 'b', topic: 'sw.op', data: { s: 2 } });
+    assert(!box.H.some((f) => f.t === 'b' && f.data.s === 2), 'nobody hears a member who is not let in');
+    reg.handle(R, 'H', { t: 's', patch: { nm: 'Lilly' } });
+    assert(!box.G.some((f) => f.u && f.u[0][1].nm), 'private keys stay private');
+    reg.handle(R, 'H', { t: 's', patch: { adm: [['G', 1]] } });
+    eq(box.G.at(-1).j.find((e) => e.peer === 'H').state.nm, 'Lilly', 'let in: everything, at once');
+    reg.handle(R, 'H', { t: 'b', topic: 'sw.op', data: { s: 3 } });
+    assert(box.G.some((f) => f.t === 'b' && f.data.s === 3), 'messages reach her now');
+    // a later "host" with hs 0 and its own adm is not the room's host
+    reg.join(R, 'X', sink('X'), { by: 'dX' });
+    reg.handle(R, 'X', { t: 's', patch: { r: 'h', hs: 0, ep: 'e9', adm: [['X', 1], ['G', 1]] } });
+    reg.handle(R, 'X', { t: 'b', topic: 'sw.op', data: { s: 4 } });
+    assert(!box.G.some((f) => f.t === 'b' && f.data.s === 4), 'a later pretend host reaches nobody');
+    assert(!box.X.some((f) => (f.j || []).some((e) => e.state.nm) || (f.u || []).some((u) => u[1].nm)), 'and sees no names');
+    // the host's own reloaded page (the same device stamp) is the host as well
+    reg.join(R, 'H2', sink('H2'), { by: 'dH' });
+    reg.handle(R, 'H2', { t: 's', patch: { r: 'h', hs: 9, ep: 'e2', adm: [] } });
+    assert(box.H2.some((f) => (f.j || []).some((e) => e.peer === 'G' && e.state.nm === 'Mia')), 'her reloaded page sees in full');
+    reg.handle(R, 'H2', { t: 'b', topic: 'sw.op', data: { s: 5 } });
+    assert(box.G.some((f) => f.t === 'b' && f.data.s === 5), 'her reloaded page reaches her friends');
+    // sent home: public keys again
+    reg.handle(R, 'H', { t: 's', patch: { adm: [] } });
+    eq(box.G.at(-1).j.find((e) => e.peer === 'H').state.nm, undefined, 'sent home: names hidden again');
+    // rooms one address may make
+    const r2 = new RoomRegistry({ roomsPerOwner: 2 });
+    assert(r2.join('a1', 'p1', () => {}, { owner: 'ip' }).ok && r2.join('a2', 'p2', () => {}, { owner: 'ip' }).ok, 'two rooms');
+    eq(r2.join('a3', 'p3', () => {}, { owner: 'ip' }).code, 'limit', 'a third room from the same address');
+    assert(r2.join('a1', 'p4', () => {}, { owner: 'ip' }).ok, 'joining a room that is there is fine');
+    r2.leave('a2', 'p2');
+    assert(r2.join('a3', 'p3', () => {}, { owner: 'ip' }).ok, 'a closed room frees its place');
+  });
+
+  await test('identity: a presence uid proves nothing; guests follow the host who was there first', async () => {
+    const W = simWorld(22, { presenceDelayMs: [5, 30], delayMs: [5, 40] });
+    const c2 = { clock: W.clock, rand: mulberry32(22), transport: (uid) => new LoopTransport({ hub: W.hub, clock: W.clock, uid }) };
+    const Ho = makeSession(c2, 'Lily', 'uH');
+    const knocks = [];
+    Ho.session.on('knock', (k) => knocks.push(k));
+    const h = track(Ho.session.host());
+    await runUntil(W.clock, () => h.done);
+    const code = Ho.session.code;
+    const Mia = makeSession(c2, 'Mia', 'u1', { guest: true });
+    await simAwait(W.clock, Mia.session.join(code));
+    await runUntil(W.clock, () => knocks.length === 1);
+    Ho.session.admit(knocks[0].peer);
+    assert(await runUntil(W.clock, () => Mia.session.state === 'g.live'), 'Mia live');
+    // a stranger on another device writes Mia's uid (and the host's) in her own presence
+    const fake = new LoopTransport({ hub: W.hub, clock: W.clock, uid: 'uStranger' });
+    await simAwait(W.clock, fake.open(proto.roomNameFor(code)));
+    const hostState = Ho.session.transport.myState();
+    fake.setState({ v: proto.PROTOCOL, pv: 'test', r: 'g', kn: 1, uid: 'u1', nm: 'Mia', ep: hostState.ep });
+    fake.flushState();
+    assert(await runUntil(W.clock, () => knocks.length === 2), 'a knock card for her (not let in as Mia)');
+    eq(knocks[1].uid, 'uStranger', 'the card has the room stamp, not her claim');
+    Ho.session.deny(knocks[1].peer);
+    // a pretend host who came later (hs 0) does not get the next friend
+    const pretend = new LoopTransport({ hub: W.hub, clock: W.clock, uid: 'uPretend' });
+    await simAwait(W.clock, pretend.open(proto.roomNameFor(code)));
+    pretend.setState({ v: proto.PROTOCOL, pv: 'test', r: 'h', hs: 0, ep: 'zzzz', nm: 'Lily', adm: [], no: [] });
+    pretend.flushState();
+    await W.clock.advance(500);
+    const Zoe = makeSession(c2, 'Zoe', 'u2', { guest: true });
+    await simAwait(W.clock, Zoe.session.join(code));
+    await runUntil(W.clock, () => knocks.length === 3, 20000);
+    eq(Zoe.session.guestCore.hostPeer, Ho.session.transport.selfId(), 'Zoe knocks at the real host');
+    await fake.close();
+    await pretend.close();
+    W.hub.close();
+    return `${knocks.length} knock cards`;
+  });
+
+  await test('careful friends: tapping makes nothing hers; watering and eating are fine; fence joins are the host\'s', async () => {
+    const { clock, hub, H, gs } = await hostAndGuests(23, [['Mia', 'u1']]);
+    const [G] = gs;
+    const HA = H.adapter, GA = G.adapter;
+    const lamp = HA.userPlace('lamp', 10, 5, 10);
+    const table = HA.userPlace('table', 14, 5, 14);
+    const cake = HA.userPlace('cupcake', 14, 6, 14);
+    const fence = HA.userPlace('fence', 18, 5, 18);
+    HA.userTill(12, 4, 12);
+    assert(lamp && table && cake && fence, 'the host built a lamp, a table with a cupcake and a fence');
+    await act(clock, [H, G]);
+    // a tap on her lamp, then Remove: still hers
+    GA.userData(lamp, { on: true });
+    await act(clock, [G]);
+    eq(HA.ents.get(lamp).data.on, true, 'the friend switched the lamp on');
+    GA.userRemove(lamp);
+    await act(clock, [G], 3000);
+    assert(HA.ents.has(lamp), 'but cannot take it away after tapping it');
+    eq(H.session.hostCore.stats.rejectCodes['e-:2'], 1, 'refused as protected');
+    // watering the host's garden, eating her cupcake
+    GA.userWater(12, 4, 12);
+    GA.userRemove(cake);
+    await act(clock, [G], 3000);
+    eq(HA.cells[HA.idx(12, 4, 12)], B.farmland_wet, 'watering the host\'s garden is fine');
+    assert(!HA.ents.has(cake), 'eating the host\'s cupcake is fine');
+    // ... and watering made nothing hers
+    GA.userCells([[12, 4, 12, B.air]]);
+    await act(clock, [G], 3000);
+    eq(HA.cells[HA.idx(12, 4, 12)], B.farmland_wet, 'the wet soil stays the host\'s');
+    // her page's guess of a fence join is not taken
+    GA.userData(fence, { conn: 5 });
+    await act(clock, [G], 3000);
+    eq(HA.ents.get(fence).data.conn, 0, 'the host keeps her fence joins');
+    assert(await runUntil(clock, () => GA.ents.get(fence)?.data.conn === 0, 5000), 'and the friend gets them back');
+    hub.close();
+  });
+
+  await test('ownership follows the friend: a new friend in a freed seat owns nothing; a resumed host keeps owners', async () => {
+    let saved = null;
+    const { clock, hub, ctx, H, gs } = await hostAndGuests(24, [['Mia', 'u1'], ['Zoe', 'u2']]);
+    const [Mia, Zoe] = gs;
+    const chair = Mia.adapter.userPlace('chair', 6, 5, 6);
+    const stool = Zoe.adapter.userPlace('chair', 8, 5, 6);
+    await act(clock, [Mia, Zoe], 3000);
+    assert(H.adapter.ents.has(chair) && H.adapter.ents.has(stool), 'Mia and Zoe each built a chair');
+    // Mia goes; her seat is freed after 60 s; June takes it
+    await simAwait(clock, Mia.session.abandon());
+    await clock.advance(65000);
+    const June = await guestJoins(clock, ctx, H, 'June', 'u3');
+    eq(June.session.guestCore.seat, 1, 'June got seat 1');
+    June.adapter.userRemove(chair);
+    await act(clock, [June], 3000);
+    assert(H.adapter.ents.has(chair), 'June cannot remove Mia\'s chair');
+    eq(H.session.undoSeat(1), 0, 'Undo building for June has nothing of Mia\'s');
+    // the host's page reloads: owners come back from her saved world
+    saved = { code: H.session.code.join('-'), ...H.session.hostCore.exportAuthors() };
+    const code = H.session.code;
+    await simAwait(clock, H.session.abandon());
+    const H2 = makeSession(ctx, 'Lily', 'uH', { adapter: H.adapter, options: { autoAdmit: true }, env: { loadAuthors: () => saved } });
+    const h2 = track(H2.session.host({ code, resume: true, uids: ['u2', 'u3'] }));
+    await runUntil(clock, () => h2.done);
+    assert(h2.value, 'hosting again');
+    assert(await runUntil(clock, () => Zoe.session.state === 'g.live' && Zoe.session.guestCore.epoch === H2.session.epoch, 30000), 'Zoe follows');
+    Zoe.adapter.userRemove(stool);
+    await act(clock, [Zoe], 3000);
+    assert(!H.adapter.ents.has(stool), 'Zoe can still take back her own chair after the host\'s reload');
+    hub.close();
+  });
+
+  await test('kind words: Undo building tells the friend; an unanswered knock is not "Not now"; a wrong code keeps her where she is', async () => {
+    let exits = 0;
+    const env = { exitToTitle: () => { exits++; } };
+    const W = simWorld(25, { presenceDelayMs: [5, 30], delayMs: [5, 40] });
+    const ctx = { clock: W.clock, rand: mulberry32(25), transport: (uid) => new LoopTransport({ hub: W.hub, clock: W.clock, uid }) };
+    const H = makeSession(ctx, 'Lily', 'uH');
+    const knocks = [], gone = [];
+    H.session.on('knock', (k) => knocks.push(k));
+    H.session.on('knock-gone', (k) => gone.push(k));
+    const h = track(H.session.host());
+    await runUntil(W.clock, () => h.done);
+    const code = H.session.code;
+    // nobody answers for 90 s
+    const Rosie = makeSession(ctx, 'Rosie', 'u1', { guest: true, env });
+    await simAwait(W.clock, Rosie.session.join(code));
+    await runUntil(W.clock, () => Rosie.session.state === 'idle', 100000);
+    eq(Rosie.messages, ['no_answer'], 'no answer: its own message');
+    eq(exits, 0, 'she stays where she was (keypad)');
+    assert(await runUntil(W.clock, () => gone.length === 1), 'the host hears the knock went away');
+    assert(gone[0].waited >= 89000 && gone[0].name === 'Rosie', 'after a long wait (' + gone[0].waited + ')');
+    // wrong pictures
+    const X = makeSession(ctx, 'Xan', 'u9', { guest: true, env });
+    const other = code.slice();
+    other[0] = other[0] === 'gem' ? 'cat' : 'gem';
+    await simAwait(W.clock, X.session.join(other));
+    await runUntil(W.clock, () => X.session.state === 'idle', 20000);
+    eq([X.messages, exits], [['no_host'], 0], 'wrong pictures: the message, and she stays on the keypad');
+    // Undo building: she hears it kindly
+    const Mia = makeSession(ctx, 'Mia', 'u2', { guest: true, env });
+    await simAwait(W.clock, Mia.session.join(code));
+    await runUntil(W.clock, () => knocks.length === 2);
+    H.session.admit(knocks[1].peer);
+    assert(await runUntil(W.clock, () => Mia.session.state === 'g.live'), 'Mia live');
+    Mia.adapter.userCells([[3, 5, 3, B.planks], [4, 5, 3, B.planks]]);
+    await act(W.clock, [Mia], 3000);
+    eq(H.session.undoSeat(1), 1, 'one group undone');
+    assert(await runUntil(W.clock, () => Mia.adapter.toasts.some(([t]) => /tidied up/.test(t)), 5000), 'Mia hears "Lily tidied up..."');
+    assert(await runUntil(W.clock, () => Mia.adapter.cells[Mia.adapter.idx(3, 5, 3)] === B.air, 5000), 'her blocks went back');
+    // sent home from inside the world: back to the title
+    H.session.kick(Mia.session.transport.selfId());
+    await runUntil(W.clock, () => Mia.session.state === 'idle');
+    eq([Mia.messages, exits], [['kicked'], 1], 'sent home from the world: title');
+    W.hub.close();
+  });
+}
+
 // =====================================================================================
 // Property test: 1 host + 3 guests, seeded random actions, faults; convergence + exactly once
 // =====================================================================================
@@ -668,11 +911,11 @@ function get(port, p, headers = {}) {
 }
 
 /** A raw WebSocket client (Node 22 global WebSocket; `ws` when headers are needed). */
-async function rawWs(port, room, secret, headers) {
+async function rawWs(port, room, secret, headers, device = null) {
   const { WebSocket: WS } = await import('ws');
   return new Promise((resolve) => {
     const frames = [];
-    const ws = new WS(`ws://127.0.0.1:${port}/r/${room}?s=${secret}`, { headers });
+    const ws = new WS(`ws://127.0.0.1:${port}/r/${room}?s=${secret}` + (device ? `&d=${device}` : ''), { headers });
     const box = { ws, frames, closed: null, error: null };
     ws.on('message', (d) => frames.push(JSON.parse(d.toString())));
     ws.on('close', (code) => (box.closed = code));
@@ -761,6 +1004,10 @@ async function serverTests() {
       eq(fifth.closed, 4001, 'fifth player refused (room full)');
       assert(fifth.frames.some((f) => f.t === 'e' && f.code === 'full'), 'full error frame');
       const [a, b] = socks;
+      // the relay is gated: a becomes the room's host and lets b in (b then hears messages)
+      const bPeer = b.frames[0].self;
+      a.ws.send(JSON.stringify({ t: 's', patch: { r: 'h', adm: [[bPeer, 1]] } }));
+      await waitFor(() => b.frames.some((f) => f.t === 'p' && !f.reset && f.j && f.j.some((e) => e.state.r === 'h')));
       // message size limit
       a.ws.send(JSON.stringify({ t: 'b', topic: 'sw.op', data: { x: 'y'.repeat(3950) } }));
       a.ws.send(JSON.stringify({ t: 'b', topic: 'sw.op', data: { x: 'ok' } }));
@@ -775,9 +1022,11 @@ async function serverTests() {
       a.ws.send(JSON.stringify({ t: 's', patch: { b1: 'x'.repeat(1000), b2: 'x'.repeat(1000), b3: 'x'.repeat(1000), b4: 'x'.repeat(1000), b5: 'x'.repeat(200) } }));
       await waitFor(() => a.frames.filter((f) => f.t === 'e').length >= 2);
       eq(a.frames.filter((f) => f.t === 'e').map((f) => f.code), ['too_big', 'too_big'], 'presence too big');
-      a.ws.send(JSON.stringify({ t: 's', patch: { r: 'h', n: 1 } }));
+      a.ws.send(JSON.stringify({ t: 's', patch: { n: 1 } }));
       await waitFor(() => b.frames.some((f) => f.t === 'p' && f.u));
-      eq(b.frames.find((f) => f.t === 'p' && f.u).u[0][1], { r: 'h', n: 1 }, 'presence relayed');
+      eq(b.frames.find((f) => f.t === 'p' && f.u).u[0][1], { n: 1 }, 'presence relayed');
+      assert(!socks[2].frames.some((f) => f.t === 'p' && f.u && 'n' in f.u[0][1]), 'not to a player who is not let in');
+      assert(!socks[2].frames.some((f) => f.t === 'b'), 'who hears no messages either');
       // rate limit: 300 messages at once, about 80 get through
       const before = b.frames.length;
       for (let k = 0; k < 300; k++) a.ws.send(JSON.stringify({ t: 'b', topic: 'sw.op', data: { k } }));
@@ -823,8 +1072,8 @@ async function serverTests() {
     try {
       const room = 'sw1-sun-sun-moon-cat';
       const ra = await a.open(room);
-      await b.open(room);
-      a.setState({ r: 'h', n: 1 });
+      const rb = await b.open(room);
+      a.setState({ r: 'h', n: 1, adm: [[rb.self, 1]] });
       await waitFor(() => b.peers().some((p) => p.id === ra.self && p.state.n === 1));
       a.partition(1500);
       await sleep(300);
@@ -851,6 +1100,111 @@ async function serverTests() {
   });
 }
 
+// ---------- the review's server attacks ----------
+
+async function serverSafetyTests() {
+  await test('server: a 16 KB nested frame never takes the relay down; every answer has security headers', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'sw-'));
+    const page = path.join(dir, 'page.html');
+    writeFileSync(page, '<!doctype html><title>Sparkle World</title>');
+    const srv = await startServerProcess({ SW_DIST: page });
+    try {
+      const room = 'sw1-heart-star-moon-cat';
+      const h = await rawWs(srv.port, room, 'hostsecret0000000000');
+      const k = await rawWs(srv.port, room, 'kidsecret00000000000');
+      await waitFor(() => h.frames.length > 0 && k.frames.length > 0);
+      const bad = await rawWs(srv.port, 'attacker-room', 'attackersecret000000');
+      await waitFor(() => bad.frames.length > 0);
+      const depth = 7990;
+      bad.ws.send('{"t":"b","topic":"x","data":' + '['.repeat(depth) + ']'.repeat(depth) + '}');
+      await waitFor(() => bad.frames.some((f) => f.t === 'e'), 3000);
+      eq(bad.frames.find((f) => f.t === 'e').code, 'bad_frame', 'the frame is refused');
+      await sleep(300);
+      eq(srv.child.exitCode, null, 'the server is still running');
+      eq((await get(srv.port, '/healthz')).status, 200, '/healthz still answers');
+      eq([h.closed, k.closed], [null, null], 'the other room is still open');
+      h.ws.send(JSON.stringify({ t: 's', patch: { r: 'h', n: 1 } }));
+      await waitFor(() => h.frames.some((f) => f.t === 'p' && !f.reset && f.j), 3000);
+      const home = await get(srv.port, '/');
+      assert(/frame-ancestors 'none'/.test(home.headers['content-security-policy'] || ''), 'CSP frame-ancestors on the page');
+      assert(/connect-src 'self'/.test(home.headers['content-security-policy'] || ''), 'CSP connect-src on the page');
+      eq(home.headers['x-frame-options'], 'DENY', 'X-Frame-Options');
+      for (const [p, st] of [['/nope', 404], ['/r/sw1-heart-star-moon-cat', 426], ['/healthz', 200]]) {
+        const r = await get(srv.port, p);
+        eq(r.status, st, p);
+        assert(r.headers['x-content-type-options'] === 'nosniff' && r.headers['content-security-policy'], p + ' has security headers');
+      }
+      for (const s of [h, k, bad]) s.ws.terminate();
+      assert(!/hostsecret|kidsecret|attacker|\[\[\[/.test(srv.output()), 'no payloads or secrets logged');
+    } finally {
+      await stopServer(srv);
+    }
+  });
+
+  await test('server: stamps come from the device secret; X-Forwarded-For cannot dodge the per-IP limits; new connections are paced', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'sw-'));
+    const page = path.join(dir, 'page.html');
+    writeFileSync(page, '<!doctype html><title>Sparkle World</title>');
+    const srv = await startServerProcess({ SW_DIST: page, SW_MAX_PER_IP: '4', SW_ROOMS_PER_IP: '3', SW_CONNECT_BURST: '40' });
+    const socks = [];
+    const open = async (...a) => {
+      const s = await rawWs(srv.port, ...a);
+      socks.push(s);
+      return s;
+    };
+    try {
+      const R = 'sw1-heart-star-moon-cat';
+      const a = await open(R, 'aaaa-secret-0000000', {}, 'device-one-secret-000000');
+      const b = await open(R, 'bbbb-secret-0000000', {}, 'device-one-secret-000000');
+      const c = await open(R, 'cccc-secret-0000000', {}, 'device-two-secret-000000');
+      await waitFor(() => c.frames.length > 0);
+      const stamps = c.frames[0].j.map((e) => [e.peer, e.by, e.at]);
+      const byOf = (s) => stamps.find((x) => x[0] === s.frames[0].self)[1];
+      assert(byOf(a) && byOf(a) === byOf(b), 'the same device: the same stamp');
+      assert(byOf(c) && byOf(c) !== byOf(a), 'another device: another stamp');
+      assert(stamps.every((x, k) => k === 0 || x[2] > stamps[k - 1][2]), 'join order');
+      for (const s of socks.splice(0)) s.ws.close(1000);
+      await sleep(300);
+      const other = await open('sw1-cat-cat-cat-cat', 'dddd-secret-0000000', {}, 'device-one-secret-000000');
+      await waitFor(() => other.frames.length > 0);
+      assert(other.frames[0].j[0].by !== byOf(a), 'in another room the stamp is another (no tracking across rooms)');
+      const plain = await open('sw1-cat-cat-cat-sun', 'eeee-secret-0000000');
+      await waitFor(() => plain.frames.length > 0);
+      eq(plain.frames[0].j[0].by, null, 'no device secret: no stamp');
+      for (const s of socks.splice(0)) s.ws.close(1000);
+      await sleep(300);
+      // per-IP connections: writing X-Forwarded-For does not make a new address
+      for (let k = 0; k < 7; k++) await open('sw1-sun-sun-sun-sun', `xff-secret-${k}-0000000`, { 'X-Forwarded-For': `10.0.${k}.1, 127.0.0.1` });
+      await waitFor(() => socks.filter((s) => s.closed === 4029).length >= 3, 3000);
+      eq(socks.filter((s) => s.closed === 4029).length, 3, 'the 5th, 6th and 7th are refused (4 per IP)');
+      for (const s of socks.splice(0)) s.ws.close(1000);
+      await sleep(300);
+      for (let k = 0; k < 6; k++) await open('sw1-sun-sun-sun-moon', `xfp-secret-${k}-0000000`, { 'X-Forwarded-For': `6.6.${k}.6, 203.0.113.9` });
+      await waitFor(() => socks.filter((s) => s.closed === 4029).length >= 2, 3000);
+      eq(socks.filter((s) => s.closed === 4029).length, 2, 'the right-most public entry counts (one address)');
+      for (const s of socks.splice(0)) s.ws.close(1000);
+      await sleep(300);
+      // rooms one address may make at a time
+      for (let k = 0; k < 4; k++) await open(`room-made-${k}`, `room-secret-${k}-0000000`);
+      await waitFor(() => socks[3].closed !== null, 3000);
+      eq(socks.map((s) => s.closed), [null, null, null, 4029], 'three rooms, the fourth is refused');
+      for (const s of socks.splice(0)) s.ws.close(1000);
+      await sleep(300);
+      // new connections per address: a burst of 40, then 1 a second
+      let refused = 0;
+      for (let k = 0; k < 45; k++) {
+        const s = await rawWs(srv.port, 'sw1-gem-gem-gem-gem', `fast-secret-${k}-000000`);
+        if (s.error === 429) refused++;
+        else s.ws.terminate();
+      }
+      assert(refused >= 3, 'connecting over and over is slowed down (' + refused + ' refused with 429)');
+    } finally {
+      for (const s of socks) try { s.ws.terminate(); } catch {}
+      await stopServer(srv);
+    }
+  });
+}
+
 // ---------- the same property test through the real server ----------
 
 async function wsPropertyTests() {
@@ -858,7 +1212,7 @@ async function wsPropertyTests() {
   const dir = mkdtempSync(path.join(tmpdir(), 'sw-'));
   const page = path.join(dir, 'page.html');
   writeFileSync(page, '<!doctype html><title>Sparkle World</title>');
-  const srv = await startServerProcess({ SW_DIST: page, SW_MAX_PER_IP: '50' });
+  const srv = await startServerProcess({ SW_DIST: page, SW_MAX_PER_IP: '50', SW_ROOMS_PER_IP: '50', SW_CONNECT_BURST: '100000' });
   const seeds = +(args.wsseeds || 1);
   try {
     for (let k = 0; k < seeds; k++) {
@@ -881,6 +1235,7 @@ const t0 = Date.now();
 if (!ONLY || ONLY.has('unit')) await unitTests();
 if (!ONLY || ONLY.has('prop')) await propertyTests();
 if (!ONLY || ONLY.has('server')) await serverTests();
+if (!ONLY || ONLY.has('server')) await serverSafetyTests();
 if (!ONLY || ONLY.has('ws')) await wsPropertyTests();
 console.log(`\n${passed} passed, ${failures} failed in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
 process.exit(failures ? 1 : 0);

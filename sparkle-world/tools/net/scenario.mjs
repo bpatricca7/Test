@@ -255,7 +255,9 @@ export async function scenario(seed, steps, net, { quietMs = 10000, maxQuietMs =
       case 'restartHost': {
         if (H.session.state !== 'h.live' || step > steps * 0.9) { did = false; break; }
         counters.restarts++;
-        const uids = alive().map((g) => g.uid);
+        // what the real game keeps for "Keep playing": the room stamps of the friends here
+        // (on the Railway relay the server makes them from each device's secret)
+        const uids = alive().map((g) => g.session.transport?.peers?.().find((p) => p.self)?.uid || g.uid);
         await waitP(H.session.abandon());
         H.adapter.undoStack = [];
         H = hostMaker(H.adapter);

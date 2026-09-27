@@ -112,6 +112,7 @@ export const MESSAGES = Object.freeze({
   no_host: 'Nobody is playing with those pictures. Check them with your friend!',
   version: 'Your game needs a refresh!',
   denied: "{host} can't play right now. Maybe later!",
+  no_answer: "{host} didn't hear the knock. Knock again?",
   full: "{host}'s world is full of friends right now!",
   snapshot_failed: "The world got lost on the way. Let's try again!",
   reconnecting: 'Reconnecting…',
@@ -119,13 +120,18 @@ export const MESSAGES = Object.freeze({
   host_gone: '{host} went home. Her world is saved at her house!',
   ended: '{host} went home. Her world is saved at her house!',
   kicked: "Time to go home! Let's play in your own world.",
-  paused: '{host} paused building for a moment.',
+  paused: '{host} paused building.',
+  building_paused: '{host} paused building.',
+  building_on: 'You can build again!',
   reject_1: 'Oops! Someone else changed that.',
-  reject_2: "That's {host}'s! Ask her first.",
-  reject_3: '{host} paused building for a moment.',
+  reject_2: "That's someone else's! Build your own next to it.",
+  reject_3: '{host} paused building.',
   reject_4: 'Slow down, sparkle builder!',
   reject_5: 'Oops! Someone else changed that.',
   prefab_fizzled: "The magic fizzled! Something of {host}'s is in the way.",
+  prefab_rest: 'The magic needs a little rest! Try again in a moment.',
+  prefab_changed: 'Oops! Something changed there.',
+  tidied: "{host} tidied up. Let's build something new together!",
   pet_owner: "That's {host}'s pet! Ask her to help.",
   backup_failed: "Your world couldn't make a safety copy, so friends can't come in right now.",
   fatal: 'Playing together stopped.',
@@ -351,6 +357,14 @@ export function parseCtl(d) {
     if (!isStr(d.e, 16) || !isStr(d.to, 64) || !['kick', 'end', 'deny'].includes(d.why)) return null;
     return { k: 'bye', e: d.e, to: d.to, why: d.why };
   }
+  if (d.k === 'tidy') {
+    // the host undid this friend's building: a kind word and a few sparkle spots
+    if (!isStr(d.e, 16) || !isStr(d.to, 64) || !isIntIn(d.n, 0, 2 ** 31)) return null;
+    const at = Array.isArray(d.at)
+      ? d.at.slice(0, 8).filter((c) => Array.isArray(c) && c.length === 3 && c.every((v) => isIntIn(v, -64, 4096)))
+      : [];
+    return { k: 'tidy', e: d.e, to: d.to, n: d.n, at };
+  }
   return { k: d.k };
 }
 
@@ -363,7 +377,6 @@ export function readHostState(s) {
     pv: typeof s.pv === 'string' ? s.pv : '',
     ep: isStr(s.ep, 16) ? s.ep : '',
     hs: typeof s.hs === 'number' ? s.hs : 0,
-    uid: typeof s.uid === 'string' ? s.uid : null,
     nm: typeof s.nm === 'string' ? s.nm.slice(0, 24) : '',
     hd: isIntIn(s.hd, 0, 2 ** 31) ? s.hd : 0,
     fl: isIntIn(s.fl, 0, 2 ** 31) ? s.fl : 0,

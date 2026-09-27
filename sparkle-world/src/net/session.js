@@ -10,7 +10,10 @@
 //   transport  () => NetTransport (a fresh one per session; see transport.js createTransport)
 //   build      the build id (__SW_BUILD__), presence `pv`
 //   env        optional game callbacks, all may be async:
-//     prepareHost()          save the world + the ".before" backup -> true | {ok:false}
+//     prepareHost({resume})  save the world; make the ".before" backup unless a good one is
+//                            there already (a resumed session never replaces it) -> true | {ok:false}
+//     loadAuthors(code)      resume: who owned what when the page went away (NetHost
+//                            exportAuthors(), saved with the world), or null
 //     saveHost({final})      local save while hosting (every 15 s) and at the end
 //     saveLastHost(info)     profile.net.lastHost = {code, at, uids}
 //     saveLastJoin(info)     profile.net.lastJoin = {code, hostName, at}
@@ -93,7 +96,7 @@ export class NetSession {
       if (typeof this.env.prepareHost === 'function') {
         let ok = false;
         try {
-          ok = await this.env.prepareHost();
+          ok = await this.env.prepareHost({ resume: !!resume });
         } catch (err) {
           console.warn('[net] backup failed', err);
         }
@@ -106,13 +109,21 @@ export class NetSession {
         await this._openWithRetry(t, roomNameFor(pick));
         const hs = this.clock.now();
         const local = this.adapter.local();
-        t.setState({ v: PROTOCOL, pv: this.build, r: 'h', hs, uid: id.uid ?? null, nm: cleanText(local.nm, 12), ep: '' });
+        t.setState({ v: PROTOCOL, pv: this.build, r: 'h', hs, nm: cleanText(local.nm, 12), ep: '' });
         t.flushState();
         await this._sleep(C.HOST_PICK_WAIT);
         if (this.state !== 'h.opening') return this._abandon(t);
         const me = t.selfId();
-        const rival = t.peers().some((p) => !p.self && p.state.r === 'h' && p.state.end !== 1 &&
-          (!(typeof p.state.hs === 'number') || p.state.hs < hs || (p.state.hs === hs && p.id < me)));
+        const mine = t.peers().find((p) => p.self);
+        // another host was here first (the room's join order when it gives one; else presence
+        // hs): pick other pictures. My own page from before a reload (the same room stamp) is
+        // not a rival: it is on its way out.
+        const rival = t.peers().some((p) => {
+          if (p.self || p.state.r !== 'h' || p.state.end === 1) return false;
+          if (mine && mine.uid && p.uid === mine.uid) return false;
+          if (mine && typeof mine.at === 'number' && typeof p.at === 'number') return p.at < mine.at;
+          return !(typeof p.state.hs === 'number') || p.state.hs < hs || (p.state.hs === hs && p.id < me);
+        });
         if (!rival) {
           words = pick;
           break;
@@ -126,9 +137,17 @@ export class NetSession {
       if (this.state !== 'h.opening') return this._abandon(t);
       this.transport = t;
       this.code = words;
+      let authors = null;
+      if (resume && typeof this.env.loadAuthors === 'function') {
+        try {
+          authors = await this.env.loadAuthors(words);
+        } catch {
+          authors = null;
+        }
+      }
       this.hostCore = new NetHost({
         session: this, transport: t, adapter: this.adapter, clock: this.clock, rand: this.rand, build: this.build,
-        uid: id.uid ?? null, options: { ...this.options, resumeUids: resume ? uids : [] },
+        uid: id.uid ?? null, options: { ...this.options, resumeUids: resume ? uids : [], resumed: !!resume, authors },
       });
       this.hostCore.start();
       this._watch(t);
@@ -194,9 +213,13 @@ export class NetSession {
     this._setState(state);
   }
 
-  /** Called by NetGuest when the session is over for her (kicked, host gone, ...). */
+  /**
+   * Called by NetGuest when the session is over for her (kicked, host gone, ...). Before she
+   * was ever in the host's world (wrong pictures, "Not now", no answer) she stays right where
+   * she is (the keypad keeps her pictures); after, she goes back to the title.
+   */
   _guestEnded(code, vars) {
-    this.leave({ message: code, vars });
+    this.leave({ message: code, vars, quiet: !this.guestCore?.entered });
   }
 
   // ---------- leaving ----------

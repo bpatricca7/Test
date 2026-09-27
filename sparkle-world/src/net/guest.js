@@ -29,6 +29,8 @@ export class NetGuest {
     this.zc = (o.compression === undefined ? true : !!o.compression) && canDeflate() ? 1 : 0;
 
     this.phase = 'finding'; // finding | knocking | loading | live | waiting | ended
+    this.entered = false; // she is in the host's world (the first snapshot went in)
+    this.buildRule = null; // the host's "Friends can build" as last seen (null: not yet)
     this.findStart = this.clock.now();
     this.knockStart = 0;
     this.hostPeer = null;
@@ -150,7 +152,11 @@ export class NetGuest {
       if (now - this.findStart > C.FIND_HOST) return this._end('no_host');
       return;
     }
-    ok.sort((a, b) => (a.state.hs || 0) - (b.state.hs || 0) || (a.id < b.id ? -1 : 1));
+    // the room's host is the one who was there first: the room's own join order (`at`, which
+    // nobody can fake) decides; presence hs (written by each peer itself) only breaks ties
+    // where the room gives no order (claude.ai)
+    const order = (p) => (typeof p.at === 'number' ? p.at : Infinity);
+    ok.sort((a, b) => order(a) - order(b) || (a.state.hs || 0) - (b.state.hs || 0) || (a.id < b.id ? -1 : 1));
     this._knock(ok[0], now);
   }
 
@@ -164,7 +170,7 @@ export class NetGuest {
     this.hostMissingSince = null;
     const local = this.a.local();
     this.t.setState({
-      v: PROTOCOL, pv: this.build, r: 'g', uid: this.uid, nm: cleanText(local.nm, 12), lk: cleanText(local.lk, 200),
+      v: PROTOCOL, pv: this.build, r: 'g', uid: null, nm: cleanText(local.nm, 12), lk: cleanText(local.lk, 200),
       kn: 1, zc: this.zc, ep: this.epoch, ob: null, nd: null, rx: null, hs: null, hd: null, end: null,
     });
     this.t.flushState();
@@ -185,6 +191,7 @@ export class NetGuest {
     const hs = entry ? readHostState(entry.state) : null;
     if (!hs) {
       // host peer gone: a reload shows up as a new peer with the same uid and a new epoch
+      // (uid = the room's stamp: only her own device can have it)
       const again = this.hostUid
         ? this.t.peers().find((p) => !p.self && p.uid === this.hostUid && p.state.r === 'h' && p.state.end !== 1 && p.state.ep !== this.epoch)
         : null;
@@ -214,7 +221,8 @@ export class NetGuest {
       if (no) return this._end(WHY_TO_MESSAGE[no[1]] || 'denied');
       const adm = hs.adm.find((x) => x[0] === me);
       if (adm) return this._admitted(adm[1], now);
-      if (now - this.knockStart > C.KNOCK_GIVEUP) return this._end('denied');
+      // nobody answered (she did not see the card): not the same as "Not now"
+      if (now - this.knockStart > C.KNOCK_GIVEUP) return this._end('no_answer');
       return;
     }
     const no = hs.no.find((x) => x[0] === me);
@@ -236,6 +244,14 @@ export class NetGuest {
       const away = hs.zz === 1;
       if (away && this.phase === 'live') this._setPhase('waiting');
       else if (!away && this.phase === 'waiting') this._setPhase('live');
+      // "Friends can build" switched: tell her (not the first time she sees it)
+      const build = hs.ru[0];
+      if (this.buildRule !== null && build !== this.buildRule) {
+        const text = messageText(build ? 'building_on' : 'building_paused', { host: this.hostName });
+        if (text) this.a.toast(text, build ? 'build' : 'nope');
+        this.session.emit('rules', { build, mine: hs.ru[1] });
+      }
+      this.buildRule = build;
     }
     if (hs.rs.includes(me) && !this.rx && this.live) this._resync('rs');
   }
@@ -524,7 +540,10 @@ export class NetGuest {
     const now = this.clock.now();
     if (now - this.lastRejectToast < C.REJECT_TOAST_GAP) return;
     this.lastRejectToast = now;
-    const text = kind === 'pf' ? messageText('prefab_fizzled', { host: this.hostName }) : messageText('reject_' + code, { host: this.hostName });
+    // a Magic Build says why it fizzled: someone's things in the way (2), too soon after the
+    // last one (4), building paused (3), or the place changed (1, 5)
+    const pf = { 2: 'prefab_fizzled', 3: 'reject_3', 4: 'prefab_rest' }[code] || 'prefab_changed';
+    const text = messageText(kind === 'pf' ? pf : 'reject_' + code, { host: this.hostName });
     if (text) this.a.toast(text, 'nope');
   }
 
@@ -588,8 +607,9 @@ export class NetGuest {
       this.t.setState({ rx: null, nd: null });
       this.t.flushState();
       for (const s of this.buffer.keys()) if (s <= this.ap) this.buffer.delete(s);
-      const first = this.phase === 'loading';
-      if (first || this.resyncing) {
+      const first = this.phase === 'loading' && !this.resyncing;
+      this.entered = true;
+      if (this.phase === 'loading' || this.resyncing) {
         this.resyncing = false;
         this._setPhase(this.host?.zz === 1 ? 'waiting' : 'live');
       }
@@ -904,9 +924,18 @@ export class NetGuest {
   _onCtl(data, from) {
     if (from !== this.hostPeer) return;
     const c = parseCtl(data);
-    if (!c || c.k !== 'bye' || c.e !== this.epoch) return;
+    if (!c || (c.k !== 'bye' && c.k !== 'tidy') || c.e !== this.epoch) return;
     const me = this.t.selfId();
     if (c.to !== '*' && c.to !== me) return;
+    if (c.k === 'tidy') {
+      // the host undid her building: a kind word (never blame) and a poof where it went back
+      if (!this.live) return;
+      const text = messageText('tidied', { host: this.hostName });
+      if (text) this.a.toast(text, 'sparkle');
+      for (const [x, y, z] of c.at) this.a.celebrate('sparkle', x + 0.5, y + 0.5, z + 0.5);
+      this.session.emit('tidied', { n: c.n });
+      return;
+    }
     if (c.why === 'kick') this._end('kicked');
     else if (c.why === 'deny') this._end('denied');
     else if (c.why === 'end') this._end('ended');

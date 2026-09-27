@@ -1,7 +1,14 @@
 // NetHost (docs/MULTIPLAYER.md §5, §8): the authority. Seats and knocks, outbox processing
-// with validation, careful-friends protection and rate limits, the author map and per-seat
+// with validation, careful-friends protection and rate limits, the author map and per-friend
 // logs (Undo building), the journal flush into numbered batches, catch-up fixes, the snapshot
 // carousel, the host presence, hashes and the 15 s local saves.
+//
+// Who owns what is keyed by the FRIEND, not her seat (Addendum B): an owner key is 'u:' + her
+// room stamp (uid) when she has one, else 'p:' + her peer id. A friend who takes a freed seat
+// starts with nothing; a friend who comes back (same stamp) keeps what she built, also after
+// the host's page reloads (exportAuthors / importAuthors, saved with the host's world). Only
+// making or removing a thing changes its owner: tapping a lamp, a door swinging, a fence
+// joining its new neighbour or a railing opening for a bridge never do.
 //
 // It reaches the network only through NetTransport and the game only through GameAdapter.
 
@@ -14,6 +21,8 @@ import { unpackB, blockMix, blockHashOf, frameSnapshot, splitForJson, canDeflate
 import { TokenBucket, jsonBytes } from './transport.js';
 
 const ANY = new Set(ANY_FIELDS);
+/** Entity data only the host works out (a guest's page's guess is dropped, see 'ed'). */
+const DERIVED = ['conn'];
 const FIX_KEEP = 10000; // re-send the same fix for up to 10 s while she asks for the same gap
 const SEAT_LOG_BYTES = 2 * 1024 * 1024;
 
@@ -27,7 +36,8 @@ export class NetHost {
    * @param {() => number} ctx.rand
    * @param {string} ctx.build      presence `pv`
    * @param {string|null} ctx.uid   my identity().uid
-   * @param {object} [ctx.options]  { autoAdmit, compression, resumeUids, trackExec, journalMaxKeys, fixMax }
+   * @param {object} [ctx.options]  { autoAdmit, compression, resumeUids, trackExec, journalMaxKeys, fixMax,
+   *                                   authors (exportAuthors() data to start from: a resumed session) }
    */
   constructor(ctx) {
     this.session = ctx.session;
@@ -42,6 +52,8 @@ export class NetHost {
     this.compression = o.compression === undefined ? canDeflate() : !!o.compression && canDeflate();
     this.resumeUids = new Set(o.resumeUids || []);
     this.trackExec = !!o.trackExec;
+    this.resumed = !!o.resumed;
+    this._authorsIn = o.authors || null;
 
     this.epoch = null;
     this.hs = 0;
@@ -50,7 +62,7 @@ export class NetHost {
     this.blockHash = 0;
     this.live = false;
 
-    this.seats = [null, null, null, null]; // 1..3: { peer, uid, admittedAt, missingSince }
+    this.seats = [null, null, null, null]; // 1..3: { peer, uid, owner, admittedAt, missingSince }
     this.adm = new Map(); // peer -> seat
     this.no = new Map(); // peer -> why (insertion ordered)
     this.banned = new Set(); // uids
@@ -61,9 +73,9 @@ export class NetHost {
     this.flushRejects = [];
     this.recentRejects = []; // { at, seat, lseq, code }
     this.rules = { build: 1, mine: 0 };
+    // key -> owner: 0 = the host, else a friend's owner key (see _ownerOf); no entry = nobody's
     this.author = { cells: new Map(), ents: new Map(), plants: new Map() };
-    this.seatLog = [null, [], [], []];
-    this.seatLogBytes = [0, 0, 0, 0];
+    this.logs = new Map(); // owner key -> { log: [group], bytes } (Undo building)
     this.buckets = [null, null, null, null];
     this.pfAt = [-Infinity, -Infinity, -Infinity, -Infinity];
     this.zAt = -Infinity;
@@ -82,6 +94,7 @@ export class NetHost {
     this.peerMap = new Map();
     this.execSeat = null;
     this.execPeer = null;
+    this.execOwner = null;
     this.group = null;
     this.lastFlushAt = -Infinity;
     this.lastHashAt = 0;
@@ -120,12 +133,14 @@ export class NetHost {
     this.size = { sx, sy, sz, n: sx * sy * sz, layer: sx * sz };
     this.blockHash = blockHashOf((i) => this.a.getCell(i), this.size.n);
     this.a.attach('host', this.hooks);
+    if (this._authorsIn) this.importAuthors(this._authorsIn);
+    this._authorsIn = null;
     this.live = true;
     this.lastHashAt = now;
     this.lastSaveAt = now;
     const local = this.a.local();
     this.t.setState({
-      v: PROTOCOL, pv: this.build, r: 'h', uid: this.uid, ep: this.epoch, hs: this.hs,
+      v: PROTOCOL, pv: this.build, r: 'h', uid: null, ep: this.epoch, hs: this.hs,
       nm: cleanText(local.nm, 12), lk: cleanText(local.lk, 200), hd: 0, fl: 0, ak: [], adm: [], no: [], rs: [], ru: [1, 0],
       end: null, kn: null, ob: null, nd: null, rx: null,
     });
@@ -177,11 +192,12 @@ export class NetHost {
     }
     // peers that left: forget their refusals (so a new knock is judged fresh) and knocks
     for (const peer of Array.from(this.no.keys())) if (!m.has(peer)) this.no.delete(peer);
-    for (const peer of Array.from(this.knocks.keys())) {
+    for (const [peer, info] of Array.from(this.knocks)) {
       const p = m.get(peer);
       if (!p || p.state.kn !== 1) {
         this.knocks.delete(peer);
-        this.session.emit('knock-gone', { peer });
+        // waited: how long her card was up (a long wait = she gave up knocking)
+        this.session.emit('knock-gone', { peer, name: info.name, waited: now - info.at });
       }
     }
     for (const peer of Array.from(this.rs)) {
@@ -240,7 +256,7 @@ export class NetHost {
     }
     this.no.delete(peer);
     this.adm.set(peer, seat);
-    this.seats[seat] = { peer, uid, admittedAt: this.clock.now(), missingSince: null };
+    this.seats[seat] = { peer, uid, owner: this._ownerOf(uid, peer), admittedAt: this.clock.now(), missingSince: null };
     if (uid) this.seatedUids.set(uid, seat);
     this.lastLseq.set(peer, 0);
     this.acks[seat] = 0;
@@ -272,6 +288,17 @@ export class NetHost {
     this._refuse(peer, NO.KICK);
     this.t.send('ctl', { k: 'bye', e: this.epoch, to: peer, why: 'kick' }, PRIO.ctl);
     this.session.emit('players', { reason: 'kick', peer, seat });
+  }
+
+  /** The owner key of a friend: her room stamp when she has one (it comes back with her). */
+  _ownerOf(uid, peer) {
+    return uid ? 'u:' + uid : 'p:' + peer;
+  }
+
+  _logOf(owner) {
+    let l = this.logs.get(owner);
+    if (!l) this.logs.set(owner, (l = { log: [], bytes: 0 }));
+    return l;
   }
 
   setRules({ build, mine } = {}) {
@@ -356,13 +383,15 @@ export class NetHost {
     this.stats.executedKinds[e[1]] = (this.stats.executedKinds[e[1]] || 0) + 1;
     this.execSeat = seat;
     this.execPeer = peer;
+    this.execOwner = this.seats[seat]?.owner ?? this._ownerOf(null, peer);
+    const owner = this.execOwner;
     this.group = { lseq, kind: e[1], cells: new Map(), ents: new Map(), plants: new Map() };
     const s = this.session;
     s.remoteApplying = true;
     s.noHistory = true;
     let code = 0;
     try {
-      code = this._run(seat, e, now);
+      code = this._run(seat, owner, e, now);
     } catch (err) {
       console.error('[net] guest op failed', err);
       code = REJECT.INVALID;
@@ -371,8 +400,9 @@ export class NetHost {
       s.noHistory = false;
       this.execSeat = null;
       this.execPeer = null;
+      this.execOwner = null;
     }
-    this._closeGroup(seat);
+    this._closeGroup(owner);
     if (code) {
       this.stats.rejected++;
       const key = e[1] + ':' + code;
@@ -388,19 +418,19 @@ export class NetHost {
     return (y * sz + z) * sx + x;
   }
 
-  _free(i, seat) {
+  _free(i, owner) {
     const a = this.author.cells.get(i);
-    if (a === seat) return true;
+    if (a === owner) return true;
     if (a === undefined) return this.a.isFree(this.a.getCell(i));
     return false;
   }
 
-  _ownEnt(uid, seat) {
-    return this.author.ents.get(uid) === seat;
+  _ownEnt(uid, owner) {
+    return this.author.ents.get(uid) === owner;
   }
 
   /** Validate and apply one outbox entry. Returns a rejection code (0 = fine). */
-  _run(seat, e, now) {
+  _run(seat, owner, e, now) {
     const a = this.a;
     const j = this.journal;
     const R = this.rules;
@@ -433,7 +463,8 @@ export class NetHost {
             code ||= REJECT.CONFLICT;
             continue;
           }
-          if (!R.mine && before !== 0 && !this._free(i, seat)) {
+          // watering anyone's garden is helping, like harvesting (and changes no owner)
+          if (!R.mine && before !== 0 && !this._free(i, owner) && !a.isWatering?.(before, after)) {
             code ||= REJECT.PROTECTED;
             continue;
           }
@@ -466,8 +497,9 @@ export class NetHost {
         if (!R.build) return REJECT.PAUSED;
         if (!a.entityRecord(uid)) return 0; // already gone: what she wanted
         if (!R.mine) {
-          if (!this._ownEnt(uid, seat)) return REJECT.PROTECTED;
-          for (const r of a.ridersOf(uid)) if (!this._ownEnt(r, seat)) return REJECT.PROTECTED;
+          // a treat on a table is there to be eaten, by anyone
+          if (!this._ownEnt(uid, owner) && !a.isEdible?.(uid)) return REJECT.PROTECTED;
+          for (const r of a.ridersOf(uid)) if (!this._ownEnt(r, owner) && !a.isEdible?.(r)) return REJECT.PROTECTED;
         }
         return a.removeEntity(uid) ? 0 : REJECT.CONFLICT;
       }
@@ -481,17 +513,29 @@ export class NetHost {
         if (!rec) return REJECT.CONFLICT;
         if (rec[5] === rotA) return 0;
         if (rec[5] !== rotB) return REJECT.CONFLICT;
-        if (!R.mine && !this._ownEnt(uid, seat)) return REJECT.PROTECTED;
+        if (!R.mine && !this._ownEnt(uid, owner)) return REJECT.PROTECTED;
         if (!a.canPlaceEntity(rec[1], rec[2], rec[3], rec[4], rotA, uid)) return REJECT.CONFLICT;
         return a.rotateEntity(uid, rotA) ? 0 : REJECT.CONFLICT;
       }
       case 'ed': {
-        const [, , uid, patch] = e;
+        const [, , uid, raw] = e;
         if (!isIntIn(uid, 1, 2 ** 31)) return REJECT.INVALID;
-        j.touchEnt(uid);
+        j.touchEnt(uid); // (so she always gets the host's record back, also when nothing changes)
         if (!a.entityRecord(uid)) return REJECT.CONFLICT;
-        if (!isPlainData(patch, C.ENTITY_DATA_DEPTH) || jsonBytes(patch) > C.ENTITY_DATA_BYTES) return REJECT.INVALID;
-        if (!R.mine && !this._ownEnt(uid, seat)) {
+        if (!isPlainData(raw, C.ENTITY_DATA_DEPTH) || jsonBytes(raw) > C.ENTITY_DATA_BYTES) return REJECT.INVALID;
+        // derived fields are the host's to work out: a fence joins its neighbours here when a
+        // block or piece next to it changes (her own page's guess is not taken)
+        let patch = raw;
+        for (const k of DERIVED) {
+          if (k in patch) {
+            if (patch === raw) patch = { ...raw };
+            delete patch[k];
+          }
+        }
+        let keys = 0;
+        for (const k in patch) keys++;
+        if (keys === 0) return 0;
+        if (!R.mine && !this._ownEnt(uid, owner)) {
           for (const k in patch) if (!ANY.has(k)) return REJECT.PROTECTED;
         }
         return a.patchEntity(uid, patch) ? 0 : REJECT.CONFLICT;
@@ -515,7 +559,7 @@ export class NetHost {
           return a.addPlant(crop, x, y, z) ? 0 : REJECT.CONFLICT;
         }
         if (!pl || pl[0] !== crop) return REJECT.CONFLICT;
-        if (!R.mine && this.author.plants.get(i) !== seat) return REJECT.PROTECTED;
+        if (!R.mine && this.author.plants.get(i) !== owner) return REJECT.PROTECTED;
         return a.removePlant(i) ? 0 : REJECT.CONFLICT;
       }
       case 'pf': {
@@ -528,9 +572,9 @@ export class NetHost {
           : (diff) => {
             const cells = diff?.cells || [];
             for (let k = 0; k < cells.length; k += 3) {
-              if (cells[k + 1] !== cells[k + 2] && cells[k + 1] !== 0 && !this._free(cells[k], seat)) return false;
+              if (cells[k + 1] !== cells[k + 2] && cells[k + 1] !== 0 && !this._free(cells[k], owner)) return false;
             }
-            for (const uid of diff?.ents || []) if (!this._ownEnt(uid, seat)) return false;
+            for (const uid of diff?.ents || []) if (!this._ownEnt(uid, owner)) return false;
             return true;
           };
         const r = a.prefab(key, { x: ox, y: oy, z: oz, rot }, policy);
@@ -541,12 +585,12 @@ export class NetHost {
       }
       case 'pu': {
         const target = e[2];
-        const log = this.seatLog[seat];
-        const k = log.findIndex((g) => g.lseq === target && g.kind === 'pf');
+        const l = this._logOf(owner);
+        const k = l.log.findIndex((g) => g.lseq === target && g.kind === 'pf');
         if (k < 0) return REJECT.CONFLICT;
-        const g = log[k];
-        log.splice(k, 1);
-        this.seatLogBytes[seat] -= g.bytes;
+        const g = l.log[k];
+        l.log.splice(k, 1);
+        l.bytes -= g.bytes;
         this._revertGroup(g);
         return 0;
       }
@@ -580,10 +624,14 @@ export class NetHost {
     if (!this.live) return;
     this.journal.touchCell(i);
     this.changedSinceSave = true;
-    if (this.execSeat !== null) {
-      this.author.cells.set(i, this.execSeat);
+    // soil getting wet (a watering can) or drying out again belongs to whoever made the bed
+    const keep = !!this.a.isWatering?.(prev, id) || !!this.a.isWatering?.(id, prev);
+    if (this.execOwner !== null) {
+      if (!keep) this.author.cells.set(i, this.execOwner);
       const g = this.group;
       if (g && !g.cells.has(i)) g.cells.set(i, prev);
+    } else if (keep) {
+      // nobody's change of owner
     } else if (this.a.inSystems?.()) this.author.cells.delete(i);
     else this.author.cells.set(i, 0);
   }
@@ -592,8 +640,16 @@ export class NetHost {
     if (!this.live) return;
     this.journal.touchEnt(uid);
     this.changedSinceSave = true;
-    if (this.execSeat !== null) {
-      this.author.ents.set(uid, this.execSeat);
+    // only making or removing a piece changes its owner: turning it, tapping it (a lamp, a
+    // door) or a derived change (a fence joining a neighbour, a railing opening for a bridge)
+    // leaves it with whoever made it
+    if (kind === 'del') this.author.ents.delete(uid);
+    else if (kind === 'add') {
+      if (this.execOwner !== null) this.author.ents.set(uid, this.execOwner);
+      else if (this.a.inSystems?.()) this.author.ents.delete(uid);
+      else this.author.ents.set(uid, 0);
+    }
+    if (this.execOwner !== null) {
       const g = this.group;
       if (g && !g.ents.has(uid)) {
         let rec = null;
@@ -608,25 +664,95 @@ export class NetHost {
         }
         g.ents.set(uid, rec);
       }
-    } else if (this.a.inSystems?.()) this.author.ents.delete(uid);
-    else this.author.ents.set(uid, 0);
+    }
   }
 
   _hookPlant(kind, i, before) {
     if (!this.live) return;
     this.journal.touchPlant(i);
     this.changedSinceSave = true;
-    if (this.execSeat !== null) {
-      this.author.plants.set(i, this.execSeat);
+    // planting makes it hers, taking it out makes it nobody's; growing and harvesting (a
+    // regrowing crop stays) change no owner
+    if (kind === 'del') this.author.plants.delete(i);
+    else if (kind === 'add') {
+      if (this.execOwner !== null) this.author.plants.set(i, this.execOwner);
+      else if (this.a.inSystems?.()) this.author.plants.delete(i);
+      else this.author.plants.set(i, 0);
+    }
+    if (this.execOwner !== null) {
       const g = this.group;
       if (g && !g.plants.has(i)) g.plants.set(i, before ? [before[0], before[1]] : null);
-    } else if (this.a.inSystems?.()) this.author.plants.delete(i);
-    else this.author.plants.set(i, 0);
+    }
+  }
+
+  // ---------- who owns what, across a reload (Addendum B) ----------
+
+  /**
+   * Owners of this session's changes, for the host's world save: owner keys that come back
+   * with the friend ('u:' stamps) and the host (0). Keys of friends with no stamp are left out
+   * (after a reload nobody can be them). Cells go as runs [start, length, owner index].
+   */
+  exportAuthors() {
+    const owners = [];
+    const index = new Map([[0, 0]]);
+    const idx = (o) => {
+      if (index.has(o)) return index.get(o);
+      if (typeof o !== 'string' || !o.startsWith('u:')) return -1;
+      owners.push(o);
+      index.set(o, owners.length);
+      return owners.length;
+    };
+    const cells = [];
+    const sorted = Array.from(this.author.cells).sort((a, b) => a[0] - b[0]);
+    for (const [i, o] of sorted) {
+      const k = idx(o);
+      if (k < 0) continue;
+      const last = cells[cells.length - 1];
+      if (last && last[2] === k && last[0] + last[1] === i) last[1]++;
+      else cells.push([i, 1, k]);
+    }
+    const ents = [];
+    for (const [uid, o] of this.author.ents) {
+      const k = idx(o);
+      if (k >= 0) ents.push([uid, k]);
+    }
+    const plants = [];
+    for (const [i, o] of this.author.plants) {
+      const k = idx(o);
+      if (k >= 0) plants.push([i, k]);
+    }
+    return { v: 1, owners, cells, ents, plants };
+  }
+
+  /** Start from a saved exportAuthors() (a resumed session: friends keep what they built). */
+  importAuthors(data) {
+    if (!data || data.v !== 1 || !Array.isArray(data.owners)) return false;
+    const owners = [0];
+    for (const o of data.owners) owners.push(typeof o === 'string' && o.startsWith('u:') ? o : undefined);
+    const own = (k) => (isInt(k) && k >= 0 && k < owners.length ? owners[k] : undefined);
+    const n = this.size ? this.size.n : Infinity;
+    for (const r of Array.isArray(data.cells) ? data.cells : []) {
+      if (!Array.isArray(r) || !isInt(r[0]) || !isInt(r[1]) || r[1] < 1 || r[0] < 0 || r[0] + r[1] > n) continue;
+      const o = own(r[2]);
+      if (o === undefined) continue;
+      for (let k = 0; k < r[1]; k++) this.author.cells.set(r[0] + k, o);
+    }
+    for (const r of Array.isArray(data.ents) ? data.ents : []) {
+      if (!Array.isArray(r) || !isIntIn(r[0], 1, 2 ** 31)) continue;
+      const o = own(r[1]);
+      if (o !== undefined && this.a.entityRecord(r[0])) this.author.ents.set(r[0], o);
+    }
+    for (const r of Array.isArray(data.plants) ? data.plants : []) {
+      if (!Array.isArray(r) || !isInt(r[0])) continue;
+      const o = own(r[1]);
+      if (o !== undefined) this.author.plants.set(r[0], o);
+    }
+    return true;
   }
 
   // ---------- per-seat log and Undo building (§8.4) ----------
 
-  _closeGroup(seat) {
+  _closeGroup(owner) {
     const g = this.group;
     this.group = null;
     if (!g || g.cells.size + g.ents.size + g.plants.size === 0) return;
@@ -649,10 +775,10 @@ export class NetHost {
       plants.push([i, b, r ? [r[1], r[2]] : null]);
     }
     const rec = { lseq: g.lseq, kind: g.kind, idx, bef, aft, ents, plants, bytes: n * 6 + ents.length * 200 + plants.length * 40 + 64 };
-    const log = this.seatLog[seat];
-    log.push(rec);
-    this.seatLogBytes[seat] += rec.bytes;
-    while (this.seatLogBytes[seat] > SEAT_LOG_BYTES && log.length > 1) this.seatLogBytes[seat] -= log.shift().bytes;
+    const l = this._logOf(owner);
+    l.log.push(rec);
+    l.bytes += rec.bytes;
+    while (l.bytes > SEAT_LOG_BYTES && l.log.length > 1) l.bytes -= l.log.shift().bytes;
   }
 
   /** Restore every key of one group whose current value still equals its after value. */
@@ -699,18 +825,40 @@ export class NetHost {
     }
   }
 
-  /** "Undo building" for one friend: newest to oldest, one host history group. */
+  /**
+   * "Undo building" for the friend in `seat` (everything she built since the host opened her
+   * door, or since the host's page came back): newest to oldest, one host history group. She
+   * hears about it (ctl 'tidy' with a few spots for her sparkles).
+   */
   undoSeat(seat) {
-    const log = this.seatLog[seat];
-    if (!log || log.length === 0) return 0;
-    const groups = log.splice(0, log.length);
-    this.seatLogBytes[seat] = 0;
+    const s = this.seats[seat];
+    const l = s ? this.logs.get(s.owner) : null;
+    if (!l || l.log.length === 0) return 0;
+    const groups = l.log.splice(0, l.log.length);
+    l.bytes = 0;
     const run = () => {
       for (let k = groups.length - 1; k >= 0; k--) this._revertGroup(groups[k]);
     };
     if (typeof this.a.historyGroup === 'function') this.a.historyGroup(run);
     else run();
+    this.t.send('ctl', { k: 'tidy', e: this.epoch, to: s.peer, n: groups.length, at: this._spots(groups) }, PRIO.ctl);
     return groups.length;
+  }
+
+  /** Up to 6 places (block cells) spread over some groups, for sparkles. */
+  _spots(groups) {
+    const all = [];
+    for (const g of groups) {
+      for (let k = 0; k < g.idx.length; k++) all.push(this.a.coords(g.idx[k]));
+      for (const [, before, after] of g.ents) {
+        const r = after || before;
+        if (r) all.push([r[2], r[3], r[4]]);
+      }
+    }
+    if (all.length <= 6) return all.map((c) => c.map((v) => v | 0));
+    const out = [];
+    for (let k = 0; k < 6; k++) out.push(all[Math.floor((k * all.length) / 6)].map((v) => v | 0));
+    return out;
   }
 
   // ---------- flush (§5.5) ----------
@@ -1024,7 +1172,7 @@ export class NetHost {
       epoch: this.epoch, seq: this.journal.seq, floor: this.journal.floor, journalKeys: this.journal.size,
       acks: this._ackTable(), adm: Array.from(this.adm), no: Array.from(this.no), rs: Array.from(this.rs),
       rules: { ...this.rules }, hash: this.hashes(), stats: { ...this.stats },
-      seatLog: this.seatLog.map((l) => (l ? l.length : 0)),
+      seatLog: this.seats.map((s, k) => (k === 0 ? 0 : s ? this.logs.get(s.owner)?.log.length || 0 : 0)),
     };
   }
 
