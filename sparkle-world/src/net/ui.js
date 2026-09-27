@@ -423,6 +423,8 @@ export function installNetUI(game, net, remote) {
     } else if ((code === 'transient' || code === 'snapshot_failed') && lastAction) {
       const again = lastAction;
       buttons.push({ label: 'Try again', icon: 'again', variant: 'mint', run: () => (again.kind === 'join' ? startJoin(again.code) : startHost(again)) }, { label: 'Not now', icon: 'close', variant: 'white' });
+    } else if (code === 'fatal') {
+      small = game.mode === 'play' && game.world && !game._isShared?.() ? 'Your world is here and everything is saved.' : 'Your own worlds are right here.';
     } else if (code === 'no_host' && lastAction && lastAction.kind === 'join') {
       const again = lastAction;
       buttons.push({ label: 'Check the pictures', icon: 'grid', variant: 'sky', run: () => openJoin(again.code) }, { label: 'OK', icon: 'check', variant: 'white' });
@@ -486,11 +488,13 @@ export function installNetUI(game, net, remote) {
     await game.exitToTitle();
   }
 
+  // (the title redraws its resume chips on 'profile:changed')
   function clearLastHost() {
     const n = netProfile();
     if (n.lastHost) {
       n.lastHost = null;
       game.saveProfile();
+      game.events.emit('profile:changed', { profile: game.profile });
     }
   }
 
@@ -499,6 +503,7 @@ export function installNetUI(game, net, remote) {
     if (n.lastJoin) {
       n.lastJoin = null;
       game.saveProfile();
+      game.events.emit('profile:changed', { profile: game.profile });
     }
   }
 
@@ -1000,7 +1005,8 @@ export function installNetUI(game, net, remote) {
       playersBody.classList.add('sw-net-players-body');
     },
     onOpen() {
-      ui.setTitle('mp-players', net.isHost ? 'Playing with Friends' : 'Players');
+      // the same word as the HUD button that opens it (NPC friends own "Friends")
+      ui.setTitle('mp-players', 'Players');
       renderPlayers(true);
     },
   });

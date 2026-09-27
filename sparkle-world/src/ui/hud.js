@@ -138,8 +138,11 @@ const CSS = /* css */ `
   .sw-hud-tl .sw-pill { max-width: 100%; }
   .sw-hud-tr .sw-round--small .sw-round-face { width: 38px; height: 38px; }
   .sw-hud-tr .sw-round--small .sw-round-face svg { width: 22px; height: 22px; }
-  /* playing together on a phone: Players takes Help's place (Help stays in the Menu) */
+  /* playing together on a phone: Players takes Help's place (Help stays in the Menu), and
+     "Reconnecting…" takes the gems' place for a moment (the column must not grow into the
+     pets / friends buttons under it) */
   .sw-hud.sw-in-session .sw-hud-tr .sw-helpbtn { display: none; }
+  .sw-hud.sw-net-trouble .sw-hud-tl .sw-gems, .sw-hud.sw-net-trouble .sw-hud-tl .sw-coins { display: none !important; }
   .sw-round .sw-count { min-width: 24px; height: 24px; font-size: 14px; line-height: 18px; top: -5px; right: -6px; }
 }
 `;
@@ -466,6 +469,7 @@ export function install(game) {
     if (on && !netUp) kind = 'up';
     else if (on && net.isGuest && typeof net.session?.sending === 'function' && net.session.sending() > 20) kind = 'send';
     netPill.hidden = !kind;
+    hud.classList.toggle('sw-net-trouble', !!kind);
     if (kind !== pillKind) {
       pillKind = kind;
       if (kind) {

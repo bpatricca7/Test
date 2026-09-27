@@ -152,6 +152,29 @@ async function nothingShowsThrough(pl, label) {
   return check(bad.length === 0, `${label}: no HUD button shows through (${JSON.stringify(bad)})`);
 }
 
+/** In a session (Players, Say, the connection pill): no HUD controls overlap, all on screen. */
+async function hudFits(pl, label) {
+  const out = await game(pl, () => {
+    const els = [...document.querySelectorAll('.sw-hud .sw-round-face, .sw-hud .sw-slot, .sw-hud .sw-pill, .lf-hud .sw-round-face')].filter((e) => e.offsetParent && getComputedStyle(e).visibility !== 'hidden');
+    const joy = document.querySelector('.sw-joy');
+    if (joy && joy.offsetParent !== null && getComputedStyle(joy).display !== 'none') els.push(joy);
+    const rects = els.map((e) => ({ e, r: e.getBoundingClientRect() }));
+    const res = [];
+    const name = (e) => e.closest('.sw-round')?.getAttribute('aria-label') || e.getAttribute('aria-label') || e.className;
+    for (let i = 0; i < rects.length; i++) {
+      for (let j = i + 1; j < rects.length; j++) {
+        const a = rects[i].r, b = rects[j].r;
+        const ix = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+        const iy = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+        if (ix > 2 && iy > 2) res.push(`${name(rects[i].e)} x ${name(rects[j].e)}`);
+      }
+    }
+    for (const { e, r } of rects) if (r.left < -1 || r.top < -1 || r.right > innerWidth + 1 || r.bottom > innerHeight + 1) res.push(`${name(e)} off screen`);
+    return res;
+  });
+  return check(out.length === 0, `${label}: HUD controls in a session do not overlap and stay on screen${out.length ? ' (' + out.join('; ') + ')' : ''}`);
+}
+
 /** The open panel card / cards fit the screen (nothing clipped). */
 async function fits(pl, selector, label) {
   const r = await game(pl, (sel) => {
@@ -229,6 +252,8 @@ test('AT1', 'Lily makes a code, Rosie joins on the keypad (touch), Lily lets her
   check(await until(lily, () => window.__toasts.some((t) => /Rosie is here/.test(t)), null, 15000), 'Lily hears "Rosie is here!"');
   const hud = await game(rosie, () => ({ players: !document.querySelector('.sw-playersbtn').hidden, count: document.querySelector('.sw-playersbtn .sw-count').textContent, say: !document.querySelector('.sw-saybtn').hidden }));
   check(hud.players && hud.count === '2' && hud.say, `Rosie's HUD shows Players (2) and Say (${JSON.stringify(hud)})`);
+  await hudFits(rosie, 'iPad (Rosie)');
+  await hudFits(lily, 'desktop (Lily)');
   await converge([lily, rosie], 'AT1');
   const p = await game(lily, () => { const q = window.__game.player.position; return { x: Math.floor(q.x), y: Math.floor(q.y), z: Math.floor(q.z) }; });
   Object.assign(spot, p);
@@ -264,8 +289,8 @@ test('AT2', 'Rosie paints a hold-drag stroke with real touch events, then Undo',
   const x0 = vp.width * 0.45, y0 = vp.height * 0.84;
   await touch('touchStart', [[x0, y0]]);
   await sleep(750);
-  for (let i = 1; i <= 40; i++) {
-    await touch('touchMove', [[x0 + i * 12, y0 - i * 7]]);
+  for (let i = 1; i <= 44; i++) {
+    await touch('touchMove', [[x0 + i * 7, y0 - i * 10]]);
     await sleep(40);
   }
   await touch('touchEnd', []);
@@ -402,8 +427,8 @@ test('AT17', 'Say bubbles and emotes show on the other page within a second', as
   await shot(rosie, 'rosie-say-panel');
   await fits(rosie, '.sw-panel-wrap.sw-open .sw-card', 'Say panel (iPad)');
   await nothingShowsThrough(rosie, 'Say panel (iPad)');
-  const t0 = Date.now();
   await press(rosie, '.sw-panel-wrap.sw-open .sw-net-phrase[data-id="0"]');
+  const t0 = Date.now(); // from the tap (Playwright's own wait for a still button is not counted)
   const seen = await until(lily, () => window.__game.debug.net.remote().some((r) => r.name === 'Rosie' && r.bubble === 'Hi!'), null, 5000, 50);
   const dt = (Date.now() - t0) / 1000;
   check(seen && dt < 1.5, `Lily sees Rosie's "Hi!" bubble after ${dt.toFixed(2)} s`);
@@ -415,8 +440,8 @@ test('AT17', 'Say bubbles and emotes show on the other page within a second', as
   // Lily's emote wheel (G, then Dance): Rosie sees her dance
   await lily.page.keyboard.press('g');
   await lily.page.waitForSelector('.sw-panel-wrap.sw-open .sw-emo-btn[data-emote="dance"]');
-  const t1 = Date.now();
   await press(lily, '.sw-panel-wrap.sw-open .sw-emo-btn[data-emote="dance"]');
+  const t1 = Date.now();
   const danced = await until(rosie, () => window.__game.debug.net.remote().some((x) => x.name === 'Lily' && x.emote === 'dance'), null, 5000, 50);
   const dt1 = (Date.now() - t1) / 1000;
   check(danced && dt1 < 1.5, `Rosie sees Lily dance after ${dt1.toFixed(2)} s`);
@@ -618,6 +643,7 @@ test('AT11', 'June joins from a phone after 300 edits (a visitor: the knock card
   await converge([lily, rosie, june], 'AT11');
   await settle(june.page, 1500);
   await shot(june, 'june-in-world');
+  await hudFits(june, 'phone (June)');
   await press(june, '.sw-playersbtn');
   await june.page.waitForSelector('.sw-panel-wrap.sw-open .sw-net-row[data-seat="2"]');
   await settle(june.page, 1200);
@@ -684,10 +710,18 @@ test('AT9', 'chaos: 30% drops, 0-800 ms delays, reordering, 5% duplicates; 60 s 
 test('AT10', 'Rosie loses the connection for 5 s during a castle build: "Reconnecting…", then everything catches up', async () => {
   const n0 = await game(lily, () => window.__game.entities.all().length);
   fc.partition(rosie.page, 5000);
+  fc.partition(june.page, 5000);
   await game(lily, ({ x, z }) => window.__game.prefabs.place('princess_castle', x + 30, z - 30, { animate: false }), spot);
   const shown = await until(rosie, () => !document.querySelector('.sw-net-pill').hidden && /Reconnecting/.test(document.querySelector('.sw-net-pill').textContent), null, 8000, 100);
   check(shown, 'Rosie’s HUD shows "Reconnecting…"');
   if (shown) await shot(rosie, 'rosie-reconnecting');
+  if (shown) await hudFits(rosie, 'iPad with "Reconnecting…"');
+  const shownPhone = await until(june, () => !document.querySelector('.sw-net-pill').hidden, null, 8000, 100);
+  check(shownPhone, 'June\u2019s phone shows "Reconnecting…" too');
+  if (shownPhone) {
+    await shot(june, 'june-reconnecting');
+    await hudFits(june, 'phone with "Reconnecting…"');
+  }
   const hidden = await until(rosie, () => document.querySelector('.sw-net-pill').hidden, null, 20000, 200);
   check(hidden, '"Reconnecting…" goes away when she is back');
   check(await game(lily, (n) => window.__game.entities.all().length > n, n0), 'the castle was built');
@@ -771,6 +805,15 @@ test('AT12', 'Lily\u2019s page reloads; "Keep playing" opens the door again; eve
   await converge([lily, rosie, june], 'AT12 before');
   await game(lily, () => window.__game.saveWorld({ thumbnail: false }));
   const ep0 = await game(rosie, () => window.__game.net.session.guestCore.epoch);
+  // SwiftShader draws every page on the CPU: while Lily's page reloads, her friends' pages are
+  // slowed down so her reload takes about as long as on a real tablet (her friends only wait
+  // for 60 s before they are told she went home; that path is covered too, see guestReturns)
+  const throttles = [];
+  for (const pl of [rosie, june]) {
+    const cdp = await pl.context.newCDPSession(pl.page);
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 8 });
+    throttles.push(cdp);
+  }
   const t0 = Date.now();
   await reloadPlayer(lily);
   const chip = lily.page.locator('.sw-title-chips .sw-net-chip--host');
@@ -780,6 +823,10 @@ test('AT12', 'Lily\u2019s page reloads; "Keep playing" opens the door again; eve
   await press(lily, chip);
   check(await until(lily, () => window.__game.net.state === 'h.live', null, 150000), 'Lily is hosting again with the same code');
   log(`  Lily hosting again ${((Date.now() - t0) / 1000).toFixed(1)} s after the reload started`);
+  for (const cdp of throttles) {
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+    await cdp.detach().catch(() => {});
+  }
   const code2 = await game(lily, () => window.__game.net.code);
   check(JSON.stringify(code2) === JSON.stringify(CODE), 'the same code');
   check(await until(lily, () => window.__toasts.some((t) => /door is open again/.test(t)), null, 5000), 'Lily hears "Your door is open again!" (no panel over her world)');

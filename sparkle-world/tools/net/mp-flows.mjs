@@ -169,8 +169,9 @@ export async function bringTo(guest, host, dx = 2, dz = 2) {
   }, [p[0] + dx, p[1], p[2] + dz]);
 }
 
+/** Close the open panel (never the title screen itself). */
 export async function closePanels(pl) {
-  await game(pl, () => { const u = window.__game.ui; if (u.current) u.close(); });
+  await game(pl, () => { const u = window.__game.ui; if (u.current && u.current !== 'title') u.close(); });
 }
 
 export const VIEW = () => {
