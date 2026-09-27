@@ -46,7 +46,15 @@ this doc disagree, fix one of them in the same change.
    - Bottom-left of hotbar: **Bag** button (opens the full catalog).
    - Right side, stacked big round buttons: **Build** (place), **Remove** (magic eraser),
      **Hand** (use/interact) — one is active at a time. Plus **Fly**, **Emotes**, **Photo**.
-   - Top-left: world name + time-of-day icon; gem counter.
+   - Top-left: world name + time-of-day icon; gem counter and Sparkle Coins ("Reconnecting…"
+     takes the counters' place for a moment when playing with friends).
+   - Screen shapes (`src/ui/hud.js`, life column in `src/things/pets/kit.js`): wide screens
+     keep the name and counters in one row; phones and portrait tablets put the counters in a
+     row under the name. Phones held sideways (e.g. 844x390): one top row of picture buttons,
+     the tools at the right edge with Fly / Emotes / Say / Photo two by two beside them, Jump
+     (or Up / Down) under the tools, the joystick in the bottom-left corner, the hotbar between.
+     The left life column (Basket, Pets, Friends, Hop off, Eat, Put away) ends above the
+     joystick and continues in a second column rather than covering it.
    - Top-right: **Dress Up** (wardrobe), **Stickers**, **Menu** (pause: Resume, Settings,
      Save & Exit).
    - Center: soft crosshair on desktop; highlighted target block/face outline (sparkly).
