@@ -315,14 +315,23 @@ export function basketTake(game, key, n = 1) {
 // ---------- a small column of round HUD buttons (Basket, Pets, Hop off) ----------
 
 const HUD_CSS = /* css */ `
-.lf-hud { position: absolute; left: calc(12px + var(--sw-safe-l)); top: calc(72px + var(--sw-safe-t)); display: none; flex-direction: column; gap: 10px; align-items: center; pointer-events: none !important; }
+/* The column starts under the HUD's top-left pills and ends above the joystick (touch) or the
+   bottom row; more buttons than fit (riding + a treat in her hand + pets + friends) go on in a
+   second column beside the first, never over the joystick. */
+.lf-hud { position: absolute; left: calc(12px + var(--sw-safe-l)); top: calc(72px + var(--sw-safe-t)); bottom: calc(104px + var(--sw-safe-b)); display: none; flex-direction: column; flex-wrap: wrap; align-content: flex-start; gap: 8px 10px; align-items: center; pointer-events: none !important; }
+.sw-app.sw-touch-hud .lf-hud { bottom: calc(256px + var(--sw-safe-b)); }
 .sw-app.sw-playing .lf-hud { display: flex; }
 .lf-hud > * { pointer-events: auto; }
 .lf-hud .sw-round[hidden] { display: none; }
 .lf-hud .lf-pulse .sw-round-face { animation: lf-pulse 1.4s ease-in-out infinite; }
 @keyframes lf-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
 @media (max-width: 760px), (max-height: 520px) { .lf-hud { top: calc(62px + var(--sw-safe-t)); gap: 6px; } }
-@media (max-width: 480px) { .lf-hud { top: calc(104px + var(--sw-safe-t)); } .lf-hud .sw-round-label { display: none; } }
+/* portrait tablets: the HUD's name and counts are two rows */
+@media (min-width: 481px) and (max-width: 900px) and (min-height: 521px) { .lf-hud { top: calc(124px + var(--sw-safe-t)); } }
+@media (min-width: 481px) and (max-width: 760px) and (min-height: 521px) { .lf-hud { top: calc(112px + var(--sw-safe-t)); } }
+/* phones sideways: pictures only, above the joystick in the bottom-left corner */
+@media (max-height: 520px) and (min-width: 481px) { .lf-hud .sw-round-label { display: none; } .sw-app.sw-touch-hud .lf-hud { bottom: calc(162px + var(--sw-safe-b)); } }
+@media (max-width: 480px) { .lf-hud { top: calc(104px + var(--sw-safe-t)); } .lf-hud .sw-round-label { display: none; } .sw-app.sw-touch-hud .lf-hud { bottom: calc(300px + var(--sw-safe-b)); } }
 `;
 
 const huds = new WeakMap();

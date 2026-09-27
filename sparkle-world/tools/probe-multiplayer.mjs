@@ -253,6 +253,13 @@ test('AT1', 'Lily makes a code, Rosie joins on the keypad (touch), Lily lets her
   const hud = await game(rosie, () => ({ players: !document.querySelector('.sw-playersbtn').hidden, count: document.querySelector('.sw-playersbtn .sw-count').textContent, say: !document.querySelector('.sw-saybtn').hidden }));
   check(hud.players && hud.count === '2' && hud.say, `Rosie's HUD shows Players (2) and Say (${JSON.stringify(hud)})`);
   await hudFits(rosie, 'iPad (Rosie)');
+  // the same iPad in portrait (768x1024): the name and the counts are two rows
+  await rosie.page.setViewportSize({ width: 768, height: 1024 });
+  await settle(rosie.page, 900);
+  await hudFits(rosie, 'iPad portrait (Rosie)');
+  await shot(rosie, 'rosie-portrait-in-world');
+  await rosie.page.setViewportSize(rosie.viewport);
+  await settle(rosie.page, 600);
   await hudFits(lily, 'desktop (Lily)');
   await converge([lily, rosie], 'AT1');
   const p = await game(lily, () => { const q = window.__game.player.position; return { x: Math.floor(q.x), y: Math.floor(q.y), z: Math.floor(q.z) }; });
@@ -483,6 +490,9 @@ test('HELD', 'a treat in Rosie’s hand shows in her avatar’s hand on Lily’s
   await settle(lily.page, 600);
   await shot(lily, 'lily-sees-held-treat');
   await shot(rosie, 'rosie-sees-held-treat');
+  // Eat and Put away join the life column while she holds a treat
+  await hudFits(rosie, 'iPad holding a treat (Rosie)');
+  await hudFits(lily, 'desktop holding a treat (Lily)');
   // putting them away empties both hands on the other page too
   const putAway = (pl) => game(pl, () => {
     const g = window.__game, b = window.__hotbarBefore;
@@ -679,6 +689,14 @@ test('AT11', 'June joins from a phone after 300 edits (a visitor: the knock card
   await settle(june.page, 1500);
   await shot(june, 'june-in-world');
   await hudFits(june, 'phone (June)');
+  // her phone held sideways (844x390): one top row, the life column above the joystick, the
+  // tools at the right edge with Jump under them, the hotbar between the joystick and Jump
+  await june.page.setViewportSize({ width: 844, height: 390 });
+  await settle(june.page, 1200);
+  await hudFits(june, 'phone sideways (June)');
+  await shot(june, 'june-sideways');
+  await june.page.setViewportSize(june.viewport);
+  await settle(june.page, 900);
   await press(june, '.sw-playersbtn');
   await june.page.waitForSelector('.sw-panel-wrap.sw-open .sw-net-row[data-seat="2"]');
   await settle(june.page, 1200);

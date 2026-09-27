@@ -11,9 +11,13 @@ const CSS = /* css */ `
 .sw-hud * { pointer-events: auto; }
 .sw-hud .sw-passive, .sw-hud .sw-passive * { pointer-events: none; }
 /* layout containers let touches through their empty space; only what is inside them is tappable */
-.sw-hud .sw-hud-right, .sw-hud .sw-hud-extras, .sw-hud .sw-hud-tr, .sw-hud .sw-hud-tl, .sw-hud .sw-hud-bottom { pointer-events: none; }
+.sw-hud .sw-hud-right, .sw-hud .sw-hud-extras, .sw-hud .sw-hud-tr, .sw-hud .sw-hud-tl, .sw-hud .sw-hud-counts, .sw-hud .sw-hud-bottom { pointer-events: none; }
 
-.sw-hud-tl { position: absolute; top: calc(12px + var(--sw-safe-t)); left: calc(12px + var(--sw-safe-l)); display: flex; gap: 8px; align-items: center; max-width: 52vw; }
+/* top-left: the world name, then the counts (gems, Sparkle Coins); the name gives way (it
+   ends in "…") so the row never runs under the top-right buttons */
+.sw-hud-tl { position: absolute; top: calc(12px + var(--sw-safe-t)); left: calc(12px + var(--sw-safe-l)); display: flex; gap: 8px; align-items: center; max-width: min(52vw, calc(100vw - 460px)); }
+.sw-hud-counts { display: flex; gap: 8px; align-items: center; flex: none; }
+.sw-hud-counts .sw-pill { flex: none; }
 .sw-pill { display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 16px 0 10px; border-radius: 999px; background: rgba(255,255,255,.92); border: 4px solid #fff; box-shadow: 0 5px 14px var(--sw-shadow); font-size: 19px; font-weight: 600; color: var(--sw-ink); white-space: nowrap; min-width: 0; }
 .sw-pill svg { width: 28px; height: 28px; flex: none; }
 .sw-pill .sw-name { overflow: hidden; text-overflow: ellipsis; }
@@ -31,6 +35,8 @@ const CSS = /* css */ `
    the top-right buttons on a 800 px tall screen */
 .sw-hud.sw-in-session:not(.sw-touchmode) .sw-hud-extras { display: grid; grid-template-columns: repeat(2, auto); gap: 8px 6px; justify-items: center; }
 .sw-net-pill svg { color: var(--sw-sky); }
+/* "Reconnecting…" / "Sending…" takes the counts' place for a moment (the corner never grows) */
+.sw-hud.sw-net-trouble .sw-hud-counts .sw-gems, .sw-hud.sw-net-trouble .sw-hud-counts .sw-coins { display: none !important; }
 .sw-net-pill.sw-sending svg { color: var(--sw-pink); animation: sw-twinkle 1.2s ease-in-out infinite; }
 
 .sw-hud-tr { position: absolute; top: calc(10px + var(--sw-safe-t)); right: calc(12px + var(--sw-safe-r)); display: flex; gap: 10px; }
@@ -136,14 +142,63 @@ const CSS = /* css */ `
   .sw-hud.sw-touchmode .sw-hud-extras .sw-round-face svg { width: 25px; height: 25px; }
   .sw-hud-tl { max-width: 40vw; }
   .sw-hud-tl .sw-pill { max-width: 100%; }
+  /* the counts share one row under the name, below the top-right buttons */
+  .sw-hud-counts { gap: 6px; }
+  .sw-hud-tl .sw-hud-counts .sw-pill { max-width: none; }
   .sw-hud-tr .sw-round--small .sw-round-face { width: 38px; height: 38px; }
   .sw-hud-tr .sw-round--small .sw-round-face svg { width: 22px; height: 22px; }
-  /* playing together on a phone: Players takes Help's place (Help stays in the Menu), and
-     "Reconnecting…" takes the gems' place for a moment (the column must not grow into the
-     pets / friends buttons under it) */
+  /* playing together on a phone: Players takes Help's place (Help stays in the Menu) */
   .sw-hud.sw-in-session .sw-hud-tr .sw-helpbtn { display: none; }
-  .sw-hud.sw-net-trouble .sw-hud-tl .sw-gems, .sw-hud.sw-net-trouble .sw-hud-tl .sw-coins { display: none !important; }
   .sw-round .sw-count { min-width: 24px; height: 24px; font-size: 14px; line-height: 18px; top: -5px; right: -6px; }
+}
+/* shorter phones (375x667): the tools a little smaller so the column stays under the top row */
+@media (max-width: 480px) and (max-height: 740px) {
+  .sw-hud-right .sw-round--big .sw-round-face { width: 50px; height: 50px; }
+  .sw-hud-right .sw-round--big .sw-round-face svg { width: 27px; height: 27px; }
+}
+/* portrait tablets (iPad 768 / 810 / 820 / 834 wide): the name on its own row, the counts
+   under it, so neither runs under the five top-right buttons */
+@media (min-width: 481px) and (max-width: 900px) and (min-height: 521px) {
+  .sw-hud-tl { flex-direction: column; align-items: flex-start; max-width: calc(100vw - 450px); }
+  .sw-hud-tl .sw-time { max-width: 100%; }
+}
+/* phones held sideways (844x390) and other short screens: one top row, the life column and
+   the joystick on the left, the tools in a column at the right edge with Fly / Emotes / Say /
+   Photo two by two beside them, Jump (or Up / Down) under the tools, and Bag / hotbar / Undo
+   along the bottom between the joystick and Jump */
+@media (max-height: 520px) and (min-width: 481px) {
+  .sw-hud-tl { max-width: min(52vw, calc(100vw - 300px)); }
+  .sw-hud-tr { gap: 6px; }
+  .sw-hud-tr .sw-round-label { display: none; }
+  .sw-hud-tr .sw-round-face { width: 46px; height: 46px; }
+  .sw-hud-tr .sw-round--small .sw-round-face { width: 38px; height: 38px; }
+  .sw-hud-tr .sw-round--small .sw-round-face svg { width: 22px; height: 22px; }
+  .sw-round .sw-count { min-width: 24px; height: 24px; font-size: 14px; line-height: 18px; top: -5px; right: -6px; }
+  .sw-hud .sw-hud-right, .sw-hud.sw-touchmode .sw-hud-right { top: calc(62px + var(--sw-safe-t)); bottom: auto; transform: none; flex-direction: column; flex-wrap: wrap-reverse; align-content: flex-start; align-items: center; max-height: 240px; gap: 6px 8px; }
+  .sw-hud .sw-hud-right .sw-sep { display: none; }
+  .sw-hud-right .sw-round--big .sw-round-face { width: 50px; height: 50px; }
+  .sw-hud-right .sw-round--big .sw-round-face svg { width: 27px; height: 27px; }
+  .sw-hud .sw-hud-extras, .sw-hud.sw-touchmode .sw-hud-extras, .sw-hud.sw-in-session:not(.sw-touchmode) .sw-hud-extras { display: grid; grid-template-columns: repeat(2, auto); gap: 6px; justify-items: center; align-items: start; }
+  .sw-hud.sw-touchmode .sw-hud-extras .sw-round-face { width: 46px; height: 46px; }
+  .sw-hud.sw-touchmode .sw-hud-extras .sw-round-face svg { width: 25px; height: 25px; }
+  .sw-hud.sw-touchmode .sw-touch { right: calc(14px + var(--sw-safe-r)); bottom: calc(8px + var(--sw-safe-b)); }
+  .sw-touch .sw-round-face { width: 56px; height: 56px; }
+  .sw-touch .sw-round-face svg { width: 30px; height: 30px; }
+  .sw-hud.sw-touchmode .sw-touch .sw-flybtn .sw-round-face { width: 54px; height: 54px; }
+  .sw-hud.sw-touchmode .sw-hud-bottom { left: calc(150px + var(--sw-safe-l)); transform: none; bottom: calc(8px + var(--sw-safe-b)); }
+  .sw-hud.sw-touchmode .sw-slot { width: clamp(28px, calc((100vw - 460px) / 9), 44px); height: clamp(28px, calc((100vw - 460px) / 9), 44px); }
+  .sw-hud.sw-touchmode .sw-slot img { width: 78%; height: 78%; }
+  .sw-joy { bottom: calc(92px + var(--sw-safe-b)); left: calc(78px + var(--sw-safe-l)); }
+}
+/* very short screens (740x360): the tool and Fly / Emotes labels give way to the pictures */
+@media (max-height: 380px) and (min-width: 481px) {
+  .sw-hud-right .sw-round-label { display: none; }
+  .sw-hud .sw-hud-right, .sw-hud.sw-touchmode .sw-hud-right { max-height: 180px; }
+}
+/* narrow short screens (667x375): Up and Down one above the other at the right edge */
+@media (max-height: 520px) and (min-width: 481px) and (max-width: 720px) {
+  .sw-hud.sw-touchmode .sw-touch { flex-direction: column; align-items: flex-end; gap: 6px; }
+  .sw-hud.sw-touchmode .sw-touch .sw-flybtn .sw-round-label { display: none; }
 }
 `;
 
@@ -290,7 +345,7 @@ export function install(game) {
   const hud = ui.el('div', 'sw-hud');
   ui.hudLayer.appendChild(hud);
 
-  // top-left: world name + time of day, gems
+  // top-left: world name + time of day, gems, Sparkle Coins
   const tl = ui.el('div', 'sw-hud-tl');
   const namePill = ui.el('div', 'sw-pill sw-time sw-passive');
   const nameText = ui.el('span', 'sw-name', '');
@@ -311,7 +366,11 @@ export function install(game) {
   const netText = ui.el('span', '', 'Reconnecting…');
   netPill.appendChild(netText);
   netPill.hidden = true;
-  tl.append(namePill, gemPill, coinPill, netPill);
+  // the counts sit together (one row under the name on phones and portrait tablets, beside it
+  // on wide screens); "Reconnecting…" takes their place for a moment
+  const counts = ui.el('div', 'sw-hud-counts');
+  counts.append(gemPill, coinPill, netPill);
+  tl.append(namePill, counts);
 
   // top-right: Dress Up, Stickers, Menu
   const tr = ui.el('div', 'sw-hud-tr');
@@ -433,6 +492,8 @@ export function install(game) {
   const refreshTouch = () => {
     touch.classList.toggle('sw-show', game.input.touchMode);
     hud.classList.toggle('sw-touchmode', !!game.input.touchMode);
+    // the life column (outside this HUD) keeps clear of the joystick in touch mode
+    game.container.classList.toggle('sw-touch-hud', !!game.input.touchMode);
   };
   const refreshGems = () => { gemText.textContent = String(game.profile.stats.gems || 0); };
   // Sparkle Coins (wave 2): shown once profile.coins is a number; 'coins:change' refreshes now.
