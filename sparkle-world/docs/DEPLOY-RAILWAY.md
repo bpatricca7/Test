@@ -43,7 +43,7 @@ Click the new service (the box with the repository name), then open its **Settin
 | Setting (where) | Set it to |
 |---|---|
 | **Source → Root Directory** | `sparkle-world` |
-| **Source → Branch** | `main` (or the branch you want to play) |
+| **Source → Branch** | `claude/girl-game-world-building-gp6bnl` (the game's branch today; if you later merge it into `main`, switch this to `main`) |
 | **Build → Custom Build Command** | `npm run build` |
 | **Deploy → Custom Start Command** | `npm start` |
 | **Deploy → Healthcheck Path** | `/healthz` |
@@ -72,6 +72,16 @@ below.
 4. Optional check: add `/healthz` to the address. The page should say `{"ok":true}`.
 
 On an iPad you can tap the Share button → **Add to Home Screen** so it opens like an app.
+
+### Bring her worlds over from the claude.ai version (optional)
+
+Worlds are saved per website, so worlds made on the claude.ai link don't appear on the Railway
+address by themselves (and the other way round). To move one, about 10 seconds per world:
+
+1. Open the game on claude.ai → **My Worlds** → on the world's card tap **Save to a file**.
+2. Open the Railway address → **My Worlds** → **Open a file** → pick that file.
+
+Her outfits and stickers stay with each website; she can dress up again in a minute.
 
 ## Step 6. Play together
 
