@@ -597,11 +597,14 @@ function installMarshmallow(game, sfx) {
     const u = H / 100; // 100 units tall
     const t = st.t;
     // night sky, stars, moon, hills
-    const sky = g.createLinearGradient(0, 0, 0, H);
-    sky.addColorStop(0, '#2B1F52');
-    sky.addColorStop(0.7, '#6A4A9C');
-    sky.addColorStop(1, '#8E6BB8');
-    g.fillStyle = sky;
+    if (!st.sky || st.skyH !== H) {
+      st.sky = g.createLinearGradient(0, 0, 0, H);
+      st.sky.addColorStop(0, '#2B1F52');
+      st.sky.addColorStop(0.7, '#6A4A9C');
+      st.sky.addColorStop(1, '#8E6BB8');
+      st.skyH = H;
+    }
+    g.fillStyle = st.sky;
     g.fillRect(0, 0, W, H);
     for (const [x, y, ph, s] of st.stars) {
       const a = 0.45 + 0.55 * Math.abs(Math.sin(t * 1.3 + ph));

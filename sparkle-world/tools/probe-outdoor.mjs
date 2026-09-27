@@ -105,61 +105,56 @@ async function fromBag(page, tab, item, { touch = false, color = 0 } = {}) {
 }
 
 /** Stand near block (x, y, z), aim at its top face and click it with the current tool. */
-async function clickBlockTop(page, x, y, z, { touch = false, from = null, pitch = 0.62, dist = 4.5 } = {}) {
-  const pt = await page.evaluate(([x, y, z, from, pitch, dist]) => {
-    const g = window.__game, w = g.world;
+async function clickBlockTop(page, x, y, z, { touch = false, from = null, dist = 4.5 } = {}) {
+  const pt = await page.evaluate(([x, y, z, from, dist]) => {
+    const g = window.__game, w = g.world, props = g.registry.blocks.props;
     const t = { x: x + 0.5, y: y + 1, z: z + 0.5 };
-    let px, pz;
-    if (from) [px, pz] = from;
-    else {
-      // a free spot on the ground a few blocks away (the side with the lowest ground)
-      let best = null;
-      for (let a = 0; a < 16; a++) {
-        const ang = (a / 16) * Math.PI * 2;
-        const cx = Math.floor(t.x + Math.sin(ang) * dist), cz = Math.floor(t.z + Math.cos(ang) * dist);
-        const h = w.heightAt(cx, cz);
-        if (h < 0) continue;
-        const score = Math.abs(h + 1 - (y + 1)) + (g.physics.bodyBlocked(cx + 0.5, h + 1.01, cz + 0.5, 0.3, 1.7) ? 99 : 0);
-        if (!best || score < best.score) best = { cx, cz, h, score };
-      }
-      px = best.cx + 0.5;
-      pz = best.cz + 0.5;
-    }
-    let gy = w.heightAt(Math.floor(px), Math.floor(pz)) + 1;
-    if (Math.abs(gy - (y + 1)) > 1.2) {
-      // no ground at that height nearby (a narrow peak): hover beside it instead
-      gy = y + 2.5;
-      g.player.setFlying(true);
-      g.player.teleport(px, gy, pz);
-      g.player.velocity.set(0, 0, 0);
-    } else {
-      if (g.player.flying) g.player.setFlying(false);
-      g.player.teleport(px, gy + 0.01, pz);
-    }
-    const p = g.player.position;
-    g.cameraRig.distance = 3.2;
-    g.cameraRig.yaw = Math.atan2(t.x - p.x, t.z - p.z);
-    g.cameraRig.pitch = pitch;
-    g.cameraRig.snap();
-    g.camera.updateMatrixWorld(true);
-    if (!g.__tapRig) { g.__tapRig = g.cameraRig.update; g.cameraRig.update = () => {}; }
     const r = g.renderer.domElement.getBoundingClientRect();
-    for (let i = 0; i < 24; i++) {
-      const v = g.camera.position.clone().set(t.x, t.y, t.z).project(g.camera);
-      const h = g.pick({ x: v.x, y: v.y });
-      // the top face of the block, or a flower / grass tuft standing on it (Build replaces it)
-      const onTop = h && h.type === 'block' && h.x === x && h.z === z &&
-        ((h.y === y && h.face[1] === 1) || (h.y === y + 1 && g.registry.blocks.props.replaceable[h.id]));
-      if (onTop) {
+    // where she may stand: the given spot, else every direction round the target
+    const spots = [];
+    if (from) spots.push(from);
+    else {
+      for (const d of [dist, dist + 1.5]) {
+        for (let a = 0; a < 12; a++) {
+          const ang = (a / 12) * Math.PI * 2;
+          spots.push([Math.floor(t.x + Math.sin(ang) * d) + 0.5, Math.floor(t.z + Math.cos(ang) * d) + 0.5]);
+        }
+      }
+    }
+    if (!g.__tapRig) { g.__tapRig = g.cameraRig.update; g.cameraRig.update = () => {}; }
+    for (const [px, pz] of spots) {
+      const h = w.heightAt(Math.floor(px), Math.floor(pz));
+      if (h + 1 > y + 2.2) continue; // a hill side above the target: no view from here
+      if (h + 1 < y - 0.2 || !from) {
+        // hover beside the target, a little above it, for a clear view down onto it
+        g.player.setFlying(true);
+        g.player.teleport(px, Math.max(h + 1.05, y + 2.2), pz);
+        g.player.velocity.set(0, 0, 0);
+      } else {
+        if (g.player.flying) g.player.setFlying(false);
+        g.player.teleport(px, h + 1.01, pz);
+      }
+      const p = g.player.position;
+      if (g.physics.bodyBlocked(p.x, p.y + 0.01, p.z, 0.3, 1.7)) continue;
+      g.cameraRig.distance = 3.2;
+      g.cameraRig.yaw = Math.atan2(t.x - p.x, t.z - p.z);
+      for (const pitch of [0.5, 0.35, 0.65, 0.8, 0.95, 1.1, 0.2]) {
+        g.cameraRig.pitch = pitch;
+        g.cameraRig.snap();
+        g.camera.updateMatrixWorld(true);
+        const v = g.camera.position.clone().set(t.x, t.y, t.z).project(g.camera);
+        if (Math.abs(v.x) > 0.8 || Math.abs(v.y) > 0.7) continue;
+        const hit = g.pick({ x: v.x, y: v.y });
+        // the top face of the block, or a flower / grass tuft standing on it (Build replaces it)
+        const onTop = hit && hit.type === 'block' && hit.x === x && hit.z === z &&
+          ((hit.y === y && hit.face[1] === 1) || (hit.y === y + 1 && props.replaceable[hit.id]));
+        if (!onTop) continue;
         const sx = r.left + ((v.x + 1) / 2) * r.width, sy = r.top + ((1 - v.y) / 2) * r.height;
         if (document.elementFromPoint(sx, sy) === g.renderer.domElement) return { x: sx, y: sy };
       }
-      g.cameraRig.pitch += i % 2 ? 0.05 : -0.08;
-      g.cameraRig.snap();
-      g.camera.updateMatrixWorld(true);
     }
     return null;
-  }, [x, y, z, from, pitch, dist]);
+  }, [x, y, z, from, dist]);
   if (pt) {
     if (touch) await page.touchscreen.tap(pt.x, pt.y);
     else await page.mouse.click(pt.x, pt.y);
@@ -167,6 +162,7 @@ async function clickBlockTop(page, x, y, z, { touch = false, from = null, pitch 
   await settle(page, 80);
   await page.evaluate(() => { const g = window.__game; if (g.__tapRig) { g.cameraRig.update = g.__tapRig; g.__tapRig = null; } });
   await settle(page, 250);
+  if (!pt) console.log(`  (could not get a clear click on block ${x},${y},${z})`);
   return !!pt;
 }
 
@@ -570,6 +566,12 @@ async function campPass(browser, errors) {
   await settle(page, 400);
   const basket = await page.evaluate(() => (window.__game.profile.basket || {}).smores || 0);
   check(errors, basket === 1, `the s'more went into the basket (${basket})`);
+  const food = await page.evaluate(async () => {
+    const g = window.__game, it = g.registry.items.get('food:smores');
+    const icon = it ? await g.registry.items.iconFor('food:smores') : '';
+    return { item: !!it, name: it && it.name, icon: icon.length, table: g.registry.furniture.has('food_smores') };
+  });
+  check(errors, food.item && food.table && food.icon > 1000, `the s'more is a real food: Bag Food item, table entity and a picture (${JSON.stringify(food)})`);
   // a crispy one
   await tapEntity(page, fire, { stand: [40.5, G + 1.01, 44.6] });
   await wait(page, () => window.__game.ui.current === 'marshmallow', null, 8000).catch(() => {});
@@ -626,6 +628,15 @@ async function campPass(browser, errors) {
   const morning = await page.evaluate(() => ({ t: window.__game.time.dayTime, stickers: Object.keys(window.__game.profile.stickers || {}) }));
   check(errors, morning.stickers.includes('happy_camper'), `morning in the tent, Happy Camper sticker (${morning.t.toFixed(2)})`);
   await picture(page, 'camp-9-tent-morning', [40.5, G + 2.0, 42.8], [40.5, G + 1.3, 38.7], { fov: 60 });
+  // the camper bunk: tap the top bunk
+  await page.evaluate(() => window.__game.player.stand());
+  await tapEntity(page, ids.bunk, { local: [0.5, 1.45, 1.4], stand: [48.5, G + 1.01, 41.5] });
+  st = await info(page);
+  const bunkSpot = await page.evaluate(() => { const g = window.__game, e = g.player.seatEntity; return e ? g.player.position.y - e.y : null; });
+  check(errors, st.state === 'sleep' && st.seat === 'camper_bunk' && bunkSpot > 1, `she climbs into the top bunk of the camper bunk (${st.state}, ${bunkSpot && bunkSpot.toFixed(2)} up)`);
+  await wait(page, () => window.__game.ui.fader && !window.__game.ui.fader.classList.contains('sw-on'), null, 20000).catch(() => {});
+  await settle(page, 1500);
+  await picture(page, 'camp-10-bunk', [49.5, G + 2.4, 42.6], [48.5, G + 1.6, 39], { fov: 60 });
   await context.close();
 }
 
