@@ -10,6 +10,7 @@ import { installCookingPanel } from './cooking/panel.js';
 import { installBasket } from './cooking/basket.js';
 import { lifeIcon, basketAdd, basketCount } from './pets/kit.js';
 import { FOOD, foodIcon } from './food-models.js';
+import { install as installShops } from './shops/index.js';
 
 const WARM_START = 6; // seconds of play before the recipe pictures start warming up
 const WARM_GAP = 0.6; // seconds between two warm-up pictures
@@ -23,6 +24,9 @@ function titleIcon(game, panel, name) {
 }
 
 export function install(game) {
+  // wave 2: shops & Sparkle Coins (src/things/shops); first, so the shop candies are foods
+  // before the basket defines its table pieces and Bag items
+  installShops(game);
   for (const r of RECIPES) game.registry.recipes.set(r.key, r);
   let panel = null;
   const basket = installBasket(game, { openCooking: (station) => panel && panel.open(station) });

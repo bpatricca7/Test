@@ -404,12 +404,15 @@ export function install(game) {
     hud.classList.toggle('sw-touchmode', !!game.input.touchMode);
   };
   const refreshGems = () => { gemText.textContent = String(game.profile.stats.gems || 0); };
-  // Sparkle Coins (wave 2): shown once profile.coins is a number; 'coins:change' refreshes now
+  // Sparkle Coins (wave 2): shown once profile.coins is a number; 'coins:change' refreshes now.
+  // The Shops module's flying coins count the pill up as they land (game.coins.shown).
   let lastCoins = null;
   const refreshCoins = () => {
-    const c = game.profile.coins;
-    const has = typeof c === 'number' && Number.isFinite(c);
+    const real = game.profile.coins;
+    const has = typeof real === 'number' && Number.isFinite(real);
     coinPill.hidden = !has;
+    const shown = has && game.coins && typeof game.coins.shown === 'number' ? game.coins.shown : real;
+    const c = Number.isFinite(shown) ? shown : real;
     if (!has || c === lastCoins) return;
     if (lastCoins !== null && c > lastCoins) {
       coinPill.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.18)' }, { transform: 'scale(1)' }], { duration: 380, easing: 'ease-out' });
@@ -418,6 +421,7 @@ export function install(game) {
     coinText.textContent = String(Math.floor(c));
   };
   game.events.on('coins:change', refreshCoins);
+  game.events.on('coins:shown', refreshCoins);
   let lastNight = null;
   const refreshTime = () => {
     const d = game.time.dayTime;

@@ -4,7 +4,7 @@
 // anime eyes, and every pose and emote in DESIGN.md.
 //
 //   createAvatar(look, { fx, blink }) -> { group, look, setLook, update, playEmote, dispose,
-//                                          setOpacity, emoting, settle }
+//                                          setOpacity, emoting, settle, hold, held }
 //   group: origin at the feet (seat surface when sitting, mattress-top centre when sleeping,
 //   saddle when riding), ~1.75 tall, facing +Z.
 //   fx(kind, Vector3, opts): optional particle hook (in the world: game.particles.emit).
@@ -13,7 +13,7 @@ import * as THREE from 'three';
 import { angleDelta, shade } from '../core/util.js';
 import { DEFAULT_LOOK, normalizeLook, lookSignature } from './wardrobe-data.js';
 import { GeoBuilder, Flare, lin } from './avatar/geo.js';
-import { REST, PARENT, BONES, PIVOT_Y, HIP } from './avatar/rig.js';
+import { REST, PARENT, BONES, PIVOT_Y, HIP, HAND_R } from './avatar/rig.js';
 import {
   acquire, release, acquireCloth, clothKey, hairStrands, paintEyes, paintMouth, mouthInk, paintGlasses, paintWing,
   EYE_VARIANTS,
@@ -318,6 +318,33 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     heartProp.add(new THREE.Mesh(b.build(), material('glow')));
   }
 
+  // ----- a held item (hook for other modules, e.g. a shop treat in her right hand) -----
+  // hold(object3d, pose) puts it in her hand, kept upright like the hand accessories, with the
+  // arm raised ('hold') or lifted to her mouth ('eat'); hold(null) lets go. The caller owns
+  // (and disposes) the object. Her hand accessory hides while she holds something.
+  const heldBone = new THREE.Group();
+  heldBone.name = 'held';
+  heldBone.position.set(HAND_R[0] - REST.elbowR[0], HAND_R[1] - REST.elbowR[1], HAND_R[2] - REST.elbowR[2]);
+  bones.elbowR.add(heldBone);
+  let heldObj = null, heldPose = 'hold';
+  function syncHandItem() {
+    const d = parts.dyn;
+    if (!d) return;
+    const show = !heldObj;
+    if (d.upright) d.upright.visible = show;
+    if (d.wandTip) d.wandTip.visible = show;
+    if (d.balloon) d.balloon.ball.visible = d.balloon.string.visible = show;
+  }
+  function hold(obj, pose = 'hold') {
+    heldPose = pose || 'hold';
+    if (obj !== heldObj) {
+      if (heldObj && heldObj.parent === heldBone) heldBone.remove(heldObj);
+      heldObj = obj || null;
+      if (heldObj) heldBone.add(heldObj);
+      syncHandItem();
+    }
+  }
+
   // ----- per-look parts -----
   let look = normalizeLook(lookIn);
   let sig = '';
@@ -383,6 +410,7 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
       meshes, flares, dyn: P.dyn, stride: P.stride, lift: P.lift, handPose: P.handPose, stiff: P.skirtStiff,
     };
     snapSecondary = true;
+    syncHandItem();
   }
 
   function setLook(next) {
@@ -490,7 +518,7 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
 
   function handPose(sw, a) {
     const hp = parts.handPose;
-    if (!hp) return;
+    if (!hp || heldObj) return;
     const sw2 = sw * a;
     if (hp === 'teddy') { tgt[ARX] = -0.4 + sw2 * 0.1; tgt[ARZ] = 0.26; tgt[ERX] = -1.55; tgt[ERZ] = 0.2; }
     else if (hp === 'wand') { tgt[ARX] = -0.25 - sw2 * 0.2; tgt[ARZ] = -0.16; tgt[ERX] = -1.0; }
@@ -881,6 +909,17 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
       }
     }
     if (!s.sitting && !s.sleeping && !s.riding) tgt[RPY] += parts.lift;
+    // a held item: arm up in front of her (or at her mouth for a bite); emotes keep their arms
+    heldBone.visible = !s.sleeping && !s.swimming;
+    if (heldObj && heldBone.visible && !emote) {
+      if (heldPose === 'eat') {
+        const nib = Math.max(0, Math.sin(t * 7.8)) * 0.16;
+        tgt[ARX] = -1.2 - nib; tgt[ARY] = 0.3; tgt[ARZ] = 0.1; tgt[ERX] = -1.55;
+      } else {
+        const sw2 = s.sitting || s.riding ? 0 : Math.sin(walkPhase) * Math.min(1.25, speed / 4.3);
+        tgt[ARX] = -0.35 - sw2 * 0.1; tgt[ARZ] = 0.06; tgt[ERX] = -1.3;
+      }
+    }
     // blend toward the pose
     const k = snapSecondary ? 1 : 1 - Math.exp(-rate * dt);
     for (let i = 0; i < NCH; i++) {
@@ -915,6 +954,10 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     }
     const a = Math.min(1.25, speed / 4.3);
     springs(dt, s, s.sitting || s.sleeping ? 0 : a);
+    if (heldObj) {
+      q1.copy(bones.armR.quaternion).multiply(bones.elbowR.quaternion).invert();
+      heldBone.quaternion.copy(q1);
+    }
     // face
     let eyes = 'open', mouth = look.face.smile;
     if (blinkOn) {
@@ -982,6 +1025,7 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
   }
 
   function dispose() {
+    hold(null);
     clearParts();
     for (const e of mats.values()) {
       e.mat.dispose();
@@ -1017,6 +1061,11 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     settle,
     setOpacity,
     dispose,
+    /** Put an Object3D in her right hand (pose 'hold' | 'eat'), or hold(null) to let go. */
+    hold,
+    get held() {
+      return heldObj;
+    },
     /** Bones by name (read-only use: photo poses, name tags...). */
     bones,
   };
