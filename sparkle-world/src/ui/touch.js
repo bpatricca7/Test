@@ -341,8 +341,10 @@ export function install(game) {
     if (!game.profile.tutorialDone && !bot) setTimeout(() => { if (game.mode === 'play' && !running) startTutorial(); }, 1400);
   });
   game.events.on('world:unload', () => { running = false; tut.hidden = true; clearTimeout(doneTimer); setToastTop(-1); });
-  game.events.on('block:place', () => complete('build'));
-  game.events.on('entity:place', () => complete('build'));
+  // a friend's building (multiplayer host executing her op) is not this player's tip done
+  const remote = () => !!(game.net && game.net.remoteApplying);
+  game.events.on('block:place', () => { if (!remote()) complete('build'); });
+  game.events.on('entity:place', () => { if (!remote()) complete('build'); });
   game.events.on('ui:open', ({ panel }) => { if (panel === 'bag') complete('bag'); });
   game.events.on('tool:change', ({ tool }) => { if (tool === 'hand') complete('hand'); });
   game.events.on('entity:use', () => complete('hand'));

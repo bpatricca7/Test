@@ -43,6 +43,27 @@ class FriendSystem {
     this.lastGreetAt = 0;
     this.ui = null;
     this.danceParty = { at: 0, n: 0 };
+    // multiplayer (docs/teams/net.md "NPC friends"): the host owns the friends. On a
+    // friend's page (remote) they are puppets that follow the host's motion samples
+    // (friend.netTarget) and still chat with her locally; inviting, dressing up, treats and
+    // Follow / Stay / Home / Bye ask the host. onChange(friend) is called when a friend is
+    // added, removed, restyled or changes mode (src/net/actors.js).
+    this.remote = false;
+    this.onChange = null;
+    this._hSeq = 0; // friend.h: a small per-session handle (motion samples use it)
+  }
+
+  _touch(f) {
+    if (this.onChange !== null) this.onChange(f);
+  }
+
+  /** On a friend's page (remote): "That's Lily's friend! ..." and true when the action must stop. */
+  _refused() {
+    const net = this.game.net;
+    if (!this.remote || (net && net.remoteApplying)) return false;
+    if (net && typeof net.refuse === 'function') net.refuse('npc');
+    else this.game.toast("She's your friend's friend! Ask her to help.", { icon: 'heart' });
+    return true;
   }
 
   // ---------- inviting & saying bye ----------
@@ -51,6 +72,7 @@ class FriendSystem {
     const g = this.game;
     const def = friendDef(key);
     if (!g.world || !def) return null;
+    if (this._refused()) return null;
     if (this.friends.length >= MAX_FRIENDS) {
       g.toast(`Your world is full of friends! (${MAX_FRIENDS})`, { icon: 'heart', key: 'friends-full' });
       return null;
@@ -88,6 +110,7 @@ class FriendSystem {
 
   _add(data) {
     const f = new Friend(this, data);
+    f.h = data.h > 0 ? data.h | 0 : ++this._hSeq;
     this.friends.push(f);
     this.group.add(f.group);
     const tag = friendTag(f.name, f.def.color);
@@ -96,12 +119,14 @@ class FriendSystem {
     this.game.pickables.add(f.pickable);
     this._slots();
     this._changed();
+    this._touch(f);
     return f;
   }
 
   remove(f, { fx = false } = {}) {
     const i = this.friends.indexOf(f);
     if (i < 0) return false;
+    if (this._refused()) return false;
     this.friends.splice(i, 1);
     this.game.pickables.delete(f.pickable);
     if (fx) {
@@ -115,6 +140,7 @@ class FriendSystem {
     f.dispose();
     this._slots();
     this._changed();
+    this._touch(f);
     return true;
   }
 
@@ -188,6 +214,15 @@ class FriendSystem {
 
   tap(f) {
     const g = this.game;
+    if (this.remote && f.act !== 'sleep') {
+      // a friend visiting: the host's friend waves and says hi to her (here only)
+      f.faceT = 4;
+      if (f.act !== 'sit' && f.emoteLeft <= 0) f.emote('wave');
+      g.celebrate([f.pos.x, f.pos.y + (f.act === 'sit' ? 1.4 : 1.9), f.pos.z], 'heart', { quiet: true, count: 5 });
+      sfx(g, 'babble', { pitch: f.def.pitch, volume: 0.8 });
+      this.say(f, 'greet');
+      return true;
+    }
     if (f.act === 'sleep') {
       g.celebrate([f.pos.x, f.pos.y + 0.9, f.pos.z], 'zzz', { quiet: true, count: 2 });
       g.toast(`Shh... ${f.name} is fast asleep!`, { icon: 'moon', key: 'friend-sleep' });
@@ -238,6 +273,7 @@ class FriendSystem {
   // ---------- modes ----------
 
   setMode(f, mode, { quiet = false } = {}) {
+    if (this._refused()) return;
     if (mode === 'follow' || mode === 'stay') {
       if (f.act === 'sit' || f.act === 'sleep' || f.act === 'toSeat' || f.act === 'toBed') f.standUp(true);
     }
@@ -250,11 +286,13 @@ class FriendSystem {
     }
     this._slots();
     this._changed();
+    this._touch(f);
   }
 
   call(f) {
     const pl = this.game.player;
     if (!pl) return;
+    if (this._refused()) return;
     if (f.act === 'sit' || f.act === 'sleep' || f.act === 'toSeat' || f.act === 'toBed') f.standUp(false);
     const p = pl.position;
     f.teleportNear(p.x, p.y, p.z, 1.3, 2.3);
@@ -266,6 +304,7 @@ class FriendSystem {
   }
 
   sendHome(f) {
+    if (this._refused()) return;
     if (f.act === 'sit' || f.act === 'sleep' || f.act === 'toSeat' || f.act === 'toBed') f.standUp(false);
     f.mode = 'home';
     const [x, y, z] = f.home;
@@ -273,13 +312,14 @@ class FriendSystem {
     this.game.toast(`${f.name} went back to her spot!`, { icon: 'home' });
     this._slots();
     this._changed();
+    this._touch(f);
   }
 
   // ---------- dancing & emotes ----------
 
   danceTogether(f) {
     const pl = this.game.player;
-    if (f.act === 'sit') f.standUp(true);
+    if (f.act === 'sit' && !this.remote) f.standUp(true);
     f.faceT = 4;
     f.emote('dance', 0.1);
     // she dances too (and every friend nearby joins in through the 'emote' event)
@@ -297,6 +337,7 @@ class FriendSystem {
       if (f.act === 'sleep' || f.act === 'toBed' || f.eatT > 0) continue;
       const d = f.distToPlayer();
       if (d > 10) continue;
+      if (this.remote && f.act === 'sit') continue; // the host's friend stays in her seat
       if (f.act === 'sit') {
         if (name !== 'dance' || d > 7) continue;
         f.standUp(true);
@@ -361,6 +402,7 @@ class FriendSystem {
   /** Give a friend a treat: free (the cookie) or one from the basket. */
   giveTreat(f, k, free = false) {
     const g = this.game;
+    if (this._refused()) return false;
     if (!free && !basketTake(g, k, 1)) {
       g.toast(`No ${foodName(k, 2)} in your basket!`, { icon: 'heart' });
       return false;
@@ -398,6 +440,7 @@ class FriendSystem {
 
   style(f, how, key = null) {
     const g = this.game;
+    if (this._refused()) return false;
     let look;
     if (how === 'outfit') look = wearOutfit(f.look, key);
     else if (how === 'hair') look = nextHair(f.look);
@@ -410,6 +453,7 @@ class FriendSystem {
     if (f.act !== 'sit' && f.act !== 'sleep') f.emote(how === 'hair' ? 'heart' : 'twirl');
     this.say(f, how === 'twins' ? 'twins' : how === 'hair' ? 'hair' : 'style');
     this.game.events.emit('friend:style', { friend: f, look: f.look });
+    this._touch(f);
     return true;
   }
 
@@ -544,7 +588,8 @@ class FriendSystem {
       f.group.visible = !far;
       _sphere.center.set(f.pos.x, f.pos.y + 0.9, f.pos.z);
       f.inView = !far && _frustum.intersectsSphere(_sphere);
-      f.update(dt, f.inView);
+      if (this.remote) f.puppet(dt, f.inView);
+      else f.update(dt, f.inView);
       const tag = this.tags.get(f);
       if (tag) {
         tag.visible = f.inView && d2 < TAG_DIST * TAG_DIST && d2 > 1.4;
@@ -645,6 +690,7 @@ export function install(game) {
     icon: () => inviteIcon(game),
     use(g, hit) {
       if (!hit) return false;
+      if (sys._refused()) return false;
       if (sys.friends.length >= MAX_FRIENDS) {
         g.toast(`Your world is full of friends! (${MAX_FRIENDS})`, { icon: 'heart', key: 'friends-full' });
         g.ui.open('friends');
@@ -683,6 +729,7 @@ export function install(game) {
   game.events.on('emote', ({ name }) => sys._mirror(name));
   // morning: everyone wakes up, one of them says good morning
   game.events.on('time:morning', () => {
+    if (sys.remote) return; // the host's friends wake up at the host's
     let said = false;
     for (const f of sys.friends) {
       if (f.wake()) {
@@ -696,6 +743,7 @@ export function install(game) {
   });
   // she goes to sleep: friends nearby tuck into free beds too (a sleepover!)
   game.events.on('player:sleep', () => {
+    if (sys.remote) return;
     for (const f of sys.friends) {
       if (f.act === 'sleep' || f.distToPlayer() > 30) continue;
       if (f.act === 'sit' || f.act === 'toSeat') f.standUp(false);
@@ -714,7 +762,7 @@ export function install(game) {
   }
   game.events.on('entity:remove', ({ entity }) => {
     // her seat or bed was taken away: stand up right now
-    if (!entity) return;
+    if (!entity || sys.remote) return;
     for (const f of sys.friends) {
       const s = f.seat || f.bed;
       if (s && !s.ground && s.uid === entity.uid) f.standUp(true);

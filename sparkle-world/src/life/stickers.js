@@ -241,7 +241,11 @@ export function install(game) {
   if (game.ui) game.ui.addStyles(CSS);
 
   const ev = game.events;
+  // multiplayer (docs/MULTIPLAYER.md §9.11): world events caused by a friend's change (the
+  // host executing her op) never count toward this player's stickers and stats
+  const remote = () => !!(game.net && game.net.remoteApplying);
   ev.on('block:place', ({ key }) => {
+    if (remote()) return;
     const n = bump('blocksPlaced');
     if (n >= 1) game.award('first_block');
     if (n >= 100) game.award('builder');
@@ -263,9 +267,9 @@ export function install(game) {
   let stargazing = -1;
   ev.on('time:night', () => { if (game.mode === 'play' && !game.stickers.has('night_owl')) stargazing = 0; });
   ev.on('world:unload', () => { stargazing = -1; });
-  ev.on('pet:adopt', () => game.award('best_friends'));
-  ev.on('pet:pet', () => { if (bump('petsPetted') >= 10) game.award('pet_lover'); });
-  ev.on('pet:ride', ({ pet }) => { if (pet && (pet.species === 'unicorn' || pet.kind === 'unicorn')) game.award('unicorn_rider'); });
+  ev.on('pet:adopt', () => { if (!remote()) game.award('best_friends'); });
+  ev.on('pet:pet', () => { if (!remote() && bump('petsPetted') >= 10) game.award('pet_lover'); });
+  ev.on('pet:ride', ({ pet }) => { if (!remote() && pet && (pet.species === 'unicorn' || pet.kind === 'unicorn')) game.award('unicorn_rider'); });
   ev.on('cook:done', ({ recipe }) => {
     const s = stats();
     s.recipesCooked = s.recipesCooked || {};
@@ -275,7 +279,7 @@ export function install(game) {
     const allRecipes = [...game.registry.recipes.keys()];
     if (allRecipes.length && allRecipes.every((k) => s.recipesCooked[k])) game.award('master_chef');
   });
-  ev.on('garden:harvest', () => game.award('green_thumb'));
+  ev.on('garden:harvest', () => { if (!remote()) game.award('green_thumb'); });
   ev.on('outfit:changed', () => { if (bump('outfitChanges') >= 5) game.award('fashionista'); });
   // gem:collect { count: found in this world, total: gems in this world }
   ev.on('gem:collect', ({ count, total }) => {
@@ -286,9 +290,9 @@ export function install(game) {
   });
   ev.on('piano:note', () => { if (bump('notesPlayed') >= 20) game.award('musician'); });
   ev.on('photo:taken', () => game.award('photographer'));
-  ev.on('prefab:place', () => game.award('magic_builder'));
+  ev.on('prefab:place', () => { if (!remote()) game.award('magic_builder'); });
   ev.on('entity:place', ({ entity }) => {
-    if (!game.entities) return;
+    if (!game.entities || remote()) return;
     const keys = new Set(game.entities.all().map((e) => e.key));
     const hasBed = [...keys].some((k) => k.startsWith('bed_'));
     const hasDoor = [...keys].some((k) => k.startsWith('door'));

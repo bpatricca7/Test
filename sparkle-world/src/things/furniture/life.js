@@ -914,7 +914,8 @@ export function installLife(game, sfx) {
 
   // mail arrives every morning
   game.events.on('time:morning', () => {
-    if (!game.world) return;
+    // a friend visiting (multiplayer guest) gets the host's mail flags from the host
+    if (!game.world || (game.net && game.net.isGuest)) return;
     for (const e of E.all()) if (e.key === 'mailbox' && e.data.mail === false) E.setData(e, { mail: true });
   });
 

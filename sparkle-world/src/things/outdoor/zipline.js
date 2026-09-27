@@ -86,6 +86,9 @@ export class ZipLines {
     this._assistHold = 0;
     this._sweeps = [];
     this.freeze = false; // probes: hold the ride still for a picture
+    // multiplayer (src/net/actors.js, kind 'zip'): called whenever a link is made or undone,
+    // so the host can send its link list; friends' pages follow that list (setLinks)
+    this.onChange = null;
   }
 
   // ---------- geometry helpers ----------
@@ -189,6 +192,7 @@ export class ZipLines {
     };
     this.links.push(l);
     this._placeTrolley(l, l.s, 0);
+    if (this.onChange !== null) this.onChange();
     if (fx) {
       this.sfx.zing();
       this._sweeps.push({ l, t: 0 });
@@ -204,6 +208,26 @@ export class ZipLines {
     disposeObject(l.obj);
     l.clampGeo.dispose();
     this._sweeps = this._sweeps.filter((s) => s.l !== l);
+    if (this.onChange !== null) this.onChange();
+  }
+
+  /**
+   * Multiplayer guest: make the links exactly the host's list [[uidA, uidB], ...] (towers
+   * that are not here yet are skipped; call again when they arrive).
+   */
+  setLinks(list) {
+    const want = new Map();
+    for (const r of Array.isArray(list) ? list : []) {
+      if (Array.isArray(r) && r.length >= 2) want.set(r[0] + ':' + r[1], r);
+    }
+    for (const l of this.links.slice()) if (!want.has(l.a + ':' + l.b)) this.unlink(l);
+    for (const r of want.values()) {
+      if (this.links.some((l) => l.a === r[0] && l.b === r[1])) continue;
+      const ea = this.E.byUid(r[0]), eb = this.E.byUid(r[1]);
+      if (!ea || !eb || ea === eb || ea.key !== 'zipline_tower' || eb.key !== 'zipline_tower') continue;
+      for (const l of this.links.slice()) if (l.a === ea.uid || l.b === ea.uid || l.a === eb.uid || l.b === eb.uid) this.unlink(l);
+      this.link(ea, eb, { parked: r[2] ? 'b' : 'a' });
+    }
   }
 
   clear() {

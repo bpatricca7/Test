@@ -40,6 +40,29 @@ class PetSystem {
     this._glowT = 0;
     this._sparkT = 0;
     this.ui = null;
+    // multiplayer (docs/MULTIPLAYER.md §9.7): the host owns every pet. On a friend's page
+    // (remote) the pets are puppets that follow the host's motion samples (pet.netTarget);
+    // she can pet and tickle them, everything else asks the host. onChange(pet) is called
+    // when a pet is added, removed, renamed or changes mode (src/net/actors.js).
+    this.remote = false;
+    this.onChange = null;
+    this._hSeq = 0; // pet.h: a small per-session handle (motion samples use it)
+  }
+
+  _touch(pet) {
+    if (this.onChange !== null) this.onChange(pet);
+  }
+
+  /**
+   * On a friend's page (remote): the host's pets only do what the host asks. Shows
+   * "That's Lily's pet! Ask her to help." and returns true when the action must stop.
+   */
+  _refused() {
+    const net = this.game.net;
+    if (!this.remote || (net && net.remoteApplying)) return false;
+    if (net && typeof net.refuse === 'function') net.refuse('pet');
+    else this.game.toast("That's your friend's pet! Ask her to help.", { icon: 'heart' });
+    return true;
   }
 
   // ---------- adopting & removing ----------
@@ -47,6 +70,7 @@ class PetSystem {
   adopt(species, variant, name, spot, { fx = true, opts = null } = {}) {
     const g = this.game;
     if (!g.world || !SPECIES[species]) return null;
+    if (this._refused()) return null;
     if (this.pets.length >= MAX_PETS) {
       g.toast(`You have ${MAX_PETS} pets! That's so much love!`, { icon: 'heart' });
       return null;
@@ -78,6 +102,7 @@ class PetSystem {
 
   _add(data) {
     const pet = new Pet(this, data);
+    pet.h = data.h > 0 ? data.h | 0 : ++this._hSeq;
     this.pets.push(pet);
     this.group.add(pet.object3d);
     this.game.pickables.add(pet.pickable);
@@ -88,12 +113,14 @@ class PetSystem {
     }
     this._slots();
     this._changed();
+    this._touch(pet);
     return pet;
   }
 
   remove(pet, { fx = false } = {}) {
     const i = this.pets.indexOf(pet);
     if (i < 0) return false;
+    if (this._refused()) return false;
     if (this.rider === pet) this.dismount();
     this.pets.splice(i, 1);
     this.game.pickables.delete(pet.pickable);
@@ -111,6 +138,7 @@ class PetSystem {
     pet.dispose();
     this._slots();
     this._changed();
+    this._touch(pet);
     return true;
   }
 
@@ -168,7 +196,8 @@ class PetSystem {
     if (pet.anim.trick === null && Math.random() < 0.7) pet.trick(Math.random() < 0.6 ? 'hop' : pet.spec.trick);
     pet.love++;
     g.events.emit('pet:pet', { pet });
-    if (this.ui) this.ui.showBubble(pet);
+    // a friend visiting pets the host's pet; its care (treats, rides, modes) stays with the host
+    if (this.ui && !this.remote) this.ui.showBubble(pet);
     return true;
   }
 
@@ -230,6 +259,7 @@ class PetSystem {
   /** Feed a pet: key 'treat' (free, the species' favourite) or a food key from the basket. */
   feed(pet, key = 'treat') {
     const g = this.game;
+    if (this._refused()) return false;
     let food = key;
     if (key === 'treat') food = pet.spec.treat;
     else if (!basketTake(g, key, 1)) {
@@ -290,6 +320,7 @@ class PetSystem {
   // ---------- modes ----------
 
   setMode(pet, mode, { quiet = false } = {}) {
+    if (this._refused()) return;
     pet.mode = mode;
     pet.idleFor = 0;
     if (mode === 'stay') {
@@ -305,12 +336,14 @@ class PetSystem {
     if (!quiet) this.voice(pet, 0.8, true);
     this._slots();
     this._changed();
+    this._touch(pet);
   }
 
   /** Call a pet over to the player (pops next to her). */
   call(pet, announce = true) {
     const pl = this.game.player;
     if (!pl) return;
+    if (this._refused()) return;
     if (this.rider === pet) return;
     if (pet.state === 'sleep') pet.wake();
     pet.mode = 'follow';
@@ -327,6 +360,7 @@ class PetSystem {
   }
 
   sendHome(pet) {
+    if (this._refused()) return;
     if (this.rider === pet) this.dismount();
     if (pet.state === 'sleep') pet.wake();
     pet.mode = 'home';
@@ -335,6 +369,7 @@ class PetSystem {
     this.game.toast(`${pet.name} went home!`, { icon: 'home' });
     this._slots();
     this._changed();
+    this._touch(pet);
   }
 
   // ---------- riding ----------
@@ -342,6 +377,7 @@ class PetSystem {
   mount(pet) {
     const g = this.game, pl = g.player;
     if (!pl || !pet.spec.rideable || pet.riding) return false;
+    if (this._refused()) return false;
     if (this.rider) this.dismount();
     if (pl.flying) pl.setFlying(false);
     if (pl.state === 'sit' || pl.state === 'sleep') pl.stand();
@@ -482,7 +518,8 @@ class PetSystem {
       const moving = Math.hypot(pl.velocity.x, pl.velocity.z) > 0.2 || pl.state === 'ride';
       this.playerStillT = moving ? 0 : this.playerStillT + dt;
     }
-    for (let i = 0; i < this.pets.length; i++) this.pets[i].update(dt);
+    if (this.remote) for (let i = 0; i < this.pets.length; i++) this.pets[i].puppet(dt);
+    else for (let i = 0; i < this.pets.length; i++) this.pets[i].update(dt);
     this.zzz.update(dt);
     // unicorn trails + sparkles
     this._sparkT -= dt;
@@ -598,6 +635,7 @@ export function install(game) {
       icon: () => petThumb(game, species, spec.variants[0].key),
       use(g, hit) {
         if (!hit) return false;
+        if (sys._refused()) return false;
         if (sys.pets.length >= MAX_PETS) {
           g.toast(`You have ${MAX_PETS} pets! That's so much love!`, { icon: 'heart' });
           return false;
@@ -635,6 +673,7 @@ export function install(game) {
 
   // wake everyone up in the morning; curl up when she goes to sleep
   game.events.on('time:morning', () => {
+    if (sys.remote) return; // the host's pets wake up at the host's
     for (const p of sys.pets) {
       if (p.state === 'sleep' || p.state === 'toBed') {
         p.wake();
@@ -643,6 +682,7 @@ export function install(game) {
     }
   });
   game.events.on('player:sleep', () => {
+    if (sys.remote) return;
     for (const p of sys.pets) if (!p.riding && p.isNearPlayer(16) && p.state !== 'sleep') {
       p.state = 'sleep';
       p.zzzT = 0.6;

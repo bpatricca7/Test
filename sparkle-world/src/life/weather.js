@@ -199,6 +199,15 @@ export function install(game) {
   const onBlock = ({ x, z }) => heightmap.setColumn(x, z);
   game.events.on('block:place', onBlock);
   game.events.on('block:remove', onBlock);
+  // a friend's building arrives silently (multiplayer guest): rain stops falling inside her new roof
+  game.events.on('net:applied', ({ cells }) => {
+    if (!heightmap.world) return;
+    if (!cells) {
+      heightmap.attach(heightmap.world, game.registry.blocks.props);
+      return;
+    }
+    for (let k = 0; k + 2 < cells.length; k += 3) heightmap.setColumn(cells[k], cells[k + 2]);
+  });
 
   game.addSystem({
     name: 'weather',

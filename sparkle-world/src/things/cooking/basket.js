@@ -99,12 +99,15 @@ export function installBasket(game, { openCooking }) {
       hint: () => 'Tap to smell the flowers',
     });
     // a placed dish came out of the basket; removing it puts it back
+    // multiplayer: only this player's own placing / removing touches her basket (§9.11)
     game.events.on('entity:place', ({ entity }) => {
+      if (game.net && game.net.remoteApplying) return;
       if (entity && entity.key.startsWith('food_') && entity.data && entity.data.food && basketCount(game, entity.data.food) > 0) {
         basketAdd(game, entity.data.food, -1);
       }
     });
     game.events.on('entity:remove', ({ entity }) => {
+      if (game.net && game.net.remoteApplying) return;
       if (entity && entity.key.startsWith('food_') && entity.data && entity.data.food) basketAdd(game, entity.data.food, 1);
     });
   }

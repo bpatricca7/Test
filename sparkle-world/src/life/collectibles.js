@@ -323,6 +323,18 @@ export function install(game) {
   game.events.on('block:place', ({ x, y, z }) => {
     for (const g of gems) if (!g.got && g.x === x && g.y === y && g.z === z) unbury(g);
   });
+  // a friend's building arrives silently (multiplayer guest): no gem stays inside it
+  game.events.on('net:applied', ({ cells }) => {
+    if (!game.world || !gems.length) return;
+    if (!cells) {
+      for (const g of gems) if (!g.got) unbury(g);
+      return;
+    }
+    for (let k = 0; k + 2 < cells.length; k += 3) {
+      const x = cells[k], y = cells[k + 1], z = cells[k + 2];
+      for (const g of gems) if (!g.got && g.x === x && g.y === y && g.z === z) unbury(g);
+    }
+  });
 
   game.gems = {
     colors: GEM_COLORS,

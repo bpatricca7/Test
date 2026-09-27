@@ -380,6 +380,7 @@ export function installPetUI(game, sys) {
   };
 
   async function rename(pet) {
+    if (sys._refused && sys._refused()) return;
     const name = await ui.textInput({ title: `New name for ${pet.name}`, value: pet.name, suggestions: suggestions(pet.species).slice(0, 6), ok: 'Save' });
     if (!name) return;
     pet.setName(name);
@@ -389,6 +390,7 @@ export function installPetUI(game, sys) {
   }
 
   async function goodbye(pet) {
+    if (sys._refused && sys._refused()) return;
     const first = await ui.confirm({ title: `Say goodbye to ${pet.name}?`, text: `${pet.name} will go back to the pet meadow.`, yes: 'Bye bye', no: 'Stay!', icon: 'heart' });
     if (!first) return;
     const second = await ui.confirm({ title: 'Are you sure?', text: `Give ${pet.name} one last hug!`, yes: 'Yes, bye', no: 'No, stay!', icon: 'heart' });

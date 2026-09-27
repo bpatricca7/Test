@@ -96,6 +96,7 @@ export function installPetStickers(game) {
     register();
     if (game.stickers && !game.stickers.has(id)) game.award(id);
   };
-  game.events.on('pet:ride', ({ pet }) => { if (pet && pet.species === 'horse') award('giddy_up'); });
-  game.events.on('pet:adopt', ({ pet }) => { if (pet && pet.species === 'turtle') award('shell_buddy'); });
+  const remote = () => !!(game.net && game.net.remoteApplying);
+  game.events.on('pet:ride', ({ pet }) => { if (!remote() && pet && pet.species === 'horse') award('giddy_up'); });
+  game.events.on('pet:adopt', ({ pet }) => { if (!remote() && pet && pet.species === 'turtle') award('shell_buddy'); });
 }

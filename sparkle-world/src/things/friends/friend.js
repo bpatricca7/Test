@@ -18,6 +18,8 @@ const TELEPORT_DIST = 24;
 const TAU = Math.PI * 2;
 // follow slots: beside and a little behind her, left and right
 const SLOTS = [1.05, -1.05, 1.75, -1.75, 2.35, -2.35];
+// emotes in the multiplayer motion sample (index; see netSample)
+const NET_EMOTES = ['wave', 'dance', 'twirl', 'cartwheel', 'jump', 'heart', 'sit'];
 
 export class Friend {
   constructor(sys, data) {
@@ -179,6 +181,9 @@ export class Friend {
     this.vel.x = 0;
     this.vel.z = 0;
     this.emoteLeft = this.avatar.playEmote(name) || 2;
+    // for friends' pages (multiplayer): the last emote and a counter
+    const ei = NET_EMOTES.indexOf(name);
+    if (ei >= 0) this.netEmote = ((this.netEmote >> 3) + 1) * 8 + ei;
     return true;
   }
 
@@ -189,6 +194,91 @@ export class Friend {
   setLook(look) {
     this.look = normalizeLook({ ...look, name: this.name });
     this.avatar.setLook(this.look);
+  }
+
+  // ---------- multiplayer puppet (a friend's page shows the host's friend) ----------
+
+  /**
+   * The motion sample for the host's presence: [h, x*20, y*20, z*20, yaw*100, st, line, emo];
+   * st 'w' walk / stand, 's' sit, 'z' sleep, 'i' swim; line -1 (speech is not sent in v1);
+   * emo = counter * 8 + emote index (0 = none yet).
+   */
+  netSample() {
+    const st = this.act === 'sit' ? 's' : this.act === 'sleep' ? 'z' : this.swimming ? 'i' : 'w';
+    const p = this.pos;
+    return [this.h | 0, Math.round(p.x * 20), Math.round(p.y * 20), Math.round(p.z * 20), Math.round(this.yaw * 100), st, -1, this.netEmote | 0];
+  }
+
+  setNetTarget(s) {
+    let t = this.netTarget;
+    if (!t) {
+      t = this.netTarget = { x: 0, y: 0, z: 0, yaw: 0, st: 'w', emo: 0, fresh: true };
+      this._emoSeen = s[7] | 0; // do not replay the emote she did before we came
+    }
+    t.x = s[1] / 20;
+    t.y = s[2] / 20;
+    t.z = s[3] / 20;
+    t.yaw = s[4] / 100;
+    t.st = typeof s[5] === 'string' ? s[5] : 'w';
+    t.emo = s[7] | 0;
+  }
+
+  /** Per frame on a friend's page: glide toward the host's latest sample, pose, emote. */
+  puppet(dt, animate) {
+    const t = this.netTarget;
+    const p = this.pos;
+    this.greetT += dt;
+    if (t) {
+      const dx = t.x - p.x, dy = t.y - p.y, dz = t.z - p.z;
+      const d = Math.hypot(dx, dy, dz);
+      if (t.fresh || d > 8) {
+        t.fresh = false;
+        p.set(t.x, t.y, t.z);
+        this.yaw = t.yaw;
+        this.hs = 0;
+      } else {
+        const k = 1 - Math.exp(-dt * 10);
+        p.x += dx * k;
+        p.y += dy * k;
+        p.z += dz * k;
+        const hs = dt > 0 ? (Math.hypot(dx, dz) * k) / dt : 0;
+        this.hs += (hs - this.hs) * Math.min(1, dt * 8);
+        if (this.faceT <= 0 || this.emoteLeft > 0) this.yaw += angleDelta(this.yaw, t.yaw) * Math.min(1, dt * 10);
+      }
+      const act = t.st === 's' ? 'sit' : t.st === 'z' ? 'sleep' : 'idle';
+      if (act !== this.act) {
+        this.act = act;
+        if (act !== 'idle') {
+          this.emoteLeft = 0;
+          if (this.avatar.stopEmote) this.avatar.stopEmote();
+        }
+      }
+      this.swimming = t.st === 'i';
+      this.onGround = true;
+      if (t.emo !== this._emoSeen) {
+        this._emoSeen = t.emo;
+        const name = NET_EMOTES[t.emo & 7];
+        if (name && act === 'idle') this.emoteLeft = this.avatar.playEmote(name) || 2;
+      }
+    }
+    if (this.faceT > 0) {
+      this.faceT -= dt;
+      if (this.act === 'idle' && this.hs < 0.3 && this.emoteLeft <= 0) this.facePlayer(dt, 5);
+    }
+    if (this.emoteLeft > 0) this.emoteLeft -= dt;
+    this.group.rotation.y = this.yaw;
+    if (animate) {
+      this.avatar.update(dt, {
+        speed: this.emoteLeft > 0 && this.hs < 1.6 ? 0 : this.hs,
+        onGround: this.onGround,
+        swimming: this.swimming,
+        flying: false,
+        sitting: this.act === 'sit',
+        sleeping: this.act === 'sleep',
+        riding: false,
+      });
+    }
+    this._updateBox();
   }
 
   // ---------- seats & beds ----------

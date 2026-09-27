@@ -166,6 +166,24 @@ export function install(game) {
     } else if (k === 'rope_bridge') bridges.dirty = true;
   });
 
+  // multiplayer guest: pieces the host placed arrive silently (no entity events): keep the
+  // ladders and whole-bridge Remove in step (the zip links follow the host's list, actors.js)
+  game.events.on('net:applied', ({ placed, removed }) => {
+    if (!game.world) return;
+    if (removed) {
+      for (const e of removed) {
+        if (e.key === 'zipline_tower' || e.key === 'tree_platform') ladders.untrack(e);
+        if (e.key === 'zipline_tower') zip.onRemove(e);
+      }
+    }
+    if (placed) {
+      for (const e of placed) {
+        if (e.key === 'zipline_tower' || e.key === 'tree_platform') ladders.track(e);
+        else if (e.key === 'rope_bridge') bridges.patch(e);
+      }
+    }
+  });
+
   let repatch = 0, creakT = 0;
   const onBridge = () => {
     const p = game.player;

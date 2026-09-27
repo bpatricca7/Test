@@ -116,6 +116,7 @@ export class Pet {
     this.tagH = this.tag.scale.y;
     this.tag.position.y = this.tagY;
     this.object3d.add(this.tag);
+    if (this.sys.pets.includes(this) && this.sys._touch) this.sys._touch(this);
   }
 
   serialize() {
@@ -500,6 +501,74 @@ export class Pet {
     }
     this.hs = Math.hypot(v.x, v.z);
     if (this.hs > 0.4) this.yaw += angleDelta(this.yaw, Math.atan2(v.x, v.z)) * Math.min(1, 9 * dt);
+  }
+
+  // ---------- multiplayer puppet (a friend's page shows the host's pet) ----------
+
+  /**
+   * Where the host says this pet is: sample [h, x*20, y*20, z*20, yaw*100, st] (st: 'w' walk /
+   * stand, 's' sit, 'l' lie, 'z' sleep, 'i' swim, 'h' ridden, 'f' ridden in the air).
+   */
+  setNetTarget(sample) {
+    const t = this.netTarget || (this.netTarget = { x: 0, y: 0, z: 0, yaw: 0, st: 'w', fresh: true });
+    t.x = sample[1] / 20;
+    t.y = sample[2] / 20;
+    t.z = sample[3] / 20;
+    t.yaw = sample[4] / 100;
+    t.st = typeof sample[5] === 'string' ? sample[5] : 'w';
+  }
+
+  /** The motion sample of this pet for the host's presence (see setNetTarget). */
+  netSample() {
+    const a = this.anim;
+    let st = 'w';
+    if (this.riding) st = a.flying ? 'f' : 'h';
+    else if (this.state === 'sleep' || a.pose === 'sleep') st = 'z';
+    else if (this.swimming) st = 'i';
+    else if (a.pose === 'sit') st = 's';
+    else if (a.pose === 'lie') st = 'l';
+    const p = this.pos;
+    return [this.h | 0, Math.round(p.x * 20), Math.round(p.y * 20), Math.round(p.z * 20), Math.round(this.yaw * 100), st];
+  }
+
+  /** Per frame on a friend's page: glide toward the host's latest sample, then animate. */
+  puppet(dt) {
+    const t = this.netTarget;
+    const p = this.pos;
+    if (t) {
+      const dx = t.x - p.x, dy = t.y - p.y, dz = t.z - p.z;
+      const d = Math.hypot(dx, dy, dz);
+      if (t.fresh || d > 8) {
+        t.fresh = false;
+        p.set(t.x, t.y, t.z);
+        this.yaw = t.yaw;
+        this.hs = 0;
+      } else {
+        const k = 1 - Math.exp(-dt * 10);
+        p.x += dx * k;
+        p.y += dy * k;
+        p.z += dz * k;
+        const hs = dt > 0 ? (Math.hypot(dx, dz) * k) / dt : 0;
+        this.hs += (hs - this.hs) * Math.min(1, dt * 8);
+        this.yaw += angleDelta(this.yaw, t.yaw) * Math.min(1, dt * 10);
+      }
+      const st = t.st;
+      this.swimming = st === 'i';
+      this.onGround = st !== 'f';
+      this.inBed = st === 'z';
+      this.anim.flying = st === 'f';
+      this.anim.pose = st === 's' ? 'sit' : st === 'l' ? 'lie' : st === 'z' ? 'sleep' : 'stand';
+      if (this.onGround) this.groundY = p.y;
+      if (st === 'z') {
+        this.zzzT -= dt;
+        if (this.zzzT <= 0) {
+          this.zzzT = 1.3 + Math.random() * 0.6;
+          this.sys.zzz.spawn(p.x + Math.sin(this.yaw) * this.ext * 0.4, p.y + this.top * 0.7, p.z + Math.cos(this.yaw) * this.ext * 0.4);
+        }
+      }
+    }
+    this.lookAtPlayer = this.anim.pose !== 'sleep' && this.hs < 0.4 && this.isNearPlayer(5);
+    this._post(dt);
   }
 
   // ---------- riding ----------
