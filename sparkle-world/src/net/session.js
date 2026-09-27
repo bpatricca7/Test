@@ -341,6 +341,18 @@ export class NetSession {
     this.hostCore?.setHidden(hidden);
   }
 
+  /** Guest: outbox entries still waiting for the host (the HUD shows "sending..." above 20). */
+  sending() {
+    const g = this.guestCore;
+    return g ? g.outbox.length + (g.run ? 1 : 0) : 0;
+  }
+
+  /** debug.net.admitAll: let every knock in without a card. */
+  setAutoAdmit(on) {
+    this.options = { ...this.options, autoAdmit: !!on };
+    if (this.hostCore) this.hostCore.autoAdmit = !!on;
+  }
+
   admit(peer) { return this.hostCore?.admit(peer) ?? false; }
   deny(peer) { this.hostCore?.deny(peer); }
   kick(peer) { this.hostCore?.kick(peer); }

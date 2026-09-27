@@ -76,6 +76,7 @@ export class NetGuest {
     this.rejected = new Set();
     this.lastRejectToast = -Infinity;
     this.obKey = '';
+    this.admKey = '';
 
     // environment following
     this.blockHash = 0;
@@ -141,9 +142,11 @@ export class NetGuest {
 
   _find(now) {
     const hosts = this.t.peers().filter((p) => !p.self && p.state.r === 'h' && p.state.end !== 1);
-    const ok = hosts.filter((p) => p.state.v === PROTOCOL && p.state.pv === this.build && typeof p.state.ep === 'string');
+    const same = hosts.filter((p) => p.state.v === PROTOCOL && p.state.pv === this.build);
+    // a host still picking her code has no epoch yet: wait for it
+    const ok = same.filter((p) => typeof p.state.ep === 'string' && p.state.ep !== '');
     if (ok.length === 0) {
-      if (hosts.length > 0 && now - this.findStart > 1500) return this._end('version');
+      if (hosts.length > 0 && same.length === 0 && now - this.findStart > 1500) return this._end('version');
       if (now - this.findStart > C.FIND_HOST) return this._end('no_host');
       return;
     }
@@ -214,6 +217,11 @@ export class NetGuest {
       return this._newEpoch(entry, now, true);
     }
     this.hd = Math.max(this.hd, hs.hd);
+    const admKey = JSON.stringify(hs.adm);
+    if (admKey !== this.admKey) {
+      this.admKey = admKey;
+      this.session.emit('players', { reason: 'roster', adm: hs.adm });
+    }
     // fast outbox trim by the host's processed-through for my seat
     for (const [seat, L] of hs.ak) if (seat === this.seat) this._trim(L);
     if (this.live) {
