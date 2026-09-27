@@ -818,6 +818,8 @@ trailers you can camp in and do things on the inside, like a dream camper or a h
      sandwich; toppings sprinkles, cherry, whipped cream, chocolate sauce, gummy bears. Build-your-own with a live
      3D preview.
    - Bought treats go into the basket: eat, share with pets/friends, place on tables, or **hold it in your hand**.
+   - As built: `src/things/shops`, see `docs/teams/shops.md` (coins API and events, treat keys `treat_*`,
+     the avatar's `hold()` hook).
 3. **More pets** — add **turtle** and **horse** (rideable, several coat colors) plus more dog and cat breeds.
 4. **Zip lines** — place a start tower and an end tower (auto-links the nearest), a cable between them; Hand-tap
    the start to zip across with a whoosh (the avatar hangs from a handle). Works from treehouses.
