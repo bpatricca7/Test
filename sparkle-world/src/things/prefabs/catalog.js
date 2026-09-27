@@ -5,11 +5,11 @@ import { cottage, princessCastle } from './houses-1.js';
 import { treehouse, candyHouse, beachHut, igloo } from './houses-2.js';
 import { bakery, petShop, modernHouse, barn } from './houses-3.js';
 import { rainbowBridge, flowerGarden, playground } from './builds.js';
-import { sparkleCamper, retroTrailer, camperVan } from './camp.js';
-import { friendshipTreehouse, fairyTreehouse } from './trees.js';
+import { sparkleCamper, retroTrailer, camperVan, campground } from './camp.js';
+import { friendshipTreehouse, fairyTreehouse, lookoutTreehouse } from './trees.js';
 
 export const PREFABS = [
   cottage, princessCastle, treehouse, candyHouse, beachHut, igloo, bakery, petShop, modernHouse, barn,
   rainbowBridge, flowerGarden, playground,
-  sparkleCamper, retroTrailer, camperVan, friendshipTreehouse, fairyTreehouse,
+  sparkleCamper, retroTrailer, camperVan, campground, friendshipTreehouse, fairyTreehouse, lookoutTreehouse,
 ];

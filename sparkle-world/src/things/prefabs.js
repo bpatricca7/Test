@@ -16,6 +16,7 @@ import { placementFromHit, placementAt, computeDiff, writeCells, groundBelow, fo
 import { voxelGeometry, prefabMaterial, footprintMaterial } from './prefabs/mesh.js';
 import { createToolbar } from './prefabs/toolbar.js';
 import { PREFABS } from './prefabs/catalog.js';
+import { installExtras } from './prefabs/extras.js';
 
 const START = 0.12; // first blocks pop at
 const SPREAD = 1.0; // bottom-to-top sweep
@@ -204,6 +205,8 @@ class Ghost {
 }
 
 export function install(game) {
+  // the pieces only Magic Builds place (big slides, the lookout telescope)
+  installExtras(game);
   const registry = game.registry.prefabs;
   const plans = new Map();
   const items = game.registry.items;
