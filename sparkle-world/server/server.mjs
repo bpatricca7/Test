@@ -1,7 +1,9 @@
 // Sparkle World server for Railway (docs/MULTIPLAYER.md Addendum A, docs/DEPLOY-RAILWAY.md).
 //
 // One small Node 22 program, only the `ws` package:
-// - serves the built game, dist/sparkle-world.html (gzip, ETag, revalidated on every load),
+// - serves the home page, dist/site/ (built from site/ by tools/site-build.mjs), at "/",
+// - serves the built game, dist/sparkle-world.html (gzip, ETag, revalidated on every load), at
+//   "/play" (also the old "/sparkle-world.html"; at "/" too when the home page is not built),
 // - GET /healthz (Railway health check) and GET /api/net ({ ok, version, build }: the game
 //   uses it to know it can play with friends here),
 // - relays multiplayer rooms at wss://<host>/r/<roomName> with the room logic in rooms.mjs.
@@ -16,7 +18,7 @@
 // [SW_ALLOWED_ORIGINS adds more, comma separated].
 
 import http from 'node:http';
-import { readFileSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
@@ -56,6 +58,7 @@ class Bucket {
 export function createServer(opts = {}) {
   const o = {
     htmlPath: opts.htmlPath ?? process.env.SW_DIST ?? path.join(ROOT, 'dist', 'sparkle-world.html'),
+    siteDir: opts.siteDir ?? process.env.SW_SITE ?? path.join(ROOT, 'dist', 'site'),
     maxRooms: opts.maxRooms ?? envInt('SW_MAX_ROOMS', 500),
     maxPeers: opts.maxPeers ?? envInt('SW_MAX_PEERS', 4),
     maxPerIp: opts.maxPerIp ?? envInt('SW_MAX_PER_IP', 12),
@@ -73,6 +76,7 @@ export function createServer(opts = {}) {
   };
   const pkg = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
   const page = loadPage(o.htmlPath);
+  const site = loadSite(o.siteDir);
   const registry = new RoomRegistry({
     maxRooms: o.maxRooms, maxPeers: o.maxPeers, msgBytes: o.msgBytes, stateBytes: o.stateBytes,
     graceMs: o.graceMs, idleMs: o.idleMs,
@@ -116,7 +120,11 @@ export function createServer(opts = {}) {
     if (pathname === '/api/net') {
       return sendJson(res, 200, { ok: !!page && !shuttingDown, version: pkg.version, build: page ? page.build : null }, head);
     }
-    if (pathname === '/' || pathname === '/index.html' || pathname === '/sparkle-world.html') {
+    // ---- the home page (dist/site/) at "/" and its files ----
+    const sitePath = site ? siteFileFor(pathname) : null;
+    if (sitePath && site.has(sitePath)) return sendSiteFile(req, res, site.get(sitePath), head);
+    // ---- the game at "/play" ("/" too when the home page is not built) ----
+    if (pathname === '/play' || pathname === '/play/' || pathname === '/sparkle-world.html' || (!site && (pathname === '/' || pathname === '/index.html'))) {
       if (!page) {
         res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' });
         res.end(head ? undefined : 'Sparkle World is not built yet. Run: npm run build\n');
@@ -141,7 +149,7 @@ export function createServer(opts = {}) {
       res.end(head ? undefined : body);
       return;
     }
-    if (pathname === '/favicon.ico') {
+    if (pathname === '/favicon.ico' && !(site && site.has('favicon.ico'))) {
       res.writeHead(204);
       res.end();
       return;
@@ -153,6 +161,43 @@ export function createServer(opts = {}) {
     }
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end(head ? undefined : 'Not found\n');
+  }
+
+  // ---- home page files ----
+
+  /** "/" -> "index.html", "/parents" -> "parents.html", "/img/a.webp" -> "img/a.webp". */
+  function siteFileFor(pathname) {
+    if (pathname === '/' || pathname === '/index.html') return 'index.html';
+    let rel = pathname.slice(1);
+    try {
+      rel = decodeURIComponent(rel);
+    } catch {
+      return null;
+    }
+    if (!rel || rel.includes('..') || rel.includes('\\') || rel.startsWith('/')) return null;
+    if (!/\.[a-z0-9]+$/i.test(rel) && site.has(rel + '.html')) return rel + '.html';
+    return rel;
+  }
+
+  function sendSiteFile(req, res, f, head) {
+    securityHeaders(res);
+    if (f.html) res.setHeader('Content-Security-Policy', SITE_CSP);
+    res.setHeader('ETag', f.etag);
+    res.setHeader('Cache-Control', f.cache);
+    if (f.gz) res.setHeader('Vary', 'Accept-Encoding');
+    if (req.headers['if-none-match'] === f.etag) {
+      res.writeHead(304);
+      res.end();
+      return;
+    }
+    const gz = !!f.gz && /\bgzip\b/.test(req.headers['accept-encoding'] || '');
+    const body = gz ? f.gz : f.raw;
+    res.writeHead(200, {
+      'Content-Type': f.type,
+      'Content-Length': body.length,
+      ...(gz ? { 'Content-Encoding': 'gzip' } : {}),
+    });
+    res.end(head ? undefined : body);
   }
 
   function clientIp(req) {
@@ -359,7 +404,7 @@ export function createServer(opts = {}) {
     return { rooms: registry.roomCount, peers: registry.peerCount(), connections: conns.size, ...counters, ...registry.counts };
   }
 
-  return { server, registry, listen, close, stats, page, options: o };
+  return { server, registry, listen, close, stats, page, site, options: o };
 }
 
 function loadPage(file) {
@@ -377,6 +422,70 @@ function loadPage(file) {
   return { raw, gz: gzipSync(raw, { level: 9 }), etag: `"${build}"`, build: buildId, size: statSync(file).size };
 }
 
+// ---------- the home page (dist/site/) ----------
+
+// Only the home page gets a Content-Security-Policy (the game page is unchanged): its own files,
+// the Google Fonts stylesheet and font files, pictures from data: URLs. No other scripts.
+const SITE_CSP = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com",
+  "img-src 'self' data:",
+  "connect-src 'self'",
+  "object-src 'none'",
+  "base-uri 'none'",
+  "form-action 'none'",
+  "frame-ancestors 'none'",
+].join('; ');
+
+const SITE_TYPES = {
+  '.html': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.webp': 'image/webp',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.ico': 'image/x-icon',
+  '.txt': 'text/plain; charset=utf-8',
+  '.webmanifest': 'application/manifest+json',
+};
+
+/** Every file of dist/site/ in memory (a few MB), keyed by its relative path; null if not built. */
+function loadSite(dir) {
+  if (!dir || !existsSync(path.join(dir, 'index.html'))) return null;
+  const files = new Map();
+  const walk = (d) => {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      if (e.name.startsWith('.')) continue;
+      const full = path.join(d, e.name);
+      if (e.isDirectory()) walk(full);
+      else if (e.isFile()) {
+        const rel = path.relative(dir, full).split(path.sep).join('/');
+        if (rel === 'preview.html') continue; // the Artifact fragment is not a page of this site
+        const type = SITE_TYPES[path.extname(rel).toLowerCase()];
+        if (!type) continue;
+        const raw = readFileSync(full);
+        const text = /^(text\/|application\/(json|manifest)|image\/svg)/.test(type);
+        files.set(rel, {
+          raw,
+          gz: text ? gzipSync(raw, { level: 9 }) : null,
+          etag: `"${createHash('sha1').update(raw).digest('hex').slice(0, 12)}"`,
+          type,
+          html: rel.endsWith('.html'),
+          // pages, styles and scripts are checked on every visit (cheap 304s); pictures for a day
+          cache: text ? 'no-cache' : 'public, max-age=86400',
+        });
+      }
+    }
+  };
+  walk(dir);
+  return files;
+}
+
 // ---------- run as a program ----------
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
@@ -387,6 +496,7 @@ if (isMain) {
   if (!app.page) console.warn('warning: dist/sparkle-world.html is missing; run "npm run build" first (health check will fail)');
   const bound = await app.listen(port, host);
   console.log(`Sparkle World server listening on port ${bound}` + (app.page ? ` (build ${app.page.build}, ${(app.page.gz.length / 1024).toFixed(0)} KB gzip)` : ''));
+  console.log(app.site ? `home page at /, the game at /play (${app.site.size} home page files)` : 'no home page (dist/site/ missing): the game is at / and /play');
   let last = '';
   setInterval(() => {
     const s = app.stats();
