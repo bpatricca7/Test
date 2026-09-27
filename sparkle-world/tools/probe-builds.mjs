@@ -336,13 +336,15 @@ async function hills(browser) {
 // ---------------- play: slides, telescope, zip line, rope bridge ----------------
 
 async function rideSlide(page, uid, label) {
-  // wait for the ride to start and finish (game time), then report where she ended up
+  // wait for the ride to start and finish. The ride runs on game time (about 2 s), and a
+  // SwiftShader frame here can take a quarter of a second (dt is clamped to 0.05 s), so a
+  // ride takes 10-15 s of real time: wait on the game state, generously
   const start = await page.evaluate(() => performance.now());
-  await page.waitForFunction((uid) => { const p = window.__game.player; return p.state === 'sit' && p.seatEntity && p.seatEntity.uid === uid; }, uid, { timeout: 5000, polling: 50 }).catch(() => {});
-  const riding = await page.evaluate(() => window.__game.player.state === 'sit');
-  await page.waitForFunction(() => { const e = window.__game.player.seatEntity; return e && e.anim && e.anim.t > 0.45; }, null, { timeout: 8000, polling: 30 }).catch(() => {});
+  await page.waitForFunction((uid) => { const p = window.__game.player; return p.state === 'sit' && p.seatEntity && p.seatEntity.uid === uid; }, uid, { timeout: 8000, polling: 50 }).catch(() => {});
+  const riding = await page.evaluate((uid) => { const p = window.__game.player; return p.state === 'sit' && !!p.seatEntity && p.seatEntity.uid === uid; }, uid);
+  await page.waitForFunction(() => { const e = window.__game.player.seatEntity; return !e || (e.anim && e.anim.t > 0.45); }, null, { timeout: 30000, polling: 30 }).catch(() => {});
   await shot(page, `${label}-mid`);
-  await page.waitForFunction(() => window.__game.player.state !== 'sit', null, { timeout: 10000, polling: 50 }).catch(() => {});
+  await page.waitForFunction(() => window.__game.player.state !== 'sit', null, { timeout: 40000, polling: 50 }).catch(() => {});
   const end = await page.evaluate(([uid, t0]) => {
     const g = window.__game, p = g.player, e = g.entities.byUid(uid);
     const far = g.entities.localToWorld(e, 0.5, 0, e.def.size[2]);
@@ -366,7 +368,7 @@ async function play(browser) {
   await page.evaluate((uid) => window.__game.debug.interact(uid), camper.slides[0]);
   const ride = await rideSlide(page, camper.slides[0], 'slide-camper');
   check(ride.riding, 'Hand on the big slide: she sits at the top');
-  check(ride.state === 'walk' && ride.dist < 3, `she whooshes to the bottom (${ride.dist.toFixed(2)} from the end, ${ride.secs.toFixed(1)} s)`);
+  check(ride.state !== 'sit' && ride.dist < 3, `she whooshes to the bottom (${ride.dist.toFixed(2)} from the end, ${ride.secs.toFixed(1)} s)`);
   await settle(page, 500);
   const wet = await page.evaluate(() => window.__game.player.swimming || window.__game.physics.liquidAt(window.__game.player.position.x, window.__game.player.position.y + 0.3, window.__game.player.position.z));
   check(wet, 'the camper slide ends with a splash in the pool');
@@ -378,9 +380,9 @@ async function play(browser) {
     g.player.teleport(p.x, p.y, p.z);
     return [p.x, p.y, p.z];
   }, camper.slides[0]);
-  const lipRide = await page.waitForFunction((uid) => { const p = window.__game.player; return p.state === 'sit' && p.seatEntity && p.seatEntity.uid === uid; }, camper.slides[0], { timeout: 6000, polling: 50 }).then(() => true, () => false);
+  const lipRide = await page.waitForFunction((uid) => { const p = window.__game.player; return p.state === 'sit' && p.seatEntity && p.seatEntity.uid === uid; }, camper.slides[0], { timeout: 15000, polling: 50 }).then(() => true, () => false);
   check(lipRide, `standing still on the slide's top lip starts a ride (${lip.map((v) => v.toFixed(1)).join(', ')})`);
-  await page.waitForFunction(() => window.__game.player.state !== 'sit', null, { timeout: 10000, polling: 50 }).catch(() => {});
+  await page.waitForFunction(() => window.__game.player.state !== 'sit', null, { timeout: 40000, polling: 50 }).catch(() => {});
 
   // the treehouse slide from the porch down to the meadow, from far away (she hops up)
   const tree = await placeBuild(page, 'friendship_treehouse', 120, 60, 0);
@@ -389,7 +391,7 @@ async function play(browser) {
   await settle(page, 300);
   await page.evaluate((uid) => window.__game.debug.interact(uid), tree.slides[0]);
   const ride2 = await rideSlide(page, tree.slides[0], 'slide-tree');
-  check(ride2.riding && ride2.state === 'walk' && ride2.dist < 3 && Math.abs(ride2.y - ride2.baseY) < 1.2, `tapping the treehouse slide from the ground: a hop up and a ride down to the meadow (ends ${ride2.dist.toFixed(2)} from its foot)`);
+  check(ride2.riding && ride2.state !== 'sit' && ride2.dist < 3 && Math.abs(ride2.y - ride2.baseY) < 1.2, `tapping the treehouse slide from the ground: a hop up and a ride down to the meadow (ends ${ride2.dist.toFixed(2)} from its foot)`);
   // bridge between the porches
   const bridge = tree.bridges;
   const outdoor = await page.evaluate(() => !!window.__game.registry.furniture.get('rope_bridge'));
@@ -512,7 +514,7 @@ async function uiPass(browser) {
     await page.mouse.up();
   }
   const r = await rideSlide(page, slideUid, 'ui-slide');
-  check(r.riding && r.state === 'walk', 'a click with the Hand tool rides the slide');
+  check(r.riding && r.state !== 'sit', `a click with the Hand tool rides the slide all the way down (${r.secs.toFixed(1)} s real time)`);
   // the Undo button takes the whole camper away again
   await page.locator('.sw-undobtn').click();
   await page.waitForFunction((n) => window.__game.history.length === n, before.hist, { timeout: 5000, polling: 100 }).catch(() => {});
@@ -594,7 +596,7 @@ async function touchPass(browser) {
   const spt = await screenPoint(page, ...sp);
   if (spt) await page.touchscreen.tap(spt.x, spt.y);
   const r = await rideSlide(page, tree.slides[0], 'touch-slide');
-  check(r.riding && r.state === 'walk', 'a tap on the big slide rides it on the iPad');
+  check(r.riding && r.state !== 'sit', `a tap on the big slide rides it on the iPad (${r.secs.toFixed(1)} s real time)`);
   await context.close();
 }
 

@@ -223,13 +223,14 @@ export function installExtras(game) {
   function endSlide(e) {
     const p = game.player;
     const path = paths.get(e.key);
-    const end = pathAt(path, path.len, p3);
-    const w = E.localToWorld(e, end[0], end[1], end[2] + 0.35, v1);
+    // where she comes off: the end of the run-out (over the pool water for the camper)
+    const end = pathAt(path, path.len - 0.35, p3);
+    const w = E.localToWorld(e, end[0], end[1], end[2], v1);
     e.anim = { t: null, still: 0 };
     if (!p || p.seatEntity !== e) return;
     p.stand();
     const ph = game.physics;
-    const wet = ph && ph.liquidAt && ph.liquidAt(w.x, w.y - 0.1, w.z);
+    const wet = ph && ph.liquidAt && ph.liquidAt(w.x, w.y - 0.15, w.z);
     if (wet) {
       // splash! land in the pool rather than on its rim
       p.position.set(w.x, w.y - 0.2, w.z);
@@ -300,7 +301,7 @@ export function installExtras(game) {
       if (p.seatEntity === e && p.state === 'sit') return true; // already whooshing
       return startSlide(e);
     },
-    hint: () => 'Tap to slide!',
+    hint: (g, e) => (g.player && g.player.seatEntity === e ? null : 'Tap to slide!'),
   });
 
   // ---------- the lookout telescope ----------

@@ -101,7 +101,7 @@ export const friendshipTreehouse = {
     a.at('rug_round|rug_heart', 22, P + 1, 7, F, C.sky);
     a.at('toy_chest', 23, P + 1, 9, B, C.mint);
     a.furn('picture_frame', 19, P + 3, 5, F);
-    a.furn('fairy_lights', 22, P + 4, 7, F, C.sky);
+    a.furn('lamp_ceiling', 22, P + 4, 7, F, C.sky);
     for (const x of [3, 4, 22, 23]) a.furn('flower_box', x, P + 1, 11, F, C.white);
     // down below: a swing under the bridge, string lights, a picnic, a mailbox, flowers
     a.put('swing', 12, 1, 11, F, C.pink);
@@ -152,7 +152,7 @@ export const fairyTreehouse = {
     a.at(COMFY, 8, 1, cz, R, C.pink);
     a.at('plant_pot', 12, 1, cz, F, C.lav);
     a.at('rug_round|rug_heart', 9, 1, 10, F, C.lav);
-    a.furn('fairy_lights', 10, 8, 10, F, C.lav);
+    a.furn('lamp_ceiling', 10, 8, 10, F, C.lav);
     // wide stairs up the left side of the stem, under the cap, into the room through a hatch;
     // glowing lantern blocks along their outer edge
     for (let k = 1; k <= 8; k++) {
@@ -199,8 +199,9 @@ export const fairyTreehouse = {
     rail(a, cx - 1, 20, cx + 1, 20, 10, C.white);
     rail(a, cx - 2, 19, cx - 2, 19, 10, C.white);
     rail(a, cx + 2, 19, cx + 2, 19, 10, C.white);
-    for (const x of [cx - 2, cx + 2]) a.block(x, 10, 20, 'quartz_pillar|quartz').block(x, 11, 20, x < cx ? 'crystal_pink|lantern' : 'crystal_blue|lantern');
-
+    a.furn(LANTERN, cx - 2, 10, 20, F, C.pink).furn(LANTERN, cx + 2, 10, 20, F, C.lav);
+    // a leafy fairy crown on top of the cap: it is a mushroom TREE
+    for (const [x, y, z, r] of [[cx, 16.5, cz, 2.2], [cx - 3, 15.5, cz + 1, 1.6], [cx + 2.5, 15.5, cz - 2, 1.6]]) a.blob(x, y, z, r, 'leaves_fairy|leaves_cherry', { keep: true, ry: 1.3 });
     // the room in the cap (floor y = 9, stand at 10)
     const Y = 10;
     a.at(BED_CLOUD, 9, Y, 4, F, C.lav);
@@ -269,7 +270,8 @@ export const lookoutTreehouse = {
     }
     // the tall trunk, roots and struts under the deck
     a.fill(tx, 1, tz, tx + 1, 22, tz + 1, 'log_oak');
-    for (const [x0, z0, x1, z1] of [[tx, tz, 1, 1], [tx + 1, tz, 12, 1], [tx, tz + 1, 1, 12], [tx + 1, tz + 1, 12, 12]]) a.line(x0, 5, z0, x1, P - 1, z1, 'log_oak');
+    for (const [x, z] of [[1, 1], [12, 1], [1, 12], [12, 12], [6, 1], [1, 6]]) a.fill(x, 1, z, x, P - 1, z, 'log_oak');
+    for (const [x0, z0, x1, z1] of [[tx, tz, 3, 3], [tx + 1, tz, 10, 3], [tx, tz + 1, 3, 10], [tx + 1, tz + 1, 10, 10]]) a.line(x0, P - 3, z0, x1, P - 1, z1, 'log_oak');
     // the deck
     a.fill(1, P, 1, 12, P, 12, 'planks_oak');
     a.fill(tx, P, tz, tx + 1, P, tz + 1, 'log_oak');
@@ -298,7 +300,7 @@ export const lookoutTreehouse = {
     a.at(BENCH, 4, P + 1, 11, F, C.pink);
     a.at('beanbag|armchair', 9, P + 1, 9, F, C.lav);
     a.block(12, P + 1, 1, 'lantern').block(1, P + 1, 12, 'lantern');
-    a.furn('fairy_lights', 3, P + 4, 3, F, C.pink);
+    a.furn('lamp_ceiling', 3, P + 4, 3, F, C.pink);
     // the zip line: a tower on the deck and one in the meadow (they link up by themselves)
     const zip = zipTower(a, 10, P + 1, 5, L, C.pink);
     if (zip) zipTower(a, 35, 1, 5, R, C.sky);
@@ -313,8 +315,8 @@ export const lookoutTreehouse = {
     a.fill(13, 1, 15, 13, P - 1, 15, 'log_oak');
     a.block(13, P + 1, 15, 'lantern');
     // the canopy high above the deck
-    a.dome(tx + 0.5, 21, tz + 0.5, 7, 5, 7, LEAF, { thick: 2 });
-    for (const [x, y, z] of [[1, 21, 1], [12, 22, 1], [1, 21, 12], [3, 20, 7], [tx + 0.5, 25, tz + 0.5]]) a.blob(x, y, z, 2.4, LEAF, { keep: true, ry: 1.9 });
+    a.dome(tx + 0.5, 21, tz + 0.5, 6.4, 5, 6.4, LEAF, { thick: 2 });
+    for (const [x, y, z] of [[2, 21, 2], [11, 22, 2], [2, 21, 11], [3, 20, 7], [tx + 0.5, 25, tz + 0.5]]) a.blob(x, y, z, 2, LEAF, { keep: true, ry: 1.7 });
     a.line(tx, 17, tz, 1, 20, 1, 'log_oak').line(tx + 1, 17, tz + 1, 11, 20, 11, 'log_oak');
     // the meadow at the far end: picnic, hay bales, lamp, flowers, a path back to the stairs
     a.flowers(14, 0, 38, 12, 1, FLOWERS, { density: 0.28, seed: 121 });

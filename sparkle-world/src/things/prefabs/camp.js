@@ -75,6 +75,8 @@ export const sparkleCamper = {
     a.fill(X0 + 1, 1, Z0 + 1, X1 - 1, 1, Z1 - 1, 'planks_white');
     a.checker(8, 5, 12, 6, 1, 'tile_pink|wool_pink', 'planks_white');
     a.fill(16, 1, 5, 17, 1, 9, 'tile_bath');
+    // the roof is a candy-striped deck
+    for (let x = X0 + 1; x <= X1 - 1; x++) a.fill(x, 6, Z0 + 1, x, 6, Z1 - 1, x % 2 ? 'planks_pink' : 'planks_white');
     // big windows all round, a heart window by the bathroom
     a.fill(5, 3, Z1, 7, 4, Z1, 'glass_pink').fill(12, 3, Z1, 14, 4, Z1, 'glass_pink');
     a.fill(16, 4, Z1, 17, 4, Z1, 'glass_blue|glass');
@@ -112,7 +114,6 @@ export const sparkleCamper = {
     a.at('bookshelf', 13, 2, 5, F, C.white).at('bookshelf', 14, 2, 5, F, C.white);
     a.furn('plant_pot', 13, 3, 5, F, C.mint).furn('teddy_bear', 14, 3, 5, F);
     a.furn('picture_frame', 13, 4, 5, F).furn('clock', 14, 4, 8, L);
-    a.furn('fairy_lights', 13, 5, 7, F, C.sky);
     // bathroom behind a white wall: shower, toilet, sink, towels
     a.fill(15, 2, 5, 15, 5, 9, 'wool_white|quartz');
     a.door(15, 2, 7, { key: 'door', rot: L, color: C.white });
@@ -193,12 +194,12 @@ export const retroTrailer = {
   build(a) {
     const X0 = 3, X1 = 12, Z0 = 5, Z1 = 9;
     const top = (x) => TEAR[x - X0];
-    const inside = (x, y, z) => x >= X0 && x <= X1 && z >= Z0 && z <= Z1 && y >= 1 && y <= top(x);
-    // teardrop body: cream trim round the side profile, mint panels and roof
+    const inside = (x, y, z) => x >= X0 && x <= X1 && z >= Z0 && z <= Z1 && y >= 1 && y <= top(x) && !((x === X0 || x === X1) && (z === Z0 || z === Z1));
+    // teardrop body: a white chassis, a cream belly band, mint panels and a white roof cap
     body(a, X0, 1, Z0, X1, 6, Z1, inside, (x, y, z) => {
-      if (z !== Z0 && z !== Z1) return 'concrete_mint|wool_lime';
-      const rim = !inside(x + 1, y, z) || !inside(x - 1, y, z) || !inside(x, y + 1, z) || !inside(x, y - 1, z);
-      return rim ? 'quartz' : y === 2 ? 'concrete_yellow|wool_yellow' : 'concrete_mint|wool_lime';
+      if (y === 1) return 'wool_white|quartz';
+      if (y === top(x) && z !== Z0 && z !== Z1) return 'wool_white|quartz';
+      return y === 2 ? 'concrete_yellow|wool_yellow' : 'concrete_mint|wool_lime';
     });
     a.fill(X0 + 1, 1, Z0 + 1, X1 - 1, 1, Z1 - 1, 'planks_oak');
     wheels(a, [7], [Z0, Z1]);
@@ -245,81 +246,80 @@ export const retroTrailer = {
 };
 
 // ---------------------------------------------------------------------------------------
-// Camper Van: a sky-and-white van with heart tail lights. A pop-top roof tent with a big bed
-// (ladder up the back), bench seats round a table, a mini kitchen, driver seats; surfboards
-// on the roof; a parasol, picnic, camp chairs and string lights outside.
+// Camper Van: a long sky-and-white van with a big windscreen and heart tail lights. A low
+// striped roof tent with a cosy bed (ladder up the back), bench seats round a table, a mini
+// kitchen, driver seats; surfboards on the roof; a parasol picnic and string lights outside.
 // ---------------------------------------------------------------------------------------
 export const camperVan = {
   key: 'camper_van',
   name: 'Camper Van',
-  blurb: 'A pastel van with a pop-top bed and surfboards',
-  size: [16, 10, 16],
+  blurb: 'A pastel van with a roof tent bed and surfboards',
+  size: [17, 9, 16],
   iconZoom: 0.82,
-  view: { front: [15.5, 5.4, 16.5, 7, 3, 7], inside: [10, 3.4, 7.5, 4.5, 2.3, 7], poptop: [2.2, 6.9, 7, 6.5, 6, 7], camp: [12.5, 3.4, 15, 6, 1.3, 11] },
+  view: { front: [16.6, 5.6, 16.8, 8, 3, 7], inside: [11.4, 3.6, 7.5, 3.5, 2.4, 7], rooftent: [1.4, 6.6, 7, 6.5, 6.1, 7], camp: [13, 3.4, 15, 6, 1.3, 11] },
   build(a) {
-    const X0 = 3, X1 = 12, Z0 = 5, Z1 = 9;
+    const X0 = 2, X1 = 14, Z0 = 5, Z1 = 9;
     body(a, X0, 1, Z0, X1, 5, Z1, (x, y, z) => {
       if (x < X0 || x > X1 || z < Z0 || z > Z1 || y < 1 || y > 5) return false;
       const ex = x === X0 || x === X1, sz = z === Z0 || z === Z1;
       if (ex && sz) return false;
       if (y === 5 && (ex || sz)) return false;
       return true;
-    }, (x, y) => (y === 1 ? 'quartz' : y <= 3 ? 'concrete_sky|wool_sky' : 'quartz'));
+    }, (x, y) => (y <= 3 ? 'concrete_sky|wool_sky' : 'wool_white|quartz'));
     a.fill(X0 + 1, 1, Z0 + 1, X1 - 1, 1, Z1 - 1, 'planks_oak');
-    wheels(a, [4, 10], [Z0, Z1]);
-    // front: windscreen, headlights, a white V; back: heart tail lights and a window
-    a.fill(X1, 4, 6, X1, 4, 8, 'glass');
-    a.block(X1, 2, 6, 'lamp_block').block(X1, 2, 8, 'lamp_block');
-    a.block(X1, 3, 7, 'quartz').block(X1, 2, 7, 'concrete_sky|wool_sky');
+    wheels(a, [4, 11], [Z0, Z1]);
+    // front: a big windscreen, headlights, a white bumper; back: heart tail lights, a window
+    a.fill(X1, 3, 6, X1, 4, 8, 'glass');
+    a.block(X1, 2, 6, 'lamp_block').block(X1, 2, 8, 'lamp_block').block(X1, 2, 7, 'wool_white|quartz');
+    a.fill(X1, 1, 6, X1, 1, 8, 'wool_white|quartz');
     a.block(X0, 2, 6, 'heart_lamp|lamp_block').block(X0, 2, 8, 'heart_lamp|lamp_block');
     a.block(X0, 4, 7, 'glass');
-    // side windows and the sliding door
-    a.fill(4, 4, Z1, 6, 4, Z1, 'glass').fill(10, 4, Z1, 11, 4, Z1, 'glass');
-    a.fill(4, 4, Z0, 11, 4, Z0, 'glass');
+    // a band of windows all round and the side door with a step
+    a.fill(3, 4, Z1, 6, 4, Z1, 'glass').fill(10, 4, Z1, 12, 4, Z1, 'glass');
+    a.fill(3, 4, Z0, 12, 4, Z0, 'glass');
     a.door(8, 2, Z1, { key: 'door', color: C.sky });
     a.block(8, 1, Z1 + 1, 'slab_white|slab_oak');
 
-    // pop-top roof tent over the back half: a low striped canvas tent with a big bed inside,
-    // a little door at the back (tap the bed from the top of the ladder to snuggle in)
-    for (let x = 4; x <= 8; x++) {
+    // roof tent on the back half of the roof: striped canvas, a cosy bed inside, a little door
+    // at the back (climb the ladder and tap the bed to snuggle in)
+    for (let x = 3; x <= 8; x++) {
       const k = x % 2 ? 'wool_yellow' : 'wool_white';
-      a.fill(x, 5, Z0, x, 6, Z0, k).fill(x, 5, Z1, x, 6, Z1, k);
+      a.block(x, 6, Z0 + 1, k).block(x, 6, Z1 - 1, k);
+      a.fill(x, 7, Z0 + 1, x, 7, Z1 - 1, x % 2 ? 'wool_pink' : 'wool_white');
     }
-    a.fill(4, 6, Z0 + 1, 4, 6, Z1 - 1, 'wool_yellow').fill(8, 6, Z0 + 1, 8, 6, Z1 - 1, 'wool_yellow');
-    for (let x = 4; x <= 8; x++) a.fill(x, 7, Z0, x, 7, Z1, x % 2 ? 'wool_pink' : 'wool_white');
-    a.block(6, 6, Z0, 'glass').block(6, 6, Z1, 'glass');
-    a.air(4, 6, 7, 4, 6, 7);
-    a.at(BED_BIG, 5, 6, 6, R, C.sky);
-    a.furn('fairy_lights', 7, 6, 8, F, C.pink);
-    // ladder up the back to the roof tent
-    for (let y = 1; y <= 4; y++) a.furn('ladder', 2, y, 7, L, C.white);
-    // surfboards on the roof rack
-    a.fill(9, 6, 6, 11, 6, 6, 'carpet_pink').block(10, 6, 6, 'carpet_white');
-    a.fill(9, 6, 8, 11, 6, 8, 'carpet_yellow').block(10, 6, 8, 'carpet_sky');
+    a.block(3, 6, 7, 'air').block(8, 6, 7, 'glass');
+    a.block(6, 6, Z0 + 1, 'glass').block(6, 6, Z1 - 1, 'glass');
+    a.at('bed_single|bed_double', 4, 6, 7, R, C.sky);
+    a.furn('fairy_lights', 7, 6, 7, F, C.pink);
+    for (let y = 1; y <= 4; y++) a.furn('ladder', 1, y, 7, L, C.white);
+    // surfboards on the front of the roof
+    a.fill(10, 6, 6, 13, 6, 6, 'carpet_pink').block(11, 6, 6, 'carpet_white');
+    a.fill(10, 6, 8, 13, 6, 8, 'carpet_yellow').block(12, 6, 8, 'carpet_sky');
 
-    // inside: benches round a table, mini kitchen, driver seats, rug, lamp
-    a.at(BENCH, 4, 2, 6, F, C.pink);
-    a.at(BENCH, 4, 2, 8, B, C.pink);
-    a.at('table_round', 4, 2, 7, F, C.white);
-    a.furn('cake_stand', 4, 3, 7, F, C.sky);
+    // inside: benches round a table, a rug, mini kitchen with a fridge, driver seats, a lamp
+    a.at(BENCH, 3, 2, 6, F, C.pink);
+    a.at(BENCH, 3, 2, 8, B, C.pink);
+    a.at('table_round', 3, 2, 7, F, C.white);
+    a.furn('cake_stand', 3, 3, 7, F, C.sky);
+    a.at('rug_round|rug_heart', 5, 2, 7, F, C.lav);
     a.at('counter', 8, 2, 6, F, C.sky);
     a.at('stove', 9, 2, 6, F, C.white);
     a.at('sink_kitchen', 10, 2, 6, F, C.sky);
+    a.at('fridge', 11, 2, 6, F, C.pink);
     a.furn('fruit_bowl', 8, 3, 6, F);
-    a.at('armchair|chair', 11, 2, 6, R, C.sun).at('armchair|chair', 11, 2, 8, R, C.sun);
-    a.at('rug_round|rug_heart', 6, 2, 7, F, C.lav);
+    a.at('armchair|chair', 13, 2, 6, R, C.sun).at('armchair|chair', 13, 2, 8, R, C.sun);
     a.furn(CEIL_LAMP, 7, 4, 7, F, C.sun);
 
-    // outside: parasol picnic, camp chairs, string lights, cooler
-    parasol(a, 13, 1, 13, 'wool_sky', 'wool_white');
+    // outside: parasol picnic, camp chairs, string lights, cooler, a lamp
+    parasol(a, 3, 1, 13, 'wool_sky', 'wool_white');
     a.at('picnic_blanket', 5, 1, 12, F, C.sky);
     campChair(a, 9, 1, 12, L, C.pink);
-    campChair(a, 13, 1, 11, L, C.mint);
-    stringLights(a, 12, 1, 3, F, C.white);
+    campChair(a, 14, 1, 12, L, C.mint);
+    stringLights(a, 12, 1, 2, F, C.white);
     cooler(a, 8, 1, 14, F, C.pink);
-    a.furn(LANTERN, 14, 1, 7, F, C.sun);
-    a.flowers(0, 0, 15, 2, 1, FLOWERS, { density: 0.35, seed: 95 });
-    a.flowers(0, 14, 15, 15, 1, FLOWERS, { density: 0.3, seed: 96 });
+    a.furn(LANTERN, 16, 1, 7, F, C.sun);
+    a.flowers(0, 0, 16, 1, 1, FLOWERS, { density: 0.35, seed: 95 });
+    a.flowers(0, 14, 16, 15, 1, FLOWERS, { density: 0.3, seed: 96 });
   },
 };
 
@@ -334,7 +334,7 @@ export const campground = {
   blurb: 'Tents round a camp fire, a hammock and a picnic',
   size: [26, 11, 22],
   iconZoom: 0.8,
-  view: { front: [21, 9, 27, 12, 1, 10], fire: [13, 3.4, 17, 13, 1.2, 8], tents: [18, 3.8, 14.5, 6, 1.6, 9], hammock: [9, 3, 20.5, 4, 1.6, 16] },
+  view: { front: [21, 9, 27, 12, 1, 10], fire: [13, 3.4, 17, 13, 1.2, 8], tents: [18, 3.8, 14.5, 6, 1.6, 9], hammock: [4, 3.2, 21.2, 4, 1.4, 16.5] },
   build(a) {
     const FX = 13, FZ = 10;
     a.flowers(0, 0, 25, 21, 1, FLOWERS, { density: 0.1, seed: 97 });
@@ -365,14 +365,14 @@ export const campground = {
     bushyTree(a, 6, 1, 17, 5, 'leaves_cherry', 'log_oak', 2.2);
     // string lights, lamps at the way in
     stringLights(a, 8, 1, 14, F, C.white);
-    stringLights(a, 15, 1, 6, F, C.white);
+    a.furn(LANTERN, 17, 1, 6, F, C.lav);
     a.furn(LANTERN, FX - 1, 1, 19, F, C.pink).furn(LANTERN, FX + 1, 1, 19, F, C.sky);
     // a log arch over the way in with a lantern
     a.fill(FX - 2, 1, 21, FX - 2, 4, 21, 'log_oak').fill(FX + 2, 1, 21, FX + 2, 4, 21, 'log_oak');
     a.fill(FX - 3, 5, 21, FX + 3, 5, 21, 'log_oak');
     a.fill(FX - 1, 5, 21, FX + 1, 5, 21, 'planks_pink').block(FX, 6, 21, 'heart_lamp|lantern').block(FX, 4, 21, 'lantern');
     // woods and flowers all round, a woodpile and a bird house
-    for (const [x, z, leaves, h] of [[2, 3, 'leaves_birch|leaves_oak', 6], [23, 3, 'leaves_oak', 5], [23, 17, 'leaves_cherry', 5], [8, 2, 'leaves_oak', 5], [18, 2, 'leaves_birch|leaves_oak', 6], [24, 11, 'leaves_oak', 4]]) {
+    for (const [x, z, leaves, h] of [[2, 3, 'leaves_birch|leaves_oak', 6], [23, 3, 'leaves_oak', 5], [23, 17, 'leaves_cherry', 5], [8, 2, 'leaves_oak', 5], [18, 2, 'leaves_birch|leaves_oak', 6], [23, 12, 'leaves_oak', 4]]) {
       bushyTree(a, x, 1, z, h, leaves, leaves.startsWith('leaves_birch') ? 'log_birch' : 'log_oak', 2.1);
     }
     a.fill(20, 1, 4, 21, 1, 4, 'log_oak').block(20, 2, 4, 'log_oak');
