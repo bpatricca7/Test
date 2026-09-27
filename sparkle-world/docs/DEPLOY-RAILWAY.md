@@ -78,7 +78,7 @@ On an iPad you can tap the Share button → **Add to Home Screen** so it opens l
 Worlds are saved per website, so worlds made on the claude.ai link don't appear on the Railway
 address by themselves (and the other way round). To move one, about 10 seconds per world:
 
-1. Open the game on claude.ai → **My Worlds** → on the world's card tap **Save to a file**.
+1. Open the game on claude.ai → **My Worlds** → on the world's card tap **Save** (the download arrow; it saves the world to a file).
 2. Open the Railway address → **My Worlds** → **Open a file** → pick that file.
 
 Her outfits and stickers stay with each website; she can dress up again in a minute.
