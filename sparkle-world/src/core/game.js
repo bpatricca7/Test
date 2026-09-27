@@ -376,7 +376,7 @@ export class Game {
     const t = this.time;
     t.t += dt;
     // a friend visiting (multiplayer guest) follows the host's frozen clock, not her own setting
-    const frozen = this.net && this.net.isGuest ? this.net.hostFrozen : this.profile.settings.timeFrozen;
+    const frozen = this.net && this.net.isGuest && this._isShared() ? this.net.hostFrozen : this.profile.settings.timeFrozen;
     if (!frozen) {
       t.dayTime += dt / t.dayLength;
       if (t.dayTime >= 1) {
@@ -1183,6 +1183,8 @@ export class Game {
   _netRefuses(tool) {
     const net = this.net;
     if (!net || !net.active || net.mayEdit(tool)) return false;
+    // still knocking from inside her own world: that world is hers to build in
+    if (net.isGuest && !this._isShared()) return false;
     this.audio.play('click', { pitch: 0.6, volume: 0.6 });
     if (typeof net.refuse === 'function') net.refuse('paused');
     return true;
