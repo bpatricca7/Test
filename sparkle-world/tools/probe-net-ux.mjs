@@ -124,7 +124,7 @@ async function main() {
   }
   const port = await freePort();
   await startServer(port);
-  const url = `http://localhost:${port}/`;
+  const url = `http://localhost:${port}/play`; // the home page is at /, the game at /play
   log(`server up: ${url}`);
   const browser = await launch({ headed: !!arg('headed') });
   try {

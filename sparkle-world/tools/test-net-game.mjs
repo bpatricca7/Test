@@ -141,7 +141,7 @@ async function main() {
   const app = createServer({ log: () => {}, idleMs: 600000 });
   if (!app.page) throw new Error('dist/sparkle-world.html missing');
   const port = await app.listen(0, '127.0.0.1');
-  const url = `http://127.0.0.1:${port}/`;
+  const url = `http://127.0.0.1:${port}/play`; // the home page is at /, the game at /play
   log('server', url, 'build', app.page.build);
 
   const browser = await launch({ headed: args.has('--headed') });
