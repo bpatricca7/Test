@@ -1,6 +1,7 @@
 // Build Sparkle World into self-contained HTML:
 //   dist/sparkle-world.html  complete document (file://, static hosts)
 //   dist/artifact.html       the same page as a fragment for claude.ai Artifact publishing
+//   dist/site/               the home page (site/, tools/site-build.mjs; served at "/", the game at "/play")
 // Usage: node tools/build.mjs          one-off minified build
 //        node tools/build.mjs --serve  dev server with rebuild + live reload on :8000
 
@@ -10,6 +11,7 @@ import { gzipSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildSite } from './site-build.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const TITLE = 'Sparkle World';
@@ -129,6 +131,8 @@ async function buildOnce() {
   console.log(`Built ${build} in ${Date.now() - t0} ms:`);
   console.log(sizeLine('dist/sparkle-world.html', full));
   console.log(sizeLine('dist/artifact.html', frag));
+  // the home page (site/ -> dist/site/)
+  await buildSite();
 }
 
 async function serve() {
