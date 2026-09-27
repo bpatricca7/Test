@@ -46,6 +46,16 @@ def cut(tl):
             piece[-FADE:] *= ramp(FADE)[::-1]
         t0 = round(s["tl0"] * SR)
         out[t0:t0 + len(piece)] += piece[:n_total - t0]
+    # silence listed mouth noises (clicks, throat sounds) wherever they land in the cut
+    for clip, m0, m1 in C.MUTE:
+        for s in segs:
+            if s["clip"] == clip and s["i"] < m1 and m0 < s["o"]:
+                a_ = round((s["tl0"] + max(m0, s["i"]) - s["i"]) * SR)
+                b_ = round((s["tl0"] + min(m1, s["o"]) - s["i"]) * SR)
+                f = int(0.004 * SR)
+                out[a_ - f:a_] *= ramp(f)[::-1]
+                out[a_:b_] = 0
+                out[b_:b_ + f] *= ramp(f)
     # let the last breath/smile die away into the end card
     f0, f1 = round((tl["events"]["freeze"] - 0.20) * SR), round(tl["events"]["freeze"] * SR)
     out[f0:f1] *= ramp(f1 - f0)[::-1]

@@ -174,7 +174,7 @@ def draw_captions(frame, t):
     chunks = TL["chunks"]
     for ci, ch in enumerate(chunks):
         t_in = ch["words"][0]["t"] - 0.03
-        t_out = ch["end"]
+        t_out = ch["end"] - (0.03 if ci + 1 < len(chunks) else 0.0)   # hand over exactly when the next chunk comes in
         if not (t_in <= t < t_out):
             continue
         active = max(i for i, w in enumerate(ch["words"]) if w["t"] - 0.03 <= t or i == 0)
