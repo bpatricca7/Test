@@ -140,7 +140,10 @@ async function clickBlockTop(page, x, y, z, { touch = false, from = null, dist =
       g.cameraRig.yaw = Math.atan2(t.x - p.x, t.z - p.z);
       for (const pitch of [0.5, 0.35, 0.65, 0.8, 0.95, 1.1, 0.2]) {
         g.cameraRig.pitch = pitch;
-        g.cameraRig.snap();
+        // snap() calls the (paused) update: run the real one directly
+        g.cameraRig.current = g.cameraRig.distance;
+        g.cameraRig.shoulder = 1;
+        g.__tapRig.call(g.cameraRig, 0, true);
         g.camera.updateMatrixWorld(true);
         const v = g.camera.position.clone().set(t.x, t.y, t.z).project(g.camera);
         if (Math.abs(v.x) > 0.8 || Math.abs(v.y) > 0.7) continue;
