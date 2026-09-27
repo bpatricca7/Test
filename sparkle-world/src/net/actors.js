@@ -313,7 +313,11 @@ export class ActorRegistry {
         const zip = zipOf();
         if (!zip || !lastLinks || typeof zip.setLinks !== 'function') return;
         const tower = (e) => e && e.key === 'zipline_tower';
-        if ((placed && placed.some(tower)) || (removed && removed.some(tower))) zip.setLinks(lastLinks);
+        if (!(placed && placed.some(tower)) && !(removed && removed.some(tower))) return;
+        // a tower placed anew under the same uid (turned, moved): its cable is drawn again
+        const again = new Set((placed || []).filter(tower).map((e) => e.uid));
+        for (const l of zip.links.slice()) if (again.has(l.a) || again.has(l.b)) zip.unlink(l);
+        zip.setLinks(lastLinks);
       },
     });
   }
