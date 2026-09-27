@@ -12,12 +12,13 @@ import { hexToRgb } from '../core/util.js';
 import { icon2, button2 } from './menus/icons2.js';
 
 const LONG_PRESS_MS = 460;
+const GHOST_CLICK_MS = 700; // a click this soon after "Pick a color!" appears must have been pressed there
 const MAX_RECENT = 10;
 
 const TAB_COLORS = {
   nature: '#7FD37A', building: '#FFAA6B', colors: '#FF7EB6', candy: '#FF94CF', glass: '#7FCBFF', lights: '#FFC94D',
   bedroom: '#AE92FF', living: '#FF9F8A', kitchen: '#4FD4AE', bathroom: '#6CC6FF', garden: '#8FD45F', fun: '#FFB84D',
-  pets: '#FF8FB1', food: '#FFA85C', houses: '#9C7BFF', more: '#B9A9D9',
+  pets: '#FF8FB1', food: '#FFA85C', houses: '#9C7BFF', more: '#B9A9D9', camping: '#7FC97A', shops: '#FF8FC8',
 };
 // the picture on each tab: the first of these that exists, else the tab's first item
 const TAB_PICS = {
@@ -462,8 +463,17 @@ export function install(game) {
     if (colorItem !== item) game.audio.play('pop');
     colorItem = item;
     mainEl.innerHTML = '';
+    // An item card opens this step on pointerup; on a touch screen the click the browser sends
+    // right after that tap lands on whatever is under the finger now (a color card), which
+    // would pick a color by itself. So a click only counts when its press started on that
+    // button, or it is a keyboard click (detail 0), or the step has been up a while.
+    const drawnAt = performance.now();
+    const pressed = new WeakSet();
+    const track = (el) => el.addEventListener('pointerdown', () => pressed.add(el));
+    const ghost = (el, e) => !!e && e.detail !== 0 && !pressed.has(el) && performance.now() - drawnAt < GHOST_CLICK_MS;
     const head = ui.el('div', 'sw-colors-head');
-    const back = button2(ui, { icon: 'back', label: 'Back', variant: 'white', size: 'small', onClick: () => { colorItem = null; renderMain(); } });
+    const back =button2(ui, { icon: 'back', label: 'Back', variant: 'white', size: 'small', onClick: (e) => { if (ghost(back, e)) return; colorItem = null; renderMain(); } });
+    track(back);
     const pic = ui.el('img');
     pic.alt = '';
     items.iconFor(item.key).then((url) => { if (url) pic.src = url; });
@@ -487,7 +497,12 @@ export function install(game) {
       const check = ui.el('span', 'sw-color-check');
       check.innerHTML = icon2('check');
       b.append(img, ui.el('span', 'sw-color-dot'), check);
-      b.addEventListener('click', () => { colorItem = null; give(item, c, { from: img }); });
+      track(b);
+      b.addEventListener('click', (e) => {
+        if (ghost(b, e)) return;
+        colorItem = null;
+        give(item, c, { from: img });
+      });
       grid.appendChild(b);
     }
     mainEl.append(head, grid);

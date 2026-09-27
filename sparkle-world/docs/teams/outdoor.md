@@ -134,6 +134,8 @@ parts batch with the rest of the furniture), and saved with the world like any f
   sits over a color card).
   A likely fix: ignore color-card clicks for ~350 ms after the grid appears, or act on the
   item card's `click` instead of `pointerup`.
+  **Fixed** (wave 2, Shops team, `docs/teams/shops.md`): a color card only takes a click whose
+  press started on it (or a keyboard click, or after 700 ms).
 
 ## Tests
 

@@ -23,7 +23,7 @@ const CSS = /* css */ `
 .lf-empty-basket img { width: 110px; height: 110px; }
 `;
 
-const TABLE_SCALE = { meal: 1, crop: 0.95, flower: 1 };
+const TABLE_SCALE = { meal: 1, crop: 0.95, flower: 1, sweet: 1 };
 
 function bookObject() {
   const g = new THREE.Group();
@@ -125,7 +125,7 @@ export function installBasket(game, { openCooking }) {
       icon: () => foodIcon(game, key),
       use(g, hit) {
         if (basketCount(g, key) <= 0) {
-          g.toast(f.kind === 'meal' ? `No more ${f.plural}! Cook some more!` : `No more ${f.plural}! Grow some more!`, { icon: 'sparkle' });
+          g.toast(f.kind === 'meal' ? `No more ${f.plural}! Cook some more!` : f.kind === 'sweet' ? `No more ${f.plural}! Visit a shop!` : `No more ${f.plural}! Grow some more!`, { icon: 'sparkle' });
           return false;
         }
         if (!E || !hit) return false;
@@ -211,7 +211,7 @@ export function installBasket(game, { openCooking }) {
         const bites = Math.min(3, Math.floor(u * 3.4));
         if (bites > e.bites) {
           e.bites = bites;
-          sfx(game, FOOD[e.key] && (e.key === 'smoothie' || e.key === 'carrot_soup' || e.key === 'ice_cream') ? 'slurp' : 'crunch');
+          sfx(game, FOOD[e.key] && (e.key === 'smoothie' || e.key === 'carrot_soup' || e.key === 'ice_cream' || FOOD[e.key].slurp) ? 'slurp' : 'crunch');
           if (game.particles) {
             _v.copy(e.m.position);
             _v.y += 0.1;
@@ -291,6 +291,14 @@ export function installBasket(game, { openCooking }) {
           sfx(game, 'chime');
         } }),
       );
+    } else if (f.kind === 'sweet' && game.treats) {
+      // shop treats (src/things/shops): eaten from her hand, and she can hold one
+      acts.append(
+        lifeButton(ui, { icon: 'eat', label: 'Eat', variant: 'pink', size: 'small', className: 'lf-act-eat', onClick: () => { ui.close(); game.treats.hold(key, { quiet: true }); game.treats.eat(key); } }),
+        lifeButton(ui, { icon: 'sparkle', label: 'Hold', variant: 'sun', size: 'small', className: 'lf-act-hold', onClick: () => { ui.close(); game.treats.hold(key); } }),
+        lifeButton(ui, { icon: 'paw', label: 'Pet', variant: 'mint', size: 'small', className: 'lf-act-pet', onClick: () => feedNearest(key) }),
+        lifeButton(ui, { icon: 'table', label: 'Table', variant: 'lav', size: 'small', className: 'lf-act-table', onClick: () => toTable(key) }),
+      );
     } else {
       acts.append(
         lifeButton(ui, { icon: 'eat', label: 'Eat', variant: 'pink', size: 'small', className: 'lf-act-eat', onClick: () => { ui.close(); eatNow(key); } }),
@@ -321,6 +329,7 @@ export function installBasket(game, { openCooking }) {
       return;
     }
     const groups = [
+      ['Sweet Treats', 'sparkle', owned.filter((k) => FOOD[k].kind === 'sweet')],
       ['Yummy Food', 'cake', owned.filter((k) => FOOD[k].kind === 'meal')],
       ['From the Garden', 'leaf', owned.filter((k) => FOOD[k].kind === 'crop')],
       ['Flowers', 'sparkle', owned.filter((k) => FOOD[k].kind === 'flower')],
