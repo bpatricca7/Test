@@ -135,18 +135,27 @@ async function main() {
     check(withShareTags('<head>\n  <!-- share-tags: x -->\n</head>', '') === '<head>\n</head>' && shareTags('bad domain"><script>') === '', 'without it (or with a strange one) those tags are left out');
     check(process.env.RAILWAY_PUBLIC_DOMAIN ? /og:image/.test(homeHtml) : !/og:image|share-tags/.test(homeHtml), 'the built page matches RAILWAY_PUBLIC_DOMAIN');
     check(home.headers.get('content-encoding') === 'gzip' && !!home.headers.get('etag'), 'gzip + ETag on the home page');
-    check(/camera=\(\)/.test(home.headers.get('permissions-policy') || ''), 'Permissions-Policy is kept on the home page');
+    const homePP = home.headers.get('permissions-policy') || '';
+    check(/camera=\(\)/.test(homePP) && /microphone=\(\)/.test(homePP), `Permissions-Policy on the home page: camera and microphone off (${homePP})`);
     const again = await fetch(`${base}/`, { headers: { 'if-none-match': home.headers.get('etag') } });
     check(again.status === 304, `a second visit is a 304 (${again.status})`);
     const play = await fetch(`${base}/play`);
     const playHtml = await play.text();
-    check(play.status === 200 && playHtml.includes('<div id="app"></div>') && /camera=\(\)/.test(play.headers.get('permissions-policy') || ''), '/play is the game (with its Permissions-Policy)');
-    check(!play.headers.get('content-security-policy'), 'the game page is served as before (no new CSP)');
+    const playPP = play.headers.get('permissions-policy') || '';
+    check(play.status === 200 && playHtml.includes('<div id="app"></div>') && /camera=\(\)/.test(playPP) && /microphone=\(self\)/.test(playPP), `/play is the game (camera off, the microphone for this site only, for the walkie-talkie: ${playPP})`);
+    const playCsp = play.headers.get('content-security-policy') || '';
+    check(/frame-ancestors 'none'/.test(playCsp) && /connect-src 'self'/.test(playCsp) && !/font-src|style-src|default-src/.test(playCsp), `the game page has the relay's CSP, not the home page's (its Google font still loads): ${playCsp}`);
     check((await fetch(`${base}/sparkle-world.html`)).status === 200, 'the old /sparkle-world.html still opens the game');
     check((await fetch(`${base}/healthz`)).status === 200, '/healthz answers');
     const info = await (await fetch(`${base}/api/net`)).json();
     check(info.ok === true && typeof info.build === 'string', `/api/net answers ${JSON.stringify(info)}`);
-    check((await fetch(`${base}/parents`)).status === 200, '/parents opens the grown-ups page');
+    const parentsRes = await fetch(`${base}/parents`);
+    check(parentsRes.status === 200, '/parents opens the grown-ups page');
+    // the words about voice are true: a walkie-talkie a grown-up turns on, never "no voice"
+    const parentsHtml = await parentsRes.text();
+    for (const [label, html] of [['home page', homeHtml], ['grown-ups page', parentsHtml]]) {
+      check(!/no voice/i.test(html) && /walkie-talkie/i.test(html) && /multiplication/i.test(html) && /recorded/i.test(html) && /mute/i.test(html) && /only works on this website|only on this website|website version/i.test(html), `${label}: voice is described as the walkie-talkie (grown-up check, never recorded, mute, website only), never "no voice"`);
+    }
     check((await fetch(`${base}/preview.html`)).status === 404, 'the Artifact fragment is not served as a page');
     check((await fetch(`${base}/../package.json`)).status === 404 && (await fetch(`${base}/%2e%2e/package.json`)).status === 404, 'no files outside dist/site/');
     const img = await fetch(`${base}/img/title.webp`);
