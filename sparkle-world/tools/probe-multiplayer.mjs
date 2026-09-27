@@ -776,13 +776,15 @@ test('AT10', 'Rosie loses the connection for 5 s during a castle build: "Reconne
   fc.partition(rosie.page, 5000);
   fc.partition(june.page, 5000);
   await game(lily, ({ x, z }) => window.__game.prefabs.place('princess_castle', x + 30, z - 30, { animate: false }), spot);
+  // June's pill is watched at the same time (her 5 s are not over while Rosie's shots are taken)
+  const phoneP = until(june, () => !document.querySelector('.sw-net-pill').hidden, null, 8000, 100);
   const shown = await until(rosie, () => !document.querySelector('.sw-net-pill').hidden && /Reconnecting/.test(document.querySelector('.sw-net-pill').textContent), null, 8000, 100);
   check(shown, 'Rosie’s HUD shows "Reconnecting…"');
   if (shown) await shot(rosie, 'rosie-reconnecting');
   if (shown) await hudFits(rosie, 'iPad with "Reconnecting…"');
-  const shownPhone = await until(june, () => !document.querySelector('.sw-net-pill').hidden, null, 8000, 100);
+  const shownPhone = await phoneP;
   check(shownPhone, 'June\u2019s phone shows "Reconnecting…" too');
-  if (shownPhone) {
+  if (shownPhone && (await game(june, () => !document.querySelector('.sw-net-pill').hidden))) {
     await shot(june, 'june-reconnecting');
     await hudFits(june, 'phone with "Reconnecting…"');
   }
@@ -881,17 +883,21 @@ test('AT12', 'Lily\u2019s page reloads; "Keep playing" opens the door again; eve
     throttles.push(cdp);
   }
   const t0 = Date.now();
-  await reloadPlayer(lily);
-  const chip = lily.page.locator('.sw-title-chips .sw-net-chip--host');
-  await chip.waitFor({ state: 'visible', timeout: 30000 });
-  check(/Keep playing/.test(await chip.textContent()), 'Lily\u2019s title shows "Keep playing"');
-  check(await until(rosie, () => document.querySelector('.sw-net-away') && !document.querySelector('.sw-net-away').hidden, null, 15000), 'Rosie sees "Lily is taking a little break\u2026"');
-  await press(lily, chip);
-  check(await until(lily, () => window.__game.net.state === 'h.live', null, 150000), 'Lily is hosting again with the same code');
-  log(`  Lily hosting again ${((Date.now() - t0) / 1000).toFixed(1)} s after the reload started`);
-  for (const cdp of throttles) {
-    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
-    await cdp.detach().catch(() => {});
+  try {
+    await reloadPlayer(lily);
+    const chip = lily.page.locator('.sw-title-chips .sw-net-chip--host');
+    await chip.waitFor({ state: 'visible', timeout: 30000 });
+    check(/Keep playing/.test(await chip.textContent()), 'Lily\u2019s title shows "Keep playing"');
+    check(await until(rosie, () => document.querySelector('.sw-net-away') && !document.querySelector('.sw-net-away').hidden, null, 15000), 'Rosie sees "Lily is taking a little break\u2026"');
+    await press(lily, chip, { timeout: 60000 });
+    check(await until(lily, () => window.__game.net.state === 'h.live', null, 150000), 'Lily is hosting again with the same code');
+    log(`  Lily hosting again ${((Date.now() - t0) / 1000).toFixed(1)} s after the reload started`);
+  } finally {
+    // (always: a failure here must not leave her friends' pages slowed down for the next tests)
+    for (const cdp of throttles) {
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 }).catch(() => {});
+      await cdp.detach().catch(() => {});
+    }
   }
   const code2 = await game(lily, () => window.__game.net.code);
   check(JSON.stringify(code2) === JSON.stringify(CODE), 'the same code');

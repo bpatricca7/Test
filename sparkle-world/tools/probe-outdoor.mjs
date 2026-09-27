@@ -512,7 +512,11 @@ async function treePass(browser, errors) {
     g.cameraRig.yaw = Math.PI;
     g.cameraRig.distance = 3;
     g.cameraRig.pitch = -0.35;
-    g.cameraRig.snap();
+    // the real camera pose (snap() runs update, which a tap helper may have paused)
+    g.cameraRig.current = g.cameraRig.distance;
+    g.cameraRig.shoulder = 1;
+    (g.__tapRig || g.cameraRig.update).call(g.cameraRig, 0, true);
+    g.camera.updateMatrixWorld(true);
   }, [trunk[0], trunk[1], G]);
   await settle(page, 300);
   const tp = await screenPoint(page, trunk[0] + 0.5, G + 4.5, trunk[1] + 1.0);

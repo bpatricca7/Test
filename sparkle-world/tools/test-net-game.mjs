@@ -528,7 +528,7 @@ async function main() {
     const back2 = await until(gb, () => {
       const g = window.__game;
       return g.net.state === 'g.live' && g.mode === 'play' && !g.loading && !g._busy;
-    }, null, 90000);
+    }, null, 150000); // the snapshot is here in a second; meshing a whole world in SwiftShader can take a minute
     check(back2, 'guest B is back after a reload (known friend: let in again without a knock card)');
     log('  guest B after the reload: ' + JSON.stringify(await gb.evaluate(() => (window.__trace || []).map(([t, s]) => `${(t / 1000).toFixed(1)}s ${s}`).join(', '))));
     if (!back2) {
