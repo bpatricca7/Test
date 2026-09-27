@@ -300,7 +300,13 @@ export function installBook(game) {
   function speak(text) {
     if (!canSpeak) return;
     try {
+      // a new page cuts the last one off; then read it in the game's own friendly voice (the
+      // one every toast and tip uses, see settings.js), when that is there
       window.speechSynthesis.cancel();
+      if (game.speak) {
+        game.speak(text, true);
+        return;
+      }
       const u = new window.SpeechSynthesisUtterance(text);
       u.rate = 0.9;
       u.pitch = 1.15;

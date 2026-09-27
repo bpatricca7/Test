@@ -97,16 +97,37 @@ async function gallery(browser) {
     const x = 22 + col * 40, z = 22 + row * 44;
     const res = await page.evaluate(([key, x, z]) => {
       const g = window.__game;
+      const before = new Set(g.entities.all().map((e) => e.uid));
       const t0 = performance.now();
       const r = g.prefabs.place(key, x, z, { rot: 0 });
       const ms = performance.now() - t0;
       const p = g.prefabs.plan(key);
-      return r && { ...r, ms, plan: { W: p.W, H: p.H, D: p.D, ax: p.ax, az: p.az, maxY: p.maxY, blocks: p.blockCount, view: g.registry.prefabs.get(key).view || null } };
+      if (!r) return null;
+      // every door and gate can be walked through: she fits in the cells in front of it and
+      // behind it (standing up to one block higher or lower, for steps), with it open
+      const E = g.entities, w = g.world, ph = g.physics;
+      const blockedDoors = [];
+      for (const d of E.all().filter((e) => !before.has(e.uid) && (e.key.startsWith('door') || e.key === 'gate'))) {
+        const wasOpen = !!(d.data && d.data.open);
+        if (!wasOpen) E.setData(d, { open: true });
+        const f = d.frontCell();
+        const cellFree = (cx, cz) => [0, 1, -1].some((dy) => !ph.bodyBlocked(cx + 0.5, d.y + dy + 0.02, cz + 0.5, 0.3, 1.7));
+        const what = (cx, cz) => {
+          const e = E.at(cx, d.y, cz);
+          return e ? e.key : g.registry.blocks.byId(w.get(cx, d.y, cz)).key;
+        };
+        const bx = 2 * d.x - f[0], bz = 2 * d.z - f[2];
+        const front = cellFree(f[0], f[2]), back = cellFree(bx, bz);
+        if (!front || !back) blockedDoors.push(`${d.key}@${d.x},${d.y},${d.z} front=${front ? 'ok' : what(f[0], f[2])} back=${back ? 'ok' : what(bx, bz)}`);
+        if (!wasOpen) E.setData(d, { open: false });
+      }
+      return { ...r, ms, blockedDoors, plan: { W: p.W, H: p.H, D: p.D, ax: p.ax, az: p.az, maxY: p.maxY, blocks: p.blockCount, view: g.registry.prefabs.get(key).view || null } };
     }, [key, x, z]);
     if (!res) {
       check(false, `${key} placed`);
       continue;
     }
+    check(!res.blockedDoors.length, `${key}: every door can be walked through${res.blockedDoors.length ? ' (' + res.blockedDoors.join('; ') + ')' : ''}`);
     const f = res.furniture;
     console.log(`  ${key}: ${res.plan.blocks} blocks, ${res.changed} cells changed in ${res.ms.toFixed(0)} ms, furniture ${f.placed}/${f.requested}${f.skipped.length ? ' (skipped ' + [...new Set(f.skipped)].join(' ') + ')' : ''}`);
     const plan = res.plan;
@@ -131,11 +152,28 @@ async function gallery(browser) {
   // the whole town from above
   await view(page, [104, 48, 178], [104, 17, 80], 0.36);
   await shot(page, 'town');
+  // draw-call budget: static furniture shares one atlas material and is merged into world
+  // batches (entities.js), so this town of ~500 pieces costs ~0.55 calls per piece (it was
+  // ~2.9 before batching); what is left is moving parts and see-through bits
+  const dc = await page.evaluate(() => {
+    const g = window.__game, r = g.renderer;
+    const kids = g.scene.children, vis = kids.map((c) => c.visible);
+    const calls = (only) => {
+      kids.forEach((c) => { c.visible = !only || c === only; });
+      r.render(g.scene, g.camera);
+      return r.info.render.calls;
+    };
+    const furniture = calls(g.entities.group), all = calls(null);
+    kids.forEach((c, i) => { c.visible = vis[i]; });
+    return { furniture, all, pieces: g.entities.all().length, batches: g.entities.batcher.info() };
+  });
+  console.log(`  town: ${dc.pieces} pieces, furniture ${dc.furniture} draw calls, frame ${dc.all} (batches ${JSON.stringify(dc.batches)})`);
+  check(dc.furniture <= Math.max(120, dc.pieces * 0.65), `town furniture stays within the draw-call budget (${dc.furniture} calls for ${dc.pieces} pieces)`);
   // Bag tab with thumbnails
   await page.evaluate(() => { const g = window.__game; g.cameraRig.setMode('third'); g.player.setFlying(false); });
   await page.keyboard.press('b');
-  await page.waitForSelector('.sw-panel-wrap.sw-open .sw-tab');
-  await page.locator('.sw-tab', { hasText: 'Magic Houses' }).click();
+  await page.waitForSelector('.sw-panel-wrap.sw-open .sw-tab2');
+  await page.locator('.sw-tab2', { hasText: 'Magic Houses' }).click();
   await page.waitForFunction((n) => [...document.querySelectorAll('.sw-panel-wrap.sw-open .sw-item img')].filter((i) => i.src.startsWith('data:')).length >= n, keys.length, { timeout: 30000 }).catch(() => {});
   const pics = await page.evaluate(() => [...document.querySelectorAll('.sw-panel-wrap.sw-open .sw-item img')].filter((i) => i.src.startsWith('data:image/png') && i.src.length > 2000).length);
   check(pics === keys.length, `every Magic House has a 3D picture in the Bag (${pics}/${keys.length})`);
@@ -285,8 +323,8 @@ async function uiPass(browser) {
     g.cameraRig.pitch = 0.5;
   });
   await page.locator('.sw-bagbtn').click();
-  await page.waitForSelector('.sw-panel-wrap.sw-open .sw-tab');
-  await page.locator('.sw-tab', { hasText: 'Magic Houses' }).click();
+  await page.waitForSelector('.sw-panel-wrap.sw-open .sw-tab2');
+  await page.locator('.sw-tab2', { hasText: 'Magic Houses' }).click();
   await page.waitForSelector('.sw-panel-wrap.sw-open .sw-item img[src^="data:"]', { timeout: 20000 });
   await settle(page, 500);
   await shot(page, 'ui-bag');
@@ -306,14 +344,24 @@ async function uiPass(browser) {
   check(!!g1.ghost && g1.ghost.key === 'cottage', 'hovering the ground shows the cottage ghost');
   check(g1.bar, 'the house bar (Turn / Build!) is showing');
   await shot(page, 'ui-ghost');
+  // the ghost is a building aid: My Worlds pictures and photos never show it
+  const inThumb = await page.evaluate(() => {
+    const g = window.__game, ghost = g.scene.getObjectByName('prefab-ghost');
+    let during = null;
+    const off = g.events.on('thumbnail:before', () => { during = ghost.visible; });
+    const url = g.captureThumbnail();
+    off();
+    return { during, after: ghost.visible, url: !!url };
+  });
+  check(inThumb.url && inThumb.during === false && inThumb.after === true, `the ghost stays out of the world's picture and comes back after (${JSON.stringify(inThumb)})`);
   await page.keyboard.press('r');
   await settle(page, 400);
   const g2 = await page.evaluate(() => window.__game.prefabs.ghost);
   check(g2 && g1.ghost && g2.placement.rot !== g1.ghost.placement.rot, `R turns the ghost (${g1.ghost && g1.ghost.placement.rot} -> ${g2 && g2.placement.rot})`);
   await page.locator('.sw-pf-turn').click();
-  await settle(page, 300);
+  await page.waitForFunction((r) => { const gh = window.__game.prefabs.ghost; return gh && gh.placement.rot !== r; }, g2 ? g2.placement.rot : -1, { timeout: 5000, polling: 100 }).catch(() => {});
   const g3 = await page.evaluate(() => window.__game.prefabs.ghost);
-  check(g3 && g3.placement.rot !== g2.placement.rot, 'the Turn button turns it again');
+  check(g3 && g2 && g3.placement.rot !== g2.placement.rot, `the Turn button turns it again (${g2 && g2.placement.rot} -> ${g3 && g3.placement.rot})`);
   await shot(page, 'ui-ghost-turned');
   const before = await page.evaluate(() => ({ blocks: window.__game.world.blocks.slice().join(','), hist: window.__game.history.length, ents: window.__game.debug.entities().length }));
   await page.mouse.move(pt ? pt.x : vp.width / 2, pt ? pt.y : vp.height * 0.6);
@@ -370,8 +418,9 @@ async function uiPass(browser) {
   check(cancelled.blocks === before.blocks && !cancelled.building && cancelled.hist === before.hist, 'Undo during the magic cancels the house');
   // the bar hides with another tool / item
   await page.locator('.sw-round', { hasText: 'Hand' }).first().click();
-  await settle(page, 200);
-  check(await page.evaluate(() => document.querySelector('.sw-pf-bar').hidden && !window.__game.prefabs.ghost), 'ghost and bar hide with the Hand tool');
+  // a frame of this scene can take a while in SwiftShader: wait for it rather than a fixed time
+  const hid = await page.waitForFunction(() => document.querySelector('.sw-pf-bar').hidden && !window.__game.prefabs.ghost, null, { timeout: 5000, polling: 100 }).then(() => true, () => false);
+  check(hid, `ghost and bar hide with the Hand tool (tool ${await page.evaluate(() => window.__game.selectedTool)})`);
   await context.close();
 }
 
@@ -383,8 +432,8 @@ async function touchPass(browser) {
   await newWorld(page, 'flat', 'cozy', 5);
   await page.evaluate(() => { window.__game.setDayTime(0.4); window.__game.cameraRig.pitch = 0.55; });
   await page.locator('.sw-bagbtn').tap();
-  await page.waitForSelector('.sw-panel-wrap.sw-open .sw-tab');
-  await page.locator('.sw-tab', { hasText: 'Magic Houses' }).tap();
+  await page.waitForSelector('.sw-panel-wrap.sw-open .sw-tab2');
+  await page.locator('.sw-tab2', { hasText: 'Magic Houses' }).tap();
   await page.waitForSelector('.sw-panel-wrap.sw-open .sw-item img[src^="data:"]', { timeout: 20000 });
   await page.locator('.sw-panel-wrap.sw-open .sw-item', { hasText: 'Candy' }).first().tap();
   await settle(page, 400);
@@ -402,7 +451,11 @@ async function touchPass(browser) {
   const pt = await screenPoint(page, ...tgt);
   const hist0 = await page.evaluate(() => window.__game.history.length);
   await page.touchscreen.tap(pt.x, pt.y);
-  await settle(page, 500);
+  await page.waitForFunction((p0) => {
+    const gh = window.__game.prefabs.ghost;
+    return !gh || !p0 || gh.placement.x !== p0.x || gh.placement.z !== p0.z || window.__game.prefabs.building;
+  }, s0.ghost && s0.ghost.placement, { timeout: 5000, polling: 100 }).catch(() => {});
+  await settle(page, 200);
   const s1 = await page.evaluate(() => ({ ghost: window.__game.prefabs.ghost, hist: window.__game.history.length, building: window.__game.prefabs.building, tip: document.querySelector('.sw-pf-tip').textContent }));
   const moved = s1.ghost && s0.ghost && (s1.ghost.placement.x !== s0.ghost.placement.x || s1.ghost.placement.z !== s0.ghost.placement.z);
   check(!!s1.ghost && moved && s1.hist === hist0 && !s1.building, `a tap off the ghost moves it there without building (tip: "${s1.tip}")`);
@@ -456,11 +509,17 @@ async function touchPass(browser) {
       const bar = document.querySelector('.sw-pf-bar').getBoundingClientRect();
       const hit = [];
       for (const sel of ['.sw-hotbar', '.sw-joy', '.sw-touch', '.sw-hud-tl', '.sw-hud-tr', '.sw-hud-right', '.sw-bagbtn', '.sw-undobtn']) {
-        for (const el of document.querySelectorAll(sel)) {
-          if (!el.offsetParent && getComputedStyle(el).position !== 'fixed') continue;
-          const r = el.getBoundingClientRect();
-          if (r.width === 0 || r.height === 0) continue;
-          if (!(bar.bottom <= r.top || bar.top >= r.bottom || bar.right <= r.left || bar.left >= r.right)) hit.push(sel);
+        for (const box of document.querySelectorAll(sel)) {
+          // the corner groups are loose columns/rows: test the buttons and pills in them, not
+          // the empty space their box also spans
+          const group = box.matches('.sw-hud-tl, .sw-hud-tr, .sw-hud-right');
+          const els = group ? box.querySelectorAll('button, .sw-pill') : [box];
+          for (const el of els) {
+            if (!el.offsetParent && getComputedStyle(el).position !== 'fixed') continue;
+            const r = el.getBoundingClientRect();
+            if (r.width === 0 || r.height === 0) continue;
+            if (!(bar.bottom <= r.top || bar.top >= r.bottom || bar.right <= r.left || bar.left >= r.right)) hit.push(sel + (el !== box ? ' ' + (el.textContent.trim() || el.className) : ''));
+          }
         }
       }
       return { hit, inside: bar.left >= 0 && bar.right <= innerWidth && bar.height > 0 };

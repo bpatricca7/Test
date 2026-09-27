@@ -15,7 +15,9 @@ export function paintTexture(key, w, h, paint, { repeat = true, smooth = false }
   const c = document.createElement('canvas');
   c.width = w;
   c.height = h;
-  const ctx = c.getContext('2d');
+  // read back once into the furniture texture array (atlas.js): keep the pixels on the CPU so
+  // that read does not stall on the GPU
+  const ctx = c.getContext('2d', { willReadFrequently: true });
   paint(ctx, w, h, mulberry32(hashString(key)));
   t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
@@ -49,6 +51,7 @@ export function material(key, opts = {}) {
   if (opts.alphaTest) p.alphaTest = opts.alphaTest;
   if (opts.side) p.side = opts.side;
   m = new THREE.MeshLambertMaterial(p);
+  m.name = key;
   m.userData.shared = true;
   if (opts.uvScale) m.userData.uvScale = opts.uvScale;
   if (opts.uvFit) m.userData.uvFit = true;
@@ -63,7 +66,11 @@ export function glow(color, intensity = 1) {
 
 /** See-through material (curtains, glass, water). */
 export function sheer(color, opacity = 0.5) {
-  return material(`sheer|${color}|${opacity}`, { color, opacity, side: THREE.DoubleSide });
+  const m = material(`sheer|${color}|${opacity}`, { color, opacity, side: THREE.DoubleSide });
+  // one pass for both sides (half the draw calls): the faces of one mesh share one color and
+  // opacity, so the blending order between them does not change the picture
+  m.forceSinglePass = true;
+  return m;
 }
 
 // ---------- pixel helpers ----------
