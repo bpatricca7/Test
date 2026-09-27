@@ -175,9 +175,17 @@ export async function bringTo(guest, host, dx = 2, dz = 2) {
   }, [p[0] + dx, p[1], p[2] + dz]);
 }
 
-/** Close the open panel (never the title screen itself). */
+/**
+ * Close the open panel (never the title screen itself): on the title, back to the title (what
+ * her X / back buttons lead to), else the world.
+ */
 export async function closePanels(pl) {
-  await game(pl, () => { const u = window.__game.ui; if (u.current && u.current !== 'title') u.close(); });
+  await game(pl, () => {
+    const g = window.__game, u = g.ui;
+    if (!u.current || u.current === 'title') return;
+    if (g.mode === 'title' && u.hasPanel('title')) u.open('title');
+    else u.close();
+  });
 }
 
 export const VIEW = () => {
