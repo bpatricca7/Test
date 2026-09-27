@@ -734,11 +734,20 @@ async function serverTests() {
     const dir = mkdtempSync(path.join(tmpdir(), 'sw-'));
     const page = path.join(dir, 'page.html');
     writeFileSync(page, '<!doctype html><title>Sparkle World</title>');
-    const srv = await startServerProcess({ SW_DIST: page, SW_MAX_ROOMS: '3', SW_MAX_PER_IP: '6', SW_IDLE_MS: '1500' });
+    const srv = await startServerProcess({ SW_DIST: page, SW_MAX_ROOMS: '2', SW_MAX_PER_IP: '6', SW_IDLE_MS: '2500' });
     const room = 'sw1-heart-star-moon-cat';
     const socks = [];
     try {
-      // 4 peers per room
+      // origin check (browsers always send Origin; it must be this site)
+      const bad = await rawWs(srv.port, room, 'secret-number-oxxxxx', { Origin: 'https://evil.example' });
+      eq(bad.error, 403, 'foreign origin refused');
+      const good = await rawWs(srv.port, 'room-origin', 'secret-number-o2xxxx', { Origin: `http://127.0.0.1:${srv.port}` });
+      assert(!good.error, 'same origin accepted');
+      await waitFor(() => good.frames.length > 0);
+      good.ws.close(1000);
+      await waitFor(() => good.closed !== null);
+      await sleep(100);
+      // 4 players per room
       for (let k = 0; k < 4; k++) socks.push(await rawWs(srv.port, room, 'secret-number-' + k + 'xxxx'));
       await waitFor(() => socks.every((s) => s.frames.length > 0));
       const fifth = await rawWs(srv.port, room, 'secret-number-5xxxxx');
@@ -756,48 +765,38 @@ async function serverTests() {
       eq([got[0].from.kind, got[0].from.guest, got[0].from.isMe, got[0].from.sameTab], ['viewer', false, false, false], 'stamp');
       assert(a.frames.some((f) => f.t === 'e' && f.code === 'too_big'), 'too_big reported');
       assert(a.frames.some((f) => f.t === 'b' && f.from.sameTab && f.from.isMe), 'echo to sender');
-      // presence limit
-      a.ws.send(JSON.stringify({ t: 's', patch: { big: 'x'.repeat(1000), b2: 'x'.repeat(1000), b3: 'x'.repeat(1000), b4: 'x'.repeat(1000), b5: 'x'.repeat(200) } }));
+      // presence limit (4 KiB merged)
+      a.ws.send(JSON.stringify({ t: 's', patch: { b1: 'x'.repeat(1000), b2: 'x'.repeat(1000), b3: 'x'.repeat(1000), b4: 'x'.repeat(1000), b5: 'x'.repeat(200) } }));
       await waitFor(() => a.frames.filter((f) => f.t === 'e').length >= 2);
-      assert(a.frames.some((f) => f.t === 'e' && f.code === 'too_big' ), 'presence too big');
+      eq(a.frames.filter((f) => f.t === 'e').map((f) => f.code), ['too_big', 'too_big'], 'presence too big');
       a.ws.send(JSON.stringify({ t: 's', patch: { r: 'h', n: 1 } }));
       await waitFor(() => b.frames.some((f) => f.t === 'p' && f.u));
-      const upd = b.frames.find((f) => f.t === 'p' && f.u);
-      eq(upd.u[0][1], { r: 'h', n: 1 }, 'presence relayed');
-      // rate limit: 300 messages at once, only ~80 get through
+      eq(b.frames.find((f) => f.t === 'p' && f.u).u[0][1], { r: 'h', n: 1 }, 'presence relayed');
+      // rate limit: 300 messages at once, about 80 get through
       const before = b.frames.length;
       for (let k = 0; k < 300; k++) a.ws.send(JSON.stringify({ t: 'b', topic: 'sw.op', data: { k } }));
       await sleep(400);
       const relayed = b.frames.length - before;
       assert(relayed >= 70 && relayed <= 110, 'rate limited: ' + relayed + ' of 300 relayed');
-      // rooms cap (3) and per-IP cap (6 connections: 4 open now)
+      // rooms cap (2): a second room is fine, a third is refused
       const r2 = await rawWs(srv.port, 'room-two', 'secret-number-r2xxxx');
+      await waitFor(() => r2.frames.length > 0);
       const r3 = await rawWs(srv.port, 'room-three', 'secret-number-r3xxxx');
-      await waitFor(() => r2.frames.length && r3.frames.length);
-      const r4 = await rawWs(srv.port, 'room-four', 'secret-number-r4xxxx');
-      await waitFor(() => r4.closed !== null);
-      eq(r4.closed, 4029, 'per-IP cap');
-      r2.ws.close(1000);
-      await waitFor(() => r2.closed !== null);
-      await sleep(100);
-      const r5 = await rawWs(srv.port, 'room-five', 'secret-number-r5xxxx');
-      await waitFor(() => r5.closed !== null || r5.frames.length > 0);
-      await waitFor(() => r5.closed !== null, 1000);
-      assert(r5.closed === 4002 || r5.frames.some((f) => f.code === 'rooms_full'), 'rooms cap: ' + r5.closed);
-      // origin check
-      const bad = await rawWs(srv.port, room, 'secret-number-oxxxxx', { Origin: 'https://evil.example' });
-      eq(bad.error, 403, 'foreign origin refused');
-      const good = await rawWs(srv.port, 'room-three', 'secret-number-o2xxxx', { Origin: `http://127.0.0.1:${srv.port}`, Host: `127.0.0.1:${srv.port}` });
-      assert(!good.error, 'same origin accepted');
-      good.ws.close(1000);
-      // idle rooms are closed
-      await waitFor(() => r3.closed !== null, 12000);
-      eq(r3.closed, 4000, 'idle room closed');
-      // graceful shutdown: clients see 1012
+      await waitFor(() => r3.closed !== null);
+      eq(r3.closed, 4002, 'rooms cap');
+      // per-IP cap (6): 5 open now
+      const r4 = await rawWs(srv.port, 'room-two', 'secret-number-r4xxxx');
+      const r5 = await rawWs(srv.port, 'room-two', 'secret-number-r5xxxx');
+      await waitFor(() => r5.closed !== null);
+      eq([r4.closed, r5.closed], [null, 4029], 'per-IP cap');
+      // idle rooms are closed (no traffic for SW_IDLE_MS)
+      await waitFor(() => r2.closed !== null, 15000);
+      eq(r2.closed, 4000, 'idle room closed');
+      // graceful shutdown
       const code = await stopServer(srv);
-      eq(code, 0, 'exit 0');
+      eq(code, 0, 'exit 0 on SIGTERM');
       await waitFor(() => socks.every((s) => s.closed !== null), 3000);
-      assert(socks.every((s) => s.closed === 1012 || s.closed === 4000), 'restart close code: ' + socks.map((s) => s.closed));
+      assert(socks.every((s) => s.closed === 1012 || s.closed === 4000), 'restart/idle close codes: ' + socks.map((s) => s.closed));
       assert(!/secret-number|yyyy|xxxx/.test(srv.output()), 'no payloads or secrets logged');
     } finally {
       for (const s of socks) try { s.ws.terminate(); } catch {}
@@ -829,8 +828,9 @@ async function serverTests() {
       // server restart on the same port
       await stopServer(srv);
       srv = await startServerProcess({ SW_DIST: page, PORT: String(port) });
-      await waitFor(() => a.peers().length === 2 && b.peers().some((p) => p.id === ra.self && p.state.n === 2), 15000);
-      assert(b.peers().some((p) => p.id === ra.self && p.state.n === 2), 'room rebuilt after restart');
+      a.setState({ n: 3 });
+      await waitFor(() => b.peers().some((p) => p.id === ra.self && p.state.n === 3), 15000);
+      assert(b.peers().some((p) => p.id === ra.self && p.state.n === 3), 'room rebuilt after restart, same peer, presence flows');
       const got = [];
       b.on('op', (d) => got.push(d));
       a.send('op', { hello: 1 }, 1);

@@ -406,6 +406,7 @@ export function wsNet(port, seed) {
   const clock = realClock;
   return {
     clock,
+    sessionOptions: { compression: true },
     advance: (ms) => sleep(ms),
     transport: (uid) => {
       const t = new WsTransport({ url: `ws://127.0.0.1:${port}`, uid, faults: { dropRate: 0.3, dupRate: 0.05, delayMs: [0, 800], rand: frand } });
