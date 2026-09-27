@@ -6,12 +6,14 @@
 <title>Sparkle World</title>
 <meta name="description" content="A cozy, pastel block world for kids: build houses, fill them with really nice beds, dress up, adopt a unicorn and invite friends with a code made of pictures. Plays in the browser on iPad, phones and computers.">
 <meta name="theme-color" content="#BDE6FF">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Sparkle World">
 <meta property="og:title" content="Sparkle World">
 <meta property="og:description" content="Build a whole world. Then move in. A cozy block-building game for kids, right in the browser.">
+<!-- share-tags: tools/site-build.mjs writes og:url, og:image and twitter:card here when RAILWAY_PUBLIC_DOMAIN is set -->
 <link rel="icon" href="img/pics/heart.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap">
+<link rel="apple-touch-icon" href="img/icon-180.png">
+<link rel="preload" href="fonts/fredoka-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -46,7 +48,7 @@
       <p class="lede">Sparkle World is a soft, pastel world made of blocks. Build a house, fill it with really nice beds and everything else, dress up, adopt a unicorn, and invite a friend over with a secret code made of pictures.</p>
       <div class="cta-row">
         <a class="btn btn-play" href="/play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z"/></svg>Play now</a>
-        <a class="btn btn-ghost" href="#inside">See what's inside</a>
+        <a class="btn btn-ghost hero-more" href="#inside">See what's inside</a>
       </div>
       <ul class="facts" aria-label="Good to know">
         <li>Plays in the browser</li>
@@ -57,7 +59,7 @@
 
     <div class="hero-art">
       <figure class="postcard">
-        <img src="img/title.webp" width="1600" height="1000" fetchpriority="high" alt="The Sparkle World title screen: a pink cottage in a flower meadow, cherry blossom trees, and a girl with long brown hair waving and saying Hi, Lily! Buttons read New World, My Worlds, Play with Friends, Dress Up, Stickers and Settings.">
+        <img src="img/title.webp" srcset="img/title-800.webp 800w, img/title.webp 1600w" sizes="(max-width: 900px) 88vw, 48vw" width="1600" height="1000" fetchpriority="high" alt="The Sparkle World title screen: a pink cottage in a flower meadow, cherry blossom trees, and a girl with long brown hair waving and saying Hi, Lily! Buttons read New World, My Worlds, Play with Friends, Dress Up, Stickers and Settings.">
         <figcaption class="tag tag--sun">This is the real game</figcaption>
       </figure>
 
@@ -106,7 +108,7 @@
         <p class="ch-num" aria-hidden="true">01</p>
         <h3 id="ch1">Build your own worlds</h3>
         <p class="say">Pick a world. Build anything!</p>
-        <p>Start a world in one of seven kinds of places, then build with more than 200 pastel blocks: pink planks, heart windows, glowing lamps, candy, glitter and rainbow blocks. Hold and drag to build a whole row at once. Oops? There is always Undo.</p>
+        <p>Start a world in one of seven kinds of places, then build with more than 200 pastel blocks: pink planks, heart windows, glowing lamps, candy, glitter and rainbow blocks. Hold still for a moment, then drag, to build a whole row at once. Oops? There is always Undo.</p>
         <ul class="blocks" aria-label="Some of the blocks">
           <li style="--t:url(img/tiles/planks_pink.png)"><span>Pink planks</span></li>
           <li style="--t:url(img/tiles/glass_heart.png)"><span>Heart window</span></li>
@@ -123,18 +125,19 @@
         </ul>
       </div>
       <div class="ch-art">
-        <figure class="shot shot--main">
-          <img src="img/candy.webp" width="1400" height="875" loading="lazy" decoding="async" alt="Candy Land from above: pink frosting hills, cookie cliffs, lollipop trees, gumdrops and a little candy house.">
-          <figcaption class="tag">Candy Land</figcaption>
+        <figure class="shot shot--main shot--ipad">
+          <img src="img/building.webp" srcset="img/building-800.webp 800w, img/building.webp 1400w" sizes="(max-width: 860px) 92vw, 56vw" width="1400" height="1050" loading="lazy" decoding="async" alt="Playing on an iPad: a girl with long brown hair stands next to a pink house she is building, with heart windows and a white floor. A new row of pink planks is growing along the front. On screen: the walk joystick, the Bag, a row of blocks to pick from, Undo, and the Build, Remove and Hand buttons.">
+          <figcaption class="tag">Building on an iPad</figcaption>
         </figure>
       </div>
       <div class="worlds" role="list" aria-label="Seven kinds of worlds">
-        <figure class="world" role="listitem" style="--r:-2deg"><img src="img/world-meadow.webp" width="1200" height="750" loading="lazy" decoding="async" alt="Flower Meadow: green hills, cherry blossom trees and flowers everywhere."><figcaption>Flower Meadow</figcaption></figure>
-        <figure class="world" role="listitem" style="--r:1.5deg"><img src="img/world-beach.webp" width="1200" height="750" loading="lazy" decoding="async" alt="Beach Island: sand, palm trees and turquoise water."><figcaption>Beach Island</figcaption></figure>
-        <figure class="world" role="listitem" style="--r:-1deg"><img src="img/world-snow.webp" width="1200" height="750" loading="lazy" decoding="async" alt="Snowy Wonderland: snowy hills and pine trees while snow falls."><figcaption>Snowy Wonderland</figcaption></figure>
-        <figure class="world" role="listitem" style="--r:2deg"><img src="img/world-fairy.webp" width="1200" height="750" loading="lazy" decoding="async" alt="Fairy Forest at night: purple trees, glowing mushrooms and stars."><figcaption>Fairy Forest</figcaption></figure>
-        <figure class="world" role="listitem" style="--r:-1.5deg"><img src="img/world-mix.webp" width="1200" height="750" loading="lazy" decoding="async" alt="Everything Land: a bit of every world side by side."><figcaption>Everything Land</figcaption></figure>
-        <div class="world world--flat" role="listitem" style="--r:1deg"><div class="flat-art" aria-hidden="true"></div><p>Builder Flat<span>Perfectly flat grass, for building whole towns.</span></p></div>
+        <figure class="world" role="listitem" style="--r:-2deg"><img src="img/world-meadow.webp" width="480" height="600" loading="lazy" decoding="async" alt="Flower Meadow: green hills, cherry blossom trees and flowers everywhere."><figcaption>Flower Meadow</figcaption></figure>
+        <figure class="world" role="listitem" style="--r:1.5deg"><img src="img/world-candy.webp" width="480" height="600" loading="lazy" decoding="async" alt="Candy Land: pink frosting ground, cookie hills, lollipop trees and a little candy house."><figcaption>Candy Land</figcaption></figure>
+        <figure class="world" role="listitem" style="--r:-1deg"><img src="img/world-beach.webp" width="480" height="600" loading="lazy" decoding="async" alt="Beach Island: sand, palm trees and turquoise water."><figcaption>Beach Island</figcaption></figure>
+        <figure class="world" role="listitem" style="--r:2deg"><img src="img/world-snow.webp" width="480" height="600" loading="lazy" decoding="async" alt="Snowy Wonderland: snowy hills and pine trees while snow falls."><figcaption>Snowy Wonderland</figcaption></figure>
+        <figure class="world" role="listitem" style="--r:-1.5deg"><img src="img/world-fairy.webp" width="480" height="600" loading="lazy" decoding="async" alt="Fairy Forest: purple fairy trees, giant blue mushrooms that glow and red spotted ones, on soft mossy ground."><figcaption>Fairy Forest</figcaption></figure>
+        <figure class="world" role="listitem" style="--r:1deg"><img src="img/world-flat.webp" width="480" height="600" loading="lazy" decoding="async" alt="Builder Flat: perfectly flat grass with a little town on it, a street of Magic Houses with lamps, a garden and a playground."><figcaption>Builder Flat</figcaption></figure>
+        <figure class="world" role="listitem" style="--r:-1deg"><img src="img/world-mix.webp" width="480" height="600" loading="lazy" decoding="async" alt="Everything Land: a bit of every world side by side."><figcaption>Everything Land</figcaption></figure>
       </div>
     </article>
 
@@ -143,16 +146,20 @@
       <div class="ch-text">
         <p class="ch-num" aria-hidden="true">02</p>
         <h3 id="ch2">Magic Houses</h3>
-        <p class="say">Tap once. Poof! A whole house!</p>
-        <p>Pick a Magic House from the Bag, tap the ground, and a whole furnished home appears, beds and all. Then change anything you like. There are 20 of them, from a cottage and a princess castle to treehouses with rope bridges and the Sparkle Camper, with bunk beds inside and a rooftop deck with a slide into a pop-out pool.</p>
+        <p class="say">Ta-da! A whole house!</p>
+        <p>Pick a Magic House from your Bag, choose a spot, tap <strong>Build!</strong> and ta-da: a whole furnished home, beds and all. Then change anything you like. There are 20 of them, from a cottage and a princess castle to treehouses with rope bridges and the Sparkle Camper, with bunk beds inside and a rooftop deck with a slide into a pool.</p>
         <ul class="chips" aria-label="Some Magic Houses">
-          <li>Cottage</li><li>Princess Castle</li><li>Friendship Treehouse</li><li>Fairy Treehouse</li><li>Sparkle Camper</li><li>Retro Mini Trailer</li><li>Camper Van</li><li>Campground</li><li>Candy House</li><li>Igloo</li><li>Bakery</li><li>Pet Shop</li>
+          <li>Flower Cottage</li><li>Princess Castle</li><li>Big Friendship Treehouse</li><li>Fairy Treehouse</li><li>Sparkle Camper</li><li>Retro Mini Trailer</li><li>Camper Van</li><li>Campground</li><li>Candy House</li><li>Snow Igloo</li><li>Sweet Bakery</li><li>Pet Shop</li>
         </ul>
       </div>
       <div class="ch-art">
         <figure class="shot shot--main">
-          <img src="img/camper.webp" width="1400" height="875" loading="lazy" decoding="async" alt="The Sparkle Camper, a big pink and white camper in a flower meadow, with a rooftop deck, a pink slide and a pool.">
+          <img src="img/camper.webp" srcset="img/camper-800.webp 800w, img/camper.webp 1400w" sizes="(max-width: 860px) 92vw, 56vw" width="1400" height="875" loading="lazy" decoding="async" alt="The Sparkle Camper, a big pink and white striped camper in a flower meadow, with a fenced rooftop deck, a pink slide and a pool.">
           <figcaption class="tag">The Sparkle Camper</figcaption>
+        </figure>
+        <figure class="shot shot--side">
+          <img src="img/camper-inside.webp" srcset="img/camper-inside-800.webp 800w, img/camper-inside.webp 1400w" sizes="(max-width: 620px) 64vw, (max-width: 860px) 60vw, 30vw" width="1400" height="875" loading="lazy" decoding="async" alt="Inside the Sparkle Camper: two bunk beds with a lamp between them, a pink kitchen with a fridge, a stove, a sink and a cake, a lilac sofa and a bookshelf.">
+          <figcaption class="tag tag--sky">Bunk beds inside</figcaption>
         </figure>
       </div>
     </article>
@@ -167,11 +174,11 @@
       </div>
       <div class="ch-art">
         <figure class="shot shot--main">
-          <img src="img/bedroom.webp" width="1400" height="875" loading="lazy" decoding="async" alt="A pink bedroom with heart wallpaper: a princess canopy bed, a bunk bed, a nightstand lamp, fairy lights, a teddy bear and a ginger kitty sitting on a heart rug.">
-          <figcaption class="tag">Golden hour</figcaption>
+          <img src="img/bedroom.webp" srcset="img/bedroom-800.webp 800w, img/bedroom.webp 1400w" sizes="(max-width: 860px) 92vw, 56vw" width="1400" height="875" loading="lazy" decoding="async" alt="A pink bedroom with heart wallpaper: a princess canopy bed, a bunk bed, a nightstand lamp, fairy lights, a teddy bear and a ginger kitty sitting on a heart rug.">
+          <figcaption class="tag">My canopy bed</figcaption>
         </figure>
         <figure class="shot shot--side">
-          <img src="img/night.webp" width="1400" height="875" loading="lazy" decoding="async" alt="A cottage at night under a starry sky, its windows and lantern posts glowing warm.">
+          <img src="img/night.webp" srcset="img/night-800.webp 800w, img/night.webp 1400w" sizes="(max-width: 620px) 64vw, (max-width: 860px) 60vw, 30vw" width="1400" height="875" loading="lazy" decoding="async" alt="A cottage at night under a starry sky, its windows and lantern posts glowing warm.">
           <figcaption class="tag tag--ink">Lamps on at night</figcaption>
         </figure>
       </div>
@@ -187,55 +194,73 @@
       </div>
       <div class="ch-art">
         <figure class="shot shot--main">
-          <img src="img/studio.webp" width="1600" height="1000" loading="lazy" decoding="async" alt="The Dress-Up Studio: a girl in a pink princess dress with a tiara and fairy wings, next to 12 hair styles: Long, Ponytail, Pigtails, Bun, Space Buns, Braids, Curly, Bob, Short, Side Pony, Wavy and Pixie.">
+          <img src="img/studio.webp" srcset="img/studio-800.webp 800w, img/studio.webp 1600w" sizes="(max-width: 860px) 92vw, 56vw" width="1600" height="1000" loading="lazy" decoding="async" alt="The Dress-Up Studio: a girl in a pink princess dress with a tiara and fairy wings, next to 12 hair styles: Long, Ponytail, Pigtails, Bun, Space Buns, Braids, Curly, Bob, Short, Side Pony, Wavy and Pixie.">
           <figcaption class="tag">The Dress-Up Studio</figcaption>
         </figure>
       </div>
     </article>
 
-    <!-- 05 pets -->
-    <article class="chapter" style="--c:var(--mint);--cs:var(--mint-soft)" aria-labelledby="ch5">
-      <div class="ch-text">
-        <p class="ch-num" aria-hidden="true">05</p>
-        <h3 id="ch5">Pets to love</h3>
-        <p class="say">I can ride my unicorn in the sky!</p>
-        <p>Adopt puppies and kitties in lots of breeds, bunnies, a panda, ducklings and turtles that love to swim. Give them names, pet them, feed them treats. The pony and the horse are for riding, and the unicorn flies, leaving a rainbow trail behind her.</p>
-      </div>
-      <div class="ch-art">
-        <figure class="shot shot--main">
-          <img src="img/pets.webp" width="1400" height="875" loading="lazy" decoding="async" alt="A row of pets in a meadow: kitties, puppies, a bunny, a rainbow turtle and a duckling in front, with a pony, a unicorn and a horse with braids behind them.">
-          <figcaption class="tag">Pet parade</figcaption>
-        </figure>
-        <figure class="shot shot--side">
-          <img src="img/unicorn.webp" width="1400" height="875" loading="lazy" decoding="async" alt="A girl riding a white unicorn up into the air, with a rainbow trail and sparkles behind them.">
+    <!-- 05 pets: one full-width band -->
+    <article class="chapter chapter--band" style="--c:var(--mint);--cs:var(--mint-soft)" aria-labelledby="ch5">
+      <figure class="band-art">
+        <img src="img/pets.webp" srcset="img/pets-800.webp 800w, img/pets.webp 2000w" sizes="(max-width: 1272px) 96vw, 1240px" width="2000" height="857" loading="lazy" decoding="async" alt="A row of pets in a meadow, each with a name tag: a Siamese kitty, a Golden Retriever puppy, a white bunny called Snowball, a rainbow turtle, a Corgi, a Calico kitty and a duckling called Sunny in front, with a pink pony, a unicorn called Pearl and a Palomino horse behind them.">
+        <figcaption class="tag">Pet parade</figcaption>
+      </figure>
+      <div class="band-body">
+        <div class="ch-text band-card">
+          <p class="ch-num" aria-hidden="true">05</p>
+          <h3 id="ch5">Pets to love</h3>
+          <p class="say">I can ride my unicorn in the sky!</p>
+          <p>Adopt puppies and kitties in lots of breeds, bunnies, a panda, ducklings and turtles that love to swim. Give them names, pet them, feed them treats. The pony and the horse are for riding, and the unicorn flies, leaving a rainbow trail behind her.</p>
+        </div>
+        <figure class="shot shot--inset">
+          <img src="img/unicorn.webp" srcset="img/unicorn-800.webp 800w, img/unicorn.webp 1400w" sizes="(max-width: 860px) 92vw, 38vw" width="1400" height="875" loading="lazy" decoding="async" alt="A girl riding a white unicorn up into the air, with a rainbow trail and sparkles behind them.">
           <figcaption class="tag tag--pink">Rainbow trail</figcaption>
         </figure>
       </div>
     </article>
 
-    <!-- 06 friends, treats and adventures -->
-    <article class="chapter chapter--flip" style="--c:var(--pink);--cs:var(--pink-soft)" aria-labelledby="ch6">
-      <div class="ch-text">
-        <p class="ch-num" aria-hidden="true">06</p>
-        <h3 id="ch6">Friends, treats and adventures</h3>
-        <p class="say">Let's have a sleepover!</p>
-        <p>Invite friends from a group of ten girls, each with her own style. They chat, dance with you and sleep over. Cook cupcakes and pancakes, grow strawberries, and build your own ice cream at the parlor with Sparkle Coins, which you earn by playing and can never buy. Ride zip lines, cross rope bridges and camp out with s'mores. Day turns to night, the weather changes, and there are sparkly gems to find.</p>
-      </div>
-      <div class="ch-art ch-art--trio">
-        <figure class="shot shot--main">
-          <img src="img/zip.webp" width="1400" height="875" loading="lazy" decoding="async" alt="A girl zooming along a pink and white striped zip line toward a wooden tower with a pink roof, high over green hills.">
-          <figcaption class="tag">Zip line!</figcaption>
-        </figure>
-        <figure class="shot shot--side">
-          <img src="img/friends.webp" width="1400" height="875" loading="lazy" decoding="async" alt="Four friends dancing with the player in a meadow, with speech bubbles saying Hello! I love it here! and Let's be friends!">
-          <figcaption class="tag tag--sky">Dance party</figcaption>
-        </figure>
-        <figure class="shot shot--third">
-          <img src="img/icecream.webp" width="1600" height="1000" loading="lazy" decoding="async" alt="The Ice Cream Parlor: building a triple sundae with strawberry, mint and unicorn scoops, sprinkles, a cherry, whipped cream and chocolate sauce, for 21 Sparkle Coins.">
-          <figcaption class="tag tag--sun">Build your own sundae</figcaption>
-        </figure>
-      </div>
-    </article>
+    <!-- 06 + 07: side by side -->
+    <div class="pair">
+      <article class="chapter chapter--half" style="--c:var(--sky);--cs:var(--sky-soft)" aria-labelledby="ch6">
+        <div class="ch-art">
+          <figure class="shot shot--main">
+            <img src="img/friends.webp" srcset="img/friends-800.webp 800w, img/friends.webp 1400w" sizes="(max-width: 860px) 92vw, 46vw" width="1400" height="875" loading="lazy" decoding="async" alt="Four friends dancing with the player in a meadow, with speech bubbles saying Hello! I love it here! and Let's be friends!">
+            <figcaption class="tag tag--sky">Dance party</figcaption>
+          </figure>
+        </div>
+        <div class="ch-text">
+          <p class="ch-num" aria-hidden="true">06</p>
+          <h3 id="ch6">Friends and sleepovers</h3>
+          <p class="say">Let's have a sleepover!</p>
+          <p>Invite friends from a group of ten girls, each with her own style. They chat with you, dance with you and sleep over.</p>
+        </div>
+      </article>
+
+      <article class="chapter chapter--half" style="--c:var(--pink);--cs:var(--pink-soft)" aria-labelledby="ch7">
+        <div class="ch-art">
+          <figure class="shot shot--main">
+            <img src="img/zip.webp" srcset="img/zip-800.webp 800w, img/zip.webp 1400w" sizes="(max-width: 860px) 92vw, 46vw" width="1400" height="875" loading="lazy" decoding="async" alt="A girl zooming along a pink and white striped zip line toward a wooden tower with a pink roof, high over green hills.">
+            <figcaption class="tag">Zip line!</figcaption>
+          </figure>
+          <figure class="shot shot--sundae">
+            <img src="img/icecream.webp" width="640" height="833" loading="lazy" decoding="async" alt="Building a Triple Sundae at the Ice Cream Parlor: strawberry, mint and unicorn scoops with sprinkles, a cherry, whipped cream and chocolate sauce, for 21 Sparkle Coins.">
+            <figcaption class="tag tag--sun">My sundae</figcaption>
+          </figure>
+        </div>
+        <div class="ch-text">
+          <p class="ch-num" aria-hidden="true">07</p>
+          <h3 id="ch7">Treats and adventures</h3>
+          <p class="say">Zip line, then ice cream!</p>
+          <ul class="leads">
+            <li><strong>Cook</strong> cupcakes and pancakes, and grow strawberries.</li>
+            <li><strong>Treat yourself</strong> at the candy shop and the ice cream parlor. Sparkle Coins come from playing and can never be bought.</li>
+            <li><strong>Zoom</strong> down zip lines, cross rope bridges and camp out with s'mores.</li>
+            <li><strong>Look up:</strong> day turns to night, the weather changes, and there are sparkly gems to find.</li>
+          </ul>
+        </div>
+      </article>
+    </div>
   </div>
 </section>
 
@@ -245,7 +270,7 @@
     <header class="section-head section-head--center">
       <p class="eyebrow">The Sticker Book</p>
       <h2 id="book-title" class="display">A sticker for everything.</h2>
-      <p class="section-lede">Her Sticker Book fills up as she plays. These are real stickers from the game. Tap one!</p>
+      <p class="section-lede">Your Sticker Book fills up as you play. These are real stickers from the game. Tap one!</p>
     </header>
     <div class="spread">
       <ul class="page page--left" aria-label="Stickers, page 1">
@@ -278,16 +303,17 @@
         <h2 id="together-title" class="display">The secret code is four pictures.</h2>
         <p class="section-lede">Friends can visit each other's worlds from their own iPad, phone or computer. The code is pictures, so there is nothing to spell, and nobody needs an account.</p>
         <ol class="steps">
-          <li><span class="step-n" aria-hidden="true">1</span><div><strong>Make a Code.</strong> Tap <em>Play now</em>, then <em>Play with Friends</em>. You get 4 pictures. Say them to your friend.</div></li>
-          <li><span class="step-n" aria-hidden="true">2</span><div><strong>Your friend taps the same 4.</strong> On her own device, on this same website: <em>Play now</em>, <em>Play with Friends</em>, <em>Join a Code</em>, the 4 pictures, <em>Go!</em></div></li>
+          <li><span class="step-n" aria-hidden="true">1</span><div><strong>Make a Code.</strong> Tap <em>Play now</em>, then <em>Play with Friends</em>, then <em>Make a Code</em>. You get 4 pictures. Say them to your friend.</div></li>
+          <li><span class="step-n" aria-hidden="true">2</span><div><strong>Your friend taps the same 4.</strong> On their own device, on this same website: <em>Play now</em>, <em>Play with Friends</em>, <em>Join a Code</em>, the 4 pictures, <em>Go!</em></div></li>
           <li><span class="step-n" aria-hidden="true">3</span><div><strong>You tap <em>Let in!</em></strong> Only you can say yes. Up to 4 players in one world.</div></li>
         </ol>
       </header>
 
       <div class="demo" id="demo">
-        <p class="demo-hint" id="demo-hint">Try it! Tap Lily's 4 pictures on Mia's phone.</p>
+        <p class="demo-hint" id="demo-hint" aria-live="polite">Try it! Tap Lily's 4 pictures on Mia's phone.</p>
+        <p class="sr-only" id="demo-status" aria-live="polite"></p>
         <div class="devices">
-          <div class="device device--tablet" aria-labelledby="host-label">
+          <div class="device device--tablet" role="group" aria-labelledby="host-label">
             <p class="device-label" id="host-label">Lily's iPad</p>
             <div class="screen host" id="host" aria-live="polite">
               <div class="host-view host-code" data-view="code">
@@ -309,7 +335,8 @@
               </div>
               <div class="host-view host-done" data-view="done" hidden>
                 <p class="host-title">Mia is here!</p>
-                <p class="host-sub">Playing together. Careful friends is on, so her things stay safe.</p>
+                <p class="host-bubble" id="host-bubble" hidden><b>Mia:</b> <span></span></p>
+                <p class="host-sub">Playing together. Careful friends is on, so Lily's things stay safe.</p>
               </div>
               <div class="host-view host-no" data-view="no" hidden>
                 <p class="host-title">Maybe later!</p>
@@ -318,7 +345,7 @@
             </div>
           </div>
 
-          <div class="device device--phone" aria-labelledby="guest-label">
+          <div class="device device--phone" role="group" aria-labelledby="guest-label">
             <p class="device-label" id="guest-label">Mia's phone</p>
             <div class="screen guest" id="guest">
               <div class="guest-view" data-view="keypad">
@@ -339,8 +366,9 @@
               </div>
               <div class="guest-view guest-in" data-view="in" hidden>
                 <p class="pad-title">You're in Lily's world!</p>
-                <p class="pad-sub">Say hi with a tap:</p>
-                <p class="mini-phrases"><span>Hi!</span><span>Let's build!</span><span>So pretty!</span></p>
+                <p class="pad-sub" id="say-label">Say hi with a tap:</p>
+                <div class="mini-phrases" role="group" aria-labelledby="say-label"><button type="button">Hi!</button><button type="button">Let's build!</button><button type="button">So pretty!</button></div>
+                <p class="said" id="said" aria-live="polite"></p>
                 <button type="button" class="pbtn pbtn--go" id="again">Try again</button>
               </div>
               <div class="guest-view guest-no" data-view="no" hidden>
@@ -350,10 +378,10 @@
               </div>
             </div>
           </div>
-          <div class="proof">
-            <p class="demo-foot">This is a pretend version. In the real game, the knock card looks like this:</p>
-            <figure class="shot shot--proof"><img src="img/code-knock-card.webp" width="1100" height="338" loading="lazy" decoding="async" alt="The real knock card in the game: Mia wants to play! with the buttons Let in! and Not now."><figcaption class="tag">From the game</figcaption></figure>
-          </div>
+        </div>
+        <div class="proof">
+          <p class="demo-foot">This is a pretend version. In the real game, the knock card looks like this:</p>
+          <figure class="shot shot--proof"><img src="img/code-knock-card.webp" width="1100" height="351" loading="lazy" decoding="async" alt="The real knock card in the game: Mia wants to play! with the buttons Let in! and Not now."><figcaption class="tag">From the game</figcaption></figure>
         </div>
       </div>
     </div>
@@ -380,13 +408,13 @@
       <p class="section-lede">A dad made this for his daughter, so it works the way a careful parent would want. Here is exactly what it does and doesn't do.</p>
     </header>
     <dl class="promises">
-      <div><dt><span class="px" style="--c:var(--pink)" aria-hidden="true"></span>No chat typing</dt><dd>Players can only send 16 fixed friendly phrases, like "Hi!" and "Let's build!". Names go through a word filter before anyone sees them.</dd></div>
-      <div><dt><span class="px" style="--c:var(--sky)" aria-hidden="true"></span>No voice, no camera</dt><dd>The game never uses the microphone or the camera, and the server tells browsers to keep them switched off for this site.</dd></div>
+      <div><dt><span class="px" style="--c:var(--pink)" aria-hidden="true"></span>No chat typing</dt><dd>Players can only send 16 fixed friendly phrases, like "Hi!" and "Let's build!". Names go through a word filter before other players see them.</dd></div>
+      <div><dt><span class="px" style="--c:var(--sky)" aria-hidden="true"></span>No voice chat, no camera</dt><dd>The game never uses the microphone or the camera, and the server tells browsers to keep them switched off for this site. It can read words out loud for early readers, but it never listens.</dd></div>
       <div><dt><span class="px" style="--c:var(--sun)" aria-hidden="true"></span>No accounts</dt><dd>Nobody signs up. No emails, no passwords, no profiles.</dd></div>
       <div><dt><span class="px" style="--c:var(--mint)" aria-hidden="true"></span>No ads, nothing to buy</dt><dd>There are no ads and no purchases. Sparkle Coins for the shops are earned by playing, like finding gems or cooking, and can never be bought.</dd></div>
       <div><dt><span class="px" style="--c:var(--lav)" aria-hidden="true"></span>Worlds stay on your device</dt><dd>Worlds, outfits and stickers are saved in this browser on this device. The server keeps nothing: a game with friends exists only in its memory, only while they play.</dd></div>
-      <div><dt><span class="px" style="--c:var(--pink)" aria-hidden="true"></span>You decide who comes in</dt><dd>A friend needs the 4-picture code and a <em>Let in!</em> from the host. The host can <em>Send home</em> any friend, and <em>Careful friends</em> (on from the start) keeps friends from changing her houses and furniture.</dd></div>
-      <div><dt><span class="px" style="--c:var(--sky)" aria-hidden="true"></span>Nothing scary</dt><dd>No monsters, no fighting, no falling damage, nothing to lose. Falling in the water just means swimming.</dd></div>
+      <div><dt><span class="px" style="--c:var(--pink)" aria-hidden="true"></span>You decide who comes in</dt><dd>A friend needs the 4-picture code and a <em>Let in!</em> from the host. The host can <em>Send home</em> any friend, and <em>Careful friends</em> (on from the start) keeps friends from changing the host's houses and furniture.</dd></div>
+      <div><dt><span class="px" style="--c:var(--sky)" aria-hidden="true"></span>Nothing scary</dt><dd>No monsters, no fighting, nobody gets hurt, nothing to lose. Falling in the water just means swimming.</dd></div>
       <div><dt><span class="px" style="--c:var(--sun)" aria-hidden="true"></span>Works where you are</dt><dd>iPad, phones and computers, in the web browser. No download. On an iPad, open the game, tap Share, then <em>Add to Home Screen</em> to keep it like an app.</dd></div>
     </dl>
     <p class="more"><a class="btn btn-light" href="parents.html">Safety and privacy, in detail</a></p>
@@ -403,7 +431,7 @@
     <div class="qa">
       <details>
         <summary>Who is it for?</summary>
-        <p>It was made for a girl who is almost 8, so every button has a picture and a short word, and nothing is scary or can be lost. Kids who love building, dressing up and pets will feel right at home.</p>
+        <p>It was made for a girl who is almost 8, so every button has a picture and a short word, and nothing is scary or can be lost. For early readers, the game can read its words out loud (switch on <em>Read words out loud</em> in Settings), and the storybooks have a <em>Read to me</em> button. Kids who love building, dressing up and pets will feel right at home.</p>
       </details>
       <details>
         <summary>Do we need to download anything?</summary>
@@ -411,23 +439,23 @@
       </details>
       <details>
         <summary>Can strangers talk to my child?</summary>
-        <p>There is no typing and no voice at all. Players can only tap one of 16 friendly phrases. To visit a world, a friend needs the 4-picture code, and the host has to tap <em>Let in!</em> for each friend. She can send anyone home at any time.</p>
+        <p>There is no typing and no voice chat. Players can only tap one of 16 friendly phrases. To visit a world, a friend needs the 4-picture code, and the host has to tap <em>Let in!</em> for each friend. The host can send anyone home at any time.</p>
       </details>
       <details>
         <summary>Is there anything to buy? Any ads?</summary>
         <p>No and no. The candy shop and the ice cream parlor use Sparkle Coins, which come from playing: finding gems, cooking, gardening, a daily gift. Coins can't be bought.</p>
       </details>
       <details>
-        <summary>Where are her worlds saved?</summary>
-        <p>On your device, in the browser, and saved as she plays. Nothing is stored on the server. To move a world to another device, open <em>My Worlds</em>, tap <em>Save</em> on the world, and open that file on the other device.</p>
+        <summary>Where are the worlds saved?</summary>
+        <p>On your device, in the browser, saved as you play. Nothing is stored on the server. Browsers can clear website data, and Safari may clear it for sites that go unused for a while, so add the game to your Home Screen and save a favorite world as a file now and then: open <em>My Worlds</em> and tap <em>Save</em> on the world. That file also moves a world to another device (<em>My Worlds</em>, then <em>Open a file</em>).</p>
       </details>
       <details>
         <summary>How many friends can play together?</summary>
-        <p>Up to 4 players in one world, each on their own device. The friend who made the code is the host: it's her world, and her rules.</p>
+        <p>Up to 4 players in one world, each on their own device. The friend who made the code is the host: it's their world, and their rules.</p>
       </details>
       <details>
-        <summary>What if a friend knocks down her house?</summary>
-        <p>With <em>Careful friends</em> on (it starts on), friends can only change their own building and the ground, not her houses and furniture. The host can also <em>Undo building</em> for a friend, and a copy of her world from before friends came is kept on her device.</p>
+        <summary>What if a friend knocks down my house?</summary>
+        <p>With <em>Careful friends</em> on (it starts on), friends can only change their own building and the ground, not your houses and furniture. The host can also <em>Undo building</em> for a friend, and a copy of your world from before friends came is kept on your device.</p>
       </details>
     </div>
   </div>

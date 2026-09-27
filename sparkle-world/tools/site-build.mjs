@@ -4,8 +4,12 @@
 //                             src/net/pictures.js (so the page always shows the real pictures)
 //   dist/site/third-party-notices.txt  a copy of THIRD_PARTY_NOTICES.md
 //   dist/site/preview.html    the same home page as a FRAGMENT for a claude.ai Artifact preview:
-//                             <title>, the font link, <style>, the body content, <script>;
-//                             images stay relative (img/...), links to /play stay as they are
+//                             <title>, <style>, the body content, <script>; images and the font
+//                             stay relative (img/..., fonts/...), links to /play stay as they are
+//
+// Link previews: when RAILWAY_PUBLIC_DOMAIN is set (Railway sets it for a service with a public
+// address, also while building), index.html gets og:url, og:image (img/share.jpg) and
+// twitter:card with that address; without it those tags are left out (they need a full URL).
 //
 // server/server.mjs serves dist/site/ at "/" and the game at "/play".
 //
@@ -30,6 +34,29 @@ async function walk(dir, base = dir) {
     else if (e.isFile()) out.push(path.relative(base, full));
   }
   return out.sort();
+}
+
+const SHARE_MARK = /[ \t]*<!-- share-tags:[^>]*-->\n?/;
+
+/** The tags that need the site's full address, or none without one. */
+export function shareTags(domain) {
+  const host = String(domain || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+  if (!/^[a-z0-9.-]+(:\d+)?$/.test(host)) return '';
+  const url = `https://${host}/`;
+  return [
+    `<meta property="og:url" content="${url}">`,
+    `<meta property="og:image" content="${url}img/share.jpg">`,
+    '<meta property="og:image:width" content="1200">',
+    '<meta property="og:image:height" content="630">',
+    '<meta property="og:image:alt" content="Sparkle World: Build a whole world. Then move in. The game\'s title screen and a little floating island made of blocks.">',
+    '<meta name="twitter:card" content="summary_large_image">',
+    '',
+  ].join('\n');
+}
+
+/** index.html with the share tags filled in (or the marker removed). */
+export function withShareTags(html, domain = process.env.RAILWAY_PUBLIC_DOMAIN) {
+  return html.replace(SHARE_MARK, shareTags(domain));
 }
 
 /** The home page as a fragment: no doctype/html/head/body; styles and script inlined. */
@@ -63,12 +90,22 @@ export async function buildSite({ quiet = false } = {}) {
   await rm(OUT, { recursive: true, force: true });
   await mkdir(OUT, { recursive: true });
   const files = await walk(SRC);
-  let images = 0;
+  const pics = new Map();
   for (const rel of files) {
     const to = path.join(OUT, rel);
     await mkdir(path.dirname(to), { recursive: true });
-    await copyFile(path.join(SRC, rel), to);
-    if (/\.(webp|jpe?g|png|avif|gif)$/i.test(rel)) images += (await stat(to)).size;
+    if (rel === 'index.html') await writeFile(to, withShareTags(await readFile(path.join(SRC, rel), 'utf8')));
+    else await copyFile(path.join(SRC, rel), to);
+    if (/\.(webp|jpe?g|png|avif|gif)$/i.test(rel)) pics.set(rel.split(path.sep).join('/'), (await stat(to)).size);
+  }
+  // what a visit downloads: a computer gets the big pictures, a phone the -800 copies where
+  // there are some (srcset); the link preview and the home-screen icon are not part of a visit
+  const extra = (rel) => /-800\.webp$/.test(rel) || /^img\/(share\.jpg|icon-180\.png)$/.test(rel);
+  let images = 0, phone = 0;
+  for (const [rel, n] of pics) {
+    if (extra(rel)) continue;
+    images += n;
+    phone += pics.get(rel.replace(/\.webp$/, '-800.webp')) ?? n;
   }
   // the picture-code stickers, straight from the game
   const { CODE_PICTURES, pictureSvg } = await import(pathToFileURL(path.join(root, 'src', 'net', 'pictures.js')).href);
@@ -96,11 +133,12 @@ export async function buildSite({ quiet = false } = {}) {
   const frag = previewFragment(html, css, js);
   await writeFile(path.join(OUT, 'preview.html'), frag);
   const kb = (n) => (n / 1024).toFixed(1) + ' KB';
-  log(`  dist/site/                ${files.length} files + ${CODE_PICTURES.length} code pictures; images ${kb(images)}`);
+  log(`  dist/site/                ${files.length} files + ${CODE_PICTURES.length} code pictures; images per visit ${kb(images)} (computer), ${kb(phone)} (phone)`);
+  if (/<!-- share-tags/.test(html)) log(`  link preview tags         ${shareTags(process.env.RAILWAY_PUBLIC_DOMAIN) ? 'for ' + process.env.RAILWAY_PUBLIC_DOMAIN : 'left out (RAILWAY_PUBLIC_DOMAIN is not set)'}`);
   log(`  dist/site/index.html      ${kb(Buffer.byteLength(html))}  (${kb(gzipSync(html).length)} gzip)`);
   log(`  dist/site/preview.html    ${kb(Buffer.byteLength(frag))}  (fragment for an Artifact preview)`);
   if (images > IMAGE_BUDGET) console.warn(`warning: home page images are ${kb(images)} (budget ${kb(IMAGE_BUDGET)})`);
-  return { files: files.length, images };
+  return { files: files.length, images, phone };
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

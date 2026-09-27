@@ -4,12 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>For Grown-ups · Sparkle World</title>
-<meta name="description" content="Safety and privacy in Sparkle World, in plain words: no chat typing, no voice, no accounts, no ads, nothing to buy, and worlds that stay on your own device.">
+<meta name="description" content="Safety and privacy in Sparkle World, in plain words: no chat typing, no voice chat, no accounts, no ads, nothing to buy, and worlds that stay on your own device.">
 <meta name="theme-color" content="#BDE6FF">
 <link rel="icon" href="img/pics/heart.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap">
+<link rel="apple-touch-icon" href="img/icon-180.png">
+<link rel="preload" href="fonts/fredoka-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body class="doc-page">
@@ -58,11 +57,11 @@
         <h2 id="short-t">The short version</h2>
         <ul class="ticks">
           <li><strong>No chat typing.</strong> Players can only tap one of 16 fixed friendly phrases.</li>
-          <li><strong>No voice, no camera.</strong> The game never uses the microphone or camera.</li>
+          <li><strong>No voice chat, no camera.</strong> The game never uses the microphone or camera. It can read words out loud for early readers, but it never listens.</li>
           <li><strong>No accounts.</strong> No sign-up, no emails, no passwords.</li>
           <li><strong>No ads and nothing to buy.</strong> Sparkle Coins are earned by playing and can't be bought.</li>
           <li><strong>Worlds stay on your device.</strong> The server doesn't store worlds, names, pictures or messages.</li>
-          <li><strong>Nothing scary.</strong> No monsters, no fighting, no damage, nothing to lose.</li>
+          <li><strong>Nothing scary.</strong> No monsters, no fighting, nobody gets hurt, nothing to lose.</li>
         </ul>
       </section>
 
@@ -85,7 +84,7 @@
 
       <section id="talking" aria-labelledby="talking-t">
         <h2 id="talking-t">Talking</h2>
-        <p>There is no typing to other players at all, and no voice. Players can tap one of these 16 phrases, and do emotes like waving and dancing:</p>
+        <p>There is no typing to other players at all, and no voice chat. Players can tap one of these 16 phrases, and do emotes like waving and dancing:</p>
         <ul class="phrases phrases--doc" aria-label="The 16 phrases">
           <li style="--p:#FF5FA2">Hi!</li><li style="--p:#FF7A7A">Come here!</li><li style="--p:#3AAEF0">Look!</li><li style="--p:#9C7BFF">Follow me!</li>
           <li style="--p:#FF8C42">Let's build!</li><li style="--p:#F5A300">Wow!</li><li style="--p:#E76BD8">So pretty!</li><li style="--p:#FF5FA2">Thank you!</li>
@@ -93,19 +92,22 @@
           <li style="--p:#8E86A6">No thanks</li><li style="--p:#FF8C42">Oops!</li><li style="--p:#7B68D9">Good night!</li><li style="--p:#FF5FA2">Bye!</li>
         </ul>
         <p>Only a number for the phrase travels to the other devices; each device shows the words from its own list. The only things a player types are names (her own, her pets' and her worlds'), and names go through a word filter before other players see them.</p>
+        <p>For early readers, the game can read its own words out loud: switch on <em>Read words out loud</em> in Settings (it starts off), or tap <em>Read to me</em> in a storybook. The browser's own speech feature does the talking; some browsers, like Chrome with its Google voices, send those words to their maker to speak them. The game never listens: it doesn't use the microphone.</p>
       </section>
 
       <section id="saving" aria-labelledby="saving-t">
         <h2 id="saving-t">What is saved, and where</h2>
         <p><strong>On your device:</strong> worlds, outfits, stickers and settings are saved in the web browser on the device she plays on, as she plays. They are not sent anywhere. Clearing the browser's website data for this site removes them.</p>
         <p><strong>Moving a world:</strong> open <em>My Worlds</em>, tap <em>Save</em> on a world (it saves a file), then on the other device open <em>My Worlds</em>, <em>Open a file</em>, and pick that file.</p>
+        <p><strong>Keeping a copy safe:</strong> browsers can clear website data, and Safari may clear it for sites that go unused for a while. Adding the game to the Home Screen helps, and saving a favorite world as a file (<em>My Worlds</em>, then <em>Save</em>) keeps a copy safe.</p>
         <p><strong>On the server:</strong> nothing is stored. When friends play together, their game exists only in the server's memory while they play, and disappears when they leave (or after 10 quiet minutes). The server does not save worlds, names, pictures or messages, and does not log what happens in games. Each device makes up a random number for itself, so a friend whose page reloads can come back to the same game.</p>
       </section>
 
       <section id="outside" aria-labelledby="outside-t">
         <h2 id="outside-t">What the pages load</h2>
-        <p>This site has no ads, no analytics and no trackers, and it doesn't set cookies. The home page and the game load one thing from outside: the rounded Fredoka font, from Google Fonts. That means your browser asks Google's font servers for the font file. If that request is blocked, the pages still work with a built-in font.</p>
-        <p>The game is built with the open-source three.js library; its license is in the <a href="third-party-notices.txt">third-party notices</a>.</p>
+        <p>This site has no ads, no analytics and no trackers, and it doesn't set cookies. The home page and this page load nothing from other sites: even the rounded Fredoka font comes from this site itself.</p>
+        <p>The game itself (at <em>Play now</em>) loads one thing from outside: the same Fredoka font, from Google Fonts. That means your browser asks Google's font servers for the font file. If that request is blocked, the game still works with a built-in font.</p>
+        <p>The game is built with the open-source three.js library, and the pages use the Fredoka font (SIL Open Font License); their licenses are in the <a href="third-party-notices.txt">third-party notices</a>.</p>
       </section>
 
       <section id="address" aria-labelledby="address-t">

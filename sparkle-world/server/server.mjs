@@ -424,13 +424,13 @@ function loadPage(file) {
 
 // ---------- the home page (dist/site/) ----------
 
-// Only the home page gets a Content-Security-Policy (the game page is unchanged): its own files,
-// the Google Fonts stylesheet and font files, pictures from data: URLs. No other scripts.
+// Only the home page gets a Content-Security-Policy (the game page is unchanged): its own files
+// (the Fredoka font too), pictures from data: URLs. Nothing from other sites, no other scripts.
 const SITE_CSP = [
   "default-src 'self'",
   "script-src 'self'",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' https://fonts.gstatic.com",
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self'",
   "img-src 'self' data:",
   "connect-src 'self'",
   "object-src 'none'",
@@ -452,6 +452,7 @@ const SITE_TYPES = {
   '.ico': 'image/x-icon',
   '.txt': 'text/plain; charset=utf-8',
   '.webmanifest': 'application/manifest+json',
+  '.woff2': 'font/woff2',
 };
 
 /** Every file of dist/site/ in memory (a few MB), keyed by its relative path; null if not built. */

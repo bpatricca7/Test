@@ -4,11 +4,15 @@
 //
 // 1. `npm run build` (unless --no-build), then server/server.mjs as its own process on a free
 //    port (PORT=<n> npm start, like Railway).
-// 2. "/" at 390x844, 768x1024, 1280x800 and 1440x900: no console errors, no failed requests,
-//    no sideways scrolling, every picture loaded, full-page screenshots .shots/<prefix>-<w>.png.
+// 2. "/" at 360x780, 390x844, 768x1024, 1024x768, 1280x800 and 1440x900: no console errors, no
+//    failed requests, nothing loaded from other sites, no sideways scrolling, every picture
+//    loaded, the game picture on a phone's first screen, the island inside the side margins,
+//    full-page screenshots .shots/<prefix>-<w>.png. Then 360, 390 and 414 again with the font
+//    blocked (the fallback font must not push the page sideways either).
 // 3. Every link on the page answers (and "/play" really opens the game's title screen), plus
 //    /healthz, /api/net, /parents, the headers (CSP on the page, gzip, ETag and 304s).
-// 4. The picture-code demo: a wrong code is refused, the right one knocks, "Let in!" lets in.
+// 4. The picture-code demo: a wrong code is refused, the right one knocks, "Let in!" lets in,
+//    and "Say hi with a tap" shows the phrase on Lily's iPad.
 // 5. dist/site/preview.html is a fragment (no doctype/html/head/body) with the same content.
 
 import { spawn, spawnSync } from 'node:child_process';
@@ -17,6 +21,7 @@ import path from 'node:path';
 import { mkdir, readFile } from 'node:fs/promises';
 import { launch, waitForTitle, ROOT, SHOTS } from './smoke.mjs';
 import { routeGoogleFonts } from './site-fonts.mjs';
+import { shareTags, withShareTags } from './site-build.mjs';
 
 const argv = process.argv.slice(2);
 const arg = (k, d = null) => {
@@ -62,7 +67,14 @@ async function startServer(port) {
   throw new Error('the server did not start');
 }
 
-function collect(page, label) {
+function collect(page, label, base = null) {
+  if (base) {
+    page.on('request', (req) => {
+      const u = req.url();
+      const onGame = /^\/(play|sparkle-world\.html)/.test(new URL(req.frame().url() || page.url(), base).pathname);
+      if (!onGame && !u.startsWith(base) && !u.startsWith('data:')) errors.push(`[${label}] loaded from another site: ${u}`);
+    });
+  }
   page.on('console', (msg) => {
     if (msg.type() === 'error') errors.push(`[${label}] console.error: ${msg.text()}`);
   });
@@ -74,11 +86,27 @@ function collect(page, label) {
 }
 
 const SIZES = [
+  { w: 360, h: 780, touch: true },
   { w: 390, h: 844, touch: true },
   { w: 768, h: 1024, touch: true },
+  { w: 1024, h: 768, touch: true },
   { w: 1280, h: 800, touch: false },
   { w: 1440, h: 900, touch: false },
 ];
+// the same phones with no Fredoka at all (blocked or slow): the fallback font is wider
+const NO_FONT = [{ w: 360, h: 780 }, { w: 390, h: 844 }, { w: 414, h: 896 }];
+
+/** Page width, and the elements that stick out on the right. */
+function overflow(page) {
+  return page.evaluate(() => ({
+    sw: document.documentElement.scrollWidth,
+    w: window.innerWidth,
+    wide: [...document.querySelectorAll('body *')].filter((e) => {
+      const r = e.getBoundingClientRect();
+      return r.width && r.right > window.innerWidth + 1 && getComputedStyle(e).position !== 'fixed';
+    }).slice(0, 5).map((e) => (e.className && e.className.baseVal === undefined ? e.className : e.tagName)),
+  }));
+}
 
 async function main() {
   if (!arg('no-build')) {
@@ -95,7 +123,17 @@ async function main() {
     const home = await fetch(`${base}/`, { headers: { 'accept-encoding': 'gzip' } });
     const csp = home.headers.get('content-security-policy') || '';
     check(home.status === 200 && /text\/html/.test(home.headers.get('content-type')), `/ is the home page (${home.status})`);
-    check(/fonts\.googleapis\.com/.test(csp) && /fonts\.gstatic\.com/.test(csp) && /script-src 'self'/.test(csp), `the home page has a CSP that allows Google Fonts (${csp.slice(0, 60)}…)`);
+    check(!/googleapis|gstatic|https:/.test(csp) && /font-src 'self'/.test(csp) && /script-src 'self'/.test(csp), `the home page's CSP allows only this site (${csp.slice(0, 70)}…)`);
+    const font = await fetch(`${base}/fonts/fredoka-latin.woff2`);
+    check(font.status === 200 && font.headers.get('content-type') === 'font/woff2' && (await font.arrayBuffer()).byteLength > 10000, 'the Fredoka font is served by the site (font/woff2)');
+    const homeHtml = await (await fetch(`${base}/`)).text();
+    check(!/fonts\.(googleapis|gstatic)\.com/.test(homeHtml) && /rel="preload" href="fonts\/fredoka-latin\.woff2"/.test(homeHtml), 'the home page preloads its own font and links nothing from Google');
+    check(/apple-touch-icon" href="img\/icon-180\.png"/.test(homeHtml) && (await fetch(`${base}/img/icon-180.png`)).status === 200, 'the home-screen icon is there');
+    check((await fetch(`${base}/img/share.jpg`)).status === 200, 'the link preview picture is there');
+    const tagged = withShareTags('<head>\n  <!-- share-tags: x -->\n</head>', 'sparkle.example.app');
+    check(/og:url" content="https:\/\/sparkle\.example\.app\/"/.test(tagged) && /og:image" content="https:\/\/sparkle\.example\.app\/img\/share\.jpg"/.test(tagged) && /summary_large_image/.test(tagged), 'with RAILWAY_PUBLIC_DOMAIN the page gets og:url, og:image and twitter:card');
+    check(withShareTags('<head>\n  <!-- share-tags: x -->\n</head>', '') === '<head>\n</head>' && shareTags('bad domain"><script>') === '', 'without it (or with a strange one) those tags are left out');
+    check(process.env.RAILWAY_PUBLIC_DOMAIN ? /og:image/.test(homeHtml) : !/og:image|share-tags/.test(homeHtml), 'the built page matches RAILWAY_PUBLIC_DOMAIN');
     check(home.headers.get('content-encoding') === 'gzip' && !!home.headers.get('etag'), 'gzip + ETag on the home page');
     check(/camera=\(\)/.test(home.headers.get('permissions-policy') || ''), 'Permissions-Policy is kept on the home page');
     const again = await fetch(`${base}/`, { headers: { 'if-none-match': home.headers.get('etag') } });
@@ -120,7 +158,7 @@ async function main() {
       const context = await browser.newContext({ viewport: { width: s.w, height: s.h }, deviceScaleFactor: 1, hasTouch: s.touch, isMobile: s.touch });
       await routeGoogleFonts(context);
       const page = await context.newPage();
-      collect(page, `home-${s.w}`);
+      collect(page, `home-${s.w}`, base);
       await page.goto(`${base}/`, { waitUntil: 'load' });
       await page.evaluate(() => document.fonts.ready);
       // scroll through so every lazy picture loads, then back to the top
@@ -133,8 +171,18 @@ async function main() {
       await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
       const pics = await page.evaluate(() => [...document.images].filter((i) => !i.naturalWidth).map((i) => i.getAttribute('src')));
       check(!pics.length, `every picture loaded${pics.length ? ' (missing: ' + pics.join(', ') + ')' : ''}`);
-      const over = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, w: window.innerWidth, wide: [...document.querySelectorAll('body *')].filter((e) => { const r = e.getBoundingClientRect(); return r.width && r.right > window.innerWidth + 1 && getComputedStyle(e).position !== 'fixed'; }).slice(0, 5).map((e) => e.className || e.tagName) }));
-      check(over.sw <= over.w, `no sideways scrolling (page ${over.sw}px, window ${over.w}px)`);
+      const over = await overflow(page);
+      // (a phone widens its layout to fit anything too wide, so compare with the phone's width)
+      check(over.sw <= s.w && over.w === s.w, `no sideways scrolling (page ${over.sw}px, window ${over.w}px of ${s.w}${over.wide.length ? '; ' + over.wide.join(', ') : ''})`);
+      if (s.w <= 900) {
+        const hero = await page.evaluate(() => {
+          const pc = document.querySelector('.postcard img').getBoundingClientRect();
+          const faces = [...document.querySelectorAll('.dio .f')].map((f) => f.getBoundingClientRect()).filter((r) => r.width);
+          return { top: pc.top, mid: pc.top + pc.height / 2, h: window.innerHeight, left: Math.min(...faces.map((r) => r.left)), right: Math.max(...faces.map((r) => r.right)), w: window.innerWidth };
+        });
+        if (s.w < 700) check(hero.mid < hero.h, `the game picture is on the first screen (its middle at ${Math.round(hero.mid)}px of ${hero.h})`);
+        check(hero.left >= 15.5 && hero.right <= hero.w - 15.5, `the island stays inside the side margins (${Math.round(hero.left)}..${Math.round(hero.right)} of ${hero.w})`);
+      }
       const alt = await page.evaluate(() => [...document.images].filter((i) => !i.hasAttribute('alt')).length);
       check(alt === 0, 'every picture has an alt attribute');
       const fredoka = await page.evaluate(() => document.fonts.check('600 20px Fredoka'));
@@ -161,6 +209,10 @@ async function main() {
         await page.locator('#let-in').click();
         await page.locator('[data-view="in"]').waitFor({ state: 'visible', timeout: 5000 });
         check(await page.locator('#host [data-view="done"]').isVisible(), `demo: ${code.join(', ')} -> knock -> Let in! -> playing together`);
+        await page.locator('.mini-phrases button', { hasText: "Let's build!" }).click();
+        check(await page.locator('#host-bubble').isVisible() && /Let's build!/.test(await page.locator('#host-bubble').textContent()), 'demo: tapping "Let\'s build!" shows it in a bubble on Lily\'s iPad');
+        const pill = await page.locator('.mini-phrases button').first().boundingBox();
+        check(pill && pill.height >= 44, `demo: the phrase buttons are big enough to tap (${pill && Math.round(pill.height)}px)`);
         await page.screenshot({ path: path.join(SHOTS, `${PREFIX}-${s.w}-demo-done.png`) });
       }
 
@@ -189,7 +241,7 @@ async function main() {
         collect(parents, 'parents');
         await parents.goto(`${base}/parents.html`);
         await parents.evaluate(() => document.fonts.ready);
-        const pov = await parents.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
+        const pov = await parents.evaluate((W) => document.documentElement.scrollWidth <= W && window.innerWidth === W, s.w);
         check(pov, 'parents.html: no sideways scrolling');
         await parents.screenshot({ path: path.join(SHOTS, `${PREFIX}-parents-1280.png`), fullPage: true });
       }
@@ -198,9 +250,32 @@ async function main() {
         collect(parents, 'parents-390');
         await parents.goto(`${base}/parents.html`);
         await parents.evaluate(() => document.fonts.ready);
-        check(await parents.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'parents.html at 390: no sideways scrolling');
+        check(await parents.evaluate((W) => document.documentElement.scrollWidth <= W && window.innerWidth === W, s.w), 'parents.html at 390: no sideways scrolling');
         await parents.screenshot({ path: path.join(SHOTS, `${PREFIX}-parents-390.png`), fullPage: true });
       }
+      await context.close();
+    }
+
+    // ---- phones without the font: the fallback font must fit too
+    for (const s of NO_FONT) {
+      console.log(`home page ${s.w}x${s.h}, font blocked`);
+      const context = await browser.newContext({ viewport: { width: s.w, height: s.h }, deviceScaleFactor: 1, hasTouch: true, isMobile: true });
+      await context.route(/^https:\/\/fonts\.(googleapis|gstatic)\.com\//, (route) => route.abort());
+      await context.route(/\/fonts\/[^/]+\.woff2$/, (route) => route.abort());
+      const page = await context.newPage();
+      await page.goto(`${base}/`, { waitUntil: 'load' });
+      await page.evaluate(() => document.fonts.ready);
+      check(!(await page.evaluate(() => document.fonts.check('600 20px Fredoka') && [...document.fonts].some((f) => f.family.replace(/"/g, '') === 'Fredoka' && f.status === 'loaded'))), 'Fredoka really is missing');
+      const over = await overflow(page);
+      check(over.sw <= s.w && over.w === s.w, `no sideways scrolling with the fallback font (page ${over.sw}px, window ${over.w}px of ${s.w}${over.wide.length ? '; ' + over.wide.join(', ') : ''})`);
+      if (s.w === 360) {
+        await page.screenshot({ path: path.join(SHOTS, `${PREFIX}-360-nofont.png`), fullPage: true });
+        console.log(`  screenshot .shots/${PREFIX}-360-nofont.png`);
+      }
+      const parents = await context.newPage();
+      await parents.goto(`${base}/parents.html`, { waitUntil: 'load' });
+      const pov = await overflow(parents);
+      check(pov.sw <= s.w && pov.w === s.w, `parents.html with the fallback font: no sideways scrolling (page ${pov.sw}px of ${s.w}${pov.wide.length ? '; ' + pov.wide.join(', ') : ''})`);
       await context.close();
     }
 
@@ -219,7 +294,7 @@ async function main() {
     // ---- the Artifact fragment
     const frag = await readFile(path.join(ROOT, 'dist', 'site', 'preview.html'), 'utf8');
     check(frag.startsWith('<title>') && !/<!doctype|<html[\s>]|<head[\s>]|<body[\s>]/i.test(frag), 'preview.html is a fragment starting with <title>');
-    check(/fonts\.googleapis\.com/.test(frag) && /<style>/.test(frag) && /<script>/.test(frag) && /src="img\/title\.webp"/.test(frag) && /href="\/play"/.test(frag), 'preview.html inlines the style and script, keeps img/... and /play');
+    check(/url\(fonts\/fredoka-latin\.woff2\)/.test(frag) && /<style>/.test(frag) && /<script>/.test(frag) && /src="img\/title\.webp"/.test(frag) && /href="\/play"/.test(frag), 'preview.html inlines the style (with the font) and script, keeps img/... and /play');
     {
       const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
       await routeGoogleFonts(context);

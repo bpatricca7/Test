@@ -74,6 +74,11 @@ below.
    address with `/play` at the end, for example
    `https://sparkle-world-production.up.railway.app/play`.
 5. Optional check: add `/healthz` to the address. The page should say `{"ok":true}`.
+6. Optional, for link previews: when you text the address to another family, the message can
+   show a picture of the game. That needs the address to be known while building, so once the
+   domain exists, open **Deployments** and click **Redeploy** on the newest one (Railway then
+   gives the build its `RAILWAY_PUBLIC_DOMAIN`). The Build Logs then show a
+   `link preview tags` line with your address.
 
 | Address | What it shows |
 |---|---|
@@ -174,8 +179,9 @@ version by itself (1–3 minutes). The old version keeps running until the new o
 - **No chat.** There is no typing to other players at all: only 16 fixed friendly phrases
   ("Hi!", "Let's build!", "Thank you!", …) and dance or wave emotes. Player names go through a
   filter before others see them.
-- **No voice, no camera.** The game never uses the microphone or camera, and the server tells
-  browsers so (it sends a `Permissions-Policy` that turns them off for this site).
+- **No voice chat, no camera.** The game never uses the microphone or camera, and the server
+  tells browsers so (it sends a `Permissions-Policy` that turns them off for this site). It can
+  read its own words out loud for early readers (Settings, *Read words out loud*, off at first).
 - **No accounts, no personal data.** Nobody signs up; there are no emails or passwords. Each
   device gets a random id so a friend who reloads can come back to her seat.
 - **Nothing stored on the server.** A game room exists only in the server's memory while
@@ -239,6 +245,6 @@ Automatic checks (for grown-ups who change the code):
 | Command | What it checks |
 |---|---|
 | `npm run test:net` | the multiplayer code on its own, with lost and late messages (about 2 minutes) |
-| `node tools/site-check.mjs` | builds, starts this same server, and checks the home page at phone, iPad and computer sizes (no errors, no sideways scrolling, every picture and link, the picture-code demo), that **Play now** opens the game at `/play`, and the page's headers. Screenshots go to `.shots/site-*.png`. About 3 minutes. |
+| `node tools/site-check.mjs` | builds, starts this same server, and checks the home page at phone (360 and 390 px wide), iPad and computer sizes, and on phones again with the font blocked (no errors, nothing loaded from other sites, no sideways scrolling, every picture and link, the picture-code demo), that **Play now** opens the game at `/play`, and the page's headers. Screenshots go to `.shots/site-*.png`. About 4 minutes. |
 | `npm run probe:railway` | builds the game, starts this same server on a free port, and three headless browsers (a computer, an iPad and a phone) make a code, join it through the real screens and build together; then the server is killed and started again (everyone reconnects by themselves) and finally killed for good (everyone gets a friendly "Playing together stopped." card). About 6 minutes. |
 | `npm run probe:mp` | the same game inside claude.ai (a pretend claude.ai room): every screen, knocking, building, Undo building, Send home, sleep, pets, zip lines, reloads, a new version, lost messages, and the size and speed limits. About 25 minutes. |

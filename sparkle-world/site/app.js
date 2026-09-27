@@ -1,6 +1,7 @@
 // Sparkle World home page: the header state, the tap-along picture-code demo (a pretend
-// version of the game's Play with Friends screens, with the game's own 12 pictures) and the
-// sticker wiggle. No libraries, no network requests, nothing stored.
+// version of the game's Play with Friends screens, with the game's own 12 pictures), the
+// sticker wiggle, and pausing the hero's animations while it is off-screen. No libraries, no
+// network requests, nothing stored.
 (function () {
   'use strict';
   var doc = document;
@@ -17,13 +18,43 @@
 
   // ---------------------------------------------------------------- stickers
   doc.querySelectorAll('.stk button').forEach(function (b) {
+    var pop = null, popTimer = 0;
     b.addEventListener('click', function () {
       b.classList.remove('is-peeled');
       void b.offsetWidth; // restart the animation
       b.classList.add('is-peeled');
+      // a little "Sticker!" that floats up and goes (removed by a timer, so it also goes
+      // when animations are switched off)
+      if (pop) pop.remove();
+      clearTimeout(popTimer);
+      pop = doc.createElement('span');
+      pop.className = 'stk-pop';
+      pop.setAttribute('aria-hidden', 'true');
+      pop.textContent = 'Sticker!';
+      b.parentNode.appendChild(pop);
+      popTimer = setTimeout(function () { if (pop) { pop.remove(); pop = null; } }, 950);
     });
     b.addEventListener('animationend', function () { b.classList.remove('is-peeled'); });
   });
+
+  // ---------------------------------------------------------------- pause what can't be seen
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { e.target.classList.toggle('is-offscreen', !e.isIntersecting); });
+    });
+    doc.querySelectorAll('.hero, .closing').forEach(function (el) { io.observe(el); });
+    // the world postcards sit in a row you swipe on phones and iPads: lazy pictures off to the
+    // side would only start loading mid-swipe, so load the whole row once it comes near
+    var row = doc.querySelector('.worlds');
+    if (row) {
+      var near = new IntersectionObserver(function (entries) {
+        if (!entries.some(function (e) { return e.isIntersecting; })) return;
+        row.querySelectorAll('img[loading="lazy"]').forEach(function (i) { i.loading = 'eager'; });
+        near.disconnect();
+      }, { rootMargin: '600px 0px' });
+      near.observe(row);
+    }
+  }
 
   // ---------------------------------------------------------------- picture-code demo
   var demo = doc.getElementById('demo');
@@ -50,6 +81,10 @@
   var notNow = doc.getElementById('not-now');
   var host = doc.getElementById('host');
   var guest = doc.getElementById('guest');
+  var status = doc.getElementById('demo-status');
+  var bubble = doc.getElementById('host-bubble');
+  var said = doc.getElementById('said');
+  var bubbleTimer = 0;
   var code = [];
   var typed = [];
   var timer = 0;
@@ -92,7 +127,7 @@
     });
   }
 
-  function renderSlots() {
+  function renderSlots(announce) {
     slots.forEach(function (li, k) {
       li.textContent = '';
       li.className = '';
@@ -106,6 +141,11 @@
       }
     });
     goBtn.disabled = typed.length < 4;
+    // for screen readers: what was just tapped, and what is next
+    if (announce && status) {
+      var left = 4 - typed.length;
+      status.textContent = typed.length ? NAME[typed[typed.length - 1]] + '. ' + (left ? left + ' more to go.' : 'All 4! Tap Go!') : 'Cleared.';
+    }
   }
 
   function buildKeys() {
@@ -124,7 +164,7 @@
         if (typed.length >= 4) return;
         typed.push(p[0]);
         msg.textContent = '';
-        renderSlots();
+        renderSlots(true);
       });
       keys.appendChild(b);
     });
@@ -136,6 +176,10 @@
     newCode();
     renderSlots();
     msg.textContent = '';
+    if (status) status.textContent = '';
+    clearTimeout(bubbleTimer);
+    if (bubble) bubble.hidden = true;
+    if (said) said.textContent = '';
     show(host, 'code');
     show(guest, 'keypad');
     hint.textContent = "Try it! Tap Lily's 4 pictures on Mia's phone.";
@@ -144,7 +188,7 @@
   clearBtn.addEventListener('click', function () {
     typed = [];
     msg.textContent = '';
-    renderSlots();
+    renderSlots(true);
   });
 
   goBtn.addEventListener('click', function () {
@@ -183,6 +227,22 @@
     reveal(guest);
     hint.textContent = 'Only the host can say yes.';
     doc.getElementById('again2').focus({ preventScroll: true });
+  });
+
+  // "Say hi with a tap": the phrase pops up in a bubble on Lily's iPad, like in the game
+  doc.querySelectorAll('.mini-phrases button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var words = b.textContent;
+      if (bubble) {
+        bubble.querySelector('span').textContent = words;
+        bubble.hidden = true;
+        void bubble.offsetWidth; // play the pop again
+        bubble.hidden = false;
+        clearTimeout(bubbleTimer);
+        bubbleTimer = setTimeout(function () { bubble.hidden = true; }, 4000);
+      }
+      if (said) said.textContent = 'Lily sees: \u201C' + words + '\u201D';
+    });
   });
 
   function again() {
