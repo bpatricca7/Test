@@ -317,6 +317,8 @@ async function main() {
     log('phase: Magic Houses');
     const histBefore = await host.evaluate(() => window.__game.history.length);
     const entsBefore = await host.evaluate(() => window.__game.entities.all().length);
+    const uidsOf = (pg) => pg.evaluate(() => window.__game.entities.all().map((e) => e.uid));
+    const u0 = new Set(await uidsOf(host));
     const cottage = await ga.evaluate(({ x, z }) => {
       const g = window.__game;
       const r = g.prefabs.place('cottage', x + 24, z + 2, { animate: true });
@@ -326,7 +328,12 @@ async function main() {
     const built = await until(host, (n) => window.__game.entities.all().length > n + 5, entsBefore, 40000);
     check(built, 'the host built the guest\'s cottage (furniture in the world)');
     check(await host.evaluate((n) => window.__game.history.length === n, histBefore), 'the host\'s Undo history is unchanged by the guest\'s house');
+    await sleep(500);
+    const cottageUids = (await uidsOf(host)).filter((u) => !u0.has(u));
+    const u1 = new Set(await uidsOf(host));
     await host.evaluate(({ x, z }) => window.__game.prefabs.place('sparkle_camper', x - 30, z - 20, { animate: false }), spot);
+    const camperUids = (await uidsOf(host)).filter((u) => !u1.has(u));
+    check(camperUids.length > 20, `the host's Sparkle Camper is furnished (${camperUids.length} pieces)`);
     await settleAndCompare(host, guests, 'Magic Houses');
     await shot(ga, 'houses-guestA', P);
 
@@ -456,9 +463,15 @@ async function main() {
 
     // ----- undo on both sides; Undo building for guest B -----
     log('phase: undo');
-    await ga.evaluate(() => { const g = window.__game; g.undo(); g.undo(); });
+    // guest A: her three plantings, then her Flower Cottage ('pu': the host takes it back);
+    // the host: her own last build, the Sparkle Camper (compare-and-set Undo)
+    await ga.evaluate(() => { const g = window.__game; for (let k = 0; k < 4; k++) g.undo(); });
     await host.evaluate(() => window.__game.undo());
     await settleAndCompare(host, guests, 'undo');
+    for (const [pg, name] of [[host, 'host'], [ga, 'guest A'], [gb, 'guest B']]) {
+      const left = await pg.evaluate((list) => list.filter((u) => window.__game.entities.byUid(u)).length, cottageUids.concat(camperUids));
+      check(left === 0, `${name}: the guest's cottage and the host's camper are gone after their Undo (${left} pieces left)`);
+    }
     const undone = await host.evaluate(() => window.__game.debug.net.undoSeat(2));
     check(undone > 0, `the host took back guest B's building (${undone} groups)`);
     await settleAndCompare(host, guests, 'undo building');

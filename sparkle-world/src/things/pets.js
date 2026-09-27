@@ -357,6 +357,7 @@ class PetSystem {
     if (announce) this.game.toast(`${pet.name} is here!`, { icon: 'heart' });
     this._slots();
     this._changed();
+    this._touch(pet);
   }
 
   sendHome(pet) {
