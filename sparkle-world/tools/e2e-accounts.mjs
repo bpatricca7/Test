@@ -308,10 +308,17 @@ const FP = {
     await page.getByRole('button', { name: 'Agree and continue' }).click();
     await page.waitForSelector('#us');
   },
-  /** On the plan card: tick the US box and start (trial or not) → the Stripe fake → pay → back. */
-  async buy(page, { trial }) {
+  /**
+   * On the plan card: tick the US box and start (trial or not) → the Stripe fake → pay → back.
+   * Starting needs a fresh email check (§7.9): right after signing in it is there already;
+   * otherwise the code emailed to `email` is typed (`fresh`: the check must NOT be asked).
+   */
+  async buy(page, { trial, email, fresh = false }) {
     await page.check('#us');
+    const since = await mailMark(email);
     await page.getByRole('button', { name: trial ? /Start your free week/ : /Start today|Start the Family Plan/ }).first().click();
+    const asked = await FP.passCheck(page, email, since);
+    if (fresh) check(!asked, 'right after signing in, starting the plan asks for no second code');
     await page.waitForURL((u) => !u.href.startsWith(R.base + '/account'), { timeout: 30000 });
     await shot(page, `stripe-fake-checkout-${trial ? 'trial' : 'today'}`);
     // the fake's hosted page: "Pay (4242)", United States first (§12.3)
@@ -531,7 +538,7 @@ async function s1() {
   await FP.signIn(page, A.email);
   await FP.agree(page);
   await shot(page, 'parentA-plan-ipad', true);
-  await FP.buy(page, { trial: true });
+  await FP.buy(page, { trial: true, email: A.email, fresh: true });
   check(/free trial has started/.test(await page.textContent('.all-set')), 'back from the fake Checkout: "You\'re all set!", the free week has started');
   await shot(page, 'parentA-all-set-ipad');
   await FP.addPlayer(page, 'Lily', { first: true });
@@ -700,7 +707,7 @@ async function s5() {
   await FP.signIn(pageB, B.email);
   await FP.agree(pageB);
   await shot(pageB, 'parentB-plan-390', true);
-  await FP.buy(pageB, { trial: false });
+  await FP.buy(pageB, { trial: false, email: B.email, fresh: true });
   check(/Family Plan is on/.test(await pageB.textContent('.all-set')), 'family B: Start today → "You\'re all set!"');
   await FP.addPlayer(pageB, 'June', { first: true });
   B.ids.June = (await FP.family(ctxB)).players[0].id;
@@ -908,21 +915,20 @@ async function s7() {
   check(read.status === 200 && read.data.length > 0, 'her worlds are still readable');
   const write = await api(`/api/players/${A.ids.Lily}/worlds/${R.shared}`, { method: 'DELETE', cookie });
   check(write.status === 403 && write.data?.error === 'not_entitled', `cloud writes are refused (${write.status} ${write.data?.error})`);
-  // family B: the Portal's "Cancel at period end" → Ends … → the period ends → resting
+  // family B: Cancel the plan → Yes (two taps, no email code: never harder than starting,
+  // §9.3) → Ends … → the period ends → resting
   const B = R.fam.B;
   if (customer) await R.stripe.card(customer, 'ok');
   await FP.ribbon(B);
   const since = await mailMark(B.email);
-  await B.page.locator('.ribbon').getByRole('button', { name: 'Manage subscription' }).click();
-  await FP.passCheck(B.page, B.email, since);
-  await B.page.waitForURL((u) => !u.href.startsWith(R.base), { timeout: 30000 });
-  await shot(B.page, 'stripe-fake-portal');
-  await B.page.getByRole('button', { name: /Cancel at period end/ }).or(B.page.getByRole('link', { name: /Cancel at period end/ })).first().click();
-  await sleep(1000);
-  await B.page.goto(`${R.base}/account?portal=1`);
-  await B.page.waitForSelector('.ribbon');
+  await B.page.locator('.ribbon').getByRole('button', { name: 'Cancel the plan' }).click();
+  await B.page.getByRole('button', { name: 'Yes, cancel it' }).click();
+  await B.page.waitForFunction(() => /ends/i.test(document.querySelector('.ribbon')?.textContent || ''), null, { timeout: 30000 });
+  check((await mailsTo(B.email)).slice(since).every((m) => m.template !== 'check'), 'cancelling the plan asks for no email code (two taps)');
   const ends = (await B.page.textContent('.ribbon')).trim();
   check(/ends/i.test(ends) && /Resume/.test(ends), `after cancelling: "${ends}"`);
+  const subsNow = (await R.stripe.state()).subscriptions || [];
+  check(subsNow.some((x) => x && x.cancel_at_period_end === true), "Stripe's subscription is set to cancel at the period end");
   await passDays(32);
   await api('/api/test/jobs', { method: 'POST', body: { name: 'reconcile' } });
   const rest = await FP.ribbon(B);
@@ -934,7 +940,7 @@ async function s7() {
   await A.page.locator('.ribbon').getByRole('button', { name: 'Restart the plan' }).click();
   await A.page.waitForSelector('#us');
   check((await A.page.locator('.plan-choice .btn').count()) === 1, 'restarting offers no second free week (one button, the price next to it)');
-  await FP.buy(A.page, { trial: false });
+  await FP.buy(A.page, { trial: false, email: A.email });
   await A.page.getByRole('button', { name: 'Go to your Family page' }).click();
   const back = (await A.page.textContent('.ribbon')).trim();
   check(/renews/.test(back), `family A restarted the plan: "${back}"`);

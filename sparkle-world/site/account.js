@@ -10,8 +10,9 @@
 // plus: a kid device opened this page (403), the family was deleted (410), can't reach us.
 //
 // Copy rules (§9.3): plain words; the price and the renewal terms next to every button that
-// starts a plan; cancelling is as easy as starting (the Portal); no box is ever pre-ticked;
-// errors say what to do next. The kids' names are used instead of pronouns.
+// starts a plan; cancelling is never harder than starting (Cancel the plan, then Yes: no email
+// code, while starting needs one); no box is ever pre-ticked; errors say what to do next. The
+// kids' names are used instead of pronouns.
 
 import { sanitizeName, isBlocked } from '/names.js';
 
@@ -272,10 +273,16 @@ async function refresh() {
   render();
 }
 
+/** She agreed to a notice older than the oldest one that still counts (a change that matters). */
+function noticeStale(f) {
+  const min = f.config && Number.isInteger(f.config.noticeMinVersion) ? f.config.noticeMinVersion : null;
+  return !!f.consent && f.consent.level !== 'none' && min !== null && !((f.consent.noticeVersion ?? 0) >= min);
+}
+
 function render() {
   const f = S.fam;
   const checkout = S.params.get('checkout');
-  if (!f.consent || f.consent.level === 'none') return noticeView();
+  if (!f.consent || f.consent.level === 'none' || noticeStale(f)) return noticeView();
   if (checkout && /^cs_[A-Za-z0-9_]+$/.test(checkout)) return backFromStripe(checkout);
   if (S.params.get('portal')) return backFromPortal();
   if (checkout) cleanUrl(); // "?checkout=cancel" is said once, not again after a reload
@@ -476,11 +483,11 @@ function codeView() {
 
 // ------------------------------------------------------------------------------ the sign-in link page
 
-async function verifyPage() {
+async function verifyPage(again = null) {
   const m = /[#&]t=([A-Za-z0-9_-]{16,256})/.exec(location.hash);
-  const token = m ? m[1] : null;
+  const token = again || (m ? m[1] : null);
   // the token leaves the address bar (and the history) at once
-  history.replaceState(null, '', location.pathname);
+  if (!again) history.replaceState(null, '', location.pathname);
   if (!token) {
     mount(card(
       h('h2', null, 'This sign-in link is not complete'),
@@ -489,28 +496,62 @@ async function verifyPage() {
     ));
     return;
   }
+  const ranOut = () => mount(card(
+    h('h2', null, 'This link has run out'),
+    h('p', { class: 'acct-lead' }, 'Sign-in links work once, for 15 minutes. Get a new code on the Family page: it takes a moment.'),
+    row(h('a', { class: 'btn btn-play', href: '/account' }, 'Get a new code')),
+  ));
+  // first, whose sign-in this is (nothing is used up by asking): a stranger's link opened on a
+  // kid's device must say so before it could take the device over
+  mount(card(h('h2', null, 'Sign in to Sparkle World?'), loadingRow()));
+  let peek;
+  try {
+    peek = await api('POST', '/api/auth/verify', { token, peek: true });
+  } catch (e) {
+    if (e.code === 'expired' || e.code === 'bad_code') return ranOut();
+    mount(card(
+      h('h2', null, 'Sign in to Sparkle World?'),
+      h('p', { class: 'acct-lead' }, say(e)),
+      row(btn('Try again', 'btn-play', () => verifyPage(token)), h('a', { class: 'btn btn-soft', href: '/' }, 'Not now')),
+    ));
+    return;
+  }
+  showVerify(token, peek, ranOut);
+}
+
+function showVerify(token, peek, ranOut) {
+  const replacing = !!(peek && peek.replacing);
   const err = errBox();
+  // signing in here signs this device out of another family: only a grown-up does that (the
+  // game's grown-up check, a times table question)
+  const a = 6 + Math.floor(Math.random() * 4);
+  const b = 6 + Math.floor(Math.random() * 4);
+  const answer = h('input', { class: 'acct-input', id: 'grownup-answer', inputmode: 'numeric', autocomplete: 'off', maxlength: '3' });
   const go = btn('Sign in', 'btn-play', async () => {
+    if (replacing && Number(answer.value.trim()) !== a * b) {
+      err.textContent = 'That answer is not right. Ask a grown-up to help.';
+      answer.focus();
+      return;
+    }
     busy(go, true);
     err.textContent = '';
     try {
-      const r = await api('POST', '/api/auth/verify', { token });
+      const r = await api('POST', '/api/auth/verify', { token, ...(replacing ? { replace: true } : {}) });
       const next = r && typeof r.next === 'string' && NEXT_RE.test(r.next) ? r.next : '/account';
       location.replace(next);
     } catch (e) {
       busy(go, false);
-      if (e.code === 'expired' || e.code === 'bad_code') {
-        mount(card(
-          h('h2', null, 'This link has run out'),
-          h('p', { class: 'acct-lead' }, 'Sign-in links work once, for 15 minutes. Get a new code on the Family page: it takes a moment.'),
-          row(h('a', { class: 'btn btn-play', href: '/account' }, 'Get a new code')),
-        ));
-      } else err.textContent = say(e);
+      if (e.code === 'expired' || e.code === 'bad_code') ranOut();
+      else if (e.code === 'conflict' && e.data && e.data.replacing) showVerify(token, { ...peek, replacing: true }, ranOut);
+      else err.textContent = say(e);
     }
   });
   mount(card(
     h('h2', null, 'Sign in to Sparkle World?'),
-    h('p', { class: 'acct-lead' }, 'Tap the button to finish signing in on this device.'),
+    h('p', { class: 'acct-lead' }, 'You are signing in as ', h('strong', null, peek && peek.email ? peek.email : 'the grown-up who asked for this email'), '. Tap the button to finish signing in on this device.'),
+    replacing && h('p', { class: 'acct-note acct-note--sun' }, h('strong', null, 'This device is signed in to another family. '), 'Signing in here signs it out of that family: its kids would need a new code to play here again.'),
+    replacing && h('label', { class: 'acct-label', for: 'grownup-answer' }, `Grown-ups: what is ${a} × ${b}?`),
+    replacing && answer,
     err,
     row(go, h('a', { class: 'btn btn-soft', href: '/' }, 'Not now')),
     h('p', { class: 'acct-small' }, "Didn't ask to sign in? Then you can close this page: nothing happens without the button."),
@@ -579,6 +620,7 @@ async function noticeView() {
   mount(card(
     h('h2', null, 'Before your children play: what Sparkle World keeps, and why.'),
     h('span', { class: 'notice-ver' }, `Notice version ${n.version}`),
+    S.fam && noticeStale(S.fam) && h('p', { class: 'acct-note acct-note--sun' }, 'We changed this notice since you last agreed. Please read it and agree again: until then, new players and switching things on wait. Saving goes on as before.'),
     h('ul', { class: 'notice-list' }, sections.map((s) => h('li', null, s.title ? h('strong', null, s.title) : null, s.title ? ' ' : null, s.text || ''))),
     h('p', null, h('a', { href: '/privacy' }, 'Read the full Privacy Notice'), ' · ', h('a', { href: '/terms' }, 'Terms')),
     h('label', { class: 'acct-check', for: 'agree' }, box, h('span', null, n.checkbox || "I'm the parent or legal guardian of the children who will play, I'm 18 or older, and I agree.")),
@@ -610,7 +652,9 @@ function planView({ cancelled = false } = {}) {
     const b = ev.currentTarget;
     busy(b, true);
     try {
-      const r = await api('POST', '/api/billing/checkout', { trial: withTrial, usResident: true });
+      // a fresh email check (a sign-in in the last 15 minutes is one): §7.9
+      const r = await withCheck(() => api('POST', '/api/billing/checkout', { trial: withTrial, usResident: true }));
+      if (!r) return busy(b, false);
       location.assign(r.url);
     } catch (e) {
       busy(b, false);
@@ -623,14 +667,14 @@ function planView({ cancelled = false } = {}) {
     ? h('div', { class: 'plan-choices plan-choices--two' },
       h('div', { class: 'plan-choice' },
         btn(`Start your ${week}`, 'btn-play', (ev) => start(ev, true)),
-        h('p', null, `Free for ${plural(cfg.trialDays, 'day')}, then ${amount}/month. It renews every month until you cancel. Cancel any time here, with Manage subscription.`)),
+        h('p', null, `Free for ${plural(cfg.trialDays, 'day')}, then ${amount}/month. It renews every month until you cancel. Cancel any time here: Cancel the plan, then Yes.`)),
       h('div', { class: 'plan-choice' },
         btn('Start today', 'btn-soft', (ev) => start(ev, false)),
         h('p', null, `${amount} today, then every month until you cancel. Pay now and playing with friends and the walkie-talkie can be turned on today. The first payment is how we confirm that a grown-up said yes.`)))
     : h('div', { class: 'plan-choices' },
       h('div', { class: 'plan-choice' },
         btn('Start the Family Plan', 'btn-play', (ev) => start(ev, false)),
-        h('p', null, `${priceText}. The first payment is today, then it renews every month until you cancel. Cancel any time here, with Manage subscription. That first payment is also how we confirm that a grown-up said yes, so playing with friends and the walkie-talkie can be turned on right away.`)));
+        h('p', null, `${priceText}. The first payment is today, then it renews every month until you cancel. Cancel any time here: Cancel the plan, then Yes. That first payment is also how we confirm that a grown-up said yes, so playing with friends and the walkie-talkie can be turned on right away.`)));
   mount(card(
     h('h2', null, 'Sparkle World Family Plan'),
     cancelled && h('p', { class: 'acct-note acct-note--sun' }, 'No payment was made. You can start whenever you like.'),
@@ -850,23 +894,25 @@ function ribbon(f) {
   let cls = '';
   const acts = [];
   const portal = (label) => btn(label, 'btn-soft btn-small', openPortal);
+  // cancelling is as easy as starting, or easier (§9.3): this button and one "Yes", no email code
+  const cancel = () => linkBtn('Cancel the plan', () => cancelPlan(p));
   switch (p.state) {
     case 'trialing': {
       const days = Math.max(0, Math.round(((ms(p.trialEnd) ?? Date.now()) - Date.now()) / DAY));
       const word = cfg.trialDays === 7 ? 'Free week' : 'Free trial';
       text = `${word}: ${days === 0 ? 'ends today' : plural(days, 'day') + ' left'}, then ${month}.`;
       cls = 'ribbon--trial';
-      acts.push(portal('Manage subscription'), btn('Start now', 'btn-play btn-small', startNow));
+      acts.push(portal('Manage subscription'), btn('Start now', 'btn-play btn-small', startNow), cancel());
       break;
     }
     case 'active':
       text = `Family Plan: renews ${date(p.periodEnd)}.`;
-      acts.push(portal('Manage subscription'));
+      acts.push(portal('Manage subscription'), cancel());
       break;
     case 'past_due':
       text = `Payment didn't go through. Playing continues until ${date(p.graceUntil ?? p.until)}.`;
       cls = 'ribbon--warn';
-      acts.push(portal('Update card'));
+      acts.push(portal('Update card'), cancel());
       break;
     case 'canceling':
       text = `Family Plan: ends ${date(p.periodEnd ?? p.until)}. Nothing more will be charged.`;
@@ -879,7 +925,13 @@ function ribbon(f) {
       acts.push(btn('Restart the plan', 'btn-play btn-small', () => planView()), btn('Download worlds', 'btn-soft btn-small', downloadEverything));
       break;
     case 'comp':
-      text = `Free pass until ${date(p.until)}.`;
+      // a free pass on top of a plan that still renews (and charges): its buttons stay
+      if (p.subState && p.subState !== 'canceling') {
+        text = `Free pass until ${date(p.until)}. Your Family Plan still renews on ${date(p.periodEnd)}.`;
+        acts.push(portal('Manage subscription'), cancel());
+      } else if (p.subState === 'canceling') {
+        text = `Free pass until ${date(p.until)}. Your Family Plan ends ${date(p.periodEnd)}; nothing more will be charged.`;
+      } else text = `Free pass until ${date(p.until)}.`;
       cls = 'ribbon--comp';
       break;
     default:
@@ -903,6 +955,39 @@ async function openPortal(ev) {
     toast(say(e));
   }
   busy(b, false);
+}
+
+/** "Cancel the plan": one question, then done (the plan runs to the end of what is paid for). */
+function cancelPlan(p) {
+  const err = errBox();
+  const end = p.state === 'trialing' ? p.trialEnd : p.periodEnd;
+  const d = dialog([
+    h('h2', null, 'Cancel the Family Plan?'),
+    h('p', null, p.state === 'trialing'
+      ? `The free trial runs until ${date(end)}, then the plan stops. Nothing will be charged.`
+      : `Everything keeps working until ${date(end)}, then the plan stops. Nothing more will be charged.`),
+    h('p', null, "The kids' worlds are kept for a while after that, so you can come back or download them."),
+    err,
+    row(btn('Yes, cancel it', 'btn-danger', async (ev) => {
+      const b = ev.currentTarget;
+      busy(b, true);
+      try {
+        await api('POST', '/api/billing/cancel', {});
+        d.close();
+        toast('The Family Plan is cancelled. Nothing more will be charged.');
+        await refresh();
+        return;
+      } catch (e) {
+        if (e.code === 'conflict') {
+          d.close();
+          await refresh();
+          return;
+        }
+        err.textContent = say(e);
+      }
+      busy(b, false);
+    }), linkBtn('Keep the plan', () => d.close())),
+  ]);
 }
 
 function startNow() {
@@ -1027,7 +1112,7 @@ async function setSwitch(p, body) {
     await refresh();
     return true;
   } catch (e) {
-    if (e.code === 'player_gone') {
+    if (e.code === 'player_gone' || e.code === 'consent_required') {
       await refresh();
       return false;
     }
@@ -1224,17 +1309,21 @@ function deviceRow(d, players) {
   svg.append(path);
   const acts = h('div', { class: 'device-acts' });
   if (kid) {
+    // locked to a child who was deleted: it plays as nobody until a grown-up picks again
+    const orphan = !!d.locked && !d.lockPlayer;
     const sel = h('select', { 'aria-label': `Who plays on ${d.label || 'this device'}` },
+      orphan && h('option', { value: '-', disabled: true }, 'Nobody yet (pick who plays)'),
       h('option', { value: '' }, 'Anyone in the family'),
       players.map((p) => h('option', { value: p.id }, `Only ${p.nickname}`)));
-    sel.value = d.lockPlayer || '';
+    sel.value = orphan ? '-' : d.lockPlayer || '';
     sel.addEventListener('change', async () => {
       try {
-        await api('PATCH', `/api/devices/${encodeURIComponent(d.id)}`, { lockPlayer: sel.value || null });
+        const r = await api('PATCH', `/api/devices/${encodeURIComponent(d.id)}`, { lockPlayer: sel.value || null });
+        if (r && typeof r === 'object') Object.assign(d, { lockPlayer: r.lockPlayer || null, locked: !!r.locked });
         toast('Saved.');
       } catch (e) {
         toast(say(e));
-        sel.value = d.lockPlayer || '';
+        sel.value = orphan && d.locked && !d.lockPlayer ? '-' : d.lockPlayer || '';
       }
     });
     acts.append(sel);
@@ -1264,7 +1353,7 @@ function renameDeviceDialog(d) {
       busy(save, false);
     }
   });
-  const dlg = dialog([h('h2', null, 'Name this device'), h('label', { class: 'acct-label', for: 'dev-label' }, 'Name'), input, h('p', { class: 'acct-hint' }, "For example: Lily's iPad."), err, row(save, linkBtn('Cancel', () => dlg.close()))]);
+  const dlg = dialog([h('h2', null, 'Name this device'), h('label', { class: 'acct-label', for: 'dev-label' }, 'Name'), input, h('p', { class: 'acct-hint' }, "For example: The kids' iPad. A nickname is fine, never a child's real name."), err, row(save, linkBtn('Cancel', () => dlg.close()))]);
 }
 
 function signOutDevice(d) {
@@ -1297,7 +1386,7 @@ function whoPlaysSelect(id) {
 function pairDialog() {
   const err = errBox();
   const who = whoPlaysSelect('pair-who');
-  const label = h('input', { class: 'acct-input', id: 'pair-label', maxlength: '40', placeholder: "Lily's iPad", autocomplete: 'off' });
+  const label = h('input', { class: 'acct-input', id: 'pair-label', maxlength: '40', placeholder: "The kids' iPad", autocomplete: 'off' });
   const body = h('div');
   const make = btn('Make a code', 'btn-play', async () => {
     busy(make, true);

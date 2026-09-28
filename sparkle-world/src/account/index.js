@@ -64,7 +64,7 @@ export class Account {
   get walkieAllowed() { return !!(this.player && this.player.walkieOk); }
   /** Why she cannot play with friends now (null = she can): not_entitled | friends_locked | friends_off */
   get why() { return (this.player && this.player.why) || null; }
-  get canSwitch() { return this.mode === 'account' && !this.me.lockPlayer && this.me.players.length > 1; }
+  get canSwitch() { return this.mode === 'account' && !this.me.lockPlayer && !this.me.locked && this.me.players.length > 1; }
 
   async _ask() {
     const net = await fetchNetInfo(globalThis);

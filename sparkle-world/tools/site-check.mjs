@@ -409,7 +409,21 @@ const ACCT_STATES = [
   { name: 'back-from-stripe', setup: (fake) => ({ cookie: familyOf(fake, { players: [] }).cookie, path: '/account?checkout=cs_test_back', wait: '.all-set', expect: async (p) => /You're all set!/.test(await p.textContent('main')) && !/checkout=/.test(p.url()) && (await p.getByRole('button', { name: 'Add your first player' }).count()) === 1, label: 'back from Stripe: "You\'re all set!" and Add your first player' }) },
   { name: 'us-only', setup: (fake) => ({ cookie: familyOf(fake, { plan: 'lapsed', players: [] }).cookie, path: '/account?checkout=cs_test_usonly', wait: 'text=only in the United States for now', expect: async (p) => /Nothing more will be charged/.test(await p.textContent('main')), label: 'back from Stripe with a billing address outside the US: cancelled, nothing charged' }) },
   { name: 'first-player', setup: (fake) => ({ cookie: familyOf(fake, { players: [] }).cookie, wait: '#nick', act: async (p) => p.fill('#nick', 'Star Bunny 7'), expect: async (p) => /Other players will see: Star Bunny/.test(await p.textContent('.preview')), label: 'add the first player: the preview through the game\'s own name filter' }) },
-  { name: 'dash', setup: (fake) => ({ cookie: familyOf(fake).cookie, wait: '.device', expect: async (p) => /renews/.test(await p.textContent('.ribbon')) && (await p.locator('article.player').count()) === 2, label: 'the dashboard: plan, players, devices, privacy' }) },
+  { name: 'dash', setup: (fake) => ({ cookie: familyOf(fake).cookie, wait: '.device', expect: async (p) => /renews/.test(await p.textContent('.ribbon')) && /Cancel the plan/.test(await p.textContent('.ribbon')) && (await p.locator('article.player').count()) === 2, label: 'the dashboard: plan (with Cancel the plan), players, devices, privacy' }) },
+  { name: 'cancel-plan', setup: (fake) => ({ cookie: familyOf(fake, { elevated: false }).cookie, wait: '.device', act: async (p) => {
+    await clickText(p, 'Cancel the plan');
+    await p.waitForSelector('dialog .btn-danger');
+  }, expect: async (p) => /Nothing more will be charged/.test(await p.textContent('dialog')) && !(await p.locator('dialog .code-boxes').count()), label: 'cancelling: one question, no email code' }) },
+  { name: 'dash-comp-renews', setup: (fake) => {
+    const f = familyOf(fake, { plan: 'active' });
+    fake.setFamily(f.f, { comp_until: new Date(Date.now() + 60 * 86400e3) });
+    return { cookie: f.cookie, wait: '.device', expect: async (p) => /Free pass until .*still renews on/.test(await p.textContent('.ribbon')) && /Cancel the plan/.test(await p.textContent('.ribbon')) && /Manage subscription/.test(await p.textContent('.ribbon')), label: 'a free pass on top of a plan that still renews: Manage and Cancel stay' };
+  } },
+  { name: 'notice-again', setup: (fake) => {
+    const f = familyOf(fake, { players: [LILY] });
+    fake.setFamily(f.f, { notice_version: 0 });
+    return { cookie: f.cookie, wait: '#agree', expect: async (p) => /We changed this notice since you last agreed/.test(await p.textContent('main')) && !(await p.isChecked('#agree')), label: 'a notice that changed in a way that matters: asked again' };
+  } },
   { name: 'dash-trialing', server: 'trial', setup: (fake) => ({ cookie: familyOf(fake, { plan: 'trialing', consent: 'email_plus', players: [{ nickname: 'Lily' }, MIA] }).cookie, wait: '.device', expect: async (p) => /Free week: \d+ days? left, then \$5\.99\/month/.test(await p.textContent('.ribbon')) && (await p.locator('article.player .switch').first().isDisabled()) && /Turns on after your first payment/.test(await p.textContent('article.player')), label: 'free week: days left, Start now, friends locked until the first payment' }) },
   { name: 'dash-past-due', setup: (fake) => ({ cookie: familyOf(fake, { plan: 'past_due' }).cookie, wait: '.device', expect: async (p) => /Payment didn't go through\. Playing continues until/.test(await p.textContent('.ribbon')) && /Update card/.test(await p.textContent('.ribbon')), label: "payment didn't go through: Update card" }) },
   { name: 'dash-canceling', setup: (fake) => ({ cookie: familyOf(fake, { plan: 'canceling' }).cookie, wait: '.device', expect: async (p) => /ends/.test(await p.textContent('.ribbon')) && /Resume/.test(await p.textContent('.ribbon')), label: 'cancelling: Ends … Resume' }) },
@@ -454,7 +468,12 @@ const ACCT_STATES = [
     fake.deleteFamily(f.f);
     return { cookie: f.cookie, wait: 'text=Your account is deleted', allow: [/\/api\/me.*410|410.*\/api\/me/] };
   } },
-  { name: 'verify', setup: () => ({ path: '/account/verify#t=' + 'A'.repeat(43), wait: 'text=Sign in to Sparkle World?', expect: async (p) => !/#t=/.test(p.url()), label: 'the link page: the token leaves the address bar, nothing happens without the button' }) },
+  { name: 'verify', setup: (fake) => ({ path: '/account/verify#t=' + fake.signInLink('grownup.link@example.com'), wait: 'text=You are signing in as', expect: async (p) => !/#t=/.test(p.url()) && /Sign in to Sparkle World\?/.test(await p.textContent('main')) && /g•••@example\.com/.test(await p.textContent('main')) && !(await p.locator('#grownup-answer').count()), label: 'the link page: the token leaves the address bar, it says whose sign-in it is, nothing happens without the button' }) },
+  { name: 'verify-replace', setup: (fake) => {
+    const other = familyOf(fake, { players: [LILY] });
+    return { cookie: fake.addSession(other.f, { kind: 'device', label: 'iPad · Safari' }).token, path: '/account/verify#t=' + fake.signInLink('stranger@example.com'), wait: 'text=This device is signed in to another family', expect: async (p) => (await p.locator('#grownup-answer').count()) === 1 && /s•••@example\.com/.test(await p.textContent('main')), label: "a link opened on another family's kid device: a warning and the grown-up question first" };
+  } },
+  { name: 'verify-expired', setup: () => ({ path: '/account/verify#t=' + 'A'.repeat(43), wait: 'text=This link has run out', allow: true, expect: async (p) => !/#t=/.test(p.url()), label: 'an old link: run out, get a new code' }) },
   { name: 'verify-incomplete', setup: () => ({ path: '/account/verify', wait: 'text=This sign-in link is not complete' }) },
 ];
 

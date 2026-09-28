@@ -116,7 +116,7 @@ export async function createFakeAccounts(o = {}) {
     const file = fileURLToPath(new URL('../server/notice.mjs', import.meta.url));
     if (existsSync(file)) {
       const m = await import(new URL('../server/notice.mjs', import.meta.url).href);
-      if (m.NOTICE_VERSION && typeof m.noticeSections === 'function') notice = { version: m.NOTICE_VERSION, sections: m.noticeSections(cfg) };
+      if (m.NOTICE_VERSION && typeof m.noticeSections === 'function') notice = { version: m.NOTICE_VERSION, minVersion: Number.isInteger(m.NOTICE_MIN_VERSION) ? m.NOTICE_MIN_VERSION : m.NOTICE_VERSION, sections: m.noticeSections(cfg) };
     }
   } catch {}
   const CHECKBOX = "I'm the parent or legal guardian of the children who will play, I'm 18 or older, and I agree that Sparkle World may keep the information above to run the game for them.";
@@ -275,7 +275,7 @@ export async function createFakeAccounts(o = {}) {
       plan,
       purgeAfter: fam.purge_after ?? null,
       players: familyPlayers(fam.id).map(playerJson),
-      config: { friendsMode: cfg.friendsMode, mpConsent: cfg.mpConsent, trialDays: cfg.trialDays, priceText: cfg.priceText, noticeVersion: notice.version, operatorEmail: cfg.operator.email },
+      config: { friendsMode: cfg.friendsMode, mpConsent: cfg.mpConsent, trialDays: cfg.trialDays, priceText: cfg.priceText, noticeVersion: notice.version, noticeMinVersion: notice.minVersion ?? notice.version, operatorEmail: cfg.operator.email },
     };
   }
 
@@ -336,8 +336,22 @@ export async function createFakeAccounts(o = {}) {
     } },
     { method: 'POST', path: '/api/auth/verify', who: 'anyone', handler: async (req, x) => {
       let a = null;
-      if (typeof x.body.token === 'string') a = [...attempts.values()].find((t) => t.link && t.link === x.body.token) || null;
-      else {
+      // like the real one (auth.mjs): {token, peek:true} says whose sign-in it is and uses
+      // nothing; a link opened in a browser signed in to another family needs {replace:true}
+      const replacing = (t) => {
+        if (!x.session) return false;
+        const fam = [...families.values()].find((f) => f.email === t.email);
+        return !fam || fam.id !== x.session.familyId;
+      };
+      if (typeof x.body.token === 'string') {
+        a = [...attempts.values()].find((t) => t.link && t.link === x.body.token) || null;
+        const live = a && !a.used && a.expiresAt > clock.now();
+        if (x.body.peek === true) {
+          if (!live) throw httpError(410, 'expired');
+          return J({ email: a.email.replace(/^(.)[^@]*(@.*)$/, '$1•••$2'), replacing: replacing(a) });
+        }
+        if (live && x.body.replace !== true && replacing(a)) throw httpError(409, 'conflict', { replacing: true });
+      } else {
         const id = cookieOf(cfg, req, 'login');
         a = id ? attempts.get(id) || null : null;
         if (a && !a.used && a.expiresAt > clock.now() && String(x.body.code || '').replace(/\D/g, '') !== a.code) {
@@ -518,7 +532,7 @@ export async function createFakeAccounts(o = {}) {
     } },
     { method: 'GET', path: '/api/players/:pid/portrait', who: 'player', handler: async () => ({ status: 404, json: { error: 'not_found' } }) },
     // ---- billing (B's routes, pretend Stripe) ----
-    { method: 'POST', path: '/api/billing/checkout', who: 'parent', handler: async (req, x) => {
+    { method: 'POST', path: '/api/billing/checkout', who: 'parent+check', handler: async (req, x) => {
       const plan = planOf(x.family.id);
       if (plan.consent === 'none') throw httpError(403, 'consent_required');
       if (x.body.usResident !== true) throw httpError(400, 'us_only');
@@ -534,6 +548,15 @@ export async function createFakeAccounts(o = {}) {
     { method: 'POST', path: '/api/billing/portal', who: 'parent+check', handler: async (req, x) => {
       if (!(subs.get(x.family.id) || []).length) throw httpError(409, 'conflict');
       return J({ url: `/api/fake/stripe/p/${x.family.id}` });
+    } },
+    // Cancel the plan (no email check: cancelling is never harder than starting)
+    { method: 'POST', path: '/api/billing/cancel', who: 'parent', handler: async (req, x) => {
+      const sub = (subs.get(x.family.id) || []).find((s) => ['trialing', 'active', 'past_due'].includes(s.status) && !s.cancel_at_period_end);
+      if (!sub) throw httpError(409, 'conflict');
+      sub.cancel_at_period_end = true;
+      invalidate();
+      events.emit('family', { familyId: x.family.id });
+      return J({ plan: planOf(x.family.id) });
     } },
     { method: 'POST', path: '/api/billing/start-now', who: 'parent+check', handler: async (req, x) => {
       const sub = (subs.get(x.family.id) || []).find((s) => s.status === 'trialing');
@@ -692,6 +715,17 @@ export async function createFakeAccounts(o = {}) {
       if (s) s.revoked = true;
       invalidate();
       events.emit('session', { sessionHash: Buffer.from(hash) });
+    },
+    /** Change a family's row directly (a free pass on top of a plan, an older notice agreed, …). */
+    setFamily(familyId, fields = {}) {
+      Object.assign(families.get(familyId), fields);
+      invalidate();
+      events.emit('family', { familyId });
+    },
+    /** A sign-in link's token for `email` (as if the grown-up asked for it). */
+    signInLink(email, { next = '/account' } = {}) {
+      const id = startAttempt('signin', email, { next: nextPath(next) });
+      return attempts.get(id).link;
     },
     lastMail(to) {
       for (let k = mail.length - 1; k >= 0; k--) if (!to || mail[k].to === to) return mail[k];
