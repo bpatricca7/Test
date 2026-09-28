@@ -26,7 +26,8 @@ import { mkdtempSync, writeFileSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { randomBytes, randomUUID } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
+import net from 'node:net';
 
 import { loadConfig } from '../server/config.mjs';
 import { createAccounts } from '../server/accounts.mjs';
@@ -42,7 +43,17 @@ import { findLegacy, importLegacy, legacyState, setLegacyState, expireLegacy } f
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MEASURE = process.argv.includes('--measure');
-const ORIGIN = 'http://localhost:8080';
+// the site's address (PUBLIC_ORIGIN): the browser checks serve the game there, so its writes
+// carry the Origin the server wants
+const WEB_PORT = await new Promise((resolve, reject) => {
+  const srv = net.createServer();
+  srv.once('error', reject);
+  srv.listen(0, '127.0.0.1', () => {
+    const { port } = srv.address();
+    srv.close(() => resolve(port));
+  });
+});
+const ORIGIN = `http://localhost:${WEB_PORT}`;
 const DAY = 86400e3;
 const ENV = Object.freeze({
   SW_ACCOUNTS: 'optional',
@@ -781,10 +792,176 @@ if (!MEASURE) {
 
   // -------------------------------------------------------------------------------------------
 
-  describe('the game in a browser (§7.10)', { skip: browserSkip() }, () => {
-    test('file:// and a claude.ai stand-in make no /api request; accounts on: pick a player and save to the cloud', { timeout: 240000 }, async () => {
-      const { browserChecks } = await import('./test-saves-browser.mjs');
-      await browserChecks({ t, base, session, family, SESS, accounts, assert, mkSave });
+  describe('the game in a browser (§7, §7.10)', { skip: browserSkip() }, () => {
+    let browser;
+    let web; // the built game, served with accounts and a pretend /api/me
+    let mode = 'optional';
+    before(async () => {
+      const { chromium } = await import('playwright-core');
+      const { CHROMIUM, LAUNCH_ARGS } = await import('./smoke.mjs');
+      browser = await chromium.launch({ executablePath: CHROMIUM, args: [...LAUNCH_ARGS, '--host-resolver-rules=MAP localhost 127.0.0.1'] });
+      const handleHttp = (req, res, url) => (url.pathname === '/api/me' ? pretendMe(req, res) : accounts.handleHttp(req, res, url));
+      web = createServer({
+        accounts: { ...accounts, handleHttp, netInfo: () => ({ accounts: mode, friendsMode: 'subscription' }), close: async () => {} },
+        htmlPath: path.join(ROOT, 'dist', 'sparkle-world.html'), siteDir: path.join(dir, 'none'), log: () => {},
+      });
+      await web.listen(WEB_PORT, '127.0.0.1');
+      web.base = ORIGIN;
+    });
+    after(async () => {
+      if (browser) await browser.close();
+      if (web) await web.close();
+    });
+
+    /** GET /api/me as §5.3 says (auth.mjs and family.mjs, owner A, answer it for real). */
+    async function pretendMe(req, res) {
+      const s = SESS.get(cookieOf(cfg, req, 'sess'));
+      let me = { signedIn: false, accounts: mode };
+      if (s) {
+        const e = await accounts.ctx.billing.entitlementFor(s.familyId);
+        const rows = (await t.db.query('select id, nickname, color, friends_on from players where family_id = $1 order by created_at, nickname', [s.familyId])).rows;
+        me = {
+          signedIn: true, kind: s.kind, accounts: mode, friendsMode: 'subscription', plan: { state: e.state, entitled: e.entitled, until: e.until }, consent: e.consent,
+          players: rows.map((p) => ({ id: p.id, nickname: p.nickname, color: p.color, portrait: null, friends: p.friends_on, walkie: false, canJoin: e.entitled, canHost: e.entitled, walkieOk: false, why: null })),
+          lockPlayer: s.lockPlayer, playUntil: Date.now() + 7 * DAY,
+        };
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify(me));
+      return true;
+    }
+
+    /** A page; page.apis: the /api requests it made; page.errors: page errors. */
+    async function open(url, { tok = null, init = null } = {}) {
+      const context = await browser.newContext({ viewport: { width: 1000, height: 700 } });
+      if (tok) await context.addCookies([{ name: 'sw_sess', value: tok, url: web.base }]);
+      if (init) await context.addInitScript(...init);
+      const page = await context.newPage();
+      page.apis = [];
+      page.errors = [];
+      page.on('request', (r) => { if (r.url().includes('/api/')) page.apis.push(`${r.method()} ${new URL(r.url()).pathname}`); });
+      page.on('pageerror', (e) => page.errors.push(e.message));
+      await page.goto(url);
+      return page;
+    }
+    const title = (page) => page.waitForFunction(() => window.__game && window.__game.ui && window.__game.ui.current === 'title', null, { timeout: 120000 });
+    const played = (page) => page.waitForFunction(() => window.__game.mode === 'play' && !window.__game.loading, null, { timeout: 120000 });
+    const dialogs = (page, re) => page.waitForFunction((src) => new RegExp(src).test(document.querySelector('.sw-layer-dialogs').innerText), re.source, { timeout: 60000 });
+    /** §7.9: no price and no "subscribe" anywhere in the game's own screens. */
+    const noMoney = async (page) => {
+      const html = await page.evaluate(() => document.querySelector('.sw-ui').innerHTML + document.body.innerText);
+      assert.ok(!html.includes('$') && !/subscri/i.test(html), 'a kid never sees a price');
+    };
+
+    test('file://, a claude.ai stand-in and ?net=loop make no /api/me request (file://, claude.ai: none at all)', { timeout: 300000 }, async () => {
+      const f = await open(pathToFileURL(path.join(ROOT, 'dist', 'sparkle-world.html')).href);
+      await title(f);
+      assert.equal(await f.evaluate(() => window.__game.account.mode), 'local');
+      assert.equal(await f.evaluate(() => document.querySelectorAll('link[href*="googleapis"]').length), 0);
+      assert.equal(await f.evaluate(async () => (await document.fonts.load('700 20px Fredoka')).length > 0), true, 'the font is inside the page');
+      assert.deepEqual(f.apis, []);
+      await f.context().close();
+      const c = await open(web.base + '/play', { init: [() => { window.claude = { use: async () => null }; }] });
+      await title(c);
+      await c.waitForTimeout(1500);
+      assert.deepEqual([await c.evaluate(() => window.__game.account.mode), c.apis], ['local', []], 'claude.ai: nothing asked');
+      assert.deepEqual(c.errors, []);
+      await c.context().close();
+      const loop = await open(web.base + '/play?net=loop');
+      await title(loop);
+      assert.ok(!loop.apis.includes('GET /api/me'));
+      await loop.context().close();
+    });
+
+    test('accounts on: signed out plays as today; a kid device picks her player, brings in the old worlds, saves to the cloud, boots offline', { timeout: 400000 }, async () => {
+      mode = 'optional';
+      const out = await open(web.base + '/play');
+      await title(out);
+      assert.deepEqual([await out.evaluate(() => window.__game.account.mode), await out.evaluate(() => window.__game.store.backendName)], ['local', 'indexedDB']);
+      assert.ok(await out.evaluate(() => !!document.querySelector('.sw-title-grownups')), 'the Grown-ups tile');
+      assert.deepEqual(out.apis.filter((a) => a !== 'GET /api/net'), ['GET /api/me']);
+      await noMoney(out);
+      await out.context().close();
+
+      const f = await family({ players: ['Lily', 'Mia'] });
+      const tok = session(f.id);
+      const lily = f.pids[0];
+      // this computer was played on before accounts: one world (in localStorage)
+      const seed = (w) => {
+        if (localStorage.getItem('seeded')) return;
+        localStorage.setItem('seeded', '1');
+        localStorage.setItem('sparkle-world:metas', JSON.stringify({ [w.id]: { id: w.id, name: w.name, updatedAt: w.updatedAt, size: w.size } }));
+        localStorage.setItem('sparkle-world:world:' + w.id, JSON.stringify(w));
+      };
+      const page = await open(web.base + '/play', { tok, init: [seed, mkSave('wold', { name: 'Old Treehouse', updatedAt: T0 + 5 })] });
+      await page.waitForSelector('.sw-acct-card', { timeout: 120000 });
+      assert.deepEqual(await page.$$eval('.sw-acct-card', (b) => b.map((x) => x.textContent)), ['LLily', 'MMia']);
+      await noMoney(page);
+      await page.click(`.sw-acct-card[data-player="${lily}"]`);
+      await title(page);
+      const info = await page.evaluate(() => ({ mode: window.__game.account.mode, store: window.__game.store.backendName, name: window.__game.profile.playerName, db: window.__game.store.dbName }));
+      assert.deepEqual(info, { mode: 'account', store: 'indexedDB+cloud', name: 'Lily', db: 'sparkle-world@p-' + lily });
+      // the first sign-in: whose are the worlds from before?
+      await dialogs(page, /1 world from before/);
+      await page.click('.sw-dialog button:has-text("Lily")');
+      await page.waitForFunction(async () => (await window.__game.store.listWorlds()).some((m) => m.name === 'Old Treehouse'), null, { timeout: 30000 });
+      // she makes a world: it reaches her cloud copy
+      await page.evaluate(() => window.__game.newWorld({ name: 'Cloud Castle' }));
+      await played(page);
+      await page.evaluate(() => window.__game.exitToTitle());
+      await page.evaluate(() => window.__game.store.flush());
+      const rows = (await t.db.query("select meta->>'name' as name from worlds where player_id = $1 and body is not null order by 1", [lily])).rows.map((r) => r.name);
+      assert.deepEqual(rows, ['Cloud Castle', 'Old Treehouse']);
+      assert.equal(await page.evaluate(() => document.querySelector('.sw-title-switch').hidden ? '' : document.querySelector('.sw-title-switch').textContent), 'Not Lily?');
+      await noMoney(page);
+      // playing together: her player goes with the connection; a refusal (4401) is a friendly card, no retries
+      const sockets = [];
+      page.on('websocket', (ws) => sockets.push(ws.url()));
+      await page.evaluate(() => window.__game.loadWorld(window.__game.profile.lastWorldId));
+      await played(page);
+      await page.evaluate(() => window.__game.net.host());
+      await page.waitForFunction(() => document.querySelector('.sw-net-msg')?.dataset.code === 'signed_out', null, { timeout: 60000 });
+      assert.match(await page.evaluate(() => document.querySelector('.sw-net-msg').innerText), /Ask a grown-up to sign in/);
+      assert.equal(sockets.length, 1, 'no retries after 4401');
+      assert.ok(sockets[0].includes('&p=' + lily), 'the socket says who she is');
+      assert.deepEqual(page.errors, []);
+      // offline: the cache boots her (the picker from the cache), saves wait on the device
+      await page.route('**/api/me', (r) => r.abort());
+      await page.reload();
+      await page.waitForSelector('.sw-acct-card', { timeout: 120000 });
+      assert.equal(await page.$eval('.sw-acct-card .sw-acct-name', (b) => b.textContent), 'Lily', 'the last player first');
+      assert.equal((await t.db.one('select octet_length(portrait) > 100 as ok from players where id = $1', [lily])).ok, true, 'her head portrait went up');
+      assert.equal(await page.$eval('.sw-acct-card img', (i) => i.naturalWidth > 0), true, 'and shows in the picker');
+      await page.click(`.sw-acct-card[data-player="${lily}"]`);
+      await title(page);
+      assert.deepEqual(await page.evaluate(() => [window.__game.account.mode, window.__game.account.offline, window.__game.profile.playerName]), ['account', true, 'Lily']);
+      assert.ok((await page.evaluate(async () => (await window.__game.store.listWorlds()).map((m) => m.name))).includes('Cloud Castle'));
+      await page.context().close();
+    });
+
+    test('required: signed out gets "Ask a grown-up" (it stays), a lapsed family "resting"', { timeout: 300000 }, async () => {
+      mode = 'required';
+      try {
+        const out = await open(web.base + '/play');
+        await title(out);
+        await dialogs(out, /Ask a grown-up to set up Sparkle World/);
+        assert.equal(await out.evaluate(() => window.__game.account.mode), 'blocked');
+        await out.keyboard.press('Escape');
+        await out.waitForTimeout(300);
+        await dialogs(out, /Ask a grown-up to set up Sparkle World/);
+        await out.click(".sw-dialog button:has-text(\"I'm a grown-up\")");
+        await dialogs(out, /Grown-ups only/);
+        await noMoney(out);
+        await out.context().close();
+        const f = await family({ plan: 'lapsed' });
+        const rest = await open(web.base + '/play', { tok: session(f.id) });
+        await title(rest);
+        await dialogs(rest, /Sparkle World is resting/);
+        await noMoney(rest);
+        await rest.context().close();
+      } finally {
+        mode = 'optional';
+      }
     });
   });
 } else {
@@ -794,7 +971,7 @@ if (!MEASURE) {
 function browserSkip() {
   if (process.env.SW_SAVES_BROWSER === '0') return 'SW_SAVES_BROWSER=0';
   if (!existsSync(path.join(ROOT, 'dist', 'sparkle-world.html'))) return 'no dist/sparkle-world.html (npm run build)';
-  if (!existsSync(path.join(ROOT, 'tools', 'test-saves-browser.mjs'))) return 'no browser checks';
+  if (!existsSync(process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium')) return 'no Chromium (CHROMIUM_PATH)';
   return false;
 }
 
