@@ -57,7 +57,9 @@ export function install(game, opts = {}) {
     if (opts.transport) return opts.transport();
     await detect();
     if (!kind) throw new NetError('unavailable');
-    return createTransport(kind);
+    // family accounts (docs/ACCOUNTS.md §7.7): her player id goes with the connection
+    const acct = game.account && game.account.playerId ? game.account : null;
+    return createTransport(kind, kind === 'ws' && acct ? { player: acct.playerId, canHost: acct.canHost } : {});
   }
 
   /** The world's "before friends" backup meta when one younger than BACKUP_MS is stored. */

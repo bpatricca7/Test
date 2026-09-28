@@ -59,7 +59,11 @@ const CSS = /* css */ `
 @media (max-width: 420px) {
   .sw-tile.sw-btn { width: 84px; min-height: 78px; font-size: 14px; }
   .sw-tile.sw-btn svg { width: 30px; height: 30px; }
+  .sw-four { gap: 8px; }
+  .sw-four .sw-tile.sw-btn { width: 78px; font-size: 13px; }
 }
+/* family accounts: "Not Lily?" (switch player) */
+.sw-title-switch.sw-btn { min-height: 40px; font-size: 15px; padding: 2px 14px; }
 /* playing with friends (src/net/ui.js): the title button and the resume chips */
 .sw-title-friends.sw-btn[hidden], .sw-title-chips[hidden] { display: none; }
 .sw-title-chips { display: flex; flex-direction: column; gap: 8px; width: 100%; }
@@ -216,7 +220,7 @@ export function install(game) {
   // title
   // =====================================================================================
   let backdrop = null;
-  let titleEl, playBtn, lastChip, tilesRow, hello, helloText, friendsBtn, netChips;
+  let titleEl, playBtn, lastChip, tilesRow, hello, helloText, friendsBtn, netChips, newBtn, worldsBtn, switchChip;
   const helloAt = { x: 0, y: 0 };
 
   const loadingOpen = () => ui.loadingEl && ui.loadingEl.classList.contains('sw-open');
@@ -272,6 +276,8 @@ export function install(game) {
   game.events.on('avatar:changed', refreshLook);
   game.events.on('outfit:changed', refreshLook);
   game.events.on('profile:changed', () => { refreshLook(); refreshTitle(); });
+  // family accounts: a conflict made "(copy)" of a world; her switches changed
+  for (const ev of ['world:forked', 'account:changed']) game.events.on(ev, () => { if (ui.isOpen('title')) refreshTitle(); if (ui.isOpen('worlds')) renderWorlds(); });
   // playing with friends: availability is known a moment after start; a session ending
   // (or starting) changes the resume chips
   game.events.on('net:state', () => { if (game.mode === 'title' && ui.isOpen('title')) refreshTitle(); });
@@ -316,8 +322,8 @@ export function install(game) {
       playBtn = button2(ui, { icon: 'play', label: 'Play', variant: 'pink', size: 'big', className: 'sw-title-play', onClick: () => continueLast() });
       lastChip = ui.el('div', 'sw-title-last');
       lastChip.hidden = true;
-      const newBtn = button2(ui, { icon: 'plus', label: 'New World', variant: 'mint', onClick: () => ui.open('newworld') });
-      const worldsBtn = button2(ui, { icon: 'world', label: 'My Worlds', variant: 'lav', onClick: () => ui.open('worlds') });
+      newBtn = button2(ui, { icon: 'plus', label: 'New World', variant: 'mint', onClick: () => ui.open('newworld') });
+      worldsBtn = button2(ui, { icon: 'world', label: 'My Worlds', variant: 'lav', onClick: () => ui.open('worlds') });
       // playing with friends (src/net/ui.js): "Keep playing" / "Join Lily" chips and the button
       netChips = ui.el('div', 'sw-title-chips');
       netChips.hidden = true;
@@ -326,7 +332,10 @@ export function install(game) {
       buttons.append(netChips, playBtn, lastChip, newBtn, worldsBtn, friendsBtn);
       // .sw-title-small (no styles) is the core title's hook for this row; probes still use it
       tilesRow = ui.el('div', 'sw-title-tiles sw-title-small');
-      bottom.append(buttons, tilesRow);
+      // family accounts: "Not Lily?" with 2+ players on a device not locked to one
+      switchChip = button2(ui, { icon: 'players', label: 'Not me?', variant: 'white', className: 'sw-title-switch', onClick: () => game.account.switchPlayer() });
+      switchChip.hidden = true;
+      bottom.append(buttons, tilesRow, switchChip);
       col.append(logo, bottom);
 
       hello = ui.el('div', 'sw-hello');
@@ -360,6 +369,16 @@ export function install(game) {
     if (game.actions.has('stickers')) tilesRow.appendChild(button2(ui, { icon: 'sticker', label: 'Stickers', variant: 'white', className: 'sw-tile sw-tile--sun', onClick: () => game.runAction('stickers') }));
     if (ui.hasPanel('settings')) tilesRow.appendChild(button2(ui, { icon: 'settings', label: 'Settings', variant: 'white', className: 'sw-tile sw-tile--sky', onClick: () => ui.open('settings') }));
     if (game.actions.has('help') && tilesRow.childElementCount < 3) tilesRow.appendChild(button2(ui, { icon: 'help', label: 'Help', variant: 'white', className: 'sw-tile sw-tile--mint', onClick: () => game.runAction('help') }));
+    // family accounts (docs/ACCOUNTS.md §7.1, §7.7): Grown-ups, "Not Lily?", a visitor's title
+    // (Play with Friends, Dress Up, Settings)
+    const acct = game.account || {};
+    const visitor = acct.mode === 'visitor';
+    if (visitor) tilesRow.querySelector('.sw-tile--sun')?.remove();
+    if (acct.grownups) tilesRow.appendChild(button2(ui, { icon: 'home', label: 'Grown-ups', variant: 'white', className: 'sw-tile sw-tile--mint sw-title-grownups', onClick: () => acct.openGrownups() }));
+    tilesRow.classList.toggle('sw-four', tilesRow.childElementCount > 3);
+    switchChip.hidden = !acct.canSwitch;
+    switchChip.lastChild.textContent = acct.canSwitch ? `Not ${acct.player.nickname}?` : '';
+    newBtn.hidden = worldsBtn.hidden = visitor;
     const net = game.net;
     const canPlayTogether = !!(net && net.available && game.actions.has('mp-start'));
     friendsBtn.hidden = !canPlayTogether;
@@ -367,7 +386,7 @@ export function install(game) {
     const chips = canPlayTogether && net.ui ? net.ui.resumeChips() : [];
     for (const c of chips) netChips.appendChild(net.ui.chipButton(c));
     netChips.hidden = chips.length === 0;
-    const worlds = await game.store.listWorlds();
+    const worlds = visitor ? [] : await game.store.listWorlds();
     const last = worlds.find((w) => w.id === game.profile.lastWorldId) || worlds[0];
     playBtn.hidden = !last;
     lastChip.hidden = !last;

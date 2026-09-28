@@ -4,6 +4,8 @@
 import { Game } from './core/game.js';
 import * as theme from './ui/theme.js';
 import * as ui from './ui/ui.js';
+// family accounts (docs/ACCOUNTS.md §7): nothing happens unless this site has them
+import * as account from './account/index.js';
 import * as blocks from './world/blocks.js';
 import * as worldgen from './world/worldgen.js';
 import * as avatar from './player/avatar.js';
@@ -44,7 +46,7 @@ function boot() {
       'Sparkle World needs a browser with WebGL2. Please try another browser.</div>';
     return;
   }
-  const modules = [theme, ui, blocks, worldgen, avatar, player, emotes, entities, furniture, prefabs,
+  const modules = [theme, ui, account, blocks, worldgen, avatar, player, emotes, entities, furniture, prefabs,
     pets, garden, cooking, daynight, weather, particles, collectibles, stickers, net,
     hud, inventory, dressup, touch, settings, photo, stickerbook, menus, keepsafe];
   for (const m of modules) m.install(game);

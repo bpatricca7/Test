@@ -421,6 +421,13 @@ export class WalkieUI {
     const ic = ui.el('div', 'sw-set-ic');
     ic.innerHTML = walkieSvg();
     const main = ui.el('div', 'sw-set-main');
+    if (g.account && g.account.active) {
+      // family accounts: her parent's switch on the Family page (read only here)
+      main.append(ui.el('div', 'sw-set-title', 'Walkie-talkie'), ui.el('div', 'sw-wk-status', `Walkie-talkie: ${wk.enabled ? 'on' : 'off'} (a grown-up can change this on the Family page)`));
+      r.append(ic, main);
+      list.appendChild(r);
+      return;
+    }
     main.appendChild(ui.el('div', 'sw-set-title', 'Walkie-talkie (grown-ups)'));
     main.appendChild(ui.el('div', 'sw-set-note', GATE_NOTE));
     const status = ui.el('div', 'sw-wk-status');

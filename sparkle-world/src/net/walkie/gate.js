@@ -7,11 +7,18 @@
 // quiet minutes or a right answer) and the lock (profile.settings.walkieLock) are saved at
 // once, so neither closing the check nor a reload skips the wait. Resolves true when a
 // grown-up answered right; false when cancelled.
+//
+// Family accounts (docs/ACCOUNTS.md §7.7): the same check guards the Grown-ups card
+// (openGate(game, { purpose: 'grownups', settings, save })): its own title and note, its wrong
+// answers and lock kept in `settings` (the account cache) and saved with `save()`, because it
+// can open before her profile is loaded. With accounts on, the walkie itself is switched on the
+// Family page, not here.
 
 import { icon2 } from '../../ui/menus/icons2.js';
 import { walkieSvg } from './art.js';
 
 export const GATE_NOTE = 'Voices go live only to friends in this game, are never recorded, and stop when the button is let go.';
+export const GROWNUPS_NOTE = 'For grown-ups: signing in, setting up this device and switching players.';
 const LOCK_MS = 60000;
 const LOCK_MAX_MS = 10 * 60000;
 const MAX_WRONG = 3;
@@ -81,14 +88,17 @@ export function newProblem(rand = Math.random) {
 /**
  * Open the grown-up check. Resolves true when answered right, false when cancelled.
  * @param {object} game
+ * @param {{ purpose?: 'walkie'|'grownups', settings?: object, save?: Function }} [opts]
  */
-export function openGate(game) {
+export function openGate(game, opts = {}) {
   const ui = game.ui;
   if (!styled) {
     ui.addStyles(CSS);
     styled = true;
   }
-  const S = game.profile.settings;
+  const grown = opts.purpose === 'grownups';
+  const S = opts.settings || game.profile.settings;
+  const save = opts.save || (() => game.saveProfile(true));
   return new Promise((resolve) => {
     const wrap = ui.el('div', 'sw-dialog-wrap sw-gate-wrap');
     const dim = ui.el('div', 'sw-backdrop');
@@ -99,8 +109,8 @@ export function openGate(game) {
     wrap.append(dim, card);
 
     const top = ui.el('div', 'sw-gate-top');
-    top.insertAdjacentHTML('afterbegin', walkieSvg());
-    top.appendChild(ui.el('h3', '', 'Grown-up check'));
+    top.insertAdjacentHTML('afterbegin', grown ? icon2('home') : walkieSvg());
+    top.appendChild(ui.el('h3', '', grown ? 'Grown-ups only' : 'Grown-up check'));
     const ask = ui.el('div', 'sw-gate-ask', 'Please ask a grown-up to answer:');
     const q = ui.el('div', 'sw-gate-q');
     const qText = ui.el('span', 'sw-gate-qtext', '');
@@ -109,7 +119,7 @@ export function openGate(game) {
     q.append(qText, eq, ans);
     const pad = ui.el('div', 'sw-gate-pad');
     const msg = ui.el('div', 'sw-gate-msg', '');
-    const note = ui.el('div', 'sw-gate-note', GATE_NOTE);
+    const note = ui.el('div', 'sw-gate-note', grown ? GROWNUPS_NOTE : GATE_NOTE);
     const btns = ui.el('div', 'sw-dialog-buttons');
     const cancel = ui.button({ label: 'Cancel', variant: 'white', icon: 'close', className: 'sw-gate-cancel', onClick: () => close(false) });
     btns.appendChild(cancel);
@@ -164,7 +174,7 @@ export function openGate(game) {
       const left = Math.ceil(((S.walkieLock || 0) - Date.now()) / 1000);
       if (left <= 0) {
         S.walkieLock = 0;
-        game.saveProfile(true);
+        save();
         setLocked(false);
         msg.textContent = 'Ready for a new one!';
         msg.classList.add('sw-good');
@@ -181,7 +191,7 @@ export function openGate(game) {
       if (!typed) return;
       if (Number(typed) === problem[0] * problem[1]) {
         delete S.walkieWrong;
-        game.saveProfile(true);
+        save();
         msg.textContent = 'Thank you!';
         msg.classList.add('sw-good');
         game.audio.play('magic');
@@ -191,7 +201,7 @@ export function openGate(game) {
       }
       // saved at once: a reload (or closing the check) never skips the wait
       const locked = noteWrong(S);
-      game.saveProfile(true);
+      save();
       game.audio.play('pop', { pitch: 0.6 });
       card.classList.remove('sw-shake');
       void card.offsetWidth;

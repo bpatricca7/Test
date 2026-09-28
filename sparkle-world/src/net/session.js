@@ -32,6 +32,8 @@ import { NetGuest } from './guest.js';
 const ERROR_TO_MESSAGE = {
   unavailable: 'unavailable', no_rooms: 'no_rooms', cannot_host: 'cannot_host', busy: 'busy', full: 'full',
   transient: 'transient', lost: 'transient', fatal: 'fatal', invalid: 'transient', too_big: 'transient',
+  // family accounts (docs/ACCOUNTS.md §7.7): each has its own card, while opening and mid-session
+  signed_out: 'signed_out', not_entitled: 'not_entitled', friends_off: 'friends_off', friends_locked: 'friends_locked', player_gone: 'player_gone',
 };
 
 export class NetSession {
@@ -454,7 +456,8 @@ export class NetSession {
     this._offs.push(
       t.onStatus((s) => {
         if (s.fatal) {
-          this.leave({ message: 'fatal', quiet: this.role === 'host' });
+          // (an account refusal mid-session says its own words: ERROR_TO_MESSAGE maps it to itself)
+          this.leave({ message: ERROR_TO_MESSAGE[s.fatal] === s.fatal ? s.fatal : 'fatal', quiet: this.role === 'host' });
           return;
         }
         this.emit('status', { connected: s.connected });

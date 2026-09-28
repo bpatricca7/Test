@@ -1,6 +1,10 @@
 // Build Sparkle World into self-contained HTML:
-//   dist/sparkle-world.html  complete document (file://, static hosts)
+//   dist/sparkle-world.html  complete document (file://, static hosts, the site's /play), with
+//                            the Fredoka font inside it (site/fonts/fredoka-latin.woff2 as a
+//                            data: URL), so the game loads nothing from another site and no
+//                            child's address reaches Google (docs/ACCOUNTS.md §7.10)
 //   dist/artifact.html       the same page as a fragment for claude.ai Artifact publishing
+//                            (keeps the Google Fonts link: claude.ai's own page)
 //   dist/site/               the home page (site/, tools/site-build.mjs; served at "/", the game at "/play")
 // Usage: node tools/build.mjs          one-off minified build
 //        node tools/build.mjs --serve  dev server with rebuild + live reload on :8000
@@ -17,6 +21,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const TITLE = 'Sparkle World';
 // media=print + onload keeps a slow/blocked font request from delaying the game script
 const FONT_LINK = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" media="print" onload="this.media=\'all\'">';
+/** The font inside the page: the site's own Fredoka (latin, weights 400-700). */
+async function fontFace() {
+  const woff2 = await readFile(path.join(root, 'site', 'fonts', 'fredoka-latin.woff2'));
+  return `@font-face{font-family:'Fredoka';font-style:normal;font-weight:400 700;font-display:swap;src:url(data:font/woff2;base64,${woff2.toString('base64')}) format('woff2')}`;
+}
 // shown before the JS runs (and keeps the page from flashing white)
 const BOOT_CSS = 'html,body{margin:0;height:100%;background:#BDE6FF;overflow:hidden}#app{position:fixed;inset:0;background:#BDE6FF}';
 
@@ -79,7 +88,7 @@ async function bundle(build) {
   return { js: escapeInline(js, 'script'), css: escapeInline(css, 'style') };
 }
 
-function fullDocument({ js, css }) {
+function fullDocument({ js, css, font }) {
   return [
     '<!doctype html>',
     '<html lang="en">',
@@ -87,7 +96,7 @@ function fullDocument({ js, css }) {
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">',
     `<title>${TITLE}</title>`,
-    FONT_LINK,
+    `<style>${font}</style>`,
     `<style>${BOOT_CSS}${css}</style>`,
     '</head>',
     '<body>',
@@ -122,7 +131,7 @@ async function buildOnce() {
   const parts = await bundle(build);
   const dist = path.join(root, 'dist');
   await mkdir(dist, { recursive: true });
-  const full = fullDocument(parts);
+  const full = fullDocument({ ...parts, font: await fontFace() });
   const frag = artifactFragment(parts);
   await writeFile(path.join(dist, 'sparkle-world.html'), full);
   await writeFile(path.join(dist, 'artifact.html'), frag);

@@ -380,6 +380,11 @@ export function installNetUI(game, net, remote) {
     fatal: { icon: 'players', c: 'var(--sw-lav)' },
     summary: { icon: 'heart', c: 'var(--sw-pink)' },
     need_world: { icon: 'world', c: 'var(--sw-mint)' },
+    // family accounts (docs/ACCOUNTS.md §7.7)
+    signed_out: { icon: 'home', c: 'var(--sw-lav)' },
+    not_entitled: { icon: 'moon', c: 'var(--sw-lav)' },
+    friends_off: { icon: 'players', c: 'var(--sw-sky)' },
+    friends_locked: { icon: 'players', c: 'var(--sw-lav)' },
   };
 
   let msgWrap = null;
@@ -433,7 +438,7 @@ export function installNetUI(game, net, remote) {
     const buttons = [];
     let small = '';
     if (code === 'cannot_host') {
-      small = text('cannot_host_small');
+      small = text(game.account && game.account.active ? 'cannot_host_acct' : 'cannot_host_small');
       buttons.push({ label: 'Join a Code', icon: 'players', variant: 'sky', run: () => openJoin() }, { label: 'OK', icon: 'check', variant: 'white' });
     } else if (code === 'version') {
       small = 'Everyone playing together needs the newest Sparkle World.';
@@ -441,6 +446,9 @@ export function installNetUI(game, net, remote) {
     } else if ((code === 'transient' || code === 'snapshot_failed') && lastAction) {
       const again = lastAction;
       buttons.push({ label: 'Try again', icon: 'again', variant: 'mint', run: () => (again.kind === 'join' ? startJoin(again.code) : startHost(again)) }, { label: 'Not now', icon: 'close', variant: 'white' });
+    } else if (/^(signed_out|not_entitled|friends_)/.test(code)) {
+      // a grown-up can see why on the Family page (behind the grown-up check)
+      if (game.account && game.account.grownups) buttons.push({ label: 'OK', icon: 'check', variant: 'pink' }, { label: 'Grown-ups', icon: 'home', variant: 'white', run: () => game.account.openGrownups() });
     } else if (code === 'fatal') {
       small = game.mode === 'play' && game.world && !game._isShared?.() ? 'Your world is here and everything is saved.' : 'Your own worlds are right here.';
     } else if (code === 'no_host' && lastAction && lastAction.kind === 'join') {
@@ -705,6 +713,12 @@ export function installNetUI(game, net, remote) {
     },
   });
   game.registerAction('mp-start', (g) => {
+    // family accounts: when /api/me already said she cannot play together, say why at once
+    const why = g.account && g.account.why;
+    if (why && MSG_LOOK[why]) {
+      showMessage(why);
+      return true;
+    }
     ensureName().then((ok) => { if (ok) g.ui.open('mp-start'); });
     return true;
   });

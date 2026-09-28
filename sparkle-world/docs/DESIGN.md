@@ -682,6 +682,25 @@ logged and reported as `{ ok:false }`).
 - Export: "Save to a file" in My Worlds (and the `saveToFile` action for the world she is
   in) uses `claude.use('downloads')` when present, else an `<a download>` blob link; Import
   uses a file input (`src/ui/menus/files.js`).
+- **Family accounts** (docs/ACCOUNTS.md §7.2–7.5, only when the site has `SW_ACCOUNTS` on and a
+  player is picked; claude.ai, `file://` and a site without accounts are exactly as above):
+  `store.configure({ ns: 'p-<uuid>', cloud, mergeProfile, readOnly })` before `init()` puts one
+  player's saves in IndexedDB `sparkle-world@p-<uuid>` / localStorage `sparkle-world@p-<uuid>:*`
+  with the server's `HttpCloudBackend` (`src/account/cloud.js`, `revisions: true`,
+  `minInterval` 30 s). Only such a backend turns on: revisions (`If-Match`; map in
+  `<prefix>revs`), retried pushes (30 s, 1, 2, then every 5 min; one request at a time),
+  a reconcile after `init()` (pushes what the cloud lacks, learns equal revisions, drops what
+  another device deleted), tombstones (a cloud delete at least as new hides and removes the
+  copy here), queued deletes (`<prefix>dels`, never listed while queued), a 409 on a world →
+  `"<name> (copy)"` `<id>~xxxx` pushed as new plus the server's version brought here
+  (`store.onFork(fn)`; the game moves into the copy and toasts), a 409 on the profile →
+  `mergeProfile` (`store.onProfile(fn)`), downloaded worlds kept here with their revision, and
+  unchanged worlds (only `player`/`time`/`hotbar`/`updatedAt` changed) not pushed again for
+  5 min. `SaveStore.wipe(ns)` deletes one namespace (`''`: the saves from before accounts only);
+  `SaveStore.legacy()` is a store on the names from before accounts (the first sign-in's
+  import, `src/account/legacy.js`). The relay's `sparkle-world:net-device` / `net-id` keys are
+  never touched. `Game.startHooks` (awaited after the texture build, before `store.init()`)
+  lets the account module pick the player first.
 - Publishing as a claude.ai Artifact: declare the capabilities `db` and `user` (cloud saves)
   and `downloads` (for "Save to a file").
 
