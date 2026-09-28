@@ -711,7 +711,10 @@ async function s5() {
   const C = (R.fam.C = { email: `c.${randomBytes(3).toString('hex')}@example.com`, ctx: cDev.ctx, page: cDev.page });
   await GAME.open(cDev);
   await cDev.page.getByText(/Ask a grown-up/).first().waitFor({ timeout: 60000 });
-  await press(cDev, cDev.page.getByRole('button', { name: /I'm a grown-up/ }).first());
+  // (the card's first button pulses while it has the focus, so it is never "stable" for a tap)
+  const grown = cDev.page.getByRole('button', { name: /I'm a grown-up/ }).first();
+  await grown.waitFor({ state: 'visible', timeout: 15000 });
+  await grown.click({ force: true });
   await GAME.grownUpCheck(cDev);
   await cDev.page.waitForURL((u) => u.pathname === '/account' && u.searchParams.get('next') === '/play', { timeout: 60000 });
   await cDev.page.waitForSelector('#email');
