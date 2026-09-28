@@ -25,7 +25,7 @@ Once this is built, nobody has to do anything by hand for a new family:
    code from the email (or taps the link in it).
 2. She reads a short notice about children's information and ticks "I agree".
 3. She pays on Stripe's own checkout page: **$5.99 a month** (plus sales tax where it applies),
-   first 7 days free, card up front. Apple Pay works on the iPad.
+   charged at checkout (no free trial, §0.2), card up front. Apple Pay works on the iPad.
 4. She adds the kids: a nickname each, up to 6.
 5. On a kid's iPad: open the game → **Grown-ups** → **I have a code** → type the 8-character code the
    Family page shows. (Or sign in on that iPad and tap **Kids play on this device**.)
@@ -834,7 +834,7 @@ handlers racing cannot put an older read on top of a newer one. The family is fo
 | `customer.subscription.created` / `updated` / `deleted` | upsert; `first_failed_at` set the first time status is `past_due`, cleared when `active`; if a family ends up with two non-terminal subscriptions, cancel the newer one and flag it |
 | `invoice.paid` | subscription id = `invoice.parent?.subscription_details?.subscription ?? invoice.subscription`; upsert; `latest_paid_at`; **if `amount_paid > 0` and `verified_at` is null: `verified_at = now`, `verified_method = 'card'`, audit `consent.verified {method:'card', invoice}`, email `friends_ready`.** The trial's $0 invoice also sends `invoice.paid` and must not count |
 | `invoice.payment_failed` | upsert (status becomes `past_due`); Stripe's own failed-payment email tells the parent |
-| `charge.dispute.created` | `flags.dispute = true` (daily summary); entitlement unchanged |
+| `charge.dispute.created` | `flags.dispute = true` (daily summary); entitlement unchanged. The family is found through the disputed charge's customer (`charges.retrieve`, hence **Charges read** on the key, §14 step 4); without it the dispute is still counted and Stripe emails the dad anyway |
 | `customer.deleted` | clear `stripe_customer_id` (a customer deleted by hand in the Dashboard) |
 | anything else | `200`, ignored |
 
@@ -1764,7 +1764,8 @@ becomes a numbered section of `docs/DEPLOY-RAILWAY.md`, written like the existin
      `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`,
      `invoice.payment_failed`, `charge.dispute.created`, `customer.deleted`. Copy the signing secret.
    - Developers → API keys → Create restricted key: Customers write, Checkout Sessions write,
-     Subscriptions write, Customer portal write, Invoices read, Prices read, Events read. Nothing else.
+     Subscriptions write, Customer portal write, Invoices read, Prices read, Charges read (to find the
+     family of a chargeback), Events read. Nothing else.
 5. **Railway Variables** (game service):
    `SW_ACCOUNTS`, `NODE_ENV=production`, `PUBLIC_ORIGIN=https://<domain>`, `DATABASE_URL`,
    `SW_SECRET` (make it with `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`),

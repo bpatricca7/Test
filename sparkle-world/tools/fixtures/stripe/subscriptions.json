@@ -1,0 +1,3401 @@
+{
+  "checkout.session.completed": {
+    "id": "sub_Fixture0001",
+    "object": "subscription",
+    "application": null,
+    "application_fee_percent": null,
+    "automatic_tax": {
+      "disabled_reason": null,
+      "enabled": true,
+      "liability": {
+        "type": "self"
+      }
+    },
+    "billing_cycle_anchor": 1793534460,
+    "billing_cycle_anchor_config": null,
+    "billing_mode": {
+      "flexible": null,
+      "type": "classic"
+    },
+    "billing_thresholds": null,
+    "cancel_at": null,
+    "cancel_at_period_end": false,
+    "canceled_at": null,
+    "cancellation_details": {
+      "comment": null,
+      "feedback": null,
+      "reason": null
+    },
+    "collection_method": "charge_automatically",
+    "created": 1790856060,
+    "currency": "usd",
+    "customer": "cus_Fixture0001",
+    "days_until_due": null,
+    "default_payment_method": "pm_Fixture0001",
+    "default_source": null,
+    "default_tax_rates": [],
+    "description": null,
+    "discounts": [],
+    "ended_at": null,
+    "invoice_settings": {
+      "account_tax_ids": null,
+      "issuer": {
+        "type": "self"
+      }
+    },
+    "items": {
+      "object": "list",
+      "data": [
+        {
+          "id": "si_Fixture0001",
+          "object": "subscription_item",
+          "billing_thresholds": null,
+          "created": 1790856060,
+          "current_period_end": 1793534460,
+          "current_period_start": 1790856060,
+          "discounts": [],
+          "metadata": {},
+          "plan": {
+            "id": "price_Fixture0001",
+            "object": "plan",
+            "active": true,
+            "amount": 599,
+            "amount_decimal": "599",
+            "billing_scheme": "per_unit",
+            "created": 1790856000,
+            "currency": "usd",
+            "interval": "month",
+            "interval_count": 1,
+            "livemode": false,
+            "metadata": {},
+            "meter": null,
+            "nickname": "Family Plan monthly",
+            "product": "prod_Fixture0001",
+            "tiers_mode": null,
+            "transform_usage": null,
+            "trial_period_days": null,
+            "usage_type": "licensed"
+          },
+          "price": {
+            "id": "price_Fixture0001",
+            "object": "price",
+            "active": true,
+            "billing_scheme": "per_unit",
+            "created": 1790856000,
+            "currency": "usd",
+            "custom_unit_amount": null,
+            "livemode": false,
+            "lookup_key": "sparkle_family_monthly",
+            "metadata": {},
+            "nickname": "Family Plan monthly",
+            "product": "prod_Fixture0001",
+            "recurring": {
+              "interval": "month",
+              "interval_count": 1,
+              "meter": null,
+              "usage_type": "licensed"
+            },
+            "tax_behavior": "exclusive",
+            "tiers_mode": null,
+            "transform_quantity": null,
+            "type": "recurring",
+            "unit_amount": 599,
+            "unit_amount_decimal": "599"
+          },
+          "quantity": 1,
+          "subscription": "sub_Fixture0001",
+          "tax_rates": []
+        }
+      ],
+      "has_more": false,
+      "total_count": 1,
+      "url": "/v1/subscription_items?subscription=sub_Fixture0001"
+    },
+    "latest_invoice": {
+      "id": "in_Fixture0001",
+      "object": "invoice",
+      "account_country": "US",
+      "account_name": "Sparkle World",
+      "account_tax_ids": null,
+      "amount_due": 635,
+      "amount_overpaid": 0,
+      "amount_paid": 635,
+      "amount_remaining": 0,
+      "amount_shipping": 0,
+      "application": null,
+      "attempt_count": 1,
+      "attempted": true,
+      "auto_advance": true,
+      "automatic_tax": {
+        "disabled_reason": null,
+        "enabled": true,
+        "liability": {
+          "type": "self"
+        },
+        "provider": "stripe",
+        "status": "complete"
+      },
+      "automatically_finalizes_at": null,
+      "billing_reason": "subscription_create",
+      "collection_method": "charge_automatically",
+      "confirmation_secret": null,
+      "created": 1790856060,
+      "currency": "usd",
+      "custom_fields": null,
+      "customer": "cus_Fixture0001",
+      "customer_address": {
+        "city": "San Francisco",
+        "country": "US",
+        "line1": "510 Townsend St",
+        "line2": null,
+        "postal_code": "94103",
+        "state": "CA"
+      },
+      "customer_email": "parent1@example.com",
+      "customer_name": "Test Parent",
+      "customer_phone": null,
+      "customer_shipping": null,
+      "customer_tax_exempt": "none",
+      "customer_tax_ids": [],
+      "default_payment_method": null,
+      "default_source": null,
+      "default_tax_rates": [],
+      "description": null,
+      "discounts": [],
+      "due_date": null,
+      "effective_at": 1790856060,
+      "ending_balance": 0,
+      "footer": null,
+      "from_invoice": null,
+      "hosted_invoice_url": "https://stripe-fake.example/i/in_Fixture0001",
+      "invoice_pdf": "https://stripe-fake.example/i/in_Fixture0001/pdf",
+      "issuer": {
+        "type": "self"
+      },
+      "last_finalization_error": null,
+      "latest_revision": null,
+      "lines": {
+        "object": "list",
+        "data": [
+          {
+            "id": "il_Fixture0001",
+            "object": "line_item",
+            "amount": 599,
+            "currency": "usd",
+            "description": "1 × Sparkle World Family Plan (at $5.99 / month)",
+            "discount_amounts": [],
+            "discountable": true,
+            "discounts": [],
+            "invoice": "in_Fixture0001",
+            "livemode": false,
+            "metadata": {},
+            "parent": {
+              "invoice_item_details": null,
+              "subscription_item_details": {
+                "invoice_item": null,
+                "proration": false,
+                "proration_details": {
+                  "credited_items": null
+                },
+                "subscription": "sub_Fixture0001",
+                "subscription_item": "si_Fixture0001"
+              },
+              "type": "subscription_item_details"
+            },
+            "period": {
+              "end": 1793534460,
+              "start": 1790856060
+            },
+            "pretax_credit_amounts": [],
+            "pricing": {
+              "price_details": {
+                "price": "price_Fixture0001",
+                "product": "prod_Fixture0001"
+              },
+              "type": "price_Fixture0002",
+              "unit_amount_decimal": "599"
+            },
+            "quantity": 1,
+            "taxes": [
+              {
+                "amount": 36,
+                "tax_behavior": "exclusive",
+                "tax_rate_details": {
+                  "tax_rate": "txr_fake_us"
+                },
+                "taxability_reason": "standard_rated",
+                "taxable_amount": 599,
+                "type": "tax_rate_details"
+              }
+            ]
+          }
+        ],
+        "has_more": false,
+        "total_count": 1,
+        "url": "/v1/invoices/in_Fixture0001/lines"
+      },
+      "livemode": false,
+      "metadata": {},
+      "next_payment_attempt": null,
+      "number": "FIXTURE0-0001",
+      "on_behalf_of": null,
+      "parent": {
+        "quote_details": null,
+        "subscription_details": {
+          "metadata": {
+            "family_id": "5a1e0000-0000-4000-8000-000000000001"
+          },
+          "subscription": "sub_Fixture0001"
+        },
+        "type": "subscription_details"
+      },
+      "payment_settings": {
+        "default_mandate": null,
+        "payment_method_options": null,
+        "payment_method_types": null
+      },
+      "period_end": 1793534460,
+      "period_start": 1790856060,
+      "post_payment_credit_notes_amount": 0,
+      "pre_payment_credit_notes_amount": 0,
+      "receipt_number": null,
+      "rendering": null,
+      "shipping_cost": null,
+      "shipping_details": null,
+      "starting_balance": 0,
+      "statement_descriptor": null,
+      "status": "paid",
+      "status_transitions": {
+        "finalized_at": 1790856060,
+        "marked_uncollectible_at": null,
+        "paid_at": 1790856060,
+        "voided_at": null
+      },
+      "subtotal": 599,
+      "subtotal_excluding_tax": 599,
+      "test_clock": null,
+      "total": 635,
+      "total_discount_amounts": [],
+      "total_excluding_tax": 599,
+      "total_pretax_credit_amounts": [],
+      "total_taxes": [
+        {
+          "amount": 36,
+          "tax_behavior": "exclusive",
+          "tax_rate_details": {
+            "tax_rate": "txr_fake_us"
+          },
+          "taxability_reason": "standard_rated",
+          "taxable_amount": 599,
+          "type": "tax_rate_details"
+        }
+      ],
+      "webhooks_delivered_at": null
+    },
+    "livemode": false,
+    "metadata": {
+      "family_id": "5a1e0000-0000-4000-8000-000000000001"
+    },
+    "next_pending_invoice_item_invoice": null,
+    "on_behalf_of": null,
+    "pause_collection": null,
+    "payment_settings": {
+      "payment_method_options": null,
+      "payment_method_types": null,
+      "save_default_payment_method": "off"
+    },
+    "pending_invoice_item_interval": null,
+    "pending_setup_intent": null,
+    "pending_update": null,
+    "schedule": null,
+    "start_date": 1790856060,
+    "status": "active",
+    "test_clock": null,
+    "transfer_data": null,
+    "trial_end": null,
+    "trial_settings": {
+      "end_behavior": {
+        "missing_payment_method": "create_invoice"
+      }
+    },
+    "trial_start": null
+  },
+  "customer.subscription.created": {
+    "id": "sub_Fixture0001",
+    "object": "subscription",
+    "application": null,
+    "application_fee_percent": null,
+    "automatic_tax": {
+      "disabled_reason": null,
+      "enabled": true,
+      "liability": {
+        "type": "self"
+      }
+    },
+    "billing_cycle_anchor": 1793534460,
+    "billing_cycle_anchor_config": null,
+    "billing_mode": {
+      "flexible": null,
+      "type": "classic"
+    },
+    "billing_thresholds": null,
+    "cancel_at": null,
+    "cancel_at_period_end": false,
+    "canceled_at": null,
+    "cancellation_details": {
+      "comment": null,
+      "feedback": null,
+      "reason": null
+    },
+    "collection_method": "charge_automatically",
+    "created": 1790856060,
+    "currency": "usd",
+    "customer": "cus_Fixture0001",
+    "days_until_due": null,
+    "default_payment_method": "pm_Fixture0001",
+    "default_source": null,
+    "default_tax_rates": [],
+    "description": null,
+    "discounts": [],
+    "ended_at": null,
+    "invoice_settings": {
+      "account_tax_ids": null,
+      "issuer": {
+        "type": "self"
+      }
+    },
+    "items": {
+      "object": "list",
+      "data": [
+        {
+          "id": "si_Fixture0001",
+          "object": "subscription_item",
+          "billing_thresholds": null,
+          "created": 1790856060,
+          "current_period_end": 1793534460,
+          "current_period_start": 1790856060,
+          "discounts": [],
+          "metadata": {},
+          "plan": {
+            "id": "price_Fixture0001",
+            "object": "plan",
+            "active": true,
+            "amount": 599,
+            "amount_decimal": "599",
+            "billing_scheme": "per_unit",
+            "created": 1790856000,
+            "currency": "usd",
+            "interval": "month",
+            "interval_count": 1,
+            "livemode": false,
+            "metadata": {},
+            "meter": null,
+            "nickname": "Family Plan monthly",
+            "product": "prod_Fixture0001",
+            "tiers_mode": null,
+            "transform_usage": null,
+            "trial_period_days": null,
+            "usage_type": "licensed"
+          },
+          "price": {
+            "id": "price_Fixture0001",
+            "object": "price",
+            "active": true,
+            "billing_scheme": "per_unit",
+            "created": 1790856000,
+            "currency": "usd",
+            "custom_unit_amount": null,
+            "livemode": false,
+            "lookup_key": "sparkle_family_monthly",
+            "metadata": {},
+            "nickname": "Family Plan monthly",
+            "product": "prod_Fixture0001",
+            "recurring": {
+              "interval": "month",
+              "interval_count": 1,
+              "meter": null,
+              "usage_type": "licensed"
+            },
+            "tax_behavior": "exclusive",
+            "tiers_mode": null,
+            "transform_quantity": null,
+            "type": "recurring",
+            "unit_amount": 599,
+            "unit_amount_decimal": "599"
+          },
+          "quantity": 1,
+          "subscription": "sub_Fixture0001",
+          "tax_rates": []
+        }
+      ],
+      "has_more": false,
+      "total_count": 1,
+      "url": "/v1/subscription_items?subscription=sub_Fixture0001"
+    },
+    "latest_invoice": {
+      "id": "in_Fixture0001",
+      "object": "invoice",
+      "account_country": "US",
+      "account_name": "Sparkle World",
+      "account_tax_ids": null,
+      "amount_due": 635,
+      "amount_overpaid": 0,
+      "amount_paid": 635,
+      "amount_remaining": 0,
+      "amount_shipping": 0,
+      "application": null,
+      "attempt_count": 1,
+      "attempted": true,
+      "auto_advance": true,
+      "automatic_tax": {
+        "disabled_reason": null,
+        "enabled": true,
+        "liability": {
+          "type": "self"
+        },
+        "provider": "stripe",
+        "status": "complete"
+      },
+      "automatically_finalizes_at": null,
+      "billing_reason": "subscription_create",
+      "collection_method": "charge_automatically",
+      "confirmation_secret": null,
+      "created": 1790856060,
+      "currency": "usd",
+      "custom_fields": null,
+      "customer": "cus_Fixture0001",
+      "customer_address": {
+        "city": "San Francisco",
+        "country": "US",
+        "line1": "510 Townsend St",
+        "line2": null,
+        "postal_code": "94103",
+        "state": "CA"
+      },
+      "customer_email": "parent1@example.com",
+      "customer_name": "Test Parent",
+      "customer_phone": null,
+      "customer_shipping": null,
+      "customer_tax_exempt": "none",
+      "customer_tax_ids": [],
+      "default_payment_method": null,
+      "default_source": null,
+      "default_tax_rates": [],
+      "description": null,
+      "discounts": [],
+      "due_date": null,
+      "effective_at": 1790856060,
+      "ending_balance": 0,
+      "footer": null,
+      "from_invoice": null,
+      "hosted_invoice_url": "https://stripe-fake.example/i/in_Fixture0001",
+      "invoice_pdf": "https://stripe-fake.example/i/in_Fixture0001/pdf",
+      "issuer": {
+        "type": "self"
+      },
+      "last_finalization_error": null,
+      "latest_revision": null,
+      "lines": {
+        "object": "list",
+        "data": [
+          {
+            "id": "il_Fixture0001",
+            "object": "line_item",
+            "amount": 599,
+            "currency": "usd",
+            "description": "1 × Sparkle World Family Plan (at $5.99 / month)",
+            "discount_amounts": [],
+            "discountable": true,
+            "discounts": [],
+            "invoice": "in_Fixture0001",
+            "livemode": false,
+            "metadata": {},
+            "parent": {
+              "invoice_item_details": null,
+              "subscription_item_details": {
+                "invoice_item": null,
+                "proration": false,
+                "proration_details": {
+                  "credited_items": null
+                },
+                "subscription": "sub_Fixture0001",
+                "subscription_item": "si_Fixture0001"
+              },
+              "type": "subscription_item_details"
+            },
+            "period": {
+              "end": 1793534460,
+              "start": 1790856060
+            },
+            "pretax_credit_amounts": [],
+            "pricing": {
+              "price_details": {
+                "price": "price_Fixture0001",
+                "product": "prod_Fixture0001"
+              },
+              "type": "price_Fixture0002",
+              "unit_amount_decimal": "599"
+            },
+            "quantity": 1,
+            "taxes": [
+              {
+                "amount": 36,
+                "tax_behavior": "exclusive",
+                "tax_rate_details": {
+                  "tax_rate": "txr_fake_us"
+                },
+                "taxability_reason": "standard_rated",
+                "taxable_amount": 599,
+                "type": "tax_rate_details"
+              }
+            ]
+          }
+        ],
+        "has_more": false,
+        "total_count": 1,
+        "url": "/v1/invoices/in_Fixture0001/lines"
+      },
+      "livemode": false,
+      "metadata": {},
+      "next_payment_attempt": null,
+      "number": "FIXTURE0-0001",
+      "on_behalf_of": null,
+      "parent": {
+        "quote_details": null,
+        "subscription_details": {
+          "metadata": {
+            "family_id": "5a1e0000-0000-4000-8000-000000000001"
+          },
+          "subscription": "sub_Fixture0001"
+        },
+        "type": "subscription_details"
+      },
+      "payment_settings": {
+        "default_mandate": null,
+        "payment_method_options": null,
+        "payment_method_types": null
+      },
+      "period_end": 1793534460,
+      "period_start": 1790856060,
+      "post_payment_credit_notes_amount": 0,
+      "pre_payment_credit_notes_amount": 0,
+      "receipt_number": null,
+      "rendering": null,
+      "shipping_cost": null,
+      "shipping_details": null,
+      "starting_balance": 0,
+      "statement_descriptor": null,
+      "status": "paid",
+      "status_transitions": {
+        "finalized_at": 1790856060,
+        "marked_uncollectible_at": null,
+        "paid_at": 1790856060,
+        "voided_at": null
+      },
+      "subtotal": 599,
+      "subtotal_excluding_tax": 599,
+      "test_clock": null,
+      "total": 635,
+      "total_discount_amounts": [],
+      "total_excluding_tax": 599,
+      "total_pretax_credit_amounts": [],
+      "total_taxes": [
+        {
+          "amount": 36,
+          "tax_behavior": "exclusive",
+          "tax_rate_details": {
+            "tax_rate": "txr_fake_us"
+          },
+          "taxability_reason": "standard_rated",
+          "taxable_amount": 599,
+          "type": "tax_rate_details"
+        }
+      ],
+      "webhooks_delivered_at": null
+    },
+    "livemode": false,
+    "metadata": {
+      "family_id": "5a1e0000-0000-4000-8000-000000000001"
+    },
+    "next_pending_invoice_item_invoice": null,
+    "on_behalf_of": null,
+    "pause_collection": null,
+    "payment_settings": {
+      "payment_method_options": null,
+      "payment_method_types": null,
+      "save_default_payment_method": "off"
+    },
+    "pending_invoice_item_interval": null,
+    "pending_setup_intent": null,
+    "pending_update": null,
+    "schedule": null,
+    "start_date": 1790856060,
+    "status": "active",
+    "test_clock": null,
+    "transfer_data": null,
+    "trial_end": null,
+    "trial_settings": {
+      "end_behavior": {
+        "missing_payment_method": "create_invoice"
+      }
+    },
+    "trial_start": null
+  },
+  "invoice.paid": {
+    "id": "sub_Fixture0001",
+    "object": "subscription",
+    "application": null,
+    "application_fee_percent": null,
+    "automatic_tax": {
+      "disabled_reason": null,
+      "enabled": true,
+      "liability": {
+        "type": "self"
+      }
+    },
+    "billing_cycle_anchor": 1793534460,
+    "billing_cycle_anchor_config": null,
+    "billing_mode": {
+      "flexible": null,
+      "type": "classic"
+    },
+    "billing_thresholds": null,
+    "cancel_at": null,
+    "cancel_at_period_end": false,
+    "canceled_at": null,
+    "cancellation_details": {
+      "comment": null,
+      "feedback": null,
+      "reason": null
+    },
+    "collection_method": "charge_automatically",
+    "created": 1790856060,
+    "currency": "usd",
+    "customer": "cus_Fixture0001",
+    "days_until_due": null,
+    "default_payment_method": "pm_Fixture0001",
+    "default_source": null,
+    "default_tax_rates": [],
+    "description": null,
+    "discounts": [],
+    "ended_at": null,
+    "invoice_settings": {
+      "account_tax_ids": null,
+      "issuer": {
+        "type": "self"
+      }
+    },
+    "items": {
+      "object": "list",
+      "data": [
+        {
+          "id": "si_Fixture0001",
+          "object": "subscription_item",
+          "billing_thresholds": null,
+          "created": 1790856060,
+          "current_period_end": 1793534460,
+          "current_period_start": 1790856060,
+          "discounts": [],
+          "metadata": {},
+          "plan": {
+            "id": "price_Fixture0001",
+            "object": "plan",
+            "active": true,
+            "amount": 599,
+            "amount_decimal": "599",
+            "billing_scheme": "per_unit",
+            "created": 1790856000,
+            "currency": "usd",
+            "interval": "month",
+            "interval_count": 1,
+            "livemode": false,
+            "metadata": {},
+            "meter": null,
+            "nickname": "Family Plan monthly",
+            "product": "prod_Fixture0001",
+            "tiers_mode": null,
+            "transform_usage": null,
+            "trial_period_days": null,
+            "usage_type": "licensed"
+          },
+          "price": {
+            "id": "price_Fixture0001",
+            "object": "price",
+            "active": true,
+            "billing_scheme": "per_unit",
+            "created": 1790856000,
+            "currency": "usd",
+            "custom_unit_amount": null,
+            "livemode": false,
+            "lookup_key": "sparkle_family_monthly",
+            "metadata": {},
+            "nickname": "Family Plan monthly",
+            "product": "prod_Fixture0001",
+            "recurring": {
+              "interval": "month",
+              "interval_count": 1,
+              "meter": null,
+              "usage_type": "licensed"
+            },
+            "tax_behavior": "exclusive",
+            "tiers_mode": null,
+            "transform_quantity": null,
+            "type": "recurring",
+            "unit_amount": 599,
+            "unit_amount_decimal": "599"
+          },
+          "quantity": 1,
+          "subscription": "sub_Fixture0001",
+          "tax_rates": []
+        }
+      ],
+      "has_more": false,
+      "total_count": 1,
+      "url": "/v1/subscription_items?subscription=sub_Fixture0001"
+    },
+    "latest_invoice": {
+      "id": "in_Fixture0001",
+      "object": "invoice",
+      "account_country": "US",
+      "account_name": "Sparkle World",
+      "account_tax_ids": null,
+      "amount_due": 635,
+      "amount_overpaid": 0,
+      "amount_paid": 635,
+      "amount_remaining": 0,
+      "amount_shipping": 0,
+      "application": null,
+      "attempt_count": 1,
+      "attempted": true,
+      "auto_advance": true,
+      "automatic_tax": {
+        "disabled_reason": null,
+        "enabled": true,
+        "liability": {
+          "type": "self"
+        },
+        "provider": "stripe",
+        "status": "complete"
+      },
+      "automatically_finalizes_at": null,
+      "billing_reason": "subscription_create",
+      "collection_method": "charge_automatically",
+      "confirmation_secret": null,
+      "created": 1790856060,
+      "currency": "usd",
+      "custom_fields": null,
+      "customer": "cus_Fixture0001",
+      "customer_address": {
+        "city": "San Francisco",
+        "country": "US",
+        "line1": "510 Townsend St",
+        "line2": null,
+        "postal_code": "94103",
+        "state": "CA"
+      },
+      "customer_email": "parent1@example.com",
+      "customer_name": "Test Parent",
+      "customer_phone": null,
+      "customer_shipping": null,
+      "customer_tax_exempt": "none",
+      "customer_tax_ids": [],
+      "default_payment_method": null,
+      "default_source": null,
+      "default_tax_rates": [],
+      "description": null,
+      "discounts": [],
+      "due_date": null,
+      "effective_at": 1790856060,
+      "ending_balance": 0,
+      "footer": null,
+      "from_invoice": null,
+      "hosted_invoice_url": "https://stripe-fake.example/i/in_Fixture0001",
+      "invoice_pdf": "https://stripe-fake.example/i/in_Fixture0001/pdf",
+      "issuer": {
+        "type": "self"
+      },
+      "last_finalization_error": null,
+      "latest_revision": null,
+      "lines": {
+        "object": "list",
+        "data": [
+          {
+            "id": "il_Fixture0001",
+            "object": "line_item",
+            "amount": 599,
+            "currency": "usd",
+            "description": "1 × Sparkle World Family Plan (at $5.99 / month)",
+            "discount_amounts": [],
+            "discountable": true,
+            "discounts": [],
+            "invoice": "in_Fixture0001",
+            "livemode": false,
+            "metadata": {},
+            "parent": {
+              "invoice_item_details": null,
+              "subscription_item_details": {
+                "invoice_item": null,
+                "proration": false,
+                "proration_details": {
+                  "credited_items": null
+                },
+                "subscription": "sub_Fixture0001",
+                "subscription_item": "si_Fixture0001"
+              },
+              "type": "subscription_item_details"
+            },
+            "period": {
+              "end": 1793534460,
+              "start": 1790856060
+            },
+            "pretax_credit_amounts": [],
+            "pricing": {
+              "price_details": {
+                "price": "price_Fixture0001",
+                "product": "prod_Fixture0001"
+              },
+              "type": "price_Fixture0002",
+              "unit_amount_decimal": "599"
+            },
+            "quantity": 1,
+            "taxes": [
+              {
+                "amount": 36,
+                "tax_behavior": "exclusive",
+                "tax_rate_details": {
+                  "tax_rate": "txr_fake_us"
+                },
+                "taxability_reason": "standard_rated",
+                "taxable_amount": 599,
+                "type": "tax_rate_details"
+              }
+            ]
+          }
+        ],
+        "has_more": false,
+        "total_count": 1,
+        "url": "/v1/invoices/in_Fixture0001/lines"
+      },
+      "livemode": false,
+      "metadata": {},
+      "next_payment_attempt": null,
+      "number": "FIXTURE0-0001",
+      "on_behalf_of": null,
+      "parent": {
+        "quote_details": null,
+        "subscription_details": {
+          "metadata": {
+            "family_id": "5a1e0000-0000-4000-8000-000000000001"
+          },
+          "subscription": "sub_Fixture0001"
+        },
+        "type": "subscription_details"
+      },
+      "payment_settings": {
+        "default_mandate": null,
+        "payment_method_options": null,
+        "payment_method_types": null
+      },
+      "period_end": 1793534460,
+      "period_start": 1790856060,
+      "post_payment_credit_notes_amount": 0,
+      "pre_payment_credit_notes_amount": 0,
+      "receipt_number": null,
+      "rendering": null,
+      "shipping_cost": null,
+      "shipping_details": null,
+      "starting_balance": 0,
+      "statement_descriptor": null,
+      "status": "paid",
+      "status_transitions": {
+        "finalized_at": 1790856060,
+        "marked_uncollectible_at": null,
+        "paid_at": 1790856060,
+        "voided_at": null
+      },
+      "subtotal": 599,
+      "subtotal_excluding_tax": 599,
+      "test_clock": null,
+      "total": 635,
+      "total_discount_amounts": [],
+      "total_excluding_tax": 599,
+      "total_pretax_credit_amounts": [],
+      "total_taxes": [
+        {
+          "amount": 36,
+          "tax_behavior": "exclusive",
+          "tax_rate_details": {
+            "tax_rate": "txr_fake_us"
+          },
+          "taxability_reason": "standard_rated",
+          "taxable_amount": 599,
+          "type": "tax_rate_details"
+        }
+      ],
+      "webhooks_delivered_at": null
+    },
+    "livemode": false,
+    "metadata": {
+      "family_id": "5a1e0000-0000-4000-8000-000000000001"
+    },
+    "next_pending_invoice_item_invoice": null,
+    "on_behalf_of": null,
+    "pause_collection": null,
+    "payment_settings": {
+      "payment_method_options": null,
+      "payment_method_types": null,
+      "save_default_payment_method": "off"
+    },
+    "pending_invoice_item_interval": null,
+    "pending_setup_intent": null,
+    "pending_update": null,
+    "schedule": null,
+    "start_date": 1790856060,
+    "status": "active",
+    "test_clock": null,
+    "transfer_data": null,
+    "trial_end": null,
+    "trial_settings": {
+      "end_behavior": {
+        "missing_payment_method": "create_invoice"
+      }
+    },
+    "trial_start": null
+  },
+  "invoice.payment_failed": {
+    "id": "sub_Fixture0001",
+    "object": "subscription",
+    "application": null,
+    "application_fee_percent": null,
+    "automatic_tax": {
+      "disabled_reason": null,
+      "enabled": true,
+      "liability": {
+        "type": "self"
+      }
+    },
+    "billing_cycle_anchor": 1793534460,
+    "billing_cycle_anchor_config": null,
+    "billing_mode": {
+      "flexible": null,
+      "type": "classic"
+    },
+    "billing_thresholds": null,
+    "cancel_at": null,
+    "cancel_at_period_end": false,
+    "canceled_at": null,
+    "cancellation_details": {
+      "comment": null,
+      "feedback": null,
+      "reason": null
+    },
+    "collection_method": "charge_automatically",
+    "created": 1790856060,
+    "currency": "usd",
+    "customer": "cus_Fixture0001",
+    "days_until_due": null,
+    "default_payment_method": "pm_Fixture0001",
+    "default_source": null,
+    "default_tax_rates": [],
+    "description": null,
+    "discounts": [],
+    "ended_at": null,
+    "invoice_settings": {
+      "account_tax_ids": null,
+      "issuer": {
+        "type": "self"
+      }
+    },
+    "items": {
+      "object": "list",
+      "data": [
+        {
+          "id": "si_Fixture0001",
+          "object": "subscription_item",
+          "billing_thresholds": null,
+          "created": 1790856060,
+          "current_period_end": 1796126460,
+          "current_period_start": 1793534460,
+          "discounts": [],
+          "metadata": {},
+          "plan": {
+            "id": "price_Fixture0001",
+            "object": "plan",
+            "active": true,
+            "amount": 599,
+            "amount_decimal": "599",
+            "billing_scheme": "per_unit",
+            "created": 1790856000,
+            "currency": "usd",
+            "interval": "month",
+            "interval_count": 1,
+            "livemode": false,
+            "metadata": {},
+            "meter": null,
+            "nickname": "Family Plan monthly",
+            "product": "prod_Fixture0001",
+            "tiers_mode": null,
+            "transform_usage": null,
+            "trial_period_days": null,
+            "usage_type": "licensed"
+          },
+          "price": {
+            "id": "price_Fixture0001",
+            "object": "price",
+            "active": true,
+            "billing_scheme": "per_unit",
+            "created": 1790856000,
+            "currency": "usd",
+            "custom_unit_amount": null,
+            "livemode": false,
+            "lookup_key": "sparkle_family_monthly",
+            "metadata": {},
+            "nickname": "Family Plan monthly",
+            "product": "prod_Fixture0001",
+            "recurring": {
+              "interval": "month",
+              "interval_count": 1,
+              "meter": null,
+              "usage_type": "licensed"
+            },
+            "tax_behavior": "exclusive",
+            "tiers_mode": null,
+            "transform_quantity": null,
+            "type": "recurring",
+            "unit_amount": 599,
+            "unit_amount_decimal": "599"
+          },
+          "quantity": 1,
+          "subscription": "sub_Fixture0001",
+          "tax_rates": []
+        }
+      ],
+      "has_more": false,
+      "total_count": 1,
+      "url": "/v1/subscription_items?subscription=sub_Fixture0001"
+    },
+    "latest_invoice": {
+      "id": "in_Fixture0002",
+      "object": "invoice",
+      "account_country": "US",
+      "account_name": "Sparkle World",
+      "account_tax_ids": null,
+      "amount_due": 635,
+      "amount_overpaid": 0,
+      "amount_paid": 0,
+      "amount_remaining": 635,
+      "amount_shipping": 0,
+      "application": null,
+      "attempt_count": 1,
+      "attempted": true,
+      "auto_advance": true,
+      "automatic_tax": {
+        "disabled_reason": null,
+        "enabled": true,
+        "liability": {
+          "type": "self"
+        },
+        "provider": "stripe",
+        "status": "complete"
+      },
+      "automatically_finalizes_at": null,
+      "billing_reason": "subscription_cycle",
+      "collection_method": "charge_automatically",
+      "confirmation_secret": null,
+      "created": 1793534460,
+      "currency": "usd",
+      "custom_fields": null,
+      "customer": "cus_Fixture0001",
+      "customer_address": {
+        "city": "San Francisco",
+        "country": "US",
+        "line1": "510 Townsend St",
+        "line2": null,
+        "postal_code": "94103",
+        "state": "CA"
+      },
+      "customer_email": "parent1@example.com",
+      "customer_name": "Test Parent",
+      "customer_phone": null,
+      "customer_shipping": null,
+      "customer_tax_exempt": "none",
+      "customer_tax_ids": [],
+      "default_payment_method": null,
+      "default_source": null,
+      "default_tax_rates": [],
+      "description": null,
+      "discounts": [],
+      "due_date": null,
+      "effective_at": 1793534460,
+      "ending_balance": 0,
+      "footer": null,
+      "from_invoice": null,
+      "hosted_invoice_url": "https://stripe-fake.example/i/in_Fixture0002",
+      "invoice_pdf": "https://stripe-fake.example/i/in_Fixture0002/pdf",
+      "issuer": {
+        "type": "self"
+      },
+      "last_finalization_error": null,
+      "latest_revision": null,
+      "lines": {
+        "object": "list",
+        "data": [
+          {
+            "id": "il_Fixture0002",
+            "object": "line_item",
+            "amount": 599,
+            "currency": "usd",
+            "description": "1 × Sparkle World Family Plan (at $5.99 / month)",
+            "discount_amounts": [],
+            "discountable": true,
+            "discounts": [],
+            "invoice": "in_Fixture0002",
+            "livemode": false,
+            "metadata": {},
+            "parent": {
+              "invoice_item_details": null,
+              "subscription_item_details": {
+                "invoice_item": null,
+                "proration": false,
+                "proration_details": {
+                  "credited_items": null
+                },
+                "subscription": "sub_Fixture0001",
+                "subscription_item": "si_Fixture0001"
+              },
+              "type": "subscription_item_details"
+            },
+            "period": {
+              "end": 1796126460,
+              "start": 1793534460
+            },
+            "pretax_credit_amounts": [],
+            "pricing": {
+              "price_details": {
+                "price": "price_Fixture0001",
+                "product": "prod_Fixture0001"
+              },
+              "type": "price_Fixture0002",
+              "unit_amount_decimal": "599"
+            },
+            "quantity": 1,
+            "taxes": [
+              {
+                "amount": 36,
+                "tax_behavior": "exclusive",
+                "tax_rate_details": {
+                  "tax_rate": "txr_fake_us"
+                },
+                "taxability_reason": "standard_rated",
+                "taxable_amount": 599,
+                "type": "tax_rate_details"
+              }
+            ]
+          }
+        ],
+        "has_more": false,
+        "total_count": 1,
+        "url": "/v1/invoices/in_Fixture0002/lines"
+      },
+      "livemode": false,
+      "metadata": {},
+      "next_payment_attempt": 1793793660,
+      "number": "FIXTURE0-0002",
+      "on_behalf_of": null,
+      "parent": {
+        "quote_details": null,
+        "subscription_details": {
+          "metadata": {
+            "family_id": "5a1e0000-0000-4000-8000-000000000001"
+          },
+          "subscription": "sub_Fixture0001"
+        },
+        "type": "subscription_details"
+      },
+      "payment_settings": {
+        "default_mandate": null,
+        "payment_method_options": null,
+        "payment_method_types": null
+      },
+      "period_end": 1796126460,
+      "period_start": 1793534460,
+      "post_payment_credit_notes_amount": 0,
+      "pre_payment_credit_notes_amount": 0,
+      "receipt_number": null,
+      "rendering": null,
+      "shipping_cost": null,
+      "shipping_details": null,
+      "starting_balance": 0,
+      "statement_descriptor": null,
+      "status": "open",
+      "status_transitions": {
+        "finalized_at": 1793534460,
+        "marked_uncollectible_at": null,
+        "paid_at": null,
+        "voided_at": null
+      },
+      "subtotal": 599,
+      "subtotal_excluding_tax": 599,
+      "test_clock": null,
+      "total": 635,
+      "total_discount_amounts": [],
+      "total_excluding_tax": 599,
+      "total_pretax_credit_amounts": [],
+      "total_taxes": [
+        {
+          "amount": 36,
+          "tax_behavior": "exclusive",
+          "tax_rate_details": {
+            "tax_rate": "txr_fake_us"
+          },
+          "taxability_reason": "standard_rated",
+          "taxable_amount": 599,
+          "type": "tax_rate_details"
+        }
+      ],
+      "webhooks_delivered_at": null
+    },
+    "livemode": false,
+    "metadata": {
+      "family_id": "5a1e0000-0000-4000-8000-000000000001"
+    },
+    "next_pending_invoice_item_invoice": null,
+    "on_behalf_of": null,
+    "pause_collection": null,
+    "payment_settings": {
+      "payment_method_options": null,
+      "payment_method_types": null,
+      "save_default_payment_method": "off"
+    },
+    "pending_invoice_item_interval": null,
+    "pending_setup_intent": null,
+    "pending_update": null,
+    "schedule": null,
+    "start_date": 1790856060,
+    "status": "past_due",
+    "test_clock": null,
+    "transfer_data": null,
+    "trial_end": null,
+    "trial_settings": {
+      "end_behavior": {
+        "missing_payment_method": "create_invoice"
+      }
+    },
+    "trial_start": null
+  },
+  "customer.subscription.updated.past_due": {
+    "id": "sub_Fixture0001",
+    "object": "subscription",
+    "application": null,
+    "application_fee_percent": null,
+    "automatic_tax": {
+      "disabled_reason": null,
+      "enabled": true,
+      "liability": {
+        "type": "self"
+      }
+    },
+    "billing_cycle_anchor": 1793534460,
+    "billing_cycle_anchor_config": null,
+    "billing_mode": {
+      "flexible": null,
+      "type": "classic"
+    },
+    "billing_thresholds": null,
+    "cancel_at": null,
+    "cancel_at_period_end": false,
+    "canceled_at": null,
+    "cancellation_details": {
+      "comment": null,
+      "feedback": null,
+      "reason": null
+    },
+    "collection_method": "charge_automatically",
+    "created": 1790856060,
+    "currency": "usd",
+    "customer": "cus_Fixture0001",
+    "days_until_due": null,
+    "default_payment_method": "pm_Fixture0001",
+    "default_source": null,
+    "default_tax_rates": [],
+    "description": null,
+    "discounts": [],
+    "ended_at": null,
+    "invoice_settings": {
+      "account_tax_ids": null,
+      "issuer": {
+        "type": "self"
+      }
+    },
+    "items": {
+      "object": "list",
+      "data": [
+        {
+          "id": "si_Fixture0001",
+          "object": "subscription_item",
+          "billing_thresholds": null,
+          "created": 1790856060,
+          "current_period_end": 1796126460,
+          "current_period_start": 1793534460,
+          "discounts": [],
+          "metadata": {},
+          "plan": {
+            "id": "price_Fixture0001",
+            "object": "plan",
+            "active": true,
+            "amount": 599,
+            "amount_decimal": "599",
+            "billing_scheme": "per_unit",
+            "created": 1790856000,
+            "currency": "usd",
+            "interval": "month",
+            "interval_count": 1,
+            "livemode": false,
+            "metadata": {},
+            "meter": null,
+            "nickname": "Family Plan monthly",
+            "product": "prod_Fixture0001",
+            "tiers_mode": null,
+            "transform_usage": null,
+            "trial_period_days": null,
+            "usage_type": "licensed"
+          },
+          "price": {
+            "id": "price_Fixture0001",
+            "object": "price",
+            "active": true,
+            "billing_scheme": "per_unit",
+            "created": 1790856000,
+            "currency": "usd",
+            "custom_unit_amount": null,
+            "livemode": false,
+            "lookup_key": "sparkle_family_monthly",
+            "metadata": {},
+            "nickname": "Family Plan monthly",
+            "product": "prod_Fixture0001",
+            "recurring": {
+              "interval": "month",
+              "interval_count": 1,
+              "meter": null,
+              "usage_type": "licensed"
+            },
+            "tax_behavior": "exclusive",
+            "tiers_mode": null,
+            "transform_quantity": null,
+            "type": "recurring",
+            "unit_amount": 599,
+            "unit_amount_decimal": "599"
+          },
+          "quantity": 1,
+          "subscription": "sub_Fixture0001",
+          "tax_rates": []
+        }
+      ],
+      "has_more": false,
+      "total_count": 1,
+      "url": "/v1/subscription_items?subscription=sub_Fixture0001"
+    },
+    "latest_invoice": {
+      "id": "in_Fixture0002",
+      "object": "invoice",
+      "account_country": "US",
+      "account_name": "Sparkle World",
+      "account_tax_ids": null,
+      "amount_due": 635,
+      "amount_overpaid": 0,
+      "amount_paid": 0,
+      "amount_remaining": 635,
+      "amount_shipping": 0,
+      "application": null,
+      "attempt_count": 1,
+      "attempted": true,
+      "auto_advance": true,
+      "automatic_tax": {
+        "disabled_reason": null,
+        "enabled": true,
+        "liability": {
+          "type": "self"
+        },
+        "provider": "stripe",
+        "status": "complete"
+      },
+      "automatically_finalizes_at": null,
+      "billing_reason": "subscription_cycle",
+      "collection_method": "charge_automatically",
+      "confirmation_secret": null,
+      "created": 1793534460,
+      "currency": "usd",
+      "custom_fields": null,
+      "customer": "cus_Fixture0001",
+      "customer_address": {
+        "city": "San Francisco",
+        "country": "US",
+        "line1": "510 Townsend St",
+        "line2": null,
+        "postal_code": "94103",
+        "state": "CA"
+      },
+      "customer_email": "parent1@example.com",
+      "customer_name": "Test Parent",
+      "customer_phone": null,
+      "customer_shipping": null,
+      "customer_tax_exempt": "none",
+      "customer_tax_ids": [],
+      "default_payment_method": null,
+      "default_source": null,
+      "default_tax_rates": [],
+      "description": null,
+      "discounts": [],
+      "due_date": null,
+      "effective_at": 1793534460,
+      "ending_balance": 0,
+      "footer": null,
+      "from_invoice": null,
+      "hosted_invoice_url": "https://stripe-fake.example/i/in_Fixture0002",
+      "invoice_pdf": "https://stripe-fake.example/i/in_Fixture0002/pdf",
+      "issuer": {
+        "type": "self"
+      },
+      "last_finalization_error": null,
+      "latest_revision": null,
+      "lines": {
+        "object": "list",
+        "data": [
+          {
+            "id": "il_Fixture0002",
+            "object": "line_item",
+            "amount": 599,
+            "currency": "usd",
+            "description": "1 × Sparkle World Family Plan (at $5.99 / month)",
+            "discount_amounts": [],
+            "discountable": true,
+            "discounts": [],
+            "invoice": "in_Fixture0002",
+            "livemode": false,
+            "metadata": {},
+            "parent": {
+              "invoice_item_details": null,
+              "subscription_item_details": {
+                "invoice_item": null,
+                "proration": false,
+                "proration_details": {
+                  "credited_items": null
+                },
+                "subscription": "sub_Fixture0001",
+                "subscription_item": "si_Fixture0001"
+              },
+              "type": "subscription_item_details"
+            },
+            "period": {
+              "end": 1796126460,
+              "start": 1793534460
+            },
+            "pretax_credit_amounts": [],
+            "pricing": {
+              "price_details": {
+                "price": "price_Fixture0001",
+                "product": "prod_Fixture0001"
+              },
+              "type": "price_Fixture0002",
+              "unit_amount_decimal": "599"
+            },
+            "quantity": 1,
+            "taxes": [
+              {
+                "amount": 36,
+                "tax_behavior": "exclusive",
+                "tax_rate_details": {
+                  "tax_rate": "txr_fake_us"
+                },
+                "taxability_reason": "standard_rated",
+                "taxable_amount": 599,
+                "type": "tax_rate_details"
+              }
+            ]
+          }
+        ],
+        "has_more": false,
+        "total_count": 1,
+        "url": "/v1/invoices/in_Fixture0002/lines"
+      },
+      "livemode": false,
+      "metadata": {},
+      "next_payment_attempt": 1793793660,
+      "number": "FIXTURE0-0002",
+      "on_behalf_of": null,
+      "parent": {
+        "quote_details": null,
+        "subscription_details": {
+          "metadata": {
+            "family_id": "5a1e0000-0000-4000-8000-000000000001"
+          },
+          "subscription": "sub_Fixture0001"
+        },
+        "type": "subscription_details"
+      },
+      "payment_settings": {
+        "default_mandate": null,
+        "payment_method_options": null,
+        "payment_method_types": null
+      },
+      "period_end": 1796126460,
+      "period_start": 1793534460,
+      "post_payment_credit_notes_amount": 0,
+      "pre_payment_credit_notes_amount": 0,
+      "receipt_number": null,
+      "rendering": null,
+      "shipping_cost": null,
+      "shipping_details": null,
+      "starting_balance": 0,
+      "statement_descriptor": null,
+      "status": "open",
+      "status_transitions": {
+        "finalized_at": 1793534460,
+        "marked_uncollectible_at": null,
+        "paid_at": null,
+        "voided_at": null
+      },
+      "subtotal": 599,
+      "subtotal_excluding_tax": 599,
+      "test_clock": null,
+      "total": 635,
+      "total_discount_amounts": [],
+      "total_excluding_tax": 599,
+      "total_pretax_credit_amounts": [],
+      "total_taxes": [
+        {
+          "amount": 36,
+          "tax_behavior": "exclusive",
+          "tax_rate_details": {
+            "tax_rate": "txr_fake_us"
+          },
+          "taxability_reason": "standard_rated",
+          "taxable_amount": 599,
+          "type": "tax_rate_details"
+        }
+      ],
+      "webhooks_delivered_at": null
+    },
+    "livemode": false,
+    "metadata": {
+      "family_id": "5a1e0000-0000-4000-8000-000000000001"
+    },
+    "next_pending_invoice_item_invoice": null,
+    "on_behalf_of": null,
+    "pause_collection": null,
+    "payment_settings": {
+      "payment_method_options": null,
+      "payment_method_types": null,
+      "save_default_payment_method": "off"
+    },
+    "pending_invoice_item_interval": null,
+    "pending_setup_intent": null,
+    "pending_update": null,
+    "schedule": null,
+    "start_date": 1790856060,
+    "status": "past_due",
+    "test_clock": null,
+    "transfer_data": null,
+    "trial_end": null,
+    "trial_settings": {
+      "end_behavior": {
+        "missing_payment_method": "create_invoice"
+      }
+    },
+    "trial_start": null
+  },
+  "checkout.session.completed.trial": {
+    "id": "sub_Fixture0002",
+    "object": "subscription",
+    "application": null,
+    "application_fee_percent": null,
+    "automatic_tax": {
+      "disabled_reason": null,
+      "enabled": true,
+      "liability": {
+        "type": "self"
+      }
+    },
+    "billing_cycle_anchor": 1794225780,
+    "billing_cycle_anchor_config": null,
+    "billing_mode": {
+      "flexible": null,
+      "type": "classic"
+    },
+    "billing_thresholds": null,
+    "cancel_at": null,
+    "cancel_at_period_end": false,
+    "canceled_at": null,
+    "cancellation_details": {
+      "comment": null,
+      "feedback": null,
+      "reason": null
+    },
+    "collection_method": "charge_automatically",
+    "created": 1793620980,
+    "currency": "usd",
+    "customer": "cus_Fixture0002",
+    "days_until_due": null,
+    "default_payment_method": "pm_Fixture0002",
+    "default_source": null,
+    "default_tax_rates": [],
+    "description": null,
+    "discounts": [],
+    "ended_at": null,
+    "invoice_settings": {
+      "account_tax_ids": null,
+      "issuer": {
+        "type": "self"
+      }
+    },
+    "items": {
+      "object": "list",
+      "data": [
+        {
+          "id": "si_Fixture0002",
+          "object": "subscription_item",
+          "billing_thresholds": null,
+          "created": 1793620980,
+          "current_period_end": 1794225780,
+          "current_period_start": 1793620980,
+          "discounts": [],
+          "metadata": {},
+          "plan": {
+            "id": "price_Fixture0001",
+            "object": "plan",
+            "active": true,
+            "amount": 599,
+            "amount_decimal": "599",
+            "billing_scheme": "per_unit",
+            "created": 1790856000,
+            "currency": "usd",
+            "interval": "month",
+            "interval_count": 1,
+            "livemode": false,
+            "metadata": {},
+            "meter": null,
+            "nickname": "Family Plan monthly",
+            "product": "prod_Fixture0001",
+            "tiers_mode": null,
+            "transform_usage": null,
+            "trial_period_days": null,
+            "usage_type": "licensed"
+          },
+          "price": {
+            "id": "price_Fixture0001",
+            "object": "price",
+            "active": true,
+            "billing_scheme": "per_unit",
+            "created": 1790856000,
+            "currency": "usd",
+            "custom_unit_amount": null,
+            "livemode": false,
+            "lookup_key": "sparkle_family_monthly",
+            "metadata": {},
+            "nickname": "Family Plan monthly",
+            "product": "prod_Fixture0001",
+            "recurring": {
+              "interval": "month",
+              "interval_count": 1,
+              "meter": null,
+              "usage_type": "licensed"
+            },
+            "tax_behavior": "exclusive",
+            "tiers_mode": null,
+            "transform_quantity": null,
+            "type": "recurring",
+            "unit_amount": 599,
+            "unit_amount_decimal": "599"
+          },
+          "quantity": 1,
+          "subscription": "sub_Fixture0002",
+          "tax_rates": []
+        }
+      ],
+      "has_more": false,
+      "total_count": 1,
+      "url": "/v1/subscription_items?subscription=sub_Fixture0002"
+    },
+    "latest_invoice": {
+      "id": "in_Fixture0003",
+      "object": "invoice",
+      "account_country": "US",
+      "account_name": "Sparkle World",
+      "account_tax_ids": null,
+      "amount_due": 0,
+      "amount_overpaid": 0,
+      "amount_paid": 0,
+      "amount_remaining": 0,
+      "amount_shipping": 0,
+      "application": null,
+      "attempt_count": 0,
+      "attempted": false,
+      "auto_advance": true,
+      "automatic_tax": {
+        "disabled_reason": null,
+        "enabled": true,
+        "liability": {
+          "type": "self"
+        },
+        "provider": "stripe",
+        "status": "complete"
+      },
+      "automatically_finalizes_at": null,
+      "billing_reason": "subscription_create",
+      "collection_method": "charge_automatically",
+      "confirmation_secret": null,
+      "created": 1793620980,
+      "currency": "usd",
+      "custom_fields": null,
+      "customer": "cus_Fixture0002",
+      "customer_address": {
+        "city": "San Francisco",
+        "country": "US",
+        "line1": "510 Townsend St",
+        "line2": null,
+        "postal_code": "94103",
+        "state": "CA"
+      },
+      "customer_email": "parent2@example.com",
+      "customer_name": "Test Parent",
+      "customer_phone": null,
+      "customer_shipping": null,
+      "customer_tax_exempt": "none",
+      "customer_tax_ids": [],
+      "default_payment_method": null,
+      "default_source": null,
+      "default_tax_rates": [],
+      "description": null,
+      "discounts": [],
+      "due_date": null,
+      "effective_at": 1793620980,
+      "ending_balance": 0,
+      "footer": null,
+      "from_invoice": null,
+      "hosted_invoice_url": "https://stripe-fake.example/i/in_Fixture0003",
+      "invoice_pdf": "https://stripe-fake.example/i/in_Fixture0003/pdf",
+      "issuer": {
+        "type": "self"
+      },
+      "last_finalization_error": null,
+      "latest_revision": null,
+      "lines": {
+        "object": "list",
+        "data": [
+          {
+            "id": "il_Fixture0003",
+            "object": "line_item",
+            "amount": 0,
+            "currency": "usd",
+            "description": "1 × Sparkle World Family Plan (at $5.99 / month)",
+            "discount_amounts": [],
+            "discountable": true,
+            "discounts": [],
+            "invoice": "in_Fixture0003",
+            "livemode": false,
+            "metadata": {},
+            "parent": {
+              "invoice_item_details": null,
+              "subscription_item_details": {
+                "invoice_item": null,
+                "proration": false,
+                "proration_details": {
+                  "credited_items": null
+                },
+                "subscription": "sub_Fixture0002",
+                "subscription_item": "si_Fixture0002"
+              },
+              "type": "subscription_item_details"
+            },
+            "period": {
+              "end": 1794225780,
+              "start": 1793620980
+            },
+            "pretax_credit_amounts": [],
+            "pricing": {
+              "price_details": {
+                "price": "price_Fixture0001",
+                "product": "prod_Fixture0001"
+              },
+              "type": "price_Fixture0002",
+              "unit_amount_decimal": "599"
+            },
+            "quantity": 1,
+            "taxes": []
+          }
+        ],
+        "has_more": false,
+        "total_count": 1,
+        "url": "/v1/invoices/in_Fixture0003/lines"
+      },
+      "livemode": false,
+      "metadata": {},
+      "next_payment_attempt": null,
+      "number": "FIXTURE0-0001",
+      "on_behalf_of": null,
+      "parent": {
+        "quote_details": null,
+        "subscription_details": {
+          "metadata": {
+            "family_id": "5a1e0000-0000-4000-8000-000000000002"
+          },
+          "subscription": "sub_Fixture0002"
+        },
+        "type": "subscription_details"
+      },
+      "payment_settings": {
+        "default_mandate": null,
+        "payment_method_options": null,
+        "payment_method_types": null
+      },
+      "period_end": 1794225780,
+      "period_start": 1793620980,
+      "post_payment_credit_notes_amount": 0,
+      "pre_payment_credit_notes_amount": 0,
+      "receipt_number": null,
+      "rendering": null,
+      "shipping_cost": null,
+      "shipping_details": null,
+      "starting_balance": 0,
+      "statement_descriptor": null,
+      "status": "paid",
+      "status_transitions": {
+        "finalized_at": 1793620980,
+        "marked_uncollectible_at": null,
+        "paid_at": 1793620980,
+        "voided_at": null
+      },
+      "subtotal": 0,
+      "subtotal_excluding_tax": 0,
+      "test_clock": null,
+      "total": 0,
+      "total_discount_amounts": [],
+      "total_excluding_tax": 0,
+      "total_pretax_credit_amounts": [],
+      "total_taxes": [],
+      "webhooks_delivered_at": null
+    },
+    "livemode": false,
+    "metadata": {
+      "family_id": "5a1e0000-0000-4000-8000-000000000002"
+    },
+    "next_pending_invoice_item_invoice": null,
+    "on_behalf_of": null,
+    "pause_collection": null,
+    "payment_settings": {
+      "payment_method_options": null,
+      "payment_method_types": null,
+      "save_default_payment_method": "off"
+    },
+    "pending_invoice_item_interval": null,
+    "pending_setup_intent": null,
+    "pending_update": null,
+    "schedule": null,
+    "start_date": 1793620980,
+    "status": "trialing",
+    "test_clock": null,
+    "transfer_data": null,
+    "trial_end": 1794225780,
+    "trial_settings": {
+      "end_behavior": {
+        "missing_payment_method": "create_invoice"
+      }
+    },
+    "trial_start": 1793620980
+  },
+  "customer.subscription.created.trialing": {
+    "id": "sub_Fixture0002",
+    "object": "subscription",
+    "application": null,
+    "application_fee_percent": null,
+    "automatic_tax": {
+      "disabled_reason": null,
+      "enabled": true,
+      "liability": {
+        "type": "self"
+      }
+    },
+    "billing_cycle_anchor": 1794225780,
+    "billing_cycle_anchor_config": null,
+    "billing_mode": {
+      "flexible": null,
+      "type": "classic"
+    },
+    "billing_thresholds": null,
+    "cancel_at": null,
+    "cancel_at_period_end": false,
+    "canceled_at": null,
+    "cancellation_details": {
+      "comment": null,
+      "feedback": null,
+      "reason": null
+    },
+    "collection_method": "charge_automatically",
+    "created": 1793620980,
+    "currency": "usd",
+    "customer": "cus_Fixture0002",
+    "days_until_due": null,
+    "default_payment_method": "pm_Fixture0002",
+    "default_source": null,
+    "default_tax_rates": [],
+    "description": null,
+    "discounts": [],
+    "ended_at": null,
+    "invoice_settings": {
+      "account_tax_ids": null,
+      "issuer": {
+        "type": "self"
+      }
+    },
+    "items": {
+      "object": "list",
+      "data": [
+        {
+          "id": "si_Fixture0002",
+          "object": "subscription_item",
+          "billing_thresholds": null,
+          "created": 1793620980,
+          "current_period_end": 1794225780,
+          "current_period_start": 1793620980,
+          "discounts": [],
+          "metadata": {},
+          "plan": {
+            "id": "price_Fixture0001",
+            "object": "plan",
+            "active": true,
+            "amount": 599,
+            "amount_decimal": "599",
+            "billing_scheme": "per_unit",
+            "created": 1790856000,
+            "currency": "usd",
+            "interval": "month",
+            "interval_count": 1,
+            "livemode": false,
+            "metadata": {},
+            "meter": null,
+            "nickname": "Family Plan monthly",
+            "product": "prod_Fixture0001",
+            "tiers_mode": null,
+            "transform_usage": null,
+            "trial_period_days": null,
+            "usage_type": "licensed"
+          },
+          "price": {
+            "id": "price_Fixture0001",
+            "object": "price",
+            "active": true,
+            "billing_scheme": "per_unit",
+            "created": 1790856000,
+            "currency": "usd",
+            "custom_unit_amount": null,
+            "livemode": false,
+            "lookup_key": "sparkle_family_monthly",
+            "metadata": {},
+            "nickname": "Family Plan monthly",
+            "product": "prod_Fixture0001",
+            "recurring": {
+              "interval": "month",
+              "interval_count": 1,
+              "meter": null,
+              "usage_type": "licensed"
+            },
+            "tax_behavior": "exclusive",
+            "tiers_mode": null,
+            "transform_quantity": null,
+            "type": "recurring",
+            "unit_amount": 599,
+            "unit_amount_decimal": "599"
+          },
+          "quantity": 1,
+          "subscription": "sub_Fixture0002",
+          "tax_rates": []
+        }
+      ],
+      "has_more": false,
+      "total_count": 1,
+      "url": "/v1/subscription_items?subscription=sub_Fixture0002"
+    },
+    "latest_invoice": {
+      "id": "in_Fixture0003",
+      "object": "invoice",
+      "account_country": "US",
+      "account_name": "Sparkle World",
+      "account_tax_ids": null,
+      "amount_due": 0,
+      "amount_overpaid": 0,
+      "amount_paid": 0,
+      "amount_remaining": 0,
+      "amount_shipping": 0,
+      "application": null,
+      "attempt_count": 0,
+      "attempted": false,
+      "auto_advance": true,
+      "automatic_tax": {
+        "disabled_reason": null,
+        "enabled": true,
+        "liability": {
+          "type": "self"
+        },
+        "provider": "stripe",
+        "status": "complete"
+      },
+      "automatically_finalizes_at": null,
+      "billing_reason": "subscription_create",
+      "collection_method": "charge_automatically",
+      "confirmation_secret": null,
+      "created": 1793620980,
+      "currency": "usd",
+      "custom_fields": null,
+      "customer": "cus_Fixture0002",
+      "customer_address": {
+        "city": "San Francisco",
+        "country": "US",
+        "line1": "510 Townsend St",
+        "line2": null,
+        "postal_code": "94103",
+        "state": "CA"
+      },
+      "customer_email": "parent2@example.com",
+      "customer_name": "Test Parent",
+      "customer_phone": null,
+      "customer_shipping": null,
+      "customer_tax_exempt": "none",
+      "customer_tax_ids": [],
+      "default_payment_method": null,
+      "default_source": null,
+      "default_tax_rates": [],
+      "description": null,
+      "discounts": [],
+      "due_date": null,
+      "effective_at": 1793620980,
+      "ending_balance": 0,
+      "footer": null,
+      "from_invoice": null,
+      "hosted_invoice_url": "https://stripe-fake.example/i/in_Fixture0003",
+      "invoice_pdf": "https://stripe-fake.example/i/in_Fixture0003/pdf",
+      "issuer": {
+        "type": "self"
+      },
+      "last_finalization_error": null,
+      "latest_revision": null,
+      "lines": {
+        "object": "list",
+        "data": [
+          {
+            "id": "il_Fixture0003",
+            "object": "line_item",
+            "amount": 0,
+            "currency": "usd",
+            "description": "1 × Sparkle World Family Plan (at $5.99 / month)",
+            "discount_amounts": [],
+            "discountable": true,
+            "discounts": [],
+            "invoice": "in_Fixture0003",
+            "livemode": false,
+            "metadata": {},
+            "parent": {
+              "invoice_item_details": null,
+              "subscription_item_details": {
+                "invoice_item": null,
+                "proration": false,
+                "proration_details": {
+                  "credited_items": null
+                },
+                "subscription": "sub_Fixture0002",
+                "subscription_item": "si_Fixture0002"
+              },
+              "type": "subscription_item_details"
+            },
+            "period": {
+              "end": 1794225780,
+              "start": 1793620980
+            },
+            "pretax_credit_amounts": [],
+            "pricing": {
+              "price_details": {
+                "price": "price_Fixture0001",
+                "product": "prod_Fixture0001"
+              },
+              "type": "price_Fixture0002",
+              "unit_amount_decimal": "599"
+            },
+            "quantity": 1,
+            "taxes": []
+          }
+        ],
+        "has_more": false,
+        "total_count": 1,
+        "url": "/v1/invoices/in_Fixture0003/lines"
+      },
+      "livemode": false,
+      "metadata": {},
+      "next_payment_attempt": null,
+      "number": "FIXTURE0-0001",
+      "on_behalf_of": null,
+      "parent": {
+        "quote_details": null,
+        "subscription_details": {
+          "metadata": {
+            "family_id": "5a1e0000-0000-4000-8000-000000000002"
+          },
+          "subscription": "sub_Fixture0002"
+        },
+        "type": "subscription_details"
+      },
+      "payment_settings": {
+        "default_mandate": null,
+        "payment_method_options": null,
+        "payment_method_types": null
+      },
+      "period_end": 1794225780,
+      "period_start": 1793620980,
+      "post_payment_credit_notes_amount": 0,
+      "pre_payment_credit_notes_amount": 0,
+      "receipt_number": null,
+      "rendering": null,
+      "shipping_cost": null,
+      "shipping_details": null,
+      "starting_balance": 0,
+      "statement_descriptor": null,
+      "status": "paid",
+      "status_transitions": {
+        "finalized_at": 1793620980,
+        "marked_uncollectible_at": null,
+        "paid_at": 1793620980,
+        "voided_at": null
+      },
+      "subtotal": 0,
+      "subtotal_excluding_tax": 0,
+      "test_clock": null,
+      "total": 0,
+      "total_discount_amounts": [],
+      "total_excluding_tax": 0,
+      "total_pretax_credit_amounts": [],
+      "total_taxes": [],
+      "webhooks_delivered_at": null
+    },
+    "livemode": false,
+    "metadata": {
+      "family_id": "5a1e0000-0000-4000-8000-000000000002"
+    },
+    "next_pending_invoice_item_invoice": null,
+    "on_behalf_of": null,
+    "pause_collection": null,
+    "payment_settings": {
+      "payment_method_options": null,
+      "payment_method_types": null,
+      "save_default_payment_method": "off"
+    },
+    "pending_invoice_item_interval": null,
+    "pending_setup_intent": null,
+    "pending_update": null,
+    "schedule": null,
+    "start_date": 1793620980,
+    "status": "trialing",
+    "test_clock": null,
+    "transfer_data": null,
+    "trial_end": 1794225780,
+    "trial_settings": {
+      "end_behavior": {
+        "missing_payment_method": "create_invoice"
+      }
+    },
+    "trial_start": 1793620980
+  },
+  "invoice.paid.trial": {
+    "id": "sub_Fixture0002",
+    "object": "subscription",
+    "application": null,
+    "application_fee_percent": null,
+    "automatic_tax": {
+      "disabled_reason": null,
+      "enabled": true,
+      "liability": {
+        "type": "self"
+      }
+    },
+    "billing_cycle_anchor": 1794225780,
+    "billing_cycle_anchor_config": null,
+    "billing_mode": {
+      "flexible": null,
+      "type": "classic"
+    },
+    "billing_thresholds": null,
+    "cancel_at": null,
+    "cancel_at_period_end": false,
+    "canceled_at": null,
+    "cancellation_details": {
+      "comment": null,
+      "feedback": null,
+      "reason": null
+    },
+    "collection_method": "charge_automatically",
+    "created": 1793620980,
+    "currency": "usd",
+    "customer": "cus_Fixture0002",
+    "days_until_due": null,
+    "default_payment_method": "pm_Fixture0002",
+    "default_source": null,
+    "default_tax_rates": [],
+    "description": null,
+    "discounts": [],
+    "ended_at": null,
+    "invoice_settings": {
+      "account_tax_ids": null,
+      "issuer": {
+        "type": "self"
+      }
+    },
+    "items": {
+      "object": "list",
+      "data": [
+        {
+          "id": "si_Fixture0002",
+          "object": "subscription_item",
+          "billing_thresholds": null,
+          "created": 1793620980,
+          "current_period_end": 1794225780,
+          "current_period_start": 1793620980,
+          "discounts": [],
+          "metadata": {},
+          "plan": {
+            "id": "price_Fixture0001",
+            "object": "plan",
+            "active": true,
+            "amount": 599,
+            "amount_decimal": "599",
+            "billing_scheme": "per_unit",
+            "created": 1790856000,
+            "currency": "usd",
+            "interval": "month",
+            "interval_count": 1,
+            "livemode": false,
+            "metadata": {},
+            "meter": null,
+            "nickname": "Family Plan monthly",
+            "product": "prod_Fixture0001",
+            "tiers_mode": null,
+            "transform_usage": null,
+            "trial_period_days": null,
+            "usage_type": "licensed"
+          },
+          "price": {
+            "id": "price_Fixture0001",
+            "object": "price",
+            "active": true,
+            "billing_scheme": "per_unit",
+            "created": 1790856000,
+            "currency": "usd",
+            "custom_unit_amount": null,
+            "livemode": false,
+            "lookup_key": "sparkle_family_monthly",
+            "metadata": {},
+            "nickname": "Family Plan monthly",
+            "product": "prod_Fixture0001",
+            "recurring": {
+              "interval": "month",
+              "interval_count": 1,
+              "meter": null,
+              "usage_type": "licensed"
+            },
+            "tax_behavior": "exclusive",
+            "tiers_mode": null,
+            "transform_quantity": null,
+            "type": "recurring",
+            "unit_amount": 599,
+            "unit_amount_decimal": "599"
+          },
+          "quantity": 1,
+          "subscription": "sub_Fixture0002",
+          "tax_rates": []
+        }
+      ],
+      "has_more": false,
+      "total_count": 1,
+      "url": "/v1/subscription_items?subscription=sub_Fixture0002"
+    },
+    "latest_invoice": {
+      "id": "in_Fixture0003",
+      "object": "invoice",
+      "account_country": "US",
+      "account_name": "Sparkle World",
+      "account_tax_ids": null,
+      "amount_due": 0,
+      "amount_overpaid": 0,
+      "amount_paid": 0,
+      "amount_remaining": 0,
+      "amount_shipping": 0,
+      "application": null,
+      "attempt_count": 0,
+      "attempted": false,
+      "auto_advance": true,
+      "automatic_tax": {
+        "disabled_reason": null,
+        "enabled": true,
+        "liability": {
+          "type": "self"
+        },
+        "provider": "stripe",
+        "status": "complete"
+      },
+      "automatically_finalizes_at": null,
+      "billing_reason": "subscription_create",
+      "collection_method": "charge_automatically",
+      "confirmation_secret": null,
+      "created": 1793620980,
+      "currency": "usd",
+      "custom_fields": null,
+      "customer": "cus_Fixture0002",
+      "customer_address": {
+        "city": "San Francisco",
+        "country": "US",
+        "line1": "510 Townsend St",
+        "line2": null,
+        "postal_code": "94103",
+        "state": "CA"
+      },
+      "customer_email": "parent2@example.com",
+      "customer_name": "Test Parent",
+      "customer_phone": null,
+      "customer_shipping": null,
+      "customer_tax_exempt": "none",
+      "customer_tax_ids": [],
+      "default_payment_method": null,
+      "default_source": null,
+      "default_tax_rates": [],
+      "description": null,
+      "discounts": [],
+      "due_date": null,
+      "effective_at": 1793620980,
+      "ending_balance": 0,
+      "footer": null,
+      "from_invoice": null,
+      "hosted_invoice_url": "https://stripe-fake.example/i/in_Fixture0003",
+      "invoice_pdf": "https://stripe-fake.example/i/in_Fixture0003/pdf",
+      "issuer": {
+        "type": "self"
+      },
+      "last_finalization_error": null,
+      "latest_revision": null,
+      "lines": {
+        "object": "list",
+        "data": [
+          {
+            "id": "il_Fixture0003",
+            "object": "line_item",
+            "amount": 0,
+            "currency": "usd",
+            "description": "1 × Sparkle World Family Plan (at $5.99 / month)",
+            "discount_amounts": [],
+            "discountable": true,
+            "discounts": [],
+            "invoice": "in_Fixture0003",
+            "livemode": false,
+            "metadata": {},
+            "parent": {
+              "invoice_item_details": null,
+              "subscription_item_details": {
+                "invoice_item": null,
+                "proration": false,
+                "proration_details": {
+                  "credited_items": null
+                },
+                "subscription": "sub_Fixture0002",
+                "subscription_item": "si_Fixture0002"
+              },
+              "type": "subscription_item_details"
+            },
+            "period": {
+              "end": 1794225780,
+              "start": 1793620980
+            },
+            "pretax_credit_amounts": [],
+            "pricing": {
+              "price_details": {
+                "price": "price_Fixture0001",
+                "product": "prod_Fixture0001"
+              },
+              "type": "price_Fixture0002",
+              "unit_amount_decimal": "599"
+            },
+            "quantity": 1,
+            "taxes": []
+          }
+        ],
+        "has_more": false,
+        "total_count": 1,
+        "url": "/v1/invoices/in_Fixture0003/lines"
+      },
+      "livemode": false,
+      "metadata": {},
+      "next_payment_attempt": null,
+      "number": "FIXTURE0-0001",
+      "on_behalf_of": null,
+      "parent": {
+        "quote_details": null,
+        "subscription_details": {
+          "metadata": {
+            "family_id": "5a1e0000-0000-4000-8000-000000000002"
+          },
+          "subscription": "sub_Fixture0002"
+        },
+        "type": "subscription_details"
+      },
+      "payment_settings": {
+        "default_mandate": null,
+        "payment_method_options": null,
+        "payment_method_types": null
+      },
+      "period_end": 1794225780,
+      "period_start": 1793620980,
+      "post_payment_credit_notes_amount": 0,
+      "pre_payment_credit_notes_amount": 0,
+      "receipt_number": null,
+      "rendering": null,
+      "shipping_cost": null,
+      "shipping_details": null,
+      "starting_balance": 0,
+      "statement_descriptor": null,
+      "status": "paid",
+      "status_transitions": {
+        "finalized_at": 1793620980,
+        "marked_uncollectible_at": null,
+        "paid_at": 1793620980,
+        "voided_at": null
+      },
+      "subtotal": 0,
+      "subtotal_excluding_tax": 0,
+      "test_clock": null,
+      "total": 0,
+      "total_discount_amounts": [],
+      "total_excluding_tax": 0,
+      "total_pretax_credit_amounts": [],
+      "total_taxes": [],
+      "webhooks_delivered_at": null
+    },
+    "livemode": false,
+    "metadata": {
+      "family_id": "5a1e0000-0000-4000-8000-000000000002"
+    },
+    "next_pending_invoice_item_invoice": null,
+    "on_behalf_of": null,
+    "pause_collection": null,
+    "payment_settings": {
+      "payment_method_options": null,
+      "payment_method_types": null,
+      "save_default_payment_method": "off"
+    },
+    "pending_invoice_item_interval": null,
+    "pending_setup_intent": null,
+    "pending_update": null,
+    "schedule": null,
+    "start_date": 1793620980,
+    "status": "trialing",
+    "test_clock": null,
+    "transfer_data": null,
+    "trial_end": 1794225780,
+    "trial_settings": {
+      "end_behavior": {
+        "missing_payment_method": "create_invoice"
+      }
+    },
+    "trial_start": 1793620980
+  },
+  "customer.subscription.updated.canceling": {
+    "id": "sub_Fixture0002",
+    "object": "subscription",
+    "application": null,
+    "application_fee_percent": null,
+    "automatic_tax": {
+      "disabled_reason": null,
+      "enabled": true,
+      "liability": {
+        "type": "self"
+      }
+    },
+    "billing_cycle_anchor": 1794225780,
+    "billing_cycle_anchor_config": null,
+    "billing_mode": {
+      "flexible": null,
+      "type": "classic"
+    },
+    "billing_thresholds": null,
+    "cancel_at": 1794225780,
+    "cancel_at_period_end": true,
+    "canceled_at": 1793621040,
+    "cancellation_details": {
+      "comment": null,
+      "feedback": null,
+      "reason": "cancellation_requested"
+    },
+    "collection_method": "charge_automatically",
+    "created": 1793620980,
+    "currency": "usd",
+    "customer": "cus_Fixture0002",
+    "days_until_due": null,
+    "default_payment_method": "pm_Fixture0002",
+    "default_source": null,
+    "default_tax_rates": [],
+    "description": null,
+    "discounts": [],
+    "ended_at": null,
+    "invoice_settings": {
+      "account_tax_ids": null,
+      "issuer": {
+        "type": "self"
+      }
+    },
+    "items": {
+      "object": "list",
+      "data": [
+        {
+          "id": "si_Fixture0002",
+          "object": "subscription_item",
+          "billing_thresholds": null,
+          "created": 1793620980,
+          "current_period_end": 1794225780,
+          "current_period_start": 1793620980,
+          "discounts": [],
+          "metadata": {},
+          "plan": {
+            "id": "price_Fixture0001",
+            "object": "plan",
+            "active": true,
+            "amount": 599,
+            "amount_decimal": "599",
+            "billing_scheme": "per_unit",
+            "created": 1790856000,
+            "currency": "usd",
+            "interval": "month",
+            "interval_count": 1,
+            "livemode": false,
+            "metadata": {},
+            "meter": null,
+            "nickname": "Family Plan monthly",
+            "product": "prod_Fixture0001",
+            "tiers_mode": null,
+            "transform_usage": null,
+            "trial_period_days": null,
+            "usage_type": "licensed"
+          },
+          "price": {
+            "id": "price_Fixture0001",
+            "object": "price",
+            "active": true,
+            "billing_scheme": "per_unit",
+            "created": 1790856000,
+            "currency": "usd",
+            "custom_unit_amount": null,
+            "livemode": false,
+            "lookup_key": "sparkle_family_monthly",
+            "metadata": {},
+            "nickname": "Family Plan monthly",
+            "product": "prod_Fixture0001",
+            "recurring": {
+              "interval": "month",
+              "interval_count": 1,
+              "meter": null,
+              "usage_type": "licensed"
+            },
+            "tax_behavior": "exclusive",
+            "tiers_mode": null,
+            "transform_quantity": null,
+            "type": "recurring",
+            "unit_amount": 599,
+            "unit_amount_decimal": "599"
+          },
+          "quantity": 1,
+          "subscription": "sub_Fixture0002",
+          "tax_rates": []
+        }
+      ],
+      "has_more": false,
+      "total_count": 1,
+      "url": "/v1/subscription_items?subscription=sub_Fixture0002"
+    },
+    "latest_invoice": {
+      "id": "in_Fixture0003",
+      "object": "invoice",
+      "account_country": "US",
+      "account_name": "Sparkle World",
+      "account_tax_ids": null,
+      "amount_due": 0,
+      "amount_overpaid": 0,
+      "amount_paid": 0,
+      "amount_remaining": 0,
+      "amount_shipping": 0,
+      "application": null,
+      "attempt_count": 0,
+      "attempted": false,
+      "auto_advance": true,
+      "automatic_tax": {
+        "disabled_reason": null,
+        "enabled": true,
+        "liability": {
+          "type": "self"
+        },
+        "provider": "stripe",
+        "status": "complete"
+      },
+      "automatically_finalizes_at": null,
+      "billing_reason": "subscription_create",
+      "collection_method": "charge_automatically",
+      "confirmation_secret": null,
+      "created": 1793620980,
+      "currency": "usd",
+      "custom_fields": null,
+      "customer": "cus_Fixture0002",
+      "customer_address": {
+        "city": "San Francisco",
+        "country": "US",
+        "line1": "510 Townsend St",
+        "line2": null,
+        "postal_code": "94103",
+        "state": "CA"
+      },
+      "customer_email": "parent2@example.com",
+      "customer_name": "Test Parent",
+      "customer_phone": null,
+      "customer_shipping": null,
+      "customer_tax_exempt": "none",
+      "customer_tax_ids": [],
+      "default_payment_method": null,
+      "default_source": null,
+      "default_tax_rates": [],
+      "description": null,
+      "discounts": [],
+      "due_date": null,
+      "effective_at": 1793620980,
+      "ending_balance": 0,
+      "footer": null,
+      "from_invoice": null,
+      "hosted_invoice_url": "https://stripe-fake.example/i/in_Fixture0003",
+      "invoice_pdf": "https://stripe-fake.example/i/in_Fixture0003/pdf",
+      "issuer": {
+        "type": "self"
+      },
+      "last_finalization_error": null,
+      "latest_revision": null,
+      "lines": {
+        "object": "list",
+        "data": [
+          {
+            "id": "il_Fixture0003",
+            "object": "line_item",
+            "amount": 0,
+            "currency": "usd",
+            "description": "1 × Sparkle World Family Plan (at $5.99 / month)",
+            "discount_amounts": [],
+            "discountable": true,
+            "discounts": [],
+            "invoice": "in_Fixture0003",
+            "livemode": false,
+            "metadata": {},
+            "parent": {
+              "invoice_item_details": null,
+              "subscription_item_details": {
+                "invoice_item": null,
+                "proration": false,
+                "proration_details": {
+                  "credited_items": null
+                },
+                "subscription": "sub_Fixture0002",
+                "subscription_item": "si_Fixture0002"
+              },
+              "type": "subscription_item_details"
+            },
+            "period": {
+              "end": 1794225780,
+              "start": 1793620980
+            },
+            "pretax_credit_amounts": [],
+            "pricing": {
+              "price_details": {
+                "price": "price_Fixture0001",
+                "product": "prod_Fixture0001"
+              },
+              "type": "price_Fixture0002",
+              "unit_amount_decimal": "599"
+            },
+            "quantity": 1,
+            "taxes": []
+          }
+        ],
+        "has_more": false,
+        "total_count": 1,
+        "url": "/v1/invoices/in_Fixture0003/lines"
+      },
+      "livemode": false,
+      "metadata": {},
+      "next_payment_attempt": null,
+      "number": "FIXTURE0-0001",
+      "on_behalf_of": null,
+      "parent": {
+        "quote_details": null,
+        "subscription_details": {
+          "metadata": {
+            "family_id": "5a1e0000-0000-4000-8000-000000000002"
+          },
+          "subscription": "sub_Fixture0002"
+        },
+        "type": "subscription_details"
+      },
+      "payment_settings": {
+        "default_mandate": null,
+        "payment_method_options": null,
+        "payment_method_types": null
+      },
+      "period_end": 1794225780,
+      "period_start": 1793620980,
+      "post_payment_credit_notes_amount": 0,
+      "pre_payment_credit_notes_amount": 0,
+      "receipt_number": null,
+      "rendering": null,
+      "shipping_cost": null,
+      "shipping_details": null,
+      "starting_balance": 0,
+      "statement_descriptor": null,
+      "status": "paid",
+      "status_transitions": {
+        "finalized_at": 1793620980,
+        "marked_uncollectible_at": null,
+        "paid_at": 1793620980,
+        "voided_at": null
+      },
+      "subtotal": 0,
+      "subtotal_excluding_tax": 0,
+      "test_clock": null,
+      "total": 0,
+      "total_discount_amounts": [],
+      "total_excluding_tax": 0,
+      "total_pretax_credit_amounts": [],
+      "total_taxes": [],
+      "webhooks_delivered_at": null
+    },
+    "livemode": false,
+    "metadata": {
+      "family_id": "5a1e0000-0000-4000-8000-000000000002"
+    },
+    "next_pending_invoice_item_invoice": null,
+    "on_behalf_of": null,
+    "pause_collection": null,
+    "payment_settings": {
+      "payment_method_options": null,
+      "payment_method_types": null,
+      "save_default_payment_method": "off"
+    },
+    "pending_invoice_item_interval": null,
+    "pending_setup_intent": null,
+    "pending_update": null,
+    "schedule": null,
+    "start_date": 1793620980,
+    "status": "trialing",
+    "test_clock": null,
+    "transfer_data": null,
+    "trial_end": 1794225780,
+    "trial_settings": {
+      "end_behavior": {
+        "missing_payment_method": "create_invoice"
+      }
+    },
+    "trial_start": 1793620980
+  },
+  "customer.subscription.deleted": {
+    "id": "sub_Fixture0002",
+    "object": "subscription",
+    "application": null,
+    "application_fee_percent": null,
+    "automatic_tax": {
+      "disabled_reason": null,
+      "enabled": true,
+      "liability": {
+        "type": "self"
+      }
+    },
+    "billing_cycle_anchor": 1794225780,
+    "billing_cycle_anchor_config": null,
+    "billing_mode": {
+      "flexible": null,
+      "type": "classic"
+    },
+    "billing_thresholds": null,
+    "cancel_at": 1794225780,
+    "cancel_at_period_end": true,
+    "canceled_at": 1793621040,
+    "cancellation_details": {
+      "comment": null,
+      "feedback": null,
+      "reason": "cancellation_requested"
+    },
+    "collection_method": "charge_automatically",
+    "created": 1793620980,
+    "currency": "usd",
+    "customer": "cus_Fixture0002",
+    "days_until_due": null,
+    "default_payment_method": "pm_Fixture0002",
+    "default_source": null,
+    "default_tax_rates": [],
+    "description": null,
+    "discounts": [],
+    "ended_at": 1793621100,
+    "invoice_settings": {
+      "account_tax_ids": null,
+      "issuer": {
+        "type": "self"
+      }
+    },
+    "items": {
+      "object": "list",
+      "data": [
+        {
+          "id": "si_Fixture0002",
+          "object": "subscription_item",
+          "billing_thresholds": null,
+          "created": 1793620980,
+          "current_period_end": 1794225780,
+          "current_period_start": 1793620980,
+          "discounts": [],
+          "metadata": {},
+          "plan": {
+            "id": "price_Fixture0001",
+            "object": "plan",
+            "active": true,
+            "amount": 599,
+            "amount_decimal": "599",
+            "billing_scheme": "per_unit",
+            "created": 1790856000,
+            "currency": "usd",
+            "interval": "month",
+            "interval_count": 1,
+            "livemode": false,
+            "metadata": {},
+            "meter": null,
+            "nickname": "Family Plan monthly",
+            "product": "prod_Fixture0001",
+            "tiers_mode": null,
+            "transform_usage": null,
+            "trial_period_days": null,
+            "usage_type": "licensed"
+          },
+          "price": {
+            "id": "price_Fixture0001",
+            "object": "price",
+            "active": true,
+            "billing_scheme": "per_unit",
+            "created": 1790856000,
+            "currency": "usd",
+            "custom_unit_amount": null,
+            "livemode": false,
+            "lookup_key": "sparkle_family_monthly",
+            "metadata": {},
+            "nickname": "Family Plan monthly",
+            "product": "prod_Fixture0001",
+            "recurring": {
+              "interval": "month",
+              "interval_count": 1,
+              "meter": null,
+              "usage_type": "licensed"
+            },
+            "tax_behavior": "exclusive",
+            "tiers_mode": null,
+            "transform_quantity": null,
+            "type": "recurring",
+            "unit_amount": 599,
+            "unit_amount_decimal": "599"
+          },
+          "quantity": 1,
+          "subscription": "sub_Fixture0002",
+          "tax_rates": []
+        }
+      ],
+      "has_more": false,
+      "total_count": 1,
+      "url": "/v1/subscription_items?subscription=sub_Fixture0002"
+    },
+    "latest_invoice": {
+      "id": "in_Fixture0003",
+      "object": "invoice",
+      "account_country": "US",
+      "account_name": "Sparkle World",
+      "account_tax_ids": null,
+      "amount_due": 0,
+      "amount_overpaid": 0,
+      "amount_paid": 0,
+      "amount_remaining": 0,
+      "amount_shipping": 0,
+      "application": null,
+      "attempt_count": 0,
+      "attempted": false,
+      "auto_advance": true,
+      "automatic_tax": {
+        "disabled_reason": null,
+        "enabled": true,
+        "liability": {
+          "type": "self"
+        },
+        "provider": "stripe",
+        "status": "complete"
+      },
+      "automatically_finalizes_at": null,
+      "billing_reason": "subscription_create",
+      "collection_method": "charge_automatically",
+      "confirmation_secret": null,
+      "created": 1793620980,
+      "currency": "usd",
+      "custom_fields": null,
+      "customer": "cus_Fixture0002",
+      "customer_address": {
+        "city": "San Francisco",
+        "country": "US",
+        "line1": "510 Townsend St",
+        "line2": null,
+        "postal_code": "94103",
+        "state": "CA"
+      },
+      "customer_email": "parent2@example.com",
+      "customer_name": "Test Parent",
+      "customer_phone": null,
+      "customer_shipping": null,
+      "customer_tax_exempt": "none",
+      "customer_tax_ids": [],
+      "default_payment_method": null,
+      "default_source": null,
+      "default_tax_rates": [],
+      "description": null,
+      "discounts": [],
+      "due_date": null,
+      "effective_at": 1793620980,
+      "ending_balance": 0,
+      "footer": null,
+      "from_invoice": null,
+      "hosted_invoice_url": "https://stripe-fake.example/i/in_Fixture0003",
+      "invoice_pdf": "https://stripe-fake.example/i/in_Fixture0003/pdf",
+      "issuer": {
+        "type": "self"
+      },
+      "last_finalization_error": null,
+      "latest_revision": null,
+      "lines": {
+        "object": "list",
+        "data": [
+          {
+            "id": "il_Fixture0003",
+            "object": "line_item",
+            "amount": 0,
+            "currency": "usd",
+            "description": "1 × Sparkle World Family Plan (at $5.99 / month)",
+            "discount_amounts": [],
+            "discountable": true,
+            "discounts": [],
+            "invoice": "in_Fixture0003",
+            "livemode": false,
+            "metadata": {},
+            "parent": {
+              "invoice_item_details": null,
+              "subscription_item_details": {
+                "invoice_item": null,
+                "proration": false,
+                "proration_details": {
+                  "credited_items": null
+                },
+                "subscription": "sub_Fixture0002",
+                "subscription_item": "si_Fixture0002"
+              },
+              "type": "subscription_item_details"
+            },
+            "period": {
+              "end": 1794225780,
+              "start": 1793620980
+            },
+            "pretax_credit_amounts": [],
+            "pricing": {
+              "price_details": {
+                "price": "price_Fixture0001",
+                "product": "prod_Fixture0001"
+              },
+              "type": "price_Fixture0002",
+              "unit_amount_decimal": "599"
+            },
+            "quantity": 1,
+            "taxes": []
+          }
+        ],
+        "has_more": false,
+        "total_count": 1,
+        "url": "/v1/invoices/in_Fixture0003/lines"
+      },
+      "livemode": false,
+      "metadata": {},
+      "next_payment_attempt": null,
+      "number": "FIXTURE0-0001",
+      "on_behalf_of": null,
+      "parent": {
+        "quote_details": null,
+        "subscription_details": {
+          "metadata": {
+            "family_id": "5a1e0000-0000-4000-8000-000000000002"
+          },
+          "subscription": "sub_Fixture0002"
+        },
+        "type": "subscription_details"
+      },
+      "payment_settings": {
+        "default_mandate": null,
+        "payment_method_options": null,
+        "payment_method_types": null
+      },
+      "period_end": 1794225780,
+      "period_start": 1793620980,
+      "post_payment_credit_notes_amount": 0,
+      "pre_payment_credit_notes_amount": 0,
+      "receipt_number": null,
+      "rendering": null,
+      "shipping_cost": null,
+      "shipping_details": null,
+      "starting_balance": 0,
+      "statement_descriptor": null,
+      "status": "paid",
+      "status_transitions": {
+        "finalized_at": 1793620980,
+        "marked_uncollectible_at": null,
+        "paid_at": 1793620980,
+        "voided_at": null
+      },
+      "subtotal": 0,
+      "subtotal_excluding_tax": 0,
+      "test_clock": null,
+      "total": 0,
+      "total_discount_amounts": [],
+      "total_excluding_tax": 0,
+      "total_pretax_credit_amounts": [],
+      "total_taxes": [],
+      "webhooks_delivered_at": null
+    },
+    "livemode": false,
+    "metadata": {
+      "family_id": "5a1e0000-0000-4000-8000-000000000002"
+    },
+    "next_pending_invoice_item_invoice": null,
+    "on_behalf_of": null,
+    "pause_collection": null,
+    "payment_settings": {
+      "payment_method_options": null,
+      "payment_method_types": null,
+      "save_default_payment_method": "off"
+    },
+    "pending_invoice_item_interval": null,
+    "pending_setup_intent": null,
+    "pending_update": null,
+    "schedule": null,
+    "start_date": 1793620980,
+    "status": "canceled",
+    "test_clock": null,
+    "transfer_data": null,
+    "trial_end": 1794225780,
+    "trial_settings": {
+      "end_behavior": {
+        "missing_payment_method": "create_invoice"
+      }
+    },
+    "trial_start": 1793620980
+  },
+  "checkout.session.completed.non-us": {
+    "id": "sub_Fixture0003",
+    "object": "subscription",
+    "application": null,
+    "application_fee_percent": null,
+    "automatic_tax": {
+      "disabled_reason": null,
+      "enabled": true,
+      "liability": {
+        "type": "self"
+      }
+    },
+    "billing_cycle_anchor": 1796213160,
+    "billing_cycle_anchor_config": null,
+    "billing_mode": {
+      "flexible": null,
+      "type": "classic"
+    },
+    "billing_thresholds": null,
+    "cancel_at": null,
+    "cancel_at_period_end": false,
+    "canceled_at": null,
+    "cancellation_details": {
+      "comment": null,
+      "feedback": null,
+      "reason": null
+    },
+    "collection_method": "charge_automatically",
+    "created": 1793621160,
+    "currency": "usd",
+    "customer": "cus_Fixture0003",
+    "days_until_due": null,
+    "default_payment_method": "pm_Fixture0003",
+    "default_source": null,
+    "default_tax_rates": [],
+    "description": null,
+    "discounts": [],
+    "ended_at": null,
+    "invoice_settings": {
+      "account_tax_ids": null,
+      "issuer": {
+        "type": "self"
+      }
+    },
+    "items": {
+      "object": "list",
+      "data": [
+        {
+          "id": "si_Fixture0003",
+          "object": "subscription_item",
+          "billing_thresholds": null,
+          "created": 1793621160,
+          "current_period_end": 1796213160,
+          "current_period_start": 1793621160,
+          "discounts": [],
+          "metadata": {},
+          "plan": {
+            "id": "price_Fixture0001",
+            "object": "plan",
+            "active": true,
+            "amount": 599,
+            "amount_decimal": "599",
+            "billing_scheme": "per_unit",
+            "created": 1790856000,
+            "currency": "usd",
+            "interval": "month",
+            "interval_count": 1,
+            "livemode": false,
+            "metadata": {},
+            "meter": null,
+            "nickname": "Family Plan monthly",
+            "product": "prod_Fixture0001",
+            "tiers_mode": null,
+            "transform_usage": null,
+            "trial_period_days": null,
+            "usage_type": "licensed"
+          },
+          "price": {
+            "id": "price_Fixture0001",
+            "object": "price",
+            "active": true,
+            "billing_scheme": "per_unit",
+            "created": 1790856000,
+            "currency": "usd",
+            "custom_unit_amount": null,
+            "livemode": false,
+            "lookup_key": "sparkle_family_monthly",
+            "metadata": {},
+            "nickname": "Family Plan monthly",
+            "product": "prod_Fixture0001",
+            "recurring": {
+              "interval": "month",
+              "interval_count": 1,
+              "meter": null,
+              "usage_type": "licensed"
+            },
+            "tax_behavior": "exclusive",
+            "tiers_mode": null,
+            "transform_quantity": null,
+            "type": "recurring",
+            "unit_amount": 599,
+            "unit_amount_decimal": "599"
+          },
+          "quantity": 1,
+          "subscription": "sub_Fixture0003",
+          "tax_rates": []
+        }
+      ],
+      "has_more": false,
+      "total_count": 1,
+      "url": "/v1/subscription_items?subscription=sub_Fixture0003"
+    },
+    "latest_invoice": {
+      "id": "in_Fixture0004",
+      "object": "invoice",
+      "account_country": "US",
+      "account_name": "Sparkle World",
+      "account_tax_ids": null,
+      "amount_due": 599,
+      "amount_overpaid": 0,
+      "amount_paid": 599,
+      "amount_remaining": 0,
+      "amount_shipping": 0,
+      "application": null,
+      "attempt_count": 1,
+      "attempted": true,
+      "auto_advance": true,
+      "automatic_tax": {
+        "disabled_reason": null,
+        "enabled": true,
+        "liability": {
+          "type": "self"
+        },
+        "provider": "stripe",
+        "status": "complete"
+      },
+      "automatically_finalizes_at": null,
+      "billing_reason": "subscription_create",
+      "collection_method": "charge_automatically",
+      "confirmation_secret": null,
+      "created": 1793621160,
+      "currency": "usd",
+      "custom_fields": null,
+      "customer": "cus_Fixture0003",
+      "customer_address": {
+        "city": "Toronto",
+        "country": "CA",
+        "line1": "1 Yonge St",
+        "line2": null,
+        "postal_code": "M5E 1E5",
+        "state": "ON"
+      },
+      "customer_email": "parent3@example.com",
+      "customer_name": "Test Parent",
+      "customer_phone": null,
+      "customer_shipping": null,
+      "customer_tax_exempt": "none",
+      "customer_tax_ids": [],
+      "default_payment_method": null,
+      "default_source": null,
+      "default_tax_rates": [],
+      "description": null,
+      "discounts": [],
+      "due_date": null,
+      "effective_at": 1793621160,
+      "ending_balance": 0,
+      "footer": null,
+      "from_invoice": null,
+      "hosted_invoice_url": "https://stripe-fake.example/i/in_Fixture0004",
+      "invoice_pdf": "https://stripe-fake.example/i/in_Fixture0004/pdf",
+      "issuer": {
+        "type": "self"
+      },
+      "last_finalization_error": null,
+      "latest_revision": null,
+      "lines": {
+        "object": "list",
+        "data": [
+          {
+            "id": "il_Fixture0004",
+            "object": "line_item",
+            "amount": 599,
+            "currency": "usd",
+            "description": "1 × Sparkle World Family Plan (at $5.99 / month)",
+            "discount_amounts": [],
+            "discountable": true,
+            "discounts": [],
+            "invoice": "in_Fixture0004",
+            "livemode": false,
+            "metadata": {},
+            "parent": {
+              "invoice_item_details": null,
+              "subscription_item_details": {
+                "invoice_item": null,
+                "proration": false,
+                "proration_details": {
+                  "credited_items": null
+                },
+                "subscription": "sub_Fixture0003",
+                "subscription_item": "si_Fixture0003"
+              },
+              "type": "subscription_item_details"
+            },
+            "period": {
+              "end": 1796213160,
+              "start": 1793621160
+            },
+            "pretax_credit_amounts": [],
+            "pricing": {
+              "price_details": {
+                "price": "price_Fixture0001",
+                "product": "prod_Fixture0001"
+              },
+              "type": "price_Fixture0002",
+              "unit_amount_decimal": "599"
+            },
+            "quantity": 1,
+            "taxes": []
+          }
+        ],
+        "has_more": false,
+        "total_count": 1,
+        "url": "/v1/invoices/in_Fixture0004/lines"
+      },
+      "livemode": false,
+      "metadata": {},
+      "next_payment_attempt": null,
+      "number": "FIXTURE0-0001",
+      "on_behalf_of": null,
+      "parent": {
+        "quote_details": null,
+        "subscription_details": {
+          "metadata": {
+            "family_id": "5a1e0000-0000-4000-8000-000000000003"
+          },
+          "subscription": "sub_Fixture0003"
+        },
+        "type": "subscription_details"
+      },
+      "payment_settings": {
+        "default_mandate": null,
+        "payment_method_options": null,
+        "payment_method_types": null
+      },
+      "period_end": 1796213160,
+      "period_start": 1793621160,
+      "post_payment_credit_notes_amount": 0,
+      "pre_payment_credit_notes_amount": 0,
+      "receipt_number": null,
+      "rendering": null,
+      "shipping_cost": null,
+      "shipping_details": null,
+      "starting_balance": 0,
+      "statement_descriptor": null,
+      "status": "paid",
+      "status_transitions": {
+        "finalized_at": 1793621160,
+        "marked_uncollectible_at": null,
+        "paid_at": 1793621160,
+        "voided_at": null
+      },
+      "subtotal": 599,
+      "subtotal_excluding_tax": 599,
+      "test_clock": null,
+      "total": 599,
+      "total_discount_amounts": [],
+      "total_excluding_tax": 599,
+      "total_pretax_credit_amounts": [],
+      "total_taxes": [],
+      "webhooks_delivered_at": null
+    },
+    "livemode": false,
+    "metadata": {
+      "family_id": "5a1e0000-0000-4000-8000-000000000003"
+    },
+    "next_pending_invoice_item_invoice": null,
+    "on_behalf_of": null,
+    "pause_collection": null,
+    "payment_settings": {
+      "payment_method_options": null,
+      "payment_method_types": null,
+      "save_default_payment_method": "off"
+    },
+    "pending_invoice_item_interval": null,
+    "pending_setup_intent": null,
+    "pending_update": null,
+    "schedule": null,
+    "start_date": 1793621160,
+    "status": "active",
+    "test_clock": null,
+    "transfer_data": null,
+    "trial_end": null,
+    "trial_settings": {
+      "end_behavior": {
+        "missing_payment_method": "create_invoice"
+      }
+    },
+    "trial_start": null
+  }
+}

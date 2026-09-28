@@ -1,0 +1,128 @@
+{
+  "id": "evt_Fixture0007",
+  "object": "event",
+  "api_version": "2026-08-26.dahlia",
+  "created": 1793620980,
+  "data": {
+    "object": {
+      "id": "cs_test_Fixture0002",
+      "object": "checkout.session",
+      "adaptive_pricing": {
+        "enabled": false
+      },
+      "after_expiration": null,
+      "allow_promotion_codes": false,
+      "amount_subtotal": 0,
+      "amount_total": 0,
+      "automatic_tax": {
+        "enabled": true,
+        "liability": {
+          "type": "self"
+        },
+        "provider": "stripe",
+        "status": "complete"
+      },
+      "billing_address_collection": "required",
+      "cancel_url": "https://sparkleworld.example/account?checkout=cancel",
+      "client_reference_id": "5a1e0000-0000-4000-8000-000000000002",
+      "client_secret": null,
+      "collected_information": {
+        "business_name": null,
+        "individual_name": null,
+        "shipping_details": null
+      },
+      "consent": {
+        "promotions": null,
+        "terms_of_service": "accepted"
+      },
+      "consent_collection": {
+        "payment_method_reuse_agreement": null,
+        "promotions": "none",
+        "terms_of_service": "required"
+      },
+      "created": 1793620920,
+      "currency": "usd",
+      "currency_conversion": null,
+      "custom_fields": [],
+      "custom_text": {
+        "after_submit": null,
+        "shipping_address": null,
+        "submit": null,
+        "terms_of_service_acceptance": {
+          "message": "I agree to the Terms. My Family Plan renews every month at $5.99 plus tax until I cancel; I can cancel any time on the Family page."
+        }
+      },
+      "customer": "cus_Fixture0002",
+      "customer_creation": null,
+      "customer_details": {
+        "address": {
+          "city": "San Francisco",
+          "country": "US",
+          "line1": "510 Townsend St",
+          "line2": null,
+          "postal_code": "94103",
+          "state": "CA"
+        },
+        "business_name": null,
+        "email": "parent2@example.com",
+        "individual_name": null,
+        "name": "Test Parent",
+        "phone": null,
+        "tax_exempt": "none",
+        "tax_ids": []
+      },
+      "customer_email": null,
+      "discounts": [],
+      "expires_at": 1793707320,
+      "invoice": "in_Fixture0003",
+      "invoice_creation": null,
+      "livemode": false,
+      "locale": "en",
+      "metadata": {},
+      "mode": "subscription",
+      "origin_context": null,
+      "payment_intent": null,
+      "payment_link": null,
+      "payment_method_collection": "always",
+      "payment_method_configuration_details": null,
+      "payment_method_options": {
+        "card": {
+          "request_three_d_secure": "automatic"
+        }
+      },
+      "payment_method_types": [
+        "card"
+      ],
+      "payment_status": "no_payment_required",
+      "permissions": null,
+      "phone_number_collection": {
+        "enabled": false
+      },
+      "recovered_from": null,
+      "saved_payment_method_options": null,
+      "setup_intent": null,
+      "shipping_address_collection": null,
+      "shipping_cost": null,
+      "shipping_options": [],
+      "status": "complete",
+      "submit_type": null,
+      "subscription": "sub_Fixture0002",
+      "success_url": "https://sparkleworld.example/account?checkout={CHECKOUT_SESSION_ID}",
+      "total_details": {
+        "amount_discount": 0,
+        "amount_shipping": 0,
+        "amount_tax": 0
+      },
+      "ui_mode": "hosted",
+      "url": null,
+      "wallet_options": null
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 1,
+  "request": {
+    "id": null,
+    "idempotency_key": null
+  },
+  "type": "checkout.session.completed"
+}

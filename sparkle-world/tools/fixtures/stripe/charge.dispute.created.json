@@ -1,0 +1,50 @@
+{
+  "id": "evt_Fixture0004",
+  "object": "event",
+  "api_version": "2026-08-26.dahlia",
+  "created": 1790856120,
+  "data": {
+    "object": {
+      "id": "du_Fixture0001",
+      "object": "dispute",
+      "amount": 635,
+      "balance_transactions": [],
+      "charge": "ch_Fixture0001",
+      "created": 1790856120,
+      "currency": "usd",
+      "enhanced_eligibility_types": [],
+      "evidence": {
+        "customer_email_address": null,
+        "product_description": null,
+        "uncategorized_text": null
+      },
+      "evidence_details": {
+        "due_by": 1791460920,
+        "has_evidence": false,
+        "past_due": false,
+        "submission_count": 0
+      },
+      "is_charge_refundable": true,
+      "livemode": false,
+      "metadata": {},
+      "payment_intent": "pi_Fixture0001",
+      "payment_method_details": {
+        "card": {
+          "brand": "visa",
+          "case_type": "chargeback",
+          "network_reason_code": "10.4"
+        },
+        "type": "card"
+      },
+      "reason": "fraudulent",
+      "status": "needs_response"
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 1,
+  "request": {
+    "id": null,
+    "idempotency_key": null
+  },
+  "type": "charge.dispute.created"
+}
