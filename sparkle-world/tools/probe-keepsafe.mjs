@@ -523,6 +523,9 @@ async function run() {
   }
 }
 
+// our server goes with us, whatever happens (a stray promise must not leave it running)
+process.on('exit', stopServer);
+process.on('unhandledRejection', (err) => errors.push('[probe] unhandled: ' + (err && err.stack ? err.stack : err)));
 try {
   await run();
 } catch (err) {
