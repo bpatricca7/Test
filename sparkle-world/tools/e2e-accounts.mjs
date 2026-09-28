@@ -363,10 +363,11 @@ const FP = {
    */
   async ribbon(fam) {
     const page = fam.page;
+    // her old session may have run out: /api/me then answers 401 signed_out (expected here)
+    if (!page.allow.some((re) => String(re) === String(/401.*\/api\/me/))) page.allow.push(/401.*\/api\/me/);
     await page.goto(`${R.base}/account`);
     await page.waitForSelector('.ribbon, #email', { timeout: 30000 });
     if (!(await page.locator('.ribbon').count())) {
-      page.allow.push(/401.*\/api\/me/); // her old session ran out: /api/me says signed_out
       check(/signed out|sign in/i.test(await page.textContent('main')), 'a month later the Family page asks the grown-up to sign in again');
       await FP.signIn(page, fam.email);
       await page.waitForSelector('.ribbon', { timeout: 30000 });
