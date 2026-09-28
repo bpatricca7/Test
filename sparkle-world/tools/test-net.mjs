@@ -1,6 +1,6 @@
 // Multiplayer net-core tests (docs/MULTIPLAYER.md §15.1), no browser:
 //   node tools/test-net.mjs                 unit tests + property test (20 seeds) + server tests + WebSocket property test
-//   node tools/test-net.mjs --only=unit     just the unit tests (also: prop, server, ws)
+//   node tools/test-net.mjs --only=unit     just the unit tests (also: prop, server, accounts, ws)
 //   node tools/test-net.mjs --seeds=5 --steps=2000 --seed=7
 // The WebSocket tests start server/server.mjs on a random port; they need dist/sparkle-world.html
 // (npm run build) for the page tests.
@@ -1336,6 +1336,390 @@ async function serverSafetyTests() {
   });
 }
 
+// ---------- family accounts on the relay (docs/ACCOUNTS.md §8, §12.6) ----------
+// server/server.mjs in this process with an injected fake `accounts` (tools/fake-accounts.mjs,
+// the §15.2 shape): refusals and close codes, claims in the room (nickname stamping, wk, r:'h',
+// ob, sw.op), live revocation, the per-family limit, the database-down cache, legacy sockets.
+
+/** A WebSocket to /r/<room> with an account cookie and player (?p=). */
+async function acctWs(port, room, { secret = 'sec-' + Math.random().toString(36).slice(2, 12) + '-000000', cookie = '', p = null, device = null } = {}) {
+  const { WebSocket: WS } = await import('ws');
+  return new Promise((resolve) => {
+    const q = `?s=${secret}` + (device ? `&d=${device}` : '') + (p ? `&p=${encodeURIComponent(p)}` : '');
+    const ws = new WS(`ws://127.0.0.1:${port}/r/${room}${q}`, { headers: cookie ? { Cookie: cookie } : {} });
+    const box = { ws, frames: [], closed: null, reason: '', status: null, opened: false, self: null, bytes: 0, closedAt: 0 };
+    ws.on('message', (d, isBinary) => {
+      if (isBinary) {
+        box.bytes += d.length;
+        return;
+      }
+      const f = JSON.parse(d.toString());
+      if (f.t === 'p' && f.self) box.self = f.self;
+      box.frames.push(f);
+    });
+    ws.on('close', (code, reason) => {
+      box.closed = code;
+      box.reason = String(reason);
+      box.closedAt = Date.now();
+      resolve(box);
+    });
+    ws.on('unexpected-response', (req, res) => {
+      box.status = res.statusCode;
+      resolve(box);
+    });
+    ws.on('error', () => {});
+    ws.on('open', () => {
+      box.opened = true;
+      // refusals close right after the handshake: give them a moment before resolving
+      setTimeout(() => resolve(box), 150);
+    });
+  });
+}
+
+/** The latest presence another member has of `peer` (merging p frames). */
+function presenceOf(box, peer) {
+  let st = null;
+  for (const f of box.frames) {
+    if (f.t !== 'p') continue;
+    if (f.reset) st = null;
+    for (const e of f.j || []) if (e.peer === peer) st = { ...e.state };
+    for (const [pp, patch] of f.u || []) if (pp === peer) {
+      st = { ...(st || {}) };
+      for (const k in patch) {
+        if (patch[k] === null) delete st[k];
+        else st[k] = patch[k];
+      }
+    }
+    if ((f.l || []).includes(peer)) st = null;
+  }
+  return st;
+}
+
+async function startAccountServer(fakeOpts = {}, serverOpts = {}) {
+  const { createFakeAccounts } = await import('./fake-accounts.mjs');
+  const { createServer } = await import('../server/server.mjs');
+  const dir = mkdtempSync(path.join(tmpdir(), 'sw-acct-'));
+  const page = path.join(dir, 'page.html');
+  writeFileSync(page, '<!doctype html><title>Sparkle World</title>');
+  const fake = await createFakeAccounts({ mode: 'required', ...fakeOpts });
+  const app = createServer({ accounts: fake, htmlPath: page, siteDir: path.join(dir, 'no-site'), log: () => {}, connectBurst: 1000, roomsBurst: 1000, maxPerIp: 100, roomsPerIp: 100, ...serverOpts });
+  const port = await app.listen(0, '127.0.0.1');
+  return { app, fake, port, close: () => app.close() };
+}
+
+async function accountTests() {
+  console.log('\nFamily accounts on the relay (in-process server, fake accounts)');
+  const ROOM = 'sw1-heart-star-moon-cat';
+
+  await test('accounts: refusals complete the handshake, send {t:e, code} and close with 4401-4405 / 1013', async () => {
+    const s = await startAccountServer({ mode: 'required' });
+    try {
+      const { fake, port } = s;
+      const fam = fake.addFamily({ plan: 'active', consent: 'verified' });
+      const lily = fake.addPlayer(fam, { nickname: 'Lily', friends: true });
+      const mia = fake.addPlayer(fam, { nickname: 'Mia', friends: false });
+      const dev = fake.addSession(fam, { kind: 'device' });
+      const locked = fake.addSession(fam, { kind: 'device', lockPlayer: mia });
+      const lapsedFam = fake.addFamily({ plan: 'lapsed', consent: 'verified' });
+      const rose = fake.addPlayer(lapsedFam, { nickname: 'Rose', friends: true });
+      const lapsedDev = fake.addSession(lapsedFam, { kind: 'device' });
+      const trialFam = fake.addFamily({ plan: 'trialing', consent: 'email_plus' });
+      const tia = fake.addPlayer(trialFam, { nickname: 'Tia', friends: true });
+      const trialDev = fake.addSession(trialFam, { kind: 'device' });
+      const cases = [
+        ['required mode without p', { cookie: dev.cookie }, 4401, 'signed_out'],
+        ['p without a session', { p: lily }, 4401, 'signed_out'],
+        ['an unknown session', { cookie: 'sw_sess=' + 'x'.repeat(43), p: lily }, 4401, 'signed_out'],
+        ['a lapsed plan', { cookie: lapsedDev.cookie, p: rose }, 4402, 'not_entitled'],
+        ['Play with friends off', { cookie: dev.cookie, p: mia }, 4403, 'friends_off'],
+        ['consent not verified yet (free week)', { cookie: trialDev.cookie, p: tia }, 4404, 'friends_locked'],
+        ["another family's player", { cookie: dev.cookie, p: rose }, 4405, 'player_gone'],
+        ['a player that is not there', { cookie: dev.cookie, p: '00000000-0000-4000-8000-000000000000' }, 4405, 'player_gone'],
+        ['a device locked to another player', { cookie: locked.cookie, p: lily }, 4405, 'player_gone'],
+      ];
+      for (const [label, opts, code, name] of cases) {
+        const b = await acctWs(port, ROOM, opts);
+        await waitFor(() => b.closed !== null, 3000);
+        eq([b.opened, b.closed, b.frames], [true, code, [{ t: 'e', code: name }]], label);
+      }
+      const bad = await acctWs(port, ROOM, { cookie: dev.cookie, p: '<script>' });
+      eq(bad.status, 400, 'a malformed p is a 400 before the handshake');
+      fake.down = true;
+      const down = await acctWs(port, ROOM, { cookie: dev.cookie, p: lily });
+      await waitFor(() => down.closed !== null, 3000);
+      eq([down.closed, down.frames], [1013, [{ t: 'e', code: 'unavailable' }]], 'the database is down and nothing is cached: 1013 (the page retries)');
+      fake.down = false;
+      const ok = await acctWs(port, ROOM, { cookie: dev.cookie, p: lily });
+      await sleep(200);
+      eq([ok.opened, ok.closed], [true, null], 'an entitled player with friends on is let through');
+      assert(ok.frames.some((f) => f.t === 'p' && f.self), 'she joined the room');
+      eq(ok.frames.filter((f) => f.t === 'v'), [{ t: 'v', k: 'perm', walkie: 0 }], 'an account link is told its walkie permission at once');
+      ok.ws.close(1000);
+    } finally {
+      await s.close();
+    }
+  });
+
+  await test('accounts: in the room the server stamps nicknames, drops wk without walkie, refuses r:h / ob / sw.op without the claims', async () => {
+    const s = await startAccountServer({ mode: 'required' });
+    try {
+      const { fake, port } = s;
+      const famA = fake.addFamily({ plan: 'active', consent: 'verified' });
+      const lily = fake.addPlayer(famA, { nickname: 'Lily', friends: true, walkie: true });
+      const devA = fake.addSession(famA, { kind: 'device' });
+      const famB = fake.addFamily({ plan: 'active', consent: 'verified' });
+      const june = fake.addPlayer(famB, { nickname: 'June', friends: true, walkie: false });
+      const devB = fake.addSession(famB, { kind: 'device' });
+      const H = await acctWs(port, ROOM, { cookie: devA.cookie, p: lily, device: 'device-lily-000000000000' });
+      const G = await acctWs(port, ROOM, { cookie: devB.cookie, p: june, device: 'device-june-000000000000' });
+      await waitFor(() => H.self && G.self);
+      eq(H.frames.find((f) => f.t === 'v'), { t: 'v', k: 'perm', walkie: 1 }, "Lily's grown-up switched her walkie on: perm 1");
+      eq(G.frames.find((f) => f.t === 'v'), { t: 'v', k: 'perm', walkie: 0 }, "June's walkie is off: perm 0");
+      // the host (a changed page pretending to be someone else) lets June in
+      H.ws.send(JSON.stringify({ t: 's', patch: { v: 1, r: 'h', nm: 'Queen Admin', wk: 1, adm: [[G.self, 1]] } }));
+      await waitFor(() => presenceOf(G, H.self)?.nm);
+      eq(presenceOf(G, H.self).nm, 'Lily', 'the name June sees is the one Lily\'s grown-up chose');
+      eq(presenceOf(G, H.self).wk, 1, 'Lily may show her walkie badge');
+      G.ws.send(JSON.stringify({ t: 's', patch: { v: 1, r: 'g', nm: 'Lily', wk: 1, ob: [[1, 'p', 1, 2, 3]] } }));
+      await waitFor(() => presenceOf(H, G.self)?.nm);
+      const g = presenceOf(H, G.self);
+      eq([g.nm, g.wk, Array.isArray(g.ob)], ['June', undefined, true], "June cannot be 'Lily', and her walkie badge is dropped (no grown-up switch); she may build");
+      // a replace frame is held to the same rules
+      G.ws.send(JSON.stringify({ t: 's', replace: true, patch: { v: 1, r: 'g', nm: 'Nobody', wk: 1 } }));
+      await sleep(200);
+      eq([presenceOf(H, G.self).nm, presenceOf(H, G.self).wk, presenceOf(H, G.self).ob], ['June', undefined, undefined], 'replace: nm stamped, wk dropped');
+      H.ws.close(1000);
+      G.ws.close(1000);
+
+      // free-join visitors (§8.6): a family without a plan, friends on, email-plus consent
+      const v = await startAccountServer({ mode: 'required', friendsMode: 'free-join', mpConsent: 'email_plus' });
+      try {
+        const famH = v.fake.addFamily({ plan: 'active', consent: 'verified' });
+        const host = v.fake.addPlayer(famH, { nickname: 'Lily', friends: true });
+        const hDev = v.fake.addSession(famH, { kind: 'device' });
+        const famV = v.fake.addFamily({ plan: 'none', consent: 'email_plus' });
+        const vis = v.fake.addPlayer(famV, { nickname: 'Poppy', friends: true });
+        const vDev = v.fake.addSession(famV, { kind: 'device' });
+        const HH = await acctWs(v.port, ROOM, { cookie: hDev.cookie, p: host });
+        const V = await acctWs(v.port, ROOM, { cookie: vDev.cookie, p: vis });
+        await waitFor(() => HH.self && V.self);
+        eq(V.frames.find((f) => f.t === 'v'), { t: 'v', k: 'perm', walkie: 0 }, 'a visitor never has the walkie');
+        HH.ws.send(JSON.stringify({ t: 's', patch: { v: 1, r: 'h', adm: [[V.self, 1]] } }));
+        await sleep(150);
+        V.ws.send(JSON.stringify({ t: 's', patch: { r: 'h', nm: 'x' } }));
+        await waitFor(() => V.frames.some((f) => f.t === 'e'));
+        eq(V.frames.filter((f) => f.t === 'e').map((f) => f.code), ['cannot_host'], "a visitor's r:'h' is refused");
+        V.ws.send(JSON.stringify({ t: 's', patch: { r: 'g', nm: 'x', ob: [[1, 'p', 0, 0, 0]] } }));
+        await waitFor(() => presenceOf(HH, V.self)?.nm);
+        eq([presenceOf(HH, V.self).nm, presenceOf(HH, V.self).ob, presenceOf(HH, V.self).r], ['Poppy', undefined, 'g'], "a visitor's building outbox never reaches the host");
+        V.ws.send(JSON.stringify({ t: 'b', topic: 'sw.op', data: { k: 1 } }));
+        V.ws.send(JSON.stringify({ t: 'b', topic: 'sw.bulk', data: { k: 1 } }));
+        await waitFor(() => V.frames.filter((f) => f.t === 'e').length >= 3);
+        eq(V.frames.filter((f) => f.t === 'e').map((f) => f.code), ['cannot_host', 'cannot_build', 'cannot_build'], 'sw.op / sw.bulk from a visitor are rejected');
+        assert(!HH.frames.some((f) => f.t === 'b' && f.topic.startsWith('sw.')), 'the host got none of them');
+        V.ws.send(JSON.stringify({ t: 'b', topic: 'sw.ctl', data: { k: 'hi' } }));
+        await waitFor(() => HH.frames.some((f) => f.t === 'b' && f.topic === 'sw.ctl'));
+        HH.ws.close(1000);
+        V.ws.close(1000);
+      } finally {
+        await v.close();
+      }
+    } finally {
+      await s.close();
+    }
+  });
+
+  await test('accounts: live revocation within about a second (friends off 4403, signed out 4401, deleted 4405, plan ended 4402); walkie off clears the badge', async () => {
+    const s = await startAccountServer({ mode: 'required' });
+    try {
+      const { fake, port, app } = s;
+      const fam = fake.addFamily({ plan: 'active', consent: 'verified' });
+      const lily = fake.addPlayer(fam, { nickname: 'Lily', friends: true, walkie: true });
+      const mia = fake.addPlayer(fam, { nickname: 'Mia', friends: true, walkie: true });
+      const zoe = fake.addPlayer(fam, { nickname: 'Zoe', friends: true });
+      const dev = fake.addSession(fam, { kind: 'device' });
+      const dev2 = fake.addSession(fam, { kind: 'device' });
+      const other = fake.addFamily({ plan: 'active', consent: 'verified' });
+      const ann = fake.addPlayer(other, { nickname: 'Ann', friends: true });
+      const annDev = fake.addSession(other, { kind: 'device' });
+      const H = await acctWs(port, ROOM, { cookie: dev.cookie, p: lily });
+      const M = await acctWs(port, ROOM, { cookie: dev2.cookie, p: mia });
+      const A = await acctWs(port, ROOM, { cookie: annDev.cookie, p: ann });
+      await waitFor(() => H.self && M.self && A.self);
+      H.ws.send(JSON.stringify({ t: 's', patch: { v: 1, r: 'h', nm: 'Lily', adm: [[M.self, 1], [A.self, 2]] } }));
+      M.ws.send(JSON.stringify({ t: 's', patch: { v: 1, r: 'g', nm: 'Mia', wk: 1 } }));
+      await waitFor(() => presenceOf(H, M.self)?.wk === 1);
+      // the walkie switch off: the badge goes at once (the voice side is in test-walkie)
+      let t0 = Date.now();
+      fake.setPlayer(mia, { walkie: false });
+      await waitFor(() => presenceOf(H, M.self) && presenceOf(H, M.self).wk === undefined, 2000);
+      const wkMs = Date.now() - t0;
+      assert(presenceOf(H, M.self).wk === undefined && wkMs < 1000, `Mia's walkie badge is gone in ${wkMs} ms`);
+      await waitFor(() => M.frames.some((f) => f.t === 'v' && f.k === 'perm' && f.walkie === 0));
+      M.ws.send(JSON.stringify({ t: 's', patch: { wk: 1 } }));
+      await sleep(150);
+      eq(presenceOf(H, M.self).wk, undefined, 'her page cannot put the badge back');
+      // and on again: the page is told
+      fake.setPlayer(mia, { walkie: true });
+      await waitFor(() => M.frames.filter((f) => f.t === 'v' && f.k === 'perm').at(-1)?.walkie === 1, 2000);
+      // Play with friends off: closed with 4403
+      t0 = Date.now();
+      fake.setPlayer(mia, { friends: false });
+      await waitFor(() => M.closed !== null, 2000);
+      eq([M.closed, M.frames.filter((f) => f.t === 'e').map((f) => f.code)], [4403, ['friends_off']], 'friends off');
+      assert(M.closedAt - t0 < 1000, `closed in ${M.closedAt - t0} ms`);
+      await waitFor(() => H.frames.some((f) => f.t === 'p' && (f.l || []).includes(M.self)), 1000);
+      assert(H.frames.some((f) => f.t === 'p' && (f.l || []).includes(M.self)), 'the host sees her leave at once');
+      eq(A.closed, null, "another family's player is not touched");
+      // the device is signed out (Family page: Sign out): 4401
+      const Z = await acctWs(port, ROOM, { cookie: dev2.cookie, p: zoe });
+      await waitFor(() => Z.self);
+      t0 = Date.now();
+      fake.revokeSession(dev2.hash);
+      await waitFor(() => Z.closed !== null, 2000);
+      eq([Z.closed, Z.closedAt - t0 < 1000], [4401, true], 'a revoked session closes with 4401 within a second');
+      // the player is deleted: 4405
+      fake.deletePlayer(lily);
+      await waitFor(() => H.closed !== null, 2000);
+      eq(H.closed, 4405, 'a deleted player closes with 4405');
+      // the other family's plan ends (a webhook): 4402
+      fake.setPlan(other, 'lapsed');
+      await waitFor(() => A.closed !== null, 2000);
+      eq(A.closed, 4402, 'a plan that ended closes with 4402');
+      // a plan that runs out by time is found by the sweep (recheck, cached ≤ 60 s)
+      const fam3 = fake.addFamily({ plan: 'canceling', consent: 'verified' });
+      const kim = fake.addPlayer(fam3, { nickname: 'Kim', friends: true });
+      const kDev = fake.addSession(fam3, { kind: 'device' });
+      const K = await acctWs(port, ROOM, { cookie: kDev.cookie, p: kim });
+      await waitFor(() => K.self);
+      fake.clock.set(30 * 24 * 3600e3); // a month later: the period ended, no event
+      await app.recheckAll(false);
+      await sleep(100);
+      eq(K.closed, null, 'the 60 s cache still answers (a lapse by time takes up to about two minutes)');
+      fake.invalidate();
+      await app.recheckAll(false);
+      await waitFor(() => K.closed !== null, 2000);
+      eq(K.closed, 4402, 'the next sweep ends it with 4402');
+      fake.clock.set(0);
+      const st = app.stats();
+      assert(st.revoked >= 5 && st.rechecks > 0 && st.accountConnections === 0, `counters: revoked ${st.revoked}, rechecks ${st.rechecks}, account connections ${st.accountConnections}`);
+    } finally {
+      await s.close();
+    }
+  });
+
+  await test('accounts: at most SW_MAX_PER_FAMILY connections per family; the database-down cache keeps friends playing', async () => {
+    const s = await startAccountServer({ mode: 'required' }, { maxPerFamily: 2 });
+    try {
+      const { fake, port, app } = s;
+      const fam = fake.addFamily({ plan: 'active', consent: 'verified' });
+      const lily = fake.addPlayer(fam, { nickname: 'Lily', friends: true });
+      const mia = fake.addPlayer(fam, { nickname: 'Mia', friends: true });
+      const dev = fake.addSession(fam, { kind: 'device' });
+      const other = fake.addFamily({ plan: 'active', consent: 'verified' });
+      const ann = fake.addPlayer(other, { nickname: 'Ann', friends: true });
+      const aDev = fake.addSession(other, { kind: 'device' });
+      const lilySecret = 'sec-lily-comes-back-0000';
+      let a = await acctWs(port, ROOM, { cookie: dev.cookie, p: lily, secret: lilySecret });
+      const b = await acctWs(port, 'sw1-cat-cat-cat-cat', { cookie: dev.cookie, p: mia });
+      const c = await acctWs(port, 'sw1-sun-sun-sun-sun', { cookie: dev.cookie, p: lily });
+      await waitFor(() => c.closed !== null, 2000);
+      eq([a.closed, b.closed, c.closed, c.frames.filter((f) => f.t === 'e').map((f) => f.code)], [null, null, 4029, ['limit']], 'the third connection of one family is refused (limit)');
+      const d = await acctWs(port, 'sw1-sun-sun-sun-sun', { cookie: aDev.cookie, p: ann });
+      await sleep(150);
+      eq(d.closed, null, 'another family is not affected');
+      eq(app.stats().familyLimited, 1, 'counted');
+      b.ws.close(1000);
+      await sleep(200);
+      const e = await acctWs(port, 'sw1-sun-sun-sun-sun', { cookie: dev.cookie, p: mia });
+      await sleep(150);
+      eq(e.closed, null, 'after one closes, a new one may come');
+      // at the limit, the same page coming back (same peer) before its old socket closed takes
+      // its own old place instead of being refused
+      const a2 = await acctWs(port, ROOM, { cookie: dev.cookie, p: lily, secret: lilySecret });
+      await waitFor(() => a.closed !== null, 2000);
+      await sleep(100);
+      eq([a.closed, a2.closed, app.stats().familyLimited], [4009, null, 1], 'at the limit, a reconnect of the same page replaces its old socket (4009), it is not refused');
+      a = a2;
+      // the database goes down: live games go on, a reconnect uses the cached claims
+      fake.down = true;
+      await app.recheckAll(true);
+      await sleep(150);
+      eq([a.closed, d.closed, e.closed], [null, null, null], 'a recheck that finds the database down closes nobody');
+      a.ws.close(4000);
+      await sleep(150);
+      const again = await acctWs(port, ROOM, { cookie: dev.cookie, p: lily });
+      await sleep(150);
+      eq(again.closed, null, 'a reconnect while the database is down is let in from the cache (up to 30 minutes old)');
+      const fresh = fake.addSession(fam, { kind: 'device' });
+      const nope = await acctWs(port, ROOM, { cookie: fresh.cookie, p: mia });
+      await waitFor(() => nope.closed !== null, 2000);
+      eq(nope.closed, 1013, 'a session the cache never saw gets 1013 (unavailable)');
+      assert(fake.counters.stale >= 1, 'the stale entry was used');
+      fake.down = false;
+      for (const x of [again, d, e]) x.ws.close(1000);
+    } finally {
+      await s.close();
+    }
+  });
+
+  await test('accounts: optional mode lets legacy sockets play exactly as today; the Family page exists only with accounts on', async () => {
+    const s = await startAccountServer({ mode: 'optional' });
+    try {
+      const { port, fake } = s;
+      const A = await acctWs(port, ROOM, { device: 'device-legacy-a-0000000' });
+      const B = await acctWs(port, ROOM, { device: 'device-legacy-b-0000000' });
+      await waitFor(() => A.self && B.self);
+      eq(A.frames.filter((f) => f.t === 'v'), [], 'no perm frame for a legacy socket');
+      A.ws.send(JSON.stringify({ t: 's', patch: { v: 1, r: 'h', nm: 'Anyname', wk: 1, adm: [[B.self, 1]] } }));
+      await waitFor(() => presenceOf(B, A.self)?.nm);
+      eq([presenceOf(B, A.self).nm, presenceOf(B, A.self).wk], ['Anyname', 1], 'a legacy member keeps her own name and badge');
+      B.ws.send(JSON.stringify({ t: 'b', topic: 'sw.op', data: { x: 1 } }));
+      await waitFor(() => A.frames.some((f) => f.t === 'b' && f.topic === 'sw.op'));
+      const fam = fake.addFamily({ plan: 'active', consent: 'verified' });
+      const lily = fake.addPlayer(fam, { nickname: 'Lily', friends: true });
+      const dev = fake.addSession(fam, { kind: 'device' });
+      const C = await acctWs(port, ROOM, { cookie: dev.cookie, p: lily });
+      await waitFor(() => C.self);
+      eq(C.closed, null, 'and an account player may join the same room');
+      // a signed-in page without p (it fell back to local mode) plays as a legacy socket
+      const D = await acctWs(port, ROOM, { cookie: dev.cookie, device: 'device-legacy-d-0000000' });
+      await waitFor(() => D.self || D.closed !== null);
+      eq([D.closed, D.frames.filter((f) => f.t === 'v').length], [null, 0], 'optional: a session cookie without p is a legacy socket (no claims, no perm frame)');
+      for (const x of [A, B, C, D]) x.ws.close(1000);
+    } finally {
+      await s.close();
+    }
+    // the Family page files: 404 with accounts off, COOP with accounts on
+    const { createServer } = await import('../server/server.mjs');
+    const { createFakeAccounts } = await import('./fake-accounts.mjs');
+    const dir = mkdtempSync(path.join(tmpdir(), 'sw-site-'));
+    const { mkdirSync } = await import('node:fs');
+    mkdirSync(path.join(dir, 'account'), { recursive: true });
+    for (const f of ['index.html', 'account.html', 'account/verify.html', 'privacy.html', 'terms.html']) writeFileSync(path.join(dir, f), '<!doctype html><title>x</title>');
+    for (const f of ['account.js', 'account.css']) writeFileSync(path.join(dir, f), '/* x */');
+    const page = path.join(dir, 'page.html');
+    writeFileSync(page, '<!doctype html><title>Sparkle World</title>');
+    const off = createServer({ htmlPath: page, siteDir: dir, log: () => {} });
+    const offPort = await off.listen(0, '127.0.0.1');
+    const on = createServer({ accounts: await createFakeAccounts({ mode: 'optional' }), htmlPath: page, siteDir: dir, log: () => {} });
+    const onPort = await on.listen(0, '127.0.0.1');
+    try {
+      for (const p of ['/account', '/account/verify', '/account.js', '/account.css', '/privacy', '/terms']) {
+        eq((await get(offPort, p)).status, 404, `accounts off: ${p} is not there`);
+        const r = await get(onPort, p);
+        eq(r.status, 200, `accounts on: ${p}`);
+        const page = p === '/account' || p === '/account/verify';
+        eq(r.headers['cross-origin-opener-policy'], page ? 'same-origin' : undefined, `${p}: COOP only on the Family page`);
+      }
+      eq((await get(offPort, '/')).headers['cross-origin-opener-policy'], undefined, 'the home page: no COOP (as today)');
+    } finally {
+      await off.close();
+      await on.close();
+    }
+  });
+}
+
 // ---------- the same property test through the real server ----------
 
 async function wsPropertyTests() {
@@ -1367,6 +1751,7 @@ if (!ONLY || ONLY.has('unit')) await unitTests();
 if (!ONLY || ONLY.has('prop')) await propertyTests();
 if (!ONLY || ONLY.has('server')) await serverTests();
 if (!ONLY || ONLY.has('server')) await serverSafetyTests();
+if (!ONLY || ONLY.has('accounts')) await accountTests();
 if (!ONLY || ONLY.has('ws')) await wsPropertyTests();
 console.log(`\n${passed} passed, ${failures} failed in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
 process.exit(failures ? 1 : 0);

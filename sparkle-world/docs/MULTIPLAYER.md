@@ -1519,14 +1519,16 @@ Each criterion is scored 1–10. Total = mean.
        checks Origin, and never logs payloads. *(The review's gate, per-address limits and
        proxy address rule are Addendum B items 3 and 4.)*
      - It stores **no** player data. There are no accounts; identity is a per-device stamp
-       the server makes (Addendum B item 1) plus the sanitized in-game name.
+       the server makes (Addendum B item 1) plus the sanitized in-game name. *(Family accounts,
+       `SW_ACCOUNTS` on: Addendum D.)*
    - `railway.json` / `Procfile` and `package.json` scripts: `npm start` runs the server on
      `$PORT`, the build runs `npm run build`, and the health check is `/healthz`.
      `docs/DEPLOY-RAILWAY.md` has step-by-step instructions for a parent: connect the GitHub
      repo, set the root directory `sparkle-world`, and the service deploys on every push.
    - Saving on the Railway version is local only: IndexedDB, plus "Save to a file". The
      existing SaveStore fallbacks already do this with no code change. No server-side saves in
-     v1, which keeps COPPA exposure minimal.
+     v1, which keeps COPPA exposure minimal. *(With family accounts on, a family's cloud copy
+     exists too: Addendum D and `docs/ACCOUNTS.md` §7.)*
 2. **No voice chat, ever, unless a parent-gated design is explicitly requested later.** Quick
    phrases and emotes only (already the rule in §11.6 and §17). *(The family asked for exactly
    that later the same day: the parent-gated, push-to-talk walkie-talkie of Addendum C, on the
@@ -1792,3 +1794,105 @@ the gate agreeing page by page) and an end-to-end run through the real server (t
 `/play`) with three pages (desktop host, iPad friend, phone friend without walkie). See
 `docs/teams/walkie.md` for the numbers. `npm run test:net` covers the gate, the stamps and
 the per-address limits the walkie relies on.
+
+---
+
+## Addendum D: family accounts on the relay (2026-09-28, docs/ACCOUNTS.md §8)
+
+The family decided on family accounts and a Family Plan ($5.99 a month; `docs/ACCOUNTS.md` is
+the spec). This addendum **replaces Addendum A's "no server-side saves" and "there are no
+accounts"** for a server that runs with `SW_ACCOUNTS=optional` or `required`. With `SW_ACCOUNTS`
+unset (`off`, the default) everything above holds unchanged: no database, no accounts, no cloud
+saves, the relay exactly as in Addenda A–C. The claude.ai version never uses accounts.
+
+### D.1 What changes, what doesn't
+
+- **Saves** (C's part, `docs/ACCOUNTS.md` §7): with the Family Plan a child's worlds and profile
+  are also kept in the family's cloud copy on the server (the `SaveStore` cloud slot,
+  `HttpCloudBackend`). Games together still live only in memory; the relay stores nothing and
+  logs no payload. Voices are still never recorded.
+- **Identity:** a signed-in device connects with its session cookie and `&p=<player id>`
+  (`/r/<room>?s=&d=&p=`). The per-device stamp (`by`, Addendum B item 1) is unchanged, still per
+  device; the host's **Let in!** gate and the host hold (Addendum B items 2–3) are untouched.
+- **Who may connect** is decided at the upgrade, after every existing check (room name, `s`, `d`,
+  Origin, shutting down, the per-address buckets): `accounts.authorizeSocket({cookie, playerId})`.
+  In `optional` mode a socket without `p` is a legacy socket (exactly today's behavior), with or
+  without a session cookie (a signed-in page that fell back to local mode, for example because
+  `/api/me` did not answer, plays as today); in `required` mode every socket needs a session and
+  `p`.
+
+### D.2 Refusals the page can read
+
+A refused account socket **completes the WebSocket handshake**, gets `{t:'e', code}` and is closed
+with a code the page maps to a friendly card (a refused HTTP upgrade reaches a browser as 1006,
+which could never become a card):
+
+| Close | `code` | When |
+|---|---|---|
+| 4401 | `signed_out` | no valid session; `p` without a session; `required` without `p`; the session was revoked |
+| 4402 | `not_entitled` | the family's plan is not good |
+| 4403 | `friends_off` | the child's **Play with friends** switch is off |
+| 4404 | `friends_locked` | the consent needed for friends is missing (the first payment) |
+| 4405 | `player_gone` | the player is not in the session's family, or was deleted |
+| 1013 | `unavailable` | the database is down and nothing is cached (the page retries) |
+| 4029 | `limit` | more than `SW_MAX_PER_FAMILY` (12) connections for one family (next to the per-address 12) |
+
+The codes of §4.3 / Addendum A–C (4000, 4001, 4002, 4003, 4004, 4008, 4009, 4029, 1011, 1012)
+keep their meaning.
+
+### D.3 Claims in the room (`server/rooms.mjs`)
+
+An admitted account member carries `acct = {familyId, playerId, nickname, canHost, canBuild,
+walkie}` (`join(…, meta.claims)`; null for legacy members and in `tools/net/hub.mjs`). The room
+applies them to her frames:
+
+- presence `r:'h'` without `canHost` → refused `{t:'e', code:'cannot_host'}`, nothing changes;
+- presence `wk:1` without `walkie` → the key is dropped (her badge shows **walkie off**, which is
+  exactly what the voice relay reads);
+- presence `nm` → always the server's nickname (the one her grown-up chose), so a changed page
+  cannot pretend to be another child (a replace frame too);
+- presence `ob` (the guest's building outbox) without `canBuild` → dropped; broadcasts `sw.op` /
+  `sw.bulk` without `canBuild` → refused (`cannot_build`);
+- `setClaims(name, peer, claims)` brings a live member in line: losing `walkie` clears her `wk`
+  and tells the room; a new nickname replaces `nm`.
+
+With `SW_FRIENDS_MODE=subscription` (the family's choice) every admitted account member has
+`canHost = canBuild = true`; only a `free-join` visitor (not built by default) has them false.
+
+### D.4 The walkie (`server/voice.mjs`)
+
+Each link of an account player carries `allowed` (her claims' `walkie`: the grown-up's switch on
+the Family page **and** the confirmed consent). A link that is not allowed talks to nobody and
+hears nothing, whatever her page says (`{k:'on'}`, `wk:1`); the Addendum C rules stay on top of
+it. The server tells the page `{t:'v', k:'perm', walkie: 0|1}` when the link is made and whenever
+it changes (the page's walkie follows it; in account mode the multiplication gate is not used).
+`setAllowed(link, false)` releases her floor at once (`cut` `off`). Legacy links are always
+allowed, as before.
+
+### D.5 Live revocation
+
+`server/server.mjs` indexes account connections by session, family and player. On
+`accounts.events` (`session` revoked, `family` changed or deleted, `player` changed or deleted)
+each affected connection is asked again (`accounts.recheck(claims, {fresh: true})`), and every
+60 s all of them are (the answer is cached ≤ 60 s):
+
+- lost the right to play → `{t:'e', code}`, she leaves the room at once, close with the code;
+- walkie switched off → her voice stops first (`setAllowed(false)`), then her `wk` is cleared;
+- walkie switched on → `setClaims`, then `setAllowed(true)` and the `perm` frame;
+- the database is down (`unavailable`) → nothing changes: live games go on. New connections use
+  a cached answer up to 30 minutes old (A's `authorizeSocket`), so reconnects keep working.
+
+A switch on the Family page reaches a game in progress within about a second (measured in the
+tests: tens of milliseconds); a plan that ends by time within about two minutes.
+
+### D.6 Tests
+
+`npm run test:net` (`--only=accounts`) runs the relay with an injected fake `accounts`
+(`tools/fake-accounts.mjs`): every refusal and close code, nickname stamping, `wk` / `r:'h'` /
+`ob` / `sw.op`, live revocation within a second, the per-family limit, the database-down cache,
+legacy sockets in `optional`, the Family page only with accounts on. `npm run test:walkie` adds
+the relay alone (`allowed`, `perm`, `setAllowed`) and the real server with fake accounts: a child
+without the switch gets 0 voice bytes; switched off mid-game, no byte reaches her after the
+switch although her page keeps saying `on` with `wk:1`; on again, `perm` 1 and she hears.
+`npm run e2e:accounts` plays it through the real pages (`docs/ACCOUNTS.md` §12.8). Notes and
+numbers: `docs/teams/accounts-D.md`.

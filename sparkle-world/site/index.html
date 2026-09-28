@@ -28,8 +28,14 @@
       <a href="#inside">What's inside</a>
       <a href="#together">Play together</a>
       <a href="#grownups">For grown-ups</a>
+<!-- when accounts=optional,required -->
+      <a href="#family-plan">Family Plan</a>
+<!-- end when -->
       <a href="#faq">Questions</a>
     </nav>
+<!-- when accounts=optional,required -->
+    <a class="top-signin" href="/account">Sign in</a>
+<!-- end when -->
     <a class="btn btn-play btn-small" href="/play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z"/></svg>Play now</a>
   </div>
 </header>
@@ -53,7 +59,11 @@
       <ul class="facts" aria-label="Good to know">
         <li>Plays in the browser</li>
         <li>iPad, phones and computers</li>
+<!-- when accounts=off -->
         <li>No ads. Nothing to buy.</li>
+<!-- when accounts=optional,required -->
+        <li>No ads. Nothing to buy inside.</li>
+<!-- end when -->
       </ul>
     </div>
 
@@ -301,7 +311,13 @@
       <header class="together-head">
         <p class="eyebrow">Play together</p>
         <h2 id="together-title" class="display">The secret code is four pictures.</h2>
+<!-- when accounts=off -->
         <p class="section-lede">Friends can visit each other's worlds from their own iPad, phone or computer. The code is pictures, so there is nothing to spell, and nobody needs an account.</p>
+<!-- when accounts=optional -->
+        <p class="section-lede">Friends can visit each other's worlds from their own iPad, phone or computer. The code is pictures, so there is nothing to spell. Until {{SW_REQUIRED_FROM}}, devices that aren't signed in can still play together as before; after that, each friend's family needs the <a href="#family-plan">Family Plan</a> too.</p>
+<!-- when accounts=required -->
+        <p class="section-lede">Friends can visit each other's worlds from their own iPad, phone or computer, when their families have the <a href="#family-plan">Family Plan</a> too. The code is pictures, so there is nothing to spell, and kids never type an email.</p>
+<!-- end when -->
         <ol class="steps">
           <li><span class="step-n" aria-hidden="true">1</span><div><strong>Make a Code.</strong> Tap <em>Play now</em>, then <em>Play with Friends</em>, then <em>Make a Code</em>. You get 4 pictures. Say them to your friend.</div></li>
           <li><span class="step-n" aria-hidden="true">2</span><div><strong>Your friend taps the same 4.</strong> On their own device, on this same website: <em>Play now</em>, <em>Play with Friends</em>, <em>Join a Code</em>, the 4 pictures, <em>Go!</em></div></li>
@@ -409,10 +425,22 @@
     </header>
     <dl class="promises">
       <div><dt><span class="px" style="--c:var(--pink)" aria-hidden="true"></span>No chat typing</dt><dd>Players can only send 16 fixed friendly phrases, like "Hi!" and "Let's build!". Names go through a word filter before other players see them.</dd></div>
+<!-- when accounts=off -->
       <div><dt><span class="px" style="--c:var(--sky)" aria-hidden="true"></span>A walkie-talkie, only if you say so</dt><dd>Voice stays off until a grown-up turns it on for this device, with a quick multiplication question. Then she holds a button to talk, and only friends in the same game with theirs on can hear. It's never recorded, the host can mute anyone, and it only works on this website. No camera, ever.</dd></div>
       <div><dt><span class="px" style="--c:var(--sun)" aria-hidden="true"></span>No accounts</dt><dd>Nobody signs up. No emails, no passwords, no profiles.</dd></div>
       <div><dt><span class="px" style="--c:var(--mint)" aria-hidden="true"></span>No ads, nothing to buy</dt><dd>There are no ads and no purchases. Sparkle Coins for the shops are earned by playing, like finding gems or cooking, and can never be bought.</dd></div>
       <div><dt><span class="px" style="--c:var(--lav)" aria-hidden="true"></span>Worlds stay on your device</dt><dd>Worlds, outfits and stickers are saved in this browser on this device. The server keeps nothing: a game with friends exists only in its memory, only while they play.</dd></div>
+<!-- when accounts=optional -->
+      <div><dt><span class="px" style="--c:var(--sky)" aria-hidden="true"></span>A walkie-talkie, only if you say so</dt><dd>Voice stays off until a grown-up switches it on for each child on the Family page. On a device that isn't signed in yet, a grown-up turns it on for that device in Settings, with a quick multiplication question. Then she holds a button to talk, and only friends in the same game with theirs on can hear. It's never recorded, the host can mute anyone, and it only works on this website. No camera, ever.</dd></div>
+      <div><dt><span class="px" style="--c:var(--sun)" aria-hidden="true"></span>Accounts are for grown-ups</dt><dd>A grown-up signs in with an email on the Family page. Kids never type an email: each child is just a nickname you choose, and you set up the devices they play on. One cookie keeps a signed-in device signed in.</dd></div>
+      <div><dt><span class="px" style="--c:var(--mint)" aria-hidden="true"></span>One plan, nothing to buy inside</dt><dd>The Family Plan is {{SW_PRICE_TEXT}}, for the whole family. There are no ads and nothing to buy inside the game: Sparkle Coins are earned by playing and can never be bought, and kids never see a price.</dd></div>
+      <div><dt><span class="px" style="--c:var(--lav)" aria-hidden="true"></span>Worlds saved twice</dt><dd>With the Family Plan, worlds are saved on the device and in your family's cloud copy on our server, so they follow her to another device and come back if a browser clears them. Download or delete them any time. Devices that aren't signed in keep their worlds on the device only, as before.</dd></div>
+<!-- when accounts=required -->
+      <div><dt><span class="px" style="--c:var(--sky)" aria-hidden="true"></span>A walkie-talkie, only if you say so</dt><dd>Voice stays off until a grown-up switches it on for each child on the Family page. Then she holds a button to talk, and only friends in the same game with theirs on can hear. It's never recorded, the host can mute anyone, and it only works on this website. No camera, ever.</dd></div>
+      <div><dt><span class="px" style="--c:var(--sun)" aria-hidden="true"></span>Accounts are for grown-ups</dt><dd>A grown-up signs in with an email on the Family page. Kids never type an email: each child is just a nickname you choose, and you set up the devices they play on. One cookie keeps a signed-in device signed in.</dd></div>
+      <div><dt><span class="px" style="--c:var(--mint)" aria-hidden="true"></span>One plan, nothing to buy inside</dt><dd>The Family Plan is {{SW_PRICE_TEXT}}, for the whole family. There are no ads and nothing to buy inside the game: Sparkle Coins are earned by playing and can never be bought, and kids never see a price.</dd></div>
+      <div><dt><span class="px" style="--c:var(--lav)" aria-hidden="true"></span>Worlds saved twice</dt><dd>Worlds are saved on the device and in your family's cloud copy on our server, so they follow her to another device and come back if a browser clears them. Download or delete them any time on the Family page.</dd></div>
+<!-- end when -->
       <div><dt><span class="px" style="--c:var(--pink)" aria-hidden="true"></span>You decide who comes in</dt><dd>A friend needs the 4-picture code and a <em>Let in!</em> from the host. The host can <em>Send home</em> any friend, and <em>Careful players</em> (on from the start) keeps friends from changing the host's houses and furniture.</dd></div>
       <div><dt><span class="px" style="--c:var(--sky)" aria-hidden="true"></span>Nothing scary</dt><dd>No monsters, no fighting, nobody gets hurt, nothing to lose. Falling in the water just means swimming.</dd></div>
       <div><dt><span class="px" style="--c:var(--sun)" aria-hidden="true"></span>Works where you are</dt><dd>iPad, phones and computers, in the web browser. No download. On an iPad, open the game, tap Share, then <em>Add to Home Screen</em> to keep it like an app.</dd></div>
@@ -420,6 +448,36 @@
     <p class="more"><a class="btn btn-light" href="parents.html">Safety and privacy, in detail</a></p>
   </div>
 </section>
+<!-- when accounts=optional,required -->
+
+<!-- ============================ FAMILY PLAN ============================ -->
+<section class="family-plan" id="family-plan" aria-labelledby="plan-title">
+  <div class="wrap plan-grid">
+    <header class="section-head">
+      <p class="eyebrow">Family Plan</p>
+      <h2 id="plan-title" class="display">One plan for the whole family.</h2>
+<!-- end when -->
+<!-- when accounts=optional -->
+      <p class="section-lede">Playing on your own device works without an account. The Family Plan adds worlds saved on every device, the Family page, and playing together with friends whose families have it too. From {{SW_REQUIRED_FROM}}, playing together needs the Family Plan for each family.</p>
+<!-- when accounts=required -->
+      <p class="section-lede">Sparkle World needs the Family Plan. A grown-up starts it on the Family page, adds the kids, and sets up the devices they play on.</p>
+<!-- end when -->
+<!-- when accounts=optional,required -->
+    </header>
+    <div class="plan-box">
+      <p class="plan-price">{{SW_PRICE_TEXT}}</p>
+      <ul class="plan-ticks">
+        <li>Up to 6 kids, each with her own player and worlds</li>
+        <li>Worlds saved on every device, and kept if a browser clears them</li>
+        <li>Playing together, and the walkie-talkie if you switch it on</li>
+        <li>Nothing to buy inside the game, ever. Kids never see a price.</li>
+      </ul>
+      <p class="plan-cta"><a class="btn btn-play" href="/account">Go to the Family page</a></p>
+      <p class="plan-small">It renews every month until you cancel. Cancel any time on the Family page, in two taps. For families in the United States for now.</p>
+    </div>
+  </div>
+</section>
+<!-- end when -->
 
 <!-- ============================ FAQ ============================ -->
 <section class="faq" id="faq" aria-labelledby="faq-title">
@@ -437,6 +495,7 @@
         <summary>Do we need to download anything?</summary>
         <p>No. Sparkle World runs in the web browser on iPad, phones and computers. Tap <a href="/play">Play now</a> and it starts. It works with a mouse and keyboard, or with touch.</p>
       </details>
+<!-- when accounts=off -->
       <details>
         <summary>Can strangers talk to my child?</summary>
         <p>There is no typing: players tap one of 16 friendly phrases. To visit a world, a friend needs the 4-picture code, and the host has to tap <em>Let in!</em> for each friend. The only voice is the walkie-talkie, which stays off until a grown-up turns it on for that device; then only friends who were let in, and have theirs on too, can hear. The host can mute anyone, or send anyone home, at any time.</p>
@@ -453,6 +512,37 @@
         <summary>Where are the worlds saved?</summary>
         <p>On your device, in the browser, saved as you play. Nothing is stored on the server. Browsers can clear website data, and Safari may clear it for sites that go unused for a while, so add the game to your Home Screen and save a favorite world as a file now and then: open <em>My Worlds</em> and tap <em>Save</em> on the world. That file also moves a world to another device (<em>My Worlds</em>, then <em>Open a file</em>).</p>
       </details>
+<!-- when accounts=optional,required -->
+      <details>
+        <summary>Can strangers talk to my child?</summary>
+        <p>There is no typing: players tap one of 16 friendly phrases. To visit a world, a friend needs the 4-picture code, and the host has to tap <em>Let in!</em> for each friend. The only voice is the walkie-talkie, which stays off until a grown-up switches it on; then only friends who were let in, and have theirs on too, can hear. The host can mute anyone, or send anyone home, at any time.</p>
+      </details>
+      <details>
+        <summary>How does the walkie-talkie work?</summary>
+        <p>A grown-up switches it on for each child on the Family page (it needs <em>Play with friends</em> on too, and your first payment is how we confirm a grown-up said yes). While playing together, she holds the walkie button to talk (up to 15 seconds), and the microphone turns off as soon as she lets go. Friends in the same game who have theirs on hear her live. Nothing is recorded or kept anywhere, and it works only on this website, not in other versions of the game.</p>
+<!-- end when -->
+<!-- when accounts=optional -->
+        <p>On a device that isn't signed in yet, it works the old way: a grown-up opens <em>Settings</em>, taps <em>Walkie-talkie (grown-ups)</em> and answers a multiplication question, for that device only.</p>
+<!-- end when -->
+<!-- when accounts=optional,required -->
+      </details>
+      <details>
+        <summary>Is there anything to buy? Any ads?</summary>
+        <p>No ads, and nothing to buy inside the game. The Family Plan ({{SW_PRICE_TEXT}}) is the only thing that costs money, and only a grown-up can start it, on the Family page. The candy shop and the ice cream parlor use Sparkle Coins, which come from playing: finding gems, cooking, gardening, a daily gift. Coins can't be bought, and kids never see a price.</p>
+      </details>
+      <details>
+        <summary>Where are the worlds saved?</summary>
+        <p>On the device, in the browser, as she plays, and with the Family Plan also in your family's cloud copy on our server, so her worlds follow her to another device and come back if a browser clears them. You can download them, or delete them, any time on the Family page. <em>My Worlds</em>, then <em>Save</em>, still saves a world as a file too.</p>
+      </details>
+      <details>
+        <summary>What does a child need to sign in?</summary>
+        <p>Nothing: kids never type an email or a password. A grown-up signs in on the Family page with an email code, adds each child as a nickname, and sets up her device with a short code (or taps <em>Kids play on this device</em>). On the device, she taps her picture in <em>Who's playing?</em> and plays.</p>
+      </details>
+      <details>
+        <summary>How do I cancel the Family Plan?</summary>
+        <p>On the Family page: <em>Manage subscription</em>, then cancel. It keeps working until the end of the month you paid for, and nothing more is charged. You can download everything, or delete your family's account, on the Family page too.</p>
+      </details>
+<!-- end when -->
       <details>
         <summary>How many friends can play together?</summary>
         <p>Up to 4 players in one world, each on their own device. The friend who made the code is the host: it's their world, and their rules.</p>
@@ -494,9 +584,18 @@
     <nav class="foot-links" aria-label="More">
       <a href="/play">Play now</a>
       <a href="parents.html">For grown-ups</a>
+<!-- when accounts=optional,required -->
+      <a href="/account">Family page</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+<!-- end when -->
       <a href="third-party-notices.txt">Third-party notices</a>
     </nav>
+<!-- when accounts=off -->
     <p class="foot-privacy">Privacy: no accounts, no ads, no trackers. Worlds are saved on your own device, not on our server.</p>
+<!-- when accounts=optional,required -->
+    <p class="foot-privacy">Privacy: no ads, no analytics, no trackers, nothing sold. Accounts are for grown-ups; kids never type an email. Details in the <a href="/privacy">Privacy Notice</a>.</p>
+<!-- end when -->
   </div>
 </footer>
 
