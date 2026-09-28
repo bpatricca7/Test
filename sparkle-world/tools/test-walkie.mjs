@@ -1198,6 +1198,9 @@ async function main() {
     await press(june, '.sw-hud-tr button[aria-label="Menu"]');
     await press(june, '.sw-panel-wrap.sw-open button:has-text("Settings")');
     await june.page.waitForSelector('.sw-panel-wrap.sw-open .sw-wk-setrow');
+    // the Settings panel is still sliding open: with the game's own font (self-hosted since
+    // accounts v1, wider than the fallback) a tap at once lands on the row, not on its switch
+    await settle(june.page, 700);
     await press(june, '.sw-panel-wrap.sw-open .sw-wk-setrow .sw-wk-switch');
     const offAgain = await until(june, () => !window.__game.debug.walkie.state().enabled && !document.querySelector('.sw-gate'), null, 3000, 100);
     check(!!offAgain, 'June: turning the walkie off is one tap (no question)');
