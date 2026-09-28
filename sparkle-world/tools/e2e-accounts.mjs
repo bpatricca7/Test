@@ -941,11 +941,26 @@ async function s10() {
     page.flushErrors();
     await ctx.close();
   }
-  // SW_ACCOUNTS=optional: signed-out devices play, and play together, as today
+  // SW_ACCOUNTS=optional, with the family's settings (no free trial): signed-out devices play,
+  // and play together, as today
   await stopServer(R.server);
-  R.server = await startServer(R.port, { ...R.env, SW_ACCOUNTS: 'optional', SW_SITE: R.optSite });
+  R.server = await startServer(R.port, { ...R.env, SW_ACCOUNTS: 'optional', SW_TRIAL_DAYS: '0', SW_SITE: R.optSite });
   const net = await (await fetch(`${R.base}/api/net`)).json();
   check(net.accounts === 'optional', `/api/net says accounts: optional (${JSON.stringify(net)})`);
+  // the plan card as the family decided it (SW_TRIAL_DAYS=0), on a phone
+  {
+    const ctx = await newContext('parentD', { w: 390, h: 844 });
+    const page = await newPage(ctx, 'parentD');
+    await FP.signIn(page, `d.${randomBytes(3).toString('hex')}@example.com`);
+    await FP.agree(page);
+    const buttons = await page.locator('.plan-choice .btn').allTextContents();
+    const words = await page.textContent('.plan-choices');
+    check(buttons.length === 1 && buttons[0] === 'Start the Family Plan' && /\$5\.99 a month, plus sales tax where it applies/.test(words) && /renews every month until you cancel/.test(words) && !/free/i.test(words), `no free trial (the family's decision): one "Start the Family Plan" button, the price and the renewal next to it (${buttons.join(' | ')})`);
+    check(!(await page.isChecked('#us')), 'the US box starts empty');
+    await shot(page, 'parentD-plan-no-trial-390', true);
+    page.flushErrors();
+    await ctx.close();
+  }
   const lily = await newDevice('opt-lily', 'Lily', { w: 1280, h: 800, touch: false });
   const rosie = await newDevice('opt-rosie', 'Rosie', { w: 1024, h: 768 });
   for (const d of [lily, rosie]) {
@@ -1005,7 +1020,7 @@ async function main() {
     const startStripeFake = await loadStripeFake();
     let stripeInfo = null;
     if (startStripeFake) {
-      const webhookSecret = 'whsec_' + randomBytes(24).toString('base64url');
+      const webhookSecret = 'whsec_' + randomBytes(24).toString('hex'); // Stripe's are letters and digits
       R.stripe = await startStripeFake({ webhookUrl: `http://127.0.0.1:${R.port}/api/stripe/webhook`, webhookSecret, publicUrl: null });
       stripeInfo = { url: R.stripe.url, webhookSecret, priceId: R.stripe.priceId || null };
       cleanups.push(() => R.stripe.close());
@@ -1020,7 +1035,7 @@ async function main() {
     R.optSite = mkdtempSync(path.join(tmpdir(), 'sw-e2e-site-opt-'));
     cleanups.push(() => rmSync(R.siteDir, { recursive: true, force: true }), () => rmSync(R.optSite, { recursive: true, force: true }));
     await buildSite({ out: R.siteDir, mode: 'required', env: R.env, quiet: true });
-    await buildSite({ out: R.optSite, mode: 'optional', env: R.env, quiet: true });
+    await buildSite({ out: R.optSite, mode: 'optional', env: { ...R.env, SW_TRIAL_DAYS: '0' }, quiet: true });
     R.browser = await launch({ headed: !!arg('headed') });
     cleanups.push(() => R.browser.close());
     if (run.includes(2)) await seedLegacy();

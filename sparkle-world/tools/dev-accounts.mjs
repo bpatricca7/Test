@@ -115,7 +115,7 @@ async function main() {
   const startStripeFake = await loadStripeFake();
   let stripe = null;
   if (startStripeFake) {
-    const webhookSecret = 'whsec_' + randomBytes(24).toString('base64url');
+    const webhookSecret = 'whsec_' + randomBytes(24).toString('hex'); // Stripe's are letters and digits
     const f = await startStripeFake({ webhookUrl: `${ORIGIN}/api/stripe/webhook`, webhookSecret, publicUrl: null });
     stripe = { url: f.url, webhookSecret, priceId: f.priceId || null };
     cleanups.push(() => f.close());
