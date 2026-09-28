@@ -155,6 +155,10 @@ idempotency, drift repair, `--replace`, the program.
   - The admin tool's `comp` / `consent-verified` should call `ctx.billing.invalidate(familyId)`;
     `show` can print `flags` (`dispute`, `refund_due`, `us_only`, `duplicate_sub`). The daily
     summary can use `ctx.billing.stats()`.
+  - Seen once in 7 runs under load (not billing code): the skeleton test "tryLock: one holder at a
+    time; lock waits" expects `['a1', 'a2', 'b']`, but with a pool the second `db.lock` call can get
+    the lock first (`['b', 'a1', 'a2']`). Mutual exclusion held; assert that `a1, a2` are adjacent
+    instead of the order, or start the second call from inside the first holder.
   - The `stripe` SDK writes one `<claude-code-hint …/>` line to stderr when it is imported with
     `CLAUDECODE` set (only in this development environment): a log spy on stderr may see it.
 - **C (saves)**: writes check `(await ctx.billing.entitlementFor(familyId)).entitled` (true in the
