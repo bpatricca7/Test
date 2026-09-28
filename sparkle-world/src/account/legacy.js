@@ -29,9 +29,13 @@ export function setLegacyState(v) {
 }
 
 /** A profile with something of hers in it (not the game's starting one). */
+// Every profile starts with this many coins (START_COINS in src/things/shops/coins.js, not
+// imported here: that module pulls in the shops' UI), so only more than that means she played.
+const START_COINS = 100;
+
 export function profileHasPlay(p) {
   const s = (p && p.stats) || {};
-  return !!p && (Object.keys(p.stickers || {}).length > 0 || p.coins > 0 || s.blocksPlaced > 0 || s.worldsCreated > 0 || (p.outfits || []).some(Boolean));
+  return !!p && (Object.keys(p.stickers || {}).length > 0 || p.coins > START_COINS || s.blocksPlaced > 0 || s.worldsCreated > 0 || (p.outfits || []).some(Boolean));
 }
 
 /** Might there be old saves? (no database is created just to look) */
