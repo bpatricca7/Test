@@ -335,6 +335,7 @@ export function routes(ctx) {
         elevatedAt: x.session.elevatedAt ?? null,
         consent: consentJson(f),
         plan: ent,
+        purgeAfter: ms(f.purge_after), // the lapsed ribbon's "kept until <date>" (§9.2); null while entitled
         players: r.rows.map((p) => playerJson(p, { worlds: p.world_count, lastPlayed: ms(p.last_played) })),
         config: {
           friendsMode: cfg.friendsMode,

@@ -16,7 +16,8 @@
 //   consent_confirm  { at (ms), v }
 //   welcome          { trialEnd? (ms), periodEnd? (ms) }
 //   friends_ready    {}
-//   us_only          { refund? (true when a payment was taken and will be refunded) }
+//   us_only          { refund? or refundDue? (true when a payment was taken and will be refunded;
+//                      billing.mjs sends refundDue) }
 //   lapse_warning    { lapsedAt (ms), purgeAfter (ms) }
 //   annual_reminder  {}
 //   inactive         {}
@@ -138,7 +139,7 @@ function usOnly({ data }) {
     text: [
       "Sorry! Sparkle World's Family Plan is only available in the United States for now, so we cancelled it.",
       '',
-      data.refund === true ? 'The payment that was taken will be refunded to your card.' : 'No payment was taken.',
+      data.refund === true || data.refundDue === true ? 'The payment that was taken will be refunded to your card.' : 'No payment was taken.',
     ].join('\n'),
   };
 }

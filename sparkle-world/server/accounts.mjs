@@ -15,8 +15,8 @@
 //
 // `db` is optional (tests pass one from tools/testdb.mjs; otherwise cfg.databaseUrl is opened
 // and closed by close()). `clock` defaults to makeClock(): the app clock that every time
-// comparison uses (§3.1), moved by POST /api/test/clock. `timers: false` starts no job timers
-// (in-process tests and the admin CLI run jobs with ctx.jobs.run(name)).
+// comparison uses (§3.1), moved by POST /api/test/clock. `timers: false` (or `jobs: false`) starts
+// no job timers (in-process tests and the admin CLI run jobs with ctx.jobs.run(name)).
 //
 // The route modules are picked up when their files exist, so each owner adds its own file
 // without editing this one (docs/ACCOUNTS.md §15.1):
@@ -63,7 +63,8 @@ async function optionalModule(file) {
   return existsSync(fileURLToPath(url)) ? import(url.href) : null;
 }
 
-export async function createAccounts(cfg, { log = (...a) => console.log(...a), clock = makeClock(), db = null, timers = true } = {}) {
+export async function createAccounts(cfg, { log = (...a) => console.log(...a), clock = makeClock(), db = null, timers = true, jobs: jobsOpt = true } = {}) {
+  if (jobsOpt === false) timers = false; // `jobs: false` (tools/test-billing.mjs) is the same as `timers: false`
   if (!cfg || cfg.accounts === 'off') throw new Error('createAccounts: accounts are off');
   const ownDb = !db;
   if (!db) db = await openDb(cfg.databaseUrl, { log });
