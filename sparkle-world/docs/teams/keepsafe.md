@@ -111,7 +111,9 @@ for older callers.
 
 ## Tests
 
-`node tools/probe-keepsafe.mjs [--no-build] [--headed]` (about 2½ minutes): builds, starts
+`node tools/probe-keepsafe.mjs [--no-build] [--headed] [--only=devices]` (about 2½ minutes;
+`--only=devices` reruns just the iPhone/iPad, `file://` and claude.ai cases with the backup file
+of an earlier run): builds, starts
 `server/server.mjs` on a free port (stops only that process), then checks:
 
 - no manifest, no `apple-mobile-web-app-*` / `mobile-web-app-capable` tags on the game page or

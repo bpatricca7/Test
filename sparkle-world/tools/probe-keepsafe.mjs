@@ -1,7 +1,7 @@
 // Keeping her worlds safe on the website (src/core/keepsafe.js, src/ui/keepsafe.js,
 // docs/teams/keepsafe.md), end to end through the real server:
 //
-//   node tools/probe-keepsafe.mjs [--no-build] [--headed] [--shots-prefix=keepsafe]
+//   node tools/probe-keepsafe.mjs [--no-build] [--headed] [--shots-prefix=keepsafe] [--only=devices]
 //
 // 1. `npm run build`, then starts server/server.mjs on a random free port (its own process;
 //    only that process is stopped at the end, by its PID).
@@ -210,212 +210,216 @@ async function run() {
 
   const browser = await launch({ headed: !!arg('headed') });
   try {
-    // -------------------------------------------------------------- 3. desktop Chrome
-    log('Desktop Chrome: persist() at boot and at the first key press');
-    const A = await open(browser, PLAY, { label: 'desktop' });
-    await game(A.page, () => window.__game.keepsafe.ready);
-    let s = await ksState(A.page);
-    check(s.active, 'the website version: keepsafe is on');
-    check(s.calls.persisted >= 1 && s.calls.persist === 1, `persist() asked once at boot (persisted() ${s.calls.persisted}, persist() ${s.calls.persist})`);
-    check(s.state && s.state.persisted === false && s.state.askedAt > 0, 'the answer is in profile.keepsafe (persisted: false, askedAt)');
-    await A.page.keyboard.press('Shift');
-    await A.page.waitForFunction(() => window.__ks.persist >= 2, null, { timeout: 3000 }).catch(() => {});
-    await game(A.page, () => window.__game.keepsafe.ready);
-    s = await ksState(A.page);
-    check(s.calls.persist === 2, `asked again at her first key press (persist() ${s.calls.persist})`);
-    check(s.diag && s.diag.keepsafe && s.diag.keepsafe.persisted === false && s.diag.keepsafe.asks === 2 && s.diag.keepsafe.host === 'web', `diag.report().storage.keepsafe says so (${JSON.stringify(s.diag && s.diag.keepsafe)})`);
-    await A.page.keyboard.press('Shift');
-    await settle(A.page, 300);
-    check((await ksState(A.page)).calls.persist === 2, 'later key presses do not ask again');
-    await noHomeScreenUi(A.page, 'desktop');
-
-    log('Two worlds, a new look, coins and a sticker');
-    await newWorld(A.page, 'Rainbow Meadow');
-    await newWorld(A.page, 'Cupcake Village');
-    const mine = await game(A.page, async () => {
-      const g = window.__game, p = g.profile;
-      p.look.hair = { ...p.look.hair, style: 'space_buns', color: '#9C7BFF' };
-      p.look.top = { ...p.look.top, color: '#3FD8B0' };
-      p.look.name = 'Mia';
-      p.playerName = 'Mia';
-      p.coins = 777;
-      p.stickers = { ...p.stickers, first_block: p.stickers.first_block || new Date().toISOString() };
-      g.events.emit('avatar:changed', { look: p.look });
-      await g.saveProfile(true);
-      return { look: JSON.stringify(p.look), worlds: (await g.store.listWorlds()).map((w) => w.name).sort() };
-    });
-    check(mine.worlds.length === 2, `two worlds here (${mine.worlds.join(', ')})`);
-
-    log('A new player is not nagged');
-    await ageBackup(A.page, null);
-    await reload(A.page);
-    check(!(await cardShows(A.page, 3500)), 'worlds made today and no copy yet: no card');
-
-    log('The backup card after 8 days');
-    await ageBackup(A.page, 8);
-    await reload(A.page);
-    check(await cardShows(A.page), 'the card shows on the title');
-    await settle(A.page, 700);
-    await shot(A.page, 'card-desktop');
-    const cardText = await A.page.locator('.ks-card').innerText();
-    check(/It's been a while!/.test(cardText) && /Save a copy of your worlds\?/.test(cardText), 'it says "It\'s been a while! Save a copy of your worlds?"');
-    check((await A.page.locator('.ks-card .ks-shot').count()) === 2, 'it shows her two worlds\' pictures');
-    await A.page.locator('.ks-card button', { hasText: 'Not now' }).click();
-    await A.page.waitForSelector('.ks-card', { state: 'detached', timeout: 3000 }).catch(() => {});
-    s = await ksState(A.page);
-    check(s.state.snoozeUntil > Date.now() + 6.9 * DAY && s.state.snoozeUntil < Date.now() + 7.1 * DAY, '"Not now" waits 7 days');
-    check((await A.page.locator('.ks-card').count()) === 0, 'the card is gone');
-    await reload(A.page);
-    check(!(await cardShows(A.page, 3500)), 'after "Not now": no card on the next visit');
-
-    log('Never in a world');
-    await ageBackup(A.page, 8);
-    await A.page.reload();
-    // a quick Play, as soon as the title is there (before the card)
-    await A.page.waitForFunction(() => window.__game && window.__game.ui && window.__game.ui.current === 'title' && !document.querySelector('.sw-title-play').hidden, null, { timeout: 30000, polling: 50 });
-    await game(A.page, () => document.querySelector('.sw-title-play').click());
-    await waitForPlay(A.page);
-    await settle(A.page, 2500);
-    check((await A.page.locator('.ks-card').count()) === 0, 'a quick Play: no card in the world');
-    check(!(await game(A.page, () => window.__game.keepsafe.remind({ force: true }))), 'asking while playing shows nothing');
-    check((await A.page.locator('.ks-card').count()) === 0, 'still no card in the world');
-    await game(A.page, () => window.__game.exitToTitle());
-    await waitForTitle(A.page);
-    check(await cardShows(A.page), 'back on the title: the card');
-
-    log('"Save a copy": one file with every world');
-    const dl = A.page.waitForEvent('download', { timeout: 20000 }).catch(() => null);
-    await A.page.locator('.ks-card button', { hasText: 'Save a copy' }).click();
-    const d = await dl;
-    check(d && /^Sparkle World backup \d{4}-\d\d-\d\d\.json$/.test(d.suggestedFilename()), `downloaded "${d && d.suggestedFilename()}"`);
     const backupFile = path.join(SHOTS, `${P}-backup.json`);
-    let backup = null;
-    if (d) {
-      await d.saveAs(backupFile);
-      backup = JSON.parse(await readFile(backupFile, 'utf8'));
-    }
-    check(backup && backup.format === 'sparkle-world-backup' && backup.worlds.length === 2 && backup.worlds.every((w) => w.blocks && w.size && w.thumbnail), `the file has both worlds (${backup && backup.worlds.map((w) => w.name).join(', ')})`);
-    check(backup && JSON.stringify(backup.profile.look) === mine.look && backup.profile.coins === 777 && backup.profile.stickers.first_block, 'and her look, coins and stickers');
-    check(backup && !('settings' in backup.profile) && !('net' in backup.profile) && !('keepsafe' in backup.profile), 'but not this device\'s settings or ids');
-    await A.page.waitForFunction(() => /Saved a copy of your worlds!/.test(document.querySelector('.sw-toasts').textContent), null, { timeout: 4000 }).catch(() => {});
-    check(/Saved a copy of your worlds!/.test(await game(A.page, () => document.querySelector('.sw-toasts').textContent)), 'a happy toast');
-    s = await ksState(A.page);
-    check(Math.abs(s.state.lastBackupAt - Date.now()) < 60000, 'lastBackupAt is now');
-    await reload(A.page);
-    check(!(await cardShows(A.page, 3500)), 'right after a copy: no card');
+    let s;
+    // --only=devices: the iPhone/iPad, file:// and claude.ai cases with the backup file of an earlier run
+    if (arg('only') !== 'devices') {
+      // -------------------------------------------------------------- 3. desktop Chrome
+      log('Desktop Chrome: persist() at boot and at the first key press');
+      const A = await open(browser, PLAY, { label: 'desktop' });
+      await game(A.page, () => window.__game.keepsafe.ready);
+      s = await ksState(A.page);
+      check(s.active, 'the website version: keepsafe is on');
+      check(s.calls.persisted >= 1 && s.calls.persist === 1, `persist() asked once at boot (persisted() ${s.calls.persisted}, persist() ${s.calls.persist})`);
+      check(s.state && s.state.persisted === false && s.state.askedAt > 0, 'the answer is in profile.keepsafe (persisted: false, askedAt)');
+      await A.page.keyboard.press('Shift');
+      await A.page.waitForFunction(() => window.__ks.persist >= 2, null, { timeout: 3000 }).catch(() => {});
+      await game(A.page, () => window.__game.keepsafe.ready);
+      s = await ksState(A.page);
+      check(s.calls.persist === 2, `asked again at her first key press (persist() ${s.calls.persist})`);
+      check(s.diag && s.diag.keepsafe && s.diag.keepsafe.persisted === false && s.diag.keepsafe.asks === 2 && s.diag.keepsafe.host === 'web', `diag.report().storage.keepsafe says so (${JSON.stringify(s.diag && s.diag.keepsafe)})`);
+      await A.page.keyboard.press('Shift');
+      await settle(A.page, 300);
+      check((await ksState(A.page)).calls.persist === 2, 'later key presses do not ask again');
+      await noHomeScreenUi(A.page, 'desktop');
 
-    log('Saving one world to a file counts too; "Save all" in My Worlds');
-    await ageBackup(A.page, 8);
-    await A.page.locator('.sw-title2 button', { hasText: 'My Worlds' }).click();
-    await A.page.waitForSelector('.sw-panel-wrap.sw-open .sw-world img');
-    check(await A.page.locator('.sw-save-all').isVisible(), 'My Worlds has "Save all" on the website');
-    const dl1 = A.page.waitForEvent('download', { timeout: 20000 }).catch(() => null);
-    await A.page.locator('.sw-world button[aria-label="Save to a file"]').first().click();
-    const d1 = await dl1;
-    const worldFile = path.join(SHOTS, `${P}-one-world.json`);
-    if (d1) await d1.saveAs(worldFile);
-    await settle(A.page, 400);
-    s = await ksState(A.page);
-    check(d1 && Math.abs(s.state.lastBackupAt - Date.now()) < 60000, 'one world saved to a file: lastBackupAt is now');
-    const dl2 = A.page.waitForEvent('download', { timeout: 20000 }).catch(() => null);
-    await A.page.locator('.sw-save-all').click();
-    const d2 = await dl2;
-    check(d2 && /backup/.test(d2.suggestedFilename()), '"Save all" downloads a backup too');
-    await settle(A.page, 300);
-    await shot(A.page, 'worlds-save-all');
-    await A.context.close();
+      log('Two worlds, a new look, coins and a sticker');
+      await newWorld(A.page, 'Rainbow Meadow');
+      await newWorld(A.page, 'Cupcake Village');
+      const mine = await game(A.page, async () => {
+        const g = window.__game, p = g.profile;
+        p.look.hair = { ...p.look.hair, style: 'space_buns', color: '#9C7BFF' };
+        p.look.top = { ...p.look.top, color: '#3FD8B0' };
+        p.look.name = 'Mia';
+        p.playerName = 'Mia';
+        p.coins = 777;
+        p.stickers = { ...p.stickers, first_block: p.stickers.first_block || new Date().toISOString() };
+        g.events.emit('avatar:changed', { look: p.look });
+        await g.saveProfile(true);
+        return { look: JSON.stringify(p.look), worlds: (await g.store.listWorlds()).map((w) => w.name).sort() };
+      });
+      check(mine.worlds.length === 2, `two worlds here (${mine.worlds.join(', ')})`);
 
-    // -------------------------------------------------------------- 5. a fresh profile
-    log('A fresh profile opens the backup');
-    const B = await open(browser, PLAY, { label: 'fresh' });
-    const freshLook = await game(B.page, () => JSON.stringify(window.__game.profile.look));
-    await B.page.locator('.sw-title2 button', { hasText: 'My Worlds' }).click();
-    await B.page.waitForSelector('.sw-panel-wrap.sw-open .sw-empty');
-    let chooser = B.page.waitForEvent('filechooser');
-    await B.page.locator('.sw-panel-wrap.sw-open .sw-empty button', { hasText: 'Open a file' }).click();
-    await (await chooser).setFiles(backupFile);
-    await B.page.waitForFunction(() => document.querySelectorAll('.sw-world').length === 2, null, { timeout: 10000 }).catch(() => {});
-    await settle(B.page, 600);
-    const back = await game(B.page, async () => {
-      const g = window.__game;
-      return { worlds: (await g.store.listWorlds()).map((w) => w.name).sort(), look: JSON.stringify(g.profile.look), name: g.profile.playerName, coins: g.profile.coins, sticker: !!g.profile.stickers.first_block, toast: document.querySelector('.sw-toasts').textContent };
-    });
-    check(back.worlds.join() === mine.worlds.join(), `both worlds are back (${back.worlds.join(', ')})`);
-    check(back.look === mine.look && back.look !== freshLook && back.name === 'Mia', 'her look and name are back');
-    check(back.coins === 777 && back.sticker, 'her coins and sticker are back');
-    check(/Your worlds are back!/.test(back.toast), 'toast: "Your worlds are back!"');
-    await shot(B.page, 'restored');
+      log('A new player is not nagged');
+      await ageBackup(A.page, null);
+      await reload(A.page);
+      check(!(await cardShows(A.page, 3500)), 'worlds made today and no copy yet: no card');
 
-    log('Opening it again: a changed world asks, an unchanged one is skipped');
-    const changedId = await game(B.page, async () => {
-      const g = window.__game;
-      const w = (await g.store.listWorlds()).find((m) => m.name === 'Rainbow Meadow');
-      const save = await g.store.loadWorld(w.id);
-      // a newer copy of the same world: she walked on a bit
-      save.player = { ...save.player, x: save.player.x + 1 };
-      save.updatedAt = Date.now();
-      await g.store.saveWorld(save);
-      return w.id;
-    });
-    const openFile = async (file) => {
-      const ch = B.page.waitForEvent('filechooser');
-      await B.page.locator('.sw-open-file').click();
-      await (await ch).setFiles(file);
-    };
-    await game(B.page, () => window.__game.ui.open('worlds'));
-    await openFile(backupFile);
-    const asked = await B.page.waitForSelector('.sw-dialog.ks-conflict', { timeout: 5000 }).then(() => true, () => false);
-    check(asked, 'a world that is already here (and changed): an in-page question');
-    await settle(B.page, 500);
-    await shot(B.page, 'conflict-desktop');
-    const q = await game(B.page, () => ({
-      text: document.querySelector('.ks-conflict').innerText,
-      dialogs: document.querySelectorAll('.sw-dialog').length,
-      newer: document.querySelector('.ks-side.ks-newer') && document.querySelector('.ks-side.ks-newer').dataset.side,
-    }));
-    check(/\u201CRainbow Meadow\u201D is already here/.test(q.text) && /Here now/.test(q.text) && /In the file/.test(q.text), 'it shows both: "Here now" and "In the file"');
-    check(q.newer === 'mine', 'the one here is marked "Newer"');
-    check(/Keep the one here/.test(q.text) && /Use the one in the file/.test(q.text) && /Keep both/.test(q.text), 'three answers');
-    await B.page.locator('.ks-conflict button', { hasText: 'Keep the one here' }).click();
-    await B.page.waitForFunction(() => /You have all these worlds already!/.test(document.querySelector('.sw-toasts').textContent), null, { timeout: 5000 }).catch(() => {});
-    const fileAt = backup.worlds.find((w) => w.id === changedId);
-    let after = await game(B.page, async (id) => { const w = await window.__game.store.loadWorld(id); return { n: (await window.__game.store.listWorlds()).length, player: JSON.stringify(w.player), dialogs: document.querySelectorAll('.ks-conflict').length }; }, changedId);
-    check(after.n === 2 && fileAt && after.player !== JSON.stringify(fileAt.player) && after.dialogs === 0, 'only one question (the unchanged world was skipped); "Keep the one here" kept hers');
+      log('The backup card after 8 days');
+      await ageBackup(A.page, 8);
+      await reload(A.page);
+      check(await cardShows(A.page), 'the card shows on the title');
+      await settle(A.page, 700);
+      await shot(A.page, 'card-desktop');
+      const cardText = await A.page.locator('.ks-card').innerText();
+      check(/It's been a while!/.test(cardText) && /Save a copy of your worlds\?/.test(cardText), 'it says "It\'s been a while! Save a copy of your worlds?"');
+      check((await A.page.locator('.ks-card .ks-shot').count()) === 2, 'it shows her two worlds\' pictures');
+      await A.page.locator('.ks-card button', { hasText: 'Not now' }).click();
+      await A.page.waitForSelector('.ks-card', { state: 'detached', timeout: 3000 }).catch(() => {});
+      s = await ksState(A.page);
+      check(s.state.snoozeUntil > Date.now() + 6.9 * DAY && s.state.snoozeUntil < Date.now() + 7.1 * DAY, '"Not now" waits 7 days');
+      check((await A.page.locator('.ks-card').count()) === 0, 'the card is gone');
+      await reload(A.page);
+      check(!(await cardShows(A.page, 3500)), 'after "Not now": no card on the next visit');
 
-    await openFile(backupFile);
-    await B.page.waitForSelector('.sw-dialog.ks-conflict', { timeout: 5000 });
-    await B.page.locator('.ks-conflict button', { hasText: 'Keep both' }).click();
-    await B.page.waitForFunction(() => document.querySelectorAll('.sw-world').length === 3, null, { timeout: 5000 }).catch(() => {});
-    after = await game(B.page, async () => (await window.__game.store.listWorlds()).map((w) => w.name).sort());
-    check(after.length === 3 && after.includes('Rainbow Meadow (copy)'), `"Keep both": a copy (${after.join(', ')})`);
+      log('Never in a world');
+      await ageBackup(A.page, 8);
+      await A.page.reload();
+      // a quick Play, as soon as the title is there (before the card)
+      await A.page.waitForFunction(() => window.__game && window.__game.ui && window.__game.ui.current === 'title' && !document.querySelector('.sw-title-play').hidden, null, { timeout: 30000, polling: 50 });
+      await game(A.page, () => document.querySelector('.sw-title-play').click());
+      await waitForPlay(A.page);
+      await settle(A.page, 2500);
+      check((await A.page.locator('.ks-card').count()) === 0, 'a quick Play: no card in the world');
+      check(!(await game(A.page, () => window.__game.keepsafe.remind({ force: true }))), 'asking while playing shows nothing');
+      check((await A.page.locator('.ks-card').count()) === 0, 'still no card in the world');
+      await game(A.page, () => window.__game.exitToTitle());
+      await waitForTitle(A.page);
+      check(await cardShows(A.page), 'back on the title: the card');
 
-    await openFile(backupFile);
-    await B.page.waitForSelector('.sw-dialog.ks-conflict', { timeout: 5000 });
-    await B.page.locator('.ks-conflict button', { hasText: 'Use the one in the file' }).click();
-    await B.page.waitForFunction(() => /Your worlds are back!/.test(document.querySelector('.sw-toasts').textContent), null, { timeout: 5000 }).catch(() => {});
-    after = await game(B.page, async (id) => {
-      const w = await window.__game.store.loadWorld(id);
-      return { n: (await window.__game.store.listWorlds()).length, spawn: JSON.stringify(w.spawn), player: JSON.stringify(w.player) };
-    }, changedId);
-    check(after.n === 3 && fileAt && after.player === JSON.stringify(fileAt.player), '"Use the one in the file" put the file\'s world back');
+      log('"Save a copy": one file with every world');
+      const dl = A.page.waitForEvent('download', { timeout: 20000 }).catch(() => null);
+      await A.page.locator('.ks-card button', { hasText: 'Save a copy' }).click();
+      const d = await dl;
+      check(d && /^Sparkle World backup \d{4}-\d\d-\d\d\.json$/.test(d.suggestedFilename()), `downloaded "${d && d.suggestedFilename()}"`);
+      let backup = null;
+      if (d) {
+        await d.saveAs(backupFile);
+        backup = JSON.parse(await readFile(backupFile, 'utf8'));
+      }
+      check(backup && backup.format === 'sparkle-world-backup' && backup.worlds.length === 2 && backup.worlds.every((w) => w.blocks && w.size && w.thumbnail), `the file has both worlds (${backup && backup.worlds.map((w) => w.name).join(', ')})`);
+      check(backup && JSON.stringify(backup.profile.look) === mine.look && backup.profile.coins === 777 && backup.profile.stickers.first_block, 'and her look, coins and stickers');
+      check(backup && !('settings' in backup.profile) && !('net' in backup.profile) && !('keepsafe' in backup.profile), 'but not this device\'s settings or ids');
+      await A.page.waitForFunction(() => /Saved a copy of your worlds!/.test(document.querySelector('.sw-toasts').textContent), null, { timeout: 4000 }).catch(() => {});
+      check(/Saved a copy of your worlds!/.test(await game(A.page, () => document.querySelector('.sw-toasts').textContent)), 'a happy toast');
+      s = await ksState(A.page);
+      check(Math.abs(s.state.lastBackupAt - Date.now()) < 60000, 'lastBackupAt is now');
+      await reload(A.page);
+      check(!(await cardShows(A.page, 3500)), 'right after a copy: no card');
 
-    log('A single-world file that is already here');
-    if (d1) {
-      // the one-world file came from the first device; put that exact world here first
-      const one = JSON.parse(await readFile(worldFile, 'utf8'));
-      await game(B.page, async (save) => { await window.__game.store.saveWorld(save); }, one.save);
-      const n0 = await game(B.page, async () => (await window.__game.store.listWorlds()).length);
+      log('Saving one world to a file counts too; "Save all" in My Worlds');
+      await ageBackup(A.page, 8);
+      await A.page.locator('.sw-title2 button', { hasText: 'My Worlds' }).click();
+      await A.page.waitForSelector('.sw-panel-wrap.sw-open .sw-world img');
+      check(await A.page.locator('.sw-save-all').isVisible(), 'My Worlds has "Save all" on the website');
+      const dl1 = A.page.waitForEvent('download', { timeout: 20000 }).catch(() => null);
+      await A.page.locator('.sw-world button[aria-label="Save to a file"]').first().click();
+      const d1 = await dl1;
+      const worldFile = path.join(SHOTS, `${P}-one-world.json`);
+      if (d1) await d1.saveAs(worldFile);
+      await settle(A.page, 400);
+      s = await ksState(A.page);
+      check(d1 && Math.abs(s.state.lastBackupAt - Date.now()) < 60000, 'one world saved to a file: lastBackupAt is now');
+      const dl2 = A.page.waitForEvent('download', { timeout: 20000 }).catch(() => null);
+      await A.page.locator('.sw-save-all').click();
+      const d2 = await dl2;
+      check(d2 && /backup/.test(d2.suggestedFilename()), '"Save all" downloads a backup too');
+      await settle(A.page, 300);
+      await shot(A.page, 'worlds-save-all');
+      await A.context.close();
+
+      // -------------------------------------------------------------- 5. a fresh profile
+      log('A fresh profile opens the backup');
+      const B = await open(browser, PLAY, { label: 'fresh' });
+      const freshLook = await game(B.page, () => JSON.stringify(window.__game.profile.look));
+      await B.page.locator('.sw-title2 button', { hasText: 'My Worlds' }).click();
+      await B.page.waitForSelector('.sw-panel-wrap.sw-open .sw-empty');
+      let chooser = B.page.waitForEvent('filechooser');
+      await B.page.locator('.sw-panel-wrap.sw-open .sw-empty button', { hasText: 'Open a file' }).click();
+      await (await chooser).setFiles(backupFile);
+      await B.page.waitForFunction(() => document.querySelectorAll('.sw-world').length === 2, null, { timeout: 10000 }).catch(() => {});
+      await settle(B.page, 600);
+      const back = await game(B.page, async () => {
+        const g = window.__game;
+        return { worlds: (await g.store.listWorlds()).map((w) => w.name).sort(), look: JSON.stringify(g.profile.look), name: g.profile.playerName, coins: g.profile.coins, sticker: !!g.profile.stickers.first_block, toast: document.querySelector('.sw-toasts').textContent };
+      });
+      check(back.worlds.join() === mine.worlds.join(), `both worlds are back (${back.worlds.join(', ')})`);
+      check(back.look === mine.look && back.look !== freshLook && back.name === 'Mia', 'her look and name are back');
+      check(back.coins === 777 && back.sticker, 'her coins and sticker are back');
+      check(/Your worlds are back!/.test(back.toast), 'toast: "Your worlds are back!"');
+      await shot(B.page, 'restored');
+
+      log('Opening it again: a changed world asks, an unchanged one is skipped');
+      const changedId = await game(B.page, async () => {
+        const g = window.__game;
+        const w = (await g.store.listWorlds()).find((m) => m.name === 'Rainbow Meadow');
+        const save = await g.store.loadWorld(w.id);
+        // a newer copy of the same world: she walked on a bit
+        save.player = { ...save.player, x: save.player.x + 1 };
+        save.updatedAt = Date.now();
+        await g.store.saveWorld(save);
+        return w.id;
+      });
+      const openFile = async (file) => {
+        const ch = B.page.waitForEvent('filechooser');
+        await B.page.locator('.sw-open-file').click();
+        await (await ch).setFiles(file);
+      };
       await game(B.page, () => window.__game.ui.open('worlds'));
-      await openFile(worldFile);
-      await B.page.waitForSelector('.sw-dialog.ks-conflict', { timeout: 5000 });
-      const t = await B.page.locator('.ks-conflict').innerText();
-      check(/They are just the same\./.test(t) && /Keep both/.test(t) && /OK/.test(t), 'it says "They are just the same." (OK / Keep both)');
-      await B.page.locator('.ks-conflict button', { hasText: 'OK' }).click();
+      await openFile(backupFile);
+      const asked = await B.page.waitForSelector('.sw-dialog.ks-conflict', { timeout: 5000 }).then(() => true, () => false);
+      check(asked, 'a world that is already here (and changed): an in-page question');
       await settle(B.page, 500);
-      check((await game(B.page, async () => (await window.__game.store.listWorlds()).length)) === n0, 'OK: nothing added');
-    }
-    await B.context.close();
+      await shot(B.page, 'conflict-desktop');
+      const q = await game(B.page, () => ({
+        text: document.querySelector('.ks-conflict').innerText,
+        dialogs: document.querySelectorAll('.sw-dialog').length,
+        newer: document.querySelector('.ks-side.ks-newer') && document.querySelector('.ks-side.ks-newer').dataset.side,
+      }));
+      check(/\u201CRainbow Meadow\u201D is already here/.test(q.text) && /Here now/.test(q.text) && /In the file/.test(q.text), 'it shows both: "Here now" and "In the file"');
+      check(q.newer === 'mine', 'the one here is marked "Newer"');
+      check(/Keep the one here/.test(q.text) && /Use the one in the file/.test(q.text) && /Keep both/.test(q.text), 'three answers');
+      await B.page.locator('.ks-conflict button', { hasText: 'Keep the one here' }).click();
+      await B.page.waitForFunction(() => /You have all these worlds already!/.test(document.querySelector('.sw-toasts').textContent), null, { timeout: 5000 }).catch(() => {});
+      const fileAt = backup.worlds.find((w) => w.id === changedId);
+      let after = await game(B.page, async (id) => { const w = await window.__game.store.loadWorld(id); return { n: (await window.__game.store.listWorlds()).length, player: JSON.stringify(w.player), dialogs: document.querySelectorAll('.ks-conflict').length }; }, changedId);
+      check(after.n === 2 && fileAt && after.player !== JSON.stringify(fileAt.player) && after.dialogs === 0, 'only one question (the unchanged world was skipped); "Keep the one here" kept hers');
 
+      await openFile(backupFile);
+      await B.page.waitForSelector('.sw-dialog.ks-conflict', { timeout: 5000 });
+      await B.page.locator('.ks-conflict button', { hasText: 'Keep both' }).click();
+      await B.page.waitForFunction(() => document.querySelectorAll('.sw-world').length === 3, null, { timeout: 5000 }).catch(() => {});
+      after = await game(B.page, async () => (await window.__game.store.listWorlds()).map((w) => w.name).sort());
+      check(after.length === 3 && after.includes('Rainbow Meadow (copy)'), `"Keep both": a copy (${after.join(', ')})`);
+
+      await openFile(backupFile);
+      await B.page.waitForSelector('.sw-dialog.ks-conflict', { timeout: 5000 });
+      await B.page.locator('.ks-conflict button', { hasText: 'Use the one in the file' }).click();
+      await B.page.waitForFunction(() => /Your worlds are back!/.test(document.querySelector('.sw-toasts').textContent), null, { timeout: 5000 }).catch(() => {});
+      after = await game(B.page, async (id) => {
+        const w = await window.__game.store.loadWorld(id);
+        return { n: (await window.__game.store.listWorlds()).length, spawn: JSON.stringify(w.spawn), player: JSON.stringify(w.player) };
+      }, changedId);
+      check(after.n === 3 && fileAt && after.player === JSON.stringify(fileAt.player), '"Use the one in the file" put the file\'s world back');
+
+      log('A single-world file that is already here');
+      if (d1) {
+        // the one-world file came from the first device; put that exact world here first
+        const one = JSON.parse(await readFile(worldFile, 'utf8'));
+        await game(B.page, async (save) => { await window.__game.store.saveWorld(save); }, one.save);
+        const n0 = await game(B.page, async () => (await window.__game.store.listWorlds()).length);
+        await game(B.page, () => window.__game.ui.open('worlds'));
+        await openFile(worldFile);
+        await B.page.waitForSelector('.sw-dialog.ks-conflict', { timeout: 5000 });
+        const t = await B.page.locator('.ks-conflict').innerText();
+        check(/They are just the same\./.test(t) && /Keep both/.test(t) && /OK/.test(t), 'it says "They are just the same." (OK / Keep both)');
+        await B.page.locator('.ks-conflict button', { hasText: 'OK' }).click();
+        await settle(B.page, 500);
+        check((await game(B.page, async () => (await window.__game.store.listWorlds()).length)) === n0, 'OK: nothing added');
+      }
+      await B.context.close();
+
+    }
     // -------------------------------------------------------------- 6. iPhone / iPad
     const backupText = await readFile(backupFile, 'utf8');
     const seed = async (page) => {
@@ -436,13 +440,14 @@ async function run() {
         await shot(C.page, label);
       }
       if (shown && expect) {
-        await settle(C.page, 700);
+        // the card pops in (software WebGL can make that slow here): measure it once it stands
+        await C.page.waitForFunction(() => document.querySelector('.ks-card').getAnimations().every((a) => a.playState === 'finished'), null, { timeout: 15000 }).catch(() => {});
         const r = await C.page.evaluate(() => {
           const c = document.querySelector('.ks-card').getBoundingClientRect();
           const bs = [...document.querySelectorAll('.ks-card button')].map((b) => b.getBoundingClientRect());
-          return { inside: c.left >= 0 && c.top >= 0 && c.right <= innerWidth + 0.5 && c.bottom <= innerHeight + 0.5, big: bs.every((b) => b.height >= 44 && b.width >= 44) };
+          return { inside: c.left >= 0 && c.top >= 0 && c.right <= innerWidth + 0.5 && c.bottom <= innerHeight + 0.5, big: bs.every((b) => b.height >= 44 && b.width >= 44), at: [c.left, c.top, c.right, c.bottom, innerWidth, innerHeight].map(Math.round).join(','), bs: bs.map((b) => `${Math.round(b.width)}x${Math.round(b.height)}`).join(' ') };
         });
-        check(r.inside && r.big, `${name}: the card fits the screen and its buttons are big`);
+        check(r.inside && r.big, `${name}: the card fits the screen and its buttons are big (card ${r.at}; buttons ${r.bs})`);
       }
       return C;
     };

@@ -260,7 +260,7 @@ export function install(game) {
           { value: 'later', label: 'Not now', variant: 'white', icon: 'clock', className: 'ks-later' },
           { value: 'save', label: 'Save a copy', variant: 'pink', icon: 'download', className: 'ks-save' },
         ],
-        note: `Grown-ups: on this website her worlds live only in this browser, which can clear them. One file keeps ${n === 1 ? 'her world' : n === 2 ? 'both worlds' : `all ${n} worlds`}, her look and stickers. To bring them back: My\u00A0Worlds \u2192 Open\u00A0a\u00A0file.`,
+        note: `Grown-ups: on this website her worlds live only in this browser, which can clear them. One file keeps ${n === 1 ? 'her world' : n === 2 ? 'both worlds' : `all ${n} worlds`}, her look and stickers. To bring them back: My\u00A0Worlds\u00A0\u2192\u00A0Open\u00A0a\u00A0file.`,
         cancelValue: 'later',
         focus: 1,
         className: 'ks-card',
