@@ -33,7 +33,16 @@
 // its room at once (it has nothing to come back to).
 // The client IP is the socket address, or behind a proxy (SW_TRUST_PROXY, on by default) the
 // right-most public address in X-Forwarded-For (what the proxy saw, not what the client wrote);
-// an IPv6 address counts by its /64 network (one home gets a whole /64).
+// an IPv6 address counts by its /64 network (one home gets a whole /64). Those helpers and the
+// token buckets live in server/limits.mjs.
+//
+// Family accounts (docs/ACCOUNTS.md) are OFF unless SW_ACCOUNTS is `optional` or `required`.
+// Off, nothing below changes: no database, no /api routes beyond /api/net, no cookies, and
+// server/accounts.mjs (with `pg` and `stripe`) is never even loaded. On, createServer({ accounts })
+// sends every other /api/* request to accounts.handleHttp(), asks the database in /healthz,
+// adds `accounts` and `friendsMode` to /api/net, and asks accounts.authorizeSocket() about every
+// WebSocket after the existing checks (a refusal completes the handshake, sends {t:'e', code}
+// and closes with 4401-4405 or 1013, so the page can show a friendly card).
 
 import http from 'node:http';
 import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs';
@@ -42,9 +51,13 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, WebSocket } from 'ws';
-import { isIP } from 'node:net';
 import { RoomRegistry, ROOM_NAME_RE } from './rooms.mjs';
 import { VoiceRelay } from './voice.mjs';
+import { Bucket, clientIpOf, addressKey } from './limits.mjs';
+import { loadConfig, summarizeConfig } from './config.mjs';
+
+// moved to limits.mjs (docs/ACCOUNTS.md §1.3); re-exported here for the tests and older callers
+export { Bucket, KeyedLimiter, isInternalIp, normalizeIp, clientIpOf, addressKey } from './limits.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -52,94 +65,6 @@ const envInt = (name, def) => {
   const v = parseInt(process.env[name] ?? '', 10);
   return Number.isFinite(v) ? v : def;
 };
-
-class Bucket {
-  constructor(rate, burst) {
-    this.rate = rate;
-    this.burst = burst;
-    this.tokens = burst;
-    this.at = Date.now();
-  }
-
-  take() {
-    const now = Date.now();
-    this.tokens = Math.min(this.burst, this.tokens + ((now - this.at) * this.rate) / 1000);
-    this.at = now;
-    if (this.tokens < 1) return false;
-    this.tokens -= 1;
-    return true;
-  }
-
-  /** Full again (nothing to remember about this address). */
-  idle() {
-    return this.tokens + ((Date.now() - this.at) * this.rate) / 1000 >= this.burst;
-  }
-}
-
-/**
- * Loopback, private, link-local and carrier-grade NAT (100.64.0.0/10) addresses: a proxy hop,
- * not a client. With proxyPeer (only for the socket peer: is this connection from a proxy?)
- * all of 100.0.0.0/8 counts too, because Railway says its edge and internal proxies always
- * connect from there. Inside X-Forwarded-For only 100.64.0.0/10 is skipped: the rest of 100/8
- * is ordinary public space (homes on some ISPs), and skipping it would let a client there
- * write any address it liked in front of the one the proxy appended.
- */
-export function isInternalIp(ip, { proxyPeer = false } = {}) {
-  if (typeof ip !== 'string') return true;
-  const v4 = /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(ip);
-  if (v4) {
-    const [a, b] = [+v4[1], +v4[2]];
-    return a === 10 || a === 127 || a === 0 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) ||
-      (a === 169 && b === 254) || (proxyPeer ? a === 100 : a === 100 && b >= 64 && b <= 127);
-  }
-  const l = ip.toLowerCase();
-  return l === '::1' || l === '::' || l.startsWith('fc') || l.startsWith('fd') || l.startsWith('fe80');
-}
-
-/** '::ffff:1.2.3.4' -> '1.2.3.4'; strips ports and brackets; '' when not an IP. */
-export function normalizeIp(s) {
-  let t = String(s || '').trim();
-  if (t.startsWith('[')) t = t.slice(1, t.indexOf(']') > 0 ? t.indexOf(']') : undefined);
-  else if (/^\d+\.\d+\.\d+\.\d+:\d+$/.test(t)) t = t.slice(0, t.lastIndexOf(':'));
-  if (/^::ffff:\d+\.\d+\.\d+\.\d+$/i.test(t)) t = t.slice(7);
-  return isIP(t) ? t : '';
-}
-
-/**
- * The address to count limits by. Without a trusted proxy (or when the socket peer is itself
- * a public address) it is the socket peer. Behind a proxy (Railway's edge connects from
- * 100.0.0.0/8) it is the right-most public entry of X-Forwarded-For: proxies append what they
- * saw, so entries a client wrote itself sit further left and are never reached. Only
- * internal entries: the socket peer.
- */
-export function clientIpOf(remoteAddress, xff, trustProxy = true) {
-  const sock = normalizeIp(remoteAddress) || String(remoteAddress || '?');
-  if (!trustProxy || !isInternalIp(sock, { proxyPeer: true })) return sock;
-  const list = (Array.isArray(xff) ? xff.join(',') : typeof xff === 'string' ? xff : '').split(',');
-  for (let k = list.length - 1; k >= 0; k--) {
-    const ip = normalizeIp(list[k]);
-    if (!ip) continue;
-    if (!isInternalIp(ip)) return ip;
-  }
-  return sock;
-}
-
-/**
- * The key the per-address limits count by: IPv4 as is, IPv6 by its /64 network (a home or a
- * phone gets a whole /64, so counting single IPv6 addresses would let one device take as many
- * as it likes). Anything else (not an IP) as is.
- */
-export function addressKey(ip) {
-  let a = String(ip || '?').trim();
-  if (isIP(a) !== 6) return a;
-  const zone = a.indexOf('%');
-  if (zone >= 0) a = a.slice(0, zone);
-  const [head, tail = ''] = a.split('::');
-  const hs = head ? head.split(':') : [];
-  const ts = a.includes('::') ? (tail ? tail.split(':') : []) : [];
-  const groups = a.includes('::') ? [...hs, ...Array(Math.max(0, 8 - hs.length - ts.length)).fill('0'), ...ts] : hs;
-  return groups.slice(0, 4).map((g) => (g || '0').toLowerCase().replace(/^0+(?=.)/, '')).join(':') + '::/64';
-}
 
 /**
  * Create the server (not listening yet). Options mirror the env variables; tests pass them
@@ -169,7 +94,12 @@ export function createServer(opts = {}) {
     log: opts.log ?? ((...a) => console.log(...a)),
     sweepMs: opts.sweepMs ?? 5000,
     testStats: opts.testStats ?? process.env.SW_TEST_STATS === '1', // GET /api/stats (tests only)
+    // family accounts (docs/ACCOUNTS.md §15.2): null = off, exactly today's server
+    accounts: opts.accounts ?? null,
+    // Strict-Transport-Security on every answer (accounts on with an https PUBLIC_ORIGIN)
+    hsts: opts.hsts ?? false,
   };
+  const accounts = o.accounts;
   const pkg = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
   const page = loadPage(o.htmlPath);
   const site = loadSite(o.siteDir);
@@ -200,6 +130,7 @@ export function createServer(opts = {}) {
     res.setHeader('Permissions-Policy', `camera=(), microphone=${game ? '(self)' : '()'}, geolocation=(), payment=(), usb=(), display-capture=()`);
     res.setHeader('Content-Security-Policy', "frame-ancestors 'none'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'");
     res.setHeader('X-Frame-Options', 'DENY');
+    if (o.hsts) res.setHeader('Strict-Transport-Security', 'max-age=31536000');
   }
 
   function sendText(res, status, text, head, extra = {}) {
@@ -217,18 +148,26 @@ export function createServer(opts = {}) {
 
   function handleHttp(req, res) {
     const head = req.method === 'HEAD';
-    if (req.method !== 'GET' && !head) return sendText(res, 405, undefined, true, { Allow: 'GET, HEAD' });
+    let url = null;
     let pathname = '/';
     try {
-      pathname = new URL(req.url, 'http://x').pathname;
+      url = new URL(req.url, 'http://x');
+      pathname = url.pathname;
     } catch {}
+    // family accounts: every /api/* but /api/net (and the tests' /api/stats), any method
+    if (accounts && url && pathname.startsWith('/api/') && pathname !== '/api/net' && !(pathname === '/api/stats' && o.testStats)) {
+      return handleApi(req, res, url);
+    }
+    if (req.method !== 'GET' && !head) return sendText(res, 405, undefined, true, { Allow: 'GET, HEAD' });
     if (pathname === '/healthz') {
       if (!page) return sendJson(res, 503, { ok: false, error: 'game not built' }, head);
+      if (accounts) return healthz(res, head);
       return sendJson(res, 200, { ok: true }, head);
     }
     if (pathname === '/api/stats' && o.testStats) return sendJson(res, 200, { ...stats(), voicePeers: voice.peerStats() }, head);
     if (pathname === '/api/net') {
-      return sendJson(res, 200, { ok: !!page && !shuttingDown, version: pkg.version, build: page ? page.build : null }, head);
+      const info = { ok: !!page && !shuttingDown, version: pkg.version, build: page ? page.build : null };
+      return sendJson(res, 200, accounts ? { ...info, ...accounts.netInfo() } : info, head);
     }
     // ---- the home page (dist/site/) at "/" and its files ----
     const sitePath = site ? siteFileFor(pathname) : null;
@@ -258,6 +197,37 @@ export function createServer(opts = {}) {
     if (pathname === '/favicon.ico' && !(site && site.has('favicon.ico'))) return sendText(res, 204, undefined, true);
     if (pathname.startsWith('/r/')) return sendText(res, 426, 'WebSocket only\n', head);
     sendText(res, 404, 'Not found\n', head);
+  }
+
+  // ---- family accounts (only with SW_ACCOUNTS on) ----
+
+  async function handleApi(req, res, url) {
+    securityHeaders(res);
+    res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+    try {
+      if (await accounts.handleHttp(req, res, url)) return;
+      if (!res.headersSent) sendJson(res, 404, { error: 'not_found' }, req.method === 'HEAD');
+    } catch (err) {
+      counters.errors++;
+      o.log(`api: unexpected error ${err && err.name ? err.name : 'Error'}`);
+      if (res.headersSent) res.destroy();
+      else sendJson(res, 503, { error: 'unavailable' });
+    }
+  }
+
+  /** The database answers `select 1` within 2 s and every migration is applied (§13.3). */
+  async function healthz(res, head) {
+    let h = null;
+    let timer;
+    try {
+      h = await Promise.race([accounts.health(), new Promise((resolve) => (timer = setTimeout(() => resolve(null), 2000)))]);
+    } catch {
+      h = null;
+    } finally {
+      clearTimeout(timer);
+    }
+    if (h && h.ok) return sendJson(res, 200, { ok: true }, head);
+    return sendJson(res, 503, { ok: false, error: 'database' }, head);
   }
 
   // ---- home page files ----
@@ -362,15 +332,47 @@ export function createServer(opts = {}) {
       counters.roomLimited++;
       return refuse(socket, 429, 'Too Many Requests');
     }
+    if (accounts) return upgradeWithAccount(req, socket, head, url, name, secret, device, ip);
     try {
-      wss.handleUpgrade(req, socket, head, (ws) => onConnection(ws, name, secret, device, ip));
+      wss.handleUpgrade(req, socket, head, (ws) => onConnection(ws, name, secret, device, ip, null));
     } catch (err) {
       counters.errors++;
       refuse(socket, 400, 'Bad Request');
     }
   });
 
-  function onConnection(ws, name, secret, device, ip) {
+  // with accounts on: the session and player are checked after every check above (§8.1)
+  async function upgradeWithAccount(req, socket, head, url, name, secret, device, ip) {
+    const playerId = url.searchParams.get('p') || null;
+    if (playerId && !/^[A-Za-z0-9-]{1,64}$/.test(playerId)) return refuse(socket, 400, 'Bad Request');
+    let r;
+    try {
+      r = await accounts.authorizeSocket({ cookie: req.headers.cookie || '', playerId });
+    } catch {
+      r = { ok: false, code: 'unavailable' };
+    }
+    if (socket.destroyed) return;
+    if (shuttingDown) return refuse(socket, 503, 'Service Unavailable');
+    try {
+      if (r && r.ok) {
+        wss.handleUpgrade(req, socket, head, (ws) => onConnection(ws, name, secret, device, ip, r.claims || null));
+        return;
+      }
+      // refused AFTER the handshake: a browser sees only 1006 for a refused HTTP upgrade, so
+      // the page could never show a friendly card for a 403
+      const code = r && ACCOUNT_CLOSE[r.code] ? r.code : 'signed_out';
+      counters.rejected++;
+      wss.handleUpgrade(req, socket, head, (ws) => {
+        safeSend(ws, { t: 'e', code });
+        ws.close(ACCOUNT_CLOSE[code], code);
+      });
+    } catch {
+      counters.errors++;
+      refuse(socket, 400, 'Bad Request');
+    }
+  }
+
+  function onConnection(ws, name, secret, device, ip, claims) {
     counters.connections++;
     const peer = createHash('sha256').update(name + '\n' + secret).digest('hex').slice(0, 16);
     // the server's stamp for this device in this room: the same device gets the same stamp
@@ -384,7 +386,7 @@ export function createServer(opts = {}) {
     }
     perIp.set(ip, ipCount + 1);
     const key = name + '\n' + peer;
-    const conn = { ws, name, peer, ip, bucket: new Bucket(o.rate, o.burst), bye: false, replaced: false, alive: true, dropped: 0, droppedAt: 0 };
+    const conn = { ws, name, peer, ip, claims, bucket: new Bucket(o.rate, o.burst), bye: false, replaced: false, alive: true, dropped: 0, droppedAt: 0 };
     const old = conns.get(key);
     if (old) {
       old.replaced = true;
@@ -401,7 +403,8 @@ export function createServer(opts = {}) {
       }
       ws.send(JSON.stringify(frame));
     };
-    const r = registry.join(name, peer, sink, { by, kind: 'viewer', guest: false, owner: ip });
+    // claims (accounts on, docs/ACCOUNTS.md §8.2): null for legacy members; rooms.mjs applies them
+    const r = registry.join(name, peer, sink, { by, kind: 'viewer', guest: false, owner: ip, claims });
     if (!r.ok) {
       safeSend(ws, { t: 'e', code: r.code });
       conn.bye = true;
@@ -551,7 +554,7 @@ export function createServer(opts = {}) {
         conn.ws.close(1012, 'restarting');
       } catch {}
     }
-    return new Promise((resolve) => {
+    const closing = new Promise((resolve) => {
       const done = () => resolve();
       server.close(done);
       setTimeout(() => {
@@ -559,14 +562,29 @@ export function createServer(opts = {}) {
         server.closeAllConnections?.();
       }, 1500).unref?.();
     });
+    if (!accounts) return closing;
+    // accounts: in-flight requests finish first, then the database pool ends
+    return closing.then(() => accounts.close().catch(() => {}));
   }
 
   function stats() {
     return { rooms: registry.roomCount, peers: registry.peerCount(), connections: conns.size, ...counters, ...registry.counts, voice: voice.stats() };
   }
 
-  return { server, registry, voice, listen, close, stats, page, site, options: o };
+  return { server, registry, voice, listen, close, stats, page, site, accounts, options: o };
 }
+
+// WebSocket close codes for the accounts refusals (docs/ACCOUNTS.md §8.1); the page maps them to
+// friendly cards and stops retrying (1013: the database is down, the page retries)
+const ACCOUNT_CLOSE = Object.freeze({
+  signed_out: 4401,
+  not_entitled: 4402,
+  friends_off: 4403,
+  friends_locked: 4404,
+  player_gone: 4405,
+  unavailable: 1013,
+});
+export { ACCOUNT_CLOSE };
 
 function loadPage(file) {
   if (!existsSync(file)) return null;
@@ -654,7 +672,27 @@ function loadSite(dir) {
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
-  const app = createServer();
+  // family accounts: off unless SW_ACCOUNTS says so; a broken setting refuses the start with one
+  // line (exit 1, so Railway keeps the running deployment)
+  let cfg;
+  try {
+    cfg = loadConfig(process.env);
+  } catch (err) {
+    console.error(err.message);
+    process.exit(1);
+  }
+  let accounts = null;
+  if (cfg.accounts !== 'off') {
+    try {
+      const { createAccounts } = await import('./accounts.mjs');
+      accounts = await createAccounts(cfg, { log: (...a) => console.log(...a) });
+    } catch (err) {
+      console.error(`Sparkle World will not start: accounts could not start (${err && err.code ? err.code : err && err.name ? err.name : 'Error'})`);
+      process.exit(1);
+    }
+    console.log(summarizeConfig(cfg));
+  }
+  const app = createServer({ accounts, hsts: !!(accounts && cfg.hsts) });
   const port = envInt('PORT', 8080);
   const host = process.env.HOST || '0.0.0.0';
   if (!app.page) console.warn('warning: dist/sparkle-world.html is missing; run "npm run build" first (health check will fail)');

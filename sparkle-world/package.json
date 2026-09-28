@@ -14,17 +14,28 @@
     "test:net": "node tools/test-net.mjs",
     "test:walkie": "node tools/test-walkie.mjs",
     "probe:mp": "node tools/build.mjs && node tools/probe-multiplayer.mjs",
-    "probe:railway": "node tools/probe-railway.mjs"
+    "probe:railway": "node tools/probe-railway.mjs",
+    "test:accounts": "node --test tools/test-accounts.mjs",
+    "test:billing": "node --test tools/test-billing.mjs",
+    "test:saves": "node --test tools/test-saves.mjs",
+    "e2e:accounts": "node tools/build.mjs && node tools/e2e-accounts.mjs",
+    "dev:accounts": "node tools/dev-accounts.mjs",
+    "stripe:setup": "node tools/stripe-setup.mjs",
+    "admin": "node server/admin.mjs",
+    "migrate": "node server/migrate.mjs"
   },
   "license": "MIT",
   "engines": {
     "node": ">=22"
   },
   "dependencies": {
+    "pg": "8.23.0",
+    "stripe": "22.6.2",
     "three": "0.186.1",
     "ws": "8.22.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
     "esbuild": "0.28.2",
     "playwright-core": "1.56.1"
   }
