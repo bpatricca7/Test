@@ -190,6 +190,11 @@ async function call(method, p, { tok = null, body, headers = {}, gz = false } = 
   } catch {}
   return { status: r.status, headers: r.headers, data, buf };
 }
+/** Wait until fn() is true (or ms pass) → whether it was. */
+async function until(fn, ms = 5000) {
+  for (const end = Date.now() + ms; Date.now() < end; await new Promise((r) => setTimeout(r, 20))) if (await fn()) return true;
+  return false;
+}
 const W = (pid, id = '') => `/api/players/${pid}/worlds${id ? '/' + encodeURIComponent(id) : ''}`;
 const put = (pid, save, tok, match = '*', opts = {}) => call('PUT', W(pid, save.id), { tok, body: save, headers: { 'if-match': match, ...(opts.headers || {}) }, gz: opts.gz });
 
@@ -858,10 +863,6 @@ if (!MEASURE) {
       await acct.prepare();
       return { acct, game, pg, cache: () => JSON.parse(ls.getItem('sparkle-world:acct')) };
     }
-    const until = async (fn, ms = 5000) => {
-      for (const end = Date.now() + ms; Date.now() < end; await new Promise((r) => setTimeout(r, 20))) if (await fn()) return true;
-      return false;
-    };
     const nsKeys = (ls, pid) => [...ls.m.keys()].filter((k) => k.startsWith(`sparkle-world@p-${pid}:`));
 
     test('one player: her own saves and the cloud; a locked device takes its player; signed out forgets the cache', async () => {
@@ -1132,6 +1133,8 @@ if (!MEASURE) {
       assert.equal(sockets.length, 1, 'no retries after 4401');
       assert.ok(sockets[0].includes('&p=' + lily), 'the socket says who she is');
       assert.deepEqual(page.errors, []);
+      const portrait = async () => (await t.db.one('select octet_length(portrait) > 100 as ok from players where id = $1', [lily])).ok;
+      assert.ok(await until(portrait, 60000), 'her head portrait went up');
       // the next visit: the worlds from before were answered for, so nobody is asked again
       await page.reload();
       await page.waitForSelector('.sw-acct-card', { timeout: 120000 });
@@ -1145,8 +1148,8 @@ if (!MEASURE) {
       await page.reload();
       await page.waitForSelector('.sw-acct-card', { timeout: 120000 });
       assert.equal(await page.$eval('.sw-acct-card .sw-acct-name', (b) => b.textContent), 'Lily', 'the last player first');
-      assert.equal((await t.db.one('select octet_length(portrait) > 100 as ok from players where id = $1', [lily])).ok, true, 'her head portrait went up');
-      assert.equal(await page.$eval('.sw-acct-card img', (i) => i.naturalWidth > 0), true, 'and shows in the picker');
+      await page.waitForSelector('.sw-acct-card img', { timeout: 10000 });
+      assert.equal(await page.$eval('.sw-acct-card img', (i) => i.naturalWidth > 0), true, 'her portrait shows in the picker');
       await page.click(`.sw-acct-card[data-player="${lily}"]`);
       await title(page);
       assert.deepEqual(await page.evaluate(() => [window.__game.account.mode, window.__game.account.offline, window.__game.profile.playerName]), ['account', true, 'Lily']);
