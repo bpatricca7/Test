@@ -668,7 +668,7 @@ session of the family that owns `:pid`, and the device's locked player if set); 
 | `GET /api/devices` | parent | → `[{id (8 hex), kind, label, lastSeen (date), current, lockPlayer}]` | A |
 | `PATCH /api/devices/:id` | parent | `{label?, lockPlayer?}` → device | A |
 | `DELETE /api/devices/:id` | parent | → `{ok}` (revoked, sockets closed) | A |
-| `GET /api/family` | parent | `{email, createdAt, elevatedUntil, consent:{level, noticeVersion, consentAt, verifiedAt, method}, plan (§6.5), players:[{id, nickname, color, portrait, friends, walkie, createdAt, worlds, lastPlayed}], config:{friendsMode, mpConsent, trialDays, priceText, noticeVersion, operatorEmail}}` | A |
+| `GET /api/family` | parent | `{email, createdAt, elevatedUntil, elevatedAt, consent:{level, noticeVersion, consentAt, verifiedAt, method}, plan (§6.5), purgeAfter, players:[{id, nickname, color, sort, portrait, friends, walkie, createdAt, worlds, lastPlayed}], config:{friendsMode, mpConsent, trialDays, priceText, noticeVersion, operatorEmail}}` (times in epoch ms) | A |
 | `GET /api/family/audit` | parent | → consent history `[{at, action, player?}]` | A |
 | `POST /api/consent` | parent | `{noticeVersion, agree:true}` → `{consent}` | A |
 | `POST /api/players` | parent | `{nickname, color?}` → `201 player` (needs consent; and entitled, or `free-join`) | A |
@@ -693,9 +693,10 @@ session of the family that owns `:pid`, and the device's locked player if set); 
 | `POST /api/billing/start-now` | parent+check | → `{plan}` (trialing only) | B |
 | `POST /api/stripe/webhook` | stripe | raw body → `200 {received:true}` \| 400 \| 500 | B |
 | `GET /api/test/mail?to=` | test | → captured emails `[{template, to, subject, text, at}]` | A |
-| `POST /api/test/clock` | test | `{offsetMs}` → app clock moved | A |
+| `POST /api/test/clock` | test | `{offsetMs}` (absolute) or `{advanceMs}` → app clock moved | A |
 | `POST /api/test/jobs` | test | `{name}` → runs a job now | A |
 | `POST /api/test/reset` | test | truncates every table | A |
+| `POST /api/test/limits` | test | `{off: true\|false}` → rate limits off, or fresh and on (a server in its own process) | A |
 | WS `/r/<room>?s=&d=&p=<player>` | session (§8) | the existing relay | D |
 
 `server.mjs` keeps answering 405 for non-GET methods outside `/api/*`.
@@ -1121,7 +1122,7 @@ room buckets), then, with accounts on:
 
 ```js
 const r = await accounts.authorizeSocket({ cookie: req.headers.cookie, playerId: url.searchParams.get('p') })
-// → { ok: true, claims: null }            optional mode, no cookie and no p: a legacy socket (today's behavior)
+// → { ok: true, claims: null }            optional mode and no p (with or without a cookie): a legacy socket (today's behavior)
 // → { ok: true, claims }                   claims = { sessionHash, familyId, playerId, nickname,
 //                                                     canHost, canBuild, walkie, until }
 // → { ok: false, code }                    code: signed_out | not_entitled | friends_off | friends_locked | player_gone | unavailable
@@ -1219,7 +1220,11 @@ She can knock and play in a subscribed friend's world as a looker (the host's pa
    "Sparkle World Family Plan: $5.99 a month,
    plus sales tax where it applies. Up to 6 kids, their worlds saved on every device, playing with
    friends, the walkie-talkie. Nothing to buy inside the game, ever." Checkbox "I live in the United
-   States". **Start your free week** ("Free for 7 days, then $5.99/month. It renews every month until you
+   States". With no trial (`SW_TRIAL_DAYS=0`, the family's choice) one button, **Start the Family
+   Plan** ("The first payment is today, then it renews every month until you cancel. Cancel any time
+   here, with Manage subscription. That first payment is also how we confirm that a grown-up said
+   yes, so playing with friends and the walkie-talkie can be turned on right away."). With a trial,
+   two: **Start your free week** ("Free for 7 days, then $5.99/month. It renews every month until you
    cancel. Cancel any time here, with Manage subscription.") and **Start today** ("Pay now and playing
    with friends and the walkie-talkie can be turned on today. The first payment is how we confirm that a
    grown-up said yes."). Opened from an iPad Home Screen app, it suggests Safari (the app's cookie jar
@@ -1604,7 +1609,9 @@ offline; the iPad checks are manual, §14 step 8). Zero console errors; screensh
 5. Friends: in the trial, Lily's friends switch is locked; **Start now** (email check) → verified →
    switch on. Family B does the same with **Start today**. Lily hosts, B's child joins with the code →
    **Let in!** → they build; hashes equal. A presence `nm` change by B's page is ignored. Family C
-   (never subscribed) → "Sparkle World is resting…" style card, no knock reaches Lily. The game DOM
+   (never subscribed, so no dashboard and no pair code) signs in from the game (**I'm a grown-up** →
+   the Family page → back to `/play`) → "Sparkle World is resting…" style card, no knock reaches Lily
+   (the relay refuses C's sockets: 4401 without a player, 4405 with a made-up one). The game DOM
    never contains `$` or "subscri" in any state.
 6. Walkie: Lily's walkie on, B's child's off → B's child gets 0 voice bytes; B's parent switches it on
    → the `perm` frame arrives → she talks and hears; switched off again → nothing within 1 s.
