@@ -74,10 +74,10 @@ function clearTimers() {
 }
 
 /** Show a state: its nodes in the page's column (wide for the dashboard). */
-function mount(nodes, { wide = false, subtitle = null } = {}) {
+function mount(nodes, { wide = false, mid = false, subtitle = null } = {}) {
   clearTimers();
   if (subtitle && sub) sub.textContent = subtitle;
-  const wrap = h('div', { class: 'acct-wrap' + (wide ? '' : ' acct-narrow') }, nodes);
+  const wrap = h('div', { class: 'acct-wrap' + (wide ? '' : mid ? ' acct-mid' : ' acct-narrow') }, nodes);
   main.replaceChildren(wrap);
   const first = wrap.querySelector('h2');
   if (first) {
@@ -380,7 +380,7 @@ function codeBoxes(onDone) {
 
 /** A "send again" link that waits 30 s. */
 function resendLink(onResend) {
-  const b = linkBtn('send it again', async () => {
+  const b = linkBtn('Send it again', async () => {
     busy(b, true);
     await onResend();
     wait();
@@ -389,15 +389,15 @@ function resendLink(onResend) {
   const wait = () => {
     left = 30;
     b.disabled = true;
-    b.textContent = `send it again (in ${left} s)`;
+    b.textContent = `Send it again (in ${left} s)`;
     const t = setInterval(() => {
       left--;
-      if (left > 0) b.textContent = `send it again (in ${left} s)`;
+      if (left > 0) b.textContent = `Send it again (in ${left} s)`;
       else {
         clearInterval(t);
         b.disabled = false;
         b.removeAttribute('aria-busy');
-        b.textContent = 'send it again';
+        b.textContent = 'Send it again';
       }
     }, 1000);
     timers.push(t);
@@ -462,8 +462,8 @@ function codeView() {
     boxes.el,
     err,
     row(go),
-    h('p', { class: 'acct-small' }, "You can also tap the link in the email. Didn't get it? Look in the spam folder, or ", again, '.'),
-    row(linkBtn('Use a different email', () => signIn())),
+    h('p', { class: 'acct-small' }, "You can also tap the link in the email. Didn't get it? Look in the spam folder, or send it again."),
+    row(again, linkBtn('Use a different email', () => signIn())),
     h('p', { class: 'acct-small' }, 'Kids never need an email.'),
   ), { subtitle: 'Almost there: the code is in your email.' });
   again.wait();
@@ -652,7 +652,7 @@ function planView({ cancelled = false } = {}) {
       render();
     })),
     row(linkBtn('Sign out', signOut)),
-  ), { subtitle: 'One plan for the whole family. Nothing to buy inside the game, ever.' });
+  ), { mid: true, subtitle: 'One plan for the whole family. Nothing to buy inside the game, ever.' });
 }
 
 // ------------------------------------------------------------------------------ 4. back from Stripe
@@ -957,7 +957,7 @@ function playerCard(p, f) {
   };
   const friendsWhy = lockedWhy();
   let walkieWhy = null;
-  if (friendsWhy) walkieWhy = friendsWhy;
+  if (friendsWhy) walkieWhy = lockedWhy(); // its own nodes (a node lives in one place only)
   else if (!plan.walkieConsentOk) walkieWhy = ['Turns on after your first payment. ', trialing && linkBtn('Start now', startNow)];
   else if (!p.friends) walkieWhy = ['Turn on Play with friends first.'];
   const el = h('article', { class: 'player', 'data-player': p.id },
@@ -1295,6 +1295,7 @@ function pairDialog() {
     busy(make, false);
   });
   const showCode = (r) => {
+    const kid = S.fam.players.find((p) => p.id === who.value);
     const left = h('p', { class: 'acct-small', role: 'timer' });
     const tick = () => {
       const s = Math.max(0, Math.round((ms(r.expiresAt) - Date.now()) / 1000));
@@ -1308,7 +1309,7 @@ function pairDialog() {
       h('p', { class: 'pair-code', 'aria-label': `The code: ${String(r.code).split('').join(' ')}` }, r.code),
       left,
       h('ol', { class: 'pair-steps' },
-        h('li', null, 'On her device, open ', h('b', null, `${location.host}/play`), '.'),
+        h('li', null, kid ? `On ${kid.nickname}'s device, open ` : 'On the kid\'s device, open ', h('b', null, `${location.host}/play`), '.'),
         h('li', null, 'Tap ', h('b', null, 'Grown-ups'), ', then ', h('b', null, 'I have a code'), '.'),
         h('li', null, 'Type this code. The dash is optional, and small letters are fine.')),
       row(btn('Done', 'btn-play', () => dlg.close())),
@@ -1582,8 +1583,8 @@ function emailCheck({ within5 = false } = {}) {
       h('p', null, 'We emailed a code to ', h('strong', null, mask(S.fam && S.fam.email)), '. Type it here to continue.'),
       boxes.el,
       err,
-      row(go, linkBtn('Cancel', () => dlg.close())),
-      h('p', { class: 'acct-small' }, within5 ? 'Deleting the account needs a code from the last 5 minutes.' : 'Important changes need a fresh code, so nobody else using this device can make them.', ' No email? ', again, '.'),
+      row(go, again, linkBtn('Cancel', () => dlg.close())),
+      h('p', { class: 'acct-small' }, within5 ? 'Deleting the account needs a code from the last 5 minutes.' : 'Important changes need a fresh code, so nobody else using this device can make them.'),
     ], { onClose: () => {
       if (!done) resolve(false);
     } });

@@ -516,6 +516,28 @@ async function accountPages(browser) {
       if (!(r.status === 200 || (href === '/play' && r.status === 503))) check(false, `${href} answers (${r.status})`);
     }
 
+    // ---- the home page, /parents, /privacy and /terms in the account modes, at every size
+    for (const [mode, s] of [['required', srv], ['optional', optSrv]]) {
+      for (const size of [...ACCT_SIZES, { w: 414, h: 896, touch: true, label: '414', shots: false }]) {
+        const context = await browser.newContext({ viewport: { width: size.w, height: size.h }, deviceScaleFactor: 1, hasTouch: size.touch, isMobile: size.touch });
+        const page = await context.newPage();
+        collect(page, `${mode}-pages-${size.w}`, s.base);
+        for (const p of mode === 'required' ? ['/', '/parents', '/privacy', '/terms'] : ['/', '/parents']) {
+          await page.goto(s.base + p, { waitUntil: 'load' });
+          await page.evaluate(() => document.fonts.ready);
+          const over = await overflow(page);
+          check(over.sw <= size.w && over.w === size.w, `${mode} ${p} at ${size.w}: no sideways scrolling (page ${over.sw}px${over.wide.length ? '; ' + over.wide.join(', ') : ''})`);
+          if (p === '/') check(await page.locator('.top .top-signin').isVisible(), `${mode} / at ${size.w}: "Sign in" is in the header`);
+          if (size.shots !== false && (size.w !== 1024 || p === '/')) {
+            const name = p === '/' ? 'home' : p.slice(1);
+            await page.screenshot({ path: path.join(SHOTS, `${PREFIX}-acct-${mode}-${name}-${size.label}.png`), fullPage: true });
+          }
+          await page.waitForLoadState('networkidle'); // lazy pictures the screenshot woke up
+        }
+        await context.close();
+      }
+    }
+
     // ---- every state at every size
     for (const size of ACCT_SIZES) {
       console.log(`Family page ${size.w}x${size.h}`);

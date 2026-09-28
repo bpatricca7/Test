@@ -890,7 +890,8 @@ button { font-family: var(--font); }
 .top-signin:hover { color: var(--ink); border-bottom-color: var(--pink); }
 .top .top-signin + .btn-small { margin-left: 10px; }
 @media (max-width: 860px) { .top-signin { margin-left: auto; } }
-@media (max-width: 400px) { .top-signin { font-size: .95rem; padding-inline: 2px; } .top .top-signin + .btn-small { margin-left: 8px; } }
+@media (max-width: 520px) { .top-signin { padding-inline: 2px; } .top .top-signin + .btn-small { margin-left: 0; } }
+@media (max-width: 400px) { .top-signin { font-size: .95rem; } }
 
 .family-plan { padding: clamp(72px, 9vw, 130px) 0 clamp(20px, 3vw, 40px); background: linear-gradient(180deg, #FFF3D6, var(--cream)); }
 .plan-grid { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: clamp(24px, 5vw, 72px); align-items: center; }
