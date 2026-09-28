@@ -172,6 +172,43 @@ idempotency, drift repair, `--replace`, the program.
 - docs/ACCOUNTS.md edits in this branch: §0.1 step 3 (no free trial), the §6.4 dispute row and §14
   step 4 (Charges read).
 
+## Checklist: the legal elements (§11.3, §11.10; tested in test:billing)
+
+Direct notice (`server/notice.mjs`, 312.4(c)):
+
+- [x] why the parent's contact was collected ("You gave us your email so we can ask your permission and so you can sign in")
+- [x] that consent is needed, and how to give it (the "I agree" checkbox, never pre-ticked)
+- [x] the items collected (nickname, avatar and its picture, game progress, worlds incl. typed world and pet names)
+- [x] how they are used (only to run the game)
+- [x] the possible disclosures (Play with friends: nickname, avatar, world; walkie: live voice, never recorded), off by default, per child
+- [x] that collection can be agreed to without disclosure ("You can agree to saving without agreeing to playing with friends")
+- [x] how the sharing switches unlock (worded from `SW_MP_CONSENT`: the first payment)
+- [x] the recipients (Railway; Stripe and the email provider named from `MAIL_MODE`, never children's information; no selling)
+- [x] retention (`SW_RETAIN_DAYS` after the plan ends; deletion at once; backups 7 days)
+- [x] the parent's rights (see, download, delete, switch off; or email the operator)
+- [x] deletion of the parent's contact if consent does not come (14 days)
+- [x] the link to the online notice and the operator's name, address, phone and email
+
+Online notice (`site/privacy.html`, 312.4(d)):
+
+- [x] operator name, address, phone, email (`{{SW_OPERATOR_*}}`) · [x] what is collected from children and why
+- [x] how it is used · [x] what is never collected · [x] what is kept about parents
+- [x] whether children can make information available to others, and the two switches
+- [x] persistent identifiers (the session cookie, the sign-in cookie, the device secret, IP addresses in memory) and the internal operations they support
+- [x] service providers and what each receives · [x] no selling, no advertising
+- [x] the retention policy (RETENTION.md in plain words) · [x] parent rights and how to use them (10 business days)
+- [x] how consent is obtained (email plus; the card method; form / call / video for free passes)
+- [x] security in brief · [x] the notice version and date
+
+Terms (`site/terms.html`) and auto-renewal:
+
+- [x] the one plan and its price, "plus sales tax where it applies" (`{{SW_PRICE_TEXT}}`) · [x] no free trial (the family's decision)
+- [x] automatic monthly renewal until cancelled · [x] how to cancel (the Portal, two taps, or email) and when it takes effect (period end, no partial refunds)
+- [x] United States only (non-US cancelled and refunded) · [x] a parent or legal guardian, 18+, agrees for her children
+- [x] nothing to buy inside the game · [x] kind play (acceptable use) · [x] changes to the terms and the price with 30 days' notice · [x] the operator
+- [x] Checkout: `consent_collection.terms_of_service: 'required'` with the renewal sentence (`renewalSentence(cfg)`) next to the box
+- [x] the `welcome` email's data (price, trial end, period end) for the acknowledgment A's template writes; online cancellation in the Portal; the `annual_reminder` is A's job
+
 ## Known gaps
 
 - **Refunds** stay manual (`refund_due` for a non-US payment or a duplicate plan).
