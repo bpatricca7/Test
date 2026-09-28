@@ -101,6 +101,17 @@ a trial were squeezed on the iPad; the US-only return was not handled.
   says "kept for a while after a plan ends".
 - **B**: `/terms` says there is no free trial. The e2e runs with `SW_TRIAL_DAYS=7` (to drive the
   free week and Start now, §12.8) and its build warns about exactly that, which is expected.
+- **C (a bug the e2e shows, red until fixed)**: every new device that opened the game signed
+  out in `required` mode is asked "This device has stickers and outfits from before. Whose are
+  they?" at its first play (seen on the computer and on Mia's device). `profileHasPlay()` in
+  `src/account/legacy.js` counts `coins > 0`, but `src/things/shops/coins.js` gives every
+  profile 100 coins to start, so an untouched profile counts as played. Suggested: compare with
+  the starting coins (or leave coins out). The e2e answers the card like a parent ("They're not
+  ours") so the other scenarios still run, and fails one check naming the devices.
+- **C (a suggestion)**: the game reads `why` from `/api/me` when it opens, so a child whose
+  grown-up has just switched **Play with friends** on still sees "Playing with friends isn't
+  ready yet" until the game is opened again. Asking `/api/me` again when she taps Play with
+  Friends while `why` is set would make the switch feel instant (the e2e reopens the game there).
 - **C**: a device locked to a player who is then deleted plays as the only remaining player
   (the lock is `on delete set null`); §12.8 #8 says "→ the picker", which is what it shows with
   two or more players left.

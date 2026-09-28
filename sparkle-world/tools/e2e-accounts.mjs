@@ -573,7 +573,8 @@ async function s3() {
     for (const d of (await indexedDB.databases?.()) || []) indexedDB.deleteDatabase(d.name);
   });
   await ipad.page.reload();
-  await GAME.title(ipad).catch(async () => GAME.pick(ipad, 'Lily').then(() => GAME.title(ipad)));
+  await GAME.pick(ipad, 'Lily'); // an unlocked device of a family with two players asks who plays
+  await GAME.title(ipad);
   const back = Date.now() + 60000;
   while (Date.now() < back && !(await GAME.worlds(ipad)).some((w) => w.id === R.shared)) await sleep(1000);
   check((await GAME.worlds(ipad)).some((w) => w.id === R.shared), 'after the site data was cleared, the world comes back from the cloud');
@@ -602,7 +603,12 @@ async function s4() {
     await GAME.saveExit(dev);
   }
   for (const dev of devs) await dev.ctx.unroute('**/api/players/**');
-  for (const dev of devs) await dev.page.reload();
+  // opened again: an unlocked device of a family with two players asks "Who's playing?"
+  for (const dev of devs) {
+    await dev.page.reload();
+    await GAME.pick(dev, 'Lily');
+    await GAME.title(dev);
+  }
   const A = R.fam.A;
   const cookie = await cookieOf(R.dev.ipad.ctx);
   const end = Date.now() + 120000;
@@ -658,6 +664,7 @@ async function s5() {
   // (§7.1, §7.7: the "why" card comes from /api/me without trying), so it is opened again.
   const lily = R.dev.ipad;
   await lily.page.reload();
+  await GAME.pick(lily, 'Lily');
   await GAME.title(lily);
   await setupPage(lily);
   const code = await hostMakesCode(lily, { log });
