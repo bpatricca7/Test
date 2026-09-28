@@ -109,7 +109,8 @@ export function openGate(game, opts = {}) {
     wrap.append(dim, card);
 
     const top = ui.el('div', 'sw-gate-top');
-    top.insertAdjacentHTML('afterbegin', grown ? icon2('home') : walkieSvg());
+    // the house as big as the walkie picture (46 px; without the class it filled the card)
+    top.insertAdjacentHTML('afterbegin', grown ? icon2('home', { cls: 'sw-wk-art' }) : walkieSvg());
     top.appendChild(ui.el('h3', '', grown ? 'Grown-ups only' : 'Grown-up check'));
     const ask = ui.el('div', 'sw-gate-ask', 'Please ask a grown-up to answer:');
     const q = ui.el('div', 'sw-gate-q');
