@@ -119,10 +119,13 @@ found on D's side, all fixed in this branch:
 
 What it found on the other builders' sides is under "Notes for integration".
 
-**The last full run** (all ten scenarios, this branch's final e2e, A/B/C as above; about 16
-minutes): **78 checks passed, 2 problems, both C's** (below): Mia's copy stays on her device
-after she is deleted (§12.8 #8), and "worlds from before" is asked on devices that never played
-before accounts (computer, June's, Mia's). Everything else of §12.8 passed: sign-up with the
+**The last full runs** (all ten scenarios, this branch's final e2e; about 16 minutes each):
+with C at `d17c4f6`, 78 checks passed and 2 problems, both C's: Mia's copy stayed on her device
+after she was deleted (§12.8 #8), and "worlds from before" was asked on devices that never
+played before accounts. C's later `c3f8b81`…`4c2bff8` (ask only once, wipe players deleted on the
+Family page) fixed the first: with A `e45dffb`, B `3e214dc`, C `4c2bff8` and this branch,
+**79 checks passed, 1 problem**: "worlds from before" is still asked on the computer, June's
+and Mia's devices (the starting coins, below). Everything else of §12.8 passed: sign-up with the
 emailed code, the free week, the pair codes and "Who's playing?", the import of the iPad's two
 old worlds, cloud saves across devices and after site data is cleared, the offline conflict
 ("Shared Island (copy)"), Start now (verified by the first payment), Start today, playing
@@ -145,21 +148,22 @@ together as today. The server log had no email and no nickname.
   says "kept for a while after a plan ends".
 - **B**: `/terms` says there is no free trial. The e2e runs with `SW_TRIAL_DAYS=7` (to drive the
   free week and Start now, §12.8) and its build warns about exactly that, which is expected.
-- **C (a bug the e2e shows, red until fixed)**: every new device that opened the game signed
-  out in `required` mode is asked "This device has stickers and outfits from before. Whose are
+- **C (a bug the e2e shows, still open at C `4c2bff8`: the e2e's one remaining problem)**: every
+  new device that opened the game signed out in `required` mode is asked "This device has stickers and outfits from before. Whose are
   they?" at its first play (seen on the computer and on Mia's device). `profileHasPlay()` in
   `src/account/legacy.js` counts `coins > 0`, but `src/things/shops/coins.js` gives every
   profile 100 coins to start, so an untouched profile counts as played. Suggested: compare with
   the starting coins (or leave coins out). The e2e answers the card like a parent ("They're not
   ours") so the other scenarios still run, and fails one check naming the devices.
-- **C (a bug the e2e shows)**: the same question comes back at every boot after it was
-  answered. `askLegacy()` (`src/account/cards.js`) never reads `legacyState()`, so an iPad
+- **C (fixed by C in `c3f8b81`, confirmed by the last run)**: the same question came back at
+  every boot after it was answered. `askLegacy()` (`src/account/cards.js`) never reads `legacyState()`, so an iPad
   whose old worlds were imported (they are kept 30 days) or dismissed ("They're not ours") is
   asked again each time the game opens (§7.5: only while `sparkle-world:legacy` is neither
   `imported` nor `dismissed`; "Not now" asks again next time). Seen when Lily's iPad opens the
   game again in §12.8 #5.
-- **C (a bug the e2e shows, red until fixed; children's data)**: a deleted player's copy stays
-  on a device that was not playing her at that moment. `prepare()` in `src/account/index.js`
+- **C (fixed by C in `c3f8b81`, confirmed by the last run: "Mia's copy is wiped from the
+  device"; children's data)**: a deleted player's copy stayed on a device that was not playing
+  her at that moment. `prepare()` in `src/account/index.js`
   wipes only on `410 family_gone`, or on `player_gone` while she is the chosen player; when the
   device opens again, `/api/me` simply no longer lists her, so `sparkle-world@p-<her id>` is
   never wiped (§3.4 / the delete dialog: "devices remove their copies the next time they open
