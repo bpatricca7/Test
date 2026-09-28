@@ -23,7 +23,7 @@ const CSS = /* css */ `
 .ks-card .ks-ask { margin: 0 0 18px; font-size: 22px; font-weight: 600; color: var(--sw-ink); }
 .ks-card .sw-dialog-buttons { flex-wrap: nowrap; }
 .ks-card .sw-dialog-buttons .sw-btn { min-width: 0; flex: 0 1 auto; }
-.sw-dialog .sw-dialog-note { margin: 16px 4px 0; font-size: 14px; line-height: 1.35; font-weight: 500; color: #7A6690; }
+.sw-dialog .sw-dialog-note { margin: 16px 4px 0; font-size: 14px; line-height: 1.35; font-weight: 500; color: #7A6690; text-wrap: pretty; }
 
 /* the picture: her worlds' own pictures tucked into a pink treasure box */
 .ks-art { position: relative; width: 260px; height: 160px; margin: 0 auto 4px; pointer-events: none; }
@@ -37,7 +37,7 @@ const CSS = /* css */ `
 
 /* "is already here": the two worlds side by side, three answers in a column */
 .ks-conflict { width: min(520px, 100%); }
-.ks-conflict h3 { font-size: 25px; line-height: 1.15; overflow-wrap: anywhere; }
+.ks-conflict h3 { font-size: 25px; line-height: 1.15; overflow-wrap: anywhere; text-wrap: balance; }
 .ks-count { margin: 0 0 10px; font-size: 15px; font-weight: 600; color: var(--sw-lav); }
 .ks-vs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0 16px; }
 .ks-side { position: relative; background: var(--sw-cream); border: 4px solid var(--sw-lav-soft); border-radius: 20px; padding: 8px 8px 6px; }
@@ -260,7 +260,7 @@ export function install(game) {
           { value: 'later', label: 'Not now', variant: 'white', icon: 'clock', className: 'ks-later' },
           { value: 'save', label: 'Save a copy', variant: 'pink', icon: 'download', className: 'ks-save' },
         ],
-        note: `Grown-ups: on this website her worlds live only in this browser, which can clear them. One file keeps ${n === 1 ? 'her world' : n === 2 ? 'both worlds' : `all ${n} worlds`}, her look and stickers. To bring them back: My Worlds \u2192 Open a file.`,
+        note: `Grown-ups: on this website her worlds live only in this browser, which can clear them. One file keeps ${n === 1 ? 'her world' : n === 2 ? 'both worlds' : `all ${n} worlds`}, her look and stickers. To bring them back: My\u00A0Worlds \u2192 Open\u00A0a\u00A0file.`,
         cancelValue: 'later',
         focus: 1,
         className: 'ks-card',
