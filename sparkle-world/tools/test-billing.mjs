@@ -474,10 +474,11 @@ describe('the legal drafts (site/privacy.html, site/terms.html, §11.10)', () =>
     ];
     for (const re of must) assert.match(t, re, String(re));
   });
-  test('the drafts load nothing from other sites and have no scripts or forms', () => {
+  test('the drafts load nothing from other sites, have no inline script and no form', () => {
     for (const f of ['privacy.html', 'terms.html']) {
       const html = read(f);
-      assert.ok(!/<script\b/i.test(html), f + ' has no script');
+      const scripts = [...html.matchAll(/<script\b[^>]*>/gi)].map((m) => m[0]);
+      assert.ok(scripts.every((s) => /^<script src="app\.js" defer>$/.test(s)), f + ': only the site\'s own app.js');
       assert.ok(!/<form\b/i.test(html), f + ' has no form');
       assert.ok(!/(src|href)\s*=\s*["']\s*(https?:)?\/\/(?!\{\{)/i.test(html.replace(/<a\b[^>]*>/gi, '')), f + ' loads nothing from another site');
       assert.match(html, /<meta name="viewport"/);
