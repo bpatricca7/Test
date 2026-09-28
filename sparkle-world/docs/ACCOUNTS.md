@@ -218,7 +218,7 @@ Deploy Logs, exit code 1, so Railway keeps the old deployment) when a rule below
 | Variable | Needed when | Meaning |
 |---|---|---|
 | `SW_ACCOUNTS` | always (default `off`) | `off` \| `optional` \| `required` |
-| `DATABASE_URL` | accounts on | `${{Postgres.DATABASE_URL}}` (Railway reference variable, private network) |
+| `DATABASE_URL` | accounts on | `${{Postgres.DATABASE_URL}}` (Railway reference variable, private network); `pglite:` or `pglite:<dir>` = in-process PGlite for development and tests (refused in production) |
 | `PUBLIC_ORIGIN` | accounts on | e.g. `https://sparkleworld.fun`; must be `https://`, except `http://localhost:*` / `http://127.0.0.1:*` when `NODE_ENV` is not `production` (then cookies drop `__Host-`/`Secure`, §4.2) |
 | `SW_SECRET` | accounts on | ≥ 32 random bytes, base64. Sub-keys by HKDF-SHA256(secret, salt `sparkle-world`, info = `code` \| `email` \| `pair`). Rotating it only voids pending codes |
 | `STRIPE_SECRET_KEY` | accounts on | a **restricted** key `rk_live_…` (`sk_test_`/`rk_test_` on staging) (§14 step 4) |
@@ -239,7 +239,9 @@ Refusal rules: accounts on without any required variable; `PUBLIC_ORIGIN` not ht
 `SW_SECRET` shorter than 32 bytes; production with `MAIL_MODE` not `resend`/`postmark`; `SW_TEST=1`
 with `NODE_ENV=production` or a `…_live_` Stripe key; `STRIPE_API_BASE` in production;
 `SW_STRIPE_SHAPES=1` with a live key; `SW_FRIENDS_MODE=free-join` with `SW_MP_CONSENT=verified`
-(a free family can never pass card consent, §6.7); unknown values of any enum.
+(a free family can never pass card consent, §6.7); unknown values of any enum. With accounts `off`
+only `SW_ACCOUNTS` itself is checked (nothing else is read), so a stray variable can never stop
+today's server.
 The existing `SW_MAX_*`, `SW_TRUST_PROXY`, `SW_ALLOWED_ORIGINS` etc. are unchanged. With the cookie now
 carried by the WebSocket, `SW_ALLOWED_ORIGINS` must never list another company's site.
 
@@ -857,15 +859,18 @@ latest period end; else the most recently synced.
 
 | Stripe status | Entitled while | `state` | `until` |
 |---|---|---|---|
-| (any) and `comp_until > now` | always | `comp` | `comp_until` |
+| (any) and `comp_until > now` | always | `comp` | `comp_until` (the plan's `until` when that is later) |
 | `trialing` | `now < trial_end + 1 day` | `trialing` | `trial_end + 1 d` |
 | `active`, not cancelling | `now < period_end + 3 days` (renewal webhook lag) | `active` | `period_end + 3 d` |
 | `active`, `cancel_at_period_end` | `now < period_end + 1 hour` | `canceling` | `period_end` |
 | `past_due` | `now < first_failed_at + SW_GRACE_DAYS` | `past_due` | `first_failed_at + grace` |
-| `incomplete` | never | `none` | — |
+| `incomplete` | never | `none` (`lapsed` when an earlier plan or pass ended) | — |
 | `unpaid`, `canceled`, `incomplete_expired`, `paused`, or any row past its `until` | never | `lapsed` (had a plan) or `none` | — |
 
-The slack days only cover late webhooks; the reconcile job (§6.6) corrects the real state. Callers
+"Had a plan": an ended free pass, a `lapsed_at`, or any subscription that got past `incomplete` /
+`incomplete_expired`. A missing date on a live subscription (it should not happen) falls back to the
+other date, then to a day after `synced_at`. The slack days only cover late webhooks; the reconcile
+job (§6.6) corrects the real state. Callers
 use `billing.entitlementFor(familyId)` (60-second cache, invalidated by webhooks, sync and admin).
 Tested as a table over every status × time position × comp × consent (§12.6).
 
@@ -1495,8 +1500,9 @@ Stripe step is the dad's one test-mode purchase (§14 step 8).
 ### 12.2 Databases in tests (`tools/testdb.mjs`)
 
 `openTestDb()`: `SW_TEST_DATABASE_URL` set → a fresh database per test file (`create database
-sw_t_<random>`, dropped after); else, when Postgres binaries are found and the user is not root →
-a throwaway cluster (`initdb` into a temp directory, a random port, a Unix socket); else, when
+sw_t_<random>`, dropped after); else, when Postgres binaries are found and the user is not root
+(as root: when a `postgres` system user exists, the cluster runs as that user) → a throwaway
+cluster (`initdb` into a temp directory, a random port, a Unix socket); else, when
 `@electric-sql/pglite` is installed → in-process PGlite behind the same `query/tx` interface; else it
 exits with "No Postgres for the tests: set SW_TEST_DATABASE_URL" (never a silent pass). CI uses a real
 Postgres 16 service.
