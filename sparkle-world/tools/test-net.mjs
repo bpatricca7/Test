@@ -22,6 +22,7 @@ import { NetSession } from '../src/net/session.js';
 import { Journal, buildPayload } from '../src/net/journal.js';
 import { TokenBucket, StateBox, Pacer, NetError, jsonBytes, realClock } from '../src/net/transport.js';
 import { RoomRegistry, tooDeep, jsonSize } from '../server/rooms.mjs';
+import { clientIpOf, isInternalIp } from '../server/server.mjs';
 import * as codec from '../src/net/codec.js';
 import * as proto from '../src/net/protocol.js';
 import * as wardrobe from '../src/player/wardrobe-data.js';
@@ -1299,6 +1300,21 @@ async function serverSafetyTests() {
       eq(socks.filter((s) => s.closed === 4029).length, 2, 'the right-most public entry counts (one address)');
       for (const s of socks.splice(0)) s.ws.close(1000);
       await sleep(300);
+      // a home whose real address is public 100.x (outside carrier-grade NAT 100.64.0.0/10):
+      // the proxy's entry counts, so forged entries in front of it are not new addresses
+      for (let k = 0; k < 6; k++) await open('sw1-sun-sun-moon-moon', `xfh-secret-${k}-0000000`, { 'X-Forwarded-For': `5.5.${k}.5, 100.8.1.2` });
+      await waitFor(() => socks.filter((s) => s.closed === 4029).length >= 2, 3000);
+      eq(socks.filter((s) => s.closed === 4029).length, 2, 'a public 100.x address is the client, not a hop (forged entries before it do not count)');
+      for (const s of socks.splice(0)) s.ws.close(1000);
+      await sleep(300);
+      eq(clientIpOf('100.64.0.2', '100.33.12.7'), '100.33.12.7', 'behind the proxy, a public 100.x entry is the client');
+      eq(clientIpOf('100.64.0.2', '6.6.6.6, 100.33.12.7'), '100.33.12.7', 'entries a client wrote before it are never reached');
+      eq(clientIpOf('100.64.0.2', '100.130.2.2'), '100.130.2.2', 'the top of 100/8 is public too');
+      eq(clientIpOf('100.64.0.2', '6.6.6.6, 100.72.1.1'), '6.6.6.6', 'a carrier-grade NAT hop (100.64.0.0/10) is skipped');
+      eq(clientIpOf('100.8.1.2', '6.6.6.6'), '6.6.6.6', "Railway's proxies connect from anywhere in 100.0.0.0/8 (the socket peer)");
+      eq(clientIpOf('198.51.100.7', '6.6.6.6'), '198.51.100.7', 'a public socket peer is the client (X-Forwarded-For ignored)');
+      eq(clientIpOf('100.64.0.2', '6.6.6.6', false), '100.64.0.2', 'SW_TRUST_PROXY=0: always the socket peer');
+      assert(isInternalIp('100.8.1.2', { proxyPeer: true }) && !isInternalIp('100.8.1.2') && isInternalIp('100.127.0.1') && !isInternalIp('100.128.0.1'), '100/8 is a proxy peer; only 100.64.0.0/10 is a hop inside X-Forwarded-For');
       // rooms one address may make at a time
       for (let k = 0; k < 4; k++) await open(`room-made-${k}`, `room-secret-${k}-0000000`);
       await waitFor(() => socks[3].closed !== null, 3000);

@@ -1588,11 +1588,15 @@ Three reviews (relay safety, kid UX, sync) found real holes; these are the rules
    12 (both HTTP 429 before the WebSocket opens; a code nobody plays makes a new room, so
    trying codes one after another from one home takes about 17 hours; joining a game that
    is there costs no room). The address behind a proxy is the right-most public
-   `X-Forwarded-For` entry (proxy hops in private ranges and Railway's 100.0.0.0/8
-   skipped), so a client cannot pick its own; an IPv6 address counts by its /64 (one home
-   gets a whole /64). A page that drops without ever setting presence leaves its room at
-   once (no reconnect grace). Every answer carries `Content-Security-Policy:
-   frame-ancestors 'none'; connect-src 'self'; object-src 'none'; base-uri 'none';
+   `X-Forwarded-For` entry, so a client cannot pick its own: the socket peer counts as a
+   proxy when it is private or in Railway's 100.0.0.0/8, but inside `X-Forwarded-For` only
+   private, link-local and carrier-grade NAT (100.64.0.0/10) hops are skipped (the rest of
+   100/8 is homes on some ISPs; skipping it let such a home write any address in front of
+   the one the proxy appended). An IPv6 address counts by its /64 (one home gets a whole
+   /64). What Railway's edge writes into `X-Forwarded-For` was tested locally only; check it
+   once on the live site (`docs/teams/net.md`, Known limits). A page that drops without ever
+   setting presence leaves its room at once (no reconnect grace). Every answer carries
+   `Content-Security-Policy: frame-ancestors 'none'; connect-src 'self'; object-src 'none'; base-uri 'none';
    form-action 'none'`, `X-Frame-Options: DENY` and a `Permissions-Policy` with the camera,
    location, payment, USB and screen capture off; the microphone is `(self)` on the game
    page only (the walkie-talkie, Addendum C) and off on every other answer. The 4-picture
@@ -1643,7 +1647,7 @@ Team notes, files and tests: `docs/teams/walkie.md`.
 
 | Rule | Where it is enforced |
 |---|---|
-| Exists only on Railway (`net.kind === 'ws'`); hidden in claude.ai, in `?net=loop`, and alone | page (`src/net/walkie/index.js` `exists`, `live`) |
+| Exists only on Railway (`net.kind === 'ws'`); hidden in claude.ai, in `?net=loop`, and alone (on the Railway site alone only the grown-ups' Settings row shows, so a grown-up can turn it on before a game) | page (`src/net/walkie/index.js` `exists`, `live`) |
 | Only while playing together with a code, only among the players of that one game: exactly the members the room's gate shows the game to (the host plus the friends she let in with a tap; device stamps and the gate are Addendum B items 1 and 3) | server (`server/voice.mjs` asks the room's gate, `RoomRegistry.gameOf`, for **every** frame), host (§8.5), page |
 | Each device's grown-up passes the check (`profile.settings.walkie = {on, at}`); without it the page never says "voice on", so it neither talks nor receives a single voice byte | server (voice-on set), page |
 | Everyone sees who can hear: a page receives or sends voice only while its presence shows `wk:1` (the **walkie** badge in every Players panel); a page that hides it (**walkie off**) gets nothing | server (reads `wk` like `adm`, at every frame), page |

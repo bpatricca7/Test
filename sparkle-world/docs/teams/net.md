@@ -268,6 +268,13 @@ a Flower Cottage fence survived the guest's Undo), and `avatarFields` sends the 
   Adding `mail` (and maybe `pic`) to `ANY_FIELDS` would change that.
 - Doors toggled by a friend swing on every page (the furniture's per-entity animation state
   survives the in-place record update); pieces placed anew by a record just appear.
+- What Railway's edge writes into `X-Forwarded-For` was tested locally only (a simulated
+  proxy). The relay counts the right-most entry that is not private, link-local or
+  100.64.0.0/10, trusting X-Forwarded-For only when the socket peer is private or in
+  100.0.0.0/8. If Railway's own hops showed up there as other 100.x addresses, every family
+  would count as one address and meet the 12-connection limit ("Lots of games right now!").
+  Check once on the live site: with `SW_MAX_PER_IP=2` for a moment, three pages on home
+  Wi-Fi get one refusal, while a phone on mobile data still gets in; then remove the variable.
 
 ## Tests
 

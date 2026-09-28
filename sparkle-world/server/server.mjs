@@ -77,16 +77,20 @@ class Bucket {
 }
 
 /**
- * Loopback, private, link-local and 100.x addresses: a proxy hop, not a client. (Railway says
- * its edge and internal proxies always use 100.0.0.0/8; that covers carrier-grade NAT too.)
+ * Loopback, private, link-local and carrier-grade NAT (100.64.0.0/10) addresses: a proxy hop,
+ * not a client. With proxyPeer (only for the socket peer: is this connection from a proxy?)
+ * all of 100.0.0.0/8 counts too, because Railway says its edge and internal proxies always
+ * connect from there. Inside X-Forwarded-For only 100.64.0.0/10 is skipped: the rest of 100/8
+ * is ordinary public space (homes on some ISPs), and skipping it would let a client there
+ * write any address it liked in front of the one the proxy appended.
  */
-export function isInternalIp(ip) {
+export function isInternalIp(ip, { proxyPeer = false } = {}) {
   if (typeof ip !== 'string') return true;
   const v4 = /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(ip);
   if (v4) {
     const [a, b] = [+v4[1], +v4[2]];
     return a === 10 || a === 127 || a === 0 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) ||
-      (a === 169 && b === 254) || a === 100;
+      (a === 169 && b === 254) || (proxyPeer ? a === 100 : a === 100 && b >= 64 && b <= 127);
   }
   const l = ip.toLowerCase();
   return l === '::1' || l === '::' || l.startsWith('fc') || l.startsWith('fd') || l.startsWith('fe80');
@@ -103,14 +107,14 @@ export function normalizeIp(s) {
 
 /**
  * The address to count limits by. Without a trusted proxy (or when the socket peer is itself
- * a public address) it is the socket peer. Behind a proxy (Railway's edge is a private hop)
- * it is the right-most public entry of X-Forwarded-For: proxies append what they saw, so
- * entries a client wrote itself sit further left and are never reached. Only internal
- * entries: the socket peer.
+ * a public address) it is the socket peer. Behind a proxy (Railway's edge connects from
+ * 100.0.0.0/8) it is the right-most public entry of X-Forwarded-For: proxies append what they
+ * saw, so entries a client wrote itself sit further left and are never reached. Only
+ * internal entries: the socket peer.
  */
 export function clientIpOf(remoteAddress, xff, trustProxy = true) {
   const sock = normalizeIp(remoteAddress) || String(remoteAddress || '?');
-  if (!trustProxy || !isInternalIp(sock)) return sock;
+  if (!trustProxy || !isInternalIp(sock, { proxyPeer: true })) return sock;
   const list = (Array.isArray(xff) ? xff.join(',') : typeof xff === 'string' ? xff : '').split(',');
   for (let k = list.length - 1; k >= 0; k--) {
     const ip = normalizeIp(list[k]);
@@ -581,8 +585,10 @@ function loadPage(file) {
 
 // ---------- the home page (dist/site/) ----------
 
-// Only the home page gets a Content-Security-Policy (the game page is unchanged): its own files
-// (the Fredoka font too), pictures from data: URLs. Nothing from other sites, no other scripts.
+// The home page's HTML pages (dist/site/*.html) get this stricter policy in place of the common
+// one that securityHeaders() puts on every answer; the game page keeps the common one (it has
+// inline scripts). Its own files (the Fredoka font too), pictures from data: URLs. Nothing from
+// other sites, no other scripts.
 const SITE_CSP = [
   "default-src 'self'",
   "script-src 'self'",

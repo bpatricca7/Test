@@ -280,7 +280,7 @@ Add these in the service's **Variables** tab (then redeploy):
 | `SW_ROOMS_PER_IP` | 6 | games one internet address may have started at the same time |
 | `SW_CONNECT_RATE` / `SW_CONNECT_BURST` | 1 / 30 | new connections per second from one address, and how many may come at once |
 | `SW_ROOMS_PER_MIN` / `SW_ROOMS_BURST` | 20 / 12 | new games per minute from one address, and how many may come at once (a wrong code counts as a new game; joining a game that is there does not) |
-| `SW_TRUST_PROXY` | on | set to `0` only if the server is NOT behind Railway's (or another) proxy; behind one, the address counted is the right-most public one in `X-Forwarded-For` (the one the proxy saw). An IPv6 address counts by its /64 (one home) |
+| `SW_TRUST_PROXY` | on | set to `0` only if the server is NOT behind Railway's (or another) proxy; behind one (a connection from a private address or Railway's 100.0.0.0/8), the address counted is the right-most public one in `X-Forwarded-For` (the one the proxy saw; only private, link-local and 100.64.0.0/10 hops are skipped there, because the rest of 100.x is ordinary home addresses). An IPv6 address counts by its /64 (one home) |
 | `SW_IDLE_MS` | 600000 | close a game after this many quiet milliseconds (10 min) |
 | `SW_ALLOWED_ORIGINS` | *(empty)* | extra web addresses allowed to connect, comma separated (only needed if you serve the page from a different domain than the server) |
 
