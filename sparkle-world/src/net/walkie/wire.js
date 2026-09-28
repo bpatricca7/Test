@@ -69,10 +69,6 @@ export const F_END = 2;
 export const PEER_RE = /^[A-Za-z0-9_-]{1,64}$/;
 export const isPeerId = (v) => typeof v === 'string' && PEER_RE.test(v);
 
-/** Why-codes the page shows as friendly words (never shown raw). */
-export const NO_WHY = Object.freeze(['off', 'group', 'quiet', 'muted', 'wait']);
-export const CUT_WHY = Object.freeze(['cap', 'idle', 'quiet', 'muted', 'group', 'off']);
-
 function asBytes(b) {
   if (b instanceof Uint8Array) return b;
   if (b instanceof ArrayBuffer) return new Uint8Array(b);

@@ -29,7 +29,7 @@ import net from 'node:net';
 import path from 'node:path';
 import { mkdir } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
-import { waitForTitle, settle, finish, ROOT, SHOTS, CHROMIUM, LAUNCH_ARGS, PAGE_URL } from './smoke.mjs';
+import { waitForTitle, waitForPlay, waitIdle, settle, finish, ROOT, SHOTS, CHROMIUM, LAUNCH_ARGS, PAGE_URL } from './smoke.mjs';
 import {
   sleep, game, until, press, setupPage, hostMakesCode, guestTypesCode, hostLetsIn, waitLive, bringTo, closePanels,
 } from './net/mp-flows.mjs';
@@ -618,6 +618,37 @@ async function main() {
       }));
       check(!r.row && !r.exists && !r.btn, `${label}: transport ${r.kind}, no walkie (no Settings row, no button)`);
       await ctx.close();
+    }
+
+    // ----- alone on the Railway site (/play): only the grown-ups' Settings row (so a grown-up
+    // can turn it on before a game); in a world alone no button, no badge, no microphone, and
+    // M does nothing until a code is live -----
+    log('alone at /play: the Settings row only');
+    {
+      const solo = await openPlayer(browser, { key: 'solo', name: 'Poppy', viewport: { width: 1280, height: 800 }, touch: false, seed: 53 }, url);
+      const kind = await until(solo, () => window.__game.net.kind, null, 10000);
+      check(kind === 'ws', `alone at /play: WebSocket transport (${kind})`);
+      await grownUpTurnsOn(solo, { wrongFirst: false });
+      await press(solo, 'button.sw-btn:has-text("New World")');
+      await solo.page.waitForSelector('.sw-panel-wrap.sw-open .sw-biome img[src]');
+      await press(solo, '.sw-panel-wrap.sw-open .sw-biome[data-biome="flat"]');
+      await press(solo, 'button.sw-create');
+      await waitForPlay(solo.page);
+      await waitIdle(solo.page);
+      await settle(solo.page, 500);
+      await solo.page.keyboard.down('m');
+      await sleep(900);
+      const r = await game(solo, () => {
+        const s = window.__game.debug.walkie.state();
+        const shown = (sel) => !!document.querySelector(sel) && !document.querySelector(sel).hidden;
+        return { mode: window.__game.mode, enabled: s.enabled, live: s.live, show: s.view.show, talk: s.talk, micLive: s.micLive, micSeen: s.micSeen, card: !!document.querySelector('.sw-wk-card'), btn: shown('.sw-wk'), off: shown('.sw-wk-off') };
+      });
+      await solo.page.keyboard.up('m');
+      const tx = (await WS(solo)).tx;
+      check(r.mode === 'play' && r.enabled && !r.live, `alone at /play in a world: walkie on for this device, nothing live (${JSON.stringify(r)})`);
+      check(!r.btn && !r.off && r.show === null, 'alone at /play: no walkie button, no "Walkie off" badge');
+      check(r.talk === 'idle' && !r.micLive && !r.micSeen && !r.card && tx.presses === 0, `alone at /play: holding M does nothing (talk ${r.talk}, no microphone card, microphone never live, ${tx.presses} presses)`);
+      await solo.context.close();
     }
 
     const [lily, rosie, june] = [

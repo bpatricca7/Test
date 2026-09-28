@@ -230,10 +230,6 @@ export class VoiceRelay {
     return out;
   }
 
-  _floorKey(l) {
-    return l.name;
-  }
-
   _json(l, obj) {
     try {
       l.send.json(obj);
@@ -254,7 +250,7 @@ export class VoiceRelay {
         // which game she is in, never the page
         if (f.h !== undefined && !isPeerId(f.h)) return;
         l.on = true;
-        const fl = this.floors.get(this._floorKey(l));
+        const fl = this.floors.get(l.name);
         const ok = this._inGame(l.name, l.peer);
         this._json(l, { t: 'v', k: 'hi', ok, talk: fl && ok ? fl.link.peer : null });
         return;
@@ -279,7 +275,7 @@ export class VoiceRelay {
           this._json(l, { t: 'v', k: 'no', why });
           return;
         }
-        const key = this._floorKey(l);
+        const key = l.name;
         const fl = this.floors.get(key);
         if (fl && fl.link !== l) {
           this.counts.busy++;
@@ -319,7 +315,7 @@ export class VoiceRelay {
   }
 
   _leaveFloor(l, why) {
-    const fl = this.floors.get(this._floorKey(l));
+    const fl = this.floors.get(l.name);
     if (fl && fl.link === l) this._release(fl, why);
   }
 
@@ -358,7 +354,7 @@ export class VoiceRelay {
     l.c.bytesIn += len;
     this.counts.framesIn++;
     this.counts.bytesIn += len;
-    const fl = this.floors.get(this._floorKey(l));
+    const fl = this.floors.get(l.name);
     if (!l.on || !fl || fl.link !== l) {
       this.counts.noFloor++;
       this._junk(l, now, len);

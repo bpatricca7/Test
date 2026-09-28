@@ -39,8 +39,10 @@ tested and what is left to check on real devices.
 - A device whose walkie is **off** shows no walkie button, only a small grey **Walkie off**
   badge while a friend's walkie is on (tap: "A grown-up can turn on the walkie-talkie in
   Settings."). It sends nothing and the server sends it nothing.
-- Playing alone, and inside claude.ai (RoomTransport, where the microphone is blocked): no
-  walkie UI at all, no Settings row.
+- Playing alone from a file, and inside claude.ai (RoomTransport, where the microphone is
+  blocked): no walkie UI and no Settings row. On the Railway site when playing alone: only the
+  grown-ups' Settings row (so a grown-up can turn it on before a game); no walkie button or
+  badge, no microphone, and M does nothing until a code is live.
 
 Screenshots (`node tools/test-walkie.mjs`): `.shots/walkie-gate-{desktop,ipad,phone}.png`,
 `walkie-gate-wait.png` (the wait after a reload),
@@ -216,8 +218,10 @@ code.
 - **End to end** through the real server (`server/server.mjs` on a random port,
   `SW_TEST_STATS=1`, the game at `/play`), Chromium with a fake microphone: first, no walkie at all alone (file://)
   or inside claude.ai (a stand-in `window.claude` room: room transport, no Settings row, no
-  button); then three pages: Lily (host, desktop 1280×800), Rosie (iPad 1024×768, touch), June
-  (phone 390×844, touch, walkie **off**): Permissions-Policy;
+  button); alone at `/play` a grown-up turns it on in Settings, then in a world alone there is
+  no button or badge, holding M asks for no microphone and presses nothing; then three pages:
+  Lily (host, desktop 1280×800), Rosie (iPad 1024×768, touch), June (phone 390×844, touch,
+  walkie **off**): Permissions-Policy;
   grown-up checks with real taps (a wrong answer, then right) on desktop and iPad; no walkie UI
   before playing together; the button only for walkie-on players, June only gets the "Walkie
   off" badge; the microphone card on the first press; **Lily holds 2 s** → 25 frames / 16,176 B
