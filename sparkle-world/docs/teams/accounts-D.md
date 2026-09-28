@@ -108,6 +108,12 @@ a trial were squeezed on the iPad; the US-only return was not handled.
   profile 100 coins to start, so an untouched profile counts as played. Suggested: compare with
   the starting coins (or leave coins out). The e2e answers the card like a parent ("They're not
   ours") so the other scenarios still run, and fails one check naming the devices.
+- **C (a bug the e2e shows)**: the same question comes back at every boot after it was
+  answered. `askLegacy()` (`src/account/cards.js`) never reads `legacyState()`, so an iPad
+  whose old worlds were imported (they are kept 30 days) or dismissed ("They're not ours") is
+  asked again each time the game opens (§7.5: only while `sparkle-world:legacy` is neither
+  `imported` nor `dismissed`; "Not now" asks again next time). Seen when Lily's iPad opens the
+  game again in §12.8 #5.
 - **C (a bug the e2e shows, red until fixed; children's data)**: a deleted player's copy stays
   on a device that was not playing her at that moment. `prepare()` in `src/account/index.js`
   wipes only on `410 family_gone`, or on `player_gone` while she is the chosen player; when the

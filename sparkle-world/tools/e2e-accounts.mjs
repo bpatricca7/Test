@@ -494,15 +494,23 @@ async function newDevice(key, name, size, opts = {}) {
   const dev = { key, name, ctx, page, touch: size.touch !== false, viewport: { width: size.w, height: size.h }, seed: 11 + key.length };
   R.dev[key] = dev;
   // only the iPad played before accounts: any other device asked "from before. Whose are
-  // they?" is wrong (§7.5: only when there are old worlds or a profile that was played).
-  // It is counted (a check at the end) and answered like a grown-up would, so the rest runs.
-  if (key !== 'ipad') {
-    await page.addLocatorHandler(page.getByText(/from before\. Whose are they\?/).first(), async () => {
-      R.unexpectedImport.add(key);
-      await page.getByRole('button', { name: "They're not ours" }).first().click();
-    });
-  }
+  // they?" is wrong (§7.5: only when there are old worlds or a profile that was played)
+  if (key !== 'ipad') await watchImport(dev, key);
   return dev;
+}
+
+/**
+ * The "from before. Whose are they?" question where it should not come (§7.5: only while the
+ * device has old saves and `sparkle-world:legacy` is neither imported nor dismissed): counted
+ * (one check at the end names the devices) and answered like a grown-up would, so the other
+ * scenarios still run.
+ */
+async function watchImport(dev, label) {
+  const page = dev.page;
+  await page.addLocatorHandler(page.getByText(/from before\. Whose are they\?/).first(), async () => {
+    R.unexpectedImport.add(label);
+    await page.getByRole('button', { name: "They're not ours" }).first().click({ force: true });
+  });
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -563,6 +571,8 @@ async function s2() {
   await shot(dev.page, 'ipad-import-card');
   await tapIt(dev, dev.page.getByRole('button', { name: 'Lily', exact: true }).first());
   await GAME.title(dev);
+  // answered once: the iPad must not ask again (it keeps the old copies 30 days, §7.5)
+  await watchImport(dev, 'ipad (again, after the import)');
   await noPriceInGame(dev.page, 'the iPad, Lily');
   const cookie = await cookieOf(dev.ctx);
   const end = Date.now() + 60000;
@@ -1156,7 +1166,7 @@ async function main() {
       for (const f of Object.values(R.fam)) f.page?.flushErrors?.();
       for (const d of Object.values(R.dev)) d.page?.flushErrors?.();
     }
-    if (run.some((n) => n >= 2 && n <= 9)) check(R.unexpectedImport.size === 0, `no device that never played before accounts is asked about "worlds from before" (${[...R.unexpectedImport].join(', ') || 'none'})`);
+    if (run.some((n) => n >= 2 && n <= 9)) check(R.unexpectedImport.size === 0, `"worlds from before. Whose are they?" comes only where it should: once, on the iPad (asked wrongly on: ${[...R.unexpectedImport].join(', ') || 'none'})`);
     // nothing personal in the server's log (§12.7 log spy, for the e2e's own run)
     const out = SERVER_LOG.join('');
     const leaks = Object.values(R.fam).map((f) => f.email).filter((e) => out.includes(e));
