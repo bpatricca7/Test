@@ -91,8 +91,10 @@ In this branch, with `SW_ACCOUNTS` unset (2026-09-28, on a shared 4-core machine
 | `node tools/probe-railway.mjs` | passed |
 | `node tools/dev-accounts.mjs --fake --seed` | starts; `/account` 200, `/api/net` says `required` |
 
-`npm run e2e:accounts` needs A, B and C: in this branch alone it runs scenario 10 and reports
-1–9 NOT RUN (exit 2). In the scratch tree with A, B and C merged, see the next section.
+`npm run e2e:accounts` needs A, B and C: in this branch alone it runs scenario 10 (8 checks
+passed, 0 problems: `file://` and a claude.ai stand-in make no `/api` request, `optional` mode
+plays together as today) and reports 1–9 and 10's plan-card part NOT RUN (exit 2, never a
+silent pass). In the scratch tree with A, B and C merged, see the next section.
 
 ## Integration runs (A, B, C merged into a scratch tree; nothing of theirs is committed here)
 
