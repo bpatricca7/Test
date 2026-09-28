@@ -85,7 +85,7 @@ export const BACKUP_FORMAT = 'sparkle-world-backup';
 // volumes, quality and a grown-up's switches), not playing-with-friends ids, not lastWorldId.
 const BACKUP_PROFILE_KEYS = ['look', 'outfits', 'playerName', 'nameSet', 'stickers', 'stickersSeen', 'stats', 'coins', 'basket', 'tutorialDone'];
 
-function newWorldId() {
+export function newWorldId() {
   return 'w' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
 }
 
@@ -558,29 +558,19 @@ export class SaveStore {
    * is ever touched.
    */
   static async wipe(ns) {
-    const legacy = !ns;
-    if (!legacy && !NS_RE.test(ns)) return false;
-    const prefix = legacy ? LS_PREFIX : DB_NAME + '@' + ns + ':';
+    if (ns && !NS_RE.test(ns)) return false;
+    const db = ns ? DB_NAME + '@' + ns : DB_NAME;
+    // before accounts: only the saves (never the relay's device id or the account cache)
+    const re = ns ? new RegExp('^' + db + ':') : /^sparkle-world:(metas|profile|world:)/;
     try {
       const ls = window.localStorage;
-      const drop = [];
-      for (let i = 0; i < ls.length; i++) {
-        const k = ls.key(i);
-        if (!k || !k.startsWith(prefix)) continue;
-        const rest = k.slice(prefix.length);
-        if (!legacy || rest === 'metas' || rest === 'profile' || rest.startsWith('world:')) drop.push(k);
-      }
-      for (const k of drop) ls.removeItem(k);
+      for (const k of Array.from({ length: ls.length }, (_, i) => ls.key(i))) if (re.test(k)) ls.removeItem(k);
     } catch {}
     try {
-      const idb = window.indexedDB;
-      if (idb) {
-        await new Promise((resolve) => {
-          const req = idb.deleteDatabase(legacy ? DB_NAME : DB_NAME + '@' + ns);
-          req.onsuccess = req.onerror = req.onblocked = () => resolve();
-          setTimeout(resolve, 3000);
-        });
-      }
+      await new Promise((resolve) => {
+        window.indexedDB.deleteDatabase(db).onsuccess = resolve;
+        setTimeout(resolve, 3000);
+      });
     } catch {}
     return true;
   }
@@ -775,18 +765,19 @@ export class SaveStore {
 
   // ----- profile -----
 
-  async _localProfile() {
-    let local = null;
+  /** The newest of get(backend) over every local backend that may hold data. */
+  async _newest(get) {
+    let best = null;
     for (const b of this._readers()) {
-      const p = await this._safe('local profile', () => b.getProfile(), null);
-      if (p && (!local || (p.updatedAt || 0) > (local.updatedAt || 0))) local = p;
+      const v = await this._safe('local read', () => get(b), null);
+      if (v && (!best || (v.updatedAt || 0) > (best.updatedAt || 0))) best = v;
     }
-    return local;
+    return best;
   }
 
   async loadProfile() {
     await this.init();
-    const local = await this._localProfile();
+    const local = await this._newest((b) => b.getProfile());
     if (this._rev) return this._loadProfileRev(local);
     const cloud = this.cloud ? await this._safe('cloud profile', () => withTimeout(this.cloud.getProfile(), CLOUD_READ_MS, 'cloud read'), null) : null;
     if (local && cloud) return (cloud.updatedAt || 0) > (local.updatedAt || 0) ? cloud : local;
@@ -795,28 +786,24 @@ export class SaveStore {
 
   /** Local and cloud profiles merged (§7.4); what the cloud lacks is pushed. */
   async _loadProfileRev(local) {
-    let cloud = null;
-    let reached = false;
+    let cloud;
     try {
       cloud = await withTimeout(this.cloud.getProfile(), CLOUD_READ_MS, 'cloud read');
-      reached = true;
-    } catch (err) {
-      console.warn('[storage] cloud profile failed', String((err && err.message) || err));
+    } catch {
+      return local; // offline: this device's copy (pushed with the next save)
     }
     if (cloud) {
       this._setRev(PROFILE_REV, cloud._rev);
       delete cloud._rev;
     }
-    if (!local) return cloud;
-    if (!cloud) {
-      if (reached && !this.cloudReadOnly) this._queueProfile(local);
-      return local;
+    if (!local || !cloud) {
+      if (local && !this.cloudReadOnly) this._queueProfile(local);
+      return cloud || local;
     }
-    const merged = this._merge ? this._merge(local, cloud) : (cloud.updatedAt || 0) > (local.updatedAt || 0) ? cloud : local;
+    const merged = this._merge ? this._merge(local, cloud) : cloud;
     // push when this device has something the cloud does not (newer, or stickers it lacks...)
-    const strip = typeof this.cloud.strip === 'function' ? (p) => this.cloud.strip(p) : (p) => p;
-    const differs = canon({ ...strip(merged), updatedAt: 0 }) !== canon({ ...strip(cloud), updatedAt: 0 });
-    if (!this.cloudReadOnly && ((local.updatedAt || 0) > (cloud.updatedAt || 0) || differs)) this._queueProfile(merged);
+    const strip = (p) => canon({ ...this.cloud.strip(p), updatedAt: 0 });
+    if (!this.cloudReadOnly && ((local.updatedAt || 0) > (cloud.updatedAt || 0) || strip(merged) !== strip(cloud))) this._queueProfile(merged);
     return merged;
   }
 
@@ -898,7 +885,7 @@ export class SaveStore {
     return (await this._listAll()).some((m) => m.id === id + '.undo');
   }
 
-  async _listAll() {
+  async _listAll(cloudToo = true) {
     await this.init();
     const byId = new Map();
     const add = (metas, source) => {
@@ -913,19 +900,14 @@ export class SaveStore {
       }
     };
     for (const b of this._readers()) add(await this._safe('list local', () => b.listMetas(), []), b.kind);
-    if (this.cloud) add(await this._safe('list cloud', () => withTimeout(this.cloud.listMetas(), CLOUD_READ_MS, 'cloud read'), []), 'cloud');
+    if (this.cloud && cloudToo) add(await this._safe('list cloud', () => withTimeout(this.cloud.listMetas(), CLOUD_READ_MS, 'cloud read'), []), 'cloud');
     let all = [...byId.values()];
     if (this._rev) all = all.filter((m) => !this._gone(m.id, m.updatedAt));
     return all.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   }
 
-  async _loadLocal(id) {
-    let local = null;
-    for (const b of this._readers()) {
-      const w = await this._safe('load local world', () => b.getWorld(id), null);
-      if (w && (!local || (w.updatedAt || 0) > (local.updatedAt || 0))) local = w;
-    }
-    return local;
+  _loadLocal(id) {
+    return this._newest((b) => b.getWorld(id));
   }
 
   async loadWorld(id) {
@@ -1241,10 +1223,7 @@ export class SaveStore {
         if (!this._pendingWorlds.has(key)) await this._deleteLocal(key);
         return;
       }
-      if (status === 400 || status === 413) {
-        console.warn('[storage] the cloud did not take a world', String(err.message || err));
-        return; // no retry: the same save would be refused again
-      }
+      if (status === 400 || status === 413) return; // no retry: the same save would be refused again (it stays here)
       if (!this._pendingWorlds.has(key)) this._pendingWorlds.set(key, save);
       this._failed(key, err);
     }
@@ -1261,12 +1240,15 @@ export class SaveStore {
     if (this.cloudReadOnly) return;
     const n = (this._retries.get(key) || 0) + 1;
     this._retries.set(key, n);
-    let wait = RETRY_MS[n - 1] || RETRY_LAST_MS;
-    if (err && err.retryAfter > 0) wait = Math.max(wait, err.retryAfter * 1000);
-    const t = this._timers.get(key);
-    if (t) clearTimeout(t);
+    clearTimeout(this._timers.get(key));
     this._timers.delete(key);
-    this._scheduleCloud(key, wait);
+    this._scheduleCloud(key, Math.max(RETRY_MS[n - 1] || RETRY_LAST_MS, (err && err.retryAfter) * 1000 || 0));
+  }
+
+  _emit(fns, v) {
+    for (const fn of fns) {
+      try { fn(v); } catch (e) { console.warn('[storage] listener failed', e); }
+    }
   }
 
   /**
@@ -1277,17 +1259,16 @@ export class SaveStore {
     const from = save.id;
     const to = from.slice(0, 67) + '~' + Math.random().toString(36).slice(2, 6).padEnd(4, '0');
     const name = forkName(save.name);
-    this._redirect.set(from, { to, name });
-    const later = this._pendingWorlds.get(from); // a newer save of the world waiting its turn
+    // a newer save of the world waiting its turn is the copy; saves of it from now on too
+    const fork = { ...(this._pendingWorlds.get(from) || save), id: to, name };
     this._pendingWorlds.delete(from);
-    const fork = { ...(later || save), id: to, name };
-    if (Number.isFinite(err && err.rev)) this._setRev(from, err.rev);
-    await this._writeLocal('fork', (b) => b.putWorld(fork));
     this._pendingWorlds.set(to, fork);
+    this._redirect.set(from, { to, name });
+    this._setRev(from, err.rev);
+    const wrote = this._writeLocal('fork', (b) => b.putWorld(fork)); // before any later save of it
+    this._emit(this._forkFns, { from, to, name });
+    await wrote;
     this._scheduleCloud(to, 0);
-    for (const fn of this._forkFns) {
-      try { fn({ from, to, name }); } catch (e) { console.warn('[storage] fork listener failed', e); }
-    }
     setTimeout(() => this._redirect.delete(from), 2000);
     this._ok(from);
     try {
@@ -1302,25 +1283,22 @@ export class SaveStore {
 
   /** 409 on the profile: merge with the server's (§7.4) and push again on its revision. */
   async _profileConflict(p) {
-    let server = null;
+    let server;
     try {
       server = await withTimeout(this.cloud.getProfile(), CLOUD_READ_MS, 'cloud read');
     } catch (err) {
-      if (!this._pendingProfile) this._pendingProfile = p;
-      this._failed('profile', err);
-      return;
+      this._pendingProfile = this._pendingProfile || p;
+      return this._failed('profile', err);
     }
     if (server) {
       this._setRev(PROFILE_REV, server._rev);
       delete server._rev;
     } else this._revs.delete(PROFILE_REV);
-    const merge = (a, b) => (b && this._merge ? this._merge(a, b) : a);
-    const merged = merge(p, server);
+    const merge = (a) => (server && this._merge ? this._merge(a, server) : a);
+    const merged = merge(p);
     await this._writeLocal('profile merge', (b) => b.putProfile(merged));
-    this._pendingProfile = this._pendingProfile ? merge(this._pendingProfile, server) : merged;
-    for (const fn of this._profileFns) {
-      try { fn(merged); } catch (e) { console.warn('[storage] profile listener failed', e); }
-    }
+    this._pendingProfile = merge(this._pendingProfile || p);
+    this._emit(this._profileFns, merged);
     const n = (this._retries.get('profile') || 0) + 1;
     this._retries.set('profile', n);
     this._scheduleCloud('profile', n > 3 ? RETRY_MS[0] : 0);
@@ -1332,42 +1310,30 @@ export class SaveStore {
    * uploads what the page-closing journal kept); an equal one teaches its revision.
    */
   async _reconcile() {
-    if (!this._rev || this.cloudReadOnly) return;
     let metas;
     try {
       metas = await withTimeout(this.cloud.listMetas({ fresh: true }), CLOUD_READ_MS, 'cloud read');
     } catch {
       return; // offline: pushes wait for their retries
     }
-    const cloud = new Map();
-    for (const m of metas || []) if (m && m.id) cloud.set(m.id, m);
+    const cloud = new Map(metas.map((m) => [m.id, m]));
     for (const id of this._dels) this._pushCloud('del:' + id);
-    const locals = new Map();
-    for (const b of this._readers()) {
-      for (const m of await this._safe('list local', () => b.listMetas(), [])) {
-        if (m && m.id && (!locals.has(m.id) || (m.updatedAt || 0) > (locals.get(m.id).updatedAt || 0))) locals.set(m.id, m);
-      }
-    }
-    for (const [id, lm] of locals) {
-      if (this._dels.has(id)) continue;
+    for (const lm of await this._listAll(false)) {
+      const id = lm.id;
       const cm = cloud.get(id);
       const lt = lm.updatedAt || 0;
-      if (cm && cm.deleted) {
-        this._tombs.set(id, cm.updatedAt || 0);
-        if ((cm.updatedAt || 0) >= lt) {
-          await this._deleteLocal(id);
-          this._revs.delete(id);
-          continue;
-        }
-      }
-      if (!cm || cm.deleted || lt > (cm.updatedAt || 0)) {
-        if (this._pendingWorlds.has(id)) continue;
-        const save = await this._loadLocal(id);
+      const ct = cm ? cm.updatedAt || 0 : -1;
+      if (cm && cm.deleted) this._tombs.set(id, ct);
+      if (cm && cm.deleted && ct >= lt) {
+        await this._deleteLocal(id);
+        this._revs.delete(id);
+      } else if (!cm || cm.deleted || lt > ct) {
+        const save = !this._pendingWorlds.has(id) && (await this._loadLocal(id));
         if (save) {
           this._pendingWorlds.set(id, save);
           this._scheduleCloud(id);
         }
-      } else if (lt === (cm.updatedAt || 0)) this._setRev(id, cm.rev);
+      } else if (lt === ct) this._setRev(id, cm.rev);
     }
     this._saveSync();
   }

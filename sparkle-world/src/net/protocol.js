@@ -141,6 +141,12 @@ export const MESSAGES = Object.freeze({
   made_prefab: '{name} made a {prefab}!',
   slept: '{name} went to sleep. Good morning, everyone!',
   summary: 'Playing together is over! Everything is saved.',
+  // family accounts (docs/ACCOUNTS.md §7.7); player_gone has no words: the page goes back to "Who's playing?"
+  signed_out: 'Ask a grown-up to sign in to Sparkle World on this device.',
+  not_entitled: 'Sparkle World is resting. Ask a grown-up to wake it up!',
+  friends_off: 'Ask a grown-up to turn on Play with Friends for you.',
+  friends_locked: "Playing with friends isn't ready yet. A grown-up can check the Family page.",
+  cannot_host_acct: 'Grown-ups: see the Family page.',
 });
 
 /** Fill `{host}` / `{name}` / `{prefab}` in a message. */

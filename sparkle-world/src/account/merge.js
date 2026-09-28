@@ -7,13 +7,14 @@
 // and `settings.walkie*` (the old per-device grown-up check).
 
 const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
-const when = (v) => (typeof v === 'number' ? v : Date.parse(String(v)) || 0);
-const LOCAL_KEYS = ['net', 'keepsafe'];
+const when = (v) => (typeof v === 'number' ? v : Date.parse(v) || 0);
+const LOCAL = /^(net|keepsafe|_rev)$/;
+const WALKIE = /^walkie/;
 
 function maxNumbers(a, b) {
-  const out = { ...(isObj(a) ? a : {}) };
+  const out = { ...a };
   for (const [k, v] of Object.entries(isObj(b) ? b : {})) {
-    if (typeof v === 'number' && Number.isFinite(v)) out[k] = typeof out[k] === 'number' && out[k] >= v ? out[k] : v;
+    if (typeof v === 'number') out[k] = out[k] >= v ? out[k] : v;
     else if (isObj(v)) out[k] = maxNumbers(out[k], v);
     else if (!(k in out)) out[k] = v;
   }
@@ -21,20 +22,18 @@ function maxNumbers(a, b) {
 }
 
 function union(a, b) {
-  const out = { ...(isObj(a) ? a : {}) };
+  const out = { ...a };
   for (const [k, v] of Object.entries(isObj(b) ? b : {})) if (!(k in out) || when(v) < when(out[k])) out[k] = v;
   return out;
 }
 
+/** p's own keys that match `re` (or all others with keep = false), copied. */
+const pick = (p, re, keep) => Object.fromEntries(Object.entries(isObj(p) ? p : {}).filter(([k]) => re.test(k) === keep));
+
 /** What goes to the server: the profile without its device-local parts. */
 export function cloudProfile(p) {
-  const out = { ...p };
-  for (const k of LOCAL_KEYS) delete out[k];
-  delete out._rev;
-  if (isObj(out.settings)) {
-    out.settings = { ...out.settings };
-    for (const k of Object.keys(out.settings)) if (k.startsWith('walkie')) delete out.settings[k];
-  }
+  const out = pick(p, LOCAL, false);
+  if (isObj(out.settings)) out.settings = pick(out.settings, WALKIE, false);
   return out;
 }
 
@@ -43,17 +42,13 @@ export function mergeProfile(local, server) {
   if (!isObj(local)) return server;
   const lt = local.updatedAt || 0;
   const st = server.updatedAt || 0;
-  const out = JSON.parse(JSON.stringify(cloudProfile(st > lt ? server : local)));
+  const out = JSON.parse(JSON.stringify({ ...cloudProfile(st > lt ? server : local), ...pick(local, LOCAL, true) }));
+  delete out._rev;
   out.stickers = union(local.stickers, server.stickers);
-  if (isObj(local.stickersSeen) || isObj(server.stickersSeen)) out.stickersSeen = union(local.stickersSeen, server.stickersSeen);
+  if (local.stickersSeen || server.stickersSeen) out.stickersSeen = union(local.stickersSeen, server.stickersSeen);
   out.stats = maxNumbers(local.stats, server.stats);
-  const coins = Math.max(Number(local.coins) || 0, Number(server.coins) || 0);
-  if (coins || 'coins' in local || 'coins' in server) out.coins = coins;
-  for (const k of LOCAL_KEYS) if (local[k] !== undefined) out[k] = JSON.parse(JSON.stringify(local[k]));
-  if (isObj(local.settings)) {
-    out.settings = { ...(out.settings || {}) };
-    for (const [k, v] of Object.entries(local.settings)) if (k.startsWith('walkie')) out.settings[k] = v;
-  }
+  if ('coins' in local || 'coins' in server) out.coins = Math.max(local.coins || 0, server.coins || 0);
+  if (isObj(local.settings)) out.settings = { ...out.settings, ...pick(local.settings, WALKIE, true) };
   out.updatedAt = Math.max(lt, st);
   return out;
 }

@@ -342,12 +342,14 @@ export function install(game) {
       r.hidden = !game.world;
       list.appendChild(r);
     }
-    // name
+    // name (family accounts: the nickname her grown-up chose, read only here)
+    const acct = game.account || {};
     {
-      const { row: r, main } = row('pencil', 'var(--sw-pink)', 'Your name');
+      const { row: r, main } = row('pencil', 'var(--sw-pink)', 'Your name', acct.active ? 'A grown-up can change it on the Family page' : '');
       const line = ui.el('div', 'sw-set-line');
       const name = ui.el('div', 'sw-set-name', game.profile.playerName || (game.profile.look && game.profile.look.name) || 'Lily');
-      line.append(name, button2(ui, {
+      line.append(name);
+      if (!acct.active) line.append(button2(ui, {
         icon: 'pencil', label: 'Change', variant: 'white', size: 'small',
         onClick: async () => {
           const cur = game.profile.playerName || (game.profile.look && game.profile.look.name) || '';
@@ -364,6 +366,12 @@ export function install(game) {
         },
       }));
       main.appendChild(line);
+      list.appendChild(r);
+    }
+    // family accounts: the Grown-ups card, behind the grown-up check (src/account/cards.js)
+    if (acct.grownups) {
+      const { row: r, main } = row('home', 'var(--sw-lav)', 'Grown-ups', 'The Family page, this device, switching players');
+      main.appendChild(button2(ui, { icon: 'home', label: 'Open', variant: 'white', size: 'small', className: 'sw-set-grownups', onClick: () => acct.openGrownups() }));
       list.appendChild(r);
     }
     // rows other modules add (the walkie-talkie's grown-up switch: src/net/walkie/ui.js)

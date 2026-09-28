@@ -10,7 +10,11 @@
 // - Identity: a random per-device secret (localStorage, never in presence, never shown) goes
 //   with every connection (?d=...). The server turns it into this device's `by` stamp for the
 //   room, which nobody else can make. identity() has no uid to give (the stamp is the
-//   server's); canHost is true. No accounts.
+//   server's); canHost is true (with family accounts: what /api/me said about her).
+// - Family accounts (docs/ACCOUNTS.md §7.7, §8.1): the picked player goes with the connection
+//   (&p=<player id>; the session cookie goes with it by itself). The server refuses after the
+//   handshake with {t:'e', code} and close codes 4401 signed_out, 4402 not_entitled,
+//   4403 friends_off, 4404 friends_locked, 4405 player_gone: no retries, a friendly card.
 // - The walkie-talkie (src/net/walkie) shares the socket: binary frames and {t:'v'} frames go
 //   to `voiceIn`, `voiceUp` runs after every (re)connect, `sendVoice()` writes one frame. The
 //   server decides who hears (server/voice.mjs), with the same gate as the room.
@@ -38,7 +42,10 @@ const BACKOFF = [500, 1000, 2000, 4000, 8000];
 const GIVE_UP_MS = 60000;
 const KEEPALIVE_MS = 20000;
 const SILENT_MS = 50000;
-const CLOSE_TO_ERROR = { 4001: 'full', 4002: 'busy', 4029: 'busy', 4003: 'no_rooms', 4004: 'invalid' };
+const CLOSE_TO_ERROR = {
+  4001: 'full', 4002: 'busy', 4029: 'busy', 4003: 'no_rooms', 4004: 'invalid',
+  4401: 'signed_out', 4402: 'not_entitled', 4403: 'friends_off', 4404: 'friends_locked', 4405: 'player_gone',
+};
 
 function randomSecret(n = 24) {
   const a = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -59,10 +66,14 @@ export class WsTransport extends FrameTransport {
    * @param {object} [o.clock]
    * @param {Function} [o.WebSocket] constructor (default: globalThis.WebSocket)
    * @param {object} [o.faults]     tests: { dropRate, dupRate, delayMs, rand } on received broadcasts
+   * @param {string} [o.player]     family accounts: the picked player's id (&p=)
+   * @param {boolean} [o.canHost]   family accounts: may she host (default true)
    */
   constructor(o = {}) {
     super({ clock: o.clock || realClock, limits: o.limits });
     this._base = o.url || null;
+    this._player = typeof o.player === 'string' && /^[0-9a-f-]{36}$/i.test(o.player) ? o.player : null;
+    this._canHost = o.canHost !== false;
     this._device = o.device || (o.uid ? ('dev_' + String(o.uid)).replace(/[^A-Za-z0-9_-]/g, '_').padEnd(16, '0').slice(0, 64) : null);
     this._WS = o.WebSocket || globalThis.WebSocket;
     this._faults = o.faults || null;
@@ -82,7 +93,7 @@ export class WsTransport extends FrameTransport {
   get kind() { return 'ws'; }
 
   async identity() {
-    return { uid: null, canHost: true };
+    return { uid: null, canHost: this._canHost };
   }
 
   _urlFor(room) {
@@ -93,7 +104,7 @@ export class WsTransport extends FrameTransport {
       base = (loc.protocol === 'https:' ? 'wss://' : 'ws://') + loc.host;
     }
     if (!this._device) this._device = loadDeviceSecret();
-    return `${base.replace(/\/$/, '')}/r/${encodeURIComponent(room)}?s=${this._secret}&d=${this._device}`;
+    return `${base.replace(/\/$/, '')}/r/${encodeURIComponent(room)}?s=${this._secret}&d=${this._device}` + (this._player ? `&p=${this._player}` : '');
   }
 
   async _linkOpen(roomName) {
@@ -153,6 +164,13 @@ export class WsTransport extends FrameTransport {
   _onSocketClosed(code) {
     if (this._stopped || this._closed) return;
     const err = CLOSE_TO_ERROR[code];
+    // the account refusals (4401-4405) stop retries while opening and mid-session alike
+    if (code > 4400 && code < 4406) {
+      this._stopped = true;
+      if (this._welcome) this._failOpen(new NetError(err));
+      else this._onFatal(err);
+      return;
+    }
     if (err && this._welcome) {
       this._failOpen(new NetError(err));
       this._stopped = true;

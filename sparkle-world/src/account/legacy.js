@@ -7,7 +7,7 @@
 // copies stay 30 days after an import, then a later boot removes them (only the
 // 'sparkle-world' database and the sparkle-world:metas / profile / world:* keys).
 
-import { SaveStore, isSideCopyId, backupProfile, mergeBackupProfile } from '../core/storage.js';
+import { SaveStore, isSideCopyId, backupProfile, mergeBackupProfile, newWorldId } from '../core/storage.js';
 
 export const LEGACY_KEY = 'sparkle-world:legacy';
 const KEEP_MS = 30 * 86400000;
@@ -28,24 +28,17 @@ export function setLegacyState(v) {
 
 /** A profile with something of hers in it (not the game's starting one). */
 export function profileHasPlay(p) {
-  if (!p || typeof p !== 'object') return false;
-  const s = p.stats || {};
-  return Object.keys(p.stickers || {}).length > 0 || (p.coins || 0) > 0 || (s.blocksPlaced || 0) > 0 || (s.worldsCreated || 0) > 0 ||
-    (Array.isArray(p.outfits) && p.outfits.some(Boolean));
+  const s = (p && p.stats) || {};
+  return !!p && (Object.keys(p.stickers || {}).length > 0 || p.coins > 0 || s.blocksPlaced > 0 || s.worldsCreated > 0 || (p.outfits || []).some(Boolean));
 }
 
 /** Might there be old saves? (no database is created just to look) */
 async function mayHaveLegacy() {
   try {
-    if (localStorage.getItem('sparkle-world:metas') || localStorage.getItem('sparkle-world:profile')) return true;
-  } catch {}
-  try {
-    const idb = globalThis.indexedDB;
-    if (!idb) return false;
-    if (typeof idb.databases !== 'function') return true;
-    return (await idb.databases()).some((d) => d && d.name === 'sparkle-world');
+    return !!(localStorage.getItem('sparkle-world:metas') || localStorage.getItem('sparkle-world:profile')) ||
+      (await indexedDB.databases()).some((d) => d.name === 'sparkle-world');
   } catch {
-    return true;
+    return typeof indexedDB !== 'undefined'; // (no databases() in this browser: look)
   }
 }
 
@@ -65,10 +58,6 @@ export async function findLegacy() {
     return null;
   }
   return { store, worlds, all, profile };
-}
-
-function newId() {
-  return 'w' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
 }
 
 /**
@@ -100,7 +89,7 @@ export async function importLegacy(legacy, target, profile) {
     } else if (seen.has(key(save))) {
       continue; // brought in before: the very same world
     } else if (mine.has(id)) {
-      id = newId();
+      id = newWorldId();
       renamed.set(save.id, id);
     }
     const copy = { ...save, id };

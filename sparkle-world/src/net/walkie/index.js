@@ -65,6 +65,7 @@ class Walkie {
 
     game.addSystem({ name: 'walkie', update: (dt) => this.update(dt) });
     game.events.on('net:state', () => this._sync());
+    game.events.on('account:changed', () => this._sync());
     game.events.on('world:unload', () => this._letGo());
     // Settings -> "Walkie-talkie (grown-ups)" (src/ui/settings.js calls game.settingsRows)
     (game.settingsRows || (game.settingsRows = [])).push((list) => this.ui.settingsRow(list));
@@ -96,8 +97,13 @@ class Walkie {
     return this.net.kind === 'ws';
   }
 
-  /** This device's grown-up said yes. */
+  /**
+   * This device's grown-up said yes; with family accounts (a player picked): her parent's
+   * switch on the Family page, from /api/me and the server's `perm` frames (ACCOUNTS.md §7.7).
+   */
   get enabled() {
+    const a = this.game.account;
+    if (a && a.active) return a.walkieAllowed;
     const w = this.game.profile && this.game.profile.settings && this.game.profile.settings.walkie;
     return !!(w && w.on === true);
   }
@@ -447,9 +453,9 @@ class Walkie {
     const r = await this.mic.probe();
     if (r === 'ok') {
       this.micState = 'ready';
-      const w = this.game.profile.settings.walkie;
-      if (w && w.on) {
-        w.mic = true;
+      const s = this.game.profile.settings;
+      if (this.enabled) {
+        s.walkie = { ...(s.walkie || {}), mic: true };
         this.game.saveProfile();
       }
       this.game.toast('Ready! Hold the walkie button and talk.', { icon: 'sound', color: 'mint', key: 'walkie-ready' });
@@ -527,6 +533,10 @@ class Walkie {
     if (!m || typeof m !== 'object') return;
     this.stats.rx.ctl++;
     switch (m.k) {
+      case 'perm': // the server: her walkie switch (family accounts, ACCOUNTS.md §8.3)
+        if (this.game.account && this.game.account.setWalkie) this.game.account.setWalkie(m.walkie === 1 || m.walkie === true);
+        this._sync();
+        break;
       case 'hi':
         this.inGame = m.ok === true;
         this._setFloor(isPeerId(m.talk) ? m.talk : null);

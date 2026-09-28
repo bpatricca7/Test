@@ -7,7 +7,10 @@ import { LIMITS, TOPICS, C, isRoomName } from './protocol.js';
 import { utf8Length } from './codec.js';
 
 export class NetError extends Error {
-  /** code: unavailable | no_rooms | cannot_host | busy | full | transient | lost | fatal | too_big | invalid */
+  /**
+   * code: unavailable | no_rooms | cannot_host | busy | full | transient | lost | fatal | too_big | invalid,
+   * or (family accounts, docs/ACCOUNTS.md §7.7) signed_out | not_entitled | friends_off | friends_locked | player_gone
+   */
   constructor(code, message) {
     super(message || code);
     this.name = 'NetError';
@@ -553,7 +556,10 @@ export class FrameTransport extends NetTransport {
     if (f.t === 'e') {
       this._stats.errors[f.code] = (this._stats.errors[f.code] || 0) + 1;
       if (this._welcome) {
-        const map = { full: 'full', rooms_full: 'busy', busy: 'busy', bad_name: 'invalid', origin: 'no_rooms', limit: 'busy' };
+        const map = {
+          full: 'full', rooms_full: 'busy', busy: 'busy', bad_name: 'invalid', origin: 'no_rooms', limit: 'busy',
+          signed_out: 'signed_out', not_entitled: 'not_entitled', friends_off: 'friends_off', friends_locked: 'friends_locked', player_gone: 'player_gone',
+        };
         if (map[f.code]) this._failOpen(new NetError(map[f.code], f.msg || f.code));
       }
     }
@@ -702,6 +708,33 @@ export class FrameTransport extends NetTransport {
 
 // ---------- choosing a transport ----------
 
+const netInfos = new WeakMap(); // env -> Promise<info | null>
+
+/**
+ * GET /api/net once per page ({ ok, version, build, accounts?, friendsMode? }, or null when
+ * there is no such server). Shared by detectTransportKind() and the account module
+ * (src/account/index.js), so the page asks once. Only on http(s) pages; a failure is not kept.
+ */
+export function fetchNetInfo(env = globalThis) {
+  if (netInfos.has(env)) return netInfos.get(env);
+  const p = (async () => {
+    try {
+      if (!/^https?:$/.test(env.location.protocol)) return null;
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), 4000);
+      const res = await env.fetch('/api/net', { cache: 'no-store', signal: ctl.signal });
+      const info = res.ok ? await res.json() : null;
+      clearTimeout(timer);
+      return info && typeof info === 'object' ? info : null;
+    } catch {
+      return null;
+    }
+  })();
+  netInfos.set(env, p);
+  p.then((v) => { if (!v) netInfos.delete(env); });
+  return p;
+}
+
 /**
  * Which transport this page should use: 'loop' (?net=loop), 'room' (inside claude.ai, when
  * claude.use('room') resolves), 'ws' (served over http(s) by server/server.mjs, which answers
@@ -722,16 +755,8 @@ export async function detectTransportKind(env = globalThis) {
     }
   }
   if (loc && (loc.protocol === 'http:' || loc.protocol === 'https:') && typeof env.fetch === 'function' && typeof env.WebSocket === 'function') {
-    try {
-      const ctl = typeof AbortController === 'function' ? new AbortController() : null;
-      const timer = ctl ? setTimeout(() => ctl.abort(), 4000) : null;
-      const res = await env.fetch('/api/net', { cache: 'no-store', signal: ctl?.signal });
-      if (timer) clearTimeout(timer);
-      if (res.ok) {
-        const info = await res.json();
-        if (info && info.ok === true) return 'ws';
-      }
-    } catch {}
+    const info = await fetchNetInfo(env);
+    if (info && info.ok === true) return 'ws';
   }
   return null;
 }

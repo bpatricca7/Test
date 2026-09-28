@@ -110,6 +110,9 @@ export class Game {
     };
 
     // hooks filled in by feature modules
+    // awaited by start() after the texture build and before store.init() (the account module
+    // picks her player here: docs/ACCOUNTS.md §7.1); a failing hook is logged and ignored
+    this.startHooks = [];
     this.createAvatar = null; // avatar.js: (look) -> avatar
     this.createPlayer = null; // player.js: (savedPlayer) -> Player (also sets game.cameraRig)
     this.cameraRig = null;
@@ -170,6 +173,20 @@ export class Game {
     this._acceptWithLiquids = null;
     this._hintV = new THREE.Vector3();
     this._hintAt = { x: 0, y: 0 };
+
+    // a conflict with another device kept both copies (storage.js, docs/ACCOUNTS.md §7.4): if
+    // she is in that world, she goes on building in her own copy
+    this.store.onFork(({ from, to, name }) => {
+      const w = this.world;
+      if (w && w.meta && w.meta.id === from && !w.meta.shared) {
+        w.meta.id = to;
+        w.meta.name = name;
+        this.profile.lastWorldId = to;
+        this.saveProfile();
+        this.toast('Your world changed on another device too, so we kept both copies!', { icon: 'world', color: 'mint', duration: 6000 });
+      }
+      this.events.emit('world:forked', { from, to, name });
+    });
 
     this._registerCoreActions();
     this._bindInput();
@@ -253,6 +270,13 @@ export class Game {
     this.blockUniforms = createBlockUniforms(texture);
     this.blockMaterials = createBlockMaterials(this.blockUniforms);
 
+    for (const hook of this.startHooks) {
+      try {
+        await hook(this);
+      } catch (err) {
+        console.warn('[game] start hook failed', err);
+      }
+    }
     await this.store.init();
     const saved = await this.store.loadProfile();
     this.profile = mergeProfile(defaultProfile(this.defaultLook), saved || {});

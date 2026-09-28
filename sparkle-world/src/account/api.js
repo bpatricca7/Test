@@ -6,16 +6,8 @@
 
 /** An Error for a failed call: { status (0 = no answer), code, data, retryAfter }. */
 export function apiError(status, code, data = null, retryAfter = 0) {
-  const e = new Error(status ? `${status} ${code}` : code);
-  e.status = status;
-  e.code = code;
-  e.data = data;
-  e.retryAfter = retryAfter;
-  if (data && typeof data === 'object') {
-    if (Number.isFinite(data.rev)) e.rev = data.rev;
-    if (Number.isFinite(data.updatedAt)) e.updatedAt = data.updatedAt;
-  }
-  return e;
+  // the answer's own fields too (a 409's rev and updatedAt)
+  return Object.assign(new Error(status ? `${status} ${code}` : code), data, { status, code, data, retryAfter });
 }
 
 /** "r12" (an ETag) → 12, or undefined. */
@@ -40,15 +32,13 @@ export function createApi(o = {}) {
       h['Content-Type'] = 'application/json';
     }
     if (ifMatch !== undefined) h['If-Match'] = ifMatch;
-    const ctl = typeof AbortController === 'function' ? new AbortController() : null;
-    const timer = setTimeout(() => ctl && ctl.abort(), timeout);
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), timeout);
     let res;
     let text = '';
     try {
-      res = await f(base + path, {
-        method, headers: h, credentials: 'same-origin', cache: 'no-store', signal: ctl ? ctl.signal : undefined,
-        body: json !== undefined ? JSON.stringify(json) : body,
-      });
+      // (same-origin credentials by default: the session cookie goes along; answers are no-store)
+      res = await f(base + path, { method, headers: h, signal: ctl.signal, body: json !== undefined ? JSON.stringify(json) : body });
       text = res.status === 204 ? '' : await res.text();
     } catch {
       throw apiError(0, 'offline');
