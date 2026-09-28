@@ -356,6 +356,27 @@ export async function startStripeFake({
     return r;
   };
 
+  let clockHook = null;
+  /** The clock: one step at a time, each step's webhooks delivered before the next (like real time). */
+  async function advanceMs(ms, { wait = true } = {}) {
+    if (!(ms >= 0)) throw new Error('advance: a positive time');
+    const target = engine.now() + ms;
+    for (let guard = 0; guard < 100000; guard++) {
+      const next = engine.nextDue(target);
+      if (!next) break;
+      engine.setNow(next.at);
+      if (clockHook) await clockHook(engine.now());
+      try {
+        next.run();
+      } finally {
+        flush();
+      }
+      if (wait) await delivery.idle();
+    }
+    engine.setNow(target);
+    if (clockHook) await clockHook(engine.now());
+  }
+
   const api_ = {
     url: base,
     webhookSecret,
@@ -370,8 +391,12 @@ export async function startStripeFake({
     now: () => engine.now(),
     pay: (session, { outcome = 'ok', country = 'US', wait = true } = {}) => waited(() => engine.completeCheckout(idOf(session, 'cs_'), { outcome, country }), wait),
     portal: (ps, action, { wait = true } = {}) => waited(() => engine.portalAction(idOf(ps, 'bps_'), action), wait),
-    advance: (days, { wait = true } = {}) => waited(() => engine.advanceMs(days * 86400e3), wait),
-    advanceMs: (ms, { wait = true } = {}) => waited(() => engine.advanceMs(ms), wait),
+    advance: (days, o) => advanceMs(days * 86400e3, o),
+    advanceMs,
+    /** fn(nowMs) before every clock step, so the app's clock can follow (clock.set(now - Date.now())). */
+    onClock(fn) {
+      clockHook = fn || null;
+    },
     dispute: (o = {}, { wait = true } = {}) => waited(() => engine.dispute(o), wait),
     async redeliver(eventId) {
       const ev = engine.events.find((x) => x.id === eventId);

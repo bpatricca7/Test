@@ -76,9 +76,10 @@ export class StripeEngine {
    * @param {boolean} [o.seed]     make the Family Plan product and its $5.99 price (default true)
    * @param {number} [o.taxRate]   US sales tax in the fake (default 0.06)
    */
-  constructor({ publicUrl = 'http://127.0.0.1', seed = true, taxRate = 0.06 } = {}) {
+  constructor({ publicUrl = 'http://127.0.0.1', seed = true, taxRate = 0.06, fixedClock = null } = {}) {
     this.publicUrl = publicUrl;
     this.taxRate = taxRate;
+    this.fixedClock = fixedClock; // ms: a clock that stands still unless moved (fixtures); null = real time
     this.offsetMs = 0;
     this.customers = new Map();
     this.products = new Map();
@@ -103,11 +104,16 @@ export class StripeEngine {
   // ---- time ----
 
   now() {
-    return Date.now() + this.offsetMs;
+    return (this.fixedClock ?? Date.now()) + this.offsetMs;
   }
 
   nowSec() {
     return sec(this.now());
+  }
+
+  /** Put the clock at `ms` (it keeps running from there, unless it is a fixed clock). */
+  setNow(ms) {
+    this.offsetMs = ms - (this.fixedClock ?? Date.now());
   }
 
   id(prefix, n = 24) {
@@ -913,13 +919,22 @@ export class StripeEngine {
   advanceMs(ms) {
     if (!(ms >= 0)) throw new Error('advance: a positive time');
     const target = this.now() + ms;
-    for (let guard = 0; guard < 100000; guard++) {
-      const next = this._nextDue(target);
-      if (!next) break;
-      this.offsetMs = next.at - Date.now();
-      next.run();
-    }
-    this.offsetMs = target - Date.now();
+    for (let guard = 0; guard < 100000 && this.stepTo(target); guard++);
+    this.setNow(target);
+  }
+
+  /** The next thing due at or before `target`: { at, run } (the clock is not moved), or null. */
+  nextDue(target) {
+    return this._nextDue(target);
+  }
+
+  /** Move the clock to the next thing due at or before `target` and do it; false when none is left. */
+  stepTo(target) {
+    const next = this._nextDue(target);
+    if (!next) return false;
+    this.setNow(next.at);
+    next.run();
+    return true;
   }
 
   _nextDue(target) {
