@@ -452,7 +452,8 @@ Turn on **2FA** in Stripe first. Make sure the switch at the top says **Test mod
    (`whsec_…`) and copy it.
 8. **Developers → API keys → Create restricted key** (name it "Sparkle World server"):
    **Customers: write, Checkout Sessions: write, Subscriptions: write, Customer portal: write,
-   Invoices: read, Prices: read, Events: read.** Nothing else. Copy the key (`rk_test_…`).
+   Invoices: read, Prices: read, Charges: read, Events: read.** Nothing else. Copy the key
+   (`rk_test_…`). (Charges: read lets the server find which family a chargeback belongs to.)
 
 ## Step 14. Railway Variables
 
@@ -500,10 +501,15 @@ deployment keeps running: fix the variable and deploy again.
 
 1. Open `https://<staging address>/privacy` and `/terms` and check your operator details.
 2. Have a lawyer who works on children's privacy (COPPA) read `/privacy`, `/terms`, the notice the
-   Family page shows before a child plays, and the two questions in `docs/ACCOUNTS.md` §11.4
-   (whether the free trial's saved card counts as consent; whether playing with friends needs the
-   stronger consent). A flat-fee review is enough. Apply the lawyer's notes before going live.
-3. Later, optionally, apply for a kidSAFE or PRIVO seal.
+   Family page shows before a child plays, and the questions in `docs/ACCOUNTS.md` §11.4 (whether
+   playing with friends needs the stronger consent that the first payment gives; and, only if you
+   ever turn on a free trial, whether the trial's saved card counts as consent). A flat-fee review
+   is enough. Apply the lawyer's notes before going live.
+3. The pages are written for the family's decisions (no free trial, 7 days of play after a failed
+   payment, worlds kept 90 days after a plan ends). If you ever change `SW_TRIAL_DAYS`,
+   `SW_GRACE_DAYS` or `SW_RETAIN_DAYS`, the Build Logs warn that `/terms` or `/privacy` still say
+   the old thing: change those words in the same deploy.
+4. Later, optionally, apply for a kidSAFE or PRIVO seal.
 
 ## Step 16. Admin access (for a parent's request, a free pass, or an emergency)
 

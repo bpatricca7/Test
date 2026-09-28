@@ -278,12 +278,25 @@ export async function buildSite({ quiet = false, out = OUT, mode = null, env = p
   const where = path.relative(root, out) || out;
   log(`  ${(where + '/').padEnd(25)} ${files.length} files + ${CODE_PICTURES.length} code pictures; images per visit ${kb(images)} (computer), ${kb(phone)} (phone)`);
   if (on) log(`  family accounts           ${accounts}: the Family page, /privacy and /terms are built`);
-  if (on && missing.size) console.warn(`warning: the account pages need ${[...missing].sort().join(', ')} (set them in the build's environment, like Railway's Variables; placeholders were printed instead)`);
+  // the legal pages' words are written for the defaults: a build with other settings says so
+  // (the words must change in the same deploy, docs/ACCOUNTS.md §11.10, §18)
+  const warnings = [];
+  if (on && missing.size) warnings.push(`warning: the account pages need ${[...missing].sort().join(', ')} (set them in the build's environment, like Railway's Variables; placeholders were printed instead)`);
+  if (on) {
+    const legal = (f) => readFile(path.join(out, f), 'utf8').catch(() => '');
+    const terms = await legal('terms.html');
+    const privacy = await legal('privacy.html');
+    if (trial === 'yes' && /There is no free trial/.test(terms)) warnings.push(`warning: SW_TRIAL_DAYS=${values.SW_TRIAL_DAYS}, but /terms says there is no free trial: change site/terms.html in the same deploy`);
+    if (values.SW_RETAIN_DAYS !== '90' && /\b90 days\b/.test(privacy + terms)) warnings.push(`warning: SW_RETAIN_DAYS=${values.SW_RETAIN_DAYS}, but /privacy and /terms say 90 days: change them in the same deploy`);
+    const grace = typeof env.SW_GRACE_DAYS === 'string' && env.SW_GRACE_DAYS.trim() ? env.SW_GRACE_DAYS.trim() : '7';
+    if (grace !== '7' && /continues for 7 days/.test(terms)) warnings.push(`warning: SW_GRACE_DAYS=${grace}, but /terms says playing continues for 7 days: change it in the same deploy`);
+  }
+  for (const w of warnings) console.warn(w);
   if (/<!-- share-tags/.test(html)) log(`  link preview tags         ${shareTags(env.RAILWAY_PUBLIC_DOMAIN) ? 'for ' + env.RAILWAY_PUBLIC_DOMAIN : 'left out (RAILWAY_PUBLIC_DOMAIN is not set)'}`);
   log(`  ${(where + '/index.html').padEnd(25)} ${kb(Buffer.byteLength(html))}  (${kb(gzipSync(html).length)} gzip)`);
   log(`  ${(where + '/preview.html').padEnd(25)} ${kb(Buffer.byteLength(frag))}  (fragment for an Artifact preview)`);
   if (images > IMAGE_BUDGET) console.warn(`warning: home page images are ${kb(images)} (budget ${kb(IMAGE_BUDGET)})`);
-  return { files: files.length, images, phone, accounts, missing: [...missing] };
+  return { files: files.length, images, phone, accounts, missing: [...missing], warnings };
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
