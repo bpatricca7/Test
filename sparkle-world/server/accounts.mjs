@@ -118,6 +118,7 @@ export async function createAccounts(cfg, { log = (...a) => console.log(...a), c
     if (m?.routes) routes.push(...(await m.routes(ctx)));
   }
   const router = createRouter({ cfg, ctx, routes });
+  ctx.routes = router.routes; // the mounted routes (the tests walk them: every check route, every parent route)
   // timers: false (in-process tests, the admin CLI): jobs run only when asked (ctx.jobs.run)
   const jobs = mods.jobs?.startJobs ? await mods.jobs.startJobs(ctx, { timers }) : null;
   ctx.jobs = jobs;

@@ -169,6 +169,11 @@ export function createSessions(ctx) {
     cache.clear();
     claimsCache.clear();
   }
+  /** Tests: make every cached entry `byMs` older (the caches run on real time). */
+  function ageCaches(byMs) {
+    for (const e of cache.values()) e.at -= byMs;
+    for (const e of claimsCache.values()) e.at -= byMs;
+  }
   // registered before server.mjs's listeners, so its re-checks always see fresh answers
   events.on('session', (e) => e && typeof e.sessionHash === 'string' && forget(e.sessionHash));
   events.on('family', (e) => e && e.familyId && forgetFamily(e.familyId));
@@ -341,6 +346,7 @@ export function createSessions(ctx) {
     recheck,
     forget,
     clearCaches,
+    ageCaches,
   };
 }
 
