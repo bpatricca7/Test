@@ -314,6 +314,8 @@ if (!MEASURE) {
       await put(pid, mkSave('t1'), tok);
       const d = await call('DELETE', W(pid, 't1'), { tok, body: {} });
       assert.deepEqual([d.status, d.data], [200, { rev: 2 }]);
+      const gone = await t.db.one('select meta, thumb, body, size, stored from worlds where player_id = $1 and world_id = $2', [pid, 't1']);
+      assert.deepEqual([gone.meta, gone.thumb, gone.body, gone.size, gone.stored], [{}, null, null, 0, 0], 'a tombstone keeps no world content: not even the name she typed (meta)');
       const tomb = (await call('GET', W(pid), { tok })).data.find((x) => x.id === 't1');
       assert.equal(tomb.deleted, true);
       assert.equal(tomb.rev, 2);

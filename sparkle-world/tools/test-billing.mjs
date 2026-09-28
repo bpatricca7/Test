@@ -362,7 +362,7 @@ const subRows = async (db, id) => (await db.query('select * from subscriptions w
 
 /** Checkout through the app, then the fake's hosted page ("Pay"): → { url, session, redirect }. */
 async function subscribe(A, fake, fam, { trial = false, outcome = 'ok', country = 'US', wait = true } = {}) {
-  const r = await A.call('POST', '/api/billing/checkout', { token: tok(fam), body: { trial, usResident: true } });
+  const r = await A.call('POST', '/api/billing/checkout', { token: tok(fam, 'check'), body: { trial, usResident: true } });
   assert.equal(r.status, 200, JSON.stringify(r.data));
   const paid = await fake.pay(r.data.url, { outcome, country, wait });
   return { url: r.data.url, sessionId: /\/c\/(cs_test_[A-Za-z0-9]+)/.exec(r.data.url)[1], paid };
@@ -840,15 +840,19 @@ describe('billing through the app and the fake (§6, SW_TRIAL_DAYS=0)', () => {
     assert.deepEqual([(await A.call('POST', '/api/billing/checkout', { body: { usResident: true } })).status], [401]);
     const dev = await A.call('POST', '/api/billing/checkout', { token: tok(f, 'plain', 'device'), body: { usResident: true } });
     assert.deepEqual([dev.status, dev.data], [403, { error: 'forbidden' }]);
+    // starting a plan needs a fresh email check (a sign-in in the last 15 minutes is one): a
+    // child on a device that kept a grown-up's session never reaches Stripe's page (§7.9)
+    const stale = await A.call('POST', '/api/billing/checkout', { token: tok(f), body: { usResident: true } });
+    assert.deepEqual([stale.status, stale.data], [403, { error: 'check_required' }]);
     const noConsent = await makeFamily(A.db, { consent: false });
-    assert.deepEqual((await A.call('POST', '/api/billing/checkout', { token: tok(noConsent), body: { usResident: true } })).data, { error: 'consent_required' });
+    assert.deepEqual((await A.call('POST', '/api/billing/checkout', { token: tok(noConsent, 'check'), body: { usResident: true } })).data, { error: 'consent_required' });
     const unverified = await makeFamily(A.db, { verifiedEmail: false });
-    assert.equal((await A.call('POST', '/api/billing/checkout', { token: tok(unverified), body: { usResident: true } })).status, 403);
+    assert.equal((await A.call('POST', '/api/billing/checkout', { token: tok(unverified, 'check'), body: { usResident: true } })).status, 403);
     for (const body of [{}, { usResident: false }, { usResident: 'true' }]) {
-      const r = await A.call('POST', '/api/billing/checkout', { token: tok(f), body });
+      const r = await A.call('POST', '/api/billing/checkout', { token: tok(f, 'check'), body });
       assert.deepEqual([r.status, r.data], [400, { error: 'us_only' }]);
     }
-    const csrf = await A.call('POST', '/api/billing/checkout', { token: tok(f), body: { usResident: true }, headers: { origin: 'https://evil.example' } });
+    const csrf = await A.call('POST', '/api/billing/checkout', { token: tok(f, 'check'), body: { usResident: true }, headers: { origin: 'https://evil.example' } });
     assert.equal(csrf.status, 403);
     assert.equal(fake.requests((x) => x.method !== 'GET').length, posts, 'none of these reached Stripe');
   });
@@ -856,7 +860,7 @@ describe('billing through the app and the fake (§6, SW_TRIAL_DAYS=0)', () => {
   test('Checkout: the customer once (email and family id only), exactly the §6.2 parameters, no trial by default', async () => {
     const f = await makeFamily(A.db);
     const before = fake.requests().length;
-    const r = await A.call('POST', '/api/billing/checkout', { token: tok(f), body: { trial: true, usResident: true } });
+    const r = await A.call('POST', '/api/billing/checkout', { token: tok(f, 'check'), body: { trial: true, usResident: true } });
     assert.equal(r.status, 200);
     assert.match(r.data.url, new RegExp(`^${fake.url}/c/cs_test_`));
     const reqs = fake.requests().slice(before);
@@ -884,7 +888,7 @@ describe('billing through the app and the fake (§6, SW_TRIAL_DAYS=0)', () => {
     });
     assert.equal(reqs.find((x) => x.path === '/v1/checkout/sessions').stripeVersion, STRIPE_API_VERSION);
     // one open Checkout per family, reused while it is under 30 minutes old
-    const again = await A.call('POST', '/api/billing/checkout', { token: tok(f), body: { usResident: true } });
+    const again = await A.call('POST', '/api/billing/checkout', { token: tok(f, 'check'), body: { usResident: true } });
     assert.equal(again.data.url, r.data.url);
     assert.equal(fake.requests((x) => x.method === 'POST' && x.path === '/v1/checkout/sessions').filter((x) => x.params.client_reference_id === f.id).length, 1);
     assert.equal(fake.requests((x) => x.method === 'POST' && x.path === '/v1/customers' && x.params.metadata?.family_id === f.id).length, 1, 'the customer is made once');
@@ -915,7 +919,7 @@ describe('billing through the app and the fake (§6, SW_TRIAL_DAYS=0)', () => {
     assert.equal((await A.db.one("select count(*) as n from stripe_events where processed_at is not null")).n, fake.events().filter((x) => HANDLED_EVENTS.includes(x.type) && JSON.stringify(x).includes(row.stripe_customer_id)).length);
     const flags = row.flags;
     assert.equal(flags.checkout, undefined, 'the open Checkout is forgotten once done');
-    const again = await A.call('POST', '/api/billing/checkout', { token: tok(f), body: { usResident: true } });
+    const again = await A.call('POST', '/api/billing/checkout', { token: tok(f, 'check'), body: { usResident: true } });
     assert.deepEqual([again.status, again.data], [409, { error: 'already_subscribed' }]);
   });
 
@@ -959,6 +963,32 @@ describe('billing through the app and the fake (§6, SW_TRIAL_DAYS=0)', () => {
     assert.deepEqual([s.data.plan.state, s.data.plan.cancelAtPeriodEnd, s.data.plan.until], ['canceling', true, s.data.plan.periodEnd]);
     fake.delivery('normal');
     await fake.portal(r.data.url, 'resume');
+    assert.equal((await A.billing.entitlementFor(f.id)).state, 'active');
+  });
+
+  test('Cancel the plan (§9.3): no email check (never harder than starting), cancel at period end, "Ends …"; Resume in the Portal', async () => {
+    const f = await makeFamily(A.db);
+    const none = await A.call('POST', '/api/billing/cancel', { token: tok(f) });
+    assert.deepEqual([none.status, none.data], [409, { error: 'conflict' }], 'no plan to cancel');
+    await subscribe(A, fake, f);
+    const dev = await A.call('POST', '/api/billing/cancel', { token: tok(f, 'plain', 'device') });
+    assert.deepEqual([dev.status, dev.data], [403, { error: 'forbidden' }], 'a kid device cannot');
+    const r = await A.call('POST', '/api/billing/cancel', { token: tok(f) });
+    assert.equal(r.status, 200, JSON.stringify(r.data));
+    assert.deepEqual([r.data.plan.state, r.data.plan.cancelAtPeriodEnd, r.data.plan.entitled], ['canceling', true, true], 'a plain parent session, no email code');
+    const cust = (await famRow(A.db, f.id)).stripe_customer_id;
+    const theirs = fake.state().subscriptions.find((x) => x.customer === cust);
+    assert.deepEqual([theirs.status, theirs.cancel_at_period_end], ['active', true], "Stripe's subscription ends at the period end");
+    const req = fake.requests((x) => x.method === 'POST' && x.path === `/v1/subscriptions/${theirs.id}`).at(-1);
+    assert.deepEqual(req.params, { cancel_at_period_end: 'true' });
+    assert.equal((await subRows(A.db, f.id))[0].cancel_at_period_end, true, 'the mirror at once (the webhook may come later)');
+    assert.ok(A.familyEvents.includes(f.id));
+    const twice = await A.call('POST', '/api/billing/cancel', { token: tok(f) });
+    assert.deepEqual([twice.status, twice.data], [409, { error: 'conflict' }], 'already cancelled');
+    // Resume (and the card, the invoices) stay in the Portal, behind the email check
+    assert.deepEqual((await A.call('POST', '/api/billing/portal', { token: tok(f) })).data, { error: 'check_required' });
+    const portal = await A.call('POST', '/api/billing/portal', { token: tok(f, 'check') });
+    await fake.portal(portal.data.url, 'resume');
     assert.equal((await A.billing.entitlementFor(f.id)).state, 'active');
   });
 
@@ -1136,7 +1166,7 @@ describe('billing through the app and the fake (§6, SW_TRIAL_DAYS=0)', () => {
     const row = await famRow(A.db, f.id);
     assert.deepEqual([row.stripe_customer_id, row.flags.customer_gen], [null, 1]);
     assert.equal((await subRows(A.db, f.id))[0].status, 'canceled', 'deleting a customer ends its plan');
-    const r = await A.call('POST', '/api/billing/checkout', { token: tok(f), body: { usResident: true } });
+    const r = await A.call('POST', '/api/billing/checkout', { token: tok(f, 'check'), body: { usResident: true } });
     assert.equal(r.status, 200);
     const made = fake.requests((x) => x.method === 'POST' && x.path === '/v1/customers').at(-1);
     assert.equal(made.idempotencyKey, `cust-${f.id}-1`);
@@ -1214,6 +1244,12 @@ describe('billing through the app and the fake (§6, SW_TRIAL_DAYS=0)', () => {
     assert.ok(st.subscriptions.filter((x) => x.customer === customer).every((x) => x.status === 'canceled'));
     const cancel = fake.requests((x) => x.method === 'DELETE' && x.path.startsWith('/v1/subscriptions/')).at(-1);
     assert.deepEqual(cancel.params, { invoice_now: 'false', prorate: 'false' });
+    // our own deletes mark the customer first: after a restore, admin reapply-deletions acts
+    // only on customer.deleted events that carry the mark (never on a hand-deleted customer)
+    const mark = fake.requests((x) => x.method === 'POST' && x.path === `/v1/customers/${customer}`).at(-1);
+    assert.deepEqual(mark.params, { metadata: { sw_family_deleted: '1' } });
+    const gone = fake.events('customer.deleted').filter((e) => e.data.object.id === customer).at(-1);
+    assert.deepEqual([gone.data.object.metadata.family_id, gone.data.object.metadata.sw_family_deleted], [f.id, '1'], 'the customer.deleted event carries the family and the mark');
     assert.deepEqual(await A.billing.cancelAndDelete(customer), { ok: true }, 'already deleted is fine');
     assert.deepEqual(await A.billing.cancelAndDelete({ stripe_customer_id: null }), { ok: true, skipped: true });
     assert.equal((await s.customers.retrieve(customer)).deleted, true);
@@ -1231,11 +1267,11 @@ describe('billing through the app and the fake (§6, SW_TRIAL_DAYS=0)', () => {
     assert.ok(Math.abs(row.purge_after.getTime() - (row.lapsed_at.getTime() + 90 * 86400e3)) < 5);
     assert.ok(Math.abs(row.lapsed_at.getTime() - now) < 5000);
     assert.deepEqual(await A.lapse(), { lapsed: 0, resumed: 0 }, 'once');
-    await A.db.query("update families set comp_until = $2, flags = flags || '{\"warned30\":true}' where id = $1", [f.id, new Date(now + 30 * 86400e3)]);
+    await A.db.query("update families set comp_until = $2, kid_data_purged_at = $3, flags = flags || '{\"warned30\":true}' where id = $1", [f.id, new Date(now + 30 * 86400e3), new Date(now)]);
     r = await A.lapse();
     assert.deepEqual(r, { lapsed: 0, resumed: 1 });
     row = await famRow(A.db, f.id);
-    assert.deepEqual([row.lapsed_at, row.purge_after, row.flags.warned30], [null, null, undefined]);
+    assert.deepEqual([row.lapsed_at, row.purge_after, row.kid_data_purged_at, row.flags.warned30], [null, null, null, undefined], 'the purge of the last lapse is forgotten too: a next lapse purges again');
     const audit = (await A.db.query('select action, actor from audit_log where family_id = $1 order by id', [f.id])).rows.map((a) => `${a.action}/${a.actor}`);
     assert.deepEqual(audit.slice(-2), ['plan.lapsed/system', 'plan.resumed/system']);
     const never = await makeFamily(A.db);
@@ -1263,7 +1299,7 @@ describe('billing through the app and the fake (§6, SW_TRIAL_DAYS=0)', () => {
   test('Stripe down: 502 stripe_unavailable (after the SDK\'s 2 retries), logged by name only', async () => {
     const f = await makeFamily(A.db);
     fake.failNext(3, { status: 500, path: '/v1/customers' });
-    const r = await A.call('POST', '/api/billing/checkout', { token: tok(f), body: { usResident: true } });
+    const r = await A.call('POST', '/api/billing/checkout', { token: tok(f, 'check'), body: { usResident: true } });
     assert.deepEqual([r.status, r.data], [502, { error: 'stripe_unavailable' }]);
     assert.equal(fake.requests((x) => x.path === '/v1/customers' && x.status === 500).length >= 3, true);
     assert.ok(A.logs.includes('billing: stripe StripeAPIError'));
@@ -1272,8 +1308,8 @@ describe('billing through the app and the fake (§6, SW_TRIAL_DAYS=0)', () => {
   test('rate limits: 5 Checkouts per family per hour (§4.8)', async () => {
     A.accounts.ctx.limits = new Limits();
     const f = await makeFamily(A.db);
-    for (let i = 0; i < 5; i++) assert.equal((await A.call('POST', '/api/billing/checkout', { token: tok(f), body: { usResident: true } })).status, 200);
-    const r = await A.call('POST', '/api/billing/checkout', { token: tok(f), body: { usResident: true } });
+    for (let i = 0; i < 5; i++) assert.equal((await A.call('POST', '/api/billing/checkout', { token: tok(f, 'check'), body: { usResident: true } })).status, 200);
+    const r = await A.call('POST', '/api/billing/checkout', { token: tok(f, 'check'), body: { usResident: true } });
     assert.deepEqual([r.status, r.data], [429, { error: 'rate' }]);
     assert.ok(Number(r.headers['retry-after']) >= 1);
   });
@@ -1322,7 +1358,7 @@ describe('billing with a free week (SW_TRIAL_DAYS=7, §6.7)', () => {
     assert.deepEqual([welcome.trialDays, welcome.trialEnd], [7, e.trialEnd]);
     // a family that used its trial gets none, even when asking
     const g = await makeFamily(A.db, { trialUsed: true });
-    await A.call('POST', '/api/billing/checkout', { token: tok(g), body: { trial: true, usResident: true } });
+    await A.call('POST', '/api/billing/checkout', { token: tok(g, 'check'), body: { trial: true, usResident: true } });
     const p2 = fake.requests((x) => x.method === 'POST' && x.path === '/v1/checkout/sessions').at(-1).params;
     assert.deepEqual(p2.subscription_data, { metadata: { family_id: g.id } });
     assert.match(p2.custom_text.terms_of_service_acceptance.message, /^I agree to the Terms\. My Family Plan/);
