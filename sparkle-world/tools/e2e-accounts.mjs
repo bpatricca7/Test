@@ -52,7 +52,7 @@ import path from 'node:path';
 import { mkdir } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
 import { launch, waitForTitle, waitForPlay, waitIdle, settle, ROOT, SHOTS, PAGE_URL } from './smoke.mjs';
-import { sleep, game, until, press, setupPage, hostMakesCode, guestTypesCode, hostLetsIn, waitLive, bringTo, closePanels, converge } from './net/mp-flows.mjs';
+import { sleep, game, until, press, setupPage, hostMakesCode, guestTypesCode, hostLetsIn, waitLive, bringTo, converge } from './net/mp-flows.mjs';
 import { buildSite } from './site-build.mjs';
 import { devEnv, loadStripeFake } from './dev-accounts.mjs';
 import { W as WIRE, F_START, packFrame } from '../src/net/walkie/wire.js';
@@ -174,6 +174,7 @@ const R = {
   ips: 10,
   fam: {}, // A, B, C: { email, ctx, page, ids: { Lily, Mia, June } }
   dev: {}, // ipad, computer, mia, june: { ctx, page, key, name, touch }
+  unexpectedImport: new Set(), // devices that were asked about "worlds from before" wrongly
 };
 
 async function api(p, { method = 'GET', body, cookie = null, ip = '203.0.113.250' } = {}) {
@@ -387,7 +388,9 @@ const GAME = {
     const box = dev.page.locator('.sw-dialog input.sw-input, .sw-panel-wrap.sw-open input, dialog input').first();
     await box.waitFor({ timeout: 15000 });
     await box.fill(code);
-    await box.press('Enter');
+    // a good code signs the device in and the game reloads (the old page may still look like
+    // a title underneath its card, so wait for the reload itself)
+    await Promise.all([dev.page.waitForNavigation({ timeout: 30000 }), box.press('Enter')]);
   },
   async pick(dev, nickname) {
     await dev.page.getByText(/Who's playing\?/).first().waitFor({ timeout: 60000 });
@@ -439,6 +442,15 @@ async function newDevice(key, name, size, opts = {}) {
   const page = await newPage(ctx, key, opts);
   const dev = { key, name, ctx, page, touch: size.touch !== false, viewport: { width: size.w, height: size.h }, seed: 11 + key.length };
   R.dev[key] = dev;
+  // only the iPad played before accounts: any other device asked "from before. Whose are
+  // they?" is wrong (§7.5: only when there are old worlds or a profile that was played).
+  // It is counted (a check at the end) and answered like a grown-up would, so the rest runs.
+  if (key !== 'ipad') {
+    await page.addLocatorHandler(page.getByText(/from before\. Whose are they\?/).first(), async () => {
+      R.unexpectedImport.add(key);
+      await page.getByRole('button', { name: "They're not ours" }).first().click();
+    });
+  }
   return dev;
 }
 
@@ -551,13 +563,22 @@ async function s3() {
 async function s4() {
   log('4. Both devices edit the same world offline, then reconnect');
   const devs = [R.dev.ipad, R.dev.computer];
-  for (const dev of devs) {
-    dev.page.allow.push(/api\/players/);
-    await dev.ctx.route('**/api/players/**', (route) => route.abort());
+  const open = async (dev) => {
     await setupPage(dev);
     await game(dev, (id) => window.__game.loadWorld(id), R.shared);
     await waitForPlay(dev.page);
     await waitIdle(dev.page);
+  };
+  // both open it once online (the iPad's copy came back only as a name in the list after its
+  // site data was cleared: opening it keeps the whole world on the device)
+  for (const dev of devs) {
+    await open(dev);
+    await GAME.saveExit(dev);
+  }
+  for (const dev of devs) {
+    dev.page.allow.push(/api\/players/);
+    await dev.ctx.route('**/api/players/**', (route) => route.abort());
+    await open(dev);
     await GAME.place(dev, 3 + devs.indexOf(dev));
     await GAME.saveExit(dev);
   }
@@ -613,9 +634,12 @@ async function s5() {
   await GAME.pair(june, juneCode);
   await GAME.title(june);
   await setupPage(june);
-  // Lily hosts on the iPad, June joins with the code
+  // Lily hosts on the iPad, June joins with the code. The iPad's game read /api/me when it
+  // opened (in the free week: friends_locked); it learns the new switch when it opens again
+  // (§7.1, §7.7: the "why" card comes from /api/me without trying), so it is opened again.
   const lily = R.dev.ipad;
-  await closePanels(lily);
+  await lily.page.reload();
+  await GAME.title(lily);
   await setupPage(lily);
   const code = await hostMakesCode(lily, { log });
   await guestTypesCode(june, code);
@@ -791,6 +815,17 @@ async function s7() {
   await api('/api/test/jobs', { method: 'POST', body: { name: 'reconcile' } });
   const rest = await FP.ribbon(B.page);
   check(/Resting/.test(rest), `the period ended: "${rest}"`);
+  await shot(B.page, 'parentB-resting-390', true);
+  // A wakes Sparkle World up again (Restart the plan: no second free week), for 8 and 9
+  const ribbonA = await FP.ribbon(A.page);
+  check(/Resting/.test(ribbonA), `family A is resting too: "${ribbonA}"`);
+  await A.page.locator('.ribbon').getByRole('button', { name: 'Restart the plan' }).click();
+  await A.page.waitForSelector('#us');
+  check((await A.page.locator('.plan-choice .btn').count()) === 1, 'restarting offers no second free week (one button, the price next to it)');
+  await FP.buy(A.page, { trial: false });
+  await A.page.getByRole('button', { name: 'Go to your Family page' }).click();
+  const back = (await A.page.textContent('.ribbon')).trim();
+  check(/renews/.test(back), `family A restarted the plan: "${back}"`);
 }
 
 function findCustomer(state, email) {
@@ -822,7 +857,11 @@ async function s8() {
   await A.page.locator('article.player', { hasText: 'Mia' }).waitFor({ state: 'detached', timeout: 20000 });
   check(true, 'A deleted Mia on the Family page');
   await mia.page.reload();
-  await mia.page.getByText(/A grown-up can add you|Who's playing/).first().waitFor({ timeout: 60000 });
+  // the device was only Mia's: now "Who's playing?" (or, with one player left, that player;
+  // the lock went with Mia), never Mia again
+  await mia.page.waitForFunction(() => /A grown-up can add you|Who's playing/.test(document.body.innerText) || (window.__game && window.__game.ui && window.__game.ui.current === 'title' && window.__game.account && window.__game.account.playerId), null, { timeout: 60000 });
+  const now = await game(mia, () => window.__game.account && window.__game.account.playerId);
+  check(now !== A.ids.Mia, `Mia's device does not play as Mia any more (${now === A.ids.Lily ? 'Lily, the one player left' : now || 'the picker'})`);
   const after = await dbs();
   check(!after.some((n) => n.includes(A.ids.Mia)), `Mia's copy is wiped from the device (${after.join(', ') || 'none left'})`);
   await shot(mia.page, 'mia-device-after-delete');
@@ -837,6 +876,8 @@ async function s9() {
     return r && r.id;
   })();
   await FP.ribbon(A.page).catch(() => {});
+  const customer = findCustomer(R.stripe.state ? await R.stripe.state() : null, A.email);
+  check(!!customer, `A is a customer at the Stripe fake (${customer})`);
   A.page.allow.push(/403|410/);
   const since = await mailMark(A.email);
   await A.page.getByRole('button', { name: 'Delete our account' }).click();
@@ -855,7 +896,10 @@ async function s9() {
   counts.player_rows = (await R.db.one('select count(*) as n from worlds w where not exists (select 1 from players p where p.id = w.player_id)')).n;
   check(Object.values(counts).every((n) => n === 0), `nothing of A is left in any table (${JSON.stringify(counts)})`);
   const state = R.stripe.state ? await R.stripe.state() : null;
-  check(!findCustomer(state, A.email) || JSON.stringify(state).includes('"deleted":true'), "the Stripe fake shows A's customer deleted");
+  const gone = ((state && state.customers) || []).find((c) => c && c.id === customer);
+  check(!!gone && gone.deleted === true && !findCustomer(state, A.email), `the Stripe fake shows A's customer deleted (${JSON.stringify(gone)})`);
+  const subs = ((state && state.subscriptions) || []).filter((s) => s.customer === customer);
+  check(subs.length > 0 && subs.every((s) => ['canceled', 'incomplete_expired'].includes(s.status)), `and every subscription of A's ended (${subs.map((s) => s.status).join(', ')})`);
   check((await mailsTo(A.email)).some((m) => m.template === 'account_deleted'), 'the account_deleted email was sent');
   const ipad = R.dev.ipad;
   ipad.page.allow.push(/410/);
@@ -928,8 +972,13 @@ async function s10() {
 // ---------------------------------------------------------------------------------------------
 
 async function main() {
-  // --only=6 runs 1 and 5 too (6 builds on them)
-  const want = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter((n) => !ONLY || ONLY.has(n) || [...ONLY].some((k) => (AFTER[k] || []).includes(n)));
+  // --only=6 runs 1, 2 and 5 too (6 builds on 1 and 5, 5 on 2)
+  const pick = new Set(ONLY || []);
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const k of [...pick]) for (const d of AFTER[k] || []) if (!pick.has(d)) grew = !!pick.add(d);
+  }
+  const want = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter((n) => !ONLY || pick.has(n));
   const missing = {};
   for (const n of want) {
     const m = [...new Set([...NEEDS[n], ...(AFTER[n] || []).flatMap((k) => NEEDS[k])])].filter((k) => !has(k));
@@ -999,6 +1048,7 @@ async function main() {
       for (const f of Object.values(R.fam)) f.page?.flushErrors?.();
       for (const d of Object.values(R.dev)) d.page?.flushErrors?.();
     }
+    if (run.some((n) => n >= 2 && n <= 9)) check(R.unexpectedImport.size === 0, `no device that never played before accounts is asked about "worlds from before" (${[...R.unexpectedImport].join(', ') || 'none'})`);
     // nothing personal in the server's log (§12.7 log spy, for the e2e's own run)
     const out = SERVER_LOG.join('');
     const leaks = Object.values(R.fam).map((f) => f.email).filter((e) => out.includes(e));
