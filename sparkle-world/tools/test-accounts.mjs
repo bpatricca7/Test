@@ -219,6 +219,15 @@ describe('database and migrations (§3)', () => {
     assert.deepEqual(tables, ['audit_log', 'deleted_families', 'families', 'gone_sessions', 'login_attempts', 'outbox', 'pair_codes', 'player_profiles', 'players', 'schema_migrations', 'sessions', 'stripe_events', 'subscriptions', 'worlds']);
   });
 
+  test('migrations are expand-only: no drop, rename or type change (§3.2)', () => {
+    for (const m of listMigrations()) {
+      const sql = readFileSync(m.file, 'utf8').replace(/--[^\n]*/g, '').toLowerCase();
+      for (const bad of [/\bdrop\s+(table|column|index|constraint|type|schema)\b/, /\brename\b/, /\balter\s+column\s+\S+\s+(set\s+data\s+)?type\b/, /\btruncate\b/, /\bdelete\s+from\b/]) {
+        assert.ok(!bad.test(sql), `${path.basename(m.file)}: ${bad}`);
+      }
+    }
+  });
+
   test('values: int8 → Number, bytea → Buffer, timestamptz → Date, jsonb parsed', async () => {
     const f = await t.db.one("insert into families (email, flags) values ('p@example.com', $1) returning *", [JSON.stringify({ dispute: true })]);
     assert.equal(typeof f.id, 'string');
@@ -1194,6 +1203,62 @@ describe('A: sessions, the email check, kid devices (§4.4–4.6, §12.7)', () =
     assert.ok(await h.family(email), 'not deleted');
     h.setClock(36 * MIN);
     assert.equal((await b.post('/api/devices/pair-code', {})).data.error, 'check_required', 'and 15 minutes later nothing');
+  });
+
+  test('CSRF on every state-changing route: X-SW, Origin, JSON, Sec-Fetch-Site (the webhook alone is exempt)', async () => {
+    const { b, ids } = await setupFamily(h, 'csrf.walk@example.com', { players: ['Clementine'] });
+    remember('Clementine');
+    const writes = h.ctx.routes.filter((r) => r.method !== 'GET' && r.who !== 'stripe' && r.who !== 'test');
+    assert.ok(writes.length >= 15);
+    const good = { 'x-sw': '1', origin: HTTPS, 'content-type': 'application/json' };
+    for (const r of writes) {
+      const p = fill(r.path, ids.Clementine);
+      const name = `${r.method} ${r.path}`;
+      for (const [why, headers, status] of [
+        ['no X-SW', { origin: HTTPS, 'content-type': 'application/json' }, 403],
+        ['another site', { ...good, origin: 'https://evil.example' }, 403],
+        ['cross-site fetch', { ...good, 'sec-fetch-site': 'cross-site' }, 403],
+        ['a form post', { ...good, 'content-type': 'text/plain' }, 415],
+      ]) {
+        b.ip = nextIp(); // (60 requests: past one address's burst)
+        const res = await b.call(r.method, p, { body: {}, csrf: false, headers });
+        assert.deepEqual([name, why, res.status], [name, why, status]);
+      }
+    }
+    const hook = h.ctx.routes.find((r) => r.who === 'stripe');
+    if (hook) assert.notEqual((await b.call('POST', hook.path, { body: '{}', csrf: false, headers: { 'content-type': 'application/json' } })).status, 403);
+  });
+
+  test('the default limits: 120 a minute (60 at once) per address, 240 a minute per session', async () => {
+    const one = h.browser();
+    let n = 0;
+    while ((await one.get('/api/me')).status !== 429 && n < 100) n++;
+    assert.ok(n >= 59 && n < 70, `per address after ${n}`);
+    const { b } = await setupFamily(h, 'busy.session@example.com');
+    const cookie = b.cookieHeader();
+    let m = 0;
+    for (;;) {
+      const r = await httpCall(h.base, 'GET', '/api/me', { headers: { cookie, 'x-forwarded-for': nextIp() } });
+      if (r.status === 429 || m > 300) break;
+      m++;
+    }
+    assert.ok(m >= 238 && m <= 280, `per session after ${m}`);
+  });
+
+  test('/api/test/* do not exist without SW_TEST=1', async () => {
+    const cfgNoTest = loadConfig({ ...TEST_ENV, SW_TEST: '' });
+    const acc = await createAccounts(cfgNoTest, { log: spy.log, db: t.db, timers: false });
+    const app = createServer({ accounts: acc, htmlPath: A_HTML, siteDir: path.join(A_DIR, 'none'), log: spy.log });
+    const port = await app.listen(0, '127.0.0.1');
+    try {
+      assert.ok(!acc.ctx.routes.some((r) => r.path.startsWith('/api/test/')));
+      const r = await httpCall(`http://127.0.0.1:${port}`, 'GET', '/api/test/mail');
+      assert.deepEqual([r.status, r.data], [404, { error: 'not_found' }]);
+      const c = await httpCall(`http://127.0.0.1:${port}`, 'POST', '/api/test/clock', { headers: { 'x-sw': '1', origin: HTTPS, 'content-type': 'application/json' }, body: '{"offsetMs":1}' });
+      assert.equal(c.status, 404);
+    } finally {
+      await app.close();
+    }
   });
 
   test('the email check: 5 an hour per family', async () => {
