@@ -61,7 +61,7 @@ then, so none of these files is even loaded.
 | event | payload | when |
 |---|---|---|
 | `session` | `{ sessionHash }` (64 hex) | a session revoked (logout, logout-all, device removed, sign-in over an old one, pairing over an old one, "Kids play on this device", admin sign-out-all), a device's lock changed, a family deleted (each of its sessions) |
-| `family` | `{ familyId, deleted? }` | consent agreed, the family deleted (`deleted: true`), kid data purged; B: after a webhook or sync |
+| `family` | `{ familyId, deleted? }` | consent agreed, the family deleted (`deleted: true`), the plan lapsed or resumed (retention job), kid data purged, an admin change (in the admin's own process only); B: after a webhook or sync |
 | `player` | `{ familyId, playerId, deleted? }` | friends/walkie/nickname changed, the player deleted (`deleted: true`) |
 
 auth.mjs registers its own listeners first, so by the time server.mjs's listener calls
@@ -138,8 +138,8 @@ and end with a test calling `spy.check()` (it also refuses any email-address or 
 
 ```
 npm ci
-npm run test:accounts                     # 96 tests: the cluster (postgres user) by default
-SW_TEST_DB=pglite npm run test:accounts   # 95 + 1 skipped (the admin-as-a-program test needs a URL)
+npm run test:accounts                     # 98 tests: the cluster (postgres user) by default
+SW_TEST_DB=pglite npm run test:accounts   # 97 + 1 skipped (the admin-as-a-program test needs a URL)
 SW_TEST_VERBOSE=1 npm run test:accounts   # print what the servers log
 ```
 
