@@ -11,11 +11,12 @@
 //       recheck(claims) → Promise<{ ok, claims?, code? }>,                         // §8.4, cached ≤ 60 s
 //       events,       // EventEmitter: 'session' {sessionHash}, 'family' {familyId}, 'player' {familyId, playerId}
 //       close() → Promise<void>,
-//       ctx }         // for tests
+//       ctx }         // for tests (ctx.jobs.run(name), ctx.mail.captured, ctx.limits, ...)
 //
 // `db` is optional (tests pass one from tools/testdb.mjs; otherwise cfg.databaseUrl is opened
 // and closed by close()). `clock` defaults to makeClock(): the app clock that every time
-// comparison uses (§3.1), moved by POST /api/test/clock.
+// comparison uses (§3.1), moved by POST /api/test/clock. `timers: false` starts no job timers
+// (in-process tests and the admin CLI run jobs with ctx.jobs.run(name)).
 //
 // The route modules are picked up when their files exist, so each owner adds its own file
 // without editing this one (docs/ACCOUNTS.md §15.1):
@@ -62,7 +63,7 @@ async function optionalModule(file) {
   return existsSync(fileURLToPath(url)) ? import(url.href) : null;
 }
 
-export async function createAccounts(cfg, { log = (...a) => console.log(...a), clock = makeClock(), db = null } = {}) {
+export async function createAccounts(cfg, { log = (...a) => console.log(...a), clock = makeClock(), db = null, timers = true } = {}) {
   if (!cfg || cfg.accounts === 'off') throw new Error('createAccounts: accounts are off');
   const ownDb = !db;
   if (!db) db = await openDb(cfg.databaseUrl, { log });
@@ -102,7 +103,9 @@ export async function createAccounts(cfg, { log = (...a) => console.log(...a), c
     jobs: await optionalModule('./jobs.mjs'),
   };
 
-  ctx.audit = mods.audit?.audit ?? fallbackAudit;
+  const auditFn = mods.audit?.audit ?? fallbackAudit;
+  // every audit row carries the app clock's time unless the caller gives one
+  ctx.audit = (q, familyId, action, detail = {}, opts = {}) => auditFn(q, familyId, action, detail, { at: clock.now(), ...opts });
   ctx.mail = mods.mail?.createMail ? await mods.mail.createMail(ctx) : fallbackMail();
   ctx.family = mods.family?.createFamily ? await mods.family.createFamily(ctx) : fallbackFamily(ctx);
   ctx.sessions = mods.auth?.createSessions ? await mods.auth.createSessions(ctx) : fallbackSessions();
@@ -115,13 +118,15 @@ export async function createAccounts(cfg, { log = (...a) => console.log(...a), c
     if (m?.routes) routes.push(...(await m.routes(ctx)));
   }
   const router = createRouter({ cfg, ctx, routes });
-  const jobs = mods.jobs?.startJobs ? await mods.jobs.startJobs(ctx) : null;
+  // timers: false (in-process tests, the admin CLI): jobs run only when asked (ctx.jobs.run)
+  const jobs = mods.jobs?.startJobs ? await mods.jobs.startJobs(ctx, { timers }) : null;
+  ctx.jobs = jobs;
 
-  // ---- the relay's questions (§8.1, §8.4). A: replace with the real claims ----
+  // ---- the relay's questions (§8.1, §8.4): auth.mjs answers them (claims, caches) ----
   async function authorizeSocket({ cookie, playerId } = {}) {
+    if (ctx.sessions.authorizeSocket) return ctx.sessions.authorizeSocket({ cookie, playerId });
     const token = cookieOf(cfg, cookie || '', 'sess');
     if (!token && !playerId && cfg.accounts === 'optional') return { ok: true, claims: null }; // a legacy socket: today's behavior
-    if (ctx.sessions.authorizeSocket) return ctx.sessions.authorizeSocket({ cookie, playerId });
     if (playerId && !isUuid(playerId)) return { ok: false, code: 'player_gone' };
     return { ok: false, code: 'signed_out' };
   }
