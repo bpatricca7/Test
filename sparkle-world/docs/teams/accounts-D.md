@@ -79,7 +79,20 @@ Numbers are in the section "Results" below.
 
 ## Results
 
-(filled in at the end of the run: see below)
+In this branch, with `SW_ACCOUNTS` unset (2026-09-28, on a shared 4-core machine):
+
+| Gate | Result |
+|---|---|
+| `npm run build` | build `d532aea4`, no change in `dist/`; `dist/site/` identical (`diff -r`) to the skeleton's |
+| `node tools/smoke.mjs --shots-prefix=acctD` | SMOKE PASSED |
+| `npm run test:net` | 59 passed, 0 failed (the skeleton's 54 + 5 relay-with-accounts tests) |
+| `node tools/test-walkie.mjs --no-build` | 225 checks passed, 0 problems (with the relay-alone and the server-with-accounts walkie parts) |
+| `node tools/site-check.mjs --no-build --shots-prefix=acctD` | HOME PAGE OK (and the account pages): 553 checks; 27 Family page states at 360, 390, 1024×768 and 1280×800, plus the whole journey |
+| `node tools/probe-railway.mjs` | passed |
+| `node tools/dev-accounts.mjs --fake --seed` | starts; `/account` 200, `/api/net` says `required` |
+
+`npm run e2e:accounts` needs A, B and C: in this branch alone it runs scenario 10 and reports
+1–9 NOT RUN (exit 2). In the scratch tree with A, B and C merged, see the next section.
 
 ## Integration runs (A, B, C merged into a scratch tree; nothing of theirs is committed here)
 
