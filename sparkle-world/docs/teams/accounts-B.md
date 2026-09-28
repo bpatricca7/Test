@@ -71,7 +71,10 @@ already processed, re-fetches what it needs outside the transaction (the subscri
 country is not sold to), then in one transaction records the event id and applies the effect. Every
 effect is idempotent by itself too (the verified consent and the three emails are guarded by the row
 they change), so the sync, the webhook and reconcile agree in any order. A subscription row is only
-replaced by a newer read (`synced_at`). A paid invoice records verified consent only when its billing
+replaced by a newer read (`synced_at`). Every billing transaction locks the family's row first
+(`select … for update`), before any subscriptions row, so concurrent webhooks, the sync and
+reconcile queue instead of deadlocking (A: keep that order in any transaction that touches both a
+family and its subscriptions). A paid invoice records verified consent only when its billing
 country is sold to. Two live plans: the newer (by start date) is cancelled at Stripe, flagged
 `duplicate_sub` (+ `refund_due` if it was already paid); the other plan's state is read from Stripe
 first, never assumed from the mirror.
@@ -109,7 +112,7 @@ fake.card(customerId, 'fail'); await fake.dispute({ customer }); await fake.idle
 ## How to test
 
 ```
-npm run test:billing                       # 103 tests: 102 pass, 1 skipped (real-shapes.txt not there yet)
+npm run test:billing                       # 104 tests: 103 pass, 1 skipped (real-shapes.txt not there yet)
 SW_TEST_DB=pglite npm run test:billing     # the same on PGlite
 node tools/stripe-fake/make-fixtures.mjs   # after changing the fake: rewrites the fixtures (the suite checks they match)
 STRIPE_SECRET_KEY=sk_test_x STRIPE_API_BASE=http://127.0.0.1:12111 npm run stripe:setup   # against a running fake
@@ -123,7 +126,7 @@ client; the shape contract (fixtures ⊇ `READ_PATHS`, fixtures = the fake's sha
 when present); then the real server + SDK + fake: who may start a plan, the exact Checkout
 parameters, pay → verified by card + one welcome + one friends_ready + audit, the return sync with
 dropped webhooks, the Portal and sync without a session id, non-US (cancelled, `us_only`,
-`refund_due`, never verified), duplicate / reverse / late deliveries, a throwing handler (500 then
+`refund_due`, never verified), duplicate / reverse / late deliveries, a whole Checkout's webhooks (each twice) plus the sync at the same moment for 4 families (no deadlock, applied once), a throwing handler (500 then
 success, once), bad signatures (wrong secret, 10-minute-old, re-serialized, missing), a dispute, two
 live plans, a customer deleted in the Dashboard, the `synced_at` guard, failed renewal → grace →
 cancelled → lapsed by the clock, reconcile after dropped webhooks, `cancelAndDelete` and retried
