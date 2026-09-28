@@ -9,7 +9,7 @@
 //     fromCookie(cookieHeader, now), fromToken(token, now)
 //     byHash(hashBuffer, now) → session | null      (no touch; the relay's questions)
 //     createSession(q, { familyId, kind, label, lockPlayer, now, elevated }) → { token, hash, cookie }
-//     revokeFamily(familyId | null, { now, except }) → number   (admin sign-out-all, logout-all)
+//     revokeFamily(familyId | null, { now }) → number   (admin sign-out-all, logout-all)
 //     authorizeSocket({ cookie, playerId }) → { ok, claims?, code? }   (§8.1)
 //     recheck(claims) → { ok, claims?, code? }                         (§8.4, cached ≤ 60 s)
 //     forget(hashHex), clearCaches()
@@ -153,19 +153,26 @@ export function createSessions(ctx) {
   const { cfg, db, clock, events } = ctx;
   const cache = new Map(); // token hash hex → { s, at }
   const claimsCache = new Map(); // `${hex}:${pid}` → { at, value, hex, familyId, playerId }
+  // bumped by every invalidation: an answer read from the database while one happened is used
+  // but not cached (it may predate the revocation or the change that caused it)
+  let epoch = 0;
 
   function forget(hex) {
+    epoch++;
     cache.delete(hex);
     for (const [k, e] of claimsCache) if (e.hex === hex) claimsCache.delete(k);
   }
   function forgetFamily(familyId) {
+    epoch++;
     for (const [k, e] of cache) if (e.s && e.s.familyId === familyId) cache.delete(k);
     for (const [k, e] of claimsCache) if (e.familyId === familyId) claimsCache.delete(k);
   }
   function forgetPlayer(playerId) {
+    epoch++;
     for (const [k, e] of claimsCache) if (e.playerId === playerId) claimsCache.delete(k);
   }
   function clearCaches() {
+    epoch++;
     cache.clear();
     claimsCache.clear();
   }
@@ -194,9 +201,10 @@ export function createSessions(ctx) {
     const hex = hash.toString('hex');
     const hit = cache.get(hex);
     if (hit && Date.now() - hit.at < CACHE_MS) return hit.s;
+    const before = epoch;
     const row = await db.one('select * from sessions where id_hash = $1', [hash]);
     const s = row ? toSession(row) : null;
-    if (s) cache.set(hex, { s, at: Date.now() });
+    if (s && epoch === before) cache.set(hex, { s, at: Date.now() });
     else cache.delete(hex);
     return s;
   }
@@ -204,6 +212,7 @@ export function createSessions(ctx) {
   async function touch(s, now) {
     const idle = s.kind === 'parent' ? PARENT_IDLE_MS : DEVICE_LIFE_MS;
     const slide = s.kind === 'device' && s.expiresAt - now < DEVICE_LIFE_MS - SLIDE_MS;
+    const before = epoch;
     try {
       const row = await db.one(
         `update sessions set last_seen_at = $2, idle_expires_at = $3${slide ? ', expires_at = $4' : ''} where id_hash = $1 and revoked_at is null returning *`,
@@ -211,7 +220,7 @@ export function createSessions(ctx) {
       );
       if (row) {
         const fresh = toSession(row);
-        cache.set(s.hash.toString('hex'), { s: fresh, at: Date.now() });
+        if (epoch === before) cache.set(s.hash.toString('hex'), { s: fresh, at: Date.now() });
         return fresh;
       }
     } catch (err) {
@@ -263,13 +272,13 @@ export function createSessions(ctx) {
     return r ? r.id_hash : null;
   }
 
-  async function revokeFamily(familyId, { now = clock.now(), except = null } = {}) {
+  /** Revoke every live session of a family (or of everyone: familyId null) → how many. */
+  async function revokeFamily(familyId, { now = clock.now() } = {}) {
     const r = familyId
       ? await db.query('update sessions set revoked_at = $2 where family_id = $1 and revoked_at is null returning id_hash', [familyId, new Date(now)])
       : await db.query('update sessions set revoked_at = $1 where revoked_at is null returning id_hash', [new Date(now)]);
-    const hashes = r.rows.map((x) => x.id_hash).filter((h) => !except || !Buffer.from(h).equals(except));
     announce(r.rows.map((x) => x.id_hash));
-    return hashes.length;
+    return r.rows.length;
   }
 
   // ---- the relay's questions (§8.1, §8.4) ----
@@ -303,15 +312,16 @@ export function createSessions(ctx) {
     const key = `${hex}:${playerId}`;
     const hit = claimsCache.get(key);
     if (hit && Date.now() - hit.at < CACHE_MS) return hit.value;
+    const before = epoch;
     try {
       const r = await computeAccess(hash, playerId, clock.now());
       const { familyId = r.claims?.familyId ?? null, ...value } = r;
-      claimsCache.set(key, { at: Date.now(), value, hex, familyId, playerId });
+      if (epoch === before) claimsCache.set(key, { at: Date.now(), value, hex, familyId, playerId });
       if (claimsCache.size > 5000) claimsCache.delete(claimsCache.keys().next().value);
       return value;
     } catch (err) {
       // the database is down: a recent enough answer keeps reconnects working after a deploy
-      if (hit && Date.now() - hit.at < STALE_MS) return hit.value;
+      if (hit && claimsCache.get(key) === hit && Date.now() - hit.at < STALE_MS) return hit.value;
       ctx.log(`sessions: socket check failed ${err && err.code ? err.code : err && err.name ? err.name : 'Error'}`);
       return { ok: false, code: 'unavailable' };
     }
