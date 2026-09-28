@@ -1820,6 +1820,12 @@ saves, the relay exactly as in Addenda A–C. The claude.ai version never uses a
   without a session cookie (a signed-in page that fell back to local mode, for example because
   `/api/me` did not answer, plays as today); in `required` mode every socket needs a session and
   `p`.
+- **Two kinds never share a room** (only possible in `optional`): an account child's grown-up
+  agreed to friends "whose families have Sparkle World too", so a room holding an account member
+  refuses a legacy page, and a room of legacy pages refuses an account child (`rooms.mjs` `join`
+  answers `accounts_mixed`, the server closes with **4406** before any roster, so no nickname,
+  avatar, world or voice crosses). Legacy pages keep playing with each other exactly as today;
+  account children with each other.
 
 ### D.2 Refusals the page can read
 
@@ -1836,6 +1842,7 @@ which could never become a card):
 | 4405 | `player_gone` | the player is not in the session's family, or was deleted |
 | 1013 | `unavailable` | the database is down and nothing is cached (the page retries) |
 | 4029 | `limit` | more than `SW_MAX_PER_FAMILY` (12) connections for one family (next to the per-address 12) |
+| 4406 | `accounts_mixed` | (`optional` only) the room has members of the other kind: account children and pages without an account never play together (D.1); "You can't play with this friend yet: both of you need a grown-up to set up Sparkle World." |
 
 The codes of §4.3 / Addendum A–C (4000, 4001, 4002, 4003, 4004, 4008, 4009, 4029, 1011, 1012)
 keep their meaning.
@@ -1867,7 +1874,8 @@ hears nothing, whatever her page says (`{k:'on'}`, `wk:1`); the Addendum C rules
 it. The server tells the page `{t:'v', k:'perm', walkie: 0|1}` when the link is made and whenever
 it changes (the page's walkie follows it; in account mode the multiplication gate is not used).
 `setAllowed(link, false)` releases her floor at once (`cut` `off`). Legacy links are always
-allowed, as before.
+allowed, as before, but only ever among legacy pages: rooms never mix the two kinds (D.1), and
+voice goes only to the members of the same game.
 
 ### D.5 Live revocation
 
@@ -1891,8 +1899,9 @@ tests: tens of milliseconds); a plan that ends by time within about two minutes.
 (`tools/fake-accounts.mjs`): every refusal and close code, nickname stamping, `wk` / `r:'h'` /
 `ob` / `sw.op`, live revocation within a second, the per-family limit, the database-down cache,
 legacy sockets in `optional`, the Family page only with accounts on. `npm run test:walkie` adds
-the relay alone (`allowed`, `perm`, `setAllowed`) and the real server with fake accounts: a child
-without the switch gets 0 voice bytes; switched off mid-game, no byte reaches her after the
+the relay alone (`allowed`, `perm`, `setAllowed`; a legacy link refused in an account room and an
+account link refused in a legacy room, 0 voice bytes either way) and the real server with fake
+accounts: a child without the switch gets 0 voice bytes; switched off mid-game, no byte reaches her after the
 switch although her page keeps saying `on` with `wk:1`; on again, `perm` 1 and she hears.
 `npm run e2e:accounts` plays it through the real pages (`docs/ACCOUNTS.md` §12.8). Notes and
 numbers: `docs/teams/accounts-D.md`.

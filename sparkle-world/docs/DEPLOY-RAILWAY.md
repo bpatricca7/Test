@@ -519,8 +519,11 @@ The admin commands run inside the service:
    the `sparkle-world` folder: `railway link` (pick the project and the environment).
 2. `railway ssh`, then for example `npm run admin -- show <email>` (plan, consent, players and
    devices counted, never the children's content). Other commands: `comp <email> <YYYY-MM-DD>` (a
-   free pass), `consent-verified <email> --method form` (a signed consent form), `export <email>`,
-   `delete <email>`, `sign-out-all`, `stats`.
+   free pass; it warns when the family's plan still renews, so cancel that first if the pass
+   replaces it), `consent-verified <email> --method form` (a signed consent form), `delete
+   <email>`, `sign-out-all [<email>]` (without an email it asks you to type `EVERYONE`),
+   `reapply-deletions` (after a restore, SECURITY-PROGRAM.md §7), `stats`. `export <email>` prints
+   children's content: never send it by email.
 3. If `railway ssh` is not available on your plan: turn on the Postgres service's public
    networking for a moment, run `railway run --service <game> npm run admin -- …` with
    `DATABASE_URL` set to the Postgres `DATABASE_PUBLIC_URL`, and **turn public networking off
@@ -543,7 +546,9 @@ Set `SW_STRIPE_SHAPES=1` in staging's Variables (test keys only), deploy, then:
 5. Switch **Play with friends** and the **Walkie-talkie** on for one child (a code is emailed
    first). Play together with a second test family (another email, another browser), including the
    walkie. Switch the walkie off on the Family page while they play: it stops within a second.
-6. **Manage subscription** → cancel. The plan shows **Ends …**.
+6. **Cancel the plan** → **Yes, cancel it** (two taps, no code: cancelling must never be harder
+   than starting). The plan shows **Ends …**; **Resume** (Stripe's portal, after a code) turns it
+   back on. Also open **Manage subscription** once and check the portal looks right.
 7. In the Stripe Dashboard: the invoice shows the **tax line**; **Developers → Webhooks → your
    endpoint**: every delivery is **2xx**.
 8. In the Deploy Logs, copy every line that starts with `stripe-shape` into
@@ -595,4 +600,4 @@ pages are exactly as in Part 1 (the database is kept, untouched).
 | No sign-in email arrives | Check the spam folder; check the provider's logs and that the domain shows "verified" (step 12). |
 | "Couldn't reach the payment page" | Stripe keys or `STRIPE_PRICE_ID` (step 13); the Deploy Logs show `stripe_unavailable`. |
 | Stripe shows failed webhook deliveries | The endpoint URL (step 13.7) and `STRIPE_WEBHOOK_SECRET` must match; a key change needs the new secret. The server also re-reads subscriptions every 6 hours, and the Family page syncs when a parent comes back from Stripe. |
-| A parent asks for her data, or to be deleted, by email | Confirm the request came from the account's email, then `npm run admin -- export <email>` or `delete <email>` (step 16). Answer within 10 business days. |
+| A parent asks for her data, or to be deleted, by email | Confirm the request came from the account's email. For a copy, help her sign in on the Family page and use **Download everything**: never email children's information (the export holds nicknames, portraits and worlds). To delete: `npm run admin -- delete <email>` (step 16). Answer within 10 business days. |

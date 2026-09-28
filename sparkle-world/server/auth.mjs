@@ -18,7 +18,8 @@
 //               label, createdAt, lastSeenAt, expiresAt, idleExpiresAt, elevatedUntil, elevatedAt }  (ms)
 //     locked: a kid device set up for one child. It stays locked when that child is deleted
 //     (lock_player then becomes null, migration 002): such a device sees no player at all,
-//     never every sibling. lockedTo(s) is the one test every route and the relay use.
+//     never every sibling. lockedAway(s, pid) (http.mjs) is the one test every route and the
+//     relay use.
 //   claims  = { sessionHash (hex), familyId, playerId, nickname, canHost, canBuild, walkie, until }
 //   events:  'session' { sessionHash (hex) } when one is revoked or its lock changes.
 //
@@ -30,10 +31,10 @@
 
 import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import { httpError, cookieOf, isUuid, lockedAway } from './http.mjs';
-
-export { lockedAway };
 import { accessOf } from './family.mjs';
 import { maskEmail } from './mail.mjs';
+
+export { lockedAway };
 
 const MIN = 60e3;
 const HOUR = 60 * MIN;

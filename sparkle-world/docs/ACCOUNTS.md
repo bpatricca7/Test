@@ -453,6 +453,22 @@ create table deleted_families (
 );
 ```
 
+**`server/migrations/002_session_locked.sql`** (added after the review of the integrated build):
+
+```sql
+alter table sessions add column locked boolean not null default false;
+update sessions set locked = true where lock_player is not null;
+update worlds set meta = '{}'::jsonb where body is null;   -- tombstones keep no world content
+```
+
+`sessions.lock_player` is `on delete set null`, so "is this device locked" is kept apart from "to
+which player": a device locked to a child who is deleted (or purged by retention) stays locked,
+to nobody. `/api/me` lists no player for it, every `:pid` route answers 404 (her own ones 410
+`player_gone`, so the device wipes her copy) and the relay 4405, until the parent picks who plays
+on the Family page (choosing "Anyone in the family" unlocks it). Every check is the one test
+`lockedAway(s, pid)`: `(locked or lock_player) and lock_player <> pid` (the `or` covers a row
+written by an older deployment during a deploy).
+
 Limits enforced in code: ≤ 6 players per family; ≤ 3 live pair codes per family; ≤ 60 live worlds
 per player (side copies count, tombstones do not); stored gzip ≤ 100 MB per player and ≤ 300 MB per
 family; profile ≤ 256 KB; portrait ≤ 32 KB PNG. Before release, `tools/test-saves.mjs --measure`
@@ -469,11 +485,19 @@ prints real save sizes from the probes' worlds; keep caps at 4× the largest see
   attempts for that email; audit `family.deleted`. (3) Close the family's sockets (4401), clear the cookie, enqueue the
   `account_deleted` email (`family_id` null, address captured before step 2), log
   `deletion-journal family=<uuid>` (no email).
+  Before `customers.del` the customer gets the metadata `sw_family_deleted: '1'`, so its
+  `customer.deleted` event says the deletion was ours.
 - **Delete a player:** delete the row (cascades to profile and worlds), audit, close her sockets
-  (4405). Devices then get `410 player_gone` and wipe that player's local copy (§7.2).
-- **Restore from a backup** re-creates deleted families. The runbook (§13.4) re-applies deletions
-  from two journals that live outside the database: Stripe's `customer.deleted` events (Stripe keeps
-  30 days of events) and the `deletion-journal` log lines.
+  (4405), drop the cached sessions of devices locked to her (they stay locked, to nobody, §3.3),
+  log `deletion-journal player=<uuid>`. Devices then get `410 player_gone` and wipe that player's
+  local copy (§7.2).
+- **Delete a world** (in the game): a tombstone (§5.4) and `deletion-journal world=<player
+  uuid>/<world id>` (ids only).
+- **Restore from a backup** re-creates deleted families, players and worlds. The runbook (§13.4)
+  re-applies deletions from two journals that live outside the database: Stripe's
+  `customer.deleted` events that carry our mark (Stripe keeps 30 days of events; a customer
+  deleted by hand in the Dashboard only unlinks its family, §6.4, and is never re-applied) and the
+  `deletion-journal` log lines (`family=`, `player=`, `world=`).
 
 ### 3.5 Retention (the written policy; `jobs.mjs` enforces it hourly)
 
@@ -485,10 +509,10 @@ prints real save sizes from the probes' worlds; keep caps at 4× the largest see
 | `gone_sessions` | 180 days | deleted |
 | A family that never agreed to the notice | 14 days after sign-up | deleted (the notice says so) |
 | A family that agreed but never had a plan or free pass (and no players) | 30 days | deleted |
-| Kid data (players, profiles, worlds, portraits) after the plan ends | `SW_RETAIN_DAYS` (90) after `lapsed_at`; emails 30 and 7 days before | deleted; family row kept |
+| Kid data (players, profiles, worlds, portraits) after the plan ends | `SW_RETAIN_DAYS` (90) after `lapsed_at`; emails 30 and 7 days before; after every lapse (a comeback and a new lapse start the clock, the warnings and the purge again) | deleted; family row kept |
 | The family row (email, Stripe id, consent dates) after the plan ends | 12 months after `lapsed_at` | deleted with its Stripe customer |
 | A paying family with no sign-in and no play for 24 months | kept | one email offering deletion; never deleted while paying |
-| World tombstones | 30 days | deleted |
+| World tombstones (no content: no body, picture or `meta`) | 30 days | deleted |
 | `stripe_events` | 30 days | deleted |
 | Outbox | sent: 7 days (secret data scrubbed at send); failed: 30 days | deleted |
 | Audit log (no personal data) | 3 years (proof of consent; a choice, not a legal requirement) | deleted |
@@ -538,9 +562,15 @@ time. A GET never changes anything.
    into the iPad app that asked). 5 wrong tries kill the attempt: `400 {error:'bad_code', triesLeft}`,
    then `410 {error:'expired'}`. The input uses `autocomplete="one-time-code"` and `inputmode="numeric"`.
 3. **Link** (convenience): `https://<origin>/account/verify#t=<token>`. The token is in the fragment,
-   so it never reaches server logs or a Referer. The page shows "Sign in to Sparkle World?" and a
-   button that POSTs `{token}` to `/api/auth/verify`. Opening the link (email scanners prefetch links)
-   consumes nothing. The link works in any browser.
+   so it never reaches server logs or a Referer. The page first asks `POST /api/auth/verify
+   {token, peek: true}` (uses nothing) → `{email: 'b•••@gmail.com', replacing}` and shows "Sign in
+   to Sparkle World?" with "You are signing in as b•••@gmail.com" and a button that POSTs
+   `{token}`. `replacing` is true when this browser holds a live session of **another** family
+   (a kid's device, say): signing in would sign it out of that family, so the page says so, asks
+   the grown-up check (a times-table question) and sends `{token, replace: true}`; without
+   `replace` the server answers `409 {error:'conflict', replacing:true}` and the link stays good
+   (login CSRF: a stranger's link opened on a kid's device never quietly takes it over). Opening
+   the link (email scanners prefetch links) consumes nothing. The link works in any browser.
 4. On success, in one transaction: `update login_attempts set used_at=$now where id_hash=$1 and
    used_at is null and expires_at > $now returning …` (single use even under a race); find or create
    the family (`insert … on conflict (email) do nothing`, then select); set `email_verified_at`; revoke
@@ -552,9 +582,13 @@ time. A GET never changes anything.
 
 Sensitive actions need `elevated_until > now` (sign-in counts for 15 minutes):
 turning **Play with friends** or the **walkie-talkie** on; deleting a player; downloads (per player,
-per family); making a pair code; the Stripe Portal; **Start now**; "sign out everywhere".
+per family); making a pair code; starting a plan (**Checkout**: a child on a device that kept a
+grown-up's session never reaches Stripe's page, §7.9); the Stripe Portal (card, invoices, Resume:
+it shows the parent's billing details); **Start now**; "sign out everywhere".
 Deleting the family needs a check done **within the last 5 minutes** (`elevated_at`).
-Turning a switch off, renaming, adding a player, removing a device and signing out need no check.
+Turning a switch off, renaming, adding a player, removing a device, signing out and **Cancel the
+plan** (§6.3) need no check: cancelling is never harder than starting (California's ARL and
+similar laws).
 
 `POST /api/auth/check` (parent session) emails a 6-digit code (a `login_attempts` row with purpose
 `check`, the session's hash, the attempt cookie); `POST /api/auth/verify {code}` then sets
@@ -576,7 +610,8 @@ Passkeys (Face ID) and a grown-up PIN are phase 2 (§16).
 - A **device** session may use: `GET /api/me`, the saves and portrait routes of its family's players
   (only the locked player if set), the WebSocket, `POST /api/auth/logout`. Never `/api/family*`,
   `/api/billing/*`, `/api/devices*`.
-- "Who's playing?" has no kid PIN: the kids are 7–8 and siblings. A device can be locked to one player.
+- "Who's playing?" has no kid PIN: the kids are 7–8 and siblings. A device can be locked to one player;
+  it stays locked when that player is deleted (to nobody, `sessions.locked`, §3.3).
 - Labels: a coarse name made once from the User-Agent at creation (`iPad · Safari`, `Mac · Chrome`,
   …; the User-Agent itself is not stored); the parent can rename it.
 
@@ -606,26 +641,33 @@ that session's sockets with 4401 at once.
 ### 4.8 Rate limits and abuse
 
 In-memory `KeyedLimiter` (token buckets from `server/limits.mjs`, keyed by `addressKey(ip)` (IPv6 by
-/64), `email_key`, family id or player id; idle buckets forgotten). All answer
-`429 {error:'rate'}` with `Retry-After`.
+/64), `netKey(ip)` (IPv6 by /48, IPv4 as is), `email_key`, family id or player id; idle buckets
+forgotten). All answer `429 {error:'rate'}` with `Retry-After`. A route's limits are checked in
+order (per address, per network, then for everyone), **before its body is read**, together with
+who may call (§5.1): a refused request never has its body read, inflated or parsed, and one home's
+allocation (a /56 holds 256 /64s) runs into its own network's limit long before it could use up
+the limit for everyone. When a limit for everyone is used up, the log says so (one line, never
+who). `email_key` is `HMAC(k_email, the mailbox)`: `name+tag@` counts as `name@`, and at Gmail dots
+do not count.
 
 | What | Limit |
 |---|---|
-| `POST /api/auth/start` | per email: 3 / 15 min and 10 / day (counted in `login_attempts`, survives restarts); per address 10 / hour (burst 5); all 300 / hour (protects the email quota) |
-| `POST /api/auth/verify` | 5 tries per attempt; per address 30 / hour |
+| `POST /api/auth/start` | per email (mailbox): 3 / 15 min and 10 / day (counted in `login_attempts`, survives restarts); per address 10 / hour (burst 5); per network 20 / hour (burst 10); all 1000 / hour |
+| `POST /api/auth/verify` | 5 tries per attempt; per email 10 wrong codes a day over all its attempts (sign-in and email check; after that codes for that email are `410 expired` until the day has passed, while the link keeps working); per address 30 / hour |
 | `POST /api/auth/check` | per family 5 / hour |
-| `POST /api/auth/pair` | per address 10 / 10 min; all 200 / hour |
+| `POST /api/auth/pair` | per address 10 / 10 min; per network 20 / 10 min; all 1000 / hour (a code is about 40 bits and lives 10 minutes: with 30 codes waiting at any time, 24,000 guesses a day would need about 1.5 million days, on average, to hit one) |
 | `POST /api/devices/pair-code` | per family 10 / hour |
 | `POST /api/billing/checkout` | per family 5 / hour; per address 20 / hour; one open Checkout Session per family at a time (reused while < 30 min old) |
 | other billing routes | per family 20 / hour |
 | world and profile PUT | per player 12 / min (burst 20) |
 | exports | per family 5 / hour |
 | everything else under `/api` | per address 120 / min (burst 60); per session 240 / min |
-| request bodies | JSON 16 KB (world PUT: `SW_WORLD_MAX_BYTES` after decompression; profile 256 KB; webhook 1 MB raw) → `413` without reading further |
+| request bodies | read only after who may call and the limits (§5.1); JSON 16 KB (world PUT: `SW_WORLD_MAX_BYTES` after decompression, inflated with the asynchronous `gunzip`, off the event loop the relay shares; profile 256 KB; webhook 1 MB raw) → `413` without reading further (`Connection: close`) |
 
 Abuse covered: email enumeration (identical answers, nothing created at start), link prefetching
-(POST to consume), code guessing (bound to the attempt cookie, 5 tries), email bombing (per-email and
-global limits), card testing (only a signed-in parent with a verified email and agreed notice can make
+(POST to consume), code guessing (bound to the attempt cookie, 5 tries, 10 wrong a day per email),
+login CSRF (the link page says whose sign-in it is and replaces another family's session only when
+asked, §4.3), email bombing (per-mailbox, per-network and global limits), card testing (only a signed-in parent with a verified email and agreed notice can make
 a Checkout Session, rate limits, hosted Checkout with Stripe's own bot and Radar protections, no card
 form of ours anywhere), IDOR (every `:pid` is checked against the session's family and answers `404`
 when it is not hers), gzip bombs (`maxOutputLength`), trial abuse (one trial per family; the same
@@ -644,6 +686,7 @@ JSON in and out. Errors are `{error: '<code>', …}` with one of: `bad_request`,
 `nickname_taken`, `nickname_blocked`, `already_subscribed` (409), `us_only`, `stripe_unavailable`
 (502), `unavailable` (503). The page never shows a code to a child (§7.7).
 
+Who may call is checked, with the route's limits, before the body is read (§4.8).
 Who may call (the "Who" column): **anyone**; **session** (parent or device); **parent**;
 **parent+check** (email check within 15 min); **parent+check5** (within 5 min); **player** (any
 session of the family that owns `:pid`, and the device's locked player if set); **stripe**
@@ -658,21 +701,21 @@ session of the family that owns `:pid`, and the device's locked player if set); 
 | `GET /api/me` | anyone | §5.3 | A |
 | `GET /api/notice` | anyone | `{version, sections:[{title, text}], checkbox}` from `notice.mjs` | A (data: B) |
 | `POST /api/auth/start` | anyone | `{email, next?}` → `202 {ok:true}` | A |
-| `POST /api/auth/verify` | anyone | `{code}` or `{token}` → `{next}` (sign-in) or `{elevatedUntil}` (check) | A |
+| `POST /api/auth/verify` | anyone | `{code}` or `{token, replace?}` → `{next}` (sign-in) or `{elevatedUntil}` (check); `{token, peek: true}` → `{email (masked), replacing}`, uses nothing; a link in a browser signed in to another family without `replace` → `409 {error:'conflict', replacing:true}` (§4.3) | A |
 | `POST /api/auth/check` | parent | → `202 {ok:true}` | A |
 | `POST /api/auth/logout` | session | → `{ok}` | A |
 | `POST /api/auth/logout-all` | parent+check | → `{ok}` (every session of the family) | A |
 | `POST /api/auth/pair` | anyone | `{code}` → `{ok}` + device cookie | A |
 | `POST /api/devices/pair-code` | parent+check | `{label?, lockPlayer?}` → `{code, expiresAt}` | A |
 | `POST /api/devices/this` | parent | `{label?, lockPlayer?}` → `{ok}` (becomes a device session) | A |
-| `GET /api/devices` | parent | → `[{id (8 hex), kind, label, lastSeen (date), current, lockPlayer}]` | A |
-| `PATCH /api/devices/:id` | parent | `{label?, lockPlayer?}` → device | A |
+| `GET /api/devices` | parent | → `[{id (8 hex), kind, label, lastSeen (date), current, lockPlayer, locked}]` (`locked` with `lockPlayer` null: locked to a deleted child, §3.3) | A |
+| `PATCH /api/devices/:id` | parent | `{label?, lockPlayer?}` → device (`lockPlayer` a player locks it, `null` unlocks it) | A |
 | `DELETE /api/devices/:id` | parent | → `{ok}` (revoked, sockets closed) | A |
-| `GET /api/family` | parent | `{email, createdAt, elevatedUntil, elevatedAt, consent:{level, noticeVersion, consentAt, verifiedAt, method}, plan (§6.5), purgeAfter, players:[{id, nickname, color, sort, portrait, friends, walkie, createdAt, worlds, lastPlayed}], config:{friendsMode, mpConsent, trialDays, priceText, noticeVersion, operatorEmail}}` (times in epoch ms) | A |
+| `GET /api/family` | parent | `{email, createdAt, elevatedUntil, elevatedAt, consent:{level, noticeVersion, consentAt, verifiedAt, method}, plan (§6.5), purgeAfter, players:[{id, nickname, color, sort, portrait, friends, walkie, createdAt, worlds, lastPlayed}], config:{friendsMode, mpConsent, trialDays, priceText, noticeVersion, noticeMinVersion, operatorEmail}}` (times in epoch ms) | A |
 | `GET /api/family/audit` | parent | → consent history `[{at, action, player?}]` | A |
 | `POST /api/consent` | parent | `{noticeVersion, agree:true}` → `{consent}` | A |
-| `POST /api/players` | parent | `{nickname, color?}` → `201 player` (needs consent; and entitled, or `free-join`) | A |
-| `PATCH /api/players/:pid` | parent (+check to switch on) | `{nickname?, color?, sort?, friends?, walkie?, notice?}` → player | A |
+| `POST /api/players` | parent | `{nickname, color?}` → `201 player` (needs consent to a notice ≥ `NOTICE_MIN_VERSION`, else `403 consent_required`; and entitled, or `free-join`) | A |
+| `PATCH /api/players/:pid` | parent (+check to switch on) | `{nickname?, color?, sort?, friends?, walkie?, notice?}` → player. Switching on also needs consent to a notice ≥ `NOTICE_MIN_VERSION` (`403 consent_required`); `friends.on`/`walkie.on` record the server's notice version, and a `notice` other than it → `409 conflict {noticeVersion}` | A |
 | `DELETE /api/players/:pid` | parent+check | `{confirm: <nickname>}` → `{ok}` | A |
 | `GET /api/players/:pid/summary` | parent | `{nickname, createdAt, friends, walkie, profile:{stickers, coins, stats}, worlds:[{id, name, biome, sizeName, updatedAt, size, thumb}]}` | A |
 | `GET /api/players/:pid/export` | parent+check | attachment: `{format:'sparkle-world-player', v:1, player, profile, worlds:[{format:'sparkle-world', v:1, save}]}` | A |
@@ -687,9 +730,10 @@ session of the family that owns `:pid`, and the device's locked player if set); 
 | `DELETE /api/players/:pid/worlds/:wid` | player (entitled) | → `{rev}` (a tombstone; no `If-Match` needed) | C |
 | `PUT /api/players/:pid/portrait` | player | `{png: 'data:image/png;base64,…'}` (≤ 32 KB, PNG signature checked) → `{rev}` | C |
 | `GET /api/players/:pid/portrait` | player | → `image/png` (URL has `?v=<portrait_rev>`) | C |
-| `POST /api/billing/checkout` | parent (+consent) | `{trial: bool, usResident: true}` → `{url}` \| `409 already_subscribed` | B |
+| `POST /api/billing/checkout` | parent+check (+consent) | `{trial: bool, usResident: true}` → `{url}` \| `409 already_subscribed` | B |
 | `POST /api/billing/sync` | parent | `{sessionId?}` → `{plan}` | B |
 | `POST /api/billing/portal` | parent+check | → `{url}` | B |
+| `POST /api/billing/cancel` | parent | → `{plan}` (the live plan ends at the period end; `409 conflict` when there is none) | B |
 | `POST /api/billing/start-now` | parent+check | → `{plan}` (trialing only) | B |
 | `POST /api/stripe/webhook` | stripe | raw body → `200 {received:true}` \| 400 \| 500 | B |
 | `GET /api/test/mail?to=` | test | → captured emails `[{template, to, subject, text, at}]` | A |
@@ -715,6 +759,7 @@ session of the family that owns `:pid`, and the device's locked player if set); 
               canJoin, canHost, walkieOk,      // what the relay will allow now
               why }],                          // null | 'not_entitled' | 'friends_locked' | 'friends_off'
   lockPlayer: id | null,
+  locked: boolean,                              // true with lockPlayer null: locked to a deleted child, players: []
   playUntil: ms }                               // min(entitlement until, now + 7 days): offline boot limit
 // the family was deleted:            410 {error:'family_gone'}  (session hash found in gone_sessions)
 // a revoked or expired session:      401 {error:'signed_out'}
@@ -732,7 +777,7 @@ session of the family that owns `:pid`, and the device's locked player if set); 
   - a row, `If-Match` differs (or is `*`): if the incoming `updatedAt` equals the stored one → `200`
     with the current rev (the same save again); else `409 {error:'conflict', rev, updatedAt}`;
   - side copies (`<id>.before`, `<id>.undo`): newest `updatedAt` wins, no conflicts.
-- **Validation.** Body ≤ `SW_WORLD_MAX_BYTES` after `zlib.gunzipSync(buf, {maxOutputLength})`;
+- **Validation.** Body ≤ `SW_WORLD_MAX_BYTES` after `zlib.gunzip(buf, {maxOutputLength})` (asynchronous, and only for a caller who may write there, §4.8);
   JSON object with `id === :wid`, string `name` ≤ 80, string `blocks`, `size` `{x,y,z}` within
   `WORLD_SIZES` bounds, finite `updatedAt`, `thumbnail` null or `data:image/jpeg;base64,…` ≤ 96 KB.
   Stored: `body = gzip(JSON as received)`, `thumb` = the decoded JPEG, `meta = metaOf(save)` minus
@@ -743,7 +788,8 @@ session of the family that owns `:pid`, and the device's locked player if set); 
   otherwise `403 {error:'not_entitled'}`. **Reads** work while the player exists (the retention
   window), so a lapsed kid still sees her worlds and the parent can download them.
 - **Profile PUT** follows the same `If-Match` rules (no side copies); the client merges on 409 (§7.4).
-- **Delete** writes a tombstone (`body`, `thumb` null, `deleted_at`, rev + 1). A deleted player
+- **Delete** writes a tombstone (`body`, `thumb` null, `meta` `{}`, `deleted_at`, rev + 1: no
+  world content, not even its name) and a `deletion-journal world=` line (§3.4). A deleted player
   answers `410 {error:'player_gone'}` on every route.
 
 ---
@@ -769,7 +815,8 @@ session of the family that owns `:pid`, and the device's locked player if set); 
 
 ### 6.2 Checkout (`POST /api/billing/checkout`)
 
-Requires a parent session, `consent_at`, the `usResident` checkbox, and no non-terminal subscription
+Requires a parent session with a fresh email check (a sign-in counts for 15 minutes, so the
+first-time flow asks for no second code), `consent_at`, the `usResident` checkbox, and no non-terminal subscription
 (else `409 already_subscribed` and the page offers the Portal). Creates the customer once
 (`customers.create({email, metadata:{family_id}}, {idempotencyKey:'cust-'+family_id})`; never any
 child data), then:
@@ -807,6 +854,11 @@ unlocks friends and the walkie at once, §6.7).
 - **Portal:** `billingPortal.sessions.create({customer, return_url: PUBLIC_ORIGIN + '/account?portal=1',
   configuration: STRIPE_PORTAL_CONFIG})` → `{url}`. Cancellation is at period end: the plan shows
   "Ends Nov 5" with a **Resume** link (the Portal) until then.
+- **Cancel the plan** (`POST /api/billing/cancel`, a parent session, no email check): the live
+  subscription (trialing, active or past due) gets `subscriptions.update(id,
+  {cancel_at_period_end: true})`, the mirror is updated at once (the webhook follows). On the
+  Family page it is two taps (**Cancel the plan**, **Yes, cancel it**), while starting a plan
+  needs the email check: cancelling is never harder than starting.
 - **Start now** (trialing only): `subscriptions.update(id, {trial_end: 'now'})`; Stripe invoices and
   charges at once. The handler then retrieves the subscription with `latest_invoice` and applies the
   same `invoice.paid` logic if it is paid, so friends unlock without waiting for the webhook.
@@ -836,7 +888,7 @@ handlers racing cannot put an older read on top of a newer one. The family is fo
 | `invoice.paid` | subscription id = `invoice.parent?.subscription_details?.subscription ?? invoice.subscription`; upsert; `latest_paid_at`; **if `amount_paid > 0` and `verified_at` is null: `verified_at = now`, `verified_method = 'card'`, audit `consent.verified {method:'card', invoice}`, email `friends_ready`.** The trial's $0 invoice also sends `invoice.paid` and must not count |
 | `invoice.payment_failed` | upsert (status becomes `past_due`); Stripe's own failed-payment email tells the parent |
 | `charge.dispute.created` | `flags.dispute = true` (daily summary); entitlement unchanged. The family is found through the disputed charge's customer (`charges.retrieve`, hence **Charges read** on the key, §14 step 4); without it the dispute is still counted and Stripe emails the dad anyway |
-| `customer.deleted` | clear `stripe_customer_id` (a customer deleted by hand in the Dashboard) |
+| `customer.deleted` | clear `stripe_customer_id` (a customer deleted by hand in the Dashboard); our own family delete marks the customer `sw_family_deleted` first (§3.4), which only the restore runbook reads |
 | anything else | `200`, ignored |
 
 Current-period dates come from `sub.items.data[0].current_period_end` (the pinned API version keeps
@@ -849,6 +901,7 @@ entitlementOf({ family, subs, now, cfg }) → {
   state: 'none' | 'trialing' | 'active' | 'canceling' | 'past_due' | 'comp' | 'lapsed',
   entitled: boolean, until: ms | null,
   trialEnd, periodEnd, graceUntil, cancelAtPeriodEnd,
+  subState,                    // the subscription's own state while it is good (also under a free pass), else null
   consent: 'none' | 'email_plus' | 'verified',
   friendsConsentOk: boolean,   // cfg.mpConsent === 'email_plus' ? consent !== 'none' : consent === 'verified'
   walkieConsentOk: boolean,    // consent === 'verified' (always)
@@ -884,7 +937,9 @@ Tested as a table over every status × time position × comp × consent (§12.6)
   no `lapsed_at` gets `lapsed_at = now`, `purge_after = now + SW_RETAIN_DAYS`; a family entitled again
   gets both cleared (audit `plan.lapsed` / `plan.resumed`). Emails at `purge_after − 30 d` and
   `− 7 d`; at `purge_after` the players are deleted (`kid_data_purged_at`, audit
-  `retention.purge {players:n}`).
+  `retention.purge {players:n}`). `kid_data_purged_at` belongs to one lapse: a comeback and a new
+  lapse clear it, so a second lapse is warned and purged again 90 days on (a device locked to a
+  purged child stays locked to nobody, §3.3).
 
 ### 6.7 Trial, consent tiers and `SW_FRIENDS_MODE`
 
@@ -1064,14 +1119,16 @@ because an iPad Home Screen app keeps its own storage, apart from Safari's.
   so a free-join visitor gets the existing `cannot_host` card ("You can join a friend's world!") with
   new small print "Grown-ups: see the Family page."
 - Close codes and `{t:'e'}` codes **4401 `signed_out`, 4402 `not_entitled`, 4403 `friends_off`,
-  4404 `friends_locked`, 4405 `player_gone`** go into `CLOSE_TO_ERROR` (`ws-transport.js`), the
+  4404 `friends_locked`, 4405 `player_gone`, 4406 `accounts_mixed`** go into `CLOSE_TO_ERROR` (`ws-transport.js`), the
   welcome map (`transport.js _onFrame`) and `ERROR_TO_MESSAGE` (`session.js`). They stop retries, both
   while opening and mid-session (a mid-session close shows its own message, not "Playing together
   stopped."). `player_gone` reloads to the picker.
 - New texts (`protocol.js MESSAGES`, looks in `ui.js MSG_LOOK`): `signed_out` "Ask a grown-up to sign
   in to Sparkle World on this device." · `not_entitled` "Sparkle World is resting. Ask a grown-up to
   wake it up!" · `friends_off` "Ask a grown-up to turn on Play with Friends for you." ·
-  `friends_locked` "Playing with friends isn't ready yet. A grown-up can check the Family page."
+  `friends_locked` "Playing with friends isn't ready yet. A grown-up can check the Family page." ·
+  `accounts_mixed` "You can't play with this friend yet: both of you need a grown-up to set up
+  Sparkle World." (with a **Grown-ups** button, like the others)
 - **Before connecting:** when `/api/me` says the player cannot join (`why`), **Play with Friends**
   shows that card at once instead of trying.
 - **Walkie:** in account mode `walkie.enabled` is `game.account.walkieAllowed`: the player's `walkieOk`
@@ -1095,7 +1152,9 @@ answers. A 401 is never treated as offline.
 ### 7.9 What a kid never sees
 
 No price, no "subscribe", no "buy", no email field, no error codes, anywhere in the game. Every money
-or account screen is on the Family page, behind the grown-up check and the parent's email. The e2e
+or account screen is on the Family page, behind the grown-up check and the parent's email (starting a
+plan and the Portal need a fresh email check, so a child on a device that kept a grown-up's session
+cannot reach Stripe's pages). The e2e
 test asserts that the game's DOM never contains `$` or "subscri" in any account state (§12.8).
 Sparkle Coins stay earned-only: no route grants coins, and the game page keeps `payment=()`.
 
@@ -1138,7 +1197,8 @@ handshake, so a 403 there could never become a friendly card). Existing 429 refu
 | 4402 | `not_entitled` | the family's plan is not good (and not a free-join visitor) |
 | 4403 | `friends_off` | the child's **Play with friends** switch is off |
 | 4404 | `friends_locked` | the consent tier for friends is missing (`SW_MP_CONSENT`) |
-| 4405 | `player_gone` | the player is not in the session's family (or was deleted) |
+| 4405 | `player_gone` | the player is not in the session's family (or was deleted), or a locked device asks for another player |
+| 4406 | `accounts_mixed` | (from `rooms.mjs`, `optional` only) the room has members of the other kind: account and legacy never share a room (§8.2) |
 | 1013 | `unavailable` | the database is down and no cached answer exists (the page retries, then "Playing together stopped.") |
 
 Claims come from a 60-second cache keyed by `(sessionHash, playerId)`; while the database is down an
@@ -1163,6 +1223,13 @@ A member with claims gets `acct = {familyId, playerId, nickname, canHost, canBui
 
 In `subscription` mode every admitted account member has `canHost = canBuild = true`. The host's
 **Let in!** gate, device stamps (`by`, unchanged: still per device) and the host hold are untouched.
+
+**Account and legacy members never share a room** (only possible in `optional`): the parent's
+consent covers friends "whose families have Sparkle World too" (§11.3, §11.5), so `join()` refuses
+a member without claims in a room with an account member, and an account member in a room with a
+legacy member (`accounts_mixed`, close 4406, before any roster: nothing about either child
+crosses, voice included). Legacy pages play with each other exactly as before; account children
+with each other.
 
 ### 8.3 Claims in `voice.mjs`
 
@@ -1214,7 +1281,8 @@ She can knock and play in a subscribed friend's world as a looker (the host's pa
 1. **Sign in** (401 from `/api/family`): "Grown-ups: sign in or start the Family Plan". Email field →
    "Check your email" with 6 code boxes (`one-time-code`), **Resend** after 30 s, **Use a different
    email**, and "Kids never need an email." The first-time email also carries the notice.
-2. **Notice** (`consent.level === 'none'`): the direct notice from `GET /api/notice` (§11.3), its
+2. **Notice** (`consent.level === 'none'`, or an agreement to a notice older than
+   `NOTICE_MIN_VERSION`, then with "We changed this notice since you last agreed"): the direct notice from `GET /api/notice` (§11.3), its
    version, a link to `/privacy`, the checkbox, **Agree and continue**.
 3. **Plan** (not entitled and no players yet; with `free-join` it can be skipped with **Not now**):
    "Sparkle World Family Plan: $5.99 a month,
@@ -1222,10 +1290,10 @@ She can knock and play in a subscribed friend's world as a looker (the host's pa
    friends, the walkie-talkie. Nothing to buy inside the game, ever." Checkbox "I live in the United
    States". With no trial (`SW_TRIAL_DAYS=0`, the family's choice) one button, **Start the Family
    Plan** ("The first payment is today, then it renews every month until you cancel. Cancel any time
-   here, with Manage subscription. That first payment is also how we confirm that a grown-up said
+   here: Cancel the plan, then Yes. That first payment is also how we confirm that a grown-up said
    yes, so playing with friends and the walkie-talkie can be turned on right away."). With a trial,
    two: **Start your free week** ("Free for 7 days, then $5.99/month. It renews every month until you
-   cancel. Cancel any time here, with Manage subscription.") and **Start today** ("Pay now and playing
+   cancel. Cancel any time here: Cancel the plan, then Yes.") and **Start today** ("Pay now and playing
    with friends and the walkie-talkie can be turned on today. The first payment is how we confirm that a
    grown-up said yes."). Opened from an iPad Home Screen app, it suggests Safari (the app's cookie jar
    and Stripe's page do not mix well).
@@ -1234,11 +1302,14 @@ She can knock and play in a subscribed friend's world as a looker (the host's pa
 5. **Add a player** (no players yet): nickname (1–12 letters, "a nickname, not her real name"; a live
    preview through the same filter: "Other players will see: Star Bunny"), a color, **Add**.
 6. **Dashboard:**
-   - **Plan** ribbon, one sentence + one action: "Free week: 5 days left, then $5.99/month."
-     [Manage subscription] [Start now] · "Family Plan: renews Nov 5." [Manage subscription] ·
-     "Payment didn't go through. Playing continues until Oct 12." [Update card] · "Ends Nov 5."
-     [Resume] · "Resting: worlds are kept until Jan 2." [Restart the plan] [Download worlds] ·
-     "Free pass until …". Manage/Update/Resume open the Portal (email check).
+   - **Plan** ribbon, one sentence + its actions: "Free week: 5 days left, then $5.99/month."
+     [Manage subscription] [Start now] [Cancel the plan] · "Family Plan: renews Nov 5." [Manage
+     subscription] [Cancel the plan] · "Payment didn't go through. Playing continues until Oct
+     12." [Update card] [Cancel the plan] · "Ends Nov 5." [Resume] · "Resting: worlds are kept
+     until Jan 2." [Restart the plan] [Download worlds] · "Free pass until …" (with a plan that
+     still renews: "…Your Family Plan still renews on Nov 5." [Manage subscription] [Cancel the
+     plan]). Manage/Update/Resume open the Portal (email check); **Cancel the plan** asks one
+     question ("Yes, cancel it") and needs no code.
    - **Players** (up to 6): portrait or bubble, nickname, **Rename**, the **Play with friends** switch
      with its own notice ("Other players in a game she joins or hosts see her nickname, her avatar and
      the world. Only friends the host lets in, whose families have Sparkle World too. No typing, only
@@ -1264,7 +1335,8 @@ She can knock and play in a subscribed friend's world as a looker (the host's pa
 ### 9.3 Copy rules
 
 Plain words, no jargon, no dark patterns: the price and renewal terms are next to every button that
-starts a plan; cancelling is as easy as starting (the Portal, two taps); no box is ever pre-ticked
+starts a plan; cancelling is never harder than starting (**Cancel the plan**, **Yes**: two taps and
+no code, while starting needs the email check); no box is ever pre-ticked
 (the US box and the notice box start empty); errors say what to do next ("Couldn't reach the payment
 page. Try again in a minute.").
 
@@ -1357,6 +1429,8 @@ payment details go only to Stripe.
 >
 > - **You gave us your email** so we can ask your permission and so you can sign in. Children are
 >   never asked for an email.
+> - **We need your permission first:** if you don't agree, we don't collect, use or share anything
+>   about your children.
 > - **With your permission we keep, for each child:** a nickname you choose (a nickname, please, not
 >   a real name), her avatar and its picture, her game progress (stickers, coins, outfits, settings)
 >   and her worlds, including names she types for worlds and pets. We use them only to run the game:
@@ -1379,7 +1453,9 @@ payment details go only to Stripe.
 >   Details in the Privacy Notice.
 > - **You can** see, download and delete your children's information and turn any permission off at
 >   any time on the Family page, or by writing to {operator email}.
-> - **If you don't finish** setting up within 14 days, we delete your email address.
+> - **If you don't finish** setting up: if you don't agree to this notice within 14 days, we delete
+>   your email address; if you agree but don't start the Family Plan within 30 days, we delete it
+>   then.
 > - [Read the full Privacy Notice](/privacy). Sparkle World is run by {operator name}, {address},
 >   {phone}, {email}.
 >
@@ -1387,10 +1463,13 @@ payment details go only to Stripe.
 > Sparkle World may keep the information above to run the game for them. **[Agree and continue]**
 
 This covers the notice's required elements: why the parent's contact was collected; that consent is
-needed; the items collected and the possible disclosures; how they are used, the recipients and that
+needed and that without it nothing is collected, used or disclosed (312.4(c)(1)(ii)); the items collected and the possible disclosures; how they are used, the recipients and that
 collection can be agreed to without disclosure; the link to the online notice; how to consent; and
 deletion of the parent's contact if consent does not come. Changing the text bumps `NOTICE_VERSION`;
-parents who agreed to an older version are asked again at the next sign-in when the change is material.
+when the change is material, `NOTICE_MIN_VERSION` is raised with it: parents who agreed to an older
+version see the notice again on the Family page, and until they agree no player is added and no
+switch goes on (`403 consent_required`; saving goes on). Version 1 was reworded before anyone agreed
+to it in production (accounts were still off), so it stays version 1.
 
 ### 11.4 Verifiable parental consent, in tiers
 
@@ -1451,7 +1530,8 @@ Enforced by `jobs.mjs`; every run logs counts only (`retention: deleted families
 ### 11.9 Consent and action records (`audit_log`)
 
 Actions: `consent.email_plus {v}`, `consent.confirm_sent {v}`, `consent.verified {method, invoice?}`,
-`player.create`, `player.delete`, `friends.on {v}`, `friends.off`, `walkie.on {v}`, `walkie.off`,
+`player.create`, `player.delete`, `friends.on {v}`, `friends.off`, `walkie.on {v}`, `walkie.off`
+(`v` is always the notice version the server shows; a page that says another one gets `409`),
 `device.paired {sid}`, `device.removed {sid}`, `export.player`, `export.family`, `family.delete`,
 `family.deleted`, `plan.lapsed`, `plan.resumed`, `retention.purge {players}`, `comp.set {until}`,
 `email.changed`. `detail` holds only versions, ids (a player id, an 8-hex session prefix, a Stripe
@@ -1587,7 +1667,11 @@ sign-in; a revoked session is refused everywhere (HTTP and WebSocket); CSRF: mis
 `Origin`, `text/plain`, a cross-site `Sec-Fetch-Site` → 403/415, the webhook exempt; every
 parent+check route without the check → 403 `check_required`; delete without a 5-minute check → 403; a
 device session → 401/403 on every family, billing and device route; another family's `:pid` → 404;
-`next` open-redirect attempts → `/account`; every limit reaches 429; `/api/test/*` absent without
+`next` open-redirect attempts → `/account`; every limit reaches 429; one IPv6 /48 cannot use up the
+limits for everyone; per email counts the mailbox (`+tag`, Gmail dots); 10 wrong codes a day per
+email; a signed-out caller's gzip bomb is answered 401 before it is inflated; a link opened on
+another family's device says whose it is and replaces the session only with `replace`; a device
+locked to a deleted child sees nobody (HTTP and WebSocket); `/api/test/*` absent without
 `SW_TEST`; the server refuses to start with `SW_TEST=1` in production; and a **log spy** over every
 suite asserts that no email address, token, code, nickname, world name or IP address is ever logged.
 
@@ -1617,8 +1701,9 @@ offline; the iPad checks are manual, §14 step 8). Zero console errors; screensh
    → the `perm` frame arrives → she talks and hears; switched off again → nothing within 1 s.
 7. Billing life: the fake clock passes the renewal with a failing card → "Payment didn't go through"
    → grace passes → Lily's socket closes with 4402, the game shows the resting card, cloud writes
-   refused, worlds still readable; the Portal's **Cancel at period end** → "Ends …" → the period ends →
-   lapsed.
+   refused, worlds still readable; family B: **Cancel the plan** → **Yes, cancel it** (no email
+   code) → "Ends …" → the period ends → lapsed; A restarts the plan (Checkout asks for the email
+   check when the sign-in is older than 15 minutes).
 8. A deletes Mia → Mia's device gets 410 and its local copy is wiped → the picker.
 9. A deletes the account → every table is empty for A, the fake shows the customer deleted, the
    `account_deleted` email is captured, A's devices get `410 family_gone` and wipe.
@@ -1681,9 +1766,12 @@ Turn on Railway's Postgres volume backups (daily, keep 7) if the plan offers the
 the Postgres service's **Backups** tab; if not, upgrade or document that devices' own copies are the
 fallback). Never copy the database to another vendor without updating VENDORS.md and the notice.
 **Restore runbook** (in SECURITY-PROGRAM.md): restore on staging first; after a production restore to
-time T, run `admin reapply-deletions --since T`: it deletes families whose Stripe `customer.deleted`
-events since T carry their `family_id`, then the ids from `deletion-journal` log lines since T (pasted
-from the Deploy Logs). Do one restore drill on staging.
+time T, run `admin reapply-deletions --since T --ids <file> [--dry-run]`: it lists and (after the
+count is typed) deletes again the families whose Stripe `customer.deleted` events since T carry
+their `family_id` **and our mark** `sw_family_deleted` (others are printed for review: a customer
+deleted by hand in the Dashboard never deletes its family), and the `family=`, `player=` and
+`world=` ids of the `deletion-journal` lines since T (pasted from the Deploy Logs; a world becomes a
+tombstone again). Do one restore drill on staging.
 
 ### 13.5 What the dad watches
 
@@ -1725,13 +1813,13 @@ and ids, never children's content.
 | Command | What |
 |---|---|
 | `show <email>` | plan state, consent, flags, player and device counts, last seen |
-| `comp <email> <YYYY-MM-DD\|off>` | a free pass until that day (or remove it) |
+| `comp <email> <YYYY-MM-DD\|off>` | a free pass until that day (or remove it); warns when the family's plan still renews (and is charged) |
 | `consent-verified <email> --method form\|call\|video` | records tier-2 consent obtained another listed way (§11.4) |
-| `change-email <old> <new>` | after confirming the request from the old address |
-| `export <email> > file.json` | the family export (a parent's request by email) |
+| `change-email <old> <new>` | after confirming the request from the old address; every session and pair code of the family ends (it often follows a taken-over mailbox) |
+| `export <email> > file.json` | the family export. It prints children's content, so it is never emailed: a parent asking by email is helped to sign in and use **Download everything** |
 | `delete <email>` | the family delete of §3.4 (asks to type the email again) |
-| `sign-out-all [<email>]` | revoke every session of a family, or of everyone (incident response) |
-| `reapply-deletions --since <ISO time> [--ids <file>]` | after a restore (§13.4) |
+| `sign-out-all [<email>]` | revoke every session of a family, or of everyone (incident response; without an email it asks to type `EVERYONE`) |
+| `reapply-deletions --since <ISO time> [--ids <file>] [--dry-run]` | after a restore (§13.4): lists the families, players and worlds, asks to type how many |
 | `purge-now`, `stats` | run the retention job now; print the summary line |
 
 ---

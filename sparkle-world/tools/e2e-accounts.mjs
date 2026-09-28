@@ -32,7 +32,7 @@
 //     again → nothing within 1 s.
 //  7. Billing life: the renewal fails → "Payment didn't go through" → grace passes → Lily's
 //     socket closes with 4402, the game shows the resting card, cloud writes refused, worlds
-//     readable; B's Portal: Cancel at period end → "Ends …" → the period ends → resting.
+//     readable; B: Cancel the plan → Yes (no email code) → "Ends …" → the period ends → resting.
 //  8. A deletes Mia → Mia's device gets 410, its copy is wiped → the picker.
 //  9. A deletes the account → nothing of A in any table, the fake's customer deleted, the
 //     account_deleted email, A's devices get 410 family_gone and wipe.

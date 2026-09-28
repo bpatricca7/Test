@@ -43,6 +43,8 @@
 .acct-note--sun { background: var(--sun-soft); }
 .acct-note--pink { background: var(--pink-soft); }
 .acct-note strong { color: var(--ink); }
+div.acct-note > p { margin: 0 0 8px; }
+div.acct-note > .acct-row { margin-top: 4px; }
 .acct-error { background: #FFE3EC; color: #8E1244; border-radius: 16px; padding: 12px 16px; font-weight: 500; margin: 12px 0 0; }
 .acct-error:empty { display: none; }
 .acct-ok { background: var(--mint-soft); color: var(--mint-deep); border-radius: 16px; padding: 12px 16px; font-weight: 500; }

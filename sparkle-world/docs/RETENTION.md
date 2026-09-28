@@ -13,7 +13,7 @@ server enforces it by itself: the hourly `retention` job in `server/jobs.mjs` (w
 | Data | Why we keep it | How long | Then |
 |---|---|---|---|
 | Children's players (nickname, color, portrait), profiles (avatar, progress) and worlds | to run the game: save her worlds and show her player on every device | while the family's plan (or free pass) is good | see the next row |
-| … after the plan ends | so the family can come back, or download the worlds | `SW_RETAIN_DAYS` (**90 days**) after `lapsed_at`; emails 30 and 7 days before | deleted (the players, which deletes profiles and worlds); `kid_data_purged_at` is set |
+| … after the plan ends | so the family can come back, or download the worlds | `SW_RETAIN_DAYS` (**90 days**) after `lapsed_at`; emails 30 and 7 days before (after every lapse: a family that comes back and lapses again is warned and purged again) | deleted (the players, which deletes profiles and worlds); `kid_data_purged_at` is set for that lapse and cleared when the plan comes back or lapses again |
 | The family row (parent's email, Stripe customer id, consent dates, billing country) after the plan ends | so a returning family finds its account and its consent records; answering billing questions | **12 months** after `lapsed_at` | deleted, together with the Stripe customer |
 | A family that never agreed to the notice | nothing to run without consent; the notice promises it | **14 days** after sign-up | deleted |
 | A family that agreed but never had a plan or free pass and added no players | nothing to run | **30 days** | deleted |
@@ -46,8 +46,11 @@ server enforces it by itself: the hourly `retention` job in `server/jobs.mjs` (w
 
 Deletion is a real `delete` in Postgres (the rows are gone; foreign keys cascade from a family to
 its players, profiles, worlds, sessions, codes, subscriptions and outbox). Nothing is "soft
-deleted" except the 30-day world tombstones, which hold no world content. After a database restore,
-the restore runbook re-applies deletions (SECURITY-PROGRAM.md §7).
+deleted" except the 30-day world tombstones, which hold no world content (no body, picture or
+`meta`: not the world's name either). Every deletion a parent asks for writes a
+`deletion-journal` line with ids only (`family=`, `player=`, `world=<player>/<world>`), and our
+own family deletes mark the Stripe customer (`sw_family_deleted`) before deleting it. After a
+database restore, the restore runbook re-applies all of them (SECURITY-PROGRAM.md §7).
 
 ## Checking it works
 

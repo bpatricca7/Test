@@ -18,12 +18,19 @@ Do whichever of these fit, quickly. None of them loses families' worlds.
   your own email): change its password from a device you trust, sign out all its sessions, check
   its 2FA settings and recovery email, and look at its security/audit log for changes you didn't
   make.
-- **Sessions may be stolen**: `npm run admin -- sign-out-all` (everyone signs in again; worlds are
-  untouched). For one family: `npm run admin -- sign-out-all <email>`.
+- **Sessions may be stolen**: `npm run admin -- sign-out-all` and type `EVERYONE` (everyone signs
+  in again; worlds are untouched). For one family: `npm run admin -- sign-out-all <email>`.
 - **A bug is showing data it shouldn't**: roll back to the previous deployment in Railway (the
-  service → Deployments → the last good one → Redeploy), or set `SW_ACCOUNTS=off` and redeploy:
-  the game keeps working the way it did before accounts, and nothing is deleted (the family
-  worlds stay in the database and on the devices, and come back when accounts are on again).
+  service → Deployments → the last good one → Redeploy); that is the first choice. If sessions
+  may be involved, also `npm run admin -- sign-out-all`.
+  Setting `SW_ACCOUNTS=off` is the **last resort**, for hours, not days: the family worlds stay
+  in the database, but while it is off the retention job does not run, the Family page (review,
+  download, delete) is gone, and a site built in `off` mode says things that are then untrue
+  ("worlds are saved on your own device, not on our server"). If you must: set it as a runtime
+  change only (keep the pages built for the accounts mode: no new build), put a short maintenance
+  note where parents will look, answer parents' requests by email meanwhile (SECURITY-PROGRAM.md
+  §5), run `npm run admin -- purge-now` each day it lasts, and turn accounts back on as soon as the
+  fix is deployed.
 - **The database may be exposed**: turn off Postgres public networking if it is on; rotate the
   database password (Railway → Postgres → Settings), which also changes `DATABASE_URL` (a reference
   variable, so the game service picks it up on redeploy).

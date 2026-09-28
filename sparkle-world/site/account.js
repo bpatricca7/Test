@@ -873,7 +873,12 @@ function dashboard() {
       h('div', { class: 'dash-head' },
         h('h2', null, 'Your family'),
         h('p', null, 'Signed in as ', f.email)),
-      S.next && S.next.startsWith('/play') && h('p', { class: 'acct-note' }, 'Ready to play? ', h('a', { href: S.next }, 'Back to the game')),
+      // signed in from the game: this is often the kids' own device, which should not keep a
+      // grown-up's session (the Family page and the plan behind only the times-table question)
+      S.next && S.next.startsWith('/play') && h('div', { class: 'acct-note' },
+        h('p', null, 'Ready to play? ', h('a', { href: S.next }, 'Back to the game')),
+        h('p', null, h('strong', null, "Is this the kids' device? "), 'Make it a kid device, so the Family page stays yours.'),
+        row(btn('Make this a kid device', 'btn-soft btn-small', thisDeviceDialog))),
       ribbon(f),
       playersSection(f),
       h('div', { class: 'dash-cols' }, devicesSection(f), privacySection(f)),

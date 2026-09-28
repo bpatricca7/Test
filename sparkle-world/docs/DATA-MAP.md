@@ -54,7 +54,7 @@ Who can see it, in the tables below:
 | Field | What | Child? | Who sees it | Deleted |
 |---|---|---|---|---|
 | `world_id`, `rev`, `client_updated_at`, `size`, `stored`, `updated_at` | ids, revisions, sizes, dates | no | parent, devices | with the world / player |
-| `meta` | name, biome, size, dates (the world's summary) | **child** (the name she typed) | parent, devices; friends in a game she hosts | with the world / player |
+| `meta` | name, biome, size, dates (the world's summary) | **child** (the name she typed) | parent, devices; friends in a game she hosts | at once when she deletes the world (a tombstone's `meta` is `{}`), or with the player |
 | `thumb` | a small JPEG picture of the world | child | parent, devices | with the world / player |
 | `body` | the world itself (blocks, things, pets and their names), gzip | **child** | parent (download), devices; friends see the world she hosts while playing | at once when she deletes it (a tombstone with no content stays 30 days) |
 | `deleted_at` | the tombstone's date | no | devices | after 30 days |
@@ -64,7 +64,8 @@ Who can see it, in the tables below:
 | Table / field | What | Child? | Who sees it | Deleted |
 |---|---|---|---|---|
 | `sessions.id_hash` | SHA-256 of the session cookie (the cookie itself is never stored) | no (a persistent identifier) | internal | 7 days after expiry |
-| `sessions.kind`, `label`, `lock_player`, dates, `elevated_*`, `revoked_at` | parent or device session; a coarse device name like "iPad · Safari"; the email check's time | no | parent (device list) | 7 days after expiry |
+| `sessions.kind`, `lock_player`, `locked`, dates, `elevated_*`, `revoked_at` | parent or device session; which player a kid device is locked to (`locked` stays true when that player is deleted: the device then sees nobody); the email check's time | no | parent (device list) | 7 days after expiry |
+| `sessions.label` | a coarse device name like "iPad · Safari", or a name the parent types (the page suggests "The kids' iPad"; it may still hold a child's name) | **possibly child** | parent (device list, family export) | with the session (7 days after expiry) |
 | `gone_sessions` | session hashes of deleted families | no | internal | 180 days |
 | `login_attempts` | the email (for the code email), `email_key` (HMAC of the email, for rate counting), hashed attempt id, link and code; tries; dates | no | internal | 24 h after expiry |
 | `pair_codes` | HMAC of a kid-device pairing code, label, locked player, dates | no | internal | 24 h after expiry |

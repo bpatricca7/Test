@@ -97,8 +97,12 @@ Most of this parents do themselves on the Family page. When a parent writes inst
    address, a phone call alone, or a social media message.
 2. Do it with the admin tool:
    - see: `npm run admin -- show <email>` (counts and dates only)
-   - download: `npm run admin -- export <email> > family.json`, send the file to the account's email
-     address, then **delete your copy**
+   - download: **never email children's information** (nicknames, portraits, worlds): our email
+     provider must not receive it (VENDORS.md). Answer that she can sign in on the Family page with
+     a code sent to that address (it works on any device, even if hers was lost) and use
+     **Download everything**; help her sign in if she is stuck. `npm run admin -- export` prints
+     children's content: use it only to check what a download holds, on the server, and keep no
+     copy
    - delete everything: `npm run admin -- delete <email>`
    - a changed email address: `npm run admin -- change-email <old> <new>` (only after the old
      address confirmed it)
@@ -122,10 +126,13 @@ Rotate at once after any suspected leak (see INCIDENT.md), and otherwise once a 
 - Railway Postgres backups: daily, kept 7 days (docs/ACCOUNTS.md §13.4). Check in the Postgres
   service's **Backups** tab that they run.
 - **Restore runbook:** restore on **staging** first and check it. After a production restore to
-  time T, deletions made after T must be done again: run
-  `npm run admin -- reapply-deletions --since T` (it uses Stripe's `customer.deleted` events and the
-  `deletion-journal` lines from the Deploy Logs since T; paste those lines into a file and pass
-  `--ids <file>`).
+  time T, deletions made after T must be done again: families, children and worlds. Paste the
+  `deletion-journal` lines from the Deploy Logs since T (`family=`, `player=`, `world=`; ids only)
+  into a file and run `npm run admin -- reapply-deletions --since T --ids <file> --dry-run` to see
+  the list, then again without `--dry-run`: it prints the list and asks you to type how many.
+  It also reads Stripe's `customer.deleted` events since T, but only those our own delete marked
+  (`sw_family_deleted`); a customer you deleted by hand in the Stripe Dashboard is printed for you
+  to check and its family is left alone.
 - Do **one restore drill on staging** before launch and write the date in §10.
 
 ## 8. Vendors
