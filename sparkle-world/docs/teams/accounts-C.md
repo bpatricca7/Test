@@ -47,11 +47,13 @@ walkie gate and title are unchanged.
 
 ## How to test
 
-- `npm run test:saves`: the saves API (12 tests), `mergeProfile` (2), SaveStore +
-  HttpCloudBackend in Node (11), and the built game in Chromium (3; skipped without
-  `dist/sparkle-world.html` or a Chromium, or with `SW_SAVES_BROWSER=0`). Runs on the test
-  cluster and on PGlite (`SW_TEST_DB=pglite`). The browser part uses a pretend `/api/me`
-  (A's auth/family answer it for real) and the pretend session store of the API part.
+- `npm run test:saves` (32 tests in 6 suites): the saves API (12), `mergeProfile` (2),
+  SaveStore + HttpCloudBackend in Node (11), the account module's boot in Node (3), the relay
+  socket's account close codes with a fake WebSocket (1), and the built game in Chromium (3;
+  skipped without `dist/sparkle-world.html` or a Chromium, or with `SW_SAVES_BROWSER=0`). Runs
+  on the test cluster and on PGlite (`SW_TEST_DB=pglite`). The Node boot tests and the browser
+  part use a pretend `/api/me` (`meFor()`, §5.3; A's auth/family answer it for real) and the
+  pretend session store of the API part.
 - `node tools/test-saves.mjs --measure`: every biome × size saved by the built game (JSON and
   gzip sizes) against the caps.
 - Regression gates with `SW_ACCOUNTS` unset: `npm run build`, `node tools/smoke.mjs`,
@@ -69,6 +71,27 @@ walkie gate and title are unchanged.
   come back when the device is signed in again); `family_gone` / `player_gone` do.
 - `keepsafe` (this browser's storage state) is treated as device-local like `net` and
   `settings.walkie*` (never uploaded, always this device's in a merge).
-- The legacy import runs only online (it needs the family's player list).
+- The legacy import runs only online (it needs the family's player list), on the title (never
+  over her game).
 - Visitor mode (`free-join`) is implemented minimally: no cloud, the title shows Play with
   Friends, Dress Up, Settings (and Grown-ups).
+- `src/ui/keepsafe.js` (not C's) still offers "Save a copy of your worlds" every 7 days in
+  account mode; with cloud saves on, its owner may want to skip the card while
+  `game.store.cloudWritable` (the file copy still works and is harmless).
+- **The self-hosted font changes the game's layout in these tests.** Before, the sandbox could
+  not reach Google Fonts, so every browser test ran with the fallback font; now the real
+  Fredoka is inside the page (as on the live site, where Google served it). One timing-fragile
+  step in `tools/test-walkie.mjs` (D's file) then fails often: "June: turning the walkie off is
+  one tap" (and so "June told the server voice off"). The event log shows the tap reaching
+  `.sw-wk-setrow` instead of `.sw-wk-switch`: Playwright taps while the Settings panel is still
+  opening. The same happens on the skeleton's own code once the font is inlined (1 of 3 runs of
+  a focused repro), never with a 400 ms pause first (3 of 3). The fix is in the test: after
+  `waitForSelector('.sw-panel-wrap.sw-open .sw-wk-setrow')` add `await settle(june.page, 700);`
+  (as `grownUpTurnsOn` effectively does with `scrollIntoViewIfNeeded`). With that one line the
+  whole `node tools/test-walkie.mjs` passes on this tree (198 checks, 0 problems); without it
+  it failed 3 of 3 runs here, while the skeleton (fallback font) passed.
+- Other browser probes that tap or press at computed points may shift the same way for the
+  same reason (the real font is a little wider than the fallback); none is changed here.
+- Bundle: `dist/artifact.html` grows by 30,502 bytes minified (29.8 KiB, the project's "KB"),
+  `dist/sparkle-world.html` by that plus the font (≈ 39.8 KB as a `data:` URL, and the Google
+  link goes). The budget of §15.4 has little room left.

@@ -9,9 +9,17 @@
 //      the profile merge (`net` device-local), tombstones, queued deletes, skipped unchanged
 //      pushes, wipe, player_gone, the legacy import (twice → no double coins), a keepsafe
 //      backup file;
-//   3. the game in Chromium (skipped without dist/sparkle-world.html or a Chromium; set
+//   3. the account module's boot in Node (src/account/index.js with a pretend page): its player
+//      and namespace, a locked device, signed out forgets the cached player, offline boot until
+//      playUntil, a 401 is never offline, no plan = the cloud only read, a player deleted on the
+//      Family page is wiped here (410), family_gone wipes every player;
+//   4. the relay socket (src/net/ws-transport.js with a fake WebSocket): &p=, canHost, the
+//      account close codes 4401-4405 stop retries while opening and mid-session, 1013 retries;
+//   5. the game in Chromium (skipped without dist/sparkle-world.html or a Chromium; set
 //      SW_SAVES_BROWSER=0 to skip): file:// and a claude.ai stand-in make no /api request, and
-//      with accounts on a paired device picks its player and saves to the cloud.
+//      with accounts on a paired device picks its player, brings in the worlds from before (asked
+//      once), saves to the cloud, shows the account rows in Settings, gets a friendly card for
+//      4401 and boots offline; `required` shows its cards; no "$" or "subscri" in any of it.
 //
 // `node tools/test-saves.mjs --measure` instead prints real save sizes (every biome × size, made
 // by the built game in Chromium), to keep the caps of §3.3 at 4× the largest or more.
