@@ -456,6 +456,20 @@ const GAME = {
   },
 };
 
+/**
+ * Close devices a later scenario no longer needs: every open game draws its world on the CPU
+ * (SwiftShader), and four of them in the background slow the next scenario down a lot.
+ */
+async function retire(...keys) {
+  for (const k of keys) {
+    const d = R.dev[k];
+    if (!d || d.retired) continue;
+    d.page.flushErrors?.();
+    d.retired = true;
+    await d.ctx.close().catch(() => {});
+  }
+}
+
 async function newDevice(key, name, size, opts = {}) {
   const ctx = await newContext(key, size);
   const page = await newPage(ctx, key, opts);
@@ -620,6 +634,7 @@ async function s4() {
   }
   check(cloud.some((w) => w.id === R.shared) && cloud.some((w) => /\(copy\)$/.test(w.name || '') && w.id.startsWith(R.shared + '~')), `a "(copy)" world next to the original: nothing lost (${cloud.map((w) => w.name).join(', ')})`);
   for (const dev of devs) dev.page.allow = [];
+  await retire('computer');
 }
 
 async function s5() {
@@ -701,6 +716,7 @@ async function s5() {
   check(!(await cDev.page.locator('button.sw-title-friends:not([hidden])').count()), 'family C: no Play with Friends to knock with');
   await sleep(1000);
   check((await game(lily, () => window.__knockEvents || 0)) === knocks, 'no knock from family C reaches Lily');
+  await retire('familyC');
 }
 
 // ---- 6: the walkie switch, through the relay with the kids' device cookies
@@ -792,6 +808,7 @@ async function s6() {
     lily.ws.terminate();
     june.ws.terminate();
   }
+  await retire('june');
 }
 
 async function s7() {
@@ -966,6 +983,12 @@ async function s10() {
     check(asked.length === 0, `a window.claude stand-in makes no /api/me request (${asked.length})`);
     page.flushErrors();
     await ctx.close();
+  }
+  // nothing of scenarios 1-9 is needed any more: their games stop drawing
+  await retire(...Object.keys(R.dev));
+  for (const f of Object.values(R.fam)) {
+    f.page?.flushErrors?.();
+    await f.ctx?.close().catch(() => {});
   }
   // SW_ACCOUNTS=optional, with the family's settings (no free trial): signed-out devices play,
   // and play together, as today

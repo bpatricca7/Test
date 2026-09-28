@@ -108,6 +108,14 @@ a trial were squeezed on the iPad; the US-only return was not handled.
   profile 100 coins to start, so an untouched profile counts as played. Suggested: compare with
   the starting coins (or leave coins out). The e2e answers the card like a parent ("They're not
   ours") so the other scenarios still run, and fails one check naming the devices.
+- **C (a bug the e2e shows, red until fixed; children's data)**: a deleted player's copy stays
+  on a device that was not playing her at that moment. `prepare()` in `src/account/index.js`
+  wipes only on `410 family_gone`, or on `player_gone` while she is the chosen player; when the
+  device opens again, `/api/me` simply no longer lists her, so `sparkle-world@p-<her id>` is
+  never wiped (§3.4 / the delete dialog: "devices remove their copies the next time they open
+  the game"). Suggested: on a successful online `/api/me`, wipe every id of `cache.used` that
+  is not in `me.players` (same family), and drop it from the cache. Seen in §12.8 #8 (Mia's
+  device reopened after A deleted her: the picker, but her database still there).
 - **C (a suggestion)**: the game reads `why` from `/api/me` when it opens, so a child whose
   grown-up has just switched **Play with friends** on still sees "Playing with friends isn't
   ready yet" until the game is opened again. Asking `/api/me` again when she taps Play with
