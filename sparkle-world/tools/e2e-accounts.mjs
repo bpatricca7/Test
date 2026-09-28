@@ -175,6 +175,7 @@ const R = {
   fam: {}, // A, B, C: { email, ctx, page, ids: { Lily, Mia, June } }
   dev: {}, // ipad, computer, mia, june: { ctx, page, key, name, touch }
   unexpectedImport: new Set(), // devices that were asked about "worlds from before" wrongly
+  notRun: [], // parts of a scenario that could not run in this tree (reported like a scenario)
 };
 
 async function api(p, { method = 'GET', body, cookie = null, ip = '203.0.113.250' } = {}) {
@@ -241,17 +242,19 @@ async function newContext(label, { w = 1024, h = 768, touch = true } = {}) {
 async function newPage(ctx, key, { allow = [] } = {}) {
   const page = await ctx.newPage();
   const errs = [];
-  // like smoke.mjs's collectors, with the address of a resource that failed to load (the
-  // browser's own favicon.ico request on the Stripe fake's pages is not ours)
+  // like smoke.mjs's collectors (a game built before its font was self-hosted asks Google Fonts,
+  // which is offline here), with the address of a resource that failed to load (the browser's
+  // own favicon.ico request on the Stripe fake's pages is not ours)
+  const ignored = (u) => /\/favicon\.ico$/.test(u) || /fonts\.(googleapis|gstatic)\.com/.test(u);
   page.on('console', (msg) => {
     if (msg.type() !== 'error') return;
     const url = (msg.location() && msg.location().url) || '';
-    if (/\/favicon\.ico$/.test(url)) return;
+    if (ignored(url) || ignored(msg.text())) return;
     errs.push(`[${key}] console.error: ${msg.text()}${url ? ` (${url})` : ''}`);
   });
   page.on('pageerror', (err) => errs.push(`[${key}] pageerror: ${err.message}\n${err.stack || ''}`));
   page.on('requestfailed', (req) => {
-    if (/\/favicon\.ico$/.test(req.url())) return;
+    if (ignored(req.url())) return;
     // a request the page itself gave up because it reloaded (the scenarios reload on purpose)
     if (req.failure() && req.failure().errorText === 'net::ERR_ABORTED') return;
     errs.push(`[${key}] request failed: ${req.url()} ${req.failure() ? req.failure().errorText : ''}`);
@@ -1064,8 +1067,13 @@ async function s10() {
   R.server = await startServer(R.port, { ...R.env, SW_ACCOUNTS: 'optional', SW_TRIAL_DAYS: '0', SW_SITE: R.optSite });
   const net = await (await fetch(`${R.base}/api/net`)).json();
   check(net.accounts === 'optional', `/api/net says accounts: optional (${JSON.stringify(net)})`);
-  // the plan card as the family decided it (SW_TRIAL_DAYS=0), on a phone
-  {
+  // the plan card as the family decided it (SW_TRIAL_DAYS=0), on a phone (it needs A's sign-in
+  // and B's plan: without them this part is reported and skipped, the rest of 10 still runs)
+  const planParts = ACCOUNT_BASE.filter((k) => !has(k));
+  if (planParts.length) {
+    log(`  the no-trial plan card: NOT RUN, needs ${planParts.map((k) => PARTS[k][0]).join(', ')}`);
+    R.notRun.push('10 (the no-trial plan card)');
+  } else {
     const ctx = await newContext('parentD', { w: 390, h: 844 });
     const page = await newPage(ctx, 'parentD');
     await FP.signIn(page, `d.${randomBytes(3).toString('hex')}@example.com`);
@@ -1214,7 +1222,7 @@ async function main() {
 }
 
 function finish(missing) {
-  const notRun = Object.keys(missing);
+  const notRun = [...Object.keys(missing), ...R.notRun];
   console.log(`\n${passed} checks passed, ${errors.length} problems${notRun.length ? `, scenarios NOT RUN: ${notRun.join(', ')}` : ''}`);
   for (const e of errors) console.log(' - ' + e);
   if (errors.length) process.exitCode = 1;
