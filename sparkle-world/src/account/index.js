@@ -22,7 +22,7 @@
 import { createApi } from './api.js';
 import { HttpCloudBackend } from './cloud.js';
 import { mergeProfile } from './merge.js';
-import { expireLegacy, importLegacy } from './legacy.js';
+import { importLegacy } from './legacy.js';
 import { pickPlayer } from './picker.js';
 import { watchPortrait } from './portrait.js';
 import { ask, grownupCard, blockingCard, askLegacy } from './cards.js';
@@ -90,7 +90,6 @@ export class Account {
     const g = this.game;
     const c = this.cache;
     this.server = b.server;
-    expireLegacy().catch(() => {});
     while (b.err) {
       const e = b.err;
       if (e.code === 'family_gone') {
@@ -109,17 +108,31 @@ export class Account {
       } else return; // optional: play on this device as today
     }
     const me = (this.me = b.me || {});
-    if (!me.signedIn) return this.server === 'required' && this._block('signin');
+    const players = (me.players = me.players || []);
+    if (!me.signedIn) {
+      // signed out (a 401 too): this device boots nobody from the cache any more
+      delete c.me;
+      this._write();
+      return this.server === 'required' && this._block('signin');
+    }
     if (!this.offline) {
       c.me = me;
       c.accounts = this.server;
       this._write();
+      // a player deleted on the Family page: her copy on this device goes too (410, §3.4)
+      for (const id of c.used.filter((x) => !players.some((p) => p.id === x))) {
+        this.api.call('GET', `/api/players/${id}/profile`).catch(async (e) => {
+          if (e.status !== 404 && e.status !== 410) return;
+          if (e.status === 410) await SaveStore.wipe('p-' + id);
+          this.cache.used = this.cache.used.filter((x) => x !== id);
+          this._write();
+        });
+      }
     }
-    const players = (me.players = me.players || []);
     const entitled = !!(me.plan && me.plan.entitled);
     const free = me.friendsMode === 'free-join';
     if (!entitled && !free && this.server === 'required') return this._block('resting');
-    if (!players.length) return this.server === 'required' && this._block('noplayers');
+    if (!players.length) return (entitled || this.server === 'required') && this._block('noplayers');
     const next = c.next;
     delete c.next;
     const p = players.find((x) => x.id === me.lockPlayer) || (players.length === 1 ? players[0] : players.find((x) => x.id === next)) ||
@@ -151,9 +164,11 @@ export class Account {
     g.events.on('net:message', (m) => m && m.code === 'player_gone' && this._gone(m.code));
   }
 
+  /** The card of §7.1 over the title: it stays in `required`; in `optional` she may close it. */
   _block(why) {
-    this.mode = 'blocked';
-    this.game.events.on('game:ready', () => setTimeout(() => blockingCard(this.game, this, why), 0));
+    const soft = this.server !== 'required';
+    if (!soft) this.mode = 'blocked';
+    this.game.events.on('game:ready', () => setTimeout(() => blockingCard(this.game, this, why, soft), 0));
   }
 
   /** profile.playerName / nameSet / look.name = her nickname (§7.1). */

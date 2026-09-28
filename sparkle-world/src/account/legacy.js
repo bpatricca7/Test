@@ -3,9 +3,11 @@
 // "keep her worlds safe" backup file carries comes along: every world with its "Before
 // friends" side copies, her look, outfits, stickers, counters, coins and basket.
 //
-// localStorage['sparkle-world:legacy'] = { state: 'imported' | 'dismissed', to, at }. The old
-// copies stay 30 days after an import, then a later boot removes them (only the
-// 'sparkle-world' database and the sparkle-world:metas / profile / world:* keys).
+// localStorage['sparkle-world:legacy'] = { state: 'imported' | 'dismissed', to, at }: once
+// answered, the question comes back only when an old world was played after `at` (signed out
+// in `optional` mode). The old copies stay 30 days after an import, then a later signed-in boot
+// removes them (only the 'sparkle-world' database and the sparkle-world:metas / profile /
+// world:* keys), never while they hold a world played after the import.
 
 import { SaveStore, isSideCopyId, backupProfile, mergeBackupProfile, newWorldId } from '../core/storage.js';
 
@@ -115,10 +117,21 @@ export async function removeLegacy(legacyStore = null) {
   await SaveStore.wipe('');
 }
 
-/** A later boot: old copies imported more than 30 days ago go. */
+/** Worlds from before played after the answer (signed out, on this device's old names). */
+export const playedSince = (legacy, st) => legacy.all.some((m) => (m.updatedAt || 0) > ((st && st.at) || 0));
+
+/**
+ * A later boot (signed in): old copies imported more than 30 days ago go, unless one of them
+ * was played after the import (then they stay, and she is asked again).
+ */
 export async function expireLegacy(now = Date.now()) {
   const st = legacyState();
   if (!st || st.state !== 'imported' || !(now - (st.at || 0) > KEEP_MS) || st.removed) return false;
+  const legacy = await findLegacy();
+  if (legacy) {
+    legacy.store.close();
+    if (playedSince(legacy, st)) return false;
+  }
   await removeLegacy();
   setLegacyState({ ...st, removed: now });
   return true;

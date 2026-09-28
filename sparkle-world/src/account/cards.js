@@ -6,7 +6,7 @@
 
 import { choiceDialog, textInputDialog } from '../ui/dialogs.js';
 import { saveAllWorlds } from '../ui/keepsafe.js';
-import { findLegacy, setLegacyState, removeLegacy } from './legacy.js';
+import { findLegacy, legacyState, setLegacyState, removeLegacy, expireLegacy, playedSince } from './legacy.js';
 
 const go = (url) => location.assign(url);
 const OFF = "Can't reach Sparkle World. Try again in a minute.";
@@ -67,14 +67,16 @@ export async function grownupCard(game, acct) {
 
 /**
  * `required` mode without a sign-in, a good plan or a player: a card over the title that
- * stays (§7.1). why: 'signin' | 'resting' | 'noplayers'
+ * stays (§7.1). why: 'signin' | 'resting' | 'noplayers'. soft (`optional`, no player yet): an
+ * OK closes it and she plays on this device.
  */
-export async function blockingCard(game, acct, why) {
+export async function blockingCard(game, acct, why, soft = false) {
   const worlds = why === 'signin' ? await game.store.listWorlds() : [];
   for (;;) {
     const v = why === 'signin'
       ? await ask(game, 'Ask a grown-up to set up Sparkle World', [['grown', "I'm a grown-up", 'mint'], ['code', 'I have a code', 'sky'], ...(worlds.length ? [['old', 'Keep my old worlds safe']] : [])], { cancel: null })
-      : await ask(game, why === 'resting' ? 'Sparkle World is resting. Ask a grown-up to wake it up!' : 'A grown-up can add you on the Family page', [['grownups', 'Grown-ups', 'mint']], { cancel: null });
+      : await ask(game, why === 'resting' ? 'Sparkle World is resting. Ask a grown-up to wake it up!' : 'A grown-up can add you on the Family page', [['grownups', 'Grown-ups', 'mint'], ...(soft ? [['ok', 'OK']] : [])], { cancel: soft ? 'ok' : null });
+    if (v === 'ok') return;
     if (v === 'old') {
       // "Keep my old worlds safe": the worlds from before, read only, and Save to a file
       const list = game.ui.el('div');
@@ -90,9 +92,13 @@ export async function blockingCard(game, acct, why) {
 
 /** The first sign-in: whose are the worlds from before? (§7.5) */
 export async function askLegacy(game, acct) {
+  await expireLegacy();
   const legacy = await findLegacy();
   acct.hasLegacy = !!legacy;
   if (!legacy) return;
+  // answered before ("imported" / "They're not ours"): asked again only for worlds played since
+  const st = legacyState();
+  if (st && !playedSince(legacy, st)) return legacy.store.close();
   const n = legacy.worlds.length;
   const ua = navigator.userAgent;
   const here = /iPad/.test(ua) || (/Mac/.test(ua) && navigator.maxTouchPoints > 1) ? 'This iPad' : /iPhone/.test(ua) ? 'This iPhone' : 'This device';

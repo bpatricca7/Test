@@ -48,6 +48,7 @@ export const SAVES_LIMITS = Object.freeze({
   profileBytes: 256 * KB, // profile JSON
   portraitBytes: 32 * KB, // PNG
   thumbBytes: 72 * KB, // JPEG (its data: URL ≤ 96 KB)
+  tombs: 1000, // tombstones per player for worlds the server never had (kept 30 days)
 });
 
 export const WORLD_ID_RE = /^[A-Za-z0-9_.~-]{1,72}$/;
@@ -275,6 +276,12 @@ export function routes(ctx) {
       await q.query('select pg_advisory_xact_lock(hashtext($1))', [lockKey(pid, id)]);
       const row = await q.one('select rev, body is null as tomb from worlds where player_id = $1 and world_id = $2 for update', [pid, id]);
       if (row && row.tomb) return { json: { rev: row.rev } };
+      if (!row) {
+        // a world the server never had (made and deleted while away): a tombstone, while
+        // there are not too many of them (every other device then knows it is gone)
+        const n = (await q.one('select count(*) as n from worlds where player_id = $1 and body is null', [pid])).n;
+        if (n >= lim().tombs) return { json: { rev: 0 } };
+      }
       const rev = (row ? row.rev : 0) + 1;
       // a tombstone: other devices learn about the delete (§3.3); kept 30 days (jobs.mjs)
       await q.query(

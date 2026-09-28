@@ -28,6 +28,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { randomBytes } from 'node:crypto';
 import net from 'node:net';
+import { EventEmitter } from 'node:events';
 
 import { loadConfig } from '../server/config.mjs';
 import { createAccounts } from '../server/accounts.mjs';
@@ -40,6 +41,7 @@ import { HttpCloudBackend } from '../src/account/cloud.js';
 import { createApi } from '../src/account/api.js';
 import { mergeProfile, cloudProfile } from '../src/account/merge.js';
 import { findLegacy, importLegacy, legacyState, setLegacyState, expireLegacy } from '../src/account/legacy.js';
+import { Account } from '../src/account/index.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MEASURE = process.argv.includes('--measure');
@@ -140,6 +142,22 @@ async function family({ plan = 'comp', consent = true, players = ['Lily'] } = {}
   const ids = [];
   for (const nick of players) ids.push((await t.db.one('insert into players (family_id, nickname) values ($1, $2) returning id', [f.id, nick])).id);
   return { id: f.id, pids: ids };
+}
+
+/**
+ * GET /api/me as §5.3 says, for the pretend sessions (auth.mjs and family.mjs, owner A, answer
+ * it for real).
+ */
+async function meFor(tok, mode = 'optional') {
+  const s = SESS.get(tok);
+  if (!s) return { signedIn: false, accounts: mode };
+  const e = await accounts.ctx.billing.entitlementFor(s.familyId);
+  const rows = (await t.db.query('select id, nickname, color, friends_on from players where family_id = $1 order by created_at, nickname', [s.familyId])).rows;
+  return {
+    signedIn: true, kind: s.kind, accounts: mode, friendsMode: 'subscription', plan: { state: e.state, entitled: e.entitled, until: e.until }, consent: e.consent,
+    players: rows.map((p) => ({ id: p.id, nickname: p.nickname, color: p.color, portrait: null, friends: p.friends_on, walkie: false, canJoin: e.entitled, canHost: e.entitled, walkieOk: false, why: null })),
+    lockPlayer: s.lockPlayer, playUntil: Date.now() + 7 * DAY,
+  };
 }
 
 function session(familyId, { kind = 'device', lockPlayer = null } = {}) {
@@ -295,6 +313,13 @@ if (!MEASURE) {
       assert.deepEqual((await call('DELETE', W(pid, 'never'), { tok, body: {} })).data, { rev: 1 }, 'deleting twice changes nothing');
       const row = await t.db.one('select body, thumb, stored from worlds where player_id = $1 and world_id = $2', [pid, 'never']);
       assert.deepEqual([row.body, row.thumb, row.stored], [null, null, 0]);
+      accounts.ctx.savesLimits = { ...SAVES_LIMITS, tombs: 1 };
+      try {
+        assert.deepEqual((await call('DELETE', W(pid, 'never2'), { tok, body: {} })).data, { rev: 0 }, 'not too many tombstones for worlds it never had');
+        assert.equal(await t.db.one("select 1 from worlds where player_id = $1 and world_id = 'never2'", [pid]), null);
+      } finally {
+        accounts.ctx.savesLimits = null;
+      }
     });
 
     test('side copies (.before, .undo): the newest wins, never a conflict', async () => {
@@ -768,8 +793,11 @@ if (!MEASURE) {
       assert.deepEqual(again, { worlds: 0, failed: 0 });
       assert.equal(profile.coins, 40, 'no double coins');
       assert.equal((await store.listWorlds()).length, 3, 'no double worlds');
-      setLegacyState({ state: 'imported', to: pid, at: Date.now() - 31 * DAY });
-      assert.equal(await expireLegacy(), true);
+      setLegacyState({ state: 'imported', to: pid, at: T0 + 2 });
+      assert.equal(await expireLegacy(T0 + 40 * DAY), false, 'old2 was played after the import (signed out): they all stay');
+      setLegacyState({ state: 'imported', to: pid, at: Date.now() });
+      assert.equal(await expireLegacy(Date.now() + 29 * DAY), false, 'kept 30 days');
+      assert.equal(await expireLegacy(Date.now() + 31 * DAY), true);
       assert.equal(A.ls.getItem('sparkle-world:metas'), null);
       assert.equal(legacyState().state, 'imported');
       assert.equal(await findLegacy(), null);
@@ -787,6 +815,115 @@ if (!MEASURE) {
       assert.deepEqual([res.ok, res.added.length, res.profile.coins], [true, 2, 3]);
       await store.flush();
       assert.equal((await t.db.one('select count(*) as n from worlds where player_id = $1', [pid])).n, 2);
+    });
+  });
+
+  // -------------------------------------------------------------------------------------------
+
+  describe('the account module boot (§7.1, §7.8), in Node', () => {
+    const realFetch = globalThis.fetch;
+    after(() => {
+      globalThis.fetch = realFetch;
+      delete globalThis.location;
+    });
+
+    /**
+     * A pretend /play page on a device: its location, a fetch with the device's cookie, and
+     * GET /api/me from meFor() (or o.me = { status, body }). → { game, pg: { reqs, down } }
+     */
+    function page(ls, o = {}) {
+      onDevice(ls);
+      globalThis.window.location = globalThis.location = { protocol: 'http:', search: '', host: new URL(ORIGIN).host };
+      const pg = { reqs: [], down: !!o.down };
+      globalThis.fetch = async (url, opts = {}) => {
+        const u = new URL(url, base);
+        pg.reqs.push(`${opts.method || 'GET'} ${u.pathname}`);
+        if (pg.down) throw new TypeError('fetch failed');
+        if (u.pathname === '/api/me') {
+          const r = o.me || { status: 200, body: await meFor(o.tok) };
+          return new Response(JSON.stringify(r.body), { status: r.status, headers: { 'content-type': 'application/json' } });
+        }
+        // eslint-disable-next-line no-unused-vars
+        const { cache, ...rest } = opts;
+        return realFetch(u, { ...rest, headers: { ...(opts.headers || {}), origin: ORIGIN, ...(o.tok ? { cookie: `sw_sess=${o.tok}` } : {}) } });
+      };
+      const game = { store: new SaveStore(), events: new EventEmitter(), profile: { settings: {} }, saveProfile() {}, ui: null };
+      STORES.push(game.store);
+      return { game, pg };
+    }
+    async function boot(ls, o) {
+      const { game, pg } = page(ls, o);
+      const acct = new Account(game);
+      await acct.prepare();
+      return { acct, game, pg, cache: () => JSON.parse(ls.getItem('sparkle-world:acct')) };
+    }
+    const until = async (fn, ms = 5000) => {
+      for (const end = Date.now() + ms; Date.now() < end; await new Promise((r) => setTimeout(r, 20))) if (await fn()) return true;
+      return false;
+    };
+    const nsKeys = (ls, pid) => [...ls.m.keys()].filter((k) => k.startsWith(`sparkle-world@p-${pid}:`));
+
+    test('one player: her own saves and the cloud; a locked device takes its player; signed out forgets the cache', async () => {
+      const f = await family({ players: ['Lily', 'Mia'] });
+      const [lily, mia] = f.pids;
+      const ls = new MemLS();
+      const a = await boot(ls, { tok: session(f.id, { lockPlayer: mia }) });
+      assert.deepEqual([a.acct.mode, a.acct.server, a.acct.playerId, a.game.store.dbName], ['account', 'optional', mia, 'sparkle-world@p-' + mia]);
+      assert.ok(a.game.store._given instanceof HttpCloudBackend);
+      assert.deepEqual([a.cache().last, a.cache().used, a.cache().me.players.map((p) => p.nickname)], [mia, [mia], ['Lily', 'Mia']]);
+      assert.deepEqual(a.pg.reqs, ['GET /api/net', 'GET /api/me']);
+      const one = await family();
+      const b = await boot(new MemLS(), { tok: session(one.id) });
+      assert.deepEqual([b.acct.mode, b.acct.playerId, b.acct.canSwitch], ['account', one.pids[0], false], 'the only player: no picker');
+      const out = await boot(ls, {});
+      assert.deepEqual([out.acct.mode, out.acct.server, out.game.store.dbName, out.acct.grownups], ['local', 'optional', 'sparkle-world', true]);
+      assert.equal(out.cache().me, undefined, 'a signed-out device boots nobody offline');
+      assert.deepEqual(out.cache().used, [mia], 'but still knows whose copies it holds');
+      assert.equal(lily.length, 36);
+    });
+
+    test('offline: the cache boots her until playUntil; a 401 is never offline; no plan: the cloud only read', async () => {
+      const f = await family();
+      const pid = f.pids[0];
+      const ls = new MemLS();
+      const tok = session(f.id);
+      await boot(ls, { tok });
+      const off = await boot(ls, { tok, down: true });
+      assert.deepEqual([off.acct.mode, off.acct.offline, off.acct.playerId], ['account', true, pid]);
+      assert.equal(off.game.store._given.offline, true, 'reads fail at once, writes retry');
+      const c = off.cache();
+      c.me.playUntil = Date.now() - 1000;
+      ls.setItem('sparkle-world:acct', JSON.stringify(c));
+      const late = await boot(ls, { tok, down: true });
+      assert.equal(late.acct.mode, 'local', 'past playUntil: this device as before (optional)');
+      await boot(ls, { tok });
+      const revoked = await boot(ls, { tok, me: { status: 401, body: { error: 'signed_out' } } });
+      assert.deepEqual([revoked.acct.mode, revoked.cache().me], ['local', undefined]);
+      const n = await family({ plan: 'lapsed' });
+      const ro = await boot(new MemLS(), { tok: session(n.id) });
+      assert.deepEqual([ro.acct.mode, ro.game.store.cloudReadOnly], ['account', true], 'optional without a plan: her saves stay here');
+    });
+
+    test('a player deleted on the Family page goes from this device (410); family_gone wipes every player here', async () => {
+      const f = await family({ players: ['Lily', 'Mia'] });
+      const [lily, mia] = f.pids;
+      const other = await family();
+      const ls = new MemLS();
+      for (const id of [lily, mia, other.pids[0]]) ls.setItem(`sparkle-world@p-${id}:metas`, '{}');
+      ls.setItem('sparkle-world:acct', JSON.stringify({ used: [lily, mia, other.pids[0]], last: mia }));
+      ls.setItem('sparkle-world:net-device', 'keep-me');
+      await t.db.query('delete from players where id = $1', [mia]);
+      const tok = session(f.id);
+      const a = await boot(ls, { tok });
+      assert.equal(a.acct.playerId, lily, 'the one player left');
+      assert.ok(await until(() => a.cache().used.length === 1), 'the vanished players are looked up');
+      assert.deepEqual([nsKeys(ls, mia), a.cache().used], [[], [lily]], "Mia's copy is gone (410 player_gone)");
+      assert.equal(nsKeys(ls, other.pids[0]).length, 1, "another family's player (404) is left alone");
+      assert.ok(a.pg.reqs.includes(`GET /api/players/${mia}/profile`));
+      const g = await boot(ls, { tok, me: { status: 410, body: { error: 'family_gone' } } });
+      assert.equal(g.acct.mode, 'local');
+      assert.deepEqual([nsKeys(ls, lily), g.cache().used, g.cache().me], [[], [], undefined]);
+      assert.equal(ls.getItem('sparkle-world:net-device'), 'keep-me', "the relay's device id stays");
     });
   });
 
@@ -813,19 +950,8 @@ if (!MEASURE) {
       if (web) await web.close();
     });
 
-    /** GET /api/me as §5.3 says (auth.mjs and family.mjs, owner A, answer it for real). */
     async function pretendMe(req, res) {
-      const s = SESS.get(cookieOf(cfg, req, 'sess'));
-      let me = { signedIn: false, accounts: mode };
-      if (s) {
-        const e = await accounts.ctx.billing.entitlementFor(s.familyId);
-        const rows = (await t.db.query('select id, nickname, color, friends_on from players where family_id = $1 order by created_at, nickname', [s.familyId])).rows;
-        me = {
-          signedIn: true, kind: s.kind, accounts: mode, friendsMode: 'subscription', plan: { state: e.state, entitled: e.entitled, until: e.until }, consent: e.consent,
-          players: rows.map((p) => ({ id: p.id, nickname: p.nickname, color: p.color, portrait: null, friends: p.friends_on, walkie: false, canJoin: e.entitled, canHost: e.entitled, walkieOk: false, why: null })),
-          lockPlayer: s.lockPlayer, playUntil: Date.now() + 7 * DAY,
-        };
-      }
+      const me = await meFor(cookieOf(cfg, req, 'sess'), mode);
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
       res.end(JSON.stringify(me));
       return true;
@@ -925,6 +1051,14 @@ if (!MEASURE) {
       assert.equal(sockets.length, 1, 'no retries after 4401');
       assert.ok(sockets[0].includes('&p=' + lily), 'the socket says who she is');
       assert.deepEqual(page.errors, []);
+      // the next visit: the worlds from before were answered for, so nobody is asked again
+      await page.reload();
+      await page.waitForSelector('.sw-acct-card', { timeout: 120000 });
+      await page.click(`.sw-acct-card[data-player="${lily}"]`);
+      await title(page);
+      await page.waitForTimeout(2500);
+      assert.ok(!/from before/.test(await page.evaluate(() => document.querySelector('.sw-layer-dialogs').innerText)), 'asked once');
+      assert.equal(await page.evaluate(() => window.__game.account.hasLegacy), true, 'the old copies stay 30 days (Remove old copies)');
       // offline: the cache boots her (the picker from the cache), saves wait on the device
       await page.route('**/api/me', (r) => r.abort());
       await page.reload();
