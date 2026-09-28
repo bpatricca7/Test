@@ -473,6 +473,13 @@ async function accountPages(browser) {
   console.log('account pages: the site for SW_ACCOUNTS=required and optional');
   check(req.result.accounts === 'required' && req.result.missing.length === 0, `built for required with the operator details (${JSON.stringify(req.result.missing)})`);
   check(bare.result.missing.length === 4, `without the operator details the build warns (${bare.result.missing.join(', ')})`);
+  {
+    // a child's color is the same on the Family page and in the game's "Who's playing?"
+    const { readFileSync, existsSync } = await import('node:fs');
+    const picker = path.join(ROOT, 'src', 'account', 'picker.js');
+    const colorsOf = (file, name) => (new RegExp(`${name}\\s*=\\s*\\[([^\\]]*)\\]`).exec(readFileSync(file, 'utf8')) || [])[1]?.replace(/\s/g, '') ?? null;
+    if (existsSync(picker)) check(colorsOf(picker, 'COLORS') === colorsOf(path.join(ROOT, 'site', 'account.js'), 'PLAYER_COLORS'), "the Family page's player colors are the game's (src/account/picker.js)");
+  }
   const srv = await startAccountServer('required', req.dir);
   const trial = await startAccountServer('required', req.dir, { trialDays: 7 });
   const optSrv = await startAccountServer('optional', opt.dir);

@@ -21,8 +21,9 @@ doc.documentElement.classList.add('js');
 
 const DAY = 24 * 3600 * 1000;
 const MAX_PLAYERS = 6;
-// players.color 0..7 (the picker in the game uses the same order)
-const PLAYER_COLORS = ['#FF5FA2', '#3AAEF0', '#22BF95', '#9C7BFF', '#FF8C42', '#E0A800', '#E76BD8', '#14A3B8'];
+// players.color 0..7: the same colors as the game's "Who's playing?" (src/account/picker.js
+// COLORS), so a child's bubble looks the same on the Family page and in the game
+const PLAYER_COLORS = ['#FF6FAE', '#A78BFA', '#22BF95', '#3AAEF0', '#F5A300', '#FF7A6B', '#14B8A6', '#E879F9'];
 const GATE_NOTE = 'Voices go live only to friends in this game, are never recorded, and stop when the button is let go.';
 const NEXT_RE = /^\/(account|play)(\?[A-Za-z0-9=&%_-]{0,200})?$/;
 

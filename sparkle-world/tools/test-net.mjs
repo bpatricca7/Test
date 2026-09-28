@@ -1619,7 +1619,8 @@ async function accountTests() {
       const other = fake.addFamily({ plan: 'active', consent: 'verified' });
       const ann = fake.addPlayer(other, { nickname: 'Ann', friends: true });
       const aDev = fake.addSession(other, { kind: 'device' });
-      const a = await acctWs(port, ROOM, { cookie: dev.cookie, p: lily });
+      const lilySecret = 'sec-lily-comes-back-0000';
+      let a = await acctWs(port, ROOM, { cookie: dev.cookie, p: lily, secret: lilySecret });
       const b = await acctWs(port, 'sw1-cat-cat-cat-cat', { cookie: dev.cookie, p: mia });
       const c = await acctWs(port, 'sw1-sun-sun-sun-sun', { cookie: dev.cookie, p: lily });
       await waitFor(() => c.closed !== null, 2000);
@@ -1633,6 +1634,13 @@ async function accountTests() {
       const e = await acctWs(port, 'sw1-sun-sun-sun-sun', { cookie: dev.cookie, p: mia });
       await sleep(150);
       eq(e.closed, null, 'after one closes, a new one may come');
+      // at the limit, the same page coming back (same peer) before its old socket closed takes
+      // its own old place instead of being refused
+      const a2 = await acctWs(port, ROOM, { cookie: dev.cookie, p: lily, secret: lilySecret });
+      await waitFor(() => a.closed !== null, 2000);
+      await sleep(100);
+      eq([a.closed, a2.closed, app.stats().familyLimited], [4009, null, 1], 'at the limit, a reconnect of the same page replaces its old socket (4009), it is not refused');
+      a = a2;
       // the database goes down: live games go on, a reconnect uses the cached claims
       fake.down = true;
       await app.recheckAll(true);
@@ -1674,7 +1682,11 @@ async function accountTests() {
       const C = await acctWs(port, ROOM, { cookie: dev.cookie, p: lily });
       await waitFor(() => C.self);
       eq(C.closed, null, 'and an account player may join the same room');
-      for (const x of [A, B, C]) x.ws.close(1000);
+      // a signed-in page without p (it fell back to local mode) plays as a legacy socket
+      const D = await acctWs(port, ROOM, { cookie: dev.cookie, device: 'device-legacy-d-0000000' });
+      await waitFor(() => D.self || D.closed !== null);
+      eq([D.closed, D.frames.filter((f) => f.t === 'v').length], [null, 0], 'optional: a session cookie without p is a legacy socket (no claims, no perm frame)');
+      for (const x of [A, B, C, D]) x.ws.close(1000);
     } finally {
       await s.close();
     }

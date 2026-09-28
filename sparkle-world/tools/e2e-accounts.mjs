@@ -51,7 +51,7 @@ import net from 'node:net';
 import path from 'node:path';
 import { mkdir } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
-import { launch, waitForTitle, waitForPlay, waitIdle, settle, ROOT, SHOTS, PAGE_URL, attachErrorCollectors } from './smoke.mjs';
+import { launch, waitForTitle, waitForPlay, waitIdle, settle, ROOT, SHOTS, PAGE_URL } from './smoke.mjs';
 import { sleep, game, until, press, setupPage, hostMakesCode, guestTypesCode, hostLetsIn, waitLive, bringTo, closePanels, converge } from './net/mp-flows.mjs';
 import { buildSite } from './site-build.mjs';
 import { devEnv, loadStripeFake } from './dev-accounts.mjs';
@@ -238,7 +238,21 @@ async function newContext(label, { w = 1024, h = 768, touch = true } = {}) {
 async function newPage(ctx, key, { allow = [] } = {}) {
   const page = await ctx.newPage();
   const errs = [];
-  attachErrorCollectors(page, errs, key);
+  // like smoke.mjs's collectors, with the address of a resource that failed to load (the
+  // browser's own favicon.ico request on the Stripe fake's pages is not ours)
+  page.on('console', (msg) => {
+    if (msg.type() !== 'error') return;
+    const url = (msg.location() && msg.location().url) || '';
+    if (/\/favicon\.ico$/.test(url)) return;
+    errs.push(`[${key}] console.error: ${msg.text()}${url ? ` (${url})` : ''}`);
+  });
+  page.on('pageerror', (err) => errs.push(`[${key}] pageerror: ${err.message}\n${err.stack || ''}`));
+  page.on('requestfailed', (req) => {
+    if (/\/favicon\.ico$/.test(req.url())) return;
+    // a request the page itself gave up because it reloaded (the scenarios reload on purpose)
+    if (req.failure() && req.failure().errorText === 'net::ERR_ABORTED') return;
+    errs.push(`[${key}] request failed: ${req.url()} ${req.failure() ? req.failure().errorText : ''}`);
+  });
   page.allow = allow;
   page.on('response', (res) => {
     if (res.status() >= 400 && !page.allow.some((re) => re.test(`${res.status()} ${res.url()}`))) errors.push(`[${key}] HTTP ${res.status()} ${res.url()}`);

@@ -31,7 +31,8 @@
 }
 .acct-card > :last-child { margin-bottom: 0; }
 .acct-card h2 { font-size: clamp(1.6rem, 1.2rem + 1.5vw, 2.25rem); line-height: 1.08; letter-spacing: -.01em; margin: 0 0 14px; text-wrap: balance; }
-.acct-card h2:focus { outline: none; }
+/* a heading focused by the page itself (a new state, a dialog), for screen readers: no ring */
+.acct h2[tabindex='-1']:focus, .acct-dialog h2[tabindex='-1']:focus { outline: none; }
 .acct-card h3 { font-size: 1.3rem; line-height: 1.15; margin: 0 0 8px; }
 .acct-card p { color: var(--ink-2); text-wrap: pretty; }
 .acct-lead { font-size: 1.15rem; }
@@ -122,12 +123,12 @@ p .acct-link { min-height: 0; padding: 0 2px; font-size: inherit; }
 .plan-list li { position: relative; padding-left: 36px; font-weight: 500; color: var(--ink); line-height: 1.35; }
 .plan-list li::before { content: ''; position: absolute; left: 0; top: .08em; width: 24px; height: 24px; border-radius: 8px; background: var(--mint) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 12.5l4 4 8-9' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 20px no-repeat; }
 .plan-choice { border: 3px solid #F1E4F7; border-radius: 22px; padding: 18px; background: var(--cream); display: grid; gap: 10px; }
-.plan-choice .btn { width: 100%; }
+.plan-choice .btn { width: 100%; white-space: normal; text-wrap: balance; }
 .plan-choice p { margin: 0; font-size: 1rem; }
+/* two choices (only with a free trial) stack: each keeps its whole sentence next to its button */
 .plan-choices { display: grid; gap: 14px; }
 @media (min-width: 760px) {
   .plan-card { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
-  .plan-choices--two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }
 
 /* ------------------------------------------------------------------ "You're all set!" */

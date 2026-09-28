@@ -1816,8 +1816,10 @@ saves, the relay exactly as in Addenda A–C. The claude.ai version never uses a
   device; the host's **Let in!** gate and the host hold (Addendum B items 2–3) are untouched.
 - **Who may connect** is decided at the upgrade, after every existing check (room name, `s`, `d`,
   Origin, shutting down, the per-address buckets): `accounts.authorizeSocket({cookie, playerId})`.
-  In `optional` mode a socket without a cookie and without `p` is a legacy socket (exactly
-  today's behavior); in `required` mode every socket needs a session and `p`.
+  In `optional` mode a socket without `p` is a legacy socket (exactly today's behavior), with or
+  without a session cookie (a signed-in page that fell back to local mode, for example because
+  `/api/me` did not answer, plays as today); in `required` mode every socket needs a session and
+  `p`.
 
 ### D.2 Refusals the page can read
 

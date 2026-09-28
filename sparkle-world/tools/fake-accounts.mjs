@@ -235,7 +235,9 @@ export async function createFakeAccounts(o = {}) {
   async function authorizeSocket({ cookie, playerId } = {}) {
     counters.authorize++;
     const tok = cookieOf(cfg, cookie || '', 'sess');
-    if (!tok && !playerId && mode === 'optional') return { ok: true, claims: null };
+    // optional: no p is a legacy socket, with or without a session cookie (like A's: a
+    // signed-in page that fell back to local mode plays as today)
+    if (!playerId && mode === 'optional') return { ok: true, claims: null };
     if (!tok) return { ok: false, code: 'signed_out' };
     if (playerId && !isUuid(playerId)) return { ok: false, code: 'player_gone' };
     return cachedClaims(sha(tok).toString('hex'), playerId, false);
