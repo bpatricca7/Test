@@ -1121,6 +1121,19 @@ if (!MEASURE) {
       const rows = (await t.db.query("select meta->>'name' as name from worlds where player_id = $1 and body is not null order by 1", [lily])).rows.map((r) => r.name);
       assert.deepEqual(rows, ['Cloud Castle', 'Old Treehouse']);
       assert.equal(await page.evaluate(() => document.querySelector('.sw-title-switch').hidden ? '' : document.querySelector('.sw-title-switch').textContent), 'Not Lily?');
+      // Settings: her name is the family's, the walkie is her grown-up's switch, a Grown-ups row
+      const settings = await page.evaluate(() => {
+        window.__game.ui.open('settings');
+        const panel = document.querySelector('.sw-set-name').closest('.sw-panel') || document.body;
+        const nameRow = document.querySelector('.sw-set-name').closest('.sw-set-row') || document.querySelector('.sw-set-name').parentElement.parentElement;
+        const out = { text: panel.innerText, change: !!nameRow.querySelector('button'), grownups: !!document.querySelector('.sw-set-grownups') };
+        window.__game.ui.open('title');
+        return out;
+      });
+      assert.match(settings.text, /A grown-up can change it on the Family page/);
+      assert.match(settings.text, /Walkie-talkie: off \(a grown-up can change this on the Family page\)/);
+      assert.deepEqual([settings.change, settings.grownups], [false, true], 'no Change button for her name; a Grown-ups row');
+      await title(page);
       await noMoney(page);
       // playing together: her player goes with the connection; a refusal (4401) is a friendly card, no retries
       const sockets = [];

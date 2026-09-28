@@ -157,7 +157,9 @@ export class Account {
       this._name();
       if (this.mode !== 'account') return;
       watchPortrait(g, this);
-      if (!this.offline) setTimeout(() => askLegacy(g, this).catch(() => {}), 1500);
+      // the worlds from before: asked on the title (never over her game)
+      const later = () => setTimeout(() => (g.mode === 'title' && !g.loading ? askLegacy(g, this).catch(() => {}) : later()), 1500);
+      if (!this.offline) later();
     });
     // her nickname is the family's (a file or a merge never renames her)
     g.events.on('profile:changed', () => this._name());
