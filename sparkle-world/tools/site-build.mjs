@@ -11,6 +11,29 @@
 // address, also while building), index.html gets og:url, og:image (img/share.jpg) and
 // twitter:card with that address; without it those tags are left out (they need a full URL).
 //
+// Family accounts (docs/ACCOUNTS.md §9.5): the words on the pages must be true for the mode
+// being deployed, so the build reads SW_ACCOUNTS (Railway passes the service's Variables to the
+// build) and keeps only the lines written for that mode:
+//   <!-- when accounts=off -->            (HTML; in CSS: /* when accounts=off */)
+//   … lines for that mode …
+//   <!-- when accounts=optional,required -->
+//   … lines for those modes …
+//   <!-- end when -->
+// The marker lines themselves always go, so with SW_ACCOUNTS unset (off) the output is exactly
+// the pages as they were before accounts. `<!-- when font=google|self -->` picks the sentence
+// about the game's font from the built game itself (dist/sparkle-world.html links Google Fonts
+// or not), and `<!-- when trial=yes|no -->` the words about a free trial (SW_TRIAL_DAYS > 0).
+// Only with accounts on:
+//   - the Family page (account.html, account/verify.html, account.js, account.css), /privacy and
+//     /terms are built, and src/net/names.js is copied as names.js (the Family page's nickname
+//     preview uses the game's own filter);
+//   - {{SW_OPERATOR_NAME}}, {{SW_OPERATOR_EMAIL}}, {{SW_OPERATOR_ADDRESS}},
+//     {{SW_OPERATOR_PHONE}}, {{SW_PRICE_TEXT}}, {{SW_TRIAL_DAYS}}, {{SW_RETAIN_DAYS}},
+//     {{SW_REQUIRED_FROM}} are filled in from the build's environment (a warning names each
+//     one that is missing; the operator's details are required by COPPA in production);
+//   - dist/site/.site.json records the mode (the server warns when it runs in another one).
+// With accounts off those files are left out entirely (the server would not serve them).
+//
 // server/server.mjs serves dist/site/ at "/" and the game at "/play".
 //
 //   node tools/site-build.mjs      (tools/build.mjs runs it after the game build)
@@ -24,6 +47,10 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = path.join(root, 'site');
 const OUT = path.join(root, 'dist', 'site');
 const IMAGE_BUDGET = 3 * 1024 * 1024;
+
+/** Files that exist only with accounts on (relative to site/, `/` separators). */
+export const ACCOUNT_ONLY = ['account.html', 'account/verify.html', 'account.js', 'account.css', 'privacy.html', 'terms.html'];
+const accountOnly = (rel) => ACCOUNT_ONLY.includes(rel) || rel.startsWith('account/');
 
 async function walk(dir, base = dir) {
   const out = [];
@@ -59,6 +86,85 @@ export function withShareTags(html, domain = process.env.RAILWAY_PUBLIC_DOMAIN) 
   return html.replace(SHARE_MARK, shareTags(domain));
 }
 
+/** SW_ACCOUNTS as the build sees it: 'off' | 'optional' | 'required' (anything else: off, warned). */
+export function accountsMode(env = process.env) {
+  const v = String(env.SW_ACCOUNTS ?? '').trim().toLowerCase();
+  if (v === '' || v === 'off') return 'off';
+  if (v === 'optional' || v === 'required') return v;
+  console.warn(`warning: SW_ACCOUNTS=${env.SW_ACCOUNTS} is not off, optional or required: the home page is built for off (the server will refuse to start)`);
+  return 'off';
+}
+
+const WHEN = /^[ \t]*(?:<!--|\/\*)[ \t]*when[ \t]+(accounts|font|trial)=([a-z,]+)[ \t]*(?:-->|\*\/)[ \t]*$/;
+const END = /^[ \t]*(?:<!--|\/\*)[ \t]*end when[ \t]*(?:-->|\*\/)[ \t]*$/;
+
+/**
+ * Keep the lines written for this build: `when accounts=…` / `when font=…` blocks (see the top
+ * of this file); the marker lines always go. Blocks do not nest.
+ */
+export function forMode(text, { accounts = 'off', font = 'google', trial = 'no' } = {}) {
+  if (!/when (accounts|font|trial)=/.test(text)) return text;
+  const want = { accounts, font, trial };
+  const out = [];
+  let keep = true;
+  for (const line of text.split('\n')) {
+    const m = WHEN.exec(line);
+    if (m) {
+      keep = m[2].split(',').includes(want[m[1]]);
+      continue;
+    }
+    if (END.test(line)) {
+      keep = true;
+      continue;
+    }
+    if (keep) out.push(line);
+  }
+  return out.join('\n');
+}
+
+/** The {{…}} placeholders of the account-mode pages, from the build's environment. */
+export function placeholders(env = process.env) {
+  const v = (k, d = null) => (typeof env[k] === 'string' && env[k].trim() ? env[k].trim() : d);
+  return {
+    SW_OPERATOR_NAME: v('SW_OPERATOR_NAME'),
+    SW_OPERATOR_EMAIL: v('SW_OPERATOR_EMAIL'),
+    SW_OPERATOR_ADDRESS: v('SW_OPERATOR_ADDRESS'),
+    SW_OPERATOR_PHONE: v('SW_OPERATOR_PHONE'),
+    SW_PRICE_TEXT: v('SW_PRICE_TEXT', '$5.99 a month, plus sales tax where it applies'),
+    SW_TRIAL_DAYS: v('SW_TRIAL_DAYS', '0'),
+    SW_RETAIN_DAYS: v('SW_RETAIN_DAYS', '90'),
+    SW_REQUIRED_FROM: v('SW_REQUIRED_FROM'),
+  };
+}
+
+const escHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const MISSING = {
+  SW_OPERATOR_NAME: '[operator name: set SW_OPERATOR_NAME]',
+  SW_OPERATOR_EMAIL: '[operator email: set SW_OPERATOR_EMAIL]',
+  SW_OPERATOR_ADDRESS: '[mailing address: set SW_OPERATOR_ADDRESS]',
+  SW_OPERATOR_PHONE: '[phone: set SW_OPERATOR_PHONE]',
+  SW_REQUIRED_FROM: 'a date we will announce here first',
+};
+
+/** Fill {{NAME}} placeholders (HTML-escaped); returns { text, missing: [names] }. */
+export function fillPlaceholders(text, values) {
+  const missing = new Set();
+  const out = text.replace(/\{\{(SW_[A-Z_]+)\}\}/g, (m, k) => {
+    if (!(k in values)) return m;
+    const val = values[k];
+    if (val === null || val === undefined) {
+      missing.add(k);
+      return escHtml(MISSING[k] || `[${k}]`);
+    }
+    if (k === 'SW_REQUIRED_FROM' && /^\d{4}-\d\d-\d\d$/.test(val)) {
+      const d = new Date(val + 'T12:00:00Z');
+      return escHtml(d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }));
+    }
+    return escHtml(val);
+  });
+  return { text: out, missing: [...missing] };
+}
+
 /** The home page as a fragment: no doctype/html/head/body; styles and script inlined. */
 export function previewFragment(html, css, js) {
   const title = (/<title>[\s\S]*?<\/title>/i.exec(html) || ['<title>Sparkle World</title>'])[0];
@@ -79,7 +185,14 @@ export function previewFragment(html, css, js) {
   ].join('\n');
 }
 
-export async function buildSite({ quiet = false } = {}) {
+/**
+ * @param {object} [o]
+ * @param {boolean} [o.quiet]
+ * @param {string} [o.out]    where to build (default dist/site; tests build other modes elsewhere)
+ * @param {'off'|'optional'|'required'} [o.mode]  default: SW_ACCOUNTS from `env`
+ * @param {object} [o.env]    the environment to read (default process.env)
+ */
+export async function buildSite({ quiet = false, out = OUT, mode = null, env = process.env } = {}) {
   const log = quiet ? () => {} : (...a) => console.log(...a);
   try {
     await stat(path.join(SRC, 'index.html'));
@@ -87,16 +200,45 @@ export async function buildSite({ quiet = false } = {}) {
     log('  (no site/index.html: home page skipped)');
     return null;
   }
-  await rm(OUT, { recursive: true, force: true });
-  await mkdir(OUT, { recursive: true });
-  const files = await walk(SRC);
+  const accounts = mode || accountsMode(env);
+  const on = accounts !== 'off';
+  // the game's font: Google Fonts, or its own (docs/ACCOUNTS.md §7.10)
+  let font = 'google';
+  try {
+    font = /fonts\.googleapis\.com/.test(await readFile(path.join(root, 'dist', 'sparkle-world.html'), 'utf8')) ? 'google' : 'self';
+  } catch {}
+  const values = placeholders(env);
+  const trial = Number(values.SW_TRIAL_DAYS) > 0 ? 'yes' : 'no';
+  const missing = new Set();
+  const textOf = (rel, text) => {
+    let t = forMode(text, { accounts, font, trial });
+    if (on && /\.(html|css|js)$/.test(rel)) {
+      const f = fillPlaceholders(t, values);
+      for (const k of f.missing) missing.add(k);
+      t = f.text;
+    }
+    return t;
+  };
+
+  await rm(out, { recursive: true, force: true });
+  await mkdir(out, { recursive: true });
+  const files = (await walk(SRC)).filter((rel) => on || !accountOnly(rel.split(path.sep).join('/')));
   const pics = new Map();
   for (const rel of files) {
-    const to = path.join(OUT, rel);
+    const to = path.join(out, rel);
     await mkdir(path.dirname(to), { recursive: true });
-    if (rel === 'index.html') await writeFile(to, withShareTags(await readFile(path.join(SRC, rel), 'utf8')));
-    else await copyFile(path.join(SRC, rel), to);
+    const from = path.join(SRC, rel);
+    if (/\.(html|css|js)$/.test(rel)) {
+      let t = textOf(rel, await readFile(from, 'utf8'));
+      if (rel === 'index.html') t = withShareTags(t, env.RAILWAY_PUBLIC_DOMAIN);
+      await writeFile(to, t);
+    } else await copyFile(from, to);
     if (/\.(webp|jpe?g|png|avif|gif)$/i.test(rel)) pics.set(rel.split(path.sep).join('/'), (await stat(to)).size);
+  }
+  if (on) {
+    // the game's own name filter, for the Family page's nickname preview (an ES module with no imports)
+    await copyFile(path.join(root, 'src', 'net', 'names.js'), path.join(out, 'names.js'));
+    await writeFile(path.join(out, '.site.json'), JSON.stringify({ accounts, font }) + '\n');
   }
   // what a visit downloads: a computer gets the big pictures, a phone the -800 copies where
   // there are some (srcset); the link preview and the home-screen icon are not part of a visit
@@ -109,7 +251,7 @@ export async function buildSite({ quiet = false } = {}) {
   }
   // the picture-code stickers, straight from the game
   const { CODE_PICTURES, pictureSvg } = await import(pathToFileURL(path.join(root, 'src', 'net', 'pictures.js')).href);
-  await mkdir(path.join(OUT, 'img', 'pics'), { recursive: true });
+  await mkdir(path.join(out, 'img', 'pics'), { recursive: true });
   // a standalone SVG file is XML: a repeated attribute (fine inside HTML, where the first one
   // wins) would stop the whole picture from drawing, so keep only the first of each
   const firstAttrs = (svg) => svg.replace(/<([a-zA-Z]+)((?:\s+[\w:-]+="[^"]*")*)\s*(\/?)>/g, (m, tag, attrs, close) => {
@@ -121,24 +263,27 @@ export async function buildSite({ quiet = false } = {}) {
     const svg = firstAttrs(pictureSvg(p.word))
       .replace('<svg class="sw-pic "', '<svg xmlns="http://www.w3.org/2000/svg"')
       .replace(' aria-hidden="true" focusable="false"', ' width="128" height="128"');
-    await writeFile(path.join(OUT, 'img', 'pics', `${p.word}.svg`), svg + '\n');
+    await writeFile(path.join(out, 'img', 'pics', `${p.word}.svg`), svg + '\n');
   }
   // the open-source notices, readable at /third-party-notices.txt
   try {
-    await copyFile(path.join(root, 'THIRD_PARTY_NOTICES.md'), path.join(OUT, 'third-party-notices.txt'));
+    await copyFile(path.join(root, 'THIRD_PARTY_NOTICES.md'), path.join(out, 'third-party-notices.txt'));
   } catch {}
-  const html = await readFile(path.join(SRC, 'index.html'), 'utf8');
-  const css = await readFile(path.join(SRC, 'styles.css'), 'utf8').catch(() => '');
-  const js = await readFile(path.join(SRC, 'app.js'), 'utf8').catch(() => '');
+  const html = textOf('index.html', await readFile(path.join(SRC, 'index.html'), 'utf8'));
+  const css = textOf('styles.css', await readFile(path.join(SRC, 'styles.css'), 'utf8').catch(() => ''));
+  const js = textOf('app.js', await readFile(path.join(SRC, 'app.js'), 'utf8').catch(() => ''));
   const frag = previewFragment(html, css, js);
-  await writeFile(path.join(OUT, 'preview.html'), frag);
+  await writeFile(path.join(out, 'preview.html'), frag);
   const kb = (n) => (n / 1024).toFixed(1) + ' KB';
-  log(`  dist/site/                ${files.length} files + ${CODE_PICTURES.length} code pictures; images per visit ${kb(images)} (computer), ${kb(phone)} (phone)`);
-  if (/<!-- share-tags/.test(html)) log(`  link preview tags         ${shareTags(process.env.RAILWAY_PUBLIC_DOMAIN) ? 'for ' + process.env.RAILWAY_PUBLIC_DOMAIN : 'left out (RAILWAY_PUBLIC_DOMAIN is not set)'}`);
-  log(`  dist/site/index.html      ${kb(Buffer.byteLength(html))}  (${kb(gzipSync(html).length)} gzip)`);
-  log(`  dist/site/preview.html    ${kb(Buffer.byteLength(frag))}  (fragment for an Artifact preview)`);
+  const where = path.relative(root, out) || out;
+  log(`  ${(where + '/').padEnd(25)} ${files.length} files + ${CODE_PICTURES.length} code pictures; images per visit ${kb(images)} (computer), ${kb(phone)} (phone)`);
+  if (on) log(`  family accounts           ${accounts}: the Family page, /privacy and /terms are built`);
+  if (on && missing.size) console.warn(`warning: the account pages need ${[...missing].sort().join(', ')} (set them in the build's environment, like Railway's Variables; placeholders were printed instead)`);
+  if (/<!-- share-tags/.test(html)) log(`  link preview tags         ${shareTags(env.RAILWAY_PUBLIC_DOMAIN) ? 'for ' + env.RAILWAY_PUBLIC_DOMAIN : 'left out (RAILWAY_PUBLIC_DOMAIN is not set)'}`);
+  log(`  ${(where + '/index.html').padEnd(25)} ${kb(Buffer.byteLength(html))}  (${kb(gzipSync(html).length)} gzip)`);
+  log(`  ${(where + '/preview.html').padEnd(25)} ${kb(Buffer.byteLength(frag))}  (fragment for an Artifact preview)`);
   if (images > IMAGE_BUDGET) console.warn(`warning: home page images are ${kb(images)} (budget ${kb(IMAGE_BUDGET)})`);
-  return { files: files.length, images, phone };
+  return { files: files.length, images, phone, accounts, missing: [...missing] };
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
