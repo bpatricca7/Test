@@ -561,6 +561,202 @@ async function loudnessTest(browser) {
   }
 }
 
+// ---------- family accounts: the Family page's walkie switch (docs/ACCOUNTS.md §8.3, §8.4) ----------
+// (1) the relay alone (voice.mjs + rooms.mjs): an account link carries `allowed`, is told
+//     {k:'perm'}, and switching it off releases her floor at once; (2) through the real server
+//     in this process with a fake `accounts` (tools/fake-accounts.mjs): a player whose grown-up
+//     did not switch the walkie on gets 0 voice bytes and cannot talk; a switch turned off
+//     mid-game reaches her within a second, even if her page keeps saying {k:'on'} with wk:1;
+//     turned on again, the perm frame arrives and she hears and talks.
+
+const voiceFrame = (seq) => packFrame(seq === 0 ? F_START : 0, seq & 0xffff, 0, 0, new Uint8Array(WIRE.FRAME_SAMPLES / 2).fill(0x35));
+
+async function accountRelayUnit() {
+  log('accounts: the voice relay alone (allowed, perm, setAllowed)');
+  const { RoomRegistry } = await import('../server/rooms.mjs');
+  const { VoiceRelay } = await import('../server/voice.mjs');
+  let t = 1000;
+  const registry = new RoomRegistry({ gate: true, now: () => t });
+  const relay = new VoiceRelay({ registry, now: () => t });
+  const room = 'sw1-heart-star-moon-cat';
+  const mk = (peer, claims) => {
+    const box = { json: [], bytes: 0 };
+    registry.join(room, peer, () => {}, { by: 'd-' + peer, claims });
+    box.link = relay.link(room, peer, { json: (f) => box.json.push(f), binary: (b) => ((box.bytes += b.length), true), kick: () => {} }, claims ? { walkie: claims.walkie } : undefined);
+    return box;
+  };
+  const acct = (nickname, walkie) => ({ familyId: 'f-' + nickname, playerId: 'p-' + nickname, nickname, canHost: true, canBuild: true, walkie });
+  const H = mk('host', acct('Lily', true));
+  const R = mk('rosie', acct('Rosie', true));
+  const J = mk('june', acct('June', false));
+  const L = mk('legacy', null);
+  check(JSON.stringify(H.json) === '[{"t":"v","k":"perm","walkie":1}]' && JSON.stringify(J.json) === '[{"t":"v","k":"perm","walkie":0}]' && L.json.length === 0, 'account links are told their walkie permission when made (legacy links: nothing, as before)');
+  registry.handle(room, 'host', { t: 's', patch: { r: 'h', wk: 1, adm: [['rosie', 1], ['june', 2], ['legacy', 3]] } });
+  for (const p of ['rosie', 'june', 'legacy']) registry.handle(room, p, { t: 's', patch: { r: 'g', wk: 1 } });
+  check(registry.rooms.get(room).members.get('june').state.wk === undefined, "June's wk:1 was dropped by the room (no walkie switch)");
+  for (const b of [H, R, J, L]) b.link.control({ k: 'on' });
+  check(J.json.at(-1).k === 'hi' && J.json.at(-1).ok === false, 'June is not counted in the game for voice (hi ok:false)');
+  let mark = H.json.length;
+  H.link.control({ k: 'req' });
+  check(H.json.slice(mark).some((f) => f.k === 'go'), 'Lily may talk');
+  for (let k = 0; k < 5; k++) {
+    t += 80;
+    H.link.binary(voiceFrame(k));
+  }
+  check(R.bytes > 0 && L.bytes > 0 && J.bytes === 0, `Rosie and the legacy friend hear her (${R.bytes} B), June gets 0 bytes`);
+  J.link.control({ k: 'req' });
+  check(J.json.at(-1).k === 'no' && J.json.at(-1).why === 'off', "June cannot talk ('off')");
+  // switched off in the middle of Lily's press: her floor goes at once
+  t += 80;
+  check(relay.setAllowed(H.link, false) === true, 'setAllowed(false) changes it');
+  check(H.json.some((f) => f.k === 'cut' && f.why === 'off') && H.json.at(-1).k === 'perm' && H.json.at(-1).walkie === 0, "Lily's press is cut ('off') and her page is told perm 0");
+  check(R.json.at(-1).k === 'talk' && R.json.at(-1).by === null, 'the others learn that nobody talks now');
+  const before = R.bytes;
+  H.link.control({ k: 'on' });
+  H.link.control({ k: 'req' });
+  for (let k = 5; k < 10; k++) {
+    t += 80;
+    H.link.binary(voiceFrame(k));
+  }
+  check(R.bytes === before && H.json.at(-1).k === 'no', `her page says on and req again and sends frames: nobody gets a byte (${R.bytes - before} B), she hears no`);
+  check(relay.setAllowed(H.link, false) === false && relay.setAllowed(H.link, true) === true && H.json.at(-1).walkie === 1, 'on again: perm 1');
+  t += 3000;
+  H.link.control({ k: 'on' });
+  mark = H.json.length;
+  H.link.control({ k: 'req' });
+  check(H.json.slice(mark).some((f) => f.k === 'go'), 'she may talk again');
+  check(relay.stats().revoked === 1, 'counted');
+  for (const b of [H, R, J, L]) b.link.close();
+  relay.stop();
+}
+
+async function accountServerVoice() {
+  log('accounts: the walkie switch through the real server (fake accounts in this process)');
+  const { createServer } = await import('../server/server.mjs');
+  const { createFakeAccounts } = await import('./fake-accounts.mjs');
+  const { mkdtempSync, writeFileSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const WSN = (await import('ws')).WebSocket;
+  const dir = mkdtempSync(path.join(tmpdir(), 'sw-walkie-acct-'));
+  const page = path.join(dir, 'page.html');
+  writeFileSync(page, '<!doctype html><title>Sparkle World</title>');
+  const fake = await createFakeAccounts({ mode: 'required' });
+  const app = createServer({ accounts: fake, htmlPath: page, siteDir: path.join(dir, 'none'), log: () => {} });
+  const port = await app.listen(0, '127.0.0.1');
+  const room = 'sw1-heart-star-moon-cat';
+  const open = (cookie, p, name) => new Promise((resolve) => {
+    const box = { name, json: [], bytes: 0, lastByteAt: 0, self: null, closed: null };
+    box.ws = new WSN(`ws://127.0.0.1:${port}/r/${room}?s=${name}-secret-00000000000&d=${name}-device-0000000000&p=${p}`, { headers: { Cookie: cookie } });
+    box.ws.on('message', (d, bin) => {
+      if (bin) {
+        box.bytes += d.length;
+        box.lastByteAt = Date.now();
+        return;
+      }
+      const f = JSON.parse(d.toString());
+      if (f.t === 'p' && f.self) box.self = f.self;
+      box.json.push(f);
+    });
+    box.ws.on('close', (c) => (box.closed = c));
+    box.ws.on('error', () => {});
+    box.ws.on('open', () => resolve(box));
+  });
+  const send = (b, f) => b.ws.send(JSON.stringify(f));
+  const waitUntil = async (cond, ms = 3000) => {
+    const end = Date.now() + ms;
+    while (!cond() && Date.now() < end) await sleep(20);
+    return cond();
+  };
+  const fams = ['Lily', 'Rosie', 'June'].map((n) => {
+    const f = fake.addFamily({ plan: 'active', consent: 'verified' });
+    const p = fake.addPlayer(f, { nickname: n, friends: true, walkie: n !== 'June' });
+    return { f, p, s: fake.addSession(f, { kind: 'device' }) };
+  });
+  const [lily, rosie, june] = await Promise.all(fams.map((x, k) => open(x.s.cookie, x.p, ['lily', 'rosie', 'june'][k])));
+  let talking = null;
+  try {
+    await waitUntil(() => lily.self && rosie.self && june.self);
+    send(lily, { t: 's', patch: { v: 1, r: 'h', nm: 'Lily', wk: 1, adm: [[rosie.self, 1], [june.self, 2]] } });
+    for (const b of [rosie, june]) send(b, { t: 's', patch: { v: 1, r: 'g', nm: b.name, wk: 1 } });
+    await sleep(200);
+    for (const b of [lily, rosie, june]) send(b, { t: 'v', k: 'on' });
+    await sleep(200);
+    send(lily, { t: 'v', k: 'req' });
+    check(await waitUntil(() => lily.json.some((f) => f.t === 'v' && f.k === 'go')), 'Lily (walkie switched on by her grown-up) may talk');
+    let seq = 0;
+    talking = setInterval(() => {
+      if (lily.ws.readyState === 1) lily.ws.send(voiceFrame(seq++));
+    }, 80);
+    check(await waitUntil(() => rosie.bytes > 3000), `Rosie hears her (${rosie.bytes} B)`);
+    check(june.bytes === 0, "June (her grown-up's switch is off) gets 0 voice bytes, although her page said on and wk:1");
+    // Rosie's grown-up switches the walkie off on the Family page, while Lily talks and Rosie's
+    // page keeps saying "on" with its badge
+    const nag = setInterval(() => {
+      send(rosie, { t: 'v', k: 'on' });
+      send(rosie, { t: 's', patch: { wk: 1 } });
+    }, 100);
+    const t0 = Date.now();
+    fake.setPlayer(fams[1].p, { walkie: false });
+    const told = await waitUntil(() => rosie.json.some((f) => f.t === 'v' && f.k === 'perm' && f.walkie === 0), 2000);
+    const permMs = Date.now() - t0;
+    await sleep(1500);
+    clearInterval(nag);
+    const lateMs = rosie.lastByteAt - t0;
+    check(told && permMs < 1000, `Rosie's page is told perm 0 in ${permMs} ms`);
+    check(lateMs < 1000, `no voice byte reaches Rosie later than 1 s after the switch (the last one ${lateMs} ms after)`);
+    const bytesAfter = rosie.bytes;
+    await sleep(500);
+    check(rosie.bytes === bytesAfter, 'and none at all afterwards, although her page keeps saying on and wk:1');
+    send(rosie, { t: 'v', k: 'req' });
+    check(await waitUntil(() => rosie.json.filter((f) => f.t === 'v' && f.k === 'no').some((f) => f.why === 'off')), "she cannot talk ('off')");
+    const badge = () => {
+      let st = null;
+      for (const f of lily.json) {
+        if (f.t !== 'p') continue;
+        for (const e of f.j || []) if (e.peer === rosie.self) st = { ...e.state };
+        for (const [pp, patch] of f.u || []) if (pp === rosie.self) {
+          st = { ...(st || {}) };
+          for (const k in patch) patch[k] === null ? delete st[k] : (st[k] = patch[k]);
+        }
+      }
+      return st;
+    };
+    check(badge() && badge().wk === undefined, 'Lily sees "walkie off" on Rosie (no wk in her presence)');
+    // on again: the perm frame arrives, her page says on and shows the badge, she hears
+    fake.setPlayer(fams[1].p, { walkie: true });
+    check(await waitUntil(() => rosie.json.filter((f) => f.t === 'v' && f.k === 'perm').at(-1)?.walkie === 1, 2000), 'switched on again: perm 1 arrives');
+    send(rosie, { t: 's', patch: { wk: 1 } });
+    send(rosie, { t: 'v', k: 'on' });
+    const b0 = rosie.bytes;
+    check(await waitUntil(() => rosie.bytes > b0 + 2000, 3000), `she hears Lily again (${rosie.bytes - b0} B)`);
+    clearInterval(talking);
+    talking = null;
+    send(lily, { t: 'v', k: 'end' });
+    await sleep(300);
+    // Rosie talks now; switched off mid-press, her floor is released at once
+    let mark = rosie.json.length;
+    send(rosie, { t: 'v', k: 'req' });
+    check(await waitUntil(() => rosie.json.slice(mark).some((f) => f.t === 'v' && f.k === 'go'), 3000), 'Rosie may talk');
+    let rs = 0;
+    const rTalk = setInterval(() => rosie.ws.readyState === 1 && rosie.ws.send(voiceFrame(rs++)), 80);
+    await waitUntil(() => lily.bytes > 1500);
+    fake.setPlayer(fams[1].p, { walkie: false });
+    check(await waitUntil(() => rosie.json.some((f) => f.t === 'v' && f.k === 'cut' && f.why === 'off'), 1000), "her press is cut ('off') within a second");
+    check(await waitUntil(() => lily.json.filter((f) => f.t === 'v' && f.k === 'talk').at(-1)?.by === null, 1000), 'Lily learns nobody talks');
+    await sleep(300);
+    const lb = lily.bytes;
+    await sleep(600);
+    clearInterval(rTalk);
+    check(lily.bytes === lb, 'nothing more of Rosie reaches Lily');
+    const st = app.stats();
+    numbers.accountWalkie = { permMs, lastByteAfterMs: lateMs, revoked: st.voice.revoked, walkieChanged: st.walkieChanged };
+  } finally {
+    if (talking) clearInterval(talking);
+    for (const b of [lily, rosie, june]) b.ws.terminate();
+    await app.close();
+  }
+}
+
 // ---------- the run ----------
 
 async function main() {
@@ -569,6 +765,9 @@ async function main() {
   const unit = await runUnit({ check, log });
   numbers.snr = unit.snr;
   numbers.codecBytesPerSecond = unit.bytesPerSecond;
+  // with family accounts (Node only: the relay alone, then the real server in this process)
+  await accountRelayUnit();
+  await accountServerVoice();
   if (arg('unit-only')) return;
 
   // (b) end to end
