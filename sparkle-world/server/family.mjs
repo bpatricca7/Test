@@ -135,6 +135,8 @@ export function createFamily(ctx) {
     }
     const t = new Date(now);
     const gone = await db.tx(async (q) => {
+      // the row lock makes a second, simultaneous delete of the same family a no-op
+      if (!(await q.one('select id from families where id = $1 for update', [fam.id]))) return null;
       const s = await q.query('select id_hash from sessions where family_id = $1', [fam.id]);
       await q.query('insert into gone_sessions (id_hash, gone_at) select id_hash, $2 from sessions where family_id = $1 on conflict (id_hash) do nothing', [fam.id, t]);
       await q.query(
@@ -147,6 +149,7 @@ export function createFamily(ctx) {
       await ctx.audit(q, fam.id, 'family.deleted', {}, { actor });
       return s.rows.map((r) => r.id_hash);
     });
+    if (!gone) return { ok: false };
     ctx.billing?.invalidate?.(fam.id);
     for (const h of gone) ctx.sessions?.forget?.(Buffer.from(h).toString('hex'));
     events.emit('family', { familyId: fam.id, deleted: true });

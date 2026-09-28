@@ -1691,6 +1691,13 @@ describe('A: exports and deleting the family (§3.4, §11.6)', () => {
     assert.equal(events.filter(([k]) => k === 'session').length, 2);
   });
 
+  test('two deletes of the same family at once: one does it', async () => {
+    const { familyId } = await setupFamily(h, 'double.delete@example.com');
+    const r = await Promise.all([h.ctx.family.deleteFamily(familyId, { notify: false }), h.ctx.family.deleteFamily(familyId, { notify: false })]);
+    assert.equal(r.filter((x) => x.ok).length, 1);
+    assert.equal(await count(t.db, "select count(*) as n from audit_log where family_id = $1 and action = 'family.deleted'", [familyId]), 1);
+  });
+
   test('deleting: no check within 5 minutes → 403; a Stripe failure does not stop it, the retention job finishes it', async () => {
     const email = 'stripe.down@example.com';
     const { b, familyId } = await setupFamily(h, email);

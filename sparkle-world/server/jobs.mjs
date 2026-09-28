@@ -253,6 +253,7 @@ export function startJobs(ctx, { timers = true } = {}) {
 
   async function run(name, opts = {}) {
     if (!IMPL[name]) throw new Error('jobs: unknown job');
+    if (stopped) return { skipped: true }; // shutting down: the database is going away
     while (running.has(name)) await running.get(name).catch(() => {});
     const p = (async () => {
       const r = await ctx.db.tryLock(jobLock(name), () => IMPL[name](ctx, { now: ctx.clock.now(), ...opts }));
