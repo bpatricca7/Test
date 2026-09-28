@@ -526,7 +526,9 @@ export async function createFakeAccounts(o = {}) {
       checkouts.set(id, { familyId: x.family.id, trial: x.body.trial === true && cfg.trialDays > 0 && !x.family.trial_used, status: 'open' });
       return J({ url: `/api/fake/stripe/c/${id}` });
     } },
-    { method: 'POST', path: '/api/billing/sync', who: 'parent', handler: async (req, x) => J({ plan: planOf(x.family.id) }) },
+    // B's answer carries usOnly when Checkout's billing address was outside the US (the
+    // pretend session id cs_test_usonly stands for one, for the page's screenshots)
+    { method: 'POST', path: '/api/billing/sync', who: 'parent', handler: async (req, x) => J({ plan: planOf(x.family.id), ...(x.body.sessionId === 'cs_test_usonly' ? { usOnly: true } : {}) }) },
     { method: 'POST', path: '/api/billing/portal', who: 'parent+check', handler: async (req, x) => {
       if (!(subs.get(x.family.id) || []).length) throw httpError(409, 'conflict');
       return J({ url: `/api/fake/stripe/p/${x.family.id}` });

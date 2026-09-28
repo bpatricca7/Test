@@ -188,13 +188,20 @@ async function api(p, { method = 'GET', body, cookie = null, ip = '203.0.113.250
   return { status: res.status, data };
 }
 
-/** The newest 6-digit code emailed to `to` (the test hook reads the memory outbox). */
+/**
+ * How many emails `to` has had so far: a mark taken before an action, so the code the action
+ * sends is found after it (the capture's times are the app clock's, which the test moves).
+ */
+async function mailMark(to) {
+  return (await mailsTo(to)).length;
+}
+
+/** The newest 6-digit code emailed to `to` after the mark `since` (the memory outbox). */
 async function codeFor(to, { since = 0, template = null } = {}) {
   const end = Date.now() + 20000;
   while (Date.now() < end) {
-    const r = await api(`/api/test/mail?to=${encodeURIComponent(to)}`);
-    const list = Array.isArray(r.data) ? r.data : [];
-    const m = list.filter((x) => (!template || x.template === template) && Date.parse(x.at || 0) >= since - 2000).at(-1);
+    const list = await mailsTo(to);
+    const m = list.slice(since).filter((x) => !template || x.template === template).at(-1);
     const code = m && /\b(\d{6})\b/.exec(`${m.subject || ''} ${m.text || ''}`);
     if (code) return code[1];
     await sleep(250);
@@ -267,7 +274,7 @@ const FP = {
   async signIn(page, email) {
     await page.goto(`${R.base}/account`);
     await page.waitForSelector('#email');
-    const since = Date.now();
+    const since = await mailMark(email);
     await page.fill('#email', email);
     await page.click('button[type=submit]');
     await page.waitForSelector('.code-boxes');
@@ -312,7 +319,7 @@ const FP = {
   async setSwitch(page, email, nickname, which, on) {
     const sw = FP.switchOf(page, nickname, which);
     if ((await sw.getAttribute('aria-checked')) === String(on)) return;
-    const since = Date.now();
+    const since = await mailMark(email);
     await sw.click();
     if (on) await FP.passCheck(page, email, since);
     await page.waitForFunction(([n, w, v]) => {
@@ -321,7 +328,7 @@ const FP = {
     }, [nickname, which, on], { timeout: 20000 });
   },
   async pairCode(page, email, lockTo = null) {
-    const since = Date.now();
+    const since = await mailMark(email);
     await page.getByRole('button', { name: "Set up a kid's device" }).click();
     if (lockTo) await page.selectOption('#pair-who', { label: `Only ${lockTo}` });
     await page.getByRole('button', { name: 'Make a code' }).click();
@@ -363,7 +370,7 @@ const GAME = {
     await shot(dev.page, `${dev.key}-ask-a-grown-up`);
     await press(dev, dev.page.getByRole('button', { name: /I have a code/ }).first());
     await GAME.grownUpCheck(dev);
-    const box = dev.page.locator('.sw-panel-wrap.sw-open input, .sw-acct-card input, dialog input').first();
+    const box = dev.page.locator('.sw-dialog input.sw-input, .sw-panel-wrap.sw-open input, dialog input').first();
     await box.waitFor({ timeout: 15000 });
     await box.fill(code);
     await box.press('Enter');
@@ -563,7 +570,7 @@ async function s5() {
   check(await FP.switchOf(A.page, 'Lily', 'friends').isDisabled(), "in the free week Lily's Play with friends is locked");
   check(/Turns on after your first payment/.test(await A.page.locator('article.player', { hasText: 'Lily' }).textContent()), '"Turns on after your first payment."');
   await shot(A.page, 'parentA-free-week-locked-ipad', true);
-  const since = Date.now();
+  const since = await mailMark(A.email);
   await A.page.locator('.ribbon').getByRole('button', { name: 'Start now' }).click();
   await A.page.locator('dialog').getByRole('button', { name: 'Start now' }).click();
   await FP.passCheck(A.page, A.email, since);
@@ -755,7 +762,7 @@ async function s7() {
   const B = R.fam.B;
   if (customer) await R.stripe.card(customer, 'ok');
   await FP.ribbon(B.page);
-  const since = Date.now();
+  const since = await mailMark(B.email);
   await B.page.locator('.ribbon').getByRole('button', { name: 'Manage subscription' }).click();
   await FP.passCheck(B.page, B.email, since);
   await B.page.waitForURL((u) => !u.href.startsWith(R.base), { timeout: 30000 });
@@ -793,7 +800,7 @@ async function s8() {
   const dbs = async () => mia.page.evaluate(async () => ((await indexedDB.databases?.()) || []).map((d) => d.name));
   const before = await dbs();
   check(before.some((n) => n.includes(A.ids.Mia)), `Mia's device keeps her worlds in her own store (${before.join(', ')})`);
-  const since = Date.now();
+  const since = await mailMark(A.email);
   await A.page.getByRole('button', { name: 'Delete Mia' }).click();
   await A.page.fill('#confirm-nick', 'Mia');
   await A.page.locator('dialog .btn-danger-strong').click();
@@ -817,7 +824,7 @@ async function s9() {
   })();
   await FP.ribbon(A.page).catch(() => {});
   A.page.allow.push(/403|410/);
-  const since = Date.now();
+  const since = await mailMark(A.email);
   await A.page.getByRole('button', { name: 'Delete our account' }).click();
   await A.page.fill('#confirm-delete', 'DELETE');
   await A.page.locator('dialog .btn-danger-strong').click();
@@ -907,7 +914,8 @@ async function s10() {
 // ---------------------------------------------------------------------------------------------
 
 async function main() {
-  const want = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter((n) => !ONLY || ONLY.has(n));
+  // --only=6 runs 1 and 5 too (6 builds on them)
+  const want = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter((n) => !ONLY || ONLY.has(n) || [...ONLY].some((k) => (AFTER[k] || []).includes(n)));
   const missing = {};
   for (const n of want) {
     const m = [...new Set([...NEEDS[n], ...(AFTER[n] || []).flatMap((k) => NEEDS[k])])].filter((k) => !has(k));
@@ -957,12 +965,22 @@ async function main() {
     cleanups.push(() => stopServer(R.server));
     log(`server up with accounts (required): ${R.base}/account, Stripe ${R.stripe ? 'fake at ' + R.stripe.url : 'MISSING'}, database ${R.dbUrl ? 'url' : 'none'}`);
     const S = { 1: s1, 2: s2, 3: s3, 4: s4, 5: s5, 6: s6, 7: s7, 8: s8, 9: s9, 10: s10 };
+    const failed = new Set();
     for (const n of run) {
+      // a scenario that builds on a failed one is not run (it could only time out)
+      const broken = (AFTER[n] || []).filter((k) => failed.has(k));
+      if (broken.length) {
+        failed.add(n);
+        check(false, `scenario ${n}: not run, it builds on scenario ${broken.join(', ')}`);
+        continue;
+      }
       try {
         await S[n]();
       } catch (err) {
         check(false, `scenario ${n}: ${String(err && err.stack ? err.stack : err).split('\n').slice(0, 3).join(' | ')}`);
         for (const d of Object.values(R.dev)) await shot(d.page, `failed-${n}-${d.key}`).catch(() => {});
+        for (const f of Object.values(R.fam)) await shot(f.page, `failed-${n}-${f.email.split('.')[0]}`).catch(() => {});
+        failed.add(n); // what builds on it cannot run (a check that only failed stops nothing)
       }
       for (const f of Object.values(R.fam)) f.page?.flushErrors?.();
       for (const d of Object.values(R.dev)) d.page?.flushErrors?.();

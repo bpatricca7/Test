@@ -225,6 +225,9 @@ function cleanUrl() {
   S.params = new URLSearchParams(keep);
 }
 
+/** The server's settings for the page (GET /api/family config), or {} before it came. */
+const familyConfig = () => (S.fam && S.fam.config) || {};
+
 async function load() {
   S.fam = await api('GET', '/api/family');
   S.elevatedUntil = ms(S.fam.elevatedUntil);
@@ -661,11 +664,14 @@ async function backFromStripe(sessionId) {
   mount(card(h('h2', null, 'Setting up your Family Plan…'), loadingRow('Checking with Stripe…')), { subtitle: 'Just a moment.' });
   let plan = null;
   let lastErr = null;
+  let usOnly = false;
   for (let k = 0; k < 5; k++) {
     try {
-      plan = (await api('POST', '/api/billing/sync', { sessionId })).plan;
+      const r = await api('POST', '/api/billing/sync', { sessionId });
+      plan = r && r.plan;
+      usOnly = !!(r && r.usOnly);
       lastErr = null;
-      if (plan && plan.entitled) break;
+      if ((plan && plan.entitled) || usOnly) break;
     } catch (e) {
       lastErr = e;
       if (e.status === 401) return signIn({ note: 'Please sign in again to finish setting up.' });
@@ -676,6 +682,15 @@ async function backFromStripe(sessionId) {
   try {
     await load();
   } catch {}
+  if (usOnly) {
+    // the billing address was outside the United States: Stripe's plan was cancelled at once
+    return mount(card(
+      h('h2', null, 'Sorry, only in the United States for now'),
+      h('p', { class: 'acct-lead' }, 'The Family Plan is only for families in the United States for now, so we cancelled it right away. Nothing more will be charged, and if a payment went through, we will refund it.'),
+      h('p', null, 'We sent you an email about it too. Questions? ', familyConfig().operatorEmail ? h('a', { href: 'mailto:' + familyConfig().operatorEmail }, familyConfig().operatorEmail) : 'Reply to that email.'),
+      row(h('a', { class: 'btn btn-soft', href: '/' }, 'Home page'), linkBtn('Sign out', signOut)),
+    ), { subtitle: 'The Family Plan is for families in the US for now.' });
+  }
   if (plan && plan.entitled) return allSet(plan);
   mount(card(
     h('h2', null, "We're still waiting to hear from Stripe"),
@@ -1290,7 +1305,7 @@ function pairDialog() {
       const r = await withCheck(() => api('POST', '/api/devices/pair-code', { ...(label.value.trim() ? { label: label.value.trim().slice(0, 40) } : {}), ...(who.value ? { lockPlayer: who.value } : {}) }));
       if (r) return showCode(r);
     } catch (e) {
-      err.textContent = e.code === 'limit' || e.code === 'rate' ? 'There are 3 codes waiting already. Use one, or wait 10 minutes for them to run out.' : say(e);
+      err.textContent = e.code === 'limit' ? 'There are 3 codes waiting already. Use one, or wait 10 minutes for them to run out.' : say(e);
     }
     busy(make, false);
   });

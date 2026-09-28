@@ -410,9 +410,12 @@ export function createServer(opts = {}) {
       ws.close(4029, 'too many connections');
       return;
     }
-    // per family (accounts on, §8.5), next to the per-address limit
+    // per family (accounts on, §8.5), next to the per-address limit; a page coming back as the
+    // same peer (its old socket not closed yet) takes its own old place, not a new one
     const family = claims && claims.familyId ? String(claims.familyId) : null;
-    if (family && (acctIndex.family.get(family)?.size || 0) >= o.maxPerFamily) {
+    const back = family ? conns.get(name + '\n' + peer) : null;
+    const hers = back && back.open && back.claims && keyOf(back.claims.familyId) === family ? 1 : 0;
+    if (family && (acctIndex.family.get(family)?.size || 0) - hers >= o.maxPerFamily) {
       counters.familyLimited++;
       safeSend(ws, { t: 'e', code: 'limit' });
       ws.close(4029, 'too many connections');
