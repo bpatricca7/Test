@@ -633,7 +633,11 @@ async function s4() {
     await sleep(2000);
   }
   check(cloud.some((w) => w.id === R.shared) && cloud.some((w) => /\(copy\)$/.test(w.name || '') && w.id.startsWith(R.shared + '~')), `a "(copy)" world next to the original: nothing lost (${cloud.map((w) => w.name).join(', ')})`);
-  for (const dev of devs) dev.page.allow = [];
+  // what the offline minutes and the conflict answered (409) were expected: flushed under the allow list
+  for (const dev of devs) {
+    dev.page.flushErrors();
+    dev.page.allow = [];
+  }
   await retire('computer');
 }
 
