@@ -1530,6 +1530,21 @@ describe('A: the notice, consent, players and their switches (§5.2, §6.7, §11
     }
   });
 
+  test('free-join (with SW_MP_CONSENT=email_plus): a family without a plan adds players who may only join', async () => {
+    const fj = await startHarness(t.db, { SW_FRIENDS_MODE: 'free-join', SW_MP_CONSENT: 'email_plus' });
+    try {
+      const { b, ids } = await setupFamily(fj, 'visitor.mom@example.com', { players: ['Pixie'], entitled: false });
+      assert.deepEqual((await b.patch(`/api/players/${ids.Pixie}`, { friends: true, walkie: true })).data, { error: 'not_entitled' }, 'never the walkie');
+      assert.equal((await b.patch(`/api/players/${ids.Pixie}`, { friends: true })).status, 200);
+      const me = (await b.get('/api/me')).data;
+      assert.deepEqual([me.friendsMode, me.plan.entitled, me.players[0].canJoin, me.players[0].canHost, me.players[0].walkieOk, me.players[0].why], ['free-join', false, true, false, false, null]);
+      const r = await fj.accounts.authorizeSocket({ cookie: `${SESS}=${b.cookie(SESS)}`, playerId: ids.Pixie });
+      assert.deepEqual([r.ok, r.claims.canHost, r.claims.canBuild, r.claims.walkie, r.claims.until], [true, false, false, false, null]);
+    } finally {
+      await fj.close();
+    }
+  });
+
   test('another family\'s player is 404, a deleted one 410 (every :pid route)', async () => {
     const mine = await setupFamily(h, 'idor.a@example.com', { players: ['Poppy'] });
     const theirs = await setupFamily(h, 'idor.b@example.com', { players: ['Ivy Rose'] });

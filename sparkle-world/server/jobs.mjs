@@ -97,6 +97,7 @@ async function retention(ctx, { now }) {
           await ctx.audit(q, f.id, 'plan.resumed', {}, { actor: 'system' });
         });
         ctx.billing.invalidate(f.id);
+        ctx.events.emit('family', { familyId: f.id });
         c.resumed++;
       }
       continue;
@@ -112,6 +113,7 @@ async function retention(ctx, { now }) {
         await ctx.audit(q, f.id, 'plan.lapsed', {}, { actor: 'system' });
       });
       ctx.billing.invalidate(f.id);
+      ctx.events.emit('family', { familyId: f.id }); // live games learn it now, not at the next sweep
       f.flags = { ...(f.flags || {}), warned30: undefined, warned7: undefined };
       c.lapsed++;
     }
