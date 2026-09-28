@@ -230,8 +230,6 @@ async function newContext(label, { w = 1024, h = 768, touch = true } = {}) {
     hasTouch: touch,
     isMobile: touch,
     deviceScaleFactor: 1,
-    // the game's buttons pulse and pop; with reduced motion they hold still for a tap
-    reducedMotion: 'reduce',
     extraHTTPHeaders: { 'X-Forwarded-For': `203.0.113.${R.ips++}` },
   });
   ctx.label = label;
@@ -460,11 +458,7 @@ const GAME = {
   },
 };
 
-/**
- * Tap a button like a child would (a tap on a touch device, a click on a computer). The
- * contexts ask for reduced motion, so the game's pulsing buttons hold still for the tap
- * (src/ui/theme.js honours prefers-reduced-motion).
- */
+/** Tap a button like a child would (a tap on a touch device, a click on a computer). */
 async function tapIt(dev, target, timeout = 30000) {
   const l = typeof target === 'string' ? dev.page.locator(target).first() : target;
   await l.waitFor({ state: 'visible', timeout });
@@ -736,7 +730,12 @@ async function s5() {
   const C = (R.fam.C = { email: `c.${randomBytes(3).toString('hex')}@example.com`, ctx: cDev.ctx, page: cDev.page });
   await GAME.open(cDev);
   await cDev.page.getByText(/Ask a grown-up/).first().waitFor({ timeout: 60000 });
-  await tapIt(cDev, cDev.page.getByRole('button', { name: /I'm a grown-up/ }).first());
+  // the card's first button has the keyboard focus (and pulses, so a tap never finds it
+  // standing still): the grown-up presses Enter, which the browser turns into its click
+  const grown = cDev.page.getByRole('button', { name: /I'm a grown-up/ }).first();
+  await grown.waitFor({ state: 'visible', timeout: 30000 });
+  await grown.focus();
+  await cDev.page.keyboard.press('Enter');
   await GAME.grownUpCheck(cDev);
   await cDev.page.waitForURL((u) => u.pathname === '/account' && u.searchParams.get('next') === '/play', { timeout: 60000 });
   await cDev.page.waitForSelector('#email');
@@ -1108,6 +1107,21 @@ async function main() {
   R.port = await freePort();
   R.base = `http://localhost:${R.port}`;
   const cleanups = [];
+  // stopped from outside (Ctrl+C, a CI timeout): the server, the database and the fake go too
+  let stopping = false;
+  const onSignal = async (sig) => {
+    if (stopping) return;
+    stopping = true;
+    console.log(`\n${sig}: stopping the servers of this run`);
+    for (const c of cleanups.slice().reverse()) {
+      try {
+        await c();
+      } catch {}
+    }
+    process.exit(130);
+  };
+  process.once('SIGINT', onSignal);
+  process.once('SIGTERM', onSignal);
   try {
     // every scenario runs a server with accounts on (10 too: optional mode), so a database
     const { openTestDb } = await import('./testdb.mjs');
@@ -1153,7 +1167,10 @@ async function main() {
       try {
         await S[n]();
       } catch (err) {
-        check(false, `scenario ${n}: ${String(err && err.stack ? err.stack : err).split('\n').slice(0, 3).join(' | ')}`);
+        // the message with Playwright's call log (what it waited for), then where it happened
+        const msg = String((err && err.message) || err).split('\n').filter((l) => l.trim()).slice(0, 14);
+        const at = String((err && err.stack) || '').split('\n').filter((l) => /^\s+at /.test(l)).slice(0, 2);
+        check(false, `scenario ${n}: ${[...msg, ...at].map((l) => l.trim()).join(' | ')}`);
         for (const d of Object.values(R.dev)) await shot(d.page, `failed-${n}-${d.key}`).catch(() => {});
         for (const f of Object.values(R.fam)) await shot(f.page, `failed-${n}-${f.email.split('.')[0]}`).catch(() => {});
         failed.add(n); // what builds on it cannot run (a check that only failed stops nothing)
