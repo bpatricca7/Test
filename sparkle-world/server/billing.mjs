@@ -237,6 +237,15 @@ export function createBilling(ctx) {
     return null;
   }
 
+  /**
+   * Lock the family's row for the rest of the transaction. Every billing transaction takes it
+   * first (before any subscriptions row), so webhooks Stripe delivers at the same moment, the
+   * return sync and reconcile queue up behind each other instead of deadlocking. → false if gone.
+   */
+  async function lockFamily(q, familyId) {
+    return !!(await q.one('select id from families where id = $1 for update', [familyId]));
+  }
+
   async function linkCustomer(q, familyId, customer) {
     if (!customer) return;
     await q.query(
@@ -309,7 +318,8 @@ export function createBilling(ctx) {
       const f = await familyFor(q, { metadata: sub.metadata?.family_id, customer });
       if (!f) return null;
       fid = f.id;
-    } else if (!(await q.one('select 1 as ok from families where id = $1', [fid]))) return null;
+    }
+    if (!(await lockFamily(q, fid))) return null;
     await linkCustomer(q, fid, customer);
     await upsertSubscription(q, fid, sub, syncedAt);
     if (sub.trial_end || sub.status === 'trialing') await q.query('update families set trial_used = true where id = $1 and not trial_used', [fid]);
@@ -348,7 +358,7 @@ export function createBilling(ctx) {
   async function applyCheckout(q, session, sub, syncedAt) {
     const customer = idOf(session.customer);
     const f = await familyFor(q, { clientRef: session.client_reference_id, metadata: session.metadata?.family_id ?? sub?.metadata?.family_id, customer });
-    if (!f) return null;
+    if (!f || !(await lockFamily(q, f.id))) return null;
     const fid = f.id;
     await linkCustomer(q, fid, customer);
     const country = normCountry(session.customer_details?.address?.country);
@@ -495,7 +505,7 @@ export function createBilling(ctx) {
       case 'charge.dispute.created': {
         counters.disputes++;
         if (!prep.customer) return [];
-        const f = await q.one('select id from families where stripe_customer_id = $1', [prep.customer]);
+        const f = await q.one('select id from families where stripe_customer_id = $1 for update', [prep.customer]);
         if (!f) return [];
         await setFlags(q, f.id, { dispute: true });
         return [f.id];

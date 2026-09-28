@@ -827,6 +827,7 @@ describe('billing through the app and the fake (§6, SW_TRIAL_DAYS=0)', () => {
   beforeEach(async () => {
     fake.delivery('normal');
     A.accounts.ctx.limits = NO_LIMITS;
+    await fake.idle(); // webhooks still on their way from the last test finish before the tables are emptied
     await A.t.reset();
     A.billing.invalidate();
   });
@@ -1019,6 +1020,27 @@ describe('billing through the app and the fake (§6, SW_TRIAL_DAYS=0)', () => {
     await fake.idle();
     assert.deepEqual((await outbox(A.db, f.id)).count, { welcome: 1, friends_ready: 1 });
     assert.equal((await subRows(A.db, f.id))[0].status, 'active');
+  });
+
+  test('webhooks Stripe delivers at the same moment, and the return sync, never deadlock and apply once', async () => {
+    const fams = [];
+    for (let i = 0; i < 4; i++) fams.push(await makeFamily(A.db));
+    fake.delivery('drop');
+    const sessions = [];
+    for (const f of fams) sessions.push((await subscribe(A, fake, f)).sessionId);
+    const dropped = new Set(fake.deliveries().filter((d) => d.status === 'dropped').map((d) => d.event));
+    const events = fake.events().filter((e) => dropped.has(e.id) && HANDLED_EVENTS.includes(e.type));
+    const calls = [
+      ...events.map((e) => postEvent(A, fake.webhookSecret, e)),
+      ...events.map((e) => postEvent(A, fake.webhookSecret, e)), // and each one twice
+      ...fams.map((f, i) => A.call('POST', '/api/billing/sync', { token: tok(f), body: { sessionId: sessions[i] } })),
+    ];
+    const answers = await Promise.all(calls);
+    assert.deepEqual([...new Set(answers.map((a) => a.status))], [200], JSON.stringify(answers.filter((a) => a.status !== 200).map((a) => a.data)));
+    for (const f of fams) {
+      assert.deepEqual((await outbox(A.db, f.id)).count, { welcome: 1, friends_ready: 1 });
+      assert.equal((await subRows(A.db, f.id))[0].status, 'active');
+    }
   });
 
   test('a handler that throws answers 500; Stripe retries and it works, once (§6.4 step 6)', async () => {
@@ -1278,6 +1300,7 @@ describe('billing with a free week (SW_TRIAL_DAYS=7, §6.7)', () => {
   });
   beforeEach(async () => {
     fake.delivery('normal');
+    await fake.idle();
     await A.t.reset();
     A.billing.invalidate();
   });
