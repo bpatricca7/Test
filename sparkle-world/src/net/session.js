@@ -25,17 +25,16 @@
 //   'summary' {} (host session over).
 
 import { C, PROTOCOL, roomNameFor, randomCode, isCode, messageText, cleanText } from './protocol.js';
-import { NetError, realClock, listenerSet } from './transport.js';
+import { NetError, realClock, listenerSet, ACCOUNT_CODES } from './transport.js';
 import { NetHost } from './host.js';
 import { NetGuest } from './guest.js';
 
 const ERROR_TO_MESSAGE = {
   unavailable: 'unavailable', no_rooms: 'no_rooms', cannot_host: 'cannot_host', busy: 'busy', full: 'full',
   transient: 'transient', lost: 'transient', fatal: 'fatal', invalid: 'transient', too_big: 'transient',
-  // family accounts (docs/ACCOUNTS.md §7.7): each has its own card, while opening and mid-session
-  signed_out: 'signed_out', not_entitled: 'not_entitled', friends_off: 'friends_off', friends_locked: 'friends_locked', player_gone: 'player_gone',
-  accounts_mixed: 'accounts_mixed',
 };
+// family accounts (docs/ACCOUNTS.md §7.7): each has its own card, while opening and mid-session
+for (const c of ACCOUNT_CODES) ERROR_TO_MESSAGE[c] = c;
 
 export class NetSession {
   constructor(o = {}) {

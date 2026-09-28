@@ -6,6 +6,17 @@
 import { LIMITS, TOPICS, C, isRoomName } from './protocol.js';
 import { utf8Length } from './codec.js';
 
+/**
+ * The family accounts' refusals (docs/ACCOUNTS.md §7.7, §8.1), in close-code order: 4401 is
+ * signed_out … 4406 accounts_mixed. Each is its own error and card, while opening and
+ * mid-session alike.
+ */
+export const ACCOUNT_CODES = Object.freeze(['signed_out', 'not_entitled', 'friends_off', 'friends_locked', 'player_gone', 'accounts_mixed']);
+
+/** A relay {t:'e'} code while opening → the error the page shows. */
+const WELCOME_ERRORS = { full: 'full', rooms_full: 'busy', busy: 'busy', bad_name: 'invalid', origin: 'no_rooms', limit: 'busy' };
+for (const c of ACCOUNT_CODES) WELCOME_ERRORS[c] = c;
+
 export class NetError extends Error {
   /**
    * code: unavailable | no_rooms | cannot_host | busy | full | transient | lost | fatal | too_big | invalid,
@@ -555,14 +566,7 @@ export class FrameTransport extends NetTransport {
     if (f.t === 'p') return this._onRoster(f);
     if (f.t === 'e') {
       this._stats.errors[f.code] = (this._stats.errors[f.code] || 0) + 1;
-      if (this._welcome) {
-        const map = {
-          full: 'full', rooms_full: 'busy', busy: 'busy', bad_name: 'invalid', origin: 'no_rooms', limit: 'busy',
-          signed_out: 'signed_out', not_entitled: 'not_entitled', friends_off: 'friends_off', friends_locked: 'friends_locked', player_gone: 'player_gone',
-          accounts_mixed: 'accounts_mixed',
-        };
-        if (map[f.code]) this._failOpen(new NetError(map[f.code], f.msg || f.code));
-      }
+      if (this._welcome && WELCOME_ERRORS[f.code]) this._failOpen(new NetError(WELCOME_ERRORS[f.code], f.msg || f.code));
     }
   }
 

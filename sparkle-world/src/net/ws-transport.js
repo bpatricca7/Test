@@ -21,7 +21,7 @@
 //   to `voiceIn`, `voiceUp` runs after every (re)connect, `sendVoice()` writes one frame. The
 //   server decides who hears (server/voice.mjs), with the same gate as the room.
 
-import { FrameTransport, NetError, realClock } from './transport.js';
+import { FrameTransport, NetError, realClock, ACCOUNT_CODES } from './transport.js';
 
 const DEVICE_KEY = 'sparkle-world:net-device';
 
@@ -44,11 +44,9 @@ const BACKOFF = [500, 1000, 2000, 4000, 8000];
 const GIVE_UP_MS = 60000;
 const KEEPALIVE_MS = 20000;
 const SILENT_MS = 50000;
-const CLOSE_TO_ERROR = {
-  4001: 'full', 4002: 'busy', 4029: 'busy', 4003: 'no_rooms', 4004: 'invalid',
-  4401: 'signed_out', 4402: 'not_entitled', 4403: 'friends_off', 4404: 'friends_locked', 4405: 'player_gone',
-  4406: 'accounts_mixed',
-};
+const CLOSE_TO_ERROR = { 4001: 'full', 4002: 'busy', 4029: 'busy', 4003: 'no_rooms', 4004: 'invalid' };
+// 4401 signed_out … 4406 accounts_mixed (the family accounts' refusals)
+ACCOUNT_CODES.forEach((c, i) => (CLOSE_TO_ERROR[4401 + i] = c));
 
 function randomSecret(n = 24) {
   const a = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -168,7 +166,7 @@ export class WsTransport extends FrameTransport {
     if (this._stopped || this._closed) return;
     const err = CLOSE_TO_ERROR[code];
     // the account refusals (4401-4406) stop retries while opening and mid-session alike
-    if (code > 4400 && code < 4407) {
+    if (code > 4400 && code <= 4400 + ACCOUNT_CODES.length) {
       this._stopped = true;
       if (this._welcome) this._failOpen(new NetError(err));
       else this._onFatal(err);
