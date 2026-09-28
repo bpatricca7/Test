@@ -24,6 +24,13 @@
 //   - never to someone muted: the host's presence `wm` = [all 0/1, [peers]] ("Mute everyone" /
 //     a muted friend) silences talkers here too, and a listener's own mutes ({k:'mute'}) keep
 //     those voices from being sent to her.
+//   - with family accounts on (docs/ACCOUNTS.md §8.3), only to players whose grown-up switched
+//     the walkie on for them on the Family page: each link of an account player carries
+//     `allowed` (her claims' walkie). A link that is not allowed talks to nobody and hears
+//     nothing, whatever the page says ({k:'on'}, wk:1); switching it off mid-game releases her
+//     floor at once (cut 'off'). The page learns its permission from {t:'v', k:'perm',
+//     walkie: 0|1}, sent when the link is made and whenever it changes. Legacy links (no
+//     account, and every link with accounts off) are always allowed, exactly as before.
 // Nothing is recorded, stored or logged: frames are passed on as they are and forgotten; only
 // counters are kept (for /api/stats in tests).
 
@@ -55,6 +62,8 @@ class Link {
     this.peer = peer;
     this.send = send; // { json(obj), binary(bytes) -> false when dropped, kick() }
     this.on = false;
+    this.allowed = true; // the account's walkie switch (§8.3); legacy links are always allowed
+    this.perm = false; // an account link: the page is told its permission ({k:'perm'})
     this.mutes = new Set();
     this.closed = false;
     this.coolUntil = -Infinity;
@@ -102,19 +111,48 @@ export class VoiceRelay {
     this.timer = null;
     this.counts = {
       links: 0, framesIn: 0, bytesIn: 0, framesRelayed: 0, bytesRelayed: 0,
-      grants: 0, busy: 0, denied: 0, bad: 0, rateDropped: 0, noFloor: 0, kicked: 0, notShown: 0,
+      grants: 0, busy: 0, denied: 0, bad: 0, rateDropped: 0, noFloor: 0, kicked: 0, notShown: 0, revoked: 0,
       cuts: { cap: 0, idle: 0, quiet: 0, muted: 0, group: 0, off: 0 },
     };
   }
 
-  /** A new connection in room `name` as `peer`. send: { json(obj), binary(bytes) }. */
-  link(name, peer, send) {
+  /**
+   * A new connection in room `name` as `peer`. send: { json(obj), binary(bytes) }.
+   * opts.walkie (only for an account player, docs/ACCOUNTS.md §8.3): may she use the walkie?
+   * Given, the link is an account link: `allowed` follows it and the page is told at once with
+   * {t:'v', k:'perm', walkie: 0|1}. Without opts (a legacy link) nothing changes.
+   */
+  link(name, peer, send, opts = undefined) {
     const l = new Link(this, name, peer, send, this.now());
     let set = this.rooms.get(name);
     if (!set) this.rooms.set(name, (set = new Set()));
     set.add(l);
     this.counts.links++;
+    if (opts && typeof opts === 'object' && 'walkie' in opts) {
+      l.perm = true;
+      l.allowed = !!opts.walkie;
+      this._json(l, { t: 'v', k: 'perm', walkie: l.allowed ? 1 : 0 });
+    }
     return l;
+  }
+
+  /**
+   * The grown-up switched this player's walkie on or off (or the plan's consent changed):
+   * off releases her floor at once (cut 'off') and stops everything to and from her; either
+   * way an account link's page is told ({k:'perm'}). Returns true when it changed.
+   */
+  setAllowed(l, on) {
+    if (!l || l.closed) return false;
+    const allowed = !!on;
+    if (l.allowed === allowed) return false;
+    l.allowed = allowed;
+    if (!allowed) {
+      this.counts.revoked++;
+      this._leaveFloor(l, 'off');
+      l.on = false;
+    }
+    if (l.perm) this._json(l, { t: 'v', k: 'perm', walkie: allowed ? 1 : 0 });
+    return true;
   }
 
   start(everyMs = 250) {
@@ -156,7 +194,7 @@ export class VoiceRelay {
   /** Per-peer counters (tests only; peers are random ids, room names are not included). */
   peerStats() {
     const out = [];
-    for (const set of this.rooms.values()) for (const l of set) out.push({ peer: l.peer, on: l.on, ...l.c });
+    for (const set of this.rooms.values()) for (const l of set) out.push({ peer: l.peer, on: l.on, allowed: l.allowed, ...l.c });
     return out;
   }
 
@@ -209,7 +247,7 @@ export class VoiceRelay {
 
   /** Why this link may not talk now (null = it may). */
   _talkBlock(l) {
-    if (!l.on || !this._shown(l.name, l.peer)) return 'off';
+    if (!l.allowed || !l.on || !this._shown(l.name, l.peer)) return 'off';
     const g = this._game(l.name);
     if (!this._inGame(l.name, l.peer, g)) return 'group';
     const m = this._hostMute(g);
@@ -225,7 +263,7 @@ export class VoiceRelay {
     const g = set ? this._game(name) : null;
     if (!g) return out;
     for (const o of set) {
-      if (o.on && !o.closed && this._shown(o.name, o.peer) && this._inGame(o.name, o.peer, g)) out.push(o);
+      if (o.on && o.allowed && !o.closed && this._shown(o.name, o.peer) && this._inGame(o.name, o.peer, g)) out.push(o);
     }
     return out;
   }
@@ -251,7 +289,8 @@ export class VoiceRelay {
         if (f.h !== undefined && !isPeerId(f.h)) return;
         l.on = true;
         const fl = this.floors.get(l.name);
-        const ok = this._inGame(l.name, l.peer);
+        // a player whose grown-up has not switched the walkie on is not counted in (§8.3)
+        const ok = l.allowed && this._inGame(l.name, l.peer);
         this._json(l, { t: 'v', k: 'hi', ok, talk: fl && ok ? fl.link.peer : null });
         return;
       }
@@ -355,7 +394,7 @@ export class VoiceRelay {
     this.counts.framesIn++;
     this.counts.bytesIn += len;
     const fl = this.floors.get(l.name);
-    if (!l.on || !fl || fl.link !== l) {
+    if (!l.on || !l.allowed || !fl || fl.link !== l) {
       this.counts.noFloor++;
       this._junk(l, now, len);
       return;

@@ -37,12 +37,26 @@
 // token buckets live in server/limits.mjs.
 //
 // Family accounts (docs/ACCOUNTS.md) are OFF unless SW_ACCOUNTS is `optional` or `required`.
-// Off, nothing below changes: no database, no /api routes beyond /api/net, no cookies, and
-// server/accounts.mjs (with `pg` and `stripe`) is never even loaded. On, createServer({ accounts })
-// sends every other /api/* request to accounts.handleHttp(), asks the database in /healthz,
-// adds `accounts` and `friendsMode` to /api/net, and asks accounts.authorizeSocket() about every
-// WebSocket after the existing checks (a refusal completes the handshake, sends {t:'e', code}
-// and closes with 4401-4405 or 1013, so the page can show a friendly card).
+// Off, nothing below changes: no database, no /api routes beyond /api/net, no cookies, no
+// Family page, and server/accounts.mjs (with `pg` and `stripe`) is never even loaded. On,
+// createServer({ accounts }):
+// - sends every other /api/* request to accounts.handleHttp(), asks the database in /healthz,
+//   adds `accounts` and `friendsMode` to /api/net, and serves the Family page (/account,
+//   /account/verify, with Cross-Origin-Opener-Policy: same-origin) and /privacy, /terms;
+// - asks accounts.authorizeSocket() about every WebSocket after the existing checks (a refusal
+//   completes the handshake, sends {t:'e', code} and closes with 4401-4405 or 1013, so the page
+//   can show a friendly card); an admitted account player's claims go to the room
+//   (rooms.mjs: host, build, walkie and nickname rules) and to her walkie link (voice.mjs:
+//   `allowed`, the {t:'v', k:'perm'} frame);
+// - keeps account connections indexed by session, family and player: on accounts.events
+//   ('session', 'family', 'player') and every 60 s (accounts.recheck, cached) each affected
+//   connection is checked again. Lost the right to play: {t:'e', code} and the close code;
+//   walkie switched off: her voice stops at once and her badge shows "walkie off"; switched
+//   on: the page is told ({k:'perm'}). A dashboard switch reaches a live game within about a
+//   second, a lapse by time within about two minutes. While the database is down (recheck
+//   says `unavailable`), live games go on;
+// - allows at most SW_MAX_PER_FAMILY (12) connections per family, next to the per-address
+//   limits.
 
 import http from 'node:http';
 import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs';
@@ -98,6 +112,10 @@ export function createServer(opts = {}) {
     accounts: opts.accounts ?? null,
     // Strict-Transport-Security on every answer (accounts on with an https PUBLIC_ORIGIN)
     hsts: opts.hsts ?? false,
+    // relay connections one family may have (accounts on; main passes cfg.maxPerFamily)
+    maxPerFamily: opts.maxPerFamily ?? 12,
+    // how often every account connection is checked again (accounts.recheck is cached ≤ 60 s)
+    recheckMs: opts.recheckMs ?? 60000,
   };
   const accounts = o.accounts;
   const pkg = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
@@ -115,6 +133,9 @@ export function createServer(opts = {}) {
   const connectBuckets = new Map(); // ip -> Bucket (new connections)
   const roomBuckets = new Map(); // ip -> Bucket (new rooms)
   const counters = { connections: 0, rejected: 0, rateDropped: 0, connectLimited: 0, roomLimited: 0, errors: 0, voiceKicked: 0 };
+  if (accounts) Object.assign(counters, { familyLimited: 0, revoked: 0, rechecks: 0, walkieChanged: 0 });
+  // account connections (accounts on): session hash (hex) / family id / player id -> Set<conn>
+  const acctIndex = { session: new Map(), family: new Map(), player: new Map() };
   let shuttingDown = false;
 
   const server = http.createServer((req, res) => handleHttp(req, res));
@@ -171,7 +192,9 @@ export function createServer(opts = {}) {
     }
     // ---- the home page (dist/site/) at "/" and its files ----
     const sitePath = site ? siteFileFor(pathname) : null;
-    if (sitePath && site.has(sitePath)) return sendSiteFile(req, res, site.get(sitePath), head);
+    // the Family page, /privacy and /terms exist only with accounts on (a site built for
+    // accounts but served without them must not offer a sign-in that cannot work)
+    if (sitePath && site.has(sitePath) && (accounts || !ACCOUNT_SITE_FILES.has(sitePath))) return sendSiteFile(req, res, site.get(sitePath), head, ACCOUNT_PAGES.has(sitePath));
     // ---- the game at "/play" ("/" too when the home page is not built) ----
     if (pathname === '/play' || pathname === '/play/' || pathname === '/sparkle-world.html' || (!site && (pathname === '/' || pathname === '/index.html'))) {
       if (!page) return sendText(res, 503, 'Sparkle World is not built yet. Run: npm run build\n', head);
@@ -246,9 +269,11 @@ export function createServer(opts = {}) {
     return rel;
   }
 
-  function sendSiteFile(req, res, f, head) {
+  function sendSiteFile(req, res, f, head, accountPage = false) {
     securityHeaders(res);
     if (f.html) res.setHeader('Content-Security-Policy', SITE_CSP);
+    // the Family page: no other window (Stripe's page, a link it opened) can reach this one
+    if (accountPage) res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
     res.setHeader('ETag', f.etag);
     res.setHeader('Cache-Control', f.cache);
     if (f.gz) res.setHeader('Vary', 'Accept-Encoding');
@@ -384,9 +409,18 @@ export function createServer(opts = {}) {
       ws.close(4029, 'too many connections');
       return;
     }
+    // per family (accounts on, §8.5), next to the per-address limit
+    const family = claims && claims.familyId ? String(claims.familyId) : null;
+    if (family && (acctIndex.family.get(family)?.size || 0) >= o.maxPerFamily) {
+      counters.familyLimited++;
+      safeSend(ws, { t: 'e', code: 'limit' });
+      ws.close(4029, 'too many connections');
+      return;
+    }
     perIp.set(ip, ipCount + 1);
     const key = name + '\n' + peer;
-    const conn = { ws, name, peer, ip, claims, bucket: new Bucket(o.rate, o.burst), bye: false, replaced: false, alive: true, dropped: 0, droppedAt: 0 };
+    const conn = { ws, name, peer, ip, claims, bucket: new Bucket(o.rate, o.burst), bye: false, replaced: false, alive: true, dropped: 0, droppedAt: 0, open: true, checking: null, again: null, keys: [] };
+    if (claims) indexConn(conn);
     const old = conns.get(key);
     if (old) {
       old.replaced = true;
@@ -420,7 +454,8 @@ export function createServer(opts = {}) {
           counters.voiceKicked++;
           ws.close(4008, 'too fast');
         },
-      });
+      // an account player: her grown-up's walkie switch, told to the page ({k:'perm'})
+      }, claims ? { walkie: claims.walkie === true } : undefined);
     }
     ws.on('pong', () => {
       conn.alive = true;
@@ -484,6 +519,8 @@ export function createServer(opts = {}) {
     }
     ws.on('error', () => {});
     ws.on('close', (code) => {
+      conn.open = false;
+      if (conn.claims) unindexConn(conn);
       conn.voice?.close();
       const n = (perIp.get(ip) || 1) - 1;
       if (n <= 0) perIp.delete(ip);
@@ -549,6 +586,8 @@ export function createServer(opts = {}) {
     voice.stop();
     clearInterval(sweepTimer);
     clearInterval(roomTimer);
+    if (recheckTimer) clearInterval(recheckTimer);
+    unlisten();
     for (const conn of conns.values()) {
       try {
         conn.ws.close(1012, 'restarting');
@@ -568,10 +607,156 @@ export function createServer(opts = {}) {
   }
 
   function stats() {
-    return { rooms: registry.roomCount, peers: registry.peerCount(), connections: conns.size, ...counters, ...registry.counts, voice: voice.stats() };
+    const out = { rooms: registry.roomCount, peers: registry.peerCount(), connections: conns.size, ...counters, ...registry.counts, voice: voice.stats() };
+    if (accounts) {
+      let n = 0;
+      for (const set of acctIndex.family.values()) n += set.size;
+      out.accountConnections = n;
+    }
+    return out;
   }
 
-  return { server, registry, voice, listen, close, stats, page, site, accounts, options: o };
+  // ---- live revocation (accounts on, docs/ACCOUNTS.md §8.4) ----
+
+  /** An index key: a session hash (Buffer or hex), a family or a player id. */
+  function keyOf(v) {
+    if (v === null || v === undefined) return null;
+    if (Buffer.isBuffer(v) || v instanceof Uint8Array) return Buffer.from(v).toString('hex');
+    return String(v);
+  }
+
+  function indexKeys(claims) {
+    return [['session', keyOf(claims.sessionHash)], ['family', keyOf(claims.familyId)], ['player', keyOf(claims.playerId)]];
+  }
+
+  function indexConn(conn) {
+    conn.keys = indexKeys(conn.claims);
+    for (const [kind, k] of conn.keys) {
+      if (k === null) continue;
+      let set = acctIndex[kind].get(k);
+      if (!set) acctIndex[kind].set(k, (set = new Set()));
+      set.add(conn);
+    }
+  }
+
+  function unindexConn(conn) {
+    for (const [kind, k] of conn.keys) {
+      const set = k === null ? null : acctIndex[kind].get(k);
+      if (!set) continue;
+      set.delete(conn);
+      if (!set.size) acctIndex[kind].delete(k);
+    }
+    conn.keys = [];
+  }
+
+  /**
+   * Ask the accounts again about one live connection: one question at a time per connection
+   * (an event that comes while one runs asks once more afterwards). `fresh` (after an event)
+   * passes { fresh: true }: the accounts skip their 60 s cache (they also clear it before
+   * emitting the event).
+   */
+  function recheckConn(conn, fresh) {
+    if (!accounts || !conn.claims || !conn.open) return Promise.resolve();
+    if (conn.checking) {
+      conn.again = conn.again === 'fresh' || fresh ? 'fresh' : 'cached';
+      return conn.checking;
+    }
+    counters.rechecks++;
+    conn.checking = (async () => {
+      let r;
+      try {
+        r = await accounts.recheck(conn.claims, fresh ? { fresh: true } : undefined);
+      } catch {
+        r = { ok: false, code: 'unavailable' };
+      }
+      conn.checking = null;
+      if (conn.open) applyCheck(conn, r);
+      if (conn.again && conn.open) {
+        const f = conn.again === 'fresh';
+        conn.again = null;
+        await recheckConn(conn, f);
+      }
+    })();
+    return conn.checking;
+  }
+
+  /** What a recheck answered, applied to the live connection. */
+  function applyCheck(conn, r) {
+    if (!r || typeof r !== 'object') return;
+    if (!r.ok) {
+      if (r.code === 'unavailable') return; // the database is down: live games go on (§8.1)
+      endConn(conn, ACCOUNT_CLOSE[r.code] ? r.code : 'signed_out');
+      return;
+    }
+    const next = r.claims;
+    if (!next || typeof next !== 'object') return;
+    const was = conn.claims;
+    conn.claims = next;
+    const keys = indexKeys(next);
+    if (keys.some(([, k], i) => conn.keys[i]?.[1] !== k)) {
+      unindexConn(conn);
+      indexConn(conn);
+    }
+    const walkieWas = was.walkie === true;
+    const walkieNow = next.walkie === true;
+    // switched off: her voice stops first, then her badge; switched on: badge rules first,
+    // then the page is told it may
+    if (walkieWas && !walkieNow && conn.voice) voice.setAllowed(conn.voice, false);
+    if (walkieWas !== walkieNow || was.nickname !== next.nickname || was.canHost !== next.canHost || was.canBuild !== next.canBuild) {
+      registry.setClaims(conn.name, conn.peer, next);
+    }
+    if (!walkieWas && walkieNow && conn.voice) voice.setAllowed(conn.voice, true);
+    if (walkieWas !== walkieNow) counters.walkieChanged++;
+  }
+
+  /** She may not play together any more: tell her why (the page shows a friendly card) and close. */
+  function endConn(conn, code) {
+    if (!conn.open || conn.bye) return;
+    counters.revoked++;
+    conn.bye = true;
+    conn.voice?.close(); // not one voice byte to or from her from now on
+    safeSend(conn.ws, { t: 'e', code });
+    registry.leave(conn.name, conn.peer); // the others see her leave at once
+    try {
+      conn.ws.close(ACCOUNT_CLOSE[code], code);
+    } catch {}
+  }
+
+  function recheckEach(set, fresh) {
+    if (!set) return;
+    for (const conn of [...set]) recheckConn(conn, fresh);
+  }
+
+  const onSessionEvent = (e) => recheckEach(acctIndex.session.get(keyOf(e && e.sessionHash)), true);
+  const onFamilyEvent = (e) => recheckEach(acctIndex.family.get(keyOf(e && e.familyId)), true);
+  const onPlayerEvent = (e) => {
+    if (e && e.playerId) recheckEach(acctIndex.player.get(keyOf(e.playerId)), true);
+    else recheckEach(acctIndex.family.get(keyOf(e && e.familyId)), true);
+  };
+  const events = accounts && accounts.events && typeof accounts.events.on === 'function' ? accounts.events : null;
+  if (events) {
+    events.on('session', onSessionEvent);
+    events.on('family', onFamilyEvent);
+    events.on('player', onPlayerEvent);
+  }
+  function unlisten() {
+    if (!events) return;
+    events.off('session', onSessionEvent);
+    events.off('family', onFamilyEvent);
+    events.off('player', onPlayerEvent);
+  }
+
+  /** Every account connection asked again (the 60 s sweep; tests call it directly). */
+  function recheckAll(fresh = false) {
+    const all = [];
+    for (const set of acctIndex.family.values()) for (const conn of [...set]) all.push(recheckConn(conn, fresh));
+    return Promise.all(all);
+  }
+  // a plan that ends by time, a session that expires: caught within recheckMs + the cache
+  const recheckTimer = accounts ? setInterval(() => recheckAll(false), o.recheckMs) : null;
+  recheckTimer?.unref?.();
+
+  return { server, registry, voice, listen, close, stats, page, site, siteMode: site ? site.mode : null, accounts, options: o, recheckAll };
 }
 
 // WebSocket close codes for the accounts refusals (docs/ACCOUNTS.md §8.1); the page maps them to
@@ -585,6 +770,11 @@ const ACCOUNT_CLOSE = Object.freeze({
   unavailable: 1013,
 });
 export { ACCOUNT_CLOSE };
+
+// the Family page (Cross-Origin-Opener-Policy: same-origin, §4.7), and every file that exists
+// only with accounts on (with accounts off they answer 404, as before they existed)
+const ACCOUNT_PAGES = new Set(['account.html', 'account/verify.html']);
+const ACCOUNT_SITE_FILES = new Set([...ACCOUNT_PAGES, 'account.js', 'account.css', 'privacy.html', 'terms.html']);
 
 function loadPage(file) {
   if (!existsSync(file)) return null;
@@ -665,6 +855,13 @@ function loadSite(dir) {
     }
   };
   walk(dir);
+  // the accounts mode the home page's words were written for (tools/site-build.mjs writes
+  // .site.json only when accounts are on; no file: built with accounts off)
+  try {
+    files.mode = JSON.parse(readFileSync(path.join(dir, '.site.json'), 'utf8')).accounts || 'off';
+  } catch {
+    files.mode = 'off';
+  }
   return files;
 }
 
@@ -692,7 +889,9 @@ if (isMain) {
     }
     console.log(summarizeConfig(cfg));
   }
-  const app = createServer({ accounts, hsts: !!(accounts && cfg.hsts) });
+  const app = createServer({ accounts, hsts: !!(accounts && cfg.hsts), ...(accounts ? { maxPerFamily: cfg.maxPerFamily } : {}) });
+  // the home page must say what is true for this mode (docs/ACCOUNTS.md §9.5)
+  if (accounts && app.site && app.siteMode !== cfg.accounts) console.warn(`warning: the home page was built for SW_ACCOUNTS=${app.siteMode}, but the server runs with ${cfg.accounts}: build with the same SW_ACCOUNTS (npm run build) so its words are true`);
   const port = envInt('PORT', 8080);
   const host = process.env.HOST || '0.0.0.0';
   if (!app.page) console.warn('warning: dist/sparkle-world.html is missing; run "npm run build" first (health check will fail)');

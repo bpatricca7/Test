@@ -25,6 +25,17 @@
 //   for her), so a pretend host who came in between never gets her friends.
 //   gameOf(name) gives that same answer (with or without the gate) to the walkie-talkie relay
 //   (server/voice.mjs), so voice reaches exactly the members the gate lets see the game.
+// - account claims (family accounts on, docs/ACCOUNTS.md §8.2): join(…, meta.claims) gives a
+//   member `acct = {familyId, playerId, nickname, canHost, canBuild, walkie}` (null for legacy
+//   members, in the test hub and with accounts off: then nothing below applies). For such a
+//   member the room applies the server's rules to her presence and messages: r:'h' without
+//   canHost is refused (cannot_host, nothing changes); wk:1 without walkie is dropped from the
+//   patch (her badge then shows "walkie off", which is what the voice relay reads); nm is
+//   always the server's nickname (a changed page cannot pretend to be another child); ob (a
+//   guest's building outbox) without canBuild is dropped, and so are her sw.op / sw.bulk
+//   broadcasts (rejected: only a host sends them). setClaims(name, peer, acct) changes a live
+//   member's claims (losing walkie clears her wk and tells the room). The host's Let in! gate,
+//   the device stamps (`by`, still per device) and the host hold are untouched.
 // Nothing here stores anything beyond the live room, and nothing is logged.
 //
 // Frames out:  {t:'p', self?, reset?, j?:[entry], l?:[peer], u?:[[peer, patch]]}
@@ -50,6 +61,27 @@ export const HOST_HOLD_MS = 90000;
 
 /** Deepest nesting a broadcast may have (the game's messages use at most 7). */
 export const MAX_DATA_DEPTH = 16;
+
+/** Broadcast topics only a member that may build sends (the host's building, §5.3). */
+const BUILD_TOPICS = new Set(['sw.op', 'sw.bulk']);
+
+/**
+ * The room's view of an account member's claims (docs/ACCOUNTS.md §8.2), or null for a legacy
+ * member (no claims). Only these fields are kept; the session, the plan's end and the rest
+ * stay with the server.
+ */
+export function acctOf(claims) {
+  if (!claims || typeof claims !== 'object') return null;
+  const nickname = typeof claims.nickname === 'string' && claims.nickname ? claims.nickname : null;
+  return {
+    familyId: claims.familyId ?? null,
+    playerId: claims.playerId ?? null,
+    nickname,
+    canHost: claims.canHost === true,
+    canBuild: claims.canBuild === true,
+    walkie: claims.walkie === true,
+  };
+}
 
 const enc = new TextEncoder();
 /** UTF-8 bytes of a value's JSON text; -1 when it cannot be measured (too deep to stringify). */
@@ -137,6 +169,7 @@ class Member {
     this.by = meta.by ?? null;
     this.kind = meta.kind || 'viewer';
     this.guest = !!meta.guest;
+    this.acct = acctOf(meta.claims); // account claims (§8.2), null for a legacy member
     this.state = {};
     this.detachedAt = sink ? 0 : now;
     this.joinedAt = now;
@@ -209,7 +242,8 @@ export class RoomRegistry {
   /**
    * Put `peer` in room `name` with a delivery function sink(frame). A peer already in the
    * room (a reconnect) swaps its sink and gets the whole roster again.
-   * meta: { by, kind, guest, owner } (owner: who is asking, for the rooms-per-owner cap).
+   * meta: { by, kind, guest, owner, claims } (owner: who is asking, for the rooms-per-owner
+   * cap; claims: the account claims the server checked, null or absent for a legacy member).
    * @returns {{ok:true, resumed:boolean} | {ok:false, code:'bad_name'|'full'|'rooms_full'|'limit'}}
    */
   join(name, peer, sink, meta = {}) {
@@ -221,6 +255,9 @@ export class RoomRegistry {
       existing.sink = sink;
       existing.detachedAt = 0;
       room.lastActive = now;
+      // the reconnect's own claims (the server checked them again); legacy pages have none
+      existing.acct = acctOf(meta.claims);
+      this._enforce(room, existing);
       this._deliver(existing, { t: 'p', self: peer, reset: true, j: this._entries(room, existing) });
       return { ok: true, resumed: true };
     }
@@ -310,8 +347,23 @@ export class RoomRegistry {
     if (!frame || typeof frame !== 'object') return this._reject('bad_frame');
     const now = this.now();
     if (frame.t === 's') {
-      const patch = frame.patch;
+      let patch = frame.patch;
       if (!patch || typeof patch !== 'object' || Array.isArray(patch)) return this._reject('bad_frame');
+      const a = m.acct;
+      if (a) {
+        // the account rules (docs/ACCOUNTS.md §8.2): the server's word, not the page's
+        if (!a.canHost && patch.r === 'h') return this._reject('cannot_host');
+        const kept = {};
+        for (const k in patch) {
+          if (!IDENT_RE.test(k) || BAD_KEYS.has(k)) return this._reject('bad_state', 'key');
+          const v = patch[k];
+          const set = v !== null && v !== undefined;
+          if (k === 'wk' && set && !a.walkie) continue; // no walkie badge without the grown-up's switch
+          if (k === 'ob' && set && !a.canBuild) continue; // a looker's building never reaches the host
+          kept[k] = k === 'nm' && a.nickname ? a.nickname : v; // her name is the one her grown-up chose
+        }
+        patch = kept;
+      }
       const next = frame.replace ? {} : { ...m.state };
       for (const k in patch) {
         if (!IDENT_RE.test(k) || BAD_KEYS.has(k)) return this._reject('bad_state', 'key');
@@ -330,28 +382,15 @@ export class RoomRegistry {
       } else {
         for (const k in patch) (out ||= {})[k] = patch[k] === undefined ? null : patch[k];
       }
-      const before = this.gate ? this._openSet(room) : null;
-      m.state = next;
       room.lastActive = now;
       this.counts.states++;
-      this._trackHost(room);
-      const after = this.gate ? this._openSet(room) : null;
-      for (const o of room.members.values()) {
-        if (o === m) {
-          if (this._flipped(o, before, after)) this._refresh(room, o); // she became the host
-          continue;
-        }
-        if (this._flipped(o, before, after)) {
-          this._refresh(room, o);
-          continue;
-        }
-        const seen = out && this._visible(o, after) ? out : out && publicPart(out);
-        if (seen) this._deliver(o, { t: 'p', u: [[peer, seen]] });
-      }
+      this._setState(room, m, next, out);
       return null;
     }
     if (frame.t === 'b') {
       if (typeof frame.topic !== 'string' || !TOPIC_RE.test(frame.topic)) return this._reject('bad_topic');
+      // an account member who may not build never sends the host's building messages (§8.2)
+      if (m.acct && !m.acct.canBuild && BUILD_TOPICS.has(frame.topic)) return this._reject('cannot_build');
       // depth first: JSON.stringify of 8,000 nested arrays would throw (and take the relay down)
       if (tooDeep(frame.data)) return this._reject('bad_frame', 'too deep');
       const size = jsonSize(frame.data);
@@ -403,7 +442,65 @@ export class RoomRegistry {
     return out;
   }
 
+  /**
+   * Change a live member's account claims (docs/ACCOUNTS.md §8.2, §8.4): a grown-up switched
+   * the walkie off, renamed her, or the plan changed. Her presence is brought in line at once
+   * (losing walkie clears her wk, and the room is told, so every badge shows "walkie off").
+   * `claims` is what the server's accounts gave (acctOf keeps the room's part); null makes her
+   * a legacy member. Returns false when she is not in the room.
+   */
+  setClaims(name, peer, claims) {
+    const room = this.rooms.get(name);
+    const m = room?.members.get(peer);
+    if (!m) return false;
+    m.acct = acctOf(claims);
+    this._enforce(room, m);
+    return true;
+  }
+
   // ---------- internals ----------
+
+  /** Bring an account member's presence in line with her claims (a server-made patch). */
+  _enforce(room, m) {
+    const a = m.acct;
+    if (!a) return;
+    let fix = null;
+    if (!a.walkie && m.state.wk !== undefined) (fix ||= {}).wk = null;
+    if (!a.canBuild && m.state.ob !== undefined) (fix ||= {}).ob = null;
+    if (!a.canHost && m.state.r === 'h') (fix ||= {}).r = null;
+    if (a.nickname && m.state.nm !== undefined && m.state.nm !== a.nickname) (fix ||= {}).nm = a.nickname;
+    if (!fix) return;
+    const next = { ...m.state };
+    for (const k in fix) {
+      if (fix[k] === null) delete next[k];
+      else next[k] = fix[k];
+    }
+    this._setState(room, m, next, fix);
+  }
+
+  /**
+   * Store a member's new presence `next` and tell the others what changed (`out`: the patch,
+   * null for nothing). The gate may open or close for someone (she became the host, a friend
+   * was let in): they get everyone's presence again.
+   */
+  _setState(room, m, next, out) {
+    const before = this.gate ? this._openSet(room) : null;
+    m.state = next;
+    this._trackHost(room);
+    const after = this.gate ? this._openSet(room) : null;
+    for (const o of room.members.values()) {
+      if (o === m) {
+        if (this._flipped(o, before, after)) this._refresh(room, o); // she became the host
+        continue;
+      }
+      if (this._flipped(o, before, after)) {
+        this._refresh(room, o);
+        continue;
+      }
+      const seen = out && this._visible(o, after) ? out : out && publicPart(out);
+      if (seen) this._deliver(o, { t: 'p', u: [[m.peer, seen]] });
+    }
+  }
 
   _reject(code, msg) {
     this.counts.rejected++;
