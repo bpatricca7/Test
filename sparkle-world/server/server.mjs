@@ -114,8 +114,9 @@ export function createServer(opts = {}) {
     hsts: opts.hsts ?? false,
     // relay connections one family may have (accounts on; main passes cfg.maxPerFamily)
     maxPerFamily: opts.maxPerFamily ?? 12,
-    // how often every account connection is checked again (accounts.recheck is cached ≤ 60 s)
-    recheckMs: opts.recheckMs ?? 60000,
+    // how often every account connection is checked again (accounts.recheck is cached ≤ 60 s;
+    // SW_RECHECK_MS is for the end-to-end test, which moves the clock by weeks)
+    recheckMs: opts.recheckMs ?? envInt('SW_RECHECK_MS', 60000),
   };
   const accounts = o.accounts;
   const pkg = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
