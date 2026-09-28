@@ -230,6 +230,8 @@ async function newContext(label, { w = 1024, h = 768, touch = true } = {}) {
     hasTouch: touch,
     isMobile: touch,
     deviceScaleFactor: 1,
+    // the game's buttons pulse and pop; with reduced motion they hold still for a tap
+    reducedMotion: 'reduce',
     extraHTTPHeaders: { 'X-Forwarded-For': `203.0.113.${R.ips++}` },
   });
   ctx.label = label;
@@ -459,19 +461,15 @@ const GAME = {
 };
 
 /**
- * Tap a button like a child would. The game gives the first button of a card or menu the
- * focus, and a focused button pulses: it never holds still, which is what a normal tap waits
- * for. After a short wait the tap goes through anyway (overlays are still handled first).
+ * Tap a button like a child would (a tap on a touch device, a click on a computer). The
+ * contexts ask for reduced motion, so the game's pulsing buttons hold still for the tap
+ * (src/ui/theme.js honours prefers-reduced-motion).
  */
-async function tapIt(dev, target, timeout = 15000) {
+async function tapIt(dev, target, timeout = 30000) {
   const l = typeof target === 'string' ? dev.page.locator(target).first() : target;
   await l.waitFor({ state: 'visible', timeout });
-  try {
-    if (dev.touch) await l.tap({ timeout: 6000 });
-    else await l.click({ timeout: 6000 });
-  } catch {
-    await l.click({ force: true, timeout });
-  }
+  if (dev.touch) await l.tap({ timeout });
+  else await l.click({ timeout });
 }
 
 /**
@@ -738,10 +736,7 @@ async function s5() {
   const C = (R.fam.C = { email: `c.${randomBytes(3).toString('hex')}@example.com`, ctx: cDev.ctx, page: cDev.page });
   await GAME.open(cDev);
   await cDev.page.getByText(/Ask a grown-up/).first().waitFor({ timeout: 60000 });
-  // (the card's first button pulses while it has the focus, so it is never "stable" for a tap)
-  const grown = cDev.page.getByRole('button', { name: /I'm a grown-up/ }).first();
-  await grown.waitFor({ state: 'visible', timeout: 15000 });
-  await grown.click({ force: true });
+  await tapIt(cDev, cDev.page.getByRole('button', { name: /I'm a grown-up/ }).first());
   await GAME.grownUpCheck(cDev);
   await cDev.page.waitForURL((u) => u.pathname === '/account' && u.searchParams.get('next') === '/play', { timeout: 60000 });
   await cDev.page.waitForSelector('#email');
