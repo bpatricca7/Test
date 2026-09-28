@@ -247,6 +247,58 @@ async function fromPglite() {
   return { kind: 'pglite', db, url: null, close: () => db.close() };
 }
 
+// ---- the log spy (docs/ACCOUNTS.md §12.7), for every accounts suite ----
+
+/**
+ * Keep every console line (and whatever is passed to `spy.log`, the log function to give the
+ * servers under test), so a suite can check at its end that no email address, token, code,
+ * nickname, world name or IP address was ever logged:
+ *
+ *   const spy = installLogSpy();          // at the top of the test file
+ *   spy.remember(email, code, token);     // everything secret the suite handles
+ *   createAccounts(cfg, { log: spy.log }); createServer({ ..., log: spy.log });
+ *   spy.check();                          // the last test: throws naming the first 3 characters
+ *
+ * Lines are printed as well only with SW_TEST_VERBOSE=1.
+ */
+export function installLogSpy({ passThrough = process.env.SW_TEST_VERBOSE === '1' } = {}) {
+  const lines = [];
+  const secrets = new Set();
+  const fmt = (v) => (typeof v === 'string' ? v : v instanceof Error ? `${v.name}: ${v.message}` : (() => {
+    try {
+      return JSON.stringify(v);
+    } catch {
+      return String(v);
+    }
+  })());
+  const log = (...a) => lines.push(a.map(fmt).join(' '));
+  for (const k of ['log', 'info', 'warn', 'error', 'debug']) {
+    const orig = console[k].bind(console);
+    console[k] = (...a) => {
+      log(...a);
+      if (passThrough) orig(...a);
+    };
+  }
+  return {
+    lines,
+    secrets,
+    log,
+    /** Values of 4 or more characters that must never be logged. */
+    remember(...values) {
+      for (const v of values) if (v !== null && v !== undefined && String(v).length >= 4) secrets.add(String(v));
+    },
+    check() {
+      const text = lines.join('\n');
+      for (const s of secrets) if (text.includes(s)) throw new Error(`log spy: a secret was logged (${s.slice(0, 3)}…)`);
+      const email = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/.exec(text);
+      if (email) throw new Error(`log spy: an email address was logged (${email[0].slice(0, 3)}…)`);
+      const ip = /\b(?:\d{1,3}\.){3}\d{1,3}\b/.exec(text);
+      if (ip) throw new Error(`log spy: an IP address was logged (${ip[0].slice(0, 3)}…)`);
+      return lines.length;
+    },
+  };
+}
+
 // ---- as a program ----
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

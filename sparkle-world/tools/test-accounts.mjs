@@ -5,14 +5,17 @@
 // cookies) and the server's accounts hooks. A adds sign-in, sessions, pairing, family,
 // exports, delete, retention, the outbox, audit and the log spy below.
 
-import { test, describe, before, after } from 'node:test';
+import { test, describe, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { gzipSync } from 'node:zlib';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { gzipSync, gunzipSync } from 'node:zlib';
+import { mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID, createHmac } from 'node:crypto';
+import { spawn } from 'node:child_process';
+import { performance } from 'node:perf_hooks';
+import { fileURLToPath } from 'node:url';
 import WebSocket from 'ws';
 
 import { loadConfig, ConfigError, summarizeConfig, subKey } from '../server/config.mjs';
@@ -21,7 +24,21 @@ import { KeyedLimiter, Limits, Bucket } from '../server/limits.mjs';
 import { createRouter, HttpError, parseCookies, serializeCookie, cookieOf } from '../server/http.mjs';
 import { createAccounts, makeClock } from '../server/accounts.mjs';
 import { createServer, clientIpOf, isInternalIp, addressKey } from '../server/server.mjs';
-import { openTestDb } from './testdb.mjs';
+import { openTestDb, installLogSpy } from './testdb.mjs';
+import { safeNext, normalizeEmail, normalizePairCode, deviceLabel, cleanLabel, AUTH_LIMITS } from '../server/auth.mjs';
+import { accessOf, cleanNickname } from '../server/family.mjs';
+import { audit, checkAudit, AUDIT_ACTIONS } from '../server/audit.mjs';
+import { makeTransport, maskEmail, MAIL_BACKOFF_MS, MAIL_MAX_TRIES } from '../server/mail.mjs';
+import { renderMail, TEMPLATES } from '../server/mail-templates.mjs';
+import { fullYears, msUntilUtc } from '../server/jobs.mjs';
+import { runAdmin } from '../server/admin.mjs';
+import { readWorldFile } from '../src/core/storage.js';
+
+// The log spy (§12.7): from here on every console line of this file, and every log function
+// given to the servers below, is kept (and printed only with SW_TEST_VERBOSE=1). The last test
+// checks that no email address, token, code, nickname, world name or IP address was logged.
+const spy = installLogSpy();
+const remember = spy.remember;
 
 const SECRET = randomBytes(32).toString('base64');
 const ORIGIN = 'http://localhost:8080';
@@ -202,6 +219,15 @@ describe('database and migrations (§3)', () => {
     assert.deepEqual(tables, ['audit_log', 'deleted_families', 'families', 'gone_sessions', 'login_attempts', 'outbox', 'pair_codes', 'player_profiles', 'players', 'schema_migrations', 'sessions', 'stripe_events', 'subscriptions', 'worlds']);
   });
 
+  test('migrations are expand-only: no drop, rename or type change (§3.2)', () => {
+    for (const m of listMigrations()) {
+      const sql = readFileSync(m.file, 'utf8').replace(/--[^\n]*/g, '').toLowerCase();
+      for (const bad of [/\bdrop\s+(table|column|index|constraint|type|schema)\b/, /\brename\b/, /\balter\s+column\s+\S+\s+(set\s+data\s+)?type\b/, /\btruncate\b/, /\bdelete\s+from\b/]) {
+        assert.ok(!bad.test(sql), `${path.basename(m.file)}: ${bad}`);
+      }
+    }
+  });
+
   test('values: int8 → Number, bytea → Buffer, timestamptz → Date, jsonb parsed', async () => {
     const f = await t.db.one("insert into families (email, flags) values ('p@example.com', $1) returning *", [JSON.stringify({ dispute: true })]);
     assert.equal(typeof f.id, 'string');
@@ -258,14 +284,17 @@ describe('database and migrations (§3)', () => {
     assert.deepEqual(inner, { ok: false });
     assert.deepEqual(await t.db.tryLock('sparkle-world:job:test', async () => 2), { ok: true, value: 2 });
     const order = [];
-    await Promise.all([
-      t.db.lock('sparkle-world:x', async () => {
-        order.push('a1');
-        await new Promise((r) => setTimeout(r, 50));
-        order.push('a2');
-      }),
-      t.db.lock('sparkle-world:x', async () => order.push('b')),
-    ]);
+    let entered;
+    const inA = new Promise((r) => (entered = r));
+    const a = t.db.lock('sparkle-world:x', async () => {
+      order.push('a1');
+      entered();
+      await new Promise((r) => setTimeout(r, 50));
+      order.push('a2');
+    });
+    await inA; // b asks only once a holds the lock (two pool connections race otherwise)
+    const b = t.db.lock('sparkle-world:x', async () => order.push('b'));
+    await Promise.all([a, b]);
     assert.deepEqual(order, ['a1', 'a2', 'b']);
     assert.equal(await t.db.ping(2000), true);
   });
@@ -558,5 +587,1894 @@ describe('server hooks (§1.2, §8.1)', () => {
     const { port } = await start({ ...ENV, SW_ACCOUNTS: 'required' });
     const s = await ws(port, '');
     assert.deepEqual([s.opened, s.closed, s.frames], [true, 4401, [{ t: 'e', code: 'signed_out' }]]);
+  });
+});
+
+// =============================================================================================
+// Builder A (§12.6, §12.7): sign-in, sessions, the email check, devices, consent, players,
+// exports, deletes, the relay's questions, mail, jobs, audit, the admin CLI. A real server
+// (createServer + createAccounts, SW_TEST=1, MAIL_MODE=memory) on 127.0.0.1 with an https
+// PUBLIC_ORIGIN, so the cookies are the production ones (__Host-, Secure) and HSTS is on.
+// Billing's Stripe side of a family delete is a recording stub (B tests the real one against
+// the Stripe fake).
+
+const MIN = 60e3;
+const HOUR = 60 * MIN;
+const DAY = 24 * HOUR;
+const HTTPS = 'https://sparkleworld.fun';
+const TEST_ENV = Object.freeze({
+  ...ENV,
+  PUBLIC_ORIGIN: HTTPS,
+  SW_TEST: '1',
+  STRIPE_API_BASE: 'http://127.0.0.1:9', // a Stripe call would fail at once instead of going out
+  SW_OPERATOR_EMAIL: 'privacy@sparkleworld.fun',
+});
+const IPAD = 'Mozilla/5.0 (iPad; CPU OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
+const MAC_CHROME = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36';
+const SESS = '__Host-sw_sess';
+const LOGIN = '__Host-sw_login';
+const A_DIR = mkdtempSync(path.join(tmpdir(), 'sw-acct-a-'));
+const A_HTML = path.join(A_DIR, 'game.html');
+writeFileSync(A_HTML, '<!doctype html><title>Sparkle World</title>');
+process.on('exit', () => rmSync(A_DIR, { recursive: true, force: true }));
+const SERVER_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'server');
+
+let ipSeq = 0;
+function nextIp() {
+  ipSeq++;
+  const ip = ipSeq < 250 ? `203.0.113.${ipSeq}` : `198.51.100.${(ipSeq % 250) + 1}`;
+  remember(ip);
+  return ip;
+}
+let roomSeq = 0;
+const allMail = [];
+const allAudit = [];
+
+function httpCall(base, method, p, { headers = {}, body } = {}) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(p, base);
+    const req = http.request({ host: u.hostname, port: u.port, path: u.pathname + u.search, method, headers }, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => {
+        const buf = Buffer.concat(chunks);
+        const text = buf.toString();
+        let data = null;
+        try {
+          data = JSON.parse(text);
+        } catch {}
+        resolve({ status: res.statusCode, headers: res.headers, data, text, buf });
+      });
+    });
+    req.on('error', reject);
+    if (body !== undefined) req.write(body);
+    req.end();
+  });
+}
+
+/** A browser: its own address and cookie jar; state-changing calls carry the §4.7 headers. */
+class Browser {
+  constructor(h, { ip = nextIp(), ua = IPAD } = {}) {
+    this.h = h;
+    this.ip = ip;
+    this.ua = ua;
+    this.jar = new Map();
+  }
+  cookie(name) {
+    return this.jar.get(name) ?? null;
+  }
+  cookieHeader() {
+    return [...this.jar].map(([k, v]) => `${k}=${v}`).join('; ');
+  }
+  async call(method, p, { body, headers = {}, csrf = true } = {}) {
+    const hd = { 'user-agent': this.ua, 'x-forwarded-for': this.ip };
+    if (this.jar.size) hd.cookie = this.cookieHeader();
+    let payload;
+    if (method !== 'GET' && method !== 'HEAD') {
+      if (csrf) Object.assign(hd, { 'x-sw': '1', origin: HTTPS, 'content-type': 'application/json' });
+      payload = body === undefined ? '{}' : typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body);
+      hd['content-length'] = String(Buffer.byteLength(payload)); // (Node sends a DELETE body only with a length)
+    }
+    Object.assign(hd, headers);
+    const r = await httpCall(this.h.base, method, p, { headers: hd, body: payload });
+    for (const sc of [].concat(r.headers['set-cookie'] || [])) {
+      const pair = sc.split(';')[0];
+      const i = pair.indexOf('=');
+      const k = pair.slice(0, i);
+      const v = pair.slice(i + 1);
+      if (/Max-Age=0(;|$)/.test(sc) || v === '') this.jar.delete(k);
+      else {
+        this.jar.set(k, v);
+        remember(v);
+      }
+    }
+    return r;
+  }
+  get(p, o) {
+    return this.call('GET', p, o);
+  }
+  post(p, body, o = {}) {
+    return this.call('POST', p, { ...o, body });
+  }
+  patch(p, body, o = {}) {
+    return this.call('PATCH', p, { ...o, body });
+  }
+  del(p, body, o = {}) {
+    return this.call('DELETE', p, { ...o, body });
+  }
+}
+
+async function startHarness(db, env = {}) {
+  const cfg = loadConfig({ ...TEST_ENV, ...env });
+  const clock = makeClock();
+  const accounts = await createAccounts(cfg, { log: spy.log, db, clock, timers: false });
+  const app = createServer({ accounts, htmlPath: A_HTML, siteDir: path.join(A_DIR, 'none'), log: spy.log, hsts: cfg.hsts });
+  const port = await app.listen(0, '127.0.0.1');
+  const h = { cfg, clock, accounts, ctx: accounts.ctx, app, port, base: `http://127.0.0.1:${port}`, db, stripeCalls: [], stripeFails: false };
+  accounts.ctx.billing.cancelAndDelete = async (a) => {
+    h.stripeCalls.push(a);
+    if (h.stripeFails) {
+      const e = new Error('no network');
+      e.name = 'StripeConnectionError';
+      throw e;
+    }
+    return { ok: true };
+  };
+  h.browser = (o) => new Browser(h, o);
+  h.mail = async (to) => (await new Browser(h).get('/api/test/mail?to=' + encodeURIComponent(to))).data;
+  h.lastMail = async (to) => (await h.mail(to)).at(-1);
+  h.lastCode = async (to) => {
+    const mail = await h.lastMail(to);
+    const code = /(\d{6})$/.exec(mail.subject)[1];
+    remember(code);
+    return { code, mail };
+  };
+  h.link = (mail) => {
+    const t = /#t=([A-Za-z0-9_-]+)/.exec(mail.text)[1];
+    remember(t);
+    return t;
+  };
+  h.family = (email) => db.one('select * from families where email = $1', [email]);
+  h.setClock = (offsetMs) => {
+    clock.set(offsetMs);
+    h.ctx.billing.invalidate();
+    h.ctx.sessions.clearCaches();
+  };
+  h.close = async () => {
+    allMail.push(...h.ctx.mail.captured); // the last test reads every email this file sent
+    allAudit.push(...(await db.query('select * from audit_log')).rows); // and every audit row
+    await app.close();
+  };
+  return h;
+}
+
+async function signIn(h, b, email, { next } = {}) {
+  remember(email);
+  const s = await b.post('/api/auth/start', { email, ...(next ? { next } : {}) });
+  assert.equal(s.status, 202, 'start: ' + s.text);
+  const { code } = await h.lastCode(email);
+  const v = await b.post('/api/auth/verify', { code });
+  assert.equal(v.status, 200, 'verify: ' + v.text);
+  return (await h.family(email)).id;
+}
+
+/** An active Family Plan (and, by default, verified consent) straight in the database. */
+async function entitle(h, familyId, { verified = true } = {}) {
+  const now = h.clock.now();
+  await h.db.query(
+    `update families set consent_at = coalesce(consent_at, $2), notice_version = coalesce(notice_version, 1),
+            verified_at = case when $3::boolean then coalesce(verified_at, $2) else verified_at end,
+            verified_method = case when $3::boolean then coalesce(verified_method, 'card') else verified_method end,
+            stripe_customer_id = coalesce(stripe_customer_id, $4)
+      where id = $1`,
+    [familyId, new Date(now), verified, 'cus_' + familyId.slice(0, 8)],
+  );
+  await h.db.query(
+    `insert into subscriptions (id, family_id, customer_id, status, price_id, started_at, current_period_end, synced_at)
+     values ($1, $2, $3, 'active', 'price_abc123', $4, $5, $4)
+     on conflict (id) do update set status = 'active', current_period_end = excluded.current_period_end, synced_at = excluded.synced_at`,
+    ['sub_' + familyId.slice(0, 8), familyId, 'cus_' + familyId.slice(0, 8), new Date(now), new Date(now + 20 * DAY)],
+  );
+  h.ctx.billing.invalidate(familyId);
+}
+
+/** Sign in, agree to the notice, (by default) a plan with verified consent, and players. */
+async function setupFamily(h, email, { players = [], entitled = true, verified = true, b = h.browser() } = {}) {
+  const familyId = await signIn(h, b, email);
+  const n = (await b.get('/api/notice')).data;
+  const c = await b.post('/api/consent', { noticeVersion: n.version, agree: true });
+  assert.equal(c.status, 200, c.text);
+  if (entitled) await entitle(h, familyId, { verified });
+  const ids = {};
+  for (const nick of players) {
+    remember(nick);
+    const r = await b.post('/api/players', { nickname: nick });
+    assert.equal(r.status, 201, r.text);
+    ids[nick] = r.data.id;
+  }
+  return { b, familyId, ids };
+}
+
+/** A kid's device paired with a code from the parent's browser `b` (still within its check). */
+async function pairKid(h, b, body = {}, o = {}) {
+  const pc = await b.post('/api/devices/pair-code', body);
+  assert.equal(pc.status, 200, pc.text);
+  remember(pc.data.code, pc.data.code.replace('-', ''));
+  const kid = h.browser(o);
+  const r = await kid.post('/api/auth/pair', { code: pc.data.code });
+  assert.equal(r.status, 200, r.text);
+  return kid;
+}
+
+/** Open a relay socket as browser `b` for player `pid` (null: no p) and see what happens. */
+function wsOpen(h, b, pid, { waitMs = 400 } = {}) {
+  return new Promise((resolve) => {
+    const headers = { 'x-forwarded-for': b.ip };
+    if (b.jar.size) headers.cookie = b.cookieHeader();
+    const s = new WebSocket(`ws://127.0.0.1:${h.port}/r/test-room-${++roomSeq}?s=${'a'.repeat(20)}${pid ? '&p=' + pid : ''}`, { headers });
+    const box = { frames: [], closed: null, opened: false, status: null, stillOpen: false };
+    s.on('open', () => (box.opened = true));
+    s.on('message', (d) => {
+      try {
+        box.frames.push(JSON.parse(d.toString()));
+      } catch {}
+    });
+    s.on('close', (code) => {
+      box.closed = code;
+      resolve(box);
+    });
+    s.on('unexpected-response', (req, res) => {
+      box.status = res.statusCode;
+      resolve(box);
+    });
+    s.on('error', () => {});
+    setTimeout(() => {
+      if (box.opened && box.closed === null) {
+        box.stillOpen = true;
+        s.close(1000);
+      }
+    }, waitMs);
+  });
+}
+
+const fill = (p, pid) => p.replace(':pid', pid).replace(':wid', 'w1').replace(':id', '00000000');
+const count = async (db, sql, params) => (await db.one(sql, params)).n;
+
+function putWorld(db, pid, id, { name = 'Castle Cove', updatedAt = 1790000000000, size = { x: 144, y: 64, z: 144 }, thumb = null, rev = 1 } = {}) {
+  remember(name);
+  const save = { id, name, biome: 'meadow', size, blocks: 'AAAA', palette: [], createdAt: updatedAt - 1000, updatedAt, thumbnail: null };
+  const text = JSON.stringify(save);
+  const gz = gzipSync(text);
+  const meta = { id, name, biome: 'meadow', size, createdAt: save.createdAt, updatedAt };
+  return db.query(
+    `insert into worlds (player_id, world_id, rev, client_updated_at, meta, thumb, body, size, stored)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+     on conflict (player_id, world_id) do update set body = excluded.body, rev = excluded.rev, deleted_at = null`,
+    [pid, id, rev, updatedAt, JSON.stringify(meta), thumb, gz, text.length, gz.length],
+  ).then(() => save);
+}
+
+function putProfile(db, pid, profile) {
+  const text = JSON.stringify(profile);
+  return db.query('insert into player_profiles (player_id, rev, client_updated_at, body, size) values ($1, 1, $2, $3, $4) on conflict (player_id) do update set body = excluded.body', [
+    pid, profile.updatedAt || 1, gzipSync(text), text.length,
+  ]);
+}
+
+// ---------------------------------------------------------------------------------------------
+
+describe('A: small pieces (emails, next, pair codes, labels, nicknames, access)', () => {
+  test('emails are normalized; odd ones are refused', () => {
+    assert.equal(normalizeEmail('  Lily.Mom@Example.COM '), 'lily.mom@example.com');
+    assert.equal(normalizeEmail('élise@example.com'), 'élise@example.com', 'NFC');
+    for (const bad of ['', 'no-at', 'a@b', 'a b@c.de', 'x'.repeat(250) + '@b.co', 'a@b..co', 'a@b.c', '<a>@b.co', 42, null]) assert.equal(normalizeEmail(bad), null, String(bad));
+  });
+  test('next: only /account and /play (open redirects → /account)', () => {
+    for (const n of ['//evil.example', 'https://evil.example', '/account/../evil', '/accounts', '/play?x=<b>', '\\\\evil', '/account?next=//evil.example', 'javascript:alert(1)', '/play#x', null, 7]) {
+      assert.equal(safeNext(n), '/account', String(n));
+    }
+    assert.equal(safeNext('/play'), '/play');
+    assert.equal(safeNext('/account?checkout=cs_test_1'), '/account?checkout=cs_test_1');
+  });
+  test('pair codes: Crockford base32, any case, O=0, I=L=1, dash optional', () => {
+    assert.equal(normalizePairCode('k7qm-2xfd'), 'K7QM2XFD');
+    assert.equal(normalizePairCode('K7QM 2XFD'), 'K7QM2XFD');
+    assert.equal(normalizePairCode('O1LI-abcd'), '0111ABCD');
+    assert.equal(normalizePairCode('UUUU-UUUU'), null, 'no U');
+    assert.equal(normalizePairCode('K7QM-2XF'), null);
+    assert.equal(normalizePairCode(12345678), null);
+  });
+  test('device labels come from the User-Agent (which is not kept); a parent\'s label is cleaned', () => {
+    assert.equal(deviceLabel(IPAD), 'iPad · Safari');
+    assert.equal(deviceLabel(MAC_CHROME), 'Mac · Chrome');
+    assert.equal(deviceLabel('Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Mobile Safari/537.36'), 'Android phone · Chrome');
+    assert.equal(deviceLabel(''), 'Device · Browser');
+    assert.equal(cleanLabel('  Kitchen‮ iPad\n<b> '), 'Kitchen iPadb');
+    assert.equal(cleanLabel('x'.repeat(60)).length, 40);
+    assert.equal(cleanLabel('   '), null);
+  });
+  test('nicknames go through names.js (≤ 12 letters, no digits, the blocklist)', () => {
+    assert.equal(cleanNickname('Lily2'), 'Lily');
+    assert.equal(cleanNickname('  Star   Bunny '), 'Star Bunny');
+    assert.equal(cleanNickname('Princess Sparkle Pony'), 'Princess Spa');
+    for (const bad of ['butt', '1234', '', '   ', 'admin', null]) assert.equal(cleanNickname(bad), null, String(bad));
+  });
+  test('accessOf: what the relay allows (§6.7, §8.6)', () => {
+    const cfg = { friendsMode: 'subscription' };
+    const ent = (entitled, verified = true) => ({ entitled, friendsConsentOk: verified, walkieConsentOk: verified });
+    const p = (friends_on, walkie_on = false) => ({ friends_on, walkie_on });
+    assert.equal(accessOf({ ent: ent(false), player: p(true), cfg }).why, 'not_entitled');
+    assert.equal(accessOf({ ent: ent(true, false), player: p(true), cfg }).why, 'friends_locked');
+    assert.equal(accessOf({ ent: ent(true), player: p(false), cfg }).why, 'friends_off');
+    assert.deepEqual(accessOf({ ent: ent(true), player: p(true, true), cfg }), { canJoin: true, canHost: true, canBuild: true, walkieOk: true, why: null });
+    assert.equal(accessOf({ ent: { entitled: true, friendsConsentOk: true, walkieConsentOk: false }, player: p(true, true), cfg }).walkieOk, false, 'the walkie always needs verified consent');
+    const free = { friendsMode: 'free-join' };
+    assert.deepEqual(accessOf({ ent: ent(false), player: p(true, true), cfg: free }), { canJoin: true, canHost: false, canBuild: false, walkieOk: false, why: null }, 'a visitor');
+    assert.equal(accessOf({ ent: ent(false), player: p(false), cfg: free }).why, 'friends_off');
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+
+describe('A: sign-in (§4.3, §12.7)', () => {
+  let t;
+  let h;
+  before(async () => {
+    t = await openTestDb();
+    h = await startHarness(t.db);
+  });
+  after(async () => {
+    await h?.close();
+    await t?.close();
+  });
+  beforeEach(() => {
+    h.ctx.limits = new Limits();
+    h.setClock(0);
+  });
+
+  test('start: the same status, body, cookies and timing for known and unknown emails; nothing is created', async () => {
+    const known = [1, 2, 3, 4, 5, 6, 7].map((i) => `known${i}@example.com`);
+    const unknown = known.map((e) => e.replace('known', 'stranger'));
+    remember(...known, ...unknown);
+    for (const e of known) await t.db.query('insert into families (email, email_verified_at) values ($1, $2)', [e, new Date()]);
+    const families = await count(t.db, 'select count(*) as n from families');
+    const shape = (r) => ({ status: r.status, body: r.text, type: r.headers['content-type'], cookies: [].concat(r.headers['set-cookie']).map((c) => c.replace(/=[^;]*/, '=X')) });
+    const times = { known: [], unknown: [] };
+    const shapes = { known: null, unknown: null };
+    for (let i = 0; i < known.length; i++) {
+      for (const [kind, email] of i % 2 ? [['known', known[i]], ['unknown', unknown[i]]] : [['unknown', unknown[i]], ['known', known[i]]]) {
+        const b = h.browser();
+        const t0 = performance.now();
+        const r = await b.post('/api/auth/start', { email });
+        times[kind].push(performance.now() - t0);
+        shapes[kind] = shape(r);
+      }
+    }
+    assert.deepEqual(shapes.known, shapes.unknown);
+    assert.deepEqual([shapes.known.status, shapes.known.body], [202, '{"ok":true}']);
+    assert.equal(await count(t.db, 'select count(*) as n from families'), families, 'no family is created by start');
+    const median = (l) => [...l].sort((a, b) => a - b)[l.length >> 1];
+    const [mk, mu] = [median(times.known), median(times.unknown)];
+    assert.ok(Math.abs(mk - mu) < Math.max(40, 0.5 * Math.max(mk, mu)), `timing known ${mk.toFixed(1)} ms vs unknown ${mu.toFixed(1)} ms`);
+  });
+
+  test('bad emails → 400 bad_email', async () => {
+    for (const email of ['', 'no-at', 'a@b', 'x'.repeat(250) + '@b.co', 42]) {
+      const r = await h.browser().post('/api/auth/start', { email });
+      assert.deepEqual([r.status, r.data], [400, { error: 'bad_email' }], String(email));
+    }
+  });
+
+  test('a code works only in the browser that asked, once; the cookies are exactly §4.2\'s', async () => {
+    const email = 'lily.mom@example.com';
+    remember(email);
+    const asker = h.browser();
+    const r = await asker.post('/api/auth/start', { email, next: '/play' });
+    assert.equal(r.status, 202);
+    assert.equal(r.headers['strict-transport-security'], 'max-age=31536000');
+    assert.equal(r.headers['cross-origin-resource-policy'], 'same-origin');
+    const login = [].concat(r.headers['set-cookie']).find((c) => c.startsWith(LOGIN + '='));
+    assert.match(login, /^__Host-sw_login=[A-Za-z0-9_-]{43}; Path=\/; HttpOnly; SameSite=Lax; Max-Age=900; Secure$/);
+    const loginValue = asker.cookie(LOGIN);
+    const { code, mail } = await h.lastCode(email);
+    assert.equal(mail.template, 'signin');
+    assert.match(mail.subject, /^Your Sparkle World code: \d{6}$/);
+    assert.match(mail.text, /Welcome to Sparkle World!/);
+    assert.match(mail.text, /notice version 1/);
+    assert.ok(mail.text.includes(`${HTTPS}/privacy`));
+    const elsewhere = await h.browser().post('/api/auth/verify', { code });
+    assert.deepEqual([elsewhere.status, elsewhere.data], [410, { error: 'expired' }], 'no attempt cookie: no sign-in');
+    const ok = await asker.post('/api/auth/verify', { code });
+    assert.deepEqual([ok.status, ok.data], [200, { next: '/play' }]);
+    const set = [].concat(ok.headers['set-cookie']);
+    assert.match(set.find((c) => c.startsWith(SESS + '=')), /^__Host-sw_sess=[A-Za-z0-9_-]{43}; Path=\/; HttpOnly; SameSite=Lax; Max-Age=2592000; Secure$/);
+    assert.ok(set.includes('__Host-sw_login=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Secure'));
+    const replay = h.browser();
+    replay.jar.set(LOGIN, loginValue);
+    assert.equal((await replay.post('/api/auth/verify', { code })).status, 410, 'single use');
+    const me = await asker.get('/api/me');
+    assert.deepEqual([me.data.signedIn, me.data.kind, me.data.accounts, me.data.consent, me.data.players], [true, 'parent', 'optional', 'none', []]);
+    assert.ok(!me.text.includes(email), '/api/me never carries the email');
+    const f = await h.family(email);
+    assert.ok(f.email_verified_at instanceof Date);
+    const s = await t.db.one('select * from sessions where family_id = $1', [f.id]);
+    assert.deepEqual([s.kind, s.label], ['parent', 'iPad · Safari'], 'a coarse label from the User-Agent, which is not kept');
+    assert.ok(Buffer.isBuffer(s.id_hash) && s.id_hash.length === 32);
+    assert.ok(!s.id_hash.equals(Buffer.from(asker.cookie(SESS))), 'only a hash is stored');
+    assert.equal(+s.expires_at - +s.created_at, 30 * DAY);
+    assert.equal(+s.idle_expires_at - +s.created_at, 14 * DAY);
+    assert.equal(+s.elevated_until - +s.created_at, 15 * MIN, 'a sign-in counts as an email check for 15 minutes');
+  });
+
+  test('five wrong codes kill the attempt', async () => {
+    const email = 'five.tries@example.com';
+    remember(email);
+    const b = h.browser();
+    await b.post('/api/auth/start', { email });
+    const { code } = await h.lastCode(email);
+    const wrong = code === '000000' ? '111111' : '000000';
+    for (let left = 4; left >= 0; left--) {
+      const r = await b.post('/api/auth/verify', { code: wrong });
+      assert.deepEqual([r.status, r.data], [400, { error: 'bad_code', triesLeft: left }]);
+    }
+    const r = await b.post('/api/auth/verify', { code });
+    assert.deepEqual([r.status, r.data], [410, { error: 'expired' }]);
+    assert.equal(await h.family(email), null);
+  });
+
+  test('the link: any browser, POST only, single use; opening the page consumes nothing', async () => {
+    const email = 'link.dad@example.com';
+    remember(email);
+    await h.browser().post('/api/auth/start', { email });
+    const mail = await h.lastMail(email);
+    const token = h.link(mail);
+    assert.ok(mail.text.includes(`${HTTPS}/account/verify#t=${token}`), 'the token is in the fragment');
+    const phone = h.browser({ ua: MAC_CHROME });
+    await phone.get('/account/verify'); // what a mail scanner does (the fragment never reaches the server)
+    assert.equal((await phone.get('/api/auth/verify?t=' + token)).status, 405, 'a GET changes nothing');
+    const ok = await phone.post('/api/auth/verify', { token });
+    assert.deepEqual([ok.status, ok.data], [200, { next: '/account' }]);
+    assert.equal((await phone.get('/api/me')).data.signedIn, true);
+    const twice = await h.browser().post('/api/auth/verify', { token });
+    assert.deepEqual([twice.status, twice.data], [410, { error: 'expired' }]);
+    assert.equal((await h.browser().post('/api/auth/verify', { token: 'x'.repeat(43) })).status, 410);
+    assert.equal((await h.browser().post('/api/auth/verify', {})).status, 400);
+  });
+
+  test('codes and links expire after 15 minutes', async () => {
+    const email = 'slow.mom@example.com';
+    remember(email);
+    const b = h.browser();
+    await b.post('/api/auth/start', { email });
+    const { code, mail } = await h.lastCode(email);
+    const token = h.link(mail);
+    h.setClock(15 * MIN + 1000);
+    assert.equal((await b.post('/api/auth/verify', { code })).status, 410);
+    assert.equal((await h.browser().post('/api/auth/verify', { token })).status, 410);
+  });
+
+  test('only the 3 newest attempts for an email stay valid', async () => {
+    const email = 'many.tabs@example.com';
+    remember(email);
+    const tabs = [h.browser(), h.browser(), h.browser(), h.browser()];
+    const codes = [];
+    assert.equal((await h.browser().post('/api/test/limits', { off: true })).data.limits, 'off');
+    for (const b of tabs) {
+      await b.post('/api/auth/start', { email });
+      codes.push((await h.lastCode(email)).code);
+    }
+    h.ctx.limits = new Limits();
+    assert.equal((await tabs[0].post('/api/auth/verify', { code: codes[0] })).status, 410);
+    assert.equal((await tabs[3].post('/api/auth/verify', { code: codes[3] })).status, 200);
+  });
+
+  test('signing in again: a new session, the old one ended, the email says "sign in" now', async () => {
+    const email = 'again@example.com';
+    const b = h.browser();
+    await signIn(h, b, email);
+    const first = b.cookie(SESS);
+    const stale = h.browser();
+    stale.jar.set(SESS, first);
+    await signIn(h, b, email);
+    const second = b.cookie(SESS);
+    assert.notEqual(first, second);
+    const r = await stale.get('/api/family');
+    assert.deepEqual([r.status, r.data], [401, { error: 'signed_out' }]);
+    assert.equal((await b.get('/api/family')).status, 200);
+    const mails = await h.mail(email);
+    assert.match(mails.at(-1).text, /^Here is your code to sign in to Sparkle World:/);
+    assert.ok(!/notice version/.test(mails.at(-1).text));
+    const me = await stale.get('/api/me');
+    assert.deepEqual([me.status, me.data, [].concat(me.headers['set-cookie'])], [401, { error: 'signed_out' }, ['__Host-sw_sess=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Secure']]);
+  });
+
+  test('a bad next comes back as /account', async () => {
+    const email = 'redirect@example.com';
+    remember(email);
+    const b = h.browser();
+    await b.post('/api/auth/start', { email, next: '//evil.example/account' });
+    const { code } = await h.lastCode(email);
+    assert.deepEqual((await b.post('/api/auth/verify', { code })).data, { next: '/account' });
+  });
+
+  test('limits: per email 3 per 15 min and 10 a day, per address 5 at once, all 300 an hour, verify 30 an hour', async () => {
+    const email = 'limited@example.com';
+    remember(email);
+    const start = () => h.browser().post('/api/auth/start', { email });
+    for (let round = 0; round < 3; round++) {
+      h.setClock(round * 16 * MIN);
+      for (let i = 0; i < 3; i++) assert.equal((await start()).status, 202);
+      const no = await start();
+      assert.deepEqual([no.status, no.data], [429, { error: 'rate' }]);
+      assert.equal(no.headers['retry-after'], '900');
+    }
+    h.setClock(3 * 16 * MIN);
+    assert.equal((await start()).status, 202, 'the 10th of the day');
+    const day = await start();
+    assert.deepEqual([day.status, day.headers['retry-after']], [429, '3600']);
+    h.setClock(0);
+    const one = h.browser();
+    for (let i = 0; i < 5; i++) {
+      remember(`ip${i}@example.com`);
+      assert.equal((await one.post('/api/auth/start', { email: `ip${i}@example.com` })).status, 202);
+    }
+    assert.equal((await one.post('/api/auth/start', { email: 'ip5@example.com' })).status, 429, 'per address');
+    const all = h.ctx.limits.limiter(AUTH_LIMITS.startAll);
+    while (all.take('*'));
+    assert.equal((await h.browser().post('/api/auth/start', { email: 'everyone@example.com' })).status, 429, 'all 300 an hour');
+    const v = h.browser();
+    for (let i = 0; i < 30; i++) assert.notEqual((await v.post('/api/auth/verify', { code: '123456' })).status, 429);
+    const nv = await v.post('/api/auth/verify', { code: '123456' });
+    assert.deepEqual([nv.status, nv.data], [429, { error: 'rate' }]);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+
+describe('A: sessions, the email check, kid devices (§4.4–4.6, §12.7)', () => {
+  let t;
+  let h;
+  before(async () => {
+    t = await openTestDb();
+    h = await startHarness(t.db);
+  });
+  after(async () => {
+    await h?.close();
+    await t?.close();
+  });
+  beforeEach(() => {
+    h.ctx.limits = new Limits();
+    h.setClock(0);
+  });
+
+  test('every parent+check route without a fresh check → 403 check_required', async () => {
+    const { b, ids } = await setupFamily(h, 'check.walk@example.com', { players: ['Mila'] });
+    h.setClock(16 * MIN); // the sign-in's 15 minutes are over
+    const checked = h.ctx.routes.filter((r) => r.who === 'parent+check' || r.who === 'parent+check5');
+    assert.ok(checked.length >= 6, 'the check routes are mounted');
+    for (const r of checked) {
+      const res = await b.call(r.method, fill(r.path, ids.Mila), { body: {} });
+      assert.deepEqual([`${r.method} ${r.path}`, res.status, res.data?.error], [`${r.method} ${r.path}`, 403, 'check_required']);
+    }
+  });
+
+  test('a device session → 403 on every family, billing and device route; signed out → 401 everywhere', async () => {
+    const { b, ids } = await setupFamily(h, 'device.walk@example.com', { players: ['Zoey'] });
+    const kid = await pairKid(h, b);
+    const parentOnly = h.ctx.routes.filter((r) => r.who.startsWith('parent'));
+    assert.ok(parentOnly.some((r) => r.path.startsWith('/api/family')) && parentOnly.some((r) => r.path.startsWith('/api/devices')));
+    for (const r of parentOnly) {
+      const res = await kid.call(r.method, fill(r.path, ids.Zoey), { body: {} });
+      assert.deepEqual([`${r.method} ${r.path}`, res.status, res.data?.error], [`${r.method} ${r.path}`, 403, 'forbidden']);
+    }
+    const me = await kid.get('/api/me');
+    assert.deepEqual([me.data.kind, me.data.players.map((p) => p.nickname)], ['device', ['Zoey']]);
+    const nobody = h.browser();
+    for (const r of h.ctx.routes.filter((x) => ['session', 'parent', 'parent+check', 'parent+check5', 'player'].includes(x.who))) {
+      const res = await nobody.call(r.method, fill(r.path, ids.Zoey), { body: {} });
+      assert.deepEqual([`${r.method} ${r.path}`, res.status, res.data?.error], [`${r.method} ${r.path}`, 401, 'signed_out']);
+    }
+    assert.equal((await kid.post('/api/auth/logout', {})).status, 200, 'a device may sign itself out');
+  });
+
+  test('the email check: a code by email, good for 15 minutes; deleting needs one within 5 minutes', async () => {
+    const email = 'check.mom@example.com';
+    const { b } = await setupFamily(h, email, { entitled: false });
+    h.setClock(20 * MIN);
+    assert.equal((await b.post('/api/devices/pair-code', {})).data.error, 'check_required');
+    const c = await b.post('/api/auth/check', {});
+    assert.deepEqual([c.status, c.data], [202, { ok: true }]);
+    const { code, mail } = await h.lastCode(email);
+    assert.equal(mail.template, 'check');
+    assert.match(mail.subject, /^Your Sparkle World check code: \d{6}$/);
+    const sameSessionNoAttempt = h.browser();
+    sameSessionNoAttempt.jar.set(SESS, b.cookie(SESS));
+    assert.equal((await sameSessionNoAttempt.post('/api/auth/verify', { code })).status, 410, 'bound to the browser that asked');
+    const v = await b.post('/api/auth/verify', { code });
+    assert.equal(v.status, 200);
+    assert.ok(Math.abs(v.data.elevatedUntil - (h.clock.now() + 15 * MIN)) < 5000);
+    assert.equal((await b.post('/api/devices/pair-code', {})).status, 200);
+    const fam = (await b.get('/api/family')).data;
+    assert.ok(fam.elevatedUntil > h.clock.now());
+    h.setClock(26 * MIN); // the check was 6 minutes ago: still within 15, not within 5
+    assert.equal((await b.post('/api/devices/pair-code', {})).status, 200);
+    const del = await b.post('/api/family/delete', { confirm: 'DELETE' });
+    assert.deepEqual([del.status, del.data], [403, { error: 'check_required' }]);
+    assert.ok(await h.family(email), 'not deleted');
+    h.setClock(36 * MIN);
+    assert.equal((await b.post('/api/devices/pair-code', {})).data.error, 'check_required', 'and 15 minutes later nothing');
+  });
+
+  test('CSRF on every state-changing route: X-SW, Origin, JSON, Sec-Fetch-Site (the webhook alone is exempt)', async () => {
+    const { b, ids } = await setupFamily(h, 'csrf.walk@example.com', { players: ['Clementine'] });
+    remember('Clementine');
+    const writes = h.ctx.routes.filter((r) => r.method !== 'GET' && r.who !== 'stripe' && r.who !== 'test');
+    assert.ok(writes.length >= 15);
+    const good = { 'x-sw': '1', origin: HTTPS, 'content-type': 'application/json' };
+    for (const r of writes) {
+      const p = fill(r.path, ids.Clementine);
+      const name = `${r.method} ${r.path}`;
+      for (const [why, headers, status] of [
+        ['no X-SW', { origin: HTTPS, 'content-type': 'application/json' }, 403],
+        ['another site', { ...good, origin: 'https://evil.example' }, 403],
+        ['cross-site fetch', { ...good, 'sec-fetch-site': 'cross-site' }, 403],
+        ['a form post', { ...good, 'content-type': 'text/plain' }, 415],
+      ]) {
+        b.ip = nextIp(); // (60 requests: past one address's burst)
+        const res = await b.call(r.method, p, { body: {}, csrf: false, headers });
+        assert.deepEqual([name, why, res.status], [name, why, status]);
+      }
+    }
+    const hook = h.ctx.routes.find((r) => r.who === 'stripe');
+    if (hook) assert.notEqual((await b.call('POST', hook.path, { body: '{}', csrf: false, headers: { 'content-type': 'application/json' } })).status, 403);
+  });
+
+  test('the default limits: 120 a minute (60 at once) per address, 240 a minute per session', async () => {
+    const one = h.browser();
+    let n = 0;
+    while ((await one.get('/api/me')).status !== 429 && n < 100) n++;
+    assert.ok(n >= 59 && n < 70, `per address after ${n}`);
+    const { b } = await setupFamily(h, 'busy.session@example.com');
+    const cookie = b.cookieHeader();
+    let m = 0;
+    for (;;) {
+      const r = await httpCall(h.base, 'GET', '/api/me', { headers: { cookie, 'x-forwarded-for': nextIp() } });
+      if (r.status === 429 || m > 300) break;
+      m++;
+    }
+    assert.ok(m >= 238 && m <= 280, `per session after ${m}`);
+  });
+
+  test('/api/test/* do not exist without SW_TEST=1', async () => {
+    const cfgNoTest = loadConfig({ ...TEST_ENV, SW_TEST: '' });
+    const acc = await createAccounts(cfgNoTest, { log: spy.log, db: t.db, timers: false });
+    const app = createServer({ accounts: acc, htmlPath: A_HTML, siteDir: path.join(A_DIR, 'none'), log: spy.log });
+    const port = await app.listen(0, '127.0.0.1');
+    try {
+      assert.ok(!acc.ctx.routes.some((r) => r.path.startsWith('/api/test/')));
+      const r = await httpCall(`http://127.0.0.1:${port}`, 'GET', '/api/test/mail');
+      assert.deepEqual([r.status, r.data], [404, { error: 'not_found' }]);
+      const c = await httpCall(`http://127.0.0.1:${port}`, 'POST', '/api/test/clock', { headers: { 'x-sw': '1', origin: HTTPS, 'content-type': 'application/json' }, body: '{"offsetMs":1}' });
+      assert.equal(c.status, 404);
+    } finally {
+      await app.close();
+    }
+  });
+
+  test('the email check: 5 an hour per family', async () => {
+    const { b } = await setupFamily(h, 'check.limit@example.com', { entitled: false });
+    for (let i = 0; i < 5; i++) assert.equal((await b.post('/api/auth/check', {})).status, 202);
+    const no = await b.post('/api/auth/check', {});
+    assert.deepEqual([no.status, no.data], [429, { error: 'rate' }]);
+  });
+
+  test('pair codes: 8 symbols, 10 minutes, single use, at most 3 live; the device gets its label and lock', async () => {
+    const { b, familyId, ids } = await setupFamily(h, 'pair.dad@example.com', { players: ['Aria', 'Nora'] });
+    const pc = await b.post('/api/devices/pair-code', { label: "Aria's iPad", lockPlayer: ids.Aria });
+    assert.equal(pc.status, 200);
+    assert.match(pc.data.code, /^[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}$/);
+    assert.ok(Math.abs(pc.data.expiresAt - (h.clock.now() + 10 * MIN)) < 5000);
+    remember(pc.data.code, pc.data.code.replace('-', ''));
+    const second = await b.post('/api/devices/pair-code', {});
+    const third = await b.post('/api/devices/pair-code', {});
+    remember(second.data.code, third.data.code);
+    const fourth = await b.post('/api/devices/pair-code', {});
+    assert.deepEqual([fourth.status, fourth.data], [409, { error: 'limit' }]);
+    const other = await b.post('/api/devices/pair-code', { lockPlayer: randomUUID() });
+    assert.equal(other.status, 404, 'lock only to her own players');
+    // typed on the kid's iPad in lower case without the dash, O for 0
+    const kid = h.browser();
+    const typed = pc.data.code.toLowerCase().replace('-', '').replace(/0/g, 'o');
+    const r = await kid.post('/api/auth/pair', { code: typed });
+    assert.deepEqual([r.status, r.data], [200, { ok: true }]);
+    assert.match([].concat(r.headers['set-cookie'])[0], /^__Host-sw_sess=[A-Za-z0-9_-]{43}; Path=\/; HttpOnly; SameSite=Lax; Max-Age=15552000; Secure$/);
+    assert.equal((await h.browser().post('/api/auth/pair', { code: pc.data.code })).status, 400, 'single use');
+    const me = (await kid.get('/api/me')).data;
+    assert.deepEqual([me.kind, me.lockPlayer, me.players.map((p) => p.nickname)], ['device', ids.Aria, ['Aria']]);
+    const devices = (await b.get('/api/devices')).data;
+    const dev = devices.find((d) => d.kind === 'device');
+    assert.deepEqual([dev.label, dev.lockPlayer, dev.current, typeof dev.lastSeen], ["Aria's iPad", ids.Aria, false, 'number']);
+    assert.match(dev.id, /^[0-9a-f]{8}$/);
+    assert.equal(devices.find((d) => d.current).kind, 'parent');
+    const log = await t.db.query("select action, detail from audit_log where family_id = $1 and action = 'device.paired'", [familyId]);
+    assert.deepEqual(log.rows.map((x) => x.detail), [{ sid: dev.id }]);
+    // a code from the default label: the kid's User-Agent
+    const mac = h.browser({ ua: MAC_CHROME });
+    assert.equal((await mac.post('/api/auth/pair', { code: second.data.code })).status, 200);
+    assert.ok((await b.get('/api/devices')).data.some((d) => d.label === 'Mac · Chrome'));
+    // expired after 10 minutes
+    h.setClock(11 * MIN);
+    assert.deepEqual((await h.browser().post('/api/auth/pair', { code: third.data.code })).data, { error: 'bad_code' });
+  });
+
+  test('pairing: 10 tries per 10 minutes per address, 200 an hour for everyone', async () => {
+    const kid = h.browser();
+    for (let i = 0; i < 10; i++) assert.equal((await kid.post('/api/auth/pair', { code: 'ZZZZ-ZZZZ' })).status, 400);
+    const no = await kid.post('/api/auth/pair', { code: 'ZZZZ-ZZZZ' });
+    assert.deepEqual([no.status, no.data], [429, { error: 'rate' }]);
+    const all = h.ctx.limits.limiter(AUTH_LIMITS.pairAll);
+    while (all.take('*'));
+    assert.equal((await h.browser().post('/api/auth/pair', { code: 'ZZZZ-ZZZZ' })).status, 429);
+  });
+
+  test('pair codes: 10 an hour per family', async () => {
+    const { b } = await setupFamily(h, 'pair.limit@example.com', { entitled: false });
+    const l = h.ctx.limits.limiter(AUTH_LIMITS.pairCodeFamily);
+    assert.ok(l); // made on first use below
+    for (let i = 0; i < 10; i++) {
+      const r = await b.post('/api/devices/pair-code', {});
+      assert.ok([200, 409].includes(r.status), r.text);
+      if (r.data.code) remember(r.data.code);
+      if (r.status === 409) await t.db.query('update pair_codes set used_at = $1 where used_at is null', [new Date()]);
+    }
+    assert.equal((await b.post('/api/devices/pair-code', {})).status, 429);
+  });
+
+  test('devices: rename, lock, sign out one (its sockets and requests end), "Kids play on this device"', async () => {
+    const { b, familyId, ids } = await setupFamily(h, 'devices.mom@example.com', { players: ['Ruby', 'Opal'] });
+    await b.patch(`/api/players/${ids.Ruby}`, { friends: true });
+    const kid = await pairKid(h, b);
+    const dev = (await b.get('/api/devices')).data.find((d) => d.kind === 'device');
+    const ren = await b.patch(`/api/devices/${dev.id}`, { label: 'Hall iPad', lockPlayer: ids.Ruby });
+    assert.deepEqual([ren.status, ren.data.label, ren.data.lockPlayer], [200, 'Hall iPad', ids.Ruby]);
+    assert.equal((await b.patch(`/api/devices/${dev.id}`, { lockPlayer: randomUUID() })).status, 404);
+    const parentDev = (await b.get('/api/devices')).data.find((d) => d.current);
+    assert.equal((await b.patch(`/api/devices/${parentDev.id}`, { lockPlayer: ids.Ruby })).status, 400, 'a parent session is never locked');
+    assert.equal((await b.patch('/api/devices/ffffffff', { label: 'x' })).status, 404);
+    assert.deepEqual((await kid.get('/api/me')).data.players.map((p) => p.id), [ids.Ruby]);
+    const ok = await wsOpen(h, kid, ids.Ruby);
+    assert.equal(ok.stillOpen, true, 'the locked player plays with friends');
+    const wrong = await wsOpen(h, kid, ids.Opal);
+    assert.deepEqual([wrong.closed, wrong.frames.at(-1)], [4405, { t: 'e', code: 'player_gone' }], 'another player on a locked device');
+    const off = await b.del(`/api/devices/${dev.id}`, {});
+    assert.deepEqual([off.status, off.data], [200, { ok: true }]);
+    assert.deepEqual((await kid.get('/api/me')).data, { error: 'signed_out' });
+    const after = await wsOpen(h, kid, ids.Ruby);
+    assert.deepEqual([after.closed, after.frames.at(-1)], [4401, { t: 'e', code: 'signed_out' }], 'a revoked session is refused on the relay too');
+    assert.equal((await t.db.one("select count(*) as n from audit_log where family_id = $1 and action = 'device.removed'", [familyId])).n, 1);
+    // this browser becomes a kid device (a new token); the Family page then asks to sign in
+    const before = b.cookie(SESS);
+    const me = await b.post('/api/devices/this', { lockPlayer: ids.Opal });
+    assert.equal(me.status, 200);
+    assert.notEqual(b.cookie(SESS), before);
+    assert.equal((await b.get('/api/family')).status, 403);
+    const dme = (await b.get('/api/me')).data;
+    assert.deepEqual([dme.kind, dme.lockPlayer], ['device', ids.Opal]);
+    const stale = h.browser();
+    stale.jar.set(SESS, before);
+    assert.equal((await stale.get('/api/me')).status, 401);
+  });
+
+  test('logout and logout everywhere', async () => {
+    const email = 'bye@example.com';
+    const { b } = await setupFamily(h, email);
+    const phone = h.browser();
+    await signIn(h, phone, email);
+    const kid = await pairKid(h, b);
+    const all = await b.post('/api/auth/logout-all', {});
+    assert.deepEqual([all.status, b.cookie(SESS)], [200, null]);
+    for (const x of [phone, kid]) assert.equal((await x.get('/api/me')).status, 401);
+    const again = h.browser();
+    await signIn(h, again, email);
+    const out = await again.post('/api/auth/logout', {});
+    assert.deepEqual([out.status, again.cookie(SESS)], [200, null]);
+    assert.equal((await again.get('/api/me')).data.signedIn, false);
+  });
+
+  test('lifetimes: a parent session 14 days unused or 30 days in all; a device 180 days after last use, sliding', async () => {
+    const email = 'lifetimes@example.com';
+    const { b } = await setupFamily(h, email);
+    const kid = await pairKid(h, b);
+    for (let d = 13; d <= 26; d += 13) {
+      h.setClock(d * DAY);
+      assert.equal((await b.get('/api/family')).status, 200, `parent in use on day ${d}`);
+    }
+    h.setClock(30 * DAY + MIN);
+    assert.equal((await b.get('/api/family')).status, 401, 'the parent session ends after 30 days');
+    h.setClock(0);
+    const idle = h.browser();
+    await signIn(h, idle, email);
+    h.setClock(14 * DAY + MIN);
+    assert.equal((await idle.get('/api/family')).status, 401, '14 days unused');
+    // the device: used on day 170 → still good on day 340, and its cookie follows
+    h.setClock(170 * DAY);
+    const me = await kid.get('/api/me');
+    assert.equal(me.status, 200);
+    const set = [].concat(me.headers['set-cookie'] || []).find((c) => c.startsWith(SESS + '='));
+    assert.match(set, /Max-Age=155(51|52)\d{3}(;|$)/, 'the cookie is sent again with the slid life (180 days)');
+    h.setClock(340 * DAY);
+    assert.equal((await kid.get('/api/me')).status, 200);
+    h.setClock(521 * DAY);
+    assert.equal((await kid.get('/api/me')).status, 401, '180 days unused');
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+
+describe('A: the notice, consent, players and their switches (§5.2, §6.7, §11)', () => {
+  let t;
+  let h;
+  before(async () => {
+    t = await openTestDb();
+    h = await startHarness(t.db);
+  });
+  after(async () => {
+    await h?.close();
+    await t?.close();
+  });
+  beforeEach(() => {
+    h.ctx.limits = new Limits();
+    h.setClock(0);
+  });
+
+  test('the notice; consent (email plus) is recorded, audited and confirmed by email a day later', async () => {
+    const email = 'consent.mom@example.com';
+    const b = h.browser();
+    const familyId = await signIn(h, b, email);
+    const n = await b.get('/api/notice');
+    assert.equal(n.status, 200);
+    assert.ok(Number.isInteger(n.data.version) && n.data.sections.length >= 5 && /18 or older/.test(n.data.checkbox));
+    assert.deepEqual((await b.post('/api/players', { nickname: 'Luna' })).data, { error: 'consent_required' });
+    assert.equal((await b.post('/api/consent', { noticeVersion: n.data.version, agree: false })).status, 400);
+    const stale = await b.post('/api/consent', { noticeVersion: n.data.version + 1, agree: true });
+    assert.deepEqual([stale.status, stale.data.error], [409, 'conflict']);
+    const c = await b.post('/api/consent', { noticeVersion: n.data.version, agree: true });
+    assert.equal(c.status, 200);
+    assert.deepEqual([c.data.consent.level, c.data.consent.noticeVersion, c.data.consent.verifiedAt], ['email_plus', n.data.version, null]);
+    assert.equal((await b.post('/api/consent', { noticeVersion: n.data.version, agree: true })).status, 200, 'twice is fine');
+    const audit1 = await t.db.query('select action, detail, actor from audit_log where family_id = $1 order by id', [familyId]);
+    assert.deepEqual(audit1.rows, [{ action: 'consent.email_plus', detail: { v: n.data.version }, actor: 'parent' }]);
+    assert.equal((await h.mail(email)).filter((m) => m.template === 'consent_confirm').length, 0, 'not yet');
+    h.setClock(DAY + MIN);
+    const confirm = (await h.mail(email)).filter((m) => m.template === 'consent_confirm');
+    assert.equal(confirm.length, 1);
+    assert.match(confirm[0].text, /You agreed on .* that Sparkle World may keep your children's nicknames/);
+    assert.ok(confirm[0].text.includes(`${HTTPS}/account`));
+    const audit2 = await t.db.query('select action, detail, actor from audit_log where family_id = $1 order by id', [familyId]);
+    assert.deepEqual(audit2.rows.at(-1), { action: 'consent.confirm_sent', detail: { v: n.data.version }, actor: 'system' });
+    const fam = (await b.get('/api/family')).data;
+    assert.deepEqual([fam.email, fam.consent.level, fam.config.friendsMode, fam.config.mpConsent, fam.config.trialDays, fam.config.priceText, fam.config.operatorEmail], [
+      email, 'email_plus', 'subscription', 'verified', 0, '$5.99 a month, plus sales tax where it applies', 'privacy@sparkleworld.fun',
+    ]);
+    assert.deepEqual((await b.get('/api/family/audit')).data.map((a) => a.action), ['consent.confirm_sent', 'consent.email_plus']);
+  });
+
+  test('players: need consent and a plan; names.js filter; unique in any case; at most 6', async () => {
+    const email = 'players.dad@example.com';
+    const { b, familyId } = await setupFamily(h, email, { entitled: false });
+    assert.deepEqual((await b.post('/api/players', { nickname: 'Luna' })).data, { error: 'not_entitled' });
+    await entitle(h, familyId, { verified: false });
+    const r = await b.post('/api/players', { nickname: 'Luna2', color: 3 });
+    remember('Luna');
+    assert.equal(r.status, 201);
+    assert.deepEqual([r.data.nickname, r.data.color, r.data.friends, r.data.walkie, r.data.portrait, r.data.worlds], ['Luna', 3, false, false, null, 0]);
+    assert.deepEqual((await b.post('/api/players', { nickname: 'LUNA' })).data, { error: 'nickname_taken' });
+    assert.deepEqual((await b.post('/api/players', { nickname: 'butt' })).data, { error: 'nickname_blocked' });
+    assert.deepEqual((await b.post('/api/players', { nickname: '12345' })).data, { error: 'nickname_blocked' });
+    assert.equal((await b.post('/api/players', { nickname: 'Rosa', color: 9 })).status, 400);
+    for (const nick of ['Rosa', 'Iris', 'Hazel', 'Pearl', 'Violet']) {
+      remember(nick);
+      assert.equal((await b.post('/api/players', { nickname: nick })).status, 201);
+    }
+    remember('Daisy');
+    assert.deepEqual((await b.post('/api/players', { nickname: 'Daisy' })).data, { error: 'limit' });
+    const fam = (await b.get('/api/family')).data;
+    assert.deepEqual(fam.players.map((p) => p.nickname), ['Luna', 'Rosa', 'Iris', 'Hazel', 'Pearl', 'Violet']);
+    assert.equal((await t.db.one("select count(*) as n from audit_log where family_id = $1 and action = 'player.create'", [familyId])).n, 6);
+  });
+
+  test('switches: on needs the check, a plan and the consent tier; off needs nothing; walkie needs friends', async () => {
+    const email = 'switch.mom@example.com';
+    const { b, familyId, ids } = await setupFamily(h, email, { players: ['Stella'], verified: false });
+    const pid = ids.Stella;
+    const events = [];
+    const onPlayer = (e) => events.push(e);
+    h.ctx.events.on('player', onPlayer);
+    try {
+      assert.deepEqual((await b.patch(`/api/players/${pid}`, { friends: true })).data, { error: 'needs_verified' }, 'email plus is not enough for friends (SW_MP_CONSENT=verified)');
+      let me = (await b.get('/api/me')).data;
+      assert.deepEqual([me.consent, me.players[0].canJoin, me.players[0].why], ['email_plus', false, 'friends_locked']);
+      await t.db.query("update families set verified_at = $2, verified_method = 'card' where id = $1", [familyId, new Date()]);
+      h.ctx.billing.invalidate(familyId);
+      me = (await b.get('/api/me')).data;
+      assert.deepEqual([me.consent, me.players[0].why], ['verified', 'friends_off']);
+      assert.deepEqual((await b.patch(`/api/players/${pid}`, { walkie: true })).data, { error: 'conflict' }, 'the walkie needs friends on');
+      h.setClock(16 * MIN);
+      assert.deepEqual((await b.patch(`/api/players/${pid}`, { friends: true })).data, { error: 'check_required' });
+      h.setClock(0);
+      const on = await b.patch(`/api/players/${pid}`, { friends: true, walkie: true, notice: 1 });
+      assert.deepEqual([on.status, on.data.friends, on.data.walkie], [200, true, true]);
+      me = (await b.get('/api/me')).data;
+      assert.deepEqual(me.players[0], { id: pid, nickname: 'Stella', color: 0, portrait: null, friends: true, walkie: true, canJoin: true, canHost: true, walkieOk: true, why: null });
+      assert.equal(me.plan.state, 'active');
+      assert.ok(me.playUntil <= h.clock.now() + 7 * DAY + 1000 && me.playUntil > h.clock.now() + 6 * DAY);
+      h.setClock(16 * MIN);
+      const off = await b.patch(`/api/players/${pid}`, { friends: false });
+      assert.deepEqual([off.status, off.data.friends, off.data.walkie], [200, false, false], 'friends off takes the walkie with it, no check needed');
+      const renamed = await b.patch(`/api/players/${pid}`, { nickname: 'Star9 Bright', color: 2 });
+      remember('Star Bright');
+      assert.deepEqual([renamed.data.nickname, renamed.data.color], ['Star Bright', 2]);
+      const log = await t.db.query('select action, detail, player_id from audit_log where family_id = $1 and player_id is not null order by id', [familyId]);
+      assert.deepEqual(log.rows.map((x) => [x.action, x.detail]), [['player.create', {}], ['friends.on', { v: 1 }], ['walkie.on', { v: 1 }], ['friends.off', {}], ['walkie.off', {}]]);
+      assert.ok(log.rows.every((x) => x.player_id === pid));
+      assert.deepEqual(events.map((e) => e.playerId), [pid, pid, pid]);
+      // lapsed: the switch cannot be turned on, and /api/me says why
+      await t.db.query('delete from subscriptions where family_id = $1', [familyId]);
+      h.ctx.billing.invalidate(familyId);
+      h.setClock(0);
+      assert.deepEqual((await b.patch(`/api/players/${pid}`, { friends: true })).data, { error: 'not_entitled' });
+      me = (await b.get('/api/me')).data;
+      assert.deepEqual([me.plan.entitled, me.players[0].why, me.playUntil <= h.clock.now() + 1000], [false, 'not_entitled', true]);
+    } finally {
+      h.ctx.events.off('player', onPlayer);
+    }
+  });
+
+  test('free-join (with SW_MP_CONSENT=email_plus): a family without a plan adds players who may only join', async () => {
+    const fj = await startHarness(t.db, { SW_FRIENDS_MODE: 'free-join', SW_MP_CONSENT: 'email_plus' });
+    try {
+      const { b, ids } = await setupFamily(fj, 'visitor.mom@example.com', { players: ['Pixie'], entitled: false });
+      assert.deepEqual((await b.patch(`/api/players/${ids.Pixie}`, { friends: true, walkie: true })).data, { error: 'not_entitled' }, 'never the walkie');
+      assert.equal((await b.patch(`/api/players/${ids.Pixie}`, { friends: true })).status, 200);
+      const me = (await b.get('/api/me')).data;
+      assert.deepEqual([me.friendsMode, me.plan.entitled, me.players[0].canJoin, me.players[0].canHost, me.players[0].walkieOk, me.players[0].why], ['free-join', false, true, false, false, null]);
+      const r = await fj.accounts.authorizeSocket({ cookie: `${SESS}=${b.cookie(SESS)}`, playerId: ids.Pixie });
+      assert.deepEqual([r.ok, r.claims.canHost, r.claims.canBuild, r.claims.walkie, r.claims.until], [true, false, false, false, null]);
+    } finally {
+      await fj.close();
+    }
+  });
+
+  test('another family\'s player is 404, a deleted one 410 (every :pid route)', async () => {
+    const mine = await setupFamily(h, 'idor.a@example.com', { players: ['Poppy'] });
+    const theirs = await setupFamily(h, 'idor.b@example.com', { players: ['Ivy Rose'] });
+    for (const r of h.ctx.routes.filter((x) => x.path.includes(':pid') && x.who !== 'player')) {
+      const res = await mine.b.call(r.method, fill(r.path, theirs.ids['Ivy Rose']), { body: {} });
+      assert.deepEqual([`${r.method} ${r.path}`, res.status], [`${r.method} ${r.path}`, 404]);
+      const gone = await mine.b.call(r.method, fill(r.path, randomUUID()), { body: {} });
+      assert.deepEqual([`${r.method} ${r.path}`, gone.status, gone.data?.error], [`${r.method} ${r.path}`, 410, 'player_gone']);
+    }
+  });
+
+  test('summary: her worlds with sizes and dates, stickers, coins, stats', async () => {
+    const { b, ids } = await setupFamily(h, 'summary.mom@example.com', { players: ['Willow'] });
+    const pid = ids.Willow;
+    await putWorld(t.db, pid, 'w1', { name: 'Castle Cove', updatedAt: 1790000000000, thumb: Buffer.from([0xff, 0xd8, 0xff]) });
+    await putWorld(t.db, pid, 'w2', { name: 'Unicorn Farm', updatedAt: 1790000500000, size: { x: 208, y: 64, z: 208 }, rev: 4 });
+    await putWorld(t.db, pid, 'w2.before', { name: 'Unicorn Farm', updatedAt: 1790000400000 });
+    await t.db.query("insert into worlds (player_id, world_id, rev, client_updated_at, meta, deleted_at) values ($1, 'w3', 2, 1, '{}', $2)", [pid, new Date()]);
+    await putProfile(t.db, pid, { stickers: { firstHouse: 1, petPal: 2 }, coins: 42, stats: { blocksPlaced: 900, recipesCooked: { soup: 2 } }, updatedAt: 5 });
+    const s = (await b.get(`/api/players/${pid}/summary`)).data;
+    assert.deepEqual([s.nickname, s.friends, s.walkie, s.profile.coins, s.profile.stickers, s.profile.stats.blocksPlaced], ['Willow', false, false, 42, ['firstHouse', 'petPal'], 900]);
+    assert.deepEqual(s.worlds.map((w) => [w.id, w.name, w.sizeName, w.updatedAt, w.thumb]), [
+      ['w2', 'Unicorn Farm', 'big', 1790000500000, null],
+      ['w2.before', 'Unicorn Farm', 'cozy', 1790000400000, null],
+      ['w1', 'Castle Cove', 'cozy', 1790000000000, `/api/players/${pid}/worlds/w1/thumb?v=1`],
+    ]);
+    assert.ok(s.worlds.every((w) => w.size > 0));
+    const fam = (await b.get('/api/family')).data;
+    assert.equal(fam.players[0].worlds, 2, 'side copies and deleted worlds are not counted');
+  });
+
+  test('deleting a player: the check, her nickname typed; the relay and devices are told', async () => {
+    const { b, familyId, ids } = await setupFamily(h, 'delete.player@example.com', { players: ['Clover', 'Maple'] });
+    const pid = ids.Clover;
+    await putWorld(t.db, pid, 'w1');
+    const seen = [];
+    const on = (e) => seen.push(e);
+    h.ctx.events.on('player', on);
+    try {
+      assert.deepEqual((await b.del(`/api/players/${pid}`, { confirm: 'Maple' })).data, { error: 'bad_request' });
+      h.setClock(16 * MIN);
+      assert.deepEqual((await b.del(`/api/players/${pid}`, { confirm: 'Clover' })).data, { error: 'check_required' });
+      h.setClock(0);
+      assert.deepEqual((await b.del(`/api/players/${pid}`, { confirm: 'clover' })).data, { ok: true });
+    } finally {
+      h.ctx.events.off('player', on);
+    }
+    assert.deepEqual(seen, [{ familyId, playerId: pid, deleted: true }]);
+    assert.equal(await count(t.db, 'select count(*) as n from worlds where player_id = $1', [pid]), 0);
+    assert.deepEqual((await b.get(`/api/players/${pid}/summary`)).data, { error: 'player_gone' });
+    assert.equal((await t.db.one("select count(*) as n from audit_log where family_id = $1 and action = 'player.delete' and player_id = $2", [familyId, pid])).n, 1);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+
+describe('A: exports and deleting the family (§3.4, §11.6)', () => {
+  let t;
+  let h;
+  before(async () => {
+    t = await openTestDb();
+    h = await startHarness(t.db);
+  });
+  after(async () => {
+    await h?.close();
+    await t?.close();
+  });
+  beforeEach(() => {
+    h.ctx.limits = new Limits();
+    h.setClock(0);
+    h.stripeFails = false;
+  });
+
+  test('her data as a file: the game\'s own world files, streamed; the check; 5 an hour', async () => {
+    const { b, familyId, ids } = await setupFamily(h, 'export.mom@example.com', { players: ['Sunny', 'Brook'] });
+    const saves = [await putWorld(t.db, ids.Sunny, 'w1', { name: 'Castle Cove' }), await putWorld(t.db, ids.Sunny, 'w2', { name: 'Seaside Shop' })];
+    await putWorld(t.db, ids.Brook, 'b1', { name: 'Treehouse Den' });
+    await putProfile(t.db, ids.Sunny, { stickers: { a: 1 }, coins: 7, updatedAt: 3 });
+    await t.db.query('update players set portrait = $2, portrait_rev = 1 where id = $1', [ids.Sunny, Buffer.from('89504e470d0a1a0a', 'hex')]);
+    const r = await b.get(`/api/players/${ids.Sunny}/export`);
+    assert.equal(r.status, 200);
+    assert.match(r.headers['content-disposition'], /^attachment; filename="sparkle-world-player-\d{4}-\d{2}-\d{2}\.json"$/);
+    assert.equal(r.headers['cache-control'], 'no-store');
+    assert.equal(r.data.format, 'sparkle-world-player');
+    assert.deepEqual([r.data.player.nickname, r.data.profile.coins, r.data.worlds.length], ['Sunny', 7, 2]);
+    assert.match(r.data.player.portrait, /^data:image\/png;base64,/);
+    for (const [i, w] of r.data.worlds.entries()) {
+      assert.deepEqual(w, { format: 'sparkle-world', v: 1, save: saves[i] });
+      const back = readWorldFile(JSON.stringify(w));
+      assert.deepEqual([back.ok, back.kind, back.worlds[0].name], [true, 'world', saves[i].name], 'My Worlds → Open a file reads it');
+    }
+    const fam = await b.get('/api/family/export');
+    assert.match(fam.headers['content-disposition'], /^attachment; filename="sparkle-world-family-\d{4}-\d{2}-\d{2}\.json"$/);
+    assert.equal(fam.data.format, 'sparkle-world-family');
+    assert.deepEqual([fam.data.family.email, fam.data.family.consent.level], ['export.mom@example.com', 'verified']);
+    assert.deepEqual(fam.data.players.map((p) => [p.player.nickname, p.worlds.map((w) => w.save.name)]), [['Sunny', ['Castle Cove', 'Seaside Shop']], ['Brook', ['Treehouse Den']]]);
+    assert.ok(fam.data.consentHistory.some((a) => a.action === 'export.player'));
+    assert.ok(fam.data.devices.length >= 1);
+    const acts = (await t.db.query('select action from audit_log where family_id = $1 and action like $2', [familyId, 'export.%'])).rows.map((x) => x.action);
+    assert.deepEqual(acts.sort(), ['export.family', 'export.player']);
+    for (let i = 0; i < 3; i++) assert.equal((await b.get(`/api/players/${ids.Brook}/export`)).status, 200);
+    assert.deepEqual((await b.get('/api/family/export')).data, { error: 'rate' }, 'exports: 5 an hour per family');
+    h.setClock(16 * MIN);
+    h.ctx.limits = new Limits();
+    assert.deepEqual((await b.get('/api/family/export')).data, { error: 'check_required' });
+  });
+
+  test('deleting the family: Stripe first, then every row, gone_sessions for her devices, the email, the journal', async () => {
+    const email = 'delete.all@example.com';
+    const { b, familyId, ids } = await setupFamily(h, email, { players: ['Fern', 'Sage'] });
+    const kid = await pairKid(h, b);
+    await b.post('/api/devices/pair-code', {}); // one live pair code left over
+    await putWorld(t.db, ids.Fern, 'w1');
+    await putProfile(t.db, ids.Sage, { coins: 1, updatedAt: 1 });
+    await h.browser().post('/api/auth/start', { email }); // a pending sign-in attempt for the address
+    const fam = await h.family(email);
+    const sessions = (await t.db.query('select id_hash from sessions where family_id = $1', [familyId])).rows.map((r) => r.id_hash);
+    assert.equal(sessions.length, 2);
+    const events = [];
+    const onFam = (e) => events.push(['family', e]);
+    const onSess = (e) => events.push(['session', e]);
+    h.ctx.events.on('family', onFam);
+    h.ctx.events.on('session', onSess);
+    try {
+      assert.deepEqual((await b.post('/api/family/delete', { confirm: 'delete' })).data, { error: 'bad_request' });
+      const r = await b.post('/api/family/delete', { confirm: 'DELETE' });
+      assert.deepEqual([r.status, r.data, b.cookie(SESS)], [200, { ok: true }, null]);
+    } finally {
+      h.ctx.events.off('family', onFam);
+      h.ctx.events.off('session', onSess);
+    }
+    assert.deepEqual(h.stripeCalls.at(-1), { familyId, customerId: fam.stripe_customer_id });
+    const pids = [ids.Fern, ids.Sage];
+    const left = {
+      families: await count(t.db, 'select count(*) as n from families where id = $1', [familyId]),
+      players: await count(t.db, 'select count(*) as n from players where family_id = $1', [familyId]),
+      profiles: await count(t.db, 'select count(*) as n from player_profiles where player_id = $1 or player_id = $2', pids),
+      worlds: await count(t.db, 'select count(*) as n from worlds where player_id = $1 or player_id = $2', pids),
+      sessions: await count(t.db, 'select count(*) as n from sessions where family_id = $1', [familyId]),
+      attempts: await count(t.db, 'select count(*) as n from login_attempts where email = $1 or family_id = $2', [email, familyId]),
+      pairCodes: await count(t.db, 'select count(*) as n from pair_codes where family_id = $1', [familyId]),
+      subscriptions: await count(t.db, 'select count(*) as n from subscriptions where family_id = $1', [familyId]),
+      outbox: await count(t.db, 'select count(*) as n from outbox where family_id = $1', [familyId]),
+    };
+    assert.deepEqual(left, { families: 0, players: 0, profiles: 0, worlds: 0, sessions: 0, attempts: 0, pairCodes: 0, subscriptions: 0, outbox: 0 });
+    const gone = (await t.db.query('select id_hash from gone_sessions')).rows.map((r) => r.id_hash.toString('hex'));
+    for (const hsh of sessions) assert.ok(gone.includes(hsh.toString('hex')));
+    const df = await t.db.one('select * from deleted_families where family_id = $1', [familyId]);
+    assert.deepEqual([df.stripe_customer_id, df.stripe_done_at instanceof Date], [null, true]);
+    assert.deepEqual((await t.db.query('select action from audit_log where family_id = $1 order by id', [familyId])).rows.slice(-2).map((x) => x.action), ['family.delete', 'family.deleted']);
+    const me = await kid.get('/api/me');
+    assert.deepEqual([me.status, me.data], [410, { error: 'family_gone' }], 'her devices learn it and wipe');
+    assert.equal(kid.cookie(SESS), null);
+    const mail = (await h.mail(email)).at(-1);
+    assert.equal(mail.template, 'account_deleted');
+    assert.match(mail.text, /backups roll off within 7 days/);
+    assert.ok(spy.lines.includes(`deletion-journal family=${familyId}`));
+    assert.ok(events.some(([k, e]) => k === 'family' && e.familyId === familyId && e.deleted));
+    assert.equal(events.filter(([k]) => k === 'session').length, 2);
+  });
+
+  test('two deletes of the same family at once: one does it', async () => {
+    const { familyId } = await setupFamily(h, 'double.delete@example.com');
+    const r = await Promise.all([h.ctx.family.deleteFamily(familyId, { notify: false }), h.ctx.family.deleteFamily(familyId, { notify: false })]);
+    assert.equal(r.filter((x) => x.ok).length, 1);
+    assert.equal(await count(t.db, "select count(*) as n from audit_log where family_id = $1 and action = 'family.deleted'", [familyId]), 1);
+  });
+
+  test('deleting: no check within 5 minutes → 403; a Stripe failure does not stop it, the retention job finishes it', async () => {
+    const email = 'stripe.down@example.com';
+    const { b, familyId } = await setupFamily(h, email);
+    h.setClock(6 * MIN);
+    assert.deepEqual((await b.post('/api/family/delete', { confirm: 'DELETE' })).data, { error: 'check_required' });
+    h.setClock(0);
+    h.stripeFails = true;
+    assert.equal((await b.post('/api/family/delete', { confirm: 'DELETE' })).status, 200);
+    const df = await t.db.one('select * from deleted_families where family_id = $1', [familyId]);
+    assert.deepEqual([df.stripe_customer_id, df.stripe_done_at], ['cus_' + familyId.slice(0, 8), null]);
+    assert.equal(await h.family(email), null, 'deleted anyway');
+    await h.ctx.jobs.run('retention');
+    assert.equal((await t.db.one('select stripe_done_at from deleted_families where family_id = $1', [familyId])).stripe_done_at, null, 'still failing');
+    h.stripeFails = false;
+    await h.ctx.jobs.run('retention');
+    const done = await t.db.one('select * from deleted_families where family_id = $1', [familyId]);
+    assert.deepEqual([done.stripe_customer_id, done.stripe_done_at instanceof Date], [null, true]);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+
+describe("A: the relay's questions — authorizeSocket and recheck (§8.1, §8.4)", () => {
+  let t;
+  let h;
+  before(async () => {
+    t = await openTestDb();
+    h = await startHarness(t.db);
+  });
+  after(async () => {
+    await h?.close();
+    await t?.close();
+  });
+  beforeEach(() => {
+    h.ctx.limits = new Limits();
+    h.setClock(0);
+  });
+  const sess = (b) => `${SESS}=${b.cookie(SESS)}`;
+
+  test('claims for a player who may play with friends; each refusal code', async () => {
+    const { b, familyId, ids } = await setupFamily(h, 'claims@example.com', { players: ['Lily', 'Rosie'] });
+    assert.equal((await b.patch(`/api/players/${ids.Lily}`, { friends: true, walkie: true })).status, 200);
+    const cookie = sess(b);
+    const r = await h.accounts.authorizeSocket({ cookie, playerId: ids.Lily });
+    assert.equal(r.ok, true);
+    assert.deepEqual(Object.keys(r.claims).sort(), ['canBuild', 'canHost', 'familyId', 'nickname', 'playerId', 'sessionHash', 'until', 'walkie']);
+    assert.deepEqual([r.claims.familyId, r.claims.playerId, r.claims.nickname, r.claims.canHost, r.claims.canBuild, r.claims.walkie], [familyId, ids.Lily, 'Lily', true, true, true]);
+    assert.match(r.claims.sessionHash, /^[0-9a-f]{64}$/);
+    assert.ok(r.claims.until > h.clock.now() + 20 * DAY);
+    assert.deepEqual(await h.accounts.recheck(r.claims), r);
+    const other = await setupFamily(h, 'claims.other@example.com', { players: ['Opal'] });
+    const cases = [
+      [{ cookie, playerId: ids.Rosie }, { ok: false, code: 'friends_off' }],
+      [{ cookie: '', playerId: ids.Lily }, { ok: false, code: 'signed_out' }],
+      [{ cookie: `${SESS}=${'x'.repeat(43)}`, playerId: ids.Lily }, { ok: false, code: 'signed_out' }],
+      [{ cookie, playerId: 'abc' }, { ok: false, code: 'player_gone' }],
+      [{ cookie, playerId: randomUUID() }, { ok: false, code: 'player_gone' }],
+      [{ cookie, playerId: other.ids.Opal }, { ok: false, code: 'player_gone' }],
+      [{ cookie: '', playerId: null }, { ok: true, claims: null }],
+      [{ cookie, playerId: null }, { ok: true, claims: null }], // optional: no p is today's relay, cookie or not
+    ];
+    for (const [q, want] of cases) assert.deepEqual(await h.accounts.authorizeSocket(q), want, JSON.stringify(q.playerId));
+    // email plus only → friends_locked; no plan → not_entitled
+    await t.db.query('update families set verified_at = null, verified_method = null where id = $1', [familyId]);
+    h.ctx.events.emit('family', { familyId });
+    h.ctx.billing.invalidate(familyId);
+    assert.deepEqual(await h.accounts.recheck(r.claims), { ok: false, code: 'friends_locked' });
+    await t.db.query('delete from subscriptions where family_id = $1', [familyId]);
+    h.ctx.billing.invalidate(familyId);
+    h.ctx.events.emit('family', { familyId });
+    assert.deepEqual(await h.accounts.recheck(r.claims), { ok: false, code: 'not_entitled' });
+  });
+
+  test('live changes reach recheck at once: a switch off, a rename, a revoked session, a deleted player', async () => {
+    const { b, ids } = await setupFamily(h, 'live@example.com', { players: ['Daisy', 'Pansy'] });
+    await b.patch(`/api/players/${ids.Daisy}`, { friends: true, walkie: true });
+    await b.patch(`/api/players/${ids.Pansy}`, { friends: true });
+    const kid = await pairKid(h, b);
+    const a = await h.accounts.authorizeSocket({ cookie: sess(kid), playerId: ids.Daisy });
+    assert.equal(a.claims.walkie, true);
+    await b.patch(`/api/players/${ids.Daisy}`, { walkie: false, nickname: 'Daisy Mae' });
+    remember('Daisy Mae');
+    const w = await h.accounts.recheck(a.claims);
+    assert.deepEqual([w.ok, w.claims.walkie, w.claims.nickname], [true, false, 'Daisy Mae'], 'not the 60-second cache');
+    await b.patch(`/api/players/${ids.Daisy}`, { friends: false });
+    assert.deepEqual(await h.accounts.recheck(a.claims), { ok: false, code: 'friends_off' });
+    const p = await h.accounts.authorizeSocket({ cookie: sess(kid), playerId: ids.Pansy });
+    assert.equal(p.ok, true);
+    assert.deepEqual((await b.del(`/api/players/${ids.Pansy}`, { confirm: 'Pansy' })).data, { ok: true });
+    assert.deepEqual(await h.accounts.recheck(p.claims), { ok: false, code: 'player_gone' });
+    await b.patch(`/api/players/${ids.Daisy}`, { friends: true });
+    assert.equal((await h.accounts.recheck(a.claims)).ok, true);
+    const dev = (await b.get('/api/devices')).data.find((d) => d.kind === 'device');
+    await b.del(`/api/devices/${dev.id}`, {});
+    assert.deepEqual(await h.accounts.recheck(a.claims), { ok: false, code: 'signed_out' });
+    assert.deepEqual(await h.accounts.recheck(null), { ok: true, claims: null });
+    assert.deepEqual(await h.accounts.recheck({ sessionHash: 'nope', playerId: ids.Daisy }), { ok: false, code: 'signed_out' });
+  });
+
+  test('answers are cached 60 s; while the database is down a cached answer up to 30 minutes old is used, else unavailable', async () => {
+    const { b, ids } = await setupFamily(h, 'db.down@example.com', { players: ['Hazel', 'Juniper'] });
+    await b.patch(`/api/players/${ids.Hazel}`, { friends: true });
+    await b.patch(`/api/players/${ids.Juniper}`, { friends: true });
+    const cookie = sess(b);
+    assert.equal((await h.accounts.authorizeSocket({ cookie, playerId: ids.Hazel })).ok, true);
+    const saved = { one: t.db.one, query: t.db.query };
+    const down = async () => {
+      const e = new Error('connect ECONNREFUSED');
+      e.code = 'ECONNREFUSED';
+      throw e;
+    };
+    t.db.one = down;
+    t.db.query = down;
+    try {
+      assert.equal((await h.accounts.authorizeSocket({ cookie, playerId: ids.Hazel })).ok, true, 'fresh cache');
+      h.ctx.sessions.ageCaches(5 * MIN);
+      assert.equal((await h.accounts.authorizeSocket({ cookie, playerId: ids.Hazel })).ok, true, 'a stale answer while the database is down');
+      assert.deepEqual(await h.accounts.authorizeSocket({ cookie, playerId: ids.Juniper }), { ok: false, code: 'unavailable' }, 'nothing cached');
+      h.ctx.sessions.ageCaches(30 * MIN);
+      assert.deepEqual(await h.accounts.authorizeSocket({ cookie, playerId: ids.Hazel }), { ok: false, code: 'unavailable' }, 'too old');
+      const me = await b.get('/api/me');
+      assert.deepEqual([me.status, me.data], [503, { error: 'unavailable' }]);
+    } finally {
+      t.db.one = saved.one;
+      t.db.query = saved.query;
+    }
+    assert.ok(spy.lines.some((l) => l.includes('socket check failed ECONNREFUSED')));
+  });
+
+  test('required mode: every socket needs a session and p; through server.mjs the refusals close with 4401–4405', async () => {
+    const cfgReq = loadConfig({ ...TEST_ENV, SW_ACCOUNTS: 'required' });
+    const req = await createAccounts(cfgReq, { log: spy.log, db: t.db, timers: false });
+    try {
+      assert.deepEqual(await req.authorizeSocket({ cookie: '', playerId: null }), { ok: false, code: 'signed_out' });
+    } finally {
+      await req.close();
+    }
+    const { b, familyId, ids } = await setupFamily(h, 'sockets@example.com', { players: ['Iris', 'Tulip'] });
+    await b.patch(`/api/players/${ids.Iris}`, { friends: true, walkie: true });
+    const kid = await pairKid(h, b);
+    const ok = await wsOpen(h, kid, ids.Iris);
+    assert.deepEqual([ok.opened, ok.stillOpen], [true, true]);
+    const legacy = await wsOpen(h, h.browser(), null);
+    assert.equal(legacy.stillOpen, true, 'optional: a signed-out page plays as today');
+    const off = await wsOpen(h, kid, ids.Tulip);
+    assert.deepEqual([off.opened, off.closed, off.frames.at(-1)], [true, 4403, { t: 'e', code: 'friends_off' }]);
+    const gone = await wsOpen(h, kid, randomUUID());
+    assert.deepEqual([gone.closed, gone.frames.at(-1)], [4405, { t: 'e', code: 'player_gone' }]);
+    const nobody = await wsOpen(h, h.browser(), ids.Iris);
+    assert.deepEqual([nobody.closed, nobody.frames.at(-1)], [4401, { t: 'e', code: 'signed_out' }]);
+    await t.db.query('update families set verified_at = null where id = $1', [familyId]);
+    h.ctx.billing.invalidate(familyId);
+    h.ctx.events.emit('family', { familyId });
+    const locked = await wsOpen(h, kid, ids.Iris);
+    assert.deepEqual([locked.closed, locked.frames.at(-1)], [4404, { t: 'e', code: 'friends_locked' }]);
+    await t.db.query('delete from subscriptions where family_id = $1', [familyId]);
+    h.ctx.billing.invalidate(familyId);
+    h.ctx.events.emit('family', { familyId });
+    const resting = await wsOpen(h, kid, ids.Iris);
+    assert.deepEqual([resting.closed, resting.frames.at(-1)], [4402, { t: 'e', code: 'not_entitled' }]);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+
+describe('A: emails — the outbox, transports and words (§10, §13.7)', () => {
+  let t;
+  let h;
+  before(async () => {
+    t = await openTestDb();
+    h = await startHarness(t.db);
+  });
+  after(async () => {
+    await h?.close();
+    await t?.close();
+  });
+  beforeEach(async () => {
+    h.ctx.limits = new Limits();
+    h.setClock(0);
+    await t.reset();
+    h.ctx.mail.captured.length = 0;
+  });
+
+  test('retries back off 1 min, 5 min, 30 min, 2 h, 6 h, 12 h, 24 h, then stop; errors kept by name only', async () => {
+    const tries = [];
+    h.ctx.mail.setTransport(async (m) => {
+      tries.push(m.id);
+      const e = new Error('provider said no to ' + m.to);
+      e.code = 'http_503';
+      throw e;
+    });
+    try {
+      remember('retry.me@example.com');
+      await h.ctx.mail.enqueue(t.db, 'friends_ready', 'retry.me@example.com', {});
+      let at = 0;
+      for (let i = 0; i < MAIL_MAX_TRIES; i++) {
+        h.setClock(at);
+        const r = await h.ctx.jobs.run('outbox');
+        assert.equal(r.failed + r.stopped, 1, `try ${i + 1}`);
+        const row = await t.db.one('select * from outbox');
+        assert.deepEqual([row.tries, row.last_error, row.sent_at], [i + 1, 'http_503', null]);
+        if (i < MAIL_BACKOFF_MS.length) {
+          assert.ok(Math.abs(+row.send_after - (Date.now() + at) - MAIL_BACKOFF_MS[i]) < 3000, 'backoff ' + i);
+          h.setClock(at + MAIL_BACKOFF_MS[i] - 5000);
+          assert.equal((await h.ctx.jobs.run('outbox')).failed, 0, 'not before its time');
+          at += MAIL_BACKOFF_MS[i] + 1000;
+        }
+      }
+      assert.equal(tries.length, 8);
+      h.setClock(at + 30 * DAY);
+      assert.deepEqual(await h.ctx.jobs.run('outbox'), { sent: 0, failed: 0, stopped: 0 }, 'stopped for good');
+    } finally {
+      h.ctx.mail.setTransport(makeTransport(h.cfg, { captured: h.ctx.mail.captured }));
+    }
+  });
+
+  test('sent once (two instances sending at the same moment); secrets scrubbed at send; old codes never sent', async () => {
+    const twin = await createAccounts(h.cfg, { log: spy.log, db: t.db, timers: false });
+    const sent = [];
+    const slow = (who) => async (m) => {
+      await new Promise((r) => setTimeout(r, 20));
+      sent.push([who, m.template, m.id]);
+    };
+    h.ctx.mail.setTransport(slow('a'));
+    twin.ctx.mail.setTransport(slow('b'));
+    try {
+      for (let i = 0; i < 6; i++) await h.ctx.mail.enqueue(t.db, 'check', `twice${i}@example.com`, { code: String(100000 + i) });
+      remember('twice0@example.com');
+      await Promise.all([h.ctx.jobs.run('outbox'), twin.ctx.jobs.run('outbox'), h.ctx.mail.runOutbox(), twin.ctx.mail.runOutbox()]);
+      assert.equal(sent.length, 6, 'each email once');
+      assert.equal(new Set(sent.map((s) => s[2])).size, 6);
+      const rows = (await t.db.query('select data, sent_at from outbox')).rows;
+      assert.ok(rows.every((r) => r.sent_at && JSON.stringify(r.data) === '{}'), 'codes scrubbed once sent');
+      // a code whose 15 minutes passed before it could be sent is not sent at all
+      await h.ctx.mail.enqueue(t.db, 'signin', 'late@example.com', { code: '123456', link: HTTPS + '/account/verify#t=abc' });
+      remember('late@example.com');
+      h.setClock(16 * MIN);
+      assert.deepEqual(await h.ctx.jobs.run('outbox'), { sent: 0, failed: 0, stopped: 1 });
+      const late = await t.db.one("select * from outbox where to_email = 'late@example.com'");
+      assert.deepEqual([late.sent_at, late.last_error, late.data], [null, 'expired', {}]);
+    } finally {
+      h.ctx.mail.setTransport(makeTransport(h.cfg, { captured: h.ctx.mail.captured }));
+      await twin.close();
+    }
+  });
+
+  test('the job lock: while another instance holds it, a run skips its turn', async () => {
+    const twin = await createAccounts(h.cfg, { log: spy.log, db: t.db, timers: false });
+    try {
+      for (const name of ['outbox', 'retention', 'summary', 'reminders', 'reconcile']) {
+        let inner = null;
+        const held = await t.db.tryLock(`sparkle-world:job:${name}`, async () => {
+          inner = await twin.ctx.jobs.run(name);
+          return true;
+        });
+        assert.equal(held.ok, true);
+        assert.deepEqual(inner, { skipped: true }, name);
+      }
+      const [a, b] = await Promise.all([h.ctx.jobs.run('summary'), twin.ctx.jobs.run('summary')]);
+      assert.equal([a, b].filter((r) => r.skipped).length <= 1, true);
+    } finally {
+      await twin.close();
+    }
+  });
+
+  test('transports: resend and postmark send the right request (no tracking); log masks the address', async () => {
+    const calls = [];
+    const realFetch = globalThis.fetch;
+    let status = 200;
+    globalThis.fetch = async (url, init) => {
+      calls.push({ url: String(url), init });
+      return new Response('{"id":"x"}', { status });
+    };
+    try {
+      const base = { ...TEST_ENV, MAIL_API_KEY: 'key_123', MAIL_FROM: 'Sparkle World <hello@sparkleworld.fun>' };
+      const msg = { id: 41, to: 'parent@example.com', from: 'Sparkle World <hello@sparkleworld.fun>', replyTo: 'privacy@sparkleworld.fun', subject: 'S', text: 'T', html: '<p>T</p>' };
+      remember('parent@example.com');
+      await makeTransport(loadConfig({ ...base, MAIL_MODE: 'resend' }))(msg);
+      assert.equal(calls[0].url, 'https://api.resend.com/emails');
+      assert.deepEqual([calls[0].init.headers.Authorization, calls[0].init.headers['Idempotency-Key']], ['Bearer key_123', 'sparkle-outbox-41']);
+      assert.deepEqual(JSON.parse(calls[0].init.body), { from: msg.from, to: ['parent@example.com'], subject: 'S', text: 'T', html: '<p>T</p>', reply_to: 'privacy@sparkleworld.fun' });
+      await makeTransport(loadConfig({ ...base, MAIL_MODE: 'postmark' }))(msg);
+      assert.equal(calls[1].url, 'https://api.postmarkapp.com/email');
+      assert.equal(calls[1].init.headers['X-Postmark-Server-Token'], 'key_123');
+      const pm = JSON.parse(calls[1].init.body);
+      assert.deepEqual([pm.To, pm.MessageStream, pm.TrackOpens, pm.TrackLinks, pm.ReplyTo], ['parent@example.com', 'outbound', false, 'None', 'privacy@sparkleworld.fun']);
+      status = 422;
+      await assert.rejects(makeTransport(loadConfig({ ...base, MAIL_MODE: 'resend' }))(msg), (e) => e.code === 'http_422');
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+    const lines = [];
+    const dev = makeTransport(loadConfig({ ...TEST_ENV, MAIL_MODE: 'log' }), { log: (l) => lines.push(l) });
+    await dev({ to: 'bryan.parent@gmail.com', template: 'signin', data: { code: '482913', link: 'http://localhost:8080/account/verify#t=abc' } });
+    await dev({ to: 'bryan.parent@gmail.com', template: 'welcome', data: {} });
+    assert.deepEqual(lines, ['[mail] b•••@gmail.com signin: code 482913, link http://localhost:8080/account/verify#t=abc', '[mail] b•••@gmail.com welcome']);
+    assert.equal(maskEmail('x'), '•••');
+  });
+
+  test('every template: plain words, our own links only, and never a child\'s name', async () => {
+    const cfg = h.cfg;
+    const data = { code: '123456', link: `${HTTPS}/account/verify#t=tok`, at: 1790000000000, v: 1, trialEnd: 1790600000000, lapsedAt: 1790000000000, purgeAfter: 1797000000000, refund: true };
+    assert.equal(TEMPLATES.length, 10);
+    for (const tpl of TEMPLATES) {
+      for (const firstTime of [false, true]) {
+        const m = renderMail(tpl, { data, cfg, firstTime, notice: { version: 1, sections: [{ title: 'You can', text: 'delete it.' }] } });
+        assert.ok(m.subject && m.text.length > 40 && m.html.startsWith('<!doctype html>'), tpl);
+        const links = m.text.match(/https?:\/\/[^\s)]+/g) || [];
+        assert.ok(links.every((l) => l.startsWith(HTTPS + '/')), `${tpl}: links only to PUBLIC_ORIGIN`);
+        assert.ok(!/<img|src=|track/i.test(m.html), `${tpl}: no images or tracking`);
+      }
+    }
+    assert.match(renderMail('welcome', { data: { trialEnd: 1790600000000 }, cfg }).text, /Cancel before .* and you won't be charged/);
+    assert.ok(!/free days/.test(renderMail('welcome', { data: {}, cfg }).text), 'no trial, no trial words');
+    assert.match(renderMail('us_only', { data: { refund: true }, cfg }).text, /refunded/);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+
+describe('A: jobs — retention, lapse and purge, reminders, the daily line (§3.5, §6.6, §13.7)', () => {
+  let t;
+  let h;
+  before(async () => {
+    t = await openTestDb();
+    h = await startHarness(t.db);
+  });
+  after(async () => {
+    await h?.close();
+    await t?.close();
+  });
+  beforeEach(async () => {
+    h.ctx.limits = new Limits();
+    h.setClock(0);
+    await t.reset();
+  });
+  const at = async (offsetMs, job = 'retention') => {
+    h.setClock(offsetMs);
+    return h.ctx.jobs.run(job);
+  };
+
+  test('rows that expire: attempts and pair codes a day after, sessions a week after, tombstones 30 days, sent mail 7 days, audit 3 years', async () => {
+    const { b, familyId } = await setupFamily(h, 'keeper@example.com', { entitled: false });
+    await t.db.query('update families set comp_until = $2 where id = $1', [familyId, new Date(Date.now() + 3650 * DAY)]);
+    h.ctx.billing.invalidate(familyId);
+    await b.post('/api/devices/pair-code', {});
+    const kid = await pairKid(h, b);
+    remember('passerby@example.com');
+    await h.browser().post('/api/auth/start', { email: 'passerby@example.com' });
+    await h.mail('keeper@example.com'); // sends what is due: those rows are "sent" now
+    remember('Marigold');
+    const pid = (await b.post('/api/players', { nickname: 'Marigold' })).data.id;
+    await putWorld(t.db, pid, 'w1');
+    await t.db.query('update worlds set body = null, thumb = null, deleted_at = $2 where player_id = $1', [pid, new Date()]);
+    const n = async () => ({
+      attempts: await count(t.db, 'select count(*) as n from login_attempts'),
+      pairCodes: await count(t.db, 'select count(*) as n from pair_codes'),
+      sessions: await count(t.db, 'select count(*) as n from sessions'),
+      tombstones: await count(t.db, 'select count(*) as n from worlds where body is null'),
+      sentMail: await count(t.db, 'select count(*) as n from outbox where sent_at is not null'),
+      audit: await count(t.db, 'select count(*) as n from audit_log'),
+      families: await count(t.db, 'select count(*) as n from families'),
+    });
+    const start = await n();
+    assert.ok(start.attempts >= 2 && start.pairCodes === 2 && start.sessions === 2 && start.tombstones === 1 && start.sentMail >= 2 && start.audit >= 3);
+    await at(DAY + 5 * MIN);
+    assert.deepEqual([(await n()).attempts, (await n()).pairCodes], [start.attempts, start.pairCodes], 'not before a day after they expire');
+    await at(DAY + 20 * MIN);
+    let now = await n();
+    assert.deepEqual([now.attempts, now.pairCodes, now.sessions, now.tombstones], [0, 0, 2, 1]);
+    await at(8 * DAY);
+    assert.equal((await n()).sentMail, 0, 'sent mail after 7 days');
+    await at(22 * DAY);
+    now = await n();
+    assert.deepEqual([now.sessions, now.tombstones], [1, 1], 'the unused parent session: 14 days + 7');
+    await at(31 * DAY);
+    assert.equal((await n()).tombstones, 0);
+    await at(188 * DAY);
+    assert.equal((await n()).sessions, 0, 'the kid device: 180 days unused + 7');
+    await at(3 * 365 * DAY + 2 * DAY);
+    now = await n();
+    assert.deepEqual([now.audit, now.families], [0, 1], 'audit rows after 3 years; the family with a pass stays');
+    assert.ok(kid);
+    assert.ok(spy.lines.some((l) => /^retention: deleted families=\d+ players=\d+ sessions=\d+/.test(l)));
+  });
+
+  test('families that never finish: no notice agreed after 14 days; agreed but no plan, pass or player after 30 days', async () => {
+    const quiet = h.browser();
+    const neverId = await signIn(h, quiet, 'never.agreed@example.com');
+    const agreed = await setupFamily(h, 'no.plan@example.com', { entitled: false });
+    const withKid = await setupFamily(h, 'has.kid@example.com', { entitled: false });
+    await t.db.query("insert into players (family_id, nickname) values ($1, 'Posy')", [withKid.familyId]);
+    remember('Posy');
+    await at(14 * DAY - HOUR);
+    assert.ok(await h.family('never.agreed@example.com'));
+    const r = await at(14 * DAY + HOUR);
+    assert.equal(r.families, 1);
+    assert.equal(await h.family('never.agreed@example.com'), null);
+    assert.deepEqual((await quiet.get('/api/me')).data, { error: 'family_gone' }, 'its browser learns it');
+    assert.ok(await h.family('no.plan@example.com'));
+    await at(30 * DAY + HOUR);
+    assert.equal(await h.family('no.plan@example.com'), null);
+    assert.ok(await h.family('has.kid@example.com'), 'a family with a player is kept');
+    assert.ok(neverId && agreed.familyId);
+    const acts = (await t.db.query("select actor from audit_log where action = 'family.deleted'")).rows.map((x) => x.actor);
+    assert.deepEqual(acts, ['system', 'system']);
+    assert.equal((await h.mail('no.plan@example.com')).filter((m) => m.template === 'account_deleted').length, 0, 'no email for these');
+  });
+
+  test('the plan ends: lapsed, warned 30 and 7 days before, the kids\' data purged after SW_RETAIN_DAYS, the family row after 12 months', async () => {
+    const email = 'lapse.mom@example.com';
+    const { b, familyId, ids } = await setupFamily(h, email, { players: ['Poppy Lou', 'Wren'] });
+    await at(22 * DAY);
+    assert.equal((await h.family(email)).lapsed_at, null, 'still in the renewal slack');
+    const r = await at(24 * DAY);
+    assert.equal(r.lapsed, 1);
+    let f = await h.family(email);
+    assert.equal(+f.purge_after - +f.lapsed_at, 90 * DAY);
+    const lapsedAt = +f.lapsed_at;
+    const me = await h.browser().get('/api/me');
+    assert.ok(me);
+    await at(lapsedAt - Date.now() + 60 * DAY - HOUR);
+    assert.equal((await h.mail(email)).filter((m) => m.template === 'lapse_warning').length, 0);
+    await at(lapsedAt - Date.now() + 60 * DAY + HOUR);
+    await at(lapsedAt - Date.now() + 60 * DAY + 2 * HOUR);
+    let warnings = (await h.mail(email)).filter((m) => m.template === 'lapse_warning');
+    assert.equal(warnings.length, 1, 'once, 30 days before');
+    assert.match(warnings[0].text, /kept until .*, then deleted/);
+    await at(lapsedAt - Date.now() + 83 * DAY + HOUR);
+    warnings = (await h.mail(email)).filter((m) => m.template === 'lapse_warning');
+    assert.equal(warnings.length, 2, 'and 7 days before');
+    const seen = [];
+    const on = (e) => seen.push(e);
+    h.ctx.events.on('family', on);
+    try {
+      const purge = await at(lapsedAt - Date.now() + 90 * DAY + HOUR);
+      assert.equal(purge.players, 2);
+    } finally {
+      h.ctx.events.off('family', on);
+    }
+    assert.deepEqual(seen, [{ familyId }]);
+    f = await h.family(email);
+    assert.ok(f.kid_data_purged_at instanceof Date);
+    assert.equal(await count(t.db, 'select count(*) as n from players where family_id = $1', [familyId]), 0);
+    const detail = (await t.db.one("select detail from audit_log where family_id = $1 and action = 'retention.purge'", [familyId])).detail;
+    assert.deepEqual(detail, { players: 2 });
+    assert.ok(ids['Wren'] && b);
+    await at(lapsedAt - Date.now() + 365 * DAY - HOUR);
+    assert.ok(await h.family(email), 'the family row stays a year');
+    await at(lapsedAt - Date.now() + 365 * DAY + HOUR);
+    assert.equal(await h.family(email), null);
+    assert.deepEqual(h.stripeCalls.at(-1), { familyId, customerId: 'cus_' + familyId.slice(0, 8) }, 'with its Stripe customer');
+  });
+
+  test('a lapsed family that comes back: resumed, warnings cleared', async () => {
+    const email = 'comeback@example.com';
+    const { familyId } = await setupFamily(h, email, { players: ['Juno'] });
+    await at(24 * DAY);
+    assert.ok((await h.family(email)).lapsed_at);
+    await t.db.query('update families set comp_until = $2 where id = $1', [familyId, new Date(Date.now() + 400 * DAY)]);
+    const r = await at(25 * DAY);
+    assert.equal(r.resumed, 1);
+    const f = await h.family(email);
+    assert.deepEqual([f.lapsed_at, f.purge_after], [null, null]);
+    const acts = (await t.db.query('select action from audit_log where family_id = $1 and action like $2 order by id', [familyId, 'plan.%'])).rows.map((x) => x.action);
+    assert.deepEqual(acts, ['plan.lapsed', 'plan.resumed']);
+  });
+
+  test('reminders: the yearly one on the anniversary; "still using it?" after 24 months without use, once', async () => {
+    const email = 'yearly@example.com';
+    await setupFamily(h, email);
+    await at(364 * DAY, 'reminders');
+    assert.equal((await h.mail(email)).filter((m) => m.template === 'annual_reminder').length, 0);
+    await at(366 * DAY, 'reminders');
+    await at(367 * DAY, 'reminders');
+    assert.equal((await h.mail(email)).filter((m) => m.template === 'annual_reminder').length, 1);
+    await at(731 * DAY, 'reminders');
+    await at(732 * DAY, 'reminders');
+    const mails = await h.mail(email);
+    assert.equal(mails.filter((m) => m.template === 'annual_reminder').length, 2);
+    assert.equal(mails.filter((m) => m.template === 'inactive').length, 1);
+    assert.equal(fullYears(Date.UTC(2024, 1, 29), Date.UTC(2025, 1, 28)), 0);
+    assert.equal(fullYears(Date.UTC(2024, 1, 29), Date.UTC(2025, 2, 1)), 1);
+    assert.equal(msUntilUtc(3, 17, Date.UTC(2026, 8, 28, 3, 16)), MIN);
+    assert.equal(msUntilUtc(3, 17, Date.UTC(2026, 8, 28, 3, 17)), DAY);
+  });
+
+  test('the daily line: counts only', async () => {
+    const now = Date.now();
+    const fam = async (email, extra = {}) => {
+      const f = await t.db.one('insert into families (email, consent_at, flags) values ($1, $2, $3) returning id', [email, new Date(now), JSON.stringify(extra)]);
+      return f.id;
+    };
+    const sub = (fid, status, x = {}) => t.db.query(
+      'insert into subscriptions (id, family_id, customer_id, status, trial_end, current_period_end, first_failed_at, synced_at) values ($1, $2, $3, $4, $5, $6, $7, $8)',
+      ['sub_' + randomBytes(4).toString('hex'), fid, 'cus_x', status, x.trialEnd ? new Date(x.trialEnd) : null, x.periodEnd ? new Date(x.periodEnd) : null, x.failed ? new Date(x.failed) : null, new Date(now)],
+    );
+    await sub(await fam('d1@example.com'), 'active', { periodEnd: now + 10 * DAY });
+    await sub(await fam('d2@example.com'), 'trialing', { trialEnd: now + 3 * DAY, periodEnd: now + 3 * DAY });
+    await sub(await fam('d3@example.com', { dispute: true }), 'past_due', { periodEnd: now - DAY, failed: now - DAY });
+    await sub(await fam('d4@example.com', { refund_due: true }), 'canceled', { periodEnd: now - 9 * DAY });
+    await fam('d5@example.com');
+    await t.db.query("insert into stripe_events (id, type, created, processed_at) values ('evt_1', 'invoice.paid', 1, $1), ('evt_2', 'invoice.paid', 2, null)", [new Date(now)]);
+    await t.db.query("insert into outbox (to_email, template, sent_at) values ('d1@example.com', 'welcome', $1)", [new Date(now)]);
+    await t.db.query("insert into outbox (to_email, template, tries) values ('d1@example.com', 'welcome', $1)", [MAIL_MAX_TRIES]);
+    const r = await h.ctx.jobs.run('summary');
+    assert.equal(r.line, 'accounts: families=5 entitled=3 trialing=1 past_due=1 lapsed=1 webhooks ok=1 failed=1 mails sent=1 failed=1 disputes=1 refund_due=1');
+    assert.ok(spy.lines.includes(r.line));
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+
+describe('A: audit records (§11.9)', () => {
+  let t;
+  before(async () => {
+    t = await openTestDb();
+  });
+  after(async () => t?.close());
+
+  test('only the listed actions and keys; values are versions, ids, methods, dates and counts', async () => {
+    assert.equal(Object.keys(AUDIT_ACTIONS).length, 20);
+    checkAudit('friends.on', { v: 1 });
+    checkAudit('consent.verified', { method: 'card', invoice: 'in_1Abc' }, { actor: 'stripe' });
+    checkAudit('comp.set', { until: null }, { actor: 'admin' });
+    for (const [action, detail, opts] of [
+      ['friends.onn', {}],
+      ['friends.on', { v: 1, nickname: 'Lily' }],
+      ['friends.on', { v: 'Lily' }],
+      ['device.paired', { sid: 'lily@example.com' }],
+      ['consent.verified', { method: 'email' }],
+      ['consent.verified', { invoice: 'Lily was here' }],
+      ['comp.set', { until: 'tomorrow' }],
+      ['retention.purge', { players: -1 }],
+      ['player.create', {}, { actor: 'kid' }],
+      ['player.create', {}, { playerId: 'Lily' }],
+    ]) {
+      assert.throws(() => checkAudit(action, detail, opts), /^Error: audit: /, `${action} ${JSON.stringify(detail)}`);
+    }
+    const f = await t.db.one("insert into families (email) values ('audit@example.com') returning id");
+    remember('audit@example.com');
+    await audit(t.db, f.id, 'friends.on', { v: 2 }, { playerId: randomUUID(), at: Date.UTC(2026, 0, 1) });
+    await assert.rejects(audit(t.db, f.id, 'friends.on', { nickname: 'Lily' }), /audit:/);
+    await assert.rejects(audit(t.db, 'not-a-family', 'friends.off'), /audit:/);
+    const rows = (await t.db.query('select * from audit_log')).rows;
+    assert.equal(rows.length, 1, 'a refused record writes nothing');
+    assert.deepEqual([rows[0].action, rows[0].detail, rows[0].actor, +rows[0].at], ['friends.on', { v: 2 }, 'parent', Date.UTC(2026, 0, 1)]);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+
+describe('A: the admin CLI (§13.8)', () => {
+  let t;
+  let h;
+  before(async () => {
+    t = await openTestDb();
+    h = await startHarness(t.db);
+  });
+  after(async () => {
+    await h?.close();
+    await t?.close();
+  });
+  beforeEach(() => {
+    h.ctx.limits = new Limits();
+    h.setClock(0);
+  });
+  const run = async (args, o = {}) => {
+    const lines = [];
+    const chunks = [];
+    const code = await runAdmin(args, { ctx: h.ctx, out: (s) => lines.push(s), write: (c) => chunks.push(c), confirm: async () => '', ...o });
+    return { code, lines, text: lines.join('\n'), written: chunks.join('') };
+  };
+
+  test('show, comp, consent-verified, change-email', async () => {
+    const email = 'admin.mom@example.com';
+    const { b, familyId } = await setupFamily(h, email, { entitled: false });
+    let r = await run(['show', 'Admin.Mom@Example.com']);
+    assert.equal(r.code, 0, r.text);
+    assert.equal(r.lines[0], `family ${familyId}`);
+    assert.match(r.text, /plan: none, entitled no/);
+    assert.match(r.text, /consent: email_plus, notice v1 agreed \d{4}-\d{2}-\d{2}, verified -/);
+    assert.match(r.text, /players 0 \(friends on 0, walkie on 0\) {2}sessions: parent 1, device 0/);
+    assert.deepEqual((await run(['comp', email, '2027-02-30'])).code, 2);
+    r = await run(['comp', email, '2027-01-31']);
+    assert.equal(r.code, 0);
+    let f = await h.family(email);
+    assert.equal(+f.comp_until, Date.UTC(2027, 1, 1));
+    const me = (await b.get('/api/me')).data;
+    assert.deepEqual([me.plan.state, me.plan.entitled], ['comp', true], 'the free pass works at once in this process');
+    const kid = await b.post('/api/players', { nickname: 'Birdie' });
+    remember('Birdie');
+    assert.equal(kid.status, 201);
+    r = await run(['show', email]);
+    assert.match(r.text, /plan: comp, entitled yes/);
+    assert.match(r.text, /players 1 \(friends on 0/);
+    assert.ok(!r.text.includes('Birdie'), "never a child's content");
+    assert.equal((await run(['consent-verified', email, '--method', 'card'])).code, 2, 'the card is recorded by the first payment only');
+    r = await run(['consent-verified', email, '--method', 'form']);
+    assert.equal(r.code, 0);
+    f = await h.family(email);
+    assert.deepEqual([f.verified_method, f.verified_at instanceof Date], ['form', true]);
+    assert.equal((await run(['comp', email, 'off'])).code, 0);
+    assert.equal((await h.family(email)).comp_until, null);
+    const acts = (await t.db.query("select action, detail, actor from audit_log where family_id = $1 and actor = 'admin' order by id", [familyId])).rows;
+    assert.deepEqual(acts, [
+      { action: 'comp.set', detail: { until: '2027-01-31' }, actor: 'admin' },
+      { action: 'consent.verified', detail: { method: 'form' }, actor: 'admin' },
+      { action: 'comp.set', detail: { until: null }, actor: 'admin' },
+    ]);
+    await setupFamily(h, 'taken@example.com', { entitled: false });
+    assert.equal((await run(['change-email', email, 'taken@example.com'])).code, 1);
+    remember('new.address@example.com');
+    r = await run(['change-email', email, 'New.Address@example.com']);
+    assert.equal(r.code, 0);
+    assert.equal((await h.family('new.address@example.com')).id, familyId);
+    assert.equal((await run(['show', 'nobody@example.com'])).text, 'no family with that email');
+  });
+
+  test('export; delete asks for the email again; sign-out-all', async () => {
+    const email = 'admin.delete@example.com';
+    const { b, familyId, ids } = await setupFamily(h, email, { players: ['Wrenna'] });
+    await putWorld(t.db, ids.Wrenna, 'w1', { name: 'Moon Garden' });
+    const ex = await run(['export', email]);
+    assert.equal(ex.code, 0);
+    const data = JSON.parse(ex.written);
+    assert.deepEqual([data.format, data.family.email, data.players[0].worlds[0].save.name], ['sparkle-world-family', email, 'Moon Garden']);
+    const phone = h.browser();
+    await signIn(h, phone, email);
+    const so = await run(['sign-out-all', email]);
+    assert.match(so.text, /^signed out 2 sessions of family /);
+    assert.equal((await phone.get('/api/me')).status, 401);
+    assert.equal((await b.get('/api/me')).status, 401);
+    const no = await run(['delete', email], { confirm: async () => 'someone.else@example.com' });
+    assert.deepEqual([no.code, no.text], [1, 'not deleted: the email did not match']);
+    assert.ok(await h.family(email));
+    const yes = await run(['delete', email], { confirm: async () => ' Admin.Delete@example.com ' });
+    assert.equal(yes.code, 0, yes.text);
+    assert.equal(await h.family(email), null);
+    assert.deepEqual(h.stripeCalls.at(-1), { familyId, customerId: 'cus_' + familyId.slice(0, 8) });
+    assert.equal((await h.mail(email)).at(-1).template, 'account_deleted');
+    const acts = (await t.db.query("select action from audit_log where family_id = $1 and actor = 'admin' order by id", [familyId])).rows.map((x) => x.action);
+    assert.deepEqual(acts, ['export.family', 'family.delete', 'family.deleted']);
+    assert.match((await run(['sign-out-all'])).text, /^signed out \d+ sessions? \(everyone\)/);
+  });
+
+  test('reapply-deletions (Stripe events and the journal), purge-now, stats, usage', async () => {
+    const x = await setupFamily(h, 'restored.x@example.com', { entitled: false });
+    const y = await setupFamily(h, 'restored.y@example.com', { entitled: false });
+    const z = await setupFamily(h, 'restored.z@example.com', { entitled: false });
+    const since = new Date(Date.now() - DAY).toISOString();
+    const asked = [];
+    const saved = h.ctx.stripe;
+    h.ctx.stripe = {
+      events: {
+        list(params) {
+          asked.push(params);
+          return (async function* () {
+            yield { data: { object: { id: 'cus_x', metadata: { family_id: x.familyId } } } };
+            yield { data: { object: { id: 'cus_q', metadata: {} } } };
+          })();
+        },
+      },
+    };
+    try {
+      const journal = `2026-09-28T10:00:00Z deletion-journal family=${y.familyId}\nnoise\n${randomUUID()}\n`;
+      const r = await run(['reapply-deletions', '--since', since, '--ids', 'journal.txt'], { readFile: (f) => (f === 'journal.txt' ? journal : '') });
+      assert.equal(r.code, 0, r.text);
+      assert.match(r.text, /reapplied deletions: 2 families deleted again, 1 already gone/);
+      assert.deepEqual(asked, [{ type: 'customer.deleted', created: { gte: Math.floor(Date.parse(since) / 1000) }, limit: 100 }]);
+    } finally {
+      h.ctx.stripe = saved;
+    }
+    assert.equal(await h.family('restored.x@example.com'), null);
+    assert.equal(await h.family('restored.y@example.com'), null);
+    assert.ok(await h.family('restored.z@example.com'));
+    assert.ok(z);
+    assert.equal((await run(['reapply-deletions'])).code, 2);
+    const p = await run(['purge-now']);
+    assert.equal(p.code, 0);
+    assert.match(p.text, /^retention: families=\d+ players=\d+ sessions=\d+/);
+    const s = await run(['stats']);
+    assert.match(s.text, /^accounts: families=\d+ entitled=\d+ trialing=0 past_due=0 lapsed=\d+ webhooks ok=0 failed=0 mails sent=\d+ failed=0 disputes=0 refund_due=0$/);
+    assert.equal((await run([])).code, 2);
+    assert.equal((await run(['frobnicate'])).code, 2);
+  });
+
+  test('as a program: node server/admin.mjs with the server\'s Variables', async (tc) => {
+    if (!t.url) {
+      tc.skip('PGlite has no URL for another process');
+      return;
+    }
+    const runProgram = (args, env = {}) => new Promise((resolve) => {
+      const p = spawn(process.execPath, [path.join(SERVER_DIR, 'admin.mjs'), ...args], { env: { PATH: process.env.PATH, ...TEST_ENV, DATABASE_URL: t.url, ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
+      let out = '';
+      let err = '';
+      p.stdout.on('data', (d) => (out += d));
+      p.stderr.on('data', (d) => (err += d));
+      p.on('exit', (code) => resolve({ code, out, err }));
+    });
+    const stats = await runProgram(['stats']);
+    assert.equal(stats.code, 0, stats.err);
+    assert.match(stats.out, /^accounts: families=\d+ /);
+    const none = await runProgram(['show', 'nobody@example.com']);
+    assert.deepEqual([none.code, none.out], [1, 'no family with that email\n']);
+    const off = await runProgram(['stats'], { SW_ACCOUNTS: '' });
+    assert.equal(off.code, 1);
+    assert.match(off.err, /SW_ACCOUNTS is off/);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+
+describe('A: the server refuses to start with a broken setting (one line, exit 1, §2)', () => {
+  const runServer = (env) => new Promise((resolve) => {
+    const p = spawn(process.execPath, [path.join(SERVER_DIR, 'server.mjs')], { env: { PATH: process.env.PATH, PORT: '0', ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
+    let out = '';
+    let err = '';
+    p.stdout.on('data', (d) => (out += d));
+    p.stderr.on('data', (d) => (err += d));
+    const timer = setTimeout(() => p.kill('SIGKILL'), 30000);
+    p.on('exit', (code) => {
+      clearTimeout(timer);
+      resolve({ code, out, err });
+    });
+  });
+
+  test('SW_TEST=1 in production', async () => {
+    const r = await runServer({ ...PROD, SW_TEST: '1' });
+    assert.equal(r.code, 1);
+    assert.match(r.err, /^Sparkle World will not start: [^\n]*SW_TEST=1 is refused in production[^\n]*\n$/);
+  });
+
+  test('an unknown SW_ACCOUNTS; a database that does not answer', async () => {
+    const bad = await runServer({ SW_ACCOUNTS: 'maybe' });
+    assert.deepEqual([bad.code, bad.err], [1, 'Sparkle World will not start: SW_ACCOUNTS must be one of off, optional, required\n']);
+    const r = await runServer({ ...TEST_ENV, SW_TEST: '', DATABASE_URL: 'postgresql://sw@127.0.0.1:9/nothing' });
+    assert.equal(r.code, 1);
+    assert.equal(r.err, 'Sparkle World will not start: accounts could not start (ECONNREFUSED)\n');
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+
+describe('A: the log spy (§12.7) — the last suite', () => {
+  test('no email address, token, code, nickname, world name or IP address was ever logged', () => {
+    assert.ok(spy.lines.length > 20, `the suites logged ${spy.lines.length} lines`);
+    assert.ok(spy.secrets.size > 100, `${spy.secrets.size} secrets watched`);
+    assert.ok(spy.lines.some((l) => l.startsWith('deletion-journal family=')));
+    spy.check();
+  });
+
+  test("no email carried a child's name; no audit row an email address, a nickname or a world name", () => {
+    const names = [...spy.secrets].filter((s) => /^[A-Z][a-z]+( [A-Z][a-z]+)?$/.test(s));
+    const emails = [...spy.secrets].filter((s) => s.includes('@'));
+    assert.ok(names.length >= 20 && emails.length >= 20);
+    assert.ok(allMail.length > 30, `${allMail.length} emails`);
+    for (const m of allMail) for (const n of names) assert.ok(!(m.subject + m.text).includes(n), `a ${m.template} email names a child`);
+    assert.ok(allAudit.length > 30);
+    for (const row of allAudit) {
+      const text = JSON.stringify(row.detail);
+      for (const s of [...names, ...emails]) assert.ok(!text.includes(s), `audit ${row.action} holds personal data`);
+    }
   });
 });
