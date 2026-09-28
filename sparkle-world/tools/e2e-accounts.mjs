@@ -703,18 +703,35 @@ async function s5() {
   await noPriceInGame(lily.page, 'Lily playing together');
   await noPriceInGame(june.page, 'June playing together');
   await shot(lily.page, 'ipad-lily-hosts-june');
-  // family C never subscribed: the resting card; nothing reaches Lily
-  const ctxC = await newContext('parentC', { w: 1280, h: 800, touch: false });
-  const pageC = await newPage(ctxC, 'parentC', { allow: [/403/] });
-  const C = (R.fam.C = { email: `c.${randomBytes(3).toString('hex')}@example.com`, ctx: ctxC, page: pageC });
-  await FP.signIn(pageC, C.email);
-  await FP.agree(pageC);
-  const cCode = await FP.pairCode(pageC, C.email);
+  // family C never subscribed: the grown-up signs in from the game ("I'm a grown-up", §7.1),
+  // which takes her back to it: the resting card; nothing reaches Lily
   const knocks = await game(lily, () => window.__knockEvents || 0);
-  const cDev = await newDevice('familyC', 'Poppy', { w: 1024, h: 768 });
+  const cDev = await newDevice('familyC', 'Poppy', { w: 1024, h: 768 }, { allow: [/403/] });
+  const C = (R.fam.C = { email: `c.${randomBytes(3).toString('hex')}@example.com`, ctx: cDev.ctx, page: cDev.page });
   await GAME.open(cDev);
-  await GAME.pair(cDev, cCode);
+  await cDev.page.getByText(/Ask a grown-up/).first().waitFor({ timeout: 60000 });
+  await press(cDev, cDev.page.getByRole('button', { name: /I'm a grown-up/ }).first());
+  await GAME.grownUpCheck(cDev);
+  await cDev.page.waitForURL((u) => u.pathname === '/account' && u.searchParams.get('next') === '/play', { timeout: 60000 });
+  await cDev.page.waitForSelector('#email');
+  check(/take you back to the game/.test(await cDev.page.textContent('main')), 'from the game, the Family page says it will take her back');
+  const cSince = await mailMark(C.email);
+  await cDev.page.fill('#email', C.email);
+  await cDev.page.click('button[type=submit]');
+  await cDev.page.waitForSelector('.code-boxes');
+  await Promise.all([cDev.page.waitForURL((u) => u.pathname === '/play', { timeout: 60000 }), cDev.page.locator('#code').fill(await codeFor(C.email, { since: cSince }))]);
   await cDev.page.getByText(/Sparkle World is resting/).first().waitFor({ timeout: 60000 });
+  check(true, 'family C signed in from the game and is back in it: "Sparkle World is resting…"');
+  // and the relay itself: C's session cannot come into Lily's game, with or without a player
+  const lilyRoom = `sw1-${code.join('-')}`;
+  const cCookie = await cookieOf(cDev.ctx);
+  for (const [p, want] of [[null, 4401], ['00000000-0000-4000-8000-000000000000', 4405]]) {
+    const s = await voiceSocket(cCookie, p, 'poppy', lilyRoom);
+    const t0 = Date.now();
+    while (s.closed === null && Date.now() - t0 < 5000) await sleep(50);
+    check(s.closed === want, `family C's socket into Lily's game ${p ? 'as a made-up player' : 'without a player'}: closed with ${s.closed} (${want})`);
+    s.ws.terminate();
+  }
   await shot(cDev.page, 'familyC-resting');
   await noPriceInGame(cDev.page, 'family C (never subscribed)');
   check(!(await cDev.page.locator('button.sw-title-friends:not([hidden])').count()), 'family C: no Play with Friends to knock with');
@@ -725,11 +742,11 @@ async function s5() {
 
 // ---- 6: the walkie switch, through the relay with the kids' device cookies
 
-function voiceSocket(cookie, p, name) {
+function voiceSocket(cookie, p, name, room = 'sw1-heart-star-moon-gem') {
   return new Promise((resolve) => {
     import('ws').then(({ WebSocket: WSN }) => {
       const box = { name, json: [], bytes: 0, lastByteAt: 0, self: null, closed: null };
-      box.ws = new WSN(`ws://127.0.0.1:${R.port}/r/sw1-heart-star-moon-gem?s=${name}-${randomBytes(8).toString('hex')}&d=${name}-dev-${randomBytes(8).toString('hex')}&p=${p}`, { headers: { Cookie: cookie, 'X-Forwarded-For': `198.51.100.${name.length}` } }); // no Origin: not a browser page
+      box.ws = new WSN(`ws://127.0.0.1:${R.port}/r/${room}?s=${name}-${randomBytes(8).toString('hex')}&d=${name}-dev-${randomBytes(8).toString('hex')}${p ? `&p=${p}` : ''}`, { headers: { Cookie: cookie, 'X-Forwarded-For': `198.51.100.${name.length}` } }); // no Origin: not a browser page
       box.ws.on('message', (d, bin) => {
         if (bin) {
           box.bytes += d.length;
