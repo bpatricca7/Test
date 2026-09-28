@@ -499,7 +499,7 @@ export function routes(ctx) {
       const h = await sessions().revokeIn(q, old, now);
       if (h) revoked.push(h);
     }
-    const s = await sessions().createSession(q, { familyId: fam.id, kind: 'parent', now, elevated: true });
+    const s = await sessions().createSession(q, { familyId: fam.id, kind: 'parent', label: deviceLabel(req.headers['user-agent']), now, elevated: true });
     return { revoked, answer: { json: { next: safeNext(a.next) }, cookies: [s.cookie, clearLogin] } };
   }
 

@@ -998,7 +998,7 @@ describe('A: sign-in (§4.3, §12.7)', () => {
     const f = await h.family(email);
     assert.ok(f.email_verified_at instanceof Date);
     const s = await t.db.one('select * from sessions where family_id = $1', [f.id]);
-    assert.equal(s.kind, 'parent');
+    assert.deepEqual([s.kind, s.label], ['parent', 'iPad · Safari'], 'a coarse label from the User-Agent, which is not kept');
     assert.ok(Buffer.isBuffer(s.id_hash) && s.id_hash.length === 32);
     assert.ok(!s.id_hash.equals(Buffer.from(asker.cookie(SESS))), 'only a hash is stored');
     assert.equal(+s.expires_at - +s.created_at, 30 * DAY);
