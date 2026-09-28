@@ -257,7 +257,8 @@ async function newPage(ctx, key, { allow = [] } = {}) {
     errs.push(`[${key}] request failed: ${req.url()} ${req.failure() ? req.failure().errorText : ''}`);
   });
   // a 409 on a player's profile is the cloud saves' normal merge (§7.4): the game merges and pushes again
-  page.allow = [/409.*\/api\/players\/[^ ]*\/profile/, ...allow];
+  page.baseAllow = [/409.*\/api\/players\/[^ ]*\/profile/, ...allow];
+  page.allow = [...page.baseAllow];
   page.on('response', (res) => {
     if (res.status() >= 400 && !page.allow.some((re) => re.test(`${res.status()} ${res.url()}`))) errors.push(`[${key}] HTTP ${res.status()} ${res.url()}`);
   });
@@ -403,7 +404,7 @@ const GAME = {
   async pair(dev, code) {
     await dev.page.getByText(/Ask a grown-up/).first().waitFor({ timeout: 60000 });
     await shot(dev.page, `${dev.key}-ask-a-grown-up`);
-    await press(dev, dev.page.getByRole('button', { name: /I have a code/ }).first());
+    await tapIt(dev, dev.page.getByRole('button', { name: /I have a code/ }).first());
     await GAME.grownUpCheck(dev);
     const box = dev.page.locator('.sw-dialog input.sw-input, .sw-panel-wrap.sw-open input, dialog input').first();
     await box.waitFor({ timeout: 15000 });
@@ -415,7 +416,7 @@ const GAME = {
   async pick(dev, nickname) {
     await dev.page.getByText(/Who's playing\?/).first().waitFor({ timeout: 60000 });
     await shot(dev.page, `${dev.key}-whos-playing`);
-    await press(dev, dev.page.getByRole('button', { name: new RegExp(nickname) }).first());
+    await tapIt(dev, dev.page.getByRole('button', { name: new RegExp(nickname) }).first());
   },
   async title(dev) {
     await waitForTitle(dev.page, 90000);
@@ -426,10 +427,10 @@ const GAME = {
   /** A world she builds in: New World (flat) → Create! → a row of blocks → Save & Exit. */
   async buildWorld(dev, { name = null } = {}) {
     const p = dev.page;
-    await press(dev, 'button.sw-btn:has-text("New World")');
+    await tapIt(dev, 'button.sw-btn:has-text("New World")');
     await p.waitForSelector('.sw-panel-wrap.sw-open .sw-biome img[src]');
-    await press(dev, '.sw-panel-wrap.sw-open .sw-biome[data-biome="flat"]');
-    await press(dev, 'button.sw-create');
+    await tapIt(dev, '.sw-panel-wrap.sw-open .sw-biome[data-biome="flat"]');
+    await tapIt(dev, 'button.sw-create');
     await waitForPlay(p);
     await waitIdle(p);
     await GAME.place(dev, 6);
@@ -450,12 +451,28 @@ const GAME = {
   },
   async saveExit(dev) {
     const id = await game(dev, () => window.__game.world.meta.id);
-    await press(dev, '.sw-hud-tr button[aria-label="Menu"]');
-    await press(dev, '.sw-panel-wrap.sw-open button:has-text("Save & Exit")');
+    await tapIt(dev, '.sw-hud-tr button[aria-label="Menu"]');
+    await tapIt(dev, '.sw-panel-wrap.sw-open button:has-text("Save & Exit")');
     await GAME.title(dev);
     return id;
   },
 };
+
+/**
+ * Tap a button like a child would. The game gives the first button of a card or menu the
+ * focus, and a focused button pulses: it never holds still, which is what a normal tap waits
+ * for. After a short wait the tap goes through anyway (overlays are still handled first).
+ */
+async function tapIt(dev, target, timeout = 15000) {
+  const l = typeof target === 'string' ? dev.page.locator(target).first() : target;
+  await l.waitFor({ state: 'visible', timeout });
+  try {
+    if (dev.touch) await l.tap({ timeout: 6000 });
+    else await l.click({ timeout: 6000 });
+  } catch {
+    await l.click({ force: true, timeout });
+  }
+}
 
 /**
  * Close devices a later scenario no longer needs: every open game draws its world on the CPU
@@ -544,7 +561,7 @@ async function s2() {
   // the import card: "This iPad has 2 worlds from before. Whose are they?"
   await dev.page.getByText(/worlds from before/).first().waitFor({ timeout: 60000 });
   await shot(dev.page, 'ipad-import-card');
-  await press(dev, dev.page.getByRole('button', { name: 'Lily', exact: true }).first());
+  await tapIt(dev, dev.page.getByRole('button', { name: 'Lily', exact: true }).first());
   await GAME.title(dev);
   await noPriceInGame(dev.page, 'the iPad, Lily');
   const cookie = await cookieOf(dev.ctx);
@@ -637,7 +654,7 @@ async function s4() {
   // what the offline minutes and the conflict answered (409) were expected: flushed under the allow list
   for (const dev of devs) {
     dev.page.flushErrors();
-    dev.page.allow = [];
+    dev.page.allow = [...dev.page.baseAllow];
   }
   await retire('computer');
 }
