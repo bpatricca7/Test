@@ -81,15 +81,28 @@ Numbers are in the section "Results" below.
 
 (filled in at the end of the run: see below)
 
-## The first integration run (A, B, C merged in a scratch tree, not committed here)
+## Integration runs (A, B, C merged into a scratch tree; nothing of theirs is committed here)
 
-What it found on D's side, fixed in this branch: the e2e read emailed codes by time (the capture's
-times are the app clock, which the test moves) → by position; the game's code box is the
-dialog's `.sw-input`; a pairing reload was not waited for; the iPad (whose site data was cleared)
-had the shared world only as a name until opened, so the offline scene opens it online first; a
-device locked to a deleted player goes to the remaining player when there is only one (the
-check accepts that); the player colors differed from the game's picker; the two plan choices of
-a trial were squeezed on the iPad; the US-only return was not handled.
+A, B and C's branches as they were on 2026-09-28 (A `e45dffb`, B `3e214dc`, C `d17c4f6`) merged
+cleanly with this branch except `site/privacy.html` / `site/terms.html` (now B's bytes here, so
+that conflict is gone). `npm run e2e:accounts` was then run there about a dozen times. What it
+found on D's side, all fixed in this branch:
+
+- the Family page: the player colors differed from the game's picker; the two plan choices of a
+  trial were squeezed side by side on the iPad; the US-only return from Stripe was not handled;
+  a focus ring on headings the page focuses itself;
+- the e2e itself: emailed codes found by position (the capture's times are the app clock, which
+  the test moves); the game's code box is the dialog's `.sw-input`; the reload after pairing is
+  waited for; an unlocked device of a family with two players asks "Who's playing?" every time
+  it opens; the iPad whose site data was cleared has the shared world only as a name until it is
+  opened, so the offline scene opens it online first; a family without a plan has no dashboard
+  (so no pair code): family C signs in from the game ("I'm a grown-up"), as §7.1 describes;
+  family A restarts its plan after resting so 8 and 9 have a plan; the grown-up check's typed
+  answer is read back; a webhook secret with a `-` (base64url) was refused by the config (now
+  hex); games a later scenario does not need are closed (each draws on the CPU); the game page
+  gets two minutes to load on a shared CPU.
+
+What it found on the other builders' sides is under "Notes for integration".
 
 ## Notes for integration
 

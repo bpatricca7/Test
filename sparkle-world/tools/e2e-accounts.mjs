@@ -357,9 +357,20 @@ const FP = {
     await page.getByRole('button', { name: 'Done' }).click();
     return code;
   },
-  async ribbon(page) {
+  /**
+   * The family's plan ribbon on its Family page. After the test clock has moved past a parent
+   * session's 30 days (§4.6) the page asks her to sign in again, which she does.
+   */
+  async ribbon(fam) {
+    const page = fam.page;
     await page.goto(`${R.base}/account`);
-    await page.waitForSelector('.ribbon', { timeout: 20000 });
+    await page.waitForSelector('.ribbon, #email', { timeout: 30000 });
+    if (!(await page.locator('.ribbon').count())) {
+      page.allow.push(/401.*\/api\/me/); // her old session ran out: /api/me says signed_out
+      check(/signed out|sign in/i.test(await page.textContent('main')), 'a month later the Family page asks the grown-up to sign in again');
+      await FP.signIn(page, fam.email);
+      await page.waitForSelector('.ribbon', { timeout: 30000 });
+    }
     return (await page.textContent('.ribbon')).trim();
   },
   async family(ctx) {
@@ -759,7 +770,9 @@ async function s5() {
   }
   await shot(cDev.page, 'familyC-resting');
   await noPriceInGame(cDev.page, 'family C (never subscribed)');
-  check(!(await cDev.page.locator('button.sw-title-friends:not([hidden])').count()), 'family C: no Play with Friends to knock with');
+  // the title is still drawn behind the resting card, but nothing on it can be reached
+  const reachable = await cDev.page.locator('button.sw-title-friends').first().click({ trial: true, timeout: 3000 }).then(() => true, () => false);
+  check(!reachable, 'family C: Play with Friends cannot be reached behind the resting card');
   await sleep(1000);
   check((await game(lily, () => window.__knockEvents || 0)) === knocks, 'no knock from family C reaches Lily');
   await retire('familyC');
@@ -865,14 +878,20 @@ async function s7() {
   check(!!customer, 'the Stripe fake knows A as a customer');
   if (customer) await R.stripe.card(customer, 'fail');
   const lilySock = await voiceSocket(await cookieOf(R.dev.ipad.ctx), A.ids.Lily, 'lilyseven');
+  // Lily plays on (a game with some presence, so the relay never drops it as quiet)
+  const alive = () => lilySock.ws.readyState === 1 && lilySock.ws.send(JSON.stringify({ t: 's', patch: { v: 1, r: 'h', nm: 'x', t: Date.now() } }));
+  alive();
+  const keep = setInterval(alive, 30000);
+  keep.unref();
   await passDays(31);
-  const ribbon = await FP.ribbon(A.page);
+  const ribbon = await FP.ribbon(A);
   check(/Payment didn't go through\. Playing continues until/.test(ribbon), `after the failed renewal: "${ribbon}"`);
   await shot(A.page, 'parentA-payment-failed-ipad');
   await passDays(9);
   await api('/api/test/jobs', { method: 'POST', body: { name: 'reconcile' } });
   const end = Date.now() + 150000;
   while (lilySock.closed === null && Date.now() < end) await sleep(500);
+  clearInterval(keep);
   check(lilySock.closed === 4402, `after the grace days Lily's socket closes with 4402 (${lilySock.closed})`);
   const ipad = R.dev.ipad;
   ipad.page.allow.push(/403/);
@@ -888,7 +907,7 @@ async function s7() {
   // family B: the Portal's "Cancel at period end" → Ends … → the period ends → resting
   const B = R.fam.B;
   if (customer) await R.stripe.card(customer, 'ok');
-  await FP.ribbon(B.page);
+  await FP.ribbon(B);
   const since = await mailMark(B.email);
   await B.page.locator('.ribbon').getByRole('button', { name: 'Manage subscription' }).click();
   await FP.passCheck(B.page, B.email, since);
@@ -902,11 +921,11 @@ async function s7() {
   check(/ends/i.test(ends) && /Resume/.test(ends), `after cancelling: "${ends}"`);
   await passDays(32);
   await api('/api/test/jobs', { method: 'POST', body: { name: 'reconcile' } });
-  const rest = await FP.ribbon(B.page);
+  const rest = await FP.ribbon(B);
   check(/Resting/.test(rest), `the period ended: "${rest}"`);
   await shot(B.page, 'parentB-resting-390', true);
   // A wakes Sparkle World up again (Restart the plan: no second free week), for 8 and 9
-  const ribbonA = await FP.ribbon(A.page);
+  const ribbonA = await FP.ribbon(A);
   check(/Resting/.test(ribbonA), `family A is resting too: "${ribbonA}"`);
   await A.page.locator('.ribbon').getByRole('button', { name: 'Restart the plan' }).click();
   await A.page.waitForSelector('#us');
@@ -928,7 +947,7 @@ async function s8() {
   log('8. A deletes Mia: her device gets 410, its copy is wiped, the picker');
   await retire('computer', 'june', 'familyC'); // 8 and 9 do not need them (their games draw on the CPU)
   const A = R.fam.A;
-  await FP.ribbon(A.page);
+  await FP.ribbon(A);
   const code = await FP.pairCode(A.page, A.email, 'Mia');
   const mia = await newDevice('mia', 'Mia', { w: 1024, h: 768 }, { allow: [/410/] });
   await GAME.open(mia);
@@ -965,7 +984,7 @@ async function s9() {
     const r = await R.db.one('select id from families where email = $1', [A.email]);
     return r && r.id;
   })();
-  await FP.ribbon(A.page).catch(() => {});
+  await FP.ribbon(A).catch(() => {});
   const customer = findCustomer(R.stripe.state ? await R.stripe.state() : null, A.email);
   check(!!customer, `A is a customer at the Stripe fake (${customer})`);
   R.dev.ipad?.page.allow.push(/410/); // Lily's iPad hears family_gone at its next cloud call
