@@ -3,7 +3,8 @@
 This guide puts Sparkle World on its own web address, so friends can play together from
 their own iPads or computers: one player taps **Play with Friends → Make a Code** and reads out
 4 pictures, the others tap **Play with Friends → Join a Code** and tap the same 4 pictures. No
-accounts are needed.
+accounts are needed. (Family accounts and the $5.99 Family Plan are a separate, later step:
+**Part 2** at the end. Until you turn them on, nothing of them runs.)
 
 You do not need to know how to program. It takes about 20 minutes the first time.
 
@@ -263,14 +264,22 @@ version by itself (1–3 minutes). The old version keeps running until the new o
 - **No camera.** The game never uses the camera. The server's `Permissions-Policy` turns the
   camera, location and payments off for this site, and allows the microphone only on the
   game page, only for this site (for the walkie-talkie); the home page may not use it.
-- **No accounts, no personal data.** Nobody signs up; there are no emails or passwords. Each
+- **No accounts, no personal data** (without Part 2). Nobody signs up; there are no emails or
+  passwords. Each
   device keeps a random secret so a friend who reloads can come back to her seat; the
   server turns it into a different stamp in every game, so no one can follow a device from
   game to game, and no one can pretend to be another device.
-- **Nothing stored on the server.** A game room exists only in the server's memory while
+- **Nothing stored on the server** (without Part 2). A game room exists only in the server's
+  memory while
   friends are playing, and disappears when they leave (or after 10 quiet minutes). The server
   does not save worlds, names, pictures, messages or voices, and does not log what happens in
   games.
+- **With family accounts (Part 2)** the server keeps, with a parent's permission, the parent's
+  email, each child's nickname, avatar picture, progress and worlds (the family's cloud copy),
+  which the parent can see, download and delete on the Family page. Messages and voices are still
+  never stored. Playing with friends and the walkie-talkie are switches per child, off at first,
+  and the server enforces them: a child whose switch is off cannot join, and a switch turned off
+  reaches a game in progress within a second. At most 12 connections per family.
 - **Limits.** At most 4 players per game, 500 games at a time, 12 connections and 6 games
   from one home internet address, and new connections and new games are slowed down if one
   address keeps opening them (someone trying code after code). Other websites cannot connect
@@ -342,3 +351,242 @@ Automatic checks (for grown-ups who change the code):
 | `node tools/probe-keepsafe.mjs` | over this same server: the browser is asked to keep her worlds, the "Save a copy of your worlds?" card (after a week, "Not now", never while playing), the backup file and opening it on a new device (worlds and look come back, a world that is already there is only replaced after asking), on a computer, iPad and iPhone; nothing of it inside claude.ai or from a file on the computer. About 3 minutes. |
 | `node tools/probe-net-ux.mjs` | over this same server: the name question on a new device, Play Together, what a knocking device can see, building paused and on again, Undo building told kindly, a host reload ("Your friends are waiting!"), Before friends and its Undo. About 5 minutes. |
 | `npm run probe:mp` | the same game inside claude.ai (a pretend claude.ai room): every screen, knocking, building, Undo building, Send home, sleep, pets, zip lines, reloads, a new version, lost messages, and the size and speed limits. About 25 minutes. |
+| `npm run test:accounts`, `npm run test:billing`, `npm run test:saves` | family accounts (Part 2): sign-in, the Family Plan and Stripe (a pretend Stripe, never the real one), cloud saves. They need Postgres on the computer (or `SW_TEST_DATABASE_URL`). A few minutes each. |
+| `npm run e2e:accounts` | family accounts end to end in Chromium: sign up, the plan, kids' devices, worlds on two devices, playing together, the walkie switch, a failed payment, deleting a child and the account. About 20 minutes. |
+| `npm run dev:accounts` | try Part 2 on your computer: `http://localhost:8080/account` with a local database and the pretend Stripe; the emails (with their codes) are printed in the terminal. `npm run dev:accounts -- --fake --seed` needs no database at all. |
+
+`node tools/site-check.mjs` also builds the pages for `SW_ACCOUNTS=required` and `optional` and
+checks them, and the Family page in every state, at phone, iPad and computer sizes
+(`.shots/site-acct-*.png`).
+
+---
+
+# Part 2: family accounts and the Family Plan
+
+Everything above works with **no accounts at all**, and stays exactly like that until you set
+the variable `SW_ACCOUNTS`. This part turns on the **Family Plan** ($5.99 a month, plus sales tax
+where it applies): grown-ups sign in on the **Family page** (`/account`), add their kids,
+worlds are saved in the family's cloud copy, and playing with friends and the walkie-talkie are
+switched on per child. The whole design is in `docs/ACCOUNTS.md`; this is the checklist of the
+things only you can do (its §14), step by step.
+
+**Do it twice.** First everything in **Stripe test mode on a `staging` copy** of the game (steps
+10–17), with your own email and the test card `4242 4242 4242 4242`. Only when that works, repeat
+it in **live mode for production** (step 18). Nothing is ever charged in test mode.
+
+It takes an afternoon the first time, plus waiting for the domain and the email provider.
+
+## Step 10. A domain
+
+The Family Plan needs a web address of your own (emails come from it, and it looks trustworthy).
+
+1. Buy one at a registrar (for example `sparkleworld.fun`, about $10–20 a year). Turn on **2FA**
+   (a code on your phone at sign-in) at the registrar straight away.
+2. Railway → the game service → **Settings → Networking → Custom Domain** → type the domain.
+   Railway shows a **CNAME** record.
+3. At the registrar, in the domain's **DNS** settings, add that CNAME record. After a few minutes
+   (sometimes an hour) Railway shows a green check and `https://<domain>` opens the home page.
+
+## Step 11. Railway: a database, and a staging copy
+
+1. In the project: **+ New → Database → Add PostgreSQL**. A **Postgres** box appears.
+2. Click the **game service → Variables → New Variable**: name `DATABASE_URL`, value
+   `${{Postgres.DATABASE_URL}}` (type it exactly like that; Railway fills in the private address).
+3. Click the **Postgres** box → **Backups** (if your plan offers it): daily, keep 7.
+4. Keep the game service's **Settings → Deploy → Replicas** at `1`, and turn **Serverless / App
+   Sleeping off**: payments (webhooks), emails and the daily jobs need a server that is awake.
+   Keep your spending limit (step 8).
+5. **Environments** (the name at the top, `production`) → **New Environment** → **Duplicate
+   production**, name it `staging`. It gets its own Postgres and its own `…up.railway.app`
+   address (**Settings → Networking → Generate Domain** in staging). Steps 12–17 happen in
+   **staging**.
+
+## Step 12. The email provider
+
+Sign-in codes are emailed. Resend is free at family scale (3,000 emails a month); Postmark works
+the same way (it approves new accounts before they can send).
+
+1. Make an account (with 2FA). **Domains → Add domain** → your domain.
+2. It shows DNS records (DKIM and SPF; Postmark also a Return-Path). Add each one at the
+   registrar, exactly as shown. Also add a **DMARC** record, for example a TXT record named
+   `_dmarc` with the value `v=DMARC1; p=quarantine; rua=mailto:<your email>`.
+3. In the provider's settings: **open tracking off, click tracking off**, and the shortest message
+   retention offered.
+4. **API Keys → Create** a key with "sending access" only. Copy it (you need it in step 14).
+
+## Step 13. Stripe (in test mode first)
+
+Turn on **2FA** in Stripe first. Make sure the switch at the top says **Test mode**.
+
+1. **Settings → Public details:** name `Sparkle World`, a support email, **Terms of service**
+   `https://<domain>/terms`, **Privacy policy** `https://<domain>/privacy`, statement descriptor
+   (what appears on card statements) `SPARKLEWORLD`.
+2. **The plan.** On your computer, in the `sparkle-world` folder, with a *full* test secret key
+   (Developers → API keys → **Secret key**, `sk_test_…`; only for this one command, never in
+   Railway):
+
+   ```
+   STRIPE_SECRET_KEY=sk_test_… npm run stripe:setup
+   ```
+
+   It makes the product **Sparkle World Family Plan**, the one price ($5.99 a month, tax
+   "exclusive": tax is added on top) and the Customer Portal settings, and prints two lines,
+   `STRIPE_PRICE_ID=price_…` and `STRIPE_PORTAL_CONFIG=bpc_…`. Keep them for step 14. Running it
+   again changes nothing.
+3. **Tax:** Settings → **Tax** → turn on Stripe Tax, set your origin address, and for the product
+   pick the tax code for a personal-use online game or digital subscription (check it with your
+   accountant, and add a registration for your home state if the accountant says so).
+4. **Billing → Customer portal:** update payment method on, invoice history on, **cancel at end
+   of billing period** with the reason survey; plan switching off, quantity off, email editing
+   off. (The setup script did this; check it looks like that.)
+5. **Billing → Subscriptions and emails:** successful payment receipts, failed payment emails,
+   trial-ending reminders and expiring-card emails **on**. Under "Manage failed payments": Smart
+   Retries, then **cancel the subscription** when all retries fail.
+6. **Radar:** leave the defaults. (Optionally, if your plan allows custom rules, `Block if
+   :card_country: != 'US'`.)
+7. **Developers → Webhooks → Add endpoint:** URL `https://<your staging address>/api/stripe/webhook`,
+   API version **`2026-08-26.dahlia`**, events: `checkout.session.completed`,
+   `customer.subscription.created`, `customer.subscription.updated`,
+   `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`,
+   `charge.dispute.created`, `customer.deleted`. Save, then **Reveal** the signing secret
+   (`whsec_…`) and copy it.
+8. **Developers → API keys → Create restricted key** (name it "Sparkle World server"):
+   **Customers: write, Checkout Sessions: write, Subscriptions: write, Customer portal: write,
+   Invoices: read, Prices: read, Events: read.** Nothing else. Copy the key (`rk_test_…`).
+
+## Step 14. Railway Variables
+
+In **staging**, the game service → **Variables → Raw Editor**, paste and fill in (one per line):
+
+| Variable | Value |
+|---|---|
+| `SW_ACCOUNTS` | `required` on staging (see step 18 for production) |
+| `NODE_ENV` | `production` |
+| `PUBLIC_ORIGIN` | `https://<the staging address>` (production: `https://<domain>`), nothing after it |
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (from step 11) |
+| `SW_SECRET` | a long random secret: run `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` and paste what it prints |
+| `STRIPE_SECRET_KEY` | the **restricted** key from step 13.8 (`rk_test_…`) |
+| `STRIPE_WEBHOOK_SECRET` | `whsec_…` from step 13.7 |
+| `STRIPE_PRICE_ID` | `price_…` from step 13.2 |
+| `STRIPE_PORTAL_CONFIG` | `bpc_…` from step 13.2 |
+| `MAIL_MODE` | `resend` (or `postmark`) |
+| `MAIL_API_KEY` | the key from step 12 |
+| `MAIL_FROM` | `Sparkle World <hello@<domain>>` |
+| `SW_OPERATOR_NAME` | who runs Sparkle World (your name, or your small LLC) |
+| `SW_OPERATOR_EMAIL` | the email parents can write to |
+| `SW_OPERATOR_ADDRESS` | a mailing address (a PO box or an LLC's address keeps your home address private) |
+| `SW_OPERATOR_PHONE` | a phone number for parents |
+
+The operator lines are printed on `/privacy`, `/terms` and in emails: the children's privacy law
+(COPPA) requires them. Railway passes the Variables to the build too, so the pages are built with
+them (the Build Logs warn about any that is missing).
+
+Optional, only if you want other than the family's decisions: `SW_TRIAL_DAYS` (0: no free
+trial), `SW_FRIENDS_MODE` (`subscription`: each friend's family has the plan), `SW_MP_CONSENT`
+(`verified`), `SW_GRACE_DAYS` (7), `SW_RETAIN_DAYS` (90), `SW_SELL_COUNTRIES` (`US`),
+`SW_MAX_PER_FAMILY` (12 connections), and `SW_REQUIRED_FROM` (the date the home page announces
+while `SW_ACCOUNTS=optional`, for example `2026-11-02`).
+
+**Never** set `SW_TEST` or `STRIPE_API_BASE` on Railway: they are for the automatic tests, and the
+server refuses to start with them in production.
+
+Click **Deploy**. In the Deploy Logs you should see a line like
+`accounts: required, friends subscription, consent verified, trial 0 d, …, stripe test, db postgres`
+and then `Sparkle World server listening …`. If a variable is wrong, the new deployment stops with
+**one line** that names it (for example `SW_SECRET must be at least 32 random bytes`) and the old
+deployment keeps running: fix the variable and deploy again.
+
+## Step 15. The legal part
+
+1. Open `https://<staging address>/privacy` and `/terms` and check your operator details.
+2. Have a lawyer who works on children's privacy (COPPA) read `/privacy`, `/terms`, the notice the
+   Family page shows before a child plays, and the two questions in `docs/ACCOUNTS.md` §11.4
+   (whether the free trial's saved card counts as consent; whether playing with friends needs the
+   stronger consent). A flat-fee review is enough. Apply the lawyer's notes before going live.
+3. Later, optionally, apply for a kidSAFE or PRIVO seal.
+
+## Step 16. Admin access (for a parent's request, a free pass, or an emergency)
+
+The admin commands run inside the service:
+
+1. Install the Railway command line tool on your computer and log in (`railway login`), then in
+   the `sparkle-world` folder: `railway link` (pick the project and the environment).
+2. `railway ssh`, then for example `npm run admin -- show <email>` (plan, consent, players and
+   devices counted, never the children's content). Other commands: `comp <email> <YYYY-MM-DD>` (a
+   free pass), `consent-verified <email> --method form` (a signed consent form), `export <email>`,
+   `delete <email>`, `sign-out-all`, `stats`.
+3. If `railway ssh` is not available on your plan: turn on the Postgres service's public
+   networking for a moment, run `railway run --service <game> npm run admin -- …` with
+   `DATABASE_URL` set to the Postgres `DATABASE_PUBLIC_URL`, and **turn public networking off
+   again** afterwards.
+
+## Step 17. The one real test-mode purchase (staging)
+
+Set `SW_STRIPE_SHAPES=1` in staging's Variables (test keys only), deploy, then:
+
+1. On your iPad, open `https://<staging address>/account`, type your email, and check that the
+   email arrives in iPad Mail and that the **6-digit code** fills in by itself. Also try it from a
+   Home Screen app (add `/play` to the Home Screen, open it, **Grown-ups → Sign in or start**).
+2. Read the notice, tick the box, **Agree and continue**.
+3. Tick **I live in the United States**, **Start the Family Plan**. On Stripe's page use the card
+   `4242 4242 4242 4242`, any future date, any 3 digits, a US address. Back on the Family page:
+   **You're all set!**
+4. Add two players. **Set up a kid's device**: on a second browser (or the iPad's Home Screen
+   app) open `/play` → **Grown-ups** → **I have a code**, type the code. Pick a player, build
+   something, and check the world appears on the other device.
+5. Switch **Play with friends** and the **Walkie-talkie** on for one child (a code is emailed
+   first). Play together with a second test family (another email, another browser), including the
+   walkie. Switch the walkie off on the Family page while they play: it stops within a second.
+6. **Manage subscription** → cancel. The plan shows **Ends …**.
+7. In the Stripe Dashboard: the invoice shows the **tax line**; **Developers → Webhooks → your
+   endpoint**: every delivery is **2xx**.
+8. In the Deploy Logs, copy every line that starts with `stripe-shape` into
+   `tools/fixtures/stripe/real-shapes.txt` (the automatic tests check the code against them), then
+   remove `SW_STRIPE_SHAPES` again.
+9. What only a real iPad can check (the tests cannot run Safari): the Home Screen app sign-in with
+   the code, pairing, and the walkie.
+
+## Step 18. Live: production, optional first, then required
+
+1. In Stripe, switch to **live mode** and repeat step 13 (the setup command with `sk_live_…`, tax,
+   portal, emails, the webhook for `https://<domain>/api/stripe/webhook`, a live restricted key).
+2. In **production**'s Variables, set everything of step 14 with the live values,
+   `PUBLIC_ORIGIN=https://<domain>`, and **`SW_ACCOUNTS=optional`**, plus `SW_REQUIRED_FROM` (the
+   date, at most about 30 days later, from which playing together needs the Family Plan). Deploy.
+   In `optional`, a device that is not signed in plays exactly as before, with a **Grown-ups** tile;
+   the home page and `/parents` now describe the Family Plan (they are built for the mode you set:
+   always change `SW_ACCOUNTS` and let Railway rebuild, never only restart).
+3. Make one real $5.99 purchase with the family's own card, then **refund it** in the Stripe
+   Dashboard (Payments → the payment → Refund).
+4. Families already playing together: give them a free pass if you like
+   (`npm run admin -- comp <their email> 2027-01-01`).
+5. On the announced date, set **`SW_ACCOUNTS=required`** and deploy: signed-out devices now see
+   "Ask a grown-up to set up Sparkle World", and the home page's `optional`-only sentences are gone.
+
+To turn accounts off again, remove `SW_ACCOUNTS` (or set it to `off`) and deploy: the game and the
+pages are exactly as in Part 1 (the database is kept, untouched).
+
+### What to watch
+
+- **Stripe** emails you when webhook deliveries keep failing.
+- **Deploy Logs**, one line a day: `accounts: families=… entitled=… trialing=… past_due=…
+  lapsed=… webhooks ok=… failed=… mails sent=… failed=… disputes=… refund_due=…`. A `refund_due`
+  is a non-US family whose payment needs a manual refund in the Dashboard; `disputes` are
+  chargebacks.
+- **Railway → Usage**, and the email provider's bounce list.
+- **Backups:** once, restore staging from a backup and check the Family page still works (the
+  runbook is in `docs/SECURITY-PROGRAM.md`).
+
+### If something goes wrong (family accounts)
+
+| What you see | What to do |
+|---|---|
+| The deployment stops with `Sparkle World will not start: … is missing` or `must …` | That variable is missing or wrong (step 14). The old deployment keeps running. |
+| `accounts could not start (ECONNREFUSED)` | The database is not reachable: check `DATABASE_URL = ${{Postgres.DATABASE_URL}}` and that the Postgres service is running. |
+| The deploy fails at "Healthcheck" with accounts on | `/healthz` asks the database; open the Postgres service's logs. |
+| `warning: the home page was built for SW_ACCOUNTS=off, but the server runs with required` | The pages were built before the variable was set: **Redeploy** (a build, not a restart). |
+| The build warns `the account pages need SW_OPERATOR_…` | Set the operator variables (step 14) and redeploy. |
+| No sign-in email arrives | Check the spam folder; check the provider's logs and that the domain shows "verified" (step 12). |
+| "Couldn't reach the payment page" | Stripe keys or `STRIPE_PRICE_ID` (step 13); the Deploy Logs show `stripe_unavailable`. |
+| Stripe shows failed webhook deliveries | The endpoint URL (step 13.7) and `STRIPE_WEBHOOK_SECRET` must match; a key change needs the new secret. The server also re-reads subscriptions every 6 hours, and the Family page syncs when a parent comes back from Stripe. |
+| A parent asks for her data, or to be deleted, by email | Confirm the request came from the account's email, then `npm run admin -- export <email>` or `delete <email>` (step 16). Answer within 10 business days. |
