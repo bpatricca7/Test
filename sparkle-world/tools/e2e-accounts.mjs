@@ -233,6 +233,8 @@ async function newContext(label, { w = 1024, h = 768, touch = true } = {}) {
     extraHTTPHeaders: { 'X-Forwarded-For': `203.0.113.${R.ips++}` },
   });
   ctx.label = label;
+  // the game is one 2 MB page drawn by SwiftShader on a shared CPU: loading it can take long
+  ctx.setDefaultNavigationTimeout(120000);
   return ctx;
 }
 
