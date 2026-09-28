@@ -274,8 +274,8 @@ function render() {
   if (!f.consent || f.consent.level === 'none') return noticeView();
   if (checkout && /^cs_[A-Za-z0-9_]+$/.test(checkout)) return backFromStripe(checkout);
   if (S.params.get('portal')) return backFromPortal();
+  if (checkout) cleanUrl(); // "?checkout=cancel" is said once, not again after a reload
   if (!f.plan.entitled && f.players.length === 0 && !S.skipPlan) return planView({ cancelled: checkout === 'cancel' });
-  if (checkout) cleanUrl();
   if (f.players.length === 0 && (f.plan.entitled || f.config.friendsMode === 'free-join')) return addFirstView();
   return dashboard();
 }

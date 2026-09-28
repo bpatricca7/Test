@@ -638,7 +638,7 @@ function voiceSocket(cookie, p, name) {
   return new Promise((resolve) => {
     import('ws').then(({ WebSocket: WSN }) => {
       const box = { name, json: [], bytes: 0, lastByteAt: 0, self: null, closed: null };
-      box.ws = new WSN(`ws://127.0.0.1:${R.port}/r/sw1-heart-star-moon-gem?s=${name}-${randomBytes(8).toString('hex')}&d=${name}-dev-${randomBytes(8).toString('hex')}&p=${p}`, { headers: { Cookie: cookie, Origin: R.base, 'X-Forwarded-For': `198.51.100.${name.length}` } });
+      box.ws = new WSN(`ws://127.0.0.1:${R.port}/r/sw1-heart-star-moon-gem?s=${name}-${randomBytes(8).toString('hex')}&d=${name}-dev-${randomBytes(8).toString('hex')}&p=${p}`, { headers: { Cookie: cookie, 'X-Forwarded-For': `198.51.100.${name.length}` } }); // no Origin: not a browser page
       box.ws.on('message', (d, bin) => {
         if (bin) {
           box.bytes += d.length;
