@@ -6,6 +6,13 @@
 // If a local write fails later on (quota, the browser evicting storage, a broken database),
 // that save falls through to the next backend (localStorage, then memory) instead of being
 // dropped, and reads look in every backend that has been written to (newest copy wins).
+//
+// Family accounts (docs/ACCOUNTS.md §7.2): store.configure({ ns, cloud, mergeProfile }) before
+// init() puts one player's saves under their own names ('sparkle-world@p-<uuid>') with the
+// server's HttpCloudBackend (src/account/cloud.js). Such a backend says `revisions: true`, and
+// only then do the extras run: revisions (If-Match), retried pushes, a reconcile after init(),
+// tombstones, "(copy)" forks on a conflict, the profile merge, skipped unchanged pushes, queued
+// deletes. Without configure() everything is exactly as before (claude.ai's CloudBackend too).
 
 import { sleep } from './util.js';
 
@@ -13,6 +20,10 @@ const DB_NAME = 'sparkle-world';
 const LS_PREFIX = 'sparkle-world:';
 const PART_CHARS = 180000;
 const CLOUD_MIN_INTERVAL = 60000;
+const RETRY_MS = [30000, 60000, 120000]; // then every 5 minutes (revisioned backends)
+const RETRY_LAST_MS = 300000;
+const SKIP_MS = 5 * 60000; // an unchanged world is not pushed again within this time
+const PROFILE_REV = '@profile';
 const CLOUD_WRITE_MS = 10000; // one cloud write that has not settled by then counts as failed
 const CLOUD_READ_MS = 8000; // cloud reads give up after this (local data is used instead)
 
@@ -174,21 +185,22 @@ class MemoryBackend {
 }
 
 class LocalStorageBackend {
-  constructor(ls) {
+  constructor(ls, prefix = LS_PREFIX) {
     this.kind = 'localStorage';
     this.ls = ls;
+    this.prefix = prefix;
   }
   _get(key) {
-    const s = this.ls.getItem(LS_PREFIX + key);
+    const s = this.ls.getItem(this.prefix + key);
     return s ? JSON.parse(s) : null;
   }
   _set(key, value) {
-    this.ls.setItem(LS_PREFIX + key, JSON.stringify(value));
+    this.ls.setItem(this.prefix + key, JSON.stringify(value));
   }
   /** Does this browser already hold Sparkle World saves here? */
   hasData() {
     try {
-      return this.ls.getItem(LS_PREFIX + 'metas') !== null || this.ls.getItem(LS_PREFIX + 'profile') !== null;
+      return this.ls.getItem(this.prefix + 'metas') !== null || this.ls.getItem(this.prefix + 'profile') !== null;
     } catch {
       return false;
     }
@@ -207,7 +219,7 @@ class LocalStorageBackend {
     this._set('metas', metas);
   }
   async deleteWorld(id) {
-    this.ls.removeItem(LS_PREFIX + 'world:' + id);
+    this.ls.removeItem(this.prefix + 'world:' + id);
     const metas = this._get('metas') || {};
     delete metas[id];
     this._set('metas', metas);
@@ -264,14 +276,14 @@ class IDBBackend {
   }
 }
 
-function openIDB(timeoutMs = 2000) {
+function openIDB(name = DB_NAME, timeoutMs = 2000) {
   return new Promise((resolve) => {
     let settled = false;
     const finish = (v) => { if (!settled) { settled = true; resolve(v); } };
     try {
       const idb = window.indexedDB;
       if (!idb) return finish(null);
-      const req = idb.open(DB_NAME, 1);
+      const req = idb.open(name, 1);
       req.onupgradeneeded = () => {
         const db = req.result;
         if (!db.objectStoreNames.contains('worlds')) db.createObjectStore('worlds', { keyPath: 'id' });
@@ -392,8 +404,39 @@ async function detectCloud() {
 
 // ---------- SaveStore ----------
 
+/** FNV-1a of a string (the "did this world change?" check before a push). */
+function fnv(s) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);
+  return h >>> 0;
+}
+
+/** A world push can be skipped when only these changed (docs/ACCOUNTS.md §7.2 item 7). */
+function saveHash(save) {
+  // eslint-disable-next-line no-unused-vars
+  const { player, time, hotbar, updatedAt, thumbnail, ...rest } = save;
+  return fnv(JSON.stringify(rest));
+}
+
+/** "<name> (copy)" in at most 80 characters. */
+export function forkName(name) {
+  const n = typeof name === 'string' && name.trim() ? name : 'My World';
+  return (n.length > 73 ? n.slice(0, 73) : n) + ' (copy)';
+}
+
+const NS_RE = /^[A-Za-z0-9_-]{1,64}$/;
+
+/** JSON with sorted keys (a "same content?" check). */
+function canon(v) {
+  if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+  if (v && typeof v === 'object') return '{' + Object.keys(v).sort().map((k) => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}';
+  return JSON.stringify(v === undefined ? null : v);
+}
+
 export class SaveStore {
   constructor() {
+    this.dbName = DB_NAME;
+    this.lsPrefix = LS_PREFIX;
     this.local = new MemoryBackend(); // primary local backend, picked by init()
     this._spares = null; // fallback backends for failed writes (created on first need)
     this._usedSpares = new Set(); // spares that hold data and must be read too
@@ -411,6 +454,55 @@ export class SaveStore {
     this._cloudFailing = false;
     this._lastPersistent = null;
     this.ready = null;
+    // family accounts (configure(); used only by a backend with `revisions`)
+    this._configured = false;
+    this._given = null; // the backend given to configure()
+    this._merge = null; // mergeProfile(local, server)
+    this._revs = new Map(); // world id | PROFILE_REV -> rev this device's copy descends from
+    this._dels = new Set(); // deletes not yet taken by the server
+    this._tombs = new Map(); // id -> time of a delete the cloud told us about
+    this._pushed = new Map(); // id -> { hash, at } of the last successful push
+    this._retries = new Map(); // key -> failed attempts in a row
+    this._redirect = new Map(); // id -> { to, name } while a fork is being made
+    this._forkFns = [];
+    this._profileFns = [];
+    this._chain = Promise.resolve(); // one push at a time
+    this._ls = null;
+    this.reconciled = Promise.resolve();
+  }
+
+  /**
+   * Before init(): o.ns 'p-<uuid>' → IndexedDB 'sparkle-world@p-<uuid>' and localStorage keys
+   * 'sparkle-world@p-<uuid>:…'; o.cloud: the backend to use instead of detectCloud() (null: none);
+   * o.mergeProfile(local, server); o.readOnly: the cloud is only read (no plan: §1.2).
+   */
+  configure(o = {}) {
+    if (this.ready) throw new Error('store.configure() must come before init()');
+    if (o.ns !== undefined && o.ns !== null) {
+      if (!NS_RE.test(o.ns)) throw new Error('bad store namespace');
+      this.dbName = DB_NAME + '@' + o.ns;
+      this.lsPrefix = DB_NAME + '@' + o.ns + ':';
+    }
+    this._configured = true;
+    this._given = o.cloud || null;
+    this._merge = typeof o.mergeProfile === 'function' ? o.mergeProfile : null;
+    this.cloudReadOnly = !!o.readOnly;
+    return this;
+  }
+
+  /** fn({ from, to, name }) after a conflict made "<name> (copy)" (docs/ACCOUNTS.md §7.4). */
+  onFork(fn) {
+    this._forkFns.push(fn);
+  }
+
+  /** fn(merged) after the profile was merged with another device's (a 409). */
+  onProfile(fn) {
+    this._profileFns.push(fn);
+  }
+
+  /** Does the cloud keep revisions (the family server)? */
+  get _rev() {
+    return !!(this.cloud && this.cloud.revisions);
   }
 
   /** Pick the local backend and start looking for the cloud (waits briefly for it). */
@@ -418,17 +510,27 @@ export class SaveStore {
     if (this.ready) return this.ready;
     this.ready = (async () => {
       try {
-        const db = await openIDB();
+        const db = await openIDB(this.dbName);
         if (db) this.local = new IDBBackend(db);
         else {
           const ls = probeLocalStorage();
-          if (ls) this.local = new LocalStorageBackend(ls);
+          if (ls) this.local = new LocalStorageBackend(ls, this.lsPrefix);
         }
       } catch (err) {
         console.warn('[storage] local storage unavailable, using memory', err);
       }
       // saves that fell back to localStorage in an earlier session must still be found
       for (const b of this._spareBackends()) if (b.kind === 'localStorage' && b.hasData()) this._usedSpares.add(b);
+      if (this._configured) {
+        this.cloud = this._given;
+        if (this._rev) {
+          this._ls = probeLocalStorage();
+          this._loadSync();
+          // (tests await store.reconciled)
+          if (!this.cloudReadOnly) this.reconciled = new Promise((r) => setTimeout(() => r(this._reconcile().catch(() => {})), 0));
+        }
+        return { ok: true, local: this.local.kind, cloud: !!this.cloud };
+      }
       const cloudPromise = detectCloud().then((backend) => {
         this.cloud = backend;
         if (backend) for (const fn of this._cloudListeners) fn();
@@ -438,6 +540,54 @@ export class SaveStore {
       return { ok: true, local: this.local.kind, cloud: !!this.cloud };
     })();
     return this.ready;
+  }
+
+  /** Stop pushing and close the local database (before deleting it; tests). */
+  close() {
+    for (const t of this._timers.values()) clearTimeout(t);
+    this._timers.clear();
+    try {
+      if (this.local.db) this.local.db.close();
+    } catch {}
+  }
+
+  /**
+   * Delete one namespace's saves on this device: its database and its localStorage keys.
+   * ns '' (or null) is the saves from before accounts ('sparkle-world' and the sparkle-world:
+   * metas / profile / world:* keys); nothing else (the relay's device id, the account cache)
+   * is ever touched.
+   */
+  static async wipe(ns) {
+    const legacy = !ns;
+    if (!legacy && !NS_RE.test(ns)) return false;
+    const prefix = legacy ? LS_PREFIX : DB_NAME + '@' + ns + ':';
+    try {
+      const ls = window.localStorage;
+      const drop = [];
+      for (let i = 0; i < ls.length; i++) {
+        const k = ls.key(i);
+        if (!k || !k.startsWith(prefix)) continue;
+        const rest = k.slice(prefix.length);
+        if (!legacy || rest === 'metas' || rest === 'profile' || rest.startsWith('world:')) drop.push(k);
+      }
+      for (const k of drop) ls.removeItem(k);
+    } catch {}
+    try {
+      const idb = window.indexedDB;
+      if (idb) {
+        await new Promise((resolve) => {
+          const req = idb.deleteDatabase(legacy ? DB_NAME : DB_NAME + '@' + ns);
+          req.onsuccess = req.onerror = req.onblocked = () => resolve();
+          setTimeout(resolve, 3000);
+        });
+      }
+    } catch {}
+    return true;
+  }
+
+  /** A store on the names from before accounts (the first sign-in's import, §7.5). */
+  static legacy() {
+    return new SaveStore().configure({ cloud: null });
   }
 
   /** Called once if the cloud backend becomes available after init() returned. */
@@ -478,7 +628,7 @@ export class SaveStore {
   _cloudResult(key, err) {
     if (!err) {
       this._cloudFailing = false;
-    } else if (isPermanentCloudError(err)) {
+    } else if (isPermanentCloudError(err) || (err && err.status === 410)) {
       if (!this.cloudReadOnly) {
         console.info('[storage] cloud saves are not available for this viewer; saving on this device only.', String((err && err.message) || err));
       }
@@ -488,7 +638,7 @@ export class SaveStore {
       this._pendingWorlds.clear();
       this._pendingProfile = null;
     } else {
-      if (!this._cloudFailing) console.warn('[storage] cloud write failed', key, err);
+      if (!this._cloudFailing) console.warn('[storage] cloud write failed', key, String((err && err.message) || err));
       this._cloudFailing = true;
     }
     this._statusChanged();
@@ -499,7 +649,7 @@ export class SaveStore {
       this._spares = [];
       if (this.local.kind === 'indexedDB') {
         const ls = probeLocalStorage();
-        if (ls) this._spares.push(new LocalStorageBackend(ls));
+        if (ls) this._spares.push(new LocalStorageBackend(ls, this.lsPrefix));
       }
       if (this.local.kind !== 'memory') this._spares.push(new MemoryBackend());
     }
@@ -548,6 +698,39 @@ export class SaveStore {
     }
   }
 
+  // ----- revisions and queued deletes (revisioned backends): localStorage[prefix + 'revs' | 'dels'] -----
+
+  _loadSync() {
+    try {
+      const ls = this._ls;
+      const revs = JSON.parse(ls.getItem(this.lsPrefix + 'revs') || '{}');
+      for (const [k, v] of Object.entries(revs)) if (Number.isFinite(v)) this._revs.set(k, v);
+      for (const id of JSON.parse(ls.getItem(this.lsPrefix + 'dels') || '[]')) if (typeof id === 'string') this._dels.add(id);
+    } catch {}
+  }
+
+  _saveSync() {
+    try {
+      const ls = this._ls;
+      ls.setItem(this.lsPrefix + 'revs', JSON.stringify(Object.fromEntries(this._revs)));
+      ls.setItem(this.lsPrefix + 'dels', JSON.stringify([...this._dels]));
+    } catch {}
+  }
+
+  _setRev(id, rev) {
+    if (!Number.isFinite(rev)) return;
+    if (this._revs.get(id) === rev) return;
+    this._revs.set(id, rev);
+    this._saveSync();
+  }
+
+  /** The cloud's "deleted" wins over a copy here that is not newer. */
+  _gone(id, updatedAt) {
+    if (this._dels.has(id)) return true;
+    const t = this._tombs.get(id);
+    return t !== undefined && t >= (updatedAt || 0);
+  }
+
   // ----- page-closing journal -----
 
   /** The localStorage backend (primary or spare), or null when this browser has none. */
@@ -592,16 +775,54 @@ export class SaveStore {
 
   // ----- profile -----
 
-  async loadProfile() {
-    await this.init();
+  async _localProfile() {
     let local = null;
     for (const b of this._readers()) {
       const p = await this._safe('local profile', () => b.getProfile(), null);
       if (p && (!local || (p.updatedAt || 0) > (local.updatedAt || 0))) local = p;
     }
+    return local;
+  }
+
+  async loadProfile() {
+    await this.init();
+    const local = await this._localProfile();
+    if (this._rev) return this._loadProfileRev(local);
     const cloud = this.cloud ? await this._safe('cloud profile', () => withTimeout(this.cloud.getProfile(), CLOUD_READ_MS, 'cloud read'), null) : null;
     if (local && cloud) return (cloud.updatedAt || 0) > (local.updatedAt || 0) ? cloud : local;
     return cloud || local || null;
+  }
+
+  /** Local and cloud profiles merged (§7.4); what the cloud lacks is pushed. */
+  async _loadProfileRev(local) {
+    let cloud = null;
+    let reached = false;
+    try {
+      cloud = await withTimeout(this.cloud.getProfile(), CLOUD_READ_MS, 'cloud read');
+      reached = true;
+    } catch (err) {
+      console.warn('[storage] cloud profile failed', String((err && err.message) || err));
+    }
+    if (cloud) {
+      this._setRev(PROFILE_REV, cloud._rev);
+      delete cloud._rev;
+    }
+    if (!local) return cloud;
+    if (!cloud) {
+      if (reached && !this.cloudReadOnly) this._queueProfile(local);
+      return local;
+    }
+    const merged = this._merge ? this._merge(local, cloud) : (cloud.updatedAt || 0) > (local.updatedAt || 0) ? cloud : local;
+    // push when this device has something the cloud does not (newer, or stickers it lacks...)
+    const strip = typeof this.cloud.strip === 'function' ? (p) => this.cloud.strip(p) : (p) => p;
+    const differs = canon({ ...strip(merged), updatedAt: 0 }) !== canon({ ...strip(cloud), updatedAt: 0 });
+    if (!this.cloudReadOnly && ((local.updatedAt || 0) > (cloud.updatedAt || 0) || differs)) this._queueProfile(merged);
+    return merged;
+  }
+
+  _queueProfile(p) {
+    this._pendingProfile = JSON.parse(JSON.stringify(p));
+    this._scheduleCloud('profile');
   }
 
   async saveProfile(profile) {
@@ -683,36 +904,65 @@ export class SaveStore {
     const add = (metas, source) => {
       for (const m of metas || []) {
         if (!m || !m.id) continue;
+        if (m.deleted) {
+          this._tombs.set(m.id, m.updatedAt || 0); // a cloud tombstone (§7.2 item 5)
+          continue;
+        }
         const cur = byId.get(m.id);
         if (!cur || (m.updatedAt || 0) > (cur.updatedAt || 0)) byId.set(m.id, { ...m, source });
       }
     };
     for (const b of this._readers()) add(await this._safe('list local', () => b.listMetas(), []), b.kind);
     if (this.cloud) add(await this._safe('list cloud', () => withTimeout(this.cloud.listMetas(), CLOUD_READ_MS, 'cloud read'), []), 'cloud');
-    return [...byId.values()].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    let all = [...byId.values()];
+    if (this._rev) all = all.filter((m) => !this._gone(m.id, m.updatedAt));
+    return all.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   }
 
-  async loadWorld(id) {
-    await this.init();
+  async _loadLocal(id) {
     let local = null;
     for (const b of this._readers()) {
       const w = await this._safe('load local world', () => b.getWorld(id), null);
       if (w && (!local || (w.updatedAt || 0) > (local.updatedAt || 0))) local = w;
     }
+    return local;
+  }
+
+  async loadWorld(id) {
+    await this.init();
+    const local = await this._loadLocal(id);
     if (!this.cloud) return local;
     const metas = await this._safe('cloud metas', () => withTimeout(this.cloud.listMetas(), CLOUD_READ_MS, 'cloud read'), []);
     const cm = metas.find((m) => m.id === id);
-    if (cm && (!local || (cm.updatedAt || 0) > (local.updatedAt || 0))) {
+    if (this._rev) {
+      if (cm && cm.deleted) this._tombs.set(id, cm.updatedAt || 0);
+      if (this._gone(id, local && local.updatedAt)) return null;
+    }
+    if (cm && !cm.deleted && (!local || (cm.updatedAt || 0) > (local.updatedAt || 0))) {
       const cloud = await this._safe('load cloud world', () => withTimeout(this.cloud.getWorld(id), CLOUD_READ_MS * 3, 'cloud read'), null);
+      if (cloud && this._rev) await this._keepDownload(cloud);
       if (cloud) return cloud;
     }
     return local;
   }
 
+  /** A world downloaded from a revisioned cloud: keep it here too and learn its revision. */
+  async _keepDownload(save) {
+    const rev = save._rev;
+    delete save._rev;
+    await this._writeLocal('keep cloud copy', (b) => b.putWorld(save));
+    this._setRev(save.id, rev);
+    this._pushed.set(save.id, { hash: saveHash(save), at: Date.now() });
+  }
+
   async saveWorld(save) {
     await this.init();
     if (!save || !save.id) return { ok: false, error: 'no id' };
+    // a save of a world whose conflict is being forked right now goes to the fork (§7.4)
+    const r = this._redirect.get(save.id);
+    if (r) save = { ...save, id: r.to, name: r.name };
     if (!save.updatedAt) save.updatedAt = Date.now();
+    if (this._dels.delete(save.id)) this._saveSync();
     const local = await this._writeLocal('world save', (b) => b.putWorld(save));
     if (local.ok && local.backend === this.local) {
       // the primary works again: drop older fallback copies (they only use up space)
@@ -734,9 +984,7 @@ export class SaveStore {
     return this._deleteOne(id);
   }
 
-  async _deleteOne(id) {
-    await this.init();
-    this._pendingWorlds.delete(id);
+  async _deleteLocal(id) {
     let ok = true;
     for (const b of this._readers()) {
       try {
@@ -745,6 +993,24 @@ export class SaveStore {
         console.warn('[storage] delete failed', b.kind, err);
         if (b === this.local) ok = false;
       }
+    }
+    return ok;
+  }
+
+  async _deleteOne(id) {
+    await this.init();
+    this._pendingWorlds.delete(id);
+    let ok = await this._deleteLocal(id);
+    if (this._rev) {
+      // queued until the server has it, so the world never comes back from the cloud
+      this._revs.delete(id);
+      this._pushed.delete(id);
+      if (!this.cloudReadOnly) {
+        this._dels.add(id);
+        this._saveSync();
+        this._pushCloud('del:' + id);
+      }
+      return { ok };
     }
     if (this.cloud && !this.cloudReadOnly) {
       try {
@@ -881,19 +1147,26 @@ export class SaveStore {
 
   // ----- cloud throttling -----
 
-  _scheduleCloud(key) {
+  _scheduleCloud(key, wait = null) {
     if (this.cloudReadOnly || this._timers.has(key)) return;
     const last = this._lastCloudWrite.get(key) || 0;
-    const wait = Math.max(0, last + CLOUD_MIN_INTERVAL - Date.now());
+    const every = (this.cloud && this.cloud.minInterval) || CLOUD_MIN_INTERVAL;
+    const ms = wait !== null ? wait : Math.max(0, last + every - Date.now());
     const timer = setTimeout(() => {
       this._timers.delete(key);
       this._pushCloud(key);
-    }, wait);
+    }, ms);
     this._timers.set(key, timer);
   }
 
   async _pushCloud(key) {
     if (!this.cloud || this.cloudReadOnly) return;
+    if (this._rev) {
+      // one request at a time (a reconcile or an import must not burst)
+      const run = this._chain.then(() => this._pushRev(key));
+      this._chain = run.catch(() => {});
+      return run;
+    }
     this._lastCloudWrite.set(key, Date.now());
     try {
       let wrote = false;
@@ -912,6 +1185,193 @@ export class SaveStore {
     }
   }
 
+  // ----- pushes to a revisioned cloud (§7.2 items 2, 6, 7) -----
+
+  async _pushRev(key) {
+    if (this.cloudReadOnly) return;
+    this._lastCloudWrite.set(key, Date.now());
+    if (key.startsWith('del:')) {
+      const id = key.slice(4);
+      if (!this._dels.has(id)) return;
+      try {
+        await this.cloud.deleteWorld(id);
+        this._dels.delete(id);
+        this._tombs.set(id, Date.now());
+        this._saveSync();
+        this._ok(key);
+      } catch (err) {
+        this._failed(key, err);
+      }
+      return;
+    }
+    if (key === 'profile') {
+      const p = this._pendingProfile;
+      this._pendingProfile = null;
+      if (!p) return;
+      try {
+        const r = await this.cloud.putProfile(p, { base: this._revs.get(PROFILE_REV) });
+        this._setRev(PROFILE_REV, r.rev);
+        this._ok(key);
+      } catch (err) {
+        if (err && err.status === 409) return this._profileConflict(p);
+        if (!this._pendingProfile) this._pendingProfile = p;
+        this._failed(key, err);
+      }
+      return;
+    }
+    const save = this._pendingWorlds.get(key);
+    this._pendingWorlds.delete(key);
+    if (!save) return;
+    const hash = saveHash(save);
+    const last = this._pushed.get(key);
+    if (last && last.hash === hash && Date.now() - last.at < SKIP_MS && this._revs.has(key)) return;
+    try {
+      const r = await this.cloud.putWorld(save, { base: this._revs.get(key) });
+      this._setRev(key, r.rev);
+      this._pushed.set(key, { hash, at: Date.now() });
+      this._ok(key);
+    } catch (err) {
+      const status = err && err.status;
+      if (status === 409 && !isSideCopyId(key)) return this._fork(save, err);
+      if (status === 410 && err.code === 'deleted') {
+        // deleted on another device before this copy was made: it goes here too
+        this._tombs.set(key, Date.now());
+        this._revs.delete(key);
+        this._saveSync();
+        if (!this._pendingWorlds.has(key)) await this._deleteLocal(key);
+        return;
+      }
+      if (status === 400 || status === 413) {
+        console.warn('[storage] the cloud did not take a world', String(err.message || err));
+        return; // no retry: the same save would be refused again
+      }
+      if (!this._pendingWorlds.has(key)) this._pendingWorlds.set(key, save);
+      this._failed(key, err);
+    }
+  }
+
+  _ok(key) {
+    this._retries.delete(key);
+    this._cloudResult(key, null);
+  }
+
+  /** A failed push: permanent → read-only (today's path); else try again later. */
+  _failed(key, err) {
+    this._cloudResult(key, err);
+    if (this.cloudReadOnly) return;
+    const n = (this._retries.get(key) || 0) + 1;
+    this._retries.set(key, n);
+    let wait = RETRY_MS[n - 1] || RETRY_LAST_MS;
+    if (err && err.retryAfter > 0) wait = Math.max(wait, err.retryAfter * 1000);
+    const t = this._timers.get(key);
+    if (t) clearTimeout(t);
+    this._timers.delete(key);
+    this._scheduleCloud(key, wait);
+  }
+
+  /**
+   * 409 on a world (§7.4): this device's copy becomes "<name> (copy)" (a new world, pushed as
+   * new) and the server's version of the world is brought here, so both are kept.
+   */
+  async _fork(save, err) {
+    const from = save.id;
+    const to = from.slice(0, 67) + '~' + Math.random().toString(36).slice(2, 6).padEnd(4, '0');
+    const name = forkName(save.name);
+    this._redirect.set(from, { to, name });
+    const later = this._pendingWorlds.get(from); // a newer save of the world waiting its turn
+    this._pendingWorlds.delete(from);
+    const fork = { ...(later || save), id: to, name };
+    if (Number.isFinite(err && err.rev)) this._setRev(from, err.rev);
+    await this._writeLocal('fork', (b) => b.putWorld(fork));
+    this._pendingWorlds.set(to, fork);
+    this._scheduleCloud(to, 0);
+    for (const fn of this._forkFns) {
+      try { fn({ from, to, name }); } catch (e) { console.warn('[storage] fork listener failed', e); }
+    }
+    setTimeout(() => this._redirect.delete(from), 2000);
+    this._ok(from);
+    try {
+      const server = await withTimeout(this.cloud.getWorld(from), CLOUD_READ_MS * 3, 'cloud read');
+      if (server) await this._keepDownload(server);
+    } catch {
+      // not reachable now: this device's copy of the world goes (it lives on as the fork), so
+      // the world is read from the cloud next time
+      await this._deleteLocal(from);
+    }
+  }
+
+  /** 409 on the profile: merge with the server's (§7.4) and push again on its revision. */
+  async _profileConflict(p) {
+    let server = null;
+    try {
+      server = await withTimeout(this.cloud.getProfile(), CLOUD_READ_MS, 'cloud read');
+    } catch (err) {
+      if (!this._pendingProfile) this._pendingProfile = p;
+      this._failed('profile', err);
+      return;
+    }
+    if (server) {
+      this._setRev(PROFILE_REV, server._rev);
+      delete server._rev;
+    } else this._revs.delete(PROFILE_REV);
+    const merge = (a, b) => (b && this._merge ? this._merge(a, b) : a);
+    const merged = merge(p, server);
+    await this._writeLocal('profile merge', (b) => b.putProfile(merged));
+    this._pendingProfile = this._pendingProfile ? merge(this._pendingProfile, server) : merged;
+    for (const fn of this._profileFns) {
+      try { fn(merged); } catch (e) { console.warn('[storage] profile listener failed', e); }
+    }
+    const n = (this._retries.get('profile') || 0) + 1;
+    this._retries.set('profile', n);
+    this._scheduleCloud('profile', n > 3 ? RETRY_MS[0] : 0);
+  }
+
+  /**
+   * After init() (§7.2 item 4): one look at the cloud. A local world the cloud deleted (and
+   * not changed since) goes; one the cloud lacks, or an older cloud copy, is pushed (this
+   * uploads what the page-closing journal kept); an equal one teaches its revision.
+   */
+  async _reconcile() {
+    if (!this._rev || this.cloudReadOnly) return;
+    let metas;
+    try {
+      metas = await withTimeout(this.cloud.listMetas({ fresh: true }), CLOUD_READ_MS, 'cloud read');
+    } catch {
+      return; // offline: pushes wait for their retries
+    }
+    const cloud = new Map();
+    for (const m of metas || []) if (m && m.id) cloud.set(m.id, m);
+    for (const id of this._dels) this._pushCloud('del:' + id);
+    const locals = new Map();
+    for (const b of this._readers()) {
+      for (const m of await this._safe('list local', () => b.listMetas(), [])) {
+        if (m && m.id && (!locals.has(m.id) || (m.updatedAt || 0) > (locals.get(m.id).updatedAt || 0))) locals.set(m.id, m);
+      }
+    }
+    for (const [id, lm] of locals) {
+      if (this._dels.has(id)) continue;
+      const cm = cloud.get(id);
+      const lt = lm.updatedAt || 0;
+      if (cm && cm.deleted) {
+        this._tombs.set(id, cm.updatedAt || 0);
+        if ((cm.updatedAt || 0) >= lt) {
+          await this._deleteLocal(id);
+          this._revs.delete(id);
+          continue;
+        }
+      }
+      if (!cm || cm.deleted || lt > (cm.updatedAt || 0)) {
+        if (this._pendingWorlds.has(id)) continue;
+        const save = await this._loadLocal(id);
+        if (save) {
+          this._pendingWorlds.set(id, save);
+          this._scheduleCloud(id);
+        }
+      } else if (lt === (cm.updatedAt || 0)) this._setRev(id, cm.rev);
+    }
+    this._saveSync();
+  }
+
   /**
    * Push every pending cloud write now (leaving the world, tab hidden, page closing).
    * Settles within the per-write timeouts even if the host's db never answers.
@@ -924,6 +1384,7 @@ export class SaveStore {
       this._timers.delete(k);
     }
     await Promise.all(keys.map((k) => this._pushCloud(k)));
+    if (this._rev) await this._chain;
     return { ok: true };
   }
 }
