@@ -117,6 +117,22 @@ found on D's side, all fixed in this branch:
 
 What it found on the other builders' sides is under "Notes for integration".
 
+**The last full run** (all ten scenarios, this branch's final e2e, A/B/C as above; about 16
+minutes): **78 checks passed, 2 problems, both C's** (below): Mia's copy stays on her device
+after she is deleted (§12.8 #8), and "worlds from before" is asked on devices that never played
+before accounts (computer, June's, Mia's). Everything else of §12.8 passed: sign-up with the
+emailed code, the free week, the pair codes and "Who's playing?", the import of the iPad's two
+old worlds, cloud saves across devices and after site data is cleared, the offline conflict
+("Shared Island (copy)"), Start now (verified by the first payment), Start today, playing
+together with nickname stamping and equal hashes, family C refused (the resting card; the relay
+closes its sockets with 4401 / 4405), the walkie through the relay (0 bytes without the switch,
+perm frame, cut 42 ms after the switch), the failed renewal, grace, 4402 on the live socket,
+the resting card, reads kept and writes refused, the Portal's cancel at period end, lapse,
+restart, Mia's device no longer Mia, the family delete (every table empty, the Stripe
+customer deleted, the email, the iPad wiped by `family_gone`), `file://` and a claude.ai
+stand-in making no `/api` request, the no-trial plan card, and `optional` mode playing
+together as today. The server log had no email and no nickname.
+
 ## Notes for integration
 
 - **privacy.html / terms.html**: both B and D created them. D's branch now has B's files byte
