@@ -84,6 +84,29 @@ export function confirmDialog(ui, { title = 'Are you sure?', text = '', yes = 'Y
   }, signal);
 }
 
+/**
+ * A question with any number of answers, e.g. "Keep the one here / Use the file's / Keep
+ * both". choices: [{ value, label, variant, icon, className }]; body: an optional element
+ * under the title (pictures); className: extra class on the card; makeButton(opts): the button
+ * factory (default ui.button). Esc and a tap outside resolve cancelValue; the choice at
+ * `focus` has the keyboard focus (Enter only presses the focused button).
+ */
+export function choiceDialog(ui, { title = '', text = '', body = null, note = '', choices = [], cancelValue = null, focus = 0, className = '', makeButton = null, signal = null } = {}) {
+  return openDialog(ui, (card, close) => {
+    if (className) card.classList.add(...className.split(/\s+/).filter(Boolean));
+    if (title) card.appendChild(make('h3', '', title));
+    if (body) card.appendChild(body);
+    if (text) card.appendChild(make('p', '', text));
+    const row = make('div', 'sw-dialog-buttons');
+    const btn = makeButton || ((o) => ui.button(o));
+    const buttons = choices.map((c) => btn({ label: c.label, variant: c.variant || 'white', icon: c.icon || null, className: c.className || '', onClick: () => close(c.value) }));
+    row.append(...buttons);
+    card.appendChild(row);
+    if (note) card.appendChild(make('p', 'sw-dialog-note', note));
+    return { cancelValue, onEnter: null, focus: buttons[focus] || buttons[0] || null };
+  }, signal);
+}
+
 /** Ask for a short text. Resolves the trimmed string, or null when cancelled. */
 export function textInputDialog(ui, { title = 'Name', value = '', placeholder = '', suggestions = [], ok = 'OK', maxLength = 40, signal = null } = {}) {
   return openDialog(ui, (card, close) => {

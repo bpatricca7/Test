@@ -661,7 +661,9 @@ logged and reported as `{ ok:false }`).
   `store.onStatus(fn)` reports every change of `persistent` as `fn({ persistent })`.
 - `store.listWorlds()`, `store.loadWorld(id)`, `store.saveWorld(save)`, `store.deleteWorld(id)`,
   `store.loadProfile()`, `store.saveProfile(profile)`, `store.exportWorld(id) -> string`,
-  `store.importWorld(string)`.
+  `store.importWorld(string)`, `store.exportAll(profile) -> string` (a backup: every world +
+  her look, outfits, stickers, coins), `store.importAll(string, { ask })` (one world or a
+  backup; never replaces a world that is here without `ask`, see §3 and docs/teams/keepsafe.md).
 - Write failures later in a session (quota, eviction, a broken database): that save falls
   through IndexedDB → localStorage → memory instead of being dropped. Reads merge every local
   backend that holds data (newest `updatedAt` wins; localStorage copies left by an earlier
@@ -783,6 +785,24 @@ Diagnostics (`game.diag`, `src/core/diag.js`): errors, long frames, stalls, WebG
 stats; `diag.report()`. Inside a claude.ai Artifact the report uploads (small, at most once a
 minute) to the viewer's own `data/users/<uid>/profile/diag/<session>`, only while the save
 store has a writable cloud.
+
+Keeping worlds safe on the website (`game.keepsafe`, `src/core/keepsafe.js` + `src/ui/keepsafe.js`,
+docs/teams/keepsafe.md): on the Railway website worlds live only in this browser, which may
+clear them (Safari on iPhone/iPad after about 7 days without a visit), and nothing is saved on
+the server. So, only there (`hostKind() === 'web'`: never inside claude.ai, where worlds also
+save to her account, never on `file://`): `navigator.storage.persist()` is asked at boot and
+again at the first tap or key press, the answer kept in `profile.keepsafe` (`{ persisted,
+askedAt, grantedAt, installed, lastBackupAt, snoozeUntil, remindedAt }`) and in
+`diag.report().storage.keepsafe`; and the title screen offers "It's been a while! Save a copy of
+your worlds?" when the storage is not kept for sure (or it is an iPhone/iPad browser tab), she
+has worlds and nothing went into a file for 7 days ("Not now" waits 7 days; never while playing).
+A copy is one file (`{ format: 'sparkle-world-backup', v: 1, profile, worlds }`, made by
+`store.exportAll`; also **Save all** in My Worlds on the website). **Open a file** takes a
+one-world file or a backup (`store.importAll`): a world with the same id is only replaced after
+an in-page question (Keep the one here / Use the one in the file / Keep both; an unchanged one in
+a backup is skipped), and the backup's profile is merged so nothing here is lost (her look only
+on a device with no worlds yet). Every save to a file emits `files:saved { what, id? }`.
+`src/ui/dialogs.js` also has `choiceDialog(ui, { title, body, text, note, choices, ... })`.
 
 Biome def (`game.registry.biomes.set(key, def)`): `{ key, name, description, iconBlock,
 colors: [cssTop, cssBottom] (New World card), sky?: { top, horizon }, generate(world, rand,

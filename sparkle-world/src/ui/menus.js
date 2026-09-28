@@ -5,7 +5,9 @@
 import { icon2, button2 } from './menus/icons2.js';
 import { TitleBackdrop } from './menus/backdrop.js';
 import { paintBiomeArt, sizeArt } from './menus/biome-art.js';
-import { prepareDownloads, saveFile, safeFileName, pickTextFile } from './menus/files.js';
+import { prepareDownloads, saveFile, safeFileName } from './menus/files.js';
+// "Open a file" (one world or a whole backup) and "Save all": keepsafe.js
+import { openWorldFile, saveAllWorlds } from './keepsafe.js';
 
 const CSS = /* css */ `
 /* ---------- title ---------- */
@@ -704,6 +706,7 @@ export function install(game) {
     if (res === 'saved') {
       game.toast('Saved to a file!', { icon: 'download', color: 'mint' });
       game.audio.play('success');
+      game.events.emit('files:saved', { what: 'world', id: meta.id });
     } else if (res === 'failed') {
       game.toast('Oops! Saving a file does not work here.', { icon: 'sparkle' });
     }
@@ -720,13 +723,18 @@ export function install(game) {
   });
 
   async function importWorld() {
-    const text = await pickTextFile('.json,application/json,text/plain');
-    if (!text) return;
-    const res = await game.store.importWorld(text);
-    if (res && res.ok) {
-      highlightId = res.id;
-      game.toast('Your world is here!', { icon: 'world', color: 'mint', big: true });
-      game.audio.play('magic');
+    // one world or a whole backup; a world already here is only replaced if she says so
+    const res = await openWorldFile(game);
+    if (!res) return;
+    if (res.ok) {
+      const brought = [...res.added, ...res.replaced, ...res.copies];
+      highlightId = brought[0] || null;
+      if (brought.length) {
+        game.toast(res.kind === 'backup' ? 'Your worlds are back!' : 'Your world is here!', { icon: 'world', color: 'mint', big: true });
+        game.audio.play('magic');
+      } else {
+        game.toast(res.kind === 'backup' ? 'You have all these worlds already!' : 'You kept your world.', { icon: 'world', color: 'mint' });
+      }
       if (ui.isOpen('worlds')) renderWorlds();
       else ui.open('worlds');
       refreshTitle();
@@ -747,6 +755,10 @@ export function install(game) {
         button2(ui, { icon: 'plus', label: 'New World', variant: 'mint', size: 'small', onClick: () => ui.open('newworld') }),
         button2(ui, { icon: 'open', label: 'Open a file', variant: 'sky', size: 'small', className: 'sw-open-file', onClick: () => importWorld() }),
       );
+      // the website keeps worlds only in this browser: one file with all of them (keepsafe.js)
+      if (game.keepsafe && game.keepsafe.active) {
+        worldsBar.append(button2(ui, { icon: 'download', label: 'Save all', title: 'Save all my worlds to a file', variant: 'sun', size: 'small', className: 'sw-save-all', onClick: () => saveAllWorlds(game) }));
+      }
       worldsList = ui.el('div', 'sw-worlds');
       container.append(worldsBar, worldsList);
     },

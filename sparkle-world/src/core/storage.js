@@ -65,6 +65,98 @@ export function isSideCopyId(id) {
   return isBackupId(id) || isUndoId(id);
 }
 
+// ---------- files: one world, or a backup of everything ----------
+
+/** "Save a copy of your worlds": every world plus her own things, in one file. */
+export const BACKUP_FORMAT = 'sparkle-world-backup';
+
+// what of the profile a backup carries: her own things. Not the settings (this device's
+// volumes, quality and a grown-up's switches), not playing-with-friends ids, not lastWorldId.
+const BACKUP_PROFILE_KEYS = ['look', 'outfits', 'playerName', 'nameSet', 'stickers', 'stickersSeen', 'stats', 'coins', 'basket', 'tutorialDone'];
+
+function newWorldId() {
+  return 'w' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
+}
+
+const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
+const validSave = (s) => isObj(s) && typeof s.blocks === 'string' && isObj(s.size);
+
+/** The part of a profile that goes into a backup (a deep copy). */
+export function backupProfile(profile) {
+  const out = {};
+  if (!isObj(profile)) return out;
+  for (const k of BACKUP_PROFILE_KEYS) if (profile[k] !== undefined) out[k] = JSON.parse(JSON.stringify(profile[k]));
+  return out;
+}
+
+/**
+ * Bring a backup's profile into `current` (changed in place). Nothing she has here is lost:
+ * stickers and seen stickers are joined, counters and coins keep the bigger number, the basket
+ * keeps the bigger count of each food, empty outfit slots are filled. Her look, name and
+ * outfits come from the file only on a fresh device (`fresh`: no worlds here before).
+ * Returns true when anything changed.
+ */
+export function mergeBackupProfile(current, fromFile, { fresh = false } = {}) {
+  if (!isObj(current) || !isObj(fromFile)) return false;
+  const before = JSON.stringify(current);
+  const f = fromFile;
+  if (fresh) {
+    if (isObj(f.look)) current.look = { ...(current.look || {}), ...f.look };
+    if (Array.isArray(f.outfits) && f.outfits.length === 6) current.outfits = JSON.parse(JSON.stringify(f.outfits));
+    if (typeof f.playerName === 'string' && f.playerName.trim()) current.playerName = f.playerName.slice(0, 40);
+    if (f.nameSet) current.nameSet = true;
+    if (f.tutorialDone) current.tutorialDone = f.tutorialDone;
+  } else if (Array.isArray(f.outfits) && Array.isArray(current.outfits)) {
+    const have = new Set(current.outfits.filter(Boolean).map((o) => JSON.stringify(o)));
+    const extra = f.outfits.filter((o) => o && !have.has(JSON.stringify(o)));
+    for (let i = 0; i < current.outfits.length && extra.length; i++) if (!current.outfits[i]) current.outfits[i] = extra.shift();
+  }
+  for (const k of ['stickers', 'stickersSeen']) {
+    if (!isObj(f[k])) continue;
+    const mine = isObj(current[k]) ? current[k] : (current[k] = {});
+    for (const [id, at] of Object.entries(f[k])) if (!(id in mine)) mine[id] = at;
+  }
+  const maxNumbers = (mine, theirs) => {
+    for (const [k, v] of Object.entries(theirs)) {
+      if (typeof v === 'number' && Number.isFinite(v)) {
+        if (!(typeof mine[k] === 'number' && mine[k] >= v)) mine[k] = v;
+      } else if (isObj(v)) {
+        if (!isObj(mine[k])) mine[k] = {};
+        maxNumbers(mine[k], v);
+      }
+    }
+  };
+  if (isObj(f.stats)) maxNumbers(isObj(current.stats) ? current.stats : (current.stats = {}), f.stats);
+  if (isObj(f.basket)) maxNumbers(isObj(current.basket) ? current.basket : (current.basket = {}), f.basket);
+  if (typeof f.coins === 'number' && Number.isFinite(f.coins) && f.coins >= 0 && !(current.coins >= f.coins)) current.coins = Math.floor(f.coins);
+  return JSON.stringify(current) !== before;
+}
+
+/**
+ * Read a Sparkle World file: one world ({ format: 'sparkle-world', save } or a bare save) or a
+ * backup ({ format: BACKUP_FORMAT, profile, worlds: [save...] }). Returns
+ * { ok, kind: 'world' | 'backup', worlds: [save...], profile: {...} | null, skipped } or
+ * { ok: false, error }. Broken worlds inside a backup are skipped (counted), not fatal.
+ */
+export function readWorldFile(text) {
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return { ok: false, error: 'not a Sparkle World file' };
+  }
+  if (isObj(parsed) && parsed.format === BACKUP_FORMAT) {
+    const list = Array.isArray(parsed.worlds) ? parsed.worlds : [];
+    const worlds = list.filter(validSave);
+    const profile = isObj(parsed.profile) ? parsed.profile : null;
+    if (!worlds.length && !profile) return { ok: false, error: 'not a Sparkle World file' };
+    return { ok: true, kind: 'backup', worlds, profile, skipped: list.length - worlds.length };
+  }
+  const save = isObj(parsed) && parsed.format === 'sparkle-world' ? parsed.save : parsed;
+  if (!validSave(save)) return { ok: false, error: 'not a Sparkle World file' };
+  return { ok: true, kind: 'world', worlds: [save], profile: null, skipped: 0 };
+}
+
 // ---------- local backends ----------
 
 class MemoryBackend {
@@ -688,6 +780,103 @@ export class SaveStore {
     } catch (err) {
       return { ok: false, error: String(err) };
     }
+  }
+
+  /**
+   * Every world (not the "Before friends" side copies) and her own things from `profile`
+   * (look, outfits, name, stickers, coins, counters, basket) as one JSON string: the
+   * "Save a copy of your worlds" backup. Resolves null when there is nothing to save.
+   */
+  async exportAll(profile) {
+    try {
+      const worlds = [];
+      for (const m of await this.listWorlds()) {
+        const save = await this.loadWorld(m.id);
+        if (validSave(save)) worlds.push(save);
+      }
+      if (!worlds.length && !profile) return null;
+      return JSON.stringify({
+        format: BACKUP_FORMAT,
+        v: 1,
+        about: 'Sparkle World: a copy of every world, her look, outfits and stickers. To bring it back: My Worlds, then Open a file.',
+        savedAt: new Date().toISOString(),
+        profile: backupProfile(profile),
+        worlds,
+      });
+    } catch (err) {
+      console.warn('[storage] export all failed', err);
+      return null;
+    }
+  }
+
+  /**
+   * Put back the worlds of a file made by exportWorld (one world) or exportAll (a backup).
+   * A world whose id is already here is never replaced silently: `ask(conflict)` decides
+   * ('mine' keeps the one here, 'file' replaces it, 'both' adds the file's as a copy; anything
+   * else counts as 'mine'). conflict = { id, name, index, total, same, mine: meta, file: meta };
+   * `same` = both have the same updatedAt. In a backup, such unchanged worlds are skipped
+   * without asking. The profile part is returned, not applied (see mergeBackupProfile).
+   * Resolves { ok, kind, added: [ids], replaced: [ids], copies: [ids], kept: [ids], same: [ids],
+   * failed, skipped, fresh (no worlds here before), profile } or { ok: false, error }.
+   */
+  async importAll(text, { ask = null } = {}) {
+    const file = readWorldFile(text);
+    if (!file.ok) return file;
+    const out = { ok: true, kind: file.kind, added: [], replaced: [], copies: [], kept: [], same: [], failed: 0, skipped: file.skipped, fresh: false, profile: file.profile };
+    try {
+      const here = new Map((await this.listWorlds()).map((m) => [m.id, m]));
+      out.fresh = here.size === 0;
+      const total = file.worlds.length;
+      for (let i = 0; i < total; i++) {
+        const save = JSON.parse(JSON.stringify(file.worlds[i]));
+        if (typeof save.name !== 'string' || !save.name.trim()) save.name = 'My World';
+        if (typeof save.id !== 'string' || !save.id || isSideCopyId(save.id)) save.id = newWorldId();
+        delete save.backupOf;
+        delete save.backupAt;
+        delete save.undoOf;
+        // one world opened from a file shows up first in My Worlds; a backup keeps its days
+        if (file.kind === 'world' || !save.updatedAt) save.updatedAt = Date.now();
+        const mine = here.get(save.id);
+        let choice = 'add';
+        if (mine) {
+          const same = (mine.updatedAt || 0) === (file.worlds[i].updatedAt || 0);
+          if (same && file.kind === 'backup') {
+            out.same.push(save.id);
+            continue;
+          }
+          let answer = 'mine';
+          try {
+            if (ask) answer = await ask({ id: save.id, name: save.name, index: i, total, same, mine, file: metaOf(file.worlds[i]) });
+          } catch (err) {
+            console.warn('[storage] import question failed', err);
+          }
+          choice = answer === 'file' || answer === 'both' ? answer : 'mine';
+        }
+        if (choice === 'mine') {
+          out.kept.push(save.id);
+          continue;
+        }
+        if (choice === 'both') {
+          save.id = newWorldId();
+          save.name = (save.name.length > 33 ? save.name.slice(0, 33) : save.name) + ' (copy)';
+          save.updatedAt = Date.now();
+        } else if (choice === 'file') {
+          save.updatedAt = Date.now(); // her choice now: newer than any copy left here
+        }
+        const res = await this.saveWorld(save);
+        if (!res.ok) {
+          out.failed++;
+          continue;
+        }
+        here.set(save.id, metaOf(save));
+        (choice === 'both' ? out.copies : choice === 'file' ? out.replaced : out.added).push(save.id);
+      }
+    } catch (err) {
+      console.warn('[storage] import failed', err);
+      return { ok: false, error: String(err) };
+    }
+    if (out.failed && !out.added.length && !out.replaced.length && !out.copies.length) out.ok = false;
+    return out;
   }
 
   // ----- cloud throttling -----

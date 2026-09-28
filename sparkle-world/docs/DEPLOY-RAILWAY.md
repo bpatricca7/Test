@@ -104,6 +104,32 @@ address by themselves (and the other way round). To move one, about 10 seconds p
 
 Her outfits and stickers stay with each website; she can dress up again in a minute.
 
+### Keeping her worlds safe
+
+Her worlds are saved **in the browser on her device**, not on the server (the server keeps
+nothing, on purpose: no accounts and no children's data on it). A browser can clear what a
+website saved: when the device runs short of space, when someone clears the browser's website
+data, and Safari on iPhone and iPad clears a website's saved data after about **7 days in
+which the website was not opened**. So the game does three things, and you can do one:
+
+- **It asks the browser to keep her worlds** ("persistent storage"). There is nothing to tap.
+  (Firefox may ask you once whether the site may store data: tap **Allow**.)
+- **It reminds her to make a copy.** When no copy was made for a week and the browser does not
+  promise to keep her worlds (or it is Safari on an iPhone or iPad), the title screen shows
+  *"It's been a while! Save a copy of your worlds?"*. **Save a copy** saves one file with every
+  world, her look, outfits and stickers; **Not now** asks again in a week. It never interrupts
+  playing.
+- **You can make a copy any time:** **My Worlds → Save all** (only on this website). The file is
+  called for example `Sparkle World backup 2026-09-28.json`. On an iPad or iPhone, Safari asks
+  whether to download it: tap **Download**; it goes to the **Files** app, in **Downloads**.
+  Keep it somewhere safe (for example move it to iCloud Drive, or email it to yourself).
+- **To bring them back** (a new iPad, or after the browser cleared them): open the game →
+  **My Worlds → Open a file** → pick the file. Her worlds, look, outfits, stickers and coins
+  come back. If a world in the file is already on the device and different, the game asks which
+  one to keep (**Keep the one here**, **Use the one in the file** or **Keep both**): it never
+  replaces one without asking. The file does not carry the device's settings (for example the
+  walkie-talkie stays off on a new device until a grown-up turns it on there).
+
 ## Step 6. Play together
 
 1. On the first device, on the title screen: **Play with Friends → Make a Code** (it opens
@@ -313,5 +339,6 @@ Automatic checks (for grown-ups who change the code):
 | `node tools/site-check.mjs` | builds, starts this same server, and checks the home page at phone (360 and 390 px wide), iPad and computer sizes, and on phones again with the font blocked (no errors, nothing loaded from other sites, no sideways scrolling, every picture and link, the picture-code demo), that **Play now** opens the game at `/play`, and the page's headers. Screenshots go to `.shots/site-*.png`. About 4 minutes. |
 | `npm run test:walkie` | the walkie-talkie: sound coding, the server's rules (who may hear, one talker, 15 seconds, mutes) and three browsers with a pretend microphone through this same server (about 10 minutes) |
 | `npm run probe:railway` | builds the game, starts this same server on a free port, and three headless browsers (a computer, an iPad and a phone) make a code, join it through the real screens and build together; then the server is killed and started again (everyone reconnects by themselves) and finally killed for good (everyone gets a friendly "Playing together stopped." card). About 6 minutes. |
+| `node tools/probe-keepsafe.mjs` | over this same server: the browser is asked to keep her worlds, the "Save a copy of your worlds?" card (after a week, "Not now", never while playing), the backup file and opening it on a new device (worlds and look come back, a world that is already there is only replaced after asking), on a computer, iPad and iPhone; nothing of it inside claude.ai or from a file on the computer. About 3 minutes. |
 | `node tools/probe-net-ux.mjs` | over this same server: the name question on a new device, Play Together, what a knocking device can see, building paused and on again, Undo building told kindly, a host reload ("Your friends are waiting!"), Before friends and its Undo. About 5 minutes. |
 | `npm run probe:mp` | the same game inside claude.ai (a pretend claude.ai room): every screen, knocking, building, Undo building, Send home, sleep, pets, zip lines, reloads, a new version, lost messages, and the size and speed limits. About 25 minutes. |

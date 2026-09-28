@@ -352,6 +352,10 @@ async function desktop(browser) {
     const chooser = page.waitForEvent('filechooser');
     await page.locator('.sw-open-file').click();
     await (await chooser).setFiles(file);
+    // that world is already here: she is asked (in the page) and keeps both
+    const asked = await page.waitForSelector('.sw-dialog.ks-conflict', { timeout: 8000 }).then(() => true, () => false);
+    check(asked, 'the world is already here: an in-page question ("They are just the same.")');
+    if (asked) await page.locator('.ks-conflict button', { hasText: 'Keep both' }).click();
     await page.waitForFunction((n) => document.querySelectorAll('.sw-world').length === n + 1, count0, { timeout: 8000 }).catch(() => {});
     await settle(page, 600);
     await shot(page, 'worlds-imported', P);

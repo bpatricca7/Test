@@ -167,6 +167,8 @@ export class Diagnostics {
       contexts: this.contexts,
       canvases: this._canvasRefs.length || this.canvas.created ? this.canvasStats() : null,
       audio: g.audio && g.audio.stats ? g.audio.stats() : null,
+      // the website's storage: kept by the browser or not, the last copy in a file (keepsafe.js)
+      storage: { backend: g.store ? g.store.backendName : null, keepsafe: g.keepsafe && g.keepsafe.report ? g.keepsafe.report() : null },
       errors: this.errors.map(({ key, ...e }) => e),
       longFrames: this.longFrames,
       stalls: this.stalls,

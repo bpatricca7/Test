@@ -30,6 +30,8 @@ import * as settings from './ui/settings.js';
 import * as photo from './ui/photo.js';
 import * as stickerbook from './ui/stickerbook.js';
 import * as menus from './ui/menus.js';
+// keeping her worlds safe on the website: storage the browser keeps, a copy in a file
+import * as keepsafe from './ui/keepsafe.js';
 
 function boot() {
   const app = document.getElementById('app');
@@ -44,7 +46,7 @@ function boot() {
   }
   const modules = [theme, ui, blocks, worldgen, avatar, player, emotes, entities, furniture, prefabs,
     pets, garden, cooking, daynight, weather, particles, collectibles, stickers, net,
-    hud, inventory, dressup, touch, settings, photo, stickerbook, menus];
+    hud, inventory, dressup, touch, settings, photo, stickerbook, menus, keepsafe];
   for (const m of modules) m.install(game);
   game.start().catch((err) => console.error('[boot] start failed', err));
 }
