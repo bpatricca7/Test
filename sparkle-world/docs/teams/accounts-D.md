@@ -157,6 +157,19 @@ What it found on the other builders' sides is under "Notes for integration".
   two or more players left.
 - The `stripe` SDK prints one `<claude-code-hint …/>` line on stderr when `CLAUDECODE` is set
   (only in this development environment); the e2e shows it as `[server!]`.
+- **docs/ACCOUNTS.md** (not D's file; for whoever syncs it at integration): §8.1's comment
+  ("optional mode, no cookie and no p: a legacy socket") should read "no p, with or without a
+  cookie" (A's deviation 1, which Addendum D and the fake follow); §9.2 state 3 still describes
+  the free week first: with `SW_TRIAL_DAYS=0` the page shows one **Start the Family Plan** button
+  with the price and renewal sentence (the free week and Start today appear only with a trial);
+  §12.8 #5: family C, which has no plan and so no dashboard or pair code, signs in from the game
+  (I'm a grown-up → the Family page → back to the resting card), and the e2e also checks that
+  the relay refuses C's sockets (4401 without a player, 4405 with a made-up one).
+- The e2e runs with `SW_TRIAL_DAYS=7` for the free-week scenes of §12.8 (1, 5); the family's
+  setting (no trial) is checked on the plan card in scenario 10 and in site-check.
+- `site/styles.css` is not in §15.1's list; D's additions (the home page's Family Plan section
+  and header Sign in) sit inside `/* when accounts=optional,required */`, so an `off` build is
+  byte for byte the skeleton's. `tools/fake-accounts.mjs` is a new D test helper.
 
 ## Known gaps
 
