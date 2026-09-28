@@ -42,6 +42,7 @@ import { createApi } from '../src/account/api.js';
 import { mergeProfile, cloudProfile } from '../src/account/merge.js';
 import { findLegacy, importLegacy, legacyState, setLegacyState, expireLegacy } from '../src/account/legacy.js';
 import { Account } from '../src/account/index.js';
+import { WsTransport } from '../src/net/ws-transport.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MEASURE = process.argv.includes('--measure');
@@ -152,10 +153,10 @@ async function meFor(tok, mode = 'optional') {
   const s = SESS.get(tok);
   if (!s) return { signedIn: false, accounts: mode };
   const e = await accounts.ctx.billing.entitlementFor(s.familyId);
-  const rows = (await t.db.query('select id, nickname, color, friends_on from players where family_id = $1 order by created_at, nickname', [s.familyId])).rows;
+  const rows = (await t.db.query('select id, nickname, color, friends_on, portrait_rev from players where family_id = $1 order by created_at, nickname', [s.familyId])).rows;
   return {
     signedIn: true, kind: s.kind, accounts: mode, friendsMode: 'subscription', plan: { state: e.state, entitled: e.entitled, until: e.until }, consent: e.consent,
-    players: rows.map((p) => ({ id: p.id, nickname: p.nickname, color: p.color, portrait: null, friends: p.friends_on, walkie: false, canJoin: e.entitled, canHost: e.entitled, walkieOk: false, why: null })),
+    players: rows.map((p) => ({ id: p.id, nickname: p.nickname, color: p.color, portrait: p.portrait_rev ? `/api/players/${p.id}/portrait?v=${p.portrait_rev}` : null, friends: p.friends_on, walkie: false, canJoin: e.entitled, canHost: e.entitled, walkieOk: false, why: null })),
     lockPlayer: s.lockPlayer, playUntil: Date.now() + 7 * DAY,
   };
 }
@@ -929,6 +930,86 @@ if (!MEASURE) {
 
   // -------------------------------------------------------------------------------------------
 
+  describe('the relay socket with family accounts (§7.7), in Node', () => {
+    /** A WebSocket the test drives: frames in, close codes. */
+    class FakeWS {
+      static all = [];
+      constructor(url) {
+        this.url = url;
+        this.readyState = 1;
+        FakeWS.all.push(this);
+      }
+      send() {}
+      close() {
+        this.readyState = 3;
+      }
+      frame(f) {
+        this.onmessage({ data: JSON.stringify(f) });
+      }
+      shut(code) {
+        this.readyState = 3;
+        this.onclose({ code });
+      }
+    }
+    const PID = '2b6c1e0e-3f7a-4c1e-9d2a-0f5b8f6c7a11';
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    /** An open transport (the room's roster arrived). */
+    async function opened(o = {}) {
+      const tr = new WsTransport({ url: 'ws://relay', uid: 'lily', WebSocket: FakeWS, player: PID, ...o });
+      const p = tr.open('room1');
+      FakeWS.all.at(-1).frame({ t: 'p', self: 'a1', reset: true, j: [{ kind: 'viewer', peer: 'a1', state: {} }] });
+      await p;
+      return tr;
+    }
+
+    test('&p= goes along, canHost is what /api/me said, 4401-4405 stop retries (opening and mid-session), 1013 retries', async () => {
+      FakeWS.all = [];
+      const plain = new WsTransport({ url: 'ws://relay', uid: 'x', WebSocket: FakeWS });
+      assert.deepEqual(await plain.identity(), { uid: null, canHost: true });
+      assert.ok(!plain._urlFor('room1').includes('&p='), 'no player: the URL as before accounts');
+      const visitor = new WsTransport({ url: 'ws://relay', uid: 'x', WebSocket: FakeWS, player: PID, canHost: false });
+      assert.deepEqual(await visitor.identity(), { uid: null, canHost: false });
+      assert.match(visitor._urlFor('room1'), new RegExp(`^ws://relay/r/room1\\?s=[A-Za-z0-9]+&d=dev_x0+&p=${PID}$`));
+      assert.ok(!new WsTransport({ url: 'ws://relay', uid: 'x', WebSocket: FakeWS, player: 'x&evil=1' })._urlFor('room1').includes('evil'), 'only a player id');
+
+      // refused while opening: the server's {t:'e'} and its close code; no second try
+      for (const [code, err] of [[4401, 'signed_out'], [4402, 'not_entitled'], [4403, 'friends_off'], [4404, 'friends_locked'], [4405, 'player_gone']]) {
+        FakeWS.all = [];
+        const tr = new WsTransport({ url: 'ws://relay', uid: 'lily', WebSocket: FakeWS, player: PID });
+        const p = tr.open('room1');
+        FakeWS.all[0].frame({ t: 'e', code: err });
+        FakeWS.all[0].shut(code);
+        await assert.rejects(p, (e) => e.name === 'NetError' && e.code === err, err);
+        await wait(650);
+        assert.equal(FakeWS.all.length, 1, `${code}: no retry`);
+        const q = new WsTransport({ url: 'ws://relay', uid: 'lily', WebSocket: FakeWS, player: PID });
+        const pq = q.open('room1');
+        FakeWS.all.at(-1).shut(code); // the close code alone says it too
+        await assert.rejects(pq, (e) => e.code === err);
+      }
+
+      // mid-session: the friend's switch went off on the Family page (§8.4)
+      FakeWS.all = [];
+      const tr = await opened();
+      const fatal = [];
+      tr.onStatus((st) => st.fatal && fatal.push(st.fatal));
+      FakeWS.all[0].shut(4403);
+      await wait(650);
+      assert.deepEqual([fatal, FakeWS.all.length], [['friends_off'], 1], 'its own words, no retries');
+      await tr.close();
+
+      // 1013 (the database is down, no cached answer): the page tries again
+      FakeWS.all = [];
+      const busy = await opened();
+      FakeWS.all[0].shut(1013);
+      await wait(650);
+      assert.equal(FakeWS.all.length, 2, 'retried');
+      await busy.close();
+    });
+  });
+
+  // -------------------------------------------------------------------------------------------
+
   describe('the game in a browser (§7, §7.10)', { skip: browserSkip() }, () => {
     let browser;
     let web; // the built game, served with accounts and a pretend /api/me
@@ -1073,7 +1154,7 @@ if (!MEASURE) {
       await page.context().close();
     });
 
-    test('required: signed out gets "Ask a grown-up" (it stays), a lapsed family "resting"', { timeout: 300000 }, async () => {
+    test('required: signed out gets "Ask a grown-up" (it stays), a lapsed family "resting", no players yet "A grown-up can add you"', { timeout: 300000 }, async () => {
       mode = 'required';
       try {
         const out = await open(web.base + '/play');
@@ -1093,6 +1174,24 @@ if (!MEASURE) {
         await dialogs(rest, /Sparkle World is resting/);
         await noMoney(rest);
         await rest.context().close();
+        // a plan but nobody added yet: the card stays in `required`...
+        const empty = await family({ players: [] });
+        const tok = session(empty.id, { kind: 'parent' });
+        const none = await open(web.base + '/play', { tok });
+        await title(none);
+        await dialogs(none, /A grown-up can add you on the Family page/);
+        assert.equal(await none.evaluate(() => window.__game.account.mode), 'blocked');
+        await none.context().close();
+        // ...and in `optional` an OK closes it: she plays on this device as before
+        mode = 'optional';
+        const soft = await open(web.base + '/play', { tok });
+        await title(soft);
+        await dialogs(soft, /A grown-up can add you on the Family page/);
+        await soft.click('.sw-dialog button:has-text("OK")');
+        await soft.waitForFunction(() => !/Family page/.test(document.querySelector('.sw-layer-dialogs').innerText));
+        assert.deepEqual(await soft.evaluate(() => [window.__game.account.mode, window.__game.store.dbName]), ['local', 'sparkle-world']);
+        await noMoney(soft);
+        await soft.context().close();
       } finally {
         mode = 'optional';
       }
