@@ -9,7 +9,10 @@
 //   fake.setWebhook(url, secret?)  // when the app's address is known only after the fake started
 //   await fake.pay(sessionIdOrUrl, { outcome: 'ok'|'decline'|'3ds'|'approve', country: 'US' })
 //   await fake.portal(portalSessionIdOrUrl, 'cancel_at_period_end'|'resume'|'cancel_now'|'update_card'|'card_fails')
-//   await fake.advance(days)       // the fake's clock: trials end, periods renew, retries, cancels
+//   await fake.advance(days)       // the fake's clock: trials end, periods renew, retries, cancels;
+//                                  // one step at a time, each step's webhooks delivered before the next
+//   fake.onClock((nowMs) => appClock.set(nowMs - Date.now()))   // the app's clock follows every step
+//                                  // (so "first seen past_due" is the time of the failure, §12.5)
 //   fake.delivery('normal'|'duplicate'|'reverse'|'delay'|'drop', { delayMs })
 //   fake.card(customerId, 'ok'|'fail')
 //   await fake.dispute({ customer })
