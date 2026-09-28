@@ -256,7 +256,8 @@ async function newPage(ctx, key, { allow = [] } = {}) {
     if (req.failure() && req.failure().errorText === 'net::ERR_ABORTED') return;
     errs.push(`[${key}] request failed: ${req.url()} ${req.failure() ? req.failure().errorText : ''}`);
   });
-  page.allow = allow;
+  // a 409 on a player's profile is the cloud saves' normal merge (§7.4): the game merges and pushes again
+  page.allow = [/409.*\/api\/players\/[^ ]*\/profile/, ...allow];
   page.on('response', (res) => {
     if (res.status() >= 400 && !page.allow.some((re) => re.test(`${res.status()} ${res.url()}`))) errors.push(`[${key}] HTTP ${res.status()} ${res.url()}`);
   });
@@ -901,6 +902,7 @@ function findCustomer(state, email) {
 
 async function s8() {
   log('8. A deletes Mia: her device gets 410, its copy is wiped, the picker');
+  await retire('computer', 'june', 'familyC'); // 8 and 9 do not need them (their games draw on the CPU)
   const A = R.fam.A;
   await FP.ribbon(A.page);
   const code = await FP.pairCode(A.page, A.email, 'Mia');
@@ -942,6 +944,7 @@ async function s9() {
   await FP.ribbon(A.page).catch(() => {});
   const customer = findCustomer(R.stripe.state ? await R.stripe.state() : null, A.email);
   check(!!customer, `A is a customer at the Stripe fake (${customer})`);
+  R.dev.ipad?.page.allow.push(/410/); // Lily's iPad hears family_gone at its next cloud call
   A.page.allow.push(/403|410/);
   const since = await mailMark(A.email);
   await A.page.getByRole('button', { name: 'Delete our account' }).click();
