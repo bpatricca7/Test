@@ -373,11 +373,28 @@ const GAME = {
   },
   /** The grown-up check (the walkie's multiplication gate, purpose 'grownups'). */
   async grownUpCheck(dev) {
-    await dev.page.waitForSelector('.sw-gate .sw-gate-qtext', { timeout: 15000 });
-    const t = await dev.page.locator('.sw-gate .sw-gate-qtext').textContent();
-    const m = /(\d+)\s*×\s*(\d+)/.exec(t);
-    for (const d of String(Number(m[1]) * Number(m[2]))) await press(dev, `.sw-gate .sw-gate-key[data-d="${d}"]`);
-    await press(dev, '.sw-gate .sw-gate-ok');
+    const p = dev.page;
+    await p.waitForSelector('.sw-gate .sw-gate-qtext', { timeout: 15000 });
+    // under a loaded CPU a tap can be lost: the typed answer is read back before OK (a wrong
+    // answer only brings a new problem; three would wait a minute)
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const q = await p.locator('.sw-gate .sw-gate-qtext').textContent();
+      const m = /(\d+)\s*×\s*(\d+)/.exec(q);
+      const want = String(Number(m[1]) * Number(m[2]));
+      for (let k = 0; k < 3; k++) {
+        for (let n = 0; n < 4 && (await p.locator('.sw-gate .sw-gate-a').textContent()).replace(/\D/g, ''); n++) await press(dev, '.sw-gate .sw-gate-del');
+        for (let i = 0; i < want.length; i++) {
+          if (i && want[i] === want[i - 1]) await sleep(400); // two taps on one key are not a double-tap
+          await press(dev, `.sw-gate .sw-gate-key[data-d="${want[i]}"]`);
+        }
+        if ((await p.locator('.sw-gate .sw-gate-a').textContent()).replace(/\D/g, '') === want) break;
+      }
+      await press(dev, '.sw-gate .sw-gate-ok');
+      // the check closes (right), or asks a new problem (wrong)
+      const done = await p.waitForFunction((q) => !document.querySelector('.sw-gate') || document.querySelector('.sw-gate .sw-gate-qtext')?.textContent !== q, q, { timeout: 10000 }).then(() => p.evaluate(() => !document.querySelector('.sw-gate')), () => false);
+      if (done) return;
+    }
+    throw new Error('the grown-up check did not take the answer');
   },
   /** Signed out: "Ask a grown-up" → I have a code → the grown-up check → type the code. */
   async pair(dev, code) {
