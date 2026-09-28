@@ -1663,7 +1663,7 @@ async function accountTests() {
     }
   });
 
-  await test('accounts: optional mode lets legacy sockets play exactly as today; the Family page exists only with accounts on', async () => {
+  await test('accounts: optional mode lets legacy sockets play exactly as today, never in a room with account children; the Family page exists only with accounts on', async () => {
     const s = await startAccountServer({ mode: 'optional' });
     try {
       const { port, fake } = s;
@@ -1679,14 +1679,31 @@ async function accountTests() {
       const fam = fake.addFamily({ plan: 'active', consent: 'verified' });
       const lily = fake.addPlayer(fam, { nickname: 'Lily', friends: true });
       const dev = fake.addSession(fam, { kind: 'device' });
+      // an account child never shares a room with children whose families have no account
+      // (her grown-up agreed to friends "whose families have Sparkle World too", §8.2)
+      const joinsBefore = A.frames.filter((f) => f.t === 'p' && f.j).length;
       const C = await acctWs(port, ROOM, { cookie: dev.cookie, p: lily });
-      await waitFor(() => C.self);
-      eq(C.closed, null, 'and an account player may join the same room');
+      await waitFor(() => C.closed !== null, 2000);
+      eq([C.closed, C.self, C.frames.some((f) => f.t === 'e' && f.code === 'accounts_mixed')], [4406, null, true], 'an account player cannot join a room of legacy pages: {t:e, accounts_mixed} and 4406, before any roster');
+      await sleep(100);
+      eq([A.frames.filter((f) => f.t === 'p' && f.j).length, B.frames.some((f) => f.t === 'p' && (f.j || []).some((e) => e.state && e.state.nm === 'Lily'))], [joinsBefore, false], 'the legacy players never see her (no join, no nickname)');
       // a signed-in page without p (it fell back to local mode) plays as a legacy socket
       const D = await acctWs(port, ROOM, { cookie: dev.cookie, device: 'device-legacy-d-0000000' });
       await waitFor(() => D.self || D.closed !== null);
       eq([D.closed, D.frames.filter((f) => f.t === 'v').length], [null, 0], 'optional: a session cookie without p is a legacy socket (no claims, no perm frame)');
-      for (const x of [A, B, C, D]) x.ws.close(1000);
+      // the other way round: a room with an account child refuses a legacy page
+      const ROOM2 = 'sw1-cat-moon-star-heart';
+      const mia = fake.addPlayer(fam, { nickname: 'Mia', friends: true });
+      const E = await acctWs(port, ROOM2, { cookie: dev.cookie, p: lily });
+      await waitFor(() => E.self);
+      E.ws.send(JSON.stringify({ t: 's', patch: { v: 1, r: 'h', nm: 'Lily' } }));
+      const F = await acctWs(port, ROOM2, { device: 'device-legacy-f-0000000' });
+      await waitFor(() => F.closed !== null, 2000);
+      eq([F.closed, F.self, F.frames.some((f) => f.t === 'p')], [4406, null, false], 'a legacy page cannot join a room with an account child (4406, no roster, so no nickname or avatar)');
+      const G = await acctWs(port, ROOM2, { cookie: fake.addSession(fam, { kind: 'device' }).cookie, p: mia });
+      await waitFor(() => G.self || G.closed !== null);
+      eq(G.closed, null, 'account children still play together');
+      for (const x of [A, B, D, E, G]) x.ws.close(1000);
     } finally {
       await s.close();
     }

@@ -47,7 +47,8 @@
 //   completes the handshake, sends {t:'e', code} and closes with 4401-4405 or 1013, so the page
 //   can show a friendly card); an admitted account player's claims go to the room
 //   (rooms.mjs: host, build, walkie and nickname rules) and to her walkie link (voice.mjs:
-//   `allowed`, the {t:'v', k:'perm'} frame);
+//   `allowed`, the {t:'v', k:'perm'} frame); a room never mixes account children with pages
+//   without an account (optional mode): the other kind is closed with 4406 accounts_mixed;
 // - keeps account connections indexed by session, family and player: on accounts.events
 //   ('session', 'family', 'player') and every 60 s (accounts.recheck, cached) each affected
 //   connection is checked again. Lost the right to play: {t:'e', code} and the close code;
@@ -446,7 +447,9 @@ export function createServer(opts = {}) {
     if (!r.ok) {
       safeSend(ws, { t: 'e', code: r.code });
       conn.bye = true;
-      ws.close(r.code === 'full' ? 4001 : r.code === 'rooms_full' ? 4002 : r.code === 'limit' ? 4029 : 4004, r.code);
+      // accounts_mixed (4406): an account child and a page without an account never share a
+      // room (rooms.mjs; SW_ACCOUNTS=optional only): the page shows a card, no retries
+      ws.close(r.code === 'full' ? 4001 : r.code === 'rooms_full' ? 4002 : r.code === 'limit' ? 4029 : r.code === 'accounts_mixed' ? 4406 : 4004, r.code);
     } else {
       // the walkie-talkie link of this connection (server/voice.mjs decides who hears)
       conn.voice = voice.link(name, peer, {
@@ -771,6 +774,7 @@ const ACCOUNT_CLOSE = Object.freeze({
   friends_off: 4403,
   friends_locked: 4404,
   player_gone: 4405,
+  accounts_mixed: 4406, // (from rooms.mjs's join, not from the accounts)
   unavailable: 1013,
 });
 export { ACCOUNT_CLOSE };

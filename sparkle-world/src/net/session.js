@@ -34,6 +34,7 @@ const ERROR_TO_MESSAGE = {
   transient: 'transient', lost: 'transient', fatal: 'fatal', invalid: 'transient', too_big: 'transient',
   // family accounts (docs/ACCOUNTS.md §7.7): each has its own card, while opening and mid-session
   signed_out: 'signed_out', not_entitled: 'not_entitled', friends_off: 'friends_off', friends_locked: 'friends_locked', player_gone: 'player_gone',
+  accounts_mixed: 'accounts_mixed',
 };
 
 export class NetSession {

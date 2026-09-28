@@ -385,6 +385,7 @@ export function installNetUI(game, net, remote) {
     not_entitled: { icon: 'moon', c: 'var(--sw-lav)' },
     friends_off: { icon: 'players', c: 'var(--sw-sky)' },
     friends_locked: { icon: 'players', c: 'var(--sw-lav)' },
+    accounts_mixed: { icon: 'players', c: 'var(--sw-sky)' },
   };
 
   let msgWrap = null;
@@ -446,7 +447,7 @@ export function installNetUI(game, net, remote) {
     } else if ((code === 'transient' || code === 'snapshot_failed') && lastAction) {
       const again = lastAction;
       buttons.push({ label: 'Try again', icon: 'again', variant: 'mint', run: () => (again.kind === 'join' ? startJoin(again.code) : startHost(again)) }, { label: 'Not now', icon: 'close', variant: 'white' });
-    } else if (/^(signed_out|not_entitled|friends_)/.test(code)) {
+    } else if (/^(signed_out|not_entitled|friends_|accounts_mixed)/.test(code)) {
       // a grown-up can see why on the Family page (behind the grown-up check)
       if (game.account && game.account.grownups) buttons.push({ label: 'OK', icon: 'check', variant: 'pink' }, { label: 'Grown-ups', icon: 'home', variant: 'white', run: () => game.account.openGrownups() });
     } else if (code === 'fatal') {

@@ -146,6 +146,8 @@ export const MESSAGES = Object.freeze({
   not_entitled: 'Sparkle World is resting. Ask a grown-up to wake it up!',
   friends_off: 'Ask a grown-up to turn on Play with Friends for you.',
   friends_locked: "Playing with friends isn't ready yet. A grown-up can check the Family page.",
+  // a child with an account and a device without one never play together (optional mode)
+  accounts_mixed: "You can't play with this friend yet: both of you need a grown-up to set up Sparkle World.",
   cannot_host_acct: 'Grown-ups: see the Family page.',
 });
 

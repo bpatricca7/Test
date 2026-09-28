@@ -36,6 +36,11 @@
 //   broadcasts (rejected: only a host sends them). setClaims(name, peer, acct) changes a live
 //   member's claims (losing walkie clears her wk and tells the room). The host's Let in! gate,
 //   the device stamps (`by`, still per device) and the host hold are untouched.
+// - account and legacy members never share a room (docs/ACCOUNTS.md §8.2; only possible while
+//   SW_ACCOUNTS=optional): a signed-in child's parent agreed to friends "whose families have
+//   Sparkle World too", so a room with an account member refuses a member without claims, and
+//   the other way round: join() answers {ok:false, code:'accounts_mixed'} (the server closes
+//   with 4406, the page shows a card for grown-ups). Nothing about her reaches the room first.
 // Nothing here stores anything beyond the live room, and nothing is logged.
 //
 // Frames out:  {t:'p', self?, reset?, j?:[entry], l?:[peer], u?:[[peer, patch]]}
@@ -244,12 +249,15 @@ export class RoomRegistry {
    * room (a reconnect) swaps its sink and gets the whole roster again.
    * meta: { by, kind, guest, owner, claims } (owner: who is asking, for the rooms-per-owner
    * cap; claims: the account claims the server checked, null or absent for a legacy member).
-   * @returns {{ok:true, resumed:boolean} | {ok:false, code:'bad_name'|'full'|'rooms_full'|'limit'}}
+   * @returns {{ok:true, resumed:boolean} | {ok:false, code:'bad_name'|'full'|'rooms_full'|'limit'|'accounts_mixed'}}
    */
   join(name, peer, sink, meta = {}) {
     if (typeof name !== 'string' || !ROOM_NAME_RE.test(name)) return { ok: false, code: 'bad_name' };
     const now = this.now();
     let room = this.rooms.get(name);
+    // account children play only with account children, legacy pages only with legacy pages
+    const acct = !!acctOf(meta.claims);
+    if (room) for (const o of room.members.values()) if (o.peer !== peer && !!o.acct !== acct) return { ok: false, code: 'accounts_mixed' };
     const existing = room?.members.get(peer);
     if (existing) {
       existing.sink = sink;

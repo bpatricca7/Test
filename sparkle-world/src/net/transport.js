@@ -9,7 +9,7 @@ import { utf8Length } from './codec.js';
 export class NetError extends Error {
   /**
    * code: unavailable | no_rooms | cannot_host | busy | full | transient | lost | fatal | too_big | invalid,
-   * or (family accounts, docs/ACCOUNTS.md §7.7) signed_out | not_entitled | friends_off | friends_locked | player_gone
+   * or (family accounts, docs/ACCOUNTS.md §7.7) signed_out | not_entitled | friends_off | friends_locked | player_gone | accounts_mixed
    */
   constructor(code, message) {
     super(message || code);
@@ -559,6 +559,7 @@ export class FrameTransport extends NetTransport {
         const map = {
           full: 'full', rooms_full: 'busy', busy: 'busy', bad_name: 'invalid', origin: 'no_rooms', limit: 'busy',
           signed_out: 'signed_out', not_entitled: 'not_entitled', friends_off: 'friends_off', friends_locked: 'friends_locked', player_gone: 'player_gone',
+          accounts_mixed: 'accounts_mixed',
         };
         if (map[f.code]) this._failOpen(new NetError(map[f.code], f.msg || f.code));
       }

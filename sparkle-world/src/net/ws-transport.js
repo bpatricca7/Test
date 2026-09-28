@@ -15,6 +15,8 @@
 //   (&p=<player id>; the session cookie goes with it by itself). The server refuses after the
 //   handshake with {t:'e', code} and close codes 4401 signed_out, 4402 not_entitled,
 //   4403 friends_off, 4404 friends_locked, 4405 player_gone: no retries, a friendly card.
+//   4406 accounts_mixed: the room has players of the other kind (with / without an account,
+//   SW_ACCOUNTS=optional only), who never play together: no retries, a card too.
 // - The walkie-talkie (src/net/walkie) shares the socket: binary frames and {t:'v'} frames go
 //   to `voiceIn`, `voiceUp` runs after every (re)connect, `sendVoice()` writes one frame. The
 //   server decides who hears (server/voice.mjs), with the same gate as the room.
@@ -45,6 +47,7 @@ const SILENT_MS = 50000;
 const CLOSE_TO_ERROR = {
   4001: 'full', 4002: 'busy', 4029: 'busy', 4003: 'no_rooms', 4004: 'invalid',
   4401: 'signed_out', 4402: 'not_entitled', 4403: 'friends_off', 4404: 'friends_locked', 4405: 'player_gone',
+  4406: 'accounts_mixed',
 };
 
 function randomSecret(n = 24) {
@@ -164,8 +167,8 @@ export class WsTransport extends FrameTransport {
   _onSocketClosed(code) {
     if (this._stopped || this._closed) return;
     const err = CLOSE_TO_ERROR[code];
-    // the account refusals (4401-4405) stop retries while opening and mid-session alike
-    if (code > 4400 && code < 4406) {
+    // the account refusals (4401-4406) stop retries while opening and mid-session alike
+    if (code > 4400 && code < 4407) {
       this._stopped = true;
       if (this._welcome) this._failOpen(new NetError(err));
       else this._onFatal(err);

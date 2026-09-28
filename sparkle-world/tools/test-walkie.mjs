@@ -579,10 +579,11 @@ async function accountRelayUnit() {
   const registry = new RoomRegistry({ gate: true, now: () => t });
   const relay = new VoiceRelay({ registry, now: () => t });
   const room = 'sw1-heart-star-moon-cat';
-  const mk = (peer, claims) => {
+  const mk = (peer, claims, where = room) => {
     const box = { json: [], bytes: 0 };
-    registry.join(room, peer, () => {}, { by: 'd-' + peer, claims });
-    box.link = relay.link(room, peer, { json: (f) => box.json.push(f), binary: (b) => ((box.bytes += b.length), true), kick: () => {} }, claims ? { walkie: claims.walkie } : undefined);
+    box.joined = registry.join(where, peer, () => {}, { by: 'd-' + peer, claims });
+    // (the link is made even when the room said no, so the test can show it hears nothing)
+    box.link = relay.link(where, peer, { json: (f) => box.json.push(f), binary: (b) => ((box.bytes += b.length), true), kick: () => {} }, claims ? { walkie: claims.walkie } : undefined);
     return box;
   };
   const acct = (nickname, walkie) => ({ familyId: 'f-' + nickname, playerId: 'p-' + nickname, nickname, canHost: true, canBuild: true, walkie });
@@ -591,6 +592,7 @@ async function accountRelayUnit() {
   const J = mk('june', acct('June', false));
   const L = mk('legacy', null);
   check(JSON.stringify(H.json) === '[{"t":"v","k":"perm","walkie":1}]' && JSON.stringify(J.json) === '[{"t":"v","k":"perm","walkie":0}]' && L.json.length === 0, 'account links are told their walkie permission when made (legacy links: nothing, as before)');
+  check(L.joined.ok === false && L.joined.code === 'accounts_mixed', "a page without an account is refused in an account child's room (accounts_mixed)");
   registry.handle(room, 'host', { t: 's', patch: { r: 'h', wk: 1, adm: [['rosie', 1], ['june', 2], ['legacy', 3]] } });
   for (const p of ['rosie', 'june', 'legacy']) registry.handle(room, p, { t: 's', patch: { r: 'g', wk: 1 } });
   check(registry.rooms.get(room).members.get('june').state.wk === undefined, "June's wk:1 was dropped by the room (no walkie switch)");
@@ -603,7 +605,7 @@ async function accountRelayUnit() {
     t += 80;
     H.link.binary(voiceFrame(k));
   }
-  check(R.bytes > 0 && L.bytes > 0 && J.bytes === 0, `Rosie and the legacy friend hear her (${R.bytes} B), June gets 0 bytes`);
+  check(R.bytes > 0 && J.bytes === 0 && L.bytes === 0, `Rosie hears her (${R.bytes} B); June gets 0 bytes, and so does the page without an account (it never got into the room)`);
   J.link.control({ k: 'req' });
   check(J.json.at(-1).k === 'no' && J.json.at(-1).why === 'off', "June cannot talk ('off')");
   // switched off in the middle of Lily's press: her floor goes at once
@@ -626,7 +628,35 @@ async function accountRelayUnit() {
   H.link.control({ k: 'req' });
   check(H.json.slice(mark).some((f) => f.k === 'go'), 'she may talk again');
   check(relay.stats().revoked === 1, 'counted');
-  for (const b of [H, R, J, L]) b.link.close();
+  // the other way round: a room of pages without an account refuses an account child, and no
+  // voice crosses between them
+  const room2 = 'sw1-cat-moon-star-heart';
+  const LH = mk('legacy-host', null, room2);
+  const LG = mk('legacy-guest', null, room2);
+  const A2 = mk('acct-guest', acct('Mia', true), room2);
+  check(LH.joined.ok && LG.joined.ok && A2.joined.ok === false && A2.joined.code === 'accounts_mixed', "an account child is refused in a room of pages without an account (accounts_mixed)");
+  registry.handle(room2, 'legacy-host', { t: 's', patch: { r: 'h', wk: 1, adm: [['legacy-guest', 1], ['acct-guest', 2]] } });
+  for (const p of ['legacy-guest', 'acct-guest']) registry.handle(room2, p, { t: 's', patch: { r: 'g', wk: 1 } });
+  for (const b of [LH, LG, A2]) b.link.control({ k: 'on' });
+  t += 3000;
+  mark = LH.json.length;
+  LH.link.control({ k: 'req' });
+  check(LH.json.slice(mark).some((f) => f.k === 'go'), 'the legacy host may talk (as today)');
+  for (let k = 0; k < 5; k++) {
+    t += 80;
+    LH.link.binary(voiceFrame(k));
+  }
+  check(LG.bytes > 0 && A2.bytes === 0, `her legacy friend hears her (${LG.bytes} B); the account child gets 0 bytes`);
+  LH.link.control({ k: 'end' });
+  t += 3000;
+  const heard = [LH.bytes, LG.bytes];
+  A2.link.control({ k: 'req' });
+  for (let k = 0; k < 5; k++) {
+    t += 80;
+    A2.link.binary(voiceFrame(k + 100));
+  }
+  check(LH.bytes === heard[0] && LG.bytes === heard[1], 'and nothing she sends reaches the legacy pages');
+  for (const b of [H, R, J, L, LH, LG, A2]) b.link.close();
   relay.stop();
 }
 
