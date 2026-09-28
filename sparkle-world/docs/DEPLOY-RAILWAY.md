@@ -89,11 +89,9 @@ below.
 | `https://<your address>/parents` | safety and privacy, in plain words |
 | `https://<your address>/healthz` | `{"ok":true}` (Railway's health check) |
 
-On an iPad, open the game (**Play now**, or the `/play` address), then tap the Share button →
-**Add to Home Screen** so it opens like an app, straight into the game. If you added the plain
-address to the Home Screen before the home page existed, it now opens the home page: tap
-**Play now**, or add the icon again from `/play`. Her worlds are not affected: they are saved
-per website, and the home page and the game are the same website.
+The plain address now opens the home page; the game is one tap away (**Play now**, or the
+`/play` address). Her worlds are not affected: they are saved per website, and the home page and
+the game are the same website.
 
 ### Bring her worlds over from the claude.ai version (optional)
 
@@ -534,14 +532,14 @@ The admin commands run inside the service:
 Set `SW_STRIPE_SHAPES=1` in staging's Variables (test keys only), deploy, then:
 
 1. On your iPad, open `https://<staging address>/account`, type your email, and check that the
-   email arrives in iPad Mail and that the **6-digit code** fills in by itself. Also try it from a
-   Home Screen app (add `/play` to the Home Screen, open it, **Grown-ups → Sign in or start**).
+   email arrives in iPad Mail and that the **6-digit code** fills in by itself. Also try it from
+   the game: open `/play`, then **Grown-ups → Sign in or start**.
 2. Read the notice, tick the box, **Agree and continue**.
 3. Tick **I live in the United States**, **Start the Family Plan**. On Stripe's page use the card
    `4242 4242 4242 4242`, any future date, any 3 digits, a US address. Back on the Family page:
    **You're all set!**
-4. Add two players. **Set up a kid's device**: on a second browser (or the iPad's Home Screen
-   app) open `/play` → **Grown-ups** → **I have a code**, type the code. Pick a player, build
+4. Add two players. **Set up a kid's device**: on a second browser (or another
+   device) open `/play` → **Grown-ups** → **I have a code**, type the code. Pick a player, build
    something, and check the world appears on the other device.
 5. Switch **Play with friends** and the **Walkie-talkie** on for one child (a code is emailed
    first). Play together with a second test family (another email, another browser), including the
@@ -554,8 +552,8 @@ Set `SW_STRIPE_SHAPES=1` in staging's Variables (test keys only), deploy, then:
 8. In the Deploy Logs, copy every line that starts with `stripe-shape` into
    `tools/fixtures/stripe/real-shapes.txt` (the automatic tests check the code against them), then
    remove `SW_STRIPE_SHAPES` again.
-9. What only a real iPad can check (the tests cannot run Safari): the Home Screen app sign-in with
-   the code, pairing, and the walkie.
+9. What only a real iPad can check (the tests cannot run Safari): sign-in with the code in Safari,
+   pairing, and the walkie.
 
 ## Step 18. Live: production, optional first, then required
 
