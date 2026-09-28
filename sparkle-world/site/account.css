@@ -37,6 +37,8 @@
 .acct-card p { color: var(--ink-2); text-wrap: pretty; }
 .acct-lead { font-size: 1.15rem; }
 .acct-small { font-size: .98rem; color: var(--muted) !important; }
+/* room under a chunky button (its shadow) before the small print */
+.acct-card form + .acct-small, .acct-row + .acct-small { margin-top: 18px; }
 .acct-note { background: var(--sky-soft); border-radius: 16px; padding: 12px 16px; font-size: 1rem; color: var(--ink-2); margin: 0 0 16px; }
 .acct-note--sun { background: var(--sun-soft); }
 .acct-note--pink { background: var(--pink-soft); }
