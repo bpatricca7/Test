@@ -272,7 +272,7 @@ export function routes(ctx) {
     const id = wid(x);
     await mayWrite(x);
     const pid = x.player.id;
-    return ctx.db.tx(async (q) => {
+    const r = await ctx.db.tx(async (q) => {
       await q.query('select pg_advisory_xact_lock(hashtext($1))', [lockKey(pid, id)]);
       const row = await q.one('select rev, body is null as tomb from worlds where player_id = $1 and world_id = $2 for update', [pid, id]);
       if (row && row.tomb) return { json: { rev: row.rev } };
@@ -283,16 +283,21 @@ export function routes(ctx) {
         if (n >= lim().tombs) return { json: { rev: 0 } };
       }
       const rev = (row ? row.rev : 0) + 1;
-      // a tombstone: other devices learn about the delete (§3.3); kept 30 days (jobs.mjs)
+      // a tombstone: other devices learn about the delete (§3.3); kept 30 days (jobs.mjs). It
+      // holds no world content: no body, no picture, and no meta (the name she typed, the biome)
       await q.query(
         `insert into worlds (player_id, world_id, rev, client_updated_at, meta, thumb, body, size, stored, deleted_at, updated_at)
          values ($1, $2, $3, $4, '{}'::jsonb, null, null, 0, 0, $5, $5)
-         on conflict (player_id, world_id) do update set rev = excluded.rev, thumb = null, body = null, size = 0, stored = 0,
+         on conflict (player_id, world_id) do update set rev = excluded.rev, client_updated_at = excluded.client_updated_at,
+           meta = '{}'::jsonb, thumb = null, body = null, size = 0, stored = 0,
            deleted_at = excluded.deleted_at, updated_at = excluded.updated_at`,
         [pid, id, rev, x.now, now(x)],
       );
-      return { json: { rev } };
+      return { json: { rev }, journal: !!row };
     });
+    // the restore runbook re-applies this delete from the journal (§3.4, §13.4): ids only
+    if (r.journal) ctx.log(`deletion-journal world=${pid}/${id}`);
+    return { json: r.json };
   }
 
   // ---------------------------------------------------------------------------------------

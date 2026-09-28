@@ -2,8 +2,11 @@
 // Family page (GET /api/notice), the first sign-in email and the tests. Plain text only: pages
 // insert it with textContent, emails use it as it is. Never any child's information in here.
 //
-//   NOTICE_VERSION                  bump it when the text changes in a way that matters; parents who
-//                                   agreed to an older version are asked again at the next sign-in
+//   NOTICE_VERSION                  the version of the text below; bump it whenever the text changes
+//   NOTICE_MIN_VERSION              the oldest version an agreement still counts for. Raise it to
+//                                   NOTICE_VERSION when a change matters: parents who agreed to an
+//                                   older version then see the notice again on the Family page,
+//                                   and until they agree no player is added and no switch goes on
 //   noticeSections(cfg)             → [{ title, text }]          (the pinned contract, §15.2)
 //   noticeCheckbox(cfg)             → the one checkbox's label (never pre-ticked)
 //   notice(cfg)                     → { version, date, title, sections, checkbox, privacyPath }
@@ -19,6 +22,7 @@
 // details (development) read "[SW_OPERATOR_… not set]"; production refuses to start without them.
 
 export const NOTICE_VERSION = 1;
+export const NOTICE_MIN_VERSION = 1;
 export const NOTICE_DATE = '2026-09-28';
 
 export const NOTICE_TITLE = 'Before your children play: what Sparkle World keeps, and why.';
@@ -64,6 +68,11 @@ export function noticeSections(cfg = {}) {
       text: 'so we can ask your permission and so you can sign in. Children are never asked for an email.',
     },
     {
+      // 16 CFR 312.4(c)(1)(ii): consent is needed, and without it nothing is collected, used or disclosed
+      title: 'We need your permission first',
+      text: "if you don't agree, we don't collect, use or share anything about your children.",
+    },
+    {
       title: 'With your permission we keep, for each child',
       text:
         'a nickname you choose (a nickname, please, not a real name), her avatar and its picture, her game progress (stickers, coins, outfits, settings) and her worlds, including names she types for worlds and pets. ' +
@@ -96,7 +105,7 @@ export function noticeSections(cfg = {}) {
     },
     {
       title: "If you don't finish",
-      text: 'setting up within 14 days, we delete your email address.',
+      text: "setting up: if you don't agree to this notice within 14 days, we delete your email address; if you agree but don't start the Family Plan within 30 days, we delete it then.",
     },
     {
       title: 'Who runs Sparkle World',
@@ -114,6 +123,7 @@ export function noticeCheckbox() {
 export function notice(cfg = {}) {
   return {
     version: NOTICE_VERSION,
+    minVersion: NOTICE_MIN_VERSION,
     date: NOTICE_DATE,
     title: NOTICE_TITLE,
     sections: noticeSections(cfg),
@@ -126,7 +136,7 @@ export function notice(cfg = {}) {
 export function noticeSummary(cfg = {}) {
   const privacy = (cfg.publicOrigin || '') + '/privacy';
   return [
-    'Before your children play, Sparkle World asks your permission to keep a nickname, an avatar, game progress and worlds for each child, only to run the game.',
+    "Before your children play, Sparkle World asks your permission to keep a nickname, an avatar, game progress and worlds for each child, only to run the game. Without it, we don't collect, use or share anything about them.",
     "We never collect children's emails, real names, birthdays, photos, location, contacts or recordings. No ads, no analytics, no trackers.",
     'Playing with friends and the walkie-talkie stay off until you switch them on for each child on the Family page.',
     `You will read the whole notice on the Family page before agreeing. The Privacy Notice: ${privacy}`,

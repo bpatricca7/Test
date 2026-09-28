@@ -13,7 +13,12 @@
 //   billing.lapse()                     // lapsed_at / purge_after on and off (§6.6); the retention job calls it
 //   billing.checkPrice()                // SW_PRICE_TEXT against the Stripe price (a warning, never fatal)
 //   billing.stats()                     // counters for the daily summary line (§13.5)
-//   routes(ctx)                         // POST /api/billing/checkout|sync|portal|start-now, /api/stripe/webhook
+//   routes(ctx)                         // POST /api/billing/checkout|sync|portal|cancel|start-now, /api/stripe/webhook
+//
+// Cancelling is never harder than starting (California's ARL and similar laws): Cancel the plan
+// (POST /api/billing/cancel, cancel at period end) needs only the parent's session, while starting
+// (checkout) needs a fresh email check, which a sign-in gives for 15 minutes anyway. The Portal
+// (card, invoices, Resume) keeps its email check: it shows the parent's billing details.
 //
 // Rules that keep it safe (§6.4): the webhook verifies the signature over the raw body first; an
 // event id is handled once (stripe_events, inside the same transaction as its effect, so emails go
@@ -717,6 +722,23 @@ export function createBilling(ctx) {
     return { json: { url: ps.url } };
   }
 
+  // POST /api/billing/cancel → {plan}: the live plan ends at the end of the period it is paid for
+  // (the Portal's "cancel at period end"); no email check, two taps on the Family page (§9.3)
+  async function cancel(req, x) {
+    const fam = await familyRow(x);
+    const row = await db.one(
+      `select id from subscriptions where family_id = $1 and status in ('trialing', 'active', 'past_due') and not cancel_at_period_end
+        order by coalesce(current_period_end, trial_end) desc nulls last limit 1`,
+      [fam.id],
+    );
+    if (!row) throw new HttpError(409, 'conflict');
+    const sub = await sc((s) => s.subscriptions.update(row.id, { cancel_at_period_end: true }), { missing: [409, 'conflict'] });
+    const syncedAt = clock.now();
+    await db.tx((q) => applySubscription(q, sub, { familyId: fam.id, syncedAt }));
+    changed([fam.id]);
+    return { json: { plan: await entitlementFor(fam.id) } };
+  }
+
   async function startNow(req, x) {
     const fam = await familyRow(x);
     const row = await db.one("select id from subscriptions where family_id = $1 and status = 'trialing' order by trial_end desc nulls last limit 1", [fam.id]);
@@ -826,6 +848,10 @@ export function createBilling(ctx) {
         }
       }
       try {
+        // marked first: after a database restore, `admin reapply-deletions` re-applies only the
+        // customer.deleted events that carry this mark (a customer deleted by hand in the
+        // Dashboard only unlinks its family, §6.4, and must never delete it)
+        await stripe().customers.update(customer, { metadata: { sw_family_deleted: '1' } });
         await stripe().customers.del(customer);
       } catch (err) {
         if (!isMissing(err)) throw err;
@@ -857,7 +883,7 @@ export function createBilling(ctx) {
       const e = entitlementOf({ family: f, subs, now, cfg });
       if (!e.entitled && !f.lapsed_at && e.state === 'lapsed') {
         const ok = await db.tx(async (q) => {
-          const r = await q.query('update families set lapsed_at = $2, purge_after = $3 where id = $1 and lapsed_at is null', [f.id, new Date(now), new Date(now + cfg.retainDays * DAY)]);
+          const r = await q.query('update families set lapsed_at = $2, purge_after = $3, kid_data_purged_at = null where id = $1 and lapsed_at is null', [f.id, new Date(now), new Date(now + cfg.retainDays * DAY)]);
           if (r.rowCount) await ctx.audit(q, f.id, 'plan.lapsed', {}, { actor: 'system' });
           return r.rowCount > 0;
         });
@@ -867,7 +893,7 @@ export function createBilling(ctx) {
         }
       } else if (e.entitled && f.lapsed_at) {
         const ok = await db.tx(async (q) => {
-          const r = await q.query("update families set lapsed_at = null, purge_after = null, flags = flags - 'warned30' - 'warned7' where id = $1 and lapsed_at is not null", [f.id]);
+          const r = await q.query("update families set lapsed_at = null, purge_after = null, kid_data_purged_at = null, flags = flags - 'warned30' - 'warned7' where id = $1 and lapsed_at is not null", [f.id]);
           if (r.rowCount) await ctx.audit(q, f.id, 'plan.resumed', {}, { actor: 'system' });
           return r.rowCount > 0;
         });
@@ -910,11 +936,14 @@ export function createBilling(ctx) {
     const family20 = { name: 'billing-family', count: 20, perMs: HOUR, key: 'family' };
     return [
       {
-        method: 'POST', path: '/api/billing/checkout', who: 'parent', handler: checkout,
+        // starting a plan needs a fresh email check (a sign-in gives one for 15 minutes): a child
+        // on a device that kept a grown-up's session never reaches Stripe's page (§7.9)
+        method: 'POST', path: '/api/billing/checkout', who: 'parent+check', handler: checkout,
         limit: [{ name: 'billing-checkout-family', count: 5, perMs: HOUR, key: 'family' }, { name: 'billing-checkout-ip', count: 20, perMs: HOUR, key: 'ip' }],
       },
       { method: 'POST', path: '/api/billing/sync', who: 'parent', handler: sync, limit: [family20] },
       { method: 'POST', path: '/api/billing/portal', who: 'parent+check', handler: portal, limit: [family20] },
+      { method: 'POST', path: '/api/billing/cancel', who: 'parent', handler: cancel, limit: [family20] },
       { method: 'POST', path: '/api/billing/start-now', who: 'parent+check', handler: startNow, limit: [family20] },
       { method: 'POST', path: '/api/stripe/webhook', who: 'stripe', body: { kind: 'raw', max: WEBHOOK_MAX }, handler: webhook },
     ];

@@ -115,7 +115,7 @@ function welcome({ data, cfg }) {
   lines.push(
     '',
     'It renews every month until you cancel.',
-    `To cancel: on the Family page (${cfg.publicOrigin}/account) choose Manage subscription, or reply to this email. Cancelling stops the next payment; the plan keeps working until the end of the month you paid for.`,
+    `To cancel: on the Family page (${cfg.publicOrigin}/account) choose Cancel the plan, or reply to this email. Cancelling stops the next payment; the plan keeps working until the end of the month you paid for.`,
     '',
     'Next: add your players on the Family page and set up the kids\' devices.',
   );
@@ -163,7 +163,7 @@ function annualReminder({ cfg }) {
     text: [
       `A yearly reminder: your Sparkle World Family Plan renews every month (${cfg.priceText}) until you cancel.`,
       '',
-      `To cancel: on the Family page (${cfg.publicOrigin}/account) choose Manage subscription, or reply to this email.`,
+      `To cancel: on the Family page (${cfg.publicOrigin}/account) choose Cancel the plan, or reply to this email.`,
     ].join('\n'),
   };
 }
@@ -259,8 +259,9 @@ export async function loadNotice(cfg) {
   }
   const m = await noticeModule;
   if (!m || !Number.isInteger(m.NOTICE_VERSION) || typeof m.noticeSections !== 'function') {
-    return { version: 1, sections: fallbackSections(cfg), checkbox: FALLBACK_CHECKBOX };
+    return { version: 1, minVersion: 1, sections: fallbackSections(cfg), checkbox: FALLBACK_CHECKBOX };
   }
   const checkbox = typeof m.noticeCheckbox === 'function' ? m.noticeCheckbox(cfg) : typeof m.NOTICE_CHECKBOX === 'string' ? m.NOTICE_CHECKBOX : FALLBACK_CHECKBOX;
-  return { version: m.NOTICE_VERSION, sections: m.noticeSections(cfg), checkbox };
+  const minVersion = Number.isInteger(m.NOTICE_MIN_VERSION) ? Math.min(m.NOTICE_MIN_VERSION, m.NOTICE_VERSION) : m.NOTICE_VERSION;
+  return { version: m.NOTICE_VERSION, minVersion, sections: m.noticeSections(cfg), checkbox };
 }

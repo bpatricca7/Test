@@ -179,7 +179,7 @@ describe('entitlementOf: inputs', () => {
     assert.equal(e.until, T + DAY, 'grace defaults to 7 days');
   });
   test('the answer has exactly the fields of §6.5', () => {
-    assert.deepEqual(Object.keys(at([])).sort(), ['cancelAtPeriodEnd', 'consent', 'entitled', 'friendsConsentOk', 'graceUntil', 'periodEnd', 'state', 'trialEnd', 'until', 'walkieConsentOk']);
+    assert.deepEqual(Object.keys(at([])).sort(), ['cancelAtPeriodEnd', 'consent', 'entitled', 'friendsConsentOk', 'graceUntil', 'periodEnd', 'state', 'subState', 'trialEnd', 'until', 'walkieConsentOk']);
   });
 });
 
@@ -399,7 +399,9 @@ describe('the direct notice (server/notice.mjs, §11.3)', () => {
       /Railway/, /Stripe/, /Resend/, /don't sell/i, // recipients
       /90 days after it ends/i, /backups roll off within 7 days/i,
       /see, download and delete/i, /hello@sparkleworld\.example/,
+      /We need your permission first.*don't collect, use or share anything about your children/i, // 312.4(c)(1)(ii): consent is needed
       /within 14 days, we delete your email address/i, // deletion if consent does not come
+      /agree but don't start the Family Plan within 30 days, we delete it then/i, // …and if a plan does not come (§3.5)
       /The Operator, PO Box 1, Town, ST 00000, \+1 555 0100, hello@sparkleworld\.example/, // operator contact
       /https:\/\/sparkleworld\.example\/privacy/, // the link to the online notice
     ];

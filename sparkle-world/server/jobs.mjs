@@ -93,7 +93,8 @@ async function retention(ctx, { now }) {
     if (ent.entitled) {
       if (f.lapsed_at) {
         await db.tx(async (q) => {
-          await q.query("update families set lapsed_at = null, purge_after = null, flags = flags - 'warned30' - 'warned7' where id = $1", [f.id]);
+          // kid_data_purged_at belongs to the lapse that ended: the next lapse purges again
+          await q.query("update families set lapsed_at = null, purge_after = null, kid_data_purged_at = null, flags = flags - 'warned30' - 'warned7' where id = $1", [f.id]);
           await ctx.audit(q, f.id, 'plan.resumed', {}, { actor: 'system' });
         });
         ctx.billing.invalidate(f.id);
@@ -109,12 +110,14 @@ async function retention(ctx, { now }) {
       lapsedAt = now;
       purgeAfter = now + cfg.retainDays * DAY;
       await db.tx(async (q) => {
-        await q.query("update families set lapsed_at = $2, purge_after = $3, flags = flags - 'warned30' - 'warned7' where id = $1", [f.id, new Date(lapsedAt), new Date(purgeAfter)]);
+        // a new lapse (a second one after a comeback too): warned and purged again, 90 days on
+        await q.query("update families set lapsed_at = $2, purge_after = $3, kid_data_purged_at = null, flags = flags - 'warned30' - 'warned7' where id = $1", [f.id, new Date(lapsedAt), new Date(purgeAfter)]);
         await ctx.audit(q, f.id, 'plan.lapsed', {}, { actor: 'system' });
       });
       ctx.billing.invalidate(f.id);
       ctx.events.emit('family', { familyId: f.id }); // live games learn it now, not at the next sweep
       f.flags = { ...(f.flags || {}), warned30: undefined, warned7: undefined };
+      f.kid_data_purged_at = null;
       c.lapsed++;
     }
     if (now >= lapsedAt + YEAR) {

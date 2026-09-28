@@ -17,7 +17,6 @@
 // Children's data never leaves through here except to the signed-in parent (summary, exports)
 // and, as the server's own nickname stamp, to the relay. Nothing here is logged but ids.
 
-import { createHmac } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
 import { httpError, isUuid } from './http.mjs';
 import { consentOf } from './entitlement.mjs';
@@ -70,6 +69,13 @@ function sizeName(size) {
   return null;
 }
 
+/**
+ * The parent agreed to a notice older than NOTICE_MIN_VERSION (a change that matters, §11.3):
+ * the Family page shows the notice again, and until she agrees no player is added and no
+ * switch goes on (403 consent_required). Saving goes on meanwhile.
+ */
+export const noticeStale = (f, n) => !!f && !!f.consent_at && (f.notice_version ?? 0) < (n.minVersion ?? n.version);
+
 const portraitUrl = (p) => (p.portrait ? `/api/players/${p.id}/portrait?v=${p.portrait_rev}` : null);
 
 function consentJson(f) {
@@ -109,7 +115,6 @@ function gunzipJson(buf) {
 
 export function createFamily(ctx) {
   const { cfg, db, clock, events } = ctx;
-  const emailKey = (email) => createHmac('sha256', cfg.keys.email).update(email).digest();
 
   const load = async (familyId) => (isUuid(familyId) ? db.one('select * from families where id = $1', [familyId]) : null);
   const player = async (pid) => (isUuid(pid) ? db.one('select * from players where id = $1', [pid.toLowerCase()]) : null);
@@ -144,7 +149,7 @@ export function createFamily(ctx) {
          on conflict (family_id) do update set deleted_at = excluded.deleted_at, stripe_customer_id = excluded.stripe_customer_id, stripe_done_at = excluded.stripe_done_at`,
         [fam.id, t, stripeDone ? null : fam.stripe_customer_id, stripeDone ? t : null],
       );
-      await q.query('delete from login_attempts where email_key = $1', [emailKey(fam.email)]);
+      await q.query('delete from login_attempts where email = $1', [fam.email]); // (its email check attempts cascade)
       await q.query('delete from families where id = $1', [fam.id]);
       await ctx.audit(q, fam.id, 'family.deleted', {}, { actor });
       return s.rows.map((r) => r.id_hash);
@@ -160,13 +165,21 @@ export function createFamily(ctx) {
   }
 
   async function deletePlayer(familyId, playerId, { actor = 'parent', now = clock.now() } = {}) {
-    const ok = await db.tx(async (q) => {
+    const locked = await db.tx(async (q) => {
+      // the devices locked to her stay locked (to nobody now); their cached sessions go
+      const s = await q.query('select id_hash from sessions where family_id = $1 and lock_player = $2', [familyId, playerId]);
       const r = await q.one('delete from players where id = $1 and family_id = $2 returning id', [playerId, familyId]);
-      if (r) await ctx.audit(q, familyId, 'player.delete', {}, { actor, playerId });
-      return !!r;
+      if (!r) return null;
+      await ctx.audit(q, familyId, 'player.delete', {}, { actor, playerId });
+      return s.rows.map((x) => Buffer.from(x.id_hash).toString('hex'));
     });
-    if (ok) events.emit('player', { familyId, playerId, deleted: true });
-    return ok;
+    if (!locked) return false;
+    for (const hex of locked) ctx.sessions?.forget?.(hex);
+    events.emit('player', { familyId, playerId, deleted: true });
+    for (const hex of locked) events.emit('session', { sessionHash: hex });
+    // the restore runbook re-applies this delete from the journal (§3.4, §13.4): ids only
+    ctx.log(`deletion-journal player=${playerId}`);
+    return true;
   }
 
   // ---- exports: streamed, one world at a time ----
@@ -270,8 +283,11 @@ export function routes(ctx) {
     if (!f) throw httpError(410, 'family_gone');
     const now = x.now;
     const ent = await ctx.billing.entitlementFor(f.id);
-    const rows = s.lockPlayer
-      ? await db.query('select * from players where id = $1 and family_id = $2', [s.lockPlayer, f.id])
+    // a locked device sees its one child; locked to a child who was deleted, it sees nobody
+    // (never every sibling: the lock outlives the child, migration 002)
+    const locked = !!(s.locked || s.lockPlayer);
+    const rows = locked
+      ? s.lockPlayer ? await db.query('select * from players where id = $1 and family_id = $2', [s.lockPlayer, f.id]) : { rows: [] }
       : await db.query('select * from players where family_id = $1 order by sort, created_at', [f.id]);
     const players = rows.rows.map((p) => {
       const a = accessOf({ ent, player: p, cfg });
@@ -301,6 +317,7 @@ export function routes(ctx) {
         consent: ent.consent,
         players,
         lockPlayer: s.lockPlayer || null,
+        locked,
         playUntil: ent.entitled ? Math.min(ent.until ?? now + PLAY_OFFLINE_MS, now + PLAY_OFFLINE_MS) : now,
       },
     };
@@ -343,6 +360,7 @@ export function routes(ctx) {
           trialDays: cfg.trialDays,
           priceText: cfg.priceText,
           noticeVersion: n.version,
+          noticeMinVersion: n.minVersion ?? n.version,
           operatorEmail: cfg.operator?.email || null,
         },
       },
@@ -376,7 +394,7 @@ export function routes(ctx) {
   // POST /api/players {nickname, color?}
   async function addPlayer(req, x) {
     const f = x.family;
-    if (!f.consent_at) throw httpError(403, 'consent_required');
+    if (!f.consent_at || noticeStale(f, await loadNotice(cfg))) throw httpError(403, 'consent_required');
     const ent = await ctx.billing.entitlementFor(f.id);
     if (!ent.entitled && cfg.friendsMode !== 'free-join') throw httpError(403, 'not_entitled');
     const nickname = cleanNickname(x.body.nickname);
@@ -408,6 +426,10 @@ export function routes(ctx) {
     if (b.color !== undefined && (!Number.isInteger(b.color) || b.color < 0 || b.color > 7)) throw httpError(400, 'bad_request');
     if (b.sort !== undefined && (!Number.isInteger(b.sort) || b.sort < 0 || b.sort > 1000)) throw httpError(400, 'bad_request');
     if (b.notice !== undefined && (!Number.isInteger(b.notice) || b.notice < 1 || b.notice > 1e6)) throw httpError(400, 'bad_request');
+    // the consent records (friends.on / walkie.on {v}) name the notice the server shows now,
+    // never a number the page chose; a page showing another version is told so (like /api/consent)
+    const n = await loadNotice(cfg);
+    if (b.notice !== undefined && b.notice !== n.version) throw httpError(409, 'conflict', { noticeVersion: n.version });
     const friendsOn = b.friends === true && !p.friends_on;
     const walkieOn = b.walkie === true && !p.walkie_on;
     let friends = b.friends ?? p.friends_on;
@@ -415,6 +437,7 @@ export function routes(ctx) {
     if (!friends) walkie = false; // the walkie needs friends (and goes off with it)
     if (friendsOn || walkieOn) {
       if (!(x.session.elevatedUntil > x.now)) throw httpError(403, 'check_required');
+      if (noticeStale(x.family, n)) throw httpError(403, 'consent_required');
       if (walkieOn && !friends) throw httpError(409, 'conflict');
       const ent = await ctx.billing.entitlementFor(p.family_id);
       const visitorOk = cfg.friendsMode === 'free-join' && !walkieOn;
@@ -427,7 +450,7 @@ export function routes(ctx) {
       nickname = cleanNickname(b.nickname);
       if (!nickname) throw httpError(400, 'nickname_blocked');
     }
-    const v = b.notice ?? (await loadNotice(cfg)).version;
+    const v = n.version;
     const row = await db.tx(async (q) => {
       if (nickname !== p.nickname) {
         const taken = await q.one('select 1 as x from players where family_id = $1 and lower(nickname) = lower($2) and id <> $3', [p.family_id, nickname, p.id]);

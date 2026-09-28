@@ -4,6 +4,7 @@
 // - Bucket: one token bucket (rate tokens per second, up to `burst`).
 // - isInternalIp / normalizeIp / clientIpOf / addressKey: which address a request counts as
 //   (docs/MULTIPLAYER.md Addendum B item 4). server.mjs re-exports them for the tests.
+// - netKey: the network a request counts as (IPv6 by /48), for the accounts' per-network limits.
 // - KeyedLimiter: many buckets keyed by a string (an addressKey, an email key, a family id,
 //   a player id, a session hash, or '*' for "everyone"); buckets that are full again are
 //   forgotten, so memory stays small.
@@ -110,6 +111,19 @@ export function addressKey(ip) {
   const ts = a.includes('::') ? (tail ? tail.split(':') : []) : [];
   const groups = a.includes('::') ? [...hs, ...Array(Math.max(0, 8 - hs.length - ts.length)).fill('0'), ...ts] : hs;
   return groups.slice(0, 4).map((g) => (g || '0').toLowerCase().replace(/^0+(?=.)/, '')).join(':') + '::/64';
+}
+
+/**
+ * The key the per-network limits count by: IPv6 by its /48 (a home or a small company gets a
+ * /48 or a /56, so one /48 holds every /64 a single allocation can use), IPv4 as is (one
+ * address is already one home). Anything else (not an IP) as is. docs/ACCOUNTS.md §4.8: the
+ * sign-in and pairing limits for everyone sit behind these, so one allocation cannot use them up.
+ */
+export function netKey(ip) {
+  const a = String(ip || '?').trim();
+  if (isIP(a.split('%')[0]) !== 6) return a;
+  const k = addressKey(a); // 'g1:g2:g3:g4::/64'
+  return k.split(':').slice(0, 3).join(':') + '::/48';
 }
 
 /**

@@ -6,11 +6,20 @@
 //   show <email>                                    plan, consent, flags, player/device counts, last seen
 //   comp <email> <YYYY-MM-DD|off>                   a free pass until the end of that day (UTC), or none
 //   consent-verified <email> --method form|call|video   tier-2 consent obtained another listed way (§11.4)
-//   change-email <old> <new>                        after confirming the request from the old address
-//   export <email> > file.json                      the family export (a parent's request by email)
+//   change-email <old> <new>                        after confirming the request from the old address;
+//                                                   every session and pair code of the family ends
+//   export <email> > file.json                      the family export: it PRINTS CHILDREN'S CONTENT
+//                                                   (nicknames, portraits, worlds). Never email it:
+//                                                   a parent downloads it herself on the Family page
 //   delete <email>                                  the family delete of §3.4 (type the email again)
-//   sign-out-all [<email>]                          every session of a family, or of everyone
-//   reapply-deletions --since <ISO time> [--ids <file>]   after a restore (§13.4)
+//   sign-out-all [<email>]                          every session of a family, or of everyone (type
+//                                                   EVERYONE to confirm)
+//   reapply-deletions --since <ISO time> [--ids <file>] [--dry-run]
+//                                                   after a restore (§13.4): the families, players and
+//                                                   worlds deleted since then, from Stripe's
+//                                                   customer.deleted events that our own deletes
+//                                                   marked and the `deletion-journal` log lines;
+//                                                   lists them and asks to type how many
 //   purge-now                                       run the retention job now
 //   stats                                           print the daily summary line
 //
@@ -30,10 +39,10 @@ export const USAGE = `usage: npm run -s admin -- <command>
   comp <email> <YYYY-MM-DD|off>
   consent-verified <email> --method form|call|video
   change-email <old> <new>
-  export <email> > file.json
+  export <email> > file.json      (prints children's content: never email the file)
   delete <email>
-  sign-out-all [<email>]
-  reapply-deletions --since <ISO time> [--ids <file>]
+  sign-out-all [<email>]           (no email: everyone, after typing EVERYONE)
+  reapply-deletions --since <ISO time> [--ids <file>] [--dry-run]
   purge-now
   stats`;
 
@@ -134,6 +143,12 @@ export async function runAdmin(argv, { ctx, out = (s) => process.stdout.write(s 
       });
       changed(f);
       out(until === null ? `free pass removed for family ${f.id}` : `free pass for family ${f.id} through ${label} (UTC)`);
+      if (until !== null) {
+        const live = await db.query("select id, cancel_at_period_end from subscriptions where family_id = $1 and status in ('trialing', 'active', 'past_due')", [f.id]);
+        for (const x of live.rows) {
+          if (!x.cancel_at_period_end) out(`warning: subscription ${x.id} still renews and is still charged. If the pass replaces it, cancel it (the parent's Family page: Cancel the plan, or the Stripe Dashboard).`);
+        }
+      }
       return 0;
     }
 
@@ -164,13 +179,19 @@ export async function runAdmin(argv, { ctx, out = (s) => process.stdout.write(s 
         out('another family already signs in with the new email');
         return 1;
       }
-      await db.tx(async (q) => {
+      // an email change often follows a lost or taken-over mailbox: every session and live pair
+      // code of the family ends with it (devices are set up again from the new address)
+      const revoked = await db.tx(async (q) => {
         await q.query('update families set email = $2 where id = $1', [f.id, next]);
-        await q.query('delete from login_attempts where email = $1', [f.email]);
+        await q.query('delete from login_attempts where email = $1 or family_id = $2', [f.email, f.id]);
+        const r = await q.query('update sessions set revoked_at = $2 where family_id = $1 and revoked_at is null returning id_hash', [f.id, new Date(now)]);
+        await q.query('delete from pair_codes where family_id = $1', [f.id]);
         await ctx.audit(q, f.id, 'email.changed', {}, { actor: 'admin' });
+        return r.rows.map((x) => x.id_hash);
       });
+      ctx.sessions?.announce?.(revoked);
       changed(f);
-      out(`email changed for family ${f.id}. Change the customer's email in the Stripe Dashboard too, so receipts go to the same address.`);
+      out(`email changed for family ${f.id}; ${revoked.length} session${revoked.length === 1 ? '' : 's'} signed out and its pair codes ended. Change the customer's email in the Stripe Dashboard too, so receipts go to the same address.`);
       return 0;
     }
 
@@ -205,6 +226,13 @@ export async function runAdmin(argv, { ctx, out = (s) => process.stdout.write(s 
         const f = await needFamily(args[0]);
         if (!f) return 1;
         familyId = f.id;
+      } else {
+        // everyone: every kid device of every family has to be set up again afterwards
+        const typed = await confirm('No email given: this signs out EVERY family and every kid device. Type EVERYONE to go on: ');
+        if (String(typed || '').trim() !== 'EVERYONE') {
+          out('nobody was signed out');
+          return 1;
+        }
       }
       const n = await ctx.sessions.revokeFamily(familyId, { now });
       out(`signed out ${n} session${n === 1 ? '' : 's'}` + (familyId ? ` of family ${familyId}` : ' (everyone)') + '; the running server notices within a minute');
@@ -214,30 +242,69 @@ export async function runAdmin(argv, { ctx, out = (s) => process.stdout.write(s 
     case 'reapply-deletions': {
       const since = option(args, '--since');
       const idsFile = option(args, '--ids');
+      const dry = args.includes('--dry-run');
+      if (dry) args.splice(args.indexOf('--dry-run'), 1);
       const t = since ? Date.parse(since) : NaN;
       if (args.length || !Number.isFinite(t)) return usage();
-      const ids = new Set();
+      const fams = new Set();
+      const players = new Set();
+      const worlds = new Map(); // `${pid}/${wid}` → [pid, wid]
       if (ctx.stripe?.events?.list) {
         const list = ctx.stripe.events.list({ type: 'customer.deleted', created: { gte: Math.floor(t / 1000) }, limit: 100 });
         const each = list && typeof list[Symbol.asyncIterator] === 'function' ? list : ((await list)?.data || []);
         for await (const ev of each) {
-          const fid = ev?.data?.object?.metadata?.family_id;
-          if (isUuid(fid)) ids.add(fid.toLowerCase());
+          const obj = ev?.data?.object || {};
+          const fid = obj.metadata?.family_id;
+          if (!isUuid(fid)) continue;
+          // only customers our own family delete marked (billing.cancelAndDelete): one deleted
+          // by hand in the Dashboard only unlinked its family (§6.4), which must stay
+          if (obj.metadata?.sw_family_deleted === '1') fams.add(fid.toLowerCase());
+          else out(`not reapplied (deleted by hand in Stripe, check it): event ${ev.id} customer ${obj.id || '-'} family ${fid.toLowerCase()}`);
         }
       } else {
         out('stripe: no client here, so Stripe customer.deleted events were not read');
       }
       if (idsFile !== null) {
         const text = readFile(idsFile);
-        for (const m of text.matchAll(/family=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/gi)) ids.add(m[1].toLowerCase());
-        for (const line of text.split(/\r?\n/)) if (isUuid(line.trim())) ids.add(line.trim().toLowerCase());
+        const U = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+        for (const m of text.matchAll(new RegExp(`family=(${U})`, 'gi'))) fams.add(m[1].toLowerCase());
+        for (const m of text.matchAll(new RegExp(`player=(${U})`, 'gi'))) players.add(m[1].toLowerCase());
+        for (const m of text.matchAll(new RegExp(`world=(${U})/([A-Za-z0-9_.~-]{1,72})`, 'gi'))) worlds.set(`${m[1].toLowerCase()}/${m[2]}`, [m[1].toLowerCase(), m[2]]);
+        for (const line of text.split(/\r?\n/)) if (isUuid(line.trim())) fams.add(line.trim().toLowerCase());
       }
-      let deleted = 0;
-      for (const id of ids) {
+      const total = fams.size + players.size + worlds.size;
+      for (const id of fams) out(`family ${id}`);
+      for (const id of players) out(`player ${id}`);
+      for (const k of worlds.keys()) out(`world ${k}`);
+      out(`${fams.size} famil${fams.size === 1 ? 'y' : 'ies'}, ${players.size} player${players.size === 1 ? '' : 's'}, ${worlds.size} world${worlds.size === 1 ? '' : 's'} to delete again`);
+      if (dry || !total) return 0;
+      const typed = await confirm(`Type ${total} to delete these ${total} again: `);
+      if (String(typed || '').trim() !== String(total)) {
+        out('nothing deleted: the number did not match');
+        return 1;
+      }
+      let nf = 0;
+      let np = 0;
+      let nw = 0;
+      for (const id of fams) {
         const r = await ctx.family.deleteFamily(id, { actor: 'admin', notify: false, now });
-        if (r.ok) deleted++;
+        if (r.ok) nf++;
       }
-      out(`reapplied deletions: ${deleted} famil${deleted === 1 ? 'y' : 'ies'} deleted again, ${ids.size - deleted} already gone`);
+      for (const pid of players) {
+        const p = await db.one('select family_id from players where id = $1', [pid]);
+        if (p && (await ctx.family.deletePlayer(p.family_id, pid, { actor: 'admin', now }))) np++;
+      }
+      for (const [pid, wid] of worlds.values()) {
+        // the same tombstone as a delete in the game (saves.mjs): other devices learn it too
+        const r = await db.query(
+          `update worlds set rev = rev + 1, client_updated_at = $3, meta = '{}'::jsonb, thumb = null, body = null, size = 0, stored = 0, deleted_at = $4, updated_at = $4
+            where player_id = $1 and world_id = $2 and body is not null`,
+          [pid, wid, now, new Date(now)],
+        );
+        nw += r.rowCount;
+      }
+      if (nf || np) ctx.billing?.invalidate?.();
+      out(`reapplied deletions: ${nf} famil${nf === 1 ? 'y' : 'ies'}, ${np} player${np === 1 ? '' : 's'} and ${nw} world${nw === 1 ? '' : 's'} deleted again; the rest were already gone`);
       return 0;
     }
 

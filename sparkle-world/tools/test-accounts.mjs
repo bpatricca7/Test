@@ -208,12 +208,12 @@ describe('database and migrations (§3)', () => {
   });
   after(async () => t && t.close());
 
-  test('migrate applies 001 once; running it again changes nothing', async () => {
+  test('migrate applies 001 and 002 once; running it again changes nothing', async () => {
     assert.deepEqual(await migrationStatus(t.db), { ok: false, current: 0, latest: listMigrations().length });
     const first = await migrate(t.db);
-    assert.deepEqual(first.applied, [1]);
+    assert.deepEqual(first.applied, [1, 2]);
     const second = await migrate(t.db);
-    assert.deepEqual(second, { applied: [], current: 1 });
+    assert.deepEqual(second, { applied: [], current: 2 });
     assert.equal((await migrationStatus(t.db)).ok, true);
     const tables = (await t.db.query("select tablename from pg_tables where schemaname = 'public' order by 1")).rows.map((r) => r.tablename);
     assert.deepEqual(tables, ['audit_log', 'deleted_families', 'families', 'gone_sessions', 'login_attempts', 'outbox', 'pair_codes', 'player_profiles', 'players', 'schema_migrations', 'sessions', 'stripe_events', 'subscriptions', 'worlds']);
@@ -427,8 +427,8 @@ describe('the /api router', () => {
     assert.deepEqual([hook.status, hook.data.raw], [200, '{"id":"evt_1"}']);
   });
   test('bodies: JSON objects only, 16 KB, gzip only where allowed, gzip bombs are 413', async () => {
-    assert.equal((await call('POST', '/api/auth/start', { headers: SAFE, body: '[1,2]', json: false })).status, 400);
-    assert.equal((await call('POST', '/api/auth/start', { headers: SAFE, body: '{nope', json: false })).status, 400);
+    assert.equal((await call('POST', '/api/auth/logout', { headers: SAFE, body: '[1,2]', json: false, session: 'parent' })).status, 400);
+    assert.equal((await call('POST', '/api/auth/logout', { headers: SAFE, body: '{nope', json: false, session: 'parent' })).status, 400);
     const big = await call('POST', '/api/auth/logout', { headers: SAFE, body: { x: 'a'.repeat(17000) }, session: 'parent' });
     assert.deepEqual([big.status, big.data], [413, { error: 'too_big' }]);
     const save = { id: 'w1', blocks: 'x'.repeat(1000) };
@@ -441,6 +441,16 @@ describe('the /api router', () => {
     const notGz = await call('PUT', `/api/players/${PID}/worlds/w1`, { headers: { ...SAFE, 'content-encoding': 'gzip' }, body: Buffer.from('plain'), session: 'parent' });
     assert.equal(notGz.status, 400);
     assert.equal((await call('POST', '/api/auth/logout', { headers: { ...SAFE, 'content-encoding': 'gzip' }, body: gzipSync('{}'), session: 'parent' })).status, 415, 'no gzip on plain JSON routes');
+  });
+  test("who may call comes before the body: a stranger's gzip bomb is never inflated (§4.8)", async () => {
+    const bomb = gzipSync(Buffer.alloc(1e6, 32));
+    const gz = { ...SAFE, 'content-encoding': 'gzip' };
+    const r = await call('PUT', `/api/players/${PID}/worlds/w1`, { headers: gz, body: bomb });
+    assert.deepEqual([r.status, r.data, r.headers.connection], [401, { error: 'signed_out' }, 'close'], 'signed out: 401 at once (before, the body was inflated first and answered 413)');
+    const other = await call('PUT', `/api/players/${OTHER}/worlds/w1`, { headers: gz, body: bomb, session: 'parent' });
+    assert.deepEqual([other.status, other.data], [404, { error: 'not_found' }], "another family's player: 404 before the body");
+    const own = await call('PUT', `/api/players/${PID}/worlds/w1`, { headers: gz, body: bomb, session: 'parent' });
+    assert.deepEqual([own.status, own.data], [413, { error: 'too_big' }], 'her own player: the body is read (in the thread pool) and refused as too big');
   });
   test('who: signed out, device, check, check within 5 minutes (§5.1)', async () => {
     assert.deepEqual((await call('GET', '/api/family')).data, { error: 'signed_out' });
@@ -567,7 +577,7 @@ describe('server hooks (§1.2, §8.1)', () => {
     assert.equal(r.headers.get('cross-origin-resource-policy'), 'same-origin');
     assert.equal((await fetch(base + '/play', { method: 'POST' })).status, 405, 'still 405 outside /api');
     const h = await app.accounts.health();
-    assert.deepEqual(h, { ok: true, db: true, migrations: 1 });
+    assert.deepEqual(h, { ok: true, db: true, migrations: listMigrations().length });
   });
 
   test('optional: a socket without cookie and p is a legacy socket; with p it is refused after the handshake', async () => {
@@ -1097,7 +1107,7 @@ describe('A: sign-in (§4.3, §12.7)', () => {
     assert.deepEqual((await b.post('/api/auth/verify', { code })).data, { next: '/account' });
   });
 
-  test('limits: per email 3 per 15 min and 10 a day, per address 5 at once, all 300 an hour, verify 30 an hour', async () => {
+  test('limits: per email 3 per 15 min and 10 a day, per address 5 at once, all 1000 an hour, verify 30 an hour', async () => {
     const email = 'limited@example.com';
     remember(email);
     const start = () => h.browser().post('/api/auth/start', { email });
@@ -1121,11 +1131,97 @@ describe('A: sign-in (§4.3, §12.7)', () => {
     assert.equal((await one.post('/api/auth/start', { email: 'ip5@example.com' })).status, 429, 'per address');
     const all = h.ctx.limits.limiter(AUTH_LIMITS.startAll);
     while (all.take('*'));
-    assert.equal((await h.browser().post('/api/auth/start', { email: 'everyone@example.com' })).status, 429, 'all 300 an hour');
+    assert.equal((await h.browser().post('/api/auth/start', { email: 'everyone@example.com' })).status, 429, 'all 1000 an hour');
+    assert.ok(spy.lines.some((l) => l.startsWith('api: limit auth-start-all (for everyone) is used up')), 'the log says so (never who)');
     const v = h.browser();
     for (let i = 0; i < 30; i++) assert.notEqual((await v.post('/api/auth/verify', { code: '123456' })).status, 429);
     const nv = await v.post('/api/auth/verify', { code: '123456' });
     assert.deepEqual([nv.status, nv.data], [429, { error: 'rate' }]);
+  });
+
+  test("one network (an IPv6 /48) cannot use up everyone's sign-in and pairing limits", async () => {
+    // a home's /56 holds 256 /64s: each counts as its own address, but all share the /48's limit
+    const at = (i) => {
+      const ip = `2001:db8:77:${i.toString(16)}::1`;
+      remember(ip);
+      return h.browser({ ip });
+    };
+    for (let i = 0; i < 10; i++) {
+      remember(`net${i}@example.com`);
+      assert.equal((await at(i).post('/api/auth/start', { email: `net${i}@example.com` })).status, 202);
+    }
+    const more = await at(0xff).post('/api/auth/start', { email: 'net10@example.com' });
+    assert.deepEqual([more.status, more.data], [429, { error: 'rate' }], 'the 11th at once from the same /48');
+    remember('real.parent@example.com');
+    assert.equal((await h.browser({ ip: '2001:db8:78::1' }).post('/api/auth/start', { email: 'real.parent@example.com' })).status, 202, 'a family on another network still signs in');
+    for (let i = 0; i < 20; i++) assert.equal((await at(0x100 + i).post('/api/auth/pair', { code: 'AAAA-AAAA' })).status, 400);
+    assert.equal((await at(0x200).post('/api/auth/pair', { code: 'AAAA-AAAA' })).status, 429, 'pairing: 20 per 10 minutes per network');
+    assert.equal((await h.browser({ ip: '2001:db8:79::1' }).post('/api/auth/pair', { code: 'AAAA-AAAA' })).status, 400, 'another network can still pair');
+    assert.ok(AUTH_LIMITS.startAll.count >= 1000 && AUTH_LIMITS.pairAll.count >= 1000, 'and the limits for everyone are far above that');
+  });
+
+  test('per email means per mailbox: name+tag@ and Gmail dots count as one', async () => {
+    const forms = ['sam.jones@gmail.com', 'samjones+1@gmail.com', 'S.am.Jones+x@googlemail.com', 'samjones+4@gmail.com'];
+    remember(...forms, ...forms.map((e) => e.toLowerCase()));
+    for (const e of forms.slice(0, 3)) assert.equal((await h.browser().post('/api/auth/start', { email: e })).status, 202, e);
+    const r = await h.browser().post('/api/auth/start', { email: forms[3] });
+    assert.deepEqual([r.status, r.data], [429, { error: 'rate' }], 'the 4th start for the same mailbox in 15 minutes');
+    remember('samjones+1@example.com', 'sam.jones@example.com');
+    assert.equal((await h.browser().post('/api/auth/start', { email: 'samjones+1@example.com' })).status, 202, 'another domain keeps its dots and tags apart from Gmail');
+    assert.equal((await h.browser().post('/api/auth/start', { email: 'sam.jones@example.com' })).status, 202);
+  });
+
+  test('wrong codes: 10 a day per email, over all its attempts; then codes stop until the day has passed, the link still works', async () => {
+    const email = 'guessed.mom@example.com';
+    remember(email);
+    const left = [];
+    for (let k = 0; k < 2; k++) {
+      const b = h.browser();
+      const st = await b.post('/api/auth/start', { email });
+      assert.equal(st.status, 202, st.text);
+      const { code } = await h.lastCode(email);
+      const wrong = code === '000000' ? '111111' : '000000';
+      for (let i = 0; i < 5; i++) left.push((await b.post('/api/auth/verify', { code: wrong })).data.triesLeft);
+    }
+    assert.deepEqual(left, [4, 3, 2, 1, 0, 4, 3, 2, 1, 0]);
+    const b = h.browser();
+    await b.post('/api/auth/start', { email });
+    const { code, mail } = await h.lastCode(email);
+    const r = await b.post('/api/auth/verify', { code });
+    assert.deepEqual([r.status, r.data], [410, { error: 'expired' }], 'even the right code, for a day');
+    const link = await h.browser().post('/api/auth/verify', { token: h.link(mail) });
+    assert.equal(link.status, 200, 'the link in the email (which cannot be guessed) still signs in');
+    h.setClock(DAY + HOUR);
+    const next = h.browser();
+    await next.post('/api/auth/start', { email });
+    assert.equal((await next.post('/api/auth/verify', { code: (await h.lastCode(email)).code })).status, 200, 'a day later codes work again');
+  });
+
+  test("a link opened where another family is signed in: it says whose sign-in it is and signs the device out only when asked (login CSRF)", async () => {
+    const v = await setupFamily(h, 'victim.mom@example.com', { players: ['Wrenny'] });
+    const kid = await pairKid(h, v.b);
+    const stranger = 'stranger.dad@example.com';
+    remember(stranger);
+    await h.browser().post('/api/auth/start', { email: stranger, next: '/play' });
+    const token = h.link(await h.lastMail(stranger));
+    const peek = await kid.post('/api/auth/verify', { token, peek: true });
+    assert.deepEqual([peek.status, peek.data], [200, { email: 's•••@example.com', replacing: true }]);
+    assert.equal(await count(t.db, 'select count(*) as n from login_attempts where link_hash is not null and used_at is null and email = $1', [stranger]), 1, 'asking uses nothing');
+    const refused = await kid.post('/api/auth/verify', { token });
+    assert.deepEqual([refused.status, refused.data], [409, { error: 'conflict', replacing: true }]);
+    let me = (await kid.get('/api/me')).data;
+    assert.deepEqual([me.signedIn, me.kind, me.players.map((p) => p.nickname)], [true, 'device', ['Wrenny']], 'the kid device is still hers');
+    assert.equal((await h.browser().post('/api/auth/verify', { token, peek: true })).data.replacing, false, 'a browser signed in nowhere replaces nothing');
+    const ok = await kid.post('/api/auth/verify', { token, replace: true });
+    assert.deepEqual([ok.status, ok.data], [200, { next: '/play' }], 'after the warning (and the grown-up question), it signs in');
+    me = (await kid.get('/api/me')).data;
+    assert.deepEqual([me.kind, me.players], ['parent', []]);
+    // her own link, on her own browser: nothing to warn about
+    await h.browser().post('/api/auth/start', { email: 'victim.mom@example.com' });
+    const own = h.link(await h.lastMail('victim.mom@example.com'));
+    assert.equal((await v.b.post('/api/auth/verify', { token: own, peek: true })).data.replacing, false);
+    assert.equal((await v.b.post('/api/auth/verify', { token: own })).status, 200);
+    assert.equal((await kid.post('/api/auth/verify', { token: own, peek: true })).status, 410, 'a used link: expired');
   });
 });
 
@@ -1365,6 +1461,31 @@ describe('A: sessions, the email check, kid devices (§4.4–4.6, §12.7)', () =
     assert.equal((await stale.get('/api/me')).status, 401);
   });
 
+  test('a device locked to a child who is then deleted stays locked: it sees nobody, never her brothers and sisters', async () => {
+    const { b, ids } = await setupFamily(h, 'locked.mom@example.com', { players: ['Mira', 'Lilac'] });
+    const kid = await pairKid(h, b, { lockPlayer: ids.Mira });
+    let me = (await kid.get('/api/me')).data;
+    assert.deepEqual([me.locked, me.lockPlayer, me.players.map((p) => p.nickname)], [true, ids.Mira, ['Mira']]);
+    assert.equal((await kid.get(`/api/players/${ids.Lilac}/worlds`)).status, 404, 'locked: her sister is not hers (the session is cached now)');
+    assert.equal((await b.del(`/api/players/${ids.Mira}`, { confirm: 'Mira' })).status, 200);
+    me = (await kid.get('/api/me')).data;
+    assert.deepEqual([me.locked, me.lockPlayer, me.players], [true, null, []], 'locked to nobody now');
+    assert.deepEqual((await kid.get(`/api/players/${ids.Mira}/profile`)).data, { error: 'player_gone' }, 'her own routes answer 410, so the device wipes her copy');
+    assert.equal((await kid.get(`/api/players/${ids.Lilac}/worlds`)).status, 404);
+    const put = await kid.call('PUT', `/api/players/${ids.Lilac}/profile`, { body: { coins: 999999, updatedAt: 1 }, headers: { 'if-match': '*' } });
+    assert.deepEqual([put.status, put.data], [404, { error: 'not_found' }]);
+    assert.equal((await wsOpen(h, kid, ids.Lilac)).closed, 4405, 'and the relay does not let it play as her sister');
+    const dev = (await b.get('/api/devices')).data.find((d) => d.kind === 'device');
+    assert.deepEqual([dev.locked, dev.lockPlayer], [true, null], 'the Family page shows it locked to nobody');
+    const unlocked = await b.patch(`/api/devices/${dev.id}`, { lockPlayer: null });
+    assert.deepEqual([unlocked.data.locked, unlocked.data.lockPlayer], [false, null], 'the grown-up unlocks it on purpose');
+    me = (await kid.get('/api/me')).data;
+    assert.deepEqual([me.locked, me.players.map((p) => p.nickname)], [false, ['Lilac']]);
+    const relocked = await b.patch(`/api/devices/${dev.id}`, { lockPlayer: ids.Lilac });
+    assert.deepEqual([relocked.data.locked, relocked.data.lockPlayer], [true, ids.Lilac]);
+    assert.ok(spy.lines.includes(`deletion-journal player=${ids.Mira}`), 'the delete is journaled (ids only) for the restore runbook');
+  });
+
   test('logout and logout everywhere', async () => {
     const email = 'bye@example.com';
     const { b } = await setupFamily(h, email);
@@ -1528,6 +1649,28 @@ describe('A: the notice, consent, players and their switches (§5.2, §6.7, §11
     } finally {
       h.ctx.events.off('player', onPlayer);
     }
+  });
+
+  test("the consent records name the notice the server shows; an agreement to an older notice is asked again (§11.3)", async () => {
+    const { b, familyId, ids } = await setupFamily(h, 'notice.dad@example.com', { players: ['Fern'] });
+    const bad = await b.patch(`/api/players/${ids.Fern}`, { friends: true, notice: 99 });
+    assert.deepEqual([bad.status, bad.data], [409, { error: 'conflict', noticeVersion: 1 }], 'a page showing another notice is told so, nothing recorded');
+    assert.equal((await b.patch(`/api/players/${ids.Fern}`, { friends: true })).status, 200);
+    const on = await t.db.one("select detail from audit_log where family_id = $1 and action = 'friends.on'", [familyId]);
+    assert.deepEqual(on.detail, { v: 1 }, "the server's own version, never one the page chose");
+    // a change that mattered (NOTICE_MIN_VERSION above what she agreed to): simulated with an
+    // agreement to version 0
+    await t.db.query('update families set notice_version = 0 where id = $1', [familyId]);
+    const fam = (await b.get('/api/family')).data;
+    assert.deepEqual([fam.consent.level, fam.consent.noticeVersion, fam.config.noticeVersion, fam.config.noticeMinVersion], ['verified', 0, 1, 1]);
+    remember('Moss');
+    assert.deepEqual((await b.post('/api/players', { nickname: 'Moss' })).data, { error: 'consent_required' }, 'no new player until she agrees again');
+    assert.deepEqual((await b.patch(`/api/players/${ids.Fern}`, { walkie: true })).data, { error: 'consent_required' }, 'no switch goes on');
+    assert.equal((await b.patch(`/api/players/${ids.Fern}`, { friends: false })).status, 200, 'switching off never waits');
+    assert.equal((await b.post('/api/consent', { noticeVersion: 1, agree: true })).status, 200);
+    assert.equal((await b.post('/api/players', { nickname: 'Moss' })).status, 201, 'agreed again: on as before');
+    const acts = (await t.db.query("select detail from audit_log where family_id = $1 and action = 'consent.email_plus' order by id", [familyId])).rows.map((r) => r.detail);
+    assert.deepEqual(acts, [{ v: 1 }, { v: 1 }], 'the second agreement is recorded too');
   });
 
   test('free-join (with SW_MP_CONSENT=email_plus): a family without a plan adds players who may only join', async () => {
@@ -2181,6 +2324,41 @@ describe('A: jobs — retention, lapse and purge, reminders, the daily line (§3
     assert.deepEqual(acts, ['plan.lapsed', 'plan.resumed']);
   });
 
+  test("a second lapse after a comeback: warned and purged again 90 days on; a device locked to a purged child sees nobody", async () => {
+    const email = 'twice.lapsed@example.com';
+    const { b, familyId, ids } = await setupFamily(h, email, { players: ['Hazel'] });
+    const kid = await pairKid(h, b, { lockPlayer: ids.Hazel });
+    const warnings = async () => (await h.mail(email)).filter((m) => m.template === 'lapse_warning').length;
+    // the first lapse, straight to its purge
+    await at(24 * DAY);
+    const first = +(await h.family(email)).lapsed_at;
+    assert.equal((await at(first - Date.now() + 90 * DAY + HOUR)).players, 1);
+    assert.ok((await h.family(email)).kid_data_purged_at instanceof Date);
+    const me = (await kid.get('/api/me')).data;
+    assert.deepEqual([me.locked, me.lockPlayer, me.players], [true, null, []], "the purge does not unlock the device: it sees nobody");
+    // she comes back: a new plan, a new child
+    const back = first - Date.now() + 100 * DAY;
+    h.setClock(back);
+    await entitle(h, familyId);
+    assert.equal((await at(back + HOUR)).resumed, 1);
+    let f = await h.family(email);
+    assert.deepEqual([f.lapsed_at, f.purge_after, f.kid_data_purged_at], [null, null, null], 'the comeback clears the last purge too');
+    remember('Ivy');
+    await t.db.query("insert into players (family_id, nickname) values ($1, 'Ivy')", [familyId]);
+    const before = await warnings();
+    // the second lapse: the same 90 days, the same two warnings, then the purge
+    assert.equal((await at(back + 24 * DAY)).lapsed, 1);
+    f = await h.family(email);
+    const second = +f.lapsed_at;
+    assert.deepEqual([f.kid_data_purged_at, +f.purge_after - second], [null, 90 * DAY]);
+    await at(second - Date.now() + 60 * DAY + HOUR);
+    assert.equal(await warnings(), before + 1, '30 days before');
+    await at(second - Date.now() + 83 * DAY + HOUR);
+    assert.equal(await warnings(), before + 2, '7 days before');
+    assert.equal((await at(second - Date.now() + 90 * DAY + HOUR)).players, 1, 'purged at +90 days, not 12 months later');
+    assert.equal(await count(t.db, 'select count(*) as n from players where family_id = $1', [familyId]), 0);
+  });
+
   test('reminders: the yearly one on the anniversary; "still using it?" after 24 months without use, once', async () => {
     const email = 'yearly@example.com';
     await setupFamily(h, email);
@@ -2325,10 +2503,20 @@ describe('A: the admin CLI (§13.8)', () => {
     ]);
     await setupFamily(h, 'taken@example.com', { entitled: false });
     assert.equal((await run(['change-email', email, 'taken@example.com'])).code, 1);
+    // an email change ends every session and pair code of the family (it often follows a
+    // taken-over mailbox)
+    await entitle(h, familyId);
+    const code = (await b.post('/api/devices/pair-code', {})).data.code;
+    remember(code, code.replace('-', ''));
+    const tablet = await pairKid(h, b);
     remember('new.address@example.com');
     r = await run(['change-email', email, 'New.Address@example.com']);
     assert.equal(r.code, 0);
+    assert.match(r.text, /2 sessions signed out and its pair codes ended/);
     assert.equal((await h.family('new.address@example.com')).id, familyId);
+    assert.deepEqual([(await b.get('/api/me')).status, (await tablet.get('/api/me')).status], [401, 401], "the parent's browser and the kid device are signed out");
+    assert.equal(await count(t.db, 'select count(*) as n from pair_codes where family_id = $1', [familyId]), 0, 'no pair code is left');
+    assert.equal((await h.browser().post('/api/auth/pair', { code })).status, 400, 'the old code no longer pairs');
     assert.equal((await run(['show', 'nobody@example.com'])).text, 'no family with that email');
   });
 
@@ -2356,13 +2544,30 @@ describe('A: the admin CLI (§13.8)', () => {
     assert.equal((await h.mail(email)).at(-1).template, 'account_deleted');
     const acts = (await t.db.query("select action from audit_log where family_id = $1 and actor = 'admin' order by id", [familyId])).rows.map((x) => x.action);
     assert.deepEqual(acts, ['export.family', 'family.delete', 'family.deleted']);
-    assert.match((await run(['sign-out-all'])).text, /^signed out \d+ sessions? \(everyone\)/);
+    // everyone: only after typing EVERYONE
+    const other = await setupFamily(h, 'everyone.else@example.com', { entitled: false });
+    const nobody = await run(['sign-out-all'], { confirm: async () => 'yes' });
+    assert.deepEqual([nobody.code, nobody.text], [1, 'nobody was signed out']);
+    assert.equal((await other.b.get('/api/me')).data.signedIn, true, 'a forgotten email signs out nobody by itself');
+    assert.match((await run(['sign-out-all'], { confirm: async () => ' EVERYONE ' })).text, /^signed out \d+ sessions? \(everyone\)/);
+    assert.equal((await other.b.get('/api/me')).status, 401);
   });
 
-  test('reapply-deletions (Stripe events and the journal), purge-now, stats, usage', async () => {
+  test('comp warns when the family still has a plan that renews (and is charged)', async () => {
+    const email = 'comp.paying@example.com';
+    const { familyId } = await setupFamily(h, email);
+    const r = await run(['comp', email, '2027-06-30']);
+    assert.equal(r.code, 0);
+    assert.match(r.text, new RegExp(`warning: subscription sub_${familyId.slice(0, 8)} still renews and is still charged`));
+  });
+
+  test('reapply-deletions (our own Stripe deletions and the journal: families, players, worlds), purge-now, stats, usage', async () => {
     const x = await setupFamily(h, 'restored.x@example.com', { entitled: false });
     const y = await setupFamily(h, 'restored.y@example.com', { entitled: false });
-    const z = await setupFamily(h, 'restored.z@example.com', { entitled: false });
+    const z = await setupFamily(h, 'restored.z@example.com', { players: ['Juniper', 'Posy'] });
+    const w = await setupFamily(h, 'handdeleted.w@example.com', { entitled: false });
+    await putWorld(t.db, z.ids.Posy, 'w-keep', { name: 'Keep Garden' });
+    await putWorld(t.db, z.ids.Posy, 'w-gone', { name: 'Gone Garden' });
     const since = new Date(Date.now() - DAY).toISOString();
     const asked = [];
     const saved = h.ctx.stripe;
@@ -2371,25 +2576,43 @@ describe('A: the admin CLI (§13.8)', () => {
         list(params) {
           asked.push(params);
           return (async function* () {
-            yield { data: { object: { id: 'cus_x', metadata: { family_id: x.familyId } } } };
-            yield { data: { object: { id: 'cus_q', metadata: {} } } };
+            // our own family delete marks the customer first (billing.cancelAndDelete)
+            yield { id: 'evt_x', data: { object: { id: 'cus_x', metadata: { family_id: x.familyId, sw_family_deleted: '1' } } } };
+            // a customer the dad deleted by hand in the Dashboard: its family must stay
+            yield { id: 'evt_w', data: { object: { id: 'cus_w', metadata: { family_id: w.familyId } } } };
+            yield { id: 'evt_q', data: { object: { id: 'cus_q', metadata: {} } } };
           })();
         },
       },
     };
     try {
-      const journal = `2026-09-28T10:00:00Z deletion-journal family=${y.familyId}\nnoise\n${randomUUID()}\n`;
-      const r = await run(['reapply-deletions', '--since', since, '--ids', 'journal.txt'], { readFile: (f) => (f === 'journal.txt' ? journal : '') });
+      // the journal lines a restore brings back: a family, a child and a world (ids only)
+      const journal = `2026-09-28T10:00:00Z deletion-journal family=${y.familyId}\nnoise\n${randomUUID()}\n` +
+        `2026-09-28T10:01:00Z deletion-journal player=${z.ids.Juniper}\n2026-09-28T10:02:00Z deletion-journal world=${z.ids.Posy}/w-gone\n`;
+      const opts = { readFile: (f) => (f === 'journal.txt' ? journal : '') };
+      const dry = await run(['reapply-deletions', '--since', since, '--ids', 'journal.txt', '--dry-run'], opts);
+      assert.equal(dry.code, 0, dry.text);
+      assert.match(dry.text, /3 families, 1 player, 1 world to delete again/);
+      assert.match(dry.text, new RegExp(`not reapplied \\(deleted by hand in Stripe, check it\\): event evt_w customer cus_w family ${w.familyId}`));
+      assert.ok(await h.family('restored.x@example.com'), 'a dry run deletes nothing');
+      const wrong = await run(['reapply-deletions', '--since', since, '--ids', 'journal.txt'], { ...opts, confirm: async () => '4' });
+      assert.deepEqual([wrong.code, wrong.lines.at(-1)], [1, 'nothing deleted: the number did not match']);
+      assert.ok(await h.family('restored.y@example.com'));
+      const r = await run(['reapply-deletions', '--since', since, '--ids', 'journal.txt'], { ...opts, confirm: async () => '5' });
       assert.equal(r.code, 0, r.text);
-      assert.match(r.text, /reapplied deletions: 2 families deleted again, 1 already gone/);
-      assert.deepEqual(asked, [{ type: 'customer.deleted', created: { gte: Math.floor(Date.parse(since) / 1000) }, limit: 100 }]);
+      assert.match(r.text, /reapplied deletions: 2 families, 1 player and 1 world deleted again; the rest were already gone/);
+      assert.deepEqual(asked.at(-1), { type: 'customer.deleted', created: { gte: Math.floor(Date.parse(since) / 1000) }, limit: 100 });
     } finally {
       h.ctx.stripe = saved;
     }
     assert.equal(await h.family('restored.x@example.com'), null);
     assert.equal(await h.family('restored.y@example.com'), null);
+    assert.ok(await h.family('handdeleted.w@example.com'), 'a customer deleted by hand in Stripe never deletes its family');
     assert.ok(await h.family('restored.z@example.com'));
-    assert.ok(z);
+    assert.equal(await count(t.db, 'select count(*) as n from players where id = $1', [z.ids.Juniper]), 0, 'the child deleted after the backup is deleted again');
+    const ws = (await t.db.query('select world_id, body is null as tomb, meta from worlds where player_id = $1 order by world_id', [z.ids.Posy])).rows;
+    assert.deepEqual(ws.map((r) => [r.world_id, r.tomb, r.tomb ? r.meta : null]), [['w-gone', true, {}], ['w-keep', false, null]], 'the world deleted after the backup is a tombstone again (no name kept), the other stays');
+    assert.ok(spy.lines.some((l) => l === `deletion-journal player=${z.ids.Juniper}`), 'the player delete is journaled again');
     assert.equal((await run(['reapply-deletions'])).code, 2);
     const p = await run(['purge-now']);
     assert.equal(p.code, 0);

@@ -14,8 +14,11 @@
 //     recheck(claims) → { ok, claims?, code? }                         (§8.4, cached ≤ 60 s)
 //     forget(hashHex), clearCaches()
 //   }
-//   session = { hash (Buffer), id (8 hex), kind: 'parent'|'device', familyId, lockPlayer, label,
-//               createdAt, lastSeenAt, expiresAt, idleExpiresAt, elevatedUntil, elevatedAt }  (ms)
+//   session = { hash (Buffer), id (8 hex), kind: 'parent'|'device', familyId, locked, lockPlayer,
+//               label, createdAt, lastSeenAt, expiresAt, idleExpiresAt, elevatedUntil, elevatedAt }  (ms)
+//     locked: a kid device set up for one child. It stays locked when that child is deleted
+//     (lock_player then becomes null, migration 002): such a device sees no player at all,
+//     never every sibling. lockedTo(s) is the one test every route and the relay use.
 //   claims  = { sessionHash (hex), familyId, playerId, nickname, canHost, canBuild, walkie, until }
 //   events:  'session' { sessionHash (hex) } when one is revoked or its lock changes.
 //
@@ -26,8 +29,11 @@
 // while the database is down an entry up to 30 minutes old is used.
 
 import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
-import { httpError, cookieOf, isUuid } from './http.mjs';
+import { httpError, cookieOf, isUuid, lockedAway } from './http.mjs';
+
+export { lockedAway };
 import { accessOf } from './family.mjs';
+import { maskEmail } from './mail.mjs';
 
 const MIN = 60e3;
 const HOUR = 60 * MIN;
@@ -47,18 +53,32 @@ const CACHE_MS = 60e3;
 const STALE_MS = 30 * MIN;
 const LOGIN_COOKIE_S = 900;
 
-/** The rate limits of §4.8 that belong to these routes (the router applies them). */
+/**
+ * The rate limits of §4.8 that belong to these routes (the router applies them, in order).
+ * Per address (IPv6 by /64), then per network (IPv6 by /48, IPv4 as is), then for everyone:
+ * one home's allocation (a /56 holds 256 /64s) runs into its own network's limit long before
+ * it could use up everyone's, so it cannot stop other families from signing in or pairing.
+ * The limits for everyone stay well above real use; when one is used up the log says so.
+ */
 export const AUTH_LIMITS = Object.freeze({
   startIp: { name: 'auth-start-ip', count: 10, perMs: HOUR, burst: 5, key: 'ip' },
-  startAll: { name: 'auth-start-all', count: 300, perMs: HOUR, key: 'global' },
+  startNet: { name: 'auth-start-net', count: 20, perMs: HOUR, burst: 10, key: 'net' },
+  startAll: { name: 'auth-start-all', count: 1000, perMs: HOUR, key: 'global' },
   verifyIp: { name: 'auth-verify-ip', count: 30, perMs: HOUR, key: 'ip' },
   checkFamily: { name: 'auth-check-family', count: 5, perMs: HOUR, key: 'family' },
   pairIp: { name: 'auth-pair-ip', count: 10, perMs: 10 * MIN, key: 'ip' },
-  pairAll: { name: 'auth-pair-all', count: 200, perMs: HOUR, key: 'global' },
+  pairNet: { name: 'auth-pair-net', count: 20, perMs: 10 * MIN, key: 'net' },
+  pairAll: { name: 'auth-pair-all', count: 1000, perMs: HOUR, key: 'global' },
   pairCodeFamily: { name: 'pair-code-family', count: 10, perMs: HOUR, key: 'family' },
 });
-/** Per email, counted in login_attempts so it survives restarts. */
-export const EMAIL_LIMITS = Object.freeze({ short: { count: 3, perMs: 15 * MIN }, day: { count: 10, perMs: DAY } });
+/**
+ * Per email, counted in login_attempts so it survives restarts, on the email's rate key
+ * (emailRateKey: name+tag@ and Gmail's dots count as the same mailbox): sign-ins started
+ * (3 per 15 minutes, 10 a day), and wrong codes (10 a day, sign-in and email check together;
+ * after that codes for that email stop working until the day has passed, while the link in
+ * the email still works: it cannot be guessed).
+ */
+export const EMAIL_LIMITS = Object.freeze({ short: { count: 3, perMs: 15 * MIN }, day: { count: 10, perMs: DAY }, wrongCodes: { count: 10, perMs: DAY } });
 
 // ---------------------------------------------------------------------------------------------
 // small helpers (also used by family.mjs, admin.mjs and the tests)
@@ -82,6 +102,24 @@ export function normalizeEmail(s) {
   if (!/^[^\s@<>()[\]\\,;:"]+@[^\s@<>()[\]\\,;:"]+\.[^\s@<>()[\]\\,;:".]{2,}$/u.test(e)) return null;
   if (/[\u0000-\u001f\u007f]/.test(e) || e.includes('..')) return null;
   return e;
+}
+
+/**
+ * The mailbox an address reaches, for counting per email: 'name+tag@x' is 'name@x', and at
+ * Gmail dots do not count ('j.doe@gmail.com' = 'jdoe@gmail.com' = 'jdoe@googlemail.com').
+ * Only for limits (login_attempts.email_key); the family's email is always the one typed.
+ */
+export function emailRateKey(email) {
+  const at = email.lastIndexOf('@');
+  let local = email.slice(0, at);
+  let domain = email.slice(at + 1);
+  const plus = local.indexOf('+');
+  if (plus > 0) local = local.slice(0, plus);
+  if (domain === 'gmail.com' || domain === 'googlemail.com') {
+    local = local.replace(/\./g, '') || local;
+    domain = 'gmail.com';
+  }
+  return local + '@' + domain;
 }
 
 const NEXT_RE = /^\/(account|play)(\?[A-Za-z0-9=&%_-]{0,200})?$/;
@@ -134,6 +172,8 @@ function toSession(row) {
     id: sidOf(row.id_hash),
     kind: row.kind,
     familyId: row.family_id,
+    // an old deployment (side by side during a deploy) writes lock_player without `locked`
+    locked: !!row.locked || !!row.lock_player,
     lockPlayer: row.lock_player || null,
     label: row.label || null,
     createdAt: ms(row.created_at),
@@ -259,9 +299,9 @@ export function createSessions(ctx) {
     const life = kind === 'parent' ? PARENT_LIFE_MS : DEVICE_LIFE_MS;
     const idle = kind === 'parent' ? PARENT_IDLE_MS : DEVICE_LIFE_MS;
     await q.query(
-      `insert into sessions (id_hash, family_id, kind, label, lock_player, created_at, last_seen_at, expires_at, idle_expires_at, elevated_until, elevated_at)
-       values ($1, $2, $3, $4, $5, $6, $6, $7, $8, $9, $10)`,
-      [hash, familyId, kind, label, lockPlayer, new Date(now), new Date(now + life), new Date(now + idle), elevated ? new Date(now + ELEVATE_MS) : null, elevated ? new Date(now) : null],
+      `insert into sessions (id_hash, family_id, kind, label, lock_player, locked, created_at, last_seen_at, expires_at, idle_expires_at, elevated_until, elevated_at)
+       values ($1, $2, $3, $4, $5, $6, $7, $7, $8, $9, $10, $11)`,
+      [hash, familyId, kind, label, lockPlayer, lockPlayer !== null, new Date(now), new Date(now + life), new Date(now + idle), elevated ? new Date(now + ELEVATE_MS) : null, elevated ? new Date(now) : null],
     );
     return { token, hash, cookie: { name: 'sess', value: token, maxAge: life / 1000 } };
   }
@@ -286,7 +326,7 @@ export function createSessions(ctx) {
   async function computeAccess(hash, playerId, now) {
     const s = await byHash(hash, now);
     if (!s) return { ok: false, code: 'signed_out' };
-    if (s.lockPlayer && s.lockPlayer !== playerId) return { ok: false, code: 'player_gone', familyId: s.familyId };
+    if (lockedAway(s, playerId)) return { ok: false, code: 'player_gone', familyId: s.familyId };
     const p = await ctx.family.player(playerId);
     if (!p || p.family_id !== s.familyId) return { ok: false, code: 'player_gone', familyId: s.familyId };
     const ent = await ctx.billing.entitlementFor(s.familyId);
@@ -367,7 +407,7 @@ export function routes(ctx) {
   const { cfg, db, clock, events } = ctx;
   const sessions = () => ctx.sessions;
   const L = AUTH_LIMITS;
-  const emailKey = (email) => hmac(cfg.keys.email, email);
+  const emailKey = (email) => hmac(cfg.keys.email, emailRateKey(email));
   const codeMac = (attemptId, code) => hmac(cfg.keys.code, attemptId + code);
   const pairMac = (code) => hmac(cfg.keys.pair, code);
   const clearLogin = { name: 'login', value: null };
@@ -433,16 +473,39 @@ export function routes(ctx) {
     return { status: 202, json: { ok: true }, cookies: [{ name: 'login', value: attemptId, maxAge: LOGIN_COOKIE_S }] };
   }
 
-  // POST /api/auth/verify {code} | {token} → {next} (sign-in) or {elevatedUntil} (check)
+  /**
+   * Is this a link opened in a browser that is signed in to ANOTHER family (a kid's device,
+   * say), which signing in would sign out? False with no live session here, or one of the
+   * family the link signs in to.
+   */
+  async function replacing(q, a, x) {
+    if (!x.session) return false;
+    const fam = await q.one('select id from families where email = $1', [a.email]);
+    return !fam || fam.id !== x.session.familyId;
+  }
+
+  // POST /api/auth/verify {code} | {token, peek?, replace?} → {next} (sign-in) or
+  // {elevatedUntil} (check); {token, peek: true} → {email (masked), replacing} and uses nothing
   async function verify(req, x) {
     const now = x.now;
     const body = x.body || {};
     let r;
     if (typeof body.token === 'string') {
       if (!/^[A-Za-z0-9_-]{20,100}$/.test(body.token)) throw httpError(410, 'expired');
+      const live = (a) => a && !a.used_at && ms(a.expires_at) > now && a.tries < MAX_CODE_TRIES;
+      if (body.peek === true) {
+        // the link page says whose sign-in this is before anything happens (login CSRF: a
+        // stranger's link opened on a kid's device must not quietly take the device over)
+        const a = await db.one("select * from login_attempts where link_hash = $1 and purpose = 'signin'", [sha256(body.token)]);
+        if (!live(a)) throw httpError(410, 'expired');
+        return { json: { email: maskEmail(a.email), replacing: await replacing(db, a, x) } };
+      }
       r = await db.tx(async (q) => {
         const a = await q.one("select * from login_attempts where link_hash = $1 and purpose = 'signin' for update", [sha256(body.token)]);
-        if (!a || a.used_at || ms(a.expires_at) <= now || a.tries >= MAX_CODE_TRIES) return { expired: true };
+        if (!live(a)) return { expired: true };
+        // signed in to another family here: only after the page said so (and asked a grown-up);
+        // the link stays good until then
+        if (body.replace !== true && (await replacing(q, a, x))) return { error: httpError(409, 'conflict', { replacing: true }) };
         await q.query('update login_attempts set used_at = $2 where id_hash = $1', [a.id_hash, new Date(now)]);
         return finish(q, a, req, x);
       });
@@ -453,11 +516,15 @@ export function routes(ctx) {
       r = await db.tx(async (q) => {
         const a = await q.one('select * from login_attempts where id_hash = $1 for update', [sha256(attemptId)]);
         if (!a || a.used_at || ms(a.expires_at) <= now || a.tries >= MAX_CODE_TRIES) return { expired: true };
+        // wrong codes per email (§4.8): 10 a day, whichever attempts they were typed into
+        const W = EMAIL_LIMITS.wrongCodes;
+        const wrong = (await q.one('select coalesce(sum(tries), 0) as n from login_attempts where email_key = $1 and created_at > $2', [a.email_key, new Date(now - W.perMs)])).n;
+        if (wrong >= W.count) return { expired: true };
         const good = /^\d{6}$/.test(code) && timingSafeEqual(codeMac(attemptId, code), Buffer.from(a.code_mac));
         if (!good) {
           const tries = a.tries + 1;
           await q.query('update login_attempts set tries = $2 where id_hash = $1', [a.id_hash, tries]);
-          return { bad: true, triesLeft: Math.max(0, MAX_CODE_TRIES - tries) };
+          return { bad: true, triesLeft: Math.max(0, Math.min(MAX_CODE_TRIES - tries, W.count - wrong - 1)) };
         }
         await q.query('update login_attempts set used_at = $2 where id_hash = $1', [a.id_hash, new Date(now)]);
         return finish(q, a, req, x);
@@ -603,6 +670,8 @@ export function routes(ctx) {
     createdAt: ms(row.created_at),
     current: !!current && Buffer.from(row.id_hash).equals(current),
     lockPlayer: row.lock_player || null,
+    // locked to a child who was deleted: it plays as nobody until the parent picks again
+    locked: !!row.locked || !!row.lock_player,
   });
 
   async function findDevice(x) {
@@ -642,7 +711,9 @@ export function routes(ctx) {
       const lock = await lockablePlayer(x.session.familyId, x.body.lockPlayer);
       params.push(lock);
       sets.push(`lock_player = $${params.length}`);
-      lockChanged = (row.lock_player || null) !== lock;
+      // the parent's choice: a player locks it, "Anyone in the family" (null) unlocks it
+      sets.push(`locked = ${lock !== null ? 'true' : 'false'}`);
+      lockChanged = (row.lock_player || null) !== lock || (!!row.locked || !!row.lock_player) !== (lock !== null);
     }
     if (!sets.length) return { json: deviceJson(row, x.session.hash) };
     const upd = await db.one(`update sessions set ${sets.join(', ')} where id_hash = $1 returning *`, params);
@@ -664,12 +735,12 @@ export function routes(ctx) {
   }
 
   return [
-    { method: 'POST', path: '/api/auth/start', who: 'anyone', limit: [L.startIp, L.startAll], handler: start },
+    { method: 'POST', path: '/api/auth/start', who: 'anyone', limit: [L.startIp, L.startNet, L.startAll], handler: start },
     { method: 'POST', path: '/api/auth/verify', who: 'anyone', limit: [L.verifyIp], handler: verify },
     { method: 'POST', path: '/api/auth/check', who: 'parent', limit: [L.checkFamily], handler: check },
     { method: 'POST', path: '/api/auth/logout', who: 'session', handler: logout },
     { method: 'POST', path: '/api/auth/logout-all', who: 'parent+check', handler: logoutAll },
-    { method: 'POST', path: '/api/auth/pair', who: 'anyone', limit: [L.pairIp, L.pairAll], handler: pair },
+    { method: 'POST', path: '/api/auth/pair', who: 'anyone', limit: [L.pairIp, L.pairNet, L.pairAll], handler: pair },
     { method: 'POST', path: '/api/devices/pair-code', who: 'parent+check', limit: [L.pairCodeFamily], handler: pairCode },
     { method: 'POST', path: '/api/devices/this', who: 'parent', handler: thisDevice },
     { method: 'GET', path: '/api/devices', who: 'parent', handler: listDevices },

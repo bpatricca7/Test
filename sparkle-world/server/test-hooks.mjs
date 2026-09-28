@@ -22,7 +22,11 @@ function dropCaches(ctx) {
 
 export function routes(ctx) {
   async function mail(req, x) {
-    await ctx.jobs?.run('outbox');
+    // everything that is due (the outbox job sends 20 a run: a test may have queued more)
+    for (let k = 0; k < 50; k++) {
+      const r = await ctx.jobs?.run('outbox');
+      if (!r || r.skipped || (r.sent || 0) + (r.failed || 0) + (r.stopped || 0) < 20) break;
+    }
     const to = typeof x.query.to === 'string' && x.query.to ? x.query.to.trim().normalize('NFC').toLowerCase() : null;
     const list = (ctx.mail.captured || []).filter((m) => !to || m.to === to);
     return { json: list.map((m) => ({ template: m.template, to: m.to, subject: m.subject, text: m.text, at: m.at })) };

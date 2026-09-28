@@ -7,6 +7,8 @@
 //     entitled, until,                 // until: ms, or null when not entitled
 //     trialEnd, periodEnd, graceUntil, // ms or null, from the subscription that counts
 //     cancelAtPeriodEnd,
+//     subState,                        // the subscription's own state while it is good (also
+//                                      //   under a free pass), else null
 //     consent: 'none' | 'email_plus' | 'verified',
 //     friendsConsentOk,                // cfg.mpConsent === 'email_plus' ? consent !== 'none' : consent === 'verified'
 //     walkieConsentOk,                 // consent === 'verified' (always)
@@ -131,6 +133,9 @@ export function entitlementOf({ family, subs = [], now, cfg = {} }) {
     periodEnd: sub ? toMs(get(sub, 'current_period_end')) : null,
     graceUntil: sub && get(sub, 'status') === 'past_due' ? at.graceUntil ?? null : null,
     cancelAtPeriodEnd: sub ? get(sub, 'cancel_at_period_end') === true : false,
+    // the subscription's own state while it is good, also under a free pass (the Family page
+    // still offers Manage and Cancel while a comp family's plan renews): null when none is
+    subState: at.entitled ? at.state : null,
     consent,
     friendsConsentOk: mpConsent === 'email_plus' ? consent !== 'none' : consent === 'verified',
     walkieConsentOk: consent === 'verified',

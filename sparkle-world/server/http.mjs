@@ -7,7 +7,10 @@
 //     path: '/api/players/:pid/worlds/:wid',            // :name segments become x.params.name
 //     who: 'anyone'|'session'|'parent'|'parent+check'|'parent+check5'|'player'|'stripe'|'test',
 //     body: { kind: 'json'|'raw'|'world', max },         // default { kind: 'json', max: 16 KB }
-//     limit: [{ name, count, perMs, burst?, key: 'ip'|'session'|'family'|'player'|'global' }],
+//     limit: [{ name, count, perMs, burst?, key: 'ip'|'net'|'session'|'family'|'player'|'global' }],
+//            checked in order, before the body is read; a refused request takes nothing from
+//            the limits after the one that refused it (so 'net' before 'global' keeps one
+//            network from using up everyone's allowance)
 //     handler: async (req, x) → { status?, json?, body?, stream?, headers?, cookies? },
 //   }]
 //
@@ -15,11 +18,12 @@
 //         player, ip, now, req, url }
 //     body       parsed JSON ('json', 'world'), or the raw Buffer ('raw')
 //     bodyBytes  the (uncompressed) bytes of the body; bodyGzip: the gzip bytes as received, or null
-//     session    { hash, kind: 'parent'|'device', familyId, lockPlayer, elevatedUntil (ms|null),
+//     session    { hash, kind: 'parent'|'device', familyId, locked, lockPlayer, elevatedUntil (ms|null),
 //                  elevatedAt (ms|null), … } from ctx.sessions.fromRequest(), or null
 //     family     the families row of the session's family (ctx.family.load), or null
 //     player     the players row of :pid ('player' routes), checked against the session
 //     ip         addressKey of the client (IPv6 by /64), for limits only; never log or store it
+//     net        netKey of the client (IPv6 by /48, IPv4 as is): the 'net' limits, same rules
 //     now        the app clock in ms (ctx.clock.now()); pass new Date(x.now) to SQL
 //
 // A handler answers with an object, or throws `new HttpError(status, code, extra?)` (or
@@ -33,9 +37,12 @@
 //
 // server.mjs has already set the common security headers and Cross-Origin-Resource-Policy.
 
-import { gunzipSync } from 'node:zlib';
+import { gunzip } from 'node:zlib';
+import { promisify } from 'node:util';
 import { Readable } from 'node:stream';
-import { addressKey, clientIpOf } from './limits.mjs';
+import { addressKey, clientIpOf, netKey } from './limits.mjs';
+
+const gunzipAsync = promisify(gunzip); // off the event loop the relay shares
 
 export const JSON_MAX = 16 * 1024;
 export const RAW_MAX = 1024 * 1024;
@@ -61,6 +68,15 @@ export class HttpError extends Error {
 export const httpError = (status, code, extra, headers) => new HttpError(status, code, extra, headers);
 
 export const isUuid = (s) => typeof s === 'string' && UUID_RE.test(s);
+
+/**
+ * Is session `s` kept away from player `pid`? A device locked to one child may use only that
+ * child; a device whose child was deleted (locked, its lock_player then null) may use nobody.
+ * The one test of the routes (here), /api/me (family.mjs) and the relay (auth.mjs).
+ */
+export function lockedAway(s, pid) {
+  return !!s && (!!s.locked || !!s.lockPlayer) && s.lockPlayer !== pid;
+}
 
 // ---------------------------------------------------------------------------------------------
 // cookies
@@ -156,7 +172,8 @@ export function readRaw(req, max) {
  * The request body for a route's `body` spec → { body, bytes, gzip }.
  * 'json': ≤ max (16 KB) of JSON, an object (an empty body is {}); no gzip.
  * 'world': JSON, optionally Content-Encoding: gzip; ≤ max bytes AFTER decompression
- *          (gunzip with maxOutputLength, so a gzip bomb is a 413, not a crash).
+ *          (gunzip with maxOutputLength, so a gzip bomb is a 413, not a crash; in the thread
+ *          pool, not on the event loop the relay shares).
  * 'raw':  the bytes as sent (≤ max, 1 MB), not parsed (the Stripe webhook).
  */
 export async function readBody(req, spec = {}, cfg = {}) {
@@ -173,7 +190,7 @@ export async function readBody(req, spec = {}, cfg = {}) {
   if (enc === 'gzip' && kind === 'world') {
     gzip = await readRaw(req, max);
     try {
-      bytes = gunzipSync(gzip, { maxOutputLength: max });
+      bytes = await gunzipAsync(gzip, { maxOutputLength: max });
     } catch (err) {
       if (err && (err.code === 'ERR_BUFFER_TOO_LARGE' || err instanceof RangeError)) throw httpError(413, 'too_big');
       throw httpError(400, 'bad_request');
@@ -257,10 +274,20 @@ export function createRouter({ cfg, ctx, routes }) {
     return found;
   }
 
+  const emptied = new Map(); // a limit for everyone → when it was last said to be used up
   function limited(spec, key) {
     if (!ctx.limits || key === undefined || key === null) return;
     const res = ctx.limits.check(spec, key);
-    if (!res.ok) throw httpError(429, 'rate', {}, { 'Retry-After': String(res.retryAfter) });
+    if (res.ok) return;
+    if (spec.key === 'global') {
+      // one line (never who) at most every 10 minutes: the dad sees it in the Deploy Logs
+      const t = Date.now();
+      if (!(t - (emptied.get(spec.name) || 0) < 600e3)) {
+        emptied.set(spec.name, t);
+        log(`api: limit ${spec.name} (for everyone) is used up; refusing for ${res.retryAfter} s`);
+      }
+    }
+    throw httpError(429, 'rate', {}, { 'Retry-After': String(res.retryAfter) });
   }
 
   async function handle(req, res, url) {
@@ -276,6 +303,7 @@ export function createRouter({ cfg, ctx, routes }) {
       return true;
     }
     const { r, params } = hit;
+    const client = clientIpOf(req.socket?.remoteAddress, req.headers['x-forwarded-for'], cfg.trustProxy !== false);
     const x = {
       params,
       query: Object.fromEntries(url.searchParams),
@@ -287,39 +315,45 @@ export function createRouter({ cfg, ctx, routes }) {
       sessionError: null,
       family: null,
       player: null,
-      ip: addressKey(clientIpOf(req.socket?.remoteAddress, req.headers['x-forwarded-for'], cfg.trustProxy !== false)),
+      ip: addressKey(client),
+      net: netKey(client),
       now: now(),
       req,
       url,
     };
+    let bodyRead = method === 'GET';
     try {
       if (r.who !== 'stripe') limited(DEFAULT_LIMITS.ip, x.ip);
+      if (method !== 'GET' && r.who !== 'stripe') {
+        const bad = csrfProblem(req, cfg);
+        if (bad) throw bad;
+      }
+      // who may call, and the route's limits, BEFORE the body is read: neither needs it, and a
+      // stranger's 8 MB world (or a gzip bomb) is then never inflated or parsed (§4.8)
+      if (r.who !== 'stripe' && r.who !== 'test') await who(r, x);
+      for (const l of r.limit || []) {
+        const key = l.key === 'global' ? '*' : l.key === 'ip' ? x.ip : l.key === 'net' ? x.net : l.key === 'session' ? x.session?.hash?.toString('hex') : l.key === 'family' ? x.session?.familyId : l.key === 'player' ? x.player?.id : undefined;
+        limited(l, key);
+      }
       if (method !== 'GET') {
-        if (r.who !== 'stripe') {
-          const bad = csrfProblem(req, cfg);
-          if (bad) throw bad;
-        }
         const b = await readBody(req, r.body || (r.who === 'stripe' ? { kind: 'raw' } : {}), cfg);
+        bodyRead = true;
         x.body = b.body;
         x.bodyBytes = b.bytes;
         x.bodyGzip = b.gzip;
-      }
-      if (r.who !== 'stripe' && r.who !== 'test') await who(r, x);
-      for (const l of r.limit || []) {
-        const key = l.key === 'global' ? '*' : l.key === 'ip' ? x.ip : l.key === 'session' ? x.session?.hash?.toString('hex') : l.key === 'family' ? x.session?.familyId : l.key === 'player' ? x.player?.id : undefined;
-        limited(l, key);
       }
       const answer = (await r.handler(req, x)) || { status: 204 };
       send(res, req, answer, cfg);
     } catch (err) {
       if (err instanceof HttpError) {
-        // a body that was too big is not read further: the connection closes after this answer
-        const extra = err.status === 413 ? { Connection: 'close' } : {};
+        // a body that was too big, or never read (refused before it), is not read further:
+        // the connection closes after this answer
+        const extra = err.status === 413 || !bodyRead ? { Connection: 'close' } : {};
         send(res, req, { status: err.status, json: { error: err.code, ...err.extra }, headers: { ...err.headers, ...extra } });
       } else {
         log(`api: ${r.method} ${r.path} failed: ${err && err.code ? err.code : err && err.name ? err.name : 'Error'}`);
         if (res.headersSent) res.destroy();
-        else send(res, req, { status: 503, json: { error: 'unavailable' } });
+        else send(res, req, { status: 503, json: { error: 'unavailable' }, headers: bodyRead ? {} : { Connection: 'close' } });
       }
     }
     return true;
@@ -353,7 +387,7 @@ export function createRouter({ cfg, ctx, routes }) {
       const p = ctx.family?.player ? await ctx.family.player(pid) : null;
       if (!p) throw httpError(410, 'player_gone'); // deleted (or never was): devices wipe their copy
       if (p.family_id !== s.familyId) throw httpError(404, 'not_found'); // another family's: never say it exists
-      if (s.lockPlayer && s.lockPlayer !== pid) throw httpError(404, 'not_found');
+      if (lockedAway(s, pid)) throw httpError(404, 'not_found');
       x.player = p;
     }
   }
