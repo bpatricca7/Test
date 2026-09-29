@@ -1,0 +1,68 @@
+# Amentum AI - container stack.
+#
+#   cp env/dev-openai.env.example env/app.env   # or demo / gcc-high
+#   docker compose up -d --build
+#   open http://localhost:8080
+#
+# GCC High: docker compose -f docker-compose.yml -f docker-compose.gcchigh.yml up -d
+name: amentum-ai
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: amentum-ai:latest
+    env_file: env/app.env
+    environment:
+      DATA_DIR: /data
+      SANDBOX_URL: http://sandbox:8100
+      SANDBOX_TOKEN: ${SANDBOX_TOKEN:-change-me-sandbox-token}
+    ports:
+      - "8080:8000"
+    volumes:
+      - app-data:/data
+    networks:
+      - edge          # user traffic + outbound to the model endpoint / MCP servers
+      - sandbox-net   # private link to the code interpreter
+    depends_on:
+      sandbox:
+        condition: service_healthy
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  sandbox:
+    build:
+      context: .
+      dockerfile: sandbox.Dockerfile
+    image: amentum-ai-sandbox:latest
+    environment:
+      SANDBOX_TOKEN: ${SANDBOX_TOKEN:-change-me-sandbox-token}
+      SANDBOX_EXEC_TIMEOUT_S: "180"
+      SANDBOX_IDLE_TIMEOUT_S: "1800"
+      SANDBOX_MAX_SESSIONS: "24"
+    volumes:
+      - sandbox-sessions:/sandbox/sessions
+    tmpfs:
+      - /tmp:size=1g
+      - /sandbox/home:size=256m,uid=10001,gid=10001
+    networks:
+      - sandbox-net   # internal-only: model-written code has NO route out
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 512
+    mem_limit: 6g
+    cpus: 2.0
+    restart: unless-stopped
+
+networks:
+  edge: {}
+  sandbox-net:
+    internal: true
+
+volumes:
+  app-data: {}
+  sandbox-sessions: {}

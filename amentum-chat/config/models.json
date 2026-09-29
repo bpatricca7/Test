@@ -1,0 +1,44 @@
+{
+  "_comment": "Model catalog. Prices are USD per 1M tokens (OpenAI list prices, Sep 2026). Replace with your Azure Government price sheet before using the cost figures for chargeback. 'deployment' is the Azure deployment name (or OpenAI model id); override per environment with MODEL_DEPLOYMENTS.",
+  "models": [
+    {
+      "id": "gpt-5.6-sol",
+      "label": "GPT-5.6 Sol",
+      "tier": "Flagship",
+      "description": "Deepest reasoning for complex analysis, engineering and multi-step agent work.",
+      "deployment": "gpt-5.6-sol",
+      "api": "responses",
+      "reasoning": true,
+      "efforts": ["none", "low", "medium", "high", "xhigh"],
+      "default_effort": "medium",
+      "vision": true,
+      "pricing": { "input": 5.0, "cached_input": 0.5, "output": 30.0 }
+    },
+    {
+      "id": "gpt-5.6-terra",
+      "label": "GPT-5.6 Terra",
+      "tier": "Balanced",
+      "description": "Everyday workhorse: strong reasoning at roughly half the cost of Sol.",
+      "deployment": "gpt-5.6-terra",
+      "api": "responses",
+      "reasoning": true,
+      "efforts": ["none", "low", "medium", "high", "xhigh"],
+      "default_effort": "medium",
+      "vision": true,
+      "pricing": { "input": 2.0, "cached_input": 0.2, "output": 12.0 }
+    },
+    {
+      "id": "gpt-5.6-luna",
+      "label": "GPT-5.6 Luna",
+      "tier": "Fast",
+      "description": "Fastest and most affordable for quick answers and high-volume tasks.",
+      "deployment": "gpt-5.6-luna",
+      "api": "responses",
+      "reasoning": true,
+      "efforts": ["none", "low", "medium", "high"],
+      "default_effort": "low",
+      "vision": true,
+      "pricing": { "input": 0.2, "cached_input": 0.02, "output": 1.2 }
+    }
+  ]
+}

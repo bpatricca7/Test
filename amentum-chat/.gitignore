@@ -1,0 +1,15 @@
+node_modules/
+frontend/dist/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+backend/data/
+backend/.env
+env/*.env
+!env/*.env.example
+deploy/certs/*
+!deploy/certs/.gitkeep
+!deploy/certs/README.md
+*.log
+*.tsbuildinfo

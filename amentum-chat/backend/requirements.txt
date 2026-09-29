@@ -1,0 +1,28 @@
+# Amentum AI backend - pinned to the versions this code was tested with.
+# Web
+fastapi==0.141.1
+uvicorn[standard]==0.54.0
+python-multipart==0.0.32
+pydantic==2.13.5
+pydantic-settings==2.15.0
+httpx==0.28.1
+
+# Model providers (OpenAI, Azure OpenAI commercial, Azure Government / GCC High)
+openai==3.20.0
+azure-identity==1.25.3
+
+# MCP data connectors
+mcp==2.2.0
+
+# Code interpreter (Jupyter kernel) + document libraries available to model-written code
+jupyter_client==8.10.0
+ipykernel==7.3.0
+numpy==2.4.6
+pandas==3.0.6
+matplotlib==3.11.2
+openpyxl==3.1.5
+xlsxwriter==3.2.9
+python-docx==1.2.0
+python-pptx==1.0.2
+pypdf==6.19.0
+reportlab==5.0.1

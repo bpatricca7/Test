@@ -1,0 +1,12 @@
+**/node_modules
+**/dist
+**/.venv
+**/__pycache__
+**/*.pyc
+backend/data
+backend/.env
+env/*.env
+!env/*.env.example
+.git
+**/.pytest_cache
+docs/screenshots

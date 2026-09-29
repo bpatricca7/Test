@@ -1,0 +1,21 @@
+# GCC High overlay - use together with docker-compose.yml:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.gcchigh.yml up -d
+#
+# Expects env/app.env filled from env/gcc-high.env.example. The app listens only on
+# localhost; publish it through the Amentum reverse proxy / Entra Application Proxy, which
+# authenticates users and injects X-MS-CLIENT-PRINCIPAL-NAME (see deploy/gcc-high/README.md).
+services:
+  app:
+    ports: !override
+      - "127.0.0.1:8080:8000"
+    volumes:
+      - app-data:/data
+      # Amentum TLS-inspection root CA, referenced by OUTBOUND_CA_BUNDLE
+      - ./deploy/certs:/certs:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m
+      - /home/amentum:size=64m,uid=10001,gid=10001
+    cap_drop: [ALL]
+    mem_limit: 4g

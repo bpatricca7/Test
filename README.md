@@ -1,3 +1,6 @@
+> **Also in this repository:** [`amentum-chat/`](amentum-chat/README.md) – the Amentum AI assistant
+> (React UI + FastAPI backend for OpenAI and Azure Government / GCC High).
+
 # Robinhood Prediction Markets Analysis
 
 Automated analysis tool for identifying undervalued predictions in Robinhood's prediction markets (powered by Kalshi).
