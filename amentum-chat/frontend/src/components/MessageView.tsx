@@ -5,7 +5,6 @@ import type { Message, Part, UsageInfo } from "../lib/types";
 import { effortLabel, fmtCost, fmtDuration, fmtInt, fmtTokens } from "../lib/format";
 import { useShallow } from "zustand/react/shallow";
 import { useStore } from "../lib/store";
-import { BrandMark } from "./Brand";
 import { FileCard } from "./Files";
 import { CopyButton, Markdown } from "./Markdown";
 import { ThinkingBlock } from "./ThinkingBlock";
@@ -44,7 +43,7 @@ function Notice({ part }: { part: Extract<Part, { type: "notice" }> }) {
 
 function liveLabel(parts: Part[]): string | null {
   const last = parts[parts.length - 1];
-  if (!last) return "Thinking";
+  if (!last) return "Working";
   if (last.type === "tool" && last.status !== "running") return "Reviewing results";
   if (last.type === "reasoning" && last.status !== "running") return "Working";
   return null;
@@ -53,7 +52,7 @@ function liveLabel(parts: Part[]): string | null {
 const AssistantMessage = memo(function AssistantMessage({ msg, isLast, streamingStart }: {
   msg: Message; isLast: boolean; streamingStart: number | null;
 }) {
-  const { prefs, regenerate, streaming } = useStore(useShallow((s) => ({ prefs: s.prefs, regenerate: s.regenerate, streaming: s.streaming })));
+  const { prefs, regenerate, streaming, config } = useStore(useShallow((s) => ({ prefs: s.prefs, regenerate: s.regenerate, streaming: s.streaming, config: s.config })));
   const showUsage = useStore((s) => s.showUsage());
   const live = msg.status === "streaming";
   const text = msg.parts.filter((p) => p.type === "text").map((p) => (p as { text: string }).text).join("\n\n");
@@ -73,7 +72,6 @@ const AssistantMessage = memo(function AssistantMessage({ msg, isLast, streaming
 
   return (
     <div className={clsx("msg assistant", live && "is-live")}>
-      <div className="msg-avatar"><BrandMark size={30} /></div>
       <div className="msg-body">
         {msg.parts.map((p, i) => {
           switch (p.type) {
@@ -111,6 +109,13 @@ const AssistantMessage = memo(function AssistantMessage({ msg, isLast, streaming
               )}
               {msg.status === "stopped" && <span className="stopped-tag"><CircleStop size={12} /> Stopped</span>}
             </div>
+            {!showUsage && msg.usage?.model && (
+              <span className="msg-meta">
+                {config?.models.find((m) => m.id === msg.usage?.model)?.label ?? msg.usage.model}
+                {msg.usage.effort ? ` · ${effortLabel(msg.usage.effort)}` : ""}
+                {msg.usage.duration_ms ? ` · ${fmtDuration(msg.usage.duration_ms)}` : ""}
+              </span>
+            )}
             {showUsage && msg.usage && msg.usage.calls > 0 && <UsageBar usage={msg.usage} />}
           </div>
         )}

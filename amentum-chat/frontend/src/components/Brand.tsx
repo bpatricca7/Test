@@ -1,21 +1,13 @@
-import { useId } from "react";
-
-/** Placeholder brand mark. To use the official Amentum logo, drop the approved SVG into
- *  public/brand/ and swap this component's contents for an <img src="/brand/logo.svg" />. */
-export function BrandMark({ size = 32, animated = false }: { size?: number; animated?: boolean }) {
-  const id = useId().replace(/:/g, "");
+/** Placeholder mark: four rising bars, a nod to the "Amplified" rising-lines identity.
+ *  To use the official Amentum logo, drop the approved SVG into public/brand/ and replace
+ *  this component's contents with <img src="/brand/logo.svg" alt="Amentum" />. */
+export function BrandMark({ size = 22 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 64 64" className={animated ? "brand-mark animated" : "brand-mark"} aria-hidden>
-      <defs>
-        <linearGradient id={`bm-${id}`} x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0" stopColor="#4a67e6" />
-          <stop offset=".55" stopColor="#2a8fd0" />
-          <stop offset="1" stopColor="#12c476" />
-        </linearGradient>
-      </defs>
-      <rect width="64" height="64" rx="17" className="brand-mark-bg" />
-      <path d="M15 47 L32 15 L49 47" fill="none" stroke={`url(#bm-${id})`} strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M23.5 37.5 H40.5" stroke="#12c476" strokeWidth="6" strokeLinecap="round" className="brand-mark-bar" />
+    <svg width={size} height={size} viewBox="0 0 24 24" className="brand-mark" aria-hidden>
+      <path d="M2.5 21 L6.5 21 L8.5 14 L4.5 14 Z" />
+      <path d="M7.5 21 L11.5 21 L14 11 L10 11 Z" />
+      <path d="M12.5 21 L16.5 21 L19.5 7 L15.5 7 Z" />
+      <path d="M17.5 21 L21.5 21 L24 3 L20 3 Z" transform="translate(-1.5 0)" />
     </svg>
   );
 }

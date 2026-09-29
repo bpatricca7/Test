@@ -6,7 +6,7 @@ import { useShallow } from "zustand/react/shallow";
 import { useStore } from "../lib/store";
 import type { Connector, ConnectorPreset } from "../lib/types";
 import { Modal, Segmented, StatusDot, Switch } from "./ui";
-import { OrbitSpinner } from "./ThinkingSpinner";
+import { Loader } from "./ThinkingSpinner";
 
 const PRESET_ICON: Record<string, typeof Plug> = { briefcase: Briefcase, globe: Globe, folder: Folder, database: Database };
 const STATUS_LABEL: Record<string, string> = {
@@ -216,7 +216,7 @@ function ConnectorForm({ initial, presets, allowStdio, onDone }: {
           </label>
           <div className="form-actions full">
             <button className="btn primary" disabled={!json.trim() || !!busy} onClick={doImport}>
-              {busy === "save" ? <OrbitSpinner size={16} /> : <Plus size={15} />} Import & connect
+              {busy === "save" ? <Loader size={16} /> : <Plus size={15} />} Import & connect
             </button>
           </div>
         </div>
@@ -282,10 +282,10 @@ function ConnectorForm({ initial, presets, allowStdio, onDone }: {
           )}
           <div className="form-actions full">
             <button className="btn ghost" disabled={!valid || !!busy} onClick={doTest}>
-              {busy === "test" ? <OrbitSpinner size={16} /> : <Plug size={15} />} Test connection
+              {busy === "test" ? <Loader size={16} /> : <Plug size={15} />} Test connection
             </button>
             <button className="btn primary" disabled={!valid || !!busy} onClick={doSave}>
-              {busy === "save" ? <OrbitSpinner size={16} /> : <CircleCheck size={15} />} {editing ? "Save changes" : "Save & connect"}
+              {busy === "save" ? <Loader size={16} /> : <CircleCheck size={15} />} {editing ? "Save changes" : "Save & connect"}
             </button>
           </div>
         </div>

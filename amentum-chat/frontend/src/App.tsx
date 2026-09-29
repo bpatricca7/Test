@@ -10,7 +10,7 @@ import { Header } from "./components/Header";
 import { MessageView } from "./components/MessageView";
 import { SettingsModal } from "./components/SettingsModal";
 import { Sidebar } from "./components/Sidebar";
-import { OrbitSpinner } from "./components/ThinkingSpinner";
+import { Loader } from "./components/ThinkingSpinner";
 import { Toasts } from "./components/ui";
 import { UsageModal } from "./components/UsageModal";
 import { BrandMark } from "./components/Brand";
@@ -52,7 +52,7 @@ function Thread() {
   }, [streaming?.controller]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loadingConversation) {
-    return <div className="thread center"><OrbitSpinner size={42} /></div>;
+    return <div className="thread center"><Loader size={24} /></div>;
   }
   if (!messages.length) {
     return <div className="thread empty-thread"><EmptyState /></div>;
@@ -97,7 +97,7 @@ export default function App() {
   if (bootError) {
     return (
       <div className="boot">
-        <BrandMark size={56} />
+        <BrandMark size={32} />
         <h2>Can't reach the Amentum AI service</h2>
         <p>{bootError}</p>
         <button className="btn primary" onClick={() => location.reload()}>Retry</button>
@@ -107,7 +107,7 @@ export default function App() {
   if (!config) {
     return (
       <div className="boot">
-        <OrbitSpinner size={48} />
+        <Loader size={28} />
       </div>
     );
   }
@@ -118,7 +118,6 @@ export default function App() {
         <div className="class-banner" style={{ background: config.banner.color }}>{config.banner.text}</div>
       )}
       <div className="app-body">
-        <div className="bg-aurora" aria-hidden />
         <Sidebar />
         <main className="main">
           <Header />

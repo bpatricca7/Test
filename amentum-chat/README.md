@@ -8,22 +8,22 @@ your PC today against the OpenAI API, or with no API key at all in demo mode.
 
 ![Amentum AI](docs/screenshots/home.png)
 
-| Live thinking traces | Code interpreter + charts | Office files → downloads, preview, print |
+| Live reasoning trace | Code interpreter + charts | Office files → downloads, preview, print |
 |---|---|---|
 | ![](docs/screenshots/thinking.png) | ![](docs/screenshots/chat-dark.png) | ![](docs/screenshots/files.png) |
 | **Data connectors (MCP)** | **Usage & cost** | **Light theme** |
 | ![](docs/screenshots/connectors.png) | ![](docs/screenshots/usage.png) | ![](docs/screenshots/light.png) |
 
-<p align="center"><img src="docs/screenshots/thinking-levels.png" alt="Thinking level dropdown" width="720"></p>
+<p align="center"><img src="docs/screenshots/thinking-levels.png" alt="Reasoning effort dropdown in the composer" width="720"></p>
 
 ## What you get
 
-- **GPT-5.6 Sol / Terra / Luna**, switchable per chat, with a **thinking-level dropdown** next to
-  the model picker: Instant, Light, Balanced, Deep, Extra deep and Maximum. All six levels were
+- **GPT-5.6 Sol / Terra / Luna** with **model and reasoning-effort dropdowns right in the chat
+  composer**. Effort runs Instant, Light, Balanced, Deep, Extra deep and Maximum. All six levels were
   verified against the live API for all three models, and each model remembers its own level.
-- **Thinking traces.** Reasoning summaries stream live from the Responses API into a panel with
-  an animated orbit spinner, a timer and the current step's heading. When it finishes, the panel
-  collapses to "Thought for 12s" and you can reopen it.
+- **Reasoning traces.** Reasoning summaries stream live from the Responses API with a rising-bars
+  activity indicator, a mm:ss timer and the current step's heading. When it finishes, the trace
+  collapses to "Reasoned for 12s · 3 steps" and you can reopen it.
 - **Code interpreter.** A stateful Python (Jupyter) sandbox with pandas, matplotlib, openpyxl,
   python-docx, python-pptx, pypdf and reportlab. You can watch the code as it's written. Charts
   render inline, and every file the code creates shows up as a card with **Download**,
@@ -211,18 +211,27 @@ Everything is an environment variable; see `backend/app/config.py` for the full 
 | `UI_BANNER_TEXT`, `UI_BANNER_COLOR` | | Classification banner |
 | `APP_NAME`, `APP_TAGLINE`, `SYSTEM_PROMPT_EXTRA` | | Branding and org guidance |
 
-## Branding
+## Design and branding
 
-- Colors come from the Amentum palette (Blue `#30448B`, Green `#009D4F`, Slate `#4B4F58`) in
-  `frontend/src/styles/tokens.css`.
-- The "A" mark is a placeholder. To use the approved Amentum logo, replace
-  `frontend/src/components/Brand.tsx` and `frontend/public/brand/mark.svg`, following brand
-  guidelines.
+The interface is deliberately plain-spoken: neutral graphite and paper surfaces, hairline rules,
+tight corners, IBM Plex Sans with IBM Plex Mono for data. Amentum green is the single accent. There
+are no gradients, glows or glass effects. Fonts are bundled, so nothing loads from a CDN.
+
+- **Colors** all live in `frontend/src/styles/tokens.css`. The published Amentum values
+  (Green `#009D4F`, Blue `#30448B`, Slate `#4B4F58`) are the anchors. If your brand team has
+  updated values from the 2024 identity, change the `--brand-*` and per-theme `--accent*` tokens
+  there; nothing else hard-codes color.
+- **Charts** made by the code interpreter use a categorical palette that leads with Amentum green.
+  It is validated for color-blind separation and contrast in light and dark
+  (`backend/app/sandbox/kernels.py`).
+- **Logo:** the rising-bars mark is a placeholder that nods to the "Amplified" rising-lines
+  identity. To use the approved Amentum logo, replace `frontend/src/components/Brand.tsx` and
+  `frontend/public/brand/mark.svg`, following brand guidelines.
 
 ## Development and tests
 
 ```bash
-cd backend && pip install -r requirements-dev.txt && pytest       # 18 tests
+cd backend && pip install -r requirements-dev.txt && pytest       # 19 tests
 cd frontend && npm run typecheck && npm run build
 ```
 

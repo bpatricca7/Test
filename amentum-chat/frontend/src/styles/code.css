@@ -1,8 +1,8 @@
-/* Markdown typography + syntax highlighting (Amentum palette) */
+/* Markdown typography + syntax highlighting */
 
 .markdown {
-  font-size: 15px;
-  line-height: 1.7;
+  font-size: 14.5px;
+  line-height: 1.68;
   overflow-wrap: anywhere;
 }
 
@@ -15,28 +15,34 @@
 }
 
 .markdown p {
-  margin: 0.55em 0 0.85em;
+  margin: 0.5em 0 0.85em;
 }
 
 .markdown h1,
 .markdown h2,
 .markdown h3,
 .markdown h4 {
-  font-family: var(--font-display);
-  letter-spacing: -0.015em;
   line-height: 1.3;
-  margin: 1.3em 0 0.5em;
+  margin: 1.4em 0 0.5em;
   font-weight: 600;
+  letter-spacing: -0.005em;
 }
 
-.markdown h1 { font-size: 1.55em; }
-.markdown h2 { font-size: 1.3em; }
-.markdown h3 { font-size: 1.12em; }
-.markdown h4 { font-size: 1em; }
+.markdown h1 { font-size: 1.4em; }
+.markdown h2 { font-size: 1.2em; }
+.markdown h3 { font-size: 1.05em; }
+.markdown h4 {
+  font-size: 0.8em;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
 
 .markdown ul,
 .markdown ol {
-  padding-left: 1.4em;
+  padding-left: 1.3em;
   margin: 0.4em 0 0.9em;
 }
 
@@ -44,21 +50,24 @@
   margin: 0.25em 0;
 }
 
-.markdown li::marker {
+.markdown ul > li::marker {
+  color: var(--accent);
+}
+
+.markdown ol > li::marker {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
   color: var(--text-3);
 }
 
 .markdown strong {
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .markdown blockquote {
   margin: 0.9em 0;
-  padding: 10px 16px;
-  border-left: 3px solid transparent;
-  border-image: linear-gradient(180deg, #6f8bff, #22d08a) 1;
-  background: var(--surface);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 2px 0 2px 14px;
+  border-left: 2px solid var(--accent);
   color: var(--text-2);
 }
 
@@ -69,59 +78,65 @@
 .markdown hr {
   border: 0;
   height: 1px;
-  background: var(--border);
+  background: var(--line);
   margin: 1.4em 0;
 }
 
 .markdown a {
-  color: var(--accent);
-  text-decoration: none;
-  border-bottom: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 3px;
 }
 
 .markdown a:hover {
-  border-bottom-color: var(--accent);
+  color: var(--accent);
 }
 
 .markdown .dead-link {
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .inline-code {
   font-family: var(--font-mono);
   font-size: 0.86em;
-  padding: 0.12em 0.4em;
-  border-radius: 6px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
+  padding: 0.1em 0.35em;
+  border-radius: var(--r-xs);
+  background: var(--raised-2);
+  border: 1px solid var(--line);
 }
 
 .table-wrap {
   overflow-x: auto;
   margin: 0.9em 0;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
 }
 
 .markdown table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13.5px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 
 .markdown th {
   text-align: left;
-  font-weight: 600;
-  background: var(--surface-2);
-  padding: 9px 12px;
-  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  background: var(--raised);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
   white-space: nowrap;
 }
 
 .markdown td {
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border);
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--line);
   vertical-align: top;
 }
 
@@ -130,14 +145,14 @@
 }
 
 .markdown tbody tr:hover td {
-  background: var(--surface);
+  background: var(--raised);
 }
 
 .code-block {
   margin: 0.9em 0;
-  border-radius: var(--radius-md);
+  border-radius: var(--r-md);
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: 1px solid var(--code-line);
   background: var(--code-bg);
 }
 
@@ -145,90 +160,88 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 6px 4px 14px;
-  background: rgba(255, 255, 255, 0.04);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  height: 30px;
+  padding: 0 4px 0 12px;
+  border-bottom: 1px solid var(--code-line);
 }
 
 .code-block-head .icon-btn {
-  color: #8d98b6;
+  color: #8a929c;
 }
 
 .code-block-head .icon-btn:hover {
   color: #fff;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.07);
 }
 
 .code-lang {
   font-family: var(--font-mono);
-  font-size: 11.5px;
-  color: #8d98b6;
-  text-transform: lowercase;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a929c;
 }
 
 .code-block pre {
   margin: 0;
-  padding: 14px 16px;
+  padding: 12px 14px;
   overflow-x: auto;
-  font-size: 13px;
+  font-size: 12.5px;
   line-height: 1.6;
 }
 
 .code-block code {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 12.5px;
   line-height: 1.6;
-  color: #d7def2;
+  color: #d6dbe2;
   background: none;
 }
 
-/* highlight.js theme - tuned to the Amentum blue/green palette */
+/* highlight.js theme: restrained, one warm + one green + neutrals */
 .hljs {
-  color: #d7def2;
+  color: #d6dbe2;
 }
 .hljs-comment,
 .hljs-quote {
-  color: #6b7797;
+  color: #6b737d;
   font-style: italic;
 }
 .hljs-keyword,
 .hljs-selector-tag,
 .hljs-built_in,
-.hljs-literal {
-  color: #8ea4ff;
+.hljs-literal,
+.hljs-meta,
+.hljs-meta .hljs-keyword {
+  color: #9aa7c9;
 }
 .hljs-string,
 .hljs-regexp,
 .hljs-addition,
 .hljs-attribute {
-  color: #5fe3a6;
+  color: #5fcf8e;
 }
 .hljs-number,
 .hljs-symbol,
 .hljs-bullet {
-  color: #f5b454;
+  color: #e0b05c;
 }
 .hljs-title,
 .hljs-title.function_,
-.hljs-section {
-  color: #62c9f2;
-}
+.hljs-section,
 .hljs-title.class_,
 .hljs-type {
-  color: #c49bff;
+  color: #f0f2f4;
+  font-weight: 500;
 }
 .hljs-attr,
 .hljs-variable,
 .hljs-template-variable,
 .hljs-params {
-  color: #e9edf7;
-}
-.hljs-meta,
-.hljs-meta .hljs-keyword {
-  color: #f08fb1;
+  color: #c3c9d1;
 }
 .hljs-deletion {
-  color: #ff6b70;
+  color: #f0646d;
 }
 .hljs-emphasis {
   font-style: italic;

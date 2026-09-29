@@ -4,7 +4,7 @@ import type { FileRef } from "../lib/types";
 import { fmtBytes } from "../lib/format";
 import { useShallow } from "zustand/react/shallow";
 import { useStore } from "../lib/store";
-import { OrbitSpinner } from "./ThinkingSpinner";
+import { Loader } from "./ThinkingSpinner";
 
 const KIND: Record<string, { icon: typeof File; color: string; label: string }> = {
   word: { icon: FileText, color: "#3b82f6", label: "Word" },
@@ -161,7 +161,7 @@ export function FilePreviewModal() {
         <div className="preview-body">
           {state.loading && (
             <div className="preview-status">
-              <OrbitSpinner size={40} />
+              <Loader size={26} />
               <span>Rendering preview…</span>
             </div>
           )}

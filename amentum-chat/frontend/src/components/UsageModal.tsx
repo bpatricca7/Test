@@ -5,7 +5,7 @@ import { useShallow } from "zustand/react/shallow";
 import { useStore } from "../lib/store";
 import { fmtCost, fmtInt, fmtTokens } from "../lib/format";
 import { Modal, Segmented } from "./ui";
-import { OrbitSpinner } from "./ThinkingSpinner";
+import { Loader } from "./ThinkingSpinner";
 
 function niceMax(v: number): number {
   if (v <= 0) return 1;
@@ -111,7 +111,7 @@ export function UsageModal() {
         )}
       </div>
       {error && <div className="notice error">{error}</div>}
-      {!data && !error && <div className="center-pad"><OrbitSpinner size={36} /></div>}
+      {!data && !error && <div className="center-pad"><Loader size={22} /></div>}
       {data && t && (
         <>
           <div className="stat-row">

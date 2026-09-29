@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUp, Paperclip, Plug, Settings2, Square, SquareTerminal, Upload, X } from "lucide-react";
+import { ArrowUp, Paperclip, Plug, Settings2, SlidersHorizontal, Square, SquareTerminal, Upload, X } from "lucide-react";
 import clsx from "clsx";
 import { api } from "../lib/api";
 import { useShallow } from "zustand/react/shallow";
@@ -7,7 +7,8 @@ import { useStore } from "../lib/store";
 import type { FileRef } from "../lib/types";
 import { fmtBytes } from "../lib/format";
 import { FileIcon } from "./Files";
-import { OrbitSpinner } from "./ThinkingSpinner";
+import { EffortDropdown, ModelDropdown } from "./Pickers";
+import { Loader } from "./ThinkingSpinner";
 import { Switch } from "./ui";
 
 interface Pending {
@@ -178,14 +179,14 @@ export function Composer() {
         </div>
       )}
       <div className={clsx("composer", streaming && "is-streaming")}>
-        <div className="composer-glow" aria-hidden />
+        {streaming && <div className="composer-progress" aria-hidden />}
         <div className="composer-inner">
           {pending.length > 0 && (
             <div className="composer-files">
               {pending.map((p) => (
                 <div key={p.key} className={clsx("attach-chip", p.status)}>
                   {p.status === "uploading" ? (
-                    <span className="file-icon"><OrbitSpinner size={16} /></span>
+                    <span className="file-icon"><Loader size={16} /></span>
                   ) : (
                     <FileIcon file={p.file ?? { id: null, name: p.name, mime: "", url: "", kind: "file" }} size={16} />
                   )}
@@ -205,7 +206,7 @@ export function Composer() {
             ref={inputRef}
             value={draft}
             rows={1}
-            placeholder={`Message ${config?.app_name ?? "Amentum AI"}…`}
+            placeholder="Ask anything, or attach Word, Excel, PowerPoint or PDF files…"
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
@@ -225,25 +226,29 @@ export function Composer() {
             <input ref={fileRef} type="file" multiple hidden accept={ACCEPT}
               onChange={(e) => { addFiles(Array.from(e.target.files ?? [])); e.target.value = ""; }} />
             <button className="icon-btn" title="Attach files" onClick={() => fileRef.current?.click()}>
-              <Paperclip size={17} />
+              <Paperclip size={16} />
             </button>
+            <span className="bar-sep" aria-hidden />
+            <ModelDropdown />
+            <EffortDropdown />
             <div className="tools-anchor">
-              <button className={clsx("chip-btn", toolsOpen && "active")} onClick={() => setToolsOpen((o) => !o)}>
-                <Settings2 size={14} />
-                Tools
-                {ciOn && <span className="chip-dot code" title="Code interpreter on" />}
-                {activeConnectors > 0 && <span className="chip-count">{activeConnectors}</span>}
+              <button className={clsx("dd-trigger", toolsOpen && "active")} onClick={() => setToolsOpen((o) => !o)}
+                title="Tools and data connectors">
+                <SlidersHorizontal size={14} />
+                <span className="dd-full">Tools</span>
+                {ciOn && <span className="tool-flag" title="Code interpreter on">PY</span>}
+                {activeConnectors > 0 && <span className="tool-flag" title="Connectors enabled">{activeConnectors}</span>}
               </button>
               {toolsOpen && <ToolsMenu onClose={() => setToolsOpen(false)} />}
             </div>
-            <span className="composer-hint">Enter to send · Shift+Enter for a new line</span>
+            <span className="composer-hint">Enter to send · Shift+Enter for new line</span>
             {streaming ? (
-              <button className="send-btn stop" title="Stop generating" onClick={stop}>
-                <Square size={14} fill="currentColor" />
+              <button className="send-btn stop" title="Stop" onClick={stop}>
+                <Square size={12} fill="currentColor" />
               </button>
             ) : (
               <button className="send-btn" title="Send" disabled={!canSend} onClick={submit}>
-                <ArrowUp size={18} strokeWidth={2.4} />
+                <ArrowUp size={17} strokeWidth={2.2} />
               </button>
             )}
           </div>

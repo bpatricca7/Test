@@ -101,7 +101,7 @@ export function Sidebar() {
       <aside className={clsx("sidebar", sidebarOpen && "open")}>
         <div className="sidebar-top">
           <div className="brand">
-            <BrandMark size={34} />
+            <BrandMark size={20} />
             <Wordmark name={config?.app_name ?? "Amentum AI"} />
           </div>
           <button className="icon-btn subtle" onClick={() => setSidebarOpen(false)} title="Close sidebar">
@@ -112,7 +112,7 @@ export function Sidebar() {
         <button className="new-chat" onClick={newChat}>
           <SquarePen size={16} />
           <span>New chat</span>
-          <kbd>Ctrl ⇧ O</kbd>
+          <kbd>Ctrl+Shift+O</kbd>
         </button>
 
         <div className="search">

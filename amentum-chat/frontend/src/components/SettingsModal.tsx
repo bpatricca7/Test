@@ -4,7 +4,7 @@ import { api, type Diagnostics } from "../lib/api";
 import { useShallow } from "zustand/react/shallow";
 import { useStore } from "../lib/store";
 import { Modal, Segmented, Switch } from "./ui";
-import { OrbitSpinner } from "./ThinkingSpinner";
+import { Loader } from "./ThinkingSpinner";
 
 export function SettingsModal() {
   const { setModal, prefs, setPrefs, config } = useStore(useShallow((s) => ({ setModal: s.setModal, prefs: s.prefs, setPrefs: s.setPrefs, config: s.config })));
@@ -63,10 +63,10 @@ export function SettingsModal() {
           <div className="section-head">
             <h4>System status</h4>
             <button className="btn ghost small" onClick={probe} disabled={probing}>
-              {probing ? <OrbitSpinner size={14} /> : <Activity size={14} />} Test model connection
+              {probing ? <Loader size={14} /> : <Activity size={14} />} Test model connection
             </button>
           </div>
-          {!diag && <div className="center-pad"><OrbitSpinner size={28} /></div>}
+          {!diag && <div className="center-pad"><Loader size={20} /></div>}
           {diag && (
             <dl className="status-grid">
               {rows.map(([k, v]) => (
