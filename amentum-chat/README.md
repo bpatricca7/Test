@@ -21,11 +21,11 @@ your PC today against the OpenAI API, or with no API key at all in demo mode.
 - **GPT-5.6 Sol / Terra / Luna** with **model and reasoning-effort dropdowns right in the chat
   composer**. Effort runs Instant, Light, Balanced, Deep, Extra deep and Maximum. All six levels were
   verified against the live API for all three models, and each model remembers its own level.
-- **Reasoning traces.** While the model reasons, the Amentum mark plays as a pixel spinner that
-  sharpens from coarse to fine blocks, beside a mm:ss timer and the heading of the current step.
-  The reasoning summary streams in live from the Responses API. When reasoning finishes, the pixels
-  resolve into the solid logo and the trace collapses to "Reasoned for 12s · 3 steps", which you
-  can reopen.
+- **Reasoning traces.** While the model reasons, a small spinner made from the Amentum logo sits
+  beside a mm:ss timer and the heading of the current step. The logo breaks into pixels that swirl
+  in two counter-rotating rings, and the reasoning summary streams in live from the Responses API.
+  When reasoning finishes, the pixels spiral back into place and form the solid logo, and the row
+  becomes "Reasoned for 12s · 3 steps", which you can expand.
 - **Code interpreter.** A stateful Python (Jupyter) sandbox with pandas, matplotlib, openpyxl,
   python-docx, python-pptx, pypdf and reportlab. You can watch the code as it's written. Charts
   render inline, and every file the code creates shows up as a card with **Download**,
@@ -229,8 +229,8 @@ There are no gradients, glows or glass effects. Fonts are bundled, so nothing lo
 - **Logo:** the four-arch mark and the "amentum" logotype are vector traces of the logo on
   amentum.com (`frontend/src/lib/mark.ts`, `frontend/public/brand/mark.svg`). They are accurate
   enough for an internal tool, but for production swap in the approved artwork from Amentum's brand
-  team. The pixel spinner is generated from the same mark, so re-sample `MARK_GRIDS` if you
-  replace it.
+  team. The spinner (`frontend/src/lib/logoSpinner.ts`) samples its pixels from the same path at
+  runtime, so it follows automatically.
 
 ## Development and tests
 

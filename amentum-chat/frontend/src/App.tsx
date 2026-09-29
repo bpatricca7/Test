@@ -10,7 +10,7 @@ import { Header } from "./components/Header";
 import { MessageView } from "./components/MessageView";
 import { SettingsModal } from "./components/SettingsModal";
 import { Sidebar } from "./components/Sidebar";
-import { LogoLoader } from "./components/ThinkingSpinner";
+import { LogoSpinner } from "./components/ThinkingSpinner";
 import { Toasts } from "./components/ui";
 import { UsageModal } from "./components/UsageModal";
 import { BrandMark } from "./components/Brand";
@@ -52,7 +52,7 @@ function Thread() {
   }, [streaming?.controller]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loadingConversation) {
-    return <div className="thread center"><LogoLoader width={48} /></div>;
+    return <div className="thread center"><LogoSpinner size={32} /></div>;
   }
   if (!messages.length) {
     return <div className="thread empty-thread"><EmptyState /></div>;
@@ -107,7 +107,7 @@ export default function App() {
   if (!config) {
     return (
       <div className="boot">
-        <LogoLoader width={56} />
+        <LogoSpinner size={44} />
       </div>
     );
   }

@@ -9,7 +9,7 @@ import { fmtDuration } from "../lib/format";
 import { useStore } from "../lib/store";
 import { FileCard } from "./Files";
 import { CopyButton } from "./Markdown";
-import { LogoLoader } from "./ThinkingSpinner";
+import { LogoSpinner } from "./ThinkingSpinner";
 
 hljs.registerLanguage("python", python);
 hljs.registerLanguage("json", json);
@@ -36,7 +36,7 @@ function StatusBadge({ part }: { part: ToolPart }) {
     const writing = part.kind !== "mcp" && typeof part.input === "string" && !part.output;
     return (
       <span className="tool-status running">
-        <LogoLoader width={24} />
+        <LogoSpinner size={18} />
         <span className="status-label">{part.kind === "mcp" ? "Querying" : writing ? "Writing code" : "Running"}</span>
       </span>
     );

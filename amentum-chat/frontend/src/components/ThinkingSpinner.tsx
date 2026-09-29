@@ -1,6 +1,5 @@
-import { useEffect, useState, type ReactNode } from "react";
-import clsx from "clsx";
-import { MARK_GRID_Y, MARK_PATH, markGrids } from "../lib/mark";
+import { useEffect, useRef, useState } from "react";
+import { LogoSpinnerEngine } from "../lib/logoSpinner";
 
 /** Small inline busy indicator for buttons and panels: three pixels stepping in sequence. */
 export function Loader({ size = 16 }: { size?: number }) {
@@ -13,41 +12,26 @@ export function Loader({ size = 16 }: { size?: number }) {
   );
 }
 
-// Pixel layers never change, so build them once, on first use. About a third of the cells
-// twinkle, staggered.
-let pixelLayers: ReactNode = null;
-function getPixelLayers(): ReactNode {
-  pixelLayers ??= markGrids().map(({ cols, cells }, g) => {
-    const size = 100 / cols;
-    const inset = size * 0.08;
-    return (
-      <g key={cols} className={`ll-grid ll-g${g}`}>
-        {cells.map(([c, r, level], i) => {
-          const h = (i * 37 + cols * 11) % 10;
-          return (
-            <rect key={i} x={c * size + inset} y={r * size + inset} width={size - inset * 2} height={size - inset * 2}
-              className={clsx(`l${level}`, h < 3 && `tw${h + 1}`)} />
-          );
-        })}
-      </g>
-    );
-  });
-  return pixelLayers;
-}
-
 /**
- * Thinking spinner: the Amentum mark rendered as pixels that cycle coarse → fine → coarse while
- * the model works. With `solid`, the pixels resolve into the solid vector mark.
+ * Thinking spinner: the Amentum mark breaks into pixels that swirl in two counter-rotating rings
+ * while the model works. When `done` turns true the pixels spiral back and form the solid logo,
+ * which stays in place. Mounted with `done` already true, it simply shows the logo.
  */
-export function LogoLoader({ width = 44, solid = false }: { width?: number; solid?: boolean }) {
-  return (
-    <span className={clsx("logo-loader", solid && "is-solid")} style={{ width, height: (width * 2) / 3 }} aria-hidden>
-      <svg viewBox="0 0 100 66.67" width={width} height={(width * 2) / 3}>
-        <path className="ll-mark" d={MARK_PATH} fillRule="evenodd" transform={`translate(0 ${MARK_GRID_Y})`} />
-        {getPixelLayers()}
-      </svg>
-    </span>
-  );
+export function LogoSpinner({ size = 20, done = false }: { size?: number; done?: boolean }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  const engine = useRef<LogoSpinnerEngine | null>(null);
+  const initialDone = useRef(done);
+  useEffect(() => {
+    if (!ref.current) return;
+    const e = new LogoSpinnerEngine(ref.current, size, initialDone.current);
+    engine.current = e;
+    return () => e.destroy();
+  }, [size]);
+  useEffect(() => {
+    initialDone.current = done;
+    engine.current?.setDone(done);
+  }, [done]);
+  return <canvas ref={ref} className="logo-spinner" style={{ width: size, height: size }} aria-hidden />;
 }
 
 export function useElapsed(startMs: number | null, running: boolean): number {
@@ -70,7 +54,7 @@ export function ThinkingIndicator({ label, startedAt }: { label: string; started
   const elapsed = useElapsed(startedAt, true);
   return (
     <div className="thinking-indicator" role="status" aria-live="polite">
-      <LogoLoader width={36} />
+      <LogoSpinner size={20} />
       <span className="status-label">{label}</span>
       {startedAt && <span className="thinking-timer">{clock(elapsed)}</span>}
     </div>

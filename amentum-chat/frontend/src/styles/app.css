@@ -812,103 +812,10 @@ a {
   33.3%, 100% { opacity: 0.25; }
 }
 
-/* Thinking spinner: the Amentum mark as pixels. Three grids (6×4, 12×8, 24×16) take turns so the
-   mark sharpens and softens in a loop, over a faint outline of the solid mark. On .is-solid the
-   finest grid dissolves and the vector mark fills in. */
-.logo-loader {
-  --period: 2s;
-  display: inline-flex;
-  flex: none;
-  color: var(--mark);
-}
-
-.logo-loader svg {
+/* Thinking spinner (canvas, drawn by lib/logoSpinner.ts) */
+.logo-spinner {
   display: block;
-  overflow: visible;
-}
-
-.ll-mark {
-  fill: currentColor;
-  opacity: 0.14;
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-.ll-grid {
-  fill: currentColor;
-  opacity: 0;
-  animation: var(--period) steps(1, end) infinite;
-}
-
-.ll-grid .l1 { fill-opacity: 0.3; }
-.ll-grid .l2 { fill-opacity: 0.55; }
-.ll-grid .l3 { fill-opacity: 0.8; }
-.ll-grid .l4 { fill-opacity: 1; }
-
-.ll-g0 { animation-name: ll-coarse; }
-.ll-g1 { animation-name: ll-mid; }
-.ll-g2 { animation-name: ll-fine; }
-
-.ll-grid .tw1,
-.ll-grid .tw2,
-.ll-grid .tw3 {
-  animation: ll-twinkle 0.5s steps(1, end) infinite;
-}
-
-.ll-grid .tw2 { animation-delay: -0.17s; }
-.ll-grid .tw3 { animation-delay: -0.34s; }
-
-/* coarse → mid → fine → mid, each a quarter of the period */
-@keyframes ll-coarse {
-  0% { opacity: 1; }
-  25%, 100% { opacity: 0; }
-}
-
-@keyframes ll-mid {
-  0% { opacity: 0; }
-  25% { opacity: 1; }
-  50% { opacity: 0; }
-  75%, 100% { opacity: 1; }
-}
-
-@keyframes ll-fine {
-  0%, 25% { opacity: 0; }
-  50% { opacity: 1; }
-  75%, 100% { opacity: 0; }
-}
-
-@keyframes ll-twinkle {
-  0% { opacity: 1; }
-  50% { opacity: 0.2; }
-}
-
-.logo-loader.is-solid .ll-grid {
-  animation: none;
-  opacity: 0;
-}
-
-.logo-loader.is-solid .ll-g2 {
-  animation: ll-dissolve 0.45s var(--ease) both;
-}
-
-.logo-loader.is-solid .ll-g2 rect {
-  animation: none;
-}
-
-.logo-loader.is-solid .ll-mark {
-  opacity: 1;
-  animation: ll-form 0.6s var(--ease) both;
-}
-
-@keyframes ll-dissolve {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
-@keyframes ll-form {
-  0%, 20% { opacity: 0.14; transform: scale(0.97); }
-  70% { opacity: 1; transform: scale(1.03); }
-  100% { opacity: 1; transform: scale(1); }
+  flex: none;
 }
 
 .level-bars {
@@ -1169,8 +1076,8 @@ a {
 .thinking-indicator {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  min-height: 34px;
+  gap: 10px;
+  min-height: 28px;
   font-size: 13px;
 }
 
@@ -1197,7 +1104,7 @@ a {
 .thinking-head {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
   min-height: 26px;
   text-align: left;
   font-size: 13px;
@@ -1206,56 +1113,16 @@ a {
   max-width: 100%;
 }
 
+.thinking-head:disabled {
+  cursor: default;
+}
+
 .thinking:not(.is-running) .thinking-head:not(:disabled) {
   cursor: pointer;
 }
 
 .thinking:not(.is-running) .thinking-head:not(:disabled):hover {
   color: var(--text);
-}
-
-.thinking-live {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  min-height: 46px;
-  min-width: 0;
-}
-
-.thinking-live-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.thinking-live-top {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-}
-
-.thinking-kicker {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
-
-.thinking-live .thinking-heading {
-  font-size: 13.5px;
-  color: var(--text);
-}
-
-.thinking-live .thinking-timer {
-  margin-left: 0;
-}
-
-.thinking-mark {
-  flex: none;
-  fill: var(--mark);
 }
 
 .thinking-label {
@@ -3141,17 +3008,4 @@ a {
     opacity: 1;
   }
 
-  .ll-grid,
-  .ll-grid rect,
-  .ll-mark {
-    animation: none !important;
-  }
-
-  .ll-g2 {
-    opacity: 1;
-  }
-
-  .logo-loader.is-solid .ll-g2 {
-    opacity: 0;
-  }
 }
