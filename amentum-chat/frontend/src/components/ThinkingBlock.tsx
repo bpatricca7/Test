@@ -3,7 +3,7 @@ import { ChevronRight } from "lucide-react";
 import clsx from "clsx";
 import type { Part } from "../lib/types";
 import { Markdown } from "./Markdown";
-import { clock, Loader, useElapsed } from "./ThinkingSpinner";
+import { clock, Radar, useElapsed } from "./ThinkingSpinner";
 
 type ReasoningPart = Extract<Part, { type: "reasoning" }>;
 
@@ -34,27 +34,32 @@ export function ThinkingBlock({ part, expandDefault }: { part: ReasoningPart; ex
 
   return (
     <div className={clsx("thinking", running && "is-running", showBody && "is-open")}>
-      <button
-        className="thinking-head"
-        onClick={() => hasText && !running && setOpen((o) => !o)}
-        aria-expanded={showBody}
-        disabled={!hasText || running}
-      >
-        {running ? <Loader size={13} /> : <span className="thinking-mark" aria-hidden />}
-        {running ? (
-          <span className="thinking-label">
-            <span className="status-label">Reasoning</span>
-            {heading && <span className="thinking-heading">{heading}</span>}
+      {running ? (
+        <div className="thinking-live" role="status" aria-live="polite">
+          <Radar size={40} />
+          <span className="thinking-live-text">
+            <span className="thinking-live-top">
+              <span className="thinking-kicker">Reasoning</span>
+              <span className="thinking-timer">{clock(elapsed)}</span>
+            </span>
+            <span className="thinking-heading">{heading ?? "Working through the problem"}</span>
           </span>
-        ) : (
+        </div>
+      ) : (
+        <button
+          className="thinking-head"
+          onClick={() => hasText && setOpen((o) => !o)}
+          aria-expanded={showBody}
+          disabled={!hasText}
+        >
+          <span className="thinking-mark" aria-hidden />
           <span className="thinking-label done">
             {part.status === "stopped" ? "Reasoning stopped" : `Reasoned for ${secs}s`}
             {hasText && <span className="thinking-steps">{steps} step{steps === 1 ? "" : "s"}</span>}
           </span>
-        )}
-        {running && <span className="thinking-timer">{clock(elapsed)}</span>}
-        {!running && hasText && <ChevronRight size={14} className={clsx("chev-r", open && "open")} />}
-      </button>
+          {hasText && <ChevronRight size={14} className={clsx("chev-r", open && "open")} />}
+        </button>
+      )}
       {showBody && (
         <div className="thinking-body" ref={bodyRef}>
           <Markdown text={part.text} className="thinking-md" />

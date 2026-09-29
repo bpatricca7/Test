@@ -21,8 +21,8 @@ your PC today against the OpenAI API, or with no API key at all in demo mode.
 - **GPT-5.6 Sol / Terra / Luna** with **model and reasoning-effort dropdowns right in the chat
   composer**. Effort runs Instant, Light, Balanced, Deep, Extra deep and Maximum. All six levels were
   verified against the live API for all three models, and each model remembers its own level.
-- **Reasoning traces.** Reasoning summaries stream live from the Responses API with a rising-bars
-  activity indicator, a mm:ss timer and the current step's heading. When it finishes, the trace
+- **Reasoning traces.** While the model reasons, a radar-sweep spinner runs next to a mm:ss timer
+  and the heading of the current step, and the reasoning summary streams in live from the Responses API. When it finishes, the trace
   collapses to "Reasoned for 12s · 3 steps" and you can reopen it.
 - **Code interpreter.** A stateful Python (Jupyter) sandbox with pandas, matplotlib, openpyxl,
   python-docx, python-pptx, pypdf and reportlab. You can watch the code as it's written. Charts

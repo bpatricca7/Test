@@ -12,6 +12,18 @@ export function Loader({ size = 16 }: { size?: number }) {
   );
 }
 
+/** Thinking spinner: a radar sweep with contacts that light up as the beam passes. */
+export function Radar({ size = 30 }: { size?: number }) {
+  return (
+    <span className="radar" style={{ width: size, height: size }} aria-hidden>
+      <i className="radar-sweep" />
+      <i className="radar-blip" />
+      <i className="radar-blip" />
+      <i className="radar-blip" />
+    </span>
+  );
+}
+
 export function useElapsed(startMs: number | null, running: boolean): number {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -32,7 +44,7 @@ export function ThinkingIndicator({ label, startedAt }: { label: string; started
   const elapsed = useElapsed(startedAt, true);
   return (
     <div className="thinking-indicator" role="status" aria-live="polite">
-      <Loader size={14} />
+      <Radar size={30} />
       <span className="status-label">{label}</span>
       {startedAt && <span className="thinking-timer">{clock(elapsed)}</span>}
     </div>

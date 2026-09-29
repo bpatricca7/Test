@@ -816,6 +816,85 @@ a {
   }
 }
 
+/* Thinking spinner: radar sweep. Rings + crosshair are drawn by the base, the beam rotates, and
+   each contact flares as the beam passes its bearing (delay = bearing / 360 × period). */
+.radar {
+  --period: 2.4s;
+  position: relative;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--accent-line);
+  background:
+    radial-gradient(circle, transparent 0 31%, var(--accent-line) 31% calc(31% + 1px), transparent calc(31% + 1px)),
+    linear-gradient(var(--grid-line), var(--grid-line)) center / 100% 1px no-repeat,
+    linear-gradient(var(--grid-line), var(--grid-line)) center / 1px 100% no-repeat,
+    var(--accent-soft);
+  overflow: hidden;
+  --grid-line: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.radar-sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 62%,
+    color-mix(in srgb, var(--accent) 16%, transparent) 78%,
+    color-mix(in srgb, var(--accent) 65%, transparent) 100%
+  );
+  animation: sweep var(--period) linear infinite;
+}
+
+.radar-sweep::after {
+  content: "";
+  position: absolute;
+  left: calc(50% - 0.75px);
+  top: 0;
+  width: 1.5px;
+  height: 50%;
+  background: var(--accent);
+}
+
+.radar-blip {
+  position: absolute;
+  width: 11%;
+  height: 11%;
+  min-width: 3px;
+  min-height: 3px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--accent) 30%, transparent);
+  translate: -50% -50%;
+  opacity: 0;
+  animation: blip var(--period) linear infinite;
+}
+
+.radar-blip:nth-of-type(2) { left: 77.7%; top: 34%;   animation-delay: calc(var(--period) * 60 / 360); }
+.radar-blip:nth-of-type(3) { left: 55.7%; top: 71.3%; animation-delay: calc(var(--period) * 165 / 360); }
+.radar-blip:nth-of-type(4) { left: 21%;   top: 42.2%; animation-delay: calc(var(--period) * 285 / 360); }
+
+@keyframes sweep {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes blip {
+  0% {
+    opacity: 1;
+    scale: 1.5;
+  }
+  10% {
+    scale: 1;
+  }
+  65%,
+  100% {
+    opacity: 0;
+    scale: 1;
+  }
+}
+
 .level-bars {
   display: inline-flex;
   align-items: flex-end;
@@ -1074,8 +1153,8 @@ a {
 .thinking-indicator {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  height: 28px;
+  gap: 12px;
+  min-height: 34px;
   font-size: 13px;
 }
 
@@ -1117,6 +1196,45 @@ a {
 
 .thinking:not(.is-running) .thinking-head:not(:disabled):hover {
   color: var(--text);
+}
+
+.thinking-live {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-height: 46px;
+  min-width: 0;
+}
+
+.thinking-live-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.thinking-live-top {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.thinking-kicker {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.thinking-live .thinking-heading {
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.thinking-live .thinking-timer {
+  margin-left: 0;
 }
 
 .thinking-mark {
@@ -3008,5 +3126,15 @@ a {
     animation: none !important;
     transform: none;
     opacity: 1;
+  }
+
+  .radar-sweep {
+    animation: none !important;
+    transform: rotate(45deg);
+  }
+
+  .radar-blip {
+    animation: none !important;
+    opacity: 0.7;
   }
 }
