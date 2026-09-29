@@ -1,22 +1,29 @@
-/** Placeholder mark: four rising bars, a nod to the "Amplified" rising-lines identity.
- *  To use the official Amentum logo, drop the approved SVG into public/brand/ and replace
- *  this component's contents with <img src="/brand/logo.svg" alt="Amentum" />. */
-export function BrandMark({ size = 22 }: { size?: number }) {
+import { MARK_H, MARK_PATH, WORD_H, WORD_PATH } from "../lib/mark";
+
+/** The Amentum four-arch mark, in brand green. `width` sets the size; height follows the artwork. */
+export function BrandMark({ width = 26, className }: { width?: number; className?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" className="brand-mark" aria-hidden>
-      <path d="M2.5 21 L6.5 21 L8.5 14 L4.5 14 Z" />
-      <path d="M7.5 21 L11.5 21 L14 11 L10 11 Z" />
-      <path d="M12.5 21 L16.5 21 L19.5 7 L15.5 7 Z" />
-      <path d="M17.5 21 L21.5 21 L24 3 L20 3 Z" transform="translate(-1.5 0)" />
+    <svg width={width} height={(width * MARK_H) / 100} viewBox={`0 0 100 ${MARK_H}`}
+      className={className ?? "brand-mark"} aria-hidden>
+      <path d={MARK_PATH} fillRule="evenodd" />
     </svg>
   );
 }
 
+/** Logotype plus the product suffix (e.g. "AI"). Falls back to text for a non-Amentum app name. */
 export function Wordmark({ name }: { name: string }) {
   const [first, ...rest] = name.split(" ");
+  const isAmentum = first.toLowerCase() === "amentum";
   return (
     <span className="wordmark">
-      <span className="wordmark-main">{first.toUpperCase()}</span>
+      {isAmentum ? (
+        <svg className="wordmark-main" height={14} width={(14 * 100) / WORD_H} viewBox={`0 0 100 ${WORD_H}`}
+          role="img" aria-label="Amentum">
+          <path d={WORD_PATH} fillRule="evenodd" />
+        </svg>
+      ) : (
+        <span className="wordmark-text">{first}</span>
+      )}
       {rest.length > 0 && <span className="wordmark-sub">{rest.join(" ")}</span>}
     </span>
   );

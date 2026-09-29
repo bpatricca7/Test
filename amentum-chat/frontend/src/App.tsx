@@ -10,7 +10,7 @@ import { Header } from "./components/Header";
 import { MessageView } from "./components/MessageView";
 import { SettingsModal } from "./components/SettingsModal";
 import { Sidebar } from "./components/Sidebar";
-import { Loader } from "./components/ThinkingSpinner";
+import { LogoLoader } from "./components/ThinkingSpinner";
 import { Toasts } from "./components/ui";
 import { UsageModal } from "./components/UsageModal";
 import { BrandMark } from "./components/Brand";
@@ -52,7 +52,7 @@ function Thread() {
   }, [streaming?.controller]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loadingConversation) {
-    return <div className="thread center"><Loader size={24} /></div>;
+    return <div className="thread center"><LogoLoader width={48} /></div>;
   }
   if (!messages.length) {
     return <div className="thread empty-thread"><EmptyState /></div>;
@@ -97,7 +97,7 @@ export default function App() {
   if (bootError) {
     return (
       <div className="boot">
-        <BrandMark size={32} />
+        <BrandMark width={48} />
         <h2>Can't reach the Amentum AI service</h2>
         <p>{bootError}</p>
         <button className="btn primary" onClick={() => location.reload()}>Retry</button>
@@ -107,7 +107,7 @@ export default function App() {
   if (!config) {
     return (
       <div className="boot">
-        <Loader size={28} />
+        <LogoLoader width={56} />
       </div>
     );
   }

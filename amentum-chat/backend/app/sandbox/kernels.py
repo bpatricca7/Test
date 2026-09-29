@@ -43,8 +43,9 @@ try:
     _mpl.rcParams.update({
         "figure.dpi": 110, "figure.figsize": (8, 4.5), "axes.spines.top": False, "axes.spines.right": False,
         "axes.grid": True, "grid.alpha": 0.25, "font.size": 10,
-        # Amentum green first; validated for colour-blind separation and contrast (light + dark).
-        "axes.prop_cycle": _cycler(color=["#009D4F", "#4A63C0", "#C98300", "#138FA8", "#D2544F", "#9A62D8"]),
+        # Leads with a chart-safe shade of the Amentum logo green (#5FB257 is too light for bars);
+        # validated for colour-blind separation and contrast (light + dark).
+        "axes.prop_cycle": _cycler(color=["#43993B", "#4A63C0", "#C98300", "#138FA8", "#D2544F", "#9A62D8"]),
     })
     get_ipython().run_line_magic("matplotlib", "inline")
 except Exception:

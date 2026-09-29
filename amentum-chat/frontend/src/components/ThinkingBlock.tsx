@@ -3,7 +3,8 @@ import { ChevronRight } from "lucide-react";
 import clsx from "clsx";
 import type { Part } from "../lib/types";
 import { Markdown } from "./Markdown";
-import { clock, Radar, useElapsed } from "./ThinkingSpinner";
+import { clock, LogoLoader, useElapsed } from "./ThinkingSpinner";
+import { BrandMark } from "./Brand";
 
 type ReasoningPart = Extract<Part, { type: "reasoning" }>;
 
@@ -24,25 +25,41 @@ export function ThinkingBlock({ part, expandDefault }: { part: ReasoningPart; ex
   const heading = running ? currentHeading(part.text) : null;
   const steps = Math.max(1, [...part.text.matchAll(HEADINGS)].length);
 
+  // When reasoning finishes live, hold the header briefly so the pixel mark can resolve to solid.
+  const [settling, setSettling] = useState(false);
+  const wasRunning = useRef(running);
+  useEffect(() => {
+    const finished = wasRunning.current && !running;
+    wasRunning.current = running;
+    if (!finished || part.status === "stopped") return;
+    setSettling(true);
+    const t = setTimeout(() => setSettling(false), 1100);
+    return () => clearTimeout(t);
+  }, [running]);
+
   useEffect(() => {
     if (running && bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
   }, [part.text, running]);
 
-  const showBody = hasText && (running || open);
+  const showBody = hasText && (running || settling || open);
   const duration = part.duration_ms ?? elapsed;
   const secs = Math.max(1, Math.round(duration / 1000));
 
   return (
     <div className={clsx("thinking", running && "is-running", showBody && "is-open")}>
-      {running ? (
-        <div className="thinking-live" role="status" aria-live="polite">
-          <Radar size={40} />
+      {running || settling ? (
+        <div className={clsx("thinking-live", !running && "is-settled")} role="status" aria-live="polite">
+          <LogoLoader width={44} solid={!running} />
           <span className="thinking-live-text">
             <span className="thinking-live-top">
-              <span className="thinking-kicker">Reasoning</span>
-              <span className="thinking-timer">{clock(elapsed)}</span>
+              <span className="thinking-kicker">{running ? "Reasoning" : "Complete"}</span>
+              <span className="thinking-timer">
+                {running ? clock(duration) : `${steps} step${steps === 1 ? "" : "s"}`}
+              </span>
             </span>
-            <span className="thinking-heading">{heading ?? "Working through the problem"}</span>
+            <span className="thinking-heading">
+              {running ? heading ?? "Working through the problem" : `Reasoned for ${secs}s`}
+            </span>
           </span>
         </div>
       ) : (
@@ -52,7 +69,7 @@ export function ThinkingBlock({ part, expandDefault }: { part: ReasoningPart; ex
           aria-expanded={showBody}
           disabled={!hasText}
         >
-          <span className="thinking-mark" aria-hidden />
+          <BrandMark width={15} className="thinking-mark" />
           <span className="thinking-label done">
             {part.status === "stopped" ? "Reasoning stopped" : `Reasoned for ${secs}s`}
             {hasText && <span className="thinking-steps">{steps} step{steps === 1 ? "" : "s"}</span>}

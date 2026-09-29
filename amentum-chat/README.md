@@ -21,9 +21,11 @@ your PC today against the OpenAI API, or with no API key at all in demo mode.
 - **GPT-5.6 Sol / Terra / Luna** with **model and reasoning-effort dropdowns right in the chat
   composer**. Effort runs Instant, Light, Balanced, Deep, Extra deep and Maximum. All six levels were
   verified against the live API for all three models, and each model remembers its own level.
-- **Reasoning traces.** While the model reasons, a radar-sweep spinner runs next to a mm:ss timer
-  and the heading of the current step, and the reasoning summary streams in live from the Responses API. When it finishes, the trace
-  collapses to "Reasoned for 12s · 3 steps" and you can reopen it.
+- **Reasoning traces.** While the model reasons, the Amentum mark plays as a pixel spinner that
+  sharpens from coarse to fine blocks, beside a mm:ss timer and the heading of the current step.
+  The reasoning summary streams in live from the Responses API. When reasoning finishes, the pixels
+  resolve into the solid logo and the trace collapses to "Reasoned for 12s · 3 steps", which you
+  can reopen.
 - **Code interpreter.** A stateful Python (Jupyter) sandbox with pandas, matplotlib, openpyxl,
   python-docx, python-pptx, pypdf and reportlab. You can watch the code as it's written. Charts
   render inline, and every file the code creates shows up as a card with **Download**,
@@ -213,20 +215,22 @@ Everything is an environment variable; see `backend/app/config.py` for the full 
 
 ## Design and branding
 
-The interface is deliberately plain-spoken: neutral graphite and paper surfaces, hairline rules,
-tight corners, IBM Plex Sans with IBM Plex Mono for data. Amentum green is the single accent. There
-are no gradients, glows or glass effects. Fonts are bundled, so nothing loads from a CDN.
+The interface is deliberately plain-spoken: charcoal and white surfaces, hairline rules, tight
+corners, IBM Plex Sans with IBM Plex Mono for data. The Amentum logo green is the single accent.
+There are no gradients, glows or glass effects. Fonts are bundled, so nothing loads from a CDN.
 
-- **Colors** all live in `frontend/src/styles/tokens.css`. The published Amentum values
-  (Green `#009D4F`, Blue `#30448B`, Slate `#4B4F58`) are the anchors. If your brand team has
-  updated values from the 2024 identity, change the `--brand-*` and per-theme `--accent*` tokens
-  there; nothing else hard-codes color.
-- **Charts** made by the code interpreter use a categorical palette that leads with Amentum green.
-  It is validated for color-blind separation and contrast in light and dark
-  (`backend/app/sandbox/kernels.py`).
-- **Logo:** the rising-bars mark is a placeholder that nods to the "Amplified" rising-lines
-  identity. To use the approved Amentum logo, replace `frontend/src/components/Brand.tsx` and
-  `frontend/public/brand/mark.svg`, following brand guidelines.
+- **Colors** all live in `frontend/src/styles/tokens.css`. The anchors are the logo green
+  `#5FB257` and the charcoal `#282828`, both sampled from amentum.com. In light mode, green text
+  uses the darker `#37822F` so it meets 4.5:1 contrast on white. To apply official brand values,
+  change the `--brand-*` and per-theme `--accent*` tokens; nothing else hard-codes color.
+- **Charts** made by the code interpreter lead with `#43993B`, a darker shade of the logo green,
+  because `#5FB257` is too light for bars on white. The palette is validated for color-blind
+  separation and contrast in light and dark (`backend/app/sandbox/kernels.py`).
+- **Logo:** the four-arch mark and the "amentum" logotype are vector traces of the logo on
+  amentum.com (`frontend/src/lib/mark.ts`, `frontend/public/brand/mark.svg`). They are accurate
+  enough for an internal tool, but for production swap in the approved artwork from Amentum's brand
+  team. The pixel spinner is generated from the same mark, so re-sample `MARK_GRIDS` if you
+  replace it.
 
 ## Development and tests
 

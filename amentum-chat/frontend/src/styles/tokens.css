@@ -1,15 +1,16 @@
 /* Amentum AI design tokens.
  *
- * Brand anchors (published Amentum palette): Green #009D4F, Blue #30448B, Slate #4B4F58.
- * Green is the single interface accent; everything else is neutral graphite / paper so the
- * content, not the chrome, carries the page. To apply updated brand values, change the
- * --brand-* variables and the per-theme --accent* values below. Nothing else hard-codes colour.
+ * Brand anchors, sampled from amentum.com: logo green #5FB257 and charcoal #282828 (the site's
+ * dark surfaces). Neutrals are true greys built around that charcoal; green is the single accent.
+ * In light mode, green text uses a darker shade (#37822F) so it meets 4.5:1 on white; the mark
+ * itself always stays logo green. To apply updated brand values, change the --brand-* variables
+ * and the per-theme --accent* values below. Nothing else hard-codes colour.
  */
 
 :root {
-  --brand-green: #009d4f;
-  --brand-blue: #30448b;
-  --brand-slate: #4b4f58;
+  --brand-green: #5fb257;
+  --brand-charcoal: #282828;
+  --mark: var(--brand-green);
 
   --font-sans: "IBM Plex Sans Variable", "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", "Cascadia Mono", Consolas, monospace;
@@ -24,57 +25,57 @@
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 
   /* ---- dark (default) ---- */
-  --bg: #0d0f12;
-  --bg-2: #111418;
-  --raised: #161a1f;
-  --raised-2: #1d2228;
-  --line: #242930;
-  --line-2: #323841;
-  --text: #e8eaed;
-  --text-2: #a7adb5;
-  --text-3: #6f7680;
-  --accent: #1fbf6b; /* green tuned for dark surfaces */
-  --accent-fill: #1fbf6b;
-  --on-accent: #04130a;
-  --accent-soft: rgba(31, 191, 107, 0.12);
-  --accent-line: rgba(31, 191, 107, 0.45);
+  --bg: #1c1c1c;
+  --bg-2: #222222;
+  --raised: #282828; /* brand charcoal */
+  --raised-2: #303030;
+  --line: #333333;
+  --line-2: #444444;
+  --text: #f0f0f0;
+  --text-2: #b4b4b4;
+  --text-3: #7e7e7e;
+  --accent: #5fb257;
+  --accent-fill: #5fb257;
+  --on-accent: #0f1a0d;
+  --accent-soft: rgba(95, 178, 87, 0.13);
+  --accent-line: rgba(95, 178, 87, 0.45);
   --danger: #f0646d;
   --danger-soft: rgba(240, 100, 109, 0.12);
   --warn: #e3a53f;
   --warn-soft: rgba(227, 165, 63, 0.12);
-  --info: #7f93d6;
-  --code-bg: #0a0c0e;
-  --code-line: #20252b;
+  --info: #8a9bd8;
+  --code-bg: #161616;
+  --code-line: #2c2c2c;
   --shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
-  --scrim: rgba(4, 6, 8, 0.66);
-  --grid: rgba(255, 255, 255, 0.045);
+  --scrim: rgba(8, 8, 8, 0.66);
+  --grid: rgba(255, 255, 255, 0.04);
   color-scheme: dark;
 }
 
 :root[data-theme="light"] {
-  --bg: #f3f4f5;
+  --bg: #f4f4f4;
   --bg-2: #fafafa;
   --raised: #ffffff;
-  --raised-2: #f0f2f4;
-  --line: #e0e3e7;
-  --line-2: #cbd0d6;
-  --text: #121518;
-  --text-2: #4b4f58; /* Amentum slate */
-  --text-3: #7b818a;
-  --accent: #007f40; /* text-safe green on white */
-  --accent-fill: #008743;
-  --on-accent: #ffffff;
-  --accent-soft: rgba(0, 157, 79, 0.09);
-  --accent-line: rgba(0, 135, 67, 0.4);
+  --raised-2: #f0f0f0;
+  --line: #e2e2e2;
+  --line-2: #cdcdcd;
+  --text: #262626;
+  --text-2: #525252;
+  --text-3: #7c7c7c;
+  --accent: #37822f; /* text-safe shade of the logo green */
+  --accent-fill: #5fb257;
+  --on-accent: #0f1a0d;
+  --accent-soft: rgba(95, 178, 87, 0.12);
+  --accent-line: rgba(55, 130, 47, 0.45);
   --danger: #c93a44;
   --danger-soft: rgba(201, 58, 68, 0.08);
   --warn: #a86a05;
   --warn-soft: rgba(168, 106, 5, 0.09);
   --info: #30448b;
-  --code-bg: #111418;
-  --code-line: #262b31;
-  --shadow: 0 14px 36px rgba(18, 21, 24, 0.14);
-  --scrim: rgba(18, 21, 24, 0.35);
-  --grid: rgba(18, 21, 24, 0.055);
+  --code-bg: #1f1f1f;
+  --code-line: #2e2e2e;
+  --shadow: 0 14px 36px rgba(20, 20, 20, 0.14);
+  --scrim: rgba(20, 20, 20, 0.35);
+  --grid: rgba(20, 20, 20, 0.05);
   color-scheme: light;
 }

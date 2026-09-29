@@ -101,7 +101,7 @@ export function Sidebar() {
       <aside className={clsx("sidebar", sidebarOpen && "open")}>
         <div className="sidebar-top">
           <div className="brand">
-            <BrandMark size={20} />
+            <BrandMark width={27} />
             <Wordmark name={config?.app_name ?? "Amentum AI"} />
           </div>
           <button className="icon-btn subtle" onClick={() => setSidebarOpen(false)} title="Close sidebar">
