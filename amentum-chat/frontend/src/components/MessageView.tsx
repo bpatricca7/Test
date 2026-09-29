@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { ArrowDownRight, ArrowUpRight, CircleStop, Clock, Coins, Cpu, Pencil, RefreshCw, TriangleAlert, Info, CircleAlert } from "lucide-react";
 import clsx from "clsx";
 import type { Message, Part, UsageInfo } from "../lib/types";
@@ -59,6 +59,17 @@ const AssistantMessage = memo(function AssistantMessage({ msg, isLast, streaming
   const text = msg.parts.filter((p) => p.type === "text").map((p) => (p as { text: string }).text).join("\n\n");
   const label = live ? liveLabel(msg.parts) : null;
   const lastIsText = msg.parts[msg.parts.length - 1]?.type === "text";
+  const fileLinks = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const p of msg.parts) {
+      const found = p.type === "files" ? p.files : p.type === "tool" && p.output && "files" in p.output ? p.output.files : [];
+      for (const f of found) {
+        if (!f.id) continue;
+        map[f.name] = map[f.name.toLowerCase()] = f.url;
+      }
+    }
+    return map;
+  }, [msg.parts]);
 
   return (
     <div className={clsx("msg assistant", live && "is-live")}>
@@ -73,7 +84,7 @@ const AssistantMessage = memo(function AssistantMessage({ msg, isLast, streaming
             case "text":
               return (
                 <div key={`t${i}`} className={clsx("msg-text", live && lastIsText && i === msg.parts.length - 1 && "caret")}>
-                  <Markdown text={p.text} />
+                  <Markdown text={p.text} files={fileLinks} />
                 </div>
               );
             case "files":

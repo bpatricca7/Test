@@ -131,9 +131,13 @@ message timeline, so a live stream and a reloaded conversation render identicall
 **Thinking traces.** With the Responses API the app requests
 `reasoning: {effort, summary: "auto"}` and streams `response.reasoning_summary_text.delta`. With
 `RESPONSES_STORE=false`, reasoning is carried between tool calls as `reasoning.encrypted_content`,
-so nothing is retained by the provider. Deployments that only support Chat Completions (set
-`"api": "chat"` per model) still show a live "Thinking" phase with duration and reasoning-token
-counts, and `reasoning_content` is rendered if the model streams it.
+so nothing is retained by the provider. GPT-5.6 decides how much to think: on easy questions it
+often answers with no reasoning at all, and short reasoning may come back without a summary.
+
+Deployments that only support Chat Completions (set `"api": "chat"` per model) still work, with two
+limits verified against the live OpenAI API: no thinking text is streamed (reasoning tokens still
+appear in usage), and GPT-5.x rejects tools combined with a thinking level. When that happens the app
+retries the request with thinking off, keeps tools and code interpreter working, and shows a note.
 
 **Code interpreter modes** (`CODE_INTERPRETER`):
 
@@ -229,7 +233,8 @@ server.
 - **GPT-5.6 availability and pricing in Azure Government.** I couldn't confirm either.
   Everything model-specific is in `config/models.json` and the env file.
 - **Responses API in your Gov region.** If it isn't available, set `"api": "chat"` for the
-  affected models. Thinking then shows duration and token counts instead of summaries.
+  affected models. You lose the thinking text, and turns that use tools run without extended
+  thinking (see *Thinking traces* above).
 - **Hosted code interpreter** (`CODE_INTERPRETER=hosted`) depends on the provider's containers
   API and is untested against Azure Government. `local` is the recommended mode.
 - **Single replica.** The app runs as one process; see the scaling notes in the GCC High guide.

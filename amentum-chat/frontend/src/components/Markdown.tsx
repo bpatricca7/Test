@@ -48,7 +48,24 @@ function CodeBlock({ children, className }: { children?: ReactNode; className?: 
   );
 }
 
-export const Markdown = memo(function Markdown({ text, className }: { text: string; className?: string }) {
+/** Map a model-written link like "report.docx", "sandbox:/mnt/data/report.docx" or "./out/report.docx"
+ *  to the generated file's download URL. Returns null for other relative links (which would 404). */
+function resolveLink(href: string | undefined, files?: Record<string, string>): string | null | undefined {
+  if (!href) return href;
+  if (/^(https?:|mailto:|#)/i.test(href)) return href;
+  let path = href.replace(/^sandbox:/, "").split(/[?#]/)[0];
+  try {
+    path = decodeURIComponent(path);
+  } catch {
+    /* keep the raw path */
+  }
+  const name = path.split("/").pop() ?? "";
+  return files?.[name] ?? files?.[name.toLowerCase()] ?? null;
+}
+
+export const Markdown = memo(function Markdown({ text, className, files }: {
+  text: string; className?: string; files?: Record<string, string>;
+}) {
   return (
     <div className={`markdown ${className ?? ""}`}>
       <ReactMarkdown
@@ -66,11 +83,16 @@ export const Markdown = memo(function Markdown({ text, className }: { text: stri
               <table>{children}</table>
             </div>
           ),
-          a: ({ children, href }) => (
-            <a href={href} target="_blank" rel="noreferrer noopener">
-              {children}
-            </a>
-          ),
+          a: ({ children, href }) => {
+            const url = resolveLink(href, files);
+            if (url === null) return <span className="dead-link">{children}</span>;
+            if (url !== href) return <a href={url} download>{children}</a>;
+            return (
+              <a href={href} target="_blank" rel="noreferrer noopener">
+                {children}
+              </a>
+            );
+          },
         }}
       >
         {text}

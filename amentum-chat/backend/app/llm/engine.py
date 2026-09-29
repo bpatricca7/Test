@@ -7,7 +7,9 @@ Two wire protocols, same event stream to the UI:
   tool calls via encrypted reasoning items (store=false = nothing retained at
   the provider).
 * Chat Completions (fallback for deployments without the Responses API):
-  function tools + streaming; reasoning is summarised as timing + token count.
+  function tools + streaming. Thinking text only appears if the model streams
+  `reasoning_content`; GPT-5.x rejects tools + reasoning_effort here, so such
+  requests are retried with reasoning_effort="none".
 """
 
 from __future__ import annotations
@@ -506,7 +508,7 @@ class Turn:
         messages += self._history("chat") + [self._current_user("chat")]
         tools: list[dict[str, Any]] = [ci.FUNCTION_TOOL_CHAT] if self.code_mode == "local" else []
         tools += self.mcp.function_tools(self.req.mcp_server_ids, "chat")
-        thinks = m.reasoning and self.req.effort not in (None, "none")
+        effort = self.req.effort if m.reasoning else None
 
         for step in range(s.max_tool_steps + 1):
             params: dict[str, Any] = {"model": m.deployment, "messages": messages, "stream": True,
@@ -515,15 +517,28 @@ class Turn:
                 params["tools"] = tools
                 if step == s.max_tool_steps:
                     params["tool_choice"] = "none"
-            if m.reasoning and self.req.effort:
-                params["reasoning_effort"] = self.req.effort
+            if effort:
+                params["reasoning_effort"] = effort
             if s.max_output_tokens:
                 params["max_completion_tokens"] = s.max_output_tokens
 
             rid = f"rs_chat_{step}"
-            if thinks:
-                await self._reasoning_start(rid)
-            stream = await self.client.chat.completions.create(**params)
+            try:
+                stream = await self.client.chat.completions.create(**params)
+            except openai.BadRequestError as exc:
+                # GPT-5.x on /chat/completions rejects function tools combined with reasoning_effort
+                # (other than "none"). Keep the tools and retry this request without extended thinking.
+                if not (tools and effort not in (None, "none") and "reasoning_effort" in str(exc)):
+                    raise
+                effort = "none"
+                params["reasoning_effort"] = effort
+                await self.emit({"type": "notice", "level": "info", "text":
+                                 "This model's Chat Completions endpoint can't combine tools with extended thinking, "
+                                 "so this answer used tools without it. Use the Responses API (\"api\": \"responses\") "
+                                 "to get both."})
+                stream = await self.client.chat.completions.create(**params)
+            # Chat Completions only reveals thinking if the model streams `reasoning_content`; the UI's
+            # live "Thinking" indicator covers the silent wait, so no empty thinking block is created.
             text = ""
             pending: dict[int, dict[str, Any]] = {}
             async for chunk in stream:

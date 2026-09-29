@@ -157,3 +157,16 @@ def test_diagnostics_probe(make_app):
         d = c.get("/api/diagnostics", params={"probe": True}).json()
         assert d["probe"]["ok"] is True
         assert d["sandbox"]["ok"] is True
+
+
+def test_chat_completions_retries_without_thinking_when_tools_rejected(make_app, chat, fake_llm_url, tmp_path):
+    """Real OpenAI behaviour: GPT-5.x /chat/completions rejects tools + reasoning_effort (HTTP 400)."""
+    app = make_app(LLM_PROVIDER="openai", OPENAI_API_KEY="test", OPENAI_BASE_URL=f"{fake_llm_url}/strict/v1",
+                   MODELS_FILE=_chat_models_file(tmp_path))
+    with TestClient(app) as c:
+        events = chat(c, {"message": "chart the hours please", "model": "gpt-5.6-luna", "effort": "medium"})
+        notice = next(e for e in events if e["type"] == "notice")
+        assert notice["level"] == "info" and "without" in notice["text"]
+        assert next(e for e in events if e["type"] == "tool_end")["status"] == "done"
+        assert next(e for e in events if e["type"] == "done")["status"] == "complete"
+        assert not any(e["type"] == "reasoning_start" for e in events)

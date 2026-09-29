@@ -44,6 +44,20 @@ def fake_llm_url():
     async def deployment_responses(deployment: str, request: Request):
         return await responses(request)
 
+    @app.post("/strict/v1/chat/completions")  # mimics api.openai.com for GPT-5.x on Chat Completions
+    async def strict_chat(request: Request):
+        from fastapi.responses import JSONResponse
+
+        body = await request.json()
+        if body.get("tools") and body.get("reasoning_effort") not in (None, "none"):
+            model = body.get("model")
+            return JSONResponse(status_code=400, content={"error": {
+                "message": f"Function tools with reasoning_effort are not supported for {model} in "
+                           "/v1/chat/completions. To use function tools, use /v1/responses or set "
+                           "reasoning_effort to 'none'.",
+                "type": "invalid_request_error", "param": "reasoning_effort", "code": None}})
+        return await chat_completions(request)
+
     port = _free_port()
     server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning"))
     thread = threading.Thread(target=server.run, daemon=True)
