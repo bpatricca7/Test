@@ -14,10 +14,13 @@ your PC today against the OpenAI API, or with no API key at all in demo mode.
 | **Data connectors (MCP)** | **Usage & cost** | **Light theme** |
 | ![](docs/screenshots/connectors.png) | ![](docs/screenshots/usage.png) | ![](docs/screenshots/light.png) |
 
+<p align="center"><img src="docs/screenshots/thinking-levels.png" alt="Thinking level dropdown" width="720"></p>
+
 ## What you get
 
-- **GPT-5.6 Sol / Terra / Luna**, switchable per chat, each with a thinking-depth control
-  (Instant → Extra deep).
+- **GPT-5.6 Sol / Terra / Luna**, switchable per chat, with a **thinking-level dropdown** next to
+  the model picker: Instant, Light, Balanced, Deep, Extra deep and Maximum. All six levels were
+  verified against the live API for all three models, and each model remembers its own level.
 - **Thinking traces.** Reasoning summaries stream live from the Responses API into a panel with
   an animated orbit spinner, a timer and the current step's heading. When it finishes, the panel
   collapses to "Thought for 12s" and you can reopen it.

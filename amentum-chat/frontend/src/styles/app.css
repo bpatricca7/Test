@@ -529,6 +529,7 @@ a {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-left: auto;
 }
 
 .env-badge {
@@ -582,15 +583,6 @@ a {
   font-weight: 600;
   font-size: 16px;
   letter-spacing: -0.01em;
-}
-
-.model-effort {
-  font-size: 11.5px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 99px;
-  background: var(--accent-soft);
-  color: var(--accent);
 }
 
 .chev {
@@ -758,14 +750,121 @@ a {
   background: var(--surface-3);
 }
 
-.effort-bars i:nth-child(1) { height: 4px; }
-.effort-bars i:nth-child(2) { height: 6.5px; }
-.effort-bars i:nth-child(3) { height: 9px; }
-.effort-bars i:nth-child(4) { height: 11.5px; }
-.effort-bars i:nth-child(5) { height: 14px; }
-
 .effort-bars i.on {
   background: var(--gradient);
+}
+
+/* Thinking level dropdown */
+.thinking-picker {
+  position: relative;
+}
+
+.thinking-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 10px 0 11px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.thinking-btn:hover,
+.thinking-btn.active {
+  color: var(--text);
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+}
+
+.thinking-btn-icon {
+  color: var(--accent);
+}
+
+.thinking-menu {
+  position: absolute;
+  top: 42px;
+  left: 0;
+  width: 340px;
+  padding: 6px;
+  z-index: 50;
+}
+
+.thinking-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 10px;
+  text-align: left;
+  border-radius: var(--radius-sm);
+  transition: background 0.12s;
+}
+
+.thinking-option:hover {
+  background: var(--surface-2);
+}
+
+.thinking-option.selected {
+  background: var(--accent-soft);
+}
+
+.thinking-option .effort-bars {
+  width: 34px;
+  justify-content: center;
+}
+
+.thinking-option-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.35;
+}
+
+.thinking-option-text strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.thinking-option-text strong em {
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 99px;
+  background: var(--surface-3);
+  color: var(--text-3);
+}
+
+.thinking-option-text > span {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.thinking-menu-foot {
+  margin-top: 4px;
+  padding: 10px 10px 6px;
+  border-top: 1px solid var(--border);
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-3);
+}
+
+.model-text .model-level {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: var(--accent);
 }
 
 /* ---------------------------------------------------------------------------
@@ -3133,8 +3232,43 @@ a {
   }
 
   .env-badge span,
-  .model-effort {
+  .thinking-btn-label {
     display: none;
+  }
+
+  .topbar {
+    gap: 4px;
+  }
+
+  .topbar-right {
+    gap: 4px;
+  }
+
+  .model-btn {
+    padding: 0 6px 0 8px;
+    gap: 4px;
+  }
+
+  .model-name {
+    font-size: 15px;
+  }
+
+  .thinking-btn {
+    padding: 0 9px;
+    gap: 6px;
+  }
+
+  .thinking-btn .chev,
+  .topbar-title {
+    display: none;
+  }
+
+  .thinking-menu {
+    position: fixed;
+    top: 58px;
+    left: 12px;
+    right: 12px;
+    width: auto;
   }
 
   .topbar {

@@ -9,7 +9,7 @@
       "deployment": "gpt-5.6-sol",
       "api": "responses",
       "reasoning": true,
-      "efforts": ["none", "low", "medium", "high", "xhigh"],
+      "efforts": ["none", "low", "medium", "high", "xhigh", "max"],
       "default_effort": "medium",
       "vision": true,
       "pricing": { "input": 5.0, "cached_input": 0.5, "output": 30.0 }
@@ -22,7 +22,7 @@
       "deployment": "gpt-5.6-terra",
       "api": "responses",
       "reasoning": true,
-      "efforts": ["none", "low", "medium", "high", "xhigh"],
+      "efforts": ["none", "low", "medium", "high", "xhigh", "max"],
       "default_effort": "medium",
       "vision": true,
       "pricing": { "input": 2.0, "cached_input": 0.2, "output": 12.0 }
@@ -35,7 +35,7 @@
       "deployment": "gpt-5.6-luna",
       "api": "responses",
       "reasoning": true,
-      "efforts": ["none", "low", "medium", "high"],
+      "efforts": ["none", "low", "medium", "high", "xhigh", "max"],
       "default_effort": "low",
       "vision": true,
       "pricing": { "input": 0.2, "cached_input": 0.02, "output": 1.2 }

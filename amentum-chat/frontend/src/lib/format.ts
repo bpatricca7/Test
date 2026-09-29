@@ -54,3 +54,16 @@ export function effortLabel(e: string | null | undefined): string {
   if (!e) return "Standard";
   return { none: "Instant", low: "Light", medium: "Balanced", high: "Deep", xhigh: "Extra deep", max: "Maximum" }[e] ?? e;
 }
+
+export function effortDescription(e: string): string {
+  return (
+    {
+      none: "No extended thinking - fastest and cheapest",
+      low: "A quick think for simple questions",
+      medium: "Good default for most work",
+      high: "Multi-step analysis and tricky problems",
+      xhigh: "Hard problems - noticeably slower, more tokens",
+      max: "Hardest problems - slowest and most expensive",
+    }[e] ?? ""
+  );
+}
