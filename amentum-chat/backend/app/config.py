@@ -99,6 +99,8 @@ class Settings(BaseSettings):
     responses_store: bool = False
     max_tool_steps: int = 16
     max_output_tokens: int = 0  # 0 = provider default
+    # When a reply hits the output limit it is continued automatically, up to this many times.
+    max_continuations: int = 3
     system_prompt_extra: str = ""
 
     # ---- Code interpreter ---------------------------------------------------------

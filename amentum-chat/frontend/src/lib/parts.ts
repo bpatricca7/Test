@@ -78,8 +78,11 @@ export function applyEvent(parts: Part[], ev: StreamEvent): Part[] {
 }
 
 export function finalizeParts(parts: Part[], stopped: boolean): Part[] {
+  // A tool that never reported a result didn't finish, even if the turn did.
   return parts.map((p) =>
-    "status" in p && p.status === "running" ? ({ ...p, status: stopped ? "stopped" : "done" } as Part) : p,
+    "status" in p && p.status === "running"
+      ? ({ ...p, status: stopped || p.type === "tool" ? "stopped" : "done" } as Part)
+      : p,
   );
 }
 

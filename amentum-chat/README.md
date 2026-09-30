@@ -206,6 +206,9 @@ Everything is an environment variable; see `backend/app/config.py` for the full 
 | `REASONING_SUMMARY` | `auto` | `auto`, `concise`, `detailed`, `off` |
 | `RESPONSES_STORE` | `false` | Provider-side storage of responses |
 | `CODE_INTERPRETER` | `local` | `local`, `hosted`, `off` |
+| `MAX_OUTPUT_TOKENS` | `0` | Output-token cap per model request (`0` = the model's own maximum). Reasoning tokens count toward it, and with `CODE_INTERPRETER=hosted` so does every code step in the reply |
+| `MAX_CONTINUATIONS` | `3` | A reply cut off by the output limit is continued automatically this many times before the user sees a warning |
+| `MAX_TOOL_STEPS` | `16` | Tool calls (code runs, connector queries) per reply |
 | `SANDBOX_URL`, `SANDBOX_TOKEN` | | Use the isolated sandbox service (empty = embedded) |
 | `AUTH_MODE`, `AUTH_USER_HEADER`, `ADMIN_USERS` | `none` | SSO via trusted header |
 | `CONNECTORS_ADMIN_ONLY`, `MCP_ALLOW_STDIO` | `false`, `true` | Connector governance |

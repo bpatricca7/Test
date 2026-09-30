@@ -170,3 +170,51 @@ def test_chat_completions_retries_without_thinking_when_tools_rejected(make_app,
         assert next(e for e in events if e["type"] == "tool_end")["status"] == "done"
         assert next(e for e in events if e["type"] == "done")["status"] == "complete"
         assert not any(e["type"] == "reasoning_start" for e in events)
+
+
+def _notices(events, level="warning"):
+    return [e["text"] for e in events if e["type"] == "notice" and e["level"] == level]
+
+
+def test_responses_reply_cut_off_by_output_limit_is_continued(make_app, chat, fake_llm_url, trunc_log):
+    """A reply that ends with response.incomplete (max_output_tokens) is picked up where it stopped."""
+    app = make_app(LLM_PROVIDER="openai", OPENAI_API_KEY="test", OPENAI_BASE_URL=f"{fake_llm_url}/trunc/v1")
+    with TestClient(app) as c:
+        events = chat(c, {"message": "write a long report", "model": "gpt-5.6-luna", "code_interpreter": False})
+        text = "".join(e["delta"] for e in events if e["type"] == "text_delta")
+        assert text == "The first half, and the second half."
+        assert not _notices(events)
+        assert next(e for e in events if e["type"] == "done")["status"] == "complete"
+
+    assert len(trunc_log) == 2
+    resent = trunc_log[1]["input"]
+    # the partial text goes back as a plain assistant message, followed by the request to continue
+    assert resent[-2] == {"role": "assistant", "content": "The first half, "}
+    assert resent[-1]["role"] == "developer" and "[Automatic message]" in resent[-1]["content"]
+    # nothing unfinished is resent, and no reasoning item is left without the item it led to
+    assert not any(isinstance(i, dict) and i.get("status") == "incomplete" for i in resent)
+    assert not any(isinstance(i, dict) and i.get("type") == "reasoning" for i in resent)
+
+
+def test_responses_gives_up_after_max_continuations(make_app, chat, fake_llm_url, trunc_log):
+    app = make_app(LLM_PROVIDER="openai", OPENAI_API_KEY="test", OPENAI_BASE_URL=f"{fake_llm_url}/truncall/v1",
+                   MAX_CONTINUATIONS="1")
+    with TestClient(app) as c:
+        events = chat(c, {"message": "write a long report", "model": "gpt-5.6-luna", "code_interpreter": False})
+        warning = _notices(events)
+        assert len(warning) == 1 and "after 1 automatic continuation" in warning[0]
+        assert next(e for e in events if e["type"] == "done")["status"] == "complete"
+    assert len(trunc_log) == 2
+
+
+def test_chat_completions_reply_cut_off_by_length_is_continued(make_app, chat, fake_llm_url, trunc_log, tmp_path):
+    app = make_app(LLM_PROVIDER="openai", OPENAI_API_KEY="test", OPENAI_BASE_URL=f"{fake_llm_url}/trunc/v1",
+                   MODELS_FILE=_chat_models_file(tmp_path))
+    with TestClient(app) as c:
+        events = chat(c, {"message": "write a long report", "model": "gpt-5.6-luna", "code_interpreter": False})
+        assert "".join(e["delta"] for e in events if e["type"] == "text_delta") == "Part one, part two."
+        assert not _notices(events)
+    assert len(trunc_log) == 2
+    resent = trunc_log[1]["messages"]
+    assert resent[-2] == {"role": "assistant", "content": "Part one, "}
+    assert resent[-1]["role"] == "user" and "[Automatic message]" in resent[-1]["content"]

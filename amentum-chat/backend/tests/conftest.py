@@ -58,6 +58,8 @@ def fake_llm_url():
                 "type": "invalid_request_error", "param": "reasoning_effort", "code": None}})
         return await chat_completions(request)
 
+    _mount_truncating(app, responses, chat_completions)
+
     port = _free_port()
     server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning"))
     thread = threading.Thread(target=server.run, daemon=True)
@@ -68,6 +70,98 @@ def fake_llm_url():
         time.sleep(0.05)
     yield f"http://127.0.0.1:{port}"
     server.should_exit = True
+
+
+TRUNC_LOG: list[dict] = []  # streaming request bodies seen by the truncating endpoints
+CONTINUE_MARK = "[Automatic message]"
+
+
+def _mount_truncating(app, responses, chat_completions) -> None:
+    """Endpoints that behave like a model hitting its output-token limit.
+
+    /trunc/...     cut off on the first request, finish once the engine asks it to continue
+    /truncall/...  cut off every time
+    Non-streaming requests (conversation titles) are answered by the demo simulator.
+    """
+    from fastapi.responses import StreamingResponse
+
+    def sse(etype: str, **data) -> str:
+        return f"event: {etype}\ndata: {json.dumps({'type': etype, 'sequence_number': 0, **data})}\n\n"
+
+    def response(status: str, output: list, reason: str | None = None) -> dict:
+        return {"id": "resp_t", "object": "response", "created_at": 0, "model": "m", "status": status,
+                "output": output, "error": None, "parallel_tool_calls": True, "tool_choice": "auto", "tools": [],
+                "incomplete_details": {"reason": reason} if reason else None,
+                "usage": {"input_tokens": 10, "output_tokens": 5, "total_tokens": 15,
+                          "input_tokens_details": {"cached_tokens": 0},
+                          "output_tokens_details": {"reasoning_tokens": 0}}}
+
+    def message(text: str, status: str) -> dict:
+        return {"id": f"msg_{status}", "type": "message", "role": "assistant", "status": status,
+                "content": [{"type": "output_text", "text": text, "annotations": []}]}
+
+    async def responses_stream(cut: bool):
+        yield sse("response.created", response=response("in_progress", []))
+        if cut:
+            rs = {"id": "rs_1", "type": "reasoning", "summary": [], "encrypted_content": "eA=="}
+            yield sse("response.output_item.added", output_index=0, item={**rs, "encrypted_content": None})
+            yield sse("response.output_item.done", output_index=0, item=rs)
+            yield sse("response.output_item.added", output_index=1, item={**message("", "in_progress"), "content": []})
+            yield sse("response.output_text.delta", item_id="msg_in_progress", output_index=1, content_index=0,
+                      delta="The first half, ", logprobs=[])
+            yield sse("response.incomplete", response=response(
+                "incomplete", [rs, message("The first half, ", "incomplete")], "max_output_tokens"))
+        else:
+            yield sse("response.output_item.added", output_index=0, item={**message("", "in_progress"), "content": []})
+            yield sse("response.output_text.delta", item_id="msg_in_progress", output_index=0, content_index=0,
+                      delta="and the second half.", logprobs=[])
+            done = message("and the second half.", "completed")
+            yield sse("response.output_item.done", output_index=0, item=done)
+            yield sse("response.completed", response=response("completed", [done]))
+
+    async def chat_stream(cut: bool):
+        def chunk(delta: dict, finish: str | None = None) -> str:
+            return "data: " + json.dumps({"id": "c", "object": "chat.completion.chunk", "created": 0, "model": "m",
+                                          "choices": [{"index": 0, "delta": delta, "finish_reason": finish}]}) + "\n\n"
+        yield chunk({"role": "assistant", "content": ""})
+        yield chunk({"content": "Part one, " if cut else "part two."})
+        yield chunk({}, "length" if cut else "stop")
+        yield "data: " + json.dumps({"id": "c", "object": "chat.completion.chunk", "created": 0, "model": "m",
+                                     "choices": [], "usage": {"prompt_tokens": 10, "completion_tokens": 5,
+                                                              "total_tokens": 15}}) + "\n\n"
+        yield "data: [DONE]\n\n"
+
+    def continuing(body: dict) -> bool:
+        return CONTINUE_MARK in json.dumps(body.get("input") or body.get("messages") or [])
+
+    for mode in ("trunc", "truncall"):
+        def make(mode: str):
+            async def trunc_responses(request: Request):
+                body = await request.json()
+                if not body.get("stream"):
+                    return await responses(request)
+                TRUNC_LOG.append(body)
+                cut = mode == "truncall" or not continuing(body)
+                return StreamingResponse(responses_stream(cut), media_type="text/event-stream")
+
+            async def trunc_chat(request: Request):
+                body = await request.json()
+                if not body.get("stream"):
+                    return await chat_completions(request)
+                TRUNC_LOG.append(body)
+                cut = mode == "truncall" or not continuing(body)
+                return StreamingResponse(chat_stream(cut), media_type="text/event-stream")
+
+            app.post(f"/{mode}/v1/responses")(trunc_responses)
+            app.post(f"/{mode}/v1/chat/completions")(trunc_chat)
+
+        make(mode)
+
+
+@pytest.fixture
+def trunc_log():
+    TRUNC_LOG.clear()
+    return TRUNC_LOG
 
 
 def reset_singletons() -> None:

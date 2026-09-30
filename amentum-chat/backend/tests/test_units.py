@@ -7,7 +7,7 @@ import json
 import pytest
 
 from app.catalog import Pricing, Usage
-from app.llm.engine import CodeArgStream
+from app.llm.engine import CodeArgStream, _carry_forward, join_continuation, mend_seam
 from app.llm.parts import PartsBuilder
 from app.tools.mcp_manager import parse_import
 
@@ -150,3 +150,49 @@ def test_gcc_high_entra_uses_government_authority_and_scope(monkeypatch, tmp_pat
     assert captured["cred"]["authority"] == "login.microsoftonline.us"
     assert captured["scope"] == "https://cognitiveservices.azure.us/.default"
     reset_singletons()
+
+
+def test_carry_forward_after_output_limit_keeps_only_finished_items():
+    reasoning = {"id": "rs_1", "type": "reasoning", "summary": [], "encrypted_content": "x"}
+    call = {"id": "ci_1", "type": "code_interpreter_call", "status": "completed", "code": "print(1)"}
+    reasoning2 = {"id": "rs_2", "type": "reasoning", "summary": [], "encrypted_content": "y"}
+    cut_code = {"id": "ci_2", "type": "code_interpreter_call", "status": "incomplete", "code": "prin"}
+    output = [reasoning, call, reasoning2, cut_code]
+    assert _carry_forward(output, cut=False) == output
+    # the unfinished code step and the reasoning that led to it are dropped; finished work is kept
+    assert _carry_forward(output, cut=True) == [reasoning, call]
+
+    partial = {"id": "msg_1", "type": "message", "role": "assistant", "status": "incomplete",
+               "content": [{"type": "output_text", "text": "Half a sent", "annotations": []}]}
+    assert _carry_forward([reasoning, partial], cut=True) == [{"role": "assistant", "content": "Half a sent"}]
+
+
+def test_finalize_marks_unfinished_tools_stopped():
+    pb = PartsBuilder()
+    pb.apply({"type": "reasoning_start", "id": "r"})
+    pb.apply({"type": "tool_start", "id": "t", "kind": "hosted_code", "name": "python"})
+    pb.finalize()
+    assert [p["status"] for p in pb.parts] == ["done", "stopped"]
+
+
+@pytest.mark.parametrize("before,after,expected", [
+    ("the hottest month,", "with storms", " with storms"),
+    ("It ends here.", "Next sentence", " Next sentence"),
+    ("version 3.", "5 is out", "5 is out"),  # a decimal, not a new sentence
+    ("hurri", "canes", "canes"),  # may be a split word: left alone
+    ("list item\n", "8. August", "8. August"),
+    ("done ", "next", "next"),
+])
+def test_mend_seam(before, after, expected):
+    assert mend_seam(before, after) == expected
+
+
+@pytest.mark.parametrize("before,after,expected", [
+    ("| 12 | 144 |\n| 13 | 233 | 609 |", "| 13 | 233 | 609 |\n| 14 |", "\n| 14 |"),  # restated last row
+    ("7. **July:** Hot and", "7. **July:** Hot and humid.", " humid."),  # restated unfinished line
+    ("the running total reaches", "total reaches 121,392", " 121,392"),  # repeated tail
+    ("| 13 | 233 | 609 |", "\n| 14 | 377 |", "\n| 14 | 377 |"),  # clean continuation untouched
+    ("the hottest month,", "with storms", " with storms"),
+])
+def test_join_continuation(before, after, expected):
+    assert join_continuation(before, after) == expected

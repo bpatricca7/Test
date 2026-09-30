@@ -74,7 +74,8 @@ class PartsBuilder:
     def finalize(self, stopped: bool = False) -> None:
         for p in self.parts:
             if p.get("status") == "running":
-                p["status"] = "stopped" if stopped else "done"
+                # A tool that never reported a result didn't finish, even if the turn did.
+                p["status"] = "stopped" if stopped or p["type"] == "tool" else "done"
 
     @property
     def text(self) -> str:
