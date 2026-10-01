@@ -970,6 +970,11 @@ build differs from the plan text, the build is right and the plan text is old:
   hair) and `HAIR_PRAISE` in `chat.js`; jersey and tee compliments use `{num}`. Lily-Rose keeps
   "Every girl is a princess!". `debug.friends.roster()` also has `pronoun` and `kind`, and
   `debug.friends.order()` gives the invite order.
+- **Ghost tap on the invite cards.** With 16 cards the My Friends panel fills the spot where
+  the "Invite a Friend" ground tap lands, so on an iPad that same tap's click picked the card
+  under the finger (Theo) without the child choosing. The invite cards now ignore a click in
+  the first 700 ms after they are drawn unless it was pressed on that card (the Bag's colour
+  step uses the same rule). probe-pals' touch pass caught it.
 - **Not changed (decision 1):** `server/notice.mjs`, the mail templates, `site/privacy.html`
   and `site/terms.html` still say "her"; they wait for the dad-approved legal pass. The site
   screenshots were not retaken, so their alt texts stay true.
