@@ -238,6 +238,7 @@ export class RemotePlayers {
       visible: f.visible, st: f.st, held: f.heldKey, inHand: f.avatar && f.avatar.held ? f.avatar.held.name || 'held' : null,
       bubble: f.bubbleLeft > 0 ? f.bubbleText : null,
       tag: !!(f.tag && f.tag.visible), emote: f.avatar ? f.avatar.emoting || null : null,
+      lk: f.lk,
     }));
   }
 

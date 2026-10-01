@@ -105,7 +105,7 @@ export async function askLegacy(game, acct) {
   const players = acct.me.players || [];
   const v = await ask(game, `${here} has ${n ? n + (n === 1 ? ' world' : ' worlds') : 'stickers and outfits'} from before. Whose are they?`,
     [...players.map((p) => [p.id, p.nickname, 'pink']), ['later', 'Not now'], ['no', "They're not ours"]],
-    { cancel: 'later', note: 'Grown-ups: they are copied into her worlds and her cloud copy.' });
+    { cancel: 'later', note: "Grown-ups: they are copied into that player's worlds and cloud copy." });
   const p = players.find((x) => x.id === v);
   if (v === 'no') setLegacyState({ state: 'dismissed', at: Date.now() });
   if (p && (await acct.importTo(p, legacy))) {

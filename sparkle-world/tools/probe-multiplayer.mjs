@@ -569,7 +569,7 @@ test('AT19', 'pets: Lily’s pets move on Rosie’s page; Rosie may pet but not 
     return { petted, rode, riding: g.player.state === 'ride', toasts: window.__toasts.slice(t0) };
   }, ids);
   check(r.petted === true, 'Rosie can pet Lily’s puppy (local hearts)');
-  check(r.rode === false && !r.riding && r.toasts.some((t) => /That's Lily's pet! Ask her to help/.test(t)), `riding Lily's horse is refused kindly (${JSON.stringify(r.toasts)})`);
+  check(r.rode === false && !r.riding && r.toasts.some((t) => /That's Lily's pet! Ask Lily to help/.test(t)), `riding Lily's horse is refused kindly (${JSON.stringify(r.toasts)})`);
   // NPC friends are Lily's too: Rosie sees them
   const npc = await game(lily, ({ x, y, z }) => window.__game.debug.friends.invite('nia', x + 3.5, y + 0.5, z - 3.5), spot);
   check(!!npc, 'Lily invited Nia (an NPC friend)');
@@ -1011,7 +1011,7 @@ test('END', 'Lily: Save & Exit ends playing together kindly (June goes home; Lil
   await settle(lily.page, 700);
   await shot(lily, 'lily-summary');
   const gone = await until(june, () => window.__game.mode === 'title' && document.querySelector('.sw-net-msg[data-code="ended"]') !== null, null, 30000);
-  check(gone, 'June is on the title with "Lily went home. Her world is saved at her house!"');
+  check(gone, 'June is on the title with "Lily went home. The world is saved at Lily's house!"');
   await settle(june.page, 700);
   await shot(june, 'june-host-ended');
   await press(lily, '.sw-net-msg .sw-net-msg-btn:has-text("Great")');
