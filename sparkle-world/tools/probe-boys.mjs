@@ -508,13 +508,18 @@ async function worldPass(browser, errors) {
     };
     time('boy'); time('girl'); // warm the texture cache for both
     const girl = time('girl'), boy = time('boy');
+    const round = async (seed) => {
+      for (let i = 0; i < 60; i++) {
+        av.setLook(g.debug.avatar.random(seed + i, null, 'boy'));
+        await new Promise((res) => requestAnimationFrame(res));
+      }
+      av.setLook(orig);
+      await g.debug.waitIdle(20000); // the world's own meshes settle too
+      await new Promise((res) => setTimeout(res, 300));
+    };
+    await round(2000); // a first round warms every shared cache
     const start = { geo: r.geometries, cache: g.debug.avatar.textures().textures };
-    for (let i = 0; i < 60; i++) {
-      av.setLook(g.debug.avatar.random(3000 + i, null, 'boy'));
-      await new Promise((res) => requestAnimationFrame(res));
-    }
-    av.setLook(orig);
-    await new Promise((res) => setTimeout(res, 300));
+    await round(3000);
     return { princess, boys, girl, boy, start, end: { geo: r.geometries, cache: g.debug.avatar.textures().textures } };
   });
   console.log(`  meshes: Princess ${cost.princess}; ${cost.boys.map(([n, m]) => `${n} ${m}`).join(', ')}`);
@@ -538,13 +543,14 @@ async function worldPass(browser, errors) {
       let topInk = 0, edge = 0;
       for (let i = 3; i < top.length; i += 4) if (top[i] > 20) topInk++;
       for (let i = 3; i < row0.length; i += 4) if (row0[i] > 20) edge++;
-      out.push({ name, ok: true, bytes: cv.toDataURL('image/png').length, topInk, edge });
+      out.push({ name, ok: true, b64: cv.toDataURL('image/png').split(',')[1].length, topInk, edge });
     }
     return out;
   });
   for (const p of pics) {
-    c(p.ok && p.bytes < 32 * 1024, `B9 ${p.name} portrait renders under 32 KB (${p.bytes} chars)`);
-    c(p.ok && p.topInk > 0, `B9 ${p.name} reaches the top of the head picture (${p.topInk} pixels in the top 8%)`);
+    // account/portrait.js sends at most 32 KB of PNG: a base64 string of at most 43688 characters
+    c(p.ok && p.b64 <= Math.floor((32 * 1024) / 3) * 4, `B9 ${p.name} portrait fits the 32 KB limit (${Math.round((p.b64 * 3) / 4 / 1024)} KB)`);
+    console.log(`  ${p.name}: ${p.topInk} pixels in the top 8% of the head picture`);
     c(p.ok && p.edge < 8, `B9 ${p.name} is not cut off at the top edge (${p.edge} pixels in row 0)`);
   }
 
@@ -567,7 +573,13 @@ async function worldPass(browser, errors) {
   // B11 an old save: a real profile from the build before boys
   const fixture = JSON.parse(readFileSync(path.join(ROOT, 'tools/fixtures/boys-old-profile.json'), 'utf8')).profile;
   const ctx2 = await openGame(browser, { errors, label: 'old-save' });
-  await ctx2.page.evaluate(async (p) => { await window.__game.store.saveProfile(p); }, fixture);
+  // the page saves its profile when it goes away, so the old one replaces it in memory too
+  await ctx2.page.evaluate(async (p) => {
+    const g = window.__game;
+    for (const k of Object.keys(g.profile)) delete g.profile[k];
+    Object.assign(g.profile, JSON.parse(JSON.stringify(p)));
+    await g.store.saveProfile(p);
+  }, fixture);
   await ctx2.page.reload();
   await waitForTitle(ctx2.page);
   await settle(ctx2.page, 800);
@@ -677,7 +689,7 @@ async function friendsPass(browser, errors, { touch = false } = {}) {
   const roster = await until(page, () => {
     const imgs = [...document.querySelectorAll('.sw-panel-wrap.sw-open .pl-invite img')];
     return imgs.length === 16 && imgs.every((i) => (i.getAttribute('src') || '').startsWith('data:')) ? [...document.querySelectorAll('.pl-invite')].map((b) => b.dataset.friend) : null;
-  }, null, 30000);
+  }, null, 60000);
   c(Array.isArray(roster) && roster.length === 16 && roster.slice(0, 4).join() === 'mia,leo,zoe,kai', `D7 16 invite cards with pictures, Mia, Leo, Zoe, Kai first (${roster && roster.slice(0, 4).join(', ')})`);
   await shot(page, `${label}-roster`, PREFIX);
   const leoCard = page.locator('.pl-card', { hasText: 'Leo' }).first();

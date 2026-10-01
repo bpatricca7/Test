@@ -957,7 +957,13 @@ build differs from the plan text, the build is right and the plan text is old:
 - **Toys in hand** (soccer ball, toy car, toy dino) use the ice cream's arm pose (`HOLD_UP` in
   `avatar.js`; the only other changes there are the face texture key and the header).
 - **Bucket hat** is a soft square crown on a 4-sided sloping brim (a round crown let the
-  hair's box corners poke through). Caps are rounded boxes with a two-step brim.
+  hair's box corners poke through). Caps are rounded boxes with a two-step brim. Under a cap,
+  bucket hat or beanie (`P.hatFlat`) the short curls drop their crown ring and fringe, the faux
+  hawk drops its ridge, the afro keeps only its two lower rings and spiky shows three short
+  front spikes, so nothing pokes through the hat (`.shots/boys-hats.png`).
+- **Costs measured** (B8, SwiftShader): boy starters 21 to 25 meshes (Princess 30); setLook
+  about 6 ms for boy looks vs 7 ms for girl looks; no geometry growth over 60 boy looks after
+  a warm-up round. Three boys + three girls draw fewer calls than six girls (142 vs 152).
 - **Friends.** `FRIENDS` gains the six boys at the end; `ROSTER_ORDER` / `rosterFriends()` give
   the invite panel's order; `BAG_FRIEND = 'lilyrose'` pins the Bag picture; `pronouns(def)`,
   `outfitsFor(def)`, `nextHair(look, kind)`, `surpriseLook(look, kind)`; `LINES_BOY` (style,
