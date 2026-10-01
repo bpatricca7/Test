@@ -358,13 +358,14 @@ const STYLES = {
       h.restore();
     };
     let i = 0;
-    for (let a = 0; a < 14; a++) { // a ring around the crown, the face left open (as curly)
+    // under a hat only the back and side rows show (the crown ring and fringe would poke through)
+    for (let a = 0; a < 14 && !P.hatFlat; a++) { // a ring around the crown, the face left open (as curly)
       const ang = (a / 14) * Math.PI * 2;
       const x = Math.sin(ang) * 0.34, z = Math.cos(ang) * 0.3 - 0.02;
       if (z > 0.2 && Math.abs(x) < 0.22) continue;
       curl(x, 1.68 + rand() * 0.04, z, 0.09 + rand() * 0.01, i++);
     }
-    for (let a = 0; a < 5; a++) curl(-0.2 + a * 0.1, 1.66 + (a % 2) * 0.02, 0.27, 0.085, i++); // fringe
+    if (!P.hatFlat) for (let a = 0; a < 5; a++) curl(-0.2 + a * 0.1, 1.66 + (a % 2) * 0.02, 0.27, 0.085, i++); // fringe
     if (!P.hatFlat) for (let a = 0; a < 6; a++) curl(-0.22 + a * 0.09, 1.77 + rand() * 0.02, -0.08 + (a % 2) * 0.14, 0.1, i++); // top
     for (let r = 0; r < 2; r++) {
       for (let k = 0; k < 5; k++) curl(-0.24 + k * 0.12, 1.54 - r * 0.13, -0.32, 0.095, i++); // back
@@ -374,10 +375,10 @@ const STYLES = {
   fauxhawk(P, h, C) {
     helmet(h, C, { sideBottom: 1.46, backBottom: 1.38, puff: -0.01, sideFront: 0.12 }, P);
     hairline(h, C);
-    // a central ridge, tallest at the front (kept low under a hat)
+    // a central ridge, tallest at the front (none under a hat: it would poke through)
     const heights = [0.26, 0.22, 0.18, 0.15, 0.12];
-    for (let k = 0; k < heights.length; k++) {
-      const z = 0.24 - k * 0.12, tall = P.hatFlat ? heights[k] * 0.4 : heights[k];
+    for (let k = 0; k < heights.length && !P.hatFlat; k++) {
+      const z = 0.24 - k * 0.12, tall = heights[k];
       h.save().rotateAt(0, 1.72, z, -0.3, 0, 0);
       h.ccube(0, 1.72 + tall / 2, z, 0.13, tall, 0.13, 0.035, C(10 + k));
       h.restore();
@@ -394,7 +395,7 @@ const STYLES = {
     let i = 0;
     for (let r = 0; r < rings.length; r++) {
       const [el, n] = rings[r];
-      if (P.hatFlat && r >= 3) break;
+      if (P.hatFlat && r >= 2) break; // under a hat only the lower rings puff out
       for (let k = 0; k < n; k++) {
         const az = ((k + (r % 2) * 0.5) / n) * Math.PI * 2;
         const x = R * Math.cos(el) * Math.sin(az), y = cy + R * Math.sin(el) * 0.9, z = cz + R * Math.cos(el) * Math.cos(az);

@@ -193,10 +193,10 @@ const HEAD = {
     const w = 0.37 + (P.hairPuff || 0), back = -0.34 - (P.hairPuff || 0) * 1.4;
     const S = Math.SQRT2; // a 4-sided cone's corners sit at 45 degrees: half width = r / sqrt 2
     b.save().translate(0, 0, (back + 0.32) / 2);
-    b.cone(0, 1.53, 0, (w + 0.15) * S, 0.09, shade(c, 0.08), 4, (w + 0.01) * S);
+    b.cone(0, 1.54, 0, (w + 0.11) * S, 0.08, shade(c, 0.08), 4, (w + 0.01) * S);
     b.restore();
-    b.cbox(-w, 1.58, back, w, 1.83, 0.32, 0.1, c);
-    b.cbox(-w + 0.06, 1.8, back + 0.06, w - 0.06, 1.87, 0.26, 0.05, c);
+    b.cbox(-w, 1.58, back, w, 1.85, 0.32, 0.07, c); // tall enough to cover the hair's top corners
+    b.cbox(-w + 0.06, 1.82, back + 0.06, w - 0.06, 1.89, 0.26, 0.05, c);
     b.box(-w - 0.006, 1.6, back - 0.006, w + 0.006, 1.655, 0.326, shade(c, -0.15)); // band
   },
   headphones(P, b, c) {
@@ -220,9 +220,9 @@ const HEAD = {
 /** A baseball cap: rounded crown, top button, front brim and a star badge (sized to the hair). */
 function cap(P, b, c) {
   const w = 0.36 + (P.hairPuff || 0);
-  b.cbox(-w, 1.59, -0.33 - (P.hairPuff || 0) * 1.4, w, 1.8, 0.31, 0.1, c);
-  b.cbox(-w + 0.06, 1.76, -0.27, w - 0.06, 1.85, 0.25, 0.05, c);
-  b.ccube(0, 1.86, -0.01, 0.05, 0.03, 0.05, 0.012, shade(c, -0.12));
+  b.cbox(-w, 1.59, -0.33 - (P.hairPuff || 0) * 1.4, w, 1.84, 0.31, 0.06, c); // covers the hair's top corners
+  b.cbox(-w + 0.06, 1.8, -0.27, w - 0.06, 1.88, 0.25, 0.05, c);
+  b.ccube(0, 1.89, -0.01, 0.05, 0.03, 0.05, 0.012, shade(c, -0.12));
   // the brim: a rounded front (two steps), tipped down a little
   const brim = shade(c, -0.12);
   b.save().rotateAt(0, 1.62, 0.3, 0.12, 0, 0);
