@@ -326,6 +326,11 @@ export class Drive {
           continue;
         }
       }
+      // what stopped the straight move: the shore (boats), water ahead (cars), or a wall; a
+      // boat gliding along the shore or a car along a pond's edge still says so (a toast)
+      const wet = !this.boat && this._wet(tx, p.y, tz, dir);
+      if (this.boat) this.hit = 'shore';
+      else if (wet) this.hit = 'water';
       // slide along the wall: the X part alone, then the Z part alone (when they move at all)
       if (Math.abs(nx * s) > 0.01 && this._ok(p.x + nx * s, p.y, p.z, dir)) {
         p.x += nx * s;
@@ -337,10 +342,9 @@ export class Drive {
         this.speed *= 0.85;
         continue;
       }
-      // a soft stop
-      const wet = !this.boat && this._wet(tx, p.y, tz, dir);
-      this.hit = this.boat ? 'shore' : wet ? 'water' : 'wall';
-      if (!wet && Math.abs(this.speed) > 2) {
+      // a soft stop: a boing and stars at a wall (a boat only splashes at the shore)
+      if (!this.hit) this.hit = 'wall';
+      if (this.hit === 'wall' && Math.abs(this.speed) > 2) {
         this.bumps++;
         this.bumpSpeed = Math.abs(this.speed);
         this.squash = 0.3;

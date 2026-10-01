@@ -130,6 +130,7 @@ class VehicleSystem {
     this._v = new THREE.Vector3();
     this._w = { x: 0, y: 0, z: 0 };
     this._remotes = new Set();
+    this.stats = { remoteHonks: 0, remoteModels: 0 };
   }
 
   // =====================================================================================
@@ -463,8 +464,7 @@ class VehicleSystem {
     let swim = false, stand = null, spot = null;
     if (cur.v.water && asked) {
       // a boat: step out onto the shore when there is one; else ask, then swim
-      const seat = cur.mount.seatWorld(this._w);
-      stand = pl ? pl.findStandSpot(seat.x, seat.y, seat.z) : null;
+      stand = this._shoreSpot(cur);
       if (!stand) {
         const now = performance.now();
         if (now - this._swimAsk > SWIM_CONFIRM) {
@@ -521,6 +521,35 @@ class VehicleSystem {
     if (swim) this.sfx.splash(1);
     g.events.emit('vehicle:park', { entity, reason });
     return true;
+  }
+
+  /**
+   * Dry land within 3 blocks of a boat's seat where she can stand (not shallow water: the
+   * lagoon floor under one block of water is no shore). Bounded: 49 columns x 4 heights.
+   */
+  _shoreSpot(cur) {
+    const g = this.game, ph = g.physics, pl = g.player;
+    if (!ph || !pl) return null;
+    const seat = cur.mount.seatWorld(this._w);
+    if (![seat.x, seat.y, seat.z].every(fin)) return null;
+    const bx = Math.floor(seat.x), bz = Math.floor(seat.z), by = cur.drive.waterY + 1;
+    for (let r = 0; r <= 3; r++) {
+      for (let dz = -r; dz <= r; dz++) {
+        for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+          for (const dy of [0, 1, -1, 2]) {
+            const px = bx + dx + 0.5, py = by + dy, pz = bz + dz + 0.5;
+            if (ph.liquidAt(px, py + 0.1, pz) || ph.liquidAt(px, py + 0.6, pz) || ph.liquidAt(px, py - 0.5, pz)) continue;
+            if (ph.bodyBlocked(px, py + 0.01, pz, pl.halfW, pl.height)) continue;
+            if (!ph.bodyBlocked(px, py - 0.3, pz, pl.halfW, 0.3)) continue;
+            // not on the boat itself (it is parked after this, on its water cells)
+            if (cur.drive.overlapsCell(Math.floor(px), Math.floor(py), Math.floor(pz))) continue;
+            return [px, py + 0.01, pz];
+          }
+        }
+      }
+    }
+    return null;
   }
 
   /** A spot in the water beside a parked boat where she can swim. */
@@ -802,6 +831,7 @@ class VehicleSystem {
     if (!def) return null;
     const color = typeof vh[1] === 'string' && /^[0-9a-f]{6}$/.test(vh[1]) ? '#' + vh[1].toUpperCase() : (def.colors ? def.colors[0] : '#FFFFFF');
     const rv = new RemoteVehicle(this.game, def, color);
+    this.stats.remoteModels++;
     this._remotes.add(rv);
     const dispose = rv.dispose.bind(rv);
     rv.dispose = () => { this._remotes.delete(rv); dispose(); };
@@ -812,6 +842,7 @@ class VehicleSystem {
   remoteHonk(key, dist) {
     const def = this.defs.get(key);
     if (!def || !fin(dist) || dist > 24) return;
+    this.stats.remoteHonks++;
     this.sfx.horn(def.vehicle.horn, Math.max(0.15, 1 - dist / 24));
   }
 
@@ -1017,6 +1048,19 @@ class VehicleSystem {
       },
       /** Test only: end the drive without parking (the host's custody must put it back). */
       drop: () => sys._drop(null),
+      /** Test setup: move the live vehicle (a test course elsewhere in the world). */
+      setPose(x, y, z, yaw = 0) {
+        const cur = sys.current;
+        if (!cur || ![x, y, z, yaw].every(fin)) return false;
+        const d = cur.drive;
+        d.pos.x = x; d.pos.y = y; d.pos.z = z; d.yaw = yaw;
+        d.speed = 0; d.vy = 0; d.liftVis = 0;
+        if (d.boat) d.waterY = Math.floor(y);
+        Object.assign(d.good, { x, y, z, yaw });
+        if (g.cameraRig) g.cameraRig.yaw = yaw;
+        return d.poseFree(x, y, z, yaw);
+      },
+      stats: () => ({ ...sys.stats }),
       plan: () => (sys.current ? sys._planFor(sys.current).rec : null),
     };
   }
