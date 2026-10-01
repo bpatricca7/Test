@@ -8,7 +8,7 @@ import { FONT, lifeHud, toScreen, basketCount } from '../pets/kit.js';
 import { foodIcon } from '../food-models.js';
 import { getStage } from '../../ui/dressup/stage.js';
 import { friendIcon } from './icons.js';
-import { FRIENDS, OUTFITS } from './looks.js';
+import { FRIENDS, friendDef, BAG_FRIEND, outfitsFor, rosterFriends, pronouns } from './looks.js';
 
 export const CSS = /* css */ `
 .pl-say { position: absolute; left: 0; top: 0; transform: translate(-50%, -100%); width: max-content; max-width: min(260px, 60vw); padding: 7px 14px 9px;
@@ -171,7 +171,7 @@ export function portrait(game, key, look, frame = 'full') {
 
 /** The Bag icon of "Invite a Friend": a friend's face with a pink plus badge. */
 export async function inviteIcon(game) {
-  const face = await portrait(game, 'icon', FRIENDS[3].look, 'head');
+  const face = await portrait(game, 'icon', (friendDef(BAG_FRIEND) || FRIENDS[3]).look, 'head');
   const c = document.createElement('canvas');
   c.width = c.height = 128;
   const g = c.getContext('2d');
@@ -204,7 +204,9 @@ export async function inviteIcon(game) {
 
 // ---------- the UI ----------
 
-const MODE_TEXT = { follow: 'Following you', stay: 'Waiting here', home: 'At her spot' };
+const MODE_TEXT = { follow: 'Following you', stay: 'Waiting here' };
+/** What a friend is doing, for the My Friends card. */
+const modeText = (mode, def) => (mode === 'home' ? `At ${pronouns(def).their} spot` : MODE_TEXT[mode] || '');
 
 export function installFriendUI(game, sys) {
   const ui = game.ui;
@@ -333,7 +335,7 @@ export function installFriendUI(game, sys) {
       }
       row.appendChild(roundBtn('Back', 'var(--sw-lav)', ui.icon('back'), () => { bub.view = 'main'; renderBubble(); }));
     } else if (bub.view === 'style') {
-      for (const o of OUTFITS) {
+      for (const o of outfitsFor(f.def)) {
         row.appendChild(roundBtn(o.name, f.def.color, I(o.icon), () => sys.style(f, 'outfit', o.key)));
       }
       row.appendChild(roundBtn('Surprise!', 'var(--sw-sun)', I('gift'), () => sys.style(f, 'surprise')));
@@ -395,7 +397,7 @@ export function installFriendUI(game, sys) {
     const pic = img('', 'pl-pic');
     portrait(game, friend.key, friend.look, 'head').then((u) => { if (u) pic.src = u; });
     const words = el('div');
-    words.append(el('div', 'pl-card-name', friend.name), el('div', 'pl-card-meta', `${friend.def.style} · ${MODE_TEXT[friend.mode]}`));
+    words.append(el('div', 'pl-card-name', friend.name), el('div', 'pl-card-meta', `${friend.def.style} · ${modeText(friend.mode, friend.def)}`));
     top.append(pic, words);
     const acts = el('div', 'pl-card-actions');
     const btn = (icon, label, variant, fn) => {
@@ -426,7 +428,7 @@ export function installFriendUI(game, sys) {
     const full = mine.length >= sys.max;
     rosterEl.classList.toggle('pl-is-full', full);
     noteEl.hidden = !full;
-    for (const def of FRIENDS) {
+    for (const def of rosterFriends()) {
       const here = mine.find((f) => f.key === def.key) || null;
       const b = el('button', 'pl-invite' + (here ? ' pl-is-here' : ''));
       b.type = 'button';
@@ -460,7 +462,7 @@ export function installFriendUI(game, sys) {
   }
 
   async function goodbye(friend) {
-    const first = await ui.confirm({ title: `Say bye to ${friend.name}?`, text: `${friend.name} will go home for now. You can invite her again!`, yes: 'Bye bye', no: 'Stay!', icon: 'heart' });
+    const first = await ui.confirm({ title: `Say bye to ${friend.name}?`, text: `${friend.name} will go home for now. You can invite ${pronouns(friend.def).them} again!`, yes: 'Bye bye', no: 'Stay!', icon: 'heart' });
     if (!first) return;
     const second = await ui.confirm({ title: 'Are you sure?', text: `Give ${friend.name} a big hug first!`, yes: 'Yes, bye', no: 'No, stay!', icon: 'heart' });
     if (!second) return;

@@ -14,7 +14,7 @@ import { FOOD, foodModel, foodIcon, foodName, hasFoodModel } from '../food-model
 import { basketTake } from '../pets/kit.js';
 import { sfx } from '../pets/sfx.js';
 import { Friend, HALF_W, HEIGHT } from './friend.js';
-import { FRIENDS, FRIEND_KEYS, friendDef, wearOutfit, nextHair, surpriseLook, twinLook, OUTFITS } from './looks.js';
+import { FRIENDS, FRIEND_KEYS, friendDef, wearOutfit, nextHair, surpriseLook, twinLook, OUTFITS, pronouns, rosterFriends } from './looks.js';
 import { pickLine, lineCount } from './chat.js';
 import { installFriendUI, friendTag, disposeTag, inviteIcon } from './ui.js';
 import { installFriendStickers } from './stickers.js';
@@ -62,7 +62,7 @@ class FriendSystem {
     const net = this.game.net;
     if (!this.remote || (net && net.remoteApplying)) return false;
     if (net && typeof net.refuse === 'function') net.refuse('npc');
-    else this.game.toast("She's your friend's friend! Ask her to help.", { icon: 'heart' });
+    else this.game.toast("That's your friend's friend! Ask your friend to help.", { icon: 'heart' });
     return true;
   }
 
@@ -102,7 +102,7 @@ class FriendSystem {
       f.emote('wave', 0.25);
       f.greetT = 0;
       setTimeout(() => { if (this.friends.includes(f)) this.say(f, 'arrive'); }, 450);
-      g.toast(`${def.name} is here! Tap her to play!`, { icon: 'heart', big: true, color: 'pink', key: 'friend-invite' });
+      g.toast(`${def.name} is here! Tap ${pronouns(def).them} to play!`, { icon: 'heart', big: true, color: 'pink', key: 'friend-invite' });
     }
     g.events.emit('friend:invite', { friend: f });
     return f;
@@ -309,7 +309,7 @@ class FriendSystem {
     f.mode = 'home';
     const [x, y, z] = f.home;
     f.teleportNear(x, y, z, 0, 1.4);
-    this.game.toast(`${f.name} went back to her spot!`, { icon: 'home' });
+    this.game.toast(`${f.name} went back to ${pronouns(f.def).their} spot!`, { icon: 'home' });
     this._slots();
     this._changed();
     this._touch(f);
@@ -443,9 +443,9 @@ class FriendSystem {
     if (this._refused()) return false;
     let look;
     if (how === 'outfit') look = wearOutfit(f.look, key);
-    else if (how === 'hair') look = nextHair(f.look);
+    else if (how === 'hair') look = nextHair(f.look, f.def.kind);
     else if (how === 'twins') look = twinLook(f.look, g.profile.look);
-    else look = surpriseLook(f.look);
+    else look = surpriseLook(f.look, f.def.kind);
     f.setLook(look);
     g.celebrate([f.pos.x, f.pos.y + 1, f.pos.z], 'sparkle', { quiet: true, count: 22 });
     g.celebrate([f.pos.x, f.pos.y + 1.7, f.pos.z], 'star', { quiet: true, count: 8 });
@@ -801,7 +801,8 @@ export function install(game) {
       remove: (id) => { const f = sys.byId(id); return f ? sys.remove(f) : false; },
       lines: () => lineCount(),
       outfits: () => OUTFITS.map((o) => o.key),
-      roster: () => FRIENDS.map((f) => ({ key: f.key, name: f.name, style: f.style })),
+      roster: () => FRIENDS.map((f) => ({ key: f.key, name: f.name, style: f.style, pronoun: f.pronoun, kind: f.kind })),
+      order: () => rosterFriends().map((f) => f.key), // the invite panel's order
       drawCalls: () => {
         let n = 0;
         sys.group.traverseVisible((o) => { if (o.isMesh || o.isSprite) n++; });
