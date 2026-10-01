@@ -1,5 +1,5 @@
-// The avatar: a detailed, adorable blocky "chibi" girl built from the look (see
-// wardrobe-data.js), with its own materials (so the camera can fade her), springy hair,
+// The avatar: a detailed, adorable blocky "chibi" kid built from the look (see
+// wardrobe-data.js), with its own materials (so the camera can fade it), springy hair,
 // flapping wings, swaying capes and skirts, a floating balloon, a sparkling wand, big blinking
 // anime eyes, and every pose and emote in DESIGN.md.
 //
@@ -46,6 +46,8 @@ const hop = (e, s0, len) => {
 
 const PERMANENT = new Set(['plain', 'plain2', 'glow', 'hair', 'eyes', 'mouth']);
 const MOUTHS_ALWAYS = ['open', 'o', 'sleep', 'grin'];
+// Toys held up in front like the ice cream, so they show.
+const HOLD_UP = new Set(['soccer_ball', 'toy_car', 'dino_toy']);
 
 const smooth = (a, b, x) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -260,13 +262,13 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
   function acquireFace(look) {
     const keys = [];
     const brow = shade(look.hair.color, -0.3);
-    const base = `${look.eyes.color}|${look.eyes.lashes}|${look.face.blush}|${look.face.freckles}|${look.skin}|${brow}`;
+    const base = `${look.eyes.color}|${look.eyes.lashes}|${look.face.blush}|${look.face.freckles}|${look.skin}|${brow}|${look.face.brows}`;
     const eyes = {};
     for (const v of EYE_VARIANTS) {
       const k = `eyes|${base}|${v}`;
       eyes[v] = acquire(k, 256, 128, (g, w, h) => paintEyes(g, w, h, {
         eyeColor: look.eyes.color, lashes: look.eyes.lashes, blush: look.face.blush, freckles: look.face.freckles,
-        skin: look.skin, brow, variant: v,
+        skin: look.skin, brow, brows: look.face.brows, variant: v,
       }));
       keys.push(k);
     }
@@ -522,7 +524,7 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     const sw2 = sw * a;
     if (hp === 'teddy') { tgt[ARX] = -0.4 + sw2 * 0.1; tgt[ARZ] = 0.26; tgt[ERX] = -1.55; tgt[ERZ] = 0.2; }
     else if (hp === 'wand') { tgt[ARX] = -0.25 - sw2 * 0.2; tgt[ARZ] = -0.16; tgt[ERX] = -1.0; }
-    else if (hp === 'ice_cream') { tgt[ARX] = -0.3 - sw2 * 0.1; tgt[ARZ] = 0.06; tgt[ERX] = -1.4; }
+    else if (hp === 'ice_cream' || HOLD_UP.has(hp)) { tgt[ARX] = -0.3 - sw2 * 0.1; tgt[ARZ] = 0.06; tgt[ERX] = -1.4; }
     else if (hp === 'balloon') { tgt[ARX] = -0.3 - sw2 * 0.15; tgt[ARZ] = -0.22; tgt[ERX] = -0.55; }
     else if (hp === 'purse') { tgt[ARZ] = -0.2; tgt[ERX] = -0.25; }
   }

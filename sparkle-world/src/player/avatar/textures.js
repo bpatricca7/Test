@@ -131,6 +131,51 @@ function flower(g, x, y, r, petal, center) {
   g.fill();
 }
 
+/** A chunky lightning bolt centred on (x, y), s tall. */
+export function boltPath(g, x, y, s) {
+  const pts = [[0.12, -0.5], [-0.26, 0.06], [-0.02, 0.06], [-0.14, 0.5], [0.26, -0.08], [0.02, -0.08], [0.16, -0.5]];
+  g.beginPath();
+  pts.forEach(([px, py], i) => (i ? g.lineTo(x + px * s, y + py * s) : g.moveTo(x + px * s, y + py * s)));
+  g.closePath();
+}
+
+/** A friendly little dino silhouette (long neck, round back, tail), facing right, s wide. */
+function dinoShape(g, x, y, s) {
+  g.beginPath();
+  g.ellipse(x - s * 0.05, y + s * 0.05, s * 0.3, s * 0.2, 0, 0, Math.PI * 2); // body
+  g.fill();
+  g.beginPath(); // tail
+  g.moveTo(x - s * 0.3, y);
+  g.quadraticCurveTo(x - s * 0.5, y + s * 0.05, x - s * 0.55, y - s * 0.12);
+  g.quadraticCurveTo(x - s * 0.42, y + s * 0.18, x - s * 0.2, y + s * 0.18);
+  g.closePath();
+  g.fill();
+  g.fillRect(x + s * 0.12, y - s * 0.32, s * 0.12, s * 0.38); // neck
+  g.beginPath(); // head
+  g.ellipse(x + s * 0.24, y - s * 0.32, s * 0.14, s * 0.09, 0, 0, Math.PI * 2);
+  g.fill();
+  for (const lx of [-0.2, 0.08]) g.fillRect(x + lx * s, y + s * 0.15, s * 0.09, s * 0.16); // legs
+}
+
+/** A small rocket pointing up, with a sparkle puff below (no flames). */
+function rocketShape(g, x, y, s) {
+  g.beginPath(); // body with a pointed nose
+  g.moveTo(x, y - s * 0.5);
+  g.quadraticCurveTo(x + s * 0.2, y - s * 0.25, x + s * 0.14, y + s * 0.22);
+  g.lineTo(x - s * 0.14, y + s * 0.22);
+  g.quadraticCurveTo(x - s * 0.2, y - s * 0.25, x, y - s * 0.5);
+  g.fill();
+  for (const side of [-1, 1]) { // fins
+    g.beginPath();
+    g.moveTo(x + side * s * 0.13, y);
+    g.lineTo(x + side * s * 0.28, y + s * 0.3);
+    g.lineTo(x + side * s * 0.1, y + s * 0.22);
+    g.closePath();
+    g.fill();
+  }
+  sparkle4(g, x, y + s * 0.42, s * 0.12);
+}
+
 // ---------- cloth ----------
 
 /**
@@ -242,6 +287,51 @@ export function paintCloth(g, W, H, { color, pattern = 'none', patternColor = '#
   } else if (pattern === 'rainbow') {
     g.fillStyle = rgba(pc, 0.9);
     for (const [x, y] of [[q, q * 0.9], [3 * q, 2.9 * q]]) sparkle4(g, x, y, W * 0.06);
+  } else if (pattern === 'plaid') {
+    // two wide soft bands each way, a thin line through each (reads as flannel)
+    const band = Math.round(W * 0.14);
+    g.fillStyle = rgba(pc, 0.45);
+    for (const p of [q - band / 2, 3 * q - band / 2]) {
+      g.fillRect(0, p, W, band);
+      g.fillRect(p, 0, band, H);
+    }
+    g.fillStyle = rgba(pc, 0.7);
+    for (const p of [q - 1, 3 * q - 1]) {
+      g.fillRect(0, p, W, 2);
+      g.fillRect(p, 0, 2, H);
+    }
+  } else if (pattern === 'checks') {
+    g.fillStyle = rgba(pc, 0.85);
+    for (let cy = 0; cy < 4; cy++) for (let cx = 0; cx < 4; cx++) if ((cx + cy) % 2) g.fillRect(cx * q, cy * q, q, q);
+  } else if (pattern === 'bolts') {
+    g.fillStyle = pc;
+    for (const [x, y] of [[q, q], [3 * q, 3 * q]]) {
+      boltPath(g, x, y, W * 0.32);
+      g.fill();
+    }
+    g.fillStyle = rgba(pc, 0.55);
+    for (const [x, y] of [[3 * q, q], [q, 3 * q]]) sparkle4(g, x, y, W * 0.05);
+  } else if (pattern === 'dinos') {
+    g.fillStyle = pc;
+    dinoShape(g, q + 2, q + 2, W * 0.36);
+    dinoShape(g, 3 * q + 2, 3 * q + 2, W * 0.36);
+    g.fillStyle = rgba(pc, 0.5);
+    for (const [x, y] of [[3 * q, q], [q, 3 * q]]) {
+      g.beginPath();
+      g.arc(x, y, W * 0.04, 0, Math.PI * 2);
+      g.fill();
+    }
+  } else if (pattern === 'rockets') {
+    for (const [x, y] of [[q, q], [3 * q, 3 * q]]) {
+      g.fillStyle = pc;
+      rocketShape(g, x, y, W * 0.36);
+      g.fillStyle = color; // a round window
+      g.beginPath();
+      g.arc(x, y - W * 0.06, W * 0.035, 0, Math.PI * 2);
+      g.fill();
+    }
+    g.fillStyle = rgba(pc, 0.7);
+    for (const [x, y] of [[3 * q, q], [q, 3 * q]]) sparkle4(g, x, y, W * 0.06);
   }
   if (fabric === 'sparkle') {
     for (let i = 0; i < 150; i++) {
@@ -339,12 +429,19 @@ export function paintEyes(g, W, H, o) {
     const outer = side; // outer corner direction
     // brows
     g.strokeStyle = o.brow;
-    g.lineWidth = 5;
     g.lineCap = 'round';
     g.beginPath();
     const by = v === 'happy' ? 12 : 15;
-    g.moveTo(cx - outer * 17, by + 3);
-    g.quadraticCurveTo(cx + outer * 2, by - 4, cx + outer * 19, by + 4);
+    if (o.brows === 'bold') {
+      // thicker and flatter, the outer end a little lower
+      g.lineWidth = 8.5;
+      g.moveTo(cx - outer * 17, by + 3);
+      g.quadraticCurveTo(cx + outer * 2, by - 2, cx + outer * 19, by + 6);
+    } else {
+      g.lineWidth = 5;
+      g.moveTo(cx - outer * 17, by + 3);
+      g.quadraticCurveTo(cx + outer * 2, by - 4, cx + outer * 19, by + 4);
+    }
     g.stroke();
     if (v === 'blink' || v === 'sleep') {
       g.strokeStyle = ink;

@@ -2,14 +2,14 @@
 // dresses (deformable flares), and shoes. Everything is authored in avatar space; P (the
 // build context from avatar.js) routes each piece to the bone and material it belongs to.
 
-import { shade, mixHex } from '../../core/util.js';
+import { shade, mixHex, hexToRgb } from '../../core/util.js';
 
 const WHITE = '#FFFFFF';
 const GOLD = '#FFD54A';
 
 const FABRIC = {
   top: { sweater: 'knit', sparkle_top: 'sparkle' },
-  bottom: { jeans: 'denim', overalls: 'denim', tutu: 'tulle' },
+  bottom: { jeans: 'denim', overalls: 'denim', tutu: 'tulle', joggers: 'knit' },
   dress: { princess: 'satin', ballgown: 'satin', party: 'satin', mermaid: 'sparkle', overall_dress: 'denim' },
 };
 
@@ -17,10 +17,76 @@ const SLEEVES = {
   tshirt: 'short', tank: 'none', hoodie: 'long', sweater: 'long', blouse: 'puffy', crop: 'short', jacket: 'long',
   sparkle_top: 'cap', sundress: 'none', party: 'puffy', princess: 'puffy', ballgown: 'offpuff',
   overall_dress: 'tee', mermaid: 'none',
+  polo: 'short', jersey: 'short', button_up: 'long', tee_dino: 'short', tee_rocket: 'short', tee_bolt: 'short',
 };
 
-const PANTS = new Set(['jeans', 'leggings', 'overalls']);
-const LONG_TOPS = new Set(['hoodie', 'sweater', 'jacket']);
+const PANTS = new Set(['jeans', 'leggings', 'overalls', 'joggers', 'pants']);
+const LONG_TOPS = new Set(['hoodie', 'sweater', 'jacket', 'button_up']);
+const BUTTONED = new Set(['jeans', 'shorts', 'overalls', 'cargo_shorts', 'pants']);
+
+// Pixel pictures on a shirt front: one string per row (top first), one character per pixel,
+// '.' = no pixel. Colors come from the palette passed to pixelDecal.
+const DECALS = {
+  tee_dino: {
+    rows: [
+      '........GGGG.',
+      '.......GGKGGG',
+      '.......GGGGGG',
+      '..S.S..GGG...',
+      '.SGSGSGGGG...',
+      'GGGGGGGGGG...',
+      '..GGLLLLGG...',
+      '...GLLLGG....',
+      '...GG..GG....',
+      '...GG..GG....',
+    ],
+    palette: { G: '#6BD68A', L: '#B8F2A0', K: '#3B2230', S: '#FFA94D' },
+  },
+  tee_rocket: {
+    rows: [
+      '....R....',
+      '...RRR...',
+      '...WWW...',
+      '..WWWWW..',
+      '..WBBBW..',
+      '..WBBBW..',
+      '..WWWWW..',
+      '..WWWWW..',
+      '.RWWWWWR.',
+      'RRWWWWWRR',
+      'RR.WWW.RR',
+      '...Y.Y...',
+      '..Y.Y.Y..',
+      '...Y.Y...',
+    ],
+    palette: { W: '#FFFFFF', R: '#FF6B6B', B: '#6CC6FF', Y: '#FFD43B' }, // a sparkle puff, no flames
+  },
+  tee_bolt: {
+    rows: [
+      '...OYYO',
+      '..OYYO.',
+      '..OYYO.',
+      '.OYYO..',
+      '.OYYYYO',
+      'OYYYYO.',
+      '...OYO.',
+      '..OYO..',
+      '..OYO..',
+      '.OYO...',
+      '.OO....',
+      'O......',
+    ],
+    palette: { Y: '#FFD43B', O: '#FFA94D' },
+  },
+};
+
+// A 3x5 pixel font for jersey numbers.
+const DIGITS = [
+  ['###', '#.#', '#.#', '#.#', '###'], ['.#.', '##.', '.#.', '.#.', '###'], ['###', '..#', '###', '#..', '###'],
+  ['###', '..#', '.##', '..#', '###'], ['#.#', '#.#', '###', '..#', '..#'], ['###', '#..', '###', '..#', '###'],
+  ['###', '#..', '###', '#.#', '###'], ['###', '..#', '.#.', '.#.', '.#.'], ['###', '#.#', '###', '#.#', '###'],
+  ['###', '#.#', '###', '..#', '###'],
+];
 
 // ---------- body ----------
 
@@ -151,6 +217,43 @@ export function buildOutfit(P) {
       TP.box(-0.216, 1.0, -0.127, 0.216, 1.035, 0.127, trimLight);
       TP.cube(0, 0.97, 0.128, 0.05, 0.05, 0.012, '#FFFFFF');
       break;
+    case 'polo':
+      crew();
+      for (const s of [-1, 1]) {
+        TP.save().rotateAt(s * 0.05, 1.07, 0.13, 0, 0, s * 0.5);
+        TP.box(s * 0.01, 1.04, 0.118, s * 0.1, 1.1, 0.136, trimLight); // collar flaps
+        TP.restore();
+      }
+      TP.box(-0.022, 0.93, 0.119, 0.022, 1.06, 0.127, trim); // placket
+      for (const y of [1.03, 0.97]) TP.cube(0, y, 0.129, 0.022, 0.022, 0.01, WHITE);
+      break;
+    case 'jersey': {
+      scoop(0.07, 0.1); // V-neck
+      TP.box(-0.072, 1.08, -0.12, 0.072, 1.092, 0.128, trim);
+      const numC = numberColor(topC, topSrc.patternColor);
+      jerseyNumber(TP, L.top.num, 0, 0.92, 0.121, 0.028, numC, 1);
+      jerseyNumber(TP, L.top.num, 0, 0.86, -0.121, 0.04, numC, -1);
+      break;
+    }
+    case 'button_up':
+      for (const s of [-1, 1]) {
+        TP.save().rotateAt(s * 0.04, 1.08, 0.13, 0, 0, s * 0.75);
+        TP.box(s * 0.005, 1.03, 0.118, s * 0.11, 1.095, 0.138, trimLight); // pointed collar
+        TP.restore();
+      }
+      TP.box(-0.024, 0.76, 0.119, 0.024, 1.04, 0.127, trim); // placket
+      for (const y of [1.0, 0.92, 0.84, 0.77]) TP.cube(0, y, 0.129, 0.02, 0.02, 0.01, WHITE);
+      TP.box(0.07, 0.9, 0.119, 0.16, 0.99, 0.128, trim); // chest pocket
+      TP.box(0.07, 0.975, 0.119, 0.16, 0.99, 0.131, shade(topC, -0.25));
+      break;
+    case 'tee_dino':
+    case 'tee_rocket':
+    case 'tee_bolt': {
+      crew();
+      const d = DECALS[topType];
+      pixelDecal(TP, d.rows, 0, topType === 'tee_rocket' ? 0.915 : 0.925, 0.121, 0.016, d.palette);
+      break;
+    }
     default:
       crew();
   }
@@ -161,7 +264,8 @@ export function buildOutfit(P) {
   H.cbox(-0.19, 0.555, -0.115, 0.19, 0.775, 0.115, 0.02, WHITE);
   if (!dress) {
     HP.box(-0.196, 0.742, -0.121, 0.196, 0.778, 0.121, shade(bottomC, -0.15));
-    if (bottomType === 'jeans' || bottomType === 'shorts' || bottomType === 'overalls') HP.cube(0, 0.76, 0.123, 0.03, 0.03, 0.01, GOLD);
+    if (BUTTONED.has(bottomType)) HP.cube(0, 0.76, 0.123, 0.03, 0.03, 0.01, GOLD);
+    if (bottomType === 'joggers') for (const s of [-1, 1]) HP.box(s * 0.03 - 0.006, 0.68, 0.121, s * 0.03 + 0.006, 0.745, 0.127, WHITE); // drawstrings
   } else if (['party', 'princess', 'ballgown', 'sundress'].includes(dress.type)) {
     const sash = dress.type === 'sundress' ? trimLight : mixHex(topC, WHITE, 0.7);
     HP.box(-0.197, 0.735, -0.122, 0.197, 0.775, 0.122, sash);
@@ -205,6 +309,10 @@ export function buildOutfit(P) {
     } else if (sleeve === 'tee') {
       up.cbox(x - 0.073, 0.925, -0.079, x + 0.073, 1.092, 0.079, 0.022, WHITE);
     }
+    if (topType === 'jersey') {
+      const sc = numberColor(topC, topSrc.patternColor);
+      for (const y of [0.95, 0.98]) up.box(x - 0.076, y, -0.082, x + 0.076, y + 0.014, 0.082, sc); // sleeve stripes
+    }
   }
 
   // ----- legs -----
@@ -216,13 +324,20 @@ export function buildOutfit(P) {
     if (pants) {
       P.B(leg, bottomMat).cbox(x - 0.093, 0.3, -0.098, x + 0.093, 0.665, 0.098, 0.02, WHITE);
       P.B(knee, bottomMat).cbox(x - 0.088, 0.06, -0.093, x + 0.088, 0.375, 0.093, 0.02, WHITE);
-      if (bottomType !== 'leggings') P.B(knee, 'plain').box(x - 0.093, 0.085, -0.098, x + 0.093, 0.135, 0.098, shade(bottomC, 0.28));
+      if (bottomType === 'joggers') P.B(knee, 'plain').box(x - 0.093, 0.06, -0.098, x + 0.093, 0.12, 0.098, shade(bottomC, -0.15)); // ankle cuffs
+      else if (bottomType !== 'leggings') P.B(knee, 'plain').box(x - 0.093, 0.085, -0.098, x + 0.093, 0.135, 0.098, shade(bottomC, 0.28));
     } else {
       P.B(leg, 'plain').cbox(x - 0.09, 0.3, -0.095, x + 0.09, 0.66, 0.095, 0.02, skin);
       P.B(knee, 'plain').cbox(x - 0.085, 0.06, -0.09, x + 0.085, 0.37, 0.09, 0.02, skin);
-      if (bottomType === 'shorts') {
-        P.B(leg, bottomMat).cbox(x - 0.1, 0.46, -0.105, x + 0.1, 0.665, 0.105, 0.02, WHITE);
-        P.B(leg, 'plain').box(x - 0.102, 0.455, -0.107, x + 0.102, 0.48, 0.107, shade(bottomC, 0.25));
+      if (bottomType === 'shorts' || bottomType === 'cargo_shorts') {
+        const end = bottomType === 'cargo_shorts' ? 0.4 : 0.46;
+        P.B(leg, bottomMat).cbox(x - 0.1, end, -0.105, x + 0.1, 0.665, 0.105, 0.02, WHITE);
+        P.B(leg, 'plain').box(x - 0.102, end - 0.005, -0.107, x + 0.102, end + 0.02, 0.107, shade(bottomC, 0.25));
+        if (bottomType === 'cargo_shorts') {
+          // a side pocket with a flap on each leg
+          P.B(leg, bottomMat).box(x + side * 0.1, 0.46, -0.055, x + side * 0.122, 0.56, 0.055, WHITE);
+          P.B(leg, 'plain').box(x + side * 0.1, 0.55, -0.06, x + side * 0.126, 0.575, 0.06, shade(bottomC, -0.15));
+        }
       }
     }
   }
@@ -237,6 +352,49 @@ export function buildOutfit(P) {
 function heartDecal(b, x, y, z, color, s = 0.018) {
   const px = [[-2, 1], [-1, 2], [1, 2], [2, 1], [-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [-1, 1], [0, 1], [1, 1], [-1, -1], [0, -1], [1, -1], [0, -2]];
   for (const [i, j] of px) b.box(x + i * s - s / 2, y + j * s - s / 2, z, x + i * s + s / 2, y + j * s + s / 2, z + 0.008, color);
+}
+
+/**
+ * A pixel picture centred on (x, y) at depth z, s per pixel. rows: strings, top row first, one
+ * character per pixel ('.' = none); palette: char -> hex. Runs of one color in a row become
+ * one box. dir -1 draws it on the back (facing -Z, mirrored so it reads from behind).
+ */
+function pixelDecal(b, rows, x, y, z, s, palette, dir = 1) {
+  const h = rows.length, w = rows[0].length;
+  const z0 = dir > 0 ? z : z - 0.008, z1 = dir > 0 ? z + 0.008 : z;
+  for (let j = 0; j < h; j++) {
+    const row = rows[j];
+    const yy = y + ((h - 1) / 2 - j) * s;
+    let i = 0;
+    while (i < w) { // bounded: i grows every pass
+      const ch = row[i];
+      let k = i + 1;
+      while (k < w && row[k] === ch) k++;
+      const color = palette[ch];
+      if (color) {
+        let xa = x + (i - w / 2) * s, xb = x + (k - w / 2) * s;
+        if (dir < 0) [xa, xb] = [-xb + 2 * x, -xa + 2 * x];
+        b.box(xa, yy - s / 2, z0, xb, yy + s / 2, z1, color);
+      }
+      i = k;
+    }
+  }
+}
+
+/** A jersey number (0..99) in the 3x5 pixel font, centred on (x, y). */
+function jerseyNumber(b, num, x, y, z, s, color, dir) {
+  const n = Number.isInteger(num) && num >= 0 && num <= 99 ? num : 7;
+  const digits = String(n).split('').map((d) => DIGITS[+d]);
+  const rows = [];
+  for (let r = 0; r < 5; r++) rows.push(digits.map((d) => d[r]).join('.'));
+  pixelDecal(b, rows, x, y, z, s, { '#': color }, dir);
+}
+
+/** The number / stripe color: the pattern color, or one that reads on the shirt. */
+function numberColor(shirt, pc) {
+  if (pc && pc !== shirt) return pc;
+  const [r, g, bl] = hexToRgb(shirt);
+  return (0.2126 * r + 0.7152 * g + 0.0722 * bl) / 255 > 0.6 ? shade(shirt, -0.5) : WHITE;
 }
 
 function shellTrim(b, color) {
@@ -405,6 +563,32 @@ function buildShoes(P, shoes, skin) {
         b.box(x - 0.1, 0.225, -0.103, x + 0.1, 0.26, 0.103, light);
         break;
       }
+      case 'high_tops':
+        // sneaker sole and toe cap, a tall shaft, white laces and a round star ankle patch
+        b.box(x - 0.1, 0, -0.105, x + 0.1, 0.038, 0.165, '#F4F1F8');
+        b.cbox(x - 0.094, 0.03, -0.1, x + 0.094, 0.125, 0.155, 0.03, c);
+        b.cbox(x - 0.09, 0.03, 0.105, x + 0.09, 0.085, 0.162, 0.02, WHITE);
+        b.cbox(x - 0.097, 0.03, -0.102, x + 0.097, 0.26, 0.1, 0.025, c);
+        b.box(x - 0.1, 0.245, -0.104, x + 0.1, 0.27, 0.104, WHITE);
+        for (let k = 0; k < 4; k++) b.box(x - 0.045, 0.135 + k * 0.03, 0.098, x + 0.045, 0.146 + k * 0.03, 0.108, WHITE);
+        b.save().translate(x + side * 0.098, 0.19, 0).rotate(0, 0, Math.PI / 2);
+        b.cyl(0, -0.006, 0, 0.04, 0.012, WHITE, 10);
+        b.restore();
+        for (const r of [0, Math.PI / 4]) { // a little star (two turned squares)
+          b.save().rotateAt(x + side * 0.106, 0.19, 0, r, 0, 0);
+          b.cube(x + side * 0.106, 0.19, 0, 0.004, 0.032, 0.032, c);
+          b.restore();
+        }
+        break;
+      case 'skate_shoes':
+        // a chunky low shoe on a thick white sole, a side stripe and a white toe band
+        b.box(x - 0.104, 0, -0.11, x + 0.104, 0.05, 0.17, WHITE);
+        b.cbox(x - 0.097, 0.045, -0.104, x + 0.097, 0.15, 0.16, 0.035, c);
+        b.box(x - 0.1, 0.07, -0.08, x + 0.1, 0.095, 0.11, shade(c, 0.4));
+        b.cbox(x - 0.092, 0.045, 0.115, x + 0.092, 0.095, 0.167, 0.02, WHITE);
+        for (const z of [0.03, 0.07]) b.box(x - 0.05, 0.145, z, x + 0.05, 0.155, z + 0.018, WHITE);
+        b.box(x - 0.088, 0.145, -0.093, x + 0.088, 0.18, 0.093, WHITE); // socks
+        break;
       default:
         b.cbox(x - 0.094, 0, -0.1, x + 0.094, 0.12, 0.155, 0.03, c);
     }

@@ -1,4 +1,4 @@
-// Twelve hair styles as layered voxel geometry: a "helmet" over the head, anime bangs,
+// Hair styles as layered voxel geometry: a "helmet" over the head, anime bangs,
 // side locks, and swinging parts (ponytails, pigtails, braids, long back hair) on spring
 // chains. Colors come from hairColors(): one color, or a second color as ombre / streaks /
 // tips, or a pastel rainbow. The strand texture adds shine (an "angel ring" at the crown).
@@ -14,6 +14,8 @@ const RANGES = {
   long: [1.62, 0.8], wavy_long: [1.62, 0.72], ponytail: [1.6, 1.0], pigtails: [1.6, 0.95], braids: [1.6, 0.78],
   bun: [1.66, 1.3], space_buns: [1.66, 1.3], curly: [1.66, 1.02], bob: [1.62, 1.2], short: [1.7, 1.36],
   side_pony: [1.6, 0.92], pixie: [1.72, 1.42],
+  buzz: [1.77, 1.42], spiky: [1.95, 1.42], side_part: [1.8, 1.42], shaggy: [1.78, 1.25],
+  short_curly: [1.84, 1.3], fauxhawk: [1.98, 1.44], afro: [1.98, 1.24],
 };
 
 /** colorFor(index) -> (p) => THREE.Color. index >= 10 marks a strand (streaks use every 3rd). */
@@ -47,8 +49,9 @@ export function hairColors(look) {
 
 // ---------- shared pieces ----------
 
-function helmet(h, C, { sideBottom = 1.34, backBottom = 1.2, puff = 0, sideFront = 0.16 } = {}) {
+function helmet(h, C, { sideBottom = 1.34, backBottom = 1.2, puff = 0, sideFront = 0.16 } = {}, P = null) {
   const w = 0.338 + puff, top = 1.758 + puff * 0.7, bz = -0.302 - puff;
+  if (P) P.hairPuff = puff; // caps and headphones sit this much wider
   h.cbox(-w, 1.6, bz, w, top, 0.296, 0.045, C(0)); // crown
   h.cbox(-w + 0.05, 1.7, bz + 0.04, w - 0.05, top + 0.022, 0.17, 0.05, C(0)); // a little dome
   // back of the head in strands with a soft, uneven edge
@@ -157,20 +160,20 @@ function tailSeg(C, widths, depths, idx) {
 const STYLES = {
   long(P, h, C) {
     P.backZ = -0.35;
-    helmet(h, C, { sideBottom: 1.12, backBottom: 1.1 });
+    helmet(h, C, { sideBottom: 1.12, backBottom: 1.1 }, P);
     bangs(h, C, 'swept');
     sideLocks(h, C, 0.98);
     backCurtain(P, C, { bottom: 0.74, wave: false });
   },
   wavy_long(P, h, C) {
     P.backZ = -0.36;
-    helmet(h, C, { sideBottom: 1.1, backBottom: 1.08, puff: 0.012 });
+    helmet(h, C, { sideBottom: 1.1, backBottom: 1.08, puff: 0.012 }, P);
     bangs(h, C, 'parted');
     sideLocks(h, C, 0.92, { w: 0.06 });
     backCurtain(P, C, { bottom: 0.66, wave: true });
   },
   ponytail(P, h, C) {
-    helmet(h, C, { sideBottom: 1.3, backBottom: 1.24 });
+    helmet(h, C, { sideBottom: 1.3, backBottom: 1.24 }, P);
     bangs(h, C, 'swept');
     sideLocks(h, C, 1.3, { w: 0.04, z0: 0.14 });
     const pts = [[0, 1.6, -0.34], [0, 1.47, -0.45], [0, 1.28, -0.48], [0, 1.08, -0.45], [0, 0.94, -0.41]];
@@ -178,7 +181,7 @@ const STYLES = {
     tie(P, 'head', 0, 1.6, -0.33, [1.1, 0, 0], P.tieColor);
   },
   pigtails(P, h, C) {
-    helmet(h, C, { sideBottom: 1.3, backBottom: 1.22 });
+    helmet(h, C, { sideBottom: 1.3, backBottom: 1.22 }, P);
     bangs(h, C, 'parted');
     for (const s of [-1, 1]) {
       const pts = [[s * 0.36, 1.46, -0.1], [s * 0.43, 1.33, -0.11], [s * 0.45, 1.16, -0.1], [s * 0.43, 1.0, -0.08]];
@@ -187,7 +190,7 @@ const STYLES = {
     }
   },
   bun(P, h, C) {
-    helmet(h, C, { sideBottom: 1.3, backBottom: 1.3 });
+    helmet(h, C, { sideBottom: 1.3, backBottom: 1.3 }, P);
     bangs(h, C, 'swept2');
     sideLocks(h, C, 1.26, { w: 0.035, z0: 0.16, tip: false });
     h.ccube(0, 1.8, -0.1, 0.28, 0.2, 0.26, 0.07, C(11));
@@ -197,7 +200,7 @@ const STYLES = {
     tie(P, 'head', 0, 1.74, -0.1, [0, 0, 0], P.tieColor);
   },
   space_buns(P, h, C) {
-    helmet(h, C, { sideBottom: 1.28, backBottom: 1.24 });
+    helmet(h, C, { sideBottom: 1.28, backBottom: 1.24 }, P);
     bangs(h, C, 'parted');
     sideLocks(h, C, 1.18, { w: 0.03, z0: 0.18, tip: false });
     for (const s of [-1, 1]) {
@@ -208,7 +211,7 @@ const STYLES = {
     }
   },
   braids(P, h, C) {
-    helmet(h, C, { sideBottom: 1.3, backBottom: 1.2 });
+    helmet(h, C, { sideBottom: 1.3, backBottom: 1.2 }, P);
     bangs(h, C, 'parted');
     for (const s of [-1, 1]) {
       const pts = [[s * 0.31, 1.32, -0.06], [s * 0.31, 1.17, 0.05], [s * 0.3, 1.02, 0.12], [s * 0.29, 0.88, 0.14], [s * 0.285, 0.76, 0.14]];
@@ -231,7 +234,7 @@ const STYLES = {
   },
   curly(P, h, C) {
     P.backZ = -0.41;
-    helmet(h, C, { sideBottom: 1.12, backBottom: 1.06, puff: 0.03 });
+    helmet(h, C, { sideBottom: 1.12, backBottom: 1.06, puff: 0.03 }, P);
     const rand = mulberry32(99);
     // a halo of curls around the crown, sides and back
     const curl = (x, y, z, s, i) => {
@@ -255,7 +258,7 @@ const STYLES = {
     for (const s of [-1, 1]) for (let y = 1.4; y >= 1.15; y -= 0.1) curl(s * 0.34, y, 0.17, 0.1, i++);
   },
   bob(P, h, C) {
-    helmet(h, C, { sideBottom: 1.2, backBottom: 1.2, sideFront: 0.22 });
+    helmet(h, C, { sideBottom: 1.2, backBottom: 1.2, sideFront: 0.22 }, P);
     bangs(h, C, 'blunt');
     // the bob's rounded ends, curling in at the jaw line
     for (const s of [-1, 1]) {
@@ -266,7 +269,7 @@ const STYLES = {
     h.box(-0.33, 1.17, -0.32, 0.33, 1.22, -0.26, C(25));
   },
   short(P, h, C) {
-    helmet(h, C, { sideBottom: 1.42, backBottom: 1.34 });
+    helmet(h, C, { sideBottom: 1.42, backBottom: 1.34 }, P);
     bangs(h, C, 'short');
     sideLocks(h, C, 1.4, { w: 0.03, z0: 0.12, z1: 0.26 });
     // a little clip
@@ -275,7 +278,7 @@ const STYLES = {
     b.cube(0.25, 1.575, 0.305, 0.04, 0.04, 0.02, P.tieColor);
   },
   side_pony(P, h, C) {
-    helmet(h, C, { sideBottom: 1.3, backBottom: 1.24 });
+    helmet(h, C, { sideBottom: 1.3, backBottom: 1.24 }, P);
     bangs(h, C, 'swept2');
     sideLocks(h, C, 1.3, { w: 0.04, z0: 0.14 });
     const pts = [[-0.34, 1.42, -0.14], [-0.41, 1.3, -0.04], [-0.4, 1.14, 0.1], [-0.36, 0.98, 0.16], [-0.33, 0.86, 0.16]];
@@ -283,7 +286,7 @@ const STYLES = {
     tie(P, 'head', -0.345, 1.43, -0.14, [0.5, 0, -1.2], P.tieColor);
   },
   pixie(P, h, C) {
-    helmet(h, C, { sideBottom: 1.44, backBottom: 1.4 });
+    helmet(h, C, { sideBottom: 1.44, backBottom: 1.4 }, P);
     bangs(h, C, 'wispy');
     sideLocks(h, C, 1.4, { w: 0.03, z0: 0.14, z1: 0.27 });
     const tufts = [[-0.18, 1.76, 0.1, 0.4], [0.02, 1.78, 0.05, -0.2], [0.2, 1.76, 0.0, -0.5], [-0.05, 1.77, -0.18, 0.2], [0.14, 1.75, -0.22, -0.3]];
@@ -293,7 +296,124 @@ const STYLES = {
       h.restore();
     });
   },
+
+  // ----- short styles (boys; no swinging chains, so they cost fewer meshes) -----
+  // P.hatFlat: a cap, bucket hat or beanie sits on top, so tall parts stay low.
+
+  buzz(P, h, C) {
+    helmet(h, C, { sideBottom: 1.46, backBottom: 1.38, puff: -0.014, sideFront: 0.12 }, P);
+    hairline(h, C);
+  },
+  spiky(P, h, C) {
+    helmet(h, C, { sideBottom: 1.44, backBottom: 1.36 }, P);
+    bangs(h, C, 'short');
+    const rand = mulberry32(7);
+    // three rows of three spikes pointing up and back (only the front row under a hat)
+    for (let row = 0; row < 3; row++) {
+      if (P.hatFlat && row > 0) break;
+      for (let col = 0; col < 3; col++) {
+        const x = (col - 1) * 0.18, z = 0.16 - row * 0.17;
+        const r = 0.06 + rand() * 0.02, tall = P.hatFlat ? 0.06 : 0.14 + rand() * 0.06;
+        const y = P.hatFlat ? 1.6 : 1.7 - row * 0.02;
+        const back = P.hatFlat ? 0.9 : -0.35 - row * 0.25 - rand() * 0.2;
+        h.save().rotateAt(x, y, z, back, 0, -Math.sign(x) * (0.25 + rand() * 0.15));
+        h.cone(x, y, P.hatFlat ? 0.27 : z, r, tall, C(10 + row * 3 + col), 6);
+        h.restore();
+      }
+    }
+  },
+  side_part(P, h, C) {
+    helmet(h, C, { sideBottom: 1.42, backBottom: 1.36 }, P);
+    // a fringe swept from the part (x = 0.12) across the forehead and lifted into a swoop
+    const part = 0.12, n = 6, W = (part + 0.338) / n;
+    for (let i = 0; i < n; i++) {
+      const xa = part - (i + 1) * W, xb = part - i * W + 0.004;
+      h.save().rotateAt(part, 1.66, 0.28, -0.18 - i * 0.02, 0, 0.06);
+      h.box(xa, 1.585 + i * 0.01, 0.24, xb, 1.72 + (i < 3 ? 0.02 : 0), 0.315, C(10 + i));
+      h.restore();
+    }
+    h.box(part, 1.61, 0.24, 0.338, 1.68, 0.3, C(17)); // the short side
+    const dark = (p, nn) => C(19)(p, nn).multiplyScalar(0.78);
+    h.box(part - 0.012, 1.7, -0.26, part + 0.012, 1.775, 0.29, dark); // the part line
+  },
+  shaggy(P, h, C) {
+    helmet(h, C, { sideBottom: 1.32, backBottom: 1.22, puff: 0.012 }, P);
+    h.save().translate(0, -0.05, 0);
+    bangs(h, C, 'wispy');
+    h.restore();
+    sideLocks(h, C, 1.3, { w: 0.04, tip: true });
+    // a deeper, jagged back edge
+    const nb = 7, w = 0.35, bw = (2 * w) / nb;
+    for (let i = 0; i < nb; i++) {
+      const x0 = -w + i * bw;
+      h.box(x0, 1.16 - ((i * 3) % 4) * 0.02, -0.318, x0 + bw * 0.8, 1.3, -0.24, C(30 + i));
+    }
+  },
+  short_curly(P, h, C) {
+    helmet(h, C, { sideBottom: 1.36, backBottom: 1.3, puff: 0.015 }, P);
+    const rand = mulberry32(31);
+    const curl = (x, y, z, s, i) => {
+      h.save().rotateAt(x, y, z, (rand() - 0.5) * 0.6, (rand() - 0.5) * 0.8, (rand() - 0.5) * 0.6);
+      h.ccube(x, y, z, s, s, s, s * 0.3, C(10 + i));
+      h.restore();
+    };
+    let i = 0;
+    for (let a = 0; a < 14; a++) { // a ring around the crown, the face left open (as curly)
+      const ang = (a / 14) * Math.PI * 2;
+      const x = Math.sin(ang) * 0.34, z = Math.cos(ang) * 0.3 - 0.02;
+      if (z > 0.2 && Math.abs(x) < 0.22) continue;
+      curl(x, 1.68 + rand() * 0.04, z, 0.09 + rand() * 0.01, i++);
+    }
+    for (let a = 0; a < 5; a++) curl(-0.2 + a * 0.1, 1.66 + (a % 2) * 0.02, 0.27, 0.085, i++); // fringe
+    if (!P.hatFlat) for (let a = 0; a < 6; a++) curl(-0.22 + a * 0.09, 1.77 + rand() * 0.02, -0.08 + (a % 2) * 0.14, 0.1, i++); // top
+    for (let r = 0; r < 2; r++) {
+      for (let k = 0; k < 5; k++) curl(-0.24 + k * 0.12, 1.54 - r * 0.13, -0.32, 0.095, i++); // back
+      for (const s of [-1, 1]) curl(s * 0.34, 1.55 - r * 0.12, -0.1 + r * 0.08, 0.09, i++); // sides
+    }
+  },
+  fauxhawk(P, h, C) {
+    helmet(h, C, { sideBottom: 1.46, backBottom: 1.38, puff: -0.01, sideFront: 0.12 }, P);
+    hairline(h, C);
+    // a central ridge, tallest at the front (kept low under a hat)
+    const heights = [0.26, 0.22, 0.18, 0.15, 0.12];
+    for (let k = 0; k < heights.length; k++) {
+      const z = 0.24 - k * 0.12, tall = P.hatFlat ? heights[k] * 0.4 : heights[k];
+      h.save().rotateAt(0, 1.72, z, -0.3, 0, 0);
+      h.ccube(0, 1.72 + tall / 2, z, 0.13, tall, 0.13, 0.035, C(10 + k));
+      h.restore();
+    }
+  },
+  afro(P, h, C) {
+    const puff = P.hatFlat ? 0.04 : 0.07;
+    P.backZ = -0.42;
+    helmet(h, C, { sideBottom: 1.24, backBottom: 1.18, puff }, P);
+    const rand = mulberry32(53);
+    // round curls on a sphere around the head, the face left open
+    const R = P.hatFlat ? 0.4 : 0.43, cy = 1.62, cz = -0.03;
+    const rings = [[-0.35, 12], [-0.05, 13], [0.25, 12], [0.55, 10], [0.85, 6], [1.2, 3]];
+    let i = 0;
+    for (let r = 0; r < rings.length; r++) {
+      const [el, n] = rings[r];
+      if (P.hatFlat && r >= 3) break;
+      for (let k = 0; k < n; k++) {
+        const az = ((k + (r % 2) * 0.5) / n) * Math.PI * 2;
+        const x = R * Math.cos(el) * Math.sin(az), y = cy + R * Math.sin(el) * 0.9, z = cz + R * Math.cos(el) * Math.cos(az);
+        if (z > 0.12 && y < 1.66 && Math.abs(x) < 0.3) continue;
+        h.save().rotateAt(x, y, z, (rand() - 0.5) * 0.5, (rand() - 0.5) * 0.5, 0);
+        h.ccube(x, y, z, 0.13, 0.13, 0.13, 0.05, C(10 + i++));
+        h.restore();
+      }
+    }
+  },
 };
+
+/** A short, straight hairline across the forehead (no anime points), for buzz cuts. */
+function hairline(h, C) {
+  const n = 7, W = 0.6 / n;
+  for (let i = 0; i < n; i++) {
+    h.box(-0.3 + i * W, 1.6 + (i % 2) * 0.008, 0.25, -0.3 + (i + 1) * W + 0.003, 1.665, 0.3, C(10 + i));
+  }
+}
 
 /** Long hair down the back, on a swinging "curtain" bone. */
 function backCurtain(P, C, { bottom = 0.74, wave = false }) {
@@ -324,11 +444,15 @@ function backCurtain(P, C, { bottom = 0.74, wave = false }) {
   h.restore();
 }
 
+const HAT_FLAT = new Set(['cap', 'cap_back', 'bucket_hat', 'beanie']);
+
 /** Build the chosen style onto the head. */
 export function buildHair(P) {
   const C = hairColors(P.look);
   const h = P.B('head', 'hair', { uv: 'hair' });
   h.under = 0.78;
+  P.hairPuff = 0;
+  P.hatFlat = HAT_FLAT.has(P.look.acc.head); // only the short styles read it
   const style = STYLES[P.look.hair.style] || STYLES.long;
   style(P, h, C);
 }

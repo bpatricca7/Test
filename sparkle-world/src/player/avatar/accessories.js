@@ -1,6 +1,6 @@
-// Accessories as small voxel models: head (bows, tiaras, crowns, ears, hats, halo), face
+// Accessories as small voxel models: head (bows, tiaras, crowns, ears, hats, caps, halo), face
 // (glasses on painted planes), back (wings on swinging bones, backpack, cape chain), neck
-// and hand items (wand with a sparkle tip, purse, balloon on a string, teddy, ice cream).
+// and hand items (wand with a sparkle tip, purse, balloon on a string, teddy, ice cream, toys).
 
 import { shade, mixHex } from '../../core/util.js';
 import { bow } from './outfit.js';
@@ -180,7 +180,58 @@ const HEAD = {
     const g = P.B(bone, 'glow');
     g.torus(0, 1.98, 0, 0.2, 0.026, mixHex(c, '#FFF6C8', 0.35), 18, 6);
   },
+  cap(P, b, c) {
+    cap(P, b, c);
+  },
+  cap_back(P, b, c) {
+    b.save().rotateAt(0, 1.7, 0, 0, Math.PI, 0); // the same cap, brim at the back
+    cap(P, b, c);
+    b.restore();
+  },
+  bucket_hat(P, b, c) {
+    // a soft square crown (it covers the hair's corners) over a sloping square brim
+    const w = 0.37 + (P.hairPuff || 0), back = -0.34 - (P.hairPuff || 0) * 1.4;
+    const S = Math.SQRT2; // a 4-sided cone's corners sit at 45 degrees: half width = r / sqrt 2
+    b.save().translate(0, 0, (back + 0.32) / 2);
+    b.cone(0, 1.53, 0, (w + 0.15) * S, 0.09, shade(c, 0.08), 4, (w + 0.01) * S);
+    b.restore();
+    b.cbox(-w, 1.58, back, w, 1.83, 0.32, 0.1, c);
+    b.cbox(-w + 0.06, 1.8, back + 0.06, w - 0.06, 1.87, 0.26, 0.05, c);
+    b.box(-w - 0.006, 1.6, back - 0.006, w + 0.006, 1.655, 0.326, shade(c, -0.15)); // band
+  },
+  headphones(P, b, c) {
+    const R = 0.4 + (P.hairPuff || 0);
+    for (let i = 0; i <= 14; i++) { // band over the top (same loop as the headband)
+      const a = (-0.5 + i / 14) * Math.PI * 0.94;
+      const x = Math.sin(a) * R, y = 1.43 + Math.cos(a) * (R - 0.01);
+      b.save().rotateAt(x, y, 0, 0, 0, -a);
+      b.box(x - 0.045, y - 0.022, -0.035, x + 0.045, y + 0.022, 0.035, c);
+      b.restore();
+    }
+    const cushion = mixHex(c, WHITE, 0.6);
+    for (const s of [-1, 1]) {
+      b.ccube(s * (R - 0.03), 1.4, 0, 0.1, 0.15, 0.13, 0.04, c);
+      b.ccube(s * (R - 0.085), 1.4, 0, 0.03, 0.12, 0.1, 0.012, cushion);
+      b.cube(s * (R + 0.022), 1.4, 0, 0.006, 0.05, 0.05, WHITE);
+    }
+  },
 };
+
+/** A baseball cap: rounded crown, top button, front brim and a star badge (sized to the hair). */
+function cap(P, b, c) {
+  const w = 0.36 + (P.hairPuff || 0);
+  b.cbox(-w, 1.59, -0.33 - (P.hairPuff || 0) * 1.4, w, 1.8, 0.31, 0.1, c);
+  b.cbox(-w + 0.06, 1.76, -0.27, w - 0.06, 1.85, 0.25, 0.05, c);
+  b.ccube(0, 1.86, -0.01, 0.05, 0.03, 0.05, 0.012, shade(c, -0.12));
+  // the brim: a rounded front (two steps), tipped down a little
+  const brim = shade(c, -0.12);
+  b.save().rotateAt(0, 1.62, 0.3, 0.12, 0, 0);
+  b.cbox(-0.31, 1.6, 0.26, 0.31, 1.64, 0.46, 0.015, brim);
+  b.cbox(-0.24, 1.6, 0.44, 0.24, 1.64, 0.53, 0.015, brim);
+  b.restore();
+  const star = [[0, 2], [-1, 1], [0, 1], [1, 1], [-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [-1, -1], [0, -1], [1, -1], [-1, -2], [1, -2]];
+  for (const [i, j] of star) b.cube(i * 0.014, 1.7 + j * 0.014, 0.312, 0.015, 0.015, 0.006, WHITE);
+}
 
 // ---------- face ----------
 
@@ -248,14 +299,18 @@ function buildBack(P) {
   const c = P.look.acc.backColor;
   if (!type || type === 'none') return;
   if (type === 'fairy_wings' || type === 'butterfly_wings' || type === 'angel_wings') return wings(P, type, c);
-  if (type === 'backpack') {
+  if (type === 'backpack' || type === 'star_pack') {
     const b = P.B('torso', 'plain');
     const z0 = P.backZ + 0.005, z1 = z0 - 0.175;
     b.cbox(-0.17, 0.72, z1, 0.17, 1.04, z0, 0.05, c);
     b.cbox(-0.13, 0.74, z1 - 0.025, 0.13, 0.9, z1 + 0.03, 0.03, mixHex(c, WHITE, 0.35));
     b.cbox(-0.17, 0.97, z1 - 0.01, 0.17, 1.06, z1 + 0.09, 0.04, shade(c, -0.1));
+    // badge: a pink heart, or a yellow star on the Star Backpack
     const heart = [[-1, 1], [1, 1], [-1, 0], [0, 0], [1, 0], [0, -1], [0, 1]];
-    for (const [i, j] of heart) b.cube(i * 0.018, 0.82 + j * 0.018, z1 - 0.028, 0.018, 0.018, 0.008, PINK);
+    const star = [[0, 1], [-1, 0], [0, 0], [1, 0], [-1, -1], [1, -1]];
+    const badge = type === 'star_pack' ? star : heart;
+    const bc = type === 'star_pack' ? '#FFD43B' : PINK;
+    for (const [i, j] of badge) b.cube(i * 0.018, 0.82 + j * 0.018, z1 - 0.028, 0.018, 0.018, 0.008, bc);
     for (const s of [-1, 1]) {
       b.box(s * 0.09, 0.8, 0.118, s * 0.14, 1.088, 0.133, shade(c, -0.15));
       b.box(s * 0.09, 1.075, z0, s * 0.14, 1.092, 0.133, shade(c, -0.15));
@@ -337,12 +392,38 @@ function buildNeck(P) {
     }
     b.cube(0, 0, 0.015, 0.03, 0.035, 0.025, shade(c, -0.15));
     b.restore();
+  } else if (type === 'necktie') {
+    b.ccube(0, 1.05, 0.128, 0.05, 0.045, 0.02, 0.01, shade(c, -0.12)); // knot
+    b.save().rotateAt(0, 1.03, 0.13, 0, 0, Math.PI / 4);
+    b.box(-0.026, 1.0, 0.12, 0.026, 1.04, 0.132, c);
+    b.restore();
+    b.box(-0.032, 0.83, 0.12, 0.032, 1.03, 0.132, c);
+    b.save().rotateAt(0, 0.83, 0.126, 0, 0, Math.PI / 4);
+    b.box(-0.0226, 0.8074, 0.12, 0.0226, 0.8526, 0.132, c); // the pointed tip
+    b.restore();
+    b.box(-0.032, 0.92, 0.131, 0.032, 0.94, 0.134, mixHex(c, WHITE, 0.45)); // a lighter stripe
+  } else if (type === 'medal') {
+    for (const s of [-1, 1]) {
+      b.save().rotateAt(s * 0.05, 1.0, 0.125, 0, 0, s * 0.42);
+      b.box(s * 0.03, 0.9, 0.12, s * 0.07, 1.09, 0.13, c); // V ribbon
+      b.restore();
+    }
+    b.save().translate(0, 0.875, 0.128).rotate(Math.PI / 2, 0, 0);
+    b.cyl(0, 0, 0, 0.048, 0.016, GOLD, 12);
+    b.restore();
+    const star = [[0, 1], [-1, 0], [0, 0], [1, 0], [-1, -1], [1, -1]];
+    for (const [i, j] of star) b.cube(i * 0.012, 0.875 + j * 0.012, 0.146, 0.012, 0.012, 0.004, WHITE);
   }
 }
 
 // ---------- hand ----------
 
-const HAND_DEFAULT = { wand: '#FFE27A', purse: '#FF8CC6', balloon: '#FF5FA2', teddy: '#C8905E', ice_cream: '#FFB6D0' };
+const HAND_DEFAULT = {
+  wand: '#FFE27A', purse: '#FF8CC6', balloon: '#FF5FA2', teddy: '#C8905E', ice_cream: '#FFB6D0',
+  soccer_ball: '#FFFFFF', toy_car: '#FF6B6B', dino_toy: '#6BD68A',
+};
+// Dark patches on the soccer ball (directions from its centre).
+const BALL_PATCHES = [[0, 0.3, 0.95], [0.85, 0.45, 0.3], [-0.85, 0.45, 0.3], [0.55, -0.6, 0.55], [-0.55, -0.6, 0.55], [0, 0.85, -0.5]];
 
 function buildHand(P) {
   const type = P.look.acc.hand;
@@ -417,6 +498,43 @@ function buildHand(P) {
       const a = i * 0.8;
       b.cube(hx + Math.cos(a) * 0.055, y + 0.17 + (i % 3) * 0.02, hz + 0.02 + Math.sin(a) * 0.055, 0.014, 0.014, 0.014, sprinkles[i % 4]);
     }
+  } else if (type === 'soccer_ball') {
+    const cx = hx, cy = hy + 0.09, cz = hz + 0.1, r = 0.09;
+    b.sphere(cx, cy, cz, r, r, r, c, 12, 8);
+    const ink = c === WHITE ? '#3A1F4D' : shade(c, -0.55);
+    for (const [dx, dy, dz] of BALL_PATCHES) {
+      const k = r * 0.93 / Math.hypot(dx, dy, dz);
+      b.ccube(cx + dx * k, cy + dy * k, cz + dz * k, 0.04, 0.04, 0.04, 0.012, ink);
+    }
+  } else if (type === 'toy_car') {
+    // a little voxel car pointing forward (+Z): body, a cab with blue windows, four wheels
+    const y = hy + 0.06, z = hz + 0.1;
+    b.ccube(hx, y, z, 0.12, 0.05, 0.2, 0.015, c);
+    b.ccube(hx, y + 0.045, z - 0.015, 0.1, 0.045, 0.1, 0.012, shade(c, -0.08));
+    for (const s of [-1, 1]) b.cube(hx, y + 0.047, z - 0.015 + s * 0.05, 0.08, 0.03, 0.006, '#6CC6FF');
+    for (const s of [-1, 1]) b.cube(hx + s * 0.035, y + 0.005, z + 0.1, 0.025, 0.018, 0.006, '#FFE27A'); // headlights
+    for (const sx of [-1, 1]) {
+      for (const sz of [-1, 1]) {
+        b.save().translate(hx + sx * 0.06, y - 0.025, z + sz * 0.065).rotate(0, 0, Math.PI / 2);
+        b.cyl(0, -0.012, 0, 0.026, 0.024, '#3A1F4D', 8);
+        b.restore();
+      }
+    }
+  } else if (type === 'dino_toy') {
+    // a friendly voxel dino: body, neck and head, tail, three back plates, a lighter belly
+    const y = hy + 0.04, z = hz + 0.1, belly = mixHex(c, WHITE, 0.5);
+    b.ccube(hx, y + 0.06, z, 0.08, 0.08, 0.13, 0.02, c);
+    b.ccube(hx, y + 0.05, z + 0.01, 0.07, 0.05, 0.1, 0.015, belly);
+    b.ccube(hx, y + 0.12, z + 0.07, 0.05, 0.08, 0.05, 0.015, c); // neck
+    b.ccube(hx, y + 0.17, z + 0.09, 0.06, 0.05, 0.08, 0.015, c); // head
+    for (const s of [-1, 1]) b.cube(hx + s * 0.031, y + 0.18, z + 0.105, 0.006, 0.014, 0.014, '#3B2230');
+    b.ccube(hx, y + 0.05, z - 0.1, 0.05, 0.04, 0.09, 0.012, c); // tail
+    for (let k = 0; k < 3; k++) {
+      b.save().rotateAt(hx, y + 0.1, z + 0.03 - k * 0.045, 0, 0, Math.PI / 4);
+      b.cube(hx, y + 0.1, z + 0.03 - k * 0.045, 0.03, 0.03, 0.025, '#FFA94D');
+      b.restore();
+    }
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) b.cube(hx + sx * 0.025, y + 0.005, z + sz * 0.04, 0.025, 0.04, 0.025, c); // legs
   }
 }
 
