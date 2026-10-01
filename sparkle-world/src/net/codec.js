@@ -372,7 +372,7 @@ const tokIdx = (map, key) => (map.get(key) ?? 0).toString(36);
 const tokHex = (c) => (typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c) ? c.slice(1).toLowerCase() : '-');
 const tokBool = (b) => (b ? '1' : '0');
 
-/** look -> dot-separated token string (~130 chars, at most about 151). The name is not included. */
+/** look -> dot-separated token string (~130 chars, at most 152). The name is not included. */
 export function packLook(look) {
   const l = normalizeLook(look);
   const t = [];

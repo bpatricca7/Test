@@ -231,7 +231,7 @@ export function buildOutfit(P) {
       scoop(0.07, 0.1); // V-neck
       TP.box(-0.072, 1.08, -0.12, 0.072, 1.092, 0.128, trim);
       const numC = numberColor(topC, topSrc.patternColor);
-      jerseyNumber(TP, L.top.num, 0, 0.92, 0.121, 0.028, numC, 1);
+      jerseyNumber(TP, L.top.num, 0, 0.845, 0.121, 0.025, numC, 1); // low enough for a medal above it
       jerseyNumber(TP, L.top.num, 0, 0.86, -0.121, 0.04, numC, -1);
       break;
     }

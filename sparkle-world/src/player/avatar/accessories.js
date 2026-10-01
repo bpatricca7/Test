@@ -404,15 +404,16 @@ function buildNeck(P) {
     b.box(-0.032, 0.92, 0.131, 0.032, 0.94, 0.134, mixHex(c, WHITE, 0.45)); // a lighter stripe
   } else if (type === 'medal') {
     for (const s of [-1, 1]) {
-      b.save().rotateAt(s * 0.05, 1.0, 0.125, 0, 0, s * 0.42);
-      b.box(s * 0.03, 0.9, 0.12, s * 0.07, 1.09, 0.13, c); // V ribbon
+      // a short V ribbon, so the medal hangs above a jersey's number
+      b.save().rotateAt(s * 0.04, 1.03, 0.125, 0, 0, s * 0.5);
+      b.box(s * 0.02, 0.97, 0.12, s * 0.058, 1.09, 0.13, c);
       b.restore();
     }
-    b.save().translate(0, 0.875, 0.128).rotate(Math.PI / 2, 0, 0);
-    b.cyl(0, 0, 0, 0.048, 0.016, GOLD, 12);
+    b.save().translate(0, 0.96, 0.128).rotate(Math.PI / 2, 0, 0);
+    b.cyl(0, 0, 0, 0.046, 0.016, GOLD, 12);
     b.restore();
     const star = [[0, 1], [-1, 0], [0, 0], [1, 0], [-1, -1], [1, -1]];
-    for (const [i, j] of star) b.cube(i * 0.012, 0.875 + j * 0.012, 0.146, 0.012, 0.012, 0.004, WHITE);
+    for (const [i, j] of star) b.cube(i * 0.012, 0.96 + j * 0.012, 0.146, 0.012, 0.012, 0.004, WHITE);
   }
 }
 
