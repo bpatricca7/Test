@@ -174,6 +174,8 @@ export function install(game, opts = {}) {
     join: (code) => (isCode(code) ? session.join(code) : Promise.resolve(false)),
     leave: (o) => session.leave(o),
     mayEdit: (tool) => session.mayEdit(tool),
+    /** The host's rules { build, mine } (mine 1 = "Friends can change my things"). */
+    get rules() { return session.rules; },
     /** Does any other player's avatar (from presence) overlap block cell (x, y, z)? */
     cellHasFriend(x, y, z) {
       if (session.state === 'idle') return false;
@@ -196,9 +198,10 @@ export function install(game, opts = {}) {
     on: (name, fn) => session.on(name, fn),
     /**
      * A friend asked for something only the host may do: a short, friendly toast (at most
-     * one per kind every 4 s). kind: 'paused' | 'pet' | 'npc'.
+     * one per kind every 4 s). kind: 'paused' | 'pet' | 'npc' | 'vehicle' (vars.noun) | 'look' (a
+     * visiting player who may not build, docs/ACCOUNTS.md §8.6).
      */
-    refuse(kind) {
+    refuse(kind, vars = {}) {
       const now = performance.now();
       if (now - (refusedAt.get(kind) ?? -Infinity) < REFUSE_GAP) return;
       refusedAt.set(kind, now);
@@ -207,7 +210,28 @@ export function install(game, opts = {}) {
       if (kind === 'paused') text = messageText('paused', { host });
       else if (kind === 'pet') text = messageText('pet_owner', { host });
       else if (kind === 'npc') text = `That's ${host}'s friend! Ask ${host} to help.`;
+      else if (kind === 'look') text = `You're visiting ${host}'s world! Look around and have fun.`;
+      else if (kind === 'vehicle') {
+        // a host's car in careful mode (docs/teams/vehicles.md §7); never "ask first"
+        const noun = vars && /^[a-z-]{1,12}$/.test(vars.noun || '') ? vars.noun : 'car';
+        text = `That's ${host}'s ${noun}! Make your own in the Bag.`;
+      }
       if (text) game.toast(text, { icon: 'heart' });
+    },
+    /** Host: the friends' vehicles in custody, as parked save records (systems.vehicles). */
+    custody() {
+      const h = session.hostCore;
+      return h && typeof h.custodyRecords === 'function' ? h.custodyRecords() : [];
+    },
+    /** Host: who owns an entity now (before the host drives it); null elsewhere. */
+    ownerToken(uid) {
+      const h = session.hostCore;
+      return h && session.role === 'host' ? h.ownerToken(uid) : null;
+    },
+    /** Host: a parked vehicle keeps the owner it had (no-op elsewhere). */
+    restoreOwner(uid, token) {
+      const h = session.hostCore;
+      if (h && session.role === 'host' && token) h.restoreOwner(uid, token);
     },
   };
   net.backupMeta = backupMeta;

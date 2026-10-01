@@ -13,6 +13,8 @@
     "start": "node server/server.mjs",
     "test:net": "node tools/test-net.mjs",
     "test:walkie": "node tools/test-walkie.mjs",
+    "test:vehicles": "node tools/test-vehicles.mjs",
+    "probe:vehicles": "node tools/build.mjs && node tools/probe-vehicles.mjs",
     "probe:mp": "node tools/build.mjs && node tools/probe-multiplayer.mjs",
     "probe:boys": "node tools/build.mjs && node tools/probe-boys.mjs",
     "probe:railway": "node tools/probe-railway.mjs",

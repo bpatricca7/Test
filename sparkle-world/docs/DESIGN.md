@@ -103,6 +103,7 @@ this doc disagree, fix one of them in the same change.
 | Photos | Camera button → UI hides, flash, polaroid preview → save to device. |
 | Explore | Collect sparkling gems hidden around the world; swim; fly; butterflies & fireflies. |
 | Weather & time | Day/night cycle (~12 min), stars and moon at night; weather wand in Settings: sunny, cloudy, rain, snow, rainbow. |
+| Drive | Bag → Cars & Boats → place it (cars on land, boats on the water), Hand-tap: drive, honk, lights, Get out. Nine of them: Bubble Car, Convertible, Safari Jeep, Go-Kart, Road Trip Van, Ice Cream Van, Speedboat, Swan Boat, Sailboat (§6). |
 
 ### Stickers (achievements)
 `first_block` First Block · `builder` 100 blocks placed · `home_sweet_home` placed a bed and a
@@ -112,7 +113,8 @@ recipes · `green_thumb` harvested a plant · `fashionista` changed outfit 5 tim
 `gem_hunter` 10 gems · `gem_master` all gems in a world · `rainbow_maker` placed all 7 rainbow
 colors · `night_owl` saw the stars · `musician` played 20 piano notes · `photographer` took a
 photo · `unicorn_rider` rode a unicorn · `magic_builder` placed a Magic House ·
-`world_maker` created 3 worlds · `splash` went swimming · `sky_high` flew above the clouds.
+`world_maker` created 3 worlds · `splash` went swimming · `sky_high` flew above the clouds ·
+`beep_beep` Beep Beep! (drove a car or van) · `ahoy` Ahoy! (steered a boat) (§6).
 
 ### Visual identity
 - Pixel-art block textures (16×16, nearest filtering) in a **bright pastel** palette; soft fog;
@@ -270,7 +272,11 @@ See §3 for the full as-built API.
 'emote'             { name }
 'game:ready'        {}                       'profile:changed' { profile }
 'history:change'    { size }                 'thumbnail:before' {}  'thumbnail:after' {}
+'vehicle:drive'     { key, kind, uid }       'vehicle:park'   { entity, reason }
+'vehicle:honk'      { key }                  'vehicle:bump'   { speed }
 ```
+`vehicle:park` reasons: 'button' | 'key' | 'stand' | 'auto' | 'trouble' | 'drop' (`entity` is null
+for 'drop': the drive ended without parking). It is one of the "save soon" events.
 `block:place` / `block:remove` payloads also carry `key` (block key). `world.set(..., {record:
 false})` (worldgen, undo, prefabs) emits nothing.
 
@@ -336,7 +342,8 @@ game.registry.items.register({
 });
 ```
 Bag tabs (ids): `nature building colors candy glass lights bedroom living kitchen bathroom
-garden fun pets food houses` (labels in `ITEM_CATEGORIES`, `src/core/registry.js`).
+garden fun pets food houses` (labels in `ITEM_CATEGORIES`, `src/core/registry.js`); feature modules
+splice their own in: `camping`, `shops`, `vehicles` ("Cars & Boats", after Shops).
 Items may also set `kind` ('block' | 'furniture' | 'other'), `hidden`, and blocks/furniture
 set `block` / `furniture` keys. `items.get(key)`, `items.byCategory(tab)`,
 `items.iconFor(key, color?)` → Promise<dataURL> (cached per color, never rejects). `use` returns true when it did
@@ -420,6 +427,12 @@ and `hint(game, hit)`. Reach is `game.reach` (8) from the player's head.
   of her head. First person toggle (V key / Settings). Camera never clips into blocks. `game.cameraRig` = `{ yaw, pitch, distance, mode, setMode(m),
   toggleMode(), snap() }`; yaw 0 looks toward +Z. Movement is camera-relative. Portrait
   screens widen the vertical fov (70° + (1 − aspect)·40°).
+- Mounts: `player.mount(m)` takes a pet (kind `'pet'`, the default) or a vehicle (kind
+  `'vehicle'`, §6); the state stays `'ride'` either way and `player.mountPet` (alias `mounted`)
+  holds it. A mount may give `seatWorld(out)` (where she sits), `pose: 'sit'` (seated, not
+  riding), `overlapsCell(x,y,z)` (nothing is built into her car), `standSpot()` (for saves) and
+  `beforeStand()` (park now, return where she stands). Space does not double-tap to fly while
+  she drives.
 - Player extras: `setFlying(on)`, `toggleFly()`, `emote(name)`, `findStandSpot(x,y,z,entity)`,
   `overlapsCell(x,y,z)`, `serialize()` (saves a standing spot when sitting/sleeping),
   `seatEntity`, `mountPet`. Riding: `mount(pet)` puts the player on `pet.object3d` (or
@@ -539,6 +552,11 @@ As built:
     brings both back); saves load tables first.
   Helpers: `entities.surfaceBelow(x,y,z)`, `entities.itemsOnTop(entity)`. entity also has
   `lightPoint` (world [x,y,z] of its light).
+- `rotXZ(x, z, rot)` is exported. `entities.extraLights` (Set): things that are not placed
+  furniture may borrow one of the 4 pooled lights too (`{ object3d, lightPoint, lightCell, lightScale,
+  moving }`; a moving one has its light follow `lightPoint` every frame). The car she drives uses it.
+- `def.vehicle` (cars, vans, boats, §6): drive specs kept on the furniture def; the entity action
+  `drive` runs on a Hand tap.
 
 Canonical furniture keys (prefabs and other modules may reference these):
 Bedroom: `bed_single bed_double bed_canopy bed_bunk bed_heart bed_cloud crib pet_bed
@@ -746,6 +764,12 @@ World saves also hold `sizeName` ('cozy'|'big'), `waterLevel`, `outside`, `spawn
 and `hotbar: { slots: [itemKey|null ×9], colors: [swatch|null ×9], index }` (the hotbar is
 per world; `game.hotbar.colors` holds the chosen swatch per slot).
 `entities` system data: `[{ uid, key, x, y, z, rot, color, data }]`.
+`vehicles` system data (only when there is something in it): `{ v: 1, away: [{ uid, key, x, y, z,
+rot, color, data }] }`: the car she drives right now, as the parked record it would get if she got
+out here, and on a host every friend's car in custody. Loading places each one (its spot, else the
+nearest free spot, else forced at its spot: never lost) and steps her out of it. Old saves have
+none; a world saved while she drives stands her beside the parked car. `profile.stats` gains
+`drives`, `boatRides`, `honks`, `driveMeters`.
 
 ### Performance budget
 60 fps on a 2019 iPad / mid laptop: chunk meshing time-sliced (≤ 6 ms/frame), no per-frame
@@ -762,6 +786,10 @@ ratio and particle counts.
   `getBlock(x,y,z)` → key, `heightAt(x,z)`, `entities()`, `info()` (mode, fps, draw calls,
   pending chunks, storage…), `waitIdle(ms)` → Promise<bool>. `place` accepts block keys and
   furniture keys (`furn:bed_single` or `bed_single`); `useAt(x,y,z, face=[0,1,0])`.
+- Vehicles: `npm run test:vehicles` (Node: the physics and park search, NaN, bounds, no `while`)
+  and `npm run probe:vehicles` (browser, `--only=land,water,touch,models,save,mp`); the debug
+  handle `debug.vehicles` (`list state drive park honk lights presence corrupt drop setPose stats
+  plan`). `tools/fixtures/old-world-96565e4.json` is a world saved before vehicles.
 - `tools/smoke.mjs [--biome=meadow] [--shots-prefix=core] [--only=desktop|touch] [--headed]`.
   It exports `launch, openGame, attachErrorCollectors, waitForTitle, waitForPlay, waitIdle,
   startWorld, startWorldViaUI, shot, settle, finish, screenPoint` for team scenario scripts.
@@ -926,3 +954,32 @@ module follows from now on:
 - Per-player listeners (stickers, stats, coins, basket, tips) check
   `if (game.net?.remoteApplying) return;` first.
 - Host-only actions on a guest refuse with `game.net.refuse(kind)`.
+
+---
+
+## 6. Wave 3: cars, vans and boats (added 2026-10-01)
+
+From the dad and his daughter: "boats and cars and vans you can drive". The design, the build
+notes and every number are in `docs/teams/vehicles.md`; in short (`src/things/vehicles/`):
+
+- **The fleet** (Bag → Cars & Boats, free and unlimited, 6 colors each): Bubble Car, Convertible,
+  Safari Jeep, Go-Kart, Road Trip Van, Ice Cream Van (its horn is a jingle; it does not open the
+  shop), Speedboat, Swan Boat, Sailboat. Placed with the nose away from her; cars on land ("Cars go
+  on land!"), boats in the top water cell ("Boats go on water! Tap the water.").
+- **Parked = furniture**: saved, synced, Remove, Undo, careful friends. A Hand tap drives it: the
+  entity leaves the world (no Undo entry), a live model carries her (`player.mount`, state
+  `'ride'`, seated pose), and the system seats her after the car moved each frame.
+- **Driving**: the joystick or W A S D point where to go (pull back = reverse), a chase camera,
+  Space or the Honk button (in Jump's place) honk, L or Lights, E / X or Get out. Build and Remove
+  are off while she drives ("Park first to build!").
+- **Physics** (`drive.js`, on `Physics.overlap`): three square probes, 1-block steps climbed
+  (eased in the picture), gentle roll-down, soft stops with a boing and stars, cars refuse water,
+  boats stay on one water level with a bob and a wake. Every number is checked every step;
+  every loop has a fixed bound; no `while` loops.
+- **Never lost**: Get out parks on whole cells (bounded search, 588 checks at most); when she is
+  stood up by anything else it parks where it is; when nothing fits it is placed anyway at its old
+  spot. Every save holds the car she drives as a parked record (`systems.vehicles`).
+- **Lights**: at night by themselves; beams, a glow on the road and one of the 4 pooled lights
+  (no new lights, no shader recompiles).
+- **Friends**: presence `vh` draws her car under her avatar on every page; the host keeps
+  custody of a friend's car while she drives it (docs/MULTIPLAYER.md §7, §8).

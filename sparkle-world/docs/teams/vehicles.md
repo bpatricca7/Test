@@ -6,8 +6,9 @@ you can drive**. The "boys characters" part belongs to the avatar / pals teams (
 NPC friends) and is out of scope here; every vehicle works with any avatar look, and the fleet
 is made for every kid (a jeep, a go-kart and a speedboat next to a bubble car and a swan boat).
 
-Status: **design only** (no code written yet). Every claim about the existing code cites
-`file:line` as of branch `claude/girl-game-world-building-gp6bnl`, commit `96565e4`.
+Status: **built** (wave 3; see "As built" at the end for what changed from this design and
+the test results). Every claim about the existing code cites `file:line` as of branch
+`claude/girl-game-world-building-gp6bnl`, commit `96565e4`.
 
 Owner files (all new): `src/things/vehicles/*`, `tools/probe-vehicles.mjs`,
 `tools/test-vehicles.mjs`, this file. Hooks outside the folder are small and listed in §3.2.
@@ -939,3 +940,89 @@ Settled before building, together with docs/teams/wave3-critique.md (apply every
 9. **Seat the rider after the vehicle moves** (V-B1), the way pet.syncRider does.
 10. **Files you own / must not touch:** follow the critique's SHARED list. Vehicles owns game.js (the DIRTY_EVENTS line only), player.js, camera.js, entities.js, hud.js, touch.js, main.js, adapter.js, host.js, facade.js, remote-players.js (the boys builder adds one `lk: f.lk` line in list(); keep it if you see it), the new src/things/vehicles/. In protocol.js add only VEHICLE_KEY_RE / parseVehiclePresence after the existing constants; refusal texts go in facade.js. Do not edit site/*, avatar/wardrobe/dress-up/friends files, codec.js, or the MESSAGES block. Your tests in test-net.mjs go in a separate block at the end.
 11. **Never push; never commit dist/*.** Commit source, docs and tests to your worktree branch often (end each commit message with the two attribution lines the integrator gives you). The integrator merges, rebuilds dist and runs the full gate once.
+
+---
+
+## As built (wave 3 build)
+
+Built on `worktree-wf_d6bdfde8-016-2` from `cfb5e7c`, following the build order and the
+integrator decisions above. What differs from the design, and why:
+
+**Files.** As in §3.1, plus `src/things/vehicles/live.js` (`LiveModel`: the live model with its
+pivot / tilt / model groups, wheel, propeller, paddle and sail parts and the headlights; shared by
+the car she drives and friends' cars in `remote.js`). `defs.js` is pure data (Node imports it) and
+keeps its own copy of the shops' `TRUCK_COLORS` (same six swatches). `tools/fixtures/old-world-96565e4.json`
+is a world and profile saved by the build before vehicles (a bed, a lamp, a pool float on water, a
+puppy, a horse she rides while it saves, an NPC friend), loaded by `probe-vehicles --only=save`.
+
+**Shared files** (the critique's list, nothing else): `game.js` only gains `'vehicle:park'` in
+`DIRTY_EVENTS`; `protocol.js` only `VEHICLE_KEY_RE` and `parseVehiclePresence` (the adapter's
+optional `isVehicle` / `parkVehicle` / `vehicleNoun` are documented in `adapter.js`, not in the
+typedef); refusal texts are in `facade.js`.
+
+**Controls.**
+- Honk: Space and the Honk button only (`KeyH` stays Help, V-B2). Space honks on the key itself
+  (a tap can come and go between two frames) and the 'jump' press it makes counts as the same
+  honk; the button presses 'jump'. Honks at most every 0.6 s. The keyboard help card lists Space
+  (Honk in a car), L (Car lights), E or X (Get out of a car).
+- E or X get out and win over the game's E: while she drives the tool is held on Hand (a
+  `tool:change` listener registered on `game:ready`, after the HUD's, switches back to Hand with
+  "Park first to build!"), so the game's E only switches to Hand and never interacts. This is also
+  how Build and Remove are off while driving (decision 8) without touching `game.js`.
+  Known gap: a desktop right-click still runs Remove on what she points at (it does not go
+  through the tool); a block built into the car is still refused by `player.overlapsCell`.
+- Hand taps while driving work as usual: a chair or a bed auto-parks the car where it is.
+
+**Physics.** As §5 with V-B3 applied: "no support" is the finite `y - 1.2`, picture values are
+zeroed when broken, only the pose restores `good`. Water ahead is checked at the bumper's centre
+and corners, at the wheels' level and down to 4 cells below them until ground (a pond past a small
+ledge counts). The shore / pond toast also shows while a boat glides along a shore or a car along
+a pond (the straight move was refused even though a slide went on); boats splash at the shore, only
+cars boing at walls. `step(dt, { mx, mz, camYaw })` takes the raw controls (Node tests drive it).
+
+**Boats.** Get out near land steps her onto DRY land only (`_shoreSpot`: 49 columns x 4 heights,
+never the lagoon floor under shallow water, which the player's `findStandSpot` would accept).
+Parked boats bob through `def.update` turning the 'hull' part about its middle at the waterline.
+
+**Never lost (V-B4).** Get out: the bounded search (588 checks); "No room to park here!" only for
+a button / key. Every other path (stood up, auto, trouble, saves, loading) falls back to: its old
+spot, the extended search here, the extended search round its old spot, then `force: true` at its
+old spot (or here, on whole cells). `placeRecord` checks the uid is free first (critique item 4) and
+leaves a record that is already there (a save made twice) alone.
+
+**Multiplayer.**
+- Custody starts only when the friend's presence `vh` (sent in the same state as her `ob`) names
+  the removed vehicle's uid. A plain Remove of a vehicle (no `vh`) is a removal, not a drive; the
+  design's 10 s rule would otherwise have put a removed car back.
+- A visiting player who may not build (free-join, ACCOUNTS §8.6: the relay drops her `ob`) is
+  refused up front: "You're visiting Lily's world! Look around and have fun." (facade kind 'look').
+- Host `stop()` releases custody before the hooks come off (critique item 6); the host's own drives
+  keep the owner through `net.ownerToken` / `net.restoreOwner`.
+- The race (two players tap one car) uses `remote-players.vehicleOf(src)`: the lower seat keeps it.
+- Known limitation: if the host's page reloads while a friend drives a car that is NOT in her own
+  uid range (mine = 1), the host's world brings the car back from `systems.vehicles` and her later
+  park adds a second copy (nothing is lost; one copy can be removed). Her own cars park with their
+  own uid and replace the restored record.
+
+**Not done (left out on purpose).** The passenger pet (decision 4) and NPC friends driving (§11).
+The Build / Remove HUD buttons are not dimmed while she drives (they answer with the toast).
+
+### Test results (this worktree)
+
+Run one suite at a time (SwiftShader Chromium; another builder's browser ran alongside):
+
+| suite | result |
+|---|---|
+| `npm run test:vehicles` | 8 passed, 0 failed (NaN, cliff 1b, 40,000 random steps p99 < 0.02 ms, boats 20,000 steps, climb / wall / ledge / shore, park spots and the 588 bound, no `while`) |
+| `npm run test:net` | 61 passed, 0 failed (unit incl. the two vehicle tests, 20 property seeds, server, accounts, ws property) |
+| `npm run probe:vehicles` | 102 checks, SMOKE PASSED, zero console errors (land, water, touch, models, save, mp). The first full run failed one check (driving draw calls 10 > 8, measured from two different camera views); the probe now measures both from one fixed camera (7). |
+| `npm run smoke` | passed (17 checks) |
+| `probe-life` / `probe-outdoor` / `probe-furniture` / `probe-menus` | 63 / 52 / 52 / 77 checks, passed |
+| `probe-shops` / `probe-keepsafe` / `probe-net-ux` / `site-check` | 93 / 79 / 32 / 644 checks, passed |
+| `npm run probe:railway` | 25 checks, passed |
+| `probe-avatar` / `probe-pals` / `test-net-game` | 28 / 72 / 228 checks, passed |
+| `node tools/test-walkie-unit.mjs` | all walkie unit tests passed |
+| `npm run test:walkie` | 230 checks, 0 problems (third run). Twice it failed 3-5 timing checks (the 15 s cap ring, a tap on a sliding Settings panel) while the machine's load was 8-12 on 4 cores; the build before vehicles passed then, and this build passed all 230 once the load dropped. |
+| `npm run e2e:accounts` | 84 checks, 0 problems (third run; the first was cut by a time limit, the second timed out tapping the grown-up keypad under the same heavy load) |
+| `npm run probe:mp` | 24 tests PASS (AT1-AT22, END), 196 checks, 0 failed |
+| `npm run test:accounts` / `test:billing` / `test:saves` | 107 / 104 / 32 passed, 0 failed |

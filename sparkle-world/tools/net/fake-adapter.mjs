@@ -37,6 +37,8 @@ export const FURNITURE = {
   cupcake: { size: [1, 1, 1], placeOn: 'table', edible: true },
   fence: { size: [1, 1, 1], data: { conn: 0 } },
   easel: { size: [1, 2, 1], data: { art: '' } },
+  // a drivable vehicle (host custody tests, docs/teams/vehicles.md §10.2)
+  kart_test: { size: [1, 1, 2], vehicle: true },
 };
 export const CROPS = ['carrot', 'tomato', 'strawberry'];
 export const PREFABS = { hut: { name: 'Tiny Hut', w: 3, h: 3, d: 3 } };
@@ -422,7 +424,43 @@ export class FakeAdapter {
   // ---------- environment ----------
 
   local() {
-    return { p: this.pos.slice(), st: this.st, nm: this.name, lk: this.look };
+    const out = { p: this.pos.slice(), st: this.st, nm: this.name, lk: this.look };
+    // the vehicle she drives (presence vh), only when a test set one
+    if (this.vh !== undefined) out.vh = this.vh;
+    return out;
+  }
+
+  // ---------- vehicles (optional extensions) ----------
+
+  isVehicle(key) {
+    return !!FURNITURE[key]?.vehicle;
+  }
+
+  vehicleNoun() {
+    return 'go-kart';
+  }
+
+  /** Put a vehicle record back: its spot, else the nearest free one (rings 0..3), else forced. */
+  parkVehicle(rec) {
+    const [uid, key, x, y, z, rot, color, data] = rec;
+    if (!FURNITURE[key]) return 0;
+    const u = this.ents.has(uid) ? this._allocUid() : uid;
+    for (let r = 0; r <= 3; r++) {
+      for (let dz = -r; dz <= r; dz++) {
+        for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+          for (const ro of [rot, (rot + 1) & 3, (rot + 2) & 3, (rot + 3) & 3]) {
+            if (this._canPlace(key, x + dx, y, z + dz, ro)) {
+              const e = this._place(key, x + dx, y, z + dz, ro, color, data || 0, u);
+              if (e) return e.uid;
+            }
+          }
+        }
+      }
+    }
+    this._put([u, key, x, y, z, rot, color || 0, data || 0, 0, 0]);
+    this.hooks?.ent('add', u, null, this.entityRecord(u));
+    return u;
   }
 
   time() {

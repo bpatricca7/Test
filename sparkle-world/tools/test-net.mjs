@@ -1783,9 +1783,165 @@ async function wsPropertyTests() {
 }
 
 // =====================================================================================
+// Vehicles (docs/teams/vehicles.md §10.2): presence vh and the host's custody of a friend's car
+// =====================================================================================
+
+async function vehicleTests() {
+  console.log('\nVehicles: presence vh, host custody');
+  const { avatarFields, NetHost } = await import('../src/net/host.js');
+
+  await test('vehicles: presence vh - the parser, sent only on change, host presence within 3,900 B', async () => {
+    const P = proto.parseVehiclePresence;
+    eq(P(['car_kart', 'ff4f7b', 1, 5, 1000001]), ['car_kart', 'ff4f7b', 1, 5, 1000001], 'a good one');
+    eq(P(['boat_swan', 'ffffff']), ['boat_swan', 'ffffff', 0, 0, 0], 'missing numbers are 0');
+    eq(P(['car_kart', 'ff4f7b', 99, 5000, 2 ** 40]), ['car_kart', 'ff4f7b', 3, 999, 2 ** 31], 'numbers clamped');
+    eq(P(['car_kart', 'ff4f7b', 'x', NaN, Infinity]), ['car_kart', 'ff4f7b', 0, 0, 0], 'junk numbers are 0');
+    for (const bad of ['car_kart', null, {}, [], ['Car!', 'ff4f7b'], ['car_kart', '#ff4f7b'], ['car_kart', 'FF4F7B'], ['car_kart', 'ff4f7'],
+      [['car_kart'], 'ff4f7b'], ['x'.repeat(40), 'ff4f7b'], ['car_kart', 'ff4f7b', 1, 2, 3, 4, 5, 6, 7], ['<b>', 'ff4f7b']]) {
+      eq(P(bad), null, 'refused: ' + JSON.stringify(bad).slice(0, 40));
+    }
+    // avatarFields: vh goes out only when it changes
+    const owner = { presenceText: new Map(), lastPos: null, lastLookAt: -Infinity, _set: NetHost.prototype._set };
+    const send = (vh) => { const patch = {}; avatarFields(owner, patch, { vh }, 0); return patch; };
+    eq(send(['car_kart', 'ff4f7b', 0, 0, 7]).vh, ['car_kart', 'ff4f7b', 0, 0, 7], 'first drive: sent');
+    assert(!('vh' in send(['car_kart', 'ff4f7b', 0, 0, 7])), 'unchanged: not sent');
+    eq(send(['car_kart', 'ff4f7b', 0, 1, 7]).vh[3], 1, 'a honk: sent');
+    eq(send(['bad key!', 'ff4f7b']).vh, null, 'a broken one goes out as null');
+    eq(send(null).vh, undefined, 'still null: not sent again');
+    // a host with three friends, every field at its biggest, a vehicle too
+    const { clock, hub, H, gs } = await hostAndGuests(41, [['Mia', 'u1'], ['Zoe', 'u2'], ['June', 'u3']]);
+    H.adapter.vh = ['van_icecream', 'ffbfa0', 3, 999, 2 ** 31 - 1];
+    for (const G of gs) G.adapter.vh = ['car_convertible', 'ff5fa2', 3, 999, 2 ** 30];
+    await act(clock, [H, ...gs], 3000);
+    const hs = jsonBytes(H.session.transport.myState());
+    assert(hs <= 3900, 'host presence ' + hs + ' B');
+    eq(H.session.transport.myState().vh, ['van_icecream', 'ffbfa0', 3, 999, 2 ** 31 - 1], 'the host\'s vh is out');
+    const gp = H.session.transport.peers().find((p) => p.state.nm === 'Mia');
+    eq(gp.state.vh, ['car_convertible', 'ff5fa2', 3, 999, 2 ** 30], 'a friend\'s vh reaches the host');
+    hub.close();
+    return `host presence ${hs} B`;
+  });
+
+  await test('vehicles: custody - drive, park while paused, plain remove, refusals, freed seat, 10 s rule, stop, mine=1, Undo building', async () => {
+    const { clock, hub, H, gs } = await hostAndGuests(42, [['Mia', 'u1']]);
+    const [G] = gs;
+    const HA = H.adapter, GA = G.adapter, host = H.session.hostCore;
+    const mia = 'u:u1';
+    const drive = async (uid) => {
+      GA.vh = ['kart_test', 'ff4f7b', 0, 0, uid];
+      GA.userRemove(uid);
+      await act(clock, [G], 3000);
+    };
+    const park = async (x, z) => {
+      GA.vh = null;
+      const uid = GA.userPlace('kart_test', x, 5, z);
+      await act(clock, [G], 3000);
+      return uid;
+    };
+    // 1. her own kart: drive (custody), the host pauses building, she parks: accepted, still hers
+    const k = GA.userPlace('kart_test', 6, 5, 6);
+    await act(clock, [G], 3000);
+    assert(HA.ents.has(k) && host.author.ents.get(k) === mia, 'Mia built a kart');
+    await drive(k);
+    assert(!HA.ents.has(k) && host.custody.has(mia), 'driving: gone, in custody');
+    eq(host.custodyRecords().map((r) => [r.uid, r.key, r.x, r.z]), [[k, 'kart_test', 6, 6]], 'custody record (for the host\'s saves)');
+    H.session.setRules({ build: 0 });
+    await act(clock, [H], 2000);
+    const k2 = await park(10, 6);
+    assert(HA.ents.has(k2) && HA.ents.get(k2).x === 10, 'parked while building is paused');
+    eq(host.author.ents.get(k2), mia, 'still hers');
+    eq(host.custody.size, 0, 'no custody left');
+    // 2. paused: a vehicle without custody is refused as before
+    const before3 = host.stats.rejectCodes['e+:3'] || 0;
+    GA.userPlace('kart_test', 14, 5, 6);
+    await act(clock, [G], 3000);
+    eq((host.stats.rejectCodes['e+:3'] || 0) - before3, 1, 'paused: refused (code 3)');
+    H.session.setRules({ build: 1 });
+    await act(clock, [H], 2000);
+    // a plain Remove of her kart (no vh): no custody, it stays removed
+    const k3 = GA.userPlace('kart_test', 18, 5, 6);
+    await act(clock, [G], 3000);
+    GA.userRemove(k3);
+    await act(clock, [G], 15000);
+    assert(!HA.ents.has(k3) && host.custody.size === 0, 'Remove is Remove: no custody, not put back');
+    // 3. the 10 s rule: she stops saying she drives it (a page that dropped her drive)
+    await drive(k2);
+    assert(host.custody.has(mia), 'custody again');
+    GA.vh = null;
+    await act(clock, [G], 4000);
+    assert(host.custody.has(mia), 'not yet after 4 s');
+    await act(clock, [G], 9000);
+    assert(HA.ents.has(k2) && HA.ents.get(k2).x === 10 && host.author.ents.get(k2) === mia, 'back at its spot after 10 s, still hers');
+    assert(HA.toasts.some(([t]) => /went back to its spot/.test(t)), 'the host hears it went back');
+    assert(await runUntil(clock, () => GA.ents.has(k2), 5000), 'and Mia sees it again');
+    // ... but not while a park of it waits in her outbox
+    await drive(k2);
+    const id = G.session.transport.selfId();
+    const p = host.peerMap.get(id);
+    host.peerMap.set(id, { ...p, state: { ...p.state, vh: null, ob: [[99999, 'e+', 1000099, 'kart_test', 3, 5, 3, 0, 0, 0]] } });
+    const t = clock.now();
+    host._watchCustody(t);
+    host._watchCustody(t + 11000);
+    assert(host.custody.has(mia), 'a park still in her outbox: kept');
+    host.peerMap.set(id, p);
+    // 4. a freed seat (seat hold over / sent home / her page reloaded): back with uid and owner
+    host._freeSeat(1);
+    assert(HA.ents.has(k2) && HA.ents.get(k2).x === 10 && host.author.ents.get(k2) === mia && host.custody.size === 0, 'freed seat: back');
+    hub.close();
+
+    // 5. stop(): back before the final save; listed until then
+    const W2 = await hostAndGuests(43, [['Mia', 'u1']]);
+    const kk = W2.gs[0].adapter.userPlace('kart_test', 6, 5, 6);
+    await act(W2.clock, [W2.gs[0]], 3000);
+    W2.gs[0].adapter.vh = ['kart_test', 'ff4f7b', 0, 0, kk];
+    W2.gs[0].adapter.userRemove(kk);
+    await act(W2.clock, [W2.gs[0]], 3000);
+    eq(W2.H.session.hostCore.custodyRecords().length, 1, 'listed while she drives');
+    let seenAtSave = null;
+    W2.H.session.env = { ...(W2.H.session.env || {}), saveHost: () => { seenAtSave = W2.H.adapter.ents.has(kk); } };
+    await simAwait(W2.clock, W2.H.session.leave());
+    assert(W2.H.adapter.ents.has(kk), 'stop: the kart is back');
+    assert(seenAtSave === true, 'back before the final save (' + seenAtSave + ')');
+    W2.hub.close();
+
+    // 6. mine = 1: she drives the host's car and parks it: a uid of hers, the host still owns it
+    const W3 = await hostAndGuests(44, [['Mia', 'u1']]);
+    const H3 = W3.H.adapter, G3 = W3.gs[0].adapter, host3 = W3.H.session.hostCore;
+    const hk = H3.userPlace('kart_test', 20, 5, 20);
+    await act(W3.clock, [W3.H], 3000);
+    eq(host3.author.ents.get(hk), 0, 'the host\'s kart');
+    W3.H.session.setRules({ mine: 1 });
+    await act(W3.clock, [W3.H], 2000);
+    G3.vh = ['kart_test', 'ff4f7b', 0, 0, hk];
+    G3.userRemove(hk);
+    await act(W3.clock, [W3.gs[0]], 3000);
+    assert(!H3.ents.has(hk) && host3.custody.has(mia), 'Mia drives the host\'s kart');
+    G3.vh = null;
+    const nk = G3.userPlace('kart_test', 23, 5, 20);
+    await act(W3.clock, [W3.gs[0]], 3000);
+    assert(H3.ents.has(nk) && nk >= 1e6 && nk < 2e6, 'parked with a uid of hers');
+    eq(host3.author.ents.get(nk), 0, 'the host still owns it');
+    // 7. Undo building after take + park: the host's kart is back at its old spot, no custody
+    W3.H.session.undoSeat(1);
+    assert(H3.ents.has(hk) && H3.ents.get(hk).x === 20 && !H3.ents.has(nk), 'Undo building: back at its old spot');
+    eq(host3.custody.size, 0, 'no custody left');
+    // careful mode again: the host's kart cannot be taken (refused, she gets it back)
+    W3.H.session.setRules({ mine: 0 });
+    await act(W3.clock, [W3.H], 2000);
+    G3.vh = ['kart_test', 'ff4f7b', 0, 0, hk];
+    G3.userRemove(hk);
+    await act(W3.clock, [W3.gs[0]], 3000);
+    assert(H3.ents.has(hk) && host3.custody.size === 0, 'careful mode: protected, no custody');
+    assert(await runUntil(W3.clock, () => G3.ents.has(hk), 5000), 'and it comes back on her page');
+    W3.hub.close();
+  });
+}
+
+// =====================================================================================
 
 const t0 = Date.now();
 if (!ONLY || ONLY.has('unit')) await unitTests();
+if (!ONLY || ONLY.has('unit') || ONLY.has('vehicles')) await vehicleTests();
 if (!ONLY || ONLY.has('prop')) await propertyTests();
 if (!ONLY || ONLY.has('server')) await serverTests();
 if (!ONLY || ONLY.has('server')) await serverSafetyTests();

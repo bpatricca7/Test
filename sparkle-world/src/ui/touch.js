@@ -129,7 +129,11 @@ export function install(game) {
   // joystick decoration (the ring itself is built by core input.js)
   if (input.joyBase) {
     for (const dir of ['up', 'down', 'left', 'right']) input.joyBase.appendChild(ui.el('span', `sw-joy-arrow sw-${dir}`));
-    input.joyBase.appendChild(ui.el('span', 'sw-joy-label', 'Walk'));
+    const joyLabel = ui.el('span', 'sw-joy-label', 'Walk');
+    input.joyBase.appendChild(joyLabel);
+    // driving a car or a van: "Drive"; a boat: "Steer"; back to "Walk" when she gets out
+    game.events.on('vehicle:drive', (e) => { joyLabel.textContent = e && e.kind === 'boat' ? 'Steer' : 'Drive'; });
+    for (const ev of ['vehicle:park', 'world:unload']) game.events.on(ev, () => { joyLabel.textContent = 'Walk'; });
   }
 
   // =====================================================================================
@@ -139,7 +143,7 @@ export function install(game) {
   const key = (t, cls = '') => `<span class="sw-key ${cls}">${t}</span>`;
   const KEY_CARDS = [
     [[`<span class="sw-wasd"><span></span>${key('W')}<span></span>${key('A')}${key('S')}${key('D')}</span>`], 'Walk'],
-    [[key('Space', 'sw-wide')], 'Jump'],
+    [[key('Space', 'sw-wide')], 'Jump (Honk in a car)'],
     [[key('Shift', 'sw-mid')], 'Run or go down'],
     [[key('F')], 'Fly on / off'],
     [[key('1'), '<span class="sw-or">to</span>', key('9')], 'Pick from your hotbar'],
@@ -152,6 +156,8 @@ export function install(game) {
     [[key('P')], 'Take a photo'],
     [[key('G')], 'Dance and wave'],
     [[key('←'), key('→')], 'Turn around'],
+    [[key('L')], 'Car lights'],
+    [[key('E'), '<span class="sw-or">or</span>', key('X')], 'Get out of a car'],
     [[key('Esc', 'sw-mid')], 'Menu'],
     [[PICS.mouseLeft], 'Click to build or use'],
     [[PICS.mouseRight], 'Right click to remove'],

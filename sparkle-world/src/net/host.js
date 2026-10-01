@@ -15,6 +15,7 @@
 import {
   C, PRIO, REJECT, NO, ANY_FIELDS, RATE, PROTOCOL, randomEpoch,
   isInt, isIntIn, isObj, isStr, isEntityKey, isColor, isPlainData, messageText, cleanText, HELD_KEY_RE,
+  parseVehiclePresence,
 } from './protocol.js';
 import { Journal, buildPayload } from './journal.js';
 import { unpackB, blockMix, blockHashOf, frameSnapshot, splitForJson, canDeflate, round2, utf8Length } from './codec.js';
@@ -25,6 +26,9 @@ const ANY = new Set(ANY_FIELDS);
 const DERIVED = ['conn'];
 const FIX_KEEP = 10000; // re-send the same fix for up to 10 s while she asks for the same gap
 const SEAT_LOG_BYTES = 2 * 1024 * 1024;
+// a friend's car in the host's custody goes back to its spot when she has not been driving it
+// (no presence vh with its uid, no park waiting in her outbox) for this long
+const CUSTODY_NO_VH = 10000;
 
 export class NetHost {
   /**
@@ -76,6 +80,9 @@ export class NetHost {
     // key -> owner: 0 = the host, else a friend's owner key (see _ownerOf); no entry = nobody's
     this.author = { cells: new Map(), ents: new Map(), plants: new Map() };
     this.logs = new Map(); // owner key -> { log: [group], bytes } (Undo building)
+    // vehicles friends are driving (docs/teams/vehicles.md §8.4): the host keeps custody so a
+    // car is never lost. owner key -> { uid, rec, peer, seat, name, prevOwner, since, noVhSince }
+    this.custody = new Map();
     this.buckets = [null, null, null, null];
     this.pfAt = [-Infinity, -Infinity, -Infinity, -Infinity];
     this.zAt = -Infinity;
@@ -150,6 +157,9 @@ export class NetHost {
   /** Stop: presence end:1 and a best-effort goodbye to everyone. Hooks come off. */
   stop() {
     if (!this.live) return;
+    // friends' cars go back to their spots first (while the hooks still journal and the
+    // world is saved after this)
+    for (const owner of Array.from(this.custody.keys())) this._releaseCustody(owner, 'stop');
     this.live = false;
     this.ended = true;
     try {
@@ -190,6 +200,7 @@ export class NetHost {
         if (now - seat.missingSince > C.SEAT_HOLD) this._freeSeat(s);
       }
     }
+    this._watchCustody(now);
     // peers that left: forget their refusals (so a new knock is judged fresh) and knocks
     for (const peer of Array.from(this.no.keys())) if (!m.has(peer)) this.no.delete(peer);
     for (const [peer, info] of Array.from(this.knocks)) {
@@ -319,6 +330,8 @@ export class NetHost {
   _freeSeat(seat) {
     const s = this.seats[seat];
     if (!s) return;
+    // her car goes back to its spot (seat hold over, sent home, her page reloaded)
+    this._releaseCustody(s.owner, 'free');
     this.adm.delete(s.peer);
     this.lastLseq.delete(s.peer);
     this.receivers.delete(s.peer);
@@ -480,13 +493,28 @@ export class NetHost {
         const [, , uid, key, x, y, z, rot, color, data] = e;
         if (!isIntIn(uid, 1, 2 ** 31)) return REJECT.INVALID;
         j.touchEnt(uid);
-        if (!R.build) return REJECT.PAUSED;
+        // parking the car she drives (in the host's custody) is fine even while building is
+        // paused: it must come back
+        const held = this.custody.get(owner);
+        const parking = !!(held && held.rec[1] === key && a.isVehicle?.(key));
+        if (!R.build && !parking) return REJECT.PAUSED;
         const lo = seat * C.SEAT_UID_SPAN + 1;
         if (uid < lo || uid >= lo - 1 + C.SEAT_UID_SPAN) return REJECT.INVALID;
         if (a.entityRecord(uid)) return REJECT.INVALID;
         if (!isEntityKey(key) || this._idx(x, y, z) < 0 || !isIntIn(rot, 0, 3) || !isColor(color ?? 0)) return REJECT.INVALID;
         const d = data || 0;
         if (d !== 0 && (!isPlainData(d, C.ENTITY_DATA_DEPTH) || jsonBytes(d) > C.ENTITY_DATA_BYTES)) return REJECT.INVALID;
+        if (parking) {
+          // where she parked, else the nearest free spot (the vehicle is never refused for room)
+          let ok = a.canPlaceEntity(key, x, y, z, rot, null) && a.placeEntity([uid, key, x, y, z, rot, color || 0, d, 0, 0]);
+          if (!ok) ok = (a.parkVehicle?.([uid, key, x, y, z, rot, color || 0, d, 0, 0]) || 0) === uid;
+          if (!ok) return REJECT.CONFLICT;
+          this.custody.delete(owner);
+          // a vehicle keeps its owner when it is driven and parked again
+          if (held.prevOwner === undefined) this.author.ents.delete(uid);
+          else this.author.ents.set(uid, held.prevOwner);
+          return 0;
+        }
         if (!a.canPlaceEntity(key, x, y, z, rot, null)) return REJECT.CONFLICT;
         return a.placeEntity([uid, key, x, y, z, rot, color || 0, d, 0, 0]) ? 0 : REJECT.CONFLICT;
       }
@@ -501,7 +529,14 @@ export class NetHost {
           if (!this._ownEnt(uid, owner) && !a.isEdible?.(uid)) return REJECT.PROTECTED;
           for (const r of a.ridersOf(uid)) if (!this._ownEnt(r, owner) && !a.isEdible?.(r)) return REJECT.PROTECTED;
         }
-        return a.removeEntity(uid) ? 0 : REJECT.CONFLICT;
+        // a vehicle she is about to drive (her presence vh, sent with this outbox, names it):
+        // the host keeps custody until she parks it
+        const before = a.entityRecord(uid);
+        const drives = !!(before && a.isVehicle?.(before[1]) && this._drivesNow(seat, uid));
+        const prevOwner = this.author.ents.has(uid) ? this.author.ents.get(uid) : undefined;
+        if (!a.removeEntity(uid)) return REJECT.CONFLICT;
+        if (drives) this._takeCustody(owner, seat, before, prevOwner, now);
+        return 0;
       }
       case 'er': {
         const [, , uid, rotB, rotA] = e;
@@ -841,8 +876,103 @@ export class NetHost {
     };
     if (typeof this.a.historyGroup === 'function') this.a.historyGroup(run);
     else run();
+    // a car she drove came back with the revert: no custody left (else it goes back now)
+    if (this.custody.has(s.owner)) this._releaseCustody(s.owner, 'undo');
     this.t.send('ctl', { k: 'tidy', e: this.epoch, to: s.peer, n: groups.length, at: this._spots(groups) }, PRIO.ctl);
     return groups.length;
+  }
+
+  // ---------- vehicle custody (docs/teams/vehicles.md §8.4) ----------
+
+  /** Does the friend in `seat` say (presence vh) that she drives the vehicle `uid` now? */
+  _drivesNow(seat, uid) {
+    const s = this.seats[seat];
+    const p = s && this.peerMap.get(s.peer);
+    const vh = p ? parseVehiclePresence(p.state.vh) : null;
+    return !!vh && vh[4] === uid;
+  }
+
+  _takeCustody(owner, seat, rec, prevOwner, now) {
+    // one vehicle per friend: an older one goes back first
+    if (this.custody.has(owner)) this._releaseCustody(owner, 'second');
+    const s = this.seats[seat];
+    this.custody.set(owner, {
+      uid: rec[0], rec: rec.slice(), peer: s ? s.peer : null, seat, name: cleanText(this._seatName(seat), 12),
+      prevOwner, since: now, noVhSince: null,
+    });
+  }
+
+  /**
+   * Put a friend's vehicle back where she took it from (or the nearest free spot; never lost),
+   * with its owner from before. Returns true when the custody entry is gone.
+   */
+  _releaseCustody(owner, why = '') {
+    const c = this.custody.get(owner);
+    if (!c) return false;
+    this.custody.delete(owner);
+    if (this.a.entityRecord(c.uid)) return true; // it is back already (an Undo)
+    let uid = 0;
+    try {
+      uid = this.a.parkVehicle?.(c.rec) || 0;
+    } catch (err) {
+      console.error('[net] could not put a car back', err);
+    }
+    if (!uid) return true;
+    if (c.prevOwner === undefined) this.author.ents.delete(uid);
+    else this.author.ents.set(uid, c.prevOwner);
+    if (why !== 'stop') {
+      const noun = this.a.vehicleNoun?.(c.rec[1]) || 'car';
+      this.a.toast(`${c.name || 'A friend'}'s ${noun} went back to its spot.`, 'sparkle');
+    }
+    return true;
+  }
+
+  /**
+   * Every tick: a car that is back already (an Undo) needs no custody; a friend who is here
+   * but has not been driving it (no vh with its uid) for 10 s, with no park of it waiting in
+   * her outbox, gets it put back.
+   */
+  _watchCustody(now) {
+    for (const [owner, c] of Array.from(this.custody)) {
+      if (this.a.entityRecord(c.uid)) {
+        this.custody.delete(owner);
+        continue;
+      }
+      const p = c.peer ? this.peerMap.get(c.peer) : null;
+      if (!p) continue; // gone: the seat hold (_freeSeat) decides
+      const vh = parseVehiclePresence(p.state.vh);
+      if (vh && vh[4] === c.uid) {
+        c.noVhSince = null;
+        continue;
+      }
+      const last = this.lastLseq.get(c.peer) || 0;
+      const ob = Array.isArray(p.state.ob) ? p.state.ob : [];
+      if (ob.some((e) => Array.isArray(e) && e[0] > last && e[1] === 'e+' && e[3] === c.rec[1])) continue;
+      if (c.noVhSince == null) c.noVhSince = now;
+      else if (now - c.noVhSince > CUSTODY_NO_VH) this._releaseCustody(owner, 'idle');
+    }
+  }
+
+  /** The vehicles in custody as parked save records (the host's world saves them). */
+  custodyRecords() {
+    const out = [];
+    for (const c of this.custody.values()) {
+      const r = c.rec;
+      out.push({ uid: r[0], key: r[1], x: r[2], y: r[3], z: r[4], rot: r[5], color: r[6] || null, data: r[7] && typeof r[7] === 'object' ? JSON.parse(JSON.stringify(r[7])) : {} });
+    }
+    return out;
+  }
+
+  /** The owner of an entity now (the host is about to drive it), to give back on parking. */
+  ownerToken(uid) {
+    return { has: this.author.ents.has(uid), owner: this.author.ents.get(uid) };
+  }
+
+  /** After the host parked a vehicle: it keeps the owner it had (ownerToken). */
+  restoreOwner(uid, token) {
+    if (!token || !isIntIn(uid, 1, 2 ** 31)) return;
+    if (token.has) this.author.ents.set(uid, token.owner);
+    else this.author.ents.delete(uid);
   }
 
   /** Up to 6 places (block cells) spread over some groups, for sparkles. */
@@ -1235,6 +1365,8 @@ export function avatarFields(owner, patch, local, now) {
   // optional: the treat held in her hand (an item key, never free text; §7 "Held treats").
   // Ice cream keys carry '-' between their flavors, so the key rule is HELD_KEY_RE.
   if ('hi' in local) owner._set(patch, 'hi', typeof local.hi === 'string' && HELD_KEY_RE.test(local.hi) ? local.hi : null);
+  // optional: the vehicle she drives [key, color, flags, honk, src] (docs/teams/vehicles.md §8.1)
+  if ('vh' in local) owner._set(patch, 'vh', parseVehiclePresence(local.vh));
 }
 
 function angleDiff(a, b) {

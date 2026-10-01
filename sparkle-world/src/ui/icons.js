@@ -78,6 +78,8 @@ const PATHS = {
   talk: `<path ${EO} d="M5 3.2h14a3.3 3.3 0 0 1 3.3 3.3v8.1a3.3 3.3 0 0 1-3.3 3.3h-7.4l-5.3 3.9v-3.9H5a3.3 3.3 0 0 1-3.3-3.3V6.5A3.3 3.3 0 0 1 5 3.2Z M7.6 9.3a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2Z M12 9.3a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2Z M16.4 9.3a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2Z"/>`,
   knock: `<path ${EO} d="M3.6 21.6V9a6.4 6.4 0 0 1 12.8 0v12.6Z M12.4 13.2a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 1 0 0-2.6Z"/><path ${S} stroke-width="2.2" d="M19.4 6.6 21.8 5M19.8 11.4h2.8M19.4 16.2l2.4 1.6"/>`,
   crown: `<path d="M3.2 17.4 2 6.6l5.4 4.3L12 3.6l4.6 7.3L22 6.6l-1.2 10.8Z"/><rect x="3.2" y="18.4" width="17.6" height="3" rx="1.5"/>`,
+  // a squeeze horn (round bulb, flared trumpet) with two sound arcs: Honk while driving
+  honk: `<circle cx="4.8" cy="12" r="3.6"/><path d="M7.8 10.7h3v2.6h-3Z"/><path d="M10.2 10.4 16.8 5.6v12.8l-6.6-4.8Z"/><path ${S} stroke-width="2.2" d="M19.4 9.4a3.8 3.8 0 0 1 0 5.2M21.6 7a7.4 7.4 0 0 1 0 10"/>`,
 };
 
 /** SVG markup for an icon (unknown names give a star). */

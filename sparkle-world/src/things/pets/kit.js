@@ -263,6 +263,8 @@ const PATHS = {
   seed: `<path d="M12 21.4c-4.6 0-7-3.4-7-7.6C5 8.8 9 4.6 12 2.6c3 2 7 6.2 7 11.2 0 4.2-2.4 7.6-7 7.6Z"/><path fill="#fff" opacity=".45" d="M10.4 7.8c-1.8 1.8-2.8 4-2.6 6.2.1.9-1.3 1-1.4.1-.3-2.8 1-5.4 3-7.3.6-.6 1.6.3 1 1Z"/>`,
   water: `<path d="M3.6 9.2h10.8v8.6a3 3 0 0 1-3 3H6.6a3 3 0 0 1-3-3Z"/><path d="m14 11 6.6-4.4 1 1.4-6.6 5.4Z"/><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M5.2 9.2c0-3.6 1.8-5.4 3.8-5.4s3.8 1.8 3.8 5.4"/><circle cx="20.8" cy="3.2" r="1.2"/><circle cx="22.4" cy="6" r=".9"/>`,
   ride: `<path ${EO} d="M6.4 21.6v-7.4c0-4.6 1.8-8.2 4.8-10l-.4-2.6 2.6 1.4 2.2-1.6.6 2.8c2.6 1.4 4.8 4.2 5.4 7.6.3 1.8-1 3-2.6 2.4l-3-1.2c-.9 2.6-1 5.6-.4 8.6Z M15.2 7.2a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6Z"/><path opacity=".55" d="M8 8.6c-1.8-1.2-3.8-1-4.8.4 1.8.2 2.8 1.4 3.2 3Z"/>`,
+  // a headlamp with three beams (vehicles: Lights)
+  lights: `<path d="M9.6 5.2a6.8 6.8 0 0 0 0 13.6h1.6V5.2Z"/><rect x="11.8" y="6.4" width="2" height="11.2" rx="1"/><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="M16.4 7.2l5.2-1.6M16.4 12h5.6M16.4 16.8l5.2 1.6"/>`,
   hopoff: `<path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M4.5 13C5 7.5 9.2 4.2 13.4 5.4c3.2.9 4.8 4.4 4.6 8.6"/><path d="m13.8 12.4 4.4 5.6 4.2-5.8Z"/><rect x="2.5" y="19.4" width="19" height="2.8" rx="1.4"/>`,
   sit: `<path d="M12 3.4a3.2 3.2 0 1 1 0 6.4 3.2 3.2 0 0 1 0-6.4Z"/><path d="M7 20.6v-5.2c0-2.8 2.2-4.4 5-4.4s5 1.6 5 4.4v5.2Z"/><path opacity=".6" d="M4 20h16v2H4Z"/>`,
   leaf: `<path d="M20.4 3.6C11 3.2 4.4 7.6 4.4 14.4c0 1.6.4 3 1 4.2L3.6 20.4l1.4 1.2 1.8-1.8c1.2.8 2.8 1.2 4.4 1.2 6.8 0 10.6-7 9.2-17.4Z"/>`,

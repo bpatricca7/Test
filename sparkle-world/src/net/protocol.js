@@ -214,6 +214,23 @@ export const IDENT_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
  * 'treat_<candy>' or 'treat_ic_<style>_<flavor-flavor-flavor>_<toppings>' (at most 47 chars).
  */
 export const HELD_KEY_RE = /^[a-z0-9_-]{1,48}$/;
+/** Presence `vh`, the vehicle she drives (docs/teams/vehicles.md §8.1): a furniture key. */
+export const VEHICLE_KEY_RE = /^[a-z][a-z0-9_]{0,31}$/;
+
+/**
+ * Presence `vh` from a friend: [key, color, flags, honk, src] -> a clean copy, or null for
+ * anything else (wrong shape, bad key or color, nested values). color: 6 lowercase hex;
+ * flags 0..3 (bit 0 lights, bit 1 reversing); honk 0..999 (a nonce); src 0..2^31 (the uid
+ * she took it from).
+ */
+export function parseVehiclePresence(v) {
+  if (!Array.isArray(v) || v.length < 2 || v.length > 8) return null;
+  const [key, color, flags, honk, src] = v;
+  if (typeof key !== 'string' || !VEHICLE_KEY_RE.test(key)) return null;
+  if (typeof color !== 'string' || !/^[0-9a-f]{6}$/.test(color)) return null;
+  const int = (n, lo, hi) => (typeof n === 'number' && Number.isFinite(n) ? Math.max(lo, Math.min(hi, Math.round(n))) : 0);
+  return [key, color, int(flags, 0, 3), int(honk, 0, 999), int(src, 0, 2 ** 31)];
+}
 
 /** Depth of a JSON value (a scalar is 0, {} or [] is 1). */
 export function jsonDepth(v, limit = 16) {

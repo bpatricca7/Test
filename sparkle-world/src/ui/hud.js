@@ -476,11 +476,25 @@ export function install(game) {
   const refreshTools = () => {
     for (const [name, b] of Object.entries(tools)) b.classList.toggle('sw-active', game.selectedTool === name);
   };
+  // while she drives a car or sails a boat, Jump becomes Honk (same spot, same 'jump' press:
+  // the vehicles module honks on it) and Fly hides
+  const jumpFace = jumpBtn.querySelector('.sw-round-face');
+  const jumpLabel = jumpBtn.querySelector('.sw-round-label');
+  let honkShown = false;
   const refreshFly = () => {
     const flying = !!(game.player && game.player.flying);
+    const driving = !!(game.player && game.player.mountPet && game.player.mountPet.kind === 'vehicle');
     flyBtn.classList.toggle('sw-active', flying);
+    flyBtn.hidden = driving;
     upBtn.hidden = downBtn.hidden = !flying;
     jumpBtn.hidden = flying;
+    if (driving !== honkShown) {
+      honkShown = driving;
+      jumpFace.innerHTML = icon(driving ? 'honk' : 'jump');
+      jumpLabel.textContent = driving ? 'Honk' : 'Jump';
+      jumpBtn.setAttribute('aria-label', driving ? 'Honk' : 'Jump');
+      jumpBtn.classList.toggle('sw-honkbtn', driving);
+    }
   };
   const refreshActions = () => {
     dressBtn.hidden = !game.actions.has('dressup');
@@ -572,7 +586,7 @@ export function install(game) {
   game.events.on('player:fly', refreshFly);
   // sitting, lying down, standing up or riding can end a flight too: never leave Fly lit or
   // Up / Down showing in place of Jump
-  for (const ev of ['player:sit', 'player:sleep', 'player:stand', 'pet:ride']) game.events.on(ev, refreshFly);
+  for (const ev of ['player:sit', 'player:sleep', 'player:stand', 'pet:ride', 'vehicle:drive', 'vehicle:park', 'world:unload']) game.events.on(ev, refreshFly);
   game.events.on('gem:collect', refreshGems);
   game.input.on('touchmode', refreshTouch);
   game.events.on('world:load', ({ world }) => {

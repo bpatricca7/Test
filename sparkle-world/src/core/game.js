@@ -31,7 +31,7 @@ const DIRTY_SAVE_MS = 5000;
 const DIRTY_SAVE_MAX_MS = 20000; // ...and at the latest this long after the first unsaved change
 const DIRTY_EVENTS = [
   'history:change', 'block:place', 'block:remove', 'entity:place', 'entity:remove', 'entity:use',
-  'prefab:place', 'pet:adopt', 'garden:plant', 'garden:harvest', 'gem:collect',
+  'prefab:place', 'pet:adopt', 'garden:plant', 'garden:harvest', 'gem:collect', 'vehicle:park',
 ];
 const AUTOSAVE_THUMB_MS = 5 * 60000; // autosaves refresh the My Worlds picture this often
 const MAX_HISTORY = 20;
