@@ -25,6 +25,10 @@ export class CameraRig {
     this.pitch = 0.32;
     this.distance = 4.5; // wanted distance
     this.current = 4.5; // after collision pull-in
+    // extra distance someone else asks for (a van is long: the vehicles module wants the camera
+    // further back); eased, and added on top of her own zoom so that is never overwritten
+    this.extra = 0;
+    this.extraWant = 0;
     this.shoulder = 1; // share of the shoulder offset in use (pulled in beside walls)
     this._rays = [[0, 0], [0.22, 0.14], [-0.22, 0.14], [0.22, -0.14], [-0.22, -0.14]];
     this._hit = makeVoxelHit();
@@ -43,7 +47,7 @@ export class CameraRig {
 
   /** Jump straight to the target pose (after teleports and world loads). */
   snap() {
-    this.current = this.distance;
+    this.current = this.distance + this.extra;
     this.shoulder = 1;
     this.update(0, true);
   }
@@ -68,11 +72,17 @@ export class CameraRig {
     if (input.zoom) this.distance = clamp(this.distance + input.zoom * 0.7, 2, 9);
     const first = this.mode === 'first';
     this.pitch = clamp(this.pitch, first ? -1.45 : -0.9, first ? 1.45 : 1.3);
+    const want = Number.isFinite(this.extraWant) ? clamp(this.extraWant, 0, 6) : 0;
+    if (snap) this.extra = want;
+    else this.extra += clamp(want - this.extra, -2 * dt, 2 * dt);
+    const distance = this.distance + this.extra;
 
     const p = this.player.position;
     const cam = g.camera;
     const state = this.player.state;
-    const headY = state === 'sleep' ? 0.6 : state === 'sit' ? 0.75 : first ? EYE : HEAD;
+    // a driver's seat is low: her eyes are about 0.95 above it
+    const driving = state === 'ride' && this.player.mountPet && this.player.mountPet.kind === 'vehicle';
+    const headY = state === 'sleep' ? 0.6 : state === 'sit' ? 0.75 : driving ? (first ? 0.95 : HEAD) : first ? EYE : HEAD;
     const hx = p.x, hy = p.y + headY, hz = p.z;
     const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
     const dx = Math.sin(this.yaw) * cp, dy = -sp, dz = Math.cos(this.yaw) * cp;
@@ -100,12 +110,12 @@ export class CameraRig {
     const tx = hx + rx * side, ty = hy + LIFT * this.shoulder, tz = hz + rz * side;
 
     // pull in when blocks are between the pivot and the camera
-    let allowed = this.distance;
+    let allowed = distance;
     if (g.world) {
       // perpendicular offsets approximate the near-plane corners
       for (const [ox, oy] of this._rays) {
-        const free = this._clear(tx + rx * ox, ty + oy, tz + rz * ox, -dx, -dy, -dz, this.distance + 0.3);
-        if (free < this.distance + 0.3) allowed = Math.min(allowed, Math.max(0.3, free - 0.3));
+        const free = this._clear(tx + rx * ox, ty + oy, tz + rz * ox, -dx, -dy, -dz, distance + 0.3);
+        if (free < distance + 0.3) allowed = Math.min(allowed, Math.max(0.3, free - 0.3));
       }
     }
     if (snap || allowed < this.current) this.current = allowed;

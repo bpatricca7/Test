@@ -25,7 +25,7 @@ import { disposeObject } from '../core/models.js';
 import { SHAPES } from '../core/registry.js';
 
 // integer rotation of a grid offset (x, z) by rot quarter turns (same as rotation.y = rot*PI/2)
-function rotXZ(x, z, rot) {
+export function rotXZ(x, z, rot) {
   switch (rot & 3) {
     case 1: return [z, -x];
     case 2: return [-x, -z];
@@ -302,6 +302,10 @@ export class EntityManager {
     }
     this._lightTimer = 0;
     this._lit = new Array(LIGHT_POOL).fill(null); // entity lit by each pool light
+    // lights that are not placed furniture but may borrow a pool light too (the headlights of
+    // the car she drives): { object3d, lightPoint: [x,y,z], lightCell: true, lightScale?,
+    // moving? }. A moving one has its pool light follow lightPoint every frame.
+    this.extraLights = new Set();
     this._tmp = new THREE.Vector3();
     this.batcher = new StaticBatcher(this);
     // batches catch up right before every render of the scene (frame, thumbnail, photo), so a
@@ -843,6 +847,7 @@ export class EntityManager {
       const cam = game.camera.position;
       const lit = [];
       for (const e of this.map.values()) if (e.lightCell) lit.push(e);
+      for (const e of this.extraLights) if (e.lightCell && e.object3d) lit.push(e);
       lit.sort((a, b) => cam.distanceToSquared(a.object3d.position) - cam.distanceToSquared(b.object3d.position));
       for (let i = 0; i < this.lights.length; i++) {
         const e = lit[i] || null;
@@ -857,6 +862,8 @@ export class EntityManager {
     for (let i = 0; i < this.lights.length; i++) {
       const e = this._lit[i];
       this.lights[i].intensity = e && e.lightCell ? strength * (e.lightScale ?? 1) : 0;
+      // a light on something moving follows it (the 0.25 s re-sort alone would trail behind)
+      if (e && e.moving && e.lightPoint) this.lights[i].position.set(e.lightPoint[0], e.lightPoint[1] + 0.1, e.lightPoint[2]);
     }
   }
 
@@ -870,6 +877,7 @@ export class EntityManager {
     this.updaters.clear();
     this.batcher.clear();
     this._lit.fill(null);
+    this.extraLights.clear();
     this.nextUid = 1;
     this.uidBase = 0;
     for (const l of this.lights) l.intensity = 0;

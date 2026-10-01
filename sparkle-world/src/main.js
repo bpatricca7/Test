@@ -17,6 +17,8 @@ import * as prefabs from './things/prefabs.js';
 import * as pets from './things/pets.js';
 import * as garden from './things/garden.js';
 import * as cooking from './things/cooking.js';
+// wave 3: cars, vans and boats she can drive (docs/teams/vehicles.md)
+import * as vehicles from './things/vehicles/index.js';
 import * as daynight from './life/daynight.js';
 import * as weather from './life/weather.js';
 import * as particles from './life/particles.js';
@@ -47,7 +49,7 @@ function boot() {
     return;
   }
   const modules = [theme, ui, account, blocks, worldgen, avatar, player, emotes, entities, furniture, prefabs,
-    pets, garden, cooking, daynight, weather, particles, collectibles, stickers, net,
+    pets, garden, cooking, vehicles, daynight, weather, particles, collectibles, stickers, net,
     hud, inventory, dressup, touch, settings, photo, stickerbook, menus, keepsafe];
   for (const m of modules) m.install(game);
   game.start().catch((err) => console.error('[boot] start failed', err));

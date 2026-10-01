@@ -28,6 +28,9 @@ export class Player {
     this.halfW = 0.3;
     this.height = 1.7;
     this.seatEntity = null;
+    // what carries her while state === 'ride': a pet (pets.js) or a vehicle she drives
+    // (src/things/vehicles). It keeps its old name because pets compare it by identity;
+    // read m.kind ('pet' | 'vehicle') before using anything pet-specific.
     this.mountPet = null;
     this.holder = null; // what carries her while state === 'hold' (zip lines)
     this.body = { pos: this.position, vel: this.velocity, halfW: this.halfW, height: this.height, onGround: false };
@@ -49,6 +52,8 @@ export class Player {
 
   _onKey(e) {
     if (!e.down || e.code !== 'Space' || this.game.paused || this.game.mode !== 'play') return;
+    // Space is the horn while she drives (a double tap would otherwise stand her up to fly)
+    if (this.state === 'ride' && this.mountPet && this.mountPet.kind === 'vehicle') return;
     const now = performance.now();
     if (now - this._lastSpace < DOUBLE_TAP_MS) {
       this.toggleFly();
@@ -64,6 +69,11 @@ export class Player {
 
   get sleeping() {
     return this.state === 'sleep';
+  }
+
+  /** What carries her (a pet or a vehicle, see mount()), or null. */
+  get mounted() {
+    return this.mountPet;
   }
 
   update(dt) {
@@ -84,8 +94,16 @@ export class Player {
       }
     }
     if (this.state === 'ride') {
-      // the pets module moves the pet (and reads input); we sit on its saddle
+      // the pets module moves the pet (and reads input); we sit on its saddle. A vehicle seats
+      // her itself after it moved this frame (src/things/vehicles); this is only the fallback.
       const pet = this.mountPet;
+      if (pet && typeof pet.seatWorld === 'function') {
+        pet.seatWorld(this.position);
+        if (Number.isFinite(pet.yaw)) this.yaw = pet.yaw;
+        this.velocity.set(0, 0, 0);
+        this._syncAvatar(dt);
+        return;
+      }
       const o = pet && (pet.object3d || pet.group);
       if (!o) this.stand();
       else {
@@ -185,14 +203,16 @@ export class Player {
     const grp = this.avatar.group;
     grp.position.copy(this.position);
     grp.rotation.y = this.yaw;
+    // in a car or a boat she sits on its seat (pose 'sit'); on a pony she rides
+    const seated = this.state === 'ride' && !!this.mountPet && this.mountPet.pose === 'sit';
     this.avatar.update(dt, {
       speed: Math.hypot(this.velocity.x, this.velocity.z),
       onGround: this.onGround,
       swimming: this.swimming,
       flying: this.flying,
-      sitting: this.state === 'sit',
+      sitting: this.state === 'sit' || seated,
       sleeping: this.state === 'sleep',
-      riding: this.state === 'ride',
+      riding: this.state === 'ride' && !seated,
     });
   }
 
@@ -253,11 +273,21 @@ export class Player {
     const was = this.state;
     if (was !== 'sit' && was !== 'sleep' && was !== 'ride' && was !== 'hold') return;
     const e = this.seatEntity;
+    const m = was === 'ride' ? this.mountPet : null;
     this.state = 'walk';
     this.seatEntity = null;
     this.mountPet = null;
     this.holder = null;
-    const spot = this.findStandSpot(this.position.x, this.position.y, this.position.z, e);
+    // a vehicle parks itself right now (synchronously) and says where her door is
+    let spot = null;
+    if (m && typeof m.beforeStand === 'function') {
+      try {
+        spot = m.beforeStand();
+      } catch (err) {
+        console.error('[player] parking failed', err);
+      }
+    }
+    if (!spot) spot = this.findStandSpot(this.position.x, this.position.y, this.position.z, e);
     if (spot) this.position.set(spot[0], spot[1], spot[2]);
     this.velocity.set(0, 0, 0);
     this._syncAvatar(0);
@@ -290,11 +320,17 @@ export class Player {
     return null;
   }
 
-  /** Ride a pet (the pets module moves it; pet.object3d and pet.seatHeight are used). */
-  mount(pet) {
+  /**
+   * Ride a mount. A pet (kind 'pet', the default): the pets module moves it, pet.object3d and
+   * pet.seatHeight are used. A vehicle (kind 'vehicle', src/things/vehicles): it moves itself
+   * and seats her; it may give seatWorld(out), pose ('sit'), overlapsCell(x,y,z), standSpot()
+   * (for saves) and beforeStand() (parks it, returns her stand spot or null).
+   */
+  mount(m) {
+    if (m && !m.kind) m.kind = 'pet';
     this.state = 'ride';
     this._landQuietly();
-    this.mountPet = pet;
+    this.mountPet = m;
     this.velocity.set(0, 0, 0);
   }
 
@@ -347,6 +383,9 @@ export class Player {
   /** Does the body overlap block cell (x,y,z)? (so you cannot build inside yourself) */
   overlapsCell(x, y, z) {
     const p = this.position;
+    const m = this.state === 'ride' ? this.mountPet : null;
+    // the car she drives counts as her: nothing is built into it
+    if (m && typeof m.overlapsCell === 'function' && m.overlapsCell(x, y, z)) return true;
     return (
       p.x + this.halfW > x && p.x - this.halfW < x + 1 &&
       p.y + this.height > y && p.y < y + 1 &&
@@ -358,7 +397,17 @@ export class Player {
     let p = this.position;
     // never save someone lying in bed or sitting: they come back standing next to it
     if (this.state === 'sit' || this.state === 'sleep' || this.state === 'ride' || this.state === 'hold') {
-      const spot = this.findStandSpot(p.x, p.y, p.z, this.seatEntity);
+      // a vehicle knows where it would park for this save: she stands beside that spot
+      const m = this.state === 'ride' ? this.mountPet : null;
+      let spot = null;
+      if (m && typeof m.standSpot === 'function') {
+        try {
+          spot = m.standSpot();
+        } catch (err) {
+          console.error('[player] stand spot failed', err);
+        }
+      }
+      if (!spot) spot = this.findStandSpot(p.x, p.y, p.z, this.seatEntity);
       if (spot) p = { x: spot[0], y: spot[1], z: spot[2] };
     }
     const r = (v) => Math.round(v * 100) / 100;
