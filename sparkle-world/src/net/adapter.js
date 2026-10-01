@@ -260,7 +260,12 @@ export class GameAdapter {
     delete json.player;
     delete json.hotbar;
     delete json.thumbnail;
-    if (json.systems) delete json.systems.netOwners; // the host's own bookkeeping
+    if (json.systems) {
+      delete json.systems.netOwners; // the host's own bookkeeping
+      // so is the car she drives (and friends' cars in her custody): a parked copy in the
+      // snapshot would show it twice; it comes back as an entity record when it is parked
+      delete json.systems.vehicles;
+    }
     json.blocks = '';
     json.actors = this.actors.handles();
     return { json, rle: g.world.encodeBlocksBytes() };
@@ -582,7 +587,19 @@ export class GameAdapter {
     }
     // the treat in her hand (shops: game.treats.held, null or a 'treat_*' key) -> presence hi
     // (the host's and every guest's own avatarFields send it; the only writer of `hi`)
-    return { p, st, nm, lk: this._lk, hi: this.heldKey() };
+    // the vehicle she drives (src/things/vehicles) -> presence vh, or null
+    return { p, st, nm, lk: this._lk, hi: this.heldKey(), vh: this.vehicleField() };
+  }
+
+  /** Presence vh: [key, color, flags, honk, src] while she drives, else null. */
+  vehicleField() {
+    const v = this.game.vehicles;
+    if (!v || typeof v.presence !== 'function') return null;
+    try {
+      return v.presence();
+    } catch {
+      return null;
+    }
   }
 
   /** The treat key in her hand (game.treats.held: a key, or null), or null. */
@@ -663,6 +680,33 @@ export class GameAdapter {
   resolveIntent(kind, lseq, ok) {
     const P = this.game.prefabs;
     if (kind === 'pf' && P && typeof P.resolveRemote === 'function') P.resolveRemote(lseq, ok);
+  }
+
+  // ---------- vehicles (host custody, docs/teams/vehicles.md §8.4) ----------
+
+  /** Is this furniture key a drivable vehicle? */
+  isVehicle(key) {
+    const def = this.game.entities && this.game.entities.defs.get(key);
+    return !!(def && def.vehicle);
+  }
+
+  /** The vehicle's word for toasts ('car', 'van', 'boat'...). */
+  vehicleNoun(key) {
+    const def = this.game.entities && this.game.entities.defs.get(key);
+    return (def && def.vehicle && def.vehicle.noun) || 'car';
+  }
+
+  /**
+   * Host: put a vehicle record [uid,key,x,y,z,rot,color,data,...] back: its spot when it fits,
+   * else the nearest free spot, else forced at its spot (never lost); the record's uid when it
+   * is free. Returns the placed uid, or 0.
+   */
+  parkVehicle(rec) {
+    const V = this.game.vehicles;
+    if (!Array.isArray(rec) || !V || typeof V.placeRecord !== 'function') return 0;
+    const [uid, key, x, y, z, rot, color, data] = rec;
+    const e = V.placeRecord({ uid, key, x, y, z, rot, color: color || null, data: data && typeof data === 'object' ? clone(data) : {} });
+    return e ? e.uid : 0;
   }
 }
 

@@ -12,6 +12,9 @@
 //   hanging pose of the zip line, blended over the avatar's own pose).
 // - A name tag in the player's color (seat colors), a phrase bubble for 4 s (the phrase text
 //   comes from THIS page's table; the id is all that travelled), a treat in her hand.
+// - The car, van or boat she drives (presence vh, docs/teams/vehicles.md §8.2): the same live
+//   model as hers (game.vehicles.remoteModel), under her seat; she sits in it; her honks play
+//   here within 24 blocks.
 // - No collisions and no picking: friends are pictures of where the others are.
 
 import * as THREE from 'three';
@@ -20,7 +23,7 @@ import { hasFoodModel, foodModel } from '../things/food-models.js';
 import { disposeObject } from '../core/models.js';
 import { EMOTES } from '../player/wardrobe-data.js';
 import { unpackLook } from './codec.js';
-import { HELD_KEY_RE } from './protocol.js';
+import { HELD_KEY_RE, parseVehiclePresence } from './protocol.js';
 import { sanitizeName } from './names.js';
 import { phraseText, phraseIcon, PHRASES } from './pictures.js';
 
@@ -123,6 +126,10 @@ class Friend {
     this.t = 0;
     this.bubble = null;
     this.bubbleLeft = 0;
+    this.vh = null; // parsed presence vh: [key, color, flags, honk, src]
+    this.vhKey = null;
+    this.vehicle = null; // RemoteVehicle (src/things/vehicles/remote.js)
+    this.honkN = null;
   }
 
   push(now, p) {
@@ -238,7 +245,15 @@ export class RemotePlayers {
       visible: f.visible, st: f.st, held: f.heldKey, inHand: f.avatar && f.avatar.held ? f.avatar.held.name || 'held' : null,
       bubble: f.bubbleLeft > 0 ? f.bubbleText : null,
       tag: !!(f.tag && f.tag.visible), emote: f.avatar ? f.avatar.emoting || null : null,
+      vehicle: f.vh ? f.vh[0] : null,
     }));
+  }
+
+  /** The friend driving the vehicle that was parked with this uid (her vh src), or null. */
+  vehicleOf(uid) {
+    if (!uid) return null;
+    for (const f of this.friends.values()) if (f.vh && f.vh[4] === uid) return { peer: f.peer, seat: f.seat, name: f.name };
+    return null;
   }
 
   clear() {
@@ -351,6 +366,46 @@ export class RemotePlayers {
     }
     const hi = typeof st.hi === 'string' && HELD_KEY_RE.test(st.hi) ? st.hi : null;
     if (hi !== f.heldKey) this._setHeld(f, hi);
+    this._setVehicle(f, parseVehiclePresence(st.vh));
+  }
+
+  /** Her vehicle from presence vh: a new model when the key or color changes; honks. */
+  _setVehicle(f, vh) {
+    const g = this.game;
+    const key = vh ? vh[0] + ':' + vh[1] : null;
+    if (key !== f.vhKey) {
+      this._dropVehicle(f);
+      f.vhKey = key;
+      if (vh && g.vehicles && typeof g.vehicles.remoteModel === 'function') {
+        try {
+          f.vehicle = g.vehicles.remoteModel(vh);
+        } catch (err) {
+          console.warn('[net] friend vehicle failed', err);
+          f.vehicle = null;
+        }
+        if (f.vehicle) {
+          f.vehicle.object3d.name = 'friend-vehicle:' + f.peer;
+          this.group.add(f.vehicle.object3d);
+        }
+      }
+    }
+    f.vh = vh;
+    // a new honk nonce: her horn (the first presence we see only tells the count so far)
+    if (!vh) f.honkN = null;
+    else if (f.honkN === null) f.honkN = vh[3];
+    else if (vh[3] !== f.honkN) {
+      f.honkN = vh[3];
+      if (g.vehicles && typeof g.vehicles.remoteHonk === 'function' && g.player) {
+        g.vehicles.remoteHonk(vh[0], f.pos.distanceTo(g.player.position));
+      }
+    }
+  }
+
+  _dropVehicle(f) {
+    if (!f.vehicle) return;
+    if (f.vehicle.object3d.parent) f.vehicle.object3d.parent.remove(f.vehicle.object3d);
+    f.vehicle.dispose();
+    f.vehicle = null;
   }
 
   _frame(f, dt, renderT, cam) {
@@ -398,6 +453,9 @@ export class RemotePlayers {
     grp.position.copy(f.pos);
     grp.rotation.y = f.yaw;
     f.t += dt;
+    // in a car or a boat she sits on its seat ('h' without vh is still a pony ride)
+    const seated = f.st === 'h' && !!f.vehicle;
+    if (f.vehicle) f.vehicle.update(dt, f.pos.x, f.pos.y, f.pos.z, f.yaw, f.speed, f.vh ? f.vh[2] : 0, show);
     if (show && dist < ANIM_FREEZE) {
       const st = f.st;
       av.update(dt, {
@@ -405,9 +463,9 @@ export class RemotePlayers {
         onGround: st !== 'f' && st !== 'i' && st !== 'l',
         swimming: st === 'i',
         flying: st === 'f',
-        sitting: st === 's',
+        sitting: st === 's' || seated,
         sleeping: st === 'z',
-        riding: st === 'h',
+        riding: st === 'h' && !seated,
       });
       // a held treat raises her arm in avatar.update (hidden while she sleeps or swims)
       if (st === 'l') hangPose(av, f.t, 1);
@@ -476,6 +534,7 @@ export class RemotePlayers {
 
   _drop(f) {
     this._letGo(f);
+    this._dropVehicle(f);
     if (f.tag) {
       disposeSprite(f.tag);
       f.tag = null;

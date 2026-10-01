@@ -69,6 +69,8 @@ export class RemoteVehicle {
   }
 
   dispose() {
+    if (this.disposed) return;
+    this.disposed = true;
     if (this.wake) this.wake.dispose();
     this.wake = null;
     this.live.dispose();

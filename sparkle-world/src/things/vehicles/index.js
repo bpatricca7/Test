@@ -242,8 +242,11 @@ class VehicleSystem {
     // playing at a friend's: checks before trying, so nothing flickers in the common cases
     const net = this._net();
     if (net && net.isGuest) {
-      if (!net.mayEdit('build')) {
-        if (typeof net.refuse === 'function') net.refuse('paused');
+      // a visiting player who may not build (free-join, docs/ACCOUNTS.md §8.6): the relay
+      // drops her outbox, so the drive would never reach the host
+      const looker = !!(g.account && g.account.mode === 'visitor');
+      if (looker || !net.mayEdit('build')) {
+        if (typeof net.refuse === 'function') net.refuse(looker ? 'look' : 'paused');
         return false;
       }
       const rules = net.rules || null;
