@@ -456,7 +456,9 @@ export function installLife(game, sfx) {
     const start = at(e, 0.5, 0.02, 0.45);
     p.position.copy(start);
     p.velocity.set(0, 0, 0);
-    climb = { entity: e, top: ladderTop(e), until: performance.now() + 8000, over: 0 };
+    // a budget of game time (not wall time): on a slow device the frames are clamped, so a
+    // wall-clock limit let go of her before she reached the top
+    climb = { entity: e, top: ladderTop(e), left: 8, over: 0 };
     g.audio.play('jump', { volume: 0.5 });
     return true;
   }, () => 'Tap to climb');
@@ -865,7 +867,8 @@ export function installLife(game, sfx) {
     if (lad && !lad.def.climb) lad = null;
     if (climb) {
       const c = climb;
-      if (performance.now() > c.until || !E.byUid(c.entity.uid)) climb = null;
+      c.left -= Number.isFinite(dt) && dt > 0 ? dt : 0;
+      if (!(c.left > 0) || !E.byUid(c.entity.uid)) climb = null;
       else if (p.position.y < c.top + 0.05) {
         const t = E.localToWorld(c.entity, 0.5, 0, 0.45, tmp2);
         p.velocity.x = (t.x - p.position.x) * 6;
