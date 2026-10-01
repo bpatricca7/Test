@@ -242,11 +242,21 @@ async function standNear(page, x, z, d = 4) {
   await settle(page, 300);
 }
 
-const drawCalls = (page) => page.evaluate(async () => {
+/** Draw calls of a frame, optionally from a fixed camera (view: [x, y, z] it looks at). */
+const drawCalls = (page, view = null) => page.evaluate(async (view) => {
   const g = window.__game;
-  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-  return g.renderer.info.render.calls;
-});
+  let rig = null;
+  if (view) {
+    rig = g.cameraRig.update;
+    g.cameraRig.update = () => {};
+    g.camera.position.set(view[0] + 7, view[1] + 6, view[2] - 7);
+    g.camera.lookAt(view[0], view[1], view[2]);
+  }
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(r))));
+  const calls = g.renderer.info.render.calls;
+  if (rig) g.cameraRig.update = rig;
+  return calls;
+}, view);
 
 // =====================================================================================
 // land
@@ -433,7 +443,8 @@ async function landPass(browser, errors) {
     }
     return sum / 120;
   });
-  const callsDriving = await drawCalls(page);
+  const view = await page.evaluate(() => { const s = window.__game.debug.vehicles.state(); return [s.x, s.y, s.z]; });
+  const callsDriving = await drawCalls(page, view);
   const sysDriving = await timing();
 
   // ---- E gets out (not the chair she looks at) ----
@@ -460,7 +471,7 @@ async function landPass(browser, errors) {
   check(errors, parked.hist === parked.hist0, `driving and parking left no Undo entries (${parked.hist0} -> ${parked.hist})`);
   check(errors, (await events(page, 'vehicle:park')).length >= 1, "'vehicle:park' fired");
   await settle(page, 600);
-  const callsParked = await drawCalls(page);
+  const callsParked = await drawCalls(page, view);
   const sysIdle = await timing();
   check(errors, callsDriving - callsParked <= 8, `draw calls while driving minus parked: ${callsDriving} - ${callsParked} = ${callsDriving - callsParked} (<= 8)`);
   check(errors, sysDriving <= sysIdle + 1.5, `systems stage while driving ${sysDriving.toFixed(2)} ms vs idle ${sysIdle.toFixed(2)} ms (<= +1.5)`);
