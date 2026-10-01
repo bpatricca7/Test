@@ -4,7 +4,7 @@
 
 import {
   normalizeLook, HAIR_STYLES, HAIR_MIXES, SMILES, TOPS, BOTTOMS, DRESSES, PATTERNS, SHOES,
-  HEAD_ACC, FACE_ACC, BACK_ACC, NECK_ACC, HAND_ACC,
+  HEAD_ACC, FACE_ACC, BACK_ACC, NECK_ACC, HAND_ACC, BROWS,
 } from '../player/wardrobe-data.js';
 
 // ---------- base36 / hex digits ----------
@@ -363,6 +363,7 @@ const idxOf = (list) => {
 const L = {
   hair: HAIR_STYLES, mix: HAIR_MIXES, smile: SMILES, top: TOPS, bottom: BOTTOMS, dress: DRESSES,
   pattern: PATTERNS, shoes: SHOES, head: HEAD_ACC, face: FACE_ACC, back: BACK_ACC, neck: NECK_ACC, hand: HAND_ACC,
+  brows: BROWS,
 };
 const IDX = {};
 for (const k in L) IDX[k] = idxOf(L[k]);
@@ -371,7 +372,7 @@ const tokIdx = (map, key) => (map.get(key) ?? 0).toString(36);
 const tokHex = (c) => (typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c) ? c.slice(1).toLowerCase() : '-');
 const tokBool = (b) => (b ? '1' : '0');
 
-/** look -> dot-separated token string (~130 chars). The name is not included. */
+/** look -> dot-separated token string (~130 chars, at most about 151). The name is not included. */
 export function packLook(look) {
   const l = normalizeLook(look);
   const t = [];
@@ -393,6 +394,10 @@ export function packLook(look) {
     tokIdx(IDX.back, a.back), tokHex(a.backColor), tokIdx(IDX.neck, a.neck), tokHex(a.neckColor),
     tokIdx(IDX.hand, a.hand), a.handColor ? tokHex(a.handColor) : '-',
   );
+  // Appended tail (wave 3): eyebrows and the jersey number (0..99, base 36). New tokens only
+  // ever go at the end, so an older string is a prefix and still unpacks.
+  const num = l.top ? l.top.num : 7;
+  t.push(tokIdx(IDX.brows, l.face.brows), (Number.isInteger(num) && num >= 0 && num <= 99 ? num : 7).toString(36));
   return t.join('.');
 }
 
@@ -436,6 +441,11 @@ export function unpackLook(s, name) {
     back: opt(L.back), backColor: hex(), neck: opt(L.neck), neckColor: hex(),
     hand: opt(L.hand), handColor: hex() ?? null,
   };
+  // The tail (brows, jersey number) came later: an older string without it reads '-' here,
+  // which gives undefined, and normalizeLook fills 'soft' and 7.
+  look.face.brows = opt(L.brows);
+  const num = parseInt(next(), 36);
+  look.top.num = Number.isInteger(num) && num >= 0 && num <= 99 ? num : undefined;
   return normalizeLook(look);
 }
 
