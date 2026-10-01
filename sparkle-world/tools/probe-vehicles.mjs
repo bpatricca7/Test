@@ -997,7 +997,7 @@ async function mpPass(browser, errors) {
   await game(rosie, () => window.__game.debug.vehicles.honk());
   check(errors, await until(lily, (n) => window.__game.debug.vehicles.stats().remoteHonks > n, honks0, 8000), 'Rosie honks: Lily\'s page plays it');
   await lily.page.waitForTimeout(800);
-  await shot(lily, 'mp-lily-sees-rosie-kart', PREFIX);
+  await shot(lily.page, 'mp-lily-sees-rosie-kart', PREFIX);
 
   // 3. building paused: her park still goes through
   await game(lily, () => window.__game.debug.net.setRules({ build: 0 }));

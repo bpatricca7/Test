@@ -313,6 +313,8 @@ Avatar fields are the same for hosts and guests.
 | `st` | all | 1 char | `w` walk/stand, `i` swim, `f` fly, `s` sit, `z` sleep, `h` ride, `e` emote, `l` zip line |
 | `em` | all | `[name,n]` | last emote and a nonce |
 | `ph` | all | `[id,n]` | last quick phrase and a nonce |
+| `hi` | all | string ≤ 48 or null | the treat in her hand (an item key, `HELD_KEY_RE`) |
+| `vh` | all | `[key,color,flags,honk,src]` or null | the vehicle she drives (wave 3, docs/teams/vehicles.md §8.1): `key` a furniture key (`VEHICLE_KEY_RE`), `color` 6 lowercase hex, `flags` 0..3 (bit 0 lights, bit 1 reversing), `honk` a nonce 0..999, `src` the uid she took it from (0 = none). Receivers parse it with `parseVehiclePresence` (wrong shape → null). With `st:'h'` it means "driving"; `'h'` without `vh` is still a pony ride. `p` is then her seat. About 45 B; sent on change only (a drive, a honk at most every 0.6 s, the lights). No protocol bump: peers share the build id `pv`. |
 | `ep` | all | string | host: its epoch. Guest: the epoch she follows. |
 | `hs` | host | number | hosting-since (ms, host clock), for tie-breaks |
 | `hd` | host | int | head sequence number (last batch sent) |
@@ -660,6 +662,19 @@ count }`.
 **Held treats (wave 2).** If "hold it in your hand" is not part of `look`, add the optional
 presence field `hi` (an item key) and draw it on remote avatars. Never send free text.
 
+**Vehicles (wave 3, docs/teams/vehicles.md §8).** Parked cars, vans and boats are ordinary
+furniture: journal `E` records, `e+ e- er ed` from friends, careful friends as for any piece. A
+drive is an `e-` (the car leaves the world, no Undo entry) and a park an `e+` (her own uid when it
+is in her range, else a new uid of hers); while she drives, everyone sees the car under her avatar
+from presence `vh` (`remote-players.js` + `game.vehicles.remoteModel`; her honks play within 24
+blocks). The host keeps **custody** of a friend's vehicle while she drives it (§8.1), so a car is
+never lost. The snapshot leaves the host's `systems.vehicles` out (the car the host drives is not
+a parked copy; it comes back as a record when parked). Guest pre-checks: building paused →
+"paused"; careful mode and a host-range uid (< 10⁶) → "That's Lily's car! Make your own in the
+Bag."; a visiting player who may not build (Addendum D, free-join) → "look". Two players tapping
+the same car: the lower seat keeps it, the other page ends its drive ("Rosie is driving that one!").
+Undo building (ctl `tidy`) ends her drive without parking.
+
 ---
 
 ## 8. Host authority
@@ -678,7 +693,7 @@ Every key an op names is **touched even when the op is rejected** (§5.6).
 |---|---|---|
 | `b` | rule `build`; rate cells. Per cell: in bounds; CAS `current === before`, or `current === after` (a no-op); `y === 0 && solid[before] && !solid[after]` → 5; `after` solid while the cell is occupied by an entity → 1; careful mode: `before ≠ 0 && !free(i, seat)` → 2 | `world.set(…, {record:true})` inside `world.batch` when > 8 cells. After a cell becomes `farmland_wet`: `garden.adoptWet`. |
 | `e+` | build; rate; key registered; uid in the seat's range and unused; `data` ≤ 600 B JSON, depth ≤ 3; `canPlace(def, x, y, z, rot, null, {players:false})` → else 1 | `entities.place(…, {uid, history:false, events:true, fx:true})` |
-| `e-` | build; exists; careful mode: author = seat, for the entity **and** every item standing on it → else 2 | `entities.remove(e, {history:false})` |
+| `e-` | build; exists; careful mode: author = seat, for the entity **and** every item standing on it → else 2 | `entities.remove(e, {history:false})`. A vehicle whose uid her presence `vh` names in the same state (she drives it): the host takes **custody** `{uid, rec, prevOwner}` (one per friend; a second take puts the first back). |
 | `er` | build; exists; `rot === rotBefore` → else 1; careful: own; `canPlace` for the new rot, ignoring the entity itself, with players off | `_setRot` |
 | `ed` | exists; patch keys ⊆ `ANY_FIELDS = {open, on, ch, art, bloom, conn}`, unless own or builder mode → else 2; ≤ 600 B | `setData` |
 | `p+` | build; crop known; soil below is farmland; no plant there | `garden.addPlant(crop, x, y, z, 0, wetUntil)` |
@@ -690,6 +705,20 @@ Every key an op names is **touched even when the op is rejected** (§5.6).
 
 Rejection codes: `1` conflict, `2` protected, `3` paused (rule `build` is 0), `4` limit,
 `5` invalid.
+
+**Vehicle custody (wave 3).** An `e+` of the same vehicle key from a friend holding custody skips
+the `build` check (her car must come back even when building was paused meanwhile; every other
+check stays). When it does not fit, `a.parkVehicle(rec)` puts it at the nearest free spot (bounded),
+same uid. The parked vehicle keeps the owner it had before (`prevOwner`: a friend's kart stays
+hers, the host's car stays the host's). Custody is released (the car goes back where she took it
+from, or nearby, or forced there; owner restored; the host hears "Rosie's go-kart went back to its
+spot.") when her seat is freed (seat hold over, sent home, her page reloaded), when she is here but
+her `vh` has not named it for 10 s and no `e+` of that key waits in her `ob`, on `stop()` (before
+the adapter detaches and the final save) and after Undo building (dropped when the revert brought
+it back). A plain Remove of a vehicle (no `vh`) is just a removal. The host's world saves list
+every vehicle in custody in `systems.vehicles.away` (`net.custody()`), so a crash of the host's
+page keeps it too. The host's own drives keep their owner through `net.ownerToken(uid)` /
+`net.restoreOwner(uid, token)`.
 
 **Rate limits** are token buckets per seat (§5.12). Each entry is charged **before** it is
 applied: its cells, plus 1 for every non-cell op; a cost above the burst is capped at the burst.
@@ -1029,6 +1058,12 @@ Guests apply host data silently (`record:false`, `events:false`) and emit one `'
 executes guest ops with the normal events on, so derived listeners such as fence joining run
 exactly as in single-player.
 
+**Named exception (wave 3, vehicles).** "No `update()` mutates world state on a guest" has one
+exception: the vehicles system may auto-park HER OWN vehicle from its `update` when her own state
+changed under it (she sat down, a teleport, the pony), and a guest ends a drive whose car the host
+put back. The change goes through `game.entities.place` inside `asPlayer` (`game._inSystems =
+false`, restored in `finally`) so her recorder sends it like a tap.
+
 ### 9.12 `src/core/storage.js`
 
 - `listWorlds()` excludes ids ending in `.before`.
@@ -1332,6 +1367,13 @@ the title.
     - no message over the limits;
     - no page over the budget;
     - nothing changed by a kicked seat after its kick.
+
+- **Vehicles (wave 3):** `vehicles: presence vh` (the parser, sent only on change, a host
+  presence with `vh` within 3,900 B) and `vehicles: custody` (drive, park while paused, a plain
+  Remove, the paused refusal, a freed seat, the 10 s rule and an `e+` still in `ob`, `stop()`
+  before the final save, `mine = 1` keeps the host's ownership, Undo building) over the
+  FakeAdapter's `kart_test`. `--only=vehicles` runs just these. The browser side is
+  `npm run probe:vehicles -- --only=mp`.
 
 ### 15.2 Headless multiplayer probe (`tools/probe-multiplayer.mjs`)
 
