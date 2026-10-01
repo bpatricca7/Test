@@ -7,7 +7,7 @@
 //
 //   await audit(q, familyId, action, detail = {}, { actor = 'parent', playerId = null, at = null })
 //     q:       db or a transaction's q (tools write it in the same transaction as the change)
-//     actor:   'parent' | 'system' | 'stripe' | 'admin'
+//     actor:   'parent' | 'system' | 'stripe' | 'admin' | 'config' (SW_FREE_PASS, §6.9)
 //     at:      ms (the app clock); accounts.mjs passes ctx.clock.now() for every caller
 
 import { isUuid } from './http.mjs';
@@ -36,14 +36,14 @@ export const AUDIT_ACTIONS = Object.freeze({
   'email.changed': [],
 });
 
-export const AUDIT_ACTORS = Object.freeze(['parent', 'system', 'stripe', 'admin']);
+export const AUDIT_ACTORS = Object.freeze(['parent', 'system', 'stripe', 'admin', 'config']);
 
 const smallInt = (v) => Number.isInteger(v) && v >= 0 && v <= 1e6;
 /** key → is this value allowed (never text a person typed). */
 const VALUES = {
   v: smallInt,
   players: smallInt,
-  method: (v) => ['card', 'form', 'call', 'video'].includes(v),
+  method: (v) => ['card', 'form', 'call', 'video', 'operator'].includes(v),
   invoice: (v) => typeof v === 'string' && /^in_[A-Za-z0-9]{1,64}$/.test(v),
   sid: (v) => typeof v === 'string' && /^[0-9a-f]{8}$/.test(v),
   until: (v) => v === null || (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)),

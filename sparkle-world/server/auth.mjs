@@ -538,6 +538,7 @@ export function routes(ctx) {
     if (r.error) throw r.error;
     if (r.revoked) sessions().announce(r.revoked);
     if (r.elevated) sessions().forget(r.elevated.toString('hex'));
+    if (r.freePass) ctx.freePass.changed(r.freePass);
     return r.answer;
   }
 
@@ -561,6 +562,13 @@ export function routes(ctx) {
       'update families set email_verified_at = coalesce(email_verified_at, $2), last_seen_at = $2 where email = $1 returning id',
       [a.email, new Date(now)],
     );
+    // SW_FREE_PASS (§6.9): a listed address gets its free pass when the family is created or
+    // signs in, so it works before the family exists
+    let freePass = null;
+    if (ctx.freePass?.listed(a.email)) {
+      const fp = await ctx.freePass.applyIn(q, fam.id, { now });
+      if (fp.pass || fp.consent) freePass = fam.id;
+    }
     const revoked = [];
     const old = oldSessionHash(req);
     if (old) {
@@ -568,7 +576,7 @@ export function routes(ctx) {
       if (h) revoked.push(h);
     }
     const s = await sessions().createSession(q, { familyId: fam.id, kind: 'parent', label: deviceLabel(req.headers['user-agent']), now, elevated: true });
-    return { revoked, answer: { json: { next: safeNext(a.next) }, cookies: [s.cookie, clearLogin] } };
+    return { revoked, freePass, answer: { json: { next: safeNext(a.next) }, cookies: [s.cookie, clearLogin] } };
   }
 
   // POST /api/auth/check → 202: emails a 6-digit code for the email check (§4.4)

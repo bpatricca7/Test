@@ -1485,7 +1485,9 @@ function historyLine(a, names) {
   switch (a.action) {
     case 'consent.email_plus': return `You agreed to the notice${d.v ? ` (version ${d.v})` : ''}.`;
     case 'consent.confirm_sent': return 'We emailed you a confirmation of your consent.';
-    case 'consent.verified': return d.method === 'card' || !d.method ? 'Your first payment confirmed that a grown-up said yes.' : 'We recorded your signed consent.';
+    case 'consent.verified':
+      if (d.method === 'operator') return 'Sparkle World\'s owner confirmed that a grown-up said yes (your own family).';
+      return d.method === 'card' || !d.method ? 'Your first payment confirmed that a grown-up said yes.' : 'We recorded your signed consent.';
     case 'player.create': return who ? `You added ${who}.` : 'You added a player.';
     case 'player.delete': return 'You deleted a player.';
     case 'friends.on': return `Play with friends on${who ? ` for ${who}` : ''}.`;

@@ -192,6 +192,9 @@ export function loadConfig(env = process.env) {
     phone: needInProduction('SW_OPERATOR_PHONE'),
   });
 
+  // ---- free passes the operator gives his own family (§6.9) ----
+  const freePass = parseFreePass(str('SW_FREE_PASS'), problems);
+
   // ---- tests and staging only (§12) ----
   if (test && production) problems.push('SW_TEST=1 is refused in production');
   if (test && stripeLive) problems.push('SW_TEST=1 is refused with a live Stripe key');
@@ -237,7 +240,68 @@ export function loadConfig(env = process.env) {
     mailApiKey,
     mailFrom,
     operator,
+    freePass,
   });
+}
+
+export const FREE_PASS_MAX = 20;
+export const FREE_PASS_DEFAULT_DAY = '2099-12-31';
+const DAY_MS = 24 * 3600e3;
+
+/**
+ * The same address shape as auth.mjs's normalizeEmail (sign-in stores the family's email that
+ * way, so a listed address matches it exactly); repeated here because this file imports nothing.
+ */
+function freePassEmail(s) {
+  let e;
+  try {
+    e = s.trim().normalize('NFC').toLowerCase();
+  } catch {
+    return null;
+  }
+  if (e.length < 3 || e.length > 254) return null;
+  if (!/^[^\s@<>()[\]\\,;:"]+@[^\s@<>()[\]\\,;:"]+\.[^\s@<>()[\]\\,;:".]{2,}$/u.test(e)) return null;
+  if (/[\u0000-\u001f\u007f]/.test(e) || e.includes('..')) return null;
+  return e;
+}
+
+/**
+ * SW_FREE_PASS: `a@b.com, c@d.com:2027-06-30` → a frozen list of { email, day, until } (until:
+ * the end of that day, UTC, in ms; no day = 2099-12-31). A problem names the entry by its
+ * place in the list, never by its text (an address is personal data). null/empty → [].
+ */
+export function parseFreePass(text, problems) {
+  if (text === null || text === undefined || String(text).trim() === '') return Object.freeze([]);
+  const parts = String(text).split(',').map((s) => s.trim()).filter(Boolean);
+  if (parts.length > FREE_PASS_MAX) {
+    problems.push(`SW_FREE_PASS lists ${parts.length} addresses (at most ${FREE_PASS_MAX})`);
+    return Object.freeze([]);
+  }
+  const list = [];
+  const seen = new Set();
+  for (let i = 0; i < parts.length; i++) {
+    const p = parts[i];
+    const m = /^(.*?)(?::(\d{4}-\d{2}-\d{2}))?$/.exec(p);
+    const email = m ? freePassEmail(m[1]) : null;
+    if (!email) {
+      problems.push(`SW_FREE_PASS entry ${i + 1} must be an email address, or email:YYYY-MM-DD`);
+      continue;
+    }
+    const day = m[2] || FREE_PASS_DEFAULT_DAY;
+    const [y, mo, d] = day.split('-').map(Number);
+    const t = Date.UTC(y, mo - 1, d);
+    if (!Number.isFinite(t) || y < 2000 || y > 2099 || new Date(t).toISOString().slice(0, 10) !== day) {
+      problems.push(`SW_FREE_PASS entry ${i + 1} has a date that is not a real day (YYYY-MM-DD, up to 2099-12-31)`);
+      continue;
+    }
+    if (seen.has(email)) {
+      problems.push(`SW_FREE_PASS entry ${i + 1} lists the same address twice`);
+      continue;
+    }
+    seen.add(email);
+    list.push(Object.freeze({ email, day, until: t + DAY_MS }));
+  }
+  return Object.freeze(list);
 }
 
 /** One safe line for the Deploy Logs (no secrets, no addresses of people). */
@@ -254,6 +318,7 @@ export function summarizeConfig(cfg) {
     `mail ${cfg.mailMode}`,
     `stripe ${cfg.stripeLive ? 'live' : 'test'}${cfg.stripeApiBase ? ' (fake)' : ''}`,
     `db ${/^pglite:/i.test(cfg.databaseUrl) ? 'pglite' : 'postgres'}`,
+    cfg.freePass && cfg.freePass.length ? `free passes ${cfg.freePass.length}` : null,
     cfg.test ? 'TEST HOOKS ON' : null,
   ].filter(Boolean).join(', ');
 }
