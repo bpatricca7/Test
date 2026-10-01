@@ -723,7 +723,7 @@ async function friendsPass(browser, errors, { touch = false } = {}) {
     const walk = await page.evaluate(async () => {
       const g = window.__game;
       for (const f of g.friends.friends) g.friends.setMode(f, 'follow', { quiet: true });
-      const t0 = Date.now(), seen = g.diag.report().longFrames.length;
+      const r0 = g.diag.report(), t0 = Date.now(), seen = r0.longFrames.length, seenStalls = r0.stalls.length; // only what happens from here
       const p0 = g.player.position.clone();
       let nonFinite = 0;
       for (let i = 0; i < 60; i++) { // 30 s: the player walks a slow circle, the friends follow
@@ -734,7 +734,7 @@ async function friendsPass(browser, errors, { touch = false } = {}) {
       }
       const rep = g.diag.report();
       const longs = rep.longFrames.slice(seen).map((l) => l.ms);
-      return { secs: (Date.now() - t0) / 1000, nonFinite, maxLong: longs.length ? Math.max(...longs) : 0, stalls: rep.stalls.length };
+      return { secs: (Date.now() - t0) / 1000, nonFinite, maxLong: longs.length ? Math.max(...longs) : 0, stalls: rep.stalls.length - seenStalls };
     });
     c(walk.nonFinite === 0, `D5 after ${walk.secs.toFixed(0)} s of follow mode every friend position is finite`);
     c(walk.maxLong <= 1000 && walk.stalls === 0, `D5 the frame loop never stalled over 1 s (longest ${walk.maxLong} ms, ${walk.stalls} stalls)`);
