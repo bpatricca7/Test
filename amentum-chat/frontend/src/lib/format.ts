@@ -51,8 +51,8 @@ export function greeting(name: string): string {
 }
 
 export function effortLabel(e: string | null | undefined): string {
-  if (!e) return "Standard";
-  return { none: "Instant", low: "Light", medium: "Balanced", high: "Deep", xhigh: "Extra deep", max: "Maximum" }[e] ?? e;
+  // The reasoning-effort value sent to the API, shown as-is.
+  return e || "default";
 }
 
 export function effortDescription(e: string): string {

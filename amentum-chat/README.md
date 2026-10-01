@@ -19,7 +19,7 @@ your PC today against the OpenAI API, or with no API key at all in demo mode.
 ## What you get
 
 - **GPT-5.6 Sol / Terra / Luna** with **model and reasoning-effort dropdowns right in the chat
-  composer**. Effort runs Instant, Light, Balanced, Deep, Extra deep and Maximum. All six levels were
+  composer**. Effort uses the API values directly: none, low, medium, high, xhigh and max. All six were
   verified against the live API for all three models, and each model remembers its own level.
 - **Reasoning traces.** While the model reasons, a small spinner made from the Amentum logo sits
   beside a mm:ss timer and the heading of the current step. The logo breaks into pixels that swirl

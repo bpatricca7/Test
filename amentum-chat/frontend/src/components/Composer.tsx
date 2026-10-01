@@ -179,7 +179,6 @@ export function Composer() {
         </div>
       )}
       <div className={clsx("composer", streaming && "is-streaming")}>
-        {streaming && <div className="composer-progress" aria-hidden />}
         <div className="composer-inner">
           {pending.length > 0 && (
             <div className="composer-files">

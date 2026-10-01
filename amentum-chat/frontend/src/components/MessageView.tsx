@@ -57,7 +57,6 @@ const AssistantMessage = memo(function AssistantMessage({ msg, isLast, streaming
   const live = msg.status === "streaming";
   const text = msg.parts.filter((p) => p.type === "text").map((p) => (p as { text: string }).text).join("\n\n");
   const label = live ? liveLabel(msg.parts) : null;
-  const lastIsText = msg.parts[msg.parts.length - 1]?.type === "text";
   const fileLinks = useMemo(() => {
     const map: Record<string, string> = {};
     for (const p of msg.parts) {
@@ -81,7 +80,7 @@ const AssistantMessage = memo(function AssistantMessage({ msg, isLast, streaming
               return <ToolCard key={p.id} part={p} />;
             case "text":
               return (
-                <div key={`t${i}`} className={clsx("msg-text", live && lastIsText && i === msg.parts.length - 1 && "caret")}>
+                <div key={`t${i}`} className="msg-text">
                   <Markdown text={p.text} files={fileLinks} />
                 </div>
               );

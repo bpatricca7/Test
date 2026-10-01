@@ -931,17 +931,6 @@ a {
   min-width: 0;
 }
 
-.msg-text.caret .markdown > :last-child::after {
-  content: "";
-  display: inline-block;
-  width: 7px;
-  height: 1.05em;
-  margin-left: 2px;
-  vertical-align: -0.15em;
-  background: var(--accent);
-  animation: blink 0.9s steps(2) infinite;
-}
-
 .msg-footer {
   display: flex;
   flex-wrap: wrap;
@@ -1192,26 +1181,6 @@ a {
   border-radius: var(--r-md);
   background: var(--raised);
   overflow: hidden;
-}
-
-.tool-card.is-running::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 2px;
-  width: 30%;
-  background: var(--accent);
-  animation: scan 1.3s var(--ease) infinite;
-}
-
-@keyframes scan {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(340%);
-  }
 }
 
 .tool-card.is-error {
@@ -1515,25 +1484,6 @@ a {
 
 .composer:focus-within {
   border-color: var(--accent-line);
-}
-
-.composer-progress {
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  top: -1px;
-  height: 2px;
-  overflow: hidden;
-}
-
-.composer-progress::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 25%;
-  background: var(--accent);
-  animation: scan 1.3s var(--ease) infinite;
 }
 
 .composer-inner {
