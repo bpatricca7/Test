@@ -683,7 +683,7 @@ function planView({ cancelled = false } = {}) {
       h('div', null,
         h('p', { class: 'price' }, h('b', null, pm ? pm[1] : amount), h('span', null, pm ? pm[2] : 'a month')),
         h('ul', { class: 'plan-list' },
-          h('li', null, 'Up to 6 kids, each with her own player'),
+          h('li', null, 'Up to 6 kids, each with their own player'),
           h('li', null, 'Their worlds saved on every device, and kept safe if a browser clears them'),
           h('li', null, 'Playing with friends whose families have the plan too'),
           h('li', null, 'The walkie-talkie, only if you turn it on'),
@@ -842,7 +842,7 @@ function playerForm({ player = null, first = false, onDone, onCancel = null }) {
   } } },
   h('label', { class: 'acct-label', for: 'nick' }, 'Nickname'),
   input,
-  h('p', { class: 'acct-hint' }, 'A nickname, not her real name. Letters only, up to 12.'),
+  h('p', { class: 'acct-hint' }, 'A nickname, not their real name. Letters only, up to 12.'),
   note,
   swatches,
   prev,
@@ -856,7 +856,7 @@ function playerForm({ player = null, first = false, onDone, onCancel = null }) {
 function addFirstView() {
   mount(card(
     h('h2', null, 'Add your first player'),
-    h('p', { class: 'acct-lead' }, `Each child gets her own player, with her own worlds and stickers. You can add up to ${MAX_PLAYERS}.`),
+    h('p', { class: 'acct-lead' }, `Each child gets their own player, with their own worlds and stickers. You can add up to ${MAX_PLAYERS}.`),
     playerForm({ first: true, onDone: async (p) => {
       toast(`${p.nickname} is ready to play!`);
       await refresh();
@@ -1426,7 +1426,7 @@ function pairDialog() {
     );
   };
   body.append(
-    h('p', null, "You'll get a code to type on her iPad, phone or computer. It works once, for 10 minutes."),
+    h('p', null, "You'll get a code to type on your child's iPad, phone or computer. It works once, for 10 minutes."),
     h('label', { class: 'acct-label', for: 'pair-who' }, 'Who plays on it?'),
     who,
     h('label', { class: 'acct-label', for: 'pair-label', style: 'margin-top:14px' }, 'A name for it (you can skip this)'),

@@ -362,7 +362,7 @@ async function desktop(browser) {
   });
   await settle(page, 500);
   await inviteViaBag(page, 'mia');
-  await until(page, () => document.querySelectorAll('.sw-panel-wrap.sw-open .pl-invite img[src^="data:"]').length >= 10, null, 25000);
+  await until(page, () => document.querySelectorAll('.sw-panel-wrap.sw-open .pl-invite img[src^="data:"]').length >= 16, null, 25000);
   await settle(page, 300);
   await shot(page, 'friends-panel', P);
   const mia = await pickFriendCard(page, 'mia');
@@ -603,7 +603,7 @@ async function desktop(browser) {
   // ----- six friends max -----
   const more = await page.evaluate(() => {
     const d = window.__game.debug.friends;
-    return ['lilyrose', 'maya', 'chloe', 'nia'].map((k) => d.invite(k));
+    return ['lilyrose', 'leo', 'chloe', 'nia'].map((k) => d.invite(k)); // one boy among them (boys.md)
   });
   check(more.slice(0, 3).every(Boolean) && more[3] === null, 'up to 6 friends; the 7th is politely refused');
   const calls = await page.evaluate(() => window.__game.debug.info().calls);
@@ -641,7 +641,7 @@ async function touch(browser) {
   await settle(page, 500);
   // a friend from the Bag
   await inviteViaBag(page, 'nia', { tap: true });
-  await until(page, () => document.querySelectorAll('.sw-panel-wrap.sw-open .pl-invite img[src^="data:"]').length >= 10, null, 25000);
+  await until(page, () => document.querySelectorAll('.sw-panel-wrap.sw-open .pl-invite img[src^="data:"]').length >= 16, null, 25000);
   await settle(page, 300);
   await shot(page, 'touch-friends-panel', P);
   const nia = await pickFriendCard(page, 'nia', true);

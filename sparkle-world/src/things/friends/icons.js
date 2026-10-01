@@ -1,6 +1,6 @@
 // Little 24x24 icons (currentColor) for the friends UI: talk, follow, stay, treat, hair,
-// surprise, twins, the outfit pictures and the Friends button. Unknown names fall back to
-// the core icon set and then to the life icons.
+// surprise, twins, the outfit and style pictures (rocket, dino, ...) and the Friends button.
+// Unknown names fall back to the core icon set and then to the life icons.
 
 import { lifeIcon } from '../pets/kit.js';
 
@@ -24,11 +24,13 @@ const PATHS = {
   skate: `<path d="M5.2 3.4h5.4v8.2h5.8a4.2 4.2 0 0 1 4.2 4.2v.8H3.4V5.2a1.8 1.8 0 0 1 1.8-1.8Z"/><circle cx="6.4" cy="19.8" r="2.2"/><circle cx="17.4" cy="19.8" r="2.2"/><path fill="#fff" opacity=".5" d="M5.4 7.4h3.4v1.4H5.4Z"/>`,
   palette: `<path ${EO} d="M12 2.2c5.6 0 10 3.8 10 8.6 0 3.2-2.6 4.8-5.2 4.2-1.6-.4-2.8.8-2.2 2.4.8 2.2-.4 4.4-3.2 4.4C6 21.8 2 17.4 2 12 2 6.6 6.4 2.2 12 2.2Z M7 8a1.8 1.8 0 1 0 0 3.6A1.8 1.8 0 0 0 7 8Z M11.6 5a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6Z M16.6 6.8a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6Z M7.8 13.4a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6Z"/>`,
   friends: `<circle cx="8" cy="7.4" r="4.2"/><path d="M1.4 20.6c0-4 3-6.6 6.6-6.6s6.6 2.6 6.6 6.6Z"/><path d="M3.6 6.4c.4-3 2.4-4.6 4.4-4.6 2.4 0 4.2 1.6 4.6 4.4-1.8-.4-3.4-1.2-4.4-2.6-1 1.4-2.6 2.4-4.6 2.8Z"/><circle opacity=".75" cx="16.6" cy="8.6" r="3.6"/><path opacity=".75" d="M15.8 13.6c3.8-.4 6.8 2.2 6.8 7h-6.4c0-2.6-.8-4.8-2.2-6.4.6-.4 1.2-.6 1.8-.6Z"/><path opacity=".75" d="M20.4 4.8a2.2 2.2 0 1 1 1 4.2 2.2 2.2 0 0 1-1-4.2Z"/>`,
+  rocket: `<path ${EO} d="M12 1.6c3.4 2.4 5 6 5 10.2v4.6H7v-4.6c0-4.2 1.6-7.8 5-10.2Z M12 6.8a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 0 0 0-4.4Z"/><path d="M7 11.8 3.4 15.6v3.6L7 16.4Z M17 11.8l3.6 3.8v3.6L17 16.4Z"/><path opacity=".7" d="M9.4 17.6h5.2L12 22.4Z"/>`,
+  dino: `<path d="M15.4 2.6h4.2a2.6 2.6 0 0 1 2.6 2.6v.6a1.6 1.6 0 0 1-1.6 1.6h-2v5c0 3.4-2.2 5.8-5.2 6.4v2.6h-2.6v-2.4H8.4v2.4H5.8v-3c-1.4-.8-2.4-2-3-3.6L1 13.2l2.6-.6c.6-2.6 2.6-4.4 5.4-4.4h3.6V5.4a2.8 2.8 0 0 1 2.8-2.8Z"/><circle cx="17.4" cy="4.6" r=".9" fill="#fff"/><path opacity=".6" d="M6.6 6.2l1.4-2 1.4 2Z M10 6l1.2-1.8L12.4 6Z"/>`,
   invite: `<circle cx="9" cy="7.4" r="4.4"/><path d="M1.8 21c0-4.4 3.2-7.2 7.2-7.2s7.2 2.8 7.2 7.2Z"/><path d="M18.2 7.6h2v3h3v2h-3v3h-2v-3h-3v-2h3Z"/>`,
 };
 
 export function friendIcon(name, ui = null) {
   if (PATHS[name]) return `<svg class="sw-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">${PATHS[name]}</svg>`;
-  if (ui && ['heart', 'star', 'sun', 'moon', 'music', 'dress', 'sparkle', 'home', 'check', 'back', 'close', 'emote', 'jump', 'plus'].includes(name)) return ui.icon(name);
+  if (ui && ['heart', 'star', 'sun', 'moon', 'music', 'dress', 'sparkle', 'home', 'check', 'back', 'close', 'emote', 'jump', 'plus', 'build'].includes(name)) return ui.icon(name);
   return lifeIcon(name);
 }

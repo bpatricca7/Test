@@ -1,12 +1,19 @@
 // Wardrobe data: the default look, every option list the Dress-Up Studio offers (stable keys
 // saved in profiles + friendly names kids read), curated color palettes, normalizeLook,
-// a coordinated randomLook ("Surprise me!") and the ready-made starter outfits.
+// a coordinated randomLook ("Surprise me!" in a Girl, Boy or Mix style) and the ready-made
+// starter outfits.
+//
+// Option lists are APPEND ONLY: the multiplayer look codec sends list indices, so old saves and
+// old tokens keep their meaning only while no entry moves. Each option carries a `tag` ('g',
+// 'b' or 'gb') that only says which "Surprise me!" style picks it; every option is free for
+// anyone in the Studio.
 //
 // look = {
 //   name, skin,
 //   hair:  { style, color, color2: hex | 'rainbow' | null, mix: 'ombre' | 'streaks' | 'tips' },
-//   eyes:  { color, lashes }, face: { blush, freckles, smile },
-//   top / bottom: { type, color, pattern, patternColor },  dress: null | { type, color, pattern, patternColor },
+//   eyes:  { color, lashes }, face: { blush, freckles, smile, brows: 'soft' | 'bold' },
+//   top: { type, color, pattern, patternColor, num: 0..99 (only drawn on a jersey) },
+//   bottom: { type, color, pattern, patternColor },  dress: null | { type, color, pattern, patternColor },
 //   shoes: { type, color },
 //   acc: { head, headColor, face, faceColor, back, backColor, neck, neckColor, hand, handColor }
 // }   (faceColor / handColor may be null = the item's own default colors)
@@ -16,8 +23,8 @@ export const DEFAULT_LOOK = {
   skin: '#F6D2B8',
   hair: { style: 'long', color: '#7A4A2A', color2: null, mix: 'ombre' },
   eyes: { color: '#5A3A28', lashes: true },
-  face: { blush: true, freckles: false, smile: 'happy' },
-  top: { type: 'tshirt', color: '#FF8CC6', pattern: 'hearts', patternColor: '#FFFFFF' },
+  face: { blush: true, freckles: false, smile: 'happy', brows: 'soft' },
+  top: { type: 'tshirt', color: '#FF8CC6', pattern: 'hearts', patternColor: '#FFFFFF', num: 7 },
   bottom: { type: 'skirt', color: '#8E7CFF', pattern: 'none', patternColor: '#FFFFFF' },
   dress: null,
   shoes: { type: 'sneakers', color: '#FFFFFF' },
@@ -27,55 +34,82 @@ export const DEFAULT_LOOK = {
   },
 };
 
-const opts = (pairs) => pairs.map(([key, name]) => ({ key, name }));
+// [key, name, tag]: tag 'g' = in the Girl surprise (the default), 'b' = in the Boy surprise,
+// 'gb' = both. Each list's Girl filter is exactly the list as it was before the boy items, so
+// the Girl surprise (and its seeded results) is what it always was.
+const opts = (pairs) => pairs.map(([key, name, tag = 'g']) => ({ key, name, tag }));
 
 export const HAIR_STYLES = opts([
   ['long', 'Long'], ['ponytail', 'Ponytail'], ['pigtails', 'Pigtails'], ['bun', 'Bun'],
-  ['space_buns', 'Space Buns'], ['braids', 'Braids'], ['curly', 'Curly'], ['bob', 'Bob'],
+  ['space_buns', 'Space Buns'], ['braids', 'Braids'], ['curly', 'Curly', 'gb'], ['bob', 'Bob'],
   ['short', 'Short'], ['side_pony', 'Side Pony'], ['wavy_long', 'Wavy'], ['pixie', 'Pixie'],
+  ['buzz', 'Buzz Cut', 'b'], ['spiky', 'Spiky', 'b'], ['side_part', 'Side Part', 'b'], ['shaggy', 'Shaggy', 'b'],
+  ['short_curly', 'Short Curls', 'b'], ['fauxhawk', 'Faux Hawk', 'b'], ['afro', 'Afro', 'b'],
 ]);
-export const HAIR_MIXES = opts([['ombre', 'Ombre'], ['streaks', 'Streaks'], ['tips', 'Tips']]);
+export const HAIR_MIXES = opts([['ombre', 'Ombre', 'gb'], ['streaks', 'Streaks', 'gb'], ['tips', 'Tips', 'gb']]);
 export const TOPS = opts([
-  ['tshirt', 'T-Shirt'], ['tank', 'Tank Top'], ['hoodie', 'Hoodie'], ['sweater', 'Sweater'],
-  ['blouse', 'Blouse'], ['crop', 'Crop Top'], ['jacket', 'Jacket'], ['sparkle_top', 'Sparkle Top'],
+  ['tshirt', 'T-Shirt', 'gb'], ['tank', 'Tank Top'], ['hoodie', 'Hoodie', 'gb'], ['sweater', 'Sweater', 'gb'],
+  ['blouse', 'Blouse'], ['crop', 'Crop Top'], ['jacket', 'Jacket', 'gb'], ['sparkle_top', 'Sparkle Top'],
+  ['polo', 'Polo', 'b'], ['jersey', 'Jersey', 'b'], ['button_up', 'Button-Up', 'b'], ['tee_dino', 'Dino Tee', 'b'],
+  ['tee_rocket', 'Rocket Tee', 'b'], ['tee_bolt', 'Lightning Tee', 'b'],
 ]);
 export const BOTTOMS = opts([
-  ['skirt', 'Skirt'], ['tutu', 'Tutu'], ['jeans', 'Jeans'], ['leggings', 'Leggings'],
-  ['shorts', 'Shorts'], ['overalls', 'Overalls'], ['pleated', 'Pleated Skirt'],
+  ['skirt', 'Skirt'], ['tutu', 'Tutu'], ['jeans', 'Jeans', 'gb'], ['leggings', 'Leggings'],
+  ['shorts', 'Shorts', 'gb'], ['overalls', 'Overalls', 'gb'], ['pleated', 'Pleated Skirt'],
+  ['cargo_shorts', 'Cargo Shorts', 'b'], ['joggers', 'Joggers', 'b'], ['pants', 'Pants', 'b'],
 ]);
 export const DRESSES = opts([
   ['sundress', 'Sundress'], ['party', 'Party Dress'], ['princess', 'Princess Dress'],
   ['ballgown', 'Ball Gown'], ['overall_dress', 'Overall Dress'], ['mermaid', 'Mermaid Dress'],
 ]);
 export const SHOES = opts([
-  ['sneakers', 'Sneakers'], ['boots', 'Boots'], ['sandals', 'Sandals'], ['sparkle', 'Sparkle Shoes'],
-  ['rainboots', 'Rain Boots'], ['ballet', 'Ballet Flats'], ['roller_skates', 'Roller Skates'],
+  ['sneakers', 'Sneakers', 'gb'], ['boots', 'Boots', 'gb'], ['sandals', 'Sandals', 'gb'], ['sparkle', 'Sparkle Shoes'],
+  ['rainboots', 'Rain Boots', 'gb'], ['ballet', 'Ballet Flats'], ['roller_skates', 'Roller Skates', 'gb'],
+  ['high_tops', 'High-Tops', 'b'], ['skate_shoes', 'Skate Shoes', 'b'],
 ]);
 export const HEAD_ACC = opts([
-  ['none', 'None'], ['bow', 'Bow'], ['tiara', 'Tiara'], ['crown', 'Crown'], ['flower_crown', 'Flower Crown'],
-  ['cat_ears', 'Cat Ears'], ['bunny_ears', 'Bunny Ears'], ['unicorn_horn', 'Unicorn Horn'], ['beanie', 'Beanie'],
-  ['sun_hat', 'Sun Hat'], ['headband', 'Headband'], ['witch_hat', 'Sparkly Hat'], ['halo', 'Halo'],
+  ['none', 'None', 'gb'], ['bow', 'Bow'], ['tiara', 'Tiara'], ['crown', 'Crown'], ['flower_crown', 'Flower Crown'],
+  ['cat_ears', 'Cat Ears'], ['bunny_ears', 'Bunny Ears'], ['unicorn_horn', 'Unicorn Horn'], ['beanie', 'Beanie', 'gb'],
+  ['sun_hat', 'Sun Hat'], ['headband', 'Headband'], ['witch_hat', 'Sparkly Hat', 'gb'], ['halo', 'Halo'],
+  ['cap', 'Cap', 'b'], ['cap_back', 'Backwards Cap', 'b'], ['bucket_hat', 'Bucket Hat', 'b'], ['headphones', 'Headphones', 'b'],
 ]);
 export const FACE_ACC = opts([
-  ['none', 'None'], ['glasses', 'Glasses'], ['sunglasses', 'Sunglasses'], ['heart_glasses', 'Heart Glasses'],
-  ['star_glasses', 'Star Glasses'],
+  ['none', 'None', 'gb'], ['glasses', 'Glasses', 'gb'], ['sunglasses', 'Sunglasses', 'gb'], ['heart_glasses', 'Heart Glasses'],
+  ['star_glasses', 'Star Glasses', 'gb'],
 ]);
 export const BACK_ACC = opts([
-  ['none', 'None'], ['fairy_wings', 'Fairy Wings'], ['butterfly_wings', 'Butterfly Wings'],
-  ['angel_wings', 'Angel Wings'], ['backpack', 'Backpack'], ['cape', 'Cape'],
+  ['none', 'None', 'gb'], ['fairy_wings', 'Fairy Wings'], ['butterfly_wings', 'Butterfly Wings'],
+  ['angel_wings', 'Angel Wings'], ['backpack', 'Backpack', 'gb'], ['cape', 'Cape', 'gb'],
+  ['star_pack', 'Star Backpack', 'b'],
 ]);
 export const NECK_ACC = opts([
-  ['none', 'None'], ['necklace', 'Necklace'], ['pearls', 'Pearls'], ['scarf', 'Scarf'], ['bowtie', 'Bow Tie'],
+  ['none', 'None', 'gb'], ['necklace', 'Necklace'], ['pearls', 'Pearls'], ['scarf', 'Scarf', 'gb'], ['bowtie', 'Bow Tie', 'gb'],
+  ['necktie', 'Tie', 'b'], ['medal', 'Medal', 'b'],
 ]);
 export const HAND_ACC = opts([
-  ['none', 'None'], ['wand', 'Magic Wand'], ['purse', 'Purse'], ['balloon', 'Balloon'], ['teddy', 'Teddy'],
-  ['ice_cream', 'Ice Cream'],
+  ['none', 'None', 'gb'], ['wand', 'Magic Wand', 'gb'], ['purse', 'Purse'], ['balloon', 'Balloon', 'gb'], ['teddy', 'Teddy', 'gb'],
+  ['ice_cream', 'Ice Cream', 'gb'],
+  ['soccer_ball', 'Soccer Ball', 'b'], ['toy_car', 'Toy Car', 'b'], ['dino_toy', 'Toy Dino', 'b'],
 ]);
 export const PATTERNS = opts([
-  ['none', 'Plain'], ['hearts', 'Hearts'], ['stars', 'Stars'], ['stripes', 'Stripes'], ['dots', 'Dots'],
+  ['none', 'Plain', 'gb'], ['hearts', 'Hearts'], ['stars', 'Stars', 'gb'], ['stripes', 'Stripes', 'gb'], ['dots', 'Dots', 'gb'],
   ['rainbow', 'Rainbow'], ['flowers', 'Flowers'],
+  ['plaid', 'Plaid', 'b'], ['checks', 'Checks', 'b'], ['bolts', 'Lightning', 'b'], ['dinos', 'Dinos', 'b'], ['rockets', 'Rockets', 'b'],
 ]);
-export const SMILES = opts([['happy', 'Happy'], ['grin', 'Big Smile'], ['cat', 'Cat Smile'], ['open', 'Excited']]);
+export const SMILES = opts([['happy', 'Happy', 'gb'], ['grin', 'Big Smile', 'gb'], ['cat', 'Cat Smile', 'gb'], ['open', 'Excited', 'gb']]);
+/** Eyebrows: 'soft' is the original gentle arc, 'bold' a thicker, flatter brow. */
+export const BROWS = opts([['soft', 'Soft', 'gb'], ['bold', 'Bold', 'gb']]);
+/** "Surprise me!" styles, cycled by the Studio's style button (device-local `surpriseStyle`). */
+export const SURPRISE_STYLES = ['girl', 'boy', 'mix'];
+
+/**
+ * The options one "Surprise me!" style picks from (letter 'g' or 'b'), in list order. Falls back
+ * to the whole list if a filter is ever empty, so a pick can never be undefined.
+ */
+export function tagged(list, letter) {
+  const out = list.filter((o) => (o.tag || 'g').includes(letter));
+  return out.length ? out : list;
+}
 export const EMOTES = opts([
   ['wave', 'Wave'], ['dance', 'Dance'], ['twirl', 'Twirl'], ['cartwheel', 'Cartwheel'],
   ['jump', 'Jump'], ['heart', 'Heart'], ['sit', 'Sit'],
@@ -110,13 +144,15 @@ const KEYS = {
   hair: keySet(HAIR_STYLES), mix: keySet(HAIR_MIXES), top: keySet(TOPS), bottom: keySet(BOTTOMS),
   dress: keySet(DRESSES), shoes: keySet(SHOES), head: keySet(HEAD_ACC), face: keySet(FACE_ACC),
   back: keySet(BACK_ACC), neck: keySet(NECK_ACC), hand: keySet(HAND_ACC), pattern: keySet(PATTERNS),
-  smile: keySet(SMILES),
+  smile: keySet(SMILES), brows: keySet(BROWS),
 };
 
 const col = (v, d) => (typeof v === 'string' && HEX.test(v) ? v.toUpperCase() : d);
 const colOrNull = (v) => (typeof v === 'string' && HEX.test(v) ? v.toUpperCase() : null);
 const one = (v, set, d) => (set.has(v) ? v : d);
 const bool = (v, d) => (typeof v === 'boolean' ? v : d);
+// A whole number in [lo, hi]; strings, NaN and Infinity give the default.
+const int = (v, lo, hi, d) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : d);
 
 function garment(g, d, types) {
   const src = g && typeof g === 'object' ? g : {};
@@ -153,8 +189,10 @@ export function normalizeLook(look) {
       blush: bool(face.blush, d.face.blush),
       freckles: bool(face.freckles, d.face.freckles),
       smile: one(face.smile, KEYS.smile, d.face.smile),
+      brows: one(face.brows, KEYS.brows, d.face.brows),
     },
-    top: garment(l.top, d.top, KEYS.top),
+    // `num` lives on the top only (bottoms and dresses have no number).
+    top: { ...garment(l.top, d.top, KEYS.top), num: int(l.top && l.top.num, 0, 99, d.top.num) },
     bottom: garment(l.bottom, d.bottom, KEYS.bottom),
     dress: l.dress && typeof l.dress === 'object' && KEYS.dress.has(l.dress.type)
       ? garment(l.dress, { type: 'sundress', color: '#FF8CC6', pattern: 'none', patternColor: '#FFFFFF' }, KEYS.dress)
@@ -185,6 +223,20 @@ export function lookSignature(look) {
   return JSON.stringify(normalizeLook(look));
 }
 
+/**
+ * True while a profile's look is still the untouched default (any name) and the Studio was
+ * never visited from the title's nudge: the title's Dress Up tile then wiggles.
+ */
+export function freshLook(profile) {
+  if (!profile || typeof profile !== 'object' || profile.lookPicked) return false;
+  return lookSignature({ ...normalizeLook(profile.look), name: DEFAULT_LOOK.name }) === lookSignature(DEFAULT_LOOK);
+}
+
+/** The name is still the unset default (never typed): greetings say "friend" for a Boy style. */
+export function nameUnset(profile) {
+  return !!profile && !profile.nameSet && normalizeLook(profile.look).name === DEFAULT_LOOK.name;
+}
+
 // ---------- "Surprise me!" ----------
 
 // Color stories: a main color, a second color, an accent and a light pattern color that all
@@ -202,14 +254,36 @@ const THEMES = [
   { name: 'rainbow', main: ['#FFFFFF', '#E6DDFF'], second: ['#6CC6FF', '#FF8CC6', '#FFD43B'], accent: ['#FF5FA2', '#3FD8B0'], light: ['#FF5FA2', '#6CC6FF'], rainbow: true },
 ];
 
+// Boy color stories: sporty, outdoorsy and space colors (same shape as THEMES).
+export const BOY_THEMES = [
+  { name: 'team', main: ['#4D7CFF', '#FF6B6B'], second: ['#FFFFFF', '#3A1F4D', '#6B7280'], accent: ['#FF6B6B', '#FFD43B'], light: ['#FFFFFF'] },
+  { name: 'ocean', main: ['#6CC6FF', '#3FD8B0'], second: ['#4D7CFF', '#FFFFFF', '#3A1F4D'], accent: ['#4D7CFF', '#FFD43B'], light: ['#FFFFFF'] },
+  { name: 'forest', main: ['#6BD68A', '#8B5E3C'], second: ['#8B5E3C', '#6B7280', '#FFE58A'], accent: ['#FFE58A', '#FFA94D'], light: ['#FFFFFF', '#FFE58A'] },
+  { name: 'sunset', main: ['#FFA94D', '#FF6B6B'], second: ['#3A1F4D', '#4D7CFF', '#FFE58A'], accent: ['#FFE58A', '#FF6B6B'], light: ['#FFFFFF', '#FFE58A'] },
+  { name: 'space', main: ['#3A1F4D', '#7048E8'], second: ['#6B7280', '#222230', '#7048E8'], accent: ['#6CC6FF', '#FFD43B'], light: ['#6CC6FF', '#FFFFFF'] },
+  { name: 'dino', main: ['#B8F2A0', '#6BD68A'], second: ['#8B5E3C', '#4D7CFF', '#6B7280'], accent: ['#FFA94D', '#6BD68A'], light: ['#FFFFFF', '#FFA94D'] },
+];
+const BOY_PATTERNS = ['stars', 'stripes', 'dots', 'plaid', 'checks', 'bolts', 'dinos', 'rockets'];
+
 /**
  * A random (always cute, color-coordinated) look. rand() -> [0, 1). When `base` is given its
  * name, skin, eyes and face are kept (the Studio's "Surprise me!" keeps who you are and
- * changes what you wear).
+ * changes what you wear). `style`: 'girl' (the default, exactly the original surprise, the same
+ * rand() calls in the same order), 'boy', or 'mix' (one rand() picks the girl or boy branch,
+ * then the hair style comes from every style).
  */
-export function randomLook(rand = Math.random, name = DEFAULT_LOOK.name, base = null) {
+export function randomLook(rand = Math.random, name = DEFAULT_LOOK.name, base = null, style = 'girl') {
+  if (style === 'boy') return boyLook(rand, name, base, tagged(HAIR_STYLES, 'b'));
+  if (style === 'mix') return rand() < 0.5 ? boyLook(rand, name, base, HAIR_STYLES) : girlLook(rand, name, base, HAIR_STYLES);
+  return girlLook(rand, name, base, tagged(HAIR_STYLES, 'g'));
+}
+
+function girlLook(rand, name, base, hairStyles) {
   const pick = (arr) => arr[Math.floor(rand() * arr.length) % arr.length];
   const chance = (p) => rand() < p;
+  const TOPS_G = tagged(TOPS, 'g');
+  const BOTTOMS_G = tagged(BOTTOMS, 'g');
+  const SHOES_G = tagged(SHOES, 'g');
   const th = pick(THEMES);
   const main = pick(th.main);
   const second = pick(th.second.filter((c) => c !== main)) || pick(th.second);
@@ -217,19 +291,19 @@ export function randomLook(rand = Math.random, name = DEFAULT_LOOK.name, base = 
   const light = pick(th.light.filter((c) => c !== main)) || '#FFFFFF';
   const pattern = () => (th.rainbow && chance(0.6) ? 'rainbow' : chance(0.5) ? 'none' : pick(['hearts', 'stars', 'stripes', 'dots', 'flowers']));
   const dressType = chance(0.4) ? pick(DRESSES).key : null;
-  const top = pick(TOPS).key;
-  const bottom = pick(BOTTOMS).key;
+  const top = pick(TOPS_G).key;
+  const bottom = pick(BOTTOMS_G).key;
   const natural = chance(0.72);
   const hairColor = base && chance(0.6) ? base.hair.color : natural ? pick(HAIR_COLORS_NATURAL) : pick(HAIR_COLORS_FANTASY);
   const color2 = chance(0.22) ? (th.rainbow || chance(0.25) ? 'rainbow' : pick([accent, second, ...HAIR_COLORS_FANTASY])) : null;
   const metals = ['#FFD54A', '#DDE3EC'];
-  const shoesType = dressType === 'ballgown' || dressType === 'princess' ? pick(['sparkle', 'ballet']) : pick(SHOES).key;
-  const back = chance(0.3) ? pick(BACK_ACC.slice(1)).key : 'none';
+  const shoesType = dressType === 'ballgown' || dressType === 'princess' ? pick(['sparkle', 'ballet']) : pick(SHOES_G).key;
+  const back = chance(0.3) ? pick(tagged(BACK_ACC, 'g').slice(1)).key : 'none';
   const look = {
     name: base ? base.name : name,
     skin: base ? base.skin : pick(SKIN_TONES),
     hair: {
-      style: pick(HAIR_STYLES).key,
+      style: pick(hairStyles).key,
       color: hairColor,
       color2: color2 === hairColor ? null : color2,
       mix: pick(HAIR_MIXES).key,
@@ -241,15 +315,63 @@ export function randomLook(rand = Math.random, name = DEFAULT_LOOK.name, base = 
     dress: dressType ? { type: dressType, color: main, pattern: pattern(), patternColor: light } : null,
     shoes: { type: shoesType, color: chance(0.35) ? '#FFFFFF' : pick([accent, second]) },
     acc: {
-      head: chance(0.7) ? pick(HEAD_ACC.slice(1)).key : 'none',
+      head: chance(0.7) ? pick(tagged(HEAD_ACC, 'g').slice(1)).key : 'none',
       headColor: pick([accent, accent, ...metals, second]),
-      face: chance(0.2) ? pick(FACE_ACC.slice(1)).key : 'none',
+      face: chance(0.2) ? pick(tagged(FACE_ACC, 'g').slice(1)).key : 'none',
       faceColor: chance(0.5) ? accent : null,
       back,
       backColor: pick([second, accent, main === '#FFFFFF' ? accent : main]),
-      neck: chance(0.3) ? pick(NECK_ACC.slice(1)).key : 'none',
+      neck: chance(0.3) ? pick(tagged(NECK_ACC, 'g').slice(1)).key : 'none',
       neckColor: pick([...metals, accent]),
-      hand: chance(0.3) ? pick(HAND_ACC.slice(1)).key : 'none',
+      hand: chance(0.3) ? pick(tagged(HAND_ACC, 'g').slice(1)).key : 'none',
+      handColor: chance(0.6) ? accent : null,
+    },
+  };
+  return normalizeLook(look);
+}
+
+// The Boy surprise: short hair, boy clothes, mostly no lashes, often bold brows, a jersey number.
+// A fixed number of rand() calls, no retry loops.
+function boyLook(rand, name, base, hairStyles) {
+  const pick = (arr) => arr[Math.floor(rand() * arr.length) % arr.length];
+  const chance = (p) => rand() < p;
+  const th = pick(BOY_THEMES);
+  const main = pick(th.main);
+  const second = pick(th.second.filter((c) => c !== main)) || pick(th.second);
+  const accent = pick(th.accent.filter((c) => c !== main)) || pick(th.accent);
+  const light = pick(th.light.filter((c) => c !== main)) || '#FFFFFF';
+  const pattern = () => (chance(0.5) ? 'none' : pick(BOY_PATTERNS));
+  const top = pick(tagged(TOPS, 'b')).key;
+  const bottom = pick(tagged(BOTTOMS, 'b')).key;
+  const hairColor = base && chance(0.6) ? base.hair.color : chance(0.85) ? pick(HAIR_COLORS_NATURAL) : pick(HAIR_COLORS_FANTASY);
+  const color2 = chance(0.1) ? pick([accent, ...HAIR_COLORS_FANTASY]) : null;
+  const look = {
+    name: base ? base.name : name,
+    skin: base ? base.skin : pick(SKIN_TONES),
+    hair: {
+      style: pick(hairStyles).key,
+      color: hairColor,
+      color2: color2 === hairColor ? null : color2,
+      mix: pick(HAIR_MIXES).key,
+    },
+    eyes: base ? { ...base.eyes } : { color: pick(EYE_COLORS), lashes: chance(0.15) },
+    face: base ? { ...base.face } : {
+      blush: chance(0.5), freckles: chance(0.25), smile: pick(SMILES).key, brows: chance(0.55) ? 'bold' : 'soft',
+    },
+    top: { type: top, color: main, pattern: pattern(), patternColor: light, num: 1 + Math.floor(rand() * 99) },
+    bottom: { type: bottom, color: second, pattern: chance(0.85) ? 'none' : pattern(), patternColor: light },
+    dress: null,
+    shoes: { type: pick(tagged(SHOES, 'b')).key, color: chance(0.35) ? '#FFFFFF' : pick([accent, second, main]) },
+    acc: {
+      head: chance(0.5) ? pick(tagged(HEAD_ACC, 'b').slice(1)).key : 'none',
+      headColor: pick([accent, main, second]),
+      face: chance(0.2) ? pick(tagged(FACE_ACC, 'b').slice(1)).key : 'none',
+      faceColor: chance(0.5) ? accent : null,
+      back: chance(0.25) ? pick(tagged(BACK_ACC, 'b').slice(1)).key : 'none',
+      backColor: pick([accent, main, second]),
+      neck: chance(0.15) ? pick(tagged(NECK_ACC, 'b').slice(1)).key : 'none',
+      neckColor: pick(['#FFD54A', accent, main]),
+      hand: chance(0.3) ? pick(tagged(HAND_ACC, 'b').slice(1)).key : 'none',
       handColor: chance(0.6) ? accent : null,
     },
   };
@@ -260,11 +382,13 @@ export function randomLook(rand = Math.random, name = DEFAULT_LOOK.name, base = 
 
 /**
  * Ready-made looks. Wearing one changes clothes, shoes, accessories and the hair style (plus
- * any hair highlight it lists); skin, hair color, eyes, face and name stay yours.
+ * any hair highlight it lists); skin, hair color, eye color and name stay yours. A boy look
+ * (`tag: 'b'`) may also set `eyes.lashes` and `face.brows`; girl looks never touch the face.
+ * Append only (friends' Dress up bubbles and the probes find them by key).
  */
 export const STARTER_OUTFITS = [
   {
-    key: 'princess', name: 'Princess',
+    key: 'princess', name: 'Princess', tag: 'g',
     hairStyle: 'wavy_long',
     look: {
       dress: { type: 'ballgown', color: '#FF8CC6', pattern: 'stars', patternColor: '#FFF4E0' },
@@ -273,7 +397,7 @@ export const STARTER_OUTFITS = [
     },
   },
   {
-    key: 'sporty', name: 'Sporty',
+    key: 'sporty', name: 'Sporty', tag: 'g',
     hairStyle: 'ponytail',
     look: {
       top: { type: 'tshirt', color: '#3FD8B0', pattern: 'stripes', patternColor: '#FFFFFF' },
@@ -283,7 +407,7 @@ export const STARTER_OUTFITS = [
     },
   },
   {
-    key: 'beach', name: 'Beach Day',
+    key: 'beach', name: 'Beach Day', tag: 'g',
     hairStyle: 'side_pony',
     look: {
       dress: { type: 'sundress', color: '#FFD43B', pattern: 'flowers', patternColor: '#FFFFFF' },
@@ -292,7 +416,7 @@ export const STARTER_OUTFITS = [
     },
   },
   {
-    key: 'fairy', name: 'Fairy',
+    key: 'fairy', name: 'Fairy', tag: 'g',
     hairStyle: 'space_buns',
     look: {
       top: { type: 'sparkle_top', color: '#E6DDFF', pattern: 'none', patternColor: '#FFFFFF' },
@@ -302,7 +426,7 @@ export const STARTER_OUTFITS = [
     },
   },
   {
-    key: 'winter', name: 'Cozy Winter',
+    key: 'winter', name: 'Cozy Winter', tag: 'g',
     hairStyle: 'braids',
     look: {
       top: { type: 'sweater', color: '#FF6B6B', pattern: 'stars', patternColor: '#FFFFFF' },
@@ -312,7 +436,7 @@ export const STARTER_OUTFITS = [
     },
   },
   {
-    key: 'rockstar', name: 'Rock Star',
+    key: 'rockstar', name: 'Rock Star', tag: 'g',
     hairStyle: 'curly',
     hair: { color2: '#FF5FA2', mix: 'streaks' },
     look: {
@@ -320,6 +444,73 @@ export const STARTER_OUTFITS = [
       bottom: { type: 'pleated', color: '#FF5FA2', pattern: 'stars', patternColor: '#FFE58A' },
       shoes: { type: 'boots', color: '#3A1F4D' },
       acc: { head: 'none', face: 'star_glasses', faceColor: '#FFD43B', back: 'none', neck: 'necklace', neckColor: '#DDE3EC', hand: 'none' },
+    },
+  },
+  // boys (appended)
+  {
+    key: 'soccer', name: 'Soccer Star', tag: 'b',
+    hairStyle: 'short_curly',
+    eyes: { lashes: false }, face: { brows: 'bold' },
+    look: {
+      top: { type: 'jersey', color: '#4D7CFF', pattern: 'none', patternColor: '#FFFFFF', num: 10 },
+      bottom: { type: 'shorts', color: '#FFFFFF', pattern: 'none', patternColor: '#FFFFFF' },
+      shoes: { type: 'high_tops', color: '#FF6B6B' },
+      acc: { head: 'none', face: 'none', back: 'none', neck: 'medal', neckColor: '#FF6B6B', hand: 'soccer_ball', handColor: null },
+    },
+  },
+  {
+    key: 'skater', name: 'Skater', tag: 'b',
+    hairStyle: 'spiky',
+    eyes: { lashes: false },
+    look: {
+      top: { type: 'tee_bolt', color: '#3A1F4D', pattern: 'none', patternColor: '#FFFFFF' },
+      bottom: { type: 'joggers', color: '#6B7280', pattern: 'none', patternColor: '#FFFFFF' },
+      shoes: { type: 'skate_shoes', color: '#FF6B6B' },
+      acc: { head: 'cap_back', headColor: '#FF6B6B', face: 'none', back: 'none', neck: 'none', hand: 'none' },
+    },
+  },
+  {
+    key: 'space', name: 'Space Explorer', tag: 'b',
+    hairStyle: 'fauxhawk',
+    eyes: { lashes: false },
+    look: {
+      top: { type: 'tee_rocket', color: '#3A1F4D', pattern: 'none', patternColor: '#FFFFFF' },
+      bottom: { type: 'joggers', color: '#7048E8', pattern: 'none', patternColor: '#FFFFFF' },
+      shoes: { type: 'high_tops', color: '#FFFFFF' },
+      acc: { head: 'headphones', headColor: '#6CC6FF', face: 'none', back: 'star_pack', backColor: '#6CC6FF', neck: 'none', hand: 'none' },
+    },
+  },
+  {
+    key: 'dino', name: 'Dino Explorer', tag: 'b',
+    hairStyle: 'buzz',
+    eyes: { lashes: false },
+    look: {
+      top: { type: 'tee_dino', color: '#FFE58A', pattern: 'none', patternColor: '#FFFFFF' },
+      bottom: { type: 'cargo_shorts', color: '#8B5E3C', pattern: 'none', patternColor: '#FFFFFF' },
+      shoes: { type: 'boots', color: '#8B5E3C' },
+      acc: { head: 'bucket_hat', headColor: '#6BD68A', face: 'none', back: 'backpack', backColor: '#FFA94D', neck: 'none', hand: 'dino_toy', handColor: null },
+    },
+  },
+  {
+    key: 'camp', name: 'Camping Day', tag: 'b',
+    hairStyle: 'shaggy',
+    eyes: { lashes: false }, face: { brows: 'bold' },
+    look: {
+      top: { type: 'button_up', color: '#FF6B6B', pattern: 'plaid', patternColor: '#3A1F4D' },
+      bottom: { type: 'jeans', color: '#4D7CFF', pattern: 'none', patternColor: '#FFFFFF' },
+      shoes: { type: 'boots', color: '#8B5E3C' },
+      acc: { head: 'beanie', headColor: '#FFA94D', face: 'none', back: 'none', neck: 'none', hand: 'none' },
+    },
+  },
+  {
+    key: 'dapper', name: 'Party Time', tag: 'b',
+    hairStyle: 'side_part',
+    eyes: { lashes: false },
+    look: {
+      top: { type: 'button_up', color: '#FFFFFF', pattern: 'none', patternColor: '#FFFFFF' },
+      bottom: { type: 'pants', color: '#3A1F4D', pattern: 'none', patternColor: '#FFFFFF' },
+      shoes: { type: 'sneakers', color: '#FFFFFF' },
+      acc: { head: 'none', face: 'none', back: 'none', neck: 'bowtie', neckColor: '#FF5FA2', hand: 'balloon', handColor: '#6CC6FF' },
     },
   },
 ];
@@ -330,12 +521,15 @@ export function applyOutfit(look, outfit) {
   const o = outfit.look || {};
   const next = {
     ...base,
-    top: o.top ? { ...o.top } : base.top,
+    // A top without its own number keeps yours.
+    top: o.top ? { num: base.top.num, ...o.top } : base.top,
     bottom: o.bottom ? { ...o.bottom } : base.bottom,
     dress: o.dress ? { ...o.dress } : null,
     shoes: o.shoes ? { ...o.shoes } : base.shoes,
     acc: { ...DEFAULT_LOOK.acc, head: 'none', ...(o.acc || {}) },
     hair: { ...base.hair, ...(outfit.hair || {}), style: outfit.hairStyle || base.hair.style },
+    eyes: outfit.eyes ? { ...base.eyes, ...outfit.eyes } : base.eyes,
+    face: outfit.face ? { ...base.face, ...outfit.face } : base.face,
   };
   return normalizeLook(next);
 }

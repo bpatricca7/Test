@@ -6,8 +6,9 @@ the player's avatar, the NPC friends, neutral words about real players, the webs
 and the multiplayer look codec. Boats, cars and vans are a separate team; the touch points are
 listed in section 13.
 
-Status: DESIGN ONLY. Nothing in the code was changed when this was written. Every `file:line`
-below is the code as of commit `96565e4` on `claude/girl-game-world-building-gp6bnl`.
+Status: BUILT (wave 3). The plan below was written before the code changed: every `file:line`
+is the code as of commit `96565e4` on `claude/girl-game-world-building-gp6bnl`. What was built,
+and where it differs from the plan, is in "As built" at the end.
 
 ---
 
@@ -919,3 +920,81 @@ Settled before building, together with docs/teams/wave3-critique.md (apply every
 7. **The style setting** is named `surpriseStyle`, kept device-local (not in the cloud profile, not sent to the server), so no gender-like field enters children's data.
 8. **Files you own / must not touch:** follow the critique's SHARED list. Boys owns avatar.js, wardrobe-data.js, codec.js, dressup*, menus.js, storage.js, friends/*, the MESSAGES block in protocol.js, the codec look test in test-net.mjs, site/index.html (including ONE sentence about drivable cars, vans and boats in the feature list). Boys adds only `lk: f.lk` (one line) in remote-players.js list() and only the string at pets.js:64. Never edit game.js, player.js, entities.js, hud.js, touch.js, host.js, adapter.js.
 9. **Never push; never commit dist/*.** Commit source, docs and tests to your worktree branch often (end each commit message with the two attribution lines the integrator gives you). The integrator merges, rebuilds dist and runs the full gate once.
+
+---
+
+## As built (wave 3, boys builder)
+
+Everything in sections 3 to 11 is built, with the integrator decisions above applied. Where the
+build differs from the plan text, the build is right and the plan text is old:
+
+- **Style setting.** `surpriseStyle` ('girl' | 'boy' | 'mix', or unset) is kept per player on
+  this device only: `SaveStore.deviceGet / deviceSet` (`src/core/storage.js`) store it in
+  localStorage under the store's own prefix (`sparkle-world@p-<uuid>:device:surpriseStyle` for
+  a family player), or in memory when storage is blocked. It is never in the profile, a backup
+  file or the cloud copy; `SaveStore.wipe('')` removes it with the old saves. The Studio reads
+  it through `game.surpriseStyle()`. There is no `profile.lookStyle`. `profile.lookPicked`
+  (the title nudge is done) is in the profile and in backups (either side true wins).
+- **Unset name (decision 3).** `nameUnset(profile)` in `wardrobe-data.js`. With the Boy style
+  and the name never typed, the title says "Hi, friend!", friends' `{name}` lines say
+  "friend", and New World suggestions say "My Rainbow Meadow" instead of "Lily's ...". After
+  the first boy ready-made look (name unset) the Studio shows a "What's your name? Type it
+  here!" bubble under the name field once per device (`deviceGet('nameAsked')`), for 7 s; it
+  never blocks.
+- **Tile order.** Girl and Mix keep the list order (Girl is exactly the old order, new items at
+  the end). Boy puts boy-only items first, then shared ones ('gb', e.g. Curly, T-Shirt), then
+  the rest; 'none' always stays first. So with Boy the Hair tab starts with Buzz Cut.
+- **Auto style.** The first ready-made look picked while the style is unset sets it (boy look
+  -> Boy, girl look -> Girl). The Outfits tab keeps its order until the next visit, so tiles
+  do not jump under the finger.
+- **Actions row.** Surprise me!, the style button (picture + word) and Undo stay in one row
+  from desktop down to a 360 px phone (the word hides at 480 px and below).
+- **Codec length.** The plan's "151" missed one character: the tail is `.1.2r` (two dots, one
+  brows character, two number characters), so the worst case is 147 + 5 = **152** (test-net
+  allows 160, presence 200). An old token has 34 tokens (not 50).
+- **Jersey + medal.** The front number sits lower (centre y 0.845, 0.025 per pixel) and the
+  medal hangs on a short ribbon above it, so Soccer Star shows both.
+- **Toys in hand** (soccer ball, toy car, toy dino) use the ice cream's arm pose (`HOLD_UP` in
+  `avatar.js`; the only other changes there are the face texture key and the header).
+- **Bucket hat** is a soft square crown on a 4-sided sloping brim (a round crown let the
+  hair's box corners poke through). Caps are rounded boxes with a two-step brim. Under a cap,
+  bucket hat or beanie (`P.hatFlat`) the short curls drop their crown ring and fringe, the faux
+  hawk drops its ridge, the afro keeps only its two lower rings and spiky shows three short
+  front spikes, so nothing pokes through the hat (`.shots/boys-hats.png`).
+- **Costs measured** (B8, SwiftShader): boy starters 21 to 25 meshes (Princess 30); setLook
+  about 6 ms for boy looks vs 7 ms for girl looks; no geometry growth over 60 boy looks after
+  a warm-up round. Three boys + three girls draw fewer calls than six girls (142 vs 152).
+- **Friends.** `FRIENDS` gains the six boys at the end; `ROSTER_ORDER` / `rosterFriends()` give
+  the invite panel's order; `BAG_FRIEND = 'lilyrose'` pins the Bag picture; `pronouns(def)`,
+  `outfitsFor(def)`, `nextHair(look, kind)`, `surpriseLook(look, kind)`; `LINES_BOY` (style,
+  hair) and `HAIR_PRAISE` in `chat.js`; jersey and tee compliments use `{num}`. Lily-Rose keeps
+  "Every girl is a princess!". `debug.friends.roster()` also has `pronoun` and `kind`, and
+  `debug.friends.order()` gives the invite order.
+- **Ghost tap on the invite cards.** With 16 cards the My Friends panel fills the spot where
+  the "Invite a Friend" ground tap lands, so on an iPad that same tap's click picked the card
+  under the finger (Theo) without the child choosing. The invite cards now ignore a click in
+  the first 700 ms after they are drawn unless it was pressed on that card (the Bag's colour
+  step uses the same rule). probe-pals' touch pass caught it.
+- **Not changed (decision 1):** `server/notice.mjs`, the mail templates, `site/privacy.html`
+  and `site/terms.html` still say "her"; they wait for the dad-approved legal pass. The site
+  screenshots were not retaken, so their alt texts stay true.
+- **Site sentence.** `site/index.html` line 112 now ends "Then she asked for boys to play
+  with, and for cars, vans and boats to drive, so they are inside too." (one deploy ships both
+  teams; if vehicles does not ship, drop the vehicles part).
+
+### Tests
+
+- `tools/probe-boys.mjs` (`npm run probe:boys`), flags `--only=unit|studio|touch|world|friends|grids`:
+  A1-A9 in Node (goldens recorded from the code before any change), B1-B6 on desktop and C on
+  an iPad with taps (plus a 390 px and a 360 px phone for the actions row), B7 grids
+  (`.shots/boys-*.png`: hair, hats on every short style, clothes, accessories, starters,
+  friends, surprises), B8 costs, B9 portraits, B10 photo, B11 an old save, D1-D7 friends on
+  desktop (D3 and D7 on touch too).
+- `tools/fixtures/boys-old-profile.json`: a real profile saved by the build before boys
+  (`dist` at `cfb5e7c`, the same game code as `96565e4`), loaded by B11.
+- `tools/test-net.mjs`: brows in the round-trip lists, Boy and Mix looks, numbers 0 / 7 / 35 /
+  36 / 99, an old 34-token string, a broken number token, `packLook` without a top.
+- `tools/probe-multiplayer.mjs`: new test `LOOKS` after `HELD`; the pet and "went home"
+  messages follow the new words.
+- `tools/probe-pals.mjs`: waits for 16 invite pictures; the six-friends scene includes Leo.
+- `tools/site-shots.mjs`: sets `lookPicked` so the marketing title shot has no nudge badge.

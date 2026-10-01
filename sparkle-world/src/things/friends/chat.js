@@ -1,8 +1,9 @@
-// What friends say: short, kind lines that react to what is around (her outfit, pets, the
+// What friends say: short, kind lines that react to what is around (your outfit, pets, the
 // time of day, the weather, food, the world type, furniture nearby) plus each friend's own
 // lines. pickLine(game, friend, kind) never repeats one of the friend's last few lines.
+// Boy friends say LINES_BOY instead for being dressed up and for new hair.
 
-import { HAIR_STYLES } from '../../player/wardrobe-data.js';
+import { HAIR_STYLES, nameUnset } from '../../player/wardrobe-data.js';
 
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 
@@ -98,6 +99,7 @@ export const LINES = {
       cat_ears: 'Meow! Cute cat ears!', bunny_ears: 'Bunny ears! Hop hop!', unicorn_horn: 'A unicorn horn! So magical!',
       sun_hat: 'Cute sun hat!', beanie: 'Your beanie looks so cozy!', witch_hat: 'Your sparkly hat is so cool!',
       halo: 'Your halo is shining!', bow: 'I love your bow!', headband: 'Cute headband!',
+      cap: 'Cool cap!', cap_back: 'Backwards cap! So cool!', bucket_hat: 'Nice bucket hat!', headphones: 'What song are you listening to?',
     },
     face: {
       glasses: 'Your glasses look so smart!', sunglasses: 'Cool sunglasses!', heart_glasses: 'Heart glasses! I love them!',
@@ -105,27 +107,56 @@ export const LINES = {
     },
     back: {
       fairy_wings: 'Your wings are so sparkly!', butterfly_wings: 'Butterfly wings! So pretty!', angel_wings: 'You look like an angel!',
-      cape: 'Cool cape, superhero!', backpack: 'Cute backpack!',
+      cape: 'Cool cape, superhero!', backpack: 'Cute backpack!', star_pack: 'Cool star backpack!',
     },
-    neck: { pearls: 'Your pearls are so fancy!', scarf: 'Cozy scarf!', necklace: 'Pretty necklace!', bowtie: 'A bow tie! So cute!' },
+    neck: {
+      pearls: 'Your pearls are so fancy!', scarf: 'Cozy scarf!', necklace: 'Pretty necklace!', bowtie: 'A bow tie! So cute!',
+      necktie: 'A tie! So fancy!', medal: 'A gold medal! You\'re a champion!',
+    },
     hand: {
       wand: 'Can your wand do magic?', balloon: 'I love your balloon!', teddy: 'Your teddy is so cuddly!',
       ice_cream: 'Mmm, your ice cream looks yummy!', purse: 'Cute purse!',
+      soccer_ball: 'Let\'s play soccer!', toy_car: 'Vroom vroom! Cool car!', dino_toy: 'Rawr! I love your dino!',
     },
     dress: {
       ballgown: 'Your ball gown is beautiful!', mermaid: 'You look like a real mermaid!', princess: 'You look like a princess!',
       party: 'Party dress! Let\'s party!', sundress: 'Cute sundress!', overall_dress: 'I love your overall dress!',
     },
-    shoes: { roller_skates: 'Roller skates! Let\'s skate together!', sparkle: 'Your sparkly shoes are so shiny!', rainboots: 'Cute rain boots!' },
+    shoes: {
+      roller_skates: 'Roller skates! Let\'s skate together!', sparkle: 'Your sparkly shoes are so shiny!', rainboots: 'Cute rain boots!',
+      high_tops: 'Cool high-tops!', skate_shoes: 'Nice skate shoes!',
+    },
+    // tops (only said when there is no dress)
+    top: {
+      jersey: 'Number {num}! Go team!', tee_dino: 'Dinosaurs are the best!', tee_rocket: 'To the moon! Cool rocket!',
+      tee_bolt: 'Lightning fast!',
+    },
   },
 };
 
+/** A boy friend's words for being dressed up and for new hair (the rest is shared). */
+export const LINES_BOY = {
+  style: ['I love it! Thank you!', 'I look so cool!', 'Do I look awesome?', 'This is my new favorite!', 'So stylish!'],
+  hair: ['New hair! I love it!', 'Ooh, so cool!', 'My hair looks awesome!'],
+};
+
 const HAIR_NAMES = Object.fromEntries(HAIR_STYLES.map((h) => [h.key, h.name.toLowerCase()]));
+// the short styles get their own compliment ("Your buzz cut hair is so pretty!" reads oddly)
+const HAIR_PRAISE = {
+  buzz: 'Cool buzz cut!', spiky: 'Your spiky hair is awesome!', side_part: 'Your hair looks so sharp!',
+  shaggy: 'Your shaggy hair is so fun!', short_curly: 'I love your curls!', fauxhawk: 'Whoa, a faux hawk! So cool!',
+  afro: 'Your afro is awesome!',
+};
 
 function fill(line, game, friend, extra = {}) {
-  const look = game.profile && game.profile.look;
-  const name = (look && look.name) || game.profile.playerName || 'friend';
-  return line.replace(/\{name\}/g, name).replace(/\{friend\}/g, friend ? friend.name : '').replace(/\{pet\}/g, extra.pet || 'your pet');
+  const p = game.profile;
+  const look = p && p.look;
+  // a Boy surprise style with the name never typed: "friend", not the default name
+  const unset = !!game.surpriseStyle && game.surpriseStyle() === 'boy' && nameUnset(p);
+  const name = unset ? 'friend' : (look && look.name) || (p && p.playerName) || 'friend';
+  const num = look && look.top && Number.isInteger(look.top.num) ? look.top.num : 7;
+  return line.replace(/\{name\}/g, name).replace(/\{friend\}/g, friend ? friend.name : '')
+    .replace(/\{pet\}/g, extra.pet || 'your pet').replace(/\{num\}/g, String(num));
 }
 
 /** Compliments about her outfit (a list, maybe empty). */
@@ -140,11 +171,13 @@ function outfitLines(game) {
   if (O.neck[a.neck]) out.push(O.neck[a.neck]);
   if (O.hand[a.hand]) out.push(O.hand[a.hand]);
   if (look.dress && O.dress[look.dress.type]) out.push(O.dress[look.dress.type]);
+  else if (look.top && O.top[look.top.type]) out.push(O.top[look.top.type]);
   if (look.shoes && O.shoes[look.shoes.type]) out.push(O.shoes[look.shoes.type]);
   if (look.hair) {
     if (look.hair.color2 === 'rainbow') out.push('Rainbow hair! Wow!');
     const hn = HAIR_NAMES[look.hair.style];
-    if (hn) out.push(`Your ${hn} hair is so pretty!`);
+    if (HAIR_PRAISE[look.hair.style]) out.push(HAIR_PRAISE[look.hair.style]);
+    else if (hn) out.push(`Your ${hn} hair is so pretty!`);
   }
   if (look.top && look.top.pattern === 'hearts' && !look.dress) out.push('I love the hearts on your top!');
   return out;
@@ -205,6 +238,8 @@ export function pickLine(game, friend, kind = 'chat', extra = {}) {
     pool = ctx.length && Math.random() < 0.75 ? ctx : [...ctx, ...LINES.general];
   } else if (kind.startsWith('event:')) {
     pool = LINES.events[kind.slice(6)] || LINES.general;
+  } else if (friend && friend.def && friend.def.kind === 'boy' && LINES_BOY[kind]) {
+    pool = LINES_BOY[kind];
   } else {
     pool = LINES[kind] || LINES.general;
   }

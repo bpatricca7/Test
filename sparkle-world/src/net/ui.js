@@ -980,7 +980,7 @@ export function installNetUI(game, net, remote) {
     const dot = ui.el('span', 'sw-net-dot');
     nameLine.append(dot, ui.el('span', 'sw-net-who-text', name + (pl.you ? ' (you)' : '')));
     if (pl.guest) nameLine.appendChild(ui.el('span', 'sw-net-badge', 'visitor'));
-    let sub = pl.host ? "It's her world" : 'Visiting';
+    let sub = pl.host ? `It's ${name}'s world` : 'Visiting';
     if (pl.host && pl.you) sub = "It's your world";
     if (!pl.you && pl.away) sub = pl.host ? 'Taking a little break' : 'Coming back…';
     else if (!pl.you && !pl.host && (!Array.isArray(st.p) || (st.rx && typeof st.rx === 'object'))) sub = 'Flying here…';
@@ -1006,7 +1006,7 @@ export function installNetUI(game, net, remote) {
         button2(ui, {
           icon: 'home', label: 'Send home', variant: 'white', className: 'sw-net-kick',
           onClick: async () => {
-            const ok = await ui.confirm({ title: `Send ${name} home?`, text: `${name} goes back to her own world and can't come back in this game.`, yes: 'Yes, send home', no: 'No', icon: 'home' });
+            const ok = await ui.confirm({ title: `Send ${name} home?`, text: `${name} goes back home and can't come back in this game.`, yes: 'Yes, send home', no: 'No', icon: 'home' });
             if (!ok) return;
             remote.hush(pl.peer); // one goodbye (this one), not a second when her avatar leaves
             S.kick(pl.peer);
@@ -1260,7 +1260,7 @@ export function installNetUI(game, net, remote) {
     // her card was up a long time and nobody answered: tell the host kindly
     if (net.isHost && waited >= KNOCK_MISSED_MS) {
       const who = sanitizeName(name || '', 'A friend');
-      game.toast(`${who} knocked while you were busy. She can knock again!`, { icon: 'knock', duration: 6000 });
+      game.toast(`${who} knocked while you were busy. They can knock again!`, { icon: 'knock', duration: 6000 });
     }
   });
 
@@ -1343,7 +1343,7 @@ export function installNetUI(game, net, remote) {
       clearLastJoin();
       const who = sanitizeName(lastAction.chip, '') || 'Your friend';
       if (ui.isOpen('mp-join')) showKeypad();
-      showCard({ text: `${cap(who)} isn't playing right now. Ask her for a new code!`, icon: 'home', color: 'var(--sw-sun)', code: 'no_host_chip' });
+      showCard({ text: `${cap(who)} isn't playing right now. Ask for a new code!`, icon: 'home', color: 'var(--sw-sun)', code: 'no_host_chip' });
       return;
     }
     // wrong pictures: the "oops" right on the keypad, her pictures still there to fix

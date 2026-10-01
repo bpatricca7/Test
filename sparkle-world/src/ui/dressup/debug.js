@@ -2,11 +2,16 @@
 // shared stage into one labelled grid image.
 
 import { getStage, FRAMES } from './stage.js';
+import * as W from '../../player/wardrobe-data.js';
 import { normalizeLook, randomLook, applyOutfit, STARTER_OUTFITS, HAIR_STYLES } from '../../player/wardrobe-data.js';
 import { mulberry32 } from '../../core/util.js';
 import { cacheStats } from '../../player/avatar/textures.js';
 
 let uid = 0;
+const OPTION_LISTS = [
+  'HAIR_STYLES', 'HAIR_MIXES', 'TOPS', 'BOTTOMS', 'DRESSES', 'SHOES', 'HEAD_ACC', 'FACE_ACC', 'BACK_ACC', 'NECK_ACC',
+  'HAND_ACC', 'PATTERNS', 'SMILES', 'BROWS',
+];
 
 /**
  * items: [{ look, label, frame?, pose? }] -> Promise<dataURL> of a grid (cols x rows).
@@ -45,9 +50,11 @@ export function installDebug(game) {
   game.debug.avatar = {
     renderGrid,
     frames: Object.keys(FRAMES),
-    starters: () => STARTER_OUTFITS.map((o) => ({ key: o.key, name: o.name, look: applyOutfit(game.profile.look, o) })),
-    random: (seed, base = null) => randomLook(mulberry32(seed), 'Lily', base ? normalizeLook(base) : null),
+    starters: () => STARTER_OUTFITS.map((o) => ({ key: o.key, name: o.name, tag: o.tag, look: applyOutfit(game.profile.look, o) })),
+    random: (seed, base = null, style = 'girl') => randomLook(mulberry32(seed), 'Lily', base ? normalizeLook(base) : null, style),
     hairStyles: () => HAIR_STYLES.map((h) => h.key),
+    // every option list's keys and surprise tags (probes check the lists stay append-only)
+    options: () => Object.fromEntries(OPTION_LISTS.map((k) => [k, W[k].map((o) => ({ key: o.key, tag: o.tag }))])),
     textures: cacheStats,
     look: () => normalizeLook(game.profile.look),
     stage: () => getStage(), // snapshot queue + stats for probes

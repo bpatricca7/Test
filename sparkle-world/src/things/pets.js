@@ -61,7 +61,7 @@ class PetSystem {
     const net = this.game.net;
     if (!this.remote || (net && net.remoteApplying)) return false;
     if (net && typeof net.refuse === 'function') net.refuse('pet');
-    else this.game.toast("That's your friend's pet! Ask her to help.", { icon: 'heart' });
+    else this.game.toast("That's your friend's pet! Ask your friend to help.", { icon: 'heart' });
     return true;
   }
 

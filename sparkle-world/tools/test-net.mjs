@@ -131,6 +131,7 @@ async function unitTests() {
       'top.type': wardrobe.TOPS, 'top.pattern': wardrobe.PATTERNS, 'bottom.type': wardrobe.BOTTOMS, 'bottom.pattern': wardrobe.PATTERNS,
       'dress.type': wardrobe.DRESSES, 'dress.pattern': wardrobe.PATTERNS, 'shoes.type': wardrobe.SHOES,
       'acc.head': wardrobe.HEAD_ACC, 'acc.face': wardrobe.FACE_ACC, 'acc.back': wardrobe.BACK_ACC, 'acc.neck': wardrobe.NECK_ACC, 'acc.hand': wardrobe.HAND_ACC,
+      'face.brows': wardrobe.BROWS,
     };
     let n = 0;
     const check = (look) => {
@@ -151,10 +152,30 @@ async function unitTests() {
       }
     }
     for (let k = 0; k < 200; k++) check(wardrobe.randomLook(rand, 'Zoe'));
+    for (let k = 0; k < 200; k++) check(wardrobe.randomLook(rand, 'Zoe', null, 'boy'));
+    for (let k = 0; k < 200; k++) check(wardrobe.randomLook(rand, 'Zoe', null, 'mix'));
     const l2 = wardrobe.normalizeLook({ hair: { style: 'bob', color: '#123456', color2: 'rainbow' }, acc: { faceColor: '#ABCDEF', handColor: '#00FF00' } });
     check(l2);
     const l3 = wardrobe.normalizeLook({ hair: { color2: '#FEDCBA' } });
     check(l3);
+    // Jersey numbers (base 36: 35 is one character, 36 two).
+    for (const num of [0, 7, 35, 36, 99]) {
+      const l = wardrobe.normalizeLook({ name: 'Leo', top: { type: 'jersey', num } });
+      check(l);
+      eq(codec.unpackLook(codec.packLook(l), 'Leo').top.num, num, 'jersey number ' + num);
+    }
+    // An old 34-token string (before the brows / number tail) still unpacks, with the defaults.
+    const old = codec.packLook(wardrobe.normalizeLook({ name: 'Mia', face: { brows: 'bold' }, top: { num: 42 } }));
+    const oldToks = old.split('.');
+    eq(oldToks.length, 36, 'token count');
+    const back = codec.unpackLook(oldToks.slice(0, 34).join('.'), 'Mia');
+    eq(back.face.brows, 'soft', 'old string: soft brows');
+    eq(back.top.num, 7, 'old string: number 7');
+    eq(codec.unpackLook(old, 'Mia').top.num, 42, 'new string: number 42');
+    // A broken number token falls back instead of reaching the avatar.
+    eq(codec.unpackLook(oldToks.slice(0, 35).concat('zz').join('.'), 'Mia').top.num, 7, 'number 1295 rejected');
+    // packLook never throws on a look missing its top (adapter.js would swallow it into lk = '').
+    assert(codec.packLook({ name: 'Mia', top: null }).endsWith('.0.7'), 'packLook without a top');
     eq(codec.unpackLook('garbage.tokens', 'X').hair.style, 'long', 'defaults for garbage');
     return `${n} looks`;
   });

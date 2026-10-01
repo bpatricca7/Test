@@ -14,6 +14,7 @@
     "test:net": "node tools/test-net.mjs",
     "test:walkie": "node tools/test-walkie.mjs",
     "probe:mp": "node tools/build.mjs && node tools/probe-multiplayer.mjs",
+    "probe:boys": "node tools/build.mjs && node tools/probe-boys.mjs",
     "probe:railway": "node tools/probe-railway.mjs",
     "test:accounts": "node --test tools/test-accounts.mjs",
     "test:billing": "node --test tools/test-billing.mjs",

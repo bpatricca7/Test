@@ -566,7 +566,7 @@ export class WalkieUI {
         b.querySelector('.sw-wk-art').outerHTML = walkieSvg({ off: v });
       });
       box.appendChild(b);
-      box.appendChild(ui.el('div', 'sw-wk-note', 'Mute next to a friend turns her walkie off for everyone.'));
+      box.appendChild(ui.el('div', 'sw-wk-note', "Mute next to a friend turns that friend's walkie off for everyone."));
       col.appendChild(box);
     } else if (wk.hostWm().all) {
       col.appendChild(ui.el('div', 'sw-wk-note', `${wk.hostName()} turned the walkie-talkies off for now.`));
