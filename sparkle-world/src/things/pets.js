@@ -55,7 +55,7 @@ class PetSystem {
 
   /**
    * On a friend's page (remote): the host's pets only do what the host asks. Shows
-   * "That's Lily's pet! Ask Lily to help." and returns true when the action must stop.
+   * "That's Lily's pet! Ask her to help." and returns true when the action must stop.
    */
   _refused() {
     const net = this.game.net;

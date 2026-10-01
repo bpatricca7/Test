@@ -80,6 +80,9 @@ name-tag color and voice pitch: **Mia** (Rock Star), **Zoe** (Sporty), **Ava** (
 **Lily-Rose** (Princess), **Maya** (Skater, roller skates), **Chloe** (Artist), **Nia**
 (Dancer), **Emma** (Beach Day), **Sofia** (Snow Queen), **Aria** (Mermaid). Skin tones from
 light to deep, twelve different hair styles and colors. Built with `game.createAvatar(look)`.
+Wave 3 added six boys after them (Leo, Max, Kai, Sam, Ezra, Theo) with `pronoun` / `kind` on
+every def, boy outfits, hair and lines, and an invite order that takes turns; see
+`docs/teams/boys.md`.
 
 - **Inviting**: Bag -> Fun & Toys -> **Invite a Friend** (`friend:invite`, first in the tab),
   Build-tap the ground -> panel **`friends`** (`ui.open('friends', { spot })`) -> tap a friend

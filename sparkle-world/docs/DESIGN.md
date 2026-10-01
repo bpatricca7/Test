@@ -67,10 +67,19 @@ this doc disagree, fix one of them in the same change.
    color (≥ 88 px buttons), the current slot's color marked.
 6. **Dress-Up Studio** — full-screen: big 3D avatar on a turntable (drag to spin) with sparkly
    backdrop; category tabs (Skin, Hair, Eyes & Face, Tops, Bottoms, Dresses, Shoes, Hats &
-   Ears, Glasses, Wings & Backpacks, Necklaces, Hand); each item a thumbnail; color swatches;
-   pattern picker (plain, hearts, stars, stripes, dots, rainbow, flowers). "Surprise me!"
-   randomizer, 6 saved **Outfit** slots, name field. Opened from title, HUD, or a wardrobe/mirror
-   in the world.
+   Ears, Glasses, Wings & Backpacks, Neck, Hand); each item a thumbnail; color swatches;
+   pattern picker (plain, hearts, stars, stripes, dots, rainbow, flowers, plaid, checks,
+   lightning, dinos, rockets). "Surprise me!" randomizer with a **Girl / Boy / Mix** style
+   button next to it (one button that cycles; kept on this device only, never in the profile
+   or the cloud; unset = Girl, exactly the original surprise), 12 ready-made looks (6 girl, 6
+   boy), 6 saved **Outfit** slots, name field. Boy items: 7 short hair styles, polo, jersey
+   (with a "My number" stepper, 0 to 99), button-up and three picture tees, cargo shorts,
+   joggers, pants, high-tops, skate shoes, caps, a bucket hat, headphones, a star backpack, a
+   tie, a medal, three toys, and Soft / Bold eyebrows. Every item is free for anyone; the
+   style only changes the surprise and which tiles come first. Opened from title, HUD, or a
+   wardrobe/mirror in the world. While a look was never changed, the title's Dress Up tile
+   wiggles and opens on the ready-made looks (`profile.lookPicked` turns it off after one
+   visit). See `docs/teams/boys.md`.
 7. **Sticker Book** — pages of stickers earned for milestones; locked ones show a hint.
 
 ### Things you can do in the world
@@ -444,8 +453,9 @@ lists as `[{ key, name }]` plus `normalizeLook(look)` and `randomLook(rand, name
   skin: '#F6D2B8',
   hair:  { style: 'long', color: '#7A4A2A', color2: null },
   eyes:  { color: '#5A3A28', lashes: true },
-  face:  { blush: true, freckles: false, smile: 'happy' },
-  top:    { type: 'tshirt', color: '#FF8CC6', pattern: 'hearts', patternColor: '#FFFFFF' },
+  face:  { blush: true, freckles: false, smile: 'happy', brows: 'soft' },   // brows: 'soft' | 'bold'
+  top:    { type: 'tshirt', color: '#FF8CC6', pattern: 'hearts', patternColor: '#FFFFFF',
+            num: 7 },      // jersey number 0..99 (drawn on a jersey only; top only)
   bottom: { type: 'skirt',  color: '#8E7CFF', pattern: 'none', patternColor: '#FFFFFF' },
   dress:  null,            // or { type, color, pattern, patternColor } — replaces top+bottom
   shoes:  { type: 'sneakers', color: '#FFFFFF' },
@@ -462,6 +472,19 @@ bunny_ears, unicorn_horn, beanie, sun_hat, headband, witch_hat(sparkly, friendly
 Face: none, glasses, sunglasses, heart_glasses, star_glasses. Back: none, fairy_wings,
 butterfly_wings, angel_wings, backpack, cape, mermaid_tail? (no). Neck: none, necklace,
 pearls, scarf, bowtie. Hand: none, wand, purse, balloon, teddy, ice_cream.
+Appended for boys (wave 3, `docs/teams/boys.md`): hair buzz, spiky, side_part, shaggy,
+short_curly, fauxhawk, afro; tops polo, jersey, button_up, tee_dino, tee_rocket, tee_bolt;
+bottoms cargo_shorts, joggers, pants; shoes high_tops, skate_shoes; head cap, cap_back,
+bucket_hat, headphones; back star_pack; neck necktie, medal; hand soccer_ball, toy_car,
+dino_toy; patterns plaid, checks, bolts, dinos, rockets; `BROWS` soft, bold.
+**Option lists are append only** (the look codec sends indices; old saves keep their
+meaning). Each option has a `tag` ('g', 'b' or 'gb') that only picks what the Girl / Boy
+surprise uses; `tagged(list, letter)` filters (falling back to the whole list).
+`randomLook(rand, name, base, style = 'girl')`: 'girl' is the original surprise (same
+rand() calls), 'boy' a boy surprise, 'mix' either. All new geometry is drawn with existing
+materials on existing bones (no extra draw calls; a held toy is the usual `handItem` mesh),
+and boy hair has no swinging chains. Short styles read `P.hatFlat` (a cap, bucket hat or
+beanie) to stay under the hat; caps and headphones read `P.hairPuff`.
 
 ### Entities & furniture (src/things/entities.js, furniture.js, furniture-models.js)
 ```js
@@ -875,6 +898,11 @@ trailers you can camp in and do things on the inside, like a dream camper or a h
 6. **Cool girls (friends)** — NPC friends who live in the world: stylish girls with names and cool outfits
    (built with `createAvatar` + curated looks), wander, wave, chat in speech bubbles, dance with you, follow you
    when invited, sit on sofas, sleep in beds at night, can be dressed up too. "Invite a friend" from the Bag.
+   As built in wave 3: friends are **ten girls and six boys** (Leo, Max, Kai, Sam, Ezra, Theo, appended at the
+   end of `FRIENDS`; the invite panel takes turns via `ROSTER_ORDER`; still at most 6 per world). Each friend
+   def has `pronoun` ('she' | 'he') and `kind` ('girl' | 'boy'): the game says "Tap him to play!", boys get boy
+   outfits, hair and surprises. Text about **real players** never says "her" or "she": the name, "they" or
+   "your child" (`docs/teams/boys.md`).
 7. **Big campers & camping** — Magic Builds: **Sparkle Camper** (big pink camper with bunk beds, kitchenette,
    sofa, bathroom, rooftop deck with slide and a pop-out pool), **Retro Mini Trailer**, **Camper Van**. Camping
    furniture: tent (sleep in it), campfire (roast marshmallows / s'mores), camping chairs, hammock, string lights,

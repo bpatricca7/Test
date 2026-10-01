@@ -46,6 +46,11 @@ RAINBOW`), `randomLook(rand, name, base?)` (color-story themes; with `base` keep
 eyes and face), `STARTER_OUTFITS` (Princess, Sporty, Beach Day, Fairy, Cozy Winter, Rock Star)
 + `applyOutfit(look, outfit)`, `cloneLook`, `lookSignature`. `game.lookSignature` too.
 
+Wave 3 (boy looks, see `docs/teams/boys.md`): the lists grew (append only) with boy hair,
+tops, bottoms, shoes, hats, a star backpack, tie, medal, toys and patterns; options carry a
+surprise `tag`; new look keys `face.brows` and `top.num`; `randomLook(rand, name, base, style)`
+with 'girl' | 'boy' | 'mix'; six boy starters appended (`tag: 'b'`, may set lashes / brows).
+
 ## Dress-Up Studio
 
 - Panel `'dressup'` (fullscreen) + action `'dressup'`. `game.runAction('dressup')` from the HUD,

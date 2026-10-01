@@ -523,7 +523,8 @@ Typical sizes and rates:
 
 ### 5.13 Look codec
 
-`packLook(look)` makes a dot-separated token string (about 130 characters) in this fixed order:
+`packLook(look)` makes a dot-separated token string (about 130 characters, at most 152) in this
+fixed order:
 1. `skin`
 2. `hair.style`, `hair.color`, `hair.color2` (`-`, `r` = rainbow, or hex), `hair.mix`
 3. `eyes.color`, `eyes.lashes`
@@ -534,11 +535,22 @@ Typical sizes and rates:
 8. `shoes.type`, `shoes.color`
 9. `acc.head`, `headColor`, `face`, `faceColor|-`, `back`, `backColor`, `neck`, `neckColor`,
    `hand`, `handColor|-`
+10. `face.brows` (index into `BROWS`: 0 soft, 1 bold) — added with the boy looks
+11. `top.num`, the jersey number 0..99 in base 36 (`0`..`2r`) — added with the boy looks
 
 Options are indices in base36 into the exported lists in `wardrobe-data.js` (`HAIR_STYLES`,
-`HAIR_MIXES`, `SMILES`, `TOPS`, `PATTERNS`, `BOTTOMS`, `DRESSES`, `SHOES`, `*_ACC`). This is
-safe because `pv` must match. Colors are 6 hex digits without `#`, and booleans are 0/1. The
-name is not included (`nm`). `unpackLook` always ends with `normalizeLook()`.
+`HAIR_MIXES`, `SMILES`, `TOPS`, `PATTERNS`, `BOTTOMS`, `DRESSES`, `SHOES`, `*_ACC`, `BROWS`).
+This is safe because `pv` must match. Colors are 6 hex digits without `#`, and booleans are
+0/1. The name is not included (`nm`). `unpackLook` always ends with `normalizeLook()`.
+
+**Append only.** The option lists only ever grow at the end (no entry moves), and new tokens
+only ever go at the end of the string. So an older 34-token string (before items 10 and 11)
+is a prefix and still unpacks: the missing tokens read as `-`, and `normalizeLook` fills soft
+brows and number 7. A number token outside 0..99 is dropped the same way. Every list stays
+under 36 entries, so each option token stays one character. The worst case (every optional
+color set, a dress, number 99) is 152 characters: under the test's 160 (`tools/test-net.mjs`)
+and the presence cap of 200. NPC friends need nothing new on the wire: their records carry the
+whole look JSON, and each page knows a friend's pronoun from `friendDef(key)`.
 
 ---
 

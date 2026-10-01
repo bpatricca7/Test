@@ -21,6 +21,7 @@ import { launch, attachErrorCollectors, waitForTitle, settle, finish, PAGE_URL, 
 import { NetHub } from './net/hub.mjs';
 import { FakeClaudeHub } from './net/fake-claude.js';
 import * as flows from './net/mp-flows.mjs';
+import * as codec from '../src/net/codec.js';
 
 const { sleep, game, until, press, tapWorld, setupPage, trace, waitLive, bringTo, closePanels, VIEW } = flows;
 
@@ -521,6 +522,44 @@ test('HELD', 'a treat in Rosie’s hand shows in her avatar’s hand on Lily’s
   check(gone, 'Rosie put her sundae away: her hand is empty on Lily’s page');
   const goneL = await until(rosie, () => { const r = window.__game.debug.net.remote().find((x) => x.name === 'Lily'); return r && !r.held && !r.inHand; }, null, 8000);
   check(goneL, 'Lily put her lollipop away: her hand is empty on Rosie’s page');
+});
+
+test('LOOKS', 'boy looks travel: Rosie wears Space Explorer (number 23, bold brows); Lily invites Leo and Rosie sees him', async () => {
+  // Rosie changes her look the way the Studio does (profile + avatar:changed)
+  const mine = await game(rosie, () => {
+    const g = window.__game;
+    const o = g.debug.avatar.starters().find((s) => s.key === 'space').look;
+    g.profile.look = { ...o, top: { ...o.top, num: 23 }, face: { ...o.face, brows: 'bold' } };
+    g.saveProfile();
+    g.events.emit('avatar:changed', { look: g.profile.look });
+    return g.debug.avatar.look();
+  });
+  const want = codec.packLook(mine);
+  const t0 = Date.now();
+  const lk = await until(lily, (w) => {
+    const r = window.__game.debug.net.remote().find((x) => x.name === 'Rosie');
+    return r && r.lk === w ? r.lk : null;
+  }, want, 8000);
+  const dt = (Date.now() - t0) / 1000;
+  check(lk === want && dt < 5, `Lily gets Rosie's new look token within 5 s (${dt.toFixed(1)} s)`);
+  const theirs = codec.unpackLook(lk || '', 'Rosie');
+  check(theirs.hair.style === 'fauxhawk' && theirs.top.num === 23 && theirs.face.brows === 'bold', `Rosie's avatar on Lily's page: faux hawk, number 23, bold brows (${theirs.hair.style}, ${theirs.top.num}, ${theirs.face.brows})`);
+  // Lily's NPC friend Leo shows on Rosie's page with the same look; styling him is Lily's
+  const here = await game(lily, () => { const p = window.__game.player.position; return { x: p.x, y: p.y, z: p.z }; });
+  const leo = await game(lily, ({ x, y, z }) => window.__game.debug.friends.invite('leo', x - 3, y + 0.5, z + 3), here);
+  check(!!leo, 'Lily invited Leo');
+  await converge([lily, rosie], 'LOOKS Leo');
+  const lilyLeo = await game(lily, (id) => JSON.stringify(window.__game.friends.byId(id).look), leo);
+  const rosieLeo = await until(rosie, (id) => { const f = window.__game.friends.byId(id); return f ? JSON.stringify(f.look) : null; }, leo, 15000);
+  check(rosieLeo === lilyLeo, 'Rosie sees Leo with the same look as on Lily’s page');
+  const t = await game(rosie, (id) => {
+    const g = window.__game;
+    const n = window.__toasts.length;
+    g.debug.friends.style(id, 'surprise');
+    return window.__toasts.slice(n);
+  }, leo);
+  check(t.some((x) => x === "That's Lily's friend! Ask Lily to help."), `dressing up Leo on Rosie's page is refused kindly (${JSON.stringify(t)})`);
+  await converge([lily, rosie], 'LOOKS end');
 });
 
 test('AT18', 'time and weather: Lily sets rain and night; Rosie sleeps in her bed; morning for both', async () => {
