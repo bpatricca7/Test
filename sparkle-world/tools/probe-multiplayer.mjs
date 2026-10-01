@@ -1050,7 +1050,7 @@ test('END', 'Lily: Save & Exit ends playing together kindly (June goes home; Lil
   await settle(lily.page, 700);
   await shot(lily, 'lily-summary');
   const gone = await until(june, () => window.__game.mode === 'title' && document.querySelector('.sw-net-msg[data-code="ended"]') !== null, null, 30000);
-  check(gone, 'June is on the title with "Lily went home. The world is saved at Lily's house!"');
+  check(gone, 'June is on the title with "Lily went home. The world is saved at Lily’s house!"');
   await settle(june.page, 700);
   await shot(june, 'june-host-ended');
   await press(lily, '.sw-net-msg .sw-net-msg-btn:has-text("Great")');
