@@ -293,7 +293,7 @@ version by itself (1–3 minutes). The old version keeps running until the new o
 
 | What you see | What to do |
 |---|---|
-| Build fails with `esbuild: not found` or `Cannot find module 'esbuild'` | In **Variables**, add `NPM_CONFIG_PRODUCTION` = `false`, then redeploy. |
+| Build fails with `esbuild: not found` or `Cannot find module 'esbuild'` | In **Variables**, add `NPM_CONFIG_INCLUDE` = `dev`, then redeploy. (With `NODE_ENV=production`, npm skips the build tools, such as esbuild, when it installs. The older advice `NPM_CONFIG_PRODUCTION=false` does nothing with npm 10.) |
 | Build fails right away with "no start command" or wrong files | Check **Root Directory** is exactly `sparkle-world` (step 3). |
 | Deployment fails at "Healthcheck" | Check the build command is `npm run build` (the game must be built before it starts). Look at the Deploy Logs for `dist/sparkle-world.html is missing`. |
 | The page opens but there is no **Play with Friends** button | Open `/api/net` on your address; it should show `{"ok":true,...}`. If it does, reload the game page. |
@@ -411,6 +411,8 @@ the same way (it approves new accounts before they can send).
 3. In the provider's settings: **open tracking off, click tracking off**, and the shortest message
    retention offered.
 4. **API Keys → Create** a key with "sending access" only. Copy it (you need it in step 14).
+5. Waiting for the domain to show "verified"? Resend's testing sender lets you try sign-in with
+   your own address meanwhile (the note under the table in step 14).
 
 ## Step 13. Stripe (in test mode first)
 
@@ -461,6 +463,7 @@ In **staging**, the game service → **Variables → Raw Editor**, paste and fil
 |---|---|
 | `SW_ACCOUNTS` | `required` on staging (see step 18 for production) |
 | `NODE_ENV` | `production` |
+| `NPM_CONFIG_INCLUDE` | `dev` (**required** with `NODE_ENV=production`: without it npm leaves out the build tools, and the build stops with `esbuild: not found`) |
 | `PUBLIC_ORIGIN` | `https://<the staging address>` (production: `https://<domain>`), nothing after it |
 | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (from step 11) |
 | `SW_SECRET` | a long random secret: run `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` and paste what it prints |
@@ -470,11 +473,17 @@ In **staging**, the game service → **Variables → Raw Editor**, paste and fil
 | `STRIPE_PORTAL_CONFIG` | `bpc_…` from step 13.2 |
 | `MAIL_MODE` | `resend` (or `postmark`) |
 | `MAIL_API_KEY` | the key from step 12 |
-| `MAIL_FROM` | `Sparkle World <hello@<domain>>` |
+| `MAIL_FROM` | `Sparkle World <hello@<domain>>` (see the note below the table while the domain is not verified yet) |
 | `SW_OPERATOR_NAME` | who runs Sparkle World (your name, or your small LLC) |
 | `SW_OPERATOR_EMAIL` | the email parents can write to |
 | `SW_OPERATOR_ADDRESS` | a mailing address (a PO box or an LLC's address keeps your home address private) |
 | `SW_OPERATOR_PHONE` | a phone number for parents |
+
+**Before the email domain is verified** (step 12 can take a while), Resend's testing sender works
+as a stopgap: `MAIL_FROM` = `Sparkle World <onboarding@resend.dev>`. Resend sends from it **only to
+the address you signed up to Resend with**, so only you can sign in that way (use that address,
+and list it in `SW_FREE_PASS` below). Switch `MAIL_FROM` to `Sparkle World <hello@<domain>>` as
+soon as the domain shows "verified", before anyone else signs up.
 
 The operator lines are printed on `/privacy`, `/terms` and in emails: the children's privacy law
 (COPPA) requires them. Railway passes the Variables to the build too, so the pages are built with
@@ -494,6 +503,32 @@ Click **Deploy**. In the Deploy Logs you should see a line like
 and then `Sparkle World server listening …`. If a variable is wrong, the new deployment stops with
 **one line** that names it (for example `SW_SECRET must be at least 32 random bytes`) and the old
 deployment keeps running: fix the variable and deploy again.
+
+### Free pass for your own family
+
+To use the Family Plan with your own family without paying (while you test, or for good), add
+one more variable with **your own** sign-in email:
+
+| Variable | Value |
+|---|---|
+| `SW_FREE_PASS` | `you@example.com` |
+
+Deploy. Then sign in on the Family page with that email (before or after this deploy, either
+works), read the notice and tick the box like every parent: your family has the plan through
+2099-12-31, and the friends and walkie switches can go on (your agreement is recorded as consent
+"by the operator", because you run Sparkle World). The Deploy Logs say only how many addresses
+are listed (`free passes: 1 listed, …`), never the addresses.
+
+- Several addresses (another grown-up of **your own** family): commas,
+  `you@example.com, partner@example.com`. An end date: `you@example.com:2027-06-30` (the pass runs
+  through that day). At most 20.
+- To end it, take the address off the list (or remove the variable) and deploy: that pass ends at
+  the start, like a plan that ends (the Family page then offers the plan; worlds are kept 90 days).
+  Passes given with the admin command (step 16) are never changed by this list.
+- Only for your own family: for anyone else, use the admin command and a signed consent form
+  (step 16).
+- A typo stops the deploy with one line such as `SW_FREE_PASS entry 2 must be an email address`
+  (the old deployment keeps running): fix it and deploy again.
 
 ## Step 15. The legal part
 
@@ -517,7 +552,7 @@ The admin commands run inside the service:
    the `sparkle-world` folder: `railway link` (pick the project and the environment).
 2. `railway ssh`, then for example `npm run admin -- show <email>` (plan, consent, players and
    devices counted, never the children's content). Other commands: `comp <email> <YYYY-MM-DD>` (a
-   free pass; it warns when the family's plan still renews, so cancel that first if the pass
+   free pass; for your own family `SW_FREE_PASS` in step 14 needs no admin access; it warns when the family's plan still renews, so cancel that first if the pass
    replaces it), `consent-verified <email> --method form` (a signed consent form), `delete
    <email>`, `sign-out-all [<email>]` (without an email it asks you to type `EVERYONE`),
    `reapply-deletions` (after a restore, SECURITY-PROGRAM.md §7), `stats`. `export <email>` prints
