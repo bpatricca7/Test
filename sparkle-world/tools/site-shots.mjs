@@ -66,6 +66,7 @@ async function openPlay(browser, { viewport = { width: 1280, height: 800 }, touc
     g.profile.look.name = name;
     g.profile.playerName = name;
     g.profile.tutorialDone = true;
+    g.profile.lookPicked = true; // keeps the marketing title shot free of the Dress Up nudge badge
     g.profile.settings.quality = 'auto';
     g.profile.settings.music = 0;
     g.profile.settings.sfx = 0;

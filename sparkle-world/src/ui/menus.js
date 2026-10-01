@@ -8,6 +8,7 @@ import { paintBiomeArt, sizeArt } from './menus/biome-art.js';
 import { prepareDownloads, saveFile, safeFileName } from './menus/files.js';
 // "Open a file" (one world or a whole backup) and "Save all": keepsafe.js
 import { openWorldFile, saveAllWorlds } from './keepsafe.js';
+import { nameUnset, freshLook } from '../player/wardrobe-data.js';
 
 const CSS = /* css */ `
 /* ---------- title ---------- */
@@ -33,6 +34,13 @@ const CSS = /* css */ `
 .sw-tile.sw-tile--sun svg { color: #F5A300; }
 .sw-tile.sw-tile--sky svg { color: #3AAEF0; }
 .sw-tile.sw-tile--mint svg { color: #22BF95; }
+/* a look never changed: Dress Up wiggles now and then with a sparkle badge (CSS only, so the
+   layout does not move; the press bounce still works because only rotate/scale animate) */
+.sw-tile.sw-tile--nudge { position: relative; animation: sw-nudge 4s ease-in-out infinite; }
+.sw-tile.sw-tile--nudge::after { content: ''; position: absolute; top: -9px; right: -9px; width: 28px; height: 28px; pointer-events: none; background: var(--sw-sun);
+  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%); animation: sw-twinkle 1.6s ease-in-out infinite; }
+@keyframes sw-nudge { 0%, 82%, 100% { rotate: 0deg; scale: 1; } 86% { rotate: -7deg; scale: 1.06; } 90% { rotate: 6deg; scale: 1.06; } 94% { rotate: -3deg; scale: 1.03; } }
+@media (prefers-reduced-motion: reduce) { .sw-tile.sw-tile--nudge, .sw-tile.sw-tile--nudge::after { animation: none; } }
 .sw-hello { position: absolute; left: 0; top: 0; transform: translate(-9999px, 0); padding: 8px 18px 8px 14px; border-radius: 22px; background: #fff; color: var(--sw-ink); font-size: clamp(18px, 2.4vw, 26px); font-weight: 700; white-space: nowrap; box-shadow: 0 6px 16px var(--sw-shadow); border: 4px solid var(--sw-pink-soft); display: flex; align-items: center; gap: 8px; pointer-events: none !important; will-change: transform; }
 .sw-hello svg { width: 1.1em; height: 1.1em; color: var(--sw-pink); animation: sw-beat 1.2s ease-in-out infinite; }
 .sw-hello::after { content: ''; position: absolute; left: 50%; bottom: -13px; margin-left: -10px; border: 10px solid transparent; border-top: 11px solid #fff; border-bottom: 0; filter: drop-shadow(0 3px 0 var(--sw-pink-soft)); }
@@ -213,6 +221,9 @@ export function install(game) {
     const p = game.profile;
     return (p.playerName && String(p.playerName).trim()) || (p.look && p.look.name) || 'friend';
   };
+  // a Boy surprise style while the name is still the unset default: not "Lily" (boys.md)
+  const boyUnset = () => !!game.surpriseStyle && game.surpriseStyle() === 'boy' && nameUnset(game.profile);
+  const greetName = () => (boyUnset() ? 'friend' : playerName());
   const tallQuery = typeof matchMedia === 'function' ? matchMedia('(max-aspect-ratio: 1/1)') : null;
   const isTall = () => (tallQuery ? tallQuery.matches : window.innerHeight > window.innerWidth);
 
@@ -271,7 +282,7 @@ export function install(game) {
 
   const refreshLook = () => {
     if (backdrop) backdrop.setLook(game.profile.look);
-    if (helloText) helloText.textContent = `Hi, ${playerName()}!`;
+    if (helloText) helloText.textContent = `Hi, ${greetName()}!`;
   };
   game.events.on('avatar:changed', refreshLook);
   game.events.on('outfit:changed', refreshLook);
@@ -340,7 +351,7 @@ export function install(game) {
 
       hello = ui.el('div', 'sw-hello');
       hello.innerHTML = icon2('heart');
-      helloText = ui.el('span', 'sw-hello-in', `Hi, ${playerName()}!`);
+      helloText = ui.el('span', 'sw-hello-in', `Hi, ${greetName()}!`);
       hello.prepend(helloText);
 
       titleEl.append(col, hello);
@@ -351,7 +362,7 @@ export function install(game) {
       if (!backdrop) titleEl.classList.add('sw-flat');
       if (titleEl.classList.contains('sw-flat') && !titleEl.querySelector('svg[preserveAspectRatio]')) titleEl.insertAdjacentHTML('afterbegin', hillsSvg());
       hello.style.transform = 'translate(-9999px, 0)';
-      helloText.textContent = `Hi, ${playerName()}!`;
+      helloText.textContent = `Hi, ${greetName()}!`;
       // restart the pop so the greeting bounces in every time
       helloText.style.animation = 'none';
       void helloText.offsetWidth;
@@ -365,7 +376,15 @@ export function install(game) {
   async function refreshTitle() {
     if (!playBtn) return;
     tilesRow.innerHTML = '';
-    if (game.actions.has('dressup')) tilesRow.appendChild(button2(ui, { icon: 'dress', label: 'Dress Up', variant: 'white', className: 'sw-tile sw-tile--lav', onClick: () => game.runAction('dressup') }));
+    if (game.actions.has('dressup')) {
+      // a look never changed: the tile wiggles with a sparkle and opens on the ready-made
+      // looks (girls' and boys'); one Studio visit turns it off (profile.lookPicked)
+      const fresh = freshLook(game.profile);
+      tilesRow.appendChild(button2(ui, {
+        icon: 'dress', label: 'Dress Up', variant: 'white', className: 'sw-tile sw-tile--lav' + (fresh ? ' sw-tile--nudge' : ''),
+        onClick: () => game.runAction('dressup', freshLook(game.profile) ? { tab: 'outfits' } : undefined),
+      }));
+    }
     if (game.actions.has('stickers')) tilesRow.appendChild(button2(ui, { icon: 'sticker', label: 'Stickers', variant: 'white', className: 'sw-tile sw-tile--sun', onClick: () => game.runAction('stickers') }));
     if (ui.hasPanel('settings')) tilesRow.appendChild(button2(ui, { icon: 'settings', label: 'Settings', variant: 'white', className: 'sw-tile sw-tile--sky', onClick: () => ui.open('settings') }));
     if (game.actions.has('help') && tilesRow.childElementCount < 3) tilesRow.appendChild(button2(ui, { icon: 'help', label: 'Help', variant: 'white', className: 'sw-tile sw-tile--mint', onClick: () => game.runAction('help') }));
@@ -474,7 +493,7 @@ export function install(game) {
       }
     }
     lastIdea = idea;
-    return `${playerName()}'s ${idea}`;
+    return boyUnset() ? `My ${idea}` : `${playerName()}'s ${idea}`;
   };
 
   const renderBiomes = () => {
@@ -690,7 +709,7 @@ export function install(game) {
   };
 
   async function renameWorld(meta) {
-    const name = await ui.textInput({ title: 'Rename world', value: meta.name, suggestions: ideasFor(meta.biome).slice(0, 3).map((s) => `${playerName()}'s ${s}`), ok: 'Save' });
+    const name = await ui.textInput({ title: 'Rename world', value: meta.name, suggestions: ideasFor(meta.biome).slice(0, 3).map((s) => (boyUnset() ? `My ${s}` : `${playerName()}'s ${s}`)), ok: 'Save' });
     if (!name) return;
     const save = await game.store.loadWorld(meta.id);
     if (!save) return;
