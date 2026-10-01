@@ -204,6 +204,8 @@ export async function inviteIcon(game) {
 
 // ---------- the UI ----------
 
+// a click this soon after the invite cards appear must have been pressed on the card itself
+const GHOST_CLICK_MS = 700;
 const MODE_TEXT = { follow: 'Following you', stay: 'Waiting here' };
 /** What a friend is doing, for the My Friends card. */
 const modeText = (mode, def) => (mode === 'home' ? `At ${pronouns(def).their} spot` : MODE_TEXT[mode] || '');
@@ -418,6 +420,8 @@ export function installFriendUI(game, sys) {
   }
 
   function renderPanel() {
+    const drawnAt = performance.now();
+    const pressed = new WeakSet();
     const mine = sys.friends;
     mineEl.innerHTML = '';
     mineHead.hidden = !mine.length;
@@ -442,7 +446,11 @@ export function installFriendUI(game, sys) {
       style.appendChild(document.createTextNode(def.style));
       b.append(pic, el('b', '', def.name), style);
       if (here) b.appendChild(el('span', 'pl-here', 'Here!'));
-      b.addEventListener('click', () => {
+      b.addEventListener('pointerdown', () => pressed.add(b));
+      b.addEventListener('click', (e) => {
+        // the tap on the ground that opened this panel must not also pick the card that
+        // appeared under the finger (16 cards now fill the spot where it lands)
+        if (e.detail !== 0 && !pressed.has(b) && performance.now() - drawnAt < GHOST_CLICK_MS) return;
         if (here) {
           ui.close();
           sys.call(here);
