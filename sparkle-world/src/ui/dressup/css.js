@@ -38,7 +38,10 @@ export const CSS = /* css */ `
 .sw-dress-fallback { position: absolute; inset: 0; display: grid; place-items: center; font-size: 20px; font-weight: 700; color: var(--sw-lav); text-align: center; padding: 20px; }
 .sw-dress-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 .sw-dress-actions .sw-btn svg { width: 1.4em; height: 1.4em; }
-.sw-dress-actions .sw-dress-style { min-width: 64px; gap: 6px; }
+/* Surprise me!, the style button and Undo stay in one row (the preview keeps its height) */
+.sw-dress-actions { flex-wrap: nowrap; }
+.sw-dress-actions .sw-btn { flex: 0 1 auto; min-width: 0; white-space: nowrap; gap: 6px; padding-left: clamp(10px, 1.5vw, 22px); padding-right: clamp(10px, 1.5vw, 22px); }
+.sw-dress-actions .sw-dress-style { min-width: 64px; }
 .sw-dress-actions .sw-dress-style svg { width: 30px; height: 30px; flex: none; }
 .sw-dress-ask { position: absolute; left: 18px; top: calc(100% + 10px); z-index: 5; padding: 8px 14px; border-radius: 18px; background: var(--sw-sun); color: var(--sw-ink); font: 700 16px var(--sw-font); white-space: nowrap; box-shadow: 0 4px 12px var(--sw-shadow); pointer-events: none; animation: sw-pop .35s var(--sw-bounce); }
 .sw-dress-ask::before { content: ''; position: absolute; left: 22px; top: -9px; border: 9px solid transparent; border-top: 0; border-bottom-color: var(--sw-sun); }
