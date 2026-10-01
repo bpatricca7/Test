@@ -38,6 +38,22 @@ export const CSS = /* css */ `
 .sw-dress-fallback { position: absolute; inset: 0; display: grid; place-items: center; font-size: 20px; font-weight: 700; color: var(--sw-lav); text-align: center; padding: 20px; }
 .sw-dress-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 .sw-dress-actions .sw-btn svg { width: 1.4em; height: 1.4em; }
+.sw-dress-actions .sw-dress-style { min-width: 64px; gap: 6px; }
+.sw-dress-actions .sw-dress-style svg { width: 30px; height: 30px; flex: none; }
+.sw-dress-ask { position: absolute; left: 18px; top: calc(100% + 10px); z-index: 5; padding: 8px 14px; border-radius: 18px; background: var(--sw-sun); color: var(--sw-ink); font: 700 16px var(--sw-font); white-space: nowrap; box-shadow: 0 4px 12px var(--sw-shadow); pointer-events: none; animation: sw-pop .35s var(--sw-bounce); }
+.sw-dress-ask::before { content: ''; position: absolute; left: 22px; top: -9px; border: 9px solid transparent; border-top: 0; border-bottom-color: var(--sw-sun); }
+.sw-dress-ask[hidden] { display: none; }
+.sw-dress-name { position: relative; }
+.sw-dress-name--ask { border-color: var(--sw-sun); animation: sw-dress-ask 1.2s ease-in-out 3; }
+@keyframes sw-dress-ask { 0%, 100% { box-shadow: 0 4px 12px var(--sw-shadow); } 50% { box-shadow: 0 0 0 6px rgba(255,201,77,.55), 0 4px 12px var(--sw-shadow); } }
+
+/* "My number" on a jersey: big − / + around a jersey-shaped badge */
+.sw-dstep { display: flex; align-items: center; gap: 14px; }
+.sw-dstep-btn { width: 64px; height: 64px; flex: none; border-radius: 50%; border: 4px solid #fff; background: var(--sw-lav); color: #fff; font: 700 38px/1 var(--sw-font); display: grid; place-items: center; padding: 0 0 4px; cursor: pointer; box-shadow: 0 4px 0 rgba(58,31,77,.12), 0 6px 14px var(--sw-shadow); touch-action: manipulation; -webkit-user-select: none; user-select: none; transition: transform .15s var(--sw-bounce); }
+.sw-dstep-btn:active { transform: scale(.9); }
+.sw-dstep-btn:disabled { opacity: .4; cursor: default; }
+.sw-dstep-num { --c: #4D7CFF; position: relative; width: 84px; height: 76px; display: grid; place-items: center; padding-top: 8px; font: 700 32px var(--sw-font); color: #fff; -webkit-text-stroke: 5px var(--sw-ink); paint-order: stroke fill;
+  background: var(--c); clip-path: polygon(22% 0, 78% 0, 100% 18%, 88% 38%, 80% 32%, 80% 100%, 20% 100%, 20% 32%, 12% 38%, 0 18%); filter: drop-shadow(0 3px 0 rgba(58,31,77,.15)); }
 
 .sw-dress-side { flex: 1; min-width: 0; display: flex; flex-direction: column; background: rgba(255,255,255,.78); border: 5px solid #fff; border-radius: 32px; box-shadow: 0 8px 0 rgba(58,31,77,.08), 0 16px 34px rgba(58,31,77,.18); overflow: hidden; }
 .sw-dress-tabs { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; padding: 10px 10px 8px; background: linear-gradient(#FFFFFF, #FFF3FA); border-bottom: 3px solid var(--sw-pink-soft); }
@@ -123,6 +139,12 @@ export const CSS = /* css */ `
   .sw-dsec-title { font-size: 18px; }
   .sw-sw { width: 46px; height: 46px; }
   .sw-sw--big { width: 54px; height: 54px; }
+}
+@media (max-width: 480px) {
+  /* Surprise me! + the style picture + Undo fit a 360 px row */
+  .sw-dress-actions .sw-dress-style { padding: 4px 10px; }
+  .sw-dress-actions .sw-dress-style .sw-btn-label { display: none; }
+  .sw-dress-ask { left: 0; font-size: 15px; }
 }
 @media (max-height: 560px) and (orientation: landscape) {
   .sw-dress-title { font-size: 24px; }

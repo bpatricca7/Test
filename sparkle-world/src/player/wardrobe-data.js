@@ -223,6 +223,20 @@ export function lookSignature(look) {
   return JSON.stringify(normalizeLook(look));
 }
 
+/**
+ * True while a profile's look is still the untouched default (any name) and the Studio was
+ * never visited from the title's nudge: the title's Dress Up tile then wiggles.
+ */
+export function freshLook(profile) {
+  if (!profile || typeof profile !== 'object' || profile.lookPicked) return false;
+  return lookSignature({ ...normalizeLook(profile.look), name: DEFAULT_LOOK.name }) === lookSignature(DEFAULT_LOOK);
+}
+
+/** The name is still the unset default (never typed): greetings say "friend" for a Boy style. */
+export function nameUnset(profile) {
+  return !!profile && !profile.nameSet && normalizeLook(profile.look).name === DEFAULT_LOOK.name;
+}
+
 // ---------- "Surprise me!" ----------
 
 // Color stories: a main color, a second color, an accent and a light pattern color that all

@@ -83,7 +83,7 @@ export const BACKUP_FORMAT = 'sparkle-world-backup';
 
 // what of the profile a backup carries: her own things. Not the settings (this device's
 // volumes, quality and a grown-up's switches), not playing-with-friends ids, not lastWorldId.
-const BACKUP_PROFILE_KEYS = ['look', 'outfits', 'playerName', 'nameSet', 'stickers', 'stickersSeen', 'stats', 'coins', 'basket', 'tutorialDone'];
+const BACKUP_PROFILE_KEYS = ['look', 'outfits', 'playerName', 'nameSet', 'stickers', 'stickersSeen', 'stats', 'coins', 'basket', 'tutorialDone', 'lookPicked'];
 
 export function newWorldId() {
   return 'w' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
@@ -122,6 +122,7 @@ export function mergeBackupProfile(current, fromFile, { fresh = false } = {}) {
     const extra = f.outfits.filter((o) => o && !have.has(JSON.stringify(o)));
     for (let i = 0; i < current.outfits.length && extra.length; i++) if (!current.outfits[i]) current.outfits[i] = extra.shift();
   }
+  if (f.lookPicked === true && !current.lookPicked) current.lookPicked = true; // the title's Dress Up nudge stays gone
   for (const k of ['stickers', 'stickersSeen']) {
     if (!isObj(f[k])) continue;
     const mine = isObj(current[k]) ? current[k] : (current[k] = {});
@@ -500,6 +501,30 @@ export class SaveStore {
     this._profileFns.push(fn);
   }
 
+  /**
+   * A small setting for this player on this device only (e.g. the Studio's surprise style):
+   * localStorage under this store's prefix (so each family player has their own), or memory
+   * when storage is blocked. Never in the profile, a backup file or the cloud copy.
+   */
+  deviceGet(key, fallback = null) {
+    if (this._device && key in this._device) return this._device[key];
+    try {
+      const v = window.localStorage.getItem(this.lsPrefix + 'device:' + key);
+      return v === null ? fallback : JSON.parse(v);
+    } catch {
+      return fallback;
+    }
+  }
+
+  deviceSet(key, value) {
+    (this._device || (this._device = {}))[key] = value;
+    try {
+      window.localStorage.setItem(this.lsPrefix + 'device:' + key, JSON.stringify(value));
+    } catch {
+      // private mode / blocked storage: the memory copy lasts for this visit
+    }
+  }
+
   /** Does the cloud keep revisions (the family server)? */
   get _rev() {
     return !!(this.cloud && this.cloud.revisions);
@@ -561,7 +586,7 @@ export class SaveStore {
     if (ns && !NS_RE.test(ns)) return false;
     const db = ns ? DB_NAME + '@' + ns : DB_NAME;
     // before accounts: only the saves (never the relay's device id or the account cache)
-    const re = ns ? new RegExp('^' + db + ':') : /^sparkle-world:(metas|profile|world:)/;
+    const re = ns ? new RegExp('^' + db + ':') : /^sparkle-world:(metas|profile|world:|device:)/;
     try {
       const ls = window.localStorage;
       for (const k of Array.from({ length: ls.length }, (_, i) => ls.key(i))) if (re.test(k)) ls.removeItem(k);
@@ -1046,7 +1071,7 @@ export class SaveStore {
       return JSON.stringify({
         format: BACKUP_FORMAT,
         v: 1,
-        about: 'Sparkle World: a copy of every world, her look, outfits and stickers. To bring it back: My Worlds, then Open a file.',
+        about: 'Sparkle World: a copy of every world, your look, outfits and stickers. To bring it back: My Worlds, then Open a file.',
         savedAt: new Date().toISOString(),
         profile: backupProfile(profile),
         worlds,
