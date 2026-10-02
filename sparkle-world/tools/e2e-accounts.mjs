@@ -52,7 +52,7 @@ import path from 'node:path';
 import { mkdir } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
 import { launch, waitForTitle, waitForPlay, waitIdle, settle, ROOT, SHOTS, PAGE_URL } from './smoke.mjs';
-import { sleep, game, until, press, setupPage, hostMakesCode, guestTypesCode, hostLetsIn, waitLive, bringTo, converge } from './net/mp-flows.mjs';
+import { sleep, game, until, press, drawn, setupPage, hostMakesCode, guestTypesCode, hostLetsIn, waitLive, bringTo, converge } from './net/mp-flows.mjs';
 import { buildSite } from './site-build.mjs';
 import { devEnv, loadStripeFake } from './dev-accounts.mjs';
 import { W as WIRE, F_START, packFrame } from '../src/net/walkie/wire.js';
@@ -401,6 +401,9 @@ const GAME = {
   async grownUpCheck(dev) {
     const p = dev.page;
     await p.waitForSelector('.sw-gate .sw-gate-qtext', { timeout: 15000 });
+    // a page that just opened draws (and compiles) its first 3D title frame behind the check:
+    // let that frame finish before tapping (see drawn() in net/mp-flows.mjs)
+    await drawn(dev);
     // under a loaded CPU a tap can be lost: the typed answer is read back before OK (a wrong
     // answer only brings a new problem; three would wait a minute)
     for (let attempt = 0; attempt < 2; attempt++) {

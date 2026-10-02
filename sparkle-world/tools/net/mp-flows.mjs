@@ -26,6 +26,26 @@ export async function until(pl, fn, a, timeout = 20000, poll = 200) {
   }
 }
 
+/**
+ * Wait until the page has drawn `n` more frames. A page that just opened the title (or just
+ * reloaded) compiles its shaders on its first 3D frame; with other game pages drawing through
+ * the same SwiftShader GPU process that one frame can hold the page's main thread for half a
+ * minute, and a tap sent meanwhile times out. Bounded: gives up after `timeout` ms.
+ */
+export async function drawn(pl, n = 2, timeout = 180000) {
+  const page = pl.page || pl;
+  const frames = page.evaluate((n) => new Promise((res) => {
+    let left = Math.max(1, Math.min(10, n | 0));
+    const f = () => (--left <= 0 ? res(true) : requestAnimationFrame(f));
+    requestAnimationFrame(f);
+  }), n).catch(() => false);
+  let timer;
+  const late = new Promise((res) => { timer = setTimeout(() => res(false), timeout); });
+  const ok = await Promise.race([frames, late]);
+  clearTimeout(timer);
+  return ok;
+}
+
 /** Real tap (touch pages) or click (mouse pages). */
 export async function press(pl, locator, { timeout = 15000 } = {}) {
   const l = typeof locator === 'string' ? pl.page.locator(locator).first() : locator;

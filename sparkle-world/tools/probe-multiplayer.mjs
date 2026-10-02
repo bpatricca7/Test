@@ -22,6 +22,7 @@ import { NetHub } from './net/hub.mjs';
 import { FakeClaudeHub } from './net/fake-claude.js';
 import * as flows from './net/mp-flows.mjs';
 import * as codec from '../src/net/codec.js';
+import { C as NETC } from '../src/net/protocol.js';
 
 const { sleep, game, until, press, tapWorld, setupPage, trace, waitLive, bringTo, closePanels, VIEW } = flows;
 
@@ -927,7 +928,19 @@ test('AT12', 'Lily\u2019s page reloads; "Keep playing" opens the door again; eve
     const chip = lily.page.locator('.sw-title-chips .sw-net-chip--host');
     await chip.waitFor({ state: 'visible', timeout: 30000 });
     check(/Keep playing/.test(await chip.textContent()), 'Lily\u2019s title shows "Keep playing"');
-    check(await until(rosie, () => document.querySelector('.sw-net-away') && !document.querySelector('.sw-net-away').hidden, null, 15000), 'Rosie sees "Lily is taking a little break\u2026"');
+    // her friends wait HOST_AWAY_GRACE for her with the "little break" pill; a reload slower than
+    // that (SwiftShader, every page drawn by one CPU) rightly tells them she went home instead,
+    // and guestReturns() below brings them back through that card
+    const back = Date.now() - t0;
+    const rosieSees = await until(rosie, () => {
+      const a = document.querySelector('.sw-net-away');
+      if (a && !a.hidden) return 'break';
+      return document.querySelector('.sw-net-msg[data-code="host_gone"]') ? 'went home' : null;
+    }, null, 15000);
+    if (back < NETC.HOST_AWAY_GRACE - 5000) check(rosieSees === 'break', `Rosie sees "Lily is taking a little break\u2026" (${rosieSees || 'nothing'})`);
+    else check(!!rosieSees, `Rosie sees "Lily is taking a little break\u2026" or, as Lily took ${(back / 1000).toFixed(0)} s (over the ${NETC.HOST_AWAY_GRACE / 1000} s grace), that she went home (${rosieSees || 'nothing'})`);
+    // her title's first 3D frame (shader compile) can hold her page for a while: let it finish
+    await flows.drawn(lily);
     await press(lily, chip, { timeout: 60000 });
     check(await until(lily, () => window.__game.net.state === 'h.live', null, 150000), 'Lily is hosting again with the same code');
     log(`  Lily hosting again ${((Date.now() - t0) / 1000).toFixed(1)} s after the reload started`);
