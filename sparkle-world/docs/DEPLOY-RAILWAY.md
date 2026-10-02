@@ -401,7 +401,136 @@ The Family Plan needs a web address of your own (emails come from it, and it loo
 
 ## Step 12. The email provider
 
-Sign-in codes are emailed. Resend is free at family scale (3,000 emails a month); Postmark works
+Sign-in codes and the plan emails are emailed. You already have **Microsoft 365** business email,
+so the server sends them through it, from one of your own mailboxes (step 12a). Resend or Postmark
+(step 12b) is the other way, if you ever move away from Microsoft 365. Do one of them, not both.
+
+## Step 12a. Send the emails with Microsoft 365
+
+This gives the game server permission to **send** email from one mailbox of yours (for example
+`support@brickoodle.com`) and nothing else: it cannot read any mailbox. It takes about 20 minutes.
+Sign in with your Microsoft 365 **Global Administrator** account (the first admin account of your
+Microsoft 365, usually yours): only an administrator can approve ("grant admin consent" for) the
+permission in step 5.
+
+**First, the mailbox.** Pick the address the emails come from, for example `support@brickoodle.com`.
+It can be a normal user mailbox, or a **shared mailbox**, which is free (no license):
+Microsoft 365 admin center (`admin.microsoft.com`) → **Teams & groups → Shared mailboxes → Add a
+shared mailbox** ([how](https://learn.microsoft.com/en-us/microsoft-365/admin/email/create-a-shared-mailbox)).
+Parents see the mailbox's **display name** as the sender, so name it `Glimmer World` (the name you
+type in `MAIL_FROM` is not what they see; the display name is). Parents' replies go to
+`SW_OPERATOR_EMAIL` (the emails say "reply to" that address), not to this mailbox.
+
+Your domain's email should already be set up for Microsoft 365 (SPF). Also check that **DKIM** and
+**DMARC** are on for the domain, so the emails don't land in spam: Microsoft's pages
+[DKIM](https://learn.microsoft.com/en-us/defender-office-365/email-authentication-dkim-configure)
+and [DMARC](https://learn.microsoft.com/en-us/defender-office-365/email-authentication-dmarc-configure)
+show where (a DMARC record can be a TXT record named `_dmarc` with
+`v=DMARC1; p=quarantine; rua=mailto:<your email>`).
+
+**Then the app registration** (Microsoft's own steps:
+[register an app](https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-register-app),
+[add a permission](https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-configure-app-access-web-apis),
+[add a client secret](https://learn.microsoft.com/en-us/entra/identity-platform/how-to-add-credentials)):
+
+1. Open the **Microsoft Entra admin center**, `entra.microsoft.com`, and sign in.
+2. In the left menu: **Entra ID → App registrations → New registration**.
+   - **Name:** `Glimmer World mail`
+   - **Supported account types:** **Single tenant only** ("Accounts in this organizational
+     directory only")
+   - **Redirect URI:** leave it empty.
+   - Click **Register**.
+3. The app's **Overview** page opens. Copy two values (they look like
+   `1e2d3c4b-5a69-4788-9a6b-5c4d3e2f1a0b`) into your notes:
+   - **Application (client) ID** → this is `MS_CLIENT_ID`
+   - **Directory (tenant) ID** → this is `MS_TENANT_ID`
+4. **API permissions → Add a permission → Microsoft Graph → Application permissions** (not
+   "Delegated permissions"). Type `Mail.Send` in the search box, tick **Mail.Send**, then **Add
+   permissions**. (The `User.Read` permission already in the list is not needed; you may remove it.)
+5. Click **Grant admin consent for <your organization> → Yes**. The **Status** column of
+   `Mail.Send` now shows a green check, "Granted for …".
+6. **Certificates & secrets → Client secrets → New client secret.** Description `Railway`;
+   **Expires: 24 months** (the longest Microsoft allows; Microsoft recommends less than 12, so pick
+   12 months if you'd rather renew it once a year). Click **Add**.
+   - Copy the **Value** column **right away**: it is shown only now. This is `MS_CLIENT_SECRET`.
+     **Not** the "Secret ID" next to it (the server refuses an ID and says so).
+   - Put a **calendar reminder** one month before the date in the **Expires** column: "Renew the
+     Glimmer World mail secret" (how: `docs/SECURITY-PROGRAM.md` §6). When the secret expires,
+     sign-in emails stop and the Deploy Logs say `the client secret has expired`.
+   - Paste the secret only into Railway (step 14): never into an email, a chat or a file.
+7. In step 14 you will set these Railway Variables:
+
+   | Variable | Value |
+   |---|---|
+   | `MAIL_MODE` | `microsoft` |
+   | `MS_TENANT_ID` | the Directory (tenant) ID from 3 |
+   | `MS_CLIENT_ID` | the Application (client) ID from 3 |
+   | `MS_CLIENT_SECRET` | the secret's Value from 6 |
+   | `MAIL_FROM` | `Glimmer World <support@brickoodle.com>` (the address part picks the mailbox the emails are sent from) |
+
+   `MAIL_API_KEY` is not used with Microsoft 365. The same four Microsoft values work for staging
+   and for production.
+
+The emails are sent with "don't save a copy in Sent Items", so sign-in codes and families' emails
+don't pile up in that mailbox. (Microsoft still keeps a hidden copy in the mailbox's Recoverable
+Items for 14 days, then deletes it; don't put this mailbox on a "litigation hold" or a long
+retention policy. Details: `docs/ACCOUNTS.md` §10.)
+
+### Lock the app to the one mailbox (optional, recommended)
+
+The `Mail.Send` permission of step 4 lets the app send as **any** mailbox of your organization
+(as you, too). If the secret ever leaked, someone could send email as anyone at your domain.
+Microsoft's current way to limit an app to one mailbox is **RBAC for Applications** in Exchange
+Online ([Microsoft's page](https://learn.microsoft.com/en-us/exchange/permissions-exo/application-rbac);
+the older "Application Access Policies" are now
+[legacy](https://learn.microsoft.com/en-us/exchange/permissions-exo/application-access-policies)
+and should not be used for new setups). It takes about 15 minutes plus up to 2 hours of waiting,
+and you can do it any time after sign-in emails work.
+
+You need PowerShell (on Windows it is already there; on a Mac install "PowerShell 7" first).
+
+1. In PowerShell, once: `Install-Module -Name ExchangeOnlineManagement`. Then sign in:
+
+   ```
+   Connect-ExchangeOnline -UserPrincipalName <your admin address>
+   ```
+
+2. In the Entra admin center: **Entra ID → Enterprise apps → Glimmer World mail**. Copy its
+   **Object ID** from *this* page (the Enterprise app's Object ID is not the one shown on the App
+   registration page).
+3. In PowerShell (put in your own values; keep the quotes):
+
+   ```
+   New-ServicePrincipal -AppId <Application (client) ID> -ObjectId <Enterprise app Object ID> -DisplayName "Glimmer World mail"
+   New-ManagementScope -Name "Glimmer World mailbox" -RecipientRestrictionFilter "PrimarySmtpAddress -eq 'support@brickoodle.com'"
+   New-ManagementRoleAssignment -Name "Glimmer World mail send" -App <Application (client) ID> -Role "Application Mail.Send" -CustomResourceScope "Glimmer World mailbox"
+   ```
+
+   ([New-ManagementRoleAssignment](https://learn.microsoft.com/en-us/powershell/module/exchangepowershell/new-managementroleassignment?view=exchange-ps),
+   [New-ManagementScope](https://learn.microsoft.com/en-us/powershell/module/exchangepowershell/new-managementscope?view=exchange-ps))
+4. Check it (this asks Exchange directly, without waiting):
+
+   ```
+   Test-ServicePrincipalAuthorization -Identity <Application (client) ID> -Resource support@brickoodle.com
+   Test-ServicePrincipalAuthorization -Identity <Application (client) ID> -Resource <your own address>
+   ```
+
+   The first shows `Application Mail.Send` with **InScope True**, the second **InScope False**
+   ([Test-ServicePrincipalAuthorization](https://learn.microsoft.com/en-us/powershell/module/exchangepowershell/test-serviceprincipalauthorization?view=exchange-ps)).
+5. **Now take away the organization-wide permission**, or the lock does nothing (Microsoft adds the
+   two permissions together): Entra admin center → **App registrations → Glimmer World mail → API
+   permissions** → the `…` at the end of the **Mail.Send** line → **Revoke admin consent** → Yes;
+   then `…` → **Remove permission**.
+6. Wait: Exchange keeps permissions in a cache for **30 minutes to 2 hours**. Then sign in on the
+   Family page again: the code still arrives. (If the Deploy Logs show `refused (403 …)` meanwhile,
+   wait a little longer; sign-in emails are retried.)
+
+To undo the lock: add **Mail.Send** back with admin consent (steps 4 and 5 above), then
+`Remove-ManagementRoleAssignment "Glimmer World mail send"`.
+
+## Step 12b. Or: Resend or Postmark
+
+Only if you don't use Microsoft 365 (step 12a). Resend is free at family scale (3,000 emails a month); Postmark works
 the same way (it approves new accounts before they can send).
 
 1. Make an account (with 2FA). **Domains → Add domain** → your domain.
@@ -471,15 +600,16 @@ In **staging**, the game service → **Variables → Raw Editor**, paste and fil
 | `STRIPE_WEBHOOK_SECRET` | `whsec_…` from step 13.7 |
 | `STRIPE_PRICE_ID` | `price_…` from step 13.2 |
 | `STRIPE_PORTAL_CONFIG` | `bpc_…` from step 13.2 |
-| `MAIL_MODE` | `resend` (or `postmark`) |
-| `MAIL_API_KEY` | the key from step 12 |
-| `MAIL_FROM` | `Sparkle World <hello@<domain>>` (see the note below the table while the domain is not verified yet) |
+| `MAIL_MODE` | `microsoft` (step 12a; or `resend` / `postmark`, step 12b) |
+| `MS_TENANT_ID`, `MS_CLIENT_ID`, `MS_CLIENT_SECRET` | with `microsoft`: the Directory (tenant) ID, the Application (client) ID and the secret's **Value** from step 12a |
+| `MAIL_API_KEY` | with `resend` or `postmark` only: the key from step 12b |
+| `MAIL_FROM` | with `microsoft`: the sending mailbox, `Glimmer World <support@brickoodle.com>`. With Resend or Postmark: `Sparkle World <hello@<domain>>` (see the note below the table while the domain is not verified yet) |
 | `SW_OPERATOR_NAME` | who runs Sparkle World (your name, or your small LLC) |
 | `SW_OPERATOR_EMAIL` | the email parents can write to |
 | `SW_OPERATOR_ADDRESS` | a mailing address (a PO box or an LLC's address keeps your home address private) |
 | `SW_OPERATOR_PHONE` | a phone number for parents |
 
-**Before the email domain is verified** (step 12 can take a while), Resend's testing sender works
+**Resend only: before the email domain is verified** (step 12b can take a while), Resend's testing sender works
 as a stopgap: `MAIL_FROM` = `Sparkle World <onboarding@resend.dev>`. Resend sends from it **only to
 the address you signed up to Resend with**, so only you can sign in that way (use that address,
 and list it in `SW_FREE_PASS` below). Switch `MAIL_FROM` to `Sparkle World <hello@<domain>>` as
@@ -495,11 +625,11 @@ trial), `SW_FRIENDS_MODE` (`subscription`: each friend's family has the plan), `
 `SW_MAX_PER_FAMILY` (12 connections), and `SW_REQUIRED_FROM` (the date the home page announces
 while `SW_ACCOUNTS=optional`, for example `2026-11-02`).
 
-**Never** set `SW_TEST` or `STRIPE_API_BASE` on Railway: they are for the automatic tests, and the
-server refuses to start with them in production.
+**Never** set `SW_TEST`, `STRIPE_API_BASE`, `MS_LOGIN_BASE` or `MS_GRAPH_BASE` on Railway: they
+are for the automatic tests, and the server refuses to start with them in production.
 
 Click **Deploy**. In the Deploy Logs you should see a line like
-`accounts: required, friends subscription, consent verified, trial 0 d, …, stripe test, db postgres`
+`accounts: required, friends subscription, consent verified, trial 0 d, …, mail microsoft (brickoodle.com), stripe test, db postgres`
 and then `Sparkle World server listening …`. If a variable is wrong, the new deployment stops with
 **one line** that names it (for example `SW_SECRET must be at least 32 random bytes`) and the old
 deployment keeps running: fix the variable and deploy again.
@@ -617,7 +747,10 @@ pages are exactly as in Part 1 (the database is kept, untouched).
   lapsed=… webhooks ok=… failed=… mails sent=… failed=… disputes=… refund_due=…`. A `refund_due`
   is a non-US family whose payment needs a manual refund in the Dashboard; `disputes` are
   chargebacks.
-- **Railway → Usage**, and the email provider's bounce list.
+- **Railway → Usage**, and the email provider's bounce list. With Microsoft 365, bounces
+  ("Undeliverable" notices) arrive in the inbox of the sending mailbox (`MAIL_FROM`): look there
+  now and then; a typo in a parent's address shows up that way.
+- **The Microsoft 365 client secret's expiry date** (your calendar reminder, step 12a.6).
 - **Backups:** once, restore staging from a backup and check the Family page still works (the
   runbook is in `docs/SECURITY-PROGRAM.md`).
 
@@ -630,7 +763,13 @@ pages are exactly as in Part 1 (the database is kept, untouched).
 | The deploy fails at "Healthcheck" with accounts on | `/healthz` asks the database; open the Postgres service's logs. |
 | `warning: the home page was built for SW_ACCOUNTS=off, but the server runs with required` | The pages were built before the variable was set: **Redeploy** (a build, not a restart). |
 | The build warns `the account pages need SW_OPERATOR_…` | Set the operator variables (step 14) and redeploy. |
-| No sign-in email arrives | Check the spam folder; check the provider's logs and that the domain shows "verified" (step 12). |
+| No sign-in email arrives | Check the spam folder. With Microsoft 365, the Deploy Logs have a line starting `mail: Microsoft 365` that says what to fix (the rows below). With Resend or Postmark: the provider's logs, and that the domain shows "verified" (step 12b). |
+| `mail: Microsoft 365 sign-in failed (401): the client secret is not right …` | `MS_CLIENT_SECRET` holds the Secret ID or a typo: copy the secret's **Value** (make a new secret if it is no longer shown, step 12a.6), deploy. |
+| `mail: Microsoft 365 sign-in failed (401): the client secret has expired …` | Make a new client secret (step 12a.6), put its Value in `MS_CLIENT_SECRET`, deploy; then delete the old one. Emails waiting in the meantime go out by themselves. |
+| `mail: Microsoft 365 sign-in failed (400): no app with this MS_CLIENT_ID …` or `the tenant was not found …` | `MS_CLIENT_ID` / `MS_TENANT_ID` are swapped or mistyped: copy both again from the app's Overview page (step 12a.3). |
+| `mail: Microsoft 365 refused (403 …): the app needs the Mail.Send application permission with admin consent …` | Step 12a.4–5: **Mail.Send** must be an **Application** permission with the green "Granted" check. If you locked the app to one mailbox, `MAIL_FROM` must be exactly that mailbox, and after a change wait up to 2 hours. |
+| `mail: Microsoft 365 refused (404 …): mailbox not found …` | The address in `MAIL_FROM` is not a mailbox of your Microsoft 365 (a typo, an alias of a group, or a user without an Exchange license): use a user or shared mailbox's own address. |
+| `mail: Microsoft 365 is limiting how fast we send (429)` | Nothing to do: the emails are retried by themselves (Microsoft allows 30 a minute per mailbox). |
 | "Couldn't reach the payment page" | Stripe keys or `STRIPE_PRICE_ID` (step 13); the Deploy Logs show `stripe_unavailable`. |
 | Stripe shows failed webhook deliveries | The endpoint URL (step 13.7) and `STRIPE_WEBHOOK_SECRET` must match; a key change needs the new secret. The server also re-reads subscriptions every 6 hours, and the Family page syncs when a parent comes back from Stripe. |
 | A parent asks for her data, or to be deleted, by email | Confirm the request came from the account's email. For a copy, help her sign in on the Family page and use **Download everything**: never email children's information (the export holds nicknames, portraits and worlds). To delete: `npm run admin -- delete <email>` (step 16). Answer within 10 business days. |

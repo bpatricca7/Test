@@ -51,7 +51,8 @@ answers in the table in §10.
 ## 4. Safeguards (what we do every day)
 
 **Accounts and access**
-- 2FA (or a passkey) on: GitHub, Railway, Stripe, the email provider, the domain registrar, and the
+- 2FA (or a passkey) on: GitHub, Railway, Stripe, the email provider (with Microsoft 365: every
+  admin account of the Microsoft 365 organization), the domain registrar, and the
   coordinator's own email account (it receives every password reset). Check once a year that it is
   still on.
 - Only the coordinator has these accounts. No shared logins. If the backup person ever needs
@@ -64,7 +65,9 @@ answers in the table in §10.
 **Secrets**
 - All secrets live in Railway → the game service → Variables, and nowhere else:
   `SW_SECRET`, `STRIPE_SECRET_KEY` (a restricted `rk_live_…` key with only the permissions in
-  docs/ACCOUNTS.md §14 step 4), `STRIPE_WEBHOOK_SECRET`, `MAIL_API_KEY`, `DATABASE_URL`.
+  docs/ACCOUNTS.md §14 step 4), `STRIPE_WEBHOOK_SECRET`, `MAIL_API_KEY` (Resend or Postmark) or
+  `MS_CLIENT_SECRET` (Microsoft 365: an app that may only send mail, best limited to the one
+  mailbox; DEPLOY-RAILWAY.md step 12a), `DATABASE_URL`.
 - The full Stripe secret key (`sk_live_…`) is used once, by hand, for `npm run stripe:setup`, and is
   never stored in Railway.
 
@@ -118,6 +121,7 @@ Rotate at once after any suspected leak (see INCIDENT.md), and otherwise once a 
 | `STRIPE_SECRET_KEY` (restricted) | Stripe → Developers → API keys → roll the restricted key (same permissions) → paste the new one in Railway → deploy |
 | `STRIPE_WEBHOOK_SECRET` | Stripe → Developers → Webhooks → the endpoint → Roll secret (Stripe can keep the old one valid for a while) → Railway → deploy |
 | `MAIL_API_KEY` | the email provider → API keys → create a new key, put it in Railway, deploy, then delete the old key |
+| `MS_CLIENT_SECRET` (Microsoft 365) | before it expires (it lasts at most 24 months; the calendar reminder of DEPLOY-RAILWAY.md step 12a), or at once after a leak: Entra admin center → App registrations → Glimmer World mail → Certificates & secrets → New client secret → copy its **Value** → Railway `MS_CLIENT_SECRET` → deploy → check a sign-in email arrives → delete the old secret |
 | `SW_SECRET` | `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` → Railway → deploy. Only codes waiting to be typed stop working; nobody is signed out |
 | Everyone's sessions | `npm run admin -- sign-out-all` (everyone signs in again) |
 

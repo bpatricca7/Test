@@ -111,7 +111,7 @@ Who can see it, in the tables below:
 | Who | What they get | Child? |
 |---|---|---|
 | Stripe | the parent's email, `family_id` as metadata, the card and billing address typed on Stripe's page, the plan and payments | no |
-| The email provider (Resend or Postmark) | the parent's email and the text of our emails | no |
+| The email provider (Microsoft 365 with `MAIL_MODE=microsoft`; or Resend or Postmark) | the parent's email and the text of our emails (codes, links, dates; never children's information). With Microsoft 365 the emails are sent from the family's own mailbox with `saveToSentItems: false`: no copy in Sent Items, but Exchange keeps the sent item in that mailbox's Recoverable Items for its deleted-item retention (14 days by default, at most 30) and a message trace (docs/ACCOUNTS.md §10) | no |
 | Railway | everything in §1 (as our host), Deploy Logs (no personal information in them) | yes, as a service provider |
 | Railway backups | a copy of §1, kept at most 7 days | yes |
 

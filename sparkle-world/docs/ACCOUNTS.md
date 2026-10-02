@@ -104,9 +104,9 @@ consent approach (§11); and one real test-mode purchase before going live.
  └───────────────┬───────────────────────────┬─────────────────────────────┬──────────────┘
                  │ private network            │ HTTPS (server → provider)   │ HTTPS both ways
                  ▼                            ▼                             ▼
-        Railway Postgres 16            Email provider (Resend or      Stripe (Checkout, Portal,
-   (families, players, saves,          Postmark): parent email         Tax, webhooks): parent
-    sessions, billing mirror)          address + our text only          email + payment only
+        Railway Postgres 16            Email provider (Microsoft      Stripe (Checkout, Portal,
+   (families, players, saves,          365, Resend or Postmark):       Tax, webhooks): parent
+    sessions, billing mirror)          parent email + our text only     email + payment only
 ```
 
 No second service: jobs run inside the same process under Postgres advisory locks (§13.3). Rooms,
@@ -144,7 +144,7 @@ server/
   auth.mjs            (new) sign-in, sessions, email check, pairing, devices                    [A]
   family.mjs          (new) /api/me, family, consent, players, export, delete                   [A]
   audit.mjs           (new) audit(q, familyId, action, detail) with the allowed actions         [A]
-  mail.mjs            (new) outbox, transports (resend | postmark | log | memory)               [A]
+  mail.mjs            (new) outbox, transports (resend | postmark | microsoft | log | memory)   [A]
   mail-templates.mjs  (new) every email's text (§10)                                            [A]
   jobs.mjs            (new) outbox sender, retention, lapse, reminders, reconcile trigger (§13.7)[A]
   admin.mjs           (new) the admin CLI (§13.8)                                               [A]
@@ -231,16 +231,20 @@ Deploy Logs, exit code 1, so Railway keeps the old deployment) when a rule below
 | `SW_WORLD_MAX_BYTES` | optional | default `8388608` (8 MB, one world's JSON, uncompressed) |
 | `SW_MAX_PER_FAMILY` | optional | default `12` relay connections per family |
 | `SW_FREE_PASS` | optional | the operator's own family, without paying (§6.9): a comma list of `email` or `email:YYYY-MM-DD` (no date = through `2099-12-31`), at most 20. The Deploy Logs show only how many |
-| `MAIL_MODE` | accounts on | `resend` \| `postmark` (production) \| `log` (development) \| `memory` (tests) |
-| `MAIL_API_KEY`, `MAIL_FROM` | production | provider key; `Sparkle World <hello@your-domain>` (before the domain is verified at Resend, `Sparkle World <onboarding@resend.dev>` works, but Resend delivers it only to the Resend account owner's own address) |
+| `MAIL_MODE` | accounts on | `microsoft` \| `resend` \| `postmark` (production) \| `log` (development) \| `memory` (tests) |
+| `MAIL_API_KEY`, `MAIL_FROM` | production | `MAIL_API_KEY`: the Resend or Postmark key (not used with `microsoft`). `MAIL_FROM`: `Sparkle World <hello@your-domain>` (before the domain is verified at Resend, `Sparkle World <onboarding@resend.dev>` works, but Resend delivers it only to the Resend account owner's own address). With `microsoft`, its address part **is the sending mailbox** (`/users/{address}/sendMail`), for example `Glimmer World <support@brickoodle.com>` |
+| `MS_TENANT_ID`, `MS_CLIENT_ID`, `MS_CLIENT_SECRET` | `MAIL_MODE=microsoft` | the Microsoft Entra app registration (DEPLOY-RAILWAY.md step 12a): the Directory (tenant) ID and the Application (client) ID (both GUIDs), and the client secret's **Value** (a value shaped like a GUID is refused: that is the secret's ID). The Deploy Logs show only `mail microsoft (<the mailbox's domain>)` |
 | `SW_OPERATOR_NAME`, `SW_OPERATOR_EMAIL`, `SW_OPERATOR_ADDRESS`, `SW_OPERATOR_PHONE` | production | printed into `/privacy`, `/terms` and emails (COPPA requires operator contact details) |
 | `NODE_ENV` | production | `production` |
 | `NPM_CONFIG_INCLUDE` | production (the build) | `dev`: with `NODE_ENV=production` npm leaves out devDependencies such as esbuild, which the build needs (`NPM_CONFIG_PRODUCTION=false` does nothing with npm 10) |
-| `SW_TEST`, `STRIPE_API_BASE`, `SW_TEST_DATABASE_URL`, `SW_STRIPE_SHAPES` | tests/staging only | §12 |
+| `SW_TEST`, `STRIPE_API_BASE`, `MS_LOGIN_BASE`, `MS_GRAPH_BASE`, `SW_TEST_DATABASE_URL`, `SW_STRIPE_SHAPES` | tests/staging only | §12 (`MS_LOGIN_BASE` and `MS_GRAPH_BASE` point `microsoft` at the local fake, §12.3a) |
 
 Refusal rules: accounts on without any required variable; `PUBLIC_ORIGIN` not https in production;
-`SW_SECRET` shorter than 32 bytes; production with `MAIL_MODE` not `resend`/`postmark`; `SW_TEST=1`
-with `NODE_ENV=production` or a `…_live_` Stripe key; `STRIPE_API_BASE` in production;
+`SW_SECRET` shorter than 32 bytes; production with `MAIL_MODE` not `resend`/`postmark`/`microsoft`;
+with `MAIL_MODE=microsoft`, a missing or malformed `MS_TENANT_ID`/`MS_CLIENT_ID` (GUIDs),
+`MS_CLIENT_SECRET` (missing, shaped like a GUID, or with spaces) or a `MAIL_FROM` that is not one
+address; `SW_TEST=1` with `NODE_ENV=production` or a `…_live_` Stripe key; `STRIPE_API_BASE`,
+`MS_LOGIN_BASE` or `MS_GRAPH_BASE` in production;
 `SW_STRIPE_SHAPES=1` with a live key; `SW_FRIENDS_MODE=free-join` with `SW_MP_CONSENT=verified`
 (a free family can never pass card consent, §6.7); an `SW_FREE_PASS` entry that is not an email
 address, has a date that is not a real day (or is after 2099-12-31), or lists an address twice, or
@@ -1420,13 +1424,66 @@ family. `/parents` gets a short "Accounts and your child's information" section 
 ## 10. Emails
 
 All emails go through the `outbox` table (exactly once, retried, never lost in a deploy) and one of
-four transports: `resend` (`POST https://api.resend.com/emails`, `Authorization: Bearer`),
+five transports: `microsoft` (Microsoft 365 through Microsoft Graph, below), `resend`
+(`POST https://api.resend.com/emails`, `Authorization: Bearer`),
 `postmark` (`POST https://api.postmarkapp.com/email`, `X-Postmark-Server-Token`, stream `outbound`,
 `TrackOpens:false`, `TrackLinks:'None'`), `log` (development: prints "[mail] b•••@gmail.com signin:
 code 482913, link http://localhost:8080/account/verify#t=…"; refused in production), `memory` (tests,
 read with `GET /api/test/mail`). The worker runs every 15 s and right after an enqueue; failures back
 off 1 min, 5 min, 30 min, 2 h, 6 h, 12 h, 24 h, then stop (counted in the daily summary). Plain text
 plus simple HTML, no remote images, no tracking, links only to `PUBLIC_ORIGIN`.
+
+**`microsoft` (Microsoft 365, `server/mail.mjs`).** App-only Microsoft Graph with the OAuth 2.0
+client credentials grant, Node's `fetch`, no SDK; every request has a 10 s timeout.
+
+- **Token:** `POST https://login.microsoftonline.com/{MS_TENANT_ID}/oauth2/v2.0/token`, form
+  `client_id`, `client_secret`, `scope=https://graph.microsoft.com/.default`,
+  `grant_type=client_credentials`
+  ([client credentials flow](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-client-creds-grant-flow)).
+  The access token is kept in memory until 5 minutes before its `expires_in` (about an hour), with
+  one refresh at a time (emails sent at the same moment share it).
+- **Send:** `POST https://graph.microsoft.com/v1.0/users/{mailbox}/sendMail`, where the mailbox is
+  the address in `MAIL_FROM`, with `{ message: { subject, body: { contentType: 'HTML', content },
+  toRecipients: [{ emailAddress: { address } }], replyTo: [the operator's email] },
+  saveToSentItems: false }`. Graph takes one body: `HTML` when the template has HTML (every
+  template does), `Text` otherwise. Success is `202 Accepted`
+  ([user: sendMail](https://learn.microsoft.com/en-us/graph/api/user-sendmail?view=graph-rest-1.0)).
+  Permission: Microsoft Graph **`Mail.Send`, application type**, with admin consent (the least
+  privileged permission for this call), optionally limited to this one mailbox with Exchange Online
+  RBAC for Applications (DEPLOY-RAILWAY.md step 12a, "Lock the app to the one mailbox"). The name
+  people see is the mailbox's own display name in Microsoft 365 (the name part of `MAIL_FROM` is not
+  sent). A shared mailbox works and needs no license.
+- **`saveToSentItems: false`, and why:** sign-in codes and the family's emails do not collect in
+  the mailbox's Sent Items, where anyone reading that mailbox would see them and where they would
+  outlive this app's own retention (§3.5: an email's data is scrubbed when it is sent, the row is
+  deleted after 7 days). Exchange still keeps the sent item in the mailbox's **Recoverable Items**
+  for the deleted-item retention period (14 days by default in Exchange Online, at most 30) unless
+  the mailbox is on a hold or under a retention policy, and keeps a message trace (sender,
+  recipient, subject) as for any email
+  ([the send mail process](https://learn.microsoft.com/en-us/graph/outlook-things-to-know-about-send-mail),
+  [Recoverable Items in Exchange Online](https://learn.microsoft.com/en-us/exchange/security-and-compliance/recoverable-items-folder/recoverable-items-folder)).
+  Codes are dead after 15 minutes, so those copies are of no use to anyone; do not put the sending
+  mailbox on a litigation hold or a long retention policy.
+- **Errors:** a `401` drops the cached token and tries once more with a fresh one. `429` and `5xx`
+  are retried: a `Retry-After` of up to 5 s is waited for once, in place; a longer one moves the
+  email's next try (honored up to 1 h, never sooner than the backoff above;
+  [throttling](https://learn.microsoft.com/en-us/graph/throttling)). `400`/`413`: the message
+  itself was refused, so it stops at once (`permanent`). `403` (no `Mail.Send` application
+  permission with admin consent, or the mailbox is outside the app's RBAC scope), `404` (no such
+  mailbox; `MailboxNotEnabledForRESTAPI`: no Exchange Online mailbox), a second `401`, and sign-in
+  failures (`AADSTS7000215` wrong secret, `AADSTS7000222` expired secret, `AADSTS700016` wrong
+  app, `AADSTS90002` wrong tenant) are setup problems: one Deploy Logs line names the likely fix
+  (at most once per 15 minutes per problem), for example `mail: Microsoft 365 refused (403
+  ErrorAccessDenied): the app needs the Mail.Send application permission with admin consent …`,
+  and the email keeps the slow backoff above, so emails queued during a setup mistake (a consent
+  confirmation, a welcome) still go out once it is fixed. A log line never holds the secret, the
+  token, an address or Microsoft's own error text (it can quote the mailbox address): only status
+  numbers and error code names.
+- **Limits:** Exchange Online allows 30 messages a minute and 10,000 recipients a day per mailbox
+  ([Exchange Online limits](https://learn.microsoft.com/en-us/office365/servicedescriptions/exchange-online-service-description/exchange-online-limits));
+  Graph allows 10,000 requests per 10 minutes and 4 concurrent requests per app and mailbox
+  ([Outlook service limits](https://learn.microsoft.com/en-us/graph/throttling-limits#outlook-service-limits)).
+  Family scale is far below both, and the outbox sends one email at a time.
 
 **Rule: no email ever contains a child's nickname, avatar, world or pet name** ("your family's
 players"), so the email provider never receives children's information.
@@ -1677,6 +1734,22 @@ card(customer, 'ok'|'fail'), state(), close()}`; also runnable as `node tools/st
   secret})`, so the app's real `constructEvent` path runs. Delivery modes: `normal`, `duplicate`,
   `reverse` (out of order), `delay`, `drop` (the reconcile path), with retries on non-2xx.
 
+### 12.3a The Microsoft 365 fake (`tools/ms-graph-fake.mjs`)
+
+`startMsGraphFake({tenantId, clientId, clientSecret, mailboxes})` → `{url, requests, sent, tokens,
+revokeTokens(), failSend({status, headers, code, times}), failToken({status, errorCodes, times}),
+hang, reset(), close()}`. A `node:http` server for the two calls `MAIL_MODE=microsoft` makes, at
+`MS_LOGIN_BASE` and `MS_GRAPH_BASE` (both its `url`; refused in production): the token endpoint
+checks the form, tenant, app and secret (answering Entra's error JSON with `error_codes`, e.g.
+`AADSTS7000215` for a wrong secret); `sendMail` checks the bearer token (revoked → `401`), the
+mailbox (unknown → `404 ErrorInvalidUser`, whose message quotes the address, so the tests show it
+is never logged) and the JSON body, and answers `202`. `tools/test-mail-microsoft.mjs`
+(`npm run test:mail-microsoft`) covers the config checks, the request shapes, the token cache and
+its refresh, the 401 retry, 429 Retry-After, 5xx, 400/403/404 and sign-in failures and their log
+lines, timeouts, the outbox's handling, and a real sign-in code email from `/api/auth/start`
+through the fake to `/api/auth/verify`; the log spy checks that no secret, token, code or address
+was logged.
+
 ### 12.4 Fixtures and the contract check
 
 `tools/fixtures/stripe/*.json`: one event per handled type and status path, in the pinned shapes,
@@ -1699,6 +1772,7 @@ used by every time comparison (§3.1); the e2e moves the Stripe fake's clock by 
   rows left for the family, `gone_sessions` filled, the Stripe fake shows the customer deleted);
   retention and lapse jobs with the test clock; outbox retries, scrubbing and exactly-once; audit
   (no personal data); advisory locks (two instances, one job run).
+- **`tools/test-mail-microsoft.mjs`:** `MAIL_MODE=microsoft` against its fake (§12.3a).
 - **`tools/test-billing.mjs` (B):** `entitlementOf` table; checkout parameters (trial on/off, one trial,
   already subscribed → 409, US box); sync with and without a session id; Portal; Start now (verified at
   once); webhooks: bad signature → 400 and nothing written, 10-minute-old timestamp → 400, re-serialized
@@ -1837,7 +1911,7 @@ tombstone again). Do one restore drill on staging.
 
 Stripe emails him when webhook deliveries keep failing. The Deploy Logs print one line a day:
 `accounts: families=… entitled=… trialing=… past_due=… lapsed=… webhooks ok=… failed=… mails sent=…
-failed=… disputes=… refund_due=…`. Railway's usage page; the email provider's bounce list.
+failed=… disputes=… refund_due=…`. Railway's usage page; the email provider's bounce list (with Microsoft 365: the "Undeliverable" notices in the sending mailbox's inbox); the Microsoft 365 client secret's expiry date.
 
 ### 13.6 Costs
 
@@ -1845,7 +1919,7 @@ failed=… disputes=… refund_due=…`. Railway's usage page; the email provide
 |---|---|
 | Railway Hobby: the Node service + Postgres | $5/month minimum (includes $5 of use); likely $5–10 |
 | Domain | about $10–20 a year |
-| Email | Resend's free tier (3,000 emails/month, 100/day) covers family scale; Postmark: 100/month free, then about $15/month |
+| Email | Microsoft 365: nothing extra when the family already has a Microsoft 365 business plan with a mailbox on the domain (a shared mailbox needs no license). Otherwise Resend's free tier (3,000 emails/month, 100/day) covers family scale; Postmark: 100/month free, then about $15/month |
 | Stripe, per $5.99 charge | about $0.54 (card, Billing, Tax; §6.8) |
 | Lawyer | one flat-fee review before the first real charge |
 | kidSAFE / PRIVO | optional, after launch; ask for a quote |
@@ -1897,7 +1971,10 @@ becomes a numbered section of `docs/DEPLOY-RAILWAY.md`, written like the existin
    Replicas stays 1. Keep **Serverless / App Sleeping off** (webhooks, emails and the daily jobs need a
    running server). Keep the spending limit (step 8 of the current doc). Environments → New → duplicate
    production as `staging` (its own Postgres and a `*.up.railway.app` address).
-3. **Email provider** (Resend recommended to start; Postmark works the same). Create the account;
+3. **Email provider.** **Microsoft 365** when the family already has it (the family's choice,
+   2026-10-02): an app registration with the `Mail.Send` application permission and a client
+   secret, best locked to the one mailbox (DEPLOY-RAILWAY.md step 12a). Otherwise Resend (Postmark
+   works the same): create the account;
    add the domain; put its DKIM/SPF (and Postmark's Return-Path) records at the registrar; add a
    DMARC record; turn **off** open and click tracking; shortest message retention; copy the API key.
    (Postmark approves new accounts before they can send to anyone.)
@@ -1925,12 +2002,14 @@ becomes a numbered section of `docs/DEPLOY-RAILWAY.md`, written like the existin
    `SW_ACCOUNTS`, `NODE_ENV=production`, `PUBLIC_ORIGIN=https://<domain>`, `DATABASE_URL`,
    `SW_SECRET` (make it with `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`),
    `STRIPE_SECRET_KEY` (the restricted key), `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID`,
-   `STRIPE_PORTAL_CONFIG`, `MAIL_MODE=resend` (or `postmark`), `MAIL_API_KEY`,
-   `MAIL_FROM=Sparkle World <hello@<domain>>`, `SW_OPERATOR_NAME`, `SW_OPERATOR_EMAIL`,
+   `STRIPE_PORTAL_CONFIG`, `MAIL_MODE=microsoft` with `MS_TENANT_ID`, `MS_CLIENT_ID` and
+   `MS_CLIENT_SECRET` (or `MAIL_MODE=resend`/`postmark` with `MAIL_API_KEY`),
+   `MAIL_FROM=Sparkle World <hello@<domain>>` (with `microsoft`: the sending mailbox),
+   `SW_OPERATOR_NAME`, `SW_OPERATOR_EMAIL`,
    `SW_OPERATOR_ADDRESS` (a PO box or a small LLC's address keeps the home address private),
    `SW_OPERATOR_PHONE`, and if you want other than the defaults `SW_TRIAL_DAYS`, `SW_FRIENDS_MODE`,
-   `SW_MP_CONSENT`, `SW_GRACE_DAYS`, `SW_RETAIN_DAYS`. Never set `SW_TEST` or `STRIPE_API_BASE` in
-   production (the server refuses to start).
+   `SW_MP_CONSENT`, `SW_GRACE_DAYS`, `SW_RETAIN_DAYS`. Never set `SW_TEST`, `STRIPE_API_BASE`,
+   `MS_LOGIN_BASE` or `MS_GRAPH_BASE` in production (the server refuses to start).
 6. **Legal.** Fill in the operator details; have the lawyer read `/privacy`, `/terms`, the notice and
    §11.4's two judgment calls; publish. Optionally apply to kidSAFE later.
 7. **Admin access.** `railway ssh` into the service and run `npm run admin -- show <email>` (check the
@@ -2061,6 +2140,7 @@ first. **A → everyone**: `package.json`, `001_init.sql`, `config.mjs`, `db.mjs
 6. **Trial length:** keep 7 days, or shorter, or none?
 7. **Refunds:** "cancel any time, keeps working until the end of the month, no partial refunds": OK?
 8. **Email provider:** Resend (free at this size) or Postmark (paid after 100 emails a month)?
+   *Decided 2026-10-02: Microsoft 365, which the family already has (`MAIL_MODE=microsoft`).*
 9. **Domain name**, and whether to apply for a kidSAFE seal after launch.
 
 ## 18. Risks
