@@ -243,7 +243,9 @@ async function standNear(page, x, z, d = 4) {
 }
 
 /** Draw calls of a frame, optionally from a fixed camera (view: [x, y, z] it looks at). */
-const drawCalls = (page, view = null) => page.evaluate(async (view) => {
+// draw calls of one view: the median of five looks (a passing cloud, a bird or a sparkle can add
+// one or two to a single frame), and the visible meshes per scene group for a failure's notes
+const drawCallsOf = (page, view = null) => page.evaluate(async (view) => {
   const g = window.__game;
   let rig = null;
   if (view) {
@@ -252,11 +254,28 @@ const drawCalls = (page, view = null) => page.evaluate(async (view) => {
     g.camera.position.set(view[0] + 7, view[1] + 6, view[2] - 7);
     g.camera.lookAt(view[0], view[1], view[2]);
   }
-  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(r))));
-  const calls = g.renderer.info.render.calls;
+  const frame = () => new Promise((r) => requestAnimationFrame(r));
+  await frame();
+  await frame();
+  const samples = [];
+  for (let i = 0; i < 5; i++) {
+    await frame();
+    samples.push(g.renderer.info.render.calls);
+  }
+  const by = {};
+  for (const child of g.scene.children) {
+    let n = 0;
+    child.traverseVisible((o) => { if (o.isMesh || o.isPoints || o.isLine || o.isSprite) n++; });
+    if (n) {
+      const name = child.name || child.type;
+      by[name] = (by[name] || 0) + n;
+    }
+  }
   if (rig) g.cameraRig.update = rig;
-  return calls;
+  const sorted = samples.slice().sort((a, b) => a - b);
+  return { calls: sorted[2], samples, by };
 }, view);
+const drawCalls = async (page, view = null) => (await drawCallsOf(page, view)).calls;
 
 // =====================================================================================
 // land
@@ -458,7 +477,8 @@ async function landPass(browser, errors) {
     return sum / 120;
   });
   const view = await page.evaluate(() => { const s = window.__game.debug.vehicles.state(); return [s.x, s.y, s.z]; });
-  const callsDriving = await drawCalls(page, view);
+  const dcDriving = await drawCallsOf(page, view);
+  const callsDriving = dcDriving.calls;
   const sysDriving = await timing();
 
   // ---- E gets out (not the chair she looks at) ----
@@ -485,9 +505,11 @@ async function landPass(browser, errors) {
   check(errors, parked.hist === parked.hist0, `driving and parking left no Undo entries (${parked.hist0} -> ${parked.hist})`);
   check(errors, (await events(page, 'vehicle:park')).length >= 1, "'vehicle:park' fired");
   await settle(page, 600);
-  const callsParked = await drawCalls(page, view);
+  const dcParked = await drawCallsOf(page, view);
+  const callsParked = dcParked.calls;
   const sysIdle = await timing();
   check(errors, callsDriving - callsParked <= 8, `draw calls while driving minus parked: ${callsDriving} - ${callsParked} = ${callsDriving - callsParked} (<= 8)`);
+  console.log(`    (driving ${JSON.stringify(dcDriving.samples)} ${JSON.stringify(dcDriving.by)}; parked ${JSON.stringify(dcParked.samples)} ${JSON.stringify(dcParked.by)})`);
   check(errors, sysDriving <= sysIdle + 1.5, `systems stage while driving ${sysDriving.toFixed(2)} ms vs idle ${sysIdle.toFixed(2)} ms (<= +1.5)`);
 
   // ---- auto-park: a chair while driving (Hand) parks the car where it is ----
