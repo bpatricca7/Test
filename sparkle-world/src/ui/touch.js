@@ -173,6 +173,7 @@ export function install(game) {
     [`<span class="sw-help-pic" style="display:grid;place-items:center;color:#3FD8B0">${icon2('jump', { size: 56 })}</span>`, 'Jump button'],
     [`<span class="sw-help-pic" style="display:grid;place-items:center;color:#6CC6FF">${icon2('fly', { size: 56 })}</span>`, 'Fly button, then Up and Down'],
     [`<span class="sw-help-pic" style="display:grid;place-items:center;color:#FF5FA2">${icon2('bag', { size: 56 })}</span>`, 'Bag: pick what to build'],
+    [`<span class="sw-help-pic" style="display:grid;place-items:center;color:#FFB020">${icon2('honk', { size: 56 })}</span>`, 'In a car or boat: the joystick drives, Honk beeps, the pink button gets out'],
   ];
 
   const renderHelp = () => {

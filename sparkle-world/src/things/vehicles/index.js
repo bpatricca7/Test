@@ -314,7 +314,7 @@ class VehicleSystem {
     this._firstTip.add(boat);
     const touch = this.game.input.touchMode;
     const text = touch
-      ? (boat ? 'Push the joystick to steer! Tap Honk to toot!' : 'Push the joystick to drive! Tap Honk to beep!')
+      ? (boat ? 'Push the joystick to steer! Tap Honk to toot! The pink button gets out.' : 'Push the joystick to drive! Tap Honk to beep! The pink button gets out.')
       : (boat ? 'Steer with W A S D! Space toots, E gets out.' : 'Drive with W A S D! Space honks, E gets out.');
     this.game.toast(text, { icon: 'star', duration: 4200 });
   }
