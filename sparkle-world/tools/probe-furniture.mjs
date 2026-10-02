@@ -587,7 +587,10 @@ async function actionsPass(page, errors, ids) {
   check(errors, !!dressPanel || /Dress-Up/.test(dressToast), `the wardrobe opens the Dress-Up Studio (or a friendly toast): ${dressPanel || dressToast.slice(0, 60)}`);
   if (dressPanel) await page.keyboard.press('Escape');
   await tapEntity(page, ids.toyChest, { wait: 700 });
-  check(errors, await page.evaluate(() => { const fx = window.__game.scene.getObjectByName('furniture-fx'); return !!fx && fx.children.length > 0; }), 'the toy chest pops out a toy');
+  // the toy pops out 250 ms after the lid opens (a timer): on a slow software-drawn page a long
+  // frame can delay that timer past one fixed look, so wait for it (it stays up 2.4 s of game time)
+  const toy = await page.waitForFunction(() => { const fx = window.__game.scene.getObjectByName('furniture-fx'); return !!fx && fx.children.length > 0; }, null, { timeout: 6000, polling: 50 }).then(() => true, () => false);
+  check(errors, toy, 'the toy chest pops out a toy');
   await freeShot(page, 'toy-chest', [41.5, 19.6, 49.8], [43, 17.8, 47], 100);
   await tapEntity(page, ids.mailbox);
   const letter = await page.evaluate(() => window.__game.ui.current === 'letter' && document.querySelector('.sw-letter-paper').textContent);
