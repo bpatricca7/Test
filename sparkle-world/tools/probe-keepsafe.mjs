@@ -300,6 +300,10 @@ async function run() {
       check(backup && backup.format === 'sparkle-world-backup' && backup.worlds.length === 2 && backup.worlds.every((w) => w.blocks && w.size && w.thumbnail), `the file has both worlds (${backup && backup.worlds.map((w) => w.name).join(', ')})`);
       check(backup && JSON.stringify(backup.profile.look) === mine.look && backup.profile.coins === 777 && backup.profile.stickers.first_block, 'and her look, coins and stickers');
       check(backup && !('settings' in backup.profile) && !('net' in backup.profile) && !('keepsafe' in backup.profile), 'but not this device\'s settings or ids');
+      check(backup && /^Glimmer World: /.test(backup.about), `the file says what it is: "${backup && backup.about}"`);
+      // the fresh profile below opens it as a file saved before the game was renamed: the same
+      // format id ('sparkle-world-backup'), the old name in its "about" line
+      if (backup) await writeFile(backupFile, JSON.stringify({ ...backup, about: 'Sparkle World: a copy of every world, your look, outfits and stickers. To bring it back: My Worlds, then Open a file.' }));
       await A.page.waitForFunction(() => /Saved a copy of your worlds!/.test(document.querySelector('.sw-toasts').textContent), null, { timeout: 4000 }).catch(() => {});
       check(/Saved a copy of your worlds!/.test(await game(A.page, () => document.querySelector('.sw-toasts').textContent)), 'a happy toast');
       s = await ksState(A.page);
@@ -329,7 +333,7 @@ async function run() {
       await A.context.close();
 
       // -------------------------------------------------------------- 5. a fresh profile
-      log('A fresh profile opens the backup');
+      log('A fresh profile opens the backup (as saved before the rename)');
       const B = await open(browser, PLAY, { label: 'fresh' });
       const freshLook = await game(B.page, () => JSON.stringify(window.__game.profile.look));
       await B.page.locator('.sw-title2 button', { hasText: 'My Worlds' }).click();
