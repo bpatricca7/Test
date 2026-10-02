@@ -366,12 +366,16 @@ async function uiPass(browser) {
   const before = await page.evaluate(() => ({ blocks: window.__game.world.blocks.slice().join(','), hist: window.__game.history.length, ents: window.__game.debug.entities().length }));
   await page.mouse.move(pt ? pt.x : vp.width / 2, pt ? pt.y : vp.height * 0.6);
   await settle(page, 300);
+  // the magic runs on real time (about 1.6 s): one long software-drawn frame can carry it from
+  // start to end, so the probe holds its clock half way (the game's test hook) to look at it
+  await page.evaluate(() => { window.__game.prefabs.holdClock = 1.0; });
   await page.mouse.down();
   await page.mouse.up();
-  await page.waitForFunction(() => window.__game.prefabs.clock > 0.8, null, { timeout: 5000, polling: 16 }).catch(() => {});
+  await page.waitForFunction(() => window.__game.prefabs.building, null, { timeout: 15000, polling: 50 }).catch(() => {});
   const mid = await page.evaluate(() => window.__game.prefabs.building);
   check(mid, 'the house is popping in (animation running)');
   await shot(page, 'ui-building');
+  await page.evaluate(() => { window.__game.prefabs.holdClock = null; });
   await page.waitForFunction(() => !window.__game.prefabs.building, null, { timeout: 8000 });
   await page.waitForFunction(() => window.__game.chunks.pending === 0, null, { timeout: 30000 }).catch(() => {});
   await settle(page, 700);

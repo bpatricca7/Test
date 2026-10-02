@@ -517,12 +517,16 @@ async function uiPass(browser) {
   check(!!g1.ghost && g1.ghost.key === 'sparkle_camper' && g1.name === 'Sparkle Camper', `hovering the ground shows the Sparkle Camper ghost and its bar ("${g1.name}")`);
   await shot(page, 'ui-ghost');
   const before = await page.evaluate(() => ({ blocks: window.__game.world.blocks.slice().join(','), hist: window.__game.history.length, ents: window.__game.debug.entities().length }));
+  // the magic runs on real time (about 1.6 s): one long software-drawn frame can carry it from
+  // start to end, so the probe holds its clock half way (the game's test hook) to look at it
+  await page.evaluate(() => { window.__game.prefabs.holdClock = 1.0; });
   await page.mouse.down();
   await page.mouse.up();
-  await page.waitForFunction(() => window.__game.prefabs.clock > 0.8, null, { timeout: 6000, polling: 16 }).catch(() => {});
+  await page.waitForFunction(() => window.__game.prefabs.building, null, { timeout: 15000, polling: 50 }).catch(() => {});
   const building = await page.evaluate(() => window.__game.prefabs.building);
   check(building, 'a click starts the magic (the camper pops in)');
   await shot(page, 'ui-building');
+  await page.evaluate(() => { window.__game.prefabs.holdClock = null; });
   await page.waitForFunction(() => !window.__game.prefabs.building, null, { timeout: 10000 });
   await meshed(page);
   await settle(page, 700);
@@ -556,6 +560,8 @@ async function uiPass(browser) {
   const spt = await screenPoint(page, ...sp);
   if (spt) await page.mouse.move(spt.x, spt.y);
   await settle(page, 400);
+  // the hover target is worked out on the next drawn frame (a slow one here can take seconds)
+  await page.waitForFunction(() => { const t = window.__game.target; return t && t.type === 'pickable' && t.pickable.ref && /^big_slide/.test(t.pickable.ref.key || ''); }, null, { timeout: 15000, polling: 100 }).catch(() => {});
   const hint = await page.evaluate(() => { const t = window.__game.target; return t && t.type === 'pickable' && t.pickable.ref && t.pickable.ref.key; });
   check(/^big_slide/.test(hint || ''), `the mouse over the slide targets it (${hint})`);
   await shot(page, 'ui-slide-hint', { toasts: true });
