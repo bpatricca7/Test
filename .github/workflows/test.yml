@@ -1,4 +1,4 @@
-# Sparkle World: every automated check on every change (docs/ACCOUNTS.md §12.10).
+# Glimmer World: every automated check on every change (docs/ACCOUNTS.md §12.10).
 # Nothing here talks to Stripe or an email provider: Stripe is the local fake
 # (tools/stripe-fake/), emails stay in memory, Postgres is the service below.
 name: sparkle-world tests
@@ -61,6 +61,9 @@ jobs:
 
       - name: Build (the game, the home page; accounts off)
         run: npm run build
+
+      - name: Product name (Glimmer World; no old name left anywhere people read)
+        run: node --test tools/test-name.mjs
 
       - name: Accounts platform (A)
         run: npm run test:accounts
