@@ -483,6 +483,13 @@ if (!MEASURE) {
       assert.equal(cloudProfile(m).net, undefined);
       assert.deepEqual(mergeProfile(m, server).coins, 30, 'merging again adds nothing');
     });
+    test('lookPicked stays once either copy has it (the Dress Up nudge never comes back)', () => {
+      const a = { updatedAt: 10, look: { hair: 'a' }, lookPicked: true };
+      const b = { updatedAt: 20, look: { hair: 'a' } };
+      assert.equal(mergeProfile(a, b).lookPicked, true, 'the older local copy had it');
+      assert.equal(mergeProfile(b, a).lookPicked, true, 'the older server copy had it');
+      assert.equal(mergeProfile(b, { updatedAt: 5 }).lookPicked, undefined, 'neither: not made up');
+    });
     test('forkName: "<name> (copy)" in at most 80 characters', () => {
       assert.equal(forkName('Castle'), 'Castle (copy)');
       assert.equal(forkName('x'.repeat(80)).length, 80);

@@ -48,6 +48,8 @@ export function mergeProfile(local, server) {
   if (local.stickersSeen || server.stickersSeen) out.stickersSeen = union(local.stickersSeen, server.stickersSeen);
   out.stats = maxNumbers(local.stats, server.stats);
   if ('coins' in local || 'coins' in server) out.coins = Math.max(local.coins || 0, server.coins || 0);
+  // the Dress Up nudge stays gone once she opened the Studio on any device (one way, like a backup)
+  if (local.lookPicked === true || server.lookPicked === true) out.lookPicked = true;
   if (isObj(local.settings)) out.settings = { ...out.settings, ...pick(local.settings, WALKIE, true) };
   out.updatedAt = Math.max(lt, st);
   return out;
