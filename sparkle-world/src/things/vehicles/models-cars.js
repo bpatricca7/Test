@@ -137,8 +137,9 @@ export function jeep(color, data) {
   }
   k.box(1.46, 0.06, 0.06, WHITE, 0.27, 1.6, 0.89);
   k.box(1.46, 0.05, 0.05, WHITE, 0.27, 1.6, 0.2);
-  k.ball(1, '#FFF6EC', 1.0, 1.7, 0.95, { seg: 16, sx: 0.32, sy: 0.05, sz: 1.0 });
-  for (const [z, c] of [[0.55, '#FF6FA8'], [0.95, '#6CC6FF'], [1.35, '#FFC94D']]) k.box(0.52, 0.02, 0.12, c, 0.74, 1.73, z);
+  // the board rides over the passenger side, so the chase camera sees the driver's head
+  k.ball(1, '#FFF6EC', 0.55, 1.7, 0.95, { seg: 16, sx: 0.32, sy: 0.05, sz: 1.0 });
+  for (const [z, c] of [[0.55, '#FF6FA8'], [0.95, '#6CC6FF'], [1.35, '#FFC94D']]) k.box(0.52, 0.02, 0.12, c, 0.29, 1.73, z);
   // the spare tire on the back, fog lamps, round headlamps
   discZ(k, 0.3, 0.12, TIRE, 1.0, 0.86, 0.0, 18);
   discZ(k, 0.18, 0.02, sand, 1.0, 0.86, -0.02, 14);
