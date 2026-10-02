@@ -103,7 +103,7 @@ export const VEHICLES = [
     colliders: [[0.05, 0, 0.05, 1.95, 1.3, 3.95]],
     vehicle: {
       kind: 'boat', water: true, noun: 'boat', hint: 'Tap to sail!', seat: [1.0, 1.05, 0.9], pose: 'sit', door: 1,
-      body: { halfW: 0.85, halfL: 1.85, height: 1.0 }, speed: 6.5, reverse: 1.5, accel: 2.5, turn: 1.5, cam: 3.0,
+      body: { halfW: 0.85, halfL: 1.85, height: 1.0, clearance: 3.9 }, speed: 6.5, reverse: 1.5, accel: 2.5, turn: 1.5, cam: 3.0,
       horn: 'ding', engine: 'sail', lamps: [[0.75, 1.25, 3.6], [1.25, 1.25, 3.6]],
     },
   },

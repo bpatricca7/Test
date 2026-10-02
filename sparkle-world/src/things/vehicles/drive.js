@@ -10,8 +10,8 @@
 // Safety (the game once froze on iPads from a non-finite position in an endless loop):
 //   - every number is checked every step: a non-finite pose (pos, yaw, speed, vy) goes back to
 //     the last good pose; a non-finite picture value (lift, pitch, roll) is just zeroed;
-//   - every loop has a fixed bound (sub-steps 4, probes 3, unstick 3, water scan 64); there is
-//     no while loop in this folder (tools/test-vehicles.mjs checks).
+//   - every loop has a fixed bound (sub-steps 4, probes 3, unstick 3, water scans 64 and 32);
+//     there is no while loop in this folder (tools/test-vehicles.mjs checks).
 
 const TWO_PI = Math.PI * 2;
 const COAST = 3.5; // blocks/s² when she lets go
@@ -23,7 +23,9 @@ const SUPPORT_REACH = 1.2; // how far below the wheels we look for ground
 const SUB_STEP = 0.3; // longest move per sub-step
 const MAX_SUB = 4;
 const WATER_SCAN = 64;
-const WATER_DROP = 4; // how far down a car looks for water past its bumper
+const WATER_DROP = 32; // how far down a car looks for water past its bumper (a cliff over a pond)
+const WET_EDGE = 3; // near the spot she was put back from water, no driving over a drop
+const BOAT_CLEARANCE = 1.85; // hull and rider above the water (a tall boat says more: body.clearance)
 
 /** Signed smallest turn from a to b (radians). */
 export function angleDelta(a, b) {
@@ -66,6 +68,8 @@ export class Drive {
     this.halfW = clamp(fin(b.halfW) ? b.halfW : 0.85, 0.2, 2);
     this.halfL = clamp(fin(b.halfL) ? b.halfL : this.halfW, this.halfW, 3);
     this.height = clamp(fin(b.height) ? b.height : 1.5, 0.5, 3);
+    // boats: the room they need above the water (the Sailboat's mast and sail)
+    this.clearance = clamp(fin(b.clearance) ? b.clearance : BOAT_CLEARANCE, 1, 4.5);
     this.off = this.halfL - this.halfW; // probe offset along the nose
     this.probes = this.off > 0.01 ? [-1, 0, 1] : [0];
     this.pos = { x: pos[0], y: pos[1], z: pos[2] };
@@ -89,6 +93,7 @@ export class Drive {
     this.bumpSpeed = 0;
     this.climbed = 0;
     this.trouble = null; // 'stuck' | 'dry' | null: the system should park the vehicle
+    this.wetEdge = null; // { x, z }: where a fall into water put her back (no driving off there)
     // counters for the debug API and the tests
     this.nanResets = 0;
     this.bumps = 0;
@@ -118,7 +123,7 @@ export class Drive {
       const px = this._px(x, yaw, i), pz = this._pz(z, yaw, i);
       if (this.boat) {
         if (!ph.liquidAt(px, this.waterY + 0.5, pz)) return false;
-        if (ph.bodyBlocked(px, this.waterY + 0.05, pz, hw, 1.85)) return false;
+        if (ph.bodyBlocked(px, this.waterY + 0.05, pz, hw, this.clearance)) return false;
       } else if (ph.bodyBlocked(px, y + 0.01, pz, hw, this.height)) return false;
     }
     return true;
@@ -151,7 +156,7 @@ export class Drive {
 
   /**
    * Water ahead of a car: under the bumper (centre and both corners), liquid at the wheels'
-   * level or below them before any ground (a pond down a little ledge counts too).
+   * level or below them before any ground (a pond down a ledge or a cliff counts too).
    */
   _waterAhead(x, y, z, yaw, dir) {
     const ph = this.physics;
@@ -258,6 +263,8 @@ export class Drive {
     this.bumpSpeed = 0;
     this.climbed = 0;
     if (!(dt > 0)) return this;
+    const we = this.wetEdge;
+    if (we && !(Math.hypot(this.pos.x - we.x, this.pos.z - we.z) <= WET_EDGE + 1)) this.wetEdge = null;
     dt = Math.min(dt, 0.05);
     this.sanitize();
     // something appeared inside her car (a friend's block, an Undo): lift it out, else park
@@ -356,7 +363,18 @@ export class Drive {
   }
 
   _wet(x, y, z, dir) {
-    return this._waterAhead(x, y, z, this.yaw, dir);
+    return this._waterAhead(x, y, z, this.yaw, dir) || this._overWetEdge(x, y, z, dir);
+  }
+
+  /**
+   * Near the spot a fall into water put her back: a drop under the nose (more than a ledge)
+   * counts as water, so a held stick cannot drive off into the same pond again and again.
+   */
+  _overWetEdge(x, y, z, dir) {
+    const e = this.wetEdge;
+    if (!e || Math.hypot(x - e.x, z - e.z) > WET_EDGE) return false;
+    const i = this.probes.length > 1 ? dir : 0;
+    return this._support(x, y, z, this.yaw, i) <= y - SUPPORT_REACH + 1e-6;
   }
 
   /** May the body be at (x, y, z) now? (free, and for cars: no water at the bumper) */
@@ -385,9 +403,12 @@ export class Drive {
       this.onGround = p.y <= support + 0.001;
       if (this.onGround) this.vy = 0;
     }
-    // never end in water: rolled into a pond some other way -> the last good spot
+    // never end in water: rolled into a pond some other way -> the last good spot, and that
+    // edge stays closed while she is near it (no fall-and-back-again loop with a held stick)
     if (this.physics.liquidAt(p.x, p.y + 0.1, p.z)) {
       this._restore();
+      this.hit = 'water';
+      if (fin(p.x) && fin(p.z)) this.wetEdge = { x: p.x, z: p.z };
       if (!this.poseFree(p.x, p.y, p.z, this.yaw)) this.trouble = 'stuck';
     }
   }
@@ -476,7 +497,7 @@ export class Drive {
   /** Does the body overlap block cell (x, y, z)? (nothing is built into her car) */
   overlapsCell(x, y, z) {
     const p = this.pos, hw = this.halfW;
-    const y0 = this.boat ? this.waterY + 0.05 : p.y, y1 = this.boat ? this.waterY + 1.9 : p.y + this.height;
+    const y0 = this.boat ? this.waterY + 0.05 : p.y, y1 = this.boat ? this.waterY + 0.05 + this.clearance : p.y + this.height;
     if (!(y1 > y && y0 < y + 1)) return false;
     for (const i of this.probes) {
       const px = this._px(p.x, this.yaw, i), pz = this._pz(p.z, this.yaw, i);

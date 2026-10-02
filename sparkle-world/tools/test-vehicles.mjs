@@ -339,6 +339,74 @@ await test('3b: boats stop at the shore and keep one water level', () => {
   assert(d.trouble === 'dry' || d.trouble === 'stuck', 'trouble when the lake is gone: ' + d.trouble);
 });
 
+await test('3c: a 6-high cliff over a pond stops at the edge (never airborne)', () => {
+  const w = flatWorld(4);
+  w.fill(0, 4, 0, 47, 9, 25, STONE); // a cliff top at y = 10 up to z = 26
+  w.fill(0, 1, 26, 47, 3, 47, WATER); // the pond at its foot
+  const env = setup(w);
+  for (const s of [CAR, BUBBLE]) {
+    const d = makeDrive(env, s, 20, 10, 20, 0);
+    let minY = d.pos.y, wet = 0;
+    for (let i = 0; i < 600; i++) {
+      d.step(1 / 60, FWD);
+      minY = Math.min(minY, d.pos.y);
+      if (d.hit === 'water') wet++;
+      assert(allFinite(d), 'finite');
+    }
+    assert(minY > 9.99, 'never dropped off the edge, lowest y ' + minY.toFixed(2));
+    assert(wet > 0, 'the edge says water');
+    assert(d.pos.z + s.body.halfL <= 26.1 && cleanPose(d), 'bumper at the cliff edge, nose at ' + (d.pos.z + s.body.halfL).toFixed(2));
+  }
+});
+
+await test('3d: a pond out past the cliff foot: she lands on the land, or is put back once and that edge stays closed', () => {
+  const w = flatWorld(4);
+  w.fill(0, 4, 0, 47, 9, 25, STONE); // a cliff top at y = 10 up to z = 26, land at y = 4 below
+  w.fill(0, 3, 30, 47, 3, 47, WATER); // a pond from z = 30
+  const env = setup(w);
+  // held forward off the cliff: she flies out, never into the pond, and stays down (no loop)
+  let d = makeDrive(env, CAR, 20, 10, 20, 0);
+  let falls = 0, up = true, wetAt = 0;
+  for (let i = 0; i < 60 * 20; i++) {
+    d.step(1 / 60, FWD);
+    assert(allFinite(d), 'finite');
+    if (env.physics.liquidAt(d.pos.x, d.pos.y + 0.1, d.pos.z)) wetAt++;
+    if (up && d.pos.y < 9) { falls++; up = false; }
+    if (!up && d.pos.y > 9.99) up = true;
+  }
+  assert(wetAt === 0 && falls === 1 && Math.abs(d.pos.y - 4) < 0.01 && d.pos.z + CAR.body.halfL <= 30.1, `one drop onto the land, nose at ${(d.pos.z + CAR.body.halfL).toFixed(2)}, y ${d.pos.y.toFixed(2)}`);
+  // the backstop: something put her into the pond from the cliff (a fall the scan could not
+  // see): back to the cliff edge once, and with the stick held that edge stays closed
+  d = makeDrive(env, CAR, 20, 10, 24.5, 0);
+  d.pos.z = 34; d.pos.y = 6; // in the air over the pond
+  for (let i = 0; i < 60 && !d.wetEdge; i++) d.step(1 / 60, null);
+  assert(d.wetEdge && Math.abs(d.pos.y - 10) < 0.01 && Math.abs(d.pos.z - 24.5) < 0.01, 'put back on the cliff: ' + JSON.stringify(d.pos));
+  let low = Infinity;
+  for (let i = 0; i < 60 * 10; i++) {
+    d.step(1 / 60, FWD);
+    low = Math.min(low, d.pos.y);
+  }
+  assert(low > 9.99 && cleanPose(d), 'the edge stays closed while she holds forward, lowest y ' + low.toFixed(2));
+  // she turns away and drives off: once she is far from that edge it is forgotten
+  for (let i = 0; i < 240; i++) d.step(1 / 60, { mx: 0, mz: 1, camYaw: Math.PI });
+  assert(d.wetEdge === null && d.pos.z < 20, 'away from the edge, it is forgotten (z ' + d.pos.z.toFixed(1) + ')');
+  return `${falls} drop`;
+});
+
+await test('3e: a low bridge stops the Sailboat (its mast) but not the Speedboat', () => {
+  const w = flatWorld(1);
+  w.fill(0, 1, 0, 47, 3, 47, WATER);
+  w.fill(0, 5, 30, 47, 5, 30, STONE); // a bridge deck 2 blocks above the water (y 5)
+  const env = setup(w);
+  const SAIL = spec('boat_sail');
+  const sail = makeDrive(env, SAIL, 20, 3, 22, 0);
+  const fast = makeDrive(env, BOAT, 26, 3, 22, 0);
+  for (let i = 0; i < 300; i++) { sail.step(1 / 60, FWD); fast.step(1 / 60, FWD); }
+  assert(sail.pos.z + SAIL.body.halfL <= 30.001 && cleanPose(sail), 'the Sailboat waits before the bridge, bow at ' + (sail.pos.z + SAIL.body.halfL).toFixed(2));
+  assert(fast.pos.z > 32, 'the Speedboat passes under, z ' + fast.pos.z.toFixed(1));
+  assert(sail.overlapsCell(20, 6, Math.floor(sail.pos.z)) === true, 'the mast counts for blocks built into it');
+});
+
 await test('4: park spots fit, on whole cells and quarter turns; sealed box = null within 588', () => {
   const w = flatWorld(4);
   const ctx = makeCtx(w);
