@@ -925,6 +925,8 @@ test('AT12', 'Lily\u2019s page reloads; "Keep playing" opens the door again; eve
   const t0 = Date.now();
   try {
     await reloadPlayer(lily);
+    // her title's first 3D frame (shader compile) can hold her page for a while: let it finish
+    await flows.drawn(lily);
     const chip = lily.page.locator('.sw-title-chips .sw-net-chip--host');
     await chip.waitFor({ state: 'visible', timeout: 30000 });
     check(/Keep playing/.test(await chip.textContent()), 'Lily\u2019s title shows "Keep playing"');
@@ -939,7 +941,6 @@ test('AT12', 'Lily\u2019s page reloads; "Keep playing" opens the door again; eve
     }, null, 15000);
     if (back < NETC.HOST_AWAY_GRACE - 5000) check(rosieSees === 'break', `Rosie sees "Lily is taking a little break\u2026" (${rosieSees || 'nothing'})`);
     else check(!!rosieSees, `Rosie sees "Lily is taking a little break\u2026" or, as Lily took ${(back / 1000).toFixed(0)} s (over the ${NETC.HOST_AWAY_GRACE / 1000} s grace), that she went home (${rosieSees || 'nothing'})`);
-    // her title's first 3D frame (shader compile) can hold her page for a while: let it finish
     await flows.drawn(lily);
     await press(lily, chip, { timeout: 60000 });
     check(await until(lily, () => window.__game.net.state === 'h.live', null, 150000), 'Lily is hosting again with the same code');
