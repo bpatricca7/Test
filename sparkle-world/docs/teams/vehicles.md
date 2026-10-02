@@ -1013,6 +1013,13 @@ leaves a record that is already there (a save made twice) alone.
   uid range (mine = 1), the host's world brings the car back from `systems.vehicles` and her later
   park adds a second copy (nothing is lost; one copy can be removed). Her own cars park with their
   own uid and replace the restored record.
+- Known limitation (deferred from the wave 3 review): a host's car that a friend drove and parked
+  while "Friends can change my things" was on keeps the host as its owner but gets a uid in the
+  friend's seat range. If the host later turns careful mode on, the page's own pre-check (uid
+  below 10⁶) lets that car through: the drive starts, the host refuses it (PROTECTED) and the
+  car snaps back with the general "That's someone else's!" note instead of "That's Lily's car!".
+  Nothing is lost. The clean fix needs the host to tell the pages who owns out-of-range cars, or
+  a park that keeps the car's host-range uid (a protocol change), so it waits for a later wave.
 
 **Not done (left out on purpose).** The passenger pet (decision 4) and NPC friends driving (§11).
 The Build / Remove HUD buttons are not dimmed while she drives (they answer with the toast).
