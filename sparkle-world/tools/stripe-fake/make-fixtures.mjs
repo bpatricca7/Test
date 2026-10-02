@@ -33,7 +33,7 @@ function checkoutParams(customer, family, trialDays) {
     consent_collection: { terms_of_service: 'required' },
     custom_text: { terms_of_service_acceptance: { message: 'I agree to the Terms. My Family Plan renews every month at $5.99 plus tax until I cancel; I can cancel any time on the Family page.' } },
     allow_promotion_codes: 'false', locale: 'en',
-    success_url: 'https://sparkleworld.example/account?checkout={CHECKOUT_SESSION_ID}', cancel_url: 'https://sparkleworld.example/account?checkout=cancel',
+    success_url: 'https://glimmerworld.example/account?checkout={CHECKOUT_SESSION_ID}', cancel_url: 'https://glimmerworld.example/account?checkout=cancel',
   };
 }
 

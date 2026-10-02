@@ -120,7 +120,7 @@ export async function saveAllWorlds(game) {
     game.toast('Oops! Could not find your worlds.', { icon: 'sparkle' });
     return 'failed';
   }
-  const res = await saveFile({ filename: `Sparkle World backup ${localDay()}.json`, data: text, mime: 'application/json' });
+  const res = await saveFile({ filename: `Glimmer World backup ${localDay()}.json`, data: text, mime: 'application/json' });
   if (res === 'saved') {
     game.toast('Saved a copy of your worlds!', { icon: 'download', color: 'mint' });
     game.audio.play('success');

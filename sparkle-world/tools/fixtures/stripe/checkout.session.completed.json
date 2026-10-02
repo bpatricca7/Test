@@ -23,7 +23,7 @@
         "status": "complete"
       },
       "billing_address_collection": "required",
-      "cancel_url": "https://sparkleworld.example/account?checkout=cancel",
+      "cancel_url": "https://glimmerworld.example/account?checkout=cancel",
       "client_reference_id": "5a1e0000-0000-4000-8000-000000000001",
       "client_secret": null,
       "collected_information": {
@@ -107,7 +107,7 @@
       "status": "complete",
       "submit_type": null,
       "subscription": "sub_Fixture0001",
-      "success_url": "https://sparkleworld.example/account?checkout={CHECKOUT_SESSION_ID}",
+      "success_url": "https://glimmerworld.example/account?checkout={CHECKOUT_SESSION_ID}",
       "total_details": {
         "amount_discount": 0,
         "amount_shipping": 0,

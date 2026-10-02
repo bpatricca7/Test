@@ -1,7 +1,7 @@
-# Sparkle World: written information security program
+# Glimmer World: written information security program
 
 *COPPA 16 CFR 312.8 asks every operator of a children's service to keep a written information
-security program, sized to the operator and the information. Sparkle World is run by one parent
+security program, sized to the operator and the information. Glimmer World is run by one parent
 for a small number of families, so this program is short on purpose. It applies from the day
 family accounts go live (`SW_ACCOUNTS=optional` or `required`). Written 2026-09-28 with
 docs/ACCOUNTS.md; read it again at every yearly review.*

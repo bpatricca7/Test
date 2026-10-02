@@ -1,6 +1,6 @@
 # Third-party notices
 
-Sparkle World bundles the following open-source software and fonts.
+Glimmer World bundles the following open-source software and fonts.
 
 ## three.js (https://threejs.org), MIT License
 

@@ -1,7 +1,7 @@
-# Sparkle World: when something goes wrong
+# Glimmer World: when something goes wrong
 
 *The incident response plan of the security program ([SECURITY-PROGRAM.md](SECURITY-PROGRAM.md)).
-One person runs Sparkle World, so this is a checklist to follow calmly, in order. An "incident" is
+One person runs Glimmer World, so this is a checklist to follow calmly, in order. An "incident" is
 anything that may have let someone see, change or delete family information they shouldn't, or
 that exposed a secret: a leaked key, a hacked account, a bug that showed one family's data to
 another, a lost laptop that was signed in, a strange admin action you didn't make.*
@@ -66,9 +66,9 @@ Answer these, as well as you can:
 
 A simple email to parents (fill in the brackets):
 
-> Subject: Something went wrong at Sparkle World
+> Subject: Something went wrong at Glimmer World
 >
-> Hello, I'm [name], who runs Sparkle World. On [date] [what happened, in one or two sentences].
+> Hello, I'm [name], who runs Glimmer World. On [date] [what happened, in one or two sentences].
 > This may have exposed [which information] for your family. [What I did about it.] [What you can
 > do, if anything.] Your children's worlds are [safe / restored]. I'm sorry. If you have any
 > question, reply to this email or call [phone].

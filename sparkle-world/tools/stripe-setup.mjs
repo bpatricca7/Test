@@ -3,14 +3,15 @@
 //   STRIPE_SECRET_KEY=sk_test_… PUBLIC_ORIGIN=https://your-domain npm run stripe:setup
 //
 // It finds or makes, and prints for the Railway Variables:
-//   - the Product "Sparkle World Family Plan" (metadata sw=family_plan)
+//   - the Product "Glimmer World Family Plan" (metadata sw=family_plan)
 //   - its one Price: $5.99 a month, USD, tax behavior "exclusive" ("plus sales tax where it applies"),
 //     lookup key sparkle_family_monthly                          → STRIPE_PRICE_ID
 //   - a Customer Portal configuration (metadata sw=family_portal): update the card, invoice
 //     history, cancel at the end of the period with the reason survey; no plan switching, no
 //     quantity, no email editing                                  → STRIPE_PORTAL_CONFIG
 // Running it again changes nothing (it looks everything up first; a portal configuration that
-// drifted is put back). A Stripe price can't be changed: if the one with the lookup key differs,
+// drifted is put back, and a product or portal headline made under the game's old name, such as
+// "Sparkle World Family Plan", gets today's name). A Stripe price can't be changed: if the one with the lookup key differs,
 // it stops and says so (`--replace` makes a new one and moves the lookup key to it).
 //
 // It needs a full secret key (sk_…) once, by hand. The running server only gets the restricted
@@ -26,6 +27,8 @@ import { stripeOptions } from '../server/stripe.mjs';
 export const LOOKUP_KEY = 'sparkle_family_monthly';
 export const PRODUCT_TAG = 'family_plan';
 export const PORTAL_TAG = 'family_portal';
+export const PRODUCT_NAME = 'Glimmer World Family Plan';
+export const PORTAL_HEADLINE = 'Glimmer World Family Plan';
 export const PRICE = Object.freeze({ unit_amount: 599, currency: 'usd', interval: 'month', tax_behavior: 'exclusive' });
 
 const CANCEL_REASONS = ['too_expensive', 'missing_features', 'switched_service', 'unused', 'customer_service', 'too_complex', 'low_quality', 'other'];
@@ -85,15 +88,21 @@ export async function setup({ stripe, origin = null, replace = false, taxCode = 
   }
   if (!product) {
     product = await stripe.products.create({
-      name: 'Sparkle World Family Plan',
+      name: PRODUCT_NAME,
       description: 'Up to 6 kids, their worlds saved on every device, playing with friends and the walkie-talkie. Nothing to buy inside the game.',
       metadata: { sw: PRODUCT_TAG },
       ...(taxCode ? { tax_code: taxCode } : {}),
     });
     created.push('product');
-  } else if (taxCode && product.tax_code !== taxCode) {
-    product = await stripe.products.update(product.id, { tax_code: taxCode });
-    created.push('product tax code');
+  } else {
+    const fix = {};
+    if (product.name !== PRODUCT_NAME) fix.name = PRODUCT_NAME; // made under the old name
+    if (taxCode && product.tax_code !== taxCode) fix.tax_code = taxCode;
+    if (fix.name || fix.tax_code) {
+      product = await stripe.products.update(product.id, fix);
+      if (fix.name) created.push('product name');
+      if (fix.tax_code) created.push('product tax code');
+    }
   }
   const wrong = price
     ? [
@@ -133,7 +142,7 @@ export async function setup({ stripe, origin = null, replace = false, taxCode = 
   const configs = await listAll((p) => stripe.billingPortal.configurations.list(p), { active: true });
   let conf = configs.find((c) => c.metadata?.sw === PORTAL_TAG) || null;
   const profile = {
-    headline: 'Sparkle World Family Plan',
+    headline: PORTAL_HEADLINE,
     ...(origin ? { privacy_policy_url: origin + '/privacy', terms_of_service_url: origin + '/terms' } : {}),
   };
   if (!conf) {
@@ -147,13 +156,14 @@ export async function setup({ stripe, origin = null, replace = false, taxCode = 
   } else {
     const drift = portalDrift(conf);
     const urls = origin && (conf.business_profile?.privacy_policy_url !== profile.privacy_policy_url || conf.business_profile?.terms_of_service_url !== profile.terms_of_service_url || conf.default_return_url !== origin + '/account?portal=1');
-    if (drift.length || urls) {
+    const headline = conf.business_profile?.headline !== PORTAL_HEADLINE;
+    if (drift.length || urls || headline) {
       conf = await stripe.billingPortal.configurations.update(conf.id, {
         business_profile: profile,
         ...(origin ? { default_return_url: origin + '/account?portal=1' } : {}),
         features: portalFeatures(),
       });
-      created.push(`portal configuration (${[...drift, urls ? 'links' : null].filter(Boolean).join(', ')})`);
+      created.push(`portal configuration (${[...drift, urls ? 'links' : null, headline ? 'headline' : null].filter(Boolean).join(', ')})`);
     }
   }
   log(created.length ? `made or fixed: ${created.join(', ')}` : 'everything was already there; nothing changed');
@@ -176,7 +186,7 @@ if (isMain) {
   }
   let origin = (process.env.PUBLIC_ORIGIN || '').trim().replace(/\/+$/, '') || null;
   if (origin && !/^https:\/\/[^/]+$/.test(origin) && !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
-    console.error('PUBLIC_ORIGIN must be the site address, like https://sparkleworld.fun');
+    console.error('PUBLIC_ORIGIN must be the site address, like https://www.playglimmerworld.com');
     process.exit(1);
   }
   if (!origin) console.warn('(no PUBLIC_ORIGIN: the portal gets no Privacy/Terms links or return address; set them in the Dashboard, or run again with PUBLIC_ORIGIN)');

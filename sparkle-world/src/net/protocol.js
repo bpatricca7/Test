@@ -105,7 +105,7 @@ export const STATES = Object.freeze([
 export const MESSAGES = Object.freeze({
   unavailable: '',
   cannot_host: "You can join a friend's world!",
-  cannot_host_small: 'Grown-ups: inviting friends needs Contributor access to Sparkle World.',
+  cannot_host_small: 'Grown-ups: inviting friends needs Contributor access to Glimmer World.',
   no_rooms: "Playing together isn't turned on for this account. Ask a grown-up!",
   busy: 'Lots of games right now! Try again in a minute.',
   transient: 'The magic mail is slow. Try again?',
@@ -142,12 +142,12 @@ export const MESSAGES = Object.freeze({
   slept: '{name} went to sleep. Good morning, everyone!',
   summary: 'Playing together is over! Everything is saved.',
   // family accounts (docs/ACCOUNTS.md §7.7); player_gone has no words: the page goes back to "Who's playing?"
-  signed_out: 'Ask a grown-up to sign in to Sparkle World on this device.',
-  not_entitled: 'Sparkle World is resting. Ask a grown-up to wake it up!',
+  signed_out: 'Ask a grown-up to sign in to Glimmer World on this device.',
+  not_entitled: 'Glimmer World is resting. Ask a grown-up to wake it up!',
   friends_off: 'Ask a grown-up to turn on Play with Friends for you.',
   friends_locked: "Playing with friends isn't ready yet. A grown-up can check the Family page.",
   // a child with an account and a device without one never play together (optional mode)
-  accounts_mixed: "You can't play with this friend yet: both of you need a grown-up to set up Sparkle World.",
+  accounts_mixed: "You can't play with this friend yet: both of you need a grown-up to set up Glimmer World.",
   cannot_host_acct: 'Grown-ups: see the Family page.',
 });
 

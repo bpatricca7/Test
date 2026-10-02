@@ -21,15 +21,18 @@
 // priceText, mailMode, publicOrigin, operator { name, email, address, phone }. Missing operator
 // details (development) read "[SW_OPERATOR_… not set]"; production refuses to start without them.
 
+// Version 1 was edited in place twice before any family agreed in production (accounts were still
+// off): a rewording, and the rename from Sparkle World to Glimmer World (docs/ACCOUNTS.md §11.3).
+// Once a real agreement exists, every change bumps NOTICE_VERSION.
 export const NOTICE_VERSION = 1;
 export const NOTICE_MIN_VERSION = 1;
 export const NOTICE_DATE = '2026-09-28';
 
-export const NOTICE_TITLE = 'Before your children play: what Sparkle World keeps, and why.';
+export const NOTICE_TITLE = 'Before your children play: what Glimmer World keeps, and why.';
 
 /** The Play with friends switch's own notice (one per child, off by default). */
 export const FRIENDS_SWITCH_NOTICE =
-  'Other players in a game she joins or hosts see her nickname, her avatar and the world. Only friends the host lets in, whose families have Sparkle World too. No typing, only 16 friendly phrases.';
+  'Other players in a game she joins or hosts see her nickname, her avatar and the world. Only friends the host lets in, whose families have Glimmer World too. No typing, only 16 friendly phrases.';
 
 /** The walkie-talkie switch's own notice: the game's GATE_NOTE (src/net/walkie/gate.js), word for word. */
 export const WALKIE_SWITCH_NOTICE = 'Voices go live only to friends in this game, are never recorded, and stop when the button is let go.';
@@ -85,7 +88,7 @@ export function noticeSections(cfg = {}) {
     {
       title: 'Playing with friends and the walkie-talkie are off',
       text:
-        'until you switch them on for each child on the Family page. When on, the other children in the same game (only friends the host lets in, whose families also have Sparkle World) see her nickname, avatar and the world, and hear her voice live while she holds the walkie button. ' +
+        'until you switch them on for each child on the Family page. When on, the other children in the same game (only friends the host lets in, whose families also have Glimmer World) see her nickname, avatar and the world, and hear her voice live while she holds the walkie button. ' +
         'Voices are never recorded. You can agree to saving without agreeing to playing with friends. ' +
         friendsConsentSentence(cfg),
     },
@@ -108,15 +111,15 @@ export function noticeSections(cfg = {}) {
       text: "setting up: if you don't agree to this notice within 14 days, we delete your email address; if you agree but don't start the Family Plan within 30 days, we delete it then.",
     },
     {
-      title: 'Who runs Sparkle World',
-      text: `Sparkle World is run by ${op(cfg, 'name')}, ${op(cfg, 'address')}, ${op(cfg, 'phone')}, ${op(cfg, 'email')}. The full Privacy Notice: ${privacy}`,
+      title: 'Who runs Glimmer World',
+      text: `Glimmer World is run by ${op(cfg, 'name')}, ${op(cfg, 'address')}, ${op(cfg, 'phone')}, ${op(cfg, 'email')}. The full Privacy Notice: ${privacy}`,
     },
   ];
 }
 
 /** The one checkbox (the page never ticks it for the parent). */
 export function noticeCheckbox() {
-  return "I'm the parent or legal guardian of the children who will play, I'm 18 or older, and I agree that Sparkle World may keep the information above to run the game for them.";
+  return "I'm the parent or legal guardian of the children who will play, I'm 18 or older, and I agree that Glimmer World may keep the information above to run the game for them.";
 }
 
 /** GET /api/notice's answer. */
@@ -136,7 +139,7 @@ export function notice(cfg = {}) {
 export function noticeSummary(cfg = {}) {
   const privacy = (cfg.publicOrigin || '') + '/privacy';
   return [
-    "Before your children play, Sparkle World asks your permission to keep a nickname, an avatar, game progress and worlds for each child, only to run the game. Without it, we don't collect, use or share anything about them.",
+    "Before your children play, Glimmer World asks your permission to keep a nickname, an avatar, game progress and worlds for each child, only to run the game. Without it, we don't collect, use or share anything about them.",
     "We never collect children's emails, real names, birthdays, photos, location, contacts or recordings. No ads, no analytics, no trackers.",
     'Playing with friends and the walkie-talkie stay off until you switch them on for each child on the Family page.',
     `You will read the whole notice on the Family page before agreeing. The Privacy Notice: ${privacy}`,

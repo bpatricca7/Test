@@ -223,7 +223,7 @@ export class StripeEngine {
   // ---- the catalog ----
 
   seedCatalog() {
-    const product = this.createProduct({ name: 'Sparkle World Family Plan', metadata: { sw: 'family_plan' }, tax_code: 'txcd_10000000' });
+    const product = this.createProduct({ name: 'Glimmer World Family Plan', metadata: { sw: 'family_plan' }, tax_code: 'txcd_10000000' });
     const price = this.createPrice({
       product: product.id, currency: 'usd', unit_amount: '599', recurring: { interval: 'month' }, tax_behavior: 'exclusive', lookup_key: 'sparkle_family_monthly', nickname: 'Family Plan monthly',
     });
@@ -752,7 +752,7 @@ export class StripeEngine {
     };
     const seq = cust ? cust.next_invoice_sequence++ : 1;
     const inv = this._stamp({
-      id, object: 'invoice', account_country: 'US', account_name: 'Sparkle World', account_tax_ids: null,
+      id, object: 'invoice', account_country: 'US', account_name: 'Glimmer World', account_tax_ids: null,
       amount_due: amount + tax, amount_overpaid: 0, amount_paid: 0, amount_remaining: amount + tax, amount_shipping: 0, application: null,
       attempt_count: 0, attempted: false, auto_advance: true,
       automatic_tax: { disabled_reason: null, enabled: true, liability: { type: 'self' }, provider: 'stripe', status: 'complete' },

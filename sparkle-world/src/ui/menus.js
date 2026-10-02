@@ -306,9 +306,9 @@ export function install(game) {
       const col = ui.el('div', 'sw-title-col');
 
       const logo = ui.el('h1', 'sw-logo');
-      logo.setAttribute('aria-label', 'Sparkle World');
+      logo.setAttribute('aria-label', 'Glimmer World');
       let n = 0;
-      for (const word of ['Sparkle', 'World']) {
+      for (const word of ['Glimmer', 'World']) {
         const w = ui.el('span', 'sw-word');
         for (const ch of word) {
           const l = ui.el('span', 'sw-l', ch);
@@ -777,7 +777,7 @@ export function install(game) {
       else ui.open('worlds');
       refreshTitle();
     } else {
-      game.toast('Hmm, that file is not a Sparkle World.', { icon: 'sparkle', color: 'pink' });
+      game.toast('Hmm, that file is not a Glimmer World.', { icon: 'sparkle', color: 'pink' });
       game.audio.play('click', { pitch: 0.6 });
     }
   }

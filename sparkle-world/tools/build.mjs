@@ -1,4 +1,4 @@
-// Build Sparkle World into self-contained HTML:
+// Build Glimmer World into self-contained HTML:
 //   dist/sparkle-world.html  complete document (file://, static hosts, the site's /play), with
 //                            the Fredoka font inside it (site/fonts/fredoka-latin.woff2 as a
 //                            data: URL), so the game loads nothing from another site and no
@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 import { buildSite } from './site-build.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const TITLE = 'Sparkle World';
+const TITLE = 'Glimmer World';
 // media=print + onload keeps a slow/blocked font request from delaying the game script
 const FONT_LINK = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" media="print" onload="this.media=\'all\'">';
 /** The font inside the page: the site's own Fredoka (latin, weights 400-700). */
@@ -150,7 +150,7 @@ async function serve() {
   const ctx = await esbuild.context({ ...common, define, sourcemap: 'inline', outdir: path.join(root, 'dev'), write: false });
   await ctx.watch();
   const { port } = await ctx.serve({ servedir: root, port: 8000 });
-  console.log(`Sparkle World dev server: http://localhost:${port}/  (rebuilds on save, live reload)`);
+  console.log(`Glimmer World dev server: http://localhost:${port}/  (rebuilds on save, live reload)`);
 }
 
 if (process.argv.includes('--serve')) {

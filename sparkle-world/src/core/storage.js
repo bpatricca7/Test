@@ -145,7 +145,7 @@ export function mergeBackupProfile(current, fromFile, { fresh = false } = {}) {
 }
 
 /**
- * Read a Sparkle World file: one world ({ format: 'sparkle-world', save } or a bare save) or a
+ * Read a Glimmer World file: one world ({ format: 'sparkle-world', save } or a bare save) or a
  * backup ({ format: BACKUP_FORMAT, profile, worlds: [save...] }). Returns
  * { ok, kind: 'world' | 'backup', worlds: [save...], profile: {...} | null, skipped } or
  * { ok: false, error }. Broken worlds inside a backup are skipped (counted), not fatal.
@@ -155,17 +155,17 @@ export function readWorldFile(text) {
   try {
     parsed = JSON.parse(text);
   } catch {
-    return { ok: false, error: 'not a Sparkle World file' };
+    return { ok: false, error: 'not a Glimmer World file' };
   }
   if (isObj(parsed) && parsed.format === BACKUP_FORMAT) {
     const list = Array.isArray(parsed.worlds) ? parsed.worlds : [];
     const worlds = list.filter(validSave);
     const profile = isObj(parsed.profile) ? parsed.profile : null;
-    if (!worlds.length && !profile) return { ok: false, error: 'not a Sparkle World file' };
+    if (!worlds.length && !profile) return { ok: false, error: 'not a Glimmer World file' };
     return { ok: true, kind: 'backup', worlds, profile, skipped: list.length - worlds.length };
   }
   const save = isObj(parsed) && parsed.format === 'sparkle-world' ? parsed.save : parsed;
-  if (!validSave(save)) return { ok: false, error: 'not a Sparkle World file' };
+  if (!validSave(save)) return { ok: false, error: 'not a Glimmer World file' };
   return { ok: true, kind: 'world', worlds: [save], profile: null, skipped: 0 };
 }
 
@@ -198,7 +198,7 @@ class LocalStorageBackend {
   _set(key, value) {
     this.ls.setItem(this.prefix + key, JSON.stringify(value));
   }
-  /** Does this browser already hold Sparkle World saves here? */
+  /** Does this browser already hold Glimmer World saves here? */
   hasData() {
     try {
       return this.ls.getItem(this.prefix + 'metas') !== null || this.ls.getItem(this.prefix + 'profile') !== null;
@@ -1042,7 +1042,7 @@ export class SaveStore {
     try {
       const parsed = JSON.parse(text);
       const save = parsed && parsed.format === 'sparkle-world' ? parsed.save : parsed;
-      if (!save || !save.blocks || !save.size) return { ok: false, error: 'not a Sparkle World file' };
+      if (!save || !save.blocks || !save.size) return { ok: false, error: 'not a Glimmer World file' };
       const existing = await this.listWorlds();
       if (!save.id || existing.some((m) => m.id === save.id)) {
         save.id = 'w' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
@@ -1071,7 +1071,7 @@ export class SaveStore {
       return JSON.stringify({
         format: BACKUP_FORMAT,
         v: 1,
-        about: 'Sparkle World: a copy of every world, your look, outfits and stickers. To bring it back: My Worlds, then Open a file.',
+        about: 'Glimmer World: a copy of every world, your look, outfits and stickers. To bring it back: My Worlds, then Open a file.',
         savedAt: new Date().toISOString(),
         profile: backupProfile(profile),
         worlds,

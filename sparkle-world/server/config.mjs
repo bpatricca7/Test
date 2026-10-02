@@ -12,7 +12,7 @@ import { hkdfSync } from 'node:crypto';
 
 export class ConfigError extends Error {
   constructor(problems) {
-    super('Sparkle World will not start: ' + problems.join('; '));
+    super('Glimmer World will not start: ' + problems.join('; '));
     this.name = 'ConfigError';
     this.problems = problems;
   }
@@ -111,7 +111,7 @@ export function loadConfig(env = process.env) {
       u = new URL(publicOrigin);
     } catch {}
     if (!u || (u.pathname !== '/' && u.pathname !== '') || u.search || u.hash || u.username || u.password) {
-      problems.push('PUBLIC_ORIGIN must be just the site address, like https://sparkleworld.fun');
+      problems.push('PUBLIC_ORIGIN must be just the site address, like https://www.playglimmerworld.com');
     } else if (u.protocol === 'https:') {
       publicOrigin = u.origin;
     } else if (u.protocol === 'http:' && LOCAL_HOSTS.has(u.hostname) && !production) {
@@ -180,7 +180,7 @@ export function loadConfig(env = process.env) {
   const mailProvider = mailMode === 'resend' || mailMode === 'postmark';
   if (production && mailMode && !mailProvider) problems.push('MAIL_MODE must be resend or postmark in production');
   const mailApiKey = str('MAIL_API_KEY');
-  const mailFrom = str('MAIL_FROM') || (mailProvider ? null : 'Sparkle World <hello@localhost>');
+  const mailFrom = str('MAIL_FROM') || (mailProvider ? null : 'Glimmer World <hello@localhost>');
   if (mailProvider && !mailApiKey) problems.push(`MAIL_API_KEY is missing (needed with MAIL_MODE=${mailMode})`);
   if (mailProvider && !mailFrom) problems.push(`MAIL_FROM is missing (needed with MAIL_MODE=${mailMode})`);
 

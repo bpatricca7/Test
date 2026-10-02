@@ -1,6 +1,6 @@
-# Sparkle World: parental consent by form, phone call or video call
+# Glimmer World: parental consent by form, phone call or video call
 
-*COPPA lets an operator confirm a parent's consent in several ways (16 CFR 312.5(b)(2)). Sparkle
+*COPPA lets an operator confirm a parent's consent in several ways (16 CFR 312.5(b)(2)). Glimmer
 World normally uses the card method: the first payment for the Family Plan records verified consent
 by itself (docs/ACCOUNTS.md §6.7, §11.4). This page is for the families who don't pay by card: a
 family with a **free pass** (`admin comp`) that wants **Play with friends** and the
@@ -16,12 +16,12 @@ per child on the Family page, as usual.
 
 ## 1. The consent form (print this part)
 
-> **Sparkle World: a parent's consent**
+> **Glimmer World: a parent's consent**
 >
-> Sparkle World is a game for children run by {{SW_OPERATOR_NAME}}, {{SW_OPERATOR_ADDRESS}},
+> Glimmer World is a game for children run by {{SW_OPERATOR_NAME}}, {{SW_OPERATOR_ADDRESS}},
 > {{SW_OPERATOR_PHONE}}, {{SW_OPERATOR_EMAIL}}.
 >
-> **What this form is for.** Your family has a Sparkle World account. Before your children can
+> **What this form is for.** Your family has a Glimmer World account. Before your children can
 > **play with friends** or use the **walkie-talkie**, the law asks us to confirm that a parent
 > really agreed. You can agree by signing this form and sending it back to us.
 >
@@ -32,7 +32,7 @@ per child on the Family page, as usual.
 > **What this form allows**, and only for the children you switch it on for, on the Family page:
 >
 > - **Play with friends:** other children in a game she joins or hosts (only friends the host lets
->   in, whose families also have Sparkle World) see her nickname, her avatar and the world. There is
+>   in, whose families also have Glimmer World) see her nickname, her avatar and the world. There is
 >   no typing, only 16 friendly phrases.
 > - **Walkie-talkie:** those friends hear her voice live while she holds the walkie button. Voices
 >   are never recorded or stored.
@@ -44,10 +44,10 @@ per child on the Family page, as usual.
 >
 > **Your name (printed):** ____________________________________________
 >
-> ☐ I am the parent or legal guardian of the children in this Sparkle World account, and I am 18 or
+> ☐ I am the parent or legal guardian of the children in this Glimmer World account, and I am 18 or
 > older.
 >
-> ☐ I agree that my children may play with friends and use the walkie-talkie in Sparkle World, for
+> ☐ I agree that my children may play with friends and use the walkie-talkie in Glimmer World, for
 > the children I switch these on for on the Family page, as described above.
 >
 > **Signature:** ______________________________  **Date:** ______________

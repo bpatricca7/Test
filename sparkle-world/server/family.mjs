@@ -530,13 +530,13 @@ export function routes(ctx) {
   async function exportPlayer(req, x) {
     const p = await ownPlayer(x);
     await ctx.audit(db, p.family_id, 'export.player', {}, { playerId: p.id });
-    return { headers: attachment(`sparkle-world-player-${dayOf(x.now)}.json`), stream: fam().playerChunks(p) };
+    return { headers: attachment(`glimmer-world-player-${dayOf(x.now)}.json`), stream: fam().playerChunks(p) };
   }
 
   // GET /api/family/export (parent+check): everything, streamed one world at a time
   async function exportFamily(req, x) {
     await ctx.audit(db, x.family.id, 'export.family', {});
-    return { headers: attachment(`sparkle-world-family-${dayOf(x.now)}.json`), stream: fam().exportFamily(x.family.id) };
+    return { headers: attachment(`glimmer-world-family-${dayOf(x.now)}.json`), stream: fam().exportFamily(x.family.id) };
   }
 
   // POST /api/family/delete {confirm:'DELETE'} (parent+check5)

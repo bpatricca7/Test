@@ -25,7 +25,7 @@ const BLOCK = new Set([
   'dead', 'murder', 'moron', 'jerk', 'fart', 'poop', 'pee', 'butt', 'butthead', 'weirdo', 'freak', 'nerd',
   'retard', 'retarded', 'crap', 'damn', 'hell', 'suck', 'sucks', 'shutup', 'knife', 'blood',
   // pretending to be the game or someone in charge of it
-  'admin', 'administrator', 'moderator', 'mod', 'owner', 'police', 'host', 'sparkleworld', 'claude',
+  'admin', 'administrator', 'moderator', 'mod', 'owner', 'police', 'host', 'sparkleworld', 'glimmerworld', 'claude',
   'anthropic', 'railway', 'system',
   // body words
   'boob', 'boobs', 'penis', 'vagina', 'nipple', 'nude', 'naked', 'sexy', 'sex',

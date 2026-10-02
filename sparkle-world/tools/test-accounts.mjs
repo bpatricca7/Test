@@ -57,13 +57,13 @@ const ENV = Object.freeze({
 const PROD = Object.freeze({
   ...ENV,
   NODE_ENV: 'production',
-  PUBLIC_ORIGIN: 'https://sparkleworld.fun',
+  PUBLIC_ORIGIN: 'https://www.playglimmerworld.com',
   STRIPE_SECRET_KEY: 'rk_live_abc123',
   MAIL_MODE: 'resend',
   MAIL_API_KEY: 're_abc',
-  MAIL_FROM: 'Sparkle World <hello@sparkleworld.fun>',
+  MAIL_FROM: 'Glimmer World <hello@playglimmerworld.com>',
   SW_OPERATOR_NAME: 'The Family',
-  SW_OPERATOR_EMAIL: 'hello@sparkleworld.fun',
+  SW_OPERATOR_EMAIL: 'hello@playglimmerworld.com',
   SW_OPERATOR_ADDRESS: 'PO Box 1',
   SW_OPERATOR_PHONE: '+1 555 0100',
 });
@@ -112,7 +112,7 @@ describe('config (§2)', () => {
   test('refusal rules', () => {
     refuses({ ...PROD, PUBLIC_ORIGIN: 'http://localhost:8080' }, /PUBLIC_ORIGIN must start with https:\/\/ in production/);
     refuses({ ...ENV, PUBLIC_ORIGIN: 'http://example.com' }, /PUBLIC_ORIGIN must start with https:\/\//);
-    refuses({ ...ENV, PUBLIC_ORIGIN: 'https://sparkleworld.fun/account' }, /just the site address/);
+    refuses({ ...ENV, PUBLIC_ORIGIN: 'https://www.playglimmerworld.com/account' }, /just the site address/);
     refuses({ ...ENV, SW_SECRET: randomBytes(31).toString('base64') }, /SW_SECRET must be at least 32 random bytes/);
     refuses({ ...ENV, SW_SECRET: 'not base64 at all!' }, /SW_SECRET/);
     refuses({ ...PROD, MAIL_MODE: 'log' }, /MAIL_MODE must be resend or postmark in production/);
@@ -147,7 +147,7 @@ describe('config (§2)', () => {
     const dev = loadConfig(ENV);
     assert.deepEqual([dev.cookies.sess, dev.cookies.login, dev.cookies.secure, dev.hsts], ['sw_sess', 'sw_login', false, false]);
     const prod = loadConfig(PROD);
-    assert.deepEqual([prod.cookies.sess, prod.cookies.login, prod.cookies.secure, prod.hsts, prod.publicOrigin], ['__Host-sw_sess', '__Host-sw_login', true, true, 'https://sparkleworld.fun']);
+    assert.deepEqual([prod.cookies.sess, prod.cookies.login, prod.cookies.secure, prod.hsts, prod.publicOrigin], ['__Host-sw_sess', '__Host-sw_login', true, true, 'https://www.playglimmerworld.com']);
     assert.equal(serializeCookie(prod, 'sess', 'abc_-1', 3600), '__Host-sw_sess=abc_-1; Path=/; HttpOnly; SameSite=Lax; Max-Age=3600; Secure');
     assert.equal(serializeCookie(dev, 'login', null), 'sw_login=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
     assert.throws(() => serializeCookie(prod, 'sess', 'a;b', 1));
@@ -187,8 +187,8 @@ describe('config (§2)', () => {
     assert.equal(loadConfig({ SW_FREE_PASS: 'nonsense' }).accounts, 'off');
   });
   test("MAIL_FROM takes Resend's testing sender (before the domain is verified)", () => {
-    const c = loadConfig({ ...PROD, MAIL_FROM: 'Sparkle World <onboarding@resend.dev>' });
-    assert.equal(c.mailFrom, 'Sparkle World <onboarding@resend.dev>');
+    const c = loadConfig({ ...PROD, MAIL_FROM: 'Glimmer World <onboarding@resend.dev>' });
+    assert.equal(c.mailFrom, 'Glimmer World <onboarding@resend.dev>');
     assert.equal(loadConfig({ ...PROD, MAIL_FROM: 'onboarding@resend.dev' }).mailFrom, 'onboarding@resend.dev');
   });
   test('sub-keys (HKDF) are stable, distinct and not the secret', () => {
@@ -560,7 +560,7 @@ describe('server hooks (§1.2, §8.1)', () => {
   let t;
   const dir = mkdtempSync(path.join(tmpdir(), 'sw-acct-'));
   const html = path.join(dir, 'game.html');
-  writeFileSync(html, '<!doctype html><title>Sparkle World</title>');
+  writeFileSync(html, '<!doctype html><title>Glimmer World</title>');
   const servers = [];
   before(async () => {
     t = await openTestDb();
@@ -657,13 +657,13 @@ describe('server hooks (§1.2, §8.1)', () => {
 const MIN = 60e3;
 const HOUR = 60 * MIN;
 const DAY = 24 * HOUR;
-const HTTPS = 'https://sparkleworld.fun';
+const HTTPS = 'https://www.playglimmerworld.com';
 const TEST_ENV = Object.freeze({
   ...ENV,
   PUBLIC_ORIGIN: HTTPS,
   SW_TEST: '1',
   STRIPE_API_BASE: 'http://127.0.0.1:9', // a Stripe call would fail at once instead of going out
-  SW_OPERATOR_EMAIL: 'privacy@sparkleworld.fun',
+  SW_OPERATOR_EMAIL: 'privacy@playglimmerworld.com',
 });
 const IPAD = 'Mozilla/5.0 (iPad; CPU OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
 const MAC_CHROME = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36';
@@ -671,7 +671,7 @@ const SESS = '__Host-sw_sess';
 const LOGIN = '__Host-sw_login';
 const A_DIR = mkdtempSync(path.join(tmpdir(), 'sw-acct-a-'));
 const A_HTML = path.join(A_DIR, 'game.html');
-writeFileSync(A_HTML, '<!doctype html><title>Sparkle World</title>');
+writeFileSync(A_HTML, '<!doctype html><title>Glimmer World</title>');
 process.on('exit', () => rmSync(A_DIR, { recursive: true, force: true }));
 const SERVER_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'server');
 
@@ -1034,8 +1034,8 @@ describe('A: sign-in (§4.3, §12.7)', () => {
     const loginValue = asker.cookie(LOGIN);
     const { code, mail } = await h.lastCode(email);
     assert.equal(mail.template, 'signin');
-    assert.match(mail.subject, /^Your Sparkle World code: \d{6}$/);
-    assert.match(mail.text, /Welcome to Sparkle World!/);
+    assert.match(mail.subject, /^Your Glimmer World code: \d{6}$/);
+    assert.match(mail.text, /Welcome to Glimmer World!/);
     assert.match(mail.text, /notice version 1/);
     assert.ok(mail.text.includes(`${HTTPS}/privacy`));
     const elsewhere = await h.browser().post('/api/auth/verify', { code });
@@ -1138,7 +1138,7 @@ describe('A: sign-in (§4.3, §12.7)', () => {
     assert.deepEqual([r.status, r.data], [401, { error: 'signed_out' }]);
     assert.equal((await b.get('/api/family')).status, 200);
     const mails = await h.mail(email);
-    assert.match(mails.at(-1).text, /^Here is your code to sign in to Sparkle World:/);
+    assert.match(mails.at(-1).text, /^Here is your code to sign in to Glimmer World:/);
     assert.ok(!/notice version/.test(mails.at(-1).text));
     const me = await stale.get('/api/me');
     assert.deepEqual([me.status, me.data, [].concat(me.headers['set-cookie'])], [401, { error: 'signed_out' }, ['__Host-sw_sess=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Secure']]);
@@ -1328,7 +1328,7 @@ describe('A: sessions, the email check, kid devices (§4.4–4.6, §12.7)', () =
     assert.deepEqual([c.status, c.data], [202, { ok: true }]);
     const { code, mail } = await h.lastCode(email);
     assert.equal(mail.template, 'check');
-    assert.match(mail.subject, /^Your Sparkle World check code: \d{6}$/);
+    assert.match(mail.subject, /^Your Glimmer World check code: \d{6}$/);
     const sameSessionNoAttempt = h.browser();
     sameSessionNoAttempt.jar.set(SESS, b.cookie(SESS));
     assert.equal((await sameSessionNoAttempt.post('/api/auth/verify', { code })).status, 410, 'bound to the browser that asked');
@@ -1615,13 +1615,13 @@ describe('A: the notice, consent, players and their switches (§5.2, §6.7, §11
     h.setClock(DAY + MIN);
     const confirm = (await h.mail(email)).filter((m) => m.template === 'consent_confirm');
     assert.equal(confirm.length, 1);
-    assert.match(confirm[0].text, /You agreed on .* that Sparkle World may keep your children's nicknames/);
+    assert.match(confirm[0].text, /You agreed on .* that Glimmer World may keep your children's nicknames/);
     assert.ok(confirm[0].text.includes(`${HTTPS}/account`));
     const audit2 = await t.db.query('select action, detail, actor from audit_log where family_id = $1 order by id', [familyId]);
     assert.deepEqual(audit2.rows.at(-1), { action: 'consent.confirm_sent', detail: { v: n.data.version }, actor: 'system' });
     const fam = (await b.get('/api/family')).data;
     assert.deepEqual([fam.email, fam.consent.level, fam.config.friendsMode, fam.config.mpConsent, fam.config.trialDays, fam.config.priceText, fam.config.operatorEmail], [
-      email, 'email_plus', 'subscription', 'verified', 0, '$5.99 a month, plus sales tax where it applies', 'privacy@sparkleworld.fun',
+      email, 'email_plus', 'subscription', 'verified', 0, '$5.99 a month, plus sales tax where it applies', 'privacy@playglimmerworld.com',
     ]);
     assert.deepEqual((await b.get('/api/family/audit')).data.map((a) => a.action), ['consent.confirm_sent', 'consent.email_plus']);
   });
@@ -1815,7 +1815,7 @@ describe('A: exports and deleting the family (§3.4, §11.6)', () => {
     await t.db.query('update players set portrait = $2, portrait_rev = 1 where id = $1', [ids.Sunny, Buffer.from('89504e470d0a1a0a', 'hex')]);
     const r = await b.get(`/api/players/${ids.Sunny}/export`);
     assert.equal(r.status, 200);
-    assert.match(r.headers['content-disposition'], /^attachment; filename="sparkle-world-player-\d{4}-\d{2}-\d{2}\.json"$/);
+    assert.match(r.headers['content-disposition'], /^attachment; filename="glimmer-world-player-\d{4}-\d{2}-\d{2}\.json"$/);
     assert.equal(r.headers['cache-control'], 'no-store');
     assert.equal(r.data.format, 'sparkle-world-player');
     assert.deepEqual([r.data.player.nickname, r.data.profile.coins, r.data.worlds.length], ['Sunny', 7, 2]);
@@ -1826,7 +1826,7 @@ describe('A: exports and deleting the family (§3.4, §11.6)', () => {
       assert.deepEqual([back.ok, back.kind, back.worlds[0].name], [true, 'world', saves[i].name], 'My Worlds → Open a file reads it');
     }
     const fam = await b.get('/api/family/export');
-    assert.match(fam.headers['content-disposition'], /^attachment; filename="sparkle-world-family-\d{4}-\d{2}-\d{2}\.json"$/);
+    assert.match(fam.headers['content-disposition'], /^attachment; filename="glimmer-world-family-\d{4}-\d{2}-\d{2}\.json"$/);
     assert.equal(fam.data.format, 'sparkle-world-family');
     assert.deepEqual([fam.data.family.email, fam.data.family.consent.level], ['export.mom@example.com', 'verified']);
     assert.deepEqual(fam.data.players.map((p) => [p.player.nickname, p.worlds.map((w) => w.save.name)]), [['Sunny', ['Castle Cove', 'Seaside Shop']], ['Brook', ['Treehouse Den']]]);
@@ -2176,18 +2176,18 @@ describe('A: emails — the outbox, transports and words (§10, §13.7)', () => 
       return new Response('{"id":"x"}', { status });
     };
     try {
-      const base = { ...TEST_ENV, MAIL_API_KEY: 'key_123', MAIL_FROM: 'Sparkle World <hello@sparkleworld.fun>' };
-      const msg = { id: 41, to: 'parent@example.com', from: 'Sparkle World <hello@sparkleworld.fun>', replyTo: 'privacy@sparkleworld.fun', subject: 'S', text: 'T', html: '<p>T</p>' };
+      const base = { ...TEST_ENV, MAIL_API_KEY: 'key_123', MAIL_FROM: 'Glimmer World <hello@playglimmerworld.com>' };
+      const msg = { id: 41, to: 'parent@example.com', from: 'Glimmer World <hello@playglimmerworld.com>', replyTo: 'privacy@playglimmerworld.com', subject: 'S', text: 'T', html: '<p>T</p>' };
       remember('parent@example.com');
       await makeTransport(loadConfig({ ...base, MAIL_MODE: 'resend' }))(msg);
       assert.equal(calls[0].url, 'https://api.resend.com/emails');
       assert.deepEqual([calls[0].init.headers.Authorization, calls[0].init.headers['Idempotency-Key']], ['Bearer key_123', 'sparkle-outbox-41']);
-      assert.deepEqual(JSON.parse(calls[0].init.body), { from: msg.from, to: ['parent@example.com'], subject: 'S', text: 'T', html: '<p>T</p>', reply_to: 'privacy@sparkleworld.fun' });
+      assert.deepEqual(JSON.parse(calls[0].init.body), { from: msg.from, to: ['parent@example.com'], subject: 'S', text: 'T', html: '<p>T</p>', reply_to: 'privacy@playglimmerworld.com' });
       await makeTransport(loadConfig({ ...base, MAIL_MODE: 'postmark' }))(msg);
       assert.equal(calls[1].url, 'https://api.postmarkapp.com/email');
       assert.equal(calls[1].init.headers['X-Postmark-Server-Token'], 'key_123');
       const pm = JSON.parse(calls[1].init.body);
-      assert.deepEqual([pm.To, pm.MessageStream, pm.TrackOpens, pm.TrackLinks, pm.ReplyTo], ['parent@example.com', 'outbound', false, 'None', 'privacy@sparkleworld.fun']);
+      assert.deepEqual([pm.To, pm.MessageStream, pm.TrackOpens, pm.TrackLinks, pm.ReplyTo], ['parent@example.com', 'outbound', false, 'None', 'privacy@playglimmerworld.com']);
       status = 422;
       await assert.rejects(makeTransport(loadConfig({ ...base, MAIL_MODE: 'resend' }))(msg), (e) => e.code === 'http_422');
     } finally {
@@ -2919,22 +2919,22 @@ describe('A: the server refuses to start with a broken setting (one line, exit 1
   test('SW_TEST=1 in production', async () => {
     const r = await runServer({ ...PROD, SW_TEST: '1' });
     assert.equal(r.code, 1);
-    assert.match(r.err, /^Sparkle World will not start: [^\n]*SW_TEST=1 is refused in production[^\n]*\n$/);
+    assert.match(r.err, /^Glimmer World will not start: [^\n]*SW_TEST=1 is refused in production[^\n]*\n$/);
   });
 
   test('a malformed SW_FREE_PASS (the address is never printed)', async () => {
     remember('dad.secret@example.com');
     const r = await runServer({ ...PROD, SW_FREE_PASS: 'dad.secret@example.com:2027-13-01' });
     assert.equal(r.code, 1);
-    assert.equal(r.err, 'Sparkle World will not start: SW_FREE_PASS entry 1 has a date that is not a real day (YYYY-MM-DD, up to 2099-12-31)\n');
+    assert.equal(r.err, 'Glimmer World will not start: SW_FREE_PASS entry 1 has a date that is not a real day (YYYY-MM-DD, up to 2099-12-31)\n');
   });
 
   test('an unknown SW_ACCOUNTS; a database that does not answer', async () => {
     const bad = await runServer({ SW_ACCOUNTS: 'maybe' });
-    assert.deepEqual([bad.code, bad.err], [1, 'Sparkle World will not start: SW_ACCOUNTS must be one of off, optional, required\n']);
+    assert.deepEqual([bad.code, bad.err], [1, 'Glimmer World will not start: SW_ACCOUNTS must be one of off, optional, required\n']);
     const r = await runServer({ ...TEST_ENV, SW_TEST: '', DATABASE_URL: 'postgresql://sw@127.0.0.1:9/nothing' });
     assert.equal(r.code, 1);
-    assert.equal(r.err, 'Sparkle World will not start: accounts could not start (ECONNREFUSED)\n');
+    assert.equal(r.err, 'Glimmer World will not start: accounts could not start (ECONNREFUSED)\n');
   });
 });
 

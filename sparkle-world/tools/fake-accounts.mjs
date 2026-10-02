@@ -43,7 +43,7 @@ function draftNotice(cfg) {
     { title: 'You gave us your email', text: 'so we can ask your permission and so you can sign in. Children are never asked for an email.' },
     { title: 'With your permission we keep, for each child:', text: 'a nickname you choose (a nickname, please, not a real name), her avatar and its picture, her game progress (stickers, coins, outfits, settings) and her worlds, including names she types for worlds and pets. We use them only to run the game: to save her worlds on our server so they follow her between devices and survive a browser clearing its data.' },
     { title: 'We never collect', text: "children's emails, real names, birthdays, photos, location, contacts or recordings. No ads, no analytics, no trackers." },
-    { title: 'Playing with friends and the walkie-talkie are off', text: 'until you switch them on for each child on the Family page. When on, the other children in the same game (only friends the host lets in, whose families also have Sparkle World) see her nickname, avatar and the world, and hear her voice live while she holds the walkie button. Voices are never recorded. You can agree to saving without agreeing to playing with friends. These switches become available once we have confirmed that a grown-up said yes: your first payment does that.' },
+    { title: 'Playing with friends and the walkie-talkie are off', text: 'until you switch them on for each child on the Family page. When on, the other children in the same game (only friends the host lets in, whose families also have Glimmer World) see her nickname, avatar and the world, and hear her voice live while she holds the walkie button. Voices are never recorded. You can agree to saving without agreeing to playing with friends. These switches become available once we have confirmed that a grown-up said yes: your first payment does that.' },
     { title: 'Who helps us run it:', text: "Railway (hosting and database). Stripe (your payments) and our email provider (our emails) receive only your email and payment details, never your children's information. We don't sell or share information for advertising." },
     { title: 'How long we keep it:', text: `while your plan is active, and ${cfg.retainDays} days after it ends (so you can come back). When you delete it, it is gone at once, and our backups roll off within 7 days. Details in the Privacy Notice.` },
     { title: 'You can', text: `see, download and delete your children's information and turn any permission off at any time on the Family page, or by writing to ${op.email || 'us'}.` },
@@ -79,7 +79,7 @@ export async function createFakeAccounts(o = {}) {
     SW_FRIENDS_MODE: o.friendsMode || 'subscription',
     SW_MP_CONSENT: o.mpConsent || (o.friendsMode === 'free-join' ? 'email_plus' : 'verified'),
     SW_OPERATOR_NAME: 'The Sparkle Family',
-    SW_OPERATOR_EMAIL: 'hello@sparkleworld.example',
+    SW_OPERATOR_EMAIL: 'hello@glimmerworld.example',
     SW_OPERATOR_ADDRESS: 'PO Box 123, Springfield, USA',
     SW_OPERATOR_PHONE: '+1 555 0100',
   };
@@ -119,7 +119,7 @@ export async function createFakeAccounts(o = {}) {
       if (m.NOTICE_VERSION && typeof m.noticeSections === 'function') notice = { version: m.NOTICE_VERSION, minVersion: Number.isInteger(m.NOTICE_MIN_VERSION) ? m.NOTICE_MIN_VERSION : m.NOTICE_VERSION, sections: m.noticeSections(cfg) };
     }
   } catch {}
-  const CHECKBOX = "I'm the parent or legal guardian of the children who will play, I'm 18 or older, and I agree that Sparkle World may keep the information above to run the game for them.";
+  const CHECKBOX = "I'm the parent or legal guardian of the children who will play, I'm 18 or older, and I agree that Glimmer World may keep the information above to run the game for them.";
 
   const planOf = (familyId) => {
     const fam = families.get(familyId);
@@ -516,12 +516,12 @@ export async function createFakeAccounts(o = {}) {
         format: 'sparkle-world-player', v: 1, player: { nickname: p.nickname, createdAt: p.created_at }, profile: p.profile,
         worlds: (worlds.get(p.id) || []).map((w) => ({ format: 'sparkle-world', v: 1, save: { id: w.id, name: w.name, biome: w.biome, size: { x: 64, y: 32, z: 64 }, blocks: '', updatedAt: w.updatedAt } })),
       });
-      return { status: 200, body, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Content-Disposition': 'attachment; filename="sparkle-world-player.json"' } };
+      return { status: 200, body, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Content-Disposition': 'attachment; filename="glimmer-world-player.json"' } };
     } },
     { method: 'GET', path: '/api/family/export', who: 'parent+check', handler: async (req, x) => {
       audited(x.family.id, 'export.family');
       const body = JSON.stringify({ format: 'sparkle-world-family', v: 1, family: { email: x.family.email }, players: familyPlayers(x.family.id).map(playerJson) });
-      return { status: 200, body, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Content-Disposition': `attachment; filename="sparkle-world-family-${new Date(clock.now()).toISOString().slice(0, 10)}.json"` } };
+      return { status: 200, body, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Content-Disposition': `attachment; filename="glimmer-world-family-${new Date(clock.now()).toISOString().slice(0, 10)}.json"` } };
     } },
     { method: 'POST', path: '/api/family/delete', who: 'parent+check5', handler: async (req, x) => {
       if (x.body.confirm !== 'DELETE') throw httpError(400, 'bad_request');
@@ -569,7 +569,7 @@ export async function createFakeAccounts(o = {}) {
     { method: 'GET', path: '/api/fake/stripe/c/:id', who: 'anyone', handler: async (req, x) => {
       const c = checkouts.get(x.params.id);
       if (!c) throw httpError(404, 'not_found');
-      return fakePage('Pretend Stripe Checkout', `<p>Sparkle World Family Plan: ${esc(cfg.priceText)}${c.trial ? `, free for ${cfg.trialDays} days` : ''}.</p><p><a class="b" id="pay" href="/api/fake/stripe/pay/${esc(x.params.id)}">Pay (4242)</a> <a href="/account?checkout=cancel">Back</a></p>`);
+      return fakePage('Pretend Stripe Checkout', `<p>Glimmer World Family Plan: ${esc(cfg.priceText)}${c.trial ? `, free for ${cfg.trialDays} days` : ''}.</p><p><a class="b" id="pay" href="/api/fake/stripe/pay/${esc(x.params.id)}">Pay (4242)</a> <a href="/account?checkout=cancel">Back</a></p>`);
     } },
     { method: 'GET', path: '/api/fake/stripe/pay/:id', who: 'anyone', handler: async (req, x) => {
       const c = checkouts.get(x.params.id);
@@ -584,7 +584,7 @@ export async function createFakeAccounts(o = {}) {
       }
       return { status: 303, headers: { Location: `/account?checkout=${x.params.id}` } };
     } },
-    { method: 'GET', path: '/api/fake/stripe/p/:id', who: 'anyone', handler: async (req, x) => fakePage('Pretend Stripe Portal', ['cancel', 'resume', 'fail', 'fix'].map((k) => `<p><a class="b" id="${k}" href="/api/fake/stripe/portal/${esc(x.params.id)}/${k}">${{ cancel: 'Cancel at period end', resume: 'Resume', fail: 'Card starts failing', fix: 'Update card' }[k]}</a></p>`).join('') + '<p><a id="back" href="/account?portal=1">Back to Sparkle World</a></p>') },
+    { method: 'GET', path: '/api/fake/stripe/p/:id', who: 'anyone', handler: async (req, x) => fakePage('Pretend Stripe Portal', ['cancel', 'resume', 'fail', 'fix'].map((k) => `<p><a class="b" id="${k}" href="/api/fake/stripe/portal/${esc(x.params.id)}/${k}">${{ cancel: 'Cancel at period end', resume: 'Resume', fail: 'Card starts failing', fix: 'Update card' }[k]}</a></p>`).join('') + '<p><a id="back" href="/account?portal=1">Back to Glimmer World</a></p>') },
     { method: 'GET', path: '/api/fake/stripe/portal/:id/:what', who: 'anyone', handler: async (req, x) => {
       const fam = families.get(x.params.id);
       if (!fam) throw httpError(404, 'not_found');

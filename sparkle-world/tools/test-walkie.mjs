@@ -669,7 +669,7 @@ async function accountServerVoice() {
   const WSN = (await import('ws')).WebSocket;
   const dir = mkdtempSync(path.join(tmpdir(), 'sw-walkie-acct-'));
   const page = path.join(dir, 'page.html');
-  writeFileSync(page, '<!doctype html><title>Sparkle World</title>');
+  writeFileSync(page, '<!doctype html><title>Glimmer World</title>');
   const fake = await createFakeAccounts({ mode: 'required' });
   const app = createServer({ accounts: fake, htmlPath: page, siteDir: path.join(dir, 'none'), log: () => {} });
   const port = await app.listen(0, '127.0.0.1');

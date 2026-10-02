@@ -345,7 +345,7 @@ async function desktop(browser) {
     file = path.join(SHOTS, `${P}-world.json`);
     await wd.saveAs(file);
     const text = await readFile(file, 'utf8');
-    check(JSON.parse(text).format === 'sparkle-world', 'the file is a Sparkle World save');
+    check(JSON.parse(text).format === 'sparkle-world', 'the file is a Glimmer World save');
   }
   const count0 = await page.locator('.sw-world').count();
   if (file) {
@@ -366,9 +366,9 @@ async function desktop(browser) {
     const chooser2 = page.waitForEvent('filechooser');
     await page.locator('.sw-open-file').click();
     await (await chooser2).setFiles(bad);
-    await page.waitForFunction(() => /not a Sparkle World/.test(document.querySelector('.sw-toasts').textContent), null, { timeout: 5000 }).catch(() => {});
+    await page.waitForFunction(() => /not a Glimmer World/.test(document.querySelector('.sw-toasts').textContent), null, { timeout: 5000 }).catch(() => {});
     const toast = await page.evaluate(() => document.querySelector('.sw-toasts').textContent);
-    check(/not a Sparkle World/.test(toast), 'a wrong file gets a friendly message');
+    check(/not a Glimmer World/.test(toast), 'a wrong file gets a friendly message');
     // delete the imported copy (two in-page questions)
     await page.locator('.sw-world.sw-new button[aria-label="Delete"], .sw-world button[aria-label="Delete"]').first().click();
     await page.locator('.sw-dialog button', { hasText: 'Yes, delete' }).click();

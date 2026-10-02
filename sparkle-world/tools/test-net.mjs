@@ -1009,7 +1009,7 @@ async function serverTests() {
       assert(/no-cache/.test(page.headers['cache-control']), 'cache header');
       assert(page.headers.etag, 'etag');
       const text = gunzipSync(page.body).toString();
-      assert(text.startsWith('<!doctype html>') && text.includes('Sparkle World'), 'the game page');
+      assert(text.startsWith('<!doctype html>') && text.includes('Glimmer World'), 'the game page');
       const again = await get(srv.port, '/', { 'if-none-match': page.headers.etag });
       eq(again.status, 304, 'revalidation');
       const plain = await get(srv.port, '/');
@@ -1041,7 +1041,7 @@ async function serverTests() {
   await test('server: limits (4 per room, 3,900 B messages, 4 KiB presence, rate, rooms, per-IP, origin, idle, shutdown)', async () => {
     const dir = mkdtempSync(path.join(tmpdir(), 'sw-'));
     const page = path.join(dir, 'page.html');
-    writeFileSync(page, '<!doctype html><title>Sparkle World</title>');
+    writeFileSync(page, '<!doctype html><title>Glimmer World</title>');
     const srv = await startServerProcess({ SW_DIST: page, SW_MAX_ROOMS: '2', SW_MAX_PER_IP: '6', SW_IDLE_MS: '2500' });
     const room = 'sw1-heart-star-moon-cat';
     const socks = [];
@@ -1122,7 +1122,7 @@ async function serverTests() {
   await test('server: new rooms per address, IPv6 counts per /64, silent drops', async () => {
     const dir = mkdtempSync(path.join(tmpdir(), 'sw-'));
     const page = path.join(dir, 'page.html');
-    writeFileSync(page, '<!doctype html><title>Sparkle World</title>');
+    writeFileSync(page, '<!doctype html><title>Glimmer World</title>');
     const srv = await startServerProcess({ SW_DIST: page, SW_MAX_PER_IP: '100', SW_ROOMS_PER_IP: '100', SW_CONNECT_BURST: '1000', SW_GRACE_MS: '5000' });
     const socks = [];
     const open = async (...a) => {
@@ -1190,7 +1190,7 @@ async function serverTests() {
   await test('server: WsTransport reconnects as the same peer after a drop and after a server restart', async () => {
     const dir = mkdtempSync(path.join(tmpdir(), 'sw-'));
     const page = path.join(dir, 'page.html');
-    writeFileSync(page, '<!doctype html><title>Sparkle World</title>');
+    writeFileSync(page, '<!doctype html><title>Glimmer World</title>');
     let srv = await startServerProcess({ SW_DIST: page });
     const port = srv.port;
     const url = `ws://127.0.0.1:${port}`;
@@ -1233,7 +1233,7 @@ async function serverSafetyTests() {
   await test('server: a 16 KB nested frame never takes the relay down; every answer has security headers', async () => {
     const dir = mkdtempSync(path.join(tmpdir(), 'sw-'));
     const page = path.join(dir, 'page.html');
-    writeFileSync(page, '<!doctype html><title>Sparkle World</title>');
+    writeFileSync(page, '<!doctype html><title>Glimmer World</title>');
     const srv = await startServerProcess({ SW_DIST: page });
     try {
       const room = 'sw1-heart-star-moon-cat';
@@ -1280,7 +1280,7 @@ async function serverSafetyTests() {
   await test('server: stamps come from the device secret; X-Forwarded-For cannot dodge the per-IP limits; new connections are paced', async () => {
     const dir = mkdtempSync(path.join(tmpdir(), 'sw-'));
     const page = path.join(dir, 'page.html');
-    writeFileSync(page, '<!doctype html><title>Sparkle World</title>');
+    writeFileSync(page, '<!doctype html><title>Glimmer World</title>');
     const srv = await startServerProcess({ SW_DIST: page, SW_MAX_PER_IP: '4', SW_ROOMS_PER_IP: '3', SW_CONNECT_BURST: '40' });
     const socks = [];
     const open = async (...a) => {
@@ -1421,7 +1421,7 @@ async function startAccountServer(fakeOpts = {}, serverOpts = {}) {
   const { createServer } = await import('../server/server.mjs');
   const dir = mkdtempSync(path.join(tmpdir(), 'sw-acct-'));
   const page = path.join(dir, 'page.html');
-  writeFileSync(page, '<!doctype html><title>Sparkle World</title>');
+  writeFileSync(page, '<!doctype html><title>Glimmer World</title>');
   const fake = await createFakeAccounts({ mode: 'required', ...fakeOpts });
   const app = createServer({ accounts: fake, htmlPath: page, siteDir: path.join(dir, 'no-site'), log: () => {}, connectBurst: 1000, roomsBurst: 1000, maxPerIp: 100, roomsPerIp: 100, ...serverOpts });
   const port = await app.listen(0, '127.0.0.1');
@@ -1701,7 +1701,7 @@ async function accountTests() {
       const lily = fake.addPlayer(fam, { nickname: 'Lily', friends: true });
       const dev = fake.addSession(fam, { kind: 'device' });
       // an account child never shares a room with children whose families have no account
-      // (her grown-up agreed to friends "whose families have Sparkle World too", §8.2)
+      // (her grown-up agreed to friends "whose families have Glimmer World too", §8.2)
       const joinsBefore = A.frames.filter((f) => f.t === 'p' && f.j).length;
       const C = await acctWs(port, ROOM, { cookie: dev.cookie, p: lily });
       await waitFor(() => C.closed !== null, 2000);
@@ -1737,7 +1737,7 @@ async function accountTests() {
     for (const f of ['index.html', 'account.html', 'account/verify.html', 'privacy.html', 'terms.html']) writeFileSync(path.join(dir, f), '<!doctype html><title>x</title>');
     for (const f of ['account.js', 'account.css']) writeFileSync(path.join(dir, f), '/* x */');
     const page = path.join(dir, 'page.html');
-    writeFileSync(page, '<!doctype html><title>Sparkle World</title>');
+    writeFileSync(page, '<!doctype html><title>Glimmer World</title>');
     const off = createServer({ htmlPath: page, siteDir: dir, log: () => {} });
     const offPort = await off.listen(0, '127.0.0.1');
     const on = createServer({ accounts: await createFakeAccounts({ mode: 'optional' }), htmlPath: page, siteDir: dir, log: () => {} });
@@ -1764,7 +1764,7 @@ async function wsPropertyTests() {
   console.log('\nProperty test through the real server (4 WsTransport clients; client-side 30% drop, 5% duplicates, 0-800 ms delay; socket drops)');
   const dir = mkdtempSync(path.join(tmpdir(), 'sw-'));
   const page = path.join(dir, 'page.html');
-  writeFileSync(page, '<!doctype html><title>Sparkle World</title>');
+  writeFileSync(page, '<!doctype html><title>Glimmer World</title>');
   const srv = await startServerProcess({ SW_DIST: page, SW_MAX_PER_IP: '50', SW_ROOMS_PER_IP: '50', SW_CONNECT_BURST: '100000', SW_ROOMS_BURST: '100000' });
   const seeds = +(args.wsseeds || 1);
   try {

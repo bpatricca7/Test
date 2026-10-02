@@ -291,7 +291,7 @@ async function run() {
       const dl = A.page.waitForEvent('download', { timeout: 20000 }).catch(() => null);
       await A.page.locator('.ks-card button', { hasText: 'Save a copy' }).click();
       const d = await dl;
-      check(d && /^Sparkle World backup \d{4}-\d\d-\d\d\.json$/.test(d.suggestedFilename()), `downloaded "${d && d.suggestedFilename()}"`);
+      check(d && /^Glimmer World backup \d{4}-\d\d-\d\d\.json$/.test(d.suggestedFilename()), `downloaded "${d && d.suggestedFilename()}"`);
       let backup = null;
       if (d) {
         await d.saveAs(backupFile);

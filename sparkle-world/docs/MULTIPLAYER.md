@@ -1,4 +1,4 @@
-# Sparkle World: Play with Friends (multiplayer v1)
+# Glimmer World: Play with Friends (multiplayer v1)
 
 The family asked: *"make this game multiplayer where you can enter a code and play with your
 friends"*. This document is the contract for building it. It extends `docs/DESIGN.md`; read §2
@@ -1275,7 +1275,7 @@ function. Easel pictures (16×16 pixels) are the only free drawing; the host can
 | Situation | What the child sees | Where |
 |---|---|---|
 | `room` unavailable / file:// / signed out | Friends buttons hidden | title, pause |
-| `canHost === false` or probe `not_permitted` | "You can join a friend's world!" · small: "Grown-ups: inviting friends needs Contributor access to Sparkle World." | card |
+| `canHost === false` or probe `not_permitted` | "You can join a friend's world!" · small: "Grown-ups: inviting friends needs Contributor access to Glimmer World." | card |
 | join `no_rooms` | "Playing together isn't turned on for this account. Ask a grown-up!" | card |
 | `busy` (limit) | "Lots of games right now! Try again in a minute." | card |
 | `transient` after retries | "The magic mail is slow. Try again?" [Try again] | card |
@@ -1875,7 +1875,7 @@ saves, the relay exactly as in Addenda A–C. The claude.ai version never uses a
   `/api/me` did not answer, plays as today); in `required` mode every socket needs a session and
   `p`.
 - **Two kinds never share a room** (only possible in `optional`): an account child's grown-up
-  agreed to friends "whose families have Sparkle World too", so a room holding an account member
+  agreed to friends "whose families have Glimmer World too", so a room holding an account member
   refuses a legacy page, and a room of legacy pages refuses an account child (`rooms.mjs` `join`
   answers `accounts_mixed`, the server closes with **4406** before any roster, so no nickname,
   avatar, world or voice crosses). Legacy pages keep playing with each other exactly as today;
@@ -1896,7 +1896,7 @@ which could never become a card):
 | 4405 | `player_gone` | the player is not in the session's family, or was deleted |
 | 1013 | `unavailable` | the database is down and nothing is cached (the page retries) |
 | 4029 | `limit` | more than `SW_MAX_PER_FAMILY` (12) connections for one family (next to the per-address 12) |
-| 4406 | `accounts_mixed` | (`optional` only) the room has members of the other kind: account children and pages without an account never play together (D.1); "You can't play with this friend yet: both of you need a grown-up to set up Sparkle World." |
+| 4406 | `accounts_mixed` | (`optional` only) the room has members of the other kind: account children and pages without an account never play together (D.1); "You can't play with this friend yet: both of you need a grown-up to set up Glimmer World." |
 
 The codes of §4.3 / Addendum A–C (4000, 4001, 4002, 4003, 4004, 4008, 4009, 4029, 1011, 1012)
 keep their meaning.

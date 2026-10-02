@@ -341,7 +341,7 @@ export function paintBiomeArt(game, key, def = {}) {
     g.fillStyle = '#FFFFFF';
     for (let i = 0; i < 30; i++) g.fillRect(Math.floor(rand() * ART_W), Math.floor(rand() * ART_H * 0.7), 2, 2);
   }
-  // sparkles everywhere (it is Sparkle World after all)
+  // sparkles everywhere (it is Glimmer World after all)
   for (let i = 0; i < 5; i++) drawSparkle(g, Math.floor(10 + rand() * (ART_W - 20)), Math.floor(8 + rand() * ART_H * 0.5), 2, '#FFFFFF');
 
   return c.toDataURL('image/png');
