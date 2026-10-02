@@ -523,7 +523,12 @@ export class NetHost {
         if (!isIntIn(uid, 1, 2 ** 31)) return REJECT.INVALID;
         j.touchEnt(uid);
         if (!R.build) return REJECT.PAUSED;
-        if (!a.entityRecord(uid)) return 0; // already gone: what she wanted
+        if (!a.entityRecord(uid)) {
+          // two friends tapped the same car: the pages let the lower seat keep it, so the
+          // host's custody goes to her too (else one car is driven twice, or yanked back)
+          this._claimCustody(owner, seat, uid, now);
+          return 0; // already gone: what she wanted
+        }
         if (!R.mine) {
           // a treat on a table is there to be eaten, by anyone
           if (!this._ownEnt(uid, owner) && !a.isEdible?.(uid)) return REJECT.PROTECTED;
@@ -903,6 +908,33 @@ export class NetHost {
   }
 
   /**
+   * The custody of vehicle `uid` moves to the friend in `seat` when she says she drives it and
+   * her seat is lower than its holder's (the pages' rule: the lower seat keeps a car two
+   * friends tapped), or when the holder no longer drives it (`force`). In careful mode only to
+   * the car's owner from before. Returns true when it moved.
+   */
+  _claimCustody(owner, seat, uid, now, { force = false } = {}) {
+    let from = null, c = null;
+    for (const [o, x] of this.custody) {
+      if (x.uid === uid) {
+        from = o;
+        c = x;
+        break;
+      }
+    }
+    if (!c || from === owner || owner === undefined || owner === null) return false;
+    if (!force && !(seat < c.seat)) return false;
+    if (!this._drivesNow(seat, uid)) return false;
+    if (!this.rules.mine && c.prevOwner !== owner) return false;
+    this.custody.delete(from);
+    // one vehicle per friend: an older one of hers goes back first
+    if (this.custody.has(owner)) this._releaseCustody(owner, 'second');
+    const s = this.seats[seat];
+    this.custody.set(owner, { ...c, peer: s ? s.peer : null, seat, name: cleanText(this._seatName(seat), 12), since: now, noVhSince: null });
+    return true;
+  }
+
+  /**
    * Put a friend's vehicle back where she took it from (or the nearest free spot; never lost),
    * with its owner from before. Returns true when the custody entry is gone.
    */
@@ -934,6 +966,7 @@ export class NetHost {
    */
   _watchCustody(now) {
     for (const [owner, c] of Array.from(this.custody)) {
+      if (this.custody.get(owner) !== c) continue; // moved or ended earlier in this loop
       if (this.a.entityRecord(c.uid)) {
         this.custody.delete(owner);
         continue;
@@ -945,12 +978,25 @@ export class NetHost {
         c.noVhSince = null;
         continue;
       }
+      // she let it go, and another friend here says she drives it (a tie the pages settled
+      // the other way): the custody follows the car
+      if (this._handOver(c, now)) continue;
       const last = this.lastLseq.get(c.peer) || 0;
       const ob = Array.isArray(p.state.ob) ? p.state.ob : [];
       if (ob.some((e) => Array.isArray(e) && e[0] > last && e[1] === 'e+' && e[3] === c.rec[1])) continue;
       if (c.noVhSince == null) c.noVhSince = now;
       else if (now - c.noVhSince > CUSTODY_NO_VH) this._releaseCustody(owner, 'idle');
     }
+  }
+
+  /** _watchCustody: the custody of `c` to the seated friend whose vh names its uid, if any. */
+  _handOver(c, now) {
+    for (let k = 1; k <= C.MAX_SEATS; k++) {
+      const s = this.seats[k];
+      if (!s || k === c.seat || !this._drivesNow(k, c.uid)) continue;
+      return this._claimCustody(s.owner, k, c.uid, now, { force: true });
+    }
+    return false;
   }
 
   /** The vehicles in custody as parked save records (the host's world saves them). */

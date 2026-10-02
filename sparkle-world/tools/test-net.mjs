@@ -1935,6 +1935,76 @@ async function vehicleTests() {
     assert(await runUntil(W3.clock, () => G3.ents.has(hk), 5000), 'and it comes back on her page');
     W3.hub.close();
   });
+
+  await test('vehicles: two friends tap one car - the host gives it to the lower seat like the pages (both orders), and to whoever still drives it', async () => {
+    const kartsOn = (A) => Array.from(A.ents.values()).filter((e) => (e[1] || e.key) === 'kart_test').length;
+    // the pages' rule (vehicles/index.js _netChecks): the lower seat keeps it, the other drops
+    for (const zoeFirst of [true, false]) {
+      const { clock, hub, H, gs } = await hostAndGuests(zoeFirst ? 45 : 46, [['Mia', 'u1'], ['Zoe', 'u2']]);
+      const [M, Z] = gs;
+      const HA = H.adapter, host = H.session.hostCore;
+      H.session.setRules({ mine: 1 });
+      const hk = HA.userPlace('kart_test', 20, 5, 20);
+      await act(clock, [H], 3000);
+      assert(M.adapter.ents.has(hk) && Z.adapter.ents.has(hk), 'both see the host\'s kart');
+      // both tap it before hearing about the other; the first one's tap reaches the host first
+      // (the second page's presence is held back until then)
+      const [A, B] = zoeFirst ? [Z, M] : [M, Z];
+      const tap = (G) => {
+        G.adapter.vh = ['kart_test', 'ff4f7b', 0, 0, hk];
+        G.adapter.userRemove(hk);
+        G.session.frameEnd();
+      };
+      const bt = B.session.transport, realSet = bt.setState, held = [];
+      bt.setState = (patch) => { held.push(patch); };
+      tap(B);
+      tap(A);
+      assert(await runUntil(clock, () => host.custody.size === 1, 3000, 5), 'the first tap reached the host');
+      bt.setState = realSet;
+      for (const patch of held) bt.setState(patch);
+      await act(clock, [A, B], 3000);
+      await act(clock, [A, B], 2000);
+      eq(Array.from(host.custody.keys()), ['u:u1'], (zoeFirst ? 'Zoe first' : 'Mia first') + ': the custody is Mia\'s (seat 1)');
+      eq(host.custody.get('u:u1').name, 'Mia', 'her name for the toasts');
+      // Zoe's page drops its drive; Mia drives on for 15 s: nothing goes back under her
+      Z.adapter.vh = null;
+      await act(clock, [Z], 2000);
+      await act(clock, [H, M, Z], 15000);
+      eq(kartsOn(HA), 0, 'still out while Mia drives');
+      assert(!HA.toasts.some(([t]) => /went back to its spot/.test(t)), 'no "went back" while she drives');
+      // Mia parks it further on: one kart, the host still owns it
+      M.adapter.vh = null;
+      const nk = M.adapter.userPlace('kart_test', 24, 5, 20);
+      await act(clock, [M], 3000);
+      await act(clock, [H, M, Z], 15000);
+      eq(kartsOn(HA), 1, 'one kart on the host after the race');
+      assert(HA.ents.has(nk) && host.author.ents.get(nk) === 0 && host.custody.size === 0, 'Mia\'s park, the host\'s kart, no custody left');
+      hub.close();
+    }
+    // the backstop: the holder lets it go while another friend says she drives it (her page
+    // settled the tie the other way): the custody follows the car, no 10 s put-back
+    const { clock, hub, H, gs } = await hostAndGuests(47, [['Mia', 'u1'], ['Zoe', 'u2']]);
+    const [M, Z] = gs;
+    const HA = H.adapter, host = H.session.hostCore;
+    H.session.setRules({ mine: 1 });
+    const hk = HA.userPlace('kart_test', 20, 5, 20);
+    await act(clock, [H], 3000);
+    M.adapter.vh = ['kart_test', 'ff4f7b', 0, 0, hk];
+    M.adapter.userRemove(hk);
+    await act(clock, [M], 3000);
+    Z.adapter.vh = ['kart_test', 'ff4f7b', 0, 0, hk];
+    M.adapter.vh = null;
+    await act(clock, [M, Z], 3000);
+    eq(Array.from(host.custody.keys()), ['u:u2'], 'the custody moved to Zoe');
+    await act(clock, [H, M, Z], 15000);
+    eq(kartsOn(HA), 0, 'not put back while Zoe drives');
+    Z.adapter.vh = null;
+    const zk = Z.adapter.userPlace('kart_test', 24, 5, 24);
+    await act(clock, [Z], 3000);
+    eq(kartsOn(HA), 1, 'Zoe parks it: one kart');
+    assert(HA.ents.has(zk) && host.custody.size === 0, 'her park, no custody left');
+    hub.close();
+  });
 }
 
 // =====================================================================================
