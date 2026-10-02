@@ -115,8 +115,8 @@ describe('config (§2)', () => {
     refuses({ ...ENV, PUBLIC_ORIGIN: 'https://sparkleworld.fun/account' }, /just the site address/);
     refuses({ ...ENV, SW_SECRET: randomBytes(31).toString('base64') }, /SW_SECRET must be at least 32 random bytes/);
     refuses({ ...ENV, SW_SECRET: 'not base64 at all!' }, /SW_SECRET/);
-    refuses({ ...PROD, MAIL_MODE: 'log' }, /MAIL_MODE must be resend or postmark in production/);
-    refuses({ ...PROD, MAIL_MODE: 'memory' }, /MAIL_MODE must be resend or postmark in production/);
+    refuses({ ...PROD, MAIL_MODE: 'log' }, /MAIL_MODE must be resend, postmark or microsoft in production/);
+    refuses({ ...PROD, MAIL_MODE: 'memory' }, /MAIL_MODE must be resend, postmark or microsoft in production/);
     refuses({ ...PROD, SW_TEST: '1' }, /SW_TEST=1 is refused in production/);
     refuses({ ...ENV, SW_TEST: '1', STRIPE_SECRET_KEY: 'sk_live_abc' }, /SW_TEST=1 is refused with a live Stripe key/);
     refuses({ ...PROD, STRIPE_API_BASE: 'http://127.0.0.1:1234' }, /STRIPE_API_BASE is for tests only/);

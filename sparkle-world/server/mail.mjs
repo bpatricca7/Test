@@ -11,9 +11,11 @@
 //   mail.captured                   the memory transport's emails (GET /api/test/mail)
 //   mail.setTransport(fn)           tests: fn({ to, from, replyTo, template, subject, text, html, id })
 //
-// Transports (MAIL_MODE): `resend`, `postmark` (production: Node's fetch, no SDK), `log`
-// (development: one line with the masked address, and the code and link of sign-in emails),
-// `memory` (tests). Failures back off 1 min, 5 min, 30 min, 2 h, 6 h, 12 h, 24 h, then stop.
+// Transports (MAIL_MODE): `resend`, `postmark`, `microsoft` (production: Node's fetch, no SDK;
+// `microsoft` is Microsoft 365 through Microsoft Graph, see below), `log` (development: one line
+// with the masked address, and the code and link of sign-in emails), `memory` (tests). Failures
+// back off 1 min, 5 min, 30 min, 2 h, 6 h, 12 h, 24 h, then stop; a transport's error may say
+// `permanent` (stop now) or `retryAfterMs` (the provider's Retry-After, capped at 1 h).
 // Secret data (codes, links) is scrubbed to {} once an email is sent or given up; a sign-in or
 // check code older than its 15 minutes is not sent at all. Errors are recorded and logged by
 // name only; an address, a code or a link is never logged (except the `log` transport's own
@@ -85,6 +87,205 @@ function postmark(cfg) {
   };
 }
 
+// ---- Microsoft 365 (MAIL_MODE=microsoft): Microsoft Graph, app-only (OAuth 2.0 client credentials)
+//
+// Token: POST {login}/{MS_TENANT_ID}/oauth2/v2.0/token (client_id, client_secret,
+// scope=https://graph.microsoft.com/.default, grant_type=client_credentials), kept in memory
+// until 5 minutes before its expires_in, one refresh at a time. Send: POST
+// {graph}/v1.0/users/{the MAIL_FROM mailbox}/sendMail → 202 Accepted, with saveToSentItems:false
+// (no copy of a code or a family's email collects in the mailbox's Sent Items; docs/ACCOUNTS.md
+// §10). A 401 drops the token and tries once more with a fresh one. 429 and 5xx are retried
+// (Retry-After up to 5 s is waited for once, in place; a longer one moves the email's next try,
+// at most 1 h, never sooner than the outbox's own backoff). 400 stops the email (the same message
+// would be refused again). 401/403/404 and sign-in failures are setup problems: one log line that
+// names the likely fix, and the outbox's slow backoff keeps the email until it is fixed. Every
+// request has a 10 s timeout. A log line never holds the secret, the token, an address or
+// Microsoft's own error text (it can quote the address); only status numbers and error code names.
+
+export const MS_TIMEOUT_MS = 10000;
+export const MS_TOKEN_EARLY_MS = 5 * 60e3;
+export const MS_RETRY_AFTER_WAIT_MS = 5000;
+export const MAIL_RETRY_AFTER_CAP_MS = 3600e3;
+const MS_HINT_EVERY_MS = 15 * 60e3;
+const MS_LOGIN = 'https://login.microsoftonline.com';
+const MS_GRAPH = 'https://graph.microsoft.com';
+
+/** Retry-After (seconds, or an HTTP date) → ms from now; null when absent or unreadable. */
+export function retryAfterMs(value, nowMs = Date.now()) {
+  if (value === null || value === undefined) return null;
+  const s = String(value).trim();
+  if (/^\d+$/.test(s)) return Number(s) * 1000;
+  const t = Date.parse(s);
+  return Number.isFinite(t) ? Math.max(0, t - nowMs) : null;
+}
+
+const safeCode = (v) => (typeof v === 'string' ? v.replace(/[^A-Za-z0-9_.]/g, '').slice(0, 60) : '');
+
+/** Entra sign-in error numbers (AADSTS…) → the fix, in words the dad can act on. */
+const MS_TOKEN_HINTS = new Map([
+  [7000215, "the client secret is not right: put the secret's Value (not its Secret ID) in MS_CLIENT_SECRET"],
+  [7000222, 'the client secret has expired: make a new one (App registrations → the app → Certificates & secrets), put its Value in MS_CLIENT_SECRET and deploy'],
+  [700016, 'no app with this MS_CLIENT_ID in this tenant: check MS_CLIENT_ID (Application (client) ID) and MS_TENANT_ID (Directory (tenant) ID)'],
+  [90002, 'the tenant was not found: check MS_TENANT_ID (Directory (tenant) ID)'],
+  [900023, 'the tenant was not found: check MS_TENANT_ID (Directory (tenant) ID)'],
+  [700024, 'the client assertion is not valid: check MS_CLIENT_SECRET'],
+  [1002012, 'the scope was refused: check the app registration in the Entra admin center'],
+]);
+
+function microsoft(cfg, { log, now, sleep, timeoutMs }) {
+  const tokenUrl = `${cfg.msLoginBase || MS_LOGIN}/${encodeURIComponent(cfg.msTenantId)}/oauth2/v2.0/token`;
+  const sendUrl = `${cfg.msGraphBase || MS_GRAPH}/v1.0/users/${encodeURIComponent(cfg.msMailbox).replace(/%40/g, '@')}/sendMail`;
+  let cached = null; // { token, until }
+  let inflight = null;
+  const said = new Map();
+  const hint = (key, text) => {
+    const t = now();
+    if (said.has(key) && t - said.get(key) < MS_HINT_EVERY_MS) return;
+    said.set(key, t);
+    log(`mail: ${text}`);
+  };
+  const fail = (code, { retryAfter = null, permanent = false } = {}) => {
+    const e = new Error('Microsoft 365 answered ' + code);
+    e.name = 'MailHttpError';
+    e.code = code;
+    if (retryAfter !== null) e.retryAfterMs = retryAfter;
+    if (permanent) e.permanent = true;
+    return e;
+  };
+  const netFail = (err, what) => {
+    const timeout = err && (err.name === 'TimeoutError' || err.name === 'AbortError');
+    hint(`net_${what}`, `Microsoft 365 could not be reached (${what}: ${timeout ? 'timed out' : 'network error'}); trying again later`);
+    return fail(`ms_${what}_${timeout ? 'timeout' : 'network'}`);
+  };
+  const readJson = async (res) => {
+    try {
+      return await res.json();
+    } catch {
+      return null;
+    }
+  };
+
+  async function fetchToken() {
+    let res;
+    try {
+      res = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
+        body: new URLSearchParams({
+          client_id: cfg.msClientId,
+          client_secret: cfg.msClientSecret,
+          scope: 'https://graph.microsoft.com/.default',
+          grant_type: 'client_credentials',
+        }).toString(),
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+    } catch (err) {
+      throw netFail(err, 'token');
+    }
+    const body = await readJson(res);
+    if (res.ok && body && typeof body.access_token === 'string' && body.access_token) {
+      const life = Number(body.expires_in) * 1000;
+      return { token: body.access_token, until: now() + (Number.isFinite(life) ? Math.max(0, life - MS_TOKEN_EARLY_MS) : 0) };
+    }
+    const status = res.status;
+    if (status === 429 || status >= 500) {
+      hint(`token_${status}`, `Microsoft 365 sign-in is busy or down (${status}); trying again later`);
+      throw fail(`ms_token_${status}`, { retryAfter: retryAfterMs(res.headers.get('retry-after')) });
+    }
+    const codes = Array.isArray(body?.error_codes) ? body.error_codes.map(Number) : [];
+    const known = codes.find((c) => MS_TOKEN_HINTS.has(c));
+    const why = known !== undefined ? `${MS_TOKEN_HINTS.get(known)} (AADSTS${known})` : `check MS_TENANT_ID, MS_CLIENT_ID and MS_CLIENT_SECRET${safeCode(body?.error) ? ` (${safeCode(body.error)})` : ''}`;
+    hint(`token_${status}_${known ?? ''}`, `Microsoft 365 sign-in failed (${status}): ${why}`);
+    throw fail(`ms_token_${status}`);
+  }
+
+  async function token() {
+    if (cached && now() < cached.until) return cached.token;
+    if (!inflight) {
+      inflight = fetchToken()
+        .then((t) => {
+          cached = t;
+          return t;
+        })
+        .finally(() => {
+          inflight = null;
+        });
+    }
+    return (await inflight).token;
+  }
+
+  return async (m) => {
+    const message = {
+      subject: m.subject,
+      body: m.html ? { contentType: 'HTML', content: m.html } : { contentType: 'Text', content: m.text },
+      toRecipients: [{ emailAddress: { address: m.to } }],
+      ...(m.replyTo ? { replyTo: [{ emailAddress: { address: m.replyTo } }] } : {}),
+    };
+    const payload = JSON.stringify({ message, saveToSentItems: false });
+    let renewed = false;
+    let waited = false;
+    for (;;) {
+      const t = await token();
+      let res;
+      try {
+        res = await fetch(sendUrl, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' },
+          body: payload,
+          signal: AbortSignal.timeout(timeoutMs),
+        });
+      } catch (err) {
+        throw netFail(err, 'send');
+      }
+      if (res.ok) {
+        await res.arrayBuffer().catch(() => {});
+        return;
+      }
+      const status = res.status;
+      const code = safeCode((await readJson(res))?.error?.code);
+      const named = code ? `${status} ${code}` : String(status);
+      if (status === 401 && !renewed) {
+        renewed = true;
+        if (cached && cached.token === t) cached = null; // a fresh token, once
+        continue;
+      }
+      if (status === 429 || status >= 500) {
+        const ra = retryAfterMs(res.headers.get('retry-after'));
+        if (ra !== null && ra <= MS_RETRY_AFTER_WAIT_MS && !waited) {
+          waited = true;
+          await sleep(ra);
+          continue;
+        }
+        hint(`send_${status}`, status === 429 ? `Microsoft 365 is limiting how fast we send (429); trying again later` : `Microsoft 365 answered ${status}; trying again later`);
+        throw fail(`http_${status}`, { retryAfter: ra });
+      }
+      if (status === 401) {
+        hint('send_401', `Microsoft 365 refused the app's token (${named}): check that MS_TENANT_ID and MS_CLIENT_ID are the same app registration's, and that its Mail.Send permission has admin consent`);
+        throw fail('http_401');
+      }
+      if (status === 403) {
+        hint('send_403', `Microsoft 365 refused (${named}): the app needs the Mail.Send application permission with admin consent (Entra admin center → App registrations → the app → API permissions); if the app is limited to one mailbox, MAIL_FROM must be that mailbox`);
+        throw fail('http_403');
+      }
+      if (status === 404) {
+        hint(
+          'send_404',
+          code === 'MailboxNotEnabledForRESTAPI'
+            ? `Microsoft 365 refused (${named}): the MAIL_FROM user has no Exchange Online mailbox (give it a license, or use a shared mailbox)`
+            : `Microsoft 365 refused (${named}): mailbox not found: MAIL_FROM must be a mailbox (a user or a shared mailbox) in this Microsoft 365 organization`,
+        );
+        throw fail('http_404');
+      }
+      if (status === 400 || status === 413) {
+        hint(`send_${status}`, `Microsoft 365 refused this email (${named}); it will not be sent again`);
+        throw fail(`http_${status}`, { permanent: true });
+      }
+      hint(`send_${status}`, `Microsoft 365 answered ${named}`);
+      throw fail(`http_${status}`);
+    }
+  };
+}
+
 function devLog(log) {
   return async (m) => {
     let what = '';
@@ -101,12 +302,18 @@ function memory(captured) {
   };
 }
 
-export function makeTransport(cfg, { captured = [], log = () => {} } = {}) {
+/**
+ * The transport for cfg.mailMode. `now` and `sleep` are for tests (the Microsoft token's life and
+ * a short Retry-After wait use the real clock, not the app clock).
+ */
+export function makeTransport(cfg, { captured = [], log = () => {}, now = () => Date.now(), sleep = (ms) => new Promise((r) => setTimeout(r, ms)), timeoutMs = MS_TIMEOUT_MS } = {}) {
   switch (cfg.mailMode) {
     case 'resend':
       return resend(cfg);
     case 'postmark':
       return postmark(cfg);
+    case 'microsoft':
+      return microsoft(cfg, { log, now, sleep, timeoutMs });
     case 'log':
       return devLog(log);
     case 'memory':
@@ -187,11 +394,16 @@ export function createMail(ctx) {
             msg = renderMail(row.template, { data, cfg, firstTime, notice: firstTime ? await loadNotice(cfg) : null });
             await transport({ id: row.id, to: row.to_email, from: cfg.mailFrom, replyTo: cfg.operator?.email || null, template: row.template, data, now, ...msg });
           } catch (err) {
-            const tries = row.tries + 1;
+            // err.permanent: the provider refused this very message (it would refuse it again);
+            // err.retryAfterMs: the provider asked us to wait (honored up to an hour, never
+            // sooner than the backoff)
+            const tries = err && err.permanent ? MAIL_MAX_TRIES : row.tries + 1;
             const stop = tries >= MAIL_MAX_TRIES;
+            const asked = Number.isFinite(err?.retryAfterMs) ? Math.min(Math.max(0, err.retryAfterMs), MAIL_RETRY_AFTER_CAP_MS) : 0;
+            const wait = Math.max(MAIL_BACKOFF_MS[tries - 1] ?? 0, stop ? 0 : asked);
             await q.query(
               "update outbox set tries = $2, last_error = $3, send_after = $4, data = case when $5::boolean then '{}'::jsonb else data end where id = $1",
-              [row.id, tries, errName(err), new Date(now + (MAIL_BACKOFF_MS[tries - 1] ?? 0)), stop],
+              [row.id, tries, errName(err), new Date(now + wait), stop],
             );
             return stop ? 'stopped' : 'failed';
           }

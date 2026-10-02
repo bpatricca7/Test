@@ -21,7 +21,9 @@ export class ConfigError extends Error {
 export const ACCOUNT_MODES = ['off', 'optional', 'required'];
 export const FRIENDS_MODES = ['subscription', 'free-join'];
 export const MP_CONSENTS = ['verified', 'email_plus'];
-export const MAIL_MODES = ['resend', 'postmark', 'log', 'memory'];
+export const MAIL_MODES = ['resend', 'postmark', 'microsoft', 'log', 'memory'];
+/** The modes that really send: the only ones allowed in production. */
+export const MAIL_PROVIDERS = ['resend', 'postmark', 'microsoft'];
 
 export const DEFAULTS = Object.freeze({
   trialDays: 0, // the family's decision (2026-09-28): no free trial
@@ -36,6 +38,18 @@ export const DEFAULTS = Object.freeze({
 });
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1']);
+const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The address part of MAIL_FROM (`Name <addr>` or a bare `addr`), lower-cased; null when it is
+ * not one address. With MAIL_MODE=microsoft it picks the mailbox (/users/{address}/sendMail).
+ */
+export function mailboxOf(from) {
+  const s = String(from || '').trim();
+  const m = /^(?:[^<>]*<([^<>\s]+)>|([^<>\s]+))$/.exec(s);
+  const a = m ? (m[1] || m[2]).toLowerCase() : '';
+  return /^[^\s@<>()[\]\\,;:"/?#%]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/.test(a) ? a : null;
+}
 
 /** HKDF-SHA256 sub-key of the master secret (salt `sparkle-world`, info = its purpose). */
 export function subKey(secret, info) {
@@ -90,6 +104,23 @@ export function loadConfig(env = process.env) {
     const v = str(k);
     if (v === null && production) problems.push(`${k} is missing (needed in production)`);
     return v;
+  };
+  /** A test-only API address (MS_LOGIN_BASE, MS_GRAPH_BASE): refused in production, like STRIPE_API_BASE. */
+  const testBase = (k) => {
+    const v = str(k);
+    if (v === null) return null;
+    if (production) {
+      problems.push(`${k} is for tests only and is refused in production`);
+      return null;
+    }
+    try {
+      const u = new URL(v);
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') throw new Error();
+    } catch {
+      problems.push(`${k} must be an http(s) address`);
+      return null;
+    }
+    return v.replace(/\/+$/, '');
   };
 
   // ---- the database ----
@@ -177,12 +208,43 @@ export function loadConfig(env = process.env) {
   // ---- email ----
   if (str('MAIL_MODE') === null) need('MAIL_MODE');
   const mailMode = oneOf('MAIL_MODE', MAIL_MODES, null);
-  const mailProvider = mailMode === 'resend' || mailMode === 'postmark';
-  if (production && mailMode && !mailProvider) problems.push('MAIL_MODE must be resend or postmark in production');
+  const mailProvider = MAIL_PROVIDERS.includes(mailMode);
+  const microsoft = mailMode === 'microsoft';
+  if (production && mailMode && !mailProvider) problems.push('MAIL_MODE must be resend, postmark or microsoft in production');
   const mailApiKey = str('MAIL_API_KEY');
   const mailFrom = str('MAIL_FROM') || (mailProvider ? null : 'Sparkle World <hello@localhost>');
-  if (mailProvider && !mailApiKey) problems.push(`MAIL_API_KEY is missing (needed with MAIL_MODE=${mailMode})`);
+  if (mailProvider && !microsoft && !mailApiKey) problems.push(`MAIL_API_KEY is missing (needed with MAIL_MODE=${mailMode})`);
   if (mailProvider && !mailFrom) problems.push(`MAIL_FROM is missing (needed with MAIL_MODE=${mailMode})`);
+
+  // Microsoft 365 (Microsoft Graph, app-only; docs/ACCOUNTS.md §10): the app registration's ids
+  // and client secret, and the mailbox MAIL_FROM names. Read only with MAIL_MODE=microsoft. A
+  // problem line never prints a value (the secret above all).
+  let msTenantId = null;
+  let msClientId = null;
+  let msClientSecret = null;
+  let msMailbox = null;
+  // tests only: a local fake of the two Microsoft hosts (tools/ms-graph-fake.mjs); refused in
+  // production whatever MAIL_MODE is, exactly like STRIPE_API_BASE
+  const msLoginBase = testBase('MS_LOGIN_BASE');
+  const msGraphBase = testBase('MS_GRAPH_BASE');
+  if (microsoft) {
+    msTenantId = str('MS_TENANT_ID');
+    msClientId = str('MS_CLIENT_ID');
+    msClientSecret = str('MS_CLIENT_SECRET');
+    if (!msTenantId) problems.push('MS_TENANT_ID is missing (needed with MAIL_MODE=microsoft)');
+    else if (!GUID.test(msTenantId)) problems.push('MS_TENANT_ID must be the Directory (tenant) ID, like 00000000-0000-0000-0000-000000000000');
+    if (!msClientId) problems.push('MS_CLIENT_ID is missing (needed with MAIL_MODE=microsoft)');
+    else if (!GUID.test(msClientId)) problems.push('MS_CLIENT_ID must be the Application (client) ID, like 00000000-0000-0000-0000-000000000000');
+    if (!msClientSecret) problems.push('MS_CLIENT_SECRET is missing (needed with MAIL_MODE=microsoft)');
+    else if (GUID.test(msClientSecret)) problems.push("MS_CLIENT_SECRET looks like the secret's ID: copy the secret's Value instead");
+    else if (/\s/.test(msClientSecret) || msClientSecret.length < 16 || msClientSecret.length > 256) problems.push('MS_CLIENT_SECRET must be the client secret Value (one word, no spaces)');
+    if (mailFrom) {
+      msMailbox = mailboxOf(mailFrom);
+      if (!msMailbox) problems.push('MAIL_FROM must name the sending mailbox, like Sparkle World <support@your-domain>');
+    }
+    if (msTenantId) msTenantId = msTenantId.toLowerCase();
+    if (msClientId) msClientId = msClientId.toLowerCase();
+  }
 
   // ---- who runs it (printed in /privacy, /terms and emails; COPPA) ----
   const operator = Object.freeze({
@@ -239,6 +301,12 @@ export function loadConfig(env = process.env) {
     mailMode,
     mailApiKey,
     mailFrom,
+    msTenantId,
+    msClientId,
+    msClientSecret,
+    msMailbox,
+    msLoginBase,
+    msGraphBase,
     operator,
     freePass,
   });
@@ -315,7 +383,7 @@ export function summarizeConfig(cfg) {
     `grace ${cfg.graceDays} d`,
     `retain ${cfg.retainDays} d`,
     `sell ${cfg.sellCountries.join(',')}`,
-    `mail ${cfg.mailMode}`,
+    cfg.mailMode === 'microsoft' ? `mail microsoft (${String(cfg.msMailbox || '').split('@')[1] || '?'}${cfg.msLoginBase || cfg.msGraphBase ? ', fake' : ''})` : `mail ${cfg.mailMode}`,
     `stripe ${cfg.stripeLive ? 'live' : 'test'}${cfg.stripeApiBase ? ' (fake)' : ''}`,
     `db ${/^pglite:/i.test(cfg.databaseUrl) ? 'pglite' : 'postgres'}`,
     cfg.freePass && cfg.freePass.length ? `free passes ${cfg.freePass.length}` : null,
