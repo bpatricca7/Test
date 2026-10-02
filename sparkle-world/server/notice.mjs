@@ -37,7 +37,7 @@ export const FRIENDS_SWITCH_NOTICE =
 /** The walkie-talkie switch's own notice: the game's GATE_NOTE (src/net/walkie/gate.js), word for word. */
 export const WALKIE_SWITCH_NOTICE = 'Voices go live only to friends in this game, are never recorded, and stop when the button is let go.';
 
-const PROVIDER_NAMES = { resend: 'Resend', postmark: 'Postmark' };
+const PROVIDER_NAMES = { resend: 'Resend', postmark: 'Postmark', microsoft: 'Microsoft 365' };
 
 function op(cfg, key) {
   const v = cfg?.operator?.[key];

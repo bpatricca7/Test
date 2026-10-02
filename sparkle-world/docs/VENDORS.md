@@ -34,7 +34,20 @@ receive it: that is a rule of the code (docs/ACCOUNTS.md §10, §6.2) and is tes
 | Security page | stripe.com → Security |
 | Reviewed | ______ |
 
-## The email provider: Resend or Postmark (one of them)
+## The email provider: Microsoft 365 (`MAIL_MODE=microsoft`, the family's choice)
+
+| | |
+|---|---|
+| What it does | sends our emails (sign-in codes, the consent confirmation, plan emails) from the family's own Microsoft 365 mailbox (for example `support@brickoodle.com`), through Microsoft Graph |
+| What it receives | the parent's email address and the text of our emails (codes and links; never children's information). The app's access is the Microsoft Graph `Mail.Send` application permission only (best limited to the one mailbox, DEPLOY-RAILWAY.md step 12a); it cannot read any mailbox |
+| Children's information | **never** |
+| What it keeps | no copy in Sent Items (`saveToSentItems: false`); Exchange keeps the sent item in the mailbox's Recoverable Items for the deleted-item retention (14 days by default, at most 30) unless the mailbox is on a hold or a retention policy, and a message trace (sender, recipient, subject). Keep the sending mailbox off litigation hold and long retention policies |
+| Terms to have in place | the Microsoft Products and Services Data Protection Addendum (DPA), which applies to Microsoft 365 business plans (microsoft.com → Licensing → Product Terms / DPA) |
+| Settings to check | 2FA (MFA) on every Microsoft 365 admin; the app registration "Glimmer World mail": only `Mail.Send` (application), or no Entra permission at all and the Exchange RBAC assignment scoped to the one mailbox (step 12a); the client secret's expiry date (a calendar reminder a month before); the domain's SPF, DKIM ([DKIM](https://learn.microsoft.com/en-us/defender-office-365/email-authentication-dkim-configure)) and DMARC ([DMARC](https://learn.microsoft.com/en-us/defender-office-365/email-authentication-dmarc-configure)); the sending mailbox has no forwarding rules; the secret is only in Railway |
+| Security page | microsoft.com → Trust Center |
+| Reviewed | ______ |
+
+## Or: Resend or Postmark (one of them, if not Microsoft 365)
 
 | | |
 |---|---|
@@ -43,7 +56,7 @@ receive it: that is a rule of the code (docs/ACCOUNTS.md §10, §6.2) and is tes
 | Children's information | **never** |
 | Terms to have in place | the provider's Data Processing Agreement (resend.com → Legal, or postmarkapp.com → Legal / Privacy) |
 | Settings to check | 2FA; open and click tracking **off**; the shortest message retention it offers; the domain's DKIM, SPF (and Postmark's Return-Path) and DMARC records; the API key is only in Railway |
-| Which one we use | ______ (the same as `MAIL_MODE`; the direct notice names it automatically) |
+| Which one we use | ______ (the same as `MAIL_MODE`; the direct notice names it automatically: Resend, Postmark or Microsoft 365) |
 | Reviewed | ______ |
 
 ## The domain registrar

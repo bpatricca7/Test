@@ -22,6 +22,7 @@
     "test:billing": "node --test tools/test-billing.mjs",
     "test:saves": "node --test tools/test-saves.mjs",
     "test:name": "node tools/build.mjs && node --test tools/test-name.mjs",
+    "test:mail-microsoft": "node --test tools/test-mail-microsoft.mjs",
     "e2e:accounts": "node tools/build.mjs && node tools/e2e-accounts.mjs",
     "dev:accounts": "node tools/dev-accounts.mjs",
     "stripe:setup": "node tools/stripe-setup.mjs",
