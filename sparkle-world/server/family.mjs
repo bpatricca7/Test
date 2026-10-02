@@ -216,8 +216,11 @@ export function createFamily(ctx) {
   }
 
   async function history(familyId) {
-    const r = await db.query('select at, action, player_id from audit_log where family_id = $1 order by at desc, id desc limit 500', [familyId]);
-    return r.rows.map((a) => ({ at: ms(a.at), action: a.action, ...(a.player_id ? { player: a.player_id } : {}) }));
+    const r = await db.query('select at, action, player_id, detail from audit_log where family_id = $1 order by at desc, id desc limit 500', [familyId]);
+    // the consent method is the one detail the page words differently (a payment, a signed
+    // form, the operator's own family); it is never personal data (§11.9)
+    const method = (a) => (a.action === 'consent.verified' && typeof a.detail?.method === 'string' ? { detail: { method: a.detail.method } } : {});
+    return r.rows.map((a) => ({ at: ms(a.at), action: a.action, ...(a.player_id ? { player: a.player_id } : {}), ...method(a) }));
   }
 
   async function* exportFamily(familyId) {
@@ -380,10 +383,16 @@ export function routes(ctx) {
     if (f.consent_at && f.notice_version === n.version) return { json: { consent: consentJson(f) } };
     const now = x.now;
     const updated = await db.tx(async (q) => {
-      const row = await q.one('update families set notice_version = $2, consent_at = $3 where id = $1 returning *', [f.id, n.version, new Date(now)]);
+      let row = await q.one('update families set notice_version = $2, consent_at = $3 where id = $1 returning *', [f.id, n.version, new Date(now)]);
       await ctx.audit(q, f.id, 'consent.email_plus', { v: n.version });
       // the "plus" of email plus: a confirmation a day later, with a way to take it back
       await ctx.mail.enqueue(q, 'consent_confirm', f.email, { at: now, v: n.version }, { familyId: f.id, sendAfter: now + CONSENT_CONFIRM_MS });
+      // SW_FREE_PASS (§6.9): the operator's own listed family gets verified consent (method
+      // 'operator') only now, after the parent agreed to the notice like every parent
+      if (ctx.freePass?.listed(row.email)) {
+        const fp = await ctx.freePass.applyIn(q, f.id, { now, notice: n });
+        if (fp.pass || fp.consent) row = await q.one('select * from families where id = $1', [f.id]);
+      }
       return row;
     });
     ctx.billing.invalidate(f.id);

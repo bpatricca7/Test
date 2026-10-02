@@ -138,7 +138,7 @@ server/
   voice.mjs           (edit) per-link `allowed`, the `perm` control frame                        [D]
   config.mjs          (new) read + validate environment variables (§2)                          [A]
   db.mjs              (new) pg Pool (or PGlite in tests): query, tx, tryLock                    [A]
-  migrate.mjs         (new) migration runner; migrations/001_init.sql (§3.3)                    [A]
+  migrate.mjs         (new) migration runner; migrations/001_init.sql, 002, 003 (§3.3)          [A]
   http.mjs            (new) router, body reader (limits, gzip), cookies, CSRF, JSON answers     [A]
   accounts.mjs        (new) composition root: createAccounts(cfg) → the API server.mjs uses     [A]
   auth.mjs            (new) sign-in, sessions, email check, pairing, devices                    [A]
@@ -148,6 +148,7 @@ server/
   mail-templates.mjs  (new) every email's text (§10)                                            [A]
   jobs.mjs            (new) outbox sender, retention, lapse, reminders, reconcile trigger (§13.7)[A]
   admin.mjs           (new) the admin CLI (§13.8)                                               [A]
+  freepass.mjs        (new) SW_FREE_PASS: the operator's own family's pass and consent (§6.9)   [A]
   test-hooks.mjs      (new) /api/test/* (only with SW_TEST=1)                                   [A]
   saves.mjs           (new) /api/players/:pid/profile|worlds|portrait                           [C]
   entitlement.mjs     (new) pure entitlementOf() (§6.5)                                         [B]
@@ -229,17 +230,22 @@ Deploy Logs, exit code 1, so Railway keeps the old deployment) when a rule below
 | `SW_PRICE_TEXT` | optional | default `$5.99 a month, plus sales tax where it applies`; checked against the Stripe price at start (a mismatch logs one warning) |
 | `SW_WORLD_MAX_BYTES` | optional | default `8388608` (8 MB, one world's JSON, uncompressed) |
 | `SW_MAX_PER_FAMILY` | optional | default `12` relay connections per family |
+| `SW_FREE_PASS` | optional | the operator's own family, without paying (§6.9): a comma list of `email` or `email:YYYY-MM-DD` (no date = through `2099-12-31`), at most 20. The Deploy Logs show only how many |
 | `MAIL_MODE` | accounts on | `resend` \| `postmark` (production) \| `log` (development) \| `memory` (tests) |
-| `MAIL_API_KEY`, `MAIL_FROM` | production | provider key; `Sparkle World <hello@your-domain>` |
+| `MAIL_API_KEY`, `MAIL_FROM` | production | provider key; `Sparkle World <hello@your-domain>` (before the domain is verified at Resend, `Sparkle World <onboarding@resend.dev>` works, but Resend delivers it only to the Resend account owner's own address) |
 | `SW_OPERATOR_NAME`, `SW_OPERATOR_EMAIL`, `SW_OPERATOR_ADDRESS`, `SW_OPERATOR_PHONE` | production | printed into `/privacy`, `/terms` and emails (COPPA requires operator contact details) |
 | `NODE_ENV` | production | `production` |
+| `NPM_CONFIG_INCLUDE` | production (the build) | `dev`: with `NODE_ENV=production` npm leaves out devDependencies such as esbuild, which the build needs (`NPM_CONFIG_PRODUCTION=false` does nothing with npm 10) |
 | `SW_TEST`, `STRIPE_API_BASE`, `SW_TEST_DATABASE_URL`, `SW_STRIPE_SHAPES` | tests/staging only | §12 |
 
 Refusal rules: accounts on without any required variable; `PUBLIC_ORIGIN` not https in production;
 `SW_SECRET` shorter than 32 bytes; production with `MAIL_MODE` not `resend`/`postmark`; `SW_TEST=1`
 with `NODE_ENV=production` or a `…_live_` Stripe key; `STRIPE_API_BASE` in production;
 `SW_STRIPE_SHAPES=1` with a live key; `SW_FRIENDS_MODE=free-join` with `SW_MP_CONSENT=verified`
-(a free family can never pass card consent, §6.7); unknown values of any enum. With accounts `off`
+(a free family can never pass card consent, §6.7); an `SW_FREE_PASS` entry that is not an email
+address, has a date that is not a real day (or is after 2099-12-31), or lists an address twice, or
+more than 20 entries (the line names the entry by its place, never the address); unknown values of
+any enum. With accounts `off`
 only `SW_ACCOUNTS` itself is checked (nothing else is read), so a stray variable can never stop
 today's server.
 The existing `SW_MAX_*`, `SW_TRUST_PROXY`, `SW_ALLOWED_ORIGINS` etc. are unchanged. With the cookie now
@@ -468,6 +474,21 @@ to nobody. `/api/me` lists no player for it, every `:pid` route answers 404 (her
 on the Family page (choosing "Anyone in the family" unlocks it). Every check is the one test
 `lockedAway(s, pid)`: `(locked or lock_player) and lock_player <> pid` (the `or` covers a row
 written by an older deployment during a deploy).
+
+**`server/migrations/003_free_pass.sql`** (`SW_FREE_PASS`, §6.9):
+
+```sql
+alter table families add column comp_source text;      -- null: the admin's pass; 'config': SW_FREE_PASS's
+alter table families add constraint families_comp_source check (comp_source in ('config'));
+alter table families drop constraint families_verified_method,
+  add constraint families_verified_method check (verified_method in ('card','form','call','video','operator'));
+alter table audit_log drop constraint audit_log_actor_check,
+  add constraint audit_log_actor_check check (actor in ('parent','system','stripe','admin','config'));
+```
+
+Replacing a check constraint by a wider one of the same name, in one statement, is the one drop
+the expand-only rule (§3.2) allows: every value the old code writes is still allowed, so an old
+deployment running side by side keeps working (the test that checks migrations knows this case).
 
 Limits enforced in code: ≤ 6 players per family; ≤ 3 live pair codes per family; ≤ 60 live worlds
 per player (side copies count, tombstones do not); stored gzip ≤ 100 MB per player and ≤ 300 MB per
@@ -948,7 +969,7 @@ Tested as a table over every status × time position × comp × consent (§12.6)
 | Needs | entitled + `consent_at` (email plus) | entitled + tier by `SW_MP_CONSENT` (default: `verified`) + the child's **friends** switch | entitled + `verified` + friends switch + the child's **walkie** switch |
 | With no trial (the default, `SW_TRIAL_DAYS=0`) | yes | right after checkout (the first charge is the verified consent), once the parent switches **friends** on | same, plus the **walkie** switch |
 | During a free week (only if `SW_TRIAL_DAYS>0`) | yes | after **Start now** or the first monthly payment | same |
-| Free pass (`comp`) | yes | after the admin records verified consent (`admin consent-verified … --method form`, a signed consent form, §11.4) | same |
+| Free pass (`comp`) | yes | after the admin records verified consent (`admin consent-verified … --method form`, a signed consent form, §11.4); for an `SW_FREE_PASS` address, once the parent agrees to the notice (method `operator`, §6.9) | same |
 
 **`subscription`** (default): every relay member must pass the row above.
 **`free-join`**: a family with consent and no plan may add players and switch **friends** on; those
@@ -969,6 +990,41 @@ play is not a disclosure needing stronger consent (§11.4). The server refuses t
 - **Card testing:** §4.8.
 - **Fees** (approximate; check the account's pricing page): card 2.9% + 30¢ ≈ $0.47, Billing ≈ 0.7% ≈
   $0.04, Tax ≈ 0.5% ≈ $0.03 → about **$5.45** kept per family per month, before income tax.
+
+### 6.9 Free passes from `SW_FREE_PASS` (the operator's own family)
+
+The dad tests the Family Plan with his own family without paying, and without a shell on the
+server (the admin CLI needs `railway ssh`, §13.8). He lists his own address(es) in a Railway
+Variable: `SW_FREE_PASS=dad@example.com` or `SW_FREE_PASS=dad@example.com, mom@example.com:2027-06-30`
+(no date = through 2099-12-31; at most 20; checked at start, §2). `server/freepass.mjs` applies it:
+
+- **When:** at every start, for each family that already exists with a listed address, and at
+  sign-in (which also creates the family), so listing an address before the family signs up works.
+  Changing a Variable always restarts the server on Railway, so the start is when a list change
+  takes effect. Each family is changed in its own transaction, its row locked first, and only when
+  something differs: running it again (or in two containers side by side) changes nothing.
+- **The pass:** `comp_until` = the end of the listed day (UTC), `comp_source = 'config'`. A pass the
+  admin command set (`comp_source` null) is never touched while it runs; one that has ended no
+  longer does anything, so the list may set its own. `admin comp` on a listed family takes the pass
+  over (`comp_source` null); when that pass ends, or after `comp … off`, the list gives its own
+  again at the next start or sign-in. To stop, remove the address from the list.
+- **Removed from the list:** a pass the list set ends at the next start (`comp_until = now`). It
+  ends like any plan ending: the family is `lapsed` (§6.5) and the lapse, warnings and retention of
+  §6.6 apply, unless the family has its own subscription. Passes set by the admin command are never
+  ended by the list.
+- **Consent:** a listed family is the operator's own, approved by the operator, so its verified
+  consent (tier 2, §11.4) is recorded with the method **`operator`**: only for a listed address,
+  only after the parent agreed to the current notice in the normal flow (`POST /api/consent`, or
+  at the next start or sign-in for a parent who agreed before the address was listed), and only
+  when no verified consent is recorded yet (never over `card`, `form`, `call` or `video`). The
+  notice is never skipped: until the parent agrees, the family has the pass but no players. Like a
+  card's, the record stays when the address leaves the list (it records that a grown-up said yes).
+  **List only your own family's addresses**: for anyone else, a free pass is `admin comp` plus a
+  signed consent form (`admin consent-verified … --method form`).
+- **Records:** each change is one `audit_log` row with the actor `config`: `comp.set {until}` (the
+  listed day, or `null` when the pass ended) and `consent.verified {method: 'operator'}`. The log
+  says only counts (`free passes: 1 listed, 1 set, 0 ended, 0 consent recorded`); `admin show`
+  marks such a pass `(from SW_FREE_PASS)`.
 
 ---
 
@@ -1486,6 +1542,8 @@ to it in production (accounts were still off), so it stays version 1.
   **Start today** gets there on day one. For free passes, the admin can record another listed method
   (a signed consent form returned by mail, fax or scan; a call; a video call) with
   `admin consent-verified <email> --method form|call|video` (`docs/CONSENT-FORM.md` is the form).
+  The operator's own family, listed in `SW_FREE_PASS`, is recorded with the method `operator` after
+  the parent agrees to the notice (§6.9).
 - **Judgment call 1 (for the lawyer):** whether the trial's saved card is enough. If yes, it is one
   line (set `verified_at` at `checkout.session.completed`).
 - **Judgment call 2 (for the lawyer):** whether filtered, invite-only multiplayer (nickname ≤ 12 letters,
@@ -1534,7 +1592,9 @@ Actions: `consent.email_plus {v}`, `consent.confirm_sent {v}`, `consent.verified
 (`v` is always the notice version the server shows; a page that says another one gets `409`),
 `device.paired {sid}`, `device.removed {sid}`, `export.player`, `export.family`, `family.delete`,
 `family.deleted`, `plan.lapsed`, `plan.resumed`, `retention.purge {players}`, `comp.set {until}`,
-`email.changed`. `detail` holds only versions, ids (a player id, an 8-hex session prefix, a Stripe
+`email.changed`. Actors: `parent`, `system`, `stripe`, `admin`, and `config` (the records
+`SW_FREE_PASS` writes, §6.9); consent methods: `card`, `form`, `call`, `video`, `operator`.
+`detail` holds only versions, ids (a player id, an 8-hex session prefix, a Stripe
 invoice id) and counts; never an email, a nickname, an IP address or free text. `audit.mjs` rejects
 unknown actions and keys.
 
@@ -1813,7 +1873,7 @@ and ids, never children's content.
 | Command | What |
 |---|---|
 | `show <email>` | plan state, consent, flags, player and device counts, last seen |
-| `comp <email> <YYYY-MM-DD\|off>` | a free pass until that day (or remove it); warns when the family's plan still renews (and is charged) |
+| `comp <email> <YYYY-MM-DD\|off>` | a free pass until that day (or remove it); warns when the family's plan still renews (and is charged). Without a shell, `SW_FREE_PASS` gives the operator's own family a pass (§6.9) |
 | `consent-verified <email> --method form\|call\|video` | records tier-2 consent obtained another listed way (§11.4) |
 | `change-email <old> <new>` | after confirming the request from the old address; every session and pair code of the family ends (it often follows a taken-over mailbox) |
 | `export <email> > file.json` | the family export. It prints children's content, so it is never emailed: a parent asking by email is helped to sign in and use **Download everything** |

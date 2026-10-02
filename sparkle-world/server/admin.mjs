@@ -5,6 +5,7 @@
 //
 //   show <email>                                    plan, consent, flags, player/device counts, last seen
 //   comp <email> <YYYY-MM-DD|off>                   a free pass until the end of that day (UTC), or none
+//                                                   (SW_FREE_PASS gives passes without this, §6.9)
 //   consent-verified <email> --method form|call|video   tier-2 consent obtained another listed way (§11.4)
 //   change-email <old> <new>                        after confirming the request from the old address;
 //                                                   every session and pair code of the family ends
@@ -118,7 +119,9 @@ export async function runAdmin(argv, { ctx, out = (s) => process.stdout.write(s 
       for (const x of subs) out(`  subscription ${x.id}: ${x.status}, period end ${when(x.current_period_end)}${x.cancel_at_period_end ? ', cancel at period end' : ''}, synced ${when(x.synced_at)}`);
       out(`  stripe customer ${f.stripe_customer_id || '-'}  country ${f.country || '-'}  trial used ${f.trial_used ? 'yes' : 'no'}`);
       out(`  consent: ${e.consent}, notice v${f.notice_version ?? '-'} agreed ${day(f.consent_at)}, verified ${day(f.verified_at)}${f.verified_method ? ` (${f.verified_method})` : ''}`);
-      out(`  free pass until ${day(f.comp_until)}  lapsed ${day(f.lapsed_at)}  purge after ${day(f.purge_after)}  kid data purged ${day(f.kid_data_purged_at)}`);
+      // a pass runs to the END of its day (comp_until is the next midnight): show that day
+      const passDay = f.comp_until ? `through ${day(ms(f.comp_until) - 1)}${f.comp_source === 'config' ? ' (from SW_FREE_PASS)' : ''}` : '-';
+      out(`  free pass ${passDay}  lapsed ${day(f.lapsed_at)}  purge after ${day(f.purge_after)}  kid data purged ${day(f.kid_data_purged_at)}`);
       out(`  players ${p.n} (friends on ${p.friends}, walkie on ${p.walkie})  sessions: parent ${s.parent}, device ${s.device}  live pair codes ${codes.n}`);
       out(`  flags ${flags}`);
       return 0;
@@ -138,11 +141,13 @@ export async function runAdmin(argv, { ctx, out = (s) => process.stdout.write(s 
         label = args[1];
       }
       await db.tx(async (q) => {
-        await q.query('update families set comp_until = $2 where id = $1', [f.id, until === null ? null : new Date(until)]);
+        // the admin's pass (comp_source null): SW_FREE_PASS never touches it while it runs (§6.9)
+        await q.query('update families set comp_until = $2, comp_source = null where id = $1', [f.id, until === null ? null : new Date(until)]);
         await ctx.audit(q, f.id, 'comp.set', { until: label }, { actor: 'admin' });
       });
       changed(f);
       out(until === null ? `free pass removed for family ${f.id}` : `free pass for family ${f.id} through ${label} (UTC)`);
+      if (ctx.freePass?.listed(f.email)) out('note: this address is listed in SW_FREE_PASS: once this pass ends (or with off, at the next start or sign-in) the list gives its own pass again; remove it from the list to stop that');
       if (until !== null) {
         const live = await db.query("select id, cancel_at_period_end from subscriptions where family_id = $1 and status in ('trialing', 'active', 'past_due')", [f.id]);
         for (const x of live.rows) {

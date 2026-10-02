@@ -32,6 +32,7 @@ import { makeTransport, maskEmail, MAIL_BACKOFF_MS, MAIL_MAX_TRIES } from '../se
 import { renderMail, TEMPLATES } from '../server/mail-templates.mjs';
 import { fullYears, msUntilUtc } from '../server/jobs.mjs';
 import { runAdmin } from '../server/admin.mjs';
+import { entitlementOf } from '../server/entitlement.mjs';
 import { readWorldFile } from '../src/core/storage.js';
 
 // The log spy (§12.7): from here on every console line of this file, and every log function
@@ -154,6 +155,42 @@ describe('config (§2)', () => {
     assert.equal(cookieOf(prod, 'sw_sess=tok_1', 'sess'), null);
     assert.deepEqual({ ...parseCookies('a=1; b="2"; a=3; =x; c') }, { a: '1', b: '2' });
   });
+  test('SW_FREE_PASS: email or email:YYYY-MM-DD, lower-cased; a bad value refuses the start without naming the address (§6.9)', () => {
+    assert.deepEqual([...loadConfig(ENV).freePass], [], 'none by default');
+    const c = loadConfig({ ...ENV, SW_FREE_PASS: ' Dad@Example.com , mom.k@example.com:2027-06-30, ' });
+    assert.deepEqual(c.freePass.map((e) => ({ ...e })), [
+      { email: 'dad@example.com', day: '2099-12-31', until: Date.UTC(2100, 0, 1) },
+      { email: 'mom.k@example.com', day: '2027-06-30', until: Date.UTC(2027, 6, 1) },
+    ]);
+    assert.ok(Object.isFrozen(c.freePass) && Object.isFrozen(c.freePass[0]));
+    // the listed address matches what sign-in stores
+    for (const e of c.freePass) assert.equal(normalizeEmail(e.email), e.email);
+    const line = summarizeConfig(c);
+    assert.match(line, /free passes 2/);
+    assert.ok(!line.includes('example.com'), 'the count only');
+    assert.ok(!summarizeConfig(loadConfig(ENV)).includes('free pass'));
+    for (const [v, re] of [
+      ['not-an-email', /SW_FREE_PASS entry 1 must be an email address/],
+      ['ok@example.com, secret.mom@example', /SW_FREE_PASS entry 2 must be an email address/],
+      ['secret.mom@example.com:2027-02-30', /SW_FREE_PASS entry 1 has a date that is not a real day/],
+      ['secret.mom@example.com:2100-01-01', /SW_FREE_PASS entry 1 has a date that is not a real day/],
+      ['secret.mom@example.com:27-1-1', /SW_FREE_PASS entry 1 must be an email address, or email:YYYY-MM-DD/],
+      ['secret.mom@example.com:', /SW_FREE_PASS entry 1 must be an email address/],
+      ['secret.mom@example.com, Secret.Mom@example.com:2027-01-01', /SW_FREE_PASS entry 2 lists the same address twice/],
+      [Array.from({ length: 21 }, (_, i) => `k${i}@example.com`).join(','), /SW_FREE_PASS lists 21 addresses \(at most 20\)/],
+    ]) {
+      const err = refuses({ ...ENV, SW_FREE_PASS: v }, re);
+      assert.ok(!/secret\.mom|example/i.test(err.message), 'the address is never printed: ' + err.message);
+    }
+    assert.equal(loadConfig({ ...ENV, SW_FREE_PASS: Array.from({ length: 20 }, (_, i) => `k${i}@example.com`).join(',') }).freePass.length, 20);
+    // accounts off: not even read
+    assert.equal(loadConfig({ SW_FREE_PASS: 'nonsense' }).accounts, 'off');
+  });
+  test("MAIL_FROM takes Resend's testing sender (before the domain is verified)", () => {
+    const c = loadConfig({ ...PROD, MAIL_FROM: 'Sparkle World <onboarding@resend.dev>' });
+    assert.equal(c.mailFrom, 'Sparkle World <onboarding@resend.dev>');
+    assert.equal(loadConfig({ ...PROD, MAIL_FROM: 'onboarding@resend.dev' }).mailFrom, 'onboarding@resend.dev');
+  });
   test('sub-keys (HKDF) are stable, distinct and not the secret', () => {
     const c = loadConfig(ENV);
     const again = loadConfig(ENV);
@@ -208,12 +245,12 @@ describe('database and migrations (§3)', () => {
   });
   after(async () => t && t.close());
 
-  test('migrate applies 001 and 002 once; running it again changes nothing', async () => {
+  test('migrate applies 001, 002 and 003 once; running it again changes nothing', async () => {
     assert.deepEqual(await migrationStatus(t.db), { ok: false, current: 0, latest: listMigrations().length });
     const first = await migrate(t.db);
-    assert.deepEqual(first.applied, [1, 2]);
+    assert.deepEqual(first.applied, [1, 2, 3]);
     const second = await migrate(t.db);
-    assert.deepEqual(second, { applied: [], current: 2 });
+    assert.deepEqual(second, { applied: [], current: 3 });
     assert.equal((await migrationStatus(t.db)).ok, true);
     const tables = (await t.db.query("select tablename from pg_tables where schemaname = 'public' order by 1")).rows.map((r) => r.tablename);
     assert.deepEqual(tables, ['audit_log', 'deleted_families', 'families', 'gone_sessions', 'login_attempts', 'outbox', 'pair_codes', 'player_profiles', 'players', 'schema_migrations', 'sessions', 'stripe_events', 'subscriptions', 'worlds']);
@@ -221,7 +258,10 @@ describe('database and migrations (§3)', () => {
 
   test('migrations are expand-only: no drop, rename or type change (§3.2)', () => {
     for (const m of listMigrations()) {
-      const sql = readFileSync(m.file, 'utf8').replace(/--[^\n]*/g, '').toLowerCase();
+      let sql = readFileSync(m.file, 'utf8').replace(/--[^\n]*/g, '').toLowerCase();
+      // the one allowed drop: a check constraint replaced by a wider one of the same name in
+      // the same statement (003: a new consent method, a new audit actor)
+      sql = sql.replace(/\bdrop\s+constraint\s+(\w+)\s*,\s*add\s+constraint\s+(\w+)\s+check\b/g, (all, a, b) => (a === b ? 'add constraint ' + b + ' check' : all));
       for (const bad of [/\bdrop\s+(table|column|index|constraint|type|schema)\b/, /\brename\b/, /\balter\s+column\s+\S+\s+(set\s+data\s+)?type\b/, /\btruncate\b/, /\bdelete\s+from\b/]) {
         assert.ok(!bad.test(sql), `${path.basename(m.file)}: ${bad}`);
       }
@@ -249,8 +289,14 @@ describe('database and migrations (§3)', () => {
       "insert into families (email) values ('Upper@Example.com')",
       "insert into families (email, country) values ('c@example.com', 'usa')",
       "insert into families (email, verified_method) values ('d@example.com', 'guess')",
+      "insert into families (email, comp_source) values ('d2@example.com', 'admin')",
+      "insert into audit_log (family_id, actor, action) values (gen_random_uuid(), 'someone', 'comp.set')",
     ];
     for (const sql of bad) await assert.rejects(t.db.query(sql));
+    // 003: the operator's own family (SW_FREE_PASS, §6.9); every older value still goes in
+    for (const m of ['card', 'form', 'call', 'video', 'operator']) await t.db.query('insert into families (email, verified_method) values ($1, $2)', [`m-${m}@example.com`, m]);
+    for (const a of ['parent', 'system', 'stripe', 'admin', 'config']) await t.db.query("insert into audit_log (family_id, actor, action) values (gen_random_uuid(), $1, 'comp.set')", [a]);
+    await t.db.query("insert into families (email, comp_source) values ('src@example.com', 'config')");
     const f = await t.db.one("insert into families (email) values ('e@example.com') returning id");
     await assert.rejects(t.db.query("insert into players (family_id, nickname) values ($1, 'ThirteenChars')", [f.id]));
     await t.db.query("insert into players (family_id, nickname) values ($1, 'Lily')", [f.id]);
@@ -2413,6 +2459,8 @@ describe('A: audit records (§11.9)', () => {
 
   test('only the listed actions and keys; values are versions, ids, methods, dates and counts', async () => {
     assert.equal(Object.keys(AUDIT_ACTIONS).length, 20);
+    checkAudit('consent.verified', { method: 'operator' }, { actor: 'config' });
+    checkAudit('comp.set', { until: '2099-12-31' }, { actor: 'config' });
     checkAudit('friends.on', { v: 1 });
     checkAudit('consent.verified', { method: 'card', invoice: 'in_1Abc' }, { actor: 'stripe' });
     checkAudit('comp.set', { until: null }, { actor: 'admin' });
@@ -2438,6 +2486,211 @@ describe('A: audit records (§11.9)', () => {
     const rows = (await t.db.query('select * from audit_log')).rows;
     assert.equal(rows.length, 1, 'a refused record writes nothing');
     assert.deepEqual([rows[0].action, rows[0].detail, rows[0].actor, +rows[0].at], ['friends.on', { v: 2 }, 'parent', Date.UTC(2026, 0, 1)]);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+
+describe('A: free passes from SW_FREE_PASS (§6.9)', () => {
+  let t;
+  before(async () => {
+    t = await openTestDb();
+  });
+  after(async () => t?.close());
+
+  const configRows = async (familyId) =>
+    (await t.db.query("select action, detail, actor from audit_log where family_id = $1 and actor = 'config' order by id", [familyId])).rows;
+  const adminRun = async (h, args) => {
+    const lines = [];
+    const code = await runAdmin(args, { ctx: h.ctx, out: (s) => lines.push(s), write: () => {}, confirm: async () => '' });
+    return { code, text: lines.join('\n') };
+  };
+
+  test('listed before the family exists: the pass at sign-up; verified consent (operator) only after the notice; entitlementOf says comp', async () => {
+    const dad = 'dad.fp@example.com';
+    const other = 'neighbor.fp@example.com';
+    remember(dad, other);
+    const h = await startHarness(t.db, { SW_FREE_PASS: 'Dad.FP@Example.com' });
+    try {
+      assert.equal(await h.family(dad), null, 'nothing is created before the family signs up');
+      const b = h.browser();
+      const familyId = await signIn(h, b, dad);
+      let f = await h.family(dad);
+      assert.deepEqual([+f.comp_until, f.comp_source], [Date.UTC(2100, 0, 1), 'config'], 'through 2099-12-31');
+      assert.deepEqual([f.verified_at, f.verified_method], [null, null], 'no consent before the notice');
+      let me = (await b.get('/api/me')).data;
+      assert.deepEqual([me.plan.state, me.plan.entitled, me.consent], ['comp', true, 'none']);
+      assert.equal((await b.post('/api/players', { nickname: 'Robin' })).status, 403, 'the notice first, like every parent');
+      // the notice, in the normal flow
+      const n = (await b.get('/api/notice')).data;
+      const c = await b.post('/api/consent', { noticeVersion: n.version, agree: true });
+      assert.equal(c.status, 200, c.text);
+      assert.deepEqual([c.data.consent.level, c.data.consent.method], ['verified', 'operator']);
+      f = await h.family(dad);
+      assert.equal(f.verified_method, 'operator');
+      const e = entitlementOf({ family: f, subs: [], now: h.clock.now(), cfg: h.cfg });
+      assert.deepEqual([e.state, e.entitled, e.until, e.consent, e.friendsConsentOk, e.walkieConsentOk], ['comp', true, Date.UTC(2100, 0, 1), 'verified', true, true]);
+      // the whole Family Plan without paying: players, friends and the walkie
+      remember('Robin');
+      const p = await b.post('/api/players', { nickname: 'Robin' });
+      assert.equal(p.status, 201, p.text);
+      const sw = await b.patch(`/api/players/${p.data.id}`, { friends: true, walkie: true, notice: n.version });
+      assert.equal(sw.status, 200, sw.text);
+      me = (await b.get('/api/me')).data;
+      assert.deepEqual([me.plan.state, me.consent, me.players[0].canHost, me.players[0].walkieOk], ['comp', 'verified', true, true]);
+      assert.deepEqual(await configRows(familyId), [
+        { action: 'comp.set', detail: { until: '2099-12-31' }, actor: 'config' },
+        { action: 'consent.verified', detail: { method: 'operator' }, actor: 'config' },
+      ]);
+      const hist = (await b.get('/api/family/audit')).data;
+      assert.deepEqual(hist.find((a) => a.action === 'consent.verified').detail, { method: 'operator' }, 'the Family page can say how consent was verified');
+      assert.match((await adminRun(h, ['show', dad])).text, /verified \d{4}-\d{2}-\d{2} \(operator\)[\s\S]*free pass through 2099-12-31 \(from SW_FREE_PASS\)/);
+      // signing in again changes nothing (idempotent)
+      await signIn(h, h.browser(), dad);
+      assert.equal((await configRows(familyId)).length, 2);
+      // an address that is not listed: no pass, and agreeing to the notice is email plus only
+      const nb = h.browser();
+      const otherId = await signIn(h, nb, other);
+      const c2 = await nb.post('/api/consent', { noticeVersion: n.version, agree: true });
+      assert.deepEqual([c2.data.consent.level, c2.data.consent.method], ['email_plus', null]);
+      const o = await h.family(other);
+      assert.deepEqual([o.comp_until, o.comp_source, o.verified_at, o.verified_method], [null, null, null, null]);
+      assert.deepEqual(await configRows(otherId), []);
+      assert.equal((await nb.get('/api/me')).data.plan.state, 'none');
+    } finally {
+      await h.close();
+    }
+  });
+
+  test('at start: an existing listed family gets it; a removed address ends a pass the list set, never an admin pass', async () => {
+    const mom = 'mom.fp@example.com';
+    const aunt = 'aunt.fp@example.com';
+    const gran = 'gran.fp@example.com';
+    remember(mom, aunt, gran);
+    let h = await startHarness(t.db);
+    let ids;
+    try {
+      ids = {
+        mom: (await setupFamily(h, mom, { entitled: false })).familyId,
+        aunt: (await setupFamily(h, aunt, { entitled: false })).familyId,
+        gran: await signIn(h, h.browser(), gran), // never agreed to the notice
+      };
+      assert.equal((await adminRun(h, ['comp', aunt, '2031-01-31'])).code, 0, "the aunt's pass is the admin's");
+    } finally {
+      await h.close();
+    }
+    const restart = async (list) => {
+      h = await startHarness(t.db, list === null ? {} : { SW_FREE_PASS: list });
+    };
+
+    // listed now: the next start applies it
+    await restart(`${mom}:2030-06-30, ${aunt}, ${gran}`);
+    try {
+      let f = await h.family(mom);
+      assert.deepEqual([+f.comp_until, f.comp_source, f.verified_method], [Date.UTC(2030, 6, 1), 'config', 'operator'], 'she had agreed to the notice: verified (operator)');
+      f = await h.family(aunt);
+      assert.deepEqual([+f.comp_until, f.comp_source], [Date.UTC(2031, 1, 1), null], "the admin's running pass is never touched");
+      assert.equal(f.verified_method, 'operator');
+      f = await h.family(gran);
+      assert.deepEqual([+f.comp_until, f.comp_source, f.verified_at], [Date.UTC(2100, 0, 1), 'config', null], 'no notice agreed: a pass, but no consent');
+      assert.deepEqual(await configRows(ids.mom), [
+        { action: 'comp.set', detail: { until: '2030-06-30' }, actor: 'config' },
+        { action: 'consent.verified', detail: { method: 'operator' }, actor: 'config' },
+      ]);
+      assert.deepEqual(await configRows(ids.aunt), [{ action: 'consent.verified', detail: { method: 'operator' }, actor: 'config' }]);
+    } finally {
+      await h.close();
+    }
+
+    // the same list again: nothing changes
+    await restart(`${mom}:2030-06-30, ${aunt}, ${gran}`);
+    await h.close();
+    assert.equal((await configRows(ids.mom)).length, 2, 'idempotent');
+
+    // a new day for mom; gran removed: her pass (the list's) ends now
+    await restart(`${mom}:2031-03-31, ${aunt}`);
+    try {
+      assert.equal(+(await h.family(mom)).comp_until, Date.UTC(2031, 3, 1));
+      const g = await h.family(gran);
+      assert.ok(+g.comp_until <= h.clock.now(), 'ended');
+      const e = entitlementOf({ family: g, subs: [], now: h.clock.now(), cfg: h.cfg });
+      assert.deepEqual([e.state, e.entitled], ['lapsed', false], 'an ended pass: the usual lapse rules (§6.6)');
+      assert.deepEqual((await configRows(ids.gran)).at(-1), { action: 'comp.set', detail: { until: null }, actor: 'config' });
+    } finally {
+      await h.close();
+    }
+
+    // the Variable removed altogether: mom's pass ends; the aunt's admin pass stays
+    await restart(null);
+    try {
+      const m = await h.family(mom);
+      assert.ok(+m.comp_until <= h.clock.now());
+      assert.equal(m.verified_method, 'operator', 'verified consent stays once recorded (like a card)');
+      const a = await h.family(aunt);
+      assert.deepEqual([+a.comp_until, a.comp_source], [Date.UTC(2031, 1, 1), null]);
+      assert.equal((await h.ctx.billing.entitlementFor(ids.aunt)).state, 'comp');
+      assert.equal((await h.ctx.billing.entitlementFor(ids.mom)).state, 'lapsed');
+      // the retention job sees an ended plan like any other
+      await h.ctx.jobs.run('retention');
+      assert.notEqual((await h.family(mom)).lapsed_at, null);
+    } finally {
+      await h.close();
+    }
+    const before = (await configRows(ids.mom)).length;
+    await restart(null);
+    await h.close();
+    assert.equal((await configRows(ids.mom)).length, before, 'an ended pass is not ended twice');
+
+    // listed again later: a new pass, and the job resumes the plan
+    await restart(mom);
+    try {
+      assert.equal((await h.ctx.billing.entitlementFor(ids.mom)).state, 'comp');
+      await h.ctx.jobs.run('retention');
+      assert.equal((await h.family(mom)).lapsed_at, null);
+      // the admin's comp takes the pass over: the list no longer owns it
+      const r = await adminRun(h, ['comp', mom, '2032-01-31']);
+      assert.equal(r.code, 0);
+      assert.match(r.text, /listed in SW_FREE_PASS/);
+      assert.equal((await h.family(mom)).comp_source, null);
+    } finally {
+      await h.close();
+    }
+    await restart(null);
+    try {
+      const m = await h.family(mom);
+      assert.deepEqual([+m.comp_until, m.comp_source], [Date.UTC(2032, 1, 1), null], 'never touched once the admin set it');
+    } finally {
+      await h.close();
+    }
+  });
+
+  test('an admin pass that has ended no longer counts: the list may give its own; a listed day already past gives nothing', async () => {
+    const uncle = 'uncle.fp@example.com';
+    const late = 'late.fp@example.com';
+    remember(uncle, late);
+    let h = await startHarness(t.db);
+    let familyId;
+    try {
+      familyId = (await setupFamily(h, uncle, { entitled: false })).familyId;
+      await t.db.query('update families set comp_until = $2 where id = $1', [familyId, new Date(h.clock.now() - DAY)]);
+    } finally {
+      await h.close();
+    }
+    h = await startHarness(t.db, { SW_FREE_PASS: `${uncle}:2030-01-01` });
+    try {
+      const f = await h.family(uncle);
+      assert.deepEqual([+f.comp_until, f.comp_source], [Date.UTC(2030, 0, 2), 'config']);
+    } finally {
+      await h.close();
+    }
+    h = await startHarness(t.db, { SW_FREE_PASS: `${late}:2020-01-01` });
+    try {
+      await signIn(h, h.browser(), late);
+      const f = await h.family(late);
+      assert.deepEqual([f.comp_until, f.comp_source], [null, null]);
+    } finally {
+      await h.close();
+    }
   });
 });
 
@@ -2667,6 +2920,13 @@ describe('A: the server refuses to start with a broken setting (one line, exit 1
     const r = await runServer({ ...PROD, SW_TEST: '1' });
     assert.equal(r.code, 1);
     assert.match(r.err, /^Sparkle World will not start: [^\n]*SW_TEST=1 is refused in production[^\n]*\n$/);
+  });
+
+  test('a malformed SW_FREE_PASS (the address is never printed)', async () => {
+    remember('dad.secret@example.com');
+    const r = await runServer({ ...PROD, SW_FREE_PASS: 'dad.secret@example.com:2027-13-01' });
+    assert.equal(r.code, 1);
+    assert.equal(r.err, 'Sparkle World will not start: SW_FREE_PASS entry 1 has a date that is not a real day (YYYY-MM-DD, up to 2099-12-31)\n');
   });
 
   test('an unknown SW_ACCOUNTS; a database that does not answer', async () => {

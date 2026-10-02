@@ -26,9 +26,9 @@ Who can see it, in the tables below:
 | `email` | the parent's email (trimmed, lower-case) | no | parent, operator, Railway | with the row (RETENTION.md) |
 | `created_at`, `email_verified_at`, `last_seen_at` | dates | no | operator | with the row |
 | `notice_version`, `consent_at` | which notice the parent agreed to, and when (tier 1) | no | parent, operator | with the row |
-| `verified_at`, `verified_method` | verified consent (tier 2): `card`, `form`, `call`, `video` | no | parent, operator | with the row |
+| `verified_at`, `verified_method` | verified consent (tier 2): `card`, `form`, `call`, `video`, or `operator` (the operator's own family listed in `SW_FREE_PASS`, after the parent agreed to the notice) | no | parent, operator | with the row |
 | `stripe_customer_id` | the Stripe customer (`cus_…`) | no | operator | with the row; cleared if the customer is deleted in Stripe |
-| `trial_used`, `comp_until` | one trial per family; a free pass | no | parent, operator | with the row |
+| `trial_used`, `comp_until`, `comp_source` | one trial per family; a free pass, and who set it (null: the admin command; `config`: `SW_FREE_PASS`) | no | parent (the pass's date), operator | with the row |
 | `country` | billing country from Checkout (2 letters) | no | operator | with the row |
 | `lapsed_at`, `purge_after`, `kid_data_purged_at` | the retention clock after a plan ends | no | parent (as dates), operator | with the row |
 | `flags` | operator flags: `dispute`, `refund_due`, `us_only`, `duplicate_sub`, `welcome`, `warned30`, `warned7`, `customer_gen`, `checkout` (an open Checkout's id and time) | no | operator | with the row |
@@ -83,7 +83,7 @@ Who can see it, in the tables below:
 | Table / field | What | Child? | Who sees it | Deleted |
 |---|---|---|---|---|
 | `outbox` | the recipient (a parent's email), the template name, its data (codes and links, scrubbed to `{}` once sent), tries, last error name | no (emails never contain children's information) | internal | sent 7 days, failed 30 days |
-| `audit_log` | consent and parent actions: the action, a date, the actor (`parent`, `system`, `stripe`, `admin`), a player id, and details limited to versions, ids (a player id, an 8-hex session prefix, a Stripe invoice id) and counts | no (never an email, nickname or IP address) | parent (consent history), operator | 3 years (no foreign key: it outlives the family on purpose) |
+| `audit_log` | consent and parent actions: the action, a date, the actor (`parent`, `system`, `stripe`, `admin`, `config` for `SW_FREE_PASS`), a player id, and details limited to versions, ids (a player id, an 8-hex session prefix, a Stripe invoice id) and counts | no (never an email, nickname or IP address) | parent (consent history), operator | 3 years (no foreign key: it outlives the family on purpose) |
 | `schema_migrations` | migration versions | no | internal | never |
 
 ## 2. On the devices

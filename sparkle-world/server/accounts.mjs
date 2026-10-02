@@ -43,6 +43,7 @@ import { migrate, migrationStatus } from './migrate.mjs';
 import { createRouter, cookieOf, isUuid } from './http.mjs';
 import { Limits } from './limits.mjs';
 import { entitlementOf } from './entitlement.mjs';
+import { createFreePass } from './freepass.mjs';
 
 /** The app clock: real time plus an offset the tests can move. */
 export function makeClock(base = Date.now) {
@@ -90,6 +91,7 @@ export async function createAccounts(cfg, { log = (...a) => console.log(...a), c
     sessions: null,
     family: null,
     billing: null,
+    freePass: null,
   };
 
   const mods = {
@@ -112,6 +114,17 @@ export async function createAccounts(cfg, { log = (...a) => console.log(...a), c
   ctx.sessions = mods.auth?.createSessions ? await mods.auth.createSessions(ctx) : fallbackSessions();
   ctx.stripe = mods.stripe?.createStripe ? await mods.stripe.createStripe(cfg) : null;
   ctx.billing = mods.billing?.createBilling ? await mods.billing.createBilling(ctx) : fallbackBilling(ctx);
+
+  // SW_FREE_PASS (§6.9): the listed families get their free pass now (and at sign-in); a pass
+  // the list set for an address no longer listed ends. Counts only in the log.
+  ctx.freePass = createFreePass(ctx);
+  try {
+    const fp = await ctx.freePass.sync();
+    if (ctx.freePass.list.length || fp.ended) log(`free passes: ${ctx.freePass.list.length} listed, ${fp.set} set, ${fp.ended} ended, ${fp.consent} consent recorded`);
+  } catch (err) {
+    // never stops the start: the sign-in of a listed family applies it again
+    log(`free passes: could not apply (${err && err.code ? err.code : err && err.name ? err.name : 'Error'})`);
+  }
 
   const routes = [];
   for (const name of ['auth', 'family', 'saves', 'billing', 'testHooks']) {
