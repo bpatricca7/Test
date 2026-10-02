@@ -499,6 +499,12 @@ class Walkie {
       this._finish('cap');
       return;
     }
+    // the last frame (the rest when the press ends) keeps to the 15 s too: a press cut by time
+    // just under the sample cap would otherwise send up to one frame more
+    if (last) {
+      const room = Math.max(0, W.BURST_SAMPLES - this.sentSamples - this._pendingSamples()) & ~1; // whole bytes
+      if (block.length > room) block = block.subarray(0, room);
+    }
     const e = this.enc.encode(block);
     let flags = 0;
     if (this.first) flags |= F_START;
