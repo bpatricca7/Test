@@ -102,7 +102,7 @@ export class Account {
         this.offline = true; // offline boot (§7.8): pushes wait and retry
         b = { me: c.me };
       } else if (this.server === 'required') {
-        await ask(g, "Can't reach Sparkle World", [['again', 'Try again', 'mint', 'again']], { text: 'Check the internet, then try again.', cancel: 'again' });
+        await ask(g, "Can't reach Glimmer World", [['again', 'Try again', 'mint', 'again']], { text: 'Check the internet, then try again.', cancel: 'again' });
         b = await this._ask();
         if (!b.server) return;
       } else return; // optional: play on this device as today

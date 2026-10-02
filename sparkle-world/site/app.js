@@ -1,4 +1,4 @@
-// Sparkle World home page: the header state, the tap-along picture-code demo (a pretend
+// Glimmer World home page: the header state, the tap-along picture-code demo (a pretend
 // version of the game's Play with Friends screens, with the game's own 12 pictures), the
 // sticker wiggle, and pausing the hero's animations while it is off-screen. No libraries, no
 // network requests, nothing stored.

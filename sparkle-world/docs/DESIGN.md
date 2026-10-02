@@ -1,4 +1,6 @@
-# Sparkle World — Design & Technical Spec
+# Glimmer World — Design & Technical Spec
+
+Glimmer World (formerly Sparkle World)
 
 A cozy, blocky 3D world-building game for a girl who is almost 8. Think "Minecraft creative
 mode" rebuilt around what she asked for: **make your own worlds, dress up your avatar in cool
@@ -24,7 +26,7 @@ this doc disagree, fix one of them in the same change.
   `confirm()` is not available inside the artifact frame).
 
 ### Screens / flow
-1. **Title screen** — big "Sparkle World" logo over a live 3D backdrop (a pretty generated world,
+1. **Title screen** — big "Glimmer World" logo over a live 3D backdrop (a pretty generated world,
    slow orbiting camera, the player's avatar waving in front). *Not built yet (Menus team): the
    core title uses a CSS sky/hills backdrop with floating block icons.* Buttons: **Play** (continue last
    world), **My Worlds**, **New World**, **Dress Up**, **Stickers**, **Settings**.

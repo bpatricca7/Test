@@ -1,4 +1,4 @@
-// The Sparkle World Family page (/account) and the sign-in link page (/account/verify):
+// The Glimmer World Family page (/account) and the sign-in link page (/account/verify):
 // docs/ACCOUNTS.md §9. Vanilla JavaScript, no libraries, only this site's own /api (fetch,
 // JSON, X-SW: 1; never a form post). Every value from the API is put on the page as text
 // (textContent), never as HTML. Stripe's pages are opened with location.assign(url).
@@ -152,7 +152,7 @@ async function api(method, path, body, { raw = false } = {}) {
 /** What went wrong, in plain words, with what to do next (never an error code). */
 function say(e) {
   const code = e && e.code;
-  if (!e || e.status === 0) return "Couldn't reach Sparkle World. Check the internet connection, then try again.";
+  if (!e || e.status === 0) return "Couldn't reach Glimmer World. Check the internet connection, then try again.";
   if (code === 'rate') return 'That was a lot of tries in a short time. Wait a few minutes, then try again.';
   if (code === 'stripe_unavailable') return "Couldn't reach the payment page. Try again in a minute.";
   if (code === 'not_entitled') return 'That needs the Family Plan.';
@@ -447,7 +447,7 @@ function codeView() {
       busy(go, false);
       if (e.code === 'bad_code') {
         const left = e.data && Number.isFinite(e.data.triesLeft) ? e.data.triesLeft : null;
-        err.textContent = "That code didn't match. Check the newest email from Sparkle World." + (left !== null ? ` (${plural(left, 'try', 'tries')} left)` : '');
+        err.textContent = "That code didn't match. Check the newest email from Glimmer World." + (left !== null ? ` (${plural(left, 'try', 'tries')} left)` : '');
         boxes.bad();
       } else if (e.code === 'expired') {
         err.textContent = 'That code has expired, or was used already. We can send you a new one.';
@@ -503,14 +503,14 @@ async function verifyPage(again = null) {
   ));
   // first, whose sign-in this is (nothing is used up by asking): a stranger's link opened on a
   // kid's device must say so before it could take the device over
-  mount(card(h('h2', null, 'Sign in to Sparkle World?'), loadingRow()));
+  mount(card(h('h2', null, 'Sign in to Glimmer World?'), loadingRow()));
   let peek;
   try {
     peek = await api('POST', '/api/auth/verify', { token, peek: true });
   } catch (e) {
     if (e.code === 'expired' || e.code === 'bad_code') return ranOut();
     mount(card(
-      h('h2', null, 'Sign in to Sparkle World?'),
+      h('h2', null, 'Sign in to Glimmer World?'),
       h('p', { class: 'acct-lead' }, say(e)),
       row(btn('Try again', 'btn-play', () => verifyPage(token)), h('a', { class: 'btn btn-soft', href: '/' }, 'Not now')),
     ));
@@ -547,7 +547,7 @@ function showVerify(token, peek, ranOut) {
     }
   });
   mount(card(
-    h('h2', null, 'Sign in to Sparkle World?'),
+    h('h2', null, 'Sign in to Glimmer World?'),
     h('p', { class: 'acct-lead' }, 'You are signing in as ', h('strong', null, peek && peek.email ? peek.email : 'the grown-up who asked for this email'), '. Tap the button to finish signing in on this device.'),
     replacing && h('p', { class: 'acct-note acct-note--sun' }, h('strong', null, 'This device is signed in to another family. '), 'Signing in here signs it out of that family: its kids would need a new code to play here again.'),
     replacing && h('label', { class: 'acct-label', for: 'grownup-answer' }, `Grown-ups: what is ${a} × ${b}?`),
@@ -578,7 +578,7 @@ function kidDeviceHere() {
         }), linkBtn('Cancel', () => d.close())),
       ]);
     })),
-  ), { subtitle: 'This device plays Sparkle World.' });
+  ), { subtitle: 'This device plays Glimmer World.' });
 }
 
 function familyGone(text = "Your family's account was deleted. Everything was removed from our server; backups roll off within 7 days.") {
@@ -586,7 +586,7 @@ function familyGone(text = "Your family's account was deleted. Everything was re
     h('h2', null, 'Your account is deleted'),
     h('p', { class: 'acct-lead' }, text),
     row(btn('Sign in or start again', 'btn-soft', () => signIn()), h('a', { class: 'btn btn-soft', href: '/' }, 'Home page')),
-  ), { subtitle: 'Thank you for playing Sparkle World.' });
+  ), { subtitle: 'Thank you for playing Glimmer World.' });
 }
 
 // ------------------------------------------------------------------------------ 2. the notice
@@ -618,7 +618,7 @@ async function noticeView() {
   });
   const sections = Array.isArray(n.sections) ? n.sections : [];
   mount(card(
-    h('h2', null, 'Before your children play: what Sparkle World keeps, and why.'),
+    h('h2', null, 'Before your children play: what Glimmer World keeps, and why.'),
     h('span', { class: 'notice-ver' }, `Notice version ${n.version}`),
     S.fam && noticeStale(S.fam) && h('p', { class: 'acct-note acct-note--sun' }, 'We changed this notice since you last agreed. Please read it and agree again: until then, new players and switching things on wait. Saving goes on as before.'),
     h('ul', { class: 'notice-list' }, sections.map((s) => h('li', null, s.title ? h('strong', null, s.title) : null, s.title ? ' ' : null, s.text || ''))),
@@ -676,7 +676,7 @@ function planView({ cancelled = false } = {}) {
         btn('Start the Family Plan', 'btn-play', (ev) => start(ev, false)),
         h('p', null, `${priceText}. The first payment is today, then it renews every month until you cancel. Cancel any time here: Cancel the plan, then Yes. That first payment is also how we confirm that a grown-up said yes, so playing with friends and the walkie-talkie can be turned on right away.`)));
   mount(card(
-    h('h2', null, 'Sparkle World Family Plan'),
+    h('h2', null, 'Glimmer World Family Plan'),
     cancelled && h('p', { class: 'acct-note acct-note--sun' }, 'No payment was made. You can start whenever you like.'),
     f.plan.state === 'lapsed' && h('p', { class: 'acct-note' }, "Welcome back! Your family's plan has ended. Restart it and everything is there again."),
     h('div', { class: 'plan-card' },
@@ -885,7 +885,7 @@ function dashboard() {
       h('div', { class: 'dash-foot' },
         h('a', { class: 'btn btn-play', href: '/play' }, 'Play now'),
         h('div', { class: 'acct-row' }, btn('Sign out', 'btn-soft btn-small', signOut), linkBtn('Sign out everywhere', signOutEverywhere)))),
-  ], { wide: true, subtitle: "Everything about your family's Sparkle World, in one place." });
+  ], { wide: true, subtitle: "Everything about your family's Glimmer World, in one place." });
   loadDevices();
   loadHistory();
   return wrap;
@@ -1073,7 +1073,7 @@ function playerCard(p, f) {
       linkBtn('Rename', () => renameDialog(p))),
     toggle({
       label: 'Play with friends', on: !!p.friends, locked: friendsWhy && !p.friends ? friendsWhy : null,
-      text: `Other players in a game ${nick} joins or hosts see ${nick}'s nickname, avatar and world. Only friends the host lets in, whose families have Sparkle World too. No typing, only 16 friendly phrases.`,
+      text: `Other players in a game ${nick} joins or hosts see ${nick}'s nickname, avatar and world. Only friends the host lets in, whose families have Glimmer World too. No typing, only 16 friendly phrases.`,
       change: (on) => setSwitch(p, { friends: on }),
     }),
     toggle({
@@ -1154,7 +1154,7 @@ async function summaryDialog(p) {
   const nice = (k) => k.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
   const kb = (n) => (Number.isFinite(n) ? (n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB') : '');
   body.replaceChildren(
-    h('p', null, `This is everything Sparkle World keeps for ${s.nickname || p.nickname}: the nickname, the avatar and its picture, game progress, and worlds.`),
+    h('p', null, `This is everything Glimmer World keeps for ${s.nickname || p.nickname}: the nickname, the avatar and its picture, game progress, and worlds.`),
     h('div', { class: 'facts-grid' },
       h('div', null, h('b', null, String(worlds.length)), h('span', null, 'worlds')),
       h('div', null, h('b', null, String(count(prof.stickers))), h('span', null, 'stickers')),
@@ -1239,7 +1239,7 @@ function toGameFile(exp) {
   return {
     format: 'sparkle-world-backup',
     v: 1,
-    about: 'Sparkle World: a copy of every world, the look, outfits and stickers. To bring it back: My Worlds, then Open a file.',
+    about: 'Glimmer World: a copy of every world, the look, outfits and stickers. To bring it back: My Worlds, then Open a file.',
     savedAt: new Date().toISOString(),
     profile,
     worlds,
@@ -1264,7 +1264,7 @@ async function downloadEverything() {
     if (!res) return;
     const text = await res.text();
     const m = /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') || '');
-    saveFile(text, m ? m[1] : `sparkle-world-family-${today()}.json`);
+    saveFile(text, m ? m[1] : `glimmer-world-family-${today()}.json`);
     toast('Your family’s data is saved.');
   } catch (e) {
     toast(say(e));
@@ -1455,7 +1455,7 @@ function thisDeviceDialog() {
           h('h2', null, 'This device is ready for the kids!'),
           h('p', { class: 'acct-lead' }, 'They can open the game and start playing. To open the Family page here again, sign in with your email.'),
           row(h('a', { class: 'btn btn-play', href: '/play' }, 'Play now'), linkBtn('Sign in as a grown-up', () => signIn())),
-        ), { subtitle: 'This device plays Sparkle World.' });
+        ), { subtitle: 'This device plays Glimmer World.' });
       } catch (e) {
         err.textContent = say(e);
         busy(ev.currentTarget, false);
@@ -1486,7 +1486,7 @@ function historyLine(a, names) {
     case 'consent.email_plus': return `You agreed to the notice${d.v ? ` (version ${d.v})` : ''}.`;
     case 'consent.confirm_sent': return 'We emailed you a confirmation of your consent.';
     case 'consent.verified':
-      if (d.method === 'operator') return 'Sparkle World\'s owner confirmed that a grown-up said yes (your own family).';
+      if (d.method === 'operator') return 'Glimmer World\'s owner confirmed that a grown-up said yes (your own family).';
       return d.method === 'card' || !d.method ? 'Your first payment confirmed that a grown-up said yes.' : 'We recorded your signed consent.';
     case 'player.create': return who ? `You added ${who}.` : 'You added a player.';
     case 'player.delete': return 'You deleted a player.';

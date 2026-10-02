@@ -356,7 +356,7 @@ const ACCT_SIZES = [
   { w: 1280, h: 800, touch: false, label: 'desktop' },
   { w: 360, h: 780, touch: true, label: '360', shots: false },
 ];
-const OPERATOR = { SW_OPERATOR_NAME: 'The Sparkle Family', SW_OPERATOR_EMAIL: 'hello@sparkleworld.example', SW_OPERATOR_ADDRESS: 'PO Box 123, Springfield, IL 62701', SW_OPERATOR_PHONE: '+1 555 0100' };
+const OPERATOR = { SW_OPERATOR_NAME: 'The Sparkle Family', SW_OPERATOR_EMAIL: 'hello@glimmerworld.example', SW_OPERATOR_ADDRESS: 'PO Box 123, Springfield, IL 62701', SW_OPERATOR_PHONE: '+1 555 0100' };
 
 async function buildAccountSite(mode, extraEnv = {}) {
   const { buildSite } = await import('./site-build.mjs');
@@ -469,7 +469,7 @@ const ACCT_STATES = [
     fake.deleteFamily(f.f);
     return { cookie: f.cookie, wait: 'text=Your account is deleted', allow: [/\/api\/me.*410|410.*\/api\/me/] };
   } },
-  { name: 'verify', setup: (fake) => ({ path: '/account/verify#t=' + fake.signInLink('grownup.link@example.com'), wait: 'text=You are signing in as', expect: async (p) => !/#t=/.test(p.url()) && /Sign in to Sparkle World\?/.test(await p.textContent('main')) && /g•••@example\.com/.test(await p.textContent('main')) && !(await p.locator('#grownup-answer').count()), label: 'the link page: the token leaves the address bar, it says whose sign-in it is, nothing happens without the button' }) },
+  { name: 'verify', setup: (fake) => ({ path: '/account/verify#t=' + fake.signInLink('grownup.link@example.com'), wait: 'text=You are signing in as', expect: async (p) => !/#t=/.test(p.url()) && /Sign in to Glimmer World\?/.test(await p.textContent('main')) && /g•••@example\.com/.test(await p.textContent('main')) && !(await p.locator('#grownup-answer').count()), label: 'the link page: the token leaves the address bar, it says whose sign-in it is, nothing happens without the button' }) },
   { name: 'verify-replace', setup: (fake) => {
     const other = familyOf(fake, { players: [LILY] });
     return { cookie: fake.addSession(other.f, { kind: 'device', label: 'iPad · Safari' }).token, path: '/account/verify#t=' + fake.signInLink('stranger@example.com'), wait: 'text=This device is signed in to another family', expect: async (p) => (await p.locator('#grownup-answer').count()) === 1 && /s•••@example\.com/.test(await p.textContent('main')), label: "a link opened on another family's kid device: a warning and the grown-up question first" };
@@ -519,7 +519,7 @@ async function accountPages(browser) {
       else check(/multiplication/i.test(both) && /November 2, 2026/.test(home), 'optional: devices without an account keep the multiplication question; the date playing together needs the plan');
       for (const p of ['/privacy', '/terms']) {
         const html = await (await fetch(`${s.base}${p}`)).text();
-        check(!/\{\{|\}\}/.test(html) && html.includes('The Sparkle Family') && html.includes('PO Box 123') && html.includes('+1 555 0100') && html.includes('hello@sparkleworld.example'), `${mode}: ${p} prints the operator's name, address, phone and email`);
+        check(!/\{\{|\}\}/.test(html) && html.includes('The Sparkle Family') && html.includes('PO Box 123') && html.includes('+1 555 0100') && html.includes('hello@glimmerworld.example'), `${mode}: ${p} prints the operator's name, address, phone and email`);
       }
     }
     const privacy = await (await fetch(`${srv.base}/privacy`)).text();
@@ -697,7 +697,7 @@ async function journey(browser, srv) {
     check(/Kid device/.test(await page.textContent('#devices')), 'the paired device is listed as a kid device');
     // download everything (a file), then delete the account
     const [download] = await Promise.all([page.waitForEvent('download'), clickText(page, 'Download everything')]);
-    check(/^sparkle-world-family-\d{4}-\d\d-\d\d\.json$/.test(download.suggestedFilename()), `Download everything saves ${download.suggestedFilename()}`);
+    check(/^glimmer-world-family-\d{4}-\d\d-\d\d\.json$/.test(download.suggestedFilename()), `Download everything saves ${download.suggestedFilename()}`);
     // six minutes later: deleting needs a check from the last 5 minutes
     for (const s of fake.data.sessions.values()) if (s.familyId === fam.id && !s.revoked) {
       s.elevatedAt = Date.now() - 6 * 60e3;

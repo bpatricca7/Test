@@ -442,7 +442,7 @@ export function installNetUI(game, net, remote) {
       small = text(game.account && game.account.active ? 'cannot_host_acct' : 'cannot_host_small');
       buttons.push({ label: 'Join a Code', icon: 'players', variant: 'sky', run: () => openJoin() }, { label: 'OK', icon: 'check', variant: 'white' });
     } else if (code === 'version') {
-      small = 'Everyone playing together needs the newest Sparkle World.';
+      small = 'Everyone playing together needs the newest Glimmer World.';
       buttons.push({ label: 'Refresh', icon: 'again', variant: 'mint', run: () => location.reload() });
     } else if ((code === 'transient' || code === 'snapshot_failed') && lastAction) {
       const again = lastAction;
@@ -942,7 +942,7 @@ export function installNetUI(game, net, remote) {
       }));
       box.appendChild(row);
       // the game's own address (on the Railway site "/" is the home page, the game is "/play")
-      const where = net.kind === 'ws' && typeof location !== 'undefined' ? `open ${location.host}${location.pathname.replace(/\/(index\.html)?$/, '')} ` : 'open Sparkle World ';
+      const where = net.kind === 'ws' && typeof location !== 'undefined' ? `open ${location.host}${location.pathname.replace(/\/(index\.html)?$/, '')} ` : 'open Glimmer World ';
       box.appendChild(ui.el('div', 'sw-net-note', `Grown-ups: friends ${where}and tap Play with Friends, then Join a Code. Code: ${code.join('-')}`));
     }
     return box;

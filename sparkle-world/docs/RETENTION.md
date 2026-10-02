@@ -1,4 +1,4 @@
-# Sparkle World: data retention policy
+# Glimmer World: data retention policy
 
 *The written retention policy COPPA asks for (16 CFR 312.10): we keep children's personal
 information only as long as reasonably necessary for the purpose it was collected for, then delete

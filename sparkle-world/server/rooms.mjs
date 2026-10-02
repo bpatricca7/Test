@@ -38,7 +38,7 @@
 //   the device stamps (`by`, still per device) and the host hold are untouched.
 // - account and legacy members never share a room (docs/ACCOUNTS.md §8.2; only possible while
 //   SW_ACCOUNTS=optional): a signed-in child's parent agreed to friends "whose families have
-//   Sparkle World too", so a room with an account member refuses a member without claims, and
+//   Glimmer World too", so a room with an account member refuses a member without claims, and
 //   the other way round: join() answers {ok:false, code:'accounts_mixed'} (the server closes
 //   with 4406, the page shows a card for grown-ups). Nothing about her reaches the room first.
 // Nothing here stores anything beyond the live room, and nothing is logged.

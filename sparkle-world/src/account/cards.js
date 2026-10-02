@@ -1,6 +1,6 @@
 // The account cards (docs/ACCOUNTS.md §7.1, §7.5, §7.7): the grown-ups' card (behind the
 // grown-up check), "I have a code", the blocking cards of `required` mode ("Ask a grown-up",
-// "Sparkle World is resting", "Can't reach Sparkle World"), "Keep my old worlds safe" and the
+// "Glimmer World is resting", "Can't reach Glimmer World"), "Keep my old worlds safe" and the
 // first sign-in's "worlds from before" question. Words for grown-ups; never a price, an email,
 // an error code or a "buy" (§7.9).
 
@@ -9,7 +9,7 @@ import { saveAllWorlds } from '../ui/keepsafe.js';
 import { findLegacy, legacyState, setLegacyState, removeLegacy, expireLegacy, playedSince } from './legacy.js';
 
 const go = (url) => location.assign(url);
-const OFF = "Can't reach Sparkle World. Try again in a minute.";
+const OFF = "Can't reach Glimmer World. Try again in a minute.";
 
 /** A card with buttons [value, label, variant?, icon?]; resolves the value (Esc: o.cancel). */
 export function ask(game, title, choices, o = {}) {
@@ -74,8 +74,8 @@ export async function blockingCard(game, acct, why, soft = false) {
   const worlds = why === 'signin' ? await game.store.listWorlds() : [];
   for (;;) {
     const v = why === 'signin'
-      ? await ask(game, 'Ask a grown-up to set up Sparkle World', [['grown', "I'm a grown-up", 'mint'], ['code', 'I have a code', 'sky'], ...(worlds.length ? [['old', 'Keep my old worlds safe']] : [])], { cancel: null })
-      : await ask(game, why === 'resting' ? 'Sparkle World is resting. Ask a grown-up to wake it up!' : 'A grown-up can add you on the Family page', [['grownups', 'Grown-ups', 'mint'], ...(soft ? [['ok', 'OK']] : [])], { cancel: soft ? 'ok' : null });
+      ? await ask(game, 'Ask a grown-up to set up Glimmer World', [['grown', "I'm a grown-up", 'mint'], ['code', 'I have a code', 'sky'], ...(worlds.length ? [['old', 'Keep my old worlds safe']] : [])], { cancel: null })
+      : await ask(game, why === 'resting' ? 'Glimmer World is resting. Ask a grown-up to wake it up!' : 'A grown-up can add you on the Family page', [['grownups', 'Grown-ups', 'mint'], ...(soft ? [['ok', 'OK']] : [])], { cancel: soft ? 'ok' : null });
     if (v === 'ok') return;
     if (v === 'old') {
       // "Keep my old worlds safe": the worlds from before, read only, and Save to a file

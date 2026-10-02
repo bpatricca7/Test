@@ -45,7 +45,7 @@ function boot() {
   } catch (err) {
     console.error('[boot] could not start (WebGL2 needed)', err);
     app.innerHTML = '<div style="font:600 22px system-ui;padding:40px;text-align:center;color:#3A1F4D">' +
-      'Sparkle World needs a browser with WebGL2. Please try another browser.</div>';
+      'Glimmer World needs a browser with WebGL2. Please try another browser.</div>';
     return;
   }
   const modules = [theme, ui, account, blocks, worldgen, avatar, player, emotes, entities, furniture, prefabs,

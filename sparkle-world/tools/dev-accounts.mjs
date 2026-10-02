@@ -104,7 +104,7 @@ async function main() {
       fake.addSession(f, { kind: 'device', label: "Lily's iPad" });
       console.log('seeded: a family with the plan and two players; sign in as grownup@example.com');
     }
-    console.log(`\nSparkle World with FAKE accounts (${MODE}): ${ORIGIN}/account  (the game: ${ORIGIN}/play)`);
+    console.log(`\nGlimmer World with FAKE accounts (${MODE}): ${ORIGIN}/account  (the game: ${ORIGIN}/play)`);
     console.log('Sign in with any email; the code is printed here ([mail] …). Ctrl+C stops.\n');
     return;
   }
@@ -133,7 +133,7 @@ async function main() {
     console.log(`server exited (${code})`);
     stop();
   });
-  console.log(`\nSparkle World with accounts (${MODE}): ${ORIGIN}/account  (the game: ${ORIGIN}/play)`);
+  console.log(`\nGlimmer World with accounts (${MODE}): ${ORIGIN}/account  (the game: ${ORIGIN}/play)`);
   console.log(`database: ${t.kind}; Stripe: ${stripe ? 'the fake at ' + stripe.url : 'none'}; emails: printed below. Ctrl+C stops.\n`);
 }
 

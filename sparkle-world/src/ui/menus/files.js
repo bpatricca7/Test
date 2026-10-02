@@ -33,7 +33,7 @@ async function downloadsNamespace(waitMs = 2500) {
 }
 
 /** Make a string safe and friendly as a file name (keeps letters, digits, spaces, - _ '). */
-export function safeFileName(name, fallback = 'Sparkle World') {
+export function safeFileName(name, fallback = 'Glimmer World') {
   const s = String(name || '').replace(/[^\p{L}\p{N} _'-]+/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
   return s || fallback;
 }

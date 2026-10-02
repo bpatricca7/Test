@@ -383,7 +383,7 @@ export function install(game) {
       let date;
       try { date = now.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }); } catch { date = now.toDateString(); }
       meta = {
-        title: game.world.meta.name || 'Sparkle World',
+        title: game.world.meta.name || 'Glimmer World',
         date,
         name: boyNameUnset(game) ? '' : game.profile.playerName || (game.profile.look && game.profile.look.name) || '',
         stamp: now,

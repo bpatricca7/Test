@@ -31,7 +31,7 @@ export function checkoutPage(engine, session, { message = '' } = {}) {
   const m = engine.meta.get(session.id) || {};
   const price = engine.prices.get(m.priceId);
   const trial = m.trialDays;
-  const head = `<h1>Sparkle World Family Plan</h1>
+  const head = `<h1>Glimmer World Family Plan</h1>
 <p>${trial ? `${trial} days free, then ` : ''}${money(price?.unit_amount ?? 0, price?.currency)} a month, plus sales tax where it applies.</p>
 ${session.custom_text?.terms_of_service_acceptance?.message ? `<p><small>${esc(session.custom_text.terms_of_service_acceptance.message)}</small></p>` : ''}`;
   if (session.status !== 'open') {
@@ -68,7 +68,7 @@ export function portalPage(engine, ps, { message = '' } = {}) {
     const end = sub.items.data[0].current_period_end;
     about = `<p id="status">Status: <b>${esc(sub.status)}</b>${sub.cancel_at_period_end ? ` · ends ${date(end)}` : ''}${sub.status === 'trialing' ? ` · trial ends ${date(sub.trial_end)}` : ''}${sub.status === 'active' && !sub.cancel_at_period_end ? ` · renews ${date(end)}` : ''}</p>`;
   }
-  return shell('Billing', `<h1>Sparkle World · Billing</h1>
+  return shell('Billing', `<h1>Glimmer World · Billing</h1>
 ${message ? `<p class="msg ok">${esc(message)}</p>` : ''}
 ${about}
 <p>Card: ${card === 'ok' ? 'Visa •••• 4242' : 'Visa •••• 0341 (will be declined)'}</p>
@@ -79,7 +79,7 @@ ${about}
 <button name="action" value="update_card" class="alt" id="update-card">Update card</button>
 <button name="action" value="card_fails" class="alt" id="card-fails">Card starts failing</button>
 </form>
-<p><a href="${esc(ps.return_url)}" id="return">← Return to Sparkle World</a></p>`);
+<p><a href="${esc(ps.return_url)}" id="return">← Return to Glimmer World</a></p>`);
 }
 
 export function plainPage(title, text) {

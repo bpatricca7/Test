@@ -45,7 +45,7 @@ function footer(cfg) {
   const who = [op.name, op.address, op.email, op.phone].filter(Boolean).join(' · ');
   return [
     '—',
-    'Sparkle World' + (who ? ` is run by ${who}.` : '.'),
+    'Glimmer World' + (who ? ` is run by ${who}.` : '.'),
     `Family page: ${origin}/account · Privacy Notice: ${origin}/privacy`,
   ].join('\n');
 }
@@ -55,9 +55,9 @@ function signin({ data, cfg, firstTime, notice }) {
   const link = typeof data.link === 'string' && data.link.startsWith(cfg.publicOrigin + '/') ? data.link : `${cfg.publicOrigin}/account`;
   const lines = [];
   if (firstTime) {
-    lines.push('Welcome to Sparkle World!', '', `Your code is: ${code}`);
+    lines.push('Welcome to Glimmer World!', '', `Your code is: ${code}`);
   } else {
-    lines.push('Here is your code to sign in to Sparkle World:', '', code);
+    lines.push('Here is your code to sign in to Glimmer World:', '', code);
   }
   lines.push(
     '',
@@ -67,22 +67,22 @@ function signin({ data, cfg, firstTime, notice }) {
     'The code and the link work once, for 15 minutes.',
   );
   if (firstTime) {
-    lines.push('', 'Before your children play: what Sparkle World keeps, and why' + (notice?.version ? ` (notice version ${notice.version})` : '') + '. You will be asked to agree on the Family page.');
+    lines.push('', 'Before your children play: what Glimmer World keeps, and why' + (notice?.version ? ` (notice version ${notice.version})` : '') + '. You will be asked to agree on the Family page.');
     for (const s of notice?.sections || []) {
       if (s && typeof s.title === 'string' && typeof s.text === 'string') lines.push('', `${s.title} ${s.text}`.trim());
     }
     lines.push('', `The full Privacy Notice: ${cfg.publicOrigin}/privacy`);
   }
   lines.push('', "Didn't ask for this? You can ignore this email: nothing happens without the code.");
-  return { subject: `Your Sparkle World code: ${code}`, text: lines.join('\n') };
+  return { subject: `Your Glimmer World code: ${code}`, text: lines.join('\n') };
 }
 
 function check({ data }) {
   const code = code6(data.code);
   return {
-    subject: `Your Sparkle World check code: ${code}`,
+    subject: `Your Glimmer World check code: ${code}`,
     text: [
-      'Someone signed in to your Sparkle World Family page asked to do something that needs a quick email check (like turning on playing with friends, downloading, setting up a kid\'s device or deleting).',
+      'Someone signed in to your Glimmer World Family page asked to do something that needs a quick email check (like turning on playing with friends, downloading, setting up a kid\'s device or deleting).',
       '',
       `Your code: ${code}`,
       '',
@@ -95,9 +95,9 @@ function check({ data }) {
 
 function consentConfirm({ data, cfg }) {
   return {
-    subject: 'You agreed to Sparkle World keeping your children\'s game information',
+    subject: 'You agreed to Glimmer World keeping your children\'s game information',
     text: [
-      `You agreed on ${fmtDate(data.at)} that Sparkle World may keep your children's nicknames, avatars, game progress and worlds to run the game for them` + (Number.isInteger(data.v) ? ` (notice version ${data.v}).` : '.'),
+      `You agreed on ${fmtDate(data.at)} that Glimmer World may keep your children's nicknames, avatars, game progress and worlds to run the game for them` + (Number.isInteger(data.v) ? ` (notice version ${data.v}).` : '.'),
       '',
       'Playing with friends and the walkie-talkie stay off until you switch them on for each child on the Family page.',
       '',
@@ -108,7 +108,7 @@ function consentConfirm({ data, cfg }) {
 
 function welcome({ data, cfg }) {
   const trial = Number.isFinite(Number(data.trialEnd)) && data.trialEnd !== null && data.trialEnd !== undefined;
-  const lines = ['Thank you! Your Sparkle World Family Plan is on.', '', `The plan: ${cfg.priceText}. Nothing to buy inside the game, ever.`];
+  const lines = ['Thank you! Your Glimmer World Family Plan is on.', '', `The plan: ${cfg.priceText}. Nothing to buy inside the game, ever.`];
   if (trial) {
     lines.push('', `Your free days end on ${fmtDate(data.trialEnd)}. Cancel before ${fmtDate(data.trialEnd)} and you won't be charged.`);
   }
@@ -119,7 +119,7 @@ function welcome({ data, cfg }) {
     '',
     'Next: add your players on the Family page and set up the kids\' devices.',
   );
-  return { subject: 'Welcome to the Sparkle World Family Plan', text: lines.join('\n') };
+  return { subject: 'Welcome to the Glimmer World Family Plan', text: lines.join('\n') };
 }
 
 function friendsReady({ cfg }) {
@@ -135,9 +135,9 @@ function friendsReady({ cfg }) {
 
 function usOnly({ data }) {
   return {
-    subject: 'Sparkle World is only in the United States for now',
+    subject: 'Glimmer World is only in the United States for now',
     text: [
-      "Sorry! Sparkle World's Family Plan is only available in the United States for now, so we cancelled it.",
+      "Sorry! Glimmer World's Family Plan is only available in the United States for now, so we cancelled it.",
       '',
       data.refund === true || data.refundDue === true ? 'The payment that was taken will be refunded to your card.' : 'No payment was taken.',
     ].join('\n'),
@@ -146,9 +146,9 @@ function usOnly({ data }) {
 
 function lapseWarning({ data, cfg }) {
   return {
-    subject: "Your family's Sparkle World worlds will be deleted soon",
+    subject: "Your family's Glimmer World worlds will be deleted soon",
     text: [
-      `Your Sparkle World Family Plan ended on ${fmtDate(data.lapsedAt)}.`,
+      `Your Glimmer World Family Plan ended on ${fmtDate(data.lapsedAt)}.`,
       '',
       `Your family's players and worlds are kept until ${fmtDate(data.purgeAfter)}, then deleted.`,
       '',
@@ -159,9 +159,9 @@ function lapseWarning({ data, cfg }) {
 
 function annualReminder({ cfg }) {
   return {
-    subject: 'A yearly reminder about your Sparkle World Family Plan',
+    subject: 'A yearly reminder about your Glimmer World Family Plan',
     text: [
-      `A yearly reminder: your Sparkle World Family Plan renews every month (${cfg.priceText}) until you cancel.`,
+      `A yearly reminder: your Glimmer World Family Plan renews every month (${cfg.priceText}) until you cancel.`,
       '',
       `To cancel: on the Family page (${cfg.publicOrigin}/account) choose Cancel the plan, or reply to this email.`,
     ].join('\n'),
@@ -170,9 +170,9 @@ function annualReminder({ cfg }) {
 
 function inactive({ cfg }) {
   return {
-    subject: 'Still using Sparkle World?',
+    subject: 'Still using Glimmer World?',
     text: [
-      "Nobody in your family has signed in to Sparkle World or played it for two years, but the Family Plan is still active.",
+      "Nobody in your family has signed in to Glimmer World or played it for two years, but the Family Plan is still active.",
       '',
       `If you don't need it any more, you can cancel it and delete everything on the Family page: ${cfg.publicOrigin}/account (or reply to this email).`,
     ].join('\n'),
@@ -181,16 +181,16 @@ function inactive({ cfg }) {
 
 function accountDeleted() {
   return {
-    subject: 'Your Sparkle World family account was deleted',
+    subject: 'Your Glimmer World family account was deleted',
     text: [
-      'Your Sparkle World family account was deleted, as asked.',
+      'Your Glimmer World family account was deleted, as asked.',
       '',
       '- The Family Plan was cancelled, with no further charges.',
       "- Your children's players, worlds and everything else we kept were deleted.",
       '- Our backups roll off within 7 days.',
       '- Stripe keeps the payment records the law requires.',
       '',
-      'Thank you for playing Sparkle World.',
+      'Thank you for playing Glimmer World.',
     ].join('\n'),
   };
 }
@@ -235,7 +235,7 @@ export function renderMail(template, { data = {}, cfg, firstTime = false, notice
 // to GET /api/notice (the Family page) and to the first sign-in email. Until that file lands,
 // this short fallback (version 1) stands in.
 
-const FALLBACK_CHECKBOX = "I'm the parent or legal guardian of the children who will play, I'm 18 or older, and I agree that Sparkle World may keep the information above to run the game for them.";
+const FALLBACK_CHECKBOX = "I'm the parent or legal guardian of the children who will play, I'm 18 or older, and I agree that Glimmer World may keep the information above to run the game for them.";
 
 function fallbackSections(cfg) {
   return [

@@ -1,4 +1,4 @@
-// Sparkle World server for Railway (docs/MULTIPLAYER.md Addendum A, docs/DEPLOY-RAILWAY.md).
+// Glimmer World server for Railway (docs/MULTIPLAYER.md Addendum A, docs/DEPLOY-RAILWAY.md).
 //
 // One small Node 22 program, only the `ws` package:
 // - serves the home page, dist/site/ (built from site/ by tools/site-build.mjs), at "/",
@@ -199,7 +199,7 @@ export function createServer(opts = {}) {
     if (sitePath && site.has(sitePath) && (accounts || !ACCOUNT_SITE_FILES.has(sitePath))) return sendSiteFile(req, res, site.get(sitePath), head, ACCOUNT_PAGES.has(sitePath));
     // ---- the game at "/play" ("/" too when the home page is not built) ----
     if (pathname === '/play' || pathname === '/play/' || pathname === '/sparkle-world.html' || (!site && (pathname === '/' || pathname === '/index.html'))) {
-      if (!page) return sendText(res, 503, 'Sparkle World is not built yet. Run: npm run build\n', head);
+      if (!page) return sendText(res, 503, 'Glimmer World is not built yet. Run: npm run build\n', head);
       securityHeaders(res, true);
       res.setHeader('ETag', page.etag);
       res.setHeader('Cache-Control', 'no-cache');
@@ -892,7 +892,7 @@ if (isMain) {
       const { createAccounts } = await import('./accounts.mjs');
       accounts = await createAccounts(cfg, { log: (...a) => console.log(...a) });
     } catch (err) {
-      console.error(`Sparkle World will not start: accounts could not start (${err && err.code ? err.code : err && err.name ? err.name : 'Error'})`);
+      console.error(`Glimmer World will not start: accounts could not start (${err && err.code ? err.code : err && err.name ? err.name : 'Error'})`);
       process.exit(1);
     }
     console.log(summarizeConfig(cfg));
@@ -904,7 +904,7 @@ if (isMain) {
   const host = process.env.HOST || '0.0.0.0';
   if (!app.page) console.warn('warning: dist/sparkle-world.html is missing; run "npm run build" first (health check will fail)');
   const bound = await app.listen(port, host);
-  console.log(`Sparkle World server listening on port ${bound}` + (app.page ? ` (build ${app.page.build}, ${(app.page.gz.length / 1024).toFixed(0)} KB gzip)` : ''));
+  console.log(`Glimmer World server listening on port ${bound}` + (app.page ? ` (build ${app.page.build}, ${(app.page.gz.length / 1024).toFixed(0)} KB gzip)` : ''));
   console.log(app.site ? `home page at /, the game at /play (${app.site.size} home page files)` : 'no home page (dist/site/ missing): the game is at / and /play');
   let last = '';
   setInterval(() => {

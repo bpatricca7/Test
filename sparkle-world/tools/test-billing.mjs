@@ -303,7 +303,7 @@ function request(base, method, p, { token, body, headers = {}, raw = null } = {}
 
 const htmlDir = mkdtempSync(path.join(tmpdir(), 'sw-billing-'));
 const htmlPath = path.join(htmlDir, 'game.html');
-writeFileSync(htmlPath, '<!doctype html><title>Sparkle World</title>');
+writeFileSync(htmlPath, '<!doctype html><title>Glimmer World</title>');
 after(() => rmSync(htmlDir, { recursive: true, force: true }));
 
 async function startApp(fake, extraEnv = {}) {
@@ -381,7 +381,7 @@ const FIXTURE_NAMES = existsSync(FIXTURE_DIR) ? readdirSync(FIXTURE_DIR).filter(
 // ---------------------------------------------------------------------------------------------
 
 describe('the direct notice (server/notice.mjs, §11.3)', () => {
-  const cfg = { mpConsent: 'verified', retainDays: 90, trialDays: 0, priceText: '$5.99 a month, plus sales tax where it applies', mailMode: 'resend', publicOrigin: 'https://sparkleworld.example', operator: { name: 'The Operator', email: 'hello@sparkleworld.example', address: 'PO Box 1, Town, ST 00000', phone: '+1 555 0100' } };
+  const cfg = { mpConsent: 'verified', retainDays: 90, trialDays: 0, priceText: '$5.99 a month, plus sales tax where it applies', mailMode: 'resend', publicOrigin: 'https://glimmerworld.example', operator: { name: 'The Operator', email: 'hello@glimmerworld.example', address: 'PO Box 1, Town, ST 00000', phone: '+1 555 0100' } };
   test('version, sections, checkbox; every element of §11.3', () => {
     assert.equal(NOTICE_VERSION, 1);
     const s = noticeSections(cfg);
@@ -398,12 +398,12 @@ describe('the direct notice (server/notice.mjs, §11.3)', () => {
       /your first payment/i, // how the switches unlock (SW_MP_CONSENT=verified)
       /Railway/, /Stripe/, /Resend/, /don't sell/i, // recipients
       /90 days after it ends/i, /backups roll off within 7 days/i,
-      /see, download and delete/i, /hello@sparkleworld\.example/,
+      /see, download and delete/i, /hello@glimmerworld\.example/,
       /We need your permission first.*don't collect, use or share anything about your children/i, // 312.4(c)(1)(ii): consent is needed
       /within 14 days, we delete your email address/i, // deletion if consent does not come
       /agree but don't start the Family Plan within 30 days, we delete it then/i, // …and if a plan does not come (§3.5)
-      /The Operator, PO Box 1, Town, ST 00000, \+1 555 0100, hello@sparkleworld\.example/, // operator contact
-      /https:\/\/sparkleworld\.example\/privacy/, // the link to the online notice
+      /The Operator, PO Box 1, Town, ST 00000, \+1 555 0100, hello@glimmerworld\.example/, // operator contact
+      /https:\/\/glimmerworld\.example\/privacy/, // the link to the online notice
     ];
     for (const re of must) assert.match(all, re);
     assert.match(noticeCheckbox(cfg), /parent or legal guardian.*18 or older.*agree/i);
@@ -430,7 +430,7 @@ describe('the direct notice (server/notice.mjs, §11.3)', () => {
   });
   test('the email summary and the auto-renewal sentence', () => {
     const s = noticeSummary(cfg);
-    assert.match(s, /https:\/\/sparkleworld\.example\/privacy/);
+    assert.match(s, /https:\/\/glimmerworld\.example\/privacy/);
     assert.ok(!EMAIL_RE.test(s));
     assert.equal(pricePhrase(cfg), '$5.99 plus tax');
     assert.equal(pricePhrase({ priceText: '$5.99 a month, tax included' }), '$5.99, tax included');
@@ -1568,9 +1568,9 @@ describe('npm run stripe:setup (tools/stripe-setup.mjs, §6.1)', () => {
   const stripe = () => new Stripe('sk_test_setup', stripeOptions({ stripeApiBase: fake.url }));
 
   test('makes the product, the $5.99 price and the portal configuration; a second run changes nothing', async () => {
-    const first = await stripeSetup({ stripe: stripe(), origin: 'https://sparkleworld.example' });
+    const first = await stripeSetup({ stripe: stripe(), origin: 'https://glimmerworld.example' });
     assert.deepEqual(first.created, ['product', 'price', 'default price', 'portal configuration']);
-    const second = await stripeSetup({ stripe: stripe(), origin: 'https://sparkleworld.example' });
+    const second = await stripeSetup({ stripe: stripe(), origin: 'https://glimmerworld.example' });
     assert.deepEqual([second.priceId, second.productId, second.portalConfigId, second.created], [first.priceId, first.productId, first.portalConfigId, []]);
     const st = fake.state();
     assert.equal(st.products.length, 1);
@@ -1582,7 +1582,23 @@ describe('npm run stripe:setup (tools/stripe-setup.mjs, §6.1)', () => {
       [conf.features.customer_update.enabled, conf.features.invoice_history.enabled, conf.features.payment_method_update.enabled, conf.features.subscription_cancel.enabled, conf.features.subscription_cancel.mode, conf.features.subscription_cancel.cancellation_reason.enabled, conf.features.subscription_update.enabled],
       [false, true, true, true, 'at_period_end', true, false],
     );
-    assert.deepEqual([conf.business_profile.privacy_policy_url, conf.business_profile.terms_of_service_url, conf.default_return_url], ['https://sparkleworld.example/privacy', 'https://sparkleworld.example/terms', 'https://sparkleworld.example/account?portal=1']);
+    assert.deepEqual([conf.business_profile.privacy_policy_url, conf.business_profile.terms_of_service_url, conf.default_return_url], ['https://glimmerworld.example/privacy', 'https://glimmerworld.example/terms', 'https://glimmerworld.example/account?portal=1']);
+    assert.deepEqual([st.products[0].name, st.products[0].metadata.sw, conf.business_profile.headline], ['Glimmer World Family Plan', 'family_plan', 'Glimmer World Family Plan']);
+  });
+
+  test('a product and portal made under the old name ("Sparkle World Family Plan") get the new name, ids and tags kept', async () => {
+    const s = stripe();
+    const { productId, portalConfigId } = await stripeSetup({ stripe: s });
+    await s.products.update(productId, { name: 'Sparkle World Family Plan' });
+    await s.billingPortal.configurations.update(portalConfigId, { business_profile: { headline: 'Sparkle World Family Plan' } });
+    const fixed = await stripeSetup({ stripe: s });
+    assert.deepEqual([fixed.productId, fixed.portalConfigId], [productId, portalConfigId]);
+    assert.ok(fixed.created.includes('product name'), fixed.created.join());
+    assert.match(fixed.created.join(), /portal configuration \(headline\)/);
+    const st = fake.state();
+    assert.deepEqual([st.products.find((p) => p.id === productId).name, st.products.find((p) => p.id === productId).metadata.sw], ['Glimmer World Family Plan', 'family_plan']);
+    assert.equal(st.portalConfigurations.find((c) => c.id === portalConfigId).business_profile.headline, 'Glimmer World Family Plan');
+    assert.deepEqual((await stripeSetup({ stripe: s })).created, []);
   });
 
   test('puts a drifted portal configuration back; a price that differs stops it (--replace moves the lookup key)', async () => {
@@ -1603,7 +1619,7 @@ describe('npm run stripe:setup (tools/stripe-setup.mjs, §6.1)', () => {
   });
 
   test('as a program: prints STRIPE_PRICE_ID and STRIPE_PORTAL_CONFIG; refuses a restricted key', async () => {
-    const env = { ...process.env, STRIPE_SECRET_KEY: 'sk_test_setupCli', STRIPE_API_BASE: fake.url, PUBLIC_ORIGIN: 'https://sparkleworld.example' };
+    const env = { ...process.env, STRIPE_SECRET_KEY: 'sk_test_setupCli', STRIPE_API_BASE: fake.url, PUBLIC_ORIGIN: 'https://glimmerworld.example' };
     const { stdout } = await run(process.execPath, [path.join(ROOT, 'tools/stripe-setup.mjs')], { env });
     assert.match(stdout, /STRIPE_PRICE_ID=price_[A-Za-z0-9]+/);
     assert.match(stdout, /STRIPE_PORTAL_CONFIG=bpc_[A-Za-z0-9]+/);

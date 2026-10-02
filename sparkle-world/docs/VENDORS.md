@@ -1,6 +1,6 @@
-# Sparkle World: vendors
+# Glimmer World: vendors
 
-*The companies that help run Sparkle World with family accounts, what each one receives, and
+*The companies that help run Glimmer World with family accounts, what each one receives, and
 where its data processing terms are. Part of the security program
 ([SECURITY-PROGRAM.md](SECURITY-PROGRAM.md) §8). Review this page once a year: check each
 company's current terms and security page (links move; follow the path given), and that the

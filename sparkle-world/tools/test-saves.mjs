@@ -126,7 +126,7 @@ async function startServer() {
   const real = accounts.ctx.limits;
   accounts.ctx.limits = { check: (spec, key, n) => (spec.name === 'api-ip' || spec.name === 'api-session' ? { ok: true } : real.check(spec, key, n)), sweep: () => real.sweep() };
   const html = path.join(dir, 'game.html');
-  writeFileSync(html, '<!doctype html><title>Sparkle World</title>');
+  writeFileSync(html, '<!doctype html><title>Glimmer World</title>');
   app = createServer({ accounts, htmlPath: html, siteDir: path.join(dir, 'none'), log: () => {} });
   const port = await app.listen(0, '127.0.0.1');
   base = `http://127.0.0.1:${port}`;
@@ -1192,11 +1192,11 @@ if (!MEASURE) {
       try {
         const out = await open(web.base + '/play');
         await title(out);
-        await dialogs(out, /Ask a grown-up to set up Sparkle World/);
+        await dialogs(out, /Ask a grown-up to set up Glimmer World/);
         assert.equal(await out.evaluate(() => window.__game.account.mode), 'blocked');
         await out.keyboard.press('Escape');
         await out.waitForTimeout(300);
-        await dialogs(out, /Ask a grown-up to set up Sparkle World/);
+        await dialogs(out, /Ask a grown-up to set up Glimmer World/);
         await out.click(".sw-dialog button:has-text(\"I'm a grown-up\")");
         await dialogs(out, /Grown-ups only/);
         await noMoney(out);
@@ -1204,7 +1204,7 @@ if (!MEASURE) {
         const f = await family({ plan: 'lapsed' });
         const rest = await open(web.base + '/play', { tok: session(f.id) });
         await title(rest);
-        await dialogs(rest, /Sparkle World is resting/);
+        await dialogs(rest, /Glimmer World is resting/);
         await noMoney(rest);
         await rest.context().close();
         // a plan but nobody added yet: the card stays in `required`...

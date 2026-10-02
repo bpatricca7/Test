@@ -1,6 +1,6 @@
-# Putting Sparkle World on the internet (Railway)
+# Putting Glimmer World on the internet (Railway)
 
-This guide puts Sparkle World on its own web address, so friends can play together from
+This guide puts Glimmer World on its own web address, so friends can play together from
 their own iPads or computers: one player taps **Play with Friends → Make a Code** and reads out
 4 pictures, the others tap **Play with Friends → Join a Code** and tap the same 4 pictures. No
 accounts are needed. (Family accounts and the $5.99 Family Plan are a separate, later step:
@@ -70,7 +70,7 @@ below.
 
 1. In **Settings → Networking**, click **Generate Domain**.
 2. Railway shows an address like `https://sparkle-world-production.up.railway.app`.
-3. Open it in Safari or Chrome. The Sparkle World **home page** appears (the page for
+3. Open it in Safari or Chrome. The Glimmer World **home page** appears (the page for
    grown-ups and kids that shows what's inside, with a big **Play now** button).
 4. Tap **Play now**: the game's title screen appears. The game's own address is the home page
    address with `/play` at the end, for example
@@ -119,7 +119,7 @@ which the website was not opened**. So the game does three things, and you can d
   world, her look, outfits and stickers; **Not now** asks again in a week. It never interrupts
   playing.
 - **You can make a copy any time:** **My Worlds → Save all** (only on this website). The file is
-  called for example `Sparkle World backup 2026-09-28.json`. On an iPad or iPhone, Safari asks
+  called for example `Glimmer World backup 2026-09-28.json`. On an iPad or iPhone, Safari asks
   whether to download it: tap **Download**; it goes to the **Files** app, in **Downloads**.
   Keep it somewhere safe (for example move it to iCloud Drive, or email it to yourself).
 - **To bring them back** (a new iPad, or after the browser cleared them): open the game →
@@ -207,7 +207,7 @@ version by itself (1–3 minutes). The old version keeps running until the new o
 
 - **Logs:** click the service → **Deployments** → the active deployment → **View Logs**.
   *Build Logs* show the build; *Deploy Logs* show the running server. You should see a line like
-  `Sparkle World server listening on port 8080 (build 1a2b3c4d, 564 KB gzip)`, then
+  `Glimmer World server listening on port 8080 (build 1a2b3c4d, 564 KB gzip)`, then
   `home page at /, the game at /play (…)` and, every 15 minutes when something changed,
   `rooms=1 players=2`. The server never writes down what
   children do or say in the game.
@@ -378,9 +378,10 @@ It takes an afternoon the first time, plus waiting for the domain and the email 
 
 The Family Plan needs a web address of your own (emails come from it, and it looks trustworthy).
 
-1. Buy one at a registrar (for example `sparkleworld.fun`, about $10–20 a year). Turn on **2FA**
+1. Buy one at a registrar (the game's is `playglimmerworld.com`, about $10–20 a year). Turn on **2FA**
    (a code on your phone at sign-in) at the registrar straight away.
-2. Railway → the game service → **Settings → Networking → Custom Domain** → type the domain.
+2. Railway → the game service → **Settings → Networking → Custom Domain** → type the domain
+   (`www.playglimmerworld.com`, so `PUBLIC_ORIGIN` is `https://www.playglimmerworld.com`).
    Railway shows a **CNAME** record.
 3. At the registrar, in the domain's **DNS** settings, add that CNAME record. After a few minutes
    (sometimes an hour) Railway shows a green check and `https://<domain>` opens the home page.
@@ -418,9 +419,9 @@ the same way (it approves new accounts before they can send).
 
 Turn on **2FA** in Stripe first. Make sure the switch at the top says **Test mode**.
 
-1. **Settings → Public details:** name `Sparkle World`, a support email, **Terms of service**
+1. **Settings → Public details:** name `Glimmer World`, a support email, **Terms of service**
    `https://<domain>/terms`, **Privacy policy** `https://<domain>/privacy`, statement descriptor
-   (what appears on card statements) `SPARKLEWORLD`.
+   (what appears on card statements) `GLIMMERWORLD`.
 2. **The plan.** On your computer, in the `sparkle-world` folder, with a *full* test secret key
    (Developers → API keys → **Secret key**, `sk_test_…`; only for this one command, never in
    Railway):
@@ -429,10 +430,11 @@ Turn on **2FA** in Stripe first. Make sure the switch at the top says **Test mod
    STRIPE_SECRET_KEY=sk_test_… npm run stripe:setup
    ```
 
-   It makes the product **Sparkle World Family Plan**, the one price ($5.99 a month, tax
+   It makes the product **Glimmer World Family Plan**, the one price ($5.99 a month, tax
    "exclusive": tax is added on top) and the Customer Portal settings, and prints two lines,
    `STRIPE_PRICE_ID=price_…` and `STRIPE_PORTAL_CONFIG=bpc_…`. Keep them for step 14. Running it
-   again changes nothing.
+   again changes nothing, except that a product or portal made when the game was still called
+   Sparkle World gets the new name (same ids, nothing to change in Railway).
 3. **Tax:** Settings → **Tax** → turn on Stripe Tax, set your origin address, and for the product
    pick the tax code for a personal-use online game or digital subscription (check it with your
    accountant, and add a registration for your home state if the accountant says so).
@@ -450,7 +452,7 @@ Turn on **2FA** in Stripe first. Make sure the switch at the top says **Test mod
    `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`,
    `charge.dispute.created`, `customer.deleted`. Save, then **Reveal** the signing secret
    (`whsec_…`) and copy it.
-8. **Developers → API keys → Create restricted key** (name it "Sparkle World server"):
+8. **Developers → API keys → Create restricted key** (name it "Glimmer World server"):
    **Customers: write, Checkout Sessions: write, Subscriptions: write, Customer portal: write,
    Invoices: read, Prices: read, Charges: read, Events: read.** Nothing else. Copy the key
    (`rk_test_…`). (Charges: read lets the server find which family a chargeback belongs to.)
@@ -473,16 +475,16 @@ In **staging**, the game service → **Variables → Raw Editor**, paste and fil
 | `STRIPE_PORTAL_CONFIG` | `bpc_…` from step 13.2 |
 | `MAIL_MODE` | `resend` (or `postmark`) |
 | `MAIL_API_KEY` | the key from step 12 |
-| `MAIL_FROM` | `Sparkle World <hello@<domain>>` (see the note below the table while the domain is not verified yet) |
-| `SW_OPERATOR_NAME` | who runs Sparkle World (your name, or your small LLC) |
+| `MAIL_FROM` | `Glimmer World <hello@<domain>>` (see the note below the table while the domain is not verified yet) |
+| `SW_OPERATOR_NAME` | who runs Glimmer World (your name, or your small LLC) |
 | `SW_OPERATOR_EMAIL` | the email parents can write to |
 | `SW_OPERATOR_ADDRESS` | a mailing address (a PO box or an LLC's address keeps your home address private) |
 | `SW_OPERATOR_PHONE` | a phone number for parents |
 
 **Before the email domain is verified** (step 12 can take a while), Resend's testing sender works
-as a stopgap: `MAIL_FROM` = `Sparkle World <onboarding@resend.dev>`. Resend sends from it **only to
+as a stopgap: `MAIL_FROM` = `Glimmer World <onboarding@resend.dev>`. Resend sends from it **only to
 the address you signed up to Resend with**, so only you can sign in that way (use that address,
-and list it in `SW_FREE_PASS` below). Switch `MAIL_FROM` to `Sparkle World <hello@<domain>>` as
+and list it in `SW_FREE_PASS` below). Switch `MAIL_FROM` to `Glimmer World <hello@<domain>>` as
 soon as the domain shows "verified", before anyone else signs up.
 
 The operator lines are printed on `/privacy`, `/terms` and in emails: the children's privacy law
@@ -500,7 +502,7 @@ server refuses to start with them in production.
 
 Click **Deploy**. In the Deploy Logs you should see a line like
 `accounts: required, friends subscription, consent verified, trial 0 d, …, stripe test, db postgres`
-and then `Sparkle World server listening …`. If a variable is wrong, the new deployment stops with
+and then `Glimmer World server listening …`. If a variable is wrong, the new deployment stops with
 **one line** that names it (for example `SW_SECRET must be at least 32 random bytes`) and the old
 deployment keeps running: fix the variable and deploy again.
 
@@ -516,7 +518,7 @@ one more variable with **your own** sign-in email:
 Deploy. Then sign in on the Family page with that email (before or after this deploy, either
 works), read the notice and tick the box like every parent: your family has the plan through
 2099-12-31, and the friends and walkie switches can go on (your agreement is recorded as consent
-"by the operator", because you run Sparkle World). The Deploy Logs say only how many addresses
+"by the operator", because you run Glimmer World). The Deploy Logs say only how many addresses
 are listed (`free passes: 1 listed, …`), never the addresses.
 
 - Several addresses (another grown-up of **your own** family): commas,
@@ -605,7 +607,7 @@ Set `SW_STRIPE_SHAPES=1` in staging's Variables (test keys only), deploy, then:
 4. Families already playing together: give them a free pass if you like
    (`npm run admin -- comp <their email> 2027-01-01`).
 5. On the announced date, set **`SW_ACCOUNTS=required`** and deploy: signed-out devices now see
-   "Ask a grown-up to set up Sparkle World", and the home page's `optional`-only sentences are gone.
+   "Ask a grown-up to set up Glimmer World", and the home page's `optional`-only sentences are gone.
 
 To turn accounts off again, remove `SW_ACCOUNTS` (or set it to `off`) and deploy: the game and the
 pages are exactly as in Part 1 (the database is kept, untouched).
@@ -625,7 +627,7 @@ pages are exactly as in Part 1 (the database is kept, untouched).
 
 | What you see | What to do |
 |---|---|
-| The deployment stops with `Sparkle World will not start: … is missing` or `must …` | That variable is missing or wrong (step 14). The old deployment keeps running. |
+| The deployment stops with `Glimmer World will not start: … is missing` or `must …` | That variable is missing or wrong (step 14). The old deployment keeps running. |
 | `accounts could not start (ECONNREFUSED)` | The database is not reachable: check `DATABASE_URL = ${{Postgres.DATABASE_URL}}` and that the Postgres service is running. |
 | The deploy fails at "Healthcheck" with accounts on | `/healthz` asks the database; open the Postgres service's logs. |
 | `warning: the home page was built for SW_ACCOUNTS=off, but the server runs with required` | The pages were built before the variable was set: **Redeploy** (a build, not a restart). |

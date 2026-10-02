@@ -1,4 +1,4 @@
-// Build the Sparkle World home page (site/) into dist/site/:
+// Build the Glimmer World home page (site/) into dist/site/:
 //   dist/site/**              a copy of site/ (index.html, parents.html, styles.css, app.js, img/)
 //   dist/site/img/pics/*.svg  the 12 picture-code stickers, made from the game's own
 //                             src/net/pictures.js (so the page always shows the real pictures)
@@ -75,7 +75,7 @@ export function shareTags(domain) {
     `<meta property="og:image" content="${url}img/share.jpg">`,
     '<meta property="og:image:width" content="1200">',
     '<meta property="og:image:height" content="630">',
-    '<meta property="og:image:alt" content="Sparkle World: Build a whole world. Then move in. The game\'s title screen and a little floating island made of blocks.">',
+    '<meta property="og:image:alt" content="Glimmer World: Build a whole world. Then move in. The game\'s title screen and a little floating island made of blocks.">',
     '<meta name="twitter:card" content="summary_large_image">',
     '',
   ].join('\n');
@@ -167,7 +167,7 @@ export function fillPlaceholders(text, values) {
 
 /** The home page as a fragment: no doctype/html/head/body; styles and script inlined. */
 export function previewFragment(html, css, js) {
-  const title = (/<title>[\s\S]*?<\/title>/i.exec(html) || ['<title>Sparkle World</title>'])[0];
+  const title = (/<title>[\s\S]*?<\/title>/i.exec(html) || ['<title>Glimmer World</title>'])[0];
   const fonts = [...html.matchAll(/<link[^>]+fonts\.(?:googleapis|gstatic)\.com[^>]*>/gi)].map((m) => m[0]);
   const body = (/<body[^>]*>([\s\S]*?)<\/body>/i.exec(html) || [null, html])[1]
     .replace(/<script\b[^>]*\bsrc=["'][^"']*["'][^>]*>\s*<\/script>/gi, '')

@@ -1,6 +1,6 @@
-# Sparkle World: data map
+# Glimmer World: data map
 
-*Every piece of information Sparkle World handles with family accounts on: where it lives, who can
+*Every piece of information Glimmer World handles with family accounts on: where it lives, who can
 see it, and when it is deleted. Kept next to the schema (`server/migrations/001_init.sql`,
 docs/ACCOUNTS.md §3.3); a new column or a new kind of data updates this file, RETENTION.md and the
 Privacy Notice in the same change. "Child" marks children's personal information (COPPA treats all
@@ -106,7 +106,7 @@ Who can see it, in the tables below:
 | IP addresses (per-address limits, keyed by /64 for IPv6) | no | minutes; idle buckets are forgotten |
 | The session and entitlement caches | no | 60 seconds (claims up to 30 minutes while the database is down) |
 
-## 4. Outside Sparkle World
+## 4. Outside Glimmer World
 
 | Who | What they get | Child? |
 |---|---|---|

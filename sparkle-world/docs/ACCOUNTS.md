@@ -1,4 +1,4 @@
-# Sparkle World: family accounts, the Family Plan and cloud saves (accounts v1)
+# Glimmer World: family accounts, the Family Plan and cloud saves (accounts v1)
 
 *Final spec, 2026-09-28. Written by the lead architect after scoring three proposals (Appendix A).
 The base is proposal 2 ("one box"); the best ideas of proposals 1 and 3 are grafted on, and what
@@ -119,7 +119,7 @@ rate limits and caches stay in memory, so **Replicas stays 1** (as DEPLOY-RAILWA
 | Database, `/api/*` accounts routes | not used, not mounted | used | used |
 | `/play` signed out | exactly today | exactly today (device saves, math-gated walkie) + a **Grown-ups** tile | "Ask a grown-up" card (§7.1) |
 | Signed in, entitled | — | cloud saves, picker, dashboard switches | same |
-| Signed in, no plan (ended or never started) | — | plays her own player with cloud writes refused (read-only), saves on the device | "Sparkle World is resting" card |
+| Signed in, no plan (ended or never started) | — | plays her own player with cloud writes refused (read-only), saves on the device | "Glimmer World is resting" card |
 | … and `SW_FRIENDS_MODE=free-join`, a player with friends on | — | visitor: join a friend's game only (§7.1) | same |
 | Relay | exactly today | sockets without `p` as today; sockets with `p` are checked (§8) | every socket needs a session and `p` |
 | `/api/net` | `{ok, version, build}` | adds `accounts:'optional', friendsMode` | adds `accounts:'required', friendsMode` |
@@ -220,7 +220,7 @@ Deploy Logs, exit code 1, so Railway keeps the old deployment) when a rule below
 |---|---|---|
 | `SW_ACCOUNTS` | always (default `off`) | `off` \| `optional` \| `required` |
 | `DATABASE_URL` | accounts on | `${{Postgres.DATABASE_URL}}` (Railway reference variable, private network); `pglite:` or `pglite:<dir>` = in-process PGlite for development and tests (refused in production) |
-| `PUBLIC_ORIGIN` | accounts on | e.g. `https://sparkleworld.fun`; must be `https://`, except `http://localhost:*` / `http://127.0.0.1:*` when `NODE_ENV` is not `production` (then cookies drop `__Host-`/`Secure`, §4.2) |
+| `PUBLIC_ORIGIN` | accounts on | e.g. `https://www.playglimmerworld.com`; must be `https://`, except `http://localhost:*` / `http://127.0.0.1:*` when `NODE_ENV` is not `production` (then cookies drop `__Host-`/`Secure`, §4.2) |
 | `SW_SECRET` | accounts on | ≥ 32 random bytes, base64. Sub-keys by HKDF-SHA256(secret, salt `sparkle-world`, info = `code` \| `email` \| `pair`). Rotating it only voids pending codes |
 | `STRIPE_SECRET_KEY` | accounts on | a **restricted** key `rk_live_…` (`sk_test_`/`rk_test_` on staging) (§14 step 4) |
 | `STRIPE_WEBHOOK_SECRET` | accounts on | `whsec_…` of the webhook endpoint |
@@ -232,7 +232,7 @@ Deploy Logs, exit code 1, so Railway keeps the old deployment) when a rule below
 | `SW_MAX_PER_FAMILY` | optional | default `12` relay connections per family |
 | `SW_FREE_PASS` | optional | the operator's own family, without paying (§6.9): a comma list of `email` or `email:YYYY-MM-DD` (no date = through `2099-12-31`), at most 20. The Deploy Logs show only how many |
 | `MAIL_MODE` | accounts on | `resend` \| `postmark` (production) \| `log` (development) \| `memory` (tests) |
-| `MAIL_API_KEY`, `MAIL_FROM` | production | provider key; `Sparkle World <hello@your-domain>` (before the domain is verified at Resend, `Sparkle World <onboarding@resend.dev>` works, but Resend delivers it only to the Resend account owner's own address) |
+| `MAIL_API_KEY`, `MAIL_FROM` | production | provider key; `Glimmer World <hello@your-domain>` (before the domain is verified at Resend, `Glimmer World <onboarding@resend.dev>` works, but Resend delivers it only to the Resend account owner's own address) |
 | `SW_OPERATOR_NAME`, `SW_OPERATOR_EMAIL`, `SW_OPERATOR_ADDRESS`, `SW_OPERATOR_PHONE` | production | printed into `/privacy`, `/terms` and emails (COPPA requires operator contact details) |
 | `NODE_ENV` | production | `production` |
 | `NPM_CONFIG_INCLUDE` | production (the build) | `dev`: with `NODE_ENV=production` npm leaves out devDependencies such as esbuild, which the build needs (`NPM_CONFIG_PRODUCTION=false` does nothing with npm 10) |
@@ -280,7 +280,7 @@ carried by the WebSocket, `SW_ALLOWED_ORIGINS` must never list another company's
 ### 3.3 Schema: `server/migrations/001_init.sql`
 
 ```sql
--- Sparkle World accounts v1 (docs/ACCOUNTS.md §3). Expand-only; never edit after release.
+-- Glimmer World accounts v1 (docs/ACCOUNTS.md §3). Expand-only; never edit after release.
 
 create table families (
   id                  uuid primary key default gen_random_uuid(),
@@ -585,7 +585,7 @@ time. A GET never changes anything.
 3. **Link** (convenience): `https://<origin>/account/verify#t=<token>`. The token is in the fragment,
    so it never reaches server logs or a Referer. The page first asks `POST /api/auth/verify
    {token, peek: true}` (uses nothing) → `{email: 'b•••@gmail.com', replacing}` and shows "Sign in
-   to Sparkle World?" with "You are signing in as b•••@gmail.com" and a button that POSTs
+   to Glimmer World?" with "You are signing in as b•••@gmail.com" and a button that POSTs
    `{token}`. `replacing` is true when this browser holds a live session of **another** family
    (a kid's device, say): signing in would sign it out of that family, so the page says so, asks
    the grown-up check (a times-table question) and sends `{token, replace: true}`; without
@@ -740,7 +740,7 @@ session of the family that owns `:pid`, and the device's locked player if set); 
 | `DELETE /api/players/:pid` | parent+check | `{confirm: <nickname>}` → `{ok}` | A |
 | `GET /api/players/:pid/summary` | parent | `{nickname, createdAt, friends, walkie, profile:{stickers, coins, stats}, worlds:[{id, name, biome, sizeName, updatedAt, size, thumb}]}` | A |
 | `GET /api/players/:pid/export` | parent+check | attachment: `{format:'sparkle-world-player', v:1, player, profile, worlds:[{format:'sparkle-world', v:1, save}]}` | A |
-| `GET /api/family/export` | parent+check | attachment `sparkle-world-family-<date>.json`: family, consent history, every player export (streamed, one world at a time) | A |
+| `GET /api/family/export` | parent+check | attachment `glimmer-world-family-<date>.json`: family, consent history, every player export (streamed, one world at a time) | A |
 | `POST /api/family/delete` | parent+check5 | `{confirm:'DELETE'}` → `{ok}`, signed out (§3.4) | A |
 | `GET /api/players/:pid/profile` | player | → `200 profile` + `ETag: "r<rev>"`, or `204` | C |
 | `PUT /api/players/:pid/profile` | player (entitled) | profile JSON + `If-Match` → `{rev}` \| 409 \| 403 | C |
@@ -819,7 +819,7 @@ session of the family that owns `:pid`, and the device's locked player if set); 
 
 ### 6.1 Stripe objects (the family creates them; §14 step 4)
 
-- Product **Sparkle World Family Plan**, tax code chosen in the Stripe Tax settings for a personal-use
+- Product **Glimmer World Family Plan**, tax code chosen in the Stripe Tax settings for a personal-use
   online game or digital subscription (the exact code to be confirmed there, with an accountant).
 - One Price: `unit_amount 599`, `currency usd`, `recurring.interval month`, `tax_behavior exclusive`
   ("$5.99 a month, plus sales tax where it applies"; §17 asks the family), `lookup_key
@@ -1044,11 +1044,11 @@ hook onto `game.startHooks`; `Game.start()` awaits every hook **after the textur
    `detectCloud()`).
 2. `/api/me` fails (network, timeout 3 s, 5xx) → the cache `localStorage['sparkle-world:acct']`: if
    it has a player and `now < playUntil`, **account** mode offline (cloud pushes wait and retry);
-   otherwise `optional` → local mode, `required` → the "Can't reach Sparkle World" card with **Try
+   otherwise `optional` → local mode, `required` → the "Can't reach Glimmer World" card with **Try
    again**.
 3. `410 family_gone` → wipe every player namespace the cache lists, clear the cache, then as signed out.
 4. Signed out → `optional`: local mode plus a **Grown-ups** tile; `required`: **blocked** mode, a card
-   over the title: "Ask a grown-up to set up Sparkle World" with **I'm a grown-up** (grown-up check →
+   over the title: "Ask a grown-up to set up Glimmer World" with **I'm a grown-up** (grown-up check →
    `/account?next=/play`), **I have a code** (grown-up check → pair), and, when the device holds old
    worlds, **Keep my old worlds safe** (a read-only list with the existing **Save to a file**).
 5. Signed in, family not entitled:
@@ -1056,7 +1056,7 @@ hook onto `game.startHooks`; `Game.start()` awaits every hook **after the textur
      below) → **visitor** mode in either `optional` or `required`: the title shows only **Play with
      Friends** (Join a Code), **Dress Up** and **Settings**; saves stay on the device (no cloud);
    - otherwise `optional` → account mode with cloud writes refused (read-only; saves stay on the
-     device); `required` → blocked with "Sparkle World is resting. Ask a grown-up to wake it up!"
+     device); `required` → blocked with "Glimmer World is resting. Ask a grown-up to wake it up!"
 6. Signed in, entitled: no players → "A grown-up can add you on the Family page" (parent sessions get
    a link); a locked device or one player → that player; otherwise **Who's playing?**: full-screen,
    big cards (≥ 120 px) with the portrait (or a colored bubble with the first letter) and the nickname,
@@ -1180,11 +1180,11 @@ because an iPad Home Screen app keeps its own storage, apart from Safari's.
   while opening and mid-session (a mid-session close shows its own message, not "Playing together
   stopped."). `player_gone` reloads to the picker.
 - New texts (`protocol.js MESSAGES`, looks in `ui.js MSG_LOOK`): `signed_out` "Ask a grown-up to sign
-  in to Sparkle World on this device." · `not_entitled` "Sparkle World is resting. Ask a grown-up to
+  in to Glimmer World on this device." · `not_entitled` "Glimmer World is resting. Ask a grown-up to
   wake it up!" · `friends_off` "Ask a grown-up to turn on Play with Friends for you." ·
   `friends_locked` "Playing with friends isn't ready yet. A grown-up can check the Family page." ·
   `accounts_mixed` "You can't play with this friend yet: both of you need a grown-up to set up
-  Sparkle World." (with a **Grown-ups** button, like the others)
+  Glimmer World." (with a **Grown-ups** button, like the others)
 - **Before connecting:** when `/api/me` says the player cannot join (`why`), **Play with Friends**
   shows that card at once instead of trying.
 - **Walkie:** in account mode `walkie.enabled` is `game.account.walkieAllowed`: the player's `walkieOk`
@@ -1281,7 +1281,7 @@ In `subscription` mode every admitted account member has `canHost = canBuild = t
 **Let in!** gate, device stamps (`by`, unchanged: still per device) and the host hold are untouched.
 
 **Account and legacy members never share a room** (only possible in `optional`): the parent's
-consent covers friends "whose families have Sparkle World too" (§11.3, §11.5), so `join()` refuses
+consent covers friends "whose families have Glimmer World too" (§11.3, §11.5), so `join()` refuses
 a member without claims in a room with an account member, and an account member in a room with a
 legacy member (`accounts_mixed`, close 4406, before any roster: nothing about either child
 crosses, voice included). Legacy pages play with each other exactly as before; account children
@@ -1341,7 +1341,7 @@ She can knock and play in a subscribed friend's world as a looker (the host's pa
    `NOTICE_MIN_VERSION`, then with "We changed this notice since you last agreed"): the direct notice from `GET /api/notice` (§11.3), its
    version, a link to `/privacy`, the checkbox, **Agree and continue**.
 3. **Plan** (not entitled and no players yet; with `free-join` it can be skipped with **Not now**):
-   "Sparkle World Family Plan: $5.99 a month,
+   "Glimmer World Family Plan: $5.99 a month,
    plus sales tax where it applies. Up to 6 kids, their worlds saved on every device, playing with
    friends, the walkie-talkie. Nothing to buy inside the game, ever." Checkbox "I live in the United
    States". With no trial (`SW_TRIAL_DAYS=0`, the family's choice) one button, **Start the Family
@@ -1368,7 +1368,7 @@ She can knock and play in a subscribed friend's world as a looker (the host's pa
      question ("Yes, cancel it") and needs no code.
    - **Players** (up to 6): portrait or bubble, nickname, **Rename**, the **Play with friends** switch
      with its own notice ("Other players in a game she joins or hosts see her nickname, her avatar and
-     the world. Only friends the host lets in, whose families have Sparkle World too. No typing, only
+     the world. Only friends the host lets in, whose families have Glimmer World too. No typing, only
      16 friendly phrases."), the **Walkie-talkie** switch with its own notice (`GATE_NOTE`: "Voices go
      live only to friends in this game, are never recorded, and stop when the button is let go."),
      disabled until friends is on and consent is verified ("Turns on after your first payment. [Start
@@ -1433,9 +1433,9 @@ players"), so the email provider never receives children's information.
 
 | Template | When | Says |
 |---|---|---|
-| `signin` | sign-in requested | the code (also in the subject: "Your Sparkle World code: 482913"), the link, "didn't ask? ignore this"; the first time also the direct notice summary and `/privacy` |
+| `signin` | sign-in requested | the code (also in the subject: "Your Glimmer World code: 482913"), the link, "didn't ask? ignore this"; the first time also the direct notice summary and `/privacy` |
 | `check` | email check | the code, what it is for |
-| `consent_confirm` | 24 h after consent (`send_after`) | "You agreed on <date> that Sparkle World may keep your children's nicknames, avatars and worlds. Changed your mind? Family page → Delete (link). You can also reply to this email." (the "plus" of email plus) |
+| `consent_confirm` | 24 h after consent (`send_after`) | "You agreed on <date> that Glimmer World may keep your children's nicknames, avatars and worlds. Changed your mind? Family page → Delete (link). You can also reply to this email." (the "plus" of email plus) |
 | `welcome` | Checkout completed | plan, price, trial end date, "renews monthly until you cancel", how to cancel (the Portal, or reply), "cancel before <date> and you won't be charged" (auto-renewal acknowledgment) |
 | `friends_ready` | first real payment | friends and walkie can now be switched on per child; they stay off until then |
 | `us_only` | non-US billing address | sorry, US only for now; no charge (or a refund is coming) |
@@ -1457,7 +1457,7 @@ judgment calls flagged below (§17).*
 
 ### 11.1 Scope
 
-Sparkle World is a service directed to children under 13, so the COPPA Rule (16 CFR Part 312) applies
+Glimmer World is a service directed to children under 13, so the COPPA Rule (16 CFR Part 312) applies
 in full, including the amendments published April 22, 2025, whose compliance date (April 22, 2026)
 has passed. Every piece of child data is treated as personal information, including where the
 definition may not strictly reach it: the nickname (kids type real names), world and pet names, the
@@ -1481,7 +1481,7 @@ payment details go only to Stripe.
 
 ### 11.3 Direct notice (312.4(c)), draft v1 (`server/notice.mjs`, shown before consent and in the first email)
 
-> **Before your children play: what Sparkle World keeps, and why.** *(Notice version 1)*
+> **Before your children play: what Glimmer World keeps, and why.** *(Notice version 1)*
 >
 > - **You gave us your email** so we can ask your permission and so you can sign in. Children are
 >   never asked for an email.
@@ -1496,7 +1496,7 @@ payment details go only to Stripe.
 >   recordings. No ads, no analytics, no trackers.
 > - **Playing with friends and the walkie-talkie are off** until you switch them on for each child on
 >   the Family page. When on, the other children in the same game (only friends the host lets in,
->   whose families also have Sparkle World) see her nickname, avatar and the world, and hear her voice
+>   whose families also have Glimmer World) see her nickname, avatar and the world, and hear her voice
 >   live while she holds the walkie button. Voices are never recorded. You can agree to saving without
 >   agreeing to playing with friends. These switches become available once we have confirmed that a
 >   grown-up said yes: your first payment does that. *(`notice.mjs` words this sentence from
@@ -1512,11 +1512,11 @@ payment details go only to Stripe.
 > - **If you don't finish** setting up: if you don't agree to this notice within 14 days, we delete
 >   your email address; if you agree but don't start the Family Plan within 30 days, we delete it
 >   then.
-> - [Read the full Privacy Notice](/privacy). Sparkle World is run by {operator name}, {address},
+> - [Read the full Privacy Notice](/privacy). Glimmer World is run by {operator name}, {address},
 >   {phone}, {email}.
 >
 > ☐ I'm the parent or legal guardian of the children who will play, I'm 18 or older, and I agree that
-> Sparkle World may keep the information above to run the game for them. **[Agree and continue]**
+> Glimmer World may keep the information above to run the game for them. **[Agree and continue]**
 
 This covers the notice's required elements: why the parent's contact was collected; that consent is
 needed and that without it nothing is collected, used or disclosed (312.4(c)(1)(ii)); the items collected and the possible disclosures; how they are used, the recipients and that
@@ -1525,7 +1525,11 @@ deletion of the parent's contact if consent does not come. Changing the text bum
 when the change is material, `NOTICE_MIN_VERSION` is raised with it: parents who agreed to an older
 version see the notice again on the Family page, and until they agree no player is added and no
 switch goes on (`403 consent_required`; saving goes on). Version 1 was reworded before anyone agreed
-to it in production (accounts were still off), so it stays version 1.
+to it in production (accounts were still off), so it stays version 1. The same goes for the game's
+rename from Sparkle World to Glimmer World (2026-10-02): it changed only the product name in the
+notice, the checkbox and the emails, still before any family had agreed in production, so the
+text was edited in place as version 1 (`NOTICE_MIN_VERSION` stays 1, `NOTICE_DATE` unchanged). From
+the first real agreement on, any change, even a name, bumps `NOTICE_VERSION`.
 
 ### 11.4 Verifiable parental consent, in tiers
 
@@ -1754,7 +1758,7 @@ offline; the iPad checks are manual, §14 step 8). Zero console errors; screensh
    switch on. Family B does the same with **Start today**. Lily hosts, B's child joins with the code →
    **Let in!** → they build; hashes equal. A presence `nm` change by B's page is ignored. Family C
    (never subscribed, so no dashboard and no pair code) signs in from the game (**I'm a grown-up** →
-   the Family page → back to `/play`) → "Sparkle World is resting…" style card, no knock reaches Lily
+   the Family page → back to `/play`) → "Glimmer World is resting…" style card, no knock reaches Lily
    (the relay refuses C's sockets: 4401 without a player, 4405 with a made-up one). The game DOM
    never contains `$` or "subscri" in any state.
 6. Walkie: Lily's walkie on, B's child's off → B's child gets 0 voice bytes; B's parent switches it on
@@ -1889,7 +1893,7 @@ and ids, never children's content.
 Do everything in **test mode on staging** first, then again in live mode for production. Each step
 becomes a numbered section of `docs/DEPLOY-RAILWAY.md`, written like the existing ones.
 
-1. **Domain.** Buy one (for example `sparkleworld.fun`). Railway → the game service → Settings →
+1. **Domain.** Buy one (for example `playglimmerworld.com`). Railway → the game service → Settings →
    Networking → Custom Domain; add the CNAME at the registrar. Needed for email (DKIM/SPF), trust, and
    later passkeys. Turn on 2FA at the registrar.
 2. **Railway.** + New → Database → PostgreSQL. In the game service's Variables:
@@ -1902,8 +1906,8 @@ becomes a numbered section of `docs/DEPLOY-RAILWAY.md`, written like the existin
    DMARC record; turn **off** open and click tracking; shortest message retention; copy the API key.
    (Postmark approves new accounts before they can send to anyone.)
 4. **Stripe** (turn on 2FA first):
-   - Settings → Public details: name "Sparkle World", support email, Terms URL `https://<domain>/terms`,
-     Privacy URL `https://<domain>/privacy`, statement descriptor (e.g. `SPARKLEWORLD`).
+   - Settings → Public details: name "Glimmer World", support email, Terms URL `https://<domain>/terms`,
+     Privacy URL `https://<domain>/privacy`, statement descriptor (e.g. `GLIMMERWORLD`).
    - Run `STRIPE_SECRET_KEY=sk_test_… npm run stripe:setup` (product, the $5.99 monthly price with
      tax behavior "exclusive", the portal configuration; it prints `STRIPE_PRICE_ID` and
      `STRIPE_PORTAL_CONFIG`), or make them by hand.
@@ -1926,7 +1930,7 @@ becomes a numbered section of `docs/DEPLOY-RAILWAY.md`, written like the existin
    `SW_SECRET` (make it with `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`),
    `STRIPE_SECRET_KEY` (the restricted key), `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID`,
    `STRIPE_PORTAL_CONFIG`, `MAIL_MODE=resend` (or `postmark`), `MAIL_API_KEY`,
-   `MAIL_FROM=Sparkle World <hello@<domain>>`, `SW_OPERATOR_NAME`, `SW_OPERATOR_EMAIL`,
+   `MAIL_FROM=Glimmer World <hello@<domain>>`, `SW_OPERATOR_NAME`, `SW_OPERATOR_EMAIL`,
    `SW_OPERATOR_ADDRESS` (a PO box or a small LLC's address keeps the home address private),
    `SW_OPERATOR_PHONE`, and if you want other than the defaults `SW_TRIAL_DAYS`, `SW_FRIENDS_MODE`,
    `SW_MP_CONSENT`, `SW_GRACE_DAYS`, `SW_RETAIN_DAYS`. Never set `SW_TEST` or `STRIPE_API_BASE` in

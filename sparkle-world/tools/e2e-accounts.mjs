@@ -770,8 +770,8 @@ async function s5() {
   await cDev.page.click('button[type=submit]');
   await cDev.page.waitForSelector('.code-boxes');
   await Promise.all([cDev.page.waitForURL((u) => u.pathname === '/play', { timeout: 60000 }), cDev.page.locator('#code').fill(await codeFor(C.email, { since: cSince }))]);
-  await cDev.page.getByText(/Sparkle World is resting/).first().waitFor({ timeout: 60000 });
-  check(true, 'family C signed in from the game and is back in it: "Sparkle World is resting…"');
+  await cDev.page.getByText(/Glimmer World is resting/).first().waitFor({ timeout: 60000 });
+  check(true, 'family C signed in from the game and is back in it: "Glimmer World is resting…"');
   // and the relay itself: C's session cannot come into Lily's game, with or without a player
   const lilyRoom = `sw1-${code.join('-')}`;
   const cCookie = await cookieOf(cDev.ctx);
@@ -910,8 +910,8 @@ async function s7() {
   const ipad = R.dev.ipad;
   ipad.page.allow.push(/403/);
   await ipad.page.reload();
-  await ipad.page.getByText(/Sparkle World is resting/).first().waitFor({ timeout: 60000 });
-  check(true, 'the game shows "Sparkle World is resting…"');
+  await ipad.page.getByText(/Glimmer World is resting/).first().waitFor({ timeout: 60000 });
+  check(true, 'the game shows "Glimmer World is resting…"');
   await shot(ipad.page, 'ipad-resting');
   const cookie = await cookieOf(ipad.ctx);
   const read = await api(`/api/players/${A.ids.Lily}/worlds`, { cookie });
@@ -937,7 +937,7 @@ async function s7() {
   const rest = await FP.ribbon(B);
   check(/Resting/.test(rest), `the period ended: "${rest}"`);
   await shot(B.page, 'parentB-resting-390', true);
-  // A wakes Sparkle World up again (Restart the plan: no second free week), for 8 and 9
+  // A wakes Glimmer World up again (Restart the plan: no second free week), for 8 and 9
   const ribbonA = await FP.ribbon(A);
   check(/Resting/.test(ribbonA), `family A is resting too: "${ribbonA}"`);
   await A.page.locator('.ribbon').getByRole('button', { name: 'Restart the plan' }).click();

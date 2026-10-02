@@ -1,6 +1,6 @@
 // GameAdapter over the real game (docs/MULTIPLAYER.md §9.0, docs/teams/net.md): the only
 // bridge between the net core (host.js / guest.js, which reach the game through nothing else)
-// and Sparkle World's modules. It
+// and Glimmer World's modules. It
 //   - installs the hooks: world.onCell, entities.onChange, garden.onChange, the actor touch
 //     (re-installed on the new World after a snapshot);
 //   - reads current values as wire records (cells, entities, plants, actors) and hashes;
