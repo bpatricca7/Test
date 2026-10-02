@@ -65,6 +65,9 @@ jobs:
       - name: Accounts platform (A)
         run: npm run test:accounts
 
+      - name: Mail (Microsoft 365)
+        run: npm run test:mail-microsoft
+
       - name: Billing (B)
         run: npm run test:billing
 
