@@ -96,8 +96,10 @@ function postmark(cfg) {
 // (no copy of a code or a family's email collects in the mailbox's Sent Items; docs/ACCOUNTS.md
 // §10). A 401 drops the token and tries once more with a fresh one. 429 and 5xx are retried
 // (Retry-After up to 5 s is waited for once, in place; a longer one moves the email's next try,
-// at most 1 h, never sooner than the outbox's own backoff). 400 stops the email (the same message
-// would be refused again). 401/403/404 and sign-in failures are setup problems: one log line that
+// at most 1 h, never sooner than the outbox's own backoff). 413, and a 400 whose code is about
+// this one message (ErrorInvalidRecipients, ErrorMessageSizeExceeded), stop the email (the same
+// message would be refused again); any other 400 keeps the slow backoff. SW_OPERATOR_EMAIL (every
+// email's Reply-To) is checked at start, so a bad one never stops every email. 401/403/404 and sign-in failures are setup problems: one log line that
 // names the likely fix, and the outbox's slow backoff keeps the email until it is fixed. Every
 // request has a 10 s timeout. A log line never holds the secret, the token, an address or
 // Microsoft's own error text (it can quote the address); only status numbers and error code names.
@@ -107,6 +109,7 @@ export const MS_TOKEN_EARLY_MS = 5 * 60e3;
 export const MS_RETRY_AFTER_WAIT_MS = 5000;
 export const MAIL_RETRY_AFTER_CAP_MS = 3600e3;
 const MS_HINT_EVERY_MS = 15 * 60e3;
+const MS_PERMANENT_400 = new Set(['ErrorInvalidRecipients', 'ErrorMessageSizeExceeded']);
 const MS_LOGIN = 'https://login.microsoftonline.com';
 const MS_GRAPH = 'https://graph.microsoft.com';
 
@@ -276,9 +279,14 @@ function microsoft(cfg, { log, now, sleep, timeoutMs }) {
         );
         throw fail('http_404');
       }
-      if (status === 400 || status === 413) {
+      if (status === 413 || (status === 400 && MS_PERMANENT_400.has(code))) {
         hint(`send_${status}`, `Microsoft 365 refused this email (${named}); it will not be sent again`);
         throw fail(`http_${status}`, { permanent: true });
+      }
+      if (status === 400) {
+        // any other 400 may be about the setup or this app, not this one message: the slow backoff
+        hint(`send_400_${code}`, `Microsoft 365 refused (${named}); trying again later`);
+        throw fail('http_400');
       }
       hint(`send_${status}`, `Microsoft 365 answered ${named}`);
       throw fail(`http_${status}`);

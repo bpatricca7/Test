@@ -4,7 +4,8 @@
 // Config validation; the request shapes (token form, mailbox in the URL, saveToSentItems false,
 // recipients, subject and body); the token cache (5 minutes early, one refresh at a time); a 401
 // renewing the token once; 429 with Retry-After (waited in place when short, moved to the outbox
-// when long, capped); 5xx retried; 400 stopped; 403/404 and sign-in failures logged with the
+// when long, capped); 5xx retried; a 400 about the message stopped, any other 400 retried;
+// SW_OPERATOR_EMAIL (the Reply-To) checked at start; 403/404 and sign-in failures logged with the
 // likely fix; timeouts; and a real sign-in code email from /api/auth/start to the fake and back
 // to /api/auth/verify. The log spy checks at the end that no secret, token, code or address was
 // ever logged.
@@ -17,7 +18,7 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { randomBytes } from 'node:crypto';
 
-import { loadConfig, ConfigError, summarizeConfig, mailboxOf } from '../server/config.mjs';
+import { loadConfig, ConfigError, summarizeConfig, mailboxOf, bareAddress } from '../server/config.mjs';
 import { makeTransport, retryAfterMs, MAIL_BACKOFF_MS, MAIL_MAX_TRIES, MAIL_RETRY_AFTER_CAP_MS, MS_TOKEN_EARLY_MS } from '../server/mail.mjs';
 import { createAccounts, makeClock } from '../server/accounts.mjs';
 import { createServer } from '../server/server.mjs';
@@ -111,6 +112,17 @@ describe('config: MAIL_MODE=microsoft', () => {
   test('MAIL_MODE must be a real provider in production (microsoft counts)', () => {
     refuses({ ...PROD, MAIL_MODE: 'log' }, /MAIL_MODE must be resend, postmark or microsoft in production/);
     refuses({ ...PROD, MAIL_MODE: 'memory' }, /MAIL_MODE must be resend, postmark or microsoft in production/);
+  });
+  test('SW_OPERATOR_EMAIL (every email\'s Reply-To) must be one bare address: a bad one would stop every email', () => {
+    for (const bad of ['Glimmer World <hello@brickoodle.com>', 'hello@brickoodle.com,', 'a@b.com, c@d.com', 'hello@brickoodle', 'hello at brickoodle.com', 'hello@localhost']) {
+      refuses({ ...PROD, SW_OPERATOR_EMAIL: bad }, /^Sparkle World will not start: SW_OPERATOR_EMAIL must be one bare address, like hello@your-domain$/);
+    }
+    // the same rule whatever MAIL_MODE (Resend and Postmark carry it as Reply-To too)
+    refuses({ ...PROD, MAIL_MODE: 'resend', MAIL_API_KEY: 're_abc', SW_OPERATOR_EMAIL: 'Glimmer World <hello@brickoodle.com>' }, /SW_OPERATOR_EMAIL must be one bare address/);
+    assert.equal(loadConfig({ ...PROD, SW_OPERATOR_EMAIL: 'Hello@Brickoodle.com' }).operator.email, 'Hello@Brickoodle.com');
+    // development may use localhost
+    assert.equal(loadConfig({ ...ENV, SW_OPERATOR_EMAIL: 'hello@localhost' }).operator.email, 'hello@localhost');
+    for (const ok of [['a@b', 0], ['bare', 0], ['a@b.com', 1], ['a@localhost', 1]]) assert.equal(bareAddress(ok[0], true), !!ok[1], ok[0]);
   });
   test('MS_LOGIN_BASE and MS_GRAPH_BASE are for tests only: refused in production (whatever MAIL_MODE), like STRIPE_API_BASE', () => {
     refuses({ ...PROD, MS_LOGIN_BASE: 'http://127.0.0.1:1234' }, /MS_LOGIN_BASE is for tests only and is refused in production/);
@@ -281,6 +293,12 @@ describe('the microsoft transport against the fake', () => {
     fake.failSend({ status: 400, code: 'ErrorInvalidRecipients' });
     await assert.rejects(send(msg()), (e) => e.code === 'http_400' && e.permanent === true);
     assert.match(lines.at(-1), /refused this email \(400 ErrorInvalidRecipients\); it will not be sent again/);
+    fake.failSend({ status: 413, code: 'ErrorMessageSizeExceeded' });
+    await assert.rejects(send(msg()), (e) => e.code === 'http_413' && e.permanent === true);
+    // any other 400 may be about the setup, not this one message: kept on the slow backoff
+    fake.failSend({ status: 400, code: 'ErrorInvalidRequest' });
+    await assert.rejects(send(msg()), (e) => e.code === 'http_400' && !e.permanent);
+    assert.match(lines.at(-1), /^mail: Microsoft 365 refused \(400 ErrorInvalidRequest\); trying again later$/);
     // the same problem is logged once per 15 minutes, not for every email
     clock += 16 * 60e3;
     const before = lines.length;

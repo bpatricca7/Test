@@ -15,7 +15,8 @@
 //   fake.failSend({ status, headers, code, times })   // the next `times` sendMail calls answer so
 //   fake.failToken({ status, errorCodes, times })     // the next `times` token calls answer so
 //   fake.hang = 'token'|'send'|null // never answer that kind (for the timeouts)
-//   fake.reset()                    // forget requests, scripted failures and revocations
+//   fake.reset()                    // forget requests, scripted failures and revocations (the
+//                                   //   tokens issued stay valid, and in fake.tokens)
 //   await fake.close()
 //
 // What it checks, like Microsoft does: the token form (client_id, client_secret, scope
@@ -58,6 +59,7 @@ export async function startMsGraphFake({ tenantId, clientId, clientSecret, mailb
       fake.tokenFailures.length = 0;
       fake.hang = null;
       fake.expiresIn = 3599;
+      revoked.clear();
     },
   };
   const hanging = [];

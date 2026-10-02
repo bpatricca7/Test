@@ -51,6 +51,16 @@ export function mailboxOf(from) {
   return /^[^\s@<>()[\]\\,;:"/?#%]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/.test(a) ? a : null;
 }
 
+/**
+ * true when `s` is one bare address (no display name, no list), with the same address rule as
+ * mailboxOf; `localhost` as the domain only when allowed (development and tests).
+ */
+export function bareAddress(s, allowLocalhost = false) {
+  const t = String(s || '').trim();
+  if (mailboxOf(t) === t.toLowerCase() && !t.includes('<')) return true;
+  return allowLocalhost && /^[^\s@<>()[\]\\,;:"/?#%]+@localhost$/i.test(t);
+}
+
 /** HKDF-SHA256 sub-key of the master secret (salt `sparkle-world`, info = its purpose). */
 export function subKey(secret, info) {
   return Buffer.from(hkdfSync('sha256', secret, 'sparkle-world', info, 32));
@@ -247,12 +257,16 @@ export function loadConfig(env = process.env) {
   }
 
   // ---- who runs it (printed in /privacy, /terms and emails; COPPA) ----
+  // The operator's email is also every email's Reply-To: it must be one bare address (a provider
+  // refuses a message with a bad Reply-To, Microsoft 365 for good with 400 ErrorInvalidRecipients).
+  // localhost is allowed outside production (development and tests).
   const operator = Object.freeze({
     name: needInProduction('SW_OPERATOR_NAME'),
     email: needInProduction('SW_OPERATOR_EMAIL'),
     address: needInProduction('SW_OPERATOR_ADDRESS'),
     phone: needInProduction('SW_OPERATOR_PHONE'),
   });
+  if (operator.email !== null && !bareAddress(operator.email, !production)) problems.push('SW_OPERATOR_EMAIL must be one bare address, like hello@your-domain');
 
   // ---- free passes the operator gives his own family (§6.9) ----
   const freePass = parseFreePass(str('SW_FREE_PASS'), problems);
