@@ -430,6 +430,20 @@ async function landPass(browser, errors) {
   await settle(page, 300);
   const tool = await page.evaluate(() => window.__game.selectedTool);
   check(errors, tool === 'hand' && await toastSeen(page, /Park first to build!/, 3000), `R (Build) while driving: "Park first to build!", the tool stays Hand (${tool})`);
+  // a right-click (Remove on the desktop) and Undo wait too: nothing removed, no Undo entry used up
+  const rc = await page.evaluate(() => {
+    const g = window.__game, s = g.debug.vehicles.state();
+    const x = Math.floor(s.x), z = Math.floor(s.z) + 3;
+    let y = Math.floor(s.y) - 1;
+    for (let i = 0; i < 8 && !g.world.get(x, y, z); i++) y--;
+    const id0 = g.world.get(x, y, z), h0 = g.history.length;
+    g.removeTarget({ type: 'block', x, y, z, id: id0 });
+    const id1 = g.world.get(x, y, z);
+    const undone = g.undo();
+    return { id0, id1, h0, h1: g.history.length, undone, driving: g.isDriving() };
+  });
+  check(errors, rc.id0 > 0 && rc.id1 === rc.id0 && rc.driving, `Remove while driving (a right-click): the block stays (${JSON.stringify(rc)})`);
+  check(errors, rc.undone === false && rc.h1 === rc.h0, `Undo while driving: refused, the history keeps its ${rc.h0} entries`);
 
   // ---- costs while driving ----
   await page.evaluate(([x, z, gy]) => window.__game.debug.vehicles.setPose(x, gy, z, 0), [base.x + 0.5, base.z + 10.5, gy]);
@@ -483,6 +497,13 @@ async function landPass(browser, errors) {
   await settle(page, 400);
   const ap = await page.evaluate((uid) => ({ state: window.__game.player.state, back: !!window.__game.entities.byUid(uid), drive: !!window.__game.vehicles.current }), car.uid);
   check(errors, ap.state === 'sit' && ap.back && !ap.drive, `sitting on a chair while driving parks the car (${JSON.stringify(ap)})`);
+  const hudSit = await page.evaluate(() => {
+    const g = window.__game, all = [...document.querySelectorAll('.sw-round-label')];
+    const labels = all.map((l) => l.textContent);
+    const fl = all.find((l) => l.textContent === 'Fly'), fly = fl ? fl.closest('button') : null;
+    return { mount: !!g.player.mountPet, honk: labels.includes('Honk'), flyHidden: fly ? fly.hidden : null };
+  });
+  check(errors, !hudSit.mount && !hudSit.honk && hudSit.flyHidden !== true, `on the chair: no stale car under her, Jump (not Honk) and Fly are back (${JSON.stringify(hudSit)})`);
   await page.evaluate(() => window.__game.player.stand());
 
   // ---- Remove + Undo of a parked car (ordinary furniture) ----

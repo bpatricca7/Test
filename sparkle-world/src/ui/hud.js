@@ -483,7 +483,7 @@ export function install(game) {
   let honkShown = false;
   const refreshFly = () => {
     const flying = !!(game.player && game.player.flying);
-    const driving = !!(game.player && game.player.mountPet && game.player.mountPet.kind === 'vehicle');
+    const driving = typeof game.isDriving === 'function' && game.isDriving();
     flyBtn.classList.toggle('sw-active', flying);
     flyBtn.hidden = driving;
     upBtn.hidden = downBtn.hidden = !flying;

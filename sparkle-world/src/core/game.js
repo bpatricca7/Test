@@ -1107,9 +1107,20 @@ export class Game {
     return ok;
   }
 
+  /** Is she driving a car or sailing a boat now? (Remove and Undo wait until she parks.) */
+  isDriving() {
+    const p = this.player;
+    return !!(p && p.state === 'ride' && p.mountPet && p.mountPet.kind === 'vehicle');
+  }
+
   /** Remove tool: a block, or a pickable that supports onRemove. */
   removeTarget(hit = this.target) {
     if (!hit) return false;
+    // every way in (a right-click, a stroke, a key) waits until she parks
+    if (this.isDriving()) {
+      this._parkFirst();
+      return false;
+    }
     if (this._netRefuses('remove')) return false;
     if (hit.type === 'pickable') {
       return hit.pickable.onRemove ? !!hit.pickable.onRemove(this, hit) : false;
@@ -1261,7 +1272,21 @@ export class Game {
     }
   }
 
+  /** The soft "nope" while she drives (at most one note every 1.5 s). */
+  _parkFirst() {
+    this.audio.play('click', { pitch: 0.6, volume: 0.6 });
+    const now = performance.now();
+    if (now - (this._parkFirstAt || -Infinity) < 1500) return;
+    this._parkFirstAt = now;
+    this.toast('Park first to build!', { icon: 'star' });
+  }
+
   undo() {
+    // the car she is in has its Bag placement on top of the history: keep it for after she parks
+    if (this.isDriving()) {
+      this._parkFirst();
+      return false;
+    }
     const e = this.history.pop();
     if (!e) {
       this.toast('Nothing to undo');

@@ -511,6 +511,8 @@ class VehicleSystem {
     cur.pendingStand = at || null;
     // (reason 'stand': stand() is already running and takes pendingStand from beforeStand())
     if (pl && pl.state === 'ride' && pl.mountPet === cur.mount) pl.stand();
+    // she left for a chair or a bed: no stale car under her (the HUD's Honk, the camera)
+    if (pl && pl.mountPet === cur.mount) pl.mountPet = null;
     this.current = null;
     this._plan = null;
     if (entity) {
@@ -591,6 +593,7 @@ class VehicleSystem {
     this.current = null;
     this._plan = null;
     if (pl && pl.state === 'ride' && pl.mountPet === cur.mount) pl.stand();
+    if (pl && pl.mountPet === cur.mount) pl.mountPet = null;
     const p = cur.drive.pos;
     g.celebrate([p.x, p.y + 1, p.z], 'sparkle', { quiet: true });
     if (text) g.toast(text, { icon: 'star' });
