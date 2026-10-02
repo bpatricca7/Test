@@ -969,8 +969,10 @@ typedef); refusal texts are in `facade.js`.
   `tool:change` listener registered on `game:ready`, after the HUD's, switches back to Hand with
   "Park first to build!"), so the game's E only switches to Hand and never interacts. This is also
   how Build and Remove are off while driving (decision 8) without touching `game.js`.
-  Known gap: a desktop right-click still runs Remove on what she points at (it does not go
-  through the tool); a block built into the car is still refused by `player.overlapsCell`.
+  A desktop right-click, a Remove stroke and Undo do not go through the tool, so
+  `game.removeTarget()` and `game.undo()` refuse while `game.isDriving()` with the same note
+  (wave 3 fixes; Undo would otherwise use up the car's own Bag placement entry). A block built
+  into the car is still refused by `player.overlapsCell`.
 - Hand taps while driving work as usual: a chair or a bed auto-parks the car where it is.
 
 **Physics.** As §5 with V-B3 applied: "no support" is the finite `y - 1.2`, picture values are
@@ -999,6 +1001,14 @@ leaves a record that is already there (a save made twice) alone.
 - Host `stop()` releases custody before the hooks come off (critique item 6); the host's own drives
   keep the owner through `net.ownerToken` / `net.restoreOwner`.
 - The race (two players tap one car) uses `remote-players.vehicleOf(src)`: the lower seat keeps it.
+  The host follows the same rule (wave 3 fixes): a later `e-` for a car already in custody moves
+  the custody to the lower seat when her vh names it (careful mode: only to its owner from
+  before), and `_watchCustody` hands it to another seated friend whose vh names it when the
+  holder lets it go. test-net covers both arrival orders.
+- Cars refuse a drop into water up to 32 cells below the bumper (it was 4: a higher cliff over a
+  pond gave a fall-and-snap-back loop), and a fall into water closes that edge while she stays
+  within 3 blocks of it (`Drive.wetEdge`). Boats take their room above the water from
+  `body.clearance` (Sailboat 3.9 for its mast, others 1.85).
 - Known limitation: if the host's page reloads while a friend drives a car that is NOT in her own
   uid range (mine = 1), the host's world brings the car back from `systems.vehicles` and her later
   park adds a second copy (nothing is lost; one copy can be removed). Her own cars park with their
