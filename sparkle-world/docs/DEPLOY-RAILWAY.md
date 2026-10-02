@@ -471,10 +471,17 @@ show where (a DMARC record can be a TXT record named `_dmarc` with
    `MAIL_API_KEY` is not used with Microsoft 365. The same four Microsoft values work for staging
    and for production.
 
-The emails are sent with "don't save a copy in Sent Items", so sign-in codes and families' emails
-don't pile up in that mailbox. (Microsoft still keeps a hidden copy in the mailbox's Recoverable
-Items for 14 days, then deletes it; don't put this mailbox on a "litigation hold" or a long
-retention policy. Details: `docs/ACCOUNTS.md` §10.)
+The emails are sent with "don't save a copy in Sent Items", so no copy of a sign-in code or a
+family's email collects in that mailbox's Sent Items. (Microsoft still keeps a hidden copy in the
+mailbox's Recoverable Items for 14 days, then deletes it; don't put this mailbox on a "litigation
+hold" or a long retention policy. Details: `docs/ACCOUNTS.md` §10.)
+
+Some emails do come back to this mailbox's **Inbox**: "Undeliverable" notices (a mistyped parent
+address) and automatic replies (out of office). They show the parent's address and quote our
+email, subject included ("Your Sparkle World code: …"), and they stay until someone deletes them.
+Look at that Inbox now and then and delete them, or let Exchange do it: a retention tag on that
+mailbox's Inbox that deletes items older than 30 days
+([retention tags and policies](https://learn.microsoft.com/en-us/exchange/security-and-compliance/messaging-records-management/retention-tags-and-policies)).
 
 ### Lock the app to the one mailbox (optional, recommended)
 
@@ -517,15 +524,21 @@ You need PowerShell (on Windows it is already there; on a Mac install "PowerShel
 
    The first shows `Application Mail.Send` with **InScope True**, the second **InScope False**
    ([Test-ServicePrincipalAuthorization](https://learn.microsoft.com/en-us/powershell/module/exchangepowershell/test-serviceprincipalauthorization?view=exchange-ps)).
-5. **Now take away the organization-wide permission**, or the lock does nothing (Microsoft adds the
+5. **Wait 2 hours.** Exchange keeps permissions in a cache for **30 minutes to 2 hours**, so the new
+   assignment may not count yet. Emails keep going out meanwhile, through the organization-wide
+   permission of step 12a.4.
+6. **Now take away the organization-wide permission**, or the lock does nothing (Microsoft adds the
    two permissions together): Entra admin center → **App registrations → Glimmer World mail → API
    permissions** → the `…` at the end of the **Mail.Send** line → **Revoke admin consent** → Yes;
-   then `…` → **Remove permission**.
-6. Wait: Exchange keeps permissions in a cache for **30 minutes to 2 hours**. Then sign in on the
-   Family page again: the code still arrives. (If the Deploy Logs show `refused (403 …)` meanwhile,
-   wait a little longer; sign-in emails are retried.)
+   then `…` → **Remove permission**. Best at a quiet time (in the evening, say), in case something
+   needs fixing.
+7. About an hour later (the app's sign-in token lasts that long), sign in on the Family page again:
+   the code still arrives. If the Deploy Logs show `refused (403 …)` instead, check that `MAIL_FROM`
+   is exactly the mailbox in the scope of step 3 above, and wait a little longer. Consent and plan
+   emails go out by themselves once it works; a sign-in code is only good for 15 minutes, so ask
+   for a new code on the Family page.
 
-To undo the lock: add **Mail.Send** back with admin consent (steps 4 and 5 above), then
+To undo the lock: add **Mail.Send** back with admin consent (steps 12a.4 and 12a.5), then
 `Remove-ManagementRoleAssignment "Glimmer World mail send"`.
 
 ## Step 12b. Or: Resend or Postmark
@@ -605,7 +618,7 @@ In **staging**, the game service → **Variables → Raw Editor**, paste and fil
 | `MAIL_API_KEY` | with `resend` or `postmark` only: the key from step 12b |
 | `MAIL_FROM` | with `microsoft`: the sending mailbox, `Glimmer World <support@brickoodle.com>`. With Resend or Postmark: `Sparkle World <hello@<domain>>` (see the note below the table while the domain is not verified yet) |
 | `SW_OPERATOR_NAME` | who runs Sparkle World (your name, or your small LLC) |
-| `SW_OPERATOR_EMAIL` | the email parents can write to |
+| `SW_OPERATOR_EMAIL` | the email parents can write to: just the address, like `hello@brickoodle.com` (no name in front) |
 | `SW_OPERATOR_ADDRESS` | a mailing address (a PO box or an LLC's address keeps your home address private) |
 | `SW_OPERATOR_PHONE` | a phone number for parents |
 
@@ -765,7 +778,7 @@ pages are exactly as in Part 1 (the database is kept, untouched).
 | The build warns `the account pages need SW_OPERATOR_…` | Set the operator variables (step 14) and redeploy. |
 | No sign-in email arrives | Check the spam folder. With Microsoft 365, the Deploy Logs have a line starting `mail: Microsoft 365` that says what to fix (the rows below). With Resend or Postmark: the provider's logs, and that the domain shows "verified" (step 12b). |
 | `mail: Microsoft 365 sign-in failed (401): the client secret is not right …` | `MS_CLIENT_SECRET` holds the Secret ID or a typo: copy the secret's **Value** (make a new secret if it is no longer shown, step 12a.6), deploy. |
-| `mail: Microsoft 365 sign-in failed (401): the client secret has expired …` | Make a new client secret (step 12a.6), put its Value in `MS_CLIENT_SECRET`, deploy; then delete the old one. Emails waiting in the meantime go out by themselves. |
+| `mail: Microsoft 365 sign-in failed (401): the client secret has expired …` | Make a new client secret (step 12a.6), put its Value in `MS_CLIENT_SECRET`, deploy; then delete the old one. Consent and plan emails waiting in the meantime go out by themselves; a sign-in code is only good for 15 minutes, so ask for a new code on the Family page. |
 | `mail: Microsoft 365 sign-in failed (400): no app with this MS_CLIENT_ID …` or `the tenant was not found …` | `MS_CLIENT_ID` / `MS_TENANT_ID` are swapped or mistyped: copy both again from the app's Overview page (step 12a.3). |
 | `mail: Microsoft 365 refused (403 …): the app needs the Mail.Send application permission with admin consent …` | Step 12a.4–5: **Mail.Send** must be an **Application** permission with the green "Granted" check. If you locked the app to one mailbox, `MAIL_FROM` must be exactly that mailbox, and after a change wait up to 2 hours. |
 | `mail: Microsoft 365 refused (404 …): mailbox not found …` | The address in `MAIL_FROM` is not a mailbox of your Microsoft 365 (a typo, an alias of a group, or a user without an Exchange license): use a user or shared mailbox's own address. |

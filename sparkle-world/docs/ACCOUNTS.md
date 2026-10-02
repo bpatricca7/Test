@@ -234,7 +234,7 @@ Deploy Logs, exit code 1, so Railway keeps the old deployment) when a rule below
 | `MAIL_MODE` | accounts on | `microsoft` \| `resend` \| `postmark` (production) \| `log` (development) \| `memory` (tests) |
 | `MAIL_API_KEY`, `MAIL_FROM` | production | `MAIL_API_KEY`: the Resend or Postmark key (not used with `microsoft`). `MAIL_FROM`: `Sparkle World <hello@your-domain>` (before the domain is verified at Resend, `Sparkle World <onboarding@resend.dev>` works, but Resend delivers it only to the Resend account owner's own address). With `microsoft`, its address part **is the sending mailbox** (`/users/{address}/sendMail`), for example `Glimmer World <support@brickoodle.com>` |
 | `MS_TENANT_ID`, `MS_CLIENT_ID`, `MS_CLIENT_SECRET` | `MAIL_MODE=microsoft` | the Microsoft Entra app registration (DEPLOY-RAILWAY.md step 12a): the Directory (tenant) ID and the Application (client) ID (both GUIDs), and the client secret's **Value** (a value shaped like a GUID is refused: that is the secret's ID). The Deploy Logs show only `mail microsoft (<the mailbox's domain>)` |
-| `SW_OPERATOR_NAME`, `SW_OPERATOR_EMAIL`, `SW_OPERATOR_ADDRESS`, `SW_OPERATOR_PHONE` | production | printed into `/privacy`, `/terms` and emails (COPPA requires operator contact details) |
+| `SW_OPERATOR_NAME`, `SW_OPERATOR_EMAIL`, `SW_OPERATOR_ADDRESS`, `SW_OPERATOR_PHONE` | production | printed into `/privacy`, `/terms` and emails (COPPA requires operator contact details); `SW_OPERATOR_EMAIL` is also every email's Reply-To and must be one bare address (`hello@your-domain`, no name) |
 | `NODE_ENV` | production | `production` |
 | `NPM_CONFIG_INCLUDE` | production (the build) | `dev`: with `NODE_ENV=production` npm leaves out devDependencies such as esbuild, which the build needs (`NPM_CONFIG_PRODUCTION=false` does nothing with npm 10) |
 | `SW_TEST`, `STRIPE_API_BASE`, `MS_LOGIN_BASE`, `MS_GRAPH_BASE`, `SW_TEST_DATABASE_URL`, `SW_STRIPE_SHAPES` | tests/staging only | §12 (`MS_LOGIN_BASE` and `MS_GRAPH_BASE` point `microsoft` at the local fake, §12.3a) |
@@ -1463,12 +1463,20 @@ client credentials grant, Node's `fetch`, no SDK; every request has a 10 s timeo
   ([the send mail process](https://learn.microsoft.com/en-us/graph/outlook-things-to-know-about-send-mail),
   [Recoverable Items in Exchange Online](https://learn.microsoft.com/en-us/exchange/security-and-compliance/recoverable-items-folder/recoverable-items-folder)).
   Codes are dead after 15 minutes, so those copies are of no use to anyone; do not put the sending
-  mailbox on a litigation hold or a long retention policy.
+  mailbox on a litigation hold or a long retention policy. What does land in that mailbox's
+  **Inbox**: "Undeliverable" notices and automatic replies, which name the parent's address and
+  quote our email (a sign-in code's subject included) and stay until deleted; DEPLOY-RAILWAY.md
+  step 12a has the dad delete them now and then, or set a retention tag that deletes Inbox items
+  after 30 days.
 - **Errors:** a `401` drops the cached token and tries once more with a fresh one. `429` and `5xx`
   are retried: a `Retry-After` of up to 5 s is waited for once, in place; a longer one moves the
   email's next try (honored up to 1 h, never sooner than the backoff above;
-  [throttling](https://learn.microsoft.com/en-us/graph/throttling)). `400`/`413`: the message
-  itself was refused, so it stops at once (`permanent`). `403` (no `Mail.Send` application
+  [throttling](https://learn.microsoft.com/en-us/graph/throttling)). `413`, and a `400` whose
+  code is about this one message (`ErrorInvalidRecipients`, `ErrorMessageSizeExceeded`): the
+  message itself was refused, so it stops at once (`permanent`); any other `400` keeps the slow
+  backoff. Every message carries `SW_OPERATOR_EMAIL` as its Reply-To, so the start refuses
+  anything but one bare address there (`SW_OPERATOR_EMAIL must be one bare address, like
+  hello@your-domain`): a display name would make every email `ErrorInvalidRecipients`. `403` (no `Mail.Send` application
   permission with admin consent, or the mailbox is outside the app's RBAC scope), `404` (no such
   mailbox; `MailboxNotEnabledForRESTAPI`: no Exchange Online mailbox), a second `401`, and sign-in
   failures (`AADSTS7000215` wrong secret, `AADSTS7000222` expired secret, `AADSTS700016` wrong
@@ -1476,7 +1484,8 @@ client credentials grant, Node's `fetch`, no SDK; every request has a 10 s timeo
   (at most once per 15 minutes per problem), for example `mail: Microsoft 365 refused (403
   ErrorAccessDenied): the app needs the Mail.Send application permission with admin consent …`,
   and the email keeps the slow backoff above, so emails queued during a setup mistake (a consent
-  confirmation, a welcome) still go out once it is fixed. A log line never holds the secret, the
+  confirmation, a welcome) still go out once it is fixed (a sign-in or check code is not sent
+  after its 15 minutes: the parent asks for a new one). A log line never holds the secret, the
   token, an address or Microsoft's own error text (it can quote the mailbox address): only status
   numbers and error code names.
 - **Limits:** Exchange Online allows 30 messages a minute and 10,000 recipients a day per mailbox
