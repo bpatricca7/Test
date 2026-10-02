@@ -1141,3 +1141,5 @@ try {
   await browser.close();
 }
 finish(errors);
+// a pass that stopped half way can leave its hub's server open: never hang the gate on it
+process.exit(process.exitCode || 0);
