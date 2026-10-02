@@ -237,6 +237,14 @@ export function nameUnset(profile) {
   return !!profile && !profile.nameSet && normalizeLook(profile.look).name === DEFAULT_LOOK.name;
 }
 
+/**
+ * A Boy style on this device while the name was never typed: the game calls him "friend" (or
+ * shows no name), never the girl default (boys.md). game.surpriseStyle comes from the Studio.
+ */
+export function boyNameUnset(game) {
+  return !!game && typeof game.surpriseStyle === 'function' && game.surpriseStyle() === 'boy' && nameUnset(game.profile);
+}
+
 // ---------- "Surprise me!" ----------
 
 // Color stories: a main color, a second color, an accent and a light pattern color that all

@@ -12,6 +12,7 @@ import { HEART_ROWS, STAR_ROWS } from './palette.js';
 import { SHAPES } from '../../core/registry.js';
 import { disposeObject } from '../../core/models.js';
 import { icon } from '../../ui/icons.js';
+import { boyNameUnset } from '../../player/wardrobe-data.js';
 
 const GATE_OPEN = -Math.PI / 2 + 0.1;
 
@@ -47,7 +48,7 @@ export function installLife(game, sfx) {
   };
   const dims = (e) => e.def.size;
   const center = (e, y = 0.6) => [dims(e)[0] / 2, y, dims(e)[2] / 2];
-  const nameOf = () => (game.profile.look && game.profile.look.name) || game.profile.playerName || 'friend';
+  const nameOf = () => (boyNameUnset(game) ? 'friend' : (game.profile.look && game.profile.look.name) || game.profile.playerName || 'friend');
   const seatedOn = (e) => !!game.player && game.player.seatEntity === e && (game.player.state === 'sit' || game.player.state === 'sleep');
 
   function nearestSpot(entity, spots, hit) {

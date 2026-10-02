@@ -5,6 +5,7 @@
 import { icon } from '../../ui/icons.js';
 import { EASEL_COLORS, DEFAULT_PIC } from './models-garden.js';
 import { escapeHtml } from '../../core/util.js';
+import { boyNameUnset } from '../../player/wardrobe-data.js';
 
 const CSS = /* css */ `
 .sw-easel { display: flex; gap: 16px; align-items: flex-start; justify-content: center; flex-wrap: wrap; }
@@ -184,7 +185,7 @@ export function installEasel(game) {
       container.appendChild(letterRoot);
     },
     onOpen(args) {
-      const name = (game.profile.look && game.profile.look.name) || game.profile.playerName || 'friend';
+      const name = boyNameUnset(game) ? 'friend' : (game.profile.look && game.profile.look.name) || game.profile.playerName || 'friend';
       const r = Math.random;
       const [from, ic] = SENDERS[Math.floor(r() * SENDERS.length)];
       const note = NOTES[Math.floor(r() * NOTES.length)];

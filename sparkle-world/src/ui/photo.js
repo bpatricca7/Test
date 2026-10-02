@@ -7,6 +7,7 @@
 import { icon2, button2 } from './menus/icons2.js';
 import { saveFile, safeFileName } from './menus/files.js';
 import { raycastVoxels } from '../world/raycast.js';
+import { boyNameUnset } from '../player/wardrobe-data.js';
 
 const SMILE_MS = 700;
 const MAX_W = 960;
@@ -384,7 +385,7 @@ export function install(game) {
       meta = {
         title: game.world.meta.name || 'Sparkle World',
         date,
-        name: game.profile.playerName || (game.profile.look && game.profile.look.name) || '',
+        name: boyNameUnset(game) ? '' : game.profile.playerName || (game.profile.look && game.profile.look.name) || '',
         stamp: now,
       };
       seed = (Math.random() * 1e9) | 0;

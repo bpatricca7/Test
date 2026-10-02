@@ -6,6 +6,7 @@
 // Also runs the music mood: menu on the title, cozy under a roof, else day / night.
 
 import { clamp } from '../core/util.js';
+import { boyNameUnset } from '../player/wardrobe-data.js';
 import { icon2, button2 } from './menus/icons2.js';
 
 const CSS = /* css */ `
@@ -347,12 +348,14 @@ export function install(game) {
     {
       const { row: r, main } = row('pencil', 'var(--sw-pink)', 'Your name', acct.active ? 'A grown-up can change it on the Family page' : '');
       const line = ui.el('div', 'sw-set-line');
-      const name = ui.el('div', 'sw-set-name', game.profile.playerName || (game.profile.look && game.profile.look.name) || 'Lily');
+      // a boy whose name was never typed: an invitation, not the girl default
+      const unset = boyNameUnset(game);
+      const name = ui.el('div', 'sw-set-name', unset ? 'Pick a name!' : game.profile.playerName || (game.profile.look && game.profile.look.name) || 'Lily');
       line.append(name);
       if (!acct.active) line.append(button2(ui, {
         icon: 'pencil', label: 'Change', variant: 'white', size: 'small',
         onClick: async () => {
-          const cur = game.profile.playerName || (game.profile.look && game.profile.look.name) || '';
+          const cur = boyNameUnset(game) ? '' : game.profile.playerName || (game.profile.look && game.profile.look.name) || '';
           const v = await ui.textInput({ title: 'What is your name?', value: cur, ok: 'Save', maxLength: 20 });
           if (!v) return;
           game.profile.playerName = v;

@@ -146,7 +146,7 @@ class Studio {
     name.setAttribute('aria-label', 'My name');
     name.placeholder = 'Your name';
     name.addEventListener('input', () => this.setName(name.value));
-    name.addEventListener('blur', () => { name.value = this.look.name; });
+    name.addEventListener('blur', () => { name.value = this._shownName(); });
     name.addEventListener('keydown', (e) => { if (e.key === 'Enter') name.blur(); });
     nameWrap.appendChild(name);
     this.nameInput = name;
@@ -239,7 +239,7 @@ class Studio {
     this.openSig = sig(this.look);
     this.openedFresh = W.freshLook(this.game.profile);
     this.undoStack = [];
-    this.nameInput.value = this.look.name;
+    this.nameInput.value = this._shownName();
     if (this._viewStyle !== (this.style() || 'girl')) this.views.clear(); // another player's style on this device
     this._paintStyle();
     this._hideAsk();
@@ -307,6 +307,11 @@ class Studio {
     this._commit(false);
   }
 
+  /** The name field: empty (with its 'Your name' placeholder) for a boy who never typed one. */
+  _shownName() {
+    return W.boyNameUnset(this.game) ? '' : this.look.name;
+  }
+
   setName(value) {
     const v = String(value || '').replace(/\s+/g, ' ').trimStart().slice(0, 16);
     if (!v.trim()) return;
@@ -352,7 +357,22 @@ class Studio {
     const order = W.SURPRISE_STYLES;
     const cur = this.style() || 'girl';
     this.game.audio.play('pop');
-    this._setStyle(order[(order.indexOf(cur) + 1) % order.length]);
+    const next = order[(order.indexOf(cur) + 1) % order.length];
+    this._setStyle(next);
+    // the tap changes what Surprise me! picks, not her: say so where she looks
+    this._say(`Surprise me! picks ${next === 'mix' ? 'all kinds of' : STYLES[next].label.toLowerCase()} looks`);
+  }
+
+  /** A short line in the hint spot under the avatar, then back to "Drag to spin me!". */
+  _say(text) {
+    const span = this.hint && this.hint.querySelector('span');
+    if (!span) return;
+    span.textContent = text;
+    this.hint.classList.remove('sw-gone');
+    clearTimeout(this._sayTimer);
+    this._sayTimer = setTimeout(() => {
+      span.textContent = 'Drag to spin me!';
+    }, 2600);
   }
 
   _paintStyle() {
@@ -363,6 +383,7 @@ class Studio {
     b.innerHTML = picture(s, 30);
     b.appendChild(this.ui.el('span', 'sw-btn-label', STYLES[s].label));
     b.setAttribute('aria-label', `Surprise style: ${STYLES[s].label}`);
+    if (this.look && this.nameInput && document.activeElement !== this.nameInput) this.nameInput.value = this._shownName();
   }
 
   /**
@@ -380,6 +401,23 @@ class Studio {
       return tag === letter || letter === 'g' ? 0 : 1;
     };
     return list.map((o, i) => [rank(o), i, o]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map((x) => x[2]);
+  }
+
+  /**
+   * Ready-made looks: before a style is picked, on a look nobody changed yet, girl and boy looks
+   * take turns (Princess, Soccer Star, Sporty, Skater, ...) so a first-time boy sees his in the
+   * first rows; once a style is picked, the usual order (_order).
+   */
+  _orderOutfits(list) {
+    if (this.style() || !W.freshLook(this.game.profile)) return this._order(list);
+    const boy = list.filter((o) => o.tag === 'b');
+    const rest = list.filter((o) => o.tag !== 'b');
+    const out = [];
+    for (let i = 0; i < list.length; i++) {
+      if (rest[i]) out.push(rest[i]);
+      if (boy[i]) out.push(boy[i]);
+    }
+    return out;
   }
 
   /** After a first boy look while the name is unset: "What's your name?" once (skippable). */
@@ -608,7 +646,7 @@ class Studio {
         acc('hand', 'handColor', W.HAND_ACC, 'hand');
         break;
       case 'outfits':
-        add(this._grid(key, this._order(W.STARTER_OUTFITS), {
+        add(this._grid(key, this._orderOutfits(W.STARTER_OUTFITS), {
           title: 'Ready-made looks', frame: 'full', big: true, pic: 'outfits',
           thumb: (o) => W.applyOutfit(L(), o),
           on: (o) => sig(W.applyOutfit(L(), o)) === sig(L()),

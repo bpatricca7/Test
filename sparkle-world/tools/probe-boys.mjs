@@ -348,6 +348,8 @@ async function studioPass(browser, errors, { touch = false } = {}) {
   await waitThumbs(page);
   const ready = await page.evaluate(() => document.querySelectorAll('.sw-dress-content .sw-dsec:first-child .sw-dgrid .sw-dtile').length);
   c(ready === 12, `B4 12 ready-made looks (${ready})`);
+  const first4 = await page.evaluate(() => [...document.querySelectorAll('.sw-dress-content .sw-dsec:first-child .sw-dgrid .sw-dtile')].slice(0, 4).map((t) => [...t.querySelectorAll('span')].map((s) => s.textContent).find((x) => x && x.length > 2) || ''));
+  c(first4.join(',') === 'Princess,Soccer Star,Sporty,Skater', `B4 before a style is picked, girl and boy looks take turns (${first4.join(', ')})`);
   await shot(page, `${label}-outfits`, PREFIX);
   await press(tileLoc(page, 'Soccer Star'));
   await page.waitForFunction(() => window.__game.dressup.look.top.type === 'jersey', null, { timeout: 5000 }).catch(() => {});
@@ -356,6 +358,8 @@ async function studioPass(browser, errors, { touch = false } = {}) {
   c(await style(page) === 'boy', 'B4 the first boy look picked the Boy style (it was unset)');
   c(await page.evaluate(() => !document.querySelector('.sw-dress-ask').hidden), 'B4 the Studio asks "What\'s your name?" once (a bubble, not a dialog)');
   c(await page.evaluate(() => window.__game.ui.current === 'dressup' && !window.__game.ui.dialogOpen), 'B4 nothing blocks the Studio');
+  const nm = await page.evaluate(() => { const i = document.querySelector('.sw-dress-name input') || window.__game.dressup.nameInput; return { value: i.value, ph: i.placeholder }; });
+  c(nm.value === '' && nm.ph === 'Your name', `B4 a boy who never typed a name: the name field is empty, not "Lily" (${JSON.stringify(nm)})`);
   await settle(page, 600);
   await shot(page, `${label}-soccer-star`, PREFIX);
 
