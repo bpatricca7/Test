@@ -5,8 +5,8 @@
 //
 // Option lists are APPEND ONLY: the multiplayer look codec sends list indices, so old saves and
 // old tokens keep their meaning only while no entry moves. Each option carries a `tag` ('g',
-// 'b' or 'gb') that only says which "Surprise me!" style picks it; every option is free for
-// anyone in the Studio.
+// 'b' or 'gb') that says which "Surprise me!" style picks it and which of the Studio's Girl /
+// Boy lists shows it; Mix shows everything, so every option stays free for anyone.
 //
 // look = {
 //   name, skin,
@@ -99,7 +99,7 @@ export const PATTERNS = opts([
 export const SMILES = opts([['happy', 'Happy', 'gb'], ['grin', 'Big Smile', 'gb'], ['cat', 'Cat Smile', 'gb'], ['open', 'Excited', 'gb']]);
 /** Eyebrows: 'soft' is the original gentle arc, 'bold' a thicker, flatter brow. */
 export const BROWS = opts([['soft', 'Soft', 'gb'], ['bold', 'Bold', 'gb']]);
-/** "Surprise me!" styles, cycled by the Studio's style button (device-local `surpriseStyle`). */
+/** The Studio's Girl / Boy / Mix buttons (device-local `surpriseStyle`). */
 export const SURPRISE_STYLES = ['girl', 'boy', 'mix'];
 
 /**
@@ -109,6 +109,20 @@ export const SURPRISE_STYLES = ['girl', 'boy', 'mix'];
 export function tagged(list, letter) {
   const out = list.filter((o) => (o.tag || 'g').includes(letter));
   return out.length ? out : list;
+}
+
+/**
+ * True when everything a look wears is in one style's lists (letter 'g' or 'b'): its hair,
+ * clothes and their patterns, shoes and accessories ('none' always fits). The Studio's Girl /
+ * Boy buttons keep a look that fits and swap one that does not.
+ */
+export function lookFits(look, letter) {
+  const L = normalizeLook(look);
+  const ok = (list, key) => !key || key === 'none' || ((list.find((o) => o.key === key) || {}).tag || 'g').includes(letter);
+  const worn = L.dress ? [[DRESSES, L.dress]] : [[TOPS, L.top], [BOTTOMS, L.bottom]];
+  return ok(HAIR_STYLES, L.hair.style) && ok(SHOES, L.shoes.type) &&
+    worn.every(([list, g]) => ok(list, g.type) && ok(PATTERNS, g.pattern)) &&
+    [[HEAD_ACC, 'head'], [FACE_ACC, 'face'], [BACK_ACC, 'back'], [NECK_ACC, 'neck'], [HAND_ACC, 'hand']].every(([list, slot]) => ok(list, L.acc[slot]));
 }
 export const EMOTES = opts([
   ['wave', 'Wave'], ['dance', 'Dance'], ['twirl', 'Twirl'], ['cartwheel', 'Cartwheel'],

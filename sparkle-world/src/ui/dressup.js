@@ -1,7 +1,8 @@
 // Dress-Up Studio: the full-screen 'dressup' panel (+ the 'dressup' action). A big 3D avatar
 // on a turntable (drag to spin, tap for a happy emote), picture tabs, item grids rendered on
-// a mini "you", color swatches and a pattern picker, a name field, "Surprise me!" with its
-// Girl / Boy / Mix style button (kept on this device), Undo, ready-made looks and six saved
+// a mini "you", color swatches and a pattern picker, a name field, Girl / Boy / Mix buttons
+// over the tabs (kept on this device: which tiles show, what "Surprise me!" picks, and Girl and
+// Boy each keep their own last look), "Surprise me!", Undo, ready-made looks and six saved
 // outfit slots. Every change is saved to game.profile.look and emits 'avatar:changed';
 // closing after a change emits 'outfit:changed' { look }.
 
@@ -53,8 +54,13 @@ const COLOR_HINTS = {
   back: { angel_wings: '#FFD1E6', fairy_wings: '#A5F0E6', butterfly_wings: '#6CC6FF', cape: '#9C7BFF', backpack: '#FFD43B', star_pack: '#6CC6FF' },
 };
 
-// "Surprise me!" styles: the button's picture and word, and the tag letter each one sorts first
-const STYLES = { girl: { label: 'Girl', letter: 'g' }, boy: { label: 'Boy', letter: 'b' }, mix: { label: 'Mix', letter: '' } };
+// Girl / Boy / Mix: each button's picture and word, the tag letter of the tiles it shows (Mix:
+// every tile), and what the hint under the avatar says when it is picked
+const STYLES = {
+  girl: { label: 'Girl', letter: 'g', say: 'Girl clothes and hair!' },
+  boy: { label: 'Boy', letter: 'b', say: 'Boy clothes and hair!' },
+  mix: { label: 'Mix', letter: '', say: 'Everything, all mixed up!' },
+};
 const NUM_REPEAT = 120; // ms between steps while the number button is held
 const NUM_HOLD = 400; // ms before holding starts to repeat
 
@@ -179,12 +185,6 @@ class Studio {
     this.view = view;
     const actions = el('div', 'sw-dress-actions');
     const surprise = this.ui.button({ icon: 'sparkle', label: 'Surprise me!', variant: 'sun', className: 'sw-dress-surprise', onClick: () => this.surprise() });
-    // Girl / Boy / Mix: which clothes "Surprise me!" picks (and which tiles come first)
-    const styleBtn = el('button', 'sw-btn sw-btn--white sw-dress-style');
-    styleBtn.type = 'button';
-    styleBtn.addEventListener('click', () => this.cycleStyle());
-    this.styleBtn = styleBtn;
-    this._paintStyle();
     const undo = this.ui.button({ icon: 'undo', label: 'Undo', variant: 'white', className: 'sw-dress-undo', onClick: () => this.undo() });
     const turn = this.ui.el('button', 'sw-dress-turn');
     turn.type = 'button';
@@ -198,11 +198,27 @@ class Studio {
       this.turn();
     });
     view.appendChild(turn);
-    actions.append(surprise, styleBtn, undo);
+    actions.append(surprise, undo);
     this.undoBtn = undo;
     stageBox.append(view, actions);
 
     const side = el('section', 'sw-dress-side');
+    // Girl / Boy / Mix over the tabs: which tiles show, what Surprise me! picks, and a tap on
+    // Girl or Boy puts on that side's own last look (pickStyle)
+    const who = el('div', 'sw-dress-who');
+    who.setAttribute('role', 'group');
+    who.setAttribute('aria-label', 'Girl, Boy or Mix');
+    this.styleBtns = new Map();
+    for (const s of W.SURPRISE_STYLES) {
+      const b = el('button', 'sw-dress-who-btn');
+      b.type = 'button';
+      b.dataset.style = s;
+      b.innerHTML = picture(s, 30);
+      b.appendChild(el('span', '', STYLES[s].label));
+      b.addEventListener('click', () => this.pickStyle(s));
+      who.appendChild(b);
+      this.styleBtns.set(s, b);
+    }
     const tabs = el('nav', 'sw-dress-tabs');
     tabs.setAttribute('role', 'tablist');
     this.tabButtons = new Map();
@@ -223,11 +239,12 @@ class Studio {
     }
     const content = el('div', 'sw-dress-content');
     this.content = content;
-    side.append(tabs, content);
+    side.append(who, tabs, content);
     main.append(stageBox, side);
     root.append(top, main);
     container.appendChild(root);
     this.root = root;
+    this._paintStyle();
     this._bindDrag(view);
   }
 
@@ -240,7 +257,7 @@ class Studio {
     this.openedFresh = W.freshLook(this.game.profile);
     this.undoStack = [];
     this.nameInput.value = this._shownName();
-    if (this._viewStyle !== (this.style() || 'girl')) this.views.clear(); // another player's style on this device
+    if (this._viewStyle !== this.style()) this.views.clear(); // another player's style on this device
     this._paintStyle();
     this._hideAsk();
     this.hint.classList.remove('sw-gone');
@@ -303,6 +320,7 @@ class Studio {
     }
     this.game.audio.play(sound || (kind === 'color' ? 'pop' : kind === 'big' ? 'magic' : 'sparkle'), { pitch: 0.95 + Math.random() * 0.15 });
     this.refresh();
+    this._paintTabs();
     this._updateUndo();
     this._commit(false);
   }
@@ -337,7 +355,7 @@ class Studio {
 
   // ---------- Girl / Boy / Mix ----------
 
-  /** The surprise style picked on this device ('girl' | 'boy' | 'mix'), or null if never picked. */
+  /** The style picked on this device ('girl' | 'boy' | 'mix'), or null if never picked. */
   style() {
     const s = this.game.store && this.game.store.deviceGet ? this.game.store.deviceGet('surpriseStyle') : null;
     return STYLES[s] ? s : null;
@@ -352,15 +370,47 @@ class Studio {
     if (reorderNow && this.isOpen) this.showTab(this.tab, true);
   }
 
-  /** The style button: Girl -> Boy -> Mix -> Girl. A tap always wins over the automatic pick. */
-  cycleStyle() {
-    const order = W.SURPRISE_STYLES;
-    const cur = this.style() || 'girl';
-    this.game.audio.play('pop');
-    const next = order[(order.indexOf(cur) + 1) % order.length];
-    this._setStyle(next);
-    // the tap changes what Surprise me! picks, not her: say so where she looks
-    this._say(`Surprise me! picks ${next === 'mix' ? 'all kinds of' : STYLES[next].label.toLowerCase()} looks`);
+  /**
+   * Girl, Boy or Mix tapped. The tiles show that side's things (Mix: everything) and Surprise
+   * me! picks from them. Girl and Boy each keep their own last look on this device: leaving
+   * one remembers what was worn (when it fits that side; never picked, always, as the girl
+   * look), and coming to one whose things the look does not fit puts on its remembered look
+   * (the first time: the first boy ready-made look, or the default girl look), keeping the
+   * name, skin and eye color. Mix never changes the look; Undo undoes a swap.
+   */
+  pickStyle(s) {
+    const prev = this.style();
+    if (!STYLES[s] || s === prev) return;
+    const from = prev || 'girl'; // never picked: the look so far is the girl one
+    if (from !== 'mix' && (!prev || W.lookFits(this.look, STYLES[from].letter))) this._deviceSet('look:' + from, W.cloneLook(this.look));
+    const next = s === 'mix' ? null : this._lookFor(s);
+    if (next) this.change((d) => Object.assign(d, next), { kind: 'big', emote: 'twirl' });
+    else this.game.audio.play('pop');
+    this._setStyle(s);
+    this._say(STYLES[s].say);
+    if (s === 'boy' && next) this._askName();
+  }
+
+  /** What a tap on Girl or Boy puts on, or null when the look already fits that side. */
+  _lookFor(s) {
+    const cur = this.look;
+    if (W.lookFits(cur, STYLES[s].letter)) return null;
+    const keep = (l) => W.normalizeLook({ ...l, name: cur.name, skin: cur.skin, eyes: { ...l.eyes, color: cur.eyes.color } });
+    const saved = this._deviceGet('look:' + s);
+    if (saved && typeof saved === 'object') return keep(W.normalizeLook(saved));
+    if (s === 'boy') {
+      const first = W.applyOutfit(cur, W.STARTER_OUTFITS.find((o) => o.tag === 'b'));
+      return keep({ ...first, hair: { ...first.hair, color2: null } });
+    }
+    return keep({ ...W.cloneLook(W.DEFAULT_LOOK), hair: { ...W.DEFAULT_LOOK.hair, color: cur.hair.color } });
+  }
+
+  _deviceGet(key) {
+    return this.game.store && this.game.store.deviceGet ? this.game.store.deviceGet(key) : null;
+  }
+
+  _deviceSet(key, value) {
+    if (this.game.store && this.game.store.deviceSet) this.game.store.deviceSet(key, value);
   }
 
   /** A short line in the hint spot under the avatar, then back to "Drag to spin me!". */
@@ -376,40 +426,56 @@ class Studio {
   }
 
   _paintStyle() {
-    const b = this.styleBtn;
-    if (!b) return;
-    const s = this.style() || 'girl';
-    b.dataset.style = s;
-    b.innerHTML = picture(s, 30);
-    b.appendChild(this.ui.el('span', 'sw-btn-label', STYLES[s].label));
-    b.setAttribute('aria-label', `Surprise style: ${STYLES[s].label}`);
+    const cur = this.style();
+    if (this.styleBtns) {
+      for (const [s, b] of this.styleBtns) {
+        b.classList.toggle('sw-on', s === cur);
+        b.setAttribute('aria-pressed', s === cur ? 'true' : 'false');
+      }
+    }
+    this._paintTabs();
     if (this.look && this.nameInput && document.activeElement !== this.nameInput) this.nameInput.value = this._shownName();
   }
 
+  /** Boy has no dresses: its Dresses tab hides (unless a dress is on, so it can come off). */
+  _paintTabs() {
+    const b = this.tabButtons && this.tabButtons.get('dresses');
+    if (!b) return;
+    const hide = this.style() === 'boy' && !(this.look && this.look.dress);
+    b.hidden = hide;
+    if (hide && this.isOpen && this.tab === 'dresses') this.showTab('tops');
+  }
+
   /**
-   * Options whose tag fits the style come first (a stable sort; Mix keeps the list order, so
-   * does Girl: every old option fits it). For Boy the boy-only items lead, then the shared
-   * ones; 'none' always stays first.
+   * The tiles one list shows. Girl or Boy: that side's things ('none' first, then its own
+   * things, then the shared ones) and whatever is being worn now, so a worn tile never
+   * vanishes. Mix: every tile in list order. Never picked: every tile, girl things first, as
+   * before the buttons chose the tiles.
    */
-  _order(list) {
-    const letter = STYLES[this.style() || 'girl'].letter;
-    if (!letter) return list;
+  _order(list, worn = null) {
+    const s = this.style();
+    if (s === 'mix') return list;
+    const letter = s ? STYLES[s].letter : 'g';
     const rank = (o) => {
       const tag = o.tag || 'g';
       if (o.key === 'none') return -1;
       if (!tag.includes(letter)) return 2;
       return tag === letter || letter === 'g' ? 0 : 1;
     };
-    return list.map((o, i) => [rank(o), i, o]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map((x) => x[2]);
+    const shown = s ? list.filter((o) => rank(o) < 2 || o.key === worn) : list;
+    return shown.map((o, i) => [rank(o), i, o]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map((x) => x[2]);
   }
 
   /**
-   * Ready-made looks: before a style is picked, on a look nobody changed yet, girl and boy looks
-   * take turns (Princess, Soccer Star, Sporty, Skater, ...) so a first-time boy sees his in the
-   * first rows; once a style is picked, the usual order (_order).
+   * Ready-made looks: Girl or Boy shows that side's looks, Mix all of them. Never picked, on a
+   * look nobody changed yet, girl and boy looks take turns (Princess, Soccer Star, Sporty,
+   * Skater, ...) so a first-time boy sees his in the first rows; otherwise girl looks first.
    */
   _orderOutfits(list) {
-    if (this.style() || !W.freshLook(this.game.profile)) return this._order(list);
+    const s = this.style();
+    if (s === 'mix') return list;
+    if (s) return list.filter((o) => (o.tag || 'g').includes(STYLES[s].letter));
+    if (!W.freshLook(this.game.profile)) return this._order(list);
     const boy = list.filter((o) => o.tag === 'b');
     const rest = list.filter((o) => o.tag !== 'b');
     const out = [];
@@ -477,7 +543,7 @@ class Studio {
     if (btn && btn.scrollIntoView && this.root.clientWidth < 760) btn.scrollIntoView({ block: 'nearest', inline: 'center' });
     let view = this.views.get(key);
     if (!view) {
-      if (!this.views.size) this._viewStyle = this.style() || 'girl';
+      if (!this.views.size) this._viewStyle = this.style();
       view = this._buildTab(key);
       this.views.set(key, view);
     }
@@ -504,7 +570,7 @@ class Studio {
     };
     const L = () => this.look;
     const acc = (slot, colorKey, list, frame, colors = W.ACC_COLORS) => {
-      add(this._grid(key, this._order(list), {
+      add(this._grid(key, this._order(list, L().acc[slot]), {
         title: 'Pick one',
         frame,
         thumb: (o) => withAcc(L(), slot, colorKey, o.key),
@@ -532,7 +598,7 @@ class Studio {
         }));
         break;
       case 'hair':
-        add(this._grid(key, this._order(W.HAIR_STYLES), {
+        add(this._grid(key, this._order(W.HAIR_STYLES, L().hair.style), {
           title: 'Hair style', frame: 'hair',
           thumb: (o) => ({ ...L(), hair: { ...L().hair, style: o.key } }),
           on: (o) => L().hair.style === o.key,
@@ -585,7 +651,7 @@ class Studio {
         }
         break;
       case 'tops':
-        add(this._grid(key, this._order(W.TOPS), {
+        add(this._grid(key, this._order(W.TOPS, L().dress ? null : L().top.type), {
           title: 'Tops', frame: 'torso',
           note: () => (L().dress ? 'Picking a top takes off your dress.' : ''),
           thumb: (o) => ({ ...L(), dress: null, top: { ...L().top, type: o.key } }),
@@ -596,7 +662,7 @@ class Studio {
         add(this._number(() => !!L().dress || L().top.type !== 'jersey'));
         break;
       case 'bottoms':
-        add(this._grid(key, this._order(W.BOTTOMS), {
+        add(this._grid(key, this._order(W.BOTTOMS, L().dress ? null : L().bottom.type), {
           title: 'Bottoms', frame: 'legs',
           note: () => (L().dress ? 'Picking these takes off your dress.' : ''),
           thumb: (o) => ({ ...L(), dress: null, bottom: { ...L().bottom, type: o.key } }),
@@ -617,7 +683,7 @@ class Studio {
         break;
       }
       case 'shoes':
-        add(this._grid(key, this._order(W.SHOES), {
+        add(this._grid(key, this._order(W.SHOES, L().shoes.type), {
           title: 'Shoes', frame: 'feet',
           // long gowns would hide the shoes, so their pictures show them without the gown
           thumb: (o) => ({ ...L(), dress: L().dress && LONG_DRESSES.has(L().dress.type) ? null : L().dress, shoes: { ...L().shoes, type: o.key } }),
@@ -812,7 +878,7 @@ class Studio {
     const el = this._section('Pattern');
     const row = this.ui.el('div', 'sw-patterns');
     el.appendChild(row);
-    const items = W.PATTERNS.map((p) => {
+    const items = this._order(W.PATTERNS, cfg.garment().pattern).map((p) => {
       const b = this.ui.el('button', 'sw-pat');
       b.type = 'button';
       b.setAttribute('aria-label', p.name);

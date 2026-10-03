@@ -38,11 +38,19 @@ export const CSS = /* css */ `
 .sw-dress-fallback { position: absolute; inset: 0; display: grid; place-items: center; font-size: 20px; font-weight: 700; color: var(--sw-lav); text-align: center; padding: 20px; }
 .sw-dress-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 .sw-dress-actions .sw-btn svg { width: 1.4em; height: 1.4em; }
-/* Surprise me!, the style button and Undo stay in one row (the preview keeps its height) */
+/* Surprise me! and Undo stay in one row (the preview keeps its height) */
 .sw-dress-actions { flex-wrap: nowrap; }
 .sw-dress-actions .sw-btn { flex: 0 1 auto; min-width: 0; white-space: nowrap; gap: 6px; padding-left: clamp(10px, 1.5vw, 22px); padding-right: clamp(10px, 1.5vw, 22px); }
-.sw-dress-actions .sw-dress-style { min-width: 64px; }
-.sw-dress-actions .sw-dress-style svg { width: 30px; height: 30px; flex: none; }
+
+/* Girl / Boy / Mix over the tabs: three big pills, the picked one pink */
+.sw-dress-who { display: flex; gap: 8px; padding: 10px 12px 2px; background: #fff; }
+.sw-dress-who-btn { flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 52px; padding: 4px 10px; border-radius: 999px; border: 4px solid var(--sw-lav-soft); background: #fff; color: var(--sw-ink); font: 700 19px var(--sw-font); white-space: nowrap; cursor: pointer; touch-action: manipulation; -webkit-user-select: none; user-select: none; box-shadow: 0 3px 0 rgba(58,31,77,.08); transition: transform .16s var(--sw-bounce), background .15s; }
+.sw-dress-who-btn svg { width: 30px; height: 30px; flex: none; }
+.sw-dress-who-btn:hover { transform: translateY(-2px); }
+.sw-dress-who-btn:active { transform: scale(.94); }
+.sw-dress-who-btn.sw-on { background: var(--sw-pink); border-color: #fff; color: #fff; text-shadow: 0 2px 0 rgba(58,31,77,.15); box-shadow: 0 4px 0 rgba(58,31,77,.16), 0 6px 14px var(--sw-shadow); }
+.sw-dress-who-btn:focus-visible { outline: 4px solid var(--sw-sun); outline-offset: 2px; }
+.sw-dtab[hidden] { display: none; }
 .sw-dress-ask { position: absolute; left: 18px; top: calc(100% + 10px); z-index: 5; padding: 8px 14px; border-radius: 18px; background: var(--sw-sun); color: var(--sw-ink); font: 700 16px var(--sw-font); white-space: nowrap; box-shadow: 0 4px 12px var(--sw-shadow); pointer-events: none; animation: sw-pop .35s var(--sw-bounce); }
 .sw-dress-ask::before { content: ''; position: absolute; left: 22px; top: -9px; border: 9px solid transparent; border-top: 0; border-bottom-color: var(--sw-sun); }
 .sw-dress-ask[hidden] { display: none; }
@@ -144,9 +152,9 @@ export const CSS = /* css */ `
   .sw-sw--big { width: 54px; height: 54px; }
 }
 @media (max-width: 480px) {
-  /* Surprise me! + the style picture + Undo fit a 360 px row */
-  .sw-dress-actions .sw-dress-style { padding: 4px 10px; }
-  .sw-dress-actions .sw-dress-style .sw-btn-label { display: none; }
+  .sw-dress-who { gap: 6px; padding: 8px 8px 0; }
+  .sw-dress-who-btn { min-height: 46px; font-size: 17px; padding: 4px 6px; gap: 4px; }
+  .sw-dress-who-btn svg { width: 26px; height: 26px; }
   .sw-dress-ask { left: 0; font-size: 15px; }
 }
 @media (max-height: 560px) and (orientation: landscape) {

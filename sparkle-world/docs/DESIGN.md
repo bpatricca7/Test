@@ -71,9 +71,13 @@ this doc disagree, fix one of them in the same change.
    backdrop; category tabs (Skin, Hair, Eyes & Face, Tops, Bottoms, Dresses, Shoes, Hats &
    Ears, Glasses, Wings & Backpacks, Neck, Hand); each item a thumbnail; color swatches;
    pattern picker (plain, hearts, stars, stripes, dots, rainbow, flowers, plaid, checks,
-   lightning, dinos, rockets). "Surprise me!" randomizer with a **Girl / Boy / Mix** style
-   button next to it (one button that cycles; kept on this device only, never in the profile
-   or the cloud; unset = Girl, exactly the original surprise), 12 ready-made looks (6 girl, 6
+   lightning, dinos, rockets). **Girl / Boy / Mix** buttons over the tabs (kept on this device
+   only, never in the profile or the cloud): Girl or Boy shows only that side's things plus the
+   shared ones (Boy hides the Dresses tab), Mix shows everything; a tap on Girl or Boy puts on
+   that side's own last look (kept on the device too; the first time, the first boy ready-made
+   look or the default girl look), keeping name, skin and eye color, and Undo undoes it; never
+   picked = every tile as before and the original girl surprise. "Surprise me!" picks from the
+   chosen side. 12 ready-made looks (6 girl, 6
    boy), 6 saved **Outfit** slots, name field. Boy items: 7 short hair styles, polo, jersey
    (with a "My number" stepper, 0 to 99), button-up and three picture tees, cargo shorts,
    joggers, pants, high-tops, skate shoes, caps, a bucket hat, headphones, a star backpack, a

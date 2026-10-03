@@ -998,3 +998,27 @@ build differs from the plan text, the build is right and the plan text is old:
   messages follow the new words.
 - `tools/probe-pals.mjs`: waits for 16 invite pictures; the six-friends scene includes Leo.
 - `tools/site-shots.mjs`: sets `lookPicked` so the marketing title shot has no nudge badge.
+
+### Girl / Boy / Mix buttons (2026-10-03, after the dad's review)
+
+The dad found that picking Boy did not change the Studio: the style button only steered
+"Surprise me!" and the tile order. Now:
+
+- **Three buttons over the tabs** (`.sw-dress-who`, one per `W.SURPRISE_STYLES`), the picked
+  one pink (`aria-pressed`). The cycling `.sw-dress-style` button is gone; the actions row is
+  Surprise me! and Undo.
+- **Tiles follow the pick** (`_order(list, worn)`): Girl or Boy shows only options whose tag
+  has that letter ('none' first, then the side's own, then the shared ones), plus whatever is
+  worn now so a worn tile never vanishes; patterns follow too. Mix shows every tile in list
+  order. Never picked: every tile, girl first (exactly as before). Ready-made looks: Girl or
+  Boy shows its 6, Mix all 12, never picked keeps the first-run interleave. Boy hides the
+  Dresses tab unless a dress is on.
+- **A tap on Girl or Boy swaps the look** (`pickStyle`): leaving Girl or Boy remembers the
+  look on the device (`deviceSet('look:girl' | 'look:boy')`, only when it fits that side;
+  never picked, always, as the girl look). Coming to a side whose things the look does not fit
+  (`W.lookFits(look, letter)`) puts on its remembered look, or the first time the first boy
+  ready-made look (no second hair color) or the default girl look (the hair color kept), with
+  name, skin and eye color kept. It is one `change()`, so Undo undoes it. Mix never changes
+  the look. Like `surpriseStyle`, the remembered looks never enter the profile or the cloud.
+- `tools/probe-boys.mjs` B3 checks the buttons, the filtered hair lists, the swaps both ways,
+  Undo, and that both rows fit a 360 px phone.

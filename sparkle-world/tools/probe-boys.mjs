@@ -308,14 +308,19 @@ function titleOverlaps(page) {
   });
 }
 
-/** Surprise me!, the style button and Undo: one row, inside the screen, not overlapping. */
+/**
+ * Surprise me! and Undo under the avatar, and Girl / Boy / Mix over the tabs: each set in one
+ * row, inside the screen, not overlapping.
+ */
 function actionsFit(page) {
   return page.evaluate(() => {
-    const bs = [...document.querySelectorAll('.sw-dress-actions > .sw-btn')].map((b) => b.getBoundingClientRect());
-    if (bs.length !== 3) return `${bs.length} buttons`;
-    if (bs.some((r) => Math.abs(r.top - bs[0].top) > 2)) return 'more than one row';
-    if (bs.some((r) => r.left < 0 || r.right > innerWidth)) return 'off screen';
-    for (let i = 1; i < 3; i++) if (bs[i].left < bs[i - 1].right - 1) return 'overlapping';
+    for (const [sel, n] of [['.sw-dress-actions > .sw-btn', 2], ['.sw-dress-who > .sw-dress-who-btn', 3]]) {
+      const bs = [...document.querySelectorAll(sel)].map((b) => b.getBoundingClientRect());
+      if (bs.length !== n) return `${bs.length} buttons in ${sel}`;
+      if (bs.some((r) => Math.abs(r.top - bs[0].top) > 2)) return `${sel}: more than one row`;
+      if (bs.some((r) => r.left < 0 || r.right > innerWidth)) return `${sel}: off screen`;
+      for (let i = 1; i < n; i++) if (bs[i].left < bs[i - 1].right - 1) return `${sel}: overlapping`;
+    }
     return '';
   });
 }
@@ -342,7 +347,8 @@ async function studioPass(browser, errors, { touch = false } = {}) {
   c(await page.evaluate(() => window.__game.dressup.tab === 'outfits'), 'B1 the nudged tile opens the Studio on Outfits');
   c(await style(page) === null, 'B4 no surprise style picked yet');
   const fit = await actionsFit(page);
-  c(!fit, `B3 Surprise me!, the style button and Undo fit one row (${fit || 'ok'})`);
+  c(!fit, `B3 Surprise me! and Undo fit one row, and Girl / Boy / Mix another (${fit || 'ok'})`);
+  c(await page.evaluate(() => !document.querySelector('.sw-dress-who-btn.sw-on')), 'B3 no style picked yet: none of Girl / Boy / Mix is lit');
 
   // B4 the ready-made looks
   await waitThumbs(page);
@@ -401,30 +407,49 @@ async function studioPass(browser, errors, { touch = false } = {}) {
   await press(tabLoc(page, 'hair'));
   const thumbs = await waitThumbs(page);
   const hair = await page.evaluate(() => [...document.querySelectorAll('.sw-dress-content .sw-dsec:first-child .sw-dtile')].map((t) => t.getAttribute('aria-label')));
-  c(hair.length === 19 && thumbs, `B2 19 hair tiles, all pictures ready (${hair.length}, ${thumbs ? 'ready' : 'not ready'})`);
-  c(hair[0] === 'Buzz Cut', `B3 with Boy, the first hair tile is Buzz Cut (${hair[0]})`);
+  const hairTags = await page.evaluate(() => window.__game.debug.avatar.options().HAIR_STYLES.map((o) => o.tag));
+  const boyHair = hairTags.filter((t) => t.includes('b')).length, girlHair = hairTags.filter((t) => t.includes('g')).length;
+  c(hair.length === boyHair && thumbs, `B2 with Boy, only the ${boyHair} boy and shared hair tiles, all pictures ready (${hair.length}, ${thumbs ? 'ready' : 'not ready'})`);
+  c(hair[0] === 'Buzz Cut' && !hair.includes('Long'), `B3 with Boy, the first hair tile is Buzz Cut and no girl style shows (${hair[0]})`);
   const sig0 = await page.evaluate(() => JSON.stringify(window.__game.dressup.preview?.avatar.look));
   await press(tileLoc(page, 'Afro'));
   await settle(page, 300);
   const sig1 = await page.evaluate(() => JSON.stringify(window.__game.dressup.preview?.avatar.look));
   c((await look(page)).hair.style === 'afro' && sig1 !== sig0, 'B2 tap Afro: the look and the preview change');
   await shot(page, `${label}-hair`, PREFIX);
-  const styleBtn = page.locator('.sw-dress-style');
-  const seq = [];
-  for (let i = 0; i < 3; i++) {
-    await press(styleBtn);
-    await settle(page, 150);
-    seq.push([(await styleBtn.textContent()).trim(), await style(page), await styleBtn.getAttribute('aria-label')]);
-  }
-  c(JSON.stringify(seq.map((s) => s[1])) === '["mix","girl","boy"]' && seq.every(([t, s, a]) => t.toLowerCase() === s && a === `Surprise style: ${t}`),
-    `B3 the style button cycles Boy -> Mix -> Girl -> Boy (${seq.map((s) => s[0]).join(' -> ')})`);
-  await press(styleBtn); // Mix
-  await press(styleBtn); // Girl
-  await settle(page, 200);
-  const girlFirst = await page.evaluate(() => document.querySelector('.sw-dress-content .sw-dsec:first-child .sw-dtile')?.getAttribute('aria-label'));
-  c(girlFirst === 'Long', `B3 with Girl, the hair tiles are in the old order (${girlFirst} first)`);
-  await press(styleBtn); // Boy
-  await settle(page, 200);
+  // B3 Girl / Boy / Mix: the tiles follow the pick, and Girl and Boy each keep their own look
+  const whoBtn = (st) => page.locator(`.sw-dress-who-btn[data-style="${st}"]`);
+  const lit = () => page.evaluate(() => [...document.querySelectorAll('.sw-dress-who-btn.sw-on')].map((b) => b.dataset.style).join(','));
+  const hairTiles = () => page.evaluate(() => [...document.querySelectorAll('.sw-dress-content .sw-dsec:first-child .sw-dtile')].map((t) => t.getAttribute('aria-label')));
+  const dressesShown = () => page.evaluate(() => !document.querySelector('.sw-dtab[data-tab="dresses"]').hidden);
+  c(await lit() === 'boy' && !(await dressesShown()), `B3 the Boy button is lit and the Dresses tab hides (${await lit()})`);
+  const boyLook = await look(page);
+  await press(whoBtn('mix'));
+  await settle(page, 300);
+  const mixHair = await hairTiles();
+  c(await style(page) === 'mix' && await lit() === 'mix' && mixHair.length === hairTags.length && await dressesShown() && JSON.stringify(await look(page)) === JSON.stringify(boyLook),
+    `B3 Mix: all ${hairTags.length} hair tiles and the Dresses tab, the look stays (${mixHair.length})`);
+  await press(whoBtn('girl'));
+  await settle(page, 400);
+  const girlHairShown = await hairTiles();
+  const gl = await look(page);
+  c(await style(page) === 'girl' && girlHairShown.length === girlHair && girlHairShown[0] === 'Long' && !girlHairShown.includes('Buzz Cut'),
+    `B3 Girl: only the ${girlHair} girl and shared hair tiles, in the old order (${girlHairShown.length}, ${girlHairShown[0]} first)`);
+  c(gl.hair.style === 'long' && !gl.dress && gl.top.type === 'tshirt' && gl.eyes.lashes === true && gl.skin === boyLook.skin && gl.name === boyLook.name && await dressesShown(),
+    `B3 Girl puts on a girl look (none kept yet: the default one), keeping the name and skin (${gl.hair.style}, ${gl.top.type})`);
+  await press(whoBtn('boy'));
+  await settle(page, 400);
+  const bl = await look(page);
+  c(bl.hair.style === 'afro' && bl.top.type === 'jersey' && bl.eyes.lashes === false, `B3 Boy again brings back his own boy look (${bl.hair.style}, ${bl.top.type})`);
+  await press(whoBtn('girl'));
+  await settle(page, 400);
+  c((await look(page)).hair.style === 'long', 'B3 Girl again brings back the girl look');
+  await press(page.locator('.sw-dress-undo'));
+  await settle(page, 300);
+  c((await look(page)).hair.style === 'afro', 'B3 Undo undoes a swap');
+  await press(whoBtn('boy'));
+  await settle(page, 300);
+  c(await style(page) === 'boy' && (await look(page)).hair.style === 'afro', 'B3 Boy with a boy look on: the look stays');
   const before = await look(page);
   let surpriseBad = 0;
   for (let i = 0; i < 10; i++) {
@@ -464,6 +489,7 @@ async function studioPass(browser, errors, { touch = false } = {}) {
   c(!after.nudge && after.picked === true, 'B1 after one visit the nudge is gone (lookPicked)');
   c(after.hello.includes('Hi, friend!'), `B the title greets "friend" for a Boy style with the name unset (${after.hello.trim()})`);
   c(!after.inProfile, 'B the surprise style is not in the profile (kept on this device only)');
+  c(!(await page.evaluate(() => Object.keys(window.__game.profile).some((k) => /^look:|lookGirl|lookBoy/.test(k)))), 'B the girl and boy looks kept for the buttons are not in the profile either');
   await shot(page, `${label}-title-after`, PREFIX);
   if (touch) {
     // a phone (390 x 844) and a small one (360 x 740): the three actions still fit one row
@@ -473,7 +499,7 @@ async function studioPass(browser, errors, { touch = false } = {}) {
       await page.waitForFunction(() => window.__game.ui.current === 'dressup', null, { timeout: 8000 });
       await settle(page, 600);
       const pf = await actionsFit(page);
-      c(!pf, `C the actions fit one row on a ${vp.width} px phone (${pf || 'ok'})`);
+      c(!pf, `C Surprise me! / Undo and Girl / Boy / Mix each fit one row on a ${vp.width} px phone (${pf || 'ok'})`);
       await shot(page, `phone-${vp.width}`, PREFIX);
       await page.evaluate(() => window.__game.ui.back());
       await page.waitForFunction(() => window.__game.ui.current === 'title', null, { timeout: 8000 });
