@@ -204,7 +204,7 @@ import { createRouter, parseCookies } from '../server/http.mjs';
 import { Limits } from '../server/limits.mjs';
 import { createBilling, READ_PATHS, HANDLED_EVENTS, shapePaths, hasPath, subscriptionRow, invoiceSubscriptionId } from '../server/billing.mjs';
 import { createStripe, stripeOptions, STRIPE_API_VERSION } from '../server/stripe.mjs';
-import { NOTICE_VERSION, noticeSections, noticeCheckbox, notice, noticeSummary, renewalSentence, pricePhrase, WALKIE_SWITCH_NOTICE, FRIENDS_SWITCH_NOTICE } from '../server/notice.mjs';
+import { NOTICE_VERSION, NOTICE_MIN_VERSION, noticeSections, noticeCheckbox, notice, noticeSummary, renewalSentence, pricePhrase, WALKIE_SWITCH_NOTICE, FRIENDS_SWITCH_NOTICE } from '../server/notice.mjs';
 import { startStripeFake } from './stripe-fake/server.mjs';
 import { parseForm, encodeForm } from './stripe-fake/form.mjs';
 import { addMonth } from './stripe-fake/engine.mjs';
@@ -383,7 +383,8 @@ const FIXTURE_NAMES = existsSync(FIXTURE_DIR) ? readdirSync(FIXTURE_DIR).filter(
 describe('the direct notice (server/notice.mjs, §11.3)', () => {
   const cfg = { mpConsent: 'verified', retainDays: 90, trialDays: 0, priceText: '$5.99 a month, plus sales tax where it applies', mailMode: 'resend', publicOrigin: 'https://glimmerworld.example', operator: { name: 'The Operator', email: 'hello@glimmerworld.example', address: 'PO Box 1, Town, ST 00000', phone: '+1 555 0100' } };
   test('version, sections, checkbox; every element of §11.3', () => {
-    assert.equal(NOTICE_VERSION, 1);
+    assert.equal(NOTICE_VERSION, 2, 'version 2: the plan was renamed after families had agreed in production');
+    assert.equal(NOTICE_MIN_VERSION, 1, 'a name change does not matter: agreements to version 1 still count');
     const s = noticeSections(cfg);
     assert.ok(s.every((x) => typeof x.title === 'string' && typeof x.text === 'string' && x.text.length > 20));
     const all = s.map((x) => `${x.title} ${x.text}`).join('\n');
@@ -401,14 +402,15 @@ describe('the direct notice (server/notice.mjs, §11.3)', () => {
       /see, download and delete/i, /hello@glimmerworld\.example/,
       /We need your permission first.*don't collect, use or share anything about your children/i, // 312.4(c)(1)(ii): consent is needed
       /within 14 days, we delete your email address/i, // deletion if consent does not come
-      /agree but don't start the Family Plan within 30 days, we delete it then/i, // …and if a plan does not come (§3.5)
+      /agree but don't start a Glimmer World Membership within 30 days, we delete it then/i, // …and if a plan does not come (§3.5)
       /The Operator, PO Box 1, Town, ST 00000, \+1 555 0100, hello@glimmerworld\.example/, // operator contact
       /https:\/\/glimmerworld\.example\/privacy/, // the link to the online notice
     ];
     for (const re of must) assert.match(all, re);
     assert.match(noticeCheckbox(cfg), /parent or legal guardian.*18 or older.*agree/i);
     const n = notice(cfg);
-    assert.deepEqual([n.version, n.privacyPath, n.sections.length, n.checkbox === noticeCheckbox(cfg)], [1, '/privacy', s.length, true]);
+    assert.deepEqual([n.version, n.minVersion, n.date, n.privacyPath, n.sections.length, n.checkbox === noticeCheckbox(cfg)], [2, 1, '2026-10-03', '/privacy', s.length, true]);
+    assert.ok(!/Family Plan/.test(all), 'the notice names the Glimmer World Membership, never the old Family Plan');
     assert.ok(!/\{\{|\bundefined\b|null/.test(all), 'nothing left unfilled');
   });
   test('worded from SW_MP_CONSENT, SW_RETAIN_DAYS and the email provider', () => {
@@ -434,8 +436,8 @@ describe('the direct notice (server/notice.mjs, §11.3)', () => {
     assert.ok(!EMAIL_RE.test(s));
     assert.equal(pricePhrase(cfg), '$5.99 plus tax');
     assert.equal(pricePhrase({ priceText: '$5.99 a month, tax included' }), '$5.99, tax included');
-    assert.equal(renewalSentence(cfg), 'I agree to the Terms. My Family Plan renews every month at $5.99 plus tax until I cancel; I can cancel any time on the Family page.');
-    assert.match(renewalSentence({ ...cfg, trialDays: 7 }, { trial: true }), /^I agree to the Terms\. After the free week, my Family Plan renews every month at \$5\.99 plus tax until I cancel/);
+    assert.equal(renewalSentence(cfg), 'I agree to the Terms. My Glimmer World Membership renews every month at $5.99 plus tax until I cancel; I can cancel any time on the Family page.');
+    assert.match(renewalSentence({ ...cfg, trialDays: 7 }, { trial: true }), /^I agree to the Terms\. After the free week, my Glimmer World Membership renews every month at \$5\.99 plus tax until I cancel/);
     assert.match(renewalSentence({ ...cfg, trialDays: 14 }, { trial: true }), /After 14 free days/);
     assert.ok(renewalSentence(cfg).length <= 1200, 'fits Checkout custom_text');
   });
@@ -1348,7 +1350,7 @@ describe('billing with a free week (SW_TRIAL_DAYS=7, §6.7)', () => {
     await subscribe(A, fake, f, { trial: true });
     const co = fake.requests((x) => x.method === 'POST' && x.path === '/v1/checkout/sessions').at(-1).params;
     assert.deepEqual(co.subscription_data, { metadata: { family_id: f.id }, trial_period_days: '7' });
-    assert.match(co.custom_text.terms_of_service_acceptance.message, /After the free week, my Family Plan renews every month at \$5\.99 plus tax/);
+    assert.match(co.custom_text.terms_of_service_acceptance.message, /After the free week, my Glimmer World Membership renews every month at \$5\.99 plus tax/);
     const row = await famRow(A.db, f.id);
     assert.deepEqual([row.trial_used, row.verified_at], [true, null], 'a $0 sign-up is not a monetary transaction');
     const e = await A.billing.entitlementFor(f.id);
@@ -1361,7 +1363,7 @@ describe('billing with a free week (SW_TRIAL_DAYS=7, §6.7)', () => {
     await A.call('POST', '/api/billing/checkout', { token: tok(g, 'check'), body: { trial: true, usResident: true } });
     const p2 = fake.requests((x) => x.method === 'POST' && x.path === '/v1/checkout/sessions').at(-1).params;
     assert.deepEqual(p2.subscription_data, { metadata: { family_id: g.id } });
-    assert.match(p2.custom_text.terms_of_service_acceptance.message, /^I agree to the Terms\. My Family Plan/);
+    assert.match(p2.custom_text.terms_of_service_acceptance.message, /^I agree to the Terms\. My Glimmer World Membership/);
     // Start today (trial: false) is a real payment at once
     const h = await makeFamily(A.db);
     await subscribe(A, fake, h, { trial: false });
@@ -1583,7 +1585,7 @@ describe('npm run stripe:setup (tools/stripe-setup.mjs, §6.1)', () => {
       [false, true, true, true, 'at_period_end', true, false],
     );
     assert.deepEqual([conf.business_profile.privacy_policy_url, conf.business_profile.terms_of_service_url, conf.default_return_url], ['https://glimmerworld.example/privacy', 'https://glimmerworld.example/terms', 'https://glimmerworld.example/account?portal=1']);
-    assert.deepEqual([st.products[0].name, st.products[0].metadata.sw, conf.business_profile.headline], ['Glimmer World Family Plan', 'family_plan', 'Glimmer World Family Plan']);
+    assert.deepEqual([st.products[0].name, st.products[0].metadata.sw, conf.business_profile.headline], ['Glimmer World Membership', 'family_plan', 'Glimmer World Membership']);
   });
 
   test('a product and portal made under the old name ("Sparkle World Family Plan") get the new name, ids and tags kept', async () => {
@@ -1596,8 +1598,23 @@ describe('npm run stripe:setup (tools/stripe-setup.mjs, §6.1)', () => {
     assert.ok(fixed.created.includes('product name'), fixed.created.join());
     assert.match(fixed.created.join(), /portal configuration \(headline\)/);
     const st = fake.state();
-    assert.deepEqual([st.products.find((p) => p.id === productId).name, st.products.find((p) => p.id === productId).metadata.sw], ['Glimmer World Family Plan', 'family_plan']);
-    assert.equal(st.portalConfigurations.find((c) => c.id === portalConfigId).business_profile.headline, 'Glimmer World Family Plan');
+    assert.deepEqual([st.products.find((p) => p.id === productId).name, st.products.find((p) => p.id === productId).metadata.sw], ['Glimmer World Membership', 'family_plan']);
+    assert.equal(st.portalConfigurations.find((c) => c.id === portalConfigId).business_profile.headline, 'Glimmer World Membership');
+    assert.deepEqual((await stripeSetup({ stripe: s })).created, []);
+  });
+
+  test('a product and portal made as the "Glimmer World Family Plan" (before the membership rename) get the new name, ids and tags kept', async () => {
+    const s = stripe();
+    const { productId, portalConfigId } = await stripeSetup({ stripe: s });
+    await s.products.update(productId, { name: 'Glimmer World Family Plan' });
+    await s.billingPortal.configurations.update(portalConfigId, { business_profile: { headline: 'Glimmer World Family Plan' } });
+    const fixed = await stripeSetup({ stripe: s });
+    assert.deepEqual([fixed.productId, fixed.portalConfigId], [productId, portalConfigId]);
+    assert.ok(fixed.created.includes('product name'), fixed.created.join());
+    assert.match(fixed.created.join(), /portal configuration \(headline\)/);
+    const st = fake.state();
+    assert.deepEqual([st.products.find((p) => p.id === productId).name, st.products.find((p) => p.id === productId).metadata.sw], ['Glimmer World Membership', 'family_plan']);
+    assert.equal(st.portalConfigurations.find((c) => c.id === portalConfigId).business_profile.headline, 'Glimmer World Membership');
     assert.deepEqual((await stripeSetup({ stripe: s })).created, []);
   });
 

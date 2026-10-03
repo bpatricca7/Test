@@ -18,6 +18,13 @@
 //
 // The built files (dist/sparkle-world.html, dist/artifact.html, dist/site/) are checked when they
 // are there: `npm run test:name` builds first.
+//
+// The paid plan's name, too: it is the Glimmer World Membership (formerly the Family Plan; the
+// family's decision of 2026-10-03, because "Family Plan" sounded as if cheaper plans existed). No
+// page, email, notice, Checkout sentence or Stripe default may say "Family Plan" any more. Kept:
+// the identifiers (`family_plan` in Stripe metadata, `#family-plan`, `.family-plan`, variable
+// names), which are never written with a space, and the lines in FAMILY_PLAN_LINES below that say
+// on purpose what the old name was.
 
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
@@ -25,7 +32,8 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { renderMail, TEMPLATES } from '../server/mail-templates.mjs';
-import { notice, noticeSummary, FRIENDS_SWITCH_NOTICE } from '../server/notice.mjs';
+import { notice, noticeSummary, renewalSentence, FRIENDS_SWITCH_NOTICE } from '../server/notice.mjs';
+import { PRODUCT_NAME, PORTAL_HEADLINE } from './stripe-setup.mjs';
 import { loadConfig } from '../server/config.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -43,8 +51,33 @@ const ALLOWED_LINES = [
   /\(formerly Sparkle World\)/,
   /rename from Sparkle World to Glimmer World/,
   /^\s*Sparkle World gets the new name \(same ids/, // docs/DEPLOY-RAILWAY.md, re-running stripe:setup
-  /"Sparkle World Family Plan", gets today's name/, // tools/stripe-setup.mjs
+  /"Sparkle World Family Plan" or "Glimmer World Family Plan", gets today's name/, // tools/stripe-setup.mjs
 ];
+
+/** The old name of the paid plan, in any case and spacing ("Family Plan", "family&nbsp;plan", "FAMILY\nPLAN"). */
+const OLD_PLAN = /family(?:\s|&nbsp;|\\u00a0)+plan/gi;
+/** Lines that say, on purpose, what the plan used to be called. */
+const FAMILY_PLAN_LINES = [
+  /"Sparkle World Family Plan" or "Glimmer World Family Plan", gets today's name/, // tools/stripe-setup.mjs
+  /the paid plan's name, "Family Plan", became "Glimmer World Membership"/, // server/notice.mjs, version 2
+  /made as the "Glimmer World Family Plan" \(before the membership rename/, // docs/DEPLOY-RAILWAY.md, re-running stripe:setup
+];
+
+/** Every use of the plan's old name in `text` that is not an allowed line. */
+export function oldPlanNames(text, file = '') {
+  const lines = text.split('\n');
+  const bad = [];
+  let at = 0;
+  for (const m of text.matchAll(OLD_PLAN)) {
+    const first = text.slice(0, m.index).split('\n').length - 1;
+    const last = first + m[0].split('\n').length - 1;
+    if ([first, last].some((i) => FAMILY_PLAN_LINES.some((re) => re.test(lines[i])))) continue;
+    if (first < at) continue;
+    at = first;
+    bad.push(`${file}:${first + 1}: ${lines[first].trim().slice(0, 140)}`);
+  }
+  return bad;
+}
 
 /** What people read: [folder or file, extensions]. */
 const SOURCES = [
@@ -150,5 +183,51 @@ describe('the product name is Glimmer World everywhere people read it', () => {
     assert.match(n.checkbox, /I agree that Glimmer World may keep/);
     const dev = { SW_ACCOUNTS: 'optional', DATABASE_URL: 'postgresql://sw@127.0.0.1:5432/sw', PUBLIC_ORIGIN: 'http://localhost:8080', SW_SECRET: Buffer.alloc(32, 7).toString('base64'), STRIPE_SECRET_KEY: 'sk_test_abc123', STRIPE_WEBHOOK_SECRET: 'whsec_abc123', STRIPE_PRICE_ID: 'price_abc123', MAIL_MODE: 'memory' };
     assert.equal(loadConfig(dev).mailFrom, 'Glimmer World <hello@localhost>');
+  });
+});
+
+describe('the paid plan is the Glimmer World Membership everywhere people read it', () => {
+  test('the checker itself: catches "Family Plan" in its spellings, lets the identifiers through', () => {
+    for (const s of ['Family Plan', 'family plan', 'FAMILY PLAN', 'Family&nbsp;Plan', 'the Family\n  Plan', '<!-- ===== FAMILY PLAN ===== -->']) {
+      assert.equal(oldPlanNames(s, 'x.html').length, 1, s);
+    }
+    assert.deepEqual(oldPlanNames('<section class="family-plan" id="family-plan">; metadata: { sw: \'family_plan\' }; familyPlan()', 'x.js'), []);
+    assert.deepEqual(oldPlanNames('// "Sparkle World Family Plan" or "Glimmer World Family Plan", gets today\'s name).', 'tools/stripe-setup.mjs'), []);
+  });
+
+  test('sources: the game, the site, the server, the Stripe setup and the parent and operator docs', () => {
+    const all = SOURCES.flatMap(([rel, exts]) => files(rel, exts));
+    assert.ok(all.length > 100, `found ${all.length} files`);
+    const bad = all.flatMap((f) => oldPlanNames(readFileSync(path.join(ROOT, f), 'utf8'), f));
+    assert.deepEqual(bad, []);
+  });
+
+  test('the built game and pages (dist/), when built', (t) => {
+    const all = BUILT.flatMap((rel) => files(rel, null)).filter((f) => /\.(html|js|css|txt|json)$/.test(f));
+    if (!all.length) return t.skip('nothing built yet (npm run build)');
+    assert.deepEqual(all.flatMap((f) => oldPlanNames(readFileSync(path.join(ROOT, f), 'utf8'), f)), []);
+  });
+
+  test('every email, the direct notice, the Checkout sentence and the Stripe defaults say Glimmer World Membership', () => {
+    const cfg = {
+      mpConsent: 'verified', retainDays: 90, trialDays: 7, priceText: '$5.99 a month, plus sales tax where it applies', mailMode: 'resend',
+      publicOrigin: 'https://www.playglimmerworld.com', operator: { name: 'The Operator', email: 'hello@playglimmerworld.com', address: 'PO Box 1', phone: '+1 555 0100' },
+    };
+    const data = { code: '123456', at: Date.UTC(2026, 9, 2), v: 2, lapsedAt: Date.UTC(2026, 9, 2), purgeAfter: Date.UTC(2027, 0, 1), trialEnd: Date.UTC(2026, 9, 9), nickname: 'Lily', refund: true };
+    const n = notice(cfg);
+    for (const template of TEMPLATES) {
+      for (const firstTime of [false, true]) {
+        const m = renderMail(template, { data, cfg, firstTime, notice: n });
+        assert.deepEqual(oldPlanNames(`${m.subject}\n${m.text}\n${m.html || ''}`, `mail ${template}`), [], template);
+      }
+    }
+    assert.equal(renderMail('welcome', { data: { ...data, trialEnd: null }, cfg, notice: n }).subject, 'Welcome to your Glimmer World Membership');
+    assert.match(renderMail('welcome', { data: { ...data, trialEnd: null }, cfg, notice: n }).text, /^Thank you! Your Glimmer World Membership is on\.\n\nThe membership: \$5\.99 a month, plus sales tax where it applies, for the whole family, with everything included\. It is the only plan there is: no tiers, no add-ons/);
+    assert.equal(renderMail('annual_reminder', { data, cfg, notice: n }).subject, 'A yearly reminder about your Glimmer World Membership');
+    const all = [n.title, n.checkbox, ...n.sections.flatMap((s) => [s.title, s.text]), noticeSummary(cfg), renewalSentence(cfg), renewalSentence(cfg, { trial: true })].join('\n');
+    assert.deepEqual(oldPlanNames(all, 'notice'), []);
+    assert.match(all, /don't start a Glimmer World Membership within 30 days/);
+    assert.match(renewalSentence(cfg), /^I agree to the Terms\. My Glimmer World Membership renews every month at \$5\.99 plus tax until I cancel/);
+    assert.deepEqual([PRODUCT_NAME, PORTAL_HEADLINE], ['Glimmer World Membership', 'Glimmer World Membership']);
   });
 });

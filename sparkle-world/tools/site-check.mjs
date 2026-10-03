@@ -22,6 +22,7 @@ import { mkdir, readFile } from 'node:fs/promises';
 import { launch, waitForTitle, ROOT, SHOTS } from './smoke.mjs';
 import { routeGoogleFonts } from './site-fonts.mjs';
 import { shareTags, withShareTags } from './site-build.mjs';
+import { NOTICE_VERSION } from '../server/notice.mjs';
 
 const argv = process.argv.slice(2);
 const arg = (k, d = null) => {
@@ -394,7 +395,7 @@ const clickText = (page, name) => page.getByRole('button', { name, exact: true }
 
 /** Every Family page state (§9.2): setup(fake) → { cookie?, path?, wait, act?, expect?, label? }. */
 const ACCT_STATES = [
-  { name: 'signin', setup: () => ({ wait: '#email', expect: async (p) => /sign in or start the Family Plan/.test(await p.textContent('main')) && /Kids never need an email/.test(await p.textContent('main')), label: 'sign in, and "Kids never need an email"' }) },
+  { name: 'signin', setup: () => ({ wait: '#email', expect: async (p) => /sign in or start your membership/.test(await p.textContent('main')) && /Kids never need an email/.test(await p.textContent('main')), label: 'sign in, and "Kids never need an email"' }) },
   { name: 'signin-from-game', setup: () => ({ path: '/account?next=/play', wait: '#email', expect: async (p) => /take you back to the game/.test(await p.textContent('main')), label: 'from the game: back to it after signing in' }) },
   { name: 'code', setup: () => ({ wait: '#email', act: async (p) => {
     await p.fill('#email', 'grown.up@example.com');
@@ -403,7 +404,7 @@ const ACCT_STATES = [
     await p.locator('#code').fill('482');
   }, expect: async (p) => (await p.getAttribute('#code', 'autocomplete')) === 'one-time-code' && (await p.getAttribute('#code', 'inputmode')) === 'numeric' && /g•••@example\.com/.test(await p.textContent('main')), label: 'the code boxes: one-time-code, numeric, the email masked' }) },
   { name: 'notice', setup: (fake) => ({ cookie: familyOf(fake, { plan: 'none', consent: 'none', players: [] }).cookie, wait: '#agree', expect: async (p) => !(await p.isChecked('#agree')) && (await p.isDisabled('button:has-text("Agree and continue")')) && (await p.locator('.notice-list li').count()) >= 6, label: 'the notice: every section, the box starts empty, Agree waits for it' }) },
-  { name: 'plan', setup: (fake) => ({ cookie: familyOf(fake, { plan: 'none', consent: 'email_plus', players: [] }).cookie, wait: '#us', act: async (p) => clickText(p, 'Start the Family Plan'), expect: async (p) => !(await p.isChecked('#us')) && /only for families in the US/.test(await p.textContent('.acct-error')) && /\$5\.99/.test(await p.textContent('.plan-choice')) && /renews every month until you cancel/.test(await p.textContent('.plan-choice')), label: 'the plan: price and renewal next to the button, the US box starts empty and is needed' }) },
+  { name: 'plan', setup: (fake) => ({ cookie: familyOf(fake, { plan: 'none', consent: 'email_plus', players: [] }).cookie, wait: '#us', act: async (p) => clickText(p, 'Start your membership'), expect: async (p) => /Glimmer World Membership/.test(await p.textContent('main h2')) && /One membership with everything included\. There are no tiers and no add-ons\./.test(await p.textContent('.plan-card')) && !(await p.isChecked('#us')) && /only for families in the US/.test(await p.textContent('.acct-error')) && /\$5\.99/.test(await p.textContent('.plan-choice')) && /renews every month until you cancel/.test(await p.textContent('.plan-choice')), label: 'the plan: price and renewal next to the button, the US box starts empty and is needed' }) },
   { name: 'plan-trial', server: 'trial', setup: (fake) => ({ cookie: familyOf(fake, { plan: 'none', consent: 'email_plus', players: [] }).cookie, wait: '#us', expect: async (p) => (await p.locator('.plan-choice .btn').count()) === 2 && /Free for 7 days, then \$5\.99\/month/.test(await p.textContent('main')), label: 'with SW_TRIAL_DAYS=7: the free week and Start today, each with its terms' }) },
   { name: 'plan-cancelled', setup: (fake) => ({ cookie: familyOf(fake, { plan: 'none', consent: 'email_plus', players: [] }).cookie, path: '/account?checkout=cancel', wait: '#us', expect: async (p) => /No payment was made/.test(await p.textContent('main')), label: 'back from Checkout without paying' }) },
   { name: 'back-from-stripe', setup: (fake) => ({ cookie: familyOf(fake, { players: [] }).cookie, path: '/account?checkout=cs_test_back', wait: '.all-set', expect: async (p) => /You're all set!/.test(await p.textContent('main')) && !/checkout=/.test(p.url()) && (await p.getByRole('button', { name: 'Add your first player' }).count()) === 1, label: 'back from Stripe: "You\'re all set!" and Add your first player' }) },
@@ -418,7 +419,7 @@ const ACCT_STATES = [
   { name: 'dash-comp-renews', setup: (fake) => {
     const f = familyOf(fake, { plan: 'active' });
     fake.setFamily(f.f, { comp_until: new Date(Date.now() + 60 * 86400e3) });
-    return { cookie: f.cookie, wait: '.device', expect: async (p) => /Free pass until .*still renews on/.test(await p.textContent('.ribbon')) && /Cancel the plan/.test(await p.textContent('.ribbon')) && /Manage subscription/.test(await p.textContent('.ribbon')), label: 'a free pass on top of a plan that still renews: Manage and Cancel stay' };
+    return { cookie: f.cookie, wait: '.device', expect: async (p) => /Free pass until .*still renews on/.test(await p.textContent('.ribbon')) && /Cancel the plan/.test(await p.textContent('.ribbon')) && /Manage membership/.test(await p.textContent('.ribbon')), label: 'a free pass on top of a plan that still renews: Manage and Cancel stay' };
   } },
   { name: 'notice-again', setup: (fake) => {
     const f = familyOf(fake, { players: [LILY] });
@@ -428,7 +429,7 @@ const ACCT_STATES = [
   { name: 'dash-trialing', server: 'trial', setup: (fake) => ({ cookie: familyOf(fake, { plan: 'trialing', consent: 'email_plus', players: [{ nickname: 'Lily' }, MIA] }).cookie, wait: '.device', expect: async (p) => /Free week: \d+ days? left, then \$5\.99\/month/.test(await p.textContent('.ribbon')) && (await p.locator('article.player .switch').first().isDisabled()) && /Turns on after your first payment/.test(await p.textContent('article.player')), label: 'free week: days left, Start now, friends locked until the first payment' }) },
   { name: 'dash-past-due', setup: (fake) => ({ cookie: familyOf(fake, { plan: 'past_due' }).cookie, wait: '.device', expect: async (p) => /Payment didn't go through\. Playing continues until/.test(await p.textContent('.ribbon')) && /Update card/.test(await p.textContent('.ribbon')), label: "payment didn't go through: Update card" }) },
   { name: 'dash-canceling', setup: (fake) => ({ cookie: familyOf(fake, { plan: 'canceling' }).cookie, wait: '.device', expect: async (p) => /ends/.test(await p.textContent('.ribbon')) && /Resume/.test(await p.textContent('.ribbon')), label: 'cancelling: Ends … Resume' }) },
-  { name: 'dash-lapsed', setup: (fake) => ({ cookie: familyOf(fake, { plan: 'lapsed' }).cookie, wait: '.device', expect: async (p) => /Resting: the kids' worlds are kept until/.test(await p.textContent('.ribbon')) && /Restart the plan/.test(await p.textContent('.ribbon')) && /Download worlds/.test(await p.textContent('.ribbon')), label: 'resting: kept until …, Restart, Download' }) },
+  { name: 'dash-lapsed', setup: (fake) => ({ cookie: familyOf(fake, { plan: 'lapsed' }).cookie, wait: '.device', expect: async (p) => /Resting: the kids' worlds are kept until/.test(await p.textContent('.ribbon')) && /Restart membership/.test(await p.textContent('.ribbon')) && /Download worlds/.test(await p.textContent('.ribbon')), label: 'resting: kept until …, Restart, Download' }) },
   { name: 'dash-comp', setup: (fake) => ({ cookie: familyOf(fake, { plan: 'comp', consent: 'email_plus', players: [{ nickname: 'Lily' }] }).cookie, wait: '.device', expect: async (p) => /Free pass until/.test(await p.textContent('.ribbon')) && /signed consent form/.test(await p.textContent('article.player')), label: 'a free pass' }) },
   { name: 'check', setup: (fake) => ({ cookie: familyOf(fake, { elevated: false }).cookie, wait: '.device', act: async (p) => {
     await p.locator('article.player', { hasText: 'Mia' }).locator('.switch').first().click();
@@ -486,6 +487,14 @@ function smallTargets(page) {
     .filter(([, hgt]) => hgt < 44));
 }
 
+/** Buttons whose words stick out of them, or that reach past the right edge (a label too long for a phone). */
+function clippedButtons(page) {
+  return page.evaluate(() => [...document.querySelectorAll('main button, main a.btn, dialog button, dialog a.btn')]
+    .filter((e) => e.offsetParent !== null)
+    .filter((e) => e.scrollWidth > e.clientWidth + 1 || e.getBoundingClientRect().right > window.innerWidth + 1)
+    .map((e) => e.textContent.trim().slice(0, 40)));
+}
+
 async function accountPages(browser) {
   const req = await buildAccountSite('required');
   const opt = await buildAccountSite('optional');
@@ -511,12 +520,18 @@ async function accountPages(browser) {
       const both = home + parents;
       check(!/\{\{|\}\}/.test(both), `${mode}: no placeholders left on / and /parents`);
       check(!/No accounts|nobody needs an account|Nothing is stored on the server|doesn't set cookies|not on our server/i.test(both), `${mode}: no "no accounts / nothing on the server / no cookies" sentence`);
-      check(/id="family-plan"/.test(home) && /href="\/account">Sign in</.test(home) && /href="\/privacy"/.test(home) && /href="\/terms"/.test(home) && /\$5\.99 a month, plus sales tax where it applies/.test(home), `${mode}: the home page has the Family Plan section, Sign in, /privacy and /terms, the price with tax`);
+      check(/id="family-plan"/.test(home) && /href="\/account">Sign in</.test(home) && /href="\/privacy"/.test(home) && /href="\/terms"/.test(home) && /\$5\.99 a month, plus sales tax where it applies/.test(home), `${mode}: the home page has the membership section (id family-plan), Sign in, /privacy and /terms, the price with tax`);
+      check(/<p class="eyebrow">Glimmer World Membership<\/p>/.test(home) && /One membership with everything included\. There are no tiers and no add-ons\./.test(home) && /no tiers, no add-ons/.test(home), `${mode}: the home page names the Glimmer World Membership and says it is the one plan, everything included`);
+      check(!/Family Plan/i.test(both), `${mode}: / and /parents never say "Family Plan" (it is the Glimmer World Membership)`);
       check(/nothing to buy inside/i.test(home) && /earned by playing/.test(home) && /cloud copy/.test(home) && /download or delete/i.test(home), `${mode}: nothing to buy inside, coins earned only, the cloud copy that can be downloaded or deleted`);
       check(/id="accounts"/.test(parents) && /href="\/privacy"/.test(parents) && /one cookie/i.test(parents), `${mode}: /parents has "Accounts and your child's information" and the one cookie`);
       check(/walkie-talkie/i.test(both) && /recorded/i.test(both) && /mute/i.test(both) && /only works on this website|only on this website|website version/i.test(both) && /Family page/.test(both), `${mode}: the walkie is described (the Family page switch, never recorded, mute, website only)`);
       if (mode === 'required') check(!/multiplication/i.test(both), 'required: no multiplication question (the Family page switch replaces it)');
       else check(/multiplication/i.test(both) && /November 2, 2026/.test(home), 'optional: devices without an account keep the multiplication question; the date playing together needs the plan');
+      for (const p of ['/privacy', '/terms', '/account', '/account.js']) {
+        const words = await (await fetch(`${s.base}${p}`)).text();
+        check(!/Family Plan/i.test(words), `${mode}: ${p} never says "Family Plan" (it is the Glimmer World Membership)`);
+      }
       for (const p of ['/privacy', '/terms']) {
         const html = await (await fetch(`${s.base}${p}`)).text();
         check(!/\{\{|\}\}/.test(html) && html.includes('The Sparkle Family') && html.includes('PO Box 123') && html.includes('+1 555 0100') && html.includes('hello@glimmerworld.example'), `${mode}: ${p} prints the operator's name, address, phone and email`);
@@ -588,6 +603,8 @@ async function accountPages(browser) {
           if (def.expect) check(await def.expect(page), `${st.name} at ${size.w}: ${def.label || 'as expected'}`);
           const over = await overflow(page);
           check(over.sw <= size.w && over.w === size.w, `${st.name} at ${size.w}: no sideways scrolling (page ${over.sw}px${over.wide.length ? '; ' + over.wide.join(', ') : ''})`);
+          const clipped = await clippedButtons(page);
+          check(!clipped.length, `${st.name} at ${size.w}: every button's words fit inside it${clipped.length ? ' (' + JSON.stringify(clipped) + ')' : ''}`);
           if (size.touch) {
             const small = await smallTargets(page);
             check(!small.length, `${st.name} at ${size.w}: every button is 44 px or more${small.length ? ' (' + JSON.stringify(small) + ')' : ''}`);
@@ -646,9 +663,9 @@ async function journey(browser, srv) {
     await clickText(page, 'Agree and continue');
     await page.waitForSelector('#us');
     const fam = [...fake.data.families.values()].find((f) => f.email === email);
-    check(fam && fam.consent_at && fam.notice_version === 1, 'agreeing records consent with the notice version');
+    check(fam && fam.consent_at && fam.notice_version === NOTICE_VERSION, 'agreeing records consent with the notice version');
     await page.check('#us');
-    await clickText(page, 'Start the Family Plan');
+    await clickText(page, 'Start your membership');
     await page.waitForURL(/\/api\/fake\/stripe\/c\//);
     await page.click('#pay');
     await page.waitForSelector('.all-set');

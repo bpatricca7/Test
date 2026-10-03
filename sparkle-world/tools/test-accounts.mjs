@@ -33,6 +33,7 @@ import { renderMail, TEMPLATES } from '../server/mail-templates.mjs';
 import { fullYears, msUntilUtc } from '../server/jobs.mjs';
 import { runAdmin } from '../server/admin.mjs';
 import { entitlementOf } from '../server/entitlement.mjs';
+import { NOTICE_VERSION, NOTICE_MIN_VERSION } from '../server/notice.mjs';
 import { readWorldFile } from '../src/core/storage.js';
 
 // The log spy (§12.7): from here on every console line of this file, and every log function
@@ -814,7 +815,7 @@ async function signIn(h, b, email, { next } = {}) {
   return (await h.family(email)).id;
 }
 
-/** An active Family Plan (and, by default, verified consent) straight in the database. */
+/** An active Glimmer World Membership (and, by default, verified consent) straight in the database. */
 async function entitle(h, familyId, { verified = true } = {}) {
   const now = h.clock.now();
   await h.db.query(
@@ -1036,7 +1037,7 @@ describe('A: sign-in (§4.3, §12.7)', () => {
     assert.equal(mail.template, 'signin');
     assert.match(mail.subject, /^Your Glimmer World code: \d{6}$/);
     assert.match(mail.text, /Welcome to Glimmer World!/);
-    assert.match(mail.text, /notice version 1/);
+    assert.match(mail.text, new RegExp(`notice version ${NOTICE_VERSION}\\b`));
     assert.ok(mail.text.includes(`${HTTPS}/privacy`));
     const elsewhere = await h.browser().post('/api/auth/verify', { code });
     assert.deepEqual([elsewhere.status, elsewhere.data], [410, { error: 'expired' }], 'no attempt cookie: no sign-in');
@@ -1669,7 +1670,7 @@ describe('A: the notice, consent, players and their switches (§5.2, §6.7, §11
       h.setClock(16 * MIN);
       assert.deepEqual((await b.patch(`/api/players/${pid}`, { friends: true })).data, { error: 'check_required' });
       h.setClock(0);
-      const on = await b.patch(`/api/players/${pid}`, { friends: true, walkie: true, notice: 1 });
+      const on = await b.patch(`/api/players/${pid}`, { friends: true, walkie: true, notice: NOTICE_VERSION });
       assert.deepEqual([on.status, on.data.friends, on.data.walkie], [200, true, true]);
       me = (await b.get('/api/me')).data;
       assert.deepEqual(me.players[0], { id: pid, nickname: 'Stella', color: 0, portrait: null, friends: true, walkie: true, canJoin: true, canHost: true, walkieOk: true, why: null });
@@ -1682,7 +1683,7 @@ describe('A: the notice, consent, players and their switches (§5.2, §6.7, §11
       remember('Star Bright');
       assert.deepEqual([renamed.data.nickname, renamed.data.color], ['Star Bright', 2]);
       const log = await t.db.query('select action, detail, player_id from audit_log where family_id = $1 and player_id is not null order by id', [familyId]);
-      assert.deepEqual(log.rows.map((x) => [x.action, x.detail]), [['player.create', {}], ['friends.on', { v: 1 }], ['walkie.on', { v: 1 }], ['friends.off', {}], ['walkie.off', {}]]);
+      assert.deepEqual(log.rows.map((x) => [x.action, x.detail]), [['player.create', {}], ['friends.on', { v: NOTICE_VERSION }], ['walkie.on', { v: NOTICE_VERSION }], ['friends.off', {}], ['walkie.off', {}]]);
       assert.ok(log.rows.every((x) => x.player_id === pid));
       assert.deepEqual(events.map((e) => e.playerId), [pid, pid, pid]);
       // lapsed: the switch cannot be turned on, and /api/me says why
@@ -1700,23 +1701,31 @@ describe('A: the notice, consent, players and their switches (§5.2, §6.7, §11
   test("the consent records name the notice the server shows; an agreement to an older notice is asked again (§11.3)", async () => {
     const { b, familyId, ids } = await setupFamily(h, 'notice.dad@example.com', { players: ['Fern'] });
     const bad = await b.patch(`/api/players/${ids.Fern}`, { friends: true, notice: 99 });
-    assert.deepEqual([bad.status, bad.data], [409, { error: 'conflict', noticeVersion: 1 }], 'a page showing another notice is told so, nothing recorded');
+    assert.deepEqual([bad.status, bad.data], [409, { error: 'conflict', noticeVersion: NOTICE_VERSION }], 'a page showing another notice is told so, nothing recorded');
     assert.equal((await b.patch(`/api/players/${ids.Fern}`, { friends: true })).status, 200);
     const on = await t.db.one("select detail from audit_log where family_id = $1 and action = 'friends.on'", [familyId]);
-    assert.deepEqual(on.detail, { v: 1 }, "the server's own version, never one the page chose");
+    assert.deepEqual(on.detail, { v: NOTICE_VERSION }, "the server's own version, never one the page chose");
+    // a change that did not matter (version 2 only renamed the plan to the Glimmer World Membership):
+    // an agreement to an older version at or above NOTICE_MIN_VERSION still counts, nobody is asked again
+    assert.ok(NOTICE_MIN_VERSION < NOTICE_VERSION, 'this check needs an older version that still counts');
+    await t.db.query('update families set notice_version = $2 where id = $1', [familyId, NOTICE_MIN_VERSION]);
+    const older = (await b.get('/api/family')).data;
+    assert.deepEqual([older.consent.noticeVersion, older.config.noticeVersion, older.config.noticeMinVersion], [NOTICE_MIN_VERSION, NOTICE_VERSION, NOTICE_MIN_VERSION]);
+    remember('Ivy');
+    assert.equal((await b.post('/api/players', { nickname: 'Ivy' })).status, 201, 'an agreement to an older notice that still counts adds players as before');
     // a change that mattered (NOTICE_MIN_VERSION above what she agreed to): simulated with an
     // agreement to version 0
     await t.db.query('update families set notice_version = 0 where id = $1', [familyId]);
     const fam = (await b.get('/api/family')).data;
-    assert.deepEqual([fam.consent.level, fam.consent.noticeVersion, fam.config.noticeVersion, fam.config.noticeMinVersion], ['verified', 0, 1, 1]);
+    assert.deepEqual([fam.consent.level, fam.consent.noticeVersion, fam.config.noticeVersion, fam.config.noticeMinVersion], ['verified', 0, NOTICE_VERSION, NOTICE_MIN_VERSION]);
     remember('Moss');
     assert.deepEqual((await b.post('/api/players', { nickname: 'Moss' })).data, { error: 'consent_required' }, 'no new player until she agrees again');
     assert.deepEqual((await b.patch(`/api/players/${ids.Fern}`, { walkie: true })).data, { error: 'consent_required' }, 'no switch goes on');
     assert.equal((await b.patch(`/api/players/${ids.Fern}`, { friends: false })).status, 200, 'switching off never waits');
-    assert.equal((await b.post('/api/consent', { noticeVersion: 1, agree: true })).status, 200);
+    assert.equal((await b.post('/api/consent', { noticeVersion: NOTICE_VERSION, agree: true })).status, 200);
     assert.equal((await b.post('/api/players', { nickname: 'Moss' })).status, 201, 'agreed again: on as before');
     const acts = (await t.db.query("select detail from audit_log where family_id = $1 and action = 'consent.email_plus' order by id", [familyId])).rows.map((r) => r.detail);
-    assert.deepEqual(acts, [{ v: 1 }, { v: 1 }], 'the second agreement is recorded too');
+    assert.deepEqual(acts, [{ v: NOTICE_VERSION }, { v: NOTICE_VERSION }], 'the second agreement is recorded too');
   });
 
   test('free-join (with SW_MP_CONSENT=email_plus): a family without a plan adds players who may only join', async () => {
@@ -2530,7 +2539,7 @@ describe('A: free passes from SW_FREE_PASS (§6.9)', () => {
       assert.equal(f.verified_method, 'operator');
       const e = entitlementOf({ family: f, subs: [], now: h.clock.now(), cfg: h.cfg });
       assert.deepEqual([e.state, e.entitled, e.until, e.consent, e.friendsConsentOk, e.walkieConsentOk], ['comp', true, Date.UTC(2100, 0, 1), 'verified', true, true]);
-      // the whole Family Plan without paying: players, friends and the walkie
+      // the whole membership without paying: players, friends and the walkie
       remember('Robin');
       const p = await b.post('/api/players', { nickname: 'Robin' });
       assert.equal(p.status, 201, p.text);

@@ -316,7 +316,7 @@ const FP = {
   async buy(page, { trial, email, fresh = false }) {
     await page.check('#us');
     const since = await mailMark(email);
-    await page.getByRole('button', { name: trial ? /Start your free week/ : /Start today|Start the Family Plan/ }).first().click();
+    await page.getByRole('button', { name: trial ? /Start your free week/ : /Start today|Start your membership/ }).first().click();
     const asked = await FP.passCheck(page, email, since);
     if (fresh) check(!asked, 'right after signing in, starting the plan asks for no second code');
     await page.waitForURL((u) => !u.href.startsWith(R.base + '/account'), { timeout: 30000 });
@@ -711,7 +711,7 @@ async function s5() {
   await FP.agree(pageB);
   await shot(pageB, 'parentB-plan-390', true);
   await FP.buy(pageB, { trial: false, email: B.email, fresh: true });
-  check(/Family Plan is on/.test(await pageB.textContent('.all-set')), 'family B: Start today → "You\'re all set!"');
+  check(/Your membership is on/.test(await pageB.textContent('.all-set')), 'family B: Start today → "You\'re all set!"');
   await FP.addPlayer(pageB, 'June', { first: true });
   B.ids.June = (await FP.family(ctxB)).players[0].id;
   await FP.setSwitch(pageB, B.email, 'June', 'friends', true);
@@ -937,10 +937,10 @@ async function s7() {
   const rest = await FP.ribbon(B);
   check(/Resting/.test(rest), `the period ended: "${rest}"`);
   await shot(B.page, 'parentB-resting-390', true);
-  // A wakes Glimmer World up again (Restart the plan: no second free week), for 8 and 9
+  // A wakes Glimmer World up again (Restart membership: no second free week), for 8 and 9
   const ribbonA = await FP.ribbon(A);
   check(/Resting/.test(ribbonA), `family A is resting too: "${ribbonA}"`);
-  await A.page.locator('.ribbon').getByRole('button', { name: 'Restart the plan' }).click();
+  await A.page.locator('.ribbon').getByRole('button', { name: 'Restart membership' }).click();
   await A.page.waitForSelector('#us');
   check((await A.page.locator('.plan-choice .btn').count()) === 1, 'restarting offers no second free week (one button, the price next to it)');
   await FP.buy(A.page, { trial: false, email: A.email });
@@ -1089,7 +1089,7 @@ async function s10() {
     await FP.agree(page);
     const buttons = await page.locator('.plan-choice .btn').allTextContents();
     const words = await page.textContent('.plan-choices');
-    check(buttons.length === 1 && buttons[0] === 'Start the Family Plan' && /\$5\.99 a month, plus sales tax where it applies/.test(words) && /renews every month until you cancel/.test(words) && !/free/i.test(words), `no free trial (the family's decision): one "Start the Family Plan" button, the price and the renewal next to it (${buttons.join(' | ')})`);
+    check(buttons.length === 1 && buttons[0] === 'Start your membership' && /\$5\.99 a month, plus sales tax where it applies/.test(words) && /renews every month until you cancel/.test(words) && !/free/i.test(words), `no free trial (the family's decision): one "Start your membership" button, the price and the renewal next to it (${buttons.join(' | ')})`);
     check(!(await page.isChecked('#us')), 'the US box starts empty');
     await shot(page, 'parentD-plan-no-trial-390', true);
     page.flushErrors();
