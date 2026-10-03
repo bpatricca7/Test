@@ -1123,7 +1123,7 @@ async function sceneShare(browser) {
     'header.top, .skip, .lede, .cta-row, .facts { display: none !important; }',
     '.hero { height: 630px; padding-top: 44px; }',
     '.hero-grid { padding-bottom: 0; grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr); align-items: start; }',
-    '.hero h1 { font-size: 82px; margin-top: 8px; }',
+    '.hero h1 { font-size: 74px; margin-top: 8px; }',
     '.hero-art { padding-top: 26px; }',
     '.hero > .ground { position: absolute; left: 0; right: 0; bottom: 0; }',
     '.dio { --u: 27px; left: calc(var(--u) * -3); bottom: calc(var(--u) * -6.3); }',

@@ -75,7 +75,7 @@ export function shareTags(domain) {
     `<meta property="og:image" content="${url}img/share.jpg">`,
     '<meta property="og:image:width" content="1200">',
     '<meta property="og:image:height" content="630">',
-    '<meta property="og:image:alt" content="Glimmer World: Build a whole world. Then move in. The game\'s title screen and a little floating island made of blocks.">',
+    '<meta property="og:image:alt" content="Glimmer World: Build a magical world. Then move in. The game\'s title screen and a little floating island made of blocks.">',
     '<meta name="twitter:card" content="summary_large_image">',
     '',
   ].join('\n');
