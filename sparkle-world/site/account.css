@@ -123,6 +123,7 @@ p .acct-link { min-height: 0; padding: 0 2px; font-size: inherit; }
 .price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 0 0 4px; }
 .price b { font-size: clamp(2.6rem, 2rem + 2.6vw, 3.6rem); line-height: 1; letter-spacing: -.02em; color: var(--ink); }
 .price span { font-size: 1.1rem; font-weight: 500; color: var(--ink-2); }
+.plan-only { margin: 0 0 6px; font-weight: 600; color: var(--ink-2); line-height: 1.4; }
 .plan-list { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 10px; }
 .plan-list li { position: relative; padding-left: 36px; font-weight: 500; color: var(--ink); line-height: 1.35; }
 .plan-list li::before { content: ''; position: absolute; left: 0; top: .08em; width: 24px; height: 24px; border-radius: 8px; background: var(--mint) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 12.5l4 4 8-9' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 20px no-repeat; }

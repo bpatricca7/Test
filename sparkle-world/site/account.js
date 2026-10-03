@@ -155,13 +155,13 @@ function say(e) {
   if (!e || e.status === 0) return "Couldn't reach Glimmer World. Check the internet connection, then try again.";
   if (code === 'rate') return 'That was a lot of tries in a short time. Wait a few minutes, then try again.';
   if (code === 'stripe_unavailable') return "Couldn't reach the payment page. Try again in a minute.";
-  if (code === 'not_entitled') return 'That needs the Family Plan.';
+  if (code === 'not_entitled') return 'That needs a Glimmer World Membership.';
   if (code === 'needs_verified') return 'That turns on after your first payment.';
   if (code === 'nickname_taken') return 'You already have a player with that nickname. Try another one.';
   if (code === 'nickname_blocked') return "Please pick a different nickname: other players couldn't see that one.";
   if (code === 'limit') return 'That is the most there can be for now.';
-  if (code === 'us_only') return 'For now the Family Plan is only for families in the United States.';
-  if (code === 'already_subscribed') return 'Your family already has a Family Plan.';
+  if (code === 'us_only') return 'For now the membership is only for families in the United States.';
+  if (code === 'already_subscribed') return 'Your family already has a membership.';
   if (code === 'bad_email') return 'Please check the email address.';
   if (code === 'expired') return 'That has expired. Please start again.';
   if (code === 'signed_out') return 'You were signed out. Please sign in again.';
@@ -332,7 +332,7 @@ function signIn({ note = null } = {}) {
   err,
   row(send));
   mount(card(
-    h('h2', null, 'Grown-ups: sign in or start the Family Plan'),
+    h('h2', null, 'Grown-ups: sign in or start your membership'),
     note && h('p', { class: 'acct-note acct-note--sun' }, note),
     S.next && S.next.startsWith('/play') && h('p', { class: 'acct-note' }, "After you sign in, we'll take you back to the game."),
     h('p', { class: 'acct-lead' }, "Type your email and we'll send you a 6-digit code. Signing in and starting are the same: there are no passwords."),
@@ -563,7 +563,7 @@ function showVerify(token, peek, ranOut) {
 function kidDeviceHere() {
   mount(card(
     h('h2', null, 'This device is set up for the kids'),
-    h('p', { class: 'acct-lead' }, 'It is signed in for playing, not for the Family page. To manage the Family Plan, sign in on your own phone or computer.'),
+    h('p', { class: 'acct-lead' }, 'It is signed in for playing, not for the Family page. To manage your membership, sign in on your own phone or computer.'),
     row(h('a', { class: 'btn btn-play', href: '/play' }, 'Play now'), linkBtn('Sign this device out', () => {
       const d = dialog([
         h('h2', null, 'Sign this device out?'),
@@ -645,7 +645,7 @@ function planView({ cancelled = false } = {}) {
   const start = async (ev, withTrial) => {
     err.textContent = '';
     if (!us.checked) {
-      err.textContent = 'Please tick the box if you live in the United States. For now the Family Plan is only for families in the US.';
+      err.textContent = 'Please tick the box if you live in the United States. For now the membership is only for families in the US.';
       us.focus();
       return;
     }
@@ -673,19 +673,20 @@ function planView({ cancelled = false } = {}) {
         h('p', null, `${amount} today, then every month until you cancel. Pay now and playing with friends and the walkie-talkie can be turned on today. The first payment is how we confirm that a grown-up said yes.`)))
     : h('div', { class: 'plan-choices' },
       h('div', { class: 'plan-choice' },
-        btn('Start the Family Plan', 'btn-play', (ev) => start(ev, false)),
+        btn('Start your membership', 'btn-play', (ev) => start(ev, false)),
         h('p', null, `${priceText}. The first payment is today, then it renews every month until you cancel. Cancel any time here: Cancel the plan, then Yes. That first payment is also how we confirm that a grown-up said yes, so playing with friends and the walkie-talkie can be turned on right away.`)));
   mount(card(
-    h('h2', null, 'Glimmer World Family Plan'),
+    h('h2', null, 'Glimmer World Membership'),
     cancelled && h('p', { class: 'acct-note acct-note--sun' }, 'No payment was made. You can start whenever you like.'),
-    f.plan.state === 'lapsed' && h('p', { class: 'acct-note' }, "Welcome back! Your family's plan has ended. Restart it and everything is there again."),
+    f.plan.state === 'lapsed' && h('p', { class: 'acct-note' }, "Welcome back! Your family's membership has ended. Restart it and everything is there again."),
     h('div', { class: 'plan-card' },
       h('div', null,
         h('p', { class: 'price' }, h('b', null, pm ? pm[1] : amount), h('span', null, pm ? pm[2] : 'a month')),
+        h('p', { class: 'plan-only' }, 'One membership with everything included. There are no tiers and no add-ons.'),
         h('ul', { class: 'plan-list' },
           h('li', null, 'Up to 6 kids, each with their own player'),
           h('li', null, 'Their worlds saved on every device, and kept safe if a browser clears them'),
-          h('li', null, 'Playing with friends whose families have the plan too'),
+          h('li', null, 'Playing with friends whose families are members too'),
           h('li', null, 'The walkie-talkie, only if you turn it on'),
           h('li', null, 'Nothing to buy inside the game, ever'))),
       h('div', null,
@@ -700,13 +701,13 @@ function planView({ cancelled = false } = {}) {
       render();
     })),
     row(linkBtn('Sign out', signOut)),
-  ), { mid: true, subtitle: 'One plan for the whole family. Nothing to buy inside the game, ever.' });
+  ), { mid: true, subtitle: 'One membership for the whole family. Nothing to buy inside the game, ever.' });
 }
 
 // ------------------------------------------------------------------------------ 4. back from Stripe
 
 async function backFromStripe(sessionId) {
-  mount(card(h('h2', null, 'Setting up your Family Plan…'), loadingRow('Checking with Stripe…')), { subtitle: 'Just a moment.' });
+  mount(card(h('h2', null, 'Setting up your membership…'), loadingRow('Checking with Stripe…')), { subtitle: 'Just a moment.' });
   let plan = null;
   let lastErr = null;
   let usOnly = false;
@@ -731,10 +732,10 @@ async function backFromStripe(sessionId) {
     // the billing address was outside the United States: Stripe's plan was cancelled at once
     return mount(card(
       h('h2', null, 'Sorry, only in the United States for now'),
-      h('p', { class: 'acct-lead' }, 'The Family Plan is only for families in the United States for now, so we cancelled it right away. Nothing more will be charged, and if a payment went through, we will refund it.'),
+      h('p', { class: 'acct-lead' }, 'The membership is only for families in the United States for now, so we cancelled it right away. Nothing more will be charged, and if a payment went through, we will refund it.'),
       h('p', null, 'We sent you an email about it too. Questions? ', familyConfig().operatorEmail ? h('a', { href: 'mailto:' + familyConfig().operatorEmail }, familyConfig().operatorEmail) : 'Reply to that email.'),
       row(h('a', { class: 'btn btn-soft', href: '/' }, 'Home page'), linkBtn('Sign out', signOut)),
-    ), { subtitle: 'The Family Plan is for families in the US for now.' });
+    ), { subtitle: 'The membership is for families in the US for now.' });
   }
   if (plan && plan.entitled) return allSet(plan);
   mount(card(
@@ -745,7 +746,7 @@ async function backFromStripe(sessionId) {
 }
 
 async function backFromPortal() {
-  mount(loadingRow('Checking your plan…'));
+  mount(loadingRow('Checking your membership…'));
   try {
     await api('POST', '/api/billing/sync', {});
   } catch {}
@@ -764,9 +765,9 @@ function allSet(plan) {
     h('h2', null, "You're all set!"),
     h('p', { class: 'acct-lead' }, plan.state === 'trialing'
       ? `Your free trial has started. The first ${amount} payment is on ${date(plan.trialEnd)}, unless you cancel before then.`
-      : 'Thank you! The Family Plan is on. You can turn on playing with friends and the walkie-talkie for each child.'),
+      : 'Thank you! Your membership is on. You can turn on playing with friends and the walkie-talkie for each child.'),
     row(players ? btn('Go to your Family page', 'btn-play', () => render()) : btn('Add your first player', 'btn-play', () => addFirstView())),
-  ), { subtitle: 'Welcome to the Family Plan!' });
+  ), { subtitle: 'Welcome to your Glimmer World Membership!' });
 }
 
 // ------------------------------------------------------------------------------ 5. players
@@ -835,7 +836,7 @@ function playerForm({ player = null, first = false, onDone, onCancel = null }) {
     } catch (e) {
       busy(save, false);
       if (e.code === 'limit') err.textContent = `A family can have up to ${MAX_PLAYERS} players.`;
-      else if (e.code === 'not_entitled') err.textContent = 'Adding players needs the Family Plan.';
+      else if (e.code === 'not_entitled') err.textContent = 'Adding players needs a membership.';
       else if (e.code === 'consent_required') return refresh();
       else err.textContent = say(e);
     }
@@ -907,12 +908,12 @@ function ribbon(f) {
       const word = cfg.trialDays === 7 ? 'Free week' : 'Free trial';
       text = `${word}: ${days === 0 ? 'ends today' : plural(days, 'day') + ' left'}, then ${month}.`;
       cls = 'ribbon--trial';
-      acts.push(portal('Manage subscription'), btn('Start now', 'btn-play btn-small', startNow), cancel());
+      acts.push(portal('Manage membership'), btn('Start now', 'btn-play btn-small', startNow), cancel());
       break;
     }
     case 'active':
-      text = `Family Plan: renews ${date(p.periodEnd)}.`;
-      acts.push(portal('Manage subscription'), cancel());
+      text = `Glimmer World Membership: renews ${date(p.periodEnd)}.`;
+      acts.push(portal('Manage membership'), cancel());
       break;
     case 'past_due':
       text = `Payment didn't go through. Playing continues until ${date(p.graceUntil ?? p.until)}.`;
@@ -920,29 +921,29 @@ function ribbon(f) {
       acts.push(portal('Update card'), cancel());
       break;
     case 'canceling':
-      text = `Family Plan: ends ${date(p.periodEnd ?? p.until)}. Nothing more will be charged.`;
+      text = `Glimmer World Membership: ends ${date(p.periodEnd ?? p.until)}. Nothing more will be charged.`;
       cls = 'ribbon--end';
       acts.push(portal('Resume'));
       break;
     case 'lapsed':
-      text = ms(f.purgeAfter) ? `Resting: the kids' worlds are kept until ${date(f.purgeAfter)}.` : "Resting: the kids' worlds are kept for a while after a plan ends.";
+      text = ms(f.purgeAfter) ? `Resting: the kids' worlds are kept until ${date(f.purgeAfter)}.` : "Resting: the kids' worlds are kept for a while after a membership ends.";
       cls = 'ribbon--rest';
-      acts.push(btn('Restart the plan', 'btn-play btn-small', () => planView()), btn('Download worlds', 'btn-soft btn-small', downloadEverything));
+      acts.push(btn('Restart membership', 'btn-play btn-small', () => planView()), btn('Download worlds', 'btn-soft btn-small', downloadEverything));
       break;
     case 'comp':
       // a free pass on top of a plan that still renews (and charges): its buttons stay
       if (p.subState && p.subState !== 'canceling') {
-        text = `Free pass until ${date(p.until)}. Your Family Plan still renews on ${date(p.periodEnd)}.`;
-        acts.push(portal('Manage subscription'), cancel());
+        text = `Free pass until ${date(p.until)}. Your Glimmer World Membership still renews on ${date(p.periodEnd)}.`;
+        acts.push(portal('Manage membership'), cancel());
       } else if (p.subState === 'canceling') {
-        text = `Free pass until ${date(p.until)}. Your Family Plan ends ${date(p.periodEnd)}; nothing more will be charged.`;
+        text = `Free pass until ${date(p.until)}. Your Glimmer World Membership ends ${date(p.periodEnd)}; nothing more will be charged.`;
       } else text = `Free pass until ${date(p.until)}.`;
       cls = 'ribbon--comp';
       break;
     default:
-      text = 'No Family Plan yet.';
+      text = 'No Glimmer World Membership yet.';
       cls = 'ribbon--rest';
-      acts.push(btn('Start the Family Plan', 'btn-play btn-small', () => planView()));
+      acts.push(btn('Start your membership', 'btn-play btn-small', () => planView()));
   }
   return h('div', { class: 'ribbon ' + cls, id: 'plan', role: 'status' }, h('span', { class: 'pip', 'aria-hidden': 'true' }), h('p', null, text), acts.length ? h('div', { class: 'ribbon-acts' }, acts) : null);
 }
@@ -967,10 +968,10 @@ function cancelPlan(p) {
   const err = errBox();
   const end = p.state === 'trialing' ? p.trialEnd : p.periodEnd;
   const d = dialog([
-    h('h2', null, 'Cancel the Family Plan?'),
+    h('h2', null, 'Cancel your membership?'),
     h('p', null, p.state === 'trialing'
-      ? `The free trial runs until ${date(end)}, then the plan stops. Nothing will be charged.`
-      : `Everything keeps working until ${date(end)}, then the plan stops. Nothing more will be charged.`),
+      ? `The free trial runs until ${date(end)}, then the membership stops. Nothing will be charged.`
+      : `Everything keeps working until ${date(end)}, then the membership stops. Nothing more will be charged.`),
     h('p', null, "The kids' worlds are kept for a while after that, so you can come back or download them."),
     err,
     row(btn('Yes, cancel it', 'btn-danger', async (ev) => {
@@ -979,7 +980,7 @@ function cancelPlan(p) {
       try {
         await api('POST', '/api/billing/cancel', {});
         d.close();
-        toast('The Family Plan is cancelled. Nothing more will be charged.');
+        toast('Your membership is cancelled. Nothing more will be charged.');
         await refresh();
         return;
       } catch (e) {
@@ -991,7 +992,7 @@ function cancelPlan(p) {
         err.textContent = say(e);
       }
       busy(b, false);
-    }), linkBtn('Keep the plan', () => d.close())),
+    }), linkBtn('Keep membership', () => d.close())),
   ]);
 }
 
@@ -1054,7 +1055,7 @@ function playerCard(p, f) {
   if (p.lastPlayed) bits.push(`played ${date(p.lastPlayed)}`);
   const trialing = plan.state === 'trialing';
   const lockedWhy = () => {
-    if (!plan.entitled && f.config.friendsMode !== 'free-join') return ['Needs the Family Plan.'];
+    if (!plan.entitled && f.config.friendsMode !== 'free-join') return ['Needs a membership.'];
     if (!plan.friendsConsentOk) {
       if (plan.state === 'comp') return [`Turns on once we have your signed consent form. Write to ${f.config.operatorEmail || 'us'}.`];
       return ['Turns on after your first payment. ', trialing && linkBtn('Start now', startNow)];
@@ -1498,9 +1499,9 @@ function historyLine(a, names) {
     case 'device.removed': return 'A device was signed out.';
     case 'export.player': return who ? `You downloaded ${who}'s worlds.` : "You downloaded a player's worlds.";
     case 'export.family': return 'You downloaded everything.';
-    case 'plan.lapsed': return 'The Family Plan ended.';
-    case 'plan.resumed': return 'The Family Plan started again.';
-    case 'retention.purge': return 'Players were deleted after the plan ended.';
+    case 'plan.lapsed': return 'The membership ended.';
+    case 'plan.resumed': return 'The membership started again.';
+    case 'retention.purge': return 'Players were deleted after the membership ended.';
     case 'comp.set': return 'A free pass was set.';
     case 'email.changed': return 'Your sign-in email was changed.';
     default: return null;
@@ -1535,7 +1536,7 @@ function deleteFamilyDialog() {
       const r = await withCheck(() => api('POST', '/api/family/delete', { confirm: 'DELETE' }), { within5: true });
       if (r) {
         dlg.close();
-        familyGone("Your family's account is deleted. The Family Plan is cancelled, and the kids' worlds and everything else are gone from our server. Backups roll off within 7 days.");
+        familyGone("Your family's account is deleted. Your membership is cancelled, and the kids' worlds and everything else are gone from our server. Backups roll off within 7 days.");
         return;
       }
     } catch (e) {
@@ -1547,7 +1548,7 @@ function deleteFamilyDialog() {
     h('h2', null, 'Delete our account?'),
     h('p', null, 'This is for good. Here is what happens:'),
     h('ul', { class: 'acct-list' },
-      h('li', null, 'The Family Plan is cancelled now, with no further charges.'),
+      h('li', null, 'Your membership is cancelled now, with no further charges.'),
       h('li', null, "The kids' players, worlds and everything else are deleted from our server now."),
       h('li', null, 'Our backups roll off within 7 days.'),
       h('li', null, 'Stripe keeps the payment records the law requires.'),

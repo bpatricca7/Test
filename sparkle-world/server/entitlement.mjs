@@ -1,4 +1,4 @@
-// Is the family's Family Plan (or free pass) good right now? (docs/ACCOUNTS.md §6.5)
+// Is the family's Glimmer World Membership (or free pass) good right now? (docs/ACCOUNTS.md §6.5)
 // A pure function: no database, no Stripe, no clock of its own. Callers use
 // billing.entitlementFor(familyId), which loads the rows and caches the answer for 60 s.
 //

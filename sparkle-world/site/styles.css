@@ -898,6 +898,7 @@ button { font-family: var(--font); }
 .plan-grid .section-head { margin-bottom: 0; }
 .plan-box { background: var(--white); border-radius: 28px; padding: clamp(22px, 3.4vw, 36px); border: 3px solid #FFE08A; box-shadow: 8px 8px 0 var(--sun), 0 20px 40px -20px rgba(58, 31, 77, .45); }
 .plan-price { font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2rem); font-weight: 700; line-height: 1.15; color: var(--ink); margin-bottom: 16px; text-wrap: balance; }
+.plan-only { margin: -6px 0 18px; font-weight: 600; color: var(--ink-2); text-wrap: pretty; }
 .plan-ticks { list-style: none; margin: 0 0 22px; padding: 0; display: grid; gap: 10px; }
 .plan-ticks li { position: relative; padding-left: 30px; color: var(--ink-2); font-weight: 500; }
 .plan-ticks li::before { content: ''; position: absolute; left: 0; top: .35em; width: 16px; height: 16px; background: var(--mint); box-shadow: 3px 3px 0 var(--lav); }

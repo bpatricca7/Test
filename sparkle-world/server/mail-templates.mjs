@@ -108,18 +108,18 @@ function consentConfirm({ data, cfg }) {
 
 function welcome({ data, cfg }) {
   const trial = Number.isFinite(Number(data.trialEnd)) && data.trialEnd !== null && data.trialEnd !== undefined;
-  const lines = ['Thank you! Your Glimmer World Family Plan is on.', '', `The plan: ${cfg.priceText}. Nothing to buy inside the game, ever.`];
+  const lines = ['Thank you! Your Glimmer World Membership is on.', '', `The membership: ${cfg.priceText}, for the whole family, with everything included. It is the only plan there is: no tiers, no add-ons, and nothing to buy inside the game, ever.`];
   if (trial) {
     lines.push('', `Your free days end on ${fmtDate(data.trialEnd)}. Cancel before ${fmtDate(data.trialEnd)} and you won't be charged.`);
   }
   lines.push(
     '',
     'It renews every month until you cancel.',
-    `To cancel: on the Family page (${cfg.publicOrigin}/account) choose Cancel the plan, or reply to this email. Cancelling stops the next payment; the plan keeps working until the end of the month you paid for.`,
+    `To cancel: on the Family page (${cfg.publicOrigin}/account) choose Cancel the plan, or reply to this email. Cancelling stops the next payment; the membership keeps working until the end of the month you paid for.`,
     '',
     'Next: add your players on the Family page and set up the kids\' devices.',
   );
-  return { subject: 'Welcome to the Glimmer World Family Plan', text: lines.join('\n') };
+  return { subject: 'Welcome to your Glimmer World Membership', text: lines.join('\n') };
 }
 
 function friendsReady({ cfg }) {
@@ -137,7 +137,7 @@ function usOnly({ data }) {
   return {
     subject: 'Glimmer World is only in the United States for now',
     text: [
-      "Sorry! Glimmer World's Family Plan is only available in the United States for now, so we cancelled it.",
+      'Sorry! The Glimmer World Membership is only available in the United States for now, so we cancelled it.',
       '',
       data.refund === true || data.refundDue === true ? 'The payment that was taken will be refunded to your card.' : 'No payment was taken.',
     ].join('\n'),
@@ -148,20 +148,20 @@ function lapseWarning({ data, cfg }) {
   return {
     subject: "Your family's Glimmer World worlds will be deleted soon",
     text: [
-      `Your Glimmer World Family Plan ended on ${fmtDate(data.lapsedAt)}.`,
+      `Your Glimmer World Membership ended on ${fmtDate(data.lapsedAt)}.`,
       '',
       `Your family's players and worlds are kept until ${fmtDate(data.purgeAfter)}, then deleted.`,
       '',
-      `To keep them, restart the plan, or download the worlds, on the Family page: ${cfg.publicOrigin}/account`,
+      `To keep them, restart your membership, or download the worlds, on the Family page: ${cfg.publicOrigin}/account`,
     ].join('\n'),
   };
 }
 
 function annualReminder({ cfg }) {
   return {
-    subject: 'A yearly reminder about your Glimmer World Family Plan',
+    subject: 'A yearly reminder about your Glimmer World Membership',
     text: [
-      `A yearly reminder: your Glimmer World Family Plan renews every month (${cfg.priceText}) until you cancel.`,
+      `A yearly reminder: your Glimmer World Membership renews every month (${cfg.priceText}) until you cancel.`,
       '',
       `To cancel: on the Family page (${cfg.publicOrigin}/account) choose Cancel the plan, or reply to this email.`,
     ].join('\n'),
@@ -172,7 +172,7 @@ function inactive({ cfg }) {
   return {
     subject: 'Still using Glimmer World?',
     text: [
-      "Nobody in your family has signed in to Glimmer World or played it for two years, but the Family Plan is still active.",
+      "Nobody in your family has signed in to Glimmer World or played it for two years, but your Glimmer World Membership is still active.",
       '',
       `If you don't need it any more, you can cancel it and delete everything on the Family page: ${cfg.publicOrigin}/account (or reply to this email).`,
     ].join('\n'),
@@ -185,7 +185,7 @@ function accountDeleted() {
     text: [
       'Your Glimmer World family account was deleted, as asked.',
       '',
-      '- The Family Plan was cancelled, with no further charges.',
+      '- Your Glimmer World Membership was cancelled, with no further charges.',
       "- Your children's players, worlds and everything else we kept were deleted.",
       '- Our backups roll off within 7 days.',
       '- Stripe keeps the payment records the law requires.',

@@ -1,5 +1,5 @@
 // Free passes from the SW_FREE_PASS Variable (docs/ACCOUNTS.md §6.9): the operator's own family
-// uses the Family Plan without paying, set up from Railway's Variables alone (no admin shell).
+// uses the Glimmer World Membership without paying, set up from Railway's Variables alone (no admin shell).
 //
 //   const fp = createFreePass(ctx)
 //   fp.listed(email)               → { email, day, until } | null

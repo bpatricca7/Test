@@ -29,7 +29,7 @@
       <a href="#together">Play together</a>
       <a href="#grownups">For grown-ups</a>
 <!-- when accounts=optional,required -->
-      <a href="#family-plan">Family Plan</a>
+      <a href="#family-plan">Membership</a>
 <!-- end when -->
       <a href="#faq">Questions</a>
     </nav>
@@ -314,9 +314,9 @@
 <!-- when accounts=off -->
         <p class="section-lede">Friends can visit each other's worlds from their own iPad, phone or computer. The code is pictures, so there is nothing to spell, and nobody needs an account.</p>
 <!-- when accounts=optional -->
-        <p class="section-lede">Friends can visit each other's worlds from their own iPad, phone or computer. The code is pictures, so there is nothing to spell. Until {{SW_REQUIRED_FROM}}, devices that aren't signed in can still play together as before; after that, each friend's family needs the <a href="#family-plan">Family Plan</a> too.</p>
+        <p class="section-lede">Friends can visit each other's worlds from their own iPad, phone or computer. The code is pictures, so there is nothing to spell. Until {{SW_REQUIRED_FROM}}, devices that aren't signed in can still play together as before; after that, each friend's family needs a <a href="#family-plan">Glimmer World Membership</a> too.</p>
 <!-- when accounts=required -->
-        <p class="section-lede">Friends can visit each other's worlds from their own iPad, phone or computer, when their families have the <a href="#family-plan">Family Plan</a> too. The code is pictures, so there is nothing to spell, and kids never type an email.</p>
+        <p class="section-lede">Friends can visit each other's worlds from their own iPad, phone or computer, when their families have a <a href="#family-plan">Glimmer World Membership</a> too. The code is pictures, so there is nothing to spell, and kids never type an email.</p>
 <!-- end when -->
         <ol class="steps">
           <li><span class="step-n" aria-hidden="true">1</span><div><strong>Make a Code.</strong> Tap <em>Play now</em>, then <em>Play with Friends</em>, then <em>Make a Code</em>. You get 4 pictures. Say them to your friend.</div></li>
@@ -433,12 +433,12 @@
 <!-- when accounts=optional -->
       <div><dt><span class="px" style="--c:var(--sky)" aria-hidden="true"></span>A walkie-talkie, only if you say so</dt><dd>Voice stays off until a grown-up switches it on for each child on the Family page. On a device that isn't signed in yet, a grown-up turns it on for that device in Settings, with a quick multiplication question. Then your child holds a button to talk, and only friends in the same game with theirs on can hear. It's never recorded, the host can mute anyone, and it only works on this website. No camera, ever.</dd></div>
       <div><dt><span class="px" style="--c:var(--sun)" aria-hidden="true"></span>Accounts are for grown-ups</dt><dd>A grown-up signs in with an email on the Family page. Kids never type an email: each child is just a nickname you choose, and you set up the devices they play on. One cookie keeps a signed-in device signed in (and a short-lived one while a grown-up signs in).</dd></div>
-      <div><dt><span class="px" style="--c:var(--mint)" aria-hidden="true"></span>One plan, nothing to buy inside</dt><dd>The Family Plan is {{SW_PRICE_TEXT}}, for the whole family. There are no ads and nothing to buy inside the game: Sparkle Coins are earned by playing and can never be bought, and kids never see a price.</dd></div>
-      <div><dt><span class="px" style="--c:var(--lav)" aria-hidden="true"></span>Worlds saved twice</dt><dd>With the Family Plan, worlds are saved on the device and in your family's cloud copy on our server, so they follow your child to another device and come back if a browser clears them. Download or delete them any time. Devices that aren't signed in keep their worlds on the device only, as before.</dd></div>
+      <div><dt><span class="px" style="--c:var(--mint)" aria-hidden="true"></span>One membership, everything included</dt><dd>The Glimmer World Membership is {{SW_PRICE_TEXT}} for the whole family, and it is the only plan there is: no tiers, no add-ons. There are no ads and nothing to buy inside the game: Sparkle Coins are earned by playing and can never be bought, and kids never see a price.</dd></div>
+      <div><dt><span class="px" style="--c:var(--lav)" aria-hidden="true"></span>Worlds saved twice</dt><dd>With the membership, worlds are saved on the device and in your family's cloud copy on our server, so they follow your child to another device and come back if a browser clears them. Download or delete them any time. Devices that aren't signed in keep their worlds on the device only, as before.</dd></div>
 <!-- when accounts=required -->
       <div><dt><span class="px" style="--c:var(--sky)" aria-hidden="true"></span>A walkie-talkie, only if you say so</dt><dd>Voice stays off until a grown-up switches it on for each child on the Family page. Then your child holds a button to talk, and only friends in the same game with theirs on can hear. It's never recorded, the host can mute anyone, and it only works on this website. No camera, ever.</dd></div>
       <div><dt><span class="px" style="--c:var(--sun)" aria-hidden="true"></span>Accounts are for grown-ups</dt><dd>A grown-up signs in with an email on the Family page. Kids never type an email: each child is just a nickname you choose, and you set up the devices they play on. One cookie keeps a signed-in device signed in (and a short-lived one while a grown-up signs in).</dd></div>
-      <div><dt><span class="px" style="--c:var(--mint)" aria-hidden="true"></span>One plan, nothing to buy inside</dt><dd>The Family Plan is {{SW_PRICE_TEXT}}, for the whole family. There are no ads and nothing to buy inside the game: Sparkle Coins are earned by playing and can never be bought, and kids never see a price.</dd></div>
+      <div><dt><span class="px" style="--c:var(--mint)" aria-hidden="true"></span>One membership, everything included</dt><dd>The Glimmer World Membership is {{SW_PRICE_TEXT}} for the whole family, and it is the only plan there is: no tiers, no add-ons. There are no ads and nothing to buy inside the game: Sparkle Coins are earned by playing and can never be bought, and kids never see a price.</dd></div>
       <div><dt><span class="px" style="--c:var(--lav)" aria-hidden="true"></span>Worlds saved twice</dt><dd>Worlds are saved on the device and in your family's cloud copy on our server, so they follow your child to another device and come back if a browser clears them. Download or delete them any time on the Family page.</dd></div>
 <!-- end when -->
       <div><dt><span class="px" style="--c:var(--pink)" aria-hidden="true"></span>You decide who comes in</dt><dd>A friend needs the 4-picture code and a <em>Let in!</em> from the host. The host can <em>Send home</em> any friend, and <em>Careful players</em> (on from the start) keeps friends from changing the host's houses and furniture.</dd></div>
@@ -450,22 +450,23 @@
 </section>
 <!-- when accounts=optional,required -->
 
-<!-- ============================ FAMILY PLAN ============================ -->
+<!-- ============================ MEMBERSHIP (id family-plan) ============================ -->
 <section class="family-plan" id="family-plan" aria-labelledby="plan-title">
   <div class="wrap plan-grid">
     <header class="section-head">
-      <p class="eyebrow">Family Plan</p>
-      <h2 id="plan-title" class="display">One plan for the whole family.</h2>
+      <p class="eyebrow">Glimmer World Membership</p>
+      <h2 id="plan-title" class="display">One membership for the whole family.</h2>
 <!-- end when -->
 <!-- when accounts=optional -->
-      <p class="section-lede">Playing on your own device works without an account. The Family Plan adds worlds saved on every device, the Family page, and playing together with friends whose families have it too. From {{SW_REQUIRED_FROM}}, playing together needs the Family Plan for each family.</p>
+      <p class="section-lede">Playing on your own device works without an account. The membership adds worlds saved on every device, the Family page, and playing together with friends whose families have it too. From {{SW_REQUIRED_FROM}}, playing together needs the membership for each family.</p>
 <!-- when accounts=required -->
-      <p class="section-lede">Glimmer World needs the Family Plan. A grown-up starts it on the Family page, adds the kids, and sets up the devices they play on.</p>
+      <p class="section-lede">Glimmer World needs the membership. A grown-up starts it on the Family page, adds the kids, and sets up the devices they play on.</p>
 <!-- end when -->
 <!-- when accounts=optional,required -->
     </header>
     <div class="plan-box">
       <p class="plan-price">{{SW_PRICE_TEXT}}</p>
+      <p class="plan-only">One membership with everything included. There are no tiers and no add-ons.</p>
       <ul class="plan-ticks">
         <li>Up to 6 kids, each with their own player and worlds</li>
         <li>Worlds saved on every device, and kept if a browser clears them</li>
@@ -528,18 +529,18 @@
       </details>
       <details>
         <summary>Is there anything to buy? Any ads?</summary>
-        <p>No ads, and nothing to buy inside the game. The Family Plan ({{SW_PRICE_TEXT}}) is the only thing that costs money, and only a grown-up can start it, on the Family page. The candy shop and the ice cream parlor use Sparkle Coins, which come from playing: finding gems, cooking, gardening, a daily gift. Coins can't be bought, and kids never see a price.</p>
+        <p>No ads, and nothing to buy inside the game. The Glimmer World Membership ({{SW_PRICE_TEXT}}) is the only thing that costs money: one membership for the whole family, with everything included, and only a grown-up can start it, on the Family page. The candy shop and the ice cream parlor use Sparkle Coins, which come from playing: finding gems, cooking, gardening, a daily gift. Coins can't be bought, and kids never see a price.</p>
       </details>
       <details>
         <summary>Where are the worlds saved?</summary>
-        <p>On the device, in the browser, as your child plays, and with the Family Plan also in your family's cloud copy on our server, so their worlds follow them to another device and come back if a browser clears them. You can download them, or delete them, any time on the Family page. <em>My Worlds</em>, then <em>Save</em>, still saves a world as a file too.</p>
+        <p>On the device, in the browser, as your child plays, and with the membership also in your family's cloud copy on our server, so their worlds follow them to another device and come back if a browser clears them. You can download them, or delete them, any time on the Family page. <em>My Worlds</em>, then <em>Save</em>, still saves a world as a file too.</p>
       </details>
       <details>
         <summary>What does a child need to sign in?</summary>
         <p>Nothing: kids never type an email or a password. A grown-up signs in on the Family page with an email code, adds each child as a nickname, and sets up the child's device with a short code (or taps <em>Kids play on this device</em>). On the device, the child taps their picture in <em>Who's playing?</em> and plays.</p>
       </details>
       <details>
-        <summary>How do I cancel the Family Plan?</summary>
+        <summary>How do I cancel the membership?</summary>
         <p>On the Family page: <em>Cancel the plan</em>, then <em>Yes, cancel it</em>. No code, no questions. It keeps working until the end of the month you paid for, and nothing more is charged. You can download everything, or delete your family's account, on the Family page too.</p>
       </details>
 <!-- end when -->

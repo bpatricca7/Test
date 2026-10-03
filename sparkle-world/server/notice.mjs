@@ -24,9 +24,14 @@
 // Version 1 was edited in place twice before any family agreed in production (accounts were still
 // off): a rewording, and the rename from Sparkle World to Glimmer World (docs/ACCOUNTS.md §11.3).
 // Once a real agreement exists, every change bumps NOTICE_VERSION.
-export const NOTICE_VERSION = 1;
+// Version 2 (2026-10-03): the paid plan's name, "Family Plan", became "Glimmer World Membership"
+// (in "If you don't finish"). Accounts were on in production by then (real agreements to version 1
+// exist or may exist), so the change bumps the version. It changes no information, use, recipient
+// or right, so it is not one that matters: NOTICE_MIN_VERSION stays 1 and agreements to version 1
+// still count (nobody is asked again).
+export const NOTICE_VERSION = 2;
 export const NOTICE_MIN_VERSION = 1;
-export const NOTICE_DATE = '2026-09-28';
+export const NOTICE_DATE = '2026-10-03';
 
 export const NOTICE_TITLE = 'Before your children play: what Glimmer World keeps, and why.';
 
@@ -108,7 +113,7 @@ export function noticeSections(cfg = {}) {
     },
     {
       title: "If you don't finish",
-      text: "setting up: if you don't agree to this notice within 14 days, we delete your email address; if you agree but don't start the Family Plan within 30 days, we delete it then.",
+      text: "setting up: if you don't agree to this notice within 14 days, we delete your email address; if you agree but don't start a Glimmer World Membership within 30 days, we delete it then.",
     },
     {
       title: 'Who runs Glimmer World',
@@ -151,5 +156,5 @@ export function renewalSentence(cfg = {}, { trial = false } = {}) {
   const price = pricePhrase(cfg);
   const days = Number.isFinite(cfg.trialDays) ? cfg.trialDays : 0;
   const start = trial && days > 0 ? `After ${days === 7 ? 'the free week' : `${days} free days`}, my` : 'My';
-  return `I agree to the Terms. ${start} Family Plan renews every month at ${price} until I cancel; I can cancel any time on the Family page.`;
+  return `I agree to the Terms. ${start} Glimmer World Membership renews every month at ${price} until I cancel; I can cancel any time on the Family page.`;
 }
