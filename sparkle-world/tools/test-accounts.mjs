@@ -2734,7 +2734,7 @@ describe('A: the admin CLI (§13.8)', () => {
     assert.equal(r.code, 0, r.text);
     assert.equal(r.lines[0], `family ${familyId}`);
     assert.match(r.text, /plan: none, entitled no/);
-    assert.match(r.text, /consent: email_plus, notice v1 agreed \d{4}-\d{2}-\d{2}, verified -/);
+    assert.match(r.text, new RegExp(`consent: email_plus, notice v${NOTICE_VERSION} agreed \\d{4}-\\d{2}-\\d{2}, verified -`));
     assert.match(r.text, /players 0 \(friends on 0, walkie on 0\) {2}sessions: parent 1, device 0/);
     assert.deepEqual((await run(['comp', email, '2027-02-30'])).code, 2);
     r = await run(['comp', email, '2027-01-31']);
