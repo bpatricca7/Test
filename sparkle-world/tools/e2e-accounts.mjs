@@ -25,8 +25,9 @@
 //  5. Friends: in the free week Lily's switch is locked; Start now (email check) → verified →
 //     on. Family B does the same with Start today. Lily hosts, B's June joins with the code →
 //     Let in! → they build; hashes equal. A name change by June's page is ignored. Family C
-//     (never subscribed): the resting card, no knock reaches Lily. The game never shows "$" or
-//     "subscri" in any state.
+//     (never subscribed): its grown-up signs in from the game and goes straight on to the
+//     Family page (no card), no knock reaches Lily. The game never shows "$" or "subscri" in any
+//     state.
 //  6. Walkie (the relay itself, with the kids' device cookies): Lily's on, June's off → June
 //     gets 0 voice bytes; B switches June's on → the perm frame → she talks and hears; off
 //     again → nothing within 1 s.
@@ -749,7 +750,8 @@ async function s5() {
   await noPriceInGame(june.page, 'June playing together');
   await shot(lily.page, 'ipad-lily-hosts-june');
   // family C never subscribed: the grown-up signs in from the game ("I'm a grown-up", §7.1),
-  // which takes her back to it: the resting card; nothing reaches Lily
+  // which takes her back to it, and a grown-up's own sign-in with no membership goes straight
+  // on to the Family page (no card in between); nothing reaches Lily
   const knocks = await game(lily, () => window.__knockEvents || 0);
   const cDev = await newDevice('familyC', 'Poppy', { w: 1024, h: 768 }, { allow: [/403/] });
   const C = (R.fam.C = { email: `c.${randomBytes(3).toString('hex')}@example.com`, ctx: cDev.ctx, page: cDev.page });
@@ -769,9 +771,10 @@ async function s5() {
   await cDev.page.fill('#email', C.email);
   await cDev.page.click('button[type=submit]');
   await cDev.page.waitForSelector('.code-boxes');
-  await Promise.all([cDev.page.waitForURL((u) => u.pathname === '/play', { timeout: 60000 }), cDev.page.locator('#code').fill(await codeFor(C.email, { since: cSince }))]);
-  await cDev.page.getByText(/Glimmer World is resting/).first().waitFor({ timeout: 60000 });
-  check(true, 'family C signed in from the game and is back in it: "Glimmer World is resting…"');
+  await Promise.all([cDev.page.waitForURL((u) => u.pathname === '/play', { timeout: 60000, waitUntil: 'commit' }), cDev.page.locator('#code').fill(await codeFor(C.email, { since: cSince }))]);
+  await cDev.page.waitForURL((u) => u.pathname === '/account' && !u.search, { timeout: 60000 });
+  await cDev.page.getByText(/Before your children play/).first().waitFor({ timeout: 60000 });
+  check(true, 'family C signed in from the game, which takes the grown-up straight on to the Family page (the notice, then the membership)');
   // and the relay itself: C's session cannot come into Lily's game, with or without a player
   const lilyRoom = `sw1-${code.join('-')}`;
   const cCookie = await cookieOf(cDev.ctx);
@@ -782,11 +785,7 @@ async function s5() {
     check(s.closed === want, `family C's socket into Lily's game ${p ? 'as a made-up player' : 'without a player'}: closed with ${s.closed} (${want})`);
     s.ws.terminate();
   }
-  await shot(cDev.page, 'familyC-resting');
-  await noPriceInGame(cDev.page, 'family C (never subscribed)');
-  // the title is still drawn behind the resting card, but nothing on it can be reached
-  const reachable = await cDev.page.locator('button.sw-title-friends').first().click({ trial: true, timeout: 3000 }).then(() => true, () => false);
-  check(!reachable, 'family C: Play with Friends cannot be reached behind the resting card');
+  await shot(cDev.page, 'familyC-family-page');
   await sleep(1000);
   check((await game(lily, () => window.__knockEvents || 0)) === knocks, 'no knock from family C reaches Lily');
   await retire('familyC');

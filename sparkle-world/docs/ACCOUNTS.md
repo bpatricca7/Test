@@ -122,7 +122,7 @@ rate limits and caches stay in memory, so **Replicas stays 1** (as DEPLOY-RAILWA
 | Database, `/api/*` accounts routes | not used, not mounted | used | used |
 | `/play` signed out | exactly today | exactly today (device saves, math-gated walkie) + a **Grown-ups** tile | "Ask a grown-up" card (§7.1) |
 | Signed in, entitled | — | cloud saves, picker, dashboard switches | same |
-| Signed in, no plan (ended or never started) | — | plays her own player with cloud writes refused (read-only), saves on the device | "Glimmer World is resting" card |
+| Signed in, no plan (ended or never started) | — | plays her own player with cloud writes refused (read-only), saves on the device | a grown-up's sign-in: straight to the Family page; a kid's device: "Glimmer World is resting" card |
 | … and `SW_FRIENDS_MODE=free-join`, a player with friends on | — | visitor: join a friend's game only (§7.1) | same |
 | Relay | exactly today | sockets without `p` as today; sockets with `p` are checked (§8) | every socket needs a session and `p` |
 | `/api/net` | `{ok, version, build}` | adds `accounts:'optional', friendsMode` | adds `accounts:'required', friendsMode` |
@@ -1063,9 +1063,13 @@ hook onto `game.startHooks`; `Game.start()` awaits every hook **after the textur
      below) → **visitor** mode in either `optional` or `required`: the title shows only **Play with
      Friends** (Join a Code), **Dress Up** and **Settings**; saves stay on the device (no cloud);
    - otherwise `optional` → account mode with cloud writes refused (read-only; saves stay on the
-     device); `required` → blocked with "Glimmer World is resting. Ask a grown-up to wake it up!"
-6. Signed in, entitled: no players → "A grown-up can add you on the Family page" (parent sessions get
-   a link); a locked device or one player → that player; otherwise **Who's playing?**: full-screen,
+     device); `required` → a grown-up's own sign-in (a `parent` session) gets no card and goes
+     straight to the Family page (`/account`: the notice if not agreed yet, then the membership);
+     a kid's device is blocked with "Glimmer World is resting. Ask a grown-up to wake it up!" and
+     one **Grown-ups** button, which leads past the grown-up check straight to the Family page
+6. Signed in, entitled: no players → in `required` a grown-up's own sign-in goes straight to the
+   Family page (`/account?next=/play`) to add one; a kid's device (and `optional`) gets "A grown-up
+   can add you on the Family page"; a locked device or one player → that player; otherwise **Who's playing?**: full-screen,
    big cards (≥ 120 px) with the portrait (or a colored bubble with the first letter) and the nickname,
    the last player first. Tapping one selects it.
 

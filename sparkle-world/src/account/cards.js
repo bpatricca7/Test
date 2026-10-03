@@ -68,7 +68,9 @@ export async function grownupCard(game, acct) {
 /**
  * `required` mode without a sign-in, a good plan or a player: a card over the title that
  * stays (§7.1). why: 'signin' | 'resting' | 'noplayers'. soft (`optional`, no player yet): an
- * OK closes it and she plays on this device.
+ * OK closes it and she plays on this device. A kid's device sees 'resting' and 'noplayers'
+ * (a grown-up's own sign-in goes straight to the Family page instead): its Grown-ups button
+ * leads, past the grown-up check, straight there too.
  */
 export async function blockingCard(game, acct, why, soft = false) {
   const worlds = why === 'signin' ? await game.store.listWorlds() : [];
@@ -85,7 +87,7 @@ export async function blockingCard(game, acct, why, soft = false) {
     } else if (v && (await acct.gate())) {
       if (v === 'grown') go('/account?next=/play');
       else if (v === 'code') await pairDevice(game, acct);
-      else await grownupCard(game, acct);
+      else go('/account'); // resting / nobody added: past the check, straight to the Family page
     }
   }
 }

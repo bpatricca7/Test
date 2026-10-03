@@ -1187,7 +1187,7 @@ if (!MEASURE) {
       await page.context().close();
     });
 
-    test('required: signed out gets "Ask a grown-up" (it stays), a lapsed family "resting", no players yet "A grown-up can add you"', { timeout: 300000 }, async () => {
+    test('required: signed out gets "Ask a grown-up" (it stays), a lapsed family "resting", no players yet "A grown-up can add you"; a grown-up\'s own sign-in goes to the Family page', { timeout: 300000 }, async () => {
       mode = 'required';
       try {
         const out = await open(web.base + '/play');
@@ -1205,16 +1205,26 @@ if (!MEASURE) {
         const rest = await open(web.base + '/play', { tok: session(f.id) });
         await title(rest);
         await dialogs(rest, /Glimmer World is resting/);
+        // a kid's device: one button (past the grown-up check, the Family page)
+        assert.deepEqual(await rest.$$eval('.sw-dialog .sw-dialog-buttons button', (bs) => bs.map((b) => b.textContent.trim())), ['Grown-ups']);
         await noMoney(rest);
         await rest.context().close();
-        // a plan but nobody added yet: the card stays in `required`...
+        // a grown-up's own sign-in gets no card: straight to the Family page (the membership)
+        const grown = await open(web.base + '/play', { tok: session(f.id, { kind: 'parent' }) });
+        await grown.waitForURL((u) => u.pathname === '/account' && !u.search, { timeout: 120000 });
+        await grown.context().close();
+        // a plan but nobody added yet: a grown-up's sign-in goes to the Family page to add one...
         const empty = await family({ players: [] });
         const tok = session(empty.id, { kind: 'parent' });
         const none = await open(web.base + '/play', { tok });
-        await title(none);
-        await dialogs(none, /A grown-up can add you on the Family page/);
-        assert.equal(await none.evaluate(() => window.__game.account.mode), 'blocked');
+        await none.waitForURL((u) => u.pathname === '/account' && u.searchParams.get('next') === '/play', { timeout: 120000 });
         await none.context().close();
+        // ...a kid's device that has nobody gets the card, and it stays in `required`...
+        const kid = await open(web.base + '/play', { tok: session(empty.id) });
+        await title(kid);
+        await dialogs(kid, /A grown-up can add you on the Family page/);
+        assert.equal(await kid.evaluate(() => window.__game.account.mode), 'blocked');
+        await kid.context().close();
         // ...and in `optional` an OK closes it: she plays on this device as before
         mode = 'optional';
         const soft = await open(web.base + '/play', { tok });

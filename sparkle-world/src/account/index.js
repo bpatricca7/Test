@@ -166,10 +166,18 @@ export class Account {
     g.events.on('net:message', (m) => m && m.code === 'player_gone' && this._gone(m.code));
   }
 
-  /** The card of §7.1 over the title: it stays in `required`; in `optional` she may close it. */
+  /**
+   * The card of §7.1 over the title: it stays in `required`; in `optional` she may close it.
+   * A grown-up's own sign-in in `required` (no plan, or nobody added yet) gets no card: straight
+   * to the Family page, which leads with what is missing (the membership, or the first player).
+   */
   _block(why) {
     const soft = this.server !== 'required';
     if (!soft) this.mode = 'blocked';
+    if (!soft && why !== 'signin' && this.me && this.me.kind === 'parent') {
+      location.assign(why === 'noplayers' ? '/account?next=/play' : '/account');
+      return;
+    }
     this.game.events.on('game:ready', () => setTimeout(() => blockingCard(this.game, this, why, soft), 0));
   }
 
