@@ -440,7 +440,7 @@ async function studioPass(browser, errors, { touch = false } = {}) {
   await press(whoBtn('boy'));
   await settle(page, 400);
   const bl = await look(page);
-  c(bl.hair.style === 'afro' && bl.top.type === 'jersey' && bl.eyes.lashes === false, `B3 Boy again brings back his own boy look (${bl.hair.style}, ${bl.top.type})`);
+  c(JSON.stringify(bl) === JSON.stringify(boyLook) && bl.hair.style === 'afro', `B3 Boy again brings back his own boy look, exactly (${bl.hair.style}, ${bl.top.type})`);
   await press(whoBtn('girl'));
   await settle(page, 400);
   c((await look(page)).hair.style === 'long', 'B3 Girl again brings back the girl look');
