@@ -1,0 +1,107 @@
+# Glimmer World: every automated check on every change (docs/ACCOUNTS.md §12.10).
+# Nothing here talks to Stripe or an email provider: Stripe is the local fake
+# (tools/stripe-fake/), emails stay in memory, Postgres is the service below.
+name: sparkle-world tests
+
+on:
+  push:
+    branches: [main, 'claude/**']
+    paths: ['sparkle-world/**', '.github/workflows/test.yml']
+  pull_request:
+    paths: ['sparkle-world/**', '.github/workflows/test.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sparkle-world-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: sparkle-world
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      # tools/testdb.mjs makes a fresh database per test file on this server
+      SW_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: sparkle-world/package-lock.json
+
+      - name: Install (exact pins)
+        run: npm ci
+
+      - name: Chromium for the browser checks
+        run: |
+          npx --yes playwright@1.56.1 install --with-deps chromium
+          echo "CHROMIUM_PATH=$(node -e "import('playwright-core').then((p) => console.log(p.chromium.executablePath()))")" >> "$GITHUB_ENV"
+
+      - name: Build (the game, the home page; accounts off)
+        run: npm run build
+
+      - name: Product name (Glimmer World; no old name left anywhere people read)
+        run: node --test tools/test-name.mjs
+
+      - name: Accounts platform (A)
+        run: npm run test:accounts
+
+      - name: Mail (Microsoft 365)
+        run: npm run test:mail-microsoft
+
+      - name: Billing (B)
+        run: npm run test:billing
+
+      - name: Cloud saves (C)
+        run: npm run test:saves
+
+      - name: Multiplayer net core and relay (with and without accounts)
+        run: npm run test:net
+
+      - name: Walkie-talkie (with and without accounts)
+        run: npm run test:walkie -- --no-build
+
+      - name: Family accounts end to end
+        run: npm run e2e:accounts
+
+      - name: Smoke (the game, accounts off)
+        run: node tools/smoke.mjs --shots-prefix=ci
+
+      - name: Home page and account pages
+        run: node tools/site-check.mjs --no-build
+
+      - name: npm audit (informational)
+        if: always()
+        continue-on-error: true
+        run: npm audit --omit=dev
+
+      - name: Screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shots
+          path: sparkle-world/.shots/*.png
+          retention-days: 7
+          if-no-files-found: ignore

@@ -1,0 +1,143 @@
+// In-page dialogs (confirm() and prompt() do nothing inside the claude.ai Artifact frame).
+
+import { icon } from './icons.js';
+
+function make(tag, cls, text) {
+  const el = document.createElement(tag);
+  if (cls) el.className = cls;
+  if (text !== undefined) el.textContent = text;
+  return el;
+}
+
+/**
+ * Shared shell: a centered card over a dim layer; resolves with close(value). An aborted
+ * `signal` (AbortSignal) closes it as if cancelled.
+ */
+function openDialog(ui, build, signal = null) {
+  return new Promise((resolve) => {
+    const wrap = make('div', 'sw-dialog-wrap');
+    const dim = make('div', 'sw-backdrop');
+    const card = make('div', 'sw-dialog');
+    card.setAttribute('role', 'dialog');
+    card.setAttribute('aria-modal', 'true');
+    wrap.append(dim, card);
+    ui.dialogLayer.appendChild(wrap);
+    ui.dialogOpen = true;
+    let done = false;
+    const close = (value) => {
+      if (done) return;
+      done = true;
+      window.removeEventListener('keydown', onKey, true);
+      wrap.remove();
+      ui.dialogOpen = ui.dialogLayer.childElementCount > 0;
+      resolve(value);
+    };
+    const handlers = build(card, close);
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        close(handlers.cancelValue);
+      } else if (e.key === 'Enter') {
+        e.stopPropagation();
+        // a focused button answers for itself (the browser clicks it), so Enter on
+        // "No, keep it" never turns into "Yes"
+        const active = document.activeElement;
+        if (active && active.tagName === 'BUTTON' && card.contains(active)) return;
+        if (handlers.onEnter) {
+          e.preventDefault();
+          handlers.onEnter();
+        }
+      }
+    };
+    window.addEventListener('keydown', onKey, true);
+    dim.addEventListener('pointerdown', () => close(handlers.cancelValue));
+    if (signal) {
+      if (signal.aborted) close(handlers.cancelValue);
+      else signal.addEventListener('abort', () => close(handlers.cancelValue), { once: true });
+    }
+    if (handlers.focus) setTimeout(() => handlers.focus.focus(), 30);
+  });
+}
+
+/** Yes/No question. Resolves true for yes. */
+export function confirmDialog(ui, { title = 'Are you sure?', text = '', yes = 'Yes', no = 'No', yesVariant = 'pink', icon: ic = null, image = null, imageClass = '', signal = null } = {}) {
+  return openDialog(ui, (card, close) => {
+    const h = make('h3');
+    if (ic) h.innerHTML = icon(ic, { size: 30 }) + ' ';
+    h.appendChild(document.createTextNode(title));
+    card.appendChild(h);
+    // optional picture (a world's thumbnail: what it goes back to)
+    if (image) {
+      const img = make('img', imageClass);
+      img.alt = '';
+      img.src = image;
+      card.appendChild(img);
+    }
+    if (text) card.appendChild(make('p', '', text));
+    const row = make('div', 'sw-dialog-buttons');
+    const noBtn = ui.button({ label: no, variant: 'white', icon: 'close', onClick: () => close(false) });
+    const yesBtn = ui.button({ label: yes, variant: yesVariant, icon: 'check', onClick: () => close(true) });
+    row.append(noBtn, yesBtn);
+    card.appendChild(row);
+    // no onEnter: Enter only activates the focused button (No, by default)
+    return { cancelValue: false, onEnter: null, focus: noBtn };
+  }, signal);
+}
+
+/**
+ * A question with any number of answers, e.g. "Keep the one here / Use the file's / Keep
+ * both". choices: [{ value, label, variant, icon, className }]; body: an optional element
+ * under the title (pictures); className: extra class on the card; makeButton(opts): the button
+ * factory (default ui.button). Esc and a tap outside resolve cancelValue; the choice at
+ * `focus` has the keyboard focus (Enter only presses the focused button).
+ */
+export function choiceDialog(ui, { title = '', text = '', body = null, note = '', choices = [], cancelValue = null, focus = 0, className = '', makeButton = null, signal = null } = {}) {
+  return openDialog(ui, (card, close) => {
+    if (className) card.classList.add(...className.split(/\s+/).filter(Boolean));
+    if (title) card.appendChild(make('h3', '', title));
+    if (body) card.appendChild(body);
+    if (text) card.appendChild(make('p', '', text));
+    const row = make('div', 'sw-dialog-buttons');
+    const btn = makeButton || ((o) => ui.button(o));
+    const buttons = choices.map((c) => btn({ label: c.label, variant: c.variant || 'white', icon: c.icon || null, className: c.className || '', onClick: () => close(c.value) }));
+    row.append(...buttons);
+    card.appendChild(row);
+    if (note) card.appendChild(make('p', 'sw-dialog-note', note));
+    return { cancelValue, onEnter: null, focus: buttons[focus] || buttons[0] || null };
+  }, signal);
+}
+
+/** Ask for a short text. Resolves the trimmed string, or null when cancelled. */
+export function textInputDialog(ui, { title = 'Name', value = '', placeholder = '', suggestions = [], ok = 'OK', maxLength = 40, signal = null } = {}) {
+  return openDialog(ui, (card, close) => {
+    card.appendChild(make('h3', '', title));
+    const input = make('input', 'sw-input');
+    input.type = 'text';
+    input.value = value;
+    input.placeholder = placeholder;
+    input.maxLength = maxLength;
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+    card.appendChild(input);
+    const chips = make('div', 'sw-chips');
+    for (const s of suggestions) {
+      const c = make('button', 'sw-chip', s);
+      c.type = 'button';
+      c.addEventListener('click', () => { input.value = s; input.focus(); ui.game.audio.play('click'); });
+      chips.appendChild(c);
+    }
+    card.appendChild(chips);
+    const submit = () => {
+      const v = input.value.trim();
+      if (v) close(v);
+      else input.focus();
+    };
+    const row = make('div', 'sw-dialog-buttons');
+    row.append(
+      ui.button({ label: 'Cancel', variant: 'white', icon: 'close', onClick: () => close(null) }),
+      ui.button({ label: ok, variant: 'mint', icon: 'check', onClick: submit }),
+    );
+    card.appendChild(row);
+    return { cancelValue: null, onEnter: submit, focus: input };
+  }, signal);
+}
