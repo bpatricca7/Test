@@ -154,6 +154,7 @@ p .acct-link { min-height: 0; padding: 0 2px; font-size: inherit; }
 .dash-head { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: flex-end; justify-content: space-between; }
 .dash-head h2 { margin: 0; font-size: clamp(1.8rem, 1.3rem + 1.8vw, 2.6rem); }
 .dash-head p { margin: 0; color: var(--muted); font-weight: 500; overflow-wrap: anywhere; }
+.dash-who { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; min-width: 0; }
 .dash .acct-card { margin: 0; }
 .dash-cols { display: grid; gap: 26px; }
 @media (min-width: 900px) { .dash-cols { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }

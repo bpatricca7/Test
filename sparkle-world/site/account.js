@@ -873,7 +873,9 @@ function dashboard() {
     h('div', { class: 'dash' },
       h('div', { class: 'dash-head' },
         h('h2', null, 'Your family'),
-        h('p', null, 'Signed in as ', f.email)),
+        h('div', { class: 'dash-who' },
+          h('p', null, 'Signed in as ', f.email),
+          btn('Sign out', 'btn-soft btn-small', signOut))),
       // signed in from the game: this is often the kids' own device, which should not keep a
       // grown-up's session (the Family page and the plan behind only the times-table question)
       S.next && S.next.startsWith('/play') && h('div', { class: 'acct-note' },
@@ -885,7 +887,7 @@ function dashboard() {
       h('div', { class: 'dash-cols' }, devicesSection(f), privacySection(f)),
       h('div', { class: 'dash-foot' },
         h('a', { class: 'btn btn-play', href: '/play' }, 'Play now'),
-        h('div', { class: 'acct-row' }, btn('Sign out', 'btn-soft btn-small', signOut), linkBtn('Sign out everywhere', signOutEverywhere)))),
+        h('div', { class: 'acct-row' }, linkBtn('Sign out everywhere', signOutEverywhere)))),
   ], { wide: true, subtitle: "Everything about your family's Glimmer World, in one place." });
   loadDevices();
   loadHistory();
