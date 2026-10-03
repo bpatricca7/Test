@@ -74,7 +74,7 @@
               "livemode": false,
               "metadata": {},
               "meter": null,
-              "nickname": "Family Plan monthly",
+              "nickname": "Membership monthly",
               "product": "prod_Fixture0001",
               "tiers_mode": null,
               "transform_usage": null,
@@ -92,7 +92,7 @@
               "livemode": false,
               "lookup_key": "sparkle_family_monthly",
               "metadata": {},
-              "nickname": "Family Plan monthly",
+              "nickname": "Membership monthly",
               "product": "prod_Fixture0001",
               "recurring": {
                 "interval": "month",

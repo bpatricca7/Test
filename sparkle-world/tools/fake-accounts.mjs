@@ -569,7 +569,7 @@ export async function createFakeAccounts(o = {}) {
     { method: 'GET', path: '/api/fake/stripe/c/:id', who: 'anyone', handler: async (req, x) => {
       const c = checkouts.get(x.params.id);
       if (!c) throw httpError(404, 'not_found');
-      return fakePage('Pretend Stripe Checkout', `<p>Glimmer World Family Plan: ${esc(cfg.priceText)}${c.trial ? `, free for ${cfg.trialDays} days` : ''}.</p><p><a class="b" id="pay" href="/api/fake/stripe/pay/${esc(x.params.id)}">Pay (4242)</a> <a href="/account?checkout=cancel">Back</a></p>`);
+      return fakePage('Pretend Stripe Checkout', `<p>Glimmer World Membership: ${esc(cfg.priceText)}${c.trial ? `, free for ${cfg.trialDays} days` : ''}.</p><p><a class="b" id="pay" href="/api/fake/stripe/pay/${esc(x.params.id)}">Pay (4242)</a> <a href="/account?checkout=cancel">Back</a></p>`);
     } },
     { method: 'GET', path: '/api/fake/stripe/pay/:id', who: 'anyone', handler: async (req, x) => {
       const c = checkouts.get(x.params.id);

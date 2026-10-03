@@ -31,7 +31,7 @@ export function checkoutPage(engine, session, { message = '' } = {}) {
   const m = engine.meta.get(session.id) || {};
   const price = engine.prices.get(m.priceId);
   const trial = m.trialDays;
-  const head = `<h1>Glimmer World Family Plan</h1>
+  const head = `<h1>Glimmer World Membership</h1>
 <p>${trial ? `${trial} days free, then ` : ''}${money(price?.unit_amount ?? 0, price?.currency)} a month, plus sales tax where it applies.</p>
 ${session.custom_text?.terms_of_service_acceptance?.message ? `<p><small>${esc(session.custom_text.terms_of_service_acceptance.message)}</small></p>` : ''}`;
   if (session.status !== 'open') {

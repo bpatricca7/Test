@@ -1,17 +1,17 @@
-// Make the Stripe objects the Family Plan needs (docs/ACCOUNTS.md §6.1, §14 step 4), once:
+// Make the Stripe objects the Glimmer World Membership needs (docs/ACCOUNTS.md §6.1, §14 step 4), once:
 //
 //   STRIPE_SECRET_KEY=sk_test_… PUBLIC_ORIGIN=https://your-domain npm run stripe:setup
 //
 // It finds or makes, and prints for the Railway Variables:
-//   - the Product "Glimmer World Family Plan" (metadata sw=family_plan)
+//   - the Product "Glimmer World Membership" (metadata sw=family_plan)
 //   - its one Price: $5.99 a month, USD, tax behavior "exclusive" ("plus sales tax where it applies"),
 //     lookup key sparkle_family_monthly                          → STRIPE_PRICE_ID
 //   - a Customer Portal configuration (metadata sw=family_portal): update the card, invoice
 //     history, cancel at the end of the period with the reason survey; no plan switching, no
 //     quantity, no email editing                                  → STRIPE_PORTAL_CONFIG
 // Running it again changes nothing (it looks everything up first; a portal configuration that
-// drifted is put back, and a product or portal headline made under the game's old name, such as
-// "Sparkle World Family Plan", gets today's name). A Stripe price can't be changed: if the one with the lookup key differs,
+// drifted is put back, and a product or portal headline made under an old name, such as
+// "Sparkle World Family Plan" or "Glimmer World Family Plan", gets today's name). A Stripe price can't be changed: if the one with the lookup key differs,
 // it stops and says so (`--replace` makes a new one and moves the lookup key to it).
 //
 // It needs a full secret key (sk_…) once, by hand. The running server only gets the restricted
@@ -27,13 +27,13 @@ import { stripeOptions } from '../server/stripe.mjs';
 export const LOOKUP_KEY = 'sparkle_family_monthly';
 export const PRODUCT_TAG = 'family_plan';
 export const PORTAL_TAG = 'family_portal';
-export const PRODUCT_NAME = 'Glimmer World Family Plan';
-export const PORTAL_HEADLINE = 'Glimmer World Family Plan';
+export const PRODUCT_NAME = 'Glimmer World Membership';
+export const PORTAL_HEADLINE = 'Glimmer World Membership';
 export const PRICE = Object.freeze({ unit_amount: 599, currency: 'usd', interval: 'month', tax_behavior: 'exclusive' });
 
 const CANCEL_REASONS = ['too_expensive', 'missing_features', 'switched_service', 'unused', 'customer_service', 'too_complex', 'low_quality', 'other'];
 
-/** The portal features the Family Plan wants (§6.1). */
+/** The portal features the membership wants (§6.1). */
 export function portalFeatures() {
   return {
     customer_update: { enabled: false }, // the sign-in email and the receipts' email stay one address
@@ -128,7 +128,7 @@ export async function setup({ stripe, origin = null, replace = false, taxCode = 
       tax_behavior: PRICE.tax_behavior,
       lookup_key: LOOKUP_KEY,
       transfer_lookup_key: true,
-      nickname: 'Family Plan monthly',
+      nickname: 'Membership monthly',
       metadata: { sw: 'family_monthly' },
     });
     created.push('price');

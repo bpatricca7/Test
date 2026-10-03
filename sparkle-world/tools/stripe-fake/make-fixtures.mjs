@@ -31,7 +31,7 @@ function checkoutParams(customer, family, trialDays) {
     payment_method_collection: 'always', payment_method_types: ['card'], automatic_tax: { enabled: 'true' },
     customer_update: { address: 'auto', name: 'auto' }, billing_address_collection: 'required',
     consent_collection: { terms_of_service: 'required' },
-    custom_text: { terms_of_service_acceptance: { message: 'I agree to the Terms. My Family Plan renews every month at $5.99 plus tax until I cancel; I can cancel any time on the Family page.' } },
+    custom_text: { terms_of_service_acceptance: { message: 'I agree to the Terms. My Glimmer World Membership renews every month at $5.99 plus tax until I cancel; I can cancel any time on the Family page.' } },
     allow_promotion_codes: 'false', locale: 'en',
     success_url: 'https://glimmerworld.example/account?checkout={CHECKOUT_SESSION_ID}', cancel_url: 'https://glimmerworld.example/account?checkout=cancel',
   };

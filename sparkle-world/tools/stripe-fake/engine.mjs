@@ -73,7 +73,7 @@ export class StripeEngine {
   /**
    * @param {object} o
    * @param {string} o.publicUrl   the base of the hosted pages' URLs (/c/:id, /p/:id)
-   * @param {boolean} [o.seed]     make the Family Plan product and its $5.99 price (default true)
+   * @param {boolean} [o.seed]     make the membership product and its $5.99 price (default true)
    * @param {number} [o.taxRate]   US sales tax in the fake (default 0.06)
    */
   constructor({ publicUrl = 'http://127.0.0.1', seed = true, taxRate = 0.06, fixedClock = null } = {}) {
@@ -223,9 +223,9 @@ export class StripeEngine {
   // ---- the catalog ----
 
   seedCatalog() {
-    const product = this.createProduct({ name: 'Glimmer World Family Plan', metadata: { sw: 'family_plan' }, tax_code: 'txcd_10000000' });
+    const product = this.createProduct({ name: 'Glimmer World Membership', metadata: { sw: 'family_plan' }, tax_code: 'txcd_10000000' });
     const price = this.createPrice({
-      product: product.id, currency: 'usd', unit_amount: '599', recurring: { interval: 'month' }, tax_behavior: 'exclusive', lookup_key: 'sparkle_family_monthly', nickname: 'Family Plan monthly',
+      product: product.id, currency: 'usd', unit_amount: '599', recurring: { interval: 'month' }, tax_behavior: 'exclusive', lookup_key: 'sparkle_family_monthly', nickname: 'Membership monthly',
     });
     this.updateProduct(product.id, { default_price: price.id });
     this.createPortalConfig({ is_default: true, features: {} });
