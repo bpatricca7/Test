@@ -3,7 +3,7 @@
 This guide puts Glimmer World on its own web address, so friends can play together from
 their own iPads or computers: one player taps **Play with Friends → Make a Code** and reads out
 4 pictures, the others tap **Play with Friends → Join a Code** and tap the same 4 pictures. No
-accounts are needed. (Family accounts and the $5.99 Family Plan are a separate, later step:
+accounts are needed. (Family accounts and the $5.99 Glimmer World Membership are a separate, later step:
 **Part 2** at the end. Until you turn them on, nothing of them runs.)
 
 You do not need to know how to program. It takes about 20 minutes the first time.
@@ -349,7 +349,7 @@ Automatic checks (for grown-ups who change the code):
 | `node tools/probe-keepsafe.mjs` | over this same server: the browser is asked to keep her worlds, the "Save a copy of your worlds?" card (after a week, "Not now", never while playing), the backup file and opening it on a new device (worlds and look come back, a world that is already there is only replaced after asking), on a computer, iPad and iPhone; nothing of it inside claude.ai or from a file on the computer. About 3 minutes. |
 | `node tools/probe-net-ux.mjs` | over this same server: the name question on a new device, Play Together, what a knocking device can see, building paused and on again, Undo building told kindly, a host reload ("Your friends are waiting!"), Before friends and its Undo. About 5 minutes. |
 | `npm run probe:mp` | the same game inside claude.ai (a pretend claude.ai room): every screen, knocking, building, Undo building, Send home, sleep, pets, zip lines, reloads, a new version, lost messages, and the size and speed limits. About 25 minutes. |
-| `npm run test:accounts`, `npm run test:billing`, `npm run test:saves` | family accounts (Part 2): sign-in, the Family Plan and Stripe (a pretend Stripe, never the real one), cloud saves. They need Postgres on the computer (or `SW_TEST_DATABASE_URL`). A few minutes each. |
+| `npm run test:accounts`, `npm run test:billing`, `npm run test:saves` | family accounts (Part 2): sign-in, the membership and Stripe (a pretend Stripe, never the real one), cloud saves. They need Postgres on the computer (or `SW_TEST_DATABASE_URL`). A few minutes each. |
 | `npm run e2e:accounts` | family accounts end to end in Chromium: sign up, the plan, kids' devices, worlds on two devices, playing together, the walkie switch, a failed payment, deleting a child and the account. About 20 minutes. |
 | `npm run dev:accounts` | try Part 2 on your computer: `http://localhost:8080/account` with a local database and the pretend Stripe; the emails (with their codes) are printed in the terminal. `npm run dev:accounts -- --fake --seed` needs no database at all. |
 
@@ -359,11 +359,11 @@ checks them, and the Family page in every state, at phone, iPad and computer siz
 
 ---
 
-# Part 2: family accounts and the Family Plan
+# Part 2: family accounts and the Glimmer World Membership
 
 Everything above works with **no accounts at all**, and stays exactly like that until you set
-the variable `SW_ACCOUNTS`. This part turns on the **Family Plan** ($5.99 a month, plus sales tax
-where it applies): grown-ups sign in on the **Family page** (`/account`), add their kids,
+the variable `SW_ACCOUNTS`. This part turns on the **Glimmer World Membership** ($5.99 a month,
+plus sales tax where it applies; the one and only plan, with everything included): grown-ups sign in on the **Family page** (`/account`), add their kids,
 worlds are saved in the family's cloud copy, and playing with friends and the walkie-talkie are
 switched on per child. The whole design is in `docs/ACCOUNTS.md`; this is the checklist of the
 things only you can do (its §14), step by step.
@@ -376,7 +376,7 @@ It takes an afternoon the first time, plus waiting for the domain and the email 
 
 ## Step 10. A domain
 
-The Family Plan needs a web address of your own (emails come from it, and it looks trustworthy).
+The membership needs a web address of your own (emails come from it, and it looks trustworthy).
 
 1. Buy one at a registrar (the game's is `playglimmerworld.com`, about $10–20 a year). Turn on **2FA**
    (a code on your phone at sign-in) at the registrar straight away.
@@ -572,11 +572,18 @@ Turn on **2FA** in Stripe first. Make sure the switch at the top says **Test mod
    STRIPE_SECRET_KEY=sk_test_… npm run stripe:setup
    ```
 
-   It makes the product **Glimmer World Family Plan**, the one price ($5.99 a month, tax
-   "exclusive": tax is added on top) and the Customer Portal settings, and prints two lines,
-   `STRIPE_PRICE_ID=price_…` and `STRIPE_PORTAL_CONFIG=bpc_…`. Keep them for step 14. Running it
-   again changes nothing, except that a product or portal made when the game was still called
-   Sparkle World gets the new name (same ids, nothing to change in Railway).
+   It makes the product **Glimmer World Membership**, the one price ($5.99 a month, tax
+   "exclusive": tax is added on top) and the Customer Portal settings (headline
+   **Glimmer World Membership**), and prints two lines, `STRIPE_PRICE_ID=price_…` and
+   `STRIPE_PORTAL_CONFIG=bpc_…`. Keep them for step 14. Running it again changes nothing, except
+   that a product or portal made under an old name gets today's name. One made when the game was still called
+   Sparkle World gets the new name (same ids, nothing to change in Railway), and so does one
+   made as the "Glimmer World Family Plan" (before the membership rename, 2026-10-03).
+   **If you made the Stripe objects before that rename**, run the command once more in test mode
+   and once more in live mode (`sk_live_…`, with `PUBLIC_ORIGIN=https://<domain>`): it renames
+   the product and the portal headline to **Glimmer World Membership** and prints the same two
+   lines as before, so nothing changes in Railway. Until then, Stripe's own pages (Checkout,
+   receipts, the portal) still say the old name.
 3. **Tax:** Settings → **Tax** → turn on Stripe Tax, set your origin address, and for the product
    pick the tax code for a personal-use online game or digital subscription (check it with your
    accountant, and add a registration for your home state if the accountant says so).
@@ -651,7 +658,7 @@ deployment keeps running: fix the variable and deploy again.
 
 ### Free pass for your own family
 
-To use the Family Plan with your own family without paying (while you test, or for good), add
+To use the membership with your own family without paying (while you test, or for good), add
 one more variable with **your own** sign-in email:
 
 | Variable | Value |
@@ -715,7 +722,7 @@ Set `SW_STRIPE_SHAPES=1` in staging's Variables (test keys only), deploy, then:
    email arrives in iPad Mail and that the **6-digit code** fills in by itself. Also try it from
    the game: open `/play`, then **Grown-ups → Sign in or start**.
 2. Read the notice, tick the box, **Agree and continue**.
-3. Tick **I live in the United States**, **Start the Family Plan**. On Stripe's page use the card
+3. Tick **I live in the United States**, **Start your membership**. On Stripe's page use the card
    `4242 4242 4242 4242`, any future date, any 3 digits, a US address. Back on the Family page:
    **You're all set!**
 4. Add two players. **Set up a kid's device**: on a second browser (or another
@@ -726,7 +733,7 @@ Set `SW_STRIPE_SHAPES=1` in staging's Variables (test keys only), deploy, then:
    walkie. Switch the walkie off on the Family page while they play: it stops within a second.
 6. **Cancel the plan** → **Yes, cancel it** (two taps, no code: cancelling must never be harder
    than starting). The plan shows **Ends …**; **Resume** (Stripe's portal, after a code) turns it
-   back on. Also open **Manage subscription** once and check the portal looks right.
+   back on. Also open **Manage membership** once and check the portal looks right.
 7. In the Stripe Dashboard: the invoice shows the **tax line**; **Developers → Webhooks → your
    endpoint**: every delivery is **2xx**.
 8. In the Deploy Logs, copy every line that starts with `stripe-shape` into
@@ -741,9 +748,9 @@ Set `SW_STRIPE_SHAPES=1` in staging's Variables (test keys only), deploy, then:
    portal, emails, the webhook for `https://<domain>/api/stripe/webhook`, a live restricted key).
 2. In **production**'s Variables, set everything of step 14 with the live values,
    `PUBLIC_ORIGIN=https://<domain>`, and **`SW_ACCOUNTS=optional`**, plus `SW_REQUIRED_FROM` (the
-   date, at most about 30 days later, from which playing together needs the Family Plan). Deploy.
+   date, at most about 30 days later, from which playing together needs the membership). Deploy.
    In `optional`, a device that is not signed in plays exactly as before, with a **Grown-ups** tile;
-   the home page and `/parents` now describe the Family Plan (they are built for the mode you set:
+   the home page and `/parents` now describe the Glimmer World Membership (they are built for the mode you set:
    always change `SW_ACCOUNTS` and let Railway rebuild, never only restart).
 3. Make one real $5.99 purchase with the family's own card, then **refund it** in the Stripe
    Dashboard (Payments → the payment → Refund).

@@ -1,7 +1,7 @@
 # Glimmer World: parental consent by form, phone call or video call
 
 *COPPA lets an operator confirm a parent's consent in several ways (16 CFR 312.5(b)(2)). Glimmer
-World normally uses the card method: the first payment for the Family Plan records verified consent
+World normally uses the card method: the first payment for the Glimmer World Membership records verified consent
 by itself (docs/ACCOUNTS.md §6.7, §11.4). This page is for the families who don't pay by card: a
 family with a **free pass** (`admin comp`) that wants **Play with friends** and the
 **walkie-talkie** for its children. It gives the form to print (§1) and the steps for a call or a

@@ -1,4 +1,4 @@
-# Glimmer World: family accounts, the Family Plan and cloud saves (accounts v1)
+# Glimmer World: family accounts, the Glimmer World Membership and cloud saves (accounts v1)
 
 *Final spec, 2026-09-28. Written by the lead architect after scoring three proposals (Appendix A).
 The base is proposal 2 ("one box"); the best ideas of proposals 1 and 3 are grafted on, and what
@@ -7,7 +7,10 @@ document disagree, fix one of them in the same change, as DESIGN.md says.*
 
 Glossary. **Family**: one account, owned by one grown-up (the **parent**), who signs in with email.
 **Player**: a child in the family (nickname + avatar picture only). **Family page**: the grown-ups'
-dashboard at `/account`. **Family Plan**: the one $5.99/month Stripe subscription. **Entitled**: the
+dashboard at `/account`. **Glimmer World Membership** ("the membership"; called the Family Plan until
+2026-10-03, when the family renamed it because that name sounded as if cheaper plans existed):
+the one $5.99/month Stripe subscription, the only plan, with everything included. Identifiers
+keep the old name (`family_plan` in Stripe metadata, `#family-plan`, `planView`). **Entitled**: the
 family's plan (or a free pass) is currently good. **Parent session / device session**: a signed-in
 browser of the parent / a kid's device set up by the parent. **Email check**: a fresh 6-digit code
 emailed to the parent before a sensitive action. **Grown-up check**: the game's existing
@@ -21,7 +24,7 @@ multiplication speed bump (`src/net/walkie/gate.js`).
 
 Once this is built, nobody has to do anything by hand for a new family:
 
-1. Home page → **Family Plan** → the Family page. The grown-up types an email, then the 6-digit
+1. Home page → **Membership** → the Family page. The grown-up types an email, then the 6-digit
    code from the email (or taps the link in it).
 2. She reads a short notice about children's information and ticks "I agree".
 3. She pays on Stripe's own checkout page: **$5.99 a month** (plus sales tax where it applies),
@@ -823,7 +826,7 @@ session of the family that owns `:pid`, and the device's locked player if set); 
 
 ### 6.1 Stripe objects (the family creates them; §14 step 4)
 
-- Product **Glimmer World Family Plan**, tax code chosen in the Stripe Tax settings for a personal-use
+- Product **Glimmer World Membership** (portal headline the same), tax code chosen in the Stripe Tax settings for a personal-use
   online game or digital subscription (the exact code to be confirmed there, with an accountant).
 - One Price: `unit_amount 599`, `currency usd`, `recurring.interval month`, `tax_behavior exclusive`
   ("$5.99 a month, plus sales tax where it applies"; §17 asks the family), `lookup_key
@@ -997,7 +1000,7 @@ play is not a disclosure needing stronger consent (§11.4). The server refuses t
 
 ### 6.9 Free passes from `SW_FREE_PASS` (the operator's own family)
 
-The dad tests the Family Plan with his own family without paying, and without a shell on the
+The dad tests the membership with his own family without paying, and without a shell on the
 server (the admin CLI needs `railway ssh`, §13.8). He lists his own address(es) in a Railway
 Variable: `SW_FREE_PASS=dad@example.com` or `SW_FREE_PASS=dad@example.com, mom@example.com:2027-06-30`
 (no date = through 2099-12-31; at most 20; checked at start, §2). `server/freepass.mjs` applies it:
@@ -1338,18 +1341,19 @@ She can knock and play in a subscribed friend's world as a looker (the host's pa
 
 ### 9.2 States (one page; `account.js` renders the first that applies)
 
-1. **Sign in** (401 from `/api/family`): "Grown-ups: sign in or start the Family Plan". Email field →
+1. **Sign in** (401 from `/api/family`): "Grown-ups: sign in or start your membership". Email field →
    "Check your email" with 6 code boxes (`one-time-code`), **Resend** after 30 s, **Use a different
    email**, and "Kids never need an email." The first-time email also carries the notice.
 2. **Notice** (`consent.level === 'none'`, or an agreement to a notice older than
    `NOTICE_MIN_VERSION`, then with "We changed this notice since you last agreed"): the direct notice from `GET /api/notice` (§11.3), its
    version, a link to `/privacy`, the checkbox, **Agree and continue**.
 3. **Plan** (not entitled and no players yet; with `free-join` it can be skipped with **Not now**):
-   "Glimmer World Family Plan: $5.99 a month,
-   plus sales tax where it applies. Up to 6 kids, their worlds saved on every device, playing with
+   "Glimmer World Membership: $5.99 a month,
+   plus sales tax where it applies. One membership with everything included. There are no tiers and
+   no add-ons. Up to 6 kids, their worlds saved on every device, playing with
    friends, the walkie-talkie. Nothing to buy inside the game, ever." Checkbox "I live in the United
-   States". With no trial (`SW_TRIAL_DAYS=0`, the family's choice) one button, **Start the Family
-   Plan** ("The first payment is today, then it renews every month until you cancel. Cancel any time
+   States". With no trial (`SW_TRIAL_DAYS=0`, the family's choice) one button, **Start your
+   membership** ("The first payment is today, then it renews every month until you cancel. Cancel any time
    here: Cancel the plan, then Yes. That first payment is also how we confirm that a grown-up said
    yes, so playing with friends and the walkie-talkie can be turned on right away."). With a trial,
    two: **Start your free week** ("Free for 7 days, then $5.99/month. It renews every month until you
@@ -1363,13 +1367,15 @@ She can knock and play in a subscribed friend's world as a looker (the host's pa
    preview through the same filter: "Other players will see: Star Bunny"), a color, **Add**.
 6. **Dashboard:**
    - **Plan** ribbon, one sentence + its actions: "Free week: 5 days left, then $5.99/month."
-     [Manage subscription] [Start now] [Cancel the plan] · "Family Plan: renews Nov 5." [Manage
-     subscription] [Cancel the plan] · "Payment didn't go through. Playing continues until Oct
+     [Manage membership] [Start now] [Cancel the plan] · "Glimmer World Membership: renews Nov 5."
+     [Manage membership] [Cancel the plan] · "Payment didn't go through. Playing continues until Oct
      12." [Update card] [Cancel the plan] · "Ends Nov 5." [Resume] · "Resting: worlds are kept
-     until Jan 2." [Restart the plan] [Download worlds] · "Free pass until …" (with a plan that
-     still renews: "…Your Family Plan still renews on Nov 5." [Manage subscription] [Cancel the
-     plan]). Manage/Update/Resume open the Portal (email check); **Cancel the plan** asks one
-     question ("Yes, cancel it") and needs no code.
+     until Jan 2." [Restart membership] [Download worlds] · "Free pass until …" (with a plan that
+     still renews: "…Your Glimmer World Membership still renews on Nov 5." [Manage membership]
+     [Cancel the plan]). Manage/Update/Resume open the Portal (email check); **Cancel the plan** asks
+     one question ("Cancel your membership?", [Yes, cancel it] [Keep membership]) and needs no code.
+     **Cancel the plan** keeps its words on purpose: `/terms` names that button, and the terms change
+     only with notice.
    - **Players** (up to 6): portrait or bubble, nickname, **Rename**, the **Play with friends** switch
      with its own notice ("Other players in a game she joins or hosts see her nickname, her avatar and
      the world. Only friends the host lets in, whose families have Glimmer World too. No typing, only
@@ -1410,13 +1416,14 @@ app); the Family page has **Play now**. `next=/play` brings a sign-in started fr
 Every sentence that would become false changes at the same moment: "No accounts", "Nothing to buy",
 "Worlds stay on your device", "nothing stored on the server", "doesn't set cookies", "the game loads
 the font from Google". New truths: accounts belong to grown-ups and kids never type an email; one
-Family Plan at $5.99 a month (plus tax where it applies), nothing to buy inside the game, coins are
+Glimmer World Membership at $5.99 a month (plus tax where it applies), the only plan, with
+everything included (no tiers, no add-ons), nothing to buy inside the game, coins are
 earned only; worlds are saved on the device and in the family's cloud copy on our server, and can be
 downloaded or deleted any time; one cookie keeps a signed-in device signed in; no ads, no analytics,
 no trackers; the game loads nothing from other sites. The walkie text covers both ways (the Family
 page switch; during `optional`, the per-device question for devices without an account). The home page
-gains a **Family Plan** section, **Sign in** in the header, and `/privacy` + `/terms` in the footer.
-During `optional` it announces the date from which playing together needs the Family Plan for each
+gains a **Glimmer World Membership** section (`#family-plan`; the menu says **Membership**), **Sign in** in the header, and `/privacy` + `/terms` in the footer.
+During `optional` it announces the date from which playing together needs the membership for each
 family. `/parents` gets a short "Accounts and your child's information" section linking `/privacy`.
 
 ---
@@ -1547,7 +1554,7 @@ payment details go only to Stripe.
 
 ### 11.3 Direct notice (312.4(c)), draft v1 (`server/notice.mjs`, shown before consent and in the first email)
 
-> **Before your children play: what Glimmer World keeps, and why.** *(Notice version 1)*
+> **Before your children play: what Glimmer World keeps, and why.** *(Notice version 2)*
 >
 > - **You gave us your email** so we can ask your permission and so you can sign in. Children are
 >   never asked for an email.
@@ -1576,8 +1583,8 @@ payment details go only to Stripe.
 > - **You can** see, download and delete your children's information and turn any permission off at
 >   any time on the Family page, or by writing to {operator email}.
 > - **If you don't finish** setting up: if you don't agree to this notice within 14 days, we delete
->   your email address; if you agree but don't start the Family Plan within 30 days, we delete it
->   then.
+>   your email address; if you agree but don't start a Glimmer World Membership within 30 days, we
+>   delete it then.
 > - [Read the full Privacy Notice](/privacy). Glimmer World is run by {operator name}, {address},
 >   {phone}, {email}.
 >
@@ -1596,6 +1603,16 @@ rename from Sparkle World to Glimmer World (2026-10-02): it changed only the pro
 notice, the checkbox and the emails, still before any family had agreed in production, so the
 text was edited in place as version 1 (`NOTICE_MIN_VERSION` stays 1, `NOTICE_DATE` unchanged). From
 the first real agreement on, any change, even a name, bumps `NOTICE_VERSION`.
+
+**Version 2 (2026-10-03).** The paid plan was renamed from the Family Plan to the Glimmer World
+Membership; in the notice that is one phrase ("If you don't finish": "don't start a Glimmer World
+Membership within 30 days"). By then accounts were on in production (`SW_ACCOUNTS=required`), so
+real agreements to version 1 exist or may exist (the operator's own, from checking the free pass),
+and the rule above applies: the change bumps `NOTICE_VERSION` to 2
+(`NOTICE_DATE` 2026-10-03, and `/privacy`'s version line with it). It is not a change that matters: it
+changes no information collected, no use, no recipient and no right, only the plan's name. So
+`NOTICE_MIN_VERSION` stays 1: an agreement to version 1 still counts, nobody is asked to agree again,
+and new agreements and switches record version 2.
 
 ### 11.4 Verifiable parental consent, in tiers
 
@@ -1681,8 +1698,8 @@ unknown actions and keys.
   use (kind play); changes to the terms and the price with notice; the operator.
 - **Auto-renewal** (ROSCA; California's law and similar states): the terms next to the button, an
   affirmative checkbox (Checkout's `terms_of_service` with the sentence "I agree to the Terms. My
-  Family Plan renews every month at $5.99 plus tax until I cancel; I can cancel any time on the Family
-  page."), the `welcome` acknowledgment email, online cancellation in the Portal, the `annual_reminder`.
+  Glimmer World Membership renews every month at $5.99 plus tax until I cancel; I can cancel any time
+  on the Family page."), the `welcome` acknowledgment email, online cancellation in the Portal, the `annual_reminder`.
   The FTC's "click-to-cancel" rule was vacated in July 2025; the state laws still apply.
 
 ### 11.11 Safe Harbor, state laws, tax
@@ -2140,7 +2157,7 @@ first. **A → everyone**: `package.json`, `001_init.sql`, `config.mjs`, `db.mjs
 
 ## 17. Open questions for the family
 
-1. **Free play without an account:** at the end of the rollout, should `/play` need the Family Plan
+1. **Free play without an account:** at the end of the rollout, should `/play` need the membership
    (`SW_ACCOUNTS=required`), or should solo play on one device stay free forever (`optional`), with the
    plan adding cloud saves, friends and the walkie?
 2. **Friends in the free week:** is it all right that playing with friends and the walkie wait for the
