@@ -10,12 +10,15 @@
 //            first-turn bubble (B17), tips (B18), boats, flying and zip lines (B10)
 //   studio   the Water tab, desktop then iPad (C1-C9), and the render grids for the owner (C5)
 //   grids    only the C5 render grids (also part of studio)
+//   review   the owner's showcase pictures of the Sea Dragon (merfolk-review-*.png): the boy
+//            starter and the default girl from the front, three-quarter, side and back, in the
+//            water from the play camera, under water, at night, and next to a mermaid
 //   touch    iPad 1024x768: the HUD, the joystick label, Down, the shore with the joystick (T1-T5)
 //   friends  Aria and Leo turn too, one line per visit, they keep up (D1, D2)
 //   costs    draw calls, meshes, the first turn, toggles, systems time, the tint (B13a-f)
 //   save     an old profile (B14), a world saved in sea form
 //
-//   node tools/probe-merfolk.mjs [--only=unit,water,swim,studio,grids,touch,friends,costs,save] [--headed]
+//   node tools/probe-merfolk.mjs [--only=unit,water,swim,studio,grids,review,touch,friends,costs,save] [--headed]
 
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
@@ -339,10 +342,11 @@ async function waterPass(browser, errors) {
   // a 1-deep pool: exactly today's swim
   const flatPool = await page.evaluate((s) => {
     const g = window.__game, w = g.world;
-    // a 3x3 pool of water one block deep on top of the sand near the beach
-    const x0 = Math.floor(s.land[0]) + s.dir[0] * 6, z0 = Math.floor(s.land[2]) + s.dir[1] * 6, y = Math.floor(s.land[1]);
+    // an 11x11 pool of water one block deep on top of the sand near the beach (wide enough that
+    // one second of swimming from the middle never reaches the rim and hops out)
+    const x0 = Math.floor(s.land[0]) + s.dir[0] * 8, z0 = Math.floor(s.land[2]) + s.dir[1] * 8, y = Math.floor(s.land[1]);
     let n = 0;
-    for (let dx = -3; dx <= 3; dx++) for (let dz = -3; dz <= 3; dz++) {
+    for (let dx = -5; dx <= 5; dx++) for (let dz = -5; dz <= 5; dz++) {
       const x = x0 + dx, z = z0 + dz;
       for (let yy = y; yy <= y + 2; yy++) if (g.registry.blocks.props.solid[w.get(x, yy, z)]) g.removeBlock(x, yy, z, { history: false, fx: false });
       if (g.placeBlock(x, y, z, 'water', { history: false, fx: false })) n++;
@@ -353,9 +357,9 @@ async function waterPass(browser, errors) {
   await gameWait(page, 600);
   const shallow = (await hold(page, ['KeyW'], 1000)).filter((s) => s.swimming);
   const sMax = Math.max(0, ...shallow.map((s) => s.hs));
-  c(shallow.length > 5 && shallow.every((s) => !s.seaSwim) && sMax <= 3.0, `B8 1-deep water (${flatPool.n} cells): today's swimming (speed ${sMax.toFixed(2)} <= 3.0, no sea swimming, ${shallow.length} frames)`);
+  c(shallow.length > 5 && shallow.every((s) => !s.seaSwim) && sMax <= 3.0, `B8 1-deep water (${flatPool.n} cells): today's swimming (speed ${sMax.toFixed(2)} <= 3.0, no sea swimming, ${shallow.length} frames)${sMax > 3 ? ' ' + JSON.stringify({ pool: flatPool, s: shallow.filter((q) => q.hs > 3).slice(0, 4).map((q) => ({ t: Math.round(q.t), hs: +q.hs.toFixed(2), sea: q.seaSwim, deep: q.deep, y: +q.y.toFixed(2), x: +q.x.toFixed(2), z: +q.z.toFixed(2), st: q.state })) }) : ''}`);
   const sink = await hold(page, [], 800);
-  c(sink[sink.length - 1].vy <= 0.01, `B8 1-deep water with no input: she stays down (vy ${sink[sink.length - 1].vy.toFixed(2)})`);
+  c(sink[sink.length - 1].vy <= 0.01, `B8 1-deep water with no input: she stays down (vy ${sink[sink.length - 1].vy.toFixed(2)})${sink[sink.length - 1].vy > 0.01 ? ' ' + JSON.stringify(sink.slice(-4).map((q) => ({ t: Math.round(q.t), vy: +q.vy.toFixed(3), y: +q.y.toFixed(3), sw: q.swimming, st: q.state, x: +q.x.toFixed(2), z: +q.z.toFixed(2) }))) : ''}`);
   // back to auto
   await page.evaluate(() => {
     const g = window.__game;
@@ -640,7 +644,13 @@ async function swimPass(browser, errors) {
   {
     const { context: cx, page: pg } = await openGame(browser, { errors, label: 'candy' });
     await newWorld(pg, 'candy');
-    const cs = await deepAt(pg, 3);
+    let cs = await deepAt(pg, 3);
+    // a candy world is random: its milk lakes are sometimes beyond the search; try a new one
+    for (let i = 0; i < 3 && !cs; i++) {
+      console.log('  (B16 no deep milk near the start: a new candy world)');
+      await newWorld(pg, 'candy');
+      cs = await deepAt(pg, 3);
+    }
     const key = cs ? await pg.evaluate(([x, y, z]) => { const g = window.__game; return g.registry.blocks.defs[g.world.get(Math.floor(x), Math.floor(y), Math.floor(z))].key; }, [cs.x, cs.y, cs.z]) : null;
     c(!!cs, `B16 a deep spot in the candy sea (${key})`);
     if (cs) {
@@ -908,21 +918,34 @@ async function gridsPass(browser, errors) {
     const FRONT = { cy: 0.78, span: 2.35, yaw: 0.35, pitch: 0.12 };
     const BACK = { cy: 0.85, span: 2.35, yaw: Math.PI * 0.84, pitch: 0.18 };
     const res = {};
+    // a boy starter (short hair, no bow) as well as the default girl
+    const boy = W.starters().find((o) => o.key === 'soccer').look;
+    const SIDE = { cy: 0.7, span: 2.6, yaw: Math.PI / 2, pitch: 0.1 };
+    const PLAY = { cy: 0.8, span: 2.6, yaw: Math.PI * 0.94, pitch: 0.5 }; // behind, a little above
     for (const form of ['mermaid', 'sea_dragon']) {
       const items = [];
       colors.forEach((col, i) => items.push({ look: { ...base, sea: { form, color: col } }, label: names[i], frame: FRONT, pose: front }));
       items.push({ look: { ...base, sea: { form, color: null } }, label: 'back', frame: BACK, pose: front });
       for (const [k, cl] of Object.entries(clothes)) items.push({ look: { ...base, ...cl, sea: { form, color: null } }, label: k + ' (Match)', frame: FRONT, pose: front });
       for (const [k, cl] of Object.entries(clothes)) items.push({ look: { ...base, ...cl, sea: { form, color: null } }, label: k + ' swims', frame: 'sea', pose: swim });
+      const bl = { ...boy, sea: { form, color: null } };
+      items.push({ look: bl, label: 'boy (Match)', frame: FRONT, pose: front });
+      items.push({ look: bl, label: 'boy side', frame: SIDE, pose: front });
+      items.push({ look: bl, label: 'boy back', frame: BACK, pose: front });
+      items.push({ look: bl, label: 'boy swims', frame: 'sea', pose: swim });
+      items.push({ look: bl, label: 'boy from behind', frame: PLAY, pose: swim });
+      items.push({ look: { ...base, sea: { form, color: null } }, label: 'from behind', frame: PLAY, pose: swim });
       res[form] = await W.renderGrid(items, { cols: 6, size: 200 });
     }
     // every head accessory once with the sea dragon (the horn nubs are left out under one)
     const heads = W.options().HEAD_ACC.map((o) => o.key);
-    const boy = W.starters().find((o) => o.key === 'soccer').look;
     res.heads = await W.renderGrid(heads.map((h) => ({ look: { ...boy, acc: { ...boy.acc, head: h, headColor: '#FFD43B' }, sea: { form: 'sea_dragon', color: null } }, label: h, frame: FRONT, pose: front })), { cols: 6, size: 200 });
     res.headsBack = await W.renderGrid(heads.map((h) => ({ look: { ...boy, acc: { ...boy.acc, head: h, headColor: '#FFD43B' }, sea: { form: 'sea_dragon', color: null } }, label: h, frame: BACK, pose: front })), { cols: 6, size: 200 });
     // the starters, each in its own Match form
-    res.starters = await W.renderGrid(W.starters().map((o) => ({ look: { ...o.look, sea: { form: o.tag === 'b' ? 'sea_dragon' : 'mermaid', color: null } }, label: o.name, frame: 'sea', pose: swim })), { cols: 6, size: 200 });
+    // (and the boy starters once more from behind: the normal play view)
+    const st = W.starters().map((o) => ({ look: { ...o.look, sea: { form: o.tag === 'b' ? 'sea_dragon' : 'mermaid', color: null } }, label: o.name, frame: 'sea', pose: swim }));
+    for (const o of W.starters().filter((o) => o.tag === 'b')) st.push({ look: { ...o.look, sea: { form: 'sea_dragon', color: null } }, label: o.name + ' (back)', frame: PLAY, pose: swim });
+    res.starters = await W.renderGrid(st, { cols: 6, size: 200 });
     return res;
   });
   const { writeFileSync, mkdirSync } = await import('node:fs');
@@ -954,6 +977,188 @@ async function gridsPass(browser, errors) {
   check(errors, magenta === 0, `C5 no magenta material in the sea-form renders (${magenta} px)`);
   await context.close();
   return out;
+}
+
+// ---------------- the owner's Sea Dragon pictures ----------------
+
+async function reviewPass(browser, errors) {
+  console.log('Review pictures: the Sea Dragon on a boy starter and the default girl');
+  const c = (cond, msg) => check(errors, cond, msg);
+  const { context, page } = await openGame(browser, { errors, label: 'review' });
+  const { writeFileSync, mkdirSync } = await import('node:fs');
+  mkdirSync(SHOTS, { recursive: true });
+  const save = (name, url) => {
+    const file = path.join(SHOTS, `${PREFIX}-review-${name}.png`);
+    writeFileSync(file, Buffer.from(url.split(',')[1], 'base64'));
+    console.log(`  picture ${path.relative(ROOT, file)}`);
+  };
+  // 1. the views, big: front, three-quarter, side, back, swimming, swimming seen from behind
+  const views = await page.evaluate(async () => {
+    const W = window.__game.debug.avatar;
+    const girl = W.look();
+    const boy = W.starters().find((o) => o.key === 'soccer').look;
+    const still = { state: { swimming: true, sea: true, speed: 0, onGround: false }, t: 0.9 };
+    const swim = { state: { swimming: true, sea: true, speed: 2.2, onGround: false }, t: 0.9 };
+    const fr = {
+      front: { cy: 0.68, span: 2.95, yaw: 0, pitch: 0.08 },
+      'three-quarter': { cy: 0.68, span: 2.95, yaw: 0.7, pitch: 0.12 },
+      side: { cy: 0.68, span: 2.95, yaw: Math.PI / 2, pitch: 0.1 },
+      back: { cy: 0.68, span: 2.95, yaw: Math.PI, pitch: 0.22 },
+    };
+    const PLAY = { cy: 0.8, span: 2.6, yaw: Math.PI * 0.94, pitch: 0.5 };
+    const set = (lk, form) => {
+      const L = { ...lk, sea: { form, color: null } };
+      return [
+        ...Object.entries(fr).map(([k, f]) => ({ look: L, label: k, frame: f, pose: still })),
+        { look: L, label: 'swims', frame: 'sea', pose: swim },
+        { look: L, label: 'swims, from behind', frame: PLAY, pose: swim },
+      ];
+    };
+    const out = {};
+    out.boy = await W.renderGrid(set(boy, 'sea_dragon'), { cols: 3, size: 320 });
+    out.girl = await W.renderGrid(set(girl, 'sea_dragon'), { cols: 3, size: 320 });
+    // next to a mermaid: the same child, mermaid then sea dragon, front and back
+    const pair = [];
+    for (const [nm, lk] of [['boy', boy], ['girl', girl]]) {
+      for (const [fk, f] of [['front', fr['three-quarter']], ['back', fr.back]]) {
+        pair.push({ look: { ...lk, sea: { form: 'mermaid', color: null } }, label: `${nm} mermaid ${fk}`, frame: f, pose: still });
+        pair.push({ look: { ...lk, sea: { form: 'sea_dragon', color: null } }, label: `${nm} sea dragon ${fk}`, frame: f, pose: still });
+      }
+    }
+    out.compare = await W.renderGrid(pair, { cols: 4, size: 280 });
+    // the tail colors on the boy, three-quarter and back
+    const cols = [['Deep teal', '#2FB5B0'], ['Ocean blue', '#4D7CFF'], ['Green', '#6BD68A'], ['Gold', '#FFD43B'], ['Coral', '#FF6B6B'], ['Purple', '#9C7BFF']];
+    const tc = [];
+    for (const [n, h] of cols) tc.push({ look: { ...boy, sea: { form: 'sea_dragon', color: h } }, label: n, frame: fr['three-quarter'], pose: still });
+    for (const [n, h] of cols) tc.push({ look: { ...boy, sea: { form: 'sea_dragon', color: h } }, label: n + ' (back)', frame: PLAY, pose: swim });
+    out.colors = await W.renderGrid(tc, { cols: 6, size: 220 });
+    return out;
+  });
+  for (const [k, url] of Object.entries(views)) save(k, url);
+
+  // 2. in the world, from the normal play camera (behind, a little above)
+  await newWorld(page, 'beach');
+  await page.evaluate(() => { window.__girlLook = window.__game.debug.avatar.look(); });
+  const ds = await deepAt(page, 4);
+  c(!!ds, `review: a 4-deep spot (${JSON.stringify(ds)})`);
+  if (!ds) { await context.close(); return; }
+  // open water all around (no cliff behind the camera, room to dive): the spot near ds whose
+  // 9x9 neighbourhood is all at least 3 deep with one surface, the deepest such
+  const open = await page.evaluate(([x0, z0]) => {
+    const M = window.__game.debug.merfolk;
+    let best = null, bestS = -1;
+    for (let dz = -30; dz <= 30; dz += 2) {
+      for (let dx = -30; dx <= 30; dx += 2) {
+        const x = Math.floor(x0) + dx, z = Math.floor(z0) + dz;
+        const c0 = M.column(x, z);
+        if (c0.depth < 4) continue;
+        let ok = true, sum = 0;
+        for (let j = -4; j <= 4 && ok; j++) {
+          for (let i = -4; i <= 4; i++) {
+            const cc = M.column(x + i, z + j);
+            if (cc.depth < 3 || cc.top !== c0.top) { ok = false; break; }
+            sum += Math.min(cc.depth, 7);
+          }
+        }
+        if (ok && sum > bestS) { bestS = sum; best = { x: x + 0.5, y: c0.top - 0.6, z: z + 0.5, depth: c0.depth }; }
+      }
+    }
+    return best;
+  }, [ds.x, ds.z]);
+  console.log(`  open water for the pictures: ${JSON.stringify(open)}`);
+  const deep = open ? [open.x, open.y, open.z] : [ds.x, ds.y, ds.z];
+  const openYaw = await page.evaluate(([x, z]) => {
+    const g = window.__game;
+    let best = 0, bestN = -1;
+    for (let a = 0; a < 16; a++) {
+      const ang = (a / 16) * Math.PI * 2;
+      let n = 0;
+      for (let d = 1; d < 16; d++) {
+        if (g.debug.merfolk.column(x + Math.sin(ang) * d, z + Math.cos(ang) * d).depth >= 3) n++;
+        else break;
+      }
+      if (n > bestN) { bestN = n; best = ang; }
+    }
+    return best;
+  }, [deep[0], deep[2]]);
+  const wear = (key, form) => page.evaluate(([key, form]) => {
+    const g = window.__game;
+    const base = key ? g.debug.avatar.starters().find((o) => o.key === key).look : window.__girlLook;
+    g.profile.look = { ...base, sea: { form, color: null } };
+    g.events.emit('avatar:changed', { look: g.profile.look });
+  }, [key, form]);
+  const playShot = async (name) => {
+    await shot(page, `review-${name}`, PREFIX);
+  };
+  // a first turn earns the Sea Magic! sticker: let its cheer pass before the pictures
+  await wear('soccer', 'sea_dragon');
+  await atSurface(page, deep, openYaw);
+  await gameWait(page, 5000);
+  for (const [who, key] of [['boy', 'soccer'], ['girl', null]]) {
+    await wear(key, 'sea_dragon');
+    await atSurface(page, deep, openYaw);
+    await page.evaluate(() => { window.__game.cameraRig.pitch = 0.32; });
+    await settle(page, 500);
+    const p = await parts(page);
+    c(p && p.shown && p.form === 'sea_dragon', `review ${who}: a sea dragon at the surface (${p && p.form})`);
+    await playShot(`${who}-water`);
+    // swimming forward
+    await page.keyboard.down('KeyW');
+    await gameWait(page, 900);
+    await playShot(`${who}-swims`);
+    await page.keyboard.up('KeyW');
+    // under water: dive, hover, the camera behind and a little above (still under the surface)
+    await atSurface(page, deep, openYaw);
+    await page.evaluate(() => { window.__game.cameraRig.pitch = 0.12; });
+    await hold(page, ['KeyC'], 1100);
+    await gameWait(page, 700);
+    let u = null;
+    for (const pitch of [0.4, 0.3, 0.2, 0.12]) {
+      await page.evaluate((pt) => { window.__game.cameraRig.pitch = pt; }, pitch);
+      await gameWait(page, 350);
+      u = await page.evaluate(() => window.__game.underwater);
+      if (u === 'water') break;
+    }
+    c(u === 'water', `review ${who}: the camera is under the water (${u})`);
+    await playShot(`${who}-underwater`);
+  }
+  // at night: the glow spots shine
+  await wear('soccer', 'sea_dragon');
+  await atSurface(page, deep, openYaw);
+  await page.evaluate(() => { window.__game.cameraRig.pitch = 0.4; window.__game.setDayTime(0.92); });
+  await settle(page, 800);
+  await playShot('night');
+  await page.evaluate(() => window.__game.setDayTime(0.4));
+  // next to a mermaid friend (a second avatar beside him, in her own sea form)
+  await atSurface(page, deep, openYaw);
+  await page.evaluate(() => {
+    const g = window.__game;
+    const look = { ...window.__girlLook, sea: { form: 'mermaid', color: null } };
+    const a = g.createAvatar(look, { seaAuto: 'mermaid' });
+    const p = g.player.position, yaw = g.player.yaw;
+    a.group.position.set(p.x + Math.cos(yaw) * 1.3, p.y, p.z - Math.sin(yaw) * 1.3);
+    a.group.rotation.y = yaw;
+    g.scene.add(a.group);
+    let last = performance.now();
+    const tick = () => {
+      const n = performance.now();
+      a.update(Math.min(0.05, (n - last) / 1000), { sea: true, swimming: true, speed: 0 });
+      last = n;
+      if (g.__reviewMermaid === a) requestAnimationFrame(tick);
+    };
+    g.__reviewMermaid = a;
+    tick();
+    g.cameraRig.pitch = 0.3;
+  });
+  await settle(page, 900);
+  await playShot('next-to-mermaid');
+  await page.evaluate(() => {
+    const g = window.__game, a = g.__reviewMermaid;
+    g.__reviewMermaid = null;
+    g.scene.remove(a.group);
+    a.dispose();
+  });
+  await context.close();
 }
 
 // ---------------- touch (iPad) ----------------
@@ -1126,7 +1331,11 @@ async function costsPass(browser, errors) {
     return median(v);
   };
   const sh = await page.evaluate(() => window.__game.debug.merfolk.shore());
-  // B13c the first turn of a fresh page: the longest frame, ensureSea time
+  // B13c the first turn of a fresh page: the longest frame, ensureSea time. The Sea Magic!
+  // sticker is earned (and its cheer has passed) first: its pop is the sticker book's cost, not
+  // the turn's, and on a software GPU its animation alone makes frames 40-90 ms longer
+  await page.evaluate(() => window.__game.stickers.award('sea_magic'));
+  await gameWait(page, 5000);
   await page.evaluate(() => {
     const g = window.__game;
     g.__frames = [];
@@ -1144,12 +1353,14 @@ async function costsPass(browser, errors) {
     return { longest: Math.max(...all.filter(([n]) => n >= t && n <= t + 500).map(([, d]) => d)), median: before[Math.floor(before.length / 2)] || 0 };
   }, tIn);
   const longest = fr.longest;
-  const ens = await page.evaluate(() => {
+  const ensureMs = (form) => page.evaluate((form) => {
     // ensureSea: a fresh avatar's first sea frame (it builds the parts) minus a later sea frame
-    // (the shared textures are already painted: the player turned above)
+    // (the shared textures are already painted: the player turned above); the Sea Dragon on a
+    // boy starter (horn nubs, crest, forearm fins: the most parts)
     const g = window.__game, out = [];
+    const look = form === 'mermaid' ? g.profile.look : { ...g.debug.avatar.starters().find((o) => o.key === 'soccer').look, sea: { form, color: null } };
     for (let i = 0; i < 5; i++) {
-      const a = g.createAvatar(g.profile.look, { seaAuto: 'mermaid' });
+      const a = g.createAvatar(look, { seaAuto: form });
       a.update(0.016, { swimming: true, speed: 2 });
       const t0 = performance.now();
       a.update(0.016, { sea: true, swimming: true, speed: 2 });
@@ -1160,27 +1371,46 @@ async function costsPass(browser, errors) {
       a.dispose();
     }
     return out.sort((x, y) => x - y)[2];
-  });
+  }, form);
+  const ens = await ensureMs('mermaid');
+  await ensureMs('sea_dragon'); // its textures painted once
+  const ensD = await ensureMs('sea_dragon');
   // SwiftShader draws every frame on the CPU (a normal frame here is already over 33 ms), so the
   // check is what 33 ms means on a device: the turn adds at most 33 ms to the usual frame
   c(longest <= fr.median + 33, `B13c the longest frame in the 0.5 s after the first turn: ${Math.round(longest)} ms (usual ${Math.round(fr.median)} ms; at most +33 ms)`);
   c(ens <= 2, `B13c ensureSea (building the sea parts once): ${ens.toFixed(2)} ms (median of 5, <= 2 ms)`);
-  // B13a / B13b draw calls and meshes: in sea form vs standing on the shore, same camera
+  c(ensD <= 2, `B13c ensureSea for a Sea Dragon: ${ensD.toFixed(2)} ms (median of 5, <= 2 ms)`);
+  // B13a / B13b draw calls and meshes: in sea form vs standing on the shore, same camera; her
+  // default look (a mermaid), then a boy starter as a Sea Dragon (the form with the most parts)
   const pos = sh.deep;
   const from = [pos[0] + 4, sh.top + 2.5, pos[2] + 4], to = [pos[0], sh.top - 0.6, pos[2]];
-  await atSurface(page, pos, 0);
-  const seaCalls = await calls(from, to);
-  const seaMeshes = await page.evaluate(() => { let n = 0; window.__game.player.avatar.group.traverse((o) => { if (o.isMesh && o.visible) n++; }); return n; });
-  await place(page, [sh.land[0], sh.land[1] + 0.05, sh.land[2]], 0, 900);
-  await page.evaluate((p) => window.__game.player.teleport(p[0], p[1], p[2]), [pos[0], sh.top + 0.02, pos[2]]);
-  // stand her on a block at the same spot (one stone under her feet over the water)
-  await page.evaluate(([x, top, z]) => { const g = window.__game; g.placeBlock(Math.floor(x), top - 1, Math.floor(z), 'stone', { history: false, fx: false }); g.player.teleport(x, top + 0.02, z); }, [pos[0], sh.top, pos[2]]);
-  await gameWait(page, 900);
-  const landCalls = await calls(from, to);
-  const landMeshes = await page.evaluate(() => { let n = 0; window.__game.player.avatar.group.traverse((o) => { if (o.isMesh && o.visible) n++; }); return n; });
-  await page.evaluate(([x, top, z]) => window.__game.removeBlock(Math.floor(x), top - 1, Math.floor(z), { history: false, fx: false }), [pos[0], sh.top, pos[2]]);
-  c(seaCalls - landCalls <= 6, `B13a draw calls in sea form ${seaCalls} vs on land ${landCalls} (<= +6)`);
-  c(seaMeshes <= landMeshes + 6, `B13b meshes under her avatar: sea ${seaMeshes}, land ${landMeshes} (<= +6)`);
+  const meshCount = () => page.evaluate(() => { let n = 0; window.__game.player.avatar.group.traverse((o) => { if (o.isMesh && o.visible) n++; }); return n; });
+  const seaVsLand = async (label) => {
+    await atSurface(page, pos, 0);
+    const seaCalls = await calls(from, to);
+    const seaMeshes = await meshCount();
+    const form = await page.evaluate(() => window.__game.player.seaForm);
+    await place(page, [sh.land[0], sh.land[1] + 0.05, sh.land[2]], 0, 900);
+    await page.evaluate((p) => window.__game.player.teleport(p[0], p[1], p[2]), [pos[0], sh.top + 0.02, pos[2]]);
+    // stand her on a block at the same spot (one stone under her feet over the water)
+    await page.evaluate(([x, top, z]) => { const g = window.__game; g.placeBlock(Math.floor(x), top - 1, Math.floor(z), 'stone', { history: false, fx: false }); g.player.teleport(x, top + 0.02, z); }, [pos[0], sh.top, pos[2]]);
+    await gameWait(page, 900);
+    const landCalls = await calls(from, to);
+    const landMeshes = await meshCount();
+    await page.evaluate(([x, top, z]) => window.__game.removeBlock(Math.floor(x), top - 1, Math.floor(z), { history: false, fx: false }), [pos[0], sh.top, pos[2]]);
+    c(seaCalls - landCalls <= 6, `B13a ${label} (${form}): draw calls in sea form ${seaCalls} vs on land ${landCalls} (<= +6)`);
+    c(seaMeshes <= landMeshes + 6, `B13b ${label} (${form}): meshes under the avatar: sea ${seaMeshes}, land ${landMeshes} (<= +6)`);
+  };
+  await seaVsLand('her look');
+  const look0 = await page.evaluate(() => {
+    const g = window.__game, l0 = JSON.parse(JSON.stringify(g.profile.look));
+    const boy = g.debug.avatar.starters().find((o) => o.key === 'soccer').look;
+    g.profile.look = { ...boy, sea: { form: 'sea_dragon', color: null } };
+    g.events.emit('avatar:changed', { look: g.profile.look });
+    return l0;
+  });
+  await seaVsLand('a boy starter');
+  await page.evaluate((l0) => { const g = window.__game; g.profile.look = l0; g.events.emit('avatar:changed', { look: l0 }); }, look0);
   // B13c setLook time over 20 looks: the sea parts are not built in build()
   const sl = await page.evaluate(() => {
     const g = window.__game, W = g.debug.avatar;
@@ -1318,7 +1548,7 @@ async function savePass(browser, errors) {
 async function main() {
   const errors = [];
   if (want('unit')) unitPass(errors);
-  const browserPasses = ['water', 'swim', 'studio', 'grids', 'touch', 'friends', 'costs', 'save'].filter(want);
+  const browserPasses = ['water', 'swim', 'studio', 'grids', 'review', 'touch', 'friends', 'costs', 'save'].filter(want);
   if (browserPasses.length) {
     const browser = await launch({ headed: !!args.headed });
     try {
@@ -1329,6 +1559,7 @@ async function main() {
         await studioPass(browser, errors, { touch: true });
       }
       if (want('studio') || (only && only.includes('grids'))) await gridsPass(browser, errors);
+      if (want('studio') || (only && only.includes('review'))) await reviewPass(browser, errors);
       if (want('touch')) await touchPass(browser, errors);
       if (want('friends')) await friendsPass(browser, errors);
       if (want('costs')) await costsPass(browser, errors);

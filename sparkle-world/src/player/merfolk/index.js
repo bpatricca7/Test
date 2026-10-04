@@ -195,10 +195,38 @@ export function install(game) {
   const downBtn = () => (ui ? ui.hudLayer.querySelector('.sw-touch .sw-flybtn[aria-label="Down"]') : null);
   const touchMode = () => !!(game.input && game.input.touchMode);
 
+  // ---------- shader warm-up ----------
+  // The tail's fins are see-through and two-sided, which three.js draws in two passes (back
+  // faces, then front faces): two shader programs no other part of the game uses. Compiled
+  // lazily they would stall the frame of the first turn (about 0.7 s on a software GPU), so they
+  // are compiled once when a world loads, against the world's own lights and fog, with stand-in
+  // materials of the same kind (the programs are shared by kind, not by material). The scales
+  // (the cloth program) are warmed too, for looks without a cloth part. Kept for the session.
+  let warm = null;
+  const warmSea = () => {
+    const r = game.renderer, cam = game.camera, scene = game.scene;
+    if (!r || !cam || !scene || typeof r.compile !== 'function') return;
+    if (!warm) {
+      const tex = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
+      tex.needsUpdate = true;
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 1, 0, 0, 0, 1, 0], 3));
+      geo.setAttribute('normal', new THREE.Float32BufferAttribute([0, 0, 1, 0, 0, 1, 0, 0, 1], 3));
+      geo.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 0, 1], 2));
+      geo.setAttribute('color', new THREE.Float32BufferAttribute([1, 1, 1, 1, 1, 1, 1, 1, 1], 3));
+      const mk = (o) => new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, map: tex, emissive: new THREE.Color('#3FD8B0'), ...o }));
+      warm = new THREE.Group();
+      warm.add(mk({ side: THREE.DoubleSide, transparent: true, depthWrite: false })); // fin:
+      warm.add(mk({ side: THREE.FrontSide })); // scale:
+    }
+    try { r.compile(warm, cam, scene); } catch { /* a lost context: the first turn compiles them */ }
+  };
+
   // ---------- events ----------
   let visitToast = false; // "Mermaid magic!" once per world visit
   let firstEver = false;
   game.events.on('world:load', () => {
+    warmSea();
     visitToast = false;
     hideBubble(false);
     bub.wait = -1;

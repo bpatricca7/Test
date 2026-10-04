@@ -53,7 +53,7 @@ const hop = (e, s0, len) => {
 
 const PERMANENT = new Set(['plain', 'plain2', 'glow', 'hair', 'eyes', 'mouth']);
 // sea-form materials belong to disposeSea(), never to build()'s sweep
-const isSeaKey = (k) => k.startsWith('scale:') || k.startsWith('fin:');
+const isSeaKey = (k) => k.startsWith('scale:') || k.startsWith('fin:') || k.startsWith('seaglow:');
 const SEA_FORM_KEYS = new Set(['mermaid', 'sea_dragon', 'me']);
 // emotes that only move the arms: they still play over the sea pose
 const ARM_ONLY = new Set(['wave', 'heart']);
@@ -210,6 +210,7 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
   let opacity = 1;
   const wingMats = [];
   const seaMats = []; // { mat, base emissive } of the sea materials (the shimmer)
+  const seaGlow = []; // the sea dragon's glow-spot materials (a soft pulse)
 
   function register(key, mat, { texKeys = [], base = 1, transparent = false } = {}) {
     mat.opacity = base * opacity;
@@ -247,6 +248,12 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
       const tex = acquire(tk, 256, 128, (g, w, h) => paintGlasses(g, w, h, type, color));
       const m = new L({ map: tex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
       return register(key, m, { texKeys: [tk], transparent: true });
+    }
+    if (key.startsWith('seaglow:')) {
+      // the sea dragon's glow spots: unlit, their brightness pulses softly (seaTick)
+      const m = new THREE.MeshBasicMaterial({ vertexColors: true });
+      seaGlow.push(m);
+      return register(key, m);
     }
     if (isSeaKey(key)) {
       // scale:<hex>:<form> (the cloth: program) and fin:<hex>:<form> (the cloth2: program plus
@@ -436,6 +443,7 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
       mats.delete(k);
     }
     seaMats.length = 0;
+    seaGlow.length = 0;
     sea = null;
   }
 
@@ -821,6 +829,7 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
       const e = seaMats[i];
       e.mat.emissiveIntensity = e.base + 0.06 * Math.sin(t * 2.4 + i) + 0.5 * seaFlash;
     }
+    for (let i = 0; i < seaGlow.length; i++) seaGlow[i].color.setScalar(Math.min(1, 0.8 + 0.2 * Math.sin(t * 2.2) + 0.2 * seaFlash));
     // glints along the tail while it grows
     if (fx && w > 0.02 && w < 0.98 && seaTarget > 0) {
       seaGlintT -= dt;
