@@ -371,7 +371,7 @@ export function install(game) {
       main.appendChild(line);
       list.appendChild(r);
     }
-    // family accounts: the Grown-ups card, behind the grown-up check (src/account/cards.js)
+    // family accounts: the Grown-ups card (src/account/cards.js; the grown-up check first only on a grown-up's own sign-in)
     if (acct.grownups) {
       const { row: r, main } = row('home', 'var(--sw-lav)', 'Grown-ups', 'The Family page, this device, switching players');
       main.appendChild(button2(ui, { icon: 'home', label: 'Open', variant: 'white', size: 'small', className: 'sw-set-grownups', onClick: () => acct.openGrownups() }));

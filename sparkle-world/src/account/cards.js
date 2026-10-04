@@ -1,8 +1,10 @@
 // The account cards (docs/ACCOUNTS.md §7.1, §7.5, §7.7): the grown-ups' card (behind the
-// grown-up check), "I have a code", the blocking cards of `required` mode ("Ask a grown-up",
-// "Glimmer World is resting", "Can't reach Glimmer World"), "Keep my old worlds safe" and the
-// first sign-in's "worlds from before" question. Words for grown-ups; never a price, an email,
-// an error code or a "buy" (§7.9).
+// grown-up check only on a grown-up's own sign-in, src/account/index.js openGrownups), "I have
+// a code", the blocking cards of `required` mode ("Ask a grown-up", "Glimmer World is resting",
+// "Can't reach Glimmer World"), "Keep my old worlds safe" and the first sign-in's "worlds from
+// before" question. The grown-up check is asked only where nothing else protects the step: the
+// parent's email sign-in guards the Family page, and a code from it is the grown-up's OK. Words
+// for grown-ups; never a price, an email, an error code or a "buy" (§7.9).
 
 import { choiceDialog, textInputDialog } from '../ui/dialogs.js';
 import { saveAllWorlds } from '../ui/keepsafe.js';
@@ -10,6 +12,7 @@ import { findLegacy, legacyState, setLegacyState, removeLegacy, expireLegacy, pl
 
 const go = (url) => location.assign(url);
 const OFF = "Can't reach Glimmer World. Try again in a minute.";
+const OLD_NOTE = 'For grown-ups: removing the worlds kept here from before accounts.';
 
 /** A card with buttons [value, label, variant?, icon?]; resolves the value (Esc: o.cancel). */
 export function ask(game, title, choices, o = {}) {
@@ -34,7 +37,11 @@ export async function pairDevice(game, acct) {
   }
 }
 
-/** The grown-ups' card: what this device can do, by its kind of session (§7.7). */
+/**
+ * The grown-ups' card: what this device can do, by its kind of session (§7.7). On a kid's
+ * device it opens at once: Remove old copies asks the grown-up check first, Sign this device
+ * out asks "Sign this device out?" (as the Family page does there).
+ */
 export async function grownupCard(game, acct) {
   const me = acct.me || {};
   const parent = me.kind === 'parent';
@@ -50,11 +57,13 @@ export async function grownupCard(game, acct) {
   else if (v === 'code') await pairDevice(game, acct);
   else if (v === 'switch') await acct.switchPlayer();
   else if (v === 'old') {
+    if (!parent && !(await acct.gate(OLD_NOTE))) return;
     if ((await ask(game, 'Remove the old copies?', [['yes', 'Remove', 'pink'], ['close', 'Keep them']], { text: 'The worlds kept here from before accounts go. Worlds moved to a player stay safe.' })) !== 'yes') return;
     await removeLegacy();
     setLegacyState({ state: 'dismissed', at: Date.now(), removed: Date.now() });
     acct.hasLegacy = false;
   } else if (v === 'kid' || v === 'out') {
+    if (v === 'out' && !parent && (await ask(game, 'Sign this device out?', [['yes', 'Sign it out', 'pink'], ['close', 'Cancel']], { text: 'The kids will need a new code (or your sign-in) to play here with their worlds again.' })) !== 'yes') return;
     try {
       await game.store.flush();
       await acct.api.call('POST', v === 'kid' ? '/api/devices/this' : '/api/auth/logout', { json: {} });
@@ -70,7 +79,9 @@ export async function grownupCard(game, acct) {
  * stays (§7.1). why: 'signin' | 'resting' | 'noplayers'. soft (`optional`, no player yet): an
  * OK closes it and she plays on this device. A kid's device sees 'resting' and 'noplayers'
  * (a grown-up's own sign-in goes straight to the Family page instead): its Grown-ups button
- * leads, past the grown-up check, straight there too.
+ * leads straight there too, with no grown-up check (on a kid's device the Family page only
+ * says "This device is set up for the kids"). I'm a grown-up and I have a code ask no check
+ * either: the parent's email sign-in, or the code from the Family page, is the grown-up's OK.
  */
 export async function blockingCard(game, acct, why, soft = false) {
   const worlds = why === 'signin' ? await game.store.listWorlds() : [];
@@ -84,11 +95,9 @@ export async function blockingCard(game, acct, why, soft = false) {
       const list = game.ui.el('div');
       for (const m of worlds.slice(0, 12)) list.appendChild(game.ui.el('p', '', m.name));
       if ((await ask(game, 'Your worlds on this device', [['save', 'Save to a file', 'mint', 'download'], ['close', 'Back']], { body: list })) === 'save') await saveAllWorlds(game);
-    } else if (v && (await acct.gate())) {
-      if (v === 'grown') go('/account?next=/play');
-      else if (v === 'code') await pairDevice(game, acct);
-      else go('/account'); // resting / nobody added: past the check, straight to the Family page
-    }
+    } else if (v === 'grown') go('/account?next=/play');
+    else if (v === 'code') await pairDevice(game, acct);
+    else if (v) go('/account'); // resting / nobody added: straight to the Family page
   }
 }
 

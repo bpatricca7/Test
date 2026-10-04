@@ -14,10 +14,13 @@
 // Screenshots: .shots/<prefix>-*.png at 390 px, iPad and desktop.
 //
 //  1. Parent A signs up (the code from the capture), agrees, Start your free week, the fake's
-//     Pay, back: "Free week"; adds Lily and Mia; their pictures are empty bubbles.
+//     Pay, back: "Free week"; adds Lily and Mia; their pictures are empty bubbles. The game in
+//     A's own browser: Grown-ups asks the grown-up check first.
 //  2. A new "iPad" seeded with 2 worlds from before accounts: /play → "Ask a grown-up" → I have
-//     a code (read from A's Family page) → Who's playing → Lily → the import card → both worlds
-//     in Lily's cloud (through the API) → she builds → Save & Exit.
+//     a code (no grown-up check; read from A's Family page) → Who's playing → Lily → the import
+//     card → both worlds in Lily's cloud (through the API); Grown-ups opens at once, Sign this
+//     device out asks "Sign this device out?", Remove old copies the grown-up check first → she
+//     builds → Save & Exit.
 //  3. A "computer" pairs → Lily → the world is there with its blocks. The iPad's site data is
 //     cleared: reloaded, the world comes back from the cloud.
 //  4. Both edit the same world offline (the API blocked), then reconnect: a "(copy)" world,
@@ -25,15 +28,16 @@
 //  5. Friends: in the free week Lily's switch is locked; Start now (email check) → verified →
 //     on. Family B does the same with Start today. Lily hosts, B's June joins with the code →
 //     Let in! → they build; hashes equal. A name change by June's page is ignored. Family C
-//     (never subscribed): its grown-up signs in from the game and goes straight on to the
-//     Family page (no card), no knock reaches Lily. The game never shows "$" or "subscri" in any
-//     state.
+//     (never subscribed): its grown-up signs in from the game (I'm a grown-up, no grown-up
+//     check) and goes straight on to the Family page (no card), no knock reaches Lily. The game
+//     never shows "$" or "subscri" in any state.
 //  6. Walkie (the relay itself, with the kids' device cookies): Lily's on, June's off → June
 //     gets 0 voice bytes; B switches June's on → the perm frame → she talks and hears; off
 //     again → nothing within 1 s.
 //  7. Billing life: the renewal fails → "Payment didn't go through" → grace passes → Lily's
-//     socket closes with 4402, the game shows the resting card, cloud writes refused, worlds
-//     readable; B: Cancel the plan → Yes (no email code) → "Ends …" → the period ends → resting.
+//     socket closes with 4402, the game shows the resting card (its Grown-ups goes straight to
+//     the Family page), cloud writes refused, worlds readable; B: Cancel the plan → Yes (no
+//     email code) → "Ends …" → the period ends → resting.
 //  8. A deletes Mia → Mia's device gets 410, its copy is wiped → the picker.
 //  9. A deletes the account → nothing of A in any table, the fake's customer deleted, the
 //     account_deleted email, A's devices get 410 family_gone and wipe.
@@ -426,14 +430,34 @@ const GAME = {
     }
     throw new Error('the grown-up check did not take the answer');
   },
-  /** Signed out: "Ask a grown-up" → I have a code → the grown-up check → type the code. */
+  /**
+   * `act` leads on to `next` with no grown-up check in between (§7.7: the check only where
+   * nothing else protects the step). The run stops when the check opens instead.
+   */
+  async noCheck(dev, what, act, next) {
+    let done = false;
+    const gate = dev.page.waitForSelector('.sw-gate', { timeout: 60000 }).then(() => !done, () => false);
+    const went = (async () => {
+      await act();
+      await next();
+      done = true;
+      return false;
+    })();
+    went.catch(() => {});
+    const asked = await Promise.race([gate, went]);
+    check(!asked, `${what}: no grown-up check`);
+    if (asked) throw new Error(`${what} asked the grown-up check`);
+  },
+  /** A game card (choiceDialog) by its title. */
+  card(dev, title) {
+    return dev.page.locator('.sw-dialog', { has: dev.page.locator('h3', { hasText: title }) }).first();
+  },
+  /** Signed out: "Ask a grown-up" → I have a code (no grown-up check) → type the code. */
   async pair(dev, code) {
     await dev.page.getByText(/Ask a grown-up/).first().waitFor({ timeout: 60000 });
     await shot(dev.page, `${dev.key}-ask-a-grown-up`);
-    await tapIt(dev, dev.page.getByRole('button', { name: /I have a code/ }).first());
-    await GAME.grownUpCheck(dev);
     const box = dev.page.locator('.sw-dialog input.sw-input, .sw-panel-wrap.sw-open input, dialog input').first();
-    await box.waitFor({ timeout: 15000 });
+    await GAME.noCheck(dev, `${dev.key}: I have a code`, () => tapIt(dev, dev.page.getByRole('button', { name: /I have a code/ }).first()), () => box.waitFor({ timeout: 15000 }));
     await box.fill(code);
     // a good code signs the device in and the game reloads (the old page may still look like
     // a title underneath its card, so wait for the reload itself)
@@ -554,6 +578,21 @@ async function s1() {
   for (const p of fam.players) A.ids[p.nickname] = p.id;
   check(A.ids.Lily && A.ids.Mia && fam.plan.state === 'trialing' && fam.consent.level === 'email_plus', `the family: trialing, consent email_plus, players ${Object.keys(A.ids).join(', ')}`);
   await shot(page, 'parentA-dashboard-ipad', true);
+  // the game on A's own signed-in browser: its Grown-ups button asks the grown-up check first
+  // (§7.7: there the Family page opens with no email code)
+  const own = { key: 'parentA-game', name: 'A', ctx, page: await newPage(ctx, 'parentA-game'), touch: true, viewport: { width: 1024, height: 768 } };
+  await GAME.open(own);
+  await own.page.getByText(/Who's playing\?/).first().waitFor({ timeout: 60000 });
+  await tapIt(own, '.sw-acct-grownups');
+  await own.page.waitForSelector('.sw-gate .sw-gate-qtext', { timeout: 15000 });
+  check(!(await GAME.card(own, 'For grown-ups').count()), "a grown-up's own sign-in: Grown-ups asks the grown-up check first");
+  await shot(own.page, 'parentA-game-grownups-check');
+  await GAME.grownUpCheck(own);
+  await GAME.card(own, 'For grown-ups').waitFor({ timeout: 15000 });
+  check((await own.page.getByRole('button', { name: 'Make this a kid device' }).count()) > 0, "past it, the grown-up's card (Make this a kid device)");
+  await tapIt(own, GAME.card(own, 'For grown-ups').getByRole('button', { name: 'Close' }));
+  own.page.flushErrors();
+  await own.page.close();
 }
 
 /** Before the accounts server starts: 2 worlds made on the iPad with accounts off, same address. */
@@ -602,6 +641,27 @@ async function s2() {
     await sleep(1000);
   }
   check(cloud.length >= 2 && ['Old Castle', 'Old Garden'].every((n) => cloud.some((w) => w.name === n)), `both old worlds are in Lily's cloud (${cloud.map((w) => w.name).join(', ')})`);
+  // a kid's device: the Grown-ups card opens at once (§7.7); Sign this device out asks a plain
+  // "Sign this device out?", Remove old copies the grown-up check first
+  const grownups = GAME.card(dev, 'For grown-ups');
+  await GAME.noCheck(dev, "the iPad (a kid's device): Grown-ups", () => tapIt(dev, '.sw-title-grownups'), () => grownups.waitFor({ timeout: 15000 }));
+  await shot(dev.page, 'ipad-grownups-card');
+  const sure = GAME.card(dev, 'Sign this device out?');
+  await GAME.noCheck(dev, 'the iPad: Sign this device out', () => tapIt(dev, grownups.getByRole('button', { name: 'Sign this device out' })), () => sure.waitFor({ timeout: 15000 }));
+  check(/new code/.test(await sure.textContent()) && (await sure.getByRole('button', { name: 'Sign it out' }).count()) === 1, 'Sign this device out asks "Sign this device out?" (Sign it out / Cancel)');
+  await tapIt(dev, sure.getByRole('button', { name: 'Cancel' }));
+  await sure.waitFor({ state: 'detached', timeout: 15000 });
+  await tapIt(dev, '.sw-title-grownups');
+  await grownups.waitFor({ timeout: 15000 });
+  await tapIt(dev, grownups.getByRole('button', { name: 'Remove old copies' }));
+  await dev.page.waitForSelector('.sw-gate .sw-gate-qtext', { timeout: 15000 });
+  check(!(await GAME.card(dev, 'Remove the old copies?').count()), 'Remove old copies asks the grown-up check first');
+  await GAME.grownUpCheck(dev);
+  const remove = GAME.card(dev, 'Remove the old copies?');
+  await remove.waitFor({ timeout: 15000 });
+  await tapIt(dev, remove.getByRole('button', { name: 'Keep them' }));
+  await remove.waitFor({ state: 'detached', timeout: 15000 });
+  check(await game(dev, () => window.__game.account.hasLegacy), 'then "Remove the old copies?"; Keep them keeps them');
   await setupPage(dev);
   R.shared = await GAME.buildWorld(dev, { name: 'Shared Island' });
   check(!!R.shared, 'Lily builds a new world on the iPad and saves it');
@@ -761,10 +821,10 @@ async function s5() {
   // standing still): the grown-up presses Enter, which the browser turns into its click
   const grown = cDev.page.getByRole('button', { name: /I'm a grown-up/ }).first();
   await grown.waitFor({ state: 'visible', timeout: 30000 });
-  await grown.focus();
-  await cDev.page.keyboard.press('Enter');
-  await GAME.grownUpCheck(cDev);
-  await cDev.page.waitForURL((u) => u.pathname === '/account' && u.searchParams.get('next') === '/play', { timeout: 60000 });
+  await GAME.noCheck(cDev, "family C: I'm a grown-up", async () => {
+    await grown.focus();
+    await cDev.page.keyboard.press('Enter');
+  }, () => cDev.page.waitForURL((u) => u.pathname === '/account' && u.searchParams.get('next') === '/play', { timeout: 60000 }));
   await cDev.page.waitForSelector('#email');
   check(/take you back to the game/.test(await cDev.page.textContent('main')), 'from the game, the Family page says it will take her back');
   const cSince = await mailMark(C.email);
@@ -912,6 +972,12 @@ async function s7() {
   await ipad.page.getByText(/Glimmer World is resting/).first().waitFor({ timeout: 60000 });
   check(true, 'the game shows "Glimmer World is resting…"');
   await shot(ipad.page, 'ipad-resting');
+  // its Grown-ups button goes straight to the Family page, which on a kid's device only says so
+  await GAME.noCheck(ipad, 'the resting card: Grown-ups', () => tapIt(ipad, GAME.card(ipad, 'Glimmer World is resting').getByRole('button', { name: 'Grown-ups' })), () => ipad.page.waitForURL((u) => u.pathname === '/account', { timeout: 60000 }));
+  await ipad.page.getByText('This device is set up for the kids').first().waitFor({ timeout: 30000 });
+  check(true, 'the resting card\'s Grown-ups: the Family page says "This device is set up for the kids"');
+  await GAME.open(ipad);
+  await ipad.page.getByText(/Glimmer World is resting/).first().waitFor({ timeout: 60000 });
   const cookie = await cookieOf(ipad.ctx);
   const read = await api(`/api/players/${A.ids.Lily}/worlds`, { cookie });
   check(read.status === 200 && read.data.length > 0, 'her worlds are still readable');

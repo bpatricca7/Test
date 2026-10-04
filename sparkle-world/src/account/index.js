@@ -215,13 +215,19 @@ export class Account {
     location.reload();
   }
 
-  /** The grown-up check (its own title), for the Grown-ups buttons. */
-  gate() {
-    return openGate(this.game, { purpose: 'grownups', settings: (this.cache.gate = this.cache.gate || {}), save: () => this._write() });
+  /** The grown-up check (its own title; `note` says what it guards). */
+  gate(note) {
+    return openGate(this.game, { purpose: 'grownups', note, settings: (this.cache.gate = this.cache.gate || {}), save: () => this._write() });
   }
 
+  /**
+   * The Grown-ups buttons (§7.7). Only a grown-up's own sign-in asks the grown-up check first:
+   * there the Family page opens with no email code. Signed out, every way on needs the parent's
+   * email or a code from the Family page; a kid's device opens nothing of the family's.
+   */
   async openGrownups() {
-    if (await this.gate()) await grownupCard(this.game, this);
+    if (this.me && this.me.kind === 'parent' && !(await this.gate())) return;
+    await grownupCard(this.game, this);
   }
 
   /** "Not Lily?": pick another player; the page starts again as her. */

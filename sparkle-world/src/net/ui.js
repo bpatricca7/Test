@@ -448,7 +448,7 @@ export function installNetUI(game, net, remote) {
       const again = lastAction;
       buttons.push({ label: 'Try again', icon: 'again', variant: 'mint', run: () => (again.kind === 'join' ? startJoin(again.code) : startHost(again)) }, { label: 'Not now', icon: 'close', variant: 'white' });
     } else if (/^(signed_out|not_entitled|friends_|accounts_)/.test(code)) {
-      // a grown-up can see why on the Family page (behind the grown-up check)
+      // a grown-up can see why on the Family page (the Grown-ups card)
       if (game.account && game.account.grownups) buttons.push({ label: 'OK', icon: 'check', variant: 'pink' }, { label: 'Grown-ups', icon: 'home', variant: 'white', run: () => game.account.openGrownups() });
     } else if (code === 'fatal') {
       small = game.mode === 'play' && game.world && !game._isShared?.() ? 'Your world is here and everything is saved.' : 'Your own worlds are right here.';

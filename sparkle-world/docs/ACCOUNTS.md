@@ -14,7 +14,10 @@ keep the old name (`family_plan` in Stripe metadata, `#family-plan`, `planView`)
 family's plan (or a free pass) is currently good. **Parent session / device session**: a signed-in
 browser of the parent / a kid's device set up by the parent. **Email check**: a fresh 6-digit code
 emailed to the parent before a sensitive action. **Grown-up check**: the game's existing
-multiplication speed bump (`src/net/walkie/gate.js`).
+multiplication speed bump (`src/net/walkie/gate.js`), asked only where nothing else protects the
+step (§7.7): the Grown-ups card on a device with a parent session, **Remove old copies** on a kid's
+device, and the walkie switch in local mode. Never on the way to sign in or to pair a device (the
+parent's email, or the code from the Family page, is the grown-up's OK).
 
 ---
 
@@ -630,7 +633,8 @@ Passkeys (Face ID) and a grown-up PIN are phase 2 (§16).
   `POST /api/devices/pair-code {label?, lockPlayer?}` → `{code: "K7QM-2XFD", expiresAt}`: 8 symbols of
   Crockford base32 (no I, L, O, U; input is case-insensitive and reads O as 0, I and L as 1; the dash
   is optional), about 40 bits, 10 minutes, single use, at most 3 live per family. On the kid's device:
-  game → **Grown-ups** (grown-up check) → **I have a code** → `POST /api/auth/pair {code}` → a
+  game → **Grown-ups** → **I have a code** (no grown-up check: the code from the Family page is the
+  grown-up's OK) → `POST /api/auth/pair {code}` → a
   **device** session (180 days after last use) with the code's label and locked player. 10 tries per
   10 minutes per address, 200 per hour overall.
 - **Kids play on this device:** a parent signed in on the kid's device taps it on the Family page (or
@@ -1056,9 +1060,11 @@ hook onto `game.startHooks`; `Game.start()` awaits every hook **after the textur
    again**.
 3. `410 family_gone` → wipe every player namespace the cache lists, clear the cache, then as signed out.
 4. Signed out → `optional`: local mode plus a **Grown-ups** tile; `required`: **blocked** mode, a card
-   over the title: "Ask a grown-up to set up Glimmer World" with **I'm a grown-up** (grown-up check →
-   `/account?next=/play`), **I have a code** (grown-up check → pair), and, when the device holds old
-   worlds, **Keep my old worlds safe** (a read-only list with the existing **Save to a file**).
+   over the title: "Ask a grown-up to set up Glimmer World" with **I'm a grown-up** (straight to
+   `/account?next=/play`: the parent's email sign-in protects everything there), **I have a code**
+   (straight to pair: the code from the Family page is the grown-up's OK), and, when the device
+   holds old worlds, **Keep my old worlds safe** (a read-only list with the existing **Save to a
+   file**). None of them asks the grown-up check (it slowed sign-ups and protected nothing more).
 5. Signed in, family not entitled:
    - with `SW_FRIENDS_MODE=free-join` and the chosen player's friends switch on (after the picker
      below) → **visitor** mode in either `optional` or `required`: the title shows only **Play with
@@ -1067,7 +1073,8 @@ hook onto `game.startHooks`; `Game.start()` awaits every hook **after the textur
      device); `required` → a grown-up's own sign-in (a `parent` session) gets no card and goes
      straight to the Family page (`/account`: the notice if not agreed yet, then the membership);
      a kid's device is blocked with "Glimmer World is resting. Ask a grown-up to wake it up!" and
-     one **Grown-ups** button, which leads past the grown-up check straight to the Family page
+     one **Grown-ups** button, which leads straight to the Family page (no grown-up check: on a
+     kid's device that page only says "This device is set up for the kids")
 6. Signed in, entitled: no players → in `required` a grown-up's own sign-in goes straight to the
    Family page (`/account?next=/play`) to add one; a kid's device (and `optional`) gets "A grown-up
    can add you on the Family page"; a locked device or one player → that player; otherwise **Who's playing?**: full-screen,
@@ -1204,11 +1211,16 @@ because an iPad Home Screen app keeps its own storage, apart from Safari's.
   (`walkie/ui.js settingsRow`) becomes read-only: "Walkie-talkie: on (a grown-up can change this on
   the Family page)". The multiplication gate stays for local mode. `profile.settings.walkie` from the
   old gate is not carried over.
-- **Grown-ups** (title tile and Settings row, account modes only) → the grown-up check (`openGate`
-  gains a `purpose: 'grownups'` variant with its own title and note) → a grown-up card: signed out:
-  **Sign in or start** (`/account?next=/play`), **I have a code**; device session: **Family page**,
-  **Switch player**, **Remove old copies**, **Sign this device out**; parent session: **Family page**,
-  **Make this a kid device** (`POST /api/devices/this`), **Switch player**, **Sign out**.
+- **Grown-ups** (title tile, Settings row, the player picker and the play-together cards, account
+  modes only) → a grown-up card. Only a **parent session** asks the grown-up check first (`openGate`
+  gains a `purpose: 'grownups'` variant with its own title and note): there the Family page opens
+  with no email code and controls voice, devices and the plan. Signed out: **Sign in or start**
+  (`/account?next=/play`), **I have a code**, with no check (the email sign-in or the code protects
+  them). Device session, with no check: **Family page** (it only says "This device is set up for the
+  kids"), **Switch player**, **Remove old copies** (the grown-up check first, then "Remove the old
+  copies?"), **Sign this device out** (a plain "Sign this device out?" confirm, as on the Family page
+  there). Parent session, behind the check: **Family page**, **Make this a kid device**
+  (`POST /api/devices/this`), **Switch player**, **Remove old copies**, **Sign out**.
 
 ### 7.8 Offline
 
@@ -1220,9 +1232,9 @@ answers. A 401 is never treated as offline.
 ### 7.9 What a kid never sees
 
 No price, no "subscribe", no "buy", no email field, no error codes, anywhere in the game. Every money
-or account screen is on the Family page, behind the grown-up check and the parent's email (starting a
-plan and the Portal need a fresh email check, so a child on a device that kept a grown-up's session
-cannot reach Stripe's pages). The e2e
+or account screen is on the Family page, behind the parent's email (and, on a device that keeps a
+grown-up's session, the game's grown-up check; starting a plan and the Portal need a fresh email
+check, so a child on a device that kept a grown-up's session cannot reach Stripe's pages). The e2e
 test asserts that the game's DOM never contains `$` or "subscri" in any account state (§12.8).
 Sparkle Coins stay earned-only: no route grants coins, and the game page keeps `payment=()`.
 
@@ -1852,24 +1864,28 @@ offline; the iPad checks are manual, §14 step 8). Zero console errors; screensh
 `.shots/acct-*.png` at 390 px, iPad and desktop.
 
 1. Parent A signs up (code from the capture), agrees, **Start your free week** → fake Pay → back:
-   "Free week"; adds Lily and Mia; the portraits are empty bubbles.
+   "Free week"; adds Lily and Mia; the portraits are empty bubbles. The game in A's own browser
+   (a parent session): **Grown-ups** asks the grown-up check before the grown-ups' card.
 2. A new "iPad" context seeded with 2 legacy worlds: `/play` → "Ask a grown-up" → **I have a code**
-   (the code read from A's page) → Who's playing → Lily → the import card → both worlds in Lily's
-   cloud (checked through the API) → she builds → Save & Exit.
+   (no grown-up check; the code read from A's page) → Who's playing → Lily → the import card → both
+   worlds in Lily's cloud (checked through the API); **Grown-ups** opens the card with no check,
+   **Sign this device out** asks "Sign this device out?", **Remove old copies** asks the grown-up
+   check before "Remove the old copies?" (Keep them) → she builds → Save & Exit.
 3. A "computer" context pairs → Lily → the world is there with the blocks. The iPad's site data is
    cleared and reloaded → the world comes back from the cloud.
 4. Both edit the same world offline (API blocked) then reconnect → a "(copy)" world, nothing lost.
 5. Friends: in the trial, Lily's friends switch is locked; **Start now** (email check) → verified →
    switch on. Family B does the same with **Start today**. Lily hosts, B's child joins with the code →
    **Let in!** → they build; hashes equal. A presence `nm` change by B's page is ignored. Family C
-   (never subscribed, so no dashboard and no pair code) signs in from the game (**I'm a grown-up** →
-   the Family page → back to `/play`) → "Glimmer World is resting…" style card, no knock reaches Lily
+   (never subscribed, so no dashboard and no pair code) signs in from the game (**I'm a grown-up**,
+   no grown-up check → the Family page → back to `/play`) → "Glimmer World is resting…" style card, no knock reaches Lily
    (the relay refuses C's sockets: 4401 without a player, 4405 with a made-up one). The game DOM
    never contains `$` or "subscri" in any state.
 6. Walkie: Lily's walkie on, B's child's off → B's child gets 0 voice bytes; B's parent switches it on
    → the `perm` frame arrives → she talks and hears; switched off again → nothing within 1 s.
 7. Billing life: the fake clock passes the renewal with a failing card → "Payment didn't go through"
-   → grace passes → Lily's socket closes with 4402, the game shows the resting card, cloud writes
+   → grace passes → Lily's socket closes with 4402, the game shows the resting card (its
+   **Grown-ups** goes straight to the Family page: "This device is set up for the kids"), cloud writes
    refused, worlds still readable; family B: **Cancel the plan** → **Yes, cancel it** (no email
    code) → "Ends …" → the period ends → lapsed; A restarts the plan (Checkout asks for the email
    check when the sign-in is older than 15 minutes).

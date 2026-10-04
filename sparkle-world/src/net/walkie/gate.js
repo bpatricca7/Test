@@ -8,17 +8,17 @@
 // once, so neither closing the check nor a reload skips the wait. Resolves true when a
 // grown-up answered right; false when cancelled.
 //
-// Family accounts (docs/ACCOUNTS.md §7.7): the same check guards the Grown-ups card
-// (openGate(game, { purpose: 'grownups', settings, save })): its own title and note, its wrong
-// answers and lock kept in `settings` (the account cache) and saved with `save()`, because it
-// can open before her profile is loaded. With accounts on, the walkie itself is switched on the
-// Family page, not here.
+// Family accounts (docs/ACCOUNTS.md §7.7): the same check guards the Grown-ups card on a
+// grown-up's own sign-in and Remove old copies on a kid's device (openGate(game, { purpose:
+// 'grownups', note?, settings, save })): its own title and note, its wrong answers and lock kept
+// in `settings` (the account cache) and saved with `save()`, because it can open before her
+// profile is loaded. With accounts on, the walkie itself is switched on the Family page, not here.
 
 import { icon2 } from '../../ui/menus/icons2.js';
 import { walkieSvg } from './art.js';
 
 export const GATE_NOTE = 'Voices go live only to friends in this game, are never recorded, and stop when the button is let go.';
-export const GROWNUPS_NOTE = 'For grown-ups: signing in, setting up this device and switching players.';
+export const GROWNUPS_NOTE = 'For grown-ups: the Family page, this device and switching players.';
 const LOCK_MS = 60000;
 const LOCK_MAX_MS = 10 * 60000;
 const MAX_WRONG = 3;
@@ -88,7 +88,7 @@ export function newProblem(rand = Math.random) {
 /**
  * Open the grown-up check. Resolves true when answered right, false when cancelled.
  * @param {object} game
- * @param {{ purpose?: 'walkie'|'grownups', settings?: object, save?: Function }} [opts]
+ * @param {{ purpose?: 'walkie'|'grownups', note?: string, settings?: object, save?: Function }} [opts]
  */
 export function openGate(game, opts = {}) {
   const ui = game.ui;
@@ -120,7 +120,7 @@ export function openGate(game, opts = {}) {
     q.append(qText, eq, ans);
     const pad = ui.el('div', 'sw-gate-pad');
     const msg = ui.el('div', 'sw-gate-msg', '');
-    const note = ui.el('div', 'sw-gate-note', grown ? GROWNUPS_NOTE : GATE_NOTE);
+    const note = ui.el('div', 'sw-gate-note', opts.note || (grown ? GROWNUPS_NOTE : GATE_NOTE));
     const btns = ui.el('div', 'sw-dialog-buttons');
     const cancel = ui.button({ label: 'Cancel', variant: 'white', icon: 'close', className: 'sw-gate-cancel', onClick: () => close(false) });
     btns.appendChild(cancel);

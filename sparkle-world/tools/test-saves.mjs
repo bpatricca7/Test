@@ -1173,6 +1173,24 @@ if (!MEASURE) {
       await page.waitForTimeout(2500);
       assert.ok(!/from before/.test(await page.evaluate(() => document.querySelector('.sw-layer-dialogs').innerText)), 'asked once');
       assert.equal(await page.evaluate(() => window.__game.account.hasLegacy), true, 'the old copies stay 30 days (Remove old copies)');
+      // a kid's device: the Grown-ups card opens at once; Sign this device out asks a plain
+      // "Sign this device out?", Remove old copies the grown-up check first (§7.7)
+      await page.click('.sw-title-grownups');
+      await dialogs(page, /For grown-ups/);
+      assert.equal(await page.$('.sw-gate'), null, 'no grown-up check before the Grown-ups card on a kid device');
+      await page.click('.sw-dialog button:has-text("Sign this device out")');
+      await dialogs(page, /Sign this device out\?/);
+      assert.equal(await page.$('.sw-gate'), null, 'Sign this device out: a plain confirm, no grown-up check');
+      await page.click('.sw-dialog button:has-text("Cancel")');
+      await page.waitForFunction(() => !document.querySelector('.sw-dialog'));
+      await page.click('.sw-title-grownups');
+      await dialogs(page, /For grown-ups/);
+      await page.click('.sw-dialog button:has-text("Remove old copies")');
+      await page.waitForSelector('.sw-gate .sw-gate-qtext');
+      assert.ok(!/Remove the old copies\?/.test(await page.evaluate(() => document.querySelector('.sw-layer-dialogs').innerText)), 'the grown-up check comes before "Remove the old copies?"');
+      await page.click('.sw-gate-cancel');
+      await page.waitForSelector('.sw-gate', { state: 'detached' });
+      assert.equal(await page.evaluate(() => window.__game.account.hasLegacy), true, 'cancelled: the old copies stay');
       // offline: the cache boots her (the picker from the cache), saves wait on the device
       await page.route('**/api/me', (r) => r.abort());
       await page.reload();
@@ -1197,22 +1215,43 @@ if (!MEASURE) {
         await out.keyboard.press('Escape');
         await out.waitForTimeout(300);
         await dialogs(out, /Ask a grown-up to set up Glimmer World/);
-        await out.click(".sw-dialog button:has-text(\"I'm a grown-up\")");
-        await dialogs(out, /Grown-ups only/);
         await noMoney(out);
+        // I'm a grown-up: straight to the sign-in (the parent's email protects it), no grown-up check
+        await out.click(".sw-dialog button:has-text(\"I'm a grown-up\")");
+        await out.waitForURL((u) => u.pathname === '/account' && u.searchParams.get('next') === '/play', { timeout: 60000 });
         await out.context().close();
+        // I have a code: straight to the code box
+        const code = await open(web.base + '/play');
+        await title(code);
+        await dialogs(code, /Ask a grown-up to set up Glimmer World/);
+        await code.click('.sw-dialog button:has-text("I have a code")');
+        await code.waitForSelector('.sw-dialog input.sw-input');
+        assert.equal(await code.$('.sw-gate'), null, 'I have a code: no grown-up check');
+        await code.context().close();
         const f = await family({ plan: 'lapsed' });
         const rest = await open(web.base + '/play', { tok: session(f.id) });
         await title(rest);
         await dialogs(rest, /Glimmer World is resting/);
-        // a kid's device: one button (past the grown-up check, the Family page)
+        // a kid's device: one button (the Family page, no grown-up check)
         assert.deepEqual(await rest.$$eval('.sw-dialog .sw-dialog-buttons button', (bs) => bs.map((b) => b.textContent.trim())), ['Grown-ups']);
         await noMoney(rest);
+        // ...which goes straight to the Family page (there it only says the device is the kids')
+        await rest.click('.sw-dialog button:has-text("Grown-ups")');
+        await rest.waitForURL((u) => u.pathname === '/account', { timeout: 60000 });
         await rest.context().close();
         // a grown-up's own sign-in gets no card: straight to the Family page (the membership)
         const grown = await open(web.base + '/play', { tok: session(f.id, { kind: 'parent' }) });
         await grown.waitForURL((u) => u.pathname === '/account' && !u.search, { timeout: 120000 });
         await grown.context().close();
+        // with a plan and players, the game on a grown-up's own sign-in: Grown-ups asks the
+        // grown-up check first (there the Family page opens with no email code)
+        const two = await family({ players: ['Lily', 'Mia'] });
+        const own = await open(web.base + '/play', { tok: session(two.id, { kind: 'parent' }) });
+        await own.waitForSelector('.sw-acct-grownups', { timeout: 120000 });
+        await own.click('.sw-acct-grownups');
+        await own.waitForSelector('.sw-gate .sw-gate-qtext');
+        assert.ok(!/For grown-ups/.test(await own.evaluate(() => document.querySelector('.sw-layer-dialogs').innerText)), "a grown-up's own sign-in: the grown-up check first");
+        await own.context().close();
         // a plan but nobody added yet: a grown-up's sign-in goes to the Family page to add one...
         const empty = await family({ players: [] });
         const tok = session(empty.id, { kind: 'parent' });
