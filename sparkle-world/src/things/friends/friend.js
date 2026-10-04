@@ -10,6 +10,7 @@ import { angleDelta } from '../../core/util.js';
 import { normalizeLook } from '../../player/wardrobe-data.js';
 import { disposeObject } from '../../core/models.js';
 import { friendDef, FRIENDS } from './looks.js';
+import { SeaGate, seaDeep } from '../../player/merfolk/rules.js';
 
 const GRAVITY = 24;
 export const HALF_W = 0.28;
@@ -31,7 +32,11 @@ export class Friend {
     this.key = this.def.key;
     this.name = String(data.name || this.def.name).slice(0, 18);
     this.look = normalizeLook({ ...(data.look || this.def.look), name: this.name });
-    this.avatar = g.createAvatar(this.look);
+    // in deep water girls become mermaids, boys sea dragons (merfolk); their looks keep 'auto'
+    this.avatar = g.createAvatar(this.look, { seaAuto: this.def.kind === 'boy' ? 'sea_dragon' : 'mermaid' });
+    this.seaGate = new SeaGate();
+    this.seaOn = false;
+    this._liq = (x, y, z) => !!g.physics && g.physics.liquidAt(x, y, z);
     this.group = this.avatar.group;
     this.group.name = 'friend:' + this.key;
     this.pos = this.group.position;
@@ -200,11 +205,11 @@ export class Friend {
 
   /**
    * The motion sample for the host's presence: [h, x*20, y*20, z*20, yaw*100, st, line, emo];
-   * st 'w' walk / stand, 's' sit, 'z' sleep, 'i' swim; line -1 (speech is not sent in v1);
+   * st 'w' walk / stand, 's' sit, 'z' sleep, 'i' swim, 'm' sea form; line -1 (speech is not sent in v1);
    * emo = counter * 8 + emote index (0 = none yet).
    */
   netSample() {
-    const st = this.act === 'sit' ? 's' : this.act === 'sleep' ? 'z' : this.swimming ? 'i' : 'w';
+    const st = this.act === 'sit' ? 's' : this.act === 'sleep' ? 'z' : this.seaOn ? 'm' : this.swimming ? 'i' : 'w';
     const p = this.pos;
     return [this.h | 0, Math.round(p.x * 20), Math.round(p.y * 20), Math.round(p.z * 20), Math.round(this.yaw * 100), st, -1, this.netEmote | 0];
   }
@@ -253,7 +258,8 @@ export class Friend {
           if (this.avatar.stopEmote) this.avatar.stopEmote();
         }
       }
-      this.swimming = t.st === 'i';
+      this.swimming = t.st === 'i' || t.st === 'm';
+      this.seaOn = t.st === 'm'; // set straight from the host's sample (guests run no gate)
       this.onGround = true;
       if (t.emo !== this._emoSeen) {
         this._emoSeen = t.emo;
@@ -285,6 +291,7 @@ export class Friend {
         sitting: this.act === 'sit',
         sleeping: this.act === 'sleep',
         riding: false,
+        sea: this.seaOn,
       });
     }
     this._updateBox();
@@ -408,6 +415,7 @@ export class Friend {
         sitting: this.act === 'sit',
         sleeping: this.act === 'sleep',
         riding: false,
+        sea: this.seaOn,
       });
       this._eatPose();
     }
@@ -685,7 +693,13 @@ export class Friend {
     }
     const inWater = ph.liquidAt(p.x, p.y + 0.9, p.z) || (this.swimming && ph.liquidAt(p.x, p.y + 0.3, p.z));
     this.swimming = inWater;
-    if (inWater) speed *= 0.65;
+    // sea form (merfolk): the same gate as the player's; a friend with a tail keeps up with her
+    this.seaGate.step(dt, {
+      deep: seaDeep(this._liq, p.x, p.y, p.z), swimming: inWater, onGround: this.onGround,
+      blocked: this.act === 'sit' || this.act === 'sleep',
+    });
+    this.seaOn = this.seaGate.on && this.avatar.seaForm !== 'me';
+    if (inWater) speed *= this.seaOn ? 1.05 : 0.65;
     const tvx = wx * speed + sx * 3, tvz = wz * speed + sz * 3;
     const k = Math.min(1, (this.onGround || inWater ? 10 : 4) * dt);
     v.x += (tvx - v.x) * k;

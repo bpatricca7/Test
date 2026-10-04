@@ -92,6 +92,7 @@ export const LINES = {
     'cook:done': ['You\'re a great chef!', 'That looks delicious!'],
     'garden:harvest': ['Look what you grew!', 'Yummy veggies!'],
     'prefab:place': ['Wow! A whole house!', 'That\'s so magical!'],
+    'player:seaform': ['Whoa! Look at your tail!', 'So sparkly! Let\'s swim!', 'You swim so fast now!'],
   },
   outfit: {
     head: {
