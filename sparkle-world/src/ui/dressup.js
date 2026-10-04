@@ -1116,9 +1116,9 @@ class Studio {
       const yes = await this.ui.confirm({ title: 'Save here?', text: 'This will replace the outfit in this spot.', yes: 'Yes, save', no: 'No, keep it', icon: 'heart' });
       if (!yes) return;
     }
-    const keep = W.cloneLook(this.look);
-    delete keep.sea; // the water form stays who you are, not part of the outfit
-    outfits[i] = keep;
+    // the slot keeps the whole look; wearing it never changes the water form (_wearSlot) and the
+    // "worn" check leaves the form out, so the form stays who you are, not part of the outfit
+    outfits[i] = W.cloneLook(this.look);
     this.game.saveProfile(true);
     this.game.audio.play('success');
     this.ui.toast('Outfit saved!', { icon: 'heart', color: 'pink' });
