@@ -25,9 +25,10 @@
 // animal around a camera under the water) are drawn exactly as on land.
 //
 // Glass: see-through blocks (glass, jelly blocks, ice) do not write depth, so an animal drawn
-// after them would cover them. A kind with any animal seen through such a block (index.js
-// _glassTick) draws in SEA_BEHIND order instead, BEFORE every see-through chunk (the glass and
-// the water then blend over it as they do over anything else), without its own liquid colour.
+// after them would cover them. Each animal seen through such a block (index.js _glassTick) draws
+// in its kind's glass mesh (render.js) in SEA_BEHIND order instead, BEFORE every see-through chunk
+// (the glass and the water then blend over it as they do over anything else), without its own
+// liquid colour; the rest of its kind stays in the front mesh.
 //
 // At night every sea animal gets a soft moonlit glow (SEA_NIGHT of its own colour) on top of the
 // jellies' own glow and a pale moonlit edge, so a fish or an octopus near her never turns into a

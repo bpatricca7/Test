@@ -36,6 +36,7 @@ export function makeRecord(kind, i) {
     pod: -1, ox: 0, oz: 0, tx: 0, ty: 0, tz: 0, fade: 0, puffT: 0, leapT: 0, skipT: 0, breathT: 0,
     trick: '', trickN: 0, gx: 0, gy: 0, gz: 0, gyaw: 0, checkT: 0, holdX: 0, holdZ: 0, baby: false,
     lastTap: -1e9, cool: 0, orbit: 0, orbitR: 1, orbitW: 1, hideT: 0, homeX: 0, homeZ: 0,
+    behind: undefined, clear: 0, sepX: 0, sepZ: 0, pushX: 0, pushZ: 0, waitT: 0,
   };
 }
 
@@ -396,22 +397,105 @@ export class Spawner {
 
 // ---------- per-kind steppers (wild animals; the pod / school brains live in index.js) ----------
 
-/** Fish: each fish orbits its school centre; never outside liquid. */
-export function placeFish(r, school, env) {
+/** A fish swims at most this fast (blocks a second; a scatter's dash) toward its place on its orbit. */
+export const FISH_STEP = 14;
+/** How far out along its line a fish tries when its orbit point is blocked (parts of its radius). */
+const IN_STEPS = [1, 0.75, 0.5, 0.25, 0];
+
+/**
+ * Fish: each fish orbits its school centre; never outside liquid. dt > 0 (the game's step): a fish
+ * whose place jumps (its orbit point blocked by an ice floe, the spacing, a scatter) swims there at
+ * most FISH_STEP a second through open water instead of popping across; one that finds the straight
+ * way blocked waits in its own water, and after 1.5 s of that goes straight to its place.
+ */
+export function placeFish(r, school, env, dt = 0) {
   const rad = r.orbitR * (school.scatter > 0 ? 1 + 2 * Math.min(1, school.scatter) : 1);
   // the map and the real cell (world.get: an edit with no event is not in the map yet)
   const ok = (x, z) => columnOk(env, 'fish', Math.floor(x), Math.floor(z), school.level) && env.props.shape[env.world.get(Math.floor(x), school.level, Math.floor(z))] === LIQUID;
-  let fx = school.x + Math.sin(r.orbit) * rad, fz = school.z + Math.cos(r.orbit) * rad;
-  if (!ok(fx, fz)) {
-    fx = school.x + Math.sin(r.orbit) * 0.4;
-    fz = school.z + Math.cos(r.orbit) * 0.4;
-    if (!ok(fx, fz)) { fx = school.x; fz = school.z; }
+  // its orbit around the school's centre, nudged by its spacing from its school mates (spaceFish)
+  // a blocked point (an ice floe, the shore) moves it in along its own line from the centre, so
+  // fish by a floe stay spread out instead of all bunching at one small ring
+  const sx = Math.sin(r.orbit), sz = Math.cos(r.orbit);
+  let fx = school.x, fz = school.z;
+  for (let k = 0; k < IN_STEPS.length; k++) {
+    const d = Math.max(0.4, rad * IN_STEPS[k]);
+    const x = school.x + sx * d + r.sepX, z = school.z + sz * d + r.sepZ;
+    if (ok(x, z)) { fx = x; fz = z; break; }
+    const x2 = school.x + sx * d, z2 = school.z + sz * d;
+    if (ok(x2, z2)) { fx = x2; fz = z2; break; }
+  }
+  if (dt > 0 && Number.isFinite(r.x) && Number.isFinite(r.z) && r.level === school.level && ok(r.x, r.z)) {
+    const dx = fx - r.x, dz = fz - r.z, d = Math.hypot(dx, dz), max = FISH_STEP * dt;
+    if (d > max) {
+      const nx = r.x + (dx / d) * max, nz = r.z + (dz / d) * max;
+      if (ok(nx, nz)) { fx = nx; fz = nz; r.waitT = 0; }
+      else if ((r.waitT += dt) < 1.5) { fx = r.x; fz = r.z; }
+      else r.waitT = 0;
+    } else r.waitT = 0;
   }
   const ox = r.x, oz = r.z;
   r.x = fx; r.z = fz;
   const mx = r.x - ox, mz = r.z - oz;
   if (mx * mx + mz * mz > 1e-6) r.yaw = Math.atan2(mx, mz);
   r.level = school.level;
+}
+
+/** Little Fish keep this far apart (centre to centre, block units; a fish is about 0.85 long). */
+export const FISH_APART = 0.75;
+const SEP_MAX = 1.4, PUSH_MAX = 0.04;
+
+/**
+ * Gentle spacing inside a school: fish closer than FISH_APART push each other apart sideways, a
+ * quarter of the overlap a frame and at most PUSH_MAX in all (both at 60 fps; scaled by dt, so a
+ * slower frame rate spaces them as well; a fish never darts), and the push is
+ * kept in the fish's own small offset (sepX / sepZ, added to its orbit by placeFish) that eases
+ * back to 0 when nothing is near, so two fish never melt into one two-headed blob. A push that
+ * would leave the school's water slides along the edge (one axis) or is skipped; a fish skipping
+ * out of the water is left alone.
+ * list[from .. from + n - 1] are the school's fish. Pure, no allocations.
+ */
+export function spaceFish(list, from, n, dt, school = null, env = null) {
+  // per frame at 60 fps; a slower frame (an older iPad) pushes as much per second
+  const ease = Math.max(0, 1 - dt * 0.6), end = from + n, fr = Math.min(4, Math.max(0.25, dt * 60));
+  const share = Math.min(0.5, 0.25 * fr), most = PUSH_MAX * fr;
+  for (let i = from; i < end; i++) { const r = list[i]; r.sepX *= ease; r.sepZ *= ease; r.pushX = 0; r.pushZ = 0; }
+  for (let i = from; i < end; i++) {
+    const a = list[i];
+    if (!a.on || a.state === 'skip') continue;
+    for (let j = i + 1; j < end; j++) {
+      const b = list[j];
+      if (!b.on || b.state === 'skip') continue;
+      const dx = b.x - a.x, dz = b.z - a.z, dy = b.y - a.y;
+      const h = Math.hypot(dx, dz), d = Math.hypot(h, dy);
+      if (d >= FISH_APART) continue;
+      // straight apart; two fish on the very same spot part along their index
+      const ux = h > 1e-3 ? dx / h : Math.sin(a.i * 2.4 + 1), uz = h > 1e-3 ? dz / h : Math.cos(a.i * 2.4 + 1);
+      const k = (FISH_APART - d) * share;
+      a.pushX -= ux * k; a.pushZ -= uz * k;
+      b.pushX += ux * k; b.pushZ += uz * k;
+    }
+  }
+  for (let i = from; i < end; i++) {
+    const r = list[i];
+    let m = Math.hypot(r.pushX, r.pushZ);
+    if (m > 0 && Number.isFinite(m)) {
+      if (m > most) { r.pushX *= most / m; r.pushZ *= most / m; }
+      // the push, or (against a floe or the shore) the part of it along the edge
+      for (let t = 0; t < 3; t++) {
+        const px = t === 2 ? 0 : r.pushX, pz = t === 1 ? 0 : r.pushZ;
+        if (t > 0 && px === 0 && pz === 0) continue;
+        const x = r.x + px, z = r.z + pz;
+        if (!env || (columnOk(env, 'fish', Math.floor(x), Math.floor(z), school.level) && env.props.shape[env.world.get(Math.floor(x), school.level, Math.floor(z))] === LIQUID)) {
+          r.x = x; r.z = z;
+          r.sepX += px; r.sepZ += pz;
+          break;
+        }
+      }
+    }
+    // a soft cap: an offset past SEP_MAX shrinks back a little each frame (never a jump)
+    m = Math.hypot(r.sepX, r.sepZ);
+    if (!Number.isFinite(m)) { r.sepX = 0; r.sepZ = 0; } else if (m > SEP_MAX) { const f = (SEP_MAX + (m - SEP_MAX) * 0.9) / m; r.sepX *= f; r.sepZ *= f; }
+  }
 }
 
 /**

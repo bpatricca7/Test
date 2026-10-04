@@ -1855,3 +1855,35 @@ for a grown-up's read (§16 Q4).
   `biomes-pool-dolphins` turn her camera to the animals; the review set adds
   `review-shore-desktop|ipad` (crabs, starfish and a seahorse by the shore), spreads the night
   animals across the view, and lays the under-water animals out so none is in front of another.
+
+**Polish after the third review.**
+- *Glass per animal, not per kind.* Before, if one animal of a kind was seen through a see-through
+  block, every animal of that kind drew in the faint behind-glass order. Snow worlds put ice floes
+  on the sea near the shore, so one fish seen past a floe made the whole school faint, back and
+  forth (snow seed 777, a school just past a floe: 4 flips in 12 s, all 8 fish faint in 21% of the
+  frames). Now each kind has a second instanced mesh (`render.js`, `sea-<kind>-glass`, drawn in
+  `SEA_BEHIND` order); only the animals behind the glass go there (`r.behind`). An animal goes
+  behind the glass at once and comes back only after 2 clear checks in a row (`GLASS_HOLD`), so
+  one swimming along a floe's edge does not blink. The extra mesh is hidden at count 0, so it costs
+  a draw call only while a kind has animals on both sides of the glass; C1 (no glass) is still 9.
+  O9 counts 18 sea meshes (9 kinds, each with its glass mesh). New checks: test-sea S10 "glass
+  meshes" and probe B4 (snow: fish past a floe, `ocean-biomes-snow-floes.png`). G1 unchanged.
+- *Fish spacing.* Little Fish were not in `APART` (their place comes from their orbit), so two
+  could melt into one two-headed blob. `motion.js` `spaceFish` pushes school mates closer than
+  `FISH_APART` (0.75) apart a little each frame (at most 0.04 a frame, so a fish never darts) and
+  keeps the push as a small offset on its orbit that eases back (scaled by dt, so 20 fps spaces as
+  well as 60). By an ice floe a fish's orbit point on the ice moves in along its own line
+  (`IN_STEPS`) instead of all bunching on one small ring, a blocked push slides along the edge, and
+  a fish whose place jumps swims there at most `FISH_STEP` (14) a second instead of popping across
+  (before: steps of 1.1-1.3 blocks in one frame). Test S11 (10 fish, 60 s): frames with two fish
+  closer than 0.4 went from 92-96% to 0% in open water and to under 2% by a floe (also at 20 fps);
+  probe B4 counts it in the snow world too (0 of 74 frames). Debug: `schoolTo(i, x, z)`,
+  `fishClosest(i)`, `behindCount()`, `meshCounts(glass)`.
+- *Dolphin face and tail.* From the front or 3/4 it read as a seal or a platypus (a round ball
+  head and a short tube beak), and its flukes were a thin stick from the side. Now a softer
+  forehead slopes into a longer, gently tapered beak (a dolphin's rostrum) with a pale chin, a
+  smile line along each side of the beak that curls up toward the eye, and rounded flukes with
+  real thickness, swept back and tipped up a little. Palettes, keys and sizes are unchanged.
+- *For the integrator (P2):* this branch changed the `pf_dolphin` row of `docs/teams/squishies.md`
+  to ocean's `sky` colour #6A80CC. Squish's code was not touched: align
+  `src/things/squish/data.js` (`pf_dolphin`, still #8EB8E0) at the P2 merge.

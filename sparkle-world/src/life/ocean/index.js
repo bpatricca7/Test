@@ -16,7 +16,7 @@ import { SeaMap } from './seamap.js';
 import { SEA_KINDS, SEA_SPEC, SEA_NAMES, SEA_TEXT, PALETTES, OCEAN_STAR_KINDS, DOLPHIN_NAMES, pickPalette, hexToLinear } from './kinds.js';
 import {
   makeRecord, saveGood, sanitize, columnOk, spawnOk, settleY, swimToward, wanderTarget, canLeap, startLeap,
-  stepLeap, startTrick, stepTrick, Spawner, placeFish, stepCrab, rescueCell, bestDirection, glassBetween, SURF, NEAR,
+  stepLeap, startTrick, stepTrick, Spawner, placeFish, spaceFish, stepCrab, rescueCell, bestDirection, glassBetween, SURF, NEAR,
 } from './motion.js';
 import { SEA_U, SEA_LIQUIDS, SEA_WATER } from './material.js';
 import { SeaMeshes } from './render.js';
@@ -50,6 +50,8 @@ const HORSE_BED = 1.55, HORSE_SURF = 0.72;
 const APART = { dolphin: 1.7, sea_turtle: 1.5, jelly: 1.0, seahorse: 0.8, octopus: 1.2, crab: 0.95 };
 /** New animals of a kind spawn at least this far from one already there (_crowded). */
 const SPACE = { sea_turtle: 3, octopus: 3, jelly: 1.6, seahorse: 1.8, crab: 1.6, starfish: 1.8 };
+/** Clear line-of-sight checks in a row (8 frames apart) before an animal leaves the glass mesh. */
+const GLASS_HOLD = 2;
 const FIXED = { leap: 1, trick: 1, ride: 1, hold: 1, mount: 1, gallery: 1, buddy: 1 };
 /** An octopus's feet: on the bed, or near her up off it with its head just under the surface. */
 const octoY = (bed, surf, dist) => {
@@ -520,6 +522,7 @@ class OceanSystem {
     sc.speed = 0;
     sc.scatter = 0;
     sc.wanderT = 0;
+    sc.pinned = false;
     sc.t = 0;
     sc.fade = 0.01;
     sc.lastTap = -1e9;
@@ -536,6 +539,7 @@ class OceanSystem {
       r.orbitR = 0.6 + Math.random() * 1.1;
       r.orbitW = (0.6 + Math.random() * 0.8) * (Math.random() < 0.5 ? -1 : 1);
       r.yoff = Math.random();
+      r.sepX = 0; r.sepZ = 0; r.waitT = 0;
       placeFish(r, sc, this.env);
     }
     const s = this.session;
@@ -1052,7 +1056,7 @@ class OceanSystem {
       }
       // wander inside 10 blocks of qualifying water; scatter when tapped or swum through fast
       sc.wanderT -= dt;
-      if (sc.wanderT <= 0 || Math.hypot(sc.tx - sc.x, sc.tz - sc.z) < 0.5) {
+      if (!sc.pinned && (sc.wanderT <= 0 || Math.hypot(sc.tx - sc.x, sc.tz - sc.z) < 0.5)) {
         sc.wanderT = 4 + Math.random() * 4;
         for (let t = 0; t < 6; t++) {
           const a = Math.random() * TAU, d = 2 + Math.random() * 8;
@@ -1073,7 +1077,7 @@ class OceanSystem {
         const r = fish[s * PER_SCHOOL + i];
         if (!r.on) continue;
         r.orbit += r.orbitW * dt * (1 + sc.scatter * 2);
-        placeFish(r, sc, env);
+        placeFish(r, sc, env, dt);
         r.fade = sc.fade;
         r.phase += dt * (6 + sc.speed * 3);
         r.amp = 0.5 + sc.scatter * 0.5;
@@ -1099,6 +1103,8 @@ class OceanSystem {
         if (r.y < minY) minY = r.y; if (r.y > maxY) maxY = r.y;
         if (r.z < minZ) minZ = r.z; if (r.z > maxZ) maxZ = r.z;
       }
+      // a little room between school mates (no two-headed blobs)
+      spaceFish(fish, s * PER_SCHOOL, PER_SCHOOL, dt, sc, env);
       // one fish skips out now and then (near her)
       sc.skipT = (sc.skipT || 4) - dt;
       if (sc.skipT <= 0) {
@@ -1777,12 +1783,12 @@ class OceanSystem {
     const tod = this.game.timeOfDay;
     SEA_U.uSeaTime.value = this.clock % 600;
     SEA_U.uSeaNight.value = tod && fin(tod.night) ? clamp(tod.night, 0, 1) : 0;
-    const behind = this._glassTick();
+    this._glassTick();
     const lists = this._lists || (this._lists = [null]);
     const liquid = this._liquidFn || (this._liquidFn = (r) => this._liquid(r));
     for (const kind of SEA_KINDS) {
       lists[0] = this.pools[kind];
-      M.write(kind, lists, liquid, behind[kind]);
+      M.write(kind, lists, liquid); // each animal's own r.behind picks its mesh (render.js)
     }
   }
 
@@ -1801,22 +1807,32 @@ class OceanSystem {
   }
 
   /**
-   * Glass (material.js): for each kind, whether any of its animals is seen through a see-through
-   * block (glass, a jelly block, ice) from the camera. Each animal's line of sight is checked every
-   * eighth frame (a short voxel walk, at most 48 blocks).
+   * Glass (material.js): whether each animal is seen through a see-through block (glass, a jelly
+   * block, ice) from the camera (r.behind); only those animals draw in their kind's glass mesh
+   * (render.js), so a fish behind an ice floe never turns its whole school faint. Each animal's
+   * line of sight is checked every eighth frame (a short voxel walk, at most 48 blocks). It goes
+   * behind the glass at once (never pasted over it) and back out only after GLASS_HOLD clear checks
+   * in a row, so one swimming along a floe's edge does not blink. Returns, per kind, whether any
+   * of its animals is behind glass (the debug view).
    */
   _glassTick() {
     const B = this._behind || (this._behind = {});
     for (const kind of SEA_KINDS) B[kind] = false;
     const w = this.game.world, cam = this.game.camera;
     const props = w && w.registry && w.registry.props;
-    if (!props || !cam) return B;
+    if (!props || !cam) {
+      for (const kind of SEA_KINDS) for (const r of this.pools[kind]) { r.behind = false; r.clear = 0; }
+      return B;
+    }
     const cp = cam.position, f = this.frame;
     for (const kind of SEA_KINDS) {
       const lift = kind === 'octopus' || kind === 'crab' || kind === 'starfish' ? 0.2 : 0;
       for (const r of this.pools[kind]) {
-        if (!r.on || r.hidden) { r.behind = false; continue; }
-        if (((f + r.i) & 7) === 0 || r.behind === undefined) r.behind = glassBetween(w, props.pass, props.shape, cp.x, cp.y, cp.z, r.x, r.y + lift, r.z);
+        if (!r.on || r.hidden) { r.behind = undefined; r.clear = 0; continue; }
+        if (((f + r.i) & 7) === 0 || r.behind === undefined) {
+          if (glassBetween(w, props.pass, props.shape, cp.x, cp.y, cp.z, r.x, r.y + lift, r.z)) { r.behind = true; r.clear = 0; }
+          else if (!r.behind || ++r.clear >= GLASS_HOLD) { r.behind = false; r.clear = 0; }
+        }
         if (r.behind) B[kind] = true;
       }
     }
@@ -1968,6 +1984,28 @@ class OceanSystem {
         sc.box.max.y += dy;
         return true;
       },
+      /** Probes: school i swims to (x, z) and stays around it (its fish still circle and space out). */
+      schoolTo(i, x, z) {
+        const sc = sys.schools[i];
+        if (!sc || !sc.on) return false;
+        sc.tx = x; sc.tz = z; sc.pinned = true;
+        return true;
+      },
+      /** Probes: the closest two fish of school i (centre to centre across the water; skips left out). */
+      fishClosest(i = 0) {
+        const sc = sys.schools[i];
+        if (!sc || !sc.on) return null;
+        let best = Infinity;
+        for (let a = 0; a < PER_SCHOOL; a++) {
+          const p = sys.pools.fish[i * PER_SCHOOL + a];
+          if (!p.on || p.state === 'skip') continue;
+          for (let b = a + 1; b < PER_SCHOOL; b++) {
+            const q = sys.pools.fish[i * PER_SCHOOL + b];
+            if (q.on && q.state !== 'skip') best = Math.min(best, Math.hypot(p.x - q.x, p.z - q.z));
+          }
+        }
+        return best;
+      },
       /** Probes: every animal holds its pose (still drawn and tappable) while on. */
       still(on = true) { sys.stillOn = !!on; if (on) sys.pickT = 0; return sys.stillOn; },
       popups(on = true) { sys.popupsForced = on === null ? null : !!on; return sys.popups(); },
@@ -2091,7 +2129,14 @@ class OceanSystem {
       slotSurf: (kind, i) => (sys.meshes ? sys.meshes.slotSurf(kind, i) : null),
       /** Per kind: an animal of it is seen through glass (material.js; drawn before the glass). */
       behind: () => ({ ...(sys._behind || {}) }),
-      meshCounts: () => (sys.meshes ? sys.meshes.counts() : null),
+      /** Per kind: how many of its live animals are seen through glass (each is drawn on its own). */
+      behindCount() {
+        const out = {};
+        for (const k of SEA_KINDS) { out[k] = 0; for (const r of sys.pools[k]) if (r.on && !r.hidden && r.behind) out[k]++; }
+        return out;
+      },
+      /** Live instances per kind in the front meshes (glass: true, in the glass meshes). */
+      meshCounts: (glass = false) => (sys.meshes ? sys.meshes.counts(glass) : null),
       corrupt(kind = 'dolphin') {
         const r = sys.pools[kind].find((q) => q.on && q.state !== 'ride');
         if (!r) return false;

@@ -14,7 +14,8 @@
 //           block, a teleport
 //   touch   iPad 1024x768: a real tap, the bubble clear of the HUD, Ride with the joystick, Jump,
 //           Hop off, the Help card
-//   biomes  candy palettes and the chocolate-milk pond, a kid's pools in Flat, snow ice
+//   biomes  candy palettes and the chocolate-milk pond, a kid's pools in Flat, snow ice, fish past an
+//           ice floe (B4)
 //   saves   an old profile, an old world, a beach world saved before and after sea life (D3)
 //   mp      two pages: a friend's ride, the shared whale, her own hellos, a page that closes,
 //           joining late, a friend's trick, the buddy's name
@@ -591,7 +592,7 @@ async function worldPass(browser, errors) {
     g.scene.traverse((o) => { if (o.name && o.name.startsWith('sea-') && o.isMesh) meshes.push(o.visible); });
     return { pickables: g.pickables.size, total: Object.values(counts).reduce((a, b) => a + b, 0), visible: meshes.some(Boolean), meshes: meshes.length };
   });
-  check(errors, o9.pickables === 0 && o9.total === 0 && !o9.visible && o9.meshes === 9, `O9 back to the title: ${o9.pickables} pickables, ${o9.total} animals, ${o9.meshes} sea meshes all hidden`);
+  check(errors, o9.pickables === 0 && o9.total === 0 && !o9.visible && o9.meshes === 18, `O9 back to the title: ${o9.pickables} pickables, ${o9.total} animals, ${o9.meshes} sea meshes (9 kinds, each with its glass mesh) all hidden`);
   await context.close();
 }
 
@@ -1577,6 +1578,78 @@ async function biomesPass(browser, errors) {
     });
     check(errors, under === 0, `B3 snow: no fish under the ice (${iced.n} iced cells, ${under} fish under ice)`);
   } else check(errors, true, 'B3 snow: no ice-capped pond in this world (nothing to check)');
+
+  // B4 snow: ice floes on the sea (biomes/snow.js) are see-through blocks. Before the per-animal
+  // glass meshes one fish seen past a floe turned the whole school faint, back and forth (seed
+  // 777: 4 flips in 12 s, all 8 fish faint 21% of the frames). Now only the fish behind the ice
+  // draw behind it, and each one leaves the glass mesh only after two clear checks.
+  const floe = await ev(page, () => {
+    const g = window.__game, w = g.world, m = g.ocean.map, B = g.registry.blocks;
+    const ice = B.byKey('ice').id, packed = B.byKey('ice_packed').id, water = B.byKey('water').id;
+    for (let z = 2; z < w.sz - 2; z++) for (let x = 2; x < w.sx - 2; x++) {
+      // a floe: ice at the sea's own level with water under it
+      let y = -1;
+      for (let k = 1; k < 48 && y < 0; k++) { const id = w.get(x, k, z); if ((id === ice || id === packed) && w.get(x, k - 1, z) === water) y = k; }
+      if (y < 0) continue;
+      for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        let open = 0;
+        for (let k = 2; k <= 5; k++) if (m.top(x + dx * k, z + dz * k) === y && m.deepAround(x + dx * k, z + dz * k, 1)) open++;
+        if (open < 4) continue;
+        const bx = x - dx * 4, bz = z - dz * 4, h = w.heightAt(bx, bz);
+        if (h < y - 1 || h > y + 2) continue;
+        // the school just past the floe's edge (lines to the near fish cross the ice, to the far ones not)
+        return { y, dx, dz, stand: [bx + 0.5, h + 1, bz + 0.5], fish: [x + dx * 2.2 + 0.5, z + dz * 2.2 + 0.5] };
+      }
+    }
+    return null;
+  });
+  if (floe) {
+    await ev(page, (s) => {
+      const g = window.__game, d = g.debug.ocean;
+      g.player.teleport(s.stand[0], s.stand[1], s.stand[2]);
+      g.cameraRig.yaw = Math.atan2(s.dx, s.dz);
+      g.cameraRig.pitch = 0.35;
+      d.autoSpawn(false);
+      d.clear();
+      d.spawn('fish', s.fish[0], s.y, s.fish[1], { n: 8, variant: 0 });
+      d.schoolTo(0, s.fish[0], s.fish[1]);
+    }, floe);
+    await page.waitForTimeout(1500);
+    const b4 = await ev(page, async () => {
+      const g = window.__game, d = g.debug.ocean;
+      let frames = 0, some = 0, all = 0, wrong = 0, faint = 0, switches = 0, last = null, blob = 0;
+      const t0 = performance.now(), gt = g.time.t;
+      while (performance.now() - t0 < 12000) {
+        await new Promise((r) => requestAnimationFrame(r));
+        const n = d.behindCount().fish, front = d.meshCounts().fish, back = d.meshCounts(true).fish, live = d.count().fish;
+        frames++;
+        faint += n;
+        if (n > 0) some++;
+        if (n > 0 && n === live) all++;
+        if (front + back !== live || back !== n) wrong++;
+        if (last !== null) switches += Math.abs(n - last);
+        last = n;
+        if (d.fishClosest(0) < 0.4) blob++;
+      }
+      return { frames, some, all, wrong, faint: faint / Math.max(1, frames), switches, live: d.count().fish, game: g.time.t - gt, blob };
+    });
+    check(errors, b4.frames > 30 && b4.wrong === 0 && b4.live === 8 && b4.some > 0 && b4.all < b4.some,
+      `B4 snow: fish seen past an ice floe draw behind it one by one, the rest of the school stays clear (${b4.frames} frames; behind the ice in ${b4.some}, the whole school in ${b4.all}; ${b4.faint.toFixed(2)} of ${b4.live} fish behind it on average; lanes wrong in ${b4.wrong})`);
+    // a fish circling past the floe's edge goes behind it and out again; with the hold it never blinks
+    const rate = b4.switches / Math.max(1, b4.live) / Math.max(0.5, b4.game);
+    check(errors, rate <= 0.5,
+      `B4 snow: no blinking at the floe's edge (${b4.switches} moves in or out of the glass mesh in ${b4.game.toFixed(1)} s of game time: ${rate.toFixed(2)} a second for each fish, <= 0.5)`);
+    // by the floe the school stays spread out (motion.js spaceFish and placeFish): no two fish in one blob
+    check(errors, b4.blob <= b4.frames * 0.1,
+      `B4 snow: the school by the floe stays spread out (two fish closer than 0.4 in ${b4.blob} of ${b4.frames} frames, at most 10%)`);
+    // the picture: her camera a little to one side (she does not hide the school), looking down on
+    // the floe's edge, the fish past it
+    await ev(page, () => { const r = window.__game.cameraRig; r.yaw += 0.4; r.pitch = 0.55; });
+    await page.waitForTimeout(600);
+    await cleanView(page, true, true);
+    await shot(page, 'biomes-snow-floes', PREFIX);
+    await cleanView(page, false, true);
+  } else check(errors, false, 'B4 snow: an ice floe with open sea past it (none found)');
   await context.close();
 }
 

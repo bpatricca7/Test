@@ -127,14 +127,30 @@ const sized = (kind, geo) => (SIZE[kind] ? scaleGeometry(geo, SIZE[kind], SIZE[k
 
 function dolphinParts(k) {
   const S = 12;
+  const rot = (r) => { k.parts[k.parts.length - 1].rot = r; };
   k.part(1, 0).ball(0.32, W, 0, 0, 0, S, [0.9, 0.85, 2.6]);                    // body
   k.part(2, 0).ball(0.27, W, 0, -0.08, 0.05, S, [0.8, 0.6, 2.3]);              // belly
-  k.part(1, 0).ball(0.24, W, 0, 0.06, 0.6, S);                                // forehead
-  k.part(1, 0).cylC(0.09, 0.32, W, 0, -0.04, 0.8, [Math.PI / 2, 0, 0], 10);    // beak
-  k.part(1, 0).ball(0.09, W, 0, -0.04, 0.96, 8);
-  k.part(0, 0).cbox(0.14, 0.015, 0.02, SMILE, 0, -0.05, 1.0);                 // smile line
+  // the head: a soft rounded forehead that slopes down into a long, gently tapered beak (a
+  // dolphin's rostrum), the pale belly running up under the chin
+  k.part(1, 0).ball(0.25, W, 0, 0.07, 0.55, S, [0.9, 0.86, 1.15]);             // forehead
+  k.part(2, 0).ball(0.16, W, 0, -0.085, 0.66, 10, [0.9, 0.62, 1.25]);          // chin
+  const B0 = 0.66, BL = 0.42, BR = 0.12, BT = 0.55, BY = -0.05, BV = 0.82;     // beak: start, length, radius, taper, y, height
+  k.part(1, 0).cylC(BR, BL, W, 0, BY, B0 + BL / 2, [Math.PI / 2, 0, 0], 12, BT);
+  k.parts[k.parts.length - 1].sz *= BV;                                       // a little flatter than round
+  k.part(1, 0).ball(BR * BT, W, 0, BY, B0 + BL, 10, [1, BV, 1.15]);            // its rounded tip
+  // the smile: a line along each side of the beak, curving up at the back toward the eye
+  const beakR = (z) => BR * (1 - (1 - BT) * Math.min(1, Math.max(0, (z - B0) / BL)));
+  for (const s of [-1, 1]) {
+    const pts = [];
+    for (let i = 0; i <= 10; i++) {
+      const t = i / 10, z = B0 + BL - 0.04 - t * 0.3, r = beakR(z) + 0.004;
+      const a = -0.4 + 0.95 * t ** 2.5;                                       // angle round the beak: below the middle, curling up at the back
+      pts.push([s * r * Math.cos(a), BY + r * BV * Math.sin(a), z]);
+    }
+    k.part(0, 0).tube(pts, 0.009, SMILE, 20);
+  }
   k.part(0, 0);
-  const ey = 0.10, ez = 0.72, ex = 0.17;
+  const ey = 0.10, ez = 0.70, ex = 0.17;
   for (const s of [-1, 1]) {
     k.ball(0.055, EYE, s * ex, ey, ez, 8);
     k.ball(0.02, SHINE, s * (ex + 0.02), ey + 0.03, ez + 0.03, 6);
@@ -145,7 +161,13 @@ function dolphinParts(k) {
     k.part(1, 1, [s * 0.16, -0.12, 0.3]).cbox(0.32, 0.04, 0.16, W, s * 0.30, -0.12, 0.3, [0, 0, s * 0.5]); // flippers
   }
   k.part(1, 0).ball(0.16, W, 0, 0, -0.82, 10, [0.8, 0.8, 2]);                 // tail stock
-  for (const s of [-1, 1]) k.part(1, 0).cbox(0.30, 0.04, 0.20, W, s * 0.16, 0, -1.12, [0, s * 0.4, 0]); // flukes (V)
+  // the flukes: two rounded lobes with real thickness, swept back and tipped up a little, so
+  // from the side they show as a soft V, not a thin stick
+  k.part(1, 0).ball(0.11, W, 0, 0, -1.1, 10, [1.2, 0.75, 1]);                 // fluke root
+  for (const s of [-1, 1]) {
+    k.part(1, 0).ball(0.21, W, s * 0.2, 0.02, -1.2, 12, [1.1, 0.3, 0.52]);
+    rot([0.12, s * -0.6, s * 0.3]);
+  }
   k.part(0, 3, [0, 0.12, 0.18]).cbox(0.30, 0.05, 0.34, '#FFD84D', 0, 0.30, 0.18);                  // saddle seat
   k.part(0, 3, [0, 0.12, 0.3]).cbox(0.16, 0.16, 0.03, '#FF5FA2', 0, 0.36, 0.36, [0, 0, Math.PI / 4]); // saddle star
 }
