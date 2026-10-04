@@ -1140,20 +1140,26 @@ async function costsPass(browser, errors) {
   }, tIn);
   const longest = fr.longest;
   const ens = await page.evaluate(() => {
-    const av = window.__game.debug.avatar;
-    void av;
-    // a fresh avatar: build the sea once, timed
-    const g = window.__game, a = g.createAvatar(g.profile.look, { seaAuto: 'sea_dragon' });
-    const t0 = performance.now();
-    a.update(0.016, { sea: true, swimming: true, speed: 2 });
-    const t = performance.now() - t0;
-    a.dispose();
-    return t;
+    // ensureSea: a fresh avatar's first sea frame (it builds the parts) minus a later sea frame
+    // (the shared textures are already painted: the player turned above)
+    const g = window.__game, out = [];
+    for (let i = 0; i < 5; i++) {
+      const a = g.createAvatar(g.profile.look, { seaAuto: 'mermaid' });
+      a.update(0.016, { swimming: true, speed: 2 });
+      const t0 = performance.now();
+      a.update(0.016, { sea: true, swimming: true, speed: 2 });
+      const t1 = performance.now();
+      a.update(0.016, { sea: true, swimming: true, speed: 2 });
+      const t2 = performance.now();
+      out.push((t1 - t0) - (t2 - t1));
+      a.dispose();
+    }
+    return out.sort((x, y) => x - y)[2];
   });
   // SwiftShader draws every frame on the CPU (a normal frame here is already over 33 ms), so the
   // check is what 33 ms means on a device: the turn adds at most 33 ms to the usual frame
   c(longest <= fr.median + 33, `B13c the longest frame in the 0.5 s after the first turn: ${Math.round(longest)} ms (usual ${Math.round(fr.median)} ms; at most +33 ms)`);
-  c(ens <= 8, `B13c building the sea parts: ${ens.toFixed(1)} ms (one frame with a fresh avatar)`);
+  c(ens <= 2, `B13c ensureSea (building the sea parts once): ${ens.toFixed(2)} ms (median of 5, <= 2 ms)`);
   // B13a / B13b draw calls and meshes: in sea form vs standing on the shore, same camera
   const pos = sh.deep;
   const from = [pos[0] + 4, sh.top + 2.5, pos[2] + 4], to = [pos[0], sh.top - 0.6, pos[2]];

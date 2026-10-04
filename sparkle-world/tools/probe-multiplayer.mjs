@@ -618,11 +618,16 @@ test('SEA', 'sea forms travel: Lily turns into a mermaid in a pool, Rosie sees h
     g.cameraRig.pitch = 0.35;
   }, pool);
   await settle(rosie.page, 800);
-  const p0 = await game(rosie, () => window.__game.particles.alive());
+  // count sparkle bursts on Rosie's page (a burst lives under a second: count it as it starts)
+  await game(rosie, () => {
+    const g = window.__game, emit = g.particles.emit.bind(g.particles);
+    window.__seaBursts = 0;
+    g.particles.emit = (kind, pos, o) => { if (kind === 'sparkle' && o && o.count >= 10) window.__seaBursts++; return emit(kind, pos, o); };
+  });
   await game(lily, ({ x, z, floor }) => window.__game.player.teleport(x, floor + 1.2, z), pool);
   const lilySea = await until(rosie, () => { const r = window.__game.debug.net.remote().find((x) => x.name === 'Lily'); return r && r.st === 'm' && r.sea && r.sea.shown ? r.sea : null; }, null, 10000);
   check(!!lilySea && lilySea.form === 'mermaid', `Rosie sees Lily in sea form: st m, a mermaid tail (${JSON.stringify(lilySea && { form: lilySea.form, shown: lilySea.shown })})`);
-  const burst = await until(rosie, (n) => window.__game.particles.alive() > n + 6, p0, 3000);
+  const burst = await until(rosie, () => window.__seaBursts > 0, null, 3000);
   check(!!burst, 'a sparkle burst on Rosie’s page as Lily turns');
   await settle(rosie.page, 1200);
   await shot(rosie, 'sea-rosie-sees-mermaid');
@@ -720,6 +725,12 @@ test('SEA', 'sea forms travel: Lily turns into a mermaid in a pool, Rosie sees h
       g.cameraRig.yaw = Math.atan2(-3, -3);
       g.cameraRig.pitch = 0.35;
     }, pool);
+    // count sparkle bursts on Mia's page from before Lily's avatar appears
+    await game(mia, () => {
+      const g = window.__game, emit = g.particles.emit.bind(g.particles);
+      window.__seaBursts = 0;
+      g.particles.emit = (kind, pos, o) => { if (kind === 'sparkle' && o && o.count === 12) window.__seaBursts++; return emit(kind, pos, o); };
+    });
     // wait for Lily's avatar on Mia's page, then watch the particles for 1 s
     const seen = await until(mia, () => { const r = window.__game.debug.net.remote().find((x) => x.name === 'Lily'); return r && r.sea ? r.st : null; }, null, 20000);
     const counts = await game(mia, () => new Promise((resolve) => {
@@ -729,7 +740,8 @@ test('SEA', 'sea forms travel: Lily turns into a mermaid in a pool, Rosie sees h
     }));
     const lilyOnMia = await seaOf(mia, 'Lily');
     check(seen === 'm' && lilyOnMia.sea && lilyOnMia.sea.shown, `Mia sees Lily already a mermaid (${seen})`);
-    check(Math.max(...counts) <= Math.max(counts[0], 0) + 2, `no sparkle burst for a tail that was already there (particles ${counts[0]} -> max ${Math.max(...counts)})`);
+    const miaBursts = await game(mia, () => window.__seaBursts);
+    check(miaBursts === 0 && Math.max(...counts) <= Math.max(counts[0], 0) + 2, `no sparkle burst for a tail that was already there (${miaBursts} sea bursts; particles ${counts[0]} -> max ${Math.max(...counts)})`);
     await lkCheck(mia, 'Lily');
     await converge([lily, rosie, mia], 'SEA Mia');
     await game(mia, () => window.__game.debug.net.leave());
