@@ -612,7 +612,8 @@ Sensitive actions need `elevated_until > now` (sign-in counts for 15 minutes):
 turning **Play with friends** or the **walkie-talkie** on; deleting a player; downloads (per player,
 per family); making a pair code; starting a plan (**Checkout**: a child on a device that kept a
 grown-up's session never reaches Stripe's page, §7.9); the Stripe Portal (card, invoices, Resume:
-it shows the parent's billing details); **Start now**; "sign out everywhere".
+it shows the parent's billing details); **Start now**. Signing out, here or everywhere, never needs a
+check: it only protects the family.
 Deleting the family needs a check done **within the last 5 minutes** (`elevated_at`).
 Turning a switch off, renaming, adding a player, removing a device, signing out and **Cancel the
 plan** (§6.3) need no check: cancelling is never harder than starting (California's ARL and
@@ -732,7 +733,7 @@ session of the family that owns `:pid`, and the device's locked player if set); 
 | `POST /api/auth/verify` | anyone | `{code}` or `{token, replace?}` → `{next}` (sign-in) or `{elevatedUntil}` (check); `{token, peek: true}` → `{email (masked), replacing}`, uses nothing; a link in a browser signed in to another family without `replace` → `409 {error:'conflict', replacing:true}` (§4.3) | A |
 | `POST /api/auth/check` | parent | → `202 {ok:true}` | A |
 | `POST /api/auth/logout` | session | → `{ok}` | A |
-| `POST /api/auth/logout-all` | parent+check | → `{ok}` (every session of the family) | A |
+| `POST /api/auth/logout-all` | parent | → `{ok}` (every session of the family) | A |
 | `POST /api/auth/pair` | anyone | `{code}` → `{ok}` + device cookie | A |
 | `POST /api/devices/pair-code` | parent+check | `{label?, lockPlayer?}` → `{code, expiresAt}` | A |
 | `POST /api/devices/this` | parent | `{label?, lockPlayer?}` → `{ok}` (becomes a device session) | A |

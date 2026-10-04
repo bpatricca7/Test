@@ -1582,7 +1582,8 @@ function signOutEverywhere() {
     row(btn('Sign out everywhere', 'btn-danger', async (ev) => {
       busy(ev.currentTarget, true);
       try {
-        const r = await withCheck(() => api('POST', '/api/auth/logout-all', {}));
+        // signing out only protects the family, so it asks for no email code
+        const r = await api('POST', '/api/auth/logout-all', {});
         if (r) {
           dlg.close();
           S.fam = null;

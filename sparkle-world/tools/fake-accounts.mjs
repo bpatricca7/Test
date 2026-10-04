@@ -387,7 +387,7 @@ export async function createFakeAccounts(o = {}) {
       events.emit('session', { sessionHash: x.session.hash });
       return J({ ok: true }, 200, { cookies: [{ name: 'sess', value: null }] });
     } },
-    { method: 'POST', path: '/api/auth/logout-all', who: 'parent+check', handler: async (req, x) => {
+    { method: 'POST', path: '/api/auth/logout-all', who: 'parent', handler: async (req, x) => {
       for (const s of sessions.values()) if (s.familyId === x.session.familyId) s.revoked = true;
       invalidate();
       for (const s of sessions.values()) if (s.familyId === x.session.familyId) events.emit('session', { sessionHash: s.hash });

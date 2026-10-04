@@ -748,7 +748,7 @@ export function routes(ctx) {
     { method: 'POST', path: '/api/auth/verify', who: 'anyone', limit: [L.verifyIp], handler: verify },
     { method: 'POST', path: '/api/auth/check', who: 'parent', limit: [L.checkFamily], handler: check },
     { method: 'POST', path: '/api/auth/logout', who: 'session', handler: logout },
-    { method: 'POST', path: '/api/auth/logout-all', who: 'parent+check', handler: logoutAll },
+    { method: 'POST', path: '/api/auth/logout-all', who: 'parent', handler: logoutAll },
     { method: 'POST', path: '/api/auth/pair', who: 'anyone', limit: [L.pairIp, L.pairNet, L.pairAll], handler: pair },
     { method: 'POST', path: '/api/devices/pair-code', who: 'parent+check', limit: [L.pairCodeFamily], handler: pairCode },
     { method: 'POST', path: '/api/devices/this', who: 'parent', handler: thisDevice },

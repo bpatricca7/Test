@@ -1539,7 +1539,9 @@ describe('A: sessions, the email check, kid devices (§4.4–4.6, §12.7)', () =
     const phone = h.browser();
     await signIn(h, phone, email);
     const kid = await pairKid(h, b);
+    h.setClock(16 * MIN); // the sign-in's 15 minutes are over: signing out everywhere needs no email check
     const all = await b.post('/api/auth/logout-all', {});
+    h.setClock(0);
     assert.deepEqual([all.status, b.cookie(SESS)], [200, null]);
     for (const x of [phone, kid]) assert.equal((await x.get('/api/me')).status, 401);
     const again = h.browser();
