@@ -83,6 +83,9 @@ jobs:
       - name: Walkie-talkie (with and without accounts)
         run: npm run test:walkie -- --no-build
 
+      - name: Sea animals (sea map, ride, whale)
+        run: npm run test:sea
+
       - name: Family accounts end to end
         run: npm run e2e:accounts
 

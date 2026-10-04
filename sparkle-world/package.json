@@ -17,6 +17,8 @@
     "probe:vehicles": "node tools/build.mjs && node tools/probe-vehicles.mjs",
     "probe:mp": "node tools/build.mjs && node tools/probe-multiplayer.mjs",
     "probe:boys": "node tools/build.mjs && node tools/probe-boys.mjs",
+    "test:sea": "node tools/test-sea.mjs",
+    "probe:ocean": "node tools/build.mjs && node tools/probe-ocean.mjs",
     "probe:railway": "node tools/probe-railway.mjs",
     "test:accounts": "node --test tools/test-accounts.mjs",
     "test:billing": "node --test tools/test-billing.mjs",
