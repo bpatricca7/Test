@@ -1,16 +1,16 @@
 // Sea-form parts (docs/teams/merfolk.md §7): the tail, the fin at its tip, the mermaid's waist
 // frill and the sea dragon's creature parts (a long curving tail with light belly plates, a row
-// of round crest plates from the shoulders to the fin, leafy fronds and forearm fins, glowing
-// spots, curved horn nubs and a big ribbed fan fin). Built
-// lazily by the avatar the first time it turns (never in build()), shown or hidden with
-// `visible`, and freed by the avatar's disposeSea().
+// of round-tipped crest spikes from the shoulders to the fin, bold leafy fronds and small
+// forearm fins, glowing spots, curved horn nubs and a big ribbed fan fin with long outer
+// lobes). Built lazily by the avatar the first time it turns (never in build()), shown or
+// hidden with `visible`, and freed by the avatar's disposeSea().
 //
 //   buildSea(P, form, hex, look) -> { root, tip, tube, fluke, frill, bones, keys }
 //   class TailTube: one CPU-deformed tube (like Flare), up to three material groups
 //   paintScales / paintFin: the textures (light gray-scale; the color comes from vertex colors)
 //
 // The face, ears and cheeks are never touched: everything sits on the hips, the tail, the back,
-// the outside of the forearms and (with no head accessory) two horn nubs on top of the head.
+// the outside of the forearms and (left out only under a hat) two horn nubs on top of the head.
 
 import * as THREE from 'three';
 import { mixHex, shade } from '../../core/util.js';
@@ -39,38 +39,48 @@ export const TAIL = {
   },
 };
 
-const GOLD = '#FFD43B';
-// warm tails (Gold, Orange) get a deep-teal accent so the crest still stands out
+// the dragon's accent: a rich gold of its own (not mixed with the tail, so a purple or pink
+// tail never turns it peach); warm tails (Gold, Orange) get a deep-teal accent instead
+const GOLD = '#FFC83A';
 const warm = (hex) => {
   const n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
   return r > 200 && g > 140 && b < 120;
 };
 
-/** Tail colors: C the tail, L fins, D edges, A the dragon's accent (crest, horns, fin ribs),
- *  B the dragon's belly plates, F its fronds, G / H the glow spots (core, halo). */
+/** Tail colors: C the tail, L fins, D edges, A the dragon's accent (crest tips, horns, fin
+ *  ribs), B its belly plates, F / R its fronds and fan fin (deep root, accent-tinted rim),
+ *  K the root of its crest spikes, G / H the glow spots (core, halo). */
 export function seaPalette(hex) {
-  const A = warm(hex) ? mixHex(hex, '#1E8C88', 0.75) : mixHex(hex, GOLD, 0.85);
+  const A = warm(hex) ? '#178A86' : GOLD;
   return {
     C: hex, L: mixHex(hex, '#FFFFFF', 0.45), D: shade(hex, -0.25), A,
-    B: mixHex(hex, '#FFE7A0', 0.6), F: shade(hex, -0.1),
+    B: mixHex(hex, '#FFE7A0', 0.6), F: shade(hex, -0.24), R: mixHex(shade(hex, -0.05), A, 0.4),
+    K: shade(hex, -0.12),
     G: mixHex(hex, '#F4FFF8', 0.8), H: mixHex(hex, '#B8FFF0', 0.45),
   };
 }
 
+/** A crest spike's color by height: its root in the tail color, its tip the accent. */
+const _cc = new THREE.Color();
+export function crestColor(pal, frac, out = _cc) {
+  const k = Math.min(1, Math.max(0, (frac - 0.12) / 0.43));
+  return out.copy(lin(pal.K)).lerp(lin(pal.A), k * k * (3 - 2 * k));
+}
+
 /**
- * One round crest plate as triangles in a local frame: x across, y along the spine (toward the
- * head), z out of the back (negative). From the side it is a rounded tab (w long at the base,
- * h tall, its top leaning `lean` toward -y, the tail tip); seen from behind or above it is a
- * plump lens (thickest in the middle, 2t, thin at its edges), so a row of them reads as round
- * bumps from every side. Every triangle faces outward. cb(x, y, z) per vertex.
+ * One crest spike as triangles in a local frame: x across, y along the spine (toward the head),
+ * z out of the back (negative). From the side it is a tall spike with a soft round tip (w long
+ * at the base, h tall, the outline sin^peak, its tip leaning `lean` toward -y, the tail tip);
+ * seen from behind or above it is a lens (thickest in the middle, 2t, thin at its edges).
+ * Every triangle faces outward. cb(x, y, z) per vertex.
  */
-export function crestPlate(w, h, t, lean, cb, z0 = 0, N = 8) {
+export function crestPlate(w, h, t, lean, cb, z0 = 0, N = 8, peak = 1.5) {
   const rim = [], inP = [], inM = [];
   const base = [0, 0, z0 + 0.012];
   for (let j = 0; j <= N; j++) {
     const th = (j / N) * Math.PI, sn = Math.sin(th);
     const y = Math.cos(th) * w * 0.5 - lean * h * sn * sn;
-    const z = z0 - h * Math.pow(sn, 0.75);
+    const z = z0 - h * Math.pow(sn, peak);
     rim.push([0, y, z]);
     // the inner ridge: the outline pulled 45 % toward the middle of the base, pushed out to ±t
     const iy = y * 0.55, iz = z0 + (z - z0) * 0.62;
@@ -161,40 +171,43 @@ function tubeTemplate(form, pal) {
     push(last, a1[0], 0, a1[2], a1[3], a1[4], white);
     push(last, a0[0], 0, a0[2], a0[3], a0[4], white);
   }
-  const g0 = ring.length;
-  let g1 = g0, g2 = g0;
+  let g1 = ring.length, g2 = g1;
   if (dragon) {
-    const A = lin(pal.A);
-    // the crest: a tall row of round plates down the back (-Z), one per ring, tall at the
-    // hips and smaller toward the fin (the torso carries the row up to the shoulders)
+    // everything here but the glow spots is drawn with the scales (one opaque draw), sampling
+    // the plain middle of a belly plate (CREST_V): the colors are per vertex
+    const flat = (k, x, y, z, c) => push(k, x, y, z, 0.5, CREST_V, c);
+    // the crest: a tall row of round-tipped spikes down the back (-Z), one per ring, tall at
+    // the waist and smaller toward the fin; each spike grows out of the tail color into a gold tip
     for (let k = 0; k < RINGS; k++) {
       const f = k / (RINGS - 1);
-      const w = 0.16 - 0.07 * f, h = 0.2 - 0.1 * f, t = 0.075 - 0.035 * f;
-      crestPlate(w, h, t, 0.35, (x, y, z) => push(k, x, y, z, 0.5, CREST_V, A), -T.rz[k] + 0.012);
+      const w = 0.17 - 0.07 * f, h = 0.27 - 0.14 * f, t = 0.06 - 0.025 * f, z0 = -T.rz[k] + 0.012;
+      crestPlate(w, h, t, 0.4, (x, y, z) => flat(k, x, y, z, crestColor(pal, (z0 - z) / h).clone()), z0);
     }
-    g1 = ring.length;
     // leafy fronds: a big rounded three-lobed leaf on each side at rings 2, 4 and 6, swept
-    // down toward the fin and a little back (so they show from behind too)
-    const L = lin(pal.F), R = lin(mixHex(pal.F, pal.A, 0.6));
-    for (const [k, len, wid] of [[2, 0.27, 0.095], [4, 0.21, 0.075], [6, 0.15, 0.055]]) {
+    // down toward the fin and a little back (so they show from behind too); solid, both faces,
+    // a deep root growing into a lighter, gold-tinged rim
+    const L = lin(pal.F), R = lin(pal.R);
+    for (const [k, len, wid] of [[2, 0.3, 0.105], [4, 0.24, 0.085], [6, 0.17, 0.062]]) {
       for (const s of [-1, 1]) {
         const phi = 0.5;
         const d = [s * Math.cos(phi), -Math.sin(phi), -0.32], dl = Math.hypot(...d);
         d[0] /= dl; d[1] /= dl; d[2] /= dl;
         const e = [s * Math.sin(phi), Math.cos(phi), 0];
         const x0 = s * (T.rx[k] - 0.02);
-        const at = (a, b) => [x0 + d[0] * a + e[0] * b, d[1] * a + e[1] * b, d[2] * a + e[2] * b, 0.5 + b / (2 * wid), a / len];
+        const at = (a, b) => [x0 + d[0] * a + e[0] * b, d[1] * a + e[1] * b, d[2] * a + e[2] * b];
         const tmp = [];
         leafFan(len, wid, (a, b, edge) => tmp.push([at(a, b), edge ? R : L]));
-        for (let j = 0; j < tmp.length; j++) push(k, tmp[j][0][0], tmp[j][0][1], tmp[j][0][2], tmp[j][0][3], tmp[j][0][4], tmp[j][1]);
+        for (let j = 0; j < tmp.length; j += 3) {
+          for (const o of [[0, 1, 2], [0, 2, 1]]) for (const i of o) flat(k, ...tmp[j + i][0], tmp[j + i][1]);
+        }
       }
     }
-    g2 = ring.length;
+    g1 = g2 = ring.length;
     // glow spots: a round spot with a soft halo on each side of the crest at rings 1..6
     // (unlit, gently pulsing: they shine at night and in deep water)
     const G = lin(pal.G), Hh = lin(pal.H);
     for (let k = 1; k <= 6; k++) {
-      const r = 0.032 - 0.0025 * (k - 1);
+      const r = 0.034 - 0.0025 * (k - 1);
       for (const s of [-1, 1]) {
         const a = s * 1.05, ep = 0.01;
         const P = (aa) => [-se(Math.sin(aa)) * T.rx[k], -se(Math.cos(aa)) * T.rz[k]];
@@ -231,9 +244,10 @@ function tubeTemplate(form, pal) {
 
 /**
  * The tail: RINGS rings of SIDES sides along a spine (rest direction -Y from the root), flat
- * shaded, with extras (crest plates, fronds, glow spots) riding on the rings. Every vertex is stored as
- * (ring index, offset in that ring's frame), so deform() moves everything with the spine, in
- * place (no allocation). Groups: 0 scales (tube + crest plates), 1 fins (fronds), 2 glow (spots).
+ * shaded, with extras (crest spikes, fronds, glow spots) riding on the rings. Every vertex is
+ * stored as (ring index, offset in that ring's frame), so deform() moves everything with the
+ * spine, in place (no allocation). Groups: the scales (tube, and the dragon's crest spikes and
+ * fronds), then the dragon's glow spots (the mermaid's tail is one group).
  */
 export class TailTube {
   constructor(form, pal) {
@@ -256,10 +270,13 @@ export class TailTube {
     g.setAttribute('normal', this.nrmAttr);
     g.setAttribute('uv', new THREE.Float32BufferAttribute(tpl.uv, 2));
     g.setAttribute('color', new THREE.Float32BufferAttribute(tpl.col, 3));
-    g.addGroup(0, g1, 0); // the tube and the dragon's crest plates: one draw (the uv / color
-    // attributes copy the template's arrays)
-    if (g2 > g1) g.addGroup(g1, g2 - g1, 1);
-    if (n > g2) g.addGroup(g2, n - g2, 2);
+    // the tube (and the dragon's crest spikes and fronds): one draw (the uv / color attributes
+    // copy the template's arrays); then fins, then glow spots, each only if there are any, with
+    // material indices in that order (buildSea's tubeMats match)
+    g.addGroup(0, g1, 0);
+    let mi = 1;
+    if (g2 > g1) g.addGroup(g1, g2 - g1, mi++);
+    if (n > g2) g.addGroup(g2, n - g2, mi++);
     this.geometry = g;
     this.groupCount = g.groups.length;
     // spine scratch (made once)
@@ -347,20 +364,24 @@ export class TailTube {
 /**
  * The fin at the tail's tip, flat in the tip's X-Y plane (faces toward ±Z: horizontal when she
  * swims flat, like a dolphin's), hanging down -Y from the tip. Mermaid: two rounded scalloped
- * lobes with a little notch. Sea dragon: a big rounded fan of five soft lobes held by five
- * accent ribs, no pointed tips.
+ * lobes with a little notch (see-through, the fin material). Sea dragon: a big fan of five
+ * rounded lobes whose outer lobes reach furthest (a tail fin, not a round shell), held by five
+ * gold ribs, no pointed tips; solid, both faces, drawn with the scales (plain, CREST_V uv), a
+ * deep tail-colored root growing into a gold-tinged rim.
  */
 export function flukeGeometry(form, pal) {
   const pos = [], uv = [], col = [];
   const dragon = form === 'sea_dragon';
-  const L = lin(pal.L), A = lin(dragon ? pal.A : pal.L);
-  const W = dragon ? 0.74 : 0.52, H = dragon ? 0.42 : 0.26;
+  const L = lin(dragon ? pal.F : pal.L), A = lin(dragon ? pal.R : pal.L);
+  const W = dragon ? 0.8 : 0.52, H = dragon ? 0.44 : 0.26;
   const outline = [];
   const N = dragon ? 40 : 30;
   const fanY = (s) => {
-    // a rounded fan: deepest in the middle, five round lobes (one per rib) with soft dips
-    const fan = Math.sin(s * Math.PI) ** 0.55;
-    return -H * (0.3 + 0.7 * fan) * (0.86 + 0.14 * Math.sin(s * Math.PI * 5) ** 2);
+    // five round lobes (one per rib) with soft dips; the outer lobes reach furthest
+    const side = Math.abs(2 * s - 1); // 0 middle .. 1 edge
+    const env = Math.sin(s * Math.PI) ** 0.3; // back up toward the root at the two edges
+    const cres = 0.62 + 0.38 * side ** 1.3;
+    return -H * (0.12 + 0.88 * env * cres) * (0.84 + 0.16 * Math.sin(s * Math.PI * 5) ** 2);
   };
   for (let j = 0; j <= N; j++) {
     const s = j / N; // 0 = left edge root, 1 = right edge root
@@ -380,35 +401,52 @@ export function flukeGeometry(form, pal) {
   const root = [0, 0.02];
   const put = (x, y, z, c) => {
     pos.push(x, y, z);
-    uv.push(0.5 + x / W, -y / H);
+    if (dragon) uv.push(0.5, CREST_V);
+    else uv.push(0.5 + x / W, -y / H);
     col.push(c.r, c.g, c.b);
+  };
+  // one triangle; the dragon's (solid, one-sided material) also gets its back face
+  const tri = (a, b, c, ca, cb, cc, z = 0, faces = dragon ? [1, -1] : [1]) => {
+    for (const f of faces) {
+      const zz = z * f;
+      if (f > 0) { put(a[0], a[1], zz, ca); put(b[0], b[1], zz, cb); put(c[0], c[1], zz, cc); }
+      else { put(a[0], a[1], zz, ca); put(c[0], c[1], zz, cc); put(b[0], b[1], zz, cb); }
+    }
   };
   for (let j = 0; j < N; j++) {
     const p = outline[j], q = outline[j + 1];
-    put(root[0], root[1], 0, L);
-    put(p[0], p[1], 0, A);
-    put(q[0], q[1], 0, A);
+    if (!dragon) { put(root[0], root[1], 0, L); put(p[0], p[1], 0, A); put(q[0], q[1], 0, A); }
+    else tri(root, p, q, L, A, A); // faces +Z (p is left of q), and its back face
   }
   if (dragon) {
     // five ribs from the root to the middle of each lobe, a thin strip on each face
-    const Ar = lin(shade(pal.A, -0.08));
+    const Ar = lin(pal.A);
     for (let r = 0; r < 5; r++) {
       const s = 0.1 + 0.2 * r;
-      const ex = (s - 0.5) * W * 0.9, ey = fanY(s) * 0.9;
+      const ex = (s - 0.5) * W * 0.92, ey = fanY(s) * 0.93;
       const dl = Math.hypot(ex - root[0], ey - root[1]);
       const nx = -(ey - root[1]) / dl, ny = (ex - root[0]) / dl;
-      const w0 = 0.016, w1 = 0.007;
-      for (const z of [0.004, -0.004]) {
-        const a0 = [root[0] + nx * w0, root[1] + ny * w0], a1 = [root[0] - nx * w0, root[1] - ny * w0];
-        const b0 = [ex + nx * w1, ey + ny * w1], b1 = [ex - nx * w1, ey - ny * w1];
-        for (const v of [a0, b0, b1, a0, b1, a1]) put(v[0], v[1], z, Ar);
-      }
+      const w0 = 0.02, w1 = 0.009;
+      const a0 = [root[0] + nx * w0, root[1] + ny * w0], a1 = [root[0] - nx * w0, root[1] - ny * w0];
+      const b0 = [ex + nx * w1, ey + ny * w1], b1 = [ex - nx * w1, ey - ny * w1];
+      // a0 -> b0 -> b1 turns one way; pick the winding that faces +Z
+      const cz = (b0[0] - a0[0]) * (b1[1] - a0[1]) - (b0[1] - a0[1]) * (b1[0] - a0[0]);
+      const [u, v] = cz > 0 ? [b0, b1] : [b1, b0];
+      tri(a0, u, v, Ar, Ar, Ar, 0.005);
+      const cz2 = (b1[0] - a0[0]) * (a1[1] - a0[1]) - (b1[1] - a0[1]) * (a1[0] - a0[0]);
+      const [u2, v2] = cz2 > 0 ? [b1, a1] : [a1, b1];
+      tri(a0, u2, v2, Ar, Ar, Ar, 0.005);
     }
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   const nrm = new Float32Array(pos.length);
-  for (let i = 2; i < nrm.length; i += 3) nrm[i] = 1;
+  for (let i = 0; i < nrm.length; i += 9) {
+    // flat: every face is in the X-Y plane, its normal is ±Z by its winding
+    const ax = pos[i], ay = pos[i + 1], bx = pos[i + 3], by = pos[i + 4], cx = pos[i + 6], cy = pos[i + 7];
+    const z = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax) >= 0 ? 1 : -1;
+    nrm[i + 2] = nrm[i + 5] = nrm[i + 8] = dragon ? z : 1;
+  }
   g.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
   g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
@@ -486,17 +524,16 @@ export function paintScales(g, w, h, form) {
   }
 }
 
-/** Fins: translucent, 0.85 alpha at the base (v 0) to 0.55 at the edge (the dragon's: 0.97 to
- *  0.82, bold enough to read in deep water), 7 ribs, a white rim. */
-export function paintFin(g, w, h, form) {
+/** Fins (the mermaid's; the sea dragon has no see-through fins): translucent, 0.85 alpha at the
+ *  base (v 0) to 0.55 at the edge, 7 ribs, a white rim. */
+export function paintFin(g, w, h) {
   g.clearRect(0, 0, w, h);
-  const dragon = form === 'sea_dragon';
   const grd = g.createLinearGradient(0, 0, 0, h);
-  grd.addColorStop(0, dragon ? 'rgba(255,255,255,0.97)' : 'rgba(255,255,255,0.85)');
-  grd.addColorStop(1, dragon ? 'rgba(255,255,255,0.82)' : 'rgba(255,255,255,0.55)');
+  grd.addColorStop(0, 'rgba(255,255,255,0.85)');
+  grd.addColorStop(1, 'rgba(255,255,255,0.55)');
   g.fillStyle = grd;
   g.fillRect(0, 0, w, h);
-  g.strokeStyle = form === 'sea_dragon' ? 'rgba(150,150,150,0.75)' : 'rgba(190,190,190,0.7)';
+  g.strokeStyle = 'rgba(190,190,190,0.7)';
   g.lineWidth = 2;
   for (let i = 0; i < 7; i++) {
     g.beginPath();
@@ -504,20 +541,28 @@ export function paintFin(g, w, h, form) {
     g.lineTo(((i + 0.5) / 7) * w, h);
     g.stroke();
   }
-  if (form === 'sea_dragon') {
-    // leaf veins
-    g.strokeStyle = 'rgba(140,140,140,0.5)';
-    g.lineWidth = 1;
-    for (let i = 1; i < 6; i++) {
-      g.beginPath();
-      g.moveTo(0, (i / 6) * h);
-      g.lineTo(w, (i / 6) * h + 6);
-      g.stroke();
-    }
-  }
   g.strokeStyle = 'rgba(255,255,255,0.95)';
   g.lineWidth = 3;
   g.strokeRect(1.5, 1.5, w - 3, h - 3);
+}
+
+// Where the horn nubs grow (the right one; the left mirrors it), or null under a hat. They sit
+// on top of the head a little behind the middle; an accessory or hair that sits there moves
+// them: back behind a bow, ears or a headphone band, out beside a crown or a top bun, back
+// behind space buns, and up out of tall hair (an afro, spikes) so they never end in the curls.
+const HORN_HATS = new Set(['beanie', 'sun_hat', 'witch_hat', 'cap', 'cap_back', 'bucket_hat']);
+const HORN_ACC = {
+  bow: { z: -0.13 }, cat_ears: { z: -0.17 }, bunny_ears: { z: -0.15 }, headphones: { z: -0.13 },
+  unicorn_horn: { z: -0.1 }, crown: { z: -0.25 },
+};
+const HORN_HAIR = {
+  afro: { y: 1.97 }, curly: { y: 1.78 }, spiky: { y: 1.76 }, short_curly: { y: 1.7 }, bun: { x: 0.24 }, space_buns: { z: -0.2 },
+};
+export function hornSpot(look) {
+  const head = (look && look.acc && look.acc.head) || 'none';
+  if (HORN_HATS.has(head)) return null;
+  const h = HORN_HAIR[look && look.hair && look.hair.style] || {}, a = HORN_ACC[head] || {};
+  return { x: Math.max(0.14, h.x || 0, a.x || 0), y: Math.max(1.66, h.y || 0, a.y || 0), z: Math.min(-0.04, h.z ?? 0, a.z ?? 0) };
 }
 
 /** One curved horn nub: a tapered tube along a spine that bends back segment by segment, with a
@@ -597,8 +642,9 @@ export function buildSea(P, form, hex, look) {
     }
   } else if (form === 'sea_dragon') {
     // two curved horn nubs on top of the head, swept back, rounded tips, clearly above the hair
-    // (left out under any head accessory: it covers that spot)
-    if (!look.acc || look.acc.head === 'none') {
+    // (left out only under a hat; moved for accessories and hair that sit where they grow)
+    const spot = hornSpot(look);
+    if (spot) {
       const g = new THREE.Group();
       g.name = 'seaHorns';
       g.position.set(0, 1.74 - 1.1, -0.06);
@@ -607,40 +653,34 @@ export function buildSea(P, form, hex, look) {
       extraBones.push(g);
       const H = P.B(g, 'plain');
       const tipC = mixHex(pal.A, '#FFFFFF', 0.35);
-      for (const s of [-1, 1]) horn(H, [s * 0.14, 1.66, -0.04], [-0.15, 0, -s * 0.3], pal.A, tipC);
+      for (const s of [-1, 1]) horn(H, [s * spot.x, spot.y, spot.z], [-0.15, 0, -s * 0.3], pal.A, tipC);
     }
-    // the crest continues up the back to between the shoulders: round plates on the torso
-    // (left out under a back accessory, which covers that spot; long hair covers the top ones)
-    if (!look.acc || !look.acc.back || look.acc.back === 'none') {
-      const n = new THREE.Group();
-      n.name = 'seaSpikes';
-      n.position.set(0, 1.0 - 0.68, -0.12);
-      n.userData.origin = [0, 1.0, -0.12];
-      bones.torso.add(n);
-      extraBones.push(n);
-      const S = P.B(n, scale);
-      const A = pal.A;
-      [[1.03, 0.09, 0.1], [0.92, 0.11, 0.13], [0.81, 0.13, 0.16], [0.7, 0.14, 0.18]].forEach(([y, w, h]) => {
-        const v = [];
-        crestPlate(w, h, 0.065, 0.3, (x, yy, z) => v.push([x, y + yy, z]), -0.118, 6);
-        for (let i = 0; i < v.length; i += 3) S.poly([v[i], v[i + 1], v[i + 2]], A, { uvs: [[0.5, CREST_V], [0.5, CREST_V], [0.5, CREST_V]] });
-      });
-    }
-    // small leafy fins on the outside of each forearm, swept back toward the elbow
+    // the crest runs from the waist down the whole tail: it is not carried up the back, where
+    // it would sit on her own shirt (over a shirt number), under long hair or a backpack
+    // small leafy fins on the outside of each forearm, lying back along the arm toward the
+    // elbow (solid, both faces)
     for (const s of [-1, 1]) {
       const bone = s > 0 ? bones.elbowL : bones.elbowR;
-      const F = P.B(bone, fin);
-      const R = mixHex(pal.F, pal.A, 0.6);
-      const x0 = s * 0.335, y0 = 0.76, len = 0.18, wid = 0.06;
-      const d = [s * 0.55, 0.45, -0.7], dl = Math.hypot(...d);
-      const e = [0, 0.84, 0.54];
-      const at = (aa, bb) => [x0 + (d[0] / dl) * aa + e[0] * bb, y0 + (d[1] / dl) * aa + e[1] * bb, -0.02 + (d[2] / dl) * aa + e[2] * bb];
+      const F = P.B(bone, scale);
+      const x0 = s * 0.33, y0 = 0.7, len = 0.13, wid = 0.042;
+      const d = [s * 0.3, 0.9, -0.32], dl = Math.hypot(...d);
+      const e = [s * 0.55, 0, -0.84];
+      const at = (aa, bb) => [x0 + (d[0] / dl) * aa + e[0] * bb, y0 + (d[1] / dl) * aa + e[1] * bb, -0.04 + (d[2] / dl) * aa + e[2] * bb];
       const v = [];
-      leafFan(len, wid, (aa, bb, edge) => v.push([at(aa, bb), [0.5 + bb / (2 * wid), aa / len], edge]));
-      for (let i = 0; i < v.length; i += 3) F.poly([v[i][0], v[i + 1][0], v[i + 2][0]], v[i + 1][2] ? R : pal.F, { uvs: [v[i][1], v[i + 1][1], v[i + 2][1]] });
+      leafFan(len, wid, (aa, bb) => v.push(at(aa, bb)));
+      const uvs = [[0.5, CREST_V], [0.5, CREST_V], [0.5, CREST_V]];
+      const root = at(0, 0), cF = lin(pal.F), cR = lin(pal.R);
+      const col = (p) => (Math.abs(p.x - root[0]) + Math.abs(p.y - root[1]) + Math.abs(p.z - root[2]) < 1e-4 ? cF : cR);
+      for (let i = 0; i < v.length; i += 3) {
+        F.poly([v[i], v[i + 1], v[i + 2]], col, { uvs });
+        F.poly([v[i], v[i + 2], v[i + 1]], col, { uvs });
+      }
     }
   }
-  const glow = form === 'sea_dragon' ? `seaglow:${hex}` : 'glow';
-  const keys = form === 'sea_dragon' ? [scale, fin, glow] : [scale, fin];
-  return { root, tip, tube, tubeMats: [scale, fin, glow], fluke, flukeMat: fin, bones: extraBones, keys, palette: pal };
+  // the dragon is drawn with the scales and its glow spots only (no see-through fins)
+  if (form === 'sea_dragon') {
+    const glow = `seaglow:${hex}`;
+    return { root, tip, tube, tubeMats: [scale, glow], fluke, flukeMat: scale, bones: extraBones, keys: [scale, glow], palette: pal };
+  }
+  return { root, tip, tube, tubeMats: [scale], fluke, flukeMat: fin, bones: extraBones, keys: [scale, fin], palette: pal };
 }

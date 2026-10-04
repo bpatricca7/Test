@@ -764,8 +764,9 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
 
   // ----- sea poses (docs/teams/merfolk.md §6.4) -----
 
-  /** Swimming with a tail: streamlined and flat when fast, nose down when diving. */
-  function poseSea(speed, dt) {
+  /** Swimming with a tail: streamlined and flat when fast, nose down when diving; resting on
+   *  the floor of shallow water, the tail curls back along it (it never sinks into the sand). */
+  function poseSea(speed, dt, onFloor = false) {
     const sp = Math.min(1, speed / SEA_SWIM);
     seaPhase += dt * (2.2 + 6.5 * sp);
     const dive = Math.max(-0.55, Math.min(0.55, -vy * 0.16));
@@ -780,7 +781,8 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     tgt[ELX] = tgt[ERX] = mix(-0.5, -0.1, sp);
     seaKick.amp = 0.16 + 0.3 * sp;
     seaKick.turn = Math.max(-0.5, Math.min(0.5, -yawRate * 0.12));
-    seaKick.curl = sp < 0.2 && vy > -0.2 && vy < 0.2 ? -0.05 : 0;
+    const curl = onFloor && sp < 0.35 ? 0.24 : sp < 0.2 && vy > -0.2 && vy < 0.2 ? -0.05 : 0;
+    seaKick.curl += (curl - seaKick.curl) * Math.min(1, dt * 6);
   }
 
   /** The tail out of the water: a leap (head up rising, head first falling), or a flop on sand. */
@@ -1164,7 +1166,7 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     if (s.sleeping) { poseSleep(); rate = 6; }
     else if (s.riding && s.seaRide && tail) { poseSaddleSea(dt, s); rate = 12; }
     else if (s.sitting || s.riding) { poseSit(!!s.riding, dt); rate = s.riding ? 12 : 8; }
-    else if (s.swimming && tail) { poseSea(speed, dt); seaEmote(); rate = 10; }
+    else if (s.swimming && tail) { poseSea(speed, dt, !!s.onGround); seaEmote(); rate = 10; }
     else if (s.swimming) poseSwim(speed);
     else if (tail && !s.flying) { poseLeap(dt, s); seaEmote(); rate = 10; }
     else if (s.flying && !emote) poseFly(speed);

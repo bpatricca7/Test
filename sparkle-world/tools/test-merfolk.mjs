@@ -28,7 +28,7 @@ globalThis.document = globalThis.document || {
   createElement: () => ({ width: 0, height: 0, getContext: () => fakeCtx, style: {} }),
 };
 const { createAvatar } = await import('../src/player/avatar.js');
-const { TailTube, seaPalette, buildSea } = await import('../src/player/merfolk/parts.js');
+const { TailTube, seaPalette, buildSea, hornSpot } = await import('../src/player/merfolk/parts.js');
 const { cacheStats } = await import('../src/player/avatar/textures.js');
 const { scanText, scanCharacters, scanFiles, EXTRA_SCOPE, extraWords } = await import('./lib/name-scan.mjs');
 const { SEA_STICKERS } = await import('../src/player/merfolk/stickers.js');
@@ -285,8 +285,13 @@ await test('A6c Match gives a bright sea color for the default and every starter
       const c = R.seaColorOf(look, form);
       assert(W.SEA_COLORS.includes(c), `${o.key} ${form}: ${c}`);
       assert(!dull.has(c), 'dull ' + c);
+      // never a purple (or pearl) sea dragon by Match: its own Deep teal instead
+      if (form === 'sea_dragon') assert(c !== '#9C7BFF' && c !== '#E6DDFF', `${o.key} sea dragon Match is ${c}`);
     }
   }
+  const purpleSkirt = W.normalizeLook({ ...W.DEFAULT_LOOK, dress: null, bottom: { type: 'skirt', color: '#9C7BFF', pattern: 'none', patternColor: '#FFFFFF' } });
+  assert(R.seaColorOf(purpleSkirt, 'sea_dragon') === '#2FB5B0' && R.seaColorOf(purpleSkirt, 'mermaid') === '#9C7BFF', 'purple Match: Deep teal dragon, purple mermaid');
+  assert(R.seaColorOf({ ...purpleSkirt, sea: { form: 'sea_dragon', color: '#9C7BFF' } }, 'sea_dragon') === '#9C7BFF', 'a picked Purple stays Purple');
   for (const c of W.SEA_COLORS) assert(R.snapSeaColor(c, 'mermaid') === c, 'exact stays ' + c);
   assert(R.seaColorOf(W.normalizeLook({ ...W.DEFAULT_LOOK, sea: { form: 'auto', color: '#FFD43B' } }), 'mermaid') === '#FFD43B', 'own color wins');
   const names = Object.fromEntries(W.SEA_COLORS.map((c, i) => [c, W.SEA_COLOR_NAMES[i]]));
@@ -624,6 +629,20 @@ await test('A13 the sea strings: no other company\'s names, no famous characters
 });
 
 // ---------- A16: Down without Shift ----------
+
+await test('A17 sea dragon horns: left out only under a hat, never inside the hair', () => {
+  const hats = new Set(['beanie', 'sun_hat', 'witch_hat', 'cap', 'cap_back', 'bucket_hat']);
+  for (const o of W.HEAD_ACC) {
+    for (const h of W.HAIR_STYLES) {
+      const sp = hornSpot({ hair: { style: h.key }, acc: { head: o.key } });
+      assert(hats.has(o.key) ? sp === null : !!sp && Number.isFinite(sp.x + sp.y + sp.z), `${o.key} / ${h.key}: ${JSON.stringify(sp)}`);
+    }
+  }
+  assert(hornSpot({ hair: { style: 'afro' }, acc: { head: 'none' } }).y > 1.9, 'up out of an afro');
+  assert(hornSpot({ hair: { style: 'long' }, acc: { head: 'bow' } }).z < -0.1, 'behind a bow');
+  // the accent stays gold on every non-warm tail (never peach on purple or pink)
+  for (const c of ['#9C7BFF', '#FF8CC6', '#FF5FA2', '#2FB5B0']) assert(seaPalette(c).A === '#FFC83A', 'gold accent on ' + c);
+});
 
 await test('A16 input.downKey: Shift alone is not Down; C and the Down button are', () => {
   const fake = (keys, virt = {}) => {

@@ -78,6 +78,11 @@ const LONG_DRESSES = new Set(['princess', 'ballgown', 'mermaid']);
 const IDLE = { speed: 0, onGround: true };
 // the Water tab: the preview swims slowly on the turntable in her form (Just Me: today's swim)
 const SEA_PREVIEW = { speed: 1.6, onGround: false, swimming: true, sea: true };
+// the sea dragon's long tail swims slower here, so it hangs down and shows its whole length
+const SEA_PREVIEW_DRAGON = { ...SEA_PREVIEW, speed: 0.6 };
+// with the tail out she floats above the turntable (the tail and its fin reach below her feet),
+// and the camera follows her up
+const SEA_LIFT = { mermaid: 0.32, sea_dragon: 0.58 };
 const SEA_TILE_POSE = { state: { swimming: true, sea: true, speed: 0.3, onGround: false }, t: 0.9 };
 const SEA_SAY = { mermaid: 'Splash! A mermaid tail!', sea_dragon: 'Whoosh! A sea dragon!', me: 'Swimming as me!' };
 // a saved outfit never carries the water form (it is who you are, like the name)
@@ -1154,7 +1159,7 @@ class Studio {
     const zoom = TABS.find((t) => t.key === this.tab).zoom;
     this.preview = {
       avatar, sparkles, table, spin: 0, spinVel: 0, spinTarget: null, idle: 0, t: 0, dragging: false,
-      zoom, cy: ZOOMS[zoom].cy, span: ZOOMS[zoom].span, v: new THREE.Vector3(), ambient: 0,
+      zoom, cy: ZOOMS[zoom].cy, span: ZOOMS[zoom].span, v: new THREE.Vector3(), ambient: 0, lift: 0,
     };
     stage.onPreviewFrame = (dt) => this._frame(dt);
   }
@@ -1196,13 +1201,17 @@ class Studio {
     const sway = p.idle > 4 ? Math.sin(p.t * 0.6) * 0.18 : 0;
     p.avatar.group.rotation.y = p.spin + sway;
     p.table.group.rotation.y = p.spin * 0.999;
-    p.avatar.update(dt, this.tab === 'sea' ? SEA_PREVIEW : IDLE);
+    const seaTab = this.tab === 'sea';
+    const form = seaTab ? p.avatar.seaForm : 'me';
+    p.avatar.update(dt, seaTab ? (form === 'sea_dragon' ? SEA_PREVIEW_DRAGON : SEA_PREVIEW) : IDLE);
     p.table.update(p.t);
-    // camera eases between full body / upper body / face
+    // camera eases between full body / upper body / face (and up with her when she floats)
     const z = ZOOMS[p.zoom] || ZOOMS.full;
     const k = Math.min(1, dt * 4);
-    p.cy += (z.cy - p.cy) * k;
-    p.span += (z.span - p.span) * k;
+    p.lift += ((seaTab && p.avatar.seaShown ? SEA_LIFT[form] || 0 : 0) - p.lift) * k;
+    p.avatar.group.position.y = p.lift;
+    p.cy += (z.cy + p.lift * 0.75 - p.cy) * k;
+    p.span += (z.span + p.lift * 0.45 - p.span) * k;
     const cam = this.stage.previewCamera;
     const tan = Math.tan(THREE.MathUtils.degToRad(cam.fov / 2));
     const d = Math.max(p.span / 2 / tan, (p.span * 0.62) / 2 / tan / Math.max(0.3, cam.aspect));

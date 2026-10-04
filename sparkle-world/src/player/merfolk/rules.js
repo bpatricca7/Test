@@ -96,15 +96,21 @@ export function snapSeaColor(hex, form) {
   return best;
 }
 
+// Match never makes a purple or pearl sea dragon (it is our own creature, not a famous purple
+// one): those snap to its own Deep teal. A child who picks Purple by hand still gets Purple.
+const DRAGON_NOT = new Set(['#9C7BFF', PEARL]);
+
 /** The tail's hex. sea.color if set; else Match: the dress color, else the bottom color,
  *  snapped: an exact SEA_COLORS entry stays; a color with saturation < 0.35, lightness < 0.22
  *  or > 0.9, or a brown (hue 15-45 and lightness < 0.5) gives SEA_DEFAULT_HEX[form]; anything
- *  else gives the SEA_COLORS entry (Pearl left out) with the nearest hue. */
+ *  else gives the SEA_COLORS entry (Pearl left out) with the nearest hue. For a sea dragon,
+ *  a Match that comes out Purple or Pearl gives its Deep teal. */
 export function seaColorOf(look, form) {
   const sea = look && look.sea;
   if (sea && typeof sea.color === 'string' && SEA_COLORS.includes(sea.color.toUpperCase())) return sea.color.toUpperCase();
   const g = look && look.dress ? look.dress : look && look.bottom ? look.bottom : null;
-  return snapSeaColor(g && g.color, form);
+  const c = snapSeaColor(g && g.color, form);
+  return form === 'sea_dragon' && DRAGON_NOT.has(c) ? SEA_DEFAULT_HEX.sea_dragon : c;
 }
 
 // ---------- water ----------
