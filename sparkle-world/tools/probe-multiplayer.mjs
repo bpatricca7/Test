@@ -1,6 +1,13 @@
 // Headless multiplayer acceptance tests (docs/MULTIPLAYER.md §15.2-15.3, AT1-AT22).
 //
-//   node tools/probe-multiplayer.mjs [--until=AT9] [--shots-prefix=net] [--biome=flat] [--headed]
+//   node tools/probe-multiplayer.mjs [--part=a|b|c] [--until=AT9] [--shots-prefix=net] [--biome=flat] [--headed]
+//
+// --part splits the suite so each part fits the gate's 570 s timeout (docs/teams/wave4-integration.md
+// §10.2 C1-C3). AT1 always runs first (it starts the session); then the part's tests, in file order:
+//   b: AT7, AT11, AT9, AT10, AT20, REJOIN
+//   c: AT11, AT12, AT13, AT8, AT21, BUDGET, END, AT22   (AT11 brings June)
+//   a: every other test (AT2-AT6, AT17, HELD, LOOKS, AT18, AT19, ZIP, and new tests added among them)
+// Without --part every test runs, as before. --until still stops after the named test.
 //
 // Three players, each in her own browser context (her own IndexedDB and profile):
 //   Lily   host,  desktop 1280x800, mouse,  a claude.ai member who can host ('interact')
@@ -32,6 +39,24 @@ const arg = (k, d = null) => {
   return a ? a.slice(k.length + 3) : argv.includes(`--${k}`) ? true : d;
 };
 const UNTIL = arg('until') ? String(arg('until')).toUpperCase() : null;
+const PART = arg('part') ? String(arg('part')).toLowerCase() : null;
+/** The tests of parts b and c (AT1 runs in every part; part a is every test not listed here). */
+const PART_TESTS = {
+  b: ['AT7', 'AT11', 'AT9', 'AT10', 'AT20', 'REJOIN'],
+  c: ['AT11', 'AT12', 'AT13', 'AT8', 'AT21', 'BUDGET', 'END', 'AT22'],
+};
+if (PART && !['a', 'b', 'c'].includes(PART)) {
+  console.error(`--part must be a, b or c (got ${PART})`);
+  process.exit(2);
+}
+/** Does test `id` run in this run? */
+function inPart(id) {
+  if (!PART || id === 'AT1') return true;
+  if (PART === 'a') return !PART_TESTS.b.includes(id) && !PART_TESTS.c.includes(id);
+  return PART_TESTS[PART].includes(id);
+}
+/** The ids that ran so far (a later test may need an earlier one's scene, e.g. BUDGET needs AT6). */
+const RAN = new Set();
 const PREFIX = arg('shots-prefix', 'net');
 const HEADED = !!arg('headed');
 const BIOME = arg('biome', 'flat');
@@ -1049,8 +1074,10 @@ test('AT21', 'screenshots in portrait (768x1024): keypad, knock, Players, bubble
 test('BUDGET', 'AT14 / AT15 / AT16: guests never emit; budgets and sizes held; guests never store the host’s world', async () => {
   await budgetCheck('end', [lily, rosie, june]);
   await savesCheck('end', [rosie, june]);
-  const basket = await game(rosie, async () => (await window.__game.store.loadProfile())?.basket?.carrot | 0);
-  check(basket >= 2, `AT16: Rosie's own profile kept her carrots (${basket})`);
+  if (RAN.has('AT6')) {
+    const basket = await game(rosie, async () => (await window.__game.store.loadProfile())?.basket?.carrot | 0);
+    check(basket >= 2, `AT16: Rosie's own profile kept her carrots (${basket})`);
+  } else log('  (AT16 carrots: skipped, AT6 is in another part)');
 });
 
 test('END', 'Lily: Save & Exit ends playing together kindly (June goes home; Lily gets "Everything is saved")', async () => {
@@ -1111,7 +1138,9 @@ async function main() {
   rosie = await openPlayer(browser, PLAYERS[1]);
   await settle(lily.page, 800);
   await shot(lily, 'title-desktop');
+  if (PART) log(`part ${PART}: ${TESTS.filter((t) => inPart(t.id)).map((t) => t.id).join(', ')}`);
   for (const t of TESTS) {
+    if (!inPart(t.id)) continue;
     log(`${t.id}: ${t.title}`);
     const before = errors.length;
     const s = Date.now();
@@ -1122,6 +1151,7 @@ async function main() {
       console.log('    ERROR ' + (err.stack || err.message));
     }
     results.push({ id: t.id, ok: errors.length === before, secs: (Date.now() - s) / 1000 });
+    RAN.add(t.id);
     if (UNTIL && t.id === UNTIL) break;
   }
   log('hub: ' + JSON.stringify(hub.stats));

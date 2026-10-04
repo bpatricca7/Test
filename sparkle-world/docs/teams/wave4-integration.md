@@ -16,7 +16,7 @@ builders: **where a team doc disagrees with this one, this one wins** (§2 lists
 disagreement). Every `file:line` is the code at commit `669b6fa` on
 `claude/girl-game-world-building-gp6bnl`.
 
-Status: PLAN (nothing built yet).
+Status: PLAN. Step 0 (§6) is done; the teams build next.
 
 ---
 
@@ -493,10 +493,16 @@ One commit on `claude/girl-game-world-building-gp6bnl`, no behavior change:
    - `tools/probe-multiplayer.mjs`: `--part=a|b|c` (AT1 always runs first; then the part's
      tests in file order; parts in §10.2), keeping `--until`.
    - `tools/test-walkie.mjs`: `--part=1|2`, split at a section boundary (the browser scenes up
-     to "Rosie talks", then the family-accounts section with the Node checks).
+     to "Rosie talks", then the family-accounts section with the Node checks). **As done:**
+     `--part=1|2|3`, because a part 2 from "Rosie talks" to the end took 464 s solo, and one
+     from the mutes to the end 454 s (both over 450 s): 1 = the unit tests and the scenes up to "Rosie talks"; 2 = the family-accounts
+     Node checks, "Rosie talks", the 15 s cap and the mutes; 3 = June's phone and turning it
+     off. Each part sets up the same game together first (about 280 s in SwiftShader).
    - `tools/e2e-accounts.mjs` already has `--only`; check the three groups of §10.2.
 5. **Baseline timings**: run every gate command of §10 once, solo, on this tree, and write the
-   seconds into the "baseline" column of §10. Any command over **450 s** solo gets a further
+   seconds into the "baseline" column of §10. **As done:** only the new split parts, smoke and
+   `test:name` were run (the rest says "not measured"); a part checked only up to its first
+   tests says so. Any command over **450 s** solo gets a further
    split now (the 570 s timeout must keep about 2 minutes of headroom on a busy machine).
 6. Commit; nothing else. No `dist/*`.
 
@@ -654,83 +660,84 @@ Beach Cozy, desktop and iPad 1024 x 768 touch, `debug.merfolk.tips(true)`,
 
 | # | command | earlier | baseline |
 |---|---|---|---|
-| A1 | `timeout 570 npm run build` | 1-2 s | |
-| A2 | `timeout 570 npm run build:site` | under 1 min | |
-| A3 | `timeout 570 npm run test:name` | about 5 s | |
-| A4 | `timeout 570 npm run test:merfolk` | seconds (new) | |
-| A5 | `timeout 570 npm run test:squish` | seconds (new) | |
-| A6 | `timeout 570 npm run test:sea` | under 1 min (new; S0 makes 28 worlds) | |
-| A7 | `timeout 570 npm run test:vehicles` | 1 s | |
-| A8 | `timeout 570 npm run test:saves` | 54-60 s | |
-| A9 | `timeout 570 npm run test:accounts` | 16-19 s | |
-| A10 | `timeout 570 npm run test:billing` | 11 s | |
-| A11 | `timeout 570 npm run test:mail-microsoft` | seconds | |
-| A12 | `timeout 570 node tools/test-walkie-unit.mjs` | under 1 s | |
-| A13 | `timeout 570 npm run test:net` | 143-150 s | |
+| A1 | `timeout 570 npm run build` | 1-2 s | 2 s |
+| A2 | `timeout 570 npm run build:site` | under 1 min | not measured |
+| A3 | `timeout 570 npm run test:name` | about 5 s | 1 s (the name scanner included) |
+| A4 | `timeout 570 npm run test:merfolk` | seconds (new) | not measured |
+| A5 | `timeout 570 npm run test:squish` | seconds (new) | not measured |
+| A6 | `timeout 570 npm run test:sea` | under 1 min (new; S0 makes 28 worlds) | not measured |
+| A7 | `timeout 570 npm run test:vehicles` | 1 s | not measured |
+| A8 | `timeout 570 npm run test:saves` | 54-60 s | not measured |
+| A9 | `timeout 570 npm run test:accounts` | 16-19 s | not measured |
+| A10 | `timeout 570 npm run test:billing` | 11 s | not measured |
+| A11 | `timeout 570 npm run test:mail-microsoft` | seconds | not measured |
+| A12 | `timeout 570 node tools/test-walkie-unit.mjs` | under 1 s | not measured |
+| A13 | `timeout 570 npm run test:net` | 143-150 s | not measured |
 
 **B. Smoke and the wave-4 probes (about 90 minutes)**
 
-| # | command | earlier / estimate |
-|---|---|---|
-| B1 | `timeout 570 node tools/smoke.mjs` | 84-153 s |
-| B2 | `timeout 570 node tools/probe-merfolk.mjs --only=unit,water` | est. 6-8 min (merfolk splits `water` if over 450 s) |
-| B3 | `timeout 570 node tools/probe-merfolk.mjs --only=studio` | est. 4-5 min |
-| B4 | `timeout 570 node tools/probe-merfolk.mjs --only=touch,friends` | est. 4-5 min |
-| B5 | `timeout 570 node tools/probe-merfolk.mjs --only=costs,save` | est. 4-6 min |
-| B6 | `timeout 570 node tools/probe-squish.mjs --only=desktop` | est. 6-8 min |
-| B7 | `timeout 570 node tools/probe-squish.mjs --only=touch` | est. 4-6 min |
-| B8 | `timeout 570 node tools/probe-squish.mjs --only=world,save` | est. 5-7 min |
-| B9 | `timeout 570 node tools/probe-squish.mjs --only=mp` | est. 3-5 min |
-| B10 | `timeout 570 node tools/probe-squish.mjs --only=grids,cost` | est. 5-7 min |
-| B11 | `timeout 570 node tools/probe-ocean.mjs --only=world` | est. 5-7 min |
-| B12 | `timeout 570 node tools/probe-ocean.mjs --only=see,tap` | est. 5-7 min |
-| B13 | `timeout 570 node tools/probe-ocean.mjs --only=ride,touch` | est. 6-8 min |
-| B14 | `timeout 570 node tools/probe-ocean.mjs --only=biomes,saves` | est. 4-6 min |
-| B15 | `timeout 570 node tools/probe-ocean.mjs --only=mp` | est. 4-5 min |
-| B16 | `timeout 570 node tools/probe-ocean.mjs --only=cost` | est. 5-6 min (C3 alone runs 3 min) |
-| B17 | `timeout 570 node tools/probe-ocean.mjs --only=wave4` | est. 4-6 min |
+| # | command | earlier / estimate | baseline |
+|---|---|---|---|
+| B1 | `timeout 570 node tools/smoke.mjs` | 84-153 s | 102 s |
+| B2 | `timeout 570 node tools/probe-merfolk.mjs --only=unit,water` | est. 6-8 min (merfolk splits `water` if over 450 s) | not measured |
+| B3 | `timeout 570 node tools/probe-merfolk.mjs --only=studio` | est. 4-5 min | not measured |
+| B4 | `timeout 570 node tools/probe-merfolk.mjs --only=touch,friends` | est. 4-5 min | not measured |
+| B5 | `timeout 570 node tools/probe-merfolk.mjs --only=costs,save` | est. 4-6 min | not measured |
+| B6 | `timeout 570 node tools/probe-squish.mjs --only=desktop` | est. 6-8 min | not measured |
+| B7 | `timeout 570 node tools/probe-squish.mjs --only=touch` | est. 4-6 min | not measured |
+| B8 | `timeout 570 node tools/probe-squish.mjs --only=world,save` | est. 5-7 min | not measured |
+| B9 | `timeout 570 node tools/probe-squish.mjs --only=mp` | est. 3-5 min | not measured |
+| B10 | `timeout 570 node tools/probe-squish.mjs --only=grids,cost` | est. 5-7 min | not measured |
+| B11 | `timeout 570 node tools/probe-ocean.mjs --only=world` | est. 5-7 min | not measured |
+| B12 | `timeout 570 node tools/probe-ocean.mjs --only=see,tap` | est. 5-7 min | not measured |
+| B13 | `timeout 570 node tools/probe-ocean.mjs --only=ride,touch` | est. 6-8 min | not measured |
+| B14 | `timeout 570 node tools/probe-ocean.mjs --only=biomes,saves` | est. 4-6 min | not measured |
+| B15 | `timeout 570 node tools/probe-ocean.mjs --only=mp` | est. 4-5 min | not measured |
+| B16 | `timeout 570 node tools/probe-ocean.mjs --only=cost` | est. 5-6 min (C3 alone runs 3 min) | not measured |
+| B17 | `timeout 570 node tools/probe-ocean.mjs --only=wave4` | est. 4-6 min | not measured |
 
 **C. The suites wave 4 touches most (about 90 minutes)**
 
-| # | command | earlier (whole suite) |
-|---|---|---|
-| C1 | `timeout 570 node tools/probe-multiplayer.mjs --part=a` (AT1-AT6, AT17, HELD, SQUISH, LOOKS, SEA, AT18, AT19, ZIP) | whole: 1031-1775 s, so split |
-| C2 | `timeout 570 node tools/probe-multiplayer.mjs --part=b` (AT1, AT7, AT11, AT9, AT10, AT20, REJOIN) | |
-| C3 | `timeout 570 node tools/probe-multiplayer.mjs --part=c` (AT1, AT11, AT12, AT13, AT8, AT21, BUDGET, END, AT22) | |
-| C4-C9 | `timeout 570 node tools/probe-boys.mjs --only=X` for X = `unit`, `studio`, `touch`, `world`, `friends`, `grids` | whole: 356-656 s |
-| C10 | `timeout 570 node tools/probe-vehicles.mjs --only=models,land` | whole: 455-763 s |
-| C11 | `timeout 570 node tools/probe-vehicles.mjs --only=water,save` | |
-| C12 | `timeout 570 node tools/probe-vehicles.mjs --only=touch,mp` | |
-| C13 | `timeout 570 node tools/probe-menus.mjs --only=desktop` | whole: 399-705 s |
-| C14 | `timeout 570 node tools/probe-menus.mjs --only=touch` | |
-| C15 | `timeout 570 node tools/probe-shops.mjs` | 245-388 s |
-| C16 | `timeout 570 node tools/probe-keepsafe.mjs` | 156-209 s |
-| C17 | `timeout 570 node tools/probe-environment.mjs` | 147-185 s |
-| C18 | `timeout 570 node tools/probe-pals.mjs` | 234-417 s |
-| C19 | `timeout 570 node tools/probe-life.mjs --only=desktop` | whole: 328-511 s |
-| C20 | `timeout 570 node tools/probe-life.mjs --only=touch` | |
-| C21 | `timeout 570 node tools/probe-avatar.mjs` | 199-344 s |
-| C22 | `timeout 570 node tools/probe-builds.mjs --only=gallery,hills,play` | whole: 383-572 s |
-| C23 | `timeout 570 node tools/probe-builds.mjs --only=ui,touch` | |
-| C24 | `timeout 570 node tools/probe-prefabs.mjs --only=gallery,undo` | whole: 332-531 s |
-| C25 | `timeout 570 node tools/probe-prefabs.mjs --only=ui,touch` | |
+| # | command | earlier (whole suite) | baseline |
+|---|---|---|---|
+| C1 | `timeout 570 node tools/probe-multiplayer.mjs --part=a` (AT1-AT6, AT17, HELD, SQUISH, LOOKS, SEA, AT18, AT19, ZIP) | whole: 1031-1775 s, so split | not measured (AT1 + AT2 only: 166 s, green) |
+| C2 | `timeout 570 node tools/probe-multiplayer.mjs --part=b` (AT1, AT7, AT11, AT9, AT10, AT20, REJOIN) | | not measured (AT1 + AT7 only: 143 s, green) |
+| C3 | `timeout 570 node tools/probe-multiplayer.mjs --part=c` (AT1, AT11, AT12, AT13, AT8, AT21, BUDGET, END, AT22) | | not measured (AT1 + AT11 only: 218 s, green) |
+| C4-C9 | `timeout 570 node tools/probe-boys.mjs --only=X` for X = `unit`, `studio`, `touch`, `world`, `friends`, `grids` | whole: 356-656 s | not measured |
+| C10 | `timeout 570 node tools/probe-vehicles.mjs --only=models,land` | whole: 455-763 s | not measured |
+| C11 | `timeout 570 node tools/probe-vehicles.mjs --only=water,save` | | not measured |
+| C12 | `timeout 570 node tools/probe-vehicles.mjs --only=touch,mp` | | not measured |
+| C13 | `timeout 570 node tools/probe-menus.mjs --only=desktop` | whole: 399-705 s | not measured |
+| C14 | `timeout 570 node tools/probe-menus.mjs --only=touch` | | not measured |
+| C15 | `timeout 570 node tools/probe-shops.mjs` | 245-388 s | not measured |
+| C16 | `timeout 570 node tools/probe-keepsafe.mjs` | 156-209 s | not measured |
+| C17 | `timeout 570 node tools/probe-environment.mjs` | 147-185 s | not measured |
+| C18 | `timeout 570 node tools/probe-pals.mjs` | 234-417 s | not measured |
+| C19 | `timeout 570 node tools/probe-life.mjs --only=desktop` | whole: 328-511 s | not measured |
+| C20 | `timeout 570 node tools/probe-life.mjs --only=touch` | | not measured |
+| C21 | `timeout 570 node tools/probe-avatar.mjs` | 199-344 s | not measured |
+| C22 | `timeout 570 node tools/probe-builds.mjs --only=gallery,hills,play` | whole: 383-572 s | not measured |
+| C23 | `timeout 570 node tools/probe-builds.mjs --only=ui,touch` | | not measured |
+| C24 | `timeout 570 node tools/probe-prefabs.mjs --only=gallery,undo` | whole: 332-531 s | not measured |
+| C25 | `timeout 570 node tools/probe-prefabs.mjs --only=ui,touch` | | not measured |
 
 **D. The rest of the standing gate (about 80 minutes)**
 
-| # | command | earlier (whole suite) |
-|---|---|---|
-| D1 | `timeout 570 node tools/probe-outdoor.mjs --only=tree,zip` | whole: 309-542 s |
-| D2 | `timeout 570 node tools/probe-outdoor.mjs --only=camp,salon,touch` | |
-| D3-D6 | `timeout 570 node tools/probe-furniture.mjs --only=X` for X = `showroom`, `actions`, `touch`, `tops` | whole: 312-529 s |
-| D7 | `timeout 570 node tools/test-net-game.mjs` | 321-523 s (split in step 0 if baseline > 450 s) |
-| D8 | `timeout 570 node tools/probe-net-ux.mjs` | 217-392 s |
-| D9 | `timeout 570 node tools/test-walkie.mjs --no-build --part=1` | whole: 507-953 s, so split |
-| D10 | `timeout 570 node tools/test-walkie.mjs --no-build --part=2` | |
-| D11 | `timeout 570 node tools/site-check.mjs --no-build` | 184-257 s |
-| D12 | `timeout 570 npm run probe:railway` | 292-529 s (split in step 0 if baseline > 450 s) |
-| D13 | `timeout 570 node tools/e2e-accounts.mjs --only=4` (runs 1-4) | whole: 757-1412 s, so split |
-| D14 | `timeout 570 node tools/e2e-accounts.mjs --only=6,7` (runs 1, 2, 5, 6, 7) | |
-| D15 | `timeout 570 node tools/e2e-accounts.mjs --only=8,9,10` (runs 1, 2, 8, 9, 10) | |
+| # | command | earlier (whole suite) | baseline |
+|---|---|---|---|
+| D1 | `timeout 570 node tools/probe-outdoor.mjs --only=tree,zip` | whole: 309-542 s | not measured |
+| D2 | `timeout 570 node tools/probe-outdoor.mjs --only=camp,salon,touch` | | not measured |
+| D3-D6 | `timeout 570 node tools/probe-furniture.mjs --only=X` for X = `showroom`, `actions`, `touch`, `tops` | whole: 312-529 s | not measured |
+| D7 | `timeout 570 node tools/test-net-game.mjs` | 321-523 s (split in step 0 if baseline > 450 s) | not measured |
+| D8 | `timeout 570 node tools/probe-net-ux.mjs` | 217-392 s | not measured |
+| D9 | `timeout 570 node tools/test-walkie.mjs --no-build --part=1` | whole: 507-953 s, so split in three | 355 s (169 checks, green) |
+| D10 | `timeout 570 node tools/test-walkie.mjs --no-build --part=2` | | 358 s (85 checks, green) |
+| D10b | `timeout 570 node tools/test-walkie.mjs --no-build --part=3` (added in step 0: part 2 alone was over 450 s) | | 371 s (48 checks, green) |
+| D11 | `timeout 570 node tools/site-check.mjs --no-build` | 184-257 s | not measured |
+| D12 | `timeout 570 npm run probe:railway` | 292-529 s (split in step 0 if baseline > 450 s) | not measured |
+| D13 | `timeout 570 node tools/e2e-accounts.mjs --only=4` (runs 1-4) | whole: 757-1412 s, so split | not measured (`--only` closure checked in the code: runs 1-4) |
+| D14 | `timeout 570 node tools/e2e-accounts.mjs --only=6,7` (runs 1, 2, 5, 6, 7) | | not measured (closure: runs 1, 2, 5, 6, 7) |
+| D15 | `timeout 570 node tools/e2e-accounts.mjs --only=8,9,10` (runs 1, 2, 8, 9, 10) | | not measured (closure: runs 1, 2, 8, 9, 10) |
 
 In all: 13 Node commands and about 60 browser commands, about **4.5 hours** of serial browser
 time. Order: A (stop at the first failure), B, C, D. After any fix, re-run its covering

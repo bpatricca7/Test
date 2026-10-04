@@ -588,7 +588,14 @@ export class GameAdapter {
     // the treat in her hand (shops: game.treats.held, null or a 'treat_*' key) -> presence hi
     // (the host's and every guest's own avatarFields send it; the only writer of `hi`)
     // the vehicle she drives (src/things/vehicles) -> presence vh, or null
-    return { p, st, nm, lk: this._lk, hi: this.heldKey(), vh: this.vehicleField() };
+    return {
+      p,
+      st,
+      nm,
+      lk: this._lk,
+      hi: this.heldKey(),
+      vh: this.vehicleField(),
+    };
   }
 
   /** Presence vh: [key, color, flags, honk, src] while she drives, else null. */

@@ -48,9 +48,39 @@ function boot() {
       'Glimmer World needs a browser with WebGL2. Please try another browser.</div>';
     return;
   }
-  const modules = [theme, ui, account, blocks, worldgen, avatar, player, emotes, entities, furniture, prefabs,
-    pets, garden, cooking, vehicles, daynight, weather, particles, collectibles, stickers, net,
-    hud, inventory, dressup, touch, settings, photo, stickerbook, menus, keepsafe];
+  // one module per line (wave 4 inserts its modules as pure line additions; docs/teams/wave4-integration.md §5.2)
+  const modules = [
+    theme,
+    ui,
+    account,
+    blocks,
+    worldgen,
+    avatar,
+    player,
+    emotes,
+    entities,
+    furniture,
+    prefabs,
+    pets,
+    garden,
+    cooking,
+    vehicles,
+    daynight,
+    weather,
+    particles,
+    collectibles,
+    stickers,
+    net,
+    hud,
+    inventory,
+    dressup,
+    touch,
+    settings,
+    photo,
+    stickerbook,
+    menus,
+    keepsafe,
+  ];
   for (const m of modules) m.install(game);
   game.start().catch((err) => console.error('[boot] start failed', err));
 }

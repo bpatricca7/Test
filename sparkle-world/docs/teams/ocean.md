@@ -1285,10 +1285,9 @@ over a `FakeWorld` (a `Uint8Array` of blocks with a `props` of `shape`, `solid`,
   free wild slots < pod size + 1.
 - **S9 static scans** (comment lines stripped): no `while (` in `src/life/ocean/**`; every value
   of `SEA_TEXT`, every `DOLPHIN_NAMES` entry and the new `chat.js` strings scanned for `$`,
-  "buy", "price"; none of the owner's five forbidden names (the list in the
-  standing rules, kept in the test file only); none of these character names as whole words: Flipper, Nemo, Dory, Ariel,
-  Sebastian, Moana, Ursula, Shamu, Willy, Crush, Squirt, Hank, Destiny, Bailey, Gill, Flounder,
-  Marlin, Alberto, Giulia, Ponyo, Patrick, SpongeBob, Coco, Shimmer, Bubbles, Misty, Dash; no
+  "buy", "price"; none of the owner's forbidden names and none of the names on the character
+  list in the scanner, as whole words (both stored encoded in the shared scanner
+  `tools/lib/name-scan.mjs`: `scanText(text)` and `scanCharacters(text)`); no
   dolphin name equal to any pet name in `src/things/pets/`; every string of §7 present exactly
   in `SEA_TEXT`.
 

@@ -2,8 +2,8 @@
 
 Glimmer World (formerly Sparkle World)
 
-A cozy, blocky 3D world-building game for a girl who is almost 8. Think "Minecraft creative
-mode" rebuilt around what she asked for: **make your own worlds, dress up your avatar in cool
+A cozy, blocky 3D world-building game for a girl who is almost 8. Think of a blocky building
+game's creative mode, rebuilt around what she asked for: **make your own worlds, dress up your avatar in cool
 outfits, build really nice houses, put beds (and everything else) in them, and do all the
 things you do in life** — cook, garden, take a bath, play piano, have pets, sleep, take photos.
 

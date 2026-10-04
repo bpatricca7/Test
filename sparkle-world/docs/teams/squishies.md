@@ -426,7 +426,7 @@ touched; the presents system only reads `game.coins.giftShowing` and `game.coins
 | `tools/test-saves.mjs` | `describe('mergeProfile (§7.4)')` `:465-492`; server profile tests | S1-S5 after the `lookPicked` test (§14.4). |
 | `tools/test-net.mjs` | new `squishTests()` after `vehicleTests()` (`:1789`), run at `:2014` under `--only=unit` / `squish` | §14.2. |
 | `tools/net/fake-adapter.mjs` | `local()` `:426-430` | `if (this.hi !== undefined) out.hi = this.hi;`, the way `vh` is done (ocean.md §12.3 expects this). |
-| `tools/test-name.mjs` | its name scan | gains the trademark scan (§14.1 A13): `/needoh\|nee[ -]?doh\|squishmallow\|disney\|\bluca\b\|minecraft\|squishies\|space bud/i` over text files only. |
+| `tools/test-name.mjs` | its name scan | gains the trademark scan (§14.1 A13) through the shared scanner `tools/lib/name-scan.mjs` (the owner's forbidden names, plus squish's extra words: the toy-brand plural and the dropped "space" toy name, stored encoded) over text files only. |
 | `tools/probe-multiplayer.mjs` | after `test('HELD', ...)` `:466` | new test `SQUISH` (§14.5). |
 | `package.json` | scripts | `test:squish`, `probe:squish`. |
 | `.github/workflows/test.yml` (repo root) | right after the **"Walkie-talkie"** step (`:83-84`) | a step "Squishy toys (data, merges)" running `npm run test:squish` (seconds). |
@@ -898,10 +898,10 @@ the Sound slider and mute work.
     famous film's clownfish. The Shark has no teeth.
   - The Mermaid Tail and Sea Dragon use the **merfolk team's own designs** (a round two-lobed fin;
     a three-tip fin with soft spikes and frills), not any film's.
-- The words "NeeDoh", "Squishmallow", "Disney", "Luca" and "Minecraft" never appear in shipped
-  text (A13, in `tools/test-name.mjs`). Note: `docs/DESIGN.md:5` says "Think "Minecraft
-  creative…"". It is not shipped, but the owner's rule is "never", so the integrator may reword
-  that line (Q6).
+- The owner's forbidden names never appear in shipped text (A13, in `tools/test-name.mjs`,
+  through the shared scanner `tools/lib/name-scan.mjs`, which stores them encoded). The old
+  wording of `docs/DESIGN.md:5` named another company's game; the integrator reworded it in
+  step 0 (Q6), so no other company's name is in the repo at all.
 
 ### 8.2 Strings (exported as `STRINGS` from `data.js`; B10 also reads the rendered DOM)
 
@@ -1149,8 +1149,8 @@ toy is drawn as a plain ball in its main color (never an error on screen, one `c
 - **A12** `profileHasPlay` is true for `{ coins: 100, squish: { got: { pf_strawberry: '…' } } }`.
 - **A13** words and names: every string in `STRINGS` has none of `buy`, `price`, `cost`, `rare`,
   `chance`, `\bher\b`, `\bshe\b`, `[$€£]`; no `STRINGS` entry has a number next to "present". The
-  trademark scan `/needoh|nee[ -]?doh|squishmallow|disney|\bluca\b|minecraft|squishies|space bud/i`
-  runs in **`tools/test-name.mjs`** over text files only (`src/**/*.js`, `site/**/*.{html,css,js,md}`,
+  trademark scan (the shared scanner `tools/lib/name-scan.mjs`: the owner's forbidden names plus
+  squish's encoded extra words, the toy-brand plural and the dropped "space" toy name) runs in **`tools/test-name.mjs`** over text files only (`src/**/*.js`, `site/**/*.{html,css,js,md}`,
   `dist/*.html` with inlined `data:` URIs stripped first). No `while (` and no `Math.random` in
   `data.js` and the present-picking code (`nextItem`, `refresh`, the commit); visual randomness
   elsewhere uses `mulberry32`.
@@ -1388,8 +1388,8 @@ box during other probes' HUD-overlap checks.
   as a v2?
 - **Q5** Title screen Squish Shelf tile: **yes, if** the 5-tile `sw-four` layout passes at 420 px
   (C5); otherwise in play only.
-- **Q6** Reword `docs/DESIGN.md:5` ("Think "Minecraft creative…") so no other company's name is in
-  the repo at all?
+- **Q6** Reword `docs/DESIGN.md:5` (it named another company's game) so no other company's name is
+  in the repo at all? Done in the integrator's step 0.
 - **Q7** The Shark Puffum (no teeth, smiling) or a Narwhal Puffum in its place? Decide before
   `ITEMS_V1` is pinned.
 

@@ -35,6 +35,7 @@ import { renderMail, TEMPLATES } from '../server/mail-templates.mjs';
 import { notice, noticeSummary, renewalSentence, FRIENDS_SWITCH_NOTICE } from '../server/notice.mjs';
 import { PRODUCT_NAME, PORTAL_HEADLINE } from './stripe-setup.mjs';
 import { loadConfig } from '../server/config.mjs';
+import { scanText, scanCharacters, scanFiles, filesFor, brandWords, characterWords, extraWords, SCOPE, EXTRA_SCOPE } from './lib/name-scan.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -229,5 +230,53 @@ describe('the paid plan is the Glimmer World Membership everywhere people read i
     assert.match(all, /don't start a Glimmer World Membership within 30 days/);
     assert.match(renewalSentence(cfg), /^I agree to the Terms\. My Glimmer World Membership renews every month at \$5\.99 plus tax until I cancel/);
     assert.deepEqual([PRODUCT_NAME, PORTAL_HEADLINE], ['Glimmer World Membership', 'Glimmer World Membership']);
+  });
+});
+
+// Other companies' names (docs/teams/wave4-integration.md §6 step 0, C13): never in the game, the
+// site, the built pages or the docs. The lists live encoded in the shared scanner
+// tools/lib/name-scan.mjs; this file builds its examples from the decoded lists and never spells
+// a name itself.
+describe("no other company's names, anywhere people read", () => {
+  test('the scanner itself: whole words in any case, data: URIs skipped, lists decoded', () => {
+    const brands = brandWords();
+    assert.ok(brands.length >= 5, 'the owner\'s forbidden names are all there');
+    // a plain spelling of each entry (drop the optional bits of the fragment)
+    const plain = brands.map((w) => w.replace(/\[ -\]\?/g, '').replace(/s\?$/, ''));
+    for (const w of plain) {
+      for (const s of [w, w.toUpperCase(), w[0].toUpperCase() + w.slice(1), `Think "${w} mode".`, `a ${w}'s toy`]) {
+        assert.equal(scanText(s).length, 1, `caught (${plain.indexOf(w)}): ${s.length} chars`);
+      }
+      assert.deepEqual(scanText(`${w}x xx${w}`), [], 'whole words only');
+      const b64 = Buffer.from(` ${w} `).toString('base64');
+      assert.deepEqual(scanText(`<img src="data:image/png;base64,${b64}${w}=="> ok`), [], 'data: URIs are stripped first');
+    }
+    assert.deepEqual(scanText('Glimmer World: build, dress up, Puffums and Stretchums on the Squish Shelf.'), []);
+    const hit = scanText(`one\ntwo ${plain[2]}\nthree`);
+    assert.deepEqual([hit[0].line, hit[0].col], [2, 5]);
+    // the character list: only for the wave-4 string tables
+    const chars = characterWords();
+    assert.ok(chars.length >= 20);
+    for (const w of chars) assert.equal(scanCharacters(`Hi, ${w}!`).length, 1);
+    assert.deepEqual(scanCharacters('Splashy came to say hi!'), []);
+    assert.deepEqual(scanText(`Hi, ${chars[0]}!`), [], 'characters are not in the brand list');
+    // the teams' extra words are scanned only with { extras: true }
+    assert.deepEqual(scanText('Puffums', { extras: true }), [], 'the extra lists compile and leave our own names alone');
+    for (const team of ['merfolk', 'squish', 'ocean']) assert.ok(Array.isArray(extraWords(team)));
+  });
+
+  test('the scope: src/**, site/**, the built pages and docs/** (text files only)', () => {
+    const all = filesFor(SCOPE);
+    assert.ok(all.some((f) => f.startsWith('src/')) && all.some((f) => f.startsWith('site/')) && all.some((f) => f.startsWith('docs/')), 'every folder is scanned');
+    assert.ok(!all.some((f) => /\.(png|jpe?g|webp|woff2?|ttf|gif|ico)$/i.test(f)), 'no binary files');
+    assert.ok(all.includes('docs/DESIGN.md') && all.includes('src/main.js'));
+  });
+
+  test('sources, docs and the built pages carry none of the owner\'s forbidden names', () => {
+    assert.deepEqual(scanFiles(SCOPE).map((m) => `${m.file}:${m.line}: ${m.text}`), []);
+  });
+
+  test("the teams' extra words: not in the game or the site", () => {
+    assert.deepEqual(scanFiles(EXTRA_SCOPE, { extras: true }).map((m) => `${m.file}:${m.line}: ${m.text}`), []);
   });
 });

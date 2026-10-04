@@ -1,6 +1,17 @@
 // Walkie-talkie tests (docs/MULTIPLAYER.md Addendum C, docs/teams/walkie.md):
 //
-//   node tools/test-walkie.mjs [--unit-only] [--no-build] [--headed] [--shots-prefix=walkie]
+//   node tools/test-walkie.mjs [--part=1|2|3] [--unit-only] [--no-build] [--headed] [--shots-prefix=walkie]
+//
+// --part splits the run so each part fits the gate's 570 s timeout (docs/teams/wave4-integration.md
+// §10.2 D9-D10b). Without it everything runs, as before. Every part sets up the same game
+// together (about 280 s in SwiftShader), then runs its own scenes:
+//   1: the Node unit tests, then the browser scenes up to "Rosie talks": the server's headers,
+//      the stranger, the loudness render, the grown-up check's reload, no walkie alone or inside
+//      claude.ai, alone at /play, the game together, Lily talks, busy presses, the tie.
+//   2: the family-accounts section (Node: the relay alone, then the real server), then the game
+//      together and the scenes from "Rosie talks": the 15 s cap, the mutes.
+//   3: the game together, then June's phone (her grown-up turns the walkie on, the phone and
+//      sideways / portrait shots) and turning it off is one tap.
 //
 // (a) Node unit tests (tools/test-walkie-unit.mjs): ADPCM round trip (SNR), resampler, frame
 //     format, and the relay's floor / caps / limits / gating over the real room logic.
@@ -48,6 +59,13 @@ const arg = (k, d = null) => {
   return a ? a.slice(k.length + 3) : argv.includes(`--${k}`) ? true : d;
 };
 const PREFIX = arg('shots-prefix', 'walkie');
+const PART = arg('part') ? String(arg('part')) : null;
+if (PART && !['1', '2', '3'].includes(PART)) {
+  console.error(`--part must be 1, 2 or 3 (got ${PART})`);
+  process.exit(2);
+}
+/** Does this run include part n (both when no --part is given)? */
+const inPart = (n) => !PART || PART === String(n);
 const errors = [];
 const T0 = Date.now();
 const log = (...a) => console.log(`[${((Date.now() - T0) / 1000).toFixed(1).padStart(6)}s]`, ...a);
@@ -791,13 +809,17 @@ async function accountServerVoice() {
 
 async function main() {
   // (a) unit
-  log('unit tests');
-  const unit = await runUnit({ check, log });
-  numbers.snr = unit.snr;
-  numbers.codecBytesPerSecond = unit.bytesPerSecond;
+  if (inPart(1)) {
+    log('unit tests');
+    const unit = await runUnit({ check, log });
+    numbers.snr = unit.snr;
+    numbers.codecBytesPerSecond = unit.bytesPerSecond;
+  }
   // with family accounts (Node only: the relay alone, then the real server in this process)
-  await accountRelayUnit();
-  await accountServerVoice();
+  if (inPart(2)) {
+    await accountRelayUnit();
+    await accountServerVoice();
+  }
   if (arg('unit-only')) return;
 
   // (b) end to end
@@ -810,10 +832,12 @@ async function main() {
   await startServer(port);
   const url = `http://localhost:${port}/play`; // the home page is at /, the game at /play
   log(`server up: ${url}`);
-  const head = await fetch(url, { method: 'HEAD' });
-  const pp = head.headers.get('permissions-policy') || '';
-  check(/microphone=\(self\)/.test(pp) && /camera=\(\)/.test(pp) && /geolocation=\(\)/.test(pp), `Permissions-Policy: "${pp}" (microphone for this site only; camera and the rest off)`);
-  await strangerTests(port);
+  if (inPart(1)) {
+    const head = await fetch(url, { method: 'HEAD' });
+    const pp = head.headers.get('permissions-policy') || '';
+    check(/microphone=\(self\)/.test(pp) && /camera=\(\)/.test(pp) && /geolocation=\(\)/.test(pp), `Permissions-Policy: "${pp}" (microphone for this site only; camera and the rest off)`);
+    await strangerTests(port);
+  }
 
   const browser = await chromium.launch({
     executablePath: CHROMIUM,
@@ -821,147 +845,167 @@ async function main() {
     args: [...LAUNCH_ARGS, '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'],
   });
   try {
-    await loudnessTest(browser);
-    await gateReloadTest(browser, url);
+    if (inPart(1)) await part1Alone(browser, url);
+    await together(browser, url, port);
+  } finally {
+    await browser.close().catch(() => {});
+    const s = server;
+    server = null;
+    if (s) s.kill('SIGKILL');
+  }
+}
 
-    // ----- where the walkie must not exist: alone from a file, inside claude.ai -----
-    log('no walkie alone (file://) or inside claude.ai (room transport)');
-    for (const [label, where, init] of [
-      ['alone (file://)', PAGE_URL, null],
-      // a stand-in for claude.ai's window.claude: the game picks the room transport
-      ['claude.ai', url, () => { window.claude = { use: async (n) => (n === 'room' ? { join: async () => { throw Object.assign(new Error('no'), { code: 'not_permitted' }); } } : null) }; }],
-    ]) {
-      const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
-      if (init) await ctx.addInitScript(init);
-      const page = await ctx.newPage();
-      page.on('pageerror', (err) => errors.push(`[${label}] pageerror: ${err.message}`));
-      await page.goto(where);
-      await waitForTitle(page);
-      await page.waitForFunction(() => window.__game.net.available !== null, null, { timeout: 15000 });
-      const pl = { key: label, touch: false, page, context: ctx };
-      await press(pl, 'button.sw-tile:has-text("Settings")');
-      await page.waitForSelector('.sw-panel-wrap.sw-open .sw-set-row');
-      const r = await page.evaluate(() => ({
-        kind: window.__game.net.kind, row: !!document.querySelector('.sw-wk-setrow'),
-        exists: window.__game.debug.walkie.state().exists, btn: !document.querySelector('.sw-wk').hidden,
-      }));
-      check(!r.row && !r.exists && !r.btn, `${label}: transport ${r.kind}, no walkie (no Settings row, no button)`);
-      await ctx.close();
-    }
+/** Part 1's scenes before the game together: loudness, the gate's reload, no walkie where it must not be, alone at /play. */
+async function part1Alone(browser, url) {
+  await loudnessTest(browser);
+  await gateReloadTest(browser, url);
 
-    // ----- alone on the Railway site (/play): only the grown-ups' Settings row (so a grown-up
-    // can turn it on before a game); in a world alone no button, no badge, no microphone, and
-    // M does nothing until a code is live -----
-    log('alone at /play: the Settings row only');
-    {
-      const solo = await openPlayer(browser, { key: 'solo', name: 'Poppy', viewport: { width: 1280, height: 800 }, touch: false, seed: 53 }, url);
-      const kind = await until(solo, () => window.__game.net.kind, null, 10000);
-      check(kind === 'ws', `alone at /play: WebSocket transport (${kind})`);
-      await grownUpTurnsOn(solo, { wrongFirst: false });
-      await press(solo, 'button.sw-btn:has-text("New World")');
-      await solo.page.waitForSelector('.sw-panel-wrap.sw-open .sw-biome img[src]');
-      await press(solo, '.sw-panel-wrap.sw-open .sw-biome[data-biome="flat"]');
-      await press(solo, 'button.sw-create');
-      await waitForPlay(solo.page);
-      await waitIdle(solo.page);
-      await settle(solo.page, 500);
-      await solo.page.keyboard.down('m');
-      await sleep(900);
-      const r = await game(solo, () => {
-        const s = window.__game.debug.walkie.state();
-        const shown = (sel) => !!document.querySelector(sel) && !document.querySelector(sel).hidden;
-        return { mode: window.__game.mode, enabled: s.enabled, live: s.live, show: s.view.show, talk: s.talk, micLive: s.micLive, micSeen: s.micSeen, card: !!document.querySelector('.sw-wk-card'), btn: shown('.sw-wk'), off: shown('.sw-wk-off') };
-      });
-      await solo.page.keyboard.up('m');
-      const tx = (await WS(solo)).tx;
-      check(r.mode === 'play' && r.enabled && !r.live, `alone at /play in a world: walkie on for this device, nothing live (${JSON.stringify(r)})`);
-      check(!r.btn && !r.off && r.show === null, 'alone at /play: no walkie button, no "Walkie off" badge');
-      check(r.talk === 'idle' && !r.micLive && !r.micSeen && !r.card && tx.presses === 0, `alone at /play: holding M does nothing (talk ${r.talk}, no microphone card, microphone never live, ${tx.presses} presses)`);
-      await solo.context.close();
-    }
+  // ----- where the walkie must not exist: alone from a file, inside claude.ai -----
+  log('no walkie alone (file://) or inside claude.ai (room transport)');
+  for (const [label, where, init] of [
+    ['alone (file://)', PAGE_URL, null],
+    // a stand-in for claude.ai's window.claude: the game picks the room transport
+    ['claude.ai', url, () => { window.claude = { use: async (n) => (n === 'room' ? { join: async () => { throw Object.assign(new Error('no'), { code: 'not_permitted' }); } } : null) }; }],
+  ]) {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    if (init) await ctx.addInitScript(init);
+    const page = await ctx.newPage();
+    page.on('pageerror', (err) => errors.push(`[${label}] pageerror: ${err.message}`));
+    await page.goto(where);
+    await waitForTitle(page);
+    await page.waitForFunction(() => window.__game.net.available !== null, null, { timeout: 15000 });
+    const pl = { key: label, touch: false, page, context: ctx };
+    await press(pl, 'button.sw-tile:has-text("Settings")');
+    await page.waitForSelector('.sw-panel-wrap.sw-open .sw-set-row');
+    const r = await page.evaluate(() => ({
+      kind: window.__game.net.kind, row: !!document.querySelector('.sw-wk-setrow'),
+      exists: window.__game.debug.walkie.state().exists, btn: !document.querySelector('.sw-wk').hidden,
+    }));
+    check(!r.row && !r.exists && !r.btn, `${label}: transport ${r.kind}, no walkie (no Settings row, no button)`);
+    await ctx.close();
+  }
 
-    const [lily, rosie, june] = [
-      await openPlayer(browser, PLAYERS[0], url),
-      await openPlayer(browser, PLAYERS[1], url),
-      await openPlayer(browser, PLAYERS[2], url),
-    ];
-    const all = [lily, rosie, june];
-    for (const pl of all) {
-      const kind = await until(pl, () => window.__game.net.kind, null, 10000);
-      check(kind === 'ws', `${pl.key}: WebSocket transport (${kind})`);
-    }
+  // ----- alone on the Railway site (/play): only the grown-ups' Settings row (so a grown-up
+  // can turn it on before a game); in a world alone no button, no badge, no microphone, and
+  // M does nothing until a code is live -----
+  log('alone at /play: the Settings row only');
+  {
+    const solo = await openPlayer(browser, { key: 'solo', name: 'Poppy', viewport: { width: 1280, height: 800 }, touch: false, seed: 53 }, url);
+    const kind = await until(solo, () => window.__game.net.kind, null, 10000);
+    check(kind === 'ws', `alone at /play: WebSocket transport (${kind})`);
+    await grownUpTurnsOn(solo, { wrongFirst: false });
+    await press(solo, 'button.sw-btn:has-text("New World")');
+    await solo.page.waitForSelector('.sw-panel-wrap.sw-open .sw-biome img[src]');
+    await press(solo, '.sw-panel-wrap.sw-open .sw-biome[data-biome="flat"]');
+    await press(solo, 'button.sw-create');
+    await waitForPlay(solo.page);
+    await waitIdle(solo.page);
+    await settle(solo.page, 500);
+    await solo.page.keyboard.down('m');
+    await sleep(900);
+    const r = await game(solo, () => {
+      const s = window.__game.debug.walkie.state();
+      const shown = (sel) => !!document.querySelector(sel) && !document.querySelector(sel).hidden;
+      return { mode: window.__game.mode, enabled: s.enabled, live: s.live, show: s.view.show, talk: s.talk, micLive: s.micLive, micSeen: s.micSeen, card: !!document.querySelector('.sw-wk-card'), btn: shown('.sw-wk'), off: shown('.sw-wk-off') };
+    });
+    await solo.page.keyboard.up('m');
+    const tx = (await WS(solo)).tx;
+    check(r.mode === 'play' && r.enabled && !r.live, `alone at /play in a world: walkie on for this device, nothing live (${JSON.stringify(r)})`);
+    check(!r.btn && !r.off && r.show === null, 'alone at /play: no walkie button, no "Walkie off" badge');
+    check(r.talk === 'idle' && !r.micLive && !r.micSeen && !r.card && tx.presses === 0, `alone at /play: holding M does nothing (talk ${r.talk}, no microphone card, microphone never live, ${tx.presses} presses)`);
+    await solo.context.close();
+  }
+}
 
-    // ----- grown-ups turn the walkie on (Lily, Rosie); June's stays off -----
-    log('grown-up checks');
-    await grownUpTurnsOn(lily, { shotName: 'gate-desktop' });
-    await grownUpTurnsOn(rosie, { shotName: 'gate-ipad' });
-    check(!(await W(june)).enabled, 'June: walkie off (no grown-up check)');
+/** The game together (both parts set it up), then part 1's or part 2's scenes. */
+async function together(browser, url, port) {
+  const [lily, rosie, june] = [
+    await openPlayer(browser, PLAYERS[0], url),
+    await openPlayer(browser, PLAYERS[1], url),
+    await openPlayer(browser, PLAYERS[2], url),
+  ];
+  const all = [lily, rosie, june];
+  for (const pl of all) {
+    const kind = await until(pl, () => window.__game.net.kind, null, 10000);
+    check(kind === 'ws', `${pl.key}: WebSocket transport (${kind})`);
+  }
 
-    // ----- no walkie before playing together -----
-    for (const pl of all) {
-      const ui = await game(pl, () => ({ btn: !!document.querySelector('.sw-wk') && !document.querySelector('.sw-wk').hidden, off: !!document.querySelector('.sw-wk-off') && !document.querySelector('.sw-wk-off').hidden }));
-      check(!ui.btn && !ui.off, `${pl.key}: no walkie UI before playing together`);
-    }
+  // ----- grown-ups turn the walkie on (Lily, Rosie); June's stays off -----
+  log('grown-up checks');
+  await grownUpTurnsOn(lily, { shotName: 'gate-desktop' });
+  await grownUpTurnsOn(rosie, { shotName: 'gate-ipad' });
+  check(!(await W(june)).enabled, 'June: walkie off (no grown-up check)');
 
-    // ----- a game together -----
-    log('Lily makes a code');
-    const code = await hostMakesCode(lily, { log });
-    check(code.length === 4, `code ${code.join(' ')}`);
-    for (const g of [rosie, june]) {
-      await guestTypesCode(g, code);
-      await hostLetsIn(lily, g.name);
-      check(await waitLive(g), `${g.name} is in Lily's world`);
-    }
-    await closePanels(lily);
-    await bringTo(rosie, lily, 2.5, 3);
-    await bringTo(june, lily, -2.5, 2.5);
-    // everyone faces Lily (for the speaking badge)
-    for (const pl of [rosie, june]) {
-      await game(pl, () => {
-        const g = window.__game;
-        const me = g.debug.net.players().find((p) => p.host);
-        const q = g.player.position;
-        if (me && me.pos) {
-          g.cameraRig.yaw = Math.atan2(me.pos[0] - q.x, me.pos[2] - q.z);
-          g.cameraRig.pitch = 0.25;
-        }
-      });
-    }
-    await game(lily, () => {
+  // ----- no walkie before playing together -----
+  for (const pl of all) {
+    const ui = await game(pl, () => ({ btn: !!document.querySelector('.sw-wk') && !document.querySelector('.sw-wk').hidden, off: !!document.querySelector('.sw-wk-off') && !document.querySelector('.sw-wk-off').hidden }));
+    check(!ui.btn && !ui.off, `${pl.key}: no walkie UI before playing together`);
+  }
+
+  // ----- a game together -----
+  log('Lily makes a code');
+  const code = await hostMakesCode(lily, { log });
+  check(code.length === 4, `code ${code.join(' ')}`);
+  for (const g of [rosie, june]) {
+    await guestTypesCode(g, code);
+    await hostLetsIn(lily, g.name);
+    check(await waitLive(g), `${g.name} is in Lily's world`);
+  }
+  await closePanels(lily);
+  await bringTo(rosie, lily, 2.5, 3);
+  await bringTo(june, lily, -2.5, 2.5);
+  // everyone faces Lily (for the speaking badge)
+  for (const pl of [rosie, june]) {
+    await game(pl, () => {
       const g = window.__game;
-      const r = g.debug.net.players().find((p) => !p.you && p.name === 'Rosie');
+      const me = g.debug.net.players().find((p) => p.host);
       const q = g.player.position;
-      if (r && r.pos) {
-        g.cameraRig.yaw = Math.atan2(r.pos[0] - q.x, r.pos[2] - q.z);
+      if (me && me.pos) {
+        g.cameraRig.yaw = Math.atan2(me.pos[0] - q.x, me.pos[2] - q.z);
         g.cameraRig.pitch = 0.25;
       }
     });
+  }
+  await game(lily, () => {
+    const g = window.__game;
+    const r = g.debug.net.players().find((p) => !p.you && p.name === 'Rosie');
+    const q = g.player.position;
+    if (r && r.pos) {
+      g.cameraRig.yaw = Math.atan2(r.pos[0] - q.x, r.pos[2] - q.z);
+      g.cameraRig.pitch = 0.25;
+    }
+  });
 
-    // walkie UI only where it belongs
-    const shown = async (pl) => until(pl, () => !document.querySelector('.sw-wk').hidden, null, 8000, 150);
-    check(!!(await shown(lily)), 'Lily (host, walkie on): the walkie button is in the HUD');
-    check(!!(await shown(rosie)), 'Rosie (walkie on): the walkie button is in the HUD');
-    const juneUI = await until(june, () => ({ btn: !document.querySelector('.sw-wk').hidden, off: !document.querySelector('.sw-wk-off').hidden }), null, 1000);
-    const juneBadge = await until(june, () => !document.querySelector('.sw-wk-off').hidden, null, 8000, 150);
-    check(!juneUI.btn && !!juneBadge, `June (walkie off): no walkie button, only the small "Walkie off" badge`);
-    await settle(june.page, 400);
-    await shot(june, 'hud-walkie-off-phone');
-    const inGame = await until(rosie, () => window.__game.debug.walkie.state().inGame, null, 8000, 150);
-    check(!!inGame, 'Rosie: the server counts her in Lily\'s game (voice on)');
-    check(!(await W(june)).declared, 'June never told the server "voice on"');
+  // walkie UI only where it belongs
+  const shown = async (pl) => until(pl, () => !document.querySelector('.sw-wk').hidden, null, 8000, 150);
+  check(!!(await shown(lily)), 'Lily (host, walkie on): the walkie button is in the HUD');
+  check(!!(await shown(rosie)), 'Rosie (walkie on): the walkie button is in the HUD');
+  const juneUI = await until(june, () => ({ btn: !document.querySelector('.sw-wk').hidden, off: !document.querySelector('.sw-wk-off').hidden }), null, 1000);
+  const juneBadge = await until(june, () => !document.querySelector('.sw-wk-off').hidden, null, 8000, 150);
+  check(!juneUI.btn && !!juneBadge, `June (walkie off): no walkie button, only the small "Walkie off" badge`);
+  await settle(june.page, 400);
+  await shot(june, 'hud-walkie-off-phone');
+  const inGame = await until(rosie, () => window.__game.debug.walkie.state().inGame, null, 8000, 150);
+  check(!!inGame, 'Rosie: the server counts her in Lily\'s game (voice on)');
+  check(!(await W(june)).declared, 'June never told the server "voice on"');
 
-    // ----- first press: the microphone card -----
-    log('first presses: the microphone card');
-    await firstPressMicCard(lily, 'mic-card-desktop');
-    await firstPressMicCard(rosie, 'mic-card-ipad');
+  // ----- first press: the microphone card -----
+  log('first presses: the microphone card');
+  await firstPressMicCard(lily, 'mic-card-desktop');
+  await firstPressMicCard(rosie, 'mic-card-ipad');
+  const juneId = await game(june, () => window.__game.net.session.transport.selfId());
+  const rosieId = await game(rosie, () => window.__game.net.session.transport.selfId());
+  const lilyId = await game(lily, () => window.__game.net.session.transport.selfId());
+  let release = null;
 
+  if (inPart(1)) {
     // ----- Lily talks 2 s -----
     log('Lily holds the walkie 2 s');
     const juneBefore = await WS(june);
     const rosieBefore = await WS(rosie);
     const lilyBefore = await WS(lily);
     const sBefore = await serverStats(port);
-    let release = await hold(lily);
+    release = await hold(lily);
     const t0 = Date.now();
     const talking = await until(lily, () => window.__game.debug.walkie.state().talk === 'talking', null, 4000, 50);
     check(!!talking, 'Lily: talking (the server gave her the walkie)');
@@ -998,9 +1042,6 @@ async function main() {
     check(rxFrames >= txFrames - 1 && scheduled >= txFrames - 2, `Rosie received ${rxFrames} frames and scheduled ${scheduled} buffers (${(samples / 16000).toFixed(2)} s of voice)`);
     check(rosieAfter.player.bursts > rosieBefore.player.bursts, 'Rosie heard the squelch and the press as one burst');
     check(juneAfter.rx.frames === juneBefore.rx.frames && juneAfter.rx.bytes === 0, `June (walkie off) received ZERO voice bytes (${juneAfter.rx.bytes} B, ${juneAfter.rx.frames} frames)`);
-    const juneId = await game(june, () => window.__game.net.session.transport.selfId());
-    const rosieId = await game(rosie, () => window.__game.net.session.transport.selfId());
-    const lilyId = await game(lily, () => window.__game.net.session.transport.selfId());
     const jp = sAfter.voicePeers.find((x) => x.peer === juneId);
     const rp = sAfter.voicePeers.find((x) => x.peer === rosieId);
     check(!!jp && jp.bytesOut === 0 && jp.framesOut === 0 && jp.on === false, `server: 0 voice bytes sent to June (${JSON.stringify(jp)})`);
@@ -1062,7 +1103,10 @@ async function main() {
     check(tie.filter((x) => x.micLive).length === 1, 'only the talker\'s microphone is open');
     for (const pl of [lily, rosie]) await game(pl, () => window.__game.debug.walkie.release('race'));
     await sleep(1200);
+  }
 
+  if (inPart(2)) {
+    if (PART === '2') await sleep(1200); // past the first presses' cooldown
     // ----- Rosie talks (iPad); Lily hears -----
     log('Rosie talks from the iPad');
     await face(lily, 'Rosie');
@@ -1182,6 +1226,12 @@ async function main() {
     await closePanels(lily);
     const back = await until(rosie, () => window.__game.debug.walkie.state().view.state === 'idle', null, 4000, 100);
     check(!!back, 'walkies back on: Rosie\'s button says "Hold to talk"');
+  }
+
+  // (part 3: in step 0 a part 2 from "Rosie talks" to the end took 464 s solo, and one from the
+  // mutes to the end 454 s, both over the gate's 450 s limit, so the phone scenes run on their own)
+  if (inPart(3)) {
+    if (PART === '3') await sleep(1200); // past the first presses' cooldown
 
     // ----- June's grown-up turns hers on (phone shots) -----
     log('June\'s grown-up turns the walkie on (phone)');
@@ -1237,18 +1287,13 @@ async function main() {
     await closePanels(june);
     const offDeclared = await until(june, () => window.__game.debug.walkie.state().declared === null, null, 3000, 100);
     check(!!offDeclared, 'June told the server "voice off"');
-
-    // final server numbers
-    const fin = await serverStats(port);
-    numbers.server = fin.voice;
-    const logs = server.lines.join('');
-    check(!/Lily|Rosie|June|sw1-/.test(logs), 'the server log names no child and no code');
-  } finally {
-    await browser.close().catch(() => {});
-    const s = server;
-    server = null;
-    if (s) s.kill('SIGKILL');
   }
+
+  // final server numbers
+  const fin = await serverStats(port);
+  numbers.server = fin.voice;
+  const logs = server.lines.join('');
+  check(!/Lily|Rosie|June|sw1-/.test(logs), 'the server log names no child and no code');
 }
 
 main()
