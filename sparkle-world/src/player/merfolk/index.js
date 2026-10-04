@@ -249,7 +249,18 @@ export function install(game) {
     prepT = 0;
     const av = game.player && game.player.avatar;
     if (game.mode !== 'play' || !av || typeof av.prepareSea !== 'function') return;
-    try { av.prepareSea(); } catch { /* the first turn builds them */ }
+    try {
+      if (!av.prepareSea()) return;
+      // and their textures sent to the GPU now (hidden parts are not drawn, so otherwise the
+      // upload would fall on the first turn's frame)
+      const r = game.renderer;
+      if (!r || typeof r.initTexture !== 'function') return;
+      const seen = new Set();
+      av.group.traverse((o) => {
+        const ms = !o.material ? [] : Array.isArray(o.material) ? o.material : [o.material];
+        for (const m of ms) if (m.map && !seen.has(m.map)) { seen.add(m.map); r.initTexture(m.map); }
+      });
+    } catch { /* the first turn builds them */ }
   };
 
   // ---------- events ----------
