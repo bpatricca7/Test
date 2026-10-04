@@ -20,6 +20,7 @@ const TAB_COLORS = {
   bedroom: '#AE92FF', living: '#FF9F8A', kitchen: '#4FD4AE', bathroom: '#6CC6FF', garden: '#8FD45F', fun: '#FFB84D',
   pets: '#FF8FB1', food: '#FFA85C', houses: '#9C7BFF', more: '#B9A9D9', camping: '#7FC97A', shops: '#FF8FC8',
   vehicles: '#6CC6FF',
+  squish: '#FF9CCB',
 };
 // the picture on each tab: the first of these that exists, else the tab's first item
 const TAB_PICS = {
@@ -447,6 +448,7 @@ export function install(game) {
     }
     const list = tabItems(tab);
     mainEl.appendChild(heading('grid', tabLabel(tab)));
+    game.events.emit('bag:tab', { tab, main: mainEl }); // a tab may add a row under its heading (squish: the Squish Shelf button)
     if (!list.length) {
       const e = ui.el('div', 'sw-bag-empty');
       e.innerHTML = icon2('sparkles');

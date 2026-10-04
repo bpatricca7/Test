@@ -60,23 +60,29 @@ export function pressCurve(kind, phase, t, from = 1) {
 export const tapLength = (kind) => (kind === 'stretch' ? 1.3 : 2.3);
 
 /**
- * A little press state machine for one toy: press() / release() / tap(), then step(dt) each
- * frame returns { sx, sy } (or null when it is at rest). Used by the hand, shelf and unwrap.
+ * A little press state machine for one toy: press() / release() / tap(), then step() each frame
+ * returns { sx, sy } (or null when it is at rest). Times are wall-clock seconds, so a slow page
+ * (whose frame time is capped) still shows the curves at their real speed. Used by the hand,
+ * the shelf, the unwrap and placed toys.
  */
-export function presser(kind) {
-  let phase = null, t = 0, from = 1, cur = 1;
+const clockNow = () => (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
+
+export function presser(kind, now = clockNow) {
+  let phase = null, t0 = 0, from = 1, cur = 1;
+  const start = (ph, f) => { phase = ph; t0 = now(); from = f; };
   return {
     get busy() { return phase !== null; },
     get sy() { return cur; },
     get held() { return phase === 'down'; },
-    press() { phase = 'down'; t = 0; from = cur; },
-    release() { if (phase === 'down') { phase = 'up'; t = 0; from = cur; } },
-    tap() { phase = 'tap'; t = 0; from = 1; },
-    stop() { phase = null; t = 0; cur = 1; },
-    step(dt) {
+    press() { start('down', cur); },
+    release() { if (phase === 'down') start('up', cur); },
+    tap() { start('tap', 1); },
+    stop() { phase = null; cur = 1; },
+    /** The scale the toy has right now (what the next frame draws), without stepping. */
+    peek() { return phase ? pressCurve(kind, phase, now() - t0, from).sy : cur; },
+    step() {
       if (!phase) return null;
-      t += dt;
-      const c = pressCurve(kind, phase, t, from);
+      const c = pressCurve(kind, phase, now() - t0, from);
       cur = c.sy;
       if (c.done) { phase = null; cur = 1; }
       return c;

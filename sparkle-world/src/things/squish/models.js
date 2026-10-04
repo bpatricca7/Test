@@ -832,16 +832,25 @@ export function sharedToy(key, glitter = false) {
   let tpl = shared.get(id);
   if (!tpl) {
     tpl = toyModel(key, { glitter, live: true, hitbox: false });
-    tpl.traverse((o) => { if (o.geometry) o.geometry.userData.shared = true; });
+    // Object3D.clone copies userData through JSON: the Kit's parts map (Groups) must not be in it
+    tpl.traverse((o) => {
+      if (o.geometry) o.geometry.userData.shared = true;
+      delete o.userData.parts;
+    });
+    const part = tpl.getObjectByName('toy');
+    if (part) part.position.set(0, 0, 0); // centred on its bottom (a placed toy's part sits at the cell's centre)
     shared.set(id, tpl);
   }
   const g = tpl.clone(true);
-  const toy = g.getObjectByName('toy');
-  g.userData.parts = { toy };
+  setParts(g, { toy: g.getObjectByName('toy') });
   g.position.set(0, 0, 0);
-  if (toy) toy.position.set(0, 0, 0);
   g.name = tpl.name;
   return g;
+}
+
+/** userData.parts, kept out of JSON (so the object can still be cloned). */
+function setParts(obj, parts) {
+  Object.defineProperty(obj.userData, 'parts', { value: parts, enumerable: false, configurable: true, writable: true });
 }
 
 /** Free the shared geometry (world unload). Objects still using it must be gone first. */
@@ -867,7 +876,7 @@ export function heldToy(key, glitter = false) {
   inner.position.set(0, -0.05, 0);
   g.scale.setScalar(0.85);
   g.add(inner);
-  g.userData.parts = inner.userData.parts;
+  setParts(g, inner.userData.parts);
   return g;
 }
 

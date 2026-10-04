@@ -550,6 +550,50 @@ test('HELD', 'a treat in Rosie’s hand shows in her avatar’s hand on Lily’s
   check(goneL, 'Lily put her lollipop away: her hand is empty on Rosie’s page');
 });
 
+test('SQUISH', 'a squishy toy in Rosie’s hand shows in her avatar’s hand on Lily’s page; Lily’s Toy Shelf with a toy on it shows on Rosie’s page; hashes converge', async () => {
+  // Rosie holds the Splashy Whale (a toy she owns; presence hi = squish_pf_whale)
+  const held = await game(rosie, () => {
+    const g = window.__game;
+    window.__hotbarBefore = { slots: g.hotbar.slots.slice(), colors: g.hotbar.colors.slice(), index: g.hotbar.index };
+    g.debug.squish.give('pf_whale');
+    g.squish.hold('pf_whale', false, { quiet: true });
+    return g.squish.held();
+  });
+  check(held === 'squish_pf_whale', `Rosie holds the Splashy Whale (${held})`);
+  const seen = await until(lily, () => {
+    const r = window.__game.debug.net.remote().find((x) => x.name === 'Rosie');
+    return r && r.held === 'squish_pf_whale' && r.inHand === 'squish:pf_whale' ? r : null;
+  }, null, 8000);
+  check(!!seen, `Lily sees the Splashy Whale in Rosie's hand (${seen ? seen.inHand : JSON.stringify(await game(lily, () => window.__game.debug.net.remote().map((x) => [x.name, x.held, x.inHand])))})`);
+  // Lily (the host) puts a Toy Shelf down and a toy on its top
+  const placed = await game(lily, () => {
+    const g = window.__game, p = g.player.position;
+    g.debug.squish.give('pf_strawberry');
+    const x = Math.floor(p.x) + 3, z = Math.floor(p.z) - 2, y = g.world.heightAt(x, z) + 1;
+    const s = g.entities.place('toy_shelf', x, y, z, 0, '#FF9CCB', {});
+    const t = s && g.entities.place('squish_pf_strawberry', x, y + 1, z, 0, null, {});
+    return s && t ? [s.uid, t.uid] : null;
+  });
+  check(!!placed, 'Lily places a Toy Shelf and a Strawberry Puffum on it');
+  const there = placed && await until(rosie, (uids) => uids.every((u) => !!window.__game.entities.byUid(u)), placed, 10000);
+  check(!!there, 'Rosie sees the shelf and the toy on it');
+  await converge([lily, rosie], 'SQUISH');
+  // put away, and the hotbar as it was
+  await game(rosie, () => {
+    const g = window.__game, b = window.__hotbarBefore;
+    g.squish.putAway();
+    if (b) {
+      b.slots.forEach((k, i) => { if (g.hotbar.slots[i] !== k) g.setSlot(i, k, b.colors[i]); });
+      g.setSlot(b.index, b.slots[b.index], b.colors[b.index]);
+    }
+  });
+  const gone = await until(lily, () => { const r = window.__game.debug.net.remote().find((x) => x.name === 'Rosie'); return r && !r.held && !r.inHand; }, null, 8000);
+  check(gone, 'Rosie put it away: her hand is empty on Lily’s page');
+  // tidy up: the shelf and the toy go (later tests count entities)
+  if (placed) await game(lily, (uids) => { const E = window.__game.entities; for (const u of uids.reverse()) { const e = E.byUid(u); if (e) E.remove(e, { history: false, fx: false }); } }, placed);
+  await converge([lily, rosie], 'SQUISH tidy');
+});
+
 test('LOOKS', 'boy looks travel: Rosie wears Space Explorer (number 23, bold brows); Lily invites Leo and Rosie sees him', async () => {
   // Rosie changes her look the way the Studio does (profile + avatar:changed)
   const mine = await game(rosie, () => {

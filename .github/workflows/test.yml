@@ -83,6 +83,9 @@ jobs:
       - name: Walkie-talkie (with and without accounts)
         run: npm run test:walkie -- --no-build
 
+      - name: Squishy toys (data, merges)
+        run: npm run test:squish
+
       - name: Family accounts end to end
         run: npm run e2e:accounts
 

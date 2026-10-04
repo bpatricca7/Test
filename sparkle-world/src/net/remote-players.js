@@ -59,6 +59,7 @@ export function heldModel(game, key) {
       const m = game.treats.model(key);
       if (m) return m;
     }
+    if (/^squishg?_/.test(key) && game.squish && typeof game.squish.model === 'function') return game.squish.model(key);
   } catch (err) {
     console.warn('[net] treat model failed', key, err);
   }

@@ -609,8 +609,24 @@ export class GameAdapter {
     }
   }
 
-  /** The treat key in her hand (game.treats.held: a key, or null), or null. */
+  /** Presence hi: treats and squishy toys are the writers of `hi` (a treat wins). */
   heldKey() {
+    return this.treatHeld() || this.squishHeld();
+  }
+
+  /** The squishy toy's def key in her hand (game.squish.held()), or null. */
+  squishHeld() {
+    const sq = this.game.squish;
+    try {
+      const k = sq && sq.held();
+      return typeof k === 'string' ? k : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** The treat key in her hand (game.treats.held: a key, or null), or null. */
+  treatHeld() {
     const tr = this.game.treats;
     if (!tr) return null;
     let h = null;

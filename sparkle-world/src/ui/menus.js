@@ -884,6 +884,7 @@ export function install(game) {
         exitBtn,
       );
       const row = ui.el('div', 'sw-pause-grid');
+      if (game.actions.has('squish') && game.squish) row.appendChild(game.squish.shelfButton({ variant: 'pink', onClick: () => { ui.close(); game.runAction('squish'); } }));
       if (ui.hasPanel('settings')) row.appendChild(button2(ui, { icon: 'settings', label: 'Settings', variant: 'sky', onClick: () => ui.open('settings') }));
       if (game.actions.has('help')) row.appendChild(button2(ui, { icon: 'help', label: 'How to play', variant: 'mint', onClick: () => game.runAction('help') }));
       if (row.childElementCount) col.appendChild(row);

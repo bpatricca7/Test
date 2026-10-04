@@ -19,6 +19,8 @@ import * as garden from './things/garden.js';
 import * as cooking from './things/cooking.js';
 // wave 3: cars, vans and boats she can drive (docs/teams/vehicles.md)
 import * as vehicles from './things/vehicles/index.js';
+// wave 4: squishy toys and mystery presents (docs/teams/wave4-integration.md)
+import * as squish from './things/squish/index.js';
 import * as daynight from './life/daynight.js';
 import * as weather from './life/weather.js';
 import * as particles from './life/particles.js';
@@ -65,6 +67,7 @@ function boot() {
     garden,
     cooking,
     vehicles,
+    squish, // wave 4: after vehicles (needs entities, furniture, cooking/shops' game.coins)
     daynight,
     weather,
     particles,
