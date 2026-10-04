@@ -53,7 +53,7 @@ export const SEA_SPEC = {
 /** [key, body, accent] per kind; index 0 is the default (§3.2). APPEND ONLY. */
 export const PALETTES = {
   dolphin: [
-    ['sky', '#8EB8E0', '#F7FBFF'],
+    ['sky', '#7F98D4', '#F7FBFF'], // (was #8EB8E0: too close to the water's own blue)
     ['lilac', '#B9A8F0', '#F6F2FF'],
     ['rose', '#F7A8C8', '#FFF4F8'],
     ['mint', '#9EE3CF', '#F4FFFB'],

@@ -5,11 +5,30 @@
 // animals darken at night and fade in the fog like pets and furniture.
 //
 // Per instance: iSwim = (phase, amplitude, extra, shade), iTint = (body rgb, glow),
-// iAcc = (accent rgb, flags: 1 = saddle shown). Per vertex: aSea = (along, mask, limb), aPivot.
+// iAcc = (accent rgb, flags: 1 = saddle shown), iSurf = the y of the water surface it swims in
+// (-1e4: on dry land). Per vertex: aSea = (along, mask, limb), aPivot.
+//
+// Seen through the water: the water surface is about 75% opaque (alpha 190/255), so an animal
+// drawn before it showed at about 25%: faint blue ghosts from her camera above the water. The sea
+// meshes draw AFTER the water instead (transparent, renderOrder 1, depth written), and each pixel
+// on the other side of the surface from the camera lets the water already drawn behind it show
+// through by SEE_NEAR (just under the surface) up to SEE_FAR (deep down): animals read clearly,
+// still sitting in the water (the surface's glints and colour lie over them), deeper ones dimmer.
+// Those pixels are also a little brighter with a soft light rim, so an animal of nearly the
+// water's colour (the blue-grey dolphin) keeps its outline. Pixels on the camera's side of the
+// surface (a fin, a leaping dolphin; or everything when the camera itself is under the water) are
+// drawn as before.
 
 import * as THREE from 'three';
 
 export const SEA_MODES = ['kick', 'wiggle', 'flap', 'pulse', 'curl', 'flutter', 'snip'];
+
+/** How much of the water behind shows through an animal under the surface (see above). */
+export const SEE_NEAR = 0.2, SEE_PER = 0.07, SEE_FAR = 0.42;
+/** Under the surface: a little brighter overall (SEE_LIFT) and a light rim (SEE_RIM). */
+export const SEE_LIFT = 1.08, SEE_RIM = 0.45;
+/** The sea meshes' draw order: after every water chunk (renderOrder <= 0), before particles (10). */
+export const SEA_ORDER = 1;
 
 // rotate d about the Z axis (flap) or the Y axis (flutter) by a
 const ROT = /* glsl */ `
@@ -51,6 +70,9 @@ attribute vec3 aPivot;
 attribute vec4 iSwim;
 attribute vec4 iTint;
 attribute vec4 iAcc;
+attribute float iSurf;
+varying float vSeaUnder;
+varying float vSeaSurf;
 varying vec3 vSeaTint;
 varying vec3 vSeaAcc;
 varying float vSeaMask;
@@ -59,6 +81,8 @@ varying float vSeaGlow;
 ${ROT}`;
 
 const FRAG_HEAD = /* glsl */ `
+varying float vSeaUnder;
+varying float vSeaSurf;
 varying vec3 vSeaTint;
 varying vec3 vSeaAcc;
 varying float vSeaMask;
@@ -71,7 +95,8 @@ const cache = new Map();
 export function seaMaterial(mode) {
   let m = cache.get(mode);
   if (m) return m;
-  m = new THREE.MeshLambertMaterial({ vertexColors: true });
+  // transparent only to be drawn after the water; alpha is 1 except through the water
+  m = new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, depthWrite: true });
   m.userData.shared = true;
   const bend = BEND[mode] || '';
   m.onBeforeCompile = (shader) => {
@@ -86,16 +111,31 @@ export function seaMaterial(mode) {
     vSeaAcc = iAcc.rgb;
     vSeaMask = aSea.y;
     vSeaShade = iSwim.w;
-    vSeaGlow = seaLimb < 1.5 ? iTint.w : 0.0;`);
+    vSeaGlow = seaLimb < 1.5 ? iTint.w : 0.0;
+    vSeaSurf = iSurf;
+    vSeaUnder = iSurf - (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).y;`);
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>\n${FRAG_HEAD}`)
       .replace('#include <color_fragment>', `#include <color_fragment>
     vec3 seaK = vSeaMask < 0.5 ? vec3(1.0) : (vSeaMask < 1.5 ? vSeaTint : vSeaAcc);
     diffuseColor.rgb *= seaK * vSeaShade;`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
-    totalEmissiveRadiance += diffuseColor.rgb * vSeaGlow;`);
+    totalEmissiveRadiance += diffuseColor.rgb * vSeaGlow;`)
+      .replace('#include <opaque_fragment>', `
+    // through the water: on the other side of the surface from the camera, the water drawn
+    // behind shows through a little (more the deeper the pixel)
+    // and a soft light rim on its edges (following the light: dim at night) so its outline reads
+    // against water of nearly its own colour (the blue-grey dolphin)
+    float seaCam = cameraPosition.y - vSeaSurf;
+    if (vSeaSurf > -1000.0 && seaCam * vSeaUnder < 0.0) {
+      diffuseColor.a *= 1.0 - clamp(${SEE_NEAR.toFixed(3)} + ${SEE_PER.toFixed(3)} * abs(vSeaUnder), 0.0, ${SEE_FAR.toFixed(3)});
+      float seaRim = pow(1.0 - clamp(abs(dot(normal, normalize(vViewPosition))), 0.0, 1.0), 2.0);
+      float seaLum = dot(outgoingLight, vec3(0.299, 0.587, 0.114));
+      outgoingLight = outgoingLight * (${SEE_LIFT.toFixed(3)} + ${SEE_RIM.toFixed(3)} * seaRim) + vec3(seaLum * seaRim * ${SEE_RIM.toFixed(3)});
+    }
+    #include <opaque_fragment>`);
   };
-  m.customProgramCacheKey = () => 'sw-sea-' + mode;
+  m.customProgramCacheKey = () => 'sw-sea2-' + mode;
   cache.set(mode, m);
   return m;
 }

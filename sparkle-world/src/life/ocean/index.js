@@ -405,7 +405,8 @@ class OceanSystem {
     r.buddyT = 0;
     r.trickN = Math.floor(Math.random() * 3);
     r.pod = opts.pod != null ? opts.pod : -1;
-    if (kind === 'crab' || (kind === 'starfish' && m.top(x, z) < 0)) {
+    r.dry = kind === 'crab' || (kind === 'starfish' && m.top(x, z) < 0); // no water over it
+    if (r.dry) {
       const gy = m.ground(x, z);
       r.level = gy;
       r.y = r.ty = gy + 1;
@@ -1247,6 +1248,8 @@ class OceanSystem {
     const yw = fin(yaw) ? yaw : 0;
     r.x = x + Math.sin(yw) * 0.1; r.y = y - 0.42; r.z = z + Math.cos(yw) * 0.1;
     r.yaw = yw;
+    const top = this.map.top(r.x, r.z);
+    r.level = top; r.dry = top < 0; // the water she rides on (the see-through look, material.js)
     r.speed = fin(speed) ? speed : 0;
     r.hidden = !visible;
     r.on = true;
@@ -1747,12 +1750,17 @@ class OceanSystem {
       used[kind] = used[kind] || 0;
       const r = list[used[kind]++];
       if (!r) continue;
-      r.on = true; r.kind = kind; r.state = 'gallery'; r.variant = v; r.tintVer++; r.fade = 1; r.scale = 1;
+      r.on = true; r.kind = kind; r.state = 'gallery'; r.variant = v; r.tintVer++; r.fade = 1; r.scale = 1; r.dry = true;
       const feet = kind === 'octopus' || kind === 'crab' || kind === 'starfish' ? -0.35 : 0;
       if (cols) {
         // a grid: cols across, rows down, `cell` blocks apart (the camera frames it straight on)
         const c = i % cols, row = Math.floor(i / cols);
-        r.x = ox - (c - (cols - 1) / 2) * cell; // the camera looks along +z: +x is on the left r.z = oz; r.y = oy + ((rows - 1) / 2 - row) * cell * 0.62 + feet;
+        // (the camera looks along +z: +x is on the left). Each assignment on its own line: these
+        // once sat behind the comment, so every grid animal kept a stale y and z (under the sea
+        // floor or far away) and the owner-review pictures showed empty water.
+        r.x = ox - (c - (cols - 1) / 2) * cell;
+        r.z = oz;
+        r.y = oy + ((rows - 1) / 2 - row) * cell * 0.62 + feet;
       } else { r.x = cur + w / 2; r.z = oz; r.y = oy + feet; }
       r.yaw = kind === 'starfish' ? 0.3 : Math.PI - 0.95; r.pitch = kind === 'starfish' ? -0.5 : 0; r.roll = 0; // a 3/4 view toward a camera at -z
       r.phase = 0.6; r.amp = kind === 'dolphin' || kind === 'whale' ? 0.3 : 0.2; r.extra = kind === 'octopus' || kind === 'starfish' ? 0.05 : 0;

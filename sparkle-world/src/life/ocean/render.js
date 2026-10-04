@@ -6,7 +6,8 @@
 import * as THREE from 'three';
 import { SEA_KINDS, SEA_SPEC, PALETTES, hexToLinear } from './kinds.js';
 import { geometryFor } from './models.js';
-import { seaMaterial } from './material.js';
+import { seaMaterial, SEA_ORDER } from './material.js';
+import { SURF } from './motion.js';
 
 const _m = new THREE.Matrix4();
 const _q = new THREE.Quaternion();
@@ -36,15 +37,18 @@ export class SeaMeshes {
       geo.setAttribute('iSwim', iSwim);
       geo.setAttribute('iTint', iTint);
       geo.setAttribute('iAcc', iAcc);
+      const iSurf = new THREE.InstancedBufferAttribute(new Float32Array(cap).fill(-1e4), 1).setUsage(THREE.DynamicDrawUsage);
+      geo.setAttribute('iSurf', iSurf);
       const mesh = new THREE.InstancedMesh(geo, seaMaterial(SEA_SPEC[kind].mode), cap);
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       mesh.count = 0;
       mesh.visible = false;
       mesh.frustumCulled = false;
+      mesh.renderOrder = SEA_ORDER; // after the water (material.js)
       mesh.userData.envWarm = true;
       mesh.name = 'sea-' + kind;
       this.group.add(mesh);
-      this.k[kind] = { mesh, geo, iSwim, iTint, iAcc, owner: new Int16Array(cap).fill(-1), ver: new Int32Array(cap).fill(-1), n: 0 };
+      this.k[kind] = { mesh, geo, iSwim, iTint, iAcc, iSurf, owner: new Int16Array(cap).fill(-1), ver: new Int32Array(cap).fill(-1), n: 0 };
     }
   }
 
@@ -56,7 +60,7 @@ export class SeaMeshes {
     const K = this.k[kind];
     const cap = SEA_SPEC[kind].cap;
     const pal = PALETTES[kind];
-    const M = K.mesh.instanceMatrix.array, S = K.iSwim.array, T = K.iTint.array, A = K.iAcc.array;
+    const M = K.mesh.instanceMatrix.array, S = K.iSwim.array, T = K.iTint.array, A = K.iAcc.array, U = K.iSurf.array;
     let n = 0, tints = false;
     for (let l = 0; l < lists.length; l++) {
       const list = lists[l];
@@ -75,6 +79,7 @@ export class SeaMeshes {
         S[n * 4 + 1] = r.amp;
         S[n * 4 + 2] = r.extra;
         S[n * 4 + 3] = near ? near(r) : r.shade;
+        U[n] = r.dry ? -1e4 : r.level + SURF;
         const id = (r.uid != null ? r.uid : r.i + l * 1000);
         const ver = r.tintVer * 4 + (r.saddle ? 2 : 0);
         if (K.owner[n] !== id || K.ver[n] !== ver || r.glowDirty) {
@@ -101,6 +106,9 @@ export class SeaMeshes {
       K.iSwim.clearUpdateRanges();
       K.iSwim.addUpdateRange(0, n * 4);
       K.iSwim.needsUpdate = true;
+      K.iSurf.clearUpdateRanges();
+      K.iSurf.addUpdateRange(0, n);
+      K.iSurf.needsUpdate = true;
       if (tints) {
         K.iTint.clearUpdateRanges();
         K.iTint.addUpdateRange(0, n * 4);

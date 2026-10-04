@@ -32,7 +32,7 @@ export function makeRecord(kind, i) {
     on: false, kind, i, role: 'wild',
     x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, speed: 0, yaw: 0, pitch: 0, roll: 0, scale: 1,
     state: 'swim', prev: 'swim', t: 0, phase: 0, amp: 0, extra: 0, shade: 1,
-    variant: 0, tintVer: 0, glow: 0, flash: 0, name: '', buddy: false, level: 0,
+    variant: 0, tintVer: 0, glow: 0, flash: 0, name: '', buddy: false, level: 0, dry: false,
     pod: -1, ox: 0, oz: 0, tx: 0, ty: 0, tz: 0, fade: 0, puffT: 0, leapT: 0, skipT: 0, breathT: 0,
     trick: '', trickN: 0, gx: 0, gy: 0, gz: 0, gyaw: 0, checkT: 0, holdX: 0, holdZ: 0, baby: false,
     lastTap: -1e9, cool: 0, orbit: 0, orbitR: 1, orbitW: 1, hideT: 0, homeX: 0, homeZ: 0,

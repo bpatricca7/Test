@@ -1738,3 +1738,32 @@ kind (the dolphin palettes are sent by index: pinned by S7), `ocean-see-*.png` (
 `ocean-tap-bubble.png`, `ocean-touch-*.png`, `ocean-ride-*.png`, `ocean-world-*.png`,
 `ocean-tap-whale*.png`, `ocean-tap-seafriends-*.png`. The dolphin names in `DOLPHIN_NAMES` wait
 for a grown-up's read (§16 Q4).
+
+**Owner-review fixes (after P1).**
+- *The empty gallery.* Root cause: in `gallery()`'s grid branch the `r.z = ...` and `r.y = ...`
+  assignments sat on the same line as a `//` comment, so every grid animal kept a stale y and z
+  (y = 0 under the sea floor, or wherever it last swam) and the gallery, night gallery and palette
+  pictures showed empty water; only animals a non-grid picture had placed earlier (the whale, one
+  dolphin) showed. Each assignment is on its own line now. C5 used to count the returned items; it
+  now projects each animal to the screen and needs it inside the view with at least 40 of its own
+  silhouette pixels near its centre, differing from the same picture without sea life by >= 30
+  (the old code: 0 of 8 by day and night, 1 of 10 dolphin palettes; now every one).
+- *Faint animals from the play camera.* The water is 75% opaque and the animals were drawn before
+  it, so under the surface they showed at about 25%. The sea meshes now draw after the water
+  (`material.js`: transparent with depth written, `renderOrder` 1, the water's chunks are <= 0,
+  particles 10; no new draw calls): a pixel on the other side of the surface from the camera lets
+  the water behind show through by 0.2 + 0.07 per block of depth (at most 0.42), is 8% brighter
+  and has a soft light rim; pixels on the camera's side (fins, leaps, a camera under the water) are
+  drawn as before. A new per-instance `iSurf` (the surface y; -1e4 for crabs and starfish on sand,
+  and in the gallery) feeds it. The `sky` dolphin palette changed colour (#8EB8E0 to #7F98D4, its
+  key kept): it was the water's own blue. V1 now measures the animal against the water it covers
+  (diff) and against a 6-pixel ring of water around it (ring) for seven kinds (each first palette):
+  the old look measured diff 16-38 / ring 8-25 (one seahorse breaking the water 70 / 44), the new
+  one diff 72-161 / ring 57-152 (two runs); the gate is diff >= 60 and ring >= 50.
+- *Owner pictures:* `node tools/probe-ocean.mjs --only=review` (not in the default run) writes
+  `.shots/ocean-review-gallery-day.png`, `-gallery-night`, `-gallery-whale`,
+  `-palettes-<kind>[-n]` (every palette), `-underwater` (a debug camera under the surface; merfolk's
+  own under-water camera comes with P2) and `-play-desktop[-2]`, `-play-ipad[-2]` (her camera with
+  animals swimming near her), the HUD and the target outline hidden (as a Photo hides it). The
+  `world` pass's O2 (a pod within 10 s of game time) failed once at 15.9 s on a loaded machine and
+  passed on the rerun (3.6 s); nothing here touches the pod.

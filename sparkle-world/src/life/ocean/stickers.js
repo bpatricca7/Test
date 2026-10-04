@@ -89,7 +89,7 @@ function friendArt(g) {
 /** A sky dolphin with its little star saddle, splashing. */
 function riderArt(g) {
   wave(g, 66);
-  dolphin(g, 50, 58, 70, '#8EB8E0', '#F7FBFF', { saddle: true });
+  dolphin(g, 50, 58, 70, '#7F98D4', '#F7FBFF', { saddle: true });
   for (const [x, y, r] of [[18, 52, 4], [24, 44, 3], [84, 50, 3.5], [90, 42, 2.6]]) { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); paint(g, '#BFE9FF', 'rgba(58,31,77,0.3)', 1.2); }
 }
 

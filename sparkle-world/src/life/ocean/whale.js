@@ -124,6 +124,7 @@ export class WhaleVisits {
     r.state = 'show';
     r.x = best[0]; r.z = best[1];
     r.level = out.level;
+    r.dry = false;
     r.yaw = Math.atan2(px - r.x, pz - r.z) + Math.PI / 2;
     r.scale = 1;
     r.fade = 1;
