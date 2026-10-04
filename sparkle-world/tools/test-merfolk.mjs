@@ -30,6 +30,8 @@ globalThis.document = globalThis.document || {
 const { createAvatar } = await import('../src/player/avatar.js');
 const { TailTube, seaPalette, buildSea } = await import('../src/player/merfolk/parts.js');
 const { cacheStats } = await import('../src/player/avatar/textures.js');
+const { scanText, scanCharacters, scanFiles, EXTRA_SCOPE, extraWords } = await import('./lib/name-scan.mjs');
+const { SEA_STICKERS } = await import('../src/player/merfolk/stickers.js');
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FIXTURE = JSON.parse(readFileSync(path.join(ROOT, 'tools/fixtures/merfolk-old-profile.json'), 'utf8')).profile;
@@ -584,6 +586,41 @@ await test('A15 sea textures and materials are referenced once per avatar and al
   const after = cacheStats();
   assert(after.refs === before.refs, `refs back to ${before.refs}: ${after.refs}`);
   return `refs ${before.refs} -> ${mid.refs} -> ${after.refs}`;
+});
+
+// ---------- A13: names ----------
+
+// every player-facing string of the sea forms (merfolk.md §10.2), each checked to still be in the
+// source, so this list cannot drift from what kids read
+const SEA_STRINGS = {
+  'src/ui/dressup.js': ['Water', 'Water: mermaid, sea dragon or just me', 'I swim as', 'Tail color', 'Match my clothes',
+    'Splash! A mermaid tail!', 'Whoosh! A sea dragon!', 'Swimming as me!', 'Swim in deep water for a real tail!'],
+  'src/player/merfolk/index.js': ['Mermaid', 'Sea Dragon', 'Just Me', ' magic!', 'Hold Down to dive!', 'Hold C to dive!',
+    'Swim fast + Up = big leap!', 'Swim fast and press Up to leap like a dolphin!', 'Make it 2 deep for ', 'sea dragon', 'mermaid'],
+  'src/ui/touch.js': ['Swim', 'In deep water: Up and Down to swim and dive', 'In deep water: Space up, C down, Shift fast'],
+  'src/things/friends/chat.js': ['Whoa! Look at your tail!', "So sparkly! Let\\'s swim!", 'You swim so fast now!'],
+};
+
+await test('A13 the sea strings: no other company\'s names, no famous characters, no film words', () => {
+  const all = [];
+  for (const [file, list] of Object.entries(SEA_STRINGS)) {
+    const src = readFileSync(path.join(ROOT, file), 'utf8');
+    for (const t of list) {
+      assert(src.includes(t), `${file} still says "${t}"`);
+      all.push(t.replace(/\\'/g, "'"));
+    }
+  }
+  for (const o of W.SEA_FORMS) all.push(o.name);
+  all.push(...W.SEA_COLOR_NAMES);
+  for (const s of SEA_STICKERS) all.push(s.name, s.hint);
+  for (const t of all) {
+    assert(scanText(t, { extras: true }).length === 0, 'a forbidden name in: ' + t);
+    assert(scanCharacters(t).length === 0, 'a famous character in: ' + t);
+  }
+  assert(extraWords('merfolk').length >= 5, "merfolk's own encoded words are in the shared scanner");
+  const hits = scanFiles(EXTRA_SCOPE, { extras: true }).filter((m) => /merfolk|sea|dressup|friends|player|avatar/.test(m.file));
+  assert(hits.length === 0, hits.map((m) => `${m.file}:${m.line}`).join(', '));
+  return `${all.length} strings`;
 });
 
 // ---------- A16: Down without Shift ----------

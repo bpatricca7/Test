@@ -361,7 +361,15 @@ export function install(game) {
     };
     const deepSpot = (maxR = 60, minDepth = 4) => {
       if (game.debug.ocean && typeof game.debug.ocean.deepSpot === 'function') {
-        try { const s = game.debug.ocean.deepSpot(); if (s) return s; } catch { /* fall back */ }
+        // ocean's deep spot (when installed), in this probe API's shape
+        try {
+          const s = game.debug.ocean.deepSpot();
+          const x = Array.isArray(s) ? s[0] : s && s.x, z = Array.isArray(s) ? s[2] : s && s.z;
+          if (Number.isFinite(x) && Number.isFinite(z)) {
+            const c = column(Math.floor(x), Math.floor(z));
+            if (c.depth >= minDepth) return { x: Math.floor(x) + 0.5, y: c.top - 0.6, z: Math.floor(z) + 0.5, top: c.top + 1, depth: c.depth };
+          }
+        } catch { /* fall back */ }
       }
       const w = game.world, p = game.player;
       if (!w || !p) return null;
@@ -384,7 +392,8 @@ export function install(game) {
     /** A deep spot (>= 3 deep) next to land whose top is one block above it (the beach). */
     const shore = (maxR = 60) => {
       if (game.debug.ocean && typeof game.debug.ocean.shoreSpot === 'function') {
-        try { const s = game.debug.ocean.shoreSpot(); if (s) return s; } catch { /* fall back */ }
+        // ocean's shore spot when it already has this API's shape; else our own search below
+        try { const s = game.debug.ocean.shoreSpot(); if (s && s.deep && s.land && Number.isFinite(s.top)) return s; } catch { /* fall back */ }
       }
       const w = game.world, p = game.player;
       if (!w || !p) return null;
