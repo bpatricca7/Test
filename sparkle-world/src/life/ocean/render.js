@@ -6,7 +6,9 @@
 // Glass (material.js): each kind has a second mesh for its animals seen through a see-through
 // block (r.behind, index.js _glassTick), drawn in SEA_BEHIND order. Only the animals behind the
 // glass go there, so one fish behind an ice floe never turns the whole school faint. It costs
-// a draw call only while a kind has animals on both sides of the glass (hidden at count 0).
+// a draw call only while a kind has animals on both sides of the glass (hidden at count 0), and
+// never past SEA_CALLS in all (glassLanes): with every kind out, a kind split by the glass draws
+// all its animals in the glass mesh for that while (the old per-kind way) instead of a 10th call.
 
 import * as THREE from 'three';
 import { SEA_KINDS, SEA_SPEC, PALETTES, hexToLinear } from './kinds.js';
@@ -21,6 +23,30 @@ const _p = new THREE.Vector3();
 const _s = new THREE.Vector3();
 const _rgb = [0, 0, 0];
 const WATER = hexToLinear(SEA_WATER);
+
+/** Sea life never adds more than this many draw calls (docs/teams/ocean.md §4.2; probe C1). */
+export const SEA_CALLS = 9;
+
+/**
+ * Which lane each kind draws in this frame, within SEA_CALLS. live[kind]: its drawn animals;
+ * back[kind]: how many of them are seen through glass. out[kind]: null (each animal in its own
+ * lane: the front mesh, or the glass mesh if r.behind), true (all in the glass mesh) or false (all
+ * in the front mesh). Every kind with animals costs one call; a kind split by the glass costs a
+ * second one while calls are spare (SEA_KINDS order, so the choice is steady), else it draws all
+ * its animals behind the glass (never one pasted over the glass). Pure, no allocations.
+ */
+export function glassLanes(live, back, out, budget = SEA_CALLS) {
+  let spare = budget;
+  for (const kind of SEA_KINDS) if (live[kind] > 0) spare--;
+  for (const kind of SEA_KINDS) {
+    const n = live[kind] || 0, b = back[kind] || 0;
+    if (n <= 0 || b <= 0) out[kind] = false;
+    else if (b >= n) out[kind] = true;
+    else if (spare > 0) { out[kind] = null; spare--; }
+    else out[kind] = true;
+  }
+  return out;
+}
 
 export class SeaMeshes {
   constructor(scene) {

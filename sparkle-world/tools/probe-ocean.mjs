@@ -1943,6 +1943,38 @@ async function costPass(browser, errors) {
     return { off, on, groups, n: Object.keys(groups).length };
   });
   check(errors, c1.n <= 9 && c1.on - c1.off <= 9, `C1 sea life adds ${c1.on - c1.off} draw calls (<= 9) with every kind out: ${JSON.stringify(c1.groups)}`);
+  // C1 glass: a stained-glass wall over the left half of the view, so some kinds have animals on
+  // both sides of it. Each glass mesh is a draw call, but never past 9 in all (render.js glassLanes:
+  // with every kind out, a split kind draws all its animals behind the glass instead).
+  const c1g = await ev(page, async () => {
+    const g = window.__game, d = g.debug.ocean, w = g.world, cam = g.camera;
+    const frames = (n) => new Promise((res) => { let k = 0; const f = () => (++k >= n ? res() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    const glass = w.registry.byKey('glass_stained_pink').id;
+    const fw = new cam.position.constructor(), right = new cam.position.constructor();
+    cam.getWorldDirection(fw);
+    fw.y = 0; fw.normalize();
+    right.set(-fw.z, 0, fw.x);
+    const cells = [], seen = new Set();
+    for (let s = -8; s <= -0.5; s += 0.5) for (let h = -4; h <= 3; h++) {
+      const x = Math.floor(cam.position.x + fw.x * 3 + right.x * s), y = Math.floor(cam.position.y + h), z = Math.floor(cam.position.z + fw.z * 3 + right.z * s);
+      const key = x + ',' + y + ',' + z;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      cells.push([x, y, z, w.get(x, y, z)]);
+    }
+    for (const c of cells) w.set(c[0], c[1], c[2], glass, { record: false });
+    await frames(40);
+    const groups = {};
+    g.scene.traverse((o) => { if (o.name && o.name.startsWith('sea-') && o.isMesh && o.visible) groups[o.name] = o.count; });
+    const behind = d.behindCount(), live = d.count();
+    let split = 0, some = 0;
+    for (const k of Object.keys(behind)) { if (behind[k] > 0) some++; if (behind[k] > 0 && behind[k] < live[k]) split++; }
+    for (const c of cells) w.set(c[0], c[1], c[2], c[3], { record: false });
+    await frames(40);
+    return { groups, n: Object.keys(groups).length, some, split, cells: cells.length };
+  });
+  check(errors, c1g.some > 0 && c1g.n <= 9,
+    `C1 glass: a glass wall over half the view (${c1g.cells} cells; ${c1g.some} kinds seen through it, ${c1g.split} of them split) and sea life still draws ${c1g.n} meshes (<= 9): ${JSON.stringify(c1g.groups)}`);
   // C2 the systems stage: full counts vs idle (+1.0 ms at most)
   const c2 = await ev(page, async () => {
     const g = window.__game;

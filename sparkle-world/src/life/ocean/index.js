@@ -19,7 +19,7 @@ import {
   stepLeap, startTrick, stepTrick, Spawner, placeFish, spaceFish, stepCrab, rescueCell, bestDirection, glassBetween, SURF, NEAR,
 } from './motion.js';
 import { SEA_U, SEA_LIQUIDS, SEA_WATER } from './material.js';
-import { SeaMeshes } from './render.js';
+import { SeaMeshes, glassLanes } from './render.js';
 import { DolphinRide } from './ride.js';
 import { WhaleVisits } from './whale.js';
 import { createSeaUi } from './ui.js';
@@ -1784,11 +1784,13 @@ class OceanSystem {
     SEA_U.uSeaTime.value = this.clock % 600;
     SEA_U.uSeaNight.value = tod && fin(tod.night) ? clamp(tod.night, 0, 1) : 0;
     this._glassTick();
+    // within the draw-call budget: a kind split by the glass gets its second mesh while calls are spare
+    const lanes = glassLanes(this._live, this._back, this._lanes || (this._lanes = {}));
     const lists = this._lists || (this._lists = [null]);
     const liquid = this._liquidFn || (this._liquidFn = (r) => this._liquid(r));
     for (const kind of SEA_KINDS) {
       lists[0] = this.pools[kind];
-      M.write(kind, lists, liquid); // each animal's own r.behind picks its mesh (render.js)
+      M.write(kind, lists, liquid, lanes[kind]); // null: each animal's own r.behind picks its mesh (render.js)
     }
   }
 
@@ -1817,11 +1819,12 @@ class OceanSystem {
    */
   _glassTick() {
     const B = this._behind || (this._behind = {});
-    for (const kind of SEA_KINDS) B[kind] = false;
+    const live = this._live || (this._live = {}), back = this._back || (this._back = {});
+    for (const kind of SEA_KINDS) { B[kind] = false; live[kind] = 0; back[kind] = 0; }
     const w = this.game.world, cam = this.game.camera;
     const props = w && w.registry && w.registry.props;
     if (!props || !cam) {
-      for (const kind of SEA_KINDS) for (const r of this.pools[kind]) { r.behind = false; r.clear = 0; }
+      for (const kind of SEA_KINDS) for (const r of this.pools[kind]) { r.behind = false; r.clear = 0; if (r.on && !r.hidden) live[kind]++; }
       return B;
     }
     const cp = cam.position, f = this.frame;
@@ -1833,7 +1836,8 @@ class OceanSystem {
           if (glassBetween(w, props.pass, props.shape, cp.x, cp.y, cp.z, r.x, r.y + lift, r.z)) { r.behind = true; r.clear = 0; }
           else if (!r.behind || ++r.clear >= GLASS_HOLD) { r.behind = false; r.clear = 0; }
         }
-        if (r.behind) B[kind] = true;
+        live[kind]++;
+        if (r.behind) { B[kind] = true; back[kind]++; }
       }
     }
     return B;

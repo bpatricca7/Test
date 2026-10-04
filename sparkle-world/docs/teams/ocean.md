@@ -1865,9 +1865,12 @@ for a grown-up's read (§16 Q4).
   `SEA_BEHIND` order); only the animals behind the glass go there (`r.behind`). An animal goes
   behind the glass at once and comes back only after 2 clear checks in a row (`GLASS_HOLD`), so
   one swimming along a floe's edge does not blink. The extra mesh is hidden at count 0, so it costs
-  a draw call only while a kind has animals on both sides of the glass; C1 (no glass) is still 9.
-  O9 counts 18 sea meshes (9 kinds, each with its glass mesh). New checks: test-sea S10 "glass
-  meshes" and probe B4 (snow: fish past a floe, `ocean-biomes-snow-floes.png`). G1 unchanged.
+  a draw call only while a kind has animals on both sides of the glass, and never past 9 in all
+  (`render.js` `glassLanes`, `SEA_CALLS`): with every kind out, a split kind draws all its animals
+  behind the glass for that while (the old way) instead of a 10th call. O9 counts 18 sea meshes
+  (9 kinds, each with its glass mesh). New checks: test-sea S10 "glass meshes" (with the budget),
+  probe C1 glass (a glass wall over half the view, every kind out: still <= 9 meshes) and probe B4
+  (snow: fish past a floe, `ocean-biomes-snow-floes.png`). G1 unchanged.
 - *Fish spacing.* Little Fish were not in `APART` (their place comes from their orbit), so two
   could melt into one two-headed blob. `motion.js` `spaceFish` pushes school mates closer than
   `FISH_APART` (0.75) apart a little each frame (at most 0.04 a frame, so a fish never darts) and

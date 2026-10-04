@@ -799,7 +799,28 @@ await test('S10', 'glass meshes: only the animals seen through glass draw in the
   for (const r of list) r.behind = false;
   M.write('fish', [list]);
   assert(K.n === 20 && K.back.n === 0 && !K.back.mesh.visible, 'none behind glass: one mesh, as before');
-  return '100 rounds';
+  // within the draw-call budget (render.js glassLanes): a kind split by the glass gets its second
+  // mesh only while calls are spare; with every kind out it draws all its animals behind the glass
+  const { glassLanes, SEA_CALLS } = await import('../src/life/ocean/render.js');
+  const calls = (live, lanes) => SEA_KINDS.reduce((a, k) => a + (live[k] > 0 ? 1 : 0) + (lanes[k] === null ? 1 : 0), 0);
+  let splits = 0;
+  for (let round = 0; round < 500; round++) {
+    const live = {}, back = {};
+    for (const k of SEA_KINDS) { live[k] = rand() < 0.5 ? 0 : 1 + Math.floor(rand() * 8); back[k] = rand() < 0.5 ? 0 : Math.floor(rand() * (live[k] + 1)); }
+    const lanes = glassLanes(live, back, {});
+    assert(calls(live, lanes) <= SEA_CALLS && SEA_CALLS === 9, `round ${round}: ${calls(live, lanes)} calls`);
+    for (const k of SEA_KINDS) {
+      if (back[k] === 0) assert(lanes[k] === false, 'none behind glass: the front mesh');
+      else if (back[k] >= live[k]) assert(lanes[k] === true, 'all behind glass: the glass mesh');
+      else { assert(lanes[k] !== false, 'never one pasted over the glass'); if (lanes[k] === null) splits++; }
+    }
+  }
+  const few = glassLanes({ fish: 8, dolphin: 3 }, { fish: 2 }, {});
+  assert(few.fish === null && few.dolphin === false, 'a few kinds out: the school splits (only the 2 fish behind the ice)');
+  const all = {}, one = { fish: 2 };
+  for (const k of SEA_KINDS) all[k] = 4;
+  assert(glassLanes(all, one, {}).fish === true, 'every kind out: no 10th call, the split school draws behind the glass');
+  return `100 rounds; 500 budget rounds (${splits} splits)`;
 });
 
 await test('S11', 'fish spacing: a school of 10 on crossing orbits seldom overlaps into one blob, stays in its water, and never pops across by an ice floe', () => {
