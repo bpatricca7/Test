@@ -1661,3 +1661,80 @@ these choices where the reviews offered options or disagreed:
   order: the nearest point at least 55 blocks away if it is inside 0.95 x fog far, else skip with
   no toast, so a toast never fires without a whale.
 - **Frozen-clock whale period.** Shortened from 600 s to 360 s to match two visits per 720 s day.
+
+---
+
+## As built (P1)
+
+Built on `claude/wave4-ocean` from step 0 (`582d11c`), steps 1 to 8 of §14 except the parts that
+need merfolk (below). The integration plan's corrections apply: the folder, system, facade and
+debug object are `ocean` (C1), the stickers install with `installOceanStickers` (C14), the pose on
+a dolphin is merfolk's side-saddle (C2), escort uses the friends fallback only (C6), and the
+joystick label is the one function of integration §5.2 (C8).
+
+**Files.** `src/life/ocean/`: `kinds.js`, `seamap.js`, `schedule.js`, `models.js`, `material.js`,
+`render.js` (the nine instanced meshes, slot compaction), `motion.js`, `ride.js`, `whale.js`,
+`ui.js`, `sfx.js`, `stickers.js`, `index.js`. Shared lines as integration §5: `main.js`,
+`game.js` (`throughLiquid`, `removeLock`), `player.js` (the two §5.2 lines), `ui.js` (`opts.img`),
+`stickerbook.js` (`stickerBookExtras`, built on the book's first open), `touch.js` (the label
+function with the Ride branch, `PICS.dolphin`, the two help cards and the "Hop off a dolphin" row),
+`pets/kit.js` (`dolphin` icon after `hopoff:`), `vehicles/index.js` (`pose()`,
+`park({ reason: 'sea' })`), `friends/chat.js` and `friends/index.js`, `protocol.js`, `host.js`,
+`adapter.js`, `remote-players.js`; tools: `test-sea.mjs`, `probe-ocean.mjs`, `test-net.mjs`
+`seaTests()` (N1-N3, N2 is the combined wave-4 worst case of integration §4.3: 572 B host
+presence), `test-saves.mjs` M1-M2, `test-name.mjs` (the sea string tables), `fake-adapter.mjs`,
+`name-scan.mjs` (one more name on the character list), `probe-vehicles.mjs` (`pause(true)` in
+setup), `package.json` (`test:sea`, `probe:ocean`), `.github/workflows/test.yml`. Goldens:
+`tools/fixtures/ocean-beach-669b6fa.json` (a beach Cozy world and profile from the untouched base,
+the `chat.js` line count 253; it is 271 now).
+
+**Where the build differs from the design** (the build is right):
+- Sea turtles swim higher near her (centre 0.2 to 0.45 under the surface, not 0.3 to 0.8): with
+  the lower band their shells failed V1 (the §16 rule: closer to the surface, never brighter water).
+- A dolphin's leap also needs every column under its path to be deep (S4 asks for deep water under
+  the centre at every step); a refused leap's small hop only happens when there is room over the
+  rider's head (a low roof would otherwise end the ride as `'blocked'`).
+- Space asks for the leap on the key itself (a quick tap can fall between two frames on a slow
+  device, the vehicles' honk precedent).
+- The whale's place is sampled from her position (24 directions, the one closest to her view
+  first), not from the island's centre: from a deep spot near one edge, every centre-based
+  direction in view was closer than 55 blocks.
+- A friend's dolphin is hidden while her presence is away (a closed page), so it goes at once.
+- The Ride / Trick bubble moves below (or beside) a sticker pop or a toast instead of covering it.
+- The show pod is stepped by its own function (it froze while no wild pod was out), heads along
+  open water and retries a refused leap a second later.
+- Hellos to a crab whose shore was built away: it moves to the nearest shore cell within 2 or goes.
+- Owner decision: the name dropped from the turtle's new-pet list (`turtle.js`; pets keep theirs).
+- Debug helpers beyond §4.8 for the probes: `still(on)`, `autoSpawn(on)`, `popups(on)`,
+  `shiftSchool(i, dy)`, `palettes(kind)`, `cap(kind)`, `fields()`, `remote()`, `bubble()`,
+  `schools()`, `pods()`, `buddy()`, `tapRec(kind, i)`, `slotTint`, `meshCounts`, `corrupt`.
+- Probe timings are in game time where they measure gameplay (SwiftShader draws few frames and the
+  game steps at most 0.05 s a frame, so game time runs at about half the wall clock here).
+
+**Not built in P1 (needs merfolk; P2 on the merged tree):** R10 (a mermaid and a sea dragon
+riding, `ocean-ride-mermaid.png`, `ocean-ride-dragon.png`), T3b with the camera under the surface,
+U1's Up / Down rectangles, the `wave4` pass (integration §9.1, X1-X10). Until merfolk lands,
+`player.seaSwim` does not exist, so R5 and U2 accept "Walk" after Hop off (they expect "Swim" once
+merfolk's label branch is live; the probe reads `seaSwim` and checks the right one).
+
+**Probe passes (solo, this machine):** `world` 230 s, `see` 51 s, `tap` 80-110 s, `ride` 100 s,
+`touch` 42 s, `biomes,saves` 150 s, `mp` 265 s, `cost` (with the gallery) 276 s. Every gate
+group of integration §10.2 B11-B16 stays under 450 s.
+
+**Wanted text for the integrator (C17):**
+- DESIGN.md §1 activities: "Sea animals: dolphins, little fish, sea turtles, an octopus,
+  jellyfish, seahorses, crabs, starfish and a whale; tap to say hi, ride a dolphin." Stickers:
+  Dolphin Friend, Dolphin Rider, Sea Explorer, Ocean Star, Whale Hello! Events: `sea:meet`,
+  `sea:ride`, `sea:hopoff`, `sea:leap`, `sea:trick`, `sea:whale` (§4.7). Environment: "Sea life
+  lives at the surface near her (the water is 75% opaque); one instanced mesh per kind; a sea map
+  kept by events and a 2-rows-a-frame rescan." 7.3: this section.
+- MULTIPLAYER.md: §5.4 `sr` and `sk` rows (§4.6), §7 the Sea animals row (§9.4), §9 the
+  adapter / host / remote-players lines, §15 `probe-ocean --only=mp` and `test-net` `seaTests()`.
+- DATA-MAP.md:50: "(including which sea animals they met)".
+
+**Review pictures (owner review, integration §7.3):** `.shots/ocean-gallery-day.png`,
+`ocean-gallery-night.png`, `ocean-gallery-whale.png`, `ocean-palettes-<kind>[-n].png` for every
+kind (the dolphin palettes are sent by index: pinned by S7), `ocean-see-*.png` (the swim camera),
+`ocean-tap-bubble.png`, `ocean-touch-*.png`, `ocean-ride-*.png`, `ocean-world-*.png`,
+`ocean-tap-whale*.png`, `ocean-tap-seafriends-*.png`. The dolphin names in `DOLPHIN_NAMES` wait
+for a grown-up's read (§16 Q4).
