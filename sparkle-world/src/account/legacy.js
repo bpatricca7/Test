@@ -35,7 +35,8 @@ const START_COINS = 100;
 
 export function profileHasPlay(p) {
   const s = (p && p.stats) || {};
-  return !!p && (Object.keys(p.stickers || {}).length > 0 || p.coins > START_COINS || s.blocksPlaced > 0 || s.worldsCreated > 0 || (p.outfits || []).some(Boolean));
+  return !!p && (Object.keys(p.stickers || {}).length > 0 || p.coins > START_COINS || s.blocksPlaced > 0 || s.worldsCreated > 0 || (p.outfits || []).some(Boolean) ||
+    Object.keys((p.squish && p.squish.got) || {}).length > 0);
 }
 
 /** Might there be old saves? (no database is created just to look) */

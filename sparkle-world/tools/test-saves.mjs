@@ -108,6 +108,51 @@ const onDevice = (ls) => {
   globalThis.localStorage = ls;
 };
 
+/**
+ * src/account/merge.js mergeProfile as it was at commit 669b6fa (before squishy toys), copied as
+ * a fixture: an old cached tab still open on an iPad merges a 409 with this (squish S5).
+ */
+function oldMergeProfile669(local, server) {
+  const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
+  const when = (v) => (typeof v === 'number' ? v : Date.parse(v) || 0);
+  const LOCAL = /^(net|keepsafe|_rev)$/;
+  const WALKIE = /^walkie/;
+  const maxNumbers = (a, b) => {
+    const out = { ...a };
+    for (const [k, v] of Object.entries(isObj(b) ? b : {})) {
+      if (typeof v === 'number') out[k] = out[k] >= v ? out[k] : v;
+      else if (isObj(v)) out[k] = maxNumbers(out[k], v);
+      else if (!(k in out)) out[k] = v;
+    }
+    return out;
+  };
+  const union = (a, b) => {
+    const out = { ...a };
+    for (const [k, v] of Object.entries(isObj(b) ? b : {})) if (!(k in out) || when(v) < when(out[k])) out[k] = v;
+    return out;
+  };
+  const pick = (p, re, keep) => Object.fromEntries(Object.entries(isObj(p) ? p : {}).filter(([k]) => re.test(k) === keep));
+  const cloud = (p) => {
+    const out = pick(p, LOCAL, false);
+    if (isObj(out.settings)) out.settings = pick(out.settings, WALKIE, false);
+    return out;
+  };
+  if (!isObj(server)) return local;
+  if (!isObj(local)) return server;
+  const lt = local.updatedAt || 0;
+  const st = server.updatedAt || 0;
+  const out = JSON.parse(JSON.stringify({ ...cloud(st > lt ? server : local), ...pick(local, LOCAL, true) }));
+  delete out._rev;
+  out.stickers = union(local.stickers, server.stickers);
+  if (local.stickersSeen || server.stickersSeen) out.stickersSeen = union(local.stickersSeen, server.stickersSeen);
+  out.stats = maxNumbers(local.stats, server.stats);
+  if ('coins' in local || 'coins' in server) out.coins = Math.max(local.coins || 0, server.coins || 0);
+  if (local.lookPicked === true || server.lookPicked === true) out.lookPicked = true;
+  if (isObj(local.settings)) out.settings = { ...out.settings, ...pick(local.settings, WALKIE, true) };
+  out.updatedAt = Math.max(lt, st);
+  return out;
+}
+
 // ---------------------------------------------------------------------------------------------
 // the server: accounts on (optional), a pretend session store, one test database
 
@@ -490,6 +535,31 @@ if (!MEASURE) {
       assert.equal(mergeProfile(b, a).lookPicked, true, 'the older server copy had it');
       assert.equal(mergeProfile(b, { updatedAt: 5 }).lookPicked, undefined, 'neither: not made up');
     });
+    // squishy toys (the squish team doc §14.4): no toy is ever lost to a merge
+    test('S1 squish toys are joined (the earliest date kept) whichever copy is newer', () => {
+      const local = { updatedAt: 10, squish: { v: 1, got: { pf_dino: '2026-10-02', st_heart: '2026-10-05' }, glit: {}, seen: {} } };
+      const server = { updatedAt: 20, squish: { v: 1, got: { pf_dino: '2026-10-01', pf_strawberry: '2026-10-03' }, glit: { pf_dino: '2026-10-04' }, seen: { pf_dino: 1 } } };
+      for (const m of [mergeProfile(local, server), mergeProfile(server, local)]) {
+        assert.deepEqual(m.squish.got, { pf_dino: '2026-10-01', st_heart: '2026-10-05', pf_strawberry: '2026-10-03' });
+        assert.deepEqual(m.squish.glit, { pf_dino: '2026-10-04' });
+        assert.deepEqual(m.squish.seen, { pf_dino: 1 });
+      }
+    });
+    test('S2 a real milestone start beats a provisional one, even an earlier one; two real: the earliest; a missing one is not made up', () => {
+      const prov = { updatedAt: 30, squish: { v: 1, got: {}, base: { coins: 120, at: '2026-09-01T00:00:00Z', prov: 1 } } };
+      const real = { updatedAt: 10, squish: { v: 1, got: {}, base: { coins: 1820, at: '2026-10-01T00:00:00Z' } } };
+      assert.deepEqual(mergeProfile(prov, real).squish.base, real.squish.base);
+      assert.deepEqual(mergeProfile(real, prov).squish.base, real.squish.base);
+      const early = { updatedAt: 5, squish: { base: { coins: 0, at: '2026-09-15T00:00:00Z' } } };
+      assert.deepEqual(mergeProfile(real, early).squish.base, early.squish.base, 'two real: the earliest');
+      assert.equal(mergeProfile({ updatedAt: 1, squish: { got: {} } }, { updatedAt: 2, squish: { got: {} } }).squish.base, undefined);
+    });
+    test('S3 a server copy without squish never removes toys', () => {
+      const mine = { updatedAt: 10, coins: 150, squish: { v: 1, got: { pf_whale: '2026-10-02' } } };
+      const m = mergeProfile(mine, { updatedAt: 99, coins: 160 });
+      assert.deepEqual(Object.keys(m.squish.got), ['pf_whale']);
+      assert.equal(m.coins, 160);
+    });
     test('forkName: "<name> (copy)" in at most 80 characters', () => {
       assert.equal(forkName('Castle'), 'Castle (copy)');
       assert.equal(forkName('x'.repeat(80)).length, 80);
@@ -519,7 +589,7 @@ if (!MEASURE) {
       onDevice(dev.ls);
       const api = createApi({ base, fetch: dev.fetch, headers: { cookie: `sw_sess=${tok}`, origin: ORIGIN } });
       const cloud = new HttpCloudBackend(pid, { api, onGone: o.onGone });
-      const store = new SaveStore().configure({ ns: 'p-' + pid, cloud, mergeProfile, readOnly: !!o.readOnly });
+      const store = new SaveStore().configure({ ns: 'p-' + pid, cloud, mergeProfile: o.merge || mergeProfile, readOnly: !!o.readOnly });
       STORES.push(store);
       await store.init();
       await store.reconciled;
@@ -732,6 +802,83 @@ if (!MEASURE) {
       const a2 = await open(A, pid, tok);
       const pa = await a2.loadProfile();
       assert.deepEqual([Object.keys(pa.stickers).sort(), pa.coins, pa.net], [['a', 'fromA', 'fromB'], 50, { lastHost: { code: ['A'] } }]);
+    });
+
+    test('S3 a conflict (409) with a server copy without squish keeps her toys', async () => {
+      const f = await family();
+      const tok = session(f.id);
+      const pid = f.pids[0];
+      const A = device();
+      const B = device();
+      const a = await open(A, pid, tok);
+      await a.saveProfile({ v: 1, updatedAt: Date.now() - 10000, coins: 100 });
+      await a.flush();
+      const b = await open(B, pid, tok);
+      const pb = await b.loadProfile();
+      onDevice(A.ls);
+      await a.saveProfile({ ...(await a.loadProfile()), updatedAt: Date.now() - 5000, coins: 130 }); // newer, no squish
+      await a.flush();
+      const merged = [];
+      b.onProfile((p) => merged.push(p));
+      onDevice(B.ls);
+      await b.saveProfile({ ...pb, updatedAt: Date.now(), coins: 120, squish: { v: 1, got: { pf_dino: '2026-10-04' }, glit: {}, seen: {} } });
+      await b.flush();
+      await b.flush();
+      assert.equal(merged.length, 1, 'a 409 was merged');
+      assert.deepEqual(Object.keys(merged[0].squish.got), ['pf_dino']);
+      const onServer = (await call('GET', `/api/players/${pid}/profile`, { tok })).data;
+      assert.deepEqual([Object.keys(onServer.squish.got), onServer.coins], [['pf_dino'], 130]);
+    });
+
+    test('S4 the server keeps the stored squish when a profile without it comes in', async () => {
+      const f = await family();
+      const tok = session(f.id);
+      const P = `/api/players/${f.pids[0]}/profile`;
+      const squish = { v: 1, got: { pf_strawberry: '2026-10-04' }, glit: {}, seen: {}, base: { coins: 0, at: '2026-10-04T00:00:00.000Z' } };
+      assert.equal((await call('PUT', P, { tok, body: { v: 1, updatedAt: T0, coins: 150, squish }, headers: { 'if-match': '*' } })).status, 200);
+      assert.equal((await call('PUT', P, { tok, body: { v: 1, updatedAt: T0 + 1, coins: 160 }, headers: { 'if-match': '"r1"' } })).status, 200);
+      const g = (await call('GET', P, { tok })).data;
+      assert.deepEqual([g.coins, g.squish], [160, squish], 'the new coins, the stored toys');
+      // a profile that has squish replaces it as usual (the union happened on the device)
+      const more = { ...squish, got: { ...squish.got, pf_dino: '2026-10-05' } };
+      assert.equal((await call('PUT', P, { tok, body: { v: 1, updatedAt: T0 + 2, coins: 160, squish: more }, headers: { 'if-match': '"r2"' } })).status, 200);
+      assert.deepEqual((await call('GET', P, { tok })).data.squish, more);
+      // a fresh row without squish: nothing is made up
+      const f2 = await family();
+      const P2 = `/api/players/${f2.pids[0]}/profile`;
+      const tok2 = session(f2.id);
+      await call('PUT', P2, { tok: tok2, body: { v: 1, updatedAt: T0, coins: 5 }, headers: { 'if-match': '*' } });
+      await call('PUT', P2, { tok: tok2, body: { v: 1, updatedAt: T0 + 1, coins: 6 }, headers: { 'if-match': '"r1"' } });
+      assert.equal((await call('GET', P2, { tok: tok2 })).data.squish, undefined);
+    });
+
+    test('S5 an old tab (the 669b6fa merge) uploads without squish; the new build still has every toy', async () => {
+      const f = await family();
+      const tok = session(f.id);
+      const pid = f.pids[0];
+      const A = device();
+      const B = device();
+      const a = await open(A, pid, tok);
+      await a.saveProfile({ v: 1, updatedAt: Date.now() - 20000, coins: 100 });
+      await a.flush();
+      const b = await open(B, pid, tok, { merge: oldMergeProfile669 }); // the old cached page
+      const pb = await b.loadProfile();
+      onDevice(A.ls);
+      const toys = { v: 1, got: { pf_strawberry: '2026-10-04', pf_dolphin: '2026-10-05' }, glit: {}, seen: {}, base: { coins: 0, at: '2026-10-04T00:00:00.000Z' } };
+      await a.saveProfile({ ...(await a.loadProfile()), updatedAt: Date.now() - 10000, coins: 150, squish: toys });
+      await a.flush();
+      onDevice(B.ls);
+      await b.saveProfile({ ...pb, updatedAt: Date.now(), coins: 140, stickers: { old: '2026-10-05' } }); // newer, no squish
+      await b.flush();
+      await b.flush();
+      const onServer = (await call('GET', `/api/players/${pid}/profile`, { tok })).data;
+      assert.deepEqual(onServer.squish, toys, 'the server guard kept the toys');
+      assert.deepEqual(Object.keys(onServer.stickers || {}), ['old'], "the old tab's own change landed");
+      // the new build on either device: every toy is there
+      const a2 = await open(A, pid, tok);
+      assert.deepEqual(Object.keys((await a2.loadProfile()).squish.got).sort(), ['pf_dolphin', 'pf_strawberry']);
+      const b2 = await open(B, pid, tok);
+      assert.deepEqual(Object.keys((await b2.loadProfile()).squish.got).sort(), ['pf_dolphin', 'pf_strawberry']);
     });
 
     test('an unchanged world is not pushed again within 5 minutes; a changed one is', async () => {

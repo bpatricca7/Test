@@ -5,6 +5,10 @@
 // never summed, so nothing can be farmed). Device-local parts are always this device's and
 // never uploaded: `net` ("Keep playing" / "Join Lily"), `keepsafe` (this browser's storage)
 // and `settings.walkie*` (the old per-device grown-up check).
+// squish: union of toys; a real base beats a provisional one, then the earliest
+// (src/core/squish-merge.js).
+
+import { mergeSquish } from '../core/squish-merge.js';
 
 const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 const when = (v) => (typeof v === 'number' ? v : Date.parse(v) || 0);
@@ -47,6 +51,7 @@ export function mergeProfile(local, server) {
   out.stickers = union(local.stickers, server.stickers);
   if (local.stickersSeen || server.stickersSeen) out.stickersSeen = union(local.stickersSeen, server.stickersSeen);
   out.stats = maxNumbers(local.stats, server.stats);
+  if (isObj(local.squish) || isObj(server.squish)) out.squish = mergeSquish(local.squish, server.squish);
   if ('coins' in local || 'coins' in server) out.coins = Math.max(local.coins || 0, server.coins || 0);
   // the Dress Up nudge stays gone once she opened the Studio on any device (one way, like a backup)
   if (local.lookPicked === true || server.lookPicked === true) out.lookPicked = true;

@@ -15,6 +15,7 @@
 // deletes. Without configure() everything is exactly as before (claude.ai's CloudBackend too).
 
 import { sleep } from './util.js';
+import { mergeSquish } from './squish-merge.js';
 
 const DB_NAME = 'sparkle-world';
 const LS_PREFIX = 'sparkle-world:';
@@ -83,7 +84,7 @@ export const BACKUP_FORMAT = 'sparkle-world-backup';
 
 // what of the profile a backup carries: her own things. Not the settings (this device's
 // volumes, quality and a grown-up's switches), not playing-with-friends ids, not lastWorldId.
-const BACKUP_PROFILE_KEYS = ['look', 'outfits', 'playerName', 'nameSet', 'stickers', 'stickersSeen', 'stats', 'coins', 'basket', 'tutorialDone', 'lookPicked'];
+const BACKUP_PROFILE_KEYS = ['look', 'outfits', 'playerName', 'nameSet', 'stickers', 'stickersSeen', 'stats', 'coins', 'basket', 'tutorialDone', 'lookPicked', 'squish'];
 
 export function newWorldId() {
   return 'w' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
@@ -141,6 +142,11 @@ export function mergeBackupProfile(current, fromFile, { fresh = false } = {}) {
   if (isObj(f.stats)) maxNumbers(isObj(current.stats) ? current.stats : (current.stats = {}), f.stats);
   if (isObj(f.basket)) maxNumbers(isObj(current.basket) ? current.basket : (current.basket = {}), f.basket);
   if (typeof f.coins === 'number' && Number.isFinite(f.coins) && f.coins >= 0 && !(current.coins >= f.coins)) current.coins = Math.floor(f.coins);
+  // squishy toys: joined only when the file has them (no toy here is ever removed)
+  if (isObj(f.squish)) {
+    const joined = mergeSquish(current.squish, f.squish);
+    if (canon(joined) !== canon(current.squish)) current.squish = joined;
+  }
   return JSON.stringify(current) !== before;
 }
 
@@ -452,6 +458,7 @@ export class SaveStore {
     // succeeds again; a permanent refusal (e.g. a view-only visitor) switches cloud saves off
     // for the session (no retries, no console noise)
     this.cloudReadOnly = false;
+    this.profileStale = false; // set by loadProfile (see there)
     this._cloudFailing = false;
     this._lastPersistent = null;
     this.ready = null;
@@ -803,8 +810,14 @@ export class SaveStore {
   async loadProfile() {
     await this.init();
     const local = await this._newest((b) => b.getProfile());
+    // profileStale: the cloud read failed or timed out, so this copy may be days old (the squishy
+    // toys mark a milestone start made from it as provisional)
+    this.profileStale = false;
     if (this._rev) return this._loadProfileRev(local);
-    const cloud = this.cloud ? await this._safe('cloud profile', () => withTimeout(this.cloud.getProfile(), CLOUD_READ_MS, 'cloud read'), null) : null;
+    let failed = false;
+    const read = () => withTimeout(this.cloud.getProfile(), CLOUD_READ_MS, 'cloud read').catch((err) => { failed = true; throw err; });
+    const cloud = this.cloud ? await this._safe('cloud profile', read, null) : null;
+    this.profileStale = failed;
     if (local && cloud) return (cloud.updatedAt || 0) > (local.updatedAt || 0) ? cloud : local;
     return cloud || local || null;
   }
@@ -815,6 +828,7 @@ export class SaveStore {
     try {
       cloud = await withTimeout(this.cloud.getProfile(), CLOUD_READ_MS, 'cloud read');
     } catch {
+      this.profileStale = true;
       return local; // offline: this device's copy (pushed with the next save)
     }
     if (cloud) {
