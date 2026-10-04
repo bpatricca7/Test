@@ -78,7 +78,7 @@ const LONG_DRESSES = new Set(['princess', 'ballgown', 'mermaid']);
 const IDLE = { speed: 0, onGround: true };
 // the Water tab: the preview swims slowly on the turntable in her form (Just Me: today's swim)
 const SEA_PREVIEW = { speed: 1.6, onGround: false, swimming: true, sea: true };
-const SEA_TILE_POSE = { state: { swimming: true, sea: true, speed: 2.2, onGround: false }, t: 0.9 };
+const SEA_TILE_POSE = { state: { swimming: true, sea: true, speed: 0.3, onGround: false }, t: 0.9 };
 const SEA_SAY = { mermaid: 'Splash! A mermaid tail!', sea_dragon: 'Whoosh! A sea dragon!', me: 'Swimming as me!' };
 // a saved outfit never carries the water form (it is who you are, like the name)
 const noSea = (l) => ({ ...W.normalizeLook(l), sea: null });

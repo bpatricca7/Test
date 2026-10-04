@@ -396,6 +396,7 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
   let sea = null; // { form, hex, root, tip, tube, meshes, bones, matKeys, frill }
   let seaW = 0, seaTarget = 0, seaPhase = 0, seaFlash = 0, seaGlintT = 0, seaMouthT = 0, leapSpin = 0;
   let autoForm = null; // the cached resolved 'auto' form (cleared by setLook / setSeaAuto)
+  let seaLastForm = null; // the form of the last parts built (a look change disposes them)
   let seaHex = null; // { form, hex } cached Match color for this look
   const seaKick = { amp: 0, turn: 0, curl: 0 };
   const seaAngles = new Float32Array(7), seaSides = new Float32Array(7);
@@ -426,6 +427,7 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     }
     for (const b of sea.bones) if (b.parent) b.parent.remove(b);
     if (sea.root.parent) sea.root.parent.remove(sea.root);
+    seaLastForm = sea.form;
     for (const k of sea.matKeys) {
       const e = mats.get(k);
       if (!e) continue;
@@ -440,7 +442,10 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
   /** Build (once per look and form) the sea parts, hidden until the weight shows them. */
   function ensureSea(form, hex) {
     if (sea && sea.form === form && sea.hex === hex) return;
-    const wasShown = seaW > 0.5 && !!sea && sea.form !== form;
+    // a form change while the tail is out (a Studio tap, the bubble): sparkle (a look change
+    // disposed the old parts first, so the last built form is remembered)
+    const prevForm = sea ? sea.form : seaLastForm;
+    const wasShown = seaW > 0.5 && !!prevForm && prevForm !== form;
     disposeSea();
     const P = new BuildContext(av, look);
     const out = buildSea(P, form, hex, look);

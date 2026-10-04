@@ -417,12 +417,13 @@ export function buildSea(P, form, hex, look) {
     if (!look.acc || look.acc.head === 'none') {
       const g = new THREE.Group();
       g.name = 'seaHorns';
-      g.position.set(0, 1.71 - 1.1, -0.06);
-      g.userData.origin = [0, 1.71, -0.06];
+      g.position.set(0, 1.74 - 1.1, -0.06);
+      g.userData.origin = [0, 1.74, -0.06];
       bones.head.add(g);
       extraBones.push(g);
       const H = P.B(g, scale);
-      for (const s of [-1, 1]) H.cone(s * 0.12, 1.705, -0.06, 0.05, 0.07, pal.A, 6, 0.022);
+      // rooted in the hair, poking out of most hair styles (a big afro covers them)
+      for (const s of [-1, 1]) H.cone(s * 0.12, 1.7, -0.06, 0.055, 0.12, pal.A, 6, 0.026);
     }
     // three bubble domes down the back of the neck and upper back
     const n = new THREE.Group();

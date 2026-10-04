@@ -9,12 +9,13 @@
 //   swim     cameras (B11), photos (B12), random swimming (B15), the candy sea (B16), the
 //            first-turn bubble (B17), tips (B18), boats, flying and zip lines (B10)
 //   studio   the Water tab, desktop then iPad (C1-C9), and the render grids for the owner (C5)
+//   grids    only the C5 render grids (also part of studio)
 //   touch    iPad 1024x768: the HUD, the joystick label, Down, the shore with the joystick (T1-T5)
 //   friends  Aria and Leo turn too, one line per visit, they keep up (D1, D2)
 //   costs    draw calls, meshes, the first turn, toggles, systems time, the tint (B13a-f)
 //   save     an old profile (B14), a world saved in sea form
 //
-//   node tools/probe-merfolk.mjs [--only=unit,water,swim,studio,touch,friends,costs,save] [--headed]
+//   node tools/probe-merfolk.mjs [--only=unit,water,swim,studio,grids,touch,friends,costs,save] [--headed]
 
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
@@ -427,6 +428,22 @@ async function waterPass(browser, errors) {
 
 // ---------------- swim (desktop) ----------------
 
+/** The yaw from (x, z) with the most water at least `minDepth` deep ahead (up to 16 blocks). */
+const openWater = (page, x, z, minDepth = 3) => page.evaluate(([x, z, m]) => {
+  const g = window.__game;
+  let best = 0, bestN = -1;
+  for (let a = 0; a < 16; a++) {
+    const ang = (a / 16) * Math.PI * 2;
+    let n = 0;
+    for (let d = 1; d < 16; d++) {
+      if (g.debug.merfolk.column(x + Math.sin(ang) * d, z + Math.cos(ang) * d).depth >= m) n++;
+      else break;
+    }
+    if (n > bestN) { bestN = n; best = ang; }
+  }
+  return best;
+}, [x, z, minDepth]);
+
 /** The nearest column at least `d` deep, as a spot to drop her in. */
 const deepAt = (page, d = 4) => page.evaluate((d) => window.__game.debug.merfolk.deepSpot(80, d), d);
 
@@ -529,7 +546,8 @@ async function swimPass(browser, errors) {
   c(zip.cutNow === null && zip.after === null, `B10 holding a zip line over the water: no tail (${JSON.stringify(zip)})`);
 
   // B11 cameras
-  await atSurface(page, deep, 0);
+  const open = await openWater(page, ds.x, ds.z, 4);
+  await atSurface(page, deep, open);
   const headY = await page.evaluate(() => {
     const g = window.__game, cam = g.camera, rig = g.cameraRig;
     const f = cam.getWorldDirection(cam.position.clone());
@@ -563,8 +581,9 @@ async function swimPass(browser, errors) {
     clearInterval(watch);
     return { taken: !!g.photo.canvas, ys: out };
   });
-  const aimed = selfie.ys.filter((y) => Math.abs(y - 1.0) < 0.12).length;
-  c(selfie.taken && aimed > 0, `B12 a selfie in sea form: taken, the camera looks at her lower head (y + 1.0 seen ${aimed}x)`);
+  // the selfie camera aims 0.15 under its head point: y + 1.0 in sea form (1.3 on land) -> y + 0.85
+  const aimed = selfie.ys.filter((y) => Math.abs(y - 0.85) < 0.05).length;
+  c(selfie.taken && aimed > 0, `B12 a selfie in sea form: taken, the camera aims at her lower head (head point y + 1.0, seen ${aimed}x)`);
   await page.evaluate(() => window.__game.ui.close());
   await gameWait(page, 300);
   await atSurface(page, deep, 0);
@@ -590,7 +609,7 @@ async function swimPass(browser, errors) {
   await gameWait(page, 300);
 
   // B15 30 s of seeded random swimming: finite, no long stall, never flying
-  await atSurface(page, deep, 0);
+  await atSurface(page, deep, open);
   const rnd = (() => { let a = 1234567; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; })();
   const KEYS = ['KeyW', 'KeyA', 'KeyD', 'KeyC', 'Space', 'ShiftLeft'];
   let bad = 0, maxGap = 0, flew = false;
@@ -749,13 +768,23 @@ async function studioPass(browser, errors, { touch = false } = {}) {
   await waitOk(page, () => [...document.querySelectorAll('.sw-dress-content .sw-dpic')].slice(0, 3).every((p) => p.classList.contains('sw-ready')), null, 30000);
   await shot(page, `studio-water-${label}`, PREFIX);
   // C2 tap Sea Dragon: stored, a tail on the preview, no wave, sparkles
-  await page.evaluate(() => { const d = window.__game.dressup; window.__emotes = []; const pe = d.preview.avatar.playEmote; d.preview.avatar.playEmote = (n) => { window.__emotes.push(n); return pe(n); }; window.__sp0 = d.preview.sparkles.alive ? d.preview.sparkles.alive() : 0; });
+  await page.evaluate(() => {
+    const d = window.__game.dressup;
+    window.__emotes = [];
+    window.__sparks = 0;
+    const pe = d.preview.avatar.playEmote;
+    d.preview.avatar.playEmote = (n) => { window.__emotes.push(n); return pe(n); };
+    const em = d.preview.sparkles.emit.bind(d.preview.sparkles);
+    // bursts only (the turntable's ambient twinkle is one sparkle at a time)
+    d.preview.sparkles.emit = (k, p, o) => { if (k === 'sparkle' && o && o.count >= 10) window.__sparks++; return em(k, p, o); };
+  });
   await press(page.locator('.sw-dress-content .sw-dtile[aria-label="Sea Dragon"]'));
   await settle(page, 900);
   const c2 = await page.evaluate(() => {
     const d = window.__game.dressup;
-    return { form: d.look.sea.form, emotes: window.__emotes.slice(), parts: d.preview.avatar.seaParts(), hint: document.querySelector('.sw-dress-hint span').textContent };
+    return { form: d.look.sea.form, emotes: window.__emotes.slice(), parts: d.preview.avatar.seaParts(), hint: document.querySelector('.sw-dress-hint span').textContent, sparks: window.__sparks };
   });
+  c(c2.sparks >= 2, `C2 the preview sparkles as the tail changes (${c2.sparks} bursts)`);
   c(c2.form === 'sea_dragon' && c2.parts.shown && c2.parts.form === 'sea_dragon', `C2 Sea Dragon: picked, and the preview swims with its tail (${JSON.stringify({ form: c2.form, shown: c2.parts.shown })})`);
   c(c2.emotes.length === 0, `C2 no wave emote on this tab (${c2.emotes})`);
   c(/sea dragon/i.test(c2.hint), `C2 the hint: "${c2.hint}"`);
@@ -867,20 +896,24 @@ async function gridsPass(browser, errors) {
       shorts: { dress: null, bottom: { type: 'shorts', color: '#FFFFFF', pattern: 'none', patternColor: '#FFFFFF' } },
     };
     const swim = { state: { swimming: true, sea: true, speed: 2.2, onGround: false }, t: 0.9 };
-    const front = { state: { swimming: false, sea: true, speed: 0, onGround: false }, t: 0.9 };
+    // floating still in the water, seen from the front: the whole tail and fin show
+    const front = { state: { swimming: true, sea: true, speed: 0, onGround: false }, t: 0.9 };
+    const FRONT = { cy: 0.78, span: 2.35, yaw: 0.35, pitch: 0.12 };
+    const BACK = { cy: 0.85, span: 2.35, yaw: Math.PI * 0.84, pitch: 0.18 };
     const res = {};
     for (const form of ['mermaid', 'sea_dragon']) {
       const items = [];
-      colors.forEach((col, i) => items.push({ look: { ...base, sea: { form, color: col } }, label: names[i], frame: 'sea', pose: swim }));
-      for (const [k, cl] of Object.entries(clothes)) items.push({ look: { ...base, ...cl, sea: { form, color: null } }, label: k + ' (Match)', frame: 'sea', pose: swim });
-      for (const [k, cl] of Object.entries(clothes)) items.push({ look: { ...base, ...cl, sea: { form, color: null } }, label: k + ' front', frame: 'full', pose: front });
-      res[form] = await W.renderGrid(items, { cols: 7, size: 200 });
+      colors.forEach((col, i) => items.push({ look: { ...base, sea: { form, color: col } }, label: names[i], frame: FRONT, pose: front }));
+      items.push({ look: { ...base, sea: { form, color: null } }, label: 'back', frame: BACK, pose: front });
+      for (const [k, cl] of Object.entries(clothes)) items.push({ look: { ...base, ...cl, sea: { form, color: null } }, label: k + ' (Match)', frame: FRONT, pose: front });
+      for (const [k, cl] of Object.entries(clothes)) items.push({ look: { ...base, ...cl, sea: { form, color: null } }, label: k + ' swims', frame: 'sea', pose: swim });
+      res[form] = await W.renderGrid(items, { cols: 6, size: 200 });
     }
     // every head accessory once with the sea dragon (the horn nubs are left out under one)
     const heads = W.options().HEAD_ACC.map((o) => o.key);
     const boy = W.starters().find((o) => o.key === 'soccer').look;
-    res.heads = await W.renderGrid(heads.map((h) => ({ look: { ...boy, acc: { ...boy.acc, head: h, headColor: '#FFD43B' }, sea: { form: 'sea_dragon', color: null } }, label: h, frame: 'full', pose: front })), { cols: 6, size: 200 });
-    res.headsBack = await W.renderGrid(heads.map((h) => ({ look: { ...boy, acc: { ...boy.acc, head: h, headColor: '#FFD43B' }, sea: { form: 'sea_dragon', color: null } }, label: h, frame: 'back', pose: front })), { cols: 6, size: 200 });
+    res.heads = await W.renderGrid(heads.map((h) => ({ look: { ...boy, acc: { ...boy.acc, head: h, headColor: '#FFD43B' }, sea: { form: 'sea_dragon', color: null } }, label: h, frame: FRONT, pose: front })), { cols: 6, size: 200 });
+    res.headsBack = await W.renderGrid(heads.map((h) => ({ look: { ...boy, acc: { ...boy.acc, head: h, headColor: '#FFD43B' }, sea: { form: 'sea_dragon', color: null } }, label: h, frame: BACK, pose: front })), { cols: 6, size: 200 });
     // the starters, each in its own Match form
     res.starters = await W.renderGrid(W.starters().map((o) => ({ look: { ...o.look, sea: { form: o.tag === 'b' ? 'sea_dragon' : 'mermaid', color: null } }, label: o.name, frame: 'sea', pose: swim })), { cols: 6, size: 200 });
     return res;
@@ -1272,7 +1305,7 @@ async function savePass(browser, errors) {
 async function main() {
   const errors = [];
   if (want('unit')) unitPass(errors);
-  const browserPasses = ['water', 'swim', 'studio', 'touch', 'friends', 'costs', 'save'].filter(want);
+  const browserPasses = ['water', 'swim', 'studio', 'grids', 'touch', 'friends', 'costs', 'save'].filter(want);
   if (browserPasses.length) {
     const browser = await launch({ headed: !!args.headed });
     try {
@@ -1281,8 +1314,8 @@ async function main() {
       if (want('studio')) {
         await studioPass(browser, errors);
         await studioPass(browser, errors, { touch: true });
-        await gridsPass(browser, errors);
       }
+      if (want('studio') || (only && only.includes('grids'))) await gridsPass(browser, errors);
       if (want('touch')) await touchPass(browser, errors);
       if (want('friends')) await friendsPass(browser, errors);
       if (want('costs')) await costsPass(browser, errors);
