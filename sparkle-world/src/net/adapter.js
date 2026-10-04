@@ -595,6 +595,8 @@ export class GameAdapter {
       lk: this._lk,
       hi: this.heldKey(),
       vh: this.vehicleField(),
+      sr: this.seaRideField(),   // ocean
+      sk: this.seaTrickField(),  // ocean
     };
   }
 
@@ -604,6 +606,28 @@ export class GameAdapter {
     if (!v || typeof v.presence !== 'function') return null;
     try {
       return v.presence();
+    } catch {
+      return null;
+    }
+  }
+
+  /** Presence sr: the dolphin she rides (its palette index), else null (docs/teams/ocean.md §9.2). */
+  seaRideField() {
+    const o = this.game.ocean;
+    if (!o || typeof o.rideField !== 'function') return null;
+    try {
+      return o.rideField();
+    } catch {
+      return null;
+    }
+  }
+
+  /** Presence sk: her dolphin trick counter, or null before her first trick. */
+  seaTrickField() {
+    const o = this.game.ocean;
+    if (!o || typeof o.trickField !== 'function') return null;
+    try {
+      return o.trickField();
     } catch {
       return null;
     }

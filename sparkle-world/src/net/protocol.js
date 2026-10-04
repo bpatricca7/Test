@@ -232,6 +232,16 @@ export function parseVehiclePresence(v) {
   return [key, color, int(flags, 0, 3), int(honk, 0, 999), int(src, 0, 2 ** 31)];
 }
 
+/** Presence `sr` (docs/teams/ocean.md §4.6): she rides a dolphin; its palette index 0..15, else null. */
+export function parseSeaRide(v) {
+  return isIntIn(v, 0, 15) ? v : null;
+}
+
+/** Presence `sk`: her dolphin trick counter ((n % 4096) * 16 + palette) 0..65535, else null. */
+export function parseSeaTrick(v) {
+  return isIntIn(v, 0, 65535) ? v : null;
+}
+
 /** Depth of a JSON value (a scalar is 0, {} or [] is 1). */
 export function jsonDepth(v, limit = 16) {
   if (v === null || typeof v !== 'object') return 0;

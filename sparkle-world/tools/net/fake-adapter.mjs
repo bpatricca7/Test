@@ -427,6 +427,9 @@ export class FakeAdapter {
     const out = { p: this.pos.slice(), st: this.st, nm: this.name, lk: this.look };
     // the vehicle she drives (presence vh), only when a test set one
     if (this.vh !== undefined) out.vh = this.vh;
+    // ocean: the dolphin she rides and her trick counter (presence sr, sk), only when a test set them
+    if (this.sr !== undefined) out.sr = this.sr;
+    if (this.sk !== undefined) out.sk = this.sk;
     return out;
   }
 
