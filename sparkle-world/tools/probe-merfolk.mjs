@@ -1395,34 +1395,15 @@ async function friendsPass(browser, errors) {
 async function costsPass(browser, errors) {
   console.log('Costs (fixed camera, median of 5 frames)');
   const c = (cond, msg) => check(errors, cond, msg);
-  const { context, page } = await openGame(browser, { errors, label: 'costs' });
-  await newWorld(page, 'beach');
-  const median = (a) => a.slice().sort((x, y) => x - y)[Math.floor(a.length / 2)];
-  const calls = async (from, to) => {
-    await page.evaluate(([from, to]) => {
-      const g = window.__game;
-      g.__rig = g.__rig || g.cameraRig.update.bind(g.cameraRig);
-      g.cameraRig.update = () => {};
-      g.camera.position.set(...from);
-      g.camera.lookAt(...to);
-    }, [from, to]);
-    await settle(page, 500);
-    const v = [];
-    for (let i = 0; i < 5; i++) {
-      v.push(await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(window.__game.renderer.info.render.calls)))));
-    }
-    await page.evaluate(() => { const g = window.__game; g.cameraRig.update = g.__rig; });
-    return median(v);
-  };
-  const sh = await page.evaluate(() => window.__game.debug.merfolk.shore());
   // B13c the first turn of a fresh page, a boy starter as a Sea Dragon (the form with the most
   // parts): the longest frame from the turn's own frame (the first frame drawn with the tail)
   // through the next 0.5 s, against the same measure before he went in (the longest frame of each
   // 0.5 s stretch on the shore, their middle): like against like. The Sea Magic! sticker is
   // earned (and its cheer has passed) first: its pop is the sticker book's cost, not the turn's.
   // A software GPU's frames jump by 100-300 ms on their own, so three fresh pages are measured
-  // and the middle one counts; and on every page the turn must build no new shader program (on a
-  // real device that compile is the stall a child would see).
+  // (before the main page opens, so no other page draws meanwhile) and the middle one counts;
+  // and on every page the turn must build no new shader program (on a real device that compile
+  // is the stall a child would see).
   const firstTurn = async () => {
     const pg = await openGame(browser, { errors, label: 'costs-turn' });
     const P = pg.page;
@@ -1483,6 +1464,26 @@ async function costsPass(browser, errors) {
   const okTurns = turns.filter(Boolean);
   const deltas = okTurns.map((f) => f.longest - f.shore).sort((a, b) => a - b);
   const fr = okTurns.length ? okTurns.find((f) => f.longest - f.shore === deltas[Math.floor(deltas.length / 2)]) : { longest: Infinity, shore: 0 };
+  const { context, page } = await openGame(browser, { errors, label: 'costs' });
+  await newWorld(page, 'beach');
+  const median = (a) => a.slice().sort((x, y) => x - y)[Math.floor(a.length / 2)];
+  const calls = async (from, to) => {
+    await page.evaluate(([from, to]) => {
+      const g = window.__game;
+      g.__rig = g.__rig || g.cameraRig.update.bind(g.cameraRig);
+      g.cameraRig.update = () => {};
+      g.camera.position.set(...from);
+      g.camera.lookAt(...to);
+    }, [from, to]);
+    await settle(page, 500);
+    const v = [];
+    for (let i = 0; i < 5; i++) {
+      v.push(await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(window.__game.renderer.info.render.calls)))));
+    }
+    await page.evaluate(() => { const g = window.__game; g.cameraRig.update = g.__rig; });
+    return median(v);
+  };
+  const sh = await page.evaluate(() => window.__game.debug.merfolk.shore());
   // the main page turns too (the sea textures stay painted for the ensureSea timing below)
   await page.evaluate(() => window.__game.stickers.award('sea_magic'));
   await gameWait(page, 3000);
