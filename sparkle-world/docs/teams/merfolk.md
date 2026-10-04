@@ -1379,6 +1379,119 @@ commit messages with the trailers the session gives.)
 
 (Written after the build. Where the build differs from the plan text, the build is right.)
 
+### As built (P1)
+
+Built on `claude/wave4-merfolk` from the step-0 base `582d11c`: §15 steps 1-8 (the P1 column of
+wave4-integration.md §7.2), with the corrections C1, C3, C4, C5, C7, C8, C14, C16 and C17 applied.
+First commit: the goldens (`OLD_*_669` in `tools/test-merfolk.mjs`) and
+`tools/fixtures/merfolk-old-profile.json`, both recorded from the untouched base (a real profile
+saved by that build: a Mermaid Dress look, two outfit slots, 340 coins, three stickers).
+
+**Where the build differs from the plan**
+
+- **Shore exit (§6.2, A14, B7b).** `physics.move({ swim })` also reports a ledge up to
+  `SWIM_LEDGE` 2.05 above her feet (not only 1.05), and the hop speed grows with the rise
+  (`hopVy`). She floats with her waist in the water, so a pond rim one block above the water is
+  about 2 blocks above her feet: with the 1.05 rule alone she could never get out of a dug pond.
+  A 3-block cliff is still a wall (A14). The float-up probe is `BUOY_PROBE` 0.95 above the feet
+  (the plan said 1.1): she floats a little higher, which keeps the beach within one hop.
+- **The vertical step is one pure function** (`seaVy` in `rules.js`), shared by `player.js` and
+  the Node stepper of A14. A leap sets 0.25 s of plain gravity (`hopT`) so the easing does not
+  eat it on the frames before she is out of the water.
+- **Textures** are light gray-scale, one pair per form (`sea|scale|<form>`, `sea|fin|<form>`);
+  the tail color comes from vertex colors. Material keys stay per color and form
+  (`scale:<hex>:<form>`, `fin:<hex>:<form>`), owned by `disposeSea()` as planned. A15 checks the
+  references go back to zero.
+- **Studio tiles** show her floating in the water, three-quarter front
+  (`FRAMES.sea = { cy: 0.8, span: 2.3, yaw: 0.6, pitch: 0.14 }`, speed 0.3), not a side view
+  while swimming: from the side long hair hid the face and the tail. Easy to change at the review.
+- **Saved outfit slots** keep the whole look, `sea` included (the plan said without it):
+  wearing a slot never changes the water form and the "worn" check leaves it out, so this is
+  harmless and `probe-avatar`'s "the slot is the look" check stays as it was.
+- **The leap tip** shows on the 3rd turn of a page visit (there is no per-device turn counter;
+  `seaLeapTips` still makes it once per device).
+- **NPC friends' line**: the first tail of a world visit resets the friends' reaction timer, so
+  the tail line wins over the "You got a sticker!" cheer of her first swim a moment before.
+- **The literals of wave4-integration.md §5.2** are in place with ocean's lines as written there
+  (`_onKey` dolphin line, `seaRide` / `seaKick` in `_syncAvatar`, `seaRide` in the remote
+  `_frame`, the Ride branch of the joystick label). They do nothing until ocean lands; ocean adds
+  only `remoteRide`, `sr` / `sk` and the rest of its own lines.
+- **Probe helpers** added to shared files for tests only: `avatar.seaParts()`,
+  `remote-players` `list()` gains `sea` (one line after `lk`).
+- **CI**: `.github/workflows/test.yml` runs `npm run test:merfolk` after the walkie-talkie.
+- **Name scan (A13)**: merfolk's five encoded words are in `tools/lib/name-scan.mjs` `EXTRA.merfolk`;
+  A13 checks every sea string kids read against the brand list, the extra words and the
+  character list.
+
+**Probe notes** (`tools/probe-merfolk.mjs`, passes `unit,water`, `swim`, `studio` (with the C5
+grids), `grids`, `touch,friends`, `costs,save`)
+
+- Times are game time: the game clamps a frame to 50 ms, and SwiftShader often runs at 6-10 fps,
+  so "within N s" checks count game seconds (what a child sees at a normal frame rate).
+- B6: "peak y >= water top + 1.4" reads "the top water cell's y + 1.4" (feet clear the surface by
+  about 0.4); with `LEAP_V` 9.2 that is what the plan's numbers give.
+- B9's adapter checks (lk sends the resolved form, never auto) run in probe-multiplayer `LOOKS`
+  and `SEA`; a solo page has no adapter.
+- B10b (riding a dolphin) is P2 (it needs ocean).
+- B12: the selfie camera aims 0.15 under its head point, so it looks at y + 0.85 (head point
+  y + 1.0 in sea form, 1.3 on land).
+- B13c: on SwiftShader a normal frame is already 100-180 ms, so "<= 33 ms" is checked as "the
+  first turn adds at most 33 ms to the usual frame"; `ensureSea` itself is 0.6 ms (<= 2).
+- probe-multiplayer `SEA` (part a) opens a fourth page, Mia, who joins while Lily is already a
+  mermaid (no burst), then goes home; part a now runs about 445 s.
+
+**Gate (P1), each command alone, browser suites under the lock** (seconds on this machine)
+
+| command | result |
+|---|---|
+| `node tools/test-merfolk.mjs` | 19 passed |
+| `node tools/test-net.mjs --only=unit` / whole `test-net` | 26 / 63 passed (142 s) |
+| `npm run test:saves`, `npm run test:accounts`, `test:vehicles`, walkie unit, `test:name` | green |
+| `probe-merfolk --only=unit,water` / `swim` / `studio` / `touch,friends` / `costs,save` | green (153 / ~350 / 194 / 107 / 195 s) |
+| `smoke` | green (90 s) |
+| `probe-multiplayer --part=a` / `b` / `c` | green (445 / 448 / 445 s) |
+| `probe-boys` unit, studio, touch, world, friends, grids | green |
+| `probe-vehicles` models,land / water,save / touch,mp | green (96 / 90 / 264 s) |
+| `probe-builds` gallery,hills,play / ui,touch | green (206 / 98 s) |
+| `probe-avatar`, `probe-pals`, `probe-life --only=desktop` / `touch` | green (187 / 249 / 204 / 92 s) |
+| `probe-menus --only=desktop` / `touch`, `probe-environment` | green (99 / 264 / 130 s) |
+| `test-net-game`, `site-check --no-build` (after `build:site`) | green (279 / 180 s) |
+
+The gate caught one thing, fixed above: `probe-avatar` expects a saved outfit slot to be exactly
+the look (the slot now keeps `sea`). `probe:boys` needed no edit (the sea tokens are left out
+for auto + Match), as planned.
+
+**For the owner review (§7.3)**: `.shots/merfolk-grid-mermaid.png`,
+`merfolk-grid-sea_dragon.png` (every tail color and Match, the back, four kinds of clothes, the
+swim view), `merfolk-grid-heads.png` and `merfolk-grid-headsBack.png` (every head accessory with
+the Sea Dragon: the horn nubs show only with no head accessory), `merfolk-grid-starters.png`,
+the Studio (`merfolk-studio-water-*.png`, `merfolk-studio-dragon-*.png`) and the world
+(`merfolk-mermaid-in.png`, `merfolk-dragon-in.png`, `merfolk-leap.png`, `merfolk-underwater.png`,
+`merfolk-candy-underwater.png`, `merfolk-bubble.png`, `merfolk-friends-sea.png`). The Sea Dragon
+name and look check is the owner's (§16 Q2).
+
+**Wanted text for the integrator** (C17: builders do not edit these files)
+
+- `docs/DESIGN.md` §7.1 (sea forms): the turn in deep water (0.25 s; 2 deep), Mermaid / Sea
+  Dragon / Just Me, `look.sea` (auto follows this device's Girl / Boy button, else the worn look),
+  sea swimming (4.6 / 6.2 blocks/s, Up / Down, the float up, the dolphin leap, the shore flop up
+  to 2 blocks), the Studio's Water tab, the underwater tint, NPC friends turning too. Events:
+  `'player:seaform' { form }`, `'player:leap' { pos, form }`, `'style:changed' { style }` (and
+  the internal `'player:seaswim' { on }`). Stickers: Sea Magic!, Big Leap!. Player: `seaGate`,
+  `seaSwim`, `seaForm`; `game.underwater`.
+- `docs/MULTIPLAYER.md` §5.4 `st` gains `m` (in sea form, not riding); `lk` is
+  `packLook(withResolvedSea(look, style))`; §5.13: two sea tokens after the jersey number, left
+  out for auto + Match, worst case 156; "a later token must write the sea pair (`0.-`) first";
+  NPC `nx` samples use `st` `m` too.
+- `docs/DATA-MAP.md:50`: "... her avatar look (including the water form and tail color). A tail
+  form chosen automatically from this device's Girl / Boy button is shown to friends like clothes
+  are; the button itself is never sent or stored."
+- `docs/teams/avatar.md`: one paragraph: the sea parts are lazy, built outside `build()`;
+  `disposeSea()` owns their meshes, bones, materials and textures; `seaParts()`, `heldShown`.
+
+**Not done in P1, and why**: B10b and the merged-literal check with ocean's dolphin are P2
+(§7.2: they need ocean's `debug.ocean.ride()`). Everything else in §15 steps 1-8 is built.
+
 ---
 
 ## Review notes

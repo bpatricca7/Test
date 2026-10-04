@@ -423,7 +423,7 @@ export function buildSea(P, form, hex, look) {
       extraBones.push(g);
       const H = P.B(g, scale);
       // rooted in the hair, poking out of most hair styles (a big afro covers them)
-      for (const s of [-1, 1]) H.cone(s * 0.12, 1.7, -0.06, 0.055, 0.12, pal.A, 6, 0.026);
+      for (const s of [-1, 1]) H.cone(s * 0.12, 1.7, -0.06, 0.06, 0.17, pal.A, 6, 0.03);
     }
     // three bubble domes down the back of the neck and upper back
     const n = new THREE.Group();
