@@ -848,7 +848,9 @@ button { font-family: var(--font); }
 .foot-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 24px 48px; align-items: start; }
 .foot-love { margin: 12px 0 0; font-size: 1.1rem; font-weight: 500; }
 .foot-links { display: flex; flex-wrap: wrap; gap: 10px 24px; justify-content: flex-end; }
-.foot-links a { color: var(--white); font-weight: 600; }
+/* each link is a 44 px tall tap target for fingers; the padding and the matching negative
+   margin keep the layout exactly as before */
+.foot-links a { color: var(--white); font-weight: 600; display: inline-block; padding: 12px 0; margin: -12px 0; }
 .foot-links a:hover { color: var(--sun); }
 .foot a:focus-visible { outline-color: var(--sun); }
 .foot-privacy { grid-column: 1 / -1; margin: 8px 0 0; padding-top: 18px; border-top: 2px solid rgba(255, 255, 255, .16); font-size: .98rem; color: #F5E6D8; }
