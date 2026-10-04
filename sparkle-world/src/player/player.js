@@ -52,8 +52,9 @@ export class Player {
 
   _onKey(e) {
     if (!e.down || e.code !== 'Space' || this.game.paused || this.game.mode !== 'play') return;
-    // Space is the horn while she drives (a double tap would otherwise stand her up to fly)
-    if (this.state === 'ride' && this.mountPet && this.mountPet.kind === 'vehicle') return;
+    // Space is the horn while she drives, the leap on a dolphin (a double tap would otherwise
+    // stand her up to fly)
+    if (this.state === 'ride' && this.mountPet && (this.mountPet.kind === 'vehicle' || this.mountPet.kind === 'dolphin')) return; // ocean
     const now = performance.now();
     if (now - this._lastSpace < DOUBLE_TAP_MS) {
       this.toggleFly();
@@ -205,6 +206,7 @@ export class Player {
     grp.rotation.y = this.yaw;
     // in a car or a boat she sits on its seat (pose 'sit'); on a pony she rides
     const seated = this.state === 'ride' && !!this.mountPet && this.mountPet.pose === 'sit';
+    const dolphin = this.state === 'ride' && !!this.mountPet && this.mountPet.kind === 'dolphin';   // ocean
     this.avatar.update(dt, {
       speed: Math.hypot(this.velocity.x, this.velocity.z),
       onGround: this.onGround,
@@ -213,6 +215,8 @@ export class Player {
       sitting: this.state === 'sit' || seated,
       sleeping: this.state === 'sleep',
       riding: this.state === 'ride' && !seated,
+      seaRide: dolphin,                                    // ocean
+      seaKick: dolphin ? this.mountPet.kick : 0,           // ocean (merfolk clamps a non-finite value to its own beat)
     });
   }
 

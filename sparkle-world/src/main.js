@@ -23,6 +23,8 @@ import * as daynight from './life/daynight.js';
 import * as weather from './life/weather.js';
 import * as particles from './life/particles.js';
 import * as collectibles from './life/collectibles.js';
+// wave 4: dolphins and sea animals to meet, a dolphin to ride (docs/teams/ocean.md)
+import * as ocean from './life/ocean/index.js';
 import * as stickers from './life/stickers.js';
 // playing with friends (docs/MULTIPLAYER.md): the facade, friends' avatars and the screens
 import * as net from './net/index.js';
@@ -69,6 +71,7 @@ function boot() {
     weather,
     particles,
     collectibles,
+    ocean,         // wave 4: after collectibles (particles exist; stickers registry used on game:ready)
     stickers,
     net,
     hud,

@@ -16,6 +16,13 @@ import { Noise } from '../src/core/noise.js';
 import { SeaMap } from '../src/life/ocean/seamap.js';
 import { SEA_KINDS, OCEAN_STAR_KINDS, PALETTES, SEA_SPEC, DOLPHIN_NAMES, SEA_TEXT, SEA_NAMES, pickPalette } from '../src/life/ocean/kinds.js';
 import { h01, whaleTime, whalePhase, buddyOf, clockFrozen, WHALE_LEN } from '../src/life/ocean/schedule.js';
+import {
+  makeRecord, saveGood, sanitize, columnOk, spawnOk, settleY, swimToward, wanderTarget, canLeap, startLeap, stepLeap,
+  startTrick, stepTrick, Spawner, placeFish, stepCrab, rescueCell, SURF, BAND,
+} from '../src/life/ocean/motion.js';
+import { DolphinRide, RIDE_SPEED, RIDE_RUN } from '../src/life/ocean/ride.js';
+import { parseSeaRide, parseSeaTrick } from '../src/net/protocol.js';
+import { scanText, scanCharacters } from './lib/name-scan.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ONLY = (() => {
@@ -353,6 +360,431 @@ await test('S8', 'palettes: candy uses candy colors, snow half snowy, ponds koi'
   for (let i = 0; i < 400; i++) if (PALETTES.dolphin[pickPalette('dolphin', 'snow', r)][0] === 'snowy') snowy++;
   assert(snowy > 120 && snowy < 280, 'snow: about half snowy ' + snowy);
 });
+
+
+// =====================================================================================
+// S2 motion
+// =====================================================================================
+
+function envFor(w, seed) {
+  const map = new SeaMap().attach(w);
+  return { map, world: w, props, rand: mulberry32(seed), seaLevel: w.waterLevel, stats: { nanResets: 0 }, isSand: () => true };
+}
+
+/** A random edit near (x, z): a block into the water or water back; with or without setColumn. */
+function randomEdit(env, rand, x, z, announce) {
+  const w = env.world;
+  const ex = Math.floor(x + (rand() - 0.5) * 8), ez = Math.floor(z + (rand() - 0.5) * 8);
+  if (!w.inBounds(ex, 0, ez)) return;
+  const top = env.map.top(ex, ez);
+  if (top >= 0 && rand() < 0.6) w.set(ex, top + (rand() < 0.5 ? 0 : 1), ez, STONE);
+  else {
+    for (let y = 5; y <= 10; y++) w.set(ex, y, ez, WATER);
+    w.set(ex, 11, ez, AIR);
+  }
+  if (announce) env.map.setColumn(ex, ez);
+}
+
+await test('S2', 'motion: 20 seeds x 2,000 steps per kind with block edits: finite, in their water, in the surface band', () => {
+  let checks = 0, bandChecks = 0;
+  const kinds = ['dolphin', 'sea_turtle', 'jelly', 'fish', 'crab', 'starfish'];
+  for (let seed = 1; seed <= 20; seed++) {
+    const w = seaWorld({ sx: 64, sz: 64 });
+    const env = envFor(w, seed);
+    const rand = env.rand;
+    const player = { x: 32 + 14, z: 32, speed: 0 };
+    for (const kind of kinds) {
+      const r = makeRecord(kind, 0);
+      // a start that qualifies
+      let ok = false;
+      for (let t = 0; t < 400 && !ok; t++) {
+        const x = 2 + Math.floor(rand() * 60), z = 2 + Math.floor(rand() * 60);
+        if (kind === 'crab' ? env.map.shore(x, z) : kind === 'starfish' ? true : spawnOk(env, kind, x, z)) { r.x = x + 0.5; r.z = z + 0.5; ok = true; }
+      }
+      assert(ok, `${kind}: a start cell`);
+      r.on = true;
+      r.level = kind === 'crab' ? env.map.ground(r.x, r.z) : env.map.top(r.x, r.z);
+      r.y = kind === 'crab' ? r.level + 1 : r.level + SURF - 0.3;
+      r.tx = r.x; r.tz = r.z; r.ty = r.y;
+      saveGood(r);
+      const school = { x: r.x, z: r.z, level: r.level, scatter: 0 };
+      const fish = [];
+      if (kind === 'fish') for (let i = 0; i < 8; i++) { const f = makeRecord('fish', i); f.orbit = rand() * 6.28; f.orbitR = 0.4 + rand() * 0.8; f.orbitW = 1; f.level = r.level; fish.push(f); }
+      const sx0 = r.x, sz0 = r.z;
+      let lastEdit = -1;
+      for (let step = 0; step < 2000; step++) {
+        const dt = 1 / 30;
+        if (step % 50 === 25) { randomEdit(env, rand, r.x, r.z, rand() < 0.5); lastEdit = step; }
+        env.map.tick(2);
+        if (step % 8 === 0) {
+          const res = kind === 'crab' || kind === 'starfish' || r.state === 'leap' ? null : rescueCell(r, env);
+          if (res === 'fade') { r.on = false; break; }
+        }
+        if (kind === 'dolphin') {
+          if (r.state === 'leap') stepLeap(r, dt, env);
+          else if (r.state === 'trick') stepTrick(r, dt, env);
+          else {
+            if (step % 120 === 0) { wanderTarget(r, env, rand, r._w || (r._w = [0, 0])); r.tx = r._w[0]; r.tz = r._w[1]; }
+            swimToward(r, dt, env, r.tx, r.tz, 4 + rand() * 6);
+            settleY(r, dt, env, Math.hypot(r.x - player.x, r.z - player.z));
+            if (step % 90 === 45 && canLeap(env, r)) startLeap(r, r.speed);
+            else if (step % 400 === 200) startTrick(r, env);
+          }
+        } else if (kind === 'sea_turtle' || kind === 'jelly') {
+          if (step % 150 === 0) { wanderTarget(r, env, rand, r._w || (r._w = [0, 0]), 4, 10); r.tx = r._w[0]; r.tz = r._w[1]; }
+          swimToward(r, dt, env, r.tx, r.tz, kind === 'jelly' ? 0.3 : 1.4, 0.4);
+          if (kind === 'jelly') r.y = r.level + SURF - 0.5; else settleY(r, dt, env, Math.hypot(r.x - player.x, r.z - player.z));
+        } else if (kind === 'fish') {
+          if (step % 150 === 0) {
+            for (let t = 0; t < 6; t++) {
+              const x = r.x + (rand() - 0.5) * 16, z = r.z + (rand() - 0.5) * 16;
+              if (spawnOk(env, 'fish', Math.floor(x), Math.floor(z)) && env.map.top(x, z) === r.level) { r.tx = x; r.tz = z; break; }
+            }
+          }
+          if (step % 300 === 100) school.scatter = 1;
+          school.scatter = Math.max(0, school.scatter - dt / 3);
+          swimToward(r, dt, env, r.tx, r.tz, 1.6, 1.5);
+          if (!spawnOk(env, 'fish', Math.floor(r.x), Math.floor(r.z))) { r.x = r.gx; r.z = r.gz; }
+          saveGood(r);
+          school.x = r.x; school.z = r.z; school.level = r.level;
+          for (const f of fish) {
+            f.orbit += dt;
+            placeFish(f, school, env);
+            const surf = school.level + SURF;
+            f.y = surf - 0.275;
+            assert(Number.isFinite(f.x) && Number.isFinite(f.y) && Number.isFinite(f.z), 'fish finite');
+            if (step - lastEdit > 10) {
+              assert(props.shape[w.get(Math.floor(f.x), Math.floor(f.y), Math.floor(f.z))] === SHAPES.liquid, `seed ${seed} step ${step}: a fish outside liquid at ${f.x.toFixed(2)},${f.y.toFixed(2)},${f.z.toFixed(2)}`);
+              assert(f.y >= surf - 0.4 && f.y <= surf - 0.15, 'fish in their band');
+              checks++;
+            }
+          }
+        } else if (kind === 'crab') {
+          stepCrab(r, dt, env, rand, player);
+          if (r.lost) break; // its shore was built away: it goes (index.js fades it)
+          // (an edit with no event reaches the map within sz / 2 ticks)
+          if (r.state !== 'hide' && step - lastEdit > 34) { assert(env.map.shore(Math.floor(r.x), Math.floor(r.z)), `seed ${seed} step ${step}: a crab off the shore`); checks++; }
+        } else if (kind === 'starfish') {
+          assert(r.x === sx0 && r.z === sz0, 'starfish never move');
+        }
+        if (sanitize(r, env.stats)) throw new Error('a NaN on clean input');
+        if (r.state !== 'leap' && r.state !== 'trick') saveGood(r);
+        assert([r.x, r.y, r.z, r.yaw, r.pitch, r.roll, r.speed].every(Number.isFinite), `${kind} finite`);
+        if (kind === 'dolphin' && r.on) {
+          // an edit with no event reaches the map within sz / 2 = 32 ticks; the creature's own
+          // check runs every 8 steps (0.25 s)
+          const settled = step - lastEdit > 42;
+          if (r.state !== 'leap' && settled) {
+            assert(columnOk(env, 'dolphin', Math.floor(r.x), Math.floor(r.z), r.level), `seed ${seed} step ${step}: a dolphin in a failing column (${r.state})`);
+            checks++;
+          }
+          const bed = env.map.bed(r.x, r.z);
+          if (bed >= 0 && r.state !== 'leap') assert(r.y >= bed + 1, `seed ${seed}: a dolphin below bed + 1`);
+          const near = Math.hypot(r.x - player.x, r.z - player.z) <= 20;
+          if (near && r.state === 'swim' && r._was === 'swim') {
+            const surf = r.level + SURF;
+            assert(r.y >= surf - 0.35 - 1e-6 && r.y <= surf - 0.25 + 1e-6, `seed ${seed} step ${step}: a dolphin out of its band (${(surf - r.y).toFixed(3)})`);
+            checks++;
+            bandChecks++;
+          }
+          r._was = r.state;
+          if (!env.map.inBounds(Math.floor(r.x), Math.floor(r.z)) && r.state !== 'leap') assert(r.y >= env.map.outside().bed + 1.3 - 1e-6, 'outside: above the ring bed + 1.3');
+        }
+      }
+    }
+    assert(env.stats.nanResets === 0, 'no NaN resets on clean input');
+  }
+  // the reset path works after a forced NaN
+  const r = makeRecord('dolphin', 0);
+  r.x = 5; r.y = 6; r.z = 7; saveGood(r);
+  r.x = NaN;
+  const st = { nanResets: 0 };
+  assert(sanitize(r, st) && r.x === 5 && st.nanResets === 1, 'a NaN goes back to the last good pose');
+  assert(bandChecks > 1000, 'the dolphins\' band was checked (' + bandChecks + ')');
+  return `${checks} checks, ${bandChecks} in the band`;
+});
+
+await test('S2', 'spawn fallback: a 5x5x2 pool (fish) and a 17x17x4 pool (dolphins), the player at its edge', () => {
+  const pool = (n, d) => {
+    const w = new FakeWorld(48, 24, 48);
+    w.fill(0, 0, 0, 47, 9, 47, GRASS);
+    const x0 = 20, z0 = 20;
+    for (let z = z0; z < z0 + n; z++) for (let x = x0; x < x0 + n; x++) for (let y = 10 - d; y <= 9; y++) w.set(x, y, z, WATER);
+    return { w, x0, z0 };
+  };
+  const now = 1;
+  const a = pool(5, 2);
+  const ea = envFor(a.w, 9);
+  const sp = new Spawner(['fish', 'dolphin']);
+  const out = [0, 0];
+  let res = null;
+  for (let f = 0; f < 120 && !res; f++) res = sp.find('fish', ea, a.x0 - 0.5, a.z0 + 2.5, 8, 22, 4, now, ea.rand, out, { maxR: 22 });
+  assert(res && spawnOk(ea, 'fish', Math.floor(out[0]), Math.floor(out[1])), `fish in a 5x5x2 pool (${res})`);
+  const b = pool(17, 4);
+  const eb = envFor(b.w, 11);
+  res = null;
+  for (let f = 0; f < 240 && !res; f++) res = sp.find('dolphin', eb, b.x0 - 0.5, b.z0 + 8.5, 30, 40, 6, now, eb.rand, out, { maxR: 40 });
+  assert(res && eb.map.deepAround(out[0], out[1], 3), `dolphins in a 17x17x4 pool (${res})`);
+  // a 2-deep pool never gets dolphins
+  const c = pool(17, 2);
+  const ec = envFor(c.w, 12);
+  res = null;
+  for (let f = 0; f < 120 && !res; f++) res = sp.find('dolphin', ec, c.x0 - 0.5, c.z0 + 8.5, 30, 40, 6, now, ec.rand, out, { maxR: 40 });
+  assert(!res, 'a 2-deep pool never gets dolphins');
+});
+
+await test('S2', 'slot compaction: every slot keeps its record\'s palette after random despawns', async () => {
+  const THREE = await import('three');
+  const { SeaMeshes } = await import('../src/life/ocean/render.js');
+  const { hexToLinear } = await import('../src/life/ocean/kinds.js');
+  const scene = new THREE.Scene();
+  const M = new SeaMeshes(scene);
+  const rand = mulberry32(5);
+  const list = [];
+  for (let i = 0; i < 12; i++) { const r = makeRecord('dolphin', i); r.uid = i; list.push(r); }
+  for (let round = 0; round < 200; round++) {
+    for (const r of list) {
+      if (rand() < 0.3) r.on = !r.on;
+      if (r.on && rand() < 0.2) { r.variant = Math.floor(rand() * PALETTES.dolphin.length); r.tintVer++; }
+      r.fade = 1;
+    }
+    const n = M.write('dolphin', [list]);
+    let k = 0;
+    for (const r of list) {
+      if (!r.on) continue;
+      const t = M.slotTint('dolphin', k);
+      const want = hexToLinear(PALETTES.dolphin[r.variant][1]);
+      assert(Math.abs(t[0] - want[0]) < 1e-6 && Math.abs(t[1] - want[1]) < 1e-6 && Math.abs(t[2] - want[2]) < 1e-6, `round ${round} slot ${k}: the tint follows its record`);
+      k++;
+    }
+    assert(k === n, 'slot count');
+  }
+});
+
+// =====================================================================================
+// S3 leaps
+// =====================================================================================
+
+await test('S3', 'leaps: apex <= surface + 2.0, about 1 s in the air, lands in deep water, refused under a bridge', () => {
+  const w = seaWorld({ island: false });
+  const env = envFor(w, 3);
+  for (let k = 0; k < 40; k++) {
+    const r = makeRecord('dolphin', 0);
+    r.x = 30.5; r.z = 30.5; r.level = 10; r.y = 10 + SURF - 0.3; r.yaw = (k / 40) * Math.PI * 2;
+    assert(canLeap(env, r), 'open sea: a leap is fine');
+    startLeap(r, 4);
+    let t = 0, apex = -1;
+    for (let s = 0; s < 200; s++) {
+      t += 1 / 60;
+      const res = stepLeap(r, 1 / 60, env);
+      apex = Math.max(apex, r.y - (10 + SURF));
+      if (res === 'land') break;
+    }
+    assert(apex <= 2.0 && apex > 1.2, 'apex ' + apex.toFixed(2));
+    assert(t >= 0.8 && t <= 1.2, 'airtime ' + t.toFixed(2));
+    assert(columnOk(env, 'dolphin', Math.floor(r.x), Math.floor(r.z), 10), 'lands in a qualifying column');
+  }
+  for (let h = 1; h <= 4; h++) {
+    const w2 = seaWorld({ island: false });
+    const e2 = envFor(w2, 4);
+    for (let x = 28; x <= 36; x++) w2.set(x, 10 + h, 30, BRIDGE);
+    const r = makeRecord('dolphin', 0);
+    r.x = 30.5; r.z = 28.5; r.level = 10; r.y = 10.5; r.yaw = 0;
+    assert(!canLeap(e2, r), `a bridge ${h} above the surface: no leap`);
+  }
+});
+
+// =====================================================================================
+// S4 the ride
+// =====================================================================================
+
+await test('S4', 'ride: 20 seeds x 2,000 random inputs: deep water at one level, inside the world, never a shallow column', () => {
+  let uturns = 0, leaps = 0, refused = 0;
+  for (let seed = 1; seed <= 20; seed++) {
+    const w = seaWorld();
+    const env = envFor(w, seed);
+    env.bodyBlocked = () => false;
+    const R = new DolphinRide();
+    R.start(32.5 + 14, 32.5, 0, 10);
+    const rand = env.rand;
+    let wx = 0, wz = 1, run = false;
+    for (let s = 0; s < 2000; s++) {
+      if (s % 40 === 0) { const a = rand() * Math.PI * 2; const l = rand() < 0.2 ? 0 : 0.5 + rand() * 0.5; wx = Math.sin(a) * l; wz = Math.cos(a) * l; run = rand() < 0.4; }
+      const ev = R.step(1 / 30, wx, wz, run, rand() < 0.03, env);
+      assert(!ev.end, `seed ${seed}: the ride ended (${ev.end})`);
+      assert([R.x, R.y, R.z, R.yaw, R.speed].every(Number.isFinite), 'finite');
+      assert(env.map.depth(R.x, R.z) >= 3 && env.map.top(R.x, R.z) === 10, `seed ${seed} step ${s}: the centre is deep water at the level`);
+      assert(R.x >= 1 && R.x < 63 && R.z >= 1 && R.z < 63, 'inside [1, sx - 1]');
+      if (ev.uturn) uturns++;
+      if (ev.leap) leaps++;
+      if (ev.refused) refused++;
+    }
+  }
+  return `${uturns} U-turns, ${leaps} leaps, ${refused} small hops`;
+});
+
+await test('S4', 'ride: top speed 9.5 (12 running) within 2 s; the shelf stops it from 12 within 0.45 s; leaps come back to the level', () => {
+  const w = seaWorld({ island: false });
+  const env = envFor(w, 1);
+  env.bodyBlocked = () => false;
+  const R = new DolphinRide();
+  R.start(10.5, 32.5, Math.PI / 2, 10);
+  let t = 0;
+  for (; t < 2 && R.speed < RIDE_SPEED - 0.01; t += 1 / 60) R.step(1 / 60, 1, 0, false, false, env);
+  assert(R.speed >= RIDE_SPEED - 0.01 && t <= 2, 'walk speed 9.5 in ' + t.toFixed(2) + ' s');
+  R.start(10.5, 32.5, Math.PI / 2, 10);
+  for (t = 0; t < 2.2 && R.speed < RIDE_RUN - 0.01; t += 1 / 60) R.step(1 / 60, 1, 0, true, false, env);
+  assert(R.speed >= RIDE_RUN - 0.01 && t <= 2.2, 'run speed 12 in ' + t.toFixed(2) + ' s');
+  // a shallow shelf ahead (x >= 40 is 2 deep)
+  const ws = seaWorld({ island: false });
+  for (let z = 0; z < 64; z++) for (let x = 40; x < 64; x++) ws.fill(x, 5, z, x, 8, z, SAND); // 2 deep
+  const es = envFor(ws, 2);
+  es.bodyBlocked = () => false;
+  const S = new DolphinRide();
+  S.start(12.5, 32.5, Math.PI / 2, 10);
+  S.speed = 12;
+  let stopT = null, shallow = 0;
+  for (let s = 0; s < 600; s++) {
+    const ev = S.step(1 / 60, 1, 0, true, false, es);
+    if (ev.shallow) shallow++;
+    assert(es.map.depth(S.x, S.z) >= 3, 'never enters the shelf');
+    if (S.speed > 11.5) stopT = null;
+    else if (stopT === null && S.speed < 11.5) stopT = s;
+    if (S.speed === 0 && stopT !== null) { assert((s - stopT) / 60 <= 0.45, 'stopped in ' + ((s - stopT) / 60).toFixed(2)); break; }
+  }
+  assert(shallow >= 1 && shallow <= 3, 'the shallow toast at most once per 4 s (' + shallow + ' in 10 s)');
+  // a leap returns to the level; a refused leap (a bridge) gives the 0.5 hop
+  const L = new DolphinRide();
+  L.start(20.5, 32.5, Math.PI / 2, 10);
+  L.speed = 6;
+  let ev = L.step(1 / 60, 1, 0, false, true, env);
+  assert(ev.leap, 'a leap');
+  let top = 0;
+  for (let s = 0; s < 120; s++) { L.step(1 / 60, 1, 0, false, false, env); top = Math.max(top, L.lift); }
+  assert(!L.leaping && L.lift === 0 && Math.abs(top - 1.75) < 0.15, 'back at the level after an apex of ' + top.toFixed(2));
+  const wb = seaWorld({ island: false });
+  for (let x = 18; x < 30; x++) for (let z = 28; z < 37; z++) wb.set(x, 12, z, BRIDGE);
+  const eb = envFor(wb, 3);
+  eb.bodyBlocked = () => false;
+  const B = new DolphinRide();
+  B.start(20.5, 32.5, Math.PI / 2, 10);
+  ev = B.step(1 / 60, 0, 0, false, true, eb);
+  assert(ev.refused && !ev.leap, 'under a bridge: the small hop');
+  top = 0;
+  for (let s = 0; s < 60; s++) { B.step(1 / 60, 0, 0, false, false, eb); top = Math.max(top, B.lift); }
+  assert(top > 0.4 && top < 0.6, 'the hop is about 0.5 high (' + top.toFixed(2) + ')');
+});
+
+await test('S4', 'ride: the world edge U-turns (no toast, no stall over 0.5 s); blocks in the rider end it; the hop-off spot', () => {
+  const w = seaWorld({ island: false });
+  const env = envFor(w, 1);
+  env.bodyBlocked = () => false;
+  const R = new DolphinRide();
+  R.start(32.5, 32.5, Math.PI / 2, 10);
+  let shallow = 0, uturns = 0;
+  for (let s = 0; s < 300; s++) {
+    const ev = R.step(1 / 60, 1, 0, true, false, env); // steering straight at the east edge for 5 s
+    if (ev.shallow) shallow++;
+    if (ev.uturn) uturns++;
+  }
+  assert(shallow === 0, 'no shallow toast at the edge');
+  assert(uturns >= 1, 'a U-turn');
+  assert(R.stats.maxStall <= 0.5, 'longest stall ' + R.stats.maxStall.toFixed(2) + ' s');
+  // a block at level + 1 or + 2 on the dolphin's cell ends the ride on the next step
+  for (const dy of [1, 2]) {
+    const w2 = seaWorld({ island: false });
+    const e2 = envFor(w2, 2);
+    e2.bodyBlocked = () => false;
+    const B = new DolphinRide();
+    B.start(30.5, 30.5, 0, 10);
+    B.step(1 / 60, 0, 0, false, false, e2);
+    w2.set(30, 10 + dy, 30, STONE);
+    const ev = B.step(1 / 60, 0, 0, false, false, e2);
+    assert(ev.end === 'blocked', `a block at level + ${dy}: blocked (${ev.end})`);
+  }
+  // the water under it goes away
+  const w3 = seaWorld({ island: false });
+  const e3 = envFor(w3, 3);
+  const W = new DolphinRide();
+  W.start(30.5, 30.5, 0, 10);
+  w3.fill(30, 5, 30, 30, 10, 30, AIR);
+  assert(W.step(1 / 60, 0, 0, false, false, e3).end === 'water', 'the water went away');
+  // the ahead check refuses a column with a block at level + 2
+  const w4 = seaWorld({ island: false });
+  const e4 = envFor(w4, 4);
+  e4.bodyBlocked = () => false;
+  const A = new DolphinRide();
+  A.start(30.5, 20.5, 0, 10);
+  for (let x = 0; x < 64; x++) w4.set(x, 12, 24, STONE);
+  for (let s = 0; s < 240; s++) A.step(1 / 60, 0, 1, false, false, e4);
+  assert(A.z < 24, 'stops before a block at level + 2 (z ' + A.z.toFixed(2) + ')');
+  // the hop-off spot: in the water, a free body; standSpot is the same
+  const H = new DolphinRide();
+  H.start(30.5, 30.5, 0.3, 10);
+  const blocked = (x, y, z) => x > 30.5; // the right side is blocked
+  const spot = H.hopSpot({ map: env.map, bodyBlocked: blocked });
+  assert(env.map.top(spot[0], spot[2]) === 10 && Math.abs(spot[1] - 10.1) < 1e-9 && !blocked(spot[0], spot[1], spot[2]), 'the hop-off spot is in the water, free');
+});
+
+// =====================================================================================
+// S6 presence
+// =====================================================================================
+
+await test('S6', 'presence parsers: sr 0..15, sk 0..65535', () => {
+  for (let v = 0; v <= 15; v++) assert(parseSeaRide(v) === v, 'sr ' + v);
+  for (const bad of [-1, 16, 1.5, '3', null, [], {}, NaN]) assert(parseSeaRide(bad) === null, 'sr refused ' + String(bad));
+  for (const v of [0, 1, 4096, 65535]) assert(parseSeaTrick(v) === v, 'sk ' + v);
+  for (const bad of [-1, 65536, 1.5, '3', null, [], {}, NaN]) assert(parseSeaTrick(bad) === null, 'sk refused ' + String(bad));
+});
+
+// =====================================================================================
+// S9 static scans
+// =====================================================================================
+
+const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n');
+
+await test('S9', 'static: no while loops in the ocean folder; the strings are kind, brand-free and character-free', async () => {
+  const dir = path.join(ROOT, 'src/life/ocean');
+  for (const f of readdirSync(dir)) {
+    const src = stripComments(readFileSync(path.join(dir, f), 'utf8'));
+    assert(!/\bwhile\s*\(/.test(src), `no while loop in ${f}`);
+  }
+  const chat = await import('../src/things/friends/chat.js');
+  const L = chat.LINES;
+  const strings = [];
+  const walk = (v) => { if (typeof v === 'string') strings.push(v); else if (Array.isArray(v)) v.forEach(walk); else if (v && typeof v === 'object') Object.values(v).forEach(walk); };
+  walk(SEA_TEXT);
+  walk(DOLPHIN_NAMES);
+  walk(SEA_NAMES);
+  walk([L.events['sea:meet'], L.events['sea:ride'], L.seaKinds, L.seaInvite]);
+  const { OCEAN_STICKERS } = await import('../src/life/ocean/stickers.js');
+  for (const s of OCEAN_STICKERS) strings.push(s.name, s.hint);
+  for (const s of strings) {
+    assert(!/\$|\bbuy|\bprice|\bcoin|\bpay\b|\bshop/i.test(s), 'no prices or buying: ' + s);
+    assert(!/\b(she|her)\b/i.test(s), 'no "she" or "her" about the player: ' + s);
+    eq0(scanText(s, { extras: true }).length, 'no forbidden name in: ' + s);
+    eq0(scanCharacters(s).length, 'no famous character in: ' + s);
+    assert(s.length <= 60, 'short: ' + s);
+  }
+  // dolphin names: no repeats, none is a pet name in the game
+  assert(new Set(DOLPHIN_NAMES).size === DOLPHIN_NAMES.length, 'dolphin names are different');
+  const petDir = path.join(ROOT, 'src/things/pets');
+  const petSrc = readdirSync(petDir).map((f) => readFileSync(path.join(petDir, f), 'utf8')).join('\n');
+  const petNames = new Set();
+  for (const m of petSrc.matchAll(/names:\s*\[([^\]]*)\]/g)) for (const n of m[1].matchAll(/'([^']+)'/g)) petNames.add(n[1]);
+  for (const m of petSrc.matchAll(/COMMON_NAMES\s*=\s*\[([^\]]*)\]/g)) for (const n of m[1].matchAll(/'([^']+)'/g)) petNames.add(n[1]);
+  assert(petNames.size > 20, 'pet names found (' + petNames.size + ')');
+  for (const n of DOLPHIN_NAMES) assert(!petNames.has(n), 'not a pet name: ' + n);
+  // every string kids read (§7) is in SEA_TEXT, and the help cards use them
+  const touch = readFileSync(path.join(ROOT, 'src/ui/touch.js'), 'utf8');
+  for (const k of ['helpTouch', 'helpKeys', 'helpHop']) assert(touch.includes(`'${SEA_TEXT[k]}'`), 'touch.js uses SEA_TEXT.' + k);
+  for (const k of SEA_KINDS) assert(SEA_TEXT.met[k] && SEA_TEXT.met[k].includes(SEA_NAMES[k]), 'a first-meet line for ' + k);
+  return `${strings.length} strings`;
+});
+
+function eq0(n, msg) {
+  assert(n === 0, msg);
+}
 
 console.log(`\n${passed} passed, ${failures} failed`);
 if (failures) process.exitCode = 1;

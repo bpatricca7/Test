@@ -197,6 +197,11 @@ export function install(game) {
     else if (e.key === 'ArrowLeft') turn(-1);
   }
 
+  // [{ key, build(el), refresh() }] registered by other modules on game:ready (ocean: Sea Friends)
+  if (!game.stickerBookExtras) game.stickerBookExtras = [];
+  let extrasEl = null;
+  const extrasBuilt = new Set();
+
   ui.registerPanel('stickers', {
     title: 'Sticker Book',
     icon: 'sticker',
@@ -238,7 +243,9 @@ export function install(game) {
       detail = ui.el('div', 'sw-sb-detail');
       detail.hidden = true;
       detail.addEventListener('click', (e) => { if (e.target === detail) hideDetail(); });
-      root.append(top, book, nav, detail);
+      // extra rows under the pages, built on first open (game.stickerBookExtras: the Sea Friends)
+      extrasEl = ui.el('div', 'sw-sb-extras');
+      root.append(top, book, nav, extrasEl, detail);
       container.appendChild(root);
       if (mq && mq.addEventListener) mq.addEventListener('change', () => { if (ui.isOpen('stickers')) render(); });
     },
@@ -252,6 +259,10 @@ export function install(game) {
       else if (unseen.size) page = Math.max(0, list.findIndex((s) => unseen.has(s.id))) / PER_PAGE | 0;
       view = single() ? page : page >> 1;
       render();
+      for (const x of game.stickerBookExtras || []) {
+        if (!extrasBuilt.has(x)) { const el = ui.el('div', 'sw-sb-extra'); extrasEl.appendChild(el); x.build(el); extrasBuilt.add(x); }
+        if (x.refresh) x.refresh();
+      }
       if (game.stickers && game.stickers.markSeen) game.stickers.markSeen();
       document.addEventListener('keydown', onKey);
     },

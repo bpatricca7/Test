@@ -462,7 +462,10 @@ class VehicleSystem {
     const g = this.game, pl = g.player;
     const asked = reason === 'button' || reason === 'key';
     let swim = false, stand = null, spot = null;
-    if (cur.v.water && asked) {
+    // 'sea': she slides over onto a dolphin (src/life/ocean): the confirmed second Get out on
+    // open water (she swims beside the boat), no shore search, no toast
+    if (cur.v.water && reason === 'sea') swim = true;
+    else if (cur.v.water && asked) {
       // a boat: step out onto the shore when there is one; else ask, then swim
       stand = this._shoreSpot(cur);
       if (!stand) {
@@ -1003,6 +1006,13 @@ class VehicleSystem {
   // facade and debug
   // =====================================================================================
 
+  pose() {
+    const cur = this.current;
+    if (!cur || cur.parked || !cur.drive) return null;
+    const d = cur.drive;
+    return { x: d.pos.x, y: d.pos.y, z: d.pos.z, yaw: d.yaw, speed: d.speed, boat: !!d.boat };
+  }
+
   facade() {
     const sys = this;
     return {
@@ -1011,6 +1021,8 @@ class VehicleSystem {
       isVehicle: (key) => sys.defs.has(key),
       drive: (entity) => sys.drive(entity),
       park: (o) => sys.park(o),
+      /** Read-only: the live vehicle's pose { x, y, z, yaw, speed, boat }, or null (sea animals). */
+      pose: () => sys.pose(),
       presence: () => sys.presence(),
       remoteModel: (vh) => sys.remoteModel(vh),
       remoteHonk: (key, dist) => sys.remoteHonk(key, dist),

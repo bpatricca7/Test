@@ -92,7 +92,22 @@ export const LINES = {
     'cook:done': ['You\'re a great chef!', 'That looks delicious!'],
     'garden:harvest': ['Look what you grew!', 'Yummy veggies!'],
     'prefab:place': ['Wow! A whole house!', 'That\'s so magical!'],
+    'sea:meet': ['Wow! A sea friend!', 'So cute! Hi there!', 'I love the ocean!'],
+    'sea:ride': ['You\'re riding a dolphin! Wheee!', 'Go, go, dolphin!', 'So fast! Yay!'],
   },
+  // ocean: sea animals near the friend (game.ocean.nearAny) and an invite to find dolphins
+  seaKinds: {
+    dolphin: ['Look, dolphins! Hi, dolphins!', 'Dolphins are so smart!'],
+    fish: ['The fish are so sparkly!'],
+    sea_turtle: ['A sea turtle! So graceful!'],
+    jelly: ['The jellyfish are glowing!'],
+    crab: ['Click click! A little crab!'],
+    octopus: ['An octopus! Eight arms to hug!'],
+    seahorse: ['A tiny seahorse! So cute!'],
+    starfish: ['A starfish! Twinkle twinkle!'],
+    whale: ['A whale! It\'s so big and gentle!'],
+  },
+  seaInvite: ['I saw dolphins out in the deep water!', 'Let\'s swim out and find dolphins!'],
   outfit: {
     head: {
       tiara: 'I love your tiara!', crown: 'Your crown is so royal!', flower_crown: 'Your flower crown is so pretty!',
@@ -221,6 +236,13 @@ function contextLines(game, friend) {
       const base = k.startsWith('bed_') ? 'bed' : k === 'pool_float' ? 'pool' : k;
       if (LINES.places[base]) add(LINES.places[base]);
     }
+  }
+  // sea animals near the friend, and an invite to find dolphins near the shore
+  if (friend && g.ocean) {
+    const p = friend.pos;
+    const kind = g.ocean.nearAny(p.x, p.y, p.z, 10);
+    if (kind && LINES.seaKinds[kind]) add(LINES.seaKinds[kind], 2);
+    if (g.ocean.met('dolphin') === 0 && g.ocean.nearDeep(p.x, p.z, 40)) add(LINES.seaInvite);
   }
   // her own lines
   if (friend && friend.def) add(friend.def.lines, 2);

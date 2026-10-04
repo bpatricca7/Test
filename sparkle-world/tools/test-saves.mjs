@@ -44,7 +44,7 @@ import { createServer } from '../server/server.mjs';
 import { cookieOf } from '../server/http.mjs';
 import { SAVES_LIMITS } from '../server/saves.mjs';
 import { openTestDb } from './testdb.mjs';
-import { SaveStore, forkName, BACKUP_FORMAT } from '../src/core/storage.js';
+import { SaveStore, forkName, BACKUP_FORMAT, mergeBackupProfile, backupProfile } from '../src/core/storage.js';
 import { HttpCloudBackend } from '../src/account/cloud.js';
 import { createApi } from '../src/account/api.js';
 import { mergeProfile, cloudProfile } from '../src/account/merge.js';
@@ -489,6 +489,31 @@ if (!MEASURE) {
       assert.equal(mergeProfile(a, b).lookPicked, true, 'the older local copy had it');
       assert.equal(mergeProfile(b, a).lookPicked, true, 'the older server copy had it');
       assert.equal(mergeProfile(b, { updatedAt: 5 }).lookPicked, undefined, 'neither: not made up');
+    });
+    // ocean (docs/teams/ocean.md §13.3): the sea counters live inside stats and merge key by key
+    test('M1 sea counters: stats.seaMet joins by maximum, the ride and coin counters take the max (either copy newer)', () => {
+      const local = { updatedAt: 10, stats: { seaMet: { dolphin: 3, fish: 1 }, dolphinRides: 2, seaCoinDay: 20261004, seaCoinMask: 5 } };
+      const server = { updatedAt: 20, stats: { seaMet: { dolphin: 1, crab: 2 }, dolphinRides: 4, seaCoinDay: 20261003, seaCoinMask: 513 } };
+      for (const [a, b] of [[local, server], [server, local], [{ ...local, updatedAt: 30 }, server]]) {
+        const m = mergeProfile(a, b);
+        assert.deepEqual(m.stats.seaMet, { dolphin: 3, fish: 1, crab: 2 });
+        assert.equal(m.stats.dolphinRides, 4);
+        assert.equal(m.stats.seaCoinDay, 20261004);
+        assert.equal(m.stats.seaCoinMask, 513);
+      }
+      const old = mergeProfile({ updatedAt: 5, stats: { gems: 2 } }, local);
+      assert.deepEqual(old.stats.seaMet, { dolphin: 3, fish: 1 }, 'an old copy without sea counters loses nothing');
+    });
+    test('M2 sea counters: a backup joins them by maximum; an old backup without seaMet leaves them alone', () => {
+      const current = { stats: { seaMet: { dolphin: 3, fish: 1 }, dolphinRides: 2 } };
+      assert.equal(mergeBackupProfile(current, { stats: { seaMet: { dolphin: 1, crab: 2 }, dolphinRides: 5, seaCoinDay: 20261004 } }), true);
+      assert.deepEqual(current.stats.seaMet, { dolphin: 3, fish: 1, crab: 2 });
+      assert.equal(current.stats.dolphinRides, 5);
+      assert.equal(current.stats.seaCoinDay, 20261004);
+      const before = JSON.stringify(current);
+      mergeBackupProfile(current, { stats: { gems: 0 } });
+      assert.deepEqual(JSON.parse(before).stats.seaMet, current.stats.seaMet, 'an old backup leaves seaMet alone');
+      assert.deepEqual(backupProfile({ stats: { seaMet: { whale: 1 } } }).stats, { seaMet: { whale: 1 } }, 'stats (with the sea counters) are in a backup');
     });
     test('forkName: "<name> (copy)" in at most 80 characters', () => {
       assert.equal(forkName('Castle'), 'Castle (copy)');
