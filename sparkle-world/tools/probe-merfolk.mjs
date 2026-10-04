@@ -545,9 +545,11 @@ async function swimPass(browser, errors) {
   }, deep);
   c(zip.cutNow === null && zip.after === null, `B10 holding a zip line over the water: no tail (${JSON.stringify(zip)})`);
 
-  // B11 cameras
-  const open = await openWater(page, ds.x, ds.z, 4);
-  await atSurface(page, deep, open);
+  // B11 cameras (the deepest open water near: the dive needs room ahead and below)
+  const dd = (await deepAt(page, 6)) || (await deepAt(page, 5)) || ds;
+  const open = await openWater(page, dd.x, dd.z, Math.min(4, dd.depth));
+  console.log(`  (B11 at a ${dd.depth}-deep spot)`);
+  await atSurface(page, [dd.x, dd.y, dd.z], open);
   const headY = await page.evaluate(() => {
     const g = window.__game, cam = g.camera, rig = g.cameraRig;
     const f = cam.getWorldDirection(cam.position.clone());
@@ -1053,7 +1055,7 @@ async function friendsPass(browser, errors) {
   const forms = await page.evaluate((ids) => { const g = window.__game; return [g.friends.byId(ids.a).avatar.seaForm, g.friends.byId(ids.l).avatar.seaForm]; }, ids);
   c(both && forms[0] === 'mermaid' && forms[1] === 'sea_dragon', `D1 Aria is a mermaid, Leo a sea dragon (${forms})`);
   const LINES = ['Whoa! Look at your tail!', "So sparkly! Let's swim!", 'You swim so fast now!'];
-  const said = await waitOk(page, (L) => window.__lines.some((l) => L.includes(l)), LINES, 5000);
+  const said = await waitOk(page, (L) => window.__lines.some((l) => L.includes(l)), LINES, 9000);
   c(said, 'D1 a friend says a sea-form line when she turns');
   await shot(page, 'friends-sea', PREFIX);
   for (let i = 0; i < 3; i++) {

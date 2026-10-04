@@ -767,6 +767,8 @@ export function install(game) {
   game.events.on('player:seaform', ({ form } = {}) => {
     if (!form || seaReacted || sys.remote) return;
     seaReacted = true;
+    // her tail is the big news: it wins over a reaction a moment ago (her first swim's sticker)
+    sys.eventT = 0;
     sys.react('player:seaform');
   });
   game.events.on('entity:remove', ({ entity }) => {
