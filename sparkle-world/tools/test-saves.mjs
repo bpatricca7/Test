@@ -1174,7 +1174,12 @@ if (!MEASURE) {
       assert.ok(!/from before/.test(await page.evaluate(() => document.querySelector('.sw-layer-dialogs').innerText)), 'asked once');
       assert.equal(await page.evaluate(() => window.__game.account.hasLegacy), true, 'the old copies stay 30 days (Remove old copies)');
       // a kid's device: the Grown-ups card opens at once; Sign this device out asks a plain
-      // "Sign this device out?", Remove old copies the grown-up check first (§7.7)
+      // "Sign this device out?", Remove old copies the grown-up check first (§7.7). The title's
+      // "Save a copy of your worlds?" card may be up first: Not now
+      if (await page.$('.ks-card')) {
+        await page.click('.ks-card .ks-later');
+        await page.waitForSelector('.ks-card', { state: 'detached' });
+      }
       await page.click('.sw-title-grownups');
       await dialogs(page, /For grown-ups/);
       assert.equal(await page.$('.sw-gate'), null, 'no grown-up check before the Grown-ups card on a kid device');
@@ -1250,7 +1255,8 @@ if (!MEASURE) {
         await own.waitForSelector('.sw-acct-grownups', { timeout: 120000 });
         await own.click('.sw-acct-grownups');
         await own.waitForSelector('.sw-gate .sw-gate-qtext');
-        assert.ok(!/For grown-ups/.test(await own.evaluate(() => document.querySelector('.sw-layer-dialogs').innerText)), "a grown-up's own sign-in: the grown-up check first");
+        // (the check's own note starts "For grown-ups:", so look at the cards' titles)
+        assert.ok(!(await own.$$eval('.sw-layer-dialogs h3', (hs) => hs.some((h) => h.textContent.trim() === 'For grown-ups'))), "a grown-up's own sign-in: the grown-up check first");
         await own.context().close();
         // a plan but nobody added yet: a grown-up's sign-in goes to the Family page to add one...
         const empty = await family({ players: [] });
