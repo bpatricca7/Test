@@ -946,7 +946,7 @@ async function gridsPass(browser, errors) {
       res[form] = await W.renderGrid(items, { cols: 6, size: 200 });
     }
     // every head accessory once with the sea dragon, on the boy and on the default girl (the
-    // horn nubs are left out only under a hat); the accessories in pink / blue, never the
+    // horn nubs show only with no head accessory or a bow); the accessories in pink / blue, never the
     // horns' gold, so a horn poking through one would show; framed tall enough for the halo
     const heads = W.options().HEAD_ACC.map((o) => o.key);
     // head and shoulders, big enough to see where each horn sits (the halo floats at 1.98)
@@ -955,15 +955,19 @@ async function gridsPass(browser, errors) {
     const hd = (lk, h, col, frame, who) => ({ look: { ...lk, acc: { ...lk.acc, head: h, headColor: col }, sea: { form: 'sea_dragon', color: null } }, label: `${h} (${who})`, frame, pose: front });
     res.heads = await W.renderGrid([...heads.map((h) => hd(boy, h, '#FF5FA2', HF, 'boy')), ...heads.map((h) => hd(base, h, '#4D7CFF', HF, 'girl'))], { cols: 6, size: 200 });
     res.headsBack = await W.renderGrid([...heads.map((h) => hd(boy, h, '#FF5FA2', HB, 'boy')), ...heads.map((h) => hd(base, h, '#4D7CFF', HB, 'girl'))], { cols: 6, size: 200 });
-    // every hair style with the sea dragon (the horns rise out of tall hair, step around buns),
-    // on the boy from the front and on the girl from the side
+    // every hair style with the sea dragon (the horns rise out of tall hair, step around buns and
+    // a fauxhawk's ridge), head and shoulders: on the boy from the front and from behind, and on
+    // the default girl (her bow) from the side
     const hairs = W.options().HAIR_STYLES.map((o) => o.key);
-    const HS = { cy: 1.05, span: 2.8, yaw: Math.PI / 2, pitch: 0.1 };
-    const HH = { cy: 1.05, span: 2.8, yaw: 0.35, pitch: 0.12 }; // room for horns on an afro
+    const HS = { cy: 1.58, span: 1.75, yaw: Math.PI / 2, pitch: 0.12 };
+    const HH = { cy: 1.62, span: 1.75, yaw: 0.35, pitch: 0.12 }; // room for horns on an afro
+    const HHB = { cy: 1.62, span: 1.75, yaw: Math.PI * 0.84, pitch: 0.18 };
+    const hl = (lk, h) => ({ ...lk, hair: { ...lk.hair, style: h }, sea: { form: 'sea_dragon', color: null } });
     res.hair = await W.renderGrid([
-      ...hairs.map((h) => ({ look: { ...boy, hair: { ...boy.hair, style: h }, sea: { form: 'sea_dragon', color: null } }, label: h, frame: HH, pose: front })),
-      ...hairs.map((h) => ({ look: { ...base, hair: { ...base.hair, style: h }, sea: { form: 'sea_dragon', color: null } }, label: h + ' (side)', frame: HS, pose: front })),
-    ], { cols: 7, size: 180 });
+      ...hairs.map((h) => ({ look: hl(boy, h), label: h, frame: HH, pose: front })),
+      ...hairs.map((h) => ({ look: hl(boy, h), label: h + ' (back)', frame: HHB, pose: front })),
+      ...hairs.map((h) => ({ look: hl(base, h), label: h + ' (girl, side)', frame: HS, pose: front })),
+    ], { cols: 8, size: 170 });
     // the starters, each in its own Match form
     // (and the boy starters once more from behind: the normal play view)
     const st = W.starters().map((o) => ({ look: { ...o.look, sea: { form: o.tag === 'b' ? 'sea_dragon' : 'mermaid', color: null } }, label: o.name, frame: 'sea', pose: swim }));
@@ -1222,8 +1226,20 @@ async function reviewPass(browser, errors) {
     });
     c(left.n === 0 && left.parts && !left.parts.shown && left.parts.legsVisible,
       `review: on land after a swim, legs and no sea parts showing (${left.n} shown)`);
-    await page.evaluate((y) => { const g = window.__game; g.cameraRig.pitch = 0.3; g.cameraRig.yaw = y; }, toLand + Math.PI * 0.8);
-    await settle(page, 600);
+    // seen from the front: he turns round to face the sea and the camera hangs over the water
+    // looking at him and the beach (a camera on the land side ran into the bank or his head)
+    await page.evaluate((y) => {
+      const g = window.__game;
+      g.player.yaw = y + Math.PI;
+      g.cameraRig.yaw = y + 0.3;
+      g.cameraRig.pitch = 0.22;
+    }, toLand);
+    await settle(page, 900);
+    const view = await page.evaluate(() => {
+      const g = window.__game, c = g.camera.position, p = g.player.position;
+      return { dist: Math.hypot(c.x - p.x, c.z - p.z), up: c.y - p.y };
+    });
+    c(view.dist > 2.5, `review: the land picture's camera stands back from him (${view.dist.toFixed(1)} blocks)`);
     await playShot('boy-land-after-swim');
   } else c(false, 'review: a shore for the land picture');
   await context.close();
@@ -1399,27 +1415,53 @@ async function costsPass(browser, errors) {
     return median(v);
   };
   const sh = await page.evaluate(() => window.__game.debug.merfolk.shore());
-  // B13c the first turn of a fresh page: the longest frame, ensureSea time. The Sea Magic!
-  // sticker is earned (and its cheer has passed) first: its pop is the sticker book's cost, not
-  // the turn's, and on a software GPU its animation alone makes frames 40-90 ms longer
+  // B13c the first turn of a fresh page: the longest frame from the turn's own frame (the first
+  // frame drawn with the tail) through the next 0.5 s, against the usual frame before it. The
+  // Sea Magic! sticker is earned (and its cheer has passed) first: its pop is the sticker book's
+  // cost, not the turn's, and on a software GPU its animation alone makes frames 40-90 ms longer.
+  // A software GPU's frame times jump by 50-100 ms on their own, so three fresh pages are
+  // measured and the middle one counts.
+  const firstTurn = async () => {
+    const pg = await openGame(browser, { errors, label: 'costs-turn' });
+    const P = pg.page;
+    await newWorld(P, 'beach');
+    const sh1 = await P.evaluate(() => window.__game.debug.merfolk.shore());
+    await P.evaluate(() => window.__game.stickers.award('sea_magic'));
+    await gameWait(P, 5000);
+    await P.evaluate(() => {
+      const g = window.__game;
+      g.__frames = [];
+      let last = performance.now();
+      const tick = () => { const n = performance.now(); g.__frames.push([n, n - last, !!g.player.seaForm]); last = n; if (g.__frames.length < 2000) requestAnimationFrame(tick); };
+      tick();
+    });
+    await place(P, sh1.deep, 0, 100);
+    await waitOk(P, () => !!window.__game.player.seaForm, null, 5000);
+    await settle(P, 900);
+    const r = await P.evaluate(() => {
+      const all = window.__game.__frames;
+      const i = all.findIndex((f) => f[2]);
+      if (i < 0) return null;
+      const t = all[i][0] - all[i][1]; // the turn frame started here
+      const before = all.filter(([n]) => n < t - 300).map(([, d]) => d).sort((a, b) => a - b);
+      const after = all.slice(i).filter(([n]) => n <= t + 500).map(([, d]) => d);
+      return { longest: Math.max(...after), median: before[Math.floor(before.length / 2)] || 0, turn: all[i][1] };
+    });
+    await pg.context.close();
+    return r;
+  };
+  const turns = [];
+  for (let i = 0; i < 3; i++) turns.push(await firstTurn());
+  const okTurns = turns.filter(Boolean);
+  const deltas = okTurns.map((f) => f.longest - f.median).sort((a, b) => a - b);
+  const fr = okTurns.length ? okTurns.find((f) => f.longest - f.median === deltas[Math.floor(deltas.length / 2)]) : { longest: Infinity, median: 0 };
+  // the main page turns too (the sea textures stay painted for the ensureSea timing below)
   await page.evaluate(() => window.__game.stickers.award('sea_magic'));
-  await gameWait(page, 5000);
-  await page.evaluate(() => {
-    const g = window.__game;
-    g.__frames = [];
-    let last = performance.now();
-    const tick = () => { const n = performance.now(); g.__frames.push([n, n - last]); last = n; if (g.__frames.length < 2000) requestAnimationFrame(tick); };
-    tick();
-  });
+  await gameWait(page, 3000);
   await place(page, sh.deep, 0, 100);
   await waitOk(page, () => !!window.__game.player.seaForm, null, 5000);
-  const tIn = await page.evaluate(() => performance.now());
   await settle(page, 700);
-  const fr = await page.evaluate((t) => {
-    const all = window.__game.__frames;
-    const before = all.filter(([n]) => n < t - 100).map(([, d]) => d).sort((a, b) => a - b);
-    return { longest: Math.max(...all.filter(([n]) => n >= t && n <= t + 500).map(([, d]) => d)), median: before[Math.floor(before.length / 2)] || 0 };
-  }, tIn);
+  console.log(`  first turns: ${okTurns.map((f) => `turn frame ${Math.round(f.turn)}, longest ${Math.round(f.longest)}, usual ${Math.round(f.median)}`).join('; ')}`);
   const longest = fr.longest;
   const ensureMs = (form) => page.evaluate((form) => {
     // ensureSea: a fresh avatar's first sea frame (it builds the parts) minus a later sea frame
@@ -1445,7 +1487,7 @@ async function costsPass(browser, errors) {
   const ensD = await ensureMs('sea_dragon');
   // SwiftShader draws every frame on the CPU (a normal frame here is already over 33 ms), so the
   // check is what 33 ms means on a device: the turn adds at most 33 ms to the usual frame
-  c(longest <= fr.median + 33, `B13c the longest frame in the 0.5 s after the first turn: ${Math.round(longest)} ms (usual ${Math.round(fr.median)} ms; at most +33 ms)`);
+  c(okTurns.length === 3 && longest <= fr.median + 33, `B13c the longest frame from the first turn through 0.5 s: ${Math.round(longest)} ms (usual ${Math.round(fr.median)} ms; at most +33 ms; the middle of 3 fresh pages: +${deltas.map(Math.round).join(', +')} ms)`);
   c(ens <= 2, `B13c ensureSea (building the sea parts once): ${ens.toFixed(2)} ms (median of 5, <= 2 ms)`);
   c(ensD <= 2, `B13c ensureSea for a Sea Dragon: ${ensD.toFixed(2)} ms (median of 5, <= 2 ms)`);
   // B13a / B13b draw calls and meshes: in sea form vs standing on the shore, same camera; her

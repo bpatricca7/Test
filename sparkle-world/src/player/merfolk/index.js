@@ -196,30 +196,60 @@ export function install(game) {
   const touchMode = () => !!(game.input && game.input.touchMode);
 
   // ---------- shader warm-up ----------
-  // The tail's fins are see-through and two-sided, which three.js draws in two passes (back
-  // faces, then front faces): two shader programs no other part of the game uses. Compiled
-  // lazily they would stall the frame of the first turn (about 0.7 s on a software GPU), so they
-  // are compiled once when a world loads, against the world's own lights and fog, with stand-in
-  // materials of the same kind (the programs are shared by kind, not by material). The scales
-  // (the cloth program) are warmed too, for looks without a cloth part. Kept for the session.
-  let warm = null;
+  // The sea parts use material kinds nothing else in the game draws: the scales (lit, mapped,
+  // vertex colors, emissive), the mermaid's see-through two-sided fins (three.js draws them in
+  // two passes) and the sea dragon's unlit blended glow spots. A GPU builds the program and its
+  // pipeline the first time a kind is really drawn, which stalled the frame of the first turn
+  // (0.3-1 s on a software GPU; compiling alone was not enough). So when a world loads, three
+  // stand-ins of the same kinds (one degenerate triangle each: nothing shows) are drawn in the
+  // real scene, against its lights and fog, until each has been drawn once, then taken out.
+  let warm = null, warmFrames = 0;
   const warmSea = () => {
     const r = game.renderer, cam = game.camera, scene = game.scene;
-    if (!r || !cam || !scene || typeof r.compile !== 'function') return;
+    if (!r || !cam || !scene) return;
     if (!warm) {
       const tex = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
       tex.needsUpdate = true;
       const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 1, 0, 0, 0, 1, 0], 3));
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(9), 3));
       geo.setAttribute('normal', new THREE.Float32BufferAttribute([0, 0, 1, 0, 0, 1, 0, 0, 1], 3));
       geo.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 0, 1], 2));
       geo.setAttribute('color', new THREE.Float32BufferAttribute([1, 1, 1, 1, 1, 1, 1, 1, 1], 3));
-      const mk = (o) => new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, map: tex, emissive: new THREE.Color('#3FD8B0'), ...o }));
+      const mk = (mat) => {
+        const m = new THREE.Mesh(geo, mat);
+        m.frustumCulled = false;
+        m.onAfterRender = () => { m.userData.drawn = true; };
+        return m;
+      };
+      const lam = (o) => new THREE.MeshLambertMaterial({ vertexColors: true, map: tex, emissive: new THREE.Color('#3FD8B0'), ...o });
       warm = new THREE.Group();
-      warm.add(mk({ side: THREE.DoubleSide, transparent: true, depthWrite: false })); // fin:
-      warm.add(mk({ side: THREE.FrontSide })); // scale:
+      warm.name = 'merfolkWarm';
+      warm.add(mk(lam({ side: THREE.DoubleSide, transparent: true, depthWrite: false }))); // fin:
+      warm.add(mk(lam({ side: THREE.FrontSide }))); // scale:
+      warm.add(mk(new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false }))); // seaglow:
     }
-    try { r.compile(warm, cam, scene); } catch { /* a lost context: the first turn compiles them */ }
+    for (const m of warm.children) m.userData.drawn = false;
+    if (warm.parent !== scene) scene.add(warm);
+    warmFrames = 90; // at most: a hidden page draws nothing
+    try { if (typeof r.compile === 'function') r.compile(warm, cam, scene); } catch { /* a lost context */ }
+  };
+  const warmStep = () => {
+    if (!warm || !warm.parent) return;
+    if (--warmFrames <= 0 || warm.children.every((m) => m.userData.drawn)) warm.parent.remove(warm);
+  };
+  // The player's own sea parts are built ahead too, hidden, 1.5 s after a world loads or her
+  // look changes (building the dragon's parts costs a slow device's frame 10-20 ms): the first
+  // turn then only shows them.
+  let prepT = 0;
+  const prepSoon = () => {
+    clearTimeout(prepT);
+    prepT = setTimeout(prepareSea, 1500);
+  };
+  const prepareSea = () => {
+    prepT = 0;
+    const av = game.player && game.player.avatar;
+    if (game.mode !== 'play' || !av || typeof av.prepareSea !== 'function') return;
+    try { av.prepareSea(); } catch { /* the first turn builds them */ }
   };
 
   // ---------- events ----------
@@ -227,6 +257,7 @@ export function install(game) {
   let firstEver = false;
   game.events.on('world:load', () => {
     warmSea();
+    prepSoon();
     visitToast = false;
     hideBubble(false);
     bub.wait = -1;
@@ -239,6 +270,7 @@ export function install(game) {
     tips.dive = -1;
     setUnderwater(null);
   });
+  game.events.on('avatar:changed', prepSoon);
   game.events.on('ui:open', () => {
     if (bubble && bubble.classList.contains('lf-on')) hideBubble(true);
   });
@@ -290,6 +322,7 @@ export function install(game) {
   const sys = {
     name: 'merfolk',
     update(dt) {
+      warmStep();
       const p = game.player;
       if (game.mode !== 'play' || !game.physics || !p || !game.world) {
         if (game.underwater) setUnderwater(null);

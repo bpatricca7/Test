@@ -33,7 +33,7 @@ module names, and do not clash.
 
 | Question | Decision |
 |---|---|
-| The two forms | **Mermaid**: a shimmering scaled tail with a round two-lobed fin and a little fin frill at the waist. **Sea Dragon** (our own creature, built from dragon and real leafy-sea-dragon ideas; redesigned after the owner review, see As built): a longer, thicker, gently curving tail with light belly plates down the front, a tall row of round-tipped crest spikes (tail colored, gold tips) from the waist down the whole tail, big solid leafy fronds on the tail's sides and small leafy fins on the forearms, softly glowing spots along the tail, a big ribbed fan fin whose outer lobes reach furthest, and two curved horn nubs on the head (left out only under a hat). Deep teal with gold accents by default; Match never makes it purple or pearl (those give Deep teal). **The face, ears and cheeks stay 100 % the child's** (no head fans, no cheek scales). Both keep the child's own face, hair and top. |
+| The two forms | **Mermaid**: a shimmering scaled tail with a round two-lobed fin and a little fin frill at the waist. **Sea Dragon** (our own creature, built from dragon and real leafy-sea-dragon ideas; redesigned after the owner review, see As built): a longer, thicker, gently curving tail with light belly plates down the front, a tall row of round-tipped crest spikes (tail colored, gold tips) from the waist down the whole tail, big solid leafy fronds on the tail's sides and small leafy fins on the forearms, softly glowing spots along the tail, a big ribbed fan fin whose outer lobes reach furthest, and two curved horn nubs on the head (only with no head accessory or a bow). Deep teal with gold accents by default; Match never makes it purple or pearl (those give Deep teal). **The face, ears and cheeks stay 100 % the child's** (no head fans, no cheek scales). Both keep the child's own face, hair and top. |
 | Third choice | **Just Me**: no tail, no sparkles. In **deep** water she still gets the easy swimming (hover, Up and Down, the leap) at a slightly lower speed; in shallow water she swims exactly as today. Saying no to a tail is never a punishment. |
 | When it happens | Swimming in **deep** water (liquid at the waist **and** either one more liquid cell under the feet or liquid at head height), for **0.25 s**. Water, chocolate milk and strawberry milk all count. Never while flying, riding a pony, horse or vehicle, sitting, sleeping or on a zip line. **Riding a dolphin keeps the tail** (side-saddle, §6.5). |
 | Turning back | After standing on land for **0.35 s**, or after **1.4 s** out of the water (a leap that lands back in the water keeps the tail). Flying, mounting a pony or vehicle, sitting, the zip line or a teleport turn her back **at once**. |
@@ -933,13 +933,12 @@ glow spots `G` / `H` (core, halo) (`seaPalette`).
 - **Sea Dragon horn nubs** (`P.B(seaHorns, 'plain')`): two curved horns (`horn()`: a tapered
   tube of four segments bending back, radius 0.078 → 0.016, a lighter rounded tip, about 0.36
   long) rooted in the hair at x ±0.14, y 1.66, z −0.04, splayed out a little, clearly above
-  short hair (`hornSpot(look)`). **Left out only under a hat** (beanie, sun hat, sparkly hat,
-  cap, backwards cap, bucket hat: they cover the top of the head). Moved where an accessory or
-  hair sits on that spot: back behind a bow (z −0.13), cat ears (−0.17), bunny ears (−0.15),
-  headphones (−0.13) or the unicorn horn (−0.1); behind a crown (z −0.25); out beside a top bun
-  (±0.24); back behind space buns (z −0.2); up out of an afro (y 1.97), curly hair (1.78), spikes (1.76) or short
-  curls (1.7), so they never end inside the hair. With a tiara, flower crown, halo or
-  headband they stay where they are.
+  short hair (`hornSpot(look)`). **Only with no head accessory or a bow**: every other head
+  accessory sits on top of the head (hats, crown, tiara, flower crown, headband, cat and bunny
+  ears, unicorn horn, halo, headphones) and horns there grew out of it, so they are left out.
+  Behind and above a bow (z −0.22, splayed out); out beside a top bun (±0.24) or a fauxhawk's
+  ridge (±0.21); back behind space buns (z −0.2); up out of an afro (y 1.97), curly hair (1.78),
+  spikes (1.76) or short curls (1.7), so they never end inside the hair.
 - **No crest on the torso**: the crest starts at the waist. Carried up the back it sat on the
   child's own shirt (over a shirt number), poked through long hair from the side and had to be
   left out under backpacks and wings.
@@ -1118,7 +1117,7 @@ normal sticker path. Sticker total grows by 2 (the book handles any count).
 | what | cost |
 |---|---|
 | Avatar on land | 0 draw calls, 0 per-frame work (the form is not even resolved; one boolean) |
-| First turn of an avatar (lazy build) | about 1 ms CPU, once per (look, form); no new shader program (`scale:` = the `cloth:` program, `fin:` = the `cloth2:` program, `glow` permanent). The longest frame in the 0.5 s after the first turn stays ≤ 33 ms on the probe (B13c) |
+| First turn of an avatar (lazy build) | about 1 ms CPU, once per (look, form) (the player's own parts are built hidden ahead, `prepareSea()`); the sea material kinds are drawn once by a warm-up when a world loads (fourth round, As built). The longest frame in the 0.5 s after the first turn stays ≤ 33 ms on the probe (B13c) |
 | Avatar in sea form | Mermaid +3 / Sea Dragon +8 draw calls, minus 5-10 hidden leg and skirt meshes; tube deform about 0.02 ms (8×12 quads + extras, in place); hidden flares not deformed |
 | Textures | 2 per (color, form) at 128×128 through the shared cache, refcounted once per avatar (§7.4) |
 | Player physics | 3 to 4 extra `liquidAt` calls per frame while sea swimming (depth, float-up, the leap head check only when Up is held); 0 on land |
@@ -1388,8 +1387,8 @@ Before declaring any other suite "no edit", grep every probe for `.lk` and `pack
   animation freeze). Accepted.
 - **Q7 Older cached tabs** can drop an explicit sea choice from a cloud profile (§11). Accepted:
   no item is lost, only a preference that falls back to `'auto'`.
-- **Q8 Hats and the dragon's horn nubs**: the nubs are left out only under a hat and move
-  around other head accessories and tall hair (§7.3); C5 render grids show every head
+- **Q8 Hats and the dragon's horn nubs**: the nubs show only with no head accessory or a bow
+  and move around the bow and tall hair (§7.3); C5 render grids show every head
   accessory (boy and girl, accessories in pink / blue so a horn poking through would show) and
   every hair style with the Sea Dragon.
 - **Q9 Later wave (append only)**: a **Rainbow** tail as its own pattern list (`SEA_PATTERNS`,
@@ -1635,6 +1634,39 @@ makes a new candy world when the random one has no deep milk near the start.
   machine: the previous commit measured +23, +70 and +48 ms, this one +28 to +163 ms; no shader
   program is compiled on the turn.
 
+**Fourth round (the picture judges):**
+- **Readable from the play camera.** The float bend that lifted the tail end and fan toward
+  the camera is gone (and so is riding 0.13 higher: he floats at the mermaid's level). Floating,
+  the tail sweeps back from the hips and its end sinks a little; swimming along the top it trails
+  straight back and a little down under the surface (`FLOAT_STILL` / `FLOAT_SWIM`, blended by
+  speed). The dragon's tail waves side to side in a slow S (`seaKick.side`, more at speed) with a
+  smaller up-and-down kick (×0.4), and its fan fin rolls with the wave and turns on edge with
+  speed (`fluke.rotation.y`, eased), so from behind you see horns, the crest down the tail and the
+  fan under the water tint, not a flat splash. The mermaid's poses are unchanged.
+- **No famous-dragon colors.** Accents per tail (`ACCENTS` in parts.js): Purple has mint horns,
+  crest and ribs and a pink belly (never purple + gold + yellow); Coral aqua with a shell-pink
+  belly; Orange berry pink; Gold deep teal, its dark shades amber (they were olive). Test A17.
+- **Horns only with no head accessory or a bow.** Every other head accessory sits on top of the
+  head (hats, crown, tiara, flower crown, headband, cat and bunny ears, unicorn horn, halo,
+  headphones), so the horns are left out there; an unknown accessory key also gives none. A
+  fauxhawk moves them out past its ridge. Grids: heads, headsBack, hair (front, back, girl side).
+- **Land after a swim**: the picture looks from over the water at him on the beach (he faces
+  the sea), checked to stand back more than 2.5 blocks.
+- **Friends**: Aria and Leo pass `seaFloat` too (head out of the water), so a friend Sea Dragon
+  floats like the player instead of hanging its tail down.
+- **First-turn cost (B13c), measured.** Same script, boy as Sea Dragon, lock held, no other
+  browser: the pre-redesign head 3372638 and f0eb909 both stalled the turn frame itself
+  430-860 ms (shader / pipeline built on first draw: the fins' two passes and the glow), which the
+  old B13c window (it started after the turn frame) never saw; the redesign also made the
+  first build heavier (avatar update on the turn frame 5-7 ms before, 13-21 ms after). Now: the
+  warm-up draws three one-triangle stand-ins (scales, two-sided see-through fins, blended glow) in
+  the real scene once when a world loads, and the player's own sea parts are built hidden 1.5 s
+  after a world loads or the look changes (`avatar.prepareSea()`). Turn frame now 100-200 ms (the
+  usual frame here is 80-180 ms) with 2-3 ms avatar update. B13c now measures from the turn frame
+  itself and takes the middle of 3 fresh pages; the remaining spread (deltas -7 to +98 ms over
+  14 runs, middle about +40) is this 4-core SwiftShader machine's own frame noise: the steady
+  sea-form frame is the same as on land.
+
 **For the integrator / squish (Sea Dragon Puffum, C9):** the motifs changed shape, not names:
 the horn nubs are now curved horns swept back, with a dark root band, ridge bands and a light
 tip; the "bubble-dome spikes" are a tall row of round-tipped crest spikes, tail colored with gold
@@ -1643,7 +1675,8 @@ warm gold-cream plates; the fronds are bigger, solid, deep tail color with a lig
 tail's own color and three gold ribs each (fins, not leaves); the glow spots are round with a
 halo, plus glowing beads at the frond tips; the fan fin is bigger, five round lobes with the outer
 ones longest, deep tail color with gold ribs, folded a little toward the back. Colors stay Deep teal
-`#2FB5B0`; the accent gold is now `#FFC83A` (C9's `#FFD43B` is close enough for a toy).
+`#2FB5B0`; the accent gold is now `#FFC83A` (C9's `#FFD43B` is close enough for a toy). A toy in
+other colors follows `ACCENTS` (a purple one has mint horns and crest and a pink belly, never gold).
 
 ---
 

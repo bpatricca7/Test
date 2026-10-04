@@ -1,7 +1,7 @@
 // Sea-form parts (docs/teams/merfolk.md §7): the tail, the fin at its tip, the mermaid's waist
 // frill and the sea dragon's creature parts (a long curving tail with light belly plates, a row
-// of round-tipped crest spikes from the shoulders to the fin, bold leafy fronds and small
-// forearm fins, glowing spots, curved horn nubs and a big ribbed fan fin with long outer
+// of round-tipped crest spikes from the waist down the tail to the fin, bold leafy fronds and
+// small forearm fins, glowing spots, curved horn nubs and a big ribbed fan fin with long outer
 // lobes). Built lazily by the avatar the first time it turns (never in build()), shown or
 // hidden with `visible`, and freed by the avatar's disposeSea().
 //
@@ -9,8 +9,9 @@
 //   class TailTube: one CPU-deformed tube (like Flare), up to three material groups
 //   paintScales / paintFin: the textures (light gray-scale; the color comes from vertex colors)
 //
-// The face, ears and cheeks are never touched: everything sits on the hips, the tail, the back,
-// the outside of the forearms and (left out only under a hat) two horn nubs on top of the head.
+// The face, ears and cheeks are never touched: everything sits on the hips, the tail, the
+// outside of the forearms and (only with no head accessory or a bow) two horn nubs on top of
+// the head.
 
 import * as THREE from 'three';
 import { mixHex, shade } from '../../core/util.js';
@@ -39,29 +40,37 @@ export const TAIL = {
   },
 };
 
-// the dragon's accent: a rich gold of its own (not mixed with the tail, so a purple or pink
-// tail never turns it peach); warm tails (Gold, Orange) get a deep-teal accent instead
+// The dragon's accent (horns, crest tips, fin ribs) and belly: a rich gold of its own and warm
+// cream plates (not mixed with the tail, so a pink tail never turns them peach). Some tails get
+// accents of their own, so no tail color adds up to a famous dragon's colors: Purple has mint
+// horns and crest with a pink belly (never purple + gold + yellow), Coral aqua with a shell-pink
+// belly, Orange berry pink, Gold a deep teal with amber (not olive) shading.
 const GOLD = '#FFC83A';
-const warm = (hex) => {
-  const n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
-  return r > 200 && g > 140 && b < 120;
+const BELLY = '#FFD36E';
+const ACCENTS = {
+  '#9C7BFF': { A: '#7DF2CC', B: '#FFCFEA' }, // Purple
+  '#FF6B6B': { A: '#3FE0CF', B: '#FFDCD2' }, // Coral
+  '#FFA94D': { A: '#E2458F', B: '#FFE9CF' }, // Orange
+  '#FFD43B': { A: '#13958F', dark: '#A8430E' }, // Gold
 };
 
 /** Tail colors: C the tail, L fins, D edges, A the dragon's accent (crest tips, horns, fin
  *  ribs), S its dark back (it shades from S along the spine to C on the flanks: a dark shape
- *  in light water), B its warm belly plates, F / R its fronds and fan fin (deep root, light
- *  rim in its own color, never mixed with the gold: teal + gold turned them leaf green), K the
- *  root of its crest spikes, G / H the glow spots (core, halo), N the dark root band of its
- *  horns. */
+ *  in light water), B its belly plates, F / R its fronds and fan fin (deep root, light rim in
+ *  its own color, never mixed with the accent: teal + gold turned them leaf green), K the root
+ *  of its crest spikes, G / H the glow spots (core, halo), N the dark root band of its horns. */
 export function seaPalette(hex) {
-  const A = warm(hex) ? '#178A86' : GOLD;
+  const up = String(hex).toUpperCase();
+  const x = ACCENTS[up] || {};
+  // darker shades: toward black, or for Gold toward a deep amber (a darker yellow is olive)
+  const dk = (k) => (x.dark ? mixHex(hex, x.dark, Math.min(1, k * 1.5)) : shade(hex, -k));
   return {
-    C: hex, L: mixHex(hex, '#FFFFFF', 0.45), D: shade(hex, -0.25), A,
-    S: shade(hex, -0.45),
-    B: mixHex(hex, '#FFD36E', 0.85), F: shade(hex, -0.38), R: mixHex(hex, '#FFFFFF', 0.32),
-    K: shade(hex, -0.3),
+    C: hex, L: mixHex(hex, '#FFFFFF', 0.45), D: dk(0.25), A: x.A || GOLD,
+    S: dk(0.45),
+    B: x.B ? mixHex(hex, x.B, 0.85) : mixHex(hex, BELLY, 0.85), F: dk(0.38), R: mixHex(hex, '#FFFFFF', 0.32),
+    K: dk(0.3),
     G: mixHex(hex, '#FFFFFF', 0.86), H: mixHex(hex, '#C8FFF4', 0.5),
-    N: shade(hex, -0.55),
+    N: dk(0.55),
   };
 }
 
@@ -606,34 +615,31 @@ export function paintFin(g, w, h) {
   g.strokeRect(1.5, 1.5, w - 3, h - 3);
 }
 
-// Where the horn nubs grow (the right one; the left mirrors it), or null under a hat: x, y, z
-// its root, out its outward tilt, back its backward tilt, size. They sit on top of the head a
-// little behind the middle; an accessory or hair that sits there moves them so each stays
-// clear of it: out to the sides past a halo ring, a crown, a unicorn horn, ears or a bow (and a
-// little back and higher so the bow never hides one from the front), and up out of tall hair
-// (an afro, spikes) so they never end in the curls.
-const HORN_HATS = new Set(['beanie', 'sun_hat', 'witch_hat', 'cap', 'cap_back', 'bucket_hat']);
+// Where the horn nubs grow (the right one; the left mirrors it), or null: x, y, z its root, out
+// its outward tilt, back its backward tilt, size. They sit on top of the head a little behind
+// the middle. Only with no head accessory or a bow (a small piece at the side or front): every
+// other head accessory sits on top of the head (hats, crowns, tiaras, headbands, ears, a
+// unicorn horn, a halo, headphones), and horns there would grow out of it, so they are left
+// out. Hair that sits where they grow moves them: out past a fauxhawk's ridge or a top bun,
+// behind space buns, up out of tall hair (an afro, curls, spikes) so they never end in it.
 const HORN_ACC = {
+  none: {},
   bow: { x: 0.21, y: 1.73, z: -0.22, out: 0.55 },
-  cat_ears: { x: 0.08, y: 1.68, z: -0.2, out: 0.08, back: 0.15, size: 0.9 },
-  bunny_ears: { x: 0.29, y: 1.57, z: -0.12, out: 1.05, back: 0.05, size: 0.85 },
-  headphones: { z: -0.16 },
-  unicorn_horn: { x: 0.24, y: 1.63, z: -0.14, out: 0.62, size: 0.92 },
-  crown: { x: 0.27, y: 1.62, z: -0.06, out: 0.72, size: 0.9 },
-  halo: { x: 0.27, y: 1.62, z: -0.06, out: 0.78, size: 0.88 },
 };
 const HORN_HAIR = {
   afro: { y: 1.97 }, curly: { y: 1.78 }, spiky: { y: 1.76 }, short_curly: { y: 1.7 }, bun: { x: 0.24 }, space_buns: { z: -0.2 },
+  fauxhawk: { x: 0.21, out: 0.45 },
 };
 export function hornSpot(look) {
   const head = (look && look.acc && look.acc.head) || 'none';
-  if (HORN_HATS.has(head)) return null;
-  const h = HORN_HAIR[look && look.hair && look.hair.style] || {}, a = HORN_ACC[head] || {};
+  if (!Object.hasOwn(HORN_ACC, head)) return null;
+  const a = HORN_ACC[head];
+  const h = HORN_HAIR[look && look.hair && look.hair.style] || {};
   // tall hair lifts a horn that sits out at the side less (the hair is lower there)
   const lift = a.out > 0.6 && h.y ? Math.max(0, h.y - 1.66) * 0.6 : Math.max(0, (h.y || 0) - 1.66);
   return {
     x: Math.max(0.14, h.x || 0, a.x || 0), y: Math.max(1.66, a.y || 0) + lift, z: Math.min(-0.04, h.z ?? 0, a.z ?? 0),
-    out: a.out ?? 0.3, back: a.back ?? 0, size: a.size ?? 1,
+    out: a.out ?? h.out ?? 0.3, back: a.back ?? 0, size: a.size ?? 1,
   };
 }
 
@@ -720,7 +726,7 @@ export function buildSea(P, form, hex, look) {
     }
   } else if (form === 'sea_dragon') {
     // two curved horn nubs on top of the head, swept back, rounded tips, clearly above the hair
-    // (left out only under a hat; moved for accessories and hair that sit where they grow)
+    // (only with no head accessory or a bow; moved for a bow and for hair where they grow)
     const spot = hornSpot(look);
     if (spot) {
       const g = new THREE.Group();

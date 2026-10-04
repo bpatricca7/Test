@@ -292,6 +292,7 @@ export class Friend {
         sleeping: this.act === 'sleep',
         riding: false,
         sea: this.seaOn,
+        seaFloat: this.seaOn && !this._liq(this.pos.x, this.pos.y + 1.3, this.pos.z), // merfolk: head out
       });
     }
     this._updateBox();
@@ -416,6 +417,7 @@ export class Friend {
         sleeping: this.act === 'sleep',
         riding: false,
         sea: this.seaOn,
+        seaFloat: this.seaOn && !this._liq(this.pos.x, this.pos.y + 1.3, this.pos.z), // merfolk: head out
       });
       this._eatPose();
     }

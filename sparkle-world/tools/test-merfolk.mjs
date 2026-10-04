@@ -661,18 +661,37 @@ await test('A13 the sea strings: no other company\'s names, no famous characters
 
 // ---------- A16: Down without Shift ----------
 
-await test('A17 sea dragon horns: left out only under a hat, never inside the hair', () => {
-  const hats = new Set(['beanie', 'sun_hat', 'witch_hat', 'cap', 'cap_back', 'bucket_hat']);
+await test('A17 sea dragon horns: only with no head accessory or a bow, never inside the hair; tail accents', () => {
+  // every other head accessory sits on top of the head (hats, crowns, tiaras, headbands, ears, the
+  // unicorn horn, the halo, headphones): the horns would grow out of it
+  const keep = new Set(['none', 'bow']);
   for (const o of W.HEAD_ACC) {
     for (const h of W.HAIR_STYLES) {
       const sp = hornSpot({ hair: { style: h.key }, acc: { head: o.key } });
-      assert(hats.has(o.key) ? sp === null : !!sp && Number.isFinite(sp.x + sp.y + sp.z), `${o.key} / ${h.key}: ${JSON.stringify(sp)}`);
+      assert(keep.has(o.key) ? !!sp && Number.isFinite(sp.x + sp.y + sp.z) : sp === null, `${o.key} / ${h.key}: ${JSON.stringify(sp)}`);
     }
   }
+  assert(hornSpot({ hair: { style: 'long' }, acc: { head: 'toString' } }) === null, 'an unknown accessory: no horns');
   assert(hornSpot({ hair: { style: 'afro' }, acc: { head: 'none' } }).y > 1.9, 'up out of an afro');
   assert(hornSpot({ hair: { style: 'long' }, acc: { head: 'bow' } }).z < -0.1, 'behind a bow');
-  // the accent stays gold on every non-warm tail (never peach on purple or pink)
-  for (const c of ['#9C7BFF', '#FF8CC6', '#FF5FA2', '#2FB5B0']) assert(seaPalette(c).A === '#FFC83A', 'gold accent on ' + c);
+  assert(hornSpot({ hair: { style: 'fauxhawk' }, acc: { head: 'none' } }).x >= 0.2, 'out past a fauxhawk ridge');
+  // the accent stays gold on the cool tails (never peach on pink); Purple is never purple + gold +
+  // a yellow belly (a famous dragon's colors): mint horns and crest, a pink belly; Gold, Coral
+  // and Orange have accents of their own
+  for (const c of ['#FF8CC6', '#FF5FA2', '#2FB5B0', '#3FD8B0', '#4D7CFF']) assert(seaPalette(c).A === '#FFC83A', 'gold accent on ' + c);
+  const hue = (hex) => {
+    const n = parseInt(hex.slice(1), 16), r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+    if (!d) return { h: 0, s: 0 };
+    const h = mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return { h: h * 60, s: d / (1 - Math.abs(mx + mn - 1)) };
+  };
+  const yellowish = (hex) => { const q = hue(hex); return q.s > 0.25 && q.h >= 30 && q.h <= 70; };
+  const pu = seaPalette('#9C7BFF');
+  assert(!yellowish(pu.A) && !yellowish(pu.B), `Purple: no gold accent, no yellow belly (${pu.A}, ${pu.B})`);
+  for (const c of ['#FFD43B', '#FF6B6B', '#FFA94D']) assert(!yellowish(seaPalette(c).A), 'its own accent on ' + c);
+  // Gold's dark shades are amber, not olive (a hue under 45)
+  for (const k of ['S', 'F', 'K']) assert(hue(seaPalette('#FFD43B')[k]).h < 45, `Gold ${k} is amber: ${seaPalette('#FFD43B')[k]}`);
 });
 
 await test('A16 input.downKey: Shift alone is not Down; C and the Down button are', () => {

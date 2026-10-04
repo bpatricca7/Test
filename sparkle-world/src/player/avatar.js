@@ -5,14 +5,14 @@
 //
 //   createAvatar(look, { fx, blink, seaAuto }) -> { group, look, setLook, update, playEmote,
 //                    dispose, setOpacity, emoting, settle, hold, held, heldShown, seaForm,
-//                    seaShown, setSeaAuto, seaParts }
+//                    seaShown, setSeaAuto, prepareSea, seaParts }
 //   group: origin at the feet (seat surface when sitting, mattress-top centre when sleeping,
 //   saddle when riding), ~1.75 tall, facing +Z.
 //   fx(kind, Vector3, opts): optional particle hook (in the world: game.particles.emit).
 //   seaAuto: (look) => 'mermaid' | 'sea_dragon' | 'me', or one of those strings: the form a look
 //   with sea.form 'auto' shows in deep water (default 'me'). update(dt, { sea: true }) turns her
-//   (docs/teams/merfolk.md §6.3): the sea parts are built lazily on the first turn, never in
-//   build(), and disposeSea() alone owns their meshes, bones, materials and textures.
+//   (docs/teams/merfolk.md §6.3): the sea parts are built lazily (on the first turn, or hidden
+//   by prepareSea() in a quiet moment), never in build(), and disposeSea() alone owns their meshes, bones, materials and textures.
 
 import * as THREE from 'three';
 import { angleDelta, shade } from '../core/util.js';
@@ -407,10 +407,13 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
   let autoForm = null; // the cached resolved 'auto' form (cleared by setLook / setSeaAuto)
   let seaLastForm = null; // the form of the last parts built (a look change disposes them)
   let seaHex = null; // { form, hex } cached Match color for this look
-  const seaKick = { amp: 0, turn: 0, curl: 0, float: 0 };
-  // the floating sea dragon's tail bend per joint: most at the hips (straight back along the
-  // surface at once), then its end curls up out of the water, fan fin and all
-  const FLOAT_BEND = [0.6, 0.42, 0.2, 0.08, 0.12, 0.16, 0.12];
+  const seaKick = { amp: 0, turn: 0, curl: 0, float: 0, side: 0, sp: 0 };
+  // the floating sea dragon's tail bend per joint (positive: toward its back), blended by speed.
+  // Floating still, the tail sweeps back from the hips and its end sinks a little; swimming
+  // along the top, it trails straight back and a little down under the surface (never curling
+  // up toward the camera behind him: seen from there an upturned end was a flat splash).
+  const FLOAT_STILL = [0.45, 0.3, 0.1, 0, -0.05, -0.1, -0.1];
+  const FLOAT_SWIM = [0, -0.04, -0.06, -0.1, -0.14, -0.18, -0.2];
   const seaAngles = new Float32Array(7), seaSides = new Float32Array(7);
 
   /** The form this look shows: its explicit choice, or the cached seaAuto(look) for 'auto'. */
@@ -484,7 +487,7 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     out.tip.add(fluke);
     meshes.push(fluke);
     sea = {
-      form, hex, root: out.root, tip: out.tip, tube: out.tube, meshes, bones: out.bones, matKeys: out.keys, frill,
+      form, hex, root: out.root, tip: out.tip, tube: out.tube, meshes, bones: out.bones, matKeys: out.keys, frill, fluke,
     };
     const vis = seaW > 0.01;
     sea.root.visible = vis;
@@ -789,17 +792,15 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     seaKick.turn = Math.max(-0.5, Math.min(0.5, -yawRate * 0.12));
     const curl = onFloor && sp < 0.35 ? 0.24 : sp < 0.2 && vy > -0.2 && vy < 0.2 ? -0.05 : 0;
     seaKick.curl += (curl - seaKick.curl) * Math.min(1, dt * 6);
-    // the sea dragon at the surface (its head out): floating still, its tail sweeps straight
-    // back from the hips and lies along the surface, crest up (a creature floating, not a tail
-    // hanging into the deep); swimming along the top, the tail lifts a little so the fan fin
-    // stays in sight
-    const fl = float && !onFloor && sea && sea.form === 'sea_dragon' ? mix(1, 0.3, Math.min(1, sp / 0.45)) : 0;
+    // the sea dragon swims like a creature: its long tail waves side to side in a slow S (seen
+    // from behind, the play camera, the tail and its crest show instead of pointing at the
+    // camera), with a smaller up-and-down kick
+    const dragon = !!sea && sea.form === 'sea_dragon';
+    seaKick.sp = sp;
+    seaKick.side = dragon ? 0.35 * (0.6 + 0.4 * sp) : 0;
+    if (dragon) seaKick.amp *= 0.4;
+    const fl = float && !onFloor && dragon ? 1 : 0;
     seaKick.float += (fl - seaKick.float) * Math.min(1, dt * 4);
-    tgt[RPY] += 0.13 * fl; // it rides a little higher, its back at the waterline
-    seaKick.amp *= 1 - 0.5 * seaKick.float;
-    // and, floating still, it curves round to one side (seen from behind, a creature's curve
-    // along the surface, not a tail pointing at the camera)
-    seaKick.turn += 0.28 * seaKick.float * Math.max(0, 1 - sp / 0.45);
   }
 
   /** The tail out of the water: a leap (head up rising, head first falling), or a flop on sand. */
@@ -814,6 +815,7 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     seaKick.turn = 0;
     seaKick.curl = s.onGround ? 0.05 : 0.18;
     seaKick.float = Math.max(0, seaKick.float - dt * 4);
+    seaKick.side = 0;
   }
 
   /** Riding a dolphin with a tail: side-saddle, holding on, the tail draped along its side. */
@@ -828,6 +830,7 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     seaKick.turn = 0.35;
     seaKick.curl = 0.25;
     seaKick.float = Math.max(0, seaKick.float - dt * 4);
+    seaKick.side = 0;
   }
 
   /** After the bones are set: bend the tail, place the fin, flutter the frill, shimmer. */
@@ -838,12 +841,19 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     sea.root.scale.set(0.6 + 0.4 * gw, gw, 0.6 + 0.4 * gw);
     for (const b of sea.bones) b.scale.setScalar(gw);
     for (let i = 0; i < 7; i++) {
-      seaAngles[i] = seaKick.amp * Math.sin(seaPhase - 0.8 * i) * (0.3 + (0.7 * i) / 6) + seaKick.curl + seaKick.float * FLOAT_BEND[i];
-      seaSides[i] = (seaKick.turn * i) / 6;
+      const fb = FLOAT_STILL[i] + (FLOAT_SWIM[i] - FLOAT_STILL[i]) * seaKick.sp;
+      seaAngles[i] = seaKick.amp * Math.sin(seaPhase - 0.8 * i) * (0.3 + (0.7 * i) / 6) + seaKick.curl + seaKick.float * fb;
+      seaSides[i] = (seaKick.turn * i) / 6 + seaKick.side * Math.sin(seaPhase * 0.6 - 0.9 * i) * (0.4 + (0.6 * i) / 6);
     }
     sea.tube.deform(seaAngles, seaSides);
     sea.tip.matrix.copy(sea.tube.tipMat);
     sea.tip.matrixWorldNeedsUpdate = true;
+    // the dragon's fan fin rolls with the S-wave and turns on edge as he speeds up (a flat disc
+    // facing the camera behind him read as a splash); the mermaid's fin never rolls
+    if (sea.form === 'sea_dragon') {
+      const roll = seaKick.side ? 0.6 * seaKick.sp + 0.5 * Math.sin(seaPhase * 0.6 - 5.4) : 0;
+      sea.fluke.rotation.y += (roll - sea.fluke.rotation.y) * Math.min(1, dt * 6);
+    }
     if (sea.frill) sea.frill.scale.x = 1 + 0.06 * Math.sin(t * 5);
     seaFlash = Math.max(0, seaFlash - dt * 2);
     for (let i = 0; i < seaMats.length; i++) {
@@ -1383,6 +1393,13 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     },
     /** Change what 'auto' resolves to: (look) => form, or a form string. */
     setSeaAuto,
+    /** Build this look's sea parts ahead, hidden (a quiet moment after a world loads), so the
+     *  first turn only shows them. Nothing for 'me'; a look change frees them again. */
+    prepareSea() {
+      const form = seaFormNow();
+      if (form !== 'me') ensureSea(form, seaHexFor(form));
+      return !!sea;
+    },
     /** Probes: what the sea parts are doing. */
     seaParts() {
       let meshes = 0;
