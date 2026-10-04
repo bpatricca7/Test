@@ -83,6 +83,9 @@ jobs:
       - name: Walkie-talkie (with and without accounts)
         run: npm run test:walkie -- --no-build
 
+      - name: Sea forms (rules, codec, shore exit)
+        run: npm run test:merfolk
+
       - name: Family accounts end to end
         run: npm run e2e:accounts
 
