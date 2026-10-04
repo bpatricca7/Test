@@ -35,6 +35,7 @@ export class Input {
     this.turn = 0; // -1..1 from arrow keys (camera yaw)
     this.jump = false;
     this.down = false;
+    this.downKey = false;
     this.run = false;
     this.pointer = null; // {x, y} NDC of last tap/cursor, null = screen centre
 
@@ -94,7 +95,7 @@ export class Input {
     this.look.dx = this.look.dy = 0;
     this.zoom = 0;
     this.turn = 0;
-    this.jump = this.down = this.run = false;
+    this.jump = this.down = this.downKey = this.run = false;
     this._pinchDist = 0;
     this._touchSnap = null;
     this.stats.resets++;
@@ -160,6 +161,7 @@ export class Input {
     this.turn = on ? turn : 0;
     this.jump = on && (k.has('Space') || v.jump || latch.jump);
     this.down = on && (shift || k.has('KeyC') || v.down || latch.down);
+    this.downKey = on && (k.has('KeyC') || v.down || latch.down); // Down without Shift (sea swimming)
     this.run = on && (shift || joyRun || v.run || latch.run);
     latch.jump = latch.down = latch.run = false;
     if (!on) {

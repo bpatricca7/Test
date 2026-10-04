@@ -132,6 +132,7 @@ async function unitTests() {
       'dress.type': wardrobe.DRESSES, 'dress.pattern': wardrobe.PATTERNS, 'shoes.type': wardrobe.SHOES,
       'acc.head': wardrobe.HEAD_ACC, 'acc.face': wardrobe.FACE_ACC, 'acc.back': wardrobe.BACK_ACC, 'acc.neck': wardrobe.NECK_ACC, 'acc.hand': wardrobe.HAND_ACC,
       'face.brows': wardrobe.BROWS,
+      'sea.form': wardrobe.SEA_FORMS,
     };
     let n = 0;
     const check = (look) => {
@@ -164,6 +165,14 @@ async function unitTests() {
       check(l);
       eq(codec.unpackLook(codec.packLook(l), 'Leo').top.num, num, 'jersey number ' + num);
     }
+    // The sea tail (merfolk): every tail color and Match, as a sea dragon; the default sea
+    // (auto, Match) leaves the tokens out, so today's strings keep their 36 tokens.
+    for (const color of [null, ...wardrobe.SEA_COLORS]) {
+      const l = wardrobe.normalizeLook({ name: 'Leo', sea: { form: 'sea_dragon', color } });
+      check(l);
+      eq(codec.unpackLook(codec.packLook(l), 'Leo').sea, { form: 'sea_dragon', color }, 'sea color ' + color);
+    }
+    eq(codec.unpackLook(codec.packLook(wardrobe.normalizeLook({ name: 'Mia' })), 'Mia').sea, { form: 'auto', color: null }, 'default sea');
     // An old 34-token string (before the brows / number tail) still unpacks, with the defaults.
     const old = codec.packLook(wardrobe.normalizeLook({ name: 'Mia', face: { brows: 'bold' }, top: { num: 42 } }));
     const oldToks = old.split('.');

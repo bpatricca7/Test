@@ -12,6 +12,10 @@ import { fileURLToPath } from 'node:url';
 import * as W from '../src/player/wardrobe-data.js';
 import * as codec from '../src/net/codec.js';
 import { mulberry32 } from '../src/core/util.js';
+import * as R from '../src/player/merfolk/rules.js';
+import { Physics } from '../src/world/physics.js';
+import { SHAPES } from '../src/core/registry.js';
+import { Input } from '../src/core/input.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FIXTURE = JSON.parse(readFileSync(path.join(ROOT, 'tools/fixtures/merfolk-old-profile.json'), 'utf8')).profile;
@@ -138,17 +142,37 @@ async function test(name, fn) {
   }
 }
 
-// ---------- the goldens still hold ----------
+// ---------- A: looks, lists and the codec ----------
 
-await test('A1 every existing list still starts with its 669 keys', () => {
+const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const STYLES = ['girl', 'boy', 'mix', null];
+const starters = () => W.STARTER_OUTFITS.map((o) => ({ o, look: W.applyOutfit(W.DEFAULT_LOOK, o) }));
+
+await test('A1 every existing list still starts with its 669 keys; the sea lists are exact', () => {
   for (const [k, keys] of Object.entries(OLD_KEYS_669)) {
     const now = W[k].map((o) => o.key);
-    assert(JSON.stringify(now.slice(0, keys.length)) === JSON.stringify(keys), k);
+    assert(eq(now.slice(0, keys.length), keys), k);
+    assert(W[k].length < 36, k + ' under 36');
   }
+  assert(eq(W.SEA_FORMS.map((o) => o.key), ['auto', 'mermaid', 'sea_dragon', 'me']), 'SEA_FORMS keys');
+  assert(eq(W.SEA_COLORS, ['#3FD8B0', '#6CC6FF', '#4D7CFF', '#9C7BFF', '#FF8CC6', '#FF5FA2', '#FF6B6B', '#FFA94D', '#FFD43B', '#6BD68A', '#2FB5B0', '#E6DDFF']), 'SEA_COLORS');
+  assert(W.SEA_COLOR_NAMES.length === W.SEA_COLORS.length, 'a name per color');
+  assert(W.SEA_FORMS.length < 36 && W.SEA_COLORS.length < 36, 'one base-36 digit each');
+});
+
+await test('A2 the default sea, the old fixture look, freshLook', () => {
+  assert(eq(W.DEFAULT_LOOK.sea, { form: 'auto', color: null }), 'DEFAULT_LOOK.sea');
+  const n = W.normalizeLook(FIXTURE.look);
+  assert(eq(n.sea, { form: 'auto', color: null }), 'old look gains the default sea');
+  delete n.sea;
+  assert(JSON.stringify(n) === OLD_NORMAL_669, 'normalized fixture look is otherwise the same');
+  assert(W.freshLook({ look: W.DEFAULT_LOOK }) === true, 'freshLook(DEFAULT_LOOK)');
+  assert(W.freshLook({ look: { ...W.DEFAULT_LOOK, sea: undefined } }) === true, 'freshLook without sea');
 });
 
 await test('A3 the default, the starters and 60 seeded surprises pack exactly as before', () => {
   assert(codec.packLook(W.DEFAULT_LOOK) === OLD_DEFAULT_TOKEN_669, 'default');
+  assert(OLD_DEFAULT_TOKEN_669.length === 126, 'the default is 126 characters');
   W.STARTER_OUTFITS.forEach((o, i) => assert(codec.packLook(W.applyOutfit(W.DEFAULT_LOOK, o)) === OLD_STARTERS_669[i], 'starter ' + o.key));
   for (const style of ['girl', 'boy', 'mix']) {
     for (let s = 1; s <= 20; s++) {
@@ -157,10 +181,354 @@ await test('A3 the default, the starters and 60 seeded surprises pack exactly as
   }
 });
 
-await test('A2 the old fixture look normalizes as before', () => {
-  const n = W.normalizeLook(FIXTURE.look);
-  delete n.sea;
-  assert(JSON.stringify(n) === OLD_NORMAL_669, 'normalized fixture look');
+await test('A4 every form x every color (and Match) round-trips within 160; the worst case is 156', () => {
+  for (const f of W.SEA_FORMS) {
+    for (const c of [null, ...W.SEA_COLORS]) {
+      const l = W.normalizeLook({ ...W.DEFAULT_LOOK, name: 'Mia', sea: { form: f.key, color: c } });
+      const p = codec.packLook(l);
+      assert(p.length <= 160, 'length ' + p.length);
+      assert(eq(codec.unpackLook(p, 'Mia'), l), `round trip ${f.key} ${c}`);
+    }
+  }
+  // A4b the worst case: every optional color, a dress, number 99, a sea dragon in Pearl
+  const worst = W.normalizeLook({
+    ...W.DEFAULT_LOOK, name: 'Mia',
+    hair: { style: 'afro', color: '#FFFFFF', color2: '#FFFFFF', mix: 'tips' },
+    top: { type: 'tee_bolt', color: '#FFFFFF', pattern: 'rockets', patternColor: '#FFFFFF', num: 99 },
+    bottom: { type: 'pants', color: '#FFFFFF', pattern: 'rockets', patternColor: '#FFFFFF' },
+    dress: { type: 'mermaid', color: '#FFFFFF', pattern: 'rockets', patternColor: '#FFFFFF' },
+    shoes: { type: 'skate_shoes', color: '#FFFFFF' },
+    acc: { head: 'headphones', headColor: '#FFFFFF', face: 'star_glasses', faceColor: '#FFFFFF', back: 'star_pack', backColor: '#FFFFFF', neck: 'medal', neckColor: '#FFFFFF', hand: 'dino_toy', handColor: '#FFFFFF' },
+    sea: { form: 'sea_dragon', color: '#E6DDFF' },
+  });
+  const wl = codec.packLook(worst).length;
+  assert(wl === 156, 'worst case ' + wl);
+  assert(eq(codec.unpackLook(codec.packLook(worst), 'Mia'), worst), 'worst round trip');
+  // 3,000 random looks per style with a random sea stay within 160
+  const rnd = mulberry32(7);
+  let max = 0;
+  for (const style of ['girl', 'boy', 'mix']) {
+    for (let i = 0; i < 3000; i++) {
+      const l = W.randomLook(rnd, 'Zoe', null, style);
+      l.sea = { form: W.SEA_FORMS[Math.floor(rnd() * 4)].key, color: rnd() < 0.2 ? null : W.SEA_COLORS[Math.floor(rnd() * 12)] };
+      max = Math.max(max, codec.packLook(l).length);
+    }
+  }
+  assert(max <= 160, 'random max ' + max);
+  return `worst ${wl}, random max ${max}`;
+});
+
+await test('A5 old strings and broken tokens unpack to auto / Match', () => {
+  const toks = OLD_DEFAULT_TOKEN_669.split('.');
+  assert(toks.length === 36, '36 tokens');
+  assert(eq(codec.unpackLook(OLD_DEFAULT_TOKEN_669, 'Lily').sea, { form: 'auto', color: null }), '36-token string');
+  assert(eq(codec.unpackLook(toks.slice(0, 34).join('.'), 'Lily').sea, { form: 'auto', color: null }), '34-token string');
+  assert(eq(codec.unpackLook(OLD_DEFAULT_TOKEN_669 + '.0.-', 'Lily').sea, { form: 'auto', color: null }), 'placeholders .0.-');
+  assert(eq(codec.unpackLook(OLD_DEFAULT_TOKEN_669 + '.2.zz', 'Lily').sea, { form: 'sea_dragon', color: null }), 'broken color zz');
+  assert(eq(codec.unpackLook(OLD_DEFAULT_TOKEN_669 + '.2r.4', 'Lily').sea, { form: 'auto', color: '#FF8CC6' }), 'form index 99');
+  assert(codec.unpackLook(OLD_DEFAULT_TOKEN_669 + '.1.4', 'Lily').sea.form === 'mermaid', 'mermaid token');
+  assert(eq(codec.unpackLook(OLD_DEFAULT_TOKEN_669 + '.1.4', 'Lily'), W.normalizeLook({ ...W.DEFAULT_LOOK, sea: { form: 'mermaid', color: '#FF8CC6' } })), 'the rest of the look is the same');
+});
+
+await test('A6 resolveSeaForm and withResolvedSea', () => {
+  const d = W.DEFAULT_LOOK;
+  assert(R.resolveSeaForm(d, 'girl') === 'mermaid' && R.resolveSeaForm(d, 'mix') === 'mermaid', 'girl / mix');
+  assert(R.resolveSeaForm(d, 'boy') === 'sea_dragon', 'boy');
+  assert(R.resolveSeaForm(d, null) === 'mermaid', 'default, no style');
+  for (const { o, look } of starters()) {
+    const want = W.lookFits(look, 'b') && !W.lookFits(look, 'g') ? 'sea_dragon' : 'mermaid';
+    assert(R.resolveSeaForm(look, null) === want, 'starter ' + o.key);
+    if (o.tag === 'g') assert(want === 'mermaid', 'girl starter ' + o.key);
+    if (o.tag === 'b') assert(want === 'sea_dragon', 'boy starter ' + o.key);
+  }
+  for (const form of ['mermaid', 'sea_dragon', 'me']) {
+    for (const st of STYLES) {
+      const l = W.normalizeLook({ ...d, sea: { form, color: null } });
+      assert(R.resolveSeaForm(l, st) === form, `${form} under ${st}`);
+      assert(R.withResolvedSea(l, st).sea.form === form, 'withResolvedSea explicit');
+    }
+  }
+  for (const st of STYLES) for (const { look } of starters()) assert(R.withResolvedSea(look, st).sea.form !== 'auto', 'never auto');
+});
+
+await test('A6b withResolvedSea never mutates its input', () => {
+  for (const st of STYLES) {
+    for (const { look } of starters()) {
+      const before = JSON.parse(JSON.stringify(look));
+      R.withResolvedSea(look, st);
+      assert(eq(look, before), 'mutated');
+    }
+  }
+});
+
+await test('A6c Match gives a bright sea color for the default and every starter', () => {
+  const dull = new Set(['#FFFFFF', '#6B7280', '#8B5E3C', '#222230', '#3A1F4D']);
+  const looks = [{ o: { key: 'default', tag: 'g' }, look: W.normalizeLook(W.DEFAULT_LOOK) }, ...starters()];
+  for (const { o, look } of looks) {
+    for (const form of ['mermaid', 'sea_dragon']) {
+      const c = R.seaColorOf(look, form);
+      assert(W.SEA_COLORS.includes(c), `${o.key} ${form}: ${c}`);
+      assert(!dull.has(c), 'dull ' + c);
+    }
+  }
+  for (const c of W.SEA_COLORS) assert(R.snapSeaColor(c, 'mermaid') === c, 'exact stays ' + c);
+  assert(R.seaColorOf(W.normalizeLook({ ...W.DEFAULT_LOOK, sea: { form: 'auto', color: '#FFD43B' } }), 'mermaid') === '#FFD43B', 'own color wins');
+  const names = Object.fromEntries(W.SEA_COLORS.map((c, i) => [c, W.SEA_COLOR_NAMES[i]]));
+  return looks.map(({ o, look }) => `${o.key} ${names[R.seaColorOf(look, R.resolveSeaForm(look, null))]}`).join(', ');
+});
+
+await test('A7 randomLook keeps base.sea and calls rand() the same number of times', () => {
+  const base = W.normalizeLook({ ...W.DEFAULT_LOOK, sea: { form: 'sea_dragon', color: '#FFD43B' } });
+  for (const style of ['girl', 'boy', 'mix']) {
+    for (let s = 1; s <= 20; s++) {
+      assert(eq(W.randomLook(mulberry32(s), 'Zoe', base, style).sea, base.sea), 'keeps sea ' + style);
+      assert(eq(W.randomLook(mulberry32(s), 'Zoe', null, style).sea, { form: 'auto', color: null }), 'default sea ' + style);
+      let n1 = 0, n2 = 0;
+      const r1 = mulberry32(s), r2 = mulberry32(s);
+      W.randomLook(() => { n1++; return r1(); }, 'Zoe', base, style);
+      W.randomLook(() => { n2++; return r2(); }, 'Zoe', W.normalizeLook(W.DEFAULT_LOOK), style);
+      assert(n1 === n2, 'same rand() count');
+    }
+  }
+});
+
+await test('A8 lookFits ignores sea', () => {
+  for (const { look } of starters()) {
+    for (const form of ['auto', 'mermaid', 'sea_dragon', 'me']) {
+      const l = { ...look, sea: { form, color: '#FF8CC6' } };
+      assert(W.lookFits(l, 'g') === W.lookFits(look, 'g') && W.lookFits(l, 'b') === W.lookFits(look, 'b'), 'fits ' + form);
+    }
+  }
+});
+
+await test('A9 normalizeLook rejects bad sea values', () => {
+  const n = (sea) => W.normalizeLook({ ...W.DEFAULT_LOOK, sea }).sea;
+  assert(n({ form: 'mermaid', color: '#123456' }).color === null, 'non-palette color');
+  assert(n({ form: 'shark', color: null }).form === 'auto', 'unknown form');
+  assert(eq(n(5), { form: 'auto', color: null }), 'sea: 5');
+  assert(eq(n(null), { form: 'auto', color: null }), 'sea: null');
+  assert(n({ form: 'me', color: '#ff8cc6' }).color === '#FF8CC6', 'lower case color upper-cased');
+});
+
+// ---------- A10, A11: the gate and the depth ----------
+
+await test('A10 SeaGate tables', () => {
+  const run = (g, secs, f, dt = 0.01) => {
+    const ev = [];
+    for (let t = 0; t < secs - 1e-9; t += dt) { const e = g.step(dt, f); if (e) ev.push(e); }
+    return ev;
+  };
+  let g = new R.SeaGate();
+  assert(run(g, 10, { deep: false, swimming: true, onGround: false }).length === 0, 'a puddle never turns');
+  g = new R.SeaGate();
+  assert(run(g, 0.24, { deep: true, swimming: true }).length === 0, '0.24 s does not turn');
+  g = new R.SeaGate();
+  assert(eq(run(g, 0.26, { deep: true, swimming: true }), ['in']), '0.26 s turns');
+  // 50 surface bobs: swimming false for 0.2 s each
+  const ev = [];
+  for (let i = 0; i < 50; i++) {
+    ev.push(...run(g, 0.2, { deep: false, swimming: false, onGround: false }));
+    ev.push(...run(g, 0.3, { deep: true, swimming: true, onGround: false }));
+  }
+  assert(ev.length === 0, 'bobs keep it: ' + ev.join(','));
+  assert(run(g, 1.2, { deep: false, swimming: false, onGround: false }).length === 0, 'a 1.2 s leap keeps it');
+  run(g, 0.1, { deep: true, swimming: true });
+  assert(eq(run(g, 0.36, { deep: false, swimming: false, onGround: true }), ['out']), '0.35 s on land turns back');
+  g = new R.SeaGate();
+  run(g, 0.3, { deep: true, swimming: true });
+  assert(g.step(0.01, { blocked: true }) === 'cut' && !g.on, 'blocked cuts at once');
+  assert(g.step(0.01, { blocked: true }) === null, 'blocked while off: nothing');
+  g = new R.SeaGate();
+  g.force();
+  assert(g.on, 'force');
+  g = new R.SeaGate();
+  for (const dt of [NaN, Infinity, -1, -Infinity]) assert(g.step(dt, { deep: true, swimming: true }) === null, 'bad dt ' + dt);
+  assert(!g.on, 'bad dt never turns');
+});
+
+await test('A11 seaDeep and depthBelow on a fake grid', () => {
+  // water cells: y 0..(depth-1); liquid(x,y,z)
+  const grid = (depth) => (x, y, z) => y >= 0 && y < depth;
+  assert(!R.seaDeep(grid(1), 0.5, 0.0, 0.5), '1 deep standing');
+  assert(R.seaDeep(grid(2), 0.5, 0.0, 0.5) === true, '2 deep standing (head height)');
+  assert(R.seaDeep(grid(4), 0.5, 2.9, 0.5) === true, 'floating, cell under the feet liquid');
+  assert(!R.seaDeep(grid(4), 0.5, 3.5, 0.5), 'waist out');
+  assert(R.depthBelow(grid(4), 0.5, 3.9, 0.5) === 4 && R.depthBelow(grid(10), 0.5, 9.5, 0.5) === 4, 'capped at 4');
+  assert(R.depthBelow(grid(4), 0.5, 2.5, 0.5) === 3, 'three below');
+  assert(R.depthBelow(grid(4), 0.5, 0.2, 0.5) === 0, 'on the floor');
+  assert(R.depthBelow(grid(10), 0.5, 9.5, 0.5, 2) === 2, 'cap 2');
+});
+
+// ---------- A14: the shore exit on the real Physics.move ----------
+
+const AIR = 0, STONE = 1, WATER = 2;
+const props = {
+  solid: Uint8Array.from([0, 1, 0]),
+  shape: Uint8Array.from([SHAPES.air, SHAPES.cube, SHAPES.liquid]),
+  replaceable: Uint8Array.from([1, 0, 1]),
+};
+class FakeWorld {
+  constructor(sx = 40, sy = 24, sz = 40) {
+    this.sx = sx; this.sy = sy; this.sz = sz;
+    this.blocks = new Uint8Array(sx * sy * sz);
+    this.registry = { props };
+  }
+  get(x, y, z) {
+    if (y < 0) return STONE;
+    if (x < 0 || z < 0 || x >= this.sx || z >= this.sz || y >= this.sy) return AIR;
+    return this.blocks[(y * this.sz + z) * this.sx + x];
+  }
+  set(x, y, z, id) {
+    if (x >= 0 && y >= 0 && z >= 0 && x < this.sx && y < this.sy && z < this.sz) this.blocks[(y * this.sz + z) * this.sx + x] = id;
+  }
+  fill(x0, y0, z0, x1, y1, z1, id) {
+    for (let y = y0; y <= y1; y++) for (let z = z0; z <= z1; z++) for (let x = x0; x <= x1; x++) this.set(x, y, z, id);
+  }
+}
+const TOP = 10; // the water's top surface (water cells y <= 9) and the land top
+
+/** A sea toward -z, the land (top = TOP) from z = 30. profile(z) -> seabed top for z < 30. */
+function shoreWorld(profile) {
+  const w = new FakeWorld();
+  for (let z = 0; z < w.sz; z++) {
+    const bed = z >= 30 ? TOP : profile(z);
+    w.fill(0, 0, z, w.sx - 1, bed - 1, z, STONE);
+    if (bed < TOP) w.fill(0, bed, z, w.sx - 1, TOP - 1, z, WATER);
+  }
+  return w;
+}
+
+/**
+ * The player's sea-swimming step (player.js update, §6.2) on the real Physics: the gate, the
+ * sea speed, seaVy, physics.move({ swim }), the ledge hop. Holds `input` every frame.
+ */
+function swimmer(world, x, y, z) {
+  const physics = new Physics(world, new Set());
+  const liq = (a, b, c) => physics.liquidAt(a, b, c);
+  const pos = { x, y, z, set(a, b, c) { this.x = a; this.y = b; this.z = c; } };
+  const vel = { x: 0, y: 0, z: 0, set(a, b, c) { this.x = a; this.y = b; this.z = c; } };
+  const body = { pos, vel, halfW: 0.3, height: 1.7, onGround: false };
+  const gate = new R.SeaGate();
+  gate.force();
+  const st = { idleVT: R.BUOY_DELAY, hopT: 0 };
+  let onGround = false, seaSwim = true;
+  return {
+    pos, vel, get seaSwim() { return seaSwim; }, get onGround() { return onGround; },
+    step(dt, input) {
+      const swimming = liq(pos.x, pos.y + 0.6, pos.z);
+      const deep = R.seaDeep(liq, pos.x, pos.y, pos.z);
+      const ev = gate.step(dt, { deep, swimming, onGround, blocked: false });
+      if (ev === 'in') { seaSwim = true; st.idleVT = R.BUOY_DELAY; } else if (ev === 'out') seaSwim = false;
+      const sea = seaSwim && swimming;
+      const speed = sea ? R.SEA_SWIM : swimming ? 2.8 : 4.3;
+      const k = Math.min(1, (onGround || swimming ? 14 : 5) * dt);
+      vel.x += (0 - vel.x) * k;
+      vel.z += (input.fwd * speed - vel.z) * k;
+      if (sea) vel.y = R.seaVy(st, { dt, vy: vel.y, up: false, down: input.down, fpWant: 0, deep, chestWet: liq(pos.x, pos.y + R.BUOY_PROBE, pos.z), gravity: 24 });
+      else if (swimming) { vel.y -= 5 * dt; vel.y = Math.max(vel.y, -2.2); } else vel.y = Math.max(vel.y - 24 * dt, -40);
+      const res = physics.move(body, dt, { step: true, swim: sea });
+      onGround = res.onGround;
+      if (res.ledge !== null && input.fwd > 0.3 && (onGround || sea)) {
+        const jv = Math.sqrt(2 * 24 * 1.3);
+        vel.y = (sea ? R.hopVy(res.ledge - pos.y, 24, jv) : jv * 0.92) + 24 * dt * 0.5;
+        if (sea) st.hopT = R.HOP_HOLD;
+      }
+      if (!Number.isFinite(pos.y)) throw new Error('y not finite');
+    },
+    onLand() { return pos.z >= 30 && pos.y >= TOP - 0.01 && !liq(pos.x, pos.y + 0.6, pos.z); },
+  };
+}
+
+function exitTime(world, z0, y0, fps, input, limit) {
+  const s = swimmer(world, 20.5, y0, z0);
+  const dt = 1 / fps;
+  for (let t = 0; t < limit; t += dt) {
+    s.step(dt, input);
+    if (s.onLand()) return t;
+  }
+  return Infinity;
+}
+
+await test('A14 shore exit holding only forward (60 and 30 fps, surface, mid-water, floor)', () => {
+  // 3 deep, the seabed rising in 1-block steps toward the land
+  const w = shoreWorld((z) => (z < 24 ? TOP - 3 : z < 27 ? TOP - 2 : TOP - 1));
+  const times = [];
+  for (const fps of [60, 30]) {
+    for (const [y0, name] of [[TOP - 1.0, 'surface'], [TOP - 2.2, 'mid-water'], [TOP - 3, 'floor']]) {
+      const t = exitTime(w, 23.5, y0, fps, { fwd: 1, down: false }, 6);
+      assert(t <= 2, `${name} at ${fps} fps: ${t.toFixed(2)} s`);
+      times.push(`${name}@${fps} ${t.toFixed(2)}`);
+    }
+  }
+  // straight from 3-deep water to the bank (a 1-block step up from the surface)
+  const steep = shoreWorld(() => TOP - 3);
+  for (const fps of [60, 30]) {
+    const t = exitTime(steep, 27.5, TOP - 1.0, fps, { fwd: 1, down: false }, 6);
+    assert(t <= 2, `steep bank at ${fps} fps: ${t}`);
+    const tf = exitTime(steep, 27.5, TOP - 3, fps, { fwd: 1, down: false }, 6);
+    assert(tf <= 2.5, `steep bank from the floor at ${fps} fps: ${tf}`);
+    times.push(`steep@${fps} ${t.toFixed(2)}/${tf.toFixed(2)}`);
+  }
+  return times.join(', ');
+});
+
+await test('A14 an underwater 1-block step, a pond rim 1 above, Down + forward, a 3-block cliff', () => {
+  // underwater step: bed 4 deep then 3 deep, crossed within 1 s from the floor
+  const w = shoreWorld((z) => (z < 20 ? TOP - 4 : TOP - 3));
+  const s = swimmer(w, 20.5, TOP - 4, 18.6);
+  let crossed = Infinity;
+  for (let t = 0; t < 3; t += 1 / 60) {
+    s.step(1 / 60, { fwd: 1, down: true });
+    if (s.pos.z > 20.4) { crossed = t; break; }
+  }
+  assert(crossed <= 1, 'underwater step ' + crossed);
+  // a pond rim one block above the water top: water to TOP - 1 (cells <= TOP - 2), land at TOP
+  const pond = new FakeWorld();
+  pond.fill(0, 0, 0, pond.sx - 1, TOP - 1, pond.sz - 1, STONE);
+  pond.fill(17, TOP - 4, 17, 23, TOP - 1, 23, AIR);
+  pond.fill(17, TOP - 4, 17, 23, TOP - 2, 23, WATER);
+  const p = swimmer(pond, 20.5, TOP - 2.0, 20.5);
+  let out = Infinity;
+  for (let t = 0; t < 4; t += 1 / 60) {
+    p.step(1 / 60, { fwd: 1, down: false });
+    if (p.pos.z >= 24 && p.pos.y >= TOP - 0.01) { out = t; break; }
+  }
+  assert(out <= 2, 'pond rim ' + out);
+  // holding Down + forward: still out within 2.5 s
+  // (on the stepped seabed: holding Down she follows it up and still flops out)
+  const w2 = shoreWorld((z) => (z < 24 ? TOP - 3 : z < 27 ? TOP - 2 : TOP - 1));
+  const td = exitTime(w2, 23.5, TOP - 1.0, 60, { fwd: 1, down: true }, 6);
+  assert(td <= 2.5, 'Down + forward ' + td);
+  // a 3-block cliff: never climbed, never stuck oscillating out of range
+  const cliff = new FakeWorld();
+  cliff.fill(0, 0, 0, cliff.sx - 1, TOP - 4, cliff.sz - 1, STONE);
+  cliff.fill(0, TOP - 3, 0, cliff.sx - 1, TOP - 1, 29, WATER);
+  cliff.fill(0, TOP - 3, 30, cliff.sx - 1, TOP + 2, cliff.sz - 1, STONE);
+  const c = swimmer(cliff, 20.5, TOP - 1, 27);
+  for (let t = 0; t < 8; t += 1 / 60) {
+    c.step(1 / 60, { fwd: 1, down: false });
+    assert(Number.isFinite(c.pos.y) && c.pos.y < TOP + 3 && c.pos.z < 30, 'cliff climbed at ' + t.toFixed(2));
+  }
+  return `step ${crossed.toFixed(2)} s, pond ${out.toFixed(2)} s, Down ${td.toFixed(2)} s`;
+});
+
+// ---------- A16: Down without Shift ----------
+
+await test('A16 input.downKey: Shift alone is not Down; C and the Down button are', () => {
+  const fake = (keys, virt = {}) => {
+    const o = {
+      keys: new Set(keys), joy: { active: false }, enabled: true, move: { x: 0, z: 0 }, look: { dx: 0, dy: 0 },
+      virtual: { jump: false, down: false, run: false, ...virt }, _latch: { jump: false, down: false, run: false },
+      _checkStaleTouches() {}, pointers: new Map(),
+    };
+    Input.prototype.update.call(o);
+    return o;
+  };
+  const sh = fake(['ShiftLeft']);
+  assert(sh.down === true && sh.downKey === false && sh.run === true, 'Shift');
+  assert(fake(['KeyC']).downKey === true, 'C');
+  assert(fake([], { down: true }).downKey === true, 'the Down button');
+  assert(fake([]).downKey === false, 'nothing');
 });
 
 console.log(`\n${passed} passed, ${failures} failed`);

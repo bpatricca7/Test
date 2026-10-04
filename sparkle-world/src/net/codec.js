@@ -5,6 +5,7 @@
 import {
   normalizeLook, HAIR_STYLES, HAIR_MIXES, SMILES, TOPS, BOTTOMS, DRESSES, PATTERNS, SHOES,
   HEAD_ACC, FACE_ACC, BACK_ACC, NECK_ACC, HAND_ACC, BROWS,
+  SEA_FORMS, SEA_COLORS,
 } from '../player/wardrobe-data.js';
 
 // ---------- base36 / hex digits ----------
@@ -364,6 +365,7 @@ const L = {
   hair: HAIR_STYLES, mix: HAIR_MIXES, smile: SMILES, top: TOPS, bottom: BOTTOMS, dress: DRESSES,
   pattern: PATTERNS, shoes: SHOES, head: HEAD_ACC, face: FACE_ACC, back: BACK_ACC, neck: NECK_ACC, hand: HAND_ACC,
   brows: BROWS,
+  sea: SEA_FORMS,
 };
 const IDX = {};
 for (const k in L) IDX[k] = idxOf(L[k]);
@@ -372,7 +374,7 @@ const tokIdx = (map, key) => (map.get(key) ?? 0).toString(36);
 const tokHex = (c) => (typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c) ? c.slice(1).toLowerCase() : '-');
 const tokBool = (b) => (b ? '1' : '0');
 
-/** look -> dot-separated token string (~130 chars, at most 152). The name is not included. */
+/** look -> dot-separated token string (~130 chars, at most 156). The name is not included. */
 export function packLook(look) {
   const l = normalizeLook(look);
   const t = [];
@@ -398,6 +400,15 @@ export function packLook(look) {
   // ever go at the end, so an older string is a prefix and still unpacks.
   const num = l.top ? l.top.num : 7;
   t.push(tokIdx(IDX.brows, l.face.brows), (Number.isInteger(num) && num >= 0 && num <= 99 ? num : 7).toString(36));
+  // Appended tail (merfolk): sea form and tail color, left out while they are the default
+  // ('auto', Match) so every older look packs exactly as before.
+  // RULE FOR LATER TOKENS: a team that appends a token after these must always write the
+  // sea pair first (`0.-` = auto / Match) whenever its own token is present, or positions shift.
+  const s = l.sea;
+  if (s.form !== 'auto' || s.color) {
+    const ci = s.color ? SEA_COLORS.indexOf(s.color) : -1;
+    t.push(tokIdx(IDX.sea, s.form), ci >= 0 ? ci.toString(36) : '-');
+  }
   return t.join('.');
 }
 
@@ -446,6 +457,10 @@ export function unpackLook(s, name) {
   look.face.brows = opt(L.brows);
   const num = parseInt(next(), 36);
   look.top.num = Number.isInteger(num) && num >= 0 && num <= 99 ? num : undefined;
+  // The sea tail came later still: a missing token reads '-', which gives 'auto' / Match.
+  const form = opt(L.sea);
+  const ct = parseInt(next(), 36);
+  look.sea = { form, color: Number.isInteger(ct) && ct >= 0 && ct < SEA_COLORS.length ? SEA_COLORS[ct] : null };
   return normalizeLook(look);
 }
 
