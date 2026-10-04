@@ -966,7 +966,7 @@ async function gridsPass(browser, errors) {
     res.hair = await W.renderGrid([
       ...hairs.map((h) => ({ look: hl(boy, h), label: h, frame: HH, pose: front })),
       ...hairs.map((h) => ({ look: hl(boy, h), label: h + ' (back)', frame: HHB, pose: front })),
-      ...hairs.map((h) => ({ look: hl(base, h), label: h + ' (girl, side)', frame: HS, pose: front })),
+      ...hairs.map((h) => ({ look: hl(base, h), label: h + ' (girl)', frame: HS, pose: front })),
     ], { cols: 8, size: 170 });
     // the starters, each in its own Match form
     // (and the boy starters once more from behind: the normal play view)
