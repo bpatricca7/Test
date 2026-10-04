@@ -697,6 +697,7 @@ async function tapPass(browser, errors) {
   await aim(page, d0.x, d0.y, d0.z, 0.25);
   await freeze(page, true);
   const p1 = await recPoint(page, 'dolphin', d0.i, 0.2);
+  const hit1 = await pickAt(page, p1);
   if (p1) await page.mouse.click(p1.x, p1.y);
   await freeze(page, false);
   // (a dolphin caught mid-leap holds once it lands)
@@ -713,7 +714,7 @@ async function tapPass(browser, errors) {
       met: g.ocean.met('dolphin'), sticker: g.stickers.has('dolphin_friend'),
     };
   });
-  check(errors, held && t1.state === 'hold' && t1.owner === 'ocean', `T1 a click on a dolphin: it holds beside her and the bubble opens (${t1.state})`);
+  check(errors, held && t1.state === 'hold' && t1.owner === 'ocean', `T1 a click on a dolphin: it holds beside her and the bubble opens (${t1.state}; the click hit ${JSON.stringify(hit1)})`);
   check(errors, /Ride/.test(t1.text) && /Trick/.test(t1.text) && t1.bubble && t1.text.includes(t1.bubble.name), `T1 the bubble shows its name, Ride and Trick ("${t1.text}")`);
   check(errors, t1.sticker && t1.met === 1, `T1 Dolphin Friend, seaMet.dolphin = ${t1.met}`);
   check(errors, (await toastCount(page, /^You met a Dolphin!$/)) === 0, 'T1 no first-meet toast (the sticker says it)');
