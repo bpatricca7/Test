@@ -1423,3 +1423,88 @@ Where this doc goes beyond, or slightly differs from, a reviewer's suggested fix
   longer true. It is a small, local guard under the existing lock, tested by S4.
 - **Ring size.** 28 px and 24 px on phones as asked. The present path on the shelf is the main
   picture of progress; the ring is the reminder.
+
+---
+
+## As built (P1)
+
+Built on `claude/wave4-squish` from step 0 (`582d11c`), §15 steps 1-11 with the integration
+plan's §1.2, §1.4 and C9. Where this differs from the design above, this is what the code does.
+
+**Owner decisions applied (2026-10-04, all easy to change before the release):** Puffums and
+Stretchums, the Squish Shelf; the friendly closed-smile Shark Puffum kept (the Narwhal swap is
+still one entry before release); the goldens `ITEMS_V1` / `ORDER_V1` are pinned in
+`tools/test-squish.mjs` for the picture review and only grow after the first release. C9 colors:
+Sea Dragon Puffum `#2FB5B0` / `#FFD43B` with merfolk's motifs (rounded five-rib fan fluke, round
+bubble-dome spikes, leafy fronds, glow spots, two horn nubs), Mermaid Tail `#3FD8B0` with the
+round two-lobed fin.
+
+**Files.** New: `src/core/squish-merge.js`, `src/things/squish/{data,anim,models,index,panel,fx,sfx,art,tab,sheet}.js`,
+`tools/test-squish.mjs`, `tools/probe-squish.mjs`, `tools/fixtures/squish-rich-profile.json`
+(recorded at `582d11c` with `tools/record-squish-fixture.mjs`, 1,940 earned coins). Changed, only
+the lines of the integration plan §5: `main.js`, `merge.js`, `legacy.js`, `storage.js`
+(`BACKUP_PROFILE_KEYS`, `mergeBackupProfile`, `profileStale`), `server/saves.mjs` (the
+`putProfile` guard), `hud.js` (the pill button, the ring, `refreshRing`, the sparkle hop),
+`inventory.js` (`TAB_COLORS.squish` and ONE line: the Bag emits `'bag:tab' { tab, main }` after a
+tab's heading, which the shelf button listens to), `menus.js` (one line: the pause button through
+`game.squish.shelfButton`), `pets/kit.js` (`present`, `squish`, `shelf` after `eat:`),
+`adapter.js` (`treatHeld()` / `squishHeld()`), `remote-players.js` (`heldModel`),
+`fake-adapter.mjs` (`hi`), `test-net.mjs` (`squishTests()`, runner `unit` / `squish`),
+`test-saves.mjs` (S1-S5), `probe-multiplayer.mjs` (`SQUISH`, part a), `name-scan.mjs` (squish's two
+encoded words), `package.json`, the CI step.
+
+**Differences from the design.**
+- Everything a kid sees move or wait for runs on wall-clock time (the drop's 1.5 s clear world,
+  presses, squishes, the unwrap, the 1 s signature check): a slow page caps its frame time.
+- Heights are set by `fit()` in `models.js`: Puffums 0.48-0.54, Stretchums 0.39-0.42 (the top of
+  the designed range, so a Stretchum is 44 px tall on an iPad next to her).
+- The Starfish Squeeze sits up a little (tilted) instead of lying flat, so its face shows and it
+  is as tall as the other Stretchums. The Heart Squeeze's point is a flat diamond (a round cone
+  hid its face).
+- The shelf's pictures are drawn in batches by `sheet.js`: several toys into one offscreen target
+  on the game's thumbnail renderer (no WebGL context of our own; three's `isXRRenderTarget` flag
+  makes it draw exactly as on the canvas with the same shader programs), one read-back, cut into
+  96 px pictures; the toys' shaders for it compile one kind a frame first. On the software
+  renderer 96 pictures take about 14 s with no frame over 1 s (one at a time through the queue
+  took 40 s). Same look as `thumbs.js` (2x drawn, 4x MSAA, same lights and lens). The thumbnail
+  queue is the fallback.
+- `rest` (§6.6): `milestone(n)` for `n >= rest.n` counts from `rest.coins`, so the first appended
+  present is one normal gap after the last complete total (A8 checks it).
+- The pill tip waits until the world is clear (after the First Present! sticker pop); the Bag tip
+  ("Your new toy is in your Bag too!") comes on a later present's close, never together.
+- A16 checks the pure `tab.js` helper (twice), which `install()` calls.
+- E1: other modules may tidy an old profile on the title screen; the probe checks that nothing
+  of the squishy toys is made or saved there.
+- Holding, the HUD and the drop share the one `squish-presents` system.
+- Not built: the title-screen tile (Q5: the shelf is in play only, from the coin pill, the pause
+  menu and the Bag tab) and the optional extras of §12.
+
+**Checks run (all green on this branch):** `test:squish` (17), `test:name`, `test:net` (65, incl.
+N1-N4), `test:saves` (39, incl. S1-S5 and the browser parts), `test:accounts` (113),
+`probe-squish` in passes (`desktop`, `touch`, `world,save`, `mp`, `grids,cost`), `smoke`,
+`probe-multiplayer --part=a` (incl. `SQUISH`), `probe-shops`, `probe-menus` (desktop, touch),
+`probe-keepsafe`, `probe-life` (desktop, touch), `probe-furniture` (4 parts),
+`probe-environment`, `probe-boys` (6 parts), `probe-vehicles` (3 parts), `site-check`.
+
+**Owner review pictures** (`.shots/`): `squish-sheet.png` and `squish-sheet-glitter.png` (all 48
+toys, named, plain and sparkly), `squish-all.png`, `squish-glitter.png`, `squish-sea.png`,
+`squish-sea-glitter.png` (the 9 sea toys), `squish-world.png` (the Toy Shelf in 4 colors, a
+table), `squish-hand.png`, `squish-unwrap-1..4.png`, `squish-unwrap-boy.png`,
+`squish-glitter-pick.png`, `squish-shelf-ipad.png`, `squish-shelf-phone.png`,
+`squish-b1-shelf-first.png` (the path tip), `squish-b2-drop.png`, `squish-sticker-art.png`.
+
+**Text for the integrator (C17; builders do not edit these files):**
+- DESIGN.md §7.2: Puffums and Stretchums (48 toys) come only from mystery presents at milestones
+  of earned coins (50, then 10 more each time up to 100; up to 3 welcome presents; a Glitter
+  round after all 48); the Squish Shelf (coin pill, pause menu, Bag tab); holding with Squish! and
+  Put away; toys are free decor in worlds; 4 stickers (First Present!, Squish Collector, Squish
+  Champion, Squeeze Me!). Events: `'squish:get' { key, glitter, n }`, `'squish:squeeze' { key,
+  glitter, where }`, `'present:ready' { ready }` (and the internal `'squish:refresh'`,
+  `'bag:tab'`). Storage: `profile.squish` (`got`, `glit`, `seen`, `base`, `rest`, unions on every
+  merge), `stats.squishes`; device keys `squishPathTip`, `squishPillTip`, `squishPlaceTip`,
+  `squishBagTip`.
+- MULTIPLAYER.md §5.4 `hi`: "a treat key, a food key or a squishy toy def key (`squish_*`,
+  `squishg_*`)"; §7: "the squishy toy collection and mystery presents" are per player.
+- DATA-MAP.md: the squishy toy collection is game data in the profile (§11 sentence).
+- shops.md: the coin pill is a button that opens the Squish Shelf; earned coins also fill the
+  mystery presents (spending never takes one away).
