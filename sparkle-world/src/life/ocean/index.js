@@ -16,7 +16,7 @@ import { SeaMap } from './seamap.js';
 import { SEA_KINDS, SEA_SPEC, SEA_NAMES, SEA_TEXT, PALETTES, OCEAN_STAR_KINDS, DOLPHIN_NAMES, pickPalette } from './kinds.js';
 import {
   makeRecord, saveGood, sanitize, columnOk, spawnOk, settleY, swimToward, wanderTarget, canLeap, startLeap,
-  stepLeap, startTrick, stepTrick, Spawner, placeFish, stepCrab, rescueCell, SURF, NEAR,
+  stepLeap, startTrick, stepTrick, Spawner, placeFish, stepCrab, rescueCell, bestDirection, SURF, NEAR,
 } from './motion.js';
 import { SeaMeshes } from './render.js';
 import { DolphinRide } from './ride.js';
@@ -113,6 +113,7 @@ class OceanSystem {
       },
     };
     this.paused = false;
+    this.autoSpawn = true; // probes turn it off to set up their own scenes
     this.popupsForced = null;
     this.clock = 0;
     this.frame = 0;
@@ -185,6 +186,8 @@ class OceanSystem {
       if (!e.down || e.repeat || !this.ride.on || g.paused || g.mode !== 'play') return;
       if (g.ui && g.ui.dialogOpen) return;
       if (e.code === 'KeyE' || e.code === 'KeyX') this.hopOff('key');
+      // a quick tap can come and go between two frames: the key itself asks for the leap
+      else if (e.code === 'Space') this.leapPending = true;
     });
     // merfolk: a mermaid's own leap -> escorting dolphins leap with her (a string event)
     ev.on('player:leap', () => {
@@ -232,6 +235,8 @@ class OceanSystem {
   }
 
   _clearAll() {
+    // out of game.pickables first (a world load / unload clears the Set itself as well)
+    this._pickablesOff();
     for (const kind of SEA_KINDS) for (const r of this.pools[kind]) { r.on = false; r.inSet = false; r.saddle = false; r.hidden = false; }
     for (const sc of this.schools) { sc.on = false; sc.inSet = false; }
     for (const p of this.pods) p.on = false;
@@ -421,7 +426,7 @@ class OceanSystem {
     return r;
   }
 
-  _spawnPod(x, z, n, { first = false, sprint = false } = {}) {
+  _spawnPod(x, z, n, { first = false, sprint = false, arrive = first } = {}) {
     const pod = this.pods[0];
     if (pod.on) return false;
     const s = this.session;
@@ -464,7 +469,7 @@ class OceanSystem {
     pod.first = first;
     s.firstPod = true;
     // arriving from the fallback, or the first pod: with a splash (a leap)
-    for (const r of this.pools.dolphin) if (r.on && r.pod === 0 && first) { r.fade = 1; if (canLeap(this.env, r)) { startLeap(r, 4); this.stats.leaps++; } }
+    for (const r of this.pools.dolphin) if (r.on && r.pod === 0 && arrive) { r.fade = 1; if (canLeap(this.env, r)) { startLeap(r, 4); this.stats.leaps++; } }
     if (k && this.map.placed(x, z) && !s.poolToast.dolphin && this.popups()) {
       s.poolToast.dolphin = true;
       if (this.ui) this.ui.toast(SEA_TEXT.poolDolphins, 'dolphin', this.pools.dolphin[0].variant, { key: 'sea-pool' });
@@ -675,8 +680,17 @@ class OceanSystem {
     if (this.ride.on) this._rideStep(dt);
     if (this.ride.on && (pl.state !== 'ride' || pl.mountPet !== this.mount)) this.endRide('lost');
 
-    this._spawnTick(dt, P, tod, low);
-    this._showTick(dt, P, tod);
+    if (this.stillOn) {
+      // probes: every animal holds its pose (still drawn and tappable) for a real click
+      this._pickables(dt, P);
+      this._write(P);
+      if (this.ui) this.ui.update(dt);
+      return;
+    }
+    if (this.autoSpawn) {
+      this._spawnTick(dt, P, tod, low);
+      this._showTick(dt, P, tod);
+    }
     this._stepPod(dt, P);
     this._stepSchools(dt, P);
     this._stepOthers(dt, P, tod);
@@ -830,7 +844,7 @@ class OceanSystem {
     let playLeaper = null;
     if (pod.mode === 'play') {
       pod.playLeapT -= dt;
-      if (pod.playLeapT <= 0) { pod.playLeapT = 3 + Math.random() * 3; playLeaper = -1; }
+      if (pod.playLeapT <= 0) { pod.playLeapT = 3 + Math.random() * 3; pod.wantPlayLeap = true; }
     }
     for (let i = 0; i < WILD; i++) {
       const r = list[i];
@@ -858,7 +872,7 @@ class OceanSystem {
           const a = pod.t * 0.5 + (slot / Math.max(1, alive)) * TAU;
           tx = T.x + Math.sin(a) * 2.5; tz = T.z + Math.cos(a) * 2.5;
           want = 3.2;
-          if (playLeaper === -1) playLeaper = r;
+          if (pod.wantPlayLeap && r.state !== 'leap' && canLeap(env, r)) { playLeaper = r; pod.wantPlayLeap = false; }
         } else {
           let s = 2.2 * (1 + row * 0.4), f = 1.0 - row * 1.4;
           if (T.boat && T.speed > 2) { s = 1.6 + row * 0.6; f = 2.6 - row * 1.2; }
@@ -922,8 +936,13 @@ class OceanSystem {
       r.phase += dt * 4;
       r.leapT -= dt;
       if (r.leapT <= 0) {
-        r.leapT = 10 + Math.random() * 10;
-        if (canLeap(env, r)) { startLeap(r, 4); this.stats.leaps++; this._leapFx(r, true); }
+        if (canLeap(env, r)) { r.leapT = 10 + Math.random() * 10; startLeap(r, 4); this.stats.leaps++; this._leapFx(r, true); }
+        else {
+          // no room ahead: it turns toward open water and tries again in a second
+          r.leapT = 1;
+          const b = bestDirection(env, 'dolphin', r, 4);
+          if (b != null) r.yaw = b;
+        }
       }
       this._sane(r);
     }
@@ -1530,8 +1549,9 @@ class OceanSystem {
     const busy = g.paused || (g.ui && g.ui.current);
     const mx = busy ? 0 : input.move.x, mz = busy ? 0 : input.move.z;
     const jump = !busy && !!input.jump;
-    const press = jump && !this.jumpWas;
-    this.jumpWas = jump;
+    const press = (jump && !this.jumpWas) || (!busy && this.leapPending);
+    this.jumpWas = jump || this.leapPending;
+    this.leapPending = false;
     const ev = R.step(dt, fx * mz + rx * mx, fz * mz + rz * mx, !busy && !!input.run, press, this.env);
     r.x = R.x; r.y = R.y; r.z = R.z; r.yaw = R.yaw; r.level = R.level;
     r.pitch = R.leaping ? clamp(-Math.atan2(R.vy, Math.max(1, R.speed)) * 0.8, -0.9, 0.9) : 0;
@@ -1790,7 +1810,7 @@ class OceanSystem {
           if (!m.deepAround(x, z, 3) && m.top(x, z) < 0) return 0;
           sys.pods[0].on = false;
           for (let i = 0; i < WILD; i++) sys.pools.dolphin[i].on = false;
-          sys._spawnPod(x, z, n || 3, { first: true });
+          sys._spawnPod(x, z, n || 3, { first: true, arrive: false });
           if (variant != null) for (let i = 0; i < WILD; i++) { const r = sys.pools.dolphin[i]; if (r.on) { r.variant = variant; r.tintVer++; } }
           return sys._live('dolphin');
         }
@@ -1814,6 +1834,20 @@ class OceanSystem {
         if (on) { if (sys.meshes) sys.meshes.hideAll(); sys._pickablesOff(); }
         return sys.paused;
       },
+      /** Probes: no animals come by themselves while off (debug spawns still work). */
+      autoSpawn(on = true) { sys.autoSpawn = !!on; return sys.autoSpawn; },
+      /** Probes: move a fish school (its fish and its pick box) up or down by dy. */
+      shiftSchool(i = 0, dy = -1) {
+        const sc = sys.schools[i];
+        if (!sc || !sc.on) return false;
+        for (let k = 0; k < PER_SCHOOL; k++) { const r = sys.pools.fish[i * PER_SCHOOL + k]; if (r.on) r.y += dy; }
+        sc.y += dy;
+        sc.box.min.y += dy;
+        sc.box.max.y += dy;
+        return true;
+      },
+      /** Probes: every animal holds its pose (still drawn and tappable) while on. */
+      still(on = true) { sys.stillOn = !!on; if (on) sys.pickT = 0; return sys.stillOn; },
       popups(on = true) { sys.popupsForced = on === null ? null : !!on; return sys.popups(); },
       count() {
         const out = {};
@@ -1867,7 +1901,7 @@ class OceanSystem {
           if (!sys.map.deepAround(p.x, p.z, 3)) g.player.teleport(at[0], sys.map.top(at[0], at[1]) + 0.1, at[1]);
           sys.pods[0].on = false;
           for (let i = 0; i < WILD; i++) sys.pools.dolphin[i].on = false;
-          sys._spawnPod(at[0], at[1], 2, { first: true });
+          sys._spawnPod(at[0], at[1], 2, { first: true, arrive: false });
           r = sys._nearestRideable(at[0], at[1], 12);
           if (r) r.state = 'swim';
         }

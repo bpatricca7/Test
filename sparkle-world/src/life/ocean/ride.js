@@ -39,6 +39,7 @@ export class DolphinRide {
     this.x = x; this.z = z; this.yaw = yaw; this.level = level;
     this.speed = 0; this.lift = 0; this.vy = 0; this.leaping = false; this.hop = false;
     this.cool = 0; this.uturn = 0; this.t = 0;
+    this.stats.stall = 0; this.stats.maxStall = 0;
     this.good.x = x; this.good.z = z; this.good.yaw = yaw;
     this.y = this.baseY();
   }
@@ -148,9 +149,14 @@ export class DolphinRide {
         const cx = Math.floor(this.x + fx * d), cz = Math.floor(this.z + fz * d);
         for (let k = 1; k <= 4 && ok; k++) if (!free(env, cx, this.level + k, cz)) ok = false;
       }
-      this.leaping = true;
-      if (ok) { this.hop = false; this.vy = 7; this.stats.leaps++; ev.leap = true; }
-      else { this.hop = true; this.vy = 5.7; this.stats.refused++; ev.refused = true; } // 0.5 high, 0.35 s
+      if (ok) { this.leaping = true; this.hop = false; this.vy = 7; this.stats.leaps++; ev.leap = true; }
+      else {
+        // a small splash hop (0.5 high, 0.35 s) when there is room over the rider's head
+        this.stats.refused++;
+        ev.refused = true;
+        const room = !env.bodyBlocked || !env.bodyBlocked(this.x, this.seatY() + 0.55, this.z);
+        if (room) { this.leaping = true; this.hop = true; this.vy = 5.7; }
+      }
     }
     if (this.leaping) {
       this.lift += this.vy * dt;

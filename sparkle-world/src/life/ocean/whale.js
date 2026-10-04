@@ -9,7 +9,6 @@ import { whalePhase, clockFrozen, latchKey, WHALE_LEN, WHALE_LATE, WHALE_FROZEN_
 import { SURF } from './motion.js';
 
 const VISIT_S = 30;
-const TAU = Math.PI * 2;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const _v = new THREE.Vector3();
 const _frustum = new THREE.Frustum();
@@ -89,31 +88,34 @@ export class WhaleVisits {
     this.sys.ui && this.sys.ui.pointerAt(false);
   }
 
-  /** Try to place the whale on the ring; true when placed. */
+  /**
+   * Try to place the whale on the ring; true when placed. Directions are sampled from her, the
+   * one closest to her view first: a point 12 to 40 blocks past the world edge, at least 55
+   * blocks from her, inside 0.75 x fog far; else the nearest such point inside 0.95 x fog far.
+   */
   _place(px, pz) {
     const g = this.game, sys = this.sys, m = sys.map, w = g.world;
     const fog = g.scene.fog && Number.isFinite(g.scene.fog.far) ? g.scene.fog.far : 160;
     const cam = g.cameraRig ? g.cameraRig.yaw : 0;
-    const sx = w.sx, sz = w.sz, cx = sx / 2, cz = sz / 2;
-    // 8 directions from the island's centre, the one closest to her view direction first
+    const sx = w.sx, sz = w.sz;
     let best = null, bestScore = -Infinity, near = null, nearD = Infinity;
-    for (let k = 0; k < 8; k++) {
-      const a = (k / 8) * TAU;
+    for (let k = 0; k < 24; k++) {
+      // 0, +1, -1, +2, -2 ... steps of 15 degrees away from her view
+      const step = (k + 1) >> 1, sign = k % 2 ? 1 : -1;
+      const a = cam + sign * step * (Math.PI / 12);
       const dx = Math.sin(a), dz = Math.cos(a);
-      // distance from the centre to the edge along this direction, then 12..40 past it
-      const tEdge = Math.min(dx ? (dx > 0 ? sx - cx : cx) / Math.abs(dx) : Infinity, dz ? (dz > 0 ? sz - cz : cz) / Math.abs(dz) : Infinity);
-      for (let s = 12; s <= 40; s += 7) {
-        const x = cx + dx * (tEdge + s), z = cz + dz * (tEdge + s);
-        const d = Math.hypot(x - px, z - pz);
-        if (d < 55) continue;
+      for (let d = 55; d <= 0.95 * fog; d += 6) {
+        const x = px + dx * d, z = pz + dz * d;
+        const past = Math.max(-x, x - sx, -z, z - sz);
+        if (past < 12 || past > 40) continue;
         if (d < nearD) { nearD = d; near = [x, z]; }
         if (d > 0.75 * fog) continue;
-        const view = Math.cos(Math.atan2(x - px, z - pz) - cam);
-        const score = view * 10 - d * 0.01;
+        const score = -step * 10 - d * 0.01;
         if (score > bestScore) { bestScore = score; best = [x, z]; }
+        break;
       }
     }
-    if (!best && near && nearD <= 0.95 * fog) best = near;
+    if (!best && near) best = near;
     if (!best) return false;
     const r = this.rec;
     const out = m.outside();
@@ -128,7 +130,7 @@ export class WhaleVisits {
     r.amp = 0.5;
     r.variant = sys.pickVariant('whale');
     r.tintVer++;
-    r.y = this._bedY() ;
+    r.y = this._bedY();
     this.placed = true;
     return true;
   }

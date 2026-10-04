@@ -52,7 +52,8 @@ export function createSeaUi(game, sys) {
 
   /** A toast with the animal's picture (the sparkle icon until the picture is ready). */
   const toast = (text, kind, variant = 0, opts = {}) => {
-    const img = kind ? pictureNow(kind, variant) : '';
+    // its own colors when that picture is ready, else the kind's default picture
+    const img = kind ? pictureNow(kind, variant) || pictureNow(kind, 0) : '';
     ui.toast(text, { icon: 'sparkle', color: 'sky', ...opts, ...(img ? { img } : {}) });
   };
 
@@ -136,8 +137,20 @@ export function createSeaUi(game, sys) {
     const W = game.container.clientWidth, H = game.container.clientHeight;
     // clear of the toasts at the top, the life column on the left, the joystick and the
     // Jump button at the bottom
-    const x = Math.max(w / 2 + 96, Math.min(W - w / 2 - 96, s.x));
-    const y = Math.max(h + 92, Math.min(H - 190, s.y));
+    let x = Math.max(w / 2 + 96, Math.min(W - w / 2 - 96, s.x));
+    let y = Math.max(h + 92, Math.min(H - 190, s.y));
+    // never over a sticker pop or a toast: below it, else beside it
+    const base = game.container.getBoundingClientRect();
+    for (const el of document.querySelectorAll('.sw-stkpop, .sw-toasts .sw-toast')) {
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height) continue;
+      const L = r.left - base.left, T = r.top - base.top, R = L + r.width, B = T + r.height;
+      const over = () => x - w / 2 < R + 6 && x + w / 2 > L - 6 && y - h < B + 6 && y > T - 6;
+      if (!over()) continue;
+      if (B + 10 + h <= H - 190) y = B + 10 + h;
+      else if (R + 10 + w <= W - 8) x = R + 10 + w / 2;
+      else x = Math.max(w / 2 + 8, L - 10 - w / 2);
+    }
     bubble.style.left = Math.round(x) + 'px';
     bubble.style.top = Math.round(y) + 'px';
   }

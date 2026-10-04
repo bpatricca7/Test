@@ -663,7 +663,7 @@ await test('S4', 'ride: top speed 9.5 (12 running) within 2 s; the shelf stops i
   for (let s = 0; s < 120; s++) { L.step(1 / 60, 1, 0, false, false, env); top = Math.max(top, L.lift); }
   assert(!L.leaping && L.lift === 0 && Math.abs(top - 1.75) < 0.15, 'back at the level after an apex of ' + top.toFixed(2));
   const wb = seaWorld({ island: false });
-  for (let x = 18; x < 30; x++) for (let z = 28; z < 37; z++) wb.set(x, 12, z, BRIDGE);
+  for (let x = 18; x < 30; x++) for (let z = 28; z < 37; z++) wb.set(x, 14, z, BRIDGE); // level + 4: no leap, room for a hop
   const eb = envFor(wb, 3);
   eb.bodyBlocked = () => false;
   const B = new DolphinRide();
