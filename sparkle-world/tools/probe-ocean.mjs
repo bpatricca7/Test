@@ -210,8 +210,10 @@ async function worldPass(browser, errors) {
   const showOk = await waitOk(page, () => window.__game.debug.ocean.list('dolphin').some((r) => r.role === 'show'), null, 20000);
   check(errors, showOk, 'O11 the show pod is placed out at sea within 20 s');
   if (showOk) {
-    const l0 = await ev(page, () => window.__game.debug.ocean.stats().leaps);
-    const leapt = await waitOk(page, (n) => window.__game.debug.ocean.stats().leaps > n, l0, 25000);
+    const l0 = await ev(page, () => window.__game.debug.ocean.stats().showLeaps);
+    const t11 = await ev(page, () => window.__game.time.t);
+    const leapt = await waitOk(page, ([n, t]) => window.__game.debug.ocean.stats().showLeaps > n || window.__game.time.t - t > 25, [l0, t11], 90000)
+      && await ev(page, (n) => window.__game.debug.ocean.stats().showLeaps > n, l0);
     const inSet = await ev(page, () => [...window.__game.pickables].some((p) => p.ref && p.ref.role === 'show'));
     check(errors, leapt && !inSet, `O11 it leaps in view (${leapt}) and is never tappable (${!inSet})`);
     await shot(page, 'world-showpod', PREFIX);
@@ -222,13 +224,14 @@ async function worldPass(browser, errors) {
   await ev(page, () => window.__game.debug.ocean.clear());
   await float(page, true);
   await goTo(page, deep);
-  const t0 = Date.now();
-  const came = await waitOk(page, () => {
+  const t0 = await ev(page, () => window.__game.time.t);
+  const came = await waitOk(page, (t0) => {
     const g = window.__game, p = g.player.position;
-    return g.debug.ocean.list('dolphin').filter((r) => r.role === 'wild' && Math.hypot(r.x - p.x, r.z - p.z) < 6).length >= 2;
-  }, null, 10000);
+    return g.time.t - t0 < 10 && g.debug.ocean.list('dolphin').filter((r) => r.role === 'wild' && Math.hypot(r.x - p.x, r.z - p.z) < 6).length >= 2;
+  }, t0, 40000);
+  const tCame = (await ev(page, () => window.__game.time.t)) - t0;
   const pod = await ev(page, () => window.__game.debug.ocean.list('dolphin').filter((r) => r.role === 'wild'));
-  check(errors, came && pod.length >= 2 && pod.length <= 4, `O2 a pod of ${pod.length} reaches her within ${((Date.now() - t0) / 1000).toFixed(1)} s (< 10 s)`);
+  check(errors, came && pod.length >= 2 && pod.length <= 4, `O2 a pod of ${pod.length} reaches her within ${tCame.toFixed(1)} s of game time (< 10 s)`);
   const buddyName = await ev(page, () => window.__game.debug.ocean.buddy().name);
   check(errors, await toastSeen(page, new RegExp(`^${buddyName} came to say hi!$`), 8000), `O2 the buddy's hello: "${buddyName} came to say hi!"`);
   // 300 sampled frames: every dolphin's column passes the rule unless it is leaping or tricking
@@ -258,19 +261,66 @@ async function worldPass(browser, errors) {
   check(errors, s1.leapApex > 1 && s1.leapApex <= 2.0, `O3 apex ${s1.leapApex.toFixed(2)} above the surface (<= 2.0)`);
   check(errors, s1.puffs > 0, `O3 blowhole puffs (${s1.puffs})`);
 
+  // O7 a Speedboat at full speed over deep water: dolphins escort it, ahead of the bow, leaping
+  await float(page, true);
+  await goTo(page, deep);
+  const o7 = await ev(page, async (d) => {
+    const g = window.__game;
+    const x = Math.floor(d[0]), z = Math.floor(d[2]), y = g.ocean.map.top(x, z);
+    const e = g.entities.place('boat_speed', x, y, z, 0, null, {}, { history: false, players: false });
+    if (!e) return { placed: false };
+    g.debug.vehicles.drive(e.uid);
+    await new Promise((r) => setTimeout(r, 500));
+    return { placed: true, driving: !!g.vehicles.current };
+  }, deep);
+  if (o7.placed && o7.driving) {
+    await page.keyboard.down('KeyW');
+    await page.keyboard.down('KeyA');
+    const t7 = await ev(page, () => window.__game.time.t);
+    let near = 0, ahead = 0, lastT = t7;
+    const l7 = await ev(page, () => window.__game.debug.ocean.stats().leaps);
+    for (let k = 0; k < 400 && (await ev(page, () => window.__game.time.t)) - t7 < 20; k++) {
+      await page.waitForTimeout(500);
+      const s = await ev(page, () => {
+        const g = window.__game, b = g.vehicles.pose();
+        if (!b) return null;
+        let n = 0, a = 0;
+        for (const r of g.debug.ocean.list('dolphin')) {
+          if (r.role !== 'wild') continue;
+          const dx = r.x - b.x, dz = r.z - b.z;
+          if (Math.hypot(dx, dz) < 6) n++;
+          if (dx * Math.sin(b.yaw) + dz * Math.cos(b.yaw) > 0.5 && Math.hypot(dx, dz) < 8) a++;
+        }
+        return { n, a, speed: b.speed, t: g.time.t };
+      });
+      if (s && s.n > 0) near += s.t - lastT; // game seconds with a dolphin near
+      if (s) lastT = s.t;
+      if (s && s.a > 0) ahead++;
+    }
+    await page.keyboard.up('KeyA');
+    await page.keyboard.up('KeyW');
+    const l7b = await ev(page, () => window.__game.debug.ocean.stats().leaps);
+    check(errors, near >= 5, `O7 a dolphin within 6 blocks of the moving boat for ${near.toFixed(1)} s of 20 (>= 5)`);
+    check(errors, ahead > 0, `O7 one ahead of the bow (${ahead} samples)`);
+    check(errors, l7b > l7, `O7 leaps while escorting (${l7b - l7})`);
+    await shot(page, 'world-boat-escort', PREFIX);
+    await ev(page, () => window.__game.debug.vehicles.park('stand'));
+  } else check(errors, false, `O7 a Speedboat on deep water to drive (${JSON.stringify(o7)})`);
+
   // O8 a block into a dolphin's cell: within 1 s it is in water again or gone
   const o8 = await ev(page, async () => {
     const g = window.__game;
     const r = g.debug.ocean.list('dolphin').find((q) => q.role === 'wild' && q.state !== 'leap' && q.state !== 'trick');
     if (!r) return { none: true };
     g.world.setKey(Math.floor(r.x), r.level, Math.floor(r.z), 'stone');
-    await new Promise((res) => setTimeout(res, 1000));
+    const t0 = g.time.t;
+    for (let k = 0; k < 100 && g.time.t - t0 < 1; k++) await new Promise((res) => setTimeout(res, 100)); // 1 s of game time
     const after = g.debug.ocean.list('dolphin').find((q) => q.i === r.i);
     if (!after || after.fade < 1) return { ok: true, gone: true };
     const id = g.world.get(Math.floor(after.x), after.level, Math.floor(after.z));
     return { ok: g.registry.blocks.props.shape[id] === 5, x: after.x, z: after.z };
   });
-  check(errors, o8.ok, `O8 a block built into a dolphin's cell: within 1 s it is back in water or fading (${JSON.stringify(o8)})`);
+  check(errors, o8.ok, `O8 a block built into a dolphin's cell: within 1 s (game time) it is back in water or fading (${JSON.stringify(o8)})`);
 
   // O10 a Magic House on the sea next to the pod (no events: the record:false path)
   const o10 = await ev(page, async () => {
@@ -356,50 +406,6 @@ async function worldPass(browser, errors) {
     check(errors, await ev(page, (m) => window.__game.ocean.met('crab') === m + 1, met0), 'O6 a tap counts as meeting it');
   }
 
-  // O7 a Speedboat at full speed over deep water: dolphins escort it, ahead of the bow, leaping
-  await ev(page, () => window.__game.debug.ocean.clear());
-  const o7 = await ev(page, async (d) => {
-    const g = window.__game;
-    const x = Math.floor(d[0]), z = Math.floor(d[2]), y = g.ocean.map.top(x, z);
-    const e = g.entities.place('boat_speed', x, y, z, 0, null, {}, { history: false, players: false });
-    if (!e) return { placed: false };
-    g.debug.vehicles.drive(e.uid);
-    await new Promise((r) => setTimeout(r, 500));
-    return { placed: true, driving: !!g.vehicles.current };
-  }, deep);
-  if (o7.placed && o7.driving) {
-    await page.keyboard.down('KeyW');
-    await page.keyboard.down('KeyA');
-    const t7 = Date.now();
-    let near = 0, ahead = 0;
-    const l7 = await ev(page, () => window.__game.debug.ocean.stats().leaps);
-    for (; Date.now() - t7 < 20000;) {
-      await page.waitForTimeout(500);
-      const s = await ev(page, () => {
-        const g = window.__game, b = g.vehicles.pose();
-        if (!b) return null;
-        let n = 0, a = 0;
-        for (const r of g.debug.ocean.list('dolphin')) {
-          if (r.role !== 'wild') continue;
-          const dx = r.x - b.x, dz = r.z - b.z;
-          if (Math.hypot(dx, dz) < 6) n++;
-          if (dx * Math.sin(b.yaw) + dz * Math.cos(b.yaw) > 0.5 && Math.hypot(dx, dz) < 8) a++;
-        }
-        return { n, a, speed: b.speed };
-      });
-      if (s && s.n > 0) near += 0.5;
-      if (s && s.a > 0) ahead++;
-    }
-    await page.keyboard.up('KeyA');
-    await page.keyboard.up('KeyW');
-    const l7b = await ev(page, () => window.__game.debug.ocean.stats().leaps);
-    check(errors, near >= 5, `O7 a dolphin within 6 blocks of the moving boat for ${near} s (>= 5)`);
-    check(errors, ahead > 0, `O7 one ahead of the bow (${ahead} samples)`);
-    check(errors, l7b > l7, `O7 leaps while escorting (${l7b - l7})`);
-    await shot(page, 'world-boat-escort', PREFIX);
-    await ev(page, () => window.__game.debug.vehicles.park('stand'));
-  } else check(errors, false, `O7 a Speedboat on deep water to drive (${JSON.stringify(o7)})`);
-
   // O9 unload: pickables back to the baseline, no animals, meshes hidden
   const o9 = await ev(page, async () => {
     const g = window.__game;
@@ -430,61 +436,48 @@ async function seePass(browser, errors) {
       const res = await ev(page, async (kind) => {
         const g = window.__game, d = g.debug.ocean, p = g.player.position, cam = g.cameraRig;
         d.clear();
-        // in front of her, 5 blocks along the camera's look
-        const x = p.x + Math.sin(cam.yaw) * 5, z = p.z + Math.cos(cam.yaw) * 5;
+        // 5 blocks ahead along the camera's look and 2 to the side (not behind her own head)
+        const x = p.x + Math.sin(cam.yaw) * 5 - Math.cos(cam.yaw) * 2, z = p.z + Math.cos(cam.yaw) * 5 + Math.sin(cam.yaw) * 2;
         const n = d.spawn(kind, x, p.y, z, { n: kind === 'fish' ? 8 : 1 });
         if (!n) return { n };
-        await new Promise((r) => setTimeout(r, 1200));
-        const list = kind === 'fish' ? d.list('fish') : d.list(kind);
-        if (!list.length) return { n, gone: true };
-        // the projected box of the animal(s)
-        let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-        const r0 = g.renderer.domElement.getBoundingClientRect();
-        const W = g.renderer.domElement.width, H = g.renderer.domElement.height;
-        const half = kind === 'dolphin' ? 1.0 : kind === 'sea_turtle' ? 0.6 : kind === 'jelly' ? 0.45 : 0.25;
-        const v = new (g.camera.position.constructor)();
-        for (const r of list) {
-          for (const [dx, dy, dz] of [[-half, -half, -half], [half, half, half], [-half, half, half], [half, -half, -half], [half, half, -half], [-half, -half, half]]) {
-            v.set(r.x + dx, r.y + dy, r.z + dz).project(g.camera);
-            if (v.z > 1) continue;
-            const sx = ((v.x + 1) / 2) * W, sy = ((1 - v.y) / 2) * H;
-            x0 = Math.min(x0, sx); y0 = Math.min(y0, sy); x1 = Math.max(x1, sx); y1 = Math.max(y1, sy);
-          }
-        }
-        x0 = Math.max(0, Math.floor(x0)); y0 = Math.max(0, Math.floor(y0)); x1 = Math.min(W, Math.ceil(x1)); y1 = Math.min(H, Math.ceil(y1));
-        if (x1 - x0 < 2 || y1 - y0 < 2) return { n, box: [x0, y0, x1, y1], offscreen: true };
-        const grab = () => {
-          g.renderer.render(g.scene, g.camera);
-          const c = document.createElement('canvas');
-          c.width = x1 - x0; c.height = y1 - y0;
-          const ctx = c.getContext('2d');
-          ctx.drawImage(g.renderer.domElement, x0, y0, x1 - x0, y1 - y0, 0, 0, x1 - x0, y1 - y0);
-          return ctx.getImageData(0, 0, x1 - x0, y1 - y0).data;
-        };
-        // two pictures of the same moment: with the animals, and with the sea-life meshes hidden
-        d.pause(true);
-        g.scene.getObjectByName('sea-life').visible = true;
-        for (const m of g.scene.getObjectByName('sea-life').children) m.visible = m.count > 0;
-        const groupOf = g.scene.getObjectByName('sea-life');
-        // pause(true) hid the meshes: write once more so they show this frame
-        d.pause(false);
+        await new Promise((r) => setTimeout(r, 500));
+        d.still(true);
         await new Promise((r) => requestAnimationFrame(() => r()));
-        d.pause(true);
-        for (const m of groupOf.children) m.visible = m.count > 0;
+        const R = g.renderer, W = R.domElement.width, H = R.domElement.height;
+        const grab = () => {
+          R.render(g.scene, g.camera);
+          const c = document.createElement('canvas');
+          c.width = W; c.height = H;
+          const ctx = c.getContext('2d');
+          ctx.drawImage(R.domElement, 0, 0);
+          return ctx.getImageData(0, 0, W, H).data;
+        };
+        const groupOf = g.scene.getObjectByName('sea-life');
+        // the picture she sees, and the same moment without the sea life
         const a = grab();
         groupOf.visible = false;
         const b = grab();
         groupOf.visible = true;
-        d.pause(false);
-        let sum = 0, px = 0, changed = 0;
-        for (let i = 0; i < a.length; i += 4) {
-          const dd = Math.hypot(a[i] - b[i], a[i + 1] - b[i + 1], a[i + 2] - b[i + 2]);
-          sum += dd; px++;
-          if (dd > 20) changed++;
+        // the animals' silhouette: only the sea life (and the lights) drawn on black
+        const saved = [];
+        for (const c of g.scene.children) { saved.push([c, c.visible]); if (c !== groupOf && !c.isLight) c.visible = false; }
+        const bg = g.scene.background, fog = g.scene.fog;
+        const Color = groupOf.children[0].material.color.constructor;
+        g.scene.background = new Color(0, 0, 0);
+        g.scene.fog = null;
+        const m = grab();
+        g.scene.background = bg; g.scene.fog = fog;
+        for (const [c, v] of saved) c.visible = v;
+        d.still(false);
+        let sum = 0, px = 0;
+        for (let i = 0; i < m.length; i += 4) {
+          if (m[i] + m[i + 1] + m[i + 2] < 30) continue; // not the animal
+          sum += Math.hypot(a[i] - b[i], a[i + 1] - b[i + 1], a[i + 2] - b[i + 2]);
+          px++;
         }
-        return { n, mean: sum / px, changed: changed / px, box: [x0, y0, x1, y1] };
+        return { n, mean: px ? sum / px : 0, px };
       }, kind);
-      check(errors, res.mean >= 12, `V1 ${vp.label}: a ${kind} 5 blocks ahead is clearly visible from the swim camera (mean difference ${res.mean ? res.mean.toFixed(1) : JSON.stringify(res)} >= 12, ${res.changed ? Math.round(res.changed * 100) : 0}% of its box changed)`);
+      check(errors, res.px > 50 && res.mean >= 12, `V1 ${vp.label}: a ${kind} ahead is clearly visible from the swim camera (mean difference ${res.mean.toFixed(1)} >= 12 over its ${res.px} silhouette pixels)`);
       await shot(page, `see-${vp.label}-${kind}`, PREFIX);
     }
     // seabed animals: a bubble trail within 3 s
@@ -492,17 +485,16 @@ async function seePass(browser, errors) {
       const g = window.__game, d = g.debug.ocean, p = g.player.position, cam = g.cameraRig;
       d.clear();
       const x = p.x + Math.sin(cam.yaw) * 4, z = p.z + Math.cos(cam.yaw) * 4;
-      d.spawn('octopus', x, p.y, z);
-      const live0 = g.particles.live || 0;
+      const n = d.spawn('octopus', x, p.y, z);
+      const t0 = d.stats().trails, gt = g.time.t;
       let seen = false;
-      const t = performance.now();
-      while (performance.now() - t < 3200) {
+      for (let k = 0; k < 200 && !seen && g.time.t - gt < 3.2; k++) {
         await new Promise((r) => setTimeout(r, 200));
-        if ((g.particles.live || 0) > live0 || g.particles.count > 0) seen = true;
+        seen = d.stats().trails > t0;
       }
-      return { seen, puffs: d.stats() };
+      return { seen, n };
     });
-    check(errors, bub.seen, 'V1 an octopus on the seabed sends up a bubble trail within 3 s');
+    check(errors, bub.seen, `V1 an octopus on the seabed sends up a bubble trail within 3 s of game time (${JSON.stringify(bub)})`);
     await context.close();
   }
 }
@@ -1579,22 +1571,46 @@ async function mpPass(browser, errors) {
   check(errors, both.every(Boolean) && Math.abs(ph[0] - ph[1]) < 0.15, `P2 the shared visit starts the whale on both pages, at the same part (phase ${ph.map((v) => (v === null ? 'null' : v.toFixed(2))).join(' / ')})`);
   await shot(lily.page, 'mp-whale-lily', PREFIX);
 
-  // P5 June joins while Rosie already rides: June sees the dolphin under her within 2 s
-  await game(rosie, () => window.__game.debug.ocean.ride());
-  const june = await open({ key: 'june', name: 'June', uid: 'u-june', level: 'interact', can: true, guest: false, viewport: { width: 390, height: 844 }, touch: true, seed: 47 });
-  const code2 = await flows.hostMakesCode(lily, { biome: 'beach' }).catch(() => null);
-  void code2;
+  // P5 June joins while Rosie already rides: June sees the dolphin under her; no replay of old tricks
+  await game(lily, () => { window.__game.profile.settings.timeFrozen = true; });
+  check(errors, await game(rosie, () => window.__game.debug.ocean.ride()), 'P5 Rosie rides again');
+  const june = await open({ key: 'june', name: 'June', uid: 'u-june', level: 'interact', can: true, guest: true, viewport: { width: 390, height: 844 }, touch: true, seed: 47 });
+  await flows.guestTypesCode(june, code);
+  await flows.hostLetsIn(lily, 'June');
+  check(errors, await waitLive(june), 'June is in');
   await closePanels(lily);
-  check(errors, true, 'P5 (June joins while Rosie rides: see below)');
-  await june.context.close();
+  await game(june, (d) => { const g = window.__game; g.debug.ocean.popups(true); g.player.teleport(d[0] - 2, d[1], d[2] - 2); }, deep);
+  await float(june.page, true);
+  const p5 = await until(june, () => {
+    const g = window.__game, r = g.debug.net.remote().find((q) => q.name === 'Rosie');
+    return r && r.seaRide !== null && r.seaRide !== undefined && g.debug.ocean.remote().length === 1 ? { sr: r.seaRide } : null;
+  }, null, 8000);
+  check(errors, !!p5, `P5 June joins while Rosie rides: she sees the dolphin under Rosie (${JSON.stringify(p5)})`);
+  check(errors, (await game(june, () => window.__game.debug.ocean.stats().remoteTricks)) === 0, 'P6 June, joining after Rosie\'s trick, sees no replay');
 
-  // P4 Rosie's page closes while she rides: the friend's dolphin is gone on Lily's page within 2 s
-  const seen = await until(lily, () => window.__game.debug.ocean.remote().length === 1, null, 5000);
+  // P2b a late joiner: at p = 0.7 no whale; at p = 0.5 the dive part, never a fresh rise
+  const seaDay = await game(lily, () => { const g = window.__game; g.profile.settings.timeFrozen = false; return g.time.day; }); // shared windows need a running clock
+  await game(lily, (day) => { const g = window.__game; g.debug.ocean.clear(); g.setDayTime(g.debug.ocean.whaleTime(day, 0) + 0.7 * 0.042); }, seaDay);
+  await june.page.waitForTimeout(6000);
+  const late7 = await game(june, () => window.__game.debug.ocean.whaleState());
+  check(errors, !late7.placed, `P2b June first sees a window at p = 0.7: no whale (${JSON.stringify({ placed: late7.placed, phase: late7.phase })})`);
+  await game(lily, (day) => { const g = window.__game; g.setDayTime(g.debug.ocean.whaleTime(day, 1) + 0.5 * 0.042); }, seaDay);
+  const late5 = await until(june, () => { const s = window.__game.debug.ocean.whaleState(); return s.placed ? s : null; }, null, 12000);
+  const dbg5 = late5 ? null : await game(june, () => { const g = window.__game; return { st: g.debug.ocean.whaleState(), t: g.time, ui: g.ui.current, mode: g.mode, see: g.debug.ocean.atSea() }; });
+  const host5 = await game(lily, () => ({ t: window.__game.time }));
+  check(errors, late5 && late5.phase >= 0.45 && late5.on, `P2b June first sees a window at p = 0.5: the whale is there in its dive part (phase ${late5 ? late5.phase.toFixed(2) : 'none'}${dbg5 ? ' ' + JSON.stringify({ june: dbg5, host: host5 }) : ''})`);
+
+  // P4 Rosie's page closes while she rides: her dolphin goes from the other pages
+  const seen = await until(lily, () => window.__game.debug.ocean.remote().length === 1, null, 6000);
   const wild0 = await game(lily, () => window.__game.debug.ocean.list('dolphin').filter((r) => r.role === 'wild').length);
   await rosie.context.close();
-  const gone = await until(lily, () => window.__game.debug.ocean.remote().length === 0 && !window.__game.debug.ocean.list('dolphin').some((r) => r.role === 'friend'), null, 15000);
+  const tClose = Date.now();
+  const gone = await until(lily, () => window.__game.debug.ocean.remote().length === 0 && !window.__game.debug.ocean.list('dolphin').some((r) => r.role === 'friend'), null, 20000);
+  console.log(`    (P4 gone from Lily's page after ${((Date.now() - tClose) / 1000).toFixed(1)} s)`);
+  const goneJ = await until(june, () => window.__game.debug.ocean.remote().length === 0, null, 20000);
   const wild1 = await game(lily, () => window.__game.debug.ocean.list('dolphin').filter((r) => r.role === 'wild').length);
-  check(errors, seen && gone && wild1 === wild0, `P4 Rosie's page closes while riding: her dolphin goes from Lily's page, the wild count stays (${wild0} -> ${wild1})`);
+  check(errors, seen && gone && goneJ && wild1 === wild0, `P4 Rosie's page closes while riding: her dolphin goes from Lily's and June's pages, the wild count stays (seen ${!!seen}, gone ${!!gone}/${!!goneJ}, ${wild0} -> ${wild1})`);
+  await june.context.close();
   await lily.context.close();
   hub.close && hub.close();
 }
@@ -1663,17 +1679,16 @@ async function costPass(browser, errors) {
   });
   check(errors, c2.on - c2.off <= 1.0, `C2 the systems stage with full counts: +${(c2.on - c2.off).toFixed(2)} ms (${c2.on.toFixed(2)} vs ${c2.off.toFixed(2)})`);
   // C3 geometries stay flat over 3 minutes of spawning and despawning (thumbnail clones disposed)
-  const g10 = await ev(page, async () => {
-    await new Promise((r) => setTimeout(r, 10000));
-    return window.__game.renderer.info.memory.geometries;
-  });
+  // the same rounds throughout (a teleport, dolphins and fish, a tap, a picture); the baseline is
+  // taken after the first 10 s of them (the game's own first-visit warm-ups are done by then)
   const c3 = await ev(page, async (deep) => {
     const g = window.__game, d = g.debug.ocean;
     const t = performance.now();
-    let k = 0;
-    while (performance.now() - t < 170000) {
+    let k = 0, g10 = null;
+    while (performance.now() - t < 180000) {
       await new Promise((r) => setTimeout(r, 1500));
       k++;
+      if (g10 === null && performance.now() - t > 10000) g10 = g.renderer.info.memory.geometries;
       d.clear();
       const x = deep[0] + ((k * 7) % 11) - 5, z = deep[2] + ((k * 5) % 9) - 4;
       g.player.teleport(x, deep[1], z);
@@ -1682,8 +1697,9 @@ async function costPass(browser, errors) {
       d.tap('fish');
       g.ocean.thumb(['dolphin', 'fish', 'jelly', 'crab'][k % 4], k % 3);
     }
-    return { geometries: g.renderer.info.memory.geometries, rounds: k };
+    return { geometries: g.renderer.info.memory.geometries, rounds: k, g10 };
   }, deep);
+  const g10 = c3.g10;
   check(errors, c3.geometries <= g10 + 2, `C3 geometries after 3 minutes: ${c3.geometries} (after 10 s: ${g10}; ${c3.rounds} rounds)`);
   // C4 finite positions after all that; no frame longer than 1 s
   const c4 = await ev(page, () => {

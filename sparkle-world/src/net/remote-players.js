@@ -465,7 +465,7 @@ export class RemotePlayers {
     f.t += dt;
     // in a car or a boat she sits on its seat ('h' without vh is still a pony ride)
     const seated = f.st === 'h' && !!f.vehicle;
-    const seaRide = f.st === 'h' && f.sr != null && !f.vehicle;                                   // ocean
+    const seaRide = f.st === 'h' && f.sr != null && !f.vehicle && !f.away;                        // ocean (a page gone quiet: no dolphin)
     if (f.vehicle) f.vehicle.update(dt, f.pos.x, f.pos.y, f.pos.z, f.yaw, f.speed, f.vh ? f.vh[2] : 0, show);
     if (g.ocean) g.ocean.remoteRide(f.peer, seaRide ? f.sr : null, f.pos.x, f.pos.y, f.pos.z, f.yaw, f.speed, show); // ocean (every frame, also when frozen)
     if (show && dist < ANIM_FREEZE) {

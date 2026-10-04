@@ -103,7 +103,7 @@ class OceanSystem {
     this.rideRec = null;
     this.mount = this._makeMount();
     this.whale = new WhaleVisits(this);
-    this.stats = { leaps: 0, leapApex: 0, spawns: 0, despawns: 0, nanResets: 0, puffs: 0, mapTicks: 0, spouts: 0, whales: 0, landings: 0, tricks: 0, remoteTricks: 0, greets: 0 };
+    this.stats = { leaps: 0, leapApex: 0, spawns: 0, despawns: 0, nanResets: 0, puffs: 0, mapTicks: 0, spouts: 0, whales: 0, landings: 0, tricks: 0, remoteTricks: 0, greets: 0, showLeaps: 0, trails: 0 };
     this.env = {
       map: this.map, world: null, props: null, rand: Math.random, seaLevel: null, stats: this.stats,
       isSand: (x, z) => this._isSand(x, z),
@@ -630,6 +630,8 @@ class OceanSystem {
         this._spawnRec(r, 'dolphin', columnOk(this.env, 'dolphin', Math.floor(ox), Math.floor(oz), level) ? ox : x, columnOk(this.env, 'dolphin', Math.floor(ox), Math.floor(oz), level) ? oz : z, { state: 'show', yaw: a + Math.PI / 2 });
         r.role = 'show';
         r.outT = 0;
+        const b = bestDirection(this.env, 'dolphin', r, 5, r.yaw); // along open water
+        if (b != null) r.yaw = b;
         r.leapT = 2 + k * 3 + Math.random() * 4;
         r.level = level;
       }
@@ -692,6 +694,7 @@ class OceanSystem {
       this._showTick(dt, P, tod);
     }
     this._stepPod(dt, P);
+    this._stepShow(dt);
     this._stepSchools(dt, P);
     this._stepOthers(dt, P, tod);
     this._stepRemote(dt);
@@ -925,7 +928,11 @@ class OceanSystem {
       this._cellCheck(r, dt);
       this._sane(r);
     }
-    // the show pod
+  }
+
+  /** The show pod (cosmetic, far out): along open water, a leap every 10 to 20 s. */
+  _stepShow(dt) {
+    const list = this.pools.dolphin, env = this.env;
     for (let i = SHOW0; i < FRIEND0; i++) {
       const r = list[i];
       if (!r.on) continue;
@@ -936,7 +943,7 @@ class OceanSystem {
       r.phase += dt * 4;
       r.leapT -= dt;
       if (r.leapT <= 0) {
-        if (canLeap(env, r)) { r.leapT = 10 + Math.random() * 10; startLeap(r, 4); this.stats.leaps++; this._leapFx(r, true); }
+        if (canLeap(env, r)) { r.leapT = 10 + Math.random() * 10; startLeap(r, 4); this.stats.leaps++; this.stats.showLeaps++; this._leapFx(r, true); }
         else {
           // no room ahead: it turns toward open water and tries again in a second
           r.leapT = 1;
@@ -1187,6 +1194,7 @@ class OceanSystem {
     r.bubbleT -= dt;
     if (r.bubbleT > 0) return;
     r.bubbleT = 2 + Math.random();
+    this.stats.trails++;
     _v.set(r.x, r.y + 0.4, r.z);
     this.emit('bubble', _v, { count: 3, spread: 0.12, speed: 0.6, scale: 0.6 });
   }

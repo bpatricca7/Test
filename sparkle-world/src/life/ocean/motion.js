@@ -22,7 +22,7 @@ const fin = Number.isFinite;
 export const BAND = {
   dolphin: [0.35, 0.25],
   fish: [0.4, 0.15],
-  sea_turtle: [0.8, 0.3],
+  sea_turtle: [0.45, 0.2], // the shell top breaks the water (the probe's V1: visible from the swim camera)
 };
 
 // ---------- records ----------
