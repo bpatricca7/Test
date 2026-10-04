@@ -13,11 +13,12 @@
 
 import * as THREE from 'three';
 import { SeaMap } from './seamap.js';
-import { SEA_KINDS, SEA_SPEC, SEA_NAMES, SEA_TEXT, PALETTES, OCEAN_STAR_KINDS, DOLPHIN_NAMES, pickPalette } from './kinds.js';
+import { SEA_KINDS, SEA_SPEC, SEA_NAMES, SEA_TEXT, PALETTES, OCEAN_STAR_KINDS, DOLPHIN_NAMES, pickPalette, hexToLinear } from './kinds.js';
 import {
   makeRecord, saveGood, sanitize, columnOk, spawnOk, settleY, swimToward, wanderTarget, canLeap, startLeap,
-  stepLeap, startTrick, stepTrick, Spawner, placeFish, stepCrab, rescueCell, bestDirection, SURF, NEAR,
+  stepLeap, startTrick, stepTrick, Spawner, placeFish, stepCrab, rescueCell, bestDirection, glassBetween, SURF, NEAR,
 } from './motion.js';
+import { SEA_U, SEA_LIQUIDS, SEA_WATER } from './material.js';
 import { SeaMeshes } from './render.js';
 import { DolphinRide } from './ride.js';
 import { WhaleVisits } from './whale.js';
@@ -37,9 +38,27 @@ const SCHOOLS = 3, PER_SCHOOL = 10;
 const SOUNDS = { dolphin: 'chirp', fish: 'bloop', sea_turtle: 'bloop', octopus: 'pop', jelly: 'boop', seahorse: 'ding', crab: 'clack', starfish: 'giggle', whale: 'whale' };
 const PITCH = { sea_turtle: 0.7, seahorse: 1.4, starfish: 1.3 };
 // pick box half sizes [x/z, y down, y up] around the record (feet-origin kinds start at y)
+// (the small kinds are built bigger: models.js SIZE)
 const BOX = {
-  dolphin: [1.0, 0.5, 0.6], sea_turtle: [0.7, 0.35, 0.45], octopus: [0.5, 0, 0.95], jelly: [0.35, 0.5, 0.5],
-  seahorse: [0.3, 0.3, 0.32], crab: [0.45, 0, 0.5], starfish: [0.3, 0, 0.3],
+  dolphin: [1.0, 0.5, 0.6], sea_turtle: [0.7, 0.35, 0.5], octopus: [0.5, 0, 0.95], jelly: [0.35, 0.5, 0.5],
+  seahorse: [0.5, 0.5, 0.55], crab: [0.63, 0, 0.7], starfish: [0.6, 0, 0.45],
+};
+/** A seahorse's centre above the sea bed's top (its curled tail clear of it) and below the surface. */
+const HORSE_BED = 1.55, HORSE_SURF = 0.72;
+
+/** How far apart swimmers of a kind keep (_apart), and the states that hold their place. */
+const APART = { dolphin: 1.7, sea_turtle: 1.5, jelly: 1.0, seahorse: 0.8, octopus: 1.2, crab: 0.95 };
+/** New animals of a kind spawn at least this far from one already there (_crowded). */
+const SPACE = { sea_turtle: 3, octopus: 3, jelly: 1.6, seahorse: 1.8, crab: 1.6, starfish: 1.8 };
+const FIXED = { leap: 1, trick: 1, ride: 1, hold: 1, mount: 1, gallery: 1, buddy: 1 };
+/** An octopus's feet: on the bed, or near her up off it with its head just under the surface. */
+const octoY = (bed, surf, dist) => {
+  const low = bed + 1, high = Math.max(low, surf - 1.6);
+  return high + (low - high) * clamp((dist - NEAR * 0.6) / 6, 0, 1);
+};
+const horseY = (bed, surf, dist) => {
+  const low = bed + HORSE_BED, high = Math.max(low, surf - HORSE_SURF);
+  return high + (low - high) * clamp((dist - NEAR) / 6, 0, 1);
 };
 
 const _v = new THREE.Vector3();
@@ -113,6 +132,7 @@ class OceanSystem {
       },
     };
     this.paused = false;
+    this._okFns = {};
     this.autoSpawn = true; // probes turn it off to set up their own scenes
     this.popupsForced = null;
     this.clock = 0;
@@ -416,8 +436,9 @@ class OceanSystem {
       r.level = m.top(x, z);
       const surf = r.level + SURF;
       const bed = m.bed(x, z);
-      if (kind === 'octopus' || kind === 'starfish') r.y = bed + 1;
-      else if (kind === 'seahorse') r.y = bed + 1.45;
+      if (kind === 'octopus') r.y = octoY(bed, surf, 0);
+      else if (kind === 'starfish') r.y = bed + 1;
+      else if (kind === 'seahorse') r.y = horseY(bed, surf, 0);
       else if (kind === 'jelly') r.y = surf - 0.5 * r.scale - 0.05;
       else r.y = surf - 0.3;
       r.homeX = x; r.homeZ = z;
@@ -425,6 +446,14 @@ class OceanSystem {
     saveGood(r);
     this.stats.spawns++;
     return r;
+  }
+
+  /** Another of the kind within its SPACE of (x, z) (a small pool never fills up with them). */
+  _crowded(kind, x, z) {
+    const d = SPACE[kind] || 0;
+    if (!d) return false;
+    for (const r of this.pools[kind]) if (r.on && Math.abs(r.x - x) < d && Math.abs(r.z - z) < d && Math.hypot(r.x - x, r.z - z) < d) return true;
+    return false;
   }
 
   _spawnPod(x, z, n, { first = false, sprint = false, arrive = first } = {}) {
@@ -504,7 +533,7 @@ class OceanSystem {
       if (i >= n) { r.on = false; continue; }
       this._spawnRec(r, 'fish', x, z, { variant: sc.variant, pod: si, scale: 0.85 + Math.random() * 0.3 });
       r.orbit = Math.random() * TAU;
-      r.orbitR = 0.4 + Math.random() * 0.8;
+      r.orbitR = 0.6 + Math.random() * 1.1;
       r.orbitW = (0.6 + Math.random() * 0.8) * (Math.random() < 0.5 ? -1 : 1);
       r.yoff = Math.random();
       placeFish(r, sc, this.env);
@@ -577,7 +606,8 @@ class OceanSystem {
       const max = this._maxFor(kind, tod, low, wet);
       if (this._live(kind) >= max) continue;
       if (kind === 'sea_turtle') this.spawnT[kind] = 40 + Math.random() * 30; // one at a time
-      const res = this.spawner.find(kind, this.env, P.x, P.z, sp.near[0], sp.near[1], sp.min, now, Math.random, _tw, { camYaw });
+      const okFn = this._okFns[kind] || (this._okFns[kind] = (x, z) => spawnOk(this.env, kind, x, z) && !this._crowded(kind, x + 0.5, z + 0.5));
+      const res = this.spawner.find(kind, this.env, P.x, P.z, sp.near[0], sp.near[1], sp.min, now, Math.random, _tw, { camYaw, ok: okFn });
       if (!res) { if (kind === 'sea_turtle') this.spawnT[kind] = 2; continue; }
       const r = this._free(kind);
       if (r) {
@@ -698,6 +728,7 @@ class OceanSystem {
     this._stepShow(dt);
     this._stepSchools(dt, P);
     this._stepOthers(dt, P, tod);
+    for (const kind in APART) this._apart(kind, APART[kind]);
     this._stepRemote(dt);
     this.whale.update(dt, P.x, P.y, P.z);
     this._rideCue(dt, P);
@@ -1058,9 +1089,9 @@ class OceanSystem {
           }
         } else {
           const near = dist <= NEAR;
-          const want = near ? surf - 0.275 + 0.1 * Math.sin(r.phase * 0.2 + r.yoff * 6) : surf - 0.6;
+          const want = near ? surf - 0.38 + 0.1 * Math.sin(r.phase * 0.2 + r.yoff * 6) : surf - 0.7;
           r.y += clamp(want - r.y, -2 * dt, 2 * dt);
-          if (near) r.y = clamp(r.y, surf - 0.4, surf - 0.15);
+          if (near) r.y = clamp(r.y, surf - 0.5, surf - 0.26);
         }
         r.shade = this._shade(r, dist);
         this._sane(r);
@@ -1147,22 +1178,29 @@ class OceanSystem {
           if (r.flash > 0) r.flash = Math.max(0, r.flash - dt);
           if (Math.abs(glow - r.glow) > 0.02) { r.glow = glow; r.glowDirty = true; }
         } else if (kind === 'octopus') {
-          const bed0 = this.map.bed(r.x, r.z);
-          if (bed0 >= 0) r.y = bed0 + 1;
           if (r.state === 'scoot') {
             swimToward(r, dt, env, r.tx, r.tz, 3, 6);
             r.extra = 0.25;
             if (Math.hypot(r.tx - r.x, r.tz - r.z) < 0.2 || r.t > 1.5) { r.state = 'rest'; r.speed = 0; }
-            const bed1 = this.map.bed(r.x, r.z);
-            if (bed1 >= 0) r.y = bed1 + 1;
           } else r.extra = 0.06 + 0.04 * Math.sin(this.clock * 0.6 + r.i);
+          // curious: near her it floats up off the bed to say hi (easy to see), farther out it rests on it
+          const bed0 = this.map.bed(r.x, r.z);
+          if (bed0 >= 0) {
+            const want = octoY(bed0, surf, dist) + 0.1 * Math.sin(this.clock * 1.3 + r.i);
+            r.y += clamp(want - r.y, -0.8 * dt, 0.8 * dt);
+            if (r.y < bed0 + 1) r.y = bed0 + 1;
+          }
           r.phase += dt * 1.2;
           r.colorT -= dt;
           if (r.colorT <= 0) { r.colorT = 20; this._nextColor(r); }
           this._bubbles(r, dt, dist);
         } else if (kind === 'seahorse') {
+          // near her it floats up just under the surface (easy to see), farther out it sinks to the bed
           const bed2 = this.map.bed(r.x, r.z);
-          if (bed2 >= 0) r.y = bed2 + 1.45 + 0.15 * Math.sin(this.clock * Math.PI + r.i);
+          if (bed2 >= 0) {
+            const want = horseY(bed2, surf, dist) + 0.12 * Math.sin(this.clock * Math.PI + r.i);
+            r.y += clamp(want - r.y, -0.8 * dt, 0.8 * dt);
+          }
           if (r.state === 'twirl') { r.yaw += dt * TAU / 0.8; if (r.t > 0.8) r.state = 'rest'; } else r.yaw += dt * 0.2;
           r.phase += dt * 6 * TAU;
           r.amp = 0.6;
@@ -1181,6 +1219,30 @@ class OceanSystem {
         if (kind !== 'crab' && kind !== 'starfish') this._cellCheck(r, dt);
         r.shade = this._shade(r, dist);
         this._sane(r);
+      }
+    }
+  }
+
+  /**
+   * Swimmers of a kind never sit inside each other (two dolphins crossing read as one with two
+   * heads): any two closer than d blocks are eased apart, each only into water it may swim in.
+   */
+  _apart(kind, d) {
+    const list = this.pools[kind], env = this.env, n = list.length;
+    for (let i = 0; i < n; i++) {
+      const a = list[i];
+      if (!a.on || a.hidden || FIXED[a.state]) continue;
+      for (let j = i + 1; j < n; j++) {
+        const b = list[j];
+        if (!b.on || b.hidden || FIXED[b.state]) continue;
+        const dx = b.x - a.x, dz = b.z - a.z, dy = b.y - a.y, h = Math.hypot(dx, dz);
+        if (h >= d || Math.abs(dy) > d) continue;
+        const k = Math.min(0.08, (d - h) * 0.25), ux = h > 1e-3 ? dx / h : Math.sin(a.i + 1), uz = h > 1e-3 ? dz / h : Math.cos(a.i + 1);
+        for (const [r, s] of [[a, -1], [b, 1]]) {
+          const nx = r.x + ux * k * s, nz = r.z + uz * k * s;
+          const ok = kind === 'crab' ? this.map.shore(nx, nz) : r.dry || columnOk(env, kind, Math.floor(nx), Math.floor(nz), r.level);
+          if (ok) { r.x = nx; r.z = nz; }
+        }
       }
     }
   }
@@ -1712,11 +1774,53 @@ class OceanSystem {
   _write() {
     const M = this.meshes;
     if (!M) return;
+    const tod = this.game.timeOfDay;
+    SEA_U.uSeaTime.value = this.clock % 600;
+    SEA_U.uSeaNight.value = tod && fin(tod.night) ? clamp(tod.night, 0, 1) : 0;
+    const behind = this._glassTick();
     const lists = this._lists || (this._lists = [null]);
+    const liquid = this._liquidFn || (this._liquidFn = (r) => this._liquid(r));
     for (const kind of SEA_KINDS) {
       lists[0] = this.pools[kind];
-      M.write(kind, lists);
+      M.write(kind, lists, liquid, behind[kind]);
     }
+  }
+
+  /** The linear colour of the liquid a record swims in (water, chocolate milk, strawberry milk). */
+  _liquid(r) {
+    const w = this.game.world;
+    const id = w ? w.get(Math.floor(r.x), r.level, Math.floor(r.z)) : 0;
+    const map = this._liq || (this._liq = new Map());
+    let c = map.get(id);
+    if (!c) {
+      const def = w && w.registry && w.registry.byId ? w.registry.byId(id) : null;
+      c = hexToLinear(SEA_LIQUIDS[def && def.key] || SEA_WATER);
+      map.set(id, c);
+    }
+    return c;
+  }
+
+  /**
+   * Glass (material.js): for each kind, whether any of its animals is seen through a see-through
+   * block (glass, a jelly block, ice) from the camera. Each animal's line of sight is checked every
+   * eighth frame (a short voxel walk, at most 48 blocks).
+   */
+  _glassTick() {
+    const B = this._behind || (this._behind = {});
+    for (const kind of SEA_KINDS) B[kind] = false;
+    const w = this.game.world, cam = this.game.camera;
+    const props = w && w.registry && w.registry.props;
+    if (!props || !cam) return B;
+    const cp = cam.position, f = this.frame;
+    for (const kind of SEA_KINDS) {
+      const lift = kind === 'octopus' || kind === 'crab' || kind === 'starfish' ? 0.2 : 0;
+      for (const r of this.pools[kind]) {
+        if (!r.on || r.hidden) { r.behind = false; continue; }
+        if (((f + r.i) & 7) === 0 || r.behind === undefined) r.behind = glassBetween(w, props.pass, props.shape, cp.x, cp.y, cp.z, r.x, r.y + lift, r.z);
+        if (r.behind) B[kind] = true;
+      }
+    }
+    return B;
   }
 
   // =====================================================================================
@@ -1889,6 +1993,39 @@ class OceanSystem {
         const s = spot((x, z) => sys.map.shore(x, z) && sys.map.shore(x + 1, z) + sys.map.shore(x - 1, z) + sys.map.shore(x, z + 1) + sys.map.shore(x, z - 1) >= 2);
         return s ? [s[0], sys.map.ground(s[0], s[1]) + 1, s[1]] : null;
       },
+      /** Water 2 to 3 deep with a shore cell within 4 blocks (crabs, starfish and seahorses). */
+      shallowSpot() {
+        const m = sys.map;
+        const near = (x, z) => { for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++) if (m.shore(x + dx, z + dz)) return true; return false; };
+        const s = spot((x, z) => m.top(x, z) >= 0 && m.top(x, z) === sys.env.seaLevel && m.depth(x, z) >= 2 && m.depth(x, z) <= 3 && m.inBounds(x - 5, z - 5) && m.inBounds(x + 5, z + 5) && near(x, z));
+        return s ? [s[0], sys.map.top(s[0], s[1]) + 0.1, s[1]] : null;
+      },
+      /** The nearest shore cell to (x, z) within r blocks: [x, groundY + 1, z] or null. */
+      shoreNear(x, z, r = 8) {
+        const m = sys.map;
+        let best = null, bd = Infinity;
+        for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) {
+          const cx = Math.floor(x) + dx, cz = Math.floor(z) + dz;
+          if (!m.shore(cx, cz)) continue;
+          const d = Math.hypot(dx, dz);
+          if (d < bd) { bd = d; best = [cx + 0.5, m.ground(cx, cz) + 1, cz + 0.5]; }
+        }
+        return best;
+      },
+      /** Pictures: move a live record (by kind and index) to (x, z), optionally facing yaw. */
+      move(kind, i, x, z, yaw = null) {
+        const r = sys.pools[kind] && sys.pools[kind].find((q) => q.on && q.i === i);
+        if (!r) return false;
+        r.x = x; r.z = z;
+        if (yaw !== null) r.yaw = yaw;
+        if (r.tx !== undefined) { r.tx = x; r.tz = z; }
+        if (kind === 'seahorse' || kind === 'octopus' || kind === 'starfish') {
+          const bed = sys.map.bed(x, z);
+          if (bed >= 0) r.y = kind === 'seahorse' ? horseY(bed, r.level + SURF, 0) : kind === 'octopus' ? octoY(bed, r.level + SURF, 0) : bed + 1;
+        }
+        saveGood(r);
+        return true;
+      },
       edgeSpot() {
         const w = g.world;
         const s = spot((x, z) => (x === 5 || z === 5 || x === w.sx - 6 || z === w.sz - 6) && sys.map.deepAround(x, z, 3) && sys.map.inBounds(x, z));
@@ -1950,6 +2087,10 @@ class OceanSystem {
       fields: () => ({ sr: sys.rideField(), sk: sys.trickField() }),
       remote: () => [...sys.remote.entries()].map(([peer, e]) => ({ peer, x: e.rec.x, y: e.rec.y, z: e.rec.z, variant: e.rec.variant, hidden: !!e.rec.hidden, saddle: !!e.rec.saddle })),
       slotTint: (kind, i) => (sys.meshes ? sys.meshes.slotTint(kind, i) : null),
+      /** Slot i's (surface y, liquid r, g, b) as drawn (the liquid's colour over it). */
+      slotSurf: (kind, i) => (sys.meshes ? sys.meshes.slotSurf(kind, i) : null),
+      /** Per kind: an animal of it is seen through glass (material.js; drawn before the glass). */
+      behind: () => ({ ...(sys._behind || {}) }),
       meshCounts: () => (sys.meshes ? sys.meshes.counts() : null),
       corrupt(kind = 'dolphin') {
         const r = sys.pools[kind].find((q) => q.on && q.state !== 'ride');

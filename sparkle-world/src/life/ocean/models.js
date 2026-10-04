@@ -51,6 +51,17 @@ export class SeaKit extends Kit {
   cyl(...a) { super.cyl(...a); return this._tag(); }
   ball(...a) { super.ball(...a); return this._tag(); }
 
+  /** A smooth round tube through points [[x, y, z], ...] (a smile line), with round ends. */
+  tube(points, r, color, seg = 24) {
+    const curve = new THREE.CatmullRomCurve3(points.map((p) => new THREE.Vector3(p[0], p[1], p[2])));
+    this.parts.push({ g: new THREE.TubeGeometry(curve, seg, r, 6, false), color, cx: 0, cy: 0, cz: 0, sx: 1, sy: 1, sz: 1, rot: null });
+    this._tag();
+    const a = points[0], b = points[points.length - 1];
+    this.ball(r, color, a[0], a[1], a[2], 6);
+    this.ball(r, color, b[0], b[1], b[2], 6);
+    return this;
+  }
+
   /** A cylinder by its centre (Kit.cyl takes the base). */
   cylC(r, h, color, cx, cy, cz, rot = null, seg = 10, topRatio = 1) {
     return this.cyl(r, h, color, cx, cy - h / 2, cz, seg, rot, topRatio);
@@ -104,6 +115,14 @@ function scaleGeometry(geo, sx, sy, sz) {
   return geo;
 }
 
+/**
+ * The small kinds are built bigger than life next to a dolphin, so a 6-year-old spots them at a
+ * glance from her swim camera (owner review: a seahorse 10 pixels tall is never found). Pick boxes
+ * (index.js BOX) and heights above the sea bed follow these.
+ */
+export const SIZE = { fish: 2.0, seahorse: 1.7, starfish: 2.0, crab: 1.4 };
+const sized = (kind, geo) => (SIZE[kind] ? scaleGeometry(geo, SIZE[kind], SIZE[kind], SIZE[kind]) : geo);
+
 // ---------- the nine builders ----------
 
 function dolphinParts(k) {
@@ -139,42 +158,35 @@ function whaleParts(k) {
     const kk = Math.sqrt(Math.max(0, 1 - ((y - H[1]) / R[1]) ** 2));
     return [(R[0] * kk + out) * Math.sin(th), y, H[2] + (R[2] * kk + out) * Math.cos(th)];
   };
-  k.part(1, 0).ball(0.36, W, 0, 0, -0.1, 14, [1, 0.86, 2.3]);               // the long body
-  k.part(1, 0).ball(1, W, H[0], H[1], H[2], 14, R);                          // the big round head
-  k.part(2, 0).ball(0.33, W, 0, -0.11, 0.3, 12, [0.96, 0.62, 2.0]);          // the pale throat and belly
-  for (const x of [-0.12, -0.04, 0.04, 0.12]) {                              // throat grooves
-    k.part(1, 0).cbox(0.022, 0.02, 0.5, W, x, -0.305, 0.36);
-  }
-  // a long smile from cheek to cheek, curling up at the ends
-  k.part(0, 0);
+  // smooth round shapes (many segments, so the head meets the body in one soft crease)
+  k.part(1, 0).ball(0.36, W, 0, 0, -0.1, 24, [1, 0.86, 2.3]);               // the long body
+  k.part(1, 0).ball(1, W, H[0], H[1], H[2], 24, R);                          // the big round head
+  k.part(2, 0).ball(0.33, W, 0, -0.11, 0.3, 20, [0.96, 0.62, 2.0]);          // the pale throat and belly
+  // a long smile from cheek to cheek, curling up at the ends: one smooth line
   const smile = [];
-  for (let i = 0; i <= 18; i++) {
-    const t = -1 + (i / 18) * 2;
-    smile.push(onHead(t * 0.95, 0.02 + 0.035 * t * t, -0.004));               // just above the pale chin
+  for (let i = 0; i <= 12; i++) {
+    const t = -1 + (i / 12) * 2;
+    smile.push(onHead(t * 0.95, 0.02 + 0.035 * t * t, 0.002));                // just above the pale chin
   }
-  for (let i = 0; i < smile.length - 1; i++) {                             // short bars end to end
-    const [x0, y0, z0] = smile[i], [x1, y1, z1] = smile[i + 1];
-    k.cbox(0.028, 0.026, Math.hypot(x1 - x0, z1 - z0) * 1.25, SMILE, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
-    rot([0, Math.atan2(x1 - x0, z1 - z0), 0]);
-  }
+  k.part(0, 0).tube(smile, 0.014, SMILE, 32);
   // eyes on the sides of the head, just behind the smile's ends; blush below
   for (const s of [-1, 1]) {
     const [x, y, z] = onHead(s * 1.2, 0.12, -0.01);
-    k.ball(0.06, EYE, x, y, z, 8);
+    k.ball(0.06, EYE, x, y, z, 10);
     const [x2, y2, z2] = onHead(s * 1.1, 0.16, 0.02);
     k.ball(0.022, SHINE, x2, y2, z2, 6);
     const [x3, y3, z3] = onHead(s * 1.3, 0.03, -0.005);
-    k.ball(0.05, BLUSH, x3, y3, z3, 6, [1, 0.6, 0.6]);
+    k.ball(0.05, BLUSH, x3, y3, z3, 8, [1, 0.6, 0.6]);
   }
   k.part(0, 0).ball(0.045, SMILE, 0, H[1] + R[1] - 0.012, 0.38, 8, [1.4, 0.4, 0.8]); // the blowhole
-  k.part(1, 0).ball(0.08, W, 0, 0.27, -0.6, 8, [0.55, 0.55, 1.5]);          // a small hump (no tall fin)
+  k.part(1, 0).ball(0.08, W, 0, 0.27, -0.6, 10, [0.55, 0.55, 1.5]);         // a small hump (no tall fin)
   for (const s of [-1, 1]) {                                                 // long side flippers, swept back
-    k.part(1, 1, [s * 0.3, -0.14, 0.3]).ball(0.34, W, s * 0.52, -0.2, 0.18, 10, [1, 0.1, 0.3]);
+    k.part(1, 1, [s * 0.3, -0.14, 0.3]).ball(0.34, W, s * 0.52, -0.2, 0.18, 12, [1, 0.1, 0.3]);
     rot([0, s * 0.6, s * -0.35]);
   }
-  k.part(1, 0).ball(0.17, W, 0, 0.02, -0.98, 10, [0.85, 0.8, 1.9]);          // the tail stock
+  k.part(1, 0).ball(0.17, W, 0, 0.02, -0.98, 14, [0.85, 0.8, 1.9]);          // the tail stock
   for (const s of [-1, 1]) {                                                 // a wide flat tail
-    k.part(1, 0).ball(0.32, W, s * 0.27, 0.03, -1.34, 10, [1, 0.12, 0.48]);
+    k.part(1, 0).ball(0.32, W, s * 0.27, 0.03, -1.34, 12, [1, 0.12, 0.48]);
     rot([0, s * -0.5, 0]);
   }
 }
@@ -195,9 +207,10 @@ const BUILDERS = {
   },
   fish() {
     const k = new SeaKit((x, y, z) => (0.08 - z) / 0.3);
-    k.part(1, 0).ball(0.16, W, 0, 0, 0, 10, [0.7, 0.95, 1]);
+    k.part(1, 0).ball(0.16, W, 0, 0, 0, 12, [0.7, 0.95, 1]);
     for (const s of [-1, 1]) k.part(1, 0).cbox(0.02, 0.16, 0.13, W, 0, s * 0.05, -0.2, [s * 0.5, 0, 0]); // fan tail
-    for (const s of [-1, 1]) k.part(1, 1, [s * 0.09, -0.03, 0.02]).cbox(0.09, 0.015, 0.06, W, s * 0.12, -0.04, 0.0, [0, 0, s * 0.4]);
+    // little round side fins, well behind the eyes (low and forward they read as a frown)
+    for (const s of [-1, 1]) k.part(1, 1, [s * 0.1, -0.01, -0.04]).ball(0.05, W, s * 0.12, -0.01, -0.06, 8, [0.25, 0.7, 1]);
     k.part(1, 0).cbox(0.015, 0.06, 0.1, W, 0, 0.15, -0.02);                   // a little top fin
     for (const s of [-1, 1]) {                                               // three accent dots a side (never stripes)
       k.part(2, 0).ball(0.022, W, s * 0.104, 0.04, 0.0, 6);
@@ -205,17 +218,24 @@ const BUILDERS = {
       k.ball(0.018, W, s * 0.092, 0.05, -0.08, 6);
     }
     k.face(0.07, 0.04, 0.115, { eye: 0.03, smile: false });
-    return k.geometry();
+    // a small smile on the front, curving up (on the body's surface)
+    const front = (x, y) => 0.16 * Math.sqrt(Math.max(0, 1 - (x / 0.112) ** 2 - (y / 0.152) ** 2)) + 0.004;
+    const sm = [];
+    for (let i = 0; i <= 6; i++) { const t = -1 + i / 3; const x = t * 0.032, y = -0.035 + 0.014 * t * t; sm.push([x, y, front(x, y)]); }
+    k.part(0, 0).tube(sm, 0.006, SMILE, 12);
+    return sized('fish', k.geometry());
   },
   sea_turtle() {
     const k = new SeaKit((x, y, z) => (0.3 - z) / 1.0);
     // the domed shell in the body colour, with rounded lighter plates lying flat on it (they follow
-    // the dome, nothing pokes up) and a darker rim; the head and flippers a lighter skin colour, so
-    // the shell reads as a shell from any side
+    // the dome, nothing pokes up) and a darker band around its lower edge (a band on the dome, not
+    // a flat disc: that read as a saucer); a big head held up in front and broad paddle flippers in
+    // a lighter skin colour, so from her camera above and behind it reads as a turtle, not a dome
+    // on stick legs
     const SA = 0.45, SB = 0.2025, SC = 0.495, SY = 0.05;                 // the dome's radii and centre
     const dome = (x, z) => SY + SB * Math.sqrt(Math.max(0, 1 - (x / SA) ** 2 - (z / SC) ** 2));
-    k.part(1, 0).ball(0.45, W, 0, SY, 0, 14, [1, 0.45, 1.1]);              // domed shell
-    k.part(1, 0).ball(0.47, '#B4B4B4', 0, 0.0, 0, 14, [1, 0.16, 1.1]);    // a darker shell rim
+    k.part(1, 0).ball(0.45, W, 0, SY, 0, 16, [1, 0.45, 1.1]);              // domed shell
+    k.part(1, 0).ball(0.456, '#BDBDBD', 0, 0.035, 0, 16, [1, 0.27, 1.1]); // a darker band on its lower edge
     k.part(0, 0).ball(0.42, '#FFF2D6', 0, -0.04, 0, 12, [0.95, 0.22, 1.05]); // cream belly
     k.part(2, 0);                                                          // lighter plates, flat on the dome
     const rot = (r) => { k.parts[k.parts.length - 1].rot = r; };
@@ -225,14 +245,14 @@ const BUILDERS = {
       k.ball(0.085, W, x, y - 0.016, z, 8, [1, 0.18, 1]);
       rot([Math.atan2(z / SC ** 2, ny), 0, -Math.atan2(x / SA ** 2, ny)]);
     }
-    k.part(3, 0).cylC(0.1, 0.16, W, 0, 0.04, 0.5, [Math.PI / 2, 0, 0], 10); // a short neck
-    k.part(3, 0).ball(0.19, W, 0, 0.07, 0.66, 12, [1, 0.92, 1.05]);         // big round head
-    k.face(0.09, 0.12, 0.79, { eye: 0.045 });
+    k.part(3, 0).cylC(0.11, 0.2, W, 0, 0.07, 0.5, [Math.PI / 2 - 0.35, 0, 0], 10); // a short neck, held up
+    k.part(3, 0).ball(0.21, W, 0, 0.13, 0.7, 14, [1, 0.92, 1.08]);           // big round head
+    k.face(0.1, 0.17, 0.87, { eye: 0.05 });
     for (const s of [-1, 1]) {
-      // long front flippers sweeping back (a sea turtle's), short round back flippers
-      k.part(3, 1, [s * 0.32, -0.03, 0.18]).ball(0.26, W, s * 0.52, -0.03, 0.12, 10, [1, 0.13, 0.42]);
-      rot([0, s * 0.55, s * -0.12]);
-      k.part(3, 1, [s * 0.2, -0.03, -0.36]).ball(0.12, W, s * 0.29, -0.04, -0.44, 8, [1, 0.25, 0.7]);
+      // long, broad front flippers sweeping back (a sea turtle's paddles), round back flippers
+      k.part(3, 1, [s * 0.32, -0.02, 0.18]).ball(0.3, W, s * 0.55, -0.02, 0.1, 12, [1, 0.12, 0.55]);
+      rot([0, s * 0.6, s * -0.12]);
+      k.part(3, 1, [s * 0.2, -0.03, -0.36]).ball(0.15, W, s * 0.3, -0.03, -0.45, 10, [1, 0.22, 0.8]);
       rot([0, s * 0.5, 0]);
     }
     k.part(3, 0).ball(0.07, W, 0, -0.01, -0.56, 8, [0.8, 0.6, 1.2]);      // a little tail
@@ -290,7 +310,7 @@ const BUILDERS = {
     k.ball(0.028, W, 0, -0.22, -0.155, 8);
     k.ball(0.022, W, 0, -0.185, -0.14, 8);
     k.part(2, 1, [0, 0.02, -0.08]).cbox(0.015, 0.12, 0.08, W, 0, 0.02, -0.12); // the fluttering back fin
-    return k.geometry();
+    return sized('seahorse', k.geometry());
   },
   crab() {
     const k = new SeaKit((x, y, z) => Math.hypot(x, z) / 0.4);
@@ -309,7 +329,7 @@ const BUILDERS = {
       for (const z of [-0.1, -0.02, 0.06]) k.cbox(0.17, 0.03, 0.03, W, s * 0.27, 0.07, z, [0, 0, s * 0.6]);
     }
     k.part(0, 0).cbox(0.06, 0.012, 0.012, SMILE, 0, 0.14, 0.2);
-    return k.geometry();
+    return sized('crab', k.geometry());
   },
   starfish() {
     const k = new SeaKit((x, y, z) => Math.hypot(x, z) / 0.25);
@@ -330,7 +350,7 @@ const BUILDERS = {
       k.ball(0.02, BLUSH, s * 0.065, 0.075, -0.01, 6, [1, 0.5, 1]);
     }
     k.cbox(0.025, 0.006, 0.008, SMILE, 0, 0.079, -0.025);                 // a tiny smile
-    return k.geometry();
+    return sized('starfish', k.geometry());
   },
 };
 

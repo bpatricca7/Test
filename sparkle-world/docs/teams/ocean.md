@@ -1807,3 +1807,51 @@ for a grown-up's read (§16 Q4).
   set adds `review-leap-desktop|ipad`, `review-night-desktop|ipad` and `review-ride`. Debug:
   `gallery({ surface })` puts a water surface at that height (C6), `leap(i)` makes a dolphin leap.
   T6 waits up to 3 s for the Build click to land (it read the block after a fixed 300 ms).
+
+**Third owner review (picture judges).**
+- *Small animals were specks.* From her swim camera a seahorse was about 10 pixels tall and the
+  Little Fish a few dots. The small kinds are now built bigger than life (`models.js` `SIZE`: fish
+  2.0, seahorse 1.7, starfish 2.0, crab 1.4); pick boxes follow (`BOX`). Near her a seahorse floats
+  up to just under the surface and a curious octopus rises off the bed to say hi (both sink back
+  farther out); fish schools are a little wider so the bigger fish do not pile up.
+- *Colours washed out under the water.* The water's colour went up to 42%, then a white rim on
+  top: on a small animal almost every pixel is rim, so a sunny seahorse turned grey-beige and an
+  orange starfish pink-white. Now: a little of the LIQUID's own colour (0.1 just under the surface,
+  +0.04 a block, at most 0.2), the animal's colour made 40% richer first, no white rim; instead a
+  soft darker edge (outline) and moving dappled wave light (caustics) so it still reads as under
+  the water. A per-instance liquid colour (`iSurf` is now a vec4: surface y, liquid rgb) gives
+  fish in a chocolate-milk pond a chocolate tint (`SEA_LIQUIDS`), never the sea's blue (probe B1).
+- *Night:* every sea animal gets a soft glow of its own colour (`SEA_NIGHT` 0.3) and a pale
+  moonlit edge, so fish and an octopus near her are no longer dim smudges and the blue dolphin
+  keeps its outline against the night sky.
+- *Glass:* see-through blocks (stained glass, jelly blocks, ice) write no depth, so animals drawn
+  after them were pasted over a glass aquarium wall. `_glassTick` walks the line from the camera to
+  each animal every eighth frame (`motion.js` `glassBetween`, test S10); a kind with any animal
+  behind such a block draws in `SEA_BEHIND` order, before every see-through chunk, without its own
+  liquid colour (the glass and the water blend over it as before). New probe check G1: a pink
+  stained-glass wall in front of four animals changes them by 93.4 over the inside of their
+  silhouette (gate 50); drawn after the glass, as before, they change by only 17.4 (the wall's light
+  and shadow) and G1 fails.
+- *Models:* the Sea Turtle's flat darker rim disc (it read as a saucer from above) is now a band on
+  the dome; its head is bigger and held up on the neck, its flippers are broad paddles. The whale's
+  throat-groove boxes (two loose sticks under it) are gone, its head and body are 24-segment
+  shapes, and its smile is one smooth tube (`SeaKit.tube`) instead of stair-stepped bars. The
+  Little Fish's side fins moved back behind the eyes (low and forward they read as a frown) and it
+  has a small smile. The dolphin's tail kick is a little smaller.
+- *Apart:* swimmers of a kind are eased apart (`APART`: dolphins 1.7, turtles 1.5, jellies 1.0,
+  octopus 1.2, seahorses 0.8, crabs 0.95 along the shore), so two dolphins never cross into one
+  two-headed dolphin; new seabed animals and crabs spawn at least `SPACE` from one of their kind, so
+  a 5x5 pool no longer fills with a dozen starfish.
+- *V1 is stricter:* the see pass now shows one kind at a time (no wild animals coming by) and also
+  gates the size (silhouette >= 700 pixels, >= 150 for each animal of a school, >= 40 pixels
+  across) and the colour kept (`keep`: the mean colour change against the same animals drawn as
+  on land, <= 35). The second-review look (`81d5d6e`), run once with this probe: seahorse 215-246
+  pixels and 24-25 across, starfish 253-268 and 26, Little Fish 62-90 pixels each; keep 66-70
+  (seahorse), 87 (starfish), 57-60 (octopus), 34-42 (turtle): 8 of 14 failed, 9 with the
+  per-animal size. The new look: every kind >= 757 pixels (fish 233-308 each), >= 45 across, keep
+  6-24.
+- *Pictures:* the see, world, biomes, tap, ride, touch, gallery and review sets were all made again
+  on the final build. `world-showpod` frames the pod from 7 blocks; `biomes-candy-pond` and
+  `biomes-pool-dolphins` turn her camera to the animals; the review set adds
+  `review-shore-desktop|ipad` (crabs, starfish and a seahorse by the shore), spreads the night
+  animals across the view, and lays the under-water animals out so none is in front of another.

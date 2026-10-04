@@ -361,8 +361,9 @@ export class Spawner {
     const test = ok || ((x, z) => spawnOk(env, kind, x, z));
     for (let k = 0; k < n; k++) {
       const a = rand() * TAU;
-      // half the samples in the ring, half anywhere out to its far edge (small pools)
-      const d = k % 2 === 0 ? ring0 + rand() * (ring1 - ring0) : min + rand() * Math.max(0, R - min);
+      // half the samples in the ring, half anywhere out to its far edge, more of them near `min`
+      // (a small pool beside her has only a few cells far enough away; they are found in seconds)
+      const d = k % 2 === 0 ? ring0 + rand() * (ring1 - ring0) : min + rand() * rand() * Math.max(0, R - min);
       const x = Math.floor(px + Math.sin(a) * d), z = Math.floor(pz + Math.cos(a) * d);
       if (!test(x, z)) continue;
       const dd = Math.hypot(x + 0.5 - px, z + 0.5 - pz);
@@ -411,6 +412,35 @@ export function placeFish(r, school, env) {
   const mx = r.x - ox, mz = r.z - oz;
   if (mx * mx + mz * mz > 1e-6) r.yaw = Math.atan2(mx, mz);
   r.level = school.level;
+}
+
+/**
+ * Whether a see-through block that is not a liquid (glass, a jelly block, ice: pass 3) lies on the
+ * line from a (the camera) to b (an animal): a voxel walk over the cells strictly between them
+ * (the camera's own cell and the animal's are skipped). Lines over 48 blocks: false.
+ */
+export function glassBetween(world, pass, shape, ax, ay, az, bx, by, bz) {
+  const dx = bx - ax, dy = by - ay, dz = bz - az;
+  const len = Math.hypot(dx, dy, dz);
+  if (!(len > 0) || len > 48) return false;
+  let x = Math.floor(ax), y = Math.floor(ay), z = Math.floor(az);
+  const tx = Math.floor(bx), ty = Math.floor(by), tz = Math.floor(bz);
+  const sx = dx > 0 ? 1 : -1, sy = dy > 0 ? 1 : -1, sz = dz > 0 ? 1 : -1;
+  const ix = dx !== 0 ? 1 / Math.abs(dx) : Infinity, iy = dy !== 0 ? 1 / Math.abs(dy) : Infinity, iz = dz !== 0 ? 1 / Math.abs(dz) : Infinity;
+  let mx = dx !== 0 ? (sx > 0 ? x + 1 - ax : ax - x) * ix : Infinity;
+  let my = dy !== 0 ? (sy > 0 ? y + 1 - ay : ay - y) * iy : Infinity;
+  let mz = dz !== 0 ? (sz > 0 ? z + 1 - az : az - z) * iz : Infinity;
+  for (let i = 0; i < 160; i++) {
+    if (x === tx && y === ty && z === tz) return false;
+    if (i > 0) {
+      const id = world.get(x, y, z);
+      if (pass[id] === 3 && shape[id] !== LIQUID) return true;
+    }
+    const t = Math.min(mx, my, mz);
+    if (t > 1) return false;
+    if (t === mx) { x += sx; mx += ix; } else if (t === my) { y += sy; my += iy; } else { z += sz; mz += iz; }
+  }
+  return false;
 }
 
 /** Crabs walk sideways along shore cells only (4-neighbour steps). */

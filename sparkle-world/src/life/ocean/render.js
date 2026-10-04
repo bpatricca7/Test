@@ -6,7 +6,7 @@
 import * as THREE from 'three';
 import { SEA_KINDS, SEA_SPEC, PALETTES, hexToLinear } from './kinds.js';
 import { geometryFor } from './models.js';
-import { seaMaterial, SEA_ORDER } from './material.js';
+import { seaMaterial, SEA_ORDER, SEA_BEHIND, SEA_WATER } from './material.js';
 import { SURF } from './motion.js';
 
 const _m = new THREE.Matrix4();
@@ -15,6 +15,7 @@ const _e = new THREE.Euler(0, 0, 0, 'YXZ');
 const _p = new THREE.Vector3();
 const _s = new THREE.Vector3();
 const _rgb = [0, 0, 0];
+const WATER = hexToLinear(SEA_WATER);
 
 export class SeaMeshes {
   constructor(scene) {
@@ -37,7 +38,10 @@ export class SeaMeshes {
       geo.setAttribute('iSwim', iSwim);
       geo.setAttribute('iTint', iTint);
       geo.setAttribute('iAcc', iAcc);
-      const iSurf = new THREE.InstancedBufferAttribute(new Float32Array(cap).fill(-1e4), 1).setUsage(THREE.DynamicDrawUsage);
+      // (surface y, liquid rgb): -1e4 = dry, drawn as on land
+      const surf = new Float32Array(cap * 4);
+      for (let i = 0; i < cap; i++) surf[i * 4] = -1e4;
+      const iSurf = new THREE.InstancedBufferAttribute(surf, 4).setUsage(THREE.DynamicDrawUsage);
       geo.setAttribute('iSurf', iSurf);
       const mesh = new THREE.InstancedMesh(geo, seaMaterial(SEA_SPEC[kind].mode), cap);
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -53,10 +57,11 @@ export class SeaMeshes {
   }
 
   /**
-   * Write the live records of a kind (list: an array of records; extra: optional second list)
-   * into the instance buffers. visible(r) -> false skips a record.
+   * Write the live records of a kind (lists: arrays of records) into the instance buffers.
+   * liquid(r) -> the linear rgb of the liquid r swims in (default: water). behind: one of them is
+   * seen through glass (material.js): the kind draws before the see-through chunks, untinted.
    */
-  write(kind, lists, near = null) {
+  write(kind, lists, liquid = null, behind = false) {
     const K = this.k[kind];
     const cap = SEA_SPEC[kind].cap;
     const pal = PALETTES[kind];
@@ -78,8 +83,11 @@ export class SeaMeshes {
         S[n * 4] = r.phase;
         S[n * 4 + 1] = r.amp;
         S[n * 4 + 2] = r.extra;
-        S[n * 4 + 3] = near ? near(r) : r.shade;
-        U[n] = r.dry ? -1e4 : r.level + SURF;
+        S[n * 4 + 3] = r.shade;
+        const wet = !r.dry && !behind;
+        const lq = wet && liquid ? liquid(r) : WATER;
+        U[n * 4] = wet ? r.level + SURF : -1e4;
+        U[n * 4 + 1] = lq[0]; U[n * 4 + 2] = lq[1]; U[n * 4 + 3] = lq[2];
         const id = (r.uid != null ? r.uid : r.i + l * 1000);
         const ver = r.tintVer * 4 + (r.saddle ? 2 : 0);
         if (K.owner[n] !== id || K.ver[n] !== ver || r.glowDirty) {
@@ -98,6 +106,7 @@ export class SeaMeshes {
     }
     K.mesh.count = n;
     K.mesh.visible = n > 0;
+    K.mesh.renderOrder = behind ? SEA_BEHIND : SEA_ORDER;
     K.n = n;
     if (n > 0) {
       K.mesh.instanceMatrix.clearUpdateRanges();
@@ -107,7 +116,7 @@ export class SeaMeshes {
       K.iSwim.addUpdateRange(0, n * 4);
       K.iSwim.needsUpdate = true;
       K.iSurf.clearUpdateRanges();
-      K.iSurf.addUpdateRange(0, n);
+      K.iSurf.addUpdateRange(0, n * 4);
       K.iSurf.needsUpdate = true;
       if (tints) {
         K.iTint.clearUpdateRanges();
@@ -138,6 +147,12 @@ export class SeaMeshes {
   slotTint(kind, i) {
     const T = this.k[kind].iTint.array;
     return [T[i * 4], T[i * 4 + 1], T[i * 4 + 2], T[i * 4 + 3]];
+  }
+
+  /** Slot i's (surface y, liquid r, g, b) of a kind (the probe's candy-pond check). */
+  slotSurf(kind, i) {
+    const U = this.k[kind].iSurf.array;
+    return [U[i * 4], U[i * 4 + 1], U[i * 4 + 2], U[i * 4 + 3]];
   }
 
   counts() {

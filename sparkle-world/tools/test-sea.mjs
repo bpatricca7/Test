@@ -4,6 +4,7 @@
 // fake voxel world, plus the real biome generators for S0.
 //   S0 real worlds    S1 SeaMap         S2 motion        S3 leaps        S4 ride
 //   S5 schedule       S6 presence       S7 append-only   S8 caps         S9 static scans
+//   S10 glass (the line of sight through see-through blocks)
 
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -18,7 +19,7 @@ import { SEA_KINDS, OCEAN_STAR_KINDS, PALETTES, SEA_SPEC, DOLPHIN_NAMES, SEA_TEX
 import { h01, whaleTime, whalePhase, buddyOf, clockFrozen, WHALE_LEN } from '../src/life/ocean/schedule.js';
 import {
   makeRecord, saveGood, sanitize, columnOk, spawnOk, settleY, swimToward, wanderTarget, canLeap, startLeap, stepLeap,
-  startTrick, stepTrick, Spawner, placeFish, stepCrab, rescueCell, SURF, BAND,
+  startTrick, stepTrick, Spawner, placeFish, stepCrab, rescueCell, glassBetween, SURF, BAND,
 } from '../src/life/ocean/motion.js';
 import { DolphinRide, RIDE_SPEED, RIDE_RUN } from '../src/life/ocean/ride.js';
 import { parseSeaRide, parseSeaTrick } from '../src/net/protocol.js';
@@ -742,6 +743,32 @@ await test('S6', 'presence parsers: sr 0..15, sk 0..65535', () => {
 // =====================================================================================
 
 const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n');
+
+await test('S10', 'glass: a see-through block between the camera and an animal is found; water, air and the end cells are not', () => {
+  // ids: 0 air, 1 water (liquid, pass 3), 2 stained glass (pass 3), 3 stone (pass 1)
+  const pass = Uint8Array.from([0, 3, 3, 1]), shape = Uint8Array.from([SHAPES.air, SHAPES.liquid, SHAPES.cube, SHAPES.cube]);
+  const cells = new Map();
+  const w = { get: (x, y, z) => cells.get(`${x},${y},${z}`) || 0 };
+  // water everywhere below y 5
+  for (let x = -2; x < 30; x++) for (let z = -2; z < 30; z++) for (let y = 0; y < 5; y++) cells.set(`${x},${y},${z}`, 1);
+  assert(!glassBetween(w, pass, shape, 0.5, 7.5, 0.5, 10.5, 3.5, 12.5), 'through water only: no glass');
+  cells.set('5,5,6', 2);
+  let hits = 0, n = 0;
+  for (let k = 0; k < 40; k++) {
+    // lines through the glass cell (5, 5, 6) from many cameras, all ending at (9.5, 3.5, 10.5)
+    const a = (k / 40) * Math.PI * 2, cx = 5.5 + Math.sin(a) * 0.3, cz = 6.5 + Math.cos(a) * 0.3;
+    const ax = 9.5 + (cx - 9.5) * 2, ay = 3.5 + (5.5 - 3.5) * 2, az = 10.5 + (cz - 10.5) * 2;
+    n++;
+    if (glassBetween(w, pass, shape, ax, ay, az, 9.5, 3.5, 10.5)) hits++;
+  }
+  assert(hits === n, `every line through the glass finds it (${hits} of ${n})`);
+  assert(!glassBetween(w, pass, shape, 5.5, 5.5, 6.5, 9.5, 3.5, 10.5), 'the camera inside the glass cell itself: skipped');
+  assert(!glassBetween(w, pass, shape, 0.5, 5.5, 0.5, 5.5, 5.5, 6.5), 'the animal inside the glass cell itself: skipped');
+  assert(!glassBetween(w, pass, shape, 0.5, 9.5, 0.5, 20.5, 9.5, 20.5), 'a line above it: none');
+  assert(!glassBetween(w, pass, shape, 0, 9, 0, 60, 3, 60), 'over 48 blocks: none (fogged)');
+  for (const [a, b] of [[[0, 0, 0], [0, 0, 0]], [[NaN, 1, 1], [2, 2, 2]]]) assert(glassBetween(w, pass, shape, ...a, ...b) === false, 'degenerate lines are false');
+  return `${hits} of ${n} lines`;
+});
 
 await test('S9', 'static: no while loops in the ocean folder; the strings are kind, brand-free and character-free', async () => {
   const dir = path.join(ROOT, 'src/life/ocean');

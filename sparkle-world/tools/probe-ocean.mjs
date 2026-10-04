@@ -136,6 +136,8 @@ async function cleanView(page, on, outline = false) {
  *   ring  the colour distance between the animal (its mean colour in a) and the water around it
  *         (the mean colour of a in a 6-pixel ring just outside the silhouette)
  *   luma  the same in brightness only (0..255)
+ *   keep  mean |a - d| over the silhouette, d = the same picture with the animals drawn as on land
+ *         (no liquid colour over them): how much of its own colour the water took away
  *   view  (a point) inside the picture and in front of the camera
  */
 async function seaContrast(page, points = null, radius = 40) {
@@ -155,6 +157,18 @@ async function seaContrast(page, points = null, radius = 40) {
     groupOf.visible = false;
     const b = grab();
     groupOf.visible = true;
+    // d: every animal drawn as on land (its surface y set to "dry" for one picture)
+    const surfs = [];
+    for (const m of groupOf.children) {
+      const A = m.geometry && m.geometry.attributes.iSurf;
+      if (!A) continue;
+      surfs.push([A, A.array.slice()]);
+      for (let i = 0; i < A.count; i++) A.array[i * A.itemSize] = -1e4;
+      A.clearUpdateRanges && A.clearUpdateRanges();
+      A.needsUpdate = true;
+    }
+    const dd = grab();
+    for (const [A, v] of surfs) { A.array.set(v); A.clearUpdateRanges && A.clearUpdateRanges(); A.needsUpdate = true; }
     const saved = [];
     for (const c of g.scene.children) { saved.push([c, c.visible]); if (c !== groupOf && !c.isLight) c.visible = false; }
     const bg = g.scene.background, fog = g.scene.fog;
@@ -182,18 +196,22 @@ async function seaContrast(page, points = null, radius = 40) {
     const L = (r, g2, b2) => 0.299 * r + 0.587 * g2 + 0.114 * b2;
     const stats = (x0, y0, x1, y1) => {
       x0 = Math.max(0, Math.floor(x0)); y0 = Math.max(0, Math.floor(y0)); x1 = Math.min(W - 1, Math.floor(x1)); y1 = Math.min(H - 1, Math.floor(y1));
-      let px = 0, sum = 0, ar = 0, ag = 0, ab = 0, rn = 0, rr = 0, rg = 0, rb = 0;
+      let px = 0, sum = 0, kp = 0, ar = 0, ag = 0, ab = 0, rn = 0, rr = 0, rg = 0, rb = 0;
+      let bx0 = 1e9, by0 = 1e9, bx1 = -1, by1 = -1;
       for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
         const i = y * W + x, k = i * 4;
         if (S[i]) {
           px++;
+          if (x < bx0) bx0 = x; if (x > bx1) bx1 = x; if (y < by0) by0 = y; if (y > by1) by1 = y;
           sum += Math.hypot(a[k] - b[k], a[k + 1] - b[k + 1], a[k + 2] - b[k + 2]);
+          kp += Math.hypot(a[k] - dd[k], a[k + 1] - dd[k + 1], a[k + 2] - dd[k + 2]);
           ar += a[k]; ag += a[k + 1]; ab += a[k + 2];
         } else if (D[i]) { rn++; rr += a[k]; rg += a[k + 1]; rb += a[k + 2]; }
       }
-      if (!px || !rn) return { px, diff: px ? sum / px : 0, ring: 0, luma: 0 };
+      const size = px ? Math.max(bx1 - bx0, by1 - by0) + 1 : 0;
+      if (!px || !rn) return { px, size, diff: px ? sum / px : 0, keep: px ? kp / px : 0, ring: 0, luma: 0 };
       ar /= px; ag /= px; ab /= px; rr /= rn; rg /= rn; rb /= rn;
-      return { px, diff: sum / px, ring: Math.hypot(ar - rr, ag - rg, ab - rb), luma: Math.abs(L(ar, ag, ab) - L(rr, rg, rb)) };
+      return { px, size, diff: sum / px, keep: kp / px, ring: Math.hypot(ar - rr, ag - rg, ab - rb), luma: Math.abs(L(ar, ag, ab) - L(rr, rg, rb)) };
     };
     const all = stats(0, 0, W - 1, H - 1);
     const each = [];
@@ -213,9 +231,13 @@ async function seaContrast(page, points = null, radius = 40) {
 const f1 = (v) => (+v).toFixed(1);
 
 // V1 (the swim camera) and C5 (the gallery) thresholds: see the checks
-const V1_DIFF = 50, V1_RING = 36, C5_PX = 40, C5_DIFF = 30;
+const V1_DIFF = 50, V1_RING = 36, V1_PX = 700, V1_EACH = 150, V1_SIZE = 40, V1_KEEP = 35, C5_PX = 40, C5_DIFF = 30;
 // C6 (the water line): the same as on land below C6_SAME; tinted at least C6_TINT, C6_CLOSER nearer the water
 const C6_SAME = 2, C6_TINT = 12, C6_CLOSER = 8;
+// G1 (glass): the stained-glass wall over the animals changes them at least this much (drawn
+// after the glass, the order before the third review, they change by only 17.4: the wall's
+// light and shadow, nothing lies over them)
+const G1_TINT = 50;
 
 /** Aim the camera at a world point (rig yaw / pitch from the player). */
 async function aim(page, x, y, z, pitch = null) {
@@ -332,14 +354,19 @@ async function worldPass(browser, errors) {
     await waitOk(page, () => window.__game.debug.ocean.list('dolphin').some((r) => r.role === 'show' && r.state === 'leap'), null, 12000);
     await ev(page, () => {
       const g = window.__game, s = g.world.meta.spawn;
-      const r = g.debug.ocean.list('dolphin').find((q) => q.role === 'show');
-      if (!r) return;
-      const d = Math.hypot(s[0] - r.x, s[2] - r.z) || 1, ux = (s[0] - r.x) / d, uz = (s[2] - r.z) / d;
-      const k = Math.min(14, d), x = r.x + ux * k, z = r.z + uz * k;
+      const pod = g.debug.ocean.list('dolphin').filter((q) => q.role === 'show');
+      if (!pod.length) return;
+      const r = pod.find((q) => q.state === 'leap') || pod[0];
+      // the pod's middle, seen from 7 blocks toward the island, a little above the water
+      let cx = 0, cz = 0;
+      for (const q of pod) { cx += q.x; cz += q.z; }
+      cx /= pod.length; cz /= pod.length;
+      const d = Math.hypot(s[0] - cx, s[2] - cz) || 1, ux = (s[0] - cx) / d, uz = (s[2] - cz) / d;
+      const k = Math.min(7, d), x = cx + ux * k, z = cz + uz * k;
       g.__rig = g.__rig || g.cameraRig.update.bind(g.cameraRig);
       g.cameraRig.update = () => {};
-      g.camera.position.set(x, r.level + 0.875 + 2.5, z);
-      g.camera.lookAt(r.x, r.level + 1.2, r.z);
+      g.camera.position.set(x, r.level + 0.875 + 1.6, z);
+      g.camera.lookAt(cx, r.level + 1.3, cz);
     });
     await settle(page, 300);
     await shot(page, 'world-showpod', PREFIX);
@@ -586,6 +613,7 @@ async function seePass(browser, errors) {
     for (const kind of ['dolphin', 'fish', 'sea_turtle', 'jelly', 'octopus', 'seahorse', 'starfish']) {
       const res = await ev(page, async (kind) => {
         const g = window.__game, d = g.debug.ocean, p = g.player.position, cam = g.cameraRig;
+        d.autoSpawn(false); // only the one kind in the picture (the numbers are its own)
         d.clear();
         // 5 blocks ahead along the camera's look and 2 to the side (not behind her own head)
         const x = p.x + Math.sin(cam.yaw) * 5 - Math.cos(cam.yaw) * 2, z = p.z + Math.cos(cam.yaw) * 5 + Math.sin(cam.yaw) * 2;
@@ -595,12 +623,21 @@ async function seePass(browser, errors) {
         await new Promise((r) => setTimeout(r, 500));
         d.still(true);
         await new Promise((r) => requestAnimationFrame(() => r()));
-        return { n };
+        return { n, each: d.list(kind).length };
       }, kind);
       const c = res.n ? await seaContrast(page) : { px: 0, diff: 0, ring: 0, luma: 0 };
       await shot(page, `see-${vp.label}-${kind}`, PREFIX);
       await ev(page, () => window.__game.debug.ocean.still(false));
-      seeLog.push(`${vp.label} ${kind}: diff ${f1(c.diff)} ring ${f1(c.ring)} luma ${f1(c.luma)} px ${c.px}`);
+      const each = Math.round(c.px / Math.max(1, res.each || 1));
+      seeLog.push(`${vp.label} ${kind}: diff ${f1(c.diff)} ring ${f1(c.ring)} luma ${f1(c.luma)} keep ${f1(c.keep)} px ${c.px} (${each} each of ${res.each}) size ${c.size}`);
+      // Size and colour (third owner review): at least V1_PX silhouette pixels, V1_EACH for each
+      // animal (a school of 8 fish), V1_SIZE pixels across, and at most V1_KEEP of its colour lost
+      // to the water (keep: against the same animals drawn as on land). The second-review look
+      // (81d5d6e: small animals, up to 42% water colour and a white rim) run once with this probe:
+      // seahorse 215-246 px, 24-25 across, keep 66-70; starfish 253-268 px, 26 across, keep 87;
+      // octopus keep 57-60; turtle keep 34-42: 8 of 14 failed; its Little Fish (62-90 px each, from
+      // the same run's px / 8) fail V1_EACH too. The new
+      // look: every kind >= 757 px (fish 233-308 each), >= 45 across, keep 6-24.
       // the animal against the water it covers (diff) AND against the water around it (ring):
       // (0..441 RGB distance; each kind's first palette). The old faint look (opaque animals drawn
       // under the 75% water) measured diff 16-38 and ring 8-25 here (one seahorse whose crest broke
@@ -608,7 +645,8 @@ async function seePass(browser, errors) {
       // colour mixed over the part under the surface (material.js) they measure diff 64-107 and
       // ring 44-92 (the turtle's pale flippers and the blue dolphin are the lowest); the gate sits
       // between the two: diff >= 50, ring >= 36
-      check(errors, c.px > 50 && c.diff >= V1_DIFF && c.ring >= V1_RING, `V1 ${vp.label}: a ${kind} ahead is clearly visible from the swim camera (difference ${f1(c.diff)} >= ${V1_DIFF}, against the water around it ${f1(c.ring)} >= ${V1_RING}, over ${c.px} silhouette pixels)`);
+      check(errors, c.px >= V1_PX && each >= V1_EACH && c.size >= V1_SIZE && c.diff >= V1_DIFF && c.ring >= V1_RING && c.keep <= V1_KEEP,
+        `V1 ${vp.label}: a ${kind} ahead is big, clear and keeps its colour from the swim camera (${c.px} silhouette pixels >= ${V1_PX}, ${each} for each animal >= ${V1_EACH}, ${c.size} px across >= ${V1_SIZE}; difference ${f1(c.diff)} >= ${V1_DIFF}; against the water around it ${f1(c.ring)} >= ${V1_RING}; colour lost to the water ${f1(c.keep)} <= ${V1_KEEP})`);
     }
     // seabed animals: a bubble trail within 3 s
     const bub = await ev(page, async () => {
@@ -1460,7 +1498,21 @@ async function biomesPass(browser, errors) {
     await goTo(page, pond);
     const pf = await waitOk(page, () => window.__game.debug.ocean.schools().length > 0, null, 25000);
     check(errors, pf, 'B1 fish in the chocolate-milk pond');
+    // the chocolate milk's own colour lies over them (never the sea's blue)
+    const milk = await ev(page, () => {
+      const d = window.__game.debug.ocean, n = d.meshCounts().fish;
+      const out = [];
+      for (let i = 0; i < n; i++) out.push(d.slotSurf('fish', i).slice(1).map((v) => +v.toFixed(3)));
+      return out;
+    });
+    check(errors, milk.length > 0 && milk.every((c) => c[0] > c[2] * 2), `B1 the chocolate milk's colour over the pond fish, not the sea's blue (${JSON.stringify(milk.slice(0, 2))})`);
+    // the picture: her camera turned to the school, a little down into the pond
+    await cleanView(page, true, true);
+    const sc = await ev(page, () => { const s = window.__game.debug.ocean.schools()[0]; return s ? [s.x, s.y, s.z] : null; });
+    if (sc) await aim(page, sc[0], sc[1], sc[2], 0.55);
+    await gameWait(page, 0.6, 8000);
     await shot(page, 'biomes-candy-pond', PREFIX);
+    await cleanView(page, false, true);
   } else check(errors, false, 'B1 a chocolate-milk pond in Candy');
 
   // B2 flat: no sea life; a 5x5x2 pool gets fish ("Fish moved into your pool!"); 17x17x4 gets dolphins; 2 deep never
@@ -1480,8 +1532,10 @@ async function biomesPass(browser, errors) {
   }, [n, d, dx]);
   const small = await dig(5, 2, 2);
   await ev(page, (s) => { const g = window.__game; g.player.teleport(s[0] - 0.5, s[1] + 1, s[2] + 2.5); }, small);
-  const fishIn = await waitOk(page, () => window.__game.debug.ocean.schools().length > 0, null, 30000);
-  check(errors, fishIn && await toastSeen(page, /^Fish moved into your pool!$/, 3000), 'B2 a 5x5x2 pool, standing at its edge: fish and "Fish moved into your pool!"');
+  const fishIn = await waitOk(page, () => window.__game.debug.ocean.schools().length > 0, null, 60000);
+  const fishToast = fishIn && await toastSeen(page, /^Fish moved into your pool!$/, 3000);
+  const poolInfo = await ev(page, () => { const d = window.__game.debug.ocean; return { schools: d.schools().length, counts: d.count(), toasts: window.__toasts.slice(-4) }; });
+  check(errors, fishIn && fishToast, `B2 a 5x5x2 pool, standing at its edge: fish (${fishIn}) and "Fish moved into your pool!" (${fishToast}) ${JSON.stringify(poolInfo)}`);
   await shot(page, 'biomes-pool-fish', PREFIX);
   const shallow = await dig(17, 2, -40);
   void shallow;
@@ -1491,7 +1545,14 @@ async function biomesPass(browser, errors) {
   check(errors, pod && await toastSeen(page, /^Dolphins came to your pool!$/, 3000), 'B2 a 17x17x4 pool, at its edge: a pod and "Dolphins came to your pool!"');
   const inShallow = await ev(page, (s) => window.__game.debug.ocean.list('dolphin').some((r) => r.x >= s[0] && r.x < s[0] + 17 && r.z >= s[2] && r.z < s[2] + 17), shallow);
   check(errors, !inShallow, 'B2 the 2-deep pool never gets dolphins');
+  // the picture: a dolphin of the pod in the pool, her camera turned to it
+  await waitOk(page, (s) => window.__game.debug.ocean.list('dolphin').some((r) => r.role === 'wild' && r.fade >= 1 && r.x >= s[0] + 1 && r.x < s[0] + 16 && r.z >= s[2] + 1 && r.z < s[2] + 16), big, 20000);
+  await cleanView(page, true, true);
+  await aimAtNearest(page, 'dolphin', 'wild', 0.45);
+  await gameWait(page, 0.4, 8000);
+  await aimAtNearest(page, 'dolphin', 'wild', 0.45);
   await shot(page, 'biomes-pool-dolphins', PREFIX);
+  await cleanView(page, false, true);
 
   // B3 snow: no fish under the ice-capped pond
   await newWorld(page, 'snow');
@@ -1913,6 +1974,10 @@ async function galleryShots(browser, errors, pre = '') {
   check(errors, wl.above.px > 2000 && wl.above.diff < C6_SAME, `C6 above the water seen from above: drawn as on land, solid (difference ${f1(wl.above.diff)} < ${C6_SAME})`);
   check(errors, wl.under.px > 2000 && wl.under.diff >= C6_TINT && wl.under.closer >= C6_CLOSER, `C6 under the water seen from above: the water's colour over them (difference ${f1(wl.under.diff)} >= ${C6_TINT}, ${f1(wl.under.closer)} closer to the water >= ${C6_CLOSER})`);
   check(errors, wl.below.px > 2000 && wl.below.diff < C6_SAME, `C6 under the water seen from under it: drawn as on land, solid (difference ${f1(wl.below.diff)} < ${C6_SAME})`);
+  // G1 glass (see glassCheck)
+  const gc = await glassCheck(page, at);
+  console.log('  G1 numbers: ' + JSON.stringify(gc, (k, v) => (typeof v === 'number' ? +v.toFixed(1) : v)));
+  check(errors, gc.px > 2000 && gc.diff >= G1_TINT && gc.behind && !gc.after, `G1 animals behind a stained-glass wall are drawn under the glass, tinted by it (difference ${f1(gc.diff)} >= ${G1_TINT}; seen through glass ${gc.behind}, back to normal without it ${!gc.after})`);
   await page.evaluate(() => window.__game.setDayTime(0.9));
   const night = await pic('gallery-night', { ...G[0], night: true }, G[1]);
   check(errors, night.length === 8 && night.seen === 8, `C5 the eight smaller animals by night, each one in the picture (${night.seen} of ${night.length}; least difference ${f1(night.minDiff)})`);
@@ -1999,6 +2064,73 @@ async function waterLine(page, at) {
   }, at);
 }
 
+/**
+ * G1 glass (material.js): see-through blocks (stained glass, jelly blocks, ice) write no depth, so
+ * sea animals drawn after them would be pasted over the glass. Four animals float in the air (as on
+ * land) behind a wall of pink stained glass; over the inside of their silhouette, the picture with
+ * the wall must differ from the same picture without it (the glass lies over them). Drawn after the
+ * glass (the second-review order) they look nearly the same: see G1_TINT.
+ */
+async function glassCheck(page, at) {
+  return page.evaluate(async (at) => {
+    const g = window.__game, d = g.debug.ocean, w = g.world, R = g.renderer, W = R.domElement.width, H = R.domElement.height;
+    const groupOf = g.scene.getObjectByName('sea-life');
+    const frames = (n) => new Promise((res) => { let k = 0; const f = () => (++k >= n ? res() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    const grab = () => {
+      R.render(g.scene, g.camera);
+      const c = document.createElement('canvas');
+      c.width = W; c.height = H;
+      const x = c.getContext('2d');
+      x.drawImage(R.domElement, 0, 0);
+      return x.getImageData(0, 0, W, H).data;
+    };
+    const o = { x: at[0], y: at[1] + 2.4, z: at[2] + 12, kinds: ['dolphin', 'sea_turtle', 'octopus', 'jelly'], cols: 4, cell: 2.2 };
+    g.camera.position.set(o.x, o.y + 1.0, o.z - 6.5);
+    g.camera.lookAt(o.x, o.y, o.z);
+    g.camera.updateMatrixWorld();
+    d.gallery(o);
+    const glass = w.registry.byKey('glass_stained_pink').id;
+    const z = Math.floor(o.z - 3), cells = [];
+    for (let x = Math.floor(o.x) - 6; x <= Math.floor(o.x) + 6; x++) for (let y = Math.floor(o.y) - 2; y <= Math.floor(o.y) + 2; y++) cells.push([x, y, z, w.get(x, y, z)]);
+    for (const c of cells) w.set(c[0], c[1], c[2], glass, { record: false });
+    await frames(60);
+    const behind = Object.values(d.behind()).some(Boolean);
+    const A = grab();
+    // the silhouette (the sea life alone on black)
+    const saved = [];
+    for (const c of g.scene.children) { saved.push([c, c.visible]); if (c !== groupOf && !c.isLight) c.visible = false; }
+    const bg = g.scene.background, fog = g.scene.fog;
+    g.scene.background = new (groupOf.children[0].material.color.constructor)(0, 0, 0);
+    g.scene.fog = null;
+    const s = grab();
+    g.scene.background = bg; g.scene.fog = fog;
+    for (const [c, v] of saved) c.visible = v;
+    for (const c of cells) w.set(c[0], c[1], c[2], c[3], { record: false });
+    await frames(60);
+    const after = Object.values(d.behind()).some(Boolean);
+    const B = grab();
+    // the silhouette's inside (2 pixels in from its edge: edge pixels blend with what lies behind)
+    let M = new Uint8Array(W * H);
+    for (let i = 0; i < W * H; i++) M[i] = s[i * 4] + s[i * 4 + 1] + s[i * 4 + 2] >= 30 ? 1 : 0;
+    for (let e = 0; e < 2; e++) {
+      const N = new Uint8Array(W * H);
+      for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+        const i = y * W + x;
+        N[i] = M[i] && M[i - 1] && M[i + 1] && M[i - W] && M[i + W] ? 1 : 0;
+      }
+      M = N;
+    }
+    let px = 0, diff = 0;
+    for (let i = 0; i < W * H; i++) {
+      if (!M[i]) continue;
+      const k = i * 4;
+      px++;
+      diff += Math.hypot(A[k] - B[k], A[k + 1] - B[k + 1], A[k + 2] - B[k + 2]);
+    }
+    return { px, diff: px ? diff / px : 0, behind, after };
+  }, at);
+}
+
 // =====================================================================================
 // review (owner pictures, not part of the gate): node tools/probe-ocean.mjs --only=review
 // =====================================================================================
@@ -2028,15 +2160,21 @@ async function reviewPass(browser, errors) {
       const surf = m.top(p.x, p.z) + 0.875, bed = m.bed(p.x, p.z);
       const fx = Math.sin(yaw), fz = Math.cos(yaw);
       const at = (f, s) => [p.x + fx * f - fz * s, p.z + fz * f + fx * s];
-      let [x, z] = at(9, -1.5); d.spawn('dolphin', x, p.y, z, { n: 2 });
-      [x, z] = at(7, 2.4); d.spawn('fish', x, p.y, z, { n: 9 });
-      [x, z] = at(6, -2.4); d.spawn('sea_turtle', x, p.y, z);
-      [x, z] = at(7, 0.6); d.spawn('octopus', x, p.y, z);
-      [x, z] = at(10, 3.5); d.spawn('jelly', x, p.y, z, { n: 2 });
-      [x, z] = at(6.5, -0.9); d.spawn('seahorse', x, p.y, z);
-      [x, z] = at(5.5, 1.6); d.spawn('starfish', x, p.y, z);
+      // each one in its own direction from the camera (none in front of another)
+      let [x, z] = at(10, -2.6); d.spawn('dolphin', x, p.y, z, { n: 2 });
+      [x, z] = at(7, 2.6); d.spawn('fish', x, p.y, z, { n: 9 });
+      [x, z] = at(6, -3.6); d.spawn('sea_turtle', x, p.y, z);
+      [x, z] = at(5, -0.3); d.spawn('octopus', x, p.y, z);
+      [x, z] = at(9, 4.4); d.spawn('jelly', x, p.y, z);
+      [x, z] = at(12, 6.6); d.spawn('jelly', x, p.y, z);
+      [x, z] = at(5, 3.3); d.spawn('seahorse', x, p.y, z);
+      [x, z] = at(5.5, 1.8); d.spawn('starfish', x, p.y, z);
       await new Promise((r) => setTimeout(r, 1500));
       d.still(true);
+      // the two dolphins apart across the view (never one inside the other)
+      const dl = d.list('dolphin');
+      [x, z] = at(10, -2.6); if (dl[0]) d.move('dolphin', dl[0].i, x, z, yaw + Math.PI / 2);
+      [x, z] = at(11, 1.6); if (dl[1]) d.move('dolphin', dl[1].i, x, z, yaw + Math.PI / 2 + 0.3);
       g.__rig = g.__rig || g.cameraRig.update.bind(g.cameraRig);
       g.cameraRig.update = () => {};
       g.player.avatar.group.visible = false;
@@ -2075,10 +2213,12 @@ async function reviewPass(browser, errors) {
       cam.pitch = 0.42;
       const at = (f, s) => [p.x + Math.sin(cam.yaw) * f - Math.cos(cam.yaw) * s, p.z + Math.cos(cam.yaw) * f + Math.sin(cam.yaw) * s];
       let [x, z] = at(9, -3); d.spawn('dolphin', x, p.y, z, { n: 3 });
-      [x, z] = at(5, 2.5); d.spawn('fish', x, p.y, z, { n: 9 });
+      [x, z] = at(7, 3.5); d.spawn('fish', x, p.y, z, { n: 9 });
       [x, z] = at(6.5, -2); d.spawn('sea_turtle', x, p.y, z);
       [x, z] = at(4, -1.2); d.spawn('jelly', x, p.y, z);
-      [x, z] = at(3.5, 1.6); d.spawn('octopus', x, p.y, z);
+      [x, z] = at(4.5, -3); d.spawn('octopus', x, p.y, z);
+      [x, z] = at(5.5, -3.6); d.spawn('seahorse', x, p.y, z);
+      [x, z] = at(4.5, 3.8); d.spawn('starfish', x, p.y, z);
     });
     await gameWait(page, 1.2, 15000);
     await shot(page, `review-play-${vp.label}`, PREFIX);
@@ -2089,8 +2229,14 @@ async function reviewPass(browser, errors) {
     // a dolphin leaping out of the water near her (solid in the air, its splash below)
     const leap = await ev(page, () => {
       const g = window.__game, d = g.debug.ocean, p = g.player.position;
+      if (!d.list('dolphin').length) {
+        const cam = g.cameraRig;
+        d.spawn('dolphin', p.x + Math.sin(cam.yaw) * 7, p.y, p.z + Math.cos(cam.yaw) * 7, { n: 2 });
+      }
       const l = d.list('dolphin').sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z));
-      return l.length ? d.leap(l[0].i) && l[0].i : false;
+      // the nearest one that can leap now (one already in the air, or with no room, is skipped)
+      for (const r of l) if (d.leap(r.i)) return r.i;
+      return false;
     });
     if (leap !== false) {
       await waitOk(page, (i) => { const r = window.__game.debug.ocean.list('dolphin').find((q) => q.i === i); return r && r.y > r.level + 1.3; }, leap, 8000);
@@ -2103,16 +2249,48 @@ async function reviewPass(browser, errors) {
       g.setDayTime(0.9);
       d.clear();
       const at = (f, s) => [p.x + Math.sin(cam.yaw) * f - Math.cos(cam.yaw) * s, p.z + Math.cos(cam.yaw) * f + Math.sin(cam.yaw) * s];
-      let [x, z] = at(4.5, -1.5); d.spawn('jelly', x, p.y, z, { n: 3 });
-      [x, z] = at(5, 2.2); d.spawn('fish', x, p.y, z, { n: 8 });
-      [x, z] = at(8, 0); d.spawn('dolphin', x, p.y, z, { n: 2 });
-      [x, z] = at(3.5, 0.6); d.spawn('octopus', x, p.y, z);
+      // spread out across the view, clear of her head
+      let [x, z] = at(6, -3.2); d.spawn('jelly', x, p.y, z);
+      [x, z] = at(8, -1.4); d.spawn('jelly', x, p.y, z);
+      [x, z] = at(5, 3.6); d.spawn('jelly', x, p.y, z);
+      [x, z] = at(6.5, 2.2); d.spawn('fish', x, p.y, z, { n: 8 });
+      [x, z] = at(10, 0); d.spawn('dolphin', x, p.y, z, { n: 2 });
+      [x, z] = at(4, -2.6); d.spawn('octopus', x, p.y, z);
+      [x, z] = at(4.5, 2.2); d.spawn('seahorse', x, p.y, z);
     });
     await gameWait(page, 1.5, 15000);
     await shot(page, `review-night-${vp.label}`, PREFIX);
     const cn = await seaContrast(page);
     check(errors, cn.px > 800 && cn.diff >= C5_DIFF, `R-N ${vp.label}: at night the animals near her are in the picture (${cn.px} pixels, difference ${f1(cn.diff)})`);
     await ev(page, () => window.__game.setDayTime(0.42));
+    // by the shore: crabs on the sand, starfish and seahorses in the shallow water near her
+    const shallow = await ev(page, () => window.__game.debug.ocean.shallowSpot());
+    if (shallow) {
+      await goTo(page, shallow);
+      const res = await ev(page, () => {
+        const g = window.__game, d = g.debug.ocean, p = g.player.position, cam = g.cameraRig;
+        d.clear();
+        const sh = d.shoreNear(p.x, p.z, 8);
+        if (!sh) return null;
+        cam.yaw = Math.atan2(sh[0] - p.x, sh[2] - p.z);
+        cam.pitch = 0.5;
+        const at = (f, s2) => [p.x + Math.sin(cam.yaw) * f - Math.cos(cam.yaw) * s2, p.z + Math.cos(cam.yaw) * f + Math.sin(cam.yaw) * s2];
+        const out = {};
+        d.spawn('crab', sh[0], sh[1], sh[2], { n: 3 });
+        let [x, z] = at(3.5, -2.2); out.starfish = d.spawn('starfish', x, p.y, z);
+        [x, z] = at(4.2, 2.4); out.starfish += d.spawn('starfish', x, p.y, z, { variant: 3 });
+        [x, z] = at(3.2, 1.0); out.seahorse = d.spawn('seahorse', x, p.y, z, { variant: 1 });
+        [x, z] = at(5, -0.6); out.fish = d.spawn('fish', x, p.y, z, { n: 6, variant: 1 });
+        out.counts = d.count();
+        return out;
+      });
+      console.log('  shore: ' + JSON.stringify(res));
+      await gameWait(page, 1.2, 15000);
+      await shot(page, `review-shore-${vp.label}`, PREFIX);
+      const cs = await seaContrast(page);
+      check(errors, !!res && res.counts.crab > 0 && cs.px > 800 && cs.diff >= V1_DIFF, `R-S ${vp.label}: crabs, starfish and a seahorse by the shore are clearly in the picture (${cs.px} pixels, difference ${f1(cs.diff)})`);
+      await goTo(page, deep);
+    }
     if (vp.label === 'desktop') {
       // riding a dolphin (her own view: half the dolphin above the water, solid)
       await cleanView(page, false);
