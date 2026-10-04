@@ -48,15 +48,20 @@ const warm = (hex) => {
 };
 
 /** Tail colors: C the tail, L fins, D edges, A the dragon's accent (crest tips, horns, fin
- *  ribs), B its belly plates, F / R its fronds and fan fin (deep root, accent-tinted rim),
- *  K the root of its crest spikes, G / H the glow spots (core, halo). */
+ *  ribs), S its dark back (it shades from S along the spine to C on the flanks: a dark shape
+ *  in light water), B its warm belly plates, F / R its fronds and fan fin (deep root, light
+ *  rim in its own color, never mixed with the gold: teal + gold turned them leaf green), K the
+ *  root of its crest spikes, G / H the glow spots (core, halo), N the dark root band of its
+ *  horns. */
 export function seaPalette(hex) {
   const A = warm(hex) ? '#178A86' : GOLD;
   return {
     C: hex, L: mixHex(hex, '#FFFFFF', 0.45), D: shade(hex, -0.25), A,
-    B: mixHex(hex, '#FFE7A0', 0.6), F: shade(hex, -0.24), R: mixHex(shade(hex, -0.05), A, 0.4),
-    K: shade(hex, -0.12),
-    G: mixHex(hex, '#F4FFF8', 0.8), H: mixHex(hex, '#B8FFF0', 0.45),
+    S: shade(hex, -0.45),
+    B: mixHex(hex, '#FFD36E', 0.85), F: shade(hex, -0.38), R: mixHex(hex, '#FFFFFF', 0.32),
+    K: shade(hex, -0.3),
+    G: mixHex(hex, '#FFFFFF', 0.86), H: mixHex(hex, '#C8FFF4', 0.5),
+    N: shade(hex, -0.55),
   };
 }
 
@@ -156,20 +161,28 @@ function tubeTemplate(form, pal) {
   };
   // group 0: the tube (outside faces) and a small cap at the tip; the dragon's two front
   // columns (i 5, 6: she faces +Z) are its light belly plates
+  // the dragon's flank color by column: its dark back (S) along the spine shading into the
+  // tail color on the flanks (countershading, like a real sea creature)
+  const back = dragon ? lin(pal.S) : white;
+  const side = (u) => {
+    if (!dragon) return white;
+    const d = Math.max(0, Math.cos(u * Math.PI * 2)); // 1 on the spine .. 0 on the flanks
+    return white.clone().lerp(back, Math.pow(d, 0.7));
+  };
   for (let k = 0; k < RINGS - 1; k++) {
     for (let i = 0; i < SIDES; i++) {
       const a0 = pt(k, i), a1 = pt(k, i + 1), b0 = pt(k + 1, i), b1 = pt(k + 1, i + 1);
-      const c = i === 5 || i === 6 ? belly : white;
+      const plate = i === 5 || i === 6;
       const quad = [[k, a0], [k + 1, b0], [k + 1, b1], [k, a0], [k + 1, b1], [k, a1]];
-      for (const [kk, p] of quad) push(kk, p[0], 0, p[2], p[3], p[4], c);
+      for (const [kk, p] of quad) push(kk, p[0], 0, p[2], p[3], p[4], plate ? belly : side(p[3]));
     }
   }
   const last = RINGS - 1;
   for (let i = 0; i < SIDES; i++) {
     const a0 = pt(last, i), a1 = pt(last, i + 1);
     push(last, 0, -0.01, 0, 0.5, 3, white);
-    push(last, a1[0], 0, a1[2], a1[3], a1[4], white);
-    push(last, a0[0], 0, a0[2], a0[3], a0[4], white);
+    push(last, a1[0], 0, a1[2], a1[3], a1[4], side(a1[3]));
+    push(last, a0[0], 0, a0[2], a0[3], a0[4], side(a0[3]));
   }
   let g1 = ring.length, g2 = g1;
   if (dragon) {
@@ -180,7 +193,7 @@ function tubeTemplate(form, pal) {
     // the waist and smaller toward the fin; each spike grows out of the tail color into a gold tip
     for (let k = 0; k < RINGS; k++) {
       const f = k / (RINGS - 1);
-      const w = 0.17 - 0.07 * f, h = 0.27 - 0.14 * f, t = 0.06 - 0.025 * f, z0 = -T.rz[k] + 0.012;
+      const w = 0.18 - 0.07 * f, h = 0.31 - 0.16 * f, t = 0.065 - 0.027 * f, z0 = -T.rz[k] + 0.012;
       crestPlate(w, h, t, 0.4, (x, y, z) => flat(k, x, y, z, crestColor(pal, (z0 - z) / h).clone()), z0);
     }
     // leafy fronds: a big rounded three-lobed leaf on each side at rings 2, 4 and 6, swept
@@ -197,8 +210,29 @@ function tubeTemplate(form, pal) {
         const at = (a, b) => [x0 + d[0] * a + e[0] * b, d[1] * a + e[1] * b, d[2] * a + e[2] * b];
         const tmp = [];
         leafFan(len, wid, (a, b, edge) => tmp.push([at(a, b), edge ? R : L]));
+        // three gold ribs fanning from the root (a webbed fin, like the fan fin), a hair
+        // proud of each face
+        const A = lin(pal.A), nrm = [d[1] * e[2] - d[2] * e[1], d[2] * e[0] - d[0] * e[2], d[0] * e[1] - d[1] * e[0]];
+        for (const r of [-0.55, 0, 0.55]) {
+          const ea = len * (r === 0 ? 0.95 : 0.8), eb = wid * r * 0.95, w0 = 0.014, w1 = 0.006;
+          const ra = Math.hypot(ea, eb), na = -eb / ra, nb = ea / ra;
+          for (const f of [1, -1]) {
+            const lift = (P3) => [P3[0] + nrm[0] * 0.004 * f, P3[1] + nrm[1] * 0.004 * f, P3[2] + nrm[2] * 0.004 * f];
+            const q = [at(na * w0, nb * w0), at(ea + na * w1, eb + nb * w1), at(ea - na * w1, eb - nb * w1), at(-na * w0, -nb * w0)].map(lift);
+            for (const P3 of [q[0], q[1], q[2], q[0], q[2], q[3]]) tmp.push([P3, A, f]);
+          }
+        }
         for (let j = 0; j < tmp.length; j += 3) {
-          for (const o of [[0, 1, 2], [0, 2, 1]]) for (const i of o) flat(k, ...tmp[j + i][0], tmp[j + i][1]);
+          const f = tmp[j][2];
+          let orders = [[0, 1, 2], [0, 2, 1]]; // the leaf: both faces
+          if (f !== undefined) {
+            // a rib: one face, toward its own side of the leaf
+            const [a, b, c] = [tmp[j][0], tmp[j + 1][0], tmp[j + 2][0]];
+            const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], v = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+            const dot = (u[1] * v[2] - u[2] * v[1]) * nrm[0] + (u[2] * v[0] - u[0] * v[2]) * nrm[1] + (u[0] * v[1] - u[1] * v[0]) * nrm[2];
+            orders = [dot * f > 0 ? [0, 1, 2] : [0, 2, 1]];
+          }
+          for (const o of orders) for (const i of o) flat(k, ...tmp[j + i][0], tmp[j + i][1]);
         }
       }
     }
@@ -207,7 +241,7 @@ function tubeTemplate(form, pal) {
     // (unlit, gently pulsing: they shine at night and in deep water)
     const G = lin(pal.G), Hh = lin(pal.H);
     for (let k = 1; k <= 6; k++) {
-      const r = 0.034 - 0.0025 * (k - 1);
+      const r = 0.046 - 0.0035 * (k - 1);
       for (const s of [-1, 1]) {
         const a = s * 1.05, ep = 0.01;
         const P = (aa) => [-se(Math.sin(aa)) * T.rx[k], -se(Math.cos(aa)) * T.rz[k]];
@@ -234,6 +268,25 @@ function tubeTemplate(form, pal) {
         };
         disc(r * 1.75, 0.006, r * 0.95, Hh, white); // the halo, fading into the tail color
         disc(r, 0.008, 0, G, G);
+      }
+    }
+    // and a glowing bead at the tip of each frond's middle rib (at night the spots and beads
+    // draw the whole tail's outline)
+    for (const [k, len] of [[2, 0.3], [4, 0.24], [6, 0.17]]) {
+      for (const s of [-1, 1]) {
+        const phi = 0.5;
+        const d = [s * Math.cos(phi), -Math.sin(phi), -0.32], dl = Math.hypot(...d);
+        d[0] /= dl; d[1] /= dl; d[2] /= dl;
+        const c = [s * (T.rx[k] - 0.02) + d[0] * len * 0.93, d[1] * len * 0.93, d[2] * len * 0.93];
+        const r = 0.024 - 0.003 * (k - 2) / 2;
+        // a small octahedron (seen from anywhere)
+        const v = [[r, 0, 0], [-r, 0, 0], [0, r, 0], [0, -r, 0], [0, 0, r], [0, 0, -r]].map((q) => [c[0] + q[0], c[1] + q[1], c[2] + q[2], 0, 0]);
+        for (const [a, b] of [[0, 2], [2, 1], [1, 3], [3, 0]]) {
+          for (const z of [4, 5]) {
+            const o = [(v[a][0] + v[b][0] + v[z][0]) / 3 - c[0], (v[a][1] + v[b][1] + v[z][1]) / 3 - c[1], (v[a][2] + v[b][2] + v[z][2]) / 3 - c[2]];
+            tri(k, v[a], v[b], v[z], o, G);
+          }
+        }
       }
     }
   }
@@ -399,8 +452,11 @@ export function flukeGeometry(form, pal) {
     outline.push([x, y]);
   }
   const root = [0, 0.02];
+  // the dragon's fan folds its outer lobes a little toward its back (a shallow V seen end on),
+  // so from the side it shows as a wedge, not a thin stick
+  const FOLD = dragon ? 0.42 : 0;
   const put = (x, y, z, c) => {
-    pos.push(x, y, z);
+    pos.push(x, y, z - FOLD * Math.abs(x));
     if (dragon) uv.push(0.5, CREST_V);
     else uv.push(0.5 + x / W, -y / H);
     col.push(c.r, c.g, c.b);
@@ -442,10 +498,14 @@ export function flukeGeometry(form, pal) {
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   const nrm = new Float32Array(pos.length);
   for (let i = 0; i < nrm.length; i += 9) {
-    // flat: every face is in the X-Y plane, its normal is ±Z by its winding
-    const ax = pos[i], ay = pos[i + 1], bx = pos[i + 3], by = pos[i + 4], cx = pos[i + 6], cy = pos[i + 7];
-    const z = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax) >= 0 ? 1 : -1;
-    nrm[i + 2] = nrm[i + 5] = nrm[i + 8] = dragon ? z : 1;
+    // flat: each face's own normal by its winding (the mermaid's see-through fin: +Z)
+    if (!dragon) { nrm[i + 2] = nrm[i + 5] = nrm[i + 8] = 1; continue; }
+    const ux = pos[i + 3] - pos[i], uy = pos[i + 4] - pos[i + 1], uz = pos[i + 5] - pos[i + 2];
+    const vx = pos[i + 6] - pos[i], vy = pos[i + 7] - pos[i + 1], vz = pos[i + 8] - pos[i + 2];
+    let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+    const l = Math.hypot(nx, ny, nz) || 1;
+    nx /= l; ny /= l; nz /= l;
+    for (let k = 0; k < 9; k += 3) { nrm[i + k] = nx; nrm[i + k + 1] = ny; nrm[i + k + 2] = nz; }
   }
   g.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
   g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
@@ -546,14 +606,21 @@ export function paintFin(g, w, h) {
   g.strokeRect(1.5, 1.5, w - 3, h - 3);
 }
 
-// Where the horn nubs grow (the right one; the left mirrors it), or null under a hat. They sit
-// on top of the head a little behind the middle; an accessory or hair that sits there moves
-// them: back behind a bow, ears or a headphone band, out beside a crown or a top bun, back
-// behind space buns, and up out of tall hair (an afro, spikes) so they never end in the curls.
+// Where the horn nubs grow (the right one; the left mirrors it), or null under a hat: x, y, z
+// its root, out its outward tilt, back its backward tilt, size. They sit on top of the head a
+// little behind the middle; an accessory or hair that sits there moves them so each stays
+// clear of it: out to the sides past a halo ring, a crown, a unicorn horn, ears or a bow (and a
+// little back and higher so the bow never hides one from the front), and up out of tall hair
+// (an afro, spikes) so they never end in the curls.
 const HORN_HATS = new Set(['beanie', 'sun_hat', 'witch_hat', 'cap', 'cap_back', 'bucket_hat']);
 const HORN_ACC = {
-  bow: { z: -0.13 }, cat_ears: { z: -0.17 }, bunny_ears: { z: -0.15 }, headphones: { z: -0.13 },
-  unicorn_horn: { z: -0.1 }, crown: { z: -0.25 },
+  bow: { x: 0.21, y: 1.73, z: -0.22, out: 0.55 },
+  cat_ears: { x: 0.08, y: 1.68, z: -0.2, out: 0.08, back: 0.15, size: 0.9 },
+  bunny_ears: { x: 0.29, y: 1.57, z: -0.12, out: 1.05, back: 0.05, size: 0.85 },
+  headphones: { z: -0.16 },
+  unicorn_horn: { x: 0.24, y: 1.63, z: -0.14, out: 0.62, size: 0.92 },
+  crown: { x: 0.27, y: 1.62, z: -0.06, out: 0.72, size: 0.9 },
+  halo: { x: 0.27, y: 1.62, z: -0.06, out: 0.78, size: 0.88 },
 };
 const HORN_HAIR = {
   afro: { y: 1.97 }, curly: { y: 1.78 }, spiky: { y: 1.76 }, short_curly: { y: 1.7 }, bun: { x: 0.24 }, space_buns: { z: -0.2 },
@@ -562,18 +629,28 @@ export function hornSpot(look) {
   const head = (look && look.acc && look.acc.head) || 'none';
   if (HORN_HATS.has(head)) return null;
   const h = HORN_HAIR[look && look.hair && look.hair.style] || {}, a = HORN_ACC[head] || {};
-  return { x: Math.max(0.14, h.x || 0, a.x || 0), y: Math.max(1.66, h.y || 0, a.y || 0), z: Math.min(-0.04, h.z ?? 0, a.z ?? 0) };
+  // tall hair lifts a horn that sits out at the side less (the hair is lower there)
+  const lift = a.out > 0.6 && h.y ? Math.max(0, h.y - 1.66) * 0.6 : Math.max(0, (h.y || 0) - 1.66);
+  return {
+    x: Math.max(0.14, h.x || 0, a.x || 0), y: Math.max(1.66, a.y || 0) + lift, z: Math.min(-0.04, h.z ?? 0, a.z ?? 0),
+    out: a.out ?? 0.3, back: a.back ?? 0, size: a.size ?? 1,
+  };
 }
 
-/** One curved horn nub: a tapered tube along a spine that bends back segment by segment, with a
- *  soft rounded tip. base: its root (avatar space), rot: its starting tilt (Euler XYZ). */
+/** One curved horn: a tapered tube along a spine that sweeps back ring by ring, with a dark
+ *  root band, ridge bands down its length and a soft light tip. base: its root (avatar space),
+ *  rot: its starting tilt (Euler XYZ), size: its scale; c = { root, body, ridge, tip }. */
 const _hm = new THREE.Matrix4(), _hs = new THREE.Matrix4(), _hv = new THREE.Vector3(), _he = new THREE.Euler();
-function horn(H, base, rot, color, tipColor) {
+const HORN_STEPS = [ // [radius, length to the next ring, bend back]; odd rings are the ridges
+  [0.084, 0.055, -0.1], [0.088, 0.05, -0.18], [0.07, 0.05, -0.22], [0.072, 0.05, -0.26], [0.054, 0.045, -0.28],
+  [0.054, 0.045, -0.3], [0.036, 0.04, -0.3], [0.024, 0.03, -0.2], [0.012, 0, 0],
+];
+function horn(H, base, rot, c, size = 1) {
   const SEG = 7;
-  const steps = [[0.078, 0.13, -0.32], [0.064, 0.11, -0.45], [0.048, 0.09, -0.5], [0.03, 0.035, -0.3], [0.016, 0, 0]];
   _hm.makeTranslation(base[0], base[1], base[2]).multiply(_hs.makeRotationFromEuler(_he.set(rot[0], rot[1], rot[2])));
+  _hm.multiply(_hs.makeScale(size, size, size));
   const rings = [], centers = [];
-  for (const [r, len, bend] of steps) {
+  for (const [r, len, bend] of HORN_STEPS) {
     const ring = [];
     for (let i = 0; i < SEG; i++) {
       const a = (i / SEG) * Math.PI * 2;
@@ -587,18 +664,19 @@ function horn(H, base, rot, color, tipColor) {
   }
   _hv.set(0, 0.012, 0).applyMatrix4(_hm);
   const top = [_hv.x, _hv.y, _hv.z];
-  for (let k = 0; k < rings.length - 1; k++) {
+  const n = rings.length;
+  for (let k = 0; k < n - 1; k++) {
     const A = rings[k], B = rings[k + 1];
     const ctr = [(centers[k][0] + centers[k + 1][0]) / 2, (centers[k][1] + centers[k + 1][1]) / 2, (centers[k][2] + centers[k + 1][2]) / 2];
-    const c = k >= rings.length - 2 ? tipColor : color;
+    const col = k === 0 ? c.root : k >= n - 3 ? c.tip : k % 2 ? c.ridge : c.body;
     for (let i = 0; i < SEG; i++) {
       const j = (i + 1) % SEG;
-      H.poly([A[i], A[j], B[j], B[i]], c, { center: ctr });
+      H.poly([A[i], A[j], B[j], B[i]], col, { center: ctr });
     }
   }
-  const L = rings[rings.length - 1], lc = centers[centers.length - 1];
+  const L = rings[n - 1], lc = centers[n - 1];
   const ctr = [(lc[0] + top[0]) / 2 - (top[0] - lc[0]), (lc[1] + top[1]) / 2 - (top[1] - lc[1]), (lc[2] + top[2]) / 2 - (top[2] - lc[2])];
-  for (let i = 0; i < SEG; i++) H.poly([L[i], L[(i + 1) % SEG], top], tipColor, { center: ctr });
+  for (let i = 0; i < SEG; i++) H.poly([L[i], L[(i + 1) % SEG], top], c.tip, { center: ctr });
 }
 
 // ---------- the whole set ----------
@@ -652,17 +730,25 @@ export function buildSea(P, form, hex, look) {
       bones.head.add(g);
       extraBones.push(g);
       const H = P.B(g, 'plain');
-      const tipC = mixHex(pal.A, '#FFFFFF', 0.35);
-      for (const s of [-1, 1]) horn(H, [s * spot.x, spot.y, spot.z], [-0.15, 0, -s * 0.3], pal.A, tipC);
+      const hc = { root: pal.N, body: pal.A, ridge: shade(pal.A, -0.13), tip: mixHex(pal.A, '#FFF4D6', 0.5) };
+      for (const s of [-1, 1]) horn(H, [s * spot.x, spot.y, spot.z], [-0.15 - spot.back, 0, -s * spot.out], hc, spot.size);
     }
     // the crest runs from the waist down the whole tail: it is not carried up the back, where
     // it would sit on her own shirt (over a shirt number), under long hair or a backpack
     // small leafy fins on the outside of each forearm, lying back along the arm toward the
-    // elbow (solid, both faces)
+    // elbow (solid, both faces). Each hangs on its own sea group under the elbow (in `bones`),
+    // so the avatar hides it with the tail on land and grows it with the tail.
     for (const s of [-1, 1]) {
-      const bone = s > 0 ? bones.elbowL : bones.elbowR;
-      const F = P.B(bone, scale);
-      const x0 = s * 0.33, y0 = 0.7, len = 0.13, wid = 0.042;
+      const x0 = s * 0.33, y0 = 0.7, len = 0.16, wid = 0.05;
+      const elbow = s > 0 ? bones.elbowL : bones.elbowR;
+      const eo = elbow.userData.origin;
+      const fg = new THREE.Group();
+      fg.name = s > 0 ? 'seaFinL' : 'seaFinR';
+      fg.position.set(x0 - eo[0], y0 - eo[1], -0.04 - eo[2]); // grows from the fin's root
+      fg.userData.origin = [x0, y0, -0.04];
+      elbow.add(fg);
+      extraBones.push(fg);
+      const F = P.B(fg, scale);
       const d = [s * 0.3, 0.9, -0.32], dl = Math.hypot(...d);
       const e = [s * 0.55, 0, -0.84];
       const at = (aa, bb) => [x0 + (d[0] / dl) * aa + e[0] * bb, y0 + (d[1] / dl) * aa + e[1] * bb, -0.04 + (d[2] / dl) * aa + e[2] * bb];

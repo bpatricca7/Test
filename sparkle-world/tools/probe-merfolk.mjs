@@ -924,12 +924,12 @@ async function gridsPass(browser, errors) {
     const front = { state: { swimming: true, sea: true, speed: 0, onGround: false }, t: 0.9 };
     // tall enough for the sea dragon's horns above the head and its fan fin below the feet
     const FRONT = { cy: 0.8, span: 2.75, yaw: 0.35, pitch: 0.12 };
-    const BACK = { cy: 0.85, span: 2.75, yaw: Math.PI * 0.84, pitch: 0.18 };
+    const BACK = { cy: 0.72, span: 3.0, yaw: Math.PI * 0.84, pitch: 0.18 }; // horns to fan fin
     const res = {};
     // a boy starter (short hair, no bow) as well as the default girl
     const boy = W.starters().find((o) => o.key === 'soccer').look;
-    const SIDE = { cy: 0.7, span: 2.6, yaw: Math.PI / 2, pitch: 0.1 };
-    const PLAY = { cy: 0.8, span: 2.6, yaw: Math.PI * 0.94, pitch: 0.5 }; // behind, a little above
+    const SIDE = { cy: 0.74, span: 3.0, yaw: Math.PI / 2, pitch: 0.1 };
+    const PLAY = { cy: 0.55, span: 3.2, yaw: Math.PI * 0.94, pitch: 0.5 }; // behind, a little above (the whole fin)
     for (const form of ['mermaid', 'sea_dragon']) {
       const items = [];
       colors.forEach((col, i) => items.push({ look: { ...base, sea: { form, color: col } }, label: names[i], frame: FRONT, pose: front }));
@@ -949,8 +949,9 @@ async function gridsPass(browser, errors) {
     // horn nubs are left out only under a hat); the accessories in pink / blue, never the
     // horns' gold, so a horn poking through one would show; framed tall enough for the halo
     const heads = W.options().HEAD_ACC.map((o) => o.key);
-    const HF = { cy: 0.98, span: 2.55, yaw: 0.35, pitch: 0.12 };
-    const HB = { cy: 1.0, span: 2.55, yaw: Math.PI * 0.84, pitch: 0.18 };
+    // head and shoulders, big enough to see where each horn sits (the halo floats at 1.98)
+    const HF = { cy: 1.58, span: 1.65, yaw: 0.35, pitch: 0.12 };
+    const HB = { cy: 1.58, span: 1.65, yaw: Math.PI * 0.84, pitch: 0.18 };
     const hd = (lk, h, col, frame, who) => ({ look: { ...lk, acc: { ...lk.acc, head: h, headColor: col }, sea: { form: 'sea_dragon', color: null } }, label: `${h} (${who})`, frame, pose: front });
     res.heads = await W.renderGrid([...heads.map((h) => hd(boy, h, '#FF5FA2', HF, 'boy')), ...heads.map((h) => hd(base, h, '#4D7CFF', HF, 'girl'))], { cols: 6, size: 200 });
     res.headsBack = await W.renderGrid([...heads.map((h) => hd(boy, h, '#FF5FA2', HB, 'boy')), ...heads.map((h) => hd(base, h, '#4D7CFF', HB, 'girl'))], { cols: 6, size: 200 });
@@ -1029,7 +1030,7 @@ async function reviewPass(browser, errors) {
       side: { cy: 0.68, span: 2.95, yaw: Math.PI / 2, pitch: 0.1 },
       back: { cy: 0.68, span: 2.95, yaw: Math.PI, pitch: 0.22 },
     };
-    const PLAY = { cy: 0.8, span: 2.6, yaw: Math.PI * 0.94, pitch: 0.5 };
+    const PLAY = { cy: 0.55, span: 3.2, yaw: Math.PI * 0.94, pitch: 0.5 }; // the whole fan fin in frame
     const set = (lk, form) => {
       const L = { ...lk, sea: { form, color: null } };
       return [
@@ -1197,6 +1198,34 @@ async function reviewPass(browser, errors) {
     g.scene.remove(a.group);
     a.dispose();
   });
+  // back on land after a swim: nothing of the sea form stays on him (the forearm fins once did)
+  const sh = await page.evaluate(() => window.__game.debug.merfolk.shore());
+  if (sh) {
+    const toLand = Math.atan2(sh.dir[0], sh.dir[1]);
+    await wear('soccer', 'sea_dragon');
+    await place(page, sh.deep, toLand, 200);
+    await waitOk(page, () => window.__game.debug.merfolk.state().seaSwim, null, 3000);
+    await gameWait(page, 1500);
+    await hold(page, ['KeyW'], 5000, { until: (s, top) => !s.seaForm && !s.swimming && s.y >= top - 0.05, arg: sh.top });
+    await hold(page, ['KeyW'], 700);
+    await gameWait(page, 900);
+    const left = await page.evaluate(() => {
+      const g = window.__game;
+      let n = 0;
+      g.player.avatar.group.traverse((o) => {
+        if (!o.isMesh) return;
+        let vis = true, seaPart = false;
+        for (let q = o; q; q = q.parent) { if (!q.visible) vis = false; if (/^sea/.test(q.name)) seaPart = true; }
+        if (vis && seaPart) n++;
+      });
+      return { n, parts: g.debug.merfolk.parts() };
+    });
+    c(left.n === 0 && left.parts && !left.parts.shown && left.parts.legsVisible,
+      `review: on land after a swim, legs and no sea parts showing (${left.n} shown)`);
+    await page.evaluate((y) => { const g = window.__game; g.cameraRig.pitch = 0.3; g.cameraRig.yaw = y; }, toLand + Math.PI * 0.8);
+    await settle(page, 600);
+    await playShot('boy-land-after-swim');
+  } else c(false, 'review: a shore for the land picture');
   await context.close();
 }
 

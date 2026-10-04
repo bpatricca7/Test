@@ -486,6 +486,7 @@ export class RemotePlayers {
         riding: st === 'h' && !seated,
         seaRide,                                                                                  // ocean
         sea,                                                                                      // merfolk
+        seaFloat: inLiquid && !g.physics.liquidAt(f.pos.x, f.pos.y + 1.3, f.pos.z),               // merfolk: head out
       });
       // a held treat raises her arm in avatar.update (hidden while she sleeps or swims)
       if (st === 'l') hangPose(av, f.t, 1);

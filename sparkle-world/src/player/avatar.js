@@ -250,10 +250,12 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
       return register(key, m, { texKeys: [tk], transparent: true });
     }
     if (key.startsWith('seaglow:')) {
-      // the sea dragon's glow spots: unlit, their brightness pulses softly (seaTick)
-      const m = new THREE.MeshBasicMaterial({ vertexColors: true });
+      // the sea dragon's glow spots: unlit, their brightness pulses softly (seaTick). Drawn in
+      // the blended pass after the water (the tube's renderOrder), so they shine up through it
+      // at night and in deep water, a little softened (0.85)
+      const m = new THREE.MeshBasicMaterial({ vertexColors: true, depthWrite: false });
       seaGlow.push(m);
-      return register(key, m);
+      return register(key, m, { base: 0.85, transparent: true });
     }
     if (isSeaKey(key)) {
       // scale:<hex>:<form> (the cloth: program) and fin:<hex>:<form> (the cloth2: program plus
@@ -405,7 +407,10 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
   let autoForm = null; // the cached resolved 'auto' form (cleared by setLook / setSeaAuto)
   let seaLastForm = null; // the form of the last parts built (a look change disposes them)
   let seaHex = null; // { form, hex } cached Match color for this look
-  const seaKick = { amp: 0, turn: 0, curl: 0 };
+  const seaKick = { amp: 0, turn: 0, curl: 0, float: 0 };
+  // the floating sea dragon's tail bend per joint: most at the hips (straight back along the
+  // surface at once), then its end curls up out of the water, fan fin and all
+  const FLOAT_BEND = [0.6, 0.42, 0.2, 0.08, 0.12, 0.16, 0.12];
   const seaAngles = new Float32Array(7), seaSides = new Float32Array(7);
 
   /** The form this look shows: its explicit choice, or the cached seaAuto(look) for 'auto'. */
@@ -470,6 +475,7 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     }
     const tube = new THREE.Mesh(out.tube.geometry, out.tubeMats.map((k) => material(k)));
     tube.frustumCulled = false;
+    tube.renderOrder = 4; // its blended glow spots after the water (water chunks sort below 0)
     out.root.add(tube);
     meshes.push(tube);
     const fluke = new THREE.Mesh(out.fluke, material(out.flukeMat));
@@ -766,7 +772,7 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
 
   /** Swimming with a tail: streamlined and flat when fast, nose down when diving; resting on
    *  the floor of shallow water, the tail curls back along it (it never sinks into the sand). */
-  function poseSea(speed, dt, onFloor = false) {
+  function poseSea(speed, dt, onFloor = false, float = false) {
     const sp = Math.min(1, speed / SEA_SWIM);
     seaPhase += dt * (2.2 + 6.5 * sp);
     const dive = Math.max(-0.55, Math.min(0.55, -vy * 0.16));
@@ -783,6 +789,17 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     seaKick.turn = Math.max(-0.5, Math.min(0.5, -yawRate * 0.12));
     const curl = onFloor && sp < 0.35 ? 0.24 : sp < 0.2 && vy > -0.2 && vy < 0.2 ? -0.05 : 0;
     seaKick.curl += (curl - seaKick.curl) * Math.min(1, dt * 6);
+    // the sea dragon at the surface (its head out): floating still, its tail sweeps straight
+    // back from the hips and lies along the surface, crest up (a creature floating, not a tail
+    // hanging into the deep); swimming along the top, the tail lifts a little so the fan fin
+    // stays in sight
+    const fl = float && !onFloor && sea && sea.form === 'sea_dragon' ? mix(1, 0.3, Math.min(1, sp / 0.45)) : 0;
+    seaKick.float += (fl - seaKick.float) * Math.min(1, dt * 4);
+    tgt[RPY] += 0.13 * fl; // it rides a little higher, its back at the waterline
+    seaKick.amp *= 1 - 0.5 * seaKick.float;
+    // and, floating still, it curves round to one side (seen from behind, a creature's curve
+    // along the surface, not a tail pointing at the camera)
+    seaKick.turn += 0.28 * seaKick.float * Math.max(0, 1 - sp / 0.45);
   }
 
   /** The tail out of the water: a leap (head up rising, head first falling), or a flop on sand. */
@@ -796,6 +813,7 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     seaKick.amp = 0.06;
     seaKick.turn = 0;
     seaKick.curl = s.onGround ? 0.05 : 0.18;
+    seaKick.float = Math.max(0, seaKick.float - dt * 4);
   }
 
   /** Riding a dolphin with a tail: side-saddle, holding on, the tail draped along its side. */
@@ -809,6 +827,7 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     seaKick.amp = 0.08;
     seaKick.turn = 0.35;
     seaKick.curl = 0.25;
+    seaKick.float = Math.max(0, seaKick.float - dt * 4);
   }
 
   /** After the bones are set: bend the tail, place the fin, flutter the frill, shimmer. */
@@ -819,7 +838,7 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     sea.root.scale.set(0.6 + 0.4 * gw, gw, 0.6 + 0.4 * gw);
     for (const b of sea.bones) b.scale.setScalar(gw);
     for (let i = 0; i < 7; i++) {
-      seaAngles[i] = seaKick.amp * Math.sin(seaPhase - 0.8 * i) * (0.3 + (0.7 * i) / 6) + seaKick.curl;
+      seaAngles[i] = seaKick.amp * Math.sin(seaPhase - 0.8 * i) * (0.3 + (0.7 * i) / 6) + seaKick.curl + seaKick.float * FLOAT_BEND[i];
       seaSides[i] = (seaKick.turn * i) / 6;
     }
     sea.tube.deform(seaAngles, seaSides);
@@ -1166,7 +1185,7 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     if (s.sleeping) { poseSleep(); rate = 6; }
     else if (s.riding && s.seaRide && tail) { poseSaddleSea(dt, s); rate = 12; }
     else if (s.sitting || s.riding) { poseSit(!!s.riding, dt); rate = s.riding ? 12 : 8; }
-    else if (s.swimming && tail) { poseSea(speed, dt, !!s.onGround); seaEmote(); rate = 10; }
+    else if (s.swimming && tail) { poseSea(speed, dt, !!s.onGround, !!s.seaFloat); seaEmote(); rate = 10; }
     else if (s.swimming) poseSwim(speed);
     else if (tail && !s.flying) { poseLeap(dt, s); seaEmote(); rate = 10; }
     else if (s.flying && !emote) poseFly(speed);

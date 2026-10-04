@@ -1598,12 +1598,51 @@ sticker's pop (the sticker book's cost) is not counted as the turn's. Probe robu
 1-deep test pool is 11×11 (one second of swimming no longer reaches its rim and hops out); B16
 makes a new candy world when the random one has no deep milk near the start.
 
+**Third round (the picture judges):**
+- **Bug: the forearm fins stayed on the arms on land.** They were merged straight onto the
+  elbow bones, outside `sea.root` and `sea.bones`, so the visibility toggle and the grow scale
+  never reached them: after a swim a dragon kid walked about (and showed in Dress Up, photos and
+  on friends' screens) with leaves on both forearms, and they popped in at full size. Each now
+  hangs on its own sea group under the elbow (`seaFinL` / `seaFinR`, in `bones`), so it hides and
+  grows with the tail. Test A18 (Node: after a swim, on land the same meshes are drawn as before
+  it) and the review check "on land after a swim, no sea parts showing" with its picture
+  `merfolk-review-boy-land-after-swim.png`.
+- **Seen at the surface (the usual play view).** Floating with its head out (`seaFloat`, passed by
+  the player and remote players: the water does not reach 1.3 above the feet), the Sea Dragon's
+  tail sweeps straight back from the hips and lies along the surface, crest up, curving round to
+  one side, its end and fan fin curling up out of the water, and it rides 0.13 higher, its back
+  at the waterline (`FLOAT_BEND`, `seaKick.float`; the mermaid is unchanged). Swimming along the
+  top the tail lifts a little, so the fan fin stays in sight from behind.
+- **Darker back, warm belly**: the tail shades from a dark back along the spine (`S`, the tail
+  color 45 % darker) to its own color on the flanks, so it reads as a dark shape in light water;
+  the belly plates are warm gold-cream. Taller crest spikes (0.31 at the waist).
+- **Glow at night and in deep water**: bigger glow spots, plus a glowing bead at the tip of each
+  frond; the glow material is drawn in the blended pass after the water (the tube's
+  `renderOrder` 4, 0.85 opacity, no depth write), so the spots shine up through it.
+- **Fins, not leaves**: fronds, forearm fins and fan fin are deep tail color with a light rim in
+  the tail's own color (teal mixed with gold had turned them leaf green), and each frond has three
+  gold ribs like the fan fin. The fan folds its outer lobes a little toward the back (`FOLD`
+  0.42, real face normals), so from the side it is a wedge, not a thin stick. Forearm fins 0.16.
+- **Horns**: a dark root band, ridge bands and a light tip (no more plain yellow crescents), and
+  `hornSpot` now gives each accessory its own spot, tilt and size: out to the sides past a halo
+  ring, a crown or a unicorn horn; low and sideways under bunny ears (clear of the bent ear);
+  between and behind cat ears; back, higher and wider behind a bow, so both horns show above the
+  default girl's bow in the Dress Up preview.
+- Pictures: the heads grids frame head and shoulders (big enough to judge each horn); the back,
+  side and play-camera frames fit the whole fan fin.
+- Costs: draw calls unchanged (B13a sea form = land); `ensureSea` for a Sea Dragon about 1 ms.
+  B13c (the longest frame just after the first turn, +33 ms allowed) is noise-bound on this busy
+  machine: the previous commit measured +23, +70 and +48 ms, this one +28 to +163 ms; no shader
+  program is compiled on the turn.
+
 **For the integrator / squish (Sea Dragon Puffum, C9):** the motifs changed shape, not names:
-the horn nubs are now curved horns swept back with a lighter tip; the "bubble-dome spikes" are a
-tall row of round-tipped crest spikes, tail colored with gold tips, from the waist (not the neck)
-to the fin; the belly has light cream-gold plates; the fronds are bigger, solid, deep tail color
-with a gold-tinged rim; the glow spots are round with a halo; the fan fin is bigger, five round
-lobes with the outer ones longest, deep tail color with gold ribs. Colors stay Deep teal
+the horn nubs are now curved horns swept back, with a dark root band, ridge bands and a light
+tip; the "bubble-dome spikes" are a tall row of round-tipped crest spikes, tail colored with gold
+tips, from the waist (not the neck) to the fin; the back is darker than the flanks; the belly has
+warm gold-cream plates; the fronds are bigger, solid, deep tail color with a light rim in the
+tail's own color and three gold ribs each (fins, not leaves); the glow spots are round with a
+halo, plus glowing beads at the frond tips; the fan fin is bigger, five round lobes with the outer
+ones longest, deep tail color with gold ribs, folded a little toward the back. Colors stay Deep teal
 `#2FB5B0`; the accent gold is now `#FFC83A` (C9's `#FFD43B` is close enough for a toy).
 
 ---

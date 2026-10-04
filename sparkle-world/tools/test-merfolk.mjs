@@ -593,6 +593,37 @@ await test('A15 sea textures and materials are referenced once per avatar and al
   return `refs ${before.refs} -> ${mid.refs} -> ${after.refs}`;
 });
 
+await test('A18 after a swim, nothing of the sea form stays on the kid on land (forearm fins too)', () => {
+  // what is drawn: meshes whose every ancestor is visible, with their vertex count
+  const shown = (av) => {
+    let n = 0, verts = 0;
+    av.group.traverse((o) => {
+      if (!o.isMesh) return;
+      for (let p = o; p; p = p.parent) if (!p.visible) return;
+      n++;
+      verts += o.geometry.attributes.position.count;
+    });
+    return { n, verts };
+  };
+  const out = [];
+  for (const form of ['sea_dragon', 'mermaid']) {
+    const av = createAvatar(W.normalizeLook({ ...W.DEFAULT_LOOK, sea: { form, color: null } }));
+    const walk = { onGround: true, speed: 2 };
+    for (let i = 0; i < 10; i++) av.update(0.05, walk);
+    const land = shown(av);
+    for (let i = 0; i < 40; i++) av.update(0.05, { sea: true, swimming: true, speed: 2 });
+    assert(av.seaParts().shown, form + ': the tail is out');
+    for (let i = 0; i < 80; i++) av.update(0.05, walk);
+    const p1 = av.seaParts();
+    assert(!p1.shown && p1.weight === 0 && p1.legsVisible, form + ': back on land, legs');
+    const back = shown(av);
+    assert(back.n === land.n && back.verts === land.verts, `${form}: on land after a swim the same meshes as before (${JSON.stringify(land)} vs ${JSON.stringify(back)})`);
+    out.push(`${form} ${back.n} meshes`);
+    av.dispose();
+  }
+  return out.join(', ');
+});
+
 // ---------- A13: names ----------
 
 // every player-facing string of the sea forms (merfolk.md §10.2), each checked to still be in the

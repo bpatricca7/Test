@@ -290,6 +290,7 @@ export class Player {
       seaKick: dolphin ? this.mountPet.kick : 0,           // ocean (merfolk clamps a non-finite value to its own beat)
       sea: !!this.seaForm,                                 // merfolk
       seaCut: this._seaCutFrame,                           // merfolk
+      seaFloat: !!this.seaForm && !!this.game.physics && !this.game.physics.liquidAt(this.position.x, this.position.y + 1.3, this.position.z), // merfolk: head out
     });
     this._seaCutFrame = false;
   }
