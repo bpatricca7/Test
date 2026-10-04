@@ -115,7 +115,7 @@ function spots(n, cx, cy, cz, r, { sz = 1, from = 0.15, to = 0.95, back = false,
 
 // ---------------- recipes ----------------
 // Each recipe(d, colors, it) draws the toy and returns { cy, r } (a rough body sphere, used for
-// the glitter flecks). Puffums stand 0.46-0.54 tall, Stretchums 0.36-0.42.
+// the glitter flecks). Puffums stand about 0.46-0.54 tall, Stretchums 0.36-0.42 (fit() sets the final heights, HEIGHTS).
 
 const R = {};
 
@@ -503,9 +503,9 @@ R.cube = (d, [main, shine, ink]) => {
 
 R.heart = (d, [red, shine, ink]) => {
   for (const sx of [-1, 1]) d.ball(0.115, red, sx * 0.085, 0.27, 0, { sz: 0.75, seg: 14 });
-  d.cone(0.012, 0.185, 0.25, red, 0, 0.0, 0, 16, { rot: [0, PI / 4, 0] });
+  d.cbox(0.24, 0.24, 0.15, red, 0, 0.17, 0, { rot: [0, 0, PI / 4] }); // the point: a flat diamond
   d.ball(0.022, shine, -0.1, 0.32, 0.08, { sz: 0.5 });
-  face(d, 0, 0.23, (x, y) => 0.09 - Math.abs(x) * 0.1, 0.8, { ink });
+  face(d, 0, 0.235, (x, y) => 0.1 - Math.abs(x) * 0.08, 0.8, { ink });
   return { cy: 0.22, r: 0.2 };
 };
 
@@ -734,7 +734,7 @@ R.volcano = (d, [rock, lava, drip]) => {
 // ---------------- building ----------------
 
 /** Toy heights in block units (the squish team doc §7.1): Puffums, Stretchums. */
-export const HEIGHTS = { puff: [0.47, 0.53], stretch: [0.37, 0.41] };
+export const HEIGHTS = { puff: [0.48, 0.54], stretch: [0.39, 0.42] };
 const _box = new THREE.Box3();
 
 /**

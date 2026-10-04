@@ -79,7 +79,7 @@ const CSS = /* css */ `
 .sq-path-msg { position: absolute; left: 0; right: 0; bottom: 4px; text-align: center; font-size: 16px; font-weight: 600; color: #6B45C8; }
 .sq-champ { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 14px; border-radius: 22px; background: linear-gradient(#FFFDF2, #FFF1C9); border: 4px solid var(--sw-sun); font-size: 22px; font-weight: 700; color: var(--sw-ink); text-align: center; }
 .sq-champ svg { width: 56px; height: 42px; flex: none; }
-.sq-tip { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); z-index: 4; width: min(420px, 94%); padding: 14px 16px; border-radius: 22px; background: #fff; border: 4px solid #C8B4FF; box-shadow: 0 10px 26px rgba(58,31,77,.3); text-align: center; animation: sw-pop .4s var(--sw-bounce) both; }
+.sq-tip { position: absolute; left: 8px; right: 8px; top: 8px; margin: 0 auto; z-index: 4; max-width: 420px; box-sizing: border-box; padding: 14px 16px; border-radius: 22px; background: #fff; border: 4px solid #C8B4FF; box-shadow: 0 10px 26px rgba(58,31,77,.3); text-align: center; animation: sw-pop .4s var(--sw-bounce) both; }
 .sq-tip-pics { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .sq-tip-pics svg { width: 54px; height: 54px; }
 .sq-tip-pics .sq-arrow svg { width: 44px; height: 28px; }
@@ -119,6 +119,16 @@ const CSS = /* css */ `
   .sq-stage { height: 240px; }
   .sq-say b { font-size: 24px; }
   .sq-bar { width: 120px; }
+@media (max-width: 480px) {
+  .sq-path { gap: 2px; padding: 8px 4px 6px; }
+  .sq-path-next .sq-pbox { width: 84px; height: 98px; }
+  .sq-dots { width: 18px; margin-bottom: 44px; }
+  .sq-path-grey { width: 44px; height: 52px; margin-bottom: 30px; }
+  .sq-tabs { gap: 4px; flex-wrap: wrap; }
+  .sq-tabs button { padding: 0 10px; font-size: 16px; min-height: 44px; }
+  .sq-wood { padding: 10px 6px 4px; }
+  .sq-grid { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 12px 4px; }
+}
 }
 
 /* ---------- the pill tip ---------- */
@@ -658,17 +668,22 @@ export function installPanels(game, S) {
     if (panel !== 'present' || !presentWasOpen) return;
     presentWasOpen = false;
     if (!U.result) return;
-    setTimeout(() => {
-      if (ui.current || game.mode !== 'play') return;
-      if (!devGet('squishPillTip')) {
-        devSet('squishPillTip', 1);
-        pillTip();
-      } else if (!devGet('squishBagTip')) {
-        devSet('squishBagTip', 1);
-        game.toast(t.bagTip, { icon: 'bag', key: 'squish-bag' });
-      }
-    }, 350);
+    tipWanted = now(); // shown by tick() once the world is clear (the First Present! pop goes first)
   });
+  let tipWanted = 0;
+  function pumpTips() {
+    if (!tipWanted || game.mode !== 'play') return;
+    if (blocked(game) || drop) { tipWanted = now(); return; }
+    if (now() - tipWanted < 600) return;
+    tipWanted = 0;
+    if (!devGet('squishPillTip')) {
+      devSet('squishPillTip', 1);
+      pillTip();
+    } else if (!devGet('squishBagTip')) {
+      devSet('squishBagTip', 1);
+      game.toast(t.bagTip, { icon: 'bag', key: 'squish-bag' });
+    }
+  }
 
   let tipEl = null;
   function pillTip() {
@@ -838,6 +853,11 @@ export function installPanels(game, S) {
     const s = S.sq() || {};
     const seen = s.seen || {};
     const list = D.ITEMS.filter((it) => SH.tab === 'all' || it.kind === SH.tab);
+    // every picture the shelf shows (and the sparkly ones she owns), drawn in batches
+    S.queuePics([
+      ...list.map((it) => ({ key: it.key, glitter: D.has(p, it.key, true) && !!SH.show[it.key] })),
+      ...list.filter((it) => D.has(p, it.key, true)).map((it) => ({ key: it.key, glitter: !SH.show[it.key] })),
+    ]);
     for (const it of list) {
       const own = D.has(p, it.key);
       const ownG = D.has(p, it.key, true);
@@ -847,7 +867,7 @@ export function installPanels(game, S) {
       c.dataset.key = it.key;
       const ph = ui.el('span', 'sq-ph');
       c.appendChild(ph);
-      S.toyIcon(it.key, showG).then((u) => {
+      S.toyIcon(it.key, showG, 'high').then((u) => {
         if (!u || !c.isConnected) return;
         const img = ui.el('img');
         img.alt = '';
@@ -1011,6 +1031,7 @@ export function installPanels(game, S) {
 
   function tick() {
     if (ui.current === 'present') pumpQueue();
+    pumpTips();
     if (drop && blocked(game) && !ui.current) {
       // a bubble or pop came up over it: it waits on the Present button instead
       flyToButton(drop);

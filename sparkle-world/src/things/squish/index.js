@@ -22,6 +22,7 @@ import { lifeHud } from '../pets/kit.js';
 import { partsOf } from '../furniture/kit.js';
 import { disposeObject } from '../../core/models.js';
 import { installPanels } from './panel.js';
+import { sheetRenderer } from './sheet.js';
 import { preview } from '../pets/preview.js';
 
 const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -137,9 +138,52 @@ export function install(game) {
     }
   }
 
-  /** The toy's 96 px picture (front view). */
-  function toyIcon(key, glitter = false) {
-    return game.thumbs.get('squish:' + key + (glitter ? ':g' : ''), () => toyModel(key, { glitter, hitbox: false }), { dir: [0.4, 0.45, 1.5] });
+  /** The toy's 96 px picture (front view); priority 'high' for cubbies on screen (as the Bag asks). */
+  function toyIcon(key, glitter = false, priority = undefined) {
+    const id = key + (glitter ? ':g' : '');
+    const p = pics.get(id);
+    if (p) return p;
+    return thumbIcon(key, glitter, priority);
+  }
+  const thumbIcon = (key, glitter, priority) => game.thumbs.get('squish:' + key + (glitter ? ':g' : ''), () => toyModel(key, { glitter, hitbox: false }), { dir: [0.4, 0.45, 1.5], priority });
+
+  // the shelf's pictures in batches on the thumbnail renderer (sheet.js); the thumbnail queue
+  // is the fallback
+  const sheet = sheetRenderer(game.thumbs);
+  const pics = new Map(); // 'key' | 'key:g' -> Promise<dataURL>
+  const picQueue = [];
+  let picBatch = 1;
+  /** Ask for these pictures ([{ key, glitter }]) to be drawn in batches, soon. */
+  function queuePics(list) {
+    for (const { key, glitter } of list) {
+      const id = key + (glitter ? ':g' : '');
+      if (pics.has(id) || game.thumbs.has('squish:' + id) || !D.item(key)) continue;
+      let resolve;
+      pics.set(id, new Promise((r) => { resolve = r; }));
+      picQueue.push({ key, glitter: !!glitter, id, resolve });
+    }
+  }
+  function pumpPics() {
+    if (!picQueue.length) return;
+    if (!sheet.ready()) {
+      // no thumbnail renderer yet (nothing pictured so far): the queue makes one
+      for (const j of picQueue.splice(0)) thumbIcon(j.key, j.glitter).then(j.resolve);
+      return;
+    }
+    // the first batch small (a see-through shell's shader may still compile), then 4 a frame (the read-back waits for the drawing)
+    if (sheet.prepare(picQueue.slice(0, picBatch))) return;
+    const batch = picQueue.splice(0, picBatch);
+    let urls = null;
+    try {
+      urls = sheet.draw(batch);
+    } catch (err) {
+      console.warn('[squish] shelf pictures failed', err && err.message);
+    }
+    picBatch = 4;
+    batch.forEach((j, i) => {
+      if (urls && urls[i]) j.resolve(urls[i]);
+      else thumbIcon(j.key, j.glitter).then(j.resolve);
+    });
   }
 
   // ---------------- counting squeezes ----------------
@@ -424,6 +468,7 @@ export function install(game) {
     refresh,
     hold,
     toyIcon,
+    queuePics,
     squeezed,
     get presentsOn() { return presentsOn; },
     get ready() { return state.ready; },
@@ -535,14 +580,15 @@ export function install(game) {
         }
       }
       // the 1 s signature check (a 409 merge replaces profile.squish without an event)
-      if ((sigT -= dt) <= 0) {
-        sigT = 1;
+      if (performance.now() >= sigAt) {
+        sigAt = performance.now() + 1000;
         const p = profile();
         if (p && knownSig(p) !== state.sig) refresh();
         if (game.mode === 'play' && !sq() && p) ensureBase();
       }
       showHud();
       panels.tick(dt);
+      pumpPics();
       // the drop: one comparison unless one is wanted
       if (!dropWanted) return;
       if (game.mode === 'play' && !game.paused) playFor += dt;
@@ -564,7 +610,7 @@ export function install(game) {
       letGo();
     },
   });
-  let sigT = 1;
+  let sigAt = 0;
 
   // ---------------- debug (probes) ----------------
 
@@ -651,6 +697,21 @@ export function install(game) {
         let n = 0;
         preview(game).pivot.traverse((o) => { if (o.geometry) n++; });
         return n;
+      },
+      /** A toy's height in blocks (its model without the hitbox). */
+      toyHeight(key) {
+        const m = toyModel(key, { hitbox: false });
+        let lo = Infinity, hi = -Infinity;
+        m.updateMatrixWorld(true);
+        m.traverse((o) => {
+          if (!o.isMesh) return;
+          o.geometry.computeBoundingBox();
+          const b = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld);
+          lo = Math.min(lo, b.min.y);
+          hi = Math.max(hi, b.max.y);
+        });
+        disposeObject(m);
+        return hi - lo;
       },
       /** A squishable model (grids, probes). */
       model: (key, glitter = false) => sharedToy(key, glitter),

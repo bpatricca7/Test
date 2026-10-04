@@ -344,7 +344,7 @@ class TargetOutline {
 // pill's textContent stays the number.
 const RING_CSS = /* css */ `
 .sw-hud button.sw-pill { position: relative; font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-.sw-hud button.sw-pill::after { content: ''; position: absolute; inset: -4px -2px; }
+.sw-hud button.sw-pill::after { content: ''; position: absolute; inset: -8px -2px; }
 .sw-hud button.sw-pill:active { transform: scale(.96); }
 .sw-coins-ring { position: relative; width: 28px; height: 28px; flex: none; margin-left: -2px; }
 .sw-pill .sw-coins-ring svg { width: 28px; height: 28px; display: block; }

@@ -179,10 +179,19 @@ export const STICKER_ART = {
       g.lineTo(x1, y);
       g.stroke();
     }
+    // a little hand pressing down from above (palm and four fingertips)
     g.fillStyle = '#FFE0CC';
-    g.fillRect(40, 18, 20, 26);
     g.strokeStyle = INK;
     g.lineWidth = 2;
-    g.strokeRect(40, 18, 20, 26);
+    g.beginPath();
+    g.roundRect(37, 12, 26, 22, 7);
+    g.fill();
+    g.stroke();
+    for (let i = 0; i < 4; i++) {
+      g.beginPath();
+      g.roundRect(37.5 + i * 6.4, 28, 6, 18, 3);
+      g.fill();
+      g.stroke();
+    }
   },
 };
