@@ -29,6 +29,7 @@ import { NetHub } from './net/hub.mjs';
 import { FakeClaudeHub } from './net/fake-claude.js';
 import * as flows from './net/mp-flows.mjs';
 import * as codec from '../src/net/codec.js';
+import * as seaRules from '../src/player/merfolk/rules.js';
 import { C as NETC } from '../src/net/protocol.js';
 
 const { sleep, game, until, press, tapWorld, setupPage, trace, waitLive, bringTo, closePanels, VIEW } = flows;
@@ -85,12 +86,14 @@ async function shot(pl, name) {
   return file;
 }
 
-const ACCOUNTS = { 'u-lily': 'Parker family (Mom)', 'u-rosie': 'Rosie R.', 'u-june': 'june.visitor@example.com' };
+const ACCOUNTS = { 'u-lily': 'Parker family (Mom)', 'u-rosie': 'Rosie R.', 'u-june': 'june.visitor@example.com', 'u-mia': 'Mia M.' };
 
 const PLAYERS = [
   { key: 'lily', name: 'Lily', uid: 'u-lily', level: 'interact', can: true, guest: false, viewport: { width: 1280, height: 800 }, touch: false, seed: 11 },
   { key: 'rosie', name: 'Rosie', uid: 'u-rosie', level: 'view', can: null, guest: false, viewport: { width: 1024, height: 768 }, touch: true, seed: 29 },
   { key: 'june', name: 'June', uid: 'u-june', level: 'view', can: null, guest: true, viewport: { width: 390, height: 844 }, touch: true, seed: 47 },
+  // SEA only: a friend who joins while Lily is already a mermaid, then goes home again
+  { key: 'mia', name: 'Mia', uid: 'u-mia', level: 'view', can: null, guest: false, viewport: { width: 1024, height: 768 }, touch: false, seed: 53 },
 ];
 
 // ---------------------------------------------------------------------------------------
@@ -560,7 +563,9 @@ test('LOOKS', 'boy looks travel: Rosie wears Space Explorer (number 23, bold bro
     g.events.emit('avatar:changed', { look: g.profile.look });
     return g.debug.avatar.look();
   });
-  const want = codec.packLook(mine);
+  // the adapter sends the look with its water form resolved on her device (merfolk): never 'auto'
+  const style = await game(rosie, () => (typeof window.__game.surpriseStyle === 'function' ? window.__game.surpriseStyle() : null));
+  const want = codec.packLook(seaRules.withResolvedSea(mine, style));
   const t0 = Date.now();
   const lk = await until(lily, (w) => {
     const r = window.__game.debug.net.remote().find((x) => x.name === 'Rosie');
@@ -586,6 +591,164 @@ test('LOOKS', 'boy looks travel: Rosie wears Space Explorer (number 23, bold bro
   }, leo);
   check(t.some((x) => x === "That's Lily's friend! Ask Lily to help."), `dressing up Leo on Rosie's page is refused kindly (${JSON.stringify(t)})`);
   await converge([lily, rosie], 'LOOKS end');
+});
+
+test('SEA', 'sea forms travel: Lily turns into a mermaid in a pool, Rosie sees her tail; Rosie swims as a gold sea dragon; Leo too; a late joiner sees no burst', async () => {
+  // a pool 4 deep next to where they play (water blocks stay put: no walls needed)
+  const pool = await game(lily, ({ x, z }) => {
+    const g = window.__game, X = x + 7, Z = z - 7, h = g.world.heightAt(X, Z);
+    let n = 0;
+    for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) for (let y = h + 1; y <= h + 4; y++) if (g.placeBlock(X + a, y, Z + b, 'water', { fx: false })) n++;
+    return { x: X + 0.5, z: Z + 0.5, floor: h + 1, top: h + 5, n };
+  }, spot);
+  check(pool.n >= 90, `Lily pours a 5x5 pool, 4 deep (${pool.n} cells)`);
+  await converge([lily, rosie], 'SEA pool');
+  const seaOf = (pl, name) => game(pl, (n) => {
+    const r = window.__game.debug.net.remote().find((x) => x.name === n);
+    return r ? { st: r.st, lk: r.lk, sea: r.sea, y: r.pos[1] } : null;
+  }, name);
+  const lkMax = { v: 0 };
+  const lkCheck = async (pl, name) => { const r = await seaOf(pl, name); if (r && r.lk) lkMax.v = Math.max(lkMax.v, r.lk.length); };
+  // Lily swims in: Rosie sees st m, a mermaid's tail and a sparkle burst
+  await bringTo(rosie, lily, 0, 0);
+  await game(rosie, ({ x, z, top }) => {
+    const g = window.__game;
+    g.player.teleport(x + 4, top + 0.2, z + 4);
+    g.cameraRig.yaw = Math.atan2(-4, -4);
+    g.cameraRig.pitch = 0.35;
+  }, pool);
+  await settle(rosie.page, 800);
+  const p0 = await game(rosie, () => window.__game.particles.alive());
+  await game(lily, ({ x, z, floor }) => window.__game.player.teleport(x, floor + 1.2, z), pool);
+  const lilySea = await until(rosie, () => { const r = window.__game.debug.net.remote().find((x) => x.name === 'Lily'); return r && r.st === 'm' && r.sea && r.sea.shown ? r.sea : null; }, null, 10000);
+  check(!!lilySea && lilySea.form === 'mermaid', `Rosie sees Lily in sea form: st m, a mermaid tail (${JSON.stringify(lilySea && { form: lilySea.form, shown: lilySea.shown })})`);
+  const burst = await until(rosie, (n) => window.__game.particles.alive() > n + 6, p0, 3000);
+  check(!!burst, 'a sparkle burst on Rosie’s page as Lily turns');
+  await settle(rosie.page, 1200);
+  await shot(rosie, 'sea-rosie-sees-mermaid');
+  await lkCheck(rosie, 'Lily');
+  // Lily leaps: on Rosie's page she is out of the water in the air (not a flat swim pose)
+  await game(lily, ({ x, z }) => { const g = window.__game; g.cameraRig.yaw = 0; g.player.position.set(x, g.player.position.y, z - 1.5); }, pool);
+  await settle(lily.page, 1500);
+  await lily.page.keyboard.down('ShiftLeft');
+  await lily.page.keyboard.down('KeyW');
+  await lily.page.keyboard.down('Space');
+  const air = await until(rosie, (top) => {
+    const g = window.__game, r = g.debug.net.remote().find((x) => x.name === 'Lily');
+    return r && r.st === 'm' && r.pos[1] > top - 0.3 && !g.physics.liquidAt(r.pos[0], r.pos[1] + 0.6, r.pos[2]) ? r.pos[1] : null;
+  }, pool.top, 8000);
+  for (const k of ['Space', 'KeyW', 'ShiftLeft']) await lily.page.keyboard.up(k);
+  check(air !== null, `Lily leaps: Rosie sees her in sea form above the water, so the leap pose, not the swim pose (y ${air})`);
+  await game(lily, ({ x, z, floor }) => window.__game.player.teleport(x, floor + 1.2, z), pool);
+  // Rosie picks a gold sea dragon (as the Studio does) and swims: Lily sees it
+  await game(rosie, () => {
+    const g = window.__game;
+    g.profile.look = { ...g.profile.look, sea: { form: 'sea_dragon', color: '#FFD43B' } };
+    g.saveProfile();
+    g.events.emit('avatar:changed', { look: g.profile.look });
+  });
+  await game(rosie, ({ x, z, floor }) => window.__game.player.teleport(x + 1, floor + 1.2, z + 1), pool);
+  const rosieSea = await until(lily, () => { const r = window.__game.debug.net.remote().find((x) => x.name === 'Rosie'); return r && r.st === 'm' && r.sea && r.sea.shown ? r.sea : null; }, null, 10000);
+  check(!!rosieSea && rosieSea.form === 'sea_dragon' && rosieSea.color === '#FFD43B', `Lily sees Rosie as a gold sea dragon (${JSON.stringify(rosieSea && { form: rosieSea.form, color: rosieSea.color })})`);
+  await lkCheck(lily, 'Rosie');
+  // while swimming Rosie changes the tail to Pink: Lily's view follows within 2 s, no geometry growth
+  const geo0 = await game(lily, () => {
+    const g = window.__game, grp = g.scene.getObjectByName('friend:' + g.debug.net.remote().find((x) => x.name === 'Rosie').peer);
+    const set = new Set();
+    grp.traverse((o) => { if (o.geometry) set.add(o.geometry.uuid); });
+    return set.size;
+  });
+  await game(rosie, () => {
+    const g = window.__game;
+    g.profile.look = { ...g.profile.look, sea: { form: 'sea_dragon', color: '#FF8CC6' } };
+    g.saveProfile();
+    g.events.emit('avatar:changed', { look: g.profile.look });
+  });
+  const t0 = Date.now();
+  const pink = await until(lily, () => { const r = window.__game.debug.net.remote().find((x) => x.name === 'Rosie'); return r && r.sea && r.sea.color === '#FF8CC6' && r.sea.shown; }, null, 8000);
+  const dtPink = (Date.now() - t0) / 1000;
+  await settle(lily.page, 600);
+  const geo1 = await game(lily, () => {
+    const g = window.__game, grp = g.scene.getObjectByName('friend:' + g.debug.net.remote().find((x) => x.name === 'Rosie').peer);
+    const set = new Set();
+    grp.traverse((o) => { if (o.geometry) set.add(o.geometry.uuid); });
+    return set.size;
+  });
+  check(pink && dtPink <= 2.5, `Rosie's pink tail reaches Lily's page in ${dtPink.toFixed(1)} s`);
+  check(geo1 <= geo0, `no geometry growth under Rosie's avatar on Lily's page (${geo0} -> ${geo1})`);
+  await shot(lily, 'sea-lily-sees-dragon');
+  // Lily picks Just Me: Rosie sees today's swim pose (st i, no tail)
+  await game(lily, () => {
+    const g = window.__game;
+    g.profile.look = { ...g.profile.look, sea: { form: 'me', color: null } };
+    g.saveProfile();
+    g.events.emit('avatar:changed', { look: g.profile.look });
+  });
+  const me = await until(rosie, () => { const r = window.__game.debug.net.remote().find((x) => x.name === 'Lily'); return r && r.st === 'i' && r.sea && !r.sea.shown ? r.st : null; }, null, 8000);
+  check(me === 'i', 'Lily as Just Me: Rosie sees the swim pose with legs (st i)');
+  // Leo swims deep on Lily's page: Rosie's puppet of him is a sea dragon
+  const leo = await game(lily, ({ x, z, floor }) => {
+    const g = window.__game;
+    let f = g.friends.friends.find((q) => q.key === 'leo');
+    if (!f) { const id = g.debug.friends.invite('leo', x - 1, floor + 1.2, z - 1); f = g.friends.byId(id); }
+    g.debug.friends.setMode(f.id, 'stay');
+    f.home = [x - 1, floor + 1.2, z - 1];
+    f.pos.set(x - 1, floor + 1.2, z - 1);
+    return f.id;
+  }, pool);
+  const leoHost = await until(lily, (id) => { const f = window.__game.friends.byId(id); return f && f.seaOn ? f.avatar.seaForm : null; }, leo, 10000);
+  const leoGuest = await until(rosie, (id) => { const f = window.__game.friends.byId(id); return f && f.seaOn && f.avatar.seaShown ? f.avatar.seaForm : null; }, leo, 12000);
+  check(leoHost === 'sea_dragon' && leoGuest === 'sea_dragon', `Leo swims as a sea dragon on Lily's page and on Rosie's (${leoHost}, ${leoGuest})`);
+  // back to a mermaid for the late joiner
+  await game(lily, ({ x, z, floor }) => {
+    const g = window.__game;
+    g.profile.look = { ...g.profile.look, sea: { form: 'mermaid', color: null } };
+    g.saveProfile();
+    g.events.emit('avatar:changed', { look: g.profile.look });
+    g.player.teleport(x, floor + 1.2, z);
+  }, pool);
+  check(!!(await until(lily, () => window.__game.player.seaForm === 'mermaid', null, 5000)), 'Lily is a mermaid again');
+  // a friend who joins while Lily is already in sea form: no burst when Lily's avatar appears
+  const mia = await openPlayer(BROWSER, PLAYERS[3]);
+  try {
+    await guestTypesCode(mia, CODE);
+    await hostLetsIn(lily, 'Mia');
+    check(await waitLive(mia), 'Mia is in Lily’s world');
+    await game(mia, ({ x, z, top }) => {
+      const g = window.__game;
+      g.player.teleport(x + 3, top + 0.2, z + 3);
+      g.cameraRig.yaw = Math.atan2(-3, -3);
+      g.cameraRig.pitch = 0.35;
+    }, pool);
+    // wait for Lily's avatar on Mia's page, then watch the particles for 1 s
+    const seen = await until(mia, () => { const r = window.__game.debug.net.remote().find((x) => x.name === 'Lily'); return r && r.sea ? r.st : null; }, null, 20000);
+    const counts = await game(mia, () => new Promise((resolve) => {
+      const g = window.__game, out = [], t0 = performance.now();
+      const tick = () => { out.push(g.particles.alive()); if (performance.now() - t0 > 1000) resolve(out); else requestAnimationFrame(tick); };
+      tick();
+    }));
+    const lilyOnMia = await seaOf(mia, 'Lily');
+    check(seen === 'm' && lilyOnMia.sea && lilyOnMia.sea.shown, `Mia sees Lily already a mermaid (${seen})`);
+    check(Math.max(...counts) <= Math.max(counts[0], 0) + 2, `no sparkle burst for a tail that was already there (particles ${counts[0]} -> max ${Math.max(...counts)})`);
+    await lkCheck(mia, 'Lily');
+    await converge([lily, rosie, mia], 'SEA Mia');
+    await game(mia, () => window.__game.debug.net.leave());
+    await settle(lily.page, 1500);
+  } finally {
+    await mia.context.close();
+  }
+  check(lkMax.v > 0 && lkMax.v <= 160, `every lk within 160 characters (${lkMax.v})`);
+  await budgetCheck('SEA', [lily, rosie]);
+  // put everyone back on dry land as before
+  await game(lily, ({ x, y, z }) => window.__game.player.teleport(x + 0.5, y + 0.5, z + 0.5), spot);
+  await bringTo(rosie, lily, 3, 3);
+  await game(lily, () => {
+    const g = window.__game;
+    g.profile.look = { ...g.profile.look, sea: { form: 'auto', color: null } };
+    g.saveProfile();
+    g.events.emit('avatar:changed', { look: g.profile.look });
+  });
+  await converge([lily, rosie], 'SEA end');
 });
 
 test('AT18', 'time and weather: Lily sets rain and night; Rosie sleeps in her bed; morning for both', async () => {

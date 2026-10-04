@@ -2017,10 +2017,58 @@ async function vehicleTests() {
 }
 
 // =====================================================================================
+// Sea forms (docs/teams/merfolk.md §14.2): presence st 'm' and the longer look token
+// =====================================================================================
+
+async function merfolkTests() {
+  console.log('\nSea forms: presence st m, the look tail');
+  const { avatarFields, NetHost } = await import('../src/net/host.js');
+  const rules = await import('../src/player/merfolk/rules.js');
+
+  await test('merfolk: st m passes avatarFields; a 156-character lk with sea forms keeps host presence within 3,900 B', async () => {
+    const owner = { presenceText: new Map(), lastPos: null, lastLookAt: -Infinity, _set: NetHost.prototype._set };
+    const patch = {};
+    avatarFields(owner, patch, { st: 'm' }, 0);
+    eq(patch.st, 'm', 'st m goes out unchanged');
+    // the worst look: every optional color, a dress, number 99, a sea dragon in Pearl
+    const worst = wardrobe.normalizeLook({
+      name: 'Mia', hair: { style: 'afro', color: '#FFFFFF', color2: '#FFFFFF', mix: 'tips' },
+      top: { type: 'tee_bolt', color: '#FFFFFF', pattern: 'rockets', patternColor: '#FFFFFF', num: 99 },
+      bottom: { type: 'pants', color: '#FFFFFF', pattern: 'rockets', patternColor: '#FFFFFF' },
+      dress: { type: 'mermaid', color: '#FFFFFF', pattern: 'rockets', patternColor: '#FFFFFF' },
+      shoes: { type: 'skate_shoes', color: '#FFFFFF' },
+      acc: { head: 'headphones', headColor: '#FFFFFF', face: 'star_glasses', faceColor: '#FFFFFF', back: 'star_pack', backColor: '#FFFFFF', neck: 'medal', neckColor: '#FFFFFF', hand: 'dino_toy', handColor: '#FFFFFF' },
+      sea: { form: 'sea_dragon', color: '#E6DDFF' },
+    });
+    const lk = codec.packLook(worst);
+    eq(lk.length, 156, 'the worst look token');
+    // 'auto' is resolved before it is sent: friends never get 'auto' (and never the style)
+    const sent = codec.packLook(rules.withResolvedSea(wardrobe.normalizeLook({ name: 'Mia' }), 'boy'));
+    eq(codec.unpackLook(sent, 'Mia').sea.form, 'sea_dragon', 'auto under Boy goes out as a sea dragon');
+    assert(!/girl|boy|mix/.test(sent), 'no style word in the token');
+    const { clock, hub, H, gs } = await hostAndGuests(43, [['Mia', 'u1'], ['Zoe', 'u2'], ['June', 'u3']]);
+    for (const A of [H.adapter, ...gs.map((G) => G.adapter)]) {
+      A.st = 'm';
+      A.look = lk;
+      A.vh = ['van_icecream', 'ffbfa0', 3, 999, 2 ** 31 - 1];
+    }
+    await act(clock, [H, ...gs], 3000);
+    const hs = jsonBytes(H.session.transport.myState());
+    assert(hs <= 3900, 'host presence ' + hs + ' B');
+    const gp = H.session.transport.peers().find((p) => p.state.nm === 'Mia');
+    eq(gp.state.st, 'm', 'a friend in sea form reaches the host as st m');
+    eq(gp.state.lk, lk, 'and her whole look token');
+    hub.close();
+    return `host presence ${hs} B`;
+  });
+}
+
+// =====================================================================================
 
 const t0 = Date.now();
 if (!ONLY || ONLY.has('unit')) await unitTests();
 if (!ONLY || ONLY.has('unit') || ONLY.has('vehicles')) await vehicleTests();
+if (!ONLY || ONLY.has('unit') || ONLY.has('merfolk')) await merfolkTests();
 if (!ONLY || ONLY.has('prop')) await propertyTests();
 if (!ONLY || ONLY.has('server')) await serverTests();
 if (!ONLY || ONLY.has('server')) await serverSafetyTests();
