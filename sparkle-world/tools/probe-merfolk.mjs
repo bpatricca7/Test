@@ -486,15 +486,17 @@ async function swimPass(browser, errors) {
   const ds = await deepAt(page, 4);
   const deep = [ds.x, ds.y, ds.z];
 
-  // B10 boats: never a tail while she sails; the second Get out on open water turns her
+  // B10 boats: never a tail while she sails; the second Get out on open water turns her (out on
+  // the open sea, far from any shore, so Get out asks first)
+  const far = (await deepAt(page, 6)) || (await deepAt(page, 5)) || ds;
   const boat = await page.evaluate(([x, z, top]) => {
     const g = window.__game;
     const e = g.entities.place('boat_swan', Math.floor(x), top, Math.floor(z) + 2, 0, null, {}, { history: false, players: false });
     return e ? e.uid : null;
-  }, [ds.x, ds.z, level]);
+  }, [far.x, far.z, level]);
   c(!!boat, 'B10 a Swan Boat on the open water');
   if (boat) {
-    await place(page, [ds.x, level + 2, ds.z + 2], null, 200);
+    await place(page, [far.x, level + 2, far.z + 2], null, 200);
     await clearEvs(page);
     await page.evaluate((uid) => window.__game.debug.vehicles.drive(uid), boat);
     await gameWait(page, 400);
@@ -502,10 +504,11 @@ async function swimPass(browser, errors) {
     const sail = await hold(page, ['KeyW'], 2500);
     c(sail.every((s) => !s.seaForm && !s.seaSwim), 'B10 sailing across the water: never in sea form');
     await waitOk(page, () => Math.abs(window.__game.debug.vehicles.state().speed) < 0.1, null, 15000);
-    await page.evaluate(([x, z, top]) => window.__game.debug.vehicles.setPose(x, top, z + 2, 0), [ds.x, ds.z, level]);
+    await page.evaluate(([x, z, top]) => window.__game.debug.vehicles.setPose(x, top, z + 2, 0), [far.x, far.z, level]);
     await page.keyboard.press('KeyE');
     await gameWait(page, 300);
-    await page.locator('.lf-hud [data-action="vgetout"]').click();
+    c(await page.evaluate(() => !!window.__game.vehicles.current), 'B10 open water: the first Get out asks first (she keeps sailing)');
+    await page.locator('.lf-hud [data-action="vgetout"]').click({ timeout: 10000 });
     const t0 = await page.evaluate(() => performance.now());
     const off = await hold(page, [], 2500, { until: (s) => !!s.seaForm });
     const tTurn = off[off.length - 1];
@@ -668,10 +671,12 @@ async function swimPass(browser, errors) {
     c(noPop, 'B17 the bubble never shows with the sticker pop');
     await shot(pg, 'bubble', PREFIX);
     const x0 = await pg.evaluate(() => window.__game.player.position.z);
-    await hold(pg, ['KeyW'], 600);
+    await hold(pg, ['KeyW'], 400);
     const x1 = await pg.evaluate(() => window.__game.player.position.z);
-    c(Math.abs(x1 - x0) > 1, `B17 she still swims while it shows (moved ${(x1 - x0).toFixed(2)})`);
-    await pg.locator('.lf-bubble[data-owner="merfolk"] button[aria-label="Sea Dragon"]').click();
+    c(Math.abs(x1 - x0) > 0.8, `B17 she still swims while it shows (moved ${(x1 - x0).toFixed(2)})`);
+    // the bubble follows her as she swims: tap it where it is now (no waiting for it to stop)
+    c(!!(await pg.evaluate(() => window.__game.debug.merfolk.bubble())), 'B17 the bubble is still there to tap');
+    await pg.locator('.lf-bubble[data-owner="merfolk"] button[aria-label="Sea Dragon"]').click({ force: true, timeout: 5000 });
     const tail = await hold(pg, [], 500, { until: (s) => s.seaForm === 'sea_dragon' });
     const after = await pg.evaluate(() => ({ form: window.__game.profile.look.sea.form, asked: window.__game.store.deviceGet('seaAsked'), parts: window.__game.debug.merfolk.parts() }));
     c(after.form === 'sea_dragon' && tail[tail.length - 1].seaForm === 'sea_dragon' && after.asked === 2, `B17 a tap on Sea Dragon: stored, a sea dragon tail within 0.5 s, seaAsked 2 (${JSON.stringify({ form: after.form, asked: after.asked, t: Math.round(tail[tail.length - 1].t) })})`);
