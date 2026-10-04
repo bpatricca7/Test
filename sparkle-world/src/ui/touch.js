@@ -90,6 +90,8 @@ const PICS = {
   tap: '<svg viewBox="0 0 64 64" class="sw-help-pic"><circle cx="31" cy="18" r="12" fill="none" stroke="#FFC94D" stroke-width="4"/><circle cx="31" cy="18" r="5" fill="#FFC94D"/><path d="M26 62c-4-6-9-9-9-13 0-2 2-4 5-3l5 4V20a3.5 3.5 0 0 1 7 0v16l9 2c3 .7 5 3 4.5 6L46 62Z" fill="#FFD9C2" stroke="#3A1F4D" stroke-width="2.5" stroke-linejoin="round"/></svg>',
   hold: '<svg viewBox="0 0 64 64" class="sw-help-pic"><rect x="6" y="8" width="11" height="11" rx="2" fill="#FF8CC6"/><rect x="19" y="8" width="11" height="11" rx="2" fill="#FF8CC6"/><rect x="32" y="8" width="11" height="11" rx="2" fill="#FF8CC6" opacity=".6"/><rect x="45" y="8" width="11" height="11" rx="2" fill="#FF8CC6" opacity=".3"/><path d="M24 62c-4-6-9-9-9-13 0-2 2-4 5-3l5 4V28a3.5 3.5 0 0 1 7 0v12l9 2c3 .7 5 3 4.5 6L44 62Z" fill="#FFD9C2" stroke="#3A1F4D" stroke-width="2.5" stroke-linejoin="round"/></svg>',
   pinch: '<svg viewBox="0 0 64 64" class="sw-help-pic"><path d="M6 6l14 14M58 58L44 44M6 6h9M6 6v9M58 58h-9M58 58v-9" fill="none" stroke="#3FD8B0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="24" r="7" fill="#FFD9C2" stroke="#3A1F4D" stroke-width="2.5"/><circle cx="40" cy="40" r="7" fill="#FFD9C2" stroke="#3A1F4D" stroke-width="2.5"/></svg>',
+  // merfolk: a tail fin over the water, with the Up and Down arrows
+  tail: '<svg viewBox="0 0 64 64" class="sw-help-pic"><rect x="4" y="34" width="56" height="26" rx="8" fill="#B8E1FF"/><path d="M4 38c6 0 6-5 12-5s6 5 12 5 6-5 12-5 6 5 12-5 6 5 8 5" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/><path d="M29 44l1.6-18h2.8L35 44Z" fill="#3FD8B0"/><path d="M32 27C27 18 20 14 11 15c3 7 11 12 21 12Zm0 0c5-9 12-13 21-12-3 7-11 12-21 12Z" fill="#3FD8B0" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M50 30l5-6 5 6M50 44l5 6 5-6" fill="none" stroke="#9C7BFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 };
 
 export function install(game) {
@@ -131,9 +133,19 @@ export function install(game) {
     for (const dir of ['up', 'down', 'left', 'right']) input.joyBase.appendChild(ui.el('span', `sw-joy-arrow sw-${dir}`));
     const joyLabel = ui.el('span', 'sw-joy-label', 'Walk');
     input.joyBase.appendChild(joyLabel);
-    // driving a car or a van: "Drive"; a boat: "Steer"; back to "Walk" when she gets out
-    game.events.on('vehicle:drive', (e) => { joyLabel.textContent = e && e.kind === 'boat' ? 'Steer' : 'Drive'; });
-    for (const ev of ['vehicle:park', 'world:unload']) game.events.on(ev, () => { joyLabel.textContent = 'Walk'; });
+    // driving a car or a van: "Drive"; a boat: "Steer"; on a dolphin "Ride"; deep water "Swim";
+    // back to "Walk" when she gets out (one label function, wave4-integration.md §5.2)
+    let vehicleKind = null;
+    const setLabel = () => {
+      const pl = game.player;
+      joyLabel.textContent = vehicleKind ? (vehicleKind === 'boat' ? 'Steer' : 'Drive')
+        : pl && pl.state === 'ride' && pl.mountPet && pl.mountPet.kind === 'dolphin' ? 'Ride'    // ocean
+        : pl && pl.seaSwim ? 'Swim'                                                              // merfolk
+        : 'Walk';
+    };
+    game.events.on('vehicle:drive', (e) => { vehicleKind = e && e.kind === 'boat' ? 'boat' : 'car'; setLabel(); });
+    for (const ev of ['vehicle:park', 'world:unload']) game.events.on(ev, () => { vehicleKind = null; setLabel(); });
+    for (const ev of ['player:seaswim', 'sea:ride', 'sea:hopoff']) game.events.on(ev, setLabel);
   }
 
   // =====================================================================================
@@ -146,6 +158,7 @@ export function install(game) {
     [[key('Space', 'sw-wide')], 'Jump (Honk in a car)'],
     [[key('Shift', 'sw-mid')], 'Run or go down'],
     [[key('F')], 'Fly on / off'],
+    [[key('Space', 'sw-wide'), key('C'), key('Shift', 'sw-mid')], 'In deep water: Space up, C down, Shift fast'],
     [[key('1'), '<span class="sw-or">to</span>', key('9')], 'Pick from your hotbar'],
     [[key('B')], 'Open the Bag'],
     [[key('R')], 'Build'],
@@ -172,6 +185,7 @@ export function install(game) {
     [PICS.pinch, 'Pinch to zoom'],
     [`<span class="sw-help-pic" style="display:grid;place-items:center;color:#3FD8B0">${icon2('jump', { size: 56 })}</span>`, 'Jump button'],
     [`<span class="sw-help-pic" style="display:grid;place-items:center;color:#6CC6FF">${icon2('fly', { size: 56 })}</span>`, 'Fly button, then Up and Down'],
+    [PICS.tail, 'In deep water: Up and Down to swim and dive'],
     [`<span class="sw-help-pic" style="display:grid;place-items:center;color:#FF5FA2">${icon2('bag', { size: 56 })}</span>`, 'Bag: pick what to build'],
     [`<span class="sw-help-pic" style="display:grid;place-items:center;color:#FFB020">${icon2('honk', { size: 56 })}</span>`, 'In a car or boat: the joystick drives, Honk beeps, the pink button gets out'],
   ];

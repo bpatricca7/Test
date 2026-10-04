@@ -27,6 +27,13 @@ export const FP_DIVE_DEAD = 0.2;   // first person: camera pitch (rad) before lo
 export const BUOY_PROBE = 0.95;    // she floats up while the water reaches this far above her feet
 export const SEA_DEFAULT_HEX = { mermaid: '#3FD8B0', sea_dragon: '#2FB5B0' };
 
+/** The underwater tint per liquid block key: [top, bottom] of a vertical gradient (§5.6). */
+export const UNDERWATER_TINT = {
+  water: ['rgba(120,210,255,.18)', 'rgba(30,110,200,.38)'],
+  choco_milk: ['rgba(150,90,50,.22)', 'rgba(90,50,25,.45)'],
+  strawberry_milk: ['rgba(255,190,220,.2)', 'rgba(240,110,170,.4)'],
+};
+
 const FORMS = new Set(['mermaid', 'sea_dragon', 'me']);
 
 /** 'mermaid' | 'sea_dragon' for 'auto'. style: 'girl'|'boy'|'mix'|null (device only).

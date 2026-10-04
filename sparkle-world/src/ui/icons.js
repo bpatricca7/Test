@@ -80,6 +80,9 @@ const PATHS = {
   crown: `<path d="M3.2 17.4 2 6.6l5.4 4.3L12 3.6l4.6 7.3L22 6.6l-1.2 10.8Z"/><rect x="3.2" y="18.4" width="17.6" height="3" rx="1.5"/>`,
   // a squeeze horn (round bulb, flared trumpet) with two sound arcs: Honk while driving
   honk: `<circle cx="4.8" cy="12" r="3.6"/><path d="M7.8 10.7h3v2.6h-3Z"/><path d="M10.2 10.4 16.8 5.6v12.8l-6.6-4.8Z"/><path ${S} stroke-width="2.2" d="M19.4 9.4a3.8 3.8 0 0 1 0 5.2M21.6 7a7.4 7.4 0 0 1 0 10"/>`,
+  // sea forms (merfolk): a tail fin rising from a wave; two stacked water blocks under a wave
+  tail: `<path d="M12 10.2C10 6.4 7 4.6 3.4 4.8c1.3 3.1 4.4 5.2 8.6 5.4Zm0 0c2-3.8 5-5.6 8.6-5.4-1.3 3.1-4.4 5.2-8.6 5.4Z"/><path d="M10.7 16.6 11.2 9.6h1.6l.5 7Z"/><path ${S} stroke-width="2.2" d="M2.4 19.6c2 0 2-1.7 4-1.7s2 1.7 4 1.7 2-1.7 4-1.7 2 1.7 4 1.7 2-1.7 3.2-1.7"/>`,
+  deep: `<rect x="5" y="11.6" width="14" height="4.8" rx="1.2"/><rect x="5" y="17.4" width="14" height="4.8" rx="1.2" opacity=".65"/><path ${S} stroke-width="2.2" d="M2.6 7.6c2 0 2-1.8 4.4-1.8s2.2 1.8 4.6 1.8 2.2-1.8 4.6-1.8 2.2 1.8 4.6 1.8"/>`,
 };
 
 /** SVG markup for an icon (unknown names give a star). */

@@ -17,6 +17,9 @@ const SHOTS = {
   sit: { t: 2.0, frame: { cy: 0.66, span: 1.55, yaw: 0.5, pitch: 0.25 } },
 };
 
+// with a tail (merfolk) only the emotes that move just the arms play
+const ARM_ONLY = new Set(['wave', 'heart']);
+
 const SOUNDS = { wave: 'pop', dance: 'note:72', twirl: 'magic', cartwheel: 'whoosh', jump: 'jump', heart: 'pet', sit: 'pop' };
 
 export function install(game) {
@@ -35,7 +38,7 @@ export function install(game) {
       game.toast('Stand up first, then try again!', { icon: 'emote' });
       return;
     }
-    if (p.swimming) {
+    if ((p.swimming || p.seaForm) && !(p.seaForm && ARM_ONLY.has(name))) {
       game.toast('Swim to the shore first!', { icon: 'emote' });
       return;
     }
@@ -102,6 +105,9 @@ export function install(game) {
     },
     onOpen() {
       game.container.classList.toggle('sw-touch-ui', !!game.input.touchMode);
+      // in sea form the wheel shows only the arm-only emotes (Wave, Heart)
+      const sea = !!(game.player && game.player.seaForm);
+      for (const b of buttons) b.b.hidden = sea && !ARM_ONLY.has(b.name);
       refreshPictures();
     },
   });

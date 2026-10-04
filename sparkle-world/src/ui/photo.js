@@ -4,6 +4,7 @@
 // `downloads` capability inside claude.ai, else an <a download> link) or take another.
 // Emits 'photo:taken' (the Photographer sticker listens to it).
 
+import { UNDERWATER_TINT } from '../player/merfolk/rules.js';
 import { icon2, button2 } from './menus/icons2.js';
 import { saveFile, safeFileName } from './menus/files.js';
 import { raycastVoxels } from '../world/raycast.js';
@@ -301,6 +302,15 @@ export function install(game) {
     const g = c.getContext('2d');
     g.imageSmoothingQuality = 'high';
     g.drawImage(src, (sw - cw) / 2, (sh - ch) / 2, cw, ch, 0, 0, c.width, c.height);
+    // under the water the screen has a soft tint (merfolk): the photo gets the same one
+    const tint = game.underwater ? UNDERWATER_TINT[game.underwater] || UNDERWATER_TINT.water : null;
+    if (tint) {
+      const grd = g.createLinearGradient(0, 0, 0, c.height);
+      grd.addColorStop(0, tint[0]);
+      grd.addColorStop(1, tint[1]);
+      g.fillStyle = grd;
+      g.fillRect(0, 0, c.width, c.height);
+    }
     game.events.emit('thumbnail:after', {});
     return c;
   };
@@ -314,7 +324,7 @@ export function install(game) {
     if (!p || !w) return;
     const yaw = p.yaw || 0;
     const fx = Math.sin(yaw), fz = Math.cos(yaw);
-    const hx = p.position.x, hy = p.position.y + 1.3, hz = p.position.z;
+    const hx = p.position.x, hy = p.position.y + (p.seaForm && p.state !== 'ride' ? 1.0 : 1.3), hz = p.position.z;
     let dist = 3.3;
     const props = game.registry.blocks.props;
     const hit = raycastVoxels(w, hx, hy, hz, fx, 0.28, fz, dist + 0.4, (id) => props.solid[id] === 1);
