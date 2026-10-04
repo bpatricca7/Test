@@ -162,6 +162,14 @@ const CSS = /* css */ `
   .sw-hud-tl { flex-direction: column; align-items: flex-start; max-width: calc(100vw - 450px); }
   .sw-hud-tl .sw-time { max-width: 100%; }
 }
+/* tablets held sideways (iPad 1024 to 1366 wide; Safari's tab and address bars can leave
+   under 700 px of height): Jump (or Up / Down) sits down in the bottom-right corner, clear of
+   the tools column and its Fly / Emotes / Photo row, and Bag / hotbar / Undo move just enough
+   left to leave the corner free (the row is 762 px wide; Up / Down take 154 px + a gap) */
+@media (min-width: 974px) and (min-height: 521px) and (orientation: landscape) {
+  .sw-hud.sw-touchmode .sw-touch { bottom: calc(12px + var(--sw-safe-b)); }
+  .sw-hud.sw-touchmode .sw-hud-bottom { left: min(50%, calc(100% - 547px - var(--sw-safe-r))); }
+}
 /* phones held sideways (844x390) and other short screens: one top row, the life column and
    the joystick on the left, the tools in a column at the right edge with Fly / Emotes / Say /
    Photo two by two beside them, Jump (or Up / Down) under the tools, and Bag / hotbar / Undo
