@@ -17,6 +17,20 @@ import { Physics } from '../src/world/physics.js';
 import { SHAPES } from '../src/core/registry.js';
 import { Input } from '../src/core/input.js';
 
+// A tiny fake canvas so the avatar (and its painted textures) can be built in Node: every 2D
+// call is accepted and does nothing (A12, A15 count geometry and texture references only).
+const fakeCtx = new Proxy({}, {
+  get: (o, k) => (k in o ? o[k] : () => fakeGrad),
+  set: (o, k, v) => { o[k] = v; return true; },
+});
+const fakeGrad = { addColorStop() {} };
+globalThis.document = globalThis.document || {
+  createElement: () => ({ width: 0, height: 0, getContext: () => fakeCtx, style: {} }),
+};
+const { createAvatar } = await import('../src/player/avatar.js');
+const { TailTube, seaPalette, buildSea } = await import('../src/player/merfolk/parts.js');
+const { cacheStats } = await import('../src/player/avatar/textures.js');
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FIXTURE = JSON.parse(readFileSync(path.join(ROOT, 'tools/fixtures/merfolk-old-profile.json'), 'utf8')).profile;
 
@@ -510,6 +524,66 @@ await test('A14 an underwater 1-block step, a pond rim 1 above, Down + forward, 
     assert(Number.isFinite(c.pos.y) && c.pos.y < TOP + 3 && c.pos.z < 30, 'cliff climbed at ' + t.toFixed(2));
   }
   return `step ${crossed.toFixed(2)} s, pond ${out.toFixed(2)} s, Down ${td.toFixed(2)} s`;
+});
+
+// ---------- A12, A15: the tail mesh and texture ownership ----------
+
+await test('A12 TailTube.deform with 10,000 random angle sets stays finite and in place', () => {
+  const rnd = mulberry32(12);
+  for (const form of ['mermaid', 'sea_dragon']) {
+    const t = new TailTube(form, seaPalette('#3FD8B0'));
+    const arr = t.posAttr.array, n = arr.length;
+    const a = new Float32Array(7), b = new Float32Array(7);
+    const wild = [NaN, Infinity, -Infinity, 1e9, -1e9];
+    for (let k = 0; k < 10000; k++) {
+      for (let i = 0; i < 7; i++) {
+        a[i] = rnd() < 0.05 ? wild[Math.floor(rnd() * 5)] : (rnd() * 2 - 1) * 2;
+        b[i] = rnd() < 0.05 ? wild[Math.floor(rnd() * 5)] : (rnd() * 2 - 1) * 2;
+      }
+      t.deform(a, b);
+      if (k % 97 === 0) for (let i = 0; i < n; i++) assert(Number.isFinite(arr[i]), 'finite');
+      assert(Number.isFinite(t.tipPos.x + t.tipPos.y + t.tipPos.z), 'tip finite');
+      assert(Math.hypot(t.tipPos.x, t.tipPos.y + 0.02, t.tipPos.z) <= 1.0, 'tip within 1.0 of the root');
+    }
+    assert(t.posAttr.array === arr && arr.length === n && t.geometry.attributes.position.count === n / 3, 'same array, same count');
+  }
+  // frustumCulled is off on the tube and the fin (a bent tail never vanishes at screen edges)
+  const av = createAvatar({ sea: { form: 'mermaid', color: null } });
+  av.update(0.016, { sea: true, swimming: true, speed: 2 });
+  av.update(0.5, { sea: true, swimming: true, speed: 2 });
+  const p = av.seaParts();
+  assert(p.built && p.shown && p.legsVisible === false, 'the tail shows, legs hidden');
+  let culledOff = 0;
+  av.group.traverse((o) => { if (o.isMesh && o.frustumCulled === false) culledOff++; });
+  assert(culledOff >= 2, 'tube and fluke: frustumCulled false');
+  av.dispose();
+});
+
+await test('A15 sea textures and materials are referenced once per avatar and all released', () => {
+  const before = cacheStats();
+  const l = (color) => W.normalizeLook({ ...W.DEFAULT_LOOK, sea: { form: 'sea_dragon', color } });
+  const a = createAvatar(l('#3FD8B0')), b = createAvatar(l('#3FD8B0'));
+  const swim = { sea: true, swimming: true, speed: 2 };
+  a.update(0.5, swim); a.update(0.5, swim);
+  b.update(0.5, swim); b.update(0.5, swim);
+  assert(a.seaParts().built && b.seaParts().built, 'both built');
+  const mid = cacheStats();
+  a.dispose();
+  for (let i = 0; i < 20; i++) {
+    b.setLook(l(W.SEA_COLORS[i % 12])); // clearParts (disposeSea) + rebuild
+    b.update(0.5, swim);
+    assert(b.seaParts().built && b.seaParts().color === W.SEA_COLORS[i % 12], 'rebuilt ' + i);
+    const st = cacheStats();
+    assert(st.refs <= mid.refs, 'refs never grow: ' + st.refs + ' > ' + mid.refs);
+  }
+  // a form change while the tail is out swaps the parts without a leak
+  b.setLook({ ...l('#FFD43B'), sea: { form: 'mermaid', color: '#FFD43B' } });
+  b.update(0.5, swim);
+  assert(b.seaParts().form === 'mermaid', 'mermaid now');
+  b.dispose();
+  const after = cacheStats();
+  assert(after.refs === before.refs, `refs back to ${before.refs}: ${after.refs}`);
+  return `refs ${before.refs} -> ${mid.refs} -> ${after.refs}`;
 });
 
 // ---------- A16: Down without Shift ----------

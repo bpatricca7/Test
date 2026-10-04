@@ -3,11 +3,16 @@
 // flapping wings, swaying capes and skirts, a floating balloon, a sparkling wand, big blinking
 // anime eyes, and every pose and emote in DESIGN.md.
 //
-//   createAvatar(look, { fx, blink }) -> { group, look, setLook, update, playEmote, dispose,
-//                                          setOpacity, emoting, settle, hold, held }
+//   createAvatar(look, { fx, blink, seaAuto }) -> { group, look, setLook, update, playEmote,
+//                    dispose, setOpacity, emoting, settle, hold, held, heldShown, seaForm,
+//                    seaShown, setSeaAuto, seaParts }
 //   group: origin at the feet (seat surface when sitting, mattress-top centre when sleeping,
 //   saddle when riding), ~1.75 tall, facing +Z.
 //   fx(kind, Vector3, opts): optional particle hook (in the world: game.particles.emit).
+//   seaAuto: (look) => 'mermaid' | 'sea_dragon' | 'me', or one of those strings: the form a look
+//   with sea.form 'auto' shows in deep water (default 'me'). update(dt, { sea: true }) turns her
+//   (docs/teams/merfolk.md §6.3): the sea parts are built lazily on the first turn, never in
+//   build(), and disposeSea() alone owns their meshes, bones, materials and textures.
 
 import * as THREE from 'three';
 import { angleDelta, shade } from '../core/util.js';
@@ -21,6 +26,8 @@ import {
 import { buildBody, buildOutfit } from './avatar/outfit.js';
 import { buildHair } from './avatar/hair.js';
 import { buildAccessories } from './avatar/accessories.js';
+import { buildSea, paintScales, paintFin } from './merfolk/parts.js';
+import { seaColorOf, SEA_GROW, SEA_CUT, SEA_SWIM } from './merfolk/rules.js';
 
 export const EMOTE_DURATIONS = { wave: 2.4, dance: 4.2, twirl: 1.8, cartwheel: 1.7, jump: 1.9, heart: 2.6, sit: 6 };
 
@@ -45,6 +52,15 @@ const hop = (e, s0, len) => {
 };
 
 const PERMANENT = new Set(['plain', 'plain2', 'glow', 'hair', 'eyes', 'mouth']);
+// sea-form materials belong to disposeSea(), never to build()'s sweep
+const isSeaKey = (k) => k.startsWith('scale:') || k.startsWith('fin:');
+const SEA_FORM_KEYS = new Set(['mermaid', 'sea_dragon', 'me']);
+// emotes that only move the arms: they still play over the sea pose
+const ARM_ONLY = new Set(['wave', 'heart']);
+const SEA_IN_FX = { count: 14, spread: 0.5 };
+const SEA_BUBBLE_FX = { count: 6, spread: 0.4 };
+const SEA_OUT_FX = { count: 8, spread: 0.4 };
+const SEA_GLINT_FX = { count: 1, spread: 0.1, scale: 0.7 };
 const MOUTHS_ALWAYS = ['open', 'o', 'sleep', 'grin'];
 // Toys held up in front like the ice cream, so they show.
 const HOLD_UP = new Set(['soccer_ball', 'toy_car', 'dino_toy']);
@@ -161,6 +177,11 @@ class BuildContext {
 export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
   const fx = typeof opts.fx === 'function' ? opts.fx : null;
   const blinkOn = opts.blink !== false;
+  let seaAutoFn = null;
+  function setSeaAutoFn(v) {
+    seaAutoFn = typeof v === 'function' ? v : typeof v === 'string' ? () => v : () => 'me';
+  }
+  setSeaAutoFn(opts.seaAuto);
   const group = new THREE.Group();
   group.name = 'avatar';
   const spin = new THREE.Group();
@@ -188,6 +209,7 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
   let gen = 0;
   let opacity = 1;
   const wingMats = [];
+  const seaMats = []; // { mat, base emissive } of the sea materials (the shimmer)
 
   function register(key, mat, { texKeys = [], base = 1, transparent = false } = {}) {
     mat.opacity = base * opacity;
@@ -225,6 +247,23 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
       const tex = acquire(tk, 256, 128, (g, w, h) => paintGlasses(g, w, h, type, color));
       const m = new L({ map: tex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
       return register(key, m, { texKeys: [tk], transparent: true });
+    }
+    if (isSeaKey(key)) {
+      // scale:<hex>:<form> (the cloth: program) and fin:<hex>:<form> (the cloth2: program plus
+      // transparency); the gray-scale textures are shared per form, the color is per vertex
+      const [kind, hex, form] = key.split(':');
+      const fin = kind === 'fin';
+      const tk = `sea|${kind}|${form}`;
+      const tex = fin
+        ? acquire(tk, 128, 128, (g, w, h) => paintFin(g, w, h, form))
+        : acquire(tk, 128, 128, (g, w, h) => paintScales(g, w, h, form), { repeat: true });
+      const m = new L({
+        vertexColors: true, map: tex, side: fin ? THREE.DoubleSide : THREE.FrontSide,
+        emissive: new THREE.Color(hex), emissiveIntensity: fin ? 0.25 : 0.12,
+        ...(fin ? { depthWrite: false } : {}),
+      });
+      seaMats.push({ mat: m, base: fin ? 0.25 : 0.12 });
+      return register(key, m, { texKeys: [tk], transparent: fin, base: 1 });
     }
     if (key.startsWith('wing:')) {
       const [, type, color, part] = key.split(':');
@@ -350,10 +389,95 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
   // ----- per-look parts -----
   let look = normalizeLook(lookIn);
   let sig = '';
-  let parts = { meshes: [], flares: [], dyn: null, stride: 1, lift: 0, handPose: null, stiff: false };
+  let parts = { meshes: [], flares: [], flareMeshes: [], dyn: null, stride: 1, lift: 0, handPose: null, stiff: false };
   let snapSecondary = true;
 
+  // ----- sea form (merfolk) -----
+  let sea = null; // { form, hex, root, tip, tube, meshes, bones, matKeys, frill }
+  let seaW = 0, seaTarget = 0, seaPhase = 0, seaFlash = 0, seaGlintT = 0, seaMouthT = 0, leapSpin = 0;
+  let autoForm = null; // the cached resolved 'auto' form (cleared by setLook / setSeaAuto)
+  let seaHex = null; // { form, hex } cached Match color for this look
+  const seaKick = { amp: 0, turn: 0, curl: 0 };
+  const seaAngles = new Float32Array(7), seaSides = new Float32Array(7);
+
+  /** The form this look shows: its explicit choice, or the cached seaAuto(look) for 'auto'. */
+  function seaFormNow() {
+    const f = look.sea && look.sea.form;
+    if (f && f !== 'auto') return SEA_FORM_KEYS.has(f) ? f : 'me';
+    if (autoForm === null) {
+      let r = 'me';
+      try { r = seaAutoFn(look); } catch (err) { r = 'me'; }
+      autoForm = SEA_FORM_KEYS.has(r) ? r : 'me';
+    }
+    return autoForm;
+  }
+
+  function seaHexFor(form) {
+    if (!seaHex || seaHex.form !== form) seaHex = { form, hex: seaColorOf(look, form) };
+    return seaHex.hex;
+  }
+
+  /** The only owner of sea resources: meshes, bones, materials and their textures. */
+  function disposeSea() {
+    if (!sea) return;
+    for (const m of sea.meshes) {
+      if (m.parent) m.parent.remove(m);
+      if (m.geometry) m.geometry.dispose();
+    }
+    for (const b of sea.bones) if (b.parent) b.parent.remove(b);
+    if (sea.root.parent) sea.root.parent.remove(sea.root);
+    for (const k of sea.matKeys) {
+      const e = mats.get(k);
+      if (!e) continue;
+      e.mat.dispose();
+      for (const tk of e.texKeys) release(tk);
+      mats.delete(k);
+    }
+    seaMats.length = 0;
+    sea = null;
+  }
+
+  /** Build (once per look and form) the sea parts, hidden until the weight shows them. */
+  function ensureSea(form, hex) {
+    if (sea && sea.form === form && sea.hex === hex) return;
+    const wasShown = seaW > 0.5 && !!sea && sea.form !== form;
+    disposeSea();
+    const P = new BuildContext(av, look);
+    const out = buildSea(P, form, hex, look);
+    const meshes = [];
+    let frill = null;
+    for (const e of P.builders.values()) {
+      const geo = e.builder.build();
+      if (!geo) continue;
+      const mesh = new THREE.Mesh(geo, material(e.mat));
+      if (e.mat.startsWith('fin:')) mesh.renderOrder = 3;
+      e.bone.add(mesh);
+      meshes.push(mesh);
+      if (e.bone === out.root && e.mat.startsWith('fin:')) frill = mesh;
+    }
+    const tube = new THREE.Mesh(out.tube.geometry, out.tubeMats.map((k) => material(k)));
+    tube.frustumCulled = false;
+    out.root.add(tube);
+    meshes.push(tube);
+    const fluke = new THREE.Mesh(out.fluke, material(out.flukeMat));
+    fluke.frustumCulled = false;
+    fluke.renderOrder = 3;
+    out.tip.add(fluke);
+    meshes.push(fluke);
+    sea = {
+      form, hex, root: out.root, tip: out.tip, tube: out.tube, meshes, bones: out.bones, matKeys: out.keys, frill,
+    };
+    const vis = seaW > 0.01;
+    sea.root.visible = vis;
+    for (const b of sea.bones) b.visible = vis;
+    if (wasShown) {
+      seaFlash = 1;
+      emit('sparkle', bones.hips, 0, -0.1, 0, SEA_IN_FX);
+    }
+  }
+
   function clearParts() {
+    disposeSea();
     for (const m of parts.meshes) {
       if (m.parent) m.parent.remove(m);
       m.geometry.dispose();
@@ -365,6 +489,7 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     av.dynBones = [];
     parts.meshes = [];
     parts.flares = [];
+    parts.flareMeshes = [];
   }
 
   function build() {
@@ -390,18 +515,20 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
       meshes.push(mesh);
     }
     const flares = [];
+    const flareMeshes = [];
     for (const f of P.flares) {
       const mesh = new THREE.Mesh(f.flare.geometry, material(f.mat));
       f.bone.add(mesh);
       meshes.push(mesh);
       flares.push(f.flare);
+      flareMeshes.push(mesh);
     }
     material('eyes');
     material('mouth');
     material('glow');
     // drop materials this look no longer uses
     for (const [k, e] of mats) {
-      if (e.gen === gen || PERMANENT.has(k)) continue;
+      if (e.gen === gen || PERMANENT.has(k) || isSeaKey(k)) continue;
       e.mat.dispose();
       for (const tk of e.texKeys) release(tk);
       mats.delete(k);
@@ -409,7 +536,7 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     wingMats.length = 0;
     for (const [k, e] of mats) if (k.startsWith('wing:')) wingMats.push(e.mat);
     parts = {
-      meshes, flares, dyn: P.dyn, stride: P.stride, lift: P.lift, handPose: P.handPose, stiff: P.skirtStiff,
+      meshes, flares, flareMeshes, dyn: P.dyn, stride: P.stride, lift: P.lift, handPose: P.handPose, stiff: P.skirtStiff,
     };
     snapSecondary = true;
     syncHandItem();
@@ -421,9 +548,16 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     if (s === sig) return;
     sig = s;
     look = n;
+    autoForm = null;
+    seaHex = null;
     build();
   }
   setLook(look);
+
+  function setSeaAuto(v) {
+    setSeaAutoFn(v);
+    autoForm = null;
+  }
 
   // ----- animation state -----
   const cur = new Float32Array(NCH);
@@ -615,6 +749,83 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     tgt[FLARE] = 0.12 + Math.sin(t * 13) * 0.03 * f;
   }
 
+  // ----- sea poses (docs/teams/merfolk.md §6.4) -----
+
+  /** Swimming with a tail: streamlined and flat when fast, nose down when diving. */
+  function poseSea(speed, dt) {
+    const sp = Math.min(1, speed / SEA_SWIM);
+    seaPhase += dt * (2.2 + 6.5 * sp);
+    const dive = Math.max(-0.55, Math.min(0.55, -vy * 0.16));
+    tgt[RRX] = 0.3 + 1.1 * sp + dive * (0.4 + 0.6 * sp);
+    tgt[HX] = -0.8 * Math.max(0, tgt[RRX] - 0.2);
+    tgt[RPY] = Math.sin(seaPhase) * 0.035 * (0.3 + sp);
+    tgt[TX] = Math.sin(seaPhase + Math.PI) * 0.05 * sp;
+    tgt[ALX] = mix(-0.25 + Math.sin(t * 2.6) * 0.3, 0.25, sp);
+    tgt[ARX] = mix(-0.25 - Math.sin(t * 2.6) * 0.3, 0.25, sp);
+    tgt[ALZ] = mix(0.75 + Math.sin(t * 2.6) * 0.25, 0.18, sp);
+    tgt[ARZ] = -mix(0.75 + Math.sin(t * 2.6 + Math.PI) * 0.25, 0.18, sp);
+    tgt[ELX] = tgt[ERX] = mix(-0.5, -0.1, sp);
+    seaKick.amp = 0.16 + 0.3 * sp;
+    seaKick.turn = Math.max(-0.5, Math.min(0.5, -yawRate * 0.12));
+    seaKick.curl = sp < 0.2 && vy > -0.2 && vy < 0.2 ? -0.05 : 0;
+  }
+
+  /** The tail out of the water: a leap (head up rising, head first falling), or a flop on sand. */
+  function poseLeap(dt, s) {
+    seaPhase += dt * 3;
+    tgt[RRX] = Math.max(0.2, Math.min(2.0, 1.0 - vy * 0.2));
+    tgt[ALX] = tgt[ARX] = vy < 0 ? -2.8 : -0.6;
+    tgt[ALZ] = 0.2;
+    tgt[ARZ] = -0.2;
+    tgt[HX] = -0.3;
+    seaKick.amp = 0.06;
+    seaKick.turn = 0;
+    seaKick.curl = s.onGround ? 0.05 : 0.18;
+  }
+
+  /** Riding a dolphin with a tail: side-saddle, holding on, the tail draped along its side. */
+  function poseSaddleSea(dt, s) {
+    poseSit(true, dt);
+    tgt[RRY] = 0.5;
+    tgt[TY] = -0.35;
+    tgt[HY] += -0.12;
+    tgt[RPY] += 0.02;
+    seaPhase = Number.isFinite(s.seaKick) && s.seaKick !== 0 ? s.seaKick : seaPhase + dt * 1.2;
+    seaKick.amp = 0.08;
+    seaKick.turn = 0.35;
+    seaKick.curl = 0.25;
+  }
+
+  /** After the bones are set: bend the tail, place the fin, flutter the frill, shimmer. */
+  function seaTick(dt) {
+    if (!sea) return;
+    const w = seaW;
+    const gw = Math.max(0.001, w);
+    sea.root.scale.set(0.6 + 0.4 * gw, gw, 0.6 + 0.4 * gw);
+    for (const b of sea.bones) b.scale.setScalar(gw);
+    for (let i = 0; i < 7; i++) {
+      seaAngles[i] = seaKick.amp * Math.sin(seaPhase - 0.8 * i) * (0.3 + (0.7 * i) / 6) + seaKick.curl;
+      seaSides[i] = (seaKick.turn * i) / 6;
+    }
+    sea.tube.deform(seaAngles, seaSides);
+    sea.tip.matrix.copy(sea.tube.tipMat);
+    sea.tip.matrixWorldNeedsUpdate = true;
+    if (sea.frill) sea.frill.scale.x = 1 + 0.06 * Math.sin(t * 5);
+    seaFlash = Math.max(0, seaFlash - dt * 2);
+    for (let i = 0; i < seaMats.length; i++) {
+      const e = seaMats[i];
+      e.mat.emissiveIntensity = e.base + 0.06 * Math.sin(t * 2.4 + i) + 0.5 * seaFlash;
+    }
+    // glints along the tail while it grows
+    if (fx && w > 0.02 && w < 0.98 && seaTarget > 0) {
+      seaGlintT -= dt;
+      if (seaGlintT <= 0) {
+        seaGlintT = 0.05;
+        emit('sparkle', sea.tip, 0, 0, 0, SEA_GLINT_FX);
+      }
+    }
+  }
+
   // ----- emotes -----
 
   function poseEmote(dt) {
@@ -778,8 +989,11 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
         tx *= ch.swing * lying;
         tz *= ch.swing * lying;
       }
+      // soft floating hair in sea form (not while riding a dolphin)
+      const floaty = ch.kind !== 'cape' && seaW > 0.5 && !s.riding;
+      if (floaty) tx = tx * 0.5 + 0.32 + Math.sin(t * 1.3 + ci) * 0.08;
       tz = Math.max(-0.9, Math.min(0.9, tz));
-      const K = ch.kind === 'cape' ? 34 : 70, C = ch.kind === 'cape' ? 7 : 9;
+      const K = ch.kind === 'cape' ? 34 : floaty ? 30 : 70, C = ch.kind === 'cape' ? 7 : floaty ? 6 : 9;
       for (let i = 0; i < n; i++) {
         const j = i * 4;
         const gx = i === 0 ? tx : st[j - 4] * 0.5;
@@ -894,13 +1108,51 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     prevX = gp.x; prevY = gp.y; prevZ = gp.z; prevYaw = yaw;
     const speed = s.riding ? mvSpeed : (s.speed ?? mvSpeed);
 
+    // sea form: the weight grows toward the target; nothing is resolved on land (s.sea false, w 0)
+    if (s.sea || seaW > 0) {
+      const form = seaFormNow();
+      const ridingOk = !s.riding || !!s.seaRide;
+      seaTarget = s.sea && form !== 'me' && !s.sitting && !s.sleeping && ridingOk ? 1 : 0;
+      if (seaTarget > 0) ensureSea(form, seaHexFor(form));
+      const fast = s.seaCut || s.sitting || (s.riding && !s.seaRide) || s.sleeping || s.flying;
+      const rateW = fast ? 1 / SEA_CUT : 1 / SEA_GROW;
+      const before = seaW;
+      seaW = snapSecondary ? seaTarget : seaTarget > seaW ? Math.min(seaTarget, seaW + rateW * dt) : Math.max(seaTarget, seaW - rateW * dt);
+      if (!snapSecondary && before <= 0.5 && seaW > 0.5) {
+        seaFlash = 1;
+        seaMouthT = 0.6;
+        seaGlintT = 0;
+        emit('sparkle', bones.hips, 0, -0.1, 0, SEA_IN_FX);
+        emit('bubble', bones.hips, 0, -0.2, 0, SEA_BUBBLE_FX);
+      } else if (!snapSecondary && before > 0.5 && seaW <= 0.5) {
+        emit('sparkle', bones.hips, 0, -0.1, 0, SEA_OUT_FX);
+      }
+    } else seaTarget = 0;
+    const tail = seaW > 0.5;
+    bones.legL.visible = bones.legR.visible = !tail;
+    for (let i = 0; i < parts.flareMeshes.length; i++) parts.flareMeshes[i].visible = !tail;
+    if (sea) {
+      const vis = seaW > 0.01;
+      sea.root.visible = vis;
+      for (const b of sea.bones) b.visible = vis;
+    }
+
     // pick the pose
     tgt.fill(0);
     let rate = 16;
-    if (emote && (speed > 0.6 || s.sitting || s.sleeping || s.riding || s.swimming)) endEmote();
+    if (emote && ((speed > 0.6 && !tail) || s.sitting || s.sleeping || s.riding || (s.swimming && !tail) || (tail && !ARM_ONLY.has(emote.name)))) endEmote();
+    const seaEmote = () => {
+      if (!emote) return;
+      emote.e += dt;
+      if (emote.e >= emote.dur) endEmote();
+      else poseEmote(dt);
+    };
     if (s.sleeping) { poseSleep(); rate = 6; }
+    else if (s.riding && s.seaRide && tail) { poseSaddleSea(dt, s); rate = 12; }
     else if (s.sitting || s.riding) { poseSit(!!s.riding, dt); rate = s.riding ? 12 : 8; }
+    else if (s.swimming && tail) { poseSea(speed, dt); seaEmote(); rate = 10; }
     else if (s.swimming) poseSwim(speed);
+    else if (tail && !s.flying) { poseLeap(dt, s); seaEmote(); rate = 10; }
     else if (s.flying && !emote) poseFly(speed);
     else {
       poseGround(s, dt, speed);
@@ -910,9 +1162,10 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
         else { poseEmote(dt); rate = 18; }
       }
     }
-    if (!s.sitting && !s.sleeping && !s.riding) tgt[RPY] += parts.lift;
-    // a held item: arm up in front of her (or at her mouth for a bite); emotes keep their arms
-    heldBone.visible = !s.sleeping && !s.swimming;
+    if (!s.sitting && !s.sleeping && !s.riding && !tail) tgt[RPY] += parts.lift;
+    // a held item: arm up in front of her (or at her mouth for a bite); emotes keep their arms.
+    // Hidden while swimming and while the tail is out (a leap, a dolphin ride: hands on the fin).
+    heldBone.visible = !s.sleeping && !s.swimming && !tail;
     if (heldObj && heldBone.visible && !emote) {
       if (heldPose === 'eat') {
         const nib = Math.max(0, Math.sin(t * 7.8)) * 0.16;
@@ -932,7 +1185,10 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     prevRRY = cur[RRY];
     // apply
     spin.position.set(cur[RPX], PIVOT_Y + cur[RPY], cur[RPZ]);
-    spin.rotation.set(cur[RRX], cur[RRY], cur[RRZ]);
+    // the leap's twirl: one turn while rising out of the water, added after the smoothing
+    if (tail && !s.swimming && !s.flying && !s.riding && !s.onGround && vy > 0.5) leapSpin = Math.min(Math.PI * 2, leapSpin + dt * 13);
+    else if (s.swimming || s.onGround || !tail) leapSpin = 0;
+    spin.rotation.set(cur[RRX], cur[RRY] + (leapSpin < Math.PI * 2 ? leapSpin : 0), cur[RRZ]);
     bones.torso.rotation.set(cur[TX], cur[TY], cur[TZ]);
     bones.head.rotation.set(cur[HX], cur[HY], cur[HZ]);
     bones.armL.rotation.set(cur[ALX], cur[ALY], cur[ALZ]);
@@ -944,8 +1200,9 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     bones.legR.rotation.set(cur[LRX], cur[LRY], cur[LRZ]);
     bones.kneeR.rotation.set(cur[KR], 0, 0);
     if (!emote || emote.name !== 'heart') heartProp.visible = false;
-    // skirts
-    if (parts.flares.length) {
+    if (sea && seaW > 0) seaTick(dt);
+    // skirts (hidden flares under a tail are not deformed)
+    if (parts.flares.length && !tail) {
       const stiff = parts.stiff ? 0.45 : 1;
       flareParams.flare = cur[FLARE] * stiff;
       flareParams.swayX = cur[SWX] * stiff;
@@ -991,6 +1248,9 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     } else if (emote && emote.eyes) {
       eyes = emote.eyes === 'open' && t < blinkUntil ? 'blink' : emote.eyes;
       mouth = emote.mouth || mouth;
+    } else if (seaMouthT > 0) {
+      seaMouthT -= dt;
+      mouth = 'open'; // a happy gasp as the tail appears
     } else if (s.flying && speed > 5) mouth = 'open';
     else if (airW > 0.6 && vy > 1) mouth = 'o';
     setFace(eyes, mouth);
@@ -1007,6 +1267,12 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     glanceDir = 0;
     glanceUntil = 0;
     cur.fill(0);
+    // snapshots and teleports snap the tail too (no sparkles)
+    seaW = seaTarget;
+    seaPhase = 0;
+    seaFlash = 0;
+    seaMouthT = 0;
+    leapSpin = 0;
   }
 
   function endEmote() {
@@ -1028,7 +1294,7 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
 
   function dispose() {
     hold(null);
-    clearParts();
+    clearParts(); // disposeSea() first
     for (const e of mats.values()) {
       e.mat.dispose();
       for (const tk of e.texKeys) release(tk);
@@ -1067,6 +1333,30 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     hold,
     get held() {
       return heldObj;
+    },
+    /** False while the held item is hidden (swimming, the tail out, asleep). */
+    get heldShown() {
+      return heldBone.visible;
+    },
+    /** The form this look shows in deep water: 'mermaid' | 'sea_dragon' | 'me' (cached). */
+    get seaForm() {
+      return seaFormNow();
+    },
+    /** The tail is out (more than half grown). */
+    get seaShown() {
+      return seaW > 0.5;
+    },
+    /** Change what 'auto' resolves to: (look) => form, or a form string. */
+    setSeaAuto,
+    /** Probes: what the sea parts are doing. */
+    seaParts() {
+      let meshes = 0;
+      if (sea) for (const m of sea.meshes) if (m.parent) meshes++;
+      return {
+        built: !!sea, form: sea ? sea.form : null, color: sea ? sea.hex : null, shown: seaW > 0.5, weight: seaW,
+        meshes, legsVisible: bones.legL.visible && bones.legR.visible,
+        flaresVisible: parts.flareMeshes.every((m) => m.visible), matKeys: sea ? sea.matKeys.slice() : [],
+      };
     },
     /** Bones by name (read-only use: photo poses, name tags...). */
     bones,
