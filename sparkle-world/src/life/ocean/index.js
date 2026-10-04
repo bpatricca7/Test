@@ -1723,7 +1723,7 @@ class OceanSystem {
   // gallery (screenshots for the owner review)
   // =====================================================================================
 
-  gallery({ kinds = SEA_KINDS.filter((k) => k !== 'whale'), palettes = false, variants = null, x = null, y = null, z = null, spacing = 1.3, night = false, cols = 0, cell = 2.6 } = {}) {
+  gallery({ kinds = SEA_KINDS.filter((k) => k !== 'whale'), palettes = false, variants = null, x = null, y = null, z = null, spacing = 1.3, night = false, cols = 0, cell = 2.6, surface = null } = {}) {
     const g = this.game, pl = g.player;
     this.paused = false;
     this._clearAll();
@@ -1750,7 +1750,9 @@ class OceanSystem {
       used[kind] = used[kind] || 0;
       const r = list[used[kind]++];
       if (!r) continue;
-      r.on = true; r.kind = kind; r.state = 'gallery'; r.variant = v; r.tintVer++; r.fade = 1; r.scale = 1; r.dry = true;
+      r.on = true; r.kind = kind; r.state = 'gallery'; r.variant = v; r.tintVer++; r.fade = 1; r.scale = 1;
+      // dry (drawn as on land) unless `surface` puts a water surface at that y (the probe's water-line check)
+      r.dry = surface == null; if (surface != null) r.level = surface - SURF;
       const feet = kind === 'octopus' || kind === 'crab' || kind === 'starfish' ? -0.35 : 0;
       if (cols) {
         // a grid: cols across, rows down, `cell` blocks apart (the camera frames it straight on)
@@ -1934,6 +1936,13 @@ class OceanSystem {
       whaleTime: (day, k) => whaleTime(g.world ? g.world.meta.seed | 0 : 0, day, k),
       whaleState: () => sys.whale.state(),
       gallery: (opts) => sys.gallery(opts),
+      /** A dolphin (by its index) leaps now, if it can (the owner-review pictures). */
+      leap(i) {
+        const r = sys.pools.dolphin.find((q) => q.on && q.i === i);
+        if (!r || r.state === 'leap') return false;
+        sys._leap(r, Math.max(2, r.speed));
+        return true;
+      },
       palettes: (kind) => PALETTES[kind].length,
       cap: (kind) => SEA_SPEC[kind].cap,
       stats: () => ({ ...sys.stats }),

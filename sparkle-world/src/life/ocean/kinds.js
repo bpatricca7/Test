@@ -53,7 +53,7 @@ export const SEA_SPEC = {
 /** [key, body, accent] per kind; index 0 is the default (§3.2). APPEND ONLY. */
 export const PALETTES = {
   dolphin: [
-    ['sky', '#7F98D4', '#F7FBFF'], // (was #8EB8E0: too close to the water's own blue)
+    ['sky', '#6A80CC', '#F7FBFF'], // (was #8EB8E0, then #7F98D4: too close to the water's own blue)
     ['lilac', '#B9A8F0', '#F6F2FF'],
     ['rose', '#F7A8C8', '#FFF4F8'],
     ['mint', '#9EE3CF', '#F4FFFB'],
@@ -67,7 +67,7 @@ export const PALETTES = {
   fish: [
     ['coral', '#FF8FB1', '#FFE3EC'],
     ['sunny', '#FFD166', '#FFF6D6'],
-    ['sky', '#8FD3FF', '#E6F6FF'],
+    ['sky', '#6A8CF5', '#E6F6FF'], // (was #8FD3FF: pale blue on blue water)
     ['grape', '#B49CFF', '#EEE6FF'],
     ['mint', '#7FE0C2', '#E3FFF5'],
     ['peach', '#FFA36C', '#FFE08A'],
@@ -77,7 +77,7 @@ export const PALETTES = {
     ['candy', '#FF7AB8', '#FFF27A'],
   ],
   sea_turtle: [
-    ['ocean', '#3FB8C8', '#BFF0F5'],
+    ['ocean', '#2B8FA0', '#BFF0F5'], // (was #3FB8C8: the water's own teal)
     ['leafy', '#5FB86A', '#D6F5C8'],
     ['coral', '#FF9CC8', '#FFE0EE'],
     ['lilac', '#9C86E8', '#E6DEFF'],
@@ -93,7 +93,7 @@ export const PALETTES = {
   jelly: [
     ['pink', '#FFB8D6', '#FFE6F1'],
     ['lilac', '#D9C8FF', '#F4EEFF'],
-    ['aqua', '#A6F0FF', '#E6FCFF'],
+    ['aqua', '#4FD8B8', '#D8FFF2'], // (was #A6F0FF: pale blue on blue water)
     ['peach', '#FFD1B0', '#FFF0E3'],
     ['gummy', '#FF8CC6', '#FFD6EC'],
   ],

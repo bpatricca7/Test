@@ -113,7 +113,9 @@ async function goTo(page, spot, yaw = null) {
   }, [spot, yaw]);
 }
 
-async function cleanView(page, on) {
+async function cleanView(page, on, outline = false) {
+  // outline: also hide the 3D target outline, name tags and build ghost (as a Photo does)
+  if (outline) await page.evaluate((on) => window.__game.events.emit(on ? 'thumbnail:before' : 'thumbnail:after', {}), on);
   await page.evaluate((on) => {
     let s = document.getElementById('probe-clean');
     if (on && !s) {
@@ -211,7 +213,9 @@ async function seaContrast(page, points = null, radius = 40) {
 const f1 = (v) => (+v).toFixed(1);
 
 // V1 (the swim camera) and C5 (the gallery) thresholds: see the checks
-const V1_DIFF = 60, V1_RING = 50, C5_PX = 40, C5_DIFF = 30;
+const V1_DIFF = 50, V1_RING = 36, C5_PX = 40, C5_DIFF = 30;
+// C6 (the water line): the same as on land below C6_SAME; tinted at least C6_TINT, C6_CLOSER nearer the water
+const C6_SAME = 2, C6_TINT = 12, C6_CLOSER = 8;
 
 /** Aim the camera at a world point (rig yaw / pitch from the player). */
 async function aim(page, x, y, z, pitch = null) {
@@ -222,6 +226,22 @@ async function aim(page, x, y, z, pitch = null) {
     g.cameraRig.pitch = pitch !== null ? pitch : Math.max(-0.3, Math.min(0.9, Math.atan2(p.y + 1.5 - y, d) + 0.15));
   }, [x, y, z, pitch]);
   await settle(page, 350);
+}
+
+/** Aim her camera at the nearest record of a kind (optionally only some role); returns it or null. */
+async function aimAtNearest(page, kind, role = null, pitch = null) {
+  const r = await ev(page, ([kind, role]) => {
+    const g = window.__game, p = g.player.position;
+    let best = null, bd = Infinity;
+    for (const q of g.debug.ocean.list(kind)) {
+      if (role && q.role !== role) continue;
+      const d = Math.hypot(q.x - p.x, q.z - p.z);
+      if (d < bd) { bd = d; best = q; }
+    }
+    return best && [best.x, best.y, best.z];
+  }, [kind, role]);
+  if (r) await aim(page, r[0], r[1], r[2], pitch);
+  return r;
 }
 
 /** The page point of a record's centre (by kind and index), or null. */
@@ -305,7 +325,26 @@ async function worldPass(browser, errors) {
       && await ev(page, (n) => window.__game.debug.ocean.stats().showLeaps > n, l0);
     const inSet = await ev(page, () => [...window.__game.pickables].some((p) => p.ref && p.ref.role === 'show'));
     check(errors, leapt && !inSet, `O11 it leaps in view (${leapt}) and is never tappable (${!inSet})`);
+    // the picture: her camera turned to the show pod out at sea, the HUD out of the way
+    // (the island hides the sea from where she stands: the picture's camera alone goes out toward
+    // the pod, 14 blocks short of it, a little above the water; she stays at spawn)
+    await cleanView(page, true, true);
+    await waitOk(page, () => window.__game.debug.ocean.list('dolphin').some((r) => r.role === 'show' && r.state === 'leap'), null, 12000);
+    await ev(page, () => {
+      const g = window.__game, s = g.world.meta.spawn;
+      const r = g.debug.ocean.list('dolphin').find((q) => q.role === 'show');
+      if (!r) return;
+      const d = Math.hypot(s[0] - r.x, s[2] - r.z) || 1, ux = (s[0] - r.x) / d, uz = (s[2] - r.z) / d;
+      const k = Math.min(14, d), x = r.x + ux * k, z = r.z + uz * k;
+      g.__rig = g.__rig || g.cameraRig.update.bind(g.cameraRig);
+      g.cameraRig.update = () => {};
+      g.camera.position.set(x, r.level + 0.875 + 2.5, z);
+      g.camera.lookAt(r.x, r.level + 1.2, r.z);
+    });
+    await settle(page, 300);
     await shot(page, 'world-showpod', PREFIX);
+    await ev(page, () => { const g = window.__game; if (g.__rig) g.cameraRig.update = g.__rig; });
+    await cleanView(page, false, true);
   }
 
   // O2 the first deep swim: a pod within 6 blocks within 10 s, the buddy's hello once
@@ -387,12 +426,16 @@ async function worldPass(browser, errors) {
       if (s && s.a > 0) ahead++;
     }
     await page.keyboard.up('KeyA');
+    // the picture: still driving, her camera turned to the nearest dolphin beside the boat
+    await cleanView(page, true, true);
+    await aimAtNearest(page, 'dolphin', 'wild', 0.35);
+    await shot(page, 'world-boat-escort', PREFIX);
+    await cleanView(page, false, true);
     await page.keyboard.up('KeyW');
     const l7b = await ev(page, () => window.__game.debug.ocean.stats().leaps);
     check(errors, near >= 5, `O7 a dolphin within 6 blocks of the moving boat for ${near.toFixed(1)} s of 20 (>= 5)`);
     check(errors, ahead > 0, `O7 one ahead of the bow (${ahead} samples)`);
     check(errors, l7b > l7, `O7 leaps while escorting (${l7b - l7})`);
-    await shot(page, 'world-boat-escort', PREFIX);
     await ev(page, () => window.__game.debug.vehicles.park('stand'));
   } else check(errors, false, `O7 a Speedboat on deep water to drive (${JSON.stringify(o7)})`);
 
@@ -452,7 +495,24 @@ async function worldPass(browser, errors) {
   check(errors, jelly && glow.jellyGlow > 0.3, `O5 night: a jelly within 26 blocks glows (iTint.w ${glow.jellyGlow.toFixed(2)})`);
   check(errors, glow.fishGlow === null || glow.fishGlow === 0, `O5 a fish does not (${glow.fishGlow})`);
   check(errors, glow.whale === false, 'O5 whaleNow() is refused at night');
+  // the picture (the Magic House of O10 stands at the deep spot): out at the deep water by the
+  // world edge, jellies glowing ahead of her and a school beside them, the HUD out of the way
+  await cleanView(page, true, true);
+  const edge = await ev(page, () => window.__game.debug.ocean.edgeSpot());
+  if (edge) await goTo(page, edge);
+  await ev(page, () => {
+    const g = window.__game, d = g.debug.ocean, p = g.player.position, w = g.world;
+    d.clear();
+    const yaw = Math.atan2(w.sx / 2 - p.x, w.sz / 2 - p.z); // back toward the island
+    g.cameraRig.yaw = yaw;
+    const at = (f, s2) => [p.x + Math.sin(yaw) * f - Math.cos(yaw) * s2, p.z + Math.cos(yaw) * f + Math.sin(yaw) * s2];
+    let [x, z] = at(5, -1); d.spawn('jelly', x, p.y, z, { n: 3 });
+    [x, z] = at(6, 2.2); d.spawn('fish', x, p.y, z, { n: 8 });
+  });
+  await gameWait(page, 1.2, 15000);
+  await aimAtNearest(page, 'jelly');
   await shot(page, 'world-night', PREFIX);
+  await cleanView(page, false, true);
   await ev(page, () => window.__game.setDayTime(0.42));
 
   // O4 the lagoon: a school within 25 s, never a dolphin in it
@@ -544,8 +604,10 @@ async function seePass(browser, errors) {
       // the animal against the water it covers (diff) AND against the water around it (ring):
       // (0..441 RGB distance; each kind's first palette). The old faint look (opaque animals drawn
       // under the 75% water) measured diff 16-38 and ring 8-25 here (one seahorse whose crest broke
-      // the water: diff 70, ring 44), so every kind failed; the see-through look (material.js,
-      // drawn after the water) measures diff 72-161, ring 57-152
+      // the water: diff 70, ring 44), so every kind fails. Drawn after the water with the water's
+      // colour mixed over the part under the surface (material.js) they measure diff 64-107 and
+      // ring 44-92 (the turtle's pale flippers and the blue dolphin are the lowest); the gate sits
+      // between the two: diff >= 50, ring >= 36
       check(errors, c.px > 50 && c.diff >= V1_DIFF && c.ring >= V1_RING, `V1 ${vp.label}: a ${kind} ahead is clearly visible from the swim camera (difference ${f1(c.diff)} >= ${V1_DIFF}, against the water around it ${f1(c.ring)} >= ${V1_RING}, over ${c.px} silhouette pixels)`);
     }
     // seabed animals: a bubble trail within 3 s
@@ -774,7 +836,8 @@ async function tapPass(browser, errors) {
     check(errors, m1 === m0 + 1 && still === 'starfish', `T6 a Hand click on a Starfish block says hi (${m0} -> ${m1}), the block stays`);
     await ev(page, () => { const g = window.__game; g.debug.select('block:planks_pink'); g.setTool('build'); });
     await page.mouse.click(sp.x, sp.y);
-    await page.waitForTimeout(300);
+    // (a slow machine: up to 3 s for the build to land)
+    await waitOk(page, (c) => window.__game.debug.getBlock(c[0], c[1], c[2]) === 'planks_pink', t6, 3000);
     const now = await ev(page, (c) => window.__game.debug.getBlock(c[0], c[1], c[2]), t6);
     check(errors, now === 'planks_pink', `T6 with Build the block is replaced as today (${now})`);
     await ev(page, () => window.__game.setTool('hand'));
@@ -1844,6 +1907,12 @@ async function galleryShots(browser, errors, pre = '') {
   const G = pre ? [{ cols: 4, cell: 2.2 }, { up: 1.0, back: 6.5, fov: 50 }] : [{ cols: 4, cell: 2.3 }, { up: 1.2, back: 6.8, fov: 50 }];
   const day = await pic('gallery-day', G[0], G[1]);
   check(errors, day.length === 8 && day.seen === 8, `C5 the eight smaller animals by day, each one in the picture (${day.seen} of ${day.length}: ${day.map((d) => d.kind).join(', ')}; least difference ${f1(day.minDiff)} >= ${C5_DIFF})`);
+  // C6 the water line (see waterLine)
+  const wl = await waterLine(page, at);
+  console.log('  C6 numbers: ' + JSON.stringify(wl, (k, v) => (typeof v === 'number' ? +v.toFixed(1) : v)));
+  check(errors, wl.above.px > 2000 && wl.above.diff < C6_SAME, `C6 above the water seen from above: drawn as on land, solid (difference ${f1(wl.above.diff)} < ${C6_SAME})`);
+  check(errors, wl.under.px > 2000 && wl.under.diff >= C6_TINT && wl.under.closer >= C6_CLOSER, `C6 under the water seen from above: the water's colour over them (difference ${f1(wl.under.diff)} >= ${C6_TINT}, ${f1(wl.under.closer)} closer to the water >= ${C6_CLOSER})`);
+  check(errors, wl.below.px > 2000 && wl.below.diff < C6_SAME, `C6 under the water seen from under it: drawn as on land, solid (difference ${f1(wl.below.diff)} < ${C6_SAME})`);
   await page.evaluate(() => window.__game.setDayTime(0.9));
   const night = await pic('gallery-night', { ...G[0], night: true }, G[1]);
   check(errors, night.length === 8 && night.seen === 8, `C5 the eight smaller animals by night, each one in the picture (${night.seen} of ${night.length}; least difference ${f1(night.minDiff)})`);
@@ -1868,6 +1937,67 @@ async function galleryShots(browser, errors, pre = '') {
   await context.close();
 }
 
+
+/**
+ * C6 the water line (material.js): the water's colour lies over an animal only where the surface
+ * is BETWEEN it and the camera. The same animals are drawn twice in one spot, once with no water
+ * (dry: drawn as on land) and once with a water surface at a chosen height, and compared over
+ * their own silhouette (mean RGB distance, 0..441):
+ *   above   camera above the water, animals above it too       -> the same as on land
+ *   under   camera above the water, animals 1 block under it   -> tinted toward the water
+ *   below   camera under the water, animals under it too       -> the same as on land
+ * A test of the wrong side (the bug the picture judges found) fails `above` and `below`.
+ */
+async function waterLine(page, at) {
+  return page.evaluate((at) => {
+    const g = window.__game, d = g.debug.ocean, R = g.renderer, W = R.domElement.width, H = R.domElement.height;
+    const groupOf = g.scene.getObjectByName('sea-life');
+    const grab = () => {
+      R.render(g.scene, g.camera);
+      const c = document.createElement('canvas');
+      c.width = W; c.height = H;
+      const x = c.getContext('2d');
+      x.drawImage(R.domElement, 0, 0);
+      return x.getImageData(0, 0, W, H).data;
+    };
+    const mask = () => {
+      const saved = [];
+      for (const c of g.scene.children) { saved.push([c, c.visible]); if (c !== groupOf && !c.isLight) c.visible = false; }
+      const bg = g.scene.background, fog = g.scene.fog;
+      g.scene.background = new (groupOf.children[0].material.color.constructor)(0, 0, 0);
+      g.scene.fog = null;
+      const s = grab();
+      g.scene.background = bg; g.scene.fog = fog;
+      for (const [c, v] of saved) c.visible = v;
+      const S = new Uint8Array(W * H);
+      for (let i = 0; i < W * H; i++) S[i] = s[i * 4] + s[i * 4 + 1] + s[i * 4 + 2] >= 30 ? 1 : 0;
+      return S;
+    };
+    const o = { x: at[0], y: at[1] + 2.4, z: at[2] + 12, kinds: ['dolphin', 'sea_turtle', 'octopus', 'jelly'], cols: 4, cell: 2.2 };
+    const water = [0x5c, 0xc7, 0xe8];
+    const out = {};
+    for (const [name, camUp, surf] of [['above', 1.0, -3], ['under', 2.2, 1.0], ['below', 0.6, 3.0]]) {
+      g.camera.position.set(o.x, o.y + camUp, o.z - 6.5);
+      g.camera.lookAt(o.x, o.y, o.z);
+      g.camera.updateMatrixWorld();
+      d.gallery({ ...o, surface: o.y + surf });
+      const A = grab(), S = mask();
+      d.gallery(o);
+      const B = grab();
+      let px = 0, diff = 0, wa = 0, wb = 0;
+      for (let i = 0; i < W * H; i++) {
+        if (!S[i]) continue;
+        const k = i * 4;
+        px++;
+        diff += Math.hypot(A[k] - B[k], A[k + 1] - B[k + 1], A[k + 2] - B[k + 2]);
+        wa += Math.hypot(A[k] - water[0], A[k + 1] - water[1], A[k + 2] - water[2]);
+        wb += Math.hypot(B[k] - water[0], B[k + 1] - water[1], B[k + 2] - water[2]);
+      }
+      out[name] = { px, diff: px ? diff / px : 0, closer: px ? (wb - wa) / px : 0 };
+    }
+    return out;
+  }, at);
+}
 
 // =====================================================================================
 // review (owner pictures, not part of the gate): node tools/probe-ocean.mjs --only=review
@@ -1956,6 +2086,45 @@ async function reviewPass(browser, errors) {
     await shot(page, `review-play-${vp.label}-2`, PREFIX);
     const c = await seaContrast(page);
     check(errors, c.px > 800 && c.diff >= V1_DIFF, `R-P ${vp.label}: animals swimming near her are clearly in the picture (${c.px} pixels, difference ${f1(c.diff)})`);
+    // a dolphin leaping out of the water near her (solid in the air, its splash below)
+    const leap = await ev(page, () => {
+      const g = window.__game, d = g.debug.ocean, p = g.player.position;
+      const l = d.list('dolphin').sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z));
+      return l.length ? d.leap(l[0].i) && l[0].i : false;
+    });
+    if (leap !== false) {
+      await waitOk(page, (i) => { const r = window.__game.debug.ocean.list('dolphin').find((q) => q.i === i); return r && r.y > r.level + 1.3; }, leap, 8000);
+      await shot(page, `review-leap-${vp.label}`, PREFIX);
+    }
+    check(errors, leap !== false, `R-L ${vp.label}: a dolphin near her leaps for the picture`);
+    // the play camera at night: glowing jellies, fish and a dolphin near her
+    await ev(page, () => {
+      const g = window.__game, d = g.debug.ocean, p = g.player.position, cam = g.cameraRig;
+      g.setDayTime(0.9);
+      d.clear();
+      const at = (f, s) => [p.x + Math.sin(cam.yaw) * f - Math.cos(cam.yaw) * s, p.z + Math.cos(cam.yaw) * f + Math.sin(cam.yaw) * s];
+      let [x, z] = at(4.5, -1.5); d.spawn('jelly', x, p.y, z, { n: 3 });
+      [x, z] = at(5, 2.2); d.spawn('fish', x, p.y, z, { n: 8 });
+      [x, z] = at(8, 0); d.spawn('dolphin', x, p.y, z, { n: 2 });
+      [x, z] = at(3.5, 0.6); d.spawn('octopus', x, p.y, z);
+    });
+    await gameWait(page, 1.5, 15000);
+    await shot(page, `review-night-${vp.label}`, PREFIX);
+    const cn = await seaContrast(page);
+    check(errors, cn.px > 800 && cn.diff >= C5_DIFF, `R-N ${vp.label}: at night the animals near her are in the picture (${cn.px} pixels, difference ${f1(cn.diff)})`);
+    await ev(page, () => window.__game.setDayTime(0.42));
+    if (vp.label === 'desktop') {
+      // riding a dolphin (her own view: half the dolphin above the water, solid)
+      await cleanView(page, false);
+      const rode = await startRide(page, deep);
+      await cleanView(page, true);
+      // a little way along, her camera following behind her and the dolphin
+      await page.keyboard.down('KeyW');
+      await gameWait(page, 2.5, 20000);
+      await shot(page, 'review-ride', PREFIX);
+      await page.keyboard.up('KeyW');
+      check(errors, rode, 'R-R riding a dolphin for the picture');
+    }
     await context.close();
   }
 }

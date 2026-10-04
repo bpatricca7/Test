@@ -213,7 +213,7 @@ geometry at scale 0.6.
 |---|---|---|---|---|---|---|
 | `dolphin` | Dolphin | 1.9 long | Smooth rounded body, pale belly (accent), short beak with a small smile line, big round forehead, dorsal fin, two flippers, V-shaped tail flukes. A small star saddle shows **only on a ridden dolphin** (§4.2 flags). | `kick`: tail beats up and down | Swimming within 5 blocks: pops its head up beside the kid, chirps, the Ride / Trick bubble (§6.1). Otherwise a trick (next in the order spin, flip, tail-walk), sparkles, hearts | `chirp` (clicks and a rising whistle) |
 | `fish` | Little Fish | 0.32 long, schools of 6 to 10 | Round pastel body with **three small accent dots** on each side (never stripes), fan tail, side fins. | `wiggle`: side to side | The whole school scatters, bubbles, regroups after 3 s | `bloop` |
-| `sea_turtle` | Sea Turtle | shell 0.9 | Domed shell with lighter hexagon scutes on top (accent), a cream belly, a round smiling head, long front flippers, short back flippers. Not the pet turtle: no legs, flippers instead. | `flap`: flippers row | A slow barrel roll, hearts; then it glides beside the player for 10 s | `bloop` (pitch 0.7) |
+| `sea_turtle` | Sea Turtle | shell 0.9 | Domed shell in the body colour with rounded lighter plates lying flat on it (accent) and a darker rim, a cream belly, a big round head on a short neck and flippers in a lighter skin colour (mask 3: the body colour toward white), long front flippers sweeping back, short back flippers. Not the pet turtle: no legs, flippers instead. | `flap`: flippers row | A slow barrel roll, hearts; then it glides beside the player for 10 s | `bloop` (pitch 0.7) |
 | `octopus` | Octopus | 0.8 tall | Big round head with a little crown of spots (accent), eight curly tentacles of three balls each. | `curl`: tentacle tips sway | Changes to its next color with a pop, waves all arms, puffs sparkly bubbles (never ink), scoots 2 blocks | `pop` + `giggle` |
 | `jelly` | Jellyfish | bell 0.5, 1.0 tall | Rounded bell with a frilly rim of small balls (accent), four ribbon arms, six thin tentacles. The bell glows softly at night. | `pulse`: the bell squeezes, tentacles trail | The bell glows bright, it bobs up with three pulses | `boop` |
 | `seahorse` | Seahorse | 0.5 tall | Upright, round belly (accent), snout, little crown spikes, curled tail, a fluttering back fin. | `flutter`: back fin | Twirls once, sparkles | `ding` (pitch 1.4) |
@@ -255,9 +255,11 @@ cbox 0.30 x 0.05 x 0.34                at (0, 0.30, 0.18)      #FFD84D  saddle s
 cbox 0.16 x 0.16 x 0.03, rot [0,0,PI/4] at (0, 0.36, 0.36)     #FF5FA2  saddle star (limb 3)
 ```
 Ball segments: 12 for the dolphin and whale, 8 for everything smaller (fish, seahorse, starfish,
-crab legs). About 2,250 triangles per dolphin, 420 per fish. The whale is the dolphin recipe
-stretched (scale [4.2, 3.6, 4.2], beak replaced by a wide round head ball, white belly stripes as
-thin cboxes, no saddle), so it costs one more cached geometry, not a new style.
+crab legs). About 2,250 triangles per dolphin, 420 per fish. The whale has its own body plan
+(`whaleParts`, scaled [4.2, 3.6, 4.2]) so it never reads as a big dolphin: a huge round blunt head
+with a long smile from cheek to cheek, eyes low on the sides, a pale grooved throat, a blowhole, a
+small hump instead of a tall back fin, long swept-back side flippers and a wide flat tail; no
+saddle. One more cached geometry, the same parts vocabulary.
 
 The others follow the table in §3 with the same parts vocabulary (balls for bodies, cbox for
 fins and flippers, a cyl with `topRatio 0` for the seahorse's crown spikes). Limb ids (§4.2):
@@ -274,11 +276,11 @@ yet, so this revision's changes to the lists are free; from step 2 on the S7 gua
 
 | kind | palettes (key: body / accent) |
 |---|---|
-| dolphin | `sky` #8EB8E0 / #F7FBFF · `lilac` #B9A8F0 / #F6F2FF · `rose` #F7A8C8 / #FFF4F8 · `mint` #9EE3CF / #F4FFFB · `silver` #C9D3E0 / #FFFFFF · `bubblegum` #FF9CCB / #FFF0F7 (candy) · `cotton` #C8B4FF / #FFF7FF (candy) · `snowy` #F2F6FA / #FFFFFF (snow) · `deep` #3F7FBF / #EAF4FF · `teal` #2FA3A0 / #E8FFFB |
-| fish | `coral` #FF8FB1 / #FFE3EC · `sunny` #FFD166 / #FFF6D6 · `sky` #8FD3FF / #E6F6FF · `grape` #B49CFF / #EEE6FF · `mint` #7FE0C2 / #E3FFF5 · `peach` #FFA36C / #FFE08A · `pearl` #F5F5FF / #D9D6FF · `koi` #FF9F43 / #FFE08A (ponds) · `fairy` #E9B8FF / #FFF2FF (fairy ponds, glows at night) · `candy` #FF7AB8 / #FFF27A (candy, sprinkle-yellow dots) |
-| sea_turtle | `ocean` #3FB8C8 / #BFF0F5 · `leafy` #5FB86A / #D6F5C8 · `coral` #FF9CC8 / #FFE0EE · `lilac` #9C86E8 / #E6DEFF · `midnight` #34508C / #A9C2F0 |
+| dolphin | `sky` #6A80CC / #F7FBFF · `lilac` #B9A8F0 / #F6F2FF · `rose` #F7A8C8 / #FFF4F8 · `mint` #9EE3CF / #F4FFFB · `silver` #C9D3E0 / #FFFFFF · `bubblegum` #FF9CCB / #FFF0F7 (candy) · `cotton` #C8B4FF / #FFF7FF (candy) · `snowy` #F2F6FA / #FFFFFF (snow) · `deep` #3F7FBF / #EAF4FF · `teal` #2FA3A0 / #E8FFFB |
+| fish | `coral` #FF8FB1 / #FFE3EC · `sunny` #FFD166 / #FFF6D6 · `sky` #6A8CF5 / #E6F6FF · `grape` #B49CFF / #EEE6FF · `mint` #7FE0C2 / #E3FFF5 · `peach` #FFA36C / #FFE08A · `pearl` #F5F5FF / #D9D6FF · `koi` #FF9F43 / #FFE08A (ponds) · `fairy` #E9B8FF / #FFF2FF (fairy ponds, glows at night) · `candy` #FF7AB8 / #FFF27A (candy, sprinkle-yellow dots) |
+| sea_turtle | `ocean` #2B8FA0 / #BFF0F5 · `leafy` #5FB86A / #D6F5C8 · `coral` #FF9CC8 / #FFE0EE · `lilac` #9C86E8 / #E6DEFF · `midnight` #34508C / #A9C2F0 |
 | octopus | `coral` #FF8FA3 / #FFE0E6 · `lilac` #C3A6FF / #F0E8FF · `peach` #FFB38A / #FFE6D6 · `mint` #8FE3C8 / #E3FFF5 · `sunny` #FFD866 / #FFF6D0 |
-| jelly | `pink` #FFB8D6 / #FFE6F1 · `lilac` #D9C8FF / #F4EEFF · `aqua` #A6F0FF / #E6FCFF · `peach` #FFD1B0 / #FFF0E3 · `gummy` #FF8CC6 / #FFD6EC (candy) |
+| jelly | `pink` #FFB8D6 / #FFE6F1 · `lilac` #D9C8FF / #F4EEFF · `aqua` #4FD8B8 / #D8FFF2 · `peach` #FFD1B0 / #FFF0E3 · `gummy` #FF8CC6 / #FFD6EC (candy) |
 | seahorse | `sunny` #FFD866 / #FFF6D0 · `pink` #FF9CC8 / #FFE6F1 · `orange` #FFA36C / #FFE6D6 · `lilac` #C3A6FF / #F0E8FF |
 | crab | `red` #FF7A6B / #FFD6CF · `pink` #FF9CC8 / #FFE6F1 · `candy` #FFB3D9 / #FFF0F7 |
 | starfish | `orange` #FF9F5A / #FFE6D0 · `coral` #FF8F7A / #FFE3DC · `lilac` #C9B2FF / #F2ECFF · `yellow` #FFD43B / #FFF6C8 |
@@ -440,7 +442,7 @@ export const SEA_SPEC = {   // numbers from §3.3 and §5, one object per kind
              speed: 4.2, sprint: 11, mode: 'kick', sound: 'chirp', day: 1, night: 0.5 },
   ...
 };
-export const PALETTES = { dolphin: [['sky', '#8EB8E0', '#F7FBFF'], ...], ... };  // §3.2
+export const PALETTES = { dolphin: [['sky', '#6A80CC', '#F7FBFF'], ...], ... };  // §3.2
 export const DOLPHIN_NAMES = ['Splashy', 'Wavy', 'Twirl', 'Breezy', 'Ripple', 'Swish', 'Zoomy',
   'Seafoam', 'Tumble', 'Glide', 'Drizzle', 'Skimmer'];
 export const SEA_TEXT = { ... };                   // every string kids read (§7), for the S9 scan
@@ -1767,3 +1769,41 @@ for a grown-up's read (§16 Q4).
   animals swimming near her), the HUD and the target outline hidden (as a Photo hides it). The
   `world` pass's O2 (a pod within 10 s of game time) failed once at 15.9 s on a loaded machine and
   passed on the rerun (3.6 s); nothing here touches the pod.
+
+**Second owner review (picture judges).**
+- *The see-through test was on the wrong side.* `seaCam * vSeaUnder < 0.0` is true when the camera
+  and the pixel are on the SAME side of the surface: from her camera, parts above the water (a
+  leaping or ridden dolphin's back, a turtle's shell) turned glassy with their insides showing,
+  animals under the water drew at full strength with no water over them, and with the camera under
+  the water every animal was a see-through ghost. Now the test is `> 0.0` (the surface between the
+  pixel and the camera), and nothing is see-through any more: every pixel is opaque, and instead
+  the water's own colour (`SEA_WATER` #5CC7E8) is mixed into the animal's colour before lighting
+  (0.2 just under the surface, +0.07 a block, at most 0.42, eased in over 0.06 of a block), so it
+  darkens at night like the water and no fin or belly ever shows through a body. The 8% lift and
+  the light rim stay on those pixels. New check C6 (in `cost` / `gallery` / `review`) draws the same
+  animals dry and with a water surface at a chosen height and compares them over their silhouette:
+  above the water seen from above, and under it seen from under it, must match the dry drawing
+  (difference < 2), under it seen from above must be tinted (>= 12, and >= 8 nearer the water's
+  colour). Measured: above 0.0, under 41.9 (31.1 nearer), below 0.0. The same check with the test
+  turned back to the old side fails all three (above 46.0, under 0.0, below 45.5).
+- *V1 again (the swim camera):* with water over them again the animals measure lower than the
+  wrongly-opaque look did. The gate is now diff >= 50 and ring >= 36, between the two looks. The
+  old faint look (P1, `d6e10bc`, run once with today's probe) measured diff 16-33 and ring 5-25
+  and failed 12 of 14 (the two that passed had a part above the water: a turtle's shell, a fish
+  breaking the surface). The new look measures diff 64-111 and ring 52-90 in the last run; the
+  lowest seen in any run were ring 44 (the blue dolphin on iPad, the teal turtle's pale flippers),
+  after both were darkened (below); before that they measured 42 and 18.
+- *Colours:* the `sky` Little Fish (#8FD3FF to #6A8CF5) and the `aqua` Jellyfish (#A6F0FF to
+  #4FD8B8) were pale blue on blue water like the old `sky` dolphin; the `sky` Dolphin went one step
+  darker again (#7F98D4 to #6A80CC; its sticker art matches) and the `ocean` Sea Turtle from the
+  water's own teal #3FB8C8 to #2B8FA0. Keys kept, only colours changed.
+- *Sea Turtle:* the shell plates were tilted boxes poking up like spines and the shell, head and
+  flippers were one colour. Now rounded plates lie flat on the dome, the shell has a darker rim, the
+  head (bigger, on a short neck) and the flippers are a lighter skin colour (mask 3, `SKIN` 0.25),
+  and the front flippers sweep back (they used to point forward and read as a beak).
+- *Whale:* its own body plan (above), no longer the dolphin's tall fin and beak.
+- *Pictures:* the `world` pass now turns her camera to the animals for `world-showpod`,
+  `world-boat-escort` and `world-night` (they showed grass, a lone seahorse and a wall). The review
+  set adds `review-leap-desktop|ipad`, `review-night-desktop|ipad` and `review-ride`. Debug:
+  `gallery({ surface })` puts a water surface at that height (C6), `leap(i)` makes a dolphin leap.
+  T6 waits up to 3 s for the Build click to land (it read the block after a fixed 300 ms).

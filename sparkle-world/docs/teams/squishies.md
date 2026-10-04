@@ -234,7 +234,7 @@ export const PRESENT_ORDER = [...keys];   // APPEND ONLY too (a permutation of I
 | 19 | `pf_whale` | Splashy Whale | whale | `#6CC6FF #E6F6FF #3A1F4D` | gb | round whale, tail flukes, a 3-ball water spout |
 | 20 | `pf_sloth` | Sleepy Sloth | sloth | `#B79A80 #F1E1CF #3A1F4D` | gb | round sloth, face mask, sleepy smile, long arms hugging itself |
 | 21 | `pf_octopus` | Octo Puffum | octopus | `#FF9CCB #FFD1E6 #3A1F4D` | gb | round head, 6 curled legs (quarter tori) |
-| 22 | `pf_dolphin` | Dolphin Puffum | dolphin | `#8EB8E0 #F7FBFF #3A1F4D` | gb | chubby round dolphin (ball `sx` 1.3) in ocean's `sky` palette: pale belly, short beak with a smile line, round forehead, dorsal fin, two flippers, V tail flukes, blush |
+| 22 | `pf_dolphin` | Dolphin Puffum | dolphin | `#6A80CC #F7FBFF #3A1F4D` | gb | chubby round dolphin (ball `sx` 1.3) in ocean's `sky` palette (ocean changed it from #8EB8E0 to #6A80CC after the owner reviews, so it reads on blue water): pale belly, short beak with a smile line, round forehead, dorsal fin, two flippers, V tail flukes, blush |
 | 23 | `pf_mermaid` | Mermaid Tail | mermaid | `#9EE3CF #C8B4FF #FFFFFF` | g | a plump J-curl of tail (5 stacked balls) standing on its curl, mint-to-lilac scale pixels, the merfolk Mermaid's **round two-lobed fin** at the top, a pearl on the curl |
 | 24 | `pf_seadragon` | Sea Dragon Puffum | seadragon | `#5FC9B5 #FFD43B #3A1F4D` | b | chubby sitting sea dragon (merfolk's own creature): a ridge of soft round-tipped spikes, a pointed **three-tip tail fin**, fan frills by the head, shiny scale pixels on the cheeks, closed smile |
 

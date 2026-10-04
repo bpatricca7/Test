@@ -10,23 +10,27 @@
 //
 // Seen through the water: the water surface is about 75% opaque (alpha 190/255), so an animal
 // drawn before it showed at about 25%: faint blue ghosts from her camera above the water. The sea
-// meshes draw AFTER the water instead (transparent, renderOrder 1, depth written), and each pixel
-// on the other side of the surface from the camera lets the water already drawn behind it show
-// through by SEE_NEAR (just under the surface) up to SEE_FAR (deep down): animals read clearly,
-// still sitting in the water (the surface's glints and colour lie over them), deeper ones dimmer.
-// Those pixels are also a little brighter with a soft light rim, so an animal of nearly the
-// water's colour (the blue-grey dolphin) keeps its outline. Pixels on the camera's side of the
-// surface (a fin, a leaping dolphin; or everything when the camera itself is under the water) are
-// drawn as before.
+// meshes draw AFTER the water instead (renderOrder 1, depth written; flagged transparent only for
+// that order, every pixel stays fully opaque, so no part of an animal ever shows through another).
+// A pixel with the surface BETWEEN it and the camera (under the water seen from above, or above
+// the water seen from under it) takes on the water's own colour: SEE_NEAR just under the surface,
+// SEE_PER more per block of depth, at most SEE_FAR, eased in over the first few hundredths of a
+// block so the waterline is soft. It is mixed into the animal's colour BEFORE lighting, so at night
+// it darkens with everything else. Those pixels are also a little brighter with a soft light rim,
+// so an animal of nearly the water's colour keeps its outline. Pixels on the camera's side of the
+// surface (a fin or a leaping dolphin seen from above; every animal around a camera under the
+// water) are drawn exactly as on land.
 
 import * as THREE from 'three';
 
 export const SEA_MODES = ['kick', 'wiggle', 'flap', 'pulse', 'curl', 'flutter', 'snip'];
 
-/** How much of the water behind shows through an animal under the surface (see above). */
+/** How much of the water's colour lies over an animal across the surface (see above). */
 export const SEE_NEAR = 0.2, SEE_PER = 0.07, SEE_FAR = 0.42;
 /** Under the surface: a little brighter overall (SEE_LIFT) and a light rim (SEE_RIM). */
 export const SEE_LIFT = 1.08, SEE_RIM = 0.45;
+/** The water's own middle colour (src/world/paint/nature.js paintWater). */
+export const SEA_WATER = '#5CC7E8';
 /** The sea meshes' draw order: after every water chunk (renderOrder <= 0), before particles (10). */
 export const SEA_ORDER = 1;
 
@@ -89,13 +93,18 @@ varying float vSeaMask;
 varying float vSeaShade;
 varying float vSeaGlow;`;
 
+/** Mask 3 (a turtle's head and flippers): the body colour this much toward white. */
+export const SKIN = 0.25;
+
+const glsl = (hex) => { const c = new THREE.Color(hex); return `vec3(${c.r.toFixed(4)}, ${c.g.toFixed(4)}, ${c.b.toFixed(4)})`; };
+
 const cache = new Map();
 
 /** The cached material of a bend mode (shared, never disposed). */
 export function seaMaterial(mode) {
   let m = cache.get(mode);
   if (m) return m;
-  // transparent only to be drawn after the water; alpha is 1 except through the water
+  // transparent only to be drawn after the water; every pixel is opaque (alpha 1)
   m = new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, depthWrite: true });
   m.userData.shared = true;
   const bend = BEND[mode] || '';
@@ -117,25 +126,30 @@ export function seaMaterial(mode) {
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>\n${FRAG_HEAD}`)
       .replace('#include <color_fragment>', `#include <color_fragment>
-    vec3 seaK = vSeaMask < 0.5 ? vec3(1.0) : (vSeaMask < 1.5 ? vSeaTint : vSeaAcc);
-    diffuseColor.rgb *= seaK * vSeaShade;`)
+    vec3 seaK = vSeaMask < 0.5 ? vec3(1.0) : (vSeaMask < 1.5 ? vSeaTint : (vSeaMask < 2.5 ? vSeaAcc : mix(vSeaTint, vec3(1.0), ${SKIN.toFixed(3)})));
+    diffuseColor.rgb *= seaK * vSeaShade;
+    // across the surface from the camera (see above): the water's colour over it
+    float seaThru = 0.0;
+    if (vSeaSurf > -1000.0 && (cameraPosition.y - vSeaSurf) * vSeaUnder > 0.0) {
+      float seaD = abs(vSeaUnder);
+      seaThru = smoothstep(0.0, 0.06, seaD) * clamp(${SEE_NEAR.toFixed(3)} + ${SEE_PER.toFixed(3)} * seaD, 0.0, ${SEE_FAR.toFixed(3)});
+      diffuseColor.rgb = mix(diffuseColor.rgb, ${glsl(SEA_WATER)}, seaThru);
+    }`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
     totalEmissiveRadiance += diffuseColor.rgb * vSeaGlow;`)
       .replace('#include <opaque_fragment>', `
-    // through the water: on the other side of the surface from the camera, the water drawn
-    // behind shows through a little (more the deeper the pixel)
-    // and a soft light rim on its edges (following the light: dim at night) so its outline reads
-    // against water of nearly its own colour (the blue-grey dolphin)
-    float seaCam = cameraPosition.y - vSeaSurf;
-    if (vSeaSurf > -1000.0 && seaCam * vSeaUnder < 0.0) {
-      diffuseColor.a *= 1.0 - clamp(${SEE_NEAR.toFixed(3)} + ${SEE_PER.toFixed(3)} * abs(vSeaUnder), 0.0, ${SEE_FAR.toFixed(3)});
+    // a little brighter with a soft light rim across the surface (following the light: dim at night)
+    if (seaThru > 0.0) {
       float seaRim = pow(1.0 - clamp(abs(dot(normal, normalize(vViewPosition))), 0.0, 1.0), 2.0);
       float seaLum = dot(outgoingLight, vec3(0.299, 0.587, 0.114));
-      outgoingLight = outgoingLight * (${SEE_LIFT.toFixed(3)} + ${SEE_RIM.toFixed(3)} * seaRim) + vec3(seaLum * seaRim * ${SEE_RIM.toFixed(3)});
+      float seaOn = seaThru / ${SEE_NEAR.toFixed(3)};
+      seaOn = min(seaOn, 1.0);
+      outgoingLight = mix(outgoingLight, outgoingLight * (${SEE_LIFT.toFixed(3)} + ${SEE_RIM.toFixed(3)} * seaRim) + vec3(seaLum * seaRim * ${SEE_RIM.toFixed(3)}), seaOn);
     }
+    diffuseColor.a = 1.0;
     #include <opaque_fragment>`);
   };
-  m.customProgramCacheKey = () => 'sw-sea2-' + mode;
+  m.customProgramCacheKey = () => 'sw-sea3-' + mode;
   cache.set(mode, m);
   return m;
 }

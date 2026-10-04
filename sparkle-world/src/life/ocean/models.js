@@ -5,12 +5,14 @@
 // (octopus, crab, starfish).
 //
 // Masks: 0 = a fixed color (eyes, blush, saddle), 1 = tinted by the palette body color,
-// 2 = tinted by the palette accent. Limbs: 0 body, 1 flippers / claws / back fin / bell rim,
+// 2 = tinted by the palette accent, 3 = the body color lightened toward white (SKIN: a turtle's
+// head and flippers, so its shell reads as a shell). Limbs: 0 body, 1 flippers / claws / back fin / bell rim,
 // 2 legs / tentacles / arms, 3 the dolphin's saddle (shown only on a ridden dolphin).
 
 import * as THREE from 'three';
 import { Kit } from '../../things/pets/kit.js';
 import { PALETTES, SEA_KINDS } from './kinds.js';
+import { SKIN } from './material.js';
 
 const W = '#FFFFFF'; // tinted parts are baked white and colored by the shader
 const EYE = '#2A1B33';
@@ -104,36 +106,76 @@ function scaleGeometry(geo, sx, sy, sz) {
 
 // ---------- the nine builders ----------
 
-function dolphinParts(k, { whale = false } = {}) {
-  const S = whale ? 12 : 12;
+function dolphinParts(k) {
+  const S = 12;
   k.part(1, 0).ball(0.32, W, 0, 0, 0, S, [0.9, 0.85, 2.6]);                    // body
   k.part(2, 0).ball(0.27, W, 0, -0.08, 0.05, S, [0.8, 0.6, 2.3]);              // belly
-  if (whale) {
-    k.part(1, 0).ball(0.3, W, 0, 0.02, 0.5, S, [1.05, 0.95, 1.1]);            // a wide round head
-    for (const z of [0.05, 0.2, 0.35]) k.part(0, 0).cbox(0.3, 0.02, 0.03, '#FFFFFF', 0, -0.225, z); // belly stripes (just showing)
-  } else {
-    k.part(1, 0).ball(0.24, W, 0, 0.06, 0.6, S);                              // forehead
-    k.part(1, 0).cylC(0.09, 0.32, W, 0, -0.04, 0.8, [Math.PI / 2, 0, 0], 10);  // beak
-    k.part(1, 0).ball(0.09, W, 0, -0.04, 0.96, 8);
-    k.part(0, 0).cbox(0.14, 0.015, 0.02, SMILE, 0, -0.05, 1.0);               // smile line
-  }
+  k.part(1, 0).ball(0.24, W, 0, 0.06, 0.6, S);                                // forehead
+  k.part(1, 0).cylC(0.09, 0.32, W, 0, -0.04, 0.8, [Math.PI / 2, 0, 0], 10);    // beak
+  k.part(1, 0).ball(0.09, W, 0, -0.04, 0.96, 8);
+  k.part(0, 0).cbox(0.14, 0.015, 0.02, SMILE, 0, -0.05, 1.0);                 // smile line
   k.part(0, 0);
-  const ey = whale ? 0.08 : 0.10, ez = whale ? 0.74 : 0.72, ex = whale ? 0.23 : 0.17;
+  const ey = 0.10, ez = 0.72, ex = 0.17;
   for (const s of [-1, 1]) {
     k.ball(0.055, EYE, s * ex, ey, ez, 8);
     k.ball(0.02, SHINE, s * (ex + 0.02), ey + 0.03, ez + 0.03, 6);
     k.ball(0.045, BLUSH, s * (ex + 0.03), ey - 0.1, ez - 0.04, 6, [1, 0.6, 0.4]);
   }
-  if (whale) k.part(0, 0).cbox(0.2, 0.015, 0.02, SMILE, 0, -0.06, 0.8);
   k.part(1, 0).cbox(0.05, 0.30, 0.28, W, 0, 0.32, -0.1, [-0.5, 0, 0]);         // dorsal fin
   for (const s of [-1, 1]) {
     k.part(1, 1, [s * 0.16, -0.12, 0.3]).cbox(0.32, 0.04, 0.16, W, s * 0.30, -0.12, 0.3, [0, 0, s * 0.5]); // flippers
   }
   k.part(1, 0).ball(0.16, W, 0, 0, -0.82, 10, [0.8, 0.8, 2]);                 // tail stock
   for (const s of [-1, 1]) k.part(1, 0).cbox(0.30, 0.04, 0.20, W, s * 0.16, 0, -1.12, [0, s * 0.4, 0]); // flukes (V)
-  if (!whale) {
-    k.part(0, 3, [0, 0.12, 0.18]).cbox(0.30, 0.05, 0.34, '#FFD84D', 0, 0.30, 0.18);                  // saddle seat
-    k.part(0, 3, [0, 0.12, 0.3]).cbox(0.16, 0.16, 0.03, '#FF5FA2', 0, 0.36, 0.36, [0, 0, Math.PI / 4]); // saddle star
+  k.part(0, 3, [0, 0.12, 0.18]).cbox(0.30, 0.05, 0.34, '#FFD84D', 0, 0.30, 0.18);                  // saddle seat
+  k.part(0, 3, [0, 0.12, 0.3]).cbox(0.16, 0.16, 0.03, '#FF5FA2', 0, 0.36, 0.36, [0, 0, Math.PI / 4]); // saddle star
+}
+
+function whaleParts(k) {
+  const rot = (r) => { k.parts[k.parts.length - 1].rot = r; };
+  // the head: an ellipsoid centred at H with radii R (block units before scaling)
+  const H = [0, 0.03, 0.42], R = [0.36, 0.33, 0.46];
+  const onHead = (th, y, out = 0) => {
+    const kk = Math.sqrt(Math.max(0, 1 - ((y - H[1]) / R[1]) ** 2));
+    return [(R[0] * kk + out) * Math.sin(th), y, H[2] + (R[2] * kk + out) * Math.cos(th)];
+  };
+  k.part(1, 0).ball(0.36, W, 0, 0, -0.1, 14, [1, 0.86, 2.3]);               // the long body
+  k.part(1, 0).ball(1, W, H[0], H[1], H[2], 14, R);                          // the big round head
+  k.part(2, 0).ball(0.33, W, 0, -0.11, 0.3, 12, [0.96, 0.62, 2.0]);          // the pale throat and belly
+  for (const x of [-0.12, -0.04, 0.04, 0.12]) {                              // throat grooves
+    k.part(1, 0).cbox(0.022, 0.02, 0.5, W, x, -0.305, 0.36);
+  }
+  // a long smile from cheek to cheek, curling up at the ends
+  k.part(0, 0);
+  const smile = [];
+  for (let i = 0; i <= 18; i++) {
+    const t = -1 + (i / 18) * 2;
+    smile.push(onHead(t * 0.95, 0.02 + 0.035 * t * t, -0.004));               // just above the pale chin
+  }
+  for (let i = 0; i < smile.length - 1; i++) {                             // short bars end to end
+    const [x0, y0, z0] = smile[i], [x1, y1, z1] = smile[i + 1];
+    k.cbox(0.028, 0.026, Math.hypot(x1 - x0, z1 - z0) * 1.25, SMILE, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+    rot([0, Math.atan2(x1 - x0, z1 - z0), 0]);
+  }
+  // eyes on the sides of the head, just behind the smile's ends; blush below
+  for (const s of [-1, 1]) {
+    const [x, y, z] = onHead(s * 1.2, 0.12, -0.01);
+    k.ball(0.06, EYE, x, y, z, 8);
+    const [x2, y2, z2] = onHead(s * 1.1, 0.16, 0.02);
+    k.ball(0.022, SHINE, x2, y2, z2, 6);
+    const [x3, y3, z3] = onHead(s * 1.3, 0.03, -0.005);
+    k.ball(0.05, BLUSH, x3, y3, z3, 6, [1, 0.6, 0.6]);
+  }
+  k.part(0, 0).ball(0.045, SMILE, 0, H[1] + R[1] - 0.012, 0.38, 8, [1.4, 0.4, 0.8]); // the blowhole
+  k.part(1, 0).ball(0.08, W, 0, 0.27, -0.6, 8, [0.55, 0.55, 1.5]);          // a small hump (no tall fin)
+  for (const s of [-1, 1]) {                                                 // long side flippers, swept back
+    k.part(1, 1, [s * 0.3, -0.14, 0.3]).ball(0.34, W, s * 0.52, -0.2, 0.18, 10, [1, 0.1, 0.3]);
+    rot([0, s * 0.6, s * -0.35]);
+  }
+  k.part(1, 0).ball(0.17, W, 0, 0.02, -0.98, 10, [0.85, 0.8, 1.9]);          // the tail stock
+  for (const s of [-1, 1]) {                                                 // a wide flat tail
+    k.part(1, 0).ball(0.32, W, s * 0.27, 0.03, -1.34, 10, [1, 0.12, 0.48]);
+    rot([0, s * -0.5, 0]);
   }
 }
 
@@ -144,8 +186,11 @@ const BUILDERS = {
     return k.geometry();
   },
   whale() {
-    const k = new SeaKit((x, y, z) => (0.6 - z) / 1.8);
-    dolphinParts(k, { whale: true });
+    // its own body plan (not a big dolphin): a huge round blunt head with a long smile, a pale
+    // grooved throat, a blowhole, only a little hump for a back fin, long side flippers and a
+    // wide tail
+    const k = new SeaKit((x, y, z) => (0.5 - z) / 2.0);
+    whaleParts(k);
     return scaleGeometry(k.geometry(), 4.2, 3.6, 4.2);
   },
   fish() {
@@ -164,20 +209,33 @@ const BUILDERS = {
   },
   sea_turtle() {
     const k = new SeaKit((x, y, z) => (0.3 - z) / 1.0);
-    k.part(1, 0).ball(0.45, W, 0, 0.05, 0, 12, [1, 0.45, 1.1]);             // domed shell
-    k.part(0, 0).ball(0.42, '#FFF2D6', 0, -0.03, 0, 10, [0.95, 0.25, 1.05]); // cream belly
-    k.part(2, 0);                                                           // lighter scutes on top
-    k.cbox(0.17, 0.035, 0.17, W, 0, 0.255, 0, [0, Math.PI / 4, 0]);
-    for (const [x, z] of [[0.21, 0.13], [-0.21, 0.13], [0.21, -0.13], [-0.21, -0.13], [0, 0.27], [0, -0.27]]) {
-      k.cbox(0.13, 0.03, 0.13, W, x, 0.215, z, [Math.atan2(x, z) * 0.15, Math.PI / 4, 0]);
+    // the domed shell in the body colour, with rounded lighter plates lying flat on it (they follow
+    // the dome, nothing pokes up) and a darker rim; the head and flippers a lighter skin colour, so
+    // the shell reads as a shell from any side
+    const SA = 0.45, SB = 0.2025, SC = 0.495, SY = 0.05;                 // the dome's radii and centre
+    const dome = (x, z) => SY + SB * Math.sqrt(Math.max(0, 1 - (x / SA) ** 2 - (z / SC) ** 2));
+    k.part(1, 0).ball(0.45, W, 0, SY, 0, 14, [1, 0.45, 1.1]);              // domed shell
+    k.part(1, 0).ball(0.47, '#B4B4B4', 0, 0.0, 0, 14, [1, 0.16, 1.1]);    // a darker shell rim
+    k.part(0, 0).ball(0.42, '#FFF2D6', 0, -0.04, 0, 12, [0.95, 0.22, 1.05]); // cream belly
+    k.part(2, 0);                                                          // lighter plates, flat on the dome
+    const rot = (r) => { k.parts[k.parts.length - 1].rot = r; };
+    k.ball(0.12, W, 0, dome(0, 0) - 0.012, 0, 10, [1, 0.16, 1.1]);
+    for (const [x, z] of [[0.2, 0.15], [-0.2, 0.15], [0.21, -0.12], [-0.21, -0.12], [0, 0.29], [0, -0.28]]) {
+      const y = dome(x, z), ny = (y - SY) / SB ** 2;
+      k.ball(0.085, W, x, y - 0.016, z, 8, [1, 0.18, 1]);
+      rot([Math.atan2(z / SC ** 2, ny), 0, -Math.atan2(x / SA ** 2, ny)]);
     }
-    k.part(1, 0).ball(0.17, W, 0, 0.05, 0.6, 10);                           // round head
-    k.face(0.085, 0.11, 0.7, { eye: 0.04 });
+    k.part(3, 0).cylC(0.1, 0.16, W, 0, 0.04, 0.5, [Math.PI / 2, 0, 0], 10); // a short neck
+    k.part(3, 0).ball(0.19, W, 0, 0.07, 0.66, 12, [1, 0.92, 1.05]);         // big round head
+    k.face(0.09, 0.12, 0.79, { eye: 0.045 });
     for (const s of [-1, 1]) {
-      k.part(1, 1, [s * 0.26, -0.02, 0.25]).cbox(0.44, 0.04, 0.16, W, s * 0.45, -0.03, 0.27, [0, s * -0.45, s * 0.15]); // long front flippers
-      k.part(1, 1, [s * 0.2, -0.03, -0.36]).cbox(0.2, 0.04, 0.12, W, s * 0.29, -0.04, -0.42, [0, s * 0.5, 0]);       // short back flippers
+      // long front flippers sweeping back (a sea turtle's), short round back flippers
+      k.part(3, 1, [s * 0.32, -0.03, 0.18]).ball(0.26, W, s * 0.52, -0.03, 0.12, 10, [1, 0.13, 0.42]);
+      rot([0, s * 0.55, s * -0.12]);
+      k.part(3, 1, [s * 0.2, -0.03, -0.36]).ball(0.12, W, s * 0.29, -0.04, -0.44, 8, [1, 0.25, 0.7]);
+      rot([0, s * 0.5, 0]);
     }
-    k.part(1, 0).ball(0.06, W, 0, 0, -0.55, 8);
+    k.part(3, 0).ball(0.07, W, 0, -0.01, -0.56, 8, [0.8, 0.6, 1.2]);      // a little tail
     return k.geometry();
   },
   octopus() {
@@ -297,6 +355,8 @@ export function trianglesOf(kind) {
 
 const _c = new THREE.Color();
 const _a = new THREE.Color();
+const _k = new THREE.Color();
+const _w = new THREE.Color(1, 1, 1);
 
 /**
  * A plain, non-instanced mesh of one animal with its palette baked into the vertex colors (for
@@ -316,7 +376,7 @@ export function plainMesh(kind, variant = 0) {
   for (let i = 0; i < col.count; i++) {
     const m = sea.getY(i);
     if (m > 0.5) {
-      const t = m < 1.5 ? _c : _a;
+      const t = m < 1.5 ? _c : m < 2.5 ? _a : _k.copy(_c).lerp(_w, SKIN);
       col.setXYZ(i, col.getX(i) * t.r, col.getY(i) * t.g, col.getZ(i) * t.b);
     }
     // the saddle is folded away (only a ridden dolphin shows it)
