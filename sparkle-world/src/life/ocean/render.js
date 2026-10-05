@@ -7,8 +7,10 @@
 // block (r.behind, index.js _glassTick), drawn in SEA_BEHIND order. Only the animals behind the
 // glass go there, so one fish behind an ice floe never turns the whole school faint. It costs
 // a draw call only while a kind has animals on both sides of the glass (hidden at count 0), and
-// never past SEA_CALLS in all (glassLanes): with every kind out, a kind split by the glass draws
-// all its animals in the glass mesh for that while (the old per-kind way) instead of a 10th call.
+// never past SEA_CALLS in all (glassLanes): when calls are short, kinds with nothing in view are
+// not drawn, the spare calls go to the split kinds with the most animals in front, and only a kind
+// left without one (every kind in view) draws all its animals on one side for that while: the
+// side most of them are on (never a 10th call).
 
 import * as THREE from 'three';
 import { SEA_KINDS, SEA_SPEC, PALETTES, hexToLinear } from './kinds.js';
@@ -27,23 +29,70 @@ const WATER = hexToLinear(SEA_WATER);
 /** Sea life never adds more than this many draw calls (docs/teams/ocean.md §4.2; probe C1). */
 export const SEA_CALLS = 9;
 
+const _cand = {}, _score = {}, _prev = {};
+
 /**
  * Which lane each kind draws in this frame, within SEA_CALLS. live[kind]: its drawn animals;
  * back[kind]: how many of them are seen through glass. out[kind]: null (each animal in its own
  * lane: the front mesh, or the glass mesh if r.behind), true (all in the glass mesh) or false (all
- * in the front mesh). Every kind with animals costs one call; a kind split by the glass costs a
- * second one while calls are spare (SEA_KINDS order, so the choice is steady), else it draws all
- * its animals behind the glass (never one pasted over the glass). Pure, no allocations.
+ * in the front mesh); out keeps last frame's lanes (read for steadiness). Every kind with animals
+ * costs one call; a kind split by the glass costs a second one.
+ * When calls are short:
+ *  - seen[kind] (its animals in view) and hide: a kind with nothing in view is not drawn at all
+ *    (hide[kind] = true, no call), so a whale far off or crabs behind her never cost a school its lane;
+ *  - the spare calls go to the split kinds with the most animals in front of the glass
+ *    (front[kind], in view), a kind that had its lane last frame first among near equals (+2), so a
+ *    school by an ice floe comes before two far-off dolphins and the choice does not flip;
+ *  - a split kind left without one (every kind in view: a whale visit) draws all its animals on
+ *    the side most of its animals in view are on: in front when at least 3 times as many are in
+ *    front as behind the glass (1.5 times once it is there, so it does not flip), else behind the
+ *    glass. So a school with one fish behind an ice floe stays bright (that one fish drawn over
+ *    the ice) instead of turning faint. Without front / seen (no camera): behind the glass.
+ * Pure, no allocations.
  */
-export function glassLanes(live, back, out, budget = SEA_CALLS) {
-  let spare = budget;
-  for (const kind of SEA_KINDS) if (live[kind] > 0) spare--;
+export function glassLanes(live, back, out, budget = SEA_CALLS, front = null, seen = null, hide = null) {
+  let used = 0, want = 0;
+  for (const kind of SEA_KINDS) {
+    if (hide) hide[kind] = false;
+    const n = live[kind] || 0, b = back[kind] || 0;
+    if (n > 0) used++;
+    if (n > 0 && b > 0 && b < n) want++;
+  }
+  if (seen && hide && used + want > budget) {
+    for (const kind of SEA_KINDS) {
+      const n = live[kind] || 0, b = back[kind] || 0;
+      if (n > 0 && !(seen[kind] > 0)) { hide[kind] = true; used--; if (b > 0 && b < n) want--; }
+    }
+  }
+  let spare = budget - used;
   for (const kind of SEA_KINDS) {
     const n = live[kind] || 0, b = back[kind] || 0;
-    if (n <= 0 || b <= 0) out[kind] = false;
+    const had = out[kind] === null;
+    _prev[kind] = out[kind];
+    _cand[kind] = false;
+    if (n <= 0 || b <= 0 || (hide && hide[kind])) out[kind] = false;
     else if (b >= n) out[kind] = true;
-    else if (spare > 0) { out[kind] = null; spare--; }
-    else out[kind] = true;
+    else {
+      out[kind] = true;
+      _cand[kind] = true;
+      _score[kind] = (front ? front[kind] || 0 : n - b) + (had ? 2 : 0);
+    }
+  }
+  for (let g = 0; g < SEA_KINDS.length && spare > 0; g++) {
+    let best = null;
+    for (const kind of SEA_KINDS) if (_cand[kind] && (best === null || _score[kind] > _score[best])) best = kind;
+    if (best === null) break;
+    out[best] = null;
+    _cand[best] = false;
+    spare--;
+  }
+  // no call left for these: the side most of its animals in view are on
+  if (front && seen) {
+    for (const kind of SEA_KINDS) {
+      if (!_cand[kind]) continue;
+      const f = front[kind] || 0, bk = Math.max(0, (seen[kind] || 0) - f);
+      out[kind] = !(f >= (_prev[kind] === false ? 1.5 : 3) * Math.max(1, bk));
+    }
   }
   return out;
 }
@@ -194,6 +243,12 @@ export class SeaMeshes {
         L.ver.fill(-1);
       }
     }
+  }
+
+  /** Draw nothing of a kind this frame (glassLanes hide: none of it in view); its slots stay written. */
+  hideKind(kind) {
+    this.k[kind].mesh.visible = false;
+    this.k[kind].back.mesh.visible = false;
   }
 
   /** Tint of slot i of a kind (for the S2-style probe check): [r, g, b, glow]. */

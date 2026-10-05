@@ -24,7 +24,8 @@
 //   node tools/probe-ocean.mjs [--only=world,see,tap,ride,touch,biomes,saves,mp,cost,gallery] [--headed]
 //   (cost includes the gallery, C5; --only=cost --part=1 leaves it out and --only=gallery runs C5
 //   alone, so each fits a shorter time limit; --only=review makes the
-//   owner-review pictures, ocean-review-*.png, and is never part of the default run)
+//   owner-review pictures, ocean-review-*.png, and is never part of the default run;
+//   --only=dolphin makes ocean-dolphin-<palette>-<side>.png, the dolphin from five sides)
 //
 // Not here yet (P2, on the merged tree with merfolk): R10 (a mermaid and a sea dragon riding),
 // T3b's camera under the surface, U1's Up / Down rectangles, the cross-team `wave4` pass.
@@ -1651,6 +1652,68 @@ async function biomesPass(browser, errors) {
     await cleanView(page, true, true);
     await shot(page, 'biomes-snow-floes', PREFIX);
     await cleanView(page, false, true);
+    // B4 busy: the same school by the floe with every other kind out around it and the whale
+    // visiting (short of draw calls). Before: the spare call went by list order (dolphins first),
+    // so the whole school drew faint behind the ice while most of it was not (36 of 46 frames).
+    // Now kinds out of view cost no call, the spare calls go to the most animals in front, and a
+    // kind with none left goes to the side most of it is on.
+    await ev(page, () => { const r = window.__game.cameraRig; r.yaw -= 0.4; r.pitch = 0.35; });
+    const busy0 = await ev(page, (s) => {
+      const g = window.__game, d = g.debug.ocean, p = g.player.position;
+      const yaw = Math.atan2(s.dx, s.dz), fx = Math.sin(yaw), fz = Math.cos(yaw);
+      const at = (f, sd) => [s.fish[0] + fx * f - fz * sd, s.fish[1] + fz * f + fx * sd];
+      const got = {};
+      let [x, z] = at(5, -5); got.dolphin = d.spawn('dolphin', x, s.y, z, { n: 3 });
+      [x, z] = at(3, 5); got.sea_turtle = d.spawn('sea_turtle', x, s.y, z);
+      [x, z] = at(1, -4); got.octopus = d.spawn('octopus', x, s.y, z);
+      [x, z] = at(2, 3); got.jelly = d.spawn('jelly', x, s.y, z);
+      [x, z] = at(0, 4.5); got.seahorse = d.spawn('seahorse', x, s.y, z);
+      [x, z] = at(-1, -3); got.starfish = d.spawn('starfish', x, s.y, z);
+      const sh = d.shoreNear(p.x, p.z, 12);
+      got.crab = sh ? d.spawn('crab', sh[0], sh[1], sh[2], { n: 2 }) : 0;
+      got.whale = d.spawn('whale', 0, 0, 0);
+      d.schoolTo(0, s.fish[0], s.fish[1]);
+      return { got, count: d.count() };
+    }, floe);
+    await page.waitForTimeout(1500);
+    console.log('  B4 busy start: ' + JSON.stringify(await ev(page, (s) => {
+      const g = window.__game, d = g.debug.ocean, c = g.camera.position;
+      return { floe: s, cam: [c.x, c.y, c.z].map((v) => +v.toFixed(1)), behind: d.behindCount().fish, fish: d.list('fish').map((r) => [+r.x.toFixed(1), +r.z.toFixed(1)]) };
+    }, floe)));
+    const busy = await ev(page, async () => {
+      const g = window.__game, d = g.debug.ocean;
+      let frames = 0, faintWrong = 0, faint = 0, over = 0, flips = 0, last = null, maxCalls = 0, kinds = 0, inView = 0, someBehind = 0, stacked = 0, short = 0;
+      const t0 = performance.now();
+      while (performance.now() - t0 < 10000) {
+        await new Promise((r) => requestAnimationFrame(r));
+        const n = d.behindCount().fish, back = d.meshCounts(true).fish, live = d.count().fish, L = d.lanes();
+        let calls = 0;
+        g.scene.traverse((o) => { if (o.name && o.name.startsWith('sea-') && o.isMesh && o.visible) calls++; });
+        frames++;
+        maxCalls = Math.max(maxCalls, calls);
+        let k = 0, v = 0;
+        for (const key of Object.keys(L.seen)) { if (d.count()[key] > 0) k++; if (L.seen[key] > 0) v++; }
+        kinds = Math.max(kinds, k); inView = Math.max(inView, v);
+        if (n > 0) someBehind++;
+        // short of calls: a kind with animals on both sides of the glass drawn all on one side
+        const bc = d.behindCount(), cn = d.count();
+        if (Object.keys(bc).some((key) => bc[key] > 0 && bc[key] < cn[key] && L.lanes[key] !== null && !L.hide[key])) short++;
+        const all = live > 0 && back === live;
+        if (all) faint++;
+        // the whole school faint while fewer than half of it is behind the ice: the old look
+        if (all && n * 2 < live) faintWrong++;
+        if (back > 0 && back < live && back !== n) over++;
+        if (last !== null && all !== last) flips++;
+        last = all;
+        stacked += d.fishStacked(0) || 0;
+      }
+      return { frames, faintWrong, faint, over, flips, maxCalls, kinds, inView, someBehind, short, stacked: stacked / Math.max(1, frames), counts: d.count() };
+    });
+    console.log('  B4 busy: ' + JSON.stringify({ spawned: busy0.got, ...busy }));
+    check(errors, busy.frames > 30 && busy.kinds >= 8 && busy.maxCalls <= 9,
+      `B4 busy: the school by the floe with ${busy.kinds} kinds out (${busy.inView} in view at most) draws at most ${busy.maxCalls} sea meshes (<= 9)`);
+    check(errors, busy.faintWrong === 0 && busy.over === 0 && busy.flips <= 2,
+      `B4 busy: the school never turns faint while most of it is clear of the ice (${busy.faintWrong} of ${busy.frames} frames; all in the glass mesh in ${busy.faint}, ${busy.flips} changes; fish behind the ice in ${busy.someBehind} frames; a split kind drawn on one side, short of calls, in ${busy.short})`);
   } else check(errors, false, 'B4 snow: an ice floe with open sea past it (none found)');
   await context.close();
 }
@@ -2335,6 +2398,21 @@ async function reviewPass(browser, errors) {
     await shot(page, `review-play-${vp.label}`, PREFIX);
     await gameWait(page, 1.5, 15000);
     await shot(page, `review-play-${vp.label}-2`, PREFIX);
+    // R-F the school from her camera: school mates seldom sit one over another (a face peeking out
+    // from behind another fish: "a fish with four eyes"; fishStacked, test-sea S12's measure)
+    const rf = await ev(page, async () => {
+      const d = window.__game.debug.ocean;
+      let frames = 0, pairs = 0, any = 0;
+      for (let i = 0; i < 120; i++) {
+        await new Promise((r) => requestAnimationFrame(r));
+        const n = d.fishStacked(0);
+        if (n == null) continue;
+        frames++; pairs += n; if (n > 0) any++;
+      }
+      return { frames, pairs: pairs / Math.max(1, frames), any };
+    });
+    check(errors, rf.frames > 60 && rf.pairs <= 0.5,
+      `R-F ${vp.label}: the school's fish show one by one from her camera (${rf.pairs.toFixed(2)} stacked pairs a frame, any in ${rf.any} of ${rf.frames} frames; <= 0.5)`);
     const c = await seaContrast(page);
     check(errors, c.px > 800 && c.diff >= V1_DIFF, `R-P ${vp.label}: animals swimming near her are clearly in the picture (${c.px} pixels, difference ${f1(c.diff)})`);
     // a dolphin leaping out of the water near her (solid in the air, its splash below)
@@ -2418,6 +2496,52 @@ async function reviewPass(browser, errors) {
   }
 }
 
+/**
+ * The dolphin from five sides (owner pictures, on request: --only=dolphin), every palette given by
+ * --variants=0,1,2 (default 0, 1, 2): ocean-dolphin-<v>-<front|three-quarter|side|back-quarter|
+ * tail-side>.png, the gallery dolphin held still in the air over the sea.
+ */
+async function dolphinViews(browser, errors) {
+  console.log('\n[dolphin] the dolphin from five sides');
+  const { context, page } = await openGame(browser, { errors, label: 'dolphin-views' });
+  await newWorld(page, 'beach');
+  await cleanView(page, true, true);
+  await ev(page, () => { const g = window.__game, s = g.debug.ocean.deepSpot(); g.__dv = s; g.player.teleport(s[0], s[1], s[2]); });
+  await page.waitForTimeout(1500);
+  const views = [['front', 0, 0.35, 2.6], ['three-quarter', 0.8, 0.4, 2.8], ['side', 1.57, 0.3, 3.2], ['back-quarter', 2.4, 0.5, 3.2], ['tail-side', 1.75, 0.7, 2.2, -0.8]];
+  const variants = (args.variants || '0,1,2').split(',').map(Number);
+  let made = 0;
+  for (const v of variants) {
+    for (const [name, ang, up, dist, along = 0] of views) {
+      // the camera set by hand and one frame drawn now (the rig is not run for it)
+      const ok = await ev(page, async ([v, ang, up, dist, along]) => {
+        const g = window.__game, d = g.debug.ocean, p = g.__dv;
+        d.autoSpawn(false);
+        g.player.avatar.group.visible = false;
+        // in the air over the sea from the deep spot (fixed: she may sink meanwhile), so no
+        // palette lands under the water's surface
+        const at = { x: p[0] + 14, y: p[1] + 1.8, z: p[2] };
+        d.gallery({ kinds: ['dolphin'], variants: [v], x: at.x, y: at.y, z: at.z });
+        const yaw = Math.PI - 0.95, a = yaw + ang;
+        const cx = at.x + Math.sin(yaw) * along, cz = at.z + Math.cos(yaw) * along;
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        g.__rig = g.__rig || g.cameraRig.update.bind(g.cameraRig);
+        g.cameraRig.update = () => {};
+        g.camera.position.set(cx + Math.sin(a) * dist, at.y + up, cz + Math.cos(a) * dist);
+        g.camera.lookAt(cx, at.y, cz);
+        g.camera.updateMatrixWorld();
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        return d.count().dolphin > 0;
+      }, [v, ang, up, dist, along]);
+      await shot(page, `dolphin-${v}-${name}`, PREFIX);
+      if (ok) made++;
+    }
+  }
+  await ev(page, () => { const g = window.__game; if (g.__rig) g.cameraRig.update = g.__rig; g.player.avatar.group.visible = true; });
+  check(errors, made === variants.length * views.length, `R-D the dolphin from five sides: ${made} pictures (palettes ${variants.join(', ')})`);
+  await context.close();
+}
+
 // =====================================================================================
 
 const errors = [];
@@ -2435,6 +2559,7 @@ try {
   if (want('cost')) await costPass(browser, errors);
   else if (only && only.includes('gallery')) await galleryShots(browser, errors); // C5 alone
   if (only && only.includes('review')) await reviewPass(browser, errors); // owner pictures (on request)
+  if (only && only.includes('dolphin')) await dolphinViews(browser, errors); // the dolphin's five sides (on request)
 } catch (err) {
   errors.push('[probe] ' + (err && err.stack ? err.stack : err));
   console.log('  ERROR: ' + (err && err.stack ? err.stack : err));

@@ -52,13 +52,13 @@ export class SeaKit extends Kit {
   ball(...a) { super.ball(...a); return this._tag(); }
 
   /** A smooth round tube through points [[x, y, z], ...] (a smile line), with round ends. */
-  tube(points, r, color, seg = 24) {
+  tube(points, r, color, seg = 24, radial = 6) {
     const curve = new THREE.CatmullRomCurve3(points.map((p) => new THREE.Vector3(p[0], p[1], p[2])));
-    this.parts.push({ g: new THREE.TubeGeometry(curve, seg, r, 6, false), color, cx: 0, cy: 0, cz: 0, sx: 1, sy: 1, sz: 1, rot: null });
+    this.parts.push({ g: new THREE.TubeGeometry(curve, seg, r, radial, false), color, cx: 0, cy: 0, cz: 0, sx: 1, sy: 1, sz: 1, rot: null });
     this._tag();
     const a = points[0], b = points[points.length - 1];
-    this.ball(r, color, a[0], a[1], a[2], 6);
-    this.ball(r, color, b[0], b[1], b[2], 6);
+    this.ball(r, color, a[0], a[1], a[2], radial);
+    this.ball(r, color, b[0], b[1], b[2], radial);
     return this;
   }
 
@@ -129,11 +129,12 @@ function dolphinParts(k) {
   const S = 12;
   const rot = (r) => { k.parts[k.parts.length - 1].rot = r; };
   k.part(1, 0).ball(0.32, W, 0, 0, 0, S, [0.9, 0.85, 2.6]);                    // body
-  k.part(2, 0).ball(0.27, W, 0, -0.08, 0.05, S, [0.8, 0.6, 2.3]);              // belly
+  k.part(2, 0).ball(0.27, W, 0, -0.08, 0.05, 10, [0.8, 0.6, 2.3]);             // belly
   // the head: a soft rounded forehead that slopes down into a long, gently tapered beak (a
   // dolphin's rostrum), the pale belly running up under the chin
-  k.part(1, 0).ball(0.25, W, 0, 0.07, 0.55, S, [0.9, 0.86, 1.15]);             // forehead
-  k.part(2, 0).ball(0.16, W, 0, -0.085, 0.66, 10, [0.9, 0.62, 1.25]);          // chin
+  // (a long forehead that runs back into the body: one smooth line over the head, no neck)
+  k.part(1, 0).ball(0.25, W, 0, 0.05, 0.5, S, [0.92, 0.84, 1.7]);              // forehead
+  k.part(2, 0).ball(0.16, W, 0, -0.085, 0.66, 10, [0.66, 0.62, 1.25]);         // chin (inside the beak's sides)
   const B0 = 0.66, BL = 0.42, BR = 0.12, BT = 0.55, BY = -0.05, BV = 0.82;     // beak: start, length, radius, taper, y, height
   k.part(1, 0).cylC(BR, BL, W, 0, BY, B0 + BL / 2, [Math.PI / 2, 0, 0], 12, BT);
   k.parts[k.parts.length - 1].sz *= BV;                                       // a little flatter than round
@@ -144,10 +145,10 @@ function dolphinParts(k) {
     const pts = [];
     for (let i = 0; i <= 10; i++) {
       const t = i / 10, z = B0 + BL - 0.04 - t * 0.3, r = beakR(z) + 0.004;
-      const a = -0.4 + 0.95 * t ** 2.5;                                       // angle round the beak: below the middle, curling up at the back
+      const a = -0.4 + 0.6 * t ** 2.5;                                        // angle round the beak: below the middle, a small curl up at the back
       pts.push([s * r * Math.cos(a), BY + r * BV * Math.sin(a), z]);
     }
-    k.part(0, 0).tube(pts, 0.009, SMILE, 20);
+    k.part(0, 0).tube(pts, 0.009, SMILE, 12, 4);
   }
   k.part(0, 0);
   const ey = 0.10, ez = 0.70, ex = 0.17;
@@ -156,17 +157,21 @@ function dolphinParts(k) {
     k.ball(0.02, SHINE, s * (ex + 0.02), ey + 0.03, ez + 0.03, 6);
     k.ball(0.045, BLUSH, s * (ex + 0.03), ey - 0.1, ez - 0.04, 6, [1, 0.6, 0.4]);
   }
-  k.part(1, 0).cbox(0.05, 0.30, 0.28, W, 0, 0.32, -0.1, [-0.5, 0, 0]);         // dorsal fin
+  // the dorsal fin: a tapered fin leaning back, with a thick root (from the front a fin, not a stick)
+  k.part(1, 0).cylC(0.17, 0.34, W, 0, 0.33, -0.14, [-0.62, 0, 0], 10, 0.12);
+  k.parts[k.parts.length - 1].sx *= 0.38;
+  // the flippers: rounded paddles, swept back (edge-on a soft oval, not a slab)
   for (const s of [-1, 1]) {
-    k.part(1, 1, [s * 0.16, -0.12, 0.3]).cbox(0.32, 0.04, 0.16, W, s * 0.30, -0.12, 0.3, [0, 0, s * 0.5]); // flippers
+    k.part(1, 1, [s * 0.16, -0.12, 0.3]).ball(0.19, W, s * 0.3, -0.13, 0.27, 10, [1, 0.2, 0.55]);
+    rot([0, s * 0.45, s * -0.5]);
   }
   k.part(1, 0).ball(0.16, W, 0, 0, -0.82, 10, [0.8, 0.8, 2]);                 // tail stock
   // the flukes: two rounded lobes with real thickness, swept back and tipped up a little, so
   // from the side they show as a soft V, not a thin stick
-  k.part(1, 0).ball(0.11, W, 0, 0, -1.1, 10, [1.2, 0.75, 1]);                 // fluke root
+  k.part(1, 0).ball(0.1, W, 0, 0, -1.08, 10, [1.1, 0.6, 1]);                  // fluke root
   for (const s of [-1, 1]) {
-    k.part(1, 0).ball(0.21, W, s * 0.2, 0.02, -1.2, 12, [1.1, 0.3, 0.52]);
-    rot([0.12, s * -0.6, s * 0.3]);
+    k.part(1, 0).ball(0.22, W, s * 0.22, 0.02, -1.2, 10, [1.1, 0.22, 0.5]);
+    rot([0.1, s * -0.75, s * 0.32]);
   }
   k.part(0, 3, [0, 0.12, 0.18]).cbox(0.30, 0.05, 0.34, '#FFD84D', 0, 0.30, 0.18);                  // saddle seat
   k.part(0, 3, [0, 0.12, 0.3]).cbox(0.16, 0.16, 0.03, '#FF5FA2', 0, 0.36, 0.36, [0, 0, Math.PI / 4]); // saddle star

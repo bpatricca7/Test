@@ -40,7 +40,7 @@ would overwrite each other.
 | Multiplayer | **Local cosmetic animals**, plus the moments kids point at are shared: the world's own **buddy dolphin** (name and color from the world seed), the whale's visit time (seed + game day), presence **`sr`** (a friend rides a dolphin) and presence **`sk`** (a friend's dolphin did a trick: every page plays one beside her). No protocol bump, no host authority, nothing in the journal (§9). |
 | Saves | **No new profile keys.** `stats.seaMet` (map), `stats.dolphinRides`, `stats.seaCoinDay`, `stats.seaCoinMask` live inside `profile.stats`, which every merge already max-merges key by key, nested maps included (`src/account/merge.js:14-22`, `src/core/storage.js:131-142`). Nothing in world saves. Old saves load unchanged. |
 | Append-only lists | `SEA_KINDS` (keys) and each kind's palette list. The **dolphin palette is sent by index** in presence `sr` and `sk`, so it is APPEND ONLY like the look lists. |
-| Performance | ≤ 9 extra draw calls (usually 2 to 4), ≤ ~65k triangles at the very most, no per-frame allocation, ≤ +1.0 ms systems stage on the probe machine, shaders pre-warmed behind the loading screen. Nothing lowered; schools near the player are never thinned (§11.2). |
+| Performance | ≤ 9 extra draw calls (usually 2 to 4), ≤ ~65k triangles at the very most (planned; as built about 140k with every kind at its cap, §11.2), no per-frame allocation, ≤ +1.0 ms systems stage on the probe machine, shaders pre-warmed behind the loading screen. Nothing lowered; schools near the player are never thinned (§11.2). |
 
 ---
 
@@ -255,7 +255,7 @@ cbox 0.30 x 0.05 x 0.34                at (0, 0.30, 0.18)      #FFD84D  saddle s
 cbox 0.16 x 0.16 x 0.03, rot [0,0,PI/4] at (0, 0.36, 0.36)     #FF5FA2  saddle star (limb 3)
 ```
 Ball segments: 12 for the dolphin and whale, 8 for everything smaller (fish, seahorse, starfish,
-crab legs). About 2,250 triangles per dolphin, 420 per fish. The whale has its own body plan
+crab legs). About 2,250 triangles per dolphin, 420 per fish (planned; as built 2,508 and 1,412, see §11.2). The whale has its own body plan
 (`whaleParts`, scaled [4.2, 3.6, 4.2]) so it never reads as a big dolphin: a huge round blunt head
 with a long smile from cheek to cheek, eyes low on the sides, a pale grooved throat, a blowhole, a
 small hump instead of a tall back fin, long swept-back side flippers and a wide flat tail; no
@@ -1120,7 +1120,7 @@ the things kids point at **are** shared, at almost no protocol cost:
 | item | cost |
 |---|---|
 | Draw calls | one per kind with live instances: at most 9, usually 2 to 4 at sea, 0 inland (meshes hidden at count 0). Friends' ride dolphins and the show pod share the dolphin mesh: 0 extra. |
-| Triangles | at full counts about 12 x 2.25k (dolphins) + 30 x 0.42k (fish) + whale 3k + the rest about 12k: ≤ 65k, typically 15k. |
+| Triangles | planned: at full counts about 12 x 2.25k (dolphins) + 30 x 0.42k (fish) + whale 3k + the rest about 12k: ≤ 65k, typically 15k. As built (after the owner reviews made the small kinds bigger and rounder): dolphin 2,508, fish 1,412, turtle 2,992, octopus 2,884, jelly 1,444, seahorse 1,240, crab 1,072, starfish 1,912, whale 4,524; every kind at its cap at once about 140k (12 dolphins 30k, 30 fish 42k), typically 25-45k (a pod, a school and a few others). Instanced, so the cost is vertex work only; C1-C4 stay in budget. |
 | CPU per frame | spawn sampling 24 columns (O(1) reads each), `map.tick(2)` (about 0.04 ms), ≤ 87 creature steps (≤ 2 sea-map reads each, plus a `world.get` every 0.25 s), ≤ 87 matrix writes and box moves: about 0.2 ms desktop, ≤ 0.5 ms on the iPad budget; the probe checks ≤ +1.0 ms on SwiftShader. |
 | Pickables | ≤ 40, only within 12 blocks (Set membership at 4 Hz, boxes moved every frame). |
 | Sea map | 3 x 43 KB (Big); full scan once at world load (1.7 to 3.8 ms warm); one column per block change; 2 rows per frame round-robin. |
@@ -1899,3 +1899,41 @@ for a grown-up's read (§16 Q4).
 - *For the integrator (P2):* this branch changed the `pf_dolphin` row of `docs/teams/squishies.md`
   to ocean's `sky` colour #6A80CC. Squish's code was not touched: align
   `src/things/squish/data.js` (`pf_dolphin`, still #8EB8E0) at the P2 merge.
+
+**Polish after the fourth review.**
+- *Fish no longer stack into blobs from her camera.* Keeping fish 1.0 apart in 3D was not enough:
+  a school of 8-10 on random crossing orbits (radius 0.6-1.7) still piled up on the screen, one fish
+  behind another with its face peeking out ("a fish with four eyes"). Now a school is laid out for
+  her view (`motion.js`): up to 4 fish swim side by side in one row, more make two rows across her
+  view, the back row 1.4 behind and set between the front fish, neighbours 1.8 apart (`fishSlot`).
+  The rows turn slowly to face her camera and the whole school glides gently from side to side
+  (`schoolFrame`); fish turn smoothly to face the way they swim. `spaceFish` also spaces school
+  mates across the view: two that sit one over the other from the camera move apart sideways until
+  both show whole. `FISH_APART` is 1.3. School mates are a touch lighter or darker (`FISH_TONES`,
+  x1 / x0.93 / x1.07 on the shade; palettes unchanged). By an ice floe a blocked place takes the
+  nearest open water around it, and a fish takes the first place it can reach without crossing the
+  floe (no pops). New test-sea S12 measures it through a real camera and each fish's real box (a
+  pair is stacked when the smaller box is more than a quarter covered): before 7.3 stacked pairs a
+  frame, the rows alone 1.9, rows spaced across the view 0.16 (12 cameras from 3 blocks up to the
+  water's surface). S11: in open water no two fish closer than 1.4 now. Probe R-F counts the same
+  in the play pictures (`debug.ocean.fishStacked(i)`).
+- *Short of draw calls, the school stays bright.* `glassLanes` used to give the spare call to split
+  kinds in list order (dolphins first), so with 8-9 kinds out (a whale visit) a school by an ice
+  floe drew all faint again. Now, only when calls are short: kinds with nothing in view are not
+  drawn at all (no call), the spare calls go to the split kinds with the most animals in front of
+  the glass (a holder keeps its call against a near equal, +2, so it never flips), and a split
+  kind with no call left (every kind in view) draws all its animals on the side most of them are
+  on (in front at 3 times as many, staying there down to 1.5 times). Still never past 9 calls.
+  test-sea S10 adds the busy cases and 500 random busy rounds; probe B4 busy runs the school by the
+  floe with every other kind out and the whale (`debug.ocean.lanes()`).
+- *Dolphin.* A tapered dorsal fin leaning back (from the front a fin, not a stick), rounded paddle
+  flippers (no flat slabs), a long forehead running into the body (no neck), a narrower pale chin
+  (no white bits each side of the beak), a shorter smile curl, thinner flukes swept back more.
+  2,508 triangles (was 2,748).
+- *Pictures:* the dolphin's five sides are now made by the probe (`--only=dolphin`,
+  `--variants=0,1,2`). Cost numbers are in §11.2 (about 140k triangles with every kind at its cap).
+- *Checks this round:* test-sea 19 of 19 (S0's warm scan now the best of 7, not 3: a busy machine
+  pushed one sample past 8 ms); probe R-F 0.00 (desktop) and 0.03 (iPad) stacked pairs a frame;
+  B4 busy: 9 kinds out and in view, at most 9 meshes, the school never faint (short of calls in 9
+  of 33 frames); C1 glass 7 meshes (kinds out of view not drawn, the school split); C2 +0.61 ms;
+  G1 93.0.

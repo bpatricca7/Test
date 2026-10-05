@@ -19,7 +19,7 @@ import { SEA_KINDS, OCEAN_STAR_KINDS, PALETTES, SEA_SPEC, DOLPHIN_NAMES, SEA_TEX
 import { h01, whaleTime, whalePhase, buddyOf, clockFrozen, WHALE_LEN } from '../src/life/ocean/schedule.js';
 import {
   makeRecord, saveGood, sanitize, columnOk, spawnOk, settleY, swimToward, wanderTarget, canLeap, startLeap, stepLeap,
-  startTrick, stepTrick, Spawner, placeFish, spaceFish, FISH_APART, FISH_STEP, stepCrab, rescueCell, glassBetween, SURF, BAND,
+  startTrick, stepTrick, Spawner, placeFish, spaceFish, fishSlot, schoolFrame, FISH_APART, FISH_STEP, stepCrab, rescueCell, glassBetween, SURF, BAND,
 } from '../src/life/ocean/motion.js';
 import { DolphinRide, RIDE_SPEED, RIDE_RUN } from '../src/life/ocean/ride.js';
 import { parseSeaRide, parseSeaTrick } from '../src/net/protocol.js';
@@ -145,8 +145,8 @@ await test('S0', 'real worlds: the §2.1 numbers, the lagoon, the outside depth,
         const w = await realWorld(biome, size, seed);
         const m = new SeaMap();
         m.attach(w);
-        let ms = Infinity; // warm: the best of three scans (the first, cold one runs behind the loading screen)
-        for (let k = 0; k < 3; k++) {
+        let ms = Infinity; // warm: the best of seven scans (the first, cold one runs behind the loading screen; seven so a busy machine, another worker's browser, does not decide it)
+        for (let k = 0; k < 7; k++) {
           const t0 = performance.now();
           m.attach(w);
           ms = Math.min(ms, performance.now() - t0);
@@ -819,85 +819,231 @@ await test('S10', 'glass meshes: only the animals seen through glass draw in the
   assert(few.fish === null && few.dolphin === false, 'a few kinds out: the school splits (only the 2 fish behind the ice)');
   const all = {}, one = { fish: 2 };
   for (const k of SEA_KINDS) all[k] = 4;
-  assert(glassLanes(all, one, {}).fish === true, 'every kind out: no 10th call, the split school draws behind the glass');
-  return `100 rounds; 500 budget rounds (${splits} splits)`;
+  assert(glassLanes(all, one, {}).fish === true, 'every kind out, nothing known of the view: no 10th call, the split school draws behind the glass');
+  // short of calls (every kind out, a whale visit): the spare call goes to the kind with the most
+  // animals in front of the glass (the school, not two far-off dolphins), and kinds with nothing in
+  // view are not drawn at all (no call), so a school by an ice floe keeps its own lanes
+  const front = {}, seen = {}, hide = {};
+  for (const k of SEA_KINDS) { front[k] = 4; seen[k] = 4; }
+  const live8 = { ...all }, back8 = { fish: 2, dolphin: 1 };
+  live8.fish = 8; front.fish = 6; front.dolphin = 1; seen.dolphin = 2;
+  const busy = glassLanes(live8, back8, {}, SEA_CALLS, front, seen, hide);
+  assert(calls(live8, busy) <= SEA_CALLS + 1, 'busy: within the calls');
+  const off = {}, lanesB = {};
+  for (const k of SEA_KINDS) off[k] = 0;
+  off.crab = 1; // the crabs behind her: out of view
+  const seenB = { ...seen, crab: 0 };
+  glassLanes(live8, back8, lanesB, SEA_CALLS, front, seenB, hide);
+  const drawn = (live, lanes, hid) => SEA_KINDS.reduce((a, k) => a + (live[k] > 0 && !hid[k] ? 1 : 0) + (lanes[k] === null && !hid[k] ? 1 : 0), 0);
+  assert(hide.crab === true && lanesB.fish === null && drawn(live8, lanesB, hide) <= SEA_CALLS, `busy with the crabs out of view: the crabs are not drawn and the school and the dolphins both split (${JSON.stringify(lanesB)})`);
+  // every kind in view (a whale visit): no call to spare; a kind goes to the side most of it is on
+  const seenC = { ...seen, fish: 8 };
+  const lanesC = glassLanes(live8, back8, {}, SEA_CALLS, front, seenC, hide);
+  assert(lanesC.fish === false && lanesC.dolphin === true && drawn(live8, lanesC, hide) <= SEA_CALLS, `busy with every kind in view: the school (6 in front, 2 behind the ice) stays bright, the dolphins (1 in front, 1 behind) go behind the glass (${JSON.stringify(lanesC)})`);
+  const steady = { fish: false };
+  glassLanes(live8, back8, steady, SEA_CALLS, { ...front, fish: 4 }, { ...seenC, fish: 6 }, hide);
+  assert(steady.fish === false, 'once bright it stays bright down to 1.5 times as many in front (4 to 2: no flip)');
+  const faint = { fish: true };
+  glassLanes(live8, back8, faint, SEA_CALLS, { ...front, fish: 4 }, { ...seenC, fish: 6 }, hide);
+  assert(faint.fish === true, 'and once behind the glass it needs 3 times as many in front to come out');
+  // steady: the kind holding the spare call keeps it against a near equal (+2), so it never flips
+  const eq = { ...front, fish: 5, dolphin: 4 }, live1 = { ...live8, crab: 0 };
+  const fresh = glassLanes(live1, back8, {}, SEA_CALLS, eq, seenC, hide);
+  assert(fresh.fish === null && fresh.dolphin !== null, 'one spare call: the school (5 in front) gets it before the dolphins (4)');
+  const keep2 = { dolphin: null };
+  glassLanes(live1, back8, keep2, SEA_CALLS, eq, seenC, hide);
+  assert(keep2.dolphin === null && keep2.fish !== null, 'but dolphins already holding it keep it against a school with one more in front (no flip)');
+  // random busy rounds: never past the calls, a hidden kind is never drawn, the best front count wins
+  let rounds = 0;
+  for (let round = 0; round < 500; round++) {
+    const live = {}, back = {}, fr = {}, sn = {}, out = {};
+    for (const k of SEA_KINDS) {
+      live[k] = rand() < 0.15 ? 0 : 1 + Math.floor(rand() * 8);
+      back[k] = rand() < 0.4 ? 0 : Math.floor(rand() * (live[k] + 1));
+      sn[k] = rand() < 0.2 ? 0 : Math.floor(rand() * (live[k] + 1));
+      fr[k] = Math.max(0, Math.min(sn[k], live[k] - back[k]));
+    }
+    const h = {};
+    glassLanes(live, back, out, SEA_CALLS, fr, sn, h);
+    assert(drawn(live, out, h) <= SEA_CALLS, `busy round ${round}: ${drawn(live, out, h)} calls`);
+    let bestLeft = -1, worstGot = Infinity;
+    for (const k of SEA_KINDS) {
+      if (h[k]) { assert(!(sn[k] > 0), 'only a kind with nothing in view is hidden'); continue; }
+      const split = live[k] > 0 && back[k] > 0 && back[k] < live[k];
+      if (!split) continue;
+      assert(out[k] !== false || fr[k] >= 3 * Math.max(1, sn[k] - fr[k]), 'one drawn over the glass only when 3 times as many are in front');
+      if (out[k] === null) worstGot = Math.min(worstGot, fr[k]); else bestLeft = Math.max(bestLeft, fr[k]);
+    }
+    assert(bestLeft <= worstGot, `busy round ${round}: the spare calls go to the most animals in front`);
+    rounds++;
+  }
+  return `100 rounds; 500 budget rounds (${splits} splits); ${rounds} busy rounds`;
 });
 
-await test('S11', 'fish spacing: a school of 10 on crossing orbits seldom overlaps into one blob, stays in its water, and never pops across by an ice floe', () => {
-  // the school's own orbits (index.js _spawnSchool), centred in open water; 60 s at 60 fps
-  const run = (spaced, seed, floe = false, fps = 60) => {
-    const w = seaWorld({ sx: 64, sz: 64, island: false });
-    // floe: an ice floe on the sea (as snow worlds put near the shore) 1.5 blocks from the school's centre
-    if (floe) w.fill(34, 10, 30, 36, 10, 35, ICE);
-    const env = envFor(w, seed);
-    const rand = mulberry32(seed);
-    const school = { x: 32.5, z: 32.5, level: env.map.top(32, 32), scatter: 0 };
-    const fish = [];
-    for (let i = 0; i < 10; i++) {
-      const f = makeRecord('fish', i);
-      f.on = true; f.orbit = rand() * 6.28; f.orbitR = 0.6 + rand() * 1.1;
-      f.orbitW = (0.6 + rand() * 0.8) * (rand() < 0.5 ? -1 : 1); f.level = school.level;
-      placeFish(f, school, env); // spawned in place (index.js _spawnSchool)
-      fish.push(f);
+/**
+ * A school of n fish in open water (index.js _stepSchools, without the brain): 'old' = each fish on
+ * its own random orbit (before this round), 'new' = the school's rings (fishSlot), turning together.
+ * spaced: spaceFish runs (cam: also across the view from cam). Returns per-frame stats; look(fish)
+ * is called every settled frame.
+ */
+function schoolRun({ noView = false, layout = 'new', spaced = true, seed = 1, floe = false, fps = 60, n = 10, secs = 60, cam = null, look = null }) {
+  const w = seaWorld({ sx: 64, sz: 64, island: false });
+  // floe: an ice floe on the sea (as snow worlds put near the shore) 1.5 blocks from the school's centre
+  if (floe) w.fill(34, 10, 30, 36, 10, 35, ICE);
+  const env = envFor(w, seed);
+  const rand = mulberry32(seed);
+  const school = { x: 32.5, z: 32.5, level: env.map.top(32, 32), scatter: 0 };
+  const surf = school.level + SURF;
+  const fish = [];
+  // her camera (or, none given, the player 10 blocks off at a bearing of the seed's)
+  const eye = cam || { x: school.x - Math.sin(seed * 1.7) * 10, z: school.z - Math.cos(seed * 1.7) * 10 };
+  if (layout !== 'old') { school.glideT = rand() * 14; schoolFrame(school, eye.x, eye.z, 0); }
+  for (let i = 0; i < n; i++) {
+    const f = makeRecord('fish', i);
+    f.on = true; f.level = school.level; f.scale = 0.85 + rand() * 0.3; f.yoff = rand();
+    if (layout === 'old') {
+      f.orbit = rand() * 6.28; f.orbitR = 0.6 + rand() * 1.1;
+      f.orbitW = (0.6 + rand() * 0.8) * (rand() < 0.5 ? -1 : 1);
+    } else fishSlot(f, i, n);
+    f.y = surf - 0.38;
+    placeFish(f, school, env); // spawned in place (index.js _spawnSchool)
+    fish.push(f);
+  }
+  let close = 0, frames = 0, minD = Infinity, maxSep = 0, jump = 0;
+  const px = new Float64Array(n), pz = new Float64Array(n);
+  const dt = 1 / fps, settle = 2 * fps;
+  for (let step = 0; step < secs * fps; step++) {
+    if (layout !== 'old') schoolFrame(school, eye.x, eye.z, dt);
+    for (const f of fish) {
+      f.orbit += f.orbitW * dt; placeFish(f, school, env, spaced ? dt : 0);
+      f.phase += dt * 6;
+      f.y = surf - 0.38 + 0.1 * Math.sin(f.phase * 0.2 + f.yoff * 6);
     }
-    let close = 0, frames = 0, minD = Infinity, maxSep = 0, jump = 0;
-    const px = new Float64Array(10), pz = new Float64Array(10);
-    const dt = 1 / fps, settle = 2 * fps;
-    for (let step = 0; step < 60 * fps; step++) {
-      for (const f of fish) { f.orbit += f.orbitW * dt; placeFish(f, school, env, spaced ? dt : 0); f.y = school.level + SURF - 0.38; }
-      if (spaced) spaceFish(fish, 0, fish.length, dt, school, env);
-      if (step >= settle) for (let i = 0; i < fish.length; i++) jump = Math.max(jump, Math.hypot(fish[i].x - px[i], fish[i].z - pz[i]));
-      for (let i = 0; i < fish.length; i++) { px[i] = fish[i].x; pz[i] = fish[i].z; }
-      if (step < settle) continue; // settled
-      frames++;
-      let blob = false;
-      for (let i = 0; i < fish.length; i++) for (let j = i + 1; j < fish.length; j++) {
-        const d = Math.hypot(fish[i].x - fish[j].x, fish[i].z - fish[j].z);
-        if (d < minD) minD = d;
-        if (d < 0.4) blob = true; // closer than half a fish's width each side: two heads, one body
-      }
-      if (blob) close++;
-      for (const f of fish) {
-        maxSep = Math.max(maxSep, Math.hypot(f.sepX, f.sepZ));
-        assert(Number.isFinite(f.x) && Number.isFinite(f.z), 'finite');
-        assert(props.shape[w.get(Math.floor(f.x), Math.floor(f.y), Math.floor(f.z))] === SHAPES.liquid, 'in its water');
-      }
+    if (spaced) spaceFish(fish, 0, fish.length, dt, school, env, noView ? null : cam);
+    if (step >= settle) for (let i = 0; i < n; i++) jump = Math.max(jump, Math.hypot(fish[i].x - px[i], fish[i].z - pz[i]));
+    for (let i = 0; i < n; i++) { px[i] = fish[i].x; pz[i] = fish[i].z; }
+    if (step < settle) continue; // settled
+    frames++;
+    let blob = false;
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+      const d = Math.hypot(fish[i].x - fish[j].x, fish[i].z - fish[j].z);
+      if (d < minD) minD = d;
+      if (d < 0.4) blob = true; // closer than half a fish's width each side: two heads, one body
     }
-    return { share: close / frames, minD, maxSep, jump };
-  };
+    if (blob) close++;
+    for (const f of fish) {
+      maxSep = Math.max(maxSep, Math.hypot(f.sepX, f.sepZ));
+      assert(Number.isFinite(f.x) && Number.isFinite(f.z), 'finite');
+      assert(props.shape[w.get(Math.floor(f.x), Math.floor(f.y), Math.floor(f.z))] === SHAPES.liquid, 'in its water');
+    }
+    if (look) look(fish, school);
+  }
+  return { share: close / frames, minD, maxSep, jump, frames };
+}
+
+await test('S11', 'fish spacing: a school of 10 seldom overlaps into one blob, stays in its water, and never pops across by an ice floe', () => {
   const out = [];
-  let worst = 0, worstOld = 1;
+  let worst = 0, worstOld = 1, gap = Infinity;
   for (let seed = 1; seed <= 6; seed++) {
-    const a = run(false, seed), b = run(true, seed);
-    out.push(`${seed}: ${(a.share * 100).toFixed(0)}% -> ${(b.share * 100).toFixed(1)}% (step ${a.jump.toFixed(3)} -> ${b.jump.toFixed(3)})`);
+    const a = schoolRun({ layout: 'old', spaced: false, seed }), b = schoolRun({ seed, n: seed % 2 ? 10 : 8 });
+    out.push(`${seed}: ${(a.share * 100).toFixed(0)}% -> ${(b.share * 100).toFixed(1)}% (step ${a.jump.toFixed(3)} -> ${b.jump.toFixed(3)}, closest ${b.minD.toFixed(2)})`);
     assert(b.jump <= 0.08, `no darting: a fish moves at most 0.08 a frame at 60 fps (${b.jump.toFixed(3)})`);
     worst = Math.max(worst, b.share);
     worstOld = Math.min(worstOld, a.share);
+    gap = Math.min(gap, b.minD);
     assert(b.maxSep <= 2, `the offset stays small (${b.maxSep.toFixed(2)})`);
   }
   // by an ice floe (snow worlds): orbit points on the ice move in along their line; a fish whose
   // place jumps swims there (FISH_STEP) instead of popping across (before: steps of 1.1 to 1.3 a frame)
   const floeOut = [];
   for (let seed = 1; seed <= 6; seed++) {
-    const a = run(false, seed, true), b = run(true, seed, true);
+    const a = schoolRun({ layout: 'old', spaced: false, seed, floe: true }), b = schoolRun({ seed, floe: true });
     floeOut.push(`${seed}: ${(a.share * 100).toFixed(0)}% -> ${(b.share * 100).toFixed(1)}% (step ${a.jump.toFixed(3)} -> ${b.jump.toFixed(3)})`);
     assert(b.share < 0.03, `by a floe: at most 3% of frames have two fish in one blob (${floeOut.join(', ')})`);
     assert(b.jump <= FISH_STEP / 60 + 0.05, `by a floe: no fish pops across (a step of ${b.jump.toFixed(3)} a frame, at most ${(FISH_STEP / 60 + 0.05).toFixed(3)})`);
     assert(b.maxSep <= 2, `by a floe: the offset stays small (${b.maxSep.toFixed(2)})`);
   }
-  assert(worstOld > 0.1, `without spacing a school overlaps often (the old look; ${out.join(', ')})`);
-  assert(worst < 0.02, `with spacing at most 2% of frames have two fish in one blob (${out.join(', ')}; FISH_APART ${FISH_APART})`);
+  assert(worstOld > 0.1, `without the rings and spacing a school overlaps often (the old look; ${out.join(', ')})`);
+  assert(worst < 0.005 && gap >= 1.0, `in open water no two fish closer than 1.0 (closest ${gap.toFixed(2)}; FISH_APART ${FISH_APART}; ${out.join(', ')})`);
   // an older iPad at 20 fps: the spacing works per second, not per frame
   const slowOut = [];
   for (let seed = 1; seed <= 4; seed++) {
     for (const floe of [false, true]) {
-      const b = run(true, seed, floe, 20);
+      const b = schoolRun({ seed, floe, fps: 20 });
       slowOut.push(`${seed}${floe ? ' floe' : ''}: ${(b.share * 100).toFixed(1)}%`);
       assert(b.share < 0.03, `at 20 fps at most 3% of frames have two fish in one blob (${slowOut.join(', ')})`);
       assert(b.jump <= FISH_STEP / 20 + 0.13, `at 20 fps no fish pops across (${b.jump.toFixed(3)})`);
     }
   }
   return out.join(', ') + '; by a floe ' + floeOut.join(', ') + '; at 20 fps ' + slowOut.join(', ');
+});
+
+await test('S12', 'fish from her camera: school mates seldom sit one over another on the screen (no fish with four eyes)', async () => {
+  // a real camera (fov 70, 4:3) and each fish's real box (models.js), turned by its yaw: a pair is
+  // "stacked" when the smaller of the two boxes on the screen is more than a quarter covered by the
+  // other (a face peeking out at the edge). Cameras: her play camera (about 3 above the water,
+  // 9 to 12 away), a lower one, and one at the surface; 8 and 10 fish; 30 s each.
+  const THREE = await import('three');
+  const { geometryFor } = await import('../src/life/ocean/models.js');
+  const g = geometryFor('fish');
+  if (!g.boundingBox) g.computeBoundingBox();
+  const bb = g.boundingBox;
+  const camera = new THREE.PerspectiveCamera(70, 4 / 3, 0.1, 200);
+  const v = new THREE.Vector3();
+  const rects = [];
+  for (let i = 0; i < 10; i++) rects.push([0, 0, 0, 0]);
+  const measure = (camPos) => {
+    let frames = 0, stacked = 0, pairs = 0;
+    const look = (fish, school) => {
+      camera.position.set(camPos.x, camPos.y, camPos.z);
+      camera.lookAt(school.x, school.level + SURF - 0.4, school.z);
+      camera.updateMatrixWorld();
+      for (let i = 0; i < fish.length; i++) {
+        const f = fish[i], R = rects[i];
+        R[0] = R[1] = Infinity; R[2] = R[3] = -Infinity;
+        const c = Math.cos(f.yaw), s = Math.sin(f.yaw);
+        for (let k = 0; k < 8; k++) {
+          const lx = (k & 1 ? bb.max.x : bb.min.x) * f.scale, ly = (k & 2 ? bb.max.y : bb.min.y) * f.scale, lz = (k & 4 ? bb.max.z : bb.min.z) * f.scale;
+          v.set(f.x + lx * c + lz * s, f.y + ly, f.z - lx * s + lz * c).project(camera);
+          R[0] = Math.min(R[0], v.x); R[1] = Math.min(R[1], v.y); R[2] = Math.max(R[2], v.x); R[3] = Math.max(R[3], v.y);
+        }
+      }
+      let any = 0;
+      for (let i = 0; i < fish.length; i++) for (let j = i + 1; j < fish.length; j++) {
+        const A = rects[i], B = rects[j];
+        const ix = Math.min(A[2], B[2]) - Math.max(A[0], B[0]), iy = Math.min(A[3], B[3]) - Math.max(A[1], B[1]);
+        if (ix <= 0 || iy <= 0) continue;
+        const small = Math.min((A[2] - A[0]) * (A[3] - A[1]), (B[2] - B[0]) * (B[3] - B[1]));
+        if (ix * iy > 0.25 * small) { any++; pairs++; }
+      }
+      frames++;
+      if (any) stacked++;
+    };
+    return { look, get: () => ({ share: stacked / Math.max(1, frames), pairs: pairs / Math.max(1, frames) }) };
+  };
+  const out = [];
+  let oldSum = 0, rowSum = 0, newSum = 0, worst = 0, runs = 0;
+  for (const [h, far] of [[3.0, 11], [3.0, 9], [1.5, 9], [0.1, 9]]) {
+    for (const seed of [1, 2, 3]) {
+      const n = seed === 2 ? 8 : 10;
+      const bear = seed * 2.1;
+      const school0 = { x: 32.5, z: 32.5 };
+      const camPos = { x: school0.x - Math.sin(bear) * far, y: 10 + SURF + h, z: school0.z - Math.cos(bear) * far };
+      // (seaWorld: the water's top block is at level 10; the camera h above its surface)
+      // before (each fish on its own orbit, spaced 3D only), the rows alone, the rows spaced across the view
+      const mo = measure(camPos), mr = measure(camPos), mn = measure(camPos);
+      schoolRun({ layout: 'old', spaced: true, seed, n, secs: 30, look: mo.look });
+      schoolRun({ seed, n, secs: 30, cam: camPos, look: mr.look, noView: true });
+      schoolRun({ seed, n, secs: 30, cam: camPos, look: mn.look });
+      const o = mo.get(), rw = mr.get(), nw = mn.get();
+      oldSum += o.pairs; rowSum += rw.pairs; newSum += nw.pairs; runs++;
+      worst = Math.max(worst, nw.pairs);
+      out.push(`h ${h} d ${far} n ${n}: ${o.pairs.toFixed(2)} / ${rw.pairs.toFixed(2)} / ${nw.pairs.toFixed(2)} pairs (${(nw.share * 100).toFixed(0)}% of frames)`);
+    }
+  }
+  assert(newSum < oldSum * 0.1 && newSum < rowSum * 0.5, `far fewer stacked fish than before and than the rows alone (${(oldSum / runs).toFixed(2)} / ${(rowSum / runs).toFixed(2)} / ${(newSum / runs).toFixed(2)} pairs a frame; ${out.join(', ')})`);
+  assert(newSum / runs <= 0.3 && worst <= 0.6, `at most 0.3 stacked pairs a frame on average, 0.6 from any camera (${out.join(', ')})`);
+  return `before / rows / rows spaced across the view: ${(oldSum / runs).toFixed(2)} / ${(rowSum / runs).toFixed(2)} / ${(newSum / runs).toFixed(2)} stacked pairs a frame; ${out.join(', ')}`;
 });
 
 await test('S9', 'static: no while loops in the ocean folder; the strings are kind, brand-free and character-free', async () => {

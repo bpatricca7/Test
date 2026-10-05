@@ -16,7 +16,7 @@ import { SeaMap } from './seamap.js';
 import { SEA_KINDS, SEA_SPEC, SEA_NAMES, SEA_TEXT, PALETTES, OCEAN_STAR_KINDS, DOLPHIN_NAMES, pickPalette, hexToLinear } from './kinds.js';
 import {
   makeRecord, saveGood, sanitize, columnOk, spawnOk, settleY, swimToward, wanderTarget, canLeap, startLeap,
-  stepLeap, startTrick, stepTrick, Spawner, placeFish, spaceFish, stepCrab, rescueCell, bestDirection, glassBetween, SURF, NEAR,
+  stepLeap, startTrick, stepTrick, Spawner, placeFish, spaceFish, fishSlot, schoolFrame, stepCrab, rescueCell, bestDirection, glassBetween, SURF, NEAR,
 } from './motion.js';
 import { SEA_U, SEA_LIQUIDS, SEA_WATER } from './material.js';
 import { SeaMeshes, glassLanes } from './render.js';
@@ -35,6 +35,8 @@ const PICK_R = 12;
 const WILD = 6;          // dolphin records 0..5 are wild, 6..8 the show pod, 9..11 friends' rides
 const SHOW0 = 6, FRIEND0 = 9;
 const SCHOOLS = 3, PER_SCHOOL = 10;
+/** Little Fish shades within a school (times its colour; index i % 3). */
+const FISH_TONES = [1, 0.93, 1.07];
 const SOUNDS = { dolphin: 'chirp', fish: 'bloop', sea_turtle: 'bloop', octopus: 'pop', jelly: 'boop', seahorse: 'ding', crab: 'clack', starfish: 'giggle', whale: 'whale' };
 const PITCH = { sea_turtle: 0.7, seahorse: 1.4, starfish: 1.3 };
 // pick box half sizes [x/z, y down, y up] around the record (feet-origin kinds start at y)
@@ -531,13 +533,18 @@ class OceanSystem {
     sc.leaving = false;
     saveGood(sc);
     const list = this.pools.fish;
+    // its rows across her view (motion.js schoolFrame), gliding from a random point of its sway
+    sc.glideT = Math.random() * 14;
+    const eye = this._eye();
+    schoolFrame(sc, eye.x, eye.z, 0);
     for (let i = 0; i < PER_SCHOOL; i++) {
       const r = list[si * PER_SCHOOL + i];
       if (i >= n) { r.on = false; continue; }
       this._spawnRec(r, 'fish', x, z, { variant: sc.variant, pod: si, scale: 0.85 + Math.random() * 0.3 });
-      r.orbit = Math.random() * TAU;
-      r.orbitR = 0.6 + Math.random() * 1.1;
-      r.orbitW = (0.6 + Math.random() * 0.8) * (Math.random() < 0.5 ? -1 : 1);
+      // its own place in the school's rows (motion.js fishSlot): the school moves as one
+      fishSlot(r, i, n);
+      // school mates a touch lighter or darker, so two that overlap still read as two fish
+      r.tone = FISH_TONES[i % FISH_TONES.length];
       r.yoff = Math.random();
       r.sepX = 0; r.sepZ = 0; r.waitT = 0;
       placeFish(r, sc, this.env);
@@ -1071,6 +1078,9 @@ class OceanSystem {
       sc.kind = sv;
       if (!spawnOk(env, 'fish', Math.floor(sc.x), Math.floor(sc.z))) { sc.x = sc.gx; sc.z = sc.gz; sc.tx = sc.x; sc.tz = sc.z; }
       saveGood(sc);
+      // its rows turn to face her camera and sway gently across her view
+      const eye = this._eye();
+      schoolFrame(sc, eye.x, eye.z, dt);
       let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
       const surf = sc.level + SURF;
       for (let i = 0; i < PER_SCHOOL; i++) {
@@ -1097,14 +1107,15 @@ class OceanSystem {
           r.y += clamp(want - r.y, -2 * dt, 2 * dt);
           if (near) r.y = clamp(r.y, surf - 0.5, surf - 0.26);
         }
-        r.shade = this._shade(r, dist);
+        r.shade = this._shade(r, dist) * (r.tone || 1);
         this._sane(r);
         if (r.x < minX) minX = r.x; if (r.x > maxX) maxX = r.x;
         if (r.y < minY) minY = r.y; if (r.y > maxY) maxY = r.y;
         if (r.z < minZ) minZ = r.z; if (r.z > maxZ) maxZ = r.z;
       }
       // a little room between school mates (no two-headed blobs)
-      spaceFish(fish, s * PER_SCHOOL, PER_SCHOOL, dt, sc, env);
+      // and across the view: none peeks out from behind another (no fish with four eyes)
+      spaceFish(fish, s * PER_SCHOOL, PER_SCHOOL, dt, sc, env, eye);
       // one fish skips out now and then (near her)
       sc.skipT = (sc.skipT || 4) - dt;
       if (sc.skipT <= 0) {
@@ -1123,6 +1134,13 @@ class OceanSystem {
         sc.y = cy;
       }
     }
+  }
+
+  /** Where she looks from: the camera, or (no camera yet) the player. */
+  _eye() {
+    const c = this.game.camera;
+    if (c && c.position && Number.isFinite(c.position.x)) return c.position;
+    return this.game.player.position;
   }
 
   _scatter(sc) {
@@ -1785,12 +1803,15 @@ class OceanSystem {
     SEA_U.uSeaNight.value = tod && fin(tod.night) ? clamp(tod.night, 0, 1) : 0;
     this._glassTick();
     // within the draw-call budget: a kind split by the glass gets its second mesh while calls are spare
-    const lanes = glassLanes(this._live, this._back, this._lanes || (this._lanes = {}));
+    // (short of calls: the split kinds with the most animals in front first; kinds out of view not drawn)
+    const hide = this._hide || (this._hide = {});
+    const lanes = glassLanes(this._live, this._back, this._lanes || (this._lanes = {}), undefined, this._front, this._seen, hide);
     const lists = this._lists || (this._lists = [null]);
     const liquid = this._liquidFn || (this._liquidFn = (r) => this._liquid(r));
     for (const kind of SEA_KINDS) {
       lists[0] = this.pools[kind];
       M.write(kind, lists, liquid, lanes[kind]); // null: each animal's own r.behind picks its mesh (render.js)
+      if (hide[kind]) M.hideKind(kind);
     }
   }
 
@@ -1820,16 +1841,25 @@ class OceanSystem {
   _glassTick() {
     const B = this._behind || (this._behind = {});
     const live = this._live || (this._live = {}), back = this._back || (this._back = {});
-    for (const kind of SEA_KINDS) { B[kind] = false; live[kind] = 0; back[kind] = 0; }
+    const front = this._front || (this._front = {}), seen = this._seen || (this._seen = {});
+    for (const kind of SEA_KINDS) { B[kind] = false; live[kind] = 0; back[kind] = 0; front[kind] = 0; seen[kind] = 0; }
     const w = this.game.world, cam = this.game.camera;
     const props = w && w.registry && w.registry.props;
     if (!props || !cam) {
-      for (const kind of SEA_KINDS) for (const r of this.pools[kind]) { r.behind = false; r.clear = 0; if (r.on && !r.hidden) live[kind]++; }
+      for (const kind of SEA_KINDS) for (const r of this.pools[kind]) { r.behind = false; r.clear = 0; if (r.on && !r.hidden) { live[kind]++; seen[kind]++; front[kind]++; } }
       return B;
     }
+    // what the camera sees (last frame's view; animals move little in one frame): per kind, how many
+    // are in view and how many of those in front of the glass (glassLanes, when calls are short)
+    const fr = this._frustum || (this._frustum = new THREE.Frustum());
+    const pm = this._pm || (this._pm = new THREE.Matrix4());
+    const sph = this._sph || (this._sph = new THREE.Sphere());
+    fr.setFromProjectionMatrix(pm.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
     const cp = cam.position, f = this.frame;
     for (const kind of SEA_KINDS) {
       const lift = kind === 'octopus' || kind === 'crab' || kind === 'starfish' ? 0.2 : 0;
+      const bs = this.meshes ? this.meshes.k[kind].geo.boundingSphere : null;
+      const reach = bs ? bs.radius + bs.center.length() : 3;
       for (const r of this.pools[kind]) {
         if (!r.on || r.hidden) { r.behind = undefined; r.clear = 0; continue; }
         if (((f + r.i) & 7) === 0 || r.behind === undefined) {
@@ -1838,6 +1868,9 @@ class OceanSystem {
         }
         live[kind]++;
         if (r.behind) { B[kind] = true; back[kind]++; }
+        sph.center.set(r.x, r.y, r.z);
+        sph.radius = reach * (r.scale || 1) + 0.5;
+        if (fr.intersectsSphere(sph)) { seen[kind]++; if (!r.behind) front[kind]++; }
       }
     }
     return B;
@@ -2141,6 +2174,39 @@ class OceanSystem {
       },
       /** Live instances per kind in the front meshes (glass: true, in the glass meshes). */
       meshCounts: (glass = false) => (sys.meshes ? sys.meshes.counts(glass) : null),
+      /** This frame's glass lanes (render.js glassLanes): per kind lane, in view, in front, hidden. */
+      lanes: () => ({ lanes: { ...(sys._lanes || {}) }, seen: { ...(sys._seen || {}) }, front: { ...(sys._front || {}) }, hide: { ...(sys._hide || {}) } }),
+      /**
+       * Probes: how many pairs of school i's fish sit one over another on the screen right now (the
+       * smaller one's box more than a quarter covered; S12's measure, through the real camera).
+       */
+      fishStacked(i = 0) {
+        const sc = sys.schools[i], cam = sys.game.camera;
+        if (!sc || !sc.on || !cam) return null;
+        const g = sys.meshes ? sys.meshes.k.fish.geo : null;
+        if (g && !g.boundingBox) g.computeBoundingBox();
+        const bb = g ? g.boundingBox : { min: { x: -0.27, y: -0.3, z: -0.6 }, max: { x: 0.27, y: 0.36, z: 0.34 } };
+        const rects = [], v = new THREE.Vector3();
+        for (let a = 0; a < PER_SCHOOL; a++) {
+          const f = sys.pools.fish[i * PER_SCHOOL + a];
+          if (!f.on || f.hidden || f.state === 'skip') continue;
+          const R = [Infinity, Infinity, -Infinity, -Infinity], c = Math.cos(f.yaw), sn = Math.sin(f.yaw);
+          for (let k = 0; k < 8; k++) {
+            const lx = (k & 1 ? bb.max.x : bb.min.x) * f.scale, ly = (k & 2 ? bb.max.y : bb.min.y) * f.scale, lz = (k & 4 ? bb.max.z : bb.min.z) * f.scale;
+            v.set(f.x + lx * c + lz * sn, f.y + ly, f.z - lx * sn + lz * c).project(cam);
+            R[0] = Math.min(R[0], v.x); R[1] = Math.min(R[1], v.y); R[2] = Math.max(R[2], v.x); R[3] = Math.max(R[3], v.y);
+          }
+          if (v.z < 1) rects.push(R);
+        }
+        let pairs = 0;
+        for (let a = 0; a < rects.length; a++) for (let b = a + 1; b < rects.length; b++) {
+          const A = rects[a], B = rects[b];
+          const ix = Math.min(A[2], B[2]) - Math.max(A[0], B[0]), iy = Math.min(A[3], B[3]) - Math.max(A[1], B[1]);
+          if (ix <= 0 || iy <= 0) continue;
+          if (ix * iy > 0.25 * Math.min((A[2] - A[0]) * (A[3] - A[1]), (B[2] - B[0]) * (B[3] - B[1]))) pairs++;
+        }
+        return pairs;
+      },
       corrupt(kind = 'dolphin') {
         const r = sys.pools[kind].find((q) => q.on && q.state !== 'ride');
         if (!r) return false;

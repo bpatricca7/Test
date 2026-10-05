@@ -36,7 +36,7 @@ export function makeRecord(kind, i) {
     pod: -1, ox: 0, oz: 0, tx: 0, ty: 0, tz: 0, fade: 0, puffT: 0, leapT: 0, skipT: 0, breathT: 0,
     trick: '', trickN: 0, gx: 0, gy: 0, gz: 0, gyaw: 0, checkT: 0, holdX: 0, holdZ: 0, baby: false,
     lastTap: -1e9, cool: 0, orbit: 0, orbitR: 1, orbitW: 1, hideT: 0, homeX: 0, homeZ: 0,
-    behind: undefined, clear: 0, sepX: 0, sepZ: 0, pushX: 0, pushZ: 0, waitT: 0,
+    behind: undefined, clear: 0, sepX: 0, sepZ: 0, pushX: 0, pushZ: 0, waitT: 0, tone: 1,
   };
 }
 
@@ -399,8 +399,12 @@ export class Spawner {
 
 /** A fish swims at most this fast (blocks a second; a scatter's dash) toward its place on its orbit. */
 export const FISH_STEP = 14;
+/** How fast a fish turns to face the way it swims (radians a second). */
+const FISH_TURN = 5;
 /** How far out along its line a fish tries when its orbit point is blocked (parts of its radius). */
 const IN_STEPS = [1, 0.75, 0.5, 0.25, 0];
+/** Places tried around a blocked one (per ring of two), and the candidates in all. */
+const AROUND = 8, CANDS = 2 + AROUND * 2 + IN_STEPS.length * 2;
 
 /**
  * Fish: each fish orbits its school centre; never outside liquid. dt > 0 (the game's step): a fish
@@ -409,40 +413,113 @@ const IN_STEPS = [1, 0.75, 0.5, 0.25, 0];
  * way blocked waits in its own water, and after 1.5 s of that goes straight to its place.
  */
 export function placeFish(r, school, env, dt = 0) {
-  const rad = r.orbitR * (school.scatter > 0 ? 1 + 2 * Math.min(1, school.scatter) : 1);
+  // a scatter spreads the school out (at most 3 blocks more, so a wide school stays near)
+  const rad = r.orbitR + (school.scatter > 0 ? Math.min(3, 2 * r.orbitR) * Math.min(1, school.scatter) : 0);
   // the map and the real cell (world.get: an edit with no event is not in the map yet)
   const ok = (x, z) => columnOk(env, 'fish', Math.floor(x), Math.floor(z), school.level) && env.props.shape[env.world.get(Math.floor(x), school.level, Math.floor(z))] === LIQUID;
-  // its orbit around the school's centre, nudged by its spacing from its school mates (spaceFish)
-  // a blocked point (an ice floe, the shore) moves it in along its own line from the centre, so
-  // fish by a floe stay spread out instead of all bunching at one small ring
-  const sx = Math.sin(r.orbit), sz = Math.cos(r.orbit);
-  let fx = school.x, fz = school.z;
-  for (let k = 0; k < IN_STEPS.length; k++) {
-    const d = Math.max(0.4, rad * IN_STEPS[k]);
-    const x = school.x + sx * d + r.sepX, z = school.z + sz * d + r.sepZ;
-    if (ok(x, z)) { fx = x; fz = z; break; }
-    const x2 = school.x + sx * d, z2 = school.z + sz * d;
-    if (ok(x2, z2)) { fx = x2; fz = z2; break; }
+  // its place in the school (fishSlot), nudged by its spacing from its school mates (spaceFish)
+  // (school.face: the school's rows turned to face her; offX / offZ: its glide; schoolFrame)
+  const ang = r.orbit + (school.face || 0);
+  const sx = Math.sin(ang), sz = Math.cos(ang);
+  const cx = school.x + (school.offX || 0), cz = school.z + (school.offZ || 0);
+  // dt > 0 (the game's step): it swims there at most FISH_STEP a second, so it takes the first
+  // place it can reach this step without crossing a floe (a place past one is skipped for one
+  // nearer the centre that it can reach)
+  const live = dt > 0 && Number.isFinite(r.x) && Number.isFinite(r.z) && r.level === school.level && ok(r.x, r.z);
+  const max = FISH_STEP * dt;
+  let fx = school.x, fz = school.z, gx = NaN, gz = NaN, got = false;
+  // its place (spaced, then not); a blocked one: the nearest open water around it (toward the
+  // school's middle first), so fish by a floe stay spread out instead of bunching at one spot;
+  // last, in along its line from the centre
+  const px = cx + sx * rad, pz = cz + sz * rad, toC = Math.atan2(-sx, -sz);
+  for (let k = 0; k < CANDS && !got; k++) {
+    let x, z;
+    if (k < 2) { x = px + (k === 0 ? r.sepX : 0); z = pz + (k === 0 ? r.sepZ : 0); }
+    else if (k < 2 + AROUND * 2) {
+      const j = k - 2, ring = j < AROUND ? 0.9 : 1.8, n = j % AROUND;
+      const a = toC + ((n + 1) >> 1) * (n & 1 ? 1 : -1) * (TAU / AROUND);
+      x = px + r.sepX + Math.sin(a) * ring; z = pz + r.sepZ + Math.cos(a) * ring;
+    } else {
+      const j = k - 2 - AROUND * 2, d = Math.max(0.4, rad * IN_STEPS[j % IN_STEPS.length]), home = j >= IN_STEPS.length;
+      x = (home ? school.x : cx) + sx * d; z = (home ? school.z : cz) + sz * d;
+    }
+    if (!ok(x, z)) continue;
+    if (!live) { fx = x; fz = z; got = true; break; }
+    if (gx !== gx) { gx = x; gz = z; }
+    const dx = x - r.x, dz = z - r.z, dd = Math.hypot(dx, dz);
+    if (dd <= max) { fx = x; fz = z; got = true; break; }
+    const nx = r.x + (dx / dd) * max, nz = r.z + (dz / dd) * max;
+    if (ok(nx, nz)) { fx = nx; fz = nz; got = true; }
   }
-  if (dt > 0 && Number.isFinite(r.x) && Number.isFinite(r.z) && r.level === school.level && ok(r.x, r.z)) {
-    const dx = fx - r.x, dz = fz - r.z, d = Math.hypot(dx, dz), max = FISH_STEP * dt;
-    if (d > max) {
-      const nx = r.x + (dx / d) * max, nz = r.z + (dz / d) * max;
-      if (ok(nx, nz)) { fx = nx; fz = nz; r.waitT = 0; }
+  if (live) {
+    if (got) r.waitT = 0;
+    else if (gx === gx) {
+      // every way there crosses a floe: slide along its edge (one axis), else wait in its own
+      // water, and after 1.5 s of that go straight to its place
+      const dx = gx - r.x, dz = gz - r.z;
+      const ax = r.x + clamp(dx, -max, max), az = r.z + clamp(dz, -max, max);
+      if (Math.abs(dx) > 1e-3 && ok(ax, r.z)) { fx = ax; fz = r.z; r.waitT = 0; }
+      else if (Math.abs(dz) > 1e-3 && ok(r.x, az)) { fx = r.x; fz = az; r.waitT = 0; }
       else if ((r.waitT += dt) < 1.5) { fx = r.x; fz = r.z; }
-      else r.waitT = 0;
-    } else r.waitT = 0;
+      else { fx = gx; fz = gz; r.waitT = 0; }
+    } else { fx = r.x; fz = r.z; }
   }
   const ox = r.x, oz = r.z;
   r.x = fx; r.z = fz;
+  // it faces the way it swims, turning smoothly (a school gliding back turns round, never flips)
   const mx = r.x - ox, mz = r.z - oz;
-  if (mx * mx + mz * mz > 1e-6) r.yaw = Math.atan2(mx, mz);
+  if (!(dt > 0)) { if (mx * mx + mz * mz > 1e-6) r.yaw = Math.atan2(mx, mz); }
+  else if (mx * mx + mz * mz > (0.15 * dt) * (0.15 * dt)) r.yaw += clamp(angDiff(Math.atan2(mx, mz), r.yaw), -FISH_TURN * dt, FISH_TURN * dt);
   r.level = school.level;
 }
 
-/** Little Fish keep this far apart (centre to centre, block units; a fish is about 0.85 long). */
-export const FISH_APART = 1.0;
+/** Little Fish keep this far apart (centre to centre, block units; a fish is about 0.92 long, 0.66 tall). */
+export const FISH_APART = 1.3;
 const SEP_MAX = 1.4, PUSH_MAX = 0.04;
+/** Fish side by side in a school's row, and how far its back row is behind the front one (blocks). */
+export const FISH_SIDE = 1.8, FISH_ROWS = 1.4;
+/** How fast a school's rows turn to face her (radians a second) and its slow glide (blocks, rad/s). */
+const FACE_TURN = 0.35, GLIDE = 1.2, GLIDE_W = 0.45;
+/** How wide (half, per scale) and tall (half) a fish looks from the camera, with a little room. */
+const VIEW_W = 0.5, VIEW_H = 0.4;
+/** Schools farther than this from the camera are not spaced across the view (too small to matter). */
+const VIEW_FAR = 24;
+
+/**
+ * Fish i of a school of n: its place in the school. Up to 4 fish swim side by side in one row;
+ * more make two rows across her view, the back one FISH_ROWS behind and set between the front
+ * fish, so from her camera every fish shows whole (none sits behind another with its face
+ * peeking out). Neighbours are FISH_SIDE apart. Sets r.orbit (the place's angle in the school's
+ * frame: 0 = straight away from her) and r.orbitR (its distance from the centre); r.orbitW = 0
+ * (the school turns as one: schoolFrame).
+ */
+export function fishSlot(r, i, n) {
+  const rows = n <= 4 ? 1 : 2;
+  const front = Math.ceil(n / rows);
+  const row = i < front ? 0 : 1, col = row ? i - front : i, cnt = row ? n - front : front;
+  // rows of the same length are set half a fish over (an odd school already is)
+  const shift = rows === 2 && cnt * 2 === n ? (row ? 0.25 : -0.25) * FISH_SIDE : 0;
+  const side = (col - (cnt - 1) / 2) * FISH_SIDE + shift;
+  const away = rows === 2 ? (row ? 0.5 : -0.5) * FISH_ROWS : 0;
+  r.orbit = Math.atan2(side, away);
+  r.orbitR = Math.hypot(side, away);
+  r.orbitW = 0;
+}
+
+/**
+ * A school's frame for this step: its rows turn slowly (FACE_TURN) to face the camera or the
+ * player at (px, pz), and the whole school glides gently from side to side across her view
+ * (school.offX / offZ, added to its centre by placeFish). dt 0: face her at once.
+ */
+export function schoolFrame(school, px, pz, dt) {
+  const want = Math.atan2(school.x - px, school.z - pz);
+  if (!Number.isFinite(school.face) || !(dt > 0)) school.face = Number.isFinite(want) ? want : 0;
+  else if (Number.isFinite(want)) school.face += clamp(angDiff(want, school.face), -FACE_TURN * dt, FACE_TURN * dt);
+  school.glideT = (school.glideT || 0) + (dt > 0 ? dt : 0);
+  const g = GLIDE * Math.sin(school.glideT * GLIDE_W);
+  school.offX = Math.cos(school.face) * g;
+  school.offZ = -Math.sin(school.face) * g;
+}
 
 /**
  * Gentle spacing inside a school: fish closer than FISH_APART push each other apart sideways, a
@@ -452,9 +529,12 @@ const SEP_MAX = 1.4, PUSH_MAX = 0.04;
  * back to 0 when nothing is near, so two fish never melt into one two-headed blob. A push that
  * would leave the school's water slides along the edge (one axis) or is skipped; a fish skipping
  * out of the water is left alone.
+ * cam ({ x, y, z }, the camera): also across the view. Two school mates that look one over the
+ * other from the camera (one behind the other, its face peeking out at the edge: "a fish with four
+ * eyes") move apart sideways across the view until both show whole.
  * list[from .. from + n - 1] are the school's fish. Pure, no allocations.
  */
-export function spaceFish(list, from, n, dt, school = null, env = null) {
+export function spaceFish(list, from, n, dt, school = null, env = null, cam = null) {
   // per frame at 60 fps; a slower frame (an older iPad) pushes as much per second
   const ease = Math.max(0, 1 - dt * 0.6), end = from + n, fr = Math.min(4, Math.max(0.25, dt * 60));
   const share = Math.min(0.5, 0.25 * fr), most = PUSH_MAX * fr;
@@ -475,6 +555,7 @@ export function spaceFish(list, from, n, dt, school = null, env = null) {
       b.pushX += ux * k; b.pushZ += uz * k;
     }
   }
+  if (cam && school) viewSpace(list, from, end, share, school, cam);
   for (let i = from; i < end; i++) {
     const r = list[i];
     let m = Math.hypot(r.pushX, r.pushZ);
@@ -495,6 +576,49 @@ export function spaceFish(list, from, n, dt, school = null, env = null) {
     // a soft cap: an offset past SEP_MAX shrinks back a little each frame (never a jump)
     m = Math.hypot(r.sepX, r.sepZ);
     if (!Number.isFinite(m)) { r.sepX = 0; r.sepZ = 0; } else if (m > SEP_MAX) { const f = (SEP_MAX + (m - SEP_MAX) * 0.9) / m; r.sepX *= f; r.sepZ *= f; }
+  }
+}
+
+/**
+ * How much two fish overlap as seen from cam (0: apart; else the smaller of the sideways and
+ * up-down overlaps, in view units: size / distance). sign[0]: which way a must go across the view
+ * (+1 / -1). View axes: v = (vx, vz) along the view to the school, u = (vz, -vx) across it.
+ */
+export function viewOverlap(a, b, cam, vx, vz, sign = null) {
+  const ax = a.x - cam.x, az = a.z - cam.z, bx = b.x - cam.x, bz = b.z - cam.z;
+  const da = ax * vx + az * vz, db = bx * vx + bz * vz;
+  if (da < 1 || db < 1) return 0;
+  const la = (ax * vz - az * vx) / da, lb = (bx * vz - bz * vx) / db;
+  const ha = (a.y - cam.y) / da, hb = (b.y - cam.y) / db;
+  const sa = (a.scale || 1) / da, sb = (b.scale || 1) / db;
+  const ex = VIEW_W * (sa + sb) - Math.abs(la - lb), ey = VIEW_H * (sa + sb) - Math.abs(ha - hb);
+  if (ex <= 0 || ey <= 0) return 0;
+  if (sign) sign[0] = la > lb || (la === lb && a.i < b.i) ? 1 : -1;
+  return ex;
+}
+
+const _sign = [1];
+/** The across-the-view part of spaceFish: pushes go into pushX / pushZ (capped there). */
+function viewSpace(list, from, end, share, school, cam) {
+  let vx = school.x - cam.x, vz = school.z - cam.z;
+  const vl = Math.hypot(vx, vz);
+  if (!(vl > 0.5) || vl > VIEW_FAR) return;
+  vx /= vl; vz /= vl;
+  const ux = vz, uz = -vx;
+  for (let i = from; i < end; i++) {
+    const a = list[i];
+    if (!a.on || a.state === 'skip') continue;
+    for (let j = i + 1; j < end; j++) {
+      const b = list[j];
+      if (!b.on || b.state === 'skip') continue;
+      const ex = viewOverlap(a, b, cam, vx, vz, _sign);
+      if (ex <= 0) continue;
+      // apart across the view: each moves its share, in blocks at its own distance
+      const da = (a.x - cam.x) * vx + (a.z - cam.z) * vz, db = (b.x - cam.x) * vx + (b.z - cam.z) * vz;
+      const s = _sign[0], k = ex * share * 0.5;
+      a.pushX += ux * s * k * da; a.pushZ += uz * s * k * da;
+      b.pushX -= ux * s * k * db; b.pushZ -= uz * s * k * db;
+    }
   }
 }
 
