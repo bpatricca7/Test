@@ -33,6 +33,14 @@ av.dispose()
   at most 48 idle). Everything is released by `dispose()`. ~33 meshes (draw calls) per avatar.
 - Riding bounce and hair / cape / balloon springs are driven by the group's real movement,
   so moving `group` (player, pets, a turntable) is enough.
+- **Sea parts (wave 4, docs/teams/merfolk.md §6.3, §7).** `createAvatar(look, { seaAuto })` and
+  `update(dt, { sea: true, seaRide, seaKick, ... })` turn her into a Mermaid or a Sea Dragon in
+  deep water. The tail, fin and extras are **lazy**: built on the first turn, or hidden ahead by
+  `prepareSea()` (1.5 s after a world load or look change in play mode), never in `build()`.
+  `disposeSea()` alone owns their meshes, bones, materials and textures (`build()`'s sweep
+  never touches them; `setLook` and `dispose()` call it first). `seaForm`, `seaShown`,
+  `setSeaAuto(fnOrForm)` and `heldShown` (false while a held item hides: swimming, the tail
+  out, asleep) are read-only helpers; `seaParts()` is for probes.
 
 ## look schema (`wardrobe-data.js`)
 

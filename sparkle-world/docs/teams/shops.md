@@ -9,7 +9,9 @@ Changes outside the folder are small and additive; they are listed at the end.
 
 ## What she gets
 
-- **Sparkle Coins** in a coins pill next to the gems pill. Every profile starts with **100**
+- **Sparkle Coins** in a coins pill next to the gems pill (since wave 4 the pill is a button that
+  opens the Squish Shelf, with a ring that fills toward the next mystery present: earned coins
+  also fill the presents, and spending never takes one away; docs/teams/squishies.md §5.1). Every profile starts with **100**
   (new ones and older ones that have no coins yet). Coins are only ever spent in a shop, never
   lost.
 - Bag -> **Shops** (a new tab after Camping) with three shops, each in six pastel colors:
