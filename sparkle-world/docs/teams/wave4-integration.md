@@ -704,6 +704,7 @@ Beach Cozy, desktop and iPad 1024 x 768 touch, `debug.merfolk.tips(true)`,
 | C1b | `timeout 570 node tools/probe-multiplayer.mjs --part=d` (AT1, LOOKS, SEA; split from part a at the merfolk merge: with SEA, part a hit the 570 s timeout at load 4) | | |
 | C2 | `timeout 570 node tools/probe-multiplayer.mjs --part=b` (AT1, AT7, AT11, AT9, AT10, AT20, REJOIN) | | not measured (AT1 + AT7 only: 143 s, green) |
 | C3 | `timeout 570 node tools/probe-multiplayer.mjs --part=c` (AT1, AT11, AT12, AT13, AT8, AT21, BUDGET, END, AT22) | | not measured (AT1 + AT11 only: 218 s, green) |
+| C3b | `timeout 570 node tools/probe-multiplayer.mjs --part=e` (SIX only, no AT1: six players, and Zoe, the 7th, gets the "full" card drawn above the Join keypad) | | 449 s, green on 82a7a8c ([rf2-six]); 571 s once on a busy machine, so run it alone |
 | C4-C9 | `timeout 570 node tools/probe-boys.mjs --only=X` for X = `unit`, `studio`, `touch`, `world`, `friends`, `grids` | whole: 356-656 s | not measured |
 | C10 | `timeout 570 node tools/probe-vehicles.mjs --only=models,land` | whole: 455-763 s | not measured |
 | C11 | `timeout 570 node tools/probe-vehicles.mjs --only=water,save` | | not measured |
@@ -890,7 +891,11 @@ integration branch, never changed.
   about different kinds swimming close together is replaced by `apartKinds`.
 - 16 of the 19 probe-hud-sizes sizes are still to run with the wave-4 states (`--sizes=` groups
   of about 5).
-- The "full" card for a 7th player: check it is drawn above the Join keypad
-  (`.shots/net-six-zoe-full.png`).
+- ~~The "full" card for a 7th player: check it is drawn above the Join keypad~~ Done in
+  [rf2-six]: the card was always on top (the element at its centre is `.sw-net-msg`, with the
+  wash and OK); the old picture was a stale frame from Zoe's lagging page. SIX now checks that,
+  waits for fresh frames before the picture, and confirms each "Let in!" gave a seat (a lost tap
+  had once left a seat free, so the 7th got "Knock knock" instead of the card). `--part=e` is
+  C3b in §10.2.
 - The **owner** items of "Integrator decisions" above, then §11 steps 2-5 (the build, the full
   gate of §10, one push to the live branch, the check on the live site).

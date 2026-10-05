@@ -3,7 +3,7 @@
 //   node tools/probe-multiplayer.mjs [--part=a|b|c|d] [--until=AT9] [--shots-prefix=net] [--biome=flat] [--headed]
 //
 // --part splits the suite so each part fits the gate's 570 s timeout (docs/teams/wave4-integration.md
-// §10.2 C1-C3). AT1 always runs first (it starts the session); then the part's tests, in file order:
+// §10.2 C1-C3b). AT1 always runs first (it starts the session); then the part's tests, in file order:
 //   b: AT7, AT11, AT9, AT10, AT20, REJOIN
 //   c: AT11, AT12, AT13, AT8, AT21, BUDGET, END, AT22   (AT11 brings June)
 //   d: LOOKS, SEA   (split from a in wave 4: with SEA, part a ran past 570 s on a busy machine)
