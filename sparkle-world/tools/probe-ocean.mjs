@@ -27,8 +27,9 @@
 //   owner-review pictures, ocean-review-*.png, and is never part of the default run;
 //   --only=dolphin makes ocean-dolphin-<palette>-<side>.png, the dolphin from five sides)
 //
-// Not here yet (P2, on the merged tree with merfolk): R10 (a mermaid and a sea dragon riding),
-// T3b's camera under the surface, U1's Up / Down rectangles, the cross-team `wave4` pass.
+// P2 on the merged tree with merfolk: R10 (a mermaid and a sea dragon riding, in `ride`; the
+// pictures wave4-ride-mermaid.png, wave4-ride-dragon.png), T3b's camera under the surface (in
+// `tap`), U1's Up / Down rectangles (in `touch`). Not here yet: the cross-team `wave4` pass.
 
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -312,7 +313,8 @@ const RECTS = () => {
   const r = (sel) => [...document.querySelectorAll(sel)].filter((e) => e.offsetParent && getComputedStyle(e).visibility !== 'hidden').map((e) => { const b = e.getBoundingClientRect(); return { sel, x: b.left, y: b.top, w: b.width, h: b.height }; }).filter((b) => b.w > 0 && b.h > 0);
   return {
     bubble: r('.oc-bubble.lf-on'),
-    hud: [...r('.sw-joy'), ...r('.sw-touch-hud .sw-btn-jump, .sw-touch .sw-jump, [data-action="jump"]'), ...r('.lf-hud .sw-round:not([hidden])'), ...r('.sw-toasts .sw-toast'), ...r('.sw-stkpop'), ...r('.sw-coins, .sw-hud-coins, [aria-label="Coins"]'), ...r('.sw-hud-tr button'), ...r('.sw-hotbar')],
+    updown: r('.sw-touch .sw-flybtn'), // merfolk's Up / Down (deep water; also part of hud)
+    hud: [...r('.sw-joy'), ...r('.sw-touch .sw-flybtn'), ...r('.sw-touch-hud .sw-btn-jump, .sw-touch .sw-jump, [data-action="jump"]'), ...r('.lf-hud .sw-round:not([hidden])'), ...r('.sw-toasts .sw-toast'), ...r('.sw-stkpop'), ...r('.sw-coins, .sw-hud-coins, [aria-label="Coins"]'), ...r('.sw-hud-tr button'), ...r('.sw-hotbar')],
   };
 };
 const overlap = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
@@ -1554,6 +1556,9 @@ async function touchPass(browser, errors) {
   const b0 = r0.bubble[0];
   const hits = b0 ? r0.hud.filter((h) => overlap(b0, h)) : [];
   check(errors, b0 && hits.length === 0, `U1 the bubble overlaps no HUD part (${hits.map((h) => h.sel).join(', ') || 'none'})`);
+  // (P2) merfolk's Up / Down show in deep water and are among the parts the bubble keeps clear of
+  check(errors, r0.updown.length === 2 && r0.updown.every((u) => r0.hud.some((h) => h.sel === u.sel && h.x === u.x && h.y === u.y)),
+    `U1 merfolk's Up / Down show while she swims deep and the bubble keeps clear of them (${JSON.stringify(r0.updown.map((u) => [Math.round(u.x), Math.round(u.y), Math.round(u.w), Math.round(u.h)]))}; bubble ${b0 ? JSON.stringify([Math.round(b0.x), Math.round(b0.y), Math.round(b0.w), Math.round(b0.h)]) : 'none'})`);
   await page.waitForTimeout(3000);
   const r1 = await ev(page, RECTS);
   const b1 = r1.bubble[0];
@@ -1575,6 +1580,9 @@ async function touchPass(browser, errors) {
   const rode = await waitOk(page, () => window.__game.ocean.riding, null, 3000);
   const label = await ev(page, () => (document.querySelector('.sw-joy-label') || {}).textContent);
   check(errors, rode && label === 'Ride', `U2 Ride: the joystick says "${label}"`);
+  const rideBtns = await ev(page, RECTS);
+  const jumpShown = await ev(page, () => [...document.querySelectorAll('.sw-touch [aria-label="Jump"]')].some((e) => e.offsetParent && !e.hidden));
+  check(errors, rideBtns.updown.length === 0 && jumpShown, `U2 riding: Up / Down hidden (${rideBtns.updown.length}), Jump shown (${jumpShown})`);
   check(errors, await toastSeen(page, /^Steer with the joystick! Tap Jump to jump!$/, 3000), 'U2 "Steer with the joystick! Tap Jump to jump!"');
   await shot(page, 'touch-riding', PREFIX);
   const s0 = await ev(page, () => window.__game.debug.ocean.rideState());
@@ -1598,6 +1606,8 @@ async function touchPass(browser, errors) {
   await page.waitForTimeout(500);
   const after = await ev(page, () => ({ riding: window.__game.ocean.riding, label: (document.querySelector('.sw-joy-label') || {}).textContent, seaSwim: window.__game.player.seaSwim }));
   check(errors, !after.riding && after.label === (after.seaSwim ? 'Swim' : 'Walk'), `U2 Hop off: the label "${after.label}" (merfolk's "Swim" lands in P2)`);
+  const offBtns = await ev(page, RECTS);
+  check(errors, !after.seaSwim || offBtns.updown.length === 2, `U2 Hop off in deep water: Up / Down back (${offBtns.updown.length}, seaSwim ${after.seaSwim})`);
   // the Help panel's Touch tab shows the dolphin card
   await ev(page, () => { const g = window.__game; g.ui.open('help'); });
   await page.waitForTimeout(500);
