@@ -3188,12 +3188,56 @@ async function wave4X5(browser, errors) {
     await page.waitForTimeout(400);
     const bub = await tapDolphin(page, true);
     await crowd();
+    // The design (wave4-integration.md "Still open" X5, the owner's default): on a crowded
+    // screen the dolphin bubble may WAIT. With no free spot while a sticker pop and a toast
+    // are up it stays hidden (and its Ride / Trick cannot be tapped), and it shows, clear of
+    // everything, as soon as a free spot opens, at the latest once the pop and the toast leave.
+    const BUBSTATE = () => {
+      const e = document.querySelector('.oc-bubble.lf-on');
+      if (!e) return { open: false };
+      const ride = e.querySelector('.oc-ride');
+      const rb = ride ? ride.getBoundingClientRect() : null;
+      const hit = rb && rb.width ? document.elementFromPoint(rb.left + rb.width / 2, rb.top + rb.height / 2) : null;
+      return { open: true, hidden: getComputedStyle(e).visibility === 'hidden' || (ride && getComputedStyle(ride).visibility === 'hidden'), live: !!hit && e.contains(hit) };
+    };
     const b = await ev(page, RECTS5);
     const gb = [...new Set(b.map((q) => q.g))].sort();
     const ob = overlaps(b);
-    check(errors, bub && ['bubble', 'coins', 'joy', 'life', 'pop', 'toast', 'updown'].every((g) => gb.includes(g)), `X5 ${name} after Hop off: Up / Down, the dolphin bubble, the life column, the coins, a toast and a pop all show (${gb.join(', ')})`);
+    const bs = await ev(page, BUBSTATE);
+    if (bs.open && bs.hidden) {
+      check(errors, bub && !bs.live && ['coins', 'joy', 'life', 'pop', 'toast', 'updown'].every((g) => gb.includes(g)), `X5 ${name} after Hop off: Up / Down, the life column, the coins, a toast and a pop all show; the dolphin bubble is open and waits for room, hidden and not tappable (${gb.join(', ')}; ${JSON.stringify(bs)})`);
+    } else {
+      check(errors, bub && ['bubble', 'coins', 'joy', 'life', 'pop', 'toast', 'updown'].every((g) => gb.includes(g)), `X5 ${name} after Hop off: Up / Down, the dolphin bubble, the life column, the coins, a toast and a pop all show (${gb.join(', ')})`);
+    }
     check(errors, ob.length === 0, `X5 ${name} after Hop off: no two overlap (${ob.join('; ') || 'none'})`);
     await shot(page, `x5-${name}-hopoff`, 'wave4');
+    // the pop and the toast leave: within 3 s of game time the bubble shows, inside the screen
+    // and clear of every control (game time, because this machine draws few frames a second)
+    const after = await page.evaluate(() => new Promise((res) => {
+      const g = window.__game, t0w = performance.now();
+      let free = null, sawBusy = false;
+      const f = () => {
+        const busy = !!document.querySelector('.sw-stkpop, .sw-toasts .sw-toast');
+        if (busy) { sawBusy = true; free = null; } else if (free === null) free = g.time.t;
+        const e = document.querySelector('.oc-bubble.lf-on');
+        const shown = !!e && getComputedStyle(e).visibility !== 'hidden';
+        if (free !== null && shown) return res({ ok: true, open: true, waited: +(g.time.t - free).toFixed(2), sawBusy });
+        if (free !== null && !e) return res({ ok: false, open: false, waited: +(g.time.t - free).toFixed(2), sawBusy });
+        if (free !== null && g.time.t - free >= 3) return res({ ok: false, open: true, waited: +(g.time.t - free).toFixed(2), sawBusy });
+        if (performance.now() - t0w > 40000) return res({ ok: false, timeout: true, busy, sawBusy });
+        requestAnimationFrame(f);
+      };
+      f();
+    }));
+    const c = await ev(page, RECTS5);
+    const oc = overlaps(c);
+    const W = viewport.width, H = viewport.height;
+    const cb = c.filter((q) => q.g === 'bubble');
+    const inside = cb.length > 0 && cb.every((q) => q.x >= 0 && q.y >= 0 && q.x + q.w <= W && q.y + q.h <= H);
+    const bs2 = await ev(page, BUBSTATE);
+    check(errors, after.ok && inside && bs2.live, `X5 ${name} once the pop and the toast leave: the dolphin bubble shows within 3 s of game time, inside the screen, Ride tappable (${JSON.stringify(after)}; ${cb.map((q) => `[${Math.round(q.x)},${Math.round(q.y)} ${Math.round(q.w)}x${Math.round(q.h)}]`).join(' ') || 'no bubble'}; ${JSON.stringify(bs2)})`);
+    check(errors, oc.length === 0, `X5 ${name} once the pop and the toast leave: no two overlap (${oc.join('; ') || 'none'})`);
+    await shot(page, `x5-${name}-hopoff-shown`, 'wave4');
     // five different pictures: Present, Squish!, Put away, the dolphin, Hop off
     const svgs = await ev(page, () => [
       ...['present', 'squish', 'squish-away', 'seahop'].map((a) => { const e = document.querySelector(`.lf-hud .sw-round[data-action="${a}"] .sw-round-face svg`); return e ? e.outerHTML : null; }),

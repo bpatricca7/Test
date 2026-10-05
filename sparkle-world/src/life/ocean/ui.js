@@ -67,7 +67,7 @@ export function createSeaUi(game, sys) {
   const bubble = ui.el('div', 'lf-bubble oc-bubble');
   bubble.dataset.owner = 'ocean';
   ui.hudLayer.appendChild(bubble);
-  const bub = { rec: null, from: 'water', openedAt: 0, idle: 0, pressed: false };
+  const bub = { rec: null, from: 'water', openedAt: 0, idle: 0, pressed: false, waiting: false };
   const at = { x: 0, y: 0 };
 
   const roundBtn = (label, color, face, onClick, cls = '') => {
@@ -127,7 +127,16 @@ export function createSeaUi(game, sys) {
     const r = bub.rec;
     bub.rec = null;
     bubble.classList.remove('lf-on');
+    wait(false);
     sys.bubbleClosed(r);
+  }
+
+  // hidden and not tappable while it waits for room (or while the dolphin is off screen)
+  function wait(on, forRoom = false) {
+    bub.waiting = on && forRoom;
+    bubble.style.visibility = on ? 'hidden' : '';
+    bubble.style.pointerEvents = on ? 'none' : '';
+    if (on) bubble.setAttribute('aria-hidden', 'true'); else bubble.removeAttribute('aria-hidden');
   }
 
   function position() {
@@ -135,10 +144,10 @@ export function createSeaUi(game, sys) {
     if (!r) return;
     const s = toScreen(game, r.x, r.y + 1.15, r.z, at);
     if (!s) {
-      bubble.style.visibility = 'hidden';
+      wait(true);
       return;
     }
-    bubble.style.visibility = '';
+    wait(false);
     const w = bubble.offsetWidth || 200, h = bubble.offsetHeight || 120;
     const W = game.container.clientWidth, H = game.container.clientHeight;
     // clear of the toasts at the top, the life column on the left, the joystick and the
@@ -182,17 +191,14 @@ export function createSeaUi(game, sys) {
       }
       if (best) [x, y] = best;
     }
-    // no free spot (an upright phone): it waits while a sticker pop or a toast would lie on top
-    // of it (they are drawn above it), so Ride and Trick never vanish under a card
+    // no free spot (a crowded upright phone just after Hop off): while a sticker pop or a toast
+    // is up it waits, hidden and not tappable, and shows the moment a free spot opens, at the
+    // latest when the pop and the toast are gone (the wave-4 X5 decision, docs/teams/ocean.md).
+    // Only with no pop and no toast up and still no free spot does it sit at its own spot, so it
+    // never stays hidden for good.
     if (over(x, y)) {
       for (const el of document.querySelectorAll('.sw-stkpop, .sw-toasts .sw-toast')) {
-        const c = el.getBoundingClientRect();
-        if (!c.width || el.classList.contains('sw-leave')) continue;
-        const L = c.left - base.left, T = c.top - base.top;
-        if (x - w / 2 < L + c.width && x + w / 2 > L && y - h < T + c.height && y > T) {
-          bubble.style.visibility = 'hidden';
-          return;
-        }
+        if (el.offsetParent && el.getBoundingClientRect().width) { wait(true, true); return; }
       }
     }
     bubble.style.left = Math.round(x) + 'px';
@@ -297,8 +303,8 @@ export function createSeaUi(game, sys) {
     pointerEl: pointer,
     update(dt) {
       if (!bub.rec) return;
-      // the idle timer pauses while a sticker pop shows
-      if (!document.querySelector('.sw-stkpop')) bub.idle += dt;
+      // the idle timer pauses while a sticker pop shows or the bubble waits for room
+      if (!document.querySelector('.sw-stkpop') && !bub.waiting) bub.idle += dt;
       const r = bub.rec;
       if (!sys.bubbleValid(r, bub.from) || bub.idle > 9 || game.paused) { hideBubble(); return; }
       position();
