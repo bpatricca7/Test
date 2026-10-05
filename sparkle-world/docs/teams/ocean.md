@@ -1976,3 +1976,30 @@ for a grown-up's read (§16 Q4).
   nothing lowered).
 - *For the P2 merge:* the integrator must still align squish's `src/things/squish/data.js`
   `pf_dolphin` from #8EB8E0 to #6A80CC (squish code not touched here).
+
+**P2 fish fixes (integration, owner review).**
+- *Different kinds keep apart.* `motion.js` `apartKinds` (called each frame after `APART`) gives
+  every swimmer kind a half-room (`CROSS`: dolphin 1.0, turtle 0.8, octopus 0.75, fish 0.6, jelly
+  0.55, seahorse 0.45); two animals of different kinds closer side to side than the sum of theirs,
+  and within `CROSS_UP` (3.5) up and down, ease apart (at most 0.08 a frame). A ridden, leaping or
+  held animal is never pushed (the other takes the whole push); a fish keeps its push in its
+  spacing offset, so it eases back into its school. No fish on a dolphin's back, no octopus on its
+  tail. test-sea S14 checks the pairs, the ridden dolphin, the up-and-down limit and the cost
+  (61 swimmers bunched in one patch: about 0.07 ms a frame).
+- *`debug.ocean.fishStacked` counts only fish in the picture:* all 8 box corners must be in front
+  of the camera and the box must reach into the picture; only the part in the picture is judged.
+  `fishStacked(i, out)` also lists the stacked pairs, and `fishPose(i)` gives every fish in the
+  school's own frame (for the probe's notes).
+- *Across-the-view spacing uses each fish's real width:* `viewOverlap` now takes a fish's turn
+  against her line of sight (side on: its length; face on: its width) and the slant at the
+  school's edge for a near camera. S12: 0.02 stacked pairs a frame (was 0.16).
+- *test-sea S0's warm scan:* a Big world whose best of seven is over 8 ms gets up to two more rounds
+  of seven after a short pause (a busy machine once pushed all seven past 8 ms with unchanged code);
+  a real slowdown is slow in every round and still fails, and the rounds used are printed.
+- *Probe:* `--only=rf [--runs=10] [--vp=desktop|ipad]` runs R-F alone again and again, a new scene
+  each run, and prints the first stacked frame's pairs and school pose. About 48 s a run.
+- *Still open:* with all of the above, R-F on desktop passed 7 of 10 runs. Every failing run had
+  the school wandering 14 to 21 blocks from her (3.3 up), stacking up to 6 pairs a frame; the near
+  runs stay at 0.00-0.17. The far stacking is real (the fish are in the picture), not the old
+  counting fault. Next: read a far run's full pose (`--only=rf --vp=desktop`) and fix the far
+  layout until R-F passes 10 runs in a row on desktop and iPad.
