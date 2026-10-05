@@ -110,6 +110,9 @@ this doc disagree, fix one of them in the same change.
 | Explore | Collect sparkling gems hidden around the world; swim; fly; butterflies & fireflies. |
 | Weather & time | Day/night cycle (~12 min), stars and moon at night; weather wand in Settings: sunny, cloudy, rain, snow, rainbow. |
 | Drive | Bag → Cars & Boats → place it (cars on land, boats on the water), Hand-tap: drive, honk, lights, Get out. Nine of them: Bubble Car, Convertible, Safari Jeep, Go-Kart, Road Trip Van, Ice Cream Van, Speedboat, Swan Boat, Sailboat (§6). |
+| Sea forms | Swim into water 2 blocks deep: she turns into a mermaid or a sea dragon (or stays Just Me) and swims fast, dives with Down, floats up and leaps out of the water. Pick the form and tail color in the Dress-Up Studio's Water tab (§7.1). |
+| Sea animals and the dolphin ride | Dolphins, little fish, sea turtles, an octopus, jellyfish, seahorses, crabs, starfish and a whale live in the sea near her. Tap one to say hi; tap a dolphin and pick Ride (or Trick). Every kind she meets fills a slot of Sea Friends in the Sticker Book (§7.3). |
+| Squishy toys and mystery presents | Puffums and Stretchums (48 toys) come in mystery presents as she earns coins. Open them, collect them on the Squish Shelf (coin pill, pause menu, Bag), hold one and press Squish!, or place them in her worlds (§7.2). |
 
 ### Stickers (achievements)
 `first_block` First Block · `builder` 100 blocks placed · `home_sweet_home` placed a bed and a
@@ -121,6 +124,14 @@ colors · `night_owl` saw the stars · `musician` played 20 piano notes · `phot
 photo · `unicorn_rider` rode a unicorn · `magic_builder` placed a Magic House ·
 `world_maker` created 3 worlds · `splash` went swimming · `sky_high` flew above the clouds ·
 `beep_beep` Beep Beep! (drove a car or van) · `ahoy` Ahoy! (steered a boat) (§6).
+Wave 4 (§7; book order squish, ocean, merfolk, each +20 coins): `squish_first` First Present!
+(opened a mystery present) · `squish_ten` Squish Collector (10 squishy toys) · `squish_all`
+Squish Champion (every Puffum and Stretchum) · `squish_squeeze` Squeeze Me! (squished a toy 25
+times) · `dolphin_friend` Dolphin Friend (said hi to a dolphin) · `dolphin_rider` Dolphin Rider
+(rode a dolphin) · `sea_explorer` Sea Explorer (met 5 kinds of sea animals) · `ocean_star` Ocean
+Star (filled all the Sea Friends) · `whale_hello` Whale Hello! (saw a whale say hello) ·
+`sea_magic` Sea Magic! (swam 2 blocks deep as a mermaid or sea dragon) · `big_leap` Big Leap!
+(leapt out of the water, also on a dolphin).
 
 ### Visual identity
 - Pixel-art block textures (16×16, nearest filtering) in a **bright pastel** palette; soft fog;
@@ -280,6 +291,21 @@ See §3 for the full as-built API.
 'history:change'    { size }                 'thumbnail:before' {}  'thumbnail:after' {}
 'vehicle:drive'     { key, kind, uid }       'vehicle:park'   { entity, reason }
 'vehicle:honk'      { key }                  'vehicle:bump'   { speed }
+// wave 4 (§7), in merge order: merfolk, squish, ocean
+'player:seaform'    { form }                 // 'mermaid' | 'sea_dragon' when the tail appears or changes, null when it goes (local player only)
+'player:leap'       { pos: [x, y, z], form } // she leaps out of the water; form is null for Just Me (local player only)
+'style:changed'     { style }                // the Studio's Girl / Boy / Mix button changed (device-local)
+'player:seaswim'    { on }                   // internal: sea swimming on / off (Up / Down, the joystick label)
+'squish:get'        { key, glitter, n }      // a toy came out of a present
+'squish:squeeze'    { key, glitter, where }  // a toy was squished (in her hand or in the world)
+'present:ready'     { ready }                // a mystery present is (no longer) waiting
+'squish:refresh'    {}  'bag:tab' { tab, main }  // internal (the shelf, the Bag's toy tab)
+'sea:meet'          { kind, first, quiet }   // a hello (tap, Starfish block, whale seen); quiet = a sticker popped for it
+'sea:ride'          { variant }              // a dolphin ride starts
+'sea:hopoff'        { reason }               // 'button' | 'key' | 'stand' | 'water' | 'blocked' | 'lost' | 'unload'
+'sea:leap'          { riding }               // a dolphin leaps (riding: with her on it)
+'sea:trick'         { variant }              // a dolphin trick she started (drives presence sk)
+'sea:whale'         { personal }             // the whale is placed and surfaces
 ```
 `vehicle:park` reasons: 'button' | 'key' | 'stand' | 'auto' | 'trouble' | 'drop' (`entity` is null
 for 'drop': the drive ended without parking). It is one of the "save soon" events.
@@ -445,6 +471,12 @@ and `hint(game, hit)`. Reach is `game.reach` (8) from the player's head.
   `pet.group`) at `pet.seatHeight` (default 0.9) every frame; the pets module moves the pet and
   reads `game.input` while `player.state === 'ride'`. `game.createPlayer(saved)` (set by
   player.js) builds the player and `game.cameraRig`.
+- Sea form (wave 4, §7.1, `src/player/merfolk/`): `player.seaGate` turns on after 0.25 s in water
+  2+ deep and off after 0.35 s on land; `player.seaSwim` (sea swimming: 4.6 blocks/s, 6.2 fast,
+  Up / Down instead of Jump, a gentle float up, the leap, the shore hop up to 2 blocks);
+  `player.seaForm` (`'mermaid'` | `'sea_dragon'` | null for Just Me). A dolphin mount
+  (`mount(m)` with `m.kind === 'dolphin'`, §7.3) keeps the sea form and forces the gate on; every
+  other mount cuts it. `game.underwater` is the underwater tint.
 
 ### Avatar (src/player/avatar.js)
 ```js
@@ -611,6 +643,12 @@ igloo, bakery, pet_shop, modern_house, barn.
   butterflies by day, fireflies at night near flowers, petals under cherry trees.
 - `collectibles.js`: gems (5 colors) placed by worldgen seeds; spin + glow; collect by touch.
 - `stickers.js`: sticker registry, progress counters in `profile.stats`, awards toast + book.
+  `game.stickerBookExtras` (wave 4): rows other modules add under the pages (the Sea Friends).
+- `ocean/` (wave 4, §7.3): sea life lives at the surface near her (the water is 75% opaque); one
+  instanced mesh per kind, drawn after the water; a sea map kept by block events and a
+  2-rows-a-frame rescan. Nothing is saved in the world. On `navigator.webdriver` pages its own
+  popups stay off unless `game.debug.ocean.popups(true)`; probes near water may call
+  `game.debug.ocean.pause(true)`.
 
 ### UI (src/ui)
 `game.ui`:
@@ -750,6 +788,12 @@ logged and reported as `{ ok:false }`).
   lets the account module pick the player first.
 - Publishing as a claude.ai Artifact: declare the capabilities `db` and `user` (cloud saves)
   and `downloads` (for "Save to a file").
+- Wave 4 (§7): `profile.squish` is in `BACKUP_PROFILE_KEYS`; every merge (`account/merge.js`,
+  `mergeBackupProfile`) takes the union of the toys (`src/core/squish-merge.js`), and the
+  server's `putProfile` refuses a write that would drop toys the cloud copy has. The sea
+  counters live in `stats` and use the existing per-key max. `look.sea` travels with the look.
+  Device keys (never synced): `squishPathTip`, `squishPillTip`, `squishPlaceTip`, `squishBagTip`,
+  `seaHints`, `seaAsked`, `seaTabSeen`, `seaPoolHint`, `seaLeapTips`.
 
 ### Save formats
 ```js
@@ -776,6 +820,11 @@ out here, and on a host every friend's car in custody. Loading places each one (
 nearest free spot, else forced at its spot: never lost) and steps her out of it. Old saves have
 none; a world saved while she drives stands her beside the parked car. `profile.stats` gains
 `drives`, `boatRides`, `honks`, `driveMeters`.
+Wave 4 (§7): `profile.squish = { got, glit, seen, base, rest }` (squishy toys), `stats.squishes`;
+`stats.seaMet` (a map kind → count), `stats.dolphinRides`, `stats.seaCoinDay`,
+`stats.seaCoinMask`; `look.sea = { form, color }` (`form` `'auto'` | `'mermaid'` |
+`'sea_dragon'` | `'me'`). Old profiles have none of them and need nothing. Placed toys are
+ordinary entities in the world save; nothing else in a world save changes.
 
 ### Performance budget
 60 fps on a 2019 iPad / mid laptop: chunk meshing time-sliced (≤ 6 ms/frame), no per-frame
