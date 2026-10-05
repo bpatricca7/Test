@@ -421,6 +421,74 @@ async function waterPass(browser, errors) {
     g.events.emit('style:changed', { style: null });
   });
 
+  // B10b the dolphin ride (ocean, wave 4 integration §2): the tail stays the whole ride, with no
+  // 'player:seaform' from mount to hop off, presence st 'h'; hopping off in deep water keeps the
+  // tail with no event and no magic sound
+  const hasOcean = await page.evaluate(() => !!(window.__game.debug.ocean && window.__game.debug.ocean.ride));
+  if (!hasOcean) console.log('  (B10b skipped: ocean is not in this build)');
+  else {
+    await place(page, deep, openYaw, 300);
+    await waitOk(page, () => window.__game.player.seaForm, null, 3000);
+    await gameWait(page, 500);
+    await clearEvs(page);
+    const mounted = await page.evaluate(() => window.__game.debug.ocean.ride());
+    c(mounted, 'B10b a mermaid rides a dolphin (debug.ocean.ride())');
+    if (mounted) {
+      // 3 s of game time on the dolphin: 1.5 s of it swimming ahead (W), the rest still
+      const rideFrames = async (keys, ms) => {
+        for (const k of keys) await page.keyboard.down(k);
+        const out = await page.evaluate((ms) => new Promise((resolve) => {
+          const g = window.__game, a = g.net && g.net.adapter;
+          const out = { n: 0, legs: 0, hidden: 0, notRide: 0, st: {}, form: {} };
+          let last = performance.now(), gt = 0;
+          const tick = () => {
+            const now = performance.now();
+            gt += Math.min(50, now - last);
+            last = now;
+            const p = g.debug.merfolk.parts() || {};
+            out.n++;
+            if (p.legsVisible !== false) out.legs++;
+            if (!p.shown) out.hidden++;
+            if (g.player.state !== 'ride' || !g.debug.ocean.rideState().on) out.notRide++;
+            const st = a && typeof a.local === 'function' ? a.local().st : 'no adapter';
+            out.st[st] = (out.st[st] || 0) + 1;
+            out.form[g.player.seaForm] = (out.form[g.player.seaForm] || 0) + 1;
+            if (gt >= ms) resolve(out);
+            else requestAnimationFrame(tick);
+          };
+          tick();
+        }), ms);
+        for (const k of keys) await page.keyboard.up(k);
+        return out;
+      };
+      const r1 = await rideFrames(['KeyW'], 1500);
+      const r2 = await rideFrames([], 1500);
+      const n = r1.n + r2.n, legs = r1.legs + r2.legs, hidden = r1.hidden + r2.hidden, notRide = r1.notRide + r2.notRide;
+      const sum = (x, y) => { const o = { ...x }; for (const [k, v] of Object.entries(y)) o[k] = (o[k] || 0) + v; return o; };
+      const stAll = sum(r1.st, r2.st);
+      c(n > 10 && notRide === 0 && legs === 0 && hidden === 0,
+        `B10b on the dolphin the tail shows and the legs stay hidden on every frame (${n} frames; legs ${legs}, tail hidden ${hidden}, off the dolphin ${notRide}; forms ${JSON.stringify(sum(r1.form, r2.form))})`);
+      c(stAll.h === n || stAll['no adapter'] === n, `B10b presence st is 'h' while she rides (${JSON.stringify(stAll)})`);
+      if (stAll['no adapter']) console.log('  (B10b no adapter on this page: the presence check runs in probe-ocean mp)');
+      const fRide = await evs(page, 'player:seaform');
+      c(fRide.length === 0, `B10b no 'player:seaform' from mount to hop off (${fRide.length})`);
+      // hop off where it is deep
+      const where = await page.evaluate(() => {
+        const g = window.__game, p = g.player.position;
+        return g.debug.merfolk.column(p.x, p.z);
+      });
+      await page.evaluate(() => { window.__sounds.length = 0; window.__game.debug.ocean.hopOff('button'); });
+      await gameWait(page, 600);
+      const off = await page.evaluate(() => {
+        const g = window.__game, p = g.debug.merfolk.parts() || {};
+        return { ride: g.debug.ocean.rideState().on, state: g.player.state, form: g.player.seaForm, shown: !!p.shown, legs: p.legsVisible, weight: p.weight, magic: window.__sounds.filter((x) => x.name === 'magic').length };
+      });
+      const fOff = await evs(page, 'player:seaform');
+      c(where.depth >= 2 && !off.ride && off.state !== 'ride' && off.form === 'mermaid' && off.shown && off.legs === false && fOff.length === 0 && off.magic === 0,
+        `B10b hopping off in deep water (${where.depth} deep): the tail still shows, no event, no magic sound (${JSON.stringify({ ...off, events: fOff.length })})`);
+    }
+  }
+
   // B5 after exitToTitle: the tint is gone
   await place(page, deep, openYaw, 300);
   await settle(page, 1000);

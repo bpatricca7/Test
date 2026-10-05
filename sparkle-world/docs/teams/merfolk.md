@@ -1254,7 +1254,7 @@ bounded search (the nearest column with water ≥ 4 deep at sea level, 9,000 col
 | B8 | Just Me (`profile.look.sea.form = 'me'` + `avatar:changed`): deep water gives no tail and no `'player:seaform'`; `seaSwim` true; speed 3.6 to 4.2; hold C dives; letting go floats up; leap works and gives `big_leap` on a fresh profile; shallow (1-deep) water: today's speed ≤ 3.0 and sinking with no input |
 | B9 | `deviceSet('surpriseStyle', 'boy')`: auto gives `sea_dragon`; an explicit `mermaid` stays a mermaid under Boy; `lk` sent by the adapter contains the resolved form index, never 0; the presence JSON and the saved profile JSON never contain `girl`, `boy` or `mix` as values |
 | B10 | riding and friends of riding: drive a Swan Boat across the lagoon (`debug.vehicles`): `seaForm` null all the way; second Get out on open water: sea form 0.25-1.0 s later; Hand-tap the boat from the water: cut at once (no grow, no sound). Fly (the F key) from deep water: cut at once. A zip line over water (`outdoor` prefab): none. A redundant `setFlying(false)` while in sea form: no cut |
-| B10b | **dolphin ride** (when ocean is installed: `debug.sea.ride()` next to a dolphin in sea form): `parts().legsVisible === false` and `parts().shown` for the whole ride; no `'player:seaform'` events from mount to hop off; presence `st` is `h`; hop off in deep water: tail still shown, no event, no `magic` sound. Skipped with a note when ocean is not in the build |
+| B10b | **dolphin ride** (when ocean is installed: `debug.ocean.ride()` next to a dolphin in sea form): `parts().legsVisible === false` and `parts().shown` for the whole ride; no `'player:seaform'` events from mount to hop off; presence `st` is `h`; hop off in deep water: tail still shown, no event, no `magic` sound. Skipped with a note when ocean is not in the build |
 | B11 | cameras: third person `headY` while in sea form (rig target y − player y ≈ 1.05 ± 0.05); first person hides the avatar; looking down 0.6 rad and pressing W dives (y falls ≥ 1 in 1.5 s) |
 | B12 | selfie photo in sea form: a photo is taken, no console errors, the camera looks at y + 1.0; a photo taken underwater has a tinted bottom row (mean blue > red on the saved image) |
 | B13 | (see `costs`) |
@@ -1531,6 +1531,10 @@ name and look check is the owner's (§16 Q2).
 
 **Not done in P1, and why**: B10b and the merged-literal check with ocean's dolphin are P2
 (§7.2: they need ocean's `debug.ocean.ride()`). Everything else in §15 steps 1-8 is built.
+
+**P2 (on the merged tree)**: B10b now runs at the end of the `water` pass
+(`probe-merfolk --only=water`): 3 s on a dolphin (half of it swimming ahead), every frame
+checked, then a hop off in deep water.
 
 ### As built (owner review: the Sea Dragon redesign)
 
