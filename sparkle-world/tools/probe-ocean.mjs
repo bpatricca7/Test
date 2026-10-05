@@ -22,10 +22,16 @@
 //   cost    draw calls, the systems stage, geometries over time, NaN-free, the gallery (C5)
 //   wave4a  the cross-team pass, part one (wave4-integration.md §9.1 X1-X5): the first deep swim
 //           one thing at a time, a mermaid and a sea dragon riding, Ride from a stopped boat, a
-//           toy in the water, the HUD with everything at once (--x=1,3 runs only some of them;
-//           --only=wave4 runs every part)
+//           toy in the water, the HUD with everything at once (--x=1,3 runs only some of them)
+//   wave4b  the cross-team pass, part two (§9.1 X6-X10): the Sticker Book's 11 new stickers and the
+//           Sea Friends strip, two pages (a friend in sea form with a toy rides, then hops off on
+//           the shore), an old profile, coins and the present ring, a webdriver page staying quiet
+//           (--x=6,8 runs only some of them)
+//   --only=wave4 runs both halves (X1-X10; --x picks parts across both). Together they take
+//   longer than one 570 s run, so the gate runs them split: --only=wave4a (with --x when it is
+//   slow) and --only=wave4b (about 6 minutes: X7's two pages take about 3.5 of them)
 //
-//   node tools/probe-ocean.mjs [--only=world,see,tap,ride,touch,biomes,saves,mp,wave4a,cost,gallery] [--headed]
+//   node tools/probe-ocean.mjs [--only=world,see,tap,ride,touch,biomes,saves,mp,wave4a,wave4b,wave4,cost,gallery] [--x=...] [--headed]
 //   (cost includes the gallery, C5; --only=cost --part=1 leaves it out and --only=gallery runs C5
 //   alone, so each fits a shorter time limit; --only=review makes the
 //   owner-review pictures, ocean-review-*.png, and is never part of the default run;
@@ -33,7 +39,7 @@
 //
 // P2 on the merged tree with merfolk: R10 (a mermaid and a sea dragon riding, in `ride`; the
 // pictures wave4-ride-mermaid.png, wave4-ride-dragon.png), T3b's camera under the surface (in
-// `tap`), U1's Up / Down rectangles (in `touch`), the cross-team pass's part one (`wave4a`).
+// `tap`), U1's Up / Down rectangles (in `touch`), the cross-team pass (`wave4a`, `wave4b`).
 
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -2714,7 +2720,7 @@ async function dolphinViews(browser, errors) {
 
 // =====================================================================================
 // wave4 (plan docs/teams/wave4-integration.md §9.1), part one: X1-X5 (--only=wave4a;
-// --only=wave4 runs every part written so far). Beach Cozy with the three popup switches on:
+// --only=wave4 runs both parts; part two, X6-X10, is wave4b below). Beach Cozy with the three popup switches on:
 // debug.merfolk.tips(true), debug.ocean.popups(true), debug.squish.presents(true).
 // =====================================================================================
 
@@ -3406,13 +3412,14 @@ async function wave4X10(browser, errors) {
     }
   }
   await page.keyboard.up('KeyW');
-  const x = await ev(page, () => { const X = window.__x10; X.on = false; return { n: X.n, mf: X.mf, drop: X.drop, keys: X.keys, ready: window.__game.debug.squish.state().ready, wanted: window.__game.debug.squish.dropState().wanted, pods: window.__game.debug.ocean.pods() }; });
+  const x = await ev(page, () => { const X = window.__x10; X.on = false; return { n: X.n, mf: X.mf, drop: X.drop, keys: X.keys, ready: window.__game.debug.squish.state().ready, presentsOn: window.__game.debug.squish.dropState().presentsOn, pods: window.__game.debug.ocean.pods() }; });
   console.log('    (X10 ' + JSON.stringify({ st0, rode, n: x.n, toasts: x.keys, ready: x.ready, pods: x.pods.length }) + ')');
   const bad = x.keys.filter(([t, k]) => /^sea-(buddy|whale|form-dive|form-leap|form-pool)$/.test(k || '') || /came to say hi!|into your pool|to your pool|A whale says hello|to dive!|big leap|deep for/.test(t));
   check(errors, (Date.now() - t0) >= 60000 && rode === 'off' && x.n > 50, `X10 60 s of swimming at a deep spot with a ride (${x.n} frames)`);
   check(errors, x.mf === 0, `X10 no merfolk bubble (${x.mf} frames; seaAsked ${st0.asked}, form ${st0.form})`);
   check(errors, bad.length === 0, `X10 no merfolk tip, no buddy / pool / whale toast (${JSON.stringify(bad)})`);
-  check(errors, st0.ready >= 1 && x.drop === 0 && !x.wanted, `X10 no present drop (${st0.ready} ready, ${x.drop} frames)`);
+  // (the drop stays wanted, for a page where presents are on; webdriver keeps them off)
+  check(errors, st0.ready >= 1 && x.drop === 0 && !x.presentsOn, `X10 no present drop (${st0.ready} ready at the start, ${x.ready} at the end, ${x.drop} frames)`);
   await context.close();
 }
 
