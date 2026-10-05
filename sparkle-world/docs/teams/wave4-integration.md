@@ -892,9 +892,9 @@ integration branch, never changed.
   and probe-merfolk --only=water (the full gate runs them). ocean.md's older "Left as is" line
   about different kinds swimming close together is replaced by `apartKinds`.
 - probe-hud-sizes with the wave-4 states, in [rf2-hud] on 7ec1495: clear at 390x844, 844x390,
-  1366x940, 1366x1024, 1180x820, 1180x740, 1180x700, 1133x744. A group of 4 took 380-517 s, so
-  the gate runs groups of 3. Still to run: 1133x660, 1024x768, 1024x690, 1194x834, 1194x750,
-  1080x810, 1080x700, 1180x640, 820x1180, 768x1024, 744x1133.
+  1366x940, 1366x1024, 1180x820, 1180x740, 1180x700, 1133x744, 1133x660, 1024x768, 1024x690, 1194x834, 1194x750,
+  1080x810. A group of 4 took 380-517 s and a group of 3 290-376 s, so the gate runs groups of
+  3. Still to run: 1080x700, 1180x640, 820x1180, 768x1024, 744x1133.
 - ~~The "full" card for a 7th player: check it is drawn above the Join keypad~~ Done in
   [rf2-six]: the card was always on top (the element at its centre is `.sw-net-msg`, with the
   wash and OK); the old picture was a stale frame from Zoe's lagging page. SIX now checks that,
