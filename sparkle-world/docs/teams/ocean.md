@@ -416,7 +416,7 @@ when something changed. All four instance attributes are created with
 `setUsage(THREE.DynamicDrawUsage)` (three r186 defaults `instanceMatrix` to static).
 
 Capacity (instances) per kind: dolphin 12 (6 wild, the ride keeps its wild slot; 3 show pod; 3
-friends' rides), fish 30, sea turtle 3, octopus 2, jelly 8, seahorse 6, crab 6, starfish 12,
+friends' rides; since 6 players, 14 with 5 friends' rides, docs/MULTIPLAYER.md "Six players"), fish 30, sea turtle 3, octopus 2, jelly 8, seahorse 6, crab 6, starfish 12,
 whale 1. `mesh.visible = count > 0`; `frustumCulled = false` (instances spread over the sea, like
 the butterflies); `userData.envWarm = true`; names `sea-dolphin`, `sea-fish`, ... so the probe's
 per-group draw-call breakdown (`tools/probe-vehicles.mjs:245-278`) can list them.
