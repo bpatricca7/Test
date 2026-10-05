@@ -742,8 +742,9 @@ Beach Cozy, desktop and iPad 1024 x 768 touch, `debug.merfolk.tips(true)`,
 | D13 | `timeout 570 node tools/e2e-accounts.mjs --only=4` (runs 1-4) | whole: 757-1412 s, so split | not measured (`--only` closure checked in the code: runs 1-4) |
 | D14 | `timeout 570 node tools/e2e-accounts.mjs --only=6,7` (runs 1, 2, 5, 6, 7) | | not measured (closure: runs 1, 2, 5, 6, 7) |
 | D15 | `timeout 570 node tools/e2e-accounts.mjs --only=8,9,10` (runs 1, 2, 8, 9, 10) | | not measured (closure: runs 1, 2, 8, 9, 10) |
+| D16-D22 | `timeout 570 node tools/probe-hud-sizes.mjs gate --sizes=X` for X = `390x844,844x390,1366x940`, `1366x1024,1180x820,1180x740`, `1180x700,1133x744,1133x660`, `1024x768,1024x690,1194x834`, `1194x750,1080x810,1080x700`, `1180x640,820x1180,768x1024`, `744x1133` (the wave-4 states; a group of 4 took up to 517 s) | | all 19 clear in [rf2-hud]: 186-376 s for a group of 3 |
 
-In all: 13 Node commands and about 60 browser commands, about **4.5 hours** of serial browser
+In all: 13 Node commands and about 70 browser commands, about **5 hours** of serial browser
 time. Order: A (stop at the first failure), B, C, D. After any fix, re-run its covering
 commands, then A again.
 
@@ -884,8 +885,9 @@ integration branch, never changed.
   a toast that arrives after the dolphin bubble opened can lie over it. A product fix (a shorter
   toast stack on phones, or the bubble moving again on a new toast), then
   `probe-ocean --only=wave4a --x=5`.
-- The walkie on upright phones: its 22 px rings overlap hotbar slots and the joystick; it needs
-  a layout choice (smaller button or rings, or a new place).
+- ~~The walkie on upright phones: its 22 px rings overlap hotbar slots and the joystick~~ Done
+  in [p2-hud-finish] (upright) and [rf2-phone] (sideways); probe-hud-sizes 390x844 and 844x390
+  clear in [rf2-hud].
 - R-F (fish schools from her play camera): fixed in p2-fish-far (`motion.js` `fishY`, the back
   row a little above the front one; ocean.md "P2 fish fixes"), 10 of 10 runs on desktop and 10
   of 10 on iPad. Not re-run since: probe-ocean see,tap / ride / biomes / cost / wave4a / wave4b
@@ -895,6 +897,12 @@ integration branch, never changed.
   sizes are clear with the wave-4 states (alone and with friends), among them 390x844, 844x390
   (the walkie's rings clear the hotbar) and 1366x940 (the ride starts). A group of 4 took
   380-517 s and a group of 3 186-376 s, so the gate runs `--sizes=` groups of 3.
+- [rf2-hud]: probe-ocean `--only=wave4b` (X6-X10) and probe-merfolk `--only=touch,friends` green
+  on bfcbfc8. X7's hop-off check is timed in two parts: Rosie's new state reaches Lily within
+  2 s of wall time, and the tail is gone within 2 s of Lily's game time (frames counted as
+  `game.js` counts them, at most 0.05 s each). It had failed at 2033-2978 ms because two
+  GPU-less pages ran at about 2 frames a second, so the tail's 0.175 s shrink took 4 frames of
+  0.4-0.7 s; the message itself came in 200-550 ms. probe-hud-sizes runs as D16-D22.
 - ~~The "full" card for a 7th player: check it is drawn above the Join keypad~~ Done in
   [rf2-six]: the card was always on top (the element at its centre is `.sw-net-msg`, with the
   wash and OK); the old picture was a stale frame from Zoe's lagging page. SIX now checks that,
