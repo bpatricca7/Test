@@ -93,7 +93,7 @@ const PICS = {
   dolphin: '<svg viewBox="0 0 64 64" class="sw-help-pic"><path d="M4 50c6-6 10-6 14 0s8 6 14 0 8-6 14 0 8 6 14 0v10H4Z" fill="#8FD8FF"/><path d="M12 38c4-14 16-22 30-20 6 1 10 4 12 8l6 2-6 3c-3 5-9 8-16 8-8 0-14-3-18-1l-6 6-1-7-6 2Z" fill="#FF8CC6" stroke="#3A1F4D" stroke-width="2.5" stroke-linejoin="round"/><path d="M30 19l4-9 5 9" fill="#FF8CC6" stroke="#3A1F4D" stroke-width="2.5" stroke-linejoin="round"/><circle cx="46" cy="26" r="2.4" fill="#3A1F4D"/></svg>',
   pinch: '<svg viewBox="0 0 64 64" class="sw-help-pic"><path d="M6 6l14 14M58 58L44 44M6 6h9M6 6v9M58 58h-9M58 58v-9" fill="none" stroke="#3FD8B0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="24" r="7" fill="#FFD9C2" stroke="#3A1F4D" stroke-width="2.5"/><circle cx="40" cy="40" r="7" fill="#FFD9C2" stroke="#3A1F4D" stroke-width="2.5"/></svg>',
   // merfolk: a tail fin over the water, with the Up and Down arrows
-  tail: '<svg viewBox="0 0 64 64" class="sw-help-pic"><rect x="4" y="34" width="56" height="26" rx="8" fill="#B8E1FF"/><path d="M4 38c6 0 6-5 12-5s6 5 12 5 6-5 12-5 6 5 12-5 6 5 8 5" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/><path d="M29 44l1.6-18h2.8L35 44Z" fill="#3FD8B0"/><path d="M32 27C27 18 20 14 11 15c3 7 11 12 21 12Zm0 0c5-9 12-13 21-12-3 7-11 12-21 12Z" fill="#3FD8B0" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M50 30l5-6 5 6M50 44l5 6 5-6" fill="none" stroke="#9C7BFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  tail: '<svg viewBox="0 0 64 64" class="sw-help-pic"><rect x="4" y="34" width="56" height="26" rx="8" fill="#B8E1FF"/><path d="M4 38c6 0 6-5 12-5s6 5 12 5 6-5 12-5 6 5 12 5 6 5 8 5" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/><path d="M29 44l1.6-18h2.8L35 44Z" fill="#3FD8B0"/><path d="M32 27C27 18 20 14 11 15c3 7 11 12 21 12Zm0 0c5-9 12-13 21-12-3 7-11 12-21 12Z" fill="#3FD8B0" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M50 30l5-6 5 6M50 44l5 6 5-6" fill="none" stroke="#9C7BFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 };
 
 export function install(game) {
@@ -147,7 +147,7 @@ export function install(game) {
     };
     game.events.on('vehicle:drive', (e) => { vehicleKind = e && e.kind === 'boat' ? 'boat' : 'car'; setLabel(); });
     for (const ev of ['vehicle:park', 'world:unload']) game.events.on(ev, () => { vehicleKind = null; setLabel(); });
-    for (const ev of ['player:seaswim', 'sea:ride', 'sea:hopoff']) game.events.on(ev, setLabel);
+    for (const ev of ['player:seaswim', 'sea:ride', 'sea:hopoff', 'world:load']) game.events.on(ev, setLabel);
   }
 
   // =====================================================================================

@@ -1252,19 +1252,25 @@ class OceanSystem {
   /**
    * Swimmers of a kind never sit inside each other (two dolphins crossing read as one with two
    * heads): any two closer than d blocks are eased apart, each only into water it may swim in.
+   * One holding its place (FIXED: the one she rides, a leap, a buddy...) stays put and only the
+   * other one moves (twice as far, so the pair parts as fast); two holding their place stay.
    */
   _apart(kind, d) {
     const list = this.pools[kind], env = this.env, n = list.length;
     for (let i = 0; i < n; i++) {
       const a = list[i];
-      if (!a.on || a.hidden || FIXED[a.state]) continue;
+      if (!a.on || a.hidden) continue;
+      const fa = !!FIXED[a.state];
       for (let j = i + 1; j < n; j++) {
         const b = list[j];
-        if (!b.on || b.hidden || FIXED[b.state]) continue;
+        if (!b.on || b.hidden) continue;
+        const fb = !!FIXED[b.state];
+        if (fa && fb) continue;
         const dx = b.x - a.x, dz = b.z - a.z, dy = b.y - a.y, h = Math.hypot(dx, dz);
         if (h >= d || Math.abs(dy) > d) continue;
         const k = Math.min(0.08, (d - h) * 0.25), ux = h > 1e-3 ? dx / h : Math.sin(a.i + 1), uz = h > 1e-3 ? dz / h : Math.cos(a.i + 1);
-        for (const [r, s] of [[a, -1], [b, 1]]) {
+        const moves = fa ? [[b, 2]] : fb ? [[a, -2]] : [[a, -1], [b, 1]];
+        for (const [r, s] of moves) {
           const nx = r.x + ux * k * s, nz = r.z + uz * k * s;
           const ok = kind === 'crab' ? this.map.shore(nx, nz) : r.dry || columnOk(env, kind, Math.floor(nx), Math.floor(nz), r.level);
           if (ok) { r.x = nx; r.z = nz; }
@@ -1432,7 +1438,10 @@ class OceanSystem {
       ref: r,
       box: r.box,
       throughLiquid: true,
-      hint: () => SEA_TEXT.hint,
+      // no "Tap to say hi!" for the one whose bubble is open or that she rides, nor while a
+      // mystery present drops (one "tap" call at a time)
+      hint: () => (sys.ui && sys.ui.bubbleRec === r) || r.state === 'ride' || r.state === 'mount' ||
+        document.querySelector('.sq-drop') ? null : SEA_TEXT.hint,
       onUse: use,
       onBuild: use,
       onRemove: use,

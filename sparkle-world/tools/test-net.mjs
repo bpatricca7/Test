@@ -1048,7 +1048,7 @@ async function serverTests() {
     }
   });
 
-  await test('server: limits (4 per room, 3,900 B messages, 4 KiB presence, rate, rooms, per-IP, origin, idle, shutdown)', async () => {
+  await test('server: limits (6 per room, 3,900 B messages, 4 KiB presence, rate, rooms, per-IP, origin, idle, shutdown)', async () => {
     const dir = mkdtempSync(path.join(tmpdir(), 'sw-'));
     const page = path.join(dir, 'page.html');
     writeFileSync(page, '<!doctype html><title>Glimmer World</title>');

@@ -182,6 +182,19 @@ export function createSeaUi(game, sys) {
       }
       if (best) [x, y] = best;
     }
+    // no free spot (an upright phone): it waits while a sticker pop or a toast would lie on top
+    // of it (they are drawn above it), so Ride and Trick never vanish under a card
+    if (over(x, y)) {
+      for (const el of document.querySelectorAll('.sw-stkpop, .sw-toasts .sw-toast')) {
+        const c = el.getBoundingClientRect();
+        if (!c.width || el.classList.contains('sw-leave')) continue;
+        const L = c.left - base.left, T = c.top - base.top;
+        if (x - w / 2 < L + c.width && x + w / 2 > L && y - h < T + c.height && y > T) {
+          bubble.style.visibility = 'hidden';
+          return;
+        }
+      }
+    }
     bubble.style.left = Math.round(x) + 'px';
     bubble.style.top = Math.round(y) + 'px';
   }

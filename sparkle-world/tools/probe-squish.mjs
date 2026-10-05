@@ -598,6 +598,29 @@ async function touchPass(browser, errors) {
     const hit = (a, b) => a && b && a.l < b.r && b.l < a.r && a.t < b.b && b.t < a.b;
     c(lay.squish && !hit(lay.squish, lay.joy) && !hit(lay.present, lay.joy) && !hit(lay.away, lay.joy), `C2 ${label}: Squish!, Put away and Present are clear of the joystick (${JSON.stringify(lay)})`);
     await shot(page, phone ? 'hud-phone' : 'hud-' + label, PREFIX);
+    // C2 the one-time pill tip waits for the toasts: never on top of "You're holding ... Press Squish!"
+    const tipToast = await ev(page, () => new Promise((done) => {
+      const box = (e) => e.getBoundingClientRect();
+      const t0 = performance.now();
+      let worst = null, seen = false;
+      const step = () => {
+        const tip = document.querySelector('.sq-pilltip');
+        if (tip) {
+          seen = true;
+          const a = box(tip);
+          for (const el of document.querySelectorAll('.sw-toast')) {
+            if (el.classList.contains('sw-leave')) continue;
+            const b = box(el);
+            if (a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) worst = worst || el.innerText;
+          }
+        }
+        if (performance.now() - t0 > 7000 || (seen && performance.now() - t0 > 1500)) done({ seen, worst });
+        else requestAnimationFrame(step);
+      };
+      step();
+    }));
+    c(!tipToast.worst, `C2 ${label}: the pill tip never lies on a toast (${JSON.stringify(tipToast)})`);
+    if (phone && tipToast.seen) await shot(page, 'pilltip-phone', PREFIX);
     // C5 at phone width: three different pictures (labels are hidden)
     if (phone) {
       const svgs = await ev(page, () => ['present', 'squish', 'squish-away'].map((a) => document.querySelector(`.lf-hud .sw-round[data-action="${a}"] .sw-round-face svg`).outerHTML));

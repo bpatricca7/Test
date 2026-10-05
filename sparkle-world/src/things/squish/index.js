@@ -244,6 +244,9 @@ export function install(game) {
 
   const inWater = () => {
     const pl = game.player;
+    // on a dolphin without a tail (Just Me) she holds the toy, as on a pony (avatar.js heldBone);
+    // player.swimming stays as it was while she rides, so it does not count there
+    if (pl && pl.state === 'ride' && pl.mountPet && pl.mountPet.kind === 'dolphin' && !pl.seaForm) return false;
     return !!(pl && (pl.swimming || pl.seaForm));
   };
 

@@ -671,9 +671,15 @@ export function installPanels(game, S) {
     tipWanted = now(); // shown by tick() once the world is clear (the First Present! pop goes first)
   });
   let tipWanted = 0;
+  const toastUp = () => {
+    for (const el of ui.root.querySelectorAll('.sw-toast')) if (!el.classList.contains('sw-leave')) return true;
+    return false;
+  };
   function pumpTips() {
     if (!tipWanted || game.mode !== 'play') return;
-    if (blocked(game) || drop) { tipWanted = now(); return; }
+    // a toast up top (e.g. "You're holding ... Press Squish!") goes first: the pill tip sits
+    // just under the coin pill, right where the toast stack is on an upright phone
+    if (blocked(game) || drop || toastUp()) { tipWanted = now(); return; }
     if (now() - tipWanted < 600) return;
     tipWanted = 0;
     if (!devGet('squishPillTip')) {

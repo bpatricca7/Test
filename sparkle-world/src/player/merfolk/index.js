@@ -282,6 +282,12 @@ export function install(game) {
     setUnderwater(null);
   });
   game.events.on('avatar:changed', prepSoon);
+  // the dolphin bubble closed the choice bubble: that counts as one showing (wave4-integration §1.4)
+  game.events.on('ui:bubble-closed', ({ owner } = {}) => {
+    if (owner !== 'merfolk' || !bubble) return;
+    if (!bub.tapped) devSet('seaAsked', Math.min(2, dev('seaAsked', 0) + 1));
+    hideBubble(false);
+  });
   game.events.on('ui:open', () => {
     if (bubble && bubble.classList.contains('lf-on')) hideBubble(true);
   });
@@ -377,6 +383,7 @@ export function install(game) {
         tips.dive += dt;
         const waitBubble = bubble || bub.wait >= 0 || (tips.diveFirst && popShowing());
         if (!p.seaSwim) tips.dive = -1;
+        else if (riding()) tips.dive = 0; // no dive advice on a dolphin: 1.5 s after she hops off
         else if (tips.dive >= 1.5 && !waitBubble && !ui.current) {
           tips.dive = -1;
           if (dev('seaHints', 0) < 2 && depthBelow(game.physics.liquidAt.bind(game.physics), pos.x, pos.y, pos.z) >= 3) {
