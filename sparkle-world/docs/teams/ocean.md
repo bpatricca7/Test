@@ -1873,14 +1873,15 @@ for a grown-up's read (§16 Q4).
   (snow: fish past a floe, `ocean-biomes-snow-floes.png`). G1 unchanged.
 - *Fish spacing.* Little Fish were not in `APART` (their place comes from their orbit), so two
   could melt into one two-headed blob. `motion.js` `spaceFish` pushes school mates closer than
-  `FISH_APART` (0.75) apart a little each frame (at most 0.04 a frame, so a fish never darts) and
+  `FISH_APART` (1.0; 0.75 still let a school seen low from her swim camera read as one jumble)
+  apart a little each frame (at most 0.04 a frame, so a fish never darts) and
   keeps the push as a small offset on its orbit that eases back (scaled by dt, so 20 fps spaces as
   well as 60). By an ice floe a fish's orbit point on the ice moves in along its own line
   (`IN_STEPS`) instead of all bunching on one small ring, a blocked push slides along the edge, and
   a fish whose place jumps swims there at most `FISH_STEP` (14) a second instead of popping across
   (before: steps of 1.1-1.3 blocks in one frame). Test S11 (10 fish, 60 s): frames with two fish
-  closer than 0.4 went from 92-96% to 0% in open water and to under 2% by a floe (also at 20 fps);
-  probe B4 counts it in the snow world too (0 of 74 frames). Debug: `schoolTo(i, x, z)`,
+  closer than 0.4 went from 92-96% to under 0.5% in open water and to under 2% by a floe (also at
+  20 fps); probe B4 counts it in the snow world too. Debug: `schoolTo(i, x, z)`,
   `fishClosest(i)`, `behindCount()`, `meshCounts(glass)`.
 - *Dolphin face and tail.* From the front or 3/4 it read as a seal or a platypus (a round ball
   head and a short tube beak), and its flukes were a thin stick from the side. Now a softer

@@ -441,7 +441,7 @@ export function placeFish(r, school, env, dt = 0) {
 }
 
 /** Little Fish keep this far apart (centre to centre, block units; a fish is about 0.85 long). */
-export const FISH_APART = 0.75;
+export const FISH_APART = 1.0;
 const SEP_MAX = 1.4, PUSH_MAX = 0.04;
 
 /**
