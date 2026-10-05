@@ -1239,8 +1239,8 @@ game.debug.squish = {
 **C: touch** (iPad 1024 x 1366 portrait and 1366 x 1024; phone 390 x 844 and 360 x 780)
 - **C1** the coin pill's tap box is at least 44 x 44 px and a `locator.tap()` opens the shelf; the
   pill's `textContent` is still only the number; the ring is at least 28 px (24 px on phones).
-- **C2** open a present with 3 `touchscreen.tap`s; Hold it; the life-HUD Squish! and Present buttons
-  do not overlap the joystick (bounding boxes).
+- **C2** open a present with 3 `touchscreen.tap`s; Hold it; Squish! and Put away show at once; the
+  life-HUD Squish! and Present buttons do not overlap the joystick (bounding boxes).
 - **C3** the shelf fits 360 px wide with no horizontal scroll; cubbies at least 72 px.
 - **C4** the Bag's ghost-click rule: the tap that chooses a toy in the Bag does not place one under
   the finger (no new entity within 700 ms).
@@ -1546,9 +1546,12 @@ Made on `claude/wave4-integration` after the three merges (commit tag `[review-f
   dolphin with no tail (`player.swimming` keeps its old value during a ride, so it cannot decide
   there); with a tail, the toy still hides as in §1.2 of the integration plan.
 - **Ocean's "Tap to say hi!" waits during a present drop** (one "tap" call at a time).
-- **Still open:** probe-squish `--only=touch` C2 fails on the two iPads (1024x1366, 1366x1024),
-  twice in a row: about 600 ms after `held()` is true, Squish! and Put away read as hidden or zero
-  width, yet they show in the picture taken right after. No link to these fixes was found (they
-  only gate a toast and the pill tip); the next step is to run the same check on `a3f8126` and,
-  if it fails there too, find why the life HUD does not show the squish buttons while `heldObj`
-  is set. The check was not loosened.
+- **Squish! and Put away show the moment she holds a toy** ([rf2-c2]). probe-squish
+  `--only=touch` C2 failed on the two iPads (1024x1366, 1366x1024): about 600 ms after `held()`
+  was true, Squish! and Put away still read as hidden. `hold()` set the held toy at once, but the
+  life HUD only updated in the next system update (`showHud()` in the `squish-presents`
+  system), and on the GPU-less test machine one iPad-sized frame takes 600-800 ms. Now `hold()`
+  and `putAway()` call `showHud()` themselves (`index.js`), so the buttons appear with the
+  "You're holding ..." toast. C2 checks that they show in the same moment as `held()`, then
+  waits two game frames (`diag.frames`) and 600 ms before it measures the layout; a button that
+  stays hidden still fails. `--only=touch` green twice.

@@ -686,7 +686,7 @@ Beach Cozy, desktop and iPad 1024 x 768 touch, `debug.merfolk.tips(true)`,
 | B4 | `timeout 570 node tools/probe-merfolk.mjs --only=touch,friends` | est. 4-5 min | not measured |
 | B5 | `timeout 570 node tools/probe-merfolk.mjs --only=costs,save` | est. 4-6 min | not measured |
 | B6 | `timeout 570 node tools/probe-squish.mjs --only=desktop` | est. 6-8 min | not measured |
-| B7 | `timeout 570 node tools/probe-squish.mjs --only=touch` | est. 4-6 min | not measured |
+| B7 | `timeout 570 node tools/probe-squish.mjs --only=touch` | est. 4-6 min | 215-220 s, green twice ([rf2-c2]) |
 | B8 | `timeout 570 node tools/probe-squish.mjs --only=world,save` | est. 5-7 min | not measured |
 | B9 | `timeout 570 node tools/probe-squish.mjs --only=mp` | est. 3-5 min | not measured |
 | B10 | `timeout 570 node tools/probe-squish.mjs --only=grids,cost` | est. 5-7 min | not measured |
@@ -917,6 +917,9 @@ integration branch, never changed.
   tappable, its idle timer stands still, and it shows at the first free spot; probe-ocean X5
   checks the waiting bubble and that it shows clear of everything once the pop and toast leave.
 
+- [rf2-c2]: Squish! and Put away show the moment she holds a toy (`hold()` / `putAway()` update
+  the HUD); probe-squish C2 checks that and waits for game frames before the layout (below).
+
 **Still open before the deploy** (none of them weakens a check):
 - X5 on the upright phone (390 x 844): **decided** ([rf2-x5], the owner's default, set by the
   lead): on a crowded phone screen the dolphin bubble **waits**. Just after Hop off, with a
@@ -928,10 +931,14 @@ integration branch, never changed.
   the pop and the toast leave it shows inside the screen, Ride tappable, clear of every control
   (the same rectangle math). Every other X5 check is unchanged. B17d green on 390 x 844 and
   1024 x 1366 (154 s; pictures `.shots/wave4-x5-*-hopoff.png` and `-hopoff-shown.png`).
-- probe-squish `--only=touch` C2 on the iPads (1024x1366, 1366x1024) failed twice in
-  [review-fixes]: about 600 ms after `held()`, Squish! and Put away read as hidden or zero width,
-  yet show in the next picture. Not linked to those fixes so far; next, run it on `a3f8126`
-  (squishies.md "As built (integration review fixes)"). The check was not loosened.
+- probe-squish `--only=touch` C2 on the iPads (1024x1366, 1366x1024): **fixed** ([rf2-c2]). The
+  root cause was timing, not a pop-in animation: `hold()` set the held toy at once, but Squish!
+  and Put away only showed on the next game frame (`showHud()` ran in the system update), and on
+  the GPU-less test machine one iPad-sized frame takes 600-800 ms (measured: hidden for 600-700
+  ms, shown on the first frame after `held()`). Now `hold()` and `putAway()` update the HUD
+  themselves; C2 checks the buttons show in the same moment as `held()`, then waits two game
+  frames (plus the 600 ms) before the layout check. The check still fails a button that stays
+  hidden. `--only=touch` green twice (about 215 s each).
 - The ride pictures for the daughter (§7.3, `wave4-ride-mermaid.png`, `ocean-ride-*.png`): no
   dolphin crosses another any more, but the R10 camera cuts the ridden dolphin off at the bottom
   and her hair hides most of the side-saddle tail (**owner** or design call before she sees them).
