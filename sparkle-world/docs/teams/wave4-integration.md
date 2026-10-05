@@ -891,8 +891,10 @@ integration branch, never changed.
   of 10 on iPad. Not re-run since: probe-ocean see,tap / ride / biomes / cost / wave4a / wave4b
   and probe-merfolk --only=water (the full gate runs them). ocean.md's older "Left as is" line
   about different kinds swimming close together is replaced by `apartKinds`.
-- 16 of the 19 probe-hud-sizes sizes are still to run with the wave-4 states (`--sizes=` groups
-  of about 5).
+- probe-hud-sizes with the wave-4 states, in [rf2-hud] on 7ec1495: clear at 390x844, 844x390,
+  1366x940, 1366x1024, 1180x820, 1180x740, 1180x700, 1133x744. A group of 4 took 380-517 s, so
+  the gate runs groups of 3. Still to run: 1133x660, 1024x768, 1024x690, 1194x834, 1194x750,
+  1080x810, 1080x700, 1180x640, 820x1180, 768x1024, 744x1133.
 - ~~The "full" card for a 7th player: check it is drawn above the Join keypad~~ Done in
   [rf2-six]: the card was always on top (the element at its centre is `.sw-net-msg`, with the
   wash and OK); the old picture was a stale frame from Zoe's lagging page. SIX now checks that,
