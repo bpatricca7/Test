@@ -1229,18 +1229,24 @@ async function reviewPass(browser, errors) {
     c(left.n === 0 && left.parts && !left.parts.shown && left.parts.legsVisible,
       `review: on land after a swim, legs and no sea parts showing (${left.n} shown)`);
     // seen from the front: he turns round to face the sea and the camera hangs over the water
-    // looking at him and the beach (a camera on the land side ran into the bank or his head)
-    await page.evaluate((y) => {
-      const g = window.__game;
-      g.player.yaw = y + Math.PI;
-      g.cameraRig.yaw = y + 0.3;
-      g.cameraRig.pitch = 0.22;
-    }, toLand);
-    await settle(page, 900);
-    const view = await page.evaluate(() => {
-      const g = window.__game, c = g.camera.position, p = g.player.position;
-      return { dist: Math.hypot(c.x - p.x, c.z - p.z), up: c.y - p.y };
-    });
+    // looking at him and the beach (a camera on the land side ran into the bank or his head);
+    // a tree or the bank can still stand in the way in a random world, so the camera tries a few
+    // angles round the sea side and keeps the first that stands well back from him
+    let view = { dist: 0 };
+    for (const [off, pitch] of [[0.3, 0.22], [-0.3, 0.22], [0.7, 0.25], [-0.7, 0.25], [0, 0.35], [1.1, 0.3], [-1.1, 0.3], [0.3, 0.5]]) {
+      await page.evaluate(([y, off, pitch]) => {
+        const g = window.__game;
+        g.player.yaw = y + off + Math.PI - 0.3;
+        g.cameraRig.yaw = y + off;
+        g.cameraRig.pitch = pitch;
+      }, [toLand, off, pitch]);
+      await settle(page, 700);
+      view = await page.evaluate(() => {
+        const g = window.__game, c = g.camera.position, p = g.player.position;
+        return { dist: Math.hypot(c.x - p.x, c.z - p.z), up: c.y - p.y };
+      });
+      if (view.dist > 2.8) break;
+    }
     c(view.dist > 2.5, `review: the land picture's camera stands back from him (${view.dist.toFixed(1)} blocks)`);
     await playShot('boy-land-after-swim');
   } else c(false, 'review: a shore for the land picture');
