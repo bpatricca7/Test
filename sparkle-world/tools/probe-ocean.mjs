@@ -3124,6 +3124,304 @@ async function wave4aPass(browser, errors) {
 }
 
 // =====================================================================================
+// wave4 part two: X6-X10 (--only=wave4b; --x=6,8 runs only some of them)
+// =====================================================================================
+
+const W4_STICKERS = ['squish_first', 'squish_ten', 'squish_all', 'squish_squeeze', 'dolphin_friend', 'dolphin_rider', 'sea_explorer', 'ocean_star', 'whale_hello', 'sea_magic', 'big_leap'];
+
+/** Wait until every coin has landed (the ring reads earned minus the coins still flying). */
+const coinsLanded = (page, timeout = 10000) => waitOk(page, () => { const g = window.__game; return !g.coins || g.coins.shown === g.profile.coins; }, null, timeout);
+
+// ---------- X6 the Sticker Book ----------
+async function wave4X6(browser, errors) {
+  console.log('\n[wave4] X6 the Sticker Book: the 11 new stickers in the plan\'s order, the Sea Friends strip');
+  const { context, page } = await openGame(browser, { errors, label: 'x6' });
+  const s = await ev(page, (ids) => {
+    const g = window.__game, reg = g.registry.stickers, keys = [...reg.keys()];
+    return {
+      last: keys.slice(-11), size: reg.size, total: g.stickers.total(), all: g.stickers.all().length,
+      before: keys.slice(0, -11).filter((k) => ids.includes(k)).length,
+      art: ids.filter((id) => reg.get(id) && reg.get(id).art).length,
+    };
+  }, W4_STICKERS);
+  check(errors, JSON.stringify(s.last) === JSON.stringify(W4_STICKERS), `X6 the last 11 sticker ids are §4.7 in order (${s.last.join(', ')})`);
+  check(errors, s.total === s.size && s.all === s.size && s.before === 0, `X6 total() is the stickers before wave 4 + 11 (${s.size - 11} + 11 = ${s.total})`);
+  check(errors, s.art === 11, `X6 all 11 have art (${s.art})`);
+  await ev(page, () => window.__game.ui.open('stickers'));
+  const strip = await waitOk(page, () => !!document.querySelector('.sw-sb-extras .oc-friends .oc-slot'), null, 8000);
+  await page.locator('.oc-friends').scrollIntoViewIfNeeded().catch(() => {});
+  await page.waitForTimeout(2000); // the strip's silhouettes are drawn a few per frame
+  const r = await ev(page, () => {
+    const book = document.querySelector('.sw-sb-book').getBoundingClientRect(), f = document.querySelector('.oc-friends');
+    const fr = f.getBoundingClientRect(), cs = getComputedStyle(f);
+    return { bookBottom: Math.round(book.bottom), top: Math.round(fr.top), h: Math.round(fr.height), shown: cs.display !== 'none' && cs.visibility !== 'hidden' && fr.height > 0, slots: f.querySelectorAll('.oc-slot').length, title: (f.querySelector('.oc-friends-title') || {}).textContent };
+  });
+  check(errors, strip && r.shown && r.top >= r.bookBottom - 1 && r.slots === 9 && r.title === 'Sea Friends', `X6 the Sea Friends strip shows under the pages (${JSON.stringify(r)})`);
+  await shot(page, 'x6-book', 'wave4');
+  await context.close();
+}
+
+// ---------- X7 two pages: a friend riding with a toy ----------
+async function wave4X7(browser, errors) {
+  console.log('\n[wave4] X7 two pages: Rosie in sea form with a toy rides a dolphin, then hops off on the shore');
+  const { NetHub } = await import('./net/hub.mjs');
+  const { FakeClaudeHub } = await import('./net/fake-claude.js');
+  const flows = await import('./net/mp-flows.mjs');
+  const { game, until, setupPage, waitLive, bringTo, closePanels } = flows;
+  const hub = new NetHub({
+    clock: { now: () => Date.now(), setTimeout: (f, ms) => setTimeout(f, ms), clearTimeout: (id) => clearTimeout(id) },
+    budget: { rate: 100000, burst: 100000 }, maxPeers: 16, graceMs: 10000,
+  });
+  const fc = new FakeClaudeHub(hub);
+  const ACCOUNTS = { 'u-lily': 'Parker family (Mom)', 'u-rosie': 'Rosie R.' };
+  const open = async (def) => {
+    const context = await browser.newContext({ viewport: def.viewport, hasTouch: def.touch, isMobile: def.touch, deviceScaleFactor: 1 });
+    await fc.addContext(context, { uid: def.uid, level: def.level, can: def.can, guest: def.guest, accounts: ACCOUNTS, label: def.key });
+    const page = await context.newPage();
+    attachErrorCollectors(page, errors, def.key);
+    const pl = { ...def, context, page };
+    await page.goto(PAGE_URL, { waitUntil: 'domcontentloaded', timeout: 180000 });
+    await waitForTitle(page, 180000);
+    await setupPage(pl);
+    await recordEvents(page);
+    return pl;
+  };
+  const lily = await open({ key: 'lily', name: 'Lily', uid: 'u-lily', level: 'interact', can: true, guest: false, viewport: { width: 1280, height: 800 }, touch: false, seed: 11 });
+  const rosie = await open({ key: 'rosie', name: 'Rosie', uid: 'u-rosie', level: 'interact', can: true, guest: false, viewport: IPAD, touch: true, seed: 29 });
+  const code = await flows.hostMakesCode(lily, { biome: 'beach' });
+  await flows.guestTypesCode(rosie, code);
+  await flows.hostLetsIn(lily, 'Rosie');
+  check(errors, await waitLive(rosie), 'X7 Rosie is in Lily\'s world');
+  await closePanels(lily);
+  for (const p of [lily, rosie]) {
+    await game(p, () => { const g = window.__game; g.debug.merfolk.tips(true); g.debug.ocean.popups(true); g.debug.squish.presents(true); g.store.deviceSet('seaAsked', 2); });
+  }
+  await bringTo(rosie, lily, 3, 3);
+  // Rosie holds the Dolphin Puffum on the sand
+  const sh = await game(rosie, () => window.__game.debug.merfolk.shore());
+  await game(rosie, (s) => { const g = window.__game; g.player.setFlying(false); g.player.teleport(s[0], s[1] + 0.05, s[2]); g.debug.squish.give('pf_dolphin'); return g.squish.hold('pf_dolphin'); }, sh.land);
+  check(errors, await until(rosie, () => window.__game.squish.held() === 'squish_pf_dolphin', null, 4000), 'X7 Rosie holds the Dolphin Puffum on the sand');
+  // both at a deep spot; Rosie turns, then rides
+  const deep = await game(lily, () => window.__game.debug.ocean.deepSpot());
+  await game(lily, (d) => window.__game.player.teleport(d[0] - 3, d[1], d[2] - 2), deep);
+  await game(rosie, (d) => window.__game.player.teleport(d[0], d[1], d[2]), deep);
+  for (const p of [lily, rosie]) await float(p.page, true);
+  check(errors, await until(rosie, () => !!window.__game.player.seaForm && !!(window.__game.debug.merfolk.parts() || {}).shown, null, 15000), 'X7 Rosie turns in deep water');
+  check(errors, await game(rosie, () => window.__game.debug.ocean.ride()), 'X7 Rosie rides a dolphin');
+  const friend = () => {
+    const g = window.__game, f = [...g.net.remote.friends.values()].find((q) => q.name === 'Rosie');
+    if (!f || !f.avatar) return null;
+    const sea = f.avatar.seaParts(), rd = g.debug.ocean.remote()[0] || null;
+    return { st: f.st, sr: f.sr, shown: sea.shown, form: sea.form, legs: sea.legsVisible, held: f.heldKey || null, inHand: !!f.avatar.held, heldShown: f.avatar.heldShown, dolphin: !!rd && rd.saddle, d: rd ? Math.hypot(f.pos.x - rd.x, f.pos.z - rd.z) : null };
+  };
+  const on = await until(lily, () => {
+    const g = window.__game, f = [...g.net.remote.friends.values()].find((q) => q.name === 'Rosie');
+    if (!f || !f.avatar) return null;
+    const sea = f.avatar.seaParts(), rd = g.debug.ocean.remote()[0] || null;
+    const r = { st: f.st, sr: f.sr, shown: sea.shown, form: sea.form, legs: sea.legsVisible, held: f.heldKey || null, inHand: !!f.avatar.held, heldShown: f.avatar.heldShown, dolphin: !!rd && rd.saddle, d: rd ? Math.hypot(f.pos.x - rd.x, f.pos.z - rd.z) : null };
+    return r.st === 'h' && r.sr != null && r.dolphin && r.shown && !r.legs && r.heldShown === false ? r : null;
+  }, null, 8000);
+  const onNow = on || await game(lily, friend);
+  check(errors, !!on && on.d < 0.6, `X7 Lily sees the dolphin under Rosie, her tail out (side-saddle), no toy in her hand (${JSON.stringify(onNow)})`);
+  await game(lily, () => { const g = window.__game, r = g.debug.net.remote().find((q) => q.name === 'Rosie'); if (r) { const p = g.player.position; g.cameraRig.yaw = Math.atan2(r.pos[0] - p.x, r.pos[2] - p.z); g.cameraRig.pitch = 0.3; } });
+  await lily.page.waitForTimeout(800);
+  await shot(lily.page, 'x7-lily-sees-rosie-ride', 'wave4');
+  // Rosie hops off on the shore: Lily sees legs and the toy within 2 s
+  await float(rosie.page, false);
+  await game(rosie, (s) => { const g = window.__game; g.debug.ocean.hopOff('button'); g.player.teleport(s[0], s[1] + 0.05, s[2]); }, sh.land);
+  await game(lily, (s) => window.__game.player.teleport(s[0] + 2, s[1] + 0.05, s[2] + 1), sh.land);
+  await float(lily.page, false);
+  const t0 = Date.now();
+  const off = await until(lily, () => {
+    const g = window.__game, f = [...g.net.remote.friends.values()].find((q) => q.name === 'Rosie');
+    if (!f || !f.avatar) return null;
+    const sea = f.avatar.seaParts();
+    return !sea.shown && sea.legsVisible && f.heldKey === 'squish_pf_dolphin' && !!f.avatar.held && f.avatar.heldShown === true && g.debug.ocean.remote().length === 0 ? { legs: sea.legsVisible, held: f.heldKey } : null;
+  }, null, 2000, 50);
+  const offMs = Date.now() - t0;
+  const offNow = off || await game(lily, friend);
+  check(errors, !!off, `X7 Rosie on the shore: Lily sees legs and the toy within 2 s (${off ? offMs + ' ms' : JSON.stringify(offNow)})`);
+  // sizes and hashes
+  for (const p of [lily, rosie]) {
+    const s = await game(p, () => window.__swFakeStats());
+    check(errors, s.maxPresence <= 3900 && s.maxEmit <= 3900 && Object.keys(s.rejects).length === 0, `X7 ${p.key}: presence at most ${s.maxPresence} B, every message at most ${s.maxEmit} B, no refusals`);
+  }
+  check(errors, hub.violations.length === 0 && hub.stats.maxEmit <= 3900 && hub.stats.maxState <= 3900, `X7 the hub: no violations (${hub.violations.length}), largest message ${hub.stats.maxEmit} B, largest presence ${hub.stats.maxState} B`);
+  const r = await flows.converge([lily, rosie], { timeout: 60000 });
+  check(errors, r.ok, `X7 equal hashes and entities on lily, rosie${r.detail ? ' (' + r.detail + ')' : ''}`);
+  for (const p of [lily, rosie]) await p.context.close();
+  hub.close && hub.close();
+}
+
+// ---------- X8 an old profile ----------
+async function wave4X8(browser, errors) {
+  console.log('\n[wave4] X8 an old profile (boys-old-profile.json): a deep swim, a dolphin tap, the first world load');
+  const fixture = JSON.parse(await readFile(path.join(ROOT, 'tools', 'fixtures', 'boys-old-profile.json'), 'utf8')).profile;
+  const { context, page } = await openGame(browser, { errors, label: 'x8' });
+  await ev(page, async (p) => {
+    const g = window.__game;
+    for (const k of Object.keys(g.profile)) delete g.profile[k];
+    Object.assign(g.profile, JSON.parse(JSON.stringify(p)));
+    await g.store.saveProfile(p);
+  }, fixture);
+  await page.reload();
+  await waitForTitle(page, 60000);
+  await settle(page, 800);
+  const t = await ev(page, () => ({ hello: (document.querySelector('.sw-hello') || {}).textContent || '', name: window.__game.profile.look.name }));
+  check(errors, t.name === 'Lily' && t.hello.includes('Hi, Lily!'), `X8 the old profile loads: "${t.hello.trim()}"`);
+  await wave4World(page);
+  const base = await ev(page, () => window.__game.debug.squish.state().base);
+  const deep = await ev(page, () => window.__game.debug.ocean.deepSpot());
+  await float(page, true);
+  await goTo(page, deep);
+  const turned = await waitOk(page, () => !!window.__game.player.seaForm, null, 15000);
+  await page.waitForTimeout(1500);
+  await ev(page, async () => {
+    const g = window.__game, d = g.debug.ocean, p = g.player.position;
+    d.clear(); d.autoSpawn(false);
+    d.spawn('dolphin', p.x + 3, p.y, p.z, { n: 2 });
+    await new Promise((r) => setTimeout(r, 200));
+    d.tap('dolphin');
+  });
+  await page.waitForTimeout(800);
+  await coinsLanded(page);
+  await page.waitForTimeout(1500);
+  const x = await ev(page, async () => {
+    const g = window.__game, p = g.profile;
+    await g.saveProfile(true);
+    const saved = await g.store.loadProfile();
+    return {
+      sea: p.look.sea, savedSea: saved && saved.look && saved.look.sea, met: p.stats.seaMet, coins: p.coins, base: g.debug.squish.state().base,
+      stickers: Object.keys(p.stickers), sea2: g.__probeEvents.filter((e) => e.name === 'coins:change' && e.reason === 'sea').reduce((a, e) => a + (e.delta || 0), 0),
+    };
+  });
+  console.log('    (X8 ' + JSON.stringify({ base, ...x }) + ')');
+  const def = JSON.stringify({ form: 'auto', color: null });
+  check(errors, turned && JSON.stringify(x.sea) === def && JSON.stringify(x.savedSea) === def, `X8 look.sea is the default, also saved (${JSON.stringify(x.sea)})`);
+  check(errors, x.met && x.met.dolphin === 1, `X8 stats.seaMet.dolphin === 1 (${JSON.stringify(x.met)})`);
+  check(errors, base && base.coins === 0 && x.base && x.base.coins === 0, `X8 squish.base.coins === 0 after the first world load (${JSON.stringify(x.base)})`);
+  const old = Object.keys(fixture.stickers);
+  const added = x.stickers.filter((k) => !old.includes(k));
+  check(errors, old.every((k) => x.stickers.includes(k)) && added.every((k) => ['splash', 'sea_magic', 'dolphin_friend'].includes(k)), `X8 every old sticker kept; new only from this swim (${added.join(', ')})`);
+  const want = fixture.coins + 20 * added.length + 2;
+  check(errors, x.coins === want && x.sea2 === 2, `X8 coins ${fixture.coins} + ${20 * added.length} (stickers) + 2 (the hello) = ${x.coins} (want ${want})`);
+  await context.close();
+}
+
+// ---------- X9 coins and the ring ----------
+async function wave4X9(browser, errors) {
+  console.log('\n[wave4] X9 coins: a dolphin hello and Sea Magic! move the ring, a spend does not');
+  const { context, page } = await openGame(browser, { errors, label: 'x9' });
+  await wave4World(page);
+  // Splash! and Dolphin Friend owned first, so the swim pays exactly Sea Magic! and the hello
+  await ev(page, () => { const g = window.__game; g.award('splash'); g.award('dolphin_friend'); });
+  await page.waitForTimeout(500);
+  check(errors, await coinsLanded(page, 15000), 'X9 inFlight 0 before the swim');
+  const s0 = await ev(page, () => ({ ...window.__game.debug.squish.state(), ring: window.__game.squish.ring() }));
+  // a candy-shop spend of 30 while the ring is part way: it does not move (and once more below)
+  await ev(page, () => window.__game.coins.spend(30, 'shop'));
+  await settle(page, 600);
+  const s0b = await ev(page, () => ({ ...window.__game.debug.squish.state(), ring: window.__game.squish.ring() }));
+  check(errors, s0.ring.frac > 0 && s0.ring.frac < 1 && s0b.earned === s0.earned && s0b.ring.frac === s0.ring.frac && s0b.ring.state === s0.ring.state, `X9 a candy-shop spend of 30 with the ring part way does not move it (${s0.ring.frac.toFixed(3)} -> ${s0b.ring.frac.toFixed(3)}, earned ${s0b.earned})`);
+  const deep = await ev(page, () => window.__game.debug.ocean.deepSpot());
+  await float(page, true);
+  await goTo(page, deep);
+  await waitOk(page, () => window.__game.stickers.has('sea_magic'), null, 15000);
+  await ev(page, async () => {
+    const g = window.__game, d = g.debug.ocean, p = g.player.position;
+    d.clear(); d.autoSpawn(false);
+    d.spawn('dolphin', p.x + 3, p.y, p.z, { n: 2 });
+    await new Promise((r) => setTimeout(r, 200));
+    d.tap('dolphin');
+  });
+  await page.waitForTimeout(800);
+  await coinsLanded(page, 15000);
+  await page.waitForTimeout(800);
+  const s1 = await ev(page, () => ({ ...window.__game.debug.squish.state(), ring: window.__game.squish.ring() }));
+  console.log(`    (X9 earned ${s0.earned} -> ${s1.earned}, ring ${JSON.stringify(s0.ring)} -> ${JSON.stringify(s1.ring)}, to go ${s0.toNext} -> ${s1.toNext})`);
+  check(errors, s1.earned - s0.earned === 22, `X9 a dolphin hello (+2) and Sea Magic! (+20) raise earned by 22 (${s0.earned} -> ${s1.earned})`);
+  check(errors, s1.ring.frac > s0.ring.frac || s1.ring.state !== s0.ring.state, `X9 the ring moves (${s0.ring.frac.toFixed(3)} ${s0.ring.state} -> ${s1.ring.frac.toFixed(3)} ${s1.ring.state})`);
+  const s1b = await ev(page, () => ({ ...window.__game.debug.squish.state(), ring: window.__game.squish.ring() }));
+  await ev(page, () => window.__game.coins.spend(30, 'shop'));
+  await settle(page, 600);
+  const s2 = await ev(page, () => ({ ...window.__game.debug.squish.state(), ring: window.__game.squish.ring() }));
+  check(errors, s2.earned === s1b.earned && s2.ring.frac === s1b.ring.frac && s2.ring.state === s1b.ring.state, `X9 a spend of 30 with a present ready does not move it either (${s1b.ring.frac.toFixed(3)} ${s1b.ring.state} -> ${s2.ring.frac.toFixed(3)} ${s2.ring.state})`);
+  await context.close();
+}
+
+// ---------- X10 a webdriver page stays quiet ----------
+async function wave4X10(browser, errors) {
+  console.log('\n[wave4] X10 webdriver quiet: 60 s of swimming and riding with none of the three switches on');
+  const { context, page } = await openGame(browser, { errors, label: 'x10' });
+  await newWorld(page, 'beach');
+  // a present made ready, a fresh device (merfolk's choice bubble would ask), the buddy pod on
+  await ev(page, async () => {
+    const g = window.__game;
+    const n = Math.max(1, g.debug.squish.state().toNext);
+    g.coins.add(n, 'gift', { fly: false });
+    window.__x10 = { on: true, n: 0, mf: 0, drop: 0, keys: [] };
+    const toast = g.ui.toast.bind(g.ui);
+    g.ui.toast = (text, opts) => { window.__x10.keys.push([String(text), (opts && opts.key) || null]); return toast(text, opts); };
+    const X = window.__x10;
+    const f = () => {
+      if (!X.on) return;
+      X.n++;
+      const mf = document.querySelector('.lf-bubble.lf-on[data-owner="merfolk"]');
+      if (mf && mf.offsetParent) X.mf++;
+      if (document.querySelector('.sq-drop')) X.drop++;
+      requestAnimationFrame(f);
+    };
+    f();
+  });
+  const st0 = await ev(page, () => ({ ready: window.__game.debug.squish.state().ready, asked: window.__game.store.deviceGet('seaAsked', 0), form: window.__game.profile.look.sea && window.__game.profile.look.sea.form }));
+  const deep = await ev(page, () => window.__game.debug.ocean.deepSpot());
+  await float(page, true);
+  await goTo(page, deep);
+  const t0 = Date.now();
+  await waitOk(page, () => !!window.__game.player.seaForm, null, 15000);
+  // swim about (W held, turning), ride after 20 s, ride 20 s, hop off, swim to the end
+  await page.keyboard.down('KeyW');
+  let rode = false;
+  while (Date.now() - t0 < 60000) {
+    await page.waitForTimeout(2000);
+    const el = Date.now() - t0;
+    await ev(page, () => { const c = window.__game.cameraRig; c.yaw += 0.6; });
+    if (!rode && el > 20000) {
+      await page.keyboard.up('KeyW');
+      rode = await ev(page, async () => {
+        const g = window.__game, d = g.debug.ocean, p = g.player.position;
+        if (!d.list('dolphin').some((r) => r.role === 'wild' && Math.hypot(r.x - p.x, r.z - p.z) < 6)) d.spawn('dolphin', p.x + 3, p.y, p.z, { n: 2 });
+        await new Promise((r) => setTimeout(r, 200));
+        return !!d.ride();
+      });
+      await page.keyboard.down('KeyW');
+    }
+    if (rode === true && el > 42000) {
+      await ev(page, () => { if (window.__game.ocean.riding) window.__game.debug.ocean.hopOff('button'); });
+      rode = 'off';
+    }
+  }
+  await page.keyboard.up('KeyW');
+  const x = await ev(page, () => { const X = window.__x10; X.on = false; return { n: X.n, mf: X.mf, drop: X.drop, keys: X.keys, ready: window.__game.debug.squish.state().ready, wanted: window.__game.debug.squish.dropState().wanted, pods: window.__game.debug.ocean.pods() }; });
+  console.log('    (X10 ' + JSON.stringify({ st0, rode, n: x.n, toasts: x.keys, ready: x.ready, pods: x.pods.length }) + ')');
+  const bad = x.keys.filter(([t, k]) => /^sea-(buddy|whale|form-dive|form-leap|form-pool)$/.test(k || '') || /came to say hi!|into your pool|to your pool|A whale says hello|to dive!|big leap|deep for/.test(t));
+  check(errors, (Date.now() - t0) >= 60000 && rode === 'off' && x.n > 50, `X10 60 s of swimming at a deep spot with a ride (${x.n} frames)`);
+  check(errors, x.mf === 0, `X10 no merfolk bubble (${x.mf} frames; seaAsked ${st0.asked}, form ${st0.form})`);
+  check(errors, bad.length === 0, `X10 no merfolk tip, no buddy / pool / whale toast (${JSON.stringify(bad)})`);
+  check(errors, st0.ready >= 1 && x.drop === 0 && !x.wanted, `X10 no present drop (${st0.ready} ready, ${x.drop} frames)`);
+  await context.close();
+}
+
+async function wave4bPass(browser, errors) {
+  const parts = args.x ? args.x.split(',') : ['6', '7', '8', '9', '10'];
+  if (parts.includes('6')) await wave4X6(browser, errors);
+  if (parts.includes('7')) await wave4X7(browser, errors);
+  if (parts.includes('8')) await wave4X8(browser, errors);
+  if (parts.includes('9')) await wave4X9(browser, errors);
+  if (parts.includes('10')) await wave4X10(browser, errors);
+}
+
+// =====================================================================================
 
 const errors = [];
 const browser = await launch({ headed: !!args.headed });
@@ -3138,6 +3436,7 @@ try {
   if (want('saves')) await savesPass(browser, errors);
   if (want('mp')) await mpPass(browser, errors);
   if (want('wave4a') || (only && only.includes('wave4'))) await wave4aPass(browser, errors);
+  if (want('wave4b') || (only && only.includes('wave4'))) await wave4bPass(browser, errors);
   if (want('cost')) await costPass(browser, errors);
   else if (only && only.includes('gallery')) await galleryShots(browser, errors); // C5 alone
   if (only && only.includes('review')) await reviewPass(browser, errors); // owner pictures (on request)
