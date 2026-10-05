@@ -42,13 +42,14 @@ export const TAIL = {
 
 // The dragon's accent (horns, crest tips, fin ribs) and belly: a rich gold of its own and warm
 // cream plates (not mixed with the tail, so a pink tail never turns them peach). Some tails get
-// accents of their own, so no tail color adds up to a famous dragon's colors: Purple has mint
-// horns and crest with a pink belly (never purple + gold + yellow), Coral aqua with a shell-pink
-// belly, Orange berry pink, Gold a deep teal with amber (not olive) shading.
+// accents of their own, so no tail color adds up to a famous dragon's colors: Purple has rose
+// pink horns and crest with a pale lavender belly (never purple + gold + yellow, never purple
+// with green spikes), Coral aqua with a shell-pink belly, Orange berry pink, Gold a deep teal
+// with amber (not olive) shading.
 const GOLD = '#FFC83A';
 const BELLY = '#FFD36E';
 const ACCENTS = {
-  '#9C7BFF': { A: '#7DF2CC', B: '#FFCFEA' }, // Purple
+  '#9C7BFF': { A: '#FF5FA8', B: '#F3E6FF' }, // Purple
   '#FF6B6B': { A: '#3FE0CF', B: '#FFDCD2' }, // Coral
   '#FFA94D': { A: '#E2458F', B: '#FFE9CF' }, // Orange
   '#FFD43B': { A: '#13958F', dark: '#A8430E' }, // Gold
@@ -627,14 +628,15 @@ const HORN_ACC = {
   bow: { x: 0.21, y: 1.73, z: -0.22, out: 0.55 },
 };
 const HORN_HAIR = {
-  afro: { y: 1.97 }, curly: { y: 1.78 }, spiky: { y: 1.76 }, short_curly: { y: 1.7 }, bun: { x: 0.24 }, space_buns: { z: -0.2 },
+  afro: { y: 1.92 }, curly: { y: 1.78 }, spiky: { y: 1.76 }, short_curly: { y: 1.7 }, bun: { x: 0.24 }, space_buns: { z: -0.2 },
   fauxhawk: { x: 0.21, out: 0.45 },
 };
 export function hornSpot(look) {
   const head = (look && look.acc && look.acc.head) || 'none';
-  if (!Object.hasOwn(HORN_ACC, head)) return null;
+  if (!Object.prototype.hasOwnProperty.call(HORN_ACC, head)) return null;
   const a = HORN_ACC[head];
-  const h = HORN_HAIR[look && look.hair && look.hair.style] || {};
+  const hs = look && look.hair && look.hair.style;
+  const h = (Object.prototype.hasOwnProperty.call(HORN_HAIR, hs) && HORN_HAIR[hs]) || {};
   // tall hair lifts a horn that sits out at the side less (the hair is lower there)
   const lift = a.out > 0.6 && h.y ? Math.max(0, h.y - 1.66) * 0.6 : Math.max(0, (h.y || 0) - 1.66);
   return {

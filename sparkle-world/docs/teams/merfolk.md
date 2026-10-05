@@ -833,9 +833,19 @@ arms (holding on), the hips turned 0.5 rad to the side; the tail drapes down alo
 dolphin's side (`seaKick = { amp: 0.08, turn: 0.35, curl: 0.25 }`, a slow kick at 1.2 rad/s).
 
 **The tail wave** (`seaTick`): for joint `i` of `N - 1 = 7`:
-`a_i = amp * sin(seaPhase - 0.8 i) * (0.3 + 0.7 i / 6) + curl` (bend toward her back, about
-the hips' X axis) and `side_i = turn * i / 6` (about the Z axis). Up-and-down like a dolphin
-kick, never side to side. A frill flutter (mermaid waist frill and dragon fronds):
+`a_i = amp * sin(seaPhase - 0.8 i) * (0.3 + 0.7 i / 6) + curl + float * fb_i` (bend toward her
+back, about the hips' X axis) and
+`side_i = turn * i / 6 + side * sin(0.6 seaPhase - 0.9 i) * (0.4 + 0.6 i / 6)` (about the Z axis).
+The mermaid: up-and-down like a dolphin kick, never side to side (`side = 0`, `float = 0`).
+The sea dragon swims like a creature: its kick is `amp * 0.4`, and its long tail waves side to
+side in a slow S (`side = 0.35 * (0.6 + 0.4 sp)`), so from behind (the play camera) the tail and
+its crest show instead of pointing at the camera. Floating (not on the floor) it gets
+`float` (eased in at 4/s) with `fb_i` mixed by speed from `FLOAT_STILL = [0.45, 0.3, 0.1, 0,
+-0.05, -0.1, -0.1]` (the tail sweeps back, its end sinks a little) to `FLOAT_SWIM = [0, -0.04,
+-0.06, -0.1, -0.14, -0.18, -0.2]` (it trails back and a little down): never an upward curl of
+the tail end toward the camera. Its fan fin rolls with the wave and turns on edge with speed
+(`fluke.rotation.y` toward `0.6 sp + 0.5 sin(0.6 seaPhase - 5.4)`, eased at 6/s). A riding or
+land pose sets `side = 0`. A frill flutter (mermaid waist frill and dragon fronds):
 `scale.x = 1 + 0.06 * sin(t * 5)`. The shimmer: every `seaMats` entry's
 `emissiveIntensity = base + 0.06 * sin(t * 2.4 + i) + 0.5 * seaFlash` (`seaFlash` decays at 2/s).
 
@@ -1643,9 +1653,12 @@ makes a new candy world when the random one has no deep milk near the start.
   smaller up-and-down kick (×0.4), and its fan fin rolls with the wave and turns on edge with
   speed (`fluke.rotation.y`, eased), so from behind you see horns, the crest down the tail and the
   fan under the water tint, not a flat splash. The mermaid's poses are unchanged.
-- **No famous-dragon colors.** Accents per tail (`ACCENTS` in parts.js): Purple has mint horns,
-  crest and ribs and a pink belly (never purple + gold + yellow); Coral aqua with a shell-pink
-  belly; Orange berry pink; Gold deep teal, its dark shades amber (they were olive). Test A17.
+- **No famous-dragon colors.** Accents per tail (`ACCENTS` in parts.js): Purple has rose pink horns,
+  crest and ribs and a pale lavender belly (never purple + gold + yellow, and never purple with
+  green or mint spikes: round 4's mint was another famous look); Coral aqua with a shell-pink
+  belly; Orange berry pink; Gold deep teal, its dark shades amber (they were olive). Test A17
+  (Purple's accent and belly are neither yellow nor green/mint/aqua, hue 70-185). The colors
+  picture shows all 12 tails, three-quarter and from the play camera.
 - **Horns only with no head accessory or a bow.** Every other head accessory sits on top of the
   head (hats, crown, tiara, flower crown, headband, cat and bunny ears, unicorn horn, halo,
   headphones), so the horns are left out there; an unknown accessory key also gives none. A
@@ -1674,6 +1687,25 @@ makes a new candy world when the random one has no deep milk near the start.
   shore's 0.5 s stretches (like for like), takes the middle one, and fails if the turn builds any
   shader program.
 
+**Fifth round (the picture judges):**
+- Purple's mint accent read as another famous purple dragon (green spikes): now rose pink
+  (`#FF5FA8`) horns, crest and ribs, a pale lavender belly. A17 checks hue 70-185 too.
+- `hornSpot` used `Object.hasOwn` (ES2022; the build targets es2020 and adds no polyfills, so
+  Safari / iPadOS 15.0-15.3 threw in `buildSea` on every deep-water frame). Now
+  `Object.prototype.hasOwnProperty.call` for both tables. New test A19 scans the sea code for
+  `Object.hasOwn`, `.at(n)`, `findLast`, `structuredClone`, `replaceAll`.
+- The afro lifts the horns a little less (`y` 1.97 to 1.92), so their roots sit in the top
+  curls instead of on a stalk above them.
+- **For the owner:** horns show only with no head accessory or a bow, so 4 of the 6 boy
+  starters (Skater cap, Space Explorer headphones, Dino Explorer bucket hat, Camping Day
+  beanie) swim as a Sea Dragon without horns until the hat comes off; the crest, tail and fan
+  still read as a creature (merfolk-grid-starters.png).
+- **For the integrator's cost list:** `prepareSea()` builds the player's sea parts hidden and
+  sends their textures to the GPU 1.5 s after every world load and look change in play mode,
+  even for a child who never swims (a small memory cost; the 10-20 ms build on a slow device
+  moves to just after load). It relaxes §6.3's "built lazily on the first turn"; the hidden
+  parts add no draw calls and the warm-up stand-ins leave the scene once drawn.
+
 **For the integrator / squish (Sea Dragon Puffum, C9):** the motifs changed shape, not names:
 the horn nubs are now curved horns swept back, with a dark root band, ridge bands and a light
 tip; the "bubble-dome spikes" are a tall row of round-tipped crest spikes, tail colored with gold
@@ -1683,7 +1715,7 @@ tail's own color and three gold ribs each (fins, not leaves); the glow spots are
 halo, plus glowing beads at the frond tips; the fan fin is bigger, five round lobes with the outer
 ones longest, deep tail color with gold ribs, folded a little toward the back. Colors stay Deep teal
 `#2FB5B0`; the accent gold is now `#FFC83A` (C9's `#FFD43B` is close enough for a toy). A toy in
-other colors follows `ACCENTS` (a purple one has mint horns and crest and a pink belly, never gold).
+other colors follows `ACCENTS` (a purple one has rose pink horns and crest and a pale lavender belly, never gold or green).
 
 ---
 

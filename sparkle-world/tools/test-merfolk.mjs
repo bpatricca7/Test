@@ -676,8 +676,8 @@ await test('A17 sea dragon horns: only with no head accessory or a bow, never in
   assert(hornSpot({ hair: { style: 'long' }, acc: { head: 'bow' } }).z < -0.1, 'behind a bow');
   assert(hornSpot({ hair: { style: 'fauxhawk' }, acc: { head: 'none' } }).x >= 0.2, 'out past a fauxhawk ridge');
   // the accent stays gold on the cool tails (never peach on pink); Purple is never purple + gold +
-  // a yellow belly (a famous dragon's colors): mint horns and crest, a pink belly; Gold, Coral
-  // and Orange have accents of their own
+  // a yellow belly, and never purple with green spikes (famous dragons' colors): rose pink horns
+  // and crest, a pale lavender belly; Gold, Coral and Orange have accents of their own
   for (const c of ['#FF8CC6', '#FF5FA2', '#2FB5B0', '#3FD8B0', '#4D7CFF']) assert(seaPalette(c).A === '#FFC83A', 'gold accent on ' + c);
   const hue = (hex) => {
     const n = parseInt(hex.slice(1), 16), r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
@@ -689,9 +689,21 @@ await test('A17 sea dragon horns: only with no head accessory or a bow, never in
   const yellowish = (hex) => { const q = hue(hex); return q.s > 0.25 && q.h >= 30 && q.h <= 70; };
   const pu = seaPalette('#9C7BFF');
   assert(!yellowish(pu.A) && !yellowish(pu.B), `Purple: no gold accent, no yellow belly (${pu.A}, ${pu.B})`);
+  const greenish = (hex) => { const q = hue(hex); return q.s > 0.2 && q.h >= 70 && q.h <= 185; };
+  assert(!greenish(pu.A) && !greenish(pu.B), `Purple: no green, mint or aqua accent (${pu.A}, ${pu.B})`);
   for (const c of ['#FFD43B', '#FF6B6B', '#FFA94D']) assert(!yellowish(seaPalette(c).A), 'its own accent on ' + c);
   // Gold's dark shades are amber, not olive (a hue under 45)
   for (const k of ['S', 'F', 'K']) assert(hue(seaPalette('#FFD43B')[k]).h < 45, `Gold ${k} is amber: ${seaPalette('#FFD43B')[k]}`);
+});
+
+await test('A19 the sea code uses no built-ins newer than the build target (es2020: no polyfills)', () => {
+  // Safari / iPadOS 15.0-15.3 run WebGL2 but have no Object.hasOwn, Array.at, findLast, structuredClone
+  const files = ['src/player/merfolk/parts.js', 'src/player/merfolk/rules.js', 'src/player/merfolk/index.js', 'src/player/avatar.js'];
+  const bad = /Object\.hasOwn\(|\.at\(-?\d|\.findLast(Index)?\(|structuredClone\(|\.replaceAll\(/;
+  for (const f of files) {
+    const src = readFileSync(path.join(ROOT, f), 'utf8').split('\n');
+    src.forEach((line, i) => assert(!bad.test(line.replace(/\/\/.*$/, '')), `${f}:${i + 1}: ${line.trim()}`));
+  }
 });
 
 await test('A16 input.downKey: Shift alone is not Down; C and the Down button are', () => {

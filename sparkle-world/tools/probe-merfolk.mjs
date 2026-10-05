@@ -1057,11 +1057,14 @@ async function reviewPass(browser, errors) {
       }
     }
     out.compare = await W.renderGrid(pair, { cols: 4, size: 280 });
-    // the tail colors on the boy, three-quarter and back
-    const cols = [['Deep teal', '#2FB5B0'], ['Ocean blue', '#4D7CFF'], ['Green', '#6BD68A'], ['Gold', '#FFD43B'], ['Coral', '#FF6B6B'], ['Purple', '#9C7BFF']];
+    // all 12 tail colors on the boy, three-quarter and from behind (the play camera's view)
+    const cols = [['Deep teal', '#2FB5B0'], ['Ocean blue', '#4D7CFF'], ['Green', '#6BD68A'], ['Gold', '#FFD43B'], ['Coral', '#FF6B6B'], ['Purple', '#9C7BFF'],
+      ['Sea green', '#3FD8B0'], ['Sky blue', '#6CC6FF'], ['Pink', '#FF8CC6'], ['Hot pink', '#FF5FA2'], ['Orange', '#FFA94D'], ['Pearl', '#E6DDFF']];
     const tc = [];
-    for (const [n, h] of cols) tc.push({ look: { ...boy, sea: { form: 'sea_dragon', color: h } }, label: n, frame: fr['three-quarter'], pose: still });
-    for (const [n, h] of cols) tc.push({ look: { ...boy, sea: { form: 'sea_dragon', color: h } }, label: n + ' (back)', frame: PLAY, pose: swim });
+    for (const half of [cols.slice(0, 6), cols.slice(6)]) {
+      for (const [n, h] of half) tc.push({ look: { ...boy, sea: { form: 'sea_dragon', color: h } }, label: n, frame: fr['three-quarter'], pose: still });
+      for (const [n, h] of half) tc.push({ look: { ...boy, sea: { form: 'sea_dragon', color: h } }, label: n + ' (back)', frame: PLAY, pose: swim });
+    }
     out.colors = await W.renderGrid(tc, { cols: 6, size: 220 });
     return out;
   });
