@@ -1516,10 +1516,11 @@ async function ridePass(browser, errors) {
   }
 
   // R11 no dolphin swims through the one she rides (_apart: the ridden one holds its place and
-  // only the other one moves): another of the pod put right on it is pushed out to the dolphins'
-  // spacing (1.7) and stays out. Counted in game frames, not seconds (one frame counts at most
-  // 0.05 s and this machine without a GPU draws few frames a second): 60 frames to part, then
-  // 40 more read. Frames where the other one leaps or does a trick (it holds its place too) skip.
+  // only the other one moves): another dolphin put right on it, taken out of the pod so nothing
+  // but _apart moves it (setPod -1; with the old rule, which skipped every pair with a FIXED one,
+  // it stayed inside hers), is pushed out to the dolphins' spacing (1.7) and stays out. Counted in
+  // game frames, not seconds (one frame counts at most 0.05 s and this machine without a GPU
+  // draws few frames a second): 60 frames to part, then 40 more read.
   await goTo(page, deep);
   await page.waitForTimeout(400);
   const r11 = await ev(page, () => new Promise((resolve) => {
@@ -1529,6 +1530,7 @@ async function ridePass(browser, errors) {
     const mine = d.list('dolphin').find((r) => r.state === 'ride');
     const other = d.list('dolphin').find((r) => r.state !== 'ride' && r.role === 'wild');
     if (!mine || !other) { resolve({ rode: true, other: !!other }); return; }
+    d.setPod(other.i, -1);
     d.move('dolphin', other.i, s0.x + 0.2, s0.z + 0.1);
     const out = { rode: true, other: true, start: 0, frames: 0, read: 0, skipped: 0, min: Infinity, at60: null };
     const gap = () => {
@@ -1541,13 +1543,13 @@ async function ridePass(browser, errors) {
     const tick = () => {
       out.frames++;
       const x = gap();
-      if (!x || !x.riding) { out.lost = true; resolve(out); return; }
+      if (!x || !x.riding) { out.lost = true; d.setPod(other.i, 0); resolve(out); return; }
       if (out.frames === 60) out.at60 = +x.h.toFixed(2);
       if (out.frames > 60) {
         if (x.fixed) out.skipped++;
         else { out.read++; out.min = Math.min(out.min, x.h); }
       }
-      if (out.frames >= 100) { out.min = +out.min.toFixed(2); resolve(out); } else requestAnimationFrame(tick);
+      if (out.frames >= 100) { out.min = +out.min.toFixed(2); d.setPod(other.i, 0); resolve(out); } else requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
   }));

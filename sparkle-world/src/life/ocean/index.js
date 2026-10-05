@@ -2126,6 +2126,13 @@ class OceanSystem {
         saveGood(r);
         return true;
       },
+      /** Probes: a wild dolphin out of its pod (-1: nothing steers it, only _apart moves it) or back (0). */
+      setPod(i, pod) {
+        const r = sys.pools.dolphin.find((q) => q.on && q.i === i && q.role === 'wild');
+        if (!r) return false;
+        r.pod = pod;
+        return true;
+      },
       edgeSpot() {
         const w = g.world;
         const s = spot((x, z) => (x === 5 || z === 5 || x === w.sx - 6 || z === w.sz - 6) && sys.map.deepAround(x, z, 3) && sys.map.inBounds(x, z));
