@@ -1666,6 +1666,24 @@ these choices where the reviews offered options or disagreed:
 
 ---
 
+## Integrator decisions
+
+The integration plan, `docs/teams/wave4-integration.md`, decides everything shared between the three wave-4 teams and wins where this doc differs: its §2 corrections (C1, C2, C6, C8, C10, C13-C15, C17) apply to this doc, and its "Integrator decisions" and "As built" sections hold the answers to the open questions and what is still open before the deploy. In short, for this doc:
+
+- C1: the module, system, facade and debug object are `ocean` (`src/life/ocean/`,
+  `game.ocean`, `game.debug.ocean`); merfolk is `merfolk`.
+- C2: the pose on a dolphin is merfolk's **side-saddle** (`poseSaddleSea`); `seatWorld` stays the
+  seat point.
+- C6, C8, C10: escort uses the friends fallback only; one joystick label function with the Ride
+  branch; ocean is the only wave-4 team in `game.js`.
+- C13, C14, C15, C17: the forbidden names live only encoded in `tools/lib/name-scan.mjs`;
+  `installOceanStickers`; ocean owns the one combined wave-4 presence size test (test-net
+  `seaTests()` N2, now with 6 players); the integrator writes DESIGN.md §7.3, MULTIPLAYER.md and
+  DATA-MAP.md (done).
+- The "Left as is" line of the fourth review (different kinds may swim close together) is
+  replaced by `apartKinds` ("P2 fish fixes"). The far-school stacking in R-F is still open.
+
+
 ## As built (P1)
 
 Built on `claude/wave4-ocean` from step 0 (`582d11c`), steps 1 to 8 of §14 except the parts that
@@ -1969,7 +1987,8 @@ for a grown-up's read (§16 Q4).
 - *Dolphin pictures:* the probe now holds the dolphin over the deep water with the most room from
   the world's edge (the brown or white seam lines were the edge of the world in the background).
 - *Left as is:* animals of different kinds can still swim close together (APART spaces one kind;
-  spacing across kinds would change every kind's motion that passed). Low cameras (at the water's
+  spacing across kinds would change every kind's motion that passed). (Replaced in P2: `apartKinds`
+  keeps different kinds apart, "P2 fish fixes" below.) Low cameras (at the water's
   surface) still see some school mates partly covered (S12 0.53 pairs a frame at h 0.1 on one
   seed): with fish as long as the gap between them, two rows overlap seen from the surface; her
   play camera is fine (R-F). The triangle total stays above the first plan (written down in §11.2,

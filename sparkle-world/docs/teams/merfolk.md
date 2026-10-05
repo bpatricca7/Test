@@ -1412,8 +1412,24 @@ Before declaring any other suite "no edit", grep every probe for `.lk` and `pack
 
 ## Integrator decisions
 
-(Empty until the integrator answers Q1-Q10. Builders: never push; never commit `dist/*`; end
-commit messages with the trailers the session gives.)
+The integration plan, `docs/teams/wave4-integration.md`, decides everything shared between the three wave-4 teams and wins where this doc differs: its §2 corrections (C1, C3-C5, C7, C8, C11, C14-C17) apply to this doc, and its "Integrator decisions" and "As built" sections hold the answers to the open questions and what is still open before the deploy. In short, for this doc:
+
+- C1: the module is `merfolk` everywhere (`src/player/merfolk/`); ocean is `ocean`
+  (`game.ocean`, `game.debug.ocean`), and no module, system or debug object is called `sea`.
+- C3 / C4 / C5: the dolphin `mount` forces the gate and sets `seaSwim = true` (no `swimming`
+  test); `_syncAvatar` passes `seaKick`; the remote `_frame` keeps today's speed line.
+- C7: Big Leap! also comes from the first `'sea:leap'` with `riding: true`.
+- C8: one joystick label function (Drive / Steer, Ride, Swim while `seaSwim`, else Walk).
+- C11, C14, C15, C16, C17: `EMOTES` untouched; `installMerfolkStickers`; one combined presence
+  size test (ocean's); the Water tab's dot is `sw-tab-new`; the integrator writes DESIGN.md §7.1,
+  MULTIPLAYER.md, DATA-MAP.md and avatar.md (done).
+- Decisions: **side-saddle** on a dolphin (the daughter sees the ride pictures); **Mix gives the
+  Mermaid** for `'auto'` (Girl: Mermaid, Boy: Sea Dragon); the **Sea Dragon** name is kept; the
+  horns stay hidden under every head accessory but a bow, pending the owner.
+
+(Builders: never push; never commit `dist/*`; end commit messages with the trailers the session
+gives.)
+
 
 ## As built
 

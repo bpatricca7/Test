@@ -1426,6 +1426,22 @@ Where this doc goes beyond, or slightly differs from, a reviewer's suggested fix
 
 ---
 
+## Integrator decisions
+
+The integration plan, `docs/teams/wave4-integration.md`, decides everything shared between the three wave-4 teams and wins where this doc differs: its §2 corrections (C9, C12, C13, C15, C17) apply to this doc, and its "Integrator decisions" and "As built" sections hold the answers to the open questions and what is still open before the deploy. In short, for this doc:
+
+- C9: the Sea Dragon Puffum uses merfolk's motifs (`#2FB5B0` / gold), the Mermaid Tail
+  `#3FD8B0` with the round two-lobed fin; the Dolphin Puffum follows ocean's `sky` palette
+  `#6A80CC` (a color, not a pinned key).
+- C12, C13, C15, C17: no Dive button (merfolk reuses Up / Down); the forbidden names live only
+  encoded in `tools/lib/name-scan.mjs`; one combined presence size test (ocean's); the integrator
+  writes DESIGN.md §7.2, MULTIPLAYER.md, DATA-MAP.md and the shops.md coin pill line (done).
+- Decisions: **Puffums**, **Stretchums** and the **Squish Shelf** as names; the friendly
+  closed-smile **Shark Puffum** kept (the Narwhal swap stays one entry before the release); a
+  held toy hides while she swims in sea form and on a dolphin with a tail (Just Me on a dolphin
+  holds it).
+
+
 ## As built (P1)
 
 Built on `claude/wave4-squish` from step 0 (`582d11c`), §15 steps 1-11 with the integration
