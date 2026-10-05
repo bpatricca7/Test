@@ -730,7 +730,9 @@ async function swimPass(browser, errors) {
     } else console.log('  (B18 no 2-deep column near: skipped the 2-deep check)');
     const d = await deepAt(pg, 4);
     await place(pg, [d.x, d.y, d.z], 0, 100);
-    const tip = await toastSeen(pg, /Hold Down to dive!/, 6000);
+    // the tip comes 1.5 s of play after she turns: waited in game time (slow frames run it slower)
+    await hold(pg, [], 4000, { until: () => window.__toasts.some((t) => /Hold Down to dive!/.test(t)) });
+    const tip = await pg.evaluate(() => window.__toasts.some((t) => /Hold Down to dive!/.test(t)));
     const pulse = await pg.evaluate(() => !!document.querySelector('.sw-touch .sw-flybtn.sw-pulse[aria-label="Down"]'));
     c(tip && pulse, `B18 a deep spot: "Hold Down to dive!" and the Down button pulses (${tip}, ${pulse})`);
     await cx.close();
