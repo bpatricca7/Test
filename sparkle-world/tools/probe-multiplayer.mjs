@@ -7,7 +7,8 @@
 //   b: AT7, AT11, AT9, AT10, AT20, REJOIN
 //   c: AT11, AT12, AT13, AT8, AT21, BUDGET, END, AT22   (AT11 brings June)
 //   d: LOOKS, SEA   (split from a in wave 4: with SEA, part a ran past 570 s on a busy machine)
-//   e: SIX          (wave 4: six players; runs ONLY with --part=e, it opens five more pages)
+//   e: SIX          (wave 4: six players; runs ONLY with --part=e, without AT1: it makes its own
+//                    session, opening the other five pages while Lily makes the code)
 //   a: every other test (AT2-AT6, AT17, HELD, AT18, AT19, ZIP, and new tests added among them)
 // Without --part every test runs, as before. --until still stops after the named test.
 //
@@ -15,7 +16,7 @@
 //   Lily   host,  desktop 1280x800, mouse,  a claude.ai member who can host ('interact')
 //   Rosie  guest, iPad 1024x768, touch,     view-level (never emits)
 //   June   guest, phone 390x844, touch,     view-level outside visitor (joins in AT11)
-// Part e (SIX) adds Mia, Ava and Nora (desktop 800x600, mouse) and June, so six play together,
+// Part e (SIX) adds Mia (1024x768) and Ava and Nora (desktop 640x480, mouse; small: SwiftShader) and June, so six play together,
 // and Zoe (a 7th, phone) whose knock is refused: "Lily's world is full of friends right now!".
 // Every page gets a room.d.ts-faithful window.claude (tools/net/fake-claude.js) routed through
 // one NetHub (tools/net/hub.mjs, the production room logic in server/rooms.mjs).
@@ -58,7 +59,8 @@ if (PART && !['a', 'b', 'c', 'd', 'e'].includes(PART)) {
 }
 /** Does test `id` run in this run? */
 function inPart(id) {
-  if (PART_TESTS.e.includes(id)) return PART === 'e'; // six pages: never part of a whole run
+  if (PART === 'e') return PART_TESTS.e.includes(id); // SIX makes its own session (no AT1: it is lean)
+  if (PART_TESTS.e.includes(id)) return false; // six pages: never part of a whole run
   if (!PART || id === 'AT1') return true;
   if (PART === 'a') return !PART_TESTS.b.includes(id) && !PART_TESTS.c.includes(id) && !PART_TESTS.d.includes(id);
   return PART_TESTS[PART].includes(id);
@@ -105,8 +107,8 @@ const PLAYERS = [
   // SEA only: a friend who joins while Lily is already a mermaid, then goes home again
   { key: 'mia', name: 'Mia', uid: 'u-mia', level: 'view', can: null, guest: false, viewport: { width: 1024, height: 768 }, touch: false, seed: 53 },
   // SIX only (part e): two more friends make six players; Zoe is the 7th, who is refused
-  { key: 'ava', name: 'Ava', uid: 'u-ava', level: 'view', can: null, guest: false, viewport: { width: 800, height: 600 }, touch: false, seed: 61 },
-  { key: 'nora', name: 'Nora', uid: 'u-nora', level: 'view', can: null, guest: false, viewport: { width: 800, height: 600 }, touch: false, seed: 67 },
+  { key: 'ava', name: 'Ava', uid: 'u-ava', level: 'view', can: null, guest: false, viewport: { width: 640, height: 480 }, touch: false, seed: 61 },
+  { key: 'nora', name: 'Nora', uid: 'u-nora', level: 'view', can: null, guest: false, viewport: { width: 640, height: 480 }, touch: false, seed: 67 },
   { key: 'zoe', name: 'Zoe', uid: 'u-zoe', level: 'view', can: null, guest: false, viewport: { width: 390, height: 844 }, touch: true, seed: 71 },
 ];
 const PL = (key) => PLAYERS.find((p) => p.key === key);
@@ -1362,24 +1364,32 @@ test('AT22', 'playing alone afterwards: old-save uids keep counting up; no sessi
 
 test('SIX', 'Six players: four more friends join Lily and Rosie with the code; everyone sees everyone; a 7th is refused kindly', async () => {
   const t0 = Date.now();
-  // the four friends' pages open together (their title screens load while nobody waits)
-  const more = await Promise.all(['june', 'mia', 'ava', 'nora'].map((k) => openPlayer(BROWSER, PL(k))));
+  // the other pages open while Lily makes her world and the code (their title screens load meanwhile)
+  const [code, ...more] = await Promise.all([flows.hostMakesCode(lily, { biome: BIOME, log }), ...['june', 'mia', 'ava', 'nora', 'zoe'].map((k) => openPlayer(BROWSER, PL(k)))]);
+  CODE = code;
+  const zoe = more.pop();
   june = more[0];
-  log(`  four more pages on the title in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+  log(`  code ${CODE.join(' ')} and five more pages on the title in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
   const all = [lily, rosie, ...more];
   check(all.length === NETC.MAX_PLAYERS, `six players in the run (MAX_PLAYERS ${NETC.MAX_PLAYERS})`);
-  for (const g of more) {
-    await guestTypesCode(g, CODE);
-    await hostLetsIn(lily, g.name);
-    log(`  ${g.name} let in at ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+  // five friends type the 4 pictures at the same time; Lily lets in each knock card as it comes
+  await Promise.all([rosie, ...more].map((g) => guestTypesCode(g, CODE)));
+  const letIn = [];
+  for (let i = 0; i < 5; i++) {
+    const card = lily.page.locator('.sw-net-knock').first();
+    await card.waitFor({ state: 'visible', timeout: 30000 });
+    const who = ((await card.locator('.sw-net-knock-text').textContent()) || '').trim();
+    await settle(lily.page, 300);
+    await press(lily, card.locator('.sw-net-yes'));
+    letIn.push(who);
+    // the next card replaces this one
+    await until(lily, (w) => { const c = document.querySelector('.sw-net-knock .sw-net-knock-text'); return !c || c.textContent.trim() !== w; }, who, 10000, 100);
   }
-  const live = await Promise.all(more.map((g) => waitLive(g, 240000)));
-  more.forEach((g, i) => check(!!live[i], `${g.name} is in Lily’s world`));
-  log(`  all six live ${((Date.now() - t0) / 1000).toFixed(1)} s after the pages opened`);
-  await closePanels(lily);
-  // a 7th: her knock is refused at once, Lily never sees a knock card
+  const names = [rosie, ...more].map((g) => g.name);
+  check(names.every((n) => letIn.some((t) => t.includes(n))), `Lily let in all five from their knock cards (${JSON.stringify(letIn)})`);
+  log(`  five let in at ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+  // a 7th (while the five load: all five seats are taken): her knock is refused at once, no card for Lily
   const knocksBefore = await game(lily, () => window.__knockEvents);
-  const zoe = await openPlayer(BROWSER, PL('zoe'));
   await guestTypesCode(zoe, CODE);
   const full = await until(zoe, () => document.querySelector('.sw-net-msg[data-code="full"]') !== null, null, 30000);
   check(full, 'Zoe (the 7th) sees "Lily’s world is full of friends right now!"');
@@ -1390,6 +1400,10 @@ test('SIX', 'Six players: four more friends join Lily and Rosie with the code; e
   check(await game(lily, () => window.__knockEvents) === knocksBefore && !(await game(lily, () => !!document.querySelector('.sw-net-knock'))), 'Lily got no knock card for the 7th');
   check(await game(zoe, () => window.__game.net.state === 'idle' || window.__game.mode === 'title'), 'Zoe stays on the title');
   await zoe.context.close();
+  const live = await Promise.all([rosie, ...more].map((g) => waitLive(g, 240000)));
+  [rosie, ...more].forEach((g, i) => check(!!live[i], `${g.name} is in Lily’s world`));
+  log(`  all six live at ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+  await closePanels(lily);
   // everyone together near Lily
   const offs = [[3, 3], [-3, 3], [3, -3], [-3, -3], [0, 4]];
   for (let i = 1; i < all.length; i++) await bringTo(all[i], lily, offs[i - 1][0], offs[i - 1][1]);
@@ -1405,8 +1419,7 @@ test('SIX', 'Six players: four more friends join Lily and Rosie with the code; e
     check(count === '6', `${pl.name}'s Players button says 6 (${count})`);
   }
   await converge(all, 'SIX', 90000);
-  await settle(lily.page, 900);
-  await shot(lily, 'six-lily');
+  await settle(june.page, 900);
   await shot(june, 'six-june');
   // June's phone: the Players panel with six rows fits and scrolls
   await press(june, '.sw-playersbtn');
@@ -1425,13 +1438,18 @@ test('SIX', 'Six players: four more friends join Lily and Rosie with the code; e
     nums.push(`${pl.key}: ${s.maxPerSec}/s max, emit ${s.maxEmit} B, presence ${s.maxPresence} B (${s.emits} emits, ${s.presence} presence)`);
   }
   log('  BUDGET with 5 remote avatars: ' + nums.join('; '));
-  const frame = await game(lily, () => new Promise((res) => {
-    const ts = [];
-    const f = (t) => { ts.push(t); if (ts.length < 61) requestAnimationFrame(f); else res(ts); };
-    requestAnimationFrame(f);
-  }));
-  const gaps = frame.slice(1).map((t, i) => t - frame[i]).sort((a, b) => a - b);
-  log(`  Lily's frame gaps with 5 friends (SwiftShader, 6 pages drawing): median ${gaps[30].toFixed(1)} ms, p90 ${gaps[54].toFixed(1)} ms (recorded, not judged)`);
+  // a short, bounded sample of Lily's frames (six pages draw through one CPU renderer here)
+  const frame = await Promise.race([
+    game(lily, () => new Promise((res) => {
+      const ts = [];
+      const f = (t) => { ts.push(t); if (ts.length < 11) requestAnimationFrame(f); else res(ts); };
+      requestAnimationFrame(f);
+    })),
+    sleep(15000).then(() => null),
+  ]);
+  const gaps = frame ? frame.slice(1).map((t, i) => t - frame[i]).sort((x, y) => x - y) : null;
+  log(gaps ? `  Lily's frame gaps with 5 friends (SwiftShader, 6 pages drawing): median ${gaps[5].toFixed(1)} ms, max ${gaps[9].toFixed(1)} ms` : "  Lily's frame sample: 10 frames took over 15 s");
+  log("  (frame gaps are recorded, not judged)");
 });
 
 // ---------------------------------------------------------------------------------------
