@@ -167,7 +167,9 @@ const CSS = /* css */ `
    the tools column and its Fly / Emotes / Photo row, and Bag / hotbar / Undo move just enough
    left to leave the corner free (the row is 762 px wide; Up / Down take 154 px + a gap) */
 @media (min-width: 974px) and (min-height: 521px) and (orientation: landscape) {
-  .sw-hud.sw-touchmode .sw-touch { bottom: calc(12px + var(--sw-safe-b)); }
+  /* Up and Down close together, so the walkie's rings (src/net/walkie/ui.js) stay clear of Up
+     while she flies or swims */
+  .sw-hud.sw-touchmode .sw-touch { bottom: calc(12px + var(--sw-safe-b)); gap: 4px; }
   .sw-hud.sw-touchmode .sw-hud-bottom { left: min(50%, calc(100% - 547px - var(--sw-safe-r))); }
 }
 /* phones held sideways (844x390) and other short screens: one top row, the life column and

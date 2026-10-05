@@ -35,6 +35,12 @@ const CSS = /* css */ `
 @media (max-width: 480px) { .oc-slot { width: 58px; } .oc-slot-pic { width: 48px; height: 48px; } .oc-slot-pic img { width: 44px; height: 44px; } }
 `;
 
+// what the dolphin bubble keeps clear of (besides the screen edges)
+const AVOID = [
+  '.sw-stkpop', '.sw-toasts .sw-toast', '.sw-hud .sw-round:not([hidden]) .sw-round-face', '.sw-hud .sw-round:not([hidden]) .sw-round-label',
+  '.sw-hud .sw-pill', '.sw-hud .sw-hotbar', '.lf-hud .sw-round:not([hidden])', '.sw-joy', '.sw-wk:not([hidden]) .sw-wk-btn', '.sw-wk:not([hidden]) .sw-wk-label', '.sw-wk-off:not([hidden])',
+].join(', ');
+
 export function createSeaUi(game, sys) {
   const ui = game.ui;
   if (!ui) return null;
@@ -139,17 +145,42 @@ export function createSeaUi(game, sys) {
     // Jump button at the bottom
     let x = Math.max(w / 2 + 96, Math.min(W - w / 2 - 96, s.x));
     let y = Math.max(h + 92, Math.min(H - 190, s.y));
-    // never over a sticker pop or a toast: below it, else beside it
+    // never over a sticker pop, a toast or a HUD control (the tools, Fly / Emotes / Say / Photo,
+    // Jump or Up / Down, the walkie, the life column, the joystick; on a phone some of them sit
+    // inside the margins above): the free spot nearest to where it wants to be, above, below or
+    // beside what is in the way
     const base = game.container.getBoundingClientRect();
-    for (const el of document.querySelectorAll('.sw-stkpop, .sw-toasts .sw-toast')) {
+    const boxes = [];
+    for (const el of document.querySelectorAll(AVOID)) {
+      if (!el.offsetParent) continue;
       const r = el.getBoundingClientRect();
       if (!r.width || !r.height) continue;
-      const L = r.left - base.left, T = r.top - base.top, R = L + r.width, B = T + r.height;
-      const over = () => x - w / 2 < R + 6 && x + w / 2 > L - 6 && y - h < B + 6 && y > T - 6;
-      if (!over()) continue;
-      if (B + 10 + h <= H - 190) y = B + 10 + h;
-      else if (R + 10 + w <= W - 8) x = R + 10 + w / 2;
-      else x = Math.max(w / 2 + 8, L - 10 - w / 2);
+      const L = r.left - base.left, T = r.top - base.top;
+      boxes.push({ L, T, R: L + r.width, B: T + r.height });
+    }
+    const over = (cx, cy) => boxes.some((b) => cx - w / 2 < b.R + 6 && cx + w / 2 > b.L - 6 && cy - h < b.B + 6 && cy > b.T - 6);
+    if (over(x, y)) {
+      const fitX = (v) => Math.max(w / 2 + 8, Math.min(W - w / 2 - 8, v)), fitY = (v) => Math.max(h + 8, Math.min(H - 8, v));
+      const tries = [];
+      for (const b of boxes) tries.push([x, b.T - 10], [x, b.B + 10 + h], [b.R + 10 + w / 2, y], [b.L - 10 - w / 2, y]);
+      const pick = (list) => {
+        let best = null, bestD = Infinity;
+        for (const [tx, ty] of list) {
+          const cx = fitX(tx), cy = fitY(ty);
+          if (over(cx, cy)) continue;
+          const d = Math.hypot(cx - x, cy - y);
+          if (d < bestD) { bestD = d; best = [cx, cy]; }
+        }
+        return best;
+      };
+      // else a corner of two boxes (each try above moves only one way)
+      let best = pick(tries);
+      if (!best) {
+        const two = [];
+        for (const [tx, ty] of tries) for (const b of boxes) two.push([tx, b.T - 10], [tx, b.B + 10 + h], [b.R + 10 + w / 2, ty], [b.L - 10 - w / 2, ty]);
+        best = pick(two);
+      }
+      if (best) [x, y] = best;
     }
     bubble.style.left = Math.round(x) + 'px';
     bubble.style.top = Math.round(y) + 'px';

@@ -89,9 +89,10 @@ const CSS = /* css */ `
    down in the bottom row too, left of Jump with room for Up / Down while flying, its words
    above it; Bag / hotbar / Undo move left to make room (smaller slots under 1100 px wide),
    far enough that the rings it sends out while pressed (22 px past the button) stay clear.
-   Up in the old spot it ran into Fly / Emotes / Say / Photo on Safari's shorter screen. */
+   Up in the old spot it ran into Fly / Emotes / Say / Photo on Safari's shorter screen. Its
+   rings end 2 px left of Up (Up / Down sit 4 px apart there) and 5 px right of Undo. */
 @media (min-width: 974px) and (min-height: 521px) and (orientation: landscape) {
-  .sw-app.sw-touch-hud .sw-wk { right: calc(168px + var(--sw-safe-r)); bottom: calc(8px + var(--sw-safe-b)); flex-direction: column-reverse; align-items: flex-end; gap: 2px; }
+  .sw-app.sw-touch-hud .sw-wk { right: calc(172px + var(--sw-safe-r)); bottom: calc(8px + var(--sw-safe-b)); flex-direction: column-reverse; align-items: flex-end; gap: 2px; }
   .sw-app.sw-touch-hud .sw-wk-btn { width: 100px; height: 100px; }
   .sw-app.sw-touch-hud .sw-wk-off { right: calc(168px + var(--sw-safe-r)); bottom: calc(24px + var(--sw-safe-b)); }
   .sw-app.sw-touch-hud.sw-wk-on .sw-hud-bottom, .sw-app.sw-touch-hud.sw-wk-offshown .sw-hud-bottom { left: min(50%, calc(100% - 680px - var(--sw-safe-r))); }
