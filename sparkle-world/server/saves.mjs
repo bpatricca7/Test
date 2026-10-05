@@ -33,6 +33,7 @@ import { gzip as gzipCb, gunzip as gunzipCb } from 'node:zlib';
 import { promisify } from 'node:util';
 import { httpError } from './http.mjs';
 import { metaOf, isSideCopyId } from '../src/core/storage.js';
+import { mergeSquish } from '../src/core/squish-merge.js';
 import { WORLD_SIZES } from '../src/world/world.js';
 
 const gzip = promisify(gzipCb);
@@ -163,16 +164,19 @@ export function routes(ctx) {
         if (p.updatedAt === row.client_updated_at) return { json: { rev: row.rev }, headers: { ETag: etag(row.rev) } };
         throw httpError(409, 'conflict', { rev: row.rev, updatedAt: row.client_updated_at });
       }
-      // squishy toys are never lost to an old cached page: a build from before them uploads a
-      // profile without `squish`, so the stored one is kept (the squish team doc §9.1)
-      if (row && !isSquish(stripped.squish)) {
+      // squishy toys are never lost to an old cached page (the squish team doc §9.1): a build from
+      // before them uploads a profile without `squish`, or with a stale copy it picked up at an
+      // earlier 409 and its old merge keeps whole. So the stored toys are always joined with the
+      // upload's (mergeSquish: unions, the same rules every device uses).
+      if (row) {
         const old = await q.one('select body from player_profiles where player_id = $1', [pid]);
         let kept = null;
         try {
           kept = JSON.parse((await gunzip(old.body)).toString('utf8')).squish;
         } catch {}
         if (isSquish(kept)) {
-          json = Buffer.from(JSON.stringify({ ...stripped, squish: kept }));
+          const squish = isSquish(stripped.squish) ? mergeSquish(kept, stripped.squish) : kept;
+          json = Buffer.from(JSON.stringify({ ...stripped, squish }));
           if (json.length > lim().profileBytes) throw httpError(413, 'too_big');
           body = await gzip(json);
         }

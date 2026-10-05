@@ -864,7 +864,7 @@ if (!MEASURE) {
       assert.equal((await call('PUT', P, { tok, body: { v: 1, updatedAt: T0 + 1, coins: 160 }, headers: { 'if-match': '"r1"' } })).status, 200);
       const g = (await call('GET', P, { tok })).data;
       assert.deepEqual([g.coins, g.squish], [160, squish], 'the new coins, the stored toys');
-      // a profile that has squish replaces it as usual (the union happened on the device)
+      // a profile that has squish is joined with the stored one (here it holds every stored toy)
       const more = { ...squish, got: { ...squish.got, pf_dino: '2026-10-05' } };
       assert.equal((await call('PUT', P, { tok, body: { v: 1, updatedAt: T0 + 2, coins: 160, squish: more }, headers: { 'if-match': '"r2"' } })).status, 200);
       assert.deepEqual((await call('GET', P, { tok })).data.squish, more);
@@ -904,6 +904,23 @@ if (!MEASURE) {
       assert.deepEqual(Object.keys((await a2.loadProfile()).squish.got).sort(), ['pf_dolphin', 'pf_strawberry']);
       const b2 = await open(B, pid, tok);
       assert.deepEqual(Object.keys((await b2.loadProfile()).squish.got).sort(), ['pf_dolphin', 'pf_strawberry']);
+    });
+
+    test('S5b an old tab that already holds a stale squish uploads after a newer toy landed; the server keeps both', async () => {
+      const f = await family();
+      const tok = session(f.id);
+      const P = `/api/players/${f.pids[0]}/profile`;
+      const base = { coins: 0, at: '2026-10-04T00:00:00.000Z' };
+      const stale = { v: 1, got: { pf_strawberry: '2026-10-04' }, glit: {}, seen: {}, base };
+      const newer = { ...stale, got: { ...stale.got, pf_dolphin: '2026-10-05' } };
+      assert.equal((await call('PUT', P, { tok, body: { v: 1, updatedAt: T0, coins: 100, squish: stale }, headers: { 'if-match': '*' } })).status, 200);
+      // the new build on another device opens a present
+      assert.equal((await call('PUT', P, { tok, body: { v: 1, updatedAt: T0 + 1, coins: 150, squish: newer }, headers: { 'if-match': '"r1"' } })).status, 200);
+      // the old cached tab (its 669b6fa merge kept the stale squish whole) is newer and uploads
+      assert.equal((await call('PUT', P, { tok, body: { v: 1, updatedAt: T0 + 2, coins: 140, stickers: { old: '2026-10-05' }, squish: stale }, headers: { 'if-match': '"r2"' } })).status, 200);
+      const g = (await call('GET', P, { tok })).data;
+      assert.deepEqual(Object.keys(g.squish.got).sort(), ['pf_dolphin', 'pf_strawberry'], 'no toy dropped');
+      assert.deepEqual([g.coins, Object.keys(g.stickers || {})], [140, ['old']], "the old tab's own change landed");
     });
 
     test('an unchanged world is not pushed again within 5 minutes; a changed one is', async () => {
