@@ -85,6 +85,22 @@ const CSS = /* css */ `
 .sw-app.sw-touch-hud .sw-wk { left: auto; right: calc(176px + var(--sw-safe-r)); bottom: calc(100px + var(--sw-safe-b)); }
 .sw-app.sw-touch-hud .sw-wk-btn { width: 108px; height: 108px; }
 .sw-app.sw-touch-hud .sw-wk-off { left: auto; right: calc(180px + var(--sw-safe-r)); bottom: calc(124px + var(--sw-safe-b)); }
+/* tablets held sideways (Jump sits down in the corner there, src/ui/hud.js): the walkie sits
+   down in the bottom row too, left of Jump with room for Up / Down while flying, its words
+   above it; Bag / hotbar / Undo move left to make room (smaller slots under 1100 px wide).
+   Up in the old spot it ran into Fly / Emotes / Say / Photo on Safari's shorter screen. */
+@media (min-width: 974px) and (min-height: 521px) and (orientation: landscape) {
+  .sw-app.sw-touch-hud .sw-wk { right: calc(168px + var(--sw-safe-r)); bottom: calc(8px + var(--sw-safe-b)); flex-direction: column-reverse; align-items: flex-end; gap: 2px; }
+  .sw-app.sw-touch-hud .sw-wk-btn { width: 100px; height: 100px; }
+  .sw-app.sw-touch-hud .sw-wk-off { right: calc(168px + var(--sw-safe-r)); bottom: calc(24px + var(--sw-safe-b)); }
+  .sw-app.sw-touch-hud.sw-wk-on .sw-hud-bottom, .sw-app.sw-touch-hud.sw-wk-badge .sw-hud-bottom { left: min(50%, calc(100% - 659px - var(--sw-safe-r))); }
+}
+@media (min-width: 974px) and (max-width: 1099px) and (min-height: 521px) and (orientation: landscape) {
+  .sw-app.sw-touch-hud.sw-wk-on .sw-slot, .sw-app.sw-touch-hud.sw-wk-badge .sw-slot { width: 54px; height: 54px; border-radius: 16px; }
+  .sw-app.sw-touch-hud.sw-wk-on .sw-slot img, .sw-app.sw-touch-hud.sw-wk-badge .sw-slot img { width: 42px; height: 42px; }
+  .sw-app.sw-touch-hud.sw-wk-on .sw-hotbar, .sw-app.sw-touch-hud.sw-wk-badge .sw-hotbar { gap: 4px; padding: 6px; }
+  .sw-app.sw-touch-hud.sw-wk-on .sw-hud-bottom, .sw-app.sw-touch-hud.sw-wk-badge .sw-hud-bottom { gap: 8px; left: min(50%, calc(100% - 619px - var(--sw-safe-r))); }
+}
 /* phones held upright: in the middle above the hotbar, between Bag and Undo; the label on top */
 @media (max-width: 480px) {
   .sw-wk, .sw-app.sw-touch-hud .sw-wk { left: 50%; right: auto; transform: translateX(-50%); bottom: calc(60px + var(--sw-safe-b)); flex-direction: column-reverse; gap: 2px; }
@@ -235,7 +251,10 @@ export class WalkieUI {
       g.container.classList.toggle('sw-wk-on', show);
     }
     const badge = v.show === 'badge';
-    if (this.off.hidden === badge) this.off.hidden = !badge;
+    if (this.off.hidden === badge) {
+      this.off.hidden = !badge;
+      g.container.classList.toggle('sw-wk-badge', badge);
+    }
     if (show) this._paint(v);
     this._speakBadges(v);
     if (!show && this.root.dataset.state !== 'idle') this.root.dataset.state = 'idle';
