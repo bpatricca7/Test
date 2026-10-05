@@ -698,8 +698,15 @@ async function tapPass(browser, errors) {
   const d0 = await ev(page, () => window.__game.debug.ocean.list('dolphin')[0]);
   await aim(page, d0.x, d0.y, d0.z, 0.25);
   await freeze(page, true);
-  const p1 = await recPoint(page, 'dolphin', d0.i, 0.2);
-  const hit1 = await pickAt(page, p1);
+  // (a busy machine draws few frames: wait up to 3 s for the new dolphin's pick box to join the
+  // pick set, which is refreshed every 0.25 s of game time, before the click)
+  let p1 = null, hit1 = null;
+  for (let t = 0; t < 30; t++) {
+    p1 = await recPoint(page, 'dolphin', d0.i, 0.2);
+    hit1 = await pickAt(page, p1);
+    if (hit1 && hit1.kind === 'dolphin') break;
+    await page.waitForTimeout(100);
+  }
   if (p1) await page.mouse.click(p1.x, p1.y);
   await freeze(page, false);
   // (a dolphin caught mid-leap holds once it lands)
@@ -810,9 +817,15 @@ async function tapPass(browser, errors) {
   });
   await aim(page, fs.x, fs.y, fs.z, 0.45);
   await freeze(page, true);
-  const fsb = await ev(page, () => window.__game.debug.ocean.schools()[0].box);
-  const fp = await screenPoint(page, (fsb[0][0] + fsb[1][0]) / 2, (fsb[0][1] + fsb[1][1]) / 2, (fsb[0][2] + fsb[1][2]) / 2);
-  const hit4 = await pickAt(page, fp);
+  // (as T1: up to 3 s for the new school to join the pick set on a busy machine)
+  let fp = null, hit4 = null;
+  for (let t = 0; t < 30; t++) {
+    const fsb = await ev(page, () => window.__game.debug.ocean.schools()[0].box);
+    fp = await screenPoint(page, (fsb[0][0] + fsb[1][0]) / 2, (fsb[0][1] + fsb[1][1]) / 2, (fsb[0][2] + fsb[1][2]) / 2);
+    hit4 = await pickAt(page, fp);
+    if (hit4 && hit4.kind === 'school') break;
+    await page.waitForTimeout(100);
+  }
   await page.mouse.click(fp.x, fp.y);
   await freeze(page, false);
   console.log('    (T4 aimed at ' + JSON.stringify(hit4) + ')');
@@ -877,11 +890,12 @@ async function tapPass(browser, errors) {
     const still = await ev(page, (c) => window.__game.debug.getBlock(c[0], c[1], c[2]), t6);
     check(errors, m1 === m0 + 1 && still === 'starfish', `T6 a Hand click on a Starfish block says hi (${m0} -> ${m1}), the block stays`);
     await ev(page, () => { const g = window.__game; g.debug.select('block:planks_pink'); g.setTool('build'); });
+    const hit6 = await pickAt(page, sp);
     await page.mouse.click(sp.x, sp.y);
     // (a slow machine: up to 3 s for the build to land)
     await waitOk(page, (c) => window.__game.debug.getBlock(c[0], c[1], c[2]) === 'planks_pink', t6, 3000);
     const now = await ev(page, (c) => window.__game.debug.getBlock(c[0], c[1], c[2]), t6);
-    check(errors, now === 'planks_pink', `T6 with Build the block is replaced as today (${now})`);
+    check(errors, now === 'planks_pink', `T6 with Build the block is replaced as today (${now}; the click hit ${JSON.stringify(hit6)})`);
     await ev(page, () => window.__game.setTool('hand'));
   } else check(errors, false, 'T6 a Starfish block on the beach');
 
@@ -962,19 +976,20 @@ async function tapPass(browser, errors) {
     d.clear();
     window.__toasts.length = 0;
     const ok = d.whaleNow();
+    // (polled up to 4 s each: on a busy machine a few frames take longer than the old fixed waits)
+    const until = async (fn, ms) => { const t0 = performance.now(); for (; performance.now() - t0 < ms;) { if (fn()) return true; await new Promise((r) => setTimeout(r, 100)); } return fn(); };
     await new Promise((r) => setTimeout(r, 400));
+    await until(() => d.whaleState().placed, 4000);
     const st = d.whaleState();
     const p = g.player.position;
     g.cameraRig.yaw = Math.atan2(p.x - st.x, p.z - st.z); // facing away
-    await new Promise((r) => setTimeout(r, 700));
-    const on = !!document.querySelector('.oc-pointer.oc-on');
+    const on = await until(() => !!document.querySelector('.oc-pointer.oc-on'), 4000);
     g.cameraRig.yaw = Math.atan2(st.x - p.x, st.z - p.z);
     g.cameraRig.pitch = 0.05;
-    await new Promise((r) => setTimeout(r, 900));
-    const off = !document.querySelector('.oc-pointer.oc-on');
+    const off = await until(() => !document.querySelector('.oc-pointer.oc-on'), 4000);
     return { ok, placed: st.placed, on, off };
   });
-  check(errors, t8.placed && t8.on, 'T8 the whale behind her: the edge pointer shows');
+  check(errors, t8.placed && t8.on, `T8 the whale behind her: the edge pointer shows (${JSON.stringify(t8)})`);
   check(errors, t8.off, 'T8 turning toward it hides the pointer');
   const t8r = await ev(page, async () => {
     const g = window.__game, d = g.debug.ocean, w = g.world;
@@ -2401,18 +2416,25 @@ async function reviewPass(browser, errors) {
     // R-F the school from her camera: school mates seldom sit one over another (a face peeking out
     // from behind another fish: "a fish with four eyes"; fishStacked, test-sea S12's measure)
     const rf = await ev(page, async () => {
-      const d = window.__game.debug.ocean;
+      const g = window.__game, d = g.debug.ocean;
       let frames = 0, pairs = 0, any = 0;
+      const log = [];
       for (let i = 0; i < 120; i++) {
         await new Promise((r) => requestAnimationFrame(r));
         const n = d.fishStacked(0);
         if (n == null) continue;
         frames++; pairs += n; if (n > 0) any++;
+        if (i % 15 === 0) {
+          // (diagnostics: how far the rows are turned off her view, how far and how high she is)
+          const s = d.schools()[0], c = g.camera.position;
+          const want = Math.atan2(s.x - c.x, s.z - c.z), off = ((s.face - want + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+          log.push(`${n}:${(off * 57.3).toFixed(0)}deg/${Math.hypot(s.x - c.x, s.z - c.z).toFixed(1)}m/${(c.y - s.level).toFixed(1)}up`);
+        }
       }
-      return { frames, pairs: pairs / Math.max(1, frames), any };
+      return { frames, pairs: pairs / Math.max(1, frames), any, log: log.join(' ') };
     });
     check(errors, rf.frames > 60 && rf.pairs <= 0.5,
-      `R-F ${vp.label}: the school's fish show one by one from her camera (${rf.pairs.toFixed(2)} stacked pairs a frame, any in ${rf.any} of ${rf.frames} frames; <= 0.5)`);
+      `R-F ${vp.label}: the school's fish show one by one from her camera (${rf.pairs.toFixed(2)} stacked pairs a frame, any in ${rf.any} of ${rf.frames} frames; <= 0.5; pairs:turn/distance/height ${rf.log})`);
     const c = await seaContrast(page);
     check(errors, c.px > 800 && c.diff >= V1_DIFF, `R-P ${vp.label}: animals swimming near her are clearly in the picture (${c.px} pixels, difference ${f1(c.diff)})`);
     // a dolphin leaping out of the water near her (solid in the air, its splash below)
@@ -2520,7 +2542,13 @@ async function dolphinViews(browser, errors) {
         g.player.avatar.group.visible = false;
         // in the air over the sea from the deep spot (fixed: she may sink meanwhile), so no
         // palette lands under the water's surface
-        const at = { x: p[0] + 14, y: p[1] + 1.8, z: p[2] };
+        // (14 blocks out over deep water, the side farthest from the world's edge, so the edge
+        // stays out of the picture; else 14 blocks east as before)
+        const m = g.ocean.map, cands = [[14, 0], [-14, 0], [0, 14], [0, -14], [10, 10], [-10, 10], [10, -10], [-10, -10]];
+        const room = ([dx, dz]) => { const x = Math.floor(p[0] + dx), z = Math.floor(p[2] + dz); let r = 0; for (; r < 40 && m.inBounds(x - r - 1, z - r - 1) && m.inBounds(x + r + 1, z + r + 1); r++); return m.deepAround(x, z, 3) ? r : -1; };
+        let best = cands[0], bestR = -1;
+        for (const c of cands) { const r = room(c); if (r > bestR) { best = c; bestR = r; } }
+        const at = { x: p[0] + best[0], y: p[1] + 1.8, z: p[2] + best[1] };
         d.gallery({ kinds: ['dolphin'], variants: [v], x: at.x, y: at.y, z: at.z });
         const yaw = Math.PI - 0.95, a = yaw + ang;
         const cx = at.x + Math.sin(yaw) * along, cz = at.z + Math.cos(yaw) * along;

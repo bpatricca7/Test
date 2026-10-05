@@ -4,7 +4,8 @@
 // fake voxel world, plus the real biome generators for S0.
 //   S0 real worlds    S1 SeaMap         S2 motion        S3 leaps        S4 ride
 //   S5 schedule       S6 presence       S7 append-only   S8 caps         S9 static scans
-//   S10 glass (the line of sight through see-through blocks)   S11 fish spacing
+//   S10 glass (the line of sight through see-through blocks)   S11 fish spacing   S12 fish on the screen
+//   S13 dolphin flukes (attached and swept back)
 
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -886,7 +887,7 @@ await test('S10', 'glass meshes: only the animals seen through glass draw in the
  * spaced: spaceFish runs (cam: also across the view from cam). Returns per-frame stats; look(fish)
  * is called every settled frame.
  */
-function schoolRun({ noView = false, layout = 'new', spaced = true, seed = 1, floe = false, fps = 60, n = 10, secs = 60, cam = null, look = null }) {
+function schoolRun({ noView = false, layout = 'new', spaced = true, seed = 1, floe = false, fps = 60, n = 10, secs = 60, cam = null, look = null, drift = false }) {
   const w = seaWorld({ sx: 64, sz: 64, island: false });
   // floe: an ice floe on the sea (as snow worlds put near the shore) 1.5 blocks from the school's centre
   if (floe) w.fill(34, 10, 30, 36, 10, 35, ICE);
@@ -912,7 +913,13 @@ function schoolRun({ noView = false, layout = 'new', spaced = true, seed = 1, fl
   let close = 0, frames = 0, minD = Infinity, maxSep = 0, jump = 0;
   const px = new Float64Array(n), pz = new Float64Array(n);
   const dt = 1 / fps, settle = 2 * fps;
+  // drift: the school swims toward her and away again at the fish's speed (4 blocks each way)
+  const x0 = school.x, z0 = school.z, dl = Math.hypot(x0 - eye.x, z0 - eye.z) || 1;
   for (let step = 0; step < secs * fps; step++) {
+    if (drift) {
+      const k = 4 * Math.sin(step * dt * 0.4);
+      school.x = x0 + ((x0 - eye.x) / dl) * k; school.z = z0 + ((z0 - eye.z) / dl) * k;
+    }
     if (layout !== 'old') schoolFrame(school, eye.x, eye.z, dt);
     for (const f of fish) {
       f.orbit += f.orbitW * dt; placeFish(f, school, env, spaced ? dt : 0);
@@ -1041,9 +1048,57 @@ await test('S12', 'fish from her camera: school mates seldom sit one over anothe
       out.push(`h ${h} d ${far} n ${n}: ${o.pairs.toFixed(2)} / ${rw.pairs.toFixed(2)} / ${nw.pairs.toFixed(2)} pairs (${(nw.share * 100).toFixed(0)}% of frames)`);
     }
   }
+  // a school swimming toward her and away (the real game's schools travel): its fish keep their
+  // sides to her (sideOn), so a fish's length never covers the row behind it
+  const dOut = [];
+  let dSum = 0, dWorst = 0;
+  for (const [h, far] of [[3.0, 11], [3.0, 9], [1.5, 9]]) {
+    for (const seed of [1, 3]) {
+      const bear = seed * 2.1, school0 = { x: 32.5, z: 32.5 };
+      const camPos = { x: school0.x - Math.sin(bear) * far, y: 10 + SURF + h, z: school0.z - Math.cos(bear) * far };
+      const md = measure(camPos);
+      schoolRun({ seed, n: 10, secs: 30, cam: camPos, look: md.look, drift: true });
+      const r = md.get();
+      dSum += r.pairs; dWorst = Math.max(dWorst, r.pairs);
+      dOut.push(`h ${h} d ${far}: ${r.pairs.toFixed(2)}`);
+    }
+  }
+  out.push(`swimming toward her and away: ${(dSum / dOut.length).toFixed(2)} pairs a frame (${dOut.join(', ')})`);
+  assert(dSum / dOut.length <= 0.3 && dWorst <= 0.6, `a school swimming toward her and away: at most 0.3 stacked pairs a frame on average, 0.6 from any camera (${dOut.join(', ')})`);
   assert(newSum < oldSum * 0.1 && newSum < rowSum * 0.5, `far fewer stacked fish than before and than the rows alone (${(oldSum / runs).toFixed(2)} / ${(rowSum / runs).toFixed(2)} / ${(newSum / runs).toFixed(2)} pairs a frame; ${out.join(', ')})`);
   assert(newSum / runs <= 0.3 && worst <= 0.6, `at most 0.3 stacked pairs a frame on average, 0.6 from any camera (${out.join(', ')})`);
   return `before / rows / rows spaced across the view: ${(oldSum / runs).toFixed(2)} / ${(rowSum / runs).toFixed(2)} / ${(newSum / runs).toFixed(2)} stacked pairs a frame; ${out.join(', ')}`;
+});
+
+await test('S13', 'dolphin flukes: each lobe grows out of the fluke root (no loose pieces) and sweeps back to its tip', async () => {
+  const THREE = await import('three');
+  const { dolphinKit } = await import('../src/life/ocean/models.js');
+  const parts = dolphinKit().parts;
+  const root = parts.find((p) => p.cx === 0 && Math.abs(p.cz + 1.08) < 1e-9);
+  const stock = parts.find((p) => p.cx === 0 && Math.abs(p.cz + 0.82) < 1e-9);
+  const lobes = parts.filter((p) => Math.abs(p.cx) > 0.05 && p.cz < -1.0 && p.mask === 1);
+  assert(root && stock && lobes.length === 2, `a fluke root, a tail stock and two lobes (${lobes.length})`);
+  const inside = (e, v) => Math.hypot((v.x - e.cx) / e.sx, (v.y - e.cy) / e.sy, (v.z - e.cz) / e.sz);
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3();
+  const out = [];
+  for (const L of lobes) {
+    q.setFromEuler(new THREE.Euler(...(L.rot || [0, 0, 0])));
+    m.compose(new THREE.Vector3(L.cx, L.cy, L.cz), q, new THREE.Vector3(L.sx, L.sy, L.sz));
+    const P = L.g.attributes.position;
+    let deep = Infinity, tip = null, inner = null;
+    for (let i = 0; i < P.count; i++) {
+      v.fromBufferAttribute(P, i).applyMatrix4(m);
+      deep = Math.min(deep, inside(root, v), inside(stock, v));
+      const out = Math.abs(v.x);
+      if (!tip || out > Math.abs(tip.x)) tip = v.clone();
+      if (!inner || out < Math.abs(inner.x)) inner = v.clone();
+    }
+    assert(deep < 0.5, `a lobe reaches well inside the fluke root or the tail stock (deepest ${deep.toFixed(2)}, needs under 0.5)`);
+    assert(tip.z < inner.z - 0.1, `a lobe's tip is further back than its root (tip z ${tip.z.toFixed(2)}, root z ${inner.z.toFixed(2)})`);
+    assert(Math.abs(tip.x) > 0.3, `the flukes spread wide (${Math.abs(tip.x).toFixed(2)})`);
+    out.push(`deepest ${deep.toFixed(2)}, tip ${tip.toArray().map((n) => n.toFixed(2)).join(' ')}, root z ${inner.z.toFixed(2)}`);
+  }
+  return out.join('; ');
 });
 
 await test('S9', 'static: no while loops in the ocean folder; the strings are kind, brand-free and character-free', async () => {

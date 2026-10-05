@@ -2052,7 +2052,7 @@ class OceanSystem {
         return out;
       },
       list,
-      schools: () => sys.schools.filter((s) => s.on).map((s) => ({ x: s.x, y: s.y, z: s.z, n: s.n, scatter: s.scatter, variant: s.variant, level: s.level, inSet: s.inSet, box: [s.box.min.toArray(), s.box.max.toArray()] })),
+      schools: () => sys.schools.filter((s) => s.on).map((s) => ({ x: s.x, y: s.y, z: s.z, n: s.n, scatter: s.scatter, variant: s.variant, level: s.level, inSet: s.inSet, face: s.face, box: [s.box.min.toArray(), s.box.max.toArray()] })),
       pods: () => sys.pods.map((p) => ({ on: p.on, mode: p.mode, n: p.n, buddy: p.buddy, buddyShown: p.buddyShown })),
       buddy: () => sys.session.buddy,
       deepSpot() {

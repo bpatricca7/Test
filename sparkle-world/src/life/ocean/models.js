@@ -131,24 +131,28 @@ function dolphinParts(k) {
   k.part(1, 0).ball(0.32, W, 0, 0, 0, S, [0.9, 0.85, 2.6]);                    // body
   k.part(2, 0).ball(0.27, W, 0, -0.08, 0.05, 10, [0.8, 0.6, 2.3]);             // belly
   // the head: a soft rounded forehead that slopes down into a long, gently tapered beak (a
-  // dolphin's rostrum), the pale belly running up under the chin
+  // dolphin's rostrum); no pale chin piece (only slivers of it showed through, like a white flap
+  // or little teeth under the beak)
   // (a long forehead that runs back into the body: one smooth line over the head, no neck)
   k.part(1, 0).ball(0.25, W, 0, 0.05, 0.5, S, [0.92, 0.84, 1.7]);              // forehead
-  k.part(2, 0).ball(0.16, W, 0, -0.085, 0.66, 10, [0.66, 0.62, 1.25]);         // chin (inside the beak's sides)
   const B0 = 0.66, BL = 0.42, BR = 0.12, BT = 0.55, BY = -0.05, BV = 0.82;     // beak: start, length, radius, taper, y, height
   k.part(1, 0).cylC(BR, BL, W, 0, BY, B0 + BL / 2, [Math.PI / 2, 0, 0], 12, BT);
   k.parts[k.parts.length - 1].sz *= BV;                                       // a little flatter than round
   k.part(1, 0).ball(BR * BT, W, 0, BY, B0 + BL, 10, [1, BV, 1.15]);            // its rounded tip
-  // the smile: a line along each side of the beak, curving up at the back toward the eye
+  // the smile: a short line at each corner of the mouth (the back of the beak, where it meets
+  // the head), level along the beak and curling up at the back toward the eye. Only the back of
+  // the beak: there its width hardly changes, so from the front the line shows as a small dot at
+  // each mouth corner (a line down the tapered front of the beak shows from the front as two
+  // dark sticks, like tusks)
   const beakR = (z) => BR * (1 - (1 - BT) * Math.min(1, Math.max(0, (z - B0) / BL)));
   for (const s of [-1, 1]) {
     const pts = [];
-    for (let i = 0; i <= 10; i++) {
-      const t = i / 10, z = B0 + BL - 0.04 - t * 0.3, r = beakR(z) + 0.004;
-      const a = -0.4 + 0.6 * t ** 2.5;                                        // angle round the beak: below the middle, a small curl up at the back
+    for (let i = 0; i <= 8; i++) {
+      const t = i / 8, z = B0 + 0.26 - t * 0.11, r = beakR(z) - 0.005;       // set into the beak: only a thin line shows
+      const a = -0.1 + 0.16 * t ** 2.5;                                       // angle round the beak: just below the middle, a small curl up at the back
       pts.push([s * r * Math.cos(a), BY + r * BV * Math.sin(a), z]);
     }
-    k.part(0, 0).tube(pts, 0.009, SMILE, 12, 4);
+    k.part(0, 0).tube(pts, 0.011, SMILE, 10, 4);
   }
   k.part(0, 0);
   const ey = 0.10, ez = 0.70, ex = 0.17;
@@ -166,12 +170,14 @@ function dolphinParts(k) {
     rot([0, s * 0.45, s * -0.5]);
   }
   k.part(1, 0).ball(0.16, W, 0, 0, -0.82, 10, [0.8, 0.8, 2]);                 // tail stock
-  // the flukes: two rounded lobes with real thickness, swept back and tipped up a little, so
-  // from the side they show as a soft V, not a thin stick
+  // the flukes: two rounded lobes with real thickness that grow out of the fluke root (each
+  // lobe's inner end sits deep inside the root, so the tail is one piece) and sweep BACK to their
+  // tips (nose = +Z: a tip is further back than its root), tipped up a little, so from the side
+  // they show as a soft V, not a thin stick (test-sea S13 checks both)
   k.part(1, 0).ball(0.1, W, 0, 0, -1.08, 10, [1.1, 0.6, 1]);                  // fluke root
   for (const s of [-1, 1]) {
-    k.part(1, 0).ball(0.22, W, s * 0.22, 0.02, -1.2, 10, [1.1, 0.22, 0.5]);
-    rot([0.1, s * -0.75, s * 0.32]);
+    k.part(1, 0).ball(0.2, W, s * 0.19, 0.03, -1.17, 10, [1.1, 0.26, 0.5]);
+    rot([0, s * 0.55, s * 0.25]);
   }
   k.part(0, 3, [0, 0.12, 0.18]).cbox(0.30, 0.05, 0.34, '#FFD84D', 0, 0.30, 0.18);                  // saddle seat
   k.part(0, 3, [0, 0.12, 0.3]).cbox(0.16, 0.16, 0.03, '#FF5FA2', 0, 0.36, 0.36, [0, 0, Math.PI / 4]); // saddle star
@@ -218,11 +224,16 @@ function whaleParts(k) {
   }
 }
 
+/** The dolphin's parts before baking (test-sea S13 checks the flukes grow out of the tail). */
+export function dolphinKit() {
+  const k = new SeaKit((x, y, z) => (0.6 - z) / 1.8);
+  dolphinParts(k);
+  return k;
+}
+
 const BUILDERS = {
   dolphin() {
-    const k = new SeaKit((x, y, z) => (0.6 - z) / 1.8);
-    dolphinParts(k);
-    return k.geometry();
+    return dolphinKit().geometry();
   },
   whale() {
     // its own body plan (not a big dolphin): a huge round blunt head with a long smile, a pale

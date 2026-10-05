@@ -1120,7 +1120,7 @@ the things kids point at **are** shared, at almost no protocol cost:
 | item | cost |
 |---|---|
 | Draw calls | one per kind with live instances: at most 9, usually 2 to 4 at sea, 0 inland (meshes hidden at count 0). Friends' ride dolphins and the show pod share the dolphin mesh: 0 extra. |
-| Triangles | planned: at full counts about 12 x 2.25k (dolphins) + 30 x 0.42k (fish) + whale 3k + the rest about 12k: ≤ 65k, typically 15k. As built (after the owner reviews made the small kinds bigger and rounder): dolphin 2,508, fish 1,412, turtle 2,992, octopus 2,884, jelly 1,444, seahorse 1,240, crab 1,072, starfish 1,912, whale 4,524; every kind at its cap at once about 140k (12 dolphins 30k, 30 fish 42k), typically 25-45k (a pod, a school and a few others). Instanced, so the cost is vertex work only; C1-C4 stay in budget. |
+| Triangles | planned: at full counts about 12 x 2.25k (dolphins) + 30 x 0.42k (fish) + whale 3k + the rest about 12k: ≤ 65k, typically 15k. As built (after the owner reviews made the small kinds bigger and rounder): dolphin 2,336, fish 1,412, turtle 2,992, octopus 2,884, jelly 1,444, seahorse 1,240, crab 1,072, starfish 1,912, whale 4,524; every kind at its cap at once about 140k (12 dolphins 30k, 30 fish 42k), typically 25-45k (a pod, a school and a few others). Instanced, so the cost is vertex work only; C1-C4 stay in budget. |
 | CPU per frame | spawn sampling 24 columns (O(1) reads each), `map.tick(2)` (about 0.04 ms), ≤ 87 creature steps (≤ 2 sea-map reads each, plus a `world.get` every 0.25 s), ≤ 87 matrix writes and box moves: about 0.2 ms desktop, ≤ 0.5 ms on the iPad budget; the probe checks ≤ +1.0 ms on SwiftShader. |
 | Pickables | ≤ 40, only within 12 blocks (Set membership at 4 Hz, boxes moved every frame). |
 | Sea map | 3 x 43 KB (Big); full scan once at world load (1.7 to 3.8 ms warm); one column per block change; 2 rows per frame round-robin. |
@@ -1937,3 +1937,37 @@ for a grown-up's read (§16 Q4).
   B4 busy: 9 kinds out and in view, at most 9 meshes, the school never faint (short of calls in 9
   of 33 frames); C1 glass 7 meshes (kinds out of view not drawn, the school split); C2 +0.61 ms;
   G1 93.0.
+
+**Polish after the fifth review (judges)**
+- *Dolphin flukes grow out of the tail.* The last round's two lobes floated loose beside the tail
+  (no point inside the fluke root or the stock) and were swept forward, like a seal's back
+  flippers from above. Now each lobe's inner end sits deep inside the fluke root and the lobe
+  sweeps back to its tip (tip 0.2 further back than its root), a little thicker and tipped up so
+  from the side it shows as a soft V. New test-sea S13 checks both on the baked parts
+  (`dolphinKit()`): deepest lobe point 0.23 of the way into the root (needs under 0.5), tip behind
+  its root.
+- *Smile, front view.* The smile line ran down the tapered front of the beak, so from the front it
+  showed as two dark sticks like tusks. Now it is a short line at each mouth corner (the back of the
+  beak, where its width hardly changes), set into the beak with a small curl: from the side a smile,
+  from the front only a thin mark at each corner.
+- *No pale chin.* Only slivers of it showed through (a white flap or little teeth under the beak
+  when a dolphin leaps), so it is gone. 2,336 triangles (was 2,508).
+- *Schools: tried, not kept.* A slow wave along the rows (fish drifting up to 0.4 toward her and
+  away) made a school look less like a parade line, but probe R-F with it reached 1.0 stacked pairs
+  a frame on iPad in 2 of 4 runs, so the layout is unchanged (this round asked for no change to
+  what passed). Without it R-F also varies from run to run (0.00 in most runs, once 2.25 on
+  desktop), so R-F now prints, every 15 frames, the stacked pairs, how far the rows are turned off
+  her view, her distance and her height (the rows were never turned off her view; the cause of the
+  bad runs is still open). S12 now also runs a school swimming toward her and away (the real
+  game's schools travel): 0.04 stacked pairs a frame. `debug.ocean.schools()` lists each school's
+  `face`.
+- *Dolphin pictures:* the probe now holds the dolphin over the deep water with the most room from
+  the world's edge (the brown or white seam lines were the edge of the world in the background).
+- *Left as is:* animals of different kinds can still swim close together (APART spaces one kind;
+  spacing across kinds would change every kind's motion that passed). Low cameras (at the water's
+  surface) still see some school mates partly covered (S12 0.53 pairs a frame at h 0.1 on one
+  seed): with fish as long as the gap between them, two rows overlap seen from the surface; her
+  play camera is fine (R-F). The triangle total stays above the first plan (written down in §11.2,
+  nothing lowered).
+- *For the P2 merge:* the integrator must still align squish's `src/things/squish/data.js`
+  `pf_dolphin` from #8EB8E0 to #6A80CC (squish code not touched here).
