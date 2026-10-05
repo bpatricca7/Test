@@ -795,6 +795,9 @@ async function savePass(browser, errors) {
     const s = await sq(page);
     c(s.ready === 3, `E3 about 2,000 earned: exactly 3 ready (${s.ready}, earned ${s.earned})`);
     const now = await ev(page, () => window.__game.profile);
+    // an old look gains merfolk's default water form ({ form: 'auto', color: null }) on load, by
+    // design (merfolk B14); anything else in the look must stay as it was
+    if (now.look && !(profile.look && profile.look.sea) && JSON.stringify(now.look.sea) === JSON.stringify({ form: 'auto', color: null })) delete now.look.sea;
     const same = ['look', 'outfits', 'coins', 'stickers', 'basket', 'playerName'].filter((k) => JSON.stringify(now[k]) !== JSON.stringify(profile[k]));
     c(same.length === 0 && now.stats.coinsEarned === profile.stats.coinsEarned, `E3 nothing else in the profile changed (${same.join(',') || 'look, outfits, coins, stickers, basket, name'})`);
     // E4 open one and reload within 100 ms of tap 3: the toy stays; between tap 2 and 3: still ready
