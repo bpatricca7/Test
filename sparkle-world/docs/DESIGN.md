@@ -1038,3 +1038,89 @@ notes and every number are in `docs/teams/vehicles.md`; in short (`src/things/ve
   (no new lights, no shader recompiles).
 - **Friends**: presence `vh` draws her car under her avatar on every page; the host keeps
   custody of a friend's car while she drives it (docs/MULTIPLAYER.md §7, §8).
+
+---
+
+## 7. Wave 4: sea forms, sea friends, squishy toys and presents (added 2026-10-04)
+
+From the dad and his daughter: squishy toys, mystery presents unlocked with coins, dolphins and
+sea animals, and a water form (a mermaid for a girl, a cool sea creature for a boy). Three teams
+built it; how the three fit together (namespaces, shared literals, presence, saves, the
+"one thing at a time" rule, the merge order and the gate) is `docs/teams/wave4-integration.md`,
+which wins over the team docs where they differ. Every number below is in the team doc named in
+each part. Rules all three follow: nothing is bought (every new coin source goes through
+`game.coins.add`); every award listener starts with `if (game.net?.remoteApplying) return;`;
+every popup a module starts by itself (not from a tap) stays off on `navigator.webdriver` pages
+unless its own probe turns it on; the Girl / Boy / Mix button is read on the device only.
+
+### 7.1 Sea forms (merfolk, `src/player/merfolk/`, `docs/teams/merfolk.md`)
+- **The turn**: after 0.25 s in water 2 blocks deep she turns into a **Mermaid** or a **Sea
+  Dragon** (or stays **Just Me**) with a sparkle; 0.35 s on land turns her back. `look.sea =
+  { form, color }`: `form` `'auto'` follows this device's Girl / Boy / Mix button (Girl and Mix:
+  Mermaid, Boy: Sea Dragon; with no pick, the worn look), or `'mermaid'` / `'sea_dragon'` /
+  `'me'`; `color` is a tail color or Match. Friends see the resolved form, never `'auto'` and
+  never the button.
+- **Sea swimming** (`player.seaSwim`): 4.6 blocks/s (6.2 fast); Up / Down (the fly buttons, no new
+  HUD button) instead of Jump; a gentle float up; the **leap** out of the water (about 1.76
+  blocks, with a twirl); the shore hop up to 2 blocks, so she gets out of a dug pond. The
+  joystick label is one function: Drive / Steer in a vehicle, Ride on a dolphin, Swim while sea
+  swimming, else Walk.
+- **The Studio's Water tab**: the form and the tail color, tiles of her floating in the water;
+  a "new" dot (`sw-tab-new`) until first opened.
+- **The underwater tint** (`game.underwater`) when the camera is under the surface; dive, leap
+  and puddle tips once per device.
+- **On a dolphin** the sea form stays, in merfolk's **side-saddle** pose with the tail beating
+  in time with the dolphin (`seaKick`); a dolphin mount turns the sea gate on even from a
+  stopped boat; every other mount turns her back. A held squishy toy hides while she swims in
+  sea form (and on a dolphin with a tail); it stays in its slot and is never lost.
+- **The Sea Dragon**: a rounded five-lobed fan fin, round-tipped crest spikes, finned fronds,
+  glow spots and curved horns. The horns show with no head accessory or a bow and are left out
+  under the other head accessories (an owner check, plan "Integrator decisions").
+- **NPC friends** turn too (`nx` samples use `st` `m`). The sea parts are built hidden 1.5 s
+  after a world load or look change in play mode (`prepareSea()`), so the first turn never
+  stutters; `disposeSea()` owns them.
+- Stickers: **Sea Magic!**, **Big Leap!** (also from a dolphin's leap with her on it).
+
+### 7.2 Squishy toys and mystery presents (squish, `src/things/squish/`, `docs/teams/squishies.md`)
+- **Puffums** (slow-rise foam, 24) and **Stretchums** (dough squeeze-and-stretch, 24): 48 toys,
+  our own names. Puffums squash and slowly rise; Stretchums squeeze, stretch when held and wobble
+  back.
+- **Mystery presents** come only at milestones of earned coins (`stats.coinsEarned`, which only
+  goes up): the first at 50, the gap growing by 10 each time up to 100; up to 3 welcome presents
+  for players who already earned coins. Inside is the next toy in a fixed order she does not
+  have yet: never a duplicate, no odds, no rarity. With Girl or Boy picked, that side's toys and
+  shared toys take turns, own first. After all 48, each present lets her make one toy sparkly
+  (the Glitter round). Spending coins never takes a present away; opening one costs nothing.
+- **The unwrap**: tap 3 times (wiggle, wiggle, POP), the toy jumps out with its name.
+- **The Squish Shelf** (panel `squish`): from the coin pill (now a button with a progress ring),
+  the pause menu and the Bag's **Squish Toys** tab; a present path with "40 to go!" words.
+- **Holding** a toy: **Squish!** and **Put away** in the life column; toys are free decor in her
+  worlds (batched like furniture).
+- Stickers: **First Present!**, **Squish Collector**, **Squish Champion**, **Squeeze Me!**.
+- `profile.squish` takes the union of the toys on every merge, is in the backup file, and the
+  server refuses a cloud write that would drop toys (§2 Storage).
+
+### 7.3 Sea animals and the dolphin ride (ocean, `src/life/ocean/`, `docs/teams/ocean.md`)
+- **Nine kinds**, all our own looks, nothing that bites or stings, no catching: Dolphin (pods of
+  2 to 4, sometimes a baby), Little Fish (schools), Sea Turtle, Octopus, Jellyfish, Seahorse,
+  Crab (on the shore), Starfish (seabed and wet sand), and a gentle Whale far out at sea (two
+  visits a game day plus a first personal one).
+- **Ambient life**, like the butterflies: not entities, nothing saved in a world. One instanced
+  mesh per kind; they live at the surface near her (the water is 75% opaque); a sea map kept by
+  block events and a rescan picks where each kind may swim, so a big deep pool she digs gets
+  dolphins. Different kinds keep apart (`apartKinds`).
+- **Meeting**: tap any animal with any tool (taps never build or remove on an animal, even through
+  the water above it); hearts, a sound, and the first time per kind "You met a Dolphin!" with its
+  picture. The Sticker Book's **Sea Friends** strip has 9 slots (`game.stickerBookExtras`).
+- **The dolphin ride**: tap a dolphin while swimming (or from a stopped boat); the bubble offers
+  **Ride** and **Trick**. Ride uses the mount contract (kind `'dolphin'`): fast swimming, Jump
+  leaps, **Hop off** in the life column; dolphins stay in deep water. The bubble keeps clear of
+  sticker pops, toasts and HUD controls.
+- **Finding them**: a distant show pod leaps whenever deep sea is in view, NPC friends mention
+  the dolphins, the Help panel has a dolphin card.
+- Stickers: **Dolphin Friend**, **Dolphin Rider**, **Sea Explorer**, **Ocean Star**, **Whale
+  Hello!**; plus a small daily sea reward (+2 for the first hello to each kind a day, +5 for the
+  first ride a day, at most 23 a day), so sea play also fills the present path.
+- **Friends**: the animals are each page's own, but the world's buddy dolphin (name and color
+  from the world seed), the whale's visit time, a friend riding (presence `sr`) and a friend's
+  dolphin trick (`sk`) are the same on every page (docs/MULTIPLAYER.md §7).
