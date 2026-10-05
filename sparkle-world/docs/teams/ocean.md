@@ -1888,6 +1888,14 @@ for a grown-up's read (§16 Q4).
   forehead slopes into a longer, gently tapered beak (a dolphin's rostrum) with a pale chin, a
   smile line along each side of the beak that curls up toward the eye, and rounded flukes with
   real thickness, swept back and tipped up a little. Palettes, keys and sizes are unchanged.
+- *Probe upkeep.* C1 hides the cursor's target outline while it counts (13 calls of its own when
+  the crosshair rests on an animal, not sea life's); `--only=cost --part=1` runs C1-C4 without the
+  gallery (then `--only=gallery`), so each fits a shorter time limit; T1 names what the click hit;
+  a ride may take up to 8 s to start on a slow software-drawn page.
+- *Pictures (all made after the last code change):* `ocean-biomes-snow-floes.png` (fish past an ice
+  floe), `ocean-palettes-dolphin.png`, `ocean-gallery-*.png`, `ocean-review-*.png` (play, leap,
+  night, shore, ride, under the water), and the dolphin from five sides,
+  `ocean-dolphin-<palette 0|1|2>-<front|three-quarter|side|back-quarter|tail-side>.png`.
 - *For the integrator (P2):* this branch changed the `pf_dolphin` row of `docs/teams/squishies.md`
   to ocean's `sky` colour #6A80CC. Squish's code was not touched: align
   `src/things/squish/data.js` (`pf_dolphin`, still #8EB8E0) at the P2 merge.
