@@ -1,12 +1,13 @@
 // Headless multiplayer acceptance tests (docs/MULTIPLAYER.md §15.2-15.3, AT1-AT22).
 //
-//   node tools/probe-multiplayer.mjs [--part=a|b|c] [--until=AT9] [--shots-prefix=net] [--biome=flat] [--headed]
+//   node tools/probe-multiplayer.mjs [--part=a|b|c|d] [--until=AT9] [--shots-prefix=net] [--biome=flat] [--headed]
 //
 // --part splits the suite so each part fits the gate's 570 s timeout (docs/teams/wave4-integration.md
 // §10.2 C1-C3). AT1 always runs first (it starts the session); then the part's tests, in file order:
 //   b: AT7, AT11, AT9, AT10, AT20, REJOIN
 //   c: AT11, AT12, AT13, AT8, AT21, BUDGET, END, AT22   (AT11 brings June)
-//   a: every other test (AT2-AT6, AT17, HELD, LOOKS, AT18, AT19, ZIP, and new tests added among them)
+//   d: LOOKS, SEA   (split from a in wave 4: with SEA, part a ran past 570 s on a busy machine)
+//   a: every other test (AT2-AT6, AT17, HELD, AT18, AT19, ZIP, and new tests added among them)
 // Without --part every test runs, as before. --until still stops after the named test.
 //
 // Three players, each in her own browser context (her own IndexedDB and profile):
@@ -41,19 +42,20 @@ const arg = (k, d = null) => {
 };
 const UNTIL = arg('until') ? String(arg('until')).toUpperCase() : null;
 const PART = arg('part') ? String(arg('part')).toLowerCase() : null;
-/** The tests of parts b and c (AT1 runs in every part; part a is every test not listed here). */
+/** The tests of parts b, c and d (AT1 runs in every part; part a is every test not listed here). */
 const PART_TESTS = {
   b: ['AT7', 'AT11', 'AT9', 'AT10', 'AT20', 'REJOIN'],
   c: ['AT11', 'AT12', 'AT13', 'AT8', 'AT21', 'BUDGET', 'END', 'AT22'],
+  d: ['LOOKS', 'SEA'],
 };
-if (PART && !['a', 'b', 'c'].includes(PART)) {
-  console.error(`--part must be a, b or c (got ${PART})`);
+if (PART && !['a', 'b', 'c', 'd'].includes(PART)) {
+  console.error(`--part must be a, b, c or d (got ${PART})`);
   process.exit(2);
 }
 /** Does test `id` run in this run? */
 function inPart(id) {
   if (!PART || id === 'AT1') return true;
-  if (PART === 'a') return !PART_TESTS.b.includes(id) && !PART_TESTS.c.includes(id);
+  if (PART === 'a') return !PART_TESTS.b.includes(id) && !PART_TESTS.c.includes(id) && !PART_TESTS.d.includes(id);
   return PART_TESTS[PART].includes(id);
 }
 /** The ids that ran so far (a later test may need an earlier one's scene, e.g. BUDGET needs AT6). */

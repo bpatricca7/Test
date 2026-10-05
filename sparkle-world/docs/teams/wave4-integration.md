@@ -700,7 +700,8 @@ Beach Cozy, desktop and iPad 1024 x 768 touch, `debug.merfolk.tips(true)`,
 
 | # | command | earlier (whole suite) | baseline |
 |---|---|---|---|
-| C1 | `timeout 570 node tools/probe-multiplayer.mjs --part=a` (AT1-AT6, AT17, HELD, SQUISH, LOOKS, SEA, AT18, AT19, ZIP) | whole: 1031-1775 s, so split | not measured (AT1 + AT2 only: 166 s, green) |
+| C1 | `timeout 570 node tools/probe-multiplayer.mjs --part=a` (AT1-AT6, AT17, HELD, SQUISH, AT18, AT19, ZIP) | whole: 1031-1775 s, so split | not measured (AT1 + AT2 only: 166 s, green) |
+| C1b | `timeout 570 node tools/probe-multiplayer.mjs --part=d` (AT1, LOOKS, SEA; split from part a at the merfolk merge: with SEA, part a hit the 570 s timeout at load 4) | | |
 | C2 | `timeout 570 node tools/probe-multiplayer.mjs --part=b` (AT1, AT7, AT11, AT9, AT10, AT20, REJOIN) | | not measured (AT1 + AT7 only: 143 s, green) |
 | C3 | `timeout 570 node tools/probe-multiplayer.mjs --part=c` (AT1, AT11, AT12, AT13, AT8, AT21, BUDGET, END, AT22) | | not measured (AT1 + AT11 only: 218 s, green) |
 | C4-C9 | `timeout 570 node tools/probe-boys.mjs --only=X` for X = `unit`, `studio`, `touch`, `world`, `friends`, `grids` | whole: 356-656 s | not measured |
