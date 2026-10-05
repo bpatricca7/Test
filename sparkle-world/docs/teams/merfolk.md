@@ -1737,6 +1737,26 @@ ones longest, deep tail color with gold ribs, folded a little toward the back. C
 `#2FB5B0`; the accent gold is now `#FFC83A` (C9's `#FFD43B` is close enough for a toy). A toy in
 other colors follows `ACCENTS` (a purple one has rose pink horns and crest and a pale lavender belly, never gold or green).
 
+
+### As built (integration review fixes)
+
+Made on `claude/wave4-integration` after the three merges (commit tags `[review-fixes]`,
+`[gate-B1]`).
+
+- **No dive tip while riding.** The dive tip's timer stays at 0 while she rides a dolphin, so
+  the advice comes at the earliest 1.5 s after she hops off, never on the dolphin.
+- **The choice bubble closed by the dolphin bubble counts.** When ocean's dolphin bubble opens it
+  closes merfolk's style choice bubble with `'ui:bubble-closed' { owner: 'merfolk', by: 'ocean' }`
+  (`src/life/ocean/ui.js`); merfolk now counts that as one showing (`seaAsked`, at most 2, unless
+  she had tapped it) and hides its bubble, so it is not asked for ever.
+- **The tail help picture** (`PICS.tail` in `src/ui/touch.js`): one segment of the wave path read
+  `12-5` instead of `12 5`, so the wave had a jag; it is a smooth wave again.
+- **The joystick label** is set again on `world:load`, so after a world switch it never keeps
+  "Swim" from the last world.
+- **probe-merfolk split:** `--only=grids` (the render grids) and `--only=review` (the owner's Sea
+  Dragon pictures) are passes of their own, because studio, grids and review together went over
+  570 s; the gate runs them as B3b and B3c. `--only=touch,friends` was green on `bfcbfc8`.
+
 ---
 
 ## Review notes

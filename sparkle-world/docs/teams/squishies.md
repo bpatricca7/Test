@@ -1524,3 +1524,31 @@ table), `squish-hand.png`, `squish-unwrap-1..4.png`, `squish-unwrap-boy.png`,
 - DATA-MAP.md: the squishy toy collection is game data in the profile (§11 sentence).
 - shops.md: the coin pill is a button that opens the Squish Shelf; earned coins also fill the
   mystery presents (spending never takes one away).
+
+## As built (integration review fixes)
+
+Made on `claude/wave4-integration` after the three merges (commit tag `[review-fixes]`).
+
+- **The server joins the toys on every upload.** The `putProfile` guard of §9.1 used to keep the
+  stored `squish` only when the upload had none. An old tab can hold a stale copy (picked up at an
+  earlier 409, which its old merge keeps whole) and upload it after a newer toy landed. Now,
+  whenever a row exists and the stored profile has toys, the server stores
+  `mergeSquish(stored, upload)` (the unions every device uses), or the stored toys when the upload
+  has none (`server/saves.mjs`). test-saves S5b: an old tab with a stale `squish` uploads after a
+  newer toy landed, and the server keeps both. Nothing a player owns is lost; §11 step 4 of the
+  integration plan ("the `putProfile` squish guard is live with this deploy") still holds.
+- **The pill tip waits for toasts.** On an upright phone the one-time coin pill tip sits right
+  where the toast stack is, so it waits while a toast shows (for example "You're holding ...
+  Press Squish!"), then 600 ms more, as it already waited for the First Present! pop
+  (`panel.js` `pumpTips`). probe-squish C2 checks the tip never lies on a toast and takes
+  `squish-pilltip-phone.png`.
+- **Just Me on a dolphin holds her toy.** `inWater()` (`index.js`) returns false while she rides a
+  dolphin with no tail (`player.swimming` keeps its old value during a ride, so it cannot decide
+  there); with a tail, the toy still hides as in §1.2 of the integration plan.
+- **Ocean's "Tap to say hi!" waits during a present drop** (one "tap" call at a time).
+- **Still open:** probe-squish `--only=touch` C2 fails on the two iPads (1024x1366, 1366x1024),
+  twice in a row: about 600 ms after `held()` is true, Squish! and Put away read as hidden or zero
+  width, yet they show in the picture taken right after. No link to these fixes was found (they
+  only gate a toast and the pill tip); the next step is to run the same check on `a3f8126` and,
+  if it fails there too, find why the life HUD does not show the squish buttons while `heldObj`
+  is set. The check was not loosened.
