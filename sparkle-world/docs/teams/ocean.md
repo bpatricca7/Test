@@ -2029,3 +2029,52 @@ for a grown-up's read (§16 Q4).
   far away it is around surf - 0.7 as before. test-sea uses `fishY` too, and S12 adds two far
   cameras (3.3 up, 15 and 19 away; 0.00 pairs a frame). R-F: 10 of 10 runs on desktop (worst
   0.34 pairs a frame, a school 3 blocks under her camera) and 10 of 10 on iPad (worst 0.29).
+
+**Integration review fixes (review-fixes and the rf2 steps, on the merged tree).**
+- *No dolphin through the one she rides.* `_apart` used to skip every dolphin holding its place
+  (`FIXED`: riding, mounting, a leap, a trick, a buddy...), so a wild dolphin could swim right
+  through the one she rides. Now when one of the pair holds its place only the other moves (twice
+  as far, so the pair parts as fast); two that both hold their place stay as they are. Probe R11
+  checks it: `debug.ocean.setPod(i, -1)` takes the other dolphin out of its pod (`0` puts it
+  back), so only `_apart` moves it; R11 fails on the old rule (closest gap 0.22) and passes on the
+  new one (1.7).
+- *A buddy goes back to its pod on a new ride.* When she mounts a dolphin, a buddy left from her
+  last ride (state `buddy`) swims with the pod again (`_mountNow`): otherwise the two would both
+  hold their place and `_apart` could never part them.
+- *The bubble waits under a pop or a toast.* When there is no free spot for the Ride / Trick
+  bubble (an upright phone) and a sticker pop or a toast would lie over it (they are drawn above
+  it), it hides until they have gone (`ui.js` `position()`), so Ride and Trick never sit under a
+  card. A bubble with a free spot is unchanged.
+- *"Tap to say hi!"* no longer shows over the dolphin whose bubble is open, the one she rides or
+  is mounting, or while a mystery present drops (one "tap" call at a time).
+- *The joystick label* is set again on `world:load` too (`touch.js`), so it never says "Ride" or
+  "Swim" in a new world.
+- *Phones' toasts* (shared HUD, `src/ui/ui.js` `_toastRoom()`, `src/ui/theme.js`): phones show
+  one toast at a time and the rest wait their turn, so a stack never runs down onto the joystick,
+  Jump or the dolphin bubble. On upright phones the toast column is `100vw - 160px` wide, between
+  the life column and Build / Remove / Hand; on sideways phones it is `min(640px, 100vw - 440px)`
+  and new toasts wait while a sticker pop shows. Under a pop, toasts jump below it at once (no
+  slide), so none sweeps across the pop on a slow device.
+- *The walkie on phones* (`src/net/walkie/ui.js`): upright, the button is 96 px at bottom 77 and,
+  while it (or its badge) shows, the joystick, Jump (or Up / Down) and the life column move 46 px
+  up, so its pressed rings (22 px past the button) clear the hotbar, the joystick and Up / Jump.
+  Sideways, it sits at right 240 / bottom 94, so its rings end above the hotbar and clear
+  Photo / Fly.
+- *Probe timing (no game change).* probe-hud-sizes at 1366x940 said "the ride did not start":
+  the Ride tap reached `askRide` at once, but at about 1.4 frames a second and at most 0.05 s of
+  game time a frame, the 0.4 s mount took 7 s of wall clock against an 8 s wait. It now fails at
+  3 s only if the tap never reaches the dolphin, and gives the ride 30 s. X7 times the hop-off in
+  two parts: Rosie's new state reaches Lily within 2 s of wall time, and the tail is gone within
+  2 s of Lily's game time (it had failed at 2.0-3.0 s only because two pages without a GPU drew
+  about 2 frames a second; the message itself came in 200-550 ms).
+- *Checks:* probe-ocean `--only=ride` (R1-R11), `--only=wave4a --x=2,3` and `--only=wave4b`
+  green; probe-hud-sizes clear at all 19 sizes with the wave-4 states.
+- *Still open:* X5 on the upright phone (390 x 844). After Hop off, with a sticker pop, a toast,
+  Up / Down and the bubble all wanted at once, there is no free spot, so the bubble waits
+  (hidden) until the pop and the toast go; X5 expects it to show at once. This needs an owner
+  call: X5 accepts a bubble that waits and checks it appears once the pop and toast leave, or a
+  new layout gives the bubble room. The check was not changed. Smaller things for later: the
+  bubble moves between free spots while a sticker pop animates; toasts already up on a sideways
+  phone when a pop starts fade out unseen (new ones wait). The ride pictures for the daughter
+  (R10 camera: the ridden dolphin cut off at the bottom, the side-saddle tail mostly behind her
+  hair) wait for an owner or design call.
