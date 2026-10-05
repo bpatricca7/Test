@@ -2,7 +2,7 @@
 // buttons, labels, slots or the joystick overlap, on the ground, flying, and playing with friends
 // (Say shown, the walkie-talkie idle, "Jules bear is talking", pressed and the "Walkie off" badge, with its pressed
 // rings, 22 px past the button). Screenshots .shots/tmp-hudsizes-*.png.
-//   node tools/probe-hud-sizes.mjs [tag]
+//   node tools/probe-hud-sizes.mjs [tag] [--sizes=1180x700,1024x690]
 import { launch, openGame, settle, startWorld, shot } from './smoke.mjs';
 
 const TAG = process.argv[2] || 'now';
@@ -35,8 +35,12 @@ const overlaps = (page) => page.evaluate(() => {
 });
 
 let bad = 0;
+const only = (process.argv.find((a) => a.startsWith('--sizes=')) || '').slice(8).split(',').filter(Boolean);
 for (const [width, height] of SIZES) {
-  // a fresh browser for each size (one browser for all of them ran out of room on this machine)
+  if (only.length && !only.includes(`${width}x${height}`)) continue;
+  // a fresh browser for each size (one browser for all of them ran out of room on this machine);
+  // a browser that dies under load gets one more go
+  for (let attempt = 1; attempt <= 2; attempt++) {
   const browser = await launch({});
   try {
     const { context, page } = await openGame(browser, { errors: [], viewport: { width, height }, touch: true, label: `hud-${width}x${height}` });
@@ -76,8 +80,13 @@ for (const [width, height] of SIZES) {
     bad += all.length ? 1 : 0;
     console.log(`${width}x${height}: ${all.length ? 'OVERLAP ' + all.join('; ') : 'ok'} | ${ground.jump}`);
     await context.close();
+    break;
+  } catch (err) {
+    if (attempt === 2 || !/closed|crash/i.test(String(err && err.message))) throw err;
+    console.log(`${width}x${height}: the test browser died (${String(err.message).split('\n')[0].slice(0, 80)}), once more`);
   } finally {
-    await browser.close();
+    await browser.close().catch(() => {});
+  }
   }
 }
 console.log(bad ? `${bad} sizes overlap` : 'all sizes clear');
