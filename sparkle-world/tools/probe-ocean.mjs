@@ -35,7 +35,8 @@
 //   (cost includes the gallery, C5; --only=cost --part=1 leaves it out and --only=gallery runs C5
 //   alone, so each fits a shorter time limit; --only=review makes the
 //   owner-review pictures, ocean-review-*.png, and is never part of the default run;
-//   --only=dolphin makes ocean-dolphin-<palette>-<side>.png, the dolphin from five sides)
+//   --only=dolphin makes ocean-dolphin-<palette>-<side>.png, the dolphin from five sides;
+//   --only=rf [--runs=10] [--vp=desktop|ipad] runs R-F alone again and again, a new scene each run)
 //
 // P2 on the merged tree with merfolk: R10 (a mermaid and a sea dragon riding, in `ride`; the
 // pictures wave4-ride-mermaid.png, wave4-ride-dragon.png), T3b's camera under the surface (in
@@ -2472,6 +2473,82 @@ async function glassCheck(page, at) {
 // review (owner pictures, not part of the gate): node tools/probe-ocean.mjs --only=review
 // =====================================================================================
 
+/** The review's play scene: a few of every swimmer spread before her camera (R-F, R-P). */
+async function playScene(page) {
+  await ev(page, () => {
+    const g = window.__game, d = g.debug.ocean, p = g.player.position, cam = g.cameraRig;
+    d.autoSpawn(false);
+    d.clear();
+    cam.pitch = 0.42;
+    const at = (f, s) => [p.x + Math.sin(cam.yaw) * f - Math.cos(cam.yaw) * s, p.z + Math.cos(cam.yaw) * f + Math.sin(cam.yaw) * s];
+    let [x, z] = at(9, -3); d.spawn('dolphin', x, p.y, z, { n: 3 });
+    [x, z] = at(7, 3.5); d.spawn('fish', x, p.y, z, { n: 9 });
+    [x, z] = at(6.5, -2); d.spawn('sea_turtle', x, p.y, z);
+    [x, z] = at(4, -1.2); d.spawn('jelly', x, p.y, z);
+    [x, z] = at(4.5, -3); d.spawn('octopus', x, p.y, z);
+    [x, z] = at(5.5, -3.6); d.spawn('seahorse', x, p.y, z);
+    [x, z] = at(4.5, 3.8); d.spawn('starfish', x, p.y, z);
+  });
+  await gameWait(page, 1.2, 15000);
+}
+
+/** R-F: the school's fish show one by one from her play camera (returns the measure). */
+async function rfCheck(page, vp, errors, tag = '') {
+  // R-F the school from her camera: school mates seldom sit one over another (a face peeking out
+  // from behind another fish: "a fish with four eyes"; fishStacked, test-sea S12's measure)
+  const rf = await ev(page, async () => {
+    const g = window.__game, d = g.debug.ocean;
+    let frames = 0, pairs = 0, any = 0, first = '';
+    const log = [];
+    for (let i = 0; i < 120; i++) {
+      await new Promise((r) => requestAnimationFrame(r));
+      const st = [];
+      const n = d.fishStacked(0, st);
+      if (n == null) continue;
+      frames++; pairs += n; if (n > 0) any++;
+      // (diagnostics: the first frame with a stacked pair, every fish in the school's frame)
+      if (n > 0 && !first) first = JSON.stringify({ pairs: st, pose: d.fishPose(0) });
+      if (i % 15 === 0) {
+        // (diagnostics: how far the rows are turned off her view, how far and how high she is)
+        const s = d.schools()[0], c = g.camera.position;
+        const want = Math.atan2(s.x - c.x, s.z - c.z), off = ((s.face - want + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+        log.push(`${n}:${(off * 57.3).toFixed(0)}deg/${Math.hypot(s.x - c.x, s.z - c.z).toFixed(1)}m/${(c.y - s.level).toFixed(1)}up`);
+      }
+    }
+    return { frames, pairs: pairs / Math.max(1, frames), any, log: log.join(' '), first };
+  });
+  check(errors, rf.frames > 60 && rf.pairs <= 0.5,
+    `R-F ${vp.label}${tag}: the school's fish show one by one from her camera (${rf.pairs.toFixed(2)} stacked pairs a frame, any in ${rf.any} of ${rf.frames} frames; <= 0.5; pairs:turn/distance/height ${rf.log})`);
+  if (rf.first) console.log(`  R-F ${vp.label}${tag} first stacked frame: ${rf.first}`);
+  return rf;
+}
+
+/**
+ * --only=rf [--runs=10]: R-F alone, run again and again (desktop and iPad), each run a new scene
+ * (the school wanders its own way each time; R-F failed in about 2 of 9 runs before the fix).
+ */
+async function rfPass(browser, errors) {
+  const runs = Math.max(1, Number(args.runs) || 10);
+  for (const vp of [{ width: 1280, height: 800, label: 'desktop' }, { width: 1024, height: 768, label: 'ipad' }].filter((v) => !args.vp || v.label === args.vp)) {
+    console.log(`\n[rf] the play camera, ${vp.label}, ${runs} runs`);
+    const { context, page } = await openGame(browser, { errors, viewport: { width: vp.width, height: vp.height }, label: 'rf-' + vp.label });
+    await newWorld(page, 'beach', { quality: 'auto' });
+    await cleanView(page, true);
+    await ev(page, () => window.__game.events.emit('thumbnail:before', {}));
+    const deep = await ev(page, () => window.__game.debug.ocean.deepSpot());
+    await float(page, true);
+    await goTo(page, deep);
+    await ev(page, () => { const g = window.__game; g.award('splash'); });
+    await settle(page, 4000);
+    for (let k = 1; k <= runs; k++) {
+      await playScene(page);
+      await gameWait(page, 1.5, 15000); // (the review takes its two pictures over this time)
+      await rfCheck(page, vp, errors, ` run ${k}/${runs}`);
+    }
+    await context.close();
+  }
+}
+
 /** The owner-review pictures: the gallery and every palette, under the water, her play camera. */
 async function reviewPass(browser, errors) {
   await galleryShots(browser, errors, 'review-');
@@ -2543,46 +2620,11 @@ async function reviewPass(browser, errors) {
     await goTo(page, deep);
     await ev(page, () => { const g = window.__game; g.award('splash'); });
     await settle(page, 4000); // her first swim's sticker and its confetti are over
-    await ev(page, () => {
-      const g = window.__game, d = g.debug.ocean, p = g.player.position, cam = g.cameraRig;
-      d.autoSpawn(false);
-      d.clear();
-      cam.pitch = 0.42;
-      const at = (f, s) => [p.x + Math.sin(cam.yaw) * f - Math.cos(cam.yaw) * s, p.z + Math.cos(cam.yaw) * f + Math.sin(cam.yaw) * s];
-      let [x, z] = at(9, -3); d.spawn('dolphin', x, p.y, z, { n: 3 });
-      [x, z] = at(7, 3.5); d.spawn('fish', x, p.y, z, { n: 9 });
-      [x, z] = at(6.5, -2); d.spawn('sea_turtle', x, p.y, z);
-      [x, z] = at(4, -1.2); d.spawn('jelly', x, p.y, z);
-      [x, z] = at(4.5, -3); d.spawn('octopus', x, p.y, z);
-      [x, z] = at(5.5, -3.6); d.spawn('seahorse', x, p.y, z);
-      [x, z] = at(4.5, 3.8); d.spawn('starfish', x, p.y, z);
-    });
-    await gameWait(page, 1.2, 15000);
+    await playScene(page);
     await shot(page, `review-play-${vp.label}`, PREFIX);
     await gameWait(page, 1.5, 15000);
     await shot(page, `review-play-${vp.label}-2`, PREFIX);
-    // R-F the school from her camera: school mates seldom sit one over another (a face peeking out
-    // from behind another fish: "a fish with four eyes"; fishStacked, test-sea S12's measure)
-    const rf = await ev(page, async () => {
-      const g = window.__game, d = g.debug.ocean;
-      let frames = 0, pairs = 0, any = 0;
-      const log = [];
-      for (let i = 0; i < 120; i++) {
-        await new Promise((r) => requestAnimationFrame(r));
-        const n = d.fishStacked(0);
-        if (n == null) continue;
-        frames++; pairs += n; if (n > 0) any++;
-        if (i % 15 === 0) {
-          // (diagnostics: how far the rows are turned off her view, how far and how high she is)
-          const s = d.schools()[0], c = g.camera.position;
-          const want = Math.atan2(s.x - c.x, s.z - c.z), off = ((s.face - want + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
-          log.push(`${n}:${(off * 57.3).toFixed(0)}deg/${Math.hypot(s.x - c.x, s.z - c.z).toFixed(1)}m/${(c.y - s.level).toFixed(1)}up`);
-        }
-      }
-      return { frames, pairs: pairs / Math.max(1, frames), any, log: log.join(' ') };
-    });
-    check(errors, rf.frames > 60 && rf.pairs <= 0.5,
-      `R-F ${vp.label}: the school's fish show one by one from her camera (${rf.pairs.toFixed(2)} stacked pairs a frame, any in ${rf.any} of ${rf.frames} frames; <= 0.5; pairs:turn/distance/height ${rf.log})`);
+    await rfCheck(page, vp, errors);
     const c = await seaContrast(page);
     check(errors, c.px > 800 && c.diff >= V1_DIFF, `R-P ${vp.label}: animals swimming near her are clearly in the picture (${c.px} pixels, difference ${f1(c.diff)})`);
     // a dolphin leaping out of the water near her (solid in the air, its splash below)
@@ -3451,6 +3493,7 @@ try {
   if (want('cost')) await costPass(browser, errors);
   else if (only && only.includes('gallery')) await galleryShots(browser, errors); // C5 alone
   if (only && only.includes('review')) await reviewPass(browser, errors); // owner pictures (on request)
+  if (only && only.includes('rf')) await rfPass(browser, errors); // R-F again and again (--runs=10)
   if (only && only.includes('dolphin')) await dolphinViews(browser, errors); // the dolphin's five sides (on request)
 } catch (err) {
   errors.push('[probe] ' + (err && err.stack ? err.stack : err));

@@ -2194,7 +2194,7 @@ class OceanSystem {
        * Only fish in the picture count: every one of a fish's 8 box corners must lie in front of
        * the camera (a corner behind it projects mirrored), and its box must reach into the picture.
        */
-      fishStacked(i = 0) {
+      fishStacked(i = 0, out = null) {
         const sc = sys.schools[i], cam = sys.game.camera;
         if (!sc || !sc.on || !cam) return null;
         const g = sys.meshes ? sys.meshes.k.fish.geo : null;
@@ -2216,6 +2216,7 @@ class OceanSystem {
           // the part in the picture is judged
           if (!front || !(R[2] > -1 && R[0] < 1 && R[3] > -1 && R[1] < 1)) continue;
           for (let k = 0; k < 4; k++) R[k] = Math.max(-1, Math.min(1, R[k]));
+          R.a = a;
           rects.push(R);
         }
         let pairs = 0;
@@ -2223,9 +2224,29 @@ class OceanSystem {
           const A = rects[a], B = rects[b];
           const ix = Math.min(A[2], B[2]) - Math.max(A[0], B[0]), iy = Math.min(A[3], B[3]) - Math.max(A[1], B[1]);
           if (ix <= 0 || iy <= 0) continue;
-          if (ix * iy > 0.25 * Math.min((A[2] - A[0]) * (A[3] - A[1]), (B[2] - B[0]) * (B[3] - B[1]))) pairs++;
+          if (ix * iy > 0.25 * Math.min((A[2] - A[0]) * (A[3] - A[1]), (B[2] - B[0]) * (B[3] - B[1]))) {
+            pairs++;
+            if (out) out.push([A.a, B.a]);
+          }
         }
         return pairs;
+      },
+      /**
+       * Probes: school i's fish in its own frame (across her view, away from her; blocks from its
+       * centre), with each fish's spacing offset, turn and state, and where her camera is.
+       */
+      fishPose(i = 0) {
+        const sc = sys.schools[i], c = sys._eye();
+        if (!sc || !sc.on) return null;
+        const f0 = sc.face || 0, ax = Math.cos(f0), az = -Math.sin(f0), wx = Math.sin(f0), wz = Math.cos(f0);
+        const fish = [];
+        for (let a = 0; a < PER_SCHOOL; a++) {
+          const f = sys.pools.fish[i * PER_SCHOOL + a];
+          if (!f.on) continue;
+          const dx = f.x - sc.x, dz = f.z - sc.z;
+          fish.push({ a, across: +(dx * ax + dz * az).toFixed(2), away: +(dx * wx + dz * wz).toFixed(2), y: +(f.y - sc.level).toFixed(2), sep: +Math.hypot(f.sepX, f.sepZ).toFixed(2), yaw: +(((f.yaw - f0) % 6.283 + 9.425) % 6.283 - 3.1416).toFixed(2), st: f.state, hid: f.hidden });
+        }
+        return { cam: [+(c.x - sc.x).toFixed(1), +(c.y - sc.level).toFixed(1), +(c.z - sc.z).toFixed(1)], face: +f0.toFixed(2), off: [+(sc.offX || 0).toFixed(2), +(sc.offZ || 0).toFixed(2)], scatter: sc.scatter, fish };
       },
       corrupt(kind = 'dolphin') {
         const r = sys.pools[kind].find((q) => q.on && q.state !== 'ride');
