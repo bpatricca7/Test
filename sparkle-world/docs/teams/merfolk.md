@@ -1117,7 +1117,7 @@ normal sticker path. Sticker total grows by 2 (the book handles any count).
 | what | cost |
 |---|---|
 | Avatar on land | 0 draw calls, 0 per-frame work (the form is not even resolved; one boolean) |
-| First turn of an avatar (lazy build) | about 1 ms CPU, once per (look, form) (the player's own parts are built hidden ahead, `prepareSea()`); the sea material kinds are drawn once by a warm-up when a world loads (fourth round, As built). The longest frame in the 0.5 s after the first turn stays ≤ 33 ms on the probe (B13c) |
+| First turn of an avatar (lazy build) | about 1 ms CPU, once per (look, form) (the player's own parts are built hidden ahead, `prepareSea()`, textures uploaded); the sea material kinds are drawn once by a warm-up when a world loads (fourth round, As built). The turn builds no shader program; its longest frame in 0.5 s stays within 33 ms of the shore's (B13c) |
 | Avatar in sea form | Mermaid +3 / Sea Dragon +8 draw calls, minus 5-10 hidden leg and skirt meshes; tube deform about 0.02 ms (8×12 quads + extras, in place); hidden flares not deformed |
 | Textures | 2 per (color, form) at 128×128 through the shared cache, refcounted once per avatar (§7.4) |
 | Player physics | 3 to 4 extra `liquidAt` calls per frame while sea swimming (depth, float-up, the leap head check only when Up is held); 0 on land |
@@ -1654,18 +1654,21 @@ makes a new candy world when the random one has no deep milk near the start.
   the sea), checked to stand back more than 2.5 blocks.
 - **Friends**: Aria and Leo pass `seaFloat` too (head out of the water), so a friend Sea Dragon
   floats like the player instead of hanging its tail down.
-- **First-turn cost (B13c), measured.** Same script, boy as Sea Dragon, lock held, no other
-  browser: the pre-redesign head 3372638 and f0eb909 both stalled the turn frame itself
-  430-860 ms (shader / pipeline built on first draw: the fins' two passes and the glow), which the
-  old B13c window (it started after the turn frame) never saw; the redesign also made the
-  first build heavier (avatar update on the turn frame 5-7 ms before, 13-21 ms after). Now: the
-  warm-up draws three one-triangle stand-ins (scales, two-sided see-through fins, blended glow) in
-  the real scene once when a world loads, and the player's own sea parts are built hidden 1.5 s
-  after a world loads or the look changes (`avatar.prepareSea()`). Turn frame now 100-200 ms (the
-  usual frame here is 80-180 ms) with 2-3 ms avatar update. B13c now measures from the turn frame
-  itself and takes the middle of 3 fresh pages; the remaining spread (deltas -7 to +98 ms over
-  14 runs, middle about +40) is this 4-core SwiftShader machine's own frame noise: the steady
-  sea-form frame is the same as on land.
+- **First-turn cost (B13c), measured** (same command on all three builds, lock held, no other
+  browser, boy starter as a Sea Dragon, 3 fresh pages each; this 4-core machine draws in
+  software, a usual frame is 180-200 ms). Turn frame / its 0.5 s against the same on the shore:
+  3372638 (before the redesign) 885-997 ms, +544 to +795 ms, 2 new shader programs on the turn;
+  f0eb909 856-932 ms, +646 to +738 ms, 1 new program. So the stall was there before the redesign
+  too: a GPU builds a program the first time a material kind is really drawn (the fins' two
+  passes, the glow), and the old B13c window started after that frame, so it never saw it. Now
+  165-211 ms, -2 to +28 ms, 0 new programs (and a 4-run check: turn frames 149-436 ms with the
+  shore's own spikes at 213-364 ms). How: when a world loads, three one-triangle stand-ins
+  (scales, two-sided see-through fins, blended glow) are drawn once in the real scene; 1.5 s
+  after a world loads or the look changes the player's sea parts are built hidden
+  (`avatar.prepareSea()`) and their textures sent to the GPU (`initTexture`). B13c now runs 3
+  fresh pages before the main costs page opens, measures from the turn frame itself against the
+  shore's 0.5 s stretches (like for like), takes the middle one, and fails if the turn builds any
+  shader program.
 
 **For the integrator / squish (Sea Dragon Puffum, C9):** the motifs changed shape, not names:
 the horn nubs are now curved horns swept back, with a dark root band, ridge bands and a light
