@@ -103,11 +103,20 @@ const CSS = /* css */ `
   .sw-app.sw-touch-hud.sw-wk-on .sw-hotbar, .sw-app.sw-touch-hud.sw-wk-offshown .sw-hotbar { gap: 4px; padding: 6px; }
   .sw-app.sw-touch-hud.sw-wk-on .sw-hud-bottom, .sw-app.sw-touch-hud.sw-wk-offshown .sw-hud-bottom { gap: 8px; left: min(50%, calc(100% - 640px - var(--sw-safe-r))); }
 }
-/* phones held upright: in the middle above the hotbar, between Bag and Undo; the label on top */
+/* phones held upright: in the middle above the hotbar, between Bag and Undo; the label on top.
+   On touch screens the joystick, Jump (or Up / Down) and the life column move 46 px up while
+   the walkie (or its badge) shows, so the rings it sends out while pressed (22 px past the
+   button) clear the hotbar, the joystick and Up / Jump and their words; Jump still sits under
+   the Fly / Emotes / Photo row. The button stays big (96 px): easy to press and hold. */
 @media (max-width: 480px) {
   .sw-wk, .sw-app.sw-touch-hud .sw-wk { left: 50%; right: auto; transform: translateX(-50%); bottom: calc(60px + var(--sw-safe-b)); flex-direction: column-reverse; gap: 2px; }
+  .sw-app.sw-touch-hud.sw-wk-on .sw-hud.sw-touchmode .sw-touch, .sw-app.sw-touch-hud.sw-wk-offshown .sw-hud.sw-touchmode .sw-touch { bottom: calc(196px + var(--sw-safe-b)); }
+  .sw-app.sw-touch-hud.sw-wk-on .sw-joy:not(.active), .sw-app.sw-touch-hud.sw-wk-offshown .sw-joy:not(.active) { bottom: calc(276px + var(--sw-safe-b)); }
+  .sw-app.sw-touch-hud.sw-wk-on .lf-hud, .sw-app.sw-touch-hud.sw-wk-offshown .lf-hud { bottom: calc(346px + var(--sw-safe-b)); }
   .sw-wk-btn, .sw-app.sw-touch-hud .sw-wk-btn { width: 100px; height: 100px; }
   .sw-wk-label { font-size: 14px; max-width: 170px; }
+  .sw-app.sw-touch-hud .sw-wk { bottom: calc(77px + var(--sw-safe-b)); }
+  .sw-app.sw-touch-hud .sw-wk-btn { width: 96px; height: 96px; }
   .sw-wk-secs { min-width: 32px; height: 32px; line-height: 24px; font-size: 16px; }
   .sw-wk-off, .sw-app.sw-touch-hud .sw-wk-off { left: 50%; right: auto; transform: translateX(-50%); bottom: calc(76px + var(--sw-safe-b)); }
 }
