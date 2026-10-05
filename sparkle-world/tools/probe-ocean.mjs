@@ -890,8 +890,18 @@ async function tapPass(browser, errors) {
     const still = await ev(page, (c) => window.__game.debug.getBlock(c[0], c[1], c[2]), t6);
     check(errors, m1 === m0 + 1 && still === 'starfish', `T6 a Hand click on a Starfish block says hi (${m0} -> ${m1}), the block stays`);
     await ev(page, () => { const g = window.__game; g.debug.select('block:planks_pink'); g.setTool('build'); });
-    const hit6 = await pickAt(page, sp);
-    await page.mouse.click(sp.x, sp.y);
+    // (a slow machine: her view can still drift after the Hand click, and one run's Build click
+    // went past the starfish to the sand 6 blocks off; so aim again and wait, up to 2 s, until the
+    // point is on the starfish block before the Build click. The check itself is unchanged.)
+    await aim(page, t6[0] + 0.5, t6[1] + 0.05, t6[2] + 0.5, 0.7);
+    const sp6 = await screenPoint(page, t6[0] + 0.5, t6[1] + 0.05, t6[2] + 0.5);
+    for (let i = 0; i < 10; i++) {
+      const h = await pickAt(page, sp6);
+      if (h && h.type === 'block' && h.kind === 'starfish') break;
+      await page.waitForTimeout(200);
+    }
+    const hit6 = await pickAt(page, sp6);
+    await page.mouse.click(sp6.x, sp6.y);
     // (a slow machine: up to 3 s for the build to land)
     await waitOk(page, (c) => window.__game.debug.getBlock(c[0], c[1], c[2]) === 'planks_pink', t6, 3000);
     const now = await ev(page, (c) => window.__game.debug.getBlock(c[0], c[1], c[2]), t6);
