@@ -93,13 +93,13 @@ const CSS = /* css */ `
   .sw-app.sw-touch-hud .sw-wk { right: calc(168px + var(--sw-safe-r)); bottom: calc(8px + var(--sw-safe-b)); flex-direction: column-reverse; align-items: flex-end; gap: 2px; }
   .sw-app.sw-touch-hud .sw-wk-btn { width: 100px; height: 100px; }
   .sw-app.sw-touch-hud .sw-wk-off { right: calc(168px + var(--sw-safe-r)); bottom: calc(24px + var(--sw-safe-b)); }
-  .sw-app.sw-touch-hud.sw-wk-on .sw-hud-bottom, .sw-app.sw-touch-hud.sw-wk-badge .sw-hud-bottom { left: min(50%, calc(100% - 659px - var(--sw-safe-r))); }
+  .sw-app.sw-touch-hud.sw-wk-on .sw-hud-bottom, .sw-app.sw-touch-hud.sw-wk-offshown .sw-hud-bottom { left: min(50%, calc(100% - 659px - var(--sw-safe-r))); }
 }
 @media (min-width: 974px) and (max-width: 1099px) and (min-height: 521px) and (orientation: landscape) {
-  .sw-app.sw-touch-hud.sw-wk-on .sw-slot, .sw-app.sw-touch-hud.sw-wk-badge .sw-slot { width: 54px; height: 54px; border-radius: 16px; }
-  .sw-app.sw-touch-hud.sw-wk-on .sw-slot img, .sw-app.sw-touch-hud.sw-wk-badge .sw-slot img { width: 42px; height: 42px; }
-  .sw-app.sw-touch-hud.sw-wk-on .sw-hotbar, .sw-app.sw-touch-hud.sw-wk-badge .sw-hotbar { gap: 4px; padding: 6px; }
-  .sw-app.sw-touch-hud.sw-wk-on .sw-hud-bottom, .sw-app.sw-touch-hud.sw-wk-badge .sw-hud-bottom { gap: 8px; left: min(50%, calc(100% - 619px - var(--sw-safe-r))); }
+  .sw-app.sw-touch-hud.sw-wk-on .sw-slot, .sw-app.sw-touch-hud.sw-wk-offshown .sw-slot { width: 54px; height: 54px; border-radius: 16px; }
+  .sw-app.sw-touch-hud.sw-wk-on .sw-slot img, .sw-app.sw-touch-hud.sw-wk-offshown .sw-slot img { width: 42px; height: 42px; }
+  .sw-app.sw-touch-hud.sw-wk-on .sw-hotbar, .sw-app.sw-touch-hud.sw-wk-offshown .sw-hotbar { gap: 4px; padding: 6px; }
+  .sw-app.sw-touch-hud.sw-wk-on .sw-hud-bottom, .sw-app.sw-touch-hud.sw-wk-offshown .sw-hud-bottom { gap: 8px; left: min(50%, calc(100% - 619px - var(--sw-safe-r))); }
 }
 /* phones held upright: in the middle above the hotbar, between Bag and Undo; the label on top */
 @media (max-width: 480px) {
@@ -253,7 +253,7 @@ export class WalkieUI {
     const badge = v.show === 'badge';
     if (this.off.hidden === badge) {
       this.off.hidden = !badge;
-      g.container.classList.toggle('sw-wk-badge', badge);
+      g.container.classList.toggle('sw-wk-offshown', badge);
     }
     if (show) this._paint(v);
     this._speakBadges(v);
