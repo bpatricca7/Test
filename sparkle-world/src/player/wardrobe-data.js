@@ -15,7 +15,8 @@
 //   top: { type, color, pattern, patternColor, num: 0..99 (only drawn on a jersey) },
 //   bottom: { type, color, pattern, patternColor },  dress: null | { type, color, pattern, patternColor },
 //   shoes: { type, color },
-//   acc: { head, headColor, face, faceColor, back, backColor, neck, neckColor, hand, handColor }
+//   acc: { head, headColor, face, faceColor, back, backColor, neck, neckColor, hand, handColor },
+//   sea: { form: 'auto' | 'mermaid' | 'sea_dragon' | 'me', color: null (Match) | a SEA_COLORS hex }
 // }   (faceColor / handColor may be null = the item's own default colors)
 
 export const DEFAULT_LOOK = {
@@ -32,6 +33,9 @@ export const DEFAULT_LOOK = {
     head: 'bow', headColor: '#FF5FA2', face: 'none', faceColor: null, back: 'none', backColor: '#B8E1FF',
     neck: 'none', neckColor: '#FFD54A', hand: 'none', handColor: null,
   },
+  // What she becomes in deep water ('auto' follows this device's Girl / Boy button) and the
+  // tail color (null = Match my clothes). Left out of the look token while it is this default.
+  sea: { form: 'auto', color: null },
 };
 
 // [key, name, tag]: tag 'g' = in the Girl surprise (the default), 'b' = in the Boy surprise,
@@ -99,6 +103,24 @@ export const PATTERNS = opts([
 export const SMILES = opts([['happy', 'Happy', 'gb'], ['grin', 'Big Smile', 'gb'], ['cat', 'Cat Smile', 'gb'], ['open', 'Excited', 'gb']]);
 /** Eyebrows: 'soft' is the original gentle arc, 'bold' a thicker, flatter brow. */
 export const BROWS = opts([['soft', 'Soft', 'gb'], ['bold', 'Bold', 'gb']]);
+/** What you become in deep water. 'auto' (index 0) follows this device's Girl / Boy button
+ *  (or the worn look) and is never shown as a tile. APPEND ONLY (look codec). */
+export const SEA_FORMS = opts([
+  ['auto', 'Auto', 'gb'],
+  ['mermaid', 'Mermaid', 'g'],
+  ['sea_dragon', 'Sea Dragon', 'b'],
+  ['me', 'Just Me', 'gb'],
+]);
+/** Tail colors (the codec sends the index; null = Match my clothes). APPEND ONLY.
+ *  Hex only: patterns (a later Rainbow tail) go in their own list, never here. */
+export const SEA_COLORS = [
+  '#3FD8B0', '#6CC6FF', '#4D7CFF', '#9C7BFF', '#FF8CC6', '#FF5FA2',
+  '#FF6B6B', '#FFA94D', '#FFD43B', '#6BD68A', '#2FB5B0', '#E6DDFF',
+];
+export const SEA_COLOR_NAMES = [
+  'Sea green', 'Sky blue', 'Ocean blue', 'Purple', 'Pink', 'Hot pink',
+  'Coral', 'Orange', 'Gold', 'Green', 'Deep teal', 'Pearl',
+];
 /** The Studio's Girl / Boy / Mix buttons (device-local `surpriseStyle`). */
 export const SURPRISE_STYLES = ['girl', 'boy', 'mix'];
 
@@ -159,7 +181,11 @@ const KEYS = {
   dress: keySet(DRESSES), shoes: keySet(SHOES), head: keySet(HEAD_ACC), face: keySet(FACE_ACC),
   back: keySet(BACK_ACC), neck: keySet(NECK_ACC), hand: keySet(HAND_ACC), pattern: keySet(PATTERNS),
   smile: keySet(SMILES), brows: keySet(BROWS),
+  sea: keySet(SEA_FORMS),
 };
+const SEA_SET = new Set(SEA_COLORS);
+// A SEA_COLORS hex (upper case) or null (Match); anything else gives null.
+const seaCol = (v) => (typeof v === 'string' && SEA_SET.has(v.toUpperCase()) ? v.toUpperCase() : null);
 
 const col = (v, d) => (typeof v === 'string' && HEX.test(v) ? v.toUpperCase() : d);
 const colOrNull = (v) => (typeof v === 'string' && HEX.test(v) ? v.toUpperCase() : null);
@@ -187,6 +213,7 @@ export function normalizeLook(look) {
   const face = l.face || {};
   const acc = l.acc || {};
   const shoes = l.shoes || {};
+  const sea = l.sea && typeof l.sea === 'object' ? l.sea : {};
   const name = typeof l.name === 'string' ? l.name.replace(/\s+/g, ' ').trim().slice(0, 16) : '';
   const color2 = hair.color2 === 'rainbow' ? 'rainbow' : colOrNull(hair.color2);
   return {
@@ -223,6 +250,10 @@ export function normalizeLook(look) {
       neckColor: col(acc.neckColor, d.acc.neckColor),
       hand: one(acc.hand, KEYS.hand, d.acc.hand),
       handColor: colOrNull(acc.handColor),
+    },
+    sea: {
+      form: one(sea.form, KEYS.sea, d.sea.form),
+      color: seaCol(sea.color),
     },
   };
 }
@@ -295,9 +326,13 @@ const BOY_PATTERNS = ['stars', 'stripes', 'dots', 'plaid', 'checks', 'bolts', 'd
  * then the hair style comes from every style).
  */
 export function randomLook(rand = Math.random, name = DEFAULT_LOOK.name, base = null, style = 'girl') {
-  if (style === 'boy') return boyLook(rand, name, base, tagged(HAIR_STYLES, 'b'));
-  if (style === 'mix') return rand() < 0.5 ? boyLook(rand, name, base, HAIR_STYLES) : girlLook(rand, name, base, HAIR_STYLES);
-  return girlLook(rand, name, base, tagged(HAIR_STYLES, 'g'));
+  let out;
+  if (style === 'boy') out = boyLook(rand, name, base, tagged(HAIR_STYLES, 'b'));
+  else if (style === 'mix') out = rand() < 0.5 ? boyLook(rand, name, base, HAIR_STYLES) : girlLook(rand, name, base, HAIR_STYLES);
+  else out = girlLook(rand, name, base, tagged(HAIR_STYLES, 'g'));
+  // The water form is who you are, like the name: a surprise keeps it (no rand() call added).
+  if (base) out.sea = normalizeLook(base).sea;
+  return out;
 }
 
 function girlLook(rand, name, base, hairStyles) {

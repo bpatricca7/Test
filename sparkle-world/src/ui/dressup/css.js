@@ -107,6 +107,10 @@ export const CSS = /* css */ `
 .sw-sw--big { width: 60px; height: 60px; }
 .sw-sw--none { background: #fff; display: grid; place-items: center; }
 .sw-sw--none svg { width: 34px; height: 34px; }
+.sw-sw--match { background: #fff; display: grid; place-items: center; }
+.sw-sw--match svg { width: 36px; height: 36px; }
+.sw-dtab.sw-tab-new::after { content: ''; position: absolute; top: 4px; right: 8px; width: 12px; height: 12px; border-radius: 50%; background: var(--sw-sun); border: 2px solid #fff; box-shadow: 0 0 6px rgba(255,201,77,.9); animation: sw-tab-new 1.4s ease-in-out infinite; }
+@keyframes sw-tab-new { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }
 .sw-sw--rainbow { background: conic-gradient(#FF8A8A, #FFB86B, #FFE27A, #9BE58A, #7FD3FF, #A99BFF, #E59BFF, #FF8A8A); }
 
 .sw-patterns { display: flex; flex-wrap: wrap; gap: 10px; }

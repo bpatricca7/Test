@@ -15,6 +15,7 @@
 import { hashEntityRecords, hashPlantRecords, packLook, stableStringify } from './codec.js';
 import { classify } from '../things/prefabs/place.js';
 import { ActorRegistry, basicSanitizeName } from './actors.js';
+import { withResolvedSea } from '../player/merfolk/rules.js';
 
 const NET_APPLIED_CELLS = 2048; // 'net:applied' lists at most this many cells (else null)
 const SEAT_SPAN = 1e6;
@@ -45,6 +46,7 @@ export class GameAdapter {
     game.events.on('avatar:changed', dropLook);
     game.events.on('outfit:changed', dropLook);
     game.events.on('profile:changed', dropLook);
+    game.events.on('style:changed', dropLook); // friends see the water form 'auto' resolves to
     // a visiting friend's own gems: the ones she found in this host's world stay found when
     // she comes back (else a rejoin would hand out their coins again)
     this._hostWorld = null;
@@ -568,7 +570,7 @@ export class GameAdapter {
   local() {
     const g = this.game, pl = g.player;
     const p = pl && g.mode === 'play' ? [pl.position.x, pl.position.y, pl.position.z, pl.yaw] : null;
-    const st = pl ? ST[pl.state] || 'w' : 'w';
+    const st = pl ? (pl.seaForm && pl.state !== 'ride' ? 'm' : ST[pl.state] || 'w') : 'w'; // merfolk
     const prof = g.profile || {};
     let raw = prof.playerName || (prof.look && prof.look.name) || '';
     // the game's own starting name is not hers until she says so (others see "Friend")
@@ -580,7 +582,8 @@ export class GameAdapter {
     const nm = this._nm;
     if (this._lk === null) {
       try {
-        this._lk = packLook(prof.look || {});
+        // merfolk: the resolved water form ('auto' worked out on this device), never the style
+        this._lk = packLook(withResolvedSea(prof.look || {}, typeof g.surpriseStyle === 'function' ? g.surpriseStyle() : null));
       } catch {
         this._lk = '';
       }
@@ -592,7 +595,7 @@ export class GameAdapter {
       p,
       st,
       nm,
-      lk: this._lk,
+      lk: this._lk,              // merfolk: packLook(withResolvedSea(look, style))
       hi: this.heldKey(),
       vh: this.vehicleField(),
     };

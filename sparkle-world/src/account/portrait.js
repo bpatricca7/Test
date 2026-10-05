@@ -36,7 +36,7 @@ export function watchPortrait(game, acct) {
     const p = acct.player;
     if (!p || acct.offline || acct.mode !== 'account') return;
     const look = game.profile && game.profile.look;
-    const key = JSON.stringify(look || {});
+    const key = JSON.stringify({ ...(look || {}), sea: null }); // a tail choice never re-uploads the head picture
     if (!look || key === last) return;
     try {
       const png = await render(look);

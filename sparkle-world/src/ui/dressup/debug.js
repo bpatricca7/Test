@@ -10,7 +10,7 @@ import { cacheStats } from '../../player/avatar/textures.js';
 let uid = 0;
 const OPTION_LISTS = [
   'HAIR_STYLES', 'HAIR_MIXES', 'TOPS', 'BOTTOMS', 'DRESSES', 'SHOES', 'HEAD_ACC', 'FACE_ACC', 'BACK_ACC', 'NECK_ACC',
-  'HAND_ACC', 'PATTERNS', 'SMILES', 'BROWS',
+  'HAND_ACC', 'PATTERNS', 'SMILES', 'BROWS', 'SEA_FORMS',
 ];
 
 /**

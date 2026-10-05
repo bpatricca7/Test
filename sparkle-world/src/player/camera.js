@@ -82,7 +82,9 @@ export class CameraRig {
     const state = this.player.state;
     // a driver's seat is low: her eyes are about 0.95 above it
     const driving = state === 'ride' && this.player.mountPet && this.player.mountPet.kind === 'vehicle';
-    const headY = state === 'sleep' ? 0.6 : state === 'sit' ? 0.75 : driving ? (first ? 0.95 : HEAD) : first ? EYE : HEAD;
+    // in sea form (not riding) she swims flat: the head is lower and forward (merfolk)
+    const sea = !!this.player.seaForm && state !== 'ride';
+    const headY = state === 'sleep' ? 0.6 : state === 'sit' ? 0.75 : driving ? (first ? 0.95 : HEAD) : sea ? (first ? 1.15 : 1.05) : first ? EYE : HEAD;
     const hx = p.x, hy = p.y + headY, hz = p.z;
     const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
     const dx = Math.sin(this.yaw) * cp, dy = -sp, dz = Math.cos(this.yaw) * cp;

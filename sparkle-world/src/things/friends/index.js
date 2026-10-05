@@ -760,6 +760,17 @@ export function install(game) {
   for (const n of ['shop:buy', 'zipline:ride', 'camp:marshmallow', 'photo:taken', 'sticker:earned', 'pet:adopt', 'cook:done', 'garden:harvest', 'prefab:place']) {
     game.events.on(n, () => sys.react(n));
   }
+  // her tail appears (merfolk): one line the first time in each world visit, never on turning
+  // back and never again at every shore hop
+  let seaReacted = false;
+  game.events.on('world:load', () => { seaReacted = false; });
+  game.events.on('player:seaform', ({ form } = {}) => {
+    if (!form || seaReacted || sys.remote) return;
+    seaReacted = true;
+    // her tail is the big news: it wins over a reaction a moment ago (her first swim's sticker)
+    sys.eventT = 0;
+    sys.react('player:seaform');
+  });
   game.events.on('entity:remove', ({ entity }) => {
     // her seat or bed was taken away: stand up right now
     if (!entity || sys.remote) return;

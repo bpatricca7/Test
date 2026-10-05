@@ -33,7 +33,7 @@ module names, and do not clash.
 
 | Question | Decision |
 |---|---|
-| The two forms | **Mermaid**: a shimmering scaled tail with a round two-lobed fin and a little fin frill at the waist. **Sea Dragon** (our own creature, built from dragon and real leafy-sea-dragon ideas): a thicker scaled tail with a row of round "bubble" spikes from the back of the neck to the fin, leafy frond fins on the tail's sides, glow spots along the tail that shine at night, a fan-shaped fin, and two small soft horn nubs on the head. **The face, ears and cheeks stay 100 % the child's** (no head fans, no cheek scales). Both keep the child's own face, hair and top. |
+| The two forms | **Mermaid**: a shimmering scaled tail with a round two-lobed fin and a little fin frill at the waist. **Sea Dragon** (our own creature, built from dragon and real leafy-sea-dragon ideas; redesigned after the owner review, see As built): a longer, thicker, gently curving tail with light belly plates down the front, a tall row of round-tipped crest spikes (tail colored, gold tips) from the waist down the whole tail, big solid leafy fronds on the tail's sides and small leafy fins on the forearms, softly glowing spots along the tail, a big ribbed fan fin whose outer lobes reach furthest, and two curved horn nubs on the head (only with no head accessory or a bow). Deep teal with gold accents by default; Match never makes it purple or pearl (those give Deep teal). **The face, ears and cheeks stay 100 % the child's** (no head fans, no cheek scales). Both keep the child's own face, hair and top. |
 | Third choice | **Just Me**: no tail, no sparkles. In **deep** water she still gets the easy swimming (hover, Up and Down, the leap) at a slightly lower speed; in shallow water she swims exactly as today. Saying no to a tail is never a punishment. |
 | When it happens | Swimming in **deep** water (liquid at the waist **and** either one more liquid cell under the feet or liquid at head height), for **0.25 s**. Water, chocolate milk and strawberry milk all count. Never while flying, riding a pony, horse or vehicle, sitting, sleeping or on a zip line. **Riding a dolphin keeps the tail** (side-saddle, §6.5). |
 | Turning back | After standing on land for **0.35 s**, or after **1.4 s** out of the water (a leap that lands back in the water keeps the tail). Flying, mounting a pony or vehicle, sitting, the zip line or a teleport turn her back **at once**. |
@@ -42,7 +42,7 @@ module names, and do not clash.
 | The first turn | While the form is still `'auto'`, the first turn on a device shows a **non-blocking bubble** over her with three big picture buttons: **Mermaid**, **Sea Dragon**, **Just Me**. A tap stores the choice; ignoring it keeps `'auto'`. It fades after 8 s or when she leaves the water (§5.2). |
 | The choice later | Dress-Up Studio, new tab **Water** right after **Shoes** (the tail replaces legs and shoes), with a sparkle "new" dot until first opened: **"I swim as"**: **Mermaid / Sea Dragon / Just Me**, then **"Tail color"**: **Match** or 12 sea colors. Every child can pick any of them. |
 | The default | New look field `look.sea = { form: 'auto', color: null }`. `'auto'` follows this device's Girl / Boy / Mix button: Boy gives **Sea Dragon**, Girl and Mix give **Mermaid**. If the button was never tapped, `'auto'` follows the **worn look**: a look that fits Boy and not Girl (`lookFits`) gives Sea Dragon, anything else Mermaid. A tap (bubble or Studio) stores an explicit choice that never changes by itself. Old saves get `'auto'`, so they need no rewrite. |
-| Tail color "Match" | Takes the dress color (else the bottom's color) and **snaps it to the nearest bright sea color**; white, gray, black, brown and very dark or pale colors become **Deep teal** for a Sea Dragon and **Sea green** for a Mermaid. No boy starter look gives a dull tail. |
+| Tail color "Match" | Takes the dress color (else the bottom's color) and **snaps it to the nearest bright sea color**; white, gray, black, brown and very dark or pale colors become **Deep teal** for a Sea Dragon and **Sea green** for a Mermaid. A Sea Dragon's Match is never Purple or Pearl (those give Deep teal; a child can still pick Purple by hand). No boy starter look gives a dull tail. |
 | Privacy | The Girl / Boy / Mix choice stays on the device (`SaveStore.deviceGet`). The profile only stores `'auto'` or the form a child tapped. Friends receive the **resolved form** (a look item like a hat). For `'auto'` with the button set, that form is worked out from the button, so friends can see a tail chosen by it, exactly as they see the clothes the Boy button swaps in; the button itself is never sent or stored (§9.3). |
 | Look codec | **Two tokens appended** after the jersey number (form index, color palette index), and **left out** when the look is the default `auto` + `match`. Today's strings, goldens and old prefixes do not change. Worst case 156 characters (limit 160). New lists `SEA_FORMS` and `SEA_COLORS` are **append only**. Any later token must write the sea pair first (`0.-`) (§3.3). |
 | Presence | One new `st` letter, **`m`**: "in sea form" (swimming or leaping, with a tail). No other new field. A dolphin rider stays `h` with ocean's `sr`; friends show her tail from her `lk` (§9.2). |
@@ -297,7 +297,8 @@ export function withResolvedSea(look, style) { ... }
 /** The tail's hex. sea.color if set; else Match: the dress color, else the bottom color,
  *  snapped: an exact SEA_COLORS entry stays; a color with saturation < 0.35, lightness < 0.22
  *  or > 0.9, or a brown (hue 15-45 and lightness < 0.5) gives SEA_DEFAULT_HEX[form]; anything
- *  else gives the SEA_COLORS entry (Pearl left out) with the nearest hue. */
+ *  else gives the SEA_COLORS entry (Pearl left out) with the nearest hue. For a sea dragon,
+ *  a Match that comes out Purple or Pearl gives its Deep teal (never a purple dragon). */
 export function seaColorOf(look, form) { ... }
 
 /** Deep enough to turn: liquid at the waist and (one more liquid cell below the feet or
@@ -779,7 +780,7 @@ if (sea) sea.root.visible = seaW > 0.01;
   `lookFits`, no string work. The player's own gate reads `avatar.seaForm`, which is the cached
   value (computed once per look or style change).
 - `sea.root.scale.set(0.6 + 0.4 * seaW, seaW, 0.6 + 0.4 * seaW)` (the tail grows down from the
-  waist); the horn nubs and neck spikes scale with `seaW` too (their own bones).
+  waist); the horn nubs scale with `seaW` too (their own bone).
 - Pose choice (`:898-912`): `s.riding && s.seaRide && tail` → `poseSaddleSea(dt, s)` (before the
   riding branch); `s.swimming` → `tail ? poseSea(speed, dt, s) : poseSwim(speed)`; new:
   `else if (tail && !s.flying) poseLeap(dt, s)` before the flying branch.
@@ -807,7 +808,10 @@ tgt[ARX] = mix(-0.25 - Math.sin(t * 2.6) * 0.3, 0.25, sp);
 tgt[ALZ] = mix(0.75 + Math.sin(t * 2.6) * 0.25, 0.18, sp);
 tgt[ARZ] = -mix(0.75 + Math.sin(t * 2.6 + Math.PI) * 0.25, 0.18, sp);
 tgt[ELX] = tgt[ERX] = mix(-0.5, -0.1, sp);
-seaKick = { amp: 0.16 + 0.3 * sp, turn: Math.max(-0.5, Math.min(0.5, -yawRate * 0.12)), curl: s.onGround && sp < 0.2 ? -0.22 : 0 };
+seaKick = { amp: 0.16 + 0.3 * sp, turn: Math.max(-0.5, Math.min(0.5, -yawRate * 0.12)), curl };
+// as built: curl eases (6/s) toward 0.24 when she rests on the floor (s.onGround, sp < 0.35:
+// the tail curls back along the sand instead of sinking into it; checked in 2-deep water, the
+// lowest point stays above the floor), -0.05 when floating still, else 0
 ```
 
 **`poseLeap(dt, s)`** (tail out of the water: a leap, or flopping on the sand for up to 0.35 s):
@@ -829,9 +833,19 @@ arms (holding on), the hips turned 0.5 rad to the side; the tail drapes down alo
 dolphin's side (`seaKick = { amp: 0.08, turn: 0.35, curl: 0.25 }`, a slow kick at 1.2 rad/s).
 
 **The tail wave** (`seaTick`): for joint `i` of `N - 1 = 7`:
-`a_i = amp * sin(seaPhase - 0.8 i) * (0.3 + 0.7 i / 6) + curl` (bend toward her back, about
-the hips' X axis) and `side_i = turn * i / 6` (about the Z axis). Up-and-down like a dolphin
-kick, never side to side. A frill flutter (mermaid waist frill and dragon fronds):
+`a_i = amp * sin(seaPhase - 0.8 i) * (0.3 + 0.7 i / 6) + curl + float * fb_i` (bend toward her
+back, about the hips' X axis) and
+`side_i = turn * i / 6 + side * sin(0.6 seaPhase - 0.9 i) * (0.4 + 0.6 i / 6)` (about the Z axis).
+The mermaid: up-and-down like a dolphin kick, never side to side (`side = 0`, `float = 0`).
+The sea dragon swims like a creature: its kick is `amp * 0.4`, and its long tail waves side to
+side in a slow S (`side = 0.35 * (0.6 + 0.4 sp)`), so from behind (the play camera) the tail and
+its crest show instead of pointing at the camera. Floating (not on the floor) it gets
+`float` (eased in at 4/s) with `fb_i` mixed by speed from `FLOAT_STILL = [0.45, 0.3, 0.1, 0,
+-0.05, -0.1, -0.1]` (the tail sweeps back, its end sinks a little) to `FLOAT_SWIM = [0, -0.04,
+-0.06, -0.1, -0.14, -0.18, -0.2]` (it trails back and a little down): never an upward curl of
+the tail end toward the camera. Its fan fin rolls with the wave and turns on edge with speed
+(`fluke.rotation.y` toward `0.6 sp + 0.5 sin(0.6 seaPhase - 5.4)`, eased at 6/s). A riding or
+land pose sets `side = 0`. A frill flutter (mermaid waist frill and dragon fronds):
 `scale.x = 1 + 0.06 * sin(t * 5)`. The shimmer: every `seaMats` entry's
 `emissiveIntensity = base + 0.06 * sin(t * 2.4 + i) + 0.5 * seaFlash` (`seaFlash` decays at 2/s).
 
@@ -867,7 +881,11 @@ splash, `'player:swim'`, and the "Swim to the shore first!" emote rule. Land: no
 
 All sizes in avatar space (feet at 0, `HIP` 0.64). Colors: `C` = the tail hex,
 `L = mixHex(C, '#FFFFFF', 0.45)` (fins), `D = shade(C, -0.25)` (edges),
-dragon accent `A = mixHex(C, '#FFD43B', 0.4)` (bubble spikes, frond rims).
+dragon accent `A` = gold `#FFC83A`, not mixed with the tail, so a purple or pink tail never
+turns it peach (crest tips, horns, fin ribs; Gold and Orange tails get deep teal `#178A86`
+instead), belly `B = mixHex(C, '#FFE7A0', 0.6)`, fronds and fan fin `F = shade(C, -0.24)` at the
+root to `R = mixHex(shade(C, -0.05), A, 0.4)` at the rim, crest spike roots `K = shade(C, -0.12)`,
+glow spots `G` / `H` (core, halo) (`seaPalette`).
 
 ### 7.1 TailTube (one mesh, up to three material groups)
 
@@ -876,14 +894,24 @@ dragon accent `A = mixHex(C, '#FFD43B', 0.4)` (bubble spikes, frond rims).
   normals; like `Flare`). Lives under `sea.root` on `hips`.
 - Mermaid: length 0.86; half-width `rx` = 0.205, 0.19, 0.17, 0.15, 0.125, 0.10, 0.075, 0.05;
   half-depth `rz` = 0.13, 0.125, 0.12, 0.11, 0.095, 0.08, 0.06, 0.04. One group (scales).
-- Sea Dragon: length 0.74; `rx` = 0.21, 0.2, 0.185, 0.165, 0.14, 0.115, 0.09, 0.06;
-  `rz` = 0.14, 0.135, 0.13, 0.12, 0.105, 0.09, 0.07, 0.05. Three groups in the same buffer:
-  - group 0, `scale:`: the tube plus a row of **round bubble spikes** on the back (−Z) at rings
-    1..6: a low 6-sided dome per ring, radius 0.045 → 0.025, colored `A` by vertex color;
-  - group 1, `fin:`: **leafy fronds**, a pair of rounded leaf shapes (3 lobes each) sticking out
-    of the sides at rings 2, 4 and 6, 0.12 → 0.07 long;
-  - group 2, `glow`: **glow spots**, a small diamond on each side at rings 1..6 (6-8 % of the
-    ring's width), vertex color `L`; the `glow` material is unlit, so they shine at night.
+- Sea Dragon (as built after the owner review): length 0.96; `rx` = 0.2, 0.235, 0.23, 0.215,
+  0.19, 0.16, 0.125, 0.085; `rz` = 0.125, 0.16, 0.16, 0.15, 0.135, 0.115, 0.09, 0.065; a rest
+  `bend` per joint (0, 0.05, 0.09, 0.09, 0.05, −0.03, −0.08 rad) added after the clamp of the
+  animated angle (so a joint can reach at most 1.2 + 0.09 rad): a gentle S curve. The two front
+  columns (i 5, 6) are the **belly plates** (vertex color `B`, smooth plates in the texture).
+  Two groups in the same buffer:
+  - group 0, `scale:` (one opaque draw; the extras sample the plain middle of a belly plate,
+    `CREST_V`, and take their color per vertex): the tube; a **crest spike** on the back (−Z)
+    at every ring 0..7 (`crestPlate`, outline `sin^1.5`: a tall spike with a soft round tip
+    leaning toward the fin from the side, a lens from behind; base 0.17 → 0.10, height
+    0.27 → 0.13, thickness 0.12 → 0.07), growing from `K` at its root into an `A` tip
+    (`crestColor`); and **leafy fronds**, a big three-lobed leaf on each side at rings 2, 4 and
+    6 (0.30 → 0.17 long), swept down toward the fin and a little back, solid with both faces,
+    `F` at the root to `R` at the rim;
+  - group 1, `seaglow:<hex>`: **glow spots**, a round spot with a soft halo on each side of the
+    crest at rings 1..6 (radius 0.034 → 0.022), unlit and gently pulsing (`seaTick`), so they
+    shine at night and in deep water.
+- The tube's rest layout is built once per form and color (`tubeTemplate`) and shared.
 - Every extra vertex (domes, fronds, spots) is stored as (joint index, offset in that joint's
   frame), so `deform` moves it with the spine.
 - UVs: u around the ring (0..1), v along the tail (×3 repeats); the scales texture repeats.
@@ -897,26 +925,37 @@ dragon accent `A = mixHex(C, '#FFD43B', 0.4)` (bubble spikes, frond rims).
 - **Culling**: the tube and the fluke have `frustumCulled = false` (each is one small mesh), so
   a bent tail never vanishes at screen edges, in first-person mirrors or in selfies.
 
-### 7.2 Fluke (one mesh on `sea.tip`, fin material, `renderOrder` 3, `frustumCulled = false`)
+### 7.2 Fluke (one mesh on `sea.tip`, `renderOrder` 3, `frustumCulled = false`)
 
 - Plane in the tip's X–Y plane (flat faces toward ±Z, so it is horizontal when she swims
   flat, like a dolphin's).
 - Mermaid: two rounded lobes, total width 0.52, length 0.26, a scalloped trailing edge
   (5 scallops per lobe), a small notch in the middle.
-- Sea Dragon: a rounded **fan** (width 0.46, length 0.28) with five soft ribs from the fin
-  texture and an `A` rim; no pointed tips.
+- Mermaid: the fin material. Sea Dragon: the scales material (solid, both faces, plain
+  `CREST_V` uv): a big **fan** (width 0.8, length 0.44) of five round lobes whose outer lobes
+  reach furthest (a tail fin, not a round shell), each held by an `A` rib (thin strips on both
+  faces); `F` at the root to `R` at the rim; no pointed tips.
 
 ### 7.3 Extras (through `P.B(...)`, merged per bone and material like every other part)
 
 - **Mermaid waist frill** (`P.B('hips', fin)`): 10 petal quads around y 0.56–0.64, tilted out
   0.35 rad, covering the join of hip block and tail.
-- **Sea Dragon horn nubs** (`P.B('head', scale)`): two small soft rounded nubs (a 6-sided
-  dome, radius 0.05, height 0.07, color `A`) on top of the head at x ±0.12, toward the back.
-  **Left out when a hat, cap, crown, headband or ears are worn** (`look.acc.head !== 'none'`):
-  the head accessory covers that spot, so nothing pokes through.
-- **Sea Dragon neck spikes** (`P.B('chest', scale)`): three bubble domes down the back of the
-  neck and upper back (radius 0.05 → 0.035), continuing the row on the tail. Nothing on the
-  face, ears or cheeks: the face is 100 % the child's.
+- **Sea Dragon horn nubs** (`P.B(seaHorns, 'plain')`): two curved horns (`horn()`: a tapered
+  tube of four segments bending back, radius 0.078 → 0.016, a lighter rounded tip, about 0.36
+  long) rooted in the hair at x ±0.14, y 1.66, z −0.04, splayed out a little, clearly above
+  short hair (`hornSpot(look)`). **Only with no head accessory or a bow**: every other head
+  accessory sits on top of the head (hats, crown, tiara, flower crown, headband, cat and bunny
+  ears, unicorn horn, halo, headphones) and horns there grew out of it, so they are left out.
+  Behind and above a bow (z −0.22, splayed out); out beside a top bun (±0.24) or a fauxhawk's
+  ridge (±0.21); back behind space buns (z −0.2); up out of an afro (y 1.97), curly hair (1.78),
+  spikes (1.76) or short curls (1.7), so they never end inside the hair.
+- **No crest on the torso**: the crest starts at the waist. Carried up the back it sat on the
+  child's own shirt (over a shirt number), poked through long hair from the side and had to be
+  left out under backpacks and wings.
+- **Sea Dragon forearm fins** (`P.B('elbowL' / 'elbowR', scale)`): a small solid leafy fin
+  (0.13 long) on the outside of each forearm, lying back along the arm toward the elbow.
+- Nothing on the face, ears or cheeks, no scales on the face, body or arms: the face is 100 %
+  the child's.
 
 ### 7.4 Textures (128×128, through the shared cache)
 
@@ -924,9 +963,9 @@ dragon accent `A = mixHex(C, '#FFD43B', 0.4)` (bubble spikes, frond rims).
   row, 8 rows, offset each row; dragon: diamond scales with darker `D` edges and a lighter
   belly band at u 0.4–0.6), each scale a gradient from `C` to `L` with a white highlight dot.
   Cache key `sea|scale|<hex>|<form>`, repeat wrapping.
-- `paintFin(g, w, h, hex, form)`: translucent `L` with alpha 0.85 at the base → 0.55 at the
-  edge, 7 ribs from the base corner, a white rim; dragon fins and fronds get an `A` edge and
-  leaf veins. Key `sea|fin|<hex>|<form>`.
+- `paintFin(g, w, h)`: translucent `L` with alpha 0.85 at the base → 0.55 at the edge, 7 ribs
+  from the base corner, a white rim (the mermaid's fin and frill; the sea dragon has no
+  see-through parts). Key `sea|fin|<form>`.
 - **Ownership** (§4.2 `disposeSea`): each avatar acquires each key once when it creates the
   material and releases it exactly once in `disposeSea`. Two avatars with the same key (the
   player and Aria both on `sea|scale|#3FD8B0|mermaid`) each hold one reference, so the cache
@@ -937,7 +976,7 @@ dragon accent `A = mixHex(C, '#FFD43B', 0.4)` (bubble spikes, frond rims).
 | form | added (shown) | hidden | net |
 |---|---|---|---|
 | Mermaid | tube 1, fluke 1, waist frill 1 = **3** | legs: 4 meshes (bare) or up to 8 (pants: cloth + plain on 4 bones), skirt/dress flares 1-2 | about −1 to −7 |
-| Sea Dragon | tube 3 groups (scales, fronds, glow spots), fluke 1, horn nubs 1 (0 under a hat), neck spikes 1 = **6** | same | about −6 to +2 |
+| Sea Dragon | tube 2 groups (scales + crest + fronds, glow spots), fluke 1, horn nubs 1 (0 under a hat), forearm fins 2 = **6** | same | about −6 to +2 (B13a checks a boy starter: ≤ +6) |
 
 On land: 0 (nothing built, or built and `visible = false`).
 
@@ -1088,8 +1127,8 @@ normal sticker path. Sticker total grows by 2 (the book handles any count).
 | what | cost |
 |---|---|
 | Avatar on land | 0 draw calls, 0 per-frame work (the form is not even resolved; one boolean) |
-| First turn of an avatar (lazy build) | about 1 ms CPU, once per (look, form); no new shader program (`scale:` = the `cloth:` program, `fin:` = the `cloth2:` program, `glow` permanent). The longest frame in the 0.5 s after the first turn stays ≤ 33 ms on the probe (B13c) |
-| Avatar in sea form | Mermaid +3 / Sea Dragon +6 draw calls, minus 5-10 hidden leg and skirt meshes; tube deform about 0.02 ms (8×12 quads + extras, in place); hidden flares not deformed |
+| First turn of an avatar (lazy build) | about 1 ms CPU, once per (look, form) (the player's own parts are built hidden ahead, `prepareSea()`, textures uploaded); the sea material kinds are drawn once by a warm-up when a world loads (fourth round, As built). The turn builds no shader program; its longest frame in 0.5 s stays within 33 ms of the shore's (B13c) |
+| Avatar in sea form | Mermaid +3 / Sea Dragon +8 draw calls, minus 5-10 hidden leg and skirt meshes; tube deform about 0.02 ms (8×12 quads + extras, in place); hidden flares not deformed |
 | Textures | 2 per (color, form) at 128×128 through the shared cache, refcounted once per avatar (§7.4) |
 | Player physics | 3 to 4 extra `liquidAt` calls per frame while sea swimming (depth, float-up, the leap head check only when Up is held); 0 on land |
 | Camera underwater check | 2 `liquidAt` calls per frame; DOM class toggled only on change |
@@ -1358,9 +1397,10 @@ Before declaring any other suite "no edit", grep every probe for `.lk` and `pack
   animation freeze). Accepted.
 - **Q7 Older cached tabs** can drop an explicit sea choice from a cloud profile (§11). Accepted:
   no item is lost, only a preference that falls back to `'auto'`.
-- **Q8 Hats and the dragon's horn nubs**: the nubs are left out under any head accessory, and
-  the neck spikes sit below the hairline at the back; C5 render grids are checked by eye for
-  every head accessory once.
+- **Q8 Hats and the dragon's horn nubs**: the nubs show only with no head accessory or a bow
+  and move around the bow and tall hair (§7.3); C5 render grids show every head
+  accessory (boy and girl, accessories in pink / blue so a horn poking through would show) and
+  every hair style with the Sea Dragon.
 - **Q9 Later wave (append only)**: a **Rainbow** tail as its own pattern list (`SEA_PATTERNS`,
   a third optional codec token written after the sea pair), so `SEA_COLORS` stays hex only; a
   "tail flip" emote appended to `EMOTES`.
@@ -1378,6 +1418,304 @@ commit messages with the trailers the session gives.)
 ## As built
 
 (Written after the build. Where the build differs from the plan text, the build is right.)
+
+### As built (P1)
+
+Built on `claude/wave4-merfolk` from the step-0 base `582d11c`: §15 steps 1-8 (the P1 column of
+wave4-integration.md §7.2), with the corrections C1, C3, C4, C5, C7, C8, C14, C16 and C17 applied.
+First commit: the goldens (`OLD_*_669` in `tools/test-merfolk.mjs`) and
+`tools/fixtures/merfolk-old-profile.json`, both recorded from the untouched base (a real profile
+saved by that build: a Mermaid Dress look, two outfit slots, 340 coins, three stickers).
+
+**Where the build differs from the plan**
+
+- **Shore exit (§6.2, A14, B7b).** `physics.move({ swim })` also reports a ledge up to
+  `SWIM_LEDGE` 2.05 above her feet (not only 1.05), and the hop speed grows with the rise
+  (`hopVy`). She floats with her waist in the water, so a pond rim one block above the water is
+  about 2 blocks above her feet: with the 1.05 rule alone she could never get out of a dug pond.
+  A 3-block cliff is still a wall (A14). The float-up probe is `BUOY_PROBE` 0.95 above the feet
+  (the plan said 1.1): she floats a little higher, which keeps the beach within one hop.
+- **The vertical step is one pure function** (`seaVy` in `rules.js`), shared by `player.js` and
+  the Node stepper of A14. A leap sets 0.25 s of plain gravity (`hopT`) so the easing does not
+  eat it on the frames before she is out of the water.
+- **Textures** are light gray-scale, one pair per form (`sea|scale|<form>`, `sea|fin|<form>`);
+  the tail color comes from vertex colors. Material keys stay per color and form
+  (`scale:<hex>:<form>`, `fin:<hex>:<form>`), owned by `disposeSea()` as planned. A15 checks the
+  references go back to zero.
+- **Studio tiles** show her floating in the water, three-quarter front
+  (`FRAMES.sea = { cy: 0.8, span: 2.3, yaw: 0.6, pitch: 0.14 }`, speed 0.3), not a side view
+  while swimming: from the side long hair hid the face and the tail. Easy to change at the review.
+- **Saved outfit slots** keep the whole look, `sea` included (the plan said without it):
+  wearing a slot never changes the water form and the "worn" check leaves it out, so this is
+  harmless and `probe-avatar`'s "the slot is the look" check stays as it was.
+- **The leap tip** shows on the 3rd turn of a page visit (there is no per-device turn counter;
+  `seaLeapTips` still makes it once per device).
+- **NPC friends' line**: the first tail of a world visit resets the friends' reaction timer, so
+  the tail line wins over the "You got a sticker!" cheer of her first swim a moment before.
+- **The literals of wave4-integration.md §5.2** are in place with ocean's lines as written there
+  (`_onKey` dolphin line, `seaRide` / `seaKick` in `_syncAvatar`, `seaRide` in the remote
+  `_frame`, the Ride branch of the joystick label). They do nothing until ocean lands; ocean adds
+  only `remoteRide`, `sr` / `sk` and the rest of its own lines.
+- **Probe helpers** added to shared files for tests only: `avatar.seaParts()`,
+  `remote-players` `list()` gains `sea` (one line after `lk`).
+- **CI**: `.github/workflows/test.yml` runs `npm run test:merfolk` after the walkie-talkie.
+- **Name scan (A13)**: merfolk's five encoded words are in `tools/lib/name-scan.mjs` `EXTRA.merfolk`;
+  A13 checks every sea string kids read against the brand list, the extra words and the
+  character list.
+
+**Probe notes** (`tools/probe-merfolk.mjs`, passes `unit,water`, `swim`, `studio` (with the C5
+grids), `grids`, `touch,friends`, `costs,save`)
+
+- Times are game time: the game clamps a frame to 50 ms, and SwiftShader often runs at 6-10 fps,
+  so "within N s" checks count game seconds (what a child sees at a normal frame rate).
+- B6: "peak y >= water top + 1.4" reads "the top water cell's y + 1.4" (feet clear the surface by
+  about 0.4); with `LEAP_V` 9.2 that is what the plan's numbers give.
+- B9's adapter checks (lk sends the resolved form, never auto) run in probe-multiplayer `LOOKS`
+  and `SEA`; a solo page has no adapter.
+- B10b (riding a dolphin) is P2 (it needs ocean).
+- B12: the selfie camera aims 0.15 under its head point, so it looks at y + 0.85 (head point
+  y + 1.0 in sea form, 1.3 on land).
+- B13c: on SwiftShader a normal frame is already 100-180 ms, so "<= 33 ms" is checked as "the
+  first turn adds at most 33 ms to the usual frame"; `ensureSea` itself is 0.6 ms (<= 2).
+- probe-multiplayer `SEA` (part a) opens a fourth page, Mia, who joins while Lily is already a
+  mermaid (no burst), then goes home; part a now runs about 445 s.
+
+**Gate (P1), each command alone, browser suites under the lock** (seconds on this machine)
+
+| command | result |
+|---|---|
+| `node tools/test-merfolk.mjs` | 19 passed |
+| `node tools/test-net.mjs --only=unit` / whole `test-net` | 26 / 63 passed (142 s) |
+| `npm run test:saves`, `npm run test:accounts`, `test:vehicles`, walkie unit, `test:name` | green |
+| `probe-merfolk --only=unit,water` / `swim` / `studio` / `touch,friends` / `costs,save` | green (153 / ~350 / 194 / 107 / 195 s) |
+| `smoke` | green (90 s) |
+| `probe-multiplayer --part=a` / `b` / `c` | green (445 / 448 / 445 s) |
+| `probe-boys` unit, studio, touch, world, friends, grids | green |
+| `probe-vehicles` models,land / water,save / touch,mp | green (96 / 90 / 264 s) |
+| `probe-builds` gallery,hills,play / ui,touch | green (206 / 98 s) |
+| `probe-avatar`, `probe-pals`, `probe-life --only=desktop` / `touch` | green (187 / 249 / 204 / 92 s) |
+| `probe-menus --only=desktop` / `touch`, `probe-environment` | green (99 / 264 / 130 s) |
+| `test-net-game`, `site-check --no-build` (after `build:site`) | green (279 / 180 s) |
+
+The gate caught one thing, fixed above: `probe-avatar` expects a saved outfit slot to be exactly
+the look (the slot now keeps `sea`). `probe:boys` needed no edit (the sea tokens are left out
+for auto + Match), as planned.
+
+**For the owner review (§7.3)**: `.shots/merfolk-grid-mermaid.png`,
+`merfolk-grid-sea_dragon.png` (every tail color and Match, the back, four kinds of clothes, the
+swim view), `merfolk-grid-heads.png` and `merfolk-grid-headsBack.png` (every head accessory with
+the Sea Dragon: since the second review round the horn nubs are left out only under a hat), `merfolk-grid-starters.png`,
+the Studio (`merfolk-studio-water-*.png`, `merfolk-studio-dragon-*.png`) and the world
+(`merfolk-mermaid-in.png`, `merfolk-dragon-in.png`, `merfolk-leap.png`, `merfolk-underwater.png`,
+`merfolk-candy-underwater.png`, `merfolk-bubble.png`, `merfolk-friends-sea.png`). The Sea Dragon
+name and look check is the owner's (§16 Q2).
+
+**Wanted text for the integrator** (C17: builders do not edit these files)
+
+- `docs/DESIGN.md` §7.1 (sea forms): the turn in deep water (0.25 s; 2 deep), Mermaid / Sea
+  Dragon / Just Me, `look.sea` (auto follows this device's Girl / Boy button, else the worn look),
+  sea swimming (4.6 / 6.2 blocks/s, Up / Down, the float up, the dolphin leap, the shore flop up
+  to 2 blocks), the Studio's Water tab, the underwater tint, NPC friends turning too. Events:
+  `'player:seaform' { form }`, `'player:leap' { pos, form }`, `'style:changed' { style }` (and
+  the internal `'player:seaswim' { on }`). Stickers: Sea Magic!, Big Leap!. Player: `seaGate`,
+  `seaSwim`, `seaForm`; `game.underwater`.
+- `docs/MULTIPLAYER.md` §5.4 `st` gains `m` (in sea form, not riding); `lk` is
+  `packLook(withResolvedSea(look, style))`; §5.13: two sea tokens after the jersey number, left
+  out for auto + Match, worst case 156; "a later token must write the sea pair (`0.-`) first";
+  NPC `nx` samples use `st` `m` too.
+- `docs/DATA-MAP.md:50`: "... her avatar look (including the water form and tail color). A tail
+  form chosen automatically from this device's Girl / Boy button is shown to friends like clothes
+  are; the button itself is never sent or stored."
+- `docs/teams/avatar.md`: one paragraph: the sea parts are lazy, built outside `build()`;
+  `disposeSea()` owns their meshes, bones, materials and textures; `seaParts()`, `heldShown`.
+
+**Not done in P1, and why**: B10b and the merged-literal check with ocean's dolphin are P2
+(§7.2: they need ocean's `debug.ocean.ride()`). Everything else in §15 steps 1-8 is built.
+
+### As built (owner review: the Sea Dragon redesign)
+
+The owner review found the Sea Dragon looked almost like the mermaid (same tail, tiny spikes,
+horn nubs hidden by hair) and, from behind, not like a creature at all. It is now a bold, friendly
+creature of our own (§0, §7.1-7.3, §7.5 updated): a longer (0.96), thicker, gently curving tail
+with light **belly plates** down the front; a tall row of round-tipped **crest spikes** (tail
+colored, growing into gold tips) from the waist down the whole tail, which is what shows from
+the play camera; big solid **leafy fronds** on the tail and small **leafy fins on the forearms**;
+**curved horn nubs** that clearly rise above the hair; round **glow spots** with a soft halo
+along the crest that pulse gently (unlit `seaglow:<hex>`, owned by `disposeSea()`); a big
+**ribbed fan fin** (five round lobes, the outer ones longest, five gold ribs, no points).
+Untouched: the face, eyes, skin, hair, no frills or fins near the face or ears, no scales on the
+face, body or arms; no list, key, codec or save change. The tube's rest layout is built once per
+form and color (`tubeTemplate`), so a Sea Dragon's `ensureSea` stays about as cheap as before.
+
+**Second round (the picture judges):**
+- **Horns left out only under a hat** (beanie, sun hat, sparkly hat, cap, backwards cap, bucket
+  hat), not under every head accessory: the girl with her bow, tiaras, ears, halos, headbands,
+  headphones and four of the six boy starters now have them. `hornSpot(look)` moves them where an
+  accessory or hair sits on that spot (behind a bow, ears, headphones, the unicorn horn or a
+  crown; beside a top bun; behind space buns; up out of an afro, curly hair, spikes or short
+  curls, so they never end inside the curls).
+- **No crest on the torso**: on the back of the shirt it read as beads sewn on (over the shirt
+  number), poked through long hair from the side and was left out under backpacks. The crest
+  starts at the waist; its spikes are taller (0.27 at the waist), pointier (`sin^1.5`) and grow
+  from the tail color into a gold tip (`crestColor`), so they read as spikes, not gold lumps.
+- **Solid, bolder fronds, forearm fins and fan fin**: drawn with the scales material (opaque,
+  both faces) in a deep tail color with a gold-tinged rim, not the pale see-through fin
+  material; the fan's outer lobes are now the longest, so it reads as a tail fin, not a shell.
+  The forearm fins are smaller (0.13) and lie back along the arm. The dragon has no `fin:`
+  material at all now: 6 draw calls in sea form (was 8).
+- **Gold accent of its own** (`#FFC83A`, not mixed with the tail), so a pink or purple tail's
+  crest is gold, not peach. **Match never makes a purple or pearl Sea Dragon** (`seaColorOf`:
+  those give its Deep teal; Purple picked by hand stays), so the default girl's Sea Dragon is
+  teal and gold and her Water-tab cards differ at a glance (test A6c).
+- **Dress Up**: with the tail out, the preview floats above the turntable (0.32 mermaid, 0.58
+  Sea Dragon, the camera follows) and the Sea Dragon swims slower there (0.6), so its whole tail
+  hangs down instead of pointing at the camera; the probe waits for the change to settle before
+  its `merfolk-studio-dragon-*.png` pictures.
+- **Resting on a shallow floor** (holding Down in 2-deep water), the tail curls back along the
+  sand (`poseSea(speed, dt, onFloor)`) instead of sinking 0.6 into it (mermaid too).
+- Doc fix: the rest `bend` is added after the clamp of the animated angle (§7.1).
+- Tests: A6c checks a Sea Dragon's Match is never Purple or Pearl; A17 checks `hornSpot` for
+  every head accessory × hair style (null only under the six hats) and the gold accent. Probe
+  B8's 1-deep test pool is now raised on a sand floor with a rim (the sea next to the beach ran
+  into it in one world and made it deep).
+
+Probe: `--only=review` (also run by `studio`) writes the owner pictures
+`merfolk-review-{boy,girl,compare,colors}.png` (front, three-quarter, side, back, swimming, from
+behind; next to the mermaid; six tail colors) and the world shots
+`merfolk-review-{boy,girl}-{water,swims,underwater}.png`, `merfolk-review-night.png`,
+`merfolk-review-next-to-mermaid.png`. The render grids gained the Soccer Star boy starter (front,
+side, back, swimming, from behind), the boy starters from behind and the girl starters as a Sea
+Dragon; `merfolk-grid-heads.png` / `-headsBack.png` show every head accessory on the boy and the
+default girl (accessories in pink / blue, never the horns' gold, framed tall enough for the
+halo) and the new `merfolk-grid-hair.png` every hair style with the Sea Dragon (boy front, girl
+side). B13a / B13b also measure a boy starter as a Sea Dragon and B13c its `ensureSea` (≤ 2 ms).
+The review world shots are taken in open water (a spot whose 9×9 neighbourhood is all deep, at
+least 5 deep, at least 18 blocks inside the world, facing into the world) so no cliff sits behind
+the camera and the world's edge, where its water meets the horizon ring, is out of the picture
+(that edge shows a thin brown line: world / horizon code, not merfolk's; noted for the
+integrator). The under-water ones dive, hover and look down a little onto his back, so the whole
+crest and fan show; `merfolk-review-next-to-mermaid-swims.png` has the two swimming side by
+side.
+
+**Shader warm-up (found while re-running B13c).** The fins (`fin:`) are see-through and
+two-sided, which three.js draws in two passes, so they needed two shader programs nothing else
+uses (not the `cloth2:` program, as §7.5 had assumed); built lazily they stalled the frame of the
+first turn (about 0.7 s on SwiftShader). `index.js` now compiles them (and the scale program) on
+`world:load` with stand-in materials of the same kind against the world's lights and fog; the
+first turn adds no program. B13c now earns the Sea Magic! sticker before it measures, so the
+sticker's pop (the sticker book's cost) is not counted as the turn's. Probe robustness: B8's
+1-deep test pool is 11×11 (one second of swimming no longer reaches its rim and hops out); B16
+makes a new candy world when the random one has no deep milk near the start.
+
+**Third round (the picture judges):**
+- **Bug: the forearm fins stayed on the arms on land.** They were merged straight onto the
+  elbow bones, outside `sea.root` and `sea.bones`, so the visibility toggle and the grow scale
+  never reached them: after a swim a dragon kid walked about (and showed in Dress Up, photos and
+  on friends' screens) with leaves on both forearms, and they popped in at full size. Each now
+  hangs on its own sea group under the elbow (`seaFinL` / `seaFinR`, in `bones`), so it hides and
+  grows with the tail. Test A18 (Node: after a swim, on land the same meshes are drawn as before
+  it) and the review check "on land after a swim, no sea parts showing" with its picture
+  `merfolk-review-boy-land-after-swim.png`.
+- **Seen at the surface (the usual play view).** Floating with its head out (`seaFloat`, passed by
+  the player and remote players: the water does not reach 1.3 above the feet), the Sea Dragon's
+  tail sweeps straight back from the hips and lies along the surface, crest up, curving round to
+  one side, its end and fan fin curling up out of the water, and it rides 0.13 higher, its back
+  at the waterline (`FLOAT_BEND`, `seaKick.float`; the mermaid is unchanged). Swimming along the
+  top the tail lifts a little, so the fan fin stays in sight from behind.
+- **Darker back, warm belly**: the tail shades from a dark back along the spine (`S`, the tail
+  color 45 % darker) to its own color on the flanks, so it reads as a dark shape in light water;
+  the belly plates are warm gold-cream. Taller crest spikes (0.31 at the waist).
+- **Glow at night and in deep water**: bigger glow spots, plus a glowing bead at the tip of each
+  frond; the glow material is drawn in the blended pass after the water (the tube's
+  `renderOrder` 4, 0.85 opacity, no depth write), so the spots shine up through it.
+- **Fins, not leaves**: fronds, forearm fins and fan fin are deep tail color with a light rim in
+  the tail's own color (teal mixed with gold had turned them leaf green), and each frond has three
+  gold ribs like the fan fin. The fan folds its outer lobes a little toward the back (`FOLD`
+  0.42, real face normals), so from the side it is a wedge, not a thin stick. Forearm fins 0.16.
+- **Horns**: a dark root band, ridge bands and a light tip (no more plain yellow crescents), and
+  `hornSpot` now gives each accessory its own spot, tilt and size: out to the sides past a halo
+  ring, a crown or a unicorn horn; low and sideways under bunny ears (clear of the bent ear);
+  between and behind cat ears; back, higher and wider behind a bow, so both horns show above the
+  default girl's bow in the Dress Up preview.
+- Pictures: the heads grids frame head and shoulders (big enough to judge each horn); the back,
+  side and play-camera frames fit the whole fan fin.
+- Costs: draw calls unchanged (B13a sea form = land); `ensureSea` for a Sea Dragon about 1 ms.
+  B13c (the longest frame just after the first turn, +33 ms allowed) is noise-bound on this busy
+  machine: the previous commit measured +23, +70 and +48 ms, this one +28 to +163 ms; no shader
+  program is compiled on the turn.
+
+**Fourth round (the picture judges):**
+- **Readable from the play camera.** The float bend that lifted the tail end and fan toward
+  the camera is gone (and so is riding 0.13 higher: he floats at the mermaid's level). Floating,
+  the tail sweeps back from the hips and its end sinks a little; swimming along the top it trails
+  straight back and a little down under the surface (`FLOAT_STILL` / `FLOAT_SWIM`, blended by
+  speed). The dragon's tail waves side to side in a slow S (`seaKick.side`, more at speed) with a
+  smaller up-and-down kick (×0.4), and its fan fin rolls with the wave and turns on edge with
+  speed (`fluke.rotation.y`, eased), so from behind you see horns, the crest down the tail and the
+  fan under the water tint, not a flat splash. The mermaid's poses are unchanged.
+- **No famous-dragon colors.** Accents per tail (`ACCENTS` in parts.js): Purple has rose pink horns,
+  crest and ribs and a pale lavender belly (never purple + gold + yellow, and never purple with
+  green or mint spikes: round 4's mint was another famous look); Coral aqua with a shell-pink
+  belly; Orange berry pink; Gold deep teal, its dark shades amber (they were olive). Test A17
+  (Purple's accent and belly are neither yellow nor green/mint/aqua, hue 70-185). The colors
+  picture shows all 12 tails, three-quarter and from the play camera.
+- **Horns only with no head accessory or a bow.** Every other head accessory sits on top of the
+  head (hats, crown, tiara, flower crown, headband, cat and bunny ears, unicorn horn, halo,
+  headphones), so the horns are left out there; an unknown accessory key also gives none. A
+  fauxhawk moves them out past its ridge. Grids: heads, headsBack, hair (front, back, girl side).
+- **Land after a swim**: the picture looks from over the water at him on the beach (he faces
+  the sea); it tries a few angles until the camera stands well back (a tree in a random world
+  once put it in his head), checked at more than 2.5 blocks.
+- **Probe timing**: B1 (tail grown) and B18 (dive tip) now wait in game time, like the rest of
+  the probe; on a loaded software GPU the wall-clock waits ran out first. B16 can need a new
+  candy world when the random one has no deep milk near the start (it tries up to 3).
+- **Friends**: Aria and Leo pass `seaFloat` too (head out of the water), so a friend Sea Dragon
+  floats like the player instead of hanging its tail down.
+- **First-turn cost (B13c), measured** (same command on all three builds, lock held, no other
+  browser, boy starter as a Sea Dragon, 3 fresh pages each; this 4-core machine draws in
+  software, a usual frame is 180-200 ms). Turn frame / its 0.5 s against the same on the shore:
+  3372638 (before the redesign) 885-997 ms, +544 to +795 ms, 2 new shader programs on the turn;
+  f0eb909 856-932 ms, +646 to +738 ms, 1 new program. So the stall was there before the redesign
+  too: a GPU builds a program the first time a material kind is really drawn (the fins' two
+  passes, the glow), and the old B13c window started after that frame, so it never saw it. Now
+  165-211 ms, -2 to +28 ms, 0 new programs (and a 4-run check: turn frames 149-436 ms with the
+  shore's own spikes at 213-364 ms). How: when a world loads, three one-triangle stand-ins
+  (scales, two-sided see-through fins, blended glow) are drawn once in the real scene; 1.5 s
+  after a world loads or the look changes the player's sea parts are built hidden
+  (`avatar.prepareSea()`) and their textures sent to the GPU (`initTexture`). B13c now runs 3
+  fresh pages before the main costs page opens, measures from the turn frame itself against the
+  shore's 0.5 s stretches (like for like), takes the middle one, and fails if the turn builds any
+  shader program.
+
+**Fifth round (the picture judges):**
+- Purple's mint accent read as another famous purple dragon (green spikes): now rose pink
+  (`#FF5FA8`) horns, crest and ribs, a pale lavender belly. A17 checks hue 70-185 too.
+- `hornSpot` used `Object.hasOwn` (ES2022; the build targets es2020 and adds no polyfills, so
+  Safari / iPadOS 15.0-15.3 threw in `buildSea` on every deep-water frame). Now
+  `Object.prototype.hasOwnProperty.call` for both tables. New test A19 scans the sea code for
+  `Object.hasOwn`, `.at(n)`, `findLast`, `structuredClone`, `replaceAll`.
+- The afro lifts the horns a little less (`y` 1.97 to 1.92), so their roots sit in the top
+  curls instead of on a stalk above them.
+- **For the owner:** horns show only with no head accessory or a bow, so 4 of the 6 boy
+  starters (Skater cap, Space Explorer headphones, Dino Explorer bucket hat, Camping Day
+  beanie) swim as a Sea Dragon without horns until the hat comes off; the crest, tail and fan
+  still read as a creature (merfolk-grid-starters.png).
+- **For the integrator's cost list:** `prepareSea()` builds the player's sea parts hidden and
+  sends their textures to the GPU 1.5 s after every world load and look change in play mode,
+  even for a child who never swims (a small memory cost; the 10-20 ms build on a slow device
+  moves to just after load). It relaxes §6.3's "built lazily on the first turn"; the hidden
+  parts add no draw calls and the warm-up stand-ins leave the scene once drawn.
+
+**For the integrator / squish (Sea Dragon Puffum, C9):** the motifs changed shape, not names:
+the horn nubs are now curved horns swept back, with a dark root band, ridge bands and a light
+tip; the "bubble-dome spikes" are a tall row of round-tipped crest spikes, tail colored with gold
+tips, from the waist (not the neck) to the fin; the back is darker than the flanks; the belly has
+warm gold-cream plates; the fronds are bigger, solid, deep tail color with a light rim in the
+tail's own color and three gold ribs each (fins, not leaves); the glow spots are round with a
+halo, plus glowing beads at the frond tips; the fan fin is bigger, five round lobes with the outer
+ones longest, deep tail color with gold ribs, folded a little toward the back. Colors stay Deep teal
+`#2FB5B0`; the accent gold is now `#FFC83A` (C9's `#FFD43B` is close enough for a toy). A toy in
+other colors follows `ACCENTS` (a purple one has rose pink horns and crest and a pale lavender belly, never gold or green).
 
 ---
 

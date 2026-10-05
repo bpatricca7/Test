@@ -9,6 +9,9 @@ const LEDGE_HEIGHT = 1.05;
 // While rising (a hop or jump) a body that is only this far below the top of what it walks
 // into steps onto it, so an auto-hop that peaks a hair short at a low frame rate still lands.
 const AIR_STEP = 0.3;
+// A sea swimmer (merfolk) flops out of the water onto a bank up to this far above her feet: she
+// floats with her waist in the water, so a pond rim one block above the water is about 2 up.
+export const SWIM_LEDGE = 2.05;
 
 export class Physics {
   /**
@@ -88,9 +91,11 @@ export class Physics {
   /**
    * Move a body { pos: Vector3 (feet centre), vel: Vector3, halfW, height } by vel*dt.
    * Returns a result object (reused): { onGround, hitWall, ledge, hitCeiling } where ledge is
-   * the top y of a climbable 1-block obstacle we walked into (or null).
+   * the top y of a climbable 1-block obstacle we walked into (or null). `swim`: a sea swimmer
+   * (merfolk) counts as grounded for step-ups and ledges, and gets a ledge up to SWIM_LEDGE
+   * high, so she flops out onto the shore or a pond rim.
    */
-  move(body, dt, { step = true } = {}) {
+  move(body, dt, { step = true, swim = false } = {}) {
     const res = this._res || (this._res = { onGround: false, hitWall: false, ledge: null, hitCeiling: false });
     res.onGround = false; res.hitWall = false; res.ledge = null; res.hitCeiling = false;
     const p = body.pos, v = body.vel;
@@ -138,7 +143,7 @@ export class Physics {
         const wallMin = axis === 0 ? hit.minX : hit.minZ;
         const wallMax = axis === 0 ? hit.maxX : hit.maxZ;
         const rise = top - p.y;
-        const grounded = wasOnGround || res.onGround;
+        const grounded = wasOnGround || res.onGround || swim;
         // small obstacle (slab, carpet, bed edge): just step up onto it; while rising from a
         // hop, also onto a ledge whose top is only a little above the feet
         const stepUp = step && rise > 0 && (grounded ? rise <= STEP_HEIGHT : v.y > 0 && rise <= AIR_STEP);
@@ -146,7 +151,7 @@ export class Physics {
           p.y = top + EPS;
           continue;
         }
-        if (grounded && rise > 0 && rise <= LEDGE_HEIGHT && !this.bodyBlocked(p.x, top + EPS, p.z, hw, ht)) {
+        if (grounded && rise > 0 && rise <= (swim ? SWIM_LEDGE : LEDGE_HEIGHT) && !this.bodyBlocked(p.x, top + EPS, p.z, hw, ht)) {
           res.ledge = top;
         }
         if (axis === 0) {

@@ -24,6 +24,8 @@ import * as weather from './life/weather.js';
 import * as particles from './life/particles.js';
 import * as collectibles from './life/collectibles.js';
 import * as stickers from './life/stickers.js';
+// wave 4: a mermaid tail or a sea dragon form in deep water (docs/teams/merfolk.md)
+import * as merfolk from './player/merfolk/index.js';
 // playing with friends (docs/MULTIPLAYER.md): the facade, friends' avatars and the screens
 import * as net from './net/index.js';
 import * as hud from './ui/hud.js';
@@ -70,6 +72,7 @@ function boot() {
     particles,
     collectibles,
     stickers,
+    merfolk,       // wave 4: after stickers
     net,
     hud,
     inventory,

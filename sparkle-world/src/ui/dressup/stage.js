@@ -32,6 +32,7 @@ export const FRAMES = {
   neck: { cy: 1.12, span: 0.86, yaw: 0.2, pitch: 0.1 },
   hand: { cy: 1.1, span: 2.1, yaw: -0.4, pitch: 0.1 },
   emote: { cy: 0.95, span: 2.25, yaw: 0.3, pitch: 0.1 },
+  sea: { cy: 0.84, span: 2.55, yaw: 0.6, pitch: 0.14 }, // a swimmer floating in the water, three-quarter front, the sea dragon's horns and fin in frame (merfolk)
 };
 
 function addLights(scene) {

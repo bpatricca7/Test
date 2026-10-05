@@ -17,6 +17,7 @@ import { createAvatar } from '../player/avatar.js';
 import { GeoBuilder } from '../player/avatar/geo.js';
 import { paintCloth } from '../player/avatar/textures.js';
 import * as W from '../player/wardrobe-data.js';
+import { autoSeaForm } from '../player/merfolk/rules.js';
 
 const TABS = [
   { key: 'skin', label: 'Skin', zoom: 'full' },
@@ -26,6 +27,8 @@ const TABS = [
   { key: 'bottoms', label: 'Bottoms', zoom: 'full' },
   { key: 'dresses', label: 'Dresses', zoom: 'full' },
   { key: 'shoes', label: 'Shoes', zoom: 'full' },
+  // merfolk: what she becomes in deep water (the tail takes the place of legs and shoes)
+  { key: 'sea', label: 'Water', aria: 'Water: mermaid, sea dragon or just me', zoom: 'sea' },
   { key: 'hats', label: 'Hats & Ears', zoom: 'head' },
   { key: 'glasses', label: 'Glasses', zoom: 'face' },
   { key: 'back', label: 'Wings & Bags', zoom: 'full' },
@@ -42,6 +45,7 @@ const ZOOMS = {
   upper: { cy: 1.12, span: 1.9 },
   head: { cy: 1.36, span: 1.6 },
   face: { cy: 1.4, span: 1.3 },
+  sea: { cy: 0.78, span: 2.6 },
 };
 
 // nice first colors when an item is picked (the child's later color choice sticks)
@@ -72,6 +76,17 @@ const EMOTE_FOR = {
 const THUMB = 192;
 const LONG_DRESSES = new Set(['princess', 'ballgown', 'mermaid']);
 const IDLE = { speed: 0, onGround: true };
+// the Water tab: the preview swims slowly on the turntable in her form (Just Me: today's swim)
+const SEA_PREVIEW = { speed: 1.6, onGround: false, swimming: true, sea: true };
+// the sea dragon's long tail swims slower here, so it hangs down and shows its whole length
+const SEA_PREVIEW_DRAGON = { ...SEA_PREVIEW, speed: 0.6 };
+// with the tail out she floats above the turntable (the tail and its fin reach below her feet),
+// and the camera follows her up
+const SEA_LIFT = { mermaid: 0.32, sea_dragon: 0.58 };
+const SEA_TILE_POSE = { state: { swimming: true, sea: true, speed: 0.3, onGround: false }, t: 0.9 };
+const SEA_SAY = { mermaid: 'Splash! A mermaid tail!', sea_dragon: 'Whoosh! A sea dragon!', me: 'Swimming as me!' };
+// a saved outfit never carries the water form (it is who you are, like the name)
+const noSea = (l) => ({ ...W.normalizeLook(l), sea: null });
 const sig = (l) => JSON.stringify(l);
 
 export function install(game) {
@@ -234,6 +249,7 @@ class Studio {
         this.game.audio.play('page');
         this.showTab(t.key);
       });
+      if (t.key === 'sea' && !this._deviceGet('seaTabSeen')) b.classList.add('sw-tab-new');
       tabs.appendChild(b);
       this.tabButtons.set(t.key, b);
     }
@@ -262,7 +278,8 @@ class Studio {
     this._hideAsk();
     this.hint.classList.remove('sw-gone');
     this._setupPreview();
-    this.showTab(args.tab && TABS.some((t) => t.key === args.tab) ? args.tab : this.tab, true);
+    const inSea = !!(this.game.player && this.game.player.seaForm);
+    this.showTab(args.tab && TABS.some((t) => t.key === args.tab) ? args.tab : inSea ? 'sea' : this.tab, true);
     this._updateUndo();
     if (this.preview) this.preview.avatar.playEmote('wave');
   }
@@ -311,7 +328,7 @@ class Studio {
     if (p) {
       p.avatar.setLook(this.look);
       if (kind === 'item' || kind === 'big') {
-        p.avatar.playEmote(emote || EMOTE_FOR[this.tab] || 'wave');
+        if (this.tab !== 'sea') p.avatar.playEmote(emote || EMOTE_FOR[this.tab] || 'wave');
         p.sparkles.emit('sparkle', p.v.set(0, 1.0, 0.3), { count: 16, spread: 1.0 });
       } else if (kind === 'color') {
         p.sparkles.emit('sparkle', p.v.set(0, 1.1, 0.35), { count: 8, spread: 0.7, scale: 0.8 });
@@ -355,6 +372,12 @@ class Studio {
 
   // ---------- Girl / Boy / Mix ----------
 
+  /** The water form the look shows: its explicit one, or what 'auto' gives with this style. */
+  _seaForm() {
+    const f = this.look.sea.form;
+    return f === 'auto' ? autoSeaForm(this.style(), this.look) : f;
+  }
+
   /** The style picked on this device ('girl' | 'boy' | 'mix'), or null if never picked. */
   style() {
     const s = this.game.store && this.game.store.deviceGet ? this.game.store.deviceGet('surpriseStyle') : null;
@@ -364,6 +387,9 @@ class Studio {
   _setStyle(s, { reorderNow = true } = {}) {
     if (!STYLES[s]) return;
     if (this.game.store && this.game.store.deviceSet) this.game.store.deviceSet('surpriseStyle', s);
+    // 'auto' sea forms follow the style: the preview, the player and friends' lk (merfolk)
+    if (this.preview) this.preview.avatar.setSeaAuto((look) => autoSeaForm(this.style(), look));
+    this.game.events.emit('style:changed', { style: s });
     this._paintStyle();
     // tiles follow the style: rebuild the tabs (the open one now, or on its next visit)
     for (const k of [...this.views.keys()]) if (reorderNow || k !== this.tab) this.views.delete(k);
@@ -395,7 +421,7 @@ class Studio {
   _lookFor(s) {
     const cur = this.look;
     if (W.lookFits(cur, STYLES[s].letter)) return null;
-    const keep = (l) => W.normalizeLook({ ...l, name: cur.name, skin: cur.skin, eyes: { ...l.eyes, color: cur.eyes.color } });
+    const keep = (l) => W.normalizeLook({ ...l, name: cur.name, skin: cur.skin, eyes: { ...l.eyes, color: cur.eyes.color }, sea: cur.sea });
     const saved = this._deviceGet('look:' + s);
     if (saved && typeof saved === 'object') return keep(W.normalizeLook(saved));
     if (s === 'boy') {
@@ -535,6 +561,11 @@ class Studio {
   showTab(key, force = false) {
     if (key === this.tab && !force && this.views.has(key)) return;
     this.tab = key;
+    if (key === 'sea') {
+      const b = this.tabButtons.get('sea');
+      if (b) b.classList.remove('sw-tab-new');
+      if (!this._deviceGet('seaTabSeen')) this._deviceSet('seaTabSeen', true);
+    }
     for (const [k, b] of this.tabButtons) {
       b.classList.toggle('sw-on', k === key);
       b.setAttribute('aria-selected', k === key ? 'true' : 'false');
@@ -677,9 +708,35 @@ class Studio {
           title: 'Dresses', frame: 'dress',
           thumb: (o) => withDress(L(), o.key),
           on: (o) => (o.key === 'none' ? !L().dress : !!L().dress && L().dress.type === o.key),
-          pick: (o) => this.change((d) => { Object.assign(d, withDress(d, o.key)); }),
+          pick: (o) => {
+            if (this.change((d) => { Object.assign(d, withDress(d, o.key)); }) && o.key === 'mermaid') this._say('Swim in deep water for a real tail!');
+          },
         }));
         this._garmentColors(add, 'dress', () => !L().dress);
+        break;
+      }
+      case 'sea': {
+        // Boy: the sea dragon first; anything else: the mermaid first. Both always show.
+        const boy = this.style() === 'boy';
+        const forms = W.SEA_FORMS.filter((o) => o.key !== 'auto');
+        const order = boy ? ['sea_dragon', 'mermaid', 'me'] : ['mermaid', 'sea_dragon', 'me'];
+        const list = order.map((k) => forms.find((o) => o.key === k));
+        add(this._grid(key, list, {
+          title: 'I swim as', pic: 'sea', frame: 'sea', big: true, pose: SEA_TILE_POSE,
+          thumb: (o) => ({ ...L(), sea: { ...L().sea, form: o.key } }),
+          on: (o) => this._seaForm() === o.key,
+          pick: (o) => {
+            // a tap always stores the explicit form, even on the tile already on
+            this.change((d) => { d.sea.form = o.key; }, { kind: 'item', sound: 'magic' });
+            this._say(SEA_SAY[o.key]);
+          },
+        }));
+        add(this._swatches(W.SEA_COLORS, {
+          title: 'Tail color', names: W.SEA_COLOR_NAMES, match: true,
+          hidden: () => this._seaForm() === 'me',
+          on: (c) => (c === null ? L().sea.color === null : L().sea.color === c),
+          pick: (c) => this.change((d) => { d.sea.color = c; }, { kind: 'color' }),
+        }));
         break;
       }
       case 'shoes':
@@ -821,7 +878,7 @@ class Studio {
           draw(t, ready);
           continue;
         }
-        this.stage.snapshot(key, look, { frame: cfg.frame, size: THUMB }).then((canvas) => {
+        this.stage.snapshot(key, look, { frame: cfg.frame, size: THUMB, pose: cfg.pose }).then((canvas) => {
           if (t.key !== key) return;
           if (!canvas) {
             t.key = null;
@@ -859,8 +916,9 @@ class Studio {
       return b;
     };
     if (cfg.none) mk(null, 'sw-sw--none', 'None').insertAdjacentHTML('beforeend', picture('none', 34));
+    if (cfg.match) mk(null, 'sw-sw--match', 'Match my clothes').insertAdjacentHTML('beforeend', picture('match', 36));
     if (cfg.rainbow) mk('rainbow', 'sw-sw--rainbow', 'Rainbow');
-    for (const c of colors) mk(c, '', c);
+    colors.forEach((c, i) => mk(c, '', cfg.names ? cfg.names[i] : c));
     const refresh = () => {
       const hide = cfg.hidden ? cfg.hidden() : false;
       el.hidden = hide;
@@ -1019,7 +1077,8 @@ class Studio {
         s.save.hidden = !saved;
         s.label.textContent = saved ? `Outfit ${i + 1}` : 'Save here';
         s.b.setAttribute('aria-label', saved ? `Wear outfit ${i + 1}` : `Save outfit ${i + 1}`);
-        const on = !!saved && sig({ ...W.normalizeLook(saved), name: this.look.name }) === sig(this.look);
+        // the water form is not part of an outfit: an old slot without it still shows as worn
+        const on = !!saved && sig({ ...noSea(saved), name: this.look.name }) === sig(noSea(this.look));
         s.b.classList.toggle('sw-on', on);
         if (!saved) {
           s.key = null;
@@ -1062,6 +1121,8 @@ class Studio {
       const yes = await this.ui.confirm({ title: 'Save here?', text: 'This will replace the outfit in this spot.', yes: 'Yes, save', no: 'No, keep it', icon: 'heart' });
       if (!yes) return;
     }
+    // the slot keeps the whole look; wearing it never changes the water form (_wearSlot) and the
+    // "worn" check leaves the form out, so the form stays who you are, not part of the outfit
     outfits[i] = W.cloneLook(this.look);
     this.game.saveProfile(true);
     this.game.audio.play('success');
@@ -1076,7 +1137,7 @@ class Studio {
   _wearSlot(i) {
     const saved = this._outfits()[i];
     if (!saved) return;
-    this.change((d) => Object.assign(d, W.normalizeLook({ ...saved, name: d.name })), { kind: 'big', emote: 'dance', sound: 'chime' });
+    this.change((d) => Object.assign(d, W.normalizeLook({ ...saved, name: d.name, sea: d.sea })), { kind: 'big', emote: 'dance', sound: 'chime' });
   }
 
   // ---------- 3D preview ----------
@@ -1091,14 +1152,14 @@ class Studio {
     this.view.insertBefore(canvas, this.view.firstChild);
     const scene = stage.previewScene;
     const sparkles = new Sparkles(scene);
-    const avatar = createAvatar(this.look, { fx: (kind, pos, o) => sparkles.emit(kind, pos, o) });
+    const avatar = createAvatar(this.look, { fx: (kind, pos, o) => sparkles.emit(kind, pos, o), seaAuto: (look) => autoSeaForm(this.style(), look) });
     scene.add(avatar.group);
     const table = buildTurntable();
     scene.add(table.group);
     const zoom = TABS.find((t) => t.key === this.tab).zoom;
     this.preview = {
       avatar, sparkles, table, spin: 0, spinVel: 0, spinTarget: null, idle: 0, t: 0, dragging: false,
-      zoom, cy: ZOOMS[zoom].cy, span: ZOOMS[zoom].span, v: new THREE.Vector3(), ambient: 0,
+      zoom, cy: ZOOMS[zoom].cy, span: ZOOMS[zoom].span, v: new THREE.Vector3(), ambient: 0, lift: 0,
     };
     stage.onPreviewFrame = (dt) => this._frame(dt);
   }
@@ -1140,13 +1201,17 @@ class Studio {
     const sway = p.idle > 4 ? Math.sin(p.t * 0.6) * 0.18 : 0;
     p.avatar.group.rotation.y = p.spin + sway;
     p.table.group.rotation.y = p.spin * 0.999;
-    p.avatar.update(dt, IDLE);
+    const seaTab = this.tab === 'sea';
+    const form = seaTab ? p.avatar.seaForm : 'me';
+    p.avatar.update(dt, seaTab ? (form === 'sea_dragon' ? SEA_PREVIEW_DRAGON : SEA_PREVIEW) : IDLE);
     p.table.update(p.t);
-    // camera eases between full body / upper body / face
+    // camera eases between full body / upper body / face (and up with her when she floats)
     const z = ZOOMS[p.zoom] || ZOOMS.full;
     const k = Math.min(1, dt * 4);
-    p.cy += (z.cy - p.cy) * k;
-    p.span += (z.span - p.span) * k;
+    p.lift += ((seaTab && p.avatar.seaShown ? SEA_LIFT[form] || 0 : 0) - p.lift) * k;
+    p.avatar.group.position.y = p.lift;
+    p.cy += (z.cy + p.lift * 0.75 - p.cy) * k;
+    p.span += (z.span + p.lift * 0.45 - p.span) * k;
     const cam = this.stage.previewCamera;
     const tan = Math.tan(THREE.MathUtils.degToRad(cam.fov / 2));
     const d = Math.max(p.span / 2 / tan, (p.span * 0.62) / 2 / tan / Math.max(0.3, cam.aspect));

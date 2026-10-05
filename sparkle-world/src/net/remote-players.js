@@ -107,6 +107,7 @@ class Friend {
     this.tagText = '';
     this.tagColor = '';
     this.st = 'w';
+    this.stSeen = null; // merfolk: the last letter seen, for the sea-form sparkle
     this.stateRef = null;
     this.emN = null;
     this.phN = null;
@@ -246,6 +247,7 @@ export class RemotePlayers {
       bubble: f.bubbleLeft > 0 ? f.bubbleText : null,
       tag: !!(f.tag && f.tag.visible), emote: f.avatar ? f.avatar.emoting || null : null,
       lk: f.lk,
+      sea: f.avatar ? f.avatar.seaParts() : null,
       vehicle: f.vh ? f.vh[0] : null,
     }));
   }
@@ -346,6 +348,18 @@ export class RemotePlayers {
       if (f.count === 0 || r[l + 1] !== p[0] || r[l + 2] !== p[1] || r[l + 3] !== p[2] || r[l + 4] !== p[3]) f.push(now, p);
     }
     f.st = typeof st.st === 'string' ? st.st.slice(0, 1) : 'w';
+    // merfolk: turning into (or out of) sea form sparkles on our page too (remote avatars have
+    // no fx). The first presence, or any while the avatar is not built, only records the letter,
+    // so a late joiner or a friend coming into range never sparkles for nothing.
+    if (f.stSeen === null || !f.avatar) f.stSeen = f.st;
+    else if (f.st !== f.stSeen) {
+      const was = f.stSeen;
+      f.stSeen = f.st;
+      if ((was === 'm') !== (f.st === 'm') && this.game.particles && this.game.camera &&
+        f.pos.distanceTo(this.game.camera.position) < ANIM_FREEZE) {
+        this.game.particles.emit('sparkle', { x: f.pos.x, y: f.pos.y + 0.6, z: f.pos.z }, { count: 12 });
+      }
+    }
     const nm = sanitizeName(typeof st.nm === 'string' ? st.nm : '', 'Friend');
     if (nm !== f.name) f.name = nm;
     if (typeof st.lk === 'string' && st.lk !== f.lkWant) f.lkWant = st.lk;
@@ -457,16 +471,22 @@ export class RemotePlayers {
     // in a car or a boat she sits on its seat ('h' without vh is still a pony ride)
     const seated = f.st === 'h' && !!f.vehicle;
     if (f.vehicle) f.vehicle.update(dt, f.pos.x, f.pos.y, f.pos.z, f.yaw, f.speed, f.vh ? f.vh[2] : 0, show);
+    const seaRide = f.st === 'h' && f.sr != null && !f.vehicle;                                   // ocean
     if (show && dist < ANIM_FREEZE) {
       const st = f.st;
+      const sea = st === 'm' || seaRide;                                                          // merfolk
+      const inLiquid = st === 'm' && g.physics ? g.physics.liquidAt(f.pos.x, f.pos.y + 0.6, f.pos.z) : false; // merfolk
       av.update(dt, {
-        speed: st === 's' || st === 'z' || st === 'h' || st === 'l' ? 0 : f.speed,
-        onGround: st !== 'f' && st !== 'i' && st !== 'l',
-        swimming: st === 'i',
+        speed: st === 's' || st === 'z' || st === 'h' || st === 'l' ? 0 : f.speed,               // unchanged (C5)
+        onGround: st !== 'f' && st !== 'i' && st !== 'l' && st !== 'm',                          // merfolk adds 'm'
+        swimming: st === 'i' || inLiquid,                                                         // merfolk
         flying: st === 'f',
         sitting: st === 's' || seated,
         sleeping: st === 'z',
         riding: st === 'h' && !seated,
+        seaRide,                                                                                  // ocean
+        sea,                                                                                      // merfolk
+        seaFloat: inLiquid && !g.physics.liquidAt(f.pos.x, f.pos.y + 1.3, f.pos.z),               // merfolk: head out
       });
       // a held treat raises her arm in avatar.update (hidden while she sleeps or swims)
       if (st === 'l') hangPose(av, f.t, 1);
@@ -475,7 +495,7 @@ export class RemotePlayers {
     if (!f.tag || f.tagText !== f.name || f.tagColor !== f.color) this._makeTag(f);
     if (f.tag) {
       const st = f.st;
-      const top = st === 'z' ? 0.95 : st === 's' || st === 'h' ? 1.6 : st === 'l' ? 1.25 : 2.12;
+      const top = st === 'z' ? 0.95 : st === 's' || st === 'h' ? 1.6 : st === 'l' ? 1.25 : st === 'm' ? 1.7 : 2.12;
       f.tag.position.set(0, top, 0);
       f.tag.visible = show && !this._hideTags && dist < TAG_HIDE;
     }
@@ -596,7 +616,7 @@ export class RemotePlayers {
       return;
     }
     const st = f.st;
-    const top = st === 'z' ? 1.25 : st === 's' || st === 'h' ? 1.95 : 2.45;
+    const top = st === 'z' ? 1.25 : st === 's' || st === 'h' ? 1.95 : st === 'm' ? 2.0 : 2.45;
     const s = f.visible ? toScreen(this.game, f.pos.x, f.pos.y + top, f.pos.z, this._at) : null;
     this._position(e, s);
   }

@@ -34,6 +34,11 @@ const BRANDS = [
 /** Each wave-4 team appends its own encoded words to its list (one entry per line). */
 const EXTRA = {
   merfolk: [
+    'UG9ydG9yb3Nzbw==',
+    'TWFzc2ltbw==',
+    'RXJjb2xl',
+    'TWFjaGlhdmVsbGk=',
+    'VmVzcGE=',
   ],
   squish: [
   ],

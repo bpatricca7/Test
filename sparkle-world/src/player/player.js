@@ -5,6 +5,10 @@
 import * as THREE from 'three';
 import { angleDelta } from '../core/util.js';
 import { CameraRig } from './camera.js';
+import {
+  SeaGate, seaDeep, seaVy, hopVy, leapCheck, autoSeaForm, SEA_SWIM, SEA_SWIM_FAST, ME_SWIM, ME_SWIM_FAST,
+  BUOY_DELAY, BUOY_PROBE, HOP_HOLD, LEAP_V, FP_DIVE_DEAD,
+} from './merfolk/rules.js';
 
 export const WALK = 4.3;
 export const RUN = 6.5;
@@ -39,12 +43,24 @@ export class Player {
     this._emoteUntil = 0;
     this._wish = new THREE.Vector3();
 
-    this.avatar = game.createAvatar ? game.createAvatar(game.profile.look) : null;
+    // sea forms (docs/teams/merfolk.md §6): the gate turns her in deep water; seaSwim is the easy
+    // deep-water swimming (every form), seaForm the tail ('mermaid' | 'sea_dragon') or null
+    this.seaGate = new SeaGate();
+    this.seaSwim = false;
+    this.seaForm = null;
+    this._seaSt = { idleVT: BUOY_DELAY, hopT: 0 }; // float-up timer, shore-hop timer
+    this._leapAt = -1e9;
+    this._seaCutFrame = false;
+    this._seaDeep = false;
+    this._liq = (x, y, z) => !!game.physics && game.physics.liquidAt(x, y, z);
+    const seaAuto = (look) => autoSeaForm(typeof game.surpriseStyle === 'function' ? game.surpriseStyle() : null, look);
+    this.avatar = game.createAvatar ? game.createAvatar(game.profile.look, { seaAuto }) : null;
     if (this.avatar) game.scene.add(this.avatar.group);
     this._offs = [
       game.input.on('key', (e) => this._onKey(e)),
       game.events.on('avatar:changed', ({ look }) => this.avatar && this.avatar.setLook(look)),
       game.events.on('outfit:changed', ({ look }) => this.avatar && this.avatar.setLook(look)),
+      game.events.on('style:changed', () => this.avatar && this.avatar.setSeaAuto(seaAuto)),
     ];
     if (this.flying) this.state = 'fly';
     this._syncAvatar(0);
@@ -53,7 +69,8 @@ export class Player {
   _onKey(e) {
     if (!e.down || e.code !== 'Space' || this.game.paused || this.game.mode !== 'play') return;
     // Space is the horn while she drives (a double tap would otherwise stand her up to fly)
-    if (this.state === 'ride' && this.mountPet && this.mountPet.kind === 'vehicle') return;
+    if (this.state === 'ride' && this.mountPet && (this.mountPet.kind === 'vehicle' || this.mountPet.kind === 'dolphin')) return; // ocean
+    if (this.seaSwim && this.swimming) return; // merfolk: Space is Up in deep water, never a double-tap fly
     const now = performance.now();
     if (now - this._lastSpace < DOUBLE_TAP_MS) {
       this.toggleFly();
@@ -135,7 +152,35 @@ export class Player {
     }
     this.swimming = inWater && !this.flying;
 
-    const speed = this.flying ? (input.run ? FLY_FAST : FLY) : this.swimming ? SWIM : input.run ? RUN : WALK;
+    // sea forms: step the gate (turn in after 0.25 s of deep swimming, back on land)
+    const form = this.avatar ? this.avatar.seaForm : 'me';
+    const px = this.position.x, py = this.position.y, pz = this.position.z;
+    const deep = physics ? seaDeep(this._liq, px, py, pz) : false;
+    this._seaDeep = deep;
+    const ev = this.seaGate.step(dt, { deep, swimming: this.swimming, onGround: this.onGround, blocked: this.flying });
+    if (ev === 'in') {
+      this._setSeaSwim(true);
+      this._seaSt.idleVT = BUOY_DELAY;
+      this._seaIn(form);
+    } else if (ev === 'out' || ev === 'cut') this._seaOut(ev === 'cut');
+    else if (this.seaGate.on && form !== (this.seaForm || 'me')) {
+      // the form changed in the water (the Studio, the bubble): a quick change, no gate reset
+      if (form === 'me') {
+        this._seaCutFrame = true;
+        this.seaForm = null;
+        g.events.emit('player:seaform', { form: null });
+      } else {
+        this.seaForm = form;
+        g.events.emit('player:seaform', { form });
+      }
+    }
+    const sea = this.seaSwim && this.swimming;
+    const tail = !!this.seaForm;
+    const firstPerson = g.cameraRig && g.cameraRig.mode === 'first';
+
+    const speed = this.flying ? (input.run ? FLY_FAST : FLY)
+      : sea ? (input.run ? (tail ? SEA_SWIM_FAST : ME_SWIM_FAST) : (tail ? SEA_SWIM : ME_SWIM))
+      : this.swimming ? SWIM : input.run ? RUN : WALK;
     const accel = this.onGround || this.flying || this.swimming ? 14 : 5;
     const k = Math.min(1, accel * dt);
     this.velocity.x += (wish.x * speed - this.velocity.x) * k;
@@ -144,6 +189,29 @@ export class Player {
     if (this.flying) {
       const vy = input.jump ? 6 : input.down ? -6 : 0;
       this.velocity.y += (vy - this.velocity.y) * Math.min(1, 10 * dt);
+    } else if (sea) {
+      // deep water: Up / Down (Space / C, never Shift), a gentle float up, settle in the shallows
+      let fpWant = 0;
+      if (firstPerson && wishLen > 0.2 && g.cameraRig) {
+        const p = g.cameraRig.pitch; // positive looks down
+        if (Math.abs(p) > FP_DIVE_DEAD) fpWant = -Math.sign(p) * Math.min(1, (Math.abs(p) - FP_DIVE_DEAD) * 1.6) * Math.max(0, input.move.z);
+      }
+      this.velocity.y = seaVy(this._seaSt, {
+        dt, vy: this.velocity.y, up: input.jump, down: input.downKey, fpWant, deep,
+        chestWet: physics.liquidAt(px, py + BUOY_PROBE, pz), gravity: GRAVITY,
+      });
+      // the dolphin leap: fast with Up held, rising, the head out of the water
+      const hs0 = Math.hypot(this.velocity.x, this.velocity.z);
+      const now = performance.now();
+      if (input.jump && hs0 > 3 && this.velocity.y > 1.5 &&
+        leapCheck({ jump: true, hs: hs0, vy: this.velocity.y, headWet: physics.liquidAt(px, py + 1.5, pz), now, leapAt: this._leapAt })) {
+        this.velocity.y = LEAP_V;
+        this._leapAt = now;
+        this._seaSt.hopT = 0.25; // plain gravity while she leaves the water
+        g.audio.play('splash', { pitch: 1.2 });
+        if (g.particles) g.celebrate([px, py + 0.8, pz], 'splash', { quiet: true });
+        g.events.emit('player:leap', { pos: [px, py, pz], form: this.seaForm });
+      }
     } else if (this.swimming) {
       this.velocity.y -= 5 * dt;
       if (input.jump) this.velocity.y = Math.min(this.velocity.y + 22 * dt, 3.6);
@@ -158,13 +226,18 @@ export class Player {
     }
 
     if (physics) {
-      const res = physics.move(this.body, dt, { step: !this.flying });
+      const res = physics.move(this.body, dt, { step: !this.flying, swim: sea });
       this.onGround = res.onGround;
       // walking into a 1-block ledge: hop up automatically. The hop starts after this frame's
       // gravity step, so add back half a step: the peak (1.1) then no longer sinks below one
-      // block at low frame rates (it was 0.98 at 30 fps, 0.92 at 20 fps).
-      if (res.ledge !== null && !this.flying && wishLen > 0.3 && this.onGround) {
-        this.velocity.y = JUMP_V * 0.92 + GRAVITY * dt * 0.5;
+      // block at low frame rates (it was 0.98 at 30 fps, 0.92 at 20 fps). A sea swimmer flops
+      // out onto the shore or a pond rim the same way (merfolk).
+      if (res.ledge !== null && !this.flying && wishLen > 0.3 && (this.onGround || sea)) {
+        if (sea) {
+          this.velocity.y = hopVy(res.ledge - this.position.y, GRAVITY, JUMP_V) + GRAVITY * dt * 0.5;
+          this._seaSt.hopT = HOP_HOLD;
+          if (g.particles) g.celebrate([this.position.x, this.position.y + 0.5, this.position.z], 'splash', { quiet: true });
+        } else this.velocity.y = JUMP_V * 0.92 + GRAVITY * dt * 0.5;
       }
       if (this.flying && this.onGround && input.down) this.setFlying(false);
     }
@@ -178,7 +251,6 @@ export class Player {
 
     // facing
     const hs = Math.hypot(this.velocity.x, this.velocity.z);
-    const firstPerson = g.cameraRig && g.cameraRig.mode === 'first';
     if (firstPerson) this.yaw = camYaw;
     else if (wishLen > 0.1) {
       const target = Math.atan2(wish.x, wish.z);
@@ -205,6 +277,7 @@ export class Player {
     grp.rotation.y = this.yaw;
     // in a car or a boat she sits on its seat (pose 'sit'); on a pony she rides
     const seated = this.state === 'ride' && !!this.mountPet && this.mountPet.pose === 'sit';
+    const dolphin = this.state === 'ride' && !!this.mountPet && this.mountPet.kind === 'dolphin';   // ocean
     this.avatar.update(dt, {
       speed: Math.hypot(this.velocity.x, this.velocity.z),
       onGround: this.onGround,
@@ -213,12 +286,54 @@ export class Player {
       sitting: this.state === 'sit' || seated,
       sleeping: this.state === 'sleep',
       riding: this.state === 'ride' && !seated,
+      seaRide: dolphin,                                    // ocean
+      seaKick: dolphin ? this.mountPet.kick : 0,           // ocean (merfolk clamps a non-finite value to its own beat)
+      sea: !!this.seaForm,                                 // merfolk
+      seaCut: this._seaCutFrame,                           // merfolk
+      seaFloat: !!this.seaForm && !!this.game.physics && !this.game.physics.liquidAt(this.position.x, this.position.y + 1.3, this.position.z), // merfolk: head out
     });
+    this._seaCutFrame = false;
+  }
+
+  // ----- sea forms (merfolk) -----
+
+  _setSeaSwim(on) {
+    on = !!on;
+    if (this.seaSwim === on) return;
+    this.seaSwim = on;
+    this.game.events.emit('player:seaswim', { on });
+  }
+
+  /** The tail appears (not for Just Me: she only gets the easy deep-water swimming). */
+  _seaIn(form) {
+    if (form === 'me' || !form) return;
+    this.seaForm = form;
+    this.game.audio.play('magic', { pitch: 1.25, volume: 0.7 });
+    this.game.events.emit('player:seaform', { form });
+  }
+
+  /** Back to legs (cut: at once, no sound) and the end of sea swimming. */
+  _seaOut(cut) {
+    if (this.seaForm) {
+      if (!cut) this.game.audio.play('magic', { pitch: 0.9, volume: 0.5 });
+      this._seaCutFrame = !!cut;
+      this.seaForm = null;
+      this.game.events.emit('player:seaform', { form: null });
+    }
+    this._setSeaSwim(false);
+  }
+
+  /** Turn back at once (flying, sitting, a pony or a vehicle, the zip line, a teleport). */
+  _seaCut() {
+    if (!this.seaGate.on) return;
+    this.seaGate.reset();
+    this._seaOut(true);
   }
 
   setFlying(on) {
     on = !!on;
     if (this.flying === on) return;
+    if (on) this._seaCut();
     if (this.state === 'sit' || this.state === 'sleep' || this.state === 'ride' || this.state === 'hold') this.stand();
     this.flying = on;
     this.state = on ? 'fly' : 'walk';
@@ -243,6 +358,7 @@ export class Player {
 
   /** Sit on a seat: seatPos is the seat surface (world), yaw the direction to face. */
   sitOn(entity, seatPos, yaw) {
+    this._seaCut();
     this.state = 'sit';
     this._landQuietly();
     this.seatEntity = entity;
@@ -258,6 +374,7 @@ export class Player {
    * opts.quiet: just lying down for a rest (a hammock), not going to bed: no 'player:sleep'.
    */
   sleepIn(entity, pos, yaw, { quiet = false } = {}) {
+    this._seaCut();
     this.state = 'sleep';
     this._landQuietly();
     this.seatEntity = entity;
@@ -328,6 +445,15 @@ export class Player {
    */
   mount(m) {
     if (m && !m.kind) m.kind = 'pet';
+    // a dolphin ride keeps (or starts) the tail; every other mount turns her back at once
+    if (m && m.kind === 'dolphin') {
+      if (!this.seaGate.on) {
+        this.seaGate.force();
+        this._setSeaSwim(true);
+        this._seaSt.idleVT = BUOY_DELAY;
+        this._seaIn(this.avatar ? this.avatar.seaForm : 'me');
+      }
+    } else this._seaCut();
     this.state = 'ride';
     this._landQuietly();
     this.mountPet = m;
@@ -340,6 +466,7 @@ export class Player {
    * teleport() and flying let go too; the holder notices state !== 'hold'.
    */
   hold(holder) {
+    this._seaCut();
     if (this.state === 'sit' || this.state === 'sleep' || this.state === 'ride') this.stand();
     this._landQuietly();
     this.state = 'hold';
@@ -361,6 +488,7 @@ export class Player {
 
   emote(name) {
     if (!this.avatar || this.state === 'sit' || this.state === 'sleep' || this.state === 'ride' || this.state === 'hold') return;
+    if (this.seaForm && name !== 'wave' && name !== 'heart') return; // only arm-only emotes with a tail
     const dur = this.avatar.playEmote(name) || 2;
     this.state = 'emote';
     this._emoteUntil = performance.now() + dur * 1000;
@@ -368,6 +496,7 @@ export class Player {
   }
 
   teleport(x, y, z) {
+    this._seaCut();
     if (this.state === 'sit' || this.state === 'sleep' || this.state === 'ride' || this.state === 'hold') {
       this.state = 'walk';
       this.seatEntity = null;

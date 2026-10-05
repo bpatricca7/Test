@@ -494,8 +494,10 @@ export function install(game) {
     const driving = typeof game.isDriving === 'function' && game.isDriving();
     flyBtn.classList.toggle('sw-active', flying);
     flyBtn.hidden = driving;
-    upBtn.hidden = downBtn.hidden = !flying;
-    jumpBtn.hidden = flying;
+    // deep water (merfolk): Up and Down in Jump's place, as while flying
+    const sea = !!(game.player && game.player.seaSwim && game.player.state !== 'ride');
+    upBtn.hidden = downBtn.hidden = !(flying || sea);
+    jumpBtn.hidden = flying || sea;
     if (driving !== honkShown) {
       honkShown = driving;
       jumpFace.innerHTML = icon(driving ? 'honk' : 'jump');
@@ -595,6 +597,8 @@ export function install(game) {
   // sitting, lying down, standing up or riding can end a flight too: never leave Fly lit or
   // Up / Down showing in place of Jump
   for (const ev of ['player:sit', 'player:sleep', 'player:stand', 'pet:ride', 'vehicle:drive', 'vehicle:park', 'world:unload']) game.events.on(ev, refreshFly);
+  // sea swimming starts or ends; mounting or leaving a dolphin (ocean's events, by name)
+  for (const ev of ['player:seaswim', 'sea:ride', 'sea:hopoff']) game.events.on(ev, refreshFly);
   game.events.on('gem:collect', refreshGems);
   game.input.on('touchmode', refreshTouch);
   game.events.on('world:load', ({ world }) => {
