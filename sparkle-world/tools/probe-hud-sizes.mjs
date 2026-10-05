@@ -17,7 +17,7 @@ const overlaps = (page) => page.evaluate(() => {
   if (joy && joy.offsetParent !== null && getComputedStyle(joy).display !== 'none') els.push(joy);
   // the walkie counts with the rings it sends out while pressed: 22 px past its button
   const grow = (e, r) => (e.classList.contains('sw-wk-btn') ? { left: r.left - 22, right: r.right + 22, top: r.top - 22, bottom: r.bottom + 22 } : r);
-  const rects = els.map((e) => ({ e, r: grow(e, e.getBoundingClientRect()) }));
+  const rects = els.map((e) => ({ e, raw: e.getBoundingClientRect(), r: grow(e, e.getBoundingClientRect()) }));
   const name = (e) => (e.closest('.sw-wk') ? 'walkie ' + e.className : (e.closest('.sw-round')?.getAttribute('aria-label') || e.getAttribute('aria-label') || e.className) + (e.classList.contains('sw-round-label') ? ' label' : ''));
   const out = [];
   for (let i = 0; i < rects.length; i++) {
@@ -28,15 +28,17 @@ const overlaps = (page) => page.evaluate(() => {
       if (Math.min(a.right, b.right) - Math.max(a.left, b.left) > 2 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 2) out.push(`${name(rects[i].e)} x ${name(rects[j].e)}`);
     }
   }
-  for (const { e, r } of rects) if (r.left < -1 || r.top < -1 || r.right > innerWidth + 1 || r.bottom > innerHeight + 1) out.push(`${name(e)} off screen`);
+  // on screen: the controls themselves (the walkie's rings may run past the edge)
+  for (const { e, raw: r } of rects) if (r.left < -1 || r.top < -1 || r.right > innerWidth + 1 || r.bottom > innerHeight + 1) out.push(`${name(e)} off screen`);
   const j = document.querySelector('.sw-touch .sw-round[aria-label="Jump"] .sw-round-face')?.getBoundingClientRect();
   return { out, jump: j && j.width ? `jump at ${Math.round(j.left)},${Math.round(j.top)} (bottom gap ${Math.round(innerHeight - j.bottom)})` : 'jump hidden' };
 });
 
-const browser = await launch({});
 let bad = 0;
-try {
-  for (const [width, height] of SIZES) {
+for (const [width, height] of SIZES) {
+  // a fresh browser for each size (one browser for all of them ran out of room on this machine)
+  const browser = await launch({});
+  try {
     const { context, page } = await openGame(browser, { errors: [], viewport: { width, height }, touch: true, label: `hud-${width}x${height}` });
     await page.evaluate(() => {
       const g = window.__game;
@@ -74,9 +76,9 @@ try {
     bad += all.length ? 1 : 0;
     console.log(`${width}x${height}: ${all.length ? 'OVERLAP ' + all.join('; ') : 'ok'} | ${ground.jump}`);
     await context.close();
+  } finally {
+    await browser.close();
   }
-} finally {
-  await browser.close();
 }
 console.log(bad ? `${bad} sizes overlap` : 'all sizes clear');
 if (bad) process.exitCode = 1;
