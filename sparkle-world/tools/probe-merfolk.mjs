@@ -189,7 +189,7 @@ async function waterPass(browser, errors) {
   const turned = walk.find((s) => s.seaForm);
   c(!!turned && turned.seaForm === 'mermaid', `B1 walking in from the beach she turns into a mermaid (${turned ? turned.seaForm : 'never'})`);
   c(!!firstDeep && !!turned && turned.t - firstDeep.t <= 1200, `B1 within 1.2 s of deep water (${firstDeep && turned ? Math.round(turned.t - firstDeep.t) : '-'} ms)`);
-  await settle(page, 500);
+  await gameWait(page, 500); // game time: the tail grows in 0.35 s of play, however slow the frames
   const p1 = await parts(page);
   c(p1 && p1.shown && p1.legsVisible === false && p1.flaresVisible === false, `B1 the tail shows, legs and skirt hidden (${JSON.stringify(p1)})`);
   const f1 = await evs(page, 'player:seaform');
