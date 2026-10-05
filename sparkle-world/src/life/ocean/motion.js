@@ -747,3 +747,46 @@ export function rescueCell(r, env) {
   }
   return 'fade';
 }
+
+/**
+ * Swimmers of different kinds keep apart too (owner review: a fish on a dolphin's back, an
+ * octopus on a dolphin's tail). APART (index.js) spaces one kind and spaceFish a school; this
+ * spaces any two animals of different kinds: each kind has a half-room (CROSS, blocks), and two
+ * animals closer (side to side) than the sum of theirs, and within CROSS_UP of each other up and
+ * down (a bed animal right under a dolphin looks stacked from her camera), are eased apart a
+ * little each frame (at most 0.08 in all, so none darts). One that cannot move (riding, leaping,
+ * held, in the gallery: fixed) leaves the whole push to the other. A fish keeps its push in its
+ * spacing offset (sepX / sepZ), so it eases back to its place in the school afterwards. A push
+ * that would leave the animal's water is skipped. list[0 .. n - 1]: the live swimmers (kinds in
+ * CROSS). Pure, no allocations; n is at most the swimmer caps (about 60), so n * n / 2 cheap checks.
+ */
+export const CROSS = { dolphin: 1.0, sea_turtle: 0.8, octopus: 0.75, jelly: 0.55, fish: 0.6, seahorse: 0.45 };
+export const CROSS_UP = 3.5;
+export function apartKinds(list, n, env, fixed) {
+  for (let i = 0; i < n; i++) {
+    const a = list[i], ra = CROSS[a.kind];
+    for (let j = i + 1; j < n; j++) {
+      const b = list[j];
+      if (b.kind === a.kind) continue;
+      const d = ra + CROSS[b.kind], dx = b.x - a.x, dz = b.z - a.z;
+      if (dx >= d || dx <= -d || dz >= d || dz <= -d) continue;
+      const h = Math.hypot(dx, dz);
+      if (h >= d || Math.abs(b.y - a.y) > CROSS_UP) continue;
+      const wa = fixed[a.state] ? 0 : 1, wb = fixed[b.state] ? 0 : 1;
+      if (!wa && !wb) continue;
+      const k = Math.min(0.08, (d - h) * 0.25) * 2 / (wa + wb);
+      const ux = h > 1e-3 ? dx / h : Math.sin(a.i + 1), uz = h > 1e-3 ? dz / h : Math.cos(a.i + 1);
+      if (wa) nudge(a, -ux * k, -uz * k, env);
+      if (wb) nudge(b, ux * k, uz * k, env);
+    }
+  }
+}
+
+function nudge(r, px, pz, env) {
+  const x = r.x + px, z = r.z + pz, cx = Math.floor(x), cz = Math.floor(z);
+  if (r.kind === 'fish') {
+    if (!columnOk(env, 'fish', cx, cz, r.level) || env.props.shape[env.world.get(cx, r.level, cz)] !== LIQUID) return;
+    r.sepX += px; r.sepZ += pz;
+  } else if (!r.dry && !columnOk(env, r.kind, cx, cz, r.level)) return;
+  r.x = x; r.z = z;
+}

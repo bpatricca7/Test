@@ -16,7 +16,7 @@ import { SeaMap } from './seamap.js';
 import { SEA_KINDS, SEA_SPEC, SEA_NAMES, SEA_TEXT, PALETTES, OCEAN_STAR_KINDS, DOLPHIN_NAMES, pickPalette, hexToLinear } from './kinds.js';
 import {
   makeRecord, saveGood, sanitize, columnOk, spawnOk, settleY, swimToward, wanderTarget, canLeap, startLeap,
-  stepLeap, startTrick, stepTrick, Spawner, placeFish, spaceFish, fishSlot, schoolFrame, stepCrab, rescueCell, bestDirection, glassBetween, SURF, NEAR,
+  stepLeap, startTrick, stepTrick, Spawner, placeFish, spaceFish, fishSlot, schoolFrame, apartKinds, CROSS, stepCrab, rescueCell, bestDirection, glassBetween, SURF, NEAR,
 } from './motion.js';
 import { SEA_U, SEA_LIQUIDS, SEA_WATER } from './material.js';
 import { SeaMeshes, glassLanes } from './render.js';
@@ -740,6 +740,7 @@ class OceanSystem {
     this._stepSchools(dt, P);
     this._stepOthers(dt, P, tod);
     for (const kind in APART) this._apart(kind, APART[kind]);
+    this._apartKinds();
     this._stepRemote(dt);
     this.whale.update(dt, P.x, P.y, P.z);
     this._rideCue(dt, P);
@@ -1269,6 +1270,17 @@ class OceanSystem {
         }
       }
     }
+  }
+
+  /** Swimmers of different kinds apart (motion.js apartKinds): no fish on a dolphin's back. */
+  _apartKinds() {
+    const L = this._cross || (this._cross = []);
+    let n = 0;
+    for (const kind in CROSS) {
+      for (const r of this.pools[kind]) if (r.on && !r.hidden && r.state !== 'skip') L[n++] = r;
+    }
+    apartKinds(L, n, this.env, FIXED);
+    for (let i = 0; i < n; i++) L[i] = null;
   }
 
   _nextColor(r) {

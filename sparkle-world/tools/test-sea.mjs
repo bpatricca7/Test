@@ -5,6 +5,7 @@
 //   S0 real worlds    S1 SeaMap         S2 motion        S3 leaps        S4 ride
 //   S5 schedule       S6 presence       S7 append-only   S8 caps         S9 static scans
 //   S10 glass (the line of sight through see-through blocks)   S11 fish spacing   S12 fish on the screen
+//   S14 animals of different kinds keep apart
 //   S13 dolphin flukes (attached and swept back)
 
 import { readdirSync, readFileSync } from 'node:fs';
@@ -20,7 +21,7 @@ import { SEA_KINDS, OCEAN_STAR_KINDS, PALETTES, SEA_SPEC, DOLPHIN_NAMES, SEA_TEX
 import { h01, whaleTime, whalePhase, buddyOf, clockFrozen, WHALE_LEN } from '../src/life/ocean/schedule.js';
 import {
   makeRecord, saveGood, sanitize, columnOk, spawnOk, settleY, swimToward, wanderTarget, canLeap, startLeap, stepLeap,
-  startTrick, stepTrick, Spawner, placeFish, spaceFish, fishSlot, schoolFrame, FISH_APART, FISH_STEP, stepCrab, rescueCell, glassBetween, SURF, BAND,
+  startTrick, stepTrick, Spawner, placeFish, spaceFish, fishSlot, schoolFrame, FISH_APART, FISH_STEP, stepCrab, rescueCell, glassBetween, SURF, BAND, apartKinds, CROSS, CROSS_UP,
 } from '../src/life/ocean/motion.js';
 import { DolphinRide, RIDE_SPEED, RIDE_RUN } from '../src/life/ocean/ride.js';
 import { parseSeaRide, parseSeaTrick } from '../src/net/protocol.js';
@@ -1152,6 +1153,65 @@ await test('S9', 'static: no while loops in the ocean folder; the strings are ki
   for (const k of ['helpTouch', 'helpKeys', 'helpHop']) assert(touch.includes(`'${SEA_TEXT[k]}'`), 'touch.js uses SEA_TEXT.' + k);
   for (const k of SEA_KINDS) assert(SEA_TEXT.met[k] && SEA_TEXT.met[k].includes(SEA_NAMES[k]), 'a first-meet line for ' + k);
   return `${strings.length} strings`;
+});
+
+await test('S14', 'animals of different kinds keep apart (no fish on a dolphin\'s back, no octopus on its tail), cheaply', () => {
+  const FIXED = { leap: 1, trick: 1, ride: 1, hold: 1, mount: 1, gallery: 1, buddy: 1 };
+  const w = seaWorld({ sx: 64, sz: 64, island: false });
+  const env = envFor(w, 3);
+  const level = env.map.top(32, 32);
+  const mk = (kind, i, x, z, state = 'swim') => {
+    const r = makeRecord(kind, i);
+    r.on = true; r.level = level; r.x = x; r.z = z; r.y = level + SURF - 0.4; r.state = state;
+    if (kind === 'octopus') r.y = level - 3;
+    return r;
+  };
+  const gap = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+  // a fish on a dolphin's back, an octopus right under its tail, a jelly on a turtle
+  const dol = mk('dolphin', 0, 32.5, 32.5), fish = mk('fish', 1, 32.6, 32.4), oct = mk('octopus', 2, 32.9, 32.5);
+  const tur = mk('sea_turtle', 3, 40.5, 40.5), jel = mk('jelly', 4, 40.5, 40.6);
+  const list = [dol, fish, oct, tur, jel];
+  let step = 0;
+  for (let f = 0; f < 3 * 60; f++) {
+    apartKinds(list, list.length, env, FIXED);
+    for (const r of list) step = Math.max(step, Math.hypot(r.x - (r.px ?? r.x), r.z - (r.pz ?? r.z)));
+    for (const r of list) { r.px = r.x; r.pz = r.z; }
+  }
+  const want = (a, b) => CROSS[a.kind] + CROSS[b.kind];
+  for (const [a, b] of [[dol, fish], [dol, oct], [fish, oct], [tur, jel]]) {
+    assert(gap(a, b) >= want(a, b) - 0.05, `${a.kind} and ${b.kind} apart after 3 s (${gap(a, b).toFixed(2)}, want ${want(a, b).toFixed(2)})`);
+  }
+  assert(step <= 0.161, `none darts: at most 0.16 a frame (${step.toFixed(3)})`);
+  assert(Math.hypot(fish.sepX, fish.sepZ) > 0.3, 'the fish keeps its push in its spacing offset (eases back to its school after)');
+  // the dolphin she rides does not move: the fish swims out of the way alone
+  const ride = mk('dolphin', 5, 20.5, 20.5, 'ride'), f2 = mk('fish', 6, 20.7, 20.5);
+  for (let f = 0; f < 3 * 60; f++) apartKinds([ride, f2], 2, env, FIXED);
+  assert(ride.x === 20.5 && ride.z === 20.5, 'a ridden dolphin is never pushed');
+  assert(gap(ride, f2) >= want(ride, f2) - 0.05, `a fish leaves the ridden dolphin's back (${gap(ride, f2).toFixed(2)})`);
+  // far apart up and down (deep water): left alone
+  const d3 = mk('dolphin', 7, 10.5, 50.5), o3 = mk('octopus', 8, 10.5, 50.5);
+  o3.y = d3.y - CROSS_UP - 1;
+  apartKinds([d3, o3], 2, env, FIXED);
+  assert(d3.x === 10.5 && o3.x === 10.5, 'animals far apart up and down are left alone');
+  // its own kind is APART's / spaceFish's job
+  const fa = mk('fish', 9, 50.5, 10.5), fb = mk('fish', 10, 50.6, 10.5);
+  apartKinds([fa, fb], 2, env, FIXED);
+  assert(fa.x === 50.5 && fb.x === 50.6, 'two of one kind are not pushed here');
+  // cost: every swimmer kind at its cap (12 + 30 + 3 + 2 + 8 + 6 = 61) bunched in one 12 x 12 patch
+  const rand = mulberry32(5), many = [];
+  const caps = { dolphin: 12, fish: 30, sea_turtle: 3, octopus: 2, jelly: 8, seahorse: 6 };
+  let id = 0;
+  for (const k in caps) for (let i = 0; i < caps[k]; i++) many.push(mk(k, id++, 26 + rand() * 12, 26 + rand() * 12));
+  for (let f = 0; f < 60; f++) apartKinds(many, many.length, env, FIXED);
+  // the best of three rounds of 200 frames (a busy machine does not decide it; a real slowdown is slow in all three)
+  let ms = Infinity;
+  for (let k = 0; k < 3; k++) {
+    const t0 = performance.now();
+    for (let f = 0; f < 200; f++) apartKinds(many, many.length, env, FIXED);
+    ms = Math.min(ms, (performance.now() - t0) / 200);
+  }
+  assert(ms < 0.1, `61 swimmers a frame cost ${ms.toFixed(3)} ms (< 0.1)`);
+  return `apart after 3 s: dolphin/fish ${gap(dol, fish).toFixed(2)}, dolphin/octopus ${gap(dol, oct).toFixed(2)}, turtle/jelly ${gap(tur, jel).toFixed(2)}; 61 swimmers ${ms.toFixed(3)} ms a frame`;
 });
 
 function eq0(n, msg) {
