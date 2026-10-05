@@ -883,9 +883,11 @@ integration branch, never changed.
   `probe-ocean --only=wave4a --x=5`.
 - The walkie on upright phones: its 22 px rings overlap hotbar slots and the joystick; it needs
   a layout choice (smaller button or rings, or a new place).
-- R-F (far fish schools 14-21 blocks away) passed 7 of 10 runs on desktop; it must pass 10 in a
-  row on desktop and on iPad (ocean.md "P2 fish fixes"). ocean.md's older "Left as is" line about
-  different kinds swimming close together is replaced by `apartKinds`.
+- R-F (fish schools from her play camera): fixed in p2-fish-far (`motion.js` `fishY`, the back
+  row a little above the front one; ocean.md "P2 fish fixes"), 10 of 10 runs on desktop and 10
+  of 10 on iPad. Not re-run since: probe-ocean see,tap / ride / biomes / cost / wave4a / wave4b
+  and probe-merfolk --only=water (the full gate runs them). ocean.md's older "Left as is" line
+  about different kinds swimming close together is replaced by `apartKinds`.
 - 16 of the 19 probe-hud-sizes sizes are still to run with the wave-4 states (`--sizes=` groups
   of about 5).
 - The "full" card for a 7th player: check it is drawn above the Join keypad

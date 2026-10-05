@@ -2017,8 +2017,15 @@ for a grown-up's read (§16 Q4).
   a real slowdown is slow in every round and still fails, and the rounds used are printed.
 - *Probe:* `--only=rf [--runs=10] [--vp=desktop|ipad]` runs R-F alone again and again, a new scene
   each run, and prints the first stacked frame's pairs and school pose. About 48 s a run.
-- *Still open:* with all of the above, R-F on desktop passed 7 of 10 runs. Every failing run had
-  the school wandering 14 to 21 blocks from her (3.3 up), stacking up to 6 pairs a frame; the near
-  runs stay at 0.00-0.17. The far stacking is real (the fish are in the picture), not the old
-  counting fault. Next: read a far run's full pose (`--only=rf --vp=desktop`) and fix the far
-  layout until R-F passes 10 runs in a row on desktop and iPad.
+- *Far schools (fixed in p2-fish-far):* before this, R-F on desktop passed only 7 of 10 runs. The
+  pose of the failing frames showed why: seen from 3.3 up and 10 to 21 blocks away, the back row
+  sits only a little higher on the screen than the front row, and each fish's own wobble (up to
+  0.1 up or down) could put a front fish higher than the fish behind it, so the two lined up.
+  Now `motion.js` `fishY` sets every school fish's height: the back row swims `ROW_LIFT` (0.1)
+  above the middle and the front row 0.1 below it when her camera is above the fish (the other
+  way round when it is below them; the side changes 0.3 past the fish's height, so it never
+  flickers). The whole school bobs as one (0.012), each fish only a hair on its own (0.008), so
+  the rows keep their gap. Near her this stays inside the old band (surf - 0.5 to surf - 0.26);
+  far away it is around surf - 0.7 as before. test-sea uses `fishY` too, and S12 adds two far
+  cameras (3.3 up, 15 and 19 away; 0.00 pairs a frame). R-F: 10 of 10 runs on desktop (worst
+  0.34 pairs a frame, a school 3 blocks under her camera) and 10 of 10 on iPad (worst 0.29).
