@@ -199,7 +199,7 @@ export class RoomRegistry {
   /**
    * @param {object} o
    * @param {number} [o.maxRooms=500]
-   * @param {number} [o.maxPeers=4]    per room
+   * @param {number} [o.maxPeers=6]    per room
    * @param {number} [o.msgBytes=3900] broadcast data JSON
    * @param {number} [o.stateBytes=4096] merged presence JSON per peer
    * @param {number} [o.strBytes=1024] any string in presence
@@ -213,7 +213,7 @@ export class RoomRegistry {
    */
   constructor(o = {}) {
     this.maxRooms = o.maxRooms ?? 500;
-    this.maxPeers = o.maxPeers ?? 4;
+    this.maxPeers = o.maxPeers ?? 6;
     this.msgBytes = o.msgBytes ?? 3900;
     this.stateBytes = o.stateBytes ?? 4096;
     this.strBytes = o.strBytes ?? 1024;

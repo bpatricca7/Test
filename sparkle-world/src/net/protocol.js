@@ -20,8 +20,8 @@ export const LIMITS = Object.freeze({ msgBytes: 3900, stateBytes: 3900, strBytes
 
 /** §5.12 constants (times in ms unless named otherwise). */
 export const C = Object.freeze({
-  MAX_PLAYERS: 4, // host plus seats 1..3
-  MAX_SEATS: 3,
+  MAX_PLAYERS: 6, // host plus seats 1..5
+  MAX_SEATS: 5,
   MSG_BYTES: 3900,
   STATE_BYTES: 3900,
   STR_BYTES: 1000,

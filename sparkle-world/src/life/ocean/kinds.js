@@ -39,7 +39,7 @@ export const SEA_NAMES = {
  * sound: the tap sound; day / night: spawn chance multipliers.
  */
 export const SEA_SPEC = {
-  dolphin: { cap: 12, wild: 6, show: 3, friends: 3, max: 6, low: 6, depth: 3, near: [30, 40], min: 6, leave: 45, speed: 4.2, sprint: 11, mode: 'kick', sound: 'chirp', day: 1, night: 0.5 },
+  dolphin: { cap: 14, wild: 6, show: 3, friends: 5, max: 6, low: 6, depth: 3, near: [30, 40], min: 6, leave: 45, speed: 4.2, sprint: 11, mode: 'kick', sound: 'chirp', day: 1, night: 0.5 },
   fish: { cap: 30, max: 3, low: 2, perSchool: [6, 10], perSchoolLow: [3, 5], depth: 2, near: [8, 22], min: 4, leave: 30, speed: 1.6, mode: 'wiggle', sound: 'bloop', day: 1, night: 0.5 },
   sea_turtle: { cap: 3, max: 3, low: 3, depth: 2, near: [14, 26], min: 6, leave: 34, speed: 1.4, mode: 'flap', sound: 'bloop', daylight: 0.3, every: [40, 70] },
   octopus: { cap: 2, max: 2, low: 2, bed: [2, 6], near: [10, 24], min: 4, leave: 30, speed: 0, mode: 'curl', sound: 'pop' },

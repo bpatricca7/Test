@@ -68,13 +68,13 @@ export class NetHost {
     this.blockHash = 0;
     this.live = false;
 
-    this.seats = [null, null, null, null]; // 1..3: { peer, uid, owner, admittedAt, missingSince }
+    this.seats = new Array(C.MAX_SEATS + 1).fill(null); // 1..MAX_SEATS: { peer, uid, owner, admittedAt, missingSince }
     this.adm = new Map(); // peer -> seat
     this.no = new Map(); // peer -> why (insertion ordered)
     this.banned = new Set(); // uids
     this.seatedUids = new Map(); // uid -> seat (this session)
     this.lastLseq = new Map(); // peer -> processed-through lseq
-    this.acks = [0, 0, 0, 0];
+    this.acks = new Array(C.MAX_SEATS + 1).fill(0);
     this.acksDirty = false;
     this.flushRejects = [];
     this.recentRejects = []; // { at, seat, lseq, code }
@@ -85,8 +85,8 @@ export class NetHost {
     // vehicles friends are driving (docs/teams/vehicles.md §8.4): the host keeps custody so a
     // car is never lost. owner key -> { uid, rec, peer, seat, name, prevOwner, since, noVhSince }
     this.custody = new Map();
-    this.buckets = [null, null, null, null];
-    this.pfAt = [-Infinity, -Infinity, -Infinity, -Infinity];
+    this.buckets = new Array(C.MAX_SEATS + 1).fill(null);
+    this.pfAt = new Array(C.MAX_SEATS + 1).fill(-Infinity);
     this.zAt = -Infinity;
     this.knocks = new Map(); // peer -> info (shown to the UI)
     this.lastFixAt = new Map();

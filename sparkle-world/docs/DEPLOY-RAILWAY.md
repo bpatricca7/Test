@@ -140,7 +140,7 @@ which the website was not opened**. So the game does three things, and you can d
    address directly), then **Play with Friends → Join a Code**, tap the same 4 pictures, **Go!**.
 3. The first device shows a card "**Mia** wants to play!": tap **Let in!** (or **Not now**).
 
-Up to 4 players can be in one world. Each device saves its own worlds in its browser, just like
+Up to 6 players can be in one world. Each device saves its own worlds in its browser, just like
 before; nothing is saved on the server.
 
 While playing together:
@@ -278,7 +278,7 @@ version by itself (1–3 minutes). The old version keeps running until the new o
   never stored. Playing with friends and the walkie-talkie are switches per child, off at first,
   and the server enforces them: a child whose switch is off cannot join, and a switch turned off
   reaches a game in progress within a second. At most 12 connections per family.
-- **Limits.** At most 4 players per game, 500 games at a time, 12 connections and 6 games
+- **Limits.** At most 6 players per game, 500 games at a time, 12 connections and 6 games
   from one home internet address, and new connections and new games are slowed down if one
   address keeps opening them (someone trying code after code). Other websites cannot connect
   to your game server or show the game inside their own pages. One broken or unkind message

@@ -544,9 +544,9 @@ async function sessionTests() {
     H.session.deny(knocks[0].peer);
     await runUntil(clock, () => G1.session.state === 'idle');
     eq(G1.messages, ['denied'], 'denied');
-    // admit three, the fourth is full
+    // admit five, the sixth friend (a 7th player) is full
     const gs = [];
-    for (const [nm, uid] of [['Mia', 'u1'], ['Zoe', 'u2'], ['Ava', 'u3']]) {
+    for (const [nm, uid] of [['Mia', 'u1'], ['Zoe', 'u2'], ['Ava', 'u3'], ['Lia', 'u5'], ['Ivy', 'u6']]) {
       const G = makeSession(ctx, nm, uid, { guest: true });
       await simAwait(clock, G.session.join(code));
       await runUntil(clock, () => knocks.length > 1 + gs.length);
@@ -554,7 +554,8 @@ async function sessionTests() {
       assert(await runUntil(clock, () => G.session.state === 'g.live'), nm + ' live');
       gs.push(G);
     }
-    eq(H.session.players().length, 4, 'four players');
+    eq(H.session.players().length, 6, 'six players');
+    eq(H.session.players().map((pl) => pl.seat).sort((a, b) => a - b), [0, 1, 2, 3, 4, 5], 'seats 0..5');
     const F = makeSession(ctx, 'Fay', 'u4', { guest: true });
     await simAwait(clock, F.session.join(code));
     await runUntil(clock, () => F.session.state === 'idle');
@@ -1051,7 +1052,7 @@ async function serverTests() {
     const dir = mkdtempSync(path.join(tmpdir(), 'sw-'));
     const page = path.join(dir, 'page.html');
     writeFileSync(page, '<!doctype html><title>Glimmer World</title>');
-    const srv = await startServerProcess({ SW_DIST: page, SW_MAX_ROOMS: '2', SW_MAX_PER_IP: '6', SW_IDLE_MS: '2500' });
+    const srv = await startServerProcess({ SW_DIST: page, SW_MAX_ROOMS: '2', SW_MAX_PER_IP: '8', SW_IDLE_MS: '2500' });
     const room = 'sw1-heart-star-moon-cat';
     const socks = [];
     try {
@@ -1064,13 +1065,13 @@ async function serverTests() {
       good.ws.close(1000);
       await waitFor(() => good.closed !== null);
       await sleep(100);
-      // 4 players per room
-      for (let k = 0; k < 4; k++) socks.push(await rawWs(srv.port, room, 'secret-number-' + k + 'xxxx'));
+      // 6 players per room (the default SW_MAX_PEERS)
+      for (let k = 0; k < 6; k++) socks.push(await rawWs(srv.port, room, 'secret-number-' + k + 'xxxx'));
       await waitFor(() => socks.every((s) => s.frames.length > 0));
-      const fifth = await rawWs(srv.port, room, 'secret-number-5xxxxx');
-      await waitFor(() => fifth.closed !== null);
-      eq(fifth.closed, 4001, 'fifth player refused (room full)');
-      assert(fifth.frames.some((f) => f.t === 'e' && f.code === 'full'), 'full error frame');
+      const seventh = await rawWs(srv.port, room, 'secret-number-7xxxxx');
+      await waitFor(() => seventh.closed !== null);
+      eq(seventh.closed, 4001, 'seventh player refused (room full)');
+      assert(seventh.frames.some((f) => f.t === 'e' && f.code === 'full'), 'full error frame');
       const [a, b] = socks;
       // the relay is gated: a becomes the room's host and lets b in (b then hears messages)
       const bPeer = b.frames[0].self;
@@ -1859,8 +1860,9 @@ async function vehicleTests() {
     eq(send(['car_kart', 'ff4f7b', 0, 1, 7]).vh[3], 1, 'a honk: sent');
     eq(send(['bad key!', 'ff4f7b']).vh, null, 'a broken one goes out as null');
     eq(send(null).vh, undefined, 'still null: not sent again');
-    // a host with three friends, every field at its biggest, a vehicle too
-    const { clock, hub, H, gs } = await hostAndGuests(41, [['Mia', 'u1'], ['Zoe', 'u2'], ['June', 'u3']]);
+    // a host with five friends (6 players), every field at its biggest, a vehicle too
+    const { clock, hub, H, gs } = await hostAndGuests(41, [['Mia', 'u1'], ['Zoe', 'u2'], ['June', 'u3'], ['Lia', 'u5'], ['Ivy', 'u6']]);
+    eq(H.session.players().length, 6, 'six players');
     H.adapter.vh = ['van_icecream', 'ffbfa0', 3, 999, 2 ** 31 - 1];
     for (const G of gs) G.adapter.vh = ['car_convertible', 'ff5fa2', 3, 999, 2 ** 30];
     await act(clock, [H, ...gs], 3000);
@@ -2134,8 +2136,10 @@ async function seaTests() {
     assert(!('sr' in send({})) && !('sk' in send({})), 'no sr / sk in local: nothing sent');
   });
 
-  await test('sea: N2 the combined wave-4 worst case - 4 players, st m, a 156-character lk, a toy, sr, sk, vh: host presence <= 3,900 B', async () => {
-    const { clock, hub, H, gs } = await hostAndGuests(43, [['Mia', 'u1'], ['Zoe', 'u2'], ['June', 'u3']]);
+  await test('sea: N2 the combined wave-4 worst case - 6 players, 12-letter names, st m, a 156-character lk, a toy, sr, sk, vh: host presence <= 3,900 B', async () => {
+    // names at the name tag's longest (12, src/net/names.js MAX)
+    const { clock, hub, H, gs } = await hostAndGuests(43, [['Mia', 'u1'], ['Zoe', 'u2'], ['June', 'u3'], ['Lia', 'u5'], ['Ivy', 'u6']].map(([n, u]) => [(n + 'abcdefghijkl').slice(0, 12), u]));
+    eq(H.session.players().length, 6, 'six players');
     const lk = 'a'.repeat(140) + '.0.1.2.3.4.5.6.7'; // 156 characters
     eq(lk.length, 156, 'the look is 156 characters');
     const toy = 'squishg_' + 'k'.repeat(20);
@@ -2147,16 +2151,18 @@ async function seaTests() {
       A.sr = 15;
       A.sk = 65535;
       const base = A.local.bind(A);
-      A.local = () => ({ ...base(), hi: toy });
+      // the host's own name at 12 letters too
+      A.local = P === H ? () => ({ ...base(), nm: 'Lilyabcdefgh', hi: toy }) : () => ({ ...base(), hi: toy });
     }
     await act(clock, [H, ...gs], 3000);
     const mine = H.session.transport.myState();
+    eq(mine.nm, 'Lilyabcdefgh', 'the host\'s 12-letter name is out');
     const hs = jsonBytes(mine);
     assert(hs <= 3900, 'host presence ' + hs + ' B');
     eq(mine.sr, 15, 'the host\'s sr is out');
     eq(mine.sk, 65535, 'the host\'s sk is out');
     eq(mine.hi, toy, 'the host\'s toy is out');
-    const gp = H.session.transport.peers().find((p) => p.state.nm === 'Mia');
+    const gp = H.session.transport.peers().find((p) => p.state.nm === 'Miaabcdefghi');
     eq(gp.state.sr, 15, 'a friend\'s sr reaches the host');
     eq(gp.state.sk, 65535, 'a friend\'s sk reaches the host');
     eq(gp.state.st, 'm', 'a friend\'s st m reaches the host');

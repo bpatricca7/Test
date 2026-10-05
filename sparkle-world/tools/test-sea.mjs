@@ -353,10 +353,10 @@ await test('S7', 'append-only: SEA_KINDS and every palette keep their first entr
 // =====================================================================================
 
 await test('S8', 'caps: instances per kind and the low-quality caps', () => {
-  const want = { dolphin: 12, fish: 30, sea_turtle: 3, octopus: 2, jelly: 8, seahorse: 6, crab: 6, starfish: 12, whale: 1 };
+  const want = { dolphin: 14, fish: 30, sea_turtle: 3, octopus: 2, jelly: 8, seahorse: 6, crab: 6, starfish: 12, whale: 1 };
   for (const [k, n] of Object.entries(want)) assert(SEA_SPEC[k].cap === n, `${k} capacity ${SEA_SPEC[k].cap}`);
   const d = SEA_SPEC.dolphin;
-  assert(d.wild + d.show + d.friends === d.cap, 'dolphins: 6 wild + 3 show + 3 friends');
+  assert(d.wild + d.show + d.friends === d.cap, 'dolphins: 6 wild + 3 show + 5 friends (one ride for each friend of 6 players)');
   assert(SEA_SPEC.fish.max * SEA_SPEC.fish.perSchool[1] <= SEA_SPEC.fish.cap, 'three schools of 10 fit');
   assert(SEA_SPEC.fish.low < SEA_SPEC.fish.max && SEA_SPEC.jelly.lowNight === 4 && SEA_SPEC.jelly.maxNight === 8, 'low quality halves fish and jellies only');
   for (const k of ['dolphin', 'sea_turtle', 'octopus', 'seahorse', 'crab', 'starfish']) assert(SEA_SPEC[k].low === SEA_SPEC[k].max, `${k} is not thinned on low`);
@@ -1197,9 +1197,9 @@ await test('S14', 'animals of different kinds keep apart (no fish on a dolphin\'
   const fa = mk('fish', 9, 50.5, 10.5), fb = mk('fish', 10, 50.6, 10.5);
   apartKinds([fa, fb], 2, env, FIXED);
   assert(fa.x === 50.5 && fb.x === 50.6, 'two of one kind are not pushed here');
-  // cost: every swimmer kind at its cap (12 + 30 + 3 + 2 + 8 + 6 = 61) bunched in one 12 x 12 patch
+  // cost: every swimmer kind at its cap (14 + 30 + 3 + 2 + 8 + 6 = 63) bunched in one 12 x 12 patch
   const rand = mulberry32(5), many = [];
-  const caps = { dolphin: 12, fish: 30, sea_turtle: 3, octopus: 2, jelly: 8, seahorse: 6 };
+  const caps = { dolphin: 14, fish: 30, sea_turtle: 3, octopus: 2, jelly: 8, seahorse: 6 };
   let id = 0;
   for (const k in caps) for (let i = 0; i < caps[k]; i++) many.push(mk(k, id++, 26 + rand() * 12, 26 + rand() * 12));
   for (let f = 0; f < 60; f++) apartKinds(many, many.length, env, FIXED);
@@ -1210,8 +1210,8 @@ await test('S14', 'animals of different kinds keep apart (no fish on a dolphin\'
     for (let f = 0; f < 200; f++) apartKinds(many, many.length, env, FIXED);
     ms = Math.min(ms, (performance.now() - t0) / 200);
   }
-  assert(ms < 0.1, `61 swimmers a frame cost ${ms.toFixed(3)} ms (< 0.1)`);
-  return `apart after 3 s: dolphin/fish ${gap(dol, fish).toFixed(2)}, dolphin/octopus ${gap(dol, oct).toFixed(2)}, turtle/jelly ${gap(tur, jel).toFixed(2)}; 61 swimmers ${ms.toFixed(3)} ms a frame`;
+  assert(ms < 0.1, `63 swimmers a frame cost ${ms.toFixed(3)} ms (< 0.1)`);
+  return `apart after 3 s: dolphin/fish ${gap(dol, fish).toFixed(2)}, dolphin/octopus ${gap(dol, oct).toFixed(2)}, turtle/jelly ${gap(tur, jel).toFixed(2)}; 63 swimmers ${ms.toFixed(3)} ms a frame`;
 });
 
 function eq0(n, msg) {

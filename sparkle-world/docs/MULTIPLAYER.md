@@ -32,7 +32,7 @@ events, and it has the smallest amount of machinery of the three proposals.
 **Grafted from Proposal 2:**
 - "Careful friends" protection is on by default: a friend may change only her own things
   and natural ground.
-- At most 4 players.
+- At most 4 players (raised to 6 in wave 4; see "Six players" at the end).
 - A name sanitizer for name tags.
 - The platform account name in small print on the knock card, for grown-ups.
 - A light hash safety net.
@@ -1506,7 +1506,7 @@ now on, and the probe runs on every wave-2 merge.
 - Guests saving a copy of the host's world.
 - Shared piano, TV shows, books and cooking; gifts and trading treats between players.
 - Tapping or colliding with friends ("Wave to Mia!").
-- More than 4 players.
+- More than 4 players (wave 4 raised the limit to 6; more than 6 stays cut).
 - Per-friend "Undo last"; "Let friends in by themselves" (auto-admit); a hide-names toggle.
 - Per-chunk hash repair (v1 resyncs the whole snapshot on mismatch).
 - `WsTransport` and a game server for the own website.
@@ -1567,7 +1567,7 @@ Each criterion is scored 1–10. Total = mean.
        sender stamp, roster changes). The tests' fake hub (`tools/net/hub.mjs`) and the server
        share one room-logic module (`server/rooms.mjs`), so what the tests exercise is what
        runs in production.
-     - Server-side limits: at most 4 peers per room, 3,900 B per message, 4 KiB of presence
+     - Server-side limits: at most 6 peers per room (4 before wave 4), 3,900 B per message, 4 KiB of presence
        per peer, and a per-connection rate limit (about 40 per second, burst 80). It also
        caps rooms (e.g. 500) and connections per IP, drops idle rooms after 10 minutes,
        checks Origin, and never logs payloads. *(The review's gate, per-address limits and
@@ -1959,3 +1959,29 @@ accounts: a child without the switch gets 0 voice bytes; switched off mid-game, 
 switch although her page keeps saying `on` with `wk:1`; on again, `perm` 1 and she hears.
 `npm run e2e:accounts` plays it through the real pages (`docs/ACCOUNTS.md` §12.8). Notes and
 numbers: `docs/teams/accounts-D.md`.
+
+---
+
+## Six players (wave 4)
+
+The owner asked for 6 players in one world instead of 4. What changed:
+
+- **Limits.** `C.MAX_PLAYERS` is 6 and `C.MAX_SEATS` is 5 (`src/net/protocol.js`): the host is
+  seat 0, friends sit in seats 1..5. The server's room limit `SW_MAX_PEERS` defaults to 6
+  (`server/server.mjs`, `RoomRegistry` in `server/rooms.mjs`); a 7th page gets `full`, which
+  the knock card already shows kindly. The per-address (12) and per-family (12) connection
+  limits already fit 6 pages from one home.
+- **Host bookkeeping.** `NetHost` sizes `seats`, `acks`, `buckets` and the prefab timer `pfAt`
+  from `C.MAX_SEATS` (they were fixed arrays of 4). The protocol parsers already used
+  `C.MAX_SEATS` for seat numbers (`a`, `r`, `adm`), and `ak` / `adm` keep their room for 8 pairs.
+- **Colours.** `SEAT_COLORS` (`src/net/remote-players.js`) has two more: orange `#FF8A3D`
+  (seat 4) and gold `#E6B422` (seat 5). Name tags, the Players list, the walkie and the HUD
+  all read `seatColor(seat)`.
+- **Dolphin rides.** Every friend can ride a dolphin at once: the dolphin pool is 14 (6 wild,
+  3 show pod, 5 friends' rides; `src/life/ocean/kinds.js`, test-sea S8).
+- **Message size.** test:net's combined presence tests run with 6 players, 12-letter names and
+  every wave-4 field at its biggest: the host's presence is about 630 B, far under 3,900 B.
+  Nothing had to be trimmed.
+- **Tests.** The session test admits five friends and refuses a sixth (the 7th player); the
+  relay test fills a room with 6 sockets and refuses the 7th.
+

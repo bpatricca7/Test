@@ -32,7 +32,7 @@ const TAU = Math.PI * 2;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const fin = Number.isFinite;
 const PICK_R = 12;
-const WILD = 6;          // dolphin records 0..5 are wild, 6..8 the show pod, 9..11 friends' rides
+const WILD = 6;          // dolphin records 0..5 are wild, 6..8 the show pod, 9..13 friends' rides (5 friends: 6 players)
 const SHOW0 = 6, FRIEND0 = 9;
 const SCHOOLS = 3, PER_SCHOOL = 10;
 /** Little Fish shades within a school (times its colour; index i % 3). */

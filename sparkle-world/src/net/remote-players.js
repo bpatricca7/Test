@@ -38,7 +38,7 @@ const SNAP_DIST = 6; // blocks between two samples: a teleport, not a walk
 const EMOTE_NAMES = new Set(EMOTES.map((e) => e.key));
 
 /** Player colors by seat (0 = the host). Name tags, the Players list and the HUD use them. */
-export const SEAT_COLORS = ['#FF5FA2', '#3AAEF0', '#22BF95', '#9C7BFF'];
+export const SEAT_COLORS = ['#FF5FA2', '#3AAEF0', '#22BF95', '#9C7BFF', '#FF8A3D', '#E6B422'];
 export const seatColor = (seat) => SEAT_COLORS[(seat | 0) % SEAT_COLORS.length];
 
 const angleLerp = (a, b, t) => {

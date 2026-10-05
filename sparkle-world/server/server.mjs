@@ -21,7 +21,7 @@
 // Rooms are gated (rooms.mjs): until the host lets a player in, she sees only the public
 // presence keys, gets no messages and no voice.
 //
-// Limits (env overrides in brackets): 4 players per room [SW_MAX_PEERS], 3,900 B per message,
+// Limits (env overrides in brackets): 6 players per room [SW_MAX_PEERS], 3,900 B per message,
 // 4 KiB of presence per player, 40 messages/s per connection (burst 80), 500 rooms
 // [SW_MAX_ROOMS], 12 connections per IP [SW_MAX_PER_IP], 6 live rooms made per IP
 // [SW_ROOMS_PER_IP], new connections per IP 1/s with a burst of 30 [SW_CONNECT_RATE,
@@ -90,7 +90,7 @@ export function createServer(opts = {}) {
     htmlPath: opts.htmlPath ?? process.env.SW_DIST ?? path.join(ROOT, 'dist', 'sparkle-world.html'),
     siteDir: opts.siteDir ?? process.env.SW_SITE ?? path.join(ROOT, 'dist', 'site'),
     maxRooms: opts.maxRooms ?? envInt('SW_MAX_ROOMS', 500),
-    maxPeers: opts.maxPeers ?? envInt('SW_MAX_PEERS', 4),
+    maxPeers: opts.maxPeers ?? envInt('SW_MAX_PEERS', 6),
     maxPerIp: opts.maxPerIp ?? envInt('SW_MAX_PER_IP', 12),
     roomsPerIp: opts.roomsPerIp ?? envInt('SW_ROOMS_PER_IP', 6),
     connectRate: opts.connectRate ?? envInt('SW_CONNECT_RATE', 1),
