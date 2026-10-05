@@ -16,7 +16,7 @@ builders: **where a team doc disagrees with this one, this one wins** (§2 lists
 disagreement). Every `file:line` is the code at commit `669b6fa` on
 `claude/girl-game-world-building-gp6bnl`.
 
-Status: PLAN. Step 0 (§6) is done; the teams build next.
+Status: BUILT AND MERGED on `claude/wave4-integration` (§8); the docs commit of §11 is done; the full gate (§10) and the deploy are next. See "As built" at the end.
 
 ---
 
@@ -802,8 +802,93 @@ commands, then A again.
 
 ## Integrator decisions
 
-(Empty until the integrator answers R1-R5 and Q1-Q3.)
+Answers to §12 and the questions the teams left open (2026-10-05). Each is easy to change
+before the release; the ones marked **owner** still wait for the dad and his daughter.
+
+- **Names.** Puffums and Stretchums, together "squishy toys", the **Squish Shelf** (squishies.md
+  §8.1). The friendly closed-smile **Shark Puffum** is kept (Q1; the Narwhal swap stays one
+  entry before the release). **Sea Dragon** is kept as the name of the boy's water form, and
+  Mermaid for the girl's (merfolk.md §10.1). Every name passes `tools/lib/name-scan.mjs`.
+- **R1 Side-saddle.** Kept: on a dolphin a mermaid or a sea dragon sits side-saddle
+  (`poseSaddleSea`), the tail beating with the dolphin (`seaKick`). The X2 / R10 pictures
+  (`.shots/ocean-ride-mermaid.png`, `ocean-ride-dragon.png`) go to the daughter (**owner**); a
+  change is a pose-only change in merfolk's file.
+- **Mix defaults to Mermaid.** With `look.sea.form` `'auto'`, Girl and Mix give the Mermaid and Boy
+  the Sea Dragon; with no pick on the device, the worn look decides (`autoSeaForm`,
+  `src/player/merfolk/rules.js`). The pick stays on the device; friends get the resolved form.
+- **Sea Dragon horns.** The horns show with no head accessory or a bow and are left out under
+  every other head accessory, so 4 of the 6 boy starters swim without horns until the hat comes
+  off (`.shots/merfolk-grid-starters.png`). Kept for now, pending the **owner** (merfolk.md
+  "As built", the owner review).
+- **R2 One thing at a time.** §1.4 as built; X1 measures it. The one allowed overlap: the dolphin
+  bubble and the Dolphin Friend pop come from the same tap, so they may show together, as long
+  as the bubble never covers the pop (X1: 14 shared frames, 0 covered). If the **owner** wants
+  no overlap at all, one of them waits for the other. If the first deep swim still feels busy,
+  the first thing to drop is merfolk's dive tip on the first-ever turn.
+- **R3 The long gate.** Split with `--only`, `--part`, `--x` and `--sizes` so every command fits
+  in 570 s (§10 and the step notes in "As built").
+- **R4 Stale tabs.** The server's `putProfile` squish guard ships with this deploy; nothing a
+  player owns is lost.
+- **R5 Older probes near water.** They call `game.debug.ocean.pause(true)` where sea life could
+  touch their budgets (probe-vehicles); every self-started wave-4 popup stays off on
+  `navigator.webdriver` pages.
+- **Q2 Looks.** The gallery, render-grid and Studio pictures listed in the three team docs'
+  "As built" sections, and the dolphin names in `DOLPHIN_NAMES`, wait for the **owner**'s read.
+- **Q3 A toy in the sea.** v1 hides a held toy while she swims in sea form and on a dolphin with
+  a tail (it stays in its slot, presence `hi` keeps sending it); Just Me on a dolphin holds it,
+  as on a pony. A sea-form hold pose is for a later wave.
+- **Six players.** The owner asked for 6 players in one world instead of 4 (MULTIPLAYER.md
+  "Six players"). The relay's `SW_MAX_PEERS` defaults to 6; the **owner** checks at deploy time
+  that the Railway service does not set it to 4.
+- **The Dolphin Puffum's color** follows ocean's `sky` dolphin palette, `#6A80CC`
+  (`src/things/squish/data.js`, squishies.md row 22): a color, not a pinned key.
 
 ## As built
 
-(Written after the merge. Where the build differs from this plan, the build is right.)
+(Where the build differs from this plan, the build is right.)
+
+**Merges** on `claude/wave4-integration`, in the order of §8: `b0f7075` merfolk, `d982b73`
+squish, `6c5a35b` ocean, each followed by its fixes (probe-squish E3 allows merfolk's default
+water form on an old look; probe-ocean waits for merfolk's turn and puts Sea Magic! out of the
+way before it counts coins). The Node suites passed on the merged tree with no change
+(`72f68c0`). The live branch `claude/girl-game-world-building-gp6bnl` is merged into the
+integration branch, never changed.
+
+**P2 work after the merges** (commit tags in brackets):
+- [verify-ocean-*], [p2-ride-camera]: probe-merfolk B10b (a dolphin ride in the water pass);
+  probe-ocean R10 (a mermaid and a sea dragon ride), T3b (the camera under the surface), U1 / U2
+  (merfolk's Up / Down and the Swim label after Hop off).
+- [p2-wave4-a], [p2-wave4-b]: the cross-team pass of §9.1 in `tools/probe-ocean.mjs`:
+  `--only=wave4a` (X1-X5, split with `--x=N`) and `--only=wave4b` (X6-X10, about 344 s);
+  `--only=wave4` runs both but takes longer than one 570 s command. X6 checks that the sticker
+  total equals the registered stickers and that the 11 new ids come last (32 + 11 = 43 here;
+  never pinned). Just Me on a dolphin holds her toy (the held-toy rule reads the tail, not the
+  mount).
+- [p2-fish]: different kinds of sea animals keep apart (`apartKinds`, test-sea S14);
+  `fishStacked` counts only fish in the picture; fish spacing across the view uses each fish's
+  real width; `probe-ocean --only=rf --runs=N --vp=desktop|ipad`.
+- [p2-hud]: probe-hud-sizes checks the wave-4 states (a toy and a present, swimming, the
+  dolphin bubble, riding), alone and with friends; the dolphin bubble keeps clear of every HUD
+  control; on sideways iPads the walkie's rings clear Up while she flies or swims.
+- [p2-six-core], [p2-six-browser]: up to 6 players (`C.MAX_PLAYERS` 6, seats 1..5, two more seat
+  colors, a 14-dolphin pool with 5 friends' rides); `probe-multiplayer --part=e` (SIX, about
+  460 s) belongs in the §10 gate.
+- [p2-docs]: §11 step 1 (this section, DESIGN.md §7, MULTIPLAYER.md, DATA-MAP.md, the home
+  page, avatar.md, shops.md and the team docs' "Integrator decisions").
+
+**Still open before the deploy** (none of them weakens a check):
+- X5 on the upright phone (390 x 844): toasts stack onto the joystick and Jump while riding, and
+  a toast that arrives after the dolphin bubble opened can lie over it. A product fix (a shorter
+  toast stack on phones, or the bubble moving again on a new toast), then
+  `probe-ocean --only=wave4a --x=5`.
+- The walkie on upright phones: its 22 px rings overlap hotbar slots and the joystick; it needs
+  a layout choice (smaller button or rings, or a new place).
+- R-F (far fish schools 14-21 blocks away) passed 7 of 10 runs on desktop; it must pass 10 in a
+  row on desktop and on iPad (ocean.md "P2 fish fixes"). ocean.md's older "Left as is" line about
+  different kinds swimming close together is replaced by `apartKinds`.
+- 16 of the 19 probe-hud-sizes sizes are still to run with the wave-4 states (`--sizes=` groups
+  of about 5).
+- The "full" card for a 7th player: check it is drawn above the Join keypad
+  (`.shots/net-six-zoe-full.png`).
+- The **owner** items of "Integrator decisions" above, then §11 steps 2-5 (the build, the full
+  gate of §10, one push to the live branch, the check on the live site).
