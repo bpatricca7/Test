@@ -696,7 +696,14 @@ Beach Cozy, desktop and iPad 1024 x 768 touch, `debug.merfolk.tips(true)`,
 | B14 | `timeout 570 node tools/probe-ocean.mjs --only=biomes,saves` | est. 4-6 min | not measured |
 | B15 | `timeout 570 node tools/probe-ocean.mjs --only=mp` | est. 4-5 min | not measured |
 | B16 | `timeout 570 node tools/probe-ocean.mjs --only=cost` | est. 5-6 min (C3 alone runs 3 min) | not measured |
-| B17 | `timeout 570 node tools/probe-ocean.mjs --only=wave4` | est. 4-6 min | not measured |
+| B17 | `timeout 570 node tools/probe-ocean.mjs --only=wave4a --x=1` (X1, the first deep swim: desktop and iPad, 25 s of frames each) | | not measured |
+| B17b | `timeout 570 node tools/probe-ocean.mjs --only=wave4a --x=2,3` (a mermaid and a sea dragon ride; from a stopped boat) | | green in [rf2-ride] |
+| B17c | `timeout 570 node tools/probe-ocean.mjs --only=wave4a --x=4` (a toy in the water) | | not measured |
+| B17d | `timeout 570 node tools/probe-ocean.mjs --only=wave4a --x=5` (the HUD at 390 x 844 and 1024 x 1366; fails on the phone until the owner decides, see "As built") | | not measured |
+| B17e | `timeout 570 node tools/probe-ocean.mjs --only=wave4b` (X6-X10; X7's two pages take about 3.5 min) | | 344 s on 724b031; X6-X10 green in [rf2-hud] (X7 alone after its timing change) |
+
+`--only=wave4` runs X1-X10 in one go but takes longer than one 570 s command, so the gate never
+uses it: B17-B17e split it with `--only=wave4a --x=N` and `--only=wave4b`.
 
 **C. The suites wave 4 touches most (about 90 minutes)**
 
@@ -744,7 +751,7 @@ Beach Cozy, desktop and iPad 1024 x 768 touch, `debug.merfolk.tips(true)`,
 | D15 | `timeout 570 node tools/e2e-accounts.mjs --only=8,9,10` (runs 1, 2, 8, 9, 10) | | not measured (closure: runs 1, 2, 8, 9, 10) |
 | D16-D22 | `timeout 570 node tools/probe-hud-sizes.mjs gate --sizes=X` for X = `390x844,844x390,1366x940`, `1366x1024,1180x820,1180x740`, `1180x700,1133x744,1133x660`, `1024x768,1024x690,1194x834`, `1194x750,1080x810,1080x700`, `1180x640,820x1180,768x1024`, `744x1133` (the wave-4 states; a group of 4 took up to 517 s) | | all 19 clear in [rf2-hud]: 186-376 s for a group of 3 |
 
-In all: 13 Node commands and about 70 browser commands, about **5 hours** of serial browser
+In all: 13 Node commands and about 80 browser commands, about **5 hours** of serial browser
 time. Order: A (stop at the first failure), B, C, D. After any fix, re-run its covering
 commands, then A again.
 
@@ -879,12 +886,53 @@ integration branch, never changed.
   460 s) belongs in the §10 gate.
 - [p2-docs]: §11 step 1 (this section, DESIGN.md §7, MULTIPLAYER.md, DATA-MAP.md, the home
   page, avatar.md, shops.md and the team docs' "Integrator decisions").
+- [p2-hud-finish]: on upright phones the walkie is 96 px at bottom 77, and while it shows the
+  joystick, Jump (or Up / Down) and the life column move 46 px up, so its pressed rings clear the
+  hotbar, the joystick and Up / Jump.
+- [review-fixes] (after a review of the merged tree): the server always joins the stored squishy
+  toys with an upload's (`mergeSquish`; test-saves S5b), so an old tab's stale copy never drops a
+  toy; dolphins part from the one she rides (`_apart` moves only the free one); the coin pill tip
+  waits for toasts; the dolphin bubble waits (hidden) when it has no free spot and a sticker pop
+  or toast would lie on it; no "Tap to say hi!" on an open-bubble, ridden or mounting dolphin or
+  during a present drop; no dive tip while riding; Just Me on a dolphin holds her toy; the choice
+  bubble closed by the dolphin bubble counts as one showing; the joystick label is set again on
+  a world load; the tail help picture's wave. Details in the three team docs' "As built".
+- [gate-A], [gate-B1]: §10.2 part A green on `08d2b92`; probe-merfolk split into `grids` and
+  `review` passes (B3b, B3c).
+- [rf2-ride]: probe-ocean R11 (no dolphin through the one she rides; `debug.ocean.setPod`); a
+  buddy from her last ride goes back to its pod when she mounts another (`_mountNow`);
+  probe-hud-sizes waits for the mount in game frames (at 1366x940 the 0.4 s mount took 7 s of
+  wall clock at about 1.4 frames a second: a probe timing, not a game fault).
+- [rf2-phone]: phones show one toast at a time (`src/ui/ui.js` `_toastRoom()`), in a narrower
+  column clear of the life column and the tools; toasts jump below a sticker pop with no slide;
+  on sideways phones new toasts wait while a pop shows and the walkie sits at right 240 /
+  bottom 94, so its rings clear the hotbar and Photo / Fly.
+- [rf2-six]: probe-multiplayer SIX checks that the "full" card is on top of the Join keypad and
+  that each "Let in!" gave a seat; it runs as C3b (MULTIPLAYER.md "Six players").
+- [rf2-hud]: probe-hud-sizes clear at all 19 sizes (D16-D22); probe-ocean X7's hop-off timed in
+  two parts.
+- [rf2-docs]: the notes above, the team docs' "As built" for these steps, MULTIPLAYER.md (6
+  players, the full card) and §10.2 (B17-B17e, C3b, D16-D22).
 
 **Still open before the deploy** (none of them weakens a check):
-- X5 on the upright phone (390 x 844): toasts stack onto the joystick and Jump while riding, and
-  a toast that arrives after the dolphin bubble opened can lie over it. A product fix (a shorter
-  toast stack on phones, or the bubble moving again on a new toast), then
-  `probe-ocean --only=wave4a --x=5`.
+- X5 on the upright phone (390 x 844), **owner** or design call. The toast stack onto the
+  joystick and Jump is fixed (one toast at a time on phones, [rf2-phone]), and a toast or pop
+  never covers the bubble any more ([review-fixes]). What is left: after Hop off, with a sticker
+  pop, a toast, Up / Down and the bubble all wanted at once, the bubble has no free spot and waits
+  (hidden) until the pop and the toast go, while X5 expects it at once. Either X5 accepts a
+  waiting bubble and checks that it shows once the pop and toast leave, or a new layout gives
+  it room (two-line toasts at 92vw fitted, but covered the life column and Hand). The check was
+  not changed; B17d fails on the phone until this is decided.
+- probe-squish `--only=touch` C2 on the iPads (1024x1366, 1366x1024) failed twice in
+  [review-fixes]: about 600 ms after `held()`, Squish! and Put away read as hidden or zero width,
+  yet show in the next picture. Not linked to those fixes so far; next, run it on `a3f8126`
+  (squishies.md "As built (integration review fixes)"). The check was not loosened.
+- The ride pictures for the daughter (§7.3, `wave4-ride-mermaid.png`, `ocean-ride-*.png`): no
+  dolphin crosses another any more, but the R10 camera cuts the ridden dolphin off at the bottom
+  and her hair hides most of the side-saddle tail (**owner** or design call before she sees them).
+- Small things for later (none blocks the deploy): the dolphin bubble moves between free spots
+  while a sticker pop animates; toasts already up on a sideways phone when a pop starts fade out
+  unseen; the walkie's busy label is cut with "..." on phones (older than wave 4).
 - ~~The walkie on upright phones: its 22 px rings overlap hotbar slots and the joystick~~ Done
   in [p2-hud-finish] (upright) and [rf2-phone] (sideways); probe-hud-sizes 390x844 and 844x390
   clear in [rf2-hud].
