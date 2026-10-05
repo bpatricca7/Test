@@ -8,8 +8,9 @@
 //            and privacy (B9)
 //   swim     cameras (B11), photos (B12), random swimming (B15), the candy sea (B16), the
 //            first-turn bubble (B17), tips (B18), boats, flying and zip lines (B10)
-//   studio   the Water tab, desktop then iPad (C1-C9), and the render grids for the owner (C5)
-//   grids    only the C5 render grids (also part of studio)
+//   studio   the Water tab, desktop then iPad (C1-C9)
+//   grids    the C5 render grids for the owner (a pass of its own since the wave-4 gate:
+//            studio, grids and review together went over 570 s)
 //   review   the owner's showcase pictures of the Sea Dragon (merfolk-review-*.png): the boy
 //            starter and the default girl from the front, three-quarter, side and back, in the
 //            water from the play camera, under water, at night, and next to a mermaid
@@ -1777,8 +1778,10 @@ async function main() {
         await studioPass(browser, errors);
         await studioPass(browser, errors, { touch: true });
       }
-      if (want('studio') || (only && only.includes('grids'))) await gridsPass(browser, errors);
-      if (want('studio') || (only && only.includes('review'))) await reviewPass(browser, errors);
+      // grids and review are their own passes (the gate runs them apart from studio: together
+      // the three went over the 570 s limit at load 4); the default run still runs all three
+      if (want('grids')) await gridsPass(browser, errors);
+      if (want('review')) await reviewPass(browser, errors);
       if (want('touch')) await touchPass(browser, errors);
       if (want('friends')) await friendsPass(browser, errors);
       if (want('costs')) await costsPass(browser, errors);
