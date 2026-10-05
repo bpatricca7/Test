@@ -1404,6 +1404,11 @@ async function touchPass(browser, errors) {
   await waitOk(page, () => !document.querySelector('.sw-stkpop'), null, 15000);
   await page.waitForTimeout(500);
   await waitOk(page, () => !document.querySelector('.sw-stkpop'), null, 15000);
+  // and merfolk's turn in deep water (its "Mermaid magic!" toast, Sea Magic! being hers already)
+  // has come and gone too
+  await waitOk(page, () => !!window.__game.player.seaSwim, null, 10000);
+  await page.waitForTimeout(500);
+  await waitOk(page, () => !document.querySelector('.sw-toasts .sw-toast') && !document.querySelector('.sw-stkpop'), null, 10000);
   await ev(page, () => {
     const g = window.__game, d = g.debug.ocean, p = g.player.position, cam = g.cameraRig;
     d.spawn('dolphin', p.x + Math.sin(cam.yaw) * 3.5, p.y, p.z + Math.cos(cam.yaw) * 3.5, { n: 2 });
