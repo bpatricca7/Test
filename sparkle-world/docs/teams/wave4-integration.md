@@ -678,11 +678,11 @@ Beach Cozy, desktop and iPad 1024 x 768 touch, `debug.merfolk.tips(true)`,
 
 | # | command | earlier / estimate | baseline |
 |---|---|---|---|
-| B1 | `timeout 570 node tools/smoke.mjs` | 84-153 s | 102 s |
-| B2 | `timeout 570 node tools/probe-merfolk.mjs --only=unit,water` | est. 6-8 min (merfolk splits `water` if over 450 s) | not measured |
-| B3 | `timeout 570 node tools/probe-merfolk.mjs --only=studio` | est. 4-5 min | not measured |
-| B3b | `timeout 570 node tools/probe-merfolk.mjs --only=grids` (the C5 render grids: a pass of its own since [gate-B1]; studio, grids and review together went over 570 s) | | not measured |
-| B3c | `timeout 570 node tools/probe-merfolk.mjs --only=review` (the owner's Sea Dragon showcase pictures) | | not measured |
+| B1 | `timeout 570 node tools/smoke.mjs` | 84-153 s | 102 s; 141 s green in [gate-B1] |
+| B2 | `timeout 570 node tools/probe-merfolk.mjs --only=unit,water` | est. 6-8 min (merfolk splits `water` if over 450 s) | 289 s, 45 green in [gate-B1] |
+| B3 | `timeout 570 node tools/probe-merfolk.mjs --only=studio` | est. 4-5 min | 230 s, 37 green in [gate-B1] |
+| B3b | `timeout 570 node tools/probe-merfolk.mjs --only=grids` (the C5 render grids: a pass of its own since [gate-B1]; studio, grids and review together went over 570 s) | | 208 s, 6 grids, green in [gate-B1] |
+| B3c | `timeout 570 node tools/probe-merfolk.mjs --only=review` (the owner's Sea Dragon showcase pictures) | | 243 s, 8 green in [gate-B1] |
 | B4 | `timeout 570 node tools/probe-merfolk.mjs --only=touch,friends` | est. 4-5 min | not measured |
 | B5 | `timeout 570 node tools/probe-merfolk.mjs --only=costs,save` | est. 4-6 min | not measured |
 | B6 | `timeout 570 node tools/probe-squish.mjs --only=desktop` | est. 6-8 min | not measured |
