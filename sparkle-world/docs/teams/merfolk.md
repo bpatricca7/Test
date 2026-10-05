@@ -1651,7 +1651,11 @@ makes a new candy world when the random one has no deep milk near the start.
   headphones), so the horns are left out there; an unknown accessory key also gives none. A
   fauxhawk moves them out past its ridge. Grids: heads, headsBack, hair (front, back, girl side).
 - **Land after a swim**: the picture looks from over the water at him on the beach (he faces
-  the sea), checked to stand back more than 2.5 blocks.
+  the sea); it tries a few angles until the camera stands well back (a tree in a random world
+  once put it in his head), checked at more than 2.5 blocks.
+- **Probe timing**: B1 (tail grown) and B18 (dive tip) now wait in game time, like the rest of
+  the probe; on a loaded software GPU the wall-clock waits ran out first. B16 can need a new
+  candy world when the random one has no deep milk near the start (it tries up to 3).
 - **Friends**: Aria and Leo pass `seaFloat` too (head out of the water), so a friend Sea Dragon
   floats like the player instead of hanging its tail down.
 - **First-turn cost (B13c), measured** (same command on all three builds, lock held, no other
