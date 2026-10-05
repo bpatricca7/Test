@@ -20,8 +20,12 @@
 //   mp      two pages: a friend's ride, the shared whale, her own hellos, a page that closes,
 //           joining late, a friend's trick, the buddy's name
 //   cost    draw calls, the systems stage, geometries over time, NaN-free, the gallery (C5)
+//   wave4a  the cross-team pass, part one (wave4-integration.md §9.1 X1-X5): the first deep swim
+//           one thing at a time, a mermaid and a sea dragon riding, Ride from a stopped boat, a
+//           toy in the water, the HUD with everything at once (--x=1,3 runs only some of them;
+//           --only=wave4 runs every part)
 //
-//   node tools/probe-ocean.mjs [--only=world,see,tap,ride,touch,biomes,saves,mp,cost,gallery] [--headed]
+//   node tools/probe-ocean.mjs [--only=world,see,tap,ride,touch,biomes,saves,mp,wave4a,cost,gallery] [--headed]
 //   (cost includes the gallery, C5; --only=cost --part=1 leaves it out and --only=gallery runs C5
 //   alone, so each fits a shorter time limit; --only=review makes the
 //   owner-review pictures, ocean-review-*.png, and is never part of the default run;
@@ -29,7 +33,7 @@
 //
 // P2 on the merged tree with merfolk: R10 (a mermaid and a sea dragon riding, in `ride`; the
 // pictures wave4-ride-mermaid.png, wave4-ride-dragon.png), T3b's camera under the surface (in
-// `tap`), U1's Up / Down rectangles (in `touch`). Not here yet: the cross-team `wave4` pass.
+// `tap`), U1's Up / Down rectangles (in `touch`), the cross-team pass's part one (`wave4a`).
 
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -2709,6 +2713,415 @@ async function dolphinViews(browser, errors) {
 }
 
 // =====================================================================================
+// wave4 (plan docs/teams/wave4-integration.md §9.1), part one: X1-X5 (--only=wave4a;
+// --only=wave4 runs every part written so far). Beach Cozy with the three popup switches on:
+// debug.merfolk.tips(true), debug.ocean.popups(true), debug.squish.presents(true).
+// =====================================================================================
+
+const IPAD = { width: 1024, height: 768 };
+
+/** A beach world with the three switches on, the sounds recorded. */
+async function wave4World(page, { asked = true } = {}) {
+  await newWorld(page, 'beach');
+  await ev(page, (asked) => {
+    const g = window.__game;
+    g.debug.merfolk.tips(true);
+    g.debug.ocean.popups(true);
+    g.debug.squish.presents(true);
+    if (asked) g.store.deviceSet('seaAsked', 2); // X1 alone meets the first-turn choice bubble
+    g.__seaformEvents = [];
+    g.events.on('player:seaform', (e) => g.__seaformEvents.push(e && e.form));
+    window.__sounds = [];
+    const play = g.audio.play.bind(g.audio);
+    g.audio.play = (name, o) => { window.__sounds.push(name); return play(name, o); };
+  }, asked);
+}
+
+/** Tap (touch) or click the nearest wild dolphin in front of her; resolves true once the bubble's Ride shows. */
+async function tapDolphin(page, touch, spawn = true) {
+  if (spawn) {
+    await ev(page, () => {
+      const g = window.__game, d = g.debug.ocean, p = g.player.position, cam = g.cameraRig;
+      d.clear();
+      d.autoSpawn(false);
+      d.spawn('dolphin', p.x + Math.sin(cam.yaw) * 3.5, p.y, p.z + Math.cos(cam.yaw) * 3.5, { n: 2 });
+    });
+    await page.waitForTimeout(300);
+  }
+  const d0 = await ev(page, () => {
+    const g = window.__game, p = g.player.position;
+    const l = g.debug.ocean.list('dolphin').filter((r) => r.role === 'wild' && (!r.scale || r.scale === 1));
+    l.sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z));
+    return l[0] || null;
+  });
+  if (!d0) return false;
+  await aim(page, d0.x, d0.y, d0.z, 0.25);
+  await freeze(page, true);
+  let pt = null;
+  for (let t = 0; t < 30; t++) {
+    pt = await recPoint(page, 'dolphin', d0.i, 0.2);
+    const h = await pickAt(page, pt);
+    if (h && h.kind === 'dolphin') break;
+    await page.waitForTimeout(100);
+  }
+  if (pt) { if (touch) await page.touchscreen.tap(pt.x, pt.y); else await page.mouse.click(pt.x, pt.y); }
+  await freeze(page, false);
+  if (!(await waitOk(page, () => !!document.querySelector('.oc-bubble.lf-on .oc-ride'), null, 3000))) {
+    console.log('    (the tap missed the moving dolphin: tapped through the debug API)');
+    await ev(page, (i) => window.__game.debug.ocean.tapRec('dolphin', i), d0.i);
+  }
+  return waitOk(page, () => !!document.querySelector('.oc-bubble.lf-on .oc-ride'), null, 3000);
+}
+
+async function pressRide(page, touch) {
+  const b = page.locator('.oc-bubble.lf-on .oc-ride');
+  if (touch) await b.tap(); else await b.click();
+  return waitOk(page, () => window.__game.ocean.riding, null, 8000);
+}
+
+const joyLabel = (page) => ev(page, () => (document.querySelector('.sw-joy-label') || {}).textContent || null);
+const upDownShown = (page) => ev(page, () => [...document.querySelectorAll('.sw-touch .sw-flybtn')].filter((e) => e.offsetParent && getComputedStyle(e).visibility !== 'hidden').length);
+const jumpShown = (page) => ev(page, () => [...document.querySelectorAll('.sw-touch [aria-label="Jump"]')].some((e) => e.offsetParent && !e.hidden));
+const roundShown = (page, action) => ev(page, (a) => { const b = document.querySelector(`.lf-hud .sw-round[data-action="${a}"]`); return !!b && !b.hidden && !!b.offsetParent; }, action);
+
+// ---------- X1 the first deep swim: one thing at a time ----------
+async function wave4X1(browser, errors) {
+  console.log('\n[wave4] X1 the first deep swim, fresh profile, style never picked (desktop)');
+  const { context, page } = await openGame(browser, { errors, label: 'x1' });
+  await wave4World(page, { asked: false });
+  const sh = await ev(page, () => window.__game.debug.merfolk.shore());
+  if (!check(errors, !!sh, 'X1 a deep spot next to the beach')) { await context.close(); return; }
+  const sq0 = await ev(page, () => { const s = window.__game.debug.squish.state(); return { ready: s.ready, toNext: s.toNext, style: window.__game.surpriseStyle ? window.__game.surpriseStyle() : null, form: window.__game.profile.look.sea && window.__game.profile.look.sea.form }; });
+  console.log('    (X1 start ' + JSON.stringify(sq0) + ')');
+  // every frame: which of the four is showing (a state change is kept; a pair is counted)
+  await ev(page, () => {
+    const vis = (el) => { if (!el || !el.isConnected) return null; const cs = getComputedStyle(el); if (cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity < 0.05) return null; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 ? r : null; };
+    const first = (sel) => { for (const e of document.querySelectorAll(sel)) { const r = vis(e); if (r) return r; } return null; };
+    const X = window.__x1 = { on: true, t0: performance.now(), n: 0, log: [], pairs: {}, popOver: 0, sig: '' };
+    const f = () => {
+      if (!X.on) return;
+      const pop = first('.sw-stkpop'), mf = first('.lf-bubble.lf-on[data-owner="merfolk"]'), oc = first('.lf-bubble.lf-on[data-owner="ocean"]'), drop = first('.sq-drop');
+      const on = { pop: !!pop, merfolk: !!mf, ocean: !!oc, drop: !!drop };
+      const names = Object.keys(on).filter((k) => on[k]);
+      for (let i = 0; i < names.length; i++) for (let j = i + 1; j < names.length; j++) { const k = names[i] + '+' + names[j]; X.pairs[k] = (X.pairs[k] || 0) + 1; }
+      if (pop && oc && pop.left < oc.right - 2 && oc.left < pop.right - 2 && pop.top < oc.bottom - 2 && oc.top < pop.bottom - 2) X.popOver++;
+      const sig = names.join('+');
+      if (sig !== X.sig) { X.sig = sig; X.log.push([Math.round(performance.now() - X.t0), sig]); }
+      X.n++;
+      requestAnimationFrame(f);
+    };
+    f();
+  });
+  // walk in from the beach
+  await ev(page, ([s, yaw]) => { const g = window.__game; g.player.setFlying(false); g.player.teleport(s[0], s[1] + 0.05, s[2]); g.cameraRig.yaw = yaw; g.player.yaw = yaw; }, [sh.land, Math.atan2(-sh.dir[0], -sh.dir[1])]);
+  await page.waitForTimeout(400);
+  await page.keyboard.down('KeyW');
+  const turned = await waitOk(page, () => !!window.__game.player.seaForm, null, 20000);
+  await page.waitForTimeout(1200); // a little further out
+  await page.keyboard.up('KeyW');
+  check(errors, turned, 'X1 walking in from the beach she turns (auto, never picked)');
+  // merfolk's choice bubble: a tap on Mermaid
+  const mfShown = await waitOk(page, () => !!window.__game.debug.merfolk.bubble(), null, 30000);
+  if (mfShown) {
+    await page.waitForTimeout(800);
+    await page.locator('.lf-bubble[data-owner="merfolk"] button[aria-label="Mermaid"]').click({ force: true, timeout: 5000 }).catch(() => {});
+  }
+  await waitOk(page, () => !window.__game.debug.merfolk.bubble() && !document.querySelector('.sw-stkpop'), null, 20000);
+  // a dolphin of her first pod: a real click (the bubble, Dolphin Friend, the hello's coins)
+  await ev(page, () => { const g = window.__game, p = g.player.position, d = g.debug.ocean; if (!d.list('dolphin').some((r) => r.role === 'wild' && Math.hypot(r.x - p.x, r.z - p.z) < 8)) { const cam = g.cameraRig; d.spawn('dolphin', p.x + Math.sin(cam.yaw) * 3.5, p.y, p.z + Math.cos(cam.yaw) * 3.5, { n: 2 }); } });
+  await page.waitForTimeout(300);
+  const tapped = await tapDolphin(page, false, false);
+  check(errors, tapped, 'X1 a click on a dolphin of her pod opens its bubble');
+  // the present those coins made ready drops once everything else is gone
+  const dropped = await waitOk(page, () => !!document.querySelector('.sq-drop'), null, 90000);
+  await page.waitForTimeout(500);
+  const x = await ev(page, () => {
+    const g = window.__game, X = window.__x1;
+    X.on = false;
+    return { n: X.n, ms: Math.round(performance.now() - X.t0), log: X.log, pairs: X.pairs, popOver: X.popOver, stickers: g.__probeEvents.filter((e) => e.name === 'sticker:earned').map((e) => e.sticker), ready: g.debug.squish.state().ready, opened: g.debug.squish.state().opened };
+  });
+  console.log('    (X1 ' + JSON.stringify(x) + ')');
+  const bad = Object.keys(x.pairs).filter((k) => k !== 'pop+ocean');
+  check(errors, x.ms >= 25000 && x.n > 50, `X1 recorded every frame from the walk-in to the drop (${(x.ms / 1000).toFixed(1)} s, ${x.n} frames, >= 25 s)`);
+  check(errors, bad.length === 0, `X1 never two in the same frame among the pop, merfolk's bubble, the dolphin bubble and the drop (${JSON.stringify(x.pairs)})`);
+  check(errors, x.popOver === 0, `X1 the dolphin bubble the kid tapped open never lies over the sticker pop (${x.popOver} frames; ${x.pairs['pop+ocean'] || 0} frames side by side)`);
+  const iM = x.stickers.indexOf('sea_magic'), iD = x.stickers.indexOf('dolphin_friend');
+  check(errors, iM >= 0 && iD > iM, `X1 Sea Magic! then Dolphin Friend pop (${x.stickers.join(', ')})`);
+  const mfOn = x.log.filter((l, k) => l[1].includes('merfolk') && !(k > 0 && x.log[k - 1][1].includes('merfolk'))).length;
+  check(errors, mfOn === 1, `X1 merfolk's choice bubble shows once (${mfOn})`);
+  const dropAt = (x.log.find((l) => l[1].includes('drop')) || [null])[0];
+  const lastOther = Math.max(-1, ...x.log.filter((l) => l[0] < (dropAt === null ? Infinity : dropAt) && /pop|merfolk|ocean/.test(l[1])).map((l) => l[0]));
+  check(errors, sq0.ready === 0 && dropped && dropAt !== null && dropAt > lastOther && x.ready + x.opened >= 1, `X1 the present those coins made ready (to go ${sq0.toNext} at the start) drops only after all are gone (drop at ${dropAt} ms, the last other at ${lastOther} ms)`);
+  await shot(page, 'x1-drop', 'wave4');
+  await context.close();
+}
+
+// ---------- X2 a mermaid (then a sea dragon with Boy picked) rides ----------
+async function wave4X2(browser, errors) {
+  console.log('\n[wave4] X2 a mermaid and a sea dragon ride (iPad 1024x768 touch)');
+  const { context, page } = await openGame(browser, { errors, viewport: IPAD, touch: true, label: 'x2' });
+  await wave4World(page);
+  const deep = await ev(page, () => window.__game.debug.ocean.deepSpot());
+  // her first swim's stickers out of the way (Big Leap! stays to earn)
+  await ev(page, () => { const g = window.__game; g.award('splash'); g.award('sea_magic'); g.award('dolphin_friend'); });
+  await waitOk(page, () => !!document.querySelector('.sw-stkpop'), null, 3000);
+  for (let k = 0; k < 3; k++) await waitOk(page, () => !document.querySelector('.sw-stkpop'), null, 15000).then(() => page.waitForTimeout(400));
+  for (const [form, pic, boy] of [['mermaid', 'ride-mermaid', false], ['sea_dragon', 'ride-dragon', true]]) {
+    if (boy) await ev(page, () => { const g = window.__game; g.store.deviceSet('surpriseStyle', 'boy'); g.events.emit('style:changed', { style: 'boy' }); });
+    await float(page, true);
+    await goTo(page, deep);
+    const turned = await waitOk(page, (f) => window.__game.player.seaForm === f && !!(window.__game.debug.merfolk.parts() || {}).shown, form, 15000);
+    check(errors, turned, `X2 ${boy ? 'Boy picked, auto' : 'never picked, auto'}: she turns into a ${form}`);
+    await page.waitForTimeout(600);
+    const open = await tapDolphin(page, true);
+    await ev(page, () => { const g = window.__game; g.__seaformEvents.length = 0; window.__sounds.length = 0; window.__w4ride = null; });
+    const rode = open && await pressRide(page, true);
+    // every frame of the ride: the form set and the tail shown
+    await ev(page, () => {
+      const g = window.__game, R = window.__w4ride = { n: 0, noForm: 0, hidden: 0, on: true };
+      const f = () => { if (!R.on) return; R.n++; if (!g.player.seaForm) R.noForm++; if (!(g.debug.merfolk.parts() || {}).shown) R.hidden++; requestAnimationFrame(f); };
+      f();
+    });
+    await page.waitForTimeout(800);
+    const r = await ev(page, () => {
+      const g = window.__game, loc = g.net && g.net.adapter ? g.net.adapter.local() : null;
+      return { st: loc && loc.st, sr: loc && loc.sr };
+    });
+    const ud = await upDownShown(page), jump = await jumpShown(page), label = await joyLabel(page);
+    check(errors, rode && r.st === 'h' && r.sr !== null && r.sr !== undefined, `X2 ${form} Ride: presence st 'h', sr set (${JSON.stringify(r)})`);
+    check(errors, ud === 0 && jump && label === 'Ride', `X2 ${form} riding: Up / Down hidden (${ud}), Jump shown (${jump}), the label "${label}"`);
+    if (!boy) {
+      const jb = page.locator('.sw-touch [aria-label="Jump"]').first();
+      await jb.tap();
+      check(errors, await waitOk(page, () => window.__game.stickers.has('big_leap'), null, 4000), 'X2 Jump on the dolphin: Big Leap! (fresh profile)');
+      await page.waitForTimeout(1500);
+    }
+    // the picture, three-quarters from in front (as R10), the HUD out of the way
+    const dist0 = await ev(page, () => { const g = window.__game, s = g.debug.ocean.rideState(), cam = g.cameraRig, d = cam.distance; cam.yaw = s.yaw + Math.PI * 0.75; cam.pitch = 0.28; cam.distance = 2.2; return d; });
+    await cleanView(page, true, true);
+    await settle(page, 1200);
+    await shot(page, pic, 'wave4');
+    await cleanView(page, false, true);
+    await ev(page, (d) => { window.__game.cameraRig.distance = d; }, dist0);
+    await page.locator('.lf-hud [data-action="seahop"]').tap();
+    await page.waitForTimeout(800);
+    const off = await ev(page, () => {
+      const g = window.__game, R = window.__w4ride;
+      R.on = false;
+      return { riding: g.ocean.riding, form: g.player.seaForm, shown: !!(g.debug.merfolk.parts() || {}).shown, events: g.__seaformEvents.slice(), magic: window.__sounds.filter((s) => s === 'magic').length, R };
+    });
+    check(errors, off.R.n > 5 && off.R.noForm === 0 && off.R.hidden === 0 && off.events.length === 0, `X2 ${form}: seaForm set and the tail shown on every frame of the ride, no 'player:seaform' (${JSON.stringify(off.R)}, ${off.events.length} events)`);
+    const ud2 = await upDownShown(page), label2 = await joyLabel(page);
+    check(errors, !off.riding && off.form === form && off.shown && label2 === 'Swim' && ud2 === 2 && off.magic === 0, `X2 ${form} Hop off: the label "${label2}", Up / Down shown (${ud2}), the tail still out, no magic sound (${off.magic})`);
+  }
+  await context.close();
+}
+
+// ---------- X3 Ride from a stopped boat ----------
+async function wave4X3(browser, errors) {
+  console.log('\n[wave4] X3 Ride from a stopped boat (iPad 1024x768 touch)');
+  const { context, page } = await openGame(browser, { errors, viewport: IPAD, touch: true, label: 'x3' });
+  await wave4World(page);
+  await ev(page, () => { const g = window.__game; g.award('splash'); g.award('sea_magic'); g.award('dolphin_friend'); g.award('dolphin_rider'); });
+  const deep = await ev(page, () => window.__game.debug.ocean.deepSpot());
+  const boat = await ev(page, async (d) => {
+    const g = window.__game;
+    g.debug.ocean.clear();
+    g.debug.ocean.autoSpawn(false);
+    const x = Math.floor(d[0]), z = Math.floor(d[2]), y = g.ocean.map.top(x, z);
+    g.player.teleport(d[0], d[1], d[2]);
+    const e = g.entities.place('boat_speed', x, y, z, 0, null, {}, { history: false, players: false });
+    if (!e) return null;
+    g.debug.vehicles.drive(e.uid);
+    await new Promise((r) => setTimeout(r, 600));
+    return e.uid;
+  }, deep);
+  if (!check(errors, !!boat, 'X3 a Speedboat parked on deep water, she drives it')) { await context.close(); return; }
+  await waitOk(page, () => Math.abs(window.__game.vehicles.pose().speed) < 1, null, 8000);
+  const before = await ev(page, () => window.__game.debug.merfolk.state());
+  const opened = await ev(page, async () => {
+    const g = window.__game, d = g.debug.ocean, b = g.vehicles.pose();
+    d.spawn('dolphin', b.x + 2.5, b.y, b.z, { n: 2 });
+    await new Promise((r) => setTimeout(r, 150));
+    const r = d.list('dolphin').find((q) => Math.hypot(q.x - b.x, q.z - b.z) <= 4) || d.list('dolphin')[0];
+    d.tapRec('dolphin', r.i);
+    await new Promise((r) => setTimeout(r, 300));
+    return d.bubble() && d.bubble().from;
+  });
+  // (T2 clicks the stopped boat's dolphin for real; here the tap goes through the debug API so
+  // the moment of mounting is exact)
+  check(errors, opened === 'boat', `X3 a dolphin beside the stopped boat: the bubble offers Ride (${opened}; on the boat the gate was ${before.gateOn ? 'on' : 'off'})`);
+  await page.locator('.oc-bubble.lf-on .oc-ride').tap();
+  const at = await ev(page, () => new Promise((res) => {
+    const g = window.__game, t0 = performance.now();
+    const f = () => { if (g.ocean.riding) { const s = g.debug.merfolk.state(); return res({ gateOn: s.gateOn, seaSwim: s.seaSwim, boat: !!g.vehicles.current }); } if (performance.now() - t0 > 5000) return res(null); requestAnimationFrame(f); };
+    f();
+  }));
+  check(errors, at && at.gateOn && at.seaSwim && !at.boat, `X3 Ride from the boat: the gate on and seaSwim true on the first riding frame (C3) (${JSON.stringify(at)})`);
+  await page.waitForTimeout(800);
+  await page.locator('.lf-hud [data-action="seahop"]').tap();
+  await page.waitForTimeout(800);
+  const label = await joyLabel(page), ud = await upDownShown(page);
+  check(errors, label === 'Swim' && ud === 2, `X3 Hop off: the label "${label}", Up / Down shown (${ud})`);
+  await context.close();
+}
+
+// ---------- X4 a toy in the water ----------
+async function wave4X4(browser, errors) {
+  console.log('\n[wave4] X4 a toy in the water (desktop)');
+  const { context, page } = await openGame(browser, { errors, label: 'x4' });
+  await wave4World(page);
+  await ev(page, () => { const g = window.__game; g.award('splash'); g.award('sea_magic'); g.award('dolphin_friend'); g.award('dolphin_rider'); g.award('big_leap'); g.debug.squish.give('pf_dolphin'); });
+  const sh = await ev(page, () => window.__game.debug.merfolk.shore());
+  const holdFromShelf = async () => {
+    await ev(page, () => window.__game.ui.open('squish'));
+    await page.waitForSelector('.sw-panel-wrap.sw-open .sq-grid');
+    await page.locator('.sq-cubby[data-key=pf_dolphin]').click();
+    await page.locator('.sq-detail .sw-btn', { hasText: 'Hold it' }).click();
+    return waitOk(page, () => !window.__game.ui.current && window.__game.squish.held() === 'squish_pf_dolphin', null, 4000);
+  };
+  // on the sand: hold it
+  await ev(page, (s) => { const g = window.__game; g.player.setFlying(false); g.player.teleport(s[0], s[1] + 0.05, s[2]); }, sh.land);
+  await page.waitForTimeout(500);
+  check(errors, await holdFromShelf(), 'X4 Hold it on the sand: the Dolphin Puffum in her hand');
+  // swim deep: hidden, Squish! hidden, Put away shown, presence hi still the toy
+  const deep = await ev(page, () => window.__game.debug.ocean.deepSpot());
+  await float(page, true);
+  await goTo(page, deep);
+  await waitOk(page, () => !!window.__game.player.seaForm && !!(window.__game.debug.merfolk.parts() || {}).shown, null, 15000);
+  await page.waitForTimeout(600);
+  const w = await ev(page, () => { const g = window.__game; return { shown: g.player.avatar.heldShown, held: !!g.player.avatar.held, hi: g.net && g.net.adapter ? g.net.adapter.local().hi : 'no adapter' }; });
+  const sqBtn = await roundShown(page, 'squish'), away = await roundShown(page, 'squish-away');
+  check(errors, w.held && w.shown === false && !sqBtn && away && w.hi === 'squish_pf_dolphin', `X4 swimming deep: the toy hidden (${w.shown}), Squish! hidden (${!sqBtn}), Put away shown (${away}), presence hi ${w.hi}`);
+  // walk out: it shows again and Squish! squashes it
+  await float(page, false);
+  await ev(page, (s) => { const g = window.__game; g.player.teleport(s[0], s[1] + 0.05, s[2]); }, sh.land);
+  const back = await waitOk(page, () => window.__game.player.avatar.heldShown !== false && !window.__game.player.seaForm, null, 8000);
+  const sq2 = await waitOk(page, () => { const b = document.querySelector('.lf-hud .sw-round[data-action="squish"]'); return b && !b.hidden && !!b.offsetParent; }, null, 3000);
+  let sy = 9;
+  if (sq2) {
+    const bb = await page.locator('.lf-hud .sw-round[data-action="squish"]').boundingBox();
+    await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
+    await page.mouse.down();
+    await page.waitForTimeout(250);
+    sy = await ev(page, () => window.__game.debug.squish.handSy());
+    await page.mouse.up();
+  }
+  check(errors, back && sq2 && sy < 0.6, `X4 out of the water: the toy shows again, Squish! squashes it (sy ${typeof sy === 'number' ? sy.toFixed(2) : sy})`);
+  // Just Me on a dolphin: the toy shows (as on a pony)
+  await ev(page, () => { const g = window.__game; g.profile.look.sea = { form: 'me', color: null }; g.events.emit('avatar:changed', { look: g.profile.look }); });
+  await float(page, true);
+  await goTo(page, deep);
+  await page.waitForTimeout(600);
+  const rode = await tapDolphin(page, false) && await pressRide(page, false);
+  await page.waitForTimeout(800);
+  const me = await ev(page, () => { const g = window.__game; return { riding: g.ocean.riding, form: g.player.seaForm || null, shown: g.player.avatar.heldShown, held: g.squish.held() }; });
+  check(errors, rode && me.riding && me.shown === true && me.held === 'squish_pf_dolphin', `X4 Just Me on a dolphin holds the toy where it shows (${JSON.stringify(me)})`);
+  await ev(page, () => window.__game.debug.ocean.hopOff('button'));
+  // "Hold it" from the shelf while swimming
+  await ev(page, () => { const g = window.__game; g.squish.putAway(); g.profile.look.sea = { form: 'mermaid', color: null }; g.events.emit('avatar:changed', { look: g.profile.look }); window.__toasts.length = 0; });
+  await waitOk(page, () => !!window.__game.player.seaForm, null, 10000);
+  await holdFromShelf();
+  check(errors, await toastSeen(page, /^Swim to the shore first!$/, 3000), 'X4 "Hold it" while swimming: "Swim to the shore first!"');
+  await context.close();
+}
+
+// ---------- X5 the HUD with everything at once ----------
+async function wave4X5(browser, errors) {
+  for (const [name, viewport] of [['phone', { width: 390, height: 844 }], ['ipad-portrait', { width: 1024, height: 1366 }]]) {
+    console.log(`\n[wave4] X5 the HUD with everything at once (${name} ${viewport.width}x${viewport.height} touch)`);
+    const { context, page } = await openGame(browser, { errors, viewport, touch: true, label: 'x5-' + name });
+    await wave4World(page);
+    await ev(page, () => { const g = window.__game; g.award('splash'); g.award('sea_magic'); g.award('dolphin_friend'); g.award('dolphin_rider'); g.award('big_leap'); g.debug.squish.give('pf_dolphin'); });
+    await waitOk(page, () => !!document.querySelector('.sw-stkpop'), null, 3000);
+    for (let k = 0; k < 5; k++) await waitOk(page, () => !document.querySelector('.sw-stkpop'), null, 15000).then(() => page.waitForTimeout(400));
+    // a toy held (on the land), a present waiting (its button and the ring)
+    await ev(page, () => { const g = window.__game; g.ui.open('squish'); });
+    await page.waitForSelector('.sw-panel-wrap.sw-open .sq-grid');
+    await page.locator('.sq-cubby[data-key=pf_dolphin]').tap();
+    await page.locator('.sq-detail .sw-btn', { hasText: 'Hold it' }).tap();
+    await waitOk(page, () => !window.__game.ui.current && window.__game.squish.held() === 'squish_pf_dolphin', null, 4000);
+    const toNext = await ev(page, () => window.__game.debug.squish.state().toNext);
+    await ev(page, (n) => window.__game.coins.add(n, 'gift', { fly: false }), toNext);
+    const present = await waitOk(page, () => { const b = document.querySelector('.lf-hud .sw-round[data-action="present"]'); return !!b && !b.hidden; }, null, 6000);
+    await waitOk(page, () => !!document.querySelector('.sq-drop'), null, 4000);
+    await waitOk(page, () => !document.querySelector('.sq-drop'), null, 12000); // it flies to the Present button
+    // riding, a toast up and a sticker pop showing
+    const deep = await ev(page, () => window.__game.debug.ocean.deepSpot());
+    await float(page, true);
+    await goTo(page, deep);
+    await waitOk(page, () => !!window.__game.player.seaSwim, null, 10000);
+    await page.waitForTimeout(600);
+    const rode = await tapDolphin(page, true) && await pressRide(page, true);
+    let crowdN = 0;
+    const crowd = async () => {
+      await ev(page, (id) => {
+        const g = window.__game;
+        g.registry.stickers.set(id, { id, name: 'Probe', hint: '', icon: 'star' });
+        g.award(id);
+        g.toast('Splash! Off you go!', { icon: 'sparkle' });
+      }, 'probe_x5_' + ++crowdN);
+      await waitOk(page, () => !!document.querySelector('.sw-stkpop') && !!document.querySelector('.sw-toasts .sw-toast'), null, 6000);
+      await page.waitForTimeout(400);
+    };
+    const RECTS5 = () => {
+      const r = (g, sel) => [...document.querySelectorAll(sel)].filter((e) => e.offsetParent && getComputedStyle(e).visibility !== 'hidden' && !e.hidden).map((e) => { const b = e.getBoundingClientRect(); return { g, sel: e.getAttribute('data-action') || e.getAttribute('aria-label') || sel, x: b.left, y: b.top, w: b.width, h: b.height }; }).filter((b) => b.w > 0 && b.h > 0);
+      return [
+        ...r('life', '.lf-hud .sw-round:not([hidden])'), ...r('joy', '.sw-joy'), ...r('jump', '.sw-touch [aria-label="Jump"]'),
+        ...r('updown', '.sw-touch .sw-flybtn'), ...r('coins', '.sw-coins'), ...r('coins', '.sw-coins-ring'),
+        ...r('bubble', '.oc-bubble.lf-on'), ...r('toast', '.sw-toasts .sw-toast'), ...r('pop', '.sw-stkpop'),
+      ];
+    };
+    const overlaps = (rs) => {
+      const out = [];
+      for (let i = 0; i < rs.length; i++) for (let j = i + 1; j < rs.length; j++) {
+        const a = rs[i], b = rs[j];
+        if (a.g === b.g) continue;
+        const ix = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x), iy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+        if (ix > 2 && iy > 2) out.push(`${a.g}:${a.sel} x ${b.g}:${b.sel}`);
+      }
+      return out;
+    };
+    await crowd();
+    const a = await ev(page, RECTS5);
+    const ga = [...new Set(a.map((q) => q.g))].sort();
+    const oa = overlaps(a);
+    check(errors, rode && present && ['coins', 'joy', 'jump', 'life', 'pop', 'toast'].every((g) => ga.includes(g)) && a.some((q) => q.sel === 'present') && a.some((q) => q.sel === 'squish-away'), `X5 ${name} riding: the joystick, Jump, the life column with Present and Put away, the coins and ring, a toast and a pop all show (${ga.join(', ')})`);
+    check(errors, oa.length === 0, `X5 ${name} riding: no two overlap (${oa.join('; ') || 'none'})`);
+    await shot(page, `x5-${name}-riding`, 'wave4');
+    // just after Hop off: Up / Down back, the dolphin bubble open
+    await page.locator('.lf-hud [data-action="seahop"]').tap();
+    await waitOk(page, () => !window.__game.ocean.riding, null, 3000);
+    await waitOk(page, () => !document.querySelector('.sw-stkpop'), null, 15000);
+    await page.waitForTimeout(400);
+    const bub = await tapDolphin(page, true);
+    await crowd();
+    const b = await ev(page, RECTS5);
+    const gb = [...new Set(b.map((q) => q.g))].sort();
+    const ob = overlaps(b);
+    check(errors, bub && ['bubble', 'coins', 'joy', 'life', 'pop', 'toast', 'updown'].every((g) => gb.includes(g)), `X5 ${name} after Hop off: Up / Down, the dolphin bubble, the life column, the coins, a toast and a pop all show (${gb.join(', ')})`);
+    check(errors, ob.length === 0, `X5 ${name} after Hop off: no two overlap (${ob.join('; ') || 'none'})`);
+    await shot(page, `x5-${name}-hopoff`, 'wave4');
+    // five different pictures: Present, Squish!, Put away, the dolphin, Hop off
+    const svgs = await ev(page, () => [
+      ...['present', 'squish', 'squish-away', 'seahop'].map((a) => { const e = document.querySelector(`.lf-hud .sw-round[data-action="${a}"] .sw-round-face svg`); return e ? e.outerHTML : null; }),
+      (document.querySelector('.oc-bubble .oc-ride svg') || {}).outerHTML || null,
+    ]);
+    check(errors, svgs.every(Boolean) && new Set(svgs).size === 5, `X5 ${name}: Present, Squish!, Put away, the dolphin and Hop off are five different pictures (${svgs.filter(Boolean).length} found, ${new Set(svgs.filter(Boolean)).size} different)`);
+    await context.close();
+  }
+}
+
+async function wave4aPass(browser, errors) {
+  const parts = args.x ? args.x.split(',') : ['1', '2', '3', '4', '5'];
+  if (parts.includes('1')) await wave4X1(browser, errors);
+  if (parts.includes('2')) await wave4X2(browser, errors);
+  if (parts.includes('3')) await wave4X3(browser, errors);
+  if (parts.includes('4')) await wave4X4(browser, errors);
+  if (parts.includes('5')) await wave4X5(browser, errors);
+}
+
+// =====================================================================================
 
 const errors = [];
 const browser = await launch({ headed: !!args.headed });
@@ -2722,6 +3135,7 @@ try {
   if (want('biomes')) await biomesPass(browser, errors);
   if (want('saves')) await savesPass(browser, errors);
   if (want('mp')) await mpPass(browser, errors);
+  if (want('wave4a') || (only && only.includes('wave4'))) await wave4aPass(browser, errors);
   if (want('cost')) await costPass(browser, errors);
   else if (only && only.includes('gallery')) await galleryShots(browser, errors); // C5 alone
   if (only && only.includes('review')) await reviewPass(browser, errors); // owner pictures (on request)

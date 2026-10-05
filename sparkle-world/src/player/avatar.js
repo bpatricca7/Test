@@ -1210,7 +1210,8 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
     if (!s.sitting && !s.sleeping && !s.riding && !tail) tgt[RPY] += parts.lift;
     // a held item: arm up in front of her (or at her mouth for a bite); emotes keep their arms.
     // Hidden while swimming and while the tail is out (a leap, a dolphin ride: hands on the fin).
-    heldBone.visible = !s.sleeping && !s.swimming && !tail;
+    // On a dolphin without a tail (Just Me) she holds it, as on a pony (wave4-integration §1.2).
+    heldBone.visible = !s.sleeping && !tail && (!s.swimming || !!s.seaRide);
     if (heldObj && heldBone.visible && !emote) {
       if (heldPose === 'eat') {
         const nib = Math.max(0, Math.sin(t * 7.8)) * 0.16;
