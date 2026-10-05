@@ -1380,13 +1380,26 @@ test('SIX', 'Six players: four more friends join Lily and Rosie with the code; e
     await card.waitFor({ state: 'visible', timeout: 30000 });
     const who = ((await card.locator('.sw-net-knock-text').textContent()) || '').trim();
     await settle(lily.page, 300);
-    await press(lily, card.locator('.sw-net-yes'));
+    // Robust on a slow machine (seven pages share one CPU renderer): a tap can land while Lily's
+    // page is busy and not count. Wait until her seat count really grows; if it did not and the
+    // same card is still up, tap "Let in!" once more (a kid would tap again too). Before this,
+    // a lost tap left a seat free and the 7th got a knock card instead of the full card.
+    const seated = await game(lily, () => window.__game.debug.net.players().length);
+    for (let tries = 0; tries < 2; tries++) {
+      await press(lily, card.locator('.sw-net-yes'));
+      if (await until(lily, (n) => window.__game.debug.net.players().length > n, seated, 20000, 200)) break;
+      log(`  Lily's "Let in!" for ${who} did not count yet${tries ? '' : ', tapping again'}`);
+      const still = await game(lily, (w) => [...document.querySelectorAll('.sw-net-knock .sw-net-knock-text')].some((c) => c.textContent.trim() === w), who);
+      if (!still) break;
+    }
     letIn.push(who);
     // the next card replaces this one
     await until(lily, (w) => { const c = document.querySelector('.sw-net-knock .sw-net-knock-text'); return !c || c.textContent.trim() !== w; }, who, 10000, 100);
   }
   const names = [rosie, ...more].map((g) => g.name);
   check(names.every((n) => letIn.some((t) => t.includes(n))), `Lily let in all five from their knock cards (${JSON.stringify(letIn)})`);
+  const seats = await game(lily, () => window.__game.debug.net.players().map((p) => p.seat));
+  check(seats.length === NETC.MAX_PLAYERS, `all five have a seat before the 7th knocks (seats ${JSON.stringify(seats)})`);
   log(`  five let in at ${((Date.now() - t0) / 1000).toFixed(1)} s`);
   // a 7th (while the five load: all five seats are taken): her knock is refused at once, no card for Lily
   const knocksBefore = await game(lily, () => window.__knockEvents);
@@ -1401,6 +1414,11 @@ test('SIX', 'Six players: four more friends join Lily and Rosie with the code; e
   const fullText = await game(zoe, () => document.querySelector('.sw-net-msg')?.textContent || '');
   check(/full of friends/.test(fullText) && !/\d{3}|error/i.test(fullText), `the full card is kind, with no code ("${fullText.replace(/\s+/g, ' ').trim().slice(0, 90)}")`);
   await settle(zoe.page, 700);
+  // Zoe's phone page (the 7th, SwiftShader) can lag: a screenshot taken right away once showed a
+  // frame from before the card (even the keypad's slots were still empty, while the DOM had the
+  // card on top). Let her page draw a few fresh frames first, so the picture shows what she sees.
+  await game(zoe, () => new Promise((r) => { let n = 0; const f = () => (++n >= 4 ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); }));
+  await settle(zoe.page, 1200);
   await shot(zoe, 'six-zoe-full');
   // the card is really drawn on top (not under the Join keypad): the element at its centre is the
   // card, and the wash behind it dims the panel
@@ -1410,18 +1428,13 @@ test('SIX', 'Six players: four more friends join Lily and Rosie with the code; e
     const r = c.getBoundingClientRect();
     const at = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
     const wrap = c.closest('.sw-net-msg-wrap');
-    return { rect: [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)], top: !!(at && at.closest('.sw-net-msg')), at: at ? at.className : null, wash: wrap ? getComputedStyle(wrap).backgroundColor : null, ok: !!c.querySelector('.sw-net-msg-btn'), vis: document.visibilityState, anim: [...c.getAnimations(), ...wrap.getAnimations()].map((a) => [a.animationName, a.playState, Math.round(a.currentTime ?? -1)]), op: getComputedStyle(c).opacity, tl: Math.round(document.timeline.currentTime), now: Math.round(performance.now()) };
+    return { rect: [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)], top: !!(at && at.closest('.sw-net-msg')), at: at ? at.className : null, wash: wrap ? getComputedStyle(wrap).backgroundColor : null, ok: !!c.querySelector('.sw-net-msg-btn') };
   });
-  log(`  TMP ${JSON.stringify(onTop)}`);
-  await new Promise((r) => setTimeout(r, 2500));
-  log(`  TMP2 ${JSON.stringify(await game(zoe, () => { const c = document.querySelector('.sw-net-msg'); return c && { anim: c.getAnimations().map((a) => [a.playState, Math.round(a.currentTime ?? -1)]), op: getComputedStyle(c).opacity, tl: Math.round(document.timeline.currentTime), now: Math.round(performance.now()), raf: window.__game.frame ?? null }; }))}`);
-  await shot(zoe, 'six-zoe-full-tmp2');
   check(!!onTop.top, `the full card is drawn above the Join keypad (${JSON.stringify(onTop)})`);
   check(!!onTop.wash && !/rgba\(0, 0, 0, 0\)|transparent/.test(onTop.wash) && onTop.ok, 'the full card has the dark wash and an OK button');
   check(await game(lily, () => window.__knockEvents) === knocksBefore && !(await game(lily, () => !!document.querySelector('.sw-net-knock'))), 'Lily got no knock card for the 7th');
   check(await game(zoe, () => window.__game.net.state === 'idle' || window.__game.mode === 'title'), 'Zoe stays on the title');
   await zoe.context.close();
-  if (process.env.SW_TMP_ZOE_ONLY) return; // TEMP
   const live = await Promise.all([rosie, ...more].map((g) => waitLive(g, 240000)));
   [rosie, ...more].forEach((g, i) => check(!!live[i], `${g.name} is in Lily’s world`));
   log(`  all six live at ${((Date.now() - t0) / 1000).toFixed(1)} s`);
