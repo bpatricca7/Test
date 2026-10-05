@@ -2041,10 +2041,14 @@ for a grown-up's read (§16 Q4).
 - *A buddy goes back to its pod on a new ride.* When she mounts a dolphin, a buddy left from her
   last ride (state `buddy`) swims with the pod again (`_mountNow`): otherwise the two would both
   hold their place and `_apart` could never part them.
-- *The bubble waits under a pop or a toast.* When there is no free spot for the Ride / Trick
-  bubble (an upright phone) and a sticker pop or a toast would lie over it (they are drawn above
-  it), it hides until they have gone (`ui.js` `position()`), so Ride and Trick never sit under a
-  card. A bubble with a free spot is unchanged.
+- *The bubble waits for room (decided, [rf2-x5]).* On a crowded phone screen the dolphin bubble
+  waits: when it has no free spot while a sticker pop or a toast is up (an upright phone just
+  after Hop off, with Up / Down back), it stays open but hidden (`visibility: hidden`,
+  `pointer-events: none`, `aria-hidden`), so Ride and Trick can never be tapped unseen, and its
+  9 s idle timer stands still. It shows at the first free spot, at the latest once the pop and
+  the toast are gone (`ui.js` `position()` / `wait()`). With no pop or toast up it never waits
+  (it then sits at its own spot even without a free one), so it never stays hidden for good. A
+  bubble with a free spot is unchanged.
 - *"Tap to say hi!"* no longer shows over the dolphin whose bubble is open, the one she rides or
   is mounting, or while a mystery present drops (one "tap" call at a time).
 - *The joystick label* is set again on `world:load` too (`touch.js`), so it never says "Ride" or
@@ -2069,11 +2073,12 @@ for a grown-up's read (§16 Q4).
   about 2 frames a second; the message itself came in 200-550 ms).
 - *Checks:* probe-ocean `--only=ride` (R1-R11), `--only=wave4a --x=2,3` and `--only=wave4b`
   green; probe-hud-sizes clear at all 19 sizes with the wave-4 states.
-- *Still open:* X5 on the upright phone (390 x 844). After Hop off, with a sticker pop, a toast,
-  Up / Down and the bubble all wanted at once, there is no free spot, so the bubble waits
-  (hidden) until the pop and the toast go; X5 expects it to show at once. This needs an owner
-  call: X5 accepts a bubble that waits and checks it appears once the pop and toast leave, or a
-  new layout gives the bubble room. The check was not changed. Smaller things for later: the
+- *X5 (decided, [rf2-x5]).* The owner's default: the bubble waits, as above. probe-ocean X5
+  checks that after Hop off on the crowded phone the waiting bubble is hidden, Ride is not
+  tappable and nothing overlaps, and that within 3 s of game time after the pop and the toast
+  leave it shows inside the screen, Ride tappable, clear of every control. Its other checks are
+  unchanged. `--only=wave4a --x=5` green on 390 x 844 and 1024 x 1366.
+- *Still open:* smaller things for later: the
   bubble moves between free spots while a sticker pop animates; toasts already up on a sideways
   phone when a pop starts fade out unseen (new ones wait). The ride pictures for the daughter
   (R10 camera: the ridden dolphin cut off at the bottom, the side-saddle tail mostly behind her

@@ -699,7 +699,7 @@ Beach Cozy, desktop and iPad 1024 x 768 touch, `debug.merfolk.tips(true)`,
 | B17 | `timeout 570 node tools/probe-ocean.mjs --only=wave4a --x=1` (X1, the first deep swim: desktop and iPad, 25 s of frames each) | | not measured |
 | B17b | `timeout 570 node tools/probe-ocean.mjs --only=wave4a --x=2,3` (a mermaid and a sea dragon ride; from a stopped boat) | | green in [rf2-ride] |
 | B17c | `timeout 570 node tools/probe-ocean.mjs --only=wave4a --x=4` (a toy in the water) | | not measured |
-| B17d | `timeout 570 node tools/probe-ocean.mjs --only=wave4a --x=5` (the HUD at 390 x 844 and 1024 x 1366; fails on the phone until the owner decides, see "As built") | | not measured |
+| B17d | `timeout 570 node tools/probe-ocean.mjs --only=wave4a --x=5` (the HUD at 390 x 844 and 1024 x 1366; on the phone the dolphin bubble may wait, hidden, while a pop and a toast are up, and must show clear of everything within 3 s of game time once they leave: the X5 decision in "As built") | | 154 s |
 | B17e | `timeout 570 node tools/probe-ocean.mjs --only=wave4b` (X6-X10; X7's two pages take about 3.5 min) | | 344 s on 724b031; X6-X10 green in [rf2-hud] (X7 alone after its timing change) |
 
 `--only=wave4` runs X1-X10 in one go but takes longer than one 570 s command, so the gate never
@@ -913,16 +913,21 @@ integration branch, never changed.
   two parts.
 - [rf2-docs]: the notes above, the team docs' "As built" for these steps, MULTIPLAYER.md (6
   players, the full card) and §10.2 (B17-B17e, C3b, D16-D22).
+- [rf2-x5]: the X5 decision (below): a dolphin bubble waiting for room is hidden and not
+  tappable, its idle timer stands still, and it shows at the first free spot; probe-ocean X5
+  checks the waiting bubble and that it shows clear of everything once the pop and toast leave.
 
 **Still open before the deploy** (none of them weakens a check):
-- X5 on the upright phone (390 x 844), **owner** or design call. The toast stack onto the
-  joystick and Jump is fixed (one toast at a time on phones, [rf2-phone]), and a toast or pop
-  never covers the bubble any more ([review-fixes]). What is left: after Hop off, with a sticker
-  pop, a toast, Up / Down and the bubble all wanted at once, the bubble has no free spot and waits
-  (hidden) until the pop and the toast go, while X5 expects it at once. Either X5 accepts a
-  waiting bubble and checks that it shows once the pop and toast leave, or a new layout gives
-  it room (two-line toasts at 92vw fitted, but covered the life column and Hand). The check was
-  not changed; B17d fails on the phone until this is decided.
+- X5 on the upright phone (390 x 844): **decided** ([rf2-x5], the owner's default, set by the
+  lead): on a crowded phone screen the dolphin bubble **waits**. Just after Hop off, with a
+  sticker pop, a toast and Up / Down all up and no free spot, the bubble stays open but hidden
+  and cannot be tapped (its idle timer stands still), and it shows with no overlap as soon as a
+  free spot opens, at the latest once the pop and the toast are gone (with no pop or toast up it
+  never waits). This is the design, not a loosened check: X5 now checks that while it waits it
+  is hidden, Ride is not tappable and nothing overlaps, and that within 3 s of game time after
+  the pop and the toast leave it shows inside the screen, Ride tappable, clear of every control
+  (the same rectangle math). Every other X5 check is unchanged. B17d green on 390 x 844 and
+  1024 x 1366 (154 s; pictures `.shots/wave4-x5-*-hopoff.png` and `-hopoff-shown.png`).
 - probe-squish `--only=touch` C2 on the iPads (1024x1366, 1366x1024) failed twice in
   [review-fixes]: about 600 ms after `held()`, Squish! and Put away read as hidden or zero width,
   yet show in the next picture. Not linked to those fixes so far; next, run it on `a3f8126`
