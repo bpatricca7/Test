@@ -1392,6 +1392,68 @@ async function ridePass(browser, errors) {
     return { d: Math.hypot(p.x - s.x, p.z - s.z), state: g.player.state, riding: g.ocean.riding, water: g.physics.liquidAt(p.x, p.y + 0.6, p.z) };
   });
   check(errors, r7.d < 3 && !r7.riding && r7.water, `R7 saved while riding, reloaded: in the water ${r7.d.toFixed(1)} blocks from the spot, no ride (${r7.state})`);
+
+  // R10 (P2, with merfolk) a mermaid and a sea dragon each ride: the tail stays set through the
+  // mount and the hop off with no 'player:seaform' between, the legs hidden on the dolphin;
+  // the side-saddle pictures for the daughter (wave4-ride-mermaid.png, wave4-ride-dragon.png)
+  await float(page, true);
+  await ev(page, () => {
+    const g = window.__game;
+    g.__seaformEvents = [];
+    if (!g.__seaformRec) { g.__seaformRec = true; g.events.on('player:seaform', (e) => g.__seaformEvents.push(e && e.form)); }
+  });
+  for (const [form, pic] of [['mermaid', 'ride-mermaid'], ['sea_dragon', 'ride-dragon']]) {
+    await ev(page, (form) => {
+      const g = window.__game;
+      g.profile.look.sea = { form, color: null };
+      g.events.emit('avatar:changed', { look: g.profile.look });
+    }, form);
+    await goTo(page, deep);
+    const turned = await waitOk(page, (form) => window.__game.player.seaForm === form && !!(window.__game.debug.merfolk.parts() || {}).shown, form, 15000);
+    await page.waitForTimeout(600);
+    await ev(page, () => { window.__game.__seaformEvents.length = 0; });
+    const mounted = await ev(page, () => window.__game.debug.ocean.ride());
+    // a few frames on the dolphin, every one read
+    const on = await ev(page, () => new Promise((resolve) => {
+      const g = window.__game, out = { n: 0, notRide: 0, noForm: 0, hidden: 0, legs: 0 };
+      const t0 = performance.now();
+      const tick = () => {
+        const p = g.debug.merfolk.parts() || {};
+        out.n++;
+        if (g.player.state !== 'ride' || !g.ocean.riding) out.notRide++;
+        if (!g.player.seaForm) out.noForm++;
+        if (!p.shown) out.hidden++;
+        if (p.legsVisible !== false) out.legs++;
+        if (performance.now() - t0 >= 2000) resolve(out); else requestAnimationFrame(tick);
+      };
+      tick();
+    }));
+    check(errors, turned && mounted && on.n > 5 && on.notRide === 0 && on.noForm === 0 && on.hidden === 0 && on.legs === 0,
+      `R10 a ${form} rides: the tail on every frame, the legs hidden (${JSON.stringify(on)})`);
+    // the picture: from in front of her, three-quarters (her face, the tail to the side and the
+    // dolphin all in view; straight from the side shows the back of her head), a little above
+    // and closer in, the HUD out of the way
+    const dist0 = await ev(page, () => {
+      const g = window.__game, s = g.debug.ocean.rideState(), cam = g.cameraRig, d = cam.distance;
+      cam.yaw = s.yaw + Math.PI * 0.75;
+      cam.pitch = 0.28;
+      cam.distance = 2.2;
+      return d;
+    });
+    await cleanView(page, true, true);
+    await settle(page, 1200);
+    await shot(page, pic, 'wave4');
+    await cleanView(page, false, true);
+    await ev(page, (d) => { window.__game.cameraRig.distance = d; }, dist0);
+    await ev(page, () => window.__game.debug.ocean.hopOff('button'));
+    await page.waitForTimeout(800);
+    const off = await ev(page, () => {
+      const g = window.__game, p = g.debug.merfolk.parts() || {};
+      return { riding: g.ocean.riding, form: g.player.seaForm, shown: !!p.shown, events: g.__seaformEvents.slice() };
+    });
+    check(errors, !off.riding && off.form === form && off.shown && off.events.length === 0,
+      `R10 the ${form} hops off in deep water: the tail still set, no 'player:seaform' from mount to hop off (${JSON.stringify(off)})`);
+  }
   await context.close();
 }
 
