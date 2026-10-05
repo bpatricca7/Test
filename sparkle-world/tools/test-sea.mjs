@@ -1030,7 +1030,7 @@ await test('S12', 'fish from her camera: school mates seldom sit one over anothe
   };
   const out = [];
   let oldSum = 0, rowSum = 0, newSum = 0, worst = 0, runs = 0;
-  for (const [h, far] of [[3.0, 11], [3.0, 9], [1.5, 9], [0.1, 9]]) {
+  for (const [h, far] of [[3.0, 11], [3.0, 9], [1.5, 9], [0.1, 9], [3.7, 16]]) {
     for (const seed of [1, 2, 3]) {
       const n = seed === 2 ? 8 : 10;
       const bear = seed * 2.1;
@@ -1052,7 +1052,7 @@ await test('S12', 'fish from her camera: school mates seldom sit one over anothe
   // sides to her (sideOn), so a fish's length never covers the row behind it
   const dOut = [];
   let dSum = 0, dWorst = 0;
-  for (const [h, far] of [[3.0, 11], [3.0, 9], [1.5, 9]]) {
+  for (const [h, far] of [[3.0, 11], [3.0, 9], [1.5, 9], [3.7, 16]]) {
     for (const seed of [1, 3]) {
       const bear = seed * 2.1, school0 = { x: 32.5, z: 32.5 };
       const camPos = { x: school0.x - Math.sin(bear) * far, y: 10 + SURF + h, z: school0.z - Math.cos(bear) * far };

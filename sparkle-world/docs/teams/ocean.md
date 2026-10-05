@@ -1957,10 +1957,15 @@ for a grown-up's read (§16 Q4).
   a frame on iPad in 2 of 4 runs, so the layout is unchanged (this round asked for no change to
   what passed). Without it R-F also varies from run to run (0.00 in most runs, once 2.25 on
   desktop), so R-F now prints, every 15 frames, the stacked pairs, how far the rows are turned off
-  her view, her distance and her height (the rows were never turned off her view; the cause of the
-  bad runs is still open). S12 now also runs a school swimming toward her and away (the real
-  game's schools travel): 0.04 stacked pairs a frame. `debug.ocean.schools()` lists each school's
-  `face`.
+  her view, her distance and her height (the rows were never turned off her view; a bad run had the school
+  swimming away from her, 13 to 16 blocks off, 3.7 up; the cause is still open: S12 with that
+  camera, still or swimming toward her and away, stays at 0.00-0.06). S12 now also runs that far
+  camera and a school swimming toward her and away: 0.01 stacked pairs a frame.
+  `debug.ocean.schools()` lists each school's `face`.
+- *Probe timing on a busy machine.* tap's T1 (a dolphin), T4 (a school) and T8 (the whale) used
+  fixed waits; on a busy machine the new animal was not yet in the pick set (refreshed every
+  0.25 s of game time) or the whale not yet placed, so the click missed. They now wait up to 3-4 s
+  for it. T6 prints what its Build click hit.
 - *Dolphin pictures:* the probe now holds the dolphin over the deep water with the most room from
   the world's edge (the brown or white seam lines were the edge of the world in the background).
 - *Left as is:* animals of different kinds can still swim close together (APART spaces one kind;
