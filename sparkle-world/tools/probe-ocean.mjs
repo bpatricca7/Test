@@ -1653,7 +1653,8 @@ async function biomesPass(browser, errors) {
       const g = window.__game, d = g.debug.ocean;
       let frames = 0, some = 0, all = 0, wrong = 0, faint = 0, switches = 0, last = null, blob = 0;
       const t0 = performance.now(), gt = g.time.t;
-      while (performance.now() - t0 < 12000) {
+      // at least 12 s and 40 frames (the machine without a GPU can draw only 3 a second), at most 30 s
+      while ((performance.now() - t0 < 12000 || frames < 40) && performance.now() - t0 < 30000) {
         await new Promise((r) => requestAnimationFrame(r));
         const n = d.behindCount().fish, front = d.meshCounts().fish, back = d.meshCounts(true).fish, live = d.count().fish;
         frames++;
@@ -1715,7 +1716,9 @@ async function biomesPass(browser, errors) {
       const g = window.__game, d = g.debug.ocean;
       let frames = 0, faintWrong = 0, faint = 0, over = 0, flips = 0, last = null, maxCalls = 0, kinds = 0, inView = 0, someBehind = 0, stacked = 0, short = 0;
       const t0 = performance.now();
-      while (performance.now() - t0 < 10000) {
+      // at least 10 s and 40 frames: on the machine without a GPU this scene drew exactly 30 frames
+      // in 10 s once (the check asks for more than 30), so it keeps counting, at most 30 s
+      while ((performance.now() - t0 < 10000 || frames < 40) && performance.now() - t0 < 30000) {
         await new Promise((r) => requestAnimationFrame(r));
         const n = d.behindCount().fish, back = d.meshCounts(true).fish, live = d.count().fish, L = d.lanes();
         let calls = 0;
