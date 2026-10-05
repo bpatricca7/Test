@@ -308,13 +308,15 @@ Avatar fields are the same for hosts and guests.
 | `r` | all | `'h'`\|`'g'` | role |
 | `uid` | all | null | no longer sent (Addendum B): identity is the room's `by` stamp only |
 | `nm` | all | string ≤ 12 | name for the tag, already `sanitizeName`d; receivers sanitize again |
-| `lk` | all | string ≤ 160 | `packLook(look)` (§5.13) |
+| `lk` | all | string ≤ 160 | `packLook(look)` (§5.13); since wave 4 `packLook(withResolvedSea(look, style))`: the water form is resolved on the sender's page, so `lk` never holds `'auto'` and never the Girl / Boy / Mix button |
 | `p` | all | `[x,y,z,yaw]` 2 dp | position (feet; seat surface when sitting; mattress when sleeping) |
-| `st` | all | 1 char | `w` walk/stand, `i` swim, `f` fly, `s` sit, `z` sleep, `h` ride, `e` emote, `l` zip line |
+| `st` | all | 1 char | `w` walk/stand, `i` swim, `f` fly, `s` sit, `z` sleep, `h` ride, `e` emote, `l` zip line, `m` in sea form and not riding (wave 4, docs/teams/merfolk.md §9; a rider stays `h`, NPC `nx` samples use `m` too) |
 | `em` | all | `[name,n]` | last emote and a nonce |
 | `ph` | all | `[id,n]` | last quick phrase and a nonce |
-| `hi` | all | string ≤ 48 or null | the treat in her hand (an item key, `HELD_KEY_RE`) |
+| `hi` | all | string ≤ 48 or null | what is in her hand (`HELD_KEY_RE`): a treat key, a food key or a squishy toy def key (`squish_*`, `squishg_*`, at most 28 characters; wave 4, docs/teams/squishies.md §10). A toy hidden while she swims in sea form is still sent |
 | `vh` | all | `[key,color,flags,honk,src]` or null | the vehicle she drives (wave 3, docs/teams/vehicles.md §8.1): `key` a furniture key (`VEHICLE_KEY_RE`), `color` 6 lowercase hex, `flags` 0..3 (bit 0 lights, bit 1 reversing), `honk` a nonce 0..999, `src` the uid she took it from (0 = none). Receivers parse it with `parseVehiclePresence` (wrong shape → null). With `st:'h'` it means "driving"; `'h'` without `vh` is still a pony ride. `p` is then her seat. About 45 B; sent on change only (a drive, a honk at most every 0.6 s, the lights). No protocol bump: peers share the build id `pv`. |
+| `sr` | all | int 0..15 or null / absent | she rides a dolphin (wave 4, docs/teams/ocean.md §4.6); the value is the dolphin palette index (append-only). With `st:'h'`, `sr` means riding a dolphin, `vh` means driving, neither means a pony ride. Parsed with `parseSeaRide`; about 6 B, sent on change only |
+| `sk` | all | int 0..65535 or null / absent | her dolphin trick counter, `(n % 4096) * 16 + variant` (`variant` the dolphin palette index). A change plays one trick beside her on every page; the first value a page sees only sets it (a late joiner never replays old tricks). Parsed with `parseSeaTrick`; sent on change only |
 | `ep` | all | string | host: its epoch. Guest: the epoch she follows. |
 | `hs` | host | number | hosting-since (ms, host clock), for tie-breaks |
 | `hd` | host | int | head sequence number (last batch sent) |
@@ -539,6 +541,10 @@ fixed order:
    `hand`, `handColor|-`
 10. `face.brows` (index into `BROWS`: 0 soft, 1 bold) — added with the boy looks
 11. `top.num`, the jersey number 0..99 in base 36 (`0`..`2r`) — added with the boy looks
+12. `sea.form`, `sea.color` (indices into `SEA_FORMS` and `SEA_COLORS`, `-` for Match) — added
+    with the sea forms (wave 4, docs/teams/merfolk.md §3.3). **Left out** for the default
+    `'auto'` + Match, so every older string stays exactly the same. Worst case 156 characters.
+    The rule for any later token: it must write the sea pair (`0.-`) first.
 
 Options are indices in base36 into the exported lists in `wardrobe-data.js` (`HAIR_STYLES`,
 `HAIR_MIXES`, `SMILES`, `TOPS`, `PATTERNS`, `BOTTOMS`, `DRESSES`, `SHOES`, `*_ACC`, `BROWS`).
@@ -670,6 +676,9 @@ count }`.
 | Coins, shops, stickers, basket, cooking, outfits, photos, piano, TV shows, books | per player | per player | These never enter the host world. Buying changes only the buyer's profile. Placing a bought treat is an `e+`. |
 | Gems | its own copy | its own copy | Not synced. Each player collects in her own copy, for her own profile. The host's saved gems never change because of guests. |
 | Emotes and quick phrases | presence `em`, `ph` | presence | Phrases are ids into the receiver's own table (§11.6). |
+| Sea form (wave 4) | presence `lk` (the resolved form and tail color), `st:'m'` | the same | Each page draws the tail from her look and sparkles when `st` turns to or from `m` within range (never for a late joiner). Leaps and sounds are not sent. |
+| Squishy toy collection and mystery presents (wave 4) | per player | per player | They live in each player's own profile and never enter the host world. A held toy travels as `hi`; a toy placed in a friend's world is an ordinary `e+` (key `squish_*` / `squishg_*`) and stays there as decor, while the player keeps hers (toys are unlimited). |
+| Sea animals (wave 4) | per page | per page | Cosmetic, like butterflies. The buddy dolphin comes from the world seed and the whale's visit times from the seed and the game day, so everyone sees them. A rider's dolphin travels as presence `sr` and a friend's tricks as presence `sk`. Sea stickers and the daily sea coins are per player. |
 
 **Held treats (wave 2).** If "hold it in your hand" is not part of `look`, add the optional
 presence field `hi` (an item key) and draw it on remote avatars. Never send free text.
@@ -1116,6 +1125,25 @@ false`, restored in `finally`) so her recorder sends it like a tap.
   dressup, touch, settings, photo, stickerbook, menus`. `net` needs entities, prefabs, pets,
   garden and weather already installed, and hud and menus read its actions.
 
+### 9.14b Wave 4 (sea forms, squishy toys, sea animals)
+
+- `adapter.local()`: `st` gives `m` while she is in sea form and not riding; `lk` is
+  `packLook(withResolvedSea(look, style))`; `hi` comes from `heldKey()`, which also returns a held
+  squishy toy's def key (through `squishHeld()`; a treat wins when there are both);
+  `sr: this.seaRideField()` and `sk: this.seaTrickField()` read `game.ocean.rideField()` /
+  `trickField()` in a try/catch (the `vehicleField` pattern).
+- `host.js` `avatarFields`: `sr` through `parseSeaRide`, `sk` through `parseSeaTrick`, each sent
+  only when it changes; `st` is already cut to one character.
+- `remote-players.js`: `_ingest` keeps `f.sr`, plays `game.ocean.remoteTrick(...)` when `sk`
+  changes (never on the first value), and records `st` changes for the sea sparkle;
+  `_frame` passes `seaRide` / `sea` to the avatar and calls `game.ocean.remoteRide(...)` for a
+  friend on a dolphin (`st:'h'`, `sr` set, no `vh`); `heldModel` draws a held toy with
+  `game.squish.model(key)` (an unknown key draws nothing); `_drop` and `clear()` end a friend's
+  ride; `list()` gains `sea` and `seaRide`.
+- No protocol bump (peers share the build id), no host validation change, no server-relay
+  change. The only server change in wave 4 is the account save guard: `putProfile` refuses a
+  write that would drop squishy toys the cloud copy has.
+
 ### 9.15 Documentation
 
 Implementers add a DESIGN.md §5 "Playing with friends" that points to this file and states the
@@ -1386,6 +1414,15 @@ the title.
   before the final save, `mine = 1` keeps the host's ownership, Undo building) over the
   FakeAdapter's `kart_test`. `--only=vehicles` runs just these. The browser side is
   `npm run probe:vehicles -- --only=mp`.
+
+- **Wave 4:** `squishTests()` (N1-N4: a toy key in `hi`, sent on change, bad keys null; host
+  presence with toys in every hand; a treat wins over a toy), `merfolkTests()` (`st` `m` and a
+  156-character `lk`), `seaTests()` (N1 the `sr` / `sk` parsers and send-on-change; N2 the one
+  combined wave-4 worst case: 6 players, 12-letter names, `st:'m'`, the longest `lk`, a toy, `sr`,
+  `sk` and `vh` keep the host presence under 3,900 B; N3 the fake adapter). The browser side:
+  `probe-multiplayer` tests `SQUISH` (part a), `SEA` (part d) and `SIX` (part e, six players and a
+  refused 7th), `npm run probe:ocean -- --only=mp` and `--only=wave4b` (a friend riding with a
+  toy), `probe-squish --only=mp`, `probe-merfolk --only=friends`.
 
 ### 15.2 Headless multiplayer probe (`tools/probe-multiplayer.mjs`)
 
