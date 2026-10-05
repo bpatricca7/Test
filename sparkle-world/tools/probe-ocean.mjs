@@ -3227,20 +3227,22 @@ async function wave4X7(browser, errors) {
   await lily.page.waitForTimeout(800);
   await shot(lily.page, 'x7-lily-sees-rosie-ride', 'wave4');
   // Rosie hops off on the shore: Lily sees legs and the toy within 2 s
-  await float(rosie.page, false);
-  await game(rosie, (s) => { const g = window.__game; g.debug.ocean.hopOff('button'); g.player.teleport(s[0], s[1] + 0.05, s[2]); }, sh.land);
-  await game(lily, (s) => window.__game.player.teleport(s[0] + 2, s[1] + 0.05, s[2] + 1), sh.land);
+  // (Lily waits on the shore first, so the 2 s are the message and the change, not her own trip)
   await float(lily.page, false);
+  await game(lily, (s) => { const g = window.__game; g.player.teleport(s[0] + 2, s[1] + 0.05, s[2] + 1); }, sh.land);
+  await lily.page.waitForTimeout(1500);
+  await float(rosie.page, false);
   const t0 = Date.now();
+  await game(rosie, (s) => { const g = window.__game; g.debug.ocean.hopOff('button'); g.player.teleport(s[0], s[1] + 0.05, s[2]); }, sh.land);
   const off = await until(lily, () => {
     const g = window.__game, f = [...g.net.remote.friends.values()].find((q) => q.name === 'Rosie');
     if (!f || !f.avatar) return null;
     const sea = f.avatar.seaParts();
     return !sea.shown && sea.legsVisible && f.heldKey === 'squish_pf_dolphin' && !!f.avatar.held && f.avatar.heldShown === true && g.debug.ocean.remote().length === 0 ? { legs: sea.legsVisible, held: f.heldKey } : null;
-  }, null, 2000, 50);
+  }, null, 10000, 50);
   const offMs = Date.now() - t0;
   const offNow = off || await game(lily, friend);
-  check(errors, !!off, `X7 Rosie on the shore: Lily sees legs and the toy within 2 s (${off ? offMs + ' ms' : JSON.stringify(offNow)})`);
+  check(errors, !!off && offMs <= 2000, `X7 Rosie on the shore: Lily sees legs and the toy within 2 s (${off ? offMs + ' ms' : 'not in 10 s: ' + JSON.stringify(offNow)})`);
   // sizes and hashes
   for (const p of [lily, rosie]) {
     const s = await game(p, () => window.__swFakeStats());
