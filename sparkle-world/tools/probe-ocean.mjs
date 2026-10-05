@@ -1092,7 +1092,7 @@ async function startRide(page, deep) {
     await page.waitForSelector('.oc-bubble.lf-on .oc-ride', { timeout: 3000 });
   }
   await page.locator('.oc-bubble.lf-on .oc-ride').click();
-  return waitOk(page, () => window.__game.ocean.riding, null, 3000);
+  return waitOk(page, () => window.__game.ocean.riding, null, 8000); // a slow software-drawn frame can hold the mount
 }
 
 async function ridePass(browser, errors) {
