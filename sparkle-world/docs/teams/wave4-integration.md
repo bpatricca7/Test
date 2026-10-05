@@ -683,8 +683,8 @@ Beach Cozy, desktop and iPad 1024 x 768 touch, `debug.merfolk.tips(true)`,
 | B3 | `timeout 570 node tools/probe-merfolk.mjs --only=studio` | est. 4-5 min | 230 s, 37 green in [gate-B1] |
 | B3b | `timeout 570 node tools/probe-merfolk.mjs --only=grids` (the C5 render grids: a pass of its own since [gate-B1]; studio, grids and review together went over 570 s) | | 208 s, 6 grids, green in [gate-B1] |
 | B3c | `timeout 570 node tools/probe-merfolk.mjs --only=review` (the owner's Sea Dragon showcase pictures) | | 243 s, 8 green in [gate-B1] |
-| B4 | `timeout 570 node tools/probe-merfolk.mjs --only=touch,friends` | est. 4-5 min | not measured |
-| B5 | `timeout 570 node tools/probe-merfolk.mjs --only=costs,save` | est. 4-6 min | not measured |
+| B4 | `timeout 570 node tools/probe-merfolk.mjs --only=touch,friends` | est. 4-5 min | 207 s, 12 green in [gate-B1] |
+| B5 | `timeout 570 node tools/probe-merfolk.mjs --only=costs,save` | est. 4-6 min | 466 s and 445 s in [gate-B1], both **red** on one check only (B13c the longest frame after the first turn: the middle of 3 fresh pages +64 ms, then +41 ms, against at most +33 ms; no new shader program on any page; load about 4); the other 19 green; still open |
 | B6 | `timeout 570 node tools/probe-squish.mjs --only=desktop` | est. 6-8 min | not measured |
 | B7 | `timeout 570 node tools/probe-squish.mjs --only=touch` | est. 4-6 min | 215-220 s, green twice ([rf2-c2]) |
 | B8 | `timeout 570 node tools/probe-squish.mjs --only=world,save` | est. 5-7 min | not measured |
