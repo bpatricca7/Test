@@ -3038,8 +3038,10 @@ async function wave4X5(browser, errors) {
     // a toy held (on the land), a present waiting (its button and the ring)
     await ev(page, () => { const g = window.__game; g.ui.open('squish'); });
     await page.waitForSelector('.sw-panel-wrap.sw-open .sq-grid');
-    await page.locator('.sq-cubby[data-key=pf_dolphin]').tap();
-    await page.locator('.sq-detail .sw-btn', { hasText: 'Hold it' }).tap();
+    // (setup, not the check: on the phone the grid's next cubby lies over this one's middle
+    // while it scrolls, so the click goes to the button itself)
+    await page.locator('.sq-cubby[data-key=pf_dolphin]').dispatchEvent('click');
+    await page.locator('.sq-detail .sw-btn', { hasText: 'Hold it' }).dispatchEvent('click');
     await waitOk(page, () => !window.__game.ui.current && window.__game.squish.held() === 'squish_pf_dolphin', null, 4000);
     const toNext = await ev(page, () => window.__game.debug.squish.state().toNext);
     await ev(page, (n) => window.__game.coins.add(n, 'gift', { fly: false }), toNext);
