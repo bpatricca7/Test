@@ -3224,8 +3224,10 @@ async function wave4X7(browser, errors) {
   const onNow = on || await game(lily, friend);
   check(errors, !!on && on.d < 0.6, `X7 Lily sees the dolphin under Rosie, her tail out (side-saddle), no toy in her hand (${JSON.stringify(onNow)})`);
   await game(lily, () => { const g = window.__game, r = g.debug.net.remote().find((q) => q.name === 'Rosie'); if (r) { const p = g.player.position; g.cameraRig.yaw = Math.atan2(r.pos[0] - p.x, r.pos[2] - p.z); g.cameraRig.pitch = 0.3; } });
+  await game(lily, () => { window.__game.player.avatar.group.visible = false; }); // her own back out of the picture
   await lily.page.waitForTimeout(800);
   await shot(lily.page, 'x7-lily-sees-rosie-ride', 'wave4');
+  await game(lily, () => { window.__game.player.avatar.group.visible = true; });
   // Rosie hops off on the shore: Lily sees legs and the toy within 2 s
   // (Lily waits on the shore first, so the 2 s are the message and the change, not her own trip)
   await float(lily.page, false);
