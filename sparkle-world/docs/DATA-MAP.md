@@ -47,7 +47,7 @@ Who can see it, in the tables below:
 
 | Field | What | Child? | Who sees it | Deleted |
 |---|---|---|---|---|
-| `body` (gzip JSON), `size`, `rev`, `client_updated_at` | her avatar look, outfits, stickers, coins, stats, settings, basket | **child** | parent (summary, download), devices; friends see the avatar look while playing (if on) | with the player |
+| `body` (gzip JSON), `size`, `rev`, `client_updated_at` | outfits, stickers, coins, stats (including which sea animals they met), settings, basket, squishy toy collection, and her avatar look (including the water form and tail color). A tail form chosen automatically from this device's Girl / Boy button is shown to friends like clothes are; the button itself is never sent or stored. | **child** | parent (summary, download), devices; friends see the avatar look while playing (if on) | with the player |
 
 ### `worlds` (her saved worlds)
 
