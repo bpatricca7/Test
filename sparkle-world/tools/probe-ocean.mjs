@@ -3324,6 +3324,22 @@ async function wave4X7(browser, errors) {
   await game(lily, (s) => { const g = window.__game; g.player.teleport(s[0] + 2, s[1] + 0.05, s[2] + 1); }, sh.land);
   await lily.page.waitForTimeout(1500);
   await float(rosie.page, false);
+  // Lily's page notes when each part of the change first shows (in her frames), so a slow run
+  // says which part was late
+  await game(lily, () => {
+    const g = window.__game, t0 = performance.now(), seen = {};
+    window.__x7 = seen;
+    const tick = () => {
+      const f = [...g.net.remote.friends.values()].find((q) => q.name === 'Rosie');
+      if (f && f.avatar) {
+        const sea = f.avatar.seaParts(), now = Math.round(performance.now() - t0);
+        const parts = { tailGone: !sea.shown, legs: sea.legsVisible, key: f.heldKey === 'squish_pf_dolphin', held: !!f.avatar.held, heldShown: f.avatar.heldShown === true, noDolphin: g.debug.ocean.remote().length === 0, st: f.st !== 'h' };
+        for (const k in parts) if (parts[k] && seen[k] == null) seen[k] = now;
+      }
+      if (Object.keys(seen).length < 7 && performance.now() - t0 < 10000) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
   const t0 = Date.now();
   await game(rosie, (s) => { const g = window.__game; g.debug.ocean.hopOff('button'); g.player.teleport(s[0], s[1] + 0.05, s[2]); }, sh.land);
   const off = await until(lily, () => {
@@ -3334,7 +3350,8 @@ async function wave4X7(browser, errors) {
   }, null, 10000, 50);
   const offMs = Date.now() - t0;
   const offNow = off || await game(lily, friend);
-  check(errors, !!off && offMs <= 2000, `X7 Rosie on the shore: Lily sees legs and the toy within 2 s (${off ? offMs + ' ms' : 'not in 10 s: ' + JSON.stringify(offNow)})`);
+  const parts = await game(lily, () => window.__x7);
+  check(errors, !!off && offMs <= 2000, `X7 Rosie on the shore: Lily sees legs and the toy within 2 s (${off ? offMs + ' ms' : 'not in 10 s: ' + JSON.stringify(offNow)}; first seen on her page, ms: ${JSON.stringify(parts)})`);
   // sizes and hashes
   for (const p of [lily, rosie]) {
     const s = await game(p, () => window.__swFakeStats());
