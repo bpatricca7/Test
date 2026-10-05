@@ -242,7 +242,7 @@ Topic names: `sw.op`, `sw.bulk` and `sw.ctl`.
 Time, weather, avatars and actor **positions** are not keys. They live in presence (§5.4).
 Gems are per player and are not synced (§7).
 
-**Entity uid ranges.** Seat `s` (0 = host, 1..3 = guests) allocates uids in
+**Entity uid ranges.** Seat `s` (0 = host, 1..5 = guests; 1..3 before wave 4) allocates uids in
 `[s·1,000,000 + 1, (s+1)·1,000,000)`. `EntityManager.nextUid` is bumped only by uids in its own
 range (§9.4). A guest starts at `max(existing uids in her range) + 1` after each snapshot. Old
 saves are unaffected, because all their uids are below 10⁶.
@@ -507,7 +507,7 @@ Typical sizes and rates:
 
 | Name | Value |
 |---|---|
-| MAX_PLAYERS | 4 (host plus seats 1..3) |
+| MAX_PLAYERS / MAX_SEATS | 6 / 5 (host plus seats 1..5; 4 / 3 before wave 4, see "Six players") |
 | MSG_BYTES / STATE_BYTES / STR_BYTES | 3,900 / 3,900 / 1,000 |
 | BUCKET | 30 per s, burst 60 (per page) |
 | PRESENCE_HZ | ≤ 10 moving, on change otherwise; `flushState` within 30 ms |
@@ -828,7 +828,7 @@ sleeping, emotes and phrases always work. (In the Players panel the switches rea
   - uid seated before in this session, or listed in `lastHost.uids` on resume → auto-admit to
     the same seat. The uid is the room's stamp (`by`) only, never a value from presence
     (Addendum B): a peer cannot copy a friend's uid into her own presence to skip the card;
-  - 3 seats taken → `no f`;
+  - every seat taken (`C.MAX_SEATS`, 5 since wave 4) → `no f`;
   - otherwise → queue a **knock card** (§11.4), one card at a time.
 - **Yes.** The host adds `adm [peer, lowest free seat]` and starts `lastLseq[peer] = 0`.
   **Not now** → `no d`.
@@ -2020,5 +2020,15 @@ The owner asked for 6 players in one world instead of 4. What changed:
   every wave-4 field at its biggest: the host's presence is about 630 B, far under 3,900 B.
   Nothing had to be trimmed.
 - **Tests.** The session test admits five friends and refuses a sixth (the 7th player); the
-  relay test fills a room with 6 sockets and refuses the 7th.
+  relay test fills a room with 6 sockets and refuses the 7th (test:net "server: limits (6 per
+  room, ...)").
+- **The "full" card in a browser.** `probe-multiplayer --part=e` (SIX, no AT1) opens six pages
+  that join with the 4-picture code; after each "Let in!" it checks that the friend really got a
+  seat (on a slow machine a tap can be lost, so it taps once more), and Zoe, the 7th, gets the
+  "full" card ("Lily's world is full of friends right now!", §12). The card is drawn above the
+  Join keypad: the element at the card's centre is the card itself (`.sw-net-msg`, with its
+  wash and the OK button), checked before her picture, after her page has drawn fresh frames
+  (an older picture that seemed to show the keypad on top was a stale frame from a lagging
+  page). About 450 s on a machine without a GPU, so the wave-4 gate runs it on its own (C3b in
+  `docs/teams/wave4-integration.md` §10.2).
 
