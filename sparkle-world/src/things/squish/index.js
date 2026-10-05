@@ -261,6 +261,9 @@ export function install(game) {
     game.setTool('hand');
     dirtyHold = true;
     syncHold();
+    // Squish! and Put away show with the toast, not on the next frame (a slow frame on a big
+    // screen without a GPU was 600-800 ms of no buttons)
+    showHud();
     if (!quiet) {
       squishSfx(game, 'squish', { volume: 0.6 });
       // in the water the toy hides in her hand (wave-4 integration §1.2): the existing line
@@ -276,6 +279,7 @@ export function install(game) {
     if (game.hotbar.slots[i] === 'furn:' + heldDef) game.setSlot(i, null);
     letGo();
     dirtyHold = true;
+    showHud();
     squishSfx(game, 'rustle');
     game.toast(D.STRINGS.away, { icon: 'check', key: 'squish-hold' });
     return true;

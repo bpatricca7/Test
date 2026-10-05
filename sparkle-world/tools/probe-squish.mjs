@@ -590,6 +590,14 @@ async function touchPass(browser, errors) {
     if (phone) await shot(page, 'unwrap-phone', PREFIX);
     await page.locator('.sq-btns .sw-btn', { hasText: 'Hold it' }).tap();
     await wait(page, () => !window.__game.ui.current && !!window.__game.squish.held(), null, 5000);
+    // Squish! and Put away show in the same moment as held() (hold() updates the HUD itself)
+    const now = await ev(page, () => ['squish', 'squish-away'].map((a) => { const e = document.querySelector(`.lf-hud .sw-round[data-action="${a}"]`); return !!e && !e.hidden; }));
+    c(now[0] && now[1], `C2 ${label}: Squish! and Put away show as soon as she holds the toy (${JSON.stringify(now)})`);
+    // then two game frames and 600 ms, so the layout below is the one she sees. Wall time alone
+    // was not enough: on the GPU-less test machine one iPad-sized frame takes 600-800 ms, and the
+    // HUD used to update only on the next frame, so the buttons read hidden (rf2-c2).
+    const f0 = await ev(page, () => window.__game.diag.frames);
+    await wait(page, (f) => window.__game.diag.frames >= f + 2, f0, 10000);
     await settle(page, 600);
     const lay = await ev(page, () => {
       const r = (s) => { const e = document.querySelector(s); if (!e || e.hidden) return null; const b = e.getBoundingClientRect(); return b.width ? { l: b.left, t: b.top, r: b.right, b: b.bottom } : null; };
