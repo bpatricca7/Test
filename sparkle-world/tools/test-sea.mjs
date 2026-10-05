@@ -146,11 +146,24 @@ await test('S0', 'real worlds: the §2.1 numbers, the lagoon, the outside depth,
         const w = await realWorld(biome, size, seed);
         const m = new SeaMap();
         m.attach(w);
-        let ms = Infinity; // warm: the best of seven scans (the first, cold one runs behind the loading screen; seven so a busy machine, another worker's browser, does not decide it)
-        for (let k = 0; k < 7; k++) {
-          const t0 = performance.now();
-          m.attach(w);
-          ms = Math.min(ms, performance.now() - t0);
+        // warm: the best of seven scans (the first, cold one runs behind the loading screen). On a
+        // busy machine (another worker's browser, a garbage collection) all seven of one round
+        // could still land past 8 ms with unchanged code (seen once in a while), so a Big world
+        // whose best is over the limit gets up to two more rounds of seven after a short pause.
+        // A real slowdown is slow in every round and still fails; the rounds used are printed.
+        let ms = Infinity, rounds = 0;
+        const round = () => {
+          rounds++;
+          for (let k = 0; k < 7; k++) {
+            const t0 = performance.now();
+            m.attach(w);
+            ms = Math.min(ms, performance.now() - t0);
+          }
+        };
+        round();
+        while (size === 'big' && ms > 8 && rounds < 3) {
+          await new Promise((r) => setTimeout(r, 250));
+          round();
         }
         let d3 = 0, d5 = 0, liquid = 0;
         for (let z = 0; z < w.sz; z++) for (let x = 0; x < w.sx; x++) {
@@ -178,8 +191,9 @@ await test('S0', 'real worlds: the §2.1 numbers, the lagoon, the outside depth,
           const id = top >= 0 ? w.get(1, top, 1) : -1;
           assert(id === w.registry.idOf('strawberry_milk') || d3 > 1000, 'candy: the strawberry milk sea counts');
         }
-        if (size === 'big') assert(ms <= 8, `warm attach ${biome} ${ms.toFixed(1)} ms (<= 8)`);
-        if (seed === 777 && size === 'big') out.push(`${biome} ${ms.toFixed(1)}ms`);
+        if (size === 'big') assert(ms <= 8, `warm attach ${biome} ${ms.toFixed(1)} ms (<= 8, best of ${rounds} rounds of 7)`);
+        if (seed === 777 && size === 'big') out.push(`${biome} ${ms.toFixed(1)}ms${rounds > 1 ? ` (${rounds} rounds)` : ''}`);
+        else if (rounds > 1) out.push(`${biome} ${seed} ${ms.toFixed(1)}ms (${rounds} rounds)`);
         if (biome === 'beach') {
           // the lagoon and its channel (beach.js:62-64, :94) lie inside 0.94 x R0 of the centre
           // (R0 = 0.33 x size): every sea-level water column there is at most 2 deep

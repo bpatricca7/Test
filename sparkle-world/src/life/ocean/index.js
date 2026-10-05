@@ -2179,6 +2179,8 @@ class OceanSystem {
       /**
        * Probes: how many pairs of school i's fish sit one over another on the screen right now (the
        * smaller one's box more than a quarter covered; S12's measure, through the real camera).
+       * Only fish in the picture count: every one of a fish's 8 box corners must lie in front of
+       * the camera (a corner behind it projects mirrored), and its box must reach into the picture.
        */
       fishStacked(i = 0) {
         const sc = sys.schools[i], cam = sys.game.camera;
@@ -2191,12 +2193,18 @@ class OceanSystem {
           const f = sys.pools.fish[i * PER_SCHOOL + a];
           if (!f.on || f.hidden || f.state === 'skip') continue;
           const R = [Infinity, Infinity, -Infinity, -Infinity], c = Math.cos(f.yaw), sn = Math.sin(f.yaw);
+          let front = true;
           for (let k = 0; k < 8; k++) {
             const lx = (k & 1 ? bb.max.x : bb.min.x) * f.scale, ly = (k & 2 ? bb.max.y : bb.min.y) * f.scale, lz = (k & 4 ? bb.max.z : bb.min.z) * f.scale;
             v.set(f.x + lx * c + lz * sn, f.y + ly, f.z - lx * sn + lz * c).project(cam);
+            if (!(v.z > -1 && v.z < 1)) front = false;
             R[0] = Math.min(R[0], v.x); R[1] = Math.min(R[1], v.y); R[2] = Math.max(R[2], v.x); R[3] = Math.max(R[3], v.y);
           }
-          if (v.z < 1) rects.push(R);
+          // in the picture: in front of the camera and its box overlapping the screen (-1..1); only
+          // the part in the picture is judged
+          if (!front || !(R[2] > -1 && R[0] < 1 && R[3] > -1 && R[1] < 1)) continue;
+          for (let k = 0; k < 4; k++) R[k] = Math.max(-1, Math.min(1, R[k]));
+          rects.push(R);
         }
         let pairs = 0;
         for (let a = 0; a < rects.length; a++) for (let b = a + 1; b < rects.length; b++) {
