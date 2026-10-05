@@ -161,16 +161,25 @@ html, body {
 /* in play, toasts sit below the world name / Help / Dress Up / Menu row instead of covering
    it, narrow enough to stay clear of the tool buttons on the right. While the first-time tips
    show, the tutorial sets --sw-toast-top to just below its card. While a "New sticker!" pop
-   celebrates (src/life/stickers.js), they wait below it. */
+   celebrates (src/life/stickers.js), they wait below it: they jump there at once (no slide), so
+   a toast never sweeps across the pop on its way down on a slow device. */
 .sw-app.sw-playing .sw-toasts { top: var(--sw-toast-top, calc(96px + var(--sw-safe-t))); max-width: min(92vw, calc(100vw - 220px), 640px); transition: top .3s var(--sw-bounce); }
 .sw-app.sw-playing .sw-toast { text-align: center; }
-.sw-app.sw-playing .sw-ui:has(> .sw-stkpop) .sw-toasts { top: calc(16% + 262px + var(--sw-safe-t)); }
+.sw-app.sw-playing .sw-ui:has(> .sw-stkpop) .sw-toasts { top: calc(16% + 262px + var(--sw-safe-t)); transition: none; }
 @media (max-width: 600px) {
   .sw-app.sw-playing .sw-ui:has(> .sw-stkpop) .sw-toasts { top: calc(20% + 210px + var(--sw-safe-t)); }
 }
-/* phones: the top row is two pills tall; the tool buttons live lower down */
+/* phones: the top row is two pills tall; the tool buttons live lower down. One toast at a time
+   (src/ui/ui.js), in the middle between the life column (Basket, Present, ...) on the left and
+   Build / Remove / Hand on the right; under a sticker pop it fits above Fly / Emotes / Photo. */
 @media (max-width: 480px) {
-  .sw-app.sw-playing .sw-toasts { top: var(--sw-toast-top, calc(112px + var(--sw-safe-t))); max-width: 92vw; }
+  .sw-app.sw-playing .sw-toasts { top: var(--sw-toast-top, calc(112px + var(--sw-safe-t))); max-width: calc(100vw - 160px); }
+}
+/* phones held sideways: narrow enough to stay clear of Fly / Emotes / Build on the right and the
+   life column on the left (new toasts wait while a sticker pop shows, src/ui/ui.js) */
+@media (max-height: 520px) and (min-width: 481px) {
+  .sw-app.sw-playing .sw-toasts { max-width: min(640px, calc(100vw - 440px)); }
+  .sw-app.sw-playing .sw-ui:has(> .sw-stkpop) .sw-toasts { opacity: 0; }
 }
 `;
 

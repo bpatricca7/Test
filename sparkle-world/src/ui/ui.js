@@ -96,8 +96,23 @@ export class UI {
     this._pumpToasts();
   }
 
+  // How many toasts may show at once. Phones (upright or sideways) show one at a time and the
+  // rest wait their turn, so a stack never runs down onto the joystick, Jump or the dolphin
+  // bubble and each message stays easy to read. On a phone held sideways a "New sticker!" pop
+  // fills the middle of the screen, so new toasts wait until it has gone.
+  _toastRoom() {
+    const mq = (q) => typeof matchMedia === 'function' && matchMedia(q).matches;
+    if (!mq('(max-width: 480px), (max-height: 520px)')) return MAX_TOASTS;
+    if (mq('(max-height: 520px)') && this.root.querySelector(':scope > .sw-stkpop')) {
+      clearTimeout(this._toastWait);
+      this._toastWait = setTimeout(() => this._pumpToasts(), 400);
+      return 0;
+    }
+    return 1;
+  }
+
   _pumpToasts() {
-    while (this._toastQueue.length && this._toastCount < MAX_TOASTS) {
+    while (this._toastQueue.length && this._toastCount < this._toastRoom()) {
       const { text, opts } = this._toastQueue.shift();
       const t = this.el('div', 'sw-toast' + (opts.big ? ' sw-toast--big' : ''));
       if (opts.color) t.style.borderColor = `var(--sw-${opts.color})`;

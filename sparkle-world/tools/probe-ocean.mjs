@@ -3170,7 +3170,7 @@ async function wave4X5(browser, errors) {
         const a = rs[i], b = rs[j];
         if (a.g === b.g) continue;
         const ix = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x), iy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
-        if (ix > 2 && iy > 2) out.push(`${a.g}:${a.sel} x ${b.g}:${b.sel}`);
+        if (ix > 2 && iy > 2) { const at = (q) => `[${Math.round(q.x)},${Math.round(q.y)} ${Math.round(q.w)}x${Math.round(q.h)}]`; out.push(`${a.g}:${a.sel}${at(a)} x ${b.g}:${b.sel}${at(b)}`); }
       }
       return out;
     };

@@ -120,9 +120,11 @@ const CSS = /* css */ `
   .sw-wk-secs { min-width: 32px; height: 32px; line-height: 24px; font-size: 16px; }
   .sw-wk-off, .sw-app.sw-touch-hud .sw-wk-off { left: 50%; right: auto; transform: translateX(-50%); bottom: calc(76px + var(--sw-safe-b)); }
 }
-/* phones held sideways: above the right end of the hotbar, left of Undo; the label on top */
+/* phones held sideways: above the right end of the hotbar, left of Photo; the label on top.
+   High enough that the rings it sends out while pressed (22 px past the button) end above the
+   hotbar, and far enough left that they clear Photo / Fly and their words. */
 @media (max-height: 520px) and (min-width: 481px) {
-  .sw-wk, .sw-app.sw-touch-hud .sw-wk { left: auto; right: calc(224px + var(--sw-safe-r)); bottom: calc(70px + var(--sw-safe-b)); gap: 2px; flex-direction: column-reverse; }
+  .sw-wk, .sw-app.sw-touch-hud .sw-wk { left: auto; right: calc(240px + var(--sw-safe-r)); bottom: calc(94px + var(--sw-safe-b)); gap: 2px; flex-direction: column-reverse; }
   .sw-wk-btn, .sw-app.sw-touch-hud .sw-wk-btn { width: 92px; height: 92px; }
   .sw-wk-label { font-size: 13px; max-width: 150px; }
   .sw-wk-secs { min-width: 30px; height: 30px; line-height: 22px; font-size: 15px; }
