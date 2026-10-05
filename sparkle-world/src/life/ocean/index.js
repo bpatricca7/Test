@@ -16,7 +16,7 @@ import { SeaMap } from './seamap.js';
 import { SEA_KINDS, SEA_SPEC, SEA_NAMES, SEA_TEXT, PALETTES, OCEAN_STAR_KINDS, DOLPHIN_NAMES, pickPalette, hexToLinear } from './kinds.js';
 import {
   makeRecord, saveGood, sanitize, columnOk, spawnOk, settleY, swimToward, wanderTarget, canLeap, startLeap,
-  stepLeap, startTrick, stepTrick, Spawner, placeFish, spaceFish, fishSlot, schoolFrame, apartKinds, CROSS, stepCrab, rescueCell, bestDirection, glassBetween, SURF, NEAR,
+  stepLeap, startTrick, stepTrick, Spawner, placeFish, spaceFish, fishSlot, fishY, schoolFrame, apartKinds, CROSS, stepCrab, rescueCell, bestDirection, glassBetween, SURF, NEAR,
 } from './motion.js';
 import { SEA_U, SEA_LIQUIDS, SEA_WATER } from './material.js';
 import { SeaMeshes, glassLanes } from './render.js';
@@ -1104,7 +1104,8 @@ class OceanSystem {
           }
         } else {
           const near = dist <= NEAR;
-          const want = near ? surf - 0.38 + 0.1 * Math.sin(r.phase * 0.2 + r.yoff * 6) : surf - 0.7;
+          // (the back row a little above the front one from her camera; the school bobs as one)
+          const want = fishY(r, sc, surf, near, eye.y);
           r.y += clamp(want - r.y, -2 * dt, 2 * dt);
           if (near) r.y = clamp(r.y, surf - 0.5, surf - 0.26);
         }

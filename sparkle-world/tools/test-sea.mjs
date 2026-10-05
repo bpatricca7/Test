@@ -21,7 +21,7 @@ import { SEA_KINDS, OCEAN_STAR_KINDS, PALETTES, SEA_SPEC, DOLPHIN_NAMES, SEA_TEX
 import { h01, whaleTime, whalePhase, buddyOf, clockFrozen, WHALE_LEN } from '../src/life/ocean/schedule.js';
 import {
   makeRecord, saveGood, sanitize, columnOk, spawnOk, settleY, swimToward, wanderTarget, canLeap, startLeap, stepLeap,
-  startTrick, stepTrick, Spawner, placeFish, spaceFish, fishSlot, schoolFrame, FISH_APART, FISH_STEP, stepCrab, rescueCell, glassBetween, SURF, BAND, apartKinds, CROSS, CROSS_UP,
+  startTrick, stepTrick, Spawner, placeFish, spaceFish, fishSlot, fishY, schoolFrame, FISH_APART, FISH_STEP, stepCrab, rescueCell, glassBetween, SURF, BAND, apartKinds, CROSS, CROSS_UP,
 } from '../src/life/ocean/motion.js';
 import { DolphinRide, RIDE_SPEED, RIDE_RUN } from '../src/life/ocean/ride.js';
 import { parseSeaRide, parseSeaTrick } from '../src/net/protocol.js';
@@ -939,7 +939,7 @@ function schoolRun({ noView = false, layout = 'new', spaced = true, seed = 1, fl
     for (const f of fish) {
       f.orbit += f.orbitW * dt; placeFish(f, school, env, spaced ? dt : 0);
       f.phase += dt * 6;
-      f.y = surf - 0.38 + 0.1 * Math.sin(f.phase * 0.2 + f.yoff * 6);
+      f.y = fishY(f, school, surf, true, cam ? cam.y : undefined); // (index.js: the rows' lift, the school's bob)
     }
     if (spaced) spaceFish(fish, 0, fish.length, dt, school, env, noView ? null : cam);
     if (step >= settle) for (let i = 0; i < n; i++) jump = Math.max(jump, Math.hypot(fish[i].x - px[i], fish[i].z - pz[i]));
@@ -1067,7 +1067,8 @@ await test('S12', 'fish from her camera: school mates seldom sit one over anothe
   // sides to her (sideOn), so a fish's length never covers the row behind it
   const dOut = [];
   let dSum = 0, dWorst = 0;
-  for (const [h, far] of [[3.0, 11], [3.0, 9], [1.5, 9], [3.7, 16]]) {
+  // (3.3 up and 14 to 21 away: her play camera with the school wandered off, R-F's far runs)
+  for (const [h, far] of [[3.0, 11], [3.0, 9], [1.5, 9], [3.7, 16], [3.3, 15], [3.3, 19]]) {
     for (const seed of [1, 3]) {
       const bear = seed * 2.1, school0 = { x: 32.5, z: 32.5 };
       const camPos = { x: school0.x - Math.sin(bear) * far, y: 10 + SURF + h, z: school0.z - Math.cos(bear) * far };

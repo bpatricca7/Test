@@ -501,9 +501,34 @@ export function fishSlot(r, i, n) {
   const shift = rows === 2 && cnt * 2 === n ? (row ? 0.25 : -0.25) * FISH_SIDE : 0;
   const side = (col - (cnt - 1) / 2) * FISH_SIDE + shift;
   const away = rows === 2 ? (row ? 0.5 : -0.5) * FISH_ROWS : 0;
+  r.row = rows === 2 ? (row ? 1 : -1) : 0;
   r.orbit = Math.atan2(side, away);
   r.orbitR = Math.hypot(side, away);
   r.orbitW = 0;
+}
+
+/** How far a school's back row swims above its front row (half; blocks), and the school's bob. */
+export const ROW_LIFT = 0.1;
+const SCHOOL_BOB = 0.012, OWN_BOB = 0.008;
+
+/**
+ * The height fish r of a school wants (its centre; the caller eases toward it): just under the
+ * surface near her (surf - 0.38), deeper far away (surf - 0.7). A two-row school's back row swims
+ * ROW_LIFT higher and its front row ROW_LIFT lower when her camera is above the fish (lower and
+ * higher when it is below them), so from her camera the back row always shows above the front
+ * one, even far away, where the rows' own distance apart hardly shows on the screen. The whole
+ * school bobs together (the rows keep their gap), each fish only a hair on its own. camY: her
+ * camera's height (the side flips 0.3 past the fish, so a camera at their height never flickers).
+ */
+export function fishY(r, school, surf, near, camY) {
+  const mid = near ? surf - 0.38 : surf - 0.7;
+  if (Number.isFinite(camY)) {
+    if (camY > mid + 0.3) school.liftS = 1;
+    else if (camY < mid - 0.3) school.liftS = -1;
+  }
+  const side = school.liftS === -1 ? -1 : 1;
+  const bob = SCHOOL_BOB * Math.sin((school.glideT || 0) * 1.3) + OWN_BOB * Math.sin((r.phase || 0) * 0.2 + (r.yoff || 0) * 6);
+  return mid + (r.row || 0) * ROW_LIFT * side + bob;
 }
 
 /**
