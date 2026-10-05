@@ -22,7 +22,8 @@
 //   cost    draw calls, the systems stage, geometries over time, NaN-free, the gallery (C5)
 //
 //   node tools/probe-ocean.mjs [--only=world,see,tap,ride,touch,biomes,saves,mp,cost,gallery] [--headed]
-//   (cost includes the gallery, C5; --only=gallery runs C5 alone; --only=review makes the
+//   (cost includes the gallery, C5; --only=cost --part=1 leaves it out and --only=gallery runs C5
+//   alone, so each fits a shorter time limit; --only=review makes the
 //   owner-review pictures, ocean-review-*.png, and is never part of the default run)
 //
 // Not here yet (P2, on the merged tree with merfolk): R10 (a mermaid and a sea dragon riding),
@@ -1909,7 +1910,10 @@ async function costPass(browser, errors) {
   await float(page, true);
   await goTo(page, deep);
   await page.waitForTimeout(500);
-  // C1 draw calls: every kind spawned at full count, a fixed camera over the sea
+  // C1 draw calls: every kind spawned at full count, a fixed camera over the sea. The cursor's
+  // target outline is hidden (as for a Photo): it is the HUD's, not sea life's (13 calls of its own
+  // when the crosshair happens to rest on an animal)
+  await cleanView(page, true, true);
   const c1 = await ev(page, async () => {
     const g = window.__game, d = g.debug.ocean, p = g.player.position;
     const calls = async () => {
@@ -1956,12 +1960,12 @@ async function costPass(browser, errors) {
     fw.y = 0; fw.normalize();
     right.set(-fw.z, 0, fw.x);
     const cells = [], seen = new Set();
-    for (let s = -8; s <= -0.5; s += 0.5) for (let h = -4; h <= 3; h++) {
+    for (let s = -8; s <= -0.5; s += 0.5) for (let h = -3; h <= 3; h++) {
       const x = Math.floor(cam.position.x + fw.x * 3 + right.x * s), y = Math.floor(cam.position.y + h), z = Math.floor(cam.position.z + fw.z * 3 + right.z * s);
       const key = x + ',' + y + ',' + z;
-      if (seen.has(key)) continue;
+      if (seen.has(key) || w.get(x, y, z) !== 0) continue; // in the air over the sea (no animal loses its water)
       seen.add(key);
-      cells.push([x, y, z, w.get(x, y, z)]);
+      cells.push([x, y, z, 0]);
     }
     for (const c of cells) w.set(c[0], c[1], c[2], glass, { record: false });
     await frames(40);
@@ -1974,6 +1978,7 @@ async function costPass(browser, errors) {
     await frames(40);
     return { groups, n: Object.keys(groups).length, some, split, cells: cells.length };
   });
+  await cleanView(page, false, true);
   check(errors, c1g.some > 0 && c1g.n <= 9,
     `C1 glass: a glass wall over half the view (${c1g.cells} cells; ${c1g.some} kinds seen through it, ${c1g.split} of them split) and sea life still draws ${c1g.n} meshes (<= 9): ${JSON.stringify(c1g.groups)}`);
   // C2 the systems stage: full counts vs idle (+1.0 ms at most)
@@ -2025,7 +2030,7 @@ async function costPass(browser, errors) {
   });
   check(errors, c4.bad === 0 && c4.nan === 0, `C4 every creature position is finite (${c4.bad} bad, ${c4.nan} NaN resets)`);
   await context.close();
-  await galleryShots(browser, errors);
+  if (args.part !== '1') await galleryShots(browser, errors); // --part=1: C1-C4 alone (then --only=gallery)
 }
 
 /** C5: the animals by day and night, every palette, the whale (the owner review, §7.3). */
