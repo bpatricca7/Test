@@ -86,6 +86,9 @@ jobs:
       - name: Sea forms (rules, codec, shore exit)
         run: npm run test:merfolk
 
+      - name: Squishy toys (data, merges)
+        run: npm run test:squish
+
       - name: Family accounts end to end
         run: npm run e2e:accounts
 

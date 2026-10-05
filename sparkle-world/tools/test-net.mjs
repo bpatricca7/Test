@@ -1795,6 +1795,48 @@ async function wsPropertyTests() {
 // Vehicles (docs/teams/vehicles.md §10.2): presence vh and the host's custody of a friend's car
 // =====================================================================================
 
+// Squishy toys (wave 4, the squish team doc §14.2): a held toy is presence `hi` (no new field)
+async function squishTests() {
+  console.log('\nSquishy toys: presence hi');
+  const { avatarFields, NetHost } = await import('../src/net/host.js');
+  const { GameAdapter } = await import('../src/net/adapter.js');
+
+  await test('squish: N1/N2 avatarFields keeps a toy key and sends it only on change; bad keys become null', async () => {
+    const owner = { presenceText: new Map(), lastPos: null, lastLookAt: -Infinity, _set: NetHost.prototype._set };
+    const send = (hi) => { const patch = {}; avatarFields(owner, patch, { hi }, 0); return patch; };
+    eq(send('squishg_pf_strawberry').hi, 'squishg_pf_strawberry', 'N1 a sparkly toy: sent');
+    assert(!('hi' in send('squishg_pf_strawberry')), 'N1 unchanged: not sent');
+    eq(send('squish_st_heart').hi, 'squish_st_heart', 'N1 another toy: sent');
+    for (const bad of ['squish_PF', 'x'.repeat(49), 'a b']) {
+      send('squish_pf_dino');
+      eq(send(bad).hi, null, 'N2 refused: ' + bad.slice(0, 12));
+    }
+  });
+
+  await test('squish: N3 host presence with toys in every hand stays under 3,900 B', async () => {
+    const { clock, hub, H, gs } = await hostAndGuests(61, [['Mia', 'u1'], ['Zoe', 'u2'], ['June', 'u3']]);
+    H.adapter.hi = 'squishg_' + 'pf_' + 'a'.repeat(17);
+    for (const G of gs) G.adapter.hi = 'squishg_pf_strawberry';
+    await act(clock, [H, ...gs], 3000);
+    const hs = jsonBytes(H.session.transport.myState());
+    assert(hs <= 3900, 'host presence ' + hs + ' B');
+    eq(H.session.transport.myState().hi, H.adapter.hi, "the host's toy is out");
+    const gp = H.session.transport.peers().find((p) => p.state.nm === 'Mia');
+    eq(gp.state.hi, 'squishg_pf_strawberry', "a friend's toy reaches the host");
+    hub.close();
+    return `host presence ${hs} B`;
+  });
+
+  await test('squish: N4 heldKey - a toy with no treats module; with both, the treat wins', async () => {
+    const heldKey = (game) => GameAdapter.prototype.heldKey.call(Object.assign(Object.create(GameAdapter.prototype), { game }));
+    eq(heldKey({ squish: { held: () => 'squish_pf_dino' } }), 'squish_pf_dino', 'no game.treats: the toy (the early return is gone)');
+    eq(heldKey({ treats: { held: null }, squish: { held: () => 'squish_pf_dino' } }), 'squish_pf_dino', 'no treat held: the toy');
+    eq(heldKey({ treats: { held: 'treat_lolly' }, squish: { held: () => 'squish_pf_dino' } }), 'treat_lolly', 'both: the treat');
+    eq(heldKey({ squish: { held: () => { throw new Error('x'); } } }), null, 'a broken module: null');
+    eq(heldKey({}), null, 'nothing: null');
+  });
+}
+
 async function vehicleTests() {
   console.log('\nVehicles: presence vh, host custody');
   const { avatarFields, NetHost } = await import('../src/net/host.js');
@@ -2069,6 +2111,7 @@ const t0 = Date.now();
 if (!ONLY || ONLY.has('unit')) await unitTests();
 if (!ONLY || ONLY.has('unit') || ONLY.has('vehicles')) await vehicleTests();
 if (!ONLY || ONLY.has('unit') || ONLY.has('merfolk')) await merfolkTests();
+if (!ONLY || ONLY.has('unit') || ONLY.has('squish')) await squishTests();
 if (!ONLY || ONLY.has('prop')) await propertyTests();
 if (!ONLY || ONLY.has('server')) await serverTests();
 if (!ONLY || ONLY.has('server')) await serverSafetyTests();

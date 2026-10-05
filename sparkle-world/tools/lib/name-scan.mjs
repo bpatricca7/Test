@@ -41,6 +41,8 @@ const EXTRA = {
     'VmVzcGE=',
   ],
   squish: [
+    'c3F1aXNoaWVz', // the toy-brand plural (squish team doc §8.1)
+    'c3BhY2UgP2J1ZCg/OmR5fGRpZXN8cyk/', // the dropped "space" toy name (§8.1)
   ],
   ocean: [
   ],

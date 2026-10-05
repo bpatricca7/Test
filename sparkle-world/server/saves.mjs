@@ -63,6 +63,7 @@ const PUT_LIMIT = [{ name: 'saves-put', count: 12, perMs: 60000, burst: 20, key:
 const PORTRAIT_LIMIT = [{ name: 'portrait-put', count: 6, perMs: 60000, burst: 6, key: 'player' }];
 
 const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
+const isSquish = isObj; // profile.squish: the squishy toy collection (kept by putProfile)
 const etag = (rev) => `"r${rev}"`;
 const ms = (d) => (d instanceof Date ? d.getTime() : Number(d));
 
@@ -150,9 +151,10 @@ export function routes(ctx) {
     await mayWrite(x);
     const p = x.body;
     if (!Number.isFinite(p.updatedAt) || p.updatedAt < 0) throw httpError(400, 'bad_request');
-    const json = Buffer.from(JSON.stringify(stripProfile(p)));
+    const stripped = stripProfile(p);
+    let json = Buffer.from(JSON.stringify(stripped));
     if (json.length > lim().profileBytes) throw httpError(413, 'too_big');
-    const body = await gzip(json);
+    let body = await gzip(json);
     const pid = x.player.id;
     return ctx.db.tx(async (q) => {
       await q.query('select pg_advisory_xact_lock(hashtext($1))', [lockKey(pid, '@profile')]);
@@ -160,6 +162,20 @@ export function routes(ctx) {
       if (row && ifMatch !== row.rev) {
         if (p.updatedAt === row.client_updated_at) return { json: { rev: row.rev }, headers: { ETag: etag(row.rev) } };
         throw httpError(409, 'conflict', { rev: row.rev, updatedAt: row.client_updated_at });
+      }
+      // squishy toys are never lost to an old cached page: a build from before them uploads a
+      // profile without `squish`, so the stored one is kept (the squish team doc §9.1)
+      if (row && !isSquish(stripped.squish)) {
+        const old = await q.one('select body from player_profiles where player_id = $1', [pid]);
+        let kept = null;
+        try {
+          kept = JSON.parse((await gunzip(old.body)).toString('utf8')).squish;
+        } catch {}
+        if (isSquish(kept)) {
+          json = Buffer.from(JSON.stringify({ ...stripped, squish: kept }));
+          if (json.length > lim().profileBytes) throw httpError(413, 'too_big');
+          body = await gzip(json);
+        }
       }
       const rev = (row ? row.rev : 0) + 1;
       await q.query(

@@ -427,6 +427,8 @@ export class FakeAdapter {
     const out = { p: this.pos.slice(), st: this.st, nm: this.name, lk: this.look };
     // the vehicle she drives (presence vh), only when a test set one
     if (this.vh !== undefined) out.vh = this.vh;
+    // the toy or treat in her hand (presence hi), only when a test set one
+    if (this.hi !== undefined) out.hi = this.hi;
     return out;
   }
 

@@ -347,9 +347,45 @@ class TargetOutline {
   }
 }
 
+// The coin pill opens the Squish Shelf (wave 4, squish): a button with a present ring after the
+// number that fills as coins are EARNED (never follows spending). The ring has no text, so the
+// pill's textContent stays the number.
+const RING_CSS = /* css */ `
+.sw-hud button.sw-pill { position: relative; font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.sw-hud button.sw-pill::after { content: ''; position: absolute; inset: -8px -2px; }
+.sw-hud button.sw-pill:active { transform: scale(.96); }
+.sw-coins-ring { position: relative; width: 28px; height: 28px; flex: none; margin-left: -2px; }
+.sw-pill .sw-coins-ring svg { width: 28px; height: 28px; display: block; }
+.sw-coins-ring .sq-ring-fill { transition: stroke-dashoffset .4s ease-out; }
+.sw-coins-ring.sq-ready .sq-ring-box { fill: #B394FF; }
+.sw-coins-ring.sq-ready .sq-ring-fill { stroke: #FF5FA2; }
+.sw-coins-ring.sq-anim.sq-near { animation: sq-ring-wiggle 4s ease-in-out infinite; }
+.sw-coins-ring.sq-anim.sq-ready { animation: sq-ring-hop 3s ease-in-out infinite; }
+@keyframes sq-ring-wiggle { 0%, 84%, 100% { transform: rotate(0); } 88% { transform: rotate(-14deg); } 92% { transform: rotate(12deg); } 96% { transform: rotate(-6deg); } }
+@keyframes sq-ring-hop { 0%, 80%, 100% { transform: translateY(0) scale(1); } 88% { transform: translateY(-7px) scale(1.12); } }
+.sq-ring-spark { position: absolute; left: 0; top: 0; width: 16px; height: 16px; margin: -8px 0 0 -8px; pointer-events: none !important; z-index: 3; }
+.sq-ring-spark svg { width: 100% !important; height: 100% !important; color: #FFC94D; }
+@media (max-width: 760px), (max-height: 520px) {
+  .sw-coins-ring, .sw-pill .sw-coins-ring svg { width: 24px; height: 24px; }
+}
+`;
+const RING_R = 9.5;
+const RING_C = 2 * Math.PI * RING_R;
+function ringSvg() {
+  return [
+    '<svg viewBox="0 0 28 28" aria-hidden="true" focusable="false">',
+    `<circle cx="14" cy="14" r="${RING_R}" fill="#fff" stroke="#E8DDFF" stroke-width="4"/>`,
+    `<circle class="sq-ring-fill" cx="14" cy="14" r="${RING_R}" fill="none" stroke="#C8B4FF" stroke-width="4" stroke-linecap="round" stroke-dasharray="${RING_C.toFixed(2)}" stroke-dashoffset="${RING_C.toFixed(2)}" transform="rotate(-90 14 14)"/>`,
+    '<g class="sq-ring-gift"><rect class="sq-ring-box" x="9" y="12" width="10" height="8" rx="1.5" fill="#C8B4FF"/><rect x="8.2" y="9.6" width="11.6" height="3" rx="1" fill="#DCCDFF"/><rect x="13" y="9.6" width="2" height="10.4" fill="#FF6FA8"/><path d="M14 9.6c-1-2.4-3.4-2.6-3.4-1.2 0 1 1.8 1.2 3.4 1.2Zm0 0c1-2.4 3.4-2.6 3.4-1.2 0 1-1.8 1.2-3.4 1.2Z" fill="#FF6FA8"/></g>',
+    '<path class="sq-ring-star" d="M14 6.6l2.1 4.4 4.8.5-3.6 3.2 1 4.7L14 17l-4.3 2.4 1-4.7-3.6-3.2 4.8-.5Z" fill="#FFD43B" stroke="#F2A900" stroke-width="1" display="none"/>',
+    '</svg>',
+  ].join(''); // no whitespace: the pill's textContent stays the number
+}
+
 export function install(game) {
   const ui = game.ui;
   ui.addStyles(CSS);
+  ui.addStyles(RING_CSS);
   const hud = ui.el('div', 'sw-hud');
   ui.hudLayer.appendChild(hud);
 
@@ -363,11 +399,25 @@ export function install(game) {
   gemPill.innerHTML = icon('gem');
   const gemText = ui.el('span', '', '0');
   gemPill.appendChild(gemText);
-  const coinPill = ui.el('div', 'sw-pill sw-coins sw-passive');
+  // a button that opens the Squish Shelf when that action exists (else it stays passive)
+  const shelfAction = game.actions.has('squish');
+  const coinPill = ui.el(shelfAction ? 'button' : 'div', 'sw-pill sw-coins' + (shelfAction ? '' : ' sw-passive'));
   coinPill.innerHTML = icon('coin');
   const coinText = ui.el('span', '', '0');
   coinPill.appendChild(coinText);
   coinPill.hidden = true;
+  let coinRing = null;
+  if (shelfAction) {
+    coinPill.type = 'button';
+    coinPill.addEventListener('click', (e) => {
+      e.stopPropagation();
+      game.audio.play('click');
+      game.runAction('squish');
+    });
+    coinRing = ui.el('span', 'sw-coins-ring');
+    coinRing.innerHTML = ringSvg();
+    coinPill.appendChild(coinRing);
+  }
   // playing with friends: "Reconnecting…" / "Sending…" while it matters
   const netPill = ui.el('div', 'sw-pill sw-net-pill sw-passive');
   netPill.innerHTML = icon('cloud');
@@ -533,11 +583,48 @@ export function install(game) {
     if (lastCoins !== null && c > lastCoins) {
       coinPill.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.18)' }, { transform: 'scale(1)' }], { duration: 380, easing: 'ease-out' });
     }
+    const hop = coinRing && lastCoins !== null && c > lastCoins;
     lastCoins = c;
     coinText.textContent = String(Math.floor(c));
+    if (shelfAction) coinPill.setAttribute('aria-label', game.squish && game.squish.pillLabel ? game.squish.pillLabel(Math.floor(c)) : `Sparkle Coins: ${Math.floor(c)}`);
+    if (hop) ringHop();
   };
   game.events.on('coins:change', refreshCoins);
   game.events.on('coins:shown', refreshCoins);
+  // the present ring: its own refresh (refreshCoins returns early when the number is unchanged)
+  let ringKey = '';
+  const refreshRing = () => {
+    if (!coinRing || !game.squish || !game.squish.ring) return;
+    const r = game.squish.ring();
+    const anim = game.squish.animOk ? game.squish.animOk() : false;
+    const key = `${r.state}|${Math.round((r.frac || 0) * 100)}|${anim}`;
+    if (key === ringKey) return;
+    ringKey = key;
+    const fill = coinRing.querySelector('.sq-ring-fill');
+    fill.setAttribute('stroke-dashoffset', (RING_C * (1 - Math.max(0, Math.min(1, r.frac || 0)))).toFixed(2));
+    for (const s of ['fill', 'near', 'ready', 'done']) coinRing.classList.toggle('sq-' + s, r.state === s);
+    coinRing.classList.toggle('sq-anim', anim);
+    coinRing.querySelector('.sq-ring-gift').setAttribute('display', r.state === 'done' ? 'none' : 'inline');
+    coinRing.querySelector('.sq-ring-star').setAttribute('display', r.state === 'done' ? 'inline' : 'none');
+  };
+  // a sparkle hops from the number into the ring as coins land ("coins fill the present")
+  const ringHop = () => {
+    if (!coinRing || !game.squish || !game.squish.animOk || !game.squish.animOk() || typeof Element.prototype.animate !== 'function') return;
+    const a = coinText.getBoundingClientRect(), b = coinRing.getBoundingClientRect(), p = coinPill.getBoundingClientRect();
+    if (!a.width || !b.width) return;
+    const s = ui.el('span', 'sq-ring-spark');
+    s.innerHTML = icon('sparkles');
+    coinPill.appendChild(s);
+    const x0 = a.left - p.left + a.width / 2, y0 = a.top - p.top + a.height / 2;
+    const x1 = b.left - p.left + b.width / 2, y1 = b.top - p.top + b.height / 2;
+    const anim = s.animate([
+      { transform: `translate(${x0}px, ${y0}px) scale(.6)`, opacity: 1 },
+      { transform: `translate(${(x0 + x1) / 2}px, ${y0 - 18}px) scale(1)`, opacity: 1 },
+      { transform: `translate(${x1}px, ${y1}px) scale(.4)`, opacity: 0.2 },
+    ], { duration: 420, easing: 'ease-out' });
+    anim.onfinish = () => s.remove();
+  };
+  for (const evName of ['coins:shown', 'coins:change', 'squish:refresh']) game.events.on(evName, refreshRing);
   // playing with friends: Players (with how many are here) and Say show only in a session
   let netUp = true;
   let pillKind = null;
