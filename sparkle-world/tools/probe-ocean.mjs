@@ -683,8 +683,8 @@ async function tapPass(browser, errors) {
   const deep = await ev(page, () => window.__game.debug.ocean.deepSpot());
   await float(page, true);
   await goTo(page, deep);
-  await ev(page, () => { const g = window.__game; g.setTool('hand'); g.debug.ocean.clear(); g.debug.ocean.autoSpawn(false); g.award('splash'); });
-  await page.waitForTimeout(800); // her first swim's own sticker (Splash!) is out of the way
+  await ev(page, () => { const g = window.__game; g.setTool('hand'); g.debug.ocean.clear(); g.debug.ocean.autoSpawn(false); g.award('splash'); g.award('sea_magic'); });
+  await page.waitForTimeout(800); // her first swim's own stickers (Splash!, and merfolk's Sea Magic! for her first turn) are out of the way
 
   // T1 click a dolphin while swimming: hold beside her, the bubble, the sticker, coins
   const coins0 = await ev(page, () => window.__game.profile.coins);
@@ -1116,7 +1116,8 @@ async function ridePass(browser, errors) {
   const { context, page } = await openGame(browser, { errors, label: 'ride' });
   await newWorld(page, 'beach');
   const deep = await ev(page, () => window.__game.debug.ocean.deepSpot());
-  await ev(page, () => window.__game.award('splash')); // her first swim's own sticker, out of the way
+  // her first swim's own stickers out of the way (Splash!, and merfolk's Sea Magic! for her first turn)
+  await ev(page, () => { const g = window.__game; g.award('splash'); g.award('sea_magic'); });
   const coins0 = await ev(page, () => window.__game.profile.coins);
   // R1 the bubble's Ride
   const rode = await startRide(page, deep);
@@ -1396,9 +1397,9 @@ async function touchPass(browser, errors) {
   await float(page, true);
   await goTo(page, deep);
   // no sticker pops during U1's steady check (the bubble moves aside for a pop, by design, and
-  // the first swim's Splash! and the first hello's Dolphin Friend come at a machine's own pace;
+  // the first swim's Splash!, merfolk's first-turn Sea Magic! and the first hello's Dolphin Friend come at a machine's own pace;
   // the tap pass checks those stickers): both are hers already, their pops shown and gone
-  await ev(page, () => { const g = window.__game; g.setTool('hand'); g.debug.ocean.clear(); g.debug.ocean.autoSpawn(false); g.award('splash'); g.award('dolphin_friend'); });
+  await ev(page, () => { const g = window.__game; g.setTool('hand'); g.debug.ocean.clear(); g.debug.ocean.autoSpawn(false); g.award('splash'); g.award('sea_magic'); g.award('dolphin_friend'); });
   await waitOk(page, () => !!document.querySelector('.sw-stkpop'), null, 3000);
   await waitOk(page, () => !document.querySelector('.sw-stkpop'), null, 15000);
   await page.waitForTimeout(500);
