@@ -1635,6 +1635,9 @@ class OceanSystem {
     if (!pl || this.ride.on) return;
     const level = r.level;
     this.rideRec = r;
+    // a buddy from her last ride swims with the pod again: it and the one she now rides both
+    // hold their place (FIXED), and _apart never parts two of those
+    for (const o of this.pools.dolphin) if (o !== r && o.on && o.state === 'buddy') { o.state = 'swim'; o.buddyT = 0; }
     r.state = 'ride';
     r.saddle = true;
     r.tintVer++;

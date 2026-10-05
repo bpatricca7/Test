@@ -1514,6 +1514,46 @@ async function ridePass(browser, errors) {
     check(errors, !off.riding && off.form === form && off.shown && off.events.length === 0,
       `R10 the ${form} hops off in deep water: the tail still set, no 'player:seaform' from mount to hop off (${JSON.stringify(off)})`);
   }
+
+  // R11 no dolphin swims through the one she rides (_apart: the ridden one holds its place and
+  // only the other one moves): another of the pod put right on it is pushed out to the dolphins'
+  // spacing (1.7) and stays out. Counted in game frames, not seconds (one frame counts at most
+  // 0.05 s and this machine without a GPU draws few frames a second): 60 frames to part, then
+  // 40 more read. Frames where the other one leaps or does a trick (it holds its place too) skip.
+  await goTo(page, deep);
+  await page.waitForTimeout(400);
+  const r11 = await ev(page, () => new Promise((resolve) => {
+    const g = window.__game, d = g.debug.ocean;
+    if (!d.ride()) { resolve({ rode: false }); return; }
+    const s0 = d.rideState();
+    const mine = d.list('dolphin').find((r) => r.state === 'ride');
+    const other = d.list('dolphin').find((r) => r.state !== 'ride' && r.role === 'wild');
+    if (!mine || !other) { resolve({ rode: true, other: !!other }); return; }
+    d.move('dolphin', other.i, s0.x + 0.2, s0.z + 0.1);
+    const out = { rode: true, other: true, start: 0, frames: 0, read: 0, skipped: 0, min: Infinity, at60: null };
+    const gap = () => {
+      const l = d.list('dolphin'), a = l.find((r) => r.i === mine.i), b = l.find((r) => r.i === other.i);
+      if (!a || !b) return null;
+      return { h: Math.hypot(a.x - b.x, a.z - b.z), fixed: ['leap', 'trick', 'ride', 'hold', 'mount', 'gallery'].includes(b.state), riding: a.state === 'ride' };
+    };
+    const g0 = gap();
+    out.start = g0 ? +g0.h.toFixed(2) : null;
+    const tick = () => {
+      out.frames++;
+      const x = gap();
+      if (!x || !x.riding) { out.lost = true; resolve(out); return; }
+      if (out.frames === 60) out.at60 = +x.h.toFixed(2);
+      if (out.frames > 60) {
+        if (x.fixed) out.skipped++;
+        else { out.read++; out.min = Math.min(out.min, x.h); }
+      }
+      if (out.frames >= 100) { out.min = +out.min.toFixed(2); resolve(out); } else requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }));
+  check(errors, r11.rode && r11.other && !r11.lost && r11.start < 0.5 && r11.read >= 20 && r11.min >= 1.5,
+    `R11 a pod dolphin put on the one she rides is pushed out and stays out (no dolphin through hers): ${JSON.stringify(r11)}`);
+  await ev(page, () => window.__game.debug.ocean.hopOff('button'));
   await context.close();
 }
 

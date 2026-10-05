@@ -113,8 +113,15 @@ async function wave4(page, size) {
   await shot(page, `hudsizes-${TAG}-bubble-${size}`, 'tmp');
   // riding: Hop off in the life column, Jump (the dolphin leaps)
   if (bub) await page.locator('.oc-bubble.lf-on .oc-ride').tap();
-  const rode = bub && await waitFor(page, () => window.__game.ocean.riding && (() => { const b = document.querySelector('.lf-hud .sw-round[data-action="seahop"]'); return b && !b.hidden; })(), null, 8000);
-  if (!rode) out.push('riding: the ride did not start');
+  // the tap must reach the dolphin at once (it swims under her: state 'mount'). The mount lasts
+  // 0.4 s of game time, but one game frame counts at most 0.05 s (core/game.js), and this machine
+  // without a GPU draws about 1.4 frames a second at 1366x940, so those 8 frames take up to about
+  // 7 s here (an instrumented run: tap at 11.1 s, the ride at 18.1 s). So the ride itself gets
+  // 30 s; a tap that never reaches the dolphin still fails at 3 s.
+  const tapped = bub && await waitFor(page, () => window.__game.ocean.riding || window.__game.debug.ocean.list('dolphin').some((r) => r.state === 'mount'), null, 3000);
+  if (bub && !tapped) out.push('riding: the Ride tap did not reach the dolphin');
+  const rode = tapped && await waitFor(page, () => window.__game.ocean.riding && (() => { const b = document.querySelector('.lf-hud .sw-round[data-action="seahop"]'); return b && !b.hidden; })(), null, 30000);
+  if (tapped && !rode) out.push('riding: the ride did not start');
   await waitFor(page, () => !document.querySelector('.sw-stkpop'), null, 15000);
   await settle(page, 400);
   await bothWays(page, 'riding', out);
