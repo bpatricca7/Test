@@ -1393,13 +1393,35 @@ test('SIX', 'Six players: four more friends join Lily and Rosie with the code; e
   await guestTypesCode(zoe, CODE);
   const full = await until(zoe, () => document.querySelector('.sw-net-msg[data-code="full"]') !== null, null, 30000);
   check(full, 'Zoe (the 7th) sees "Lily’s world is full of friends right now!"');
+  if (!full) {
+    // why not: Lily's seats, knocks and peers, and Zoe's state
+    log(`  Lily: ${JSON.stringify(await game(lily, () => ({ players: window.__game.debug.net.players().map((p) => [p.seat, p.name, p.peer]), knocks: window.__game.debug.net.knocks(), peers: window.__game.debug.net.peers().map((p) => [p.id, p.uid, p.r, p.nm]) })))}`);
+    log(`  Zoe: ${JSON.stringify(await game(zoe, () => ({ state: window.__game.debug.net.state(), peers: window.__game.debug.net.peers().length })))}`);
+  }
   const fullText = await game(zoe, () => document.querySelector('.sw-net-msg')?.textContent || '');
   check(/full of friends/.test(fullText) && !/\d{3}|error/i.test(fullText), `the full card is kind, with no code ("${fullText.replace(/\s+/g, ' ').trim().slice(0, 90)}")`);
   await settle(zoe.page, 700);
   await shot(zoe, 'six-zoe-full');
+  // the card is really drawn on top (not under the Join keypad): the element at its centre is the
+  // card, and the wash behind it dims the panel
+  const onTop = await game(zoe, () => {
+    const c = document.querySelector('.sw-net-msg[data-code="full"]');
+    if (!c) return { gone: true, panel: !!document.querySelector('.sw-panel-wrap.sw-open'), mode: window.__game.mode, net: window.__game.net.state };
+    const r = c.getBoundingClientRect();
+    const at = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    const wrap = c.closest('.sw-net-msg-wrap');
+    return { rect: [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)], top: !!(at && at.closest('.sw-net-msg')), at: at ? at.className : null, wash: wrap ? getComputedStyle(wrap).backgroundColor : null, ok: !!c.querySelector('.sw-net-msg-btn'), vis: document.visibilityState, anim: [...c.getAnimations(), ...wrap.getAnimations()].map((a) => [a.animationName, a.playState, Math.round(a.currentTime ?? -1)]), op: getComputedStyle(c).opacity, tl: Math.round(document.timeline.currentTime), now: Math.round(performance.now()) };
+  });
+  log(`  TMP ${JSON.stringify(onTop)}`);
+  await new Promise((r) => setTimeout(r, 2500));
+  log(`  TMP2 ${JSON.stringify(await game(zoe, () => { const c = document.querySelector('.sw-net-msg'); return c && { anim: c.getAnimations().map((a) => [a.playState, Math.round(a.currentTime ?? -1)]), op: getComputedStyle(c).opacity, tl: Math.round(document.timeline.currentTime), now: Math.round(performance.now()), raf: window.__game.frame ?? null }; }))}`);
+  await shot(zoe, 'six-zoe-full-tmp2');
+  check(!!onTop.top, `the full card is drawn above the Join keypad (${JSON.stringify(onTop)})`);
+  check(!!onTop.wash && !/rgba\(0, 0, 0, 0\)|transparent/.test(onTop.wash) && onTop.ok, 'the full card has the dark wash and an OK button');
   check(await game(lily, () => window.__knockEvents) === knocksBefore && !(await game(lily, () => !!document.querySelector('.sw-net-knock'))), 'Lily got no knock card for the 7th');
   check(await game(zoe, () => window.__game.net.state === 'idle' || window.__game.mode === 'title'), 'Zoe stays on the title');
   await zoe.context.close();
+  if (process.env.SW_TMP_ZOE_ONLY) return; // TEMP
   const live = await Promise.all([rosie, ...more].map((g) => waitLive(g, 240000)));
   [rosie, ...more].forEach((g, i) => check(!!live[i], `${g.name} is in Lily’s world`));
   log(`  all six live at ${((Date.now() - t0) / 1000).toFixed(1)} s`);
