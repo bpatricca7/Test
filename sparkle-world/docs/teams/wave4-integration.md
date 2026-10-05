@@ -660,19 +660,19 @@ Beach Cozy, desktop and iPad 1024 x 768 touch, `debug.merfolk.tips(true)`,
 
 | # | command | earlier | baseline |
 |---|---|---|---|
-| A1 | `timeout 570 npm run build` | 1-2 s | 2 s |
-| A2 | `timeout 570 npm run build:site` | under 1 min | not measured |
-| A3 | `timeout 570 npm run test:name` | about 5 s | 1 s (the name scanner included) |
-| A4 | `timeout 570 npm run test:merfolk` | seconds (new) | not measured |
-| A5 | `timeout 570 npm run test:squish` | seconds (new) | not measured |
-| A6 | `timeout 570 npm run test:sea` | under 1 min (new; S0 makes 28 worlds) | not measured |
-| A7 | `timeout 570 npm run test:vehicles` | 1 s | not measured |
-| A8 | `timeout 570 npm run test:saves` | 54-60 s | not measured |
-| A9 | `timeout 570 npm run test:accounts` | 16-19 s | not measured |
-| A10 | `timeout 570 npm run test:billing` | 11 s | not measured |
-| A11 | `timeout 570 npm run test:mail-microsoft` | seconds | not measured |
-| A12 | `timeout 570 node tools/test-walkie-unit.mjs` | under 1 s | not measured |
-| A13 | `timeout 570 npm run test:net` | 143-150 s | not measured |
+| A1 | `timeout 570 npm run build` | 1-2 s | 2 s; 2 s green in [gate-A] |
+| A2 | `timeout 570 npm run build:site` | under 1 min | under 1 s, green in [gate-A] |
+| A3 | `timeout 570 npm run test:name` | about 5 s | 1 s (the name scanner included); 2 s, 13 green in [gate-A] |
+| A4 | `timeout 570 npm run test:merfolk` | seconds (new) | 2 s, 22 green in [gate-A] |
+| A5 | `timeout 570 npm run test:squish` | seconds (new) | under 1 s, 17 green in [gate-A] |
+| A6 | `timeout 570 npm run test:sea` | under 1 min (new; S0 makes 28 worlds) | 11 s, 21 green in [gate-A] |
+| A7 | `timeout 570 npm run test:vehicles` | 1 s | 1 s, 11 green in [gate-A] |
+| A8 | `timeout 570 npm run test:saves` | 54-60 s | 97 s, 42 green in [gate-A] |
+| A9 | `timeout 570 npm run test:accounts` | 16-19 s | 27 s, 113 green in [gate-A] |
+| A10 | `timeout 570 npm run test:billing` | 11 s | 12 s, 106 green and 1 skipped by design (no real-shapes.txt yet) in [gate-A] |
+| A11 | `timeout 570 npm run test:mail-microsoft` | seconds | 3 s, 19 green in [gate-A] |
+| A12 | `timeout 570 node tools/test-walkie-unit.mjs` | under 1 s | under 1 s, green in [gate-A] |
+| A13 | `timeout 570 npm run test:net` | 143-150 s | 147 s, 69 green in [gate-A] |
 
 **B. Smoke and the wave-4 probes (about 90 minutes)**
 
