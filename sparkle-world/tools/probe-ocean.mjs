@@ -99,6 +99,8 @@ async function float(page, on = true) {
         up(dt);
         if (!g.__float || pl.state === 'ride') return;
         const m = g.ocean.map, t = m.top(pl.position.x, pl.position.z);
+        // g.__under: held that deep under the surface instead (merfolk's dive, T3b)
+        if (t >= 0 && g.__under > 0) { pl.position.y = t - g.__under; pl.velocity.y = 0; return; }
         if (t >= 0 && pl.position.y < t + 0.1) { pl.position.y = t + 0.1; if (pl.velocity.y < 0) pl.velocity.y = 0; }
       };
       pl.__floatWrap = true;
@@ -803,6 +805,51 @@ async function tapPass(browser, errors) {
     check(errors, before.under && after.met === before.met + 1 && after.top === before.top && after.above === before.above && after.h === before.h, `T3b ${how === 'remove' ? 'Remove' : 'a right-click with the Hand'} on a fish school under the surface: a hello (${before.met} -> ${after.met}), the water stays, no history (${before.h} -> ${after.h}; aimed at ${JSON.stringify(hit)}, school in the set ${inSet})`);
   }
   await ev(page, () => window.__game.setTool('hand'));
+
+  // T3b with the camera below the surface (P2, merfolk's dive and its under-water look): she is
+  // held 2.4 blocks under, the camera level with her head; the same two clicks on a school ahead
+  for (const how of ['remove', 'right']) {
+    await ev(page, () => { const g = window.__game; g.__under = 2.4; g.cameraRig.pitch = 0; });
+    const down = await waitOk(page, () => window.__game.underwater === 'water', null, 8000);
+    await ev(page, async () => {
+      const g = window.__game, d = g.debug.ocean;
+      d.still(false);
+      d.clear();
+      const p = g.player.position, cam = g.cameraRig;
+      d.spawn('fish', p.x + Math.sin(cam.yaw) * 3.5, p.y + 1.2, p.z + Math.cos(cam.yaw) * 3.5, { n: 8 });
+      await new Promise((r) => setTimeout(r, 400));
+    });
+    await freeze(page, true);
+    const sc = await ev(page, () => window.__game.debug.ocean.schools()[0]);
+    const target = [(sc.box[0][0] + sc.box[1][0]) / 2, (sc.box[0][1] + sc.box[1][1]) / 2, (sc.box[0][2] + sc.box[1][2]) / 2];
+    await aim(page, target[0], target[1], target[2], 0);
+    const before = await ev(page, (t) => {
+      const g = window.__game, m = g.ocean.map, top = m.top(t[0], t[2]), c = g.camera.position;
+      return { top, above: g.world.get(Math.floor(t[0]), top, Math.floor(t[2])), h: g.history.length, met: g.ocean.met('fish'), under: t[1] < top + 0.875, camUnder: c.y < m.top(c.x, c.z), look: g.underwater };
+    }, target);
+    // (as T4: up to 3 s for the school to join the pick set on a busy machine)
+    let sp = null, hit = null;
+    for (let t = 0; t < 30; t++) {
+      const b = await ev(page, () => window.__game.debug.ocean.schools()[0].box);
+      sp = await screenPoint(page, (b[0][0] + b[1][0]) / 2, (b[0][1] + b[1][1]) / 2, (b[0][2] + b[1][2]) / 2);
+      hit = await pickAt(page, sp, true);
+      if (hit && hit.kind === 'school') break;
+      await page.waitForTimeout(100);
+    }
+    if (how === 'remove') { await ev(page, () => window.__game.setTool('remove')); await page.mouse.click(sp.x, sp.y); }
+    else { await ev(page, () => window.__game.setTool('hand')); await page.mouse.click(sp.x, sp.y, { button: 'right' }); }
+    await page.waitForTimeout(300);
+    const after = await ev(page, (t) => {
+      const g = window.__game, m = g.ocean.map;
+      return { above: g.world.get(Math.floor(t[0]), m.top(t[0], t[2]), Math.floor(t[2])), top: m.top(t[0], t[2]), h: g.history.length, met: g.ocean.met('fish') };
+    }, target);
+    await freeze(page, false);
+    if (how === 'remove') await shot(page, 'tap-under', PREFIX);
+    check(errors, down && before.camUnder && before.look === 'water' && before.under && after.met === before.met + 1 && after.top === before.top && after.above === before.above && after.h === before.h,
+      `T3b with the camera under the surface (merfolk's look ${before.look}), ${how === 'remove' ? 'Remove' : 'a right-click with the Hand'} on a fish school: a hello (${before.met} -> ${after.met}), the water stays, no history (${before.h} -> ${after.h}; aimed at ${JSON.stringify(hit)})`);
+  }
+  await ev(page, () => { const g = window.__game; g.__under = 0; g.setTool('hand'); });
+  await waitOk(page, () => !window.__game.underwater, null, 8000);
 
   // T4 click a fish school: scatter, bubbles, "You met a Little Fish!" with a picture
   // (T3b already met the fish: a fresh profile counter for this check)
