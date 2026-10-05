@@ -89,6 +89,9 @@ jobs:
       - name: Squishy toys (data, merges)
         run: npm run test:squish
 
+      - name: Sea animals (sea map, ride, whale)
+        run: npm run test:sea
+
       - name: Family accounts end to end
         run: npm run e2e:accounts
 

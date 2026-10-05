@@ -89,6 +89,8 @@ const PICS = {
   swipe: '<svg viewBox="0 0 64 64" class="sw-help-pic"><path d="M8 20h44M44 12l8 8-8 8" fill="none" stroke="#6CC6FF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M27 60c-4-6-9-9-9-13 0-2 2-4 5-3l5 4V30a3.5 3.5 0 0 1 7 0v10l9 2c3 .7 5 3 4.5 6L47 60Z" fill="#FFD9C2" stroke="#3A1F4D" stroke-width="2.5" stroke-linejoin="round"/></svg>',
   tap: '<svg viewBox="0 0 64 64" class="sw-help-pic"><circle cx="31" cy="18" r="12" fill="none" stroke="#FFC94D" stroke-width="4"/><circle cx="31" cy="18" r="5" fill="#FFC94D"/><path d="M26 62c-4-6-9-9-9-13 0-2 2-4 5-3l5 4V20a3.5 3.5 0 0 1 7 0v16l9 2c3 .7 5 3 4.5 6L46 62Z" fill="#FFD9C2" stroke="#3A1F4D" stroke-width="2.5" stroke-linejoin="round"/></svg>',
   hold: '<svg viewBox="0 0 64 64" class="sw-help-pic"><rect x="6" y="8" width="11" height="11" rx="2" fill="#FF8CC6"/><rect x="19" y="8" width="11" height="11" rx="2" fill="#FF8CC6"/><rect x="32" y="8" width="11" height="11" rx="2" fill="#FF8CC6" opacity=".6"/><rect x="45" y="8" width="11" height="11" rx="2" fill="#FF8CC6" opacity=".3"/><path d="M24 62c-4-6-9-9-9-13 0-2 2-4 5-3l5 4V28a3.5 3.5 0 0 1 7 0v12l9 2c3 .7 5 3 4.5 6L44 62Z" fill="#FFD9C2" stroke="#3A1F4D" stroke-width="2.5" stroke-linejoin="round"/></svg>',
+  // a pink dolphin over a blue wave (ocean: riding a dolphin)
+  dolphin: '<svg viewBox="0 0 64 64" class="sw-help-pic"><path d="M4 50c6-6 10-6 14 0s8 6 14 0 8-6 14 0 8 6 14 0v10H4Z" fill="#8FD8FF"/><path d="M12 38c4-14 16-22 30-20 6 1 10 4 12 8l6 2-6 3c-3 5-9 8-16 8-8 0-14-3-18-1l-6 6-1-7-6 2Z" fill="#FF8CC6" stroke="#3A1F4D" stroke-width="2.5" stroke-linejoin="round"/><path d="M30 19l4-9 5 9" fill="#FF8CC6" stroke="#3A1F4D" stroke-width="2.5" stroke-linejoin="round"/><circle cx="46" cy="26" r="2.4" fill="#3A1F4D"/></svg>',
   pinch: '<svg viewBox="0 0 64 64" class="sw-help-pic"><path d="M6 6l14 14M58 58L44 44M6 6h9M6 6v9M58 58h-9M58 58v-9" fill="none" stroke="#3FD8B0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="24" r="7" fill="#FFD9C2" stroke="#3A1F4D" stroke-width="2.5"/><circle cx="40" cy="40" r="7" fill="#FFD9C2" stroke="#3A1F4D" stroke-width="2.5"/></svg>',
   // merfolk: a tail fin over the water, with the Up and Down arrows
   tail: '<svg viewBox="0 0 64 64" class="sw-help-pic"><rect x="4" y="34" width="56" height="26" rx="8" fill="#B8E1FF"/><path d="M4 38c6 0 6-5 12-5s6 5 12 5 6-5 12-5 6 5 12-5 6 5 8 5" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/><path d="M29 44l1.6-18h2.8L35 44Z" fill="#3FD8B0"/><path d="M32 27C27 18 20 14 11 15c3 7 11 12 21 12Zm0 0c5-9 12-13 21-12-3 7-11 12-21 12Z" fill="#3FD8B0" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M50 30l5-6 5 6M50 44l5 6 5-6" fill="none" stroke="#9C7BFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -133,8 +135,8 @@ export function install(game) {
     for (const dir of ['up', 'down', 'left', 'right']) input.joyBase.appendChild(ui.el('span', `sw-joy-arrow sw-${dir}`));
     const joyLabel = ui.el('span', 'sw-joy-label', 'Walk');
     input.joyBase.appendChild(joyLabel);
-    // driving a car or a van: "Drive"; a boat: "Steer"; on a dolphin "Ride"; deep water "Swim";
-    // back to "Walk" when she gets out (one label function, wave4-integration.md §5.2)
+    // driving a car or a van: "Drive"; a boat: "Steer"; on a dolphin: "Ride"; swimming in sea
+    // form: "Swim"; else "Walk" (one label function, docs/teams/wave4-integration.md §5.2)
     let vehicleKind = null;
     const setLabel = () => {
       const pl = game.player;
@@ -171,6 +173,8 @@ export function install(game) {
     [[key('←'), key('→')], 'Turn around'],
     [[key('L')], 'Car lights'],
     [[key('E'), '<span class="sw-or">or</span>', key('X')], 'Get out of a car'],
+    [[key('E'), '<span class="sw-or">or</span>', key('X')], 'Hop off a dolphin'],
+    [[PICS.dolphin], 'Swim to a dolphin and click it to ride'],
     [[key('Esc', 'sw-mid')], 'Menu'],
     [[PICS.mouseLeft], 'Click to build or use'],
     [[PICS.mouseRight], 'Right click to remove'],
@@ -188,6 +192,7 @@ export function install(game) {
     [PICS.tail, 'In deep water: Up and Down to swim and dive'],
     [`<span class="sw-help-pic" style="display:grid;place-items:center;color:#FF5FA2">${icon2('bag', { size: 56 })}</span>`, 'Bag: pick what to build'],
     [`<span class="sw-help-pic" style="display:grid;place-items:center;color:#FFB020">${icon2('honk', { size: 56 })}</span>`, 'In a car or boat: the joystick drives, Honk beeps, the pink button gets out'],
+    [PICS.dolphin, 'Swim to a dolphin and tap it to ride'],
   ];
 
   const renderHelp = () => {

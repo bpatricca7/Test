@@ -68,7 +68,8 @@ export class Player {
 
   _onKey(e) {
     if (!e.down || e.code !== 'Space' || this.game.paused || this.game.mode !== 'play') return;
-    // Space is the horn while she drives (a double tap would otherwise stand her up to fly)
+    // Space is the horn while she drives, the leap on a dolphin (a double tap would otherwise
+    // stand her up to fly)
     if (this.state === 'ride' && this.mountPet && (this.mountPet.kind === 'vehicle' || this.mountPet.kind === 'dolphin')) return; // ocean
     if (this.seaSwim && this.swimming) return; // merfolk: Space is Up in deep water, never a double-tap fly
     const now = performance.now();

@@ -429,6 +429,9 @@ export class FakeAdapter {
     if (this.vh !== undefined) out.vh = this.vh;
     // the toy or treat in her hand (presence hi), only when a test set one
     if (this.hi !== undefined) out.hi = this.hi;
+    // ocean: the dolphin she rides and her trick counter (presence sr, sk), only when a test set them
+    if (this.sr !== undefined) out.sr = this.sr;
+    if (this.sk !== undefined) out.sk = this.sk;
     return out;
   }
 

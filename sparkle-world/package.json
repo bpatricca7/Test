@@ -21,6 +21,8 @@
     "probe:merfolk": "node tools/build.mjs && node tools/probe-merfolk.mjs",
     "test:squish": "node tools/test-squish.mjs",
     "probe:squish": "npm run build && node tools/probe-squish.mjs",
+    "test:sea": "node tools/test-sea.mjs",
+    "probe:ocean": "node tools/build.mjs && node tools/probe-ocean.mjs",
     "probe:railway": "node tools/probe-railway.mjs",
     "test:accounts": "node --test tools/test-accounts.mjs",
     "test:billing": "node --test tools/test-billing.mjs",

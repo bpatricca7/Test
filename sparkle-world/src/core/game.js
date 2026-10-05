@@ -1016,12 +1016,25 @@ export class Game {
     }
     const n = this._n;
     let bestPk = null, bestT = best ? best.distance : Infinity;
+    const voxT = bestT;
     const nx = this._nBest;
+    // a sea animal under the surface (pickable.throughLiquid): when the ray stopped at a liquid
+    // (Remove taps, right-clicks), it is compared against the first solid block instead, so the
+    // tap greets the fish and the water stays (docs/teams/ocean.md §5.6)
+    const waterHit = liquids && vh && this.registry.blocks.props.shape[vh.id] === SHAPES.liquid;
+    let throughT = -1;
     for (const pk of this.pickables) {
       const b = pk.box;
       if (!b) continue;
       const t = rayBox(o.x, o.y, o.z, d.x, d.y, d.z, b.min.x, b.min.y, b.min.z, b.max.x, b.max.y, b.max.z, n);
-      if (t < 0 || t > maxDist || t >= bestT) continue;
+      if (t < 0 || t > maxDist) continue;
+      if (pk.throughLiquid && waterHit) {
+        if (throughT < 0) {
+          const vh2 = raycastVoxels(this.world, o.x, o.y, o.z, d.x, d.y, d.z, maxDist, null, this._vhScratch2 || (this._vhScratch2 = makeVoxelHit()));
+          throughT = vh2 ? vh2.distance : Infinity;
+        }
+        if (t >= (bestPk ? Math.min(bestT, throughT) : throughT)) continue;
+      } else if (t >= Math.min(bestT, voxT)) continue;
       bestT = t;
       bestPk = pk;
       nx[0] = n[0]; nx[1] = n[1]; nx[2] = n[2];
@@ -1121,6 +1134,8 @@ export class Game {
       this._parkFirst();
       return false;
     }
+    // riding a dolphin (src/life/ocean): nothing is removed around her until she hops off
+    if (this.removeLock && this.removeLock()) return false;
     if (this._netRefuses('remove')) return false;
     if (hit.type === 'pickable') {
       return hit.pickable.onRemove ? !!hit.pickable.onRemove(this, hit) : false;

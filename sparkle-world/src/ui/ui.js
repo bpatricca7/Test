@@ -73,7 +73,8 @@ export class UI {
   // ---------- toasts & hint ----------
 
   /**
-   * Bouncy message at the top. opts: { icon, color: 'pink'|'sun'|..., big, duration, key }
+   * Bouncy message at the top. opts: { icon, img (a picture's data URL, shown round in place of
+   * the icon), color: 'pink'|'sun'|..., big, duration, key }
    * key: while a toast with the same key is up (or waiting), it is updated in place (new text,
    * fresh timer) instead of stacking another one, e.g. "Gem 7 of 24!" after "Gem 6 of 24!".
    */
@@ -101,6 +102,8 @@ export class UI {
       const t = this.el('div', 'sw-toast' + (opts.big ? ' sw-toast--big' : ''));
       if (opts.color) t.style.borderColor = `var(--sw-${opts.color})`;
       t.innerHTML = icon(opts.icon || (opts.big ? 'star' : 'sparkle'));
+      // opts.img (a data URL, e.g. a sea animal's picture): a round picture in place of the icon
+      if (opts.img && /^data:image\//.test(opts.img)) { const im = this.el('img', 'sw-toast-img'); im.src = opts.img; im.alt = ''; t.replaceChildren(im); }
       const label = this.el('span', '', text);
       t.appendChild(label);
       this.toastLayer.appendChild(t);

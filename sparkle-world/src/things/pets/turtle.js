@@ -9,7 +9,8 @@ export const TURTLE = {
   name: 'Turtle', voice: 'bloop', happy: 'bloop', treat: 'strawberry', gait: 'crawl', trick: 'spin', swims: true,
   speed: 2.1, run: 3.4, swimBoost: 2.3, halfW: 0.3, height: 0.5, shadow: 0.95, tagY: 0.9, hop: 7.0, scale: 1.12,
   hideOnTickle: true,
-  names: ['Shelly', 'Sheldon', 'Myrtle', 'Pebbles', 'Tiny', 'Squirt', 'Bubbles', 'Speedy'],
+  // names offered for a NEW turtle (pets keep the name they have); owner, wave 4: one name dropped
+  names: ['Shelly', 'Sheldon', 'Myrtle', 'Pebbles', 'Tiny', 'Bubbles', 'Speedy'],
   variants: [
     { key: 'green', name: 'Leafy Green', skin: '#9FDF8C', shell: '#5FB86A', rim: '#4E9C57', belly: '#FFF1B8', pattern: 'scutes', mark: '#3E8A4C', accent: '#FF6FA5' },
     { key: 'rainbow', name: 'Rainbow', skin: '#A7E6B0', shell: '#FFE27A', rim: '#FF7A9A', belly: '#FFF6D8', pattern: 'rainbow', mark: '#FFFFFF', accent: '#9C7BFF' },

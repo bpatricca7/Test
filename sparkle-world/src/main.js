@@ -25,6 +25,8 @@ import * as daynight from './life/daynight.js';
 import * as weather from './life/weather.js';
 import * as particles from './life/particles.js';
 import * as collectibles from './life/collectibles.js';
+// wave 4: dolphins and sea animals to meet, a dolphin to ride (docs/teams/ocean.md)
+import * as ocean from './life/ocean/index.js';
 import * as stickers from './life/stickers.js';
 // wave 4: a mermaid tail or a sea dragon form in deep water (docs/teams/merfolk.md)
 import * as merfolk from './player/merfolk/index.js';
@@ -69,11 +71,12 @@ function boot() {
     garden,
     cooking,
     vehicles,
-    squish, // wave 4: after vehicles (needs entities, furniture, cooking/shops' game.coins)
+    squish,        // wave 4: after vehicles (needs entities, furniture, cooking/shops' game.coins)
     daynight,
     weather,
     particles,
     collectibles,
+    ocean,         // wave 4: after collectibles (particles exist; stickers registry used on game:ready)
     stickers,
     merfolk,       // wave 4: after stickers
     net,

@@ -266,6 +266,8 @@ const PATHS = {
   // a headlamp with three beams (vehicles: Lights)
   lights: `<path d="M9.6 5.2a6.8 6.8 0 0 0 0 13.6h1.6V5.2Z"/><rect x="11.8" y="6.4" width="2" height="11.2" rx="1"/><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="M16.4 7.2l5.2-1.6M16.4 12h5.6M16.4 16.8l5.2 1.6"/>`,
   hopoff: `<path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M4.5 13C5 7.5 9.2 4.2 13.4 5.4c3.2.9 4.8 4.4 4.6 8.6"/><path d="m13.8 12.4 4.4 5.6 4.2-5.8Z"/><rect x="2.5" y="19.4" width="19" height="2.8" rx="1.4"/>`,
+  // a leaping dolphin (ocean: the Ride button)
+  dolphin: `<path d="M2.6 15.4c1.8-5.6 6.4-9.6 12-9.8 2.4-.1 4.4.6 5.8 2l1.8.4-1.4 1.2c-.6 2.6-2.8 4.6-5.8 5.2-2.6.5-4.8-.2-6.6.4l-2.6 2.4-.4-2.6Z"/><path d="M10.6 6.2 12.4 2.4l2.4 3.6Z"/><path opacity=".6" d="M2 20.2c2-1.6 3.6-1.6 5.6 0s3.6 1.6 5.6 0 3.6-1.6 5.6 0 2.4 1.2 3.2.6v2.2H2Z"/><circle fill="#fff" cx="17.4" cy="8.6" r="1.1"/>`,
   sit: `<path d="M12 3.4a3.2 3.2 0 1 1 0 6.4 3.2 3.2 0 0 1 0-6.4Z"/><path d="M7 20.6v-5.2c0-2.8 2.2-4.4 5-4.4s5 1.6 5 4.4v5.2Z"/><path opacity=".6" d="M4 20h16v2H4Z"/>`,
   leaf: `<path d="M20.4 3.6C11 3.2 4.4 7.6 4.4 14.4c0 1.6.4 3 1 4.2L3.6 20.4l1.4 1.2 1.8-1.8c1.2.8 2.8 1.2 4.4 1.2 6.8 0 10.6-7 9.2-17.4Z"/>`,
   cake: `<path d="M3.4 13.6h17.2v7.4H3.4Z"/><path opacity=".75" d="M5.2 9.6h13.6v4H5.2Z"/><path d="M11.2 4.4h1.6v5.2h-1.6Z"/><path d="M12 1.2c1 1.2 1.4 2 .9 2.8-.5.7-1.4.7-1.9 0-.4-.8 0-1.6 1-2.8Z"/>`,

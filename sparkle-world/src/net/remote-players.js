@@ -23,7 +23,7 @@ import { hasFoodModel, foodModel } from '../things/food-models.js';
 import { disposeObject } from '../core/models.js';
 import { EMOTES } from '../player/wardrobe-data.js';
 import { unpackLook } from './codec.js';
-import { HELD_KEY_RE, parseVehiclePresence } from './protocol.js';
+import { HELD_KEY_RE, parseVehiclePresence, parseSeaRide, parseSeaTrick } from './protocol.js';
 import { sanitizeName } from './names.js';
 import { phraseText, phraseIcon, PHRASES } from './pictures.js';
 
@@ -132,6 +132,8 @@ class Friend {
     this.vhKey = null;
     this.vehicle = null; // RemoteVehicle (src/things/vehicles/remote.js)
     this.honkN = null;
+    this.sr = null; // ocean: presence sr, the dolphin she rides (palette index) or null
+    this.sk = undefined; // ocean: presence sk, her trick counter (undefined until the first presence)
   }
 
   push(now, p) {
@@ -250,6 +252,7 @@ export class RemotePlayers {
       lk: f.lk,
       sea: f.avatar ? f.avatar.seaParts() : null,
       vehicle: f.vh ? f.vh[0] : null,
+      seaRide: f.sr,
     }));
   }
 
@@ -383,6 +386,12 @@ export class RemotePlayers {
     const hi = typeof st.hi === 'string' && HELD_KEY_RE.test(st.hi) ? st.hi : null;
     if (hi !== f.heldKey) this._setHeld(f, hi);
     this._setVehicle(f, parseVehiclePresence(st.vh));
+    // ocean: her dolphin ride, and a trick beside her when her counter changes (the first value
+    // a page sees only sets it: a late joiner never replays old tricks)
+    f.sr = parseSeaRide(st.sr);
+    const sk = parseSeaTrick(st.sk);
+    if (f.sk !== undefined && sk !== null && sk !== f.sk && this.game.ocean) this.game.ocean.remoteTrick(f.peer, sk, f.pos.x, f.pos.y, f.pos.z);
+    f.sk = sk;
   }
 
   /** Her vehicle from presence vh: a new model when the key or color changes; honks. */
@@ -471,8 +480,9 @@ export class RemotePlayers {
     f.t += dt;
     // in a car or a boat she sits on its seat ('h' without vh is still a pony ride)
     const seated = f.st === 'h' && !!f.vehicle;
+    const seaRide = f.st === 'h' && f.sr != null && !f.vehicle && !f.away;                        // ocean (a page gone quiet: no dolphin)
     if (f.vehicle) f.vehicle.update(dt, f.pos.x, f.pos.y, f.pos.z, f.yaw, f.speed, f.vh ? f.vh[2] : 0, show);
-    const seaRide = f.st === 'h' && f.sr != null && !f.vehicle;                                   // ocean
+    if (g.ocean) g.ocean.remoteRide(f.peer, seaRide ? f.sr : null, f.pos.x, f.pos.y, f.pos.z, f.yaw, f.speed, show); // ocean (every frame, also when frozen)
     if (show && dist < ANIM_FREEZE) {
       const st = f.st;
       const sea = st === 'm' || seaRide;                                                          // merfolk
@@ -555,6 +565,7 @@ export class RemotePlayers {
   }
 
   _drop(f) {
+    if (this.game.ocean) this.game.ocean.remoteRide(f.peer, null); // ocean: her dolphin goes too
     this._letGo(f);
     this._dropVehicle(f);
     if (f.tag) {

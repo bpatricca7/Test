@@ -76,6 +76,7 @@ const CHARACTERS = [
   'QnViYmxlcw==',
   'TWlzdHk=',
   'RGFzaA==',
+  'WmlnZ3k=',
 ];
 
 /** Where the brand list is checked (globs relative to the app folder). */

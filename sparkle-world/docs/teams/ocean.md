@@ -40,7 +40,7 @@ would overwrite each other.
 | Multiplayer | **Local cosmetic animals**, plus the moments kids point at are shared: the world's own **buddy dolphin** (name and color from the world seed), the whale's visit time (seed + game day), presence **`sr`** (a friend rides a dolphin) and presence **`sk`** (a friend's dolphin did a trick: every page plays one beside her). No protocol bump, no host authority, nothing in the journal (§9). |
 | Saves | **No new profile keys.** `stats.seaMet` (map), `stats.dolphinRides`, `stats.seaCoinDay`, `stats.seaCoinMask` live inside `profile.stats`, which every merge already max-merges key by key, nested maps included (`src/account/merge.js:14-22`, `src/core/storage.js:131-142`). Nothing in world saves. Old saves load unchanged. |
 | Append-only lists | `SEA_KINDS` (keys) and each kind's palette list. The **dolphin palette is sent by index** in presence `sr` and `sk`, so it is APPEND ONLY like the look lists. |
-| Performance | ≤ 9 extra draw calls (usually 2 to 4), ≤ ~65k triangles at the very most, no per-frame allocation, ≤ +1.0 ms systems stage on the probe machine, shaders pre-warmed behind the loading screen. Nothing lowered; schools near the player are never thinned (§11.2). |
+| Performance | ≤ 9 extra draw calls (usually 2 to 4), ≤ ~65k triangles at the very most (planned; as built about 140k with every kind at its cap, §11.2), no per-frame allocation, ≤ +1.0 ms systems stage on the probe machine, shaders pre-warmed behind the loading screen. Nothing lowered; schools near the player are never thinned (§11.2). |
 
 ---
 
@@ -213,7 +213,7 @@ geometry at scale 0.6.
 |---|---|---|---|---|---|---|
 | `dolphin` | Dolphin | 1.9 long | Smooth rounded body, pale belly (accent), short beak with a small smile line, big round forehead, dorsal fin, two flippers, V-shaped tail flukes. A small star saddle shows **only on a ridden dolphin** (§4.2 flags). | `kick`: tail beats up and down | Swimming within 5 blocks: pops its head up beside the kid, chirps, the Ride / Trick bubble (§6.1). Otherwise a trick (next in the order spin, flip, tail-walk), sparkles, hearts | `chirp` (clicks and a rising whistle) |
 | `fish` | Little Fish | 0.32 long, schools of 6 to 10 | Round pastel body with **three small accent dots** on each side (never stripes), fan tail, side fins. | `wiggle`: side to side | The whole school scatters, bubbles, regroups after 3 s | `bloop` |
-| `sea_turtle` | Sea Turtle | shell 0.9 | Domed shell with lighter hexagon scutes on top (accent), a cream belly, a round smiling head, long front flippers, short back flippers. Not the pet turtle: no legs, flippers instead. | `flap`: flippers row | A slow barrel roll, hearts; then it glides beside the player for 10 s | `bloop` (pitch 0.7) |
+| `sea_turtle` | Sea Turtle | shell 0.9 | Domed shell in the body colour with rounded lighter plates lying flat on it (accent) and a darker rim, a cream belly, a big round head on a short neck and flippers in a lighter skin colour (mask 3: the body colour toward white), long front flippers sweeping back, short back flippers. Not the pet turtle: no legs, flippers instead. | `flap`: flippers row | A slow barrel roll, hearts; then it glides beside the player for 10 s | `bloop` (pitch 0.7) |
 | `octopus` | Octopus | 0.8 tall | Big round head with a little crown of spots (accent), eight curly tentacles of three balls each. | `curl`: tentacle tips sway | Changes to its next color with a pop, waves all arms, puffs sparkly bubbles (never ink), scoots 2 blocks | `pop` + `giggle` |
 | `jelly` | Jellyfish | bell 0.5, 1.0 tall | Rounded bell with a frilly rim of small balls (accent), four ribbon arms, six thin tentacles. The bell glows softly at night. | `pulse`: the bell squeezes, tentacles trail | The bell glows bright, it bobs up with three pulses | `boop` |
 | `seahorse` | Seahorse | 0.5 tall | Upright, round belly (accent), snout, little crown spikes, curled tail, a fluttering back fin. | `flutter`: back fin | Twirls once, sparkles | `ding` (pitch 1.4) |
@@ -255,9 +255,11 @@ cbox 0.30 x 0.05 x 0.34                at (0, 0.30, 0.18)      #FFD84D  saddle s
 cbox 0.16 x 0.16 x 0.03, rot [0,0,PI/4] at (0, 0.36, 0.36)     #FF5FA2  saddle star (limb 3)
 ```
 Ball segments: 12 for the dolphin and whale, 8 for everything smaller (fish, seahorse, starfish,
-crab legs). About 2,250 triangles per dolphin, 420 per fish. The whale is the dolphin recipe
-stretched (scale [4.2, 3.6, 4.2], beak replaced by a wide round head ball, white belly stripes as
-thin cboxes, no saddle), so it costs one more cached geometry, not a new style.
+crab legs). About 2,250 triangles per dolphin, 420 per fish (planned; as built 2,508 and 1,412, see §11.2). The whale has its own body plan
+(`whaleParts`, scaled [4.2, 3.6, 4.2]) so it never reads as a big dolphin: a huge round blunt head
+with a long smile from cheek to cheek, eyes low on the sides, a pale grooved throat, a blowhole, a
+small hump instead of a tall back fin, long swept-back side flippers and a wide flat tail; no
+saddle. One more cached geometry, the same parts vocabulary.
 
 The others follow the table in §3 with the same parts vocabulary (balls for bodies, cbox for
 fins and flippers, a cyl with `topRatio 0` for the seahorse's crown spikes). Limb ids (§4.2):
@@ -274,11 +276,11 @@ yet, so this revision's changes to the lists are free; from step 2 on the S7 gua
 
 | kind | palettes (key: body / accent) |
 |---|---|
-| dolphin | `sky` #8EB8E0 / #F7FBFF · `lilac` #B9A8F0 / #F6F2FF · `rose` #F7A8C8 / #FFF4F8 · `mint` #9EE3CF / #F4FFFB · `silver` #C9D3E0 / #FFFFFF · `bubblegum` #FF9CCB / #FFF0F7 (candy) · `cotton` #C8B4FF / #FFF7FF (candy) · `snowy` #F2F6FA / #FFFFFF (snow) · `deep` #3F7FBF / #EAF4FF · `teal` #2FA3A0 / #E8FFFB |
-| fish | `coral` #FF8FB1 / #FFE3EC · `sunny` #FFD166 / #FFF6D6 · `sky` #8FD3FF / #E6F6FF · `grape` #B49CFF / #EEE6FF · `mint` #7FE0C2 / #E3FFF5 · `peach` #FFA36C / #FFE08A · `pearl` #F5F5FF / #D9D6FF · `koi` #FF9F43 / #FFE08A (ponds) · `fairy` #E9B8FF / #FFF2FF (fairy ponds, glows at night) · `candy` #FF7AB8 / #FFF27A (candy, sprinkle-yellow dots) |
-| sea_turtle | `ocean` #3FB8C8 / #BFF0F5 · `leafy` #5FB86A / #D6F5C8 · `coral` #FF9CC8 / #FFE0EE · `lilac` #9C86E8 / #E6DEFF · `midnight` #34508C / #A9C2F0 |
+| dolphin | `sky` #6A80CC / #F7FBFF · `lilac` #B9A8F0 / #F6F2FF · `rose` #F7A8C8 / #FFF4F8 · `mint` #9EE3CF / #F4FFFB · `silver` #C9D3E0 / #FFFFFF · `bubblegum` #FF9CCB / #FFF0F7 (candy) · `cotton` #C8B4FF / #FFF7FF (candy) · `snowy` #F2F6FA / #FFFFFF (snow) · `deep` #3F7FBF / #EAF4FF · `teal` #2FA3A0 / #E8FFFB |
+| fish | `coral` #FF8FB1 / #FFE3EC · `sunny` #FFD166 / #FFF6D6 · `sky` #6A8CF5 / #E6F6FF · `grape` #B49CFF / #EEE6FF · `mint` #7FE0C2 / #E3FFF5 · `peach` #FFA36C / #FFE08A · `pearl` #F5F5FF / #D9D6FF · `koi` #FF9F43 / #FFE08A (ponds) · `fairy` #E9B8FF / #FFF2FF (fairy ponds, glows at night) · `candy` #FF7AB8 / #FFF27A (candy, sprinkle-yellow dots) |
+| sea_turtle | `ocean` #2B8FA0 / #BFF0F5 · `leafy` #5FB86A / #D6F5C8 · `coral` #FF9CC8 / #FFE0EE · `lilac` #9C86E8 / #E6DEFF · `midnight` #34508C / #A9C2F0 |
 | octopus | `coral` #FF8FA3 / #FFE0E6 · `lilac` #C3A6FF / #F0E8FF · `peach` #FFB38A / #FFE6D6 · `mint` #8FE3C8 / #E3FFF5 · `sunny` #FFD866 / #FFF6D0 |
-| jelly | `pink` #FFB8D6 / #FFE6F1 · `lilac` #D9C8FF / #F4EEFF · `aqua` #A6F0FF / #E6FCFF · `peach` #FFD1B0 / #FFF0E3 · `gummy` #FF8CC6 / #FFD6EC (candy) |
+| jelly | `pink` #FFB8D6 / #FFE6F1 · `lilac` #D9C8FF / #F4EEFF · `aqua` #4FD8B8 / #D8FFF2 · `peach` #FFD1B0 / #FFF0E3 · `gummy` #FF8CC6 / #FFD6EC (candy) |
 | seahorse | `sunny` #FFD866 / #FFF6D0 · `pink` #FF9CC8 / #FFE6F1 · `orange` #FFA36C / #FFE6D6 · `lilac` #C3A6FF / #F0E8FF |
 | crab | `red` #FF7A6B / #FFD6CF · `pink` #FF9CC8 / #FFE6F1 · `candy` #FFB3D9 / #FFF0F7 |
 | starfish | `orange` #FF9F5A / #FFE6D0 · `coral` #FF8F7A / #FFE3DC · `lilac` #C9B2FF / #F2ECFF · `yellow` #FFD43B / #FFF6C8 |
@@ -440,7 +442,7 @@ export const SEA_SPEC = {   // numbers from §3.3 and §5, one object per kind
              speed: 4.2, sprint: 11, mode: 'kick', sound: 'chirp', day: 1, night: 0.5 },
   ...
 };
-export const PALETTES = { dolphin: [['sky', '#8EB8E0', '#F7FBFF'], ...], ... };  // §3.2
+export const PALETTES = { dolphin: [['sky', '#6A80CC', '#F7FBFF'], ...], ... };  // §3.2
 export const DOLPHIN_NAMES = ['Splashy', 'Wavy', 'Twirl', 'Breezy', 'Ripple', 'Swish', 'Zoomy',
   'Seafoam', 'Tumble', 'Glide', 'Drizzle', 'Skimmer'];
 export const SEA_TEXT = { ... };                   // every string kids read (§7), for the S9 scan
@@ -1118,7 +1120,7 @@ the things kids point at **are** shared, at almost no protocol cost:
 | item | cost |
 |---|---|
 | Draw calls | one per kind with live instances: at most 9, usually 2 to 4 at sea, 0 inland (meshes hidden at count 0). Friends' ride dolphins and the show pod share the dolphin mesh: 0 extra. |
-| Triangles | at full counts about 12 x 2.25k (dolphins) + 30 x 0.42k (fish) + whale 3k + the rest about 12k: ≤ 65k, typically 15k. |
+| Triangles | planned: at full counts about 12 x 2.25k (dolphins) + 30 x 0.42k (fish) + whale 3k + the rest about 12k: ≤ 65k, typically 15k. As built (after the owner reviews made the small kinds bigger and rounder): dolphin 2,336, fish 1,412, turtle 2,992, octopus 2,884, jelly 1,444, seahorse 1,240, crab 1,072, starfish 1,912, whale 4,524; every kind at its cap at once about 140k (12 dolphins 30k, 30 fish 42k), typically 25-45k (a pod, a school and a few others). Instanced, so the cost is vertex work only; C1-C4 stay in budget. |
 | CPU per frame | spawn sampling 24 columns (O(1) reads each), `map.tick(2)` (about 0.04 ms), ≤ 87 creature steps (≤ 2 sea-map reads each, plus a `world.get` every 0.25 s), ≤ 87 matrix writes and box moves: about 0.2 ms desktop, ≤ 0.5 ms on the iPad budget; the probe checks ≤ +1.0 ms on SwiftShader. |
 | Pickables | ≤ 40, only within 12 blocks (Set membership at 4 Hz, boxes moved every frame). |
 | Sea map | 3 x 43 KB (Big); full scan once at world load (1.7 to 3.8 ms warm); one column per block change; 2 rows per frame round-robin. |
@@ -1661,3 +1663,316 @@ these choices where the reviews offered options or disagreed:
   order: the nearest point at least 55 blocks away if it is inside 0.95 x fog far, else skip with
   no toast, so a toast never fires without a whale.
 - **Frozen-clock whale period.** Shortened from 600 s to 360 s to match two visits per 720 s day.
+
+---
+
+## As built (P1)
+
+Built on `claude/wave4-ocean` from step 0 (`582d11c`), steps 1 to 8 of §14 except the parts that
+need merfolk (below). The integration plan's corrections apply: the folder, system, facade and
+debug object are `ocean` (C1), the stickers install with `installOceanStickers` (C14), the pose on
+a dolphin is merfolk's side-saddle (C2), escort uses the friends fallback only (C6), and the
+joystick label is the one function of integration §5.2 (C8).
+
+**Files.** `src/life/ocean/`: `kinds.js`, `seamap.js`, `schedule.js`, `models.js`, `material.js`,
+`render.js` (the nine instanced meshes, slot compaction), `motion.js`, `ride.js`, `whale.js`,
+`ui.js`, `sfx.js`, `stickers.js`, `index.js`. Shared lines as integration §5: `main.js`,
+`game.js` (`throughLiquid`, `removeLock`), `player.js` (the two §5.2 lines), `ui.js` (`opts.img`),
+`stickerbook.js` (`stickerBookExtras`, built on the book's first open), `touch.js` (the label
+function with the Ride branch, `PICS.dolphin`, the two help cards and the "Hop off a dolphin" row),
+`pets/kit.js` (`dolphin` icon after `hopoff:`), `vehicles/index.js` (`pose()`,
+`park({ reason: 'sea' })`), `friends/chat.js` and `friends/index.js`, `protocol.js`, `host.js`,
+`adapter.js`, `remote-players.js`; tools: `test-sea.mjs`, `probe-ocean.mjs`, `test-net.mjs`
+`seaTests()` (N1-N3, N2 is the combined wave-4 worst case of integration §4.3: 572 B host
+presence), `test-saves.mjs` M1-M2, `test-name.mjs` (the sea string tables), `fake-adapter.mjs`,
+`name-scan.mjs` (one more name on the character list), `probe-vehicles.mjs` (`pause(true)` in
+setup), `package.json` (`test:sea`, `probe:ocean`), `.github/workflows/test.yml`. Goldens:
+`tools/fixtures/ocean-beach-669b6fa.json` (a beach Cozy world and profile from the untouched base,
+the `chat.js` line count 253; it is 271 now).
+
+**Where the build differs from the design** (the build is right):
+- Sea turtles swim higher near her (centre 0.2 to 0.45 under the surface, not 0.3 to 0.8): with
+  the lower band their shells failed V1 (the §16 rule: closer to the surface, never brighter water).
+- A dolphin's leap also needs every column under its path to be deep (S4 asks for deep water under
+  the centre at every step); a refused leap's small hop only happens when there is room over the
+  rider's head (a low roof would otherwise end the ride as `'blocked'`).
+- Space asks for the leap on the key itself (a quick tap can fall between two frames on a slow
+  device, the vehicles' honk precedent).
+- The whale's place is sampled from her position (24 directions, the one closest to her view
+  first), not from the island's centre: from a deep spot near one edge, every centre-based
+  direction in view was closer than 55 blocks.
+- A friend's dolphin is hidden while her presence is away (a closed page), so it goes at once.
+- The Ride / Trick bubble moves below (or beside) a sticker pop or a toast instead of covering it.
+- The show pod is stepped by its own function (it froze while no wild pod was out), heads along
+  open water and retries a refused leap a second later.
+- Hellos to a crab whose shore was built away: it moves to the nearest shore cell within 2 or goes.
+- Owner decision: the name dropped from the turtle's new-pet list (`turtle.js`; pets keep theirs).
+- Debug helpers beyond §4.8 for the probes: `still(on)`, `autoSpawn(on)`, `popups(on)`,
+  `shiftSchool(i, dy)`, `palettes(kind)`, `cap(kind)`, `fields()`, `remote()`, `bubble()`,
+  `schools()`, `pods()`, `buddy()`, `tapRec(kind, i)`, `slotTint`, `meshCounts`, `corrupt`.
+- Probe timings are in game time where they measure gameplay (SwiftShader draws few frames and the
+  game steps at most 0.05 s a frame, so game time runs at about half the wall clock here).
+
+**Not built in P1 (needs merfolk; P2 on the merged tree):** R10 (a mermaid and a sea dragon
+riding, `ocean-ride-mermaid.png`, `ocean-ride-dragon.png`), T3b with the camera under the surface,
+U1's Up / Down rectangles, the `wave4` pass (integration §9.1, X1-X10). Until merfolk lands,
+`player.seaSwim` does not exist, so R5 and U2 accept "Walk" after Hop off (they expect "Swim" once
+merfolk's label branch is live; the probe reads `seaSwim` and checks the right one).
+
+**Probe passes (solo, this machine):** `world` 230 s, `see` 51 s, `tap` 80-110 s, `ride` 100 s,
+`touch` 42 s, `biomes,saves` 150 s, `mp` 265 s, `cost` (with the gallery) 276 s. Every gate
+group of integration §10.2 B11-B16 stays under 450 s.
+
+**Wanted text for the integrator (C17):**
+- DESIGN.md §1 activities: "Sea animals: dolphins, little fish, sea turtles, an octopus,
+  jellyfish, seahorses, crabs, starfish and a whale; tap to say hi, ride a dolphin." Stickers:
+  Dolphin Friend, Dolphin Rider, Sea Explorer, Ocean Star, Whale Hello! Events: `sea:meet`,
+  `sea:ride`, `sea:hopoff`, `sea:leap`, `sea:trick`, `sea:whale` (§4.7). Environment: "Sea life
+  lives at the surface near her (the water is 75% opaque); one instanced mesh per kind; a sea map
+  kept by events and a 2-rows-a-frame rescan." 7.3: this section.
+- MULTIPLAYER.md: §5.4 `sr` and `sk` rows (§4.6), §7 the Sea animals row (§9.4), §9 the
+  adapter / host / remote-players lines, §15 `probe-ocean --only=mp` and `test-net` `seaTests()`.
+- DATA-MAP.md:50: "(including which sea animals they met)".
+
+**Review pictures (owner review, integration §7.3):** `.shots/ocean-gallery-day.png`,
+`ocean-gallery-night.png`, `ocean-gallery-whale.png`, `ocean-palettes-<kind>[-n].png` for every
+kind (the dolphin palettes are sent by index: pinned by S7), `ocean-see-*.png` (the swim camera),
+`ocean-tap-bubble.png`, `ocean-touch-*.png`, `ocean-ride-*.png`, `ocean-world-*.png`,
+`ocean-tap-whale*.png`, `ocean-tap-seafriends-*.png`. The dolphin names in `DOLPHIN_NAMES` wait
+for a grown-up's read (§16 Q4).
+
+**Owner-review fixes (after P1).**
+- *The empty gallery.* Root cause: in `gallery()`'s grid branch the `r.z = ...` and `r.y = ...`
+  assignments sat on the same line as a `//` comment, so every grid animal kept a stale y and z
+  (y = 0 under the sea floor, or wherever it last swam) and the gallery, night gallery and palette
+  pictures showed empty water; only animals a non-grid picture had placed earlier (the whale, one
+  dolphin) showed. Each assignment is on its own line now. C5 used to count the returned items; it
+  now projects each animal to the screen and needs it inside the view with at least 40 of its own
+  silhouette pixels near its centre, differing from the same picture without sea life by >= 30
+  (the old code: 0 of 8 by day and night, 1 of 10 dolphin palettes; now every one).
+- *Faint animals from the play camera.* The water is 75% opaque and the animals were drawn before
+  it, so under the surface they showed at about 25%. The sea meshes now draw after the water
+  (`material.js`: transparent with depth written, `renderOrder` 1, the water's chunks are <= 0,
+  particles 10; no new draw calls): a pixel on the other side of the surface from the camera lets
+  the water behind show through by 0.2 + 0.07 per block of depth (at most 0.42), is 8% brighter
+  and has a soft light rim; pixels on the camera's side (fins, leaps, a camera under the water) are
+  drawn as before. A new per-instance `iSurf` (the surface y; -1e4 for crabs and starfish on sand,
+  and in the gallery) feeds it. The `sky` dolphin palette changed colour (#8EB8E0 to #7F98D4, its
+  key kept): it was the water's own blue. V1 now measures the animal against the water it covers
+  (diff) and against a 6-pixel ring of water around it (ring) for seven kinds (each first palette):
+  the old look measured diff 16-38 / ring 8-25 (one seahorse breaking the water 70 / 44), the new
+  one diff 72-161 / ring 57-152 (two runs); the gate is diff >= 60 and ring >= 50.
+- *Owner pictures:* `node tools/probe-ocean.mjs --only=review` (not in the default run) writes
+  `.shots/ocean-review-gallery-day.png`, `-gallery-night`, `-gallery-whale`,
+  `-palettes-<kind>[-n]` (every palette), `-underwater` (a debug camera under the surface; merfolk's
+  own under-water camera comes with P2) and `-play-desktop[-2]`, `-play-ipad[-2]` (her camera with
+  animals swimming near her), the HUD and the target outline hidden (as a Photo hides it). The
+  `world` pass's O2 (a pod within 10 s of game time) failed once at 15.9 s on a loaded machine and
+  passed on the rerun (3.6 s); nothing here touches the pod.
+
+**Second owner review (picture judges).**
+- *The see-through test was on the wrong side.* `seaCam * vSeaUnder < 0.0` is true when the camera
+  and the pixel are on the SAME side of the surface: from her camera, parts above the water (a
+  leaping or ridden dolphin's back, a turtle's shell) turned glassy with their insides showing,
+  animals under the water drew at full strength with no water over them, and with the camera under
+  the water every animal was a see-through ghost. Now the test is `> 0.0` (the surface between the
+  pixel and the camera), and nothing is see-through any more: every pixel is opaque, and instead
+  the water's own colour (`SEA_WATER` #5CC7E8) is mixed into the animal's colour before lighting
+  (0.2 just under the surface, +0.07 a block, at most 0.42, eased in over 0.06 of a block), so it
+  darkens at night like the water and no fin or belly ever shows through a body. The 8% lift and
+  the light rim stay on those pixels. New check C6 (in `cost` / `gallery` / `review`) draws the same
+  animals dry and with a water surface at a chosen height and compares them over their silhouette:
+  above the water seen from above, and under it seen from under it, must match the dry drawing
+  (difference < 2), under it seen from above must be tinted (>= 12, and >= 8 nearer the water's
+  colour). Measured: above 0.0, under 41.9 (31.1 nearer), below 0.0. The same check with the test
+  turned back to the old side fails all three (above 46.0, under 0.0, below 45.5).
+- *V1 again (the swim camera):* with water over them again the animals measure lower than the
+  wrongly-opaque look did. The gate is now diff >= 50 and ring >= 36, between the two looks. The
+  old faint look (P1, `d6e10bc`, run once with today's probe) measured diff 16-33 and ring 5-25
+  and failed 12 of 14 (the two that passed had a part above the water: a turtle's shell, a fish
+  breaking the surface). The new look measures diff 64-111 and ring 52-90 in the last run; the
+  lowest seen in any run were ring 44 (the blue dolphin on iPad, the teal turtle's pale flippers),
+  after both were darkened (below); before that they measured 42 and 18.
+- *Colours:* the `sky` Little Fish (#8FD3FF to #6A8CF5) and the `aqua` Jellyfish (#A6F0FF to
+  #4FD8B8) were pale blue on blue water like the old `sky` dolphin; the `sky` Dolphin went one step
+  darker again (#7F98D4 to #6A80CC; its sticker art matches) and the `ocean` Sea Turtle from the
+  water's own teal #3FB8C8 to #2B8FA0. Keys kept, only colours changed.
+- *Sea Turtle:* the shell plates were tilted boxes poking up like spines and the shell, head and
+  flippers were one colour. Now rounded plates lie flat on the dome, the shell has a darker rim, the
+  head (bigger, on a short neck) and the flippers are a lighter skin colour (mask 3, `SKIN` 0.25),
+  and the front flippers sweep back (they used to point forward and read as a beak).
+- *Whale:* its own body plan (above), no longer the dolphin's tall fin and beak.
+- *Pictures:* the `world` pass now turns her camera to the animals for `world-showpod`,
+  `world-boat-escort` and `world-night` (they showed grass, a lone seahorse and a wall). The review
+  set adds `review-leap-desktop|ipad`, `review-night-desktop|ipad` and `review-ride`. Debug:
+  `gallery({ surface })` puts a water surface at that height (C6), `leap(i)` makes a dolphin leap.
+  T6 waits up to 3 s for the Build click to land (it read the block after a fixed 300 ms).
+
+**Third owner review (picture judges).**
+- *Small animals were specks.* From her swim camera a seahorse was about 10 pixels tall and the
+  Little Fish a few dots. The small kinds are now built bigger than life (`models.js` `SIZE`: fish
+  2.0, seahorse 1.7, starfish 2.0, crab 1.4); pick boxes follow (`BOX`). Near her a seahorse floats
+  up to just under the surface and a curious octopus rises off the bed to say hi (both sink back
+  farther out); fish schools are a little wider so the bigger fish do not pile up.
+- *Colours washed out under the water.* The water's colour went up to 42%, then a white rim on
+  top: on a small animal almost every pixel is rim, so a sunny seahorse turned grey-beige and an
+  orange starfish pink-white. Now: a little of the LIQUID's own colour (0.1 just under the surface,
+  +0.04 a block, at most 0.2), the animal's colour made 40% richer first, no white rim; instead a
+  soft darker edge (outline) and moving dappled wave light (caustics) so it still reads as under
+  the water. A per-instance liquid colour (`iSurf` is now a vec4: surface y, liquid rgb) gives
+  fish in a chocolate-milk pond a chocolate tint (`SEA_LIQUIDS`), never the sea's blue (probe B1).
+- *Night:* every sea animal gets a soft glow of its own colour (`SEA_NIGHT` 0.3) and a pale
+  moonlit edge, so fish and an octopus near her are no longer dim smudges and the blue dolphin
+  keeps its outline against the night sky.
+- *Glass:* see-through blocks (stained glass, jelly blocks, ice) write no depth, so animals drawn
+  after them were pasted over a glass aquarium wall. `_glassTick` walks the line from the camera to
+  each animal every eighth frame (`motion.js` `glassBetween`, test S10); a kind with any animal
+  behind such a block draws in `SEA_BEHIND` order, before every see-through chunk, without its own
+  liquid colour (the glass and the water blend over it as before). New probe check G1: a pink
+  stained-glass wall in front of four animals changes them by 93.4 over the inside of their
+  silhouette (gate 50); drawn after the glass, as before, they change by only 17.4 (the wall's light
+  and shadow) and G1 fails.
+- *Models:* the Sea Turtle's flat darker rim disc (it read as a saucer from above) is now a band on
+  the dome; its head is bigger and held up on the neck, its flippers are broad paddles. The whale's
+  throat-groove boxes (two loose sticks under it) are gone, its head and body are 24-segment
+  shapes, and its smile is one smooth tube (`SeaKit.tube`) instead of stair-stepped bars. The
+  Little Fish's side fins moved back behind the eyes (low and forward they read as a frown) and it
+  has a small smile. The dolphin's tail kick is a little smaller.
+- *Apart:* swimmers of a kind are eased apart (`APART`: dolphins 1.7, turtles 1.5, jellies 1.0,
+  octopus 1.2, seahorses 0.8, crabs 0.95 along the shore), so two dolphins never cross into one
+  two-headed dolphin; new seabed animals and crabs spawn at least `SPACE` from one of their kind, so
+  a 5x5 pool no longer fills with a dozen starfish.
+- *V1 is stricter:* the see pass now shows one kind at a time (no wild animals coming by) and also
+  gates the size (silhouette >= 700 pixels, >= 150 for each animal of a school, >= 40 pixels
+  across) and the colour kept (`keep`: the mean colour change against the same animals drawn as
+  on land, <= 35). The second-review look (`81d5d6e`), run once with this probe: seahorse 215-246
+  pixels and 24-25 across, starfish 253-268 and 26, Little Fish 62-90 pixels each; keep 66-70
+  (seahorse), 87 (starfish), 57-60 (octopus), 34-42 (turtle): 8 of 14 failed, 9 with the
+  per-animal size. The new look: every kind >= 757 pixels (fish 233-308 each), >= 45 across, keep
+  6-24.
+- *Pictures:* the see, world, biomes, tap, ride, touch, gallery and review sets were all made again
+  on the final build. `world-showpod` frames the pod from 7 blocks; `biomes-candy-pond` and
+  `biomes-pool-dolphins` turn her camera to the animals; the review set adds
+  `review-shore-desktop|ipad` (crabs, starfish and a seahorse by the shore), spreads the night
+  animals across the view, and lays the under-water animals out so none is in front of another.
+
+**Polish after the third review.**
+- *Glass per animal, not per kind.* Before, if one animal of a kind was seen through a see-through
+  block, every animal of that kind drew in the faint behind-glass order. Snow worlds put ice floes
+  on the sea near the shore, so one fish seen past a floe made the whole school faint, back and
+  forth (snow seed 777, a school just past a floe: 4 flips in 12 s, all 8 fish faint in 21% of the
+  frames). Now each kind has a second instanced mesh (`render.js`, `sea-<kind>-glass`, drawn in
+  `SEA_BEHIND` order); only the animals behind the glass go there (`r.behind`). An animal goes
+  behind the glass at once and comes back only after 2 clear checks in a row (`GLASS_HOLD`), so
+  one swimming along a floe's edge does not blink. The extra mesh is hidden at count 0, so it costs
+  a draw call only while a kind has animals on both sides of the glass, and never past 9 in all
+  (`render.js` `glassLanes`, `SEA_CALLS`): with every kind out, a split kind draws all its animals
+  behind the glass for that while (the old way) instead of a 10th call. O9 counts 18 sea meshes
+  (9 kinds, each with its glass mesh). New checks: test-sea S10 "glass meshes" (with the budget),
+  probe C1 glass (a glass wall over half the view, every kind out: still <= 9 meshes) and probe B4
+  (snow: fish past a floe, `ocean-biomes-snow-floes.png`). G1 unchanged.
+- *Fish spacing.* Little Fish were not in `APART` (their place comes from their orbit), so two
+  could melt into one two-headed blob. `motion.js` `spaceFish` pushes school mates closer than
+  `FISH_APART` (1.0; 0.75 still let a school seen low from her swim camera read as one jumble)
+  apart a little each frame (at most 0.04 a frame, so a fish never darts) and
+  keeps the push as a small offset on its orbit that eases back (scaled by dt, so 20 fps spaces as
+  well as 60). By an ice floe a fish's orbit point on the ice moves in along its own line
+  (`IN_STEPS`) instead of all bunching on one small ring, a blocked push slides along the edge, and
+  a fish whose place jumps swims there at most `FISH_STEP` (14) a second instead of popping across
+  (before: steps of 1.1-1.3 blocks in one frame). Test S11 (10 fish, 60 s): frames with two fish
+  closer than 0.4 went from 92-96% to under 0.5% in open water and to under 2% by a floe (also at
+  20 fps); probe B4 counts it in the snow world too. Debug: `schoolTo(i, x, z)`,
+  `fishClosest(i)`, `behindCount()`, `meshCounts(glass)`.
+- *Dolphin face and tail.* From the front or 3/4 it read as a seal or a platypus (a round ball
+  head and a short tube beak), and its flukes were a thin stick from the side. Now a softer
+  forehead slopes into a longer, gently tapered beak (a dolphin's rostrum) with a pale chin, a
+  smile line along each side of the beak that curls up toward the eye, and rounded flukes with
+  real thickness, swept back and tipped up a little. Palettes, keys and sizes are unchanged.
+- *Probe upkeep.* C1 hides the cursor's target outline while it counts (13 calls of its own when
+  the crosshair rests on an animal, not sea life's); `--only=cost --part=1` runs C1-C4 without the
+  gallery (then `--only=gallery`), so each fits a shorter time limit; T1 names what the click hit;
+  a ride may take up to 8 s to start on a slow software-drawn page.
+- *Pictures (all made after the last code change):* `ocean-biomes-snow-floes.png` (fish past an ice
+  floe), `ocean-palettes-dolphin.png`, `ocean-gallery-*.png`, `ocean-review-*.png` (play, leap,
+  night, shore, ride, under the water), and the dolphin from five sides,
+  `ocean-dolphin-<palette 0|1|2>-<front|three-quarter|side|back-quarter|tail-side>.png`.
+- *For the integrator (P2):* this branch changed the `pf_dolphin` row of `docs/teams/squishies.md`
+  to ocean's `sky` colour #6A80CC. Squish's code was not touched: align
+  `src/things/squish/data.js` (`pf_dolphin`, still #8EB8E0) at the P2 merge.
+
+**Polish after the fourth review.**
+- *Fish no longer stack into blobs from her camera.* Keeping fish 1.0 apart in 3D was not enough:
+  a school of 8-10 on random crossing orbits (radius 0.6-1.7) still piled up on the screen, one fish
+  behind another with its face peeking out ("a fish with four eyes"). Now a school is laid out for
+  her view (`motion.js`): up to 4 fish swim side by side in one row, more make two rows across her
+  view, the back row 1.4 behind and set between the front fish, neighbours 1.8 apart (`fishSlot`).
+  The rows turn slowly to face her camera and the whole school glides gently from side to side
+  (`schoolFrame`); fish turn smoothly to face the way they swim. `spaceFish` also spaces school
+  mates across the view: two that sit one over the other from the camera move apart sideways until
+  both show whole. `FISH_APART` is 1.3. School mates are a touch lighter or darker (`FISH_TONES`,
+  x1 / x0.93 / x1.07 on the shade; palettes unchanged). By an ice floe a blocked place takes the
+  nearest open water around it, and a fish takes the first place it can reach without crossing the
+  floe (no pops). New test-sea S12 measures it through a real camera and each fish's real box (a
+  pair is stacked when the smaller box is more than a quarter covered): before 7.3 stacked pairs a
+  frame, the rows alone 1.9, rows spaced across the view 0.16 (12 cameras from 3 blocks up to the
+  water's surface). S11: in open water no two fish closer than 1.4 now. Probe R-F counts the same
+  in the play pictures (`debug.ocean.fishStacked(i)`).
+- *Short of draw calls, the school stays bright.* `glassLanes` used to give the spare call to split
+  kinds in list order (dolphins first), so with 8-9 kinds out (a whale visit) a school by an ice
+  floe drew all faint again. Now, only when calls are short: kinds with nothing in view are not
+  drawn at all (no call), the spare calls go to the split kinds with the most animals in front of
+  the glass (a holder keeps its call against a near equal, +2, so it never flips), and a split
+  kind with no call left (every kind in view) draws all its animals on the side most of them are
+  on (in front at 3 times as many, staying there down to 1.5 times). Still never past 9 calls.
+  test-sea S10 adds the busy cases and 500 random busy rounds; probe B4 busy runs the school by the
+  floe with every other kind out and the whale (`debug.ocean.lanes()`).
+- *Dolphin.* A tapered dorsal fin leaning back (from the front a fin, not a stick), rounded paddle
+  flippers (no flat slabs), a long forehead running into the body (no neck), a narrower pale chin
+  (no white bits each side of the beak), a shorter smile curl, thinner flukes swept back more.
+  2,508 triangles (was 2,748).
+- *Pictures:* the dolphin's five sides are now made by the probe (`--only=dolphin`,
+  `--variants=0,1,2`). Cost numbers are in §11.2 (about 140k triangles with every kind at its cap).
+- *Checks this round:* test-sea 19 of 19 (S0's warm scan now the best of 7, not 3: a busy machine
+  pushed one sample past 8 ms); probe R-F 0.00 (desktop) and 0.03 (iPad) stacked pairs a frame;
+  B4 busy: 9 kinds out and in view, at most 9 meshes, the school never faint (short of calls in 9
+  of 33 frames); C1 glass 7 meshes (kinds out of view not drawn, the school split); C2 +0.61 ms;
+  G1 93.0.
+
+**Polish after the fifth review (judges)**
+- *Dolphin flukes grow out of the tail.* The last round's two lobes floated loose beside the tail
+  (no point inside the fluke root or the stock) and were swept forward, like a seal's back
+  flippers from above. Now each lobe's inner end sits deep inside the fluke root and the lobe
+  sweeps back to its tip (tip 0.2 further back than its root), a little thicker and tipped up so
+  from the side it shows as a soft V. New test-sea S13 checks both on the baked parts
+  (`dolphinKit()`): deepest lobe point 0.23 of the way into the root (needs under 0.5), tip behind
+  its root.
+- *Smile, front view.* The smile line ran down the tapered front of the beak, so from the front it
+  showed as two dark sticks like tusks. Now it is a short line at each mouth corner (the back of the
+  beak, where its width hardly changes), set into the beak with a small curl: from the side a smile,
+  from the front only a thin mark at each corner.
+- *No pale chin.* Only slivers of it showed through (a white flap or little teeth under the beak
+  when a dolphin leaps), so it is gone. 2,336 triangles (was 2,508).
+- *Schools: tried, not kept.* A slow wave along the rows (fish drifting up to 0.4 toward her and
+  away) made a school look less like a parade line, but probe R-F with it reached 1.0 stacked pairs
+  a frame on iPad in 2 of 4 runs, so the layout is unchanged (this round asked for no change to
+  what passed). Without it R-F also varies from run to run (0.00 in most runs, once 2.25 on
+  desktop), so R-F now prints, every 15 frames, the stacked pairs, how far the rows are turned off
+  her view, her distance and her height (the rows were never turned off her view; a bad run had the school
+  swimming away from her, 13 to 16 blocks off, 3.7 up; the cause is still open: S12 with that
+  camera, still or swimming toward her and away, stays at 0.00-0.06). S12 now also runs that far
+  camera and a school swimming toward her and away: 0.01 stacked pairs a frame.
+  `debug.ocean.schools()` lists each school's `face`.
+- *Probe timing on a busy machine.* tap's T1 (a dolphin), T4 (a school) and T8 (the whale) used
+  fixed waits; on a busy machine the new animal was not yet in the pick set (refreshed every
+  0.25 s of game time) or the whale not yet placed, so the click missed. They now wait up to 3-4 s
+  for it. T6 prints what its Build click hit.
+- *Dolphin pictures:* the probe now holds the dolphin over the deep water with the most room from
+  the world's edge (the brown or white seam lines were the edge of the world in the background).
+- *Left as is:* animals of different kinds can still swim close together (APART spaces one kind;
+  spacing across kinds would change every kind's motion that passed). Low cameras (at the water's
+  surface) still see some school mates partly covered (S12 0.53 pairs a frame at h 0.1 on one
+  seed): with fish as long as the gap between them, two rows overlap seen from the surface; her
+  play camera is fine (R-F). The triangle total stays above the first plan (written down in §11.2,
+  nothing lowered).
+- *For the P2 merge:* the integrator must still align squish's `src/things/squish/data.js`
+  `pf_dolphin` from #8EB8E0 to #6A80CC (squish code not touched here).

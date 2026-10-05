@@ -757,7 +757,7 @@ export function install(game) {
     }
   });
   // things that happen around her
-  for (const n of ['shop:buy', 'zipline:ride', 'camp:marshmallow', 'photo:taken', 'sticker:earned', 'pet:adopt', 'cook:done', 'garden:harvest', 'prefab:place']) {
+  for (const n of ['shop:buy', 'zipline:ride', 'camp:marshmallow', 'photo:taken', 'sticker:earned', 'pet:adopt', 'cook:done', 'garden:harvest', 'prefab:place', 'sea:ride']) {
     game.events.on(n, () => sys.react(n));
   }
   // her tail appears (merfolk): one line the first time in each world visit, never on turning
@@ -771,6 +771,8 @@ export function install(game) {
     sys.eventT = 0;
     sys.react('player:seaform');
   });
+  // ocean: a hello to a sea animal (a sticker that popped for it already says one line)
+  game.events.on('sea:meet', (e) => { if (!(e && e.quiet)) sys.react('sea:meet'); });
   game.events.on('entity:remove', ({ entity }) => {
     // her seat or bed was taken away: stand up right now
     if (!entity || sys.remote) return;

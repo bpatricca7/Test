@@ -16,6 +16,8 @@ import {
   C, PRIO, REJECT, NO, ANY_FIELDS, RATE, PROTOCOL, randomEpoch,
   isInt, isIntIn, isObj, isStr, isEntityKey, isColor, isPlainData, messageText, cleanText, HELD_KEY_RE,
   parseVehiclePresence,
+  parseSeaRide,
+  parseSeaTrick,
 } from './protocol.js';
 import { Journal, buildPayload } from './journal.js';
 import { unpackB, blockMix, blockHashOf, frameSnapshot, splitForJson, canDeflate, round2, utf8Length } from './codec.js';
@@ -1413,6 +1415,9 @@ export function avatarFields(owner, patch, local, now) {
   if ('hi' in local) owner._set(patch, 'hi', typeof local.hi === 'string' && HELD_KEY_RE.test(local.hi) ? local.hi : null);
   // optional: the vehicle she drives [key, color, flags, honk, src] (docs/teams/vehicles.md §8.1)
   if ('vh' in local) owner._set(patch, 'vh', parseVehiclePresence(local.vh));
+  // optional: the dolphin she rides (palette index) and her dolphin trick counter (docs/teams/ocean.md §9.2)
+  if ('sr' in local) owner._set(patch, 'sr', parseSeaRide(local.sr));
+  if ('sk' in local) owner._set(patch, 'sk', parseSeaTrick(local.sk));
 }
 
 function angleDiff(a, b) {

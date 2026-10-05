@@ -52,6 +52,8 @@ async function newWorld(page, biome) {
     g.profile.tutorialDone = true;
     g.profile.settings.quality = 'low'; // SwiftShader: the 3D at 1x
     g.applySettings();
+    // sea animals (wave 4) stay out of the draw-call and systems-stage checks on the water
+    if (g.debug.ocean) g.debug.ocean.pause(true);
   });
   await recordEvents(page);
 }

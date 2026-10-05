@@ -2106,12 +2106,87 @@ async function merfolkTests() {
 }
 
 // =====================================================================================
+// Sea animals (docs/teams/ocean.md §13.2): presence sr / sk, and the combined wave-4 worst case
+// =====================================================================================
+
+async function seaTests() {
+  console.log('\nSea animals: presence sr, sk; the wave-4 presence size');
+  const { avatarFields, NetHost } = await import('../src/net/host.js');
+
+  await test('sea: N1 presence sr / sk - the parsers, sent only on change, bad values go out as null', async () => {
+    for (const v of [0, 7, 15]) eq(proto.parseSeaRide(v), v, 'sr ' + v);
+    for (const bad of [-1, 16, 1.5, '3', null, [], {}, NaN, undefined, Infinity]) eq(proto.parseSeaRide(bad), null, 'sr refused: ' + String(bad));
+    for (const v of [0, 17, 65535]) eq(proto.parseSeaTrick(v), v, 'sk ' + v);
+    for (const bad of [-1, 65536, 1.5, '3', null, [], {}, NaN, undefined]) eq(proto.parseSeaTrick(bad), null, 'sk refused: ' + String(bad));
+    const owner = { presenceText: new Map(), lastPos: null, lastLookAt: -Infinity, _set: NetHost.prototype._set };
+    const send = (local) => { const patch = {}; avatarFields(owner, patch, local, 0); return patch; };
+    eq(send({ sr: 3 }).sr, 3, 'sr 3: sent');
+    assert(!('sr' in send({ sr: 3 })), 'the same sr again: not sent');
+    eq(send({ sr: null }).sr, null, 'sr null: sent once');
+    assert(!('sr' in send({ sr: null })), 'still null: not sent again');
+    eq(send({ sr: 'x' }).sr, undefined, 'a bad sr is null (already null: not sent)');
+    eq(send({ sr: 5 }).sr, 5, 'sr 5');
+    eq(send({ sr: 99 }).sr, null, 'sr 99 goes out as null');
+    eq(send({ sk: 33 }).sk, 33, 'sk 33: sent');
+    assert(!('sk' in send({ sk: 33 })), 'the same sk again: not sent');
+    eq(send({ sk: 49 }).sk, 49, 'a new trick: sent');
+    eq(send({ sk: 'x' }).sk, null, 'a bad sk goes out as null');
+    assert(!('sr' in send({})) && !('sk' in send({})), 'no sr / sk in local: nothing sent');
+  });
+
+  await test('sea: N2 the combined wave-4 worst case - 4 players, st m, a 156-character lk, a toy, sr, sk, vh: host presence <= 3,900 B', async () => {
+    const { clock, hub, H, gs } = await hostAndGuests(43, [['Mia', 'u1'], ['Zoe', 'u2'], ['June', 'u3']]);
+    const lk = 'a'.repeat(140) + '.0.1.2.3.4.5.6.7'; // 156 characters
+    eq(lk.length, 156, 'the look is 156 characters');
+    const toy = 'squishg_' + 'k'.repeat(20);
+    for (const P of [H, ...gs]) {
+      const A = P.adapter;
+      A.st = 'm';
+      A.look = lk;
+      A.vh = ['van_icecream', 'ffbfa0', 3, 999, 2 ** 31 - 1];
+      A.sr = 15;
+      A.sk = 65535;
+      const base = A.local.bind(A);
+      A.local = () => ({ ...base(), hi: toy });
+    }
+    await act(clock, [H, ...gs], 3000);
+    const mine = H.session.transport.myState();
+    const hs = jsonBytes(mine);
+    assert(hs <= 3900, 'host presence ' + hs + ' B');
+    eq(mine.sr, 15, 'the host\'s sr is out');
+    eq(mine.sk, 65535, 'the host\'s sk is out');
+    eq(mine.hi, toy, 'the host\'s toy is out');
+    const gp = H.session.transport.peers().find((p) => p.state.nm === 'Mia');
+    eq(gp.state.sr, 15, 'a friend\'s sr reaches the host');
+    eq(gp.state.sk, 65535, 'a friend\'s sk reaches the host');
+    eq(gp.state.st, 'm', 'a friend\'s st m reaches the host');
+    let biggest = 0;
+    for (const G of gs) biggest = Math.max(biggest, jsonBytes(G.session.transport.myState()));
+    assert(biggest <= 3900, 'guest presence ' + biggest + ' B');
+    hub.close();
+    return `host presence ${hs} B, guest ${biggest} B`;
+  });
+
+  await test('sea: N3 the fake adapter sends sr / sk only when a test sets them', async () => {
+    const { hub, H } = await hostAndGuests(44, []);
+    const l = H.adapter.local();
+    assert(!('sr' in l) && !('sk' in l), 'not set: not in local()');
+    H.adapter.sr = 2;
+    H.adapter.sk = 18;
+    const l2 = H.adapter.local();
+    eq([l2.sr, l2.sk], [2, 18], 'set: in local()');
+    hub.close();
+  });
+}
+
+// =====================================================================================
 
 const t0 = Date.now();
 if (!ONLY || ONLY.has('unit')) await unitTests();
 if (!ONLY || ONLY.has('unit') || ONLY.has('vehicles')) await vehicleTests();
 if (!ONLY || ONLY.has('unit') || ONLY.has('merfolk')) await merfolkTests();
 if (!ONLY || ONLY.has('unit') || ONLY.has('squish')) await squishTests();
+if (!ONLY || ONLY.has('unit') || ONLY.has('sea')) await seaTests();
 if (!ONLY || ONLY.has('prop')) await propertyTests();
 if (!ONLY || ONLY.has('server')) await serverTests();
 if (!ONLY || ONLY.has('server')) await serverSafetyTests();

@@ -279,4 +279,18 @@ describe("no other company's names, anywhere people read", () => {
   test("the teams' extra words: not in the game or the site", () => {
     assert.deepEqual(scanFiles(EXTRA_SCOPE, { extras: true }).map((m) => `${m.file}:${m.line}: ${m.text}`), []);
   });
+
+  // ocean (docs/teams/ocean.md §13.1 S9): every word kids read about sea animals
+  test('the sea string tables (SEA_TEXT, SEA_NAMES, DOLPHIN_NAMES, the sea stickers) carry no brand and no famous character', async () => {
+    const { SEA_TEXT, SEA_NAMES, DOLPHIN_NAMES } = await import('../src/life/ocean/kinds.js');
+    const { OCEAN_STICKERS } = await import('../src/life/ocean/stickers.js');
+    const words = [];
+    const walk = (v) => { if (typeof v === 'string') words.push(v); else if (v && typeof v === 'object') Object.values(v).forEach(walk); };
+    walk([SEA_TEXT, SEA_NAMES, DOLPHIN_NAMES, OCEAN_STICKERS.map((s) => [s.name, s.hint])]);
+    assert.ok(words.length > 50);
+    for (const w of words) {
+      assert.deepEqual(scanText(w, { extras: true }), [], w);
+      assert.deepEqual(scanCharacters(w), [], w);
+    }
+  });
 });
