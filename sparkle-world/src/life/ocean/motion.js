@@ -591,10 +591,23 @@ export function viewOverlap(a, b, cam, vx, vz, sign = null) {
   const la = (ax * vz - az * vx) / da, lb = (bx * vz - bz * vx) / db;
   const ha = (a.y - cam.y) / da, hb = (b.y - cam.y) / db;
   const sa = (a.scale || 1) / da, sb = (b.scale || 1) / db;
-  const ex = VIEW_W * (sa + sb) - Math.abs(la - lb), ey = VIEW_H * (sa + sb) - Math.abs(ha - hb);
+  // how wide each looks across the view: its side (FISH_LEN) or its face (FISH_WIDE) toward her,
+  // by its turn against her line of sight to it, and wider off to the side of the school's middle
+  // (a near camera sees a fish at the school's edge at a slant: r / da)
+  const ex = viewWide(a, ax, az, da) * sa + viewWide(b, bx, bz, db) * sb - Math.abs(la - lb), ey = VIEW_H * (sa + sb) - Math.abs(ha - hb);
   if (ex <= 0 || ey <= 0) return 0;
   if (sign) sign[0] = la > lb || (la === lb && a.i < b.i) ? 1 : -1;
   return ex;
+}
+
+/** A fish's half length and half width (models.js box, x scale), with a little room. */
+const FISH_LEN = 0.5, FISH_WIDE = 0.3;
+/** Half how wide fish r looks across the view (per scale), seen from (dx, dz) away at depth d. */
+function viewWide(r, dx, dz, d) {
+  const rr = Math.hypot(dx, dz), t = Number.isFinite(r.yaw) ? r.yaw : 0;
+  // its heading against her line of sight: side on (sin 1) shows its length, face on its width
+  const s = Math.abs(Math.sin(t) * dz - Math.cos(t) * dx) / (rr || 1), c = Math.sqrt(Math.max(0, 1 - s * s));
+  return Math.max(VIEW_W, FISH_LEN * s + FISH_WIDE * c) * Math.min(2, rr / d);
 }
 
 const _sign = [1];
