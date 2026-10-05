@@ -3320,23 +3320,32 @@ async function wave4X7(browser, errors) {
   await game(lily, () => { window.__game.player.avatar.group.visible = true; });
   // Rosie hops off on the shore: Lily sees legs and the toy within 2 s
   // (Lily waits on the shore first, so the 2 s are the message and the change, not her own trip)
+  // Two parts, timed the way each one runs (robust on the GPU-less test machine, [rf2-hud]):
+  // - the message: her page sees Rosie's new state within 2 s of wall time;
+  // - the change: the tail shrinks over game time (SEA_GROW / 2 = 0.175 s), and a page adds at
+  //   most 0.05 s per frame, so on two pages at about 2 frames a second the 4 frames it needs
+  //   took 1.5-2.4 s of wall time (X7 failed at 2033-2978 ms although the message came in
+  //   200-550 ms). So the whole change must show within 2 s of her game time (frames counted
+  //   the way game.js counts them); on a phone at 60 frames a second that is the wall time.
   await float(lily.page, false);
   await game(lily, (s) => { const g = window.__game; g.player.teleport(s[0] + 2, s[1] + 0.05, s[2] + 1); }, sh.land);
   await lily.page.waitForTimeout(1500);
   await float(rosie.page, false);
-  // Lily's page notes when each part of the change first shows (in her frames), so a slow run
-  // says which part was late
+  // Lily's page notes when each part first shows: wall ms and game ms
   await game(lily, () => {
-    const g = window.__game, t0 = performance.now(), seen = {};
-    window.__x7 = seen;
+    const g = window.__game, w0 = performance.now(), wall = {}, gameMs = {};
+    let last = w0, gt = 0;
+    window.__x7 = { wall, game: gameMs };
     const tick = () => {
+      const now = performance.now();
+      gt += Math.min(50, now - last); last = now;
       const f = [...g.net.remote.friends.values()].find((q) => q.name === 'Rosie');
       if (f && f.avatar) {
-        const sea = f.avatar.seaParts(), now = Math.round(performance.now() - t0);
-        const parts = { tailGone: !sea.shown, legs: sea.legsVisible, key: f.heldKey === 'squish_pf_dolphin', held: !!f.avatar.held, heldShown: f.avatar.heldShown === true, noDolphin: g.debug.ocean.remote().length === 0, st: f.st !== 'h' };
-        for (const k in parts) if (parts[k] && seen[k] == null) seen[k] = now;
+        const sea = f.avatar.seaParts();
+        const parts = { st: f.st !== 'h', noDolphin: g.debug.ocean.remote().length === 0, key: f.heldKey === 'squish_pf_dolphin', held: !!f.avatar.held, tailGone: !sea.shown, legs: sea.legsVisible, heldShown: f.avatar.heldShown === true };
+        for (const k in parts) if (parts[k] && wall[k] == null) { wall[k] = Math.round(now - w0); gameMs[k] = Math.round(gt); }
       }
-      if (Object.keys(seen).length < 7 && performance.now() - t0 < 10000) requestAnimationFrame(tick);
+      if (Object.keys(wall).length < 7 && now - w0 < 10000) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
   });
@@ -3350,8 +3359,10 @@ async function wave4X7(browser, errors) {
   }, null, 10000, 50);
   const offMs = Date.now() - t0;
   const offNow = off || await game(lily, friend);
-  const parts = await game(lily, () => window.__x7);
-  check(errors, !!off && offMs <= 2000, `X7 Rosie on the shore: Lily sees legs and the toy within 2 s (${off ? offMs + ' ms' : 'not in 10 s: ' + JSON.stringify(offNow)}; first seen on her page, ms: ${JSON.stringify(parts)})`);
+  const seen = await game(lily, () => window.__x7);
+  const msgMs = seen.wall.st, changeMs = Math.max(...Object.values(seen.game));
+  check(errors, !!off && msgMs <= 2000 && Object.keys(seen.game).length === 7 && changeMs <= 2000,
+    `X7 Rosie on the shore: Lily sees legs and the toy within 2 s (her new state after ${msgMs} ms, all of it after ${changeMs} ms of game time; ${off ? offMs + ' ms of wall time' : 'not in 10 s: ' + JSON.stringify(offNow)}; first seen ${JSON.stringify(seen)})`);
   // sizes and hashes
   for (const p of [lily, rosie]) {
     const s = await game(p, () => window.__swFakeStats());
