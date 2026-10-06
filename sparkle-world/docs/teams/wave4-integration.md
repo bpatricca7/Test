@@ -678,7 +678,7 @@ Beach Cozy, desktop and iPad 1024 x 768 touch, `debug.merfolk.tips(true)`,
 
 | # | command | earlier / estimate | baseline |
 |---|---|---|---|
-| B1 | `timeout 570 node tools/smoke.mjs` | 84-153 s | 102 s; 141 s green in [gate-B1]; 152 s green in [gate-B10d] (after the shelf's warm-up and read-back changes); 158 s green in [gate-B6r] on 16a7586 |
+| B1 | `timeout 570 node tools/smoke.mjs` | 84-153 s | 102 s; 141 s green in [gate-B1]; 152 s green in [gate-B10d] (after the shelf's warm-up and read-back changes); 158 s green in [gate-B6r] on 16a7586 ; [gate-D3b] on bd88853 under the browser lock: **green in 190 s**, 17 checks, "no console errors, page errors or failed requests" (load about 3.5; the touch HUD and Bag pictures looked at and right) |
 | B2 | `timeout 570 node tools/probe-merfolk.mjs --only=unit,water` | est. 6-8 min (merfolk splits `water` if over 450 s) | 289 s, 45 green in [gate-B1]; 337 s, 45 green in [gate-B5c] on 830cafe (after gate-B5's avatar and merfolk changes) |
 | B3 | `timeout 570 node tools/probe-merfolk.mjs --only=studio` | est. 4-5 min | 230 s, 37 green in [gate-B1]; 238 s, 37 green in [gate-B3r] on 0a37ec5 (after gate-B5's avatar and merfolk changes; no console errors, page errors or failed requests) |
 | B3b | `timeout 570 node tools/probe-merfolk.mjs --only=grids` (the C5 render grids: a pass of its own since [gate-B1]; studio, grids and review together went over 570 s) | | 208 s, 6 grids, green in [gate-B1]; 206 s, 6 grids, green in [gate-B3r] on f41b1f7 (no magenta; the grids looked at; no console errors, page errors or failed requests) |
