@@ -1323,6 +1323,21 @@ async function together(browser, url, port) {
     await settle(june.page, 700);
     await press(june, '.sw-panel-wrap.sw-open .sw-wk-setrow .sw-wk-switch');
     const offAgain = await until(june, () => !window.__game.debug.walkie.state().enabled && !document.querySelector('.sw-gate'), null, 3000, 100);
+    if (!offAgain) {
+      // [gate-D9] saw this fail once with no trace: say what the page shows and keep a picture
+      const why = await game(june, () => {
+        const g = window.__game, s = document.querySelector('.sw-panel-wrap.sw-open .sw-wk-setrow .sw-wk-switch');
+        const r = s && s.getBoundingClientRect();
+        const at = r && document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+        return {
+          walkie: g.debug.walkie.state(), ui: g.ui.current, gate: !!document.querySelector('.sw-gate'),
+          switch: r ? { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height), on: s.getAttribute('aria-checked') } : null,
+          atCentre: at ? `${at.tagName}.${String(at.className).slice(0, 60)}` : null,
+        };
+      });
+      console.log(`    (switch not off: ${JSON.stringify(why)})`);
+      await shot(june, 'off-not-off');
+    }
     check(!!offAgain, 'June: turning the walkie off is one tap (no question)');
     await closePanels(june);
     const offDeclared = await until(june, () => window.__game.debug.walkie.state().declared === null, null, 3000, 100);
