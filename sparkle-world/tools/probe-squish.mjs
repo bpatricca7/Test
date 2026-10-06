@@ -1221,7 +1221,11 @@ async function costPass(browser, errors) {
   // F4 the shelf with all 96: no frame over 1 s, all thumbnails within 20 s
   const f4 = await ev(page, async () => {
     const g = window.__game;
-    const n0 = g.diag.longFrames.length;
+    // the long frames of this window, caught as they are reported (diag keeps only its last 40,
+    // so counting from the list's length would see none once that list is full)
+    const lf = [];
+    const report = g.diag.longFrame;
+    g.diag.longFrame = function (ms, stages) { lf.push({ ms: Math.round(ms), stages }); return report.call(this, ms, stages); };
     const t0 = performance.now();
     g.ui.open('squish');
     const keys = g.debug.squish.order(null).slice(0, 48);
@@ -1237,7 +1241,7 @@ async function costPass(browser, errors) {
     }
     const ms = performance.now() - t0;
     const missing = document.querySelectorAll('.sq-cubby .sq-ph').length;
-    const lf = g.diag.longFrames.slice(n0);
+    g.diag.longFrame = report;
     const worst = Math.max(0, ...lf.map((f) => f.ms));
     const worstStages = JSON.stringify((lf.find((f) => f.ms === worst) || {}).stages || {});
     g.ui.close();
