@@ -5,7 +5,7 @@
 // a present waiting (the Present button, the ring on the coin pill), swimming (Up / Down), the
 // dolphin bubble and riding (Hop off, Jump), each alone and with friends (Say and the walkie).
 // The life column (Hop off, Present, Squish!, ...) and the dolphin bubble count too.
-// Screenshots .shots/tmp-hudsizes-*.png.
+// Console errors, page errors and failed requests fail a size too. Screenshots .shots/tmp-hudsizes-*.png.
 //   node tools/probe-hud-sizes.mjs [tag] [--sizes=1180x700,1024x690] [--no-wave4]
 import { launch, openGame, settle, startWorld, shot } from './smoke.mjs';
 
@@ -138,8 +138,10 @@ for (const [width, height] of SIZES) {
   // a browser that dies under load gets one more go
   for (let attempt = 1; attempt <= 2; attempt++) {
   const browser = await launch({});
+  // console errors, page errors and failed requests count as a failure too (the gate allows none)
+  const errors = [];
   try {
-    const { context, page } = await openGame(browser, { errors: [], viewport: { width, height }, touch: true, label: `hud-${width}x${height}` });
+    const { context, page } = await openGame(browser, { errors, viewport: { width, height }, touch: true, label: `hud-${width}x${height}` });
     await page.evaluate(() => {
       const g = window.__game;
       for (const a of ['dressup', 'stickers', 'emotes']) if (!g.actions.has(a)) g.registerAction(a, () => g.toast(a));
@@ -175,9 +177,11 @@ for (const [width, height] of SIZES) {
     }
     const sea = WAVE4 ? await wave4(page, `${width}x${height}`) : [];
     const all = [...ground.out, ...fly.out.map((o) => 'flying: ' + o), ...friends, ...sea];
-    bad += all.length ? 1 : 0;
-    console.log(`${width}x${height}: ${all.length ? 'OVERLAP ' + all.join('; ') : 'ok'} | ${ground.jump}`);
+    const errs = errors.slice(); // taken before closing, which cancels requests still loading
     await context.close();
+    bad += all.length || errs.length ? 1 : 0;
+    console.log(`${width}x${height}: ${all.length ? 'OVERLAP ' + all.join('; ') : 'ok'} | ${ground.jump} | ${errs.length} console errors, page errors or failed requests`);
+    for (const e of errs) console.log('  ' + e);
     break;
   } catch (err) {
     if (attempt === 2 || !/closed|crash/i.test(String(err && err.message))) throw err;
@@ -187,5 +191,5 @@ for (const [width, height] of SIZES) {
   }
   }
 }
-console.log(bad ? `${bad} sizes overlap` : 'all sizes clear');
+console.log(bad ? `${bad} sizes overlap or had errors` : 'all sizes clear, no console errors, page errors or failed requests');
 if (bad) process.exitCode = 1;
