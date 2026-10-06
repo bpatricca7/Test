@@ -38,13 +38,32 @@ const overlaps = (page) => page.evaluate(() => {
   return { out, jump: j && j.width ? `jump at ${Math.round(j.left)},${Math.round(j.top)} (bottom gap ${Math.round(innerHeight - j.bottom)})` : 'jump hidden' };
 });
 
+// Say as with friends. The probe has no real session, so the HUD's own refresh (every 0.25 s of
+// game time, src/ui/hud.js refreshNet) hides Say again; whether that landed before the overlap
+// check and the picture depended on frame timing ([gate-D5]: Say missing at 1024x690 and
+// 1080x700, shown at 1080x810). Now Say is held shown for as long as the probe wants it, so every
+// "with friends" check really includes it.
+const keepSay = (page) => page.evaluate(() => {
+  if (window.__swHudSay) return;
+  let want = false, obs = null;
+  window.__swHudSay = (on) => {
+    want = on;
+    const say = document.querySelector('.sw-saybtn');
+    if (!say) return;
+    say.hidden = !on;
+    if (!obs) {
+      obs = new MutationObserver(() => { if (want && say.hidden) say.hidden = false; });
+      obs.observe(say, { attributes: true, attributeFilter: ['hidden'] });
+    }
+  };
+});
+
 // alone (Say and the walkie hidden) and with friends (Say, the walkie idle with its rings)
 async function bothWays(page, label, out) {
   for (const friends of [false, true]) {
     await page.evaluate((friends) => {
       const g = window.__game;
-      const say = document.querySelector('.sw-saybtn');
-      if (say) say.hidden = !friends;
+      window.__swHudSay(friends);
       g.net.walkie.view = () => (friends ? { show: 'button', state: 'idle', who: null, left: 9, speaking: [] } : { show: 'none', speaking: [] });
       g.net.walkie.ui.update();
     }, friends);
@@ -148,6 +167,7 @@ for (const [width, height] of SIZES) {
     });
     // wave 4 needs the sea: a beach world (the land HUD is the same as the meadow's)
     await startWorld(page, WAVE4 ? 'beach' : 'meadow', { tap: true });
+    await keepSay(page);
     await settle(page, 700);
     const ground = await overlaps(page);
     await shot(page, `hudsizes-${TAG}-${width}x${height}`, 'tmp');
@@ -163,8 +183,7 @@ for (const [width, height] of SIZES) {
     for (const state of ['idle', 'busy', 'talking', 'badge']) {
       await page.evaluate((state) => {
         const g = window.__game;
-        const say = document.querySelector('.sw-saybtn');
-        if (say) say.hidden = false;
+        window.__swHudSay(true);
         // 'badge': her walkie is off while a friend's is on (the small "Walkie off" badge)
         g.net.walkie.view = () => (state === 'badge' ? { show: 'badge', state: 'off', speaking: [] }
           : { show: 'button', state, who: state === 'busy' ? { peer: 'x', name: 'Jules bear', color: '#9C7BFF' } : null, left: 9, speaking: [] });
