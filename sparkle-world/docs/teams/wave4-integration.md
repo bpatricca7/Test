@@ -672,7 +672,7 @@ Beach Cozy, desktop and iPad 1024 x 768 touch, `debug.merfolk.tips(true)`,
 | A10 | `timeout 570 npm run test:billing` | 11 s | 12 s, 106 green and 1 skipped by design (no real-shapes.txt yet) in [gate-A]; [gate-D3b] on 4a7f3ba: **106 green, 1 skipped by design, in 14 s**<br>[gate-D7] after the bubble fix (9d9bad3), on the B13 commit: **13 s, fail 0** |
 | A11 | `timeout 570 npm run test:mail-microsoft` | seconds | 3 s, 19 green in [gate-A]; 3 s green again in [gate-D3] on 4df3b21<br>[gate-D7] after the bubble fix (9d9bad3), on the B13 commit: **4 s, fail 0** |
 | A12 | `timeout 570 node tools/test-walkie-unit.mjs` | under 1 s | under 1 s, green in [gate-A]; 1 s green again in [gate-D3] on 4df3b21<br>[gate-D7] after the bubble fix (9d9bad3), on the B13 commit: **under 1 s, green** |
-| A13 | `timeout 570 npm run test:net` | 143-150 s | 147 s, 69 green in [gate-A]; [gate-D3b] on 4a7f3ba: **69 green in 148 s** |
+| A13 | `timeout 570 npm run test:net` | 143-150 s | 147 s, 69 green in [gate-A]; [gate-D3b] on 4a7f3ba: **69 green in 148 s**; [gate-D8] on 7bd1466 (the dolphin bubble fix): **69 green in 149 s** |
 
 **B. Smoke and the wave-4 probes (about 90 minutes)**
 
