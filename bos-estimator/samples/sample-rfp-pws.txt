@@ -1,0 +1,57 @@
+SOLICITATION W912QR-26-R-0042
+BASE OPERATIONS SUPPORT (BOS) SERVICES — FORT EXAMPLE, KENTUCKY
+PERFORMANCE WORK STATEMENT (PWS) — EXCERPT WITH TECHNICAL EXHIBITS
+
+SECTION 1 — GENERAL
+1.1 Scope. The Contractor shall provide all personnel, equipment, tools, materials, supervision, and other items and services necessary to perform Custodial Services, Floor Care, Grounds Maintenance, and Full Food Service (FFS) at the Dining Facility at Fort Example, Kentucky, as defined in this PWS.
+1.2 Period of Performance. The contract consists of a base period of twelve (12) months and four (4) one-year option periods.
+1.3 Climate. Fort Example is in a temperate climate with a growing season of approximately 30 weeks (April through October). Snow and ice removal is required for walks and parking areas on an as-needed basis (historical average 6 events per year).
+1.4 Hours. Administrative facilities are cleaned after normal duty hours (1700–0130). Barracks common areas, the Fitness Center, the Health Clinic, and the Dining Facility require seven-day-per-week service.
+
+SECTION 5 — CUSTODIAL SERVICES
+5.1 The Contractor shall provide custodial services in the facilities listed in Technical Exhibit 3 (TE-3). Square footage shown is gross square footage (GSF) unless a cleanable square footage (CSF) is listed. Service frequency is shown per facility.
+5.2 Routine services include emptying waste receptacles, vacuuming carpet, dust and damp mopping hard floors, cleaning and disinfecting restrooms and restocking supplies, spot cleaning glass, doors and partitions, and policing entrances.
+5.3 Periodic floor care includes spray buffing and scrub/recoat of resilient flooring, annual strip and refinish, carpet interim cleaning quarterly and hot-water extraction semi-annually, and machine scrubbing of ceramic tile.
+
+TECHNICAL EXHIBIT 3 — CUSTODIAL WORKLOAD
+Bldg No. | Facility Name | Use | Floors | Gross SF | Cleanable SF | Restroom Fixtures | Frequency
+Bldg 1201 | Brigade Headquarters | Administrative | 2 | 45,200 SF | 38,400 SF | 24 fixtures | Daily (5 days)
+Bldg 1205 | Battalion Headquarters Annex | Administrative | 1 | 18,750 SF | 15,900 SF | 10 fixtures | Daily (5 days)
+Bldg 1310 | Soldier Service Center (DHR / Finance) | Administrative | 3 | 62,000 SF | 52,700 SF | 32 fixtures | Daily (5 days)
+Bldg 2402 | Barracks, Enlisted (Common Areas Only) | Barracks | 4 | 96,000 SF | 28,800 SF | 64 fixtures | Daily (7 days)
+Bldg 2404 | Barracks, Enlisted (Common Areas Only) | Barracks | 4 | 96,000 SF | 28,800 SF | 64 fixtures | Daily (7 days)
+Bldg 2410 | Dining Facility (Warrior Restaurant) | Dining | 1 | 28,500 SF | 25,600 SF | 12 fixtures | Daily (7 days)
+Bldg 3105 | Consolidated Health Clinic | Medical | 2 | 54,300 SF | 48,900 SF | 40 fixtures | Daily (7 days)
+Bldg 3120 | Dental Clinic | Medical | 1 | 14,200 SF | 12,800 SF | 12 fixtures | Daily (5 days)
+Bldg 4001 | Physical Fitness Center | Fitness | 1 | 48,000 SF | 43,200 SF | 36 fixtures | Daily (7 days)
+Bldg 4210 | Child Development Center | Child Care | 1 | 22,400 SF | 20,200 SF | 30 fixtures | Daily (5 days)
+Bldg 4330 | Education Center and Library | Education | 2 | 36,800 SF | 31,300 SF | 18 fixtures | Daily (5 days)
+Bldg 4500 | Post Chapel and Religious Education | Community | 1 | 16,900 SF | 14,400 SF | 8 fixtures | 3x per week
+Bldg 5100 | Central Issue Facility Warehouse | Warehouse | 1 | 82,000 SF | 24,600 SF | 6 fixtures | 2x per week
+Bldg 5230 | Vehicle Maintenance Shop (TMP) | Maintenance | 1 | 44,000 SF | 17,600 SF | 8 fixtures | 2x per week
+Bldg 6010 | Aviation Hangar 1 (Shops and Admin Areas) | Hangar | 1 | 120,000 SF | 30,000 SF | 10 fixtures | Weekly
+Bldg 7020 | Range Control and Simulation Center | Laboratory | 2 | 26,500 SF | 22,500 SF | 12 fixtures | Daily (5 days)
+
+SECTION 6 — GROUNDS MAINTENANCE
+6.1 The Contractor shall maintain the grounds listed in Technical Exhibit 4 (TE-4). Improved grounds shall be mowed weekly during the growing season to a height of 3 inches, trimmed and edged with each mowing. Semi-improved grounds shall be mowed every three weeks. Unimproved grounds shall be rotary-cut three times per year.
+6.2 Planting beds shall be weeded, cultivated and kept free of debris; beds shall be re-mulched annually. Shrubs shall be pruned twice per year. Trees under 30 feet shall be pruned on a three-year cycle.
+6.3 Parking lots shall be mechanically swept monthly; sidewalks shall be blown and kept free of litter.
+
+TECHNICAL EXHIBIT 4 — GROUNDS WORKLOAD
+Area | Quantity
+Improved grounds, cantonment area (Bldgs 1201, 1205, 1310 vicinity) | 42.5 acres improved
+Improved grounds, barracks complex (Bldg 2402 and Bldg 2404) | 18.0 acres improved
+Improved grounds, community area (Bldgs 4001, 4210, 4330, 4500) | 27.3 acres improved
+Improved grounds, medical campus (Bldg 3105 vicinity) | 9.6 acres improved
+Semi-improved grounds, airfield perimeter | 215.0 acres semi-improved
+Unimproved grounds, training area buffer | 640.0 acres unimproved
+Athletic fields (soccer and softball complex) | 14.0 acres athletic
+Shrub and planting beds, all improved areas | 86,000 SF shrub beds
+Parking lots, cantonment and community areas | 1,420,000 SF parking
+Sidewalks and walkways | 310,000 SF sidewalks
+Ornamental and shade trees under 30 ft | 1,250 trees
+
+SECTION 7 — FULL FOOD SERVICE, DINING FACILITY
+7.1 The Contractor shall operate Dining Facility Bldg 2410 (Warrior Restaurant) providing full food service: receiving and storage, food preparation, serving line and short-order operation, dining room attendant services, warewashing, and sanitation of all food service areas.
+7.2 Workload. The facility serves an average of 2,650 meals per day across four meal periods (breakfast, lunch, dinner, and midnight meal), seven days per week, 365 days per year. Seating capacity is 450 seats. The kitchen and serving area is approximately 11,000 SF and the dining room is approximately 12,500 SF.
+7.3 Sanitation. The dining room floors and tables shall be cleaned after each meal period. Kitchen floors, hoods, and equipment shall be sanitized daily in accordance with TB MED 530.

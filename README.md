@@ -55,3 +55,13 @@ This analysis is for **informational purposes only** and should not be considere
 ## License
 
 MIT
+
+---
+
+## BOS Estimator (`bos-estimator/`)
+
+A separate application in this repository: an AI-driven base operations support estimating
+workbench. It reads an RFP with Claude, builds a 3D campus of the facilities to be serviced,
+estimates custodial, floor care, grounds and dining labor with RS Means-style productivity
+factors, animates the crews on a live clock, and rolls up manning per contract year.
+See [`bos-estimator/README.md`](bos-estimator/README.md) for setup.
