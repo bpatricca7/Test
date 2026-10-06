@@ -174,8 +174,30 @@ async function openPlayer(browser, def, url) {
     if (/fonts\.(googleapis|gstatic)\.com/.test(req.url())) return;
     errors.push(`[${label}] request failed: ${req.url()} ${req.failure() ? req.failure().errorText : ''}`);
   });
+  // how long each page takes to open (the shared start of every part is slow on a machine
+  // without a GPU); if a page never reaches the title, say what it shows instead and keep a
+  // picture of it, so a failure here can be told apart (slow page, a card in the way, no game)
+  const said = [];
+  let opening = true;
+  page.on('console', (msg) => opening && said.push(`${msg.type()}: ${msg.text()}`.slice(0, 200)));
+  const t0 = Date.now();
   await page.goto(url);
-  await waitForTitle(page);
+  const tGoto = Date.now() - t0;
+  try {
+    await waitForTitle(page);
+  } catch (err) {
+    const st = await Promise.race([sleep(10000).then(() => ({ evaluate: 'no answer in 10 s' })), page.evaluate(() => ({
+      href: location.href, ready: document.readyState, game: !!window.__game, mode: window.__game && window.__game.mode,
+      ui: window.__game && window.__game.ui ? window.__game.ui.current : null,
+      text: document.body ? document.body.innerText.replace(/\s+/g, ' ').slice(0, 300) : null,
+    }), null).catch((e) => ({ evaluate: String(e.message).split('\n')[0] }))]); // a page too busy to answer gets 10 s
+    log(`${label}: no title ${Date.now() - t0} ms after opening (page loaded in ${tGoto} ms): ${JSON.stringify(st)}`);
+    for (const line of said.slice(-15)) console.log(`    [${label} console] ${line}`);
+    await shot({ page }, `${label}-no-title`).catch(() => {});
+    throw err;
+  }
+  opening = false;
+  log(`${label}: title after ${Date.now() - t0} ms (page loaded in ${tGoto} ms)`);
   const pl = { ...def, context, page };
   await setupPage(pl);
   return pl;
