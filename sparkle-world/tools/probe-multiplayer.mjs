@@ -1,13 +1,19 @@
 // Headless multiplayer acceptance tests (docs/MULTIPLAYER.md §15.2-15.3, AT1-AT22).
 //
-//   node tools/probe-multiplayer.mjs [--part=a|b|c|d|e|f] [--until=AT9] [--shots-prefix=net] [--biome=flat] [--headed]
+//   node tools/probe-multiplayer.mjs [--part=a|b|c|d|e|f|g|h] [--until=AT9] [--shots-prefix=net] [--biome=flat] [--headed]
 //
 // --part splits the suite so each part fits the gate's 570 s timeout (docs/teams/wave4-integration.md
 // §10.2 C1-C3b). AT1 always runs first (it starts the session); then the part's tests, in file order:
 //   b: AT7, AT11, AT9, AT10
 //   f: AT11, AT20, REJOIN  (split from b at the wave-4 gate: AT1's and AT11's joins take about
 //                    180 s each in SwiftShader, so b with all six ran past 570 s at load 4)
-//   c: AT11, AT12, AT13, AT8, AT21, BUDGET, END, AT22   (AT11 brings June)
+//   c: JUNE, AT12                                (split in three at the wave-4 gate [gate-C1b]:
+//   g: JUNE, AT13                                 AT1 + AT11 alone take about 390 s at load 4,
+//   h: JUNE, AT8, AT21, BUDGET, END, AT22         so AT11 plus any of these ran past 570 s)
+//      JUNE is a lighter AT11: June (the same phone visitor) knocks and is let in, with none of
+//      AT11's 300 edits, pictures or HUD checks. These tests need June in the session, not a
+//      fresh AT11 (AT11 itself runs whole in parts b and f), so every test keeps its players
+//      and its checks. JUNE never runs without --part=c, g or h.
 //   d: LOOKS, SEA   (split from a in wave 4: with SEA, part a ran past 570 s on a busy machine)
 //   e: SIX          (wave 4: six players; runs ONLY with --part=e, without AT1: it makes its own
 //                    session, opening the other five pages while Lily makes the code)
@@ -51,21 +57,25 @@ const PART = arg('part') ? String(arg('part')).toLowerCase() : null;
 /** The tests of parts b-f (AT1 runs in every part; part a is every test not listed here). */
 const PART_TESTS = {
   b: ['AT7', 'AT11', 'AT9', 'AT10'],
-  c: ['AT11', 'AT12', 'AT13', 'AT8', 'AT21', 'BUDGET', 'END', 'AT22'],
+  c: ['JUNE', 'AT12'],
+  g: ['JUNE', 'AT13'],
+  h: ['JUNE', 'AT8', 'AT21', 'BUDGET', 'END', 'AT22'],
   d: ['LOOKS', 'SEA'],
   e: ['SIX'],
   f: ['AT11', 'AT20', 'REJOIN'],
 };
-if (PART && !['a', 'b', 'c', 'd', 'e', 'f'].includes(PART)) {
-  console.error(`--part must be a, b, c, d, e or f (got ${PART})`);
+if (PART && !['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].includes(PART)) {
+  console.error(`--part must be a, b, c, d, e, f, g or h (got ${PART})`);
   process.exit(2);
 }
 /** Does test `id` run in this run? */
 function inPart(id) {
   if (PART === 'e') return PART_TESTS.e.includes(id); // SIX makes its own session (no AT1: it is lean)
   if (PART_TESTS.e.includes(id)) return false; // six pages: never part of a whole run
+  // the lighter June join: only where AT11 does not run (a whole run has AT11)
+  if (id === 'JUNE') return ['c', 'g', 'h'].includes(PART);
   if (!PART || id === 'AT1') return true;
-  if (PART === 'a') return !['b', 'c', 'd', 'f'].some((k) => PART_TESTS[k].includes(id));
+  if (PART === 'a') return !['b', 'c', 'd', 'f', 'g', 'h'].some((k) => PART_TESTS[k].includes(id));
   return PART_TESTS[PART].includes(id);
 }
 /** The ids that ran so far (a later test may need an earlier one's scene, e.g. BUDGET needs AT6). */
@@ -1029,6 +1039,20 @@ test('AT11', 'June joins from a phone after 300 edits (a visitor: the knock card
   check((await resyncs(rosie)) === 0 && (await resyncs(june)) === 0, 'no resyncs so far (fault-free play)');
   await savesCheck('after AT11', [rosie, june]);
   await budgetCheck('after AT11', [lily, rosie, june]);
+});
+
+test('JUNE', 'June joins from a phone (a visitor; the lighter AT11 for parts c, g and h)', async () => {
+  june = await openPlayer(BROWSER, PLAYERS[2]);
+  const t0 = Date.now();
+  await guestTypesCode(june, CODE);
+  await until(june, () => document.querySelector('.sw-net-joining[data-phase="knocking"]:not([hidden])') !== null, null, 20000);
+  await hostLetsIn(lily, 'June', { account: 'june.visitor@example.com', visitor: true });
+  check(await waitLive(june), 'June is in Lily’s world');
+  log(`  June trace: ${await trace(june)}`);
+  log(`  June in play ${((Date.now() - t0) / 1000).toFixed(1)} s after tapping Go`);
+  await closePanels(lily);
+  await bringTo(june, lily, -2.5, 2.5);
+  await converge([lily, rosie, june], 'JUNE');
 });
 
 test('AT9', 'chaos: 30% drops, 0-800 ms delays, reordering, 5% duplicates; 60 s of edits by all three', async () => {
