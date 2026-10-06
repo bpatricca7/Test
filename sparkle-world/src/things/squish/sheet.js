@@ -1,7 +1,8 @@
 // The Squish Shelf's pictures in batches: several toys drawn in ONE go on the game's own
 // thumbnail renderer (game.thumbs.renderer: no WebGL context of our own, and its shaders for
 // plain colors are already compiled by the Bag's pictures), each into its own 192 px cell of an
-// offscreen target, then copied out with a single read-back and cut into 96 px pictures. The
+// offscreen target, then copied out with one read-back (started without waiting, collected in a
+// later frame) and cut into 96 px pictures. The
 // thumbnail queue draws one picture per frame and reads each one back on its own; on a slow
 // device (or a software renderer) that costs about a frame per picture, and the shelf has up to
 // 96. The renderer's canvas, size and target are left as they were.
@@ -310,7 +311,7 @@ export function sheetRenderer(thumbs) {
      */
     collect() {
       const out = [];
-      while (inFlight.length) {
+      for (let left = inFlight.length; left > 0; left--) {
         const b = inFlight[0];
         const gl = b.gl;
         const lost = !this.ready() || thumbs.renderer.getContext() !== gl || gl.isContextLost();
