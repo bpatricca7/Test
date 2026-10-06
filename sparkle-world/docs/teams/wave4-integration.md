@@ -710,7 +710,7 @@ uses it: B17-B17e split it with `--only=wave4a --x=N` and `--only=wave4b`.
 
 | # | command | earlier (whole suite) | baseline |
 |---|---|---|---|
-| C1 | `timeout 570 node tools/probe-multiplayer.mjs --part=a` (AT1-AT6, AT17, HELD, SQUISH, AT18, AT19, ZIP) | whole: 1031-1775 s, so split | not measured (AT1 + AT2 only: 166 s, green) |
+| C1 | `timeout 570 node tools/probe-multiplayer.mjs --part=a` (AT1-AT6, AT17, HELD, SQUISH, AT18, AT19, ZIP) | whole: 1031-1775 s, so split | not measured (AT1 + AT2 only: 166 s, green); [gate-C1] 413 s on 78dcb51, all 12 tests **green** (90 checks; hub: 0 dropped, 0 duplicated; no console errors, page errors or failed requests) |
 | C1b | `timeout 570 node tools/probe-multiplayer.mjs --part=d` (AT1, LOOKS, SEA; split from part a at the merfolk merge: with SEA, part a hit the 570 s timeout at load 4) | | |
 | C2 | `timeout 570 node tools/probe-multiplayer.mjs --part=b` (AT1, AT7, AT11, AT9, AT10, AT20, REJOIN) | | not measured (AT1 + AT7 only: 143 s, green) |
 | C3 | `timeout 570 node tools/probe-multiplayer.mjs --part=c` (AT1, AT11, AT12, AT13, AT8, AT21, BUDGET, END, AT22) | | not measured (AT1 + AT11 only: 218 s, green) |
