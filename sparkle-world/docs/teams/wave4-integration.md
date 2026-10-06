@@ -742,7 +742,7 @@ uses it: B17-B17e split it with `--only=wave4a --x=N` and `--only=wave4b`.
 | # | command | earlier (whole suite) | baseline |
 |---|---|---|---|
 | D1 | `timeout 570 node tools/probe-outdoor.mjs --only=tree,zip` | whole: 309-542 s | [gate-D1] 233 s on 64cc581, 23 checks **green** (zip line and tree platforms + rope bridge passes; the bridge picture looked at, it looks right; no console errors, page errors or failed requests; load about 4.4) |
-| D2 | `timeout 570 node tools/probe-outdoor.mjs --only=camp,salon,touch` | | not measured |
+| D2 | `timeout 570 node tools/probe-outdoor.mjs --only=camp,salon,touch` | | [gate-D1] 339 s on 67362a3, 29 checks **green** (campsite at night, salon chair, iPad touch pass; the night camp and iPad Camping bag pictures looked at, both look right; no console errors, page errors or failed requests; load about 4.3) |
 | D3-D6 | `timeout 570 node tools/probe-furniture.mjs --only=X` for X = `showroom`, `actions`, `touch`, `tops` | whole: 312-529 s | not measured |
 | D7 | `timeout 570 node tools/test-net-game.mjs` | 321-523 s (split in step 0 if baseline > 450 s) | not measured |
 | D8 | `timeout 570 node tools/probe-net-ux.mjs` | 217-392 s | not measured |
