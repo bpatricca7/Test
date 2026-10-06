@@ -1510,7 +1510,7 @@ async function costsPass(browser, errors) {
       g.__frames = [];
       // every texture upload, with its frame and its source, so a failing upload check below can
       // name what was sent (in [gate-B5] one page of 3 sent one texture on the turn's frames, and
-      // 23 fresh pages measured in [gate-B5b] sent none: the probe now says what it was if it
+      // 21 fresh pages measured in [gate-B5b] sent none: the probe now says what it was if it
       // happens again)
       g.__ups = [];
       for (const name of ['texImage2D', 'texStorage2D', 'texImage3D', 'texStorage3D', 'compressedTexImage2D']) {
