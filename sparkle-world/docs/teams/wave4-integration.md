@@ -735,7 +735,7 @@ uses it: B17-B17e split it with `--only=wave4a --x=N` and `--only=wave4b`.
 | C22 | `timeout 570 node tools/probe-builds.mjs --only=gallery,hills,play` | whole: 383-572 s | [gate-C4] 395 s on 4c660b2, 86 checks **green** (gallery, hills and play passes; the fairy treehouse on the hill and the zip line ride pictures looked at; no console errors, page errors or failed requests; load about 4) |
 | C23 | `timeout 570 node tools/probe-builds.mjs --only=ui,touch` | | [gate-C4] 192 s on b5618e0, 11 checks **green** (desktop UI and iPad touch passes; the iPad Magic Houses bag picture looked at; no console errors, page errors or failed requests; load about 4) |
 | C24 | `timeout 570 node tools/probe-prefabs.mjs --only=gallery,undo` | whole: 332-531 s | [gate-C4] 380 s on 2203fd8, 46 checks **green** (gallery and undo passes; the beach hut inside picture looked at; no console errors, page errors or failed requests; load about 4.4) |
-| C25 | `timeout 570 node tools/probe-prefabs.mjs --only=ui,touch` | | not measured |
+| C25 | `timeout 570 node tools/probe-prefabs.mjs --only=ui,touch` | | [gate-C4] 152 s on a020851, 19 checks **green** (desktop UI and touch passes, the phone and portrait iPad bars; the phone bar picture looked at: the "Tap to build!" bubble sits a little over the top of the Fly button, which no check covers; no console errors, page errors or failed requests; load about 4.3) |
 
 **D. The rest of the standing gate (about 80 minutes)**
 
