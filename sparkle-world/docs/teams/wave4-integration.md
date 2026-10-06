@@ -727,7 +727,7 @@ uses it: B17-B17e split it with `--only=wave4a --x=N` and `--only=wave4b`.
 | C14b | `timeout 570 node tools/probe-menus.mjs --only=touch --devices=ipad-portrait,ipad-mini-portrait,phone` (split from C14 in [gate-C3]) | | [gate-C3] the phone alone: 106 s, 11 checks **green**; the whole row on cf99b34: 288 s, 23 checks **green** (ipad-portrait 107 s, ipad-mini-portrait 89 s, phone 91 s; the phone HUD picture looked at; no console errors, page errors or failed requests; load about 4) |
 | C15 | `timeout 570 node tools/probe-shops.mjs` | 245-388 s | [gate-C3] 458 s on 60102de, 93 checks **green** (desktop, iPad touch and gift passes; no console errors, page errors or failed requests; load about 4). Above the 245-388 s earlier and only 112 s under the limit: if it is ever cut off, split it by pass |
 | C16 | `timeout 570 node tools/probe-keepsafe.mjs` | 156-209 s | [gate-C3b] 281 s on a8629fb, 80 checks **green** (the iPhone card picture looked at; no console errors, page errors or failed requests; load about 4) |
-| C17 | `timeout 570 node tools/probe-environment.mjs` | 147-185 s | not measured |
+| C17 | `timeout 570 node tools/probe-environment.mjs` | 147-185 s | [gate-C3b] 209 s on 97ac86d, 25 checks **green** (desktop and phone passes; the rainbow picture looked at; no console errors, page errors or failed requests; load about 4) |
 | C18 | `timeout 570 node tools/probe-pals.mjs` | 234-417 s | not measured |
 | C19 | `timeout 570 node tools/probe-life.mjs --only=desktop` | whole: 328-511 s | not measured |
 | C20 | `timeout 570 node tools/probe-life.mjs --only=touch` | | not measured |
