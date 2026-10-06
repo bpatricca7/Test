@@ -1506,8 +1506,22 @@ async function costsPass(browser, errors) {
     });
     await gameWait(P, 5000);
     await P.evaluate(() => {
-      const g = window.__game, R = g.renderer;
+      const g = window.__game, R = g.renderer, gl = R.getContext();
       g.__frames = [];
+      // every texture upload, with its frame and its source, so a failing upload check below can
+      // name what was sent (in [gate-B5] one page of 3 sent one texture on the turn's frames, and
+      // 23 fresh pages measured in [gate-B5b] sent none: the probe now says what it was if it
+      // happens again)
+      g.__ups = [];
+      for (const name of ['texImage2D', 'texStorage2D', 'texImage3D', 'texStorage3D', 'compressedTexImage2D']) {
+        if (typeof gl[name] !== 'function') continue;
+        const orig = gl[name].bind(gl);
+        gl[name] = (...a) => {
+          const src = a.find((x) => x && typeof x === 'object' && 'width' in x);
+          g.__ups.push({ name, fi: g.__frames.length, src: src || null, size: src ? `${src.width}x${src.height}` : `${a[3]}x${a[4]}` });
+          return orig(...a);
+        };
+      }
       let last = performance.now();
       const tick = () => {
         const n = performance.now();
@@ -1550,7 +1564,23 @@ async function costsPass(browser, errors) {
       }
       sea.sort((a, b) => a - b);
       const usual = all.slice(1, i).map((f) => f[1]).sort((a, b) => a - b);
+      // the uploads from the frame before the turn's through the next (what the check counts),
+      // each named by the scene object whose material holds that image
+      const owners = new Map();
+      window.__game.scene.traverse((o) => {
+        for (const m of o.material ? [].concat(o.material) : []) for (const k of Object.keys(m)) {
+          const v = m[k];
+          if (v && v.isTexture && v.image && !owners.has(v.image)) {
+            const path = [];
+            for (let p = o; p && path.length < 5; p = p.parent) path.push(p.name || p.type);
+            owners.set(v.image, `${k} of ${path.join('<')}`);
+          }
+        }
+      });
+      const ups = window.__game.__ups.filter((u) => u.fi >= i - 1 && u.fi <= i + 1)
+        .map((u) => `${u.name} ${u.size} on turn frame ${u.fi - i >= 0 ? '+' : ''}${u.fi - i}: ${u.src ? owners.get(u.src) || u.src.constructor.name + ' not in the scene' : 'data'}`);
       return {
+        ups,
         longest: Math.max(...after), shore: wins[Math.floor(wins.length / 2)] || 0, median: usual[Math.floor(usual.length / 2)] || 0,
         sea: sea.length ? sea[Math.floor(sea.length / 2)] : Infinity, seaWins: sea.length,
         turn: all[i][1], progs: all[all.length - 1][3] - all[i - 1][3], geos: all[i + 1][4] - all[i - 1][4], texs: all[i + 1][5] - all[i - 1][5], // read before or after the game's own draw: the turn frame and the next
@@ -1619,6 +1649,7 @@ async function costsPass(browser, errors) {
   c(okTurns.length === 3 && longest <= fr.sea + 33, `B13c the longest frame from the first turn through 0.5 s: ${Math.round(longest)} ms (later in sea form at the same spot ${Math.round(fr.sea)} ms, on the shore ${Math.round(fr.shore)} ms; at most +33 ms; the middle of 3 fresh pages: ${deltas.map((d) => (d >= 0 ? '+' : '') + Math.round(d)).join(', ')} ms)`);
   c(okTurns.length === 3 && okTurns.every((f) => f.progs === 0), `B13c the first turn builds no new shader program (${okTurns.map((f) => f.progs).join(', ')})`);
   c(okTurns.length === 3 && okTurns.every((f) => f.geos <= 0 && f.texs <= 0), `B13c the first turn's frame (and the next) sends no new geometry or texture to the GPU (geometries ${okTurns.map((f) => f.geos).join(', ')}; textures ${okTurns.map((f) => f.texs).join(', ')})`);
+  for (const f of okTurns) for (const u of f.ups) console.log(`    upload around the turn: ${u}`);
   c(ens <= 2, `B13c ensureSea (building the sea parts once): ${ens.toFixed(2)} ms (median of 5, <= 2 ms)`);
   c(ensD <= 2, `B13c ensureSea for a Sea Dragon: ${ensD.toFixed(2)} ms (median of 5, <= 2 ms)`);
   // B13a / B13b draw calls and meshes: in sea form vs standing on the shore, same camera; her
