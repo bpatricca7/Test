@@ -695,7 +695,7 @@ Beach Cozy, desktop and iPad 1024 x 768 touch, `debug.merfolk.tips(true)`,
 | B13 | `timeout 570 node tools/probe-ocean.mjs --only=ride,touch` | est. 6-8 min | [gate-B3] 257 s on addaad5, 44 checks **green** (desktop ride and iPad touch; no console errors, page errors or failed requests) |
 | B14 | `timeout 570 node tools/probe-ocean.mjs --only=biomes,saves` | est. 4-6 min | [gate-B3] 198 s on 7c89ee9, 17 checks **green** (candy, flat pools and snow; old profile, old world, a beach world before and after sea life; no console errors, page errors or failed requests) |
 | B15 | `timeout 570 node tools/probe-ocean.mjs --only=mp` | est. 4-5 min | [gate-B3] 401 s on 6be3dd1, 19 checks **green** (a desktop host and an iPad guest; no console errors, page errors or failed requests) |
-| B16 | `timeout 570 node tools/probe-ocean.mjs --only=cost` | est. 5-6 min (C3 alone runs 3 min) | not measured |
+| B16 | `timeout 570 node tools/probe-ocean.mjs --only=cost` | est. 5-6 min (C3 alone runs 3 min) | [gate-B3] 389 s on 619b251, 22 checks **green** (C1-C6, the gallery and G1; no console errors, page errors or failed requests) |
 | B17 | `timeout 570 node tools/probe-ocean.mjs --only=wave4a --x=1` (X1, the first deep swim: desktop and iPad, 25 s of frames each) | | not measured |
 | B17b | `timeout 570 node tools/probe-ocean.mjs --only=wave4a --x=2,3` (a mermaid and a sea dragon ride; from a stopped boat) | | green in [rf2-ride] |
 | B17c | `timeout 570 node tools/probe-ocean.mjs --only=wave4a --x=4` (a toy in the water) | | not measured |
