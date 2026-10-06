@@ -68,3 +68,36 @@ test('dining facility produces meal-driven hours and manning by year escalates c
   assert.ok(est.years[2].laborCost > est.years[0].laborCost * 1.2);
   assert.ok(est.totalFte > 100 && est.totalFte < 200, `unexpected FTE ${est.totalFte}`);
 });
+
+import { computeTopDown, DEFAULT_TOPDOWN, annualValueBasis } from '../shared/topdown';
+import { heuristicPriorAward } from '../server/heuristic';
+
+test('heuristic prior-award parser finds the incumbent contract in the sample', () => {
+  const pa = heuristicPriorAward([{ name: 's', mode: 'text', text: sample, chars: sample.length, bytes: sample.length }])!;
+  assert.ok(pa, 'no prior award found');
+  assert.equal(pa.contractNumber, 'W912QR-20-C-0015');
+  assert.equal(pa.totalValue, 31_850_000);
+  assert.equal(pa.periodMonths, 60);
+  assert.equal(pa.awardYear, 2020);
+  assert.equal(pa.spendToDate, 26_100_000);
+});
+
+test('top-down math backs FTEs out of the award with the stated assumptions', () => {
+  const inv = heuristicExtract([{ name: 's', mode: 'text', text: sample, chars: sample.length, bytes: sample.length }]);
+  const est = estimateInventory(inv);
+  const pa = { totalValue: 31_850_000, periodMonths: 60 };
+  assert.equal(annualValueBasis(pa).value, 6_370_000);
+  const a = { ...DEFAULT_TOPDOWN, loadedCostPerFte: 60000, loadedCostLow: 50000, loadedCostHigh: 70000, odcMaterialsPct: 0.1, subcontractPct: 0, gaPct: 0.1, feePct: 0.08, escalationPct: 0, yearsSinceAward: 0 };
+  const t = computeTopDown(pa, a, est, { rationale: 'x', risks: [], provider: 'heuristic' });
+  const costBase = 6_370_000 / (1.1 * 1.08);
+  const labor = costBase - 637_000;
+  assert.equal(t.priceBreakdown.loadedLabor, Math.round(labor));
+  assert.equal(t.impliedFte.base, Math.round((labor / 60000) * 10) / 10);
+  assert.ok(t.impliedFte.low < t.impliedFte.base && t.impliedFte.base < t.impliedFte.high);
+  // price identity: loaded labor + odc + ga + fee ≈ annual value
+  const sum = t.priceBreakdown.loadedLabor + t.priceBreakdown.odc + t.priceBreakdown.subcontract + t.priceBreakdown.ga + t.priceBreakdown.fee;
+  assert.ok(Math.abs(sum - t.annualValue) < 5, `price identity off by ${sum - t.annualValue}`);
+  assert.equal(t.bottomUpFte, est.totalFte);
+  // spend basis wins over award basis when present
+  assert.equal(annualValueBasis({ ...pa, spendToDate: 26_100_000, spendPeriodMonths: 48 }).basis, 'spend');
+});

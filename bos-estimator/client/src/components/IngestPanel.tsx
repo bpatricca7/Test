@@ -12,6 +12,8 @@ export function IngestPanel() {
   const start = useStore((s) => s.startExtraction);
   const cancel = useStore((s) => s.cancelExtraction);
   const setAi = useStore((s) => s.setAi);
+  const setPriorAward = useStore((s) => s.setPriorAward);
+  const pa = project?.priorAward ?? {};
   const [files, setFiles] = useState<File[]>([]);
   const [drag, setDrag] = useState(false);
   const [provider, setProvider] = useState<'auto' | 'claude' | 'heuristic'>('auto');
@@ -99,6 +101,24 @@ export function IngestPanel() {
           <button className="btn danger" onClick={cancel}>Cancel</button>
         )}
       </div>
+      <details className="award" open={Boolean(pa.totalValue || pa.annualValue || pa.spendToDate)}>
+        <summary>Previous award &amp; spend <span className="chip">{pa.totalValue || pa.annualValue || pa.spendToDate ? 'set' : 'optional'}</span><span className="hintsm">used to back into FTEs on every run</span></summary>
+        <div className="field-row">
+          <div className="field"><label>Incumbent</label><input value={pa.incumbent ?? ''} placeholder="Found in RFP if stated" onChange={(e) => setPriorAward({ incumbent: e.target.value })} /></div>
+          <div className="field"><label>Contract #</label><input value={pa.contractNumber ?? ''} onChange={(e) => setPriorAward({ contractNumber: e.target.value })} /></div>
+        </div>
+        <div className="field-row three">
+          <div className="field"><label>Total award $</label><input type="number" value={pa.totalValue ?? ''} onChange={(e) => setPriorAward({ totalValue: e.target.value === '' ? undefined : Number(e.target.value) })} /></div>
+          <div className="field"><label>Period (months)</label><input type="number" value={pa.periodMonths ?? ''} placeholder="60" onChange={(e) => setPriorAward({ periodMonths: e.target.value === '' ? undefined : Number(e.target.value) })} /></div>
+          <div className="field"><label>Award year</label><input type="number" value={pa.awardYear ?? ''} onChange={(e) => setPriorAward({ awardYear: e.target.value === '' ? undefined : Number(e.target.value) })} /></div>
+        </div>
+        <div className="field-row three">
+          <div className="field"><label>Spend to date $</label><input type="number" value={pa.spendToDate ?? ''} onChange={(e) => setPriorAward({ spendToDate: e.target.value === '' ? undefined : Number(e.target.value) })} /></div>
+          <div className="field"><label>Spend months</label><input type="number" value={pa.spendPeriodMonths ?? ''} onChange={(e) => setPriorAward({ spendPeriodMonths: e.target.value === '' ? undefined : Number(e.target.value) })} /></div>
+          <div className="field"><label>Annual value $ (if stated)</label><input type="number" value={pa.annualValue ?? ''} onChange={(e) => setPriorAward({ annualValue: e.target.value === '' ? undefined : Number(e.target.value) })} /></div>
+        </div>
+        {pa.source?.excerpt && <div className="source">“{pa.source.excerpt}”<span className="f">{pa.source.file}{pa.confidence != null ? ` · confidence ${Math.round(pa.confidence * 100)}%` : ''}</span></div>}
+      </details>
       {!health?.aiAvailable && <div className="note" style={{ marginTop: 8 }}><b>No API key on the server.</b> Add <code>ANTHROPIC_API_KEY</code> to <code>.env</code> and restart to let Claude read the documents. Until then the rule-based parser handles well-structured workload tables.</div>}
       {extraction.running && <div className="progress"><div /></div>}
       {extraction.log.length > 0 && (

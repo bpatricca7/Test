@@ -2,7 +2,9 @@
 // through tool calls so the 3D scene can grow while the document is still being read.
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
-import type { AiConfig, ExtractionEvent, Facility, GroundsArea, Inventory, SiteInfo } from '../shared/types';
+import type { AiConfig, ExtractionEvent, Facility, GroundsArea, Inventory, PriorAward, SiteInfo, TopDownAssumptions, TopDownEstimate } from '../shared/types';
+import type { EstimateResult } from '../shared/estimate';
+import { DEFAULT_TOPDOWN, annualValueBasis, bottomUpLoadedCostPerFte, computeTopDown, heuristicAssumptions } from '../shared/topdown';
 import { FACILITY_CATEGORIES, GROUNDS_KINDS, SERVICE_LEVELS } from '../shared/types';
 import { categorize } from './heuristic';
 import type { DocInput } from './extract';
@@ -25,8 +27,9 @@ How to work:
 5. Register grounds areas with register_grounds: improved / semi-improved / unimproved acreage, athletic fields, planting beds, parking lots, sidewalks, trees. Keep the document's unit (acres, SF, SY, LF, each). Tie an area to a building number when the document does; if one quantity is shared by several named buildings, split it evenly and register one area per building (say so in notes). Areas not tied to a building are fine as site-wide entries.
 6. For a dining facility, fill the dining profile: average meals (headcount) per day, meal periods, days per week, seats, kitchen and dining room SF, and whether the requirement is full food service, dining facility attendant (DFA) only, or management only.
 7. Call set_site_info once you know the installation, location, solicitation number, climate / growing season, and contract period (base + options).
-8. Give each item a short source excerpt (the row or sentence you took the number from) and a page number when you can see one.
-9. When everything is registered, call finish with a short summary and a list of anything unresolved (missing areas, ambiguous units, buildings mentioned in text but absent from the exhibit).
+8. Look hard for the PREVIOUS / INCUMBENT CONTRACT: incumbent name, contract number, award or ceiling value, period of performance, annual value, obligations or spend to date, award year. This often hides in the cover letter, sources-sought notice, Q&A, justification, or a "current contract" paragraph. Call set_previous_award with whatever you find (nulls for the rest) — the estimate backs into an FTE count from it. If nothing is stated, call it once with all values null and say so in notes.
+9. Give each item a short source excerpt (the row or sentence you took the number from) and a page number when you can see one.
+10. When everything is registered, call finish with a short summary and a list of anything unresolved (missing areas, ambiguous units, buildings mentioned in text but absent from the exhibit).
 
 Never invent buildings that the documents do not mention. Prefer tool calls over prose; keep any narration to one or two short sentences.`;
 
@@ -132,6 +135,28 @@ const tools: Anthropic.Beta.BetaTool[] = [
         contract_years: { type: ['integer', 'null'], description: 'Total years including base and all option periods.' },
         notes: { type: ['string', 'null'] },
       },
+    },
+  },
+  {
+    name: 'set_previous_award',
+    description: 'Record what the package says about the incumbent / previous contract and its value or spend.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        incumbent: { type: ['string', 'null'] },
+        contract_number: { type: ['string', 'null'] },
+        contract_type: { type: ['string', 'null'], description: 'FFP, IDIQ, cost-plus, etc.' },
+        total_value: { type: ['number', 'null'], description: 'Total award / ceiling value in dollars.' },
+        period_months: { type: ['integer', 'null'], description: 'Months of performance that total_value covers (base + options).' },
+        annual_value: { type: ['number', 'null'], description: 'Annual value in dollars if stated directly.' },
+        spend_to_date: { type: ['number', 'null'], description: 'Obligated / invoiced dollars to date.' },
+        spend_period_months: { type: ['integer', 'null'], description: 'Months covered by spend_to_date.' },
+        award_year: { type: ['integer', 'null'] },
+        source: { type: 'object', properties: { file: { type: ['string', 'null'] }, page: { type: ['integer', 'null'] }, excerpt: { type: 'string' } }, required: ['excerpt'] },
+        confidence: { type: 'number' },
+        notes: { type: ['string', 'null'] },
+      },
+      required: ['source', 'confidence'],
     },
   },
   {
@@ -301,11 +326,12 @@ function buildParams(cfg: AiConfig, variant: Variant, messages: Anthropic.Beta.B
   return base;
 }
 
-export async function extractWithClaude(docs: DocInput[], cfg: AiConfig, emit: Emit, signal?: AbortSignal): Promise<{ inventory: Inventory; usage: { input: number; output: number }; model: string }> {
+export async function extractWithClaude(docs: DocInput[], cfg: AiConfig, emit: Emit, signal?: AbortSignal): Promise<{ inventory: Inventory; priorAward?: PriorAward; usage: { input: number; output: number }; model: string }> {
   const client = new Anthropic({ maxRetries: 3, timeout: 30 * 60 * 1000 });
   const facilities = new Map<string, Facility>();
   const grounds: GroundsArea[] = [];
   let site: SiteInfo = {};
+  let priorAward: PriorAward | undefined;
   const usage = { input: 0, output: 0 };
   let gIdx = 0;
   let servedModel = cfg.model;
@@ -424,6 +450,20 @@ export async function extractWithClaude(docs: DocInput[], cfg: AiConfig, emit: E
             };
             emit({ type: 'site', site });
             text = 'Site info recorded.';
+          } else if (tu.name === 'set_previous_award') {
+            const a = input as Record<string, unknown>;
+            const src = (a.source ?? {}) as Record<string, unknown>;
+            const next: PriorAward = {
+              incumbent: str(a.incumbent), contractNumber: str(a.contract_number), contractType: str(a.contract_type),
+              totalValue: numOr(a.total_value), periodMonths: numOr(a.period_months), annualValue: numOr(a.annual_value),
+              spendToDate: numOr(a.spend_to_date), spendPeriodMonths: numOr(a.spend_period_months), awardYear: numOr(a.award_year),
+              source: { file: str(src.file) ?? pass[0]?.name, page: numOr(src.page), excerpt: (str(src.excerpt) ?? '').slice(0, 240) },
+              confidence: Math.max(0, Math.min(1, numOr(a.confidence) ?? 0.5)), notes: str(a.notes),
+            };
+            const hasValue = Boolean(next.totalValue || next.annualValue || next.spendToDate);
+            priorAward = priorAward && !hasValue ? { ...priorAward, notes: [priorAward.notes, next.notes].filter(Boolean).join(' | ') || undefined } : { ...(priorAward ?? {}), ...Object.fromEntries(Object.entries(next).filter(([, v]) => v !== undefined)) } as PriorAward;
+            emit({ type: 'prior_award', award: priorAward });
+            text = hasValue ? `Previous award recorded (${annualValueBasis(priorAward).basis} basis ≈ $${Math.round(annualValueBasis(priorAward).value).toLocaleString()}/yr).` : 'Noted: no award value in the package.';
           } else if (tu.name === 'finish') {
             finished = true;
             const unresolved = Array.isArray(input.unresolved) ? (input.unresolved as unknown[]).map(String) : [];
@@ -442,10 +482,153 @@ export async function extractWithClaude(docs: DocInput[], cfg: AiConfig, emit: E
     }
   }
 
-  return { inventory: { site, facilities: [...facilities.values()], grounds }, usage, model: servedModel };
+  return { inventory: { site, facilities: [...facilities.values()], grounds }, priorAward, usage, model: servedModel };
 }
 
 const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
 const numOr = (v: unknown) => (typeof v === 'number' && isFinite(v) ? v : typeof v === 'string' && v.trim() && isFinite(Number(v)) ? Number(v) : undefined);
 
 export const aiAvailable = () => Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
+
+// ---------------------------------------------------------------------------------------------
+// Top-down should-cost: the model proposes loaded-FTE cost and ODC / materials assumptions from
+// the previous award and the bottom-up labor picture; the arithmetic runs in shared/topdown.ts.
+// ---------------------------------------------------------------------------------------------
+
+const TOPDOWN_SYSTEM = `You are the pricing lead on a base operations support (BOS) capture team. You cross-check a bottom-up labor estimate (RS Means-style productivity) against a top-down view backed into from the previous award or the incumbent's spend run-rate.
+
+Formula the tool applies:
+  annual_value (escalated to today) = raw annual value × (1 + escalation)^years_since_award
+  cost_base = annual_value / ((1 + G&A) × (1 + fee))
+  loaded_labor = cost_base − annual_value × ODC/materials share − annual_value × subcontract share
+  implied_FTE = loaded_labor / loaded cost per FTE-year
+
+Propose assumptions a seasoned estimator would defend for this scope and location:
+- Loaded cost per FTE-year = base wage × 2,080 paid hours × load factor (SCA health & welfare, vacation/holiday, payroll taxes, site overhead and supervision not already in the headcount). Typical BOS custodial/grounds mixes land $48k–$75k; dining-heavy or high-wage-determination areas run higher. Give a base plus a low and high bound.
+- ODC / materials share of price: custodial consumables and equipment ~4–7%; grounds adds mowing fleet, fuel and parts; dining full food service is usually government-furnished subsistence so only smallwares and chemicals. Say what you assumed.
+- G&A and fee typical for a services prime (G&A 6–12%, fee 5–9%); subcontract pass-through if the scope implies it.
+- Escalation and years since award if the award value is dated.
+Then compare: state the implied FTE range against the bottom-up FTE, say which you trust more and why, name the biggest risks (scope changes, wage determination, incumbent under-staffing, option years), and give a recommended FTE to carry. If the package gives no award or spend value, still propose the assumptions, set basis to "none", and say what data to request.
+Call report_top_down exactly once with the numbers; keep prose inside the tool's rationale field.`;
+
+const topDownTool: Anthropic.Beta.BetaTool = {
+  name: 'report_top_down',
+  description: 'Report the top-down pricing assumptions and reconciliation.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      loaded_cost_per_fte: { type: 'number', description: 'Base-case fully loaded $ per FTE-year.' },
+      loaded_cost_low: { type: 'number' },
+      loaded_cost_high: { type: 'number' },
+      odc_materials_pct: { type: 'number', description: 'Share of price, 0–1.' },
+      subcontract_pct: { type: 'number', description: 'Share of price, 0–1.' },
+      ga_pct: { type: 'number', description: '0–1' },
+      fee_pct: { type: 'number', description: '0–1' },
+      escalation_pct: { type: 'number', description: 'Annual, 0–1' },
+      years_since_award: { type: 'number' },
+      basis: { type: 'string', enum: ['award', 'spend', 'annual', 'none'], description: 'Which prior value the implied FTE should be backed out of.' },
+      annual_value_override: { type: ['number', 'null'], description: 'Use only if the package states an annual value the structured fields missed.' },
+      rationale: { type: 'string', description: '4–8 sentences: assumptions, implied vs bottom-up, which to trust.' },
+      risks: { type: 'array', items: { type: 'string' } },
+      recommended_fte: { type: ['number', 'null'] },
+    },
+    required: ['loaded_cost_per_fte', 'loaded_cost_low', 'loaded_cost_high', 'odc_materials_pct', 'subcontract_pct', 'ga_pct', 'fee_pct', 'escalation_pct', 'years_since_award', 'basis', 'rationale', 'risks'],
+  },
+};
+
+const TopDownIn = z.object({
+  loaded_cost_per_fte: z.coerce.number().positive(),
+  loaded_cost_low: z.coerce.number().positive(),
+  loaded_cost_high: z.coerce.number().positive(),
+  odc_materials_pct: z.coerce.number().min(0).max(0.6),
+  subcontract_pct: z.coerce.number().min(0).max(0.8).default(0),
+  ga_pct: z.coerce.number().min(0).max(0.4),
+  fee_pct: z.coerce.number().min(0).max(0.3),
+  escalation_pct: z.coerce.number().min(0).max(0.15).default(0.03),
+  years_since_award: z.coerce.number().min(0).max(30).default(0),
+  basis: z.string().default('none'),
+  annual_value_override: z.coerce.number().positive().nullish(),
+  rationale: z.string().default(''),
+  risks: z.array(z.string()).default([]),
+  recommended_fte: z.coerce.number().positive().nullish(),
+});
+
+export interface TopDownContext {
+  priorAward?: PriorAward;
+  est: EstimateResult;
+  site: SiteInfo;
+  overrides?: Partial<TopDownAssumptions>;
+}
+
+function describeContext(ctx: TopDownContext): string {
+  const { est, priorAward: pa, site } = ctx;
+  const basis = annualValueBasis(pa);
+  const crews = est.crews.map((c) => `${c.label}: ${c.fte.toFixed(1)} FTE @ $${c.wage}/hr (${c.hours.toLocaleString()} h, $${c.annualCost.toLocaleString()} base wages)`).join('\n');
+  return [
+    `Installation: ${site.installationName ?? 'unknown'}${site.location ? `, ${site.location}` : ''}; solicitation ${site.solicitation ?? 'n/a'}; contract years ${site.contractYears ?? 'n/a'}; climate ${site.climateZone ?? 'n/a'}.`,
+    `Scope metrics: ${est.metrics.facilitiesCount} facilities, ${est.metrics.grossSqft.toLocaleString()} gross SF (${est.metrics.cleanableSqft.toLocaleString()} cleanable), ${est.metrics.acres.toFixed(1)} acres of turf/grounds, ${est.metrics.pavedSqft.toLocaleString()} SF paved, ${est.metrics.mealsPerYear.toLocaleString()} meals/yr.`,
+    `Bottom-up (RS Means-style) result: ${est.totalFte.toFixed(1)} FTE / ${est.totalHeadcount} heads, ${est.directHours.toLocaleString()} direct hours, $${est.totalLaborCost.toLocaleString()} base-wage labor. Crew mix:\n${crews}`,
+    `Wage-weighted loaded cost per FTE implied by this mix at a ${(1.42).toFixed(2)} load factor: $${bottomUpLoadedCostPerFte(est).toLocaleString()}.`,
+    pa ? `Previous award facts: ${JSON.stringify({ ...pa, source: pa.source?.excerpt })}. Derived annual value basis: ${basis.basis} ≈ $${Math.round(basis.value).toLocaleString()}/yr.` : 'Previous award facts: none found in the package and none entered.',
+    ctx.overrides && Object.keys(ctx.overrides).length ? `Estimator-locked assumptions (keep these): ${JSON.stringify(ctx.overrides)}.` : '',
+    `Current year: ${new Date().getFullYear()}.`,
+  ].filter(Boolean).join('\n\n');
+}
+
+export async function topDownWithClaude(ctx: TopDownContext, cfg: AiConfig, emit?: Emit, signal?: AbortSignal): Promise<{ topDown: TopDownEstimate; usage: { input: number; output: number } }> {
+  const client = new Anthropic({ maxRetries: 3, timeout: 10 * 60 * 1000 });
+  const messages: Anthropic.Beta.BetaMessageParam[] = [{ role: 'user', content: `${describeContext(ctx)}\n\nPropose the top-down assumptions and reconciliation now via report_top_down.` }];
+  const usage = { input: 0, output: 0 };
+  let variant: Variant = 'full';
+  for (let attempt = 0; attempt < 3; attempt++) {
+    let msg: Anthropic.Beta.BetaMessage;
+    try {
+      const params = buildParams(cfg, variant, messages);
+      params.system = [{ type: 'text', text: TOPDOWN_SYSTEM }];
+      params.tools = [topDownTool];
+      params.max_tokens = 16000;
+      const stream = client.beta.messages.stream(params, { signal });
+      msg = await stream.finalMessage();
+    } catch (err) {
+      if (err instanceof Anthropic.BadRequestError && variant !== 'bare') { variant = variant === 'full' ? 'no_fallbacks' : 'bare'; continue; }
+      throw err;
+    }
+    usage.input += (msg.usage.input_tokens ?? 0) + (msg.usage.cache_read_input_tokens ?? 0) + (msg.usage.cache_creation_input_tokens ?? 0);
+    usage.output += msg.usage.output_tokens ?? 0;
+    if (msg.stop_reason === 'refusal') throw new Error('The model declined to produce the top-down estimate.');
+    const tu = msg.content.find((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === 'tool_use' && b.name === 'report_top_down');
+    if (!tu) {
+      const text = msg.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text').map((b) => b.text).join(' ');
+      messages.push({ role: 'assistant', content: msg.content }, { role: 'user', content: 'Please call report_top_down with the numbers now.' });
+      if (text && emit) emit({ type: 'ai_text', text, kind: 'text' });
+      continue;
+    }
+    const parsed = TopDownIn.safeParse(tu.input);
+    if (!parsed.success) {
+      messages.push({ role: 'assistant', content: msg.content }, { role: 'user', content: [{ type: 'tool_result', tool_use_id: tu.id, is_error: true, content: `Invalid fields: ${parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}. Call report_top_down again.` }] });
+      continue;
+    }
+    const d = parsed.data;
+    const proposed: TopDownAssumptions = {
+      loadedCostPerFte: Math.round(d.loaded_cost_per_fte), loadedCostLow: Math.round(Math.min(d.loaded_cost_low, d.loaded_cost_per_fte)), loadedCostHigh: Math.round(Math.max(d.loaded_cost_high, d.loaded_cost_per_fte)),
+      odcMaterialsPct: d.odc_materials_pct, subcontractPct: d.subcontract_pct, gaPct: d.ga_pct, feePct: d.fee_pct, escalationPct: d.escalation_pct, yearsSinceAward: d.years_since_award,
+    };
+    const assumptions: TopDownAssumptions = { ...proposed, ...(ctx.overrides ?? {}) };
+    let pa = ctx.priorAward;
+    if (d.annual_value_override && !(pa?.annualValue)) pa = { ...(pa ?? {}), annualValue: d.annual_value_override, notes: [pa?.notes, 'Annual value supplied by the model from the package text.'].filter(Boolean).join(' | ') };
+    const topDown = computeTopDown(pa, assumptions, ctx.est, { rationale: d.rationale, risks: d.risks, recommendedFte: d.recommended_fte ?? undefined, provider: 'claude', model: msg.model || cfg.model });
+    return { topDown, usage };
+  }
+  throw new Error('The model did not return a top-down estimate.');
+}
+
+export function topDownHeuristic(ctx: TopDownContext): TopDownEstimate {
+  const a: TopDownAssumptions = { ...heuristicAssumptions(ctx.est, ctx.priorAward), ...(ctx.overrides ?? {}) };
+  const basis = annualValueBasis(ctx.priorAward);
+  const rationale = basis.basis === 'none'
+    ? 'No previous award or spend value is available, so the implied FTE cannot be backed out yet. Enter the incumbent contract value (or obligations to date) in the Previous award panel, or let the AI reader find it in the package. The assumptions shown are rule-based defaults: loaded cost per FTE from the bottom-up crew mix at a 1.42 load factor, ODC/materials scaled by the grounds share of the work.'
+    : `Rule-based cross-check (no AI key configured). Annual value taken from the ${basis.basis} basis. Loaded cost per FTE is the wage-weighted bottom-up mix at a 1.42 load factor; ODC/materials assumed at ${(a.odcMaterialsPct * 100).toFixed(1)}% of price, G&A ${(a.gaPct * 100).toFixed(0)}% and fee ${(a.feePct * 100).toFixed(0)}%. Adjust the sliders to test sensitivity, or configure ANTHROPIC_API_KEY for a reasoned reconciliation.`;
+  return computeTopDown(ctx.priorAward, a, ctx.est, { rationale, risks: basis.basis === 'none' ? ['Prior award value missing'] : ['Defaults not tuned to the local wage determination', 'ODC share is a rule of thumb'], provider: 'heuristic' });
+}
+
+export { DEFAULT_TOPDOWN };

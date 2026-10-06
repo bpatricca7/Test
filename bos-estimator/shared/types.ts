@@ -147,6 +147,54 @@ export const AI_MODEL_PRESETS: { id: string; label: string; blurb: string }[] = 
   { id: 'claude-sonnet-5-5', label: 'Claude Sonnet 5.5', blurb: 'Faster and cheaper; strong on clean workload tables.' },
 ];
 
+/** Previous award / incumbent contract facts used for the top-down should-cost cross-check. */
+export interface PriorAward {
+  incumbent?: string;
+  contractNumber?: string;
+  contractType?: string; // FFP, IDIQ, cost-plus …
+  totalValue?: number; // total award or ceiling value, $
+  periodMonths?: number; // total period of performance covered by totalValue (base + options)
+  annualValue?: number; // stated annual value, $ (overrides totalValue / period)
+  spendToDate?: number; // obligations / invoiced to date, $
+  spendPeriodMonths?: number; // months the spend covers
+  awardYear?: number;
+  source?: SourceRef;
+  notes?: string;
+  confidence?: number;
+}
+
+/** Pricing assumptions used to back into FTEs from a contract value. */
+export interface TopDownAssumptions {
+  loadedCostPerFte: number; // fully burdened $ per FTE-year (wage + fringe/H&W + overhead), base case
+  loadedCostLow: number; // optimistic (cheaper labor) bound
+  loadedCostHigh: number; // conservative bound
+  odcMaterialsPct: number; // supplies, consumables, equipment — share of price
+  subcontractPct: number; // pass-through subcontracts — share of price
+  gaPct: number; // G&A applied to cost
+  feePct: number; // fee / profit applied to cost incl. G&A
+  escalationPct: number; // annual escalation to bring prior-award $ to today
+  yearsSinceAward: number;
+}
+
+export interface TopDownEstimate {
+  basis: 'award' | 'spend' | 'annual' | 'none';
+  rawAnnualValue: number; // $ per year as found / entered
+  annualValue: number; // escalated to current-year $
+  assumptions: TopDownAssumptions;
+  priceBreakdown: { loadedLabor: number; odc: number; subcontract: number; ga: number; fee: number };
+  impliedFte: { low: number; base: number; high: number };
+  bottomUpFte: number;
+  bottomUpLaborCost: number;
+  bottomUpLoadedCostPerFte: number; // what the bottom-up crew mix implies per FTE at the same load factor
+  deltaPct: number | null; // (bottomUp − implied) / implied
+  rationale: string;
+  risks: string[];
+  recommendedFte?: number;
+  provider: 'claude' | 'heuristic';
+  model?: string;
+  generatedAt: string;
+}
+
 export interface ProjectMeta {
   id: string;
   name: string;
@@ -159,6 +207,9 @@ export interface Project extends ProjectMeta {
   factorOverrides?: Record<string, number>; // factorId -> overridden labor-hours-per-unit
   assumptionOverrides?: Partial<Assumptions>;
   wages?: Record<string, number>; // crew id -> $/hr override
+  priorAward?: PriorAward;
+  topDown?: TopDownEstimate;
+  topDownOverrides?: Partial<TopDownAssumptions>;
   ai: AiConfig;
   documents: { name: string; size: number; pages?: number; chars: number; mode: 'native_pdf' | 'text' }[];
   extraction?: { provider: 'claude' | 'heuristic'; model?: string; finishedAt: string; durationMs: number; usage?: { input: number; output: number } };
@@ -186,5 +237,7 @@ export type ExtractionEvent =
   | { type: 'facility'; facility: Facility }
   | { type: 'grounds'; area: GroundsArea }
   | { type: 'site'; site: SiteInfo }
+  | { type: 'prior_award'; award: PriorAward }
+  | { type: 'topdown'; topDown: TopDownEstimate }
   | { type: 'done'; inventory: Inventory; provider: 'claude' | 'heuristic'; model?: string; durationMs: number; usage?: { input: number; output: number } }
   | { type: 'error'; message: string };

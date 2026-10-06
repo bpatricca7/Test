@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { api, runExtraction, type ExtractOptions, type Health } from './api';
-import type { Assumptions, ExtractionEvent, Facility, GroundsArea, Inventory, Project } from '@shared/types';
+import type { Assumptions, ExtractionEvent, Facility, GroundsArea, Inventory, PriorAward, Project, TopDownAssumptions } from '@shared/types';
 import type { Crew } from '@shared/factors';
 
 export interface LogEntry { kind: 'status' | 'text' | 'thinking' | 'tool' | 'error' | 'found'; text: string; t: number }
@@ -21,6 +21,7 @@ interface State {
   toast: string | null;
   autoOrbit: boolean;
   quality: 'high' | 'fast';
+  topDownRunning: boolean;
   extraction: { running: boolean; log: LogEntry[]; docs: { name: string; pages?: number; chars: number; mode: string }[]; recent: Record<string, number>; abort?: AbortController };
   sim: { playing: boolean; speed: number; time: number };
 
@@ -37,6 +38,10 @@ interface State {
   setAssumption<K extends keyof Assumptions>(key: K, value: Assumptions[K] | undefined): void;
   setAi(patch: Partial<Project['ai']>): void;
   setWage(crew: Crew, value: number | null): void;
+  setPriorAward(patch: Partial<PriorAward>): void;
+  setTopDownOverride<K extends keyof TopDownAssumptions>(key: K, value: TopDownAssumptions[K] | undefined): void;
+  clearTopDownOverrides(): void;
+  runTopDown(provider?: 'auto' | 'claude' | 'heuristic'): Promise<void>;
   select(sel: Selection): void;
   setFocusMode(m: 'site' | 'building'): void;
   setBuildingTab(t: 'interior' | 'grounds'): void;
@@ -91,6 +96,7 @@ export const useStore = create<State>((set, get) => {
     factorsOpen: false,
     toast: null,
     autoOrbit: true,
+    topDownRunning: false,
     quality: (localStorage.getItem('bos.quality') as 'high' | 'fast') || 'high',
     extraction: { running: false, log: [], docs: [], recent: {} },
     sim: { playing: true, speed: 12, time: 18.25 },
@@ -133,6 +139,20 @@ export const useStore = create<State>((set, get) => {
       mutateProject((p) => { const a = { ...(p.assumptionOverrides ?? {}) } as Record<string, unknown>; if (value === undefined || (typeof value === 'number' && !isFinite(value))) delete a[key]; else a[key] = value; return { ...p, assumptionOverrides: a as Partial<Assumptions> }; });
     },
     setAi(patch) { mutateProject((p) => ({ ...p, ai: { ...p.ai, ...patch } })); },
+    setPriorAward(patch) { mutateProject((p) => { const next = { ...(p.priorAward ?? {}), ...patch } as PriorAward; for (const k of Object.keys(next) as (keyof PriorAward)[]) if (next[k] === undefined || (next[k] as unknown) === '' || (typeof next[k] === 'number' && !isFinite(next[k] as number))) delete next[k]; return { ...p, priorAward: next }; }); },
+    setTopDownOverride(key, value) { mutateProject((p) => { const o = { ...(p.topDownOverrides ?? {}) } as Record<string, unknown>; if (value === undefined || (typeof value === 'number' && !isFinite(value))) delete o[key]; else o[key] = value; return { ...p, topDownOverrides: o as Partial<TopDownAssumptions> }; }); },
+    clearTopDownOverrides() { mutateProject((p) => ({ ...p, topDownOverrides: {} })); },
+    async runTopDown(provider = 'auto') {
+      const { projectId, project } = get(); if (!project) return;
+      if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+      set({ topDownRunning: true });
+      try {
+        await api.saveProject(project);
+        const topDown = await api.runTopDown(projectId, { provider, priorAward: project.priorAward, overrides: project.topDownOverrides });
+        set((s) => ({ project: s.project ? { ...s.project, topDown } : s.project }));
+      } catch (err) { get().setToast((err as Error).message); }
+      finally { set({ topDownRunning: false }); }
+    },
     setWage(crew, value) { mutateProject((p) => { const w = { ...(p.wages ?? {}) }; if (value == null || !isFinite(value)) delete w[crew]; else w[crew] = value; return { ...p, wages: w }; }); },
     select(sel) { set({ selection: sel, selectedAgentId: null, focusMode: sel.kind === 'facility' ? get().focusMode : 'site' }); },
     setFocusMode(m) { set({ focusMode: m }); },
@@ -174,6 +194,14 @@ export const useStore = create<State>((set, get) => {
             break;
           }
           case 'site': set((s) => ({ project: { ...s.project!, inventory: { ...s.project!.inventory, site: { ...s.project!.inventory.site, ...e.site } } } })); log({ kind: 'status', text: `Site: ${[e.site.installationName, e.site.location, e.site.solicitation].filter(Boolean).join(' · ')}`, t: Date.now() }); break;
+          case 'prior_award':
+            set((s) => ({ project: { ...s.project!, priorAward: e.award } }));
+            log({ kind: 'found', text: `＄ Previous award: ${[e.award.incumbent, e.award.contractNumber].filter(Boolean).join(' · ') || 'facts'}${e.award.totalValue ? ` · $${e.award.totalValue.toLocaleString()} / ${e.award.periodMonths ?? '?'} mo` : ''}${e.award.spendToDate ? ` · spend $${e.award.spendToDate.toLocaleString()}` : ''}${e.award.annualValue ? ` · $${e.award.annualValue.toLocaleString()}/yr` : ''}`, t: Date.now() });
+            break;
+          case 'topdown':
+            set((s) => ({ project: { ...s.project!, topDown: e.topDown } }));
+            log({ kind: 'status', text: e.topDown.impliedFte.base > 0 ? `Top-down: ${e.topDown.impliedFte.base} FTE implied from ${e.topDown.basis} basis ($${e.topDown.annualValue.toLocaleString()}/yr at $${e.topDown.assumptions.loadedCostPerFte.toLocaleString()}/FTE, ${Math.round(e.topDown.assumptions.odcMaterialsPct * 100)}% ODC) vs ${e.topDown.bottomUpFte} bottom-up` : 'Top-down: assumptions ready, award value still needed to back into FTEs', t: Date.now() });
+            break;
           case 'done':
             set((s) => ({ project: { ...s.project!, inventory: e.inventory, extraction: { provider: e.provider, model: e.model, finishedAt: new Date().toISOString(), durationMs: e.durationMs, usage: e.usage }, name: s.project!.name === 'Untitled BOS estimate' && e.inventory.site.installationName ? `${e.inventory.site.installationName} BOS` : s.project!.name } }));
             log({ kind: 'status', text: `Done in ${(e.durationMs / 1000).toFixed(1)}s via ${e.provider === 'claude' ? e.model : 'rule-based parser'}: ${e.inventory.facilities.length} facilities, ${e.inventory.grounds.length} grounds areas${e.usage ? ` · ${e.usage.input.toLocaleString()} in / ${e.usage.output.toLocaleString()} out tokens` : ''}`, t: Date.now() });

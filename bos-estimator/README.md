@@ -19,7 +19,14 @@ Drop a solicitation (PWS, technical exhibits, workload tables) and the app:
 5. **Looks the part**: gradient sky that tracks the simulated clock, buildings with seeded lit
    windows after dark, street lights, bloom and vignette post-processing (toggle **Cinematic / Fast**
    in the viewport), a cyan scan sweep while the AI reads, and a slow idle orbit of the campus.
-6. **Rolls up manning**: hours and FTE by crew, working supervision, headcount, base-year labor
+6. **Cross-checks top-down on every run.** The reader also pulls the incumbent / previous contract
+   facts (contract number, award value, period, obligations to date) out of the package — or you type
+   them into the *Previous award & spend* panel — and the AI proposes a fully loaded cost per FTE,
+   an ODC / materials share, G&A, fee and escalation for this scope and location. The app backs
+   into an implied FTE range (loaded labor ÷ loaded cost per FTE), shows it beside the RS Means
+   bottom-up number with the delta and the AI's reconciliation, and lets you drag any assumption to
+   test sensitivity. Spend run-rate wins over award ÷ period when both are known.
+7. **Rolls up manning**: hours and FTE by crew, working supervision, headcount, base-year labor
    dollars and a per-contract-year manning table (base + options). Export everything to CSV.
 
 ## Quick start
@@ -67,6 +74,11 @@ to plainer request parameters if an account or model rejects any of them.
   workload growth and wage escalation.
 * Every factor is editable in the **RS Means factors** dialog (or inline in a building's task table).
   Overrides are stored with the project and highlighted in yellow.
+* `shared/topdown.ts` — the should-cost arithmetic: `price = (loaded labor + ODC + subs) × (1 + G&A)
+  × (1 + fee)`, solved for loaded labor and divided by the loaded cost per FTE. `server/ai.ts`
+  (`topDownWithClaude`) asks the model for the assumptions and a written reconciliation;
+  `POST /api/projects/:id/topdown` re-runs it on demand after you edit the award facts or lock a
+  slider.
 
 > RSMeans data is licensed. The values shipped here are representative BOS estimating defaults;
 > reconcile each line against your organization's current RSMeans edition before pricing a bid.

@@ -6,11 +6,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readDocument, type DocInput, type IngestMode } from './extract';
 import { heuristicExtract } from './heuristic';
-import { aiAvailable, extractWithClaude, mergeFacility } from './ai';
+import { aiAvailable, extractWithClaude, mergeFacility, topDownHeuristic, topDownWithClaude } from './ai';
+import { heuristicPriorAward } from './heuristic';
 import { emptyProject, listProjects, loadProject, saveProject } from './store';
 import { CATEGORY_DEFAULTS, CREWS, FACTORS } from '../shared/factors';
 import { DEFAULT_ASSUMPTIONS, estimateInventory } from '../shared/estimate';
-import { AI_MODEL_PRESETS, type AiConfig, type ExtractionEvent, type Inventory, type Project } from '../shared/types';
+import { AI_MODEL_PRESETS, type AiConfig, type ExtractionEvent, type Inventory, type PriorAward, type Project, type TopDownEstimate } from '../shared/types';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 // Minimal .env loader (no dependency): KEY=value lines, '#' comments, existing env wins.
@@ -60,6 +61,29 @@ app.post('/api/projects/:id/estimate', async (req, res) => {
   res.json(estimateInventory(p.inventory, p.assumptionOverrides ?? {}, p.factorOverrides));
 });
 
+app.post('/api/projects/:id/topdown', async (req, res) => {
+  const p = await loadProject(String(req.params.id));
+  const body = (req.body ?? {}) as { provider?: 'auto' | 'claude' | 'heuristic'; priorAward?: PriorAward; overrides?: Project['topDownOverrides'] };
+  if (body.priorAward) p.priorAward = body.priorAward;
+  if (body.overrides) p.topDownOverrides = body.overrides;
+  const est = estimateInventory(p.inventory, p.assumptionOverrides ?? {}, p.factorOverrides, p.wages as never);
+  const ctx = { priorAward: p.priorAward, est, site: p.inventory.site, overrides: p.topDownOverrides };
+  const wantAi = body.provider === 'claude' || ((body.provider ?? 'auto') === 'auto' && aiAvailable());
+  let topDown: TopDownEstimate;
+  try {
+    if (wantAi) {
+      if (!aiAvailable()) throw new Error('ANTHROPIC_API_KEY is not set on the server.');
+      topDown = (await topDownWithClaude(ctx, p.ai)).topDown;
+    } else topDown = topDownHeuristic(ctx);
+  } catch (err) {
+    if (body.provider === 'claude') { res.status(502).json({ error: (err as Error).message }); return; }
+    topDown = topDownHeuristic(ctx);
+  }
+  p.topDown = topDown;
+  await saveProject(p);
+  res.json(topDown);
+});
+
 app.get('/api/projects/:id/export.csv', async (req, res) => {
   const p = await loadProject(req.params.id);
   const est = estimateInventory(p.inventory, p.assumptionOverrides ?? {}, p.factorOverrides);
@@ -72,6 +96,11 @@ app.get('/api/projects/:id/export.csv', async (req, res) => {
   rows.push([]);
   rows.push(['Manning by year', 'Year', '', '', '', '', 'Hours', 'FTE', 'Headcount', '', 'Labor $']);
   for (const y of est.years) rows.push(['', y.label, '', '', '', '', String(y.hours), String(y.fte), String(y.headcount), '', String(y.laborCost)]);
+  if (p.topDown) {
+    const t = p.topDown; rows.push([]);
+    rows.push(['Top-down cross-check', 'Basis', t.basis, 'Annual value (escalated)', String(t.annualValue), 'Loaded $/FTE', String(t.assumptions.loadedCostPerFte), 'ODC %', String(t.assumptions.odcMaterialsPct), 'G&A %', String(t.assumptions.gaPct)]);
+    rows.push(['', 'Implied FTE low/base/high', `${t.impliedFte.low} / ${t.impliedFte.base} / ${t.impliedFte.high}`, 'Bottom-up FTE', String(t.bottomUpFte), 'Delta', t.deltaPct == null ? '' : `${Math.round(t.deltaPct * 100)}%`, 'Recommended', String(t.recommendedFte ?? ''), 'Rationale', t.rationale]);
+  }
   const csv = rows.map((r) => r.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
   res.setHeader('Content-Disposition', `attachment; filename="${p.id}-estimate.csv"`);
   res.type('text/csv').send(csv);
@@ -112,6 +141,7 @@ app.post('/api/projects/:id/extract', upload.array('files', 20), async (req, res
     if (!docs.length) throw new Error('No documents received.');
 
     let inventory: Inventory;
+    let foundAward: PriorAward | undefined;
     let usedProvider: 'claude' | 'heuristic' = 'heuristic';
     let usage: { input: number; output: number } | undefined;
     let model: string | undefined;
@@ -120,7 +150,7 @@ app.post('/api/projects/:id/extract', upload.array('files', 20), async (req, res
       if (!aiAvailable()) throw new Error('ANTHROPIC_API_KEY is not set on the server. Add it to .env (see .env.example) or choose the rule-based parser.');
       try {
         const r = await extractWithClaude(docs, ai, send, abort.signal);
-        inventory = r.inventory; usage = r.usage; model = r.model; usedProvider = 'claude';
+        inventory = r.inventory; usage = r.usage; model = r.model; usedProvider = 'claude'; foundAward = r.priorAward;
       } catch (err) {
         if (provider === 'claude') throw err;
         send({ type: 'status', stage: 'ai', message: `AI extraction failed (${(err as Error).message}). Falling back to the rule-based parser.` });
@@ -133,6 +163,10 @@ app.post('/api/projects/:id/extract', upload.array('files', 20), async (req, res
       for (const g of inventory.grounds) send({ type: 'grounds', area: g });
       send({ type: 'site', site: inventory.site });
     }
+    if (!foundAward || !(foundAward.totalValue || foundAward.annualValue || foundAward.spendToDate)) {
+      const h = heuristicPriorAward(docs);
+      if (h && (h.totalValue || h.annualValue || h.spendToDate)) { foundAward = { ...(foundAward ?? {}), ...h }; send({ type: 'prior_award', award: foundAward }); }
+    }
 
     send({ type: 'status', stage: 'merging', message: 'Merging into project…' });
     const project = await loadProject(String(req.params.id));
@@ -143,6 +177,27 @@ app.post('/api/projects/:id/extract', upload.array('files', 20), async (req, res
     }
     project.inventory = inventory;
     project.ai = ai;
+    // Keep manually entered award facts unless the package states a value.
+    const hasValue = (a?: PriorAward) => Boolean(a && (a.totalValue || a.annualValue || a.spendToDate));
+    project.priorAward = hasValue(foundAward) ? { ...(project.priorAward ?? {}), ...foundAward } : foundAward ? { ...foundAward, ...(project.priorAward ?? {}) } : project.priorAward;
+    if (project.priorAward) send({ type: 'prior_award', award: project.priorAward });
+
+    // Top-down should-cost cross-check runs on every extraction.
+    send({ type: 'status', stage: 'ai', message: hasValue(project.priorAward) ? 'Backing into FTEs from the previous award (top-down should-cost)…' : 'Building top-down assumptions (no award value found yet)…' });
+    try {
+      const est = estimateInventory(inventory, project.assumptionOverrides ?? {}, project.factorOverrides, project.wages as never);
+      const ctx = { priorAward: project.priorAward, est, site: inventory.site, overrides: project.topDownOverrides };
+      if (usedProvider === 'claude' && aiAvailable()) {
+        const r = await topDownWithClaude(ctx, ai, send, abort.signal);
+        project.topDown = r.topDown; if (usage) { usage.input += r.usage.input; usage.output += r.usage.output; }
+      } else project.topDown = topDownHeuristic(ctx);
+      send({ type: 'topdown', topDown: project.topDown });
+    } catch (err) {
+      send({ type: 'status', stage: 'ai', message: `Top-down cross-check failed (${(err as Error).message}); using rule-based assumptions.` });
+      const est = estimateInventory(inventory, project.assumptionOverrides ?? {}, project.factorOverrides, project.wages as never);
+      project.topDown = topDownHeuristic({ priorAward: project.priorAward, est, site: inventory.site, overrides: project.topDownOverrides });
+      send({ type: 'topdown', topDown: project.topDown });
+    }
     project.documents = [...(mode === 'append' ? project.documents : []), ...docs.map((d) => ({ name: d.name, size: d.bytes, pages: d.pages, chars: d.chars, mode: d.mode }))];
     project.extraction = { provider: usedProvider, model, finishedAt: new Date().toISOString(), durationMs: Date.now() - started, usage };
     if (!project.name || project.name === 'Untitled BOS estimate') project.name = inventory.site.installationName ? `${inventory.site.installationName} BOS` : project.name;

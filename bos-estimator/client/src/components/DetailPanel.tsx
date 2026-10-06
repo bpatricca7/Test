@@ -5,6 +5,7 @@ import { CATEGORY_DEFAULTS, CREWS, crewMeta, type Crew } from '@shared/factors';
 import { DEFAULT_ASSUMPTIONS, type TaskLine } from '@shared/estimate';
 import { FACILITY_CATEGORIES, GROUNDS_KINDS, SERVICE_LEVELS, type Facility, type GroundsArea, type ScopeItem } from '@shared/types';
 import { n0, n1, n2, pct, unitLabel, usd, usdCompact } from '../fmt';
+import { TopDownPanel } from './TopDownPanel';
 
 function LinesTable({ lines, onOverride, overrides }: { lines: TaskLine[]; onOverride: (id: string, v: number | null) => void; overrides: Record<string, number> }) {
   const groups = useMemo(() => { const m = new Map<Crew, TaskLine[]>(); for (const l of lines) { const a = m.get(l.crew) ?? []; a.push(l); m.set(l.crew, a); } return [...m.entries()]; }, [lines]);
@@ -224,6 +225,7 @@ function Totals() {
           </tbody>
         </table>
       </div>
+      <TopDownPanel />
       <div className="panel-section">
         <h3>Manning per contract year</h3>
         <table className="years">

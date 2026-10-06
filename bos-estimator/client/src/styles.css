@@ -44,7 +44,7 @@ code { font-family: var(--mono); font-size: 11.5px; background: rgba(148,163,184
 .metrics { display: flex; gap: 18px; margin-left: auto; align-items: center; }
 .metric { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.05; }
 .metric .v { font-weight: 600; font-size: 16px; font-variant-numeric: proportional-nums; }
-.metric .l { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .6px; margin-top: 2px; }
+.metric .l { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .6px; margin-top: 2px; white-space: nowrap; }
 .metric.hero { padding-left: 18px; border-left: 1px solid var(--border); }
 .metric.hero .v { font-size: 24px; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .topbar .actions { display: flex; gap: 8px; }
@@ -121,7 +121,7 @@ code { font-family: var(--mono); font-size: 11.5px; background: rgba(148,163,184
 .list-item .right .fte { color: var(--accent); }
 .list-item .ftebar { position: absolute; left: 14px; right: 14px; bottom: 2px; height: 2px; background: rgba(56,189,248,.1); border-radius: 2px; overflow: hidden; }
 .list-item .ftebar > div { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); border-radius: 2px; }
-.chip { display: inline-block; padding: 2px 7px; border-radius: 999px; font-size: 10px; letter-spacing: .4px; text-transform: uppercase; background: rgba(148,163,184,.14); color: var(--muted); font-weight: 600; }
+.chip { display: inline-block; white-space: nowrap; padding: 2px 7px; border-radius: 999px; font-size: 10px; letter-spacing: .4px; text-transform: uppercase; background: rgba(148,163,184,.14); color: var(--muted); font-weight: 600; }
 .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex: none; }
 .conf-hi { background: var(--ok); box-shadow: 0 0 6px var(--ok);} .conf-mid { background: var(--warn);} .conf-lo { background: var(--bad);}
 .search { width: 100%; background: rgba(2,6,23,.55); border: 1px solid var(--border); border-radius: 10px; padding: 7px 10px; margin-bottom: 6px; transition: border-color .15s, box-shadow .15s; }
@@ -229,3 +229,43 @@ table.lines input { width: 64px; background: rgba(2,6,23,.55); border: 1px solid
 .loading p { color: var(--muted); margin-top: 14px; text-align: center; }
 
 @media (max-width: 1280px) { .panel.left { width: 310px; } .panel.right { width: 350px; } .view-toggle, .hint { left: 332px; } .legend { right: 372px; } }
+
+/* ---------- previous award + top-down cross-check ---------- */
+details.award { margin-top: 10px; border: 1px solid var(--border); border-radius: 12px; padding: 0 10px; background: rgba(255,255,255,.02); }
+details.award summary { cursor: pointer; padding: 8px 0; font-size: 11px; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 8px; list-style: none; }
+details.award summary::-webkit-details-marker { display: none; }
+details.award summary::before { content: '▸'; color: var(--accent); transition: transform .15s; }
+details.award[open] summary::before { transform: rotate(90deg); }
+details.award summary .hintsm { margin-left: auto; text-transform: none; letter-spacing: 0; font-size: 10.5px; opacity: .8; }
+details.award .field-row { margin-top: 4px; }
+.xcheck { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+.xcheck .big { background: rgba(255,255,255,.03); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; position: relative; overflow: hidden; }
+.xcheck .big::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--c, var(--accent)); }
+.xcheck .big .v { font-size: 24px; font-weight: 600; letter-spacing: -.3px; }
+.xcheck .big .v small { font-size: 12px; color: var(--muted); font-weight: 500; margin-left: 4px; }
+.xcheck .big .l { color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+.xcheck .big .rng { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 4px; }
+.delta { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--border); background: rgba(255,255,255,.03); margin: 2px 0 8px; }
+.delta b { font-family: var(--mono); }
+.delta.hi b { color: var(--bad); } .delta.lo b { color: var(--warn); } .delta.ok b { color: var(--ok); }
+.cmpbars { display: flex; flex-direction: column; gap: 6px; margin: 6px 0 10px; }
+.cmpbars .row { display: grid; grid-template-columns: 112px 1fr 58px; gap: 8px; align-items: center; font-size: 11.5px; }
+.cmpbars .track { height: 8px; background: rgba(148,163,184,.12); border-radius: 4px; position: relative; overflow: visible; }
+.cmpbars .track > div { position: absolute; left: 0; top: 0; height: 100%; border-radius: 4px; }
+.cmpbars .track .band { background: rgba(148,163,184,.18); border-radius: 4px; }
+.cmpbars .track .tick { width: 2px; background: var(--text); border-radius: 1px; top: -3px; height: 14px; }
+.cmpbars .n { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+.assume { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+.assume .field { margin-bottom: 2px; }
+.assume .field label { display: flex; justify-content: space-between; }
+.assume .field label b { font-family: var(--mono); color: var(--text); font-weight: 500; }
+.assume input[type=range] { width: 100%; accent-color: var(--accent); }
+.assume .field.locked label { color: var(--warn); }
+.rationale { font-size: 12px; line-height: 1.5; color: #d5dcea; background: rgba(129,140,248,.08); border: 1px solid rgba(129,140,248,.25); border-radius: 10px; padding: 9px 11px; margin: 8px 0; }
+.rationale .who { display: flex; align-items: center; gap: 6px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px; color: var(--accent-2); margin-bottom: 4px; }
+.risks { margin: 4px 0 0; padding-left: 16px; font-size: 11.5px; color: var(--muted); }
+.risks li { margin: 2px 0; }
+.waterfall { display: flex; height: 10px; border-radius: 5px; overflow: hidden; margin: 6px 0 4px; border: 1px solid var(--border); }
+.waterfall > div { height: 100%; }
+.wf-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 10.5px; color: var(--muted); }
+.wf-legend .sw { width: 8px; height: 8px; border-radius: 2px; display: inline-block; margin-right: 4px; }

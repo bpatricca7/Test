@@ -1,7 +1,7 @@
 // Rule-based fallback extractor. Used when no ANTHROPIC_API_KEY is configured, when the user picks the
 // rule-based parser, or when the AI call fails — so the workbench still produces an inventory from
 // reasonably structured workload tables (pipe / tab / multi-space delimited rows).
-import type { Facility, FacilityCategory, GroundsArea, GroundsKind, GroundsUnit, Inventory, ServiceLevel, SiteInfo } from '../shared/types';
+import type { Facility, FacilityCategory, GroundsArea, GroundsKind, GroundsUnit, Inventory, PriorAward, ServiceLevel, SiteInfo } from '../shared/types';
 import type { DocInput } from './extract';
 
 const num = (s: string) => parseFloat(String(s).replace(/[,\s]/g, ''));
@@ -194,4 +194,41 @@ export function heuristicExtract(docs: DocInput[]): Inventory {
 
 function labelKind(k: GroundsKind) {
   return ({ improved_turf: 'Improved turf', semi_improved: 'Semi-improved grounds', unimproved: 'Unimproved grounds', athletic_field: 'Athletic fields', shrub_bed: 'Shrub beds', parking: 'Parking', sidewalk: 'Sidewalks', tree_canopy: 'Trees' } as Record<GroundsKind, string>)[k];
+}
+
+const money = (s: string) => { const m = s.match(/\$\s*([\d,]+(?:\.\d+)?)\s*(million|m|billion|b|k|thousand)?/i); if (!m) return undefined; let v = parseFloat(m[1].replace(/,/g, '')); const u = (m[2] ?? '').toLowerCase(); if (u.startsWith('m')) v *= 1e6; else if (u.startsWith('b')) v *= 1e9; else if (u === 'k' || u === 'thousand') v *= 1e3; return isFinite(v) ? v : undefined; };
+
+/** Pull incumbent / previous-award facts out of free text (cover letters, Q&A, "current contract" paragraphs). */
+export function heuristicPriorAward(docs: DocInput[]): PriorAward | undefined {
+  let out: PriorAward | undefined;
+  for (const doc of docs) {
+    const sentences = doc.text.split(/(?<=[.!?])\s+|\n+/);
+    for (const sRaw of sentences) {
+      const s = sRaw.trim();
+      if (!/incumbent|current contract|previous contract|existing contract|predecessor|prior contract|currently performed|under contract|awarded|obligat|contract value|ceiling|total value/i.test(s)) continue;
+      const pa: PriorAward = out ?? { confidence: 0.5 };
+      const cn = s.match(/\b([A-Z0-9]{5,8}-\d{2}-[CDFP]-\d{4})\b/); if (cn) pa.contractNumber = cn[1];
+      const inc = s.match(/incumbent(?: contractor)?(?: is|,)?\s+([A-Z][\w&.,' -]{2,60}?)(?:,|\.|\s+under|\s+was|\s+holds|\s+\()/) || s.match(/award(?:ed)?\s+(?:in\s+\w+\s+\d{4}\s+|on\s+[\w ,]+\d{4}\s+)?to\s+([A-Z][\w&.' -]*(?:,\s*(?:LLC|Inc\.?|Corp\.?|Co\.?|LP|JV))?)(?=,\s+a\b|\.|\s+under|\s+for|\s+with|,)/); if (inc && !pa.incumbent) pa.incumbent = inc[1].trim();
+      const yr = s.match(/(?:awarded|award|since)\s+(?:in\s+|on\s+)?(?:\w+\s+){0,2}(20\d{2})/i); if (yr) pa.awardYear = parseInt(yr[1]);
+      const months = s.match(/(\d{1,3})[- ]month/i); const years = s.match(/(\d{1,2})[- ]year|(?:base|one)\s+(?:year|period)[^.]{0,40}?(four|three|two|one|\d)\s+(?:one-year\s+)?option/i);
+      const amt = money(s);
+      if (amt) {
+        if (/per (?:year|annum)|annual(?:ly)?|a year|\/yr/i.test(s) && !/total/i.test(s)) pa.annualValue = amt;
+        else if (/obligat|spent|invoiced|expended|to date|through fy/i.test(s)) {
+          pa.spendToDate = amt;
+          const ord = s.match(/\b(first|second|third|fourth|fifth|sixth|\d)(?:st|nd|rd|th)?\s+(?:performance\s+|contract\s+|option\s+)?year/i);
+          const ordN: Record<string, number> = { first: 1, second: 2, third: 3, fourth: 4, fifth: 5, sixth: 6 };
+          if (months) pa.spendPeriodMonths = parseInt(months[1]); else if (ord) pa.spendPeriodMonths = (ordN[ord[1].toLowerCase()] ?? parseInt(ord[1])) * 12;
+        }
+        else { pa.totalValue = amt; if (months) pa.periodMonths = parseInt(months[1]); else if (years) { const w: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5 }; const n = years[1] ? parseInt(years[1]) : 1 + (w[years[2]?.toLowerCase()] ?? parseInt(years[2]) ?? 4); pa.periodMonths = n * 12; } }
+      }
+      if (pa.contractNumber || pa.incumbent || pa.totalValue || pa.annualValue || pa.spendToDate) {
+        pa.source = pa.source ?? { file: doc.name, excerpt: s.slice(0, 220) };
+        if (!(pa.source.excerpt ?? '').includes(s.slice(0, 40)) && (amt || cn)) pa.source = { file: doc.name, excerpt: s.slice(0, 220) };
+        out = pa;
+      }
+    }
+  }
+  if (out && out.spendToDate && !out.spendPeriodMonths && out.awardYear) out.spendPeriodMonths = Math.max(12, Math.min(out.periodMonths ?? 60, (new Date().getFullYear() - out.awardYear) * 12));
+  return out;
 }

@@ -31,7 +31,7 @@ export function TopBar() {
         <div className="metric"><span className="v"><Num value={m?.acres ?? 0} format={n1} /></span><span className="l">Acres</span></div>
         <div className="metric"><span className="v"><Num value={m?.mealsPerYear ?? 0} format={n0} /></span><span className="l">Meals / yr</span></div>
         <div className="metric"><span className="v"><Num value={est?.directHours ?? 0} format={n0} /></span><span className="l">Direct hrs / yr</span></div>
-        <div className="metric hero"><span className="v"><Num value={est?.totalFte ?? 0} format={(v) => `${n1(v)} FTE`} /></span><span className="l">{est ? `${est.totalHeadcount} heads · base year` : 'Manning'}</span></div>
+        <div className="metric hero"><span className="v"><Num value={est?.totalFte ?? 0} format={(v) => `${n1(v)} FTE`} /></span><span className="l">{est ? `${est.totalHeadcount} heads${project?.topDown && project.topDown.impliedFte.base > 0 ? ` · ${n1(project.topDown.impliedFte.base)} implied top-down` : ' · base year'}` : 'Manning'}</span></div>
       </div>
       <div className="actions">
         <button className="btn" onClick={() => setFactorsOpen(true)}>RS Means factors</button>

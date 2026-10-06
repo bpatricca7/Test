@@ -1,5 +1,5 @@
 import type { EstimateResult } from '@shared/estimate';
-import type { ExtractionEvent, Project } from '@shared/types';
+import type { ExtractionEvent, PriorAward, Project, TopDownAssumptions, TopDownEstimate } from '@shared/types';
 
 export interface Health { ok: boolean; aiAvailable: boolean; presets: { id: string; label: string; blurb: string }[]; defaultModel: string; defaultEffort: string }
 
@@ -11,6 +11,8 @@ export const api = {
   resetProject: (id: string) => fetch(`/api/projects/${id}`, { method: 'DELETE' }).then((r) => r.json() as Promise<Project>),
   estimate: (id: string) => fetch(`/api/projects/${id}/estimate`, { method: 'POST' }).then((r) => r.json() as Promise<EstimateResult>),
   exportCsvUrl: (id: string) => `/api/projects/${id}/export.csv`,
+  runTopDown: (id: string, body: { provider?: 'auto' | 'claude' | 'heuristic'; priorAward?: PriorAward; overrides?: Partial<TopDownAssumptions> }) =>
+    fetch(`/api/projects/${id}/topdown`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(async (r) => { if (!r.ok) throw new Error((await r.json().catch(() => ({ error: r.statusText }))).error ?? 'Top-down failed'); return r.json() as Promise<TopDownEstimate>; }),
 };
 
 export interface ExtractOptions {
