@@ -546,6 +546,11 @@ async function worldPass(browser, errors) {
       av.setLook(orig);
       await g.debug.waitIdle(20000); // the world's own meshes settle too
       await new Promise((res) => setTimeout(res, 300));
+      // [gate-C2] then at least one drawn frame: the renderer counts a geometry only once it
+      // draws it, and frames here take 600+ ms, so after 300 ms the fresh look's ~21 meshes
+      // were sometimes counted and sometimes not (start 136, end 157 with every setLook's
+      // geometries disposed: a race in the probe, not a leak). Two frames make sure they are.
+      for (let i = 0; i < 2; i++) await new Promise((res) => requestAnimationFrame(res));
     };
     await round(2000); // a first round warms every shared cache
     const start = { geo: r.geometries, cache: g.debug.avatar.textures().textures };
