@@ -1049,8 +1049,13 @@ async function s8() {
   await mia.page.waitForFunction(() => /A grown-up can add you|Who's playing/.test(document.body.innerText) || (window.__game && window.__game.ui && window.__game.ui.current === 'title' && window.__game.account && window.__game.account.playerId), null, { timeout: 60000 });
   const now = await game(mia, () => window.__game.account && window.__game.account.playerId);
   check(now !== A.ids.Mia, `Mia's device does not play as Mia any more (${now === A.ids.Lily ? 'Lily, the one player left' : now || 'the picker'})`);
-  const after = await dbs();
-  check(!after.some((n) => n.includes(A.ids.Mia)), `Mia's copy is wiped from the device (${after.join(', ') || 'none left'})`);
+  // the wipe runs beside the boot, not before it (src/account/index.js: the profile GET's 410
+  // calls SaveStore.wipe in the background while the picker opens), so on a slow machine the
+  // picker can be up before the copy is gone ([gate-D3]: red once at load 4, green the run
+  // before). Give it up to 20 s; the check itself is unchanged: her copy must be gone.
+  let after = await dbs();
+  for (const t0 = Date.now(); after.some((n) => n.includes(A.ids.Mia)) && Date.now() - t0 < 20000; after = await dbs()) await sleep(250);
+  check(!after.some((n) => n.includes(A.ids.Mia)),`Mia's copy is wiped from the device (${after.join(', ') || 'none left'})`);
   await shot(mia.page, 'mia-device-after-delete');
 }
 
