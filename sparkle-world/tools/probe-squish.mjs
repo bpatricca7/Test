@@ -172,10 +172,14 @@ async function aimAt(page, uid, dx = 0) {
     const p = g.player.position;
     g.cameraRig.yaw = Math.atan2(cx - p.x, cz - p.z);
     g.cameraRig.pitch = 0.5;
-    return [cx, cy, cz];
+    return [cx, cy, cz, g.diag.frames];
   }, [uid, dx]);
+  // the camera takes the new yaw only in a game frame: wait for two of them, then 400 ms. Wall
+  // time alone was not enough: on the GPU-less test machine a frame can take longer than 400 ms,
+  // and the toy was still behind the old camera (screenPoint null; gate-B2)
+  await wait(page, (f) => window.__game.diag.frames >= f + 2, c[3], 10000);
   await settle(page, 400);
-  return screenPoint(page, ...c);
+  return screenPoint(page, c[0], c[1], c[2]);
 }
 
 // =====================================================================================

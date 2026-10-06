@@ -215,6 +215,8 @@ export function install(game) {
       game.events.emit('sticker:earned', { sticker: def });
       return true;
     },
+    /** A "New sticker!" pop is waiting for a clear world or is up (others' tips wait for it). */
+    pending: () => showing || queue.length > 0,
     count: () => Object.keys(game.profile.stickers).filter((id) => reg.has(id)).length,
     total: () => reg.size,
     all,

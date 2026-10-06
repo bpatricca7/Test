@@ -679,7 +679,10 @@ export function installPanels(game, S) {
     if (!tipWanted || game.mode !== 'play') return;
     // a toast up top (e.g. "You're holding ... Press Squish!") goes first: the pill tip sits
     // just under the coin pill, right where the toast stack is on an upright phone
-    if (blocked(game) || drop || toastUp()) { tipWanted = now(); return; }
+    // a waiting sticker pop (First Present!) goes first too: its own 500 ms clock starts on the
+    // first frame after the close, so on a slow device the tip's clock could run out first
+    const popWaiting = !!(game.stickers && game.stickers.pending && game.stickers.pending());
+    if (blocked(game) || drop || toastUp() || popWaiting) { tipWanted = now(); return; }
     if (now() - tipWanted < 600) return;
     tipWanted = 0;
     if (!devGet('squishPillTip')) {
