@@ -12,6 +12,18 @@ import { launch, openGame, waitForTitle, waitForPlay, waitIdle, shot, settle, fi
 
 const P = 'menus';
 const opts = parseArgs();
+// The touch pass runs past one 570 s gate command on this machine, so the gate
+// splits it by device: --devices=ipad,ipad-air (default: every device, in order).
+const TOUCH_DEVICES = [
+  { name: 'ipad', viewport: { width: 1024, height: 768 }, deep: true },
+  { name: 'ipad-air', viewport: { width: 1180, height: 820 } },
+  { name: 'ipad-portrait', viewport: { width: 820, height: 1180 } },
+  { name: 'ipad-mini-portrait', viewport: { width: 768, height: 1024 } },
+  { name: 'phone', viewport: { width: 390, height: 844 }, deep: true },
+];
+const devArg = process.argv.find((a) => a.startsWith('--devices='));
+const DEVICES = devArg ? devArg.slice('--devices='.length).split(',').filter(Boolean) : null;
+if (DEVICES) for (const n of DEVICES) if (!TOUCH_DEVICES.some((d) => d.name === n)) { console.error(`unknown device ${n}`); process.exit(2); }
 const errors = [];
 
 function check(cond, message) {
@@ -503,11 +515,12 @@ async function main() {
   try {
     if (opts.only !== 'touch') await desktop(browser);
     if (opts.only !== 'desktop') {
-      await touchDevice(browser, { name: 'ipad', viewport: { width: 1024, height: 768 }, deep: true });
-      await touchDevice(browser, { name: 'ipad-air', viewport: { width: 1180, height: 820 } });
-      await touchDevice(browser, { name: 'ipad-portrait', viewport: { width: 820, height: 1180 } });
-      await touchDevice(browser, { name: 'ipad-mini-portrait', viewport: { width: 768, height: 1024 } });
-      await touchDevice(browser, { name: 'phone', viewport: { width: 390, height: 844 }, deep: true });
+      for (const d of TOUCH_DEVICES) {
+        if (DEVICES && !DEVICES.includes(d.name)) continue;
+        const t0 = Date.now();
+        await touchDevice(browser, d);
+        console.log(`  (${d.name}: ${Math.round((Date.now() - t0) / 1000)} s)`);
+      }
     }
   } catch (err) {
     errors.push('[probe] ' + (err.stack || err.message || String(err)));
