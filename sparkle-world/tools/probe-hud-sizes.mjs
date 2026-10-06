@@ -1,6 +1,6 @@
 // Touch HUD at real tablet and phone sizes (Safari's bars shorten an iPad's screen): no two
 // buttons, labels, slots or the joystick overlap, on the ground, flying, and playing with friends
-// (Say shown, the walkie-talkie idle, "Jules bear is talking", pressed and the "Walkie off" badge, with its pressed
+// (Say and Players shown, Help making way on a phone as in a real session, the walkie-talkie idle, "Jules bear is talking", pressed and the "Walkie off" badge, with its pressed
 // rings, 22 px past the button), and in wave 4 (a beach world): a toy held (Squish! / Put away) and
 // a present waiting (the Present button, the ring on the coin pill), swimming (Up / Down), the
 // dolphin bubble and riding (Hop off, Jump), each alone and with friends (Say and the walkie).
@@ -38,27 +38,41 @@ const overlaps = (page) => page.evaluate(() => {
   return { out, jump: j && j.width ? `jump at ${Math.round(j.left)},${Math.round(j.top)} (bottom gap ${Math.round(innerHeight - j.bottom)})` : 'jump hidden' };
 });
 
-// Say as with friends. The probe has no real session, so the HUD's own refresh (every 0.25 s of
-// game time, src/ui/hud.js refreshNet) hides Say again; whether that landed before the overlap
-// check and the picture depended on frame timing ([gate-D5]: Say missing at 1024x690 and
-// 1080x700, shown at 1080x810). Now Say is held shown for as long as the probe wants it, so every
-// "with friends" check really includes it.
+// Playing together as a real session shows it: Say, Players (with how many are here) and the
+// hud's sw-in-session class (which on a phone hides Help so Players takes its place, hud.js).
+// The probe has no real session, so the HUD's own refresh (every 0.25 s of game time,
+// src/ui/hud.js refreshNet) undoes all three again; whether that landed before the overlap check
+// and the picture depended on frame timing ([gate-D5]: Say missing at 1024x690 and 1080x700,
+// shown at 1080x810). Now they are held as in a session for as long as the probe wants it, so
+// every "with friends" check really includes Say and the real session's top-right row
+// ([gate-D6]: before this, Players was never shown and Help never made way for it).
 const keepSay = (page) => page.evaluate(() => {
   if (window.__swHudSay) return;
   let want = false, obs = null;
   window.__swHudSay = (on) => {
     want = on;
+    const hud = document.querySelector('.sw-hud');
     const say = document.querySelector('.sw-saybtn');
-    if (!say) return;
-    say.hidden = !on;
+    const players = document.querySelector('.sw-playersbtn');
+    if (!hud || !say || !players) return;
+    const apply = () => {
+      if (say.hidden === want) say.hidden = !want;
+      if (players.hidden === want) players.hidden = !want;
+      if (hud.classList.contains('sw-in-session') !== want) hud.classList.toggle('sw-in-session', want);
+      const n = players.querySelector('.sw-count');
+      if (want && n && n.textContent !== '3') { n.textContent = '3'; players.setAttribute('aria-label', 'Players: 3'); }
+    };
+    apply();
     if (!obs) {
-      obs = new MutationObserver(() => { if (want && say.hidden) say.hidden = false; });
+      obs = new MutationObserver(() => { if (want) apply(); });
       obs.observe(say, { attributes: true, attributeFilter: ['hidden'] });
+      obs.observe(players, { attributes: true, attributeFilter: ['hidden'] });
+      obs.observe(hud, { attributes: true, attributeFilter: ['class'] });
     }
   };
 });
 
-// alone (Say and the walkie hidden) and with friends (Say, the walkie idle with its rings)
+// alone (Say, Players and the walkie hidden) and with friends (Say, Players, the walkie idle with its rings)
 async function bothWays(page, label, out) {
   for (const friends of [false, true]) {
     await page.evaluate((friends) => {
@@ -177,7 +191,7 @@ for (const [width, height] of SIZES) {
     await shot(page, `hudsizes-${TAG}-fly-${width}x${height}`, 'tmp');
     await page.locator('.sw-hud .sw-round[aria-label="Fly"]').tap();
     await settle(page, 400);
-    // playing with friends: Say shows, and the walkie-talkie (stand-in views: idle, a friend
+    // playing with friends: Say and Players show (Help makes way on a phone), and the walkie-talkie (stand-in views: idle, a friend
     // with a long name talking, and pressed)
     const friends = [];
     for (const state of ['idle', 'busy', 'talking', 'badge']) {
