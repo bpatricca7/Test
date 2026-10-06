@@ -769,6 +769,75 @@ In all: 13 Node commands and about 80 browser commands, about **5 hours** of ser
 time. Order: A (stop at the first failure), B, C, D. After any fix, re-run its covering
 commands, then A again.
 
+**[gate-final] The final gate table.** Every row's last run, its time and the commit it ran on.
+The last change to game code (src, server, site) is 9d9bad3 (the dolphin bubble in
+`src/life/ocean/ui.js`); the one before it is 88ed908 (the Squish Shelf's `collect()`, 03:00), and
+every row ran after 88ed908. Only probe-ocean, probe-hud-sizes, smoke and part A reach the dolphin
+bubble (no other suite opens it: `oc-bubble` / `ocean.bubble()` appear only in probe-ocean and
+probe-hud-sizes), and every one of those rows ran again after 9d9bad3 (B14 and B15 in this step).
+Test-only changes after a row's run touched only parts that a later run covered: probe-hud-sizes
+(4ead41a, e810866: all of D16-D22 again), e2e-accounts run 8 (0370b48: D15 again), test-walkie
+parts 1 and 3 (ee5167e, b899173: D9 and D10b again; D10 is part 2 and reaches neither). All green.
+
+| row | last result | time | ran on |
+|---|---|---|---|
+| A1 build, A2 build:site, A3 test:name | green (A3 13; name scanner 0 matches) | 1 s, under 1 s, 2 s | 77eee1f |
+| A4 merfolk, A5 squish, A6 sea, A7 vehicles | green (22, 17, 21, 11) | 3, under 1, 12, 1 s | 2f02341 |
+| A8 test:saves (under the lock) | green, 42 | 110 s | 2f02341 |
+| A9 accounts, A10 billing, A11 mail, A12 walkie-unit | green (113; 106 + 1 skipped by design; 19; green) | 28, 12, 3, 1 s | 2f02341 |
+| A13 test:net | green, 69 | 151 s | 2f02341 |
+| B1 smoke | green, 17, no errors | 157 s | 2f02341 |
+| B2 merfolk unit,water | green, 45 | 337 s | 830cafe |
+| B3 merfolk studio | green, 37 | 238 s | 0a37ec5 |
+| B3b merfolk grids | green, 6 grids | 206 s | f41b1f7 |
+| B3c merfolk review | green, 8 | 251 s | adb2ce6 |
+| B4 merfolk touch,friends | green, 12 | 217 s | afa0658 |
+| B5 merfolk costs | green, 15 | 435 s | 83d7f62 |
+| B5b merfolk save | green, 6 | 34 s | 83d7f62 |
+| B6 squish desktop | green, 78 (one ghost-tap timing blip, re-run once) | 211 s | 16a7586 |
+| B7 squish touch | green, 37 | 220 s | 16a7586 |
+| B8 squish world,save | green, 22 | 186 s | 16a7586 |
+| B9 squish mp | green, 12 | 207 s | 16a7586 |
+| B10 squish grids,cost | green | 361 s | 88ed908 |
+| B11 ocean world | green, O1-O11 | 372 s | bbcc12e |
+| B12 ocean see,tap | green, 63 | 232 s | a33019d |
+| B13 ocean ride,touch | green, 44 | 288 s | 78ff00c |
+| B14 ocean biomes,saves | green, 17 | 221 s | 77eee1f |
+| B15 ocean mp | green, 19 | 406 s | b24c1a7 |
+| B16 ocean cost | green, 22 | 389 s | 619b251 |
+| B17 / B17b / B17c / B17d | green (9 / 15 / 5 / 14) | 97 / 92 / 60 / 150 s | 95d4604 / 7f98515 / ab47028 / 6a99506 |
+| B17e ocean wave4b | green, 29 (all of X6-X10) | 383 s | 6d23af9 |
+| C1 / C1b multiplayer a, d | green (90 / 49) | 413 / 419 s | 78dcb51 / 5f4a1b3 |
+| C2 / C2b multiplayer b, f | green (77 / 53) | 502 / 539 s | 4e60bf8 / ff5d0d2 |
+| C3 / C3c / C3d / C3b multiplayer c, g, h, e | green (- / 27 / 48 / 49) | 547 / 501 / 531 / 502 s | 9d5822d / e2a2a0f / 0123268 / 01eb4c3 |
+| C4-C9 probe-boys | green (C4 39, C5 41, C6 53, C7 15, C8 28, C9 grid) | 1, 71, 318, 103, 258, 45 s | 9d5822d, c7fee5d, 664a8ee |
+| C10 / C11 / C12 vehicles | green (38 / 18 / 49) | 150 / 172 / 482 s | 924b52b / ed0c800 / 5f67e22 |
+| C13 / C14 / C14b menus | green (37 / 17 / 23) | 176 / 295 / 288 s | e88b155 / cf99b34 / cf99b34 |
+| C15 shops | green, 93 | 458 s | 60102de |
+| C16 keepsafe / C17 environment | green (80 / 25) | 281 / 209 s | a8629fb / 97ac86d |
+| C18 pals | green, 72 | 452 s | b89bcae |
+| C19 / C20 life | green (55 / 8) | 338 / 218 s | 2ba5301 / 3f518f2 |
+| C21 avatar | green, 28 | 376 s | 3483d7c |
+| C22 / C23 builds | green (86 / 11) | 395 / 192 s | 4c660b2 / b5618e0 |
+| C24 / C25 prefabs | green (46 / 19) | 380 / 152 s | 2203fd8 / a020851 |
+| D1 / D2 outdoor | green (23 / 29) | 233 / 339 s | 64cc581 / 67362a3 |
+| D3-D6 furniture | green (1, 41, 9, 1) | 62, 267, 161, 52 s | c077cfd |
+| D7 / D7b net-game parts 1, 2 | green (216 / 41) | 347 / 463 s | 951d983 / 285814d |
+| D8 net-ux | green, 32 | 426 s | a135dd2 |
+| D9 / D10 / D10b test-walkie parts 1-3 | green (169 / 85 / 48), **detached with `timeout 1500`** (the written exception above) | 676 / 658 / 642 s | ee5167e / bfe218e / b899173 |
+| D11 site-check | green, 788 | 257 s | 09c9f55 |
+| D12 probe:railway | green, 25 | 541 s | 7b43f8b |
+| D13 / D14 e2e-accounts | green (25 / 70) | 417 / 482 s | f763c09 / f8779a1 |
+| D15 / D15b e2e-accounts | green (32 / 10) | 377 / 240 s | 0370b48 / 9f7e8bb |
+| D16-D22 hud-sizes (7 groups) | green, every size clear | 299, 474, 378, 387, 398, 349, 130 s | 9d9bad3, 65631a2, ca7ca89, 10ebed0, 4b19525, e9c5252, 87f5354 |
+
+**Verdict: ready to deploy, from the gate's side.** Every row of §10.2 is green on the final game
+code, and every browser run had no console errors, page errors or failed requests. Two things the
+owner should know before §11 step 3: D9, D10 and D10b only pass detached with a 1500 s limit (their
+shared start alone is about 540-610 s on this GPU-less machine, the same before wave 4), and A8
+(test-saves) asserts page errors only. The owner items in "Integrator decisions" and §12 still
+stand. Nothing was deployed.
+
 ---
 
 ## 11. Docs, site and deploy (integrator)
@@ -985,3 +1054,4 @@ integration branch, never changed.
   C3b in §10.2.
 - The **owner** items of "Integrator decisions" above, then §11 steps 2-5 (the build, the full
   gate of §10, one push to the live branch, the check on the live site).
+- [gate-final]: the full gate of §10.2 is green on the final game code (77eee1f; the last game change is 9d9bad3). This step ran B14 and B15 (the probe-ocean rows that reach the dolphin bubble and had not run since it changed), part A and B1 again, and the name scanner (0 matches). The final table and the verdict (ready to deploy, with D9-D10b detached as written) are at the end of §10.2.
