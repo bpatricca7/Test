@@ -19,6 +19,8 @@ const OUT = 96; // picture size (CSS px of a cubby)
 const CELL = 192; // drawn at 2x, then scaled down (like the thumbnails)
 const PER_ROW = 4;
 const MAX_BATCH = 12;
+// a batch whose fence has not passed after this many frames is read back anyway
+const WAIT_FRAMES = 30;
 const DIR = new THREE.Vector3(0.4, 0.45, 1.5).normalize();
 const WARM = [['pf_strawberry', true], ['st_snowball', false], ['st_gold', false]];
 
@@ -39,6 +41,7 @@ export function sheetRenderer(thumbs) {
   // link's status is read in a frame of its own (a failed link is still reported) and the
   // warm-up draw after it skips the logs.
   let newProgs = null;
+  const inFlight = []; // batches drawn, their pixels on the way back (start / collect)
   const _col = new THREE.Color();
   const setup = () => {
     if (scene) return;
@@ -211,13 +214,19 @@ export function sheetRenderer(thumbs) {
       return !!(thumbs && thumbs.renderer && !thumbs.lost && !thumbs.failed);
     },
     /**
-     * Draw up to MAX_BATCH toys ([{ key, glitter }]) and return [dataURL | ''] in the same
-     * order, or null when the renderer is not there (the caller falls back to the thumbnail queue).
+     * Draw up to MAX_BATCH toys ([{ key, glitter }]) into the offscreen target and start their
+     * read-back without waiting for it: the pixels go into a buffer on the GPU side, behind a
+     * fence, and collect() hands them out in a later frame once the fence has passed. (A plain
+     * read-back here waited for everything the GPU had queued, the game's own last frame too: on
+     * the GPU-less test machine 500-1230 ms a batch, the same for 1 picture as for 6, so smaller
+     * batches could not help.) Returns false when the renderer is not there (the caller falls
+     * back to the thumbnail queue).
      */
-    draw(list) {
-      if (!this.ready()) return null;
+    start(list) {
+      if (!this.ready()) return false;
       setup();
       const r = thumbs.renderer;
+      const gl = r.getContext();
       const jobs = list.slice(0, MAX_BATCH);
       const rows = Math.ceil(jobs.length / PER_ROW);
       const W = PER_ROW * CELL, H = rows * CELL;
@@ -265,15 +274,71 @@ export function sheetRenderer(thumbs) {
       rt.scissorTest = false;
       rt.viewport.set(0, 0, rt.width, rt.height);
       rt.scissor.set(0, 0, rt.width, rt.height);
-      // one read-back for the whole batch, then cut it into pictures
-      const px = new Uint8Array(W * H * 4);
+      // the whole batch into one pixel buffer on the GPU side (from the target's resolved
+      // pixels, as three's own read-back reads them), then a fence after it
+      let buf = null, sync = null;
       try {
-        r.readRenderTargetPixels(rt, 0, 0, W, H, px);
+        buf = gl.createBuffer();
+        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, buf);
+        gl.bufferData(gl.PIXEL_PACK_BUFFER, W * H * 4, gl.STREAM_READ);
+        r.state.bindFramebuffer(gl.FRAMEBUFFER, r.properties.get(rt).__webglFramebuffer);
+        gl.readPixels(0, 0, W, H, gl.RGBA, gl.UNSIGNED_BYTE, 0);
+        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+        sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+        gl.flush();
+      } catch (err) {
+        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+        if (buf) gl.deleteBuffer(buf);
+        buf = null;
+        console.warn('[squish] shelf pictures failed', err && err.message);
       } finally {
         r.setRenderTarget(prevTarget);
         r.setClearColor(_col, prevClear);
       }
-      return cut(px, W, H, jobs);
+      inFlight.push({ jobs, W, H, buf, sync, frames: 0, gl });
+      return true;
+    },
+    /** How many batches are still on their way back. */
+    inFlight() {
+      return inFlight.length;
+    },
+    /**
+     * The batches whose fence has passed, in the order they were started: [{ jobs, urls }]
+     * (a url is '' when that picture failed; the caller falls back to the thumbnail queue).
+     * The fence is only looked at, never waited for; a batch still not back after
+     * WAIT_FRAMES frames is read anyway (that read waits, but the pictures still arrive).
+     */
+    collect() {
+      const out = [];
+      while (inFlight.length) {
+        const b = inFlight[0];
+        const gl = b.gl;
+        const lost = !this.ready() || thumbs.renderer.getContext() !== gl || gl.isContextLost();
+        if (lost || !b.buf || !b.sync) {
+          inFlight.shift();
+          out.push({ jobs: b.jobs, urls: b.jobs.map(() => '') });
+          continue;
+        }
+        b.frames++;
+        if (gl.getSyncParameter(b.sync, gl.SYNC_STATUS) !== gl.SIGNALED && b.frames < WAIT_FRAMES) break;
+        inFlight.shift();
+        let urls = null;
+        try {
+          const px = new Uint8Array(b.W * b.H * 4);
+          gl.bindBuffer(gl.PIXEL_PACK_BUFFER, b.buf);
+          gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, px);
+          urls = cut(px, b.W, b.H, b.jobs);
+        } catch (err) {
+          console.warn('[squish] shelf pictures failed', err && err.message);
+        } finally {
+          gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+          gl.deleteBuffer(b.buf);
+          gl.deleteSync(b.sync);
+        }
+        out.push({ jobs: b.jobs, urls: urls || b.jobs.map(() => '') });
+        break; // one batch's pictures a frame (cutting them into PNGs is work too)
+      }
+      return out;
     },
   };
 }

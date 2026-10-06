@@ -164,27 +164,32 @@ export function install(game) {
     }
   }
   function pumpPics() {
+    // the batches that have come back first (sheet.collect never waits for the GPU)
+    for (const { jobs, urls } of sheet.collect()) {
+      jobs.forEach((j, i) => {
+        if (urls[i]) j.resolve(urls[i]);
+        else thumbIcon(j.key, j.glitter).then(j.resolve);
+      });
+    }
     if (!picQueue.length) return;
     if (!sheet.ready()) {
       // no thumbnail renderer yet (nothing pictured so far): the queue makes one
       for (const j of picQueue.splice(0)) thumbIcon(j.key, j.glitter).then(j.resolve);
       return;
     }
-    // the first batch small (a see-through shell's shader may still compile), then 6 a frame (the read-back waits for the drawing;
-    // on a GPU-less test machine a batch of 4 took 550-710 ms, most of it the read-back's wait, so 96 pictures in 4s ran past 20 s)
+    // the first batch small (a see-through shell's shader may still compile), then 6 a frame,
+    // with at most 2 batches on their way back at once
     if (sheet.prepare(picQueue.slice(0, picBatch))) return;
+    if (sheet.inFlight() >= 2) return;
     const batch = picQueue.splice(0, picBatch);
-    let urls = null;
+    let started = false;
     try {
-      urls = sheet.draw(batch);
+      started = sheet.start(batch);
     } catch (err) {
       console.warn('[squish] shelf pictures failed', err && err.message);
     }
     picBatch = 6;
-    batch.forEach((j, i) => {
-      if (urls && urls[i]) j.resolve(urls[i]);
-      else thumbIcon(j.key, j.glitter).then(j.resolve);
-    });
+    if (!started) for (const j of batch) thumbIcon(j.key, j.glitter).then(j.resolve);
   }
 
   // The shelf's shaders before the shelf opens. A toy's new shader program links on demand the
