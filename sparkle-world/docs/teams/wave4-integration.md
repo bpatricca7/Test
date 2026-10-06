@@ -722,7 +722,7 @@ uses it: B17-B17e split it with `--only=wave4a --x=N` and `--only=wave4b`.
 | C10 | `timeout 570 node tools/probe-vehicles.mjs --only=models,land` | whole: 455-763 s | [gate-C2] 150 s on 924b52b, 38 checks **green** (fleet picture looked at; no console errors, page errors or failed requests; load about 4) |
 | C11 | `timeout 570 node tools/probe-vehicles.mjs --only=water,save` | | [gate-C2] 172 s on ed0c800, 18 checks **green** (the pagehide journal parks the van where she was; a pre-vehicles world loads as before; no console errors, page errors or failed requests; load about 4) |
 | C12 | `timeout 570 node tools/probe-vehicles.mjs --only=touch,mp` | | [gate-C2] 482 s on 5f67e22, 49 checks **green** (June drives Lily's convertible with custody on the host; it survives Lily's reload; HUD at 844x390 looked at; no console errors, page errors or failed requests; load about 4). Only 88 s left under the limit: if it is ever cut off, split it into `--only=touch` and `--only=mp` |
-| C13 | `timeout 570 node tools/probe-menus.mjs --only=desktop` | whole: 399-705 s | not measured |
+| C13 | `timeout 570 node tools/probe-menus.mjs --only=desktop` | whole: 399-705 s | [gate-C3] 176 s on e88b155, 37 checks **green** (the bag picture looked at; no console errors, page errors or failed requests; load about 4.5) |
 | C14 | `timeout 570 node tools/probe-menus.mjs --only=touch` | | not measured |
 | C15 | `timeout 570 node tools/probe-shops.mjs` | 245-388 s | not measured |
 | C16 | `timeout 570 node tools/probe-keepsafe.mjs` | 156-209 s | not measured |
