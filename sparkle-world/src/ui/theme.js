@@ -30,6 +30,13 @@ html, body {
    double-tap zoom, no long-press callout or text selection); panels still scroll; text fields
    stay selectable and editable */
 .sw-app .sw-canvas, .sw-app .sw-layer-hud { touch-action: none; }
+/* a quick double tap must never zoom the page (iPad Safari): the browser allows double-tap zoom
+   wherever an element and its ancestors up to the nearest scroll container are all
+   touch-action: auto, and every scrolling panel body is such a container, so buttons in the Squish
+   Shelf, Pets, Friends, New World, the story book... could zoom. Every element in the game
+   defaults to manipulation (taps and panning unchanged); :where() keeps this weaker than any rule
+   that sets its own value (none on the canvas, HUD and drag stages, pan-y on sliders) */
+.sw-app, :where(.sw-app *) { touch-action: manipulation; }
 .sw-app input, .sw-app textarea, .sw-app [contenteditable="true"] { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
 
 /* layers */
