@@ -24,6 +24,10 @@ export default function App() {
   const setBuildingTab = useStore((s) => s.setBuildingTab);
   const selection = useStore((s) => s.selection);
   const select = useStore((s) => s.select);
+  const autoOrbit = useStore((s) => s.autoOrbit);
+  const setAutoOrbit = useStore((s) => s.setAutoOrbit);
+  const quality = useStore((s) => s.quality);
+  const setQuality = useStore((s) => s.setQuality);
   useEffect(() => { void init(); }, [init]);
 
   const inventory = project?.inventory;
@@ -38,40 +42,40 @@ export default function App() {
     return { est, layout, roster };
   }, [inventory, assumptions, overrides, wages]);
 
-  if (loading) return <div className="empty" style={{ paddingTop: 120 }}>Loading project…</div>;
+  if (loading) return <div className="loading"><div><div className="logo">BOS</div><p>Loading estimate…</p></div></div>;
 
   return (
     <DerivedContext.Provider value={derived}>
       <div className="app">
+        <main className="viewport"><Scene /></main>
         <TopBar />
-        <aside className="panel">
+        <aside className="panel left glass">
           <IngestPanel />
           <FacilityList />
         </aside>
-        <main className="viewport">
-          <Scene />
-          <div className="overlay view-toggle">
-            <button className={`btn ${focusMode === 'site' ? 'on' : ''}`} onClick={() => { setFocusMode('site'); }}>Site</button>
-            <button className={`btn ${focusMode === 'building' ? 'on' : ''}`} disabled={selection.kind !== 'facility'} onClick={() => setFocusMode('building')} title={selection.kind === 'facility' ? 'Cut-away view of the selected building' : 'Select a building first'}>Inside building</button>
-            {focusMode === 'building' && (
-              <div className="pill-toggle" style={{ background: 'var(--panel)' }}>
-                <button className={buildingTab === 'interior' ? 'on' : ''} onClick={() => setBuildingTab('interior')}>Interior crews</button>
-                <button className={buildingTab === 'grounds' ? 'on' : ''} onClick={() => setBuildingTab('grounds')}>Grounds crews</button>
-              </div>
-            )}
-            {selection.kind !== null && <button className="btn" onClick={() => { select({ kind: null }); setFocusMode('site'); }}>Clear selection</button>}
-          </div>
-          <div className="overlay legend">
-            <div style={{ fontWeight: 600, marginBottom: 2 }}>Crews</div>
-            {CREWS.map((c) => <div className="row" key={c.id}><span className="sw" style={{ background: c.color, borderRadius: '50%' }} />{c.short}</div>)}
-            <div style={{ fontWeight: 600, margin: '6px 0 2px' }}>Grounds</div>
-            {(['improved_turf', 'semi_improved', 'unimproved', 'athletic_field', 'shrub_bed', 'parking', 'sidewalk'] as const).map((k) => <div className="row" key={k}><span className="sw" style={{ background: ZONE_COLORS[k] }} />{ZONE_LABELS[k]}</div>)}
-          </div>
-          <LiveBoard />
-          <div className="hint">drag · orbit &nbsp;|&nbsp; wheel · zoom &nbsp;|&nbsp; click building / crew member &nbsp;|&nbsp; double-click · enter building</div>
-          {toast && <div className="toast">{toast}</div>}
-        </main>
-        <aside className="panel right scroll">
+        <div className="overlay view-toggle">
+          <button className={`btn ${focusMode === 'site' ? 'on' : ''}`} onClick={() => setFocusMode('site')}>Site</button>
+          <button className={`btn ${focusMode === 'building' ? 'on' : ''}`} disabled={selection.kind !== 'facility'} onClick={() => setFocusMode('building')} title={selection.kind === 'facility' ? 'Cut-away view of the selected building' : 'Select a building first'}>Inside building</button>
+          {focusMode === 'building' && (
+            <div className="pill-toggle">
+              <button className={buildingTab === 'interior' ? 'on' : ''} onClick={() => setBuildingTab('interior')}>Interior crews</button>
+              <button className={buildingTab === 'grounds' ? 'on' : ''} onClick={() => setBuildingTab('grounds')}>Grounds crews</button>
+            </div>
+          )}
+          {selection.kind !== null && <button className="btn" onClick={() => { select({ kind: null }); setFocusMode('site'); }}>Clear</button>}
+          <button className={`btn ${autoOrbit ? 'on' : ''}`} onClick={() => setAutoOrbit(!autoOrbit)} title="Slowly orbit the site when idle">◌ Orbit</button>
+          <button className="btn" onClick={() => setQuality(quality === 'high' ? 'fast' : 'high')} title="Toggle bloom and anti-aliasing">{quality === 'high' ? '✦ Cinematic' : '⚡ Fast'}</button>
+        </div>
+        <div className="hint">drag · orbit &nbsp;·&nbsp; wheel · zoom &nbsp;·&nbsp; click building or crew member &nbsp;·&nbsp; double-click · enter building</div>
+        <div className="overlay legend glass">
+          <div className="ttl">Crews</div>
+          {CREWS.map((c) => <div className="row" key={c.id}><span className="sw" style={{ background: c.color, color: c.color, borderRadius: '50%' }} />{c.short}</div>)}
+          <div className="ttl" style={{ marginTop: 6 }}>Grounds</div>
+          {(['improved_turf', 'semi_improved', 'unimproved', 'athletic_field', 'shrub_bed', 'parking', 'sidewalk'] as const).map((k) => <div className="row" key={k}><span className="sw" style={{ background: ZONE_COLORS[k], color: 'transparent' }} />{ZONE_LABELS[k]}</div>)}
+        </div>
+        <LiveBoard />
+        {toast && <div className="toast glass">{toast}</div>}
+        <aside className="panel right glass scroll">
           <DetailPanel />
         </aside>
         <FactorsModal />

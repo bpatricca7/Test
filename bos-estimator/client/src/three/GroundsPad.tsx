@@ -71,7 +71,7 @@ export function GroundsPad({ zone: z, area: g, estimate }: { zone: ZonePlacement
         </group>
       ))}
       {(selected || hover || (isRecent && !z.facilityId) || (!z.facilityId && Math.max(z.box.w, z.box.d) > 14)) && (
-        <Html position={[0, 1.2, 0]} center style={{ pointerEvents: 'none' }} zIndexRange={[9, 0]}>
+        <Html position={[0, 1.2, 0]} center style={{ pointerEvents: 'none' }} zIndexRange={[2, 0]}>
           <div className={`label3d ${isRecent ? 'ai' : ''}`}>
             {ZONE_LABELS[z.kind]}<span className="sf">{qty}</span>{estimate && estimate.fte > 0 && <span className="sf" style={{ color: '#4ade80' }}>{estimate.fte.toFixed(2)} FTE</span>}
           </div>

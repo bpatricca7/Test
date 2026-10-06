@@ -27,7 +27,7 @@ export function FactorsModal() {
   const overridden = Object.keys(overrides).length;
   return (
     <div className="modal-bg" onClick={() => setOpen(false)}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal glass" onClick={(e) => e.stopPropagation()}>
         <header>
           <h2>RS Means-style productivity factors</h2>
           <span className="chip">{FACTORS.length} lines · {overridden} overridden</span>

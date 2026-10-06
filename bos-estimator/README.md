@@ -16,7 +16,10 @@ Drop a solicitation (PWS, technical exhibits, workload tables) and the app:
    in and what task they are doing, on a 24-hour simulated clock. Enter a building for a cut-away
    view of floors, finishes and the custodial / floor care crews inside; switch to the grounds tab to
    watch the mowing and landscape crews on the attached acreage.
-5. **Rolls up manning**: hours and FTE by crew, working supervision, headcount, base-year labor
+5. **Looks the part**: gradient sky that tracks the simulated clock, buildings with seeded lit
+   windows after dark, street lights, bloom and vignette post-processing (toggle **Cinematic / Fast**
+   in the viewport), a cyan scan sweep while the AI reads, and a slow idle orbit of the campus.
+6. **Rolls up manning**: hours and FTE by crew, working supervision, headcount, base-year labor
    dollars and a per-contract-year manning table (base + options). Export everything to CSV.
 
 ## Quick start

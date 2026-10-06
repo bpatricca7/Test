@@ -30,13 +30,13 @@ export interface CrewMeta {
 }
 
 export const CREWS: CrewMeta[] = [
-  { id: 'custodial', label: 'Custodial crew', short: 'Custodial', color: '#38bdf8', defaultWage: 17.5, shift: { start: 17, end: 1.5 }, domain: 'interior' },
-  { id: 'floor_care', label: 'Floor care crew', short: 'Floor care', color: '#a78bfa', defaultWage: 19.5, shift: { start: 20, end: 4.5 }, domain: 'interior' },
-  { id: 'grounds_mow', label: 'Grounds — mowing crew', short: 'Mowing', color: '#4ade80', defaultWage: 18.5, shift: { start: 6, end: 14.5 }, domain: 'grounds' },
-  { id: 'grounds_landscape', label: 'Grounds — landscape crew', short: 'Landscape', color: '#facc15', defaultWage: 19.0, shift: { start: 6.5, end: 15 }, domain: 'grounds' },
-  { id: 'dining_prod', label: 'Dining — food production', short: 'Food prod', color: '#fb923c', defaultWage: 19.0, shift: { start: 4.5, end: 20 }, domain: 'dining' },
-  { id: 'dining_san', label: 'Dining — attendants & sanitation', short: 'Dining san', color: '#f472b6', defaultWage: 17.0, shift: { start: 5.5, end: 21 }, domain: 'dining' },
-  { id: 'supervision', label: 'Working supervision', short: 'Supervision', color: '#e2e8f0', defaultWage: 28.0, shift: { start: 6, end: 14.5 }, domain: 'interior' },
+  { id: 'custodial', label: 'Custodial crew', short: 'Custodial', color: '#3987e5', defaultWage: 17.5, shift: { start: 17, end: 1.5 }, domain: 'interior' },
+  { id: 'floor_care', label: 'Floor care crew', short: 'Floor care', color: '#d95926', defaultWage: 19.5, shift: { start: 20, end: 4.5 }, domain: 'interior' },
+  { id: 'grounds_mow', label: 'Grounds — mowing crew', short: 'Mowing', color: '#199e70', defaultWage: 18.5, shift: { start: 6, end: 14.5 }, domain: 'grounds' },
+  { id: 'grounds_landscape', label: 'Grounds — landscape crew', short: 'Landscape', color: '#c98500', defaultWage: 19.0, shift: { start: 6.5, end: 15 }, domain: 'grounds' },
+  { id: 'dining_prod', label: 'Dining — food production', short: 'Food prod', color: '#d55181', defaultWage: 19.0, shift: { start: 4.5, end: 20 }, domain: 'dining' },
+  { id: 'dining_san', label: 'Dining — attendants & sanitation', short: 'Dining san', color: '#008300', defaultWage: 17.0, shift: { start: 5.5, end: 21 }, domain: 'dining' },
+  { id: 'supervision', label: 'Working supervision', short: 'Supervision', color: '#9085e9', defaultWage: 28.0, shift: { start: 6, end: 14.5 }, domain: 'interior' },
 ];
 
 export const crewMeta = (id: Crew): CrewMeta => CREWS.find((c) => c.id === id)!;

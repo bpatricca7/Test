@@ -4,7 +4,7 @@ import { useDerived } from '../derived';
 import { CATEGORY_DEFAULTS, CREWS, crewMeta, type Crew } from '@shared/factors';
 import { DEFAULT_ASSUMPTIONS, type TaskLine } from '@shared/estimate';
 import { FACILITY_CATEGORIES, GROUNDS_KINDS, SERVICE_LEVELS, type Facility, type GroundsArea, type ScopeItem } from '@shared/types';
-import { n0, n1, n2, pct, unitLabel, usd } from '../fmt';
+import { n0, n1, n2, pct, unitLabel, usd, usdCompact } from '../fmt';
 
 function LinesTable({ lines, onOverride, overrides }: { lines: TaskLine[]; onOverride: (id: string, v: number | null) => void; overrides: Record<string, number> }) {
   const groups = useMemo(() => { const m = new Map<Crew, TaskLine[]>(); for (const l of lines) { const a = m.get(l.crew) ?? []; a.push(l); m.set(l.crew, a); } return [...m.entries()]; }, [lines]);
@@ -41,9 +41,10 @@ function GroupRows({ crew, lines, onOverride, overrides }: { crew: Crew; lines: 
 
 function CrewSummary({ hoursByCrew, fteDivisor }: { hoursByCrew: Partial<Record<Crew, number>>; fteDivisor: number }) {
   const entries = (Object.entries(hoursByCrew) as [Crew, number][]).filter(([, h]) => h > 0).sort((a, b) => b[1] - a[1]);
+  const max = Math.max(1, ...entries.map(([, h]) => h));
   return (
     <div className="crew-summary">
-      {entries.map(([c, h]) => { const m = crewMeta(c); return <div className="row" key={c}><span className="sw" style={{ background: m.color }} /><span>{m.label}</span><span className="n"><b>{n0(h)}</b> h</span><span className="n"><b>{n2(h / fteDivisor)}</b> FTE</span></div>; })}
+      {entries.map(([c, h]) => { const m = crewMeta(c); return <div className="row" key={c}><span className="sw" style={{ background: m.color, color: m.color }} /><span>{m.label}</span><span className="n"><b>{n0(h)}</b> h</span><span className="n"><b>{n2(h / fteDivisor)}</b> FTE</span><div className="bar"><div style={{ width: `${(h / max) * 100}%`, background: m.color }} /></div></div>; })}
     </div>
   );
 }
@@ -211,15 +212,15 @@ function Totals() {
         <div className="kpis">
           <div className="kpi"><div className="v">{n1(est.totalFte)}</div><div className="l">Total FTE</div></div>
           <div className="kpi"><div className="v">{est.totalHeadcount}</div><div className="l">Headcount</div></div>
-          <div className="kpi"><div className="v">{usd(est.totalLaborCost)}</div><div className="l">Base-yr labor $</div></div>
+          <div className="kpi"><div className="v">{usdCompact(est.totalLaborCost)}</div><div className="l">Base-yr labor $</div></div>
         </div>
         <table className="years">
           <thead><tr><th>Crew</th><th>Hours</th><th>FTE</th><th>Heads</th><th>$/hr</th><th>Labor $</th></tr></thead>
           <tbody>
             {est.crews.map((c) => (
-              <tr key={c.crew}><td><span className="dot" style={{ background: c.color, marginRight: 6 }} />{c.label}</td><td>{n0(c.hours)}</td><td>{n2(c.fte)}</td><td>{c.headcount}</td><td><input type="number" step="0.25" value={c.wage} onChange={(e) => setWage(c.crew, Number(e.target.value))} style={{ width: 58, background: 'rgba(2,6,23,.6)', border: '1px solid var(--border)', borderRadius: 4, padding: '1px 4px', textAlign: 'right' }} /></td><td>{usd(c.annualCost)}</td></tr>
+              <tr key={c.crew} title={c.label}><td><span className="dot" style={{ background: c.color, marginRight: 6 }} />{crewMeta(c.crew).short}</td><td>{n0(c.hours)}</td><td>{n2(c.fte)}</td><td>{c.headcount}</td><td><input type="number" step="0.25" value={c.wage} onChange={(e) => setWage(c.crew, Number(e.target.value))} style={{ width: 50, background: 'rgba(2,6,23,.6)', border: '1px solid var(--border)', borderRadius: 4, padding: '1px 3px', textAlign: 'right' }} /></td><td>{usdCompact(c.annualCost)}</td></tr>
             ))}
-            <tr className="total"><td>Total</td><td>{n0(est.directHours)}</td><td>{n2(est.totalFte)}</td><td>{est.totalHeadcount}</td><td /><td>{usd(est.totalLaborCost)}</td></tr>
+            <tr className="total"><td>Total</td><td>{n0(est.directHours)}</td><td>{n2(est.totalFte)}</td><td>{est.totalHeadcount}</td><td /><td>{usdCompact(est.totalLaborCost)}</td></tr>
           </tbody>
         </table>
       </div>

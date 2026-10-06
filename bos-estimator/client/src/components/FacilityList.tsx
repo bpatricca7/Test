@@ -25,6 +25,7 @@ export function FacilityList() {
   const gList = grounds.filter((g) => !ql || `${g.name} ${g.kind}`.toLowerCase().includes(ql));
   const totalSf = facilities.reduce((s, f) => s + f.grossSqft, 0);
   const isNew = (id: string) => running && recent[id] && Date.now() - recent[id] < 4000;
+  const maxFte = Math.max(0.01, ...(est?.facilities.map((e) => e.fte) ?? [0]), ...(est?.grounds.map((g) => g.fte) ?? [0]));
 
   return (
     <div className="scroll" style={{ display: 'flex', flexDirection: 'column' }}>
@@ -39,7 +40,7 @@ export function FacilityList() {
           const e = emap.get(f.id);
           const sel = selection.kind === 'facility' && selection.id === f.id;
           return (
-            <div key={f.id} className={`list-item ${sel ? 'selected' : ''} ${isNew(f.id) ? 'new' : ''}`} onClick={() => select({ kind: 'facility', id: f.id })} onDoubleClick={() => { select({ kind: 'facility', id: f.id }); setFocusMode('building'); }} title="Click to select · double-click to enter the building">
+            <div key={f.id} className={`list-item ${sel ? 'selected' : ''} ${isNew(f.id) ? 'new' : ''}`} style={sel ? undefined : { borderLeftColor: `${CATEGORY_DEFAULTS[f.category]?.color ?? '#64748b'}66` }} onClick={() => select({ kind: 'facility', id: f.id })} onDoubleClick={() => { select({ kind: 'facility', id: f.id }); setFocusMode('building'); }} title="Click to select · double-click to enter the building">
               <span className="num">{f.buildingNumber ?? '—'}</span>
               <div style={{ minWidth: 0 }}>
                 <div className="name">{f.name}</div>
@@ -49,6 +50,7 @@ export function FacilityList() {
                 <div>{n0(f.grossSqft)} SF</div>
                 <div className="sub" style={{ justifyContent: 'flex-end' }}><span className={`dot ${confClass(f.confidence)}`} title={`Extraction confidence ${Math.round(f.confidence * 100)}%`} /><span className="fte">{e ? `${n2(e.fte)} FTE` : ''}</span></div>
               </div>
+              <div className="ftebar"><div style={{ width: `${e ? Math.min(100, (e.fte / maxFte) * 100) : 0}%` }} /></div>
             </div>
           );
         })}
@@ -70,6 +72,7 @@ export function FacilityList() {
                 <div>{g.unit === 'acres' ? `${n1(g.quantity)} ac` : `${n0(g.quantity)} ${g.unit === 'each' ? 'ea' : g.unit === 'sqyd' ? 'SY' : g.unit === 'lf' ? 'LF' : 'SF'}`}</div>
                 <div className="sub" style={{ justifyContent: 'flex-end' }}><span className={`dot ${confClass(g.confidence)}`} /><span className="fte">{e ? `${n2(e.fte)} FTE` : ''}</span></div>
               </div>
+              <div className="ftebar"><div style={{ width: `${e ? Math.min(100, (e.fte / maxFte) * 100) : 0}%`, background: 'linear-gradient(90deg,#199e70,#c98500)' }} /></div>
             </div>
           );
         })}

@@ -19,6 +19,8 @@ interface State {
   selectedAgentId: string | null;
   factorsOpen: boolean;
   toast: string | null;
+  autoOrbit: boolean;
+  quality: 'high' | 'fast';
   extraction: { running: boolean; log: LogEntry[]; docs: { name: string; pages?: number; chars: number; mode: string }[]; recent: Record<string, number>; abort?: AbortController };
   sim: { playing: boolean; speed: number; time: number };
 
@@ -41,6 +43,8 @@ interface State {
   setCrewFilter(c: Crew | null): void;
   setSelectedAgent(id: string | null): void;
   setFactorsOpen(v: boolean): void;
+  setAutoOrbit(v: boolean): void;
+  setQuality(q: 'high' | 'fast'): void;
   setToast(t: string | null): void;
   startExtraction(o: Omit<ExtractOptions, 'projectId' | 'onEvent' | 'signal' | 'model' | 'effort'> & { model?: string; effort?: string }): Promise<void>;
   cancelExtraction(): void;
@@ -86,6 +90,8 @@ export const useStore = create<State>((set, get) => {
     selectedAgentId: null,
     factorsOpen: false,
     toast: null,
+    autoOrbit: true,
+    quality: (localStorage.getItem('bos.quality') as 'high' | 'fast') || 'high',
     extraction: { running: false, log: [], docs: [], recent: {} },
     sim: { playing: true, speed: 12, time: 18.25 },
 
@@ -134,6 +140,8 @@ export const useStore = create<State>((set, get) => {
     setCrewFilter(c) { set({ crewFilter: c }); },
     setSelectedAgent(id) { set({ selectedAgentId: id }); },
     setFactorsOpen(v) { set({ factorsOpen: v }); },
+    setAutoOrbit(v) { set({ autoOrbit: v }); },
+    setQuality(q) { try { localStorage.setItem('bos.quality', q); } catch { /* ignore */ } set({ quality: q }); },
     setToast(t) { set({ toast: t }); if (t) setTimeout(() => { if (get().toast === t) set({ toast: null }); }, 5000); },
 
     async startExtraction(o) {

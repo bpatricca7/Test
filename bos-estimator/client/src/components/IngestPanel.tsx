@@ -37,10 +37,10 @@ export function IngestPanel() {
   return (
     <div className="panel-section">
       <h3>1 · RFP documents <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>PDF · DOCX · TXT · CSV</span></h3>
-      <div className={`dropzone ${drag ? 'active' : ''}`} onClick={() => fileInput.current?.click()}
+      <div className={`dropzone ${drag ? 'active' : ''} ${extraction.running ? 'running' : ''}`} onClick={() => fileInput.current?.click()}
         onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)}
         onDrop={(e) => { e.preventDefault(); setDrag(false); addFiles(e.dataTransfer.files); }}>
-        <strong>Drop the solicitation here</strong><br />PWS, technical exhibits, workload tables, facility lists, drawings
+        <span className="ico">{extraction.running ? '◉' : '⇪'}</span><strong>{extraction.running ? 'Reading the solicitation…' : 'Drop the solicitation here'}</strong><br />PWS, technical exhibits, workload tables, facility lists, drawings
         <input ref={fileInput} type="file" multiple hidden accept=".pdf,.docx,.txt,.md,.csv,.tsv,.json" onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
       </div>
       {files.length > 0 && (
@@ -102,8 +102,11 @@ export function IngestPanel() {
       {!health?.aiAvailable && <div className="note" style={{ marginTop: 8 }}><b>No API key on the server.</b> Add <code>ANTHROPIC_API_KEY</code> to <code>.env</code> and restart to let Claude read the documents. Until then the rule-based parser handles well-structured workload tables.</div>}
       {extraction.running && <div className="progress"><div /></div>}
       {extraction.log.length > 0 && (
-        <div className="ailog" ref={logRef} style={{ marginTop: 8 }}>
-          {extraction.log.map((l, i) => <div key={i} className={l.kind}>{l.kind === 'thinking' ? '· ' : ''}{l.text}</div>)}
+        <div className="ailog-wrap">
+          <div className="ailog-head"><span className={`live ${extraction.running ? '' : 'idle'}`} />{extraction.running ? 'AI reader · live' : 'AI reader · finished'}<span style={{ marginLeft: 'auto', textTransform: 'none', letterSpacing: 0 }}>{extraction.docs.map((d) => d.name).join(', ')}</span></div>
+          <div className="ailog" ref={logRef}>
+            {extraction.log.map((l, i) => <div key={i} className={l.kind}>{l.kind === 'thinking' ? '· ' : ''}{l.text}</div>)}
+          </div>
         </div>
       )}
       {project?.extraction && !extraction.running && (

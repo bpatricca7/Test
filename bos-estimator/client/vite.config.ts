@@ -10,6 +10,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: { '@shared': path.resolve(here, '../shared') },
+    dedupe: ['react', 'react-dom', 'three', '@react-three/fiber', 'zustand'],
   },
   server: {
     port: 5173,

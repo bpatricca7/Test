@@ -15,6 +15,7 @@ function CrewInstances({ crew, agents, visibleFn }: { crew: Crew; agents: Agent[
   const body = useRef<THREE.InstancedMesh>(null);
   const head = useRef<THREE.InstancedMesh>(null);
   const gear = useRef<THREE.InstancedMesh>(null);
+  const beam = useRef<THREE.InstancedMesh>(null);
   const { layout } = useDerived();
   const meta = crewMeta(crew);
   const setSelectedAgent = useStore((s) => s.setSelectedAgent);
@@ -24,17 +25,18 @@ function CrewInstances({ crew, agents, visibleFn }: { crew: Crew; agents: Agent[
   const gearKind = meta.domain === 'grounds' ? (crew === 'grounds_mow' ? 'mower' : 'cart') : meta.domain === 'dining' ? 'tray' : crew === 'supervision' ? 'none' : 'cart';
 
   useFrame(() => {
-    if (!body.current || !head.current || !gear.current || !layout) return;
+    if (!body.current || !head.current || !gear.current || !beam.current || !layout) return;
     const states = agentStates(agents, clock.time, layout.depot);
     statesRef.current = states;
     const t = performance.now() / 1000;
     states.forEach((s, i) => {
-      if (s.status === 'off' || !visibleFn(s)) { body.current!.setMatrixAt(i, ZERO); head.current!.setMatrixAt(i, ZERO); gear.current!.setMatrixAt(i, ZERO); return; }
+      if (s.status === 'off' || !visibleFn(s)) { body.current!.setMatrixAt(i, ZERO); head.current!.setMatrixAt(i, ZERO); gear.current!.setMatrixAt(i, ZERO); beam.current!.setMatrixAt(i, ZERO); return; }
       const bob = s.status === 'travel' ? Math.abs(Math.sin(t * 9 + i)) * 0.08 : Math.sin(t * 5 + i) * 0.03;
       const sel = s.agent.id === selectedAgentId ? 1.25 : 1;
       dummy.position.set(s.x, s.y + 0.55 + bob, s.z); dummy.rotation.set(0, s.heading, 0); dummy.scale.setScalar(sel);
       dummy.updateMatrix(); body.current!.setMatrixAt(i, dummy.matrix);
       dummy.position.set(s.x, s.y + 1.12 + bob, s.z); dummy.updateMatrix(); head.current!.setMatrixAt(i, dummy.matrix);
+      if (s.status === 'work') { dummy.position.set(s.x, s.y + 2.6, s.z); dummy.rotation.set(0, 0, 0); dummy.scale.set(1, 1 + 0.15 * Math.sin(t * 3 + i), 1); dummy.updateMatrix(); beam.current!.setMatrixAt(i, dummy.matrix); } else beam.current!.setMatrixAt(i, ZERO);
       if (gearKind === 'none') gear.current!.setMatrixAt(i, ZERO);
       else {
         const ahead = 0.55;
@@ -42,7 +44,7 @@ function CrewInstances({ crew, agents, visibleFn }: { crew: Crew; agents: Agent[
         dummy.scale.setScalar(1); dummy.updateMatrix(); gear.current!.setMatrixAt(i, dummy.matrix);
       }
     });
-    body.current.instanceMatrix.needsUpdate = true; head.current.instanceMatrix.needsUpdate = true; gear.current.instanceMatrix.needsUpdate = true;
+    body.current.instanceMatrix.needsUpdate = true; head.current.instanceMatrix.needsUpdate = true; gear.current.instanceMatrix.needsUpdate = true; beam.current.instanceMatrix.needsUpdate = true;
   });
 
   const onClick = (e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); const i = e.instanceId; if (i == null) return; const s = statesRef.current[i]; if (s) setSelectedAgent(s.agent.id === selectedAgentId ? null : s.agent.id); };
@@ -53,11 +55,15 @@ function CrewInstances({ crew, agents, visibleFn }: { crew: Crew; agents: Agent[
     <group>
       <instancedMesh ref={body} args={[undefined, undefined, count]} frustumCulled={false} castShadow renderOrder={10} onClick={onClick} onPointerOver={hoverOn} onPointerOut={hoverOff}>
         <capsuleGeometry args={[0.22, 0.55, 4, 8]} />
-        <meshStandardMaterial color={meta.color} emissive={meta.color} emissiveIntensity={0.45} roughness={0.6} depthTest={false} transparent opacity={0.95} />
+        <meshStandardMaterial color={meta.color} emissive={meta.color} emissiveIntensity={0.7} roughness={0.5} depthTest={false} transparent opacity={0.95} />
       </instancedMesh>
       <instancedMesh ref={head} args={[undefined, undefined, count]} frustumCulled={false} renderOrder={11} onClick={onClick} onPointerOver={hoverOn} onPointerOut={hoverOff}>
         <sphereGeometry args={[0.2, 10, 10]} />
         <meshStandardMaterial color="#f1d3b3" roughness={0.7} depthTest={false} transparent opacity={0.95} />
+      </instancedMesh>
+      <instancedMesh ref={beam} args={[undefined, undefined, count]} frustumCulled={false} renderOrder={9}>
+        <cylinderGeometry args={[0.05, 0.16, 2.4, 8, 1, true]} />
+        <meshBasicMaterial color={meta.color} transparent opacity={0.28} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
       </instancedMesh>
       <instancedMesh ref={gear} args={[undefined, undefined, count]} frustumCulled={false} castShadow>
         {gearKind === 'mower' ? <boxGeometry args={[1.1, 0.5, 1.4]} /> : gearKind === 'tray' ? <boxGeometry args={[0.5, 0.06, 0.35]} /> : <boxGeometry args={[0.55, 0.5, 0.8]} />}
@@ -89,7 +95,7 @@ function SelectedAgentCard({ agents }: { agents: Agent[] }) {
     <group>
       <mesh ref={ring} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.45, 0.6, 32]} /><meshBasicMaterial color={meta.color} transparent opacity={0.9} /></mesh>
       {card && (
-        <Html position={[card.x, card.y, card.z]} center zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
+        <Html position={[card.x, card.y, card.z]} center zIndexRange={[3, 0]} style={{ pointerEvents: 'none' }}>
           <div className="worker-card" style={{ borderColor: meta.color }}>
             <b>{meta.label}{agent.represents > 1 ? ` ×${agent.represents}` : ''} · #{agent.index + 1}</b>
             {card.s.status === 'off' && <span className="c">Off shift (works {String(Math.floor(meta.shift.start)).padStart(2, '0')}:{String(Math.round((meta.shift.start % 1) * 60)).padStart(2, '0')}–{String(Math.floor(meta.shift.end)).padStart(2, '0')}:{String(Math.round((meta.shift.end % 1) * 60)).padStart(2, '0')})</span>}
