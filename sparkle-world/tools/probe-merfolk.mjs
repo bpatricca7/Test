@@ -1622,13 +1622,13 @@ async function costsPass(browser, errors) {
   await settle(page, 700);
   console.log(`  first turns: ${okTurns.map((f) => `turn frame ${Math.round(f.turn)}, longest ${Math.round(f.longest)} (in sea form later ${Math.round(f.sea)} over ${f.seaWins} stretches, shore ${Math.round(f.shore)}, usual frame ${Math.round(f.median)}), new programs ${f.progs}, geometries ${f.geos}, textures ${f.texs}`).join('; ')}`);
   const longest = fr.longest;
-  const ensureMs = (form) => page.evaluate((form) => {
+  const ensureMs = (form, n = 5) => page.evaluate(([form, n]) => {
     // ensureSea: a fresh avatar's first sea frame (it builds the parts) minus a later sea frame
     // (the shared textures are already painted: the player turned above); the Sea Dragon on a
     // boy starter (horn nubs, crest, forearm fins: the most parts)
     const g = window.__game, out = [];
     const look = form === 'mermaid' ? g.profile.look : { ...g.debug.avatar.starters().find((o) => o.key === 'soccer').look, sea: { form, color: null } };
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < n; i++) {
       const a = g.createAvatar(look, { seaAuto: form });
       a.update(0.016, { swimming: true, speed: 2 });
       const t0 = performance.now();
@@ -1639,10 +1639,17 @@ async function costsPass(browser, errors) {
       out.push((t1 - t0) - (t2 - t1));
       a.dispose();
     }
-    return out.sort((x, y) => x - y)[2];
-  }, form);
+    return out.sort((x, y) => x - y)[Math.floor(n / 2)];
+  }, [form, n]);
   const ens = await ensureMs('mermaid');
-  await ensureMs('sea_dragon'); // its textures painted once
+  // the Sea Dragon's build runs here for the first time on this page (the main page turned as a
+  // mermaid): 25 unmeasured builds paint its textures and let the browser's script engine finish
+  // optimizing that code. [gate-B5c] a diagnostic (15 builds a pass, same steps): the first pass
+  // 17, 1.4, 2.3, 5.5, 2.2, then 3.1, 4.8, 2.4, 2, 3 ms (still being optimized after 5 builds, the
+  // old warm-up; slower still while the software renderer keeps the cores busy), later passes a
+  // median of 1.2-1.3 ms; the mermaid's code is already warm, 0.4-0.5 ms. The check itself (median
+  // of 5, at most 2 ms) is unchanged; a cold first build in play is prepareSea's, ahead of the turn.
+  await ensureMs('sea_dragon', 25);
   const ensD = await ensureMs('sea_dragon');
   // SwiftShader draws every frame on the CPU (a normal frame here is already over 33 ms), so the
   // check is what 33 ms means on a device: the turn adds at most 33 ms to the usual frame
