@@ -660,18 +660,18 @@ Beach Cozy, desktop and iPad 1024 x 768 touch, `debug.merfolk.tips(true)`,
 
 | # | command | earlier | baseline |
 |---|---|---|---|
-| A1 | `timeout 570 npm run build` | 1-2 s | 2 s; 2 s green in [gate-A]; 1 s green again in [gate-D3] on 4df3b21 |
-| A2 | `timeout 570 npm run build:site` | under 1 min | under 1 s, green in [gate-A]; under 1 s green again in [gate-D3] on 4df3b21 |
-| A3 | `timeout 570 npm run test:name` | about 5 s | 1 s (the name scanner included); 2 s, 13 green in [gate-A]; 3 s green again in [gate-D3] on 4df3b21 |
-| A4 | `timeout 570 npm run test:merfolk` | seconds (new) | 2 s, 22 green in [gate-A]; 2 s, 22 green again in [gate-D3] on 4df3b21 |
-| A5 | `timeout 570 npm run test:squish` | seconds (new) | under 1 s, 17 green in [gate-A]; under 1 s green again in [gate-D3] on 4df3b21 |
-| A6 | `timeout 570 npm run test:sea` | under 1 min (new; S0 makes 28 worlds) | 11 s, 21 green in [gate-A]; 13 s, 21 green again in [gate-D3] on 4df3b21 |
-| A7 | `timeout 570 npm run test:vehicles` | 1 s | 1 s, 11 green in [gate-A]; 1 s, 11 green again in [gate-D3] on 4df3b21 |
+| A1 | `timeout 570 npm run build` | 1-2 s | 2 s; 2 s green in [gate-A]; 1 s green again in [gate-D3] on 4df3b21<br>[gate-D7] after the bubble fix (9d9bad3), on the B13 commit: **1 s, built, dist matched the committed copy** |
+| A2 | `timeout 570 npm run build:site` | under 1 min | under 1 s, green in [gate-A]; under 1 s green again in [gate-D3] on 4df3b21<br>[gate-D7] after the bubble fix (9d9bad3), on the B13 commit: **under 1 s** |
+| A3 | `timeout 570 npm run test:name` | about 5 s | 1 s (the name scanner included); 2 s, 13 green in [gate-A]; 3 s green again in [gate-D3] on 4df3b21<br>[gate-D7] after the bubble fix (9d9bad3), on the B13 commit: **3 s, fail 0** |
+| A4 | `timeout 570 npm run test:merfolk` | seconds (new) | 2 s, 22 green in [gate-A]; 2 s, 22 green again in [gate-D3] on 4df3b21<br>[gate-D7] after the bubble fix (9d9bad3), on the B13 commit: **3 s, 22 green** |
+| A5 | `timeout 570 npm run test:squish` | seconds (new) | under 1 s, 17 green in [gate-A]; under 1 s green again in [gate-D3] on 4df3b21<br>[gate-D7] after the bubble fix (9d9bad3), on the B13 commit: **under 1 s, fail 0** |
+| A6 | `timeout 570 npm run test:sea` | under 1 min (new; S0 makes 28 worlds) | 11 s, 21 green in [gate-A]; 13 s, 21 green again in [gate-D3] on 4df3b21<br>[gate-D7] after the bubble fix (9d9bad3), on the B13 commit: **13 s, 21 green** |
+| A7 | `timeout 570 npm run test:vehicles` | 1 s | 1 s, 11 green in [gate-A]; 1 s, 11 green again in [gate-D3] on 4df3b21<br>[gate-D7] after the bubble fix (9d9bad3), on the B13 commit: **1 s, 11 green** |
 | A8 | `timeout 570 npm run test:saves` | 54-60 s | 97 s, 42 green in [gate-A]; [gate-D3b] on 4a7f3ba: 42 green in 129 s, then (it drives a browser, so) under the browser lock: **42 green in 119 s**. test-saves asserts page errors only, so two more lock runs (118 s, 110 s, 42 green each) logged console errors, failed requests and 400+ responses in uncommitted debug lines: 0 page errors; the rest all come from the test's own set-up, not the game: GET /api/me ERR_FAILED is its offline boot (`page.route('**/api/me', abort)`, line 1389), two profile GETs ERR_ABORTED are the reload right after it cutting them off, and four 404s are GET /account on the test's stand-in server, whose site folder is empty on purpose (line 1231; the test only checks the game sends a grown-up to /account) |
-| A9 | `timeout 570 npm run test:accounts` | 16-19 s | 27 s, 113 green in [gate-A]; [gate-D3b] on 4a7f3ba: **113 green in 31 s** |
-| A10 | `timeout 570 npm run test:billing` | 11 s | 12 s, 106 green and 1 skipped by design (no real-shapes.txt yet) in [gate-A]; [gate-D3b] on 4a7f3ba: **106 green, 1 skipped by design, in 14 s** |
-| A11 | `timeout 570 npm run test:mail-microsoft` | seconds | 3 s, 19 green in [gate-A]; 3 s green again in [gate-D3] on 4df3b21 |
-| A12 | `timeout 570 node tools/test-walkie-unit.mjs` | under 1 s | under 1 s, green in [gate-A]; 1 s green again in [gate-D3] on 4df3b21 |
+| A9 | `timeout 570 npm run test:accounts` | 16-19 s | 27 s, 113 green in [gate-A]; [gate-D3b] on 4a7f3ba: **113 green in 31 s**<br>[gate-D7] after the bubble fix (9d9bad3), on the B13 commit: **31 s, fail 0** |
+| A10 | `timeout 570 npm run test:billing` | 11 s | 12 s, 106 green and 1 skipped by design (no real-shapes.txt yet) in [gate-A]; [gate-D3b] on 4a7f3ba: **106 green, 1 skipped by design, in 14 s**<br>[gate-D7] after the bubble fix (9d9bad3), on the B13 commit: **13 s, fail 0** |
+| A11 | `timeout 570 npm run test:mail-microsoft` | seconds | 3 s, 19 green in [gate-A]; 3 s green again in [gate-D3] on 4df3b21<br>[gate-D7] after the bubble fix (9d9bad3), on the B13 commit: **4 s, fail 0** |
+| A12 | `timeout 570 node tools/test-walkie-unit.mjs` | under 1 s | under 1 s, green in [gate-A]; 1 s green again in [gate-D3] on 4df3b21<br>[gate-D7] after the bubble fix (9d9bad3), on the B13 commit: **under 1 s, green** |
 | A13 | `timeout 570 npm run test:net` | 143-150 s | 147 s, 69 green in [gate-A]; [gate-D3b] on 4a7f3ba: **69 green in 148 s** |
 
 **B. Smoke and the wave-4 probes (about 90 minutes)**
