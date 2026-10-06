@@ -26,6 +26,14 @@ export function sheetRenderer(thumbs) {
   let scene = null, camera = null, out2d = null;
   let sheer = 'no'; // 'no' | 'busy' | 'yes': the toys' shaders for the offscreen target
   let rt = null, cell = null, warmStep = 0, warmModel = null;
+  // A toy's new shader program, made by compileAsync: without the browser's parallel-compile
+  // extension three's compileAsync is ready at once, and the first draw then waits for the
+  // link (done on demand, not in the background: a 1 s wait first did not shorten it) and
+  // for three's three error-log reads, each a round trip that waits for everything the GPU
+  // has queued (on the GPU-less test machine 1.2 s + 0.3 s + 0.3 s in one draw). So the
+  // link's status is read in a frame of its own (a failed link is still reported) and the
+  // warm-up draw after it skips the logs.
+  let newProgs = null;
   const _col = new THREE.Color();
   const setup = () => {
     if (scene) return;
@@ -90,26 +98,41 @@ export function sheetRenderer(thumbs) {
       // compiled: drawn once into the target in a frame of its own (the program links on its
       // first draw; a batch's read-back right after would wait for that too), no read-back
       if (warmModel) {
+        const r = thumbs.renderer;
+        if (newProgs) {
+          // the link's status, in a frame of its own (three's own check is skipped below)
+          const gl = r.getContext();
+          for (const p of newProgs) {
+            if (p.program && !gl.getProgramParameter(p.program, gl.LINK_STATUS)) console.error('[squish] shelf shader failed', gl.getProgramInfoLog(p.program));
+          }
+          newProgs = null;
+          return true;
+        }
         const m = warmModel;
         warmModel = null;
+        const checks = r.debug.checkShaderErrors;
         try {
-          const r = thumbs.renderer, prev = r.getRenderTarget();
+          const prev = r.getRenderTarget();
           rt.viewport.set(0, 0, CELL, CELL);
           r.setRenderTarget(rt);
+          r.debug.checkShaderErrors = false;
           r.render(scene, camera);
           rt.viewport.set(0, 0, rt.width, rt.height);
           r.setRenderTarget(prev);
-        } catch { /* the batch draws it anyway */ }
+        } catch { /* the batch draws it anyway */ } finally {
+          r.debug.checkShaderErrors = checks;
+        }
         scene.remove(m);
         disposeObject(m);
         warmStep++;
         return true;
       }
       sheer = 'busy';
-      let m = null;
+      let m = null, progs = 0;
       const done = () => {
         warmModel = m;
         if (!m) warmStep++;
+        else if (thumbs.renderer.info.programs.length > progs) newProgs = thumbs.renderer.info.programs.slice(progs);
         sheer = 'no';
       };
       try {
@@ -122,6 +145,7 @@ export function sheetRenderer(thumbs) {
         camera.updateProjectionMatrix();
         camera.lookAt(0, 0.2, 0);
         const r = thumbs.renderer, prev = r.getRenderTarget();
+        progs = r.info.programs.length;
         r.setRenderTarget(rt);
         const p = r.compileAsync ? r.compileAsync(scene, camera) : null;
         r.setRenderTarget(prev);
