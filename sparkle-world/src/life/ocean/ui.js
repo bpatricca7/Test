@@ -164,8 +164,11 @@ export function createSeaUi(game, sys) {
       if (!el.offsetParent) continue;
       const r = el.getBoundingClientRect();
       if (!r.width || !r.height) continue;
-      const L = r.left - base.left, T = r.top - base.top;
-      boxes.push({ L, T, R: L + r.width, B: T + r.height });
+      // the walkie counts with the rings it sends out while pressed: 22 px past its button
+      // (src/net/walkie/ui.js; the bubble sat inside them at 844x390 with friends, [gate-D6])
+      const g = el.classList.contains('sw-wk-btn') ? 22 : 0;
+      const L = r.left - base.left - g, T = r.top - base.top - g;
+      boxes.push({ L, T, R: L + r.width + 2 * g, B: T + r.height + 2 * g });
     }
     const over = (cx, cy) => boxes.some((b) => cx - w / 2 < b.R + 6 && cx + w / 2 > b.L - 6 && cy - h < b.B + 6 && cy > b.T - 6);
     if (over(x, y)) {
