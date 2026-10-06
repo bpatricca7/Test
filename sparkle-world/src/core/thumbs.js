@@ -34,7 +34,7 @@ export class Thumbs {
     this.failed = false;
     this.lost = false;
     this._lostTimer = 0;
-    this.stats = { rendered: 0, requeued: 0, maxJobMs: 0, rests: 0 };
+    this.stats = { rendered: 0, requeued: 0, maxJobMs: 0, rests: 0, warmed: 0 };
   }
 
   /**
@@ -112,11 +112,23 @@ export class Thumbs {
     while (q.length) {
       // a job about as slow as the last one would overshoot what is left: next frame
       if (spent > 0 && this._lastJobMs > budgetMs - spent) return;
-      const job = q.shift();
+      const job = q[0];
       const t0 = performance.now();
+      // a job whose picture needs a shader program the thumbnail renderer has never used:
+      // drawn once in this frame (the program compiles and links), read back in a later one,
+      // so no single frame pays for both (the read-back waits for the link)
+      if (!job.warmed && this._warm(job)) {
+        this._lastJobMs = performance.now() - t0;
+        if (this._lastJobMs > this.stats.maxJobMs) this.stats.maxJobMs = this._lastJobMs;
+        this.stats.warmed++;
+        return;
+      }
+      q.shift();
       let url = '';
       try {
-        url = this._render(job.build(), job.opts);
+        const obj = job.obj || job.build();
+        job.obj = null;
+        url = this._render(obj, job.opts);
       } catch (err) {
         console.warn('[thumbs] failed', job.key, err);
       }
@@ -204,8 +216,34 @@ export class Thumbs {
     }, RESTORE_WAIT_MS);
   }
 
-  /** opts.dir: camera direction [x,y,z] (default front-right, slightly above); opts.zoom */
-  _render(object, opts) {
+  /**
+   * Builds the job's object (kept on the job for its picture) and, when drawing it needs a
+   * shader program this renderer does not have yet, draws it once without reading it back.
+   * Returns true when it drew (the picture comes in a later frame).
+   */
+  _warm(job) {
+    job.warmed = true;
+    try {
+      if (!job.obj) job.obj = job.build();
+      if (!job.obj || !this._setup()) return false;
+      const n = this.renderer.info.programs.length;
+      this.renderer.compile(job.obj, this.camera, this.scene);
+      if (this.renderer.info.programs.length === n) return false;
+      const at = job.obj.position.clone();
+      this._render(job.obj, job.opts, false);
+      job.obj.position.copy(at);
+      return true;
+    } catch (err) {
+      console.warn('[thumbs] warm-up failed', job.key, err);
+      return false;
+    }
+  }
+
+  /**
+   * opts.dir: camera direction [x,y,z] (default front-right, slightly above); opts.zoom.
+   * read false: only draw (a warm-up; the object is kept, nothing is returned).
+   */
+  _render(object, opts, read = true) {
     if (!object || !this._setup()) return '';
     const pivot = new THREE.Group();
     pivot.add(object);
@@ -225,6 +263,7 @@ export class Thumbs {
       this.camera.updateProjectionMatrix();
       this.camera.lookAt(0, 0, 0);
       this.renderer.render(this.scene, this.camera);
+      if (!read) return '';
       this.outCtx.clearRect(0, 0, SIZE, SIZE);
       this.outCtx.imageSmoothingEnabled = true;
       this.outCtx.imageSmoothingQuality = 'high';
@@ -232,7 +271,8 @@ export class Thumbs {
       return this.out.toDataURL('image/png');
     } finally {
       this.scene.remove(pivot);
-      disposeObject(object);
+      if (read) disposeObject(object);
+      else pivot.remove(object);
     }
   }
 }

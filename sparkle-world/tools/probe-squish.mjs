@@ -1124,8 +1124,16 @@ async function gridsPass(browser, errors) {
 // cost
 // =====================================================================================
 
-const drawCallsOf = (page, view) => page.evaluate(async (view) => {
+// quiet: the ambient life (butterflies, fireflies, the sea animals) is hidden while counting.
+// It comes and goes with game time, and on the GPU-less test machine (frames of 600-700 ms,
+// each capped at 0.05 s of game time) it was still arriving during F1: the idle count rose
+// 138 -> 140 -> 142 over 9 s with no toy touched (butterflies 2, dolphin, octopus, starfish),
+// which read as a squish that never went back to idle. The toys' own draw calls still count.
+const AMBIENT = ['butterfly-wings', 'butterfly-bodies', 'fireflies', 'sea-life'];
+const drawCallsOf = (page, view, quiet = false) => page.evaluate(async ([view, quiet, names]) => {
   const g = window.__game;
+  const hidden = quiet ? g.scene.children.filter((o) => names.includes(o.name) && o.visible) : [];
+  for (const o of hidden) o.visible = false;
   const rig = g.cameraRig.update;
   g.cameraRig.update = () => {};
   g.camera.position.set(view[0] + 7, view[1] + 6, view[2] - 7);
@@ -1139,8 +1147,9 @@ const drawCallsOf = (page, view) => page.evaluate(async (view) => {
     samples.push(g.renderer.info.render.calls);
   }
   g.cameraRig.update = rig;
+  for (const o of hidden) o.visible = true;
   return samples.sort((a, b) => a - b)[2];
-}, view);
+}, [view, quiet, AMBIENT]);
 
 async function costPass(browser, errors) {
   console.log('\n[cost] draw calls, the systems stage, thumbnails, geometry');
@@ -1151,7 +1160,7 @@ async function costPass(browser, errors) {
   const pad = await flatPad(page, 16, 10);
   const view = [pad.x0 + 8, pad.y, pad.z0 + 4];
   await settle(page, 1000);
-  const idle0 = await drawCallsOf(page, view);
+  const idle0 = await drawCallsOf(page, view, true);
   // F1 60 placed idle toys: 48 opaque, 12 see-through
   await ev(page, (pad) => {
     const g = window.__game, d = g.debug.squish;
@@ -1165,14 +1174,14 @@ async function costPass(browser, errors) {
     });
   }, pad);
   await settle(page, 1500);
-  const idle1 = await drawCallsOf(page, view);
+  const idle1 = await drawCallsOf(page, view, true);
   c(idle1 - idle0 <= 14, `F1 60 placed idle toys add ${idle1 - idle0} draw calls (14 at most; ${idle0} -> ${idle1})`);
   await ev(page, () => { const g = window.__game, e = g.entities.all().find((x) => x.key === 'squish_pf_strawberry'); g.entities.use(e, null); });
   await settle(page, 150);
-  const sq1 = await drawCallsOf(page, view);
+  const sq1 = await drawCallsOf(page, view, true);
   c(sq1 - idle1 <= 1, `F1 squishing one adds ${sq1 - idle1} (1 at most)`);
   await settle(page, 3000);
-  const sq2 = await drawCallsOf(page, view);
+  const sq2 = await drawCallsOf(page, view, true);
   c(sq2 <= idle1, `F1 back to the idle count within 3 s (${sq2})`);
   // F2 holding a toy adds at most 2
   await ev(page, () => window.__game.squish.hold('pf_unicorn', false, { quiet: true }));

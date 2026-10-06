@@ -25,7 +25,7 @@ const WARM = [['pf_strawberry', true], ['st_snowball', false], ['st_gold', false
 export function sheetRenderer(thumbs) {
   let scene = null, camera = null, out2d = null;
   let sheer = 'no'; // 'no' | 'busy' | 'yes': the toys' shaders for the offscreen target
-  let rt = null, cell = null, warmStep = 0;
+  let rt = null, cell = null, warmStep = 0, warmModel = null;
   const _col = new THREE.Color();
   const setup = () => {
     if (scene) return;
@@ -87,20 +87,39 @@ export function sheetRenderer(thumbs) {
         sheer = 'yes';
         return false;
       }
+      // compiled: drawn once into the target in a frame of its own (the program links on its
+      // first draw; a batch's read-back right after would wait for that too), no read-back
+      if (warmModel) {
+        const m = warmModel;
+        warmModel = null;
+        try {
+          const r = thumbs.renderer, prev = r.getRenderTarget();
+          rt.viewport.set(0, 0, CELL, CELL);
+          r.setRenderTarget(rt);
+          r.render(scene, camera);
+          rt.viewport.set(0, 0, rt.width, rt.height);
+          r.setRenderTarget(prev);
+        } catch { /* the batch draws it anyway */ }
+        scene.remove(m);
+        disposeObject(m);
+        warmStep++;
+        return true;
+      }
       sheer = 'busy';
       let m = null;
       const done = () => {
-        if (m) {
-          scene.remove(m);
-          disposeObject(m);
-        }
-        warmStep++;
+        warmModel = m;
+        if (!m) warmStep++;
         sheer = 'no';
       };
       try {
         m = toyModel(sample[0], { glitter: sample[1], hitbox: false });
         scene.add(m);
         camera.position.set(0, 0.3, 2);
+        camera.near = 0.01;
+        camera.far = 200;
+        camera.aspect = 1;
+        camera.updateProjectionMatrix();
         camera.lookAt(0, 0.2, 0);
         const r = thumbs.renderer, prev = r.getRenderTarget();
         r.setRenderTarget(rt);
@@ -109,6 +128,11 @@ export function sheetRenderer(thumbs) {
         if (p && p.then) p.then(done, done);
         else done();
       } catch {
+        if (m) {
+          scene.remove(m);
+          disposeObject(m);
+          m = null;
+        }
         done();
       }
       return true;
