@@ -1,10 +1,12 @@
 // Headless multiplayer acceptance tests (docs/MULTIPLAYER.md §15.2-15.3, AT1-AT22).
 //
-//   node tools/probe-multiplayer.mjs [--part=a|b|c|d] [--until=AT9] [--shots-prefix=net] [--biome=flat] [--headed]
+//   node tools/probe-multiplayer.mjs [--part=a|b|c|d|e|f] [--until=AT9] [--shots-prefix=net] [--biome=flat] [--headed]
 //
 // --part splits the suite so each part fits the gate's 570 s timeout (docs/teams/wave4-integration.md
 // §10.2 C1-C3b). AT1 always runs first (it starts the session); then the part's tests, in file order:
-//   b: AT7, AT11, AT9, AT10, AT20, REJOIN
+//   b: AT7, AT11, AT9, AT10
+//   f: AT11, AT20, REJOIN  (split from b at the wave-4 gate: AT1's and AT11's joins take about
+//                    180 s each in SwiftShader, so b with all six ran past 570 s at load 4)
 //   c: AT11, AT12, AT13, AT8, AT21, BUDGET, END, AT22   (AT11 brings June)
 //   d: LOOKS, SEA   (split from a in wave 4: with SEA, part a ran past 570 s on a busy machine)
 //   e: SIX          (wave 4: six players; runs ONLY with --part=e, without AT1: it makes its own
@@ -46,15 +48,16 @@ const arg = (k, d = null) => {
 };
 const UNTIL = arg('until') ? String(arg('until')).toUpperCase() : null;
 const PART = arg('part') ? String(arg('part')).toLowerCase() : null;
-/** The tests of parts b, c and d (AT1 runs in every part; part a is every test not listed here). */
+/** The tests of parts b-f (AT1 runs in every part; part a is every test not listed here). */
 const PART_TESTS = {
-  b: ['AT7', 'AT11', 'AT9', 'AT10', 'AT20', 'REJOIN'],
+  b: ['AT7', 'AT11', 'AT9', 'AT10'],
   c: ['AT11', 'AT12', 'AT13', 'AT8', 'AT21', 'BUDGET', 'END', 'AT22'],
   d: ['LOOKS', 'SEA'],
   e: ['SIX'],
+  f: ['AT11', 'AT20', 'REJOIN'],
 };
-if (PART && !['a', 'b', 'c', 'd', 'e'].includes(PART)) {
-  console.error(`--part must be a, b, c, d or e (got ${PART})`);
+if (PART && !['a', 'b', 'c', 'd', 'e', 'f'].includes(PART)) {
+  console.error(`--part must be a, b, c, d, e or f (got ${PART})`);
   process.exit(2);
 }
 /** Does test `id` run in this run? */
@@ -62,7 +65,7 @@ function inPart(id) {
   if (PART === 'e') return PART_TESTS.e.includes(id); // SIX makes its own session (no AT1: it is lean)
   if (PART_TESTS.e.includes(id)) return false; // six pages: never part of a whole run
   if (!PART || id === 'AT1') return true;
-  if (PART === 'a') return !PART_TESTS.b.includes(id) && !PART_TESTS.c.includes(id) && !PART_TESTS.d.includes(id);
+  if (PART === 'a') return !['b', 'c', 'd', 'f'].some((k) => PART_TESTS[k].includes(id));
   return PART_TESTS[PART].includes(id);
 }
 /** The ids that ran so far (a later test may need an earlier one's scene, e.g. BUDGET needs AT6). */
