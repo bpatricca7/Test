@@ -729,7 +729,7 @@ uses it: B17-B17e split it with `--only=wave4a --x=N` and `--only=wave4b`.
 | C16 | `timeout 570 node tools/probe-keepsafe.mjs` | 156-209 s | [gate-C3b] 281 s on a8629fb, 80 checks **green** (the iPhone card picture looked at; no console errors, page errors or failed requests; load about 4) |
 | C17 | `timeout 570 node tools/probe-environment.mjs` | 147-185 s | [gate-C3b] 209 s on 97ac86d, 25 checks **green** (desktop and phone passes; the rainbow picture looked at; no console errors, page errors or failed requests; load about 4) |
 | C18 | `timeout 570 node tools/probe-pals.mjs` | 234-417 s | [gate-C3b] 452 s on b89bcae, 72 checks **green** (lineup, desktop and touch passes; the turtle-swims picture looked at; no console errors, page errors or failed requests; load about 4.2). Only 118 s under the limit: if it is ever cut off, split it with its own `--only=lineup`, `--only=desktop` and `--only=touch` |
-| C19 | `timeout 570 node tools/probe-life.mjs --only=desktop` | whole: 328-511 s | not measured |
+| C19 | `timeout 570 node tools/probe-life.mjs --only=desktop` | whole: 328-511 s | [gate-C3b] 338 s on 2ba5301, 55 checks **green** (the pets-swim picture looked at; no console errors, page errors or failed requests; load about 4.2) |
 | C20 | `timeout 570 node tools/probe-life.mjs --only=touch` | | not measured |
 | C21 | `timeout 570 node tools/probe-avatar.mjs` | 199-344 s | not measured |
 | C22 | `timeout 570 node tools/probe-builds.mjs --only=gallery,hills,play` | whole: 383-572 s | not measured |
