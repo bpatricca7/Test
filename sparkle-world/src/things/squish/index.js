@@ -187,6 +187,21 @@ export function install(game) {
     });
   }
 
+  // The shelf's shaders before the shelf opens. A toy's new shader program links on demand the
+  // first time it is used, in one go (on the GPU-less test machine the see-through shell's took
+  // one frame of about 1.1 s, right after the shelf opened; it cannot be split, and there is no
+  // parallel-compile extension there). So once she owns a toy, sheet.prepare() runs ahead of
+  // time: behind the loading screen while a world loads, otherwise in play frames with no other
+  // pictures or chunks waiting. Opening the shelf before it is done just carries on from there.
+  let shelfWarm = false;
+  function warmShelf() {
+    if (shelfWarm || picQueue.length || !sheet.ready()) return;
+    const p = profile();
+    if (!p || !(D.owned(p) || D.ownedGlitter(p))) return;
+    if (!game.loading && (game.mode !== 'play' || game.thumbs.pending > 0 || (game.chunks && game.chunks.pending > 0))) return;
+    if (!sheet.prepare([])) shelfWarm = true;
+  }
+
   // ---------------- counting squeezes ----------------
 
   function squeezed(key, glitter, where) {
@@ -597,6 +612,7 @@ export function install(game) {
       showHud();
       panels.tick(dt);
       pumpPics();
+      warmShelf();
       // the drop: one comparison unless one is wanted
       if (!dropWanted) return;
       if (game.mode === 'play' && !game.paused) playFor += dt;

@@ -22,6 +22,11 @@ const MAX_BATCH = 12;
 const DIR = new THREE.Vector3(0.4, 0.45, 1.5).normalize();
 const WARM = [['pf_strawberry', true], ['st_snowball', false], ['st_gold', false]];
 
+// The 2D canvases only cut and encode pixels that are already read back: kept in memory (no
+// GPU-backed canvas), so a picture's toDataURL never waits for the GPU's queue (on the GPU-less
+// test machine one waited 1 s behind the game's own frame).
+const ctx2d = (c) => c.getContext('2d', { willReadFrequently: true });
+
 export function sheetRenderer(thumbs) {
   let scene = null, camera = null, out2d = null;
   let sheer = 'no'; // 'no' | 'busy' | 'yes': the toys' shaders for the offscreen target
@@ -61,10 +66,49 @@ export function sheetRenderer(thumbs) {
     rt.isXRRenderTarget = true;
   };
 
+  /** The batch's pixels (bottom-up rows) -> one 96 px PNG data URL per job. */
+  function cut(px, W, H, jobs) {
+    out2d.width = W;
+    out2d.height = H;
+    const g = ctx2d(out2d);
+    const img = g.createImageData(W, H);
+    const row = W * 4;
+    const d = img.data;
+    for (let y = 0; y < H; y++) d.set(px.subarray((H - 1 - y) * row, (H - y) * row), y * row); // GL rows are bottom-up
+    // the edges were blended over a clear background: back to straight alpha for ImageData
+    for (let i = 0; i < d.length; i += 4) {
+      const a = d[i + 3];
+      if (a > 0 && a < 255) {
+        const k = 255 / a;
+        d[i] = Math.min(255, d[i] * k);
+        d[i + 1] = Math.min(255, d[i + 1] * k);
+        d[i + 2] = Math.min(255, d[i + 2] * k);
+      }
+    }
+    g.putImageData(img, 0, 0);
+    if (!cell) {
+      cell = document.createElement('canvas');
+      cell.width = cell.height = OUT;
+    }
+    const cg = ctx2d(cell);
+    cg.imageSmoothingEnabled = true;
+    cg.imageSmoothingQuality = 'high';
+    const urls = jobs.map((job, i) => {
+      const col = i % PER_ROW, rowI = Math.floor(i / PER_ROW);
+      cg.clearRect(0, 0, OUT, OUT);
+      cg.drawImage(out2d, col * CELL, H - (rowI + 1) * CELL, CELL, CELL, 0, 0, OUT, OUT);
+      return cell.toDataURL('image/png');
+    });
+    out2d.width = out2d.height = 1; // let the big copy go
+    return urls;
+  }
+
+
   return {
     /**
-     * Before the first batch: the offscreen target, then the toys' shaders for it. Each in a
-     * frame of its own (a software renderer takes most of a second for them).
+     * Before the first batch (or ahead of time: index.js warmShelf): the offscreen target, then
+     * the toys' shaders for it. Each in a frame of its own (a software renderer takes most of a
+     * second for them).
      * Returns true while that work is going on (the caller draws next time).
      */
     prepare(list) {
@@ -82,7 +126,8 @@ export function sheetRenderer(thumbs) {
         // the 2D side too (its first picture costs the most)
         cell = document.createElement('canvas');
         cell.width = cell.height = OUT;
-        cell.getContext('2d').putImageData(cell.getContext('2d').createImageData(OUT, OUT), 0, 0);
+        const cg = ctx2d(cell);
+        cg.putImageData(cg.createImageData(OUT, OUT), 0, 0);
         cell.toDataURL('image/png');
         return true;
       }
@@ -222,42 +267,13 @@ export function sheetRenderer(thumbs) {
       rt.scissor.set(0, 0, rt.width, rt.height);
       // one read-back for the whole batch, then cut it into pictures
       const px = new Uint8Array(W * H * 4);
-      r.readRenderTargetPixels(rt, 0, 0, W, H, px);
-      r.setRenderTarget(prevTarget);
-      r.setClearColor(_col, prevClear);
-      out2d.width = W;
-      out2d.height = H;
-      const g = out2d.getContext('2d');
-      const img = g.createImageData(W, H);
-      const row = W * 4;
-      const d = img.data;
-      for (let y = 0; y < H; y++) d.set(px.subarray((H - 1 - y) * row, (H - y) * row), y * row); // GL rows are bottom-up
-      // the edges were blended over a clear background: back to straight alpha for ImageData
-      for (let i = 0; i < d.length; i += 4) {
-        const a = d[i + 3];
-        if (a > 0 && a < 255) {
-          const k = 255 / a;
-          d[i] = Math.min(255, d[i] * k);
-          d[i + 1] = Math.min(255, d[i + 1] * k);
-          d[i + 2] = Math.min(255, d[i + 2] * k);
-        }
+      try {
+        r.readRenderTargetPixels(rt, 0, 0, W, H, px);
+      } finally {
+        r.setRenderTarget(prevTarget);
+        r.setClearColor(_col, prevClear);
       }
-      g.putImageData(img, 0, 0);
-      if (!cell) {
-        cell = document.createElement('canvas');
-        cell.width = cell.height = OUT;
-      }
-      const cg = cell.getContext('2d');
-      cg.imageSmoothingEnabled = true;
-      cg.imageSmoothingQuality = 'high';
-      const urls = jobs.map((job, i) => {
-        const col = i % PER_ROW, rowI = Math.floor(i / PER_ROW);
-        cg.clearRect(0, 0, OUT, OUT);
-        cg.drawImage(out2d, col * CELL, H - (rowI + 1) * CELL, CELL, CELL, 0, 0, OUT, OUT);
-        return cell.toDataURL('image/png');
-      });
-      out2d.width = out2d.height = 1; // let the big copy go
-      return urls;
+      return cut(px, W, H, jobs);
     },
   };
 }
