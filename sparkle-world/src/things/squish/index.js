@@ -178,9 +178,9 @@ export function install(game) {
       return;
     }
     // the first batch small (a see-through shell's shader may still compile), then 6 a frame,
-    // with at most 2 batches on their way back at once
+    // with at most 3 batches on their way back at once (the GPU draws them alongside the game's frames)
     if (sheet.prepare(picQueue.slice(0, picBatch))) return;
-    if (sheet.inFlight() >= 2) return;
+    if (sheet.inFlight() >= 3) return;
     const batch = picQueue.splice(0, picBatch);
     let started = false;
     try {
