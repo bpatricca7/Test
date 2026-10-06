@@ -1477,8 +1477,16 @@ async function costsPass(browser, errors) {
   const c = (cond, msg) => check(errors, cond, msg);
   // B13c the first turn of a fresh page, a boy starter as a Sea Dragon (the form with the most
   // parts): the longest frame from the turn's own frame (the first frame drawn with the tail)
-  // through the next 0.5 s, against the same measure before he went in (the longest frame of each
-  // 0.5 s stretch on the shore, their middle): like against like. The Sea Magic! sticker is
+  // through the next 0.5 s, against the same measure later at the same spot in sea form (the
+  // longest frame of each 0.5 s stretch from 2 s after the turn, their middle): like against
+  // like, so only the turn's one-time work counts. Until [gate-B5] the measure to beat was taken
+  // on the shore, before the move: but the move to deep water shows a new view (about 140 draw
+  // calls became about 200, and about 90 chunk geometries reached the GPU 4 frames before the
+  // turn), so the turn's window carried the new view's cost and failed by +41 to +64 ms. Measured
+  // directly in [gate-B5]: the turn built no shader program and uploaded no texture; its only
+  // first-use work was its parts' 5-7 new geometries, now drawn unseen once after prepareSea
+  // (src/player/merfolk/index.js), so the turn adds no geometry either (checked below). The
+  // shore value is still printed. The Sea Magic! sticker is
   // earned (and its cheer has passed) first: its pop is the sticker book's cost, not the turn's.
   // A software GPU's frames jump by 100-300 ms on their own, so three fresh pages are measured
   // (before the main page opens, so no other page draws meanwhile) and the middle one counts;
@@ -1503,7 +1511,7 @@ async function costsPass(browser, errors) {
       let last = performance.now();
       const tick = () => {
         const n = performance.now();
-        g.__frames.push([n, n - last, !!g.player.seaForm, R.info.programs ? R.info.programs.length : 0]);
+        g.__frames.push([n, n - last, !!g.player.seaForm, R.info.programs ? R.info.programs.length : 0, R.info.memory.geometries, R.info.memory.textures]);
         last = n;
         if (g.__frames.length < 2000) requestAnimationFrame(tick);
       };
@@ -1512,7 +1520,7 @@ async function costsPass(browser, errors) {
     await settle(P, 3000);
     await place(P, sh1.deep, 0, 100);
     await waitOk(P, () => !!window.__game.player.seaForm, null, 5000);
-    await settle(P, 900);
+    await settle(P, 4500);
     const r = await P.evaluate(() => {
       const all = window.__game.__frames;
       const i = all.findIndex((f) => f[2]);
@@ -1530,10 +1538,22 @@ async function costsPass(browser, errors) {
         wins.push(Math.max(...all.slice(k).filter((f) => start(f) >= s0 && start(f) <= s0 + 500).map((f) => f[1])));
       }
       wins.sort((a, b) => a - b);
+      // the same in sea form at the same spot, from 2 s after the turn (the tail grown, its
+      // sparkle and bubbles drawn) to the last frame
+      const end = start(all[all.length - 1]);
+      const sea = [];
+      for (let k = i; k < all.length; k++) {
+        const s0 = start(all[k]);
+        if (s0 < t + 2000) continue;
+        if (s0 + 500 > end) break;
+        sea.push(Math.max(...all.slice(k).filter((f) => start(f) >= s0 && start(f) <= s0 + 500).map((f) => f[1])));
+      }
+      sea.sort((a, b) => a - b);
       const usual = all.slice(1, i).map((f) => f[1]).sort((a, b) => a - b);
       return {
         longest: Math.max(...after), shore: wins[Math.floor(wins.length / 2)] || 0, median: usual[Math.floor(usual.length / 2)] || 0,
-        turn: all[i][1], progs: all[all.length - 1][3] - all[i - 1][3],
+        sea: sea.length ? sea[Math.floor(sea.length / 2)] : Infinity, seaWins: sea.length,
+        turn: all[i][1], progs: all[all.length - 1][3] - all[i - 1][3], geos: all[i + 1][4] - all[i - 1][4], texs: all[i + 1][5] - all[i - 1][5], // read before or after the game's own draw: the turn frame and the next
       };
     });
     await pg.context.close();
@@ -1542,8 +1562,8 @@ async function costsPass(browser, errors) {
   const turns = [];
   for (let i = 0; i < 3; i++) turns.push(await firstTurn());
   const okTurns = turns.filter(Boolean);
-  const deltas = okTurns.map((f) => f.longest - f.shore).sort((a, b) => a - b);
-  const fr = okTurns.length ? okTurns.find((f) => f.longest - f.shore === deltas[Math.floor(deltas.length / 2)]) : { longest: Infinity, shore: 0 };
+  const deltas = okTurns.map((f) => f.longest - f.sea).sort((a, b) => a - b);
+  const fr = okTurns.length ? okTurns.find((f) => f.longest - f.sea === deltas[Math.floor(deltas.length / 2)]) : { longest: Infinity, sea: 0, shore: 0 };
   const { context, page } = await openGame(browser, { errors, label: 'costs' });
   await newWorld(page, 'beach');
   const median = (a) => a.slice().sort((x, y) => x - y)[Math.floor(a.length / 2)];
@@ -1570,7 +1590,7 @@ async function costsPass(browser, errors) {
   await place(page, sh.deep, 0, 100);
   await waitOk(page, () => !!window.__game.player.seaForm, null, 5000);
   await settle(page, 700);
-  console.log(`  first turns: ${okTurns.map((f) => `turn frame ${Math.round(f.turn)}, longest ${Math.round(f.longest)} (shore ${Math.round(f.shore)}, usual frame ${Math.round(f.median)}), new programs ${f.progs}`).join('; ')}`);
+  console.log(`  first turns: ${okTurns.map((f) => `turn frame ${Math.round(f.turn)}, longest ${Math.round(f.longest)} (in sea form later ${Math.round(f.sea)} over ${f.seaWins} stretches, shore ${Math.round(f.shore)}, usual frame ${Math.round(f.median)}), new programs ${f.progs}, geometries ${f.geos}, textures ${f.texs}`).join('; ')}`);
   const longest = fr.longest;
   const ensureMs = (form) => page.evaluate((form) => {
     // ensureSea: a fresh avatar's first sea frame (it builds the parts) minus a later sea frame
@@ -1596,8 +1616,9 @@ async function costsPass(browser, errors) {
   const ensD = await ensureMs('sea_dragon');
   // SwiftShader draws every frame on the CPU (a normal frame here is already over 33 ms), so the
   // check is what 33 ms means on a device: the turn adds at most 33 ms to the usual frame
-  c(okTurns.length === 3 && longest <= fr.shore + 33, `B13c the longest frame from the first turn through 0.5 s: ${Math.round(longest)} ms (on the shore ${Math.round(fr.shore)} ms; at most +33 ms; the middle of 3 fresh pages: ${deltas.map((d) => (d >= 0 ? '+' : '') + Math.round(d)).join(', ')} ms)`);
+  c(okTurns.length === 3 && longest <= fr.sea + 33, `B13c the longest frame from the first turn through 0.5 s: ${Math.round(longest)} ms (later in sea form at the same spot ${Math.round(fr.sea)} ms, on the shore ${Math.round(fr.shore)} ms; at most +33 ms; the middle of 3 fresh pages: ${deltas.map((d) => (d >= 0 ? '+' : '') + Math.round(d)).join(', ')} ms)`);
   c(okTurns.length === 3 && okTurns.every((f) => f.progs === 0), `B13c the first turn builds no new shader program (${okTurns.map((f) => f.progs).join(', ')})`);
+  c(okTurns.length === 3 && okTurns.every((f) => f.geos <= 0 && f.texs <= 0), `B13c the first turn's frame (and the next) sends no new geometry or texture to the GPU (geometries ${okTurns.map((f) => f.geos).join(', ')}; textures ${okTurns.map((f) => f.texs).join(', ')})`);
   c(ens <= 2, `B13c ensureSea (building the sea parts once): ${ens.toFixed(2)} ms (median of 5, <= 2 ms)`);
   c(ensD <= 2, `B13c ensureSea for a Sea Dragon: ${ensD.toFixed(2)} ms (median of 5, <= 2 ms)`);
   // B13a / B13b draw calls and meshes: in sea form vs standing on the shore, same camera; her

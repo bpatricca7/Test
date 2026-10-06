@@ -234,8 +234,39 @@ export function install(game) {
     try { if (typeof r.compile === 'function') r.compile(warm, cam, scene); } catch { /* a lost context */ }
   };
   const warmStep = () => {
+    if (geoWarm && geoWarm.parent) {
+      // a look change in the meantime freed those parts: never draw a freed geometry
+      const av = game.player && game.player.avatar;
+      const live = av && typeof av.seaGeometries === 'function' ? av.seaGeometries() : [];
+      for (const m of geoWarm.children.slice()) if (!live.includes(m.geometry)) geoWarm.remove(m);
+    }
+    if (geoWarm && geoWarm.parent && (--geoFrames <= 0 || geoWarm.children.every((m) => m.userData.drawn))) {
+      geoWarm.parent.remove(geoWarm);
+      geoWarm.clear(); // the proxies only borrow the sea parts' geometries: nothing to dispose
+    }
     if (!warm || !warm.parent) return;
     if (--warmFrames <= 0 || warm.children.every((m) => m.userData.drawn)) warm.parent.remove(warm);
+  };
+  // The prepared sea parts are hidden, so their vertex buffers would first reach the GPU on the
+  // turn's frame (5-7 new geometries for a Sea Dragon, measured in [gate-B5]). So right after
+  // prepareSea, each part's geometry is drawn once by a proxy that writes no colour and no depth
+  // (same program as the glow stand-in above: colorWrite is a draw state, not a shader
+  // variant), then the proxies are taken out. Nothing shows; the picture is unchanged.
+  let geoWarm = null, geoFrames = 0, geoMat = null;
+  const warmSeaGeometry = (geos) => {
+    const scene = game.scene;
+    if (!scene || !geos.length) return;
+    if (!geoMat) geoMat = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, colorWrite: false });
+    if (!geoWarm) { geoWarm = new THREE.Group(); geoWarm.name = 'merfolkGeoWarm'; }
+    geoWarm.clear();
+    for (const geo of geos) {
+      const m = new THREE.Mesh(geo, geoMat);
+      m.frustumCulled = false;
+      m.onAfterRender = () => { m.userData.drawn = true; };
+      geoWarm.add(m);
+    }
+    if (geoWarm.parent !== scene) scene.add(geoWarm);
+    geoFrames = 90; // at most: a hidden page draws nothing
   };
   // The player's own sea parts are built ahead too, hidden, 1.5 s after a world loads or her
   // look changes (building the dragon's parts costs a slow device's frame 10-20 ms): the first
@@ -251,6 +282,7 @@ export function install(game) {
     if (game.mode !== 'play' || !av || typeof av.prepareSea !== 'function') return;
     try {
       if (!av.prepareSea()) return;
+      if (typeof av.seaGeometries === 'function') warmSeaGeometry(av.seaGeometries());
       // and their textures sent to the GPU now (hidden parts are not drawn, so otherwise the
       // upload would fall on the first turn's frame)
       const r = game.renderer;

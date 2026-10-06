@@ -5,7 +5,7 @@
 //
 //   createAvatar(look, { fx, blink, seaAuto }) -> { group, look, setLook, update, playEmote,
 //                    dispose, setOpacity, emoting, settle, hold, held, heldShown, seaForm,
-//                    seaShown, setSeaAuto, prepareSea, seaParts }
+//                    seaShown, setSeaAuto, prepareSea, seaGeometries, seaParts }
 //   group: origin at the feet (seat surface when sitting, mattress-top centre when sleeping,
 //   saddle when riding), ~1.75 tall, facing +Z.
 //   fx(kind, Vector3, opts): optional particle hook (in the world: game.particles.emit).
@@ -1400,6 +1400,11 @@ export function createAvatar(lookIn = DEFAULT_LOOK, opts = {}) {
       const form = seaFormNow();
       if (form !== 'me') ensureSea(form, seaHexFor(form));
       return !!sea;
+    },
+    /** The built sea parts' geometries (none before prepareSea or the first turn): the merfolk
+     *  system draws them once, unseen, so their buffers reach the GPU before the turn. */
+    seaGeometries() {
+      return sea ? sea.meshes.map((m) => m.geometry) : [];
     },
     /** Probes: what the sea parts are doing. */
     seaParts() {
