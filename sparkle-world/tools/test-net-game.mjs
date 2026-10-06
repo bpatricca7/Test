@@ -14,7 +14,7 @@
 // equal block / entity / plant hashes, empty outboxes and predictions, no resyncs, zero
 // console errors, and a guest never saves the host's world.
 //
-//   node tools/test-net-game.mjs [--no-build] [--headed] [--keep]
+//   node tools/test-net-game.mjs [--no-build] [--headed] [--keep] [--part=1|2]
 //
 // Exit code 0 when everything passed. Screenshots: .shots/netgame-*.png.
 
@@ -24,6 +24,12 @@ import { launch, attachErrorCollectors, waitForTitle, waitForPlay, shot, ROOT } 
 import { createServer } from '../server/server.mjs';
 
 const args = new Set(process.argv.slice(2));
+// --part=1: every phase but the guest reload; --part=2: the joins, then only the guest reload.
+// Both parts end with the whole-session rules. [gate-D1]: the whole suite ran past one 570 s
+// command on this machine (three SwiftShader world loads before the first phase, about 280 s,
+// then the reload is a fourth), so §10.2 D7 runs it as two parts; the checks are unchanged.
+const PART = (process.argv.find((a) => a.startsWith('--part=')) || '--part=all').slice(7);
+if (!['all', '1', '2'].includes(PART)) { console.log('--part must be 1 or 2'); process.exit(2); }
 const P = 'netgame';
 const errors = [];
 const t0 = Date.now();
@@ -217,6 +223,7 @@ async function main() {
     });
     const ground = (pg, x, z) => pg.evaluate(({ x, z }) => window.__game.world.heightAt(x, z), { x, z });
 
+    if (PART !== '2') {
     // ----- blocks and strokes -----
     log('phase: blocks');
     await ga.evaluate(({ x, z }) => {
@@ -502,7 +509,9 @@ async function main() {
     const hostUndo = await host.evaluate(() => window.__game.undo());
     check(hostUndo, 'the host\'s own Undo brings guest B\'s building back');
     await settleAndCompare(host, guests, 'undo of undo building');
+    }
 
+    if (PART !== '1') {
     // ----- a guest reloads and joins again -----
     log('phase: guest reload');
     await gb.reload();
@@ -551,6 +560,7 @@ async function main() {
     await settleAndCompare(host, [ga, gb], 'guest reload');
     await shot(host, 'end-host', P);
     await shot(gb, 'end-guestB', P);
+    }
 
     // ----- the rules that hold for the whole session -----
     for (const [pg, name] of [[ga, 'guest A'], [gb, 'guest B']]) {
