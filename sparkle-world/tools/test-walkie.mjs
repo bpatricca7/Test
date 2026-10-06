@@ -1088,6 +1088,19 @@ async function together(browser, url, port) {
 
     // ----- someone presses while Lily talks -----
     log('Rosie presses while Lily talks');
+    // The two pictures above can starve Lily's page (SwiftShader, no GPU) so long that her
+    // microphone sends nothing for IDLE_MS (1.5 s), and the server rightly cuts her press
+    // ('idle'). [gate-D9] saw exactly that once: Rosie then pressed a free walkie. That is the
+    // game working, not this scene, so if Lily lost the floor she lets go, waits out the cut's
+    // cooldown (2.5 s) and presses again before Rosie tries. The checks below are unchanged.
+    if ((await W(lily)).talk !== 'talking') {
+      console.log(`    (Lily lost the walkie during the pictures: ${JSON.stringify(await W(lily))}; she presses again)`);
+      await release();
+      await sleep(2800);
+      release = await hold(lily);
+      check(!!(await until(lily, () => window.__game.debug.walkie.state().talk === 'talking', null, 4000, 50)), 'Lily has the walkie again before Rosie presses');
+      await sleep(300);
+    }
     await until(rosie, () => window.__game.debug.walkie.state().floorBy !== null, null, 3000, 50);
     const rb = await WS(rosie);
     const rRelease = await hold(rosie);
