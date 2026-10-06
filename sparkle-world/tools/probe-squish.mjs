@@ -1124,7 +1124,7 @@ async function gridsPass(browser, errors) {
 // cost
 // =====================================================================================
 
-// quiet: the ambient life (butterflies, fireflies, the sea animals) is hidden while counting.
+// quiet: the ambient life (butterflies, fireflies, the sea animals) is left out while counting.
 // It comes and goes with game time, and on the GPU-less test machine (frames of 600-700 ms,
 // each capped at 0.05 s of game time) it was still arriving during F1: the idle count rose
 // 138 -> 140 -> 142 over 9 s with no toy touched (butterflies 2, dolphin, octopus, starfish),
@@ -1132,8 +1132,10 @@ async function gridsPass(browser, errors) {
 const AMBIENT = ['butterfly-wings', 'butterfly-bodies', 'fireflies', 'sea-life'];
 const drawCallsOf = (page, view, quiet = false) => page.evaluate(async ([view, quiet, names]) => {
   const g = window.__game;
-  const hidden = quiet ? g.scene.children.filter((o) => names.includes(o.name) && o.visible) : [];
-  for (const o of hidden) o.visible = false;
+  // moved to a layer the camera does not draw (the ambient code sets .visible every frame)
+  const hidden = [];
+  if (quiet) for (const o of g.scene.children) if (names.includes(o.name)) o.traverse((c) => hidden.push([c, c.layers.mask]));
+  for (const [c] of hidden) c.layers.set(31);
   const rig = g.cameraRig.update;
   g.cameraRig.update = () => {};
   g.camera.position.set(view[0] + 7, view[1] + 6, view[2] - 7);
@@ -1147,7 +1149,7 @@ const drawCallsOf = (page, view, quiet = false) => page.evaluate(async ([view, q
     samples.push(g.renderer.info.render.calls);
   }
   g.cameraRig.update = rig;
-  for (const o of hidden) o.visible = true;
+  for (const [c, mask] of hidden) c.layers.mask = mask;
   return samples.sort((a, b) => a - b)[2];
 }, [view, quiet, AMBIENT]);
 

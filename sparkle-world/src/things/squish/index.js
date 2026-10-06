@@ -170,7 +170,8 @@ export function install(game) {
       for (const j of picQueue.splice(0)) thumbIcon(j.key, j.glitter).then(j.resolve);
       return;
     }
-    // the first batch small (a see-through shell's shader may still compile), then 4 a frame (the read-back waits for the drawing)
+    // the first batch small (a see-through shell's shader may still compile), then 6 a frame (the read-back waits for the drawing;
+    // on a GPU-less test machine a batch of 4 took 550-710 ms, most of it the read-back's wait, so 96 pictures in 4s ran past 20 s)
     if (sheet.prepare(picQueue.slice(0, picBatch))) return;
     const batch = picQueue.splice(0, picBatch);
     let urls = null;
@@ -179,7 +180,7 @@ export function install(game) {
     } catch (err) {
       console.warn('[squish] shelf pictures failed', err && err.message);
     }
-    picBatch = 4;
+    picBatch = 6;
     batch.forEach((j, i) => {
       if (urls && urls[i]) j.resolve(urls[i]);
       else thumbIcon(j.key, j.glitter).then(j.resolve);
