@@ -685,11 +685,11 @@ Beach Cozy, desktop and iPad 1024 x 768 touch, `debug.merfolk.tips(true)`,
 | B3c | `timeout 570 node tools/probe-merfolk.mjs --only=review` (the owner's Sea Dragon showcase pictures) | | 243 s, 8 green in [gate-B1] |
 | B4 | `timeout 570 node tools/probe-merfolk.mjs --only=touch,friends` | est. 4-5 min | 207 s, 12 green in [gate-B1] |
 | B5 | `timeout 570 node tools/probe-merfolk.mjs --only=costs,save` | est. 4-6 min | 466 s and 445 s in [gate-B1], both **red** on one check only (B13c the longest frame after the first turn: the middle of 3 fresh pages +64 ms, then +41 ms, against at most +33 ms; no new shader program on any page; load about 4); the other 19 green; still open |
-| B6 | `timeout 570 node tools/probe-squish.mjs --only=desktop` | est. 6-8 min | not measured |
-| B7 | `timeout 570 node tools/probe-squish.mjs --only=touch` | est. 4-6 min | 215-220 s, green twice ([rf2-c2]) |
-| B8 | `timeout 570 node tools/probe-squish.mjs --only=world,save` | est. 5-7 min | not measured |
-| B9 | `timeout 570 node tools/probe-squish.mjs --only=mp` | est. 3-5 min | not measured |
-| B10 | `timeout 570 node tools/probe-squish.mjs --only=grids,cost` | est. 5-7 min | not measured |
+| B6 | `timeout 570 node tools/probe-squish.mjs --only=desktop` | est. 6-8 min | 218 s, 78 green in [gate-B2] after two fixes: the pill tip now also waits for a sticker pop still in the queue (`game.stickers.pending()`; B3 red once: the pop's 500 ms clock starts a frame after the close, the tip's 600 ms clock at the close), and the probe's `aimAt` waits two game frames for the camera's new yaw (crashed once with the toy still behind the camera); one B2 drop-timing blip in between, green on re-run |
+| B7 | `timeout 570 node tools/probe-squish.mjs --only=touch` | est. 4-6 min | 215-220 s, green twice ([rf2-c2]); 224 s, 37 green in [gate-B2] |
+| B8 | `timeout 570 node tools/probe-squish.mjs --only=world,save` | est. 5-7 min | 175 s, 22 green in [gate-B2] |
+| B9 | `timeout 570 node tools/probe-squish.mjs --only=mp` | est. 3-5 min | 195 s, 12 green in [gate-B2] |
+| B10 | `timeout 570 node tools/probe-squish.mjs --only=grids,cost` | est. 5-7 min | 293 s and 298 s in [gate-B2], both **red** on the same two checks (load about 4): F1 "back to the idle count within 3 s" (142-143 draw calls against 139-140 idle) and F4 the shelf with 96 owned (worst frame 1368-1441 ms against 1000, all in `sys:squish-presents`, longest thumbnail job 1291-1409 ms; all 96 thumbnails in 18.8-20.1 s against 20 s); every other check green; still open |
 | B11 | `timeout 570 node tools/probe-ocean.mjs --only=world` | est. 5-7 min | not measured |
 | B12 | `timeout 570 node tools/probe-ocean.mjs --only=see,tap` | est. 5-7 min | not measured |
 | B13 | `timeout 570 node tools/probe-ocean.mjs --only=ride,touch` | est. 6-8 min | not measured |
