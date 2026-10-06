@@ -183,8 +183,13 @@ async function openPlayer(browser, def, url) {
   const t0 = Date.now();
   await page.goto(url);
   const tGoto = Date.now() - t0;
+  // up to 90 s for the title (smoke's default is 30 s; e2e-accounts waits 60-90 s): the pages
+  // opened later boot while the earlier ones already draw their title scenes, all three in
+  // SwiftShader on 4 cores. In gate-D2d June's phone page loaded in 8 s and was on the title,
+  // with no card, error or failed request, 39.7 s after opening (.shots/walkie-june-no-title.png):
+  // only slow. This is a wait before the scenes, not a check
   try {
-    await waitForTitle(page);
+    await waitForTitle(page, 90000);
   } catch (err) {
     const st = await Promise.race([sleep(10000).then(() => ({ evaluate: 'no answer in 10 s' })), page.evaluate(() => ({
       href: location.href, ready: document.readyState, game: !!window.__game, mode: window.__game && window.__game.mode,
