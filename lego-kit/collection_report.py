@@ -132,6 +132,19 @@ def main(coll):
                  f"- **Shared parts**: the kits use {len(kits_with)} distinct elements in "
                  f"{tot_lines} kit lines; {shared} elements appear in two or more kits, so mixed "
                  "orders combine well.",
+                 f"- **Break-even** (2026 parts estimate, packaging, labour, fees): "
+                 f"{money(min(x['break_even_free_ship'] for x in rows))}–"
+                 f"{money(max(x['break_even_free_ship'] for x in rows))} with free shipping.",
+                 f"- **At twice the parts cost** ({money(min(x['price'] for x in rows))}–"
+                 f"{money(max(x['price'] for x in rows))}): profit "
+                 f"{money(min(x['profit_free_ship'] for x in rows))}–"
+                 f"{money(max(x['profit_free_ship'] for x in rows))} a kit "
+                 f"({min(x['margin_free_ship'] for x in rows):.0%}–"
+                 f"{max(x['margin_free_ship'] for x in rows):.0%}) with free shipping, "
+                 f"{money(min(x['profit_buyer_ship'] for x in rows))}–"
+                 f"{money(max(x['profit_buyer_ship'] for x in rows))} "
+                 f"({min(x['margin_buyer_ship'] for x in rows):.0%}–"
+                 f"{max(x['margin_buyer_ship'] for x in rows):.0%}) when the buyer pays postage.",
                  "- Outliers above $60 in parts are marked for simplification in the kit's README."
                  if any(x["parts_listed"] > 60 for x in rows) else
                  "- No kit is above $60 in parts at listed prices."]

@@ -184,8 +184,27 @@ changed there.
 
 - **19 kits**: parts from $30.88 (All-Star Sports Resort) to $53.45 (Wilderness Lodge) at listed prices; 212–416 pieces.
 - **Shared parts**: the kits use 303 distinct elements in 843 kit lines; 162 elements appear in two or more kits, so mixed orders combine well.
+- **Break-even** (2026 parts estimate, packaging, labour, fees): $57.92–$87.78 with free shipping.
+- **At twice the parts cost** ($69.99–$119.99): profit $10.36–$29.15 a kit (15%–25%) with free shipping, $19.86–$38.65 (28%–35%) when the buyer pays postage.
 - No kit is above $60 in parts at listed prices.
 <!-- comparison:end -->
+
+What the numbers mean for selling:
+- **Free shipping is the biggest single cost after parts.** It takes about $10.50
+  a kit. Charging postage separately lifts the margin by about 10 points on every
+  kit.
+- **These kits can't compete on price per piece.** At twice the parts cost they
+  sell for 25–40¢ a piece, against about 7–12¢ for LEGO's own sets. They sell as
+  unique collector pieces, and how many people will pay $70–120 for a compact
+  resort model hasn't been tested. A small trial run is the cheapest way to find
+  out.
+- **Parts are bought at retail.** Pick a Brick prices are retail. BrickLink
+  sellers may be cheaper for the most common bricks, but that couldn't be checked
+  from here. The BrickLink wanted list in each kit makes a price comparison quick.
+- **A digital-only version may be worth testing.** It would be the PDF booklet and
+  parts list sold without parts; fan-made instructions are commonly priced around
+  $5–20 (not researched for this collection). There are no parts, packing or
+  postage, but the trademark caution below applies just the same.
 
 ## Digital checks vs. a physical prototype
 
