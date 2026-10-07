@@ -101,7 +101,7 @@ Every kit includes:
 ## Completion checklist
 
 <!-- checklist:start -->
-**7 of 21 kits complete** (digital package; no physical prototypes yet).
+**9 of 21 kits complete** (digital package; no physical prototypes yet).
 
 | # | Resort | Batch | Model | Checks pass | Renders | Booklet | BOM and upload files | README | Status |
 |---|---|---|---|---|---|---|---|---|---|
@@ -120,8 +120,8 @@ Every kit includes:
 | 13 | Coronado Springs Resort | 3 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
 | 14 | Caribbean Beach Resort | 3 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
 | 15 | Port Orleans French Quarter | 4 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
-| 16 | Port Orleans Riverside | 4 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
-| 17 | All-Star Sports Resort | 4 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
+| 16 | [Port Orleans Riverside](../port-orleans-riverside-compact-lego/README.md) | 4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
+| 17 | [All-Star Sports Resort](../all-star-sports-compact-lego/README.md) | 4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
 | 18 | All-Star Music Resort | 4 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
 | 19 | All-Star Movies Resort | 4 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
 | 20 | Pop Century Resort | 4 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
@@ -169,9 +169,11 @@ changed there.
 | [Polynesian Village Resort](../polynesian-compact-lego/README.md) | Deluxe | 238 | 36 | $33.23 | $36.55 | $54.53 | $60.75 | $79.99 | $17.41 / 22% | $26.92 / 34% | 24/36 lines 2022-only, 2 new IDs |
 | [Yacht Club Resort](../yacht-club-compact-lego/README.md) | Deluxe | 319 | 38 | $41.79 | $45.97 | $64.96 | $72.27 | $99.99 | $25.08 / 25% | $34.59 / 35% | 30/38 lines 2022-only, 10 new IDs |
 | [Beach Club Resort](../beach-club-compact-lego/README.md) | Deluxe | 364 | 42 | $42.46 | $46.71 | $66.26 | $73.71 | $99.99 | $23.78 / 24% | $33.29 / 33% | 33/42 lines 2022-only, 11 new IDs, 1 in <10 recent sets |
+| [Port Orleans Riverside](../port-orleans-riverside-compact-lego/README.md) | Moderate | 244 | 45 | $32.27 | $35.50 | $53.55 | $59.67 | $79.99 | $18.39 / 23% | $27.90 / 35% | 28/45 lines 2022-only, 18 new IDs |
+| [All-Star Sports Resort](../all-star-sports-compact-lego/README.md) | Value | 240 | 48 | $30.88 | $33.97 | $51.97 | $57.92 | $69.99 | $10.92 / 16% | $20.43 / 29% | 26/48 lines 2022-only, 20 new IDs |
 
-- **7 kits**: parts from $33.23 (Polynesian Village Resort) to $48.89 (BoardWalk Inn) at listed prices; 238–383 pieces.
-- **Shared parts**: the kits use 158 distinct elements in 301 kit lines; 66 elements appear in two or more kits, so mixed orders combine well.
+- **9 kits**: parts from $30.88 (All-Star Sports Resort) to $48.89 (BoardWalk Inn) at listed prices; 238–383 pieces.
+- **Shared parts**: the kits use 185 distinct elements in 394 kit lines; 74 elements appear in two or more kits, so mixed orders combine well.
 - No kit is above $60 in parts at listed prices.
 <!-- comparison:end -->
 
