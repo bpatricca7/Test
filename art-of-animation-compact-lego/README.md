@@ -24,7 +24,7 @@ A compact display model of Disney's Art of Animation Resort at Walt Disney World
 | Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every kit in the collection |
 | Overall size | 19.2 × 12.8 cm, 9.4 cm tall |
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
-| Instructions | 33-page PDF, 28 steps, 5 sections |
+| Instructions | 33-page PDF, 28 steps, 4 sections |
 | Parts cost | **$31.41 per kit** at the Pick a Brick prices last seen (2022 and late 2025); about $34.55 with 2026 price rises (see [Cost assumptions](#cost-assumptions-and-resale-scenarios)) |
 
 ![Front view](images/art_of_animation_compact_front.jpg)

@@ -101,7 +101,7 @@ Every kit includes:
 ## Completion checklist
 
 <!-- checklist:start -->
-**19 of 21 kits complete** (digital package; no physical prototypes yet).
+**21 of 21 kits complete** (digital package; no physical prototypes yet).
 
 | # | Resort | Batch | Model | Checks pass | Renders | Booklet | BOM and upload files | README | Status |
 |---|---|---|---|---|---|---|---|---|---|
@@ -124,8 +124,8 @@ Every kit includes:
 | 17 | [All-Star Sports Resort](../all-star-sports-compact-lego/README.md) | 4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
 | 18 | [All-Star Music Resort](../all-star-music-compact-lego/README.md) | 4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
 | 19 | [All-Star Movies Resort](../all-star-movies-compact-lego/README.md) | 4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
-| 20 | Pop Century Resort | 4 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
-| 21 | Art of Animation Resort | 4 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
+| 20 | [Pop Century Resort](../pop-century-compact-lego/README.md) | 4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
+| 21 | [Art of Animation Resort](../art-of-animation-compact-lego/README.md) | 4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
 <!-- checklist:end -->
 
 ## Cost and resale comparison
@@ -181,9 +181,11 @@ changed there.
 | [All-Star Sports Resort](../all-star-sports-compact-lego/README.md) | Value | 240 | 48 | $30.88 | $33.97 | $51.97 | $57.92 | $69.99 | $10.92 / 16% | $20.43 / 29% | 26/48 lines 2022-only, 20 new IDs |
 | [All-Star Music Resort](../all-star-music-compact-lego/README.md) | Value | 278 | 46 | $33.58 | $36.94 | $55.41 | $61.73 | $79.99 | $16.53 / 21% | $26.03 / 32% | 30/46 lines 2022-only, 14 new IDs, 1 in <10 recent sets |
 | [All-Star Movies Resort](../all-star-movies-compact-lego/README.md) | Value | 288 | 54 | $36.87 | $40.56 | $59.16 | $65.86 | $89.99 | $21.83 / 24% | $31.34 / 35% | 28/54 lines 2022-only, 15 new IDs |
+| [Pop Century Resort](../pop-century-compact-lego/README.md) | Value | 315 | 60 | $42.25 | $46.48 | $65.41 | $72.78 | $99.99 | $24.63 / 25% | $34.13 / 34% | 37/60 lines 2022-only, 28 new IDs |
+| [Art of Animation Resort](../art-of-animation-compact-lego/README.md) | Value | 222 | 49 | $31.41 | $34.55 | $52.33 | $58.32 | $69.99 | $10.56 / 15% | $20.07 / 29% | 31/49 lines 2022-only, 19 new IDs |
 
-- **19 kits**: parts from $30.88 (All-Star Sports Resort) to $53.45 (Wilderness Lodge) at listed prices; 212–416 pieces.
-- **Shared parts**: the kits use 303 distinct elements in 843 kit lines; 162 elements appear in two or more kits, so mixed orders combine well.
+- **21 kits**: parts from $30.88 (All-Star Sports Resort) to $53.45 (Wilderness Lodge) at listed prices; 212–416 pieces.
+- **Shared parts**: the kits use 319 distinct elements in 952 kit lines; 178 elements appear in two or more kits, so mixed orders combine well.
 - **Break-even** (2026 parts estimate, packaging, labour, fees): $57.92–$87.78 with free shipping.
 - **At twice the parts cost** ($69.99–$119.99): profit $10.36–$29.15 a kit (15%–25%) with free shipping, $19.86–$38.65 (28%–35%) when the buyer pays postage.
 - No kit is above $60 in parts at listed prices.
