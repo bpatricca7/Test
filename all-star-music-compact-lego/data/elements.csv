@@ -1,0 +1,47 @@
+ldraw_part,ldraw_color,lego_color,bricklink_part,bricklink_color_id,bricklink_color,rebrickable_part,design_id,element_id,alt_element_ids,last_set_year,sets_since_2024,pab_2025,pab_2022,pab_price_2025,pab_price_2022,pab_name,availability
+11477.dat,4,Bright Red,11477,5,Red,11477,11477,6029946,,2026,128,,yes,,0.06,PLATE W. BOW 1X2X2/3,"likely (current, listed 2022)"
+11477.dat,25,Bright Orange,11477,4,Orange,11477,11477,6055069,,2026,38,,yes,,0.06,PLATE W. BOW 1X2X2/3,"likely (current, listed 2022)"
+14769.dat,15,White,14769,1,White,14769,14769,6044691,6601846,2026,83,,yes,,0.08,"FLAT TILE 2X2, ROUND","likely (current, listed 2022)"
+2431.dat,0,Black,2431,11,Black,2431,2431,243126,,2026,269,,yes,,0.13,FLAT TILE 1X4,"likely (current, listed 2022)"
+2877.dat,71,Medium Stone Grey,2877,86,Light Bluish Gray,2877,2877,4211383,,2026,35,,yes,,0.11,PROFILE BRICK 1X2,"likely (current, listed 2022)"
+3002.dat,4,Bright Red,3002,5,Red,3002,3002,300221,300271,2026,29,,yes,,0.17,BRICK 2X3,"likely (current, listed 2022)"
+3003.dat,4,Bright Red,3003,5,Red,3003,3003,300321,300371 4103590,2026,69,yes,yes,0.13,0.14,BRICK 2X2,listed on Pick a Brick (2025)
+3004.dat,4,Bright Red,3004,5,Red,3004,3004,300421,4613961,2026,118,yes,yes,0.1,0.11,BRICK 1X2,listed on Pick a Brick (2025)
+3004.dat,14,Bright Yellow,3004,3,Yellow,3004,3004,300424,4613966,2026,82,yes,yes,0.1,0.11,BRICK 1X2,listed on Pick a Brick (2025)
+3004.dat,15,White,3004,1,White,3004,3004,300401,4613964 6548257,2026,249,yes,yes,0.1,0.11,BRICK 1X2,listed on Pick a Brick (2025)
+3004.dat,322,Medium Azur,3004,156,Medium Azure,3004,3004,6092674,6004945 6603336,2026,54,yes,yes,0.1,0.11,BRICK 1X2,listed on Pick a Brick (2025)
+3005.dat,0,Black,3005,11,Black,3005,3005,300526,,2026,200,yes,yes,0.07,0.07,BRICK 1X1,listed on Pick a Brick (2025)
+3005.dat,15,White,3005,1,White,3005,3005,300501,300551 6548258 6552096,2026,234,yes,yes,0.07,0.07,BRICK 1X1,listed on Pick a Brick (2025)
+3005.dat,70,Reddish Brown,3005,88,Reddish Brown,3005,3005,4211242,,2026,130,yes,yes,0.07,0.07,BRICK 1X1,listed on Pick a Brick (2025)
+3005.dat,85,Medium Lilac,3005,89,Dark Purple,3005,3005,6084028,4224851 4589633 4640738,2026,18,yes,yes,0.07,0.07,BRICK 1X1,listed on Pick a Brick (2025)
+3005.dat,322,Medium Azur,3005,156,Medium Azure,3005,3005,4619652,6603285,2026,41,yes,yes,0.07,0.07,BRICK 1X1,listed on Pick a Brick (2025)
+3009.dat,15,White,3009,1,White,3009,3009,300901,300951 6548259 6552097,2026,134,,yes,,0.25,BRICK 1X6,"likely (current, listed 2022)"
+3020.dat,0,Black,3020,11,Black,3020,3020,302026,,2026,433,yes,yes,0.14,0.14,PLATE 2X4,listed on Pick a Brick (2025)
+3020.dat,2,Dark Green,3020,6,Green,3020,3020,302028,,2026,106,yes,yes,0.14,0.14,PLATE 2X4,listed on Pick a Brick (2025)
+3021.dat,4,Bright Red,3021,5,Red,3021,3021,302121,,2026,149,,yes,,0.14,PLATE 2X3,"likely (current, listed 2022)"
+3023b.dat,2,Dark Green,3023,6,Green,3023,3023,302328,,2026,158,yes,yes,0.07,0.07,PLATE 1X2,listed on Pick a Brick (2025)
+3024.dat,2,Dark Green,3024,6,Green,3024,3024,302428,,2026,82,yes,yes,0.05,0.06,PLATE 1X1,listed on Pick a Brick (2025)
+3029.dat,15,White,3029,1,White,3029,3029,4168072,302901,2026,20,,yes,,0.7,PLATE 4X12,"likely (current, listed 2022)"
+3029.dat,71,Medium Stone Grey,3029,86,Light Bluish Gray,3029,3029,4211401,,2026,44,,yes,,0.7,PLATE 4X12,"likely (current, listed 2022)"
+3032.dat,2,Dark Green,3032,6,Green,3032,3032,4116671,,2026,45,,yes,,0.43,PLATE 4X6,"likely (current, listed 2022)"
+3039.dat,4,Bright Red,3039,5,Red,3039,3039,303921,,2026,30,,yes,,0.14,ROOF TILE 2X2/45°,"likely (current, listed 2022)"
+3062b.dat,4,Bright Red,3062,5,Red,3062b,3062,306221,,2026,101,,yes,,0.06,ROUND BRICK 1X1,"likely (current, listed 2022)"
+3062b.dat,14,Bright Yellow,3062,3,Yellow,3062b,3062,306224,306844,2026,44,,yes,,0.06,ROUND BRICK 1X1,"likely (current, listed 2022)"
+3062b.dat,15,White,3062,1,White,3062b,3062,306201,6619283,2026,127,,yes,,0.06,ROUND BRICK 1X1,"likely (current, listed 2022)"
+3065.dat,47,Transparent,3065,12,Trans-Clear,3065,35743,6244904,306510 306540 6514262,2026,64,,yes,,0.12,BRICK 1X2 W/O PIN,"likely (current, listed 2022)"
+3069b.dat,14,Bright Yellow,3069,3,Yellow,3069b,3069,306924,,2026,112,,yes,,0.07,FLAT TILE 1X2,"likely (current, listed 2022)"
+3069b.dat,71,Medium Stone Grey,3069,86,Light Bluish Gray,3069b,3069,4211414,,2026,212,,yes,,0.07,FLAT TILE 1X2,"likely (current, listed 2022)"
+3069b.dat,85,Medium Lilac,3069,89,Dark Purple,3069b,3069,4613192,,2026,33,,yes,,0.07,FLAT TILE 1X2,"likely (current, listed 2022)"
+3070b.dat,14,Bright Yellow,3070,3,Yellow,3070b,3070,307024,,2026,84,,yes,,0.06,FLAT TILE 1X1,"likely (current, listed 2022)"
+3623.dat,0,Black,3623,11,Black,3623,3623,362326,,2026,307,yes,yes,0.07,0.07,PLATE 1X3,listed on Pick a Brick (2025)
+3665b.dat,4,Bright Red,3665,5,Red,3665,3665,366521,,2026,22,,yes,,0.13,ROOF TILE 1X2 INV.,"likely (current, listed 2022)"
+3710.dat,2,Dark Green,3710,6,Green,3710,3710,371028,,2026,96,yes,yes,0.1,0.11,PLATE 1X4,listed on Pick a Brick (2025)
+3795.dat,2,Dark Green,3795,6,Green,3795,3795,379528,,2026,60,,yes,,0.19,PLATE 2X6,"likely (current, listed 2022)"
+4032a.dat,4,Bright Red,4032,5,Red,4032a,4032,403221,,2026,110,,yes,,0.08,PLATE 2X2 ROUND,"likely (current, listed 2022)"
+4032a.dat,14,Bright Yellow,4032,3,Yellow,4032a,4032,403224,,2026,114,,yes,,0.08,PLATE 2X2 ROUND,"likely (current, listed 2022)"
+41539.dat,72,Dark Stone Grey,41539,85,Dark Bluish Gray,41539,41539,4210802,,2026,19,,yes,,0.81,PLATE 8X8,"likely (current, listed 2022)"
+4162.dat,0,Black,4162,11,Black,4162,4162,416226,,2026,156,,yes,,0.14,FLAT TILE 1X8,"likely (current, listed 2022)"
+60481.dat,4,Bright Red,60481,5,Red,60481,60481,4515371,,2026,9,,yes,,0.13,ROOF TILE 2X1X2,"likely (current, listed 2022)"
+60481.dat,15,White,60481,1,White,60481,60481,4515370,6552132,2026,35,,yes,,0.13,ROOF TILE 2X1X2,"likely (current, listed 2022)"
+6141.dat,14,Bright Yellow,4073,3,Yellow,6141,6141,614124,,2026,120,,yes,,0.06,ROUND PLATE 1X1,"likely (current, listed 2022)"
+91405.dat,72,Dark Stone Grey,91405,85,Dark Bluish Gray,91405,91405,6004927,,2026,13,,yes,,3.04,PLATE 16X16,"likely (current, listed 2022)"
