@@ -101,15 +101,15 @@ Every kit includes:
 ## Completion checklist
 
 <!-- checklist:start -->
-**1 of 21 kits complete** (digital package; no physical prototypes yet).
+**3 of 21 kits complete** (digital package; no physical prototypes yet).
 
 | # | Resort | Batch | Model | Checks pass | Renders | Booklet | BOM and upload files | README | Status |
 |---|---|---|---|---|---|---|---|---|---|
 | 1 | [Grand Floridian Resort](../grand-floridian-compact-lego/README.md) | 1 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
 | 2 | Riviera Resort | 1 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
 | 3 | BoardWalk Inn | 1 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
-| 4 | Contemporary Resort | 2 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
-| 5 | Polynesian Village Resort | 2 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
+| 4 | [Contemporary Resort](../contemporary-compact-lego/README.md) | 2 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
+| 5 | [Polynesian Village Resort](../polynesian-compact-lego/README.md) | 2 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
 | 6 | Wilderness Lodge | 2 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
 | 7 | Animal Kingdom Lodge | 2 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
 | 8 | Yacht Club Resort | 2 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
@@ -163,9 +163,11 @@ changed there.
 | Resort | Category | Pieces | Part lines | Parts, listed | Parts, 2026 est. | Landed cost, free shipping | Break-even | Price (2× parts) | Profit / margin, free shipping | Profit / margin, buyer pays postage | Sourcing uncertainty |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | [Grand Floridian Resort](../grand-floridian-compact-lego/README.md) | Deluxe | 327 | 41 | $42.34 | $46.57 | $65.66 | $73.05 | $99.99 | $24.38 / 24% | $33.88 / 34% | 29/41 lines 2022-only, 13 new IDs |
+| [Contemporary Resort](../contemporary-compact-lego/README.md) | Deluxe | 278 | 44 | $43.38 | $47.72 | $66.19 | $73.64 | $99.99 | $23.85 / 24% | $33.35 / 33% | 29/44 lines 2022-only, 16 new IDs |
+| [Polynesian Village Resort](../polynesian-compact-lego/README.md) | Deluxe | 238 | 36 | $33.23 | $36.55 | $54.53 | $60.75 | $79.99 | $17.41 / 22% | $26.92 / 34% | 24/36 lines 2022-only, 2 new IDs |
 
-- **1 kits**: parts from $42.34 (Grand Floridian Resort) to $42.34 (Grand Floridian Resort) at listed prices; 327–327 pieces.
-- **Shared parts**: the kits use 41 distinct elements in 41 kit lines; 0 elements appear in two or more kits, so mixed orders combine well.
+- **3 kits**: parts from $33.23 (Polynesian Village Resort) to $43.38 (Contemporary Resort) at listed prices; 238–327 pieces.
+- **Shared parts**: the kits use 85 distinct elements in 121 kit lines; 22 elements appear in two or more kits, so mixed orders combine well.
 - No kit is above $60 in parts at listed prices.
 <!-- comparison:end -->
 
