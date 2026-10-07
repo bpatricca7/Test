@@ -101,7 +101,7 @@ Every kit includes:
 ## Completion checklist
 
 <!-- checklist:start -->
-**5 of 21 kits complete** (digital package; no physical prototypes yet).
+**7 of 21 kits complete** (digital package; no physical prototypes yet).
 
 | # | Resort | Batch | Model | Checks pass | Renders | Booklet | BOM and upload files | README | Status |
 |---|---|---|---|---|---|---|---|---|---|
@@ -112,8 +112,8 @@ Every kit includes:
 | 5 | [Polynesian Village Resort](../polynesian-compact-lego/README.md) | 2 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
 | 6 | Wilderness Lodge | 2 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
 | 7 | Animal Kingdom Lodge | 2 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
-| 8 | Yacht Club Resort | 2 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
-| 9 | Beach Club Resort | 2 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
+| 8 | [Yacht Club Resort](../yacht-club-compact-lego/README.md) | 2 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
+| 9 | [Beach Club Resort](../beach-club-compact-lego/README.md) | 2 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
 | 10 | Old Key West Resort | 3 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
 | 11 | Saratoga Springs Resort | 3 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
 | 12 | Fort Wilderness Resort | 3 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
@@ -167,9 +167,11 @@ changed there.
 | [BoardWalk Inn](../boardwalk-compact-lego/README.md) | Deluxe | 383 | 53 | $48.89 | $53.78 | $73.57 | $81.79 | $109.99 | $25.52 / 23% | $35.03 / 32% | 35/53 lines 2022-only, 20 new IDs |
 | [Contemporary Resort](../contemporary-compact-lego/README.md) | Deluxe | 278 | 44 | $43.38 | $47.72 | $66.19 | $73.64 | $99.99 | $23.85 / 24% | $33.35 / 33% | 29/44 lines 2022-only, 16 new IDs |
 | [Polynesian Village Resort](../polynesian-compact-lego/README.md) | Deluxe | 238 | 36 | $33.23 | $36.55 | $54.53 | $60.75 | $79.99 | $17.41 / 22% | $26.92 / 34% | 24/36 lines 2022-only, 2 new IDs |
+| [Yacht Club Resort](../yacht-club-compact-lego/README.md) | Deluxe | 319 | 38 | $41.79 | $45.97 | $64.96 | $72.27 | $99.99 | $25.08 / 25% | $34.59 / 35% | 30/38 lines 2022-only, 10 new IDs |
+| [Beach Club Resort](../beach-club-compact-lego/README.md) | Deluxe | 364 | 42 | $42.46 | $46.71 | $66.26 | $73.71 | $99.99 | $23.78 / 24% | $33.29 / 33% | 33/42 lines 2022-only, 11 new IDs, 1 in <10 recent sets |
 
-- **5 kits**: parts from $33.23 (Polynesian Village Resort) to $48.89 (BoardWalk Inn) at listed prices; 238–383 pieces.
-- **Shared parts**: the kits use 129 distinct elements in 221 kit lines; 43 elements appear in two or more kits, so mixed orders combine well.
+- **7 kits**: parts from $33.23 (Polynesian Village Resort) to $48.89 (BoardWalk Inn) at listed prices; 238–383 pieces.
+- **Shared parts**: the kits use 158 distinct elements in 301 kit lines; 66 elements appear in two or more kits, so mixed orders combine well.
 - No kit is above $60 in parts at listed prices.
 <!-- comparison:end -->
 
