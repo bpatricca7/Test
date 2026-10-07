@@ -79,9 +79,10 @@ PROJECT = compact_project(
         "drums.ldr": ("The drums", "Two drums of round plates with white drumheads."),
     },
     legend=("drums.ldr", 1),
-    tips=["Each storey of the guest building is one course of bricks, then a white deck "
-          "that reaches out over the walkway. The yellow railings go on before the columns "
-          "of the next storey.",
+    tips=["Each storey of the guest building is one course of bricks with round white "
+          "columns in front, then a white deck that reaches out over the walkway. On the "
+          "upper storeys the yellow railing tiles sit on the edge of the deck, between the "
+          "columns.",
           "Slopes shape the jukebox top and the guitar body. Check which way each slope "
           "faces in the picture before pressing it down.",
           "Keep the white, purple and yellow parts in separate trays."],
