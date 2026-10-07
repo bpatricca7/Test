@@ -101,7 +101,7 @@ Every kit includes:
 ## Completion checklist
 
 <!-- checklist:start -->
-**17 of 21 kits complete** (digital package; no physical prototypes yet).
+**19 of 21 kits complete** (digital package; no physical prototypes yet).
 
 | # | Resort | Batch | Model | Checks pass | Renders | Booklet | BOM and upload files | README | Status |
 |---|---|---|---|---|---|---|---|---|---|
@@ -116,8 +116,8 @@ Every kit includes:
 | 9 | [Beach Club Resort](../beach-club-compact-lego/README.md) | 2 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
 | 10 | [Old Key West Resort](../old-key-west-compact-lego/README.md) | 3 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
 | 11 | [Saratoga Springs Resort](../saratoga-springs-compact-lego/README.md) | 3 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
-| 12 | Fort Wilderness Resort | 3 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
-| 13 | Coronado Springs Resort | 3 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
+| 12 | [Fort Wilderness Resort](../fort-wilderness-compact-lego/README.md) | 3 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
+| 13 | [Coronado Springs Resort](../coronado-springs-compact-lego/README.md) | 3 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
 | 14 | [Caribbean Beach Resort](../caribbean-beach-compact-lego/README.md) | 3 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
 | 15 | [Port Orleans French Quarter](../port-orleans-french-quarter-compact-lego/README.md) | 4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
 | 16 | [Port Orleans Riverside](../port-orleans-riverside-compact-lego/README.md) | 4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
@@ -173,6 +173,8 @@ changed there.
 | [Beach Club Resort](../beach-club-compact-lego/README.md) | Deluxe | 364 | 42 | $42.46 | $46.71 | $66.26 | $73.71 | $99.99 | $23.78 / 24% | $33.29 / 33% | 33/42 lines 2022-only, 11 new IDs, 1 in <10 recent sets |
 | [Old Key West Resort](../old-key-west-compact-lego/README.md) | Deluxe Villas (DVC) | 225 | 42 | $33.95 | $37.35 | $55.16 | $61.44 | $79.99 | $16.78 / 21% | $26.29 / 33% | 26/42 lines 2022-only, 10 new IDs |
 | [Saratoga Springs Resort](../saratoga-springs-compact-lego/README.md) | Deluxe Villas (DVC) | 271 | 42 | $34.82 | $38.30 | $56.69 | $63.14 | $79.99 | $15.25 / 19% | $24.75 / 31% | 27/42 lines 2022-only, 9 new IDs |
+| [Fort Wilderness Resort](../fort-wilderness-compact-lego/README.md) | Campground and Cabins | 212 | 50 | $31.71 | $34.88 | $52.53 | $58.54 | $69.99 | $10.36 / 15% | $19.86 / 28% | 37/50 lines 2022-only, 3 new IDs |
+| [Coronado Springs Resort](../coronado-springs-compact-lego/README.md) | Moderate | 332 | 39 | $48.20 | $53.02 | $72.17 | $80.24 | $109.99 | $26.92 / 24% | $36.42 / 33% | 27/39 lines 2022-only |
 | [Caribbean Beach Resort](../caribbean-beach-compact-lego/README.md) | Moderate | 299 | 50 | $38.37 | $42.21 | $60.94 | $67.84 | $89.99 | $20.05 / 22% | $29.55 / 33% | 31/50 lines 2022-only, 18 new IDs |
 | [Port Orleans French Quarter](../port-orleans-french-quarter-compact-lego/README.md) | Moderate | 286 | 40 | $38.85 | $42.74 | $61.31 | $68.24 | $89.99 | $19.68 / 22% | $29.18 / 32% | 23/40 lines 2022-only, 11 new IDs |
 | [Port Orleans Riverside](../port-orleans-riverside-compact-lego/README.md) | Moderate | 244 | 45 | $32.27 | $35.50 | $53.55 | $59.67 | $79.99 | $18.39 / 23% | $27.90 / 35% | 28/45 lines 2022-only, 18 new IDs |
@@ -180,8 +182,8 @@ changed there.
 | [All-Star Music Resort](../all-star-music-compact-lego/README.md) | Value | 278 | 46 | $33.58 | $36.94 | $55.41 | $61.73 | $79.99 | $16.53 / 21% | $26.03 / 32% | 30/46 lines 2022-only, 14 new IDs, 1 in <10 recent sets |
 | [All-Star Movies Resort](../all-star-movies-compact-lego/README.md) | Value | 288 | 54 | $36.87 | $40.56 | $59.16 | $65.86 | $89.99 | $21.83 / 24% | $31.34 / 35% | 28/54 lines 2022-only, 15 new IDs |
 
-- **17 kits**: parts from $30.88 (All-Star Sports Resort) to $53.45 (Wilderness Lodge) at listed prices; 225–416 pieces.
-- **Shared parts**: the kits use 281 distinct elements in 754 kit lines; 144 elements appear in two or more kits, so mixed orders combine well.
+- **19 kits**: parts from $30.88 (All-Star Sports Resort) to $53.45 (Wilderness Lodge) at listed prices; 212–416 pieces.
+- **Shared parts**: the kits use 303 distinct elements in 843 kit lines; 162 elements appear in two or more kits, so mixed orders combine well.
 - No kit is above $60 in parts at listed prices.
 <!-- comparison:end -->
 
