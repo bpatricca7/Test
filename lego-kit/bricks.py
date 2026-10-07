@@ -33,7 +33,7 @@ COLOR_NAMES = {
     1: "Blue", 28: "Dark Tan", 10: "Bright Green", 29: "Bright Pink",
     30: "Medium Lavender", 46: "Trans-Yellow", 47: "Trans-Clear", 36: "Trans-Red",
     320: "Dark Red", 226: "Bright Light Yellow", 297: "Pearl Gold",
-    25: "Orange", 84: "Medium Nougat",
+    25: "Orange", 84: "Medium Nougat", 14: "Yellow",
     378: "Sand Green",
     379: "Sand Blue",
     322: "Medium Azure",
