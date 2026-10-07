@@ -101,13 +101,13 @@ Every kit includes:
 ## Completion checklist
 
 <!-- checklist:start -->
-**3 of 21 kits complete** (digital package; no physical prototypes yet).
+**5 of 21 kits complete** (digital package; no physical prototypes yet).
 
 | # | Resort | Batch | Model | Checks pass | Renders | Booklet | BOM and upload files | README | Status |
 |---|---|---|---|---|---|---|---|---|---|
 | 1 | [Grand Floridian Resort](../grand-floridian-compact-lego/README.md) | 1 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
-| 2 | Riviera Resort | 1 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
-| 3 | BoardWalk Inn | 1 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
+| 2 | [Riviera Resort](../riviera-compact-lego/README.md) | 1 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
+| 3 | [BoardWalk Inn](../boardwalk-compact-lego/README.md) | 1 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
 | 4 | [Contemporary Resort](../contemporary-compact-lego/README.md) | 2 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
 | 5 | [Polynesian Village Resort](../polynesian-compact-lego/README.md) | 2 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
 | 6 | Wilderness Lodge | 2 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
@@ -163,11 +163,13 @@ changed there.
 | Resort | Category | Pieces | Part lines | Parts, listed | Parts, 2026 est. | Landed cost, free shipping | Break-even | Price (2× parts) | Profit / margin, free shipping | Profit / margin, buyer pays postage | Sourcing uncertainty |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | [Grand Floridian Resort](../grand-floridian-compact-lego/README.md) | Deluxe | 327 | 41 | $42.34 | $46.57 | $65.66 | $73.05 | $99.99 | $24.38 / 24% | $33.88 / 34% | 29/41 lines 2022-only, 13 new IDs |
+| [Riviera Resort](../riviera-compact-lego/README.md) | Deluxe Villas (DVC) | 364 | 47 | $43.70 | $48.07 | $67.62 | $75.22 | $99.99 | $22.42 / 22% | $31.92 / 32% | 30/47 lines 2022-only, 8 new IDs |
+| [BoardWalk Inn](../boardwalk-compact-lego/README.md) | Deluxe | 383 | 53 | $48.89 | $53.78 | $73.57 | $81.79 | $109.99 | $25.52 / 23% | $35.03 / 32% | 35/53 lines 2022-only, 20 new IDs |
 | [Contemporary Resort](../contemporary-compact-lego/README.md) | Deluxe | 278 | 44 | $43.38 | $47.72 | $66.19 | $73.64 | $99.99 | $23.85 / 24% | $33.35 / 33% | 29/44 lines 2022-only, 16 new IDs |
 | [Polynesian Village Resort](../polynesian-compact-lego/README.md) | Deluxe | 238 | 36 | $33.23 | $36.55 | $54.53 | $60.75 | $79.99 | $17.41 / 22% | $26.92 / 34% | 24/36 lines 2022-only, 2 new IDs |
 
-- **3 kits**: parts from $33.23 (Polynesian Village Resort) to $43.38 (Contemporary Resort) at listed prices; 238–327 pieces.
-- **Shared parts**: the kits use 85 distinct elements in 121 kit lines; 22 elements appear in two or more kits, so mixed orders combine well.
+- **5 kits**: parts from $33.23 (Polynesian Village Resort) to $48.89 (BoardWalk Inn) at listed prices; 238–383 pieces.
+- **Shared parts**: the kits use 129 distinct elements in 221 kit lines; 43 elements appear in two or more kits, so mixed orders combine well.
 - No kit is above $60 in parts at listed prices.
 <!-- comparison:end -->
 
