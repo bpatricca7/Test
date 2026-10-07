@@ -1,0 +1,50 @@
+ldraw_part,ldraw_color,lego_color,bricklink_part,bricklink_color_id,bricklink_color,rebrickable_part,design_id,element_id,alt_element_ids,last_set_year,sets_since_2024,pab_2025,pab_2022,pab_price_2025,pab_price_2022,pab_name,availability
+2417.dat,2,Dark Green,2417,6,Green,2417,2417,6266968,241728 4613823,2026,33,,yes,,0.19,LIMB ELEMENT,"likely (current, listed 2022)"
+2431.dat,0,Black,2431,11,Black,2431,2431,243126,,2026,269,,yes,,0.13,FLAT TILE 1X4,"likely (current, listed 2022)"
+2431.dat,15,White,2431,1,White,2431,2431,243101,6548255,2026,193,,yes,,0.13,FLAT TILE 1X4,"likely (current, listed 2022)"
+2431.dat,71,Medium Stone Grey,2431,86,Light Bluish Gray,2431,2431,4211356,2431194,2026,178,,yes,,0.13,FLAT TILE 1X4,"likely (current, listed 2022)"
+25269.dat,4,Bright Red,25269,5,Red,25269,25269,6170390,,2026,119,,yes,,0.05,1/4 CIRCLE TILE 1X1,"likely (current, listed 2022)"
+25269.dat,14,Bright Yellow,25269,3,Yellow,25269,25269,6195183,,2026,92,,yes,,0.05,1/4 CIRCLE TILE 1X1,"likely (current, listed 2022)"
+25269.dat,27,Bright Yellowish Green,25269,34,Lime,25269,25269,6211875,,2026,41,,yes,,0.05,1/4 CIRCLE TILE 1X1,"likely (current, listed 2022)"
+3003.dat,14,Bright Yellow,3003,3,Yellow,3003,3003,300324,300374 4103588,2026,56,yes,yes,0.13,0.14,BRICK 2X2,listed on Pick a Brick (2025)
+3003.dat,29,Light Purple,3003,104,Bright Pink,3003,3003,4550359,4245307,2026,71,yes,yes,0.13,0.14,BRICK 2X2,listed on Pick a Brick (2025)
+3004.dat,0,Black,3004,11,Black,3004,3004,300426,,2026,198,yes,yes,0.1,0.11,BRICK 1X2,listed on Pick a Brick (2025)
+3004.dat,1,Bright Blue,3004,7,Blue,3004,3004,300423,4613959,2026,56,yes,yes,0.1,0.11,BRICK 1X2,listed on Pick a Brick (2025)
+3004.dat,4,Bright Red,3004,5,Red,3004,3004,300421,4613961,2026,118,yes,yes,0.1,0.11,BRICK 1X2,listed on Pick a Brick (2025)
+3004.dat,14,Bright Yellow,3004,3,Yellow,3004,3004,300424,4613966,2026,82,yes,yes,0.1,0.11,BRICK 1X2,listed on Pick a Brick (2025)
+3004.dat,15,White,3004,1,White,3004,3004,300401,4613964 6548257,2026,249,yes,yes,0.1,0.11,BRICK 1X2,listed on Pick a Brick (2025)
+3004.dat,27,Bright Yellowish Green,3004,34,Lime,3004,3004,4164022,4122447 4613965,2026,46,,yes,,0.11,BRICK 1X2,"likely (current, listed 2022)"
+3005.dat,15,White,3005,1,White,3005,3005,300501,300551 6548258 6552096,2026,234,yes,yes,0.07,0.07,BRICK 1X1,listed on Pick a Brick (2025)
+3010.dat,0,Black,3010,11,Black,3010,3010,301026,,2026,175,yes,yes,0.16,0.15,BRICK 1X4,listed on Pick a Brick (2025)
+3010.dat,15,White,3010,1,White,3010,3010,301001,6550135,2026,186,yes,yes,0.16,0.15,BRICK 1X4,listed on Pick a Brick (2025)
+3020.dat,2,Dark Green,3020,6,Green,3020,3020,302028,,2026,106,yes,yes,0.14,0.14,PLATE 2X4,listed on Pick a Brick (2025)
+3022.dat,71,Medium Stone Grey,3022,86,Light Bluish Gray,3022,3022,4211397,,2026,292,yes,yes,0.09,0.11,PLATE 2X2,listed on Pick a Brick (2025)
+3023b.dat,2,Dark Green,3023,6,Green,3023,3023,302328,,2026,158,yes,yes,0.07,0.07,PLATE 1X2,listed on Pick a Brick (2025)
+3023b.dat,15,White,3023,1,White,3023,3023,302301,6548261 6552100,2026,520,yes,yes,0.07,0.07,PLATE 1X2,listed on Pick a Brick (2025)
+3024.dat,2,Dark Green,3024,6,Green,3024,3024,302428,,2026,82,yes,yes,0.05,0.06,PLATE 1X1,listed on Pick a Brick (2025)
+3031.dat,71,Medium Stone Grey,3031,86,Light Bluish Gray,3031,3031,4243797,4211403,2026,112,,yes,,0.21,PLATE 4X4,"likely (current, listed 2022)"
+3032.dat,15,White,3032,1,White,3032,3032,303201,,2026,71,,yes,,0.43,PLATE 4X6,"likely (current, listed 2022)"
+3033.dat,15,White,3033,1,White,3033,3033,4528341,303301,2026,17,,yes,,0.86,PLATE 6X10,"likely (current, listed 2022)"
+3035.dat,71,Medium Stone Grey,3035,86,Light Bluish Gray,3035,3035,4211407,,2026,77,,yes,,0.46,PLATE 4X8,"likely (current, listed 2022)"
+3062b.dat,15,White,3062,1,White,3062b,3062,306201,6619283,2026,127,,yes,,0.06,ROUND BRICK 1X1,"likely (current, listed 2022)"
+3062b.dat,19,Brick Yellow,3062,2,Tan,3062b,3062,4117070,306205,2026,69,,yes,,0.06,ROUND BRICK 1X1,"likely (current, listed 2022)"
+3062b.dat,70,Reddish Brown,3062,88,Reddish Brown,3062b,3062,4211183,,2026,112,,yes,,0.06,ROUND BRICK 1X1,"likely (current, listed 2022)"
+3065.dat,47,Transparent,3065,12,Trans-Clear,3065,35743,6244904,306510 306540 6514262,2026,64,,yes,,0.12,BRICK 1X2 W/O PIN,"likely (current, listed 2022)"
+32607.dat,2,Dark Green,32607,6,Green,32607,32607,6229130,,2026,138,,yes,,0.06,"PLANT, W/ PLATE 1X1, NO. 1","likely (current, listed 2022)"
+3460.dat,71,Medium Stone Grey,3460,86,Light Bluish Gray,3460,3460,4211425,,2026,154,,yes,,0.18,PLATE 1X8,"likely (current, listed 2022)"
+3622.dat,15,White,3622,1,White,3622,3622,362201,6550143,2026,121,yes,yes,0.14,0.14,BRICK 1X3,listed on Pick a Brick (2025)
+3666.dat,15,White,3666,1,White,3666,3666,366601,6548265 6552107,2026,245,,yes,,0.14,PLATE 1X6,"likely (current, listed 2022)"
+3710.dat,2,Dark Green,3710,6,Green,3710,3710,371028,,2026,96,yes,yes,0.1,0.11,PLATE 1X4,listed on Pick a Brick (2025)
+3710.dat,15,White,3710,1,White,3710,3710,371001,371051 6548266 6552108,2026,363,yes,yes,0.1,0.11,PLATE 1X4,listed on Pick a Brick (2025)
+3795.dat,2,Dark Green,3795,6,Green,3795,3795,379528,,2026,60,,yes,,0.19,PLATE 2X6,"likely (current, listed 2022)"
+3958.dat,15,White,3958,1,White,3958,3958,4144012,395801 6552116,2026,38,,yes,,0.5,PLATE 6X6,"likely (current, listed 2022)"
+4032a.dat,71,Medium Stone Grey,4032,86,Light Bluish Gray,4032a,4032,4211475,,2026,183,,yes,,0.08,PLATE 2X2 ROUND,"likely (current, listed 2022)"
+41539.dat,72,Dark Stone Grey,41539,85,Dark Bluish Gray,41539,41539,4210802,,2026,19,,yes,,0.81,PLATE 8X8,"likely (current, listed 2022)"
+4162.dat,0,Black,4162,11,Black,4162,4162,416226,,2026,156,,yes,,0.14,FLAT TILE 1X8,"likely (current, listed 2022)"
+4589.dat,0,Black,4589,11,Black,59900,59900,4529236,4518219 458926,2026,119,,yes,,0.07,NOSE CONE SMALL 1X1,"likely (current, listed 2022)"
+50950.dat,15,White,50950,1,White,50950,50950,4249112,6548268,2026,60,,yes,,0.13,Brick w/bow 1/3,"likely (current, listed 2022)"
+60479.dat,15,White,60479,1,White,60479,60479,4514842,6548269 6552130,2026,59,,yes,,0.25,PLATE 1X12,"likely (current, listed 2022)"
+6636.dat,15,White,6636,1,White,6636,6636,663601,6548296,2026,131,,yes,,0.14,FLAT TILE 1X6,"likely (current, listed 2022)"
+6636.dat,71,Medium Stone Grey,6636,86,Light Bluish Gray,6636,6636,4211549,,2026,134,,yes,,0.14,FLAT TILE 1X6,"likely (current, listed 2022)"
+87580.dat,19,Brick Yellow,87580,2,Tan,87580,87580,4565387,,2026,79,,yes,,0.08,PLATE 2X2 W 1 KNOB,"likely (current, listed 2022)"
+91405.dat,72,Dark Stone Grey,91405,85,Dark Bluish Gray,91405,91405,6004927,,2026,13,,yes,,3.04,PLATE 16X16,"likely (current, listed 2022)"
