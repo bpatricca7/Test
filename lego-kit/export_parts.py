@@ -24,10 +24,10 @@ from xml.sax.saxutils import escape
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import project as projects
-from bricks import PARTS, SubRef
+from bricks import PARTS, SubRef, DatNames
 
 ROOT = OUT = None                  # set by main() for the project
-NAMES = {p.dat: p.name for p in PARTS.values()}
+NAMES = DatNames({p.dat: p.name for p in PARTS.values()})
 NAMES["2335.dat"] = "Flag 2 x 2 Square (design 80326)"
 
 

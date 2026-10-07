@@ -18,7 +18,7 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import project as projects
-from bricks import PARTS, COLOR_NAMES, SubRef
+from bricks import PARTS, COLOR_NAMES, SubRef, DatNames
 
 ROOT = BUILD = IMG = None          # set by setup() for the project being laid out
 
@@ -32,7 +32,7 @@ PX2IN = 0.0036           # part render pixels -> inches in callouts
 CAP_IN_PER_LDU = 0.02    # never draw models larger than this (1 stud = 0.4 in)
 FULL_ART = (10.0, 6.1)   # art box of a full-page step, inches
 HALF_ART = (4.65, 5.8)   # art box of a half-page step
-DAT_NAMES = {p.dat: p.name for p in PARTS.values()}
+DAT_NAMES = DatNames({p.dat: p.name for p in PARTS.values()})
 COLOR_HEX = {15: "#F4F4F4", 0: "#1B2A34", 72: "#6C6E68", 71: "#A0A5A9", 4: "#C91A09",
              2: "#237841", 288: "#184632", 19: "#E4CD9E", 70: "#582A12", 1: "#0055BF",
              28: "#958A73", 10: "#4B9F4A", 5: "#C870A0", 26: "#923978", 29: "#E4ADC8",

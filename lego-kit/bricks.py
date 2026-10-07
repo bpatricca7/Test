@@ -121,6 +121,16 @@ def P(key, dat, name, **kw):
     PARTS[key] = PartType(dat, name, **kw)
 
 
+class DatNames(dict):
+    """Part names by .dat file. Looks again in PARTS for a file it doesn't know, so
+    parts a kit registers in its design.py (after the scripts start) are found."""
+
+    def __missing__(self, dat):
+        for p in PARTS.values():
+            self.setdefault(p.dat, p.name)
+        return dict.__getitem__(self, dat)
+
+
 def _init_parts():
     # bricks
     P("b1x1", "3005.dat", "Brick 1 x 1")

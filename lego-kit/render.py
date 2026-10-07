@@ -21,7 +21,7 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import project as projects
-from bricks import PARTS, COLOR_NAMES, SubRef
+from bricks import PARTS, COLOR_NAMES, SubRef, DatNames
 from ldraw_geom import geometry
 
 BUILD = RENDERS = MPD = None       # set by setup() for the project being rendered
@@ -56,7 +56,7 @@ def clear_library(path, alpha):
 LAT, LON = 28, 32          # camera: 28 deg above, 32 deg to the right of front
 FOV = 22
 HIGHLIGHT = "#FFFF8C00"    # orange edge lines on the elements added in a step
-DAT_NAMES = {p.dat: p.name for p in PARTS.values()}
+DAT_NAMES = DatNames({p.dat: p.name for p in PARTS.values()})
 
 
 def leocad(args, retries=2):
