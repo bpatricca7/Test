@@ -216,7 +216,8 @@ def part_jobs(counter):
     return jobs
 
 
-def run_jobs(jobs, workers=4):
+def run_jobs(jobs, workers=None):
+    workers = workers or int(os.environ.get("RENDER_WORKERS", "4"))   # fewer when builds share CPUs
     def one(job):
         out, args = job[0], job[1]
         os.makedirs(os.path.dirname(out), exist_ok=True)
