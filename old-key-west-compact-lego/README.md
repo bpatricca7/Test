@@ -2,7 +2,7 @@
 
 ![The finished model](images/old_key_west_compact_front_right.jpg)
 
-A compact display model of Disney's Old Key West Resort at Walt Disney World, part of the [compact resort collection](../resort-collection/README.md). The Hospitality House of Old Key West: a two-storey Key West house in pale yellow with white corner boards, raised on a white lattice skirt. A white porch with posts and railings runs across the front and round the corners, with a balcony over the door; on top sit a light grey tin roof with white gable trim and a louvred cupola, and a palm stands by the front steps.
+A compact display model of Disney's Old Key West Resort at Walt Disney World, part of the [resort collection](../resort-collection/README.md). The Hospitality House of Old Key West: a two-storey Key West house in pale yellow with white corner boards, raised on a white lattice skirt. A white porch with posts and railings runs across the front and round the corners, with a balcony over the door; on top sit a light grey tin roof with white gable trim and a louvred cupola, and a palm stands by the front steps.
 
 **Signature features in this kit**
 
@@ -20,7 +20,7 @@ A compact display model of Disney's Old Key West Resort at Walt Disney World, pa
 | | |
 |---|---|
 | Pieces | **225** (42 part/colour lines, 28 kinds of part, 7 colours) |
-| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every kit in the collection |
+| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every compact kit in the collection |
 | Overall size | 19.2 × 12.8 cm, 8.6 cm tall |
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
 | Instructions | 33-page PDF, 26 steps, 2 sections |

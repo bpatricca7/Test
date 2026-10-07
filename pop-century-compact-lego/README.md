@@ -2,7 +2,7 @@
 
 ![The finished model](images/pop_century_compact_front_right.jpg)
 
-A compact display model of Disney's Pop Century Resort at Walt Disney World, part of the [compact resort collection](../resort-collection/README.md). A short section of a Pop Century guest building: four storeys of white rooms with the open walkways and turquoise railings along the front, and a bright stair tower at each end. On the lawn in front stand the giant decade icons: two bowling pins, white with a red band, and a yo-yo standing on its edge.
+A compact display model of Disney's Pop Century Resort at Walt Disney World, part of the [resort collection](../resort-collection/README.md). A short section of a Pop Century guest building: four storeys of white rooms with the open walkways and turquoise railings along the front, and a bright stair tower at each end. On the lawn in front stand the giant decade icons: two bowling pins, white with a red band, and a yo-yo standing on its edge.
 
 **Signature features in this kit**
 
@@ -20,7 +20,7 @@ A compact display model of Disney's Pop Century Resort at Walt Disney World, par
 | | |
 |---|---|
 | Pieces | **315** (60 part/colour lines, 36 kinds of part, 8 colours) |
-| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every kit in the collection |
+| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every compact kit in the collection |
 | Overall size | 19.2 × 12.8 cm, 8.3 cm tall |
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
 | Instructions | 43-page PDF, 43 steps, 5 sections |

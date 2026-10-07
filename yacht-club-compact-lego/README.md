@@ -2,7 +2,7 @@
 
 ![The finished model](images/yacht_club_compact_front_right.jpg)
 
-A compact display model of Disney's Yacht Club Resort at Walt Disney World, part of the [compact resort collection](../resort-collection/README.md). The Yacht Club as a New England seaside hotel: grey-blue clapboard walls with rows of windows, two tall end pavilions with crisp white-trimmed front gables under dark grey roofs, a lower centre range with a white entrance porch and the white cupola on its ridge, and the lighthouse at the end of its pier out in the water.
+A compact display model of Disney's Yacht Club Resort at Walt Disney World, part of the [resort collection](../resort-collection/README.md). The Yacht Club as a New England seaside hotel: grey-blue clapboard walls with rows of windows, two tall end pavilions with crisp white-trimmed front gables under dark grey roofs, a lower centre range with a white entrance porch and the white cupola on its ridge, and the lighthouse at the end of its pier out in the water.
 
 **Signature features in this kit**
 
@@ -21,7 +21,7 @@ A compact display model of Disney's Yacht Club Resort at Walt Disney World, part
 | | |
 |---|---|
 | Pieces | **319** (38 part/colour lines, 27 kinds of part, 10 colours) |
-| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every kit in the collection |
+| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every compact kit in the collection |
 | Overall size | 19.2 × 12.8 cm, 9.8 cm tall |
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
 | Instructions | 31-page PDF, 36 steps, 4 sections |

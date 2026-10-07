@@ -2,7 +2,7 @@
 
 ![The finished model](images/saratoga_springs_compact_front_right.jpg)
 
-A compact display model of Disney's Saratoga Springs Resort & Spa at Walt Disney World, part of the [compact resort collection](../resort-collection/README.md). The Carriage House of Saratoga Springs, built like a Victorian spa-town building in upstate New York: a cream ground floor and a sage-green upper floor with white floor bands, under steep grey roofs. The central pavilion's tall front gable crosses the gabled wings, a white belvedere with a grey dome and finial sits where the roofs meet, white porches with posts and railings run under the wings, and a black lamp post stands on the lawn.
+A compact display model of Disney's Saratoga Springs Resort & Spa at Walt Disney World, part of the [resort collection](../resort-collection/README.md). The Carriage House of Saratoga Springs, built like a Victorian spa-town building in upstate New York: a cream ground floor and a sage-green upper floor with white floor bands, under steep grey roofs. The central pavilion's tall front gable crosses the gabled wings, a white belvedere with a grey dome and finial sits where the roofs meet, white porches with posts and railings run under the wings, and a black lamp post stands on the lawn.
 
 This kit covers The Treehouse Villas at Disney's Saratoga Springs Resort as well: they share the property, and the compact model shows the part that makes it recognisable.
 
@@ -23,7 +23,7 @@ This kit covers The Treehouse Villas at Disney's Saratoga Springs Resort as well
 | | |
 |---|---|
 | Pieces | **271** (42 part/colour lines, 28 kinds of part, 8 colours) |
-| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every kit in the collection |
+| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every compact kit in the collection |
 | Overall size | 19.2 × 12.8 cm, 9.1 cm tall |
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
 | Instructions | 38-page PDF, 31 steps, 2 sections |

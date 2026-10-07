@@ -2,7 +2,7 @@
 
 ![The finished model](images/polynesian_compact_front_right.jpg)
 
-A compact display model of Disney's Polynesian Village Resort at Walt Disney World, part of the [compact resort collection](../resort-collection/README.md). The Great Ceremonial House of the Polynesian: a longhouse under a very tall, steep thatched A-frame roof, with a dark timber gable and a tall window over the entrance and the ridge beam sticking out at the top. Two tiki torches stand on the sandy forecourt and two palms on the lawn.
+A compact display model of Disney's Polynesian Village Resort at Walt Disney World, part of the [resort collection](../resort-collection/README.md). The Great Ceremonial House of the Polynesian: a longhouse under a very tall, steep thatched A-frame roof, with a dark timber gable and a tall window over the entrance and the ridge beam sticking out at the top. Two tiki torches stand on the sandy forecourt and two palms on the lawn.
 
 This kit covers Disney's Polynesian Villas & Bungalows, Island Tower at Disney's Polynesian Village Resort as well: they share the property, and the compact model shows the part that makes it recognisable.
 
@@ -23,7 +23,7 @@ This kit covers Disney's Polynesian Villas & Bungalows, Island Tower at Disney's
 | | |
 |---|---|
 | Pieces | **238** (36 part/colour lines, 26 kinds of part, 7 colours) |
-| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every kit in the collection |
+| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every compact kit in the collection |
 | Overall size | 19.2 × 12.8 cm, 11.5 cm tall |
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
 | Instructions | 25-page PDF, 25 steps, 3 sections |

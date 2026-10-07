@@ -2,7 +2,7 @@
 
 ![The finished model](images/grand_floridian_compact_front_right.jpg)
 
-A compact display model of Disney's Grand Floridian Resort & Spa at Walt Disney World, part of the [compact resort collection](../resort-collection/README.md). The main building of the Grand Floridian: a white Victorian block with rows of windows, a steep red hipped roof, a big front gable and the little cupola on the ridge, flanked by two lower wings with red gables, and two palms out front.
+A compact display model of Disney's Grand Floridian Resort & Spa at Walt Disney World, part of the [resort collection](../resort-collection/README.md). The main building of the Grand Floridian: a white Victorian block with rows of windows, a steep red hipped roof, a big front gable and the little cupola on the ridge, flanked by two lower wings with red gables, and two palms out front.
 
 This kit covers The Villas at Disney's Grand Floridian Resort as well: they share the property, and the compact model shows the part that makes it recognisable.
 
@@ -22,12 +22,12 @@ This kit covers The Villas at Disney's Grand Floridian Resort as well: they shar
 | | |
 |---|---|
 | Pieces | **327** (41 part/colour lines, 30 kinds of part, 7 colours) |
-| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every kit in the collection |
+| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every compact kit in the collection |
 | Overall size | 19.2 × 12.8 cm, 11.7 cm tall |
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
 | Instructions | 31-page PDF, 37 steps, 3 sections |
 | Parts cost | **$42.34 per kit** at the Pick a Brick prices last seen (2022 and late 2025); about $46.57 with 2026 price rises (see [Cost assumptions](#cost-assumptions-and-resale-scenarios)) |
-| Large version | [`../grand-floridian-lego`](../grand-floridian-lego) (the full display model) |
+| Large version | [`../grand-floridian-lego`](../grand-floridian-lego) |
 
 ![Front view](images/grand_floridian_compact_front.jpg)
 

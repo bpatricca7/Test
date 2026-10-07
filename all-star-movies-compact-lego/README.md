@@ -2,7 +2,7 @@
 
 ![The finished model](images/all_star_movies_compact_front_right.jpg)
 
-A compact display model of Disney's All-Star Movies Resort at Walt Disney World, part of the [compact resort collection](../resort-collection/README.md). The Cinema Hall entrance as a classic movie palace: a white facade with red pilasters and a stepped crown, a big marquee with yellow lights and rows of dark "letters" (no readable text), and a tall red sign blade lined with bulbs. A red carpet leads to the glass doors, with a giant film reel on one side and a giant clapperboard on the other. The real resort is decorated with giant film characters; they are left out on purpose, so this kit is less recognisable than the others in the collection.
+A compact display model of Disney's All-Star Movies Resort at Walt Disney World, part of the [resort collection](../resort-collection/README.md). The Cinema Hall entrance as a classic movie palace: a white facade with red pilasters and a stepped crown, a big marquee with yellow lights and rows of dark "letters" (no readable text), and a tall red sign blade lined with bulbs. A red carpet leads to the glass doors, with a giant film reel on one side and a giant clapperboard on the other. The real resort is decorated with giant film characters; they are left out on purpose, so this kit is less recognisable than the others in the collection.
 
 **Signature features in this kit**
 
@@ -21,7 +21,7 @@ A compact display model of Disney's All-Star Movies Resort at Walt Disney World,
 | | |
 |---|---|
 | Pieces | **288** (54 part/colour lines, 30 kinds of part, 8 colours) |
-| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every kit in the collection |
+| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every compact kit in the collection |
 | Overall size | 19.2 × 12.8 cm, 12.0 cm tall |
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
 | Instructions | 32-page PDF, 34 steps, 4 sections |

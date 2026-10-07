@@ -140,3 +140,21 @@ for, not the same box with different colours.
    - the README images.
 
 `DATA_DIR` is the offline element data folder (see `../lego-kit/README.md`).
+
+## Mid-size versions
+
+A mid-size kit shows more of the same resort, at the same scale, on a larger base.
+- **Format:** pass `size="midsize"` to `compact_project(...)`,
+  `display_base(m, "midsize")` and `finish_ground(..., size="midsize")`. The base
+  is 32 × 24 studs (25.6 × 19.2 cm): two 16×16 plates in front and four 8×8 plates
+  along the back, with the same black band.
+- **Seams:** the plates meet at x = 16 (z < 16), at z = 16, and at x = 8, 16 and 24
+  (z ≥ 16). Something must cross each seam; a building plinth or a ground row is
+  enough.
+- **Size:** about $65–80 of parts at listed prices (aim for $75), roughly 500–800
+  pieces.
+- **What to add:** keep one storey = 4 plates. Show more of the resort: wings,
+  porches, verandas, a porte-cochère, extra storeys and a few more details, not a
+  bigger version of the compact model.
+- **Folder:** `<resort>-midsize-lego`, with the same `slug` and `title` as the
+  compact kit. Copy `../lego-kit/compact_build.sh` as its `build.sh`.

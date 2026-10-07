@@ -2,7 +2,7 @@
 
 ![The finished model](images/boardwalk_compact_front_right.jpg)
 
-A compact display model of Disney's BoardWalk Inn at Walt Disney World, part of the [compact resort collection](../resort-collection/README.md). The entrance of the BoardWalk Inn: the white gatehouse with its big round arch, a ring of gold dots where the sign's letters run over it and a curved roofline, two towers with dark pyramid roofs and white spires, and the drive with its red-and-blue painted curb between two topiaries.
+A compact display model of Disney's BoardWalk Inn at Walt Disney World, part of the [resort collection](../resort-collection/README.md). The entrance of the BoardWalk Inn: the white gatehouse with its big round arch, a ring of gold dots where the sign's letters run over it and a curved roofline, two towers with dark pyramid roofs and white spires, and the drive with its red-and-blue painted curb between two topiaries.
 
 This kit covers Disney's BoardWalk Villas as well: they share the property, and the compact model shows the part that makes it recognisable.
 
@@ -23,12 +23,12 @@ This kit covers Disney's BoardWalk Villas as well: they share the property, and 
 | | |
 |---|---|
 | Pieces | **383** (53 part/colour lines, 38 kinds of part, 10 colours) |
-| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every kit in the collection |
+| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every compact kit in the collection |
 | Overall size | 19.2 × 12.8 cm, 17.4 cm tall |
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
 | Instructions | 40-page PDF, 37 steps, 3 sections |
 | Parts cost | **$48.89 per kit** at the Pick a Brick prices last seen (2022 and late 2025); about $53.78 with 2026 price rises (see [Cost assumptions](#cost-assumptions-and-resale-scenarios)) |
-| Large version | [`../boardwalk-lego`](../boardwalk-lego) (the full display model) |
+| Large version | [`../boardwalk-lego`](../boardwalk-lego) |
 
 ![Front view](images/boardwalk_compact_front.jpg)
 

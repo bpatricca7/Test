@@ -2,7 +2,7 @@
 
 ![The finished model](images/all_star_sports_compact_front_right.jpg)
 
-A compact display model of Disney's All-Star Sports Resort at Walt Disney World, part of the [compact resort collection](../resort-collection/README.md). A short section of an All-Star Sports guest building: three bright storeys with open walkways behind teal railings under a red and yellow roof trim, with giant sports icons at its ends: a stair tower clad with three tall surfboards, and a giant tennis racket.
+A compact display model of Disney's All-Star Sports Resort at Walt Disney World, part of the [resort collection](../resort-collection/README.md). A short section of an All-Star Sports guest building: three bright storeys with open walkways behind teal railings under a red and yellow roof trim, with giant sports icons at its ends: a stair tower clad with three tall surfboards, and a giant tennis racket.
 
 **Signature features in this kit**
 
@@ -20,7 +20,7 @@ A compact display model of Disney's All-Star Sports Resort at Walt Disney World,
 | | |
 |---|---|
 | Pieces | **240** (48 part/colour lines, 26 kinds of part, 8 colours) |
-| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every kit in the collection |
+| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every compact kit in the collection |
 | Overall size | 19.2 × 12.8 cm, 8.0 cm tall |
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
 | Instructions | 32-page PDF, 26 steps, 4 sections |

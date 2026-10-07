@@ -2,7 +2,7 @@
 
 ![The finished model](images/beach_club_compact_front_right.jpg)
 
-A compact display model of Disney's Beach Club Resort at Walt Disney World, part of the [compact resort collection](../resort-collection/README.md). The Beach Club as a seaside Victorian beach cottage: pale sea-green clapboard with crisp white trim, a taller centre with a pink-and-white striped entrance awning, a light grey hipped roof and a white spire, two low wings with white verandas and railings, and a turret with a pointed cap at each end, on a sandy beach by the lake with beach umbrellas and a palm.
+A compact display model of Disney's Beach Club Resort at Walt Disney World, part of the [resort collection](../resort-collection/README.md). The Beach Club as a seaside Victorian beach cottage: pale sea-green clapboard with crisp white trim, a taller centre with a pink-and-white striped entrance awning, a light grey hipped roof and a white spire, two low wings with white verandas and railings, and a turret with a pointed cap at each end, on a sandy beach by the lake with beach umbrellas and a palm.
 
 This kit covers Disney's Beach Club Villas as well: they share the property, and the compact model shows the part that makes it recognisable.
 
@@ -24,7 +24,7 @@ This kit covers Disney's Beach Club Villas as well: they share the property, and
 | | |
 |---|---|
 | Pieces | **364** (42 part/colour lines, 29 kinds of part, 10 colours) |
-| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every kit in the collection |
+| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every compact kit in the collection |
 | Overall size | 19.2 × 12.8 cm, 10.4 cm tall |
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
 | Instructions | 40-page PDF, 50 steps, 5 sections |

@@ -2,7 +2,7 @@
 
 ![The finished model](images/port_orleans_french_quarter_compact_front_right.jpg)
 
-A compact display model of Disney's Port Orleans Resort - French Quarter at Walt Disney World, part of the [compact resort collection](../resort-collection/README.md). A row of three New Orleans townhouses from Port Orleans French Quarter: narrow pastel facades in pink, pale yellow and light blue, black wrought-iron balconies on the upper floors, grey roofs with dormers, and black gas lamps on the sidewalk.
+A compact display model of Disney's Port Orleans Resort - French Quarter at Walt Disney World, part of the [resort collection](../resort-collection/README.md). A row of three New Orleans townhouses from Port Orleans French Quarter: narrow pastel facades in pink, pale yellow and light blue, black wrought-iron balconies on the upper floors, grey roofs with dormers, and black gas lamps on the sidewalk.
 
 **Signature features in this kit**
 
@@ -20,7 +20,7 @@ A compact display model of Disney's Port Orleans Resort - French Quarter at Walt
 | | |
 |---|---|
 | Pieces | **286** (40 part/colour lines, 25 kinds of part, 9 colours) |
-| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every kit in the collection |
+| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every compact kit in the collection |
 | Overall size | 19.2 × 12.8 cm, 8.3 cm tall |
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
 | Instructions | 41-page PDF, 50 steps, 5 sections |

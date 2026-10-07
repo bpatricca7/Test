@@ -2,7 +2,7 @@
 
 ![The finished model](images/wilderness_lodge_compact_front_right.jpg)
 
-A compact display model of Disney's Wilderness Lodge at Walt Disney World, part of the [compact resort collection](../resort-collection/README.md). The great lodge of the Wilderness Lodge, in the Pacific Northwest style: a grey stone base under storeys of reddish-brown logs, a steep green front gable with the tall lobby window, a log porte-cochere at the entrance, two lower wings with their own green gables, the tall stone chimney and the two totem poles that guard the way in.
+A compact display model of Disney's Wilderness Lodge at Walt Disney World, part of the [resort collection](../resort-collection/README.md). The great lodge of the Wilderness Lodge, in the Pacific Northwest style: a grey stone base under storeys of reddish-brown logs, a steep green front gable with the tall lobby window, a log porte-cochere at the entrance, two lower wings with their own green gables, the tall stone chimney and the two totem poles that guard the way in.
 
 This kit covers Boulder Ridge Villas at Disney's Wilderness Lodge, Copper Creek Villas & Cabins at Disney's Wilderness Lodge as well: they share the property, and the compact model shows the part that makes it recognisable.
 
@@ -23,7 +23,7 @@ This kit covers Boulder Ridge Villas at Disney's Wilderness Lodge, Copper Creek 
 | | |
 |---|---|
 | Pieces | **416** (47 part/colour lines, 29 kinds of part, 9 colours) |
-| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every kit in the collection |
+| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every compact kit in the collection |
 | Overall size | 19.2 × 12.8 cm, 11.2 cm tall |
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
 | Instructions | 36-page PDF, 45 steps, 4 sections |

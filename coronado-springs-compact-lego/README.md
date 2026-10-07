@@ -2,7 +2,7 @@
 
 ![The finished model](images/coronado_springs_compact_front_right.jpg)
 
-A compact display model of Disney's Coronado Springs Resort at Walt Disney World, part of the [compact resort collection](../resort-collection/README.md). The Gran Destino Tower rising behind El Centro: a tall, slim tan tower with bands of dark windows and a crown of fins around a glass lantern at the top, and in front of it the low mission-style arcade of El Centro with its arches, terracotta tile roof and the stepped gable over its entrance. Two palms and a strip of the lake finish the scene.
+A compact display model of Disney's Coronado Springs Resort at Walt Disney World, part of the [resort collection](../resort-collection/README.md). The Gran Destino Tower rising behind El Centro: a tall, slim tan tower with bands of dark windows and a crown of fins around a glass lantern at the top, and in front of it the low mission-style arcade of El Centro with its arches, terracotta tile roof and the stepped gable over its entrance. Two palms and a strip of the lake finish the scene.
 
 This kit covers Gran Destino Tower at Disney's Coronado Springs Resort as well: they share the property, and the compact model shows the part that makes it recognisable.
 
@@ -23,7 +23,7 @@ This kit covers Gran Destino Tower at Disney's Coronado Springs Resort as well: 
 | | |
 |---|---|
 | Pieces | **332** (39 part/colour lines, 27 kinds of part, 9 colours) |
-| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every kit in the collection |
+| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every compact kit in the collection |
 | Overall size | 19.2 × 12.8 cm, 22.2 cm tall |
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
 | Instructions | 46-page PDF, 52 steps, 4 sections |

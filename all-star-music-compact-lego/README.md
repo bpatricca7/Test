@@ -2,7 +2,7 @@
 
 ![The finished model](images/all_star_music_compact_front_right.jpg)
 
-A compact display model of Disney's All-Star Music Resort at Walt Disney World, part of the [compact resort collection](../resort-collection/README.md). A short section of one of the bright guest buildings of All-Star Music: three storeys of rooms opening onto outdoor walkways with yellow railings, under a purple-capped parapet. Its stair tower is a giant jukebox with a rounded top, glowing light tubes and a speaker grille. A giant guitar stands on end at the other end of the building, and two giant drums sit on the lawn.
+A compact display model of Disney's All-Star Music Resort at Walt Disney World, part of the [resort collection](../resort-collection/README.md). A short section of one of the bright guest buildings of All-Star Music: three storeys of rooms opening onto outdoor walkways with yellow railings, under a purple-capped parapet. Its stair tower is a giant jukebox with a rounded top, glowing light tubes and a speaker grille. A giant guitar stands on end at the other end of the building, and two giant drums sit on the lawn.
 
 **Signature features in this kit**
 
@@ -20,7 +20,7 @@ A compact display model of Disney's All-Star Music Resort at Walt Disney World, 
 | | |
 |---|---|
 | Pieces | **278** (46 part/colour lines, 30 kinds of part, 12 colours) |
-| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every kit in the collection |
+| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every compact kit in the collection |
 | Overall size | 19.2 × 12.8 cm, 12.6 cm tall |
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
 | Instructions | 36-page PDF, 33 steps, 5 sections |

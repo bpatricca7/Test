@@ -17,12 +17,28 @@ the collection looks like one series. Use ``compact_project()`` for PROJECT and
 from bricks import Model, row, fill_rect, fill_cells, BLACK, DBG, WHITE, LBG, GREEN, RBROWN  # noqa: F401
 from walls import WallRing
 
-BASE_W, BASE_D = 24, 16
+BASE_W, BASE_D = 24, 16             # the compact base (see FORMATS for the mid-size one)
 BAND_ROWS = 2                      # z = 0, 1 are the black band
 BASE_COLOR, BAND_COLOR = DBG, BLACK
 SCALE = "about 1:250 (one storey = 4 plates, 1 stud &asymp; 2 m), like the large resort models"
 STOREY = 4                         # plates per storey: a brick course and a plate band
 BASE_CM = (19.2, 12.8)
+
+# Display sizes. "compact" is the collection's standard kit (about $30-55 of
+# parts); "midsize" shows more of each resort on a larger base (about $65-80).
+FORMATS = {
+    "compact": dict(w=24, d=16, label="compact", title="Compact",
+                    plates=[("p16x16", 0, 0), ("p8x8", 16, 0), ("p8x8", 16, 8)],
+                    subtitle="A compact display model in LEGO&reg; bricks",
+                    cover=("19 &times; 13 cm", "24 &times; 16 studs"),
+                    size_fact="24 &times; 16 studs (19.2 &times; 12.8 cm)"),
+    "midsize": dict(w=32, d=24, label="mid-size", title="Midsize",
+                    plates=[("p16x16", 0, 0), ("p16x16", 16, 0), ("p8x8", 0, 16),
+                            ("p8x8", 8, 16), ("p8x8", 16, 16), ("p8x8", 24, 16)],
+                    subtitle="A mid-size display model in LEGO&reg; bricks",
+                    cover=("26 &times; 19 cm", "32 &times; 24 studs"),
+                    size_fact="32 &times; 24 studs (25.6 &times; 19.2 cm)"),
+}
 
 HERO_VIEWS = [("cover_front_right", 26, 32), ("cover_front_left", 26, -32),
               ("cover_front", 12, 0), ("cover_high", 55, 20), ("back", 28, 150)]
@@ -40,22 +56,23 @@ SHARED_PARTS = [
 ]
 
 
-def display_base(m):
-    """Lay the standard base and the black front band (two steps).
+def display_base(m, size="compact"):
+    """Lay the base and the black front band for a display size (two steps).
 
     Returns the set of (x, z) cells at layer 1 taken by the band.
     """
-    m.add("p16x16", BASE_COLOR, 0, 0, 0)
-    m.add("p8x8", BASE_COLOR, 16, 0, 0)
-    m.add("p8x8", BASE_COLOR, 16, 8, 0)
+    f = FORMATS[size]
+    for key, x, z in f["plates"]:
+        m.add(key, BASE_COLOR, x, z, 0)
     m.step()
     # front row in 1x8 tiles; the second row is offset so it bridges the seams
-    for x in (0, 8, 16):
+    for x in range(0, f["w"], 8):
         m.add("t1x8", BAND_COLOR, x, 0, 1)
-    for x, n in ((0, 4), (4, 8), (12, 8), (20, 4)):
+    runs = [(0, 4)] + [(x, 8) for x in range(4, f["w"] - 4, 8)] + [(f["w"] - 4, 4)]
+    for x, n in runs:
         m.add(f"t1x{n}", BAND_COLOR, x, 1, 1)
     m.step()
-    return {(x, z) for x in range(BASE_W) for z in range(BAND_ROWS)}
+    return {(x, z) for x in range(f["w"]) for z in range(BAND_ROWS)}
 
 
 # 1xN tile lengths that are Bestsellers per colour (checked with avail.py)
@@ -75,17 +92,18 @@ GROUND_PLATE_SIZES = {
 LAWN_COLOURS = {2}
 
 
-def finish_ground(m, reserved, colour, layer=1, colour_at=None):
+def finish_ground(m, reserved, colour, layer=1, colour_at=None, size="compact"):
     """Cover every base cell (at ``layer``) that isn't reserved.
 
     Lawns (green) are plates with their studs showing, which reads as grass and
     costs a third of tiles. Everything else (paths, paving, sand, water) is
-    tiles in runs along x that avoid seams at x = 8 and 16, so rows that cross
-    the base plates' seam tie the plates together. ``colour_at(x, z)`` can
+    tiles in runs along x that avoid seams at every 8 studs, so rows that cross
+    the base plates' seams tie the plates together. ``colour_at(x, z)`` can
     give a different colour per cell. Returns the number of elements placed.
     """
+    W, D = FORMATS[size]["w"], FORMATS[size]["d"]
     colour_at = colour_at or (lambda x, z: colour)
-    free = [(x, z) for z in range(BASE_D) for x in range(BASE_W) if (x, z) not in reserved]
+    free = [(x, z) for z in range(D) for x in range(W) if (x, z) not in reserved]
     n = 0
     lawns = {}
     for c in free:
@@ -96,18 +114,18 @@ def finish_ground(m, reserved, colour, layer=1, colour_at=None):
         before = len(m.items) if hasattr(m, "items") else 0
         fill_cells(m, "p", col, cells, layer, sizes=GROUND_PLATE_SIZES[col])
         n += (len(m.items) - before) if hasattr(m, "items") else 0
-    for z in range(BASE_D):
+    for z in range(D):
         x = 0
-        while x < BASE_W:
+        while x < W:
             c = (x, z)
             if c in reserved or colour_at(*c) in LAWN_COLOURS:
                 x += 1
                 continue
             col = colour_at(x, z)
             x1 = x
-            while x1 < BASE_W and (x1, z) not in reserved and colour_at(x1, z) == col:
+            while x1 < W and (x1, z) not in reserved and colour_at(x1, z) == col:
                 x1 += 1
-            n += len(row(m, "t", col, x, z, x1 - x, layer, avoid={8 - x, 16 - x},
+            n += len(row(m, "t", col, x, z, x1 - x, layer, avoid={k - x for k in range(8, W, 8)},
                          sizes=GROUND_TILE_SIZES.get(col, [4, 2, 1]))) + 1
             x = x1
     return n
@@ -164,7 +182,7 @@ def palm(name="palm.ldr", trunk=4, colour=GREEN):
 def compact_project(*, slug, title, resort, about, features, omitted, colour_rows,
                     organisation, sub_info, legend, tips, build_time, height_cm=None,
                     category, merged=None, substitutions=(), main_parts_label=None,
-                    **extra):
+                    size="compact", **extra):
     """PROJECT dict for a compact kit, with the collection's shared settings.
 
     slug      file stem, e.g. "grand_floridian"  (model and PDF names)
@@ -175,27 +193,28 @@ def compact_project(*, slug, title, resort, about, features, omitted, colour_row
     category  Deluxe / Deluxe Villas / Moderate / Value (collection table)
     merged    other names covered by this kit (e.g. its DVC villas)
     """
+    f = FORMATS[size]
     pdf_stem = "_".join(w for w in title.replace("&", "and").split())
     p = dict(
         main_parts_label=main_parts_label or "Display base and forecourt",
-        model_name=f"{slug}_compact",
-        pdf_name=f"{pdf_stem}_Compact_Instructions.pdf",
+        model_name=f"{slug}_{size}",
+        pdf_name=f"{pdf_stem}_{f['title']}_Instructions.pdf",
         title=title,
-        subtitle="A compact display model in LEGO&reg; bricks",
-        cover_stats=("19 &times; 13 cm", "24 &times; 16 studs"),
+        subtitle=f["subtitle"],
+        cover_stats=f["cover"],
         badge="Unofficial fan design",
         fine_print=(f"An unofficial fan-designed model (MOC), inspired by "
                     f"{resort.replace('&', '&amp;')} at Walt Disney World. It is not affiliated "
                     "with, sponsored or endorsed by The LEGO Group or Disney. LEGO&reg; is a "
                     "trademark of The LEGO Group."),
         about=about,
-        facts=[("Size", "24 &times; 16 studs (19.2 &times; 12.8 cm), {height} cm tall"),
+        facts=[("Size", f["size_fact"] + ", {height} cm tall"),
                ("Scale", SCALE),
                ("Build time", build_time)],
         organisation=organisation,
-        organisation_note=("Every kit in the compact resort collection stands on the same "
-                           "24&times;16 display base with a black front band. Each section "
-                           "starts with a list of the parts it needs."),
+        organisation_note=(f"Every kit in the {f['label']} resort collection stands on the same "
+                           f"{f['w']}&times;{f['d']} display base with a black front band. Each "
+                           "section starts with a list of the parts it needs."),
         tips=list(tips),
         legend=legend,
         sub_info=sub_info,
@@ -214,6 +233,8 @@ def compact_project(*, slug, title, resort, about, features, omitted, colour_row
         batch_sizes=[10, 25],
         # collection fields (README and comparison table)
         compact=True,
+        size=size,
+        base=(f["w"], f["d"]),
         resort=resort,
         category=category,
         merged=merged or [],

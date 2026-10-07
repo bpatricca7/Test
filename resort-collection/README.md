@@ -210,6 +210,17 @@ What the numbers mean for selling:
   $5–20 (not researched for this collection). There are no parts, packing or
   postage, but the trademark caution below applies just the same.
 
+## Mid-size versions
+
+A second, larger tier for selected resorts: a 32 × 24 base (25.6 × 19.2 cm) with
+the same black band, scale and presentation as the compact kits, and a parts
+target of about $75. It shows more of each resort, such as wings, porches,
+verandas and more storeys. Folders are named `<resort>-midsize-lego`.
+
+<!-- midsize:start -->
+No mid-size kits yet.
+<!-- midsize:end -->
+
 ## Digital checks vs. a physical prototype
 
 Every kit is checked on the computer:

@@ -153,9 +153,34 @@ def main(coll):
     for r in lineup:
         lineup_md.append(f"| {r['order']} | {r['title']} (`{r['folder']}`) | {r['resort']} | "
                          f"{r['category']} | {r['merged'] or '–'} | {r['signature']} | {r['colours']} |")
+    # mid-size versions, next to their compact counterparts
+    compact_cost = {x["folder"].replace("-compact-lego", ""): x for x in rows}
+    mid = ["| Resort | Pieces | Part lines | Parts, listed | Parts, 2026 est. | Landed cost, free "
+           "shipping | Break-even | Price (2× parts) | Profit / margin, free shipping | Profit / "
+           "margin, buyer pays postage | Compact version |",
+           "|---|---|---|---|---|---|---|---|---|---|---|"]
+    for folder in sorted(f for f in os.listdir(root) if f.endswith("-midsize-lego")):
+        proj, have = status(root, folder)
+        if not have.get("parts") or not have.get("readme"):
+            continue
+        s = stats(proj.root)
+        c = pr.unit_costs(s["cost"], s["pieces"])
+        p_mid = pr.price_points(s["cost"])[1]
+        a = pr.scenario(s["cost"], s["pieces"], p_mid, True)
+        b = pr.scenario(s["cost"], s["pieces"], p_mid, False)
+        cc = compact_cost.get(folder.replace("-midsize-lego", ""))
+        mid.append(f"| [{proj.meta['title']}](../{folder}/README.md) | {s['pieces']} | {s['lines']} | "
+                   f"{money(s['cost'])} | {money(c['parts'])} | "
+                   f"{money(c['before_shipping'] + pr.SHIP_SELLER_PAID)} | "
+                   f"{money(pr.break_even(s['cost'], s['pieces']))} | {money(p_mid)} | "
+                   f"{money(a['profit'])} / {a['margin']:.0%} | {money(b['profit'])} / {b['margin']:.0%} | "
+                   + (f"{cc['pieces']} pieces, {money(cc['parts_listed'])}" if cc else "–") + " |")
+    if len(mid) == 2:
+        mid = ["No mid-size kits yet."]
     readme = os.path.join(coll, "README.md")
     text = open(readme).read()
-    for tag, block in (("lineup", lineup_md), ("checklist", checklist), ("comparison", comp)):
+    for tag, block in (("lineup", lineup_md), ("checklist", checklist), ("comparison", comp),
+                       ("midsize", mid)):
         text = re.sub(rf"(<!-- {tag}:start -->).*?(<!-- {tag}:end -->)",
                       lambda m: m.group(1) + "\n" + "\n".join(block) + "\n" + m.group(2), text,
                       flags=re.S)

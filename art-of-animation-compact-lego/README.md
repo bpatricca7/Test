@@ -2,7 +2,7 @@
 
 ![The finished model](images/art_of_animation_compact_front_right.jpg)
 
-A compact display model of Disney's Art of Animation Resort at Walt Disney World, part of the [compact resort collection](../resort-collection/README.md). Animation Hall, the resort's lobby building: a modern white hall with a grid of big coloured window panels, a taller glass atrium under a white barrel roof over the entrance, and a flat white canopy in front. Out front stand two generic animation icons: a giant pencil and three pots of paint. The resort's character areas, its guest buildings themed on animated films, are left out on purpose: no characters, character vehicles or character buildings appear, so this kit is less recognisable than the others in the collection.
+A compact display model of Disney's Art of Animation Resort at Walt Disney World, part of the [resort collection](../resort-collection/README.md). Animation Hall, the resort's lobby building: a modern white hall with a grid of big coloured window panels, a taller glass atrium under a white barrel roof over the entrance, and a flat white canopy in front. Out front stand two generic animation icons: a giant pencil and three pots of paint. The resort's character areas, its guest buildings themed on animated films, are left out on purpose: no characters, character vehicles or character buildings appear, so this kit is less recognisable than the others in the collection.
 
 **Signature features in this kit**
 
@@ -21,7 +21,7 @@ A compact display model of Disney's Art of Animation Resort at Walt Disney World
 | | |
 |---|---|
 | Pieces | **222** (49 part/colour lines, 33 kinds of part, 13 colours) |
-| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every kit in the collection |
+| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every compact kit in the collection |
 | Overall size | 19.2 × 12.8 cm, 9.4 cm tall |
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
 | Instructions | 33-page PDF, 28 steps, 4 sections |

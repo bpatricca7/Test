@@ -2,7 +2,7 @@
 
 ![The finished model](images/caribbean_beach_compact_front_right.jpg)
 
-A compact display model of Disney's Caribbean Beach Resort at Walt Disney World, part of the [compact resort collection](../resort-collection/README.md). Old Port Royale, the heart of Caribbean Beach: a cluster of bright island buildings in turquoise, yellow and orange with white trim and red metal roofs, gathered around the clock tower with its open lookout, with a strip of sand and a palm in front.
+A compact display model of Disney's Caribbean Beach Resort at Walt Disney World, part of the [resort collection](../resort-collection/README.md). Old Port Royale, the heart of Caribbean Beach: a cluster of bright island buildings in turquoise, yellow and orange with white trim and red metal roofs, gathered around the clock tower with its open lookout, with a strip of sand and a palm in front.
 
 **Signature features in this kit**
 
@@ -20,7 +20,7 @@ A compact display model of Disney's Caribbean Beach Resort at Walt Disney World,
 | | |
 |---|---|
 | Pieces | **299** (50 part/colour lines, 35 kinds of part, 10 colours) |
-| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every kit in the collection |
+| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every compact kit in the collection |
 | Overall size | 19.2 × 12.8 cm, 12.3 cm tall |
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
 | Instructions | 38-page PDF, 47 steps, 5 sections |

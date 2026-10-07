@@ -2,7 +2,7 @@
 
 ![The finished model](images/fort_wilderness_compact_front_right.jpg)
 
-A compact display model of Disney's Fort Wilderness Resort & Campground at Walt Disney World, part of the [compact resort collection](../resort-collection/README.md). Pioneer Hall, the frontier log building at the heart of Fort Wilderness: two storeys of reddish brown logs behind a long porch with an upper balcony, under a green gabled roof, with a stone chimney at one end. A tall pine and a flagpole stand on the lawn in front.
+A compact display model of Disney's Fort Wilderness Resort & Campground at Walt Disney World, part of the [resort collection](../resort-collection/README.md). Pioneer Hall, the frontier log building at the heart of Fort Wilderness: two storeys of reddish brown logs behind a long porch with an upper balcony, under a green gabled roof, with a stone chimney at one end. A tall pine and a flagpole stand on the lawn in front.
 
 This kit covers The Cabins at Disney's Fort Wilderness Resort as well: they share the property, and the compact model shows the part that makes it recognisable.
 
@@ -23,7 +23,7 @@ This kit covers The Cabins at Disney's Fort Wilderness Resort as well: they shar
 | | |
 |---|---|
 | Pieces | **212** (50 part/colour lines, 30 kinds of part, 8 colours) |
-| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every kit in the collection |
+| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every compact kit in the collection |
 | Overall size | 19.2 × 12.8 cm, 7.5 cm tall |
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
 | Instructions | 32-page PDF, 25 steps, 3 sections |

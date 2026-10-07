@@ -2,7 +2,7 @@
 
 ![The finished model](images/port_orleans_riverside_compact_front_right.jpg)
 
-A compact display model of Disney's Port Orleans Resort - Riverside at Walt Disney World, part of the [compact resort collection](../resort-collection/README.md). A Magnolia Bend mansion of Port Orleans Riverside: a white plantation-style house with a two-storey front porch behind a row of tall white columns, a grey hipped roof with dormers and brick chimneys, and a magnolia tree in bloom on the lawn.
+A compact display model of Disney's Port Orleans Resort - Riverside at Walt Disney World, part of the [resort collection](../resort-collection/README.md). A Magnolia Bend mansion of Port Orleans Riverside: a white plantation-style house with a two-storey front porch behind a row of tall white columns, a grey hipped roof with dormers and brick chimneys, and a magnolia tree in bloom on the lawn.
 
 This kit covers Magnolia Bend, Alligator Bayou as well: they share the property, and the compact model shows the part that makes it recognisable.
 
@@ -22,7 +22,7 @@ This kit covers Magnolia Bend, Alligator Bayou as well: they share the property,
 | | |
 |---|---|
 | Pieces | **244** (45 part/colour lines, 28 kinds of part, 6 colours) |
-| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every kit in the collection |
+| Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every compact kit in the collection |
 | Overall size | 19.2 × 12.8 cm, 8.6 cm tall |
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
 | Instructions | 29-page PDF, 22 steps, 3 sections |
