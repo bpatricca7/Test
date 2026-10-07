@@ -39,7 +39,31 @@ COLOR_HEX = {15: "#F4F4F4", 0: "#1B2A34", 72: "#6C6E68", 71: "#A0A5A9", 4: "#C91
              308: "#352100", 47: "#FCFCFC", 46: "#F5CD2F", 31: "#CDA4DE", 30: "#AC78BA",
              25: "#FE8A18", 14: "#F2CD37", 320: "#720E0F",
              226: "#FFF03A", 297: "#AA7F2E",
-             84: "#AA7D55"}
+             84: "#AA7D55",
+             378: "#A0BCAC",
+             379: "#6074A1",
+             322: "#36AEBF",
+             323: "#ADC3C0",
+             212: "#9FC3E9",
+             73: "#5A93DB",
+             272: "#0A3463",
+             321: "#078BC9",
+             3: "#008F9B",
+             27: "#BBE90B",
+             326: "#DFEEA5",
+             330: "#9B9A5A",
+             191: "#F8BB3D",
+             484: "#A95500",
+             78: "#F6D7B3",
+             92: "#D09168",
+             85: "#3F3691",
+             353: "#FF698F",
+             179: "#898788",
+             36: "#C91A09",
+             33: "#0020A0",
+             43: "#AEEFEC",
+             34: "#84B68D",
+             57: "#F08F1C"}
 
 
 def e(s):
@@ -368,7 +392,12 @@ def build(proj, man, elements):
     # ---------------- intro ----------------
     lg_model, lg_step = P["legend"]
     legend_img, _ = prep_image(man["models"][lg_model]["steps"][lg_step]["image"], max_px=600)
-    facts = "".join(f"<tr><th>{k}</th><td>{v}</td></tr>" for k, v in P["facts"])
+    if any("{height}" in v for _, v in P["facts"]):        # compact kits: measured height
+        import render
+        bmin, bmax = render.model_bbox(main_m)
+        hcm = f"{(bmax[1] - bmin[1]) * 0.04:.0f}"
+    facts = "".join(f"<tr><th>{k}</th><td>{v.replace('{height}', hcm) if '{height}' in v else v}"
+                    f"</td></tr>" for k, v in P["facts"])
     org = "".join(f"<li>{x}</li>" for x in P["organisation"])
     tips = "".join(f"<li>{x}</li>" for x in P["tips"])
     bk.page(f"""
