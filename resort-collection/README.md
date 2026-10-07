@@ -101,7 +101,7 @@ Every kit includes:
 ## Completion checklist
 
 <!-- checklist:start -->
-**11 of 21 kits complete** (digital package; no physical prototypes yet).
+**13 of 21 kits complete** (digital package; no physical prototypes yet).
 
 | # | Resort | Batch | Model | Checks pass | Renders | Booklet | BOM and upload files | README | Status |
 |---|---|---|---|---|---|---|---|---|---|
@@ -118,8 +118,8 @@ Every kit includes:
 | 11 | Saratoga Springs Resort | 3 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
 | 12 | Fort Wilderness Resort | 3 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
 | 13 | Coronado Springs Resort | 3 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
-| 14 | Caribbean Beach Resort | 3 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
-| 15 | Port Orleans French Quarter | 4 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
+| 14 | [Caribbean Beach Resort](../caribbean-beach-compact-lego/README.md) | 3 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
+| 15 | [Port Orleans French Quarter](../port-orleans-french-quarter-compact-lego/README.md) | 4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
 | 16 | [Port Orleans Riverside](../port-orleans-riverside-compact-lego/README.md) | 4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
 | 17 | [All-Star Sports Resort](../all-star-sports-compact-lego/README.md) | 4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
 | 18 | All-Star Music Resort | 4 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
@@ -171,11 +171,13 @@ changed there.
 | [Animal Kingdom Lodge](../animal-kingdom-lodge-compact-lego/README.md) | Deluxe | 401 | 39 | $47.72 | $52.49 | $72.50 | $80.61 | $109.99 | $26.59 / 24% | $36.09 / 33% | 21/39 lines 2022-only, 1 new IDs |
 | [Yacht Club Resort](../yacht-club-compact-lego/README.md) | Deluxe | 319 | 38 | $41.79 | $45.97 | $64.96 | $72.27 | $99.99 | $25.08 / 25% | $34.59 / 35% | 30/38 lines 2022-only, 10 new IDs |
 | [Beach Club Resort](../beach-club-compact-lego/README.md) | Deluxe | 364 | 42 | $42.46 | $46.71 | $66.26 | $73.71 | $99.99 | $23.78 / 24% | $33.29 / 33% | 33/42 lines 2022-only, 11 new IDs, 1 in <10 recent sets |
+| [Caribbean Beach Resort](../caribbean-beach-compact-lego/README.md) | Moderate | 299 | 50 | $38.37 | $42.21 | $60.94 | $67.84 | $89.99 | $20.05 / 22% | $29.55 / 33% | 31/50 lines 2022-only, 18 new IDs |
+| [Port Orleans French Quarter](../port-orleans-french-quarter-compact-lego/README.md) | Moderate | 286 | 40 | $38.85 | $42.74 | $61.31 | $68.24 | $89.99 | $19.68 / 22% | $29.18 / 32% | 23/40 lines 2022-only, 11 new IDs |
 | [Port Orleans Riverside](../port-orleans-riverside-compact-lego/README.md) | Moderate | 244 | 45 | $32.27 | $35.50 | $53.55 | $59.67 | $79.99 | $18.39 / 23% | $27.90 / 35% | 28/45 lines 2022-only, 18 new IDs |
 | [All-Star Sports Resort](../all-star-sports-compact-lego/README.md) | Value | 240 | 48 | $30.88 | $33.97 | $51.97 | $57.92 | $69.99 | $10.92 / 16% | $20.43 / 29% | 26/48 lines 2022-only, 20 new IDs |
 
-- **11 kits**: parts from $30.88 (All-Star Sports Resort) to $53.45 (Wilderness Lodge) at listed prices; 238–416 pieces.
-- **Shared parts**: the kits use 218 distinct elements in 480 kit lines; 86 elements appear in two or more kits, so mixed orders combine well.
+- **13 kits**: parts from $30.88 (All-Star Sports Resort) to $53.45 (Wilderness Lodge) at listed prices; 238–416 pieces.
+- **Shared parts**: the kits use 241 distinct elements in 570 kit lines; 108 elements appear in two or more kits, so mixed orders combine well.
 - No kit is above $60 in parts at listed prices.
 <!-- comparison:end -->
 
