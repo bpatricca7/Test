@@ -379,9 +379,11 @@ def build(proj, man, elements):
     # ---------------- cover ----------------
     hero, _ = prep_image(f"renders/final/{P['cover_view']}.png", max_px=2200, jpeg=False)
     big, small = P["cover_stats"]
+    # a title longer than 22 characters gets a smaller font so it stays clear of the stats
+    h1_size = f' style="font-size:{52 * 21 // len(P["title"])}pt"' if len(P["title"]) > 22 else ""
     bk.page(f"""
       <div class="title"><div class="kicker">Build instructions</div>
-        <h1>{P['title']}</h1>
+        <h1{h1_size}>{P['title']}</h1>
         <div class="sub">{P['subtitle']}</div></div>
       <div class="stats"><div class="stat"><b>{total:,}</b>pieces</div>
         <div class="stat" style="margin-top:8px"><b>{big}</b>{small}</div></div>
