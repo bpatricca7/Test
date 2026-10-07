@@ -80,7 +80,16 @@ for, not the same box with different colours.
   Call it as `m.add(key, colour, x, z, layer, rot=0/90/180/270)`. Part keys are in
   `bricks.PARTS` (see `lego-kit/bricks.py`). A part that isn't there can be
   registered in your `design.py` with `bricks.P(key, "1234.dat", "Name")` (check
-  the LDraw file exists in `/usr/share/ldraw/parts`).
+  the LDraw file exists in `/usr/share/ldraw/parts`). Prefix the key with the kit's
+  slug (for example `fw_log1x2`) so two kits can't register different parts under
+  one key.
+- **Bestseller sizes per colour:** `bricks.ALLOWED` lists the plate, tile and brick
+  sizes allowed for some colours only. For a colour with no entry, the fill
+  helpers (`row`, `fill_rect`, `fill_cells`, `WallRing`, `build_roofs` ridge tiles)
+  may pick any size, including one that isn't a Bestseller. Check the sizes with
+  `avail.py`, then either pass `sizes=` explicitly or add the entries to
+  `bricks.ALLOWED` inside your `build()` and restore the table afterwards.
+  `export_parts.py` catches any size that slips through.
 - **Roofs:** use `roofs.Roof(x0, x1, z0, z1, base, axis, pitch, color, trim=,
   trim_ends=, wall=, hips=, priority=)` and `build_roofs(m, [roofs...],
   fill_color=, keep_open=, support_caps=True)`.
@@ -91,7 +100,12 @@ for, not the same box with different colours.
     Keep crossing gables away from them, or the turret floats.
 - **Step notes:** `m.step(note)` attaches the note to the *next* step. Call
   `m.step()` to close the current one, then `m.step("note")` before adding the
-  parts of the step the note is for.
+  parts of the step the note is for. Notes are HTML-escaped: write "×", not
+  `&times;`.
+- **Legend:** `legend=("palm.ldr", 1)` names a submodel and a step index that
+  counts from 0, so 1 is that submodel's second step.
+- **Sections:** a submodel with three steps or fewer gets no section page of its
+  own; its steps follow the previous section.
 - **Connections:** every model must be one connected group. `preview.py` prints
   the problems. The base plates meet at x = 16 and at z = 8 (for x ≥ 16):
   something must cross those seams, such as a plinth, a ground row or a band row.

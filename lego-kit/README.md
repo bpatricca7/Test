@@ -23,6 +23,12 @@ booklet and shopping lists.
 | `element_lookup.py` | Maps each LDraw part and colour to a LEGO element ID, a BrickLink item, a Rebrickable part, production years and Pick a Brick evidence |
 | `export_parts.py` | Pick a Brick upload and retry files, mapping, BrickLink XML, Rebrickable CSV, parts per section; for kits, upload files for several copies and a cost sheet |
 | `make_booklet.py` | Lays out the booklet in HTML and prints it to PDF with headless Chromium |
+| `compact.py` | The compact resort collection's format: the 24×16 display base and black band, storey blocks, the shared palm, ground fill with Bestseller tile and plate sizes, and `compact_project()` for PROJECT |
+| `checks.py` | Digital checks of every model (collisions, connections, assembly order, stability), written to `checks.md` |
+| `pricing.py` | Cost and resale assumptions (parts uplift, packaging, labour, Etsy fees, shipping, price points), with sources and dates |
+| `kit_readme.py` | Writes a compact kit's README from its design, parts files, checks and booklet |
+| `collection_report.py` | Lineup, completion checklist and cost/resale comparison for `../resort-collection`, one kit per process |
+| `avail.py`, `zoom.py`, `readme_images.py`, `compact_build.sh` | Part availability check, close-up renders, README images, and the compact kits' build script |
 | `pab_check.cjs` | Checks every element against Pick a Brick live (needs lego.com access; not yet run against the live site) |
 
 ## A project folder
@@ -42,7 +48,11 @@ a cupola and chimneys. `boardwalk-lego/design.py` builds a round arch from inver
 slopes and mounts parts on side studs (the gold lettering).
 
 While designing, `python3 ../lego-kit/preview.py . [submodel.ldr]` renders quick
-views into `build/preview/`.
+views into `build/preview/`. `RENDER_WORKERS=2` limits parallel LeoCAD renders when
+several builds share a machine.
+
+The compact resort kits are documented in
+[`../resort-collection/DESIGN_GUIDE.md`](../resort-collection/DESIGN_GUIDE.md).
 
 Steps are drawn from the front right. A model that is best seen from another side can
 set `model.camera = (lat, lon)`, for example `(28, -32)` for the front left (see
