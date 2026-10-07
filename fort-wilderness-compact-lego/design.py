@@ -38,10 +38,10 @@ def _register(key, dat, name, **kw):
                 d.setdefault(dat, name)
 
 
-_register("log1x2", "30136.dat", "Brick 1 x 2 Log")
-_register("leaves4x3", "2423.dat", "Plant Leaves 4 x 3", cells=[(0, 0)], studs=[(0, 0)],
+_register("fw_log1x2", "30136.dat", "Brick 1 x 2 Log")
+_register("fw_leaves4x3", "2423.dat", "Plant Leaves 4 x 3", cells=[(0, 0)], studs=[(0, 0)],
           height=1)
-_register("clip_plate", "63868.dat", "Plate 1 x 2 with Clip on End", cells=[(0, 0)],
+_register("fw_clip_plate", "63868.dat", "Plate 1 x 2 with Clip on End", cells=[(0, 0)],
           bottom=[], height=0, solid=False, studs=[])
 
 LOG, WINDOW, ROOF, FOUND, TRIM = RBROWN, BLACK, GREEN, LBG, TAN
@@ -142,7 +142,7 @@ def rect(m, kind, colour, x, z, sx, sz, layer):
 def log_run(m, x, z, n, layer, axis, avoid=()):
     """A run of log bricks (4 and 2 long, a plain 1 x 1 brick for an odd length)."""
     pieces = split_length(n, [4, 2, 1], avoid)
-    keys = {4: "log1x4", 2: "log1x2", 1: "b1x1"}
+    keys = {4: "log1x4", 2: "fw_log1x2", 1: "b1x1"}
     pos, seams = 0, set()
     for s in pieces:
         col = LOG
@@ -294,7 +294,7 @@ def build_pine():
     m.add("round1", GREEN, 0, 0, 12)
     m.step()
     for i, r in enumerate((0, 90, 180, 270)):
-        m.add("leaves4x3", GREEN, 0, 0, 15 + i, rot=r)
+        m.add("fw_leaves4x3", GREEN, 0, 0, 15 + i, rot=r)
     m.add("cone1", GREEN, 0, 0, 19)
     m.step()
     m.width, m.depth = 1, 1
@@ -315,7 +315,7 @@ def build_flagpole():
     # with a red 1 x 2 tile on its studs
     mat = (-1, 0, 0, 0, 0, 1, 0, 1, 0)
     fy = bar_y + 14
-    flag = m.add_raw("clip_plate", WHITE, (c + 30, fy, c - 4), mat, attach_to=bar)
+    flag = m.add_raw("fw_clip_plate", WHITE, (c + 30, fy, c - 4), mat, attach_to=bar)
     m.add_raw("t1x2", RED, (c + 30, fy, c - 12), mat, attach_to=flag)
     m.step()
     m.width, m.depth = 1, 1
