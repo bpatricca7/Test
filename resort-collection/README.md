@@ -101,7 +101,7 @@ Every kit includes:
 ## Completion checklist
 
 <!-- checklist:start -->
-**15 of 21 kits complete** (digital package; no physical prototypes yet).
+**17 of 21 kits complete** (digital package; no physical prototypes yet).
 
 | # | Resort | Batch | Model | Checks pass | Renders | Booklet | BOM and upload files | README | Status |
 |---|---|---|---|---|---|---|---|---|---|
@@ -122,8 +122,8 @@ Every kit includes:
 | 15 | [Port Orleans French Quarter](../port-orleans-french-quarter-compact-lego/README.md) | 4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
 | 16 | [Port Orleans Riverside](../port-orleans-riverside-compact-lego/README.md) | 4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
 | 17 | [All-Star Sports Resort](../all-star-sports-compact-lego/README.md) | 4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
-| 18 | All-Star Music Resort | 4 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
-| 19 | All-Star Movies Resort | 4 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
+| 18 | [All-Star Music Resort](../all-star-music-compact-lego/README.md) | 4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
+| 19 | [All-Star Movies Resort](../all-star-movies-compact-lego/README.md) | 4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | done (digital) |
 | 20 | Pop Century Resort | 4 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
 | 21 | Art of Animation Resort | 4 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | not started |
 <!-- checklist:end -->
@@ -177,9 +177,11 @@ changed there.
 | [Port Orleans French Quarter](../port-orleans-french-quarter-compact-lego/README.md) | Moderate | 286 | 40 | $38.85 | $42.74 | $61.31 | $68.24 | $89.99 | $19.68 / 22% | $29.18 / 32% | 23/40 lines 2022-only, 11 new IDs |
 | [Port Orleans Riverside](../port-orleans-riverside-compact-lego/README.md) | Moderate | 244 | 45 | $32.27 | $35.50 | $53.55 | $59.67 | $79.99 | $18.39 / 23% | $27.90 / 35% | 28/45 lines 2022-only, 18 new IDs |
 | [All-Star Sports Resort](../all-star-sports-compact-lego/README.md) | Value | 240 | 48 | $30.88 | $33.97 | $51.97 | $57.92 | $69.99 | $10.92 / 16% | $20.43 / 29% | 26/48 lines 2022-only, 20 new IDs |
+| [All-Star Music Resort](../all-star-music-compact-lego/README.md) | Value | 278 | 46 | $33.58 | $36.94 | $55.41 | $61.73 | $79.99 | $16.53 / 21% | $26.03 / 32% | 30/46 lines 2022-only, 14 new IDs, 1 in <10 recent sets |
+| [All-Star Movies Resort](../all-star-movies-compact-lego/README.md) | Value | 288 | 54 | $36.87 | $40.56 | $59.16 | $65.86 | $89.99 | $21.83 / 24% | $31.34 / 35% | 28/54 lines 2022-only, 15 new IDs |
 
-- **15 kits**: parts from $30.88 (All-Star Sports Resort) to $53.45 (Wilderness Lodge) at listed prices; 225–416 pieces.
-- **Shared parts**: the kits use 245 distinct elements in 654 kit lines; 128 elements appear in two or more kits, so mixed orders combine well.
+- **17 kits**: parts from $30.88 (All-Star Sports Resort) to $53.45 (Wilderness Lodge) at listed prices; 225–416 pieces.
+- **Shared parts**: the kits use 281 distinct elements in 754 kit lines; 144 elements appear in two or more kits, so mixed orders combine well.
 - No kit is above $60 in parts at listed prices.
 <!-- comparison:end -->
 
