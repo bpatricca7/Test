@@ -1,5 +1,7 @@
 # Compact Walt Disney World resort collection
 
+![All 21 compact kits](collection_overview.jpg)
+
 A series of small, cost-conscious LEGO® display kits, one for each Walt Disney World
 resort hotel, built with the same pipeline as the large
 [Riviera](../riviera-lego), [Grand Floridian](../grand-floridian-lego) and
