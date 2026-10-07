@@ -115,13 +115,23 @@ def usage(src, wanted, inv_year):
     return out
 
 
+def rb_color_ids(src):
+    """LDraw colour code -> Rebrickable colour id. They are the same for most
+    colours but not all (Trans-Light Blue 43 -> 41, Coral 353 -> 1050, ...), so
+    map through the Rebrickable colour name in COLORS."""
+    by_name = {r["name"]: int(r["id"])
+               for r in csv.DictReader(open(os.path.join(src, "rb", "colors.csv")))}
+    return {c: by_name.get(v[2], c) for c, v in COLORS.items()}
+
+
 def main(src, combos):
     elements, parts, inv_year, pab22, pab25, bl = load(src)
+    rb_id = rb_color_ids(src)
     cands = {}
     for dat, color in combos:
         ld = dat[:-4]
         opts = RB_ALIASES.get(ld, [ld, ld.rstrip("abcdefgh")])
-        cands[(dat, color)] = [(p, color) for p in opts if p in parts]
+        cands[(dat, color)] = [(p, rb_id.get(color, color)) for p in opts if p in parts]
     wanted = {k for v in cands.values() for k in v}
     use = usage(src, wanted, inv_year)
     rows = []
