@@ -28,6 +28,7 @@ This kit covers Disney's Polynesian Villas & Bungalows, Island Tower at Disney's
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
 | Instructions | 25-page PDF, 25 steps, 3 sections |
 | Parts cost | **$33.23 per kit** at the Pick a Brick prices last seen (2022 and late 2025); about $36.55 with 2026 price rises (see [Cost assumptions](#cost-assumptions-and-resale-scenarios)) |
+| Mid-size version | [`../polynesian-midsize-lego`](../polynesian-midsize-lego) |
 
 ![Front view](images/polynesian_compact_front.jpg)
 

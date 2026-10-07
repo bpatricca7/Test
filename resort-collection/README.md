@@ -218,7 +218,9 @@ target of about $75. It shows more of each resort, such as wings, porches,
 verandas and more storeys. Folders are named `<resort>-midsize-lego`.
 
 <!-- midsize:start -->
-No mid-size kits yet.
+| Resort | Pieces | Part lines | Parts, listed | Parts, 2026 est. | Landed cost, free shipping | Break-even | Price (2× parts) | Profit / margin, free shipping | Profit / margin, buyer pays postage | Compact version |
+|---|---|---|---|---|---|---|---|---|---|---|
+| [Polynesian Village Resort](../polynesian-midsize-lego/README.md) | 570 | 52 | $76.55 | $84.20 | $106.33 | $117.99 | $169.99 | $47.06 / 28% | $56.56 / 33% | 238 pieces, $33.23 |
 <!-- midsize:end -->
 
 ## Digital checks vs. a physical prototype
