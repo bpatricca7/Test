@@ -41,8 +41,8 @@ npm run dev                     # API on :8787, Vite client on :5173
 Open http://localhost:5173, drop a PDF/DOCX/TXT solicitation (or click **Try sample RFP**) and
 press **Analyze RFP**.
 
-Production build: `npm run build && npm start` serves the bundled client from the API server on
-http://localhost:8787.
+One-port mode: `npm run up` builds the client and serves it from the API server on
+http://localhost:8787 (works on Windows, macOS and Linux; needs Node 20+).
 
 Without an API key the server falls back to a rule-based parser that handles delimited workload
 tables (it reads the built-in sample completely); the UI shows which reader produced the inventory.
