@@ -35,7 +35,7 @@ def read_csv(path):
 
 def kit_stats(proj):
     """Numbers shared by the README and the collection table."""
-    main_m, models, _ = proj.build(verbose=False)
+    main_m, models, _ = proj.build(verbose=False, write=False)
     cost_rows = [r for r in read_csv(os.path.join(proj.parts_dir, "kit_cost.csv")) if r["Element ID"]]
     mapping = read_csv(os.path.join(proj.parts_dir, "pick_a_brick_mapping.csv"))
     elements = {(r["ldraw_part"], r["ldraw_color"]): r
@@ -245,4 +245,8 @@ def write(proj):
 
 
 if __name__ == "__main__":
-    write(projects.load(sys.argv))
+    if sys.argv[1:2] == ["--stats-json"]:       # used by collection_report.py, one kit per process
+        import json
+        print(json.dumps(kit_stats(projects.Project(sys.argv[2])), default=list))
+    else:
+        write(projects.load(sys.argv))

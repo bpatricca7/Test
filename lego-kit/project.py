@@ -36,20 +36,23 @@ class Project:
         self.instr_dir = os.path.join(self.root, "instructions")
         self._built = None
 
-    def build(self, verbose=True):
-        """Build, validate and write the LDraw file (cached per process)."""
+    def build(self, verbose=True, write=True):
+        """Build, validate and write the LDraw file (cached per process).
+
+        write=False builds without touching model/ (reports and READMEs)."""
         if self._built is None:
             main_m, models = self.mod.build()
             problems = validate(main_m, verbose)
             for sm in models:
                 if sm is not main_m:
                     validate(sm, verbose)
-            os.makedirs(self.model_dir, exist_ok=True)
-            lines = []
-            for mm in models:
-                lines += mm.ldraw_lines() + [""]
-            with open(self.mpd, "w", newline="\r\n") as fh:
-                fh.write("\n".join(lines))
+            if write:
+                os.makedirs(self.model_dir, exist_ok=True)
+                lines = []
+                for mm in models:
+                    lines += mm.ldraw_lines() + [""]
+                with open(self.mpd, "w", newline="\r\n") as fh:
+                    fh.write("\n".join(lines))
             if verbose:
                 total = main_m.parts_count()
                 print(f"total elements: {sum(total.values())}, unique part/colour: {len(total)}")

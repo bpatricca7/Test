@@ -9,15 +9,18 @@ writes comparison.csv and fills the marked blocks of the collection README:
 <!-- comparison:start --> ... <!-- comparison:end -->.
 """
 import csv
+import json
 import os
 import re
+import subprocess
 import sys
 from collections import Counter
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+KIT = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, KIT)
 import project as projects  # noqa: E402
 import pricing as pr  # noqa: E402
-from kit_readme import kit_stats, read_csv  # noqa: E402
+from kit_readme import read_csv  # noqa: E402
 
 
 def money(x):
@@ -42,6 +45,14 @@ def status(root, folder):
     return proj, have
 
 
+def stats(kit_dir):
+    """kit_readme.kit_stats() in a process of its own: each kit's design.py may
+    register parts or change size rules, and must not affect the next kit."""
+    out = subprocess.run([sys.executable, os.path.join(KIT, "kit_readme.py"), "--stats-json",
+                          kit_dir], capture_output=True, text=True, check=True).stdout
+    return json.loads(out.strip().splitlines()[-1])
+
+
 def main(coll):
     root = os.path.dirname(os.path.abspath(coll))
     lineup = read_csv(os.path.join(coll, "lineup.csv"))
@@ -54,7 +65,7 @@ def main(coll):
             check_rows.append(f"| {r['order']} | {r['title']} | {r['batch']} | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | "
                               "not started |")
             continue
-        s = kit_stats(proj) if have["parts"] else None
+        s = stats(proj.root) if have["parts"] else None
         passed = s and all(v == "Pass" or "warning" in v for v in s["checks"].values()) \
             and len(s["checks"]) == 4
         done = all(have.values()) and passed
