@@ -26,7 +26,7 @@ This kit covers Jambo House, Kidani Village (Disney's Animal Kingdom Villas) as 
 | Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every kit in the collection |
 | Overall size | 19.2 × 12.8 cm, 10.7 cm tall |
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
-| Instructions | 29-page PDF, 33 steps, 4 sections |
+| Instructions | 29-page PDF, 33 steps, 3 sections |
 | Parts cost | **$47.72 per kit** at the Pick a Brick prices last seen (2022 and late 2025); about $52.49 with 2026 price rises (see [Cost assumptions](#cost-assumptions-and-resale-scenarios)) |
 
 ![Front view](images/animal_kingdom_lodge_compact_front.jpg)

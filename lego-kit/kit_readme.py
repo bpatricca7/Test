@@ -56,7 +56,10 @@ def kit_stats(proj):
     bmin, bmax = render.model_bbox(main_m)
     dims = tuple(round((bmax[i] - bmin[i]) * LDU_CM, 1) for i in (0, 2, 1))
     pdf = os.path.join(proj.instr_dir, proj.meta["pdf_name"])
-    pages = len(pymupdf.open(pdf)) if os.path.exists(pdf) else None
+    doc = pymupdf.open(pdf) if os.path.exists(pdf) else None
+    pages = len(doc) if doc else None
+    # sections as printed (small submodels share the previous section's pages)
+    n_sections = sum(1 for p in doc if "elements in this section" in p.get_text()) if doc else None
     steps = sum(len(m.steps()) for m in models)
     checks = {}
     cpath = os.path.join(proj.root, "checks.md")
@@ -70,7 +73,7 @@ def kit_stats(proj):
                 designs=len(designs), colours=len(colours), max_q=max_q,
                 copies=999 // max_q, evidence=evidence, retry=retry, few_sets=few_sets,
                 only22=only22, dims=dims, pages=pages, steps=steps,
-                sections=len(proj.meta["organisation"]), checks=checks,
+                sections=n_sections or len(proj.meta["organisation"]), checks=checks,
                 top_lines=sorted(cost_rows, key=lambda r: -float(r["Line cost (USD)"] or 0))[:3])
 
 

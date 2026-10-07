@@ -26,7 +26,7 @@ This kit covers The Treehouse Villas at Disney's Saratoga Springs Resort as well
 | Display base | 24 × 16 studs (19.2 × 12.8 cm), the same for every kit in the collection |
 | Overall size | 19.2 × 12.8 cm, 9.1 cm tall |
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
-| Instructions | 38-page PDF, 31 steps, 3 sections |
+| Instructions | 38-page PDF, 31 steps, 2 sections |
 | Parts cost | **$34.82 per kit** at the Pick a Brick prices last seen (2022 and late 2025); about $38.30 with 2026 price rises (see [Cost assumptions](#cost-assumptions-and-resale-scenarios)) |
 
 ![Front view](images/saratoga_springs_compact_front.jpg)
