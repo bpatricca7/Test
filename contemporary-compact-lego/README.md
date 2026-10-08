@@ -28,6 +28,7 @@ This kit covers Bay Lake Tower at Disney's Contemporary Resort as well: they sha
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
 | Instructions | 33-page PDF, 38 steps, 3 sections |
 | Parts cost | **$43.38 per kit** at the Pick a Brick prices last seen (2022 and late 2025); about $47.72 with 2026 price rises (see [Cost assumptions](#cost-assumptions-and-resale-scenarios)) |
+| Mid-size version | [`../contemporary-midsize-lego`](../contemporary-midsize-lego) |
 
 ![Front view](images/contemporary_compact_front.jpg)
 

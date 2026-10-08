@@ -220,6 +220,7 @@ verandas and more storeys. Folders are named `<resort>-midsize-lego`.
 <!-- midsize:start -->
 | Resort | Pieces | Part lines | Parts, listed | Parts, 2026 est. | Landed cost, free shipping | Break-even | Price (2× parts) | Profit / margin, free shipping | Profit / margin, buyer pays postage | Compact version |
 |---|---|---|---|---|---|---|---|---|---|---|
+| [Contemporary Resort](../contemporary-midsize-lego/README.md) | 502 | 51 | $74.75 | $82.23 | $103.50 | $114.86 | $169.99 | $49.89 / 29% | $59.39 / 35% | 278 pieces, $43.38 |
 | [Polynesian Village Resort](../polynesian-midsize-lego/README.md) | 570 | 52 | $76.55 | $84.20 | $106.33 | $117.99 | $169.99 | $47.06 / 28% | $56.56 / 33% | 238 pieces, $33.23 |
 <!-- midsize:end -->
 
