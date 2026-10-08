@@ -221,8 +221,15 @@ verandas and more storeys. Folders are named `<resort>-midsize-lego`.
 | Resort | Pieces | Part lines | Parts, listed | Parts, 2026 est. | Landed cost, free shipping | Break-even | Price (2× parts) | Profit / margin, free shipping | Profit / margin, buyer pays postage | Compact version |
 |---|---|---|---|---|---|---|---|---|---|---|
 | [Contemporary Resort](../contemporary-midsize-lego/README.md) | 502 | 51 | $74.75 | $82.23 | $103.50 | $114.86 | $169.99 | $49.89 / 29% | $59.39 / 35% | 278 pieces, $43.38 |
+| [Grand Floridian Resort](../grand-floridian-midsize-lego/README.md) | 550 | 58 | $76.54 | $84.19 | $106.07 | $117.70 | $169.99 | $47.32 / 28% | $56.82 / 33% | 327 pieces, $42.34 |
 | [Polynesian Village Resort](../polynesian-midsize-lego/README.md) | 570 | 52 | $76.55 | $84.20 | $106.33 | $117.99 | $169.99 | $47.06 / 28% | $56.56 / 33% | 238 pieces, $33.23 |
 <!-- midsize:end -->
+
+- **How many kits one Pick a Brick order covers:**
+  - Polynesian: 5 kits. Each kit needs 176 tan 65° roof slopes, so plan several orders for a batch.
+  - Grand Floridian: 13 kits (74 red 2×2 slopes per kit).
+  - Contemporary: 17 kits.
+- **Grand Floridian:** the [large build](../grand-floridian-lego) has 1,498 pieces and costs about $186 in parts. The mid-size kit keeps the verandas, the cupola and the porte-cochère for about 40% of that cost.
 
 ## Digital checks vs. a physical prototype
 
