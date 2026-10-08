@@ -1,0 +1,59 @@
+Element ID,Quantity,Description,LEGO colour,Design ID,BrickLink part,BrickLink colour,Alternate element IDs,Last year in a set,Availability (from data),Pick a Brick unit price seen (USD)
+300426,42,Brick 1 x 2,Black,3004,3004,Black,,2026,listed on Pick a Brick (2025),0.10
+300926,6,Brick 1 x 6,Black,3009,3009,Black,,2026,"likely (current, listed 2022)",0.25
+300826,5,Brick 1 x 8,Black,3008,3008,Black,,2026,"likely (current, listed 2022)",0.29
+243126,2,Tile 1 x 4,Black,2431,2431,Black,,2026,"likely (current, listed 2022)",0.13
+416226,7,Tile 1 x 8,Black,4162,4162,Black,,2026,"likely (current, listed 2022)",0.14
+300521,30,Brick 1 x 1,Bright Red,3005,3005,Red,,2026,listed on Pick a Brick (2025),0.07
+300421,8,Brick 1 x 2,Bright Red,3004,3004,Red,4613961,2026,listed on Pick a Brick (2025),0.10
+301021,4,Brick 1 x 4,Bright Red,3010,3010,Red,,2026,listed on Pick a Brick (2025),0.16
+4529234,1,Cone 1 x 1,Bright Red,59900,4589,Red,458921,2026,"likely (current, listed 2022)",0.07
+6092565,3,Plate 1 x 2 with 1 Stud,Bright Red,15573,15573,Red,,2026,"likely (current, listed 2022)",0.06
+4121934,20,Slope 45 2 x 1,Bright Red,3040,3040,Red,304021,2026,"likely (current, listed 2022)",0.11
+303921,74,Slope 45 2 x 2,Bright Red,3039,3039,Red,,2026,"likely (current, listed 2022)",0.14
+306921,7,Tile 1 x 2,Bright Red,3069,3069,Red,4178178,2026,"likely (current, listed 2022)",0.07
+306821,11,Tile 2 x 2,Bright Red,3068,3068,Red,,2026,"likely (current, listed 2022)",0.08
+6266968,4,Plant Leaves 6 x 5,Dark Green,2417,2417,Green,241728 4613823,2026,"likely (current, listed 2022)",0.19
+6229130,2,Plant Plate Round 1 x 1 with 3 Leaves,Dark Green,32607,32607,Green,,2026,"likely (current, listed 2022)",0.06
+302328,2,Plate 1 x 2,Dark Green,3023,3023,Green,,2026,listed on Pick a Brick (2025),0.07
+371028,4,Plate 1 x 4,Dark Green,3710,3710,Green,,2026,listed on Pick a Brick (2025),0.10
+302228,2,Plate 2 x 2,Dark Green,3022,3022,Green,,2026,listed on Pick a Brick (2025),0.09
+302028,2,Plate 2 x 4,Dark Green,3020,3020,Green,,2026,listed on Pick a Brick (2025),0.14
+379528,12,Plate 2 x 6,Dark Green,3795,3795,Green,,2026,"likely (current, listed 2022)",0.19
+4116671,4,Plate 4 x 6,Dark Green,3032,3032,Green,,2026,"likely (current, listed 2022)",0.43
+6004927,2,Plate 16 x 16,Dark Stone Grey,91405,91405,Dark Bluish Gray,,2026,"likely (current, listed 2022)",3.04
+4210802,4,Plate 8 x 8,Dark Stone Grey,41539,41539,Dark Bluish Gray,,2026,"likely (current, listed 2022)",0.81
+4211399,6,Plate 1 x 1,Medium Stone Grey,3024,3024,Light Bluish Gray,,2026,listed on Pick a Brick (2025),0.05
+4251149,1,Plate 1 x 10,Medium Stone Grey,4477,4477,Light Bluish Gray,4211495,2026,"likely (current, listed 2022)",0.18
+4211438,8,Plate 1 x 6,Medium Stone Grey,3666,3666,Light Bluish Gray,,2026,"likely (current, listed 2022)",0.14
+4211360,1,Plate 2 x 12,Medium Stone Grey,2445,2445,Light Bluish Gray,,2026,"likely (current, listed 2022)",0.35
+4211406,2,Plate 2 x 8,Medium Stone Grey,3034,3034,Light Bluish Gray,,2026,"likely (current, listed 2022)",0.25
+4211415,4,Tile 1 x 1,Medium Stone Grey,3070,3070,Light Bluish Gray,,2026,"likely (current, listed 2022)",0.06
+4211414,8,Tile 1 x 2,Medium Stone Grey,3069,3069,Light Bluish Gray,,2026,"likely (current, listed 2022)",0.07
+4211356,3,Tile 1 x 4,Medium Stone Grey,2431,2431,Light Bluish Gray,2431194,2026,"likely (current, listed 2022)",0.13
+4211549,5,Tile 1 x 6,Medium Stone Grey,6636,6636,Light Bluish Gray,,2026,"likely (current, listed 2022)",0.14
+4211481,14,Tile 1 x 8,Medium Stone Grey,4162,4162,Light Bluish Gray,,2026,"likely (current, listed 2022)",0.14
+4211183,10,Brick Round 1 x 1,Reddish Brown,3062,3062,Reddish Brown,,2026,"likely (current, listed 2022)",0.06
+6238677,1,Brick Round 1 x 1,Transparent Light Blue,35390,3062,Trans-Light Blue,4101614 4183544 6002030 6003217 6514238,2026,"likely (current, listed 2022)",0.07
+365901,2,Arch 1 x 4,White,3659,3659,White,6550145,2026,"likely (current, listed 2022)",0.14
+300501,28,Brick 1 x 1,White,3005,3005,White,300551 6548258 6552096,2026,listed on Pick a Brick (2025),0.07
+300401,37,Brick 1 x 2,White,3004,3004,White,4613964 6548257,2026,listed on Pick a Brick (2025),0.10
+287701,1,Brick 1 x 2 with Grille,White,2877,2877,White,6552093,2026,"likely (current, listed 2022)",0.11
+362201,4,Brick 1 x 3,White,3622,3622,White,6550143,2026,listed on Pick a Brick (2025),0.14
+301001,9,Brick 1 x 4,White,3010,3010,White,6550135,2026,listed on Pick a Brick (2025),0.16
+300901,8,Brick 1 x 6,White,3009,3009,White,300951 6548259 6552097,2026,"likely (current, listed 2022)",0.25
+306201,16,Brick Round 1 x 1,White,3062,3062,White,6619283,2026,"likely (current, listed 2022)",0.06
+4567449,4,Brick Round Corner 2 x 2 Macaroni,White,85080,85080,White,4543237 6078115 6619303,2026,"likely (current, listed 2022)",0.11
+474001,1,Dish 2 x 2 Inverted,White,4740,4740,White,6601845,2026,"likely (current, listed 2022)",0.07
+447701,8,Plate 1 x 10,White,4477,4477,White,6550148 6552113,2026,"likely (current, listed 2022)",0.18
+366601,8,Plate 1 x 6,White,3666,3666,White,6548265 6552107,2026,"likely (current, listed 2022)",0.14
+346001,16,Plate 1 x 8,White,3460,3460,White,6550141,2026,"likely (current, listed 2022)",0.18
+383201,4,Plate 2 x 10,White,3832,3832,White,6552109,2026,"likely (current, listed 2022)",0.25
+302201,1,Plate 2 x 2,White,3022,3022,White,4613976 6548260 6552099,2026,listed on Pick a Brick (2025),0.09
+379501,4,Plate 2 x 6,White,3795,3795,White,6550146,2027,"likely (current, listed 2022)",0.19
+303401,2,Plate 2 x 8,White,3034,3034,White,6552101,2026,"likely (current, listed 2022)",0.25
+4528341,1,Plate 6 x 10,White,3033,3033,White,303301,2026,"likely (current, listed 2022)",0.86
+303601,4,Plate 6 x 8,White,3036,3036,White,303651,2026,"likely (current, listed 2022)",0.67
+614101,48,Plate Round 1 x 1,White,6141,4073,White,6601919,2026,"likely (current, listed 2022)",0.06
+4121932,20,Slope 45 2 x 1,White,3040,3040,White,304001 6552115,2026,"likely (current, listed 2022)",0.11
+370001,3,Technic Brick 1 x 2 with Hole,White,3700,3700,White,6619284,2026,"likely (current, listed 2022)",0.11
