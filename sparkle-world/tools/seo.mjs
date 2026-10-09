@@ -3,6 +3,8 @@
 export const PUBLIC_PAGES = Object.freeze({
   'index.html': '/',
   'parents.html': '/parents',
+  'playdate-guide.html': '/playdate-guide',
+  'decorate-a-house.html': '/decorate-a-house',
   'privacy.html': '/privacy',
   'terms.html': '/terms',
 });
@@ -49,7 +51,8 @@ export function withSeoTags(html, file, origin) {
       '@context': 'https://schema.org',
       '@graph': [
         { '@type': 'Organization', '@id': origin + '/#organization', name: 'Glimmer World',
-          url, logo: origin + '/img/icon-180.png' },
+          url, logo: origin + '/img/icon-180.png',
+          sameAs: ['https://www.youtube.com/@playglimmerworld', 'https://www.instagram.com/playglimmerworld/'] },
         { '@type': 'WebSite', '@id': origin + '/#website', name: 'Glimmer World',
           url, inLanguage: 'en', publisher: { '@id': origin + '/#organization' } },
         { '@type': 'VideoGame', '@id': origin + '/#game', name: 'Glimmer World',

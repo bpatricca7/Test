@@ -793,6 +793,7 @@ const ACCOUNT_PAGES = new Set(['account.html', 'account/verify.html']);
 const ACCOUNT_SITE_FILES = new Set([...ACCOUNT_PAGES, 'account.js', 'account.css', 'privacy.html', 'terms.html']);
 const PUBLIC_PAGE_ALIASES = new Map([
   ['/index.html', '/'], ['/parents.html', '/parents'],
+  ['/playdate-guide.html', '/playdate-guide'], ['/decorate-a-house.html', '/decorate-a-house'],
   ['/privacy.html', '/privacy'], ['/terms.html', '/terms'],
 ]);
 

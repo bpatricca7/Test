@@ -48,9 +48,10 @@ for (const mode of ['off', 'optional', 'required']) test(`public crawl in ${mode
   assert.match(sitemap.headers.get('content-type'), /^application\/xml/);
   const xml = await sitemap.text();
   const urls = [...xml.matchAll(/<loc>([^<]*)<\/loc>/g)].map((m) => m[1]);
-  const paths = mode === 'off' ? ['/', '/parents'] : ['/', '/parents', '/privacy', '/terms'];
+  const guidePaths = ['/playdate-guide', '/decorate-a-house'];
+  const paths = mode === 'off' ? ['/', '/parents', ...guidePaths] : ['/', '/parents', ...guidePaths, '/privacy', '/terms'];
   assert.deepEqual(urls, paths.map((p) => origin + p));
-  assert.doesNotMatch(xml, /generated|\/account|\/play|\.html/);
+  assert.doesNotMatch(xml, /generated|\/(?:account|play)(?:[/?#]|<)|\.html/);
 
   const robots = await get('/robots.txt');
   assert.equal(robots.status, 200);
