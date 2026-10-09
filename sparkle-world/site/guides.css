@@ -1,0 +1,25 @@
+.guide-page .doc-hero h1 { max-width: 18ch; }
+.guide-shot { float: right; width: 170px; margin: 0 0 24px 28px; }
+.guide-shot img, .guide-wide img { border: 5px solid var(--white); border-radius: 20px; box-shadow: 0 8px 26px var(--shadow); }
+.guide-shot figcaption, .guide-wide figcaption { font-size: .95rem; color: var(--muted); margin-top: 14px; line-height: 1.4; }
+.guide-wide { margin: 28px 0; }
+.guide-steps { padding-left: 1.5em; }
+.guide-steps li { margin-bottom: 20px; padding-left: 6px; }
+.guide-steps li::marker { color: var(--pink-deep); font-weight: 700; }
+.guide-invite { background: var(--mint-soft); border: 2px solid var(--mint-deep); border-radius: 22px; padding: 24px; margin-bottom: 24px; }
+.guide-invite p { margin: 0; }
+@media (max-width: 520px) { .guide-shot { float: none; width: min(220px, 100%); margin: 24px auto; } }
+@media print {
+  .guide-page .top, .guide-page .doc-toc, .guide-page .foot, .guide-page .skip, .guide-page .doc-cta, .guide-page .ground { display: none; }
+  .guide-page .doc-hero { padding: 0; background: none; }
+  .guide-page .doc-hero .wrap { padding-bottom: 0; }
+  .guide-page .doc-hero h1 { font-size: 28pt; max-width: none; }
+  .guide-page .doc { display: block; padding-top: 20px; padding-bottom: 0; }
+  .guide-page .doc-body { max-width: none; }
+  .guide-page { font-size: 11pt; }
+  .guide-page .doc-body h2 { font-size: 18pt; }
+  .guide-wide { max-width: 420px; break-inside: avoid; }
+  .guide-shot { max-width: 130px; }
+  .guide-page img { box-shadow: none; }
+  .guide-page .doc-body section { padding-bottom: 16px; margin-bottom: 16px; }
+}

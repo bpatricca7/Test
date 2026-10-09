@@ -1,0 +1,88 @@
+{
+ "about": "A real profile saved by the build before squishy toys (commit 582d11c), with about 2,000 earned coins, for probe-squish E3.",
+ "profile": {
+  "v": 1,
+  "look": {
+   "name": "Lily",
+   "skin": "#F6D2B8",
+   "hair": {
+    "style": "long",
+    "color": "#7A4A2A",
+    "color2": null,
+    "mix": "ombre"
+   },
+   "eyes": {
+    "color": "#5A3A28",
+    "lashes": true
+   },
+   "face": {
+    "blush": true,
+    "freckles": false,
+    "smile": "happy",
+    "brows": "soft"
+   },
+   "top": {
+    "type": "tshirt",
+    "color": "#FF8CC6",
+    "pattern": "hearts",
+    "patternColor": "#FFFFFF",
+    "num": 7
+   },
+   "bottom": {
+    "type": "skirt",
+    "color": "#8E7CFF",
+    "pattern": "none",
+    "patternColor": "#FFFFFF"
+   },
+   "dress": null,
+   "shoes": {
+    "type": "sneakers",
+    "color": "#FFFFFF"
+   },
+   "acc": {
+    "head": "bow",
+    "headColor": "#FF5FA2",
+    "face": "none",
+    "faceColor": null,
+    "back": "none",
+    "backColor": "#B8E1FF",
+    "neck": "none",
+    "neckColor": "#FFD54A",
+    "hand": "none",
+    "handColor": null
+   }
+  },
+  "outfits": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "playerName": "Lily",
+  "stickers": {},
+  "stats": {
+   "blocksPlaced": 0,
+   "petsPetted": 0,
+   "notesPlayed": 0,
+   "outfitChanges": 0,
+   "recipesCooked": {},
+   "gems": 0,
+   "worldsCreated": 1,
+   "coinsEarned": 1940
+  },
+  "basket": {},
+  "settings": {
+   "music": 0.5,
+   "sfx": 0.8,
+   "camera": "third",
+   "readAloud": false,
+   "timeFrozen": false,
+   "quality": "auto"
+  },
+  "lastWorldId": "wmutbpigy198u4",
+  "updatedAt": 1791088274159,
+  "coins": 2040
+ }
+}
