@@ -159,7 +159,7 @@ describe('the product name is Glimmer World everywhere people read it', () => {
     assert.match(game, /\["Glimmer","World"\]|\['Glimmer', 'World'\]/, 'the title screen logo spells Glimmer World');
     if (existsSync(path.join(ROOT, 'dist', 'site', 'index.html'))) {
       const home = readFileSync(path.join(ROOT, 'dist', 'site', 'index.html'), 'utf8');
-      assert.match(home, /<title>Glimmer World<\/title>/);
+      assert.match(home, /<title>Glimmer World(?: \| [^<]+)?<\/title>/);
       assert.match(home, /aria-label="Glimmer World, home"/);
     }
   });

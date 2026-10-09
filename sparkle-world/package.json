@@ -7,6 +7,7 @@
   "scripts": {
     "build": "node tools/build.mjs",
     "build:site": "node tools/site-build.mjs",
+    "test:seo": "node --test tools/test-seo.mjs",
     "shots:site": "node tools/site-shots.mjs",
     "dev": "node tools/build.mjs --serve",
     "smoke": "node tools/build.mjs && node tools/smoke.mjs",

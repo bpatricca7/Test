@@ -42,6 +42,7 @@ import { mkdir, readFile, writeFile, readdir, rm, copyFile, stat } from 'node:fs
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
+import { siteOrigin, withSeoTags, crawlerFiles } from './seo.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = path.join(root, 'site');
@@ -67,9 +68,9 @@ const SHARE_MARK = /[ \t]*<!-- share-tags:[^>]*-->\n?/;
 
 /** The tags that need the site's full address, or none without one. */
 export function shareTags(domain) {
-  const host = String(domain || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
-  if (!/^[a-z0-9.-]+(:\d+)?$/.test(host)) return '';
-  const url = `https://${host}/`;
+  const origin = siteOrigin({ RAILWAY_PUBLIC_DOMAIN: domain });
+  if (!origin) return '';
+  const url = `${origin}/`;
   return [
     `<meta property="og:url" content="${url}">`,
     `<meta property="og:image" content="${url}img/share.jpg">`,
@@ -202,6 +203,7 @@ export async function buildSite({ quiet = false, out = OUT, mode = null, env = p
   }
   const accounts = mode || accountsMode(env);
   const on = accounts !== 'off';
+  const origin = siteOrigin(env);
   // the game's font: Google Fonts, or its own (docs/ACCOUNTS.md §7.10)
   let font = 'google';
   try {
@@ -230,7 +232,8 @@ export async function buildSite({ quiet = false, out = OUT, mode = null, env = p
     const from = path.join(SRC, rel);
     if (/\.(html|css|js)$/.test(rel)) {
       let t = textOf(rel, await readFile(from, 'utf8'));
-      if (rel === 'index.html') t = withShareTags(t, env.RAILWAY_PUBLIC_DOMAIN);
+      if (rel === 'index.html') t = withShareTags(t, origin);
+      t = withSeoTags(t, rel.split(path.sep).join('/'), origin);
       await writeFile(to, t);
     } else await copyFile(from, to);
     if (/\.(webp|jpe?g|png|avif|gif)$/i.test(rel)) pics.set(rel.split(path.sep).join('/'), (await stat(to)).size);
@@ -240,6 +243,9 @@ export async function buildSite({ quiet = false, out = OUT, mode = null, env = p
     await copyFile(path.join(root, 'src', 'net', 'names.js'), path.join(out, 'names.js'));
     await writeFile(path.join(out, '.site.json'), JSON.stringify({ accounts, font }) + '\n');
   }
+  const crawlers = crawlerFiles(origin, accounts);
+  await writeFile(path.join(out, 'robots.txt'), crawlers.robots);
+  if (crawlers.sitemap) await writeFile(path.join(out, 'sitemap.xml'), crawlers.sitemap);
   // what a visit downloads: a computer gets the big pictures, a phone the -800 copies where
   // there are some (srcset); the link preview and the home-screen icon are not part of a visit
   const extra = (rel) => /-800\.webp$/.test(rel) || /^img\/(share\.jpg|icon-180\.png)$/.test(rel);
@@ -292,7 +298,7 @@ export async function buildSite({ quiet = false, out = OUT, mode = null, env = p
     if (grace !== '7' && /continues for 7 days/.test(terms)) warnings.push(`warning: SW_GRACE_DAYS=${grace}, but /terms says playing continues for 7 days: change it in the same deploy`);
   }
   for (const w of warnings) console.warn(w);
-  if (/<!-- share-tags/.test(html)) log(`  link preview tags         ${shareTags(env.RAILWAY_PUBLIC_DOMAIN) ? 'for ' + env.RAILWAY_PUBLIC_DOMAIN : 'left out (RAILWAY_PUBLIC_DOMAIN is not set)'}`);
+  if (/<!-- share-tags/.test(html)) log(`  link preview tags         ${origin ? 'for ' + origin : 'left out (no public origin configured)'}`);
   log(`  ${(where + '/index.html').padEnd(25)} ${kb(Buffer.byteLength(html))}  (${kb(gzipSync(html).length)} gzip)`);
   log(`  ${(where + '/preview.html').padEnd(25)} ${kb(Buffer.byteLength(frag))}  (fragment for an Artifact preview)`);
   if (images > IMAGE_BUDGET) console.warn(`warning: home page images are ${kb(images)} (budget ${kb(IMAGE_BUDGET)})`);

@@ -22,6 +22,7 @@ import { mkdir, readFile } from 'node:fs/promises';
 import { launch, waitForTitle, ROOT, SHOTS } from './smoke.mjs';
 import { routeGoogleFonts } from './site-fonts.mjs';
 import { shareTags, withShareTags } from './site-build.mjs';
+import { siteOrigin } from './seo.mjs';
 import { NOTICE_VERSION } from '../server/notice.mjs';
 
 const argv = process.argv.slice(2);
@@ -150,7 +151,7 @@ async function homePage(browser) {
     const tagged = withShareTags('<head>\n  <!-- share-tags: x -->\n</head>', 'sparkle.example.app');
     check(/og:url" content="https:\/\/sparkle\.example\.app\/"/.test(tagged) && /og:image" content="https:\/\/sparkle\.example\.app\/img\/share\.jpg"/.test(tagged) && /summary_large_image/.test(tagged), 'with RAILWAY_PUBLIC_DOMAIN the page gets og:url, og:image and twitter:card');
     check(withShareTags('<head>\n  <!-- share-tags: x -->\n</head>', '') === '<head>\n</head>' && shareTags('bad domain"><script>') === '', 'without it (or with a strange one) those tags are left out');
-    check(process.env.RAILWAY_PUBLIC_DOMAIN ? /og:image/.test(homeHtml) : !/og:image|share-tags/.test(homeHtml), 'the built page matches RAILWAY_PUBLIC_DOMAIN');
+    check(siteOrigin(process.env) ? /og:image/.test(homeHtml) : !/og:image|share-tags/.test(homeHtml), 'the built page matches its configured public origin');
     check(home.headers.get('content-encoding') === 'gzip' && !!home.headers.get('etag'), 'gzip + ETag on the home page');
     const homePP = home.headers.get('permissions-policy') || '';
     check(/camera=\(\)/.test(homePP) && /microphone=\(\)/.test(homePP), `Permissions-Policy on the home page: camera and microphone off (${homePP})`);

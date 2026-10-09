@@ -196,11 +196,18 @@ export function createServer(opts = {}) {
     const sitePath = site ? siteFileFor(pathname) : null;
     // the Family page, /privacy and /terms exist only with accounts on (a site built for
     // accounts but served without them must not offer a sign-in that cannot work)
-    if (sitePath && site.has(sitePath) && (accounts || !ACCOUNT_SITE_FILES.has(sitePath))) return sendSiteFile(req, res, site.get(sitePath), head, ACCOUNT_PAGES.has(sitePath));
+    if (sitePath && site.has(sitePath) && (accounts || !ACCOUNT_SITE_FILES.has(sitePath))) {
+      const canonicalPath = PUBLIC_PAGE_ALIASES.get(pathname);
+      if (canonicalPath) return sendText(res, 301, undefined, true, {
+        Location: canonicalPath + (url?.search || ''), 'Cache-Control': 'public, max-age=86400',
+      });
+      return sendSiteFile(req, res, site.get(sitePath), head, ACCOUNT_PAGES.has(sitePath));
+    }
     // ---- the game at "/play" ("/" too when the home page is not built) ----
     if (pathname === '/play' || pathname === '/play/' || pathname === '/sparkle-world.html' || (!site && (pathname === '/' || pathname === '/index.html'))) {
       if (!page) return sendText(res, 503, 'Glimmer World is not built yet. Run: npm run build\n', head);
       securityHeaders(res, true);
+      res.setHeader('X-Robots-Tag', 'noindex');
       res.setHeader('ETag', page.etag);
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Vary', 'Accept-Encoding');
@@ -276,6 +283,7 @@ export function createServer(opts = {}) {
     if (f.html) res.setHeader('Content-Security-Policy', SITE_CSP);
     // the Family page: no other window (Stripe's page, a link it opened) can reach this one
     if (accountPage) res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    if (accountPage) res.setHeader('X-Robots-Tag', 'noindex');
     res.setHeader('ETag', f.etag);
     res.setHeader('Cache-Control', f.cache);
     if (f.gz) res.setHeader('Vary', 'Accept-Encoding');
@@ -783,6 +791,10 @@ export { ACCOUNT_CLOSE };
 // only with accounts on (with accounts off they answer 404, as before they existed)
 const ACCOUNT_PAGES = new Set(['account.html', 'account/verify.html']);
 const ACCOUNT_SITE_FILES = new Set([...ACCOUNT_PAGES, 'account.js', 'account.css', 'privacy.html', 'terms.html']);
+const PUBLIC_PAGE_ALIASES = new Map([
+  ['/index.html', '/'], ['/parents.html', '/parents'],
+  ['/privacy.html', '/privacy'], ['/terms.html', '/terms'],
+]);
 
 function loadPage(file) {
   if (!existsSync(file)) return null;
@@ -823,6 +835,7 @@ const SITE_TYPES = {
   '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  '.xml': 'application/xml; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.webp': 'image/webp',
   '.jpg': 'image/jpeg',
@@ -849,7 +862,7 @@ function loadSite(dir) {
         const type = SITE_TYPES[path.extname(rel).toLowerCase()];
         if (!type) continue;
         const raw = readFileSync(full);
-        const text = /^(text\/|application\/(json|manifest)|image\/svg)/.test(type);
+        const text = /^(text\/|application\/(json|manifest|xml)|image\/svg)/.test(type);
         files.set(rel, {
           raw,
           gz: text ? gzipSync(raw, { level: 9 }) : null,
