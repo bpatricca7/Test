@@ -220,6 +220,8 @@ verandas and more storeys. Folders are named `<resort>-midsize-lego`.
 <!-- midsize:start -->
 | Resort | Pieces | Part lines | Parts, listed | Parts, 2026 est. | Landed cost, free shipping | Break-even | Price (2× parts) | Profit / margin, free shipping | Profit / margin, buyer pays postage | Kits per order | Compact version |
 |---|---|---|---|---|---|---|---|---|---|---|---|
+| [Animal Kingdom Lodge](../animal-kingdom-lodge-midsize-lego/README.md) | 560 | 56 | $77.97 | $85.77 | $107.77 | $119.58 | $179.99 | $54.67 / 30% | $64.18 / 36% | 17 | 401 pieces, $47.72 |
+| [Beach Club Resort](../beach-club-midsize-lego/README.md) | 634 | 70 | $76.31 | $83.94 | $106.87 | $118.58 | $169.99 | $46.52 / 27% | $56.03 / 33% | 9 | 364 pieces, $42.46 |
 | [BoardWalk Inn](../boardwalk-midsize-lego/README.md) | 597 | 74 | $77.54 | $85.29 | $107.76 | $119.57 | $179.99 | $54.68 / 30% | $64.19 / 36% | 18 | 383 pieces, $48.89 |
 | [Contemporary Resort](../contemporary-midsize-lego/README.md) | 502 | 51 | $74.75 | $82.23 | $103.50 | $114.86 | $169.99 | $49.89 / 29% | $59.39 / 35% | 17 | 278 pieces, $43.38 |
 | [Grand Floridian Resort](../grand-floridian-midsize-lego/README.md) | 550 | 58 | $76.54 | $84.19 | $106.07 | $117.70 | $169.99 | $47.32 / 28% | $56.82 / 33% | 13 | 327 pieces, $42.34 |
