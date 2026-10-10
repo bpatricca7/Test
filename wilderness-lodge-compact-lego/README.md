@@ -28,6 +28,7 @@ This kit covers Boulder Ridge Villas at Disney's Wilderness Lodge, Copper Creek 
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
 | Instructions | 36-page PDF, 45 steps, 4 sections |
 | Parts cost | **$53.45 per kit** at the Pick a Brick prices last seen (2022 and late 2025); about $58.80 with 2026 price rises (see [Cost assumptions](#cost-assumptions-and-resale-scenarios)) |
+| Mid-size version | [`../wilderness-lodge-midsize-lego`](../wilderness-lodge-midsize-lego) |
 
 ![Front view](images/wilderness_lodge_compact_front.jpg)
 
