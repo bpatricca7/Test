@@ -1,0 +1,58 @@
+Element ID,Quantity,Description,LEGO colour,Unit price (USD),Price seen,Line cost (USD)
+300526,20,Brick 1 x 1,Black,0.07,late 2025,1.40
+300426,26,Brick 1 x 2,Black,0.10,late 2025,2.60
+301026,12,Brick 1 x 4,Black,0.16,late 2025,1.92
+300926,3,Brick 1 x 6,Black,0.25,2022,0.75
+243126,2,Tile 1 x 4,Black,0.13,2022,0.26
+416226,7,Tile 1 x 8,Black,0.14,2022,0.98
+4113915,44,Brick 1 x 1,Brick Yellow,0.07,late 2025,3.08
+4109995,32,Brick 1 x 2,Brick Yellow,0.10,late 2025,3.20
+4162465,4,Brick 1 x 3,Brick Yellow,0.14,late 2025,0.56
+4112982,4,Brick 1 x 6,Brick Yellow,0.25,2022,1.00
+4159774,4,Brick 1 x 8,Brick Yellow,0.29,2022,1.16
+4114306,2,Brick 2 x 2,Brick Yellow,0.13,late 2025,0.26
+4114319,6,Brick 2 x 4,Brick Yellow,0.21,late 2025,1.26
+4565387,3,Plate 2 x 2 with 1 Center Stud,Brick Yellow,0.08,2022,0.24
+4624223,1,Plate 8 x 8,Brick Yellow,0.81,2022,0.81
+4516055,24,Slope 30 1 x 1 x 2/3,Brick Yellow,0.06,2022,1.44
+4114322,36,Slope 45 2 x 2,Brick Yellow,0.14,2022,5.04
+4626200,56,Slope 65 2 x 1 x 2,Brick Yellow,0.13,2022,7.28
+4550324,18,Tile 1 x 4,Brick Yellow,0.13,2022,2.34
+4157277,8,Tile 1 x 6,Brick Yellow,0.14,2022,1.12
+6266968,2,Plant Leaves 6 x 5,Dark Green,0.19,2022,0.38
+6229130,8,Plant Plate Round 1 x 1 with 3 Leaves,Dark Green,0.06,2022,0.48
+302428,3,Plate 1 x 1,Dark Green,0.05,late 2025,0.15
+302328,6,Plate 1 x 2,Dark Green,0.07,late 2025,0.42
+371028,17,Plate 1 x 4,Dark Green,0.10,late 2025,1.70
+302228,2,Plate 2 x 2,Dark Green,0.09,late 2025,0.18
+302028,6,Plate 2 x 4,Dark Green,0.14,late 2025,0.84
+379528,7,Plate 2 x 6,Dark Green,0.19,2022,1.33
+4116671,9,Plate 4 x 6,Dark Green,0.43,2022,3.87
+6004927,2,Plate 16 x 16,Dark Stone Grey,3.04,2022,6.08
+4210802,4,Plate 8 x 8,Dark Stone Grey,0.81,2022,3.24
+4504378,3,Slope 30 1 x 1 x 2/3,Dark Stone Grey,0.06,2022,0.18
+4211054,2,Slope 45 2 x 2,Dark Stone Grey,0.14,2022,0.28
+4211242,12,Brick 1 x 1,Reddish Brown,0.07,late 2025,0.84
+4211149,4,Brick 1 x 2,Reddish Brown,0.10,late 2025,0.40
+4211210,12,Brick 2 x 2,Reddish Brown,0.13,late 2025,1.56
+4211183,8,Brick Round 1 x 1,Reddish Brown,0.06,2022,0.48
+4529242,3,Cone 1 x 1,Reddish Brown,0.07,2022,0.21
+4223683,6,Plate 1 x 10,Reddish Brown,0.18,2022,1.08
+4211150,2,Plate 1 x 2,Reddish Brown,0.07,late 2025,0.14
+4211190,19,Plate 1 x 4,Reddish Brown,0.10,late 2025,1.90
+4221590,10,Plate 1 x 6,Reddish Brown,0.14,2022,1.40
+4216695,2,Plate 2 x 2,Reddish Brown,0.09,late 2025,0.18
+4211186,8,Plate 2 x 4,Reddish Brown,0.14,late 2025,1.12
+4211211,3,Plate 2 x 8,Reddish Brown,0.25,2022,0.75
+4243838,6,Plate 4 x 4,Reddish Brown,0.21,2022,1.26
+4271874,4,Plate 4 x 6,Reddish Brown,0.43,2022,1.72
+4504376,16,Slope 30 1 x 1 x 2/3,Reddish Brown,0.06,2022,0.96
+4211202,24,Slope 45 2 x 2,Reddish Brown,0.14,2022,3.36
+4211151,6,Tile 1 x 2,Reddish Brown,0.07,2022,0.42
+4211194,8,Tile 1 x 4,Reddish Brown,0.13,2022,1.04
+4579690,4,Tile 2 x 4,Reddish Brown,0.21,2022,0.84
+4528604,4,Plate 1 x 2,Sand Yellow,0.07,late 2025,0.28
+4626904,6,Plate 1 x 4,Sand Yellow,0.10,late 2025,0.60
+4267874,6,Plate 2 x 4,Sand Yellow,0.14,late 2025,0.84
+4550329,4,Plate 2 x 6,Sand Yellow,0.19,2022,0.76
+,560,Total for one copy,,,,77.97
