@@ -1,0 +1,82 @@
+Section,Element ID,Quantity,Description,LEGO colour
+Display base and forecourt,243126,2,Tile 1 x 4,Black
+Display base and forecourt,416226,7,Tile 1 x 8,Black
+Display base and forecourt,4550324,18,Tile 1 x 4,Brick Yellow
+Display base and forecourt,4157277,8,Tile 1 x 6,Brick Yellow
+Display base and forecourt,6229130,8,Plant Plate Round 1 x 1 with 3 Leaves,Dark Green
+Display base and forecourt,302428,3,Plate 1 x 1,Dark Green
+Display base and forecourt,302328,6,Plate 1 x 2,Dark Green
+Display base and forecourt,371028,17,Plate 1 x 4,Dark Green
+Display base and forecourt,302228,2,Plate 2 x 2,Dark Green
+Display base and forecourt,302028,6,Plate 2 x 4,Dark Green
+Display base and forecourt,379528,7,Plate 2 x 6,Dark Green
+Display base and forecourt,4116671,7,Plate 4 x 6,Dark Green
+Display base and forecourt,6004927,2,Plate 16 x 16,Dark Stone Grey
+Display base and forecourt,4210802,4,Plate 8 x 8,Dark Stone Grey
+Display base and forecourt,4504378,3,Slope 30 1 x 1 x 2/3,Dark Stone Grey
+Display base and forecourt,4211054,2,Slope 45 2 x 2,Dark Stone Grey
+Lobby,300526,4,Brick 1 x 1,Black
+Lobby,300426,2,Brick 1 x 2,Black
+Lobby,301026,4,Brick 1 x 4,Black
+Lobby,300926,3,Brick 1 x 6,Black
+Lobby,4113915,4,Brick 1 x 1,Brick Yellow
+Lobby,4109995,4,Brick 1 x 2,Brick Yellow
+Lobby,4162465,4,Brick 1 x 3,Brick Yellow
+Lobby,4112982,4,Brick 1 x 6,Brick Yellow
+Lobby,4159774,4,Brick 1 x 8,Brick Yellow
+Lobby,4114319,4,Brick 2 x 4,Brick Yellow
+Lobby,4565387,2,Plate 2 x 2 with 1 Center Stud,Brick Yellow
+Lobby,4516055,12,Slope 30 1 x 1 x 2/3,Brick Yellow
+Lobby,4114322,24,Slope 45 2 x 2,Brick Yellow
+Lobby,4626200,32,Slope 65 2 x 1 x 2,Brick Yellow
+Lobby,4211242,12,Brick 1 x 1,Reddish Brown
+Lobby,4211149,4,Brick 1 x 2,Reddish Brown
+Lobby,4529242,2,Cone 1 x 1,Reddish Brown
+Lobby,4223683,6,Plate 1 x 10,Reddish Brown
+Lobby,4221590,6,Plate 1 x 6,Reddish Brown
+Lobby,4211211,1,Plate 2 x 8,Reddish Brown
+Lobby,4243838,4,Plate 4 x 4,Reddish Brown
+Lobby,4271874,2,Plate 4 x 6,Reddish Brown
+Lobby,4211151,2,Tile 1 x 2,Reddish Brown
+Lobby,4528604,4,Plate 1 x 2,Sand Yellow
+Lobby,4626904,6,Plate 1 x 4,Sand Yellow
+Inner guest wing (build 2),300526,16,Brick 1 x 1,Black
+Inner guest wing (build 2),300426,8,Brick 1 x 2,Black
+Inner guest wing (build 2),301026,8,Brick 1 x 4,Black
+Inner guest wing (build 2),4113915,32,Brick 1 x 1,Brick Yellow
+Inner guest wing (build 2),4109995,16,Brick 1 x 2,Brick Yellow
+Inner guest wing (build 2),4211190,18,Plate 1 x 4,Reddish Brown
+Inner guest wing (build 2),4211186,8,Plate 2 x 4,Reddish Brown
+Inner guest wing (build 2),4243838,2,Plate 4 x 4,Reddish Brown
+Inner guest wing (build 2),4504376,8,Slope 30 1 x 1 x 2/3,Reddish Brown
+Inner guest wing (build 2),4211202,12,Slope 45 2 x 2,Reddish Brown
+Inner guest wing (build 2),4211194,8,Tile 1 x 4,Reddish Brown
+Inner guest wing (build 2),4579690,2,Tile 2 x 4,Reddish Brown
+Inner guest wing (build 2),4267874,6,Plate 2 x 4,Sand Yellow
+Outer guest wing (build 2),300426,16,Brick 1 x 2,Black
+Outer guest wing (build 2),4113915,8,Brick 1 x 1,Brick Yellow
+Outer guest wing (build 2),4109995,12,Brick 1 x 2,Brick Yellow
+Outer guest wing (build 2),4211150,2,Plate 1 x 2,Reddish Brown
+Outer guest wing (build 2),4221590,4,Plate 1 x 6,Reddish Brown
+Outer guest wing (build 2),4216695,2,Plate 2 x 2,Reddish Brown
+Outer guest wing (build 2),4271874,2,Plate 4 x 6,Reddish Brown
+Outer guest wing (build 2),4504376,8,Slope 30 1 x 1 x 2/3,Reddish Brown
+Outer guest wing (build 2),4211202,12,Slope 45 2 x 2,Reddish Brown
+Outer guest wing (build 2),4211151,4,Tile 1 x 2,Reddish Brown
+Outer guest wing (build 2),4579690,2,Tile 2 x 4,Reddish Brown
+Outer guest wing (build 2),4550329,4,Plate 2 x 6,Sand Yellow
+Porte-cochere,4114306,2,Brick 2 x 2,Brick Yellow
+Porte-cochere,4114319,2,Brick 2 x 4,Brick Yellow
+Porte-cochere,4565387,1,Plate 2 x 2 with 1 Center Stud,Brick Yellow
+Porte-cochere,4624223,1,Plate 8 x 8,Brick Yellow
+Porte-cochere,4516055,12,Slope 30 1 x 1 x 2/3,Brick Yellow
+Porte-cochere,4114322,12,Slope 45 2 x 2,Brick Yellow
+Porte-cochere,4626200,24,Slope 65 2 x 1 x 2,Brick Yellow
+Porte-cochere,4211210,12,Brick 2 x 2,Reddish Brown
+Porte-cochere,4211183,1,Brick Round 1 x 1,Reddish Brown
+Porte-cochere,4529242,1,Cone 1 x 1,Reddish Brown
+Porte-cochere,4211211,2,Plate 2 x 8,Reddish Brown
+Acacia tree,6266968,2,Plant Leaves 6 x 5,Dark Green
+Acacia tree,4116671,2,Plate 4 x 6,Dark Green
+Acacia tree,4211183,7,Brick Round 1 x 1,Reddish Brown
+Acacia tree,4211190,1,Plate 1 x 4,Reddish Brown
