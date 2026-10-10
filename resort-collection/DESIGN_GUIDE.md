@@ -156,5 +156,11 @@ A mid-size kit shows more of the same resort, at the same scale, on a larger bas
 - **What to add:** keep one storey = 4 plates. Show more of the resort: wings,
   porches, verandas, a porte-cochère, extra storeys and a few more details, not a
   bigger version of the compact model.
+- **Show the front:** a mid-size kit shows the main entrance facade a guest sees
+  on arrival, facing the viewer (toward the black band, −Z). Keep it centred, and
+  symmetric where the real building is. The front-right, front-left and front
+  renders must look at the entrance, never at a side elevation.
+- **Large builds:** where a large build exists (Riviera, Grand Floridian,
+  BoardWalk), the mid-size kit should look like a smaller version of it.
 - **Folder:** `<resort>-midsize-lego`, with the same `slug` and `title` as the
   compact kit. Copy `../lego-kit/compact_build.sh` as its `build.sh`.
