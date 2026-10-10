@@ -2,32 +2,33 @@
 
 ![The finished model](images/polynesian_midsize_front_right.jpg)
 
-A mid-size display model of Disney's Polynesian Village Resort at Walt Disney World, part of the [resort collection](../resort-collection/README.md). The heart of the Polynesian: the Great Ceremonial House, a long hall under a very tall, steep thatched A-frame roof, with its dark timber gable and tall window over the entrance, and timber posts and glass along its long sides. Beside it stands a three-storey guest longhouse with balconies under a steep thatched roof of its own, looking out over a sandy beach and a strip of the lagoon. A sandy path lined with tiki torches leads to the door, and palms grow on the lawn and the beach.
+A mid-size display model of Disney's Polynesian Village Resort at Walt Disney World, part of the [resort collection](../resort-collection/README.md). The arrival front of the Polynesian, as a guest sees it from the drive: the Great Ceremonial House with its very tall, steep thatched roof and the dark timber gable with tall windows facing you, and in front of it the porte-cochere, a steep thatched gable of its own on dark timber posts over the drive, so the two peaked gables stack one behind the other. Lava-rock walls with small waterfalls frame the entrance on both sides, with palms and planting around them, and tiki torches with glowing tips line the lawn along the front.
 
 This kit covers Disney's Polynesian Villas & Bungalows, Island Tower at Disney's Polynesian Village Resort as well: they share the property, and the mid-size model shows the part that makes it recognisable.
 
 **Signature features in this kit**
 
-- The Great Ceremonial House: a long hall under a very tall, steep A-frame roof, shown from the gable and along its long side
-- The thatch: tan 65-degree slopes laid in five layers with dark tan edges
-- The dark timber gable with a tall window over the entrance, and the ridge beam sticking out at both ends
-- A three-storey guest longhouse with balconies behind timber railings, under a steep thatched roof with timber gables
-- Six tiki torches with glowing flames: four along the sandy path to the door and two on the beach
-- A strip of the lagoon with a sandy beach, and three palms
+- The Great Ceremonial House seen from the front: a very tall, steep thatched roof with its gable end facing the drive
+- The thatch: flared 45-degree slopes at the eaves and four layers of 65-degree slopes above, each on a dark tan plate
+- The dark timber gable with tall windows, and the ridge beam sticking out at both ends
+- The porte-cochere: a steep thatched gable on four dark timber posts over the drive, in front of the entrance
+- Two lava-rock walls with small waterfalls into clear blue pools, with planting on top
+- Six tiki torches with glowing tips and four palms
 
 **Left out**
 
-- The other guest longhouses, Island Tower and the over-water bungalows
-- The porte-cochere, the monorail station, the pools and most of the gardens
+- The guest longhouses, Island Tower and the over-water bungalows
+- The long sides of the Great Ceremonial House (the kit shows its front end)
+- The monorail, the beach, the lagoon and most of the gardens
 
 | | |
 |---|---|
-| Pieces | **570** (52 part/colour lines, 32 kinds of part, 9 colours) |
+| Pieces | **614** (51 part/colour lines, 36 kinds of part, 11 colours) |
 | Display base | 32 × 24 studs (25.6 × 19.2 cm), the same for every mid-size kit in the collection |
-| Overall size | 25.6 × 19.2 cm, 13.7 cm tall |
+| Overall size | 25.6 × 19.2 cm, 15.0 cm tall |
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
-| Instructions | 39-page PDF, 43 steps, 4 sections |
-| Parts cost | **$76.55 per kit** at the Pick a Brick prices last seen (2022 and late 2025); about $84.20 with 2026 price rises (see [Cost assumptions](#cost-assumptions-and-resale-scenarios)) |
+| Instructions | 41-page PDF, 49 steps, 5 sections |
+| Parts cost | **$73.61 per kit** at the Pick a Brick prices last seen (2022 and late 2025); about $80.97 with 2026 price rises (see [Cost assumptions](#cost-assumptions-and-resale-scenarios)) |
 | Compact version | [`../polynesian-compact-lego`](../polynesian-compact-lego) |
 
 ![Front view](images/polynesian_midsize_front.jpg)
@@ -36,13 +37,13 @@ This kit covers Disney's Polynesian Villas & Bungalows, Island Tower at Disney's
 
 | Path | What it is |
 |---|---|
-| [`instructions/Polynesian_Village_Resort_Midsize_Instructions.pdf`](instructions/Polynesian_Village_Resort_Midsize_Instructions.pdf) | **The instruction booklet**: cover, section intros with parts lists, 43 numbered steps, gallery, parts inventory with element IDs, ordering guide |
-| [`parts/pick_a_brick_upload.csv`](parts/pick_a_brick_upload.csv) | Pick a Brick upload file for **one kit** (52 element IDs) |
-| [`parts/pick_a_brick_upload_x10.csv`](parts/pick_a_brick_upload_x10.csv), [`parts/pick_a_brick_upload_x25.csv`](parts/pick_a_brick_upload_x25.csv) | Upload files for **10 kits** (5,700 pieces) and **25 kits** (14,250 pieces) |
+| [`instructions/Polynesian_Village_Resort_Midsize_Instructions.pdf`](instructions/Polynesian_Village_Resort_Midsize_Instructions.pdf) | **The instruction booklet**: cover, section intros with parts lists, 49 numbered steps, gallery, parts inventory with element IDs, ordering guide |
+| [`parts/pick_a_brick_upload.csv`](parts/pick_a_brick_upload.csv) | Pick a Brick upload file for **one kit** (51 element IDs) |
+| [`parts/pick_a_brick_upload_x10.csv`](parts/pick_a_brick_upload_x10.csv), [`parts/pick_a_brick_upload_x25.csv`](parts/pick_a_brick_upload_x25.csv) | Upload files for **10 kits** (6,140 pieces) and **25 kits** (15,350 pieces) |
 | [`parts/kit_cost.csv`](parts/kit_cost.csv) | Cost of one kit, line by line, with the price and when it was seen |
 | [`parts/pick_a_brick_list.csv`](parts/pick_a_brick_list.csv) | Bill of materials: element ID, quantity, part, LEGO colour, design ID, BrickLink part and colour, alternate IDs |
 | [`parts/pick_a_brick_mapping.csv`](parts/pick_a_brick_mapping.csv) | Part-by-part sourcing: Pick a Brick name, evidence it's sold, last price, the ID to try next, BrickLink backup |
-| [`parts/pick_a_brick_upload_retry.csv`](parts/pick_a_brick_upload_retry.csv) | Newer element IDs for 3 of the parts, for lines the upload doesn't match |
+| [`parts/pick_a_brick_upload_retry.csv`](parts/pick_a_brick_upload_retry.csv) | Newer element IDs for 6 of the parts, for lines the upload doesn't match |
 | [`parts/bricklink_wanted_list.xml`](parts/bricklink_wanted_list.xml), [`parts/rebrickable_parts.csv`](parts/rebrickable_parts.csv) | BrickLink wanted list and Rebrickable import (one kit) |
 | [`parts/parts_by_section.csv`](parts/parts_by_section.csv) | Parts for each section, for bagging |
 | [`model/polynesian_midsize.mpd`](model/polynesian_midsize.mpd) | The digital model (LDraw, with steps and submodels). Opens in BrickLink Studio, LeoCAD and LDCad |
@@ -56,20 +57,20 @@ This kit covers Disney's Polynesian Villas & Bungalows, Island Tower at Disney's
 3. Before you pay, check that every line shows the normal (Bestseller) delivery time and compare the bag total with the cost below.
 4. If a line isn't matched, use the ID in the retry file or in the "If not found" column of the mapping, multiplied by the number of kits.
 
-**Kits per order:** Pick a Brick sells up to 999 of one element per order. The part this kit uses most is needed 176 times, so one order holds up to **5 kits**.
+**Kits per order:** Pick a Brick sells up to 999 of one element per order. The part this kit uses most is needed 92 times, so one order holds up to **10 kits**.
 
 **Sourcing evidence** (every part must pass the Bestseller-only check in `export_parts.py`):
 
 | Evidence | Lines |
 |---|---|
-| In Pick a Brick Bestseller range (2022 listing); still in LEGO sets in 2026 | 31 |
-| On Pick a Brick (late-2025 listing) | 20 |
+| In Pick a Brick Bestseller range (2022 listing); still in LEGO sets in 2026 | 34 |
+| On Pick a Brick (late-2025 listing) | 16 |
 | In Pick a Brick Bestseller range (2022 listing); still in LEGO sets in 2026 (including sets listed for 2027) | 1 |
 
 **Sourcing uncertainties:**
 
-- 32 lines are backed only by LEGO's 2022 Bestseller list, so their range and price today are not confirmed.
-- 3 lines have newer element IDs (retry file); an upload may match either.
+- 35 lines are backed only by LEGO's 2022 Bestseller list, so their range and price today are not confirmed.
+- 6 lines have newer element IDs (retry file); an upload may match either.
 - LEGO pauses Standard parts in the US and Canada from November 2, 2026; this kit uses none, but check that no line shows a longer delivery time.
 
 ## Cost assumptions and resale scenarios
@@ -88,21 +89,21 @@ These are planning numbers, not quotes. Upload the 10-kit file to see today's pr
 
 | Per kit | Listed prices | 2026 estimate | Stress case |
 |---|---|---|---|
-| Parts | $76.55 | $84.20 | $91.86 |
+| Parts | $73.61 | $80.97 | $88.33 |
 | Packaging | $3.00 | $3.00 | $3.00 |
-| Labour (570 pieces) | $8.62 | $8.62 | $8.62 |
-| Before shipping | $88.17 | $95.83 | $103.48 |
+| Labour (614 pieces) | $9.18 | $9.18 | $9.18 |
+| Before shipping | $85.78 | $93.15 | $100.51 |
 | Seller-paid shipping | $10.50 | $10.50 | $10.50 |
 
-Biggest cost lines: 176× Slope 65 2 x 1 x 2 (Brick Yellow) $22.88, 2× Plate 16 x 16 (Dark Stone Grey) $6.08, 22× Plate 2 x 6 (Sand Yellow) $4.18.
+Biggest cost lines: 92× Slope 65 2 x 1 x 2 (Brick Yellow) $11.96, 2× Plate 16 x 16 (Dark Stone Grey) $6.08, 32× Slope 45 2 x 2 (Brick Yellow) $4.48.
 
 | Price | Free shipping (seller pays): profit | margin | Buyer pays postage: profit | margin |
 |---|---|---|---|---|
-| $139.99 (25¢/piece) | $19.91 | 14% | $29.41 | 21% |
-| $169.99 (30¢/piece) | $47.06 | 28% | $56.56 | 33% |
-| $219.99 (39¢/piece) | $92.31 | 42% | $101.81 | 46% |
+| $129.99 (21¢/piece) | $13.54 | 10% | $23.05 | 18% |
+| $169.99 (28¢/piece) | $49.74 | 29% | $59.25 | 35% |
+| $209.99 (34¢/piece) | $85.94 | 41% | $95.45 | 45% |
 
-Break-even price: $117.99 with free shipping, $107.49 when the buyer pays postage (2026 estimate). The stress case adds about $7.66 per kit.
+Break-even price: $115.02 with free shipping, $104.52 when the buyer pays postage (2026 estimate). The stress case adds about $7.36 per kit.
 
 ## Digital checks and physical prototype
 
@@ -120,14 +121,15 @@ The model was checked on the computer only: parts fit the stud grid without over
 ## Building notes
 
 - **Sections:**
-  1. The display base, the lawn, the path, the beach and the lagoon
+  1. The display base, the drive and the lawns
   2. The Great Ceremonial House
-  3. The guest longhouse
-  4. The tiki torches and the palms (build 6 torches and 3 palms)
-- The roofs go up one course at a time: first the dark tan plates, then the tan slopes on them, then the reddish brown bricks of the gables at the ends.
-- Each slope sits on the dark tan plate below it. Press every slope down firmly before the next plates go on: they lock the slopes together.
-- On the longhouse, the railings and the posts between the balconies stand one stud in front of the glass doors; the floor plates above tie them to the walls.
-- A “Build 6” or “Build 3” badge means you build that module that many times.
+  3. The porte-cochere
+  4. The lava-rock walls (build 2)
+  5. The tiki torches, the palms and the planting (build 6 torches and 4 palms)
+- The roofs go up one course at a time: first the dark tan plates, then the tan slopes on them, then the reddish brown bricks of the gables at the front and back.
+- Each slope sits on the plate or slope below it. Press every slope down firmly before the next plates go on: they lock the slopes together.
+- The porte-cochere stands on its four posts over the drive, just in front of the entrance; its ridge beam reaches the gable of the Great Ceremonial House.
+- A “Build 2”, “Build 4” or “Build 6” badge means you build that module that many times.
 
 ![Aerial view](images/polynesian_midsize_aerial.jpg)
 
