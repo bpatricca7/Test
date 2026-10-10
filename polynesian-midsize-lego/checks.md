@@ -12,10 +12,11 @@ These check the digital model only; see "Digital checks and physical prototype" 
 
 | Model | Elements | Collisions | Loose groups | Order warnings | Stability warnings |
 |---|---|---|---|---|---|
-| `polynesian_midsize.ldr` | 570 | 0 | 0 | 0 | 0 |
-| `ceremonial_house.ldr` | 240 | 0 | 0 | 0 | 0 |
-| `longhouse.ldr` | 192 | 0 | 0 | 0 | 0 |
+| `polynesian_midsize.ldr` | 614 | 0 | 0 | 0 | 0 |
+| `ceremonial_house.ldr` | 260 | 0 | 0 | 0 | 0 |
+| `porte_cochere.ldr` | 67 | 0 | 0 | 0 | 0 |
+| `rock_wall.ldr` | 38 | 0 | 0 | 0 | 0 |
 | `torch.ldr` | 4 | 0 | 0 | 0 | 0 |
-| `palm.ldr` | 7 | 0 | 0 | 0 | 0 |
+| `palm.ldr` | 8 | 0 | 0 | 0 | 0 |
 
 Not checked digitally: clutch strength, clips, bars and side studs (taken as attached where the design says so), weight and balance, and how easy each step is for a person to build.
