@@ -1,0 +1,90 @@
+Section,Element ID,Quantity,Description,LEGO colour
+Display base and forecourt,243126,2,Tile 1 x 4,Black
+Display base and forecourt,416226,7,Tile 1 x 8,Black
+Display base and forecourt,4114026,7,Tile 1 x 2,Brick Yellow
+Display base and forecourt,4550324,4,Tile 1 x 4,Brick Yellow
+Display base and forecourt,4157277,5,Tile 1 x 6,Brick Yellow
+Display base and forecourt,614121,4,Plate Round 1 x 1,Bright Red
+Display base and forecourt,371028,8,Plate 1 x 4,Dark Green
+Display base and forecourt,302228,1,Plate 2 x 2,Dark Green
+Display base and forecourt,302028,1,Plate 2 x 4,Dark Green
+Display base and forecourt,379528,7,Plate 2 x 6,Dark Green
+Display base and forecourt,4116671,11,Plate 4 x 6,Dark Green
+Display base and forecourt,6004927,2,Plate 16 x 16,Dark Stone Grey
+Display base and forecourt,4210802,4,Plate 8 x 8,Dark Stone Grey
+Display base and forecourt,6013102,3,Plate 1 x 2,Earth Green
+Display base and forecourt,6013975,2,Plate 1 x 3,Earth Green
+Display base and forecourt,6020923,2,Plate 1 x 4,Earth Green
+Display base and forecourt,4211414,3,Tile 1 x 2,Medium Stone Grey
+Display base and forecourt,4211549,3,Tile 1 x 6,Medium Stone Grey
+Display base and forecourt,4211481,9,Tile 1 x 8,Medium Stone Grey
+Central pavilion,300526,8,Brick 1 x 1,Black
+Central pavilion,300426,5,Brick 1 x 2,Black
+Central pavilion,4504379,4,Slope 30 1 x 1 x 2/3,Bright Red
+Central pavilion,4211098,2,Brick 1 x 1,Dark Stone Grey
+Central pavilion,4211088,5,Brick 1 x 2,Dark Stone Grey
+Central pavilion,4211002,1,Plate 2 x 6,Dark Stone Grey
+Central pavilion,4211135,2,Slope 45 2 x 1,Dark Stone Grey
+Central pavilion,4221745,12,Slope 75 2 x 1 x 3,Dark Stone Grey
+Central pavilion,4210848,4,Tile 1 x 1,Dark Stone Grey
+Central pavilion,4211052,1,Tile 1 x 2,Dark Stone Grey
+Central pavilion,4211055,2,Tile 2 x 2,Dark Stone Grey
+Central pavilion,4211407,1,Plate 4 x 8,Medium Stone Grey
+Central pavilion,300501,12,Brick 1 x 1,White
+Central pavilion,300401,5,Brick 1 x 2,White
+Central pavilion,301001,4,Brick 1 x 4,White
+Central pavilion,300901,2,Brick 1 x 6,White
+Central pavilion,300801,2,Brick 1 x 8,White
+Central pavilion,302401,4,Plate 1 x 1,White
+Central pavilion,302301,1,Plate 1 x 2,White
+Central pavilion,362301,6,Plate 1 x 3,White
+Central pavilion,371001,4,Plate 1 x 4,White
+Central pavilion,366601,5,Plate 1 x 6,White
+Central pavilion,346001,3,Plate 1 x 8,White
+Central pavilion,303501,1,Plate 4 x 8,White
+Central pavilion,6034044,2,Slope Curved 2 x 1,White
+Central pavilion,654101,2,Technic Brick 1 x 1 with Hole,White
+Central pavilion,370001,1,Technic Brick 1 x 2 with Hole,White
+Domed tower,300526,60,Brick 1 x 1,Black
+Domed tower,4529240,2,Cone 1 x 1,Dark Stone Grey
+Domed tower,4211010,2,Dish 2 x 2 Inverted,Dark Stone Grey
+Domed tower,4243831,2,Plate 4 x 4,Dark Stone Grey
+Domed tower,4221745,32,Slope 75 2 x 1 x 3,Dark Stone Grey
+Domed tower,4211474,2,Plate 6 x 6,Medium Stone Grey
+Domed tower,300501,28,Brick 1 x 1,White
+Domed tower,300401,24,Brick 1 x 2,White
+Domed tower,362201,4,Brick 1 x 3,White
+Domed tower,301001,14,Brick 1 x 4,White
+Domed tower,300901,6,Brick 1 x 6,White
+Domed tower,306201,2,Brick Round 1 x 1,White
+Domed tower,371001,20,Plate 1 x 4,White
+Domed tower,366601,20,Plate 1 x 6,White
+Domed tower,4144012,2,Plate 6 x 6,White
+Guest wing,300526,12,Brick 1 x 1,Black
+Guest wing,300426,12,Brick 1 x 2,Black
+Guest wing,4504379,12,Slope 30 1 x 1 x 2/3,Bright Red
+Guest wing,4211445,2,Plate 1 x 4,Medium Stone Grey
+Guest wing,4243797,2,Plate 4 x 4,Medium Stone Grey
+Guest wing,4211356,2,Tile 1 x 4,Medium Stone Grey
+Guest wing,4211413,8,Tile 2 x 2,Medium Stone Grey
+Guest wing,300501,28,Brick 1 x 1,White
+Guest wing,362201,4,Brick 1 x 3,White
+Guest wing,301001,2,Brick 1 x 4,White
+Guest wing,302401,16,Plate 1 x 1,White
+Guest wing,362301,8,Plate 1 x 3,White
+Guest wing,371001,14,Plate 1 x 4,White
+Guest wing,4243812,2,Plate 4 x 4,White
+Porte-cochere,4211088,3,Brick 1 x 2,Dark Stone Grey
+Porte-cochere,4211099,1,Brick 1 x 8,Dark Stone Grey
+Porte-cochere,4211135,4,Slope 45 2 x 1,Dark Stone Grey
+Porte-cochere,4211054,8,Slope 45 2 x 2,Dark Stone Grey
+Porte-cochere,4211052,1,Tile 1 x 2,Dark Stone Grey
+Porte-cochere,4211008,1,Tile 1 x 8,Dark Stone Grey
+Porte-cochere,4211055,5,Tile 2 x 2,Dark Stone Grey
+Porte-cochere,365901,6,Arch 1 x 4,White
+Porte-cochere,300501,12,Brick 1 x 1,White
+Porte-cochere,4514842,1,Plate 1 x 12,White
+Porte-cochere,4168072,1,Plate 4 x 12,White
+Porte-cochere,370001,3,Technic Brick 1 x 2 with Hole,White
+Palm tree,6229130,8,Plant Plate Round 1 x 1 with 3 Leaves,Dark Green
+Palm tree,4211183,20,Brick Round 1 x 1,Reddish Brown
