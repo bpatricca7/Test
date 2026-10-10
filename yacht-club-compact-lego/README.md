@@ -26,6 +26,7 @@ A compact display model of Disney's Yacht Club Resort at Walt Disney World, part
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
 | Instructions | 31-page PDF, 36 steps, 4 sections |
 | Parts cost | **$41.79 per kit** at the Pick a Brick prices last seen (2022 and late 2025); about $45.97 with 2026 price rises (see [Cost assumptions](#cost-assumptions-and-resale-scenarios)) |
+| Mid-size version | [`../yacht-club-midsize-lego`](../yacht-club-midsize-lego) |
 
 ![Front view](images/yacht_club_compact_front.jpg)
 

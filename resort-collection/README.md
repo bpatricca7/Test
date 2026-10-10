@@ -224,6 +224,7 @@ verandas and more storeys. Folders are named `<resort>-midsize-lego`.
 | [Grand Floridian Resort](../grand-floridian-midsize-lego/README.md) | 550 | 58 | $76.54 | $84.19 | $106.07 | $117.70 | $169.99 | $47.32 / 28% | $56.82 / 33% | 327 pieces, $42.34 |
 | [Polynesian Village Resort](../polynesian-midsize-lego/README.md) | 570 | 52 | $76.55 | $84.20 | $106.33 | $117.99 | $169.99 | $47.06 / 28% | $56.56 / 33% | 238 pieces, $33.23 |
 | [Riviera Resort](../riviera-midsize-lego/README.md) | 604 | 66 | $77.64 | $85.40 | $107.95 | $119.78 | $179.99 | $54.49 / 30% | $63.99 / 36% | 364 pieces, $43.70 |
+| [Yacht Club Resort](../yacht-club-midsize-lego/README.md) | 606 | 60 | $76.52 | $84.17 | $106.75 | $118.45 | $169.99 | $46.64 / 27% | $56.15 / 33% | 319 pieces, $41.79 |
 <!-- midsize:end -->
 
 - **How many kits one Pick a Brick order covers:**
