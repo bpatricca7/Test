@@ -1,0 +1,101 @@
+Section,Element ID,Quantity,Description,LEGO colour
+Display base and forecourt,243126,2,Tile 1 x 4,Black
+Display base and forecourt,416226,7,Tile 1 x 8,Black
+Display base and forecourt,4206330,10,Tile 1 x 1,Bright Blue
+Display base and forecourt,6206148,6,Plant Flower 1 x 1,Bright Red
+Display base and forecourt,307021,10,Tile 1 x 1,Bright Red
+Display base and forecourt,6229130,6,Plant Plate Round 1 x 1 with 3 Leaves,Dark Green
+Display base and forecourt,302428,2,Plate 1 x 1,Dark Green
+Display base and forecourt,302328,4,Plate 1 x 2,Dark Green
+Display base and forecourt,371028,14,Plate 1 x 4,Dark Green
+Display base and forecourt,302028,4,Plate 2 x 4,Dark Green
+Display base and forecourt,379528,2,Plate 2 x 6,Dark Green
+Display base and forecourt,4116671,11,Plate 4 x 6,Dark Green
+Display base and forecourt,6004927,2,Plate 16 x 16,Dark Stone Grey
+Display base and forecourt,4210802,4,Plate 8 x 8,Dark Stone Grey
+Display base and forecourt,4211414,10,Tile 1 x 2,Medium Stone Grey
+Display base and forecourt,4211481,10,Tile 1 x 8,Medium Stone Grey
+Entrance,300526,4,Brick 1 x 1,Black
+Entrance,306226,2,Brick Round 1 x 1,Black
+Entrance,4113915,12,Brick 1 x 1,Brick Yellow
+Entrance,4113916,8,Brick 1 x 4,Brick Yellow
+Entrance,4159774,4,Brick 1 x 8,Brick Yellow
+Entrance,4211104,6,Brick 1 x 3,Dark Stone Grey
+Entrance,4211133,6,Plate 1 x 3,Dark Stone Grey
+Entrance,4211056,3,Plate 1 x 6,Dark Stone Grey
+Entrance,4211115,3,Plate 4 x 6,Dark Stone Grey
+Entrance,4246896,4,Slope Curved 3 x 1,Dark Stone Grey
+Entrance,4568734,2,Tile 1 x 3,Dark Stone Grey
+Entrance,4251149,1,Plate 1 x 10,Medium Stone Grey
+Entrance,4211429,2,Plate 1 x 3,Medium Stone Grey
+Entrance,4211438,1,Plate 1 x 6,Medium Stone Grey
+Entrance,4211401,1,Plate 4 x 12,Medium Stone Grey
+Entrance,4211404,1,Plate 4 x 6,Medium Stone Grey
+Entrance,4211414,3,Tile 1 x 2,Medium Stone Grey
+Entrance,4211481,3,Tile 1 x 8,Medium Stone Grey
+Entrance,4211149,4,Brick 1 x 2,Reddish Brown
+Entrance,6060800,12,Brick Round 1 x 1,Warm Gold
+Entrance,4620761,2,Arch 1 x 6 Raised,White
+Entrance,300501,14,Brick 1 x 1,White
+Entrance,4558952,14,Brick 1 x 1 with Stud on 1 Side,White
+Entrance,300401,5,Brick 1 x 2,White
+Entrance,301001,7,Brick 1 x 4,White
+Entrance,300901,5,Brick 1 x 6,White
+Entrance,300801,13,Brick 1 x 8,White
+Entrance,300301,6,Brick 2 x 2,White
+Entrance,300201,4,Brick 2 x 3,White
+Entrance,300101,6,Brick 2 x 4,White
+Entrance,366501,12,Slope 45 2 x 1 Inverted,White
+Entrance,4249112,4,Slope Curved 3 x 1,White
+Entrance,663601,1,Tile 1 x 6,White
+Tower (build 2),300526,24,Brick 1 x 1,Black
+Tower (build 2),4211135,16,Slope 45 2 x 1,Dark Stone Grey
+Tower (build 2),4211054,8,Slope 45 2 x 2,Dark Stone Grey
+Tower (build 2),4211127,8,Slope 45 2 x 4,Dark Stone Grey
+Tower (build 2),4210848,2,Tile 1 x 1,Dark Stone Grey
+Tower (build 2),4211052,4,Tile 1 x 2,Dark Stone Grey
+Tower (build 2),4568734,2,Tile 1 x 3,Dark Stone Grey
+Tower (build 2),6116602,2,Bar 4L (Light Sword Blade),White
+Tower (build 2),300501,36,Brick 1 x 1,White
+Tower (build 2),362201,8,Brick 1 x 3,White
+Tower (build 2),301001,4,Brick 1 x 4,White
+Tower (build 2),306201,2,Brick Round 1 x 1,White
+Tower (build 2),4518400,2,Cone 1 x 1,White
+Tower (build 2),362301,2,Plate 1 x 3,White
+Tower (build 2),371001,10,Plate 1 x 4,White
+Tower (build 2),302101,14,Plate 2 x 3,White
+Tower (build 2),302001,6,Plate 2 x 4,White
+Left wing,300526,12,Brick 1 x 1,Black
+Left wing,4211106,6,Slope 33 3 x 2,Dark Stone Grey
+Left wing,4211052,2,Tile 1 x 2,Dark Stone Grey
+Left wing,4211474,1,Plate 6 x 6,Medium Stone Grey
+Left wing,4616581,3,Brick 1 x 2,Sand Green
+Left wing,4521947,3,Brick 1 x 4,Sand Green
+Left wing,6099189,27,Plate 1 x 1,Sand Green
+Left wing,4655080,12,Plate 1 x 2,Sand Green
+Left wing,306201,2,Brick Round 1 x 1,White
+Left wing,4550171,1,Fence 1 x 4 x 1,White
+Left wing,362301,2,Plate 1 x 3,White
+Left wing,366601,2,Plate 1 x 6,White
+Left wing,379501,2,Plate 2 x 6,White
+Left wing,4144012,1,Plate 6 x 6,White
+Right wing,300526,12,Brick 1 x 1,Black
+Right wing,4211106,6,Slope 33 3 x 2,Dark Stone Grey
+Right wing,4211052,2,Tile 1 x 2,Dark Stone Grey
+Right wing,4211474,1,Plate 6 x 6,Medium Stone Grey
+Right wing,4616581,3,Brick 1 x 2,Sand Green
+Right wing,4521947,3,Brick 1 x 4,Sand Green
+Right wing,6099189,27,Plate 1 x 1,Sand Green
+Right wing,4655080,12,Plate 1 x 2,Sand Green
+Right wing,306201,2,Brick Round 1 x 1,White
+Right wing,4550171,1,Fence 1 x 4 x 1,White
+Right wing,362301,2,Plate 1 x 3,White
+Right wing,366601,2,Plate 1 x 6,White
+Right wing,379501,2,Plate 2 x 6,White
+Right wing,4144012,1,Plate 6 x 6,White
+Lamp post (build 2),6116604,2,Bar 4L (Light Sword Blade),Black
+Lamp post (build 2),614126,2,Plate Round 1 x 1,Black
+Lamp post (build 2),306201,2,Brick Round 1 x 1,White
+Topiary (build 2),306228,4,Brick Round 1 x 1,Dark Green
+Topiary (build 2),4529239,2,Cone 1 x 1,Dark Green
+Topiary (build 2),6229130,4,Plant Plate Round 1 x 1 with 3 Leaves,Dark Green
