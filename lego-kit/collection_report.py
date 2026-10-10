@@ -157,8 +157,8 @@ def main(coll):
     compact_cost = {x["folder"].replace("-compact-lego", ""): x for x in rows}
     mid = ["| Resort | Pieces | Part lines | Parts, listed | Parts, 2026 est. | Landed cost, free "
            "shipping | Break-even | Price (2× parts) | Profit / margin, free shipping | Profit / "
-           "margin, buyer pays postage | Compact version |",
-           "|---|---|---|---|---|---|---|---|---|---|---|"]
+           "margin, buyer pays postage | Kits per order | Compact version |",
+           "|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for folder in sorted(f for f in os.listdir(root) if f.endswith("-midsize-lego")):
         proj, have = status(root, folder)
         if not have.get("parts") or not have.get("readme"):
@@ -174,6 +174,7 @@ def main(coll):
                    f"{money(c['before_shipping'] + pr.SHIP_SELLER_PAID)} | "
                    f"{money(pr.break_even(s['cost'], s['pieces']))} | {money(p_mid)} | "
                    f"{money(a['profit'])} / {a['margin']:.0%} | {money(b['profit'])} / {b['margin']:.0%} | "
+                   f"{s['copies']} | "
                    + (f"{cc['pieces']} pieces, {money(cc['parts_listed'])}" if cc else "–") + " |")
     if len(mid) == 2:
         mid = ["No mid-size kits yet."]
