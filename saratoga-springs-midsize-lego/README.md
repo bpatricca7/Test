@@ -2,33 +2,34 @@
 
 ![The finished model](images/saratoga_springs_midsize_front_right.jpg)
 
-A mid-size display model of Disney's Saratoga Springs Resort & Spa at Walt Disney World, part of the [resort collection](../resort-collection/README.md). The arrival front of the Carriage House at Saratoga Springs, in the colours the resort wears today: mint-green shingle with tan trim, a deeper green under the porch, red-and-white striped awnings and warm brown roofs. The round lobby tower stands at the centre, built as an octagon with clipped corners: a tan band runs up its front to a white louvre that pokes into the brown cone roof, under a tan cornice and a black finial. A porch on slim tan posts curves round the foot of the tower behind a red-and-white striped edge, and a white picket fence between chunky river-stone pillars runs along the sidewalk. On the left, a two-storey mint-green wing has a front gable, a balcony with a brown railing beside the tower, a green awning over the shop front and a grey roof with a chimney; on the right, a cream building has red awnings over its windows and a small white-trimmed gable and a white cupola with a spire on its terracotta roof. Two trees stand behind.
+A mid-size display model of Disney's Saratoga Springs Resort & Spa at Walt Disney World, part of the [resort collection](../resort-collection/README.md). The Carriage House at Saratoga Springs, the lobby building, as it stands on its street corner, in the colours the resort wears today: mint-green shingle with tan trim, a deeper green under the porch, red-and-white stripes and warm brown roofs. The round lobby tower is the corner and stands well above the wings. It is built as an octagon with clipped corners; its pale yellow band, front door and white louvre face the corner, under a tan cornice with a flared brown eave, a brown cone roof and a black finial. A porch on slim tan posts wraps round the tower's front and right behind a red-and-white striped edge. From the tower the long wing runs along the front street to the left: a balcony section with tan posts, a brown railing, a pale yellow upper storey and a tan gable; a mint-green shop with a green awning and a mint dormer with a small window; and a pale cream building with white trim, red awnings, a white-trimmed gable and a white cupola with a spire on its terracotta roof. A shorter pale wing runs from the tower toward the back along the right street. Chunky river-stone pillars carry a low white picket fence along the front and a white privacy fence down the right side, with a shade tree behind, and the two sidewalks meet at the corner.
 
 This kit covers The Treehouse Villas at Disney's Saratoga Springs Resort as well: they share the property, and the mid-size model shows the part that makes it recognisable.
 
 **Signature features in this kit**
 
-- The round lobby tower, five storeys tall: an octagon with clipped corners in mint-green shingle over a deeper green ground floor
-- A tan band up the front of the tower to a white louvre that pokes into the brown cone roof, a tan cornice under the eaves and a black finial on top
-- The porch round the foot of the tower: slim tan posts and a red-and-white striped edge in front of a brown porch roof
-- A white picket fence between chunky river-stone pillars of tan and grey round bricks, along the sidewalk
-- A two-storey mint-green wing: a front gable with a small window, a balcony with tan posts and a brown railing, a green awning over the shop front and a grey roof with a chimney
-- A cream building with red awnings over its windows, a white-trimmed gable and a white cupola with a spire on its terracotta roof
+- The round lobby tower on the street corner, six storeys tall so it stands well above the wings: an octagon with clipped corners in mint-green shingle over a deeper green ground floor
+- A pale yellow band up the tower's corner from the porch roof to a white louvre over the cornice, a tan cornice with a flared brown eave, a brown cone roof and a black finial
+- The porch wrapped round the tower's front and right: slim tan posts and a red-and-white striped edge round a brown porch roof
+- The long wing along the front street: a balcony section with tan posts, a brown railing, a pale yellow upper storey and a tan gable, then a mint-green shop with a green awning and a mint dormer with a small window
+- A pale cream building with white trim and shutters, red awnings, a white-trimmed gable and a white cupola with a spire on its terracotta roof, at the far end of the front street
+- A shorter pale wing running back from the tower along the right street, with a small white-trimmed gable
+- Chunky river-stone pillars of tan and grey round bricks, with a low white picket fence along the front and a white privacy fence down the right side, and sidewalks along both streets that meet at the corner
 
 **Left out**
 
 - The sign and the horse logo on the tower, and all other lettering
 - The rest of the guest buildings, the Treehouse Villas, the pools and the spa
-- The street, the lamp posts and the rest of the gardens
+- The street, the lamp posts, the wall lamps and the rest of the gardens
 
 | | |
 |---|---|
-| Pieces | **660** (87 part/colour lines, 38 kinds of part, 12 colours) |
+| Pieces | **705** (98 part/colour lines, 37 kinds of part, 12 colours) |
 | Display base | 32 × 24 studs (25.6 × 19.2 cm), the same for every mid-size kit in the collection |
-| Overall size | 25.6 × 19.2 cm, 13.0 cm tall |
+| Overall size | 25.6 × 19.2 cm, 13.3 cm tall |
 | Scale | about 1:250 (one storey = 4 plates, 1 stud ≈ 2 m), like the large resort models |
-| Instructions | 56-page PDF, 65 steps, 5 sections |
-| Parts cost | **$75.85 per kit** at the Pick a Brick prices last seen (2022 and late 2025); about $83.44 with 2026 price rises (see [Cost assumptions](#cost-assumptions-and-resale-scenarios)) |
+| Instructions | 67-page PDF, 80 steps, 6 sections |
+| Parts cost | **$79.06 per kit** at the Pick a Brick prices last seen (2022 and late 2025); about $86.97 with 2026 price rises (see [Cost assumptions](#cost-assumptions-and-resale-scenarios)) |
 | Compact version | [`../saratoga-springs-compact-lego`](../saratoga-springs-compact-lego) |
 
 ![Front view](images/saratoga_springs_midsize_front.jpg)
@@ -37,13 +38,13 @@ This kit covers The Treehouse Villas at Disney's Saratoga Springs Resort as well
 
 | Path | What it is |
 |---|---|
-| [`instructions/Saratoga_Springs_Resort_Midsize_Instructions.pdf`](instructions/Saratoga_Springs_Resort_Midsize_Instructions.pdf) | **The instruction booklet**: cover, section intros with parts lists, 65 numbered steps, gallery, parts inventory with element IDs, ordering guide |
-| [`parts/pick_a_brick_upload.csv`](parts/pick_a_brick_upload.csv) | Pick a Brick upload file for **one kit** (87 element IDs) |
-| [`parts/pick_a_brick_upload_x10.csv`](parts/pick_a_brick_upload_x10.csv), [`parts/pick_a_brick_upload_x25.csv`](parts/pick_a_brick_upload_x25.csv) | Upload files for **10 kits** (6,600 pieces) and **25 kits** (16,500 pieces) |
+| [`instructions/Saratoga_Springs_Resort_Midsize_Instructions.pdf`](instructions/Saratoga_Springs_Resort_Midsize_Instructions.pdf) | **The instruction booklet**: cover, section intros with parts lists, 80 numbered steps, gallery, parts inventory with element IDs, ordering guide |
+| [`parts/pick_a_brick_upload.csv`](parts/pick_a_brick_upload.csv) | Pick a Brick upload file for **one kit** (98 element IDs) |
+| [`parts/pick_a_brick_upload_x10.csv`](parts/pick_a_brick_upload_x10.csv), [`parts/pick_a_brick_upload_x25.csv`](parts/pick_a_brick_upload_x25.csv) | Upload files for **10 kits** (7,050 pieces) and **25 kits** (17,625 pieces) |
 | [`parts/kit_cost.csv`](parts/kit_cost.csv) | Cost of one kit, line by line, with the price and when it was seen |
 | [`parts/pick_a_brick_list.csv`](parts/pick_a_brick_list.csv) | Bill of materials: element ID, quantity, part, LEGO colour, design ID, BrickLink part and colour, alternate IDs |
 | [`parts/pick_a_brick_mapping.csv`](parts/pick_a_brick_mapping.csv) | Part-by-part sourcing: Pick a Brick name, evidence it's sold, last price, the ID to try next, BrickLink backup |
-| [`parts/pick_a_brick_upload_retry.csv`](parts/pick_a_brick_upload_retry.csv) | Newer element IDs for 14 of the parts, for lines the upload doesn't match |
+| [`parts/pick_a_brick_upload_retry.csv`](parts/pick_a_brick_upload_retry.csv) | Newer element IDs for 20 of the parts, for lines the upload doesn't match |
 | [`parts/bricklink_wanted_list.xml`](parts/bricklink_wanted_list.xml), [`parts/rebrickable_parts.csv`](parts/rebrickable_parts.csv) | BrickLink wanted list and Rebrickable import (one kit) |
 | [`parts/parts_by_section.csv`](parts/parts_by_section.csv) | Parts for each section, for bagging |
 | [`model/saratoga_springs_midsize.mpd`](model/saratoga_springs_midsize.mpd) | The digital model (LDraw, with steps and submodels). Opens in BrickLink Studio, LeoCAD and LDCad |
@@ -57,22 +58,21 @@ This kit covers The Treehouse Villas at Disney's Saratoga Springs Resort as well
 3. Before you pay, check that every line shows the normal (Bestseller) delivery time and compare the bag total with the cost below.
 4. If a line isn't matched, use the ID in the retry file or in the "If not found" column of the mapping, multiplied by the number of kits.
 
-**Kits per order:** Pick a Brick sells up to 999 of one element per order. The part this kit uses most is needed 44 times, so one order holds up to **22 kits**.
+**Kits per order:** Pick a Brick sells up to 999 of one element per order. The part this kit uses most is needed 58 times, so one order holds up to **17 kits**.
 
 **Sourcing evidence** (every part must pass the Bestseller-only check in `export_parts.py`):
 
 | Evidence | Lines |
 |---|---|
-| In Pick a Brick Bestseller range (2022 listing); still in LEGO sets in 2026 | 54 |
-| On Pick a Brick (late-2025 listing) | 31 |
-| In Pick a Brick Bestseller range (2022 listing); still in LEGO sets in 2025 | 1 |
+| In Pick a Brick Bestseller range (2022 listing); still in LEGO sets in 2026 | 58 |
+| On Pick a Brick (late-2025 listing) | 38 |
 | In Pick a Brick Bestseller range (2022 listing); still in LEGO sets in 2026 (including sets listed for 2027) | 1 |
+| In Pick a Brick Bestseller range (2022 listing); still in LEGO sets in 2025 | 1 |
 
 **Sourcing uncertainties:**
 
-- 56 lines are backed only by LEGO's 2022 Bestseller list, so their range and price today are not confirmed.
-- 14 lines have newer element IDs (retry file); an upload may match either.
-- Parts in fewer than 10 sets since 2024 (more likely to sell out): Fence Spindled 1 x 4 x 2 White (7 sets).
+- 60 lines are backed only by LEGO's 2022 Bestseller list, so their range and price today are not confirmed.
+- 20 lines have newer element IDs (retry file); an upload may match either.
 - LEGO pauses Standard parts in the US and Canada from November 2, 2026; this kit uses none, but check that no line shows a longer delivery time.
 
 ## Cost assumptions and resale scenarios
@@ -91,21 +91,21 @@ These are planning numbers, not quotes. Upload the 10-kit file to see today's pr
 
 | Per kit | Listed prices | 2026 estimate | Stress case |
 |---|---|---|---|
-| Parts | $75.85 | $83.44 | $91.02 |
+| Parts | $79.06 | $86.97 | $94.87 |
 | Packaging | $3.00 | $3.00 | $3.00 |
-| Labour (660 pieces) | $9.75 | $9.75 | $9.75 |
-| Before shipping | $88.60 | $96.19 | $103.77 |
+| Labour (705 pieces) | $10.31 | $10.31 | $10.31 |
+| Before shipping | $92.37 | $100.28 | $108.18 |
 | Seller-paid shipping | $10.50 | $10.50 | $10.50 |
 
-Biggest cost lines: 2× Plate 16 x 16 (Dark Stone Grey) $6.08, 44× Brick 1 x 2 (Sand Green) $4.40, 9× Plate 4 x 6 (Dark Green) $3.87.
+Biggest cost lines: 2× Plate 16 x 16 (Dark Stone Grey) $6.08, 58× Brick 1 x 2 (Sand Green) $5.80, 4× Plate 8 x 8 (Dark Stone Grey) $3.24.
 
 | Price | Free shipping (seller pays): profit | margin | Buyer pays postage: profit | margin |
 |---|---|---|---|---|
-| $139.99 (21¢/piece) | $19.56 | 14% | $29.06 | 21% |
-| $169.99 (26¢/piece) | $46.71 | 27% | $56.21 | 33% |
-| $209.99 (32¢/piece) | $82.91 | 39% | $92.41 | 44% |
+| $139.99 (20¢/piece) | $15.46 | 11% | $24.96 | 18% |
+| $179.99 (26¢/piece) | $51.66 | 29% | $61.16 | 34% |
+| $219.99 (31¢/piece) | $87.86 | 40% | $97.36 | 44% |
 
-Break-even price: $118.38 with free shipping, $107.88 when the buyer pays postage (2026 estimate). The stress case adds about $7.58 per kit.
+Break-even price: $122.90 with free shipping, $112.40 when the buyer pays postage (2026 estimate). The stress case adds about $7.91 per kit.
 
 ## Digital checks and physical prototype
 
@@ -123,16 +123,19 @@ The model was checked on the computer only: parts fit the stud grid without over
 ## Building notes
 
 - **Sections:**
-  1. The display base, the sidewalk and the lawns
-  2. The Carriage House tower
-  3. The mint-green wing
+  1. The display base, the sidewalks, the paving and the lawns
+  2. The Carriage House tower on the corner, with its porch
+  3. The mint-green wing: the shop and the balcony section
   4. The cream building
-  5. The fence and the garden: the stone pillars, the picket fence, shrubs and trees
+  5. The back wing
+  6. The fences and the garden: the stone pillars, the picket and privacy fences, shrubs and a tree
 - The tower is an octagon: its walls step in at the corners. Lay each course side by side with the picture; its joints cross those of the course below.
-- The porch's tan deck plates reach from the posts onto the tower walls and tie the porch to the tower. The striped edge alternates red and white, a plate and a slope on each.
+- The pale yellow band runs up the outer corner of the step in the middle of the tower's front-right face. Each yellow brick reaches one stud into the wall, so the mint bricks beside it lock it in, and each yellow 1×3 plate between the storeys reaches into the hollow inside.
+- The porch's brown roof plates reach from the posts onto the tower walls. The striped edge alternates red and white, a plate and a slope on each.
+- Every plate of the tan cornice reaches back onto the wall below it. The small brown slopes round its edge go on before the cone.
 - The cone roof goes up one ring of slopes at a time. Hidden brown bricks under a few slopes hold up the ring above; they have a step of their own.
 - The tower's finial and the cupola's spire sit on the centre stud of a 2×2 dish, half a stud off the grid. The cupola's white bar pushes into the top of its cone.
-- A “Build 6” or “Build 2” badge means you build that module that many times.
+- A “Build 6” badge means you build that module six times.
 
 ![Aerial view](images/saratoga_springs_midsize_aerial.jpg)
 

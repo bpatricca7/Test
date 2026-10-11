@@ -1,89 +1,100 @@
 Element ID,Quantity,Description,LEGO colour,Unit price (USD),Price seen,Line cost (USD)
-300526,16,Brick 1 x 1,Black,0.07,late 2025,1.12
-300426,21,Brick 1 x 2,Black,0.10,late 2025,2.10
+300526,15,Brick 1 x 1,Black,0.07,late 2025,1.05
+300426,16,Brick 1 x 2,Black,0.10,late 2025,1.60
 4529236,1,Cone 1 x 1,Black,0.07,2022,0.07
 474026,1,Dish 2 x 2 Inverted,Black,0.07,2022,0.07
 614126,1,Plate Round 1 x 1,Black,0.06,2022,0.06
 243126,2,Tile 1 x 4,Black,0.13,2022,0.26
 416226,7,Tile 1 x 8,Black,0.14,2022,0.98
-4109995,6,Brick 1 x 2,Brick Yellow,0.10,late 2025,0.60
-4117070,34,Brick Round 1 x 1,Brick Yellow,0.06,2022,2.04
-4159553,2,Plate 1 x 1,Brick Yellow,0.05,late 2025,0.10
-4113917,17,Plate 1 x 2,Brick Yellow,0.07,late 2025,1.19
-4121921,4,Plate 1 x 3,Brick Yellow,0.07,late 2025,0.28
-4113233,8,Plate 1 x 4,Brick Yellow,0.10,late 2025,0.80
-4124067,6,Plate 1 x 6,Brick Yellow,0.14,2022,0.84
-4114309,2,Plate 2 x 4,Brick Yellow,0.14,late 2025,0.28
-4114001,3,Plate 4 x 6,Brick Yellow,0.43,2022,1.29
-4121972,8,Slope 45 2 x 1,Brick Yellow,0.11,2022,0.88
+4117070,24,Brick Round 1 x 1,Brick Yellow,0.06,2022,1.44
+4159553,3,Plate 1 x 1,Brick Yellow,0.05,late 2025,0.15
+4113917,6,Plate 1 x 2,Brick Yellow,0.07,late 2025,0.42
+4113233,7,Plate 1 x 4,Brick Yellow,0.10,late 2025,0.70
+4124067,2,Plate 1 x 6,Brick Yellow,0.14,2022,0.28
+4114084,6,Plate 2 x 2,Brick Yellow,0.09,late 2025,0.54
+4114309,7,Plate 2 x 4,Brick Yellow,0.14,late 2025,0.98
+4114001,4,Plate 4 x 6,Brick Yellow,0.43,2022,1.72
+4516055,2,Slope 30 1 x 1 x 2/3,Brick Yellow,0.06,2022,0.12
+4121972,2,Slope 45 2 x 1,Brick Yellow,0.11,2022,0.22
+4114026,6,Tile 1 x 2,Brick Yellow,0.07,2022,0.42
 4550324,8,Tile 1 x 4,Brick Yellow,0.13,2022,1.04
-4157277,8,Tile 1 x 6,Brick Yellow,0.14,2022,1.12
-6266964,4,Plant Leaves 6 x 5,Bright Green,0.19,2022,0.76
-6206148,4,Plant Flower 1 x 1,Bright Red,0.06,2022,0.24
-302421,6,Plate 1 x 1,Bright Red,0.05,late 2025,0.30
-4504379,10,Slope 30 1 x 1 x 2/3,Bright Red,0.06,2022,0.60
-6022084,10,Brick 1 x 1,Cool Yellow,0.07,late 2025,0.70
-6022083,8,Brick 1 x 2,Cool Yellow,0.10,late 2025,0.80
-6036232,4,Brick 1 x 4,Cool Yellow,0.15,2022,0.60
+4157277,22,Tile 1 x 6,Brick Yellow,0.14,2022,3.08
+6266964,2,Plant Leaves 6 x 5,Bright Green,0.19,2022,0.38
+6206148,5,Plant Flower 1 x 1,Bright Red,0.06,2022,0.30
+302421,11,Plate 1 x 1,Bright Red,0.05,late 2025,0.55
+4504379,13,Slope 30 1 x 1 x 2/3,Bright Red,0.06,2022,0.78
+6022084,9,Brick 1 x 1,Cool Yellow,0.07,late 2025,0.63
+6022083,15,Brick 1 x 2,Cool Yellow,0.10,late 2025,1.50
+6036232,2,Brick 1 x 4,Cool Yellow,0.15,2022,0.30
+6296492,5,Plate 1 x 3,Cool Yellow,0.07,2022,0.35
 4107736,13,Brick 1 x 2,Dark Green,0.10,late 2025,1.30
-6268814,4,Plant Leaves 4 x 3,Dark Green,0.10,2022,0.40
-6266968,4,Plant Leaves 6 x 5,Dark Green,0.19,2022,0.76
-6229130,14,Plant Plate Round 1 x 1 with 3 Leaves,Dark Green,0.06,2022,0.84
-302428,8,Plate 1 x 1,Dark Green,0.05,late 2025,0.40
-302328,8,Plate 1 x 2,Dark Green,0.07,late 2025,0.56
-371028,21,Plate 1 x 4,Dark Green,0.10,late 2025,2.10
-302228,1,Plate 2 x 2,Dark Green,0.09,late 2025,0.09
-302028,1,Plate 2 x 4,Dark Green,0.14,late 2025,0.14
-379528,8,Plate 2 x 6,Dark Green,0.19,2022,1.52
-4116671,9,Plate 4 x 6,Dark Green,0.43,2022,3.87
+6268814,2,Plant Leaves 4 x 3,Dark Green,0.10,2022,0.20
+6266968,2,Plant Leaves 6 x 5,Dark Green,0.19,2022,0.38
+6229130,10,Plant Plate Round 1 x 1 with 3 Leaves,Dark Green,0.06,2022,0.60
+302428,4,Plate 1 x 1,Dark Green,0.05,late 2025,0.20
+302328,5,Plate 1 x 2,Dark Green,0.07,late 2025,0.35
+371028,8,Plate 1 x 4,Dark Green,0.10,late 2025,0.80
+302228,4,Plate 2 x 2,Dark Green,0.09,late 2025,0.36
+302028,7,Plate 2 x 4,Dark Green,0.14,late 2025,0.98
+379528,7,Plate 2 x 6,Dark Green,0.19,2022,1.33
+4116671,3,Plate 4 x 6,Dark Green,0.43,2022,1.29
 4546705,6,Slope 30 1 x 1 x 2/3,Dark Green,0.06,2022,0.36
 6069259,2,Slope 45 2 x 1,Dark Orange,0.11,2022,0.22
-6248859,12,Slope 45 2 x 2,Dark Orange,0.14,2022,1.68
-4614158,10,Tile 1 x 2,Dark Orange,0.07,2022,0.70
-4211098,13,Brick 1 x 1,Dark Stone Grey,0.07,late 2025,0.91
-4211090,12,Brick Round 1 x 1,Dark Stone Grey,0.06,2022,0.72
+6248859,8,Slope 45 2 x 2,Dark Orange,0.14,2022,1.12
+4614158,8,Tile 1 x 2,Dark Orange,0.07,2022,0.56
+4211098,5,Brick 1 x 1,Dark Stone Grey,0.07,late 2025,0.35
+4211088,5,Brick 1 x 2,Dark Stone Grey,0.10,late 2025,0.50
+4211103,2,Brick 1 x 4,Dark Stone Grey,0.16,late 2025,0.32
+4211090,6,Brick Round 1 x 1,Dark Stone Grey,0.06,2022,0.36
 6004927,2,Plate 16 x 16,Dark Stone Grey,3.04,2022,6.08
 4210802,4,Plate 8 x 8,Dark Stone Grey,0.81,2022,3.24
-4211135,4,Slope 45 2 x 1,Dark Stone Grey,0.11,2022,0.44
+4211135,9,Slope 45 2 x 1,Dark Stone Grey,0.11,2022,0.99
+4211054,5,Slope 45 2 x 2,Dark Stone Grey,0.14,2022,0.70
 4211127,6,Slope 45 2 x 4,Dark Stone Grey,0.18,2022,1.08
 4210848,2,Tile 1 x 1,Dark Stone Grey,0.06,2022,0.12
-4211052,3,Tile 1 x 2,Dark Stone Grey,0.07,2022,0.21
-4211053,4,Tile 1 x 4,Dark Stone Grey,0.13,2022,0.52
-4211412,12,Brick Round 1 x 1,Medium Stone Grey,0.06,2022,0.72
-4211399,2,Plate 1 x 1,Medium Stone Grey,0.05,late 2025,0.10
-4211445,4,Plate 1 x 4,Medium Stone Grey,0.10,late 2025,0.40
+4211052,9,Tile 1 x 2,Dark Stone Grey,0.07,2022,0.63
+4211053,6,Tile 1 x 4,Dark Stone Grey,0.13,2022,0.78
+4211412,6,Brick Round 1 x 1,Medium Stone Grey,0.06,2022,0.36
+4211398,2,Plate 1 x 2,Medium Stone Grey,0.07,late 2025,0.14
 4211438,1,Plate 1 x 6,Medium Stone Grey,0.14,2022,0.14
-4211425,1,Plate 1 x 8,Medium Stone Grey,0.18,2022,0.18
-4211452,2,Plate 2 x 6,Medium Stone Grey,0.19,2022,0.38
-4211406,1,Plate 2 x 8,Medium Stone Grey,0.25,2022,0.25
+4211425,5,Plate 1 x 8,Medium Stone Grey,0.18,2022,0.90
+4211452,7,Plate 2 x 6,Medium Stone Grey,0.19,2022,1.33
 4211405,2,Plate 6 x 10,Medium Stone Grey,0.86,2022,1.72
 4211475,6,Plate Round 2 x 2 with Axle Hole,Medium Stone Grey,0.08,2022,0.48
-4211242,8,Brick 1 x 1,Reddish Brown,0.07,late 2025,0.56
-4211183,6,Brick Round 1 x 1,Reddish Brown,0.06,2022,0.36
-4221744,14,Plate 1 x 1,Reddish Brown,0.05,late 2025,0.70
-4504376,26,Slope 30 1 x 1 x 2/3,Reddish Brown,0.06,2022,1.56
-4211199,10,Slope 45 2 x 1,Reddish Brown,0.11,2022,1.10
-4211202,22,Slope 45 2 x 2,Reddish Brown,0.14,2022,3.08
-4211151,2,Tile 1 x 2,Reddish Brown,0.07,2022,0.14
-4521948,24,Brick 1 x 1,Sand Green,0.07,late 2025,1.68
-4616581,44,Brick 1 x 2,Sand Green,0.10,late 2025,4.40
-4521947,4,Brick 1 x 4,Sand Green,0.16,late 2025,0.64
-6099189,4,Plate 1 x 1,Sand Green,0.05,late 2025,0.20
-4655080,36,Plate 1 x 2,Sand Green,0.07,late 2025,2.52
-6100234,9,Plate 1 x 4,Sand Green,0.10,late 2025,0.90
+4211242,2,Brick 1 x 1,Reddish Brown,0.07,late 2025,0.14
+4211149,1,Brick 1 x 2,Reddish Brown,0.10,late 2025,0.10
+4211183,3,Brick Round 1 x 1,Reddish Brown,0.06,2022,0.18
+4221744,9,Plate 1 x 1,Reddish Brown,0.05,late 2025,0.45
+4211152,9,Plate 1 x 3,Reddish Brown,0.07,late 2025,0.63
+4211190,5,Plate 1 x 4,Reddish Brown,0.10,late 2025,0.50
+4216695,1,Plate 2 x 2,Reddish Brown,0.09,late 2025,0.09
+4504376,40,Slope 30 1 x 1 x 2/3,Reddish Brown,0.06,2022,2.40
+4211199,2,Slope 45 2 x 1,Reddish Brown,0.11,2022,0.22
+4211202,17,Slope 45 2 x 2,Reddish Brown,0.14,2022,2.38
+4211151,1,Tile 1 x 2,Reddish Brown,0.07,2022,0.07
+4521948,9,Brick 1 x 1,Sand Green,0.07,late 2025,0.63
+4616581,58,Brick 1 x 2,Sand Green,0.10,late 2025,5.80
+4521947,13,Brick 1 x 4,Sand Green,0.16,late 2025,2.08
+6099189,15,Plate 1 x 1,Sand Green,0.05,late 2025,0.75
+4655080,35,Plate 1 x 2,Sand Green,0.07,late 2025,2.45
+6100234,12,Plate 1 x 4,Sand Green,0.10,late 2025,1.20
 6099187,2,Plate 1 x 6,Sand Green,0.14,2022,0.28
-6249817,2,Plate 2 x 4,Sand Green,0.14,2022,0.28
+6249817,1,Plate 2 x 4,Sand Green,0.14,2022,0.14
 6093526,1,Bar 3L,White,0.06,2022,0.06
-287701,4,Brick 1 x 2 with Grille,White,0.11,2022,0.44
+300501,11,Brick 1 x 1,White,0.07,late 2025,0.77
+300401,5,Brick 1 x 2,White,0.10,late 2025,0.50
+287701,2,Brick 1 x 2 with Grille,White,0.11,2022,0.22
+301001,1,Brick 1 x 4,White,0.16,late 2025,0.16
+300901,4,Brick 1 x 6,White,0.25,2022,1.00
+306201,8,Brick Round 1 x 1,White,0.06,2022,0.48
 4518400,1,Cone 1 x 1,White,0.07,2022,0.07
 474001,1,Dish 2 x 2 Inverted,White,0.07,2022,0.07
-6047813,4,Fence Spindled 1 x 4 x 2,White,0.36,2022,1.44
-302401,6,Plate 1 x 1,White,0.05,late 2025,0.30
-302301,6,Plate 1 x 2,White,0.07,late 2025,0.42
+302401,16,Plate 1 x 1,White,0.05,late 2025,0.80
+302301,4,Plate 1 x 2,White,0.07,late 2025,0.28
 366601,3,Plate 1 x 6,White,0.14,2022,0.42
 302201,1,Plate 2 x 2,White,0.09,late 2025,0.09
-379501,1,Plate 2 x 6,White,0.19,2022,0.19
 303201,2,Plate 4 x 6,White,0.43,2022,0.86
-4504369,4,Slope 30 1 x 1 x 2/3,White,0.06,2022,0.24
-4121932,10,Slope 45 2 x 1,White,0.11,2022,1.10
-,660,Total for one copy,,,,75.85
+4504369,10,Slope 30 1 x 1 x 2/3,White,0.06,2022,0.60
+4121932,15,Slope 45 2 x 1,White,0.11,2022,1.65
+663601,2,Tile 1 x 6,White,0.14,2022,0.28
+,705,Total for one copy,,,,79.06

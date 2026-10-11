@@ -12,11 +12,12 @@ These check the digital model only; see "Digital checks and physical prototype" 
 
 | Model | Elements | Collisions | Loose groups | Order warnings | Stability warnings |
 |---|---|---|---|---|---|
-| `saratoga_springs_midsize.ldr` | 660 | 0 | 0 | 0 | 0 |
-| `tower.ldr` | 277 | 0 | 0 | 0 | 0 |
-| `mint_wing.ldr` | 103 | 0 | 0 | 0 | 0 |
-| `cream_building.ldr` | 99 | 0 | 0 | 0 | 0 |
-| `pillar.ldr` | 9 | 0 | 0 | 0 | 0 |
+| `saratoga_springs_midsize.ldr` | 705 | 0 | 0 | 0 | 0 |
+| `tower.ldr` | 305 | 0 | 0 | 0 | 0 |
+| `mint_wing.ldr` | 104 | 0 | 0 | 0 | 0 |
+| `cream_building.ldr` | 86 | 0 | 0 | 0 | 0 |
+| `back_wing.ldr` | 55 | 0 | 0 | 0 | 0 |
+| `pillar.ldr` | 5 | 0 | 0 | 0 | 0 |
 | `tree.ldr` | 10 | 0 | 0 | 0 | 0 |
 
 Not checked digitally: clutch strength, clips, bars and side studs (taken as attached where the design says so), weight and balance, and how easy each step is for a person to build.
