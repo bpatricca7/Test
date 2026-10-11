@@ -217,6 +217,8 @@ the same black band, scale and presentation as the compact kits, and a parts
 target of about $75. It shows more of each resort, such as wings, porches,
 verandas and more storeys. Folders are named `<resort>-midsize-lego`.
 
+![The mid-size Deluxe kits](midsize_overview.jpg)
+
 <!-- midsize:start -->
 | Resort | Pieces | Part lines | Parts, listed | Parts, 2026 est. | Landed cost, free shipping | Break-even | Price (2× parts) | Profit / margin, free shipping | Profit / margin, buyer pays postage | Kits per order | Compact version |
 |---|---|---|---|---|---|---|---|---|---|---|---|
