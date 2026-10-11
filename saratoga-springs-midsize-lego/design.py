@@ -5,44 +5,50 @@ Build with the shared kit:  ./build.sh
 The mid-size format (lego-kit/compact.py, size="midsize"): a 32 x 24 base with a
 black front band; one storey = 4 plates (a course of bricks and a plate band),
 1 stud is about 2 m, the same scale as the compact kit. It shows the arrival
-front of the Carriage House facing the band, symmetric about x = 15.5, and more
-of the resort than the compact kit rather than a bigger copy of it: a third
-storey and a cross-gable on the pavilion, a porte-cochere over a carriage loop,
-guest buildings, a spring, lamp posts, flower beds and trees.
+front of the Carriage House facing the band: the round lobby tower in mint-green
+shingle with its tan front band, louvre, tan cornice and brown cone roof, the
+porch with its red-and-white striped edge round the foot of the tower, the white
+picket fence with stone pillars, and a lower building on each side.
 
-Grid (studs): x to the right, z toward the back; the front band is z = 0..1.
-  Carriage House  x  6..25, z 11..22   cross plan: the three-storey pavilion (x 11..20,
-                                       z 11..22), its tall front gable crossing a
-                                       cross-gable over z 14..19; two-storey wings (x 6..10
-                                       and 21..25, z 14..19) with white porches at z = 14
-                                       and gabled roofs against the pavilion. Cream ground
-                                       floor, sage-green upper floors, white bands, steep
-                                       dark grey roofs with cream bargeboards
-  belvedere       on the pavilion ridge where the roofs cross (x 15..16, z 16..17)
-  guest buildings x  0..5 and 26..31, z 16..21   two storeys and a front porch under a
-                                       steep front gable (build 2)
-  porte-cochere   x 13..18, z  6..10   white posts and a steep front gable over the loop
-  carriage loop   across z 6..10 (x 8..23) and down to the band (x 8..11 and 20..23)
-  spring          x 13..18, z  2..5    a rock with water bubbling from it, in a pool
-  trees, lamps    shade trees at (3, 4) and (28, 4); lamp posts at (7, 5) and (24, 5)
-  flower beds     z 12..13 in front of the wings' porches; z 15 in front of the guest
-                  buildings
+Grid (studs): x to the right, z toward the back; the front band is z = 0..1. The
+tower, the porch and the fence are symmetric about x = 15.5.
+  tower           x 12..19, z 10..17   an octagon with clipped corners (rows of 4, 6, 8,
+                                       8, 8, 8, 6 and 4 studs), five storeys: a green
+                                       ground floor under the porch and four mint-green
+                                       storeys above, a tan band up the front, a tan
+                                       cornice and a brown cone roof over x 11..20,
+                                       z 9..18, with the louvre at the front and a black
+                                       finial on top
+  porch           z 8..10 round the front of the tower: tan posts, a red-and-white striped
+                  edge and a brown porch roof against the tower
+  mint wing       x  2..11, z 11..16   two storeys, a front gable with a small window, a
+                                       balcony with a brown railing beside the tower, a
+                                       green awning over the shop front, a grey roof and a
+                                       chimney
+  cream building  x 20..29, z 11..16   two storeys, red awnings over the ground-floor
+                                       windows, a small front gable and a white cupola
+                                       with a spire in a terracotta roof
+  sidewalk        z 2..3 across the base; the entrance walk x 14..17, z 4..7
+  fence           z 4: a white picket fence between 2 x 2 stone pillars, open at the walk;
+                  shrubs and flowers behind it at z = 5
+  trees           behind the buildings at (3, 20) and (28, 20)
 """
 from contextlib import contextmanager
 
 import bricks
-from bricks import (Model, PARTS, FACE, row, fill_rect, fill_cells, place_rect, rot_matrix,
-                    WHITE, BLACK, DBG, LBG, GREEN, BRGREEN, TAN, RBROWN, TCLEAR, RED)
+from bricks import (Model, Offset, PARTS, FACE, row, fill_rect, fill_cells,
+                    rot_matrix, WHITE, BLACK, DBG, LBG, RED, GREEN, TAN, RBROWN, BRGREEN)
 from walls import WallRing
 from roofs import Roof, build_roofs
 from compact import compact_project, display_base, finish_ground
 
 SIZE = "midsize"
-SAGE, WATER, LAVENDER = 378, 43, 30          # Sand Green, Trans-Light Blue, Medium Lavender
-CREAM, UPPER, TRIM, ROOF, WINDOW, PLINTH = TAN, SAGE, WHITE, DBG, BLACK, LBG
-BAND, RAKE, DRIVE, ROCK = WHITE, TAN, LBG, DBG      # white bands, cream bargeboards
+MINT, CREAM, TERRA = 378, 226, 484        # Sand Green, Bright Light Yellow, Dark Orange
+DEEP = GREEN                               # the deeper green under the porch
+CONE, WING_ROOF, TRIM, WINDOW, PLINTH = RBROWN, DBG, TAN, BLACK, LBG
+PAVING = TAN
 
-# Plant Leaves 4 x 3 (a Bestseller in green), for the tops of the shade trees
+# Plant Leaves 4 x 3 (a Bestseller in green), for the tops of the trees
 bricks.P("ssm_leaves4x3", "2423.dat", "Plant Leaves 4 x 3", cells=[(0, 0)], studs=[(0, 0)],
          height=1)
 
@@ -53,88 +59,101 @@ PROJECT = compact_project(
     resort="Disney's Saratoga Springs Resort & Spa",
     category="Deluxe Villas (DVC)",
     merged=["The Treehouse Villas at Disney's Saratoga Springs Resort"],
-    about=("The arrival front of the Carriage House at Saratoga Springs, built like a "
-           "Victorian spa-town building in upstate New York: a cream ground floor and "
-           "sage-green upper floors with white floor bands, under steep dark grey roofs with "
-           "cream bargeboards. The three-storey central pavilion's tall front gable, with an "
-           "attic window, a round window and a louvre, crosses a cross-gable that carries on "
-           "the line of the gabled wings, and a white belvedere with a grey dome and finial "
-           "stands where the roofs meet. White porches with posts and railings run along the "
-           "wings, and a porte-cochere with its own steep gable stands over the carriage loop. "
-           "Lower guest buildings in the same colours, with porches of their own, stand back "
-           "at either end. In front, water bubbles from a rock in a small spring pool inside "
-           "the loop, between black lamp posts, flower beds and two shade trees."),
-    features=["The Carriage House front, symmetric about the entrance: a cream ground floor "
-              "and sage-green upper floors with white floor bands",
-              "The three-storey central pavilion, taller than in the compact kit: its tall "
-              "front gable, with an attic window, a round window and a louvre, crosses a "
-              "cross-gable under steep dark grey roofs with cream bargeboards",
-              "The white belvedere with a grey dome and finial where the roofs cross",
-              "Two-storey wings with white porches, posts and railings, gabled at the outer "
-              "ends",
-              "A porte-cochere on white posts with a steep front gable, over the carriage loop",
-              "Two lower guest buildings in cream and sage, set back at either end, with "
-              "porches of their own",
-              "A spring bubbling from a rock in a clear blue pool, two black lamp posts, "
-              "flower beds and two shade trees"],
-    omitted=["The rest of the guest buildings, the Treehouse Villas, the pools and the spa",
-             "The carved gable trusses, the brackets and the Carriage House's back wing",
-             "The lake front and the rest of the gardens"],
+    about=("The arrival front of the Carriage House at Saratoga Springs, in the colours the "
+           "resort wears today: mint-green shingle with tan trim, a deeper green under the "
+           "porch, red-and-white striped awnings and warm brown roofs. The round lobby tower "
+           "stands at the centre, built as an octagon with clipped corners: a tan band runs up "
+           "its front to a white louvre that pokes into the brown cone roof, under a tan "
+           "cornice and a black finial. A porch on slim tan posts curves round the foot of the "
+           "tower behind a red-and-white striped edge, and a white picket fence between chunky "
+           "river-stone pillars runs along the sidewalk. On the left, a two-storey mint-green "
+           "wing has a front gable, a balcony with a brown railing beside the tower, a green "
+           "awning over the shop front and a grey roof with a chimney; on the right, a cream "
+           "building has red awnings over its windows and a small white-trimmed gable and a "
+           "white cupola with a spire on its terracotta roof. Two trees stand behind."),
+    features=["The round lobby tower, five storeys tall: an octagon with clipped corners in "
+              "mint-green shingle over a deeper green ground floor",
+              "A tan band up the front of the tower to a white louvre that pokes into the "
+              "brown cone roof, a tan cornice under the eaves and a black finial on top",
+              "The porch round the foot of the tower: slim tan posts and a red-and-white "
+              "striped edge in front of a brown porch roof",
+              "A white picket fence between chunky river-stone pillars of tan and grey round "
+              "bricks, along the sidewalk",
+              "A two-storey mint-green wing: a front gable with a small window, a balcony "
+              "with tan posts and a brown railing, a green awning over the shop front and a "
+              "grey roof with a chimney",
+              "A cream building with red awnings over its windows, a white-trimmed gable and a "
+              "white cupola with a spire on its terracotta roof"],
+    omitted=["The sign and the horse logo on the tower, and all other lettering",
+             "The rest of the guest buildings, the Treehouse Villas, the pools and the spa",
+             "The street, the lamp posts and the rest of the gardens"],
     colour_rows=[("Sand Green", "Sand Green", "Sand Green"), ("Tan", "Brick Yellow", "Tan"),
-                 ("White", "White", "White"),
-                 ("Dark Bluish Gray", "Dark Stone Grey", "Dark Bluish Gray"),
-                 ("Black", "Black", "Black"),
-                 ("Light Bluish Gray", "Medium Stone Grey", "Light Bluish Gray"),
-                 ("Green", "Dark Green", "Green"),
-                 ("Bright Green", "Bright Green", "Bright Green"),
                  ("Reddish Brown", "Reddish Brown", "Reddish Brown"),
-                 ("Red", "Bright Red", "Red"),
-                 ("Medium Lavender", "Medium Lavender", "Medium Lavender"),
-                 ("Trans-Light Blue", "Transparent Light Blue", "Trans-Light Blue"),
-                 ("Trans-Clear", "Transparent", "Trans-Clear")],
-    organisation=["The display base, the carriage loop and the lawns", "The Carriage House",
-                  "The belvedere", "The guest buildings (build 2)", "The porte-cochere",
-                  "The garden: the spring, lamp posts, flower beds and trees"],
+                 ("Red", "Bright Red", "Red"), ("White", "White", "White"),
+                 ("Green", "Dark Green", "Green"),
+                 ("Bright Light Yellow", "Cool Yellow", "Bright Light Yellow"),
+                 ("Dark Orange", "Dark Orange", "Dark Orange"),
+                 ("Dark Bluish Gray", "Dark Stone Grey", "Dark Bluish Gray"),
+                 ("Light Bluish Gray", "Medium Stone Grey", "Light Bluish Gray"),
+                 ("Black", "Black", "Black"),
+                 ("Bright Green", "Bright Green", "Bright Green")],
+    organisation=["The display base, the sidewalk and the lawns", "The Carriage House tower",
+                  "The mint-green wing", "The cream building",
+                  "The fence and the garden: the stone pillars, the picket fence, shrubs and "
+                  "trees"],
     sub_info={
-        "carriage_house.ldr": ("The Carriage House",
-                               "The cross-shaped plinth, the cream ground floor with the white "
-                               "porches and the sage-green upper floor; the wings' roofs; then "
-                               "the pavilion's third storey and its tall front gable crossing "
-                               "the cross-gable."),
-        "belvedere.ldr": ("The belvedere",
-                          "White columns under a grey dome and finial. It stands on the open "
-                          "studs of the ridge where the roofs cross."),
-        "guest.ldr": ("The guest buildings",
-                      "Two identical guest buildings: a cream ground floor behind a white "
-                      "porch, a sage-green upper floor and a steep front gable with cream "
-                      "bargeboards."),
-        "porte.ldr": ("The porte-cochere",
-                      "Four white posts carry a white deck and a steep dark grey roof with a "
-                      "front gable. It stands over the carriage loop at the entrance."),
-        "lamp.ldr": ("The lamp posts", "A black post with a clear lantern."),
-        "tree.ldr": ("The shade trees", "A brown trunk and a crown of leaves."),
+        "tower.ldr": ("The Carriage House tower",
+                      "The porch floor and the green ground floor, the porch with its tan "
+                      "posts and striped edge, four mint-green storeys with the tan band up "
+                      "the front and the tan cornice; then the brown cone roof, the louvre "
+                      "and the black finial."),
+        "mint_wing.ldr": ("The mint-green wing",
+                          "Two mint-green storeys with a green awning over the shop front and "
+                          "a balcony with tan posts and a brown railing beside the tower, under "
+                          "a grey roof with a tan-trimmed front gable and a chimney."),
+        "cream_building.ldr": ("The cream building",
+                               "Two cream storeys with white bands and red awnings over the "
+                               "ground-floor windows, under a terracotta roof with a "
+                               "white-trimmed gable and a white cupola with a spire."),
+        "pillar.ldr": ("The stone pillars",
+                       "Two courses of round bricks in tan and grey under a round grey cap."),
+        "tree.ldr": ("The trees", "A brown trunk and a crown of leaves."),
     },
     legend=("tree.ldr", 1),
-    tips=["Each storey is one course of bricks, tan below and sand green above, with black "
-          "bricks for the windows, then a layer of white plates.",
-          "Plates hidden inside the plinth tie its big plates together before the walls go on.",
-          "The wings' roofs go on before the pavilion's third storey; their inner ends stand "
-          "against it.",
-          "The pavilion roof and its cross-gable cross: build them one row of slopes at a "
-          "time, with the tan slopes at the gable ends. Hidden dark grey bricks under the "
-          "valleys have a step of their own, just before the slopes they hold up.",
-          "The belvedere's finial and the spring's water sit on the centre stud of a 2&times;2 "
-          "dome, half a stud off the grid.",
-          "Each lamp post's bar pushes into the hollow stud of the round brick; the clear "
-          "lantern slides onto the top of the bar.",
-          "A <b>&ldquo;Build 2&rdquo;</b> badge means you build that module twice."],
+    tips=["The tower is an octagon: its walls step in at the corners. Lay each course side by "
+          "side with the picture; its joints cross those of the course below.",
+          "The porch's tan deck plates reach from the posts onto the tower walls and tie the "
+          "porch to the tower. The striped edge alternates red and white, a plate and a slope "
+          "on each.",
+          "The cone roof goes up one ring of slopes at a time. Hidden brown bricks under a few "
+          "slopes hold up the ring above; they have a step of their own.",
+          "The tower's finial and the cupola's spire sit on the centre stud of a 2&times;2 "
+          "dish, half a stud off the grid. The cupola's white bar pushes into the top of its "
+          "cone.",
+          "A <b>&ldquo;Build 6&rdquo;</b> or <b>&ldquo;Build 2&rdquo;</b> badge means you build "
+          "that module that many times."],
     build_time="about 2 to 2&frac12; hours",
 )
 
-# Bestseller sizes (checked with avail.py) for colours the shared table has no entry for
-KIT_SIZES = {("b", TAN): "1x1 1x2", ("b", SAGE): "1x1 1x2 1x4",
-             ("p", SAGE): "1x1 1x2 1x4 1x6 2x2 2x4", ("t", SAGE): "1x1 1x2 1x4",
-             ("t", WATER): "1x1 1x2", ("p", WATER): "1x2"}
+# Bestseller sizes (checked with avail.py) for colours the shared table has no entry
+# for, or lists sizes that aren't Bestsellers in
+KIT_SIZES = {
+    ("b", MINT): "1x1 1x2 1x4 1x6",
+    ("p", MINT): "1x1 1x2 1x4 1x6 2x4",
+    ("t", MINT): "1x1 1x2 1x3 1x4",
+    ("b", DEEP): "1x2 1x3",
+    ("b", TAN): "1x1 1x2 1x3 1x4 1x6",
+    ("p", TAN): "1x1 1x2 1x3 1x4 1x6 2x4 4x6",
+    ("t", TAN): "1x1 1x2 1x4 1x6 2x2",
+    ("b", RBROWN): "1x1 1x2 1x3 1x4 1x6",
+    ("t", RBROWN): "1x1 1x2 1x4 1x6 2x2",
+    ("t", TERRA): "1x2",
+    ("b", BLACK): "1x1 1x2",
+    ("p", LBG): "1x1 1x2 1x4 1x6 1x8 2x4 2x6 2x8 6x10",
+    ("p", WHITE): "1x1 1x2 1x6 2x6 4x6",
+    ("t", DBG): "1x1 1x2 1x4",
+    ("b", CREAM): "1x1 1x2 1x4",
+}
 
 
 @contextmanager
@@ -149,13 +168,9 @@ def kit_sizes():
         bricks.ALLOWED.update(saved)
 
 
-def front_first(it):
-    """Sort key for splitting a step: front rows first."""
-    return (it.z if it.z is not None else 999, it.x if it.x is not None else 999)
-
-
-def split_big_steps(m, limit=20):
-    """Split every step of more than `limit` parts into two: the front half first."""
+def split_steps(m, limit=20):
+    """Split every step of more than `limit` parts into steps of at most `limit`, lowest
+    and front-most parts first. A step's note stays with its first part."""
     groups = {}
     for it in m.items:
         groups.setdefault(it.step, []).append(it)
@@ -167,14 +182,15 @@ def split_big_steps(m, limit=20):
         n += 1
         if step in notes:
             m.step_notes[n] = notes[step]
-        if len(items) > limit:
-            back = {id(it) for it in sorted(items, key=front_first)[len(items) // 2:]}
-            for it in items:
-                it.step = n + 1 if id(it) in back else n
-            n += 1
-        else:
-            for it in items:
-                it.step = n
+        chunks = -(-len(items) // limit)
+        size = -(-len(items) // chunks)
+
+        def key(it):
+            return (it.layer if getattr(it, "layer", None) is not None else 999,
+                    it.z if it.z is not None else 999, it.x if it.x is not None else 999)
+        for i, it in enumerate(sorted(items, key=key)):
+            it.step = n + i // size
+        n += chunks - 1
     m.items.sort(key=lambda it: it.step)
     m.step_no = n + 1
 
@@ -183,301 +199,455 @@ def rect(x0, z0, w, d):
     return {(x, z) for x in range(x0, x0 + w) for z in range(z0, z0 + d)}
 
 
+N4 = [(0, -1, "front"), (0, 1, "back"), (-1, 0, "left"), (1, 0, "right")]
+
+
+def ring8(region):
+    """Cells of a region with a neighbour (sides or corners) outside it."""
+    return {(x, z) for (x, z) in region
+            if any((x + dx, z + dz) not in region for dx in (-1, 0, 1) for dz in (-1, 0, 1))}
+
+
+def outline(ring):
+    """Corner cells, in order, of a one-cell-wide closed ring (for WallRing)."""
+    start = min(ring, key=lambda c: (c[1], c[0]))
+    path, prev, cur = [start], None, start
+    while True:
+        nxt = [(cur[0] + dx, cur[1] + dz) for dx, dz, _ in N4
+               if (cur[0] + dx, cur[1] + dz) in ring and (cur[0] + dx, cur[1] + dz) != prev]
+        if prev is None:
+            nxt = [c for c in nxt if c[1] == cur[1]]          # go along x first
+        cur, prev = nxt[0], cur
+        if cur == start:
+            break
+        path.append(cur)
+    corners = []
+    n = len(path)
+    for i, c in enumerate(path):
+        a, b = path[i - 1], path[(i + 1) % n]
+        if not (a[0] == c[0] == b[0] or a[1] == c[1] == b[1]):
+            corners.append(c)
+    return corners
+
+
 # --------------------------------------------------------------------------
-# the Carriage House: a three-storey pavilion whose tall front gable crosses its
-# cross-gable, between two-storey wings with porches
+# the tower: an octagon of 8 x 8 studs at x 12..19, z 10..17 (main grid)
 # --------------------------------------------------------------------------
-W, D = 20, 12                        # footprint
-PAV = (5, 15)                        # x range of the pavilion (z 0..11)
-WING_Z = (3, 9)                      # z range of the wings (x 0..4 and 15..19)
-DOOR = (9, 10)
-BELV = (9, 5)                        # front-left cell of the 2 x 2 belvedere on the ridge
-FLOORS = 2                           # wings and guest buildings; the pavilion has three
+TX, TZ = 12, 10
+OX, OZ = TX - 2, TZ - 2                  # the tower submodel's origin (the porch's corner)
+FLOORS = 5                               # the porch storey and four storeys above it
 
 
-def outline(front_wing_z):
-    """Cross-shaped wall outline: the pavilion and the two wings (front wall at front_wing_z)."""
-    p0, p1 = PAV[0], PAV[1] - 1
-    w1 = WING_Z[1] - 1
-    return [(0, front_wing_z), (p0, front_wing_z), (p0, 0), (p1, 0), (p1, front_wing_z),
-            (W - 1, front_wing_z), (W - 1, w1), (p1, w1), (p1, D - 1), (p0, D - 1), (p0, w1),
-            (0, w1)]
+def U(x):
+    return abs(2 * x - (2 * TX + 7)) // 2
 
 
-def footprint():
-    p0, p1 = PAV
-    z0, z1 = WING_Z
-    return {(x, z) for x in range(W) for z in range(D) if p0 <= x < p1 or z0 <= z < z1}
+def V(z):
+    return abs(2 * z - (2 * TZ + 7)) // 2
 
 
-PAV_FRONT = {1: "CWCCDDCCWC", 2: "SWSSWWSSWS", 3: "SWSSWWSSWS"}     # x 5..14, z = 0
-WING_FRONT = "CWCWC"                                                # x 0..4 (mirrored)
+def mirror(x):
+    return 2 * TX + 7 - x
 
 
-def wall_colour(x, z, floor):
-    """Cream or sage wall, or a black window, for a wall cell."""
-    plain = CREAM if floor == 1 else UPPER
-    p0, p1 = PAV
-    if z == 0:                                      # the pavilion front
-        c = PAV_FRONT[floor][x - p0]
-        return {"C": CREAM, "S": UPPER, "W": WINDOW, "D": WINDOW}[c]
-    if x < p0 or x >= p1:                           # the wings
-        wx = x if x < p0 else W - 1 - x
-        if z in (WING_Z[0], WING_Z[0] + 1):         # front (upper z = 3, ground z = 4)
-            return WINDOW if WING_FRONT[wx] == "W" else plain
-        if z == WING_Z[1] - 1:                      # back
-            return WINDOW if wx in (1, 3) else plain
-        if x in (0, W - 1):                         # the outer ends
-            return WINDOW if z in (5, 6) else plain
-        return plain
-    if x in (p0, p1 - 1):                           # the pavilion's sides
-        return WINDOW if z in (1, D - 2) else plain
-    if z == D - 1:                                  # the pavilion's back
-        return WINDOW if x in (p0 + 2, p1 - 3) else plain
-    return plain
+def octa(a, b):
+    """Cells within a of the tower's centre on both axes and within b in sum."""
+    return {(x, z) for x in range(TX + 3 - a, TX + 5 + a) for z in range(TZ + 3 - a, TZ + 5 + a)
+            if U(x) + V(z) <= b}
 
 
-def cross_layer(m, colour, layer, middle=True):
-    """Plates over the cross footprint: a 6 x 6 plate across each wing and the pavilion's
-    side column, a 6 x 8 in the middle (unless `middle` is False), and strips of a 2 x 10
-    and a 1 x 10 across the pavilion's front and back."""
-    p0, p1 = PAV
-    z0, z1 = WING_Z
-    for x in (0, p1 - 1):
-        place_rect(m, "p", colour, x, z0, 6, z1 - z0, layer)
-    if middle:
-        place_rect(m, "p", colour, p0 + 1, z0, p1 - p0 - 2, z1 - z0, layer)
-    for zz in ((0, 2), (D - 2, 1)):
-        place_rect(m, "p", colour, p0, zz[0], p1 - p0, 2, layer)
-    for zz in (2, D - 3):
-        place_rect(m, "p", colour, p0, zz, p1 - p0, 1, layer)
+TOWER = octa(3, 4)
+WALL = ring8(TOWER)
+BAND = {(TX + 3, TZ), (TX + 4, TZ)}      # the front door, then the tan band above it
+# the porch: 2 studs round the front of the tower, from wing to wing (z <= TZ)
+PORCH = {c for c in octa(5, 7) if c[1] <= TZ and c not in TOWER}
+PORCH_EDGE = {c for c in PORCH if any((c[0] + dx, c[1] + dz) not in PORCH | TOWER
+                                      and c[1] + dz <= TZ for dx, dz, _ in N4)}
+POSTS = {(TX + 1, TZ - 2), (TX, TZ - 1), (TX - 1, TZ)}
+POSTS |= {(mirror(x), z) for x, z in POSTS}
 
 
-def pav_gable(m, cells, layer):
-    """The pavilion's gable walls: at the front an attic window, a round window and a
-    louvre in sage green; the back one plain."""
-    z = cells[0][1]
-    xs = sorted(c[0] for c in cells)
-    if z != 0:
-        row(m, "b", UPPER, xs[0], z, len(xs), layer)
-        return
-    if len(xs) == 6:                                # attic window
-        m.add("b1x1", UPPER, xs[0], z, layer)
-        m.add("b1x2", WINDOW, xs[1], z, layer)
-        m.add("b1x2", WINDOW, xs[3], z, layer)
-        m.add("b1x1", UPPER, xs[5], z, layer)
-    elif len(xs) == 4:                              # round window
-        m.add("b1x1", UPPER, xs[0], z, layer)
-        m.add("tech1x2", TRIM, xs[1], z, layer)
-        m.add("b1x1", UPPER, xs[3], z, layer)
-    else:                                           # louvre under the ridge
-        m.add("grille1x2", TRIM, xs[0], z, layer)
+def tower_colour(x, z, layer):
+    f = (layer - 1) // 4 + 1
+    if f == 1:
+        return ("b", WINDOW if (x, z) in BAND else DEEP)
+    if (x, z) in BAND:
+        return ("b", TAN)
+    side = U(x) == 3 and V(z) == 0 or V(z) == 3 and U(x) == 0 and z > TZ
+    if f >= 3 and side:
+        return ("b", WINDOW)
+    return ("b", MINT)
 
 
-def cross_gable(m, cells, layer):
-    """The cross-gable's ends, above the wings' ridges: plain sage green."""
-    x = cells[0][0]
-    zs = sorted(c[1] for c in cells)
-    row(m, "b", UPPER, x, zs[0], len(zs), layer, axis="z")
+def band(m, layer, colour=MINT):
+    """A plate band over the tower's walls, tan over the front band."""
+    fill_cells(m, "p", colour, WALL - BAND, layer)
+    m.add("p1x2", TAN, TX + 3, TZ, layer)
 
 
-def build_house():
-    m = Model("carriage_house.ldr", "The Carriage House")
-    p0, p1 = PAV
-    z0, z1 = WING_Z
-    cross_layer(m, PLINTH, 0)
-    # hidden plates inside, across the seams between the plinth plates
-    for x in (p0 - 2, p1 - 2):
-        place_rect(m, "p", PLINTH, x, z0 + 2, 4, 2, 1)
-    for z in (1, z1 - 2):
-        place_rect(m, "p", PLINTH, DOOR[0], z, 2, 4, 1)
+def both(m, key, colour, x, z, layer, length=1, axis="x"):
+    """A 1 x N plate on the left of the tower's centre line and its mirror image."""
+    for xx in (x, mirror(x) - (length - 1 if axis == "x" else 0)):
+        if length == 1:
+            m.add(key, colour, xx, z, layer)
+        else:
+            m.add(f"p1x{length}", colour, xx, z, layer, rot=0 if axis == "x" else 90)
+
+
+def match_slopes(ring, inner, blocked):
+    """Pair each ring cell with an inward neighbour (the slope's high cell).
+
+    Returns {ring cell: (high cell, face)}: a maximum matching, so as many ring cells
+    as possible take a 2 x 1 slope."""
+    opts = {}
+    for c in ring:
+        if c in blocked:
+            continue
+        o = []
+        for dx, dz, face in N4:
+            out, inn = (c[0] + dx, c[1] + dz), (c[0] - dx, c[1] - dz)
+            if out not in ring and out not in inner and inn in inner and inn not in blocked:
+                o.append((inn, face))
+        opts[c] = o
+    owner = {}
+
+    def augment(c, seen):
+        for inn, face in opts[c]:
+            if inn in seen:
+                continue
+            seen.add(inn)
+            if inn not in owner or augment(owner[inn][0], seen):
+                owner[inn] = (c, face)
+                return True
+        return False
+    for c in sorted(opts, key=lambda c: (len(opts[c]), c[1], c[0])):
+        augment(c, set())
+    return {c: (inn, face) for inn, (c, face) in owner.items()}
+
+
+def place_slope(m, colour, cells, face, layer):
+    """A 45-degree slope (2 x 1, or 2 x 2 for two cells) whose low cells are `cells`."""
+    dx, dz = {"front": (0, -1), "back": (0, 1), "left": (-1, 0), "right": (1, 0)}[face]
+    pts = list(cells) + [(x - dx, z - dz) for x, z in cells]
+    x0, z0 = min(p[0] for p in pts), min(p[1] for p in pts)
+    m.add("slope45" if len(cells) == 1 else "s45x2", colour, x0, z0, layer, rot=FACE[face])
+
+
+def cone_roof(m, base, regions, blocked):
+    """A cone of 45-degree slopes over shrinking octagons; the last region is 4 x 4 and
+    takes a pinwheel of four 2 x 2 slopes. `blocked[k]` holds cells left out of course k.
+    Returns the layer on top of the cone and the corner of its 2 x 2 top."""
+    occ = set()                                   # (x, z, course) taken
+    for k in range(len(regions) - 1):
+        outer, inner = regions[k], regions[k + 1]
+        ring = outer - inner
+        L = base + 3 * k
+        pairs = match_slopes(ring, inner, blocked.get(k, set()) | blocked.get(k + 1, set()))
+        # hidden supports under next-course cells that no slope's high end holds up
+        nxt = inner - (regions[k + 2] if k + 2 < len(regions) else inner)
+        nxt -= blocked.get(k + 1, set())
+        highs = {inn for inn, _ in pairs.values()}
+        fills = sorted(c for c in nxt if c not in highs)
+        if fills:
+            m.step("Hidden brown bricks hold up the next row of slopes.")
+            for x, z in fills:
+                for kk in range(k + 1):
+                    if (x, z, kk) not in occ:
+                        m.add("b1x1", CONE, x, z, base + 3 * kk)
+                        occ.add((x, z, kk))
+            m.step()
+        # merge side-by-side slopes facing the same way into 2 x 2 slopes
+        done = set()
+        for c in sorted(pairs, key=lambda c: (c[1], c[0])):
+            if c in done:
+                continue
+            inn, face = pairs[c]
+            occ |= {(c[0], c[1], k), (inn[0], inn[1], k)}
+            step = (1, 0) if face in ("front", "back") else (0, 1)
+            d = (c[0] + step[0], c[1] + step[1])
+            if d in pairs and d not in done and pairs[d][1] == face:
+                place_slope(m, CONE, [c, d], face, L)
+                done |= {c, d}
+                occ |= {(d[0], d[1], k), (pairs[d][0][0], pairs[d][0][1], k)}
+            else:
+                place_slope(m, CONE, [c], face, L)
+                done.add(c)
+        for c in sorted(ring - set(pairs) - blocked.get(k, set())):
+            face = next(f for dx, dz, f in N4 if (c[0] + dx, c[1] + dz) not in ring | inner)
+            m.add("p1x1", CONE, c[0], c[1], L)
+            m.add("cheese", CONE, c[0], c[1], L + 1, rot=FACE[face])
+            occ.add((c[0], c[1], k))
+        m.step()
+    # the pinwheel on the 4 x 4 top
+    k = len(regions) - 1
+    L = base + 3 * k
+    x0 = min(c[0] for c in regions[k])
+    z0 = min(c[1] for c in regions[k])
+    m.add("s45x2", CONE, x0, z0, L, rot=FACE["front"])
+    m.add("s45x2", CONE, x0 + 2, z0, L, rot=FACE["right"])
+    m.add("s45x2", CONE, x0 + 2, z0 + 2, L, rot=FACE["back"])
+    m.add("s45x2", CONE, x0, z0 + 2, L, rot=FACE["left"])
     m.step()
+    return L + 3, (x0 + 1, z0 + 1)
 
-    ground = WallRing(outline(z0 + 1))
-    upper = WallRing(outline(z0))
-    top = WallRing([(p0, 0), (p1 - 1, 0), (p1 - 1, D - 1), (p0, D - 1)])
-    porch = {(x, z0) for x in list(range(p0)) + list(range(p1, W))}
-    posts = {(x, z0) for x in (0, p0 - 1, p1, W - 1)}
-    rails = [(1, p0 - 2), (p1 + 1, W - 2)]
 
-    # ground floor in cream, the porches in white
-    L = 1
-    ground.course(m, L, 0, lambda x, z, layer: ("b", wall_colour(x, z, 1)))
+def build_tower():
+    model = Model("tower.ldr", "The Carriage House tower")
+    m = Offset(model, OX, OZ, 0)
+    # plinth: rows of grey plates under the porch, the side ones reaching under the walls
+    both(m, None, PLINTH, TX - 1, TZ, 0, length=4)
+    m.add("p1x8", PLINTH, TX, TZ - 1, 0)
+    m.add("p1x6", PLINTH, TX + 1, TZ - 2, 0)
+    covered = {(x, TZ) for x in range(TX - 1, TX + 3)} | {(mirror(x), TZ)
+                                                          for x in range(TX - 1, TX + 3)}
+    fill_cells(m, "p", PLINTH, TOWER - covered, 0)
     m.step()
-    for x, z in sorted(posts):
-        m.add("round1", TRIM, x, z, L)
-    for x, z in sorted(porch - posts):
-        m.add("round_p1", TRIM, x, z, L)
+    ring = WallRing(outline(WALL))
+    for f in range(1, FLOORS + 1):
+        L = 1 + 4 * (f - 1)
+        ring.course(m, L, f % 2, tower_colour)
+        m.step()
+        if f == 1:
+            for x, z in sorted(POSTS):
+                m.add("round1", TAN, x, z, L)
+            m.step()
+            # the porch deck: tan plates from the posts onto the walls
+            m.step("The porch deck: tan plates from the posts onto the walls.")
+            D = L + 3
+            both(m, None, TAN, TX, TZ - 1, D, length=4, axis="z")
+            both(m, None, TAN, TX + 1, TZ - 2, D, length=4, axis="z")
+            both(m, None, TAN, TX + 2, TZ - 2, D, length=3, axis="z")
+            both(m, "p1x1", TAN, TX - 1, TZ, D)
+            for x in (TX + 3, TX + 4):
+                m.add("p1x3", TAN, x, TZ - 2, D, rot=90)
+            deck = ({(TX, z) for z in range(TZ - 1, TZ + 3)}
+                    | {(TX + 1, z) for z in range(TZ - 2, TZ + 2)}
+                    | {(x, z) for x in range(TX + 2, TX + 4) for z in range(TZ - 2, TZ + 1)}
+                    | {(TX - 1, TZ)})
+            deck |= {(mirror(x), z) for x, z in deck}
+            fill_cells(m, "p", MINT, WALL - deck, D)
+            m.step()
+            m.step("The striped edge of the porch: red and white in turn, a plate and a "
+                   "slope on each. Brown slopes behind it make the porch roof.")
+            order = sorted((c for c in PORCH_EDGE if c[0] <= TX + 3), key=lambda c: -c[0])
+            for i, (x, z) in enumerate(order):
+                col = RED if i % 2 == 0 else WHITE
+                for xx in (x, mirror(x)):
+                    m.add("p1x1", col, xx, z, L + 4)
+                    m.add("cheese", col, xx, z, L + 5, rot=FACE["front"])
+            for x, z in sorted(PORCH - PORCH_EDGE):
+                face = next((f for dx, dz, f in N4 if (x + dx, z + dz) in PORCH_EDGE), "front")
+                m.add("cheese", CONE, x, z, L + 4, rot=FACE[face])
+            m.step()
+        else:
+            band(m, L + 3, TAN if f == FLOORS else MINT)
+            m.step()
+    # the eaves: a tan slab one stud wider than the walls
+    top = 1 + 4 * FLOORS
+    regions = [octa(4, 5), octa(3, 4), octa(2, 3), octa(1, 2)]
+    fill_cells(m, "p", TAN, regions[0], top)
     m.step()
-    for x0, x1 in rails:
-        row(m, "t", TRIM, x0, z0, x1 - x0 + 1, L + 1)
+    base = top + 1
+    # the louvre stands on the eaves at the front, in front of the cone
+    lx, lz = TX + 3, TZ - 1
+    box = {(lx, lz), (lx + 1, lz), (lx, lz + 1), (lx + 1, lz + 1)}
+    m.step("The louvre: white bricks with a grille at the front, tan bricks behind.")
+    for k in range(2):
+        m.add("grille1x2", WHITE, lx, lz, base + 3 * k)
+        m.add("b1x2", TAN, lx, lz + 1, base + 3 * k)
+    for z in (lz, lz + 1):
+        m.add("p1x2", TAN, lx, z, base + 6)
     m.step()
-    cross_layer(m, BAND, L + 3, middle=False)
+    blocked = {0: box, 1: box | {(lx, lz + 2), (lx + 1, lz + 2)}}
+    roof_top, (cx, cz) = cone_roof(m, base, regions, blocked)
+    m.add("s45x2", CONE, lx, lz, base + 7, rot=FACE["front"])
+    m.add("t1x2", CONE, lx, lz + 1, base + 10)
     m.step()
+    # the top of the cone and the finial
+    m.step("Brown slopes on the four studs round the top, then the finial: a black "
+           "dish, a round plate and a cone on the dish's centre stud.")
+    for (x, z), face in (((cx - 1, cz), "left"), ((cx + 1, cz - 1), "front"),
+                         ((cx + 2, cz + 1), "right"), ((cx, cz + 2), "back")):
+        m.add("cheese", CONE, x, z, roof_top, rot=FACE[face])
+    dish = m.add("dish2", BLACK, cx, cz, roof_top)
+    y = -8 * (roof_top + PARTS["dish2"].height)
+    px, pz = 20 * (cx + 1 - OX), 20 * (cz + 1 - OZ)
+    tip = model.add_raw("round_p1", BLACK, (px, y - PARTS["round_p1"].bmax_y, pz),
+                        rot_matrix(0), attach_to=dish)
+    model.add_raw("cone1", BLACK, (px, y - 8 - PARTS["cone1"].bmax_y, pz), rot_matrix(0),
+                  attach_to=tip)
+    m.step()
+    split_steps(model, 24)
+    return model
 
-    # upper floor in sage green
-    L = 5
-    upper.course(m, L, 1, lambda x, z, layer: ("b", wall_colour(x, z, 2)))
-    m.step()
-    cross_layer(m, BAND, L + 3, middle=False)
-    m.step()
 
-    # the wings' roofs: a gable with cream bargeboards at the outer end
-    base = L + 4
-    m.step("The wings' roofs. Their inner ends stand against the pavilion's third storey.")
+# --------------------------------------------------------------------------
+# mint-green wing: a front gable over the shop, a balcony porch by the tower
+# --------------------------------------------------------------------------
+WW, WD = 10, 6
+SHOP = 6                                  # the shop front is x 0..5; the balcony x 6..9
+
+
+def build_mint():
+    m = Model("mint_wing.ldr", "Mint-green wing")
+    outline_ = [(0, 0), (SHOP - 1, 0), (SHOP - 1, 1), (WW - 1, 1), (WW - 1, WD - 1),
+                (0, WD - 1)]
+    fill_rect(m, "p", PLINTH, 0, 0, WW, WD, 0)
+    m.step()
+    ring = WallRing(outline_)
+    front = {1: "MWWDDM", 2: "MWMMWM"}
+    porch_front = {1: "MDDM", 2: "MWWM"}
+
+    def mat(f):
+        def colour(x, z, layer):
+            if z == 0:
+                return ("b", WINDOW if front[f][x] in "WD" else MINT)
+            if z == 1 and x >= SHOP - 1:
+                c = porch_front[f][x - SHOP] if x >= SHOP else "M"
+                return ("b", WINDOW if c in "WD" else MINT)
+            if x == 0:
+                return ("b", WINDOW if z in (2, 3) else MINT)
+            if z == WD - 1:
+                return ("b", WINDOW if x in (2, 7) else MINT)
+            return ("b", MINT)
+        return colour
+    posts = [(SHOP, 0), (WW - 1, 0)]
+    for f in (1, 2):
+        L = 1 + 4 * (f - 1)
+        ring.course(m, L, f % 2, mat(f))
+        for x, z in posts:
+            m.add("round1", TAN, x, z, L)
+        m.step()
+        if f == 1:
+            # the band, with plates reaching out under the awning
+            m.add("p2x4", MINT, 0, -1, L + 3)
+            for x in (4, 5):
+                m.add("p1x2", MINT, x, -1, L + 3, rot=90)
+            cells = {(x, z) for x in range(WW) for z in range(WD)
+                     if z <= 1 or x in (0, WW - 1) or z == WD - 1}
+            fill_cells(m, "p", MINT, cells - {(x, 0) for x in range(SHOP)}, L + 3)
+            m.step()
+            m.step("The green awning over the shop front.")
+            for x in range(SHOP):
+                m.add("cheese", GREEN, x, -1, L + 4, rot=FACE["front"])
+            m.step()
+        else:
+            m.step("The balcony railing between the posts.")
+            row(m, "p", RBROWN, SHOP + 1, 0, WW - SHOP - 2, L, sizes=[1])
+            row(m, "t", RBROWN, SHOP + 1, 0, WW - SHOP - 2, L + 1)
+            m.step()
+            fill_rect(m, "p", TAN, 0, 0, WW, WD, L + 3, along="z")
+            m.step()
+    base = 1 + 4 * 2
+
+    def gable(mm, cells, layer):
+        z = cells[0][1]
+        xs = sorted(c[0] for c in cells)
+        if z == 0 and len(xs) == 2:
+            mm.add("b1x2", WINDOW, xs[0], z, layer)            # the small gable window
+        else:
+            row(mm, "b", MINT, xs[0], z, len(xs), layer)
+    chimney = (WW - 2, 2)
     build_roofs(m, [
-        Roof(0, p0, z0, z1, base, "x", pitch=45, color=ROOF, trim=RAKE, trim_ends=("start",),
-             wall=UPPER, wall_ends=("start",), widths=(4, 2, 1), name="left wing roof"),
-        Roof(p1, W, z0, z1, base, "x", pitch=45, color=ROOF, trim=RAKE, trim_ends=("end",),
-             wall=UPPER, wall_ends=("end",), widths=(4, 2, 1), name="right wing roof"),
-    ], fill_color=ROOF, support_caps=True)
-
-    # the pavilion's third storey
-    L = base
-    top.course(m, L, 0, lambda x, z, layer: ("b", wall_colour(x, z, 3)))
+        Roof(0, SHOP, 0, WD, base, "z", pitch=45, color=WING_ROOF, trim=TRIM,
+             trim_ends=("start", "end"), wall=gable, widths=(4, 2, 1), name="front gable"),
+        Roof(3, WW, 0, WD, base, "x", pitch=45, color=WING_ROOF, wall=MINT,
+             wall_ends=("end",), priority=1, widths=(4, 2, 1), name="wing roof"),
+    ], fill_color=WING_ROOF, keep_open={chimney}, support_caps=True)
+    m.step("The chimney stands on the open stud of the ridge.")
+    L = base + 6
+    m.add("b1x1", DBG, *chimney, L)
+    m.add("t1x1", DBG, *chimney, L + 3)
     m.step()
-    fill_rect(m, "p", BAND, p0, 0, p1 - p0, D, L + 3, along="z")
-    m.step()
-
-    # the steep roofs: the pavilion's tall front gable crossing its cross-gable
-    base = L + 4
-    bx, bz = BELV
-    keep = {(bx + i, bz + j) for i in (0, 1) for j in (0, 1)}
-    pav = Roof(p0, p1, 0, D, base, "z", pitch=45, color=ROOF, trim=RAKE,
-               trim_ends=("start", "end"), wall=pav_gable, widths=(4, 2, 1),
-               name="pavilion roof")
-    cross = Roof(p0, p1, z0, z1, base, "x", pitch=45, color=ROOF, trim=RAKE,
-                 trim_ends=("start", "end"), wall=cross_gable, priority=1, widths=(4, 2, 1),
-                 name="cross-gable")
-    build_roofs(m, [pav, cross], fill_color=ROOF, keep_open=keep, support_caps=True)
-    split_big_steps(m)
-    m.width, m.depth = W, D
-    return m, pav.layer(pav.K + 1)
-
-
-def build_belvedere():
-    """White columns, a white cornice, a grey dome and a finial."""
-    m = Model("belvedere.ldr", "Belvedere")
-    m.add("p2x2", TRIM, 0, 0, 0)
-    m.step()
-    for i in (0, 1):
-        for j in (0, 1):
-            m.add("round1", TRIM, i, j, 1)
-            m.add("round1", TRIM, i, j, 4)
-    m.step()
-    m.add("p2x2", TRIM, 0, 0, 7)
-    dome = m.add("dish2", ROOF, 0, 0, 8)
-    m.step()
-    m.step("The finial sits on the dome's centre stud.")
-    y = -8 * (8 + PARTS["dish2"].height)
-    tip = m.add_raw("round_p1", TRIM, (20, y - PARTS["round_p1"].bmax_y, 20), rot_matrix(0),
-                    attach_to=dome)
-    m.add_raw("cone1", ROOF, (20, y - 8 - PARTS["cone1"].bmax_y, 20), rot_matrix(0),
-              attach_to=tip)
-    m.step()
-    m.width, m.depth = 2, 2
     return m
 
 
 # --------------------------------------------------------------------------
-# guest buildings: two storeys under a steep front gable (build 2)
+# cream building: red awnings, a small gable and a white cupola
 # --------------------------------------------------------------------------
-GW, GD = 6, 6
+CW, CD = 10, 6
+CREAM_WIN = (1, 3, 6, 8)
+CREAM_DOOR = (4, 5)
 
 
-def guest_colour(x, z, floor):
-    plain = CREAM if floor == 1 else UPPER
-    if z == 2 - floor:                               # front (ground z = 1, behind the porch)
-        return WINDOW if x in (1, 4) else plain
-    if z == GD - 1:
-        return WINDOW if x in (2, 3) else plain
-    if x in (0, GW - 1):
-        return WINDOW if z in (2, 3) else plain
-    return plain
+def build_cream():
+    m = Model("cream_building.ldr", "Cream building")
+    fill_rect(m, "p", PLINTH, 0, 0, CW, CD, 0)
+    m.step()
+    ring = WallRing([(0, 0), (CW - 1, 0), (CW - 1, CD - 1), (0, CD - 1)])
 
+    def colour(x, z, layer):
+        if z == 0:
+            door = x in CREAM_DOOR and layer < 4
+            return ("b", WINDOW if x in CREAM_WIN or door else CREAM)
+        if z == CD - 1:
+            return ("b", WINDOW if x in (2, 7) else CREAM)
+        if x == CW - 1:
+            return ("b", WINDOW if z in (2, 3) else CREAM)
+        return ("b", CREAM)
+    for f in (1, 2):
+        L = 1 + 4 * (f - 1)
+        ring.course(m, L, f % 2, colour)
+        m.step()
+        if f == 1:
+            # white bands, with a 1 x 2 plate reaching out under each awning
+            for x in CREAM_WIN:
+                m.add("p1x2", WHITE, x, -1, L + 3, rot=90)
+            cells = {(x, z) for x in range(CW) for z in range(CD)
+                     if z == 0 or x in (0, CW - 1) or z == CD - 1}
+            fill_cells(m, "p", WHITE, cells - {(x, 0) for x in CREAM_WIN}, L + 3)
+            m.step()
+            m.step("Red awnings over the ground-floor windows.")
+            for x in CREAM_WIN:
+                m.add("cheese", RED, x, -1, L + 4, rot=FACE["front"])
+            m.step()
+        else:
+            fill_rect(m, "p", WHITE, 0, 0, CW, CD, L + 3, along="z")
+            m.step()
+    base = 1 + 4 * 2
 
-def guest_gable(m, cells, layer):
-    z = cells[0][1]
-    xs = sorted(c[0] for c in cells)
-    m.add("b1x2", WINDOW if z == 0 else UPPER, xs[0], z, layer)
-
-
-def build_guest():
-    """Two storeys under a steep front gable, with a white porch along the front."""
-    m = Model("guest.ldr", "Guest building (build 2)")
-    fill_rect(m, "p", PLINTH, 0, 0, GW, GD, 0)
+    def gable(mm, cells, layer):
+        xs = sorted(c[0] for c in cells)
+        mm.add("b1x2", WINDOW, xs[0], cells[0][1], layer)
+    cup = {(4, 2), (5, 2), (4, 3), (5, 3)}
+    build_roofs(m, [
+        Roof(0, CW, 0, CD, base, "x", pitch=45, color=TERRA, trim=WHITE,
+             trim_ends=("start", "end"), wall=CREAM, priority=1, name="roof"),
+        Roof(3, 7, 0, 3, base, "z", pitch=45, color=TERRA, trim=WHITE, trim_ends=("start",),
+             wall=gable, wall_ends=("start",), name="front gable"),
+    ], fill_color=RBROWN, keep_open=cup, support_caps=True)
+    # the cupola
+    L = base + 6
+    m.step("The cupola stands on the four open studs of the ridge.")
+    m.add("grille1x2", WHITE, 4, 2, L)
+    m.add("grille1x2", WHITE, 4, 3, L, rot=180)
     m.step()
-    ground = WallRing([(0, 1), (GW - 1, 1), (GW - 1, GD - 1), (0, GD - 1)])
-    upper = WallRing([(0, 0), (GW - 1, 0), (GW - 1, GD - 1), (0, GD - 1)])
-    ground.course(m, 1, 1, lambda x, z, layer: ("b", guest_colour(x, z, 1)))
+    m.add("p2x2", WHITE, 4, 2, L + 3)
+    dish = m.add("dish2", WHITE, 4, 2, L + 4)
     m.step()
-    for x in (0, GW - 1):
-        m.add("round1", TRIM, x, 0, 1)
-    for x in range(1, GW - 1):
-        m.add("round_p1", TRIM, x, 0, 1)
+    m.step("The spire: a white cone on the dish's centre stud and a white bar in the cone.")
+    y = -8 * (L + 4 + PARTS["dish2"].height)
+    cone = m.add_raw("cone1", WHITE, (100, y - PARTS["cone1"].bmax_y, 60), rot_matrix(0),
+                     attach_to=dish)
+    m.add_raw("bar3", WHITE, (100, y - 24 + 8 - 60, 60), rot_matrix(0), attach_to=cone)
     m.step()
-    row(m, "t", TRIM, 1, 0, GW - 2, 2)
-    m.step()
-    fill_cells(m, "p", BAND, {(x, z) for x in range(GW) for z in range(GD)
-                              if z <= 1 or z == GD - 1 or x in (0, GW - 1)}, 4)
-    m.step()
-    upper.course(m, 5, 0, lambda x, z, layer: ("b", guest_colour(x, z, 2)))
-    m.step()
-    fill_rect(m, "p", BAND, 0, 0, GW, GD, 8)
-    m.step()
-    base = 1 + 4 * FLOORS
-    build_roofs(m, [Roof(0, GW, 0, GD, base, "z", pitch=45, color=ROOF, trim=RAKE,
-                         trim_ends=("start",), wall=guest_gable, widths=(4, 2, 1),
-                         name="guest roof")], fill_color=ROOF, support_caps=True)
-    m.width, m.depth = GW, GD
     return m
 
 
 # --------------------------------------------------------------------------
-# porte-cochere: four white posts, a deck and a steep front gable
+# details: stone pillars and trees
 # --------------------------------------------------------------------------
-PC_W, PC_D = 6, 5
-PC_POSTS = [(0, 0), (PC_W - 1, 0), (0, PC_D - 1), (PC_W - 1, PC_D - 1)]
-
-
-def porte_gable(m, cells, layer):
-    z = cells[0][1]
-    xs = sorted(c[0] for c in cells)
-    row(m, "b", TRIM, xs[0], z, len(xs), layer)
-
-
-def build_porte():
-    m = Model("porte.ldr", "Porte-cochere")
-    for x, z in PC_POSTS:
-        m.add("round1", TRIM, x, z, 0)
-        m.add("round1", TRIM, x, z, 3)
+def build_pillar():
+    """A chunky pillar of river stones: two courses of round bricks in tan and greys, and a
+    round grey cap."""
+    m = Model("pillar.ldr", "Stone pillar")
+    stones = ((TAN, LBG, DBG, TAN), (LBG, TAN, TAN, DBG))
+    for k, colours in enumerate(stones):
+        for (x, z), colour in zip(((0, 0), (1, 0), (1, 1), (0, 1)), colours):
+            m.add("round1", colour, x, z, 3 * k)
+        m.step()
+    m.add("round_p2", LBG, 0, 0, 6)
     m.step()
-    fill_rect(m, "p", TRIM, 0, 0, PC_W, PC_D, 6, along="x")
-    m.step()
-    build_roofs(m, [Roof(0, PC_W, 0, PC_D, 7, "z", pitch=45, color=ROOF, trim=RAKE,
-                         trim_ends=("start",), wall=porte_gable, widths=(4, 2, 1),
-                         name="porte roof")], fill_color=ROOF, support_caps=True)
-    m.width, m.depth = PC_W, PC_D
-    return m
-
-
-# --------------------------------------------------------------------------
-# details: lamp posts, shade trees, the spring
-# --------------------------------------------------------------------------
-def build_lamp():
-    """A black post (a 4L bar in a round brick) with a clear lantern and a black cap."""
-    m = Model("lamp.ldr", "Lamp post")
-    base = m.add("round1", BLACK, 0, 0, 0)
-    m.step()
-    c = 10
-    bar_y = -8 * 3 + 4 - 80
-    bar = m.add_raw("bar4", BLACK, (c, bar_y, c), rot_matrix(0), attach_to=base)
-    lantern_y = bar_y + 8 - PARTS["round1"].bmax_y
-    lantern = m.add_raw("round1", TCLEAR, (c, lantern_y, c), rot_matrix(0), attach_to=bar)
-    m.add_raw("cone1", BLACK, (c, lantern_y - PARTS["cone1"].bmax_y, c), rot_matrix(0),
-              attach_to=lantern)
-    m.step()
-    m.width, m.depth = 1, 1
     return m
 
 
@@ -493,123 +663,68 @@ def build_tree():
     m.add("leaves6x5", BRGREEN, 0, 0, 12, rot=180)
     m.add("leaves6x5", GREEN, 0, 0, 13, rot=270)
     m.add("ssm_leaves4x3", GREEN, 0, 0, 14, rot=0)
-    m.add("ssm_leaves4x3", GREEN, 0, 0, 15, rot=90)
-    m.add("leaves1", GREEN, 0, 0, 16, rot=45)
+    m.add("leaves1", GREEN, 0, 0, 15, rot=45)
     m.step()
-    m.width, m.depth = 1, 1
     return m
 
 
 # --------------------------------------------------------------------------
 # main model
 # --------------------------------------------------------------------------
-HX, HZ = 6, 11                               # the Carriage House's corner on the base
-GUESTS = ((0, 16), (26, 16))
-PX, PZ = 13, 6                               # porte-cochere
-LOOP_Z = range(6, 11)                        # the drive across, under the porte-cochere
-LOOP_X = range(8, 24)
-LEGS = (range(8, 12), range(20, 24))         # down to the band
-SPRING = (13, 2)                             # the spring's corner: 6 x 4 studs
-POOL = rect(13, 2, 6, 2) | {(13, 4), (14, 4), (17, 4), (18, 4)}
-MOUND = (15, 4)                              # the rock the spring rises from (2 x 2)
-TREES = ((3, 4), (28, 4))
-LAMPS = ((7, 5), (24, 5))
-FLOWER_Z = 13
+MINT_AT = (2, TZ + 1)
+CREAM_AT = (20, TZ + 1)
+SIDEWALK_Z = range(2, 4)
+WALK_X = range(14, 18)
+FENCE_Z = 4
+PILLARS = (0, 6, 12, 18, 24, 30)        # left ends of the 2 x 2 pillars
+FENCES = (2, 8, 20, 26)                 # left ends of the 1 x 4 fence pieces
+BED_Z = 5
+TREES = ((3, 20), (28, 20))
 
 
 def ground_colour(x, z):
-    if z in LOOP_Z and x in LOOP_X:
-        return DRIVE
-    if z < LOOP_Z.start and any(x in leg for leg in LEGS):
-        return DRIVE
+    if z in SIDEWALK_Z:
+        return PAVING
+    if x in WALK_X and z < OZ:
+        return PAVING
     return GREEN
 
 
-def add_spring(m):
-    """The spring: a grey rock mound with water bubbling from its top, in a clear blue
-    pool edged with rocks (a nod to the High Rock Spring of Saratoga Springs)."""
-    m.step("The pool: clear blue tiles straight on the base, round a 2×2 space for the rock.")
-    for z in sorted({c[1] for c in POOL}):
-        xs = sorted(c[0] for c in POOL if c[1] == z)
-        runs = []
-        for x in xs:
-            if runs and runs[-1][0] + runs[-1][1] == x:
-                runs[-1][1] += 1
-            else:
-                runs.append([x, 1])
-        for x, n in runs:
-            row(m, "t", WATER, x, z, n, 1, sizes=[2, 1])
-    m.step()
-    m.step("The rock: four dark grey bricks under a dark grey dome, with rocks sloping down "
-           "to it.")
-    mx, mz = MOUND
-    for i in (0, 1):
-        for j in (0, 1):
-            m.add("b1x1", ROCK, mx + i, mz + j, 1)
-    dome = m.add("dish2", ROCK, mx, mz, 4)
-    m.add("slope45", ROCK, mx - 2, mz + 1, 1, rot=FACE["right"])
-    m.add("slope45", ROCK, mx + 2, mz + 1, 1, rot=FACE["left"])
-    m.step()
-    m.add("cheese", LBG, mx - 2, mz + 1, 4, rot=FACE["right"])
-    m.add("cheese", LBG, mx + 3, mz + 1, 4, rot=FACE["left"])
-    m.step("The spring: two clear blue round plates on the dome's centre stud.")
-    y = -8 * (4 + PARTS["dish2"].height)
-    cx, cz = 20 * (mx + 1), 20 * (mz + 1)
-    jet = m.add_raw("round_p1", WATER, (cx, y - PARTS["round_p1"].bmax_y, cz), rot_matrix(0),
-                    attach_to=dome)
-    m.add_raw("round_p1", WATER, (cx, y - 8 - PARTS["round_p1"].bmax_y, cz), rot_matrix(0),
-              attach_to=jet)
-    m.step()
-
-
-def build_main(house, roof_top, belv, guest, porte, lamp, tree):
+def build_main(tower, mint, cream, pillar, tree):
     m = Model("saratoga_springs_midsize.ldr", "Saratoga Springs Resort (mid-size)")
     m.header_notes = ["Mid-size resort collection; generated by design.py (lego-kit)."]
     m.section("The display base", "The base and the black band are the same for every "
-              "mid-size kit. The carriage loop and the lawns go on next; the drive tiles tie "
-              "the base plates together.")
-    band = display_base(m, SIZE)
-    reserved = set(band)
-    reserved |= {(HX + x, HZ + z) for x, z in footprint()}
-    for gx, gz in GUESTS:
-        reserved |= rect(gx, gz, GW, GD)
-    reserved |= {(PX + x, PZ + z) for x, z in PC_POSTS}
-    reserved |= rect(*SPRING, 6, 4)
+              "mid-size kit. The sidewalk, the entrance walk and the lawns go on next; the "
+              "sidewalk tiles tie the base plates together.")
+    band_cells = display_base(m, SIZE)
+    reserved = set(band_cells) | TOWER | PORCH
+    reserved |= rect(*MINT_AT, WW, WD) | rect(*CREAM_AT, CW, CD)
     finish_ground(m, reserved, GREEN, colour_at=ground_colour, size=SIZE)
     m.step()
-    m.sub(house, HX, HZ, 1)
+    m.sub(tower, OX, OZ, 1)
     m.step()
-    m.sub(belv, HX + BELV[0], HZ + BELV[1], 1 + roof_top)
+    m.sub(mint, *MINT_AT, 1)
     m.step()
-    for gx, gz in GUESTS:
-        m.sub(guest, gx, gz, 1)
+    m.sub(cream, *CREAM_AT, 1)
     m.step()
-    m.sub(porte, PX, PZ, 1)
+    m.section("The fence and the garden", "Chunky stone pillars and a white picket fence "
+              "along the sidewalk, shrubs and flowers behind the fence, and two trees behind "
+              "the buildings.")
+    for x in PILLARS:
+        m.sub(pillar, x, FENCE_Z, 2)
     m.step()
-    m.section("The garden", "A rocky spring in the middle of the carriage loop, lamp posts, "
-              "flower beds along the porches and two shade trees finish the lawns.")
-    add_spring(m)
-    for x, z in LAMPS:
-        m.sub(lamp, x, z, 2)
+    for x in FENCES:
+        m.add("fence_sp", WHITE, x, FENCE_Z, 2)
     m.step()
-    m.step("Flower beds in front of the porches: red flowers in the front row, lavender "
-           "behind, with green leaves between them.")
-    for x0 in (HX, HX + 15):
-        for i in range(5):
-            x = x0 + i
-            for z, colour, odd in ((FLOWER_Z, RED, 0), (FLOWER_Z - 1, LAVENDER, 1)):
-                if i % 2 == odd:
-                    m.add("flower1", colour, x, z, 2)
-                else:
-                    m.add("leaves1", GREEN, x, z, 2, rot=90 * ((x + z) % 4))
-    m.step()
-    for gx, gz in GUESTS:
-        for i in range(GW):
-            x, z = gx + i, gz - 1
-            if i % 2 == (0 if gx == 0 else 1):
-                m.add("flower1", RED if i in (0, GW - 1) else LAVENDER, x, z, 2)
-            else:
-                m.add("leaves1", GREEN, x, z, 2, rot=90 * ((x + z) % 4))
+    m.step("Shrubs and flowers between the fence and the porch.")
+    z = BED_Z
+    for x in range(1, 31):
+        if x in WALK_X or any(p <= x <= p + 1 for p in PILLARS):
+            continue
+        if x % 3 == 1:
+            m.add("flower1", RED, x, z, 2)
+        else:
+            m.add("leaves1", GREEN, x, z, 2, rot=90 * (x % 4))
     m.step()
     for x, z in TREES:
         m.sub(tree, x, z, 2)
@@ -619,8 +734,8 @@ def build_main(house, roof_top, belv, guest, porte, lamp, tree):
 
 def build():
     with kit_sizes():
-        house, roof_top = build_house()
-        belv, guest, porte = build_belvedere(), build_guest(), build_porte()
-        lamp, tree = build_lamp(), build_tree()
-        main_m = build_main(house, roof_top, belv, guest, porte, lamp, tree)
-    return main_m, [main_m, house, belv, guest, porte, lamp, tree]
+        tower = build_tower()
+        mint, cream = build_mint(), build_cream()
+        pillar, tree = build_pillar(), build_tree()
+        main_m = build_main(tower, mint, cream, pillar, tree)
+    return main_m, [main_m, tower, mint, cream, pillar, tree]
