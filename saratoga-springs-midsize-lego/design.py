@@ -7,8 +7,8 @@ black front band; one storey = 4 plates (a course of bricks and a plate band),
 1 stud is about 2 m, the same scale as the compact kit. It shows the Carriage
 House, the lobby building, as it stands on its street corner: the round lobby
 tower IS the corner, at the front right of the base, and the building runs away
-from it along both streets. The tower's tan band, front door and louvre face the
-corner diagonal; the porch with the red-and-white striped edge wraps round its
+from it along both streets. The tower's pale yellow band, front door and louvre face
+the corner diagonal; the porch with the red-and-white striped edge wraps round its
 front and right; the long wing runs from the tower along the front street toward
 the left (the balcony section, the mint shop with its dormer and green awning,
 then the cream building with its cupola), and a shorter pale wing runs from the
@@ -21,13 +21,14 @@ Grid (studs): x to the right, z toward the back; the front band is z = 0..1. The
 tower and its porch are symmetric about the tower's front-right diagonal,
 x + z = 33.
   tower           x 18..25, z  8..15   an octagon with clipped corners (rows of 4, 6, 8,
-                                       8, 8, 8, 6 and 4 studs), five storeys: a green
-                                       ground floor under the porch and four mint-green
-                                       storeys; a tan band up the corner of the step on
-                                       the 45-degree face, a tan cornice one stud wider
-                                       than the walls with a flared eave of small brown
-                                       slopes, a white louvre over the band, a brown cone
-                                       and a black finial
+                                       8, 8, 8, 6 and 4 studs), six storeys: a green
+                                       ground floor under the porch and five mint-green
+                                       storeys, so the cornice stands well above the wing
+                                       roofs; a pale yellow band up the corner of the
+                                       step in the middle of the 45-degree face, a tan
+                                       cornice one stud wider than the walls with a flared
+                                       eave of small brown slopes, a white louvre over the
+                                       band, a brown cone and a black finial
   porch           2 studs round the tower's front and right, ending level with its left
                   side and its back: tan posts, a brown roof and a red-and-white striped
                   edge
@@ -36,8 +37,10 @@ x + z = 33.
                                        the balcony section by the tower (x 14..17): tan
                                        posts, a brown railing, a pale yellow upper storey
                                        and a tan gable; a grey roof with a chimney
-  cream building  x  0..7,  z 10..15   two storeys, red awnings, a white-trimmed gable and
-                                       a white cupola with a spire on a terracotta roof
+  cream building  x  0..7,  z 10..15   two storeys, pale cream with white trim and
+                                       shutters between the windows, red awnings, a
+                                       white-trimmed gable and a white cupola with a spire
+                                       on a terracotta roof
   back wing       x 18..23, z 16..21   two pale storeys behind the tower, facing the right
                                        street, with a small white-trimmed gable
   sidewalks       z 2..3 across the front and x 30..31 down the right side, meeting at
@@ -80,30 +83,34 @@ PROJECT = compact_project(
     about=("The Carriage House at Saratoga Springs, the lobby building, as it stands on its "
            "street corner, in the colours the resort wears today: mint-green shingle with "
            "tan trim, a deeper green under the porch, red-and-white stripes and warm brown "
-           "roofs. The round lobby tower is the corner. It is built as an octagon with "
-           "clipped corners; its tan band, front door and white louvre face the corner, "
-           "under a tan cornice with a flared brown eave, a brown cone roof and a black "
-           "finial. A porch on slim tan posts wraps round the tower's front and right "
-           "behind a red-and-white striped edge. From the tower the long wing runs along "
-           "the front street to the left: a balcony section with tan posts, a brown "
-           "railing, a pale yellow upper storey and a tan gable; a mint-green shop with a "
-           "green awning and a mint dormer with a small window; and a cream building with "
-           "red awnings, a white-trimmed gable and a white cupola with a spire on its "
-           "terracotta roof. A shorter pale wing runs from the tower toward the back along "
+           "roofs. The round lobby tower is the corner and stands well above the wings. It "
+           "is built as an octagon with clipped corners; its pale yellow band, front door "
+           "and white louvre face the corner, under a tan cornice with a flared brown "
+           "eave, a brown cone roof and a black finial. A porch on slim tan posts wraps "
+           "round the tower's front and right behind a red-and-white striped edge. From "
+           "the tower the long wing runs along the front street to the left: a balcony "
+           "section with tan posts, a brown railing, a pale yellow upper storey and a tan "
+           "gable; a mint-green shop with a green awning and a mint dormer with a small "
+           "window; and a pale cream building with white trim, red awnings, a "
+           "white-trimmed gable and a white cupola with a spire on its terracotta roof. "
+           "A shorter pale wing runs from the tower toward the back along "
            "the right street. Chunky river-stone pillars carry a low white picket fence "
            "along the front and a white privacy fence down the right side, with a shade "
            "tree behind, and the two sidewalks meet at the corner."),
-    features=["The round lobby tower on the street corner, five storeys tall: an octagon with "
-              "clipped corners in mint-green shingle over a deeper green ground floor",
-              "A tan band up the tower's corner to a white louvre over the cornice, a tan "
-              "cornice with a flared brown eave, a brown cone roof and a black finial",
+    features=["The round lobby tower on the street corner, six storeys tall so it stands well "
+              "above the wings: an octagon with clipped corners in mint-green shingle over a "
+              "deeper green ground floor",
+              "A pale yellow band up the tower's corner from the porch roof to a white louvre "
+              "over the cornice, a tan cornice with a flared brown eave, a brown cone roof "
+              "and a black finial",
               "The porch wrapped round the tower's front and right: slim tan posts and a "
               "red-and-white striped edge round a brown porch roof",
               "The long wing along the front street: a balcony section with tan posts, a "
               "brown railing, a pale yellow upper storey and a tan gable, then a mint-green "
               "shop with a green awning and a mint dormer with a small window",
-              "A cream building with red awnings, a white-trimmed gable and a white cupola "
-              "with a spire on its terracotta roof, at the far end of the front street",
+              "A pale cream building with white trim and shutters, red awnings, a "
+              "white-trimmed gable and a white cupola with a spire on its terracotta roof, "
+              "at the far end of the front street",
               "A shorter pale wing running back from the tower along the right street, "
               "with a small white-trimmed gable",
               "Chunky river-stone pillars of tan and grey round bricks, with a low white "
@@ -131,19 +138,20 @@ PROJECT = compact_project(
     sub_info={
         "tower.ldr": ("The Carriage House tower",
                       "The green ground floor and the porch round the tower's front and "
-                      "right: tan posts, a brown roof and a striped edge. Then four "
-                      "mint-green storeys with the tan band up the corner, the tan cornice "
-                      "with its flared eave, the white louvre, the brown cone roof and the "
-                      "black finial."),
+                      "right: tan posts, a brown roof and a striped edge. Then five "
+                      "mint-green storeys with the pale yellow band up the corner, the tan "
+                      "cornice with its flared eave, the white louvre, the brown cone roof "
+                      "and the black finial."),
         "mint_wing.ldr": ("The mint-green wing",
                           "The mint-green shop with its green awning, and the balcony "
                           "section by the tower with tan posts, a brown railing and a pale "
                           "yellow upper storey, under a grey roof with a mint dormer, a tan "
                           "gable and a chimney."),
         "cream_building.ldr": ("The cream building",
-                               "Two cream storeys with white bands and red awnings over the "
-                               "ground-floor windows, under a terracotta roof with a "
-                               "white-trimmed gable and a white cupola with a spire."),
+                               "Two pale cream storeys with white trim and shutters, white "
+                               "bands and red awnings over the ground-floor windows, under "
+                               "a terracotta roof with a white-trimmed gable and a white "
+                               "cupola with a spire."),
         "back_wing.ldr": ("The back wing",
                           "Two pale storeys behind the tower, facing the right street, under "
                           "a grey roof with a small white-trimmed gable."),
@@ -154,9 +162,10 @@ PROJECT = compact_project(
     legend=("tree.ldr", 1),
     tips=["The tower is an octagon: its walls step in at the corners. Lay each course side by "
           "side with the picture; its joints cross those of the course below.",
-          "The tan band runs up the outer corner of the step on the tower's front-right "
-          "face. Each tan brick reaches one stud into the wall, so the mint bricks beside it "
-          "lock it in.",
+          "The pale yellow band runs up the outer corner of the step in the middle of the "
+          "tower's front-right face. Each yellow brick reaches one stud into the wall, so the "
+          "mint bricks beside it lock it in, and each yellow 1&times;3 plate between the "
+          "storeys reaches into the hollow inside.",
           "The porch's brown roof plates reach from the posts onto the tower walls. The "
           "striped edge alternates red and white, a plate and a slope on each.",
           "Every plate of the tan cornice reaches back onto the wall below it. The small "
@@ -304,7 +313,8 @@ def plate_on(m, colour, cells, layer, kind="p"):
 # --------------------------------------------------------------------------
 TX, TZ = 18, 8
 OX, OZ = TX - 2, TZ - 2                  # the tower submodel's origin (the porch's corner)
-FLOORS = 5                               # the porch storey and four storeys above it
+FLOORS = 6                               # the porch storey and five storeys above it
+BAND_COLOUR = YELLOW                     # the pale yellow band up the corner
 
 
 def U(x):
@@ -332,7 +342,7 @@ BAND = (TX + 6, TZ + 1)                  # the outer corner of the 45-degree fac
 
 
 def band_cells(f):
-    """The tan band in storey f: the corner cell and the hidden cell behind it, along the
+    """The pale yellow band in storey f: the corner cell and the hidden cell behind it, along the
     wall segment that owns the corner in that course (so the band is a 1 x 2 brick)."""
     return {BAND, (TX + 5, TZ + 1) if f % 2 == 0 else (TX + 6, TZ + 2)}
 
@@ -403,16 +413,19 @@ def tower_colour(x, z, layer):
     if f == 1:
         return ("b", WINDOW if (x, z) in band_cells(f) else DEEP)
     if (x, z) in band_cells(f):
-        return ("b", TAN)
+        return ("b", BAND_COLOUR)
     return ("b", MINT)
 
 
 def band(m, f, layer, colour=MINT):
-    """A plate band over the tower's walls, with a tan 1 x 2 plate over the band that
-    crosses the joint of the band brick below."""
-    tan = {BAND, (TX + 6, TZ + 2) if f % 2 == 0 else (TX + 5, TZ + 1)}
-    fill_cells(m, "p", colour, WALL - tan, layer)
-    plate_on(m, TAN, tan, layer)
+    """A plate band over the tower's walls, with a pale yellow 1 x 3 plate over the band
+    that crosses the joint of the band brick below and reaches into the hollow inside."""
+    if f % 2 == 0:
+        run = [(TX + 6, z) for z in range(TZ + 1, TZ + 4)]
+    else:
+        run = [(x, TZ + 1) for x in range(TX + 4, TX + 7)]
+    fill_cells(m, "p", colour, WALL - set(run), layer)
+    plate_on(m, BAND_COLOUR, run, layer)
 
 
 def match_slopes(ring, inner, blocked):
@@ -577,7 +590,7 @@ def build_tower():
         m.add("cheese", CONE, c[0], c[1], base, rot=FACE[face])
     m.step()
     # the louvre: white plates stacked on the cornice over the band, at the corner
-    m.step("The louvre: white plates stacked over the tan band, at the corner.")
+    m.step("The louvre: white plates stacked over the yellow band, at the corner.")
     lx, lz = LOUVRE
     for k in range(6):
         m.add("p1x1", WHITE, lx, lz, base + k)
@@ -732,9 +745,13 @@ def build_cream():
 
     def colour(x, z, layer):
         if z == 0:
+            # the front: windows and the door with white trim and shutters between them,
+            # pale cream only at the corners
             door = x in CREAM_DOOR and layer < 4
             upper = layer > 4 and x in (3, 4)
-            return ("b", WINDOW if x in CREAM_WIN or door or upper else CREAM)
+            if x in CREAM_WIN or door or upper:
+                return ("b", WINDOW)
+            return ("b", CREAM if x in (0, CW - 1) else WHITE)
         if z == CD - 1:
             return ("b", WINDOW if x in (2, 5) else CREAM)
         if x == 0:

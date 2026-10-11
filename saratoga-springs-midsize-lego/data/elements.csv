@@ -10,7 +10,6 @@ ldraw_part,ldraw_color,lego_color,bricklink_part,bricklink_color_id,bricklink_co
 3004.dat,0,Black,3004,11,Black,3004,3004,300426,,2026,198,yes,yes,0.1,0.11,BRICK 1X2,listed on Pick a Brick (2025)
 3004.dat,2,Dark Green,3004,6,Green,3004,3004,4107736,300428,2026,45,yes,yes,0.1,0.11,BRICK 1X2,listed on Pick a Brick (2025)
 3004.dat,15,White,3004,1,White,3004,3004,300401,4613964 6548257,2026,249,yes,yes,0.1,0.11,BRICK 1X2,listed on Pick a Brick (2025)
-3004.dat,19,Brick Yellow,3004,2,Tan,3004,3004,4109995,300405,2026,134,yes,yes,0.1,0.11,BRICK 1X2,listed on Pick a Brick (2025)
 3004.dat,70,Reddish Brown,3004,88,Reddish Brown,3004,3004,4211149,4613963,2026,122,yes,yes,0.1,0.11,BRICK 1X2,listed on Pick a Brick (2025)
 3004.dat,72,Dark Stone Grey,3004,85,Dark Bluish Gray,3004,3004,4211088,,2026,141,yes,yes,0.1,0.11,BRICK 1X2,listed on Pick a Brick (2025)
 3004.dat,226,Cool Yellow,3004,103,Bright Light Yellow,3004,3004,6022083,6014504,2026,41,yes,yes,0.1,0.11,BRICK 1X2,listed on Pick a Brick (2025)
@@ -70,6 +69,7 @@ ldraw_part,ldraw_color,lego_color,bricklink_part,bricklink_color_id,bricklink_co
 32607.dat,2,Dark Green,32607,6,Green,32607,32607,6229130,,2026,138,,yes,,0.06,"PLANT, W/ PLATE 1X1, NO. 1","likely (current, listed 2022)"
 3460.dat,71,Medium Stone Grey,3460,86,Light Bluish Gray,3460,3460,4211425,,2026,154,,yes,,0.18,PLATE 1X8,"likely (current, listed 2022)"
 3623.dat,70,Reddish Brown,3623,88,Reddish Brown,3623,3623,4211152,,2026,171,yes,yes,0.07,0.07,PLATE 1X3,listed on Pick a Brick (2025)
+3623.dat,226,Cool Yellow,3623,103,Bright Light Yellow,3623,3623,6296492,,2026,18,,yes,,0.07,PLATE 1X3,"likely (current, listed 2022)"
 3666.dat,15,White,3666,1,White,3666,3666,366601,6548265 6552107,2026,245,,yes,,0.14,PLATE 1X6,"likely (current, listed 2022)"
 3666.dat,19,Brick Yellow,3666,2,Tan,3666,3666,4124067,366605,2026,174,,yes,,0.14,PLATE 1X6,"likely (current, listed 2022)"
 3666.dat,71,Medium Stone Grey,3666,86,Light Bluish Gray,3666,3666,4211438,,2026,231,,yes,,0.14,PLATE 1X6,"likely (current, listed 2022)"

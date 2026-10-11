@@ -6,11 +6,10 @@ Element ID,Quantity,Description,LEGO colour,Unit price (USD),Price seen,Line cos
 614126,1,Plate Round 1 x 1,Black,0.06,2022,0.06
 243126,2,Tile 1 x 4,Black,0.13,2022,0.26
 416226,7,Tile 1 x 8,Black,0.14,2022,0.98
-4109995,4,Brick 1 x 2,Brick Yellow,0.10,late 2025,0.40
 4117070,24,Brick Round 1 x 1,Brick Yellow,0.06,2022,1.44
 4159553,3,Plate 1 x 1,Brick Yellow,0.05,late 2025,0.15
-4113917,12,Plate 1 x 2,Brick Yellow,0.07,late 2025,0.84
-4113233,6,Plate 1 x 4,Brick Yellow,0.10,late 2025,0.60
+4113917,6,Plate 1 x 2,Brick Yellow,0.07,late 2025,0.42
+4113233,7,Plate 1 x 4,Brick Yellow,0.10,late 2025,0.70
 4124067,2,Plate 1 x 6,Brick Yellow,0.14,2022,0.28
 4114084,6,Plate 2 x 2,Brick Yellow,0.09,late 2025,0.54
 4114309,7,Plate 2 x 4,Brick Yellow,0.14,late 2025,0.98
@@ -24,9 +23,10 @@ Element ID,Quantity,Description,LEGO colour,Unit price (USD),Price seen,Line cos
 6206148,5,Plant Flower 1 x 1,Bright Red,0.06,2022,0.30
 302421,11,Plate 1 x 1,Bright Red,0.05,late 2025,0.55
 4504379,13,Slope 30 1 x 1 x 2/3,Bright Red,0.06,2022,0.78
-6022084,13,Brick 1 x 1,Cool Yellow,0.07,late 2025,0.91
-6022083,10,Brick 1 x 2,Cool Yellow,0.10,late 2025,1.00
+6022084,9,Brick 1 x 1,Cool Yellow,0.07,late 2025,0.63
+6022083,15,Brick 1 x 2,Cool Yellow,0.10,late 2025,1.50
 6036232,2,Brick 1 x 4,Cool Yellow,0.15,2022,0.30
+6296492,5,Plate 1 x 3,Cool Yellow,0.07,2022,0.35
 4107736,13,Brick 1 x 2,Dark Green,0.10,late 2025,1.30
 6268814,2,Plant Leaves 4 x 3,Dark Green,0.10,2022,0.20
 6266968,2,Plant Leaves 6 x 5,Dark Green,0.19,2022,0.38
@@ -73,15 +73,15 @@ Element ID,Quantity,Description,LEGO colour,Unit price (USD),Price seen,Line cos
 4211202,17,Slope 45 2 x 2,Reddish Brown,0.14,2022,2.38
 4211151,1,Tile 1 x 2,Reddish Brown,0.07,2022,0.07
 4521948,9,Brick 1 x 1,Sand Green,0.07,late 2025,0.63
-4616581,49,Brick 1 x 2,Sand Green,0.10,late 2025,4.90
-4521947,11,Brick 1 x 4,Sand Green,0.16,late 2025,1.76
-6099189,13,Plate 1 x 1,Sand Green,0.05,late 2025,0.65
-4655080,27,Plate 1 x 2,Sand Green,0.07,late 2025,1.89
-6100234,10,Plate 1 x 4,Sand Green,0.10,late 2025,1.00
+4616581,58,Brick 1 x 2,Sand Green,0.10,late 2025,5.80
+4521947,13,Brick 1 x 4,Sand Green,0.16,late 2025,2.08
+6099189,15,Plate 1 x 1,Sand Green,0.05,late 2025,0.75
+4655080,35,Plate 1 x 2,Sand Green,0.07,late 2025,2.45
+6100234,12,Plate 1 x 4,Sand Green,0.10,late 2025,1.20
 6099187,2,Plate 1 x 6,Sand Green,0.14,2022,0.28
 6249817,1,Plate 2 x 4,Sand Green,0.14,2022,0.14
 6093526,1,Bar 3L,White,0.06,2022,0.06
-300501,7,Brick 1 x 1,White,0.07,late 2025,0.49
+300501,11,Brick 1 x 1,White,0.07,late 2025,0.77
 300401,5,Brick 1 x 2,White,0.10,late 2025,0.50
 287701,2,Brick 1 x 2 with Grille,White,0.11,2022,0.22
 301001,1,Brick 1 x 4,White,0.16,late 2025,0.16
@@ -97,4 +97,4 @@ Element ID,Quantity,Description,LEGO colour,Unit price (USD),Price seen,Line cos
 4504369,10,Slope 30 1 x 1 x 2/3,White,0.06,2022,0.60
 4121932,15,Slope 45 2 x 1,White,0.11,2022,1.65
 663601,2,Tile 1 x 6,White,0.14,2022,0.28
-,681,Total for one copy,,,,76.85
+,705,Total for one copy,,,,79.06

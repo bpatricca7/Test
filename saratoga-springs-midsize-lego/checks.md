@@ -12,8 +12,8 @@ These check the digital model only; see "Digital checks and physical prototype" 
 
 | Model | Elements | Collisions | Loose groups | Order warnings | Stability warnings |
 |---|---|---|---|---|---|
-| `saratoga_springs_midsize.ldr` | 681 | 0 | 0 | 0 | 0 |
-| `tower.ldr` | 281 | 0 | 0 | 0 | 0 |
+| `saratoga_springs_midsize.ldr` | 705 | 0 | 0 | 0 | 0 |
+| `tower.ldr` | 305 | 0 | 0 | 0 | 0 |
 | `mint_wing.ldr` | 104 | 0 | 0 | 0 | 0 |
 | `cream_building.ldr` | 86 | 0 | 0 | 0 | 0 |
 | `back_wing.ldr` | 55 | 0 | 0 | 0 | 0 |
