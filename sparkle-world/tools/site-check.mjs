@@ -502,7 +502,7 @@ async function accountPages(browser) {
   const bare = await buildAccountSite('required', { SW_OPERATOR_NAME: '', SW_OPERATOR_EMAIL: '', SW_OPERATOR_ADDRESS: '', SW_OPERATOR_PHONE: '' });
   console.log('account pages: the site for SW_ACCOUNTS=required and optional');
   check(req.result.accounts === 'required' && req.result.missing.length === 0, `built for required with the operator details (${JSON.stringify(req.result.missing)})`);
-  check(bare.result.missing.length === 3, `without the public operator details the build warns (${bare.result.missing.join(', ')})`);
+  check(bare.result.missing.length === 2, `without the public operator details the build warns (${bare.result.missing.join(', ')})`);
   {
     // a child's color is the same on the Family page and in the game's "Who's playing?"
     const { readFileSync, existsSync } = await import('node:fs');
@@ -535,7 +535,7 @@ async function accountPages(browser) {
       }
       for (const p of ['/privacy', '/terms']) {
         const html = await (await fetch(`${s.base}${p}`)).text();
-        check(!/\{\{|\}\}/.test(html) && html.includes('The Sparkle Family') && !html.includes('PO Box 123') && html.includes('+1 555 0100') && html.includes('hello@glimmerworld.example'), `${mode}: ${p} prints the operator's name, phone and email without the mailing address`);
+        check(!/\{\{|\}\}/.test(html) && html.includes('The Sparkle Family') && !html.includes('PO Box 123') && !html.includes('+1 555 0100') && html.includes('hello@glimmerworld.example'), `${mode}: ${p} prints the operator's name and email without the mailing address or phone number`);
       }
     }
     const privacy = await (await fetch(`${srv.base}/privacy`)).text();

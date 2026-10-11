@@ -18,7 +18,7 @@
 //   FRIENDS_SWITCH_NOTICE, WALKIE_SWITCH_NOTICE   the per-child switch notices (§9.2, §11.5)
 //
 // `cfg` is loadConfig()'s object; only these fields are read: mpConsent, retainDays, trialDays,
-// priceText, mailMode, publicOrigin, operator { name, email, phone }. Missing operator
+// priceText, mailMode, publicOrigin, operator { name, email }. Missing operator
 // details (development) read "[SW_OPERATOR_… not set]"; production refuses to start without them.
 
 // Version 1 was edited in place twice before any family agreed in production (accounts were still
@@ -31,7 +31,9 @@
 // still count (nobody is asked again).
 // Version 3 (2026-10-11): remove the mailing address from the operator contact details.
 // Collection, use, recipients and rights are unchanged, so earlier agreements still count.
-export const NOTICE_VERSION = 3;
+// Version 4 (2026-10-11): also remove the phone number from operator contact details.
+// The support email remains available; earlier agreements still count.
+export const NOTICE_VERSION = 4;
 export const NOTICE_MIN_VERSION = 1;
 export const NOTICE_DATE = '2026-10-11';
 
@@ -119,7 +121,7 @@ export function noticeSections(cfg = {}) {
     },
     {
       title: 'Who runs Glimmer World',
-      text: `Glimmer World is run by ${op(cfg, 'name')}, ${op(cfg, 'phone')}, ${op(cfg, 'email')}. The full Privacy Notice: ${privacy}`,
+      text: `Glimmer World is run by ${op(cfg, 'name')}, ${op(cfg, 'email')}. The full Privacy Notice: ${privacy}`,
     },
   ];
 }

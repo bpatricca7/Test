@@ -256,7 +256,7 @@ export function loadConfig(env = process.env) {
     if (msClientId) msClientId = msClientId.toLowerCase();
   }
 
-  // ---- who runs it (name, email and phone are public contact details) ----
+  // ---- who runs it (name and support email are public contact details) ----
   // The operator's email is also every email's Reply-To: it must be one bare address (a provider
   // refuses a message with a bad Reply-To, Microsoft 365 for good with 400 ErrorInvalidRecipients).
   // localhost is allowed outside production (development and tests).
@@ -264,7 +264,7 @@ export function loadConfig(env = process.env) {
     name: needInProduction('SW_OPERATOR_NAME'),
     email: needInProduction('SW_OPERATOR_EMAIL'),
     address: needInProduction('SW_OPERATOR_ADDRESS'), // retained for configuration compatibility; never published
-    phone: needInProduction('SW_OPERATOR_PHONE'),
+    phone: needInProduction('SW_OPERATOR_PHONE'), // retained for configuration compatibility; never published
   });
   if (operator.email !== null && !bareAddress(operator.email, !production)) problems.push('SW_OPERATOR_EMAIL must be one bare address, like hello@your-domain');
 
