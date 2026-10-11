@@ -1,0 +1,66 @@
+Element ID,Quantity,Description,LEGO colour,Unit price (USD),Price seen,Line cost (USD)
+6116604,2,Bar 4L (Light Sword Blade),Black,0.06,2022,0.12
+300526,44,Brick 1 x 1,Black,0.07,late 2025,3.08
+300426,8,Brick 1 x 2,Black,0.10,late 2025,0.80
+614126,2,Plate Round 1 x 1,Black,0.06,2022,0.12
+243126,2,Tile 1 x 4,Black,0.13,2022,0.26
+416226,7,Tile 1 x 8,Black,0.14,2022,0.98
+4114026,16,Tile 1 x 2,Brick Yellow,0.07,2022,1.12
+4550324,2,Tile 1 x 4,Brick Yellow,0.13,2022,0.26
+4157277,8,Tile 1 x 6,Brick Yellow,0.14,2022,1.12
+6182261,8,Plant Plate Round 1 x 1 with 3 Leaves,Bright Green,0.06,2022,0.48
+6206148,8,Plant Flower 1 x 1,Bright Red,0.06,2022,0.48
+6022084,16,Brick 1 x 1,Cool Yellow,0.07,late 2025,1.12
+6022083,20,Brick 1 x 2,Cool Yellow,0.10,late 2025,2.00
+6036232,5,Brick 1 x 4,Cool Yellow,0.15,2022,0.75
+6266968,8,Plant Leaves 6 x 5,Dark Green,0.19,2022,1.52
+6229130,12,Plant Plate Round 1 x 1 with 3 Leaves,Dark Green,0.06,2022,0.72
+302428,6,Plate 1 x 1,Dark Green,0.05,late 2025,0.30
+302328,12,Plate 1 x 2,Dark Green,0.07,late 2025,0.84
+371028,18,Plate 1 x 4,Dark Green,0.10,late 2025,1.80
+302228,3,Plate 2 x 2,Dark Green,0.09,late 2025,0.27
+302028,5,Plate 2 x 4,Dark Green,0.14,late 2025,0.70
+379528,13,Plate 2 x 6,Dark Green,0.19,2022,2.47
+4116671,1,Plate 4 x 6,Dark Green,0.43,2022,0.43
+6004927,2,Plate 16 x 16,Dark Stone Grey,3.04,2022,6.08
+4210802,4,Plate 8 x 8,Dark Stone Grey,0.81,2022,3.24
+4286050,14,Brick 1 x 1,Light Purple,0.07,late 2025,0.98
+4517993,9,Brick 1 x 2,Light Purple,0.10,late 2025,0.90
+4619652,14,Brick 1 x 1,Medium Azur,0.07,late 2025,0.98
+6092674,9,Brick 1 x 2,Medium Azur,0.10,late 2025,0.90
+4211389,28,Brick 1 x 1,Medium Stone Grey,0.07,late 2025,1.96
+4211394,11,Brick 1 x 4,Medium Stone Grey,0.16,late 2025,1.76
+4211445,3,Plate 1 x 4,Medium Stone Grey,0.10,late 2025,0.30
+4211438,2,Plate 1 x 6,Medium Stone Grey,0.14,2022,0.28
+4211425,2,Plate 1 x 8,Medium Stone Grey,0.18,2022,0.36
+4211452,2,Plate 2 x 6,Medium Stone Grey,0.19,2022,0.38
+4211404,2,Plate 4 x 6,Medium Stone Grey,0.43,2022,0.86
+4211407,2,Plate 4 x 8,Medium Stone Grey,0.46,2022,0.92
+4211408,6,Plate 6 x 8,Medium Stone Grey,0.67,2022,4.02
+4521921,4,Slope 30 1 x 1 x 2/3,Medium Stone Grey,0.06,2022,0.24
+4211614,10,Slope 45 2 x 1,Medium Stone Grey,0.11,2022,1.10
+4211410,32,Slope 45 2 x 2,Medium Stone Grey,0.14,2022,4.48
+4211409,16,Slope 45 2 x 4,Medium Stone Grey,0.18,2022,2.88
+4211356,9,Tile 1 x 4,Medium Stone Grey,0.13,2022,1.17
+4211549,10,Tile 1 x 6,Medium Stone Grey,0.14,2022,1.40
+4211413,2,Tile 2 x 2,Medium Stone Grey,0.08,2022,0.16
+4211183,24,Brick Round 1 x 1,Reddish Brown,0.06,2022,1.44
+300501,12,Brick 1 x 1,White,0.07,late 2025,0.84
+287701,5,Brick 1 x 2 with Grille,White,0.11,2022,0.55
+362201,2,Brick 1 x 3,White,0.14,late 2025,0.28
+306201,14,Brick Round 1 x 1,White,0.06,2022,0.84
+4550171,5,Fence 1 x 4 x 1,White,0.18,2022,0.90
+366601,3,Plate 1 x 6,White,0.14,2022,0.42
+346001,1,Plate 1 x 8,White,0.18,2022,0.18
+302201,2,Plate 2 x 2,White,0.09,late 2025,0.18
+303201,4,Plate 4 x 6,White,0.43,2022,1.72
+303501,2,Plate 4 x 8,White,0.46,2022,0.92
+4144012,1,Plate 6 x 6,White,0.50,2022,0.50
+303601,6,Plate 6 x 8,White,0.67,2022,4.02
+614101,32,Plate Round 1 x 1,White,0.06,2022,1.92
+4121932,30,Slope 45 2 x 1,White,0.11,2022,3.30
+307001,6,Tile 1 x 1,White,0.06,2022,0.36
+306901,2,Tile 1 x 2,White,0.07,2022,0.14
+243101,4,Tile 1 x 4,White,0.13,2022,0.52
+663601,1,Tile 1 x 6,White,0.14,2022,0.14
+,575,Total for one copy,,,,76.26
