@@ -1,0 +1,54 @@
+{
+  "name": "sparkle-world",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A cozy block-building world for kids: dress up, build houses, decorate, adopt pets, cook, garden and explore.",
+  "type": "module",
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "build:site": "node tools/site-build.mjs",
+    "test:seo": "node --test tools/test-seo.mjs",
+    "shots:site": "node tools/site-shots.mjs",
+    "dev": "node tools/build.mjs --serve",
+    "smoke": "node tools/build.mjs && node tools/smoke.mjs",
+    "start": "node server/server.mjs",
+    "test:net": "node tools/test-net.mjs",
+    "test:walkie": "node tools/test-walkie.mjs",
+    "test:vehicles": "node tools/test-vehicles.mjs",
+    "probe:vehicles": "node tools/build.mjs && node tools/probe-vehicles.mjs",
+    "probe:mp": "node tools/build.mjs && node tools/probe-multiplayer.mjs",
+    "probe:boys": "node tools/build.mjs && node tools/probe-boys.mjs",
+    "test:merfolk": "node tools/test-merfolk.mjs",
+    "probe:merfolk": "node tools/build.mjs && node tools/probe-merfolk.mjs",
+    "test:squish": "node tools/test-squish.mjs",
+    "probe:squish": "npm run build && node tools/probe-squish.mjs",
+    "test:sea": "node tools/test-sea.mjs",
+    "probe:ocean": "node tools/build.mjs && node tools/probe-ocean.mjs",
+    "probe:railway": "node tools/probe-railway.mjs",
+    "test:accounts": "node --test tools/test-accounts.mjs",
+    "test:billing": "node --test tools/test-billing.mjs",
+    "test:saves": "node --test tools/test-saves.mjs",
+    "test:name": "node tools/build.mjs && node --test tools/test-name.mjs",
+    "test:mail-microsoft": "node --test tools/test-mail-microsoft.mjs",
+    "e2e:accounts": "node tools/build.mjs && node tools/e2e-accounts.mjs",
+    "dev:accounts": "node tools/dev-accounts.mjs",
+    "stripe:setup": "node tools/stripe-setup.mjs",
+    "admin": "node server/admin.mjs",
+    "migrate": "node server/migrate.mjs"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "pg": "8.23.0",
+    "stripe": "22.6.2",
+    "three": "0.186.1",
+    "ws": "8.22.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "esbuild": "0.28.2",
+    "playwright-core": "1.56.1"
+  }
+}

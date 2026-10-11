@@ -1,0 +1,468 @@
+// Headless smoke / play test for dist/sparkle-world.html (Playwright + SwiftShader WebGL2).
+// Fails (exit 1) on any console error, page error or failed request (the optional Google
+// Fonts request is ignored). Screenshots go to .shots/<prefix>-*.png.
+//
+//   node tools/smoke.mjs [--biome=meadow] [--shots-prefix=core] [--only=desktop|touch] [--headed]
+//
+// The helpers are exported so feature teams can write their own scenario scripts:
+//   import { launch, openGame, startWorld, waitIdle, shot, finish } from './smoke.mjs';
+
+import { chromium } from 'playwright-core';
+import { mkdir } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+export const PAGE_URL = pathToFileURL(path.join(ROOT, 'dist', 'sparkle-world.html')).href;
+export const SHOTS = path.join(ROOT, '.shots');
+export const CHROMIUM = process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium';
+export const LAUNCH_ARGS = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'];
+
+const IGNORED_URLS = /fonts\.(googleapis|gstatic)\.com/;
+
+export function parseArgs(argv = process.argv.slice(2)) {
+  const opts = { biome: 'meadow', prefix: 'core', only: null, headed: false };
+  for (const a of argv) {
+    const [k, v] = a.replace(/^--/, '').split('=');
+    if (k === 'biome') opts.biome = v;
+    else if (k === 'shots-prefix') opts.prefix = v;
+    else if (k === 'only') opts.only = v;
+    else if (k === 'headed') opts.headed = true;
+  }
+  return opts;
+}
+
+export async function launch({ headed = false } = {}) {
+  return chromium.launch({ executablePath: CHROMIUM, args: LAUNCH_ARGS, headless: !headed });
+}
+
+/**
+ * New context + page on the built game. errors: array that collects every problem.
+ * device: { viewport, touch } (touch => hasTouch + isMobile).
+ */
+export async function openGame(browser, { errors, viewport = { width: 1280, height: 800 }, touch = false, label = 'page' } = {}) {
+  const context = await browser.newContext({
+    viewport,
+    hasTouch: touch,
+    isMobile: touch,
+    deviceScaleFactor: touch ? 2 : 1,
+  });
+  const page = await context.newPage();
+  attachErrorCollectors(page, errors, label);
+  await page.goto(PAGE_URL);
+  await waitForTitle(page);
+  return { context, page };
+}
+
+export function attachErrorCollectors(page, errors, label = 'page') {
+  page.on('console', (msg) => {
+    if (msg.type() !== 'error') return;
+    const url = (msg.location() && msg.location().url) || '';
+    if (IGNORED_URLS.test(url) || IGNORED_URLS.test(msg.text())) return;
+    errors.push(`[${label}] console.error: ${msg.text()}`);
+  });
+  page.on('pageerror', (err) => errors.push(`[${label}] pageerror: ${err.message}\n${err.stack || ''}`));
+  page.on('requestfailed', (req) => {
+    if (IGNORED_URLS.test(req.url())) return;
+    errors.push(`[${label}] request failed: ${req.url()} ${req.failure() ? req.failure().errorText : ''}`);
+  });
+}
+
+export async function waitForTitle(page, timeout = 30000) {
+  await page.waitForFunction(() => window.__game && window.__game.ui && window.__game.ui.current === 'title', null, { timeout });
+  await page.waitForTimeout(300);
+}
+
+export async function waitForPlay(page, timeout = 90000) {
+  await page.waitForFunction(() => window.__game && window.__game.mode === 'play' && !window.__game.loading, null, { timeout, polling: 250 });
+}
+
+export async function waitIdle(page, timeout = 60000) {
+  const ok = await page.evaluate((t) => window.__game.debug.waitIdle(t), timeout);
+  if (!ok) throw new Error('world never became idle');
+}
+
+export async function shot(page, name, prefix = 'core') {
+  await mkdir(SHOTS, { recursive: true });
+  const file = path.join(SHOTS, `${prefix}-${name}.png`);
+  await page.screenshot({ path: file });
+  console.log(`  screenshot ${path.relative(ROOT, file)}`);
+  return file;
+}
+
+/** Start a new world through the real UI (New World -> biome card -> Create!). */
+export async function startWorldViaUI(page, biome = 'meadow', { tap = false, onPanel = null } = {}) {
+  const press = async (locator) => (tap ? locator.tap() : locator.click());
+  await press(page.locator('button.sw-btn', { hasText: 'New World' }).first());
+  await page.waitForSelector('.sw-panel-wrap.sw-open .sw-biome img[src]');
+  const biomeName = await page.evaluate((b) => window.__game.registry.biomes.get(b)?.name, biome);
+  if (biomeName) await press(page.locator('.sw-biome', { hasText: biomeName }).first());
+  if (onPanel) await onPanel(page);
+  await press(page.locator('button.sw-create'));
+  await waitForPlay(page);
+  await waitIdle(page);
+}
+
+/** Start a world, preferring the real UI and falling back to the debug API. */
+export async function startWorld(page, biome = 'meadow', opts = {}) {
+  try {
+    await startWorldViaUI(page, biome, opts);
+  } catch (err) {
+    console.log(`  (UI start failed: ${err.message.split('\n')[0]}; using debug.newWorld)`);
+    await page.evaluate((b) => window.__game.debug.newWorld({ biome: b }), biome);
+    await waitForPlay(page);
+    await waitIdle(page);
+  }
+}
+
+/** Wait a few frames so the renderer shows the latest state. */
+export async function settle(page, ms = 600) {
+  await page.waitForTimeout(ms);
+}
+
+export function finish(errors) {
+  if (errors.length) {
+    console.error(`\nSMOKE FAILED with ${errors.length} problem(s):`);
+    for (const e of errors) console.error(' - ' + e);
+    process.exitCode = 1;
+  } else {
+    console.log('\nSMOKE PASSED: no console errors, page errors or failed requests.');
+  }
+}
+
+function check(errors, cond, message) {
+  if (!cond) errors.push('[check] ' + message);
+  else console.log('  ok: ' + message);
+}
+
+/** Page (CSS px) position of a world point, or null when it is behind the camera. */
+export async function screenPoint(page, x, y, z) {
+  return page.evaluate(([x, y, z]) => {
+    const g = window.__game;
+    const v = g.camera.position.clone().set(x, y, z).project(g.camera);
+    if (v.z > 1) return null;
+    const r = g.renderer.domElement.getBoundingClientRect();
+    return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height };
+  }, [x, y, z]);
+}
+
+/** Turn the camera toward an entity and return the page position of its pick box centre. */
+async function aimAtEntity(page, uid) {
+  const c = await page.evaluate((uid) => {
+    const g = window.__game, e = g.entities.byUid(uid), b = e.pickable.box;
+    const cx = (b.min.x + b.max.x) / 2, cy = (b.min.y + b.max.y) / 2 + 0.1, cz = (b.min.z + b.max.z) / 2;
+    const p = g.player.position;
+    g.cameraRig.yaw = Math.atan2(cx - p.x, cz - p.z);
+    g.cameraRig.pitch = 0.45;
+    return [cx, cy, cz];
+  }, uid);
+  await settle(page, 300);
+  return screenPoint(page, ...c);
+}
+
+// ---------------- scenarios ----------------
+
+async function desktopPass(browser, opts, errors) {
+  console.log('Desktop pass (1280x800)');
+  const { context, page } = await openGame(browser, { errors, label: 'desktop' });
+  await shot(page, '0-title', opts.prefix);
+  await startWorld(page, opts.biome, { onPanel: async (p) => { await settle(p, 400); await shot(p, '0-newworld', opts.prefix); } });
+  await settle(page, 800);
+  const info = await page.evaluate(() => window.__game.debug.info());
+  console.log(`  world ready: ${info.world.name} (${info.world.biome}) fps~${info.fps} calls=${info.calls} tris=${info.triangles} storage=${info.storage}`);
+  await shot(page, '1-world', opts.prefix);
+
+  // build a little scene in front of the player: a wall with a tower, a bed, a lamp, a chair
+  const built = await page.evaluate(() => {
+    const g = window.__game, d = g.debug, p = g.player.position;
+    const sy = Math.sin(g.cameraRig.yaw), cy = Math.cos(g.cameraRig.yaw);
+    const f = Math.abs(sy) > Math.abs(cy) ? [Math.sign(sy), 0] : [0, Math.sign(cy)]; // forward
+    const side = [-f[1], f[0]];
+    const px = Math.floor(p.x), pz = Math.floor(p.z);
+    const cell = (a, b) => [px + f[0] * a + side[0] * b, pz + f[1] * a + side[1] * b];
+    const out = { placed: [], furniture: [] };
+    d.select('block:planks_pink');
+    for (let i = -2; i <= 2; i++) {
+      const [x, z] = cell(6, i);
+      const h = d.heightAt(x, z);
+      if (d.useAt(x, h, z)) out.placed.push([x, h + 1, z]);
+    }
+    const [x0, y0, z0] = out.placed[0];
+    if (d.place('glass', x0, y0 + 1, z0)) out.placed.push([x0, y0 + 1, z0]);
+    if (d.place('lamp_block', x0, y0 + 2, z0)) out.placed.push([x0, y0 + 2, z0]);
+    d.select('block:wool_sky');
+    const top = out.placed[out.placed.length - 1];
+    if (d.useAt(top[0], top[1], top[2])) out.placed.push([top[0], top[1] + 1, top[2]]);
+    const putFurniture = (key, a, b) => {
+      const [x, z] = cell(a, b);
+      d.select(key);
+      return d.useAt(x, d.heightAt(x, z), z);
+    };
+    out.results = {
+      bed: putFurniture('furn:bed_single', 3, 3),
+      lamp: putFurniture('furn:table_lamp', 3, -3),
+      chair: putFurniture('furn:chair', 3, -1),
+    };
+    out.furniture = d.entities();
+    out.keys = out.placed.map(([x, y, z]) => d.getBlock(x, y, z));
+    return out;
+  });
+  check(errors, built.placed.length >= 6, `placed ${built.placed.length} blocks (${[...new Set(built.keys)].join(', ')})`);
+  check(errors, built.furniture.length >= 3, `placed ${built.furniture.length} furniture pieces (${built.furniture.map((e) => e.key).join(', ')})`);
+  await settle(page, 700);
+  await shot(page, '2-built', opts.prefix);
+
+  // undo removes the last thing, redo-by-hand puts it back
+  const undo = await page.evaluate(() => {
+    const g = window.__game;
+    const before = g.debug.entities().length;
+    g.undo();
+    return { before, after: g.debug.entities().length };
+  });
+  check(errors, undo.after === undo.before - 1, 'undo removed the last furniture piece');
+
+  // Hand tool: a slow, deliberate press on the bed (longer than the 0.42 s hold) still
+  // counts as a tap -> sleep -> morning
+  const bed = built.furniture.find((e) => e.key === 'bed_single');
+  if (bed) {
+    await page.evaluate(() => { window.__game.setDayTime(0.85); window.__game.setTool('hand'); });
+    const at = await aimAtEntity(page, bed.uid);
+    const onBed = at && await page.evaluate(([x, y]) => {
+      const g = window.__game, r = g.renderer.domElement.getBoundingClientRect();
+      const h = g.pick({ x: ((x - r.left) / r.width) * 2 - 1, y: -(((y - r.top) / r.height) * 2 - 1) });
+      return !!h && h.type === 'pickable' && h.pickable.ref && h.pickable.ref.key === 'bed_single';
+    }, [at.x, at.y]);
+    if (onBed) {
+      await page.mouse.move(at.x, at.y);
+      await page.mouse.down();
+      await page.waitForTimeout(700);
+      await page.mouse.up();
+      await page.waitForTimeout(200);
+      const state = await page.evaluate(() => window.__game.player.state);
+      check(errors, state === 'sleep', `slow Hand press on the bed -> sleeping (${state})`);
+    } else {
+      console.log('  (bed not in view; sleeping via debug.interact)');
+      await page.evaluate((uid) => window.__game.debug.interact(uid), bed.uid);
+    }
+    await page.waitForTimeout(1000);
+    await shot(page, '3-sleep', opts.prefix);
+    await page.waitForTimeout(3600);
+    const t = await page.evaluate(() => ({ ...window.__game.time, state: window.__game.player.state }));
+    check(errors, t.dayTime > 0.25 && t.dayTime < 0.35, `slept until morning (dayTime ${t.dayTime.toFixed(3)}, player ${t.state})`);
+    await page.evaluate(() => { window.__game.player.stand(); window.__game.setTool('build'); });
+  }
+
+  // hold still, then drag: a line of blocks on one layer that a single Undo takes back
+  const stroke = await (async () => {
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.debug.select('block:wool_yellow');
+      g.cameraRig.yaw += Math.PI / 2; // a clear patch of ground beside the build
+      g.cameraRig.pitch = 0.6;
+    });
+    await settle(page, 400);
+    const count = () => page.evaluate(() => {
+      const g = window.__game, w = g.world, id = g.registry.blocks.idOf('wool_yellow');
+      const ys = new Set(); let n = 0;
+      for (let i = 0; i < w.blocks.length; i++) if (w.blocks[i] === id) { n++; ys.add(Math.floor(i / (w.sx * w.sz))); }
+      return { n, layers: ys.size, history: g.history.length };
+    });
+    const before = await count();
+    const vp = page.viewportSize();
+    const x0 = vp.width * 0.55, y0 = vp.height * 0.66;
+    await page.mouse.move(x0, y0);
+    await page.mouse.down();
+    await page.waitForTimeout(650);
+    for (let i = 1; i <= 12; i++) { await page.mouse.move(x0 + i * 16, y0 - i * 3); await page.waitForTimeout(25); }
+    await page.mouse.up();
+    await settle(page, 300);
+    const painted = await count();
+    await shot(page, '3-stroke', opts.prefix);
+    await page.evaluate(() => window.__game.undo());
+    const undone = await count();
+    return { before, painted, undone };
+  })();
+  check(errors, stroke.painted.n - stroke.before.n >= 2 && stroke.painted.layers === 1,
+    `hold-drag painted ${stroke.painted.n - stroke.before.n} blocks on ${stroke.painted.layers} layer`);
+  check(errors, stroke.painted.history === stroke.before.history + 1 && stroke.undone.n === stroke.before.n,
+    'the whole stroke is one Undo');
+
+  // bag panel
+  await page.keyboard.press('b');
+  await page.waitForSelector('.sw-panel-wrap.sw-open .sw-item img[src]', { timeout: 15000 });
+  await settle(page, 1500);
+  await shot(page, '3-bag', opts.prefix);
+  await page.keyboard.press('Escape');
+
+  // save, reload, continue, verify persistence
+  const saved = await page.evaluate(() => window.__game.debug.save());
+  check(errors, saved && saved.ok, 'world saved');
+  const probe = built.placed[0];
+  const worldId = await page.evaluate(() => window.__game.world.meta.id);
+  await page.reload();
+  await waitForTitle(page);
+  await page.locator('button.sw-btn', { hasText: 'My Worlds' }).first().click();
+  await page.waitForSelector('.sw-panel-wrap.sw-open .sw-world img');
+  await settle(page, 400);
+  await shot(page, '4-worlds', opts.prefix);
+  // rename: the text field and name chips must be reachable (not under the dialog's backdrop)
+  await page.locator('.sw-world button[aria-label="Rename"]').first().click();
+  await page.waitForSelector('.sw-dialog .sw-input');
+  await settle(page, 400);
+  await page.locator('.sw-dialog .sw-input').click();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.type('Smoke Test Town');
+  await page.locator('.sw-dialog .sw-chip').first().click();
+  const chipName = await page.evaluate(() => document.querySelector('.sw-dialog .sw-input').value);
+  await page.locator('.sw-dialog .sw-input').click();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.type('Smoke Test Town');
+  await shot(page, '4-rename', opts.prefix);
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => [...document.querySelectorAll('.sw-world-name')].some((e) => e.textContent === 'Smoke Test Town'), null, { timeout: 5000 }).catch(() => {});
+  const renamed = await page.evaluate(() => [...document.querySelectorAll('.sw-world-name')].map((e) => e.textContent));
+  check(errors, renamed.includes('Smoke Test Town') && chipName && chipName !== 'Smoke Test Town', 'typed a new world name in the Rename dialog (and a name chip works)');
+  await page.locator('.sw-world button.sw-btn', { hasText: 'Play' }).first().click();
+  await waitForPlay(page);
+  await waitIdle(page);
+  const after = await page.evaluate(([x, y, z]) => ({
+    id: window.__game.world.meta.id,
+    key: window.__game.debug.getBlock(x, y, z),
+    entities: window.__game.debug.entities().length,
+  }), probe);
+  check(errors, after.id === worldId, 'Play continued the same world after reload');
+  check(errors, after.key === built.keys[0], `placed block persisted after reload (${after.key})`);
+  check(errors, after.entities >= 2, `furniture persisted after reload (${after.entities})`);
+
+  // night, looking at what we built so the lamps' glow shows
+  await page.evaluate(([x, y, z]) => {
+    const g = window.__game, p = g.player.position;
+    g.cameraRig.yaw = Math.atan2(x + 0.5 - p.x, z + 0.5 - p.z);
+    g.cameraRig.pitch = 0.25;
+    g.debug.setTime(0.9);
+  }, probe);
+  await settle(page, 1200);
+  await shot(page, '5-night', opts.prefix);
+
+  // pause menu
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.sw-panel-wrap.sw-open[data-panel="pause"]');
+  await settle(page, 400);
+  await shot(page, '6-pause', opts.prefix);
+  await page.keyboard.press('Escape');
+
+  await stepChecks(page, opts, errors);
+  await context.close();
+}
+
+/**
+ * Walk (real keys, straight and diagonal) into a 1-block step: she must hop onto it and stay
+ * near it. (A physics bug once flung her to the world edge, or froze the page, right here.)
+ */
+async function stepChecks(page, opts, errors) {
+  for (const [keys, label] of [[['KeyW'], 'straight'], [['KeyW', 'KeyD'], 'diagonal']]) {
+    const pad = await page.evaluate(() => {
+      const g = window.__game, w = g.world, p = g.player.position;
+      g.debug.setTime(0.5);
+      // well away from what the desktop pass built around her
+      const x0 = Math.max(10, Math.min(w.sx - 12, Math.floor(p.x) + (p.x < w.sx / 2 ? 24 : -24)));
+      const z0 = Math.max(6, Math.min(w.sz - 14, Math.floor(p.z)));
+      const y = Math.max(2, Math.min(w.sy - 8, w.heightAt(x0, z0) + 1)); // the pad's floor level
+      // a flat stone pad with open sky above, and a 1-block plank step across it from z0 + 2
+      w.batch(() => {
+        for (let x = x0 - 5; x <= x0 + 5; x++) {
+          for (let z = z0 - 2; z <= z0 + 9; z++) {
+            w.setKey(x, y - 1, z, 'stone', { record: false });
+            for (let yy = y; yy < y + 6; yy++) w.setKey(x, yy, z, yy === y && z >= z0 + 2 ? 'planks_oak' : 'air', { record: false });
+          }
+        }
+      });
+      g.player.teleport(x0 + 0.5, y + 0.01, z0 + 0.5);
+      g.cameraRig.yaw = 0; // forward = +z
+      g.cameraRig.pitch = 0.35;
+      return { x0, z0, y, top: y + 1, frames: g.diag.frames };
+    });
+    await page.waitForFunction((f) => window.__game.diag.frames > f + 3, pad.frames, { timeout: 20000 });
+    for (const k of keys) await page.keyboard.down(k);
+    const frames0 = await page.evaluate(() => window.__game.diag.frames);
+    // until she stands on the step (or 150 frames: SwiftShader is slow, so wait on frames)
+    await page.waitForFunction(([top, f0]) => {
+      const g = window.__game, p = g.player;
+      return (p.onGround && p.position.y >= top - 0.01) || g.diag.frames > f0 + 150;
+    }, [pad.top, frames0], { timeout: 45000, polling: 50 }).catch(() => {});
+    for (const k of keys) await page.keyboard.up(k);
+    const end = await Promise.race([
+      page.evaluate(() => { const p = window.__game.player; return { x: p.position.x, y: p.position.y, z: p.position.z, onGround: p.onGround }; }),
+      new Promise((resolve) => setTimeout(() => resolve(null), 15000)),
+    ]);
+    if (!end) {
+      errors.push(`[check] walking ${label} into a 1-block step froze the page`);
+      return;
+    }
+    const moved = Math.hypot(end.x - (pad.x0 + 0.5), end.z - (pad.z0 + 0.5));
+    check(errors, end.y >= pad.top - 0.01 && moved < 6,
+      `walking ${label} into a 1-block step: hopped onto it (y ${end.y.toFixed(2)}, step top ${pad.top}, moved ${moved.toFixed(1)} blocks)`);
+    await settle(page, 300);
+    await shot(page, `6-step-${label}`, opts.prefix);
+  }
+}
+
+async function touchPass(browser, opts, errors) {
+  console.log('Touch pass (390x844, hasTouch)');
+  const { context, page } = await openGame(browser, { errors, viewport: { width: 390, height: 844 }, touch: true, label: 'touch' });
+  await shot(page, '7-touch-title', opts.prefix);
+  await startWorld(page, opts.biome, { tap: true });
+  await settle(page, 800);
+  // tap the ground three blocks in front of the player with the Build tool
+  const target = await page.evaluate(() => {
+    const g = window.__game, p = g.player.position;
+    const x = Math.floor(p.x + Math.sin(g.cameraRig.yaw) * 3), z = Math.floor(p.z + Math.cos(g.cameraRig.yaw) * 3);
+    const v = g.camera.position.clone().set(x + 0.5, g.world.heightAt(x, z) + 1, z + 0.5).project(g.camera);
+    const r = g.renderer.domElement.getBoundingClientRect();
+    return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height };
+  });
+  const before = await page.evaluate(() => window.__game.profile.stats.blocksPlaced || 0);
+  await page.touchscreen.tap(target.x, target.y);
+  await settle(page, 500);
+  const afterTap = await page.evaluate(() => window.__game.profile.stats.blocksPlaced || 0);
+  check(errors, afterTap > before, 'tap with the Build tool placed a block');
+  await shot(page, '8-touch-hud', opts.prefix);
+
+  // quick taps on the resting joystick steer; they never build or remove there
+  const joy = await page.evaluate(() => { const r = document.querySelector('.sw-joy').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+  const hist0 = await page.evaluate(() => { window.__game.setTool('remove'); return window.__game.history.length; });
+  await page.touchscreen.tap(joy.x, joy.y);
+  await page.touchscreen.tap(joy.x + 18, joy.y - 12);
+  await settle(page, 300);
+  const hist1 = await page.evaluate(() => { window.__game.setTool('build'); return window.__game.history.length; });
+  check(errors, hist1 === hist0, 'quick taps on the joystick did not remove anything');
+
+  // with the Bag open nothing from the HUD may sit on top of it (or take its taps)
+  await page.locator('.sw-bagbtn').tap();
+  await page.waitForSelector('.sw-panel-wrap.sw-open .sw-item img[src]', { timeout: 15000 });
+  await settle(page, 800);
+  const onTop = await page.evaluate(() => [...document.querySelectorAll('.sw-hud button, .sw-round-label')]
+    .filter((el) => el.offsetParent)
+    .filter((el) => { const r = el.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return hit && el.contains(hit); })
+    .map((el) => el.textContent.trim() || el.className));
+  check(errors, onTop.length === 0, `no HUD button or label shows through the open Bag${onTop.length ? ' (' + onTop.join(', ') + ')' : ''}`);
+  await shot(page, '9-touch-bag', opts.prefix);
+  await context.close();
+}
+
+async function main() {
+  const opts = parseArgs();
+  const errors = [];
+  const browser = await launch(opts);
+  try {
+    if (opts.only !== 'touch') await desktopPass(browser, opts, errors);
+    if (opts.only !== 'desktop') await touchPass(browser, opts, errors);
+  } catch (err) {
+    errors.push('[smoke] ' + (err.stack || err.message || String(err)));
+  } finally {
+    await browser.close();
+  }
+  finish(errors);
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1]).href) main();
