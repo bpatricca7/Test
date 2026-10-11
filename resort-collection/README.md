@@ -217,7 +217,7 @@ the same black band, scale and presentation as the compact kits, and a parts
 target of about $75. It shows more of each resort, such as wings, porches,
 verandas and more storeys. Folders are named `<resort>-midsize-lego`.
 
-![The mid-size Deluxe kits](midsize_overview.jpg)
+![The 11 mid-size Deluxe kits](midsize_overview.jpg)
 
 <!-- midsize:start -->
 | Resort | Pieces | Part lines | Parts, listed | Parts, 2026 est. | Landed cost, free shipping | Break-even | Price (2× parts) | Profit / margin, free shipping | Profit / margin, buyer pays postage | Kits per order | Compact version |
@@ -227,6 +227,7 @@ verandas and more storeys. Folders are named `<resort>-midsize-lego`.
 | [BoardWalk Inn](../boardwalk-midsize-lego/README.md) | 597 | 74 | $77.54 | $85.29 | $107.76 | $119.57 | $179.99 | $54.68 / 30% | $64.19 / 36% | 18 | 383 pieces, $48.89 |
 | [Contemporary Resort](../contemporary-midsize-lego/README.md) | 502 | 51 | $74.75 | $82.23 | $103.50 | $114.86 | $169.99 | $49.89 / 29% | $59.39 / 35% | 17 | 278 pieces, $43.38 |
 | [Grand Floridian Resort](../grand-floridian-midsize-lego/README.md) | 550 | 58 | $76.54 | $84.19 | $106.07 | $117.70 | $169.99 | $47.32 / 28% | $56.82 / 33% | 13 | 327 pieces, $42.34 |
+| [Old Key West Resort](../old-key-west-midsize-lego/README.md) | 575 | 64 | $76.26 | $83.89 | $106.07 | $117.71 | $169.99 | $47.32 / 28% | $56.82 / 33% | 22 | 225 pieces, $33.95 |
 | [Polynesian Village Resort](../polynesian-midsize-lego/README.md) | 614 | 51 | $73.61 | $80.97 | $103.65 | $115.02 | $169.99 | $49.74 / 29% | $59.25 / 35% | 10 | 238 pieces, $33.23 |
 | [Riviera Resort](../riviera-midsize-lego/README.md) | 604 | 66 | $77.64 | $85.40 | $107.95 | $119.78 | $179.99 | $54.49 / 30% | $63.99 / 36% | 12 | 364 pieces, $43.70 |
 | [Saratoga Springs Resort](../saratoga-springs-midsize-lego/README.md) | 561 | 70 | $73.00 | $80.30 | $102.31 | $113.55 | $169.99 | $51.08 / 30% | $60.58 / 36% | 20 | 271 pieces, $34.82 |
