@@ -2213,13 +2213,14 @@ describe('A: emails — the outbox, transports and words (§10, §13.7)', () => 
   });
 
   test('every template: plain words, our own links only, and never a child\'s name', async () => {
-    const cfg = h.cfg;
+    const cfg = { ...h.cfg, operator: { ...h.cfg.operator, address: 'private-mailing-address-sentinel' } };
     const data = { code: '123456', link: `${HTTPS}/account/verify#t=tok`, at: 1790000000000, v: 1, trialEnd: 1790600000000, lapsedAt: 1790000000000, purgeAfter: 1797000000000, refund: true };
     assert.equal(TEMPLATES.length, 10);
     for (const tpl of TEMPLATES) {
       for (const firstTime of [false, true]) {
         const m = renderMail(tpl, { data, cfg, firstTime, notice: { version: 1, sections: [{ title: 'You can', text: 'delete it.' }] } });
         assert.ok(m.subject && m.text.length > 40 && m.html.startsWith('<!doctype html>'), tpl);
+        assert.ok(!m.text.includes(cfg.operator.address) && !m.html.includes(cfg.operator.address), `${tpl}: the mailing address stays private`);
         const links = m.text.match(/https?:\/\/[^\s)]+/g) || [];
         assert.ok(links.every((l) => l.startsWith(HTTPS + '/')), `${tpl}: links only to PUBLIC_ORIGIN`);
         assert.ok(!/<img|src=|track/i.test(m.html), `${tpl}: no images or tracking`);

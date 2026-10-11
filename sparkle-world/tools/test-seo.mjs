@@ -65,6 +65,7 @@ for (const mode of ['off', 'optional', 'required']) test(`public crawl in ${mode
     assert.equal(response.status, 200, pathname);
     assert.equal(response.headers.get('x-robots-tag'), null, pathname);
     const html = await response.text();
+    assert.ok(!html.includes(env.SW_OPERATOR_ADDRESS), `${pathname} does not disclose the mailing address, including in HTML comments`);
     assert.equal([...html.matchAll(/rel="canonical"/g)].length, 1);
     assert.ok(html.includes(`rel="canonical" href="${origin + pathname}"`), pathname);
     assert.doesNotMatch(html, /generated\.up\.railway\.app/);

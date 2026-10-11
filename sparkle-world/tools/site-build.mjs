@@ -27,7 +27,7 @@
 //   - the Family page (account.html, account/verify.html, account.js, account.css), /privacy and
 //     /terms are built, and src/net/names.js is copied as names.js (the Family page's nickname
 //     preview uses the game's own filter);
-//   - {{SW_OPERATOR_NAME}}, {{SW_OPERATOR_EMAIL}}, {{SW_OPERATOR_ADDRESS}},
+//   - {{SW_OPERATOR_NAME}}, {{SW_OPERATOR_EMAIL}},
 //     {{SW_OPERATOR_PHONE}}, {{SW_PRICE_TEXT}}, {{SW_TRIAL_DAYS}}, {{SW_RETAIN_DAYS}},
 //     {{SW_REQUIRED_FROM}} are filled in from the build's environment (a warning names each
 //     one that is missing; the operator's details are required by COPPA in production);
@@ -129,7 +129,6 @@ export function placeholders(env = process.env) {
   return {
     SW_OPERATOR_NAME: v('SW_OPERATOR_NAME'),
     SW_OPERATOR_EMAIL: v('SW_OPERATOR_EMAIL'),
-    SW_OPERATOR_ADDRESS: v('SW_OPERATOR_ADDRESS'),
     SW_OPERATOR_PHONE: v('SW_OPERATOR_PHONE'),
     SW_PRICE_TEXT: v('SW_PRICE_TEXT', '$5.99 a month, plus sales tax where it applies'),
     SW_TRIAL_DAYS: v('SW_TRIAL_DAYS', '0'),
@@ -142,7 +141,6 @@ const escHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<'
 const MISSING = {
   SW_OPERATOR_NAME: '[operator name: set SW_OPERATOR_NAME]',
   SW_OPERATOR_EMAIL: '[operator email: set SW_OPERATOR_EMAIL]',
-  SW_OPERATOR_ADDRESS: '[mailing address: set SW_OPERATOR_ADDRESS]',
   SW_OPERATOR_PHONE: '[phone: set SW_OPERATOR_PHONE]',
   SW_REQUIRED_FROM: 'a date we will announce here first',
 };

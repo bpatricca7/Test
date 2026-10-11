@@ -383,8 +383,8 @@ const FIXTURE_NAMES = existsSync(FIXTURE_DIR) ? readdirSync(FIXTURE_DIR).filter(
 describe('the direct notice (server/notice.mjs, §11.3)', () => {
   const cfg = { mpConsent: 'verified', retainDays: 90, trialDays: 0, priceText: '$5.99 a month, plus sales tax where it applies', mailMode: 'resend', publicOrigin: 'https://glimmerworld.example', operator: { name: 'The Operator', email: 'hello@glimmerworld.example', address: 'PO Box 1, Town, ST 00000', phone: '+1 555 0100' } };
   test('version, sections, checkbox; every element of §11.3', () => {
-    assert.equal(NOTICE_VERSION, 2, 'version 2: the plan was renamed after families had agreed in production');
-    assert.equal(NOTICE_MIN_VERSION, 1, 'a name change does not matter: agreements to version 1 still count');
+    assert.equal(NOTICE_VERSION, 3, 'version 3: the mailing address was removed from the contact details');
+    assert.equal(NOTICE_MIN_VERSION, 1, 'contact changes leave agreements to version 1 valid');
     const s = noticeSections(cfg);
     assert.ok(s.every((x) => typeof x.title === 'string' && typeof x.text === 'string' && x.text.length > 20));
     const all = s.map((x) => `${x.title} ${x.text}`).join('\n');
@@ -403,13 +403,14 @@ describe('the direct notice (server/notice.mjs, §11.3)', () => {
       /We need your permission first.*don't collect, use or share anything about your children/i, // 312.4(c)(1)(ii): consent is needed
       /within 14 days, we delete your email address/i, // deletion if consent does not come
       /agree but don't start a Glimmer World Membership within 30 days, we delete it then/i, // …and if a plan does not come (§3.5)
-      /The Operator, PO Box 1, Town, ST 00000, \+1 555 0100, hello@glimmerworld\.example/, // operator contact
+      /The Operator, \+1 555 0100, hello@glimmerworld\.example/, // operator contact
       /https:\/\/glimmerworld\.example\/privacy/, // the link to the online notice
     ];
     for (const re of must) assert.match(all, re);
     assert.match(noticeCheckbox(cfg), /parent or legal guardian.*18 or older.*agree/i);
     const n = notice(cfg);
-    assert.deepEqual([n.version, n.minVersion, n.date, n.privacyPath, n.sections.length, n.checkbox === noticeCheckbox(cfg)], [2, 1, '2026-10-03', '/privacy', s.length, true]);
+    assert.deepEqual([n.version, n.minVersion, n.date, n.privacyPath, n.sections.length, n.checkbox === noticeCheckbox(cfg)], [3, 1, '2026-10-11', '/privacy', s.length, true]);
+    assert.ok(!JSON.stringify(n).includes(cfg.operator.address), 'the public notice does not disclose the mailing address');
     assert.ok(!/Family Plan/.test(all), 'the notice names the Glimmer World Membership, never the old Family Plan');
     assert.ok(!/\{\{|\bundefined\b|null/.test(all), 'nothing left unfilled');
   });
@@ -452,7 +453,7 @@ describe('the legal drafts (site/privacy.html, site/terms.html, §11.10)', () =>
     const html = read('privacy.html');
     const t = text(html);
     const must = [
-      /\{\{SW_OPERATOR_NAME\}\}/, /\{\{SW_OPERATOR_ADDRESS\}\}/, /\{\{SW_OPERATOR_PHONE\}\}/, /\{\{SW_OPERATOR_EMAIL\}\}/, // operator contact
+      /\{\{SW_OPERATOR_NAME\}\}/, /\{\{SW_OPERATOR_PHONE\}\}/, /\{\{SW_OPERATOR_EMAIL\}\}/, // operator contact
       /nickname/i, /avatar/i, /portrait|picture/i, /progress/i, /worlds/i, /pet/i, // what is collected from children
       /how we use/i, /only to run the game/i,
       /Play with friends/i, /walkie-talkie/i, /switch/i, /never recorded/i, // children making information available + the switches

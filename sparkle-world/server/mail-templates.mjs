@@ -42,7 +42,7 @@ const code6 = (v) => (typeof v === 'string' && /^\d{6}$/.test(v) ? v : '');
 function footer(cfg) {
   const origin = cfg.publicOrigin;
   const op = cfg.operator || {};
-  const who = [op.name, op.address, op.email, op.phone].filter(Boolean).join(' · ');
+  const who = [op.name, op.email, op.phone].filter(Boolean).join(' · ');
   return [
     '—',
     'Glimmer World' + (who ? ` is run by ${who}.` : '.'),

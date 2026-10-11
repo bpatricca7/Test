@@ -256,14 +256,14 @@ export function loadConfig(env = process.env) {
     if (msClientId) msClientId = msClientId.toLowerCase();
   }
 
-  // ---- who runs it (printed in /privacy, /terms and emails; COPPA) ----
+  // ---- who runs it (name, email and phone are public contact details) ----
   // The operator's email is also every email's Reply-To: it must be one bare address (a provider
   // refuses a message with a bad Reply-To, Microsoft 365 for good with 400 ErrorInvalidRecipients).
   // localhost is allowed outside production (development and tests).
   const operator = Object.freeze({
     name: needInProduction('SW_OPERATOR_NAME'),
     email: needInProduction('SW_OPERATOR_EMAIL'),
-    address: needInProduction('SW_OPERATOR_ADDRESS'),
+    address: needInProduction('SW_OPERATOR_ADDRESS'), // retained for configuration compatibility; never published
     phone: needInProduction('SW_OPERATOR_PHONE'),
   });
   if (operator.email !== null && !bareAddress(operator.email, !production)) problems.push('SW_OPERATOR_EMAIL must be one bare address, like hello@your-domain');
