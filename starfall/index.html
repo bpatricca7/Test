@@ -661,12 +661,12 @@ const dust=new Particles(500,0xb8a888,false,1,0.6);dust.gravity=-1.5;dust.drag=0
 const glitter=new Particles(700,0xfff1b0,true,1);glitter.gravity=-0.3;glitter.drag=0.985;
 
 // one-shot effect meshes
-const flashSphere=new THREE.Mesh(new THREE.SphereGeometry(1,24,16),new THREE.MeshBasicMaterial({color:0xfff4d0,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));flashSphere.visible=false;scene.add(flashSphere);
+const flashSphere=new THREE.Sprite(new THREE.SpriteMaterial({map:dotTex,color:0xfff4d0,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,fog:false}));flashSphere.visible=false;scene.add(flashSphere); // soft radial flash
 const ringGeo=new THREE.RingGeometry(0.8,1,48);
 const shockRing=new THREE.Mesh(ringGeo,new THREE.MeshBasicMaterial({color:0xfff0c0,transparent:true,opacity:0,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));shockRing.visible=false;scene.add(shockRing);
 const dustRing=new THREE.Mesh(ringGeo,new THREE.MeshBasicMaterial({color:0xb8a888,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}));dustRing.visible=false;dustRing.rotation.x=-Math.PI/2;scene.add(dustRing);
 function fxFlash(obj,center,u,maxR,color){ // u in 0..1 over the effect life
-  if(u<=0||u>=1){obj.visible=false;return;}obj.visible=true;obj.position.copy(center);const e=easeOut(u);obj.scale.setScalar(0.1+maxR*e);obj.material.opacity=(1-u)*(1-u);if(color)obj.material.color.set(color);
+  if(u<=0||u>=1){obj.visible=false;return;}obj.visible=true;obj.position.copy(center);const e=easeOut(u);obj.scale.setScalar((0.1+maxR*e)*(obj.isSprite?2.4:1));obj.material.opacity=(1-u)*(1-u);if(color)obj.material.color.set(color);
 }
 
 // ======================= SHOOTING STAR =======================
@@ -953,7 +953,7 @@ function tick(T,dt){
   craterDecal.visible=craterRim.visible=T>=20;
   fxFlash(flashSphere,CRATER,range(T,20,20.7),7,0xfff4d0);
   dustRing.visible=T>20&&T<21.6;if(dustRing.visible){const u=range(T,20,21.6);dustRing.position.copy(CRATER).add(V3(0,0.15,0));dustRing.scale.setScalar(0.5+7*easeOut(u));dustRing.material.opacity=0.55*(1-u);}
-  if(T>65.5&&T<67){fxFlash(flashSphere,lumW,range(T,65.5,66.5),4.5,0xffe4a0);shockRing.visible=true;const u=range(T,65.5,66.8);shockRing.position.copy(lumW);shockRing.lookAt(camera.position);shockRing.scale.setScalar(1+45*easeOut(u));shockRing.material.opacity=0.8*(1-u);}
+  if(T>65.5&&T<67){fxFlash(flashSphere,lumW,range(T,65.5,66.0),2.0,0xffe4a0);shockRing.visible=true;const u=range(T,65.5,66.8);shockRing.position.copy(lumW);shockRing.lookAt(camera.position);shockRing.scale.setScalar(1+45*easeOut(u));shockRing.material.opacity=0.8*(1-u);}
   else if(!(T>20&&T<20.7)){flashSphere.visible=false;shockRing.visible=false;}
   // ground dust during ignition / liftoff
   if(thrust>0.2&&alt<6){for(let i=0;i<2;i++){const a=Math.random()*6.28,sp=3+Math.random()*6;dust.emit(LP.x+Math.cos(a)*0.6,LP.y+0.1,LP.z+Math.sin(a)*0.6,Math.cos(a)*sp,0.5+Math.random()*2,Math.sin(a)*sp,1+Math.random(),1+Math.random()*1.5,null);}}
