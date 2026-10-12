@@ -55,3 +55,7 @@ This analysis is for **informational purposes only** and should not be considere
 ## License
 
 MIT
+
+## Also in this repo
+
+- `starfall/` - **Starfall**, a two-minute Pixar-style animated short about a rocket boy, generated entirely in code (three.js + Web Audio, one HTML file, no assets). Open `starfall/index.html` and press Play. See `starfall/README.md`.
