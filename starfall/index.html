@@ -819,13 +819,14 @@ const SHOTS=[
   {t0:97.5,t1:DUR+1,fov:46,pos:()=>P(HT,FD,-4.2,1.1,1.6),look:()=>tmpA.copy(constCenter)},
 ];
 function shake(T){
-  let s=0.004;
-  s+=0.3*(1-range(T,20,21.2));
-  if(T>46.3&&T<61.2)s+=0.12*smooth(range(T,46.3,47.8))*(1-0.5*range(T,49,56))+0.25*smooth(range(T,46.3,47.5))*(1-range(T,47.5,49));
-  if(T>61.2&&T<62.8)s+=0.08*(0.5+0.5*Math.sin(T*31));
-  s+=0.45*(1-range(T,65.5,66.6));
-  s+=0.2*(1-range(T,73.5,74.3));
-  s+=0.15*(1-range(T,85,85.8));
+  let s=0.02;                                   // barely-there handheld drift
+  const jolt=(t0,t1,a)=>(T>=t0&&T<t1)?a*(1-range(T,t0,t1)):0;   // a hit that decays to zero, and is zero before it happens
+  s+=jolt(20,21.2,0.3);                         // meteor impact
+  if(T>46.3&&T<61.2)s+=0.12*smooth(range(T,46.3,47.8))*(1-0.5*range(T,49,56))+0.25*smooth(range(T,46.3,47.5))*(1-range(T,47.5,49)); // ignition rumble
+  if(T>61.2&&T<62.8)s+=0.08*(0.5+0.5*Math.sin(T*31)); // engine sputter
+  s+=jolt(65.5,66.6,0.45);                      // Lumen's burst
+  s+=jolt(73.5,74.3,0.2);                       // parachute snap
+  s+=jolt(85,85.8,0.15);                        // touchdown
   return s;
 }
 function updateCamera(T){
