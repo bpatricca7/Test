@@ -1,0 +1,95 @@
+Element ID,Quantity,Description,LEGO colour,Unit price (USD),Price seen,Line cost (USD)
+300526,10,Brick 1 x 1,Black,0.07,live 2026-10-17,0.70
+300426,4,Brick 1 x 2,Black,0.10,live 2026-10-17,0.40
+301026,4,Brick 1 x 4,Black,0.15,live 2026-10-17,0.60
+300926,6,Brick 1 x 6,Black,0.24,live 2026-10-17,1.44
+300826,5,Brick 1 x 8,Black,0.26,live 2026-10-17,1.30
+300326,5,Brick 2 x 2,Black,0.13,live 2026-10-17,0.65
+300126,3,Brick 2 x 4,Black,0.21,live 2026-10-17,0.63
+302426,2,Plate 1 x 1,Black,0.06,live 2026-10-17,0.12
+302326,5,Plate 1 x 2,Black,0.08,live 2026-10-17,0.40
+302126,2,Plate 2 x 3,Black,0.13,live 2026-10-17,0.26
+379526,2,Plate 2 x 6,Black,0.19,live 2026-10-17,0.38
+303426,3,Plate 2 x 8,Black,0.28,live 2026-10-17,0.84
+303526,2,Plate 4 x 8,Black,0.51,live 2026-10-17,1.02
+4121966,15,Slope 45 2 x 1,Black,0.10,live 2026-10-17,1.50
+303926,2,Slope 45 2 x 2,Black,0.11,live 2026-10-17,0.22
+4515373,9,Slope 65 2 x 1 x 2,Black,0.13,live 2026-10-17,1.17
+307026,4,Tile 1 x 1,Black,0.05,live 2026-10-17,0.20
+306926,5,Tile 1 x 2,Black,0.08,live 2026-10-17,0.40
+243126,2,Tile 1 x 4,Black,0.13,live 2026-10-17,0.26
+6162892,2,Tile 2 x 3,Black,0.12,live 2026-10-17,0.24
+4560182,2,Tile 2 x 4,Black,0.18,live 2026-10-17,0.36
+6284070,4,Tile Round 1 x 1,Black,0.05,live 2026-10-17,0.20
+6172383,10,Tile Round 1 x 1 Quarter,Black,0.05,live 2026-10-17,0.50
+4114306,8,Brick 2 x 2,Brick Yellow,0.13,live 2026-10-17,1.04
+4124067,1,Plate 1 x 6,Brick Yellow,0.16,live 2026-10-17,0.16
+4113988,1,Plate 2 x 8,Brick Yellow,0.28,live 2026-10-17,0.28
+307021,2,Tile 1 x 1,Bright Red,0.05,live 2026-10-17,0.10
+306921,2,Tile 1 x 2,Bright Red,0.08,live 2026-10-17,0.16
+4533742,1,Tile 1 x 3,Bright Red,0.12,live 2026-10-17,0.12
+6284574,1,Tile Round 1 x 1,Bright Red,0.05,live 2026-10-17,0.05
+6170390,12,Tile Round 1 x 1 Quarter,Bright Red,0.05,live 2026-10-17,0.60
+6249234,1,Tile 2 x 2,Bright Reddish Violet,0.09,live 2026-10-17,0.09
+6199889,4,Tile Round 1 x 1 Quarter,Bright Reddish Violet,0.05,live 2026-10-17,0.20
+6462538,2,Tile Round 1 x 1 Quarter,Dark Brown,0.05,live 2026-10-17,0.10
+4249891,4,Brick 1 x 2,Earth Blue,0.10,live 2026-10-17,0.40
+4296785,3,Brick 2 x 2,Earth Blue,0.13,live 2026-10-17,0.39
+6275133,3,Brick 2 x 4,Earth Blue,0.21,live 2026-10-17,0.63
+4528981,2,Plate 1 x 2,Earth Blue,0.08,live 2026-10-17,0.16
+6037890,1,Plate 2 x 2,Earth Blue,0.09,live 2026-10-17,0.09
+4667595,2,Plate 2 x 4,Earth Blue,0.14,live 2026-10-17,0.28
+6097420,1,Plate 2 x 6,Earth Blue,0.19,live 2026-10-17,0.19
+6429734,1,Plate 4 x 8,Earth Blue,0.51,live 2026-10-17,0.51
+6103985,2,Tile 1 x 4,Earth Blue,0.13,live 2026-10-17,0.26
+4507080,2,Tile 1 x 8,Earth Blue,0.16,live 2026-10-17,0.32
+6186974,2,Tile 2 x 3,Earth Blue,0.12,live 2026-10-17,0.24
+6369189,4,Brick 1 x 2,Light Nougat,0.10,live 2026-10-17,0.40
+6357797,12,Plate 1 x 1,Light Nougat,0.06,live 2026-10-17,0.72
+6369188,9,Plate 1 x 2,Light Nougat,0.08,live 2026-10-17,0.72
+6480394,8,Tile 1 x 1,Light Nougat,0.05,live 2026-10-17,0.40
+6330199,3,Tile 1 x 2,Light Nougat,0.08,live 2026-10-17,0.24
+6424071,3,Tile 1 x 4,Light Nougat,0.13,live 2026-10-17,0.39
+6480378,2,Tile 2 x 3,Light Nougat,0.12,live 2026-10-17,0.24
+4654128,2,Plate 1 x 2,Light Purple,0.08,live 2026-10-17,0.16
+6251940,5,Tile 1 x 1,Light Purple,0.05,live 2026-10-17,0.25
+4580010,5,Tile 1 x 2,Light Purple,0.08,live 2026-10-17,0.40
+6284587,1,Tile Round 1 x 1,Light Purple,0.05,live 2026-10-17,0.05
+6240463,10,Tile Round 1 x 1 Quarter,Light Purple,0.05,live 2026-10-17,0.50
+4539104,8,Brick 2 x 2,New Dark Red,0.13,live 2026-10-17,1.04
+4539062,1,Plate 1 x 6,New Dark Red,0.16,live 2026-10-17,0.16
+6152321,1,Plate 2 x 8,New Dark Red,0.28,live 2026-10-17,0.28
+4211242,14,Brick 1 x 1,Reddish Brown,0.07,live 2026-10-17,0.98
+4211225,4,Brick 1 x 4,Reddish Brown,0.15,live 2026-10-17,0.60
+4211193,4,Brick 1 x 6,Reddish Brown,0.24,live 2026-10-17,0.96
+4263776,3,Brick 1 x 8,Reddish Brown,0.26,live 2026-10-17,0.78
+4211210,2,Brick 2 x 2,Reddish Brown,0.13,live 2026-10-17,0.26
+4211201,1,Brick 2 x 4,Reddish Brown,0.21,live 2026-10-17,0.21
+4211189,2,Plate 2 x 3,Reddish Brown,0.13,live 2026-10-17,0.26
+4211211,3,Plate 2 x 8,Reddish Brown,0.28,live 2026-10-17,0.84
+4271874,1,Plate 4 x 6,Reddish Brown,0.40,live 2026-10-17,0.40
+6035291,2,Slope 31 1 x 2 x 2/3,Reddish Brown,0.08,live 2026-10-17,0.16
+4211222,8,Slope 45 2 x 1 Inverted,Reddish Brown,0.10,live 2026-10-17,0.80
+4211202,18,Slope 45 2 x 2,Reddish Brown,0.11,live 2026-10-17,1.98
+4579690,1,Tile 2 x 4,Reddish Brown,0.18,live 2026-10-17,0.18
+6149677,2,Tile Round 1 x 1 Quarter,Reddish Brown,0.05,live 2026-10-17,0.10
+6218823,30,Brick 1 x 2 x 1 2/3 with Studs on 1 Side,White,0.19,live 2026-10-17,5.70
+300301,8,Brick 2 x 2,White,0.13,live 2026-10-17,1.04
+302401,6,Plate 1 x 1,White,0.06,live 2026-10-17,0.36
+302301,4,Plate 1 x 2,White,0.08,live 2026-10-17,0.32
+371001,5,Plate 1 x 4,White,0.11,live 2026-10-17,0.55
+302201,7,Plate 2 x 2,White,0.09,live 2026-10-17,0.63
+302001,4,Plate 2 x 4,White,0.14,live 2026-10-17,0.56
+4503008,1,Plate 4 x 10,White,0.62,live 2026-10-17,0.62
+4120020,3,Plate 6 x 12,White,1.81,live 2026-10-17,5.43
+4547489,2,Slope 31 1 x 2 x 2/3,White,0.08,live 2026-10-17,0.16
+307001,4,Tile 1 x 1,White,0.05,live 2026-10-17,0.20
+306901,14,Tile 1 x 2,White,0.08,live 2026-10-17,1.12
+4558168,2,Tile 1 x 3,White,0.12,live 2026-10-17,0.24
+243101,4,Tile 1 x 4,White,0.13,live 2026-10-17,0.52
+663601,2,Tile 1 x 6,White,0.15,live 2026-10-17,0.30
+416201,3,Tile 1 x 8,White,0.16,live 2026-10-17,0.48
+306801,6,Tile 2 x 2,White,0.09,live 2026-10-17,0.54
+6156667,4,Tile 2 x 3,White,0.12,live 2026-10-17,0.48
+4560178,9,Tile 2 x 4,White,0.18,live 2026-10-17,1.62
+,423,Total for one copy,,,,55.49

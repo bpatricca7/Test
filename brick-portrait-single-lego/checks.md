@@ -12,12 +12,12 @@ These check the digital model only; see "Digital checks and physical prototype" 
 
 | Model | Elements | Collisions | Loose groups | Order warnings | Stability warnings |
 |---|---|---|---|---|---|
-| `brick_portrait_single.ldr` | 250 | 0 | 0 | 0 | 0 |
+| `brick_portrait_single.ldr` | 255 | 0 | 0 | 0 | 0 |
 | `her_shoe.ldr` | 3 | 0 | 0 | 0 | 0 |
 | `her_skirt.ldr` | 13 | 0 | 0 | 0 | 0 |
 | `her_torso.ldr` | 34 | 0 | 0 | 0 | 0 |
 | `her_arm.ldr` | 4 | 0 | 0 | 0 | 0 |
-| `her_head.ldr` | 50 | 0 | 0 | 0 | 0 |
+| `her_head.ldr` | 55 | 0 | 0 | 0 | 0 |
 | `her_hair.ldr` | 48 | 0 | 0 | 0 | 0 |
 | `frame.ldr` | 45 | 0 | 0 | 0 | 0 |
 
