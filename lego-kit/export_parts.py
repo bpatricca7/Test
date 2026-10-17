@@ -37,8 +37,17 @@ def load_elements():
 
 
 def price(r):
-    p = r.get("pab_price_2025") or r.get("pab_price_2022")
+    p = r.get("pab_price_live") or r.get("pab_price_2025") or r.get("pab_price_2022")
     return float(p) if p else None
+
+
+def price_seen(r):
+    """When the price in price(r) was seen."""
+    if r.get("pab_price_live"):
+        return f"live {r['pab_live_date']}"
+    if r.get("pab_price_2025"):
+        return "late 2025"
+    return "2022" if r.get("pab_price_2022") else ""
 
 
 PAB_SEARCH = "https://www.lego.com/en-us/pick-and-build/pick-a-brick?query={}"
@@ -66,6 +75,8 @@ def _sets_year(y):
 
 
 def evidence(r):
+    if r.get("pab_live"):
+        return f"On the US Pick a Brick Bestseller list, available ({r['pab_live_date']} snapshot)"
     if r["pab_2025"]:
         return "On Pick a Brick (late-2025 listing)"
     if r["pab_2022"]:
@@ -96,12 +107,12 @@ def write_pick_a_brick(rows, el):
                     "Other element IDs", "Backup: BrickLink item / colour", "Pick a Brick search"])
         for i, ((dat, color), n) in enumerate(rows, start=1):
             r = el[(dat, color)]
-            p25, p22 = r["pab_price_2025"], r["pab_price_2022"]
-            price, when = (p25, "late 2025") if p25 else ((p22, "2022") if p22 else ("", ""))
+            p = price(r)
+            price_txt, when = ("" if p is None else f"{p:.2f}"), price_seen(r)
             alt = newest_alt(r)
             others = " ".join(a for a in r["alt_element_ids"].split() if a != alt)
             w.writerow([i, r["element_id"], n, r["pab_name"] or "(not listed)", r["lego_color"],
-                        r["design_id"], NAMES[dat], evidence(r), price, when,
+                        r["design_id"], NAMES[dat], evidence(r), price_txt, when,
                         "yes" if n > ORDER_CAP_STANDARD else "", alt, others,
                         f'{r["bricklink_part"]} / {r["bricklink_color"]}',
                         PAB_SEARCH.format(r["element_id"])])
@@ -112,14 +123,29 @@ PAB_MAX_PER_ELEMENT = 999    # more than this per element needs LEGO customer se
 
 
 def check_bestseller_only(rows, el):
-    """Stop if any part is outside the Bestseller range or no longer in sets."""
-    bad = []
+    """Stop if any part is outside the Bestseller range.
+
+    A part on the live Bestseller list (pab_live.json, when the element data was
+    built with it) passes. Otherwise the older rule applies: on the 2022
+    Bestseller list and still in LEGO sets in 2025 or later. With live data,
+    parts that pass only by the older rule are listed as a warning: they were not
+    on the list, or not in stock, on the snapshot date.
+    """
+    bad, not_live = [], []
+    have_live = any(el[k].get("pab_live_date") for k, _ in rows)
     for (dat, color), n in rows:
         r = el[(dat, color)]
+        if r.get("pab_live"):
+            continue
         last = int(r["last_set_year"] or 0)
+        label = f"{NAMES[dat]} / {r['lego_color']} ({r['element_id'] or 'no ID'}, last set {last or 'none'})"
         if not r["pab_2022"] or last < BESTSELLER_SINCE:
-            bad.append(f"{NAMES[dat]} / {r['lego_color']} ({r['element_id'] or 'no ID'}, "
-                       f"last set {last or 'none'})")
+            bad.append(label)
+        elif have_live:
+            not_live.append(label)
+    if not_live:
+        print("warning: not on the live Bestseller list (passes the 2022 rule):\n  "
+              + "\n  ".join(not_live))
     if bad:
         raise SystemExit("not Bestseller-only:\n  " + "\n  ".join(bad))
 
@@ -145,7 +171,7 @@ def write_kit_cost(rows, el):
         for (dat, color), n in rows:
             r = el[(dat, color)]
             p = price(r)
-            when = "late 2025" if r["pab_price_2025"] else ("2022" if p is not None else "")
+            when = price_seen(r)
             cost = (p or 0.0) * n
             total += cost
             w.writerow([r["element_id"], n, NAMES[dat], r["lego_color"],

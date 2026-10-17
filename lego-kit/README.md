@@ -29,6 +29,7 @@ booklet and shopping lists.
 | `kit_readme.py` | Writes a compact kit's README from its design, parts files, checks and booklet |
 | `collection_report.py` | Lineup, completion checklist and cost/resale comparison for `../resort-collection`, one kit per process |
 | `avail.py`, `zoom.py`, `readme_images.py`, `compact_build.sh` | Part availability check, close-up renders, README images, and the compact kits' build script |
+| `pab_live.py` | Converts a live snapshot of the US Pick a Brick Bestseller list into `DATA_DIR/pab_live.json`, which `element_lookup.py`, `export_parts.py` and `avail.py` then use for Bestseller status and prices |
 | `pab_check.cjs` | Checks every element against Pick a Brick live (needs lego.com access; not yet run against the live site) |
 
 ## A project folder
@@ -91,10 +92,26 @@ too. The flat side of a panel is at the back at rotation 0.
 - two Pick a Brick listings: `pab2022.json` (about 1,400 Bestseller elements) and
   `pab2025.json` (bricks and plates);
 - the BrickLink Studio element map:
-  `repos/vaultcrest_moc-source/cache/studio_reference_files/ElementId.json`.
+  `repos/vaultcrest_moc-source/cache/studio_reference_files/ElementId.json`;
+- optionally `pab_live.json`: the current US Bestseller list with unit prices,
+  made by `python3 pab_live.py <snapshot.json> $DATA_DIR` from a snapshot of
+  LEGO's `PickABrickQuery` (every AVAILABLE element with `deliveryChannel=pab`).
+  The first one is dated 17 October 2026: 10,889 elements, 2,939 designs, 98
+  colours. When it is present:
+  - element IDs on the live list are chosen first, including new IDs that the
+    Rebrickable dump doesn't know yet, matched by design ID and LEGO colour name;
+  - its prices are used, shown as "live <date>" in `parts/kit_cost.csv`;
+  - a part on it passes the Bestseller-only check;
+  - `export_parts.py` warns about parts that pass only the older rule but
+    weren't on the list that day, whether out of the range or out of stock.
+
+  A copy of each imported snapshot is kept in `lego-kit/pab_live/`, and is used
+  when `DATA_DIR` has no `pab_live.json`. It has no stock counts or order caps,
+  and prices change, so a new snapshot should be imported before ordering.
 
 Without `DATA_DIR`, a project keeps its existing `data/elements.csv`.
 
-Element choice rules used by the designs: only parts that are in current
-production and were in Pick a Brick's Bestseller range (up to 999 per order).
+Element choice rules used by the designs: only parts in Pick a Brick's
+Bestseller range (up to 999 per order): on the live list when there is one,
+otherwise on the 2022 Bestseller list and still in LEGO sets in 2025 or later.
 Standard-range parts (often capped at 10 per order) are used 10 or fewer at a time.

@@ -3,11 +3,14 @@
 Uses offline copies of Rebrickable's database (elements, parts, set
 inventories) and two scrapes of LEGO Pick a Brick (2022 and late 2025) to
 choose the most current element ID and to flag how likely each element is
-to be stocked by Pick a Brick.
+to be stocked by Pick a Brick. When the data dir also holds pab_live.json (a
+live snapshot of the current US Bestseller list; see pab_live.py), elements on
+it come first and carry its prices.
 
   python3 lego-kit/element_lookup.py <project folder> <data dir> [part.dat:colour ...]
 
-The data dir holds rb/*.csv (Rebrickable dump), pab2022.json, pab2025.json and
+The data dir holds rb/*.csv (Rebrickable dump), pab2022.json, pab2025.json,
+optionally pab_live.json, and
 repos/vaultcrest_moc-source/cache/studio_reference_files/ElementId.json.
 """
 import csv
@@ -17,6 +20,7 @@ import sys
 from collections import defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import pab_live  # noqa: E402
 
 
 # LDraw colour -> (LEGO colour name, BrickLink colour id, BrickLink name)
@@ -96,7 +100,7 @@ def load(src):
     if os.path.exists(studio):
         for r in json.load(open(studio)):
             bl[str(r["ElementId"])] = (r["BLItemNo"], r["BLColorId"])
-    return elements, parts, inv_year, pab22, pab25, bl
+    return elements, parts, inv_year, pab22, pab25, bl, pab_live.load(src)
 
 
 def usage(src, wanted, inv_year):
@@ -125,7 +129,7 @@ def rb_color_ids(src):
 
 
 def main(src, combos):
-    elements, parts, inv_year, pab22, pab25, bl = load(src)
+    elements, parts, inv_year, pab22, pab25, bl, live = load(src)
     rb_id = rb_color_ids(src)
     cands = {}
     for dat, color in combos:
@@ -141,7 +145,7 @@ def main(src, combos):
         for rbk in cands[(dat, color)]:
             last, n = use.get(rbk, (0, 0))
             for eid, design in elements.get(rbk, []):
-                score = (eid in pab25, eid in pab22, last, n, int(eid))
+                score = (bool(live) and eid in live, eid in pab25, eid in pab22, last, n, int(eid))
                 if best is None or score > best[0]:
                     best = (score, rbk, eid, design, last, n)
         lego_color, bl_color, bl_name = COLORS[color]
@@ -150,7 +154,18 @@ def main(src, combos):
                    bricklink_color=bl_name, rebrickable_part="", design_id="",
                    element_id="", alt_element_ids="", last_set_year="", sets_since_2024="",
                    pab_2025="", pab_2022="", pab_price_2025="", pab_price_2022="",
+                   pab_live="", pab_price_live="", pab_live_date=live.date if live else "",
                    pab_name="", availability="")
+        if live:
+            # an element on the live list that Rebrickable doesn't know yet (new IDs)
+            designs = [d for d in ([best[3]] if best else []) + [ld, ld.rstrip("abcdefgh")] if d]
+            eid_live = live.find(designs, lego_color)
+            if eid_live and (not best or best[2] not in live):
+                if best:
+                    (_, rbk, _, design, last, n) = best
+                    best = ((True,), rbk, eid_live, design, last, n)
+                else:
+                    best = ((True,), (ld, color), eid_live, live.elements[eid_live][0], 0, 0)
         if best:
             (_, rbk, eid, design, last, n) = best
             alts = sorted({e for k in cands[(dat, color)] for e, _ in elements.get(k, [])} - {eid})
@@ -160,7 +175,10 @@ def main(src, combos):
                        pab_2022="yes" if eid in pab22 else "",
                        pab_price_2025=(pab25.get(eid) or (None, None, ""))[2] or "",
                        pab_price_2022=(pab22.get(eid) or [None] * 4)[3] or "")
-            if eid in pab22:
+            if live and eid in live:
+                row.update(pab_live="yes", pab_price_live=f"{live.price(eid):.2f}",
+                           pab_name=live.name(eid))
+            elif eid in pab22:
                 row["pab_name"] = pab22[eid][2]
             elif eid in pab25:
                 row["pab_name"] = pab25[eid][0]
@@ -169,7 +187,9 @@ def main(src, combos):
                 if bl_col != bl_color:
                     print("  ! BrickLink colour mismatch", dat, color, eid, bl_col, bl_color)
                 row["bricklink_part"] = bl_part
-            if eid in pab25:
+            if live and eid in live:
+                row["availability"] = f"Bestseller, available (US Pick a Brick, {live.date})"
+            elif eid in pab25:
                 row["availability"] = "listed on Pick a Brick (2025)"
             elif eid in pab22 and last >= 2024:
                 row["availability"] = "likely (current, listed 2022)"

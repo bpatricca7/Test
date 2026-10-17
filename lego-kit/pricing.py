@@ -23,6 +23,7 @@ import math
 PRICE_DATA = ("Pick a Brick prices last seen in LEGO's 2022 Bestseller list and a late-2025 "
               "listing (offline data; lego.com could not be reached to check current prices)")
 REPRICE = 0.10            # base case: 2026 prices about 10% above the data
+REPRICE_LIVE = 0.0        # base case for kits priced from a live Pick a Brick snapshot
 REPRICE_HIGH = 0.20       # stress case for tile- and small-part-heavy kits
 PACKAGING = 3.00          # box, 4-6 bags, card with a link/QR code to the PDF, tape, label
 PRINTED_BOOKLET = 4.00    # option: colour print of the PDF booklet (not in the base case)
