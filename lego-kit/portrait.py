@@ -456,7 +456,7 @@ def make_face_rows(beard=False, smile=True, hairline="corners", brows=True, nose
            "corners": "h/TL@s s s s s h/TR@s",
            "fringe": "h h/TL@s s s h/TR@s h"}[hairline]
     rows = [top,
-            "s b/TL@s s s b/TR@s s" if brows else "s s s s s s",
+            "s b/BR@s s s b/BL@s s" if brows else "s s s s s s",
             "s e/o@w s s e/o@w s"]
     nose_row = "s s -@s -@s s s" if nose else "s s s s s s"
     if beard:
@@ -466,7 +466,8 @@ def make_face_rows(beard=False, smile=True, hairline="corners", brows=True, nose
     else:
         rows += [nose_row,
                  "s l/TR@s t t l/TL@s s" if smile else "s s l l s s",
-                 "s s s s s s"]
+                 # the lips round under the teeth, so the open smile reads as a D
+                 "s s l/TR@s l/TL@s s s" if smile else "s s s s s s"]
     return rows
 
 
