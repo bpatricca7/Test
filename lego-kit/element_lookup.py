@@ -12,6 +12,8 @@ it come first and carry its prices.
 The data dir holds rb/*.csv (Rebrickable dump), pab2022.json, pab2025.json,
 optionally pab_live.json, and
 repos/vaultcrest_moc-source/cache/studio_reference_files/ElementId.json.
+Without rb/ (for example `lego-kit/pab_live` itself as the data dir), element IDs
+and prices come from the live Bestseller list alone (live_only()).
 """
 import csv
 import json
@@ -71,6 +73,12 @@ RB_ALIASES = {"3023b": ["3023"], "3040b": ["3040b", "3040a", "3040"], "6141": ["
               # the LDraw library in use predates the current 2x2 flag (80326);
               # 2335 has the same shape and is drawn in its place
               "2335": ["80326"]}
+# LDraw part -> LEGO design IDs on Pick a Brick, where they differ from the LDraw number
+LEGO_DESIGN = {"16577": ["40296"], "2335": ["80326"], "2456": ["44237"], "30374": ["21462"],
+               "3065": ["35743"], "3941": ["6143"], "3942c": ["14918"], "4589": ["59900"],
+               "59349": ["35286"], "60581": ["35323"], "60592": ["79128"], "60593": ["3662"],
+               "60601": ["35315"], "60603": ["35318"], "87544": ["35340"], "87552": ["35378"],
+               "87994": ["17715"], "98138": ["35381", "35380"]}
 # LDraw part -> BrickLink catalogue number
 BL_PART = {"3023b": "3023", "3040b": "3040", "6141": "4073", "3062b": "3062b",
            "3069b": "3069b", "3068b": "3068b", "3070b": "3070b", "87079": "87079",
@@ -128,7 +136,37 @@ def rb_color_ids(src):
     return {c: by_name.get(v[2], c) for c, v in COLORS.items()}
 
 
+def live_only(src, combos):
+    """Element IDs and prices from the live Bestseller list alone, for a data dir
+    without the Rebrickable dump (the dated copy in lego-kit/pab_live/ is used
+    when the dir has no pab_live.json). Set years are then unknown."""
+    live = pab_live.load(src)
+    if not live:
+        raise SystemExit(f"{src}: no Rebrickable dump (rb/) and no pab_live.json")
+    rows = []
+    for dat, color in combos:
+        ld = dat[:-4]
+        lego_color, bl_color, bl_name = COLORS[color]
+        designs = LEGO_DESIGN.get(ld, []) + [ld, ld.rstrip("abcdefgh")] + RB_ALIASES.get(ld, [])
+        eid = live.find(designs, lego_color)
+        row = dict(ldraw_part=dat, ldraw_color=color, lego_color=lego_color,
+                   bricklink_part=BL_PART.get(ld, ld), bricklink_color_id=bl_color,
+                   bricklink_color=bl_name, rebrickable_part="", design_id="",
+                   element_id="", alt_element_ids="", last_set_year="", sets_since_2024="",
+                   pab_2025="", pab_2022="", pab_price_2025="", pab_price_2022="",
+                   pab_live="", pab_price_live="", pab_live_date=live.date,
+                   pab_name="", availability="not on the live Bestseller list")
+        if eid:
+            row.update(design_id=live.elements[eid][0], element_id=eid, pab_live="yes",
+                       pab_price_live=f"{live.price(eid):.2f}", pab_name=live.name(eid),
+                       availability=f"Bestseller, available (US Pick a Brick, {live.date})")
+        rows.append(row)
+    return rows
+
+
 def main(src, combos):
+    if not os.path.exists(os.path.join(src, "rb", "elements.csv")):
+        return live_only(src, combos)
     elements, parts, inv_year, pab22, pab25, bl, live = load(src)
     rb_id = rb_color_ids(src)
     cands = {}
@@ -158,7 +196,8 @@ def main(src, combos):
                    pab_name="", availability="")
         if live:
             # an element on the live list that Rebrickable doesn't know yet (new IDs)
-            designs = [d for d in ([best[3]] if best else []) + [ld, ld.rstrip("abcdefgh")] if d]
+            designs = [d for d in ([best[3]] if best else []) + LEGO_DESIGN.get(ld, [])
+                       + [ld, ld.rstrip("abcdefgh")] if d]
             eid_live = live.find(designs, lego_color)
             if eid_live and (not best or best[2] not in live):
                 if best:

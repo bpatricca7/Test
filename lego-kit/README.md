@@ -106,7 +106,13 @@ too. The flat side of a panel is at the back at rotation 0.
     weren't on the list that day, whether out of the range or out of stock.
 
   A copy of each imported snapshot is kept in `lego-kit/pab_live/`, and is used
-  when `DATA_DIR` has no `pab_live.json`. It has no stock counts or order caps,
+  when `DATA_DIR` has no `pab_live.json`.
+- **Without the Rebrickable dump**, point `DATA_DIR` at any folder without `rb/`,
+  for example `DATA_DIR=lego-kit/pab_live`. Element IDs and prices then come from
+  the live list alone (`element_lookup.live_only`), and set years are left blank.
+  LDraw numbers that differ from LEGO's design IDs are mapped in `LEGO_DESIGN`.
+  A part that isn't on the live list gets no element ID and stops the
+  Bestseller check, so add an alias or choose another part. It has no stock counts or order caps,
   and prices change, so a new snapshot should be imported before ordering.
 
 Without `DATA_DIR`, a project keeps its existing `data/elements.csv`.

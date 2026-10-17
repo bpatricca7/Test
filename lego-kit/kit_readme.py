@@ -51,7 +51,8 @@ def kit_stats(proj):
     retry = sum(1 for r in mapping if r["If not found, try element ID"])
     few_sets = sorted((int(by_el[r["Element ID"]]["sets_since_2024"] or 0), r["Part (booklet name)"],
                        r["LEGO colour"]) for r in mapping
-                      if r["Element ID"] in by_el and int(by_el[r["Element ID"]]["sets_since_2024"] or 0) < 10)
+                      if r["Element ID"] in by_el and by_el[r["Element ID"]]["sets_since_2024"] != ""
+                      and int(by_el[r["Element ID"]]["sets_since_2024"]) < 10)
     only22 = sum(1 for r in mapping if "2022" in r["Evidence"])
     bmin, bmax = render.model_bbox(main_m)
     dims = tuple(round((bmax[i] - bmin[i]) * LDU_CM, 1) for i in (0, 2, 1))
