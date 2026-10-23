@@ -2,3 +2,4 @@ node_modules
 dist
 data/projects/*.json
 .env
+tests/fixtures/*/build/

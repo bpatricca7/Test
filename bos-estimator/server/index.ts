@@ -212,7 +212,7 @@ app.post('/api/projects/:id/extract', upload.array('files', 20), async (req, res
 });
 
 // ---------- static client (production) ----------
-const dist = path.resolve(here, '../dist');
+const dist = process.env.DIST_DIR ? path.resolve(process.env.DIST_DIR) : path.resolve(here, '../dist');
 app.use(express.static(dist));
 app.get(/^\/(?!api\/).*/, async (_req, res, next) => {
   try { await fs.access(path.join(dist, 'index.html')); res.sendFile(path.join(dist, 'index.html')); } catch { next(); }

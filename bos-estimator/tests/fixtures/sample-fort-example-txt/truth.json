@@ -1,0 +1,228 @@
+{
+  "id": "sample-fort-example-txt",
+  "title": "Built-in Fort Example PWS (txt)",
+  "theme": "military-bos",
+  "provenance": {
+    "fidelity": "synthetic",
+    "sources": [],
+    "notes": "The app's own sample, rendered three ways to catch format-specific regressions."
+  },
+  "inputs": [
+    {
+      "src": "pws.txt",
+      "as": "txt"
+    }
+  ],
+  "expect": {
+    "facilities": [
+      {
+        "buildingNumber": "1201",
+        "name": "Brigade Headquarters",
+        "grossSqft": 45200,
+        "cleanableSqft": 38400,
+        "floors": 2,
+        "restroomFixtures": 24,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "1205",
+        "name": "Battalion Headquarters Annex",
+        "grossSqft": 18750,
+        "cleanableSqft": 15900,
+        "floors": 1,
+        "restroomFixtures": 10,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "1310",
+        "name": "Soldier Service Center (DHR / Finance)",
+        "grossSqft": 62000,
+        "cleanableSqft": 52700,
+        "floors": 3,
+        "restroomFixtures": 32,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "2402",
+        "name": "Barracks, Enlisted (Common Areas Only)",
+        "grossSqft": 96000,
+        "cleanableSqft": 28800,
+        "floors": 4,
+        "restroomFixtures": 64,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "2404",
+        "name": "Barracks, Enlisted (Common Areas Only)",
+        "grossSqft": 96000,
+        "cleanableSqft": 28800,
+        "floors": 4,
+        "restroomFixtures": 64,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "2410",
+        "name": "Dining Facility (Warrior Restaurant)",
+        "grossSqft": 28500,
+        "cleanableSqft": 25600,
+        "floors": 1,
+        "restroomFixtures": 12,
+        "serviceLevel": "daily_7",
+        "dining": {
+          "mealsPerDay": 2650,
+          "mealPeriods": 4,
+          "daysPerWeek": 7
+        }
+      },
+      {
+        "buildingNumber": "3105",
+        "name": "Consolidated Health Clinic",
+        "grossSqft": 54300,
+        "cleanableSqft": 48900,
+        "floors": 2,
+        "restroomFixtures": 40,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "3120",
+        "name": "Dental Clinic",
+        "grossSqft": 14200,
+        "cleanableSqft": 12800,
+        "floors": 1,
+        "restroomFixtures": 12,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "4001",
+        "name": "Physical Fitness Center",
+        "grossSqft": 48000,
+        "cleanableSqft": 43200,
+        "floors": 1,
+        "restroomFixtures": 36,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "4210",
+        "name": "Child Development Center",
+        "grossSqft": 22400,
+        "cleanableSqft": 20200,
+        "floors": 1,
+        "restroomFixtures": 30,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "4330",
+        "name": "Education Center and Library",
+        "grossSqft": 36800,
+        "cleanableSqft": 31300,
+        "floors": 2,
+        "restroomFixtures": 18,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "4500",
+        "name": "Post Chapel and Religious Education",
+        "grossSqft": 16900,
+        "cleanableSqft": 14400,
+        "floors": 1,
+        "restroomFixtures": 8,
+        "serviceLevel": "3x_week"
+      },
+      {
+        "buildingNumber": "5100",
+        "name": "Central Issue Facility Warehouse",
+        "grossSqft": 82000,
+        "cleanableSqft": 24600,
+        "floors": 1,
+        "restroomFixtures": 6,
+        "serviceLevel": "2x_week"
+      },
+      {
+        "buildingNumber": "5230",
+        "name": "Vehicle Maintenance Shop (TMP)",
+        "grossSqft": 44000,
+        "cleanableSqft": 17600,
+        "floors": 1,
+        "restroomFixtures": 8,
+        "serviceLevel": "2x_week"
+      },
+      {
+        "buildingNumber": "6010",
+        "name": "Aviation Hangar 1 (Shops and Admin Areas)",
+        "grossSqft": 120000,
+        "cleanableSqft": 30000,
+        "floors": 1,
+        "restroomFixtures": 10,
+        "serviceLevel": "weekly"
+      },
+      {
+        "buildingNumber": "7020",
+        "name": "Range Control and Simulation Center",
+        "grossSqft": 26500,
+        "cleanableSqft": 22500,
+        "floors": 2,
+        "restroomFixtures": 12,
+        "serviceLevel": "daily_5"
+      }
+    ],
+    "facilitiesComplete": true,
+    "grounds": [
+      {
+        "kind": "improved_turf",
+        "quantity": 97.4,
+        "unit": "acres"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 215,
+        "unit": "acres"
+      },
+      {
+        "kind": "unimproved",
+        "quantity": 640,
+        "unit": "acres"
+      },
+      {
+        "kind": "athletic_field",
+        "quantity": 14,
+        "unit": "acres"
+      },
+      {
+        "kind": "shrub_bed",
+        "quantity": 86000,
+        "unit": "sqft"
+      },
+      {
+        "kind": "parking",
+        "quantity": 1420000,
+        "unit": "sqft"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 310000,
+        "unit": "sqft"
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 1250,
+        "unit": "each"
+      }
+    ],
+    "site": {
+      "contractYears": 5,
+      "climateZone": "temperate"
+    },
+    "priorAward": {
+      "totalValue": 31850000,
+      "periodMonths": 60,
+      "spendToDate": 26100000,
+      "contractNumber": "W912QR-20-C-0015",
+      "awardYear": 2020
+    }
+  },
+  "traps": [
+    "pipe-delimited table rendered as a real PDF table (glued columns in the text layer)",
+    "grounds acreage shared by several buildings",
+    "dining headcount in narrative text"
+  ]
+}

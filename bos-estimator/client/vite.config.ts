@@ -13,8 +13,8 @@ export default defineConfig({
     dedupe: ['react', 'react-dom', 'three', '@react-three/fiber', 'zustand'],
   },
   server: {
-    port: 5173,
-    proxy: { '/api': { target: 'http://localhost:8787', changeOrigin: true } },
+    port: Number(process.env.CLIENT_PORT || 5173),
+    proxy: { '/api': { target: `http://localhost:${process.env.API_PORT || 8787}`, changeOrigin: true } },
   },
   build: { outDir: path.resolve(here, '../dist'), emptyOutDir: true },
 });
