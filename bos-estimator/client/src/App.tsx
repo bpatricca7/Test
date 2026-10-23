@@ -1,6 +1,8 @@
 import { useEffect, useMemo } from 'react';
 import { useStore } from './store';
-import { DerivedContext, type Derived } from './derived';
+import { DerivedContext, EMPTY_DERIVED, type Derived, type RowMeta } from './derived';
+import { confBand, REVIEW_CONF_THRESHOLD } from './components/lib/theme';
+import { isInScope } from '@shared/types';
 import { estimateInventory } from '@shared/estimate';
 import { CREWS } from '@shared/factors';
 import { computeLayout, ZONE_COLORS, ZONE_LABELS } from './three/layout';
@@ -34,13 +36,26 @@ export default function App() {
   const assumptions = project?.assumptionOverrides;
   const overrides = project?.factorOverrides;
   const wages = project?.wages;
+  const review = project?.review;
   const derived = useMemo<Derived>(() => {
-    if (!inventory) return { est: null, layout: null, roster: [] };
+    if (!inventory) return EMPTY_DERIVED;
     const est = estimateInventory(inventory, assumptions ?? {}, overrides, wages as never);
     const layout = computeLayout(est.facilities.map((f) => f.resolved), inventory.grounds);
     const roster = buildRoster(est, layout);
-    return { est, layout, roster };
-  }, [inventory, assumptions, overrides, wages]);
+    const estById = new Map(est.facilities.map((e) => [e.facilityId, e]));
+    const gestById = new Map(est.grounds.map((g) => [g.areaId, g]));
+    const rowMeta = new Map<string, RowMeta>();
+    for (const f of inventory.facilities) {
+      const r = review?.[f.id]?.status;
+      rowMeta.set(f.id, { conf: confBand(f.confidence), review: r ?? (f.confidence < REVIEW_CONF_THRESHOLD || !f.grossSqft ? 'needs' : 'ok'), issues: [], inScope: isInScope(f), edited: false });
+    }
+    for (const g of inventory.grounds) rowMeta.set(g.id, { conf: confBand(g.confidence), review: review?.[g.id]?.status ?? (g.confidence < REVIEW_CONF_THRESHOLD ? 'needs' : 'ok'), issues: [], inScope: true, edited: false });
+    const ftes = est.facilities.map((e) => e.fte).sort((a, b) => a - b);
+    const q = (p: number) => (ftes.length ? ftes[Math.min(ftes.length - 1, Math.floor(p * ftes.length))] : 0);
+    const fteBreaks: Derived['fteBreaks'] = ftes.length >= 5 ? [q(0.2), q(0.4), q(0.6), q(0.8)] : [0.5, 1, 2, 4];
+    return { est, estById, gestById, layout, layoutRev: 0, estRev: 0, roster, rowMeta, fteBreaks };
+  }, [inventory, assumptions, overrides, wages, review]);
+  useEffect(() => { (window as unknown as { __bos?: Record<string, unknown> }).__bos = Object.assign((window as unknown as { __bos?: Record<string, unknown> }).__bos ?? {}, { store: useStore }); }, []);
 
   if (loading) return <div className="loading"><div><div className="logo">BOS</div><p>Loading estimate…</p></div></div>;
 

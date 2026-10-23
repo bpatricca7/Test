@@ -3,12 +3,59 @@ import { api, runExtraction, type ExtractOptions, type Health } from './api';
 import type { Assumptions, ExtractionEvent, Facility, GroundsArea, Inventory, PriorAward, Project, TopDownAssumptions } from '@shared/types';
 import type { Crew } from '@shared/factors';
 
-export interface LogEntry { kind: 'status' | 'text' | 'thinking' | 'tool' | 'error' | 'found'; text: string; t: number }
+export interface LogEntry { kind: 'status' | 'text' | 'thinking' | 'tool' | 'error' | 'found' | 'warning'; text: string; t: number }
 export type Selection = { kind: 'facility'; id: string } | { kind: 'grounds'; id: string } | { kind: null };
+
+// ---------------- UI contract shared with the 3D scene (see the UI spec §2.4) ----------------
+export type CenterView = 'map' | 'table';
+export type ColorBy = 'category' | 'confidence' | 'review' | 'fte';
+export type LabelMode = 'auto' | 'numbers' | 'off';
+export type Lighting = 'review' | 'live';
+export type RunPhase = 'idle' | 'uploading' | 'reading' | 'extracting' | 'merging' | 'crosscheck' | 'done' | 'failed' | 'cancelled';
+export interface CamCmd { kind: 'fit-site' | 'frame-selection'; seq: number }
+export type ReviewStatus = 'verified' | 'flagged';
+export interface ReviewEntry { status: ReviewStatus; at: number; note?: string }
+/** Project as the client keeps it: the server PUT merges unknown top-level keys, so review marks persist without a server change. */
+export type ClientProject = Project & { review?: Record<string, ReviewEntry> };
+export interface ExtractionDoc { name: string; pages?: number; chars: number; mode: string; kind?: string; role?: string; amendment?: number; scannedPages?: number[]; warnings?: string[] }
+export interface ExtractionState {
+  running: boolean;
+  phase: RunPhase;
+  mode: 'replace' | 'append' | null;
+  log: LogEntry[];
+  docs: ExtractionDoc[];
+  /** id → ms timestamp when the reader found it */
+  recent: Record<string, number>;
+  /** newest first, at most 8 */
+  recentIds: string[];
+  progress: { registered: number; expected?: number; grounds: number };
+  warnings: { message: string; file?: string; t: number }[];
+  startedAt?: number;
+  endedAt?: number;
+  error?: string;
+  staging: { active: boolean; seenIds: ReadonlySet<string>; incoming: Facility[]; incomingGrounds: GroundsArea[] };
+  snapshot?: ClientProject;
+  result?: { added: number; removed: number; changed: number; unchanged: number; changedIds: string[] };
+  abort?: AbortController;
+}
+export const emptyExtraction = (): ExtractionState => ({
+  running: false, phase: 'idle', mode: null, log: [], docs: [], recent: {}, recentIds: [],
+  progress: { registered: 0, grounds: 0 }, warnings: [],
+  staging: { active: false, seenIds: new Set(), incoming: [], incomingGrounds: [] },
+});
+
+const VIEW_KEY = 'bos.view.v1';
+function loadViewPrefs(): { colorBy?: ColorBy; labelMode?: LabelMode; lighting?: Lighting } {
+  try { const v = JSON.parse(localStorage.getItem(VIEW_KEY) ?? '{}'); return typeof v === 'object' && v ? v : {}; } catch { return {}; }
+}
+function saveViewPrefs(p: { colorBy: ColorBy; labelMode: LabelMode; lighting: Lighting }) {
+  try { localStorage.setItem(VIEW_KEY, JSON.stringify(p)); } catch { /* storage unavailable */ }
+}
+const prefersReducedMotion = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } };
 
 interface State {
   projectId: string;
-  project: Project | null;
+  project: ClientProject | null;
   health: Health | null;
   loading: boolean;
   saving: boolean;
@@ -22,8 +69,21 @@ interface State {
   autoOrbit: boolean;
   quality: 'high' | 'fast';
   topDownRunning: boolean;
-  extraction: { running: boolean; log: LogEntry[]; docs: { name: string; pages?: number; chars: number; mode: string }[]; recent: Record<string, number>; abort?: AbortController };
+  extraction: ExtractionState;
   sim: { playing: boolean; speed: number; time: number };
+  // --- view contract (THREE reads these; only SHELL writes them) ---
+  view: CenterView;
+  colorBy: ColorBy;
+  labelMode: LabelMode;
+  lighting: Lighting;
+  planView: boolean;
+  focusFloor: number | null;
+  reducedMotion: boolean;
+  hoverId: string | null;
+  /** ids matching the active inventory query; null when no query or chip is active */
+  filterIds: ReadonlySet<string> | null;
+  camCmd: CamCmd;
+  layoutEpoch: number;
 
   init(): Promise<void>;
   setProjectName(name: string): void;
@@ -56,6 +116,19 @@ interface State {
   clearProject(): Promise<void>;
   simSet(patch: Partial<State['sim']>): void;
   simTick(dtSeconds: number): void;
+  // --- view contract actions ---
+  setHover(id: string | null): void;
+  setView(v: CenterView): void;
+  setColorBy(c: ColorBy): void;
+  setLabelMode(m: LabelMode): void;
+  setLighting(l: Lighting): void;
+  setPlanView(v: boolean): void;
+  setFocusFloor(f: number | null): void;
+  setFilterIds(ids: ReadonlySet<string> | null): void;
+  requestCamera(kind: CamCmd['kind']): void;
+  relayout(): void;
+  setReview(ids: string[], status: ReviewStatus | null, note?: string): void;
+  restorePrevious(): Promise<void>;
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -95,11 +168,22 @@ export const useStore = create<State>((set, get) => {
     selectedAgentId: null,
     factorsOpen: false,
     toast: null,
-    autoOrbit: true,
+    autoOrbit: false,
     topDownRunning: false,
     quality: (localStorage.getItem('bos.quality') as 'high' | 'fast') || 'high',
-    extraction: { running: false, log: [], docs: [], recent: {} },
+    extraction: emptyExtraction(),
     sim: { playing: true, speed: 12, time: 18.25 },
+    view: 'map',
+    colorBy: loadViewPrefs().colorBy ?? 'category',
+    labelMode: loadViewPrefs().labelMode ?? 'auto',
+    lighting: loadViewPrefs().lighting ?? 'review',
+    planView: false,
+    focusFloor: null,
+    reducedMotion: prefersReducedMotion(),
+    hoverId: null,
+    filterIds: null,
+    camCmd: { kind: 'fit-site', seq: 0 },
+    layoutEpoch: 0,
 
     async init() {
       const params = new URLSearchParams(location.search);
@@ -170,14 +254,14 @@ export const useStore = create<State>((set, get) => {
       const abort = new AbortController();
       const model = o.model ?? project.ai.model; const effort = o.effort ?? project.ai.effort;
       set((s) => ({
-        extraction: { running: true, log: [{ kind: 'status', text: `Starting ${o.provider === 'heuristic' ? 'rule-based' : 'AI'} extraction…`, t: Date.now() }], docs: [], recent: {}, abort },
+        extraction: { ...emptyExtraction(), running: true, phase: 'uploading', mode: o.mode, startedAt: Date.now(), log: [{ kind: 'status', text: `Starting ${o.provider === 'heuristic' ? 'rule-based' : 'AI'} extraction…`, t: Date.now() }], abort },
         project: o.mode === 'replace' ? { ...s.project!, inventory: { site: {}, facilities: [], grounds: [] } } : s.project,
         selection: { kind: null }, focusMode: 'site',
       }));
       const onEvent = (e: ExtractionEvent) => {
         switch (e.type) {
           case 'status': log({ kind: 'status', text: e.message, t: Date.now() }); break;
-          case 'document': set((s) => ({ extraction: { ...s.extraction, docs: [...s.extraction.docs, { name: e.name, pages: e.pages, chars: e.chars, mode: e.mode }] } })); log({ kind: 'status', text: `Read ${e.name}: ${e.pages ? `${e.pages} pages, ` : ''}${e.chars.toLocaleString()} chars (${e.mode === 'native_pdf' ? 'native PDF → model reads tables & drawings' : 'text'})`, t: Date.now() }); break;
+          case 'document': set((s) => ({ extraction: { ...s.extraction, phase: 'reading', docs: [...s.extraction.docs, { name: e.name, pages: e.pages, chars: e.chars, mode: e.mode, kind: e.kind, role: e.role, amendment: e.amendment, scannedPages: e.scannedPages, warnings: e.warnings }] } })); log({ kind: 'status', text: `Read ${e.name}: ${e.pages ? `${e.pages} pages, ` : ''}${e.chars.toLocaleString()} chars (${e.mode === 'native_pdf' ? 'native PDF → model reads tables & drawings' : 'text'})`, t: Date.now() }); break;
           case 'ai_text': log({ kind: e.kind === 'tool' ? 'tool' : e.kind === 'thinking' ? 'thinking' : 'text', text: e.text, t: Date.now() }); break;
           case 'facility': {
             set((s) => {
@@ -206,7 +290,9 @@ export const useStore = create<State>((set, get) => {
             set((s) => ({ project: { ...s.project!, inventory: e.inventory, extraction: { provider: e.provider, model: e.model, finishedAt: new Date().toISOString(), durationMs: e.durationMs, usage: e.usage }, name: s.project!.name === 'Untitled BOS estimate' && e.inventory.site.installationName ? `${e.inventory.site.installationName} BOS` : s.project!.name } }));
             log({ kind: 'status', text: `Done in ${(e.durationMs / 1000).toFixed(1)}s via ${e.provider === 'claude' ? e.model : 'rule-based parser'}: ${e.inventory.facilities.length} facilities, ${e.inventory.grounds.length} grounds areas${e.usage ? ` · ${e.usage.input.toLocaleString()} in / ${e.usage.output.toLocaleString()} out tokens` : ''}`, t: Date.now() });
             break;
-          case 'error': log({ kind: 'error', text: e.message, t: Date.now() }); get().setToast(e.message); break;
+          case 'error': set((s) => ({ extraction: { ...s.extraction, phase: 'failed', error: e.message } })); log({ kind: 'error', text: e.message, t: Date.now() }); get().setToast(e.message); break;
+          case 'warning': set((s) => ({ extraction: { ...s.extraction, warnings: [...s.extraction.warnings, { message: e.message, file: e.file, t: Date.now() }] } })); log({ kind: 'warning', text: `${e.file ? `${e.file}: ` : ''}${e.message}`, t: Date.now() }); break;
+          case 'progress': set((s) => ({ extraction: { ...s.extraction, phase: s.extraction.phase === 'reading' || s.extraction.phase === 'uploading' ? 'extracting' : s.extraction.phase, progress: { registered: e.registered, expected: e.expected ?? s.extraction.progress.expected, grounds: e.grounds ?? s.extraction.progress.grounds } } })); break;
         }
       };
       try {
@@ -214,7 +300,7 @@ export const useStore = create<State>((set, get) => {
       } catch (err) {
         if ((err as Error).name !== 'AbortError') { log({ kind: 'error', text: (err as Error).message, t: Date.now() }); get().setToast((err as Error).message); }
       } finally {
-        set((s) => ({ extraction: { ...s.extraction, running: false, abort: undefined } }));
+        set((s) => ({ extraction: { ...s.extraction, running: false, abort: undefined, endedAt: Date.now(), phase: s.extraction.phase === 'failed' ? 'failed' : abort.signal.aborted ? 'cancelled' : 'done' } }));
         // reload authoritative project from server (it was saved there)
         try { const p = await api.getProject(projectId); set({ project: p }); } catch { /* keep local */ }
       }
@@ -222,9 +308,31 @@ export const useStore = create<State>((set, get) => {
     cancelExtraction() { get().extraction.abort?.abort(); },
     async clearProject() {
       const p = await api.resetProject(get().projectId);
-      set({ project: p, selection: { kind: null }, focusMode: 'site', extraction: { running: false, log: [], docs: [], recent: {} } });
+      set({ project: p, selection: { kind: null }, focusMode: 'site', extraction: emptyExtraction() });
     },
     simSet(patch) { set((s) => ({ sim: { ...s.sim, ...patch } })); },
+    setHover(id) { if (get().hoverId !== id) set({ hoverId: id }); },
+    setView(v) { set({ view: v }); },
+    setColorBy(c) { set({ colorBy: c }); const s = get(); saveViewPrefs({ colorBy: c, labelMode: s.labelMode, lighting: s.lighting }); },
+    setLabelMode(m) { set({ labelMode: m }); const s = get(); saveViewPrefs({ colorBy: s.colorBy, labelMode: m, lighting: s.lighting }); },
+    setLighting(l) { set({ lighting: l }); const s = get(); saveViewPrefs({ colorBy: s.colorBy, labelMode: s.labelMode, lighting: l }); },
+    setPlanView(v) { set({ planView: v }); },
+    setFocusFloor(f) { set({ focusFloor: f }); },
+    setFilterIds(ids) { set({ filterIds: ids }); },
+    requestCamera(kind) { set((s) => ({ camCmd: { kind, seq: s.camCmd.seq + 1 } })); },
+    relayout() { set((s) => ({ layoutEpoch: s.layoutEpoch + 1 })); get().requestCamera('fit-site'); },
+    setReview(ids, status, note) {
+      mutateProject((p) => {
+        const review = { ...(((p as ClientProject).review) ?? {}) };
+        for (const id of ids) { if (status) review[id] = { status, at: Date.now(), note }; else delete review[id]; }
+        return { ...p, review } as ClientProject;
+      });
+    },
+    async restorePrevious() {
+      const snap = get().extraction.snapshot; if (!snap) return;
+      const saved = await api.saveProject(snap);
+      set({ project: saved as ClientProject, extraction: { ...get().extraction, snapshot: undefined, result: undefined } });
+    },
     simTick(dt) {
       const s = get().sim; if (!s.playing) return;
       set({ sim: { ...s, time: (s.time + (dt * s.speed) / 60) % 24 } });
