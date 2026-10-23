@@ -16,7 +16,7 @@
 //    ("1.234,5") are read when the table or its caption uses them;
 //  - a building's gross area is never overwritten except by a later-ranked document;
 //  - excluded / not in scope / vacant / closed / demolished / struck rows stay in the inventory with a status.
-import type { AreaUnit, DiningProfile, Facility, FacilityCategory, FacilityStatus, GroundsArea, GroundsKind, GroundsUnit, Inventory, MealPeriodHeadcount, PriorAward, ServiceLevel, SiteInfo, SourceRef } from '../shared/types';
+import type { AreaUnit, DiningProfile, Facility, FacilityCategory, FacilityStatus, FloorMix, GroundsArea, GroundsKind, GroundsUnit, Inventory, MealPeriodHeadcount, PriorAward, ServiceLevel, SiteInfo, SourceRef } from '../shared/types';
 import { SQFT_PER } from '../shared/types';
 import { mealsPerDayFromPeriods } from '../shared/estimate';
 import { classifyDocument, type DocInput } from './extract';
@@ -40,6 +40,9 @@ const wordOrNum = (s: string | undefined): number | undefined => { if (!s) retur
  *  U.S. ("1,234.5") and, when `eu` is set or the cell can only be European ("1.234,5", "96,4"), European formats. */
 export function parseNumberCell(raw: string | undefined, eu = false): number | undefined {
   if (raw == null) return undefined;
+  // a tracked or conformed cell ("~~45,200~~ 47,900") reads the figure that was not struck
+  const live = raw.replace(/~~[^~]*~~/g, ' ');
+  if (live !== raw && /\d/.test(live)) raw = live;
   const s = clean(raw).replace(/\b(?:approx(?:imately)?|appx|ca|circa|about|est)\.?\s*/gi, '').replace(/[±~≈]/g, ' ');
   if (!/\d/.test(s)) return undefined;
   const euLike = eu || /\d{1,3}(?:\.\d{3})+,\d+/.test(s) || /(?:^|[^\d.,])\d+,\d{1,2}(?![\d,])/.test(s);
@@ -51,7 +54,19 @@ export function parseNumberCell(raw: string | undefined, eu = false): number | u
   return m ? Number(m[0].replace(/,/g, '')) : undefined;
 }
 
-const NUMERIC_CELL = /^[~±≈]?\s*(?:approx\.?\s*)?\$?\s*\d[\d.,]*\s*(?:%|[a-z²]{1,6}\.?)?$/i;
+/** Number format a figure is written in: "45,200" / "2,148.6" / "612.4" are U.S., "4.312,8" / "96,4" European; "1.240"
+ *  and "680" could be either. */
+function numberStyle(raw: string | undefined): 'us' | 'eu' | undefined {
+  const t = clean(raw);
+  if (!t) return undefined;
+  if (/^\D{0,4}\d{1,3}(?:\.\d{3})+,\d+(?![\d.,])/.test(t)) return 'eu';
+  if (/^\D{0,4}\d{1,3}(?:,\d{3})+(?:\.\d+)?(?![\d,])/.test(t)) return 'us';
+  if (/^\D{0,4}\d+,\d{1,2}(?![\d.,])/.test(t)) return 'eu';
+  if (/^\D{0,4}\d+\.\d{1,2}(?![\d.,])/.test(t)) return 'us';
+  return undefined;
+}
+
+const NUMERIC_CELL =/^[~±≈]?\s*(?:approx\.?\s*)?\$?\s*\d[\d.,]*\s*(?:%|[a-z²]{1,6}\.?)?$/i;
 const isNumericCell = (c: string) => NUMERIC_CELL.test(clean(c));
 const isBlankish = (c: string | undefined) => /^(?:[-–—.]+|n\/?a|n\/s|none|nil)?$/i.test(clean(c));
 
@@ -62,7 +77,7 @@ function unitOf(raw: string | undefined): QUnit | undefined {
   const t = ` ${clean(raw).toLowerCase()} `;
   const B = '[\\s(\\d/]', E = '(?=[\\s).,;:/]|$)';
   const has = (p: string) => new RegExp(`${B}(?:${p})${E}`).test(t);
-  if (has('sm|sqm|sq\\.?\\s*m\\.?|m²|m2|mq|square met(?:er|re)s?|metri quadrati')) return 'sm';
+  if (has('sm|sqm|sq\\.?\\s*m\\.?|m²|m2|mq|qm|square met(?:er|re)s?|metri quadrati|quadratmeter')) return 'sm';
   if (has('sf|s\\.f\\.|gsf|csf|nsf|sq\\.?\\s*f(?:ee|oo)?t\\.?|sq\\.?\\s*ft\\.?|square f(?:ee|oo)t(?:age)?|ft²|ft2')) return 'sf';
   if (has('sy|sq\\.?\\s*yds?\\.?|square yards?|yd²')) return 'sy';
   if (has('ha|hectares?|ettari')) return 'ha';
@@ -72,6 +87,28 @@ function unitOf(raw: string | undefined): QUnit | undefined {
   if (/^\s*(?:kv|kva|kw|ga|gal|mb|mbh|mo|lt|hr|hrs|ls|job|cy|cf|ton)\s*$/.test(t)) return 'other';
   return undefined;
 }
+/** Unit of the figure a cell holds: the unit printed right after the number parseNumberCell reads, else any unit outside
+ *  a parenthesised conversion ("45,208 SF (4,200 SM)" is in SF, "1,742 m² (18,750 SF)" in SM, "4,200 (SM)" in SM). */
+function cellUnit(raw: string | undefined): QUnit | undefined {
+  if (!raw) return undefined;
+  let t = clean(raw);
+  const live = raw.replace(/~~[^~]*~~/g, ' ');
+  if (live !== raw && /\d/.test(live)) t = clean(live);
+  const m = t.match(/\d[\d.,]*/);
+  if (m) {
+    const after = t.slice((m.index ?? 0) + m[0].length).match(/^\s*\(?\s*([a-zA-Z²][a-zA-Z².\s]{0,16})/);
+    if (after) { const u = unitOf(` ${after[1]} `); if (u) return u; }
+  }
+  return unitOf(t.replace(/\([^)]*\d[^)]*\)|\[[^\]]*\d[^\]]*\]/g, ' '));
+}
+/** "~~45,200~~ 47,900": the struck figure, for a note. */
+function struckNote(raw: string | undefined): string | undefined {
+  if (!raw || !/~~[^~]*\d[^~]*~~/.test(raw)) return undefined;
+  const live = raw.replace(/~~[^~]*~~/g, ' ');
+  if (!/\d/.test(live)) return undefined;
+  const old = raw.match(/~~([^~]*\d[^~]*)~~/)?.[1];
+  return `${clean(old)} is struck through; ${clean(live)} used.`;
+}
 const AREA_U: Record<string, AreaUnit> = { sf: 'sf', sm: 'sm', sy: 'sy' };
 const GROUNDS_U: Record<string, GroundsUnit> = { ac: 'acres', ha: 'hectares', sf: 'sqft', sm: 'sqm', sy: 'sqyd', lf: 'lf', ea: 'each' };
 
@@ -79,7 +116,7 @@ const GROUNDS_U: Record<string, GroundsUnit> = { ac: 'acres', ha: 'hectares', sf
 // Building numbers, frequencies, statuses, grounds kinds
 // =====================================================================================================================
 
-const BN_TOKEN = /^(?:[A-Z]{0,4}-?\d{1,7}[A-Z]{0,3}(?:-[A-Z0-9]{1,6})*|[A-Z]{2,5}\d{1,6}[A-Z]{0,3}(?:-[A-Z0-9]{1,4})?|[A-Z]{1,4}\d{0,3}\/[A-Z0-9]{1,6})$/;
+const BN_TOKEN = /^(?:[A-Z]{0,4}-?\d{1,7}(?:[A-Z]{1,3}\d{0,4})?(?:-[A-Z0-9]{1,6})*|[A-Z]{2,5}\d{1,6}[A-Z]{0,3}(?:-[A-Z0-9]{1,4})?)$/;
 /** Building number as printed (letters, hyphens and leading zeros kept): "Bldg 0012" → "0012", "T – 2401" → "T-2401". */
 export function normalizeBuildingNumber(raw: string | undefined): string | undefined {
   if (!raw) return undefined;
@@ -93,16 +130,58 @@ export function normalizeBuildingNumber(raw: string | undefined): string | undef
 const bnKey = (bn: string) => bn.toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^0+(?=\d)/, '');
 const nameKey = (s: string) => clean(s).toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim();
 
-/** Service frequency wording → service level (monthly / quarterly / 2x per month are checked before weekly wording). */
+const LEVEL_ORDER: ServiceLevel[] = ['daily_7', 'daily_5', '3x_week', '2x_week', 'weekly', 'biweekly', 'monthly', 'quarterly'];
+const RATE_WORD: Record<string, number> = { once: 1, twice: 2, thrice: 3, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12 };
+/** Explicit rates per month / year / quarter ("3x/month", "Four times per month", "Twice monthly", "24x/yr", "52/yr",
+ *  "Semi-annually", "Annually") as visits per week, with the text they were read from. */
+function ratesPerWeek(t: string): { perWeek: number; text: string }[] {
+  const out: { perWeek: number; text: string }[] = [];
+  const N = '(\\d+(?:\\.\\d+)?|once|twice|thrice|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)';
+  const per = (u: string) => (/^(?:mo|mos|mon|month|months|monthly)$/.test(u) ? 1 / 4.33 : /^(?:yr|yrs|year|years|annum|annually|yearly|annual|a)$/.test(u) ? 1 / 52 : /^(?:qtr|quarter|quarterly|q)$/.test(u) ? 1 / 13 : /^(?:wk|wks|week|weeks|weekly)$/.test(u) ? 1 : NaN);
+  const num = (s: string) => (/^\d/.test(s) ? Number(s) : RATE_WORD[s]);
+  const re = new RegExp(`(?:^|[^\\d.,/])${N}\\s*(?:x|×|times?|visits?|services?|cleanings?|cycles?|days?)?\\s*(?:\\/|per\\s+|a\\s+|each\\s+|every\\s+|an?\\s+)\\s*(mos?|mon|months?|yrs?|years?|annum|qtr|quarter|wks?|weeks?)\\b|(?:^|[^\\d.,/])${N}\\s*(?:x|×|times)?\\s+(monthly|yearly|annually|quarterly|weekly)\\b`, 'g');
+  for (const m of t.matchAll(re)) {
+    const n = num(m[1] ?? m[3]), f = per(m[2] ?? m[4]);
+    if (n != null && isFinite(f) && n > 0) out.push({ perWeek: n * f, text: m[0] });
+  }
+  for (const m of t.matchAll(/\bsemi-?annual(?:ly)?\b|\bbi-?annual(?:ly)?\b|\btwice (?:a|per|each) year\b/g)) out.push({ perWeek: 2 / 52, text: m[0] });
+  for (const m of t.matchAll(/(?<!semi-?|bi-?)\b(?:annual(?:ly)?|yearly|once (?:a|per|each) year)\b/g)) if (!/(?:semi-?|bi-?)$/.test(t.slice(0, m.index))) out.push({ perWeek: 1 / 52, text: m[0] });
+  return out;
+}
+const levelFromRate = (w: number): ServiceLevel => (w >= 6.5 ? 'daily_7' : w >= 4.5 ? 'daily_5' : w >= 2.5 ? '3x_week' : w >= 1.5 ? '2x_week' : w >= 0.75 ? 'weekly' : w >= 0.35 ? 'biweekly' : w >= 0.15 ? 'monthly' : 'quarterly');
+/** Visits per year when the text states a rate below quarterly ("2x/yr", "Annually"), for a note. */
+export function lessThanQuarterly(raw: string | undefined): number | undefined {
+  if (!raw) return undefined;
+  const rates = ratesPerWeek(` ${dash(clean(raw)).toLowerCase().replace(/\s*\/\s*/g, '/')} `);
+  if (!rates.length) return undefined;
+  const best = Math.max(...rates.map((r) => r.perWeek));
+  return best * 52 < 3.5 ? Math.round(best * 52 * 10) / 10 : undefined;
+}
+
+/** Service frequency wording → service level. Explicit per-month / per-year rates are read first and converted to visits
+ *  per week; the weekly wording is then read from what is left ("3x/month" is never "3x per week"). With several
+ *  frequencies in one cell the most frequent wins. */
 export function serviceLevelFromText(raw: string | undefined): ServiceLevel | undefined {
   if (!raw) return undefined;
-  const t = ` ${dash(clean(raw)).toLowerCase().replace(/\s*\/\s*/g, '/')} `;
+  let t = ` ${dash(clean(raw)).toLowerCase().replace(/\s*\/\s*/g, '/')} `;
   if (!/[a-z0-9]/.test(t)) return undefined;
+  const rates = ratesPerWeek(t);
+  for (const r of rates) t = t.replace(r.text, (x) => ' '.repeat(x.length));
+  // "twice monthly", "2x/month" were rates; "twice daily" and "N per day" are daily service
+  const fromRates = rates.length ? levelFromRate(Math.max(...rates.map((r) => r.perWeek))) : undefined;
+  const fromWords = levelFromWords(t);
+  if (fromRates && fromWords) return LEVEL_ORDER.indexOf(fromRates) <= LEVEL_ORDER.indexOf(fromWords) ? fromRates : fromWords;
+  return fromRates ?? fromWords;
+}
+function levelFromWords(t: string): ServiceLevel | undefined {
+  if (!/[a-z0-9]/.test(t)) return undefined;
+  if (/\b(?:\d+x?|once|twice|two times|\d+ times)\s*(?:\/|per |a |each )\s*day\b/.test(t) && !/\b7x|\b7 ?days|seven days|including weekends|mon(?:day)?\s*(?:-|through|thru|to)\s*sun|sun(?:day)?-sat/.test(t)) return 'daily_5';
+  if (/every other day|alternate days|alternating days/.test(t)) return '3x_week';
   if (/quarterly|qtrly|\b1x\/q(?:tr|uarter)|once (?:a|per|each) (?:calendar )?quarter|\b4x\/(?:yr|year)|trimestral/.test(t)) return 'quarterly';
   if (/\b(?:2x|twice|two times)\s*(?:\/|per |a |each )?\s*mo(?:nth)?\b|semi-?monthly|\b2\/mo\b/.test(t)) return 'biweekly';
   if (/monthly|\b1x\/mo(?:nth)?\b|once (?:a|per|each) month|mensil|\b12x\/(?:yr|year)/.test(t)) return 'monthly';
   if (/bi-?weekly|bi-?wkly|every (?:two|2|other) weeks?|fortnight|quindicinal|alternate weeks|\b14-day/.test(t)) return 'biweekly';
-  if (/\b7x|\b7\/7\b|\b7 ?days|seven days|daily \(7|24\/7|including weekends|every day|sun(?:day)?-sat|\b365 days|7 d\/w/.test(t)) return 'daily_7';
+  if (/\b7x|\b7\/7\b|\b7 ?days|seven days|daily \(7|24\/7|including weekends|every day|sun(?:day)?\s*(?:-|through|thru|to)\s*sat|mon(?:day)?\s*(?:-|through|thru|to)\s*sun|\b365 days|7 d\/w/.test(t)) return 'daily_7';
   if (/\b6x|\b6\/7\b|\b6 ?days|six days|\bm-sa(?:t)?\b|mon(?:day)?\s*(?:-|through|thru|to)\s*sat/.test(t)) return 'daily_5';
   if (/\b5x|\b5\/7\b|\b5 ?days|five days|\bm-f\b|mon(?:day)?\s*(?:-|through|thru|to)\s*fri|weekdays?|\bdaily\b|each workday|every workday|workdays/.test(t)) return 'daily_5';
   if (/\b4x\/(?:wk|week)|\b4\/7\b|four times|\b4 ?days|\bm-th\b/.test(t)) return '3x_week';
@@ -116,18 +195,69 @@ const levelFromDays = (n: number): ServiceLevel | undefined => (n >= 7 ? 'daily_
 
 /** Whole-building status wording in a row (remarks, frequency, name or status cell). Partial exclusions ("server rooms
  *  excluded", "kitchens excluded") are not statuses. */
-export function statusFromText(raw: string | undefined, opts: { frequencyCell?: boolean } = {}): { status: FacilityStatus; reason: string } | undefined {
+export function statusFromText(raw: string | undefined, opts: { frequencyCell?: boolean; nameCell?: boolean } = {}): { status: FacilityStatus; reason: string } | undefined {
   const t = clean(raw);
   if (!t) return undefined;
   const l = dash(t).toLowerCase();
   const reason = t.slice(0, 160);
-  if (/\bdeleted\b|\bremoved from (?:the )?(?:scope|requirement|list|contract)\b|\bdelete(?: from)? (?:scope|requirement)/.test(l)) return { status: 'deleted_by_amendment', reason };
-  if (/demolish|\bdemo\b(?=\s*(?:fy|\d|-|$))|da demolire|to be razed|\brazed\b|\bdisposed\b|pending disposal|for disposal/.test(l)) return { status: 'demolished', reason };
-  if (/\bvacant\b|\bclosed\b(?!-)|warm[- ]closure|mothball|\bunoccupied\b/.test(l)) return { status: 'vacant', reason };
-  if (/not in scope|out of scope|not included|not part of (?:this|the)|do not price|shall not be priced|not to be priced|\bnot priced\b|no custodial service|not serviced|no routine service|no workload|uso italiano|^\s*exclude[ds]?\b|-\s*exclude[ds]?\b|\b(?:facility|building|bldg) (?:is )?excluded|^n\/a\b|for information only|information only|for reference only|not in contract|removed from scope/.test(l)) return { status: 'excluded', reason };
-  if (/option(?:al)? (?:item|clin)s? only|option period only|\boption only\b/.test(l)) return { status: 'option_only', reason };
-  if (opts.frequencyCell && /^(?:n\/?a|none|not serviced|0|-)$/.test(l)) return { status: 'excluded', reason: `Frequency "${t}"` };
+  // a bare "N/A", "none" or "-" means no remark; only in the frequency cell does it mean "not serviced"
+  if (isBlankish(t)) return opts.frequencyCell && /^(?:n\/?a|none|-)$/.test(l) ? { status: 'excluded', reason: `Frequency "${t}"` } : undefined;
+  // "racquetball court wing demolished", "Kitchen area not included", "Mechanical rooms – excluded", "Window washing not
+  // included": a part of the building or one service, not the building
+  const whole = (re: RegExp) => { for (const m of l.matchAll(new RegExp(re.source, 'g'))) if (!partSubject(l, m.index ?? 0, !!opts.nameCell)) return true; return false; };
+  if (whole(/\bdeleted\b|\bremoved from (?:the )?(?:scope|requirement|list|contract)\b|\bdelete(?: from)? (?:scope|requirement)/)) return { status: 'deleted_by_amendment', reason };
+  // demolition planned for later ("To be demolished FY29; service through FY28") is not a status unless the row also says
+  // the building is out of scope (futureDemolition() gives the note)
+  const future = futureDemolition(l);
+  if (!future && whole(/demolish|\bdemo\b(?=\s*(?:fy|\d|-|$))|da demolire|\brazed\b|\bdisposed\b|pending disposal|for disposal/)) return { status: 'demolished', reason };
+  // "Closed weekends and federal holidays", "Closed on Saturdays", "closed at 1800": a schedule, not a closure
+  if (whole(/\bvacant\b|(?<!(?:to|will) be )\bvacated\b|\bclosed\b(?!-)(?!\s*(?:(?:on|in|from|at|between|after|before|during|for|over|each|every|all)\s+)?(?:the\s+)?(?:(?:federal|public|national|legal|school|university|district)\s+)?(?:weekends?|holidays?|saturdays?|sundays?|sat\b|sun\b|mondays?|tuesdays?|wednesdays?|thursdays?|fridays?|nights?|evenings?|overnight|lunch|noon|midnight|\d{1,2}(?::\d{2})?\s*(?:a\.?m\b|p\.?m\b)|\d{3,4}\s*(?:hrs?|hours|h)\b|\d{3,4}\s*-\s*\d{3,4}\b|\d{1,2}:\d{2}|(?:summer|winter|spring|fall|autumn|off[- ]season|christmas|school breaks?|breaks?|recess|intersession)\b))|warm[- ]closure|mothball|\bunoccupied\b/)) return { status: 'vacant', reason };
+  if (future && !EXCLUDED_RE.test(l)) return undefined;
+  if (whole(EXCLUDED_RE)) return { status: future ? 'demolished' : 'excluded', reason };
+  if (whole(/option(?:al)? (?:item|clin)s? only|option period only|\boption only\b/)) return { status: 'option_only', reason };
+  if (opts.frequencyCell && /^(?:n\/?a\b.*|not serviced|0)$/.test(l)) return { status: 'excluded', reason: `Frequency "${t}"` };
   return undefined;
+}
+const EXCLUDED_RE = /not in scope|out of scope|not included|not part of (?:this|the)|do not price|shall not be priced|not to be priced|\bnot priced\b|no custodial service|not serviced|no routine service|no workload|uso italiano|^\s*exclude[ds]?\b|-\s*exclude[ds]?\b|\b(?:facility|building|bldg) (?:is )?excluded|for information only|information only|for reference only|not in contract|removed from scope/;
+/** "To be demolished FY29", "scheduled for demolition", "programmed for demolition in FY27": demolition still to come. */
+function futureDemolition(l: string): boolean {
+  return /\bto be (?:demolished|razed|disposed)\b|\b(?:scheduled|programmed|planned|slated|proposed|identified|approved)\s+(?:for\s+)?(?:demolition|disposal)\b|\bdemolition\s+(?:is\s+)?(?:scheduled|planned|programmed)\b|\bwill be (?:demolished|razed|disposed)\b/.test(l)
+    || (/\bservice[sd]?\s+(?:through|thru|until|till|to)\b|\bin service (?:through|thru|until)\b|\bremains? in scope\b/.test(l) && /demoli|dispos/.test(l));
+}
+/** Note for a row whose remark announces a later demolition, while the building stays in scope. */
+export function futureDemolitionNote(raw: string | undefined): string | undefined {
+  const t = clean(raw);
+  return t && futureDemolition(dash(t).toLowerCase()) && !statusFromText(t) ? `Demolition planned ("${t.slice(0, 100)}"); priced as in scope.` : undefined;
+}
+/** Part-of-building and single-service nouns: a status word after one of them in the same clause applies to that part. */
+/** After a deletion verb: its scope ("from the requirement", "in its entirety", "by Amendment 0001") or the end of the clause. */
+const DELETION_SCOPE = /^\s*(?:(?:(?:from|in)\s+(?:the\s+|this\s+|its\s+|their\s+|all\s+)?(?:scope|requirements?|contract|solicitation|rfp|rfq|ifb|pws|sow|list|facility list|inventory|te[- ]?\d|technical exhibit|exhibit|attachment|appendix|table|section|entirety|clin|schedule|work|custodial|services?|pricing)\b)|(?:by|per|under|pursuant to)\s+(?:amendment|addendum|modification|change order)|(?:effective|as of|upon)\b|and\s+(?:will|shall)\s+not\b|$|[.;,(])/i;
+/** The building references open the clause (after "Item 1.", "a.", "No.", "Per Amendment 0002,") and are followed only by a
+ *  name, address or campus ("Building 0012 at North Annex", "Site 14, Wexford Commons Pocket Park,") before the verb. */
+function deletionSubject(s: string, segStart: number, targets: Ref[], vi: number): boolean {
+  const pre = s.slice(segStart, Math.min(...targets.map((r) => r.at)));
+  const mid = s.slice(Math.max(...targets.map((r) => r.end)), vi);
+  const OPENER = /^\s*(?:(?:item|line|para(?:graph)?|no\.?|change|question|answer|response|q|a)\s*\d[\w.-]{0,6}[.:)\-–]?\s+|[a-z0-9]{1,3}[.)]\s*|\d{1,2}\/\s*|\(\w{1,3}\)\s*|\d+(?:\.\d+)*[.)]?\s+|(?:yes|no)[.,]?\s+|the\s+|also,?\s+|further(?:more)?,?\s+|in addition,?\s+|additionally,?\s+|accordingly,?\s+|therefore,?\s+|(?:per|under|by|with|pursuant to|in accordance with|effective|as of|upon)\s+[^,]{1,60},\s*)*$/i;
+  if (pre.length > 120 || !OPENER.test(pre)) return false;
+  const NON_BUILDING = /\b(?:trash|refuse|garbage|debris|litter|carpets?|furniture|equipment|snow|ice|waste|recycl\w*|graffiti|tiles?|flooring|fixtures?|materials?|furnishings|boxes|items|signs?|vehicles?|occupants|personnel|staff|contents)\b/i;
+  if (mid.length > 170 || NON_BUILDING.test(pre) || NON_BUILDING.test(mid.replace(/\([^)]*\)/g, ' '))) return false;
+  if (/\b(?:shall|will|was|were|has|have|had|must|should)\b/i.test(mid.replace(/\([^)]*\)/g, ' '))) return false;
+  return /^\s*(?:\([^)]*\)\s*)?(?:,[^;:]{0,150}?,\s*|,\s*|\s*[-–—]\s*[^;:]{1,80}?\s*[-–—]\s*|\s+(?:at|on|in|located (?:at|on|in))\s+(?:the\s+)?[^,;:]{1,60}?\s*(?:,[^;:]{0,100}?,\s*)?)?(?:(?:is|are)\s+[^,;:]{1,80}?\s+and\s+)?$/i.test(mid);
+}
+/** The text names this campus ("Building 0012 at North Annex"). */
+const mentions = (text: string, campus: string) => { const k = nameKey(campus); return !!k && ` ${nameKey(text)} `.includes(` ${k} `); };
+const PART_NOUN = /\b(?:wings?|rooms?|courts?|additions?|portions?|parts?|sections?|bays?|suites?|floors?|space|spaces|areas?|canopy|canopies|sheds?|porch(?:es)?|decks?|kitchens?|lobby|lobbies|mezzanines?|stair(?:well)?s?|elevators?|restrooms?|closets?|basements?|attics?|windows?|window washing|glass|carpets?|refinishing|stripping|waxing|burnishing|shampooing|servers?|mechanical|electrical|telecom|hvac|classrooms?|locker rooms?|showers?|exterior|roofs?|loading docks?|vaults?|serving line)\b/g;
+function partSubject(l: string, at: number, nameCell: boolean): boolean {
+  const pre = l.slice(Math.max(0, at - 40), at);
+  // in a name cell the name itself is the building ("Motor Pool (DEMOLISHED FY26)", "Restroom – CLOSED"); only a part
+  // named inside the parenthesis or after the dash is a part ("Brigade HQ (annex wing demolished)")
+  const cut = nameCell ? Math.max(pre.lastIndexOf('('), pre.lastIndexOf(' - '), pre.lastIndexOf('/')) : -1;
+  const clause = pre.slice(Math.max(pre.lastIndexOf('.'), pre.lastIndexOf(';'), pre.lastIndexOf(','), pre.lastIndexOf(':'), cut) + 1);
+  let last: RegExpExecArray | undefined;
+  for (const m of clause.matchAll(PART_NOUN)) last = m as RegExpExecArray;
+  if (!last) return false;
+  // "Restroom building – not in scope" is the building
+  return !/\b(?:building|bldg|facility|structure)\b/.test(clause.slice((last.index ?? 0) + last[0].length));
 }
 
 /** Grounds terminology → kind: Type I / II / III / IV, Category A / B / C, improved / semi-improved / unimproved,
@@ -179,19 +309,30 @@ const TOTAL_RE = /^(?:grand\s+)?(?:sub-?\s*)?totale?s?\b|\bsub-?\s*totale?s?\b|\
 const isTotalRow = (cells: string[]) => cells.map(clean).filter(Boolean).slice(0, 3).some((c) => TOTAL_RE.test(c));
 
 export function categorize(name: string): FacilityCategory {
+  // descriptions in parentheses ("Community Center (multipurpose rooms, gymnasium, …)") only break ties
+  const head = name.replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
+  const c = categorizeText(head || name);
+  return c === 'other' && head !== name ? categorizeText(name) : c;
+}
+function categorizeText(name: string): FacilityCategory {
   const n = ` ${name.toLowerCase()} `;
+  // a building serviced in its office areas only is office space, whatever the building is
+  if (/administrative (?:areas?|core|offices?|space) only|office (?:and restroom |and latrine )?areas? only|offices? only/.test(n)) return 'admin';
   if (/dining|dfac|mess hall|galley|cafeteria|food service|restaurant|mensa\b/.test(n)) return 'dining';
   if (/barracks|dormitor|\bdorm\b|bachelor|\bquarters\b|billet|lodging|\buph\b|\bueph\b|\buoph\b|\bbeq\b|\bboq\b|unaccompanied|residence hall|alloggi/.test(n)) return 'barracks';
   if (/clinic|medical|dental|hospital|\bhealth\b|pharmacy|ambulatorio/.test(n)) return 'medical';
   if (/hangar/.test(n)) return 'hangar';
+  if (/gatehouse|guard ?house|overwatch|\bacp\b|access control point/.test(n)) return 'other';
+  // offices of a directorate or division are admin, even when the directorate runs shops, training or supply
+  if (/headquarters|\bhq\b|administration|\badmin\b|directorate|\boffices?\b|dispatch/.test(n)) return 'admin';
+  if (/physical plant|motor pool|maintenance|\bshops?\b|vehicle|\btmp\b|\bdol\b|repair|wash rack|\btemf\b|officina/.test(n)) return 'maintenance';
   if (/warehouse|supply|storage|depot|\bcif\b|logistic|issue facility|magazzino|hazmat|hazardous material/.test(n)) return 'warehouse';
-  if (/motor pool|maintenance|\bshops?\b|vehicle|\btmp\b|\bdol\b|repair|wash rack|\btemf\b|officina/.test(n)) return 'maintenance';
-  if (/\bgym\b|gymnasium|fitness|physical|\bpool\b|sports|athletic|aquatic|natatorium|palestra/.test(n)) return 'fitness';
-  if (/child|\bcdc\b|youth|daycare|day care|school age|asilo/.test(n)) return 'child_care';
-  if (/chapel|religious|community|\bmwr\b|\bclub\b|recreation|theater|bowling|exchange|commissary|museum|arts and crafts|cappella|readiness center/.test(n)) return 'community';
-  if (/school|education|training|classroom|academy|learning|library|instruction|istruzione/.test(n)) return 'education';
+  if (/\bgym\b|gymnasium|fitness|physical (?:fitness|training)|\bpool\b|sports|athletic|aquatic|natatorium|palestra/.test(n)) return 'fitness';
+  if (/child|\bcdc\b|daycare|day care|school age|asilo/.test(n)) return 'child_care';
+  if (/chapel|religious|spiritual|community|\bmwr\b|\bclub\b|recreation|theater|bowling|exchange|commissary|museum|arts and crafts|cappella|readiness center|library|youth|conference|family (?:assistance|support|readiness)/.test(n)) return 'community';
+  if (/school|education|training|classroom|academy|learning|instruction|istruzione/.test(n)) return 'education';
   if (/\blab\b|laborator|research|simulat|range control|test facility/.test(n)) return 'lab';
-  if (/headquarters|\bhq\b|admin|office|command|brigade|battalion|center|annex|operations|\bops\b|finance|personnel|legal|\bjag\b|post office|police|fire station|security|visitor|service center|federal building|courthouse|comando|uffici/.test(n)) return 'admin';
+  if (/command|brigade|battalion|center|annex|operations|\bops\b|finance|personnel|legal|\bjag\b|post office|police|fire station|security|visitor|service center|federal building|courthouse|comando|uffici|\bdivision\b/.test(n)) return 'admin';
   return 'other';
 }
 
@@ -201,8 +342,22 @@ export function categorize(name: string): FacilityCategory {
 
 type Role = 'item' | 'number' | 'numberWeak' | 'name' | 'use' | 'typeish' | 'catcode' | 'rpaType' | 'floors' | 'gross' | 'cleanable' | 'area' | 'qty' | 'unit'
   | 'portable' | 'fixtures' | 'fixWC' | 'fixUR' | 'fixLAV' | 'fixSH' | 'freq' | 'daysOpen' | 'status' | 'remarks' | 'campus' | 'zone' | 'address' | 'year'
-  | 'meal' | 'seats' | 'svcType' | 'gQty' | 'mows' | 'cycle' | 'svcLvl' | 'length' | 'width' | 'sides' | 'surface' | 'served' | 'rowKey' | 'change' | 'revised' | 'info';
-interface Col { i: number; role: Role; text: string; unit?: QUnit; kind?: GroundsKind; meal?: string; weekend?: boolean; old?: boolean; newer?: boolean; slash?: boolean; days?: boolean }
+  | 'meal' | 'seats' | 'svcType' | 'gQty' | 'mows' | 'cycle' | 'svcLvl' | 'length' | 'width' | 'sides' | 'surface' | 'served' | 'rowKey' | 'change' | 'revised' | 'mix' | 'info';
+interface Col {
+  i: number; role: Role; text: string; unit?: QUnit; kind?: GroundsKind; meal?: string; weekend?: boolean; old?: boolean; newer?: boolean; slash?: boolean; days?: boolean; mix?: keyof FloorMix;
+  /** length / width columns: printed in meters or feet */
+  len?: 'm' | 'ft';
+  /** a bare "Area" title: the grounds area name, or the building area when another name column exists or the values are figures */
+  bareArea?: boolean;
+  /** a generic area column titled as a pricing / service / custodial / net area */
+  serviceArea?: boolean;
+}
+/** Unit of a length or width column title: "Length (m)", "Larghezza (metri)", "Width (ft)". */
+function lengthUnit(h: string): 'm' | 'ft' | undefined {
+  if (/\((?:m|mt|mtr|ml)\.?\)|met(?:er|re)s?|metri|in m|m\.?l\.?/.test(h)) return 'm';
+  if (/\((?:ft|lf|feet)\.?\)|feet|ft|lf|linear f/.test(h)) return 'ft';
+  return undefined;
+}
 
 const MEAL_RE = /\b(breakfast|brunch|lunch|dinner|supper|midnight|late\s*\/\s*midnight|late meal|late night|colazione|pranzo|cena)\b/;
 function mealName(m: string): string {
@@ -238,7 +393,12 @@ function roleOf(cell: string): Omit<Col, 'i' | 'text'> | null {
   if (/fixture/.test(h)) return { role: 'fixtures' };
   if (/total (?:site )?(?:acres|area)|site (?:acres|area)|gross site|site size|total acres|lot size|land area|parcel area/.test(h)) return { role: 'info' };
   if (/seat/.test(h)) return { role: 'seats' };
-  if (/wood floor|glass|window|capacity|enroll|population|occupan|price|\$|cost|rate\b|amount\b/.test(h)) return { role: 'info' };
+  // floor finish areas ("Carpet SF", "VCT SF", "Ceramic SF", "Gym Wood Floor SF")
+  if (!/gross|cleanable|total/.test(h) && (u === 'sf' || u === 'sm' || /\barea\b|\bsf\b/.test(h))) {
+    const mix: keyof FloorMix | undefined = /\bcarpet/.test(h) ? 'carpet' : /\bvct\b|resilient|vinyl|\blvt\b|linoleum/.test(h) ? 'resilient' : /ceramic|terrazzo|quarry|\btile\b|marble/.test(h) ? 'hardTile' : /concrete|sealed/.test(h) ? 'concrete' : /\bwood\b|maple|hardwood/.test(h) ? 'wood' : undefined;
+    if (mix) return { role: 'mix', mix };
+  }
+  if (/wood floor|glass|window|capacity|enroll|population|occupan|price|\$|cost|rate\b|amount\b|definition|height|standard|requirement|dimension|\bsize\b/.test(h)) return { role: 'info' };
   if (/mows?\s*\/\s*(?:yr|year)|mows per|mowings|cuts per|sfalci|cycles? per (?:yr|year|season)/.test(h)) return { role: 'mows' };
   if (/(?:facilities|buildings|bldgs?|areas?) served|edifici serviti|served facilities/.test(h)) return { role: 'served' };
   if (/slab|hardscape|\bpaved\b|pavement area/.test(h) && (u === 'sf' || u === 'sm' || u === 'sy' || /area/.test(h))) return { role: 'gQty', kind: 'sidewalk', unit: u && u !== 'other' ? u : 'sf' };
@@ -256,18 +416,29 @@ function roleOf(cell: string): Omit<Col, 'i' | 'text'> | null {
   if (/ball ?fields?|athletic fields?/.test(h) && /\b(?:no\.?|number|count)$/.test(h)) return { role: 'info' };
   if (/svc\.? lvl|service level|level of service/.test(h)) return { role: 'svcLvl' };
   if (/\bcycle\b/.test(h)) return { role: 'cycle' };
-  if (/\blength\b|lunghezza/.test(h)) return { role: 'length' };
-  if (/\bwidth\b|larghezza/.test(h)) return { role: 'width' };
+  if (/\blength\b|lunghezza/.test(h)) return { role: 'length', len: lengthUnit(h) };
+  if (/\bwidth\b|larghezza/.test(h)) return { role: 'width', len: lengthUnit(h) };
   if (/^sides?\b/.test(h)) return { role: 'sides' };
   if (/^surface\b|surface type|^pavement\b|^material\b/.test(h)) return { role: 'surface' };
   const was = /\b(?:was|old|from|previous|prior|original|existing|before)\b/.test(h);
   const isNew = !was && /\b(?:is|new|revised|changed|corrected|now|after|amended)\b/.test(h);
-  if (/cleanable|\bclean(?:ed)?\b|\bcsf\b|\bnet\b|netta|pulibile|serviced|service area|custodial (?:service )?(?:area|sq|sf|square|space)|\bnsf\b|area to be cleaned/.test(h)) return { role: 'cleanable', unit: u, old: was, newer: isNew };
+  const areaUnit = u === 'sf' || u === 'sm' || u === 'sy';
+  const areaWord = /\barea\b|superficie|square f|sq\.?\s*f|footage|floor area/.test(h);
+  // "Floors Serviced", "Days Serviced per Week", "Times Cleaned per Week", "Restrooms Serviced" count things, they are not areas
+  const countHdr = !areaUnit && !areaWord && /\b(?:floors?|stor(?:e)?ys?|stories|levels?|days?|times|visits?|restrooms?|toilets?|fixtures?|rooms?|units|buildings|bldgs|occupants|per (?:week|wk|day|month|year))\b/.test(h);
+  if (countHdr && /\b(?:days?|times|visits?)\b/.test(h) && /serviced|cleaned|service|per (?:week|wk)|\/\s*(?:week|wk)/.test(h)) return { role: 'freq', days: true };
+  if (countHdr && /\b(?:restrooms?|toilets?|rooms?|units|buildings|bldgs|occupants)\b/.test(h) && !/fixture/.test(h)) return { role: 'info' };
+  if (!countHdr && /cleanable|\bclean(?:ed)?\b|\bcsf\b|\bnet\b|netta|pulibile|serviced|service area|custodial (?:service )?(?:area|sq|sf|square|space)|\bnsf\b|area to be cleaned/.test(h)) return { role: 'cleanable', unit: u, old: was, newer: isNew };
   if (/gross|\bgsf\b|lorda|\bgfa\b/.test(h)) return { role: 'gross', unit: u, old: was, newer: isNew };
   if (/\b(?:qty|quantity|quantit\w*)\b|um qty/.test(h)) return { role: 'qty', unit: u };
-  if (u === 'sf' || u === 'sm' || u === 'sy' || /\barea\b|superficie|square f|footage|pricing area|floor area/.test(h)) {
-    if (/^(?:grounds )?area(?: description| name)?$/.test(h)) return { role: 'name' };
-    return { role: 'area', unit: u, old: was, newer: isNew };
+  if (areaUnit || areaWord || /pricing area/.test(h)) {
+    if (/^(?:grounds )?area(?: description| name)?$/.test(h)) return { role: 'name', bareArea: h === 'area' };
+    // grounds and envelope schedules ("Lawn Area (SF)", "Roof Area (SF)", "Parking Lot SY") are not building areas
+    if (/\blawns?\b|\bturf\b|landscap|\bmow(?:ed|able|ing)?\b|\bgrass\b|\bprato\b/.test(h)) return { role: 'gQty', kind: 'improved_turf', unit: u && u !== 'other' ? u : 'sf' };
+    if (/parking|\blots?\b|\bpaved\b|pavement|asphalt|\broads?\b|driveway/.test(h)) return { role: 'gQty', kind: 'parking', unit: u && u !== 'other' ? u : 'sf' };
+    if (/sidewalks?|walkways?|\bwalks\b|plazas?/.test(h)) return { role: 'gQty', kind: 'sidewalk', unit: u && u !== 'other' ? u : 'sf' };
+    if (/\broofs?\b|\bwalls?\b|façade|facade|envelope|\bsite\b|\bland\b|exterior|wall covering|curtain/.test(h)) return { role: 'info' };
+    return { role: 'area', unit: u, old: was, newer: isNew, serviceArea: /pricing|service|serviced|custodial|cleanable|\bclean(?:ed)?\b|\bnet\b|workload|janitorial|to be cleaned/.test(h) };
   }
   if (/^(?:u\.?\s*m\.?|um|uom|unit|units|unit of measure|primary um|measure|unita)\b/.test(h) || (/\bu\.m\./.test(h) && h.length < 16)) return { role: 'unit' };
   if (/days open|operating days|days of operation/.test(h)) return { role: 'daysOpen' };
@@ -275,6 +446,7 @@ function roleOf(cell: string): Omit<Col, 'i' | 'text'> | null {
   if (/\bfloors?\b|\bstor(?:e)?ys?\b|stories|\bflrs?\b|piani|no\.? of levels|number of levels|^levels$/.test(h)) return { role: 'floors' };
   if (/fac status|^status$|facility status|building status|^condition|\bstato\b|record status/.test(h)) return { role: 'status' };
   if (/remark|\bnotes?\b|comment|osservaz|basis for change|explanation/.test(h)) return { role: 'remarks' };
+  if (/^change\s*\(\+|net change|^difference|^delta\b|^variance/.test(h)) return { role: 'info' };
   if (/^change\b|^action\b|type of change|change type/.test(h)) return { role: 'change' };
   if (/revised information|revision|new information|revised data|description of change|change description/.test(h)) return { role: 'revised' };
   if (/service type|type of service|service style|food service type/.test(h)) return { role: 'svcType' };
@@ -299,10 +471,26 @@ interface TableMap {
 }
 
 function buildMap(cells: string[], id: string, caption: string, above: string[][], body: string[]): TableMap | null {
+  // headcount by meal period in rows ("Meal Period | Weekday Avg Headcount | Weekend Avg Headcount", or one column per DFAC)
+  if (/^(?:meals?(?: periods?)?|periods?|service periods?|pasto|meal service)$/.test(normHeader(cells[0] ?? '')) && cells.length >= 2 && body.some((l) => MEAL_RE.test(normHeader(splitPipe(l)[0] ?? '')))) {
+    const mcols: Col[] = cells.map((c, i) => ({ i, role: 'info' as Role, text: clean(c) }));
+    const get = (r: Role) => mcols.find((c) => c.role === r);
+    return { id, cols: mcols, n: cells.length, sig: `meals:${cells.length}`, kind: 'meals', eu: false, codeRows: 0, caption, get, all: (r: Role) => mcols.filter((c) => c.role === r) };
+  }
   const cols: Col[] = [];
   const seen = new Set<Role>();
+  const roles = cells.map((c) => roleOf(c));
+  // a bare "Area" column names grounds areas ("Area | Quantity"), but next to a facility name column, or over figures
+  // ("Fac No. | Facility Name | Area | UM"), it is the building area
+  roles.forEach((r, i) => {
+    if (!r || r.role !== 'name' || !r.bareArea) return;
+    const otherName = roles.some((o, k) => k !== i && o?.role === 'name' && !o.bareArea);
+    let figures = 0, words = 0;
+    for (const l of body.slice(0, 60)) { const v = clean(splitPipe(l)[i]); if (!v || isBlankish(v)) continue; if (isNumericCell(v)) figures++; else words++; }
+    if (otherName || figures > words) roles[i] = { role: 'area', unit: undefined };
+  });
   cells.forEach((c, i) => {
-    const r = roleOf(c);
+    const r = roles[i];
     if (!r) return;
     // the first name / campus / freq / floors column wins; later look-alikes are information only
     if (['name', 'campus', 'freq', 'floors', 'number', 'use', 'status', 'unit', 'qty', 'svcLvl', 'cycle', 'rowKey', 'served'].includes(r.role) && seen.has(r.role)) { cols.push({ i, text: clean(c), role: 'info' }); return; }
@@ -341,15 +529,23 @@ function buildMap(cells: string[], id: string, caption: string, above: string[][
   const identity = has('number') || has('name');
   const bldgAreas = !!gross || !!cleanable || has('portable');
   let kind: TableMap['kind'] = 'other';
-  if ((has('change') || has('revised')) && has('number')) kind = 'change';
+  if ((has('change') || has('revised')) && has('number') && !gross && !cleanable) kind = 'change';
   else if (meals.length >= 2 && identity) kind = 'facility';
   else if (identity && bldgAreas && !(has('rowKey') && !has('number'))) kind = 'facility';
   else if (has('number') && has('qty') && has('unit')) kind = 'facility';
   else if (/meal|period|pasto|service/.test(normHeader(cells[0] ?? '')) && cells.length >= 2 && !identity) kind = 'meals';
   else if ((identity || has('rowKey')) && (has('gQty') || has('qty') || (has('length') && has('width')))) kind = 'grounds';
+  // in a building table a "Service Level" column is the cleaning frequency, not a grounds service level
+  if (kind === 'facility' && !has('freq')) { const sl = get('svcLvl'); if (sl) sl.role = 'freq'; }
   const capL = caption.toLowerCase();
   let eu = /italian (?:number )?format|formato numerico italiano|european (?:number )?format|decimal comma|comma (?:separates|as the) decimal|virgola/.test(capL) && !/u\.s\. number format|us number format/.test(capL);
-  if (!eu && !/u\.s\. number format/.test(capL)) eu = body.some((l) => l.split('|').some((c) => { const t = clean(c); return /^\D{0,4}\d{1,3}(?:\.\d{3})+,\d+\b/.test(t) || /^\D{0,4}\d+,\d{1,2}(?:\s|$|[a-z²]|\s*(?:ha|m²|mq|sm))/i.test(t); }));
+  // otherwise the figures in the area and quantity columns vote; notes, numbers and remarks ("1,2" footnote refs) never do
+  if (!eu && !/u\.s\. number format|us number format/.test(capL)) {
+    const qcols = new Set([gross, cleanable, grossOld, ...areaCands, ...grossCands, ...all('cleanable'), ...all('gQty'), ...all('qty'), ...all('mix'), ...all('length'), ...all('width')].filter((c): c is Col => !!c).map((c) => c.i));
+    let us = 0, euN = 0;
+    for (const l of body) { const cs = splitPipe(l); for (const i of qcols) { const s = numberStyle(cs[i]); if (s === 'us') us++; else if (s === 'eu') euN++; } }
+    eu = euN > 0 && euN >= 2 * us;
+  }
   let unit: QUnit | undefined;
   if (/(?:areas?|superfici\w*)[^.]{0,40}\b(?:in square met|in metri quadrati|in m²|\(sm\)|in sm\b)|square met(?:er|re)s \(sm\)|metri quadrati/.test(capL)) unit = 'sm';
   else if (/areas? (?:are )?(?:stated |shown |given )?in square (?:feet|yards)/.test(capL)) unit = /yards/.test(capL) ? 'sy' : 'sf';
@@ -366,6 +562,13 @@ interface RowData {
   bn?: string; name?: string; campus?: string; gross?: number; cleanable?: number; unit?: AreaUnit; grossPrinted?: number; cleanPrinted?: number; wasGross?: number;
   floors?: number; fixtures?: number; level?: ServiceLevel; freqText?: string; status?: { status: FacilityStatus; reason: string }; active?: boolean; use?: string;
   dining?: Partial<DiningAcc>; portableSf?: number; source: SourceRef; tableId: string; notes?: string[]; confidence?: number; strongName?: boolean;
+  /** the area came from a generic area column ("Pricing Area (SF)"), not a column titled gross */
+  grossGeneric?: boolean;
+  /** …and that column is titled as a pricing / service / custodial area */
+  grossService?: boolean;
+  /** the grouping row (banner) above the row, campus word or not */
+  group?: string;
+  floorMix?: Facility['floorMix'];
 }
 interface FacRec {
   bn?: string; key?: string; nameKey: string; name: string; strongName: boolean; campus?: string; use: string;
@@ -373,11 +576,15 @@ interface FacRec {
   cleanable?: number; cleanRank: number; cleanPrinted?: number; floors?: number; floorsRank: number; fixtures?: number; fixRank: number;
   level?: ServiceLevel; freqText?: string; levelRank: number; status?: FacilityStatus; statusReason?: string; statusRank: number;
   dining?: DiningAcc; diningRank: number; portableSf?: number; source: SourceRef; tableId: string; tables: Set<string>; notes: string[]; confidence: number;
+  floorMix?: Facility['floorMix'];
+  grossGeneric?: boolean; grossService?: boolean; group?: string;
 }
-interface GRec { g: GroundsArea; rank: number; doc: string; tableId?: string; rowKey?: string; served: string[]; dims?: { lf: number; width: number; sides: number; hard: boolean }; label: string }
+/** dims: a median or right-of-way as printed (length, width, sides) with feet per printed unit (lFt / wFt: 1, or 3.28084 for meters). */
+interface GRec { g: GroundsArea; rank: number; doc: string; tableId?: string; rowKey?: string; served: string[]; dims?: { lf: number; width: number; sides: number; hard: boolean; lFt?: number; wFt?: number }; label: string }
+const FT_PER_M = 3.28084;
 
 interface Ctx { doc: DocInput; rank: number; amendLike: boolean; page?: number; inAmend: boolean }
-interface Para { text: string; line: number; page?: number; subjects?: string[]; cell?: boolean; inAmend: boolean }
+interface Para { text: string; line: number; page?: number; subjects?: string[]; cell?: boolean; inAmend: boolean; context?: string }
 
 const ROLE_RANK: Record<string, number> = { solicitation: 0, pws: 0, other: 0, attachment: 1, qa: 2, amendment: 3 };
 function docRank(d: DocInput): { rank: number; amendLike: boolean } {
@@ -396,7 +603,14 @@ const splitPipe = (line: string): string[] => {
   if (t.endsWith('|') && cells[cells.length - 1] === '') cells.pop();
   return cells;
 };
-const splitLoose = (line: string): string[] => (line.includes('\t') ? line.split(/\t+/).map((c) => c.trim()) : /\S {3,}\S/.test(line.trim()) ? line.trim().split(/ {3,}/).map((c) => c.trim()) : [line.trim()]);
+/** Space-aligned text splits at runs of 3+ spaces (tab-separated rows were already turned into pipe rows). */
+const splitLoose = (line: string): string[] => (/\S {3,}\S/.test(line.trim()) ? line.trim().split(/ {3,}/).map((c) => c.trim()) : [line.trim()]);
+/** Text exports: tab-separated rows become "cell | cell" rows with their empty cells kept, and comma-separated
+ *  tables pasted as text are read the same way. */
+function normalizeRows(text: string): string[] {
+  const lines = text.split(/\r?\n/).map((l) => (l.includes('\t') && !l.includes('|') && l.trim() ? l.replace(/^[ ]+|[ ]+$/g, '').split('\t').map((c) => c.trim().replace(/\|/g, '/')).join(' | ') : l));
+  return csvBlocksToRows(lines);
+}
 
 /** A one-cell row inside a table that names a campus / zone / group of rows ("CANTONMENT AREA B – TROOP AREA"). */
 function groupLabel(cells: string[]): string | undefined {
@@ -422,7 +636,8 @@ const CAMPUS_WORD = /\b(?:campus|campuses|caserma|installation|garrison|annex|ba
  *  "Segment M-6", "R-5101 through R-5130" (expanded only against known numbers). */
 const REF_PREFIX = /\b(bldgs?|buildings?|bld|facilit(?:y|ies)|fac|locations?|loc|sites?|segments?|seg|structures?|parks?|dfacs?)\.?\s*(?:nos?\.?|numbers?|#)?\s*(?=[A-Z0-9])/gi;
 const REF_ID = /^(?:[A-Z]{0,4}-?\d{1,7}[A-Z]{0,3}(?:-[A-Z0-9]{1,4})?|[A-Z]{2,5}\d{2,6}[A-Z]{0,3}|[A-Z]{1,4}\/[A-Z]{1,4}|[A-Z]{3,5}(?![a-z]))/;
-interface Ref { id: string; key: string; at: number; site: boolean }
+/** at: where the reference (its "Building" prefix) starts; end: where its identifier ends. */
+interface Ref { id: string; key: string; at: number; end: number; site: boolean }
 function refsIn(text: string, known?: (key: string) => boolean): Ref[] {
   const out: Ref[] = [];
   const t = dash(text);
@@ -439,27 +654,32 @@ function refsIn(text: string, known?: (key: string) => boolean): Ref[] {
       if (/^[A-Z]{3,5}$/.test(id) && !/^(?:bldg|building)/i.test(m[1])) break; // bare letter codes only after "Building"
       if (/^(?:THE|AND|FOR|NOT|ALL|NEW|OLD|ARE|WAS|HAS|LIST|TABLE|AREA|NO)$/.test(id)) break;
       const sep = rest.slice(id.length).match(/^\s*(,|and\b|&|or\b|through\b|thru\b|to\b|-)\s*/i);
+      if (prev) {
+        // a list item looks like the first one ("1201, 1205"), never a figure ("Building 1210 to 33,120 GSF")
+        const first = out[out.length - 1]?.id ?? '';
+        const digits = (x: string) => x.replace(/\D/g, '').length;
+        if (/^\s*(?:sf|gsf|sq|square|acres?|ac\b|lf|sy|sm|m²)/i.test(rest.slice(id.length)) || (/^\d+$/.test(id) && digits(id) < digits(first) - 1)) break;
+      }
       if (prev && /^(?:through|thru|to|-)$/i.test(prev) && out.length) {
         const a = out[out.length - 1].id, b = id;
         const pa = a.match(/^(.*?)(\d+)$/), pb = b.match(/^(.*?)(\d+)$/);
-        if (pa && pb && pa[1] === pb[1] && Number(pb[2]) > Number(pa[2]) && Number(pb[2]) - Number(pa[2]) <= 400) {
-          for (let n = Number(pa[2]) + 1; n <= Number(pb[2]); n++) {
-            const cand = `${pa[1]}${String(n).padStart(pa[2].length, '0')}`;
-            if (!known || known(bnKey(cand)) || n === Number(pb[2])) out.push({ id: cand, key: bnKey(cand), at: m.index, site });
-          }
-        } else out.push({ id, key: bnKey(id), at: m.index, site });
-      } else out.push({ id, key: bnKey(id), at: m.index, site });
+        if (!(pa && pb && pa[1] === pb[1] && Number(pb[2]) > Number(pa[2]) && Number(pb[2]) - Number(pa[2]) <= 400)) break; // "1210 to 33,120" is not a range
+        for (let n = Number(pa[2]) + 1; n <= Number(pb[2]); n++) {
+          const cand = `${pa[1]}${String(n).padStart(pa[2].length, '0')}`;
+          if (!known || known(bnKey(cand)) || n === Number(pb[2])) out.push({ id: cand, key: bnKey(cand), at: m.index, end: pos + id.length, site });
+        }
+      } else out.push({ id, key: bnKey(id), at: m.index, end: pos + id.length, site });
       if (!sep) break;
       prev = sep[1];
       pos += id.length + sep[0].length;
     }
   }
   // bare identifiers that are known building numbers or grounds rows ("PB-3, Sports Complex …", "VA0355ZZ")
-  if (known) for (const m of t.matchAll(/\b([A-Z]{1,4}-\d{1,6}[A-Z]?|[A-Z]{2}\d{4}[A-Z]{2}|\d{3,6}[A-Z])\b/g)) { const k = bnKey(m[1]); if (known(k) && !out.some((r) => r.key === k)) out.push({ id: m[1], key: k, at: m.index ?? 0, site: false }); }
+  if (known) for (const m of t.matchAll(/\b([A-Z]{1,4}-\d{1,6}[A-Z]?|[A-Z]{2}\d{4}[A-Z]{2}|\d{3,6}[A-Z])\b/g)) { const k = bnKey(m[1]); if (known(k) && !out.some((r) => r.key === k)) out.push({ id: m[1], key: k, at: m.index ?? 0, end: (m.index ?? 0) + m[0].length, site: false }); }
   return out;
 }
 
-const ABBR = /(?:\b(?:no|nos|bldg|bldgs|inc|co|corp|ltd|st|ave|blvd|rd|dr|mr|mrs|ms|approx|para|sec|fig|vs|etc|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec|ft|sq|exh|att|rev|vol|pt|al|u\.s|e\.g|i\.e|a\.m|p\.m|nr|ref|cf)|\b[A-Z]|\d)\.$/i;
+const ABBR = /(?:\b(?:no|nos|bldg|bldgs|inc|co|corp|ltd|st|ave|blvd|rd|dr|mr|mrs|ms|approx|para|sec|fig|vs|etc|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec|ft|sq|exh|att|rev|vol|pt|al|u\.s|e\.g|i\.e|a\.m|p\.m|nr|ref|cf)|\b[A-Z])\.$/i;
 function splitSentences(text: string): string[] {
   const out: string[] = [];
   let start = 0;
@@ -499,6 +719,7 @@ const KV = {
 type KvField = keyof typeof KV;
 const kvField = (label: string): KvField | undefined => {
   const l = normHeader(label).replace(/:$/, '').trim();
+  if (/\d/.test(l.replace(/\([^)]*\)/g, '')) || l.length > 60) return undefined; // "Custodial Sq. Ft. 15,330" is a value, not a label
   for (const k of Object.keys(KV) as KvField[]) if (KV[k].test(l)) return k;
   return undefined;
 };
@@ -514,6 +735,9 @@ class Reader {
   inCat: RegExp[] = [];
   tableSeq = 0;
   mealTables: { periodsByTarget: Map<string, MealPeriodHeadcount[]>; hint?: string; source: SourceRef; rank: number }[] = [];
+  proseGroundsPending: Parameters<Reader['pushGrounds']>[0][] = [];
+  /** the package asks for food service (DFAC operation, full food service, dining facility attendants) */
+  diningScope = false;
 
   knownKey = (k: string) => this.byBn.has(k) || this.grounds.some((g) => g.rowKey && bnKey(g.rowKey) === k);
 
@@ -525,8 +749,16 @@ class Reader {
       const list = this.byBn.get(k) ?? [];
       const same = (c?: string) => !!c && !!row.campus && nameKey(c) === nameKey(row.campus);
       rec = list.find((r) => same(r.campus));
-      if (!rec) rec = list.find((r) => !r.campus || !row.campus);
+      // a row with no campus that could be either record goes to the one with its name ("0012 | Annex Ops" → North Annex)
+      if (!rec) { const cands = list.filter((r) => !r.campus || !row.campus); rec = (cands.length > 1 && row.name ? cands.find((r) => r.nameKey === nameKey(row.name!)) : undefined) ?? cands[0]; }
       if (!rec && list.length === 1 && !list[0].tables.has(row.tableId)) rec = list[0];
+      // the same number twice in one table, both with an area, is two buildings (two sites under group rows such as
+      // "CASTLE ROCK" / "PINE BLUFF"); the group label tells them apart
+      if (rec && rec.tables.has(row.tableId) && !/:(?:lines|dining|meals|added:.*)$/.test(row.tableId) && rec.gross > 0 && (row.gross ?? 0) > 0 && Math.abs(rec.gross - row.gross!) > 0.5 && !same(rec.campus)) {
+        if (!rec.campus && rec.group && rec.group !== row.group) rec.campus = rec.group;
+        rec = undefined;
+        if (!row.campus && row.group) row = { ...row, campus: row.group };
+      }
       if (!rec) { rec = this.newRec(row); this.byBn.set(k, [...list, rec]); rec.bn = row.bn; rec.key = k; }
     } else {
       const nk = nameKey(row.name ?? '');
@@ -538,7 +770,7 @@ class Reader {
     return rec;
   }
   newRec(row: RowData): FacRec {
-    const r: FacRec = { nameKey: nameKey(row.name ?? ''), name: '', strongName: false, use: '', gross: 0, grossRank: -1, cleanRank: -1, floorsRank: -1, fixRank: -1, levelRank: -1, statusRank: -1, diningRank: -1, source: row.source, tableId: row.tableId, tables: new Set(), notes: [], confidence: row.confidence ?? 0.75 };
+    const r: FacRec = { nameKey: nameKey(row.name ?? ''), name: '', strongName: false, use: '', gross: 0, grossRank: -1, cleanRank: -1, floorsRank: -1, fixRank: -1, levelRank: -1, statusRank: -1, diningRank: -1, source: row.source, tableId: row.tableId, tables: new Set(), notes: [], confidence: row.confidence ?? 0.75, group: row.group };
     this.recs.push(r);
     return r;
   }
@@ -549,11 +781,23 @@ class Reader {
     if (!rec.campus && row.campus) rec.campus = row.campus;
     if (row.use && !rec.use) rec.use = row.use;
     if (row.gross != null && row.gross > 0) {
-      if (!(rec.gross > 0)) { rec.gross = row.gross; rec.grossRank = rank; rec.unit = row.unit; rec.grossPrinted = row.grossPrinted; rec.grossFrom = row.source.file; rec.portableSf = row.portableSf; }
+      const takeGross = () => { rec.gross = row.gross!; rec.grossRank = rank; rec.unit = row.unit; rec.grossPrinted = row.grossPrinted; rec.grossFrom = row.source.file; rec.portableSf = row.portableSf; rec.grossGeneric = row.grossGeneric; rec.grossService = row.grossService; };
+      if (!(rec.gross > 0)) takeGross();
       else if (rank > rec.grossRank && Math.abs(rec.gross - row.gross) > 0.5) {
         rec.notes.push(`Superseded ${fmt(rec.gross)} SF${rec.grossFrom ? ` (${rec.grossFrom})` : ''} with ${fmt(row.gross)} SF from ${row.source.file}.`);
-        rec.gross = row.gross; rec.grossRank = rank; rec.unit = row.unit; rec.grossPrinted = row.grossPrinted; rec.grossFrom = row.source.file; rec.portableSf = row.portableSf;
-      } else if (Math.abs(rec.gross - row.gross) > 0.5 && rank === rec.grossRank && !rec.notes.some((n) => n.startsWith('Also listed'))) rec.notes.push(`Also listed as ${fmt(row.gross)} SF (${row.tableId.split(':').slice(-1)[0]}); kept ${fmt(rec.gross)} SF.`);
+        takeGross();
+      } else if (Math.abs(rec.gross - row.gross) > 0.5 && rank === rec.grossRank) {
+        // a second table of the same rank listing a smaller pricing / service / custodial area for the building gives
+        // the serviced area, never a new gross
+        if (row.grossService && row.gross < rec.gross * 0.95 && rec.cleanable == null && row.cleanable == null) { rec.cleanable = row.gross; rec.cleanRank = rank; rec.notes.push(`Listed as ${fmt(row.gross)} SF in a second schedule (${row.source.file}); recorded as the serviced (cleanable) area.`); }
+        else if (rec.grossGeneric && !row.grossGeneric) {
+          // a column titled gross beats a generic area column of the same rank, whatever the table order
+          const old = rec.gross, oldService = rec.grossService;
+          rec.notes.push(`Also listed as ${fmt(old)} SF in another table; kept the ${fmt(row.gross)} SF gross area.`);
+          takeGross();
+          if (oldService && old < row.gross * 0.95 && rec.cleanable == null && row.cleanable == null) { rec.cleanable = old; rec.cleanRank = rank; rec.notes.push(`The ${fmt(old)} SF schedule is recorded as the serviced (cleanable) area.`); }
+        } else if (!rec.notes.some((n) => n.startsWith('Also listed'))) rec.notes.push(`Also listed as ${fmt(row.gross)} SF in another ${row.tableId === rec.tableId ? 'row' : 'table'}; kept ${fmt(rec.gross)} SF.`);
+      }
     }
     if (row.wasGross && row.gross && Math.abs(row.wasGross - row.gross) > 0.5) rec.notes.push(`Changed from ${fmt(row.wasGross)} SF to ${fmt(row.gross)} SF (${row.source.file}).`);
     if (row.cleanable != null && row.cleanable > 0 && (rec.cleanable == null || rank > rec.cleanRank)) { rec.cleanable = row.cleanable; rec.cleanRank = rank; rec.cleanPrinted = row.cleanPrinted; if (!rec.unit) rec.unit = row.unit; }
@@ -572,6 +816,7 @@ class Reader {
       }
       rec.diningRank = Math.max(rec.diningRank, rank);
     }
+    if (row.floorMix && !rec.floorMix) rec.floorMix = row.floorMix;
     if (row.notes) for (const n of row.notes) if (!rec.notes.includes(n)) rec.notes.push(n);
     rec.confidence = Math.max(rec.confidence, row.confidence ?? 0);
   }
@@ -618,7 +863,7 @@ class Reader {
   // ---------------------------------------------------------------- one document
   readDoc(doc: DocInput, rank: number, amendLike: boolean) {
     const ctx: Ctx = { doc, rank, amendLike, inAmend: amendLike };
-    const lines = doc.text.split(/\r?\n/);
+    const lines = normalizeRows(doc.text);
     const counts = new Map<string, number>();
     for (const l of lines) { const t = l.trim(); if (t) counts.set(t, (counts.get(t) ?? 0) + 1); }
     const furniture = (t: string) => /^(?:--- page \d+ ---|page \d+(?:\s+of\s+\d+)?|cui|(?:continued|cont\.).*|.*\bcontinue[sd]? (?:on|from) (?:the )?(?:next|previous|page).*|.*\bpage [a-z]?[\d.-]+ of \d+.*)$/i.test(t) || ((counts.get(t) ?? 0) >= 3 && t.length < 220);
@@ -635,6 +880,8 @@ class Reader {
     const endPara = () => { if (para.length) paras.push({ text: para.join(' ').replace(/\s+/g, ' '), line: paraLine, page: ctx.page, inAmend: ctx.inAmend }); para = []; };
     const src = (line: string): SourceRef => ({ file: doc.name, page: ctx.page, excerpt: clean(line).slice(0, 200) });
     const flushKv = () => { if (kv) this.flushKv(kv, ctx); kv = null; };
+    // one-building-per-line facility lists are read after the document's tables, like its prose
+    const linesPending: { cells: string[]; t: string; source: SourceRef }[] = [];
 
     for (let i = 0; i < lines.length; i++) {
       const t = lines[i].trim();
@@ -647,10 +894,12 @@ class Reader {
       const cells = isPipe ? splitPipe(t) : splitLoose(t);
 
       // key / value building information sheets
-      const kvPairs = this.kvPairs(cells, t, !!kv);
+      if (!isPipe && /^(?:building|facility|property)\s+(?:information|data)\s+sheet\b|^exhibit\s+[a-z0-9.]+\s*[-–]\s*building information/i.test(t)) flushKv();
+      const kvPairs = map && !suspended && map.kind !== 'other' ? null : this.kvPairs(cells, t, !!kv);
       if (kvPairs) {
         endPara();
-        if (kvPairs.some(([f]) => f === 'number')) { flushKv(); kv = { grounds: [], source: src(t) }; }
+        const repeats = kv && kvPairs.some(([f]) => (f === 'gross' && kv!.gross != null) || (f === 'name' && kv!.name != null));
+        if (kvPairs.some(([f]) => f === 'number') || repeats) { flushKv(); kv = { grounds: [], source: src(t) }; }
         if (kv) this.kvApply(kv, kvPairs, map);
         continue;
       }
@@ -659,10 +908,12 @@ class Reader {
       if (cells.length >= 2 && !isNumericRow(cells)) {
         const above: string[][] = [];
         for (let k = i - 1, n = 0; k >= 0 && n < 5; k--) { const l = lines[k].trim(); if (!l) continue; n++; if (l.includes('|')) above.push(splitPipe(l)); }
-        const hdr = this.tryHeader(lines, i, cells, recentPlain.join(' '), above);
+        // inside a running table only a row with no figures at all can start a new header
+        const live: boolean = !!map && !suspended;
+        const hdr: { map: TableMap; extra: number } | null = live && (cells.some((c) => /\d/.test(clean(c).replace(/\(\d+\)/g, ''))) || cells.some((c) => clean(c).length > 50)) ? null : this.tryHeader(lines, i, cells, recentPlain.join(' '), above);
         if (hdr) {
           endPara();
-          if (hdr.map.kind === 'facility') flushKv();
+          if (hdr.map.kind !== 'other') flushKv();
           // a group label on the line just above the header belongs to this table
           const prev = lastPlain && lastPlain.i >= i - 3 ? groupText(lastPlain.t) : undefined;
           if (hdr.map.sig !== lastSig) group = prev;
@@ -696,20 +947,32 @@ class Reader {
         // an unmapped table row: long text cells (Q&A responses, change descriptions) are read as prose
         const subjects = cells.filter((c) => c.length < 40).flatMap((c) => refsIn(c, this.knownKey).map((r) => r.id));
         for (const c of cells) if (clean(c).length >= 30 && /\s/.test(c)) paras.push({ text: clean(c), line: i, page: ctx.page, subjects, cell: true, inAmend: ctx.inAmend });
-        this.fallbackFacility(cells, t, ctx, src(t));
+        linesPending.push({ cells, t, source: src(t) });
         continue;
       }
       if (furniture(t)) continue;
+      // a table / exhibit title closes the running table
+      if (/^(?:table|tabella|exhibit|attachment|appendix|technical exhibit|te[- ]?\d+[.:]|section\s+[a-z0-9])\b/i.test(t) && t.length < 160) { map = null; group = undefined; }
       lastPlain = { t, i };
       recentPlain.push(t); if (recentPlain.length > 6) recentPlain.shift();
       if (/^(?:[a-z]|\d{1,2}|[ivx]{1,4})[.)]\s|^(?:item|q|a)\s*\d+\s*[.:\-–]|^\d+(?:\.\d+)+\s|^\d+\.\s+[A-Z]/i.test(t)) endPara();
       if (!para.length) paraLine = i;
       para.push(t);
-      this.fallbackFacility([t], t, ctx, src(t));
-      this.proseGrounds(t, ctx, src(t));
+      linesPending.push({ cells: [t], t, source: src(t) });
+      if (!kv) this.proseGrounds(t, ctx, src(t));
     }
     endPara();
     flushKv();
+    // facility lines with no table header: only buildings no table or sheet of this or a later-ranked document gave
+    for (const l of linesPending) this.fallbackFacility(l.cells, l.t, ctx, l.source);
+    // "Where no cleanable area is given, the gross area applies" (host-nation and GSA notes)
+    if (/(?:where|if|when) no (?:cleanable|net|custodial) area is (?:given|shown|stated|recorded|listed)[^.]{0,40}gross area (?:applies|shall apply|is used)|gross area applies/i.test(doc.text.replace(/\s+/g, ' '))) {
+      for (const r of this.recs) if (r.cleanable == null && r.gross > 0 && [...r.tables].some((t) => t.startsWith(`${doc.name}:`))) { r.cleanable = r.gross; r.cleanRank = ctx.rank; r.notes.push('No cleanable area listed; the document says the gross area applies.'); }
+    }
+    // grounds stated in sentences count only for kinds the document's tables and sheets did not give
+    const tableKinds = new Set(this.grounds.filter((g) => g.doc === doc.name).map((g) => g.g.kind));
+    for (const g of this.proseGroundsPending) if (!tableKinds.has(g.kind)) this.pushGrounds(g);
+    this.proseGroundsPending = [];
     // statements after the document's own tables
     paras.sort((a, b) => a.line - b.line);
     for (let p = 0; p < paras.length; p++) this.statements(paras[p], ctx, paras);
@@ -724,18 +987,19 @@ class Reader {
     if (next && next.includes('|')) {
       const nc = splitPipe(next);
       if (nc.every((c) => !clean(c) || /^\(\d+\)$/.test(clean(c)))) extra = 1;
-      else if (!isNumericRow(nc) && !nc.some((c) => isNumericCell(c)) && nc.every((c) => clean(c).length <= 60) && nc.some((c, k) => clean(c) && !clean(cells[k]))) {
+      else if (Math.abs(nc.length - cells.length) <= 1 && !isNumericRow(nc) && !nc.some((c) => isNumericCell(c)) && nc.every((c) => clean(c).length <= 60) && nc.some((c, k) => clean(c) && !clean(cells[k]))) {
         hcells = mergeHeader(cells, nc); extra = 1;
         const nn = lines[i + 2]?.trim();
         if (nn && nn.includes('|') && splitPipe(nn).every((c) => !clean(c) || /^\(\d+\)$/.test(clean(c)))) extra = 2;
       }
     }
     if (hcells.some((c) => isNumericCell(c) && !/^\(\d+\)$/.test(clean(c)))) return null;
+    // a figure followed by a unit ("42.5 acres improved", "45,200 SF") is data, not a column title
+    if (hcells.some((c) => /^[~±≈]?\s*(?:approx\.?\s*)?\d[\d,.]*\s*(?:acres?|ac|sf|gsf|sq\.?\s*ft|sy|ha|m²|trees|fixtures|floors?)\b/i.test(clean(c)))) return null;
     const body: string[] = [];
     for (let k = i + 1 + extra; k < lines.length && body.length < 300; k++) { const l = lines[k]; if (!l.includes('|')) { if (l.trim() && !/^--- page/.test(l.trim()) && body.length > 3) break; continue; } body.push(l); }
     const map = buildMap(hcells, `t${++this.tableSeq}`, caption, above, body);
-    if (!map) return null;
-    return { map, extra };
+    return map ? { map, extra } : null;
   }
 
   // ---------------------------------------------------------------- table rows
@@ -778,17 +1042,24 @@ class Reader {
     let fromQty = false;
     if (!gCol && qtyCol && numCol) { gCol = qtyCol; fromQty = true; }
     const gTxt = cell(gCol);
-    const gUnit = unitOf(gTxt) ?? rowUnit ?? gCol?.unit ?? map.unit ?? 'sf';
+    const gUnit = cellUnit(gTxt) ?? rowUnit ?? gCol?.unit ?? map.unit ?? 'sf';
     if (rpa && !/build|bldg|edificio/i.test(rpa)) return false;
     if ((fromQty || unitCol) && !['sf', 'sm', 'sy'].includes(gUnit)) return false;
     if (fromQty && groundsKindFromText(`${name} ${clean(cell(map.get('use')))}`) && !/build|bldg/i.test(rpa)) return false;
+    // a facility list with a UM column also lists grounds and paving in SF ("Improved Grounds – Main Post | 1,856,000 | SF")
+    if (unitCol && !fromQty && !/build|bldg/i.test(rpa) && !/\b(?:building|center|hall|facility|garage|structure|house|office|shop|barracks|school)\b/i.test(name)) {
+      const gk = groundsKindFromText(name);
+      if (gk && ['improved_turf', 'semi_improved', 'unimproved', 'parking', 'sidewalk'].includes(gk)) return false;
+    }
     const eu = map.eu;
     const toSf = (v: number | undefined, u: QUnit) => (v == null ? undefined : u === 'sm' ? Math.round(v * SQFT_PER.sm) : u === 'sy' ? Math.round(v * SQFT_PER.sy) : v);
-    const grossPrinted = gTxt && !isBlankish(gTxt) ? parseNumberCell(gTxt, eu) : undefined;
+    // "1.200 qm": no building measures 1.2 units, so a lone d.ddd value is a thousands separator
+    const areaNum = (t: string) => { const v = parseNumberCell(t, eu); return v != null && v < 10 && /^\D{0,3}\d{1,3}\.\d{3}(?!\d|,)/.test(clean(t)) ? parseNumberCell(t, true) : v; };
+    const grossPrinted = gTxt && !isBlankish(gTxt) ? areaNum(gTxt) : undefined;
     let gross = toSf(grossPrinted, gUnit);
     const cTxt = cell(map.cleanable);
-    const cUnit = unitOf(cTxt) ?? rowUnit ?? map.cleanable?.unit ?? (gUnit === 'sm' || gUnit === 'sy' ? gUnit : map.unit) ?? 'sf';
-    const cleanPrinted = cTxt && !isBlankish(cTxt) ? parseNumberCell(cTxt, eu) : undefined;
+    const cUnit = cellUnit(cTxt) ?? rowUnit ?? map.cleanable?.unit ?? (gUnit === 'sm' || gUnit === 'sy' ? gUnit : map.unit) ?? 'sf';
+    const cleanPrinted = cTxt && !isBlankish(cTxt) ? areaNum(cTxt) : undefined;
     const cleanable = toSf(cleanPrinted, cUnit);
     const notes: string[] = [];
     // portable classrooms "4 @ 960" (and "2 @ 960 1 @ 1,792") are added to the building area
@@ -801,28 +1072,34 @@ class Reader {
     if (gUnit === 'sm' || gUnit === 'sy') notes.push(`Areas printed in ${gUnit === 'sm' ? 'square meters' : 'square yards'}${grossPrinted ? ` (${grossPrinted.toLocaleString('en-US')} ${gUnit.toUpperCase()} gross)` : ''}; converted at ${SQFT_PER[gUnit]} SF per ${gUnit.toUpperCase()}.`);
     const wasTxt = cell(map.grossOld);
     const wasGross = toSf(wasTxt ? parseNumberCell(wasTxt, eu) : undefined, gUnit);
-    // status: struck numbers, status / frequency / remarks / name cells
-    let status: RowData['status'];
+    // status: struck numbers or names, the status / frequency / remarks / name cells; the most specific wins
+    // (a row marked "DEMOLISHED FY26" in its name and "N/A - excluded" in its frequency is demolished)
     let active = false;
-    if (isStruck(rawBn) || (nameCol && isStruck(cells[nameCol.i]) && !clean(cells[nameCol.i]).match(/[a-z]/i)?.length === false)) status = { status: 'deleted_by_amendment', reason: 'Struck through in the facility list' };
-    if (!status && isStruck(rawBn || cells[nameCol?.i ?? -1])) status = { status: 'deleted_by_amendment', reason: 'Struck through in the facility list' };
+    const found: NonNullable<RowData['status']>[] = [];
+    if (isStruck(rawBn) || (!numCol && nameCol && isStruck(cells[nameCol.i])) || (numCol && !clean(rawBn) && nameCol && isStruck(cells[nameCol.i]))) found.push({ status: 'deleted_by_amendment', reason: 'Struck through in the facility list' });
     const stCol = map.get('status');
-    if (!status && stCol) {
+    if (stCol) {
       const v = clean(cell(stCol)).toLowerCase();
-      if (/^(?:active|in service|occupied|in scope|yes)$/.test(v)) active = true;
-      else if (/closed|inactive/.test(v)) status = { status: 'vacant', reason: `Status ${clean(cell(stCol))}` };
-      else if (/disposed|demolish|excess/.test(v)) status = { status: 'demolished', reason: `Status ${clean(cell(stCol))}` };
-      else if (v) status = statusFromText(cell(stCol));
+      if (/^(?:active|in service|occupied|in scope|yes|operational)$/.test(v)) active = true;
+      else if (/closed|inactive/.test(v)) found.push({ status: 'vacant', reason: `Status ${clean(cell(stCol))}` });
+      else if (/disposed|demolish|excess/.test(v)) found.push({ status: 'demolished', reason: `Status ${clean(cell(stCol))}` });
+      else if (v) { const x = statusFromText(cell(stCol)); if (x) found.push(x); }
     }
     const freqCol = map.get('freq');
     const fTxt = clean(cell(freqCol));
-    if (!status && fTxt) status = statusFromText(fTxt, { frequencyCell: true });
-    if (!status) for (const c of map.cols) {
-      if (!['remarks', 'name', 'meal', 'info', 'change', 'revised', 'svcType'].includes(c.role)) continue;
-      const s = statusFromText(cells[c.i]);
-      if (s) { status = s; break; }
+    if (fTxt) { const x = statusFromText(fTxt, { frequencyCell: true }); if (x) found.push(x); }
+    // information columns that only describe the building (Year Built, Historic, RPUID, …) never carry a status
+    const descriptive = (c: Col) => c.role === 'info' && /\b(?:rpuid|rpsuid|uid|id|record|year|yr|built|historic\w*|eligib\w*|registry|nrhp|code|age|height|capacity|enroll\w*|population|price|cost|rate|amount|\$)\b/i.test(c.text);
+    for (const c of map.cols) {
+      if (!['remarks', 'name', 'meal', 'info', 'change', 'revised', 'svcType'].includes(c.role) || descriptive(c)) continue;
+      const x = statusFromText(cells[c.i], { nameCell: c.role === 'name' });
+      if (x) found.push(x);
     }
-    if (!status) { for (let k = 0; k < cells.length; k++) if (!map.cols.some((c) => c.i === k)) { const s = statusFromText(cells[k]); if (s) { status = s; break; } } }
+    for (let k = 0; k < cells.length; k++) if (!map.cols.some((c) => c.i === k)) { const x = statusFromText(cells[k]); if (x) found.push(x); }
+    const demoNote = [...map.cols.filter((c) => c.role === 'remarks' || c.role === 'status').map((c) => cells[c.i]), fTxt].map(futureDemolitionNote).find(Boolean);
+    if (demoNote) notes.push(demoNote);
+    const STATUS_ORDER: FacilityStatus[] = ['deleted_by_amendment', 'demolished', 'vacant', 'excluded', 'option_only'];
+    let status: RowData['status'] = found.sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status))[0];
     // frequency
     let level: ServiceLevel | undefined;
     if (fTxt) {
@@ -839,7 +1116,7 @@ class Reader {
       const periods: MealPeriodHeadcount[] = [];
       for (const m of mealCols) {
         const txt = clean(cells[m.i]);
-        if (!txt || /\d{3,4}\s*-\s*\d{3,4}|\d{1,2}:\d{2}|a\.m\.|p\.m\./i.test(dash(txt))) continue;
+        if (!txt || !isNumericCell(txt) || /\d{3,4}\s*-\s*\d{3,4}|\d{1,2}:\d{2}|a\.m\.|p\.m\./i.test(dash(txt))) continue;
         const v = parseNumberCell(txt, eu);
         if (v == null || !isFinite(v)) continue;
         const name = m.meal ?? 'Meal';
@@ -858,19 +1135,23 @@ class Reader {
       if (svc) dining.serviceStyle = /\bdfa\b|attendant/i.test(svc) ? 'dining_facility_attendant' : /management/i.test(svc) ? 'management_only' : /ffs|full/i.test(svc) ? 'full_food_service' : undefined;
       if (days && days <= 7) dining.daysPerWeek = days;
     }
-    if (!(gross && gross > 0) && !(cleanable && cleanable > 0) && !status && !dining?.periods?.length) {
-      if (!dining && !active) return !!(gTxt && /\btbd\b|to be determined/i.test(gTxt)) || true;
-    }
+    // a row with no area, status or dining workload ("TBD – see Addendum") is not registered
+    if (!((gross ?? 0) > 0 || (cleanable ?? 0) > 0 || status || dining || active)) return true;
     const floorsTxt = cell(map.get('floors'));
     const floors = floorsTxt ? parseFloors(floorsTxt) : undefined;
     const fixtures = this.rowFixtures(cells, map);
     const campus = clean(cell(map.get('campus'))) || (group && CAMPUS_WORD.test(group) ? group : undefined);
+    if (struckNote(gTxt)) notes.push(`Gross ${struckNote(gTxt)}`);
+    if (struckNote(cTxt)) notes.push(`Cleanable ${struckNote(cTxt)}`);
     const use = [clean(cell(map.get('use'))), clean(cell(map.get('typeish')))].filter(Boolean).join(' ');
-    if (!(gross && gross > 0) && dining?.periods?.length === undefined && !status && !active && !dining) return true;
-    if (gross == null && cleanable == null && !status && !dining && !active) return true;
+    // floor finishes in SF columns (Carpet SF | VCT SF | Ceramic SF) give the floor mix
+    let floorMix: Facility['floorMix'];
+    const mix = map.all('mix').map((c) => ({ k: c.mix!, v: parseNumberCell(cells[c.i], eu) ?? 0 }));
+    const mixSum = mix.reduce((a, b) => a + b.v, 0);
+    if (mix.length >= 2 && mixSum > 0) { floorMix = {}; for (const m of mix) floorMix[m.k] = round((floorMix[m.k] ?? 0) + m.v / mixSum, 3); }
     this.register({
       bn, name: name || (bn ? `Building ${bn}` : undefined), campus: campus || undefined, gross, cleanable, unit: AREA_U[gUnit], grossPrinted: gUnit !== 'sf' ? grossPrinted : undefined, cleanPrinted: cUnit !== 'sf' ? cleanPrinted : undefined,
-      wasGross, floors, fixtures, level, freqText: fTxt || undefined, status, active, use, dining, portableSf, source, tableId: `${ctx.doc.name}:${map.id}`, notes, confidence: codeFromName ? 0.7 : 0.8,
+      wasGross, floors, fixtures, level, freqText: fTxt || undefined, status, active, use, dining, portableSf, floorMix, source, tableId: `${ctx.doc.name}:${map.id}`, notes, confidence: codeFromName ? 0.7 : 0.8, grossGeneric: !!gCol && gCol.role !== 'gross', grossService: !!gCol && gCol.role !== 'gross' && !!gCol.serviceArea, group,
     }, ctx.rank);
     return true;
   }
@@ -893,7 +1174,9 @@ class Reader {
     if (!label && !rowKey && !numRaw) return;
     // rows that are out of scope, information only, or maintained by others carry no workload
     const textCells = map.cols.filter((c) => ['remarks', 'status', 'name', 'info', 'use', 'typeish'].includes(c.role)).map((c) => clean(cells[c.i])).join(' ; ');
-    if (/not in scope|out of scope|not in contract|information only|for reference only|by others|not maintained|maintained by (?!the contractor)|excluded from|\bdeleted\b|\bdisposed\b|\bclosed\b|dato informativo/i.test(textCells)) return;
+    if (/not in scope|out of scope|not in contract|information only|for reference only|by others|not maintained|maintained by (?!the contractor)|dato informativo/i.test(textCells)) return;
+    const remarks = map.cols.filter((c) => c.role === 'remarks').map((c) => clean(cells[c.i])).join(' ; ');
+    if (/\bdeleted\b|\bdisposed\b|^\s*excluded?\b/i.test(remarks) || isStruck(cells[map.get('rowKey')?.i ?? map.get('name')?.i ?? -1])) return;
     const st = clean(cell(map.get('status'))).toLowerCase();
     if (st && !/^(?:active|in service|yes)$/.test(st)) return;
     const cat = clean(cell(map.get('catcode')));
@@ -917,13 +1200,15 @@ class Reader {
       this.pushGrounds({ ...base, kind, qty: v, unit: c.unit ?? 'ac', docLabel: [c.text, typeTxt].filter(Boolean).join(' · ') || undefined });
       any = true;
     }
-    const qCol = map.get('qty');
+    // a facility list with a UM column: grounds and paving rows carry their quantity in the area column
+    const qCol = map.get('qty') ?? (map.kind === 'facility' && map.get('unit') ? map.gross : undefined);
     if (qCol) {
       const qTxt = clean(cells[qCol.i]);
       const v = parseNumberCell(qTxt, eu);
-      const u = unitOf(` ${clean(cell(map.get('unit')))} `) ?? unitOf(qTxt) ?? qCol.unit ?? map.unit;
+      const u = unitOf(` ${clean(cell(map.get('unit')))} `) ?? cellUnit(qTxt) ?? qCol.unit ?? map.unit;
       if (v && v > 0 && u && u !== 'other') {
-        let kind = tk ?? groundsKindFromText(`${label} ${qTxt.replace(/[\d.,]+/g, ' ')}`);
+        const lk2 = groundsKindFromText(`${label} ${qTxt.replace(/[\d.,]+/g, ' ')}`);
+        let kind = lk2 && ['tree_canopy', 'shrub_bed', 'athletic_field', 'parking', 'sidewalk'].includes(lk2) ? lk2 : tk ?? lk2;
         if (!kind && (u === 'ac' || u === 'ha')) kind = lk ?? 'improved_turf';
         if (kind === 'tree_canopy' && u !== 'ea') kind = undefined;
         if (u === 'ea' && kind !== 'tree_canopy') kind = /tree/i.test(`${label} ${qTxt}`) ? 'tree_canopy' : undefined;
@@ -937,10 +1222,16 @@ class Reader {
       const S = parseNumberCell(cell(map.get('sides')), eu) || 1;
       const surface = clean(cell(map.get('surface')));
       if (L && W && L > 0 && W > 0) {
-        const sqft = L * W * S;
+        // lengths and widths in meters ("Length (m)", or a metric caption) are converted to feet
+        const metric = /\b(?:lengths?|widths?|dimensions?)\b[^.]{0,40}\b(?:in )?(?:met(?:er|re)s|metri)\b|\bin metri\b/i.test(map.caption) || map.unit === 'sm';
+        const lU = lCol.len ?? (metric ? 'm' : 'ft'), wU = wCol.len ?? (metric ? 'm' : 'ft');
+        const lFt = lU === 'm' ? FT_PER_M : 1, wFt = wU === 'm' ? FT_PER_M : 1;
+        const sqft = L * lFt * W * wFt * S;
         const hard = /paver|concrete|asphalt|paved|no turf|hardscape|brick|stone/i.test(surface);
-        const dims = { lf: L, width: W, sides: S, hard };
-        const how = `${fmt(L)} LF × ${W} FT${S !== 1 ? ` × ${S} sides` : ''} = ${fmt(sqft)} SF`;
+        const dims = { lf: L, width: W, sides: S, hard, lFt, wFt };
+        const how = lU === 'm' || wU === 'm'
+          ? `${fmt(L)} ${lU === 'm' ? 'm' : 'LF'} × ${W} ${wU === 'm' ? 'm' : 'FT'}${S !== 1 ? ` × ${S} sides` : ''}${lU === 'm' && wU === 'm' ? ` = ${fmt(L * W * S)} m²` : ''} = ${fmt(sqft)} SF`
+          : `${fmt(L)} LF × ${W} FT${S !== 1 ? ` × ${S} sides` : ''} = ${fmt(sqft)} SF`;
         if (hard) this.pushGrounds({ ...base, kind: /parking|lot/i.test(surface) ? 'parking' : 'sidewalk', qty: sqft, unit: 'sf', notes: how, dims, docLabel: surface || undefined });
         else this.pushGrounds({ ...base, kind: lk ?? tk ?? 'improved_turf', qty: sqft / 43560, unit: 'ac', notes: `${how} (${round(sqft / 43560, 3)} acres)`, dims, docLabel: surface || undefined });
         any = true;
@@ -979,9 +1270,9 @@ class Reader {
     const change = clean(cells[map.get('change')?.i ?? -1]);
     const revised = clean(cells[map.get('revised')?.i ?? -1]);
     const text = [change, revised].filter(Boolean).join('. ');
-    const para: Para = { text, line: 0, page: ctx.page, subjects: [bn], cell: true, inAmend: true };
+    const para: Para = { text, line: 0, page: ctx.page, subjects: [bn], cell: true, inAmend: true, context: cells.join(' ') };
     if (/\badd(?:ed|ition)?\b/i.test(change)) this.addFacility(bn, name, revised, ctx, source);
-    else if (/remov|delet|exclud|not in scope|withdrawn/i.test(change)) this.setStatus(bn, { status: ctx.amendLike ? 'deleted_by_amendment' : 'excluded', reason: `${change}${revised ? `: ${revised}` : ''}`.slice(0, 160) }, ctx);
+    else if (/remov|delet|exclud|not in scope|withdrawn/i.test(change)) this.setStatus(bn, { status: ctx.amendLike ? 'deleted_by_amendment' : 'excluded', reason: `${change}${revised ? `: ${revised}` : ''}`.slice(0, 160) }, ctx, cells.join(' '));
     this.statements(para, ctx, [para]);
   }
 
@@ -1009,14 +1300,34 @@ class Reader {
   // ---------------------------------------------------------------- key / value sheets
   kvPairs(cells: string[], line: string, open: boolean): [KvField, string, string][] | null {
     let pairs: [string, string][] = [];
-    if (cells.length >= 2) { for (let k = 0; k + 1 < cells.length; k += 2) pairs.push([cells[k], cells[k + 1]]); }
-    else { const m = line.match(/^([A-Za-z][A-Za-z0-9 /()&.,'-]{2,60}?):\s+(.+)$/); if (m) pairs = [[m[1], m[2]]]; }
+    if (cells.length >= 2) {
+      // label | value pairs; a layout extractor may leave empty spacer cells between a label and its value
+      const isLabel = (c: string) => !!kvField(c) || (c.includes(':') && c.split(/:\s*/).filter(Boolean).length >= 2 && c.split(/:\s*/).filter(Boolean).every((x) => !!kvField(x)));
+      for (let k = 0; k < cells.length; k++) {
+        if (!clean(cells[k]) || !isLabel(clean(cells[k]))) continue;
+        let v = k + 1;
+        while (v < cells.length && !clean(cells[v])) v++;
+        if (v < cells.length && !isLabel(clean(cells[v]))) { pairs.push([cells[k], cells[v]]); k = v; }
+      }
+    } else { const m = line.match(/^([A-Za-z][A-Za-z0-9 /()&.,'-]{2,60}?):\s+(.+)$/); if (m) pairs = [[m[1], m[2]]]; }
     const out: [KvField, string, string][] = [];
-    for (const [l, v] of pairs) { const f = kvField(clean(l)); if (f && clean(v)) out.push([f, clean(l), v]); }
-    if (!out.length) return null;
-    if (!open && !out.some(([f]) => f === 'number')) return null;
-    if (out.length === 1 && out[0][0] === 'number' && (isNumericCell(out[0][2]) && cells.length > 2)) return null;
-    if (out[0][0] === 'number' && !normalizeBuildingNumber(out[0][2])) return null;
+    for (const [l, v] of pairs) {
+      const f = kvField(clean(l));
+      // figures need a figure ("Gross Square Feet | Rentable Square Feet" is two labels, not a pair)
+      if (f && clean(v) && (!['gross', 'cleanable', 'floors', 'above', 'below', 'fixtures', 'improved', 'semi', 'unimproved', 'parking', 'sidewalk', 'beds', 'trees'].includes(f) || /\d/.test(v))) { out.push([f, clean(l), v]); continue; }
+      // two labels merged into one cell, values merged into the next: "Building Number: Building Name: | A-101 Battalion HQ"
+      const labels = clean(l).split(/:\s*/).map((x) => x.trim()).filter(Boolean);
+      const fs = labels.map((x) => kvField(x));
+      const m = clean(v).match(/^(\S+)\s+(.+)$/);
+      if (labels.length === 2 && fs[0] === 'number' && fs[1] === 'name' && m && normalizeBuildingNumber(m[1])) { out.push(['number', labels[0], m[1]], ['name', labels[1], m[2]]); }
+    }
+    // a building number must read as one; a row of column titles is a table header, not a key / value line
+    const valid = out.filter(([f, , v]) => f !== 'number' || !!normalizeBuildingNumber(v));
+    if (!valid.length) return null;
+    if (!open && !valid.some(([f]) => f === 'number')) return null;
+    if (cells.length >= 3 && cells.every((c) => !/\d/.test(clean(c))) && cells.filter((c) => clean(c) && roleOf(c)).length >= cells.filter((c) => clean(c)).length * 0.6) return null;
+    if (valid.length === 1 && valid[0][0] === 'number' && isNumericCell(valid[0][2]) && cells.length > 2) return null;
+    out.length = 0; out.push(...valid);
     // a table header is not a key / value line
     if (cells.length >= 3 && cells.every((c) => !isNumericCell(c)) && out.length === 1 && out[0][0] !== 'number' && !/\d/.test(out[0][2])) return null;
     return out;
@@ -1027,8 +1338,8 @@ class Reader {
       switch (f) {
         case 'number': kv.bn = normalizeBuildingNumber(v); break;
         case 'name': kv.name = v; break;
-        case 'gross': { const u = unitOf(v); const n = parseNumberCell(v); if (n) { kv.gross = u === 'sm' ? Math.round(n * SQFT_PER.sm) : n; if (u === 'sm') kv.unit = 'sm'; } break; }
-        case 'cleanable': { const u = unitOf(v); const n = parseNumberCell(v); if (n) kv.cleanable = u === 'sm' ? Math.round(n * SQFT_PER.sm) : n; break; }
+        case 'gross': { const u = cellUnit(v); const n = parseNumberCell(v); if (n) { kv.gross = u === 'sm' ? Math.round(n * SQFT_PER.sm) : n; if (u === 'sm') kv.unit = 'sm'; } break; }
+        case 'cleanable': { const u = cellUnit(v); const n = parseNumberCell(v); if (n) kv.cleanable = u === 'sm' ? Math.round(n * SQFT_PER.sm) : n; break; }
         case 'floors': kv.floors = parseFloors(v); break;
         case 'above': kv.above = parseFloors(v); break;
         case 'below': { const n = parseNumberCell(v); kv.below = n != null && n < 20 ? n : undefined; break; }
@@ -1040,7 +1351,7 @@ class Reader {
         case 'improved': case 'semi': case 'unimproved': case 'parking': case 'sidewalk': case 'beds': case 'trees': {
           const n = parseNumberCell(v); if (!n) break;
           const kind: GroundsKind = f === 'improved' ? 'improved_turf' : f === 'semi' ? 'semi_improved' : f === 'unimproved' ? 'unimproved' : f === 'parking' ? 'parking' : f === 'sidewalk' ? 'sidewalk' : f === 'beds' ? 'shrub_bed' : 'tree_canopy';
-          const u = unitOf(v) ?? (kind === 'tree_canopy' ? 'ea' : ['parking', 'sidewalk', 'shrub_bed'].includes(kind) ? 'sf' : 'ac');
+          const u = cellUnit(v) ?? (kind === 'tree_canopy' ? 'ea' : ['parking', 'sidewalk', 'shrub_bed'].includes(kind) ? 'sf' : 'ac');
           kv.grounds.push({ kind, qty: n, unit: u, text: v });
           break;
         }
@@ -1065,7 +1376,14 @@ class Reader {
     const m = t.match(/^(?:bldgs?|buildings?|bld|facility|fac)\.?\s*(?:no\.?|#)?\s*([A-Z]{0,3}-?\d{1,6}[A-Z]{0,2}(?:-[A-Z0-9]{1,3})?)\b/i);
     if (!m || t.length > 220) return;
     if (/\b(?:is|are|was|were|shall|will|includ\w*|exclud\w*|not|has|have|see|per)\b/i.test(t)) return;
-    const sf = [...t.matchAll(/(\d{1,3}(?:,\d{3})+|\d{3,7})(?:\.\d+)?\s*(gsf|csf|sf|s\.f\.|sq\.?\s*ft\.?|square\s*feet|ft²|sm|m²)(?![a-z])/gi)];
+    // summaries ("Buildings 1201 and 1205 together total 63,950 SF") name more than one building
+    if (/\b(?:totals?|together|combined|altogether|aggregate|sum|in all|subtotal)\b|\b(?:and|&|through|thru)\s+(?:bldgs?\.?\s*|buildings?\s+)?[A-Z]{0,3}-?\d/i.test(t) || new Set(refsIn(t.replace(/\d[\d,.]*\s*(?:gsf|csf|sf|s\.f\.|sq\.?\s*ft\.?|square\s*feet|ft²|sm|m²)/gi, ' ')).map((r) => r.key)).size > 1) return;
+    const bn0 = normalizeBuildingNumber(m[1]);
+    // a building a table or information sheet of this or a later-ranked document already gave is not re-read from a line
+    if (bn0 && this.findRecs(bnKey(bn0)).some((r) => r.gross > 0 && r.grossRank >= ctx.rank && [...r.tables].some((id) => !/:(?:lines|dining|meals)$/.test(id)))) return;
+    // a parenthesised conversion ("45,200 SF (4,200 SM)") is the same area
+    const tv = t.replace(/\([^)]*\d[^)]*\)/g, ' ');
+    const sf = [...tv.matchAll(/(\d{1,3}(?:,\d{3})+|\d{3,7})(?:\.\d+)?\s*(gsf|csf|sf|s\.f\.|sq\.?\s*ft\.?|square\s*feet|ft²|sm|m²)(?![a-z])/gi)];
     if (!sf.length) return;
     const bn = normalizeBuildingNumber(m[1]);
     if (!bn) return;
@@ -1087,17 +1405,21 @@ class Reader {
     if (!/\d/.test(t) || !/acre|\bac\b|hectare|\bha\b|\bsf\b|square (?:feet|yards)|\bsy\b|trees/i.test(t)) return;
     if (/\b(?:means|defined|definition|minimum|maximum|height|inches|per (?:acre|sf)|\$)/i.test(t)) return;
     for (const clause of t.split(/;\s*|\.\s+(?=[A-Z])/)) {
-      if (/\b(?:total|totals|totaling|in all|altogether|combined|site area|total site)\b/i.test(clause)) continue;
+      // summaries ("a total of …", "total improved acreage …", "in all") would double count listed areas
+      if (/\b(?:grand |sub)?total\s+(?:of\s+)?(?:all\s+)?(?:improved|semi|unimproved|grounds|acre|area|site|turf|mowed|maintained)|\btotals?\s*[:=]|\bin all\b|\baltogether\b|\bcombined\b|site area|total site|\ba total of\b/i.test(clause)) continue;
       if (/not (?:maintained|included|in scope|part)|exclud|by others|maintained by (?!the contractor)|information only|not mowed/i.test(clause)) continue;
-      const q = clause.match(/(\d[\d,]*(?:\.\d+)?)\s*(acres?|ac\.?|hectares?|ha|sf|square feet|sq\.?\s*ft\.?|sy|square yards|trees)\b/i);
+      if (/\brevis|\bchang|\bcorrect|\bdelet|\bfrom\s+[\d.,]+\s*(?:\w+\s+)?to\s+[\d.,]/i.test(clause)) continue;
+      if (/\(\s*(?:approx(?:imately)?\.?|about|ca\.|i\.e\.|or|≈)?\s*\d[\d,.]*\s*(?:acres?|ac|ha|sf|sq\.?\s*ft|sy)\b[^)]*\)/i.test(clause)) continue;
+      const q = clause.replace(/^\s*(?:\d+(?:\.\d+)+|[a-z]\.|\(\w\))\s+/i, '').match(/(\d[\d,]*(?:\.\d+)?)\s*(acres?|ac\.?|hectares?|ha|sf|square feet|sq\.?\s*ft\.?|sy|square yards|trees)\b/i);
       if (!q) continue;
       const kind = groundsKindFromText(clause);
       if (!kind) continue;
       const u = unitOf(` ${q[2]} `) ?? 'ac';
       if ((kind === 'tree_canopy') !== (u === 'ea')) continue;
+      if (kind === 'tree_canopy' && !/^\d[\d,]*$/.test(q[1])) continue;
       if (['improved_turf', 'semi_improved', 'unimproved', 'athletic_field'].includes(kind) && !['ac', 'ha', 'sf', 'sm', 'sy'].includes(u)) continue;
       const served = refsIn(clause).filter((r) => !r.site).map((r) => r.id);
-      this.pushGrounds({ kind, qty: Number(q[1].replace(/,/g, '')), unit: u, label: clause.replace(q[0], '').replace(/[:,\s]+$/, '').slice(0, 100), served, source, tableId: `${ctx.doc.name}:prose:${source.excerpt?.slice(0, 30)}`, rank: ctx.rank });
+      this.proseGroundsPending.push({ kind, qty: Number(q[1].replace(/,/g, '')), unit: u, label: clause.replace(q[0], '').replace(/[:,\s]+$/, '').slice(0, 100), served, source, tableId: `${ctx.doc.name}:prose`, rank: ctx.rank });
     }
   }
 
@@ -1109,20 +1431,32 @@ class Reader {
     const paraRefs = refsIn(text, known);
     const paraKeys = [...new Set(paraRefs.map((r) => r.key))];
     const paraSubject = paraKeys.length === 1 ? paraRefs[0] : undefined;
-    const subjectRefs = (p.subjects ?? []).map((id) => ({ id, key: bnKey(id), at: 0, site: false }));
+    const subjectRefs: Ref[] = (p.subjects ?? []).map((id) => ({ id, key: bnKey(id), at: 0, end: 0, site: false }));
     const amend = ctx.amendLike || p.inAmend || /amendment|addendum/i.test(text);
     for (const s of splitSentences(text)) {
       const refs = refsIn(s, known);
       // deletions / exclusions
       const del = s.match(/\b(?:is|are|was|were|has been|have been|hereby|will be|shall be)\s+(?:hereby\s+)?(?:deleted|removed|excluded|eliminated|withdrawn)\b|\b(?:is|are)\s+not\s+(?:a\s+)?part\s+of\s+(?:this|the)\s+(?:solicitation|contract|requirement|scope|rfp|work)|\bremoved\s+from\s+(?:the\s+)?scope\b|\bno\s+longer\s+(?:in\s+scope|required|part\s+of)\b|\bis\s+DELETED\b/i);
       if (del && !/\b(?:may|might|could|if|unless|whether|would)\b[^.]{0,40}$/i.test(s.slice(0, del.index))) {
-        let targets = refs.filter((r) => r.at < (del.index ?? 0));
-        if (!targets.length) { const after = s.slice((del.index ?? 0) + del[0].length); if (/^[^.]*:/.test(after)) targets = refsIn(after.slice(after.indexOf(':')), known); }
-        if (!targets.length && p.cell && subjectRefs.length === 1 && !refs.length) targets = subjectRefs;
+        // the subject of the verb: references in the same clause, near its start ("Building 118 is deleted …",
+        // "Site 14, Wexford Commons Pocket Park, is DELETED …"); a list after a colon ("… are deleted: 118, 120")
+        const vi = del.index ?? 0;
+        const segStart = Math.max(s.lastIndexOf(';', vi), s.lastIndexOf(':', vi)) + 1;
+        const after = s.slice(vi + del[0].length);
+        // the reference must be the subject of the verb ("Building 118 is deleted", "Site 14, Wexford Commons Pocket Park,
+        // is DELETED", "Building 0012 at North Annex is deleted"), never an object ("Trash from Building 1210 shall be
+        // removed daily", "The carpet in Building 1201 was removed"); "removed" / "excluded" also need their scope
+        // ("… from the requirement", "in its entirety") or the end of the clause
+        const scoped = !/\b(?:removed|excluded)\b/i.test(del[0]) || /removed\s+from|not\s+(?:a\s+)?part|no\s+longer/i.test(del[0]) || DELETION_SCOPE.test(after);
+        let targets = scoped ? refs.filter((r) => r.at >= segStart && r.at < vi) : [];
+        if (targets.length && !deletionSubject(s, segStart, targets, vi)) targets = [];
+        if (!targets.length && scoped && /^[^.]*:/.test(after)) targets = refsIn(after.slice(after.indexOf(':')), known);
+        if (!targets.length && scoped && p.cell && subjectRefs.length === 1 && !refs.length && /^\s*(?:(?:yes|no)[.,]?\s*)?(?:(?:it|they|this|that|these|those|the)(?:\s+(?:building|facility|location|site|structure|buildings|facilities))?)?\s*$/i.test(s.slice(segStart, vi))) targets = subjectRefs;
         for (const r of targets) {
           const reason = s.slice(0, 160);
-          if (!r.site) this.setStatus(r.id, { status: amend ? 'deleted_by_amendment' : 'excluded', reason }, ctx);
-          this.deleteGrounds(r.key, ctx);
+          let campus: string | null | undefined;
+          if (!r.site) campus = this.setStatus(r.id, { status: amend && (/delet|remov|withdraw|eliminat/i.test(del[0]) || /deleted by (?:amendment|addendum)/i.test(text)) ? 'deleted_by_amendment' : 'excluded', reason }, ctx, `${s} ${text} ${p.context ?? ''}`);
+          if (campus !== null) this.deleteGrounds(r.key, ctx, `${s} ${text} ${p.context ?? ''}`);
         }
       }
       // additions with their values ("Building 1114, Ridgeview Commons, is added …: 11,000 gross square feet, …")
@@ -1136,15 +1470,15 @@ class Reader {
       }
       // revisions ("Gross SF is REVISED from 2,240 to 2,420", "Amendment 0002 revises Building 2101 to 52,980 GSF")
       if (/revis|chang|correct|amend|increas|decreas|reduc|updat|is now/i.test(s)) {
-        for (const clause of s.split(/;\s+|,\s+and\s+(?=the\s|[A-Z])/)) this.revision(clause, refs.length ? refs : refsIn(clause, known), paraSubject, subjectRefs, ctx, p, amend);
+        for (const clause of s.split(/;\s+|,\s+and\s+(?=the\s|[A-Z])/)) this.revision(clause, refsIn(clause, known), refs, paraSubject, subjectRefs, ctx, amend);
       } else if (amend && /\b(?:gross|cleanable|custodial)\s+(?:square\s+(?:footage|feet)|sq\.?\s*ft|sf|area)\s+(?:of|for)\s+/i.test(s)) {
-        this.revision(s, refs, paraSubject, subjectRefs, ctx, p, amend);
+        this.revision(s, refs, refs, paraSubject, subjectRefs, ctx, amend);
       }
     }
     void all;
   }
 
-  revision(clause: string, refs: Ref[], paraSubject: Ref | undefined, subjects: Ref[], ctx: Ctx, p: Para, amend: boolean) {
+  revision(clause: string, refs: Ref[], sentenceRefs: Ref[], paraSubject: Ref | undefined, subjects: Ref[], ctx: Ctx, amend: boolean) {
     const NUM = '(\\d[\\d.,]*(?:\\s*(?:\\/|@)\\s*\\d[\\d.,]*)*)';
     const UNIT = '(?:\\s*(sf|gsf|square feet|sq\\.?\\s*ft\\.?|acres?|ac\\b|lf|linear feet|sy|sm|m²|floors?|fixtures))?';
     const c = dash(clean(clause));
@@ -1168,7 +1502,7 @@ class Reader {
     else if (/\blength\b|\blf\b/.test(seg) || /lf|linear/.test(unitTxt)) field = 'length';
     else if (/\bwidth\b/.test(seg)) field = 'width';
     else if (/acres?|turf|mow|grounds/.test(seg) || /acre|^ac$/.test(unitTxt)) field = 'acres';
-    else if (/gross|gsf|pricing area|building sf|permanent building/.test(seg)) field = 'gross';
+    else if (/gross|gsf|pricing area|building sf|permanent building/.test(seg) || (/^gsf$/.test(unitTxt))) field = 'gross';
     else if (/sf|square|sq|area|gsf/.test(seg + ' ' + unitTxt)) field = 'area';
     else if (/portables?|number of|count/.test(seg)) return;
     if (!field) return;
@@ -1177,7 +1511,7 @@ class Reader {
     const oldV = parse(oldTxt), newV = parse(newTxt);
     if (newV == null || !isFinite(newV)) return;
     let targets = refs.filter((r) => r.at <= at + 5);
-    if (!targets.length) targets = refs.length ? refs : paraSubject ? [paraSubject] : subjects.length === 1 ? subjects : [];
+    if (!targets.length) targets = refs.length ? refs : sentenceRefs.length ? sentenceRefs : paraSubject ? [paraSubject] : subjects.length === 1 ? subjects : [];
     if (!targets.length) return;
     const keys = [...new Set(targets.map((r) => r.key))];
     if (keys.length !== 1) return;
@@ -1192,7 +1526,7 @@ class Reader {
           if (field === 'length' && (oldV == null || Math.abs(d.lf - oldV) < 1)) d.lf = newV;
           else if (field === 'width' && (oldV == null || Math.abs(d.width - oldV) < 0.1)) d.width = newV;
           else continue;
-          const sqft = d.lf * d.width * d.sides;
+          const sqft = d.lf * (d.lFt ?? 1) * d.width * (d.wFt ?? 1) * d.sides;
           g.g.quantity = round(g.g.unit === 'acres' ? sqft / 43560 : sqft, 4);
           g.g.notes = `${g.g.notes ? `${g.g.notes}; ` : ''}revised: ${why}`;
         } else if (field === 'acres' && ['acres', 'hectares'].includes(g.g.unit) && oldV != null && Math.abs(g.g.quantity - oldV) <= Math.max(0.005, oldV * 0.002)) {
@@ -1227,13 +1561,36 @@ class Reader {
     }
   }
 
-  setStatus(id: string, st: { status: FacilityStatus; reason: string }, ctx: Ctx) {
-    for (const r of this.findRecs(bnKey(id))) { r.status = st.status; r.statusReason = st.reason; r.statusRank = Math.max(r.statusRank, ctx.rank); }
+  /** Applies a deletion / exclusion to the building. When the number is used on several campuses, only the record whose
+   *  campus the statement names changes; if it names none (or several), nothing changes and the records get a note.
+   *  Returns the campus applied to (undefined: no campus involved), or null when the statement was ambiguous. */
+  setStatus(id: string, st: { status: FacilityStatus; reason: string }, ctx: Ctx, context = ''): string | null | undefined {
+    let recs = this.findRecs(bnKey(id));
+    let campus: string | undefined;
+    if (recs.length > 1) {
+      const hit = recs.filter((r) => r.campus && mentions(context, r.campus));
+      if (hit.length !== 1) {
+        for (const r of recs) if (!r.notes.some((n) => n.startsWith('Deletion ambiguous'))) r.notes.push(`Deletion ambiguous across campuses: ${ctx.doc.name} says "${st.reason.slice(0, 100)}" without naming one campus for building ${id}; status not changed.`);
+        return null;
+      }
+      recs = hit; campus = hit[0].campus;
+    }
+    for (const r of recs) {
+      // a statement never turns a specific status (deleted, demolished, vacant) into a generic "excluded"
+      if (r.status && st.status === 'excluded') continue;
+      r.status = st.status; r.statusReason = st.reason; r.statusRank = Math.max(r.statusRank, ctx.rank);
+    }
+    return campus;
   }
-  deleteGrounds(key: string, ctx: Ctx) {
-    const before = this.grounds.length;
-    this.grounds = this.grounds.filter((g) => !(g.rowKey && bnKey(g.rowKey) === key && g.rank <= ctx.rank));
-    void before;
+  deleteGrounds(key: string, ctx: Ctx, context = '') {
+    let hits = this.grounds.filter((g) => g.rowKey && bnKey(g.rowKey) === key && g.rank <= ctx.rank);
+    // the same site or area number on two campuses: only the one the statement names
+    if (new Set(hits.map((g) => nameKey(g.g.campus ?? ''))).size > 1) {
+      const named = hits.filter((g) => g.g.campus && mentions(context, g.g.campus));
+      if (new Set(named.map((g) => nameKey(g.g.campus ?? ''))).size !== 1) return;
+      hits = named;
+    }
+    this.grounds = this.grounds.filter((g) => !hits.includes(g));
   }
   addFacility(id: string, name: string | undefined, text: string, ctx: Ctx, source: SourceRef) {
     const t = dash(clean(text));
@@ -1256,8 +1613,11 @@ class Reader {
     const t = dash(p.text);
     const m = t.match(/(\d[\d,]*)\s*(?:meals?|headcounts?|patrons?|rations?|diners?|customers?)\s*(?:are\s+served\s+)?(?:per|a|\/|each)\s*day/i) ?? t.match(/average daily (?:headcount|census|meals?) (?:is|of)\s*(\d[\d,]*)/i);
     if (!m) return;
+    // meals served under another contract, by others, or stated for information carry no workload here
+    if (/separate (?:contract|agreement)|another contract|other contracts?|not part of|not included|by others|information only|for reference only|not in (?:scope|contract)/i.test(t)) return;
     const meals = Number(m[1].replace(/,/g, ''));
-    if (!(meals > 0)) return;
+    // "3 meals per day" is a ration rule, not a dining workload
+    if (!(meals >= 20 || (meals > 0 && /\b(?:average|avg|headcount|census|served|serves|feeds|patrons|diners)\b/i.test(t) && meals >= 10))) return;
     const near = [p.text, paras[idx - 1]?.text ?? '', paras[idx + 1]?.text ?? ''].join(' ');
     const cnt = t.match(/\b(two|three|four|five|2|3|4|5)\s*(?:\(\d\)\s*)?meal(?:s|\s+periods?)\b/i);
     const named = new Set([...t.toLowerCase().matchAll(new RegExp(MEAL_RE.source, 'g'))].map((x) => mealName(x[1])));
@@ -1268,15 +1628,25 @@ class Reader {
     const style: DiningProfile['serviceStyle'] = /attendant[- ]only|dfa (?:services? )?only|dining facility attendant (?:services? )?only/i.test(near) ? 'dining_facility_attendant' : /management only/i.test(near) ? 'management_only' : 'full_food_service';
     const daysPerWeek = /seven days|7 days|365 days|daily including weekends/i.test(near) ? 7 : /five days|monday through friday|weekdays only/i.test(near) ? 5 : 7;
     const dining: Partial<DiningAcc> = { mealsPerDay: meals, mealPeriods, daysPerWeek, seats: seats ? Number((seats[1] ?? seats[2]).replace(/,/g, '')) : undefined, kitchenSqft: kitchen ? Number(kitchen[1].replace(/,/g, '')) : undefined, diningRoomSqft: room ? Number(room[1].replace(/,/g, '')) : undefined, serviceStyle: style };
-    // target: a building named in this or the previous paragraphs, else the only dining facility
+    // target: a building named in this or the previous paragraphs, else the dining facility the paragraph names
+    // ("The Lightning Inn serves …"), else the only dining facility
     let target: FacRec | undefined;
     for (let k = idx; k >= Math.max(0, idx - 3) && !target; k--) {
       for (const r of refsIn(paras[k].text, this.knownKey)) { const recs = this.findRecs(r.key); if (recs.length === 1) { target = recs[0]; break; } }
     }
-    if (!target) { const dfacs = this.recs.filter((r) => categorize(`${r.name} ${r.use}`) === 'dining'); if (dfacs.length >= 1) target = dfacs[0]; }
+    const dfacs = this.recs.filter((r) => categorize(`${r.name} ${r.use}`) === 'dining' || r.dining);
+    if (!target && dfacs.length) {
+      const scored = dfacs.map((r) => ({ r, s: nameSimilarity(r.name, p.text) })).sort((a, b) => b.s - a.s);
+      if (scored[0].s >= 0.5 && (scored.length === 1 || scored[0].s > scored[1].s)) target = scored[0].r;
+      else if (dfacs.length === 1) target = dfacs[0];
+    }
     const source: SourceRef = { file: ctx.doc.name, page: p.page, excerpt: p.text.slice(0, 200) };
     if (target) this.merge(target, { dining, source, tableId: `${ctx.doc.name}:dining` }, ctx.rank);
-    else this.register({ name: 'Dining Facility', gross: (dining.kitchenSqft ?? 0) + (dining.diningRoomSqft ?? 0) || undefined, dining, source, tableId: `${ctx.doc.name}:dining`, notes: ['Dining headcount found but no facility row; verify square footage.'], confidence: 0.4, active: true }, ctx.rank);
+    else if (dfacs.length > 1) {
+      for (const r of dfacs) if (!r.notes.some((n) => n.startsWith('Unassigned dining workload'))) r.notes.push(`Unassigned dining workload: ${ctx.doc.name} states ${fmt(meals)} meals per day without naming which dining facility serves them ("${p.text.slice(0, 90)}").`);
+    }
+    // a dining facility is created from prose only when the package has food-service scope
+    else if (this.diningScope) this.register({ name: 'Dining Facility', gross: (dining.kitchenSqft ?? 0) + (dining.diningRoomSqft ?? 0) || undefined, dining, source, tableId: `${ctx.doc.name}:dining`, notes: ['Dining headcount found but no facility row; verify square footage.'], confidence: 0.4, active: true }, ctx.rank);
   }
 
   // ---------------------------------------------------------------- per-meal tables in the other orientation ("Breakfast | 620 | 410")
@@ -1293,6 +1663,7 @@ class Reader {
           if (!rec) rec = dfacs.map((r) => ({ r, s: nameSimilarity(r.name, target) })).sort((a, b) => b.s - a.s).find((x) => x.s >= 0.5)?.r;
         }
         if (!rec && dfacs.length === 1) rec = dfacs[0];
+        if (!rec && !dfacs.length && mt.periodsByTarget.size === 1) rec = this.register({ name: 'Dining Facility', dining: {}, source: mt.source, tableId: `${mt.source.file}:meals`, notes: ['Headcount by meal period found but no dining facility row; enter the building and its square footage.'], confidence: 0.3, active: true }, mt.rank);
         if (!rec) continue;
         this.merge(rec, { dining: { periods }, source: mt.source, tableId: `${mt.source.file}:meals` }, mt.rank);
       }
@@ -1318,7 +1689,9 @@ class Reader {
       if (!(gross > 0) && (r.cleanable ?? 0) > 0) { gross = r.cleanable!; notes.push('Gross area not stated; cleanable area used as gross.'); }
       if (!(gross > 0) && r.dining && ((r.dining.kitchenSqft ?? 0) + (r.dining.diningRoomSqft ?? 0)) > 0) gross = (r.dining.kitchenSqft ?? 0) + (r.dining.diningRoomSqft ?? 0);
       const name = r.name || (r.bn ? `Building ${r.bn}` : 'Facility');
-      let category = categorize(`${name} ${r.use}`);
+      // the use / CATCODE description column decides when it maps to a category ("Warehouse / Office / Shops" → warehouse)
+      const useCat = r.use ? categorize(r.use.split(/\s*[/,;]\s*|\s+-\s+/)[0]) : 'other';
+      let category = useCat !== 'other' ? useCat : categorize(name);
       if (category === 'other' && r.use) category = categorize(r.use);
       if (r.dining && category !== 'dining' && (r.dining.periods.length || r.dining.mealsPerDay)) category = 'dining';
       let dining: DiningProfile | undefined;
@@ -1337,10 +1710,13 @@ class Reader {
       }
       const level: ServiceLevel = r.level ?? (category === 'dining' || category === 'barracks' || category === 'medical' || category === 'fitness' ? 'daily_7' : 'daily_5');
       if (!r.level && r.freqText) notes.push(`Frequency "${r.freqText}" not recognised; defaulted to ${level}.`);
+      const yearly = r.level === 'quarterly' ? lessThanQuarterly(r.freqText) : undefined;
+      if (yearly != null) notes.push(`"${r.freqText}" is about ${yearly} visits a year, less often than quarterly; estimated as quarterly.`);
+      if (r.level === 'biweekly' && /bi-?weekly|bi-?wkly/i.test(r.freqText ?? '')) notes.push(`"${r.freqText}" read as every two weeks; check whether the PWS defines it as twice a week.`);
       const scope: Facility['scope'] = dining ? ['custodial', 'floor_care', 'dining'] : ['custodial', 'floor_care'];
       const f: Facility = {
         id, buildingNumber: r.bn, name: name.replace(/\s+/g, ' ').slice(0, 120), category, grossSqft: Math.round(gross * 100) / 100, cleanableSqft: r.cleanable, floors: r.floors ?? 0,
-        restroomFixtures: r.fixtures, serviceLevel: level, scope, dining, source: r.source, confidence: gross > 0 ? r.confidence : 0.3,
+        restroomFixtures: r.fixtures, serviceLevel: level, scope, dining, floorMix: r.floorMix, source: r.source, confidence: gross > 0 ? r.confidence : 0.3,
         campus: r.campus, tableId: r.tableId, serviceFrequencyText: r.freqText,
       };
       if (r.status && r.status !== 'in_scope') { f.status = r.status; f.statusReason = r.statusReason; }
@@ -1369,6 +1745,36 @@ function labelKind(k: GroundsKind) {
   return ({ improved_turf: 'Improved turf', semi_improved: 'Semi-improved grounds', unimproved: 'Unimproved grounds', athletic_field: 'Athletic fields', shrub_bed: 'Shrub beds', parking: 'Parking', sidewalk: 'Sidewalks', tree_canopy: 'Trees' } as Record<GroundsKind, string>)[k];
 }
 
+/** Comma-separated tables pasted as text (a header row of titles, then rows with the same field count) become
+ *  "cell | cell" rows; quoted fields keep their commas ("45,200"). */
+function csvSplit(line: string): string[] {
+  const out: string[] = []; let cur = ''; let q = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (q) { if (c === '"' && line[i + 1] === '"') { cur += '"'; i++; } else if (c === '"') q = false; else cur += c; }
+    else if (c === '"' && !cur.trim()) q = true;
+    else if (c === ',') { out.push(cur.trim()); cur = ''; }
+    else cur += c;
+  }
+  out.push(cur.trim());
+  return out;
+}
+function csvBlocksToRows(lines: string[]): string[] {
+  const out = [...lines];
+  for (let i = 0; i < lines.length; i++) {
+    const h = lines[i];
+    if (h.includes('|') || h.includes('\t') || (h.match(/,/g)?.length ?? 0) < 2) continue;
+    const hc = csvSplit(h);
+    if (hc.length < 3 || hc.some((c) => /\d/.test(c) || !c || c.length > 40) || hc.filter((c) => roleOf(c)).length < 2) continue;
+    let j = i + 1;
+    while (j < lines.length && !lines[j].includes('|') && lines[j].trim() && csvSplit(lines[j]).length === hc.length) j++;
+    if (j - i < 2) continue;
+    for (let k = i; k < j; k++) out[k] = csvSplit(lines[k]).map((c) => c.replace(/\|/g, '/')).join(' | ');
+    i = j - 1;
+  }
+  return out;
+}
+
 function isNumericRow(cells: string[]): boolean {
   const ne = cells.map(clean).filter(Boolean);
   return ne.length > 0 && ne.filter((c) => isNumericCell(c)).length / ne.length > 0.5;
@@ -1378,8 +1784,11 @@ function fits(cells: string[], map: TableMap): boolean {
   if (cells.length < map.n - 1 || cells.length > map.n + 1) return false;
   const num = map.get('number');
   if (num && clean(cells[num.i]) && !normalizeBuildingNumber(cells[num.i])) return false;
-  const g = map.gross ?? map.get('qty');
-  if (g && clean(cells[g.i]) && !/\d|tbd|n\/a|—|-/i.test(clean(cells[g.i]))) return false;
+  for (const g of [map.gross, map.cleanable, map.get('qty'), ...map.all('gQty')]) {
+    if (!g) continue;
+    const v = clean(cells[g.i]);
+    if (v && !isBlankish(v) && !/^\s*[~±≈]?\s*(?:approx\.?\s*)?\d[\d.,]*(?:\s|$|[a-z²]{1,6}\.?(?:\s|$)|\s*@)/i.test(v) && !/^tbd\b/i.test(v)) return false;
+  }
   return true;
 }
 
@@ -1402,6 +1811,9 @@ function splitCode(name: string, allowParen: boolean): { code?: string; name: st
   const m = n.match(/^([A-Z][A-Z0-9]{1,5}(?:\/[A-Z0-9]{1,6})?)\s+-\s+(.+)$/);
   if (m && !/^(?:THE|AND|FOR|NEW|OLD|NORTH|SOUTH|EAST|WEST|MAIN|BLDG|AREA)$/.test(m[1])) return { code: m[1], name: m[2] };
   if (allowParen) { const p = n.match(/^(.+?)\s*\(([A-Z]{2,5})\)$/); if (p) return { code: p[2], name: p[1] }; }
+  // "Bldg 1201 Brigade Headquarters", "1201 – Brigade Headquarters", "T-2401 Barracks"
+  const b = n.match(/^(?:(?:bldg|building|facility|fac)\.?\s*(?:no\.?|#)?\s*)?([A-Z]{0,3}-?\d{3,6}[A-Z]?)(?:\s*[-:,]\s*|\s+)([A-Za-z(].{2,})$/i);
+  if (b && !/^\d{3,6}\s+[A-Z][a-z]+\s+(?:st|street|ave|avenue|rd|road|blvd|drive|dr|way|lane|ln|pkwy|parkway)\b/i.test(n)) return { code: b[1].toUpperCase(), name: b[2] };
   return { name };
 }
 
@@ -1440,10 +1852,11 @@ function nameSimilarity(a: string, b: string): number {
 // Site information
 // =====================================================================================================================
 
-const STATE_CLIMATE: [RegExp, SiteInfo['climateZone']][] = [
-  [/\b(?:florida|georgia|louisiana|mississippi|alabama|south carolina|hawaii|guam|puerto rico|texas gulf|okinawa)\b|,\s*(?:FL|GA|LA|MS|AL|SC|HI)\b/, 'hot_humid'],
-  [/\b(?:arizona|nevada|new mexico|utah|el paso|kuwait|qatar|bahrain|djibouti|iraq)\b|,\s*(?:AZ|NV|NM|UT)\b/, 'arid'],
-  [/\b(?:alaska|minnesota|north dakota|south dakota|montana|wisconsin|maine|vermont|new hampshire|upper michigan|wyoming)\b|,\s*(?:AK|MN|ND|SD|MT|WI|ME|VT|NH|WY)\b/, 'cold'],
+const STATE_CLIMATE: [RegExp, RegExp, NonNullable<SiteInfo['climateZone']>][] = [
+  [/\b(?:florida|georgia|louisiana|mississippi|alabama|south carolina|hawaii|guam|puerto rico|okinawa)\b/i, /,\s*(?:FL|GA|LA|MS|AL|SC|HI)\b/, 'hot_humid'],
+  [/\b(?:arizona|nevada|new mexico|utah|el paso|kuwait|qatar|bahrain|djibouti|iraq)\b/i, /,\s*(?:AZ|NV|NM|UT)\b/, 'arid'],
+  [/\b(?:alaska|minnesota|north dakota|south dakota|montana|wisconsin|maine|vermont|new hampshire|wyoming)\b/i, /,\s*(?:AK|MN|ND|SD|MT|WI|ME|VT|NH|WY)\b/, 'cold'],
+  [/\b(?:kentucky|missouri|kansas|virginia|washington|oregon|tennessee|north carolina|maryland|pennsylvania|ohio|indiana|illinois|new york|new jersey|california|oklahoma|arkansas|colorado|italy|germany|korea|japan)\b/i, /,\s*(?:KY|MO|KS|VA|WA|OR|TN|NC|MD|PA|OH|IN|IL|NY|NJ|CA|OK|AR|CO)\b/, 'temperate'],
 ];
 function extractSite(ordered: { doc: DocInput }[]): SiteInfo {
   const site: SiteInfo = {};
@@ -1481,12 +1894,14 @@ function extractSite(ordered: { doc: DocInput }[]): SiteInfo {
       if (opts != null && opts >= 1 && opts <= 10) { site.contractYears = baseYears + opts; }
     }
   }
-  const climate = all.match(/\b(humid subtropical|hot[- ]humid|arid|desert|semi-arid|cold climate|heavy snow|temperate)\b/i);
-  if (climate) { const c = climate[1].toLowerCase(); site.climateZone = /humid|subtropical/.test(c) ? 'hot_humid' : /arid|desert/.test(c) ? 'arid' : /cold|snow/.test(c) ? 'cold' : 'temperate'; }
+  // climate: stated in words, else from the state / country on the first pages, else "heavy snow" wording
+  const climate = all.match(/\b(humid subtropical|hot[- ]humid|arid|desert|semi-arid|cold climate|temperate)\b/i);
+  if (climate) { const c = climate[1].toLowerCase(); site.climateZone = /humid|subtropical/.test(c) ? 'hot_humid' : /arid|desert/.test(c) ? 'arid' : /cold/.test(c) ? 'cold' : 'temperate'; }
   else {
-    const where = `${head}`;
-    for (const [re, z] of STATE_CLIMATE) if (re.test(where)) { site.climateZone = z; break; }
-    if (!site.climateZone && /\b(?:kentucky|missouri|kansas|virginia|washington|oregon|tennessee|north carolina|maryland|pennsylvania|ohio|indiana|illinois|new york|new jersey|california|oklahoma|arkansas|colorado|italy|germany)\b|,\s*(?:KY|MO|KS|VA|WA|OR|TN|NC|MD|PA|OH|IN|IL|NY|NJ|CA|OK|AR|CO)\b/i.test(where)) site.climateZone = 'temperate';
+    let best: { at: number; z: NonNullable<SiteInfo['climateZone']> } | undefined;
+    for (const [names, abbr, z] of STATE_CLIMATE) for (const re of [names, abbr]) { const m = head.match(re); if (m && (best == null || (m.index ?? 0) < best.at)) best = { at: m.index ?? 0, z }; }
+    if (best) site.climateZone = best.z;
+    else if (/heavy snow|severe winter/i.test(all)) site.climateZone = 'cold';
   }
   const gs = all.match(/growing season[^.\n]{0,60}?(\d{2})\s*weeks/i) ?? all.match(/(\d{2})\s*weeks[^.\n]{0,30}growing season/i);
   if (gs) site.growingSeasonWeeks = Number(gs[1]);
@@ -1497,10 +1912,13 @@ function extractSite(ordered: { doc: DocInput }[]): SiteInfo {
 // Public API
 // =====================================================================================================================
 
+const DINING_SCOPE = /\b(?:food services?|full food service|\bffs\b|dining facility (?:operations?|attendants?|services?|management)|dfac (?:operations?|services?|attendants?)|\bdfa\b|mess attendants?|food preparation|meal preparation|subsistence|serving line|galley operations?)/i;
+
 export function heuristicExtract(docs: DocInput[]): Inventory {
   const r = new Reader();
   const ordered = orderDocs(docs);
   for (const o of ordered) r.scanScope(o.doc.text);
+  r.diningScope = ordered.some((o) => DINING_SCOPE.test(o.doc.text));
   for (const o of ordered) r.readDoc(o.doc, o.rank, o.amendLike);
   r.site = extractSite(ordered);
   return r.finish();
@@ -1520,7 +1938,7 @@ function paragraphsOf(text: string): string[] {
   const out: string[] = [];
   let cur: string[] = [];
   const flush = () => { if (cur.length) out.push(cur.join(' ').replace(/\s+/g, ' ')); cur = []; };
-  for (const raw of text.split(/\r?\n/)) {
+  for (const raw of normalizeRows(text)) {
     const t = raw.trim();
     if (!t || /^--- page \d+ ---$/.test(t)) { flush(); continue; }
     if (t.includes('|')) { flush(); const cells = splitPipe(t).map(clean); const long = cells.filter((c) => c.length > 25); if (long.length) out.push(long.join('. ')); continue; }
@@ -1573,6 +1991,8 @@ export function heuristicPriorAward(docs: DocInput[]): PriorAward | undefined {
         const cn = piid?.[1] ?? local?.[1];
         if (cn && !pa.contractNumber && /\d/.test(cn)) { pa.contractNumber = cn; touched = true; }
         if (!pa.incumbent) {
+          // all-caps text (SF 30 continuation pages): the joining words are lower-cased, the company name keeps its case
+          const sc = /[a-z]/.test(s.replace(/\b(?:LLC|Inc|Corp|Ltd|JV|LP)\b/g, '')) ? s : s.replace(/\b(?:THE|INCUMBENT|CONTRACTOR|CURRENT|CONTRACT|IS|PERFORMED|PERFORMING|PROVIDED|OPERATED|SERVICED|BY|AWARDED|AWARD|TO|UNDER|PURSUANT|THROUGH|SINCE|AS|FOR|WHICH|WITH|ON|IN|WHO|HOLDS|HAS|NO)\b/g, (w) => w.toLowerCase());
           const pats = [
             new RegExp(`(?:performed|provided|operated|serviced)\\s+by\\s+${COMPANY.source}(?=\\s+(?:under|pursuant|through|since|as)\\b|,|\\.|\\s*\\()`),
             new RegExp(`incumbent(?:\\s+contractor)?(?:\\s+is|:|,)?\\s+${COMPANY.source}(?=,|\\.|\\s+(?:under|performing|which|who|holds|has)\\b|\\s*\\()`),
@@ -1580,9 +2000,9 @@ export function heuristicPriorAward(docs: DocInput[]): PriorAward | undefined {
             new RegExp(`^(?:A\\d+\\.\\s*(?:See [^.]+\\.\\s*)?)?${COMPANY.source}(?=,?\\s+(?:under|\\(contract))`),
           ];
           for (const re of pats) {
-            const m = s.match(re);
+            const m = sc.match(re);
             const nm = m?.[1]?.trim();
-            if (nm && CORP.test(nm) && !/^(?:The|This|Contract|City|District|Government|University|College)\b/.test(nm)) { pa.incumbent = nm.replace(/[.,]$/, ''); touched = true; break; }
+            if (nm && CORP.test(nm) && !/^(?:The|This|Contract|City|District|Government|University|College)\b/.test(nm)) { pa.incumbent = nm.replace(/,$/, '').replace(/(?<!\b(?:Inc|Co|Corp|Ltd))\.$/, ''); touched = true; break; }
           }
         }
         if (!pa.awardYear) { const y = s.match(/\bawarded\b[^.]{0,90}?\b((?:19|20)\d{2})\b/i) ?? s.match(/\b(?:since|in)\s+((?:19|20)\d{2})\b.*\bawarded/i); if (y) { pa.awardYear = Number(y[1]); touched = true; } }
