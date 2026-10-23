@@ -200,6 +200,7 @@ function Done({ x, elapsed }: { x: ExtractionState; elapsed: number }) {
   const openLog = useStore((s) => s.openLog);
   const { counts, estById, gestById } = useDerived();
   const askRestore = useRestore(x);
+  const ruleRead = useStore((s) => s.project?.extraction?.provider === 'heuristic');
   const r = x.result;
   const took = x.endedAt && x.startedAt ? x.endedAt - x.startedAt : elapsed;
   // [Review N]: the Needs review chip sorted by Impact, and its first row selected (§5.5)
@@ -210,6 +211,7 @@ function Done({ x, elapsed }: { x: ExtractionState; elapsed: number }) {
   const segs: Seg[] = [
     { key: 'took', text: `Done in ${duration(took)}` },
     { key: 'needs', text: `${counts.needs.toLocaleString()} need review` },
+    ...(ruleRead ? [{ key: 'rule', tone: 'warn' as const, text: 'Rule-based read: check every row and the count', label: 'The rule-based parser can miss facilities or take the wrong area column on unfamiliar layouts. Compare the facility count and totals with the document.' }] : []),
     ...(r?.unverified ? [{ key: 'unver', tone: 'warn' as const, text: `${plural(r.unverified, 'verified row')} back in review`, label: `${plural(r.unverified, 'verified row')} changed in the re-read and went back to review` }] : []),
     ...(r?.conflicts ? [{ key: 'conf', tone: 'warn' as const, text: `${plural(r.conflicts, 'edit conflict')} flagged`, label: `${plural(r.conflicts, 'row')} where the re-read changed a value you edited: your value is kept and the row is flagged` }] : []),
     ...(x.warnings.length ? [{ key: 'warn', tone: 'warn' as const, text: `⚠ ${plural(x.warnings.length, 'warning')}`, label: `${plural(x.warnings.length, 'warning')}, open the log`, onClick: () => openLog('warnings') }] : []),

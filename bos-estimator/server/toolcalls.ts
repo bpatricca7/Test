@@ -31,7 +31,7 @@
 import type Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import type {
-  AreaUnit, DocumentRole, ExtractionEvent, Facility, FacilityCategory, FacilityStatus, GroundsArea, GroundsKind, GroundsUnit,
+  AreaUnit, CleaningLevel, DocumentRole, ExtractionEvent, Facility, FacilityCategory, FacilityStatus, GroundsArea, GroundsKind, GroundsUnit,
   Inventory, MealPeriodHeadcount, PriorAward, ServiceLevel, SiteInfo,
 } from '../shared/types';
 import { FACILITY_CATEGORIES, FACILITY_STATUSES, GROUNDS_KINDS, SERVICE_LEVELS, SQFT_PER } from '../shared/types';
@@ -375,6 +375,18 @@ function statusOf(v: unknown): FacilityStatus | null | undefined {
 }
 
 /** Service level from printed frequency wording ("M–F", "2x/month", "Bi-weekly", "Daily (7 days)"). */
+/** APPA appearance level 1–3 when the text names one ("APPA Level 2", "APPA custodial level II", "Level 3 (APPA)").
+ *  Levels 4–5 are mostly reduced frequency, which service_level already carries, so they set nothing. */
+export function appaLevel(text?: string | null): CleaningLevel | undefined {
+  if (!text) return undefined;
+  const t = text.replace(/\s+/g, ' ');
+  const m = /\bappa\b[^0-9a-z]*(?:(?:custodial|cleaning|appearance)\s+)?(?:level|lvl\.?)?\s*([1-5]|iii|ii|iv|v|i)\b/i.exec(t)
+    ?? /\b(?:level|lvl\.?)\s*([1-5]|iii|ii|iv|v|i)\b[^.;]{0,30}\bappa\b/i.exec(t);
+  if (!m) return undefined;
+  const n = ({ i: 1, ii: 2, iii: 3, iv: 4, v: 5 } as Record<string, number>)[m[1].toLowerCase()] ?? Number(m[1]);
+  return n >= 1 && n <= 3 ? (n as CleaningLevel) : undefined;
+}
+
 export function parseServiceFrequency(text?: string | null): ServiceLevel | undefined {
   if (!text) return undefined;
   const t = ` ${text.toLowerCase().replace(DASHES, '-').replace(/\s+/g, ' ')} `;
@@ -903,6 +915,7 @@ function prepareFacility(st: ExtractionState, d: FacilityRow): { row?: PreparedR
     occupancy: numOrUndef(d.occupancy),
     serviceLevel,
     serviceDaysPerYear: serviceDays,
+    cleaningLevel: appaLevel(standard),
     scope: scope.length ? [...new Set(scope)] : ['custodial', 'floor_care'],
     confidence: areaMissing ? Math.min(confidence0, 0.4) : confidence0,
     campus,
@@ -1201,6 +1214,7 @@ function mergeRows(old: Facility, om: FacMeta, row: Facility, rm: FacMeta): { f:
     serviceLevel: hm.levelExplicit ? hi.serviceLevel : lm.levelExplicit ? lo.serviceLevel : hi.serviceLevel,
     serviceDaysPerYear: hm.levelExplicit ? hi.serviceDaysPerYear : lm.levelExplicit ? lo.serviceDaysPerYear : hi.serviceDaysPerYear ?? lo.serviceDaysPerYear,
     serviceFrequencyText: hm.levelExplicit ? hi.serviceFrequencyText ?? lo.serviceFrequencyText : lo.serviceFrequencyText ?? hi.serviceFrequencyText,
+    cleaningLevel: hi.cleaningLevel ?? lo.cleaningLevel,
     grossSqft: A.grossSqft,
     cleanableSqft,
     originalArea,
@@ -2186,7 +2200,7 @@ export function extractionTools(opts: { strict?: boolean } = {}): Anthropic.Beta
     cleaning_detail: nullable('object', 'Only when the document prints any of these for this facility; null otherwise.', {
       properties: {
         restroom_rooms: nullable('integer', 'Number of restrooms (rooms, not fixtures) as printed, or the number of restroom rows a room list prints for the building.'),
-        cleaning_standard: nullable('string', 'The cleaning level, standard or service class the document assigns to this facility, as printed.'),
+        cleaning_standard: nullable('string', 'The cleaning level, standard or service class the document assigns to this facility, as printed (an APPA appearance level sets the estimate\'s cleaning intensity).'),
         area_by_class: nullable('array', 'Areas split by cleaning class or infection-risk class, each with the class as printed, in area_unit.', { items: obj({ label: { type: 'string' }, area: { type: 'number' } }) }),
       },
       required: ['restroom_rooms', 'cleaning_standard', 'area_by_class'], additionalProperties: false,

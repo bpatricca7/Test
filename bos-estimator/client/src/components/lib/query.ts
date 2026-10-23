@@ -383,7 +383,7 @@ export function currentOrder(): readonly string[] {
 export function metaSnapshot(): Map<string, RowMeta> {
   const s = useStore.getState(); const p = s.project; const m = new Map<string, RowMeta>();
   if (!p) return m;
-  const ctx = sharedContext(p.inventory.facilities, s.extraction.result?.changedIds ?? []);
+  const ctx = sharedContext(p.inventory.facilities, s.extraction.result?.changedIds ?? [], p.extraction?.provider === 'heuristic');
   const review: ReviewMap = p.review ?? {};
   for (const f of p.inventory.facilities) m.set(f.id, rowMetaFor(f, 'facility', ctx, review[f.id]));
   for (const g of p.inventory.grounds) m.set(g.id, rowMetaFor(g, 'grounds', ctx, review[g.id]));
@@ -392,7 +392,7 @@ export function metaSnapshot(): Map<string, RowMeta> {
 /** RowMeta of one row, from the store. */
 export function metaOf(id: string): RowMeta | undefined {
   const s = useStore.getState(); const p = s.project; if (!p) return undefined;
-  const ctx = sharedContext(p.inventory.facilities, s.extraction.result?.changedIds ?? []);
+  const ctx = sharedContext(p.inventory.facilities, s.extraction.result?.changedIds ?? [], p.extraction?.provider === 'heuristic');
   const f = p.inventory.facilities.find((x) => x.id === id);
   if (f) return rowMetaFor(f, 'facility', ctx, p.review?.[id]);
   const g = p.inventory.grounds.find((x) => x.id === id);

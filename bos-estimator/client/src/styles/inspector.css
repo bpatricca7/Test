@@ -102,6 +102,7 @@
 .wl__task .ref{display:block;font-size:var(--fs-xs);line-height:var(--lh-xs);color:var(--text-3);overflow-wrap:anywhere}
 .wl__lh{display:block;width:64px;margin-left:auto}
 .wl__lh .input{font-family:var(--font-mono);font-size:var(--fs-xs);padding:0 4px}
+.wl__lvl{display:block;margin-top:1px;font-size:var(--fs-xs);line-height:var(--lh-xs);color:var(--text-3);text-align:right}
 .wl__note{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;margin:8px 0 0;font-size:var(--fs-xs);line-height:var(--lh-xs);color:var(--text-3)}
 
 /* grounds attached */

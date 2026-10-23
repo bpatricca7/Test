@@ -7,7 +7,7 @@ import { useStore } from '../../store';
 import { useDerived, useTopDownLive } from '../../derived';
 import { CATEGORY_DEFAULTS, crewMeta } from '@shared/factors';
 import { DEFAULT_ASSUMPTIONS, groundsAcres, resolveMealsPerDay, diningMealsPerDay } from '@shared/estimate';
-import { FACILITY_CATEGORIES, FACILITY_STATUSES, GROUNDS_KINDS, SERVICE_LEVELS, isInScope, type DiningProfile, type Facility, type GroundsArea, type GroundsUnit, type ScopeItem } from '@shared/types';
+import { CLEANING_LEVELS, FACILITY_CATEGORIES, FACILITY_STATUSES, GROUNDS_KINDS, SERVICE_LEVELS, isInScope, type CleaningLevel, type DiningProfile, type Facility, type GroundsArea, type GroundsUnit, type ScopeItem } from '@shared/types';
 import { n0, n1, n2, signedPct } from '../../fmt';
 import { CONF_COLOR, CONF_GLYPH, CREW_ORDER, confBand, crewColor, categoryColor, deltaTone } from '../lib/theme';
 import { ISSUE_INFO, sourceCheck, sourceContext, type IssueCode } from '../lib/review';
@@ -105,6 +105,7 @@ function FacilityInspector({ f }: { f: Facility }) {
   const focusMode = useStore((st) => st.focusMode);
   const overrides = useStore((st) => st.project?.factorOverrides ?? EMPTY_OV);
   const productive = useStore((st) => st.project?.assumptionOverrides?.productiveHoursPerFte ?? DEFAULT_ASSUMPTIONS.productiveHoursPerFte);
+  const projectLevel = useStore((st) => st.project?.assumptionOverrides?.cleaningLevel ?? DEFAULT_ASSUMPTIONS.cleaningLevel);
   const grounds = useStore((st) => st.project?.inventory.grounds);
   const { estById, rowMeta, gestById, est } = useDerived();
   const usage = useFactorUsage(est);
@@ -176,6 +177,10 @@ function FacilityInspector({ f }: { f: Facility }) {
         <Section id="service" title="Service">
           <Fields>
             <Field label="Service level" span="full" hint={f.serviceFrequencyText ? `As printed: ${f.serviceFrequencyText}` : undefined}>{(id) => <Select id={id} value={f.serviceLevel} onChange={(v) => update(f.id, { serviceLevel: v })} options={SERVICE_LEVELS.map((x) => ({ value: x.id, label: x.label }))} />}</Field>
+            <Field label="Cleaning standard" span="full" hint={CLEANING_LEVELS.find((x) => x.id === (f.cleaningLevel ?? projectLevel))?.sfPerShift}>{(id) => (
+              <Select id={id} value={f.cleaningLevel ? String(f.cleaningLevel) : 'project'} onChange={(v) => update(f.id, { cleaningLevel: v === 'project' ? undefined : (Number(v) as CleaningLevel) })}
+                options={[{ value: 'project', label: `Project default (APPA ${projectLevel})` }, ...CLEANING_LEVELS.map((x) => ({ value: String(x.id), label: x.label }))]} />
+            )}</Field>
           </Fields>
           <div className="insp__scope" role="group" aria-label="Scope">
             {SCOPES.map((x) => <Chip key={x.id} tone={f.scope.includes(x.id) ? 'accent' : 'neutral'} selected={f.scope.includes(x.id)} onClick={() => toggleScope(x.id)}>{x.label}</Chip>)}

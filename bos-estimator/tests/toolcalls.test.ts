@@ -7,7 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Anthropic from '@anthropic-ai/sdk';
 import {
-  applyToolCall, beginPass, buildingKey, cleanBuildingNumber, createState, diningMealsPerDay, docRank, extractionTools, facilityIdentity, finalize,
+  applyToolCall, appaLevel, beginPass, buildingKey, cleanBuildingNumber, createState, diningMealsPerDay, docRank, extractionTools, facilityIdentity, finalize,
   finishClass, isTotalRow, mapGroundsLabel, parseNumber, parseServiceFrequency, replayToolCalls, seasonDay, seasonServiceDays, type ToolCall,
 } from '../server/toolcalls';
 import { describeRequests, extractWithClaude, facilityId, mergeFacility, replayToolCalls as replayFromAi } from '../server/ai';
@@ -166,6 +166,16 @@ test('a stated service calendar overrides the level\'s day count', () => {
   assert.equal(by('101').serviceDaysPerYear, 200);
   assert.equal(by('102').serviceDaysPerYear, undefined, 'an impossible day count is dropped');
   assert.equal(by('103').serviceLevel, 'daily_6');
+});
+
+test('APPA levels 1–3 are read from a printed cleaning standard', () => {
+  for (const [t, want] of [['APPA Level 2', 2], ['APPA level III', 3], ['APPA Custodial Level 1 (orderly spotlessness)', 1], ['Level 3 per APPA', 3], ['appa lvl. 2', 2]] as const) assert.equal(appaLevel(t), want, t);
+  for (const t of ['APPA Level 4', 'Level V (APPA)', 'Service Class B', 'COL 2', 'Level 2', '', null]) assert.equal(appaLevel(t), undefined, String(t));
+  const st = createState(DOCS);
+  applyToolCall(st, reg(row({ building_number: '12', name: 'HQ', gross_area: 20000, cleaning_detail: { restroom_rooms: null, cleaning_standard: 'APPA Level 3', area_by_class: null } }), row({ building_number: '13', name: 'Shop', gross_area: 8000 })));
+  const fs = finalize(st).inventory.facilities;
+  assert.equal(fs.find((f) => f.buildingNumber === '12')!.cleaningLevel, 3);
+  assert.equal(fs.find((f) => f.buildingNumber === '13')!.cleaningLevel, undefined);
 });
 
 test('total rows are recognised without catching real names', () => {

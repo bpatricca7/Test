@@ -75,6 +75,7 @@ export function useComputeDerived(): Derived {
   const wages = useStore((s) => s.project?.wages);
   const review = useStore((s) => s.project?.review);
   const changedIds = useStore((s) => s.extraction.result?.changedIds);
+  const ruleRead = useStore((s) => s.project?.extraction?.provider === 'heuristic');
   const layoutEpoch = useStore((s) => s.layoutEpoch);
   const view = useStore((s) => s.view);
 
@@ -118,12 +119,12 @@ export function useComputeDerived(): Derived {
   const rowMeta = useMemo(() => {
     const m = new Map<string, RowMeta>();
     if (!inventory) return m;
-    const ctx = stableContext(reviewContext(inventory.facilities, changedIds ?? []), ctxRef.current);
+    const ctx = stableContext(reviewContext(inventory.facilities, changedIds ?? [], ruleRead), ctxRef.current);
     ctxRef.current = ctx;
     for (const f of inventory.facilities) m.set(f.id, rowMetaFor(f, 'facility', ctx, review?.[f.id]));
     for (const g of inventory.grounds) m.set(g.id, rowMetaFor(g, 'grounds', ctx, review?.[g.id]));
     return m;
-  }, [inventory, review, changedIds]);
+  }, [inventory, review, changedIds, ruleRead]);
   const counts = useMemo(() => (rowMeta.size ? reviewCounts(rowMeta) : EMPTY_COUNTS), [rowMeta]);
 
   const fteBreaks = useMemo<[number, number, number, number]>(() => {

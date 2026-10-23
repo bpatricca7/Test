@@ -404,7 +404,7 @@ function EmptyCard() {
           : <button type="button" onClick={() => useStore.getState().openLeft('documents')}>change</button>}
       </p>
       <Popover {...why.props} placement="bottom-start" label="About the reader" className="vo-why-pop">
-        <p>The server has no <code>ANTHROPIC_API_KEY</code>, so the rule-based parser reads the package. It handles well-structured facility lists and workload tables (XLSX, CSV, text-layer PDFs).</p>
+        <p>The server has no <code>ANTHROPIC_API_KEY</code>, so the rule-based parser reads the package. It reads clean facility lists and workload tables (XLSX, CSV, text-layer PDFs), but on layouts it has not seen it can miss facilities or take the wrong area column, and it cannot read scans. Every row it reads is marked for review: compare the count and totals with the document before pricing.</p>
         <p>Add the key to <code>.env</code> and restart the server to let Claude read scanned exhibits and free-form PWS text. Reader settings are in the <button type="button" className="link" onClick={() => { why.close(); useStore.getState().openLeft('documents'); }}>Documents tab</button>.</p>
       </Popover>
     </div>

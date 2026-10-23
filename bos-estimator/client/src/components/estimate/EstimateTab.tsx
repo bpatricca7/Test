@@ -8,7 +8,7 @@ import { useStore } from '../../store';
 import { useDerived, useTopDownLive, type TopDownLive } from '../../derived';
 import { crewMeta, CREWS } from '@shared/factors';
 import { DEFAULT_ASSUMPTIONS, type EstimateResult } from '@shared/estimate';
-import type { ClimateZone, PriorAward, TopDownAssumptions, TopDownEstimate } from '@shared/types';
+import { CLEANING_LEVELS, type CleaningLevel, type ClimateZone, type PriorAward, type TopDownAssumptions, type TopDownEstimate } from '@shared/types';
 import { compact, fitNum, n0, n1, n2, signedPct, usdCompact } from '../../fmt';
 import { CREW_ORDER, crewColor, deltaTone } from '../lib/theme';
 import { cx } from '../lib/cx';
@@ -317,6 +317,7 @@ function AssumptionsSection() {
         <Field label="Climate zone">{(id) => <Select<ClimateZone> id={id} value={a.climateZone} onChange={(v) => setAssumption('climateZone', v)} options={[{ value: 'cold', label: 'Cold (snow)' }, { value: 'temperate', label: 'Temperate' }, { value: 'hot_humid', label: 'Hot / humid' }, { value: 'arid', label: 'Arid' }]} />}</Field>
         <Field label="Growing season (wk)">{(id) => <NumField id={id} value={a.growingSeasonWeeks} decimals={0} overridden={ovr('growingSeasonWeeks')} rule={{ min: 0, max: 52 }} onCommit={(v) => setAssumption('growingSeasonWeeks', v)} />}</Field>
         <Field label="Snow events / yr">{(id) => <NumField id={id} value={a.snowEventsPerYear} decimals={0} overridden={ovr('snowEventsPerYear')} rule={{ min: 0 }} onCommit={(v) => setAssumption('snowEventsPerYear', v)} />}</Field>
+        <Field label="Cleaning standard" span="full" hint={CLEANING_LEVELS.find((x) => x.id === a.cleaningLevel)?.sfPerShift}>{(id) => <Select id={id} value={String(a.cleaningLevel)} onChange={(v) => setAssumption('cleaningLevel', Number(v) as CleaningLevel)} options={CLEANING_LEVELS.map((x) => ({ value: String(x.id), label: x.label }))} />}</Field>
         <Field label="Cleanable share (default)">{(id) => <NumField id={id} value={a.cleanableShareDefault} kind="percent" decimals={0} suffix="%" overridden={ovr('cleanableShareDefault')} rule={{ min: 0, max: 1 }} onCommit={(v) => setAssumption('cleanableShareDefault', v)} />}</Field>
       </Fields>
     </section>

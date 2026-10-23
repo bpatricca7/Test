@@ -4,7 +4,7 @@ import {
   CATEGORY_DEFAULTS, CREWS, FACTORS, GROWING_WEEKS_BY_CLIMATE, SNOW_EVENTS_BY_CLIMATE, crewMeta,
   type Crew, type Factor, type FrequencyRule,
 } from './factors';
-import { SERVICE_LEVELS, isInScope, type Assumptions, type DiningProfile, type Facility, type FloorMix, type GroundsArea, type Inventory, type MealPeriodHeadcount } from './types';
+import { SERVICE_LEVELS, cleaningLevelFactor, isInScope, type Assumptions, type CleaningLevel, type DiningProfile, type Facility, type FloorMix, type GroundsArea, type Inventory, type MealPeriodHeadcount } from './types';
 
 export const DEFAULT_ASSUMPTIONS: Assumptions = {
   productiveHoursPerFte: 1776,
@@ -16,6 +16,7 @@ export const DEFAULT_ASSUMPTIONS: Assumptions = {
   growingSeasonWeeks: 30,
   snowEventsPerYear: 6,
   cleanableShareDefault: 0.85,
+  cleaningLevel: 2,
 };
 
 export interface TaskLine {
@@ -27,6 +28,8 @@ export interface TaskLine {
   unit: string;
   frequencyPerYear: number;
   lhPerUnit: number;
+  /** APPA cleaning-level multiplier on routine custodial lines (absent = 1). */
+  levelFactor?: number;
   hoursPerOccurrence: number;
   annualHours: number;
 }
@@ -38,6 +41,7 @@ export interface ResolvedFacility extends Facility {
   occupancy: number;
   footprint: { length: number; width: number };
   serviceDaysPerYear: number;
+  cleaningLevel: CleaningLevel;
 }
 
 export interface FacilityEstimate {
@@ -119,7 +123,7 @@ export function resolveFacility(f: Facility, a: Assumptions): ResolvedFacility {
   const footArea = gross / floors;
   const footprint = f.footprint ?? { length: Math.sqrt(footArea * d.aspect), width: Math.sqrt(footArea / d.aspect) };
   const level = SERVICE_LEVELS.find((s) => s.id === f.serviceLevel) ?? SERVICE_LEVELS.find((s) => s.id === d.serviceLevel)!;
-  return { ...f, floors, grossSqft: gross, cleanableSqft: cleanable, floorMix: mix, restroomFixtures: fixtures, occupancy, footprint, serviceDaysPerYear: f.serviceDaysPerYear && f.serviceDaysPerYear > 0 ? Math.min(366, f.serviceDaysPerYear) : level.daysPerYear, ...(f.dining ? { dining: resolveDining(f.dining) } : {}) };
+  return { ...f, floors, grossSqft: gross, cleanableSqft: cleanable, floorMix: mix, restroomFixtures: fixtures, occupancy, footprint, serviceDaysPerYear: f.serviceDaysPerYear && f.serviceDaysPerYear > 0 ? Math.min(366, f.serviceDaysPerYear) : level.daysPerYear, cleaningLevel: f.cleaningLevel ?? a.cleaningLevel ?? 2, ...(f.dining ? { dining: resolveDining(f.dining) } : {}) };
 }
 
 /**
@@ -241,8 +245,10 @@ export function estimateFacility(f: Facility, a: Assumptions, overrides?: Record
     if (factor.crew === 'custodial' && factor.frequency.kind === 'per_year') freq = Math.min(freq, r.serviceDaysPerYear);
     if (freq <= 0) continue;
     const rate = lh(factor, overrides);
-    const perOcc = quantity * rate;
-    lines.push({ factorId: factor.id, name: factor.name, ref: factor.ref, crew: factor.crew, quantity: round(quantity, 3), unit: factor.unit, frequencyPerYear: round(freq, 2), lhPerUnit: rate, hoursPerOccurrence: round(perOcc, 3), annualHours: round(perOcc * freq, 1) });
+    // routine (every-service-day) custodial work scales with the APPA appearance level; periodic work does not
+    const levelFactor = factor.crew === 'custodial' && factor.frequency.kind === 'per_service_day' ? cleaningLevelFactor(r.cleaningLevel) : 1;
+    const perOcc = quantity * rate * levelFactor;
+    lines.push({ factorId: factor.id, name: factor.name, ref: factor.ref, crew: factor.crew, quantity: round(quantity, 3), unit: factor.unit, frequencyPerYear: round(freq, 2), lhPerUnit: rate, ...(levelFactor !== 1 ? { levelFactor } : {}), hoursPerOccurrence: round(perOcc, 3), annualHours: round(perOcc * freq, 1) });
   }
 
   const hoursByCrew = sumByCrew(lines);

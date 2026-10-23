@@ -53,6 +53,23 @@ test('six-day service and a stated calendar scale the daily work', () => {
   assert.ok(six.totalHours > five.totalHours && school.totalHours < five.totalHours);
 });
 
+test('the APPA cleaning level scales routine custodial work only', () => {
+  const base: Facility = { id: 'a', name: 'A', category: 'admin', grossSqft: 100000, cleanableSqft: 100000, floors: 2, serviceLevel: 'daily_5', scope: ['custodial', 'floor_care'], confidence: 1 };
+  const l2 = estimateFacility(base, DEFAULT_ASSUMPTIONS);
+  const l3 = estimateFacility(base, { ...DEFAULT_ASSUMPTIONS, cleaningLevel: 3 });
+  const l1 = estimateFacility({ ...base, cleaningLevel: 1 }, { ...DEFAULT_ASSUMPTIONS, cleaningLevel: 3 }); // the facility's own level wins
+  const hrs = (e: typeof l2, crew: string) => e.lines.filter((l) => l.crew === crew).reduce((s, l) => s + l.annualHours, 0);
+  const routine = (e: typeof l2) => e.lines.filter((l) => l.crew === 'custodial' && factorById(l.factorId)!.frequency.kind === 'per_service_day').reduce((s, l) => s + l.annualHours, 0);
+  assert.ok(Math.abs(routine(l3) / routine(l2) - 0.65) < 0.01);
+  assert.ok(Math.abs(routine(l1) / routine(l2) - 1.8) < 0.01);
+  assert.equal(hrs(l3, 'floor_care'), hrs(l2, 'floor_care'), 'periodic floor care does not change');
+  assert.ok(l2.lines.every((l) => l.levelFactor === undefined), 'Level 2 lines carry no multiplier');
+  assert.ok(l3.lines.some((l) => l.levelFactor === 0.65));
+  // Level 3 office lands in the commercial band (≈28–31K SF per custodian shift)
+  const perShift = 100000 / (l3.dailyHoursByCrew.custodial! / 8);
+  assert.ok(perShift > 24000 && perShift < 32000, String(perShift));
+});
+
 test('factor overrides change the hours', () => {
   const f: Facility = { id: 'a', name: 'A', category: 'admin', grossSqft: 10000, floors: 1, serviceLevel: 'daily_5', scope: ['custodial'], confidence: 1 };
   const a = estimateFacility(f, DEFAULT_ASSUMPTIONS);

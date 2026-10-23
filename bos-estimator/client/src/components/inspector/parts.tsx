@@ -180,10 +180,11 @@ export const Workload = memo(function Workload({ lines, overrides, usage, produc
                     {wide && <><td className="r mono">{l.quantity.toLocaleString(undefined, { maximumFractionDigits: 1 })}</td><td className="muted">{unitLabel[l.unit] ?? l.unit}</td></>}
                     <td className="r mono">{fracFreq(l.frequencyPerYear)}</td>
                     <td className="r">
-                      <Tooltip content={`${on ? `Overridden (default ${def})` : `Default ${def}`} · applies to ${n.toLocaleString()} row${n === 1 ? '' : 's'} using this factor`}>
+                      <Tooltip content={`${on ? `Overridden (default ${def})` : `Default ${def}`}${l.levelFactor ? ` · ×${l.levelFactor} for the cleaning standard` : ''} · applies to ${n.toLocaleString()} row${n === 1 ? '' : 's'} using this factor`}>
                         <span className="wl__lh">
                           <NumField size="sm" value={l.lhPerUnit} decimals={4} rule={{ min: 0 }} overridden={on} placeholder={def != null ? String(def) : ''}
                             aria-label={`Labor-hours per unit for ${l.name}`} onCommit={(v) => setOverride(l.factorId, v ?? null)} />
+                          {l.levelFactor && <span className="wl__lvl mono" aria-label={`times ${l.levelFactor} for the cleaning standard`}>×{l.levelFactor}</span>}
                         </span>
                       </Tooltip>
                     </td>

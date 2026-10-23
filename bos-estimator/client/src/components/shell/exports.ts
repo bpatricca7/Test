@@ -10,7 +10,7 @@ import { downloadBackup } from '../dialogs/confirms';
 /** "Inventory with review (CSV)": every facility and grounds row with review, issues, edits, source, Hrs and FTE. */
 export function exportInventoryCsv(est: EstimateResult | null, rowMeta: ReadonlyMap<string, RowMeta>, needs: number): void {
   const s = useStore.getState(); const p = s.project; if (!p) return;
-  const ctx = sharedContext(p.inventory.facilities, s.extraction.result?.changedIds ?? []);
+  const ctx = sharedContext(p.inventory.facilities, s.extraction.result?.changedIds ?? [], p.extraction?.provider === 'heuristic');
   downloadText(`${safeFileName(p.name)} - inventory with review.csv`, inventoryCsv(p, est, rowMeta, ctx));
   s.pushToast({ text: `Downloaded ${(p.inventory.facilities.length + p.inventory.grounds.length).toLocaleString()} rows${needs ? ` · ${needs.toLocaleString()} still need review` : ''}`, tone: 'ok', ttl: 3000 });
 }
