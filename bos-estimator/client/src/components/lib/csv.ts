@@ -48,7 +48,7 @@ const kindLabel = (k: GroundsArea['kind']) => GROUNDS_KINDS.find((x) => x.id ===
 
 const HEADER = [
   'Row type', 'Id', 'Building #', 'Name', 'Campus', 'Category / kind', 'Status', 'Status reason',
-  'Gross SF', 'Cleanable SF', 'Floors', 'Restroom fixtures', 'Occupancy', 'Service level', 'Frequency as printed', 'Meals/day',
+  'Gross SF', 'Cleanable SF', 'Floors', 'Restroom fixtures', 'Occupancy', 'Service level', 'Frequency as printed', 'Cleaning standard', 'Meals/day',
   'Quantity', 'Unit', 'Acres', 'Attached to',
   'Area as printed', 'Confidence %', 'Review status', 'Needs review', 'Issues', 'Edited fields (extracted → now)',
   'Source file', 'Source page', 'Source excerpt', 'Table', 'Hrs/yr', 'FTE', 'Notes',
@@ -75,7 +75,7 @@ export function inventoryCsv(project: ClientProject, est: EstimateResult | null,
     rows.push([
       'facility', f.id, f.buildingNumber, f.name, f.campus, CATEGORY_DEFAULTS[f.category]?.label ?? f.category, statusLabel(f.status), f.statusReason,
       f.grossSqft, f.cleanableSqft ?? e?.resolved.cleanableSqft, f.floors, f.restroomFixtures ?? e?.resolved.restroomFixtures, f.occupancy ?? e?.resolved.occupancy,
-      serviceLabel(f.serviceLevel), f.serviceFrequencyText, f.dining ? (e?.resolved.dining?.mealsPerDay ?? f.dining.mealsPerDay) : undefined,
+      serviceLabel(f.serviceLevel), f.serviceFrequencyText, f.cleaningLevel ? `APPA ${f.cleaningLevel}` : e ? `APPA ${e.resolved.cleaningLevel} (project)` : undefined, f.dining ? (e?.resolved.dining?.mealsPerDay ?? f.dining.mealsPerDay) : undefined,
       undefined, undefined, undefined, undefined,
       asPrinted(f)?.replace(/^As printed /, ''), Math.round(f.confidence * 100), r?.status ?? 'unreviewed', m?.review === 'needs',
       (m?.issues ?? []).map((i) => `${ISSUE_INFO[i].label}: ${issueDetail(i, f, ctx)}`).join('; '), editedText(f, r?.edited),
@@ -87,7 +87,7 @@ export function inventoryCsv(project: ClientProject, est: EstimateResult | null,
     const host = g.facilityId ? byId.get(g.facilityId) : undefined;
     rows.push([
       'grounds', g.id, g.documentLabel, g.name, g.campus, kindLabel(g.kind), undefined, undefined,
-      undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined,
+      undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined,
       g.quantity, g.unit, e?.acres, host ? `${host.buildingNumber ? `${host.buildingNumber} · ` : ''}${host.name}` : 'Site-wide',
       undefined, Math.round(g.confidence * 100), r?.status ?? 'unreviewed', m?.review === 'needs',
       (m?.issues ?? []).map((i) => `${ISSUE_INFO[i].label}: ${issueDetail(i, g, ctx)}`).join('; '), editedText(g, r?.edited),
@@ -120,9 +120,9 @@ export async function copyText(text: string): Promise<boolean> {
 
 /** "Estimate detail (CSV)": task lines, crew summary with the project's wages, manning by year (matches the screen). */
 export function estimateCsv(project: ClientProject, est: EstimateResult): string {
-  const rows: Cell[][] = [['Scope', 'Item', 'Building #', 'Task', 'RS Means ref', 'Crew', 'Quantity', 'Unit', 'Freq/yr', 'LH/unit', 'Annual hours']];
-  for (const fe of est.facilities) for (const l of fe.lines) rows.push(['Facility', fe.resolved.name, fe.resolved.buildingNumber, l.name, l.ref, l.crew, l.quantity, l.unit, l.frequencyPerYear, l.lhPerUnit, l.annualHours]);
-  for (const ge of est.grounds) for (const l of ge.lines) rows.push(['Grounds', ge.area.name, ge.area.documentLabel, l.name, l.ref, l.crew, l.quantity, l.unit, l.frequencyPerYear, l.lhPerUnit, l.annualHours]);
+  const rows: Cell[][] = [['Scope', 'Item', 'Building #', 'Task', 'RS Means ref', 'Crew', 'Quantity', 'Unit', 'Freq/yr', 'LH/unit', 'Cleaning level ×', 'Annual hours']];
+  for (const fe of est.facilities) for (const l of fe.lines) rows.push(['Facility', fe.resolved.name, fe.resolved.buildingNumber, l.name, l.ref, l.crew, l.quantity, l.unit, l.frequencyPerYear, l.lhPerUnit, l.levelFactor ?? 1, l.annualHours]);
+  for (const ge of est.grounds) for (const l of ge.lines) rows.push(['Grounds', ge.area.name, ge.area.documentLabel, l.name, l.ref, l.crew, l.quantity, l.unit, l.frequencyPerYear, l.lhPerUnit, l.levelFactor ?? 1, l.annualHours]);
   rows.push([]);
   rows.push(['Crew summary', 'Crew', '', '', '', '', 'Hours', 'FTE', 'Headcount', 'Wage $/hr', 'Annual labor $']);
   for (const c of est.crews) rows.push(['', c.label, '', '', '', '', c.hours, c.fte, c.headcount, c.wage, c.annualCost]);

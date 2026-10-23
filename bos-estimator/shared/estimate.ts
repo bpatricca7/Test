@@ -198,6 +198,18 @@ function occurrences(rule: FrequencyRule, ctx: { serviceDays: number; growingWee
 
 const lh = (factor: Factor, overrides?: Record<string, number>) => (overrides && overrides[factor.id] != null ? overrides[factor.id] : factor.lhPerUnit);
 
+/**
+ * APPA cleaning-level multiplier for one line: appearance tasks scale fully, restroom sanitation stays within ±1/3
+ * (3–6 min per fixture), and infection control and periodic work do not scale. Medical defaults are already
+ * calibrated at Level 1–2 (hospital EVS floor), so Level 1 does not raise them further.
+ */
+function levelFactorFor(factor: Factor, r: ResolvedFacility): number {
+  if (!factor.appearance) return 1;
+  let k = cleaningLevelFactor(r.cleaningLevel);
+  if (r.category === 'medical') k = Math.min(k, 1);
+  return factor.appearance === 'sanitation' ? Math.min(4 / 3, Math.max(2 / 3, k)) : k;
+}
+
 export function estimateFacility(f: Facility, a: Assumptions, overrides?: Record<string, number>): FacilityEstimate {
   const r = resolveFacility(f, a);
   const lines: TaskLine[] = [];
@@ -245,8 +257,7 @@ export function estimateFacility(f: Facility, a: Assumptions, overrides?: Record
     if (factor.crew === 'custodial' && factor.frequency.kind === 'per_year') freq = Math.min(freq, r.serviceDaysPerYear);
     if (freq <= 0) continue;
     const rate = lh(factor, overrides);
-    // routine (every-service-day) custodial work scales with the APPA appearance level; periodic work does not
-    const levelFactor = factor.crew === 'custodial' && factor.frequency.kind === 'per_service_day' ? cleaningLevelFactor(r.cleaningLevel) : 1;
+    const levelFactor = levelFactorFor(factor, r);
     const perOcc = quantity * rate * levelFactor;
     lines.push({ factorId: factor.id, name: factor.name, ref: factor.ref, crew: factor.crew, quantity: round(quantity, 3), unit: factor.unit, frequencyPerYear: round(freq, 2), lhPerUnit: rate, ...(levelFactor !== 1 ? { levelFactor } : {}), hoursPerOccurrence: round(perOcc, 3), annualHours: round(perOcc * freq, 1) });
   }

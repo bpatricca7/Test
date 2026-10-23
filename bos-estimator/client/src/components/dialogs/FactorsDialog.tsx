@@ -80,7 +80,7 @@ function FactorsBody({ onClose }: { onClose: () => void }) {
       headerExtra={<label className="factors__search"><Search size={14} aria-hidden /><input placeholder="Filter tasks, refs, crews…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Filter factors" /></label>}>
       <div className="factors__body">
         <aside className="factors__side">
-          <p><b>How these are used.</b> Every line is a labor-hour-per-unit rate in the format of RSMeans Facilities Maintenance &amp; Repair data (task · crew · unit · frequency). Annual hours = quantity × rate × occurrences per year; FTE = hours ÷ productive hours per FTE.</p>
+          <p><b>How these are used.</b> Every line is a labor-hour-per-unit rate in the format of RSMeans Facilities Maintenance &amp; Repair data (task · crew · unit · frequency). Annual hours = quantity × rate × occurrences per year, times the cleaning-standard multiplier on appearance tasks (APPA Level 1 ×1.75, Level 3 ×0.6; restroom sanitation within ±⅓); FTE = hours ÷ productive hours per FTE.</p>
           <p><b>Reconcile before bidding.</b> RSMeans data is licensed; the defaults are representative BOS values with the benchmark basis shown under each line. Type the licensed value (or your own historical productivity) into Override. Overrides are saved with the project and apply to every facility using the line.</p>
           <ul className="factors__crews" aria-label="Crew shifts">
             {CREWS.map((c) => { const Icon = CREW_ICON[c.id]; return <li key={c.id}><span className="dot" style={{ background: crewColor(c.id) }} aria-hidden /><Icon size={13} strokeWidth={1.75} aria-hidden />{c.short}<span className="mono">{hhmm(c.shift.start)}–{hhmm(c.shift.end)}</span></li>; })}

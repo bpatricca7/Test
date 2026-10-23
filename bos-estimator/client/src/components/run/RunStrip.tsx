@@ -62,13 +62,14 @@ export const RunStrip = memo(function RunStrip() {
   const x = useStore((s) => s.extraction);
   const elapsed = useElapsed(x);
   const { counts } = useDerived();
+  const ruleRead = useStore((s) => s.project?.extraction?.provider === 'heuristic');
   const summary = useMemo(() => {
     if (x.phase === 'idle') return '';
     if (x.phase === 'failed') return `Read failed: ${x.error ?? 'unknown error'}`;
     if (x.phase === 'cancelled') return 'Read cancelled.';
-    if (x.phase === 'done') return x.found === 0 ? `The read found nothing. ${x.warnings[0]?.message ?? ''}` : `Read complete: ${x.progress.registered} facilities, ${x.progress.grounds} grounds areas, ${counts.needs} need review${x.result?.unverified ? `; ${x.result.unverified} verified rows changed and are back in review` : ''}.`;
+    if (x.phase === 'done') return x.found === 0 ? `The read found nothing. ${x.warnings[0]?.message ?? ''}` : `Read complete: ${x.progress.registered} facilities, ${x.progress.grounds} grounds areas, ${counts.needs} need review${x.result?.unverified ? `; ${x.result.unverified} verified rows changed and are back in review` : ''}${ruleRead ? '. Rule-based read: check every row and the facility count against the document' : ''}.`;
     return `Reading: ${STAGES[Math.max(0, ORDER[x.phase])]?.label ?? ''}. ${x.progress.registered} facilities found${x.progress.expected ? ` of about ${x.progress.expected}` : ''}.`;
-  }, [x.phase, x.error, x.progress, x.found, x.warnings, x.result, counts.needs]);
+  }, [x.phase, x.error, x.progress, x.found, x.warnings, x.result, counts.needs, ruleRead]);
   const said = useThrottledAnnouncement(summary);
   if (x.phase === 'idle') return null;
   return (
@@ -211,9 +212,9 @@ function Done({ x, elapsed }: { x: ExtractionState; elapsed: number }) {
   const segs: Seg[] = [
     { key: 'took', text: `Done in ${duration(took)}` },
     { key: 'needs', text: `${counts.needs.toLocaleString()} need review` },
-    ...(ruleRead ? [{ key: 'rule', tone: 'warn' as const, text: 'Rule-based read: check every row and the count', label: 'The rule-based parser can miss facilities or take the wrong area column on unfamiliar layouts. Compare the facility count and totals with the document.' }] : []),
     ...(r?.unverified ? [{ key: 'unver', tone: 'warn' as const, text: `${plural(r.unverified, 'verified row')} back in review`, label: `${plural(r.unverified, 'verified row')} changed in the re-read and went back to review` }] : []),
     ...(r?.conflicts ? [{ key: 'conf', tone: 'warn' as const, text: `${plural(r.conflicts, 'edit conflict')} flagged`, label: `${plural(r.conflicts, 'row')} where the re-read changed a value you edited: your value is kept and the row is flagged` }] : []),
+    ...(ruleRead ? [{ key: 'rule', tone: 'warn' as const, text: 'Rule-based read: check every row and the count', label: 'The rule-based parser can miss facilities or take the wrong area column on unfamiliar layouts. Compare the facility count and totals with the document.' }] : []),
     ...(x.warnings.length ? [{ key: 'warn', tone: 'warn' as const, text: `⚠ ${plural(x.warnings.length, 'warning')}`, label: `${plural(x.warnings.length, 'warning')}, open the log`, onClick: () => openLog('warnings') }] : []),
     { key: 'fac', text: plural(x.progress.registered, 'facility', 'facilities') },
     ...(rerun ? [{ key: 'delta', text: `+${r!.added.toLocaleString()} new · ${r!.changed.toLocaleString()} changed · ${r!.removed.toLocaleString()} missing` }] : []),

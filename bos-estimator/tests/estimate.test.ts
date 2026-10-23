@@ -53,21 +53,35 @@ test('six-day service and a stated calendar scale the daily work', () => {
   assert.ok(six.totalHours > five.totalHours && school.totalHours < five.totalHours);
 });
 
-test('the APPA cleaning level scales routine custodial work only', () => {
-  const base: Facility = { id: 'a', name: 'A', category: 'admin', grossSqft: 100000, cleanableSqft: 100000, floors: 2, serviceLevel: 'daily_5', scope: ['custodial', 'floor_care'], confidence: 1 };
-  const l2 = estimateFacility(base, DEFAULT_ASSUMPTIONS);
-  const l3 = estimateFacility(base, { ...DEFAULT_ASSUMPTIONS, cleaningLevel: 3 });
-  const l1 = estimateFacility({ ...base, cleaningLevel: 1 }, { ...DEFAULT_ASSUMPTIONS, cleaningLevel: 3 }); // the facility's own level wins
-  const hrs = (e: typeof l2, crew: string) => e.lines.filter((l) => l.crew === crew).reduce((s, l) => s + l.annualHours, 0);
-  const routine = (e: typeof l2) => e.lines.filter((l) => l.crew === 'custodial' && factorById(l.factorId)!.frequency.kind === 'per_service_day').reduce((s, l) => s + l.annualHours, 0);
-  assert.ok(Math.abs(routine(l3) / routine(l2) - 0.65) < 0.01);
-  assert.ok(Math.abs(routine(l1) / routine(l2) - 1.8) < 0.01);
-  assert.equal(hrs(l3, 'floor_care'), hrs(l2, 'floor_care'), 'periodic floor care does not change');
+test('the APPA cleaning level scales appearance work into the APPA bands', () => {
+  const office: Facility = { id: 'a', name: 'A', category: 'admin', grossSqft: 100000 / 0.85, cleanableSqft: 100000, floors: 2, serviceLevel: 'daily_5', scope: ['custodial', 'floor_care'], confidence: 1 };
+  const at = (f: Facility, level: 1 | 2 | 3) => estimateFacility(f, { ...DEFAULT_ASSUMPTIONS, cleaningLevel: level });
+  const perShift = (e: ReturnType<typeof estimateFacility>) => 100000 / (e.dailyHoursByCrew.custodial! / 8);
+  const hrs = (e: ReturnType<typeof estimateFacility>, pred: (l: { factorId: string; crew: string }) => boolean) => e.lines.filter(pred).reduce((s, l) => s + l.annualHours, 0);
+  const [l1, l2, l3] = [at(office, 1), at(office, 2), at(office, 3)];
+  // office lands in the APPA area-per-custodian band of each level
+  assert.ok(perShift(l1) >= 10000 && perShift(l1) <= 11000, `L1 ${perShift(l1)}`);
+  assert.ok(perShift(l2) >= 15000 && perShift(l2) <= 21000, `L2 ${perShift(l2)}`);
+  assert.ok(perShift(l3) >= 28000 && perShift(l3) <= 31000, `L3 ${perShift(l3)}`);
   assert.ok(l2.lines.every((l) => l.levelFactor === undefined), 'Level 2 lines carry no multiplier');
-  assert.ok(l3.lines.some((l) => l.levelFactor === 0.65));
-  // Level 3 office lands in the commercial band (≈28–31K SF per custodian shift)
-  const perShift = 100000 / (l3.dailyHoursByCrew.custodial! / 8);
-  assert.ok(perShift > 24000 && perShift < 32000, String(perShift));
+  // restroom sanitation stays within 3–6 minutes per fixture; periodic floor care does not change
+  for (const e of [l1, l3]) {
+    const rr = e.lines.find((l) => l.factorId === 'cust_restroom')!;
+    const min = rr.lhPerUnit * (rr.levelFactor ?? 1) * 60;
+    assert.ok(min >= 2.99 && min <= 6.01, `restroom ${min} min/fixture`);
+    assert.equal(hrs(e, (l) => l.crew === 'floor_care'), hrs(l2, (l) => l.crew === 'floor_care'));
+  }
+  // the facility's own level wins over the project assumption
+  assert.equal(perShift(at({ ...office, cleaningLevel: 1 }, 3)), perShift(l1));
+  // medical: infection control never scales, and Level 1 does not push a clinic past its Level 1–2 calibration
+  const clinic: Facility = { ...office, category: 'medical', serviceLevel: 'daily_7' };
+  const [c1, c2, c3] = [at(clinic, 1), at(clinic, 2), at(clinic, 3)];
+  assert.equal(c1.totalHours, c2.totalHours);
+  assert.ok(c3.totalHours < c2.totalHours);
+  const disinfect = (e: typeof c1) => e.lines.find((l) => l.factorId === 'cust_med_disinfect')!;
+  assert.equal(disinfect(c3).annualHours, disinfect(c2).annualHours);
+  // CSV-style arithmetic holds: quantity × frequency × rate × level = annual hours
+  for (const l of l3.lines) assert.ok(Math.abs(l.quantity * l.frequencyPerYear * l.lhPerUnit * (l.levelFactor ?? 1) - l.annualHours) <= Math.max(0.6, l.annualHours * 0.002), l.factorId);
 });
 
 test('factor overrides change the hours', () => {

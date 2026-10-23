@@ -250,15 +250,13 @@ export interface ReviewContext {
   changed: ReadonlySet<string>;
   /** campus|bldg → rows sharing it (only keys with more than one row) */
   dupCount?: ReadonlyMap<string, number>;
-  /** The inventory came from the rule-based parser: every extracted row needs a check against the document. */
-  ruleRead?: boolean;
 }
 export const dupKey = (f: Pick<Facility, 'campus' | 'buildingNumber'>) => `${normCampus(f.campus)}|${normBldg(f.buildingNumber)}`;
 
-let lastBuilt: { facilities: readonly Facility[]; changedKey: string; ruleRead: boolean; ctx: ReviewContext } | null = null;
-export function reviewContext(facilities: readonly Facility[], changedIds: readonly string[] = [], ruleRead = false): ReviewContext {
+let lastBuilt: { facilities: readonly Facility[]; changedKey: string; ctx: ReviewContext } | null = null;
+export function reviewContext(facilities: readonly Facility[], changedIds: readonly string[] = []): ReviewContext {
   const changedKey = changedIds.join('\u0001');
-  if (lastBuilt && lastBuilt.facilities === facilities && lastBuilt.changedKey === changedKey && lastBuilt.ruleRead === ruleRead) return lastBuilt.ctx;
+  if (lastBuilt && lastBuilt.facilities === facilities && lastBuilt.changedKey === changedKey) return lastBuilt.ctx;
   let withNo = 0;
   const seen = new Map<string, number>();
   for (const f of facilities) {
@@ -271,8 +269,8 @@ export function reviewContext(facilities: readonly Facility[], changedIds: reado
   const dupKeys = new Set<string>();
   const dupCount = new Map<string, number>();
   for (const [k, n] of seen) if (n > 1) { dupKeys.add(k); dupCount.set(k, n); }
-  const ctx: ReviewContext = { numbersCommon: facilities.length > 0 && withNo / facilities.length >= 0.5, dupKeys, changed: new Set(changedIds), dupCount, ruleRead };
-  lastBuilt = { facilities, changedKey, ruleRead, ctx };
+  const ctx: ReviewContext = { numbersCommon: facilities.length > 0 && withNo / facilities.length >= 0.5, dupKeys, changed: new Set(changedIds), dupCount };
+  lastBuilt = { facilities, changedKey, ctx };
   return ctx;
 }
 
@@ -282,7 +280,7 @@ const mapEq = (a: ReadonlyMap<string, number> | undefined, b: ReadonlyMap<string
   for (const [k, v] of a) if (b.get(k) !== v) return false;
   return true;
 };
-const sameFacts = (a: ReviewContext, b: ReviewContext) => a === b || (a.numbersCommon === b.numbersCommon && !!a.ruleRead === !!b.ruleRead && setEq(a.dupKeys, b.dupKeys) && setEq(a.changed, b.changed) && mapEq(a.dupCount, b.dupCount));
+const sameFacts = (a: ReviewContext, b: ReviewContext) => a === b || (a.numbersCommon === b.numbersCommon && setEq(a.dupKeys, b.dupKeys) && setEq(a.changed, b.changed) && mapEq(a.dupCount, b.dupCount));
 /** The context every caller converges on, so the per-row cache is shared by derived.ts and query.ts. */
 let canonical: ReviewContext | null = null;
 /** Returns `prev` (or the shared canonical context) when `next` carries the same facts, so per-row memoization survives unrelated edits. */
@@ -293,8 +291,8 @@ export function stableContext(next: ReviewContext, prev: ReviewContext | null | 
   return next;
 }
 /** reviewContext + stableContext against the shared canonical context. */
-export function sharedContext(facilities: readonly Facility[], changedIds: readonly string[] = [], ruleRead = false): ReviewContext {
-  return stableContext(reviewContext(facilities, changedIds, ruleRead), canonical);
+export function sharedContext(facilities: readonly Facility[], changedIds: readonly string[] = []): ReviewContext {
+  return stableContext(reviewContext(facilities, changedIds), canonical);
 }
 
 export function facilityIssues(f: Facility, ctx: ReviewContext): IssueCode[] {
@@ -310,7 +308,7 @@ export function facilityIssues(f: Facility, ctx: ReviewContext): IssueCode[] {
   if (!isInScope(f)) out.push('out_of_scope');
   if (!f.source?.file) out.push('no_source');
   if (ctx.changed.has(f.id)) out.push('rerun_changed');
-  if (ctx.ruleRead && !isManualRow(f.id)) out.push('rule_read');
+  if (f.readBy === 'rules' && !isManualRow(f.id)) out.push('rule_read');
   return out;
 }
 
@@ -320,7 +318,7 @@ export function groundsIssues(g: GroundsArea, ctx: ReviewContext): IssueCode[] {
   if (!(g.quantity > 0)) out.push('zero_qty');
   if (!g.source?.file) out.push('no_source');
   if (ctx.changed.has(g.id)) out.push('rerun_changed');
-  if (ctx.ruleRead && !isManualRow(g.id)) out.push('rule_read');
+  if (g.readBy === 'rules' && !isManualRow(g.id)) out.push('rule_read');
   return out;
 }
 

@@ -12,7 +12,8 @@ export const FIELD_LABELS: Record<string, string> = {
   grossSqft: 'Gross SF', cleanableSqft: 'Cleanable SF', floors: 'Floors', category: 'Category', serviceLevel: 'Service',
   status: 'Status', name: 'Name', buildingNumber: 'Building #', campus: 'Campus', restroomFixtures: 'Restroom fixtures',
   occupancy: 'Occupancy', 'dining.mealsPerDay': 'Meals/day', quantity: 'Quantity', unit: 'Unit', kind: 'Kind',
-  facilityId: 'Building', scope: 'Scope', serviceFrequencyText: 'Frequency as printed',
+  facilityId: 'Building', scope: 'Scope', serviceFrequencyText: 'Frequency as printed', cleaningLevel: 'Cleaning standard',
+  serviceDaysPerYear: 'Service days / yr',
 };
 export const fieldLabel = (path: string) => FIELD_LABELS[path] ?? path;
 const fmtValue = (v: unknown) => (typeof v === 'number' ? v.toLocaleString() : v == null || v === '' ? '—' : String(v));
@@ -40,7 +41,8 @@ export function diffInventories(before: Inventory, after: Inventory): RunResultC
     if (!prev || used.has(prev.id)) prev = byName.get(normName(f.name)) ?? undefined;
     if (!prev || used.has(prev.id)) { added++; continue; }
     used.add(prev.id);
-    const diff = prev.grossSqft !== f.grossSqft || (prev.cleanableSqft ?? null) !== (f.cleanableSqft ?? null) || prev.floors !== f.floors || prev.category !== f.category || prev.serviceLevel !== f.serviceLevel || (prev.status ?? 'in_scope') !== (f.status ?? 'in_scope');
+    const diff = prev.grossSqft !== f.grossSqft || (prev.cleanableSqft ?? null) !== (f.cleanableSqft ?? null) || prev.floors !== f.floors || prev.category !== f.category || prev.serviceLevel !== f.serviceLevel || (prev.status ?? 'in_scope') !== (f.status ?? 'in_scope')
+      || (prev.cleaningLevel ?? null) !== (f.cleaningLevel ?? null) || (prev.serviceDaysPerYear ?? null) !== (f.serviceDaysPerYear ?? null);
     if (diff) { changed++; changedIds.push(f.id); } else unchanged++;
   }
   const gUsed = new Set<string>();

@@ -131,6 +131,7 @@ const ISSUE_ALIASES: [RegExp, IssueCode][] = [
   [/^dup/, 'dup_bldg'], [/^(low|conf)/, 'low_conf'], [/^(no_?b|no_?num|nonum|number)/, 'no_bldg_no'], [/^(zero_?s|nosf|no_?sf|sf$)/, 'zero_sf'],
   [/^(clean|gt)/, 'clean_gt_gross'], [/^(excerpt|mismatch|not_?in|sf_not)/, 'sf_not_in_excerpt'], [/^(unit|conv|metric|m2|sm)/, 'unit_converted'],
   [/^(out|scope|excl)/, 'out_of_scope'], [/^(no_?s|nosrc|source|src)/, 'no_source'], [/^(rerun|chang)/, 'rerun_changed'], [/^(zero_?q|qty|noqty)/, 'zero_qty'],
+  [/^(rule|heur|parser)/, 'rule_read'],
 ];
 function issueOf(value: string): IssueCode | null {
   const v = value.toLowerCase();
@@ -383,7 +384,7 @@ export function currentOrder(): readonly string[] {
 export function metaSnapshot(): Map<string, RowMeta> {
   const s = useStore.getState(); const p = s.project; const m = new Map<string, RowMeta>();
   if (!p) return m;
-  const ctx = sharedContext(p.inventory.facilities, s.extraction.result?.changedIds ?? [], p.extraction?.provider === 'heuristic');
+  const ctx = sharedContext(p.inventory.facilities, s.extraction.result?.changedIds ?? []);
   const review: ReviewMap = p.review ?? {};
   for (const f of p.inventory.facilities) m.set(f.id, rowMetaFor(f, 'facility', ctx, review[f.id]));
   for (const g of p.inventory.grounds) m.set(g.id, rowMetaFor(g, 'grounds', ctx, review[g.id]));
@@ -392,7 +393,7 @@ export function metaSnapshot(): Map<string, RowMeta> {
 /** RowMeta of one row, from the store. */
 export function metaOf(id: string): RowMeta | undefined {
   const s = useStore.getState(); const p = s.project; if (!p) return undefined;
-  const ctx = sharedContext(p.inventory.facilities, s.extraction.result?.changedIds ?? [], p.extraction?.provider === 'heuristic');
+  const ctx = sharedContext(p.inventory.facilities, s.extraction.result?.changedIds ?? []);
   const f = p.inventory.facilities.find((x) => x.id === id);
   if (f) return rowMetaFor(f, 'facility', ctx, p.review?.[id]);
   const g = p.inventory.grounds.find((x) => x.id === id);

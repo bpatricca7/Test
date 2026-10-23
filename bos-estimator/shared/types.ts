@@ -105,6 +105,8 @@ export interface Facility {
   dining?: DiningProfile;
   source?: SourceRef;
   confidence: number; // 0..1 — how sure the extractor is about name + square footage
+  /** Read by the rule-based parser in its latest reading: the row needs a check against the document. */
+  readBy?: 'rules';
   notes?: string;
   /** Optional site position hint from the AI (0..1 normalized east/north). */
   siteHint?: { x: number; y: number };
@@ -160,6 +162,8 @@ export interface GroundsArea {
   unit: GroundsUnit;
   source?: SourceRef;
   confidence: number;
+  /** Read by the rule-based parser in its latest reading: the row needs a check against the document. */
+  readBy?: 'rules';
   notes?: string;
 }
 
@@ -279,21 +283,21 @@ export interface Project extends ProjectMeta {
   extraction?: { provider: 'claude' | 'heuristic'; model?: string; finishedAt: string; durationMs: number; usage?: { input: number; output: number } };
 }
 
-/** Global estimating assumptions (editable in the UI). */
 /**
- * APPA custodial appearance level the routine (every-service-day) cleaning is priced at. The factor library is
- * calibrated to Level 2; the multiplier scales routine custodial labor by the APPA area-per-custodian ratio
+ * APPA custodial appearance level routine cleaning is priced at. The factor library is calibrated to Level 2; the
+ * multiplier scales the appearance tasks (Factor.appearance) so an office lands in the APPA area-per-custodian band
  * (L1 ≈10–11K, L2 ≈18–20K, L3 ≈28–31K cleanable SF per custodian per shift). Levels 4–5 are mostly reduced
  * frequency, which the service level already expresses, so they are not offered here.
  */
 export type CleaningLevel = 1 | 2 | 3;
 export const CLEANING_LEVELS: { id: CleaningLevel; label: string; short: string; routineFactor: number; sfPerShift: string }[] = [
-  { id: 1, label: 'APPA Level 1 · orderly spotlessness', short: 'APPA 1', routineFactor: 1.8, sfPerShift: '≈10–11K SF per custodian shift' },
+  { id: 1, label: 'APPA Level 1 · orderly spotlessness', short: 'APPA 1', routineFactor: 1.75, sfPerShift: '≈10–11K SF per custodian shift' },
   { id: 2, label: 'APPA Level 2 · ordinary tidiness', short: 'APPA 2', routineFactor: 1, sfPerShift: '≈18–20K SF per custodian shift' },
-  { id: 3, label: 'APPA Level 3 · casual inspection', short: 'APPA 3', routineFactor: 0.65, sfPerShift: '≈28–31K SF per custodian shift (typical commercial contract)' },
+  { id: 3, label: 'APPA Level 3 · casual inattention', short: 'APPA 3', routineFactor: 0.6, sfPerShift: '≈28–31K SF per custodian shift (typical commercial contract)' },
 ];
 export const cleaningLevelFactor = (l: CleaningLevel | undefined) => CLEANING_LEVELS.find((x) => x.id === l)?.routineFactor ?? 1;
 
+/** Global estimating assumptions (editable in the UI). */
 export interface Assumptions {
   productiveHoursPerFte: number; // e.g. 1,776
   supervisorRatio: number; // working supervisors per N FTE (e.g. 1 per 12)

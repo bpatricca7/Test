@@ -89,9 +89,9 @@ app.post('/api/projects/:id/topdown', async (req, res) => {
 app.get('/api/projects/:id/export.csv', async (req, res) => {
   const p = await loadProject(req.params.id);
   const est = estimateInventory(p.inventory, p.assumptionOverrides ?? {}, p.factorOverrides);
-  const rows: string[][] = [['Scope', 'Item', 'Building #', 'Task', 'RS Means ref', 'Crew', 'Quantity', 'Unit', 'Freq/yr', 'LH/unit', 'Annual hours']];
-  for (const fe of est.facilities) for (const l of fe.lines) rows.push(['Facility', fe.resolved.name, fe.resolved.buildingNumber ?? '', l.name, l.ref, l.crew, String(l.quantity), l.unit, String(l.frequencyPerYear), String(l.lhPerUnit), String(l.annualHours)]);
-  for (const ge of est.grounds) for (const l of ge.lines) rows.push(['Grounds', ge.area.name, '', l.name, l.ref, l.crew, String(l.quantity), l.unit, String(l.frequencyPerYear), String(l.lhPerUnit), String(l.annualHours)]);
+  const rows: string[][] = [['Scope', 'Item', 'Building #', 'Task', 'RS Means ref', 'Crew', 'Quantity', 'Unit', 'Freq/yr', 'LH/unit', 'Cleaning level ×', 'Annual hours']];
+  for (const fe of est.facilities) for (const l of fe.lines) rows.push(['Facility', fe.resolved.name, fe.resolved.buildingNumber ?? '', l.name, l.ref, l.crew, String(l.quantity), l.unit, String(l.frequencyPerYear), String(l.lhPerUnit), String(l.levelFactor ?? 1), String(l.annualHours)]);
+  for (const ge of est.grounds) for (const l of ge.lines) rows.push(['Grounds', ge.area.name, '', l.name, l.ref, l.crew, String(l.quantity), l.unit, String(l.frequencyPerYear), String(l.lhPerUnit), String(l.levelFactor ?? 1), String(l.annualHours)]);
   rows.push([]);
   rows.push(['Crew summary', 'Crew', '', '', '', '', 'Hours', 'FTE', 'Headcount', 'Wage', 'Annual labor $']);
   for (const c of est.crews) rows.push(['', c.label, '', '', '', '', String(c.hours), String(c.fte), String(c.headcount), String(c.wage), String(c.annualCost)]);
@@ -156,6 +156,13 @@ const receiveUploads: express.RequestHandler = (req, res, next) => {
     res.status(400).json({ error: `Upload failed: ${(err as Error)?.message || String(err)}` });
   });
 };
+
+/** Rows from the rule-based parser are stamped so the review queue asks for a check of each one. */
+const stampRules = (inv: Inventory): Inventory => ({
+  ...inv,
+  facilities: inv.facilities.map((f) => ({ ...f, readBy: 'rules' as const })),
+  grounds: inv.grounds.map((g) => ({ ...g, readBy: 'rules' as const })),
+});
 
 app.post('/api/projects/:id/extract', receiveUploads, async (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
@@ -240,12 +247,12 @@ app.post('/api/projects/:id/extract', receiveUploads, async (req, res) => {
       } catch (err) {
         if (provider === 'claude' || abort.signal.aborted) throw err;
         send({ type: 'status', stage: 'ai', message: `AI extraction failed (${(err as Error).message}). Falling back to the rule-based parser.` });
-        inventory = heuristicExtract(readable);
+        inventory = stampRules(heuristicExtract(readable));
         streamHeuristic(inventory);
       }
     } else {
       send({ type: 'status', stage: 'ai', message: aiAvailable() ? 'Using rule-based parser (as requested).' : 'No ANTHROPIC_API_KEY configured — using rule-based parser.' });
-      inventory = heuristicExtract(readable);
+      inventory = stampRules(heuristicExtract(readable));
       streamHeuristic(inventory);
     }
     if (!foundAward || !(foundAward.totalValue || foundAward.annualValue || foundAward.spendToDate)) {
@@ -260,7 +267,14 @@ app.post('/api/projects/:id/extract', receiveUploads, async (req, res) => {
     let keptPrevious = false;
     if (mode === 'append') {
       const map = new Map(project.inventory.facilities.map((f) => [f.id, f]));
-      for (const f of inventory.facilities) map.set(f.id, map.has(f.id) ? mergeFacility(map.get(f.id)!, f) : f);
+      for (const f of inventory.facilities) {
+        const old = map.get(f.id);
+        if (!old) { map.set(f.id, f); continue; }
+        const merged = mergeFacility(old, f);
+        // the merged row carries this run's reading: an AI re-read clears an older rule-based stamp
+        if (usedProvider === 'heuristic') merged.readBy = 'rules'; else delete merged.readBy;
+        map.set(f.id, merged);
+      }
       inventory = { site: { ...project.inventory.site, ...inventory.site }, facilities: [...map.values()], grounds: [...project.inventory.grounds, ...inventory.grounds] };
     } else if (!inventory.facilities.length) {
       if (project.inventory.facilities.length) {

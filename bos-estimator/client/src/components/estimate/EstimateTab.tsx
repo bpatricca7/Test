@@ -305,6 +305,7 @@ function AssumptionsSection() {
   const setAssumption = useStore((s) => s.setAssumption);
   const a = { ...DEFAULT_ASSUMPTIONS, ...(ov ?? {}) };
   const ovr = (k: keyof typeof a) => ov?.[k] !== undefined;
+  const ownLevel = useStore((s) => s.project?.inventory.facilities.filter((f) => f.cleaningLevel).length ?? 0);
   return (
     <section className="est__sec" id="est-assumptions">
       <h3>Estimating assumptions</h3>
@@ -317,7 +318,7 @@ function AssumptionsSection() {
         <Field label="Climate zone">{(id) => <Select<ClimateZone> id={id} value={a.climateZone} onChange={(v) => setAssumption('climateZone', v)} options={[{ value: 'cold', label: 'Cold (snow)' }, { value: 'temperate', label: 'Temperate' }, { value: 'hot_humid', label: 'Hot / humid' }, { value: 'arid', label: 'Arid' }]} />}</Field>
         <Field label="Growing season (wk)">{(id) => <NumField id={id} value={a.growingSeasonWeeks} decimals={0} overridden={ovr('growingSeasonWeeks')} rule={{ min: 0, max: 52 }} onCommit={(v) => setAssumption('growingSeasonWeeks', v)} />}</Field>
         <Field label="Snow events / yr">{(id) => <NumField id={id} value={a.snowEventsPerYear} decimals={0} overridden={ovr('snowEventsPerYear')} rule={{ min: 0 }} onCommit={(v) => setAssumption('snowEventsPerYear', v)} />}</Field>
-        <Field label="Cleaning standard" span="full" hint={CLEANING_LEVELS.find((x) => x.id === a.cleaningLevel)?.sfPerShift}>{(id) => <Select id={id} value={String(a.cleaningLevel)} onChange={(v) => setAssumption('cleaningLevel', Number(v) as CleaningLevel)} options={CLEANING_LEVELS.map((x) => ({ value: String(x.id), label: x.label }))} />}</Field>
+        <Field label="Cleaning standard" span="full" hint={`${CLEANING_LEVELS.find((x) => x.id === a.cleaningLevel)?.sfPerShift ?? ''}${ownLevel ? ` · ${ownLevel.toLocaleString()} ${ownLevel === 1 ? 'facility sets its' : 'facilities set their'} own level` : ''}`}>{(id) => <Select id={id} value={String(a.cleaningLevel)} onChange={(v) => setAssumption('cleaningLevel', Number(v) as CleaningLevel)} options={CLEANING_LEVELS.map((x) => ({ value: String(x.id), label: x.label }))} />}</Field>
         <Field label="Cleanable share (default)">{(id) => <NumField id={id} value={a.cleanableShareDefault} kind="percent" decimals={0} suffix="%" overridden={ovr('cleanableShareDefault')} rule={{ min: 0, max: 1 }} onCommit={(v) => setAssumption('cleanableShareDefault', v)} />}</Field>
       </Fields>
     </section>
