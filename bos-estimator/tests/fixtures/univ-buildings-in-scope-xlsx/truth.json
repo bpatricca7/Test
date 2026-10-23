@@ -1,0 +1,523 @@
+{
+  "id": "univ-buildings-in-scope-xlsx",
+  "title": "University custodial RFP: short scope PDF with addendum Q&A plus Exhibit A \"Buildings in Scope\" workbook (XLSX)",
+  "theme": "higher-ed",
+  "provenance": {
+    "fidelity": "real-format",
+    "sources": [
+      {
+        "url": "https://www.umsystem.edu/sites/default/files/2022-10/Custodial%20Services%20for%20Various%20Buildings%20RFP%20Final%2010-12-2022.pdf",
+        "note": "University of Missouri RFP #23027 \"Custodial Services for Various Buildings\": package structure copied (Exhibit A – Buildings in Scope, Exhibit B – Scope of Cleaning Services, Exhibit C – RFP Staffing Workbook, each an Excel spreadsheet)."
+      },
+      {
+        "url": "https://uafs.edu/about/offices-and-services/finance-and-administration/procurement/_documents/ax24003custodialandlandscaping.pdf",
+        "note": "UAFS AX-24-003 Appendix 1 – UAFS Facilities: building names and gross SF copied: Baldor Technology Center 102,000; Boreham Library 68,331; Math Science 82,000; Advancement Center 9,008; 51st Annex 16,339; Pendergraft Health Sciences 72,230; Ballman Speer 12,466 (storage, no custodial service). Building numbers, cleanable SF, floors, fixtures and service days on these rows are illustrative."
+      },
+      {
+        "url": "https://www.pima.edu/administration/contracts-purchasing/docs/rfp-p24-10060l-custodial-services.pdf",
+        "note": "Pima Community College RFP P24/10060L: Aviation Technology Center 73,346 total SF (first floor 64,642 + second floor 8,704, so 2 floors; hangars) and 29th Street Coalition Center 39,751 SF copied."
+      },
+      {
+        "url": "https://www.nmcc.edu/wp-content/uploads/Custodial-Services-RFP-May-2026.pdf",
+        "note": "Northern Maine Community College 2026 custodial RFP: pattern of a Q&A addendum adding a building to scope (modelled as Ridgeview Commons, 11,000 SF; name illustrative)."
+      },
+      {
+        "url": "https://bids.tcnj.edu/wp-content/uploads/sites/141/2022/02/Addendum-1-2.pdf",
+        "note": "TCNJ custodial bid Addendum No. 1: pattern of Q&A clarifying gross vs net cleanable square feet and pointing bidders to the Exhibit A spreadsheet tabs."
+      },
+      {
+        "url": "https://www.lincolnu.edu/about-lincoln/purchasing/bid-information/rfp-b24-1228-facilities-management-services.pdf",
+        "note": "Lincoln University RFP B24-1228: residence halls need custodial service 7 days a week during semesters and a thorough cleaning at the end and beginning of each semester (wording paraphrased in Section 4.3)."
+      }
+    ],
+    "notes": "9 of 51 workbook rows carry real building names and gross SF (7 from UAFS AX-24-003, 2 from Pima P24/10060L); all other rows, every cleanable SF / floor / fixture / service-day value (except the Aviation Technology Center floor count), the university name, building numbers, the incumbent contract and the addendum answers are illustrative. Layout follows the MU RFP 23027 package (short RFP PDF + Excel exhibits)."
+  },
+  "inputs": [
+    {
+      "src": "rfp-27031-custodial.html",
+      "as": "pdf"
+    },
+    {
+      "src": "exhibit-a-buildings-in-scope.json",
+      "as": "xlsx",
+      "out": "27031 Exhibit A - Buildings in Scope.xlsx"
+    }
+  ],
+  "expect": {
+    "facilities": [
+      {
+        "buildingNumber": "0012",
+        "name": "Kessler Hall (Administration)",
+        "grossSqft": 58420,
+        "cleanableSqft": 47900,
+        "floors": 4,
+        "restroomFixtures": 38,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "0015",
+        "name": "Baldor Technology Center",
+        "grossSqft": 102000,
+        "cleanableSqft": 86700,
+        "floors": 2,
+        "restroomFixtures": 44,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "0018",
+        "name": "Boreham Library",
+        "grossSqft": 68331,
+        "cleanableSqft": 59450,
+        "floors": 3,
+        "restroomFixtures": 30,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "0021",
+        "name": "Math Science",
+        "grossSqft": 82000,
+        "cleanableSqft": 67240,
+        "floors": 3,
+        "restroomFixtures": 36,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "0024",
+        "name": "Advancement Center",
+        "grossSqft": 9008,
+        "cleanableSqft": 7650,
+        "floors": 1,
+        "restroomFixtures": 6,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "0027",
+        "name": "51st Annex",
+        "grossSqft": 16339,
+        "cleanableSqft": 12250,
+        "floors": 1,
+        "restroomFixtures": 8,
+        "serviceLevel": "3x_week"
+      },
+      {
+        "buildingNumber": "0033",
+        "name": "Fine Arts Center",
+        "grossSqft": 61775,
+        "cleanableSqft": 50650,
+        "floors": 3,
+        "restroomFixtures": 28,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "0036",
+        "name": "Music Building",
+        "grossSqft": 24180,
+        "cleanableSqft": 19830,
+        "floors": 2,
+        "restroomFixtures": 12
+      },
+      {
+        "buildingNumber": "0039",
+        "name": "Business Administration",
+        "grossSqft": 45960,
+        "cleanableSqft": 38150,
+        "floors": 3,
+        "restroomFixtures": 24,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "0042",
+        "name": "Education Building",
+        "grossSqft": 40230,
+        "cleanableSqft": 33390,
+        "floors": 3,
+        "restroomFixtures": 22,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "0045",
+        "name": "Social Sciences Hall",
+        "grossSqft": 37415,
+        "cleanableSqft": 30680,
+        "floors": 3,
+        "restroomFixtures": 20,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "0048",
+        "name": "Engineering and Applied Sciences",
+        "grossSqft": 88640,
+        "cleanableSqft": 70910,
+        "floors": 4,
+        "restroomFixtures": 40,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "0051",
+        "name": "Chemistry and Biology Laboratories",
+        "grossSqft": 71200,
+        "cleanableSqft": 54110,
+        "floors": 3,
+        "restroomFixtures": 34,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "0054",
+        "name": "Student Union",
+        "grossSqft": 96850,
+        "cleanableSqft": 79420,
+        "floors": 3,
+        "restroomFixtures": 58,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "0057",
+        "name": "Recreation and Wellness Center",
+        "grossSqft": 74300,
+        "cleanableSqft": 63155,
+        "floors": 2,
+        "restroomFixtures": 46,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "0060",
+        "name": "Athletic Field House",
+        "grossSqft": 52100,
+        "cleanableSqft": 31260,
+        "floors": 1,
+        "restroomFixtures": 36
+      },
+      {
+        "buildingNumber": "0063",
+        "name": "Natatorium",
+        "grossSqft": 28640,
+        "cleanableSqft": 17180,
+        "floors": 1,
+        "restroomFixtures": 22
+      },
+      {
+        "buildingNumber": "0066",
+        "name": "Campus Police and Parking Services",
+        "grossSqft": 8215,
+        "cleanableSqft": 6980,
+        "floors": 1,
+        "restroomFixtures": 6,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "0069",
+        "name": "Central Receiving and Warehouse",
+        "grossSqft": 22400,
+        "cleanableSqft": 5600,
+        "floors": 1,
+        "restroomFixtures": 4,
+        "serviceLevel": "2x_week"
+      },
+      {
+        "buildingNumber": "0072",
+        "name": "Physical Plant Shops",
+        "grossSqft": 18960,
+        "cleanableSqft": 6640,
+        "floors": 1,
+        "restroomFixtures": 6,
+        "serviceLevel": "2x_week"
+      },
+      {
+        "buildingNumber": "0075",
+        "name": "Information Technology Center",
+        "grossSqft": 26300,
+        "cleanableSqft": 21830,
+        "floors": 2,
+        "restroomFixtures": 12,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "0078",
+        "name": "Career Services and Alumni Center",
+        "grossSqft": 11520,
+        "cleanableSqft": 9560,
+        "floors": 2,
+        "restroomFixtures": 8,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "0081",
+        "name": "Child Development Laboratory School",
+        "grossSqft": 9860,
+        "cleanableSqft": 8380,
+        "floors": 1,
+        "restroomFixtures": 14,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "1102",
+        "name": "Ozark Hall (Residence Hall)",
+        "grossSqft": 112600,
+        "cleanableSqft": 33780,
+        "floors": 6,
+        "restroomFixtures": 96,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "1104",
+        "name": "Cedar Hall (Residence Hall)",
+        "grossSqft": 98450,
+        "cleanableSqft": 29540,
+        "floors": 5,
+        "restroomFixtures": 84,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "1106",
+        "name": "Juniper Hall (Residence Hall)",
+        "grossSqft": 98450,
+        "cleanableSqft": 29540,
+        "floors": 5,
+        "restroomFixtures": 84,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "1108",
+        "name": "Sycamore Suites",
+        "grossSqft": 126300,
+        "cleanableSqft": 25260,
+        "floors": 4,
+        "restroomFixtures": 18,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "1110",
+        "name": "Maple Apartments",
+        "grossSqft": 84200,
+        "cleanableSqft": 8420,
+        "floors": 3,
+        "restroomFixtures": 6,
+        "serviceLevel": "3x_week"
+      },
+      {
+        "buildingNumber": "1112",
+        "name": "University Dining Commons",
+        "grossSqft": 54700,
+        "cleanableSqft": 41030,
+        "floors": 2,
+        "restroomFixtures": 24,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "1120",
+        "name": "Honors College House",
+        "grossSqft": 6480,
+        "cleanableSqft": 5510,
+        "floors": 2,
+        "restroomFixtures": 6,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "2201",
+        "name": "Pendergraft Health Sciences",
+        "grossSqft": 72230,
+        "cleanableSqft": 60670,
+        "floors": 3,
+        "restroomFixtures": 34,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "2204",
+        "name": "Clinical Simulation Center",
+        "grossSqft": 31850,
+        "cleanableSqft": 26120,
+        "floors": 2,
+        "restroomFixtures": 16,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "2207",
+        "name": "Dental Hygiene Clinic",
+        "grossSqft": 14960,
+        "cleanableSqft": 12720,
+        "floors": 1,
+        "restroomFixtures": 18,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "2210",
+        "name": "Nursing and Allied Health",
+        "grossSqft": 42810,
+        "cleanableSqft": 36400,
+        "floors": 3,
+        "restroomFixtures": 22,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "2213",
+        "name": "Health Sciences Library",
+        "grossSqft": 19640,
+        "cleanableSqft": 16500,
+        "floors": 2,
+        "restroomFixtures": 10
+      },
+      {
+        "buildingNumber": "2216",
+        "name": "Physical Therapy Building",
+        "grossSqft": 23175,
+        "cleanableSqft": 19700,
+        "floors": 2,
+        "restroomFixtures": 14,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "2219",
+        "name": "Community Health Clinic",
+        "grossSqft": 17880,
+        "cleanableSqft": 15550,
+        "floors": 1,
+        "restroomFixtures": 20,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "2222",
+        "name": "Biomedical Research Annex",
+        "grossSqft": 27940,
+        "cleanableSqft": 19560,
+        "floors": 2,
+        "restroomFixtures": 12,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "2225",
+        "name": "Parking Deck Office and Restrooms",
+        "grossSqft": 1920,
+        "cleanableSqft": 1630,
+        "floors": 1,
+        "restroomFixtures": 2,
+        "serviceLevel": "weekly"
+      },
+      {
+        "buildingNumber": "3301",
+        "name": "Aviation Technology Center",
+        "grossSqft": 73346,
+        "cleanableSqft": 38140,
+        "floors": 2,
+        "restroomFixtures": 26,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "3304",
+        "name": "29th Street Coalition Center",
+        "grossSqft": 39751,
+        "cleanableSqft": 33790,
+        "floors": 1,
+        "restroomFixtures": 22,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "3307",
+        "name": "Downtown Classroom Building",
+        "grossSqft": 44620,
+        "cleanableSqft": 37930,
+        "floors": 4,
+        "restroomFixtures": 24
+      },
+      {
+        "buildingNumber": "3310",
+        "name": "Workforce Development Center",
+        "grossSqft": 36980,
+        "cleanableSqft": 30320,
+        "floors": 2,
+        "restroomFixtures": 18,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "3313",
+        "name": "Small Business Incubator",
+        "grossSqft": 15400,
+        "cleanableSqft": 12940,
+        "floors": 2,
+        "restroomFixtures": 8,
+        "serviceLevel": "3x_week"
+      },
+      {
+        "buildingNumber": "3316",
+        "name": "Culinary Arts Institute",
+        "grossSqft": 21560,
+        "cleanableSqft": 17250,
+        "floors": 1,
+        "restroomFixtures": 12,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "3319",
+        "name": "Downtown Library and Archives",
+        "grossSqft": 12875,
+        "cleanableSqft": 10940,
+        "floors": 2,
+        "restroomFixtures": 6,
+        "serviceLevel": "2x_week"
+      },
+      {
+        "buildingNumber": "3322",
+        "name": "Continuing Education Center",
+        "grossSqft": 18230,
+        "cleanableSqft": 15500,
+        "floors": 2,
+        "restroomFixtures": 10,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "3325",
+        "name": "Public Radio Station (KSUR)",
+        "grossSqft": 7640,
+        "cleanableSqft": 6490,
+        "floors": 1,
+        "restroomFixtures": 4,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "3328",
+        "name": "Regional Training Center (Leased, Suite 200)",
+        "grossSqft": 9400,
+        "cleanableSqft": 8000,
+        "floors": 1,
+        "restroomFixtures": 6,
+        "serviceLevel": "weekly"
+      },
+      {
+        "buildingNumber": "1114",
+        "name": "Ridgeview Commons",
+        "grossSqft": 11000,
+        "cleanableSqft": 9350,
+        "floors": 1,
+        "restroomFixtures": 14,
+        "serviceLevel": "daily_7"
+      }
+    ],
+    "facilitiesComplete": true,
+    "site": {
+      "contractYears": 5,
+      "installationName": "Kessler State University",
+      "solicitation": "RFP #27031"
+    },
+    "priorAward": {
+      "totalValue": 14950000,
+      "periodMonths": 60,
+      "incumbent": "Allpoint Custodial Group, LLC",
+      "contractNumber": "KSU-C-21-0447",
+      "awardYear": 2021
+    }
+  },
+  "traps": [
+    "Exhibit A sheet has a merged title row and a blank row above the real header row (row 3); the header must be found, not assumed to be row 1.",
+    "TOTAL row (Gross 2,220,646, Cleanable 1,450,645, Fixtures 1176) is not a facility; per Addendum Q4 it also includes information-only rows.",
+    "Building # mixes text with leading zeros (\"0012\", stored as text) and plain numbers (1102, stored as numeric cells).",
+    "Building 0030 Ballman Speer has 0 service days and Remarks \"Storage – no custodial service\": excluded from expected facilities.",
+    "Building 0084 Hawthorne Hall is a normal-looking row in the workbook (5 days/week) but Addendum No. 1 Q3 in the PDF removes it from scope: excluded.",
+    "Building 2210 Nursing and Allied Health shows 48,210 GSF in the workbook; Addendum No. 1 Q2 corrects it to 42,810 (cleanable 36,400 unchanged). Truth uses 42,810.",
+    "Building 1114 Ridgeview Commons exists only in the PDF addendum (Q1): 11,000 GSF, 9,350 cleanable, 1 floor, 14 fixtures, 7 days/week. It must be added to the workbook buildings.",
+    "Cleanable SF is far below gross for residence halls (common areas only), warehouse/shops (office areas only) and the Aviation Technology Center (hangar bays excluded) — gross and cleanable must not be swapped or averaged.",
+    "Service Days/Week is a number: 5 = daily_5, 7 = daily_7, 3 = 3x_week, 2 = 2x_week, 1 = weekly; 6 (Mon–Sat) has no exact service level so truth omits serviceLevel for those rows; 0 = not serviced.",
+    "Remarks column carries free text (APPA Level 1 notes, exclusions) that must not leak into numbers; the Notes sheet is free text with numbered notes, not building rows.",
+    "Sycamore Suites and Juniper/Cedar Hall have identical or large gross SF but different cleanable SF; Juniper and Cedar Hall are twin buildings with identical numbers (98,450 / 29,540) and must both be kept (different building numbers).",
+    "Prior award: total contract value $14,950,000 over five years (60 months) with incumbent, contract number and award year in Section 3; the Q5 FTE count (118 custodial FTEs, 9 supervisors) is staffing context, not contract value.",
+    "Contract term: one-year initial term plus four one-year renewals = 5 contract years."
+  ]
+}

@@ -1,0 +1,493 @@
+{
+  "id": "rpi-export-mixed-units-xlsx",
+  "title": "Army real property inventory (GFEBS) export workbook with mixed units of measure (89 records: SF buildings, SY parking/roads, AC grounds, LF/EA/KW/GA/MB structures) plus a one-page scope memo PDF",
+  "theme": "military-bos",
+  "provenance": {
+    "fidelity": "real-format",
+    "sources": [
+      {
+        "url": "https://www.esd.whs.mil/Portals/54/Documents/DD/forms/dd/dd1354.pdf",
+        "note": "DD Form 1354: facility number, CATCODE, primary unit of measure and quantity (plus secondary UM) as the per-facility real property record fields; basis for the FACILITY_NUMBER / CATCODE / PRIMARY_UM / TOTAL_UM_QTY columns."
+      },
+      {
+        "url": "https://www.esd.whs.mil/Portals/54/Documents/DD/issuances/dodi/416514p.pdf",
+        "note": "DoDI 4165.14 Real Property Inventory and Reporting: facility number and RPA total unit-of-measure quantity/code among validated asset fields; cited as reference a in the memo."
+      },
+      {
+        "url": "https://bea.osd.mil/bea11.2/reports/definitions1_businessrule_172534.htm",
+        "note": "DoD BEA business rule: when the real property type is land, the total unit of measure code must be \"AC\" (acres) – grounds rows use UM AC."
+      },
+      {
+        "url": "https://www.usace.army.mil/LinkClick.aspx?fileticket=bdnXSYCqMYI%3D&portalid=2",
+        "note": "USACE Army facilities unit-cost table: CATCODE 85210 organizational vehicle parking measured in SY; 72111 UEPH and 72210 dining facility titles; 851XX/852XX roads, parking and sidewalk pavement series."
+      },
+      {
+        "url": "https://armypubs.army.mil/epubs/DR_pubs/DR_a/pdf/web/r415_28.pdf",
+        "note": "AR 415-28 Real Property Category Codes (CATCD system; DA Pam 415-28 guide cited as reference b in the memo)."
+      },
+      {
+        "url": "https://www.ngbpmc.ng.mil/Portals/27/Publications/NGPAM/ngpam%20210-20.pdf?ver=oRUMEnfm1FpHJToG0Kuskg%3D%3D",
+        "note": "NG Pam 210-20: RPLANS compares real property assets identified in the RPI with calculated requirements (RPI extract as a planning data source)."
+      }
+    ],
+    "notes": "Column set and unit-of-measure codes follow DoD real property record fields (DD 1354 / DoDI 4165.14) and Army CATCODE conventions; the memo format follows Army office memoranda. The installation (Fort Tolland), solicitation number, every facility number, name, RPUID, CATCODE assignment (other than the confirmed 72111/72210/85210 titles), quantity, floor count and status are illustrative."
+  },
+  "inputs": [
+    {
+      "src": "cover-memo.html",
+      "as": "pdf",
+      "out": "W9124Q-27-R-0058 Att J-2 Cover Memo - RPI Extract Scope.pdf"
+    },
+    {
+      "src": "rpi-extract.json",
+      "as": "xlsx",
+      "out": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx"
+    }
+  ],
+  "expect": {
+    "facilities": [
+      {
+        "buildingNumber": "00101",
+        "name": "GARRISON HEADQUARTERS",
+        "grossSqft": 34210,
+        "floors": 3,
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "00103",
+        "name": "DPW ADMINISTRATION",
+        "grossSqft": 12880,
+        "floors": 2,
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "00105",
+        "name": "DIRECTORATE OF EMERGENCY SERVICES",
+        "grossSqft": 14560,
+        "floors": 2
+      },
+      {
+        "buildingNumber": "00107",
+        "name": "FIRE STATION NO 1",
+        "grossSqft": 11240,
+        "floors": 1
+      },
+      {
+        "buildingNumber": "00110",
+        "name": "TOLLAND ARMY HEALTH CLINIC",
+        "grossSqft": 28300,
+        "floors": 2,
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "00112",
+        "name": "DENTAL CLINIC",
+        "grossSqft": 9870,
+        "floors": 1,
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "00115",
+        "name": "CHILD DEVELOPMENT CENTER",
+        "grossSqft": 18450,
+        "floors": 1,
+        "category": "child_care"
+      },
+      {
+        "buildingNumber": "00118",
+        "name": "PHYSICAL FITNESS CENTER",
+        "grossSqft": 41200,
+        "floors": 2,
+        "category": "fitness"
+      },
+      {
+        "buildingNumber": "00120",
+        "name": "MAIN POST CHAPEL",
+        "grossSqft": 8140,
+        "floors": 1,
+        "category": "community"
+      },
+      {
+        "buildingNumber": "00122",
+        "name": "POST LIBRARY",
+        "grossSqft": 9600,
+        "floors": 1,
+        "category": "community"
+      },
+      {
+        "buildingNumber": "00125",
+        "name": "ARMY COMMUNITY SERVICE",
+        "grossSqft": 7920,
+        "floors": 1,
+        "category": "community"
+      },
+      {
+        "buildingNumber": "00128",
+        "name": "ARMY EDUCATION CENTER",
+        "grossSqft": 16340,
+        "floors": 2,
+        "category": "education"
+      },
+      {
+        "buildingNumber": "00135",
+        "name": "VISITOR CONTROL CENTER",
+        "grossSqft": 2150,
+        "floors": 1
+      },
+      {
+        "buildingNumber": "00137",
+        "name": "POST OFFICE",
+        "grossSqft": 4300,
+        "floors": 1,
+        "category": "community"
+      },
+      {
+        "buildingNumber": "00140",
+        "name": "SOLDIER SUPPORT CENTER",
+        "grossSqft": 19850,
+        "floors": 2,
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "00142",
+        "name": "INSTALLATION TRANSPORTATION OFFICE",
+        "grossSqft": 5200,
+        "floors": 1,
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "00145",
+        "name": "YOUTH CENTER",
+        "grossSqft": 13900,
+        "floors": 1
+      },
+      {
+        "buildingNumber": "00147",
+        "name": "OUTDOOR POOL BATHHOUSE",
+        "grossSqft": 2600,
+        "floors": 1
+      },
+      {
+        "buildingNumber": "02201",
+        "name": "MOTOR POOL MAINTENANCE SHOP",
+        "grossSqft": 32400,
+        "floors": 1,
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "02203",
+        "name": "TACTICAL EQUIPMENT MAINTENANCE FACILITY",
+        "grossSqft": 64100,
+        "floors": 2,
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "02205",
+        "name": "GENERAL PURPOSE WAREHOUSE",
+        "grossSqft": 48000,
+        "floors": 1,
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "02209",
+        "name": "ORGANIZATIONAL STORAGE",
+        "grossSqft": 4800,
+        "floors": 1,
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "02211",
+        "name": "DPW MAINTENANCE SHOPS",
+        "grossSqft": 18700,
+        "floors": 1,
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "02213",
+        "name": "HAZMAT STORAGE",
+        "grossSqft": 2400,
+        "floors": 1,
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "02215",
+        "name": "SELF SERVICE SUPPLY CENTER",
+        "grossSqft": 8600,
+        "floors": 1,
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "02217",
+        "name": "LRC SUPPLY AND SERVICES",
+        "grossSqft": 7750,
+        "floors": 1,
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "02219",
+        "name": "FUEL POINT CONTROL BUILDING",
+        "grossSqft": 640,
+        "floors": 1
+      },
+      {
+        "buildingNumber": "02221",
+        "name": "COVERED STORAGE SHED (POLE BARN)",
+        "grossSqft": 6000,
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "03301",
+        "name": "AIRCRAFT MAINTENANCE HANGAR",
+        "grossSqft": 86200,
+        "floors": 2,
+        "category": "hangar"
+      },
+      {
+        "buildingNumber": "03303",
+        "name": "AIRFIELD OPERATIONS",
+        "grossSqft": 9450,
+        "floors": 2,
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "03305",
+        "name": "AVIATION UNIT OPERATIONS",
+        "grossSqft": 12600,
+        "floors": 2,
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "03307",
+        "name": "FLIGHT SIMULATOR BUILDING",
+        "grossSqft": 8200,
+        "floors": 1,
+        "category": "education"
+      },
+      {
+        "buildingNumber": "03309",
+        "name": "CRASH FIRE RESCUE STATION",
+        "grossSqft": 10300,
+        "floors": 1
+      },
+      {
+        "buildingNumber": "04401",
+        "name": "RANGE CONTROL BUILDING",
+        "grossSqft": 6700,
+        "floors": 1
+      },
+      {
+        "buildingNumber": "04403",
+        "name": "AMMUNITION BREAKDOWN BUILDING",
+        "grossSqft": 1200,
+        "floors": 1
+      },
+      {
+        "buildingNumber": "04405",
+        "name": "RANGE AFTER ACTION REVIEW BUILDING",
+        "grossSqft": 2300,
+        "floors": 1,
+        "category": "education"
+      },
+      {
+        "buildingNumber": "1101",
+        "name": "UEPH BARRACKS",
+        "grossSqft": 58750,
+        "floors": 3,
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "1103",
+        "name": "UEPH BARRACKS",
+        "grossSqft": 58750,
+        "floors": 3,
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "1105",
+        "name": "UEPH BARRACKS",
+        "grossSqft": 58750,
+        "floors": 3,
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "1107",
+        "name": "DINING FACILITY",
+        "grossSqft": 21800,
+        "floors": 1,
+        "category": "dining"
+      },
+      {
+        "buildingNumber": "1109",
+        "name": "BATTALION HEADQUARTERS",
+        "grossSqft": 15300,
+        "floors": 2,
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "1111",
+        "name": "COMPANY OPERATIONS FACILITY",
+        "grossSqft": 22950,
+        "floors": 1,
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "1113",
+        "name": "BRIGADE HEADQUARTERS",
+        "grossSqft": 26400,
+        "floors": 2,
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "1117",
+        "name": "GENERAL INSTRUCTION BUILDING",
+        "grossSqft": 12750,
+        "floors": 1,
+        "category": "education"
+      },
+      {
+        "buildingNumber": "1119",
+        "name": "UNACCOMPANIED OFFICER QUARTERS",
+        "grossSqft": 24600,
+        "floors": 3,
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "1121",
+        "name": "TROOP MEDICAL CLINIC",
+        "grossSqft": 7400,
+        "floors": 1,
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "1123",
+        "name": "COMMUNITY ACTIVITY CENTER",
+        "grossSqft": 9100,
+        "floors": 1,
+        "category": "community"
+      },
+      {
+        "buildingNumber": "1125",
+        "name": "TROOP AREA FITNESS CENTER",
+        "grossSqft": 38600,
+        "floors": 2,
+        "category": "fitness"
+      }
+    ],
+    "facilitiesComplete": true,
+    "grounds": [
+      {
+        "kind": "improved_turf",
+        "quantity": 42.62,
+        "unit": "acres",
+        "name": "GR001 IMPROVED GROUNDS - MAIN POST"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 28.35,
+        "unit": "acres",
+        "name": "GR002 IMPROVED GROUNDS - TROOP AREA"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 6.4,
+        "unit": "acres",
+        "name": "GR003 IMPROVED GROUNDS - AIRFIELD"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 64.08,
+        "unit": "acres",
+        "name": "GR010 SEMI-IMPROVED GROUNDS - CANTONMENT"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 38.5,
+        "unit": "acres",
+        "name": "GR011 SEMI-IMPROVED GROUNDS - AIRFIELD INFIELD"
+      },
+      {
+        "kind": "parking",
+        "quantity": 6850,
+        "unit": "sqyd",
+        "buildingNumbers": [
+          "00101"
+        ],
+        "name": "PK101 POV PARKING - BLDG 00101"
+      },
+      {
+        "kind": "parking",
+        "quantity": 4480,
+        "unit": "sqyd",
+        "buildingNumbers": [
+          "00110"
+        ],
+        "name": "PK110 POV PARKING - BLDG 00110"
+      },
+      {
+        "kind": "parking",
+        "quantity": 9300,
+        "unit": "sqyd",
+        "name": "PK1101 POV PARKING - BARRACKS LOT A"
+      },
+      {
+        "kind": "parking",
+        "quantity": 8760,
+        "unit": "sqyd",
+        "name": "PK1102 POV PARKING - BARRACKS LOT B"
+      },
+      {
+        "kind": "parking",
+        "quantity": 5120,
+        "unit": "sqyd",
+        "buildingNumbers": [
+          "00118"
+        ],
+        "name": "PK118 POV PARKING - BLDG 00118"
+      },
+      {
+        "kind": "parking",
+        "quantity": 18400,
+        "unit": "sqyd",
+        "buildingNumbers": [
+          "02201"
+        ],
+        "name": "PK201 MOTOR POOL HARDSTAND - BLDG 02201"
+      },
+      {
+        "kind": "parking",
+        "quantity": 42750,
+        "unit": "sqyd",
+        "buildingNumbers": [
+          "02203"
+        ],
+        "name": "PK203 TEMF HARDSTAND - BLDG 02203"
+      },
+      {
+        "kind": "parking",
+        "quantity": 3150,
+        "unit": "sqyd",
+        "name": "PK301 AIRFIELD POV PARKING"
+      }
+    ],
+    "site": {
+      "installationName": "Fort Tolland",
+      "solicitation": "W9124Q-27-R-0058"
+    }
+  },
+  "traps": [
+    "Single worksheet with 89 records of mixed units in one TOTAL_UM_QTY column (displayed with format #,##0.00): only PRIMARY_UM = SF rows with FAC_STATUS ACTIVE are facilities (48).",
+    "5 SF building rows are excluded by status: 00130 OLD POST HEADQUARTERS (VACANT) (CLOSED); 00132 BOWLING CENTER (DISPOSED); 02207 GENERAL PURPOSE WAREHOUSE (CLOSED); 1115 UEPH BARRACKS (ROLLING PIN) (DISPOSED); T0230 MODULAR ADMIN BUILDING (DISPOSED).",
+    "Parking rows (CATCODE 85210 organizational hardstands and 85215 POV lots) are in SY and go to grounds parking in sqyd: 8 active rows totalling 98,810 SY (= 889,290 SF). PK130 (CLOSED) is excluded. Parking rows whose name cites \"BLDG 0xxxx\" carry that building number.",
+    "Roads (85110/85120, 5 rows, 126,050 SY) and the vehicle wash platform (21470, 2,950 SY) are also SY but out of scope per memo para 3: neither parking nor facilities.",
+    "Improved grounds (93210, AC) → improved_turf and semi-improved grounds (93220, AC) → semi_improved are in scope; GR004 (DISPOSED, 11.2 AC) is excluded.",
+    "Unimproved grounds and training lands (93230: GR020 8,640 AC, GR021 1,215.75 AC) are listed in AC but are out of scope per the memo (Range Control / ITAM); a reader that adds every AC row would overstate grounds by 9,855.75 acres.",
+    "Fences in LF, utilities in EA / KW / LF / GA / MB (substation 7,500 KW, 500,000 GA water tank, 58,200 LF water mains, 142 EA hydrants) are excluded; their large quantities must not become square footage or grounds.",
+    "Scope rules live only in the separate one-page cover memo PDF; the workbook itself has no scope column.",
+    "FACILITY_NUMBER mixes text cells with leading zeros (\"00101\", \"02201\", \"T0230\") and numeric cells that lost their zeros (1101..1125); the memo says 1101 is facility 01101. Truth uses the exported value (\"1101\").",
+    "RPUID (first column) is a 7-digit record key, not a quantity; CATCODE is a 5-digit numeric cell and must not be read as square feet.",
+    "Twin rows 1101/1103/1105 UEPH BARRACKS (58,750 SF each) and two \"GENERAL PURPOSE WAREHOUSE\" rows (02205 ACTIVE, 02207 CLOSED) share names; facility number decides.",
+    "02221 COVERED STORAGE SHED (POLE BARN) has a blank FLOORS cell (truth omits floors); 02219 FUEL POINT CONTROL BUILDING is only 640 SF but is a building in scope.",
+    "Last row is a report trailer \"*** END OF REPORT - 89 RECORDS ***\", not a record.",
+    "Category is asserted only where the CATCODE title is unambiguous (UEPH/UOPH → barracks, DINING FACILITY → dining, ADMIN GEN PURPOSE / HQ / COF → admin, HANGAR → hangar, WAREHOUSE/STORAGE → warehouse, MAINT SHOP → maintenance, CLINIC → medical, PFC → fitness, CDC → child_care, INSTRUCTION/SIMULATION → education, chapel/library/ACS/post office/community center → community)."
+  ]
+}

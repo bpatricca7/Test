@@ -1,0 +1,1209 @@
+{
+  "id": "army-bos-te-facility-list-pdf",
+  "title": "Army BOS PWS Section J Attachment 0003: TE 5 facility list (104 rows, landscape, zoned, subtotals) and TE 6 grounds workload (Type I/II/III acres, playing field, paved SY)",
+  "theme": "military-bos",
+  "provenance": {
+    "fidelity": "real-format",
+    "sources": [
+      {
+        "url": "https://buy.gsa.gov/api/system/files/documents/ArmyPWS.pdf",
+        "note": "Army PWS template: technical exhibit numbering (TE 1 Performance Requirements Summary, TE 2 Deliverables, TE 3 Estimated Workload Data) copied into the attachment cover table."
+      },
+      {
+        "url": "https://govtribe.com/file/government-file/annex-a-to-opord-18-011-20201106-dot-docx",
+        "note": "Fort Irwin BOS annex: facility locations delivered as a Real Property Asset File technical exhibit (TE A1) listing the government facilities requiring service; model for a GFEBS-sourced TE facility list."
+      },
+      {
+        "url": "https://sam.gov/workspace/contract/opp/a9afa9c7669b47c29ca139a9e0624ba3/view",
+        "note": "Carlisle Barracks Custodial 24-28: \"PWS TE-A Buildings by Floor Types and Sq Footage\" exhibit and task-frequency charts; model for a TE that pairs buildings, square footage and frequency."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID300491423083968486543961800045331043182/Hurlburt_Grounds_MX_PWS_2018_Draft.pdf",
+        "note": "Hurlburt Field grounds PWS: improved grass height 2–4 in, semi-improved 4–10 in (copied into Table 6-4)."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID7168376420509164332684627085445331919/FF%20Grounds%20SOW_final%20rev%201.pdf",
+        "note": "FA4809-21-Q-0035 grounds SOW: improved mowed weekly, semi-improved bi-weekly; workload table of acres by type with mowing counts (model for MOWS/YR columns)."
+      },
+      {
+        "url": "https://console.sweetspotgov.com/federal-contracts/6661f812-3141-52f9-9597-828acd3f4096",
+        "note": "Grounds Maintenance listing (returned with the SAM Daily notice below for an improved/semi-improved/unimproved query): grounds categorized as improved, semi-improved and unimproved; wording \"semi-improved grounds require maintenance of a lesser degree than improved grounds ... normally in outlying or low visibility locations\" paraphrased in Table 6-4."
+      },
+      {
+        "url": "https://samdaily.us/archive/2012/05-May/17-May-2012/FBO-02747890.htm",
+        "note": "Federal grounds notice in the same search: improved grounds 2–4 in, semi-improved 4–14 in grass heights (Type II height band)."
+      },
+      {
+        "url": "https://www.usace.army.mil/LinkClick.aspx?fileticket=bdnXSYCqMYI%3D&portalid=2",
+        "note": "USACE Army facilities unit-cost table: CATCODE 72111 UEPH barracks, 72210 dining facility, 85210 organizational vehicle parking in SY (CATCODE wording and SY paving unit)."
+      },
+      {
+        "url": "https://www.esd.whs.mil/Portals/54/Documents/DD/forms/dd/dd1354.pdf",
+        "note": "DD Form 1354: facility number, CATCODE and primary unit-of-measure quantity as the real property record fields behind the GSF column."
+      }
+    ],
+    "notes": "Layout, column set, zone/subtotal structure, footnote convention (\"1/\"), CUI banner/designation block and grounds Type I/II/III definitions follow real Army/Air Force BOS and grounds PWS exhibits. Every installation name, solicitation number, facility number, facility name, CATCODE assignment (other than the 72111/72210 titles), year built, floor count, GSF, frequency, acreage and SY quantity is illustrative. Fort Kearsley is fictional."
+  },
+  "inputs": [
+    {
+      "src": "te5-te6-attachment-0003.html",
+      "as": "pdf",
+      "out": "W9124J-27-R-0031 Att 0003 - TE5 Facility List and TE6 Grounds Workload.pdf"
+    }
+  ],
+  "expect": {
+    "facilities": [
+      {
+        "buildingNumber": "P-100",
+        "name": "GARRISON HEADQUARTERS (MCALLISTER HALL)",
+        "grossSqft": 48620,
+        "floors": 3,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "P-101",
+        "name": "DIRECTORATE OF HUMAN RESOURCES / MILITARY PERSONNEL DIVISION",
+        "grossSqft": 22415,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "P-104",
+        "name": "INSTALLATION EMERGENCY OPERATIONS CENTER",
+        "grossSqft": 9860,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "P-106",
+        "name": "DIRECTORATE OF PLANS, TRAINING, MOBILIZATION AND SECURITY (DPTMS)",
+        "grossSqft": 18240,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "P-108",
+        "name": "RESOURCE MANAGEMENT AND MISSION CONTRACTING OFFICE",
+        "grossSqft": 15906,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "P-110",
+        "name": "STAFF JUDGE ADVOCATE / LEGAL ASSISTANCE CENTER",
+        "grossSqft": 7315,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "P-114",
+        "name": "ARMY COMMUNITY SERVICE CENTER",
+        "grossSqft": 11280,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "P-116",
+        "name": "MEMORIAL CHAPEL",
+        "grossSqft": 6950,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "P-118",
+        "name": "RELIGIOUS EDUCATION CENTER",
+        "grossSqft": 12470,
+        "floors": 2,
+        "serviceLevel": "3x_week",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "P-120",
+        "name": "MAIN POST LIBRARY AND LEARNING CENTER",
+        "grossSqft": 14825,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "P-122",
+        "name": "ARMY EDUCATION CENTER AND NATIONAL TEST CENTER",
+        "grossSqft": 19330,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "P-125",
+        "name": "SOLDIER SUPPORT CENTER (ID CARDS, IN/OUT PROCESSING, FINANCE)",
+        "grossSqft": 26710,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "00205",
+        "name": "DENTAL CLINIC NO. 1",
+        "grossSqft": 13640,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "00205A",
+        "name": "DENTAL CLINIC ANNEX (PROSTHODONTICS LAB)",
+        "grossSqft": 3180,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "00207",
+        "name": "KEARSLEY ARMY HEALTH CLINIC",
+        "grossSqft": 61450,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "00209",
+        "name": "OCCUPATIONAL HEALTH AND PREVENTIVE MEDICINE",
+        "grossSqft": 8215,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "00211",
+        "name": "PHYSICAL THERAPY AND ORTHOPEDIC CLINIC",
+        "grossSqft": 10940,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "00230",
+        "name": "CHILD DEVELOPMENT CENTER (CDC) – NORTH",
+        "grossSqft": 22960,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "child_care"
+      },
+      {
+        "buildingNumber": "00232",
+        "name": "SCHOOL AGE CENTER",
+        "grossSqft": 15400,
+        "floors": 1,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "00235",
+        "name": "MILITARY POLICE STATION / PROVOST MARSHAL OFFICE",
+        "grossSqft": 17885,
+        "floors": 2,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "00238",
+        "name": "FIRE STATION NO. 1",
+        "grossSqft": 14210,
+        "floors": 2,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "00240",
+        "name": "MAIN POST OFFICE",
+        "grossSqft": 5480,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "00244",
+        "name": "VISITOR CONTROL CENTER (MAIN GATE)",
+        "grossSqft": 2860,
+        "floors": 1,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "00246",
+        "name": "OFFICIAL MAIL AND DISTRIBUTION CENTER",
+        "grossSqft": 4120,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "00250",
+        "name": "PHYSICAL FITNESS CENTER – MAIN POST (SMITH FITNESS CENTER)",
+        "grossSqft": 38760,
+        "floors": 2,
+        "serviceLevel": "daily_7",
+        "category": "fitness"
+      },
+      {
+        "buildingNumber": "00252",
+        "name": "OUTDOOR SWIMMING POOL BATHHOUSE",
+        "grossSqft": 2340,
+        "floors": 1,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "00255",
+        "name": "INSTALLATION TRANSPORTATION OFFICE / PASSENGER TRAVEL",
+        "grossSqft": 6590,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "00258",
+        "name": "NONCOMMISSIONED OFFICER ACADEMY GENERAL INSTRUCTION BUILDING AND BATTLE SIMULATION LEARNING CENTER",
+        "grossSqft": 42380,
+        "floors": 3,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "01201",
+        "name": "1ST BRIGADE COMBAT TEAM HEADQUARTERS",
+        "grossSqft": 31640,
+        "floors": 3,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "01203",
+        "name": "1-36 INFANTRY BATTALION HEADQUARTERS",
+        "grossSqft": 16880,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "01204",
+        "name": "2-36 INFANTRY BATTALION HEADQUARTERS",
+        "grossSqft": 16880,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "01205",
+        "name": "1-36 IN COMPANY OPERATIONS FACILITY (HHC, A, B, C CO)",
+        "grossSqft": 24350,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "01206",
+        "name": "2-36 IN COMPANY OPERATIONS FACILITY (HHC, A, B, C CO)",
+        "grossSqft": 24350,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "01208",
+        "name": "3-82 FIELD ARTILLERY BATTALION HEADQUARTERS AND COMPANY OPERATIONS",
+        "grossSqft": 21775,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "01210",
+        "name": "UEPH BARRACKS",
+        "grossSqft": 92480,
+        "floors": 4,
+        "serviceLevel": "weekly",
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "01212",
+        "name": "UEPH BARRACKS",
+        "grossSqft": 92480,
+        "floors": 4,
+        "serviceLevel": "weekly",
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "01214",
+        "name": "UEPH BARRACKS",
+        "grossSqft": 92480,
+        "floors": 4,
+        "serviceLevel": "weekly",
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "01216",
+        "name": "UEPH BARRACKS",
+        "grossSqft": 61920,
+        "floors": 3,
+        "serviceLevel": "weekly",
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "01218",
+        "name": "UEPH BARRACKS",
+        "grossSqft": 61920,
+        "floors": 3,
+        "serviceLevel": "weekly",
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "01220",
+        "name": "WARRIOR RESTAURANT (DINING FACILITY NO. 2)",
+        "grossSqft": 27540,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "dining"
+      },
+      {
+        "buildingNumber": "01222",
+        "name": "THUNDER INN (DINING FACILITY NO. 3)",
+        "grossSqft": 18960,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "dining"
+      },
+      {
+        "buildingNumber": "01225",
+        "name": "MCGEE PHYSICAL FITNESS CENTER (TROOP AREA)",
+        "grossSqft": 64200,
+        "floors": 2,
+        "serviceLevel": "daily_7",
+        "category": "fitness"
+      },
+      {
+        "buildingNumber": "01227",
+        "name": "TROOP MEDICAL CLINIC NO. 2",
+        "grossSqft": 9415,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "01230",
+        "name": "BRIGADE CLASSROOM AND CONFERENCE CENTER",
+        "grossSqft": 14665,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "01232",
+        "name": "UNACCOMPANIED OFFICER QUARTERS (UOPH)",
+        "grossSqft": 34500,
+        "floors": 3,
+        "serviceLevel": "weekly",
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "01235",
+        "name": "COMMUNITY ACTIVITY CENTER / BETTER OPPORTUNITIES FOR SINGLE SOLDIERS (BOSS) LOUNGE",
+        "grossSqft": 10220,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "01238",
+        "name": "4TH SUSTAINMENT BRIGADE HEADQUARTERS",
+        "grossSqft": 28310,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "01240",
+        "name": "64TH BRIGADE SUPPORT BATTALION HEADQUARTERS",
+        "grossSqft": 15975,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "01242",
+        "name": "64TH BSB COMPANY OPERATIONS FACILITY",
+        "grossSqft": 19740,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "01245",
+        "name": "CENTRAL ISSUE FACILITY (CIF)",
+        "grossSqft": 46800,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "01247",
+        "name": "TROOP AREA CHAPEL",
+        "grossSqft": 7860,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "01250",
+        "name": "BEHAVIORAL HEALTH / ARMY SUBSTANCE ABUSE PROGRAM",
+        "grossSqft": 12300,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "01252",
+        "name": "RETENTION AND CAREER COUNSELOR OFFICES",
+        "grossSqft": 3840,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "01255",
+        "name": "REPLACEMENT DETACHMENT TRANSIENT BILLETING",
+        "grossSqft": 28650,
+        "floors": 2,
+        "serviceLevel": "daily_7",
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "01258",
+        "name": "SOLDIER READINESS PROCESSING CENTER",
+        "grossSqft": 21415,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "01260",
+        "name": "TROOP AREA EDUCATION CENTER AND LANGUAGE LAB",
+        "grossSqft": 8900,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "01262",
+        "name": "BATTALION AID STATION",
+        "grossSqft": 6240,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "01264",
+        "name": "UNIT MAIL SERVICE CENTER",
+        "grossSqft": 2970,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "02301",
+        "name": "DIRECTORATE OF PUBLIC WORKS ADMINISTRATION",
+        "grossSqft": 20480,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "02303",
+        "name": "DPW ENGINEERING AND MASTER PLANNING DIVISION",
+        "grossSqft": 9950,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "02305",
+        "name": "DPW SHOPS (CARPENTRY, ELECTRICAL, PLUMBING, HVAC)",
+        "grossSqft": 31200,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "02306",
+        "name": "DPW ENVIRONMENTAL DIVISION AND LABORATORY",
+        "grossSqft": 7780,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "lab"
+      },
+      {
+        "buildingNumber": "T-2310",
+        "name": "LOGISTICS READINESS CENTER – SUPPLY AND SERVICES OFFICE",
+        "grossSqft": 4720,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "T-2312",
+        "name": "ORGANIZATIONAL STORAGE (WWII WOOD)",
+        "grossSqft": 2580,
+        "floors": 1,
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "02320",
+        "name": "LOGISTICS READINESS CENTER HEADQUARTERS",
+        "grossSqft": 18330,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "02322",
+        "name": "SUPPLY SUPPORT ACTIVITY (SSA) WAREHOUSE",
+        "grossSqft": 72000,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "02324",
+        "name": "INSTALLATION CENTRAL RECEIVING WAREHOUSE",
+        "grossSqft": 54600,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "02326",
+        "name": "HAZARDOUS MATERIALS STORAGE BUILDING",
+        "grossSqft": 3200,
+        "floors": 1,
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "02330",
+        "name": "TACTICAL EQUIPMENT MAINTENANCE FACILITY (TEMF) – 1ST BCT",
+        "grossSqft": 86450,
+        "floors": 2,
+        "serviceLevel": "3x_week",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "02332",
+        "name": "TACTICAL EQUIPMENT MAINTENANCE FACILITY (TEMF) – 4TH SUST BDE",
+        "grossSqft": 78920,
+        "floors": 2,
+        "serviceLevel": "3x_week",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "02334",
+        "name": "VEHICLE MAINTENANCE SHOP – 3-82 FA",
+        "grossSqft": 24750,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "02336",
+        "name": "DOL MAINTENANCE DIVISION ALLIED TRADES SHOP",
+        "grossSqft": 19600,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "02338",
+        "name": "DOL MAINTENANCE DIVISION ADMINISTRATION",
+        "grossSqft": 6420,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "S-2340",
+        "name": "DEPLOYMENT READINESS AND PERSONNEL STAGING FACILITY",
+        "grossSqft": 15880,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "02342",
+        "name": "TRANSPORTATION MOTOR POOL DISPATCH OFFICE",
+        "grossSqft": 2640,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "02344",
+        "name": "FUEL POINT CONTROL BUILDING",
+        "grossSqft": 960,
+        "floors": 1,
+        "serviceLevel": "weekly"
+      },
+      {
+        "buildingNumber": "02346",
+        "name": "DIRECTORATE OF EMERGENCY SERVICES – PHYSICAL SECURITY OFFICE",
+        "grossSqft": 5310,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "02350",
+        "name": "SELF-SERVICE SUPPLY CENTER",
+        "grossSqft": 11250,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "02352",
+        "name": "TRAINING SUPPORT CENTER (TSC) – TRAINING AIDS",
+        "grossSqft": 23470,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "02354",
+        "name": "MISSION TRAINING COMPLEX – SIMULATIONS BUILDING",
+        "grossSqft": 41860,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "02356",
+        "name": "RECYCLING CENTER OFFICE",
+        "grossSqft": 1880,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "02358",
+        "name": "DPW SNOW AND ICE EQUIPMENT BUILDING – BREAK ROOM AND RESTROOMS",
+        "grossSqft": 12600,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "04001",
+        "name": "AIRFIELD OPERATIONS BUILDING",
+        "grossSqft": 16420,
+        "floors": 2,
+        "serviceLevel": "daily_7",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "04003",
+        "name": "AIR TRAFFIC CONTROL TOWER (CAB AND BASE BUILDING)",
+        "grossSqft": 4860,
+        "floors": 5,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "04005",
+        "name": "AIRCRAFT MAINTENANCE HANGAR NO. 1",
+        "grossSqft": 104300,
+        "floors": 2,
+        "serviceLevel": "3x_week",
+        "category": "hangar"
+      },
+      {
+        "buildingNumber": "04007",
+        "name": "AIRCRAFT MAINTENANCE HANGAR NO. 2",
+        "grossSqft": 118640,
+        "floors": 2,
+        "serviceLevel": "3x_week",
+        "category": "hangar"
+      },
+      {
+        "buildingNumber": "04009",
+        "name": "AVIATION BATTALION HEADQUARTERS",
+        "grossSqft": 14950,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "04011",
+        "name": "AIRCRAFT CRASH, FIRE AND RESCUE STATION",
+        "grossSqft": 11760,
+        "floors": 1,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "04013",
+        "name": "FLIGHT SIMULATOR BUILDING",
+        "grossSqft": 9440,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "04015",
+        "name": "AVIATION LIFE SUPPORT EQUIPMENT (ALSE) SHOP",
+        "grossSqft": 6880,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "04017",
+        "name": "AIRFIELD WEATHER STATION",
+        "grossSqft": 1450,
+        "floors": 1,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "04020",
+        "name": "AVIATION SUPPLY WAREHOUSE",
+        "grossSqft": 22800,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "04025",
+        "name": "KAAF PASSENGER TERMINAL",
+        "grossSqft": 7560,
+        "floors": 1,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "R-5101",
+        "name": "RANGE CONTROL HEADQUARTERS",
+        "grossSqft": 12350,
+        "floors": 2,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "R-5103",
+        "name": "AMMUNITION SUPPLY POINT OFFICE",
+        "grossSqft": 2480,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "R-5110",
+        "name": "RANGE 14 CONTROL TOWER AND CLASSROOM",
+        "grossSqft": 1920,
+        "floors": 2,
+        "serviceLevel": "2x_week"
+      },
+      {
+        "buildingNumber": "R-5112",
+        "name": "RANGE 22 AFTER ACTION REVIEW BUILDING",
+        "grossSqft": 2750,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "R-5115",
+        "name": "RANGE 31 AMMUNITION BREAKDOWN BUILDING AND LATRINE",
+        "grossSqft": 860,
+        "floors": 1,
+        "serviceLevel": "weekly"
+      },
+      {
+        "buildingNumber": "R-5120",
+        "name": "MULTIPURPOSE TRAINING RANGE OPERATIONS AND STORAGE BUILDING",
+        "grossSqft": 3340,
+        "floors": 1,
+        "serviceLevel": "weekly"
+      },
+      {
+        "buildingNumber": "R-5125",
+        "name": "FORWARD OPERATING BASE KILO – DINING SHELTER",
+        "grossSqft": 4200,
+        "floors": 1,
+        "category": "dining"
+      },
+      {
+        "buildingNumber": "R-5127",
+        "name": "FORWARD OPERATING BASE KILO – BILLETING AND LATRINE",
+        "grossSqft": 9600,
+        "floors": 1,
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "R-5130",
+        "name": "URBAN ASSAULT COURSE CONTROL BUILDING",
+        "grossSqft": 1210,
+        "floors": 1
+      }
+    ],
+    "facilitiesComplete": true,
+    "grounds": [
+      {
+        "kind": "improved_turf",
+        "quantity": 18.4,
+        "unit": "acres",
+        "buildingNumbers": [
+          "P-100",
+          "P-101",
+          "P-104",
+          "P-106",
+          "P-108",
+          "P-110"
+        ],
+        "name": "GA-1 Garrison headquarters quadrangle and parade field approaches"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 3.2,
+        "unit": "acres",
+        "buildingNumbers": [
+          "P-100",
+          "P-101",
+          "P-104",
+          "P-106",
+          "P-108",
+          "P-110"
+        ],
+        "name": "GA-1 Garrison headquarters quadrangle and parade field approaches"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 22.7,
+        "unit": "acres",
+        "buildingNumbers": [
+          "P-114",
+          "P-116",
+          "P-118",
+          "P-120",
+          "P-122",
+          "P-125",
+          "00240",
+          "00246",
+          "00255"
+        ],
+        "name": "GA-2 Main post community and services area"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 6.5,
+        "unit": "acres",
+        "buildingNumbers": [
+          "P-114",
+          "P-116",
+          "P-118",
+          "P-120",
+          "P-122",
+          "P-125",
+          "00240",
+          "00246",
+          "00255"
+        ],
+        "name": "GA-2 Main post community and services area"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 7.9,
+        "unit": "acres",
+        "buildingNumbers": [
+          "00205",
+          "00205A",
+          "00207",
+          "00209",
+          "00211"
+        ],
+        "name": "GA-3 Medical and dental campus"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 2.1,
+        "unit": "acres",
+        "buildingNumbers": [
+          "00205",
+          "00205A",
+          "00207",
+          "00209",
+          "00211"
+        ],
+        "name": "GA-3 Medical and dental campus"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 9.6,
+        "unit": "acres",
+        "buildingNumbers": [
+          "00230",
+          "00232",
+          "00250",
+          "00252"
+        ],
+        "name": "GA-4 Child, youth and family services area; fitness center and pool"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 31.6,
+        "unit": "acres",
+        "buildingNumbers": [
+          "01210",
+          "01212",
+          "01214",
+          "01216",
+          "01218",
+          "01232",
+          "01255"
+        ],
+        "name": "GB-1 Troop area barracks quadrangles"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 12.4,
+        "unit": "acres",
+        "buildingNumbers": [
+          "01210",
+          "01212",
+          "01214",
+          "01216",
+          "01218",
+          "01232",
+          "01255"
+        ],
+        "name": "GB-1 Troop area barracks quadrangles"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 14.2,
+        "unit": "acres",
+        "buildingNumbers": [
+          "01201",
+          "01203",
+          "01204",
+          "01205",
+          "01206",
+          "01208",
+          "01238",
+          "01240",
+          "01242"
+        ],
+        "name": "GB-2 Brigade and battalion headquarters complex"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 4.6,
+        "unit": "acres",
+        "buildingNumbers": [
+          "01201",
+          "01203",
+          "01204",
+          "01205",
+          "01206",
+          "01208",
+          "01238",
+          "01240",
+          "01242"
+        ],
+        "name": "GB-2 Brigade and battalion headquarters complex"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 9.3,
+        "unit": "acres",
+        "buildingNumbers": [
+          "01220",
+          "01222",
+          "01225",
+          "01235"
+        ],
+        "name": "GB-3 Dining, fitness and community facilities"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 1.8,
+        "unit": "acres",
+        "buildingNumbers": [
+          "01220",
+          "01222",
+          "01225",
+          "01235"
+        ],
+        "name": "GB-3 Dining, fitness and community facilities"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 4.2,
+        "unit": "acres",
+        "name": "GC-1 Industrial area, DPW and LRC compound"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 26.8,
+        "unit": "acres",
+        "name": "GC-1 Industrial area, DPW and LRC compound"
+      },
+      {
+        "kind": "unimproved",
+        "quantity": 14.5,
+        "unit": "acres",
+        "name": "GC-1 Industrial area, DPW and LRC compound"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 11.9,
+        "unit": "acres",
+        "name": "GC-2 Motor pool and TEMF perimeters, fence lines and drainage swales"
+      },
+      {
+        "kind": "unimproved",
+        "quantity": 8,
+        "unit": "acres",
+        "name": "GC-2 Motor pool and TEMF perimeters, fence lines and drainage swales"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 6.8,
+        "unit": "acres",
+        "buildingNumbers": [
+          "04001",
+          "04003",
+          "04005",
+          "04007",
+          "04009",
+          "04011",
+          "04025"
+        ],
+        "name": "GD-1 KAAF operations area, terminal and hangar fronts; airfield infield"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 64.3,
+        "unit": "acres",
+        "buildingNumbers": [
+          "04001",
+          "04003",
+          "04005",
+          "04007",
+          "04009",
+          "04011",
+          "04025"
+        ],
+        "name": "GD-1 KAAF operations area, terminal and hangar fronts; airfield infield"
+      },
+      {
+        "kind": "unimproved",
+        "quantity": 120,
+        "unit": "acres",
+        "buildingNumbers": [
+          "04001",
+          "04003",
+          "04005",
+          "04007",
+          "04009",
+          "04011",
+          "04025"
+        ],
+        "name": "GD-1 KAAF operations area, terminal and hangar fronts; airfield infield"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 1.9,
+        "unit": "acres",
+        "name": "GD-2 Range control complex and range support buildings"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 8.7,
+        "unit": "acres",
+        "name": "GD-2 Range control complex and range support buildings"
+      },
+      {
+        "kind": "unimproved",
+        "quantity": 412.5,
+        "unit": "acres",
+        "name": "GD-2 Range control complex and range support buildings"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 38,
+        "unit": "acres",
+        "name": "GX-1 Cantonment road shoulders, rights-of-way and drainage ditches"
+      },
+      {
+        "kind": "unimproved",
+        "quantity": 56,
+        "unit": "acres",
+        "name": "GX-1 Cantonment road shoulders, rights-of-way and drainage ditches"
+      },
+      {
+        "kind": "athletic_field",
+        "quantity": 14.6,
+        "unit": "acres",
+        "name": "PF-1 Burke Sports Complex playing fields (4 softball diamonds, 2 multipurpose/soccer fields)"
+      },
+      {
+        "kind": "parking",
+        "quantity": 41850,
+        "unit": "sqyd",
+        "name": "PV-1 POV parking lots – main post (Lots 1 through 9)"
+      },
+      {
+        "kind": "parking",
+        "quantity": 36420,
+        "unit": "sqyd",
+        "name": "PV-2 POV parking lots – troop area (Lots 10 through 17)"
+      },
+      {
+        "kind": "parking",
+        "quantity": 96300,
+        "unit": "sqyd",
+        "name": "PV-3 Organizational vehicle parking – TEMF and motor pool hardstands"
+      },
+      {
+        "kind": "parking",
+        "quantity": 8940,
+        "unit": "sqyd",
+        "name": "PV-4 KAAF terminal and operations parking"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 27600,
+        "unit": "sqyd",
+        "name": "PV-5 Sidewalks, building entrance walks and plazas – cantonment"
+      }
+    ],
+    "site": {
+      "installationName": "Fort Kearsley",
+      "solicitation": "W9124J-27-R-0031"
+    }
+  },
+  "traps": [
+    "TE 5 spans 5 LANDSCAPE pages after a portrait cover; the two-row column header (group header \"REAL PROPERTY DATA (GFEBS, AS OF 30 SEP 2026)\" over CATCODE..GSF) is repeated on every page and must not be read as data.",
+    "Running header (solicitation number, TE title), \"CUI\" banners top and bottom, and the footer \"Section J, Attachment 0003 | TE 5 – Page x of y | Issued 18 SEP 2026\" repeat on every page; the renderer adds a second overall \"Page n of m\" footer.",
+    "Zone grouping rows (e.g. \"CANTONMENT AREA A – MAIN POST AND GARRISON HEADQUARTERS\", plus \"(CONTINUED)\" rows at page tops) are not facilities.",
+    "Four zone SUBTOTAL rows (CANTONMENT AREA A 484,331; CANTONMENT AREA B 919,655; CANTONMENT AREA C 565,502; KAAF AND RANGE CONTROL 357,770) and a GRAND TOTAL row (2,327,258 GSF, 104 facilities) are not facilities; per General Note 4 they include the two demolition rows.",
+    "T-2308 (ADMINISTRATIVE GENERAL PURPOSE (WWII WOOD), 4,712 GSF) and T-2314 (RESERVE COMPONENT TRAINING ROOM (WWII WOOD), 3,960 GSF) are marked \"DEMO FY27 – EXCLUDE\" in the CUSTODIAL FREQ column with footnote 2/ on the name: excluded, so truth has 102 facilities out of 104 listed rows.",
+    "Footnote markers are superscripts glued to numbers, so the text layer shows e.g. \"61,4501/\" for 00207 (61,4501/), 00238 (14,2103/), 01245 (46,8001/), 02322 (72,0001/), 02324 (54,6001/), 04005 (104,3003/), 04007 (118,6403/), 04011 (11,7603/): GSF is the number without the marker. Name markers (2/, 4/, 5/) follow facility names.",
+    "19 GSF values are printed without thousands separators (e.g. 7315, 3180, 9950) while the rest use commas; values under 1,000 (960, 860) are also present.",
+    "Facility numbers mix formats: \"P-114\" (permanent prefix), \"00205\" and its annex \"00205A\" (distinct records, both in scope), \"T-2310\" (temporary; in scope) next to demolition rows T-2308 and T-2314, \"S-2340\", and range facilities \"R-5101\".",
+    "Adjacent numeric columns YR BUILT | FLRS | GSF (e.g. \"1958 3 48,620\") must not be merged; the year is not square footage and FLRS is the floor count.",
+    "CUSTODIAL FREQ maps 7X/WK → daily_7, 5X/WK → daily_5, 3X/WK → 3x_week, 2X/WK → 2x_week, 1X/WK → weekly. 1X/MO has no matching service level, so truth omits serviceLevel for T-2312, 02326, R-5125, R-5127, R-5130 (still in scope).",
+    "Twin rows with identical data (01203/01204 battalion HQs, 01205/01206 COFs, 01210/01212/01214 and 01216/01218 UEPH barracks) are separate facilities and must all be kept.",
+    "Footnotes 3/ (fire stations, hangars: bays excluded), 4/ (dining: kitchen by food service contractor) and 5/ (barracks: common areas only) limit custodial area but give no cleanable SF, so truth carries gross SF only and no cleanableSqft.",
+    "Category is asserted only where the CATCODE description is unambiguous (e.g. 72111 → barracks, 72210 → dining, 21110 → hangar, 61050/1418x → admin); fire, MP, tower, terminal, bathhouse, fuel, range and youth-center codes carry no category.",
+    "TE 6 Table 6-1 has a two-row header (IMPROVED (TYPE I) / SEMI-IMPROVED (TYPE II) / UNIMPROVED (TYPE III), each ACRES | MOWS/YR): acreage and mowing counts alternate (\"18.4 30 3.2 12 —\") and the MOWS/YR integers are not acres. \"—\" means none. Totals: Type I 126.6 AC, Type II 180.3 AC, Type III 611.0 AC; the TOTAL row is excluded.",
+    "Grounds areas list their FACILITIES SERVED by TE 5 facility number; truth carries those as buildingNumbers. GC-1 and GD-2 give a text description instead of numbers, and GC-2 / GX-1 show \"—\", so those have no buildingNumbers.",
+    "Table 6-2 playing fields (PF-1, 14.6 AC) are maintained to Type I standard but are explicitly not included in Table 6-1 Type I acreage: athletic_field, not improved_turf, and not double counted.",
+    "Table 6-3 paved areas are in square yards (SY): parking 183,510 SY (= 1,651,590 SF) across PV-1..PV-4, sidewalks 27,600 SY (= 248,400 SF) in PV-5; the TOTAL PAVED AREA row (211,110 SY) is excluded. Truth keeps sqyd (the scorer converts)."
+  ]
+}

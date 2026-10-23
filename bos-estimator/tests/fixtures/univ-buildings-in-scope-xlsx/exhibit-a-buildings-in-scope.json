@@ -1,0 +1,667 @@
+{
+ "sheets": [
+  {
+   "name": "Exhibit A - Buildings in Scope",
+   "rows": [
+    [
+     "RFP #27031 Custodial Services for Various Buildings – Exhibit A – Buildings in Scope",
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    [],
+    [
+     "Building #",
+     "Building Name",
+     "Campus",
+     "Gross Sq Ft",
+     "Cleanable Sq Ft",
+     "# Floors",
+     "Restroom Fixtures",
+     "Service Days/Week",
+     "Remarks"
+    ],
+    [
+     "0012",
+     "Kessler Hall (Administration)",
+     "Main",
+     58420,
+     47900,
+     4,
+     38,
+     5,
+     ""
+    ],
+    [
+     "0015",
+     "Baldor Technology Center",
+     "Main",
+     102000,
+     86700,
+     2,
+     44,
+     5,
+     ""
+    ],
+    [
+     "0018",
+     "Boreham Library",
+     "Main",
+     68331,
+     59450,
+     3,
+     30,
+     7,
+     "Open 24/5 during finals"
+    ],
+    [
+     "0021",
+     "Math Science",
+     "Main",
+     82000,
+     67240,
+     3,
+     36,
+     5,
+     ""
+    ],
+    [
+     "0024",
+     "Advancement Center",
+     "Main",
+     9008,
+     7650,
+     1,
+     6,
+     5,
+     ""
+    ],
+    [
+     "0027",
+     "51st Annex",
+     "Main",
+     16339,
+     12250,
+     1,
+     8,
+     3,
+     ""
+    ],
+    [
+     "0030",
+     "Ballman Speer",
+     "Main",
+     12466,
+     0,
+     1,
+     2,
+     0,
+     "Storage – no custodial service"
+    ],
+    [
+     "0033",
+     "Fine Arts Center",
+     "Main",
+     61775,
+     50650,
+     3,
+     28,
+     5,
+     "Includes 640-seat recital hall"
+    ],
+    [
+     "0036",
+     "Music Building",
+     "Main",
+     24180,
+     19830,
+     2,
+     12,
+     6,
+     ""
+    ],
+    [
+     "0039",
+     "Business Administration",
+     "Main",
+     45960,
+     38150,
+     3,
+     24,
+     5,
+     ""
+    ],
+    [
+     "0042",
+     "Education Building",
+     "Main",
+     40230,
+     33390,
+     3,
+     22,
+     5,
+     ""
+    ],
+    [
+     "0045",
+     "Social Sciences Hall",
+     "Main",
+     37415,
+     30680,
+     3,
+     20,
+     5,
+     ""
+    ],
+    [
+     "0048",
+     "Engineering and Applied Sciences",
+     "Main",
+     88640,
+     70910,
+     4,
+     40,
+     5,
+     ""
+    ],
+    [
+     "0051",
+     "Chemistry and Biology Laboratories",
+     "Main",
+     71200,
+     54110,
+     3,
+     34,
+     5,
+     "Lab benches cleaned by department staff"
+    ],
+    [
+     "0054",
+     "Student Union",
+     "Main",
+     96850,
+     79420,
+     3,
+     58,
+     7,
+     ""
+    ],
+    [
+     "0057",
+     "Recreation and Wellness Center",
+     "Main",
+     74300,
+     63155,
+     2,
+     46,
+     7,
+     ""
+    ],
+    [
+     "0060",
+     "Athletic Field House",
+     "Main",
+     52100,
+     31260,
+     1,
+     36,
+     6,
+     "Arena floor by Athletics"
+    ],
+    [
+     "0063",
+     "Natatorium",
+     "Main",
+     28640,
+     17180,
+     1,
+     22,
+     6,
+     ""
+    ],
+    [
+     "0066",
+     "Campus Police and Parking Services",
+     "Main",
+     8215,
+     6980,
+     1,
+     6,
+     7,
+     ""
+    ],
+    [
+     "0069",
+     "Central Receiving and Warehouse",
+     "Main",
+     22400,
+     5600,
+     1,
+     4,
+     2,
+     "Office and break areas only"
+    ],
+    [
+     "0072",
+     "Physical Plant Shops",
+     "Main",
+     18960,
+     6640,
+     1,
+     6,
+     2,
+     "Office and break areas only"
+    ],
+    [
+     "0075",
+     "Information Technology Center",
+     "Main",
+     26300,
+     21830,
+     2,
+     12,
+     5,
+     ""
+    ],
+    [
+     "0078",
+     "Career Services and Alumni Center",
+     "Main",
+     11520,
+     9560,
+     2,
+     8,
+     5,
+     ""
+    ],
+    [
+     "0081",
+     "Child Development Laboratory School",
+     "Main",
+     9860,
+     8380,
+     1,
+     14,
+     5,
+     ""
+    ],
+    [
+     "0084",
+     "Hawthorne Hall",
+     "Main",
+     34750,
+     28500,
+     3,
+     18,
+     5,
+     "Renovation planned 2027–2028"
+    ],
+    [
+     "1102",
+     "Ozark Hall (Residence Hall)",
+     "Main",
+     112600,
+     33780,
+     6,
+     96,
+     7,
+     "Common areas and community restrooms only"
+    ],
+    [
+     "1104",
+     "Cedar Hall (Residence Hall)",
+     "Main",
+     98450,
+     29540,
+     5,
+     84,
+     7,
+     "Common areas and community restrooms only"
+    ],
+    [
+     "1106",
+     "Juniper Hall (Residence Hall)",
+     "Main",
+     98450,
+     29540,
+     5,
+     84,
+     7,
+     "Common areas and community restrooms only"
+    ],
+    [
+     "1108",
+     "Sycamore Suites",
+     "Main",
+     126300,
+     25260,
+     4,
+     18,
+     7,
+     "Suite bathrooms excluded"
+    ],
+    [
+     "1110",
+     "Maple Apartments",
+     "Main",
+     84200,
+     8420,
+     3,
+     6,
+     3,
+     "Lobbies, laundry and community center only"
+    ],
+    [
+     "1112",
+     "University Dining Commons",
+     "Main",
+     54700,
+     41030,
+     2,
+     24,
+     7,
+     "Kitchen by food service contractor"
+    ],
+    [
+     "1120",
+     "Honors College House",
+     "Main",
+     6480,
+     5510,
+     2,
+     6,
+     5,
+     ""
+    ],
+    [
+     "2201",
+     "Pendergraft Health Sciences",
+     "Health Sciences",
+     72230,
+     60670,
+     3,
+     34,
+     5,
+     ""
+    ],
+    [
+     "2204",
+     "Clinical Simulation Center",
+     "Health Sciences",
+     31850,
+     26120,
+     2,
+     16,
+     5,
+     "APPA Level 1 in simulation suites"
+    ],
+    [
+     "2207",
+     "Dental Hygiene Clinic",
+     "Health Sciences",
+     14960,
+     12720,
+     1,
+     18,
+     5,
+     "APPA Level 1"
+    ],
+    [
+     "2210",
+     "Nursing and Allied Health",
+     "Health Sciences",
+     48210,
+     36400,
+     3,
+     22,
+     5,
+     ""
+    ],
+    [
+     "2213",
+     "Health Sciences Library",
+     "Health Sciences",
+     19640,
+     16500,
+     2,
+     10,
+     6,
+     ""
+    ],
+    [
+     "2216",
+     "Physical Therapy Building",
+     "Health Sciences",
+     23175,
+     19700,
+     2,
+     14,
+     5,
+     ""
+    ],
+    [
+     "2219",
+     "Community Health Clinic",
+     "Health Sciences",
+     17880,
+     15550,
+     1,
+     20,
+     7,
+     "APPA Level 1"
+    ],
+    [
+     "2222",
+     "Biomedical Research Annex",
+     "Health Sciences",
+     27940,
+     19560,
+     2,
+     12,
+     5,
+     ""
+    ],
+    [
+     "2225",
+     "Parking Deck Office and Restrooms",
+     "Health Sciences",
+     1920,
+     1630,
+     1,
+     2,
+     1,
+     ""
+    ],
+    [
+     "3301",
+     "Aviation Technology Center",
+     "Downtown Center",
+     73346,
+     38140,
+     2,
+     26,
+     5,
+     "Hangar bays excluded from cleanable"
+    ],
+    [
+     "3304",
+     "29th Street Coalition Center",
+     "Downtown Center",
+     39751,
+     33790,
+     1,
+     22,
+     5,
+     ""
+    ],
+    [
+     "3307",
+     "Downtown Classroom Building",
+     "Downtown Center",
+     44620,
+     37930,
+     4,
+     24,
+     6,
+     ""
+    ],
+    [
+     "3310",
+     "Workforce Development Center",
+     "Downtown Center",
+     36980,
+     30320,
+     2,
+     18,
+     5,
+     ""
+    ],
+    [
+     "3313",
+     "Small Business Incubator",
+     "Downtown Center",
+     15400,
+     12940,
+     2,
+     8,
+     3,
+     ""
+    ],
+    [
+     "3316",
+     "Culinary Arts Institute",
+     "Downtown Center",
+     21560,
+     17250,
+     1,
+     12,
+     5,
+     "Teaching kitchens by program staff"
+    ],
+    [
+     "3319",
+     "Downtown Library and Archives",
+     "Downtown Center",
+     12875,
+     10940,
+     2,
+     6,
+     2,
+     ""
+    ],
+    [
+     "3322",
+     "Continuing Education Center",
+     "Downtown Center",
+     18230,
+     15500,
+     2,
+     10,
+     5,
+     ""
+    ],
+    [
+     "3325",
+     "Public Radio Station (KSUR)",
+     "Downtown Center",
+     7640,
+     6490,
+     1,
+     4,
+     5,
+     ""
+    ],
+    [
+     "3328",
+     "Regional Training Center (Leased, Suite 200)",
+     "Downtown Center",
+     9400,
+     8000,
+     1,
+     6,
+     1,
+     ""
+    ],
+    [
+     "TOTAL",
+     "",
+     "",
+     2220646,
+     1450645,
+     "",
+     1176,
+     "",
+     ""
+    ]
+   ],
+   "merges": [
+    "A1:I1"
+   ],
+   "numFmt": [
+    "@",
+    null,
+    null,
+    "#,##0",
+    "#,##0",
+    "0",
+    "0",
+    "0",
+    null
+   ]
+  },
+  {
+   "name": "Notes",
+   "rows": [
+    [
+     "Exhibit A – Notes"
+    ],
+    [],
+    [
+     "1.",
+     "Building numbers are University facility numbers as shown in the FY2026 Facilities Inventory and Space Report."
+    ],
+    [
+     "2.",
+     "Gross Sq Ft (Column D) is taken from the facilities inventory and includes all floors. Cleanable Sq Ft (Column E) excludes mechanical, electrical and telecommunications rooms, shafts, unconditioned storage, and areas cleaned by others (laboratory benches, food service kitchens, teaching kitchens, hangar bays, athletic arena floors)."
+    ],
+    [
+     "3.",
+     "Residence halls (1100 series): Cleanable Sq Ft includes lobbies, lounges, corridors, laundry rooms and community restrooms only. Student rooms and suite bathrooms are cleaned by residents."
+    ],
+    [
+     "4.",
+     "Restroom Fixtures = water closets + urinals + lavatories in areas serviced by the Contractor. Showers are not counted."
+    ],
+    [
+     "5.",
+     "Service Days/Week: 5 = Monday–Friday; 6 = Monday–Saturday; 7 = daily including weekends; 3 = Monday, Wednesday and Friday; 2 = Tuesday and Thursday; 1 = once per week; 0 = no routine service (building listed for information only)."
+    ],
+    [
+     "6.",
+     "Building 0030 Ballman Speer is used for storage and receives no custodial service. It is listed for information only."
+    ],
+    [
+     "7.",
+     "Building 1112 University Dining Commons: custodial service covers the dining room, restrooms and public corridors only. Kitchen, serving lines and dish room are cleaned by the food service contractor."
+    ],
+    [
+     "8.",
+     "Building 3301 Aviation Technology Center: hangar bays are swept by University staff and are excluded from Cleanable Sq Ft."
+    ],
+    [
+     "9.",
+     "APPA Level 2 applies to all buildings unless the Remarks column states otherwise."
+    ],
+    [
+     "10.",
+     "The TOTAL row is a simple sum of every row on the Exhibit A tab, including buildings listed for information only. Refer to the RFP document and any addenda for changes to this exhibit."
+    ]
+   ]
+  }
+ ]
+}

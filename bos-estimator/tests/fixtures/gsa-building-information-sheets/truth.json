@@ -1,0 +1,238 @@
+{
+  "id": "gsa-building-information-sheets",
+  "title": "GSA custodial and grounds solicitation with one Exhibit J.1 Building Information Sheet per building (DOCX)",
+  "theme": "federal-gsa",
+  "provenance": {
+    "fidelity": "real-format",
+    "sources": [
+      {
+        "url": "https://www.gsa.gov/system/files/National_Consolidated_Services__PWS_20241205.pdf",
+        "note": "GSA National Consolidated Maintenance Specification v1.2 (Dec 2024): wording copied/paraphrased for C.1.2 — regions use the Custodial Square Footage Tool to prepare custodial square feet in Exhibit J.1 \"Building Information Sheet\"; complete the Building Information Sheet for each building covered under the contract; per-building identification block (Building Number / Building Name / Building Address); snow and ice removal from entrances and walks is a standard custodial service while heavy plowing is ordered under C.15 Above Standard Services."
+      },
+      {
+        "url": "https://www.gsa.gov/system/files/National_Facility_Engineering_Consolidated_Services_w_VTS_PWS-20221215.pdf",
+        "note": "GSA National Consolidated Facilities Engineering Specification (Dec 2022): Custodial Building Information Sheets exhibit, restrooms cleaned daily at minimum or once per shift where multiple shifts are provided, interior/exterior window washing ordered as an Above Standard Service (C.15). Format and wording only."
+      },
+      {
+        "url": "https://govtribe.com/file/government-file/draft-pws-2020-national-custodial-dot-pdf",
+        "note": "GSA DRAFT PWS 2020 National Custodial: the tool calculates only square feet cleaned on a routine basis and regions remove space not cleaned routinely (file room storage, electrical closets); Exhibit J1 Building Information Sheet; restrooms/fixtures sections; glass within ten feet of the floor; \"Windows shall be cleaned once per year\", extra cleanings reimbursable. Wording only."
+      },
+      {
+        "url": "https://www.gsa.gov/system/files?file=2025+National+OM+Spec-030525.pdf",
+        "note": "GSA National O&M Specification (Mar 2025): \"Be sure to complete the Building Information Sheet (See Exhibit 1) for each building that is covered under the Contract.\" Confirms one sheet per building."
+      },
+      {
+        "url": "https://www.gsa.gov/system/files/2024_National_Custodial_Specification_October_2024-1.pdf",
+        "note": "GSA 2024 National Custodial Specification: same Exhibit J.1 / Custodial Square Footage Tool requirement. Wording only."
+      },
+      {
+        "url": "https://www.gsa.gov/real-estate/historic-preservation/explore-historic-buildings/find-a-building/us-post-office-and-courthouse-texarkana-ar",
+        "note": "Real GSA building number AR0057ZZ (state code + 4 digits + ZZ) seen in search excerpt; used only as the pattern for the illustrative VA0xxxZZ numbers."
+      }
+    ],
+    "notes": "Layout and wording follow GSA PBS national custodial / consolidated services specifications (Exhibit J.1 Building Information Sheet prepared with the Custodial Square Footage Tool, one sheet per building, standard vs. above-standard services, once-a-year window washing, snow removal at entrances and walks). The J.1 form fields beyond Building Number / Name / Address were not visible in any search excerpt, so the sheet layout (sections A–F) is a reconstruction. Every building, building number, address, square footage, fixture count, grounds quantity, the solicitation number 47PC0326R0014, the incumbent (Caldera Ridge Facility Services, LLC), its contract 47PC0321C0042 and all dollar values are illustrative. No rows are copied from a real document."
+  },
+  "inputs": [
+    {
+      "src": "j1-building-information-sheets.html",
+      "as": "docx"
+    }
+  ],
+  "expect": {
+    "facilities": [
+      {
+        "buildingNumber": "VA0123ZZ",
+        "name": "Thomas R. Whitcomb Federal Building and U.S. Courthouse",
+        "grossSqft": 118460,
+        "cleanableSqft": 88900,
+        "floors": 5,
+        "restroomFixtures": 80,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "VA0187ZZ",
+        "name": "Margaret E. Halloran Federal Building",
+        "grossSqft": 64920,
+        "cleanableSqft": 52060,
+        "floors": 3,
+        "restroomFixtures": 48,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "VA0241ZZ",
+        "name": "Federal Office Building and U.S. Post Office",
+        "grossSqft": 38750,
+        "cleanableSqft": 22860,
+        "floors": 3,
+        "restroomFixtures": 20,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "VA0318ZZ",
+        "name": "Valley Federal Office Building",
+        "grossSqft": 18640,
+        "cleanableSqft": 15360,
+        "floors": 1,
+        "restroomFixtures": 21,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "VA0402ZZ",
+        "name": "Shenandoah Federal Support Center",
+        "grossSqft": 46300,
+        "cleanableSqft": 40670,
+        "floors": 2,
+        "restroomFixtures": 24,
+        "serviceLevel": "daily_5",
+        "category": "warehouse"
+      }
+    ],
+    "facilitiesComplete": true,
+    "grounds": [
+      {
+        "kind": "improved_turf",
+        "quantity": 1.25,
+        "unit": "acres",
+        "buildingNumbers": [
+          "VA0123ZZ"
+        ],
+        "name": "VA0123ZZ landscaped / improved grounds"
+      },
+      {
+        "kind": "parking",
+        "quantity": 38600,
+        "unit": "sqft",
+        "buildingNumbers": [
+          "VA0123ZZ"
+        ],
+        "name": "VA0123ZZ surface parking lot"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 11250,
+        "unit": "sqft",
+        "buildingNumbers": [
+          "VA0123ZZ"
+        ],
+        "name": "VA0123ZZ sidewalks, plazas and steps"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 2.35,
+        "unit": "acres",
+        "buildingNumbers": [
+          "VA0187ZZ"
+        ],
+        "name": "VA0187ZZ landscaped / improved grounds"
+      },
+      {
+        "kind": "parking",
+        "quantity": 52400,
+        "unit": "sqft",
+        "buildingNumbers": [
+          "VA0187ZZ"
+        ],
+        "name": "VA0187ZZ surface parking lot"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 6980,
+        "unit": "sqft",
+        "buildingNumbers": [
+          "VA0187ZZ"
+        ],
+        "name": "VA0187ZZ sidewalks, plazas and steps"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 9600,
+        "unit": "sqft",
+        "buildingNumbers": [
+          "VA0318ZZ"
+        ],
+        "name": "VA0318ZZ landscaped / improved grounds"
+      },
+      {
+        "kind": "parking",
+        "quantity": 31500,
+        "unit": "sqft",
+        "buildingNumbers": [
+          "VA0318ZZ"
+        ],
+        "name": "VA0318ZZ surface parking lot"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 2860,
+        "unit": "sqft",
+        "buildingNumbers": [
+          "VA0318ZZ"
+        ],
+        "name": "VA0318ZZ sidewalks, plazas and steps"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 3.1,
+        "unit": "acres",
+        "buildingNumbers": [
+          "VA0402ZZ"
+        ],
+        "name": "VA0402ZZ landscaped / improved grounds"
+      },
+      {
+        "kind": "parking",
+        "quantity": 96800,
+        "unit": "sqft",
+        "buildingNumbers": [
+          "VA0402ZZ"
+        ],
+        "name": "VA0402ZZ employee lot and truck court"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 2150,
+        "unit": "sqft",
+        "buildingNumbers": [
+          "VA0402ZZ"
+        ],
+        "name": "VA0402ZZ sidewalks, plazas and steps"
+      }
+    ],
+    "site": {
+      "contractYears": 5,
+      "climateZone": "temperate",
+      "solicitation": "47PC0326R0014"
+    },
+    "priorAward": {
+      "totalValue": 5612350,
+      "periodMonths": 60,
+      "annualValue": 1146880,
+      "incumbent": "Caldera Ridge Facility Services, LLC",
+      "contractNumber": "47PC0321C0042",
+      "awardYear": 2021
+    }
+  },
+  "traps": [
+    "Key/value layout, not a row table: each building is its own Exhibit J.1 form (one per page) with label | value | label | value cells, so building number, name, gross SF, floors and fixture counts must be gathered from different cells of one sheet and kept together per building.",
+    "Three building-size numbers per sheet: Gross Square Feet (truth grossSqft), Rentable Square Feet and ABOA SF (information only). Custodial (cleanable) SF is the Section C total, not gross or rentable.",
+    "Section B price schedule is the only row table and lists Custodial Sq. Ft. per building (88,900 / 52,060 / 22,860 / 15,360 / 40,670) with abbreviated names (\"Whitcomb FB-USCH, Winchester\"); a reader that takes those as gross SF gets every SF wrong. Its \"Total Custodial Square Feet – CLIN 0001\" row (219,850) is not a building.",
+    "Amendment 0001 deletes VA0355ZZ Federal Records Annex (22,480 GSF, 16,920 custodial SF, 14 fixtures). Its J.1 sheet is still in the conformed package under a \"DELETED BY AMENDMENT 0001 – RETAINED FOR REFERENCE ONLY\" banner and CLIN 0001AF reads DELETED; it is excluded from facilities and grounds.",
+    "Amendment 0001 revises VA0241ZZ custodial SF from 21,460 to 22,860 (Suite 210 added); the sheet shows \"22,860 (revised A0001; was 21,460)\" and the office line \"15,330 (revised A0001; was 13,930)\". Truth cleanableSqft = 22,860.",
+    "Each sheet lists \"Space not included in Custodial Square Feet\" (mechanical rooms, USMS cellblock, child care center, USPS space, secure storage) with square footage; these must not be added to cleanable SF and are not facilities.",
+    "Floors are split into \"Floors Above Grade\" and \"Floors Below Grade\"; Q1 in the amendment says total floors = the sum. VA0123ZZ = 4 + 1 basement = 5, VA0241ZZ = 2 + 1 basement = 3, VA0402ZZ = \"2 (incl. 6,100 SF office mezzanine)\" = 2.",
+    "Restroom fixtures: truth = Section D TOTAL row (water closets + urinals + lavatories + showers). \"No. of Restrooms\" (26, 10, 5, 6, 6) sits next to it, and drinking fountains and service sinks are listed below the table \"not included in the restroom fixture total\".",
+    "Two-row fixture table header (\"Plumbing Fixtures\" spans Water Closets / Urinals / Lavatories / Showers).",
+    "Glass square feet (exterior/interior, one side) are window-washing quantities, not floor area.",
+    "Grounds per building: Landscaped / Improved Grounds -> improved_turf, Parking Areas -> parking, Sidewalks, Plazas and Steps -> sidewalk. VA0318ZZ gives landscaped area in square feet (9,600 SF, about 0.22 acre); other sheets in acres. Total Site Area (3.10 / 4.60 / 0.82 / 2.40 / 8.75 acres) is information only and is not a grounds quantity.",
+    "VA0241ZZ grounds (0.30 acre, 14,200 SF parking, 3,900 SF walks) are \"Not in contract (maintained by USPS)\"; only snow removal at the federal entrance is in scope, so no grounds are expected for that building. CLIN 0002 confirms grounds at VA0123ZZ, VA0187ZZ, VA0318ZZ and VA0402ZZ only.",
+    "VA0402ZZ remarks mention 4.2 acres of unmaintained wooded buffer and VA0187ZZ remarks a 0.18-acre playground maintained by the child care provider; neither is a contract grounds quantity.",
+    "Building numbers are alphanumeric GSA numbers (VA0123ZZ), not integers.",
+    "Contract term: 12-month base + four 12-month options = 5 contract years; the FAR 52.217-8 six-month extension is not a contract year.",
+    "Prior award is in amendment Q&A A3: contract 47PC0321C0042, Caldera Ridge Facility Services, LLC, awarded December 2021, 60 months, total $5,612,350; current option year $1,146,880. The $75,000 NTE for Above Standard Services (CLIN 0003) is not a prior-award value.",
+    "Running header repeats the solicitation number and \"Section J, Exhibit J.1 – Page J.1-n of 6\" on every page; a CUI footer repeats on every page."
+  ]
+}

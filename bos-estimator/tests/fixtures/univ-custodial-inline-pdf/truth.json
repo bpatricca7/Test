@@ -1,0 +1,260 @@
+{
+  "id": "univ-custodial-inline-pdf",
+  "title": "Community college custodial RFP with inline building table grouped by campus (PDF)",
+  "theme": "higher-ed",
+  "provenance": {
+    "fidelity": "real-rows",
+    "sources": [
+      {
+        "url": "https://www.polk.edu/wp-content/uploads/RFP-16-03-Custodial-Services-REVISED-11-4-2016-FINAL.pdf",
+        "note": "Polk State College RFP #16-03 Custodial Services, Scope of Work \"List of Buildings to be used for Billing Purposes\": rows copied verbatim (name + estimated gross SF): LTB – Technology Building 127,050; LAC – Academic Center 72,852; WRH – Rehabilitative Health 6,030; Seven (7) Modular Buildings – Winter Haven Campus 7,502; Chain of Lakes (COL) 14,540; CPS/ITB – Center for Public Safety Immersive Training Building 101,488; JD Alexander Center 16,143; Lake Wales Art(s) Center 12,422; four Lakeland modular buildings LMA/LMB/LMC/LMD 7,752. Also copied wording: \"Floor plans and a list of rooms and square footage of each room is available for review at the Purchasing Department\", per-SF monthly x 12 pricing by campus, payment reduced by SF taken out of service."
+      },
+      {
+        "url": "https://www.polk.edu/wp-content/uploads/16-03-Custodial-Services-Contract-FINAL-.pdf",
+        "note": "Executed contract for RFP #16-03: rows copied verbatim: WAD – Administration 47,863 and WCH – Club House 2,000 (billing list, estimated gross square footage); contract wording on relieving the contractor of obligations for areas taken out of service."
+      },
+      {
+        "url": "https://uafs.edu/about/offices-and-services/finance-and-administration/procurement/_documents/ax24003custodialandlandscaping.pdf",
+        "note": "UAFS AX-24-003 Appendix 1: per-building APPA custodial service level column (AP2/AP3) — format only."
+      },
+      {
+        "url": "https://uca.edu/procurement/files/2023/01/RFP-UCA-23-033-Custodial-Services.pdf",
+        "note": "UCA RFP UCA-23-033: APPA Level 2 cleaning standard and building-by-building price-per-SF / monthly price form — format only."
+      }
+    ],
+    "notes": "11 of the 29 expected facility rows (WAD, WCH, WRH, Winter Haven modulars, COL, CPS/ITB, LTB, LAC, Lakeland modulars LMA-LMD, JD Alexander Center, Lake Wales Arts Center) carry names and gross SF copied from Polk State College RFP #16-03 and its contract. The college name (Lakeridge State College), solicitation number, street addresses, the other 18 buildings and their SF, floors, APPA levels, days of service, hours, and the current contract (Meridian Building Care, Inc., LSC-21-117, $2,186,400) are illustrative. Floors are illustrative for every row."
+  },
+  "inputs": [
+    {
+      "src": "rfp-27-04-custodial.html",
+      "as": "pdf"
+    }
+  ],
+  "expect": {
+    "facilities": [
+      {
+        "name": "Administration",
+        "grossSqft": 47863,
+        "floors": 2,
+        "buildingNumber": "WAD",
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "name": "Club House (Restrooms Only)",
+        "grossSqft": 2000,
+        "floors": 1,
+        "buildingNumber": "WCH"
+      },
+      {
+        "name": "Health Sciences",
+        "grossSqft": 52316,
+        "floors": 2,
+        "buildingNumber": "WHS",
+        "serviceLevel": "daily_5"
+      },
+      {
+        "name": "Library and Learning Commons",
+        "grossSqft": 38420,
+        "floors": 2,
+        "buildingNumber": "WLL"
+      },
+      {
+        "name": "Rehabilitative Health",
+        "grossSqft": 6030,
+        "floors": 1,
+        "buildingNumber": "WRH",
+        "serviceLevel": "daily_5"
+      },
+      {
+        "name": "Student Center",
+        "grossSqft": 33780,
+        "floors": 2,
+        "buildingNumber": "WST",
+        "serviceLevel": "daily_7"
+      },
+      {
+        "name": "Fine Arts and Theatre",
+        "grossSqft": 41265,
+        "floors": 2,
+        "buildingNumber": "WFA",
+        "serviceLevel": "daily_5"
+      },
+      {
+        "name": "Technology Center",
+        "grossSqft": 28940,
+        "floors": 1,
+        "buildingNumber": "WTC",
+        "serviceLevel": "daily_5"
+      },
+      {
+        "name": "Gymnasium and Fitness Center",
+        "grossSqft": 36115,
+        "floors": 1,
+        "buildingNumber": "WGY",
+        "serviceLevel": "daily_7",
+        "category": "fitness"
+      },
+      {
+        "name": "Child Development Center",
+        "grossSqft": 7920,
+        "floors": 1,
+        "buildingNumber": "WCD",
+        "serviceLevel": "daily_5",
+        "category": "child_care"
+      },
+      {
+        "name": "Bookstore and Central Receiving",
+        "grossSqft": 9850,
+        "floors": 1,
+        "buildingNumber": "WBS",
+        "serviceLevel": "3x_week"
+      },
+      {
+        "name": "Facilities Operations and Grounds Maintenance Shop",
+        "grossSqft": 12604,
+        "floors": 1,
+        "buildingNumber": "WFO",
+        "serviceLevel": "2x_week",
+        "category": "maintenance"
+      },
+      {
+        "name": "Seven (7) Modular Buildings – Winter Haven Campus",
+        "grossSqft": 7502,
+        "floors": 1,
+        "serviceLevel": "3x_week"
+      },
+      {
+        "name": "Chain of Lakes",
+        "grossSqft": 14540,
+        "floors": 2,
+        "buildingNumber": "COL",
+        "serviceLevel": "daily_5"
+      },
+      {
+        "name": "Center for Public Safety Immersive Training Building",
+        "grossSqft": 101488,
+        "floors": 2,
+        "buildingNumber": "CPS/ITB"
+      },
+      {
+        "name": "Technology Building",
+        "grossSqft": 127050,
+        "floors": 3,
+        "buildingNumber": "LTB"
+      },
+      {
+        "name": "Academic Center",
+        "grossSqft": 72852,
+        "floors": 3,
+        "buildingNumber": "LAC",
+        "serviceLevel": "daily_5"
+      },
+      {
+        "name": "Health Professions Building",
+        "grossSqft": 64210,
+        "floors": 2,
+        "buildingNumber": "LHP",
+        "serviceLevel": "daily_5"
+      },
+      {
+        "name": "Library",
+        "grossSqft": 24860,
+        "floors": 2,
+        "buildingNumber": "LLB"
+      },
+      {
+        "name": "Student Services",
+        "grossSqft": 18345,
+        "floors": 1,
+        "buildingNumber": "LSS",
+        "serviceLevel": "daily_5"
+      },
+      {
+        "name": "Conference and Training Center",
+        "grossSqft": 15300,
+        "floors": 1,
+        "buildingNumber": "LCT",
+        "serviceLevel": "daily_5"
+      },
+      {
+        "name": "Four (4) Modular Buildings – LMA, LMB, LMC, LMD",
+        "grossSqft": 7752,
+        "floors": 1,
+        "serviceLevel": "3x_week"
+      },
+      {
+        "name": "Physical Plant",
+        "grossSqft": 6480,
+        "floors": 1,
+        "buildingNumber": "LPP",
+        "serviceLevel": "weekly",
+        "category": "maintenance"
+      },
+      {
+        "name": "JD Alexander Center",
+        "grossSqft": 16143,
+        "floors": 3,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "name": "Lake Wales Arts Center",
+        "grossSqft": 12422,
+        "floors": 1,
+        "serviceLevel": "2x_week"
+      },
+      {
+        "name": "Airside Center (Aerospace and Aviation Programs)",
+        "grossSqft": 29600,
+        "floors": 2,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "name": "Bartow Center",
+        "grossSqft": 22560,
+        "floors": 2,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "name": "Clear Springs Advanced Technology Center",
+        "grossSqft": 14075,
+        "floors": 1,
+        "serviceLevel": "3x_week"
+      },
+      {
+        "name": "Haines City Center (Leased Suite)",
+        "grossSqft": 8240,
+        "floors": 1,
+        "serviceLevel": "weekly"
+      }
+    ],
+    "facilitiesComplete": true,
+    "site": {
+      "contractYears": 5,
+      "climateZone": "hot_humid",
+      "installationName": "Lakeridge State College",
+      "solicitation": "RFP #27-04"
+    },
+    "priorAward": {
+      "annualValue": 2186400,
+      "incumbent": "Meridian Building Care, Inc.",
+      "contractNumber": "LSC-21-117",
+      "awardYear": 2021
+    }
+  },
+  "traps": [
+    "Campus subtotal rows (Winter Haven Campus Subtotal 440,633, Lakeland Campus Subtotal 336,849, Centers Subtotal 103,040) and the GRAND TOTAL – ALL LOCATIONS row (880,522) are not facilities.",
+    "Campus header rows (\"WINTER HAVEN CAMPUS – 3425 Lake Region Boulevard ...\") span the table and are not facilities.",
+    "The Section 3 Price Proposal Form repeats the campus subtotals and grand total as square footages; they must not be extracted as buildings or double counted.",
+    "WSC – Science Center (Renovation) shows \"TBD – see Addendum\" instead of a square footage; it is excluded from expected facilities (no SF to bill, not in the subtotal). A reader that emits it with a guessed or zero SF is counted as an extra.",
+    "Building code is embedded in the name cell with an en dash (\"WAD – Administration\"), in parentheses (\"Chain of Lakes (COL)\"), or as a slash code (\"CPS/ITB – ...\"); centers and modular groups have no code at all.",
+    "\"CPS/ITB – Center for Public Safety Immersive Training Building\" and \"WFO – Facilities Operations and Grounds Maintenance Shop\" wrap to two lines inside the Building cell.",
+    "Grouped rows: \"Seven (7) Modular Buildings – Winter Haven Campus\" (7,502) and \"Four (4) Modular Buildings – LMA, LMB, LMC, LMD\" (7,752) are each one billing line; Section 2.3.3 gives per-module sizes (960–1,124 SF; 1,938 SF each) that must not become extra facilities.",
+    "Section 2.3.2 names facilities NOT included (WPE demolished June 2025, LCH cleaned by the school board, WEP central energy plant); none are expected.",
+    "Days of service codes map to service levels: M–F = daily_5, 7 days = daily_7, M/W/F = 3x_week, T/Th = 2x_week, 1x/wk = weekly. M–Sa (six days) has no exact service level, so truth omits serviceLevel for those rows.",
+    "Two-row table header (Cleaning spans APPA Level and Days of Service) and numeric APPA level column (1/2/3) sit next to the Floors column — a reader must not take the APPA level as floors.",
+    "Prior award is a narrative sentence (Section 1.3): incumbent, contract number, award year and annual expenditure ($2,186,400 for FY 2025-2026); the per-hour event-services rate and ~400 event hours are not part of it.",
+    "Contract term is three years plus two one-year options = 5 contract years.",
+    "Running header/footer lines (college name, RFP number, issue date, WAD-214) repeat on every page."
+  ]
+}
