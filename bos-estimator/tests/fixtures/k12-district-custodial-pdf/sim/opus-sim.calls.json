@@ -1,0 +1,795 @@
+{
+  "model": "opus-sim",
+  "passes": [
+    [
+      "rfp-27-02-custodial.pdf"
+    ]
+  ],
+  "calls": [
+    {
+      "name": "set_site_info",
+      "input": {
+        "installation_name": "Cedar Prairie School District No. 427",
+        "location": "Cedar Prairie, King County, Washington",
+        "solicitation": "RFP No. 27-02",
+        "contract_name": "District-Wide Custodial Services",
+        "climate_zone": "temperate",
+        "growing_season_weeks": null,
+        "contract_years": 5,
+        "notes": "Initial term 1 year (July 1, 2027 - June 30, 2028) plus up to four 1-year renewals, maximum 5 years through June 30, 2032 (Section 1.2). Evening production cleaning; schools cleaned M-F on ~184 days/yr (180 student + 4 non-student days); Administrative Service Center M-F year-round (~250 days); Transportation and Maintenance Facility M/W/F year-round (Section 2.4). Summer deep clean of every school; summer school daily cleaning M-Th at Glacier View ES and Cedar Prairie HS (July 6-29, 2027). Washington prevailing wage, Janitors trade, King County (Section 3.4). Grounds, kitchens/serveries, stadium and aquatic center excluded (Section 2.8). District furnishes paper products, hand soap and liners. Climate zone inferred from King County, WA location; not stated in the RFP."
+      },
+      "pass": 0
+    },
+    {
+      "name": "declare_tables",
+      "input": {
+        "tables": [
+          {
+            "table_id": "Exhibit A",
+            "title": "Exhibit A - Schedule of Facilities",
+            "kind": "facilities",
+            "file": "rfp-27-02-custodial.pdf",
+            "pages": "6-7",
+            "row_count": 19,
+            "printed_total_gross_area": 1513705,
+            "area_unit": "sf"
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "201",
+            "name": "Alder Creek Elementary School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 51340,
+            "cleanable_area": 55180,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": 512,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 6,
+              "excerpt": "201 | Alder Creek Elementary School | 14820 SE 248th Street | K–5 | 512 | 1968 / 2004 | 10.2 | 1 | 51,340 | 4 @ 960 | — | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "Gross = Col. 9 Permanent Building SF (excludes portables). Portables 4 @ 960 SF. Cleanable = Exhibit B Part 1 Line 1 Pricing Area 55,180 SF (Col. 9 + portables). No gym wood floor. Occupancy = Oct 2026 enrollment. Summer: deep clean."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "202",
+            "name": "Birchwood Elementary School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 47615,
+            "cleanable_area": 47615,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": 438,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 6,
+              "excerpt": "202 | Birchwood Elementary School | 2230 Birchwood Drive NE | K–5 | 438 | 1974 / 2011 | 9.6 | 1 | 47,615 | — | — | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "No portables. Cleanable = Exhibit B Part 1 Line 2 Pricing Area 47,615 SF. No gym wood floor. Occupancy = Oct 2026 enrollment. Summer: deep clean."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "203",
+            "name": "Cedar Prairie Elementary School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 58902,
+            "cleanable_area": 64662,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": 596,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 6,
+              "excerpt": "203 | Cedar Prairie Elementary School | 505 North Railroad Avenue | K–5 | 596 | 1952 / 1998 | 7.8 | 2 | 58,902 | 6 @ 960 | 4,620 | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "Portables 6 @ 960 SF. Cleanable = Exhibit B Part 1 Line 3 Pricing Area 64,662 SF. Gym wood floor 4,620 SF (included in Col. 9). Occupancy = Oct 2026 enrollment. Summer: deep clean."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "204",
+            "name": "Eagle Ridge Elementary School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 68450,
+            "cleanable_area": 68450,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": 624,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 6,
+              "excerpt": "204 | Eagle Ridge Elementary School | 31100 Eagle Ridge Parkway SE | PK–5 | 624 | 2016 | 12.4 | 2 | 68,450 | — | 5,280 | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "No portables. Cleanable = Exhibit B Part 1 Line 4 Pricing Area 68,450 SF. Gym wood floor 5,280 SF (included in Col. 9). Occupancy = Oct 2026 enrollment (PK-5). Summer: deep clean."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "205",
+            "name": "Fernhill Elementary School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 44286,
+            "cleanable_area": 47998,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": 401,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 6,
+              "excerpt": "205 | Fernhill Elementary School | 9810 Fernhill Road SE | K–5 | 401 | 1961 / 2001 | 8.9 | 1 | 44,286 | 2 @ 960 1 @ 1,792 (dbl.) | — | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "Portables 2 @ 960 SF + 1 double unit @ 1,792 SF. Cleanable = Exhibit B Part 1 Line 5 Pricing Area 47,998 SF. No gym wood floor. Occupancy = Oct 2026 enrollment. Summer: deep clean."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "206",
+            "name": "Glacier View Elementary School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 55730,
+            "cleanable_area": 58610,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": 547,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 6,
+              "excerpt": "206 | Glacier View Elementary School | 27415 216th Avenue SE | K–5 | 547 | 1989 / 2019 | 11.0 | 1 | 55,730 | 3 @ 960 | 4,800 | M–F | Deep clean + summer school (M–Th)"
+            },
+            "confidence": 0.95,
+            "notes": "Portables 3 @ 960 SF. Cleanable = Exhibit B Part 1 Line 6 Pricing Area 58,610 SF. Gym wood floor 4,800 SF. Occupancy = Oct 2026 enrollment. Summer: deep clean + summer school site, daily cleaning M–Th (July 6-29, 2027, Section 2.5)."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "207",
+            "name": "Maple Grove Elementary School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 49108,
+            "cleanable_area": 53908,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": 489,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 6,
+              "excerpt": "207 | Maple Grove Elementary School | 1611 Maple Grove Road | K–5 | 489 | 1979 | 9.3 | 1 | 49,108 | 5 @ 960 | — | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "Portables 5 @ 960 SF. Cleanable = Exhibit B Part 1 Line 7 Pricing Area 53,908 SF. No gym wood floor. Occupancy = Oct 2026 enrollment. Summer: deep clean."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "208",
+            "name": "Old Mill Elementary School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 39870,
+            "cleanable_area": 43710,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": 286,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 6,
+              "excerpt": "208 | Old Mill Elementary School(7) | 300 Mill Pond Lane | K–5 | 286 | 1948 / 1986 | 6.1 | 2 | 39,870 | 4 @ 960 | — | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "Portables 4 @ 960 SF. Cleanable = Exhibit B Part 1 Line 8 Pricing Area 43,710 SF. Note 7: under review for consolidation at the end of the 2026-27 school year (Section 2.7). Deleted by Addendum No. 1 Item 1 (registered again below)."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "209",
+            "name": "Riverbend Elementary School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 52064,
+            "cleanable_area": 53984,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": 455,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 6,
+              "excerpt": "209 | Riverbend Elementary School | 4402 River Road | K–5 | 455 | 1996 | 10.7 | 1 | 52,064 | 2 @ 960 | 4,410 | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "Portables 2 @ 960 SF as printed (revised to 6 @ 960 by Addendum No. 1 Item 2). Cleanable = Exhibit B Part 1 Line 9 Pricing Area 53,984 SF. Gym wood floor 4,410 SF. Occupancy = Oct 2026 enrollment. Summer: deep clean."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "210",
+            "name": "Salmonberry Elementary School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 61225,
+            "cleanable_area": 61225,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": 573,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 6,
+              "excerpt": "210 | Salmonberry Elementary School | 18800 SE Salmonberry Way | K–5 | 573 | 2008 | 11.8 | 2 | 61,225 | — | 5,040 | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "No portables. Cleanable = Exhibit B Part 1 Line 10 Pricing Area 61,225 SF. Gym wood floor 5,040 SF. Occupancy = Oct 2026 enrollment. Summer: deep clean."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "211",
+            "name": "Whispering Firs Elementary School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 46930,
+            "cleanable_area": 49810,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": 418,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 6,
+              "excerpt": "211 | Whispering Firs Elementary School | 12650 SE Whispering Firs Lane | K–5 | 418 | 1971 / 2007 | 9.0 | 1 | 46,930 | 3 @ 960 | — | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "Portables 3 @ 960 SF. Cleanable = Exhibit B Part 1 Line 11 Pricing Area 49,810 SF. No gym wood floor. Occupancy = Oct 2026 enrollment. Summer: deep clean."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "301",
+            "name": "Hawthorne Middle School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 112480,
+            "cleanable_area": 116320,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": 812,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 7,
+              "excerpt": "301 | Hawthorne Middle School | 700 Hawthorne Avenue | 6–8 | 812 | 1966 / 2003 | 18.5 | 2 | 112,480 | 4 @ 960 | 9,600 | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "Portables 4 @ 960 SF. Cleanable = Exhibit B Part 1 Line 12 Pricing Area 116,320 SF. Gym wood floor 9,600 SF. Occupancy = Oct 2026 enrollment. Summer: deep clean."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "302",
+            "name": "Kestrel Point Middle School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 128750,
+            "cleanable_area": 128750,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": 904,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 7,
+              "excerpt": "302 | Kestrel Point Middle School | 25500 Kestrel Point Road SE | 6–8 | 904 | 2012 | 22.3 | 2 | 128,750 | — | 10,240 + 6,400 aux. | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "No portables. Cleanable = Exhibit B Part 1 Line 13 Pricing Area 128,750 SF. Gym wood floor 10,240 SF main + 6,400 SF auxiliary. Occupancy = Oct 2026 enrollment. Summer: deep clean."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "303",
+            "name": "Timberline Middle School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 104315,
+            "cleanable_area": 106235,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": 768,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 7,
+              "excerpt": "303 | Timberline Middle School | 16201 SE 272nd Street | 6–8 | 768 | 1983 / 2015 | 19.6 | 2 | 104,315 | 2 @ 960 | 9,216 | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "Portables 2 @ 960 SF. Cleanable = Exhibit B Part 1 Line 14 Pricing Area 106,235 SF. Gym wood floor 9,216 SF. Occupancy = Oct 2026 enrollment. Summer: deep clean."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "401",
+            "name": "Cedar Prairie High School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 268940,
+            "cleanable_area": 274700,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "occupancy": 1684,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 7,
+              "excerpt": "401 | Cedar Prairie High School | 1200 Cougar Way | 9–12 | 1,684 | 1958 / 2010 | 41.2 | 3 | 268,940 | 6 @ 960 | 14,880 + 8,050 aux. | M–F | Deep clean + summer school (M–Th)"
+            },
+            "confidence": 0.95,
+            "notes": "Portables 6 @ 960 SF. Cleanable = Exhibit B Part 1 Line 15 Pricing Area 274,700 SF. Gym wood floor 14,880 SF main + 8,050 SF aux. Occupancy = Oct 2026 enrollment. Summer: deep clean + summer school site, daily M–Th (July 6-29, 2027). Stadium restroom/concession buildings excluded (Section 2.8(d))."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "402",
+            "name": "Summit Ridge High School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 245600,
+            "cleanable_area": 245600,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "occupancy": 1512,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 7,
+              "excerpt": "402 | Summit Ridge High School | 33000 Summit Ridge Boulevard SE | 9–12 | 1,512 | 2019 | 46.8 | 3 | 245,600 | — | 13,920 + 7,680 aux. | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "No portables. Cleanable = Exhibit B Part 1 Line 16 Pricing Area 245,600 SF. Gym wood floor 13,920 SF main + 7,680 SF aux. Occupancy = Oct 2026 enrollment. Summer: deep clean."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "501",
+            "name": "Lincoln Center – Open Doors Re-Engagement Program and Cedar Prairie Family Partnership Program",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 31460,
+            "cleanable_area": 33252,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": 214,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 7,
+              "excerpt": "501 | Lincoln Center – Open Doors Re-Engagement Program and Cedar Prairie Family Partnership Program | 128 West Lincoln Street | 9–12; K–8 | 214 | 1937 / 1994 | 2.3 | 2 | 31,460 | 2 @ 896"
+            },
+            "confidence": 0.95,
+            "notes": "Alternative learning center. Portables 2 @ 896 SF. Cleanable = Exhibit B Part 1 Line 17 Pricing Area 33,252 SF. Gym wood floor 3,960 SF. Occupancy = Oct 2026 enrollment. School year M–F; summer: deep clean."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "901",
+            "name": "Administrative Service Center (District Office)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 18240,
+            "cleanable_area": 18240,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F (12 mo.)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 7,
+              "excerpt": "901 | Administrative Service Center (District Office)(8) | 18050 SE Prairie Center Drive | — | — | 1999 | 4.4 | 2 | 18,240 | — | — | M–F (12 mo.) | M–F"
+            },
+            "confidence": 0.9,
+            "notes": "Year-round M–F (~250 days, Section 2.4). Note 8: Board Room and Professional Development Annex cleaned with the main building. Exhibit B Part 2 Line 18 Pricing Area 18,240 SF. Area revised to 22,960 SF by Addendum No. 1 Item 3 (registered again below)."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "902",
+            "name": "Transportation and Maintenance Facility",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 28400,
+            "cleanable_area": 6850,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_frequency_text": "M/W/F (12 mo.)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 7,
+              "excerpt": "902 | Transportation and Maintenance Facility(6) | 21420 SE 256th Street | — | — | 1987 | 8.2 | 1 | 28,400(6) | — | — | M/W/F (12 mo.) | M/W/F"
+            },
+            "confidence": 0.95,
+            "notes": "Note 6: custodial service limited to dispatch and administration offices, driver lounge, training room, restrooms and locker rooms, approx. 6,850 SF of the 28,400 SF building; bus maintenance bays, parts room, wash bay and shops excluded (Section 2.8(c)). Cleanable = Exhibit B Part 2 Line 19 (6,850 SF, cleanable area only). Year-round Mon/Wed/Fri."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "208",
+            "name": "Old Mill Elementary School",
+            "status": "deleted_by_amendment",
+            "status_reason": "Addendum No. 1, Item 1: \"Location 208, Old Mill Elementary School, is deleted from Exhibit A and from Exhibit B, Part 1, Line 8, in its entirety.\" Consolidated into Riverbend ES (Resolution No. 2026-41); not priced.",
+            "category": "education",
+            "gross_area": null,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": null,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 9,
+              "excerpt": "Location 208, Old Mill Elementary School, is deleted from Exhibit A and from Exhibit B, Part 1, Line 8, in its entirety. The building will be placed in warm-closure status"
+            },
+            "confidence": 0.97,
+            "notes": "Addendum No. 1 Item 1 (Nov 16, 2026). Building placed in warm-closure status and maintained by District staff. Exhibit A Note 7 deleted. Its 4 portables relocate to Riverbend ES (209)."
+          },
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "209",
+            "name": "Riverbend Elementary School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 52064,
+            "cleanable_area": 57824,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 9,
+              "excerpt": "Exhibit A, Column (10) for Location 209 is revised from \"2 @ 960\" to \"6 @ 960\". Column (9), Permanent Building SF, is unchanged at 52,064. ... Pricing Area is revised from 53,984 SF to 57,824 SF."
+            },
+            "confidence": 0.97,
+            "notes": "Addendum No. 1 Item 2 and A5: four portables relocated from Old Mill ES during summer 2027; price with six (6) portables @ 960 SF for the full initial term. Cleanable = revised Pricing Area 57,824 SF."
+          },
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "901",
+            "name": "Administrative Service Center (District Office)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 22960,
+            "cleanable_area": 22960,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 9,
+              "excerpt": "Exhibit A, Column (9) for Location 901 is revised from 18,240 SF to 22,960 SF. Exhibit B, Part 2, Line 18: Pricing Area is revised from 18,240 SF to 22,960 SF."
+            },
+            "confidence": 0.97,
+            "notes": "Addendum No. 1 Item 3: Exhibit A omitted the Board Room and Professional Development Annex (4,720 SF), connected by a covered breezeway and cleaned with the main building (Note 8)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "set_previous_award",
+      "input": {
+        "incumbent": "Sound & Summit Building Care, LLC",
+        "contract_number": "CPSD-C-22-031",
+        "contract_type": null,
+        "total_value": null,
+        "period_months": null,
+        "annual_value": 3412860,
+        "spend_to_date": 12904115,
+        "spend_period_months": 48,
+        "award_year": 2022,
+        "source": {
+          "file": "rfp-27-02-custodial.pdf",
+          "page": 2,
+          "excerpt": "Payments under the contract for the 2025-26 school year ... including summer deep cleaning, totaled $3,412,860. Total payments from July 1, 2022 through June 30, 2026 (48 months) were $12,904,115."
+        },
+        "confidence": 0.95,
+        "notes": "Section 1.3 and Addendum No. 1 A4. Awarded by the Board in May 2022 for a one-year initial term with four one-year renewals; final renewal year ends June 30, 2027 (60-month term). No award/ceiling value or contract type stated. 2025-26 payments include summer deep cleaning; ~1,900 hours of extra work were ordered in 2025-26 (Section 2.9). District does not publish incumbent staffing levels."
+      },
+      "pass": 0
+    },
+    {
+      "name": "finish",
+      "input": {
+        "summary": "Cedar Prairie School District No. 427, RFP No. 27-02 District-Wide Custodial Services (1-year base + four 1-year renewals). Exhibit A (19 locations) registered: 17 school sites + Administrative Service Center (901) + Transportation and Maintenance Facility (902). Addendum No. 1 applied: Old Mill ES (208) deleted_by_amendment; Riverbend ES (209) priced with 6 portables (Pricing Area 57,824 SF); ASC (901) revised to 22,960 SF. Gross = Exhibit A Column (9) Permanent Building SF; cleanable = Exhibit B Pricing Area (Column 9 + portable classrooms; 902 cleanable 6,850 SF only). Schools M-F ~184 days + summer deep clean (floor care); 901 M-F year-round; 902 M/W/F year-round. Incumbent Sound & Summit Building Care, LLC (CPSD-C-22-031), $3,412,860 paid for 2025-26; $12,904,115 over 48 months. No grounds or dining scope.",
+        "unresolved": [
+          "Exhibit A: declared with the printed total 1,513,705 SF and 19 rows (all registered as printed). Addendum No. 1 Item 4 revises the Column (9) total to 1,478,555 SF: Location 208 (39,870 SF) deleted and Location 901 increased by 4,720 SF (18,240 -> 22,960). Revised Exhibit B total pricing area 1,499,949 SF.",
+          "Cleanable area exceeds gross at schools with portable classrooms (201, 203, 205, 206, 207, 209, 211, 301, 303, 401, 501) by design: Column (9) excludes portables and the Exhibit B Pricing Area (recorded as cleanable) adds them (Section 2.3, Note 2, A1). Portables are not separately numbered buildings; counts and unit sizes are in notes. Portable counts may change during the term (Section 2.7).",
+          "Buildings mentioned in text but absent from the exhibits and excluded from scope: restroom and concession buildings at Cedar Prairie Memorial Stadium and the District Aquatic Center (Section 2.8(d), A8). No numbers or areas given; not registered.",
+          "Grounds maintenance is not part of this RFP (Section 2.8(b)); Exhibit A Column (7) site acreage (270.1 acres total) is information only, so no grounds areas were registered.",
+          "Restroom fixture counts and floor finish mix are not given; gym wood floor SF (Column 11) recorded in notes only. Climate zone inferred from King County, WA location."
+        ]
+      },
+      "pass": 0
+    }
+  ]
+}

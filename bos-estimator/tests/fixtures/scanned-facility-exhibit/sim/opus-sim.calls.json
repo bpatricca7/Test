@@ -1,0 +1,767 @@
+{
+  "model": "opus-sim",
+  "passes": [
+    [
+      "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf"
+    ]
+  ],
+  "calls": [
+    {
+      "name": "set_site_info",
+      "input": {
+        "installation_name": "Kestrel Air National Guard Base",
+        "location": null,
+        "solicitation": "W912KS-27-Q-0006",
+        "contract_name": "Janitorial Services - Kestrel Air National Guard Base",
+        "climate_zone": null,
+        "growing_season_weeks": null,
+        "contract_years": null,
+        "notes": "Only Attachment 3 (PWS Appendix B building list, conformed thru Amendment 0001, 03 Feb 2027) is in the package; location, climate and contract period not stated. Fax header: KESTREL ANGB MSC/CONTRACTING."
+      },
+      "pass": 0
+    },
+    {
+      "name": "declare_tables",
+      "input": {
+        "tables": [
+          {
+            "table_id": "APP-B",
+            "title": "Appendix B - Building Numbers and Estimated Square Footages (conformed thru Amd 0001)",
+            "kind": "facilities",
+            "file": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf",
+            "pages": "1-2",
+            "row_count": 22,
+            "printed_total_gross_area": 130295,
+            "area_unit": "sf"
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "APP-B",
+            "campus": null,
+            "building_number": "100",
+            "name": "WING HEADQUARTERS",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 14860,
+            "cleanable_area": 14860,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf",
+              "page": 1,
+              "excerpt": "100 | WING HEADQUARTERS | 2 | 14,860 | 5X/WK |"
+            },
+            "confidence": 0.95,
+            "notes": "Area column is 'EST. SQ FT (CLEANING AREA)' (estimated cleaning area); no separate gross area printed."
+          },
+          {
+            "table_id": "APP-B",
+            "campus": null,
+            "building_number": "101",
+            "name": "BASE CIVIL ENGINEER (CES) ADMIN",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 6240,
+            "cleanable_area": 6240,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_frequency_text": "2X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf",
+              "page": 1,
+              "excerpt": "101 | BASE CIVIL ENGINEER (CES) ADMIN | 1 | 6,240 | 2X/WK |"
+            },
+            "confidence": 0.95,
+            "notes": "Area column is 'EST. SQ FT (CLEANING AREA)' (estimated cleaning area); no separate gross area printed."
+          },
+          {
+            "table_id": "APP-B",
+            "campus": null,
+            "building_number": "104",
+            "name": "COMMUNICATIONS FLIGHT",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 5315,
+            "cleanable_area": 5315,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_frequency_text": "2X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf",
+              "page": 1,
+              "excerpt": "104 | COMMUNICATIONS FLIGHT | 1 | 5,315 | 2X/WK | Excl. secure comm room"
+            },
+            "confidence": 0.95,
+            "notes": "Area column is 'EST. SQ FT (CLEANING AREA)' (estimated cleaning area); no separate gross area printed. Remarks: Excl. secure comm room."
+          },
+          {
+            "table_id": "APP-B",
+            "campus": null,
+            "building_number": "106",
+            "name": "MEDICAL GROUP (MDG) CLINIC",
+            "status": null,
+            "status_reason": null,
+            "category": "medical",
+            "gross_area": 9880,
+            "cleanable_area": 9880,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_frequency_text": "1X/WK + UTA",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf",
+              "page": 1,
+              "excerpt": "106 | MEDICAL GROUP (MDG) CLINIC | 1 | 9,880 | 1X/WK + UTA | Non-clinical areas"
+            },
+            "confidence": 0.95,
+            "notes": "Area column is 'EST. SQ FT (CLEANING AREA)' (estimated cleaning area); no separate gross area printed. Remarks: Non-clinical areas. Weekly plus once each UTA weekend. UTA = once on each Unit Training Assembly (drill) weekend, normally one weekend per month (B.2)."
+          },
+          {
+            "table_id": "APP-B",
+            "campus": null,
+            "building_number": "110",
+            "name": "DINING FACILITY",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 7450,
+            "cleanable_area": 7450,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "monthly",
+            "service_frequency_text": "UTA",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf",
+              "page": 1,
+              "excerpt": "110 | DINING FACILITY | 1 | 7,450 | UTA | Dining room & latrines only"
+            },
+            "confidence": 0.95,
+            "notes": "Area column is 'EST. SQ FT (CLEANING AREA)' (estimated cleaning area); no separate gross area printed. Remarks: Dining room & latrines only. Janitorial only (dining room & latrines); no food service workload in this package. UTA = once on each Unit Training Assembly (drill) weekend, normally one weekend per month (B.2)."
+          },
+          {
+            "table_id": "APP-B",
+            "campus": null,
+            "building_number": "112",
+            "name": "FITNESS CENTER",
+            "status": null,
+            "status_reason": null,
+            "category": "fitness",
+            "gross_area": 8120,
+            "cleanable_area": 8120,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_frequency_text": "3X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf",
+              "page": 1,
+              "excerpt": "112 | FITNESS CENTER | 1 | 8,120 | 3X/WK | Incl. locker rooms"
+            },
+            "confidence": 0.95,
+            "notes": "Area column is 'EST. SQ FT (CLEANING AREA)' (estimated cleaning area); no separate gross area printed. Remarks: Incl. locker rooms."
+          },
+          {
+            "table_id": "APP-B",
+            "campus": null,
+            "building_number": "115",
+            "name": "LODGING / VISITING QUARTERS",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 18400,
+            "cleanable_area": 18400,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "monthly",
+            "service_frequency_text": "UTA",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf",
+              "page": 1,
+              "excerpt": "115 | LODGING / VISITING QUARTERS | 2 | 18,400 | UTA | Common areas; rooms by occupant"
+            },
+            "confidence": 0.95,
+            "notes": "Area column is 'EST. SQ FT (CLEANING AREA)' (estimated cleaning area); no separate gross area printed. Remarks: Common areas; rooms by occupant. UTA = once on each Unit Training Assembly (drill) weekend, normally one weekend per month (B.2)."
+          },
+          {
+            "table_id": "APP-B",
+            "campus": null,
+            "building_number": "120",
+            "name": "OPERATIONS / SQUADRON OPS",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 12775,
+            "cleanable_area": 12775,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_frequency_text": "2X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf",
+              "page": 1,
+              "excerpt": "120 | OPERATIONS / SQUADRON OPS | 2 | 12,775 | 2X/WK |"
+            },
+            "confidence": 0.95,
+            "notes": "Area column is 'EST. SQ FT (CLEANING AREA)' (estimated cleaning area); no separate gross area printed."
+          },
+          {
+            "table_id": "APP-B",
+            "campus": null,
+            "building_number": "121",
+            "name": "AIRCREW FLIGHT EQUIPMENT (AFE)",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 3960,
+            "cleanable_area": 3960,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_frequency_text": "1X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf",
+              "page": 1,
+              "excerpt": "121 | AIRCREW FLIGHT EQUIPMENT (AFE) | 1 | 3,960 | 1X/WK |"
+            },
+            "confidence": 0.95,
+            "notes": "Area column is 'EST. SQ FT (CLEANING AREA)' (estimated cleaning area); no separate gross area printed."
+          },
+          {
+            "table_id": "APP-B",
+            "campus": null,
+            "building_number": "125",
+            "name": "MX HANGAR (OFFICE & LATRINE AREAS) *",
+            "status": null,
+            "status_reason": null,
+            "category": "hangar",
+            "gross_area": 4415,
+            "cleanable_area": 4415,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_frequency_text": "2X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf",
+              "page": 1,
+              "excerpt": "125 | MX HANGAR (OFFICE & LATRINE AREAS) * | 2 | 4,415 | 2X/WK | Hangar floor not incl."
+            },
+            "confidence": 0.95,
+            "notes": "Area column is 'EST. SQ FT (CLEANING AREA)' (estimated cleaning area); no separate gross area printed. Remarks: Hangar floor not incl.. Footnote *: Facility 125: office, latrine, break room and stairwell areas only. Hangar bay floor is not included."
+          },
+          {
+            "table_id": "APP-B",
+            "campus": null,
+            "building_number": "130",
+            "name": "MX FABRICATION SHOP",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 1880,
+            "cleanable_area": 1880,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_frequency_text": "1X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf",
+              "page": 1,
+              "excerpt": "130 | MX FABRICATION SHOP | 1 | 1,880 | 1X/WK |"
+            },
+            "confidence": 0.95,
+            "notes": "Area column is 'EST. SQ FT (CLEANING AREA)' (estimated cleaning area); no separate gross area printed."
+          },
+          {
+            "table_id": "APP-B",
+            "campus": null,
+            "building_number": "131",
+            "name": "AEROSPACE GROUND EQUIPMENT (AGE) SHOP",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 2410,
+            "cleanable_area": 2410,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_frequency_text": "1X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf",
+              "page": 1,
+              "excerpt": "131 | AEROSPACE GROUND EQUIPMENT (AGE) SHOP | 1 | 2,410 | 1X/WK |"
+            },
+            "confidence": 0.95,
+            "notes": "Area column is 'EST. SQ FT (CLEANING AREA)' (estimated cleaning area); no separate gross area printed."
+          },
+          {
+            "table_id": "APP-B",
+            "campus": null,
+            "building_number": "135",
+            "name": "VEHICLE MAINTENANCE (LRS)",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 3115,
+            "cleanable_area": 3115,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_frequency_text": "1X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf",
+              "page": 2,
+              "excerpt": "135 | VEHICLE MAINTENANCE (LRS) | 1 | 3,115 | 1X/WK | Office & latrines"
+            },
+            "confidence": 0.95,
+            "notes": "Area column is 'EST. SQ FT (CLEANING AREA)' (estimated cleaning area); no separate gross area printed. Remarks: Office & latrines."
+          },
+          {
+            "table_id": "APP-B",
+            "campus": null,
+            "building_number": "140",
+            "name": "SUPPLY WAREHOUSE (LRS)",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 4960,
+            "cleanable_area": 4960,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_frequency_text": "1X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf",
+              "page": 2,
+              "excerpt": "140 | SUPPLY WAREHOUSE (LRS) | 1 | 4,960 | 1X/WK | Office, issue counter"
+            },
+            "confidence": 0.95,
+            "notes": "Area column is 'EST. SQ FT (CLEANING AREA)' (estimated cleaning area); no separate gross area printed. Remarks: Office, issue counter."
+          },
+          {
+            "table_id": "APP-B",
+            "campus": null,
+            "building_number": "141",
+            "name": "FUELS MANAGEMENT OFFICE",
+            "status": "deleted_by_amendment",
+            "status_reason": "Struck through; 'DELETED - DEMO'D AMD 0001 JRK 2/3/27'; pen & ink A. FAC 141 DELETED - DEMOLISHED",
+            "category": "admin",
+            "gross_area": 1240,
+            "cleanable_area": 1240,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_frequency_text": "1X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf",
+              "page": 2,
+              "excerpt": "~~141 | FUELS MANAGEMENT OFFICE | 1 | 1,240 | 1X/WK~~ | DELETED - DEMO'D AMD 0001 JRK 2/3/27"
+            },
+            "confidence": 0.9,
+            "notes": "Area column is 'EST. SQ FT (CLEANING AREA)' (estimated cleaning area); no separate gross area printed. Row struck through by hand; pen & ink change A: FAC 141 DELETED - DEMOLISHED."
+          },
+          {
+            "table_id": "APP-B",
+            "campus": null,
+            "building_number": "150",
+            "name": "SECURITY FORCES (SFS)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 6780,
+            "cleanable_area": 6780,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf",
+              "page": 2,
+              "excerpt": "150 | SECURITY FORCES (SFS) | 1 | 6,780 | 5X/WK |"
+            },
+            "confidence": 0.95,
+            "notes": "Area column is 'EST. SQ FT (CLEANING AREA)' (estimated cleaning area); no separate gross area printed."
+          },
+          {
+            "table_id": "APP-B",
+            "campus": null,
+            "building_number": "155",
+            "name": "FIRE STATION (ADMIN & LATRINES ONLY)",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 2325,
+            "cleanable_area": 2325,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_frequency_text": "2X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf",
+              "page": 2,
+              "excerpt": "155 | FIRE STATION (ADMIN & LATRINES ONLY) | 1 | 2,325 | 2X/WK | Dorm & bays by FD"
+            },
+            "confidence": 0.95,
+            "notes": "Area column is 'EST. SQ FT (CLEANING AREA)' (estimated cleaning area); no separate gross area printed. Remarks: Dorm & bays by FD. Admin & latrines only; dorm & bays cleaned by Fire Dept."
+          },
+          {
+            "table_id": "APP-B",
+            "campus": null,
+            "building_number": "160",
+            "name": "TRAINING / CLASSROOM BUILDING",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 11020,
+            "cleanable_area": 11020,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_frequency_text": "2X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf",
+              "page": 2,
+              "excerpt": "160 | TRAINING / CLASSROOM BUILDING | 2 | 11,020 (10,350 struck) | 2X/WK | AMD 0001 JRK"
+            },
+            "confidence": 0.9,
+            "notes": "Area column is 'EST. SQ FT (CLEANING AREA)' (estimated cleaning area); no separate gross area printed. Handwritten 11,020 replaces struck 10,350 per AMD 0001 pen & ink B: FAC 160 SQ FT REVISED (2ND FLR ADDITION)."
+          },
+          {
+            "table_id": "APP-B",
+            "campus": null,
+            "building_number": "165",
+            "name": "CHAPEL / AIRMAN & FAMILY READINESS",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 2960,
+            "cleanable_area": 2960,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_frequency_text": "1X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf",
+              "page": 2,
+              "excerpt": "165 | CHAPEL / AIRMAN & FAMILY READINESS | 1 | 2,960 | 1X/WK |"
+            },
+            "confidence": 0.95,
+            "notes": "Area column is 'EST. SQ FT (CLEANING AREA)' (estimated cleaning area); no separate gross area printed."
+          },
+          {
+            "table_id": "APP-B",
+            "campus": null,
+            "building_number": "170",
+            "name": "RECRUITING & RETENTION",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 1150,
+            "cleanable_area": 1150,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_frequency_text": "1X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf",
+              "page": 2,
+              "excerpt": "170 | RECRUITING & RETENTION | 1 | 1,150 | 1X/WK |"
+            },
+            "confidence": 0.95,
+            "notes": "Area column is 'EST. SQ FT (CLEANING AREA)' (estimated cleaning area); no separate gross area printed."
+          },
+          {
+            "table_id": "APP-B",
+            "campus": null,
+            "building_number": "175",
+            "name": "MUNITIONS ADMIN",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 960,
+            "cleanable_area": 960,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_frequency_text": "1X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf",
+              "page": 2,
+              "excerpt": "175 | MUNITIONS ADMIN | 1 | 960 | 1X/WK |"
+            },
+            "confidence": 0.95,
+            "notes": "Area column is 'EST. SQ FT (CLEANING AREA)' (estimated cleaning area); no separate gross area printed."
+          },
+          {
+            "table_id": "APP-B",
+            "campus": null,
+            "building_number": "185",
+            "name": "SMALL ARMS RANGE CLASSROOM",
+            "status": "in_scope",
+            "status_reason": "ADDED AMD 0001 JRK; pen & ink C. FAC 185 SMALL ARMS RANGE CLASSRM ADDED",
+            "category": "education",
+            "gross_area": 1320,
+            "cleanable_area": 1320,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_frequency_text": "1X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf",
+              "page": 2,
+              "excerpt": "185 | SMALL ARMS RANGE CLASSROOM | 1 | 1,320 | 1X/WK | ADDED AMD 0001 JRK"
+            },
+            "confidence": 0.9,
+            "notes": "Area column is 'EST. SQ FT (CLEANING AREA)' (estimated cleaning area); no separate gross area printed. Handwritten row added by AMD 0001 pen & ink C: FAC 185 SMALL ARMS RANGE CLASSRM ADDED."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "set_previous_award",
+      "input": {
+        "incumbent": null,
+        "contract_number": null,
+        "contract_type": null,
+        "total_value": null,
+        "period_months": null,
+        "annual_value": null,
+        "spend_to_date": null,
+        "spend_period_months": null,
+        "award_year": null,
+        "source": {
+          "file": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf",
+          "page": null,
+          "excerpt": "No incumbent or previous contract information in the package."
+        },
+        "confidence": 0.9,
+        "notes": "The package contains only PWS Appendix B (building list); no incumbent, prior contract number, value or spend is stated."
+      },
+      "pass": 0
+    },
+    {
+      "name": "finish",
+      "input": {
+        "summary": "Kestrel ANGB janitorial services (W912KS-27-Q-0006), Attachment 3 PWS Appendix B, scanned and conformed thru Amendment 0001. Registered all 22 rows of APP-B: 21 in scope totaling 130,295 SF estimated cleaning area (matches the revised printed total), plus FAC 141 Fuels Management Office struck through and deleted by AMD 0001 (demolished). AMD 0001 pen & ink changes applied: FAC 160 revised 10,350 -> 11,020 SF; FAC 185 Small Arms Range Classroom (1,320 SF, 1X/WK) added. No grounds, dining workload or incumbent information in the package.",
+        "unresolved": [
+          "Area column is 'EST. SQ FT (CLEANING AREA)' only; no gross building area is printed, so the cleaning area was recorded as both gross and cleanable area (e.g. FAC 125 hangar covers office/latrine/break room/stairwell only; FAC 155 admin & latrines only).",
+          "Attachment 4 floor plans (15 pages) referenced in B.1 and the footnote are not in the package.",
+          "UTA frequency (once per Unit Training Assembly weekend, normally one weekend per month) mapped to monthly for FAC 110 and 115; FAC 106 is 1X/WK plus each UTA weekend, mapped to weekly.",
+          "No contract period, location, climate, grounds or previous/incumbent contract data in the package."
+        ]
+      },
+      "pass": 0
+    }
+  ]
+}

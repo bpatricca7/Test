@@ -1,0 +1,931 @@
+{
+  "model": "opus-sim2",
+  "passes": [
+    [
+      "rfp-27-02-custodial.pdf"
+    ]
+  ],
+  "calls": [
+    {
+      "name": "set_site_info",
+      "input": {
+        "installation_name": "Cedar Prairie School District No. 427",
+        "location": "Cedar Prairie, King County, Washington",
+        "solicitation": "RFP No. 27-02",
+        "contract_name": "District-Wide Custodial Services",
+        "climate_zone": "temperate",
+        "growing_season_weeks": null,
+        "contract_years": 5,
+        "notes": "Initial term July 1, 2027 - June 30, 2028 plus up to four one-year renewals (max term through June 30, 2032). Evening production custodial cleaning of 17 school sites + 2 year-round support facilities (16 schools after Addendum No. 1 deletes Location 208). Schools cleaned M-F ~184 days/yr (180 student + 4 non-student days) plus summer deep clean; Administrative Service Center M-F year-round (~250 days); Transportation & Maintenance Facility M/W/F year-round. Grounds maintenance, kitchens/serveries, and daytime custodial are NOT in scope (Section 2.8). Washington prevailing wage, 'Janitors' trade, King County. District furnishes paper products, hand soap and trash liners. Climate zone inferred from location (western Washington); growing season not stated (grounds not in scope)."
+      },
+      "pass": 0
+    },
+    {
+      "name": "declare_tables",
+      "input": {
+        "tables": [
+          {
+            "table_id": "Exhibit A",
+            "title": "Exhibit A - Schedule of Facilities",
+            "kind": "facilities",
+            "file": "rfp-27-02-custodial.pdf",
+            "pages": "6-7",
+            "row_count": 19,
+            "printed_total_gross_area": 1513705,
+            "area_unit": "sf",
+            "printed_totals": []
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "201",
+            "name": "Alder Creek Elementary School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 51340,
+            "added_areas": [
+              {
+                "label": "portable classrooms",
+                "count": 4,
+                "unit_area": 960
+              }
+            ],
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": 512,
+            "service_level": "daily_5",
+            "service_frequency_text": "School year (Sept.–June): M–F; Summer (July–Aug.): Deep clean",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 6,
+              "excerpt": "201 | Alder Creek Elementary School | K–5 | 512 | 1968 / 2004 | 10.2 | 1 | 51,340 | 4 @ 960 | — | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "Address: 14820 SE 248th Street, Cedar Prairie, WA. Grades K–5; enrollment 10/1/26 512 (information only, Note 4). Year built/modernized 1968 / 2004. Site acres 10.2 (information only; grounds not in scope). Gym wood floor SF — (part of Column 9; summer screen-and-recoat, Sec. 2.6). Area basis: Pricing Area = Column 9 + portables (Sec. 2.3); no deduction for kitchens (Sec. 2.8(a), A6). Summer deep clean incl. strip/refinish VCT, carpet extraction (Sec. 2.5)."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "202",
+            "name": "Birchwood Elementary School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 47615,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": 438,
+            "service_level": "daily_5",
+            "service_frequency_text": "School year (Sept.–June): M–F; Summer (July–Aug.): Deep clean",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 6,
+              "excerpt": "202 | Birchwood Elementary School | K–5 | 438 | 1974 / 2011 | 9.6 | 1 | 47,615 | — | — | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "Address: 2230 Birchwood Drive NE, Cedar Prairie, WA. Grades K–5; enrollment 10/1/26 438 (information only, Note 4). Year built/modernized 1974 / 2011. Site acres 9.6 (information only; grounds not in scope). Gym wood floor SF — (part of Column 9; summer screen-and-recoat, Sec. 2.6). Area basis: Pricing Area = Column 9 + portables (Sec. 2.3); no deduction for kitchens (Sec. 2.8(a), A6). Summer deep clean incl. strip/refinish VCT, carpet extraction (Sec. 2.5)."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "203",
+            "name": "Cedar Prairie Elementary School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 58902,
+            "added_areas": [
+              {
+                "label": "portable classrooms",
+                "count": 6,
+                "unit_area": 960
+              }
+            ],
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": 596,
+            "service_level": "daily_5",
+            "service_frequency_text": "School year (Sept.–June): M–F; Summer (July–Aug.): Deep clean",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 6,
+              "excerpt": "203 | Cedar Prairie Elementary School | K–5 | 596 | 1952 / 1998 | 7.8 | 2 | 58,902 | 6 @ 960 | 4,620 | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "Address: 505 North Railroad Avenue, Cedar Prairie, WA. Grades K–5; enrollment 10/1/26 596 (information only, Note 4). Year built/modernized 1952 / 1998. Site acres 7.8 (information only; grounds not in scope). Gym wood floor SF 4,620 (part of Column 9; summer screen-and-recoat, Sec. 2.6). Area basis: Pricing Area = Column 9 + portables (Sec. 2.3); no deduction for kitchens (Sec. 2.8(a), A6). Summer deep clean incl. strip/refinish VCT, carpet extraction (Sec. 2.5)."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "204",
+            "name": "Eagle Ridge Elementary School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 68450,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": 624,
+            "service_level": "daily_5",
+            "service_frequency_text": "School year (Sept.–June): M–F; Summer (July–Aug.): Deep clean",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 6,
+              "excerpt": "204 | Eagle Ridge Elementary School | PK–5 | 624 | 2016 | 12.4 | 2 | 68,450 | — | 5,280 | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "Address: 31100 Eagle Ridge Parkway SE, Cedar Prairie, WA. Grades PK–5; enrollment 10/1/26 624 (information only, Note 4). Year built/modernized 2016. Site acres 12.4 (information only; grounds not in scope). Gym wood floor SF 5,280 (part of Column 9; summer screen-and-recoat, Sec. 2.6). Area basis: Pricing Area = Column 9 + portables (Sec. 2.3); no deduction for kitchens (Sec. 2.8(a), A6). Summer deep clean incl. strip/refinish VCT, carpet extraction (Sec. 2.5)."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "205",
+            "name": "Fernhill Elementary School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 44286,
+            "added_areas": [
+              {
+                "label": "portable classrooms",
+                "count": 2,
+                "unit_area": 960
+              },
+              {
+                "label": "double portable classroom (dbl.)",
+                "count": 1,
+                "unit_area": 1792
+              }
+            ],
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": 401,
+            "service_level": "daily_5",
+            "service_frequency_text": "School year (Sept.–June): M–F; Summer (July–Aug.): Deep clean",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 6,
+              "excerpt": "205 | Fernhill Elementary School | K–5 | 401 | 1961 / 2001 | 8.9 | 1 | 44,286 | 2 @ 960 1 @ 1,792 (dbl.) | — | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "Address: 9810 Fernhill Road SE, Cedar Prairie, WA. Grades K–5; enrollment 10/1/26 401 (information only, Note 4). Year built/modernized 1961 / 2001. Site acres 8.9 (information only; grounds not in scope). Gym wood floor SF — (part of Column 9; summer screen-and-recoat, Sec. 2.6). Area basis: Pricing Area = Column 9 + portables (Sec. 2.3); no deduction for kitchens (Sec. 2.8(a), A6). Summer deep clean incl. strip/refinish VCT, carpet extraction (Sec. 2.5)."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "206",
+            "name": "Glacier View Elementary School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 55730,
+            "added_areas": [
+              {
+                "label": "portable classrooms",
+                "count": 3,
+                "unit_area": 960
+              }
+            ],
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": 547,
+            "service_level": "daily_5",
+            "service_frequency_text": "School year (Sept.–June): M–F; Summer (July–Aug.): Deep clean + summer school (M–Th)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 6,
+              "excerpt": "206 | Glacier View Elementary School | K–5 | 547 | 1989 / 2019 | 11.0 | 1 | 55,730 | 3 @ 960 | 4,800 | M–F | Deep clean + summer school (M–Th)"
+            },
+            "confidence": 0.95,
+            "notes": "Address: 27415 216th Avenue SE, Cedar Prairie, WA. Grades K–5; enrollment 10/1/26 547 (information only, Note 4). Year built/modernized 1989 / 2019. Site acres 11.0 (information only; grounds not in scope). Gym wood floor SF 4,800 (part of Column 9; summer screen-and-recoat, Sec. 2.6). Area basis: Pricing Area = Column 9 + portables (Sec. 2.3); no deduction for kitchens (Sec. 2.8(a), A6). Summer deep clean incl. strip/refinish VCT, carpet extraction (Sec. 2.5)."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "207",
+            "name": "Maple Grove Elementary School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 49108,
+            "added_areas": [
+              {
+                "label": "portable classrooms",
+                "count": 5,
+                "unit_area": 960
+              }
+            ],
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": 489,
+            "service_level": "daily_5",
+            "service_frequency_text": "School year (Sept.–June): M–F; Summer (July–Aug.): Deep clean",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 6,
+              "excerpt": "207 | Maple Grove Elementary School | K–5 | 489 | 1979 | 9.3 | 1 | 49,108 | 5 @ 960 | — | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "Address: 1611 Maple Grove Road, Cedar Prairie, WA. Grades K–5; enrollment 10/1/26 489 (information only, Note 4). Year built/modernized 1979. Site acres 9.3 (information only; grounds not in scope). Gym wood floor SF — (part of Column 9; summer screen-and-recoat, Sec. 2.6). Area basis: Pricing Area = Column 9 + portables (Sec. 2.3); no deduction for kitchens (Sec. 2.8(a), A6). Summer deep clean incl. strip/refinish VCT, carpet extraction (Sec. 2.5)."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "208",
+            "name": "Old Mill Elementary School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 39870,
+            "added_areas": [
+              {
+                "label": "portable classrooms",
+                "count": 4,
+                "unit_area": 960
+              }
+            ],
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": 286,
+            "service_level": "daily_5",
+            "service_frequency_text": "School year (Sept.–June): M–F; Summer (July–Aug.): Deep clean",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 6,
+              "excerpt": "208 | Old Mill Elementary School⁷ | K–5 | 286 | 1948 / 1986 | 6.1 | 2 | 39,870 | 4 @ 960 | — | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "Address: 300 Mill Pond Lane, Cedar Prairie, WA. Grades K–5; enrollment 10/1/26 286 (information only, Note 4). Year built/modernized 1948 / 1986. Site acres 6.1 (information only; grounds not in scope). Gym wood floor SF — (part of Column 9; summer screen-and-recoat, Sec. 2.6). Area basis: Pricing Area = Column 9 + portables (Sec. 2.3); no deduction for kitchens (Sec. 2.8(a), A6). Summer deep clean incl. strip/refinish VCT, carpet extraction (Sec. 2.5). Note 7 / Sec. 2.7: under review for consolidation at end of 2026-27 school year (see Addendum No. 1, Item 1)."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "209",
+            "name": "Riverbend Elementary School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 52064,
+            "added_areas": [
+              {
+                "label": "portable classrooms",
+                "count": 2,
+                "unit_area": 960
+              }
+            ],
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": 455,
+            "service_level": "daily_5",
+            "service_frequency_text": "School year (Sept.–June): M–F; Summer (July–Aug.): Deep clean",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 6,
+              "excerpt": "209 | Riverbend Elementary School | K–5 | 455 | 1996 | 10.7 | 1 | 52,064 | 2 @ 960 | 4,410 | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "Address: 4402 River Road, Cedar Prairie, WA. Grades K–5; enrollment 10/1/26 455 (information only, Note 4). Year built/modernized 1996. Site acres 10.7 (information only; grounds not in scope). Gym wood floor SF 4,410 (part of Column 9; summer screen-and-recoat, Sec. 2.6). Area basis: Pricing Area = Column 9 + portables (Sec. 2.3); no deduction for kitchens (Sec. 2.8(a), A6). Summer deep clean incl. strip/refinish VCT, carpet extraction (Sec. 2.5)."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "210",
+            "name": "Salmonberry Elementary School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 61225,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": 573,
+            "service_level": "daily_5",
+            "service_frequency_text": "School year (Sept.–June): M–F; Summer (July–Aug.): Deep clean",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 6,
+              "excerpt": "210 | Salmonberry Elementary School | K–5 | 573 | 2008 | 11.8 | 2 | 61,225 | — | 5,040 | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "Address: 18800 SE Salmonberry Way, Cedar Prairie, WA. Grades K–5; enrollment 10/1/26 573 (information only, Note 4). Year built/modernized 2008. Site acres 11.8 (information only; grounds not in scope). Gym wood floor SF 5,040 (part of Column 9; summer screen-and-recoat, Sec. 2.6). Area basis: Pricing Area = Column 9 + portables (Sec. 2.3); no deduction for kitchens (Sec. 2.8(a), A6). Summer deep clean incl. strip/refinish VCT, carpet extraction (Sec. 2.5)."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "211",
+            "name": "Whispering Firs Elementary School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 46930,
+            "added_areas": [
+              {
+                "label": "portable classrooms",
+                "count": 3,
+                "unit_area": 960
+              }
+            ],
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": 418,
+            "service_level": "daily_5",
+            "service_frequency_text": "School year (Sept.–June): M–F; Summer (July–Aug.): Deep clean",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 6,
+              "excerpt": "211 | Whispering Firs Elementary School | K–5 | 418 | 1971 / 2007 | 9.0 | 1 | 46,930 | 3 @ 960 | — | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "Address: 12650 SE Whispering Firs Lane, Cedar Prairie, WA. Grades K–5; enrollment 10/1/26 418 (information only, Note 4). Year built/modernized 1971 / 2007. Site acres 9.0 (information only; grounds not in scope). Gym wood floor SF — (part of Column 9; summer screen-and-recoat, Sec. 2.6). Area basis: Pricing Area = Column 9 + portables (Sec. 2.3); no deduction for kitchens (Sec. 2.8(a), A6). Summer deep clean incl. strip/refinish VCT, carpet extraction (Sec. 2.5)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "301",
+            "name": "Hawthorne Middle School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 112480,
+            "added_areas": [
+              {
+                "label": "portable classrooms",
+                "count": 4,
+                "unit_area": 960
+              }
+            ],
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": 812,
+            "service_level": "daily_5",
+            "service_frequency_text": "School year (Sept.–June): M–F; Summer (July–Aug.): Deep clean",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 7,
+              "excerpt": "301 | Hawthorne Middle School | 6–8 | 812 | 1966 / 2003 | 18.5 | 2 | 112,480 | 4 @ 960 | 9,600 | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "Address: 700 Hawthorne Avenue, Cedar Prairie, WA. Grades 6–8; enrollment 10/1/26 812 (information only, Note 4). Year built/modernized 1966 / 2003. Site acres 18.5 (information only; grounds not in scope). Gym wood floor SF 9,600 (part of Column 9; summer screen-and-recoat, Sec. 2.6). Area basis: Pricing Area = Column 9 + portables (Sec. 2.3); no deduction for kitchens (Sec. 2.8(a), A6). Summer deep clean incl. strip/refinish VCT, carpet extraction (Sec. 2.5)."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "302",
+            "name": "Kestrel Point Middle School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 128750,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": 904,
+            "service_level": "daily_5",
+            "service_frequency_text": "School year (Sept.–June): M–F; Summer (July–Aug.): Deep clean",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 7,
+              "excerpt": "302 | Kestrel Point Middle School | 6–8 | 904 | 2012 | 22.3 | 2 | 128,750 | — | 10,240 + 6,400 aux. | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "Address: 25500 Kestrel Point Road SE, Cedar Prairie, WA. Grades 6–8; enrollment 10/1/26 904 (information only, Note 4). Year built/modernized 2012. Site acres 22.3 (information only; grounds not in scope). Gym wood floor SF 10,240 + 6,400 aux. (part of Column 9; summer screen-and-recoat, Sec. 2.6). Area basis: Pricing Area = Column 9 + portables (Sec. 2.3); no deduction for kitchens (Sec. 2.8(a), A6). Summer deep clean incl. strip/refinish VCT, carpet extraction (Sec. 2.5)."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "303",
+            "name": "Timberline Middle School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 104315,
+            "added_areas": [
+              {
+                "label": "portable classrooms",
+                "count": 2,
+                "unit_area": 960
+              }
+            ],
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": 768,
+            "service_level": "daily_5",
+            "service_frequency_text": "School year (Sept.–June): M–F; Summer (July–Aug.): Deep clean",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 7,
+              "excerpt": "303 | Timberline Middle School | 6–8 | 768 | 1983 / 2015 | 19.6 | 2 | 104,315 | 2 @ 960 | 9,216 | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "Address: 16201 SE 272nd Street, Cedar Prairie, WA. Grades 6–8; enrollment 10/1/26 768 (information only, Note 4). Year built/modernized 1983 / 2015. Site acres 19.6 (information only; grounds not in scope). Gym wood floor SF 9,216 (part of Column 9; summer screen-and-recoat, Sec. 2.6). Area basis: Pricing Area = Column 9 + portables (Sec. 2.3); no deduction for kitchens (Sec. 2.8(a), A6). Summer deep clean incl. strip/refinish VCT, carpet extraction (Sec. 2.5)."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "401",
+            "name": "Cedar Prairie High School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 268940,
+            "added_areas": [
+              {
+                "label": "portable classrooms",
+                "count": 6,
+                "unit_area": 960
+              }
+            ],
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "occupancy": 1684,
+            "service_level": "daily_5",
+            "service_frequency_text": "School year (Sept.–June): M–F; Summer (July–Aug.): Deep clean + summer school (M–Th)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 7,
+              "excerpt": "401 | Cedar Prairie High School | 9–12 | 1684 | 1958 / 2010 | 41.2 | 3 | 268,940 | 6 @ 960 | 14,880 + 8,050 aux. | M–F | Deep clean + summer school (M–Th)"
+            },
+            "confidence": 0.95,
+            "notes": "Address: 1200 Cougar Way, Cedar Prairie, WA. Grades 9–12; enrollment 10/1/26 1684 (information only, Note 4). Year built/modernized 1958 / 2010. Site acres 41.2 (information only; grounds not in scope). Gym wood floor SF 14,880 + 8,050 aux. (part of Column 9; summer screen-and-recoat, Sec. 2.6). Area basis: Pricing Area = Column 9 + portables (Sec. 2.3); no deduction for kitchens (Sec. 2.8(a), A6). Summer deep clean incl. strip/refinish VCT, carpet extraction (Sec. 2.5)."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "402",
+            "name": "Summit Ridge High School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 245600,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "occupancy": 1512,
+            "service_level": "daily_5",
+            "service_frequency_text": "School year (Sept.–June): M–F; Summer (July–Aug.): Deep clean",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 7,
+              "excerpt": "402 | Summit Ridge High School | 9–12 | 1512 | 2019 | 46.8 | 3 | 245,600 | — | 13,920 + 7,680 aux. | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "Address: 33000 Summit Ridge Boulevard SE, Cedar Prairie, WA. Grades 9–12; enrollment 10/1/26 1512 (information only, Note 4). Year built/modernized 2019. Site acres 46.8 (information only; grounds not in scope). Gym wood floor SF 13,920 + 7,680 aux. (part of Column 9; summer screen-and-recoat, Sec. 2.6). Area basis: Pricing Area = Column 9 + portables (Sec. 2.3); no deduction for kitchens (Sec. 2.8(a), A6). Summer deep clean incl. strip/refinish VCT, carpet extraction (Sec. 2.5)."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "501",
+            "name": "Lincoln Center – Open Doors Re-Engagement Program and Cedar Prairie Family Partnership Program",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 31460,
+            "added_areas": [
+              {
+                "label": "portable classrooms",
+                "count": 2,
+                "unit_area": 896
+              }
+            ],
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": 214,
+            "service_level": "daily_5",
+            "service_frequency_text": "School year (Sept.–June): M–F; Summer (July–Aug.): Deep clean",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 7,
+              "excerpt": "501 | Lincoln Center – Open Doors Re-Engagement Program and Cedar Prairie Family Partnership Program | 9–12; K–8 | 214 | 1937 / 1994 | 2.3 | 2 | 31,460 | 2 @ 896 | 3,960 | M–F | Deep clean"
+            },
+            "confidence": 0.95,
+            "notes": "Address: 128 West Lincoln Street, Cedar Prairie, WA. Grades 9–12; K–8; enrollment 10/1/26 214 (information only, Note 4). Year built/modernized 1937 / 1994. Site acres 2.3 (information only; grounds not in scope). Gym wood floor SF 3,960 (part of Column 9; summer screen-and-recoat, Sec. 2.6). Area basis: Pricing Area = Column 9 + portables (Sec. 2.3); no deduction for kitchens (Sec. 2.8(a), A6). Summer deep clean incl. strip/refinish VCT, carpet extraction (Sec. 2.5)."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "901",
+            "name": "Administrative Service Center (District Office)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 18240,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F (12 mo.); Summer (July–Aug.): M–F",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 7,
+              "excerpt": "901 | Administrative Service Center (District Office)⁸ | — | — | 1999 | 4.4 | 2 | 18,240 | — | — | M–F (12 mo.) | M–F"
+            },
+            "confidence": 0.95,
+            "notes": "Address: 18050 SE Prairie Center Drive, Cedar Prairie, WA. Grades —. Year built/modernized 1999. Site acres 4.4 (information only; grounds not in scope). Note 8: Board Room and Professional Development Annex is cleaned with the main building. Cleaned M–F year-round (~250 days, Sec. 2.4)."
+          },
+          {
+            "table_id": "Exhibit A",
+            "campus": null,
+            "building_number": "902",
+            "name": "Transportation and Maintenance Facility",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 28400,
+            "added_areas": null,
+            "cleanable_area": 6850,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_frequency_text": "M/W/F (12 mo.); Summer (July–Aug.): M/W/F",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 7,
+              "excerpt": "902 | Transportation and Maintenance Facility⁶ | — | — | 1987 | 8.2 | 1 | 28,400⁶ | — | — | M/W/F (12 mo.) | M/W/F"
+            },
+            "confidence": 0.95,
+            "notes": "Address: 21420 SE 256th Street, Cedar Prairie, WA. Grades —. Year built/modernized 1987. Site acres 8.2 (information only; grounds not in scope). Note 6: custodial service limited to dispatch and administration offices, driver lounge, training room, restrooms and locker rooms, approximately 6,850 SF of the 28,400 SF building; bus maintenance bays, parts room, wash bay and shops excluded (Sec. 2.8(c)). Cleaned M/W/F year-round."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "208",
+            "name": "Old Mill Elementary School",
+            "status": "deleted_by_amendment",
+            "status_reason": "Addendum No. 1, Item 1: \"Location 208, Old Mill Elementary School, is deleted from Exhibit A and from Exhibit B, Part 1, Line 8, in its entirety.\" Warm-closure status, maintained by District staff; shall not be priced.",
+            "category": "education",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 9,
+              "excerpt": "Item 1 – Deletion of Location 208, Old Mill Elementary School ... Location 208, Old Mill Elementary School, is deleted from Exhibit A and from Exhibit B, Part 1, Line 8, in its entirety."
+            },
+            "confidence": 0.98,
+            "notes": "Board Resolution No. 2026-41 (Nov 9, 2026) consolidates Old Mill into Riverbend Elementary effective end of 2026-27. Exhibit A Note 7 deleted. Its 4 portables relocate to Riverbend (209)."
+          },
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "209",
+            "name": "Riverbend Elementary School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 52064,
+            "added_areas": [
+              {
+                "label": "portable classrooms",
+                "count": 6,
+                "unit_area": 960
+              }
+            ],
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 9,
+              "excerpt": "Exhibit A, Column (10) for Location 209 is revised from \"2 @ 960\" to \"6 @ 960\". Column (9), Permanent Building SF, is unchanged at 52,064. ... Pricing Area is revised from 53,984 SF to 57,824 SF."
+            },
+            "confidence": 0.95,
+            "notes": "Addendum No. 1, Item 2: four portables relocated from Old Mill during summer 2027; A5 (p. 10): price Riverbend with six portables for the full initial term. Revised Pricing Area 57,824 SF = 52,064 + 6 x 960. The 6 @ 960 replaces (does not add to) the base 2 @ 960."
+          },
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "901",
+            "name": "Administrative Service Center (District Office)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 22960,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-02-custodial.pdf",
+              "page": 9,
+              "excerpt": "Exhibit A, Column (9) for Location 901 is revised from 18,240 SF to 22,960 SF. Exhibit B, Part 2, Line 18: Pricing Area is revised from 18,240 SF to 22,960 SF."
+            },
+            "confidence": 0.97,
+            "notes": "Addendum No. 1, Item 3: Exhibit A omitted the Board Room and Professional Development Annex (4,720 SF), connected by covered breezeway and cleaned with the main building (Note 8). Revised Column (9) 22,960 SF includes the annex."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "set_previous_award",
+      "input": {
+        "incumbent": "Sound & Summit Building Care, LLC",
+        "contract_number": "CPSD-C-22-031",
+        "contract_type": null,
+        "total_value": null,
+        "period_months": null,
+        "annual_value": 3412860,
+        "spend_to_date": 12904115,
+        "spend_period_months": 48,
+        "award_year": 2022,
+        "source": {
+          "file": "rfp-27-02-custodial.pdf",
+          "page": 2,
+          "excerpt": "Payments under the contract for the 2025-26 school year (July 1, 2025 – June 30, 2026), including summer deep cleaning, totaled $3,412,860. Total payments from July 1, 2022 through June 30, 2026 (48 months) were $12,904,115."
+        },
+        "confidence": 0.95,
+        "notes": "Section 1.3: awarded by the Board in May 2022 for a one-year initial term with four one-year renewals; final renewal year ends June 30, 2027 (60-month period of performance, July 2022 - June 2027). No award/ceiling value or contract type stated. Confirmed by Addendum No. 1, Q4/A4 (p. 10): paid $3,412,860 for 2025-26; District does not publish incumbent staffing levels. Prior scope included Location 208 (since deleted) and pre-addendum areas."
+      },
+      "pass": 0
+    },
+    {
+      "name": "finish",
+      "input": {
+        "summary": "Cedar Prairie School District No. 427, RFP No. 27-02 District-Wide Custodial Services (1 yr + 4 one-year renewals from July 1, 2027). Registered all 19 rows of Exhibit A (17 school sites + 2 year-round support facilities) with Column (9) Permanent Building SF as gross and portable classrooms as added_areas (44 units / 42,944 SF; Pricing Area = Column 9 + portables per Sec. 2.3); gross is the cleaning basis (no deduction for kitchens, Sec. 2.8(a)/A6). Addendum No. 1 applied: Location 208 Old Mill Elementary deleted; Location 209 Riverbend portables revised 2 @ 960 -> 6 @ 960 (Column 9 unchanged 52,064); Location 901 Column (9) revised 18,240 -> 22,960 SF (adds Board Room/PD Annex 4,720 SF). Location 902 Transportation & Maintenance: 28,400 SF gross, ~6,850 SF cleanable (Note 6), M/W/F year-round. Schools M-F ~184 days + summer deep clean (strip/refinish, carpet extraction, gym wood floor screen-and-recoat); Glacier View (206) and Cedar Prairie HS (401) also summer school M-Th. Incumbent Sound & Summit Building Care, LLC (CPSD-C-22-031, awarded May 2022), $3,412,860 paid for 2025-26; $12,904,115 over 48 months. No grounds or dining scope: grounds maintenance and kitchens are excluded (Sec. 2.8); site acreage is information only, so no grounds areas were registered.",
+        "unresolved": [
+          "Exhibit A: declared printed total is the base 1,513,705 SF; Addendum No. 1 Item 4 revises the Column (9) total to 1,478,555 SF (minus 208's 39,870, plus 901's 4,720) and the total pricing area from 1,535,099 to 1,499,949 SF. Addendum rows were registered with table_id null.",
+          "Exhibit B (Price Proposal Form, p. 8) was not registered as a separate table: its Pricing Area per location equals Exhibit A Column (9) plus portables (captured via added_areas), except Line 19 (902) which is the 6,850 SF cleanable area (recorded as cleanable_area).",
+          "Excluded buildings mentioned only in text (Sec. 2.8(d), A8): restroom and concession buildings at Cedar Prairie Memorial Stadium and the District Aquatic Center - no location number or area printed; not registered.",
+          "902 cleanable area is stated as 'approximately 6,850 SF'.",
+          "Restroom fixture counts, floor-finish mix and building occupancy beyond enrollment are not provided; enrollment (information only, Note 4) was recorded as occupancy."
+        ]
+      },
+      "pass": 0
+    }
+  ]
+}

@@ -156,9 +156,10 @@ test('subtotal and total rows are rejected; real rows in the same call still reg
 
 test('missing area: rejected with an instruction; area_missing accepted with capped confidence; updates allowed', () => {
   const st = createState(DOCS);
-  const r1 = applyToolCall(st, reg(row({ building_number: '7020', name: 'Range Control', gross_area: null })));
+  // an unnumbered row cannot be held for a later building (see the held-rows test): it is rejected
+  const r1 = applyToolCall(st, reg(row({ building_number: null, name: 'Range Control', gross_area: null })));
   assert.equal(r1.isError, true);
-  assert.match(r1.resultText, /7020: gross_area missing - copy it from the row/);
+  assert.match(r1.resultText, /Range Control: gross_area missing - copy it from the row/);
   assert.match(r1.resultText, /area_missing=true/);
   assert.equal(st.facilities.size, 0);
 
@@ -444,12 +445,18 @@ test('declare_tables completeness gate: reconciled tables and explained gaps fin
   assert.equal(ok.isError, false, ok.resultText);
   assert.deepEqual(finalize(st).warnings, []);
 
-  // a gap explained in unresolved (naming the table) is accepted on the first finish
+  // a gap named in unresolved before finish ever showed it is refused once and listed; the same explanation is then accepted
   const st2 = createState(DOCS);
   applyToolCall(st2, { name: 'declare_tables', input: { tables: [{ table_id: 'TE-6', title: 'Custodial list', kind: 'facilities', row_count: 2, printed_total_gross_area: 50000, area_unit: 'sf' }] } });
   applyToolCall(st2, reg(row({ table_id: 'TE-6', building_number: '1', name: 'A', gross_area: 40000 })));
-  const ex = applyToolCall(st2, { name: 'finish', input: { summary: 'done', unresolved: ['TE-6: row 2 (Bldg 9) is illegible on the scanned page'] } });
+  const why = { summary: 'done', unresolved: ['TE-6: row 2 (Bldg 9) is illegible on the scanned page'] };
+  const first = applyToolCall(st2, { name: 'finish', input: why });
+  assert.equal(first.isError, true);
+  assert.match(first.resultText, /TE-6 \(Custodial list\): 1 of 2 rows registered/);
+  assert.match(first.resultText, /TE-6 is named in unresolved, but these figures are shown here for the first time/);
+  const ex = applyToolCall(st2, { name: 'finish', input: why });
   assert.equal(ex.isError, false);
+  assert.match(ex.resultText, /Accepted with 2 unreconciled items explained in unresolved: TE-6 \(Custodial list\): 1 of 2 rows registered/);
   assert.ok(ex.events.some((e) => e.type === 'warning' && /explained by the model/.test(e.message)));
   assert.match(finalize(st2).inventory.site.notes ?? '', /Unresolved: TE-6: row 2/);
 });
@@ -554,6 +561,236 @@ test('tool schemas: additionalProperties false everywhere, strict tools within t
 });
 
 // ------------------------------------------------------------------------------------------------
+// gross vs cleanable, added areas, held rows, revision rows, grounds totals, the finish gate
+// ------------------------------------------------------------------------------------------------
+
+const declare = (...tables: Record<string, unknown>[]): ToolCall => ({ name: 'declare_tables', input: { tables: tables.map((t) => ({ title: t.table_id, kind: 'facilities', file: J4, pages: null, row_count: null, printed_total_gross_area: null, area_unit: 'sf', printed_totals: [], ...t })) } });
+const finishCall = (unresolved: string[] = []): ToolCall => ({ name: 'finish', input: { summary: 'done', unresolved } });
+
+test('added_areas: units printed outside the area column are added to the gross; the table reconciles against the printed column', () => {
+  const st = createState(DOCS);
+  applyToolCall(st, declare({ table_id: 'EX-A', row_count: 3, printed_total_gross_area: 147086 }));
+  const r = applyToolCall(st, reg(
+    row({ table_id: 'EX-A', building_number: '201', name: 'Alder Creek ES', gross_area: 51340, added_areas: [{ label: 'portable classrooms', count: 4, unit_area: 960 }], cleanable_equals_gross: true }),
+    // mixed unit sizes in one cell: one entry per size
+    row({ table_id: 'EX-A', building_number: '205', name: 'Fernhill ES', gross_area: '44,286', added_areas: [{ label: 'portables', count: 2, unit_area: 960 }, { label: 'double portable', count: 1, unit_area: '1,792' }] }),
+    row({ table_id: 'EX-A', building_number: '202', name: 'Birchwood ES', gross_area: 51460, added_areas: [] }),
+  ));
+  assert.equal(r.isError, false, r.resultText);
+  const inv = finalize(st).inventory;
+  const alder = byBn(inv.facilities, '201')[0];
+  assert.equal(alder.grossSqft, 55180);
+  assert.equal(alder.cleanableSqft, 55180); // cleanable_equals_gross includes the added units
+  assert.match(alder.notes ?? '', /Gross = 51,340 SF printed \+ portable classrooms 4 @ 960 \(3,840 SF\) = 55,180 SF/);
+  assert.equal(byBn(inv.facilities, '205')[0].grossSqft, 47998);
+  assert.equal(byBn(inv.facilities, '202')[0].grossSqft, 51460);
+  // the printed total is the sum of the printed column (51,340 + 44,286 + 51,460), not of the summed gross
+  assert.equal(applyToolCall(st, finishCall()).isError, false);
+  assert.deepEqual(finalize(st).warnings, []);
+  // units are in area_unit and converted by the tool; units without a building area are refused
+  const sm = createState(DOCS);
+  applyToolCall(sm, reg(row({ building_number: '7', name: 'Annexed HQ', gross_area: 1000, area_unit: 'sm', added_areas: [{ label: 'annex', count: null, unit_area: 100 }] })));
+  assert.equal([...sm.facilities.values()][0].grossSqft, 11840); // 1,100 m² × 10.7639
+  const bad = applyToolCall(sm, reg(row({ building_number: '8', name: 'X', gross_area: null, added_areas: [{ label: 'portables', count: 2, unit_area: 960 }] })));
+  assert.equal(bad.isError, true);
+  assert.match(bad.resultText, /8: added_areas need the building area too/);
+  assert.match(applyToolCall(sm, reg(row({ building_number: '9', name: 'Y', gross_area: 100, added_areas: [{ label: 'portables', count: 2, unit_area: 'n/a?' }] }))).resultText, /unit_area .* must be the printed area of one unit/);
+});
+
+test('cleanable larger than gross is rejected for every affected row, with the remedy; within 5 SF is accepted', () => {
+  const st = createState(DOCS);
+  const rows = Array.from({ length: 11 }, (_, i) => row({ building_number: String(301 + i), name: `School ${i}`, gross_area: 50000, cleanable_area: 50000 + 1000 * (i + 1) }));
+  // 1.8 % over (below the old 2 % advisory threshold) and a 4 SF rounding difference
+  rows.push(row({ building_number: '320', name: 'Timberline MS', gross_area: 104315, cleanable_area: 106235 }), row({ building_number: '321', name: 'Rounding', gross_area: 10000, cleanable_area: 10004 }));
+  const r = applyToolCall(st, reg(...rows));
+  assert.equal(st.facilities.size, 1);
+  assert.match(r.resultText, /Rejected 12: 301: cleanable_area \(51,000 SF\) exceeds the gross area \(50,000 SF\)/);
+  assert.match(r.resultText, /… 4 more \(309, 310, 311, 320\)/); // every rejected row is named
+  assert.equal(r.resultText.split('cleanable is part of gross').length - 1, 1); // the remedy once
+  assert.match(r.resultText, /it is the gross area: give the building area in gross_area and the structures in added_areas\. If the columns are swapped, swap them\./);
+  // a row that only adds a cleanable area is checked against the registered gross
+  const u = applyToolCall(st, reg(row({ building_number: '321', name: 'Rounding', gross_area: null, cleanable_area: 12000 })));
+  assert.equal(u.isError, true);
+  assert.match(u.resultText, /321: cleanable_area \(12,000 SF\) exceeds the gross area \(10,000 SF\)/);
+  // a revised (smaller) gross makes an earlier, larger cleanable area stale: it is not carried over
+  const st2 = createState(DOCS);
+  applyToolCall(st2, reg(row({ building_number: '5', name: 'Gym', gross_area: 20000, cleanable_area: 18000 })));
+  applyToolCall(st2, reg(row({ building_number: '5', name: 'Gym', gross_area: 15000, source: { file: AM2, page: 1, excerpt: 'Bldg 5 revised to 15,000 SF' } })));
+  const gym = [...st2.facilities.values()][0];
+  assert.equal(gym.grossSqft, 15000);
+  assert.equal(gym.cleanableSqft, undefined);
+});
+
+test('cleanable_equals_gross: the tool sets cleanable to the gross (converted, with added areas); a different printed cleanable is kept', () => {
+  const st = createState(DOCS);
+  applyToolCall(st, reg(
+    row({ building_number: '12', name: 'Uffici', gross_area: 1240, area_unit: 'sm', cleanable_area: null, cleanable_equals_gross: true }),
+    row({ building_number: '13', name: 'Repeats gross', gross_area: 1000, cleanable_area: 1000, cleanable_equals_gross: true, added_areas: [{ label: 'annex', count: 1, unit_area: 200 }] }),
+    row({ building_number: '14', name: 'Own cleanable', gross_area: 1000, cleanable_area: 800, cleanable_equals_gross: true }),
+    row({ building_number: '15', name: 'Later', gross_area: 2000 }),
+  ));
+  const by = (bn: string) => byBn([...st.facilities.values()], bn)[0];
+  assert.equal(by('12').grossSqft, 13347);
+  assert.equal(by('12').cleanableSqft, 13347);
+  assert.equal(by('13').cleanableSqft, 1200);
+  assert.equal(by('14').cleanableSqft, 800);
+  // on a row that gives no area it resolves against the registered building
+  applyToolCall(st, reg(row({ building_number: '15', name: 'Later', gross_area: null, cleanable_equals_gross: true, source: { file: J4, page: 9, excerpt: 'note 4: gross applies' } })));
+  assert.equal(by('15').cleanableSqft, 2000);
+});
+
+test('rows without an area for a building not registered yet are held and applied when it is; finish lists rows still held', () => {
+  const docs = [{ name: 'TE.pdf', role: 'attachment' as const }];
+  const st = createState(docs);
+  applyToolCall(st, declare({ table_id: 'TE 5-1', kind: 'dining', file: 'TE.pdf', pages: '3', row_count: 2, area_unit: null }), );
+  applyToolCall(st, declare({ table_id: 'TE 6-1', file: 'TE.pdf', pages: '5', row_count: 1, printed_total_gross_area: 28460 }));
+  // the dining table comes first in the document and prints no areas
+  const dining = (bn: string, hc: number) => ({ table_id: 'TE 5-1', building_number: bn, name: `DFAC ${bn}`, gross_area: null, area_missing: false, area_unit: 'sf', status: null, dining: { meal_periods: [{ period: 'Lunch', weekday_headcount: hc, weekend_headcount: null }], meals_per_day: null, days_per_week: 5, service_style: 'full_food_service' }, source: { file: 'TE.pdf', page: 3, excerpt: `${bn} | ${hc}` }, confidence: 0.9 });
+  const r1 = applyToolCall(st, reg(dining('4120', 900), dining('4130', 400)));
+  assert.equal(r1.isError, false);
+  assert.equal(st.facilities.size, 0);
+  assert.match(r1.resultText, /Held 2 rows without an area for buildings not registered yet \(4120, 4130\)/);
+  assert.match(r1.resultText, /TE 5-1: 0 of 2 rows \(\+2 held\)/);
+  const r2 = applyToolCall(st, reg(row({ table_id: 'TE 6-1', building_number: '4120', name: 'Warrior Restaurant', gross_area: 28460, source: { file: 'TE.pdf', page: 5, excerpt: '4120 | 28,460' } })));
+  assert.match(r2.resultText, /Applied 1 held row to 4120/);
+  const dfac = byBn([...st.facilities.values()], '4120')[0];
+  assert.equal(dfac.grossSqft, 28460);
+  assert.equal(dfac.dining?.mealsPerDay, 900);
+  assert.equal(st.facilities.size, 1);
+  // 4130 is never registered: finish shows it once (and TE 5-1 is one row short), then accepts the explanation
+  const f1 = applyToolCall(st, finishCall());
+  assert.equal(f1.isError, true);
+  assert.match(f1.resultText, /4130: 1 row from TE 5-1 add data to building 4130, which was never registered with an area/);
+  assert.match(f1.resultText, /TE 5-1: 1 of 2 rows registered/);
+  assert.equal(applyToolCall(st, finishCall(['4130 / TE 5-1: the DFAC is closed; no area anywhere in the package'])).isError, false);
+  assert.ok(finalize(st).warnings.some((w) => /1 row without an area that only add data were never matched to a registered building and were dropped: 4130 \(TE 5-1\)/.test(w)));
+});
+
+test('a revision row from outside the table (amendment tagged with the base table id) keeps the table as printed, in any order', () => {
+  const docs = [{ name: 'RFP.pdf', role: 'solicitation' as const }];
+  const base = row({ table_id: 'C-1', building_number: 'PB-3', name: 'Restroom', gross_area: 2240, source: { file: 'RFP.pdf', page: 9, excerpt: 'PB-3 | 2,240' } });
+  const other = row({ table_id: 'C-1', building_number: 'PB-4', name: 'Restroom 4', gross_area: 860, source: { file: 'RFP.pdf', page: 9, excerpt: 'PB-4 | 860' } });
+  const revision = row({ table_id: 'C-1', building_number: 'PB-3', name: 'Restroom', gross_area: 2420, source: { file: 'RFP.pdf', page: 12, excerpt: 'Addendum d. PB-3 revised from 2,240 to 2,420' } });
+  for (const order of [[base, other, revision], [revision, base, other]]) {
+    const st = createState(docs);
+    applyToolCall(st, declare({ table_id: 'C-1', file: 'RFP.pdf', pages: '9', row_count: 2, printed_total_gross_area: 3100 }));
+    const results = order.map((r0) => applyToolCall(st, reg(r0)));
+    // (rows of one document merge in call order, so the area check only applies when the revision comes later)
+    if (order[2] === revision) assert.equal(byBn([...st.facilities.values()], 'PB-3')[0].grossSqft, 2420);
+    const f = applyToolCall(st, finishCall());
+    assert.equal(f.isError, false, f.resultText);
+    const fin = finalize(st);
+    assert.deepEqual(fin.warnings, [], JSON.stringify(fin.warnings));
+    if (order[2] === revision) assert.match(results[2].resultText, /PB-3: the row from p\. 12 lies outside C-1 \(pages 9\); it revises the building, and C-1 keeps its printed row/);
+  }
+  // another document: same rule by file
+  const st = createState(DOCS);
+  applyToolCall(st, declare({ table_id: 'J-4', row_count: 1, printed_total_gross_area: 45200 }));
+  applyToolCall(st, reg(row({ table_id: 'J-4', building_number: '12', name: 'HQ', gross_area: 45200, source: { file: J4, page: 3, excerpt: '12 | 45,200' } })));
+  applyToolCall(st, reg(row({ table_id: 'J-4', building_number: '12', name: 'HQ', gross_area: 47900, source: { file: AM2, page: 1, excerpt: 'Bldg 12 revised to 47,900' } })));
+  assert.equal(applyToolCall(st, finishCall()).isError, false);
+  assert.equal([...st.facilities.values()][0].grossSqft, 47900);
+});
+
+test('grounds: a printed row with several quantities is one table row; an amendment row revising a listed site is not another', () => {
+  const docs = [{ name: 'RFP.pdf', role: 'solicitation' as const }];
+  const area = (name: string, kind: string, qty: number, unit: string, page: number, excerpt: string, o: Record<string, unknown> = {}) => ({ name, table_id: 'A-1', campus: null, facility_building_number: null, kind, document_label: null, status: 'in_scope', status_reason: null, quantity: qty, unit, source: { file: 'RFP.pdf', page, excerpt }, confidence: 0.9, ...o });
+  const site1 = '1 | Harmon Park | 21.40 | 6.20 | 4 / 7.8 | 6,850 | 214';
+  const site9 = '9 | Creekside Greenway | 6.40 | 18.60';
+  const rows = [
+    area('Site 1 Harmon Park – turf', 'improved_turf', 21.4, 'acres', 6, site1), area('Site 1 Harmon Park – rough', 'unimproved', 6.2, 'acres', 6, site1),
+    area('Site 1 Harmon Park – ballfields', 'athletic_field', 7.8, 'acres', 6, site1), area('Site 1 Harmon Park – beds', 'shrub_bed', 6850, 'sqft', 6, site1),
+    area('Site 1 Harmon Park – trees', 'tree_canopy', 214, 'each', 6, site1),
+    area('Site 14 Wexford – turf', 'semi_improved', 0.48, 'acres', 6, '14 | Wexford | 0.48', { status: 'deleted_by_amendment', status_reason: 'Addendum 1' }),
+    // the addendum revises Site 9 turf (registered instead of the base figure) before the base row's other quantity
+    area('Site 9 Creekside Greenway – mowable turf', 'semi_improved', 7.15, 'acres', 12, 'Addendum b. Site 9 turf revised from 6.40 to 7.15'),
+    area('Site 9 Creekside Greenway – rough mow', 'unimproved', 18.6, 'acres', 6, site9),
+  ];
+  const st = createState(docs);
+  applyToolCall(st, declare({ table_id: 'A-1', kind: 'grounds', file: 'RFP.pdf', pages: '6-7', row_count: 3, area_unit: null }));
+  const r = applyToolCall(st, { name: 'register_grounds', input: { areas: rows } });
+  assert.match(r.resultText, /Registered 7 grounds areas in scope and 1 out of scope \(7 in scope \+ 1 out of scope in total\)/);
+  assert.match(r.resultText, /Progress: A-1: 3 of 3 rows/);
+  const f = applyToolCall(st, finishCall());
+  assert.equal(f.isError, false, f.resultText);
+  assert.match(f.resultText, /7 grounds areas in scope \+ 1 out of scope/);
+  // an amendment row for a site the table does not list is counted (it may be the only registration of a printed row)
+  const st2 = createState(docs);
+  applyToolCall(st2, declare({ table_id: 'A-1', kind: 'grounds', file: 'RFP.pdf', pages: '6-7', row_count: 2, area_unit: null }));
+  applyToolCall(st2, { name: 'register_grounds', input: { areas: [area('Site 1 Harmon Park – turf', 'improved_turf', 21.4, 'acres', 6, site1), area('M-6 Kingsridge Road – median turf', 'improved_turf', 44520, 'sqft', 12, 'Addendum c. M-6 revised to 3,180 LF')] } });
+  assert.equal(applyToolCall(st2, finishCall()).isError, false);
+});
+
+test('grounds printed totals: reconciled per unit and kind (in scope, or in scope + out of scope); gaps shown in the printed unit', () => {
+  const area = (name: string, kind: string, qty: number, unit: string, o: Record<string, unknown> = {}) => ({ name, table_id: 'TE6', campus: null, facility_building_number: null, kind, document_label: null, status: 'in_scope', status_reason: null, quantity: qty, unit, source: { file: J4, page: 7, excerpt: `${name} | ${qty}` }, confidence: 0.9, ...o });
+  const totals = [{ value: 126.6, unit: 'acres', kinds: ['improved_turf'] }, { value: 180.3, unit: 'acres', kinds: ['semi_improved'] }, { value: 211110, unit: 'sqyd', kinds: [] }, { value: 12, unit: 'hectares', kinds: ['unimproved'] }];
+  const st = createState(DOCS);
+  const d = applyToolCall(st, declare({ table_id: 'TE6', kind: 'grounds', row_count: null, area_unit: null, printed_totals: totals }));
+  assert.match(d.resultText, /TE6 \(total 126\.6 acres improved_turf; total 180\.3 acres semi_improved; total 211,110 SY; total 12 ha unimproved\)/);
+  applyToolCall(st, { name: 'register_grounds', input: { areas: [
+    area('GA-1 Type I', 'improved_turf', 100.6, 'acres'), area('GA-2 Type I', 'improved_turf', 26, 'acres'),
+    area('GA-1 Type II', 'semi_improved', 170.3, 'acres'), // 10 acres short
+    area('Lot 1', 'parking', 183510, 'sqyd'), area('Walks', 'sidewalk', 27600, 'sqyd'),
+    area('Range', 'unimproved', 10, 'hectares'), area('Old range', 'unimproved', 2, 'hectares', { status: 'excluded', status_reason: 'by others' }),
+  ] } });
+  const f = applyToolCall(st, finishCall());
+  assert.equal(f.isError, true);
+  assert.match(f.resultText, /TE6: registered 170\.3 acres semi_improved vs printed total 180\.3 acres semi_improved/);
+  assert.doesNotMatch(f.resultText, /improved_turf vs|SY vs|ha unimproved vs/);
+  applyToolCall(st, { name: 'register_grounds', input: { areas: [area('GA-3 Type II', 'semi_improved', 10, 'acres')] } });
+  assert.equal(applyToolCall(st, finishCall()).isError, false);
+  assert.deepEqual(finalize(st).warnings, []);
+  // older declarations: a grounds table's printed_total_gross_area in its area_unit is a total too
+  const st2 = createState(DOCS);
+  applyToolCall(st2, declare({ table_id: 'TE6-3', kind: 'grounds', printed_total_gross_area: 211110, area_unit: 'sy' }));
+  applyToolCall(st2, { name: 'register_grounds', input: { areas: [area('Lot 1', 'parking', 183510, 'sqyd', { table_id: 'TE6-3' })] } });
+  assert.match(applyToolCall(st2, finishCall()).resultText, /TE6-3: registered 183,510 SY vs printed total 211,110 SY/);
+  // a bad total is rejected with the reason
+  assert.match(applyToolCall(createState(DOCS), declare({ table_id: 'X', kind: 'grounds', printed_totals: [{ value: 12, unit: 'furlongs', kinds: [] }] })).resultText, /needs a number and a unit/);
+});
+
+test('finish: a named gap is waived only after a refusal showed it; the counts report updates and out-of-scope areas', () => {
+  const st = createState(DOCS);
+  applyToolCall(st, declare({ table_id: 'G-1', kind: 'grounds', row_count: 12 }));
+  // the only mention of G-1 explains something else (the unit), written before the count gap was ever shown
+  const g = applyToolCall(st, { name: 'register_grounds', input: { areas: [{ name: 'Lawn', table_id: 'G-1', kind: 'improved_turf', quantity: 3, unit: 'acres', status: 'in_scope', source: { file: J4, page: 2, excerpt: 'Lawn | 3' }, confidence: 0.9 }] } });
+  assert.match(g.resultText, /Progress: G-1: 1 of 12 rows/);
+  const unresolved = ['G-1: acreage is printed in acres; no SF total could be declared'];
+  const f1 = applyToolCall(st, finishCall(unresolved));
+  assert.equal(f1.isError, true);
+  assert.match(f1.resultText, /G-1: 1 of 12 rows registered/);
+  const f2 = applyToolCall(st, finishCall(unresolved));
+  assert.equal(f2.isError, false);
+  assert.match(f2.resultText, /Accepted with 1 unreconciled item explained in unresolved: G-1: 1 of 12 rows registered/);
+  // every merge into a registered building is an update
+  const st2 = createState(DOCS);
+  applyToolCall(st2, reg(row({ building_number: '1', name: 'A', gross_area: 100 }), row({ building_number: '2', name: 'B', gross_area: 100 })));
+  const u = applyToolCall(st2, reg(row({ building_number: '1', name: 'A', gross_area: 120, source: { file: AM2, excerpt: 'a' } }), row({ building_number: '2', name: 'B', gross_area: null, service_level: 'weekly' })));
+  assert.match(u.resultText, /2 updates of already-registered buildings/);
+  assert.match(applyToolCall(st2, reg(row({ building_number: '1', name: 'A', gross_area: 120 }))).resultText, /1 update of already-registered buildings/);
+});
+
+test('score: cleanable and service level carry weight, attribute and site mismatches are listed after facility misses', () => {
+  const truth: FixtureTruth = {
+    id: 't', title: 't', theme: 't', provenance: { fidelity: 'synthetic', sources: [] }, inputs: [], traps: [],
+    expect: {
+      facilities: [
+        { buildingNumber: '12', name: 'Uffici', grossSqft: 13347, cleanableSqft: 13347, serviceLevel: '2x_week', floors: 2, category: 'admin' },
+        { buildingNumber: '14', name: 'Alloggi', grossSqft: 37243, cleanableSqft: 37243, serviceLevel: 'weekly', floors: 3, category: 'barracks' },
+      ],
+      facilitiesComplete: true, site: { climateZone: 'temperate' },
+    },
+  };
+  const fac = (bn: string, o: Partial<Facility>): Facility => ({ id: bn, buildingNumber: bn, name: bn, category: 'admin', grossSqft: 0, floors: 0, serviceLevel: 'daily_5', scope: ['custodial'], confidence: 1, ...o });
+  const perfect = scoreInventory(truth, { site: { climateZone: 'temperate' }, facilities: [fac('12', { grossSqft: 13347, cleanableSqft: 13347, serviceLevel: '2x_week', floors: 2 }), fac('14', { grossSqft: 37243, cleanableSqft: 37243, serviceLevel: 'weekly', floors: 3, category: 'barracks' })], grounds: [] }, 'test');
+  assert.equal(perfect.score, 100);
+  assert.deepEqual(perfect.misses, []);
+  const rep = scoreInventory(truth, { site: {}, facilities: [fac('12', { grossSqft: 13347, serviceLevel: '2x_week', floors: 2 }), fac('14', { grossSqft: 37243, cleanableSqft: 37243, serviceLevel: 'daily_5', floors: 3, category: 'barracks' })], grounds: [] }, 'test');
+  assert.equal(rep.score, 95); // half the cleanable and half the service-level weight lost
+  assert.deepEqual(rep.misses, ['cleanable mismatch 12: expected 13347, got none', 'service level mismatch 14: expected weekly, got daily_5', 'site climateZone: expected temperate, got none']);
+});
+
+// ------------------------------------------------------------------------------------------------
 // the live loop (server/ai.ts) against a scripted client
 // ------------------------------------------------------------------------------------------------
 
@@ -617,7 +854,7 @@ test('live loop: cut-off tool call answered with an error, moving cache breakpoi
   assert.deepEqual(requests[0].tool_choice, { type: 'auto' });
   assert.ok((requests[0].tools as { strict?: boolean }[]).some((t) => t.strict));
   const intro = JSON.stringify(requests[0].messages);
-  assert.match(intro, /Documents in order of precedence/);
+  assert.match(intro, /Documents from lowest to highest precedence \(each one supersedes those listed above it\)/);
   assert.match(intro, /pws\.txt pages 4-6 are scanned images/);
   assert.match(intro, /hidden sheet/);
   // usage kept apart

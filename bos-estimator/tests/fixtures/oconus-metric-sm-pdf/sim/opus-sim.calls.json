@@ -1,0 +1,1673 @@
+{
+  "model": "opus-sim",
+  "passes": [
+    [
+      "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf"
+    ]
+  ],
+  "calls": [
+    {
+      "name": "set_site_info",
+      "input": {
+        "installation_name": "U.S. Army Garrison Italy (USAG Italy) – Vicenza and Poggio Renatico (FE)",
+        "location": "Vicenza (Caserma Carlo Ederle, Caserma Renato Del Din) and Poggio Renatico (FE) U.S. compound, Italy",
+        "solicitation": "W912PF-27-R-0012",
+        "contract_name": "Custodial and Grounds Maintenance Services, USAG Italy",
+        "climate_zone": "temperate",
+        "growing_season_weeks": 35,
+        "contract_years": 5,
+        "notes": "One 12-month base period and four 12-month option periods (General Note 1, PWS para 1.6). Mowing season (stagione di sfalcio) 15 March – 15 November (Table 3-4 Note 1) ≈ 35 weeks. Areas in square meters (SM) and hectares; Tables 3-2/3-3/3-4 use Italian number format. Issued by ACC – RCO Vicenza, 02 FEB 2027."
+      },
+      "pass": 0
+    },
+    {
+      "name": "declare_tables",
+      "input": {
+        "tables": [
+          {
+            "table_id": "3-1",
+            "title": "Table 3-1. Caserma Carlo Ederle, Vicenza – Facilities in Scope",
+            "kind": "facilities",
+            "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+            "pages": "2",
+            "row_count": 17,
+            "printed_total_gross_area": 36783.2,
+            "area_unit": "sm"
+          },
+          {
+            "table_id": "3-2",
+            "title": "Table 3-2. Caserma Renato Del Din, Vicenza – Elenco edifici oggetto del servizio",
+            "kind": "facilities",
+            "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+            "pages": "3",
+            "row_count": 12,
+            "printed_total_gross_area": 39817.1,
+            "area_unit": "sm"
+          },
+          {
+            "table_id": "3-3",
+            "title": "Table 3-3. Poggio Renatico (FE) – U.S. Compound – Elenco edifici",
+            "kind": "facilities",
+            "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+            "pages": "4",
+            "row_count": 3,
+            "printed_total_gross_area": 5380,
+            "area_unit": "sm"
+          },
+          {
+            "table_id": "3-4",
+            "title": "Table 3-4. Grounds and Exterior Areas – Aree verdi e superfici esterne",
+            "kind": "grounds",
+            "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+            "pages": "5",
+            "row_count": 16,
+            "printed_total_gross_area": null,
+            "area_unit": "sm"
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "3-1",
+            "campus": "Caserma Ederle",
+            "building_number": "10",
+            "name": "MENSA – DINING FACILITY (WARRIOR RESTAURANT EDERLE)",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 2148.6,
+            "cleanable_area": 1702.3,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "7X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 2,
+              "excerpt": "10 | MENSA – DINING FACILITY (WARRIOR RESTAURANT EDERLE) | 1 | 2,148.6 | 1,702.3 | 7X/WK | Kitchen and serving line by DFAC contract; dining room, latrines and entry only"
+            },
+            "confidence": 0.95,
+            "notes": "Kitchen and serving line by DFAC contract; custodial covers dining room, latrines and entry only. No dining workload (headcount) in this package."
+          },
+          {
+            "table_id": "3-1",
+            "campus": "Caserma Ederle",
+            "building_number": "29",
+            "name": "CAPPELLA – EDERLE CHAPEL",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 612.4,
+            "cleanable_area": 540,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_frequency_text": "2X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 2,
+              "excerpt": "29 | CAPPELLA – EDERLE CHAPEL | 1 | 612.4 | 540.0 | 2X/WK | Plus Sunday service set-up"
+            },
+            "confidence": 0.95,
+            "notes": "Plus Sunday service set-up."
+          },
+          {
+            "table_id": "3-1",
+            "campus": "Caserma Ederle",
+            "building_number": "47",
+            "name": "PALAZZINA COMANDO – USAG ITALY GARRISON HEADQUARTERS",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 3960,
+            "cleanable_area": 3105.8,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 2,
+              "excerpt": "47 | PALAZZINA COMANDO – USAG ITALY GARRISON HEADQUARTERS | 3 | 3,960.0 | 3,105.8 | 5X/WK"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "3-1",
+            "campus": "Caserma Ederle",
+            "building_number": "58",
+            "name": "UFFICI GENIO – DIRECTORATE OF PUBLIC WORKS (DPW) ADMINISTRATION",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 1874.2,
+            "cleanable_area": 1516,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 2,
+              "excerpt": "58 | UFFICI GENIO – DIRECTORATE OF PUBLIC WORKS (DPW) ADMINISTRATION | 2 | 1,874.2 | 1,516.0 | 5X/WK"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "3-1",
+            "campus": "Caserma Ederle",
+            "building_number": "71",
+            "name": "DEPOSITO – STORAGE BUILDING",
+            "status": "excluded",
+            "status_reason": "USO ITALIANO – \"NOT IN SCOPE – ITALIAN ARMY USE\"; note 2/: Italian Army storage under Comando Caserma control. Not in scope (General Note 7).",
+            "category": "warehouse",
+            "gross_area": 842,
+            "cleanable_area": null,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 2,
+              "excerpt": "71 | DEPOSITO – STORAGE BUILDING 2/ | 1 | 842.0 | — | USO ITALIANO | NOT IN SCOPE – ITALIAN ARMY USE"
+            },
+            "confidence": 0.95,
+            "notes": "Listed for reference only; included in Table 3-1 SUBTOTALE. Cleanable area printed as \"—\"."
+          },
+          {
+            "table_id": "3-1",
+            "campus": "Caserma Ederle",
+            "building_number": "108",
+            "name": "DAVIS SOLDIER AND FAMILY READINESS CENTER",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 1422.7,
+            "cleanable_area": 1180.5,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 2,
+              "excerpt": "108 | DAVIS SOLDIER AND FAMILY READINESS CENTER | 2 | 1,422.7 | 1,180.5 | 5X/WK"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "3-1",
+            "campus": "Caserma Ederle",
+            "building_number": "126",
+            "name": "CENTRO ISTRUZIONE – EDUCATION CENTER",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 1236.9,
+            "cleanable_area": 1014.2,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 2,
+              "excerpt": "126 | CENTRO ISTRUZIONE – EDUCATION CENTER | 2 | 1,236.9 | 1,014.2 | 5X/WK"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "3-1",
+            "campus": "Caserma Ederle",
+            "building_number": "141",
+            "name": "ALLOGGI TRUPPA – UNACCOMPANIED ENLISTED PERSONNEL HOUSING (UEPH)",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 5812,
+            "cleanable_area": 1248.6,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 4,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 2,
+              "excerpt": "141 | ALLOGGI TRUPPA – UNACCOMPANIED ENLISTED PERSONNEL HOUSING (UEPH) 1/ | 4 | 5,812.0 | 1,248.6 | 5X/WK | Common areas only"
+            },
+            "confidence": 0.95,
+            "notes": "Common areas only (note 1/): entrances, corridors, stairwells, common latrines, laundry and day rooms; living units cleaned by occupants and not in cleanable area."
+          },
+          {
+            "table_id": "3-1",
+            "campus": "Caserma Ederle",
+            "building_number": "143",
+            "name": "ALLOGGI TRUPPA – UNACCOMPANIED ENLISTED PERSONNEL HOUSING (UEPH)",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 5812,
+            "cleanable_area": 1248.6,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 4,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 2,
+              "excerpt": "143 | ALLOGGI TRUPPA – UNACCOMPANIED ENLISTED PERSONNEL HOUSING (UEPH) 1/ | 4 | 5,812.0 | 1,248.6 | 5X/WK | Common areas only"
+            },
+            "confidence": 0.95,
+            "notes": "Common areas only (note 1/): entrances, corridors, stairwells, common latrines, laundry and day rooms; living units cleaned by occupants and not in cleanable area."
+          },
+          {
+            "table_id": "3-1",
+            "campus": "Caserma Ederle",
+            "building_number": "167",
+            "name": "AMBULATORIO – HEALTH CLINIC (NON-CLINICAL AREAS)",
+            "status": null,
+            "status_reason": null,
+            "category": "medical",
+            "gross_area": 3284.5,
+            "cleanable_area": 2640,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 2,
+              "excerpt": "167 | AMBULATORIO – HEALTH CLINIC (NON-CLINICAL AREAS) | 2 | 3,284.5 | 2,640.0 | 5X/WK | Clinical areas by MEDCOM contract"
+            },
+            "confidence": 0.95,
+            "notes": "Non-clinical areas only; clinical areas by MEDCOM contract."
+          },
+          {
+            "table_id": "3-1",
+            "campus": "Caserma Ederle",
+            "building_number": "202",
+            "name": "OFFICINA HOBBY – AUTOMOTIVE SKILLS CENTER",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 1108.3,
+            "cleanable_area": 395,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_frequency_text": "2X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 2,
+              "excerpt": "202 | OFFICINA HOBBY – AUTOMOTIVE SKILLS CENTER | 1 | 1,108.3 | 395.0 | 2X/WK | Customer area, office, latrines"
+            },
+            "confidence": 0.95,
+            "notes": "Cleanable area covers customer area, office, latrines."
+          },
+          {
+            "table_id": "3-1",
+            "campus": "Caserma Ederle",
+            "building_number": "214",
+            "name": "MAGAZZINO – CENTRAL ISSUE FACILITY (CIF)",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 2965,
+            "cleanable_area": 410.5,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_frequency_text": "1X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 2,
+              "excerpt": "214 | MAGAZZINO – CENTRAL ISSUE FACILITY (CIF) | 1 | 2,965.0 | 410.5 | 1X/WK | Issue counter, offices, latrines"
+            },
+            "confidence": 0.95,
+            "notes": "Cleanable area covers issue counter, offices, latrines."
+          },
+          {
+            "table_id": "3-1",
+            "campus": "Caserma Ederle",
+            "building_number": "222",
+            "name": "EX LAVANDERIA – FORMER LAUNDRY",
+            "status": "demolished",
+            "status_reason": "DA DEMOLIRE FY27 – \"DEMO FY27 – DO NOT PRICE\"; note 3/: Former laundry, vacant; programmed for demolition FY27. Not in scope (General Note 7).",
+            "category": "other",
+            "gross_area": 655.5,
+            "cleanable_area": null,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 2,
+              "excerpt": "222 | EX LAVANDERIA – FORMER LAUNDRY 3/ | 1 | 655.5 | — | DA DEMOLIRE FY27 | DEMO FY27 – DO NOT PRICE"
+            },
+            "confidence": 0.95,
+            "notes": "Vacant; listed for reference only; included in Table 3-1 SUBTOTALE. Cleanable area printed as \"—\"."
+          },
+          {
+            "table_id": "3-1",
+            "campus": "Caserma Ederle",
+            "building_number": "302",
+            "name": "EXCHANGE BARBER AND BEAUTY SHOP",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 186.2,
+            "cleanable_area": 160.4,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 2,
+              "excerpt": "302 | EXCHANGE BARBER AND BEAUTY SHOP | 1 | 186.2 | 160.4 | 5X/WK"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "3-1",
+            "campus": "Caserma Ederle",
+            "building_number": "336",
+            "name": "PALESTRA – EDERLE FITNESS CENTER",
+            "status": null,
+            "status_reason": null,
+            "category": "fitness",
+            "gross_area": 2710.8,
+            "cleanable_area": 2315,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "7X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 2,
+              "excerpt": "336 | PALESTRA – EDERLE FITNESS CENTER | 2 | 2,710.8 | 2,315.0 | 7X/WK | Incl. locker rooms and saunas"
+            },
+            "confidence": 0.95,
+            "notes": "Incl. locker rooms and saunas."
+          },
+          {
+            "table_id": "3-1",
+            "campus": "Caserma Ederle",
+            "building_number": "395",
+            "name": "SPIRITUAL LIFE CENTER",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 498,
+            "cleanable_area": 441.6,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_frequency_text": "2X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 2,
+              "excerpt": "395 | SPIRITUAL LIFE CENTER | 1 | 498.0 | 441.6 | 2X/WK"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "3-1",
+            "campus": "Caserma Ederle",
+            "building_number": "398",
+            "name": "ASILO – CHILD DEVELOPMENT CENTER (CDC) EDERLE",
+            "status": null,
+            "status_reason": null,
+            "category": "child_care",
+            "gross_area": 1654.1,
+            "cleanable_area": 1402.9,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 2,
+              "excerpt": "398 | ASILO – CHILD DEVELOPMENT CENTER (CDC) EDERLE | 1 | 1,654.1 | 1,402.9 | 5X/WK | Service after 1800 hrs"
+            },
+            "confidence": 0.95,
+            "notes": "Service after 1800 hrs."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "3-2",
+            "campus": "Caserma Del Din",
+            "building_number": "D-01",
+            "name": "PALAZZINA COMANDO BRIGATA – BRIGADE HEADQUARTERS",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 4312.8,
+            "cleanable_area": 3520,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 4,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5/7",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 3,
+              "excerpt": "D-01 | PALAZZINA COMANDO BRIGATA – BRIGADE HEADQUARTERS | S1+PT+2 | 4.312,8 m² | 3.520,0 m² | 5/7"
+            },
+            "confidence": 0.95,
+            "notes": "Italian number format as printed (host nation data). Floors \"S1+PT+2\" = basement + ground + 2 upper = four levels (General Note 5)."
+          },
+          {
+            "table_id": "3-2",
+            "campus": "Caserma Del Din",
+            "building_number": "D-02",
+            "name": "COMANDO BATTAGLIONE 'A' – BATTALION HEADQUARTERS",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 1846.5,
+            "cleanable_area": 1512.7,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5/7",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 3,
+              "excerpt": "D-02 | COMANDO BATTAGLIONE 'A' – BATTALION HEADQUARTERS | PT+1 | 1.846,5 m² | 1.512,7 m² | 5/7"
+            },
+            "confidence": 0.95,
+            "notes": "Italian number format as printed (host nation data)."
+          },
+          {
+            "table_id": "3-2",
+            "campus": "Caserma Del Din",
+            "building_number": "D-03",
+            "name": "COMANDO BATTAGLIONE 'B' – BATTALION HEADQUARTERS",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 1846.5,
+            "cleanable_area": 1512.7,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5/7",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 3,
+              "excerpt": "D-03 | COMANDO BATTAGLIONE 'B' – BATTALION HEADQUARTERS | PT+1 | 1.846,5 m² | 1.512,7 m² | 5/7"
+            },
+            "confidence": 0.95,
+            "notes": "Italian number format as printed (host nation data)."
+          },
+          {
+            "table_id": "3-2",
+            "campus": "Caserma Del Din",
+            "building_number": "D-05",
+            "name": "ALLOGGI TRUPPA 'A' – BARRACKS (AREE COMUNI / COMMON AREAS)",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 6105,
+            "cleanable_area": 1386.4,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 4,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5/7",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 3,
+              "excerpt": "D-05 | ALLOGGI TRUPPA 'A' – BARRACKS (AREE COMUNI / COMMON AREAS) | PT+3 | 6.105,0 m² | 1.386,4 m² | 5/7 | Solo aree comuni"
+            },
+            "confidence": 0.95,
+            "notes": "Italian number format as printed (host nation data). Solo aree comuni (common areas only)."
+          },
+          {
+            "table_id": "3-2",
+            "campus": "Caserma Del Din",
+            "building_number": "D-06",
+            "name": "ALLOGGI TRUPPA 'B' – BARRACKS (AREE COMUNI / COMMON AREAS)",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 6105,
+            "cleanable_area": 1386.4,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 4,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5/7",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 3,
+              "excerpt": "D-06 | ALLOGGI TRUPPA 'B' – BARRACKS (AREE COMUNI / COMMON AREAS) | PT+3 | 6.105,0 m² | 1.386,4 m² | 5/7 | Solo aree comuni"
+            },
+            "confidence": 0.95,
+            "notes": "Italian number format as printed (host nation data). Solo aree comuni (common areas only)."
+          },
+          {
+            "table_id": "3-2",
+            "campus": "Caserma Del Din",
+            "building_number": "D-07",
+            "name": "ALLOGGI TRUPPA 'C' – BARRACKS (AREE COMUNI / COMMON AREAS)",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 5980.2,
+            "cleanable_area": 1354.9,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 4,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5/7",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 3,
+              "excerpt": "D-07 | ALLOGGI TRUPPA 'C' – BARRACKS (AREE COMUNI / COMMON AREAS) | PT+3 | 5.980,2 m² | 1.354,9 m² | 5/7 | Solo aree comuni"
+            },
+            "confidence": 0.95,
+            "notes": "Italian number format as printed (host nation data). Solo aree comuni (common areas only)."
+          },
+          {
+            "table_id": "3-2",
+            "campus": "Caserma Del Din",
+            "building_number": "D-09",
+            "name": "MENSA DEL DIN – DINING FACILITY",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 2433.6,
+            "cleanable_area": 1918,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "7/7",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 3,
+              "excerpt": "D-09 | MENSA DEL DIN – DINING FACILITY | PT | 2.433,6 m² | 1.918,0 m² | 7/7 | Escluse cucine / kitchens excluded"
+            },
+            "confidence": 0.95,
+            "notes": "Italian number format as printed (host nation data). Escluse cucine / kitchens excluded. No dining workload (headcount) in this package."
+          },
+          {
+            "table_id": "3-2",
+            "campus": "Caserma Del Din",
+            "building_number": "D-10",
+            "name": "PALESTRA – FITNESS CENTER DEL DIN",
+            "status": null,
+            "status_reason": null,
+            "category": "fitness",
+            "gross_area": 3028.4,
+            "cleanable_area": 2604.1,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "7/7",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 3,
+              "excerpt": "D-10 | PALESTRA – FITNESS CENTER DEL DIN | PT+1 | 3.028,4 m² | 2.604,1 m² | 7/7"
+            },
+            "confidence": 0.95,
+            "notes": "Italian number format as printed (host nation data)."
+          },
+          {
+            "table_id": "3-2",
+            "campus": "Caserma Del Din",
+            "building_number": "D-11",
+            "name": "MAGAZZINO COMPAGNIA – COMPANY OPERATIONS FACILITY (COF)",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 2214,
+            "cleanable_area": 486.5,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_frequency_text": "1/7",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 3,
+              "excerpt": "D-11 | MAGAZZINO COMPAGNIA – COMPANY OPERATIONS FACILITY (COF) | PT | 2.214,0 m² | 486,5 m² | 1/7 | Uffici e servizi igienici"
+            },
+            "confidence": 0.95,
+            "notes": "Italian number format as printed (host nation data). Uffici e servizi igienici (cleanable = offices and restrooms)."
+          },
+          {
+            "table_id": "3-2",
+            "campus": "Caserma Del Din",
+            "building_number": "D-12",
+            "name": "OFFICINA MEZZI – TACTICAL VEHICLE MAINTENANCE SHOP",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 4650,
+            "cleanable_area": 612.3,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_frequency_text": "1/7",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 3,
+              "excerpt": "D-12 | OFFICINA MEZZI – TACTICAL VEHICLE MAINTENANCE SHOP | PT | 4.650,0 m² | 612,3 m² | 1/7 | Uffici e servizi igienici"
+            },
+            "confidence": 0.95,
+            "notes": "Italian number format as printed (host nation data). Uffici e servizi igienici (cleanable = offices and restrooms)."
+          },
+          {
+            "table_id": "3-2",
+            "campus": "Caserma Del Din",
+            "building_number": "D-14",
+            "name": "CENTRO POLIFUNZIONALE – COMMUNITY ACTIVITY CENTER",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 1198.7,
+            "cleanable_area": 1020,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_frequency_text": "3/7",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 3,
+              "excerpt": "D-14 | CENTRO POLIFUNZIONALE – COMMUNITY ACTIVITY CENTER | PT+1 | 1.198,7 m² | 1.020,0 m² | 3/7"
+            },
+            "confidence": 0.95,
+            "notes": "Italian number format as printed (host nation data)."
+          },
+          {
+            "table_id": "3-2",
+            "campus": "Caserma Del Din",
+            "building_number": "D-15",
+            "name": "GUARDIOLA INGRESSO NORD – ACCESS CONTROL POINT (ACP)",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 96.4,
+            "cleanable_area": 82,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "7/7",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 3,
+              "excerpt": "D-15 | GUARDIOLA INGRESSO NORD – ACCESS CONTROL POINT (ACP) | PT | 96,4 m² | 82,0 m² | 7/7"
+            },
+            "confidence": 0.95,
+            "notes": "Italian number format as printed (host nation data)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "3-3",
+            "campus": "Poggio Renatico (FE)",
+            "building_number": "12",
+            "name": "UFFICI PERSONALE USA – U.S. ADMINISTRATIVE OFFICES",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 1240,
+            "cleanable_area": null,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_frequency_text": "2 v/sett.",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 4,
+              "excerpt": "12 | UFFICI PERSONALE USA – U.S. ADMINISTRATIVE OFFICES | PT+1 | 1.240 | 2 v/sett."
+            },
+            "confidence": 0.95,
+            "notes": "Italian number format (\"1.240\" mq). Superficie netta non rilevata – gross area applies (General Note 4); cleanable left null. 2 v/sett. = twice weekly (General Note 6)."
+          },
+          {
+            "table_id": "3-3",
+            "campus": "Poggio Renatico (FE)",
+            "building_number": "14",
+            "name": "ALLOGGI TEMPORANEI – TRANSIENT BILLETING",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 3460,
+            "cleanable_area": null,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_frequency_text": "settimanale",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 4,
+              "excerpt": "14 | ALLOGGI TEMPORANEI – TRANSIENT BILLETING | PT+2 | 3.460 | settimanale"
+            },
+            "confidence": 0.95,
+            "notes": "Italian number format (\"3.460\" mq). Superficie netta non rilevata – gross area applies (General Note 4); cleanable left null. settimanale = weekly (General Note 6)."
+          },
+          {
+            "table_id": "3-3",
+            "campus": "Poggio Renatico (FE)",
+            "building_number": "15",
+            "name": "MAGAZZINO – STORAGE",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 680,
+            "cleanable_area": null,
+            "area_unit": "sm",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "biweekly",
+            "service_frequency_text": "quindicinale",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 4,
+              "excerpt": "15 | MAGAZZINO – STORAGE | PT | 680 | quindicinale"
+            },
+            "confidence": 0.95,
+            "notes": "Italian number format (\"680\" mq). Superficie netta non rilevata – gross area applies (General Note 4); cleanable left null. quindicinale = every two weeks (General Note 6)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_grounds",
+      "input": {
+        "areas": [
+          {
+            "name": "GE-01 Prato rasato – zona comando e servizi / Improved turf, headquarters and community core – Bldg 47",
+            "campus": "Caserma Ederle",
+            "facility_building_number": "47",
+            "table_id": "3-4",
+            "kind": "improved_turf",
+            "document_label": "Tipo I",
+            "mowing_frequency_text": "26 sfalci/anno (mows per year); mowing season 15 March – 15 November",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 0.5875,
+            "unit": "hectares",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GE-01 | Prato rasato – zona comando e servizi / Improved turf, headquarters and community core | I | 2,35 | ha | 26 | 47, 58, 108, 126"
+            },
+            "confidence": 0.93,
+            "notes": "split from a shared quantity: 2,35 ha shared by buildings 47, 58, 108, 126 (4 ways)."
+          },
+          {
+            "name": "GE-01 Prato rasato – zona comando e servizi / Improved turf, headquarters and community core – Bldg 58",
+            "campus": "Caserma Ederle",
+            "facility_building_number": "58",
+            "table_id": "3-4",
+            "kind": "improved_turf",
+            "document_label": "Tipo I",
+            "mowing_frequency_text": "26 sfalci/anno (mows per year); mowing season 15 March – 15 November",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 0.5875,
+            "unit": "hectares",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GE-01 | Prato rasato – zona comando e servizi / Improved turf, headquarters and community core | I | 2,35 | ha | 26 | 47, 58, 108, 126"
+            },
+            "confidence": 0.93,
+            "notes": "split from a shared quantity: 2,35 ha shared by buildings 47, 58, 108, 126 (4 ways)."
+          },
+          {
+            "name": "GE-01 Prato rasato – zona comando e servizi / Improved turf, headquarters and community core – Bldg 108",
+            "campus": "Caserma Ederle",
+            "facility_building_number": "108",
+            "table_id": "3-4",
+            "kind": "improved_turf",
+            "document_label": "Tipo I",
+            "mowing_frequency_text": "26 sfalci/anno (mows per year); mowing season 15 March – 15 November",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 0.5875,
+            "unit": "hectares",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GE-01 | Prato rasato – zona comando e servizi / Improved turf, headquarters and community core | I | 2,35 | ha | 26 | 47, 58, 108, 126"
+            },
+            "confidence": 0.93,
+            "notes": "split from a shared quantity: 2,35 ha shared by buildings 47, 58, 108, 126 (4 ways)."
+          },
+          {
+            "name": "GE-01 Prato rasato – zona comando e servizi / Improved turf, headquarters and community core – Bldg 126",
+            "campus": "Caserma Ederle",
+            "facility_building_number": "126",
+            "table_id": "3-4",
+            "kind": "improved_turf",
+            "document_label": "Tipo I",
+            "mowing_frequency_text": "26 sfalci/anno (mows per year); mowing season 15 March – 15 November",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 0.5875,
+            "unit": "hectares",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GE-01 | Prato rasato – zona comando e servizi / Improved turf, headquarters and community core | I | 2,35 | ha | 26 | 47, 58, 108, 126"
+            },
+            "confidence": 0.93,
+            "notes": "split from a shared quantity: 2,35 ha shared by buildings 47, 58, 108, 126 (4 ways)."
+          },
+          {
+            "name": "GE-02 Prato rasato – alloggi e asilo / Improved turf, barracks and CDC – Bldg 141",
+            "campus": "Caserma Ederle",
+            "facility_building_number": "141",
+            "table_id": "3-4",
+            "kind": "improved_turf",
+            "document_label": "Tipo I",
+            "mowing_frequency_text": "26 sfalci/anno (mows per year); mowing season 15 March – 15 November",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 0.6067,
+            "unit": "hectares",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GE-02 | Prato rasato – alloggi e asilo / Improved turf, barracks and CDC | I | 1,82 | ha | 26 | 141, 143, 398"
+            },
+            "confidence": 0.93,
+            "notes": "split from a shared quantity: 1,82 ha shared by buildings 141, 143, 398 (3 ways)."
+          },
+          {
+            "name": "GE-02 Prato rasato – alloggi e asilo / Improved turf, barracks and CDC – Bldg 143",
+            "campus": "Caserma Ederle",
+            "facility_building_number": "143",
+            "table_id": "3-4",
+            "kind": "improved_turf",
+            "document_label": "Tipo I",
+            "mowing_frequency_text": "26 sfalci/anno (mows per year); mowing season 15 March – 15 November",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 0.6067,
+            "unit": "hectares",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GE-02 | Prato rasato – alloggi e asilo / Improved turf, barracks and CDC | I | 1,82 | ha | 26 | 141, 143, 398"
+            },
+            "confidence": 0.93,
+            "notes": "split from a shared quantity: 1,82 ha shared by buildings 141, 143, 398 (3 ways)."
+          },
+          {
+            "name": "GE-02 Prato rasato – alloggi e asilo / Improved turf, barracks and CDC – Bldg 398",
+            "campus": "Caserma Ederle",
+            "facility_building_number": "398",
+            "table_id": "3-4",
+            "kind": "improved_turf",
+            "document_label": "Tipo I",
+            "mowing_frequency_text": "26 sfalci/anno (mows per year); mowing season 15 March – 15 November",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 0.6066,
+            "unit": "hectares",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GE-02 | Prato rasato – alloggi e asilo / Improved turf, barracks and CDC | I | 1,82 | ha | 26 | 141, 143, 398"
+            },
+            "confidence": 0.93,
+            "notes": "split from a shared quantity: 1,82 ha shared by buildings 141, 143, 398 (3 ways)."
+          },
+          {
+            "name": "GE-03 Area semi-migliorata – fascia perimetrale / Semi-improved, perimeter fence line",
+            "campus": "Caserma Ederle",
+            "facility_building_number": null,
+            "table_id": "3-4",
+            "kind": "semi_improved",
+            "document_label": "Tipo II",
+            "mowing_frequency_text": "8 sfalci/anno (mows per year); mowing season 15 March – 15 November",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 4.6,
+            "unit": "hectares",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GE-03 | Area semi-migliorata – fascia perimetrale / Semi-improved, perimeter fence line | II | 4,60 | ha | 8 | —"
+            },
+            "confidence": 0.93,
+            "notes": null
+          },
+          {
+            "name": "GE-04 Campo sportivo (calcio) / Athletic field (soccer)",
+            "campus": "Caserma Ederle",
+            "facility_building_number": null,
+            "table_id": "3-4",
+            "kind": "athletic_field",
+            "document_label": "Campo sportivo (calcio) – Tipo —",
+            "mowing_frequency_text": "30 sfalci/anno (mows per year); mowing season 15 March – 15 November",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 8250,
+            "unit": "sqm",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GE-04 | Campo sportivo (calcio) / Athletic field (soccer) | — | 8.250 | m² | 30 | —"
+            },
+            "confidence": 0.93,
+            "notes": "Italian number format (8.250 m² = 8,250 m²). Maintained to the Type I standard but not included in the Type I hectares (Note 2)."
+          },
+          {
+            "name": "GE-05 Aiuole e siepi / Planting beds and hedges",
+            "campus": "Caserma Ederle",
+            "facility_building_number": null,
+            "table_id": "3-4",
+            "kind": "shrub_bed",
+            "document_label": "Aiuole e siepi",
+            "mowing_frequency_text": null,
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 1420,
+            "unit": "sqm",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GE-05 | Aiuole e siepi / Planting beds and hedges | — | 1.420 | m² | — | —"
+            },
+            "confidence": 0.93,
+            "notes": "Italian number format (1.420 m² = 1,420 m²)."
+          },
+          {
+            "name": "GE-06 Parcheggi / Parking lots (sweeping and litter)",
+            "campus": "Caserma Ederle",
+            "facility_building_number": null,
+            "table_id": "3-4",
+            "kind": "parking",
+            "document_label": "Parcheggi",
+            "mowing_frequency_text": null,
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 18600,
+            "unit": "sqm",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GE-06 | Parcheggi / Parking lots (sweeping and litter) | — | 18.600 | m² | — | —"
+            },
+            "confidence": 0.93,
+            "notes": "Italian number format (18.600 m² = 18,600 m²). Sweeping and litter."
+          },
+          {
+            "name": "GE-07 Marciapiedi e vialetti / Sidewalks and walks",
+            "campus": "Caserma Ederle",
+            "facility_building_number": null,
+            "table_id": "3-4",
+            "kind": "sidewalk",
+            "document_label": "Marciapiedi e vialetti",
+            "mowing_frequency_text": null,
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 6350,
+            "unit": "sqm",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GE-07 | Marciapiedi e vialetti / Sidewalks and walks | — | 6.350 | m² | — | —"
+            },
+            "confidence": 0.93,
+            "notes": "Italian number format (6.350 m² = 6,350 m²)."
+          },
+          {
+            "name": "GE-08 Alberature / Trees (pruning)",
+            "campus": "Caserma Ederle",
+            "facility_building_number": null,
+            "table_id": "3-4",
+            "kind": "tree_canopy",
+            "document_label": "Alberature",
+            "mowing_frequency_text": null,
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 312,
+            "unit": "each",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GE-08 | Alberature / Trees (pruning) | — | 312 | n. | — | —"
+            },
+            "confidence": 0.93,
+            "notes": "312 trees (n. = number of trees), pruning."
+          },
+          {
+            "name": "GD-01 Prato rasato – zona comando / Improved turf, brigade core – Bldg D-01",
+            "campus": "Caserma Del Din",
+            "facility_building_number": "D-01",
+            "table_id": "3-4",
+            "kind": "improved_turf",
+            "document_label": "Tipo I",
+            "mowing_frequency_text": "26 sfalci/anno (mows per year); mowing season 15 March – 15 November",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 1.0333,
+            "unit": "hectares",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GD-01 | Prato rasato – zona comando / Improved turf, brigade core | I | 3,10 | ha | 26 | D-01, D-02, D-03"
+            },
+            "confidence": 0.93,
+            "notes": "split from a shared quantity: 3,10 ha shared by buildings D-01, D-02, D-03 (3 ways)."
+          },
+          {
+            "name": "GD-01 Prato rasato – zona comando / Improved turf, brigade core – Bldg D-02",
+            "campus": "Caserma Del Din",
+            "facility_building_number": "D-02",
+            "table_id": "3-4",
+            "kind": "improved_turf",
+            "document_label": "Tipo I",
+            "mowing_frequency_text": "26 sfalci/anno (mows per year); mowing season 15 March – 15 November",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 1.0333,
+            "unit": "hectares",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GD-01 | Prato rasato – zona comando / Improved turf, brigade core | I | 3,10 | ha | 26 | D-01, D-02, D-03"
+            },
+            "confidence": 0.93,
+            "notes": "split from a shared quantity: 3,10 ha shared by buildings D-01, D-02, D-03 (3 ways)."
+          },
+          {
+            "name": "GD-01 Prato rasato – zona comando / Improved turf, brigade core – Bldg D-03",
+            "campus": "Caserma Del Din",
+            "facility_building_number": "D-03",
+            "table_id": "3-4",
+            "kind": "improved_turf",
+            "document_label": "Tipo I",
+            "mowing_frequency_text": "26 sfalci/anno (mows per year); mowing season 15 March – 15 November",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 1.0334,
+            "unit": "hectares",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GD-01 | Prato rasato – zona comando / Improved turf, brigade core | I | 3,10 | ha | 26 | D-01, D-02, D-03"
+            },
+            "confidence": 0.93,
+            "notes": "split from a shared quantity: 3,10 ha shared by buildings D-01, D-02, D-03 (3 ways)."
+          },
+          {
+            "name": "GD-02 Area semi-migliorata – zona alloggi / Semi-improved, barracks area – Bldg D-05",
+            "campus": "Caserma Del Din",
+            "facility_building_number": "D-05",
+            "table_id": "3-4",
+            "kind": "semi_improved",
+            "document_label": "Tipo II",
+            "mowing_frequency_text": "8 sfalci/anno (mows per year); mowing season 15 March – 15 November",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2.25,
+            "unit": "hectares",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GD-02 | Area semi-migliorata – zona alloggi / Semi-improved, barracks area | II | 6,75 | ha | 8 | D-05, D-06, D-07"
+            },
+            "confidence": 0.93,
+            "notes": "split from a shared quantity: 6,75 ha shared by buildings D-05, D-06, D-07 (3 ways)."
+          },
+          {
+            "name": "GD-02 Area semi-migliorata – zona alloggi / Semi-improved, barracks area – Bldg D-06",
+            "campus": "Caserma Del Din",
+            "facility_building_number": "D-06",
+            "table_id": "3-4",
+            "kind": "semi_improved",
+            "document_label": "Tipo II",
+            "mowing_frequency_text": "8 sfalci/anno (mows per year); mowing season 15 March – 15 November",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2.25,
+            "unit": "hectares",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GD-02 | Area semi-migliorata – zona alloggi / Semi-improved, barracks area | II | 6,75 | ha | 8 | D-05, D-06, D-07"
+            },
+            "confidence": 0.93,
+            "notes": "split from a shared quantity: 6,75 ha shared by buildings D-05, D-06, D-07 (3 ways)."
+          },
+          {
+            "name": "GD-02 Area semi-migliorata – zona alloggi / Semi-improved, barracks area – Bldg D-07",
+            "campus": "Caserma Del Din",
+            "facility_building_number": "D-07",
+            "table_id": "3-4",
+            "kind": "semi_improved",
+            "document_label": "Tipo II",
+            "mowing_frequency_text": "8 sfalci/anno (mows per year); mowing season 15 March – 15 November",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2.25,
+            "unit": "hectares",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GD-02 | Area semi-migliorata – zona alloggi / Semi-improved, barracks area | II | 6,75 | ha | 8 | D-05, D-06, D-07"
+            },
+            "confidence": 0.93,
+            "notes": "split from a shared quantity: 6,75 ha shared by buildings D-05, D-06, D-07 (3 ways)."
+          },
+          {
+            "name": "GD-03 Area incolta – fascia ex aeroporto Dal Molin / Unimproved, former airfield buffer",
+            "campus": "Caserma Del Din",
+            "facility_building_number": null,
+            "table_id": "3-4",
+            "kind": "unimproved",
+            "document_label": "Tipo III",
+            "mowing_frequency_text": "2 sfalci/anno (mows per year); mowing season 15 March – 15 November",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 12.4,
+            "unit": "hectares",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GD-03 | Area incolta – fascia ex aeroporto Dal Molin / Unimproved, former airfield buffer | III | 12,40 | ha | 2 | —"
+            },
+            "confidence": 0.93,
+            "notes": "Former airfield buffer; roads and remaining former airfield pavements are maintained by the host nation and not part of this workload (Note 3)."
+          },
+          {
+            "name": "GD-04 Campi sportivi (2) / Athletic fields (2)",
+            "campus": "Caserma Del Din",
+            "facility_building_number": null,
+            "table_id": "3-4",
+            "kind": "athletic_field",
+            "document_label": "Campi sportivi (2) – Tipo —",
+            "mowing_frequency_text": "30 sfalci/anno (mows per year); mowing season 15 March – 15 November",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 15400,
+            "unit": "sqm",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GD-04 | Campi sportivi (2) / Athletic fields (2) | — | 15.400 | m² | 30 | —"
+            },
+            "confidence": 0.93,
+            "notes": "Two athletic fields printed as one row, 15.400 m² combined (Italian format = 15,400 m²). Maintained to the Type I standard but not included in the Type I hectares (Note 2)."
+          },
+          {
+            "name": "GD-05 Parcheggi / Parking lots (sweeping and litter)",
+            "campus": "Caserma Del Din",
+            "facility_building_number": null,
+            "table_id": "3-4",
+            "kind": "parking",
+            "document_label": "Parcheggi",
+            "mowing_frequency_text": null,
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 24150,
+            "unit": "sqm",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GD-05 | Parcheggi / Parking lots (sweeping and litter) | — | 24.150 | m² | — | —"
+            },
+            "confidence": 0.93,
+            "notes": "Italian number format (24.150 m² = 24,150 m²). Sweeping and litter."
+          },
+          {
+            "name": "GD-06 Alberature / Trees (pruning)",
+            "campus": "Caserma Del Din",
+            "facility_building_number": null,
+            "table_id": "3-4",
+            "kind": "tree_canopy",
+            "document_label": "Alberature",
+            "mowing_frequency_text": null,
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 486,
+            "unit": "each",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GD-06 | Alberature / Trees (pruning) | — | 486 | n. | — | —"
+            },
+            "confidence": 0.93,
+            "notes": "486 trees (n. = number of trees), pruning."
+          },
+          {
+            "name": "GP-01 Prato rasato / Improved turf, U.S. compound – Bldg 12",
+            "campus": "Poggio Renatico (FE)",
+            "facility_building_number": "12",
+            "table_id": "3-4",
+            "kind": "improved_turf",
+            "document_label": "Tipo I",
+            "mowing_frequency_text": "20 sfalci/anno (mows per year); mowing season 15 March – 15 November",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 0.2833,
+            "unit": "hectares",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GP-01 | Prato rasato / Improved turf, U.S. compound | I | 0,85 | ha | 20 | 12, 14, 15"
+            },
+            "confidence": 0.93,
+            "notes": "split from a shared quantity: 0,85 ha shared by buildings 12, 14, 15 (3 ways)."
+          },
+          {
+            "name": "GP-01 Prato rasato / Improved turf, U.S. compound – Bldg 14",
+            "campus": "Poggio Renatico (FE)",
+            "facility_building_number": "14",
+            "table_id": "3-4",
+            "kind": "improved_turf",
+            "document_label": "Tipo I",
+            "mowing_frequency_text": "20 sfalci/anno (mows per year); mowing season 15 March – 15 November",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 0.2833,
+            "unit": "hectares",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GP-01 | Prato rasato / Improved turf, U.S. compound | I | 0,85 | ha | 20 | 12, 14, 15"
+            },
+            "confidence": 0.93,
+            "notes": "split from a shared quantity: 0,85 ha shared by buildings 12, 14, 15 (3 ways)."
+          },
+          {
+            "name": "GP-01 Prato rasato / Improved turf, U.S. compound – Bldg 15",
+            "campus": "Poggio Renatico (FE)",
+            "facility_building_number": "15",
+            "table_id": "3-4",
+            "kind": "improved_turf",
+            "document_label": "Tipo I",
+            "mowing_frequency_text": "20 sfalci/anno (mows per year); mowing season 15 March – 15 November",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 0.2834,
+            "unit": "hectares",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GP-01 | Prato rasato / Improved turf, U.S. compound | I | 0,85 | ha | 20 | 12, 14, 15"
+            },
+            "confidence": 0.93,
+            "notes": "split from a shared quantity: 0,85 ha shared by buildings 12, 14, 15 (3 ways)."
+          },
+          {
+            "name": "GP-02 Parcheggio / Parking lot",
+            "campus": "Poggio Renatico (FE)",
+            "facility_building_number": null,
+            "table_id": "3-4",
+            "kind": "parking",
+            "document_label": "Parcheggio",
+            "mowing_frequency_text": null,
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2300,
+            "unit": "sqm",
+            "source": {
+              "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+              "page": 5,
+              "excerpt": "GP-02 | Parcheggio / Parking lot | — | 2.300 | m² | — | —"
+            },
+            "confidence": 0.93,
+            "notes": "Italian number format (2.300 m² = 2,300 m²)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "set_previous_award",
+      "input": {
+        "incumbent": null,
+        "contract_number": null,
+        "contract_type": null,
+        "total_value": null,
+        "period_months": null,
+        "annual_value": null,
+        "spend_to_date": null,
+        "spend_period_months": null,
+        "award_year": null,
+        "source": {
+          "file": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf",
+          "page": null,
+          "excerpt": "No incumbent / previous contract information in the package (single document: Section J Att 0004, TE-3 facility list and grounds areas)."
+        },
+        "confidence": 0.9,
+        "notes": "Nothing stated: the package contains only TE-3 (facility list and grounds areas); no incumbent name, contract number, value, period or spend appears."
+      },
+      "pass": 0
+    },
+    {
+      "name": "finish",
+      "input": {
+        "summary": "USAG Italy custodial and grounds (W912PF-27-R-0012, TE-3): 32 facilities registered in square meters across three sites - Caserma Ederle (Table 3-1, 17 rows, 36,783.2 SM gross incl. Bldg 71 excluded USO ITALIANO and Bldg 222 DA DEMOLIRE FY27), Caserma Del Din (Table 3-2, 12 rows, 39,817.1 SM, Italian number format), Poggio Renatico (FE) (Table 3-3, 3 rows, 5,380 SM). 30 in scope = 80,482.8 SM gross, matching the TE-3 summary. Grounds (Table 3-4, 16 rows): 31.87 ha turf (Type I/II/III), 76,470 m2 of athletic fields, beds, parking and walks, 798 trees; shared Type I/II turf rows split evenly across the named buildings. Contract 1 base + 4 option years; no incumbent data in the package.",
+        "unresolved": [
+          "3-3 (Poggio Renatico): no cleanable area recorded by the host nation; per General Note 4 the gross area applies (cleanable left null).",
+          "3-2 (Caserma Del Din): buildings D-04, D-08 and D-13 are mentioned in the table note as parking structures and utility buildings outside the custodial scope; no rows or areas printed, so not registered.",
+          "3-3 (Poggio Renatico): Italian Air Force buildings on the site that are not listed are excluded (table note); none named.",
+          "3-4: 'Superficie complessiva Caserma Ederle - 613.260 m2' is a total site area for information only ('Not a grounds workload quantity'); not registered. Table 3-4 printed totals (31,87 ha; 76.470 m2; 798 trees) are in ha / m2 / each, so no printed_total_gross_area was declared for it.",
+          "3-4: GD-04 'Campi sportivi (2)' is one printed row of 15.400 m2 covering two fields; registered as one area.",
+          "No previous / incumbent contract information appears in the package."
+        ]
+      },
+      "pass": 0
+    }
+  ]
+}

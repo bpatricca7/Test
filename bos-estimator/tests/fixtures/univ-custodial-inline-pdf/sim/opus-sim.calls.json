@@ -1,0 +1,1148 @@
+{
+  "model": "opus-sim",
+  "passes": [
+    [
+      "rfp-27-04-custodial.pdf"
+    ]
+  ],
+  "calls": [
+    {
+      "name": "set_site_info",
+      "input": {
+        "installation_name": "Lakeridge State College",
+        "location": "Winter Haven Campus (4100 Lake Region Boulevard, Winter Haven, FL 33881), Lakeland Campus (1850 Lakeridge Parkway, Lakeland, FL 33805) and centers in Lake Wales, Lakeland, Bartow and Haines City, Florida",
+        "solicitation": "RFP #27-04",
+        "contract_name": "Custodial Services",
+        "climate_zone": "hot_humid",
+        "growing_season_weeks": null,
+        "contract_years": 5,
+        "notes": "Initial term 3 years beginning July 1, 2027 with two 1-year renewal options (max 5 years). Custodial only, no grounds or dining scope. Cleaning to APPA levels 1-3 per building. Also required: 1 day porter at Winter Haven Campus and 1 at Lakeland Campus M-F 7:00 a.m.-3:30 p.m. (in price per sf); 1 on-site supervisor per campus each evening shift; project manager M-F; event services ~400 hours/year billed hourly. Periodic floor care: scrub-and-recoat resilient tile 2x/year, strip-and-refinish 1x/year. Florida minimum wage $15.00/hr effective Sept 30, 2026. Climate inferred from Central Florida location; growing season not stated (no grounds scope)."
+      },
+      "pass": 0
+    },
+    {
+      "name": "declare_tables",
+      "input": {
+        "tables": [
+          {
+            "table_id": "Table 2-1",
+            "title": "List of Buildings to be used for Billing Purposes",
+            "kind": "facilities",
+            "file": "rfp-27-04-custodial.pdf",
+            "pages": "2-3",
+            "row_count": 30,
+            "printed_total_gross_area": 880522,
+            "area_unit": "sf"
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "Table 2-1",
+            "campus": "Winter Haven Campus",
+            "building_number": "WAD",
+            "name": "Administration",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 47863,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 2,
+              "excerpt": "1 | WAD – Administration | 47,863 | 2 | 2 | M–F"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 2."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Winter Haven Campus",
+            "building_number": "WCH",
+            "name": "Club House (Restrooms Only)",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 2000,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–Sa",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 2,
+              "excerpt": "2 | WCH – Club House (Restrooms Only) | 2,000 | 1 | 2 | M–Sa"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 2. M–Sa = Monday–Friday evening cleaning plus an additional Saturday shift 7:00 a.m.–3:30 p.m. (Sec. 2.4.1); no 6-day level available, recorded as daily_5. Restrooms only; 2,000 SF is the billing gross area printed."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Winter Haven Campus",
+            "building_number": "WHS",
+            "name": "Health Sciences",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 52316,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 2,
+              "excerpt": "3 | WHS – Health Sciences | 52,316 | 2 | 1 | M–F"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 1."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Winter Haven Campus",
+            "building_number": "WLL",
+            "name": "Library and Learning Commons",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 38420,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–Sa",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 2,
+              "excerpt": "4 | WLL – Library and Learning Commons | 38,420 | 2 | 2 | M–Sa"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 2. M–Sa = Monday–Friday evening cleaning plus an additional Saturday shift 7:00 a.m.–3:30 p.m. (Sec. 2.4.1); no 6-day level available, recorded as daily_5."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Winter Haven Campus",
+            "building_number": "WRH",
+            "name": "Rehabilitative Health",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 6030,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "5 | WRH – Rehabilitative Health | 6,030 | 1 | 2 | M–F"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 2."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Winter Haven Campus",
+            "building_number": "WSC",
+            "name": "Science Center (Renovation)",
+            "status": "excluded",
+            "status_reason": "Footnote 3: \"The WSC Science Center is under renovation... WSC is not included in the Winter Haven Campus subtotal and shall not be priced until the Addendum is issued.\"",
+            "category": "lab",
+            "gross_area": null,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": true,
+            "estimated_gross_area": 42700,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "6 | WSC – Science Center (Renovation) | TBD – see Addendum3 | 2 | 2 | M–F"
+            },
+            "confidence": 0.5,
+            "notes": "APPA cleaning Level 2. Area printed as \"TBD – see Addendum\"; square footage and return-to-service date to be issued by Addendum. Estimate 42,700 SF = average of the other 2-story Winter Haven academic buildings (WAD, WHS, WLL, WST, WFA)."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Winter Haven Campus",
+            "building_number": "WST",
+            "name": "Student Center",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 33780,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "7 days",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "7 | WST – Student Center | 33,780 | 2 | 2 | 7 days"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 2. \"7 days\" = every day of the year except College holidays (Sec. 2.3.1)."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Winter Haven Campus",
+            "building_number": "WFA",
+            "name": "Fine Arts and Theatre",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 41265,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "8 | WFA – Fine Arts and Theatre | 41,265 | 2 | 2 | M–F"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 2."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Winter Haven Campus",
+            "building_number": "WTC",
+            "name": "Technology Center",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 28940,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "9 | WTC – Technology Center | 28,940 | 1 | 2 | M–F"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 2."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Winter Haven Campus",
+            "building_number": "WGY",
+            "name": "Gymnasium and Fitness Center",
+            "status": null,
+            "status_reason": null,
+            "category": "fitness",
+            "gross_area": 36115,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "7 days",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "10 | WGY – Gymnasium and Fitness Center | 36,115 | 1 | 2 | 7 days"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 2. \"7 days\" = every day of the year except College holidays (Sec. 2.3.1)."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Winter Haven Campus",
+            "building_number": "WCD",
+            "name": "Child Development Center",
+            "status": null,
+            "status_reason": null,
+            "category": "child_care",
+            "gross_area": 7920,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "11 | WCD – Child Development Center | 7,920 | 1 | 1 | M–F"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 1. Staff require Level 2 background screening (Sec. 4.2)."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Winter Haven Campus",
+            "building_number": "WBS",
+            "name": "Bookstore and Central Receiving",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 9850,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_frequency_text": "M/W/F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "12 | WBS – Bookstore and Central Receiving | 9,850 | 1 | 3 | M/W/F"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 3."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Winter Haven Campus",
+            "building_number": "WFO",
+            "name": "Facilities Operations and Grounds Maintenance Shop",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 12604,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_frequency_text": "T/Th",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "13 | WFO – Facilities Operations and Grounds Maintenance Shop | 12,604 | 1 | 3 | T/Th"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 3."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Winter Haven Campus",
+            "building_number": null,
+            "name": "Seven (7) Modular Buildings – Winter Haven Campus",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 7502,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_frequency_text": "M/W/F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "14 | Seven (7) Modular Buildings – Winter Haven Campus | 7,502 | 1 | 3 | M/W/F"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 3. One billing line for 7 modular buildings at combined SF; modules not separately listed (Sec. 2.3.3: each 960 to 1,124 SF)."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Winter Haven Campus",
+            "building_number": "COL",
+            "name": "Chain of Lakes (COL)",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 14540,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "15 | COL – Chain of Lakes (COL) | 14,540 | 2 | 2 | M–F"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 2. Houses a collegiate high school; Jessica Lunsford Act screening (Sec. 4.2)."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Winter Haven Campus",
+            "building_number": "CPS/ITB",
+            "name": "Center for Public Safety Immersive Training Building",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 101488,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–Sa",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "16 | CPS/ITB – Center for Public Safety Immersive Training Building | 101,488 | 2 | 2 | M–Sa"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 2. M–Sa = Monday–Friday evening cleaning plus an additional Saturday shift 7:00 a.m.–3:30 p.m. (Sec. 2.4.1); no 6-day level available, recorded as daily_5."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "Table 2-1",
+            "campus": "Lakeland Campus",
+            "building_number": "LTB",
+            "name": "Technology Building",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 127050,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–Sa",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "17 | LTB – Technology Building | 127,050 | 3 | 2 | M–Sa"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 2. M–Sa = Monday–Friday evening cleaning plus an additional Saturday shift 7:00 a.m.–3:30 p.m. (Sec. 2.4.1); no 6-day level available, recorded as daily_5."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Lakeland Campus",
+            "building_number": "LAC",
+            "name": "Academic Center",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 72852,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "18 | LAC – Academic Center | 72,852 | 3 | 2 | M–F"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 2."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Lakeland Campus",
+            "building_number": "LHP",
+            "name": "Health Professions Building",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 64210,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "19 | LHP – Health Professions Building | 64,210 | 2 | 1 | M–F"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 1."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Lakeland Campus",
+            "building_number": "LLB",
+            "name": "Library",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 24860,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–Sa",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "20 | LLB – Library | 24,860 | 2 | 2 | M–Sa"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 2. M–Sa = Monday–Friday evening cleaning plus an additional Saturday shift 7:00 a.m.–3:30 p.m. (Sec. 2.4.1); no 6-day level available, recorded as daily_5."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Lakeland Campus",
+            "building_number": "LSS",
+            "name": "Student Services",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 18345,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "21 | LSS – Student Services | 18,345 | 1 | 2 | M–F"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 2."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Lakeland Campus",
+            "building_number": "LCT",
+            "name": "Conference and Training Center",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 15300,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "22 | LCT – Conference and Training Center | 15,300 | 1 | 2 | M–F"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 2."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Lakeland Campus",
+            "building_number": null,
+            "name": "Four (4) Modular Buildings – LMA, LMB, LMC, LMD",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 7752,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_frequency_text": "M/W/F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "23 | Four (4) Modular Buildings – LMA, LMB, LMC, LMD | 7,752 | 1 | 3 | M/W/F"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 3. One billing line for modular buildings LMA, LMB, LMC and LMD at combined SF (Sec. 2.3.3: 1,938 SF each)."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Lakeland Campus",
+            "building_number": "LPP",
+            "name": "Physical Plant",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 6480,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_frequency_text": "1x/wk",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "24 | LPP – Physical Plant | 6,480 | 1 | 3 | 1x/wk"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 3. \"1x/wk\" = once per week on a day designated by the Facilities Director (Sec. 2.3.1)."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Centers",
+            "building_number": null,
+            "name": "JD Alexander Center",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 16143,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "25 | JD Alexander Center | 16,143 | 3 | 2 | M–F"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 2. 210 East Park Avenue, Lake Wales (Sec. 2.3.4)."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Centers",
+            "building_number": null,
+            "name": "Lake Wales Arts Center",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 12422,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_frequency_text": "T/Th",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "26 | Lake Wales Arts Center | 12,422 | 1 | 2 | T/Th"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 2. 1150 Scenic Highway South, Lake Wales (Sec. 2.3.4)."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Centers",
+            "building_number": null,
+            "name": "Flightline Aviation Center (Aerospace and Aviation Programs)",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 29600,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "27 | Flightline Aviation Center (Aerospace and Aviation Programs) | 29,600 | 2 | 2 | M–F"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 2. 4170 Hangar Row, Lakeland (Sec. 2.3.4)."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Centers",
+            "building_number": null,
+            "name": "Bartow Center",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 22560,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "28 | Bartow Center | 22,560 | 2 | 2 | M–F"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 2. 2250 Mosaic Parkway, Bartow (Sec. 2.3.4)."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Centers",
+            "building_number": null,
+            "name": "Bartow Advanced Manufacturing Center",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 14075,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_frequency_text": "M/W/F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "29 | Bartow Advanced Manufacturing Center | 14,075 | 1 | 2 | M/W/F"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 2. 2290 Mosaic Parkway, Bartow (Sec. 2.3.4)."
+          },
+          {
+            "table_id": "Table 2-1",
+            "campus": "Centers",
+            "building_number": null,
+            "name": "Haines City Center (Leased Suite)",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 8240,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_frequency_text": "1x/wk",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 3,
+              "excerpt": "30 | Haines City Center (Leased Suite) | 8,240 | 1 | 3 | 1x/wk"
+            },
+            "confidence": 0.95,
+            "notes": "APPA cleaning Level 3. \"1x/wk\" = once per week on a day designated by the Facilities Director (Sec. 2.3.1). 31 East Hinson Avenue, Suite 4, Haines City (Sec. 2.3.4)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": null,
+            "campus": "Winter Haven Campus",
+            "building_number": "WPE",
+            "name": "Physical Education Annex",
+            "status": "demolished",
+            "status_reason": "Sec. 2.3.2: \"Building WPE (Physical Education Annex), which was demolished in June 2025\" is not part of this solicitation.",
+            "category": "fitness",
+            "gross_area": null,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": true,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 4,
+              "excerpt": "Sec. 2.3.2: \"Building WPE (Physical Education Annex), which was demolished in June 2025\" is not part of this solicitation."
+            },
+            "confidence": 0.8,
+            "notes": "Mentioned in text only (Facilities Not Included); no area printed. Campus inferred from the W- building code prefix."
+          },
+          {
+            "table_id": null,
+            "campus": "Lakeland Campus",
+            "building_number": "LCH",
+            "name": "Lakeland Collegiate High School building",
+            "status": "excluded",
+            "status_reason": "Sec. 2.3.2: \"the Lakeland Collegiate High School building (LCH), which is cleaned by the County School Board under a separate agreement\" is not part of this solicitation.",
+            "category": "education",
+            "gross_area": null,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": true,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 4,
+              "excerpt": "Sec. 2.3.2: \"the Lakeland Collegiate High School building (LCH), which is cleaned by the County School Board under a separate agreement\" is not part of this solicitation."
+            },
+            "confidence": 0.8,
+            "notes": "Mentioned in text only; no area printed. Campus inferred from name and L- code prefix."
+          },
+          {
+            "table_id": null,
+            "campus": "Winter Haven Campus",
+            "building_number": "WEP",
+            "name": "Winter Haven Campus Central Energy Plant",
+            "status": "excluded",
+            "status_reason": "Sec. 2.3.2: \"the Winter Haven Campus Central Energy Plant (WEP), which is maintained by College staff\" is not part of this solicitation.",
+            "category": "other",
+            "gross_area": null,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": true,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-27-04-custodial.pdf",
+              "page": 4,
+              "excerpt": "Sec. 2.3.2: \"the Winter Haven Campus Central Energy Plant (WEP), which is maintained by College staff\" is not part of this solicitation."
+            },
+            "confidence": 0.8,
+            "notes": "Mentioned in text only; no area printed."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "set_previous_award",
+      "input": {
+        "incumbent": "Meridian Building Care, Inc.",
+        "contract_number": "LSC-22-117",
+        "contract_type": null,
+        "total_value": null,
+        "period_months": null,
+        "annual_value": 2186400,
+        "spend_to_date": null,
+        "spend_period_months": null,
+        "award_year": 2022,
+        "source": {
+          "file": "rfp-27-04-custodial.pdf",
+          "page": 2,
+          "excerpt": "Meridian Building Care, Inc. under Contract No. LSC-22-117, awarded... April 2022... current contract expires June 30, 2027. The current annual contract amount is $2,186,400 ($182,200 per month)"
+        },
+        "confidence": 0.95,
+        "notes": "Initial 3-year term from July 1, 2022 plus two 1-year renewals, both exercised; expires June 30, 2027 (60 months total). Current annual amount $2,186,400 ($182,200/month), priced per square foot per campus/center; total contract value not stated. Contract type not stated (monthly fee at price per SF)."
+      },
+      "pass": 0
+    },
+    {
+      "name": "finish",
+      "input": {
+        "summary": "Lakeridge State College RFP #27-04 Custodial Services: registered all 30 rows of Table 2-1 (16 Winter Haven Campus, 8 Lakeland Campus, 6 Centers; 880,522 SF printed grand total) with floors, APPA level and days of service; WSC Science Center recorded as excluded (under renovation, area TBD by Addendum, not priced). Also registered the three buildings Sec. 2.3.2 lists as not included (WPE demolished, LCH and WEP excluded). No grounds or dining scope in the package. Incumbent Meridian Building Care, Inc., Contract LSC-22-117, current annual amount $2,186,400.",
+        "unresolved": [
+          "Table 2-1 item 6 WSC – Science Center: area printed as 'TBD – see Addendum'; not in the subtotal and not priced until an Addendum issues its square footage and return-to-service date (estimate 42,700 SF recorded, status excluded).",
+          "WPE, LCH and WEP are named only in Sec. 2.3.2 (Facilities Not Included) with no area; registered out of scope without table_id.",
+          "'M–Sa' buildings (WCH, WLL, CPS/ITB, LTB, LLB) get a 6th (Saturday day) shift; no 6-day service level exists, recorded as daily_5 with the text 'M–Sa'.",
+          "APPA cleaning level (1–3) per building is recorded only in notes; no field for it.",
+          "Modular groups (items 14 and 23) are single billing lines at combined SF; individual module areas not listed (WH modules 960–1,124 SF each; LMA–LMD 1,938 SF each)."
+        ]
+      },
+      "pass": 0
+    }
+  ]
+}

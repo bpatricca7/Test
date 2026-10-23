@@ -1,0 +1,31 @@
+Solicitation W9124D-26-R-0019, Custodial Services, Fort Calder, Kentucky
+QUESTIONS AND ANSWERS NO. 1
+Date: 12 June 2026
+Issued by: MICC-Fort Calder, 1450 Logistics Way, Bldg 110, Fort Calder, KY 40199-5000
+The following questions were received in response to Solicitation W9124D-26-R-0019 by the 2 June 2026 question deadline established by Amendment 0001, including questions raised at the 28 May 2026 site visit. Questions are presented as submitted, and the names of the firms that submitted them are not disclosed. The Government’s responses are incorporated into the solicitation by Amendment 0002. Where a response states that a solicitation document is changed or corrected, the change is effective as stated in the response.
+GENERAL
+
+No. | Solicitation Reference | Question | Government Response
+1 | General | Who is the incumbent and what is the current contract value? | The incumbent contractor is Ostrander Facility Group, LLC, performing under contract W9124D-21-C-0007, a firm-fixed-price contract awarded 24 September 2021 with a 12-month base period and four 12-month option periods. The contract is currently in Option Period 4, which ends 30 September 2026. Total obligations for FY2025 were $4,812,330 (1 October 2024 through 30 September 2025). The Government will not release the incumbent’s staffing levels, labor rates or CLIN pricing.
+2 | General | Can the Govt provide the # of FTEs the incumbent currently uses to perform the work? | No. The Government elects not to disclose the incumbent’s staffing. Offerors shall propose staffing based on the PWS and TE-1, as amended.
+3 | General | How much of the FY2025 obligation amount was for over-and-above work? | Over-and-above work orders issued in FY2025 totaled $186,415. This amount is included in the FY2025 obligations stated in the response to Question 1; it is not in addition to that amount.
+
+TECHNICAL EXHIBIT 1 (TE-1), CUSTODIAL FACILITY LIST
+
+No. | Solicitation Reference | Question | Government Response
+4 | TE-1, Item 17, Bldg 2101 | TE-1 shows Bldg 2101 (Physical Fitness Center) at 54,780 GSF. At the site visit the racquetball courts on the east side of the building were gone. Is 54,780 still correct and does it include the natatorium? | No. The 54,780 GSF figure included the 1,800 SF racquetball court wing, which was demolished in October 2025 but had not yet been removed from the real property record. Amendment 0002 revises Building 2101 to 52,980 GSF. The natatorium deck is included and is cleaned (TE-1, footnote 4).
+5 | TE-1, Item 7, Bldg 118 | TE-1 footnote 3 says the Building 118 testing function will consolidate into Building 124. Will Building 118 still be serviced under the new contract? | No. Building 118 is deleted from the requirement in its entirety by Amendment 0002.
+6 | TE-1, Item 13, Bldg 1207 | TE-1 shows Building 1207 (Company Operations Facility) as one floor, but at the site visit we observed a second-floor administrative mezzanine with offices and two latrines. Please confirm the number of floors. | The Government concurs. Building 1207 has two (2) floors. The number of floors for Building 1207 in TE-1 is corrected from 1 to 2. The gross square footage of 14,880 GSF already includes the second floor and is unchanged.
+7 | TE-1, Note a | Note a lists Bldg 131 (Vehicle Storage). Will the Government be adding Bldg 131 to the requirement | No. Building 131 (6,400 SF) is unheated vehicle storage maintained by the using unit and is not part of this requirement.
+8 | TE-1, Bldgs 1218 and 2145 | Are the facilities being added by amendment currently occupied? | Building 1218 (Battalion Headquarters, 3rd Battalion) has a beneficial occupancy date of 1 August 2026. Building 2145 (Soldier Readiness Processing Center) is occupied. Both facilities are added to TE-1 by Amendment 0002 and shall be serviced beginning on the first day of the base period.
+9 | TE-1, Item 25, Bldg 2133 | Bldg 2133 (VCC) is shown as Daily (7 Days). Is service req&rsquo;d on Federal holidays? | Yes. Daily (7 Days) service includes weekends and Federal holidays (PWS paragraph 1.6). No change to TE-1.
+10 | TE-1, Item 16, Bldg 1220 | Are the maintenance bays in Building 1220 (TEMF) included? | No. Only the 11,960 GSF administrative core is in scope (TE-1, footnote 2). The maintenance bays are cleaned by the using unit.
+11 | TE-1, Item 22, Bldg 2120 | Is the entire 44,300 GSF of Bldg 2120 (CIF) serviced weekly, to include the warehouse floor? | Yes. The warehouse floor is swept and spot-mopped weekly. The office and issue areas receive the full weekly service in PWS paragraph 5.2.
+
+SECTION L, INSTRUCTIONS TO OFFERORS
+
+No. | Solicitation Reference | Question | Government Response
+12 | Section L, para L.2 | Request the Government extend the proposal due date. Offerors will need time to price the revised facility list. | Yes. Amendment 0002 extends the date for receipt of proposals to 10 July 2026, 2:00 PM Eastern Time.
+13 | PWS para 1.4 | Is phase-in priced separately or included in the base year? | No. The 30-day phase-in period (1 September 2026 through 30 September 2026) has no separate CLIN. Offerors shall include phase-in costs in the base period price.
+
+END OF QUESTIONS AND ANSWERS NO. 1

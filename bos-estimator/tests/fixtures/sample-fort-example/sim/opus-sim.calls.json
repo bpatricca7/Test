@@ -1,0 +1,1092 @@
+{
+  "model": "opus-sim",
+  "passes": [
+    [
+      "pws.pdf"
+    ]
+  ],
+  "calls": [
+    {
+      "name": "set_site_info",
+      "input": {
+        "installation_name": "Fort Example",
+        "location": "Fort Example, Kentucky",
+        "solicitation": "W912QR-26-R-0042",
+        "contract_name": "Base Operations Support (BOS) Services — Fort Example, Kentucky",
+        "climate_zone": "temperate",
+        "growing_season_weeks": 30,
+        "contract_years": 5,
+        "notes": "Base period of twelve (12) months and four (4) one-year option periods (PWS 1.2). Temperate climate, growing season approx. 30 weeks (April through October) (PWS 1.3). Snow and ice removal for walks and parking as needed, historical average 6 events per year. Administrative facilities cleaned after normal duty hours (1700–0130); barracks common areas, Fitness Center, Health Clinic and Dining Facility require seven-day-per-week service (PWS 1.4)."
+      },
+      "pass": 0
+    },
+    {
+      "name": "declare_tables",
+      "input": {
+        "tables": [
+          {
+            "table_id": "TE-3",
+            "title": "Technical Exhibit 3 — Custodial Workload",
+            "kind": "facilities",
+            "file": "pws.pdf",
+            "pages": "1-2",
+            "row_count": 16,
+            "printed_total_gross_area": null,
+            "area_unit": "sf"
+          },
+          {
+            "table_id": "TE-4",
+            "title": "Technical Exhibit 4 — Grounds Workload",
+            "kind": "grounds",
+            "file": "pws.pdf",
+            "pages": "2",
+            "row_count": 11,
+            "printed_total_gross_area": null,
+            "area_unit": "sf"
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "TE-3",
+            "campus": null,
+            "building_number": "1201",
+            "name": "Brigade Headquarters",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 45200,
+            "cleanable_area": 38400,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": 24,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (5 days)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "pws.pdf",
+              "page": 1,
+              "excerpt": "Bldg 1201 | Brigade Headquarters | Administrative | 2 | 45,200 SF | 38,400 SF | 24 fixtures | Daily (5 days)"
+            },
+            "confidence": 0.97,
+            "notes": null
+          },
+          {
+            "table_id": "TE-3",
+            "campus": null,
+            "building_number": "1205",
+            "name": "Battalion Headquarters Annex",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 18750,
+            "cleanable_area": 15900,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 10,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (5 days)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "pws.pdf",
+              "page": 1,
+              "excerpt": "Bldg 1205 | Battalion Headquarters Annex | Administrative | 1 | 18,750 SF | 15,900 SF | 10 fixtures | Daily (5 days)"
+            },
+            "confidence": 0.97,
+            "notes": null
+          },
+          {
+            "table_id": "TE-3",
+            "campus": null,
+            "building_number": "1310",
+            "name": "Soldier Service Center (DHR / Finance)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 62000,
+            "cleanable_area": 52700,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": {
+              "total": 32,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (5 days)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "pws.pdf",
+              "page": 1,
+              "excerpt": "Bldg 1310 | Soldier Service Center (DHR / Finance) | Administrative | 3 | 62,000 SF | 52,700 SF | 32 fixtures | Daily (5 days)"
+            },
+            "confidence": 0.97,
+            "notes": null
+          },
+          {
+            "table_id": "TE-3",
+            "campus": null,
+            "building_number": "2402",
+            "name": "Barracks, Enlisted (Common Areas Only)",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 96000,
+            "cleanable_area": 28800,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 4,
+            "fixtures": {
+              "total": 64,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "Daily (7 days)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "pws.pdf",
+              "page": 1,
+              "excerpt": "Bldg 2402 | Barracks, Enlisted (Common Areas Only) | Barracks | 4 | 96,000 SF | 28,800 SF | 64 fixtures | Daily (7 days)"
+            },
+            "confidence": 0.97,
+            "notes": "Common areas only per facility name; cleanable SF reflects common areas."
+          },
+          {
+            "table_id": "TE-3",
+            "campus": null,
+            "building_number": "2404",
+            "name": "Barracks, Enlisted (Common Areas Only)",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 96000,
+            "cleanable_area": 28800,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 4,
+            "fixtures": {
+              "total": 64,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "Daily (7 days)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "pws.pdf",
+              "page": 1,
+              "excerpt": "Bldg 2404 | Barracks, Enlisted (Common Areas Only) | Barracks | 4 | 96,000 SF | 28,800 SF | 64 fixtures | Daily (7 days)"
+            },
+            "confidence": 0.97,
+            "notes": "Common areas only per facility name; cleanable SF reflects common areas."
+          },
+          {
+            "table_id": "TE-3",
+            "campus": null,
+            "building_number": "2410",
+            "name": "Dining Facility (Warrior Restaurant)",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 28500,
+            "cleanable_area": 25600,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 12,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "Daily (7 days)",
+            "scope": [
+              "custodial",
+              "floor_care",
+              "dining"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "pws.pdf",
+              "page": 1,
+              "excerpt": "Bldg 2410 | Dining Facility (Warrior Restaurant) | Dining | 1 | 28,500 SF | 25,600 SF | 12 fixtures | Daily (7 days)"
+            },
+            "confidence": 0.97,
+            "notes": "Full food service also required (PWS Section 7); dining workload registered separately."
+          },
+          {
+            "table_id": "TE-3",
+            "campus": null,
+            "building_number": "3105",
+            "name": "Consolidated Health Clinic",
+            "status": null,
+            "status_reason": null,
+            "category": "medical",
+            "gross_area": 54300,
+            "cleanable_area": 48900,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": 40,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "Daily (7 days)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "pws.pdf",
+              "page": 1,
+              "excerpt": "Bldg 3105 | Consolidated Health Clinic | Medical | 2 | 54,300 SF | 48,900 SF | 40 fixtures | Daily (7 days)"
+            },
+            "confidence": 0.97,
+            "notes": null
+          },
+          {
+            "table_id": "TE-3",
+            "campus": null,
+            "building_number": "3120",
+            "name": "Dental Clinic",
+            "status": null,
+            "status_reason": null,
+            "category": "medical",
+            "gross_area": 14200,
+            "cleanable_area": 12800,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 12,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (5 days)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "pws.pdf",
+              "page": 1,
+              "excerpt": "Bldg 3120 | Dental Clinic | Medical | 1 | 14,200 SF | 12,800 SF | 12 fixtures | Daily (5 days)"
+            },
+            "confidence": 0.97,
+            "notes": null
+          },
+          {
+            "table_id": "TE-3",
+            "campus": null,
+            "building_number": "4001",
+            "name": "Physical Fitness Center",
+            "status": null,
+            "status_reason": null,
+            "category": "fitness",
+            "gross_area": 48000,
+            "cleanable_area": 43200,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 36,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "Daily (7 days)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Bldg 4001 | Physical Fitness Center | Fitness | 1 | 48,000 SF | 43,200 SF | 36 fixtures | Daily (7 days)"
+            },
+            "confidence": 0.97,
+            "notes": null
+          },
+          {
+            "table_id": "TE-3",
+            "campus": null,
+            "building_number": "4210",
+            "name": "Child Development Center",
+            "status": null,
+            "status_reason": null,
+            "category": "child_care",
+            "gross_area": 22400,
+            "cleanable_area": 20200,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 30,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (5 days)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Bldg 4210 | Child Development Center | Child Care | 1 | 22,400 SF | 20,200 SF | 30 fixtures | Daily (5 days)"
+            },
+            "confidence": 0.97,
+            "notes": null
+          },
+          {
+            "table_id": "TE-3",
+            "campus": null,
+            "building_number": "4330",
+            "name": "Education Center and Library",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 36800,
+            "cleanable_area": 31300,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": 18,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (5 days)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Bldg 4330 | Education Center and Library | Education | 2 | 36,800 SF | 31,300 SF | 18 fixtures | Daily (5 days)"
+            },
+            "confidence": 0.97,
+            "notes": null
+          },
+          {
+            "table_id": "TE-3",
+            "campus": null,
+            "building_number": "4500",
+            "name": "Post Chapel and Religious Education",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 16900,
+            "cleanable_area": 14400,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 8,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_frequency_text": "3x per week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Bldg 4500 | Post Chapel and Religious Education | Community | 1 | 16,900 SF | 14,400 SF | 8 fixtures | 3x per week"
+            },
+            "confidence": 0.97,
+            "notes": null
+          },
+          {
+            "table_id": "TE-3",
+            "campus": null,
+            "building_number": "5100",
+            "name": "Central Issue Facility Warehouse",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 82000,
+            "cleanable_area": 24600,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 6,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_frequency_text": "2x per week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Bldg 5100 | Central Issue Facility Warehouse | Warehouse | 1 | 82,000 SF | 24,600 SF | 6 fixtures | 2x per week"
+            },
+            "confidence": 0.97,
+            "notes": null
+          },
+          {
+            "table_id": "TE-3",
+            "campus": null,
+            "building_number": "5230",
+            "name": "Vehicle Maintenance Shop (TMP)",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 44000,
+            "cleanable_area": 17600,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 8,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_frequency_text": "2x per week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Bldg 5230 | Vehicle Maintenance Shop (TMP) | Maintenance | 1 | 44,000 SF | 17,600 SF | 8 fixtures | 2x per week"
+            },
+            "confidence": 0.97,
+            "notes": null
+          },
+          {
+            "table_id": "TE-3",
+            "campus": null,
+            "building_number": "6010",
+            "name": "Aviation Hangar 1 (Shops and Admin Areas)",
+            "status": null,
+            "status_reason": null,
+            "category": "hangar",
+            "gross_area": 120000,
+            "cleanable_area": 30000,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 10,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_frequency_text": "Weekly",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Bldg 6010 | Aviation Hangar 1 (Shops and Admin Areas) | Hangar | 1 | 120,000 SF | 30,000 SF | 10 fixtures | Weekly"
+            },
+            "confidence": 0.97,
+            "notes": "Custodial limited to shops and admin areas per facility name; cleanable SF reflects those areas."
+          },
+          {
+            "table_id": "TE-3",
+            "campus": null,
+            "building_number": "7020",
+            "name": "Range Control and Simulation Center",
+            "status": null,
+            "status_reason": null,
+            "category": "lab",
+            "gross_area": 26500,
+            "cleanable_area": 22500,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": 12,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (5 days)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Bldg 7020 | Range Control and Simulation Center | Laboratory | 2 | 26,500 SF | 22,500 SF | 12 fixtures | Daily (5 days)"
+            },
+            "confidence": 0.97,
+            "notes": null
+          },
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "2410",
+            "name": "Dining Facility (Warrior Restaurant)",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": null,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": null,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "dining"
+            ],
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": null,
+              "meals_per_day": 2650,
+              "meal_period_count": 4,
+              "days_per_week": 7,
+              "seats": 450,
+              "kitchen_sqft": 11000,
+              "dining_room_sqft": 12500,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "7.2 Workload. The facility serves an average of 2,650 meals per day across four meal periods (breakfast, lunch, dinner, and midnight meal), seven days per week, 365 days per year."
+            },
+            "confidence": 0.95,
+            "notes": "PWS 7.1/7.2 dining workload (paragraph, not a table). Four meal periods: breakfast, lunch, dinner, midnight meal; 365 days per year. Seating 450; kitchen and serving area approx. 11,000 SF; dining room approx. 12,500 SF. No per-period headcounts printed, so the stated daily total is used."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_grounds",
+      "input": {
+        "areas": [
+          {
+            "name": "Improved grounds, cantonment area — Bldg 1201 share",
+            "campus": null,
+            "facility_building_number": "1201",
+            "table_id": "TE-4",
+            "kind": "improved_turf",
+            "document_label": "Improved grounds",
+            "mowing_frequency_text": "Improved grounds shall be mowed weekly during the growing season",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 14.166667,
+            "unit": "acres",
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Improved grounds, cantonment area (Bldgs 1201, 1205, 1310 vicinity) | 42.5 acres improved"
+            },
+            "confidence": 0.9,
+            "notes": "split from a shared quantity: 42.5 acres shared evenly by Bldgs 1201, 1205, 1310."
+          },
+          {
+            "name": "Improved grounds, cantonment area — Bldg 1205 share",
+            "campus": null,
+            "facility_building_number": "1205",
+            "table_id": "TE-4",
+            "kind": "improved_turf",
+            "document_label": "Improved grounds",
+            "mowing_frequency_text": "Improved grounds shall be mowed weekly during the growing season",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 14.166667,
+            "unit": "acres",
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Improved grounds, cantonment area (Bldgs 1201, 1205, 1310 vicinity) | 42.5 acres improved"
+            },
+            "confidence": 0.9,
+            "notes": "split from a shared quantity: 42.5 acres shared evenly by Bldgs 1201, 1205, 1310."
+          },
+          {
+            "name": "Improved grounds, cantonment area — Bldg 1310 share",
+            "campus": null,
+            "facility_building_number": "1310",
+            "table_id": "TE-4",
+            "kind": "improved_turf",
+            "document_label": "Improved grounds",
+            "mowing_frequency_text": "Improved grounds shall be mowed weekly during the growing season",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 14.166667,
+            "unit": "acres",
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Improved grounds, cantonment area (Bldgs 1201, 1205, 1310 vicinity) | 42.5 acres improved"
+            },
+            "confidence": 0.9,
+            "notes": "split from a shared quantity: 42.5 acres shared evenly by Bldgs 1201, 1205, 1310."
+          },
+          {
+            "name": "Improved grounds, barracks complex — Bldg 2402 share",
+            "campus": null,
+            "facility_building_number": "2402",
+            "table_id": "TE-4",
+            "kind": "improved_turf",
+            "document_label": "Improved grounds",
+            "mowing_frequency_text": "Improved grounds shall be mowed weekly during the growing season",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 9,
+            "unit": "acres",
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Improved grounds, barracks complex (Bldg 2402 and Bldg 2404) | 18.0 acres improved"
+            },
+            "confidence": 0.9,
+            "notes": "split from a shared quantity: 18 acres shared evenly by Bldgs 2402, 2404."
+          },
+          {
+            "name": "Improved grounds, barracks complex — Bldg 2404 share",
+            "campus": null,
+            "facility_building_number": "2404",
+            "table_id": "TE-4",
+            "kind": "improved_turf",
+            "document_label": "Improved grounds",
+            "mowing_frequency_text": "Improved grounds shall be mowed weekly during the growing season",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 9,
+            "unit": "acres",
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Improved grounds, barracks complex (Bldg 2402 and Bldg 2404) | 18.0 acres improved"
+            },
+            "confidence": 0.9,
+            "notes": "split from a shared quantity: 18 acres shared evenly by Bldgs 2402, 2404."
+          },
+          {
+            "name": "Improved grounds, community area — Bldg 4001 share",
+            "campus": null,
+            "facility_building_number": "4001",
+            "table_id": "TE-4",
+            "kind": "improved_turf",
+            "document_label": "Improved grounds",
+            "mowing_frequency_text": "Improved grounds shall be mowed weekly during the growing season",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 6.825,
+            "unit": "acres",
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Improved grounds, community area (Bldgs 4001, 4210, 4330, 4500) | 27.3 acres improved"
+            },
+            "confidence": 0.9,
+            "notes": "split from a shared quantity: 27.3 acres shared evenly by Bldgs 4001, 4210, 4330, 4500."
+          },
+          {
+            "name": "Improved grounds, community area — Bldg 4210 share",
+            "campus": null,
+            "facility_building_number": "4210",
+            "table_id": "TE-4",
+            "kind": "improved_turf",
+            "document_label": "Improved grounds",
+            "mowing_frequency_text": "Improved grounds shall be mowed weekly during the growing season",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 6.825,
+            "unit": "acres",
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Improved grounds, community area (Bldgs 4001, 4210, 4330, 4500) | 27.3 acres improved"
+            },
+            "confidence": 0.9,
+            "notes": "split from a shared quantity: 27.3 acres shared evenly by Bldgs 4001, 4210, 4330, 4500."
+          },
+          {
+            "name": "Improved grounds, community area — Bldg 4330 share",
+            "campus": null,
+            "facility_building_number": "4330",
+            "table_id": "TE-4",
+            "kind": "improved_turf",
+            "document_label": "Improved grounds",
+            "mowing_frequency_text": "Improved grounds shall be mowed weekly during the growing season",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 6.825,
+            "unit": "acres",
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Improved grounds, community area (Bldgs 4001, 4210, 4330, 4500) | 27.3 acres improved"
+            },
+            "confidence": 0.9,
+            "notes": "split from a shared quantity: 27.3 acres shared evenly by Bldgs 4001, 4210, 4330, 4500."
+          },
+          {
+            "name": "Improved grounds, community area — Bldg 4500 share",
+            "campus": null,
+            "facility_building_number": "4500",
+            "table_id": "TE-4",
+            "kind": "improved_turf",
+            "document_label": "Improved grounds",
+            "mowing_frequency_text": "Improved grounds shall be mowed weekly during the growing season",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 6.825,
+            "unit": "acres",
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Improved grounds, community area (Bldgs 4001, 4210, 4330, 4500) | 27.3 acres improved"
+            },
+            "confidence": 0.9,
+            "notes": "split from a shared quantity: 27.3 acres shared evenly by Bldgs 4001, 4210, 4330, 4500."
+          },
+          {
+            "name": "Improved grounds, medical campus",
+            "campus": null,
+            "facility_building_number": "3105",
+            "table_id": "TE-4",
+            "kind": "improved_turf",
+            "document_label": "Improved grounds",
+            "mowing_frequency_text": "Improved grounds shall be mowed weekly during the growing season",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 9.6,
+            "unit": "acres",
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Improved grounds, medical campus (Bldg 3105 vicinity) | 9.6 acres improved"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Semi-improved grounds, airfield perimeter",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE-4",
+            "kind": "semi_improved",
+            "document_label": "Semi-improved grounds",
+            "mowing_frequency_text": "Semi-improved grounds shall be mowed every three weeks",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 215,
+            "unit": "acres",
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Semi-improved grounds, airfield perimeter | 215.0 acres semi-improved"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Unimproved grounds, training area buffer",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE-4",
+            "kind": "unimproved",
+            "document_label": "Unimproved grounds",
+            "mowing_frequency_text": "Unimproved grounds shall be rotary-cut three times per year",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 640,
+            "unit": "acres",
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Unimproved grounds, training area buffer | 640.0 acres unimproved"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Athletic fields (soccer and softball complex)",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE-4",
+            "kind": "athletic_field",
+            "document_label": "Athletic fields",
+            "mowing_frequency_text": null,
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 14,
+            "unit": "acres",
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Athletic fields (soccer and softball complex) | 14.0 acres athletic"
+            },
+            "confidence": 0.95,
+            "notes": "No separate mowing frequency stated for athletic fields."
+          },
+          {
+            "name": "Shrub and planting beds, all improved areas",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE-4",
+            "kind": "shrub_bed",
+            "document_label": "Shrub and planting beds",
+            "mowing_frequency_text": "Beds weeded, cultivated and kept free of debris; re-mulched annually; shrubs pruned twice per year",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 86000,
+            "unit": "sqft",
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Shrub and planting beds, all improved areas | 86,000 SF shrub beds"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Parking lots, cantonment and community areas",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE-4",
+            "kind": "parking",
+            "document_label": "Parking lots",
+            "mowing_frequency_text": "Parking lots shall be mechanically swept monthly",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 1420000,
+            "unit": "sqft",
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Parking lots, cantonment and community areas | 1,420,000 SF parking"
+            },
+            "confidence": 0.95,
+            "notes": "Snow and ice removal as needed (avg 6 events/yr, PWS 1.3)."
+          },
+          {
+            "name": "Sidewalks and walkways",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE-4",
+            "kind": "sidewalk",
+            "document_label": "Sidewalks and walkways",
+            "mowing_frequency_text": "Sidewalks shall be blown and kept free of litter",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 310000,
+            "unit": "sqft",
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Sidewalks and walkways | 310,000 SF sidewalks"
+            },
+            "confidence": 0.95,
+            "notes": "Snow and ice removal as needed (avg 6 events/yr, PWS 1.3)."
+          },
+          {
+            "name": "Ornamental and shade trees under 30 ft",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE-4",
+            "kind": "tree_canopy",
+            "document_label": "Ornamental and shade trees under 30 ft",
+            "mowing_frequency_text": "Trees under 30 feet shall be pruned on a three-year cycle",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 1250,
+            "unit": "each",
+            "source": {
+              "file": "pws.pdf",
+              "page": 2,
+              "excerpt": "Ornamental and shade trees under 30 ft | 1,250 trees"
+            },
+            "confidence": 0.95,
+            "notes": null
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "set_previous_award",
+      "input": {
+        "incumbent": "Bluegrass Facility Services, LLC",
+        "contract_number": "W912QR-20-C-0015",
+        "contract_type": "FFP",
+        "total_value": 31850000,
+        "period_months": 60,
+        "annual_value": null,
+        "spend_to_date": 26100000,
+        "spend_period_months": 48,
+        "award_year": 2020,
+        "source": {
+          "file": "pws.pdf",
+          "page": 1,
+          "excerpt": "contract W912QR-20-C-0015, awarded in September 2020 to Bluegrass Facility Services, LLC, a firm-fixed-price contract with a total value of $31,850,000 over a 60-month period"
+        },
+        "confidence": 0.95,
+        "notes": "PWS 1.5: obligations through the end of the fourth performance year total $26,100,000 (taken as 48 months). Incumbent contract expires 30 September 2026. Annual value not stated directly."
+      },
+      "pass": 0
+    },
+    {
+      "name": "finish",
+      "input": {
+        "summary": "Fort Example, KY BOS (W912QR-26-R-0042), base + 4 option years. TE-3 Custodial Workload: 16 buildings registered (811,550 GSF), all in scope, with cleanable SF, fixtures and frequencies. Dining Facility Bldg 2410 (Warrior Restaurant) full food service: 2,650 meals/day, 4 meal periods, 7 days/week, 450 seats. TE-4 Grounds: 11 rows registered as 17 areas (three shared improved-grounds rows split evenly across their named buildings). Incumbent Bluegrass Facility Services, LLC, W912QR-20-C-0015, FFP $31.85M over 60 months, $26.1M obligated through year 4.",
+        "unresolved": [
+          "TE-3 and TE-4 print no total rows, so declared printed_total_gross_area is null; TE-3 row sum is 811,550 SF.",
+          "TE-4 is in acres / SF / each; declare_tables only accepts sf/sm/sy as area_unit, so TE-4 was declared with sf and no printed total.",
+          "Athletic fields (14.0 acres): no mowing frequency stated in PWS 6.1–6.3.",
+          "Bldg 2410 dining workload comes from PWS 7.2 paragraph (not a table); registered as an update with no table_id. Meals per day given only as a daily total (no per-period headcounts)."
+        ]
+      },
+      "pass": 0
+    }
+  ]
+}

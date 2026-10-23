@@ -13,9 +13,14 @@ export interface ScoreReport {
   dining: { expected: number; got: number; ok: boolean }[];
   priorAward: { field: string; expected: unknown; got: unknown; ok: boolean }[];
   site: { field: string; expected: unknown; got: unknown; ok: boolean }[];
+  /** Facilities not found, then SF mismatches, then cleanable / service level / floors / category mismatches, then site fields. */
   misses: string[];
   extras: string[];
-  score: number; // 0..100 headline
+  /**
+   * 0..100 headline, one decimal: 30% recall, 25% SF exact, 5% cleanable exact and 5% service level (each over the truth
+   * facilities that give one; the SF rate stands in when none do), 10% precision, 15% grounds, 5% dining, 5% prior award.
+   */
+  score: number;
 }
 
 export const normBn = (s?: string) => (s ?? '').toUpperCase().replace(/\b(BLDG|BUILDING|BLD|FAC|FACILITY|NO|#)\.?/g, '').replace(/[^A-Z0-9]/g, '').replace(/^0+(?=\d)/, '');
@@ -99,16 +104,31 @@ export function scoreInventory(truth: FixtureTruth, inv: Inventory, provider: st
   const recall = exp.length ? matched / exp.length : 1;
   const precision = truth.expect.facilitiesComplete && got.length ? matched / got.length : null;
   const sfRate = matched ? sfExact / exp.length : 0;
+  // labor-driving attributes, over every truth facility that gives one (a facility not found counts as wrong)
+  const cleanTotal = exp.filter((t) => t.cleanableSqft != null).length;
+  const lvlTotal = exp.filter((t) => t.serviceLevel).length;
+  const cleanScore = cleanTotal ? cleanOk / cleanTotal : sfRate;
+  const lvlScore = lvlTotal ? lvlOk / lvlTotal : sfRate;
   const gScore = grounds.length ? grounds.filter((g) => Math.abs(g.errPct) <= 2).length / grounds.length : 1;
   const dScore = dining.length ? dining.filter((d) => d.ok).length / dining.length : 1;
   const pScore = priorAward.length ? priorAward.filter((p) => p.ok).length / priorAward.length : 1;
-  const score = Math.round(100 * (0.3 * recall + 0.35 * sfRate + 0.1 * (precision ?? 1) + 0.15 * gScore + 0.05 * dScore + 0.05 * pScore));
+  const score = Math.round(1000 * (0.3 * recall + 0.25 * sfRate + 0.05 * cleanScore + 0.05 * lvlScore + 0.1 * (precision ?? 1) + 0.15 * gScore + 0.05 * dScore + 0.05 * pScore)) / 10;
+  const idOf = (m: FacilityMatch) => m.truth.buildingNumber ?? m.truth.name;
+  const found = matches.filter((m) => m.got);
 
   return {
     fixture: truth.id, provider,
     facilities: { expected: exp.length, extracted: got.length, matched, recall: round(recall, 3), precision: precision == null ? null : round(precision, 3), sfExact, sfExactRate: round(sfRate, 3), cleanableExactRate: cleanN ? round(cleanOk / cleanN, 3) : null, floorsRate: floorsN ? round(floorsOk / floorsN, 3) : null, serviceLevelRate: lvlN ? round(lvlOk / lvlN, 3) : null, categoryRate: catN ? round(catOk / catN, 3) : null, totalSfExpected, totalSfGot, totalSfErrPct: totalSfExpected ? round(((totalSfGot - totalSfExpected) / totalSfExpected) * 100) : 0 },
     grounds, dining, priorAward, site,
-    misses: matches.filter((m) => !m.got).map((m) => `${m.truth.buildingNumber ?? ''} ${m.truth.name} (${m.truth.grossSqft} SF)`.trim()).concat(matches.filter((m) => m.got && !m.sfOk).map((m) => `SF mismatch ${m.truth.buildingNumber ?? m.truth.name}: expected ${m.truth.grossSqft}, got ${m.sfGot}`)),
+    misses: [
+      ...matches.filter((m) => !m.got).map((m) => `${m.truth.buildingNumber ?? ''} ${m.truth.name} (${m.truth.grossSqft} SF)`.trim()),
+      ...found.filter((m) => !m.sfOk).map((m) => `SF mismatch ${idOf(m)}: expected ${m.truth.grossSqft}, got ${m.sfGot}`),
+      ...found.filter((m) => m.cleanOk === false).map((m) => `cleanable mismatch ${idOf(m)}: expected ${m.truth.cleanableSqft}, got ${m.got!.cleanableSqft ?? 'none'}`),
+      ...found.filter((m) => m.levelOk === false).map((m) => `service level mismatch ${idOf(m)}: expected ${m.truth.serviceLevel}, got ${m.got!.serviceLevel}`),
+      ...found.filter((m) => m.floorsOk === false).map((m) => `floors mismatch ${idOf(m)}: expected ${m.truth.floors}, got ${m.got!.floors}`),
+      ...found.filter((m) => m.catOk === false).map((m) => `category mismatch ${idOf(m)}: expected ${m.truth.category}, got ${m.got!.category}`),
+      ...site.filter((x) => !x.ok).map((x) => `site ${x.field}: expected ${String(x.expected)}, got ${String(x.got ?? 'none')}`),
+    ],
     extras: got.filter((_, i) => !used.has(i)).map((g) => `${g.buildingNumber ?? ''} ${g.name} (${g.grossSqft} SF)`.trim()),
     score,
   };

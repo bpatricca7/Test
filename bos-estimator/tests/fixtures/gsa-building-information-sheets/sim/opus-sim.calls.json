@@ -1,0 +1,737 @@
+{
+  "model": "opus-sim",
+  "passes": [
+    [
+      "j1-building-information-sheets.docx"
+    ]
+  ],
+  "calls": [
+    {
+      "name": "set_site_info",
+      "input": {
+        "installation_name": "Shenandoah Valley Federal Buildings",
+        "location": "Winchester, Harrisonburg and Staunton, Virginia",
+        "solicitation": "47PC0326R0014",
+        "contract_name": "Custodial and Grounds Maintenance Services – Shenandoah Valley Federal Buildings (GSA PBS Mid-Atlantic Region 3PQ)",
+        "climate_zone": "temperate",
+        "growing_season_weeks": 30,
+        "contract_years": 5,
+        "notes": "Conformed through Amendment 0001 (Sept 18, 2026). Base period Mar 1, 2027 – Feb 29, 2028 plus four 12-month option periods (5 years); FAR 52.217-8 extension up to 6 months evaluated separately. FFP with Above Standard Services (CLIN 0003, $75,000 NTE). Five buildings in scope after A0001 deleted VA0355ZZ. Mowing weekly April 1 – October 31 (approx. 30 cuts per season) per C.4.2. Wage determinations 2015-4311 (Winchester/Frederick Co.) and 2015-4327 (Harrisonburg/Rockingham/Staunton/Augusta)."
+      },
+      "pass": 0
+    },
+    {
+      "name": "declare_tables",
+      "input": {
+        "tables": [
+          {
+            "table_id": "J.1",
+            "title": "Exhibit J.1 Building Information Sheets (one sheet per building; Section B building size, Section C custodial square feet, Section D fixtures)",
+            "kind": "facilities",
+            "file": "j1-building-information-sheets.docx",
+            "pages": "6-11",
+            "row_count": 6,
+            "printed_total_gross_area": null,
+            "area_unit": "sf"
+          },
+          {
+            "table_id": "J.1-F",
+            "title": "Exhibit J.1 Section F Grounds and Exterior (landscaped/improved grounds, parking areas, sidewalks per building)",
+            "kind": "grounds",
+            "file": "j1-building-information-sheets.docx",
+            "pages": "6-11",
+            "row_count": 18,
+            "printed_total_gross_area": null,
+            "area_unit": "sf"
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "J.1",
+            "campus": "Harrisonburg",
+            "building_number": "VA0123ZZ",
+            "name": "Thomas R. Whitcomb Federal Building and U.S. Courthouse",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 118460,
+            "cleanable_area": 88900,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 5,
+            "fixtures": {
+              "total": null,
+              "water_closets": 34,
+              "urinals": 12,
+              "lavatories": 32,
+              "showers": 2
+            },
+            "occupancy": 310,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily; Monday – Friday, excluding Federal holidays",
+            "scope": [
+              "custodial",
+              "floor_care",
+              "grounds"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 6,
+              "excerpt": "Exh. J.1-1: Gross Square Feet (GSF) | 118,460 ... TOTAL CUSTODIAL (CLEANABLE) SQUARE FEET | 88,900; Floors Above Grade 4, Below Grade 1; fixtures TOTAL 26 | 34 | 12 | 32 | 2 | 80"
+            },
+            "confidence": 0.97,
+            "notes": "Courthouse / office, 275 East Market Street, Harrisonburg. Floors = 4 above + 1 basement (Q1/A1: five floors serviced). Evening shift plus one day porter 7:00–3:30. Weekly items: stairwells 3,120 SF, loading dock/mailroom 1,640 SF; monthly: storage/file 2,310 SF. Excluded from custodial SF: mech/elec/telecom 9,870, USMS cellblock 2,450, basement sallyport/judges' parking 3,120. Exterior glass 9,840 SF (one side) washed 2x/year, interior glass 2,260 SF 1x/year. Snow and ice removal: Yes. 5 elevators (4 passenger, 1 freight). CLIN 0001AA custodial 88,900 SF."
+          },
+          {
+            "table_id": "J.1",
+            "campus": "Winchester",
+            "building_number": "VA0187ZZ",
+            "name": "Margaret E. Halloran Federal Building",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 64920,
+            "cleanable_area": 52060,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": {
+              "total": null,
+              "water_closets": 22,
+              "urinals": 6,
+              "lavatories": 18,
+              "showers": 2
+            },
+            "occupancy": 245,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily; Monday – Friday, excluding Federal holidays",
+            "scope": [
+              "custodial",
+              "floor_care",
+              "grounds"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 7,
+              "excerpt": "Exh. J.1-2: Gross Square Feet (GSF) | 64,920 ... TOTAL CUSTODIAL (CLEANABLE) SQUARE FEET | 52,060; Floors Above Grade 3; fixtures TOTAL 10 | 22 | 6 | 18 | 2 | 48"
+            },
+            "confidence": 0.97,
+            "notes": "Office, 1050 Millwood Pike, Winchester. Child care center (1st floor, east wing, 3,850 SF) is cleaned by the child care provider and listed for information only (Q2/A2); not in custodial SF. Health unit 640 SF disinfected daily (C.3.6). Weekly: stairwells 1,860, loading dock 720; monthly: storage 1,150. Excluded mech/elec/telecom 4,310. Exterior glass 6,420 SF, interior 980 SF, 1x/year. Snow and ice removal: Yes. CLIN 0001AB custodial 52,060 SF."
+          },
+          {
+            "table_id": "J.1",
+            "campus": "Staunton",
+            "building_number": "VA0241ZZ",
+            "name": "Federal Office Building and U.S. Post Office",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 38750,
+            "cleanable_area": 22860,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": {
+              "total": null,
+              "water_closets": 9,
+              "urinals": 3,
+              "lavatories": 8,
+              "showers": 0
+            },
+            "occupancy": 85,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily; Monday – Friday, excluding Federal holidays",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 8,
+              "excerpt": "Exh. J.1-3: Gross Square Feet (GSF) | 38,750 ... TOTAL CUSTODIAL (CLEANABLE) SQUARE FEET | 22,860 (revised A0001; was 21,460)"
+            },
+            "confidence": 0.95,
+            "notes": "Office / Post Office, 118 East Johnson Street, Staunton; National Register listed (neutral cleaners only, C.3.8). Amendment 0001 Item 2 revised office space 13,930 -> 15,330 SF (adds 2nd floor Suite 210, 1,400 SF) and custodial total 21,460 -> 22,860 SF. Floors = 2 above + 1 basement (Q1/A1: three floors serviced). USPS retail lobby/workroom/dock 9,860 SF cleaned by USPS; basement boiler/mech 3,120 not cleaned. Grounds maintained by USPS (not in contract); snow and ice removal at the Johnson Street federal entrance only. Exterior glass 3,150 SF, interior 210 SF, 1x/year, hand clean historic sash. CLIN 0001AC custodial 22,860 SF."
+          },
+          {
+            "table_id": "J.1",
+            "campus": "Winchester",
+            "building_number": "VA0318ZZ",
+            "name": "Valley Federal Office Building",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 18640,
+            "cleanable_area": 15360,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 10,
+              "urinals": 3,
+              "lavatories": 8,
+              "showers": 0
+            },
+            "occupancy": 64,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily; Monday – Friday, excluding Federal holidays",
+            "scope": [
+              "custodial",
+              "floor_care",
+              "grounds"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 9,
+              "excerpt": "Exh. J.1-4: Gross Square Feet (GSF) | 18,640 ... TOTAL CUSTODIAL (CLEANABLE) SQUARE FEET | 15,360; Floors Above Grade 1; fixtures TOTAL 6 | 10 | 3 | 8 | 0 | 21"
+            },
+            "confidence": 0.97,
+            "notes": "Public field office, 1460 Pleasant Valley Road, Winchester; 64 staff plus approx. 180 visitors/day. Public waiting room/lobby high traffic (C.3.5); public restroom mid-day checks 2x daily by day porter are ordered under C.15 (Above Standard). Monthly: storage 520 SF. Excluded mech/elec/IT 940. Exterior glass 1,980 SF, interior 640 SF 1x/year; interview-window glazing daily. Snow and ice removal: Yes. CLIN 0001AD custodial 15,360 SF."
+          },
+          {
+            "table_id": "J.1",
+            "campus": "Harrisonburg",
+            "building_number": "VA0402ZZ",
+            "name": "Shenandoah Federal Support Center",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 46300,
+            "cleanable_area": 40670,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": null,
+              "water_closets": 8,
+              "urinals": 4,
+              "lavatories": 8,
+              "showers": 4
+            },
+            "occupancy": 52,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (office, lobby, restrooms/locker rooms, break room); Weekly (warehouse floor, maintenance shops, loading dock, stairwells); Monday – Friday, excluding Federal holidays",
+            "scope": [
+              "custodial",
+              "floor_care",
+              "grounds"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 10,
+              "excerpt": "Exh. J.1-5: Gross Square Feet (GSF) | 46,300 ... TOTAL CUSTODIAL (CLEANABLE) SQUARE FEET | 40,670; Floors Above Grade 2 (incl. 6,100 SF office mezzanine)"
+            },
+            "confidence": 0.95,
+            "notes": "Warehouse / office / shops, 855 Interstate Parkway, Harrisonburg; day shift 6:30–3:00. Mixed frequency: daily 11,800 SF (office/mezzanine 8,640, lobby/corridors 1,420, restrooms/locker rooms 1,180, break room 560); weekly 28,870 SF (warehouse floor sealed concrete 22,400 – sweep weekly, machine scrub monthly; maintenance shops 3,950; loading dock 2,100; stairwells 420). Mezzanine is the 2nd floor (Q1/A1). Excluded: mech/elec 1,860; secure evidence cage 2,300 (tenant cleans). Exterior glass 820 SF, interior 150 SF, 1x/year. Snow and ice removal: Yes. CLIN 0001AE custodial 40,670 SF."
+          },
+          {
+            "table_id": "J.1",
+            "campus": "Staunton",
+            "building_number": "VA0355ZZ",
+            "name": "Federal Records Annex",
+            "status": "deleted_by_amendment",
+            "status_reason": "DELETED BY AMENDMENT 0001 – RETAINED FOR REFERENCE ONLY. Building VA0355ZZ is not part of this solicitation (Summary of Changes Item 1: reported excess, to be vacated before contract start; CLIN 0001AF deleted).",
+            "category": "warehouse",
+            "gross_area": 22480,
+            "cleanable_area": 16920,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": null,
+              "water_closets": 7,
+              "urinals": 2,
+              "lavatories": 5,
+              "showers": 0
+            },
+            "occupancy": 18,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily; Monday – Friday, excluding Federal holidays",
+            "scope": [
+              "custodial",
+              "floor_care",
+              "grounds"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 11,
+              "excerpt": "Exh. J.1-6: DELETED BY AMENDMENT 0001 – RETAINED FOR REFERENCE ONLY. VA0355ZZ Federal Records Annex; GSF 22,480; TOTAL CUSTODIAL (CLEANABLE) SQUARE FEET | 16,920"
+            },
+            "confidence": 0.95,
+            "notes": "Records storage / office, 640 Commerce Road, Staunton. Shall not be priced. Included in the incumbent contract (Q3/A3). Records storage stacks 7,340 SF monthly."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_grounds",
+      "input": {
+        "areas": [
+          {
+            "name": "VA0123ZZ landscaped / improved grounds",
+            "campus": "Harrisonburg",
+            "facility_building_number": "VA0123ZZ",
+            "table_id": "J.1-F",
+            "kind": "improved_turf",
+            "document_label": "Landscaped / Improved Grounds",
+            "mowing_frequency_text": "Weekly April 1 through October 31 (approx. 30 cuts per season) and as needed in March and November (C.4.2)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 1.25,
+            "unit": "acres",
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 6,
+              "excerpt": "Exh. J.1-1 Sec. F: Landscaped / Improved Grounds | 1.25 acres"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "VA0123ZZ parking areas",
+            "campus": "Harrisonburg",
+            "facility_building_number": "VA0123ZZ",
+            "table_id": "J.1-F",
+            "kind": "parking",
+            "document_label": "Parking Areas",
+            "mowing_frequency_text": "Swept monthly; litter policed daily (C.4.3, C.4.4)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 38600,
+            "unit": "sqft",
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 6,
+              "excerpt": "Exh. J.1-1 Sec. F: Parking Areas | 38,600 SF (surface lot, 118 spaces)"
+            },
+            "confidence": 0.95,
+            "notes": "Plowing of parking lots and driveways is Above Standard Service (C.15 / CLIN 0003), not FFP (Q5/A5)."
+          },
+          {
+            "name": "VA0123ZZ sidewalks, plazas and steps",
+            "campus": "Harrisonburg",
+            "facility_building_number": "VA0123ZZ",
+            "table_id": "J.1-F",
+            "kind": "sidewalk",
+            "document_label": "Sidewalks, Plazas and Steps",
+            "mowing_frequency_text": "Blown or swept weekly; litter policed daily (C.4.3, C.4.4)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 11250,
+            "unit": "sqft",
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 6,
+              "excerpt": "Exh. J.1-1 Sec. F: Sidewalks, Plazas and Steps | 11,250 SF (incl. Market Street plaza)"
+            },
+            "confidence": 0.95,
+            "notes": "Snow and ice removal from entrances, steps, ramps and walks: Yes (C.3.11)."
+          },
+          {
+            "name": "VA0187ZZ landscaped / improved grounds",
+            "campus": "Winchester",
+            "facility_building_number": "VA0187ZZ",
+            "table_id": "J.1-F",
+            "kind": "improved_turf",
+            "document_label": "Landscaped / Improved Grounds",
+            "mowing_frequency_text": "Weekly April 1 through October 31 (approx. 30 cuts per season) and as needed in March and November (C.4.2)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2.35,
+            "unit": "acres",
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 7,
+              "excerpt": "Exh. J.1-2 Sec. F: Landscaped / Improved Grounds | 2.35 acres"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "VA0187ZZ parking areas",
+            "campus": "Winchester",
+            "facility_building_number": "VA0187ZZ",
+            "table_id": "J.1-F",
+            "kind": "parking",
+            "document_label": "Parking Areas",
+            "mowing_frequency_text": "Swept monthly; litter policed daily (C.4.3, C.4.4)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 52400,
+            "unit": "sqft",
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 7,
+              "excerpt": "Exh. J.1-2 Sec. F: Parking Areas | 52,400 SF (surface lot, 172 spaces)"
+            },
+            "confidence": 0.95,
+            "notes": "Plowing of parking lots and driveways is Above Standard Service (C.15 / CLIN 0003), not FFP (Q5/A5)."
+          },
+          {
+            "name": "VA0187ZZ sidewalks, plazas and steps",
+            "campus": "Winchester",
+            "facility_building_number": "VA0187ZZ",
+            "table_id": "J.1-F",
+            "kind": "sidewalk",
+            "document_label": "Sidewalks, Plazas and Steps",
+            "mowing_frequency_text": "Blown or swept weekly; litter policed daily (C.4.3, C.4.4)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 6980,
+            "unit": "sqft",
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 7,
+              "excerpt": "Exh. J.1-2 Sec. F: Sidewalks, Plazas and Steps | 6,980 SF"
+            },
+            "confidence": 0.95,
+            "notes": "Snow and ice removal from entrances, steps, ramps and walks: Yes (C.3.11)."
+          },
+          {
+            "name": "VA0241ZZ landscaped / improved grounds",
+            "campus": "Staunton",
+            "facility_building_number": "VA0241ZZ",
+            "table_id": "J.1-F",
+            "kind": "improved_turf",
+            "document_label": "Landscaped / Improved Grounds",
+            "mowing_frequency_text": null,
+            "status": "excluded",
+            "status_reason": "0.30 acre – Not in contract (maintained by USPS); Grounds Maintenance in Contract | No – USPS",
+            "quantity": 0.3,
+            "unit": "acres",
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 8,
+              "excerpt": "Exh. J.1-3 Sec. F: Landscaped / Improved Grounds | 0.30 acre – Not in contract (maintained by USPS)"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "VA0241ZZ parking areas",
+            "campus": "Staunton",
+            "facility_building_number": "VA0241ZZ",
+            "table_id": "J.1-F",
+            "kind": "parking",
+            "document_label": "Parking Areas",
+            "mowing_frequency_text": null,
+            "status": "excluded",
+            "status_reason": "14,200 SF – Not in contract (USPS lot)",
+            "quantity": 14200,
+            "unit": "sqft",
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 8,
+              "excerpt": "Exh. J.1-3 Sec. F: Parking Areas | 14,200 SF – Not in contract (USPS lot)"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "VA0241ZZ sidewalks, plazas and steps",
+            "campus": "Staunton",
+            "facility_building_number": "VA0241ZZ",
+            "table_id": "J.1-F",
+            "kind": "sidewalk",
+            "document_label": "Sidewalks, Plazas and Steps",
+            "mowing_frequency_text": null,
+            "status": "excluded",
+            "status_reason": "3,900 SF – Not in contract (USPS), except snow and ice removal at the Johnson Street federal entrance",
+            "quantity": 3900,
+            "unit": "sqft",
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 8,
+              "excerpt": "Exh. J.1-3 Sec. F: Sidewalks, Plazas and Steps | 3,900 SF – Not in contract (USPS), except snow and ice removal at the Johnson Street federal entrance"
+            },
+            "confidence": 0.95,
+            "notes": "Snow and ice removal is in contract at the Johnson Street federal entrance only."
+          },
+          {
+            "name": "VA0318ZZ landscaped / improved grounds",
+            "campus": "Winchester",
+            "facility_building_number": "VA0318ZZ",
+            "table_id": "J.1-F",
+            "kind": "improved_turf",
+            "document_label": "Landscaped / Improved Grounds",
+            "mowing_frequency_text": "Weekly April 1 through October 31 (approx. 30 cuts per season) and as needed in March and November (C.4.2)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 9600,
+            "unit": "sqft",
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 9,
+              "excerpt": "Exh. J.1-4 Sec. F: Landscaped / Improved Grounds | 9,600 SF"
+            },
+            "confidence": 0.95,
+            "notes": "Printed in square feet; sheet remarks: approx. 0.22 acre."
+          },
+          {
+            "name": "VA0318ZZ parking areas",
+            "campus": "Winchester",
+            "facility_building_number": "VA0318ZZ",
+            "table_id": "J.1-F",
+            "kind": "parking",
+            "document_label": "Parking Areas",
+            "mowing_frequency_text": "Swept monthly; litter policed daily (C.4.3, C.4.4)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 31500,
+            "unit": "sqft",
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 9,
+              "excerpt": "Exh. J.1-4 Sec. F: Parking Areas | 31,500 SF (surface lot, 96 spaces)"
+            },
+            "confidence": 0.95,
+            "notes": "Plowing of parking lots and driveways is Above Standard Service (C.15 / CLIN 0003), not FFP (Q5/A5)."
+          },
+          {
+            "name": "VA0318ZZ sidewalks, plazas and steps",
+            "campus": "Winchester",
+            "facility_building_number": "VA0318ZZ",
+            "table_id": "J.1-F",
+            "kind": "sidewalk",
+            "document_label": "Sidewalks, Plazas and Steps",
+            "mowing_frequency_text": "Blown or swept weekly; litter policed daily (C.4.3, C.4.4)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2860,
+            "unit": "sqft",
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 9,
+              "excerpt": "Exh. J.1-4 Sec. F: Sidewalks, Plazas and Steps | 2,860 SF"
+            },
+            "confidence": 0.95,
+            "notes": "Snow and ice removal from entrances, steps, ramps and walks: Yes (C.3.11)."
+          },
+          {
+            "name": "VA0402ZZ landscaped / improved grounds",
+            "campus": "Harrisonburg",
+            "facility_building_number": "VA0402ZZ",
+            "table_id": "J.1-F",
+            "kind": "improved_turf",
+            "document_label": "Landscaped / Improved Grounds",
+            "mowing_frequency_text": "Weekly April 1 through October 31 (approx. 30 cuts per season) and as needed in March and November (C.4.2)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 3.1,
+            "unit": "acres",
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 10,
+              "excerpt": "Exh. J.1-5 Sec. F: Landscaped / Improved Grounds | 3.10 acres"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "VA0402ZZ parking areas",
+            "campus": "Harrisonburg",
+            "facility_building_number": "VA0402ZZ",
+            "table_id": "J.1-F",
+            "kind": "parking",
+            "document_label": "Parking Areas",
+            "mowing_frequency_text": "Swept monthly; litter policed daily (C.4.3, C.4.4)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 96800,
+            "unit": "sqft",
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 10,
+              "excerpt": "Exh. J.1-5 Sec. F: Parking Areas | 96,800 SF (employee lot and truck court)"
+            },
+            "confidence": 0.95,
+            "notes": "Plowing of parking lots and driveways is Above Standard Service (C.15 / CLIN 0003), not FFP (Q5/A5)."
+          },
+          {
+            "name": "VA0402ZZ sidewalks, plazas and steps",
+            "campus": "Harrisonburg",
+            "facility_building_number": "VA0402ZZ",
+            "table_id": "J.1-F",
+            "kind": "sidewalk",
+            "document_label": "Sidewalks, Plazas and Steps",
+            "mowing_frequency_text": "Blown or swept weekly; litter policed daily (C.4.3, C.4.4)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2150,
+            "unit": "sqft",
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 10,
+              "excerpt": "Exh. J.1-5 Sec. F: Sidewalks, Plazas and Steps | 2,150 SF"
+            },
+            "confidence": 0.95,
+            "notes": "Snow and ice removal from entrances, steps, ramps and walks: Yes (C.3.11)."
+          },
+          {
+            "name": "VA0355ZZ landscaped / improved grounds",
+            "campus": "Staunton",
+            "facility_building_number": "VA0355ZZ",
+            "table_id": "J.1-F",
+            "kind": "improved_turf",
+            "document_label": "Landscaped / Improved Grounds",
+            "mowing_frequency_text": null,
+            "status": "deleted_by_amendment",
+            "status_reason": "DELETED BY AMENDMENT 0001 – RETAINED FOR REFERENCE ONLY (Building VA0355ZZ deleted, Summary of Changes Item 1)",
+            "quantity": 0.65,
+            "unit": "acres",
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 11,
+              "excerpt": "Exh. J.1-6 Sec. F: Landscaped / Improved Grounds | 0.65 acre"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "VA0355ZZ parking areas",
+            "campus": "Staunton",
+            "facility_building_number": "VA0355ZZ",
+            "table_id": "J.1-F",
+            "kind": "parking",
+            "document_label": "Parking Areas",
+            "mowing_frequency_text": null,
+            "status": "deleted_by_amendment",
+            "status_reason": "DELETED BY AMENDMENT 0001 – RETAINED FOR REFERENCE ONLY (Building VA0355ZZ deleted, Summary of Changes Item 1)",
+            "quantity": 18900,
+            "unit": "sqft",
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 11,
+              "excerpt": "Exh. J.1-6 Sec. F: Parking Areas | 18,900 SF"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "VA0355ZZ sidewalks, plazas and steps",
+            "campus": "Staunton",
+            "facility_building_number": "VA0355ZZ",
+            "table_id": "J.1-F",
+            "kind": "sidewalk",
+            "document_label": "Sidewalks, Plazas and Steps",
+            "mowing_frequency_text": null,
+            "status": "deleted_by_amendment",
+            "status_reason": "DELETED BY AMENDMENT 0001 – RETAINED FOR REFERENCE ONLY (Building VA0355ZZ deleted, Summary of Changes Item 1)",
+            "quantity": 1480,
+            "unit": "sqft",
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 11,
+              "excerpt": "Exh. J.1-6 Sec. F: Sidewalks, Plazas and Steps | 1,480 SF"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "VA0187ZZ child care center playground",
+            "campus": "Winchester",
+            "facility_building_number": "VA0187ZZ",
+            "table_id": null,
+            "kind": "improved_turf",
+            "document_label": "Child care center playground",
+            "mowing_frequency_text": null,
+            "status": "excluded",
+            "status_reason": "Child care center playground (0.18 acre) is maintained by the child care provider and is included in the site area but not in the landscaped area",
+            "quantity": 0.18,
+            "unit": "acres",
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 7,
+              "excerpt": "Exh. J.1-2 Remarks: Child care center playground (0.18 acre) is maintained by the child care provider and is included in the site area but not in the landscaped area above."
+            },
+            "confidence": 0.85,
+            "notes": "From sheet remarks, not a Section F row; maintained by others."
+          },
+          {
+            "name": "VA0402ZZ wooded buffer (north and east property lines)",
+            "campus": "Harrisonburg",
+            "facility_building_number": "VA0402ZZ",
+            "table_id": null,
+            "kind": "unimproved",
+            "document_label": "Wooded buffer",
+            "mowing_frequency_text": "Not maintained",
+            "status": "excluded",
+            "status_reason": "Approximately 4.2 acres of wooded buffer ... are not maintained and are not included in the landscaped area",
+            "quantity": 4.2,
+            "unit": "acres",
+            "source": {
+              "file": "j1-building-information-sheets.docx",
+              "page": 10,
+              "excerpt": "Exh. J.1-5 Remarks: Approximately 4.2 acres of wooded buffer along the north and east property lines are not maintained and are not included in the landscaped area."
+            },
+            "confidence": 0.85,
+            "notes": "From sheet remarks, not a Section F row; not maintained."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "set_previous_award",
+      "input": {
+        "incumbent": "Caldera Ridge Facility Services, LLC",
+        "contract_number": "47PC0322C0042",
+        "contract_type": null,
+        "total_value": 5612350,
+        "period_months": 60,
+        "annual_value": 1146880,
+        "spend_to_date": null,
+        "spend_period_months": null,
+        "award_year": 2021,
+        "source": {
+          "file": "j1-building-information-sheets.docx",
+          "page": 1,
+          "excerpt": "A3. The current contract, 47PC0322C0042, was awarded in December 2021 to Caldera Ridge Facility Services, LLC ... total awarded value including all options is $5,612,350."
+        },
+        "confidence": 0.9,
+        "notes": "Q3/A3: base year + four option years, 60 months, March 1, 2022 – February 28, 2027. Annual value = current Option Year 4 value $1,146,880. Covers the six buildings as originally issued including VA0355ZZ (235,370 custodial SF in total) and grounds at VA0123ZZ, VA0187ZZ, VA0318ZZ, VA0355ZZ and VA0402ZZ; does not include VA0241ZZ Suite 210. New scope after A0001 is 219,850 custodial SF (VA0355ZZ deleted, Suite 210 added). Contract type of the incumbent contract not stated. Spend to date not stated. Provided for reference only."
+      },
+      "pass": 0
+    },
+    {
+      "name": "finish",
+      "input": {
+        "summary": "GSA PBS solicitation 47PC0326R0014 (conformed through Amendment 0001), custodial and grounds maintenance at the Shenandoah Valley Federal Buildings (Winchester, Harrisonburg, Staunton VA); 1-year base + 4 option years. Registered all 6 Exhibit J.1 building information sheets: 5 in scope (VA0123ZZ, VA0187ZZ, VA0241ZZ, VA0318ZZ, VA0402ZZ; 287,070 GSF, 219,850 custodial SF, which matches the Section B CLIN 0001 total) and VA0355ZZ Federal Records Annex deleted by Amendment 0001 (22,480 GSF / 16,920 custodial SF, reference only). VA0241ZZ carries the A0001 revision to 22,860 custodial SF (Suite 210). Grounds: 18 Section F rows (landscaped/improved turf, parking, sidewalks) for the 4 grounds buildings in scope; VA0241ZZ grounds excluded (USPS) and VA0355ZZ grounds deleted; plus 2 out-of-scope remark areas (VA0187ZZ child care playground, VA0402ZZ wooded buffer). Incumbent: Caldera Ridge Facility Services, LLC, 47PC0322C0042, $5,612,350 over 60 months, current option year $1,146,880.",
+        "unresolved": [
+          "Page numbers: the text has no page markers; source.page uses the sequential page order of the excerpt (1 = Summary of Changes, 2 = B-2, 3-5 = C-1 to C-3, 6-11 = Exhibit J.1 sheets J.1-1 to J.1-6).",
+          "Total Site Area per building (3.10, 4.60, 0.82, 2.40, 8.75, 1.90 acres) is information only and includes building footprints, wooded buffers and areas maintained by others; not registered as a grounds area.",
+          "VA0402ZZ: mixed frequency (11,800 SF daily, 28,870 SF warehouse/shops/dock/stairs weekly); registered as daily_5 with the split in notes.",
+          "Snow and ice removal (entrances, steps, ramps, walks) applies at all in-scope buildings (federal entrance only at VA0241ZZ); parking lot plowing, day-porter restroom checks at VA0318ZZ and extra window washing are Above Standard Services under CLIN 0003 ($75,000 NTE) and not in the FFP inventory.",
+          "Window washing glass areas (one side) are recorded in facility notes only; there is no tool field for them."
+        ]
+      },
+      "pass": 0
+    }
+  ]
+}

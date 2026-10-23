@@ -1,0 +1,903 @@
+{
+  "model": "opus-sim",
+  "passes": [
+    [
+      "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf"
+    ]
+  ],
+  "calls": [
+    {
+      "name": "set_site_info",
+      "input": {
+        "installation_name": "Fort Branford",
+        "location": "Fort Branford, Georgia",
+        "solicitation": "W9124J-27-R-0047",
+        "contract_name": "Full Food Service (FFS), Dining Facility Attendant (DFA) and Facility Sanitation Services – Fort Branford, Georgia",
+        "climate_zone": "hot_humid",
+        "growing_season_weeks": null,
+        "contract_years": 5,
+        "notes": "Base period 1 Apr 2027 – 31 Mar 2028 plus four 12-month option periods; potential extension of services up to 6 months under FAR 52.217-8 (not counted in contract_years). Contracting office MICC – Fort Sam Houston for ASC / LRC Fort Branford. Scope: FFS at Bldgs 4120 and 7031, DFA only at Bldg 9215, custodial for TE 6-1 facilities. No grounds maintenance in this package. Climate zone inferred from Georgia location; growing season not stated."
+      },
+      "pass": 0
+    },
+    {
+      "name": "declare_tables",
+      "input": {
+        "tables": [
+          {
+            "table_id": "TE 5-1",
+            "title": "Dining Facility Workload – Estimated Average Headcount by Meal Period",
+            "kind": "dining",
+            "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+            "pages": "3",
+            "row_count": 4,
+            "printed_total_gross_area": null,
+            "area_unit": "sf"
+          },
+          {
+            "table_id": "TE 6-1",
+            "title": "Custodial Services – Facility List and Service Frequencies",
+            "kind": "facilities",
+            "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+            "pages": "5-6",
+            "row_count": 18,
+            "printed_total_gross_area": 461290,
+            "area_unit": "sf"
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "TE 6-1",
+            "campus": null,
+            "building_number": "101",
+            "name": "Garrison Headquarters (Patterson Hall)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 46850,
+            "cleanable_area": 41200,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+              "page": 5,
+              "excerpt": "1 | 101 | Garrison Headquarters (Patterson Hall) | 2 | 46,850 | 41,200 | 5X/WK"
+            },
+            "confidence": 0.97,
+            "notes": null
+          },
+          {
+            "table_id": "TE 6-1",
+            "campus": null,
+            "building_number": "115",
+            "name": "Directorate of Human Resources / Soldier Service Center (ID Cards, In- and Out-Processing, Finance)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 38925,
+            "cleanable_area": 33410,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+              "page": 5,
+              "excerpt": "2 | 115 | Directorate of Human Resources / Soldier Service Center (ID Cards, In- and Out-Processing, Finance) | 3 | 38,925 | 33,410 | 5X/WK"
+            },
+            "confidence": 0.97,
+            "notes": null
+          },
+          {
+            "table_id": "TE 6-1",
+            "campus": null,
+            "building_number": "1450",
+            "name": "Troop Issue Subsistence Activity (TISA) and Installation Food Program Office",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 31600,
+            "cleanable_area": 4280,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_frequency_text": "3X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+              "page": 5,
+              "excerpt": "3 | 1450 | TISA and Installation Food Program Office | 1 | 31,600 | 4,280 | 3X/WK | Offices, break room and restrooms only."
+            },
+            "confidence": 0.97,
+            "notes": "Custodial area covers offices, break room and restrooms only; warehouse, chill and freezer areas cleaned by TISA personnel. 3X/WK = Monday, Wednesday and Friday (Note 3)."
+          },
+          {
+            "table_id": "TE 6-1",
+            "campus": null,
+            "building_number": "1462",
+            "name": "Central Issue Facility (CIF)",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 42300,
+            "cleanable_area": 6140,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_frequency_text": "2X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+              "page": 5,
+              "excerpt": "4 | 1462 | Central Issue Facility (CIF) | 1 | 42,300 | 6,140 | 2X/WK | Customer service, fitting rooms, offices and restrooms only."
+            },
+            "confidence": 0.97,
+            "notes": "Custodial area covers customer service, fitting rooms, offices and restrooms only. 2X/WK = two non-consecutive days per week (Note 3)."
+          },
+          {
+            "table_id": "TE 6-1",
+            "campus": null,
+            "building_number": "1475",
+            "name": "Self-Service Supply Center",
+            "status": "deleted_by_amendment",
+            "status_reason": "Struck through, \"DELETED – Vacated 30 JUN 2026; scheduled for demolition.\" Note 4/: deleted from the facility list by DPW 30 June 2026 and will not be serviced.",
+            "category": "warehouse",
+            "gross_area": 9640,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": "DELETED",
+            "scope": [],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+              "page": 5,
+              "excerpt": "5 | ~~1475~~ | ~~Self-Service Supply Center~~ – DELETED 4/ | 1 | 9,640 | — | DELETED | Vacated 30 JUN 2026; scheduled for demolition."
+            },
+            "confidence": 0.97,
+            "notes": "Shown for reconciliation with the current contract only (Note 4); excluded from the printed total (Note 5). Also scheduled for demolition."
+          },
+          {
+            "table_id": "TE 6-1",
+            "campus": null,
+            "building_number": "2240",
+            "name": "Dragon Warrior Restaurant (DFAC)",
+            "status": "excluded",
+            "status_reason": "N/A – \"CLOSED – renovation through FY27. Not in scope (TE 5-1, Note 4).\"",
+            "category": "dining",
+            "gross_area": 25120,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": "N/A",
+            "scope": [],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+              "page": 5,
+              "excerpt": "6 | 2240 | Dragon Warrior Restaurant (DFAC) | 1 | 25,120 | — | N/A | CLOSED – renovation through FY27. Not in scope (TE 5-1, Note 4)."
+            },
+            "confidence": 0.97,
+            "notes": "Closed since 1 Nov 2024 for renovation; excluded from the printed total (Note 5). May be added by bilateral modification after reopening (para 1.8)."
+          },
+          {
+            "table_id": "TE 6-1",
+            "campus": null,
+            "building_number": "3301",
+            "name": "Soldier Readiness Processing (SRP) Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 18450,
+            "cleanable_area": 16020,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+              "page": 5,
+              "excerpt": "7 | 3301 | Soldier Readiness Processing (SRP) Center | 1 | 18,450 | 16,020 | 5X/WK"
+            },
+            "confidence": 0.97,
+            "notes": null
+          },
+          {
+            "table_id": "TE 6-1",
+            "campus": null,
+            "building_number": "3315",
+            "name": "Army Education Center and Learning Resource Center",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 24780,
+            "cleanable_area": 21650,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+              "page": 5,
+              "excerpt": "8 | 3315 | Army Education Center and Learning Resource Center | 2 | 24,780 | 21,650 | 5X/WK"
+            },
+            "confidence": 0.97,
+            "notes": null
+          },
+          {
+            "table_id": "TE 6-1",
+            "campus": null,
+            "building_number": "4120",
+            "name": "Patriot Warrior Restaurant (DFAC)",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 28460,
+            "cleanable_area": 4860,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "7X/WK",
+            "scope": [
+              "custodial",
+              "dining"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+              "page": 5,
+              "excerpt": "9 | 4120 | Patriot Warrior Restaurant (DFAC) | 1 | 28,460 | 4,860 | 7X/WK | Restrooms, entries, corridors and admin offices. 2/"
+            },
+            "confidence": 0.97,
+            "notes": "Custodial area covers restrooms, entries, corridors and admin offices only; kitchen/serving/dining sanitation is under PWS Part 5 (Note 2). Same building as TE 5-1 row 4120."
+          },
+          {
+            "table_id": "TE 6-1",
+            "campus": null,
+            "building_number": "4800",
+            "name": "Hooper Physical Fitness Center",
+            "status": null,
+            "status_reason": null,
+            "category": "fitness",
+            "gross_area": 61240,
+            "cleanable_area": 52880,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "7X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+              "page": 5,
+              "excerpt": "10 | 4800 | Hooper Physical Fitness Center | 1 | 61,240 | 52,880 | 7X/WK | Includes locker rooms and showers."
+            },
+            "confidence": 0.97,
+            "notes": "Includes locker rooms and showers."
+          },
+          {
+            "table_id": "TE 6-1",
+            "campus": null,
+            "building_number": "5102",
+            "name": "Troop Medical Clinic No. 2",
+            "status": null,
+            "status_reason": null,
+            "category": "medical",
+            "gross_area": 19860,
+            "cleanable_area": 17450,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+              "page": 5,
+              "excerpt": "11 | 5102 | Troop Medical Clinic No. 2 | 1 | 19,860 | 17,450 | 5X/WK | Non-clinical areas only."
+            },
+            "confidence": 0.97,
+            "notes": "Non-clinical areas only."
+          },
+          {
+            "table_id": "TE 6-1",
+            "campus": null,
+            "building_number": "5500",
+            "name": "Child Development Center (Ages 6 Weeks – 5 Years)",
+            "status": null,
+            "status_reason": null,
+            "category": "child_care",
+            "gross_area": 21300,
+            "cleanable_area": 18700,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+              "page": 5,
+              "excerpt": "12 | 5500 | Child Development Center (Ages 6 Weeks – 5 Years) | 1 | 21,300 | 18,700 | 5X/WK"
+            },
+            "confidence": 0.97,
+            "notes": null
+          },
+          {
+            "table_id": "TE 6-1",
+            "campus": null,
+            "building_number": "6010",
+            "name": "Main Post Chapel and Religious Education Annex",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 12480,
+            "cleanable_area": 10930,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_frequency_text": "2X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+              "page": 5,
+              "excerpt": "13 | 6010 | Main Post Chapel and Religious Education Annex | 1 | 12,480 | 10,930 | 2X/WK | Service days Tuesday and Saturday."
+            },
+            "confidence": 0.97,
+            "notes": "Service days Tuesday and Saturday."
+          },
+          {
+            "table_id": "TE 6-1",
+            "campus": null,
+            "building_number": "6205",
+            "name": "3rd Brigade Headquarters",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 33650,
+            "cleanable_area": 29020,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+              "page": 5,
+              "excerpt": "14 | 6205 | 3rd Brigade Headquarters | 2 | 33,650 | 29,020 | 5X/WK"
+            },
+            "confidence": 0.97,
+            "notes": null
+          },
+          {
+            "table_id": "TE 6-1",
+            "campus": null,
+            "building_number": "7031",
+            "name": "Ironhorse Warrior Restaurant (DFAC)",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 22740,
+            "cleanable_area": 3720,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "7X/WK",
+            "scope": [
+              "custodial",
+              "dining"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+              "page": 5,
+              "excerpt": "15 | 7031 | Ironhorse Warrior Restaurant (DFAC) | 1 | 22,740 | 3,720 | 7X/WK | Restrooms, entries, corridors and admin offices. 2/"
+            },
+            "confidence": 0.97,
+            "notes": "Custodial area covers restrooms, entries, corridors and admin offices only; kitchen/serving/dining sanitation is under PWS Part 5 (Note 2). Same building as TE 5-1 row 7031."
+          },
+          {
+            "table_id": "TE 6-1",
+            "campus": null,
+            "building_number": "7040",
+            "name": "Aviation Battalion Headquarters and Flight Operations Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 27315,
+            "cleanable_area": 23880,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "7X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+              "page": 5,
+              "excerpt": "16 | 7040 | Aviation Battalion Headquarters and Flight Operations Center | 2 | 27,315 | 23,880 | 7X/WK | 24-hour operations."
+            },
+            "confidence": 0.97,
+            "notes": "24-hour operations."
+          },
+          {
+            "table_id": "TE 6-1",
+            "campus": null,
+            "building_number": "9215",
+            "name": "Sentinel Warrior Restaurant (DFAC)",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 16380,
+            "cleanable_area": 2940,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "7X/WK",
+            "scope": [
+              "custodial",
+              "dining"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+              "page": 5,
+              "excerpt": "17 | 9215 | Sentinel Warrior Restaurant (DFAC) | 1 | 16,380 | 2,940 | 7X/WK | Restrooms, entries and admin offices. 2/"
+            },
+            "confidence": 0.97,
+            "notes": "Custodial area covers restrooms, entries and admin offices only; dining sanitation is under PWS Part 5 DFA (Note 2). Same building as TE 5-1 row 9215."
+          },
+          {
+            "table_id": "TE 6-1",
+            "campus": null,
+            "building_number": "9300",
+            "name": "Range Control and Training Support Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 14960,
+            "cleanable_area": 12870,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_frequency_text": "3X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+              "page": 5,
+              "excerpt": "18 | 9300 | Range Control and Training Support Center | 1 | 14,960 | 12,870 | 3X/WK | Service days Monday, Wednesday and Friday."
+            },
+            "confidence": 0.97,
+            "notes": "Service days Monday, Wednesday and Friday."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "TE 5-1",
+            "campus": null,
+            "building_number": "2240",
+            "name": "Dragon Warrior Restaurant",
+            "status": "excluded",
+            "status_reason": "\"CLOSED FOR RENOVATION THROUGH FY27 – NO WORKLOAD\"; \"Closed 1 NOV 2024. Not in scope. Diners reassigned to Bldg 4120.\"",
+            "category": "dining",
+            "gross_area": null,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [],
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": null,
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": null,
+              "seats": 400,
+              "kitchen_sqft": null,
+              "dining_room_sqft": null,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+              "page": 3,
+              "excerpt": "2240 | Dragon Warrior Restaurant | 400 | 1,200 | FFS | CLOSED FOR RENOVATION THROUGH FY27 – NO WORKLOAD 4/ | Closed 1 NOV 2024. Not in scope."
+            },
+            "confidence": 0.97,
+            "notes": "Seating 400, max feeding capacity 1,200 per meal (planning only). TE 5-2 shows 0 days open. No food service or custodial workload (Note 4/). Gross area 25,120 SF is in TE 6-1."
+          },
+          {
+            "table_id": "TE 5-1",
+            "campus": null,
+            "building_number": "4120",
+            "name": "Patriot Warrior Restaurant",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": null,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "dining"
+            ],
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": [
+                {
+                  "period": "Breakfast",
+                  "weekday_headcount": 410,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Lunch",
+                  "weekday_headcount": 905,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Dinner",
+                  "weekday_headcount": 520,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Brunch",
+                  "weekday_headcount": null,
+                  "weekend_headcount": 465
+                },
+                {
+                  "period": "Supper",
+                  "weekday_headcount": null,
+                  "weekend_headcount": 330
+                }
+              ],
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 600,
+              "kitchen_sqft": null,
+              "dining_room_sqft": null,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+              "page": 3,
+              "excerpt": "4120 | Patriot Warrior Restaurant | 600 | 1,800 | FFS | 410 | 905 | 520 | — | 465 | 330 | Main post consolidated DFAC; includes reassigned Bldg 2240 diners."
+            },
+            "confidence": 0.97,
+            "notes": "FFS. Max feeding capacity 1,800 per meal (planning only, not workload). No late/midnight meal. Days open 7 per TE 5-2. Includes reassigned Bldg 2240 diners. Gross area in TE 6-1."
+          },
+          {
+            "table_id": "TE 5-1",
+            "campus": null,
+            "building_number": "7031",
+            "name": "Ironhorse Warrior Restaurant",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": null,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "dining"
+            ],
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": [
+                {
+                  "period": "Breakfast",
+                  "weekday_headcount": 285,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Lunch",
+                  "weekday_headcount": 640,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Dinner",
+                  "weekday_headcount": 390,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Late / Midnight",
+                  "weekday_headcount": 115,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Brunch",
+                  "weekday_headcount": null,
+                  "weekend_headcount": 310
+                },
+                {
+                  "period": "Supper",
+                  "weekday_headcount": null,
+                  "weekend_headcount": 240
+                }
+              ],
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 450,
+              "kitchen_sqft": null,
+              "dining_room_sqft": null,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+              "page": 3,
+              "excerpt": "7031 | Ironhorse Warrior Restaurant | 450 | 1,350 | FFS | 285 | 640 | 390 | 115 5/ | 310 | 240 | Supports aviation brigade area; midnight meal Monday–Friday"
+            },
+            "confidence": 0.97,
+            "notes": "FFS. Max feeding capacity 1,350 per meal (planning only). Late/midnight meal (2330–0100) Monday–Friday only, not weekends/holidays (Note 5/). Days open 7 per TE 5-2. Gross area in TE 6-1."
+          },
+          {
+            "table_id": "TE 5-1",
+            "campus": null,
+            "building_number": "9215",
+            "name": "Sentinel Warrior Restaurant",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": null,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "dining"
+            ],
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": [
+                {
+                  "period": "Breakfast",
+                  "weekday_headcount": 140,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Lunch",
+                  "weekday_headcount": 315,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Dinner",
+                  "weekday_headcount": 188,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Brunch",
+                  "weekday_headcount": null,
+                  "weekend_headcount": 150
+                },
+                {
+                  "period": "Supper",
+                  "weekday_headcount": null,
+                  "weekend_headcount": 105
+                }
+              ],
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 300,
+              "kitchen_sqft": null,
+              "dining_room_sqft": null,
+              "service_style": "dining_facility_attendant"
+            },
+            "source": {
+              "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+              "page": 3,
+              "excerpt": "9215 | Sentinel Warrior Restaurant | 300 | 900 | DFA | 140 | 315 | 188 | — | 150 | 105 | DFA services only. Government (92G) cooks; supports TOE units."
+            },
+            "confidence": 0.97,
+            "notes": "DFA services only; Government (92G) cooks perform food production (Note 6/, para 1.2b). Max feeding capacity 900 per meal (planning only). Days open 7 per TE 5-2. Gross area in TE 6-1."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "set_previous_award",
+      "input": {
+        "incumbent": "Sandhill Garrison Services, LLC",
+        "contract_number": "W9124J-21-C-0012",
+        "contract_type": "FFP",
+        "total_value": 71284960,
+        "period_months": 60,
+        "annual_value": 14962415,
+        "spend_to_date": null,
+        "spend_period_months": null,
+        "award_year": 2021,
+        "source": {
+          "file": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf",
+          "page": 2,
+          "excerpt": "Sandhill Garrison Services, LLC under Contract No. W9124J-21-C-0012, a FFP contract awarded on 24 September 2021 ... total contract value, inclusive of all option periods, of $71,284,960."
+        },
+        "confidence": 0.9,
+        "notes": "Para 1.4: 12-month base (1 Oct 2021 – 30 Sep 2022) + four 12-month options; total $71,284,960 as modified. Annual value of Option Period 4 (1 Oct 2025 – 30 Sep 2026) is $14,962,415 and covers three operating DFACs (4120, 7031, 9215) and the TE 6-1 custodial facilities, plus Bldg 1475 through 30 Jun 2026. FAR 52.217-8 extension 1 Oct 2026 – 31 Mar 2027: $7,481,208. Mod P00009 deleted Bldg 2240 line items effective 1 Nov 2024 and increased Bldg 4120 line items; at award the contract had four DFACs. Field feeding contract W9124J-24-D-0019 (ceiling $4,950,000) is separate and not part of this requirement. No obligations/spend-to-date stated."
+      },
+      "pass": 0
+    },
+    {
+      "name": "finish",
+      "input": {
+        "summary": "Fort Branford, GA – solicitation W9124J-27-R-0047 (FFS, DFA and facility sanitation). Registered TE 6-1 custodial facility list (18 rows: 16 in scope totaling 461,290 GSF / 299,950 SF custodial service area; Bldg 1475 deleted and Bldg 2240 closed/not in scope) and TE 5-1 dining workload (4 rows): Bldg 4120 Patriot and 7031 Ironhorse full food service, Bldg 9215 Sentinel DFA only, each with per-meal-period weekday and weekend/holiday average headcounts, seating and 7 days/week; Bldg 2240 Dragon closed for renovation, excluded. Dining buildings were merged with their TE 6-1 custodial rows (custodial covers restrooms, entries, corridors and admin offices only). Previous award: Sandhill Garrison Services, LLC, W9124J-21-C-0012, FFP, $71,284,960 total over 60 months, Option Period 4 annual value $14,962,415. No grounds maintenance in this package.",
+        "unresolved": [
+          "TE 6-1: 18 rows registered (gross 496,050 SF) vs printed total 461,290 SF; the printed total covers only the 16 in-scope facilities per Note 5/ and excludes Bldg 1475 (deleted, 9,640 GSF) and Bldg 2240 (closed, 25,120 GSF).",
+          "Para 6-1.1 names facilities not included in this requirement (serviced under other contracts / by occupants): Bldgs 5100 and 5104 (Branford Army Health Clinic), 4810 (Outdoor Pool), Unaccompanied Housing 8101–8104, and the Exchange Main Store and food court. Not registered; no areas given.",
+          "Kitchen and dining room square footage for the DFACs are not stated; only gross area (TE 6-1) and seating (TE 5-1).",
+          "TE 6-2 custodial task frequency chart (Attachment J-0505), TE 3 GFP/GFE (J-0503) and TE 7 map (J-0506) are referenced but not in the package.",
+          "TE 5-3 historical meals served is for information only and was not used as workload; Bldg 2240 may be added by bilateral modification after renovation in FY28 (para 1.8).",
+          "No grounds maintenance areas, climate data or growing season in the package; climate zone inferred from the Georgia location."
+        ]
+      },
+      "pass": 0
+    }
+  ]
+}

@@ -1,0 +1,1188 @@
+{
+  "model": "opus-sim",
+  "passes": [
+    [
+      "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+      "W9124D-26-R-0019 Questions and Answers No 1.docx",
+      "W9124D-26-R-0019 Amendment 0002.pdf"
+    ]
+  ],
+  "calls": [
+    {
+      "name": "set_site_info",
+      "input": {
+        "installation_name": "Fort Calder",
+        "location": "Fort Calder, Kentucky (KY 40199)",
+        "solicitation": "W9124D-26-R-0019",
+        "contract_name": "Custodial Services, Fort Calder, Kentucky",
+        "climate_zone": "temperate",
+        "growing_season_weeks": null,
+        "contract_years": 5,
+        "notes": "Custodial services only (PWS J-0001); no grounds or dining scope. PWS 1.4: one 12-month base (1 Oct 2026-30 Sep 2027) and four 12-month options (through 30 Sep 2031); 30-day phase-in 1-30 Sep 2026 with no separate CLIN; FAR 52.217-8 extension up to 6 months is not an option period. Proposals due 10 Jul 2026 per Amendment 0002. Climate zone inferred from the Kentucky location (not stated)."
+      },
+      "pass": 0
+    },
+    {
+      "name": "declare_tables",
+      "input": {
+        "tables": [
+          {
+            "table_id": "TE-1",
+            "title": "Technical Exhibit 1 (TE-1) Custodial Facility List (original issue, 15 May 2026)",
+            "kind": "facilities",
+            "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+            "pages": "5-6",
+            "row_count": 26,
+            "printed_total_gross_area": 593210,
+            "area_unit": "sf"
+          },
+          {
+            "table_id": "AMD0002-3.1",
+            "title": "Amendment 0002 para 3.1 TE-1 gross square footage corrections",
+            "kind": "facilities",
+            "file": "W9124D-26-R-0019 Amendment 0002.pdf",
+            "pages": "2",
+            "row_count": 3,
+            "printed_total_gross_area": null,
+            "area_unit": "sf"
+          },
+          {
+            "table_id": "AMD0002-3.3",
+            "title": "Amendment 0002 para 3.3 TE-1 additions",
+            "kind": "facilities",
+            "file": "W9124D-26-R-0019 Amendment 0002.pdf",
+            "pages": "3",
+            "row_count": 2,
+            "printed_total_gross_area": null,
+            "area_unit": "sf"
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "101",
+            "name": "Garrison Headquarters (Calder Hall)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 42860,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (M–F)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 5,
+              "excerpt": "1 | 101 | Garrison Headquarters (Calder Hall) | 2 | 42,860 | Daily (M–F) | 1700–0500 | Includes Command Suite and Conference Rooms 201–204"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "104",
+            "name": "Directorate of Public Works (DPW) Administration Building",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 18240,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (M–F)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 5,
+              "excerpt": "2 | 104 | Directorate of Public Works (DPW) Administration Building | 2 | 18,240 | Daily (M–F) | 1700–0500"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "106",
+            "name": "Soldier Service Center (In/Out Processing, Finance, ID Cards)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 36515,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (M–F)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 5,
+              "excerpt": "3 | 106 | Soldier Service Center (In/Out Processing, Finance, ID Cards) | 3 | 36,515 | Daily (M–F) | 1700–0500 | Lobby restrooms: additional midday check at 1200"
+            },
+            "confidence": 0.95,
+            "notes": "Lobby restrooms get an additional midday check at 1200."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "109",
+            "name": "Network Enterprise Center (NEC)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 12780,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_frequency_text": "3x Weekly",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 5,
+              "excerpt": "4 | 109 | Network Enterprise Center (NEC) | 1 | 12,780 | 3x Weekly | 1700–0500 | Server rooms 110–114 excluded; escort required"
+            },
+            "confidence": 0.95,
+            "notes": "Server rooms 110–114 excluded from cleaning; escort required."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "112",
+            "name": "Military Personnel Division / Transition Assistance Program Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 9450,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (M–F)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 5,
+              "excerpt": "5 | 112 | Military Personnel Division / Transition Assistance Program Center | 1 | 9,450 | Daily (M–F) | 1700–0500"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "115",
+            "name": "Army Community Service (ACS) Center",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 15325,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (M–F)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 5,
+              "excerpt": "6 | 115 | Army Community Service (ACS) Center | 2 | 15,325 | Daily (M–F) | 1700–0500"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "118",
+            "name": "Education Center Annex (Testing Center)",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 7920,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_frequency_text": "Weekly",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 5,
+              "excerpt": "7 | 118 | Education Center Annex (Testing Center) | 1 | 7,920 | Weekly | 1700–0500 | See footnote 3"
+            },
+            "confidence": 0.95,
+            "notes": "Footnote 3: testing function planned to consolidate into Building 124 during FY2026."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "121",
+            "name": "Post Library (Grant Memorial Library)",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 21640,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (M–F)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 5,
+              "excerpt": "8 | 121 | Post Library (Grant Memorial Library) | 2 | 21,640 | Daily (M–F) | 2000–0600 | Open Saturdays; no Saturday service"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "124",
+            "name": "Education Center (Army Continuing Education System)",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 26410,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (M–F)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 5,
+              "excerpt": "9 | 124 | Education Center (Army Continuing Education System) | 2 | 26,410 | Daily (M–F) | 1700–0500"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "1201",
+            "name": "Brigade Headquarters",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 48300,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (M–F)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 5,
+              "excerpt": "10 | 1201 | Brigade Headquarters | 3 | 48,300 | Daily (M–F) | 1700–0500 | Escort required in Room 305 (secure area)"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "1203",
+            "name": "Battalion Headquarters, 1st Battalion",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 22150,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (M–F)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 5,
+              "excerpt": "11 | 1203 | Battalion Headquarters, 1st Battalion | 2 | 22,150 | Daily (M–F) | 1700–0500"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "1205",
+            "name": "Battalion Headquarters, 2nd Battalion",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 22150,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (M–F)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 5,
+              "excerpt": "12 | 1205 | Battalion Headquarters, 2nd Battalion | 2 | 22,150 | Daily (M–F) | 1700–0500"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "1207",
+            "name": "Company Operations Facility (COF), Administrative Core",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 14880,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (M–F)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 5,
+              "excerpt": "13 | 1207 | Company Operations Facility (COF), Administrative Core | 1 | 14,880 | Daily (M–F) | 1700–0500 | Arms room and supply cages excluded"
+            },
+            "confidence": 0.95,
+            "notes": "Arms room and supply cages excluded."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "1210",
+            "name": "Mission Training Complex (Classrooms and Battle Simulation)",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 31640,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_frequency_text": "3x Weekly",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 5,
+              "excerpt": "14 | 1210 | Mission Training Complex (Classrooms and Battle Simulation) | 1 | 31,640 | 3x Weekly | 1700–0500 | Simulation bays: dust control per PWS 5.7"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "1214",
+            "name": "Digital Training Facility",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 9275,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_frequency_text": "2x Weekly",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 5,
+              "excerpt": "15 | 1214 | Digital Training Facility | 1 | 9,275 | 2x Weekly | 1700–0500"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "1220",
+            "name": "Tactical Equipment Maintenance Facility (TEMF), Administrative Areas Only",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 11960,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (M–F)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 5,
+              "excerpt": "16 | 1220 | Tactical Equipment Maintenance Facility (TEMF), Administrative Areas Only | 2 | 11,960 | Daily (M–F) | 1530–2330 | See footnote 2"
+            },
+            "confidence": 0.95,
+            "notes": "Footnote 2: GSF is the administrative core only (offices, training room, break room, latrines); maintenance bays (~64,200 SF) not in this contract. Category reflects serviced admin portion."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "2101",
+            "name": "Physical Fitness Center (Ruiz Fitness Center)",
+            "status": null,
+            "status_reason": null,
+            "category": "fitness",
+            "gross_area": 54780,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "Daily (7 Days)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 6,
+              "excerpt": "17 | 2101 | Physical Fitness Center (Ruiz Fitness Center) | 2 | 54,780 | Daily (7 Days) | 0400–0530 and 1300–1500 | Locker rooms 2x daily; see footnote 4"
+            },
+            "confidence": 0.95,
+            "notes": "Locker rooms serviced 2x daily. Footnote 4: includes natatorium deck; pool water treatment by others."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "2105",
+            "name": "Child Development Center",
+            "status": null,
+            "status_reason": null,
+            "category": "child_care",
+            "gross_area": 23450,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (M–F)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 6,
+              "excerpt": "18 | 2105 | Child Development Center | 1 | 23,450 | Daily (M–F) | 1830–0530 | Infection control per PWS 5.6"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "2108",
+            "name": "Youth Center",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 16215,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (M–F)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 6,
+              "excerpt": "19 | 2108 | Youth Center | 1 | 16,215 | Daily (M–F) | 2100–0600"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "2112",
+            "name": "Main Post Chapel and Religious Education Facility",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 18900,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_frequency_text": "2x Weekly",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 6,
+              "excerpt": "20 | 2112 | Main Post Chapel and Religious Education Facility | 2 | 18,900 | 2x Weekly | 1700–2200 | Sanctuary, offices and classrooms"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "2115",
+            "name": "Army Health Clinic",
+            "status": null,
+            "status_reason": null,
+            "category": "medical",
+            "gross_area": 38620,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (M–F)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 6,
+              "excerpt": "21 | 2115 | Army Health Clinic | 2 | 38,620 | Daily (M–F) | 1700–0500 | Infection control per PWS 5.6"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "2120",
+            "name": "Central Issue Facility (CIF)",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 44300,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_frequency_text": "Weekly",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 6,
+              "excerpt": "22 | 2120 | Central Issue Facility (CIF) | 1 | 44,300 | Weekly | 0730–1530 | Warehouse floor: sweep and spot-mop"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "2124",
+            "name": "Supply Support Activity (SSA), Office and Restroom Areas",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 8640,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_frequency_text": "Weekly",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 6,
+              "excerpt": "23 | 2124 | Supply Support Activity (SSA), Office and Restroom Areas | 1 | 8,640 | Weekly | 0730–1530 | See footnote 5"
+            },
+            "confidence": 0.95,
+            "notes": "Footnote 5: office and restroom areas only; warehouse floor maintained by the SSA. PWS 3.2: contractor project office (Rooms 104–106, ~600 SF) in this building is not serviced."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "2130",
+            "name": "Military Police Station / Provost Marshal Office",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 20410,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "Daily (7 Days)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 6,
+              "excerpt": "24 | 2130 | Military Police Station / Provost Marshal Office | 2 | 20,410 | Daily (7 Days) | 2200–0400 | Holding cells excluded"
+            },
+            "confidence": 0.95,
+            "notes": "Holding cells excluded."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "2133",
+            "name": "Visitor Control Center (Main Gate)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 3860,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "Daily (7 Days)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 6,
+              "excerpt": "25 | 2133 | Visitor Control Center (Main Gate) | 1 | 3,860 | Daily (7 Days) | 2200–0400"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "2140",
+            "name": "Calder Conference and Training Center",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 12540,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_frequency_text": "2x Weekly",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.pdf",
+              "page": 6,
+              "excerpt": "26 | 2140 | Calder Conference and Training Center | 1 | 12,540 | 2x Weekly | 1700–0500 | Two services per week; Building Custodian may move a service day to follow a scheduled event (no added services"
+            },
+            "confidence": 0.95,
+            "notes": null
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "AMD0002-3.1",
+            "campus": null,
+            "building_number": "104",
+            "name": "Directorate of Public Works (DPW) Administration Building",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 19860,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (M–F)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Amendment 0002.pdf",
+              "page": 2,
+              "excerpt": "2 | 104 | Directorate of Public Works (DPW) Administration Building | 18,240 | 19,860 | +1,620 | Field-verified; the 2024 second-floor addition over the east wing"
+            },
+            "confidence": 0.95,
+            "notes": "Amendment 0002 3.1: GSF corrected from 18,240 to 19,860; all other data unchanged."
+          },
+          {
+            "table_id": "AMD0002-3.1",
+            "campus": null,
+            "building_number": "1210",
+            "name": "Mission Training Complex (Classrooms and Battle Simulation)",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 33120,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_frequency_text": "3x Weekly",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Amendment 0002.pdf",
+              "page": 2,
+              "excerpt": "14 | 1210 | Mission Training Complex (Classrooms and Battle Simulation) | 31,640 | 33,120 | +1,480 | Corrected to include the after-action review wing."
+            },
+            "confidence": 0.95,
+            "notes": "Amendment 0002 3.1: GSF corrected from 31,640 to 33,120; all other data unchanged."
+          },
+          {
+            "table_id": "AMD0002-3.1",
+            "campus": null,
+            "building_number": "2101",
+            "name": "Physical Fitness Center (Ruiz Fitness Center)",
+            "status": null,
+            "status_reason": null,
+            "category": "fitness",
+            "gross_area": 52980,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "Daily (7 Days)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Amendment 0002.pdf",
+              "page": 2,
+              "excerpt": "17 | 2101 | Physical Fitness Center (Ruiz Fitness Center) | 54,780 | 52,980 | −1,800 | Racquetball court wing demolished October 2025"
+            },
+            "confidence": 0.95,
+            "notes": "Amendment 0002 3.1 and Q&A No. 1 Q4: GSF corrected from 54,780 to 52,980 (1,800 SF racquetball wing demolished Oct 2025); natatorium deck still included and cleaned."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "118",
+            "name": "Education Center Annex (Testing Center)",
+            "status": "deleted_by_amendment",
+            "status_reason": "Amendment 0002 para 3.2: \"Building 118 is deleted from the requirement in its entirety\"; programmed for demolition under the FY2026 facility reduction program.",
+            "category": "education",
+            "gross_area": 7920,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_frequency_text": "Weekly",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Amendment 0002.pdf",
+              "page": 2,
+              "excerpt": "3.2 Deletion. TE-1 Item 7, Building 118, Education Center Annex (Testing Center), 7,920 GSF, Weekly: Building 118 is deleted from the requirement in its entirety."
+            },
+            "confidence": 0.95,
+            "notes": "Item 7 reserved; remaining TE-1 items not renumbered. Also confirmed by Q&A No. 1 Q5. Testing function relocates to Building 124 in July 2026."
+          },
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "1207",
+            "name": "Company Operations Facility (COF), Administrative Core",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 14880,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (M–F)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Questions and Answers No 1.docx",
+              "page": null,
+              "excerpt": "Q6: Building 1207 has two (2) floors. The number of floors for Building 1207 in TE-1 is corrected from 1 to 2. The gross square footage of 14,880 GSF ... is unchanged."
+            },
+            "confidence": 0.95,
+            "notes": "Q&A No. 1 Q6 (incorporated by Amendment 0002): floors corrected 1 -> 2; GSF unchanged at 14,880."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "AMD0002-3.3",
+            "campus": null,
+            "building_number": "1218",
+            "name": "Battalion Headquarters, 3rd Battalion",
+            "status": "in_scope",
+            "status_reason": "Added to TE-1 by Amendment 0002 para 3.3; services begin on the first day of the base period.",
+            "category": "admin",
+            "gross_area": 23700,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (M–F)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Amendment 0002.pdf",
+              "page": 3,
+              "excerpt": "27 | 2 | 1218 | Battalion Headquarters, 3rd Battalion | 2 | 23,700 | Daily (M–F) | 1700–0500 | New construction; beneficial occupancy date 1 August 2026"
+            },
+            "confidence": 0.95,
+            "notes": "TE-1 Item 27, Zone 2. New construction, BOD 1 Aug 2026 (Q&A No. 1 Q8)."
+          },
+          {
+            "table_id": "AMD0002-3.3",
+            "campus": null,
+            "building_number": "2145",
+            "name": "Soldier Readiness Processing (SRP) Center",
+            "status": "in_scope",
+            "status_reason": "Added to TE-1 by Amendment 0002 para 3.3; services begin on the first day of the base period.",
+            "category": "admin",
+            "gross_area": 17385,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "Daily (M–F)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124D-26-R-0019 Amendment 0002.pdf",
+              "page": 3,
+              "excerpt": "28 | 3 | 2145 | Soldier Readiness Processing (SRP) Center | 1 | 17,385 | Daily (M–F) | 1700–0500 | Occupied; previously serviced by the using unit"
+            },
+            "confidence": 0.95,
+            "notes": "TE-1 Item 28, Zone 3. Occupied; previously serviced by the using unit."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "set_previous_award",
+      "input": {
+        "incumbent": "Ostrander Facility Group, LLC",
+        "contract_number": "W9124D-21-C-0007",
+        "contract_type": "FFP",
+        "total_value": null,
+        "period_months": 60,
+        "annual_value": 4812330,
+        "spend_to_date": 4812330,
+        "spend_period_months": 12,
+        "award_year": 2021,
+        "source": {
+          "file": "W9124D-26-R-0019 Questions and Answers No 1.docx",
+          "page": null,
+          "excerpt": "Ostrander Facility Group, LLC ... contract W9124D-21-C-0007, a firm-fixed-price contract awarded 24 September 2021 ... Total obligations for FY2025 were $4,812,330"
+        },
+        "confidence": 0.9,
+        "notes": "Q&A No. 1 Q1: FFP, awarded 24 Sep 2021, 12-month base + four 12-month options, now in Option Period 4 ending 30 Sep 2026. Total award/ceiling value not stated. $4,812,330 = total FY2025 obligations (1 Oct 2024-30 Sep 2025), used as annual value; per Q3 it includes $186,415 of over-and-above work orders. Incumbent staffing and pricing not released (Q1, Q2)."
+      },
+      "pass": 0
+    },
+    {
+      "name": "finish",
+      "input": {
+        "summary": "Fort Calder, KY custodial services (W9124D-26-R-0019), base + 4 option years. Registered all 26 original TE-1 rows, then applied Amendment 0002: GSF corrections for 104 (19,860), 1210 (33,120) and 2101 (52,980); Building 118 deleted (deleted_by_amendment); Buildings 1218 (23,700) and 2145 (17,385) added; and Q&A No. 1 Q6 floors correction for 1207 (2 floors). Result: 28 buildings registered, 27 in scope, which matches the Amendment 0002 para 3.4 revised TE-1 total of 27 facilities / 627,675 GSF. All facilities include periodic floor care (PWS 5.3). No grounds or dining scope. Incumbent Ostrander Facility Group, LLC (W9124D-21-C-0007, FFP, awarded 2021); FY2025 obligations $4,812,330, including $186,415 of over-and-above work.",
+        "unresolved": [
+          "TE-1 declared with its original printed total (26 facilities, 593,210 GSF). Amendment 0002 para 3.4 revises TE-1 to 27 facilities / 627,675 GSF. The amended rows are registered under AMD0002-3.1 and AMD0002-3.3, and the Building 118 deletion and Building 1207 floor correction are registered without a table_id.",
+          "Buildings 131 (Vehicle Storage, 6,400 SF per Q&A Q7) and 2150 (Thrift Shop, NAF) are named in TE-1 Note a as maintained by others and not part of the requirement. They are not registered because they are absent from TE-1.",
+          "Buildings 1220 and 2124 are serviced in part. Their GSF is the serviced portion only (1220 maintenance bays of about 64,200 SF and the 2124 warehouse floor are excluded).",
+          "No restroom fixture counts, floor-finish mix or occupancy are given in the package. Engine defaults apply.",
+          "Total incumbent contract/ceiling value not disclosed. Only FY2025 obligations are given."
+        ]
+      },
+      "pass": 0
+    }
+  ]
+}

@@ -1,0 +1,873 @@
+[
+  {
+    "name": "declare_tables",
+    "description": "Declare the workload tables you found (facility lists, custodial workload, dining workload, grounds) before registering their rows. finish is checked against the row counts and printed totals declared here. Call again to correct a declaration.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "tables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "table_id": {
+                "type": "string",
+                "description": "Short id, e.g. \"TE-3\", \"J-4\", \"TE 5-1\"."
+              },
+              "title": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "facilities",
+                  "dining",
+                  "grounds",
+                  "other"
+                ]
+              },
+              "file": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Document name exactly as listed."
+              },
+              "pages": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Page range, e.g. \"12-19\"."
+              },
+              "row_count": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Number of building (or area) rows, excluding header, subtotal and total rows."
+              },
+              "printed_total_gross_area": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "The printed total / grand total of the gross area column, as printed (in area_unit)."
+              },
+              "area_unit": {
+                "type": "string",
+                "enum": [
+                  "sf",
+                  "sm",
+                  "sy"
+                ]
+              }
+            },
+            "required": [
+              "table_id",
+              "title",
+              "kind",
+              "file",
+              "pages",
+              "row_count",
+              "printed_total_gross_area",
+              "area_unit"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "tables"
+      ],
+      "additionalProperties": false
+    },
+    "strict": true
+  },
+  {
+    "name": "register_facilities",
+    "description": "Register facilities (buildings) in table order, in batches of up to 50 rows per call. Keep each call short enough to finish well within the output limit; if a call is reported as cut off, resend exactly those rows in smaller batches. Register every row, including excluded / deleted / demolished / vacant rows with their status. Never register subtotal or total rows. A building seen again (other table, amendment, Q&A) is merged by building number + campus.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "facilities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "table_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "table_id from declare_tables for the table this row came from."
+              },
+              "campus": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Installation, campus or site, when the package covers more than one. Same number on two campuses = two buildings."
+              },
+              "building_number": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Exactly as printed, including letters, hyphens and leading zeros (0012, T-2401, 3105-B, P-114). Null if the row has no number."
+              },
+              "name": {
+                "type": "string",
+                "description": "Facility name as printed."
+              },
+              "status": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Scope status as the document states it. null when the row says nothing about scope: a new building is then in scope, and a row that only updates an already-registered building (frequency, fixtures, dining, a revised area) leaves its status unchanged. excluded (not in scope, N/A, information only, no service); deleted_by_amendment (struck through or deleted by an amendment / Q&A); demolished (demolished or scheduled for demolition, disposed); vacant (vacant, closed); option_only (only in an option period / optional CLIN); in_scope only when a document explicitly puts the building in scope or back in scope (give status_reason).",
+                "enum": [
+                  "in_scope",
+                  "excluded",
+                  "deleted_by_amendment",
+                  "demolished",
+                  "vacant",
+                  "option_only",
+                  null
+                ]
+              },
+              "status_reason": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Why the row is (not) in scope, quoting the document (e.g. \"DEMO FY27 – EXCLUDE\", \"Deleted by Amendment 0002\")."
+              },
+              "category": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Best-fit category.",
+                "enum": [
+                  "admin",
+                  "barracks",
+                  "dining",
+                  "medical",
+                  "warehouse",
+                  "maintenance",
+                  "hangar",
+                  "fitness",
+                  "child_care",
+                  "education",
+                  "community",
+                  "lab",
+                  "other",
+                  null
+                ]
+              },
+              "gross_area": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Gross area exactly as printed, in area_unit (never converted). Null only when the row prints no area (then set area_missing) or the row only adds data to a building already registered."
+              },
+              "cleanable_area": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Cleanable / serviced / custodial area as printed, in area_unit."
+              },
+              "area_unit": {
+                "type": "string",
+                "enum": [
+                  "sf",
+                  "sm",
+                  "sy"
+                ],
+                "description": "Unit the areas are printed in: sf (square feet), sm (square meters), sy (square yards). The tool converts."
+              },
+              "area_missing": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "true when the document prints no area for this building."
+              },
+              "estimated_gross_area": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Only with area_missing: your estimate in area_unit; give the basis in notes."
+              },
+              "floors": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Number of stories."
+              },
+              "fixtures": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "Restroom fixtures. When WC / UR / LAV / shower are separate columns fill them separately; the tool sums them.",
+                "properties": {
+                  "total": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "water_closets": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "urinals": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "lavatories": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "showers": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "total",
+                  "water_closets",
+                  "urinals",
+                  "lavatories",
+                  "showers"
+                ],
+                "additionalProperties": false
+              },
+              "occupancy": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "service_level": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Routine cleaning frequency. Bi-weekly = every two weeks (biweekly) unless the document defines it as twice a week.",
+                "enum": [
+                  "daily_7",
+                  "daily_5",
+                  "3x_week",
+                  "2x_week",
+                  "weekly",
+                  "biweekly",
+                  "monthly",
+                  "quarterly",
+                  null
+                ]
+              },
+              "service_frequency_text": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The frequency exactly as printed (e.g. \"M–F\", \"Daily (7 days)\", \"2x/month\")."
+              },
+              "scope": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "custodial",
+                    "floor_care",
+                    "dining",
+                    "grounds"
+                  ]
+                },
+                "description": "Services that apply to this facility."
+              },
+              "floor_mix": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "Fractions of floor area by finish if the RFP gives them (sum ≈ 1).",
+                "properties": {
+                  "carpet": {
+                    "type": "number"
+                  },
+                  "resilient": {
+                    "type": "number"
+                  },
+                  "hard_tile": {
+                    "type": "number"
+                  },
+                  "concrete": {
+                    "type": "number"
+                  },
+                  "wood": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "carpet",
+                  "resilient",
+                  "hard_tile",
+                  "concrete",
+                  "wood"
+                ],
+                "additionalProperties": false
+              },
+              "dining": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "Dining facility workload. Register each dining facility separately with its own headcount.",
+                "properties": {
+                  "meal_periods": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "description": "Per meal period as printed: weekday = Monday–Friday average headcount per day, weekend = weekend / holiday average per day (null when the period is not served then). The tool computes meals per day.",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "period": {
+                          "type": "string"
+                        },
+                        "weekday_headcount": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "weekend_headcount": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "period",
+                        "weekday_headcount",
+                        "weekend_headcount"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "meals_per_day": {
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "description": "Only when the document states a single daily total and no per-period figures."
+                  },
+                  "meal_period_count": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "Meal periods served per weekday, when stated without headcounts."
+                  },
+                  "days_per_week": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "seats": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "kitchen_sqft": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "dining_room_sqft": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "service_style": {
+                    "type": "string",
+                    "enum": [
+                      "full_food_service",
+                      "dining_facility_attendant",
+                      "management_only"
+                    ]
+                  }
+                },
+                "required": [
+                  "meal_periods",
+                  "meals_per_day",
+                  "meal_period_count",
+                  "days_per_week",
+                  "seats",
+                  "kitchen_sqft",
+                  "dining_room_sqft",
+                  "service_style"
+                ],
+                "additionalProperties": false
+              },
+              "source": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Document name exactly as listed in the package."
+                  },
+                  "page": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "Page number (\"--- page N ---\" in text documents)."
+                  },
+                  "excerpt": {
+                    "type": "string",
+                    "description": "The row or sentence the numbers came from (≤ 200 chars)."
+                  }
+                },
+                "required": [
+                  "file",
+                  "page",
+                  "excerpt"
+                ],
+                "additionalProperties": false
+              },
+              "confidence": {
+                "type": "number",
+                "description": "0–1 confidence that name and area are correct."
+              },
+              "notes": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "table_id",
+              "campus",
+              "building_number",
+              "name",
+              "status",
+              "status_reason",
+              "gross_area",
+              "cleanable_area",
+              "area_unit",
+              "area_missing",
+              "floors",
+              "service_level",
+              "service_frequency_text",
+              "scope",
+              "source",
+              "confidence"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "facilities"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "register_grounds",
+    "description": "Register grounds maintenance areas (turf acreage by type, athletic fields, beds, parking, walks, trees) as printed. Never register total rows.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "areas": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "campus": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "facility_building_number": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Building number this area belongs to, if the document ties it to one."
+              },
+              "table_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "improved_turf",
+                  "semi_improved",
+                  "unimproved",
+                  "athletic_field",
+                  "shrub_bed",
+                  "parking",
+                  "sidewalk",
+                  "tree_canopy"
+                ],
+                "description": "Type I = improved_turf; Type II = semi_improved; Type III / IV = unimproved; BASH, airfield infield and clear zones are semi_improved or unimproved per the mowing frequency."
+              },
+              "document_label": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The document's own label (\"Type II\", \"Category B\", \"BASH area\")."
+              },
+              "mowing_frequency_text": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Mowing / service frequency as printed."
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "in_scope",
+                  "excluded",
+                  "deleted_by_amendment",
+                  "demolished",
+                  "vacant",
+                  "option_only"
+                ],
+                "description": "in_scope (default); excluded (not in scope, N/A, information only, no service); deleted_by_amendment (struck through or deleted by an amendment / Q&A); demolished (demolished or scheduled for demolition, disposed); vacant (vacant, closed); option_only (only in an option period / optional CLIN)."
+              },
+              "status_reason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "quantity": {
+                "type": "number",
+                "description": "As printed, in unit."
+              },
+              "unit": {
+                "type": "string",
+                "enum": [
+                  "acres",
+                  "hectares",
+                  "sqft",
+                  "sqm",
+                  "sqyd",
+                  "lf",
+                  "each"
+                ],
+                "description": "Unit as printed; the tool converts hectares and sqm."
+              },
+              "source": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Document name exactly as listed in the package."
+                  },
+                  "page": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "Page number (\"--- page N ---\" in text documents)."
+                  },
+                  "excerpt": {
+                    "type": "string",
+                    "description": "The row or sentence the numbers came from (≤ 200 chars)."
+                  }
+                },
+                "required": [
+                  "file",
+                  "page",
+                  "excerpt"
+                ],
+                "additionalProperties": false
+              },
+              "confidence": {
+                "type": "number"
+              },
+              "notes": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "campus",
+              "facility_building_number",
+              "kind",
+              "document_label",
+              "status",
+              "quantity",
+              "unit",
+              "source",
+              "confidence"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "areas"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "set_site_info",
+    "description": "Record installation-level facts: name, location, solicitation, climate, growing season, contract period.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "installation_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "location": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "solicitation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "contract_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "climate_zone": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "cold",
+            "temperate",
+            "hot_humid",
+            "arid",
+            null
+          ]
+        },
+        "growing_season_weeks": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "contract_years": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Total years including base and all option periods."
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "installation_name",
+        "location",
+        "solicitation",
+        "contract_name",
+        "climate_zone",
+        "growing_season_weeks",
+        "contract_years",
+        "notes"
+      ],
+      "additionalProperties": false
+    },
+    "strict": true
+  },
+  {
+    "name": "set_previous_award",
+    "description": "Record what the package says about the incumbent / previous contract and its value or spend.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "incumbent": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "contract_number": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "contract_type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "FFP, IDIQ, cost-plus, etc."
+        },
+        "total_value": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Total award / ceiling value in dollars."
+        },
+        "period_months": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Months of performance that total_value covers (base + options)."
+        },
+        "annual_value": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Annual value in dollars if stated directly."
+        },
+        "spend_to_date": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Obligated / invoiced dollars to date."
+        },
+        "spend_period_months": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Months covered by spend_to_date."
+        },
+        "award_year": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "source": {
+          "type": "object",
+          "properties": {
+            "file": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Document name exactly as listed in the package."
+            },
+            "page": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Page number (\"--- page N ---\" in text documents)."
+            },
+            "excerpt": {
+              "type": "string",
+              "description": "The row or sentence the numbers came from (≤ 200 chars)."
+            }
+          },
+          "required": [
+            "file",
+            "page",
+            "excerpt"
+          ],
+          "additionalProperties": false
+        },
+        "confidence": {
+          "type": "number"
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "source",
+        "confidence"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "finish",
+    "description": "Call once every facility and grounds area has been registered. Refused while declared tables do not reconcile, unless unresolved names the table_id and explains the difference.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "summary": {
+          "type": "string"
+        },
+        "unresolved": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "summary",
+        "unresolved"
+      ],
+      "additionalProperties": false
+    },
+    "strict": true
+  }
+]

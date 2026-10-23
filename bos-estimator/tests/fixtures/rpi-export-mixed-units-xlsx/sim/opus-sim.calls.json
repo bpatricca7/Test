@@ -1,0 +1,2114 @@
+{
+  "model": "opus-sim",
+  "passes": [
+    [
+      "W9124Q-27-R-0058 Att J-2 Cover Memo - RPI Extract Scope.pdf",
+      "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx"
+    ]
+  ],
+  "calls": [
+    {
+      "name": "set_site_info",
+      "input": {
+        "installation_name": "Fort Tolland",
+        "location": "Fort Tolland, Kansas 66999",
+        "solicitation": "W9124Q-27-R-0058",
+        "contract_name": "Facility Support Services (Custodial and Grounds Maintenance), Fort Tolland",
+        "climate_zone": "temperate",
+        "growing_season_weeks": null,
+        "contract_years": null,
+        "notes": "From Att J-2 cover memo (DPW Real Property Branch, 2 Oct 2026). Scope: custodial (PWS C.5) and grounds maintenance (PWS C.6). Climate zone inferred from the Kansas location; growing season and base/option periods are not stated in the package."
+      },
+      "pass": 0
+    },
+    {
+      "name": "declare_tables",
+      "input": {
+        "tables": [
+          {
+            "table_id": "J-2",
+            "title": "Att J-2 RPI Extract Fort Tolland 30SEP2026 - building records (RPA_TYPE BUILDING, plus the one STRUCTURE recorded in SF)",
+            "kind": "facilities",
+            "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+            "pages": null,
+            "row_count": 54,
+            "printed_total_gross_area": null,
+            "area_unit": "sf"
+          },
+          {
+            "table_id": "J-2G",
+            "title": "Att J-2 RPI Extract Fort Tolland 30SEP2026 - land (CATCODE 932xx, AC) and surfaced vehicle parking (CATCODE 85210/85215, SY) records",
+            "kind": "grounds",
+            "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+            "pages": null,
+            "row_count": 17,
+            "printed_total_gross_area": null,
+            "area_unit": "sy"
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "00101",
+            "name": "GARRISON HEADQUARTERS",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 34210,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1377897 | 00101 | GARRISON HEADQUARTERS | BUILDING | 61050 | ADMIN GEN PURPOSE | SF | 34210 | 3 | 1958 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "00103",
+            "name": "DPW ADMINISTRATION",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 12880,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1520558 | 00103 | DPW ADMINISTRATION | BUILDING | 61050 | ADMIN GEN PURPOSE | SF | 12880 | 2 | 1962 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "00105",
+            "name": "DIRECTORATE OF EMERGENCY SERVICES",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 14560,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1589614 | 00105 | DIRECTORATE OF EMERGENCY SERVICES | BUILDING | 73075 | MILITARY POLICE STATION | SF | 14560 | 2 | 1991 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "00107",
+            "name": "FIRE STATION NO 1",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 11240,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1742577 | 00107 | FIRE STATION NO 1 | BUILDING | 73010 | FIRE STATION | SF | 11240 | 1 | 1987 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "00110",
+            "name": "TOLLAND ARMY HEALTH CLINIC",
+            "status": null,
+            "status_reason": null,
+            "category": "medical",
+            "gross_area": 28300,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1221405 | 00110 | TOLLAND ARMY HEALTH CLINIC | BUILDING | 55010 | HEALTH CLINIC | SF | 28300 | 2 | 1999 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "00112",
+            "name": "DENTAL CLINIC",
+            "status": null,
+            "status_reason": null,
+            "category": "medical",
+            "gross_area": 9870,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1366134 | 00112 | DENTAL CLINIC | BUILDING | 54010 | DENTAL CLINIC | SF | 9870 | 1 | 1994 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "00115",
+            "name": "CHILD DEVELOPMENT CENTER",
+            "status": null,
+            "status_reason": null,
+            "category": "child_care",
+            "gross_area": 18450,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1984186 | 00115 | CHILD DEVELOPMENT CENTER | BUILDING | 74046 | CHILD DEVELOPMENT CENTER | SF | 18450 | 1 | 2006 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "00118",
+            "name": "PHYSICAL FITNESS CENTER",
+            "status": null,
+            "status_reason": null,
+            "category": "fitness",
+            "gross_area": 41200,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1408241 | 00118 | PHYSICAL FITNESS CENTER | BUILDING | 74028 | PHYSICAL FITNESS CENTER | SF | 41200 | 2 | 1985 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "00120",
+            "name": "MAIN POST CHAPEL",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 8140,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1823190 | 00120 | MAIN POST CHAPEL | BUILDING | 73017 | RELIGIOUS FACILITY | SF | 8140 | 1 | 1941 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "00122",
+            "name": "POST LIBRARY",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 9600,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1667582 | 00122 | POST LIBRARY | BUILDING | 74044 | LIBRARY | SF | 9600 | 1 | 1977 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "00125",
+            "name": "ARMY COMMUNITY SERVICE",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 7920,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1236597 | 00125 | ARMY COMMUNITY SERVICE | BUILDING | 74010 | ARMY COMMUNITY SERVICE CENTER | SF | 7920 | 1 | 1989 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "00128",
+            "name": "ARMY EDUCATION CENTER",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 16340,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1146508 | 00128 | ARMY EDUCATION CENTER | BUILDING | 17120 | GENERAL INSTRUCTION BLDG | SF | 16340 | 2 | 1983 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "00130",
+            "name": "OLD POST HEADQUARTERS (VACANT)",
+            "status": "vacant",
+            "status_reason": "FAC_STATUS CLOSED - memo para 4: records with FAC_STATUS \"DISPOSED\" or \"CLOSED\" are not in scope",
+            "category": "admin",
+            "gross_area": 22600,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1166641 | 00130 | OLD POST HEADQUARTERS (VACANT) | BUILDING | 61050 | ADMIN GEN PURPOSE | SF | 22600 | 2 | 1941 | CLOSED"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "00132",
+            "name": "BOWLING CENTER",
+            "status": "demolished",
+            "status_reason": "FAC_STATUS DISPOSED - memo para 4: records with FAC_STATUS \"DISPOSED\" or \"CLOSED\" are not in scope",
+            "category": "community",
+            "gross_area": 14000,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1979808 | 00132 | BOWLING CENTER | BUILDING | 74021 | BOWLING CENTER | SF | 14000 | 1 | 1964 | DISPOSED"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "00135",
+            "name": "VISITOR CONTROL CENTER",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 2150,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1856803 | 00135 | VISITOR CONTROL CENTER | BUILDING | 14130 | ACCESS CONTROL FACILITY | SF | 2150 | 1 | 2015 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "00137",
+            "name": "POST OFFICE",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 4300,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1889432 | 00137 | POST OFFICE | BUILDING | 73070 | POST OFFICE | SF | 4300 | 1 | 1968 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "00140",
+            "name": "SOLDIER SUPPORT CENTER",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 19850,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1236901 | 00140 | SOLDIER SUPPORT CENTER | BUILDING | 61050 | ADMIN GEN PURPOSE | SF | 19850 | 2 | 2003 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "00142",
+            "name": "INSTALLATION TRANSPORTATION OFFICE",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 5200,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1992676 | 00142 | INSTALLATION TRANSPORTATION OFFICE | BUILDING | 61050 | ADMIN GEN PURPOSE | SF | 5200 | 1 | 1975 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "00145",
+            "name": "YOUTH CENTER",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 13900,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1756526 | 00145 | YOUTH CENTER | BUILDING | 74047 | YOUTH CENTER | SF | 13900 | 1 | 1997 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "00147",
+            "name": "OUTDOOR POOL BATHHOUSE",
+            "status": null,
+            "status_reason": null,
+            "category": "fitness",
+            "gross_area": 2600,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1172783 | 00147 | OUTDOOR POOL BATHHOUSE | BUILDING | 74034 | SWIMMING POOL BATHHOUSE | SF | 2600 | 1 | 1972 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "02201",
+            "name": "MOTOR POOL MAINTENANCE SHOP",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 32400,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1349310 | 02201 | MOTOR POOL MAINTENANCE SHOP | BUILDING | 21410 | VEHICLE MAINTENANCE SHOP | SF | 32400 | 1 | 1979 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "02203",
+            "name": "TACTICAL EQUIPMENT MAINTENANCE FACILITY",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 64100,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1513001 | 02203 | TACTICAL EQUIPMENT MAINTENANCE FACILITY | BUILDING | 21410 | VEHICLE MAINTENANCE SHOP | SF | 64100 | 2 | 2012 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "02205",
+            "name": "GENERAL PURPOSE WAREHOUSE",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 48000,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1254178 | 02205 | GENERAL PURPOSE WAREHOUSE | BUILDING | 44220 | GEN PURPOSE WAREHOUSE | SF | 48000 | 1 | 1984 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "02207",
+            "name": "GENERAL PURPOSE WAREHOUSE",
+            "status": "vacant",
+            "status_reason": "FAC_STATUS CLOSED - memo para 4: records with FAC_STATUS \"DISPOSED\" or \"CLOSED\" are not in scope",
+            "category": "warehouse",
+            "gross_area": 36000,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1314021 | 02207 | GENERAL PURPOSE WAREHOUSE | BUILDING | 44220 | GEN PURPOSE WAREHOUSE | SF | 36000 | 1 | 1953 | CLOSED"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "02209",
+            "name": "ORGANIZATIONAL STORAGE",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 4800,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1149077 | 02209 | ORGANIZATIONAL STORAGE | BUILDING | 44270 | ORGANIZATIONAL STORAGE BLDG | SF | 4800 | 1 | 1988 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "02211",
+            "name": "DPW MAINTENANCE SHOPS",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 18700,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1634514 | 02211 | DPW MAINTENANCE SHOPS | BUILDING | 21910 | INSTALLATION MAINT/REPAIR SHOP | SF | 18700 | 1 | 1969 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "02213",
+            "name": "HAZMAT STORAGE",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 2400,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1264663 | 02213 | HAZMAT STORAGE | BUILDING | 44260 | HAZARDOUS MATERIAL STORAGE BLDG | SF | 2400 | 1 | 2001 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "02215",
+            "name": "SELF SERVICE SUPPLY CENTER",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 8600,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1254578 | 02215 | SELF SERVICE SUPPLY CENTER | BUILDING | 44220 | GEN PURPOSE WAREHOUSE | SF | 8600 | 1 | 1974 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "02217",
+            "name": "LRC SUPPLY AND SERVICES",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 7750,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1295243 | 02217 | LRC SUPPLY AND SERVICES | BUILDING | 61050 | ADMIN GEN PURPOSE | SF | 7750 | 1 | 1990 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "02219",
+            "name": "FUEL POINT CONTROL BUILDING",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 640,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1187135 | 02219 | FUEL POINT CONTROL BUILDING | BUILDING | 12120 | VEH FUEL DISPENSING CONTROL BLDG | SF | 640 | 1 | 1996 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "02221",
+            "name": "COVERED STORAGE SHED (POLE BARN)",
+            "status": "excluded",
+            "status_reason": "RPA_TYPE STRUCTURE, PRIMARY_UM SF (open-sided covered storage shed): Not in scope - no custodial service (memo para 3)",
+            "category": "warehouse",
+            "gross_area": 6000,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1632809 | 02221 | COVERED STORAGE SHED (POLE BARN) | STRUCTURE | 44250 | COVERED STORAGE SHED | SF | 6000 |  | 2008 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "03301",
+            "name": "AIRCRAFT MAINTENANCE HANGAR",
+            "status": null,
+            "status_reason": null,
+            "category": "hangar",
+            "gross_area": 86200,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1889870 | 03301 | AIRCRAFT MAINTENANCE HANGAR | BUILDING | 21110 | ACFT MAINTENANCE HANGAR | SF | 86200 | 2 | 1989 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "03303",
+            "name": "AIRFIELD OPERATIONS",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 9450,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1153215 | 03303 | AIRFIELD OPERATIONS | BUILDING | 14112 | AIRFIELD OPERATIONS BLDG | SF | 9450 | 2 | 1993 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "03305",
+            "name": "AVIATION UNIT OPERATIONS",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 12600,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1697717 | 03305 | AVIATION UNIT OPERATIONS | BUILDING | 14182 | BATTALION HQ BLDG | SF | 12600 | 2 | 2010 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "03307",
+            "name": "FLIGHT SIMULATOR BUILDING",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 8200,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1045258 | 03307 | FLIGHT SIMULATOR BUILDING | BUILDING | 17140 | TRAINING SIMULATION FACILITY | SF | 8200 | 1 | 2002 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "03309",
+            "name": "CRASH FIRE RESCUE STATION",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 10300,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1247334 | 03309 | CRASH FIRE RESCUE STATION | BUILDING | 73010 | FIRE STATION | SF | 10300 | 1 | 1995 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "04401",
+            "name": "RANGE CONTROL BUILDING",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 6700,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1264544 | 04401 | RANGE CONTROL BUILDING | BUILDING | 14169 | RANGE OPERATIONS AND CONTROL BLDG | SF | 6700 | 1 | 2004 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "04403",
+            "name": "AMMUNITION BREAKDOWN BUILDING",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 1200,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1747646 | 04403 | AMMUNITION BREAKDOWN BUILDING | BUILDING | 17830 | RANGE SUPPORT BLDG | SF | 1200 | 1 | 2009 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "04405",
+            "name": "RANGE AFTER ACTION REVIEW BUILDING",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 2300,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1520601 | 04405 | RANGE AFTER ACTION REVIEW BUILDING | BUILDING | 17120 | GENERAL INSTRUCTION BLDG | SF | 2300 | 1 | 2009 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "08201",
+            "name": "CENTRAL HEATING PLANT",
+            "status": "excluded",
+            "status_reason": "Utility plant building, CATCODE 81xxx-84xxx: Not in scope - utilities privatization contract (memo para 3)",
+            "category": "other",
+            "gross_area": null,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": true,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1304929 | 08201 | CENTRAL HEATING PLANT | BUILDING | 82110 | HEATING PLANT | MB | 24500 | 1 | 1962 | ACTIVE"
+            },
+            "confidence": 0.8,
+            "notes": "TOTAL_UM_QTY 24500 is in MB (thousand BTU per hour), not an area; no floor area printed. Out of scope, so no estimate."
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "01101",
+            "name": "UEPH BARRACKS",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 58750,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1160935 | 1101 | UEPH BARRACKS | BUILDING | 72111 | UEPH | SF | 58750 | 3 | 2009 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "Exported as 1101 in J-2; memo para 5: facilities 1101 through 1192 are 01101 through 01192 on the installation maps."
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "01103",
+            "name": "UEPH BARRACKS",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 58750,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1913246 | 1103 | UEPH BARRACKS | BUILDING | 72111 | UEPH | SF | 58750 | 3 | 2009 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "Exported as 1103 in J-2; memo para 5: facilities 1101 through 1192 are 01101 through 01192 on the installation maps."
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "01105",
+            "name": "UEPH BARRACKS",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 58750,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1760893 | 1105 | UEPH BARRACKS | BUILDING | 72111 | UEPH | SF | 58750 | 3 | 2010 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "Exported as 1105 in J-2; memo para 5: facilities 1101 through 1192 are 01101 through 01192 on the installation maps."
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "01107",
+            "name": "DINING FACILITY",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 21800,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1361841 | 1107 | DINING FACILITY | BUILDING | 72210 | DINING FACILITY | SF | 21800 | 1 | 2010 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "Exported as 1107 in J-2; memo para 5: facilities 1101 through 1192 are 01101 through 01192 on the installation maps."
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "01109",
+            "name": "BATTALION HEADQUARTERS",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 15300,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1696764 | 1109 | BATTALION HEADQUARTERS | BUILDING | 14182 | BATTALION HQ BLDG | SF | 15300 | 2 | 2010 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "Exported as 1109 in J-2; memo para 5: facilities 1101 through 1192 are 01101 through 01192 on the installation maps."
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "01111",
+            "name": "COMPANY OPERATIONS FACILITY",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 22950,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1225523 | 1111 | COMPANY OPERATIONS FACILITY | BUILDING | 14185 | COMPANY OPERATIONS FACILITY | SF | 22950 | 1 | 2011 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "Exported as 1111 in J-2; memo para 5: facilities 1101 through 1192 are 01101 through 01192 on the installation maps."
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "01113",
+            "name": "BRIGADE HEADQUARTERS",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 26400,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1987766 | 1113 | BRIGADE HEADQUARTERS | BUILDING | 14183 | BRIGADE HQ BLDG | SF | 26400 | 2 | 2012 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "Exported as 1113 in J-2; memo para 5: facilities 1101 through 1192 are 01101 through 01192 on the installation maps."
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "01115",
+            "name": "UEPH BARRACKS (ROLLING PIN)",
+            "status": "demolished",
+            "status_reason": "FAC_STATUS DISPOSED - memo para 4: records with FAC_STATUS \"DISPOSED\" or \"CLOSED\" are not in scope",
+            "category": "barracks",
+            "gross_area": 34980,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1169397 | 1115 | UEPH BARRACKS (ROLLING PIN) | BUILDING | 72111 | UEPH | SF | 34980 | 3 | 1974 | DISPOSED"
+            },
+            "confidence": 0.95,
+            "notes": "Exported as 1115 in J-2; memo para 5: facilities 1101 through 1192 are 01101 through 01192 on the installation maps."
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "01117",
+            "name": "GENERAL INSTRUCTION BUILDING",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 12750,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1334129 | 1117 | GENERAL INSTRUCTION BUILDING | BUILDING | 17120 | GENERAL INSTRUCTION BLDG | SF | 12750 | 1 | 2001 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "Exported as 1117 in J-2; memo para 5: facilities 1101 through 1192 are 01101 through 01192 on the installation maps."
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "01119",
+            "name": "UNACCOMPANIED OFFICER QUARTERS",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 24600,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1477580 | 1119 | UNACCOMPANIED OFFICER QUARTERS | BUILDING | 72410 | UOPH | SF | 24600 | 3 | 1991 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "Exported as 1119 in J-2; memo para 5: facilities 1101 through 1192 are 01101 through 01192 on the installation maps."
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "01121",
+            "name": "TROOP MEDICAL CLINIC",
+            "status": null,
+            "status_reason": null,
+            "category": "medical",
+            "gross_area": 7400,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1755785 | 1121 | TROOP MEDICAL CLINIC | BUILDING | 55010 | HEALTH CLINIC | SF | 7400 | 1 | 1994 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "Exported as 1121 in J-2; memo para 5: facilities 1101 through 1192 are 01101 through 01192 on the installation maps."
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "01123",
+            "name": "COMMUNITY ACTIVITY CENTER",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 9100,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1827519 | 1123 | COMMUNITY ACTIVITY CENTER | BUILDING | 74054 | COMMUNITY ACTIVITY CENTER | SF | 9100 | 1 | 1981 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "Exported as 1123 in J-2; memo para 5: facilities 1101 through 1192 are 01101 through 01192 on the installation maps."
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "01125",
+            "name": "TROOP AREA FITNESS CENTER",
+            "status": null,
+            "status_reason": null,
+            "category": "fitness",
+            "gross_area": 38600,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1656965 | 1125 | TROOP AREA FITNESS CENTER | BUILDING | 74028 | PHYSICAL FITNESS CENTER | SF | 38600 | 2 | 2013 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "Exported as 1125 in J-2; memo para 5: facilities 1101 through 1192 are 01101 through 01192 on the installation maps."
+          },
+          {
+            "table_id": "J-2",
+            "campus": null,
+            "building_number": "T0230",
+            "name": "MODULAR ADMIN BUILDING",
+            "status": "demolished",
+            "status_reason": "FAC_STATUS DISPOSED - memo para 4: records with FAC_STATUS \"DISPOSED\" or \"CLOSED\" are not in scope",
+            "category": "admin",
+            "gross_area": 3840,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1593458 | T0230 | MODULAR ADMIN BUILDING | BUILDING | 61050 | ADMIN GEN PURPOSE | SF | 3840 | 1 | 1998 | DISPOSED"
+            },
+            "confidence": 0.95,
+            "notes": null
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_grounds",
+      "input": {
+        "areas": [
+          {
+            "name": "00191 POV PARKING - BLDG 00101",
+            "campus": null,
+            "facility_building_number": "00101",
+            "table_id": "J-2G",
+            "kind": "parking",
+            "document_label": "CATCODE 85215 NON-ORGANIZATIONAL VEHICLE PARKING, SURFACED",
+            "mowing_frequency_text": null,
+            "status": "in_scope",
+            "status_reason": "CATCODE 85210/85215 SY: IN SCOPE - sweeping and litter control, PWS C.6.4 (memo para 3)",
+            "quantity": 6850,
+            "unit": "sqyd",
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1399419 | 00191 | POV PARKING - BLDG 00101 | STRUCTURE | 85215 | NON-ORGANIZATIONAL VEHICLE PARKING, SURFACED | SY | 6850 |  | 1958 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "RPI facility number 00191."
+          },
+          {
+            "name": "00192 POV PARKING - BLDG 00110",
+            "campus": null,
+            "facility_building_number": "00110",
+            "table_id": "J-2G",
+            "kind": "parking",
+            "document_label": "CATCODE 85215 NON-ORGANIZATIONAL VEHICLE PARKING, SURFACED",
+            "mowing_frequency_text": null,
+            "status": "in_scope",
+            "status_reason": "CATCODE 85210/85215 SY: IN SCOPE - sweeping and litter control, PWS C.6.4 (memo para 3)",
+            "quantity": 4480,
+            "unit": "sqyd",
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1127055 | 00192 | POV PARKING - BLDG 00110 | STRUCTURE | 85215 | NON-ORGANIZATIONAL VEHICLE PARKING, SURFACED | SY | 4480 |  | 1999 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "RPI facility number 00192."
+          },
+          {
+            "name": "00193 POV PARKING - BLDG 00118",
+            "campus": null,
+            "facility_building_number": "00118",
+            "table_id": "J-2G",
+            "kind": "parking",
+            "document_label": "CATCODE 85215 NON-ORGANIZATIONAL VEHICLE PARKING, SURFACED",
+            "mowing_frequency_text": null,
+            "status": "in_scope",
+            "status_reason": "CATCODE 85210/85215 SY: IN SCOPE - sweeping and litter control, PWS C.6.4 (memo para 3)",
+            "quantity": 5120,
+            "unit": "sqyd",
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1866466 | 00193 | POV PARKING - BLDG 00118 | STRUCTURE | 85215 | NON-ORGANIZATIONAL VEHICLE PARKING, SURFACED | SY | 5120 |  | 1985 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "RPI facility number 00193."
+          },
+          {
+            "name": "00194 POV PARKING - BLDG 00130",
+            "campus": null,
+            "facility_building_number": "00130",
+            "table_id": "J-2G",
+            "kind": "parking",
+            "document_label": "CATCODE 85215 NON-ORGANIZATIONAL VEHICLE PARKING, SURFACED",
+            "mowing_frequency_text": null,
+            "status": "vacant",
+            "status_reason": "FAC_STATUS CLOSED - memo para 4: not in scope regardless of category",
+            "quantity": 3900,
+            "unit": "sqyd",
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1797386 | 00194 | POV PARKING - BLDG 00130 | STRUCTURE | 85215 | NON-ORGANIZATIONAL VEHICLE PARKING, SURFACED | SY | 3900 |  | 1941 | CLOSED"
+            },
+            "confidence": 0.95,
+            "notes": "RPI facility number 00194."
+          },
+          {
+            "name": "02291 MOTOR POOL HARDSTAND - BLDG 02201",
+            "campus": null,
+            "facility_building_number": "02201",
+            "table_id": "J-2G",
+            "kind": "parking",
+            "document_label": "CATCODE 85210 ORGANIZATIONAL VEHICLE PARKING, SURFACED",
+            "mowing_frequency_text": null,
+            "status": "in_scope",
+            "status_reason": "CATCODE 85210/85215 SY: IN SCOPE - sweeping and litter control, PWS C.6.4 (memo para 3)",
+            "quantity": 18400,
+            "unit": "sqyd",
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1106692 | 02291 | MOTOR POOL HARDSTAND - BLDG 02201 | STRUCTURE | 85210 | ORGANIZATIONAL VEHICLE PARKING, SURFACED | SY | 18400 |  | 1979 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "RPI facility number 02291."
+          },
+          {
+            "name": "02293 TEMF HARDSTAND - BLDG 02203",
+            "campus": null,
+            "facility_building_number": "02203",
+            "table_id": "J-2G",
+            "kind": "parking",
+            "document_label": "CATCODE 85210 ORGANIZATIONAL VEHICLE PARKING, SURFACED",
+            "mowing_frequency_text": null,
+            "status": "in_scope",
+            "status_reason": "CATCODE 85210/85215 SY: IN SCOPE - sweeping and litter control, PWS C.6.4 (memo para 3)",
+            "quantity": 42750,
+            "unit": "sqyd",
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1686391 | 02293 | TEMF HARDSTAND - BLDG 02203 | STRUCTURE | 85210 | ORGANIZATIONAL VEHICLE PARKING, SURFACED | SY | 42750 |  | 2012 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "RPI facility number 02293."
+          },
+          {
+            "name": "03391 AIRFIELD POV PARKING",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "J-2G",
+            "kind": "parking",
+            "document_label": "CATCODE 85215 NON-ORGANIZATIONAL VEHICLE PARKING, SURFACED",
+            "mowing_frequency_text": null,
+            "status": "in_scope",
+            "status_reason": "CATCODE 85210/85215 SY: IN SCOPE - sweeping and litter control, PWS C.6.4 (memo para 3)",
+            "quantity": 3150,
+            "unit": "sqyd",
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1268287 | 03391 | AIRFIELD POV PARKING | STRUCTURE | 85215 | NON-ORGANIZATIONAL VEHICLE PARKING, SURFACED | SY | 3150 |  | 1993 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "RPI facility number 03391."
+          },
+          {
+            "name": "09301 IMPROVED GROUNDS - MAIN POST",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "J-2G",
+            "kind": "improved_turf",
+            "document_label": "CATCODE 93210 IMPROVED GROUNDS (Type I)",
+            "mowing_frequency_text": null,
+            "status": "in_scope",
+            "status_reason": "CATCODE 93210 AC: IN SCOPE - mowing, trimming and edging (Type I), PWS C.6.2 (memo para 3)",
+            "quantity": 42.62,
+            "unit": "acres",
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1977651 | 09301 | IMPROVED GROUNDS - MAIN POST | LAND | 93210 | IMPROVED GROUNDS | AC | 42.62 |  |  | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "RPI facility number 09301."
+          },
+          {
+            "name": "09302 IMPROVED GROUNDS - TROOP AREA",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "J-2G",
+            "kind": "improved_turf",
+            "document_label": "CATCODE 93210 IMPROVED GROUNDS (Type I)",
+            "mowing_frequency_text": null,
+            "status": "in_scope",
+            "status_reason": "CATCODE 93210 AC: IN SCOPE - mowing, trimming and edging (Type I), PWS C.6.2 (memo para 3)",
+            "quantity": 28.35,
+            "unit": "acres",
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1852927 | 09302 | IMPROVED GROUNDS - TROOP AREA | LAND | 93210 | IMPROVED GROUNDS | AC | 28.35 |  |  | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "RPI facility number 09302."
+          },
+          {
+            "name": "09303 IMPROVED GROUNDS - AIRFIELD",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "J-2G",
+            "kind": "improved_turf",
+            "document_label": "CATCODE 93210 IMPROVED GROUNDS (Type I)",
+            "mowing_frequency_text": null,
+            "status": "in_scope",
+            "status_reason": "CATCODE 93210 AC: IN SCOPE - mowing, trimming and edging (Type I), PWS C.6.2 (memo para 3)",
+            "quantity": 6.4,
+            "unit": "acres",
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1264127 | 09303 | IMPROVED GROUNDS - AIRFIELD | LAND | 93210 | IMPROVED GROUNDS | AC | 6.4 |  |  | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "RPI facility number 09303."
+          },
+          {
+            "name": "09304 IMPROVED GROUNDS - FORMER FAMILY HOUSING AREA",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "J-2G",
+            "kind": "improved_turf",
+            "document_label": "CATCODE 93210 IMPROVED GROUNDS (Type I)",
+            "mowing_frequency_text": null,
+            "status": "demolished",
+            "status_reason": "FAC_STATUS DISPOSED - memo para 4: not in scope regardless of category",
+            "quantity": 11.2,
+            "unit": "acres",
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1311515 | 09304 | IMPROVED GROUNDS - FORMER FAMILY HOUSING AREA | LAND | 93210 | IMPROVED GROUNDS | AC | 11.2 |  |  | DISPOSED"
+            },
+            "confidence": 0.95,
+            "notes": "RPI facility number 09304."
+          },
+          {
+            "name": "09310 SEMI-IMPROVED GROUNDS - CANTONMENT",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "J-2G",
+            "kind": "semi_improved",
+            "document_label": "CATCODE 93220 SEMI-IMPROVED GROUNDS (Type II)",
+            "mowing_frequency_text": null,
+            "status": "in_scope",
+            "status_reason": "CATCODE 93220 AC: IN SCOPE - mowing (Type II), PWS C.6.3 (memo para 3)",
+            "quantity": 64.08,
+            "unit": "acres",
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1496417 | 09310 | SEMI-IMPROVED GROUNDS - CANTONMENT | LAND | 93220 | SEMI-IMPROVED GROUNDS | AC | 64.08 |  |  | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "RPI facility number 09310."
+          },
+          {
+            "name": "09311 SEMI-IMPROVED GROUNDS - AIRFIELD INFIELD",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "J-2G",
+            "kind": "semi_improved",
+            "document_label": "CATCODE 93220 SEMI-IMPROVED GROUNDS (Type II)",
+            "mowing_frequency_text": null,
+            "status": "in_scope",
+            "status_reason": "CATCODE 93220 AC: IN SCOPE - mowing (Type II), PWS C.6.3 (memo para 3)",
+            "quantity": 38.5,
+            "unit": "acres",
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1182870 | 09311 | SEMI-IMPROVED GROUNDS - AIRFIELD INFIELD | LAND | 93220 | SEMI-IMPROVED GROUNDS | AC | 38.5 |  |  | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "RPI facility number 09311."
+          },
+          {
+            "name": "09320 UNIMPROVED GROUNDS - TRAINING AREAS",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "J-2G",
+            "kind": "unimproved",
+            "document_label": "CATCODE 93230 UNIMPROVED GROUNDS",
+            "mowing_frequency_text": null,
+            "status": "excluded",
+            "status_reason": "CATCODE 93230: Not in scope - maintained by Range Control (ITAM) (memo para 3)",
+            "quantity": 8640,
+            "unit": "acres",
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1861176 | 09320 | UNIMPROVED GROUNDS - TRAINING AREAS | LAND | 93230 | UNIMPROVED GROUNDS | AC | 8640 |  |  | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "RPI facility number 09320."
+          },
+          {
+            "name": "09321 UNIMPROVED GROUNDS - RANGE BUFFER",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "J-2G",
+            "kind": "unimproved",
+            "document_label": "CATCODE 93230 UNIMPROVED GROUNDS",
+            "mowing_frequency_text": null,
+            "status": "excluded",
+            "status_reason": "CATCODE 93230: Not in scope - maintained by Range Control (ITAM) (memo para 3)",
+            "quantity": 1215.75,
+            "unit": "acres",
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1150997 | 09321 | UNIMPROVED GROUNDS - RANGE BUFFER | LAND | 93230 | UNIMPROVED GROUNDS | AC | 1215.75 |  |  | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "RPI facility number 09321."
+          },
+          {
+            "name": "01191 POV PARKING - BARRACKS LOT A",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "J-2G",
+            "kind": "parking",
+            "document_label": "CATCODE 85215 NON-ORGANIZATIONAL VEHICLE PARKING, SURFACED",
+            "mowing_frequency_text": null,
+            "status": "in_scope",
+            "status_reason": "CATCODE 85210/85215 SY: IN SCOPE - sweeping and litter control, PWS C.6.4 (memo para 3)",
+            "quantity": 9300,
+            "unit": "sqyd",
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1501387 | 1191 | POV PARKING - BARRACKS LOT A | STRUCTURE | 85215 | NON-ORGANIZATIONAL VEHICLE PARKING, SURFACED | SY | 9300 |  | 2009 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "RPI facility number 1191 (= 01191 per memo para 5)."
+          },
+          {
+            "name": "01192 POV PARKING - BARRACKS LOT B",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "J-2G",
+            "kind": "parking",
+            "document_label": "CATCODE 85215 NON-ORGANIZATIONAL VEHICLE PARKING, SURFACED",
+            "mowing_frequency_text": null,
+            "status": "in_scope",
+            "status_reason": "CATCODE 85210/85215 SY: IN SCOPE - sweeping and litter control, PWS C.6.4 (memo para 3)",
+            "quantity": 8760,
+            "unit": "sqyd",
+            "source": {
+              "file": "W9124Q-27-R-0058 Att J-2 RPI Extract Fort Tolland 30SEP2026.xlsx",
+              "page": null,
+              "excerpt": "1810686 | 1192 | POV PARKING - BARRACKS LOT B | STRUCTURE | 85215 | NON-ORGANIZATIONAL VEHICLE PARKING, SURFACED | SY | 8760 |  | 2010 | ACTIVE"
+            },
+            "confidence": 0.95,
+            "notes": "RPI facility number 1192 (= 01192 per memo para 5)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "set_previous_award",
+      "input": {
+        "incumbent": null,
+        "contract_number": null,
+        "contract_type": null,
+        "total_value": null,
+        "period_months": null,
+        "annual_value": null,
+        "spend_to_date": null,
+        "spend_period_months": null,
+        "award_year": null,
+        "source": {
+          "file": null,
+          "page": null,
+          "excerpt": "No previous / incumbent contract information in the package (Att J-2 cover memo and RPI extract only)."
+        },
+        "confidence": 0.9,
+        "notes": "Nothing stated: the package contains only the Att J-2 cover memorandum and the GFEBS RPI extract; no incumbent, contract number, value or period of performance is given."
+      },
+      "pass": 0
+    },
+    {
+      "name": "finish",
+      "input": {
+        "summary": "Fort Tolland (W9124Q-27-R-0058) Att J-2 GFEBS RPI extract, 89 records, applied per the cover memo's applicability table. Registered 54 building records (J-2): 47 ACTIVE BUILDING/SF in scope for custodial (PWS C.5); 2 CLOSED (00130, 02207) as vacant; 3 DISPOSED (00132, 01115, T0230) as demolished; covered storage shed 02221 (STRUCTURE, SF) and central heating plant 08201 (utility plant, recorded in MB) as excluded. Registered 17 land/parking records (J-2G): 8 surfaced parking lots in SY in scope (C.6.4), 1 CLOSED lot (00194) vacant; improved 93210 acreage 09301-09303 in scope (Type I, C.6.2) and 09304 DISPOSED; semi-improved 93220 09310-09311 in scope (Type II, C.6.3); unimproved 93230 09320-09321 excluded (Range Control/ITAM). Troop-area numbers 1101-1192 registered as 01101-01192 per memo para 5. No incumbent contract information in the package.",
+        "unresolved": [
+          "J-2: 18 of the 89 extract records were not registered because they are neither buildings nor grounds maintenance areas, and all are Not in scope per memo para 3: utilities 08101, 08102, 08104, 08105, 08301, 08302, 08401, 08402, 08403 (utilities privatization); roads 08501-08505 (DPW O&M); fences 08720-08722; vehicle wash platform 02295.",
+          "08201 Central Heating Plant is a BUILDING but its TOTAL_UM_QTY (24,500) is in MB, not SF; no floor area is printed. Registered as excluded (utility plant building) with area_missing and no estimate.",
+          "Troop-area facility numbers were exported without leading zeros (1101-1192); registered as 01101-01192 per cover memo para 5.",
+          "No custodial frequencies, cleanable areas, restroom fixtures, mowing frequencies, growing season or contract period (base + options) are in the package; PWS Section C (C.5, C.6) is referenced but not included.",
+          "01107 Dining Facility is registered for custodial only; the solicitation covers custodial and grounds, and no food service workload is given.",
+          "Previous / incumbent contract: nothing stated in the package."
+        ]
+      },
+      "pass": 0
+    }
+  ]
+}

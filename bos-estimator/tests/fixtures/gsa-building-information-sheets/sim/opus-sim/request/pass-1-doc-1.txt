@@ -1,0 +1,459 @@
+Solicitation No. 47PC0326R0014 (Conformed through Amendment 0001) — Shenandoah Valley Federal Buildings Summary of Changes – Page 1
+SOLICITATION NO. 47PC0326R0014
+CUSTODIAL AND GROUNDS MAINTENANCE SERVICES
+SHENANDOAH VALLEY FEDERAL BUILDINGS – WINCHESTER, HARRISONBURG AND STAUNTON, VIRGINIA
+U.S. General Services Administration, Public Buildings Service, Mid-Atlantic Region (3PQ)
+Conformed copy incorporating Amendment 0001 (issued September 18, 2026)
+Excerpts: Section B Schedule, Section C Performance Work Statement, Section J Exhibit J.1
+
+Solicitation issued | September 2, 2026
+Amendment 0001 issued | September 18, 2026
+Offers due | October 30, 2026, 2:00 p.m. Eastern Time
+NAICS / size standard | 561720 Janitorial Services / $22.0 million
+Type of contract | Firm-fixed-price, with Above Standard Services ordered on a fixed-unit-price basis
+
+SUMMARY OF CHANGES – AMENDMENT 0001
+Item 1. Building VA0355ZZ, Federal Records Annex, 640 Commerce Road, Staunton, VA, is deleted from the scope of this solicitation in its entirety (building reported excess and scheduled to be vacated before contract start). Section C.1.1 is revised from “six (6) buildings” to “five (5) buildings.” CLIN 0001AF and the corresponding option-period CLINs are deleted. The Exhibit J.1 sheet for VA0355ZZ is retained in this conformed copy for reference only and shall not be priced.
+Item 2. Exhibit J.1, Building VA0241ZZ, Section C: Office / general administrative space is revised from 13,930 to 15,330 square feet to add second-floor Suite 210 (1,400 SF), and the Total Custodial (Cleanable) Square Feet is revised from 21,460 to 22,860. CLIN 0001AC is revised accordingly.
+Item 3. Responses to questions received by September 11, 2026:
+Q1. Are basements and the VA0402ZZ office mezzanine included in the Exhibit J.1 square feet, and how many floors are serviced at VA0123ZZ and VA0241ZZ? A1. Yes. Gross square feet include all levels, including basements, mezzanines and penthouses, and routinely cleaned basement space is included in the custodial square feet. Floors serviced are the floors above grade plus the floors below grade: five (5) at VA0123ZZ and three (3) at VA0241ZZ. The VA0402ZZ mezzanine is its second floor.
+Q2. Is the child care center at VA0187ZZ part of the custodial square footage? A2. No. The child care center is cleaned by the child care provider and is listed in Exhibit J.1 for information only.
+Q3. Who is the incumbent contractor, what is the value of the current contract, and does it cover the same scope? A3. The current contract, 47PC0322C0042, was awarded in December 2021 to Caldera Ridge Facility Services, LLC for a base year and four option years (60 months, March 1, 2022 through February 28, 2027). The total awarded value including all options is $5,612,350. The value of the current option year (Option Year 4) is $1,146,880. It covers the six (6) buildings in the solicitation as originally issued, including VA0355ZZ (235,370 custodial square feet in total), and grounds at VA0123ZZ, VA0187ZZ, VA0318ZZ, VA0355ZZ and VA0402ZZ; it does not include VA0241ZZ Suite 210. This information is provided for reference only.
+Q4. Are the exterior glass square feet one side or both sides? A4. One side. Window washing of interior and exterior surfaces is required once per year at each building, and twice per year for the exterior of VA0123ZZ (see C.3.10).
+Q5. Is parking lot plowing part of the firm-fixed price? A5. No. Snow and ice removal from entrances, steps, ramps and walks is a standard service at buildings marked “Yes” in Exhibit J.1, Section F. Plowing of parking lots and driveways will be ordered as an Above Standard Service under CLIN 0003.
+CUI – CONTROLLED UNCLASSIFIED INFORMATION (BUILDING INFORMATION) – Disseminate only to offerors with a need to know.
+Solicitation No. 47PC0326R0014 (Conformed through Amendment 0001) — Shenandoah Valley Federal Buildings Section B – Page B-2
+SECTION B – SUPPLIES OR SERVICES AND PRICES/COSTS (EXCERPT)
+B.1 Base Period (March 1, 2027 – February 29, 2028). The Contractor shall provide custodial services at the buildings listed below in accordance with Section C and Exhibit J.1. Monthly prices are firm-fixed-price per building. Custodial square feet are those shown in Exhibit J.1, Section C, as revised by Amendment 0001.
+
+CLIN | GSA Bldg. No. | Building | Custodial Sq. Ft. (Exh. J.1) | Qty | Unit | Monthly Unit Price | Extended Amount
+0001 | Standard Custodial Services – Base Period
+0001AA | VA0123ZZ | Whitcomb FB-USCH, Harrisonburg | 88,900 | 12 | MO | $__________ | $____________
+0001AB | VA0187ZZ | Halloran FB, Winchester | 52,060 | 12 | MO | $__________ | $____________
+0001AC | VA0241ZZ | FOB-USPO, Staunton | 22,860 | 12 | MO | $__________ | $____________
+0001AD | VA0318ZZ | Valley FOB, Winchester | 15,360 | 12 | MO | $__________ | $____________
+0001AE | VA0402ZZ | Shenandoah FSC, Harrisonburg | 40,670 | 12 | MO | $__________ | $____________
+0001AF | VA0355ZZ | Fed. Records Annex, Staunton | DELETED BY AMENDMENT 0001
+ | Total Custodial Square Feet – CLIN 0001 |  | 219,850 | Total CLIN 0001 |  |  | $____________
+0002 | Grounds Maintenance – Base Period (VA0123ZZ, VA0187ZZ, VA0318ZZ and VA0402ZZ; grounds at VA0241ZZ are maintained by USPS) |  |  | 12 | MO | $__________ | $____________
+0003 | Above Standard Services (C.15) – ordered by task order; estimated not-to-exceed amount for evaluation purposes |  |  | 1 | LT | — | $75,000.00 (NTE)
+
+B.2 Option Periods. Option Periods 1 through 4 (CLINs 1001–1003, 2001–2003, 3001–3003 and 4001–4003) repeat the structure of the base period and are not reproduced in this excerpt. The total potential period of performance is one (1) twelve-month base period and four (4) twelve-month option periods. An extension of services of up to six (6) months under FAR 52.217-8 may be exercised and is evaluated separately.
+B.3 Adjustments. When space is added to or deleted from the custodial area, the monthly price for the affected building will be adjusted at the offeror’s proposed price per custodial square foot, computed as the monthly unit price divided by the custodial square feet shown above.
+CUI – CONTROLLED UNCLASSIFIED INFORMATION (BUILDING INFORMATION) – Disseminate only to offerors with a need to know.
+Solicitation No. 47PC0326R0014 (Conformed through Amendment 0001) — Shenandoah Valley Federal Buildings Section C – Page C-1
+SECTION C – PERFORMANCE WORK STATEMENT (EXCERPT)
+This PWS is tailored from the GSA National Consolidated Maintenance Specification and National Custodial Specification. Paragraphs not reproduced in this excerpt are incorporated by reference.
+C.1 GENERAL
+C.1.1 Scope. The Contractor shall furnish all management, supervision, labor, materials, supplies and equipment, and shall plan, schedule, coordinate and assure effective performance of custodial and grounds maintenance services at the five (5) buildings identified in Exhibit J.1, Building Information Sheets.
+C.1.2 Building Information Sheets. A Building Information Sheet (Exhibit J.1) is provided for each building covered under the contract. The custodial square feet shown in Exhibit J.1 were prepared with the GSA Custodial Square Footage Tool and include only the square feet that will be cleaned on a routine basis; square feet that will not be cleaned routinely, such as mechanical and electrical rooms, telecommunications closets and file room storage, have been removed. Gross, rentable and ABOA square feet are provided for information only. Space cleaned by others is listed in Exhibit J.1 for information and is not part of the custodial square footage.
+C.1.3 Period of Performance. The period of performance is a twelve (12) month base period beginning March 1, 2027, and four (4) twelve-month option periods, for a total of five (5) years if all options are exercised. Services may be extended up to six (6) additional months under FAR 52.217-8.
+C.1.4 Hours of Work. Normal working hours for each building are shown in Exhibit J.1. Unless otherwise stated in Exhibit J.1, custodial services shall be performed after normal working hours, Monday through Friday, excluding Federal holidays. Services shall not be performed on Saturdays, Sundays or Federal holidays except as ordered under C.15.
+C.1.5 Service Contract Labor Standards. FAR 52.222-41, Service Contract Labor Standards, and FAR 52.222-43, Fair Labor Standards Act and Service Contract Labor Standards – Price Adjustment (Multiple Year and Option Contracts), apply to this contract. The applicable Department of Labor wage determinations are listed in Section J, Attachment J.2. Custodial and grounds labor shall be paid not less than the wage rates and fringe benefits in the wage determination for the county or independent city in which each building is located.
+CUI – CONTROLLED UNCLASSIFIED INFORMATION (BUILDING INFORMATION) – Disseminate only to offerors with a need to know.
+Solicitation No. 47PC0326R0014 (Conformed through Amendment 0001) — Shenandoah Valley Federal Buildings Section C – Page C-2
+C.3 STANDARD CUSTODIAL SERVICES
+C.3.1 Service Levels. All custodial space shall be maintained to the standard of cleanliness defined in this PWS. The frequencies below are minimums and apply to every building unless Exhibit J.1 states otherwise. Where a frequency of “daily” is shown, the task shall be performed once each workday, or once per shift where multiple shifts are provided.
+
+Task | Minimum Frequency
+Restrooms: clean and disinfect water closets, urinals, lavatories, showers and partitions; restock soap, paper and liners | Daily
+Restrooms: machine scrub floors and grout; clean walls and partitions | Monthly
+Trash and recycling removal to designated collection points | Daily
+Entrances and lobbies: sweep, damp mop, vacuum walk-off mats; spot clean entrance glass | Daily
+Carpet: vacuum traffic areas and spot clean | Daily
+Carpet: vacuum wall-to-wall, including under furniture | Weekly
+Carpet: hot-water extraction of traffic lanes / wall-to-wall | Quarterly / Annually
+Resilient and hard floors: dust mop and damp mop | Daily
+Resilient floors: scrub and recoat / strip and refinish | 2x per year / Annually
+Stairwells: sweep and damp mop treads and landings (handrails daily) | Weekly
+Elevator cabs: clean doors, walls, tracks and floors | Daily
+Dust horizontal surfaces to 7 feet; clean drinking fountains | Weekly / Daily
+Glass within ten (10) feet of the floor (doors, sidelights, partitions): spot clean | Daily
+High dusting above 7 feet, vents, diffusers and light fixtures | Annually
+Warehouse and shop floors: sweep / machine scrub | Weekly / Monthly
+Storage and file rooms included in custodial square feet: trash, vacuum or dust mop | Monthly
+Interior and exterior window washing (C.3.10) | Annually
+
+C.3.4 Courtrooms and Chambers. At VA0123ZZ courtrooms, judges’ chambers and jury rooms shall be cleaned after court adjourns, under escort when required by the U.S. Marshals Service.
+C.3.5 Public Areas. At VA0318ZZ the public waiting room, interview-window glazing and public restrooms shall be cleaned daily; mid-day restroom checks are ordered under C.15.
+C.3.6 Health Units. Health unit space shall be cleaned and disinfected daily using EPA-registered hospital-grade disinfectants.
+CUI – CONTROLLED UNCLASSIFIED INFORMATION (BUILDING INFORMATION) – Disseminate only to offerors with a need to know.
+Solicitation No. 47PC0326R0014 (Conformed through Amendment 0001) — Shenandoah Valley Federal Buildings Section C – Page C-3
+C.3.8 Historic Finishes. At VA0241ZZ (National Register listed) marble treads, terrazzo and wood trim shall be cleaned with neutral cleaners only. No abrasive pads or acid cleaners shall be used.
+C.3.10 Window Washing. Windows shall be cleaned once per year, interior and exterior surfaces, including sashes, frames, sills and mullions, at each building. At VA0123ZZ the exterior glass shall be cleaned twice per year, in April and October. Exterior glass areas in Exhibit J.1 are one-side measurements. Additional window washing requested by tenant agencies shall be ordered as an Above Standard Service under C.15 on a reimbursable basis. Work above the first floor shall comply with OSHA 29 CFR 1910 Subpart D and ANSI/IWCA I-14.1.
+C.3.11 Snow and Ice Removal. At buildings marked “Yes” in Exhibit J.1, Section F, the Contractor shall remove snow and ice from building entrances, steps, ramps and walks within two (2) hours after accumulation of one (1) inch or more, and before the start of normal working hours. Heavy snow removal and plowing of parking lots and driveways shall be ordered under C.15.
+C.4 GROUNDS MAINTENANCE
+C.4.1 Scope. Grounds maintenance applies to buildings marked “Yes – Contractor” in Exhibit J.1, Section F. The Contractor shall maintain the landscaped / improved grounds, parking areas and sidewalks listed in Exhibit J.1. Total site area is shown for information only and includes building footprints, wooded buffers and areas maintained by others.
+C.4.2 Mowing. Improved turf shall be mowed weekly from April 1 through October 31 (approximately 30 cuts per season) and as needed in March and November, to a height of 2½ to 3½ inches, with trimming and edging of walks, curbs and beds at each mowing.
+C.4.3 Planting Beds, Leaves and Litter. Shrubs shall be pruned twice per year; beds shall be weeded monthly and mulched annually. Leaves shall be removed weekly from October 15 through December 15. Litter shall be policed from all grounds, parking areas and walks daily.
+C.4.4 Parking Areas and Walks. Parking areas shall be swept monthly and walks blown or swept weekly. Pavement repair and line striping are excluded.
+C.15 ABOVE STANDARD SERVICES
+Above Standard Services are services beyond those described in C.3 and C.4, ordered in writing by the Contracting Officer at the fixed unit prices in Section B, including after-hours special cleaning, additional window washing, day-porter restroom checks, carpet extraction beyond the scheduled frequency, and snow plowing of parking lots and driveways.
+SECTION J – LIST OF DOCUMENTS, EXHIBITS AND OTHER ATTACHMENTS
+
+Attachment | Title | Date | No. of Pages
+J.1 | Exhibit J.1, Building Information Sheets (one per building; VA0355ZZ retained for reference only – see Amendment 0001) | 08/14/2026 | 6
+J.2 | Department of Labor Wage Determinations: No. 2015-4311, Rev. 27 (City of Winchester and Frederick County); No. 2015-4327, Rev. 26 (City of Harrisonburg, Rockingham County, City of Staunton and Augusta County) | 07/10/2026 | 22
+J.3 | Above Standard Services Price List (CLIN 0003) | 09/02/2026 | 2
+J.4 | Quality Assurance Surveillance Plan | 09/02/2026 | 9
+J.5 | Building floor plans (CUI; furnished on request to registered offerors) | — | —
+
+CUI – CONTROLLED UNCLASSIFIED INFORMATION (BUILDING INFORMATION) – Disseminate only to offerors with a need to know.
+Solicitation No. 47PC0326R0014 (Conformed through Amendment 0001) — Shenandoah Valley Federal Buildings Section J, Exhibit J.1 – Page J.1-1 of 6
+EXHIBIT J.1 – BUILDING INFORMATION SHEET
+U.S. General Services Administration · Public Buildings Service · Mid-Atlantic Region · Shenandoah Valley Service Center (Harrisonburg FM Office)
+
+SECTION A – BUILDING IDENTIFICATION
+GSA Building Number | VA0123ZZ | Ownership | Federally Owned
+Building Name | Thomas R. Whitcomb Federal Building and U.S. Courthouse
+Street Address | 275 East Market Street, Harrisonburg, VA 22801-4214
+Building Type | Courthouse / Office | Year Built / Last Alteration | 1968 / 2011 (modernization)
+Historic Status | Not eligible (reviewed 2019) | Building Population | 310
+Normal Hours of Operation | Mon–Fri, 7:00 a.m. – 6:00 p.m. | Custodial Shift | Evening, 5:30 p.m. – 2:00 a.m.; one day porter, 7:00 a.m. – 3:30 p.m.
+SECTION B – BUILDING SIZE
+Gross Square Feet (GSF) | 118,460 | Rentable Square Feet (RSF) | 97,315
+ABOA Square Feet | 84,902 | Days of Custodial Service | Monday – Friday, excluding Federal holidays
+Floors Above Grade | 4 | Floors Below Grade | 1 (basement)
+Passenger Elevators | 4 | Freight Elevators / Escalators | 1 / 0
+
+SECTION C – CUSTODIAL SQUARE FEET BY SPACE TYPE (prepared with the GSA Custodial Square Footage Tool; includes only space cleaned on a routine basis)
+
+Space Type | Custodial Sq. Ft. | Frequency | Remarks
+Office / general administrative space | 41,280 | Daily | Tenant agencies: USAO, USPO, GSA
+Courtrooms, judges’ chambers and jury rooms | 14,620 | Daily | After court adjourns; see C.3.4
+Lobbies, entrances and corridors | 12,940 | Daily | Includes security screening lobby
+Restrooms | 3,860 | Daily | Incl. chambers restrooms
+Stairwells (4) | 3,120 | Weekly | Handrails daily
+Elevator cabs (5) | 260 | Daily
+Conference, training and jury assembly | 6,450 | Daily
+Break rooms / kitchenettes | 1,180 | Daily
+Fitness center and locker rooms | 1,240 | Daily
+Storage / file rooms (routinely cleaned) | 2,310 | Monthly
+Loading dock and mailroom | 1,640 | Weekly
+TOTAL CUSTODIAL (CLEANABLE) SQUARE FEET | 88,900
+
+Space not included in Custodial Square Feet (information only)
+
+Space | Sq. Ft. | Reason Excluded | Reason Excluded
+Mechanical, electrical and telecommunications rooms | 9,870 | Not cleaned routinely
+USMS cellblock, sallyport and secure corridor | 2,450 | Cleaned by USMS detention contractor
+Basement vehicle sallyport and judges’ parking | 3,120 | Sweeping under C.15 only
+
+SECTION D – RESTROOMS AND PLUMBING FIXTURES
+
+Restroom Type | No. of Restrooms | Plumbing Fixtures Water Closets | Plumbing Fixtures Urinals | Plumbing Fixtures Lavatories | Plumbing Fixtures Showers | Fixtures
+Men’s | 10 | 14 | 12 | 14 | 1 | 41
+Women’s | 10 | 14 | 0 | 12 | 1 | 27
+Unisex / accessible (chambers) | 6 | 6 | 0 | 6 | 0 | 12
+TOTAL | 26 | 34 | 12 | 32 | 2 | 80
+
+Drinking fountains: 10 · Service (janitor) sinks: 6 — not included in the restroom fixture total.
+
+SECTION E – GLASS AND WINDOW WASHING
+Exterior Glass (SF, one side) | 9,840 | Interior Glass (SF, one side) | 2,260
+Window Washing Frequency | Interior 1x/year; exterior 2x/year (April and October) – see C.3.10
+SECTION F – GROUNDS AND EXTERIOR
+Total Site Area | 3.10 acres | Grounds Maintenance in Contract | Yes – Contractor (C.4)
+Landscaped / Improved Grounds | 1.25 acres | Snow and Ice Removal | Yes
+Parking Areas | 38,600 SF (surface lot, 118 spaces)
+Sidewalks, Plazas and Steps | 11,250 SF (incl. Market Street plaza)
+REMARKS
+Courtrooms 1 and 2 on the 3rd floor; Courtroom 3 (magistrate) on the 2nd floor. Custodial staff require USMS background checks.
+
+Prepared by: Property Manager, Harrisonburg FM Office · Date: 08/14/2026 · Custodial SF source: GSA Custodial Square Footage Tool (CAD/BIM floor plans, FY 2026)
+CUI – CONTROLLED UNCLASSIFIED INFORMATION (BUILDING INFORMATION) – Disseminate only to offerors with a need to know.
+Solicitation No. 47PC0326R0014 (Conformed through Amendment 0001) — Shenandoah Valley Federal Buildings Section J, Exhibit J.1 – Page J.1-2 of 6
+EXHIBIT J.1 – BUILDING INFORMATION SHEET
+U.S. General Services Administration · Public Buildings Service · Mid-Atlantic Region · Shenandoah Valley Service Center (Winchester FM Office)
+
+SECTION A – BUILDING IDENTIFICATION
+GSA Building Number | VA0187ZZ | Ownership | Federally Owned
+Building Name | Margaret E. Halloran Federal Building
+Street Address | 1050 Millwood Pike, Winchester, VA 22602-4517
+Building Type | Office | Year Built / Last Alteration | 1994 / —
+Historic Status | Not eligible | Building Population | 245
+Normal Hours of Operation | Mon–Fri, 7:00 a.m. – 6:00 p.m. | Custodial Shift | Evening, 5:30 p.m. – 2:00 a.m.
+SECTION B – BUILDING SIZE
+Gross Square Feet (GSF) | 64,920 | Rentable Square Feet (RSF) | 56,480
+ABOA Square Feet | 49,710 | Days of Custodial Service | Monday – Friday, excluding Federal holidays
+Floors Above Grade | 3 | Floors Below Grade | 0
+Passenger Elevators | 2 | Freight Elevators / Escalators | 0 / 0
+
+SECTION C – CUSTODIAL SQUARE FEET BY SPACE TYPE (prepared with the GSA Custodial Square Footage Tool; includes only space cleaned on a routine basis)
+
+Space Type | Custodial Sq. Ft. | Frequency | Remarks
+Office / general administrative space | 33,410 | Daily
+Lobbies, entrances and corridors | 7,260 | Daily
+Restrooms | 2,140 | Daily
+Stairwells (2) | 1,860 | Weekly | Handrails daily
+Elevator cabs (2) | 100 | Daily
+Conference and training rooms | 3,920 | Daily
+Break rooms / kitchenettes | 860 | Daily
+Health unit (tenant) | 640 | Daily | Disinfect per C.3.6
+Storage / file rooms (routinely cleaned) | 1,150 | Monthly
+Loading dock | 720 | Weekly
+TOTAL CUSTODIAL (CLEANABLE) SQUARE FEET | 52,060
+
+Space not included in Custodial Square Feet (information only)
+
+Space | Sq. Ft. | Reason Excluded | Reason Excluded
+Mechanical, electrical and telecommunications rooms | 4,310 | Not cleaned routinely
+Child care center (1st floor, east wing) | 3,850 | Cleaned by child care provider under its license agreement
+
+SECTION D – RESTROOMS AND PLUMBING FIXTURES
+
+Restroom Type | No. of Restrooms | Plumbing Fixtures Water Closets | Plumbing Fixtures Urinals | Plumbing Fixtures Lavatories | Plumbing Fixtures Showers | Fixtures
+Men’s | 4 | 8 | 6 | 8 | 1 | 23
+Women’s | 4 | 12 | 0 | 8 | 1 | 21
+Unisex / accessible | 2 | 2 | 0 | 2 | 0 | 4
+TOTAL | 10 | 22 | 6 | 18 | 2 | 48
+
+Drinking fountains: 6 · Service (janitor) sinks: 3 — not included in the restroom fixture total.
+
+SECTION E – GLASS AND WINDOW WASHING
+Exterior Glass (SF, one side) | 6,420 | Interior Glass (SF, one side) | 980
+Window Washing Frequency | Interior and exterior 1x/year (C.3.10)
+SECTION F – GROUNDS AND EXTERIOR
+Total Site Area | 4.60 acres | Grounds Maintenance in Contract | Yes – Contractor (C.4)
+Landscaped / Improved Grounds | 2.35 acres | Snow and Ice Removal | Yes
+Parking Areas | 52,400 SF (surface lot, 172 spaces)
+Sidewalks, Plazas and Steps | 6,980 SF
+REMARKS
+Child care center playground (0.18 acre) is maintained by the child care provider and is included in the site area but not in the landscaped area above.
+
+Prepared by: Property Manager, Winchester FM Office · Date: 08/14/2026 · Custodial SF source: GSA Custodial Square Footage Tool (CAD/BIM floor plans, FY 2026)
+CUI – CONTROLLED UNCLASSIFIED INFORMATION (BUILDING INFORMATION) – Disseminate only to offerors with a need to know.
+Solicitation No. 47PC0326R0014 (Conformed through Amendment 0001) — Shenandoah Valley Federal Buildings Section J, Exhibit J.1 – Page J.1-3 of 6
+EXHIBIT J.1 – BUILDING INFORMATION SHEET
+U.S. General Services Administration · Public Buildings Service · Mid-Atlantic Region · Shenandoah Valley Service Center (Harrisonburg FM Office)
+
+SECTION A – BUILDING IDENTIFICATION
+GSA Building Number | VA0241ZZ | Ownership | Federally Owned (USPS occupancy under agreement)
+Building Name | Federal Office Building and U.S. Post Office
+Street Address | 118 East Johnson Street, Staunton, VA 24401-4302
+Building Type | Office / Post Office | Year Built / Last Alteration | 1936 / 1988
+Historic Status | National Register listed | Building Population | 85 (federal tenants)
+Normal Hours of Operation | Mon–Fri, 7:30 a.m. – 5:00 p.m. | Custodial Shift | Evening, 5:30 p.m. – 10:00 p.m.
+SECTION B – BUILDING SIZE
+Gross Square Feet (GSF) | 38,750 | Rentable Square Feet (RSF) | 33,210
+ABOA Square Feet | 27,140 | Days of Custodial Service | Monday – Friday, excluding Federal holidays
+Floors Above Grade | 2 | Floors Below Grade | 1 (basement)
+Passenger Elevators | 1 | Freight Elevators / Escalators | 0 / 0
+
+SECTION C – CUSTODIAL SQUARE FEET BY SPACE TYPE (prepared with the GSA Custodial Square Footage Tool; includes only space cleaned on a routine basis)
+
+Space Type | Custodial Sq. Ft. | Frequency | Remarks
+Office / general administrative space | 15,330 (revised A0001; was 13,930) | Daily | Adds 2nd floor Suite 210 (1,400 SF)
+Lobbies, entrances and corridors | 3,480 | Daily | Federal (Johnson St.) lobby only
+Restrooms | 920 | Daily
+Stairwells (2) | 1,240 | Weekly | Historic marble treads – C.3.8
+Elevator cab (1) | 50 | Daily
+Conference room | 1,060 | Daily
+Break room | 380 | Daily
+Storage / file rooms (routinely cleaned) | 400 | Monthly
+TOTAL CUSTODIAL (CLEANABLE) SQUARE FEET | 22,860 (revised A0001; was 21,460)
+
+Space not included in Custodial Square Feet (information only)
+
+Space | Sq. Ft. | Reason Excluded | Reason Excluded
+USPS retail lobby, workroom and dock (1st floor) | 9,860 | Cleaned by USPS
+Basement boiler and mechanical rooms | 3,120 | Not cleaned routinely
+
+SECTION D – RESTROOMS AND PLUMBING FIXTURES
+
+Restroom Type | No. of Restrooms | Plumbing Fixtures |  |  |  | Fixtures
+ |  | Water Closets | Urinals | Lavatories | Showers
+Men’s | 2 | 3 | 3 | 3 | 0 | 9
+Women’s | 2 | 5 | 0 | 4 | 0 | 9
+Unisex / accessible | 1 | 1 | 0 | 1 | 0 | 2
+TOTAL | 5 | 9 | 3 | 8 | 0 | 20
+
+Drinking fountains: 3 · Service (janitor) sinks: 2 — not included in the restroom fixture total.
+
+SECTION E – GLASS AND WINDOW WASHING
+Exterior Glass (SF, one side) | 3,150 | Interior Glass (SF, one side) | 210
+Window Washing Frequency | Interior and exterior 1x/year; historic wood double-hung sash – hand clean only (C.3.10)
+SECTION F – GROUNDS AND EXTERIOR
+Total Site Area | 0.82 acre | Grounds Maintenance in Contract | No – USPS
+Landscaped / Improved Grounds | 0.30 acre – Not in contract (maintained by USPS) | Snow and Ice Removal | Yes – federal entrance only
+Parking Areas | 14,200 SF – Not in contract (USPS lot)
+Sidewalks, Plazas and Steps | 3,900 SF – Not in contract (USPS), except snow and ice removal at the Johnson Street federal entrance
+REMARKS
+USPS space is shown for information only. Rentable and ABOA square feet include the USPS-occupied space.
+
+Prepared by: Property Manager, Harrisonburg FM Office · Date: 08/14/2026 · Custodial SF source: GSA Custodial Square Footage Tool (CAD/BIM floor plans, FY 2026)
+CUI – CONTROLLED UNCLASSIFIED INFORMATION (BUILDING INFORMATION) – Disseminate only to offerors with a need to know.
+Solicitation No. 47PC0326R0014 (Conformed through Amendment 0001) — Shenandoah Valley Federal Buildings Section J, Exhibit J.1 – Page J.1-4 of 6
+EXHIBIT J.1 – BUILDING INFORMATION SHEET
+U.S. General Services Administration · Public Buildings Service · Mid-Atlantic Region · Shenandoah Valley Service Center (Winchester FM Office)
+
+SECTION A – BUILDING IDENTIFICATION
+GSA Building Number | VA0318ZZ | Ownership | Federally Owned
+Building Name | Valley Federal Office Building
+Street Address | 1460 Pleasant Valley Road, Winchester, VA 22601-5531
+Building Type | Office (public field office) | Year Built / Last Alteration | 2006 / —
+Historic Status | Not eligible | Building Population | 64 (plus approx. 180 visitors/day)
+Normal Hours of Operation | Mon–Fri, 8:00 a.m. – 4:30 p.m. | Custodial Shift | Evening, 5:00 p.m. – 11:30 p.m.
+SECTION B – BUILDING SIZE
+Gross Square Feet (GSF) | 18,640 | Rentable Square Feet (RSF) | 17,720
+ABOA Square Feet | 15,980 | Days of Custodial Service | Monday – Friday, excluding Federal holidays
+Floors Above Grade | 1 | Floors Below Grade | 0
+Passenger Elevators | 0 | Freight Elevators / Escalators | 0 / 0
+
+SECTION C – CUSTODIAL SQUARE FEET BY SPACE TYPE (prepared with the GSA Custodial Square Footage Tool; includes only space cleaned on a routine basis)
+
+Space Type | Custodial Sq. Ft. | Frequency | Remarks
+Office / general administrative space | 9,870 | Daily
+Public waiting room, lobby and corridors | 3,260 | Daily | High traffic – C.3.5
+Restrooms (public and staff) | 760 | Daily | Public restrooms checked 2x daily by day porter (C.15)
+Conference / interview rooms | 640 | Daily
+Break room | 310 | Daily
+Storage (routinely cleaned) | 520 | Monthly
+TOTAL CUSTODIAL (CLEANABLE) SQUARE FEET | 15,360
+
+Space not included in Custodial Square Feet (information only)
+
+Space | Sq. Ft. | Reason Excluded | Reason Excluded
+Mechanical, electrical and IT rooms | 940 | Not cleaned routinely
+
+SECTION D – RESTROOMS AND PLUMBING FIXTURES
+
+Restroom Type | No. of Restrooms | Plumbing Fixtures |  |  |  | Fixtures
+ |  | Water Closets | Urinals | Lavatories | Showers
+Men’s | 2 | 3 | 3 | 3 | 0 | 9
+Women’s | 2 | 5 | 0 | 3 | 0 | 8
+Unisex / accessible | 2 | 2 | 0 | 2 | 0 | 4
+TOTAL | 6 | 10 | 3 | 8 | 0 | 21
+
+Drinking fountains: 2 · Service (janitor) sinks: 1 — not included in the restroom fixture total.
+
+SECTION E – GLASS AND WINDOW WASHING
+Exterior Glass (SF, one side) | 1,980 | Interior Glass (SF, one side) | 640
+Window Washing Frequency | Interior and exterior 1x/year (C.3.10); interview-window glazing daily (C.3.5)
+SECTION F – GROUNDS AND EXTERIOR
+Total Site Area | 2.40 acres | Grounds Maintenance in Contract | Yes – Contractor (C.4)
+Landscaped / Improved Grounds | 9,600 SF | Snow and Ice Removal | Yes
+Parking Areas | 31,500 SF (surface lot, 96 spaces)
+Sidewalks, Plazas and Steps | 2,860 SF
+REMARKS
+Landscaped area entered in square feet by the field office (approx. 0.22 acre).
+
+Prepared by: Property Manager, Winchester FM Office · Date: 08/14/2026 · Custodial SF source: GSA Custodial Square Footage Tool (CAD/BIM floor plans, FY 2026)
+CUI – CONTROLLED UNCLASSIFIED INFORMATION (BUILDING INFORMATION) – Disseminate only to offerors with a need to know.
+Solicitation No. 47PC0326R0014 (Conformed through Amendment 0001) — Shenandoah Valley Federal Buildings Section J, Exhibit J.1 – Page J.1-5 of 6
+EXHIBIT J.1 – BUILDING INFORMATION SHEET
+U.S. General Services Administration · Public Buildings Service · Mid-Atlantic Region · Shenandoah Valley Service Center (Harrisonburg FM Office)
+
+SECTION A – BUILDING IDENTIFICATION
+GSA Building Number | VA0402ZZ | Ownership | Federally Owned
+Building Name | Shenandoah Federal Support Center
+Street Address | 855 Interstate Parkway, Harrisonburg, VA 22802-7104
+Building Type | Warehouse / Office / Shops | Year Built / Last Alteration | 1979 / 2003
+Historic Status | Not eligible | Building Population | 52
+Normal Hours of Operation | Mon–Fri, 6:30 a.m. – 4:00 p.m. | Custodial Shift | Day, 6:30 a.m. – 3:00 p.m.
+SECTION B – BUILDING SIZE
+Gross Square Feet (GSF) | 46,300 | Rentable Square Feet (RSF) | 44,860
+ABOA Square Feet | 40,390 | Days of Custodial Service | Monday – Friday, excluding Federal holidays
+Floors Above Grade | 2 (incl. 6,100 SF office mezzanine) | Floors Below Grade | 0
+Passenger Elevators | 1 | Freight Elevators / Escalators | 0 / 0
+
+SECTION C – CUSTODIAL SQUARE FEET BY SPACE TYPE (prepared with the GSA Custodial Square Footage Tool; includes only space cleaned on a routine basis)
+
+Space Type | Custodial Sq. Ft. | Frequency | Remarks
+Office / general administrative space (front office and mezzanine) | 8,640 | Daily
+Lobby and corridors | 1,420 | Daily
+Restrooms and locker rooms | 1,180 | Daily
+Stairwells (2) | 420 | Weekly
+Break room | 560 | Daily
+Warehouse floor (sealed concrete) | 22,400 | Weekly | Sweep weekly; machine scrub monthly
+Maintenance shops | 3,950 | Weekly
+Loading dock (6 doors) | 2,100 | Weekly
+TOTAL CUSTODIAL (CLEANABLE) SQUARE FEET | 40,670
+
+Space not included in Custodial Square Feet (information only)
+
+Space | Sq. Ft. | Reason Excluded | Reason Excluded
+Mechanical and electrical rooms | 1,860 | Not cleaned routinely
+Secure evidence storage cage | 2,300 | Tenant cleans; no contractor access
+
+SECTION D – RESTROOMS AND PLUMBING FIXTURES
+
+Restroom Type | No. of Restrooms | Plumbing Fixtures Water Closets | Plumbing Fixtures Urinals | Plumbing Fixtures Lavatories | Plumbing Fixtures Showers | Fixtures
+Men’s | 2 | 3 | 4 | 3 | 0 | 10
+Women’s | 2 | 3 | 0 | 3 | 0 | 6
+Locker rooms (men’s / women’s) | 2 | 2 | 0 | 2 | 4 | 8
+TOTAL | 6 | 8 | 4 | 8 | 4 | 24
+
+Drinking fountains: 3 · Service (janitor) sinks: 2 — not included in the restroom fixture total.
+
+SECTION E – GLASS AND WINDOW WASHING
+Exterior Glass (SF, one side) | 820 | Interior Glass (SF, one side) | 150
+Window Washing Frequency | Interior and exterior 1x/year (C.3.10)
+SECTION F – GROUNDS AND EXTERIOR
+Total Site Area | 8.75 acres | Grounds Maintenance in Contract | Yes – Contractor (C.4)
+Landscaped / Improved Grounds | 3.10 acres | Snow and Ice Removal | Yes
+Parking Areas | 96,800 SF (employee lot and truck court)
+Sidewalks, Plazas and Steps | 2,150 SF
+REMARKS
+Approximately 4.2 acres of wooded buffer along the north and east property lines are not maintained and are not included in the landscaped area.
+
+Prepared by: Property Manager, Harrisonburg FM Office · Date: 08/14/2026 · Custodial SF source: GSA Custodial Square Footage Tool (CAD/BIM floor plans, FY 2026)
+CUI – CONTROLLED UNCLASSIFIED INFORMATION (BUILDING INFORMATION) – Disseminate only to offerors with a need to know.
+Solicitation No. 47PC0326R0014 (Conformed through Amendment 0001) — Shenandoah Valley Federal Buildings Section J, Exhibit J.1 – Page J.1-6 of 6
+DELETED BY AMENDMENT 0001 – RETAINED FOR REFERENCE ONLY. Building VA0355ZZ is not part of this solicitation; see Summary of Changes, Item 1.
+EXHIBIT J.1 – BUILDING INFORMATION SHEET
+U.S. General Services Administration · Public Buildings Service · Mid-Atlantic Region · Shenandoah Valley Service Center (Harrisonburg FM Office)
+
+SECTION A – BUILDING IDENTIFICATION
+GSA Building Number | VA0355ZZ | Ownership | Federally Owned
+Building Name | Federal Records Annex
+Street Address | 640 Commerce Road, Staunton, VA 24401-9118
+Building Type | Records storage / Office | Year Built / Last Alteration | 1972 / —
+Historic Status | Not eligible | Building Population | 18
+Normal Hours of Operation | Mon–Fri, 7:30 a.m. – 4:00 p.m. | Custodial Shift | Day, 7:30 a.m. – 4:00 p.m.
+SECTION B – BUILDING SIZE
+Gross Square Feet (GSF) | 22,480 | Rentable Square Feet (RSF) | 21,390
+ABOA Square Feet | 17,480 | Days of Custodial Service | Monday – Friday, excluding Federal holidays
+Floors Above Grade | 2 | Floors Below Grade | 0
+Passenger Elevators | 1 | Freight Elevators / Escalators | 1 / 0
+
+SECTION C – CUSTODIAL SQUARE FEET BY SPACE TYPE (prepared with the GSA Custodial Square Footage Tool; includes only space cleaned on a routine basis)
+
+Space Type | Custodial Sq. Ft. | Frequency | Remarks
+Office / general administrative space | 5,980 | Daily
+Lobby and corridors | 1,860 | Daily
+Restrooms | 540 | Daily
+Stairwells (2) | 760 | Weekly
+Records storage stacks (routinely cleaned) | 7,340 | Monthly
+Loading dock | 440 | Weekly
+TOTAL CUSTODIAL (CLEANABLE) SQUARE FEET | 16,920
+
+Space not included in Custodial Square Feet (information only)
+
+Space | Sq. Ft. | Reason Excluded | Reason Excluded
+Mechanical and electrical rooms | 1,120 | Not cleaned routinely
+Inactive records vault (climate controlled) | 2,860 | Not cleaned routinely; NARA-controlled access
+
+SECTION D – RESTROOMS AND PLUMBING FIXTURES
+
+Restroom Type | No. of Restrooms | Plumbing Fixtures |  |  |  | Fixtures
+ |  | Water Closets | Urinals | Lavatories | Showers
+Men’s | 2 | 3 | 2 | 3 | 0 | 8
+Women’s | 2 | 4 | 0 | 2 | 0 | 6
+TOTAL | 4 | 7 | 2 | 5 | 0 | 14
+
+Drinking fountains: 2 · Service (janitor) sinks: 1 — not included in the restroom fixture total.
+
+SECTION E – GLASS AND WINDOW WASHING
+Exterior Glass (SF, one side) | 640 | Interior Glass (SF, one side) | 90
+Window Washing Frequency | Interior and exterior 1x/year (C.3.10)
+SECTION F – GROUNDS AND EXTERIOR
+Total Site Area | 1.90 acres | Grounds Maintenance in Contract | Yes – Contractor (C.4)
+Landscaped / Improved Grounds | 0.65 acre | Snow and Ice Removal | Yes
+Parking Areas | 18,900 SF
+Sidewalks, Plazas and Steps | 1,480 SF
+REMARKS
+Building reported excess (2026).
+
+Prepared by: Property Manager, Harrisonburg FM Office · Date: 08/14/2026 · Custodial SF source: GSA Custodial Square Footage Tool (CAD/BIM floor plans, FY 2026)
+CUI – CONTROLLED UNCLASSIFIED INFORMATION (BUILDING INFORMATION) – Disseminate only to offerors with a need to know.

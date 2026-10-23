@@ -1,0 +1,2095 @@
+{
+  "model": "opus-sim",
+  "passes": [
+    [
+      "rfp-27031-custodial.pdf",
+      "27031 Exhibit A - Buildings in Scope.xlsx",
+      "RFP 27031 Addendum No. 1.pdf"
+    ]
+  ],
+  "calls": [
+    {
+      "name": "set_site_info",
+      "input": {
+        "installation_name": "Kessler State University",
+        "location": "Cape Bluff, Missouri – Main Campus, Health Sciences Campus (2.4 miles east of Main Campus) and Downtown Center",
+        "solicitation": "RFP #27031",
+        "contract_name": "Custodial Services for Various Buildings",
+        "climate_zone": "temperate",
+        "growing_season_weeks": null,
+        "contract_years": 5,
+        "notes": "Initial term July 1, 2027 – June 30, 2028 plus four (4) one-year renewals, maximum five (5) years (RFP §2.1). Custodial only; exterior walks, steps and parking lots cleared by University Grounds staff (§4.6). Winter entrance/walk-off mat requirements Nov 15 – Mar 15; 5–6 snow/ice events per winter. ~14,200 students, ~3,100 on campus. APPA Level 2 unless Remarks/Exhibit B specify Level 1. Day porters at Student Union and Boreham Library 7:00 AM–3:30 PM M–F (§4.4)."
+      },
+      "pass": 0
+    },
+    {
+      "name": "declare_tables",
+      "input": {
+        "tables": [
+          {
+            "table_id": "EXH-A",
+            "title": "Exhibit A – Buildings in Scope (sheet \"Exhibit A - Buildings in Scope\")",
+            "kind": "facilities",
+            "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+            "pages": null,
+            "row_count": 51,
+            "printed_total_gross_area": 2220646,
+            "area_unit": "sf"
+          },
+          {
+            "table_id": "ADD1-A",
+            "title": "Addendum No. 1 Part A – Changes to Exhibit A – Buildings in Scope",
+            "kind": "facilities",
+            "file": "RFP 27031 Addendum No. 1.pdf",
+            "pages": "1",
+            "row_count": 3,
+            "printed_total_gross_area": null,
+            "area_unit": "sf"
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0012",
+            "name": "Kessler Hall (Administration)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 58420,
+            "cleanable_area": 47900,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 4,
+            "fixtures": {
+              "total": 38,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0012 | Kessler Hall (Administration) | Main | 58420 | 47900 | 4 | 38 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0015",
+            "name": "Baldor Technology Center",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 102000,
+            "cleanable_area": 86700,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": 44,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0015 | Baldor Technology Center | Main | 102000 | 86700 | 2 | 44 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0018",
+            "name": "Boreham Library",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 68331,
+            "cleanable_area": 59450,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": {
+              "total": 30,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "7 days/week (daily including weekends)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0018 | Boreham Library | Main | 68331 | 59450 | 3 | 30 | 7 | Open 24/5 during finals"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Open 24/5 during finals. Day porter required 7:00 AM–3:30 PM Monday–Friday (RFP §4.4). Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0021",
+            "name": "Math Science",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 82000,
+            "cleanable_area": 67240,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": {
+              "total": 36,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0021 | Math Science | Main | 82000 | 67240 | 3 | 36 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0024",
+            "name": "Advancement Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 9008,
+            "cleanable_area": 7650,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 6,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0024 | Advancement Center | Main | 9008 | 7650 | 1 | 6 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0027",
+            "name": "51st Annex",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 16339,
+            "cleanable_area": 12250,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 8,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_frequency_text": "3 days/week (Monday, Wednesday and Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0027 | 51st Annex | Main | 16339 | 12250 | 1 | 8 | 3"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0030",
+            "name": "Ballman Speer",
+            "status": "excluded",
+            "status_reason": "Storage – no custodial service; 0 service days – \"listed for information only\" (Exhibit A Note 6; RFP §4.2 shall not be priced)",
+            "category": "warehouse",
+            "gross_area": 12466,
+            "cleanable_area": 0,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 2,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": "0 days/week (no routine service – information only)",
+            "scope": [],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0030 | Ballman Speer | Main | 12466 | 0 | 1 | 2 | 0 | Storage – no custodial service"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Storage – no custodial service. Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0033",
+            "name": "Fine Arts Center",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 61775,
+            "cleanable_area": 50650,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": {
+              "total": 28,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0033 | Fine Arts Center | Main | 61775 | 50650 | 3 | 28 | 5 | Includes 640-seat recital hall"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Includes 640-seat recital hall. Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0036",
+            "name": "Music Building",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 24180,
+            "cleanable_area": 19830,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": 12,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "6 days/week (Monday–Saturday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0036 | Music Building | Main | 24180 | 19830 | 2 | 12 | 6"
+            },
+            "confidence": 0.95,
+            "notes": "Service Days/Week = 6 (Monday–Saturday); no 6-day service_level exists, daily_5 chosen – actual is 6 days/week. Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0039",
+            "name": "Business Administration",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 45960,
+            "cleanable_area": 38150,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": {
+              "total": 24,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0039 | Business Administration | Main | 45960 | 38150 | 3 | 24 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0042",
+            "name": "Education Building",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 40230,
+            "cleanable_area": 33390,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": {
+              "total": 22,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0042 | Education Building | Main | 40230 | 33390 | 3 | 22 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0045",
+            "name": "Social Sciences Hall",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 37415,
+            "cleanable_area": 30680,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": {
+              "total": 20,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0045 | Social Sciences Hall | Main | 37415 | 30680 | 3 | 20 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0048",
+            "name": "Engineering and Applied Sciences",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 88640,
+            "cleanable_area": 70910,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 4,
+            "fixtures": {
+              "total": 40,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0048 | Engineering and Applied Sciences | Main | 88640 | 70910 | 4 | 40 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0051",
+            "name": "Chemistry and Biology Laboratories",
+            "status": null,
+            "status_reason": null,
+            "category": "lab",
+            "gross_area": 71200,
+            "cleanable_area": 54110,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": {
+              "total": 34,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0051 | Chemistry and Biology Laboratories | Main | 71200 | 54110 | 3 | 34 | 5 | Lab benches cleaned by department staff"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Lab benches cleaned by department staff. Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0054",
+            "name": "Student Union",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 96850,
+            "cleanable_area": 79420,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": {
+              "total": 58,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "7 days/week (daily including weekends)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0054 | Student Union | Main | 96850 | 79420 | 3 | 58 | 7"
+            },
+            "confidence": 0.95,
+            "notes": "Day porter required 7:00 AM–3:30 PM Monday–Friday (RFP §4.4). Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0057",
+            "name": "Recreation and Wellness Center",
+            "status": null,
+            "status_reason": null,
+            "category": "fitness",
+            "gross_area": 74300,
+            "cleanable_area": 63155,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": 46,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "7 days/week (daily including weekends)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0057 | Recreation and Wellness Center | Main | 74300 | 63155 | 2 | 46 | 7"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0060",
+            "name": "Athletic Field House",
+            "status": null,
+            "status_reason": null,
+            "category": "fitness",
+            "gross_area": 52100,
+            "cleanable_area": 31260,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 36,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "6 days/week (Monday–Saturday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0060 | Athletic Field House | Main | 52100 | 31260 | 1 | 36 | 6 | Arena floor by Athletics"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Arena floor by Athletics. Service Days/Week = 6 (Monday–Saturday); no 6-day service_level exists, daily_5 chosen – actual is 6 days/week. Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0063",
+            "name": "Natatorium",
+            "status": null,
+            "status_reason": null,
+            "category": "fitness",
+            "gross_area": 28640,
+            "cleanable_area": 17180,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 22,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "6 days/week (Monday–Saturday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0063 | Natatorium | Main | 28640 | 17180 | 1 | 22 | 6"
+            },
+            "confidence": 0.95,
+            "notes": "Service Days/Week = 6 (Monday–Saturday); no 6-day service_level exists, daily_5 chosen – actual is 6 days/week. Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0066",
+            "name": "Campus Police and Parking Services",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 8215,
+            "cleanable_area": 6980,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 6,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "7 days/week (daily including weekends)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0066 | Campus Police and Parking Services | Main | 8215 | 6980 | 1 | 6 | 7"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0069",
+            "name": "Central Receiving and Warehouse",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 22400,
+            "cleanable_area": 5600,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 4,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_frequency_text": "2 days/week (Tuesday and Thursday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0069 | Central Receiving and Warehouse | Main | 22400 | 5600 | 1 | 4 | 2 | Office and break areas only"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Office and break areas only. Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0072",
+            "name": "Physical Plant Shops",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 18960,
+            "cleanable_area": 6640,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 6,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_frequency_text": "2 days/week (Tuesday and Thursday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0072 | Physical Plant Shops | Main | 18960 | 6640 | 1 | 6 | 2 | Office and break areas only"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Office and break areas only. Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0075",
+            "name": "Information Technology Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 26300,
+            "cleanable_area": 21830,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": 12,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0075 | Information Technology Center | Main | 26300 | 21830 | 2 | 12 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0078",
+            "name": "Career Services and Alumni Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 11520,
+            "cleanable_area": 9560,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": 8,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0078 | Career Services and Alumni Center | Main | 11520 | 9560 | 2 | 8 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0081",
+            "name": "Child Development Laboratory School",
+            "status": null,
+            "status_reason": null,
+            "category": "child_care",
+            "gross_area": 9860,
+            "cleanable_area": 8380,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 14,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0081 | Child Development Laboratory School | Main | 9860 | 8380 | 1 | 14 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "0084",
+            "name": "Hawthorne Hall",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 34750,
+            "cleanable_area": 28500,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": {
+              "total": 18,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "0084 | Hawthorne Hall | Main | 34750 | 28500 | 3 | 18 | 5 | Renovation planned 2027–2028"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Renovation planned 2027–2028. Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "1102",
+            "name": "Ozark Hall (Residence Hall)",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 112600,
+            "cleanable_area": 33780,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 6,
+            "fixtures": {
+              "total": 96,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "7 days/week (daily including weekends)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "1102 | Ozark Hall (Residence Hall) | Main | 112600 | 33780 | 6 | 96 | 7 | Common areas and community restrooms only"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Common areas and community restrooms only. Residence hall (RFP §4.3): common areas and community restrooms only, 7 days/week while halls are open, plus end/beginning-of-semester thorough cleaning included in price (Add. 1 A7). Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "1104",
+            "name": "Cedar Hall (Residence Hall)",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 98450,
+            "cleanable_area": 29540,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 5,
+            "fixtures": {
+              "total": 84,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "7 days/week (daily including weekends)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "1104 | Cedar Hall (Residence Hall) | Main | 98450 | 29540 | 5 | 84 | 7 | Common areas and community restrooms only"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Common areas and community restrooms only. Residence hall (RFP §4.3): common areas and community restrooms only, 7 days/week while halls are open, plus end/beginning-of-semester thorough cleaning included in price (Add. 1 A7). Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "1106",
+            "name": "Juniper Hall (Residence Hall)",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 98450,
+            "cleanable_area": 29540,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 5,
+            "fixtures": {
+              "total": 84,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "7 days/week (daily including weekends)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "1106 | Juniper Hall (Residence Hall) | Main | 98450 | 29540 | 5 | 84 | 7 | Common areas and community restrooms only"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Common areas and community restrooms only. Residence hall (RFP §4.3): common areas and community restrooms only, 7 days/week while halls are open, plus end/beginning-of-semester thorough cleaning included in price (Add. 1 A7). Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "1108",
+            "name": "Sycamore Suites",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 126300,
+            "cleanable_area": 25260,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 4,
+            "fixtures": {
+              "total": 18,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "7 days/week (daily including weekends)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "1108 | Sycamore Suites | Main | 126300 | 25260 | 4 | 18 | 7 | Suite bathrooms excluded"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Suite bathrooms excluded. Residence hall (RFP §4.3): common areas and community restrooms only, 7 days/week while halls are open, plus end/beginning-of-semester thorough cleaning included in price (Add. 1 A7). Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "1110",
+            "name": "Maple Apartments",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 84200,
+            "cleanable_area": 8420,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": {
+              "total": 6,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_frequency_text": "3 days/week (Monday, Wednesday and Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "1110 | Maple Apartments | Main | 84200 | 8420 | 3 | 6 | 3 | Lobbies, laundry and community center only"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Lobbies, laundry and community center only. Not a residence hall (RFP §4.3); serviced on Column H days. Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "1112",
+            "name": "University Dining Commons",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 54700,
+            "cleanable_area": 41030,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": 24,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "7 days/week (daily including weekends)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "1112 | University Dining Commons | Main | 54700 | 41030 | 2 | 24 | 7 | Kitchen by food service contractor"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Kitchen by food service contractor. Exhibit A Note 7: custodial covers dining room, restrooms and public corridors only; kitchen, serving lines and dish room cleaned by the food service contractor. No food service in this contract. Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Main",
+            "building_number": "1120",
+            "name": "Honors College House",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 6480,
+            "cleanable_area": 5510,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": 6,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "1120 | Honors College House | Main | 6480 | 5510 | 2 | 6 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Not a residence hall (RFP §4.3); serviced on Column H days. Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Health Sciences",
+            "building_number": "2201",
+            "name": "Pendergraft Health Sciences",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 72230,
+            "cleanable_area": 60670,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": {
+              "total": 34,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "2201 | Pendergraft Health Sciences | Health Sciences | 72230 | 60670 | 3 | 34 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Health Sciences",
+            "building_number": "2204",
+            "name": "Clinical Simulation Center",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 31850,
+            "cleanable_area": 26120,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": 16,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "2204 | Clinical Simulation Center | Health Sciences | 31850 | 26120 | 2 | 16 | 5 | APPA Level 1 in simulation suites"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: APPA Level 1 in simulation suites. APPA Level 1 cleaning standard (all others APPA Level 2). Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Health Sciences",
+            "building_number": "2207",
+            "name": "Dental Hygiene Clinic",
+            "status": null,
+            "status_reason": null,
+            "category": "medical",
+            "gross_area": 14960,
+            "cleanable_area": 12720,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 18,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "2207 | Dental Hygiene Clinic | Health Sciences | 14960 | 12720 | 1 | 18 | 5 | APPA Level 1"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: APPA Level 1. APPA Level 1 cleaning standard (all others APPA Level 2). Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Health Sciences",
+            "building_number": "2210",
+            "name": "Nursing and Allied Health",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 48210,
+            "cleanable_area": 36400,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": {
+              "total": 22,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "2210 | Nursing and Allied Health | Health Sciences | 48210 | 36400 | 3 | 22 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Health Sciences",
+            "building_number": "2213",
+            "name": "Health Sciences Library",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 19640,
+            "cleanable_area": 16500,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": 10,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "6 days/week (Monday–Saturday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "2213 | Health Sciences Library | Health Sciences | 19640 | 16500 | 2 | 10 | 6"
+            },
+            "confidence": 0.95,
+            "notes": "Service Days/Week = 6 (Monday–Saturday); no 6-day service_level exists, daily_5 chosen – actual is 6 days/week. Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Health Sciences",
+            "building_number": "2216",
+            "name": "Physical Therapy Building",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 23175,
+            "cleanable_area": 19700,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": 14,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "2216 | Physical Therapy Building | Health Sciences | 23175 | 19700 | 2 | 14 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Health Sciences",
+            "building_number": "2219",
+            "name": "Community Health Clinic",
+            "status": null,
+            "status_reason": null,
+            "category": "medical",
+            "gross_area": 17880,
+            "cleanable_area": 15550,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 20,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "7 days/week (daily including weekends)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "2219 | Community Health Clinic | Health Sciences | 17880 | 15550 | 1 | 20 | 7 | APPA Level 1"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: APPA Level 1. APPA Level 1 cleaning standard (all others APPA Level 2). Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Health Sciences",
+            "building_number": "2222",
+            "name": "Biomedical Research Annex",
+            "status": null,
+            "status_reason": null,
+            "category": "lab",
+            "gross_area": 27940,
+            "cleanable_area": 19560,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": 12,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "2222 | Biomedical Research Annex | Health Sciences | 27940 | 19560 | 2 | 12 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Health Sciences",
+            "building_number": "2225",
+            "name": "Parking Deck Office and Restrooms",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 1920,
+            "cleanable_area": 1630,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 2,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_frequency_text": "1 day/week (once per week)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "2225 | Parking Deck Office and Restrooms | Health Sciences | 1920 | 1630 | 1 | 2 | 1"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Downtown Center",
+            "building_number": "3301",
+            "name": "Aviation Technology Center",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 73346,
+            "cleanable_area": 38140,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": 26,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "3301 | Aviation Technology Center | Downtown Center | 73346 | 38140 | 2 | 26 | 5 | Hangar bays excluded from cleanable"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Hangar bays excluded from cleanable. Exhibit A Note 8: hangar bays swept by University staff, excluded from cleanable SF. Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Downtown Center",
+            "building_number": "3304",
+            "name": "29th Street Coalition Center",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 39751,
+            "cleanable_area": 33790,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 22,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "3304 | 29th Street Coalition Center | Downtown Center | 39751 | 33790 | 1 | 22 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Downtown Center",
+            "building_number": "3307",
+            "name": "Downtown Classroom Building",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 44620,
+            "cleanable_area": 37930,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 4,
+            "fixtures": {
+              "total": 24,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "6 days/week (Monday–Saturday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "3307 | Downtown Classroom Building | Downtown Center | 44620 | 37930 | 4 | 24 | 6"
+            },
+            "confidence": 0.95,
+            "notes": "Service Days/Week = 6 (Monday–Saturday); no 6-day service_level exists, daily_5 chosen – actual is 6 days/week. Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Downtown Center",
+            "building_number": "3310",
+            "name": "Workforce Development Center",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 36980,
+            "cleanable_area": 30320,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": 18,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "3310 | Workforce Development Center | Downtown Center | 36980 | 30320 | 2 | 18 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Downtown Center",
+            "building_number": "3313",
+            "name": "Small Business Incubator",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 15400,
+            "cleanable_area": 12940,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": 8,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_frequency_text": "3 days/week (Monday, Wednesday and Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "3313 | Small Business Incubator | Downtown Center | 15400 | 12940 | 2 | 8 | 3"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Downtown Center",
+            "building_number": "3316",
+            "name": "Culinary Arts Institute",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 21560,
+            "cleanable_area": 17250,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 12,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "3316 | Culinary Arts Institute | Downtown Center | 21560 | 17250 | 1 | 12 | 5 | Teaching kitchens by program staff"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Teaching kitchens by program staff. Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Downtown Center",
+            "building_number": "3319",
+            "name": "Downtown Library and Archives",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 12875,
+            "cleanable_area": 10940,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": 6,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_frequency_text": "2 days/week (Tuesday and Thursday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "3319 | Downtown Library and Archives | Downtown Center | 12875 | 10940 | 2 | 6 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Downtown Center",
+            "building_number": "3322",
+            "name": "Continuing Education Center",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 18230,
+            "cleanable_area": 15500,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": 10,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "3322 | Continuing Education Center | Downtown Center | 18230 | 15500 | 2 | 10 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Downtown Center",
+            "building_number": "3325",
+            "name": "Public Radio Station (KSUR)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 7640,
+            "cleanable_area": 6490,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 4,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_frequency_text": "5 days/week (Monday–Friday)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "3325 | Public Radio Station (KSUR) | Downtown Center | 7640 | 6490 | 1 | 4 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          },
+          {
+            "table_id": "EXH-A",
+            "campus": "Downtown Center",
+            "building_number": "3328",
+            "name": "Regional Training Center (Leased, Suite 200)",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 9400,
+            "cleanable_area": 8000,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 6,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_frequency_text": "1 day/week (once per week)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "27031 Exhibit A - Buildings in Scope.xlsx",
+              "page": null,
+              "excerpt": "3328 | Regional Training Center (Leased, Suite 200) | Downtown Center | 9400 | 8000 | 1 | 6 | 1"
+            },
+            "confidence": 0.95,
+            "notes": "Restroom fixtures = WC + UR + LAV (showers not counted), single combined column."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "ADD1-A",
+            "campus": "Main",
+            "building_number": "1114",
+            "name": "Ridgeview Commons",
+            "status": "in_scope",
+            "status_reason": "Addendum No. 1 Item A-1: \"Added to scope\"; A1: \"Building 1114, Ridgeview Commons, is added to Exhibit A\"",
+            "category": "other",
+            "gross_area": 11000,
+            "cleanable_area": 9350,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": 14,
+              "water_closets": null,
+              "urinals": null,
+              "lavatories": null,
+              "showers": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_frequency_text": "7 service days per week",
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "RFP 27031 Addendum No. 1.pdf",
+              "page": 1,
+              "excerpt": "A-1 | 1114 | Ridgeview Commons | Added to scope | Gross Sq Ft 11,000; Cleanable Sq Ft 9,350; 1 floor; 14 restroom fixtures; 7 service days per week; Campus: Main."
+            },
+            "confidence": 0.95,
+            "notes": "Opened August 2026 (Q1). Building use not stated; category is a guess. Restroom fixtures combined count."
+          },
+          {
+            "table_id": "ADD1-A",
+            "campus": "Health Sciences",
+            "building_number": "2210",
+            "name": "Nursing and Allied Health",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 42810,
+            "cleanable_area": 36400,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "RFP 27031 Addendum No. 1.pdf",
+              "page": 1,
+              "excerpt": "A-2 | 2210 | Nursing and Allied Health | Corrected | Gross Sq Ft is changed from 48,210 to 42,810. Cleanable Sq Ft (36,400) and all other columns are unchanged."
+            },
+            "confidence": 0.97,
+            "notes": "Gross SF corrected from 48,210 (transposition error, A2) to 42,810. All other Exhibit A columns unchanged."
+          },
+          {
+            "table_id": "ADD1-A",
+            "campus": "Main",
+            "building_number": "0084",
+            "name": "Hawthorne Hall",
+            "status": "deleted_by_amendment",
+            "status_reason": "Addendum No. 1 Item A-3: \"Removed from scope – Do not price. The row remains in Exhibit A for information only.\" A3: closes for renovation May 2027 through August 2028.",
+            "category": "education",
+            "gross_area": null,
+            "cleanable_area": null,
+            "area_unit": "sf",
+            "area_missing": null,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_frequency_text": null,
+            "scope": [],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "RFP 27031 Addendum No. 1.pdf",
+              "page": 1,
+              "excerpt": "A-3 | 0084 | Hawthorne Hall | Removed from scope | Do not price. The row remains in Exhibit A for information only."
+            },
+            "confidence": 0.97,
+            "notes": "Areas unchanged from Exhibit A (34,750 gross / 28,500 cleanable); removed from scope by Addendum No. 1."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "set_previous_award",
+      "input": {
+        "incumbent": "Allpoint Custodial Group, LLC",
+        "contract_number": "KSU-C-22-0447",
+        "contract_type": null,
+        "total_value": 26480000,
+        "period_months": 60,
+        "annual_value": null,
+        "spend_to_date": null,
+        "spend_period_months": null,
+        "award_year": 2022,
+        "source": {
+          "file": "rfp-27031-custodial.pdf",
+          "page": 1,
+          "excerpt": "Allpoint Custodial Group, LLC under Contract No. KSU-C-22-0447, awarded in 2022 for the period July 1, 2022 through June 30, 2027 ... total value ... including all renewals, is $26,480,000."
+        },
+        "confidence": 0.95,
+        "notes": "Five-year term (one-year initial term + four one-year renewals), July 1, 2022 – June 30, 2027. Contract type not stated. Addendum No. 1 A5: incumbent staffs approximately 78 custodial FTEs (including day porters) and 7 supervisors across all three locations. Invoices not provided (A6). Current contract covers the Exhibit A buildings (scope may differ slightly from the new RFP: 1114 added, 0084 removed)."
+      },
+      "pass": 0
+    },
+    {
+      "name": "finish",
+      "input": {
+        "summary": "Kessler State University RFP #27031 custodial services: 51 Exhibit A buildings registered across Main, Health Sciences and Downtown Center campuses (gross and cleanable SF, floors, restroom fixtures, service days/week), plus Addendum No. 1 changes: 1114 Ridgeview Commons added (11,000 / 9,350 SF, 7 days), 2210 gross corrected to 42,810 SF, 0084 Hawthorne Hall removed from scope. 0030 Ballman Speer excluded (0 service days, information only). 50 buildings in scope. No grounds scope (exterior walks/parking by University Grounds staff). Incumbent Allpoint Custodial Group, LLC, KSU-C-22-0447, $26,480,000 over 5 years (2022–2027); ~78 custodial FTEs + 7 supervisors.",
+        "unresolved": [
+          "Buildings with 6 service days/week (0036, 0060, 0063, 2213, 3307: Monday–Saturday) were set to service_level daily_5 because no 6-day level exists; service_frequency_text records 6 days/week.",
+          "EXH-A printed TOTAL (2,220,646 SF gross) is a simple sum of every Exhibit A row including information-only 0030 and does not reflect Addendum No. 1 (2210 corrected 48,210 → 42,810; 0084 removed; 1114 added), per Addendum A4.",
+          "Exhibit B (tasks/frequencies by space type), Exhibit C (staffing workbook) and Exhibit D (pricing pages) are referenced but not included in the package.",
+          "Building 1114 Ridgeview Commons use type not stated; categorized as other."
+        ]
+      },
+      "pass": 0
+    }
+  ]
+}
