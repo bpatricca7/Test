@@ -404,6 +404,18 @@ test('PDF layout: a page border is not a table frame (column titles stay one row
   assert.ok(lines.includes('Note: Building 702 is cleaned weekly; all others daily.'), lines.join('\n'));
 });
 
+test('PDF layout: under column titles, a row that opens with an identifier is a data row even with no two-digit figure', async () => {
+  const c = (text: string, from: number, align: 'l' | 'r' | 'c' = 'l'): GridCell => ({ text, from, align });
+  const g = gridPage([40, 80, 330, 400, 450], 700, [
+    [c('Exhibit', 0, 'c'), c('Title', 1, 'c'), c('Pages', 2, 'c'), c('Copies', 3, 'c')],
+    [c('E.1', 0), c('Building data sheets', 1), c('6', 2, 'c'), c('1', 3, 'c')],
+    [c('E.2', 0), c('Wage determination', 1), c('22', 2, 'c'), c('1', 3, 'c')],
+  ]);
+  const lines = (await extractPdfLayout(makePdf([{ texts: g.texts, rects: g.rects }]))).text.split('\n');
+  assert.ok(lines.includes('Exhibit | Title | Pages | Copies'), lines.join('\n'));
+  assert.ok(lines.includes('E.1 | Building data sheets | 6 | 1'), lines.join('\n'));
+});
+
 test('superscripts: unit exponents and ordinals stay text, footnote markers become [^n] (PDF and DOCX)', async () => {
   // superscripts as Word / Chromium print them: a smaller run with text rise (Ts persists across BT/ET, so reset it)
   const p = makePdf([{ ops: [
