@@ -1,0 +1,460 @@
+{
+ "model": "synthetic",
+ "calls": [
+  {
+   "name": "declare_tables",
+   "input": {
+    "tables": [
+     {
+      "table_id": "TE-3",
+      "title": "Technical Exhibit 3 Custodial Workload",
+      "file": "pws.pdf",
+      "row_count": 16,
+      "total_gross_sqft": 811550
+     }
+    ]
+   }
+  },
+  {
+   "name": "set_site_info",
+   "input": {
+    "installation_name": "Fort Example",
+    "solicitation": "W912QR-26-R-0042",
+    "contract_years": 5,
+    "climate_zone": "temperate"
+   }
+  },
+  {
+   "name": "register_facilities",
+   "input": {
+    "facilities": [
+     {
+      "table_id": "TE-3",
+      "building_number": "Bldg 1201",
+      "name": "Brigade Headquarters",
+      "gross_area": "45,200",
+      "cleanable_area": 38400,
+      "floors": 2,
+      "fixtures": {
+       "total": 24
+      },
+      "service_level": "daily_5",
+      "dining": null,
+      "source": {
+       "file": "pws.pdf",
+       "page": 1,
+       "excerpt": "Bldg 1201 | Brigade Headquarters"
+      },
+      "confidence": 0.95
+     },
+     {
+      "table_id": "TE-3",
+      "building_number": "Bldg 1205",
+      "name": "Battalion Headquarters Annex",
+      "gross_area": "18,750",
+      "cleanable_area": 15900,
+      "floors": 1,
+      "fixtures": {
+       "total": 10
+      },
+      "service_level": "daily_5",
+      "dining": null,
+      "source": {
+       "file": "pws.pdf",
+       "page": 1,
+       "excerpt": "Bldg 1205 | Battalion Headquarters Annex"
+      },
+      "confidence": 0.95
+     },
+     {
+      "table_id": "TE-3",
+      "building_number": "Bldg 1310",
+      "name": "Soldier Service Center (DHR / Finance)",
+      "gross_area": "62,000",
+      "cleanable_area": 52700,
+      "floors": 3,
+      "fixtures": {
+       "total": 32
+      },
+      "service_level": "daily_5",
+      "dining": null,
+      "source": {
+       "file": "pws.pdf",
+       "page": 1,
+       "excerpt": "Bldg 1310 | Soldier Service Center (DHR / Finance)"
+      },
+      "confidence": 0.95
+     },
+     {
+      "table_id": "TE-3",
+      "building_number": "Bldg 2402",
+      "name": "Barracks, Enlisted (Common Areas Only)",
+      "gross_area": "96,000",
+      "cleanable_area": 28800,
+      "floors": 4,
+      "fixtures": {
+       "total": 64
+      },
+      "service_level": "daily_7",
+      "dining": null,
+      "source": {
+       "file": "pws.pdf",
+       "page": 1,
+       "excerpt": "Bldg 2402 | Barracks, Enlisted (Common Areas Only)"
+      },
+      "confidence": 0.95
+     },
+     {
+      "table_id": "TE-3",
+      "building_number": "Bldg 2404",
+      "name": "Barracks, Enlisted (Common Areas Only)",
+      "gross_area": "96,000",
+      "cleanable_area": 28800,
+      "floors": 4,
+      "fixtures": {
+       "total": 64
+      },
+      "service_level": "daily_7",
+      "dining": null,
+      "source": {
+       "file": "pws.pdf",
+       "page": 1,
+       "excerpt": "Bldg 2404 | Barracks, Enlisted (Common Areas Only)"
+      },
+      "confidence": 0.95
+     },
+     {
+      "table_id": "TE-3",
+      "building_number": "Bldg 2410",
+      "name": "Dining Facility (Warrior Restaurant)",
+      "gross_area": "28,500",
+      "cleanable_area": 25600,
+      "floors": 1,
+      "fixtures": {
+       "total": 12
+      },
+      "service_level": "daily_7",
+      "dining": {
+       "meal_periods": [
+        {
+         "period": "breakfast",
+         "weekday_headcount": 620
+        },
+        {
+         "period": "lunch",
+         "weekday_headcount": 1150
+        },
+        {
+         "period": "dinner",
+         "weekday_headcount": 740
+        },
+        {
+         "period": "midnight",
+         "weekday_headcount": 140
+        }
+       ],
+       "days_per_week": 7
+      },
+      "source": {
+       "file": "pws.pdf",
+       "page": 1,
+       "excerpt": "Bldg 2410 | Dining Facility (Warrior Restaurant)"
+      },
+      "confidence": 0.95
+     },
+     {
+      "table_id": "TE-3",
+      "building_number": "Bldg 3105",
+      "name": "Consolidated Health Clinic",
+      "gross_area": "54,300",
+      "cleanable_area": 48900,
+      "floors": 2,
+      "fixtures": {
+       "total": 40
+      },
+      "service_level": "daily_7",
+      "dining": null,
+      "source": {
+       "file": "pws.pdf",
+       "page": 1,
+       "excerpt": "Bldg 3105 | Consolidated Health Clinic"
+      },
+      "confidence": 0.95
+     },
+     {
+      "table_id": "TE-3",
+      "building_number": "Bldg 3120",
+      "name": "Dental Clinic",
+      "gross_area": "14,200",
+      "cleanable_area": 12800,
+      "floors": 1,
+      "fixtures": {
+       "total": 12
+      },
+      "service_level": "daily_5",
+      "dining": null,
+      "source": {
+       "file": "pws.pdf",
+       "page": 1,
+       "excerpt": "Bldg 3120 | Dental Clinic"
+      },
+      "confidence": 0.95
+     }
+    ]
+   }
+  },
+  {
+   "name": "register_facilities",
+   "input": {
+    "facilities": [
+     {
+      "table_id": "TE-3",
+      "building_number": "Bldg 4001",
+      "name": "Physical Fitness Center",
+      "gross_area": "48,000",
+      "cleanable_area": 43200,
+      "floors": 1,
+      "fixtures": {
+       "total": 36
+      },
+      "service_level": "daily_7",
+      "dining": null,
+      "source": {
+       "file": "pws.pdf",
+       "page": 1,
+       "excerpt": "Bldg 4001 | Physical Fitness Center"
+      },
+      "confidence": 0.95
+     },
+     {
+      "table_id": "TE-3",
+      "building_number": "Bldg 4210",
+      "name": "Child Development Center",
+      "gross_area": "22,400",
+      "cleanable_area": 20200,
+      "floors": 1,
+      "fixtures": {
+       "total": 30
+      },
+      "service_level": "daily_5",
+      "dining": null,
+      "source": {
+       "file": "pws.pdf",
+       "page": 1,
+       "excerpt": "Bldg 4210 | Child Development Center"
+      },
+      "confidence": 0.95
+     },
+     {
+      "table_id": "TE-3",
+      "building_number": "Bldg 4330",
+      "name": "Education Center and Library",
+      "gross_area": "36,800",
+      "cleanable_area": 31300,
+      "floors": 2,
+      "fixtures": {
+       "total": 18
+      },
+      "service_level": "daily_5",
+      "dining": null,
+      "source": {
+       "file": "pws.pdf",
+       "page": 1,
+       "excerpt": "Bldg 4330 | Education Center and Library"
+      },
+      "confidence": 0.95
+     },
+     {
+      "table_id": "TE-3",
+      "building_number": "Bldg 4500",
+      "name": "Post Chapel and Religious Education",
+      "gross_area": "16,900",
+      "cleanable_area": 14400,
+      "floors": 1,
+      "fixtures": {
+       "total": 8
+      },
+      "service_level": "3x_week",
+      "dining": null,
+      "source": {
+       "file": "pws.pdf",
+       "page": 1,
+       "excerpt": "Bldg 4500 | Post Chapel and Religious Education"
+      },
+      "confidence": 0.95
+     },
+     {
+      "table_id": "TE-3",
+      "building_number": "Bldg 5100",
+      "name": "Central Issue Facility Warehouse",
+      "gross_area": "82,000",
+      "cleanable_area": 24600,
+      "floors": 1,
+      "fixtures": {
+       "total": 6
+      },
+      "service_level": "2x_week",
+      "dining": null,
+      "source": {
+       "file": "pws.pdf",
+       "page": 1,
+       "excerpt": "Bldg 5100 | Central Issue Facility Warehouse"
+      },
+      "confidence": 0.95
+     },
+     {
+      "table_id": "TE-3",
+      "building_number": "Bldg 5230",
+      "name": "Vehicle Maintenance Shop (TMP)",
+      "gross_area": "44,000",
+      "cleanable_area": 17600,
+      "floors": 1,
+      "fixtures": {
+       "total": 8
+      },
+      "service_level": "2x_week",
+      "dining": null,
+      "source": {
+       "file": "pws.pdf",
+       "page": 1,
+       "excerpt": "Bldg 5230 | Vehicle Maintenance Shop (TMP)"
+      },
+      "confidence": 0.95
+     },
+     {
+      "table_id": "TE-3",
+      "building_number": "Bldg 6010",
+      "name": "Aviation Hangar 1 (Shops and Admin Areas)",
+      "gross_area": "120,000",
+      "cleanable_area": 30000,
+      "floors": 1,
+      "fixtures": {
+       "total": 10
+      },
+      "service_level": "weekly",
+      "dining": null,
+      "source": {
+       "file": "pws.pdf",
+       "page": 1,
+       "excerpt": "Bldg 6010 | Aviation Hangar 1 (Shops and Admin Areas)"
+      },
+      "confidence": 0.95
+     },
+     {
+      "table_id": "TE-3",
+      "building_number": "Bldg 7020",
+      "name": "Range Control and Simulation Center",
+      "gross_area": "26,500",
+      "cleanable_area": 22500,
+      "floors": 2,
+      "fixtures": {
+       "total": 12
+      },
+      "service_level": "daily_5",
+      "dining": null,
+      "source": {
+       "file": "pws.pdf",
+       "page": 1,
+       "excerpt": "Bldg 7020 | Range Control and Simulation Center"
+      },
+      "confidence": 0.95
+     }
+    ]
+   }
+  },
+  {
+   "name": "register_grounds",
+   "input": {
+    "areas": [
+     {
+      "name": "Area 0",
+      "kind": "improved_turf",
+      "quantity": 97.4,
+      "unit": "acres",
+      "source": {
+       "excerpt": ""
+      },
+      "confidence": 0.9
+     },
+     {
+      "name": "Area 1",
+      "kind": "semi_improved",
+      "quantity": 215,
+      "unit": "acres",
+      "source": {
+       "excerpt": ""
+      },
+      "confidence": 0.9
+     },
+     {
+      "name": "Area 2",
+      "kind": "unimproved",
+      "quantity": 640,
+      "unit": "acres",
+      "source": {
+       "excerpt": ""
+      },
+      "confidence": 0.9
+     },
+     {
+      "name": "Area 3",
+      "kind": "athletic_field",
+      "quantity": 14,
+      "unit": "acres",
+      "source": {
+       "excerpt": ""
+      },
+      "confidence": 0.9
+     },
+     {
+      "name": "Area 4",
+      "kind": "shrub_bed",
+      "quantity": 86000,
+      "unit": "sqft",
+      "source": {
+       "excerpt": ""
+      },
+      "confidence": 0.9
+     },
+     {
+      "name": "Area 5",
+      "kind": "parking",
+      "quantity": 1420000,
+      "unit": "sqft",
+      "source": {
+       "excerpt": ""
+      },
+      "confidence": 0.9
+     },
+     {
+      "name": "Area 6",
+      "kind": "sidewalk",
+      "quantity": 310000,
+      "unit": "sqft",
+      "source": {
+       "excerpt": ""
+      },
+      "confidence": 0.9
+     },
+     {
+      "name": "Area 7",
+      "kind": "tree_canopy",
+      "quantity": 1250,
+      "unit": "each",
+      "source": {
+       "excerpt": ""
+      },
+      "confidence": 0.9
+     }
+    ]
+   }
+  },
+  {
+   "name": "finish",
+   "input": {
+    "summary": "done",
+    "unresolved": []
+   }
+  }
+ ]
+}

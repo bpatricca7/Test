@@ -1,0 +1,476 @@
+{
+  "id": "oconus-metric-sm-pdf",
+  "title": "USAG Italy (Vicenza / Poggio Renatico) custodial and grounds PWS TE-3: 30-facility list in square meters (SM / m² / mq) with U.S. and Italian number formats, PT+n floor notation, excluded USO ITALIANO / DA DEMOLIRE rows, and grounds in hectares and m²",
+  "theme": "oconus-scanned",
+  "provenance": {
+    "fidelity": "real-format",
+    "sources": [
+      {
+        "url": "https://www.highergov.com/contract-opportunity/custodial-services-at-usag-italy-vicenza-and-poggi-w912pf24q0047-p-f2bc1/",
+        "note": "Presolicitation W912PF24Q0047 (414th CSB): custodial services at USAG Italy Vicenza and Poggio Renatico (FE) – sites Caserma Ederle, Caserma Del Din and Poggio Renatico; base period plus four periods. Copied: site set, scope title, 1 + 4 period structure."
+      },
+      {
+        "url": "https://usfcr.com/search/opportunities/?oppId=9eca291e3fb640d1811e560c84547668",
+        "note": "W912CM24R0005 Custodial Services Wiesbaden: RCO Wiesbaden IDIQ \"for approximately 500,000 square meters of facility spaces within USAG Wiesbaden\" – OCONUS Army custodial workload stated in square meters, not SF."
+      },
+      {
+        "url": "https://2009-2017.state.gov/documents/organization/109191.pdf",
+        "note": "U.S.–Italy technical arrangement: Caserma Ederle installation area 613,260 square meters (copied as the information-only site-area row in Table 3-4)."
+      },
+      {
+        "url": "https://installationguide.militarytimes.com/installation_service/usag-italy/",
+        "note": "USAG Italy directory: HQ on Caserma Carlo Ederle, Viale della Pace 193; Davis Soldier and Family Readiness Center Bldg 108; adult education center Bldg 126; automotive services Bldg 202; barber/beauty shop Bldg 302 (building numbers and names copied; areas illustrative)."
+      },
+      {
+        "url": "https://home.army.mil/italy/contact/phonebook",
+        "note": "USAG Italy Vicenza phonebook: CDC Ederle (CYS), Building 398 (number and name copied)."
+      },
+      {
+        "url": "https://crg.health.mil/guides/usareur/vicenza/pages/azindex.aspx",
+        "note": "Vicenza community resource guide: Bldg 395 Spiritual Life Building (number and name copied)."
+      },
+      {
+        "url": "https://installations.militaryonesource.mil/search?program-service=ALL%2Finstallation%3Dusag-italy",
+        "note": "Directory listing chapel services at Caserma Ederle, Building 29 (number and name copied)."
+      },
+      {
+        "url": "https://www.govconinabox.com/explore/contractors/profile/R8LZLYBG7UK5",
+        "note": "Contract listings returned with the Ederle building search: Building 10 dining facility walk-in freezer repair (Bldg 10 = dining facility)."
+      },
+      {
+        "url": "https://www.army.mil/article/106769/new_installation_opens_in_italy",
+        "note": "Caserma Renato Del Din built on the former Dal Molin airfield vacated by the Italian Air Force, home of most of the 173rd IBCT (basis for the Del Din brigade/battalion/barracks mix and the former-airfield unimproved area)."
+      },
+      {
+        "url": "https://www.esercito.difesa.it/comunicazione/Bandi-di-gara-Esercito/Comfoter-di-Supporto/Documents/Bandi-e-Avvisi/Allegato_A__CAPITOLATO__PULIZIE__2021.pdf",
+        "note": "Italian Army (COMFOTER) cleaning capitolato listing net floor areas in m² by building and room type – model for host-nation \"superficie netta\" tables and Italian wording."
+      },
+      {
+        "url": "https://www.highergov.com/vehicle/installation-management-command-europe-imcom-e-custodial-services-8810/",
+        "note": "IMCOM-Europe custodial MATOC: task-order PWS frequencies from daily to quarterly; work must follow local and host-nation rules (General Note 9 wording)."
+      }
+    ],
+    "notes": "Exhibit structure (Section J attachment / PWS technical exhibit, general notes, two-row header, footnote \"1/\" convention) follows the Army BOS exhibits used by the other fixtures; the OCONUS elements (square-meter workload, Ederle / Del Din / Poggio Renatico site set, 1+4 periods, Caserma Ederle 613,260 m² site area, bilingual Italian/English naming, host-nation data reproduced in Italian number format) follow the sources listed. Building numbers and names 10, 29, 108, 126, 202, 302, 395 and 398 at Caserma Ederle come from public directory listings; every other building number and name, every floor count, area, cleanable area, frequency, grounds quantity, the solicitation number W912PF-27-R-0012 and the Del Din / Poggio Renatico building numbering are illustrative."
+  },
+  "inputs": [
+    {
+      "src": "te3-facility-list.html",
+      "as": "pdf",
+      "out": "W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf"
+    }
+  ],
+  "expect": {
+    "facilities": [
+      {
+        "buildingNumber": "10",
+        "name": "MENSA – DINING FACILITY (WARRIOR RESTAURANT EDERLE)",
+        "grossSqft": 23127,
+        "cleanableSqft": 18323,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "dining"
+      },
+      {
+        "buildingNumber": "29",
+        "name": "CAPPELLA – EDERLE CHAPEL",
+        "grossSqft": 6592,
+        "cleanableSqft": 5813,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "47",
+        "name": "PALAZZINA COMANDO – USAG ITALY GARRISON HEADQUARTERS",
+        "grossSqft": 42625,
+        "cleanableSqft": 33431,
+        "floors": 3,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "58",
+        "name": "UFFICI GENIO – DIRECTORATE OF PUBLIC WORKS (DPW) ADMINISTRATION",
+        "grossSqft": 20174,
+        "cleanableSqft": 16318,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "108",
+        "name": "DAVIS SOLDIER AND FAMILY READINESS CENTER",
+        "grossSqft": 15314,
+        "cleanableSqft": 12707,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "126",
+        "name": "CENTRO ISTRUZIONE – EDUCATION CENTER",
+        "grossSqft": 13314,
+        "cleanableSqft": 10917,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "141",
+        "name": "ALLOGGI TRUPPA – UNACCOMPANIED ENLISTED PERSONNEL HOUSING (UEPH)",
+        "grossSqft": 62560,
+        "cleanableSqft": 13440,
+        "floors": 4,
+        "serviceLevel": "daily_5",
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "143",
+        "name": "ALLOGGI TRUPPA – UNACCOMPANIED ENLISTED PERSONNEL HOUSING (UEPH)",
+        "grossSqft": 62560,
+        "cleanableSqft": 13440,
+        "floors": 4,
+        "serviceLevel": "daily_5",
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "167",
+        "name": "AMBULATORIO – HEALTH CLINIC (NON-CLINICAL AREAS)",
+        "grossSqft": 35354,
+        "cleanableSqft": 28417,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "202",
+        "name": "OFFICINA HOBBY – AUTOMOTIVE SKILLS CENTER",
+        "grossSqft": 11930,
+        "cleanableSqft": 4252,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "214",
+        "name": "MAGAZZINO – CENTRAL ISSUE FACILITY (CIF)",
+        "grossSqft": 31915,
+        "cleanableSqft": 4419,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "302",
+        "name": "EXCHANGE BARBER AND BEAUTY SHOP",
+        "grossSqft": 2004,
+        "cleanableSqft": 1727,
+        "floors": 1,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "336",
+        "name": "PALESTRA – EDERLE FITNESS CENTER",
+        "grossSqft": 29179,
+        "cleanableSqft": 24918,
+        "floors": 2,
+        "serviceLevel": "daily_7",
+        "category": "fitness"
+      },
+      {
+        "buildingNumber": "395",
+        "name": "SPIRITUAL LIFE CENTER",
+        "grossSqft": 5360,
+        "cleanableSqft": 4753,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "398",
+        "name": "ASILO – CHILD DEVELOPMENT CENTER (CDC) EDERLE",
+        "grossSqft": 17805,
+        "cleanableSqft": 15101,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "child_care"
+      },
+      {
+        "buildingNumber": "D-01",
+        "name": "PALAZZINA COMANDO BRIGATA – BRIGADE HEADQUARTERS",
+        "grossSqft": 46423,
+        "cleanableSqft": 37889,
+        "floors": 4,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "D-02",
+        "name": "COMANDO BATTAGLIONE 'A' – BATTALION HEADQUARTERS",
+        "grossSqft": 19876,
+        "cleanableSqft": 16283,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "D-03",
+        "name": "COMANDO BATTAGLIONE 'B' – BATTALION HEADQUARTERS",
+        "grossSqft": 19876,
+        "cleanableSqft": 16283,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "D-05",
+        "name": "ALLOGGI TRUPPA 'A' – BARRACKS (AREE COMUNI / COMMON AREAS)",
+        "grossSqft": 65714,
+        "cleanableSqft": 14923,
+        "floors": 4,
+        "serviceLevel": "daily_5",
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "D-06",
+        "name": "ALLOGGI TRUPPA 'B' – BARRACKS (AREE COMUNI / COMMON AREAS)",
+        "grossSqft": 65714,
+        "cleanableSqft": 14923,
+        "floors": 4,
+        "serviceLevel": "daily_5",
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "D-07",
+        "name": "ALLOGGI TRUPPA 'C' – BARRACKS (AREE COMUNI / COMMON AREAS)",
+        "grossSqft": 64370,
+        "cleanableSqft": 14584,
+        "floors": 4,
+        "serviceLevel": "daily_5",
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "D-09",
+        "name": "MENSA DEL DIN – DINING FACILITY",
+        "grossSqft": 26195,
+        "cleanableSqft": 20645,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "dining"
+      },
+      {
+        "buildingNumber": "D-10",
+        "name": "PALESTRA – FITNESS CENTER DEL DIN",
+        "grossSqft": 32597,
+        "cleanableSqft": 28030,
+        "floors": 2,
+        "serviceLevel": "daily_7",
+        "category": "fitness"
+      },
+      {
+        "buildingNumber": "D-11",
+        "name": "MAGAZZINO COMPAGNIA – COMPANY OPERATIONS FACILITY (COF)",
+        "grossSqft": 23831,
+        "cleanableSqft": 5237,
+        "floors": 1,
+        "serviceLevel": "weekly"
+      },
+      {
+        "buildingNumber": "D-12",
+        "name": "OFFICINA MEZZI – TACTICAL VEHICLE MAINTENANCE SHOP",
+        "grossSqft": 50052,
+        "cleanableSqft": 6591,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "D-14",
+        "name": "CENTRO POLIFUNZIONALE – COMMUNITY ACTIVITY CENTER",
+        "grossSqft": 12903,
+        "cleanableSqft": 10979,
+        "floors": 2,
+        "serviceLevel": "3x_week",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "D-15",
+        "name": "GUARDIOLA INGRESSO NORD – ACCESS CONTROL POINT (ACP)",
+        "grossSqft": 1038,
+        "cleanableSqft": 883,
+        "floors": 1,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "12",
+        "name": "UFFICI PERSONALE USA – U.S. ADMINISTRATIVE OFFICES",
+        "grossSqft": 13347,
+        "floors": 2,
+        "serviceLevel": "2x_week",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "14",
+        "name": "ALLOGGI TEMPORANEI – TRANSIENT BILLETING",
+        "grossSqft": 37243,
+        "floors": 3,
+        "serviceLevel": "weekly",
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "15",
+        "name": "MAGAZZINO – STORAGE",
+        "grossSqft": 7319,
+        "floors": 1,
+        "serviceLevel": "biweekly",
+        "category": "warehouse"
+      }
+    ],
+    "facilitiesComplete": true,
+    "grounds": [
+      {
+        "kind": "improved_turf",
+        "quantity": 2.35,
+        "unit": "hectares",
+        "name": "GE-01 Prato rasato – zona comando e servizi / Improved turf, headquarters and community core",
+        "buildingNumbers": [
+          "47",
+          "58",
+          "108",
+          "126"
+        ]
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 1.82,
+        "unit": "hectares",
+        "name": "GE-02 Prato rasato – alloggi e asilo / Improved turf, barracks and CDC",
+        "buildingNumbers": [
+          "141",
+          "143",
+          "398"
+        ]
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 4.6,
+        "unit": "hectares",
+        "name": "GE-03 Area semi-migliorata – fascia perimetrale / Semi-improved, perimeter fence line"
+      },
+      {
+        "kind": "athletic_field",
+        "quantity": 8250,
+        "unit": "sqm",
+        "name": "GE-04 Campo sportivo (calcio) / Athletic field (soccer)"
+      },
+      {
+        "kind": "shrub_bed",
+        "quantity": 1420,
+        "unit": "sqm",
+        "name": "GE-05 Aiuole e siepi / Planting beds and hedges"
+      },
+      {
+        "kind": "parking",
+        "quantity": 18600,
+        "unit": "sqm",
+        "name": "GE-06 Parcheggi / Parking lots (sweeping and litter)"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 6350,
+        "unit": "sqm",
+        "name": "GE-07 Marciapiedi e vialetti / Sidewalks and walks"
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 312,
+        "unit": "each",
+        "name": "GE-08 Alberature / Trees (pruning)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 3.1,
+        "unit": "hectares",
+        "name": "GD-01 Prato rasato – zona comando / Improved turf, brigade core",
+        "buildingNumbers": [
+          "D-01",
+          "D-02",
+          "D-03"
+        ]
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 6.75,
+        "unit": "hectares",
+        "name": "GD-02 Area semi-migliorata – zona alloggi / Semi-improved, barracks area",
+        "buildingNumbers": [
+          "D-05",
+          "D-06",
+          "D-07"
+        ]
+      },
+      {
+        "kind": "unimproved",
+        "quantity": 12.4,
+        "unit": "hectares",
+        "name": "GD-03 Area incolta – fascia ex aeroporto Dal Molin / Unimproved, former airfield buffer"
+      },
+      {
+        "kind": "athletic_field",
+        "quantity": 15400,
+        "unit": "sqm",
+        "name": "GD-04 Campi sportivi (2) / Athletic fields (2)"
+      },
+      {
+        "kind": "parking",
+        "quantity": 24150,
+        "unit": "sqm",
+        "name": "GD-05 Parcheggi / Parking lots (sweeping and litter)"
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 486,
+        "unit": "each",
+        "name": "GD-06 Alberature / Trees (pruning)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 0.85,
+        "unit": "hectares",
+        "name": "GP-01 Prato rasato / Improved turf, U.S. compound",
+        "buildingNumbers": [
+          "12",
+          "14",
+          "15"
+        ]
+      },
+      {
+        "kind": "parking",
+        "quantity": 2300,
+        "unit": "sqm",
+        "name": "GP-02 Parcheggio / Parking lot"
+      }
+    ],
+    "site": {
+      "contractYears": 5,
+      "solicitation": "W912PF-27-R-0012",
+      "installationName": "USAG Italy"
+    }
+  },
+  "traps": [
+    "Every area is metric: Table 3-1 in SM (GFEBS UM code), Table 3-2 in m², Table 3-3 in mq. Truth grossSqft / cleanableSqft = m² × 10.7639 rounded to whole SF (e.g. Bldg 47 3,960.0 SM = 42,625 SF). Reading the m² value as SF under-states the workload by 90%.",
+    "Two number conventions in one package: Table 3-1 uses the U.S. format (2,148.6); Tables 3-2 to 3-4 use the Italian format with a period for thousands and a comma for decimals (\"4.312,8 m²\" = 4,312.8 m²; \"96,4 m²\" = 96.4 m², not 964).",
+    "Integer host-nation areas with a thousands period: Poggio Renatico \"1.240\" and \"3.460\" mq are 1,240 and 3,460 m² (13,347 and 37,243 SF), not 1.24 and 3.46.",
+    "Floors use Italian notation: PT = ground floor, S1 = basement; \"PT+3\" = 4 floors, \"S1+PT+2\" = 4 floors, \"PT\" = 1 floor.",
+    "Frequencies in mixed codes: 7X/WK, 5X/WK, 2X/WK, 1X/WK (Table 3-1); 7/7, 5/7, 3/7, 1/7 days per week (Table 3-2); \"2 v/sett.\" = 2x_week, \"settimanale\" = weekly, \"quindicinale\" = biweekly (Table 3-3).",
+    "Two Caserma Ederle rows are listed but out of scope and excluded from truth: Bldg 71 DEPOSITO (USO ITALIANO, 842.0 SM) and Bldg 222 EX LAVANDERIA (DA DEMOLIRE FY27, 655.5 SM). The SUBTOTALE CASERMA EDERLE row includes both (General Note 7).",
+    "SUBTOTALE / TOTALE rows in every table are not facilities; the Table 3-3 page also carries a prose summary (\"total 30 facilities\").",
+    "Twin rows with identical data are separate facilities: Ederle 141/143, Del Din D-02/D-03 and D-05/D-06.",
+    "Bilingual names (\"ALLOGGI TRUPPA – UNACCOMPANIED ENLISTED PERSONNEL HOUSING (UEPH)\", \"PALESTRA – FITNESS CENTER DEL DIN\") wrap inside narrow cells; footnote markers 1/, 2/, 3/ follow names (superscript).",
+    "Cleanable area is far below gross for barracks (common areas only), CIF, COF, vehicle shop and auto skills; Poggio Renatico has no cleanable area (gross applies, so truth has no cleanableSqft there).",
+    "Del Din numbering skips D-04, D-08 and D-13 (stated as excluded parking/utility buildings in a note, not rows).",
+    "Grounds are in the document units: hectares with decimal commas (\"2,35 ha\" = 2.35 ha = 5.81 acres), m² with thousands periods (\"18.600 m²\" = 18,600 m² = 200,209 SF) and trees as \"n.\". Truth keeps hectares / sqm / each; the scorer converts (ha × 2.4710538, m² × 10.7639).",
+    "Grounds TOTALE rows per unit and the information-only Caserma Ederle site area (613.260 m²) are not workload quantities. SFALCI/ANNO (mows per year: 26, 8, 30…) are cycle counts, not areas.",
+    "Athletic fields GE-04 and GD-04 are maintained to the Type I standard but are not in the Type I hectares – count them once as athletic_field."
+  ]
+}

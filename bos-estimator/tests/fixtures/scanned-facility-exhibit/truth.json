@@ -1,0 +1,216 @@
+{
+  "id": "scanned-facility-exhibit",
+  "title": "Scanned (image-only) PWS Appendix B building list for an ANG base janitorial contract: 21 printed rows with hand pen-and-ink amendment changes (one row lined out, one SF corrected, one row hand-added), UTA frequency codes and a stale printed total",
+  "theme": "oconus-scanned",
+  "provenance": {
+    "fidelity": "real-format",
+    "sources": [
+      {
+        "url": "https://aws.state.ak.us/OnlinePublicNotices/Notices/Attachment.aspx?id=140242",
+        "note": "168th Wing (Eielson AFB) janitorial services PWS, Attachment 7 to ITB 230000022: \"Appendix B, Building Numbers and Estimated Square Footages\" table of facility numbers, activities (e.g. MX Fab Shop, MX Hangar, Ops), estimated square footage and weekly frequency; price changes tied to the Appendix B \"cleaning area\" square footage. Copied: appendix title, column set, activity-abbreviation style, the B.1 modification wording (paraphrased) and the \"floor plans provided separately (15 pages)\" note."
+      },
+      {
+        "url": "https://aws.state.ak.us/OnlinePublicNotices/Notices/Attachment.aspx?id=140756",
+        "note": "State of Alaska ITB for the same 168th Wing janitorial services: floor plans for the facilities service areas and estimated square footage attached as a separate file."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID297162707687379821580624672536441025401/Attachment%201%20-%20Custodial%20PWS.pdf",
+        "note": "Air Force custodial PWS whose Appendix B establishes facility cleaning levels and estimated square footage, with square footage totals used for modification pricing."
+      },
+      {
+        "url": "https://www.bidnetdirect.com/public/supplier/solicitations/statewide/2530369002/abstract",
+        "note": "Federal RFQ amendment issued to provide per-building square footage (amendments that change the building list are the norm)."
+      }
+    ],
+    "notes": "Layout and wording follow the 168th Wing Appendix B (facility no. / activity / estimated sq ft / frequency, cleaning-area modification clause, separate floor plans) and Air Force custodial PWS appendices. Kestrel Air National Guard Base, solicitation W912KS-27-Q-0006, every facility number, activity, floor count, square footage, frequency, the amendment and the initials are illustrative. The page is rendered as an image-only scan (110 dpi grayscale, slight skew, speckle, scanner-edge shadow, staple mark, fax/scan header) so the PDF has no text layer."
+  },
+  "inputs": [
+    {
+      "src": "appendix-b-building-list.html",
+      "as": "scanned-pdf",
+      "out": "W912KS-27-Q-0006 Att 3 PWS Appendix B Bldg List (conformed thru Amd 0001) - scan.pdf"
+    }
+  ],
+  "expect": {
+    "facilities": [
+      {
+        "buildingNumber": "100",
+        "name": "WING HEADQUARTERS",
+        "grossSqft": 14860,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "101",
+        "name": "BASE CIVIL ENGINEER (CES) ADMIN",
+        "grossSqft": 6240,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "104",
+        "name": "COMMUNICATIONS FLIGHT",
+        "grossSqft": 5315,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "106",
+        "name": "MEDICAL GROUP (MDG) CLINIC",
+        "grossSqft": 9880,
+        "floors": 1,
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "110",
+        "name": "DINING FACILITY",
+        "grossSqft": 7450,
+        "floors": 1,
+        "serviceLevel": "monthly",
+        "category": "dining"
+      },
+      {
+        "buildingNumber": "112",
+        "name": "FITNESS CENTER",
+        "grossSqft": 8120,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "category": "fitness"
+      },
+      {
+        "buildingNumber": "115",
+        "name": "LODGING / VISITING QUARTERS",
+        "grossSqft": 18400,
+        "floors": 2,
+        "serviceLevel": "monthly"
+      },
+      {
+        "buildingNumber": "120",
+        "name": "OPERATIONS / SQUADRON OPS",
+        "grossSqft": 12775,
+        "floors": 2,
+        "serviceLevel": "2x_week",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "121",
+        "name": "AIRCREW FLIGHT EQUIPMENT (AFE)",
+        "grossSqft": 3960,
+        "floors": 1,
+        "serviceLevel": "weekly"
+      },
+      {
+        "buildingNumber": "125",
+        "name": "MX HANGAR (OFFICE & LATRINE AREAS)",
+        "grossSqft": 4415,
+        "floors": 2,
+        "serviceLevel": "2x_week",
+        "category": "hangar"
+      },
+      {
+        "buildingNumber": "130",
+        "name": "MX FABRICATION SHOP",
+        "grossSqft": 1880,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "131",
+        "name": "AEROSPACE GROUND EQUIPMENT (AGE) SHOP",
+        "grossSqft": 2410,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "135",
+        "name": "VEHICLE MAINTENANCE (LRS)",
+        "grossSqft": 3115,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "140",
+        "name": "SUPPLY WAREHOUSE (LRS)",
+        "grossSqft": 4960,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "150",
+        "name": "SECURITY FORCES (SFS)",
+        "grossSqft": 6780,
+        "floors": 1,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "155",
+        "name": "FIRE STATION (ADMIN & LATRINES ONLY)",
+        "grossSqft": 2325,
+        "floors": 1,
+        "serviceLevel": "2x_week"
+      },
+      {
+        "buildingNumber": "160",
+        "name": "TRAINING / CLASSROOM BUILDING",
+        "grossSqft": 11020,
+        "floors": 2,
+        "serviceLevel": "2x_week",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "165",
+        "name": "CHAPEL / AIRMAN & FAMILY READINESS",
+        "grossSqft": 2960,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "170",
+        "name": "RECRUITING & RETENTION",
+        "grossSqft": 1150,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "175",
+        "name": "MUNITIONS ADMIN",
+        "grossSqft": 960,
+        "floors": 1,
+        "serviceLevel": "weekly"
+      },
+      {
+        "buildingNumber": "185",
+        "name": "SMALL ARMS RANGE CLASSROOM",
+        "grossSqft": 1320,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "category": "education"
+      }
+    ],
+    "facilitiesComplete": true,
+    "site": {
+      "solicitation": "W912KS-27-Q-0006",
+      "installationName": "Kestrel"
+    }
+  },
+  "traps": [
+    "Image-only PDF: no text layer at all (rendered at 110 dpi, grayscale, ~0.5° skew, speckle noise, scanner-edge shadow, staple mark). The rule-based reader cannot read it; only an OCR / vision reader can.",
+    "Facility 141 FUELS MANAGEMENT OFFICE (1,240 SF) is lined out by hand with \"DELETED – DEMO'D AMD 0001\" and is excluded from truth.",
+    "Facility 160 TRAINING / CLASSROOM BUILDING: printed 10,350 is struck through and 11,020 is handwritten above it; truth is 11,020 (Amendment 0001 item b).",
+    "Facility 185 SMALL ARMS RANGE CLASSROOM, 1 floor, 1,320 SF, 1X/WK is handwritten into a blank row and is included (Amendment 0001 item c).",
+    "The printed TOTAL ESTIMATED CLEANING AREA (129,545) predates the pen-and-ink changes (it includes 141 and the old 160 value, not 185); the correct in-scope total is 130,295 SF. The TOTAL row is not a facility.",
+    "The table breaks across two pages (header repeated, \"(continued on page B-2)\"); scan/fax header lines, a CONFORMED COPY stamp and page labels B-1/B-2 are not data.",
+    "Frequency codes: 5X/WK → daily_5, 3X/WK → 3x_week, 2X/WK → 2x_week, 1X/WK → weekly, UTA (one drill weekend per month, B.2) → monthly; \"1X/WK + UTA\" (106) has no single service level in truth.",
+    "Square footage is the estimated cleaning area (e.g. hangar 125 office/latrine areas only, fire station admin only) — it is the only area given, so truth grossSqft is that number and no cleanable SF is set.",
+    "Asterisk after facility 125 name refers to a note below the table."
+  ]
+}

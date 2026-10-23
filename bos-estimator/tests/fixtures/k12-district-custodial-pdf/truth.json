@@ -1,0 +1,241 @@
+{
+  "id": "k12-district-custodial-pdf",
+  "title": "K-12 school district custodial RFP: landscape schedule of 17 schools + district office + transportation, portables listed separately, gym wood floor SF, addendum deletes a school (PDF)",
+  "theme": "k12",
+  "provenance": {
+    "fidelity": "real-format",
+    "sources": [
+      {
+        "url": "https://muskegonpublicschools.org/downloads/requests_for_proposal/rfp_2024_custodial_mps.pdf",
+        "note": "Muskegon Public Schools RFP Custodial Services (2024): \"list of Buildings, addresses and Gross Square Footage for each\" with a student count per building (e.g. \"Bunker Elementary – 2312 Denmark Ave., 441 students, Square Footage 130,000\"). Format only: model for pairing address, enrollment and building SF per school (Exhibit A columns 3, 5, 9). No rows copied."
+      },
+      {
+        "url": "https://resources.finalsite.net/images/v1743423065/hsek12inus/upnqub91wobwivgtv5zr/RFPJanitorialServices2025mar.pdf",
+        "note": "Hamilton Southeastern Schools RFP for Custodial and Related Management Services (March 2025): facility table lists building SF with portables counted separately (\"Southeastern Elementary (SES) 93,000 + 7 portables\"). Format only: model for listing portables outside the building SF (Exhibit A column 10)."
+      },
+      {
+        "url": "https://core-docs.s3.amazonaws.com/documents/asset/uploaded_file/3586/PCPS/3093779/RFP_23-002_Powhatan_Custodial_Contract.pdf",
+        "note": "Powhatan County Public Schools RFP 23-002: \"ATTACHMENT D - Building Locations, Square Footage and Other Information identifies the number of portable classrooms/administration units to be cleaned at each location\"; \"Custodial services shall be provided at all portable classroom and/or administration units\"; heading \"Additions and Deletions to Building Locations and Square Footage\" and \"Additions and deletions to Square Footage may be applicable due to renovations, addition of trailers, or creation of a new school(s)\". Wording paraphrased in Sections 2.2 and 2.7."
+      },
+      {
+        "url": "https://docs.wcs.edu/pdf/purchasing/RFP-1199-Outsourced-Custodial-Services-Final.pdf",
+        "note": "Williamson County Schools RFP #1199: square footage section reducing gross to net cleanable (kitchens, mechanical rooms, closets not cleaned by contractor) and a flat monthly fee per portable classroom. Model for the kitchen exclusion (2.8(a)) and the per-portable unit price in Exhibit B Part 3."
+      },
+      {
+        "url": "https://pike.k12.ga.us/wp-content/uploads/2024/04/2024-Custodial-RFP-Final-1.pdf",
+        "note": "Pike County Schools (GA) RFP #04052024 Attachment 1: schools listed together with support buildings (Pre-K, Technology and Central Office; Facilities Office) and stadium bleachers \"in season only\". Model for adding the district office and a support facility to the school schedule and for the stadium exclusion. No rows copied."
+      },
+      {
+        "url": "https://pike.k12.ga.us/wp-content/uploads/2024/04/CUSTODIAL-RFP-Q-A-042924.pdf",
+        "note": "Pike County custodial RFP Q&A: bidders asked whether listed SF is gross or cleanable; model for the Addendum No. 1 Q&A format."
+      },
+      {
+        "url": "https://www.keysschools.com/cms/lib/FL02202360/Centricity/Domain/36/RFP 2023001_Notice_QA Response No. 1.pdf",
+        "note": "Monroe County School District RFP 2023001 Q&A No. 1: covered walkways / uncovered courtyards not included in the listed square footages; SF taken from the state facility inventory (FISH). Model for the Section 2.3 exclusion sentence and for citing the state inventory (ICOS is the Washington equivalent)."
+      },
+      {
+        "url": "https://files-backend.assets.thrillshare.com/documents/asset/uploaded_file/4223/Ferndale_Ps/8dd6c69a-ce37-42ea-be9e-69751323a7b8/RFP_FACILITIES_MAINTENANCE_AND_CUSTODIAL_SERVI.pdf?disposition=inline",
+        "note": "Ferndale Public Schools facilities maintenance and custodial RFP: custodial vendor cleans gymnasium flooring while refinishing is done by a third party. Model for Section 2.6."
+      },
+      {
+        "url": "https://nashuanh.gov/DocumentCenter/View/31752/Wood-Floor-Refinishing-2025-2027?bidId=",
+        "note": "Nashua School District wood floor refinishing RFQ: wet-screening and finishing wood gym floors in summer. Model for the screen-and-recoat task in Section 2.6."
+      },
+      {
+        "url": "https://ceqanet.lci.ca.gov/2020050483/2",
+        "note": "Oster Elementary portable classrooms notice: portables of 24 by 40 ft, about 960 SF each. Source of the 960 SF unit size."
+      }
+    ],
+    "notes": "Every name, address, enrollment, square footage, portable count, gym floor area, the district (Cedar Prairie School District No. 427, a fictional King County, Washington district), the solicitation (RFP No. 27-02) and the current contract (Sound & Summit Building Care, LLC, CPSD-C-22-031, $3,412,860 in 2025-26) are illustrative. The layout and wording follow the real K-12 custodial RFPs cited: per-school address / enrollment / gross SF (Muskegon), portables listed outside the building SF (Hamilton Southeastern, Powhatan), net-cleanable exclusions and per-portable pricing (Williamson County), district office and support buildings in the same schedule (Pike County), and a Q&A addendum. No rows were copied, so fidelity is real-format."
+  },
+  "inputs": [
+    {
+      "src": "rfp-27-02-custodial.html",
+      "as": "pdf"
+    }
+  ],
+  "expect": {
+    "facilities": [
+      {
+        "buildingNumber": "201",
+        "name": "Alder Creek Elementary School",
+        "grossSqft": 55180,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "202",
+        "name": "Birchwood Elementary School",
+        "grossSqft": 47615,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "203",
+        "name": "Cedar Prairie Elementary School",
+        "grossSqft": 64662,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "204",
+        "name": "Eagle Ridge Elementary School",
+        "grossSqft": 68450,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "205",
+        "name": "Fernhill Elementary School",
+        "grossSqft": 47998,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "206",
+        "name": "Glacier View Elementary School",
+        "grossSqft": 58610,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "207",
+        "name": "Maple Grove Elementary School",
+        "grossSqft": 53908,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "209",
+        "name": "Riverbend Elementary School",
+        "grossSqft": 57824,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "210",
+        "name": "Salmonberry Elementary School",
+        "grossSqft": 61225,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "211",
+        "name": "Whispering Firs Elementary School",
+        "grossSqft": 49810,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "301",
+        "name": "Hawthorne Middle School",
+        "grossSqft": 116320,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "302",
+        "name": "Kestrel Point Middle School",
+        "grossSqft": 128750,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "303",
+        "name": "Timberline Middle School",
+        "grossSqft": 106235,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "401",
+        "name": "Cedar Prairie High School",
+        "grossSqft": 274700,
+        "floors": 3,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "402",
+        "name": "Summit Ridge High School",
+        "grossSqft": 245600,
+        "floors": 3,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "501",
+        "name": "Lincoln Center (Open Doors / Family Partnership)",
+        "grossSqft": 33252,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "901",
+        "name": "Administrative Service Center (District Office)",
+        "grossSqft": 22960,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "902",
+        "name": "Transportation and Maintenance Facility",
+        "grossSqft": 28400,
+        "cleanableSqft": 6850,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "category": "maintenance"
+      }
+    ],
+    "facilitiesComplete": true,
+    "grounds": [],
+    "site": {
+      "contractYears": 5,
+      "climateZone": "temperate",
+      "installationName": "Cedar Prairie School District",
+      "solicitation": "RFP No. 27-02"
+    },
+    "priorAward": {
+      "annualValue": 3412860,
+      "spendToDate": 12904115,
+      "spendPeriodMonths": 48,
+      "incumbent": "Sound & Summit Building Care, LLC",
+      "contractNumber": "CPSD-C-22-031",
+      "awardYear": 2022
+    }
+  },
+  "traps": [
+    "Portables are listed outside the building SF. Exhibit A Column (9) \"Permanent Building SF\" EXCLUDES portable classrooms (Section 2.3, Note 2, Addendum Q1); Column (10) gives \"N @ SF each\". Truth grossSqft for each school = Column (9) + portable area, which equals the Exhibit B \"Pricing Area\" (e.g. Alder Creek 51,340 + 4 @ 960 = 55,180; Cedar Prairie HS 268,940 + 6 @ 960 = 274,700). Schools with no portables are unchanged.",
+    "Portable units are not all 960 SF: Fernhill has \"2 @ 960\" plus \"1 @ 1,792 (dbl.)\" on two lines of the same cell (44,286 + 3,712 = 47,998); Lincoln Center uses 896 SF units (31,460 + 1,792 = 33,252).",
+    "Addendum No. 1 (last two pages) controls: Item 1 deletes Location 208 Old Mill Elementary School (39,870 SF + 4 portables; Exhibit B 43,710) - it is NOT expected; a reader that keeps it is counted as an extra.",
+    "Addendum Item 2 moves 4 portables to Riverbend Elementary (209): 2 @ 960 becomes 6 @ 960, so gross = 52,064 + 5,760 = 57,824 (not the 53,984 printed in Exhibit B, nor the 52,064 building SF).",
+    "Addendum Item 3 revises the Administrative Service Center (901) from 18,240 SF to 22,960 SF (Board Room / Professional Development Annex, 4,720 SF, had been omitted).",
+    "Transportation and Maintenance Facility (902): Exhibit A shows the 28,400 SF building with footnote 6 glued to the number in the text layer (\"28,4006\"); service is limited to ~6,850 SF of offices/driver lounge/restrooms. Exhibit B prints 6,850 as its Pricing Area. Truth: grossSqft 28,400, cleanableSqft 6,850.",
+    "Totals are not facilities: \"Subtotal - Elementary Schools (11 locations)\" 575,520 / 30 units / 29,632 SF; \"TOTAL - ALL LOCATIONS (19)\" 1,513,705 / 44 units / 42,944 SF; Exhibit B \"Part 1 Total\" 1,510,009, \"Part 2 Total\" 25,090, \"TOTAL PRICING AREA - PARTS 1 AND 2\" 1,535,099; Addendum Item 4 revised totals 1,499,949 and 1,478,555; Section 1.4 prose \"1.51 million square feet ... 44 portable classrooms\".",
+    "Group header rows span the table (ELEMENTARY SCHOOLS (GRADES PK-5), MIDDLE SCHOOLS, HIGH SCHOOLS, ALTERNATIVE LEARNING PROGRAMS, DISTRICT SUPPORT FACILITIES (YEAR-ROUND)) and are not facilities.",
+    "Exhibit B repeats every location with line numbers 1-19 and a Pricing Area: same facilities, not additional ones. The building number is the Loc. No. (201-211, 301-303, 401-402, 501, 901, 902), not the Exhibit B line number.",
+    "Numeric distractor columns sit next to the SF: enrollment (5) (up to 1,684), year built / modernized (6) wrapped over two lines (\"1968 /\" \"2004\"), site acres (7), floors (8), and Gym Wood Floor SF (11) such as \"14,880 + 8,050 aux.\" Gym wood floor area is INCLUDED in Column (9) (Section 2.6, Note 3, Addendum Q2) and is neither added to the gross nor a separate facility.",
+    "Grounds are out of scope: site acreage (Column 7, total 270.1 acres) is \"for information only\" (Note 5, Section 2.8(b)); expected grounds is an empty list, so a reader that turns site acres into turf is penalized.",
+    "Three-row header: group row (Program / Facility Data - ICOS Inventory / Cleaning Schedule), column titles with superscript note markers glued to the words in the text layer (\"SF1\", \"Acres5\", \"each2\", \"Program4\"), and a column-number row (1)...(13). The landscape table is split across pages A-1 and A-2 with the header repeated.",
+    "Long names wrap inside the cell: \"Lincoln Center - Open Doors Re-Engagement Program and Cedar Prairie Family Partnership Program\" (three lines), \"Administrative Service Center (District Office)8\", \"Transportation and Maintenance Facility6\"; addresses also wrap (\"31100 Eagle Ridge Parkway\" / \"SE\").",
+    "Cleaning schedule: schools are cleaned \"M-F\" on District calendar days (~184 days: 180 student + 4 work days) plus a summer deep clean; closest service level is daily_5. Administrative Service Center \"M-F (12 mo.)\" = daily_5; Transportation \"M/W/F (12 mo.)\" = 3x_week. \"Deep clean + summer school (M-Th)\" is a summer note, not a service level.",
+    "Contract term is one year (July 1, 2027 - June 30, 2028) plus four one-year renewals = 5 contract years.",
+    "Prior award is narrative (Section 1.3, repeated in Addendum Q4): annual $3,412,860 for 2025-26, $12,904,115 over 48 months, incumbent Sound & Summit Building Care, LLC, Contract No. CPSD-C-22-031, awarded May 2022. Other dollar amounts ($2,000,000 / $4,000,000 CGL, $1,000,000 auto, $250,000 crime, $350 liquidated damages) are not award values.",
+    "Climate: King County, Washington (western Washington) = temperate."
+  ]
+}

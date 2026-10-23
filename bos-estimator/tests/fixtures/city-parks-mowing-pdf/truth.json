@@ -1,0 +1,752 @@
+{
+  "id": "city-parks-mowing-pdf",
+  "title": "City park, median and right-of-way mowing RFP (City of Ashby Creek, MO, RFP No. 2027-014): 26-site park schedule with mowable vs total acres, service levels, ballfields, beds and trees; medians in LF x average width; 5-row park building custodial table; Addendum No. 1 deletes a park and revises quantities",
+  "theme": "municipal-grounds",
+  "provenance": {
+    "fidelity": "real-format",
+    "sources": [
+      {
+        "url": "https://clutetexas.gov/new/wp-content/uploads/2024/11/Mowing-RFQ-REV-Final-112124.pdf",
+        "note": "City of Clute, TX 2024-2025 Mowing/Landscaping RFQ: right-of-way and drainage areas stated as \"approximately 4,210 linear feet of drainage channel with an average width of 30'\" and road ROW as 6,735 LF with 20' easements on each side; park acreage given as a gross total with ballfields (8.5 ac) and parking/roads (2 ac) netted out (Stratton Ridge Park 24.5 ac total, ~14 ac to mow) and a 1.5-ac lake excluded (Milstid Park). Model for Table A-2 (Length x Average Width x Sides, no acreage) and for the Total Site Acres vs Mowable Turf Acres split in Table A-1."
+      },
+      {
+        "url": "https://clutetexas.gov/new/wp-content/uploads/2024/12/2425-Mowing-RFQ-Pre-Bid-QnA-121724.pdf",
+        "note": "Clute pre-bid Q&A: frequency answered by addendum Q&A (rights-of-way ~3x/month, channels monthly); model for the Addendum No. 1 Q&A block."
+      },
+      {
+        "url": "https://longviewtexas.gov/DocumentCenter/View/17798/26-0011RFP--MOWING-SERVICES-PARKS-TRAILSMEDIANS--FACILITIES--RFP-PACKET?bidId=",
+        "note": "City of Longview, TX RFP 26-0011 (parks, trails, medians and facilities in one solicitation): site table with site number, address and acreage (e.g. Bennie Jackson Park, 2229 Neal St., 5.60 ac; Flewellen Park, 100 Iris Dr., 4.25 ac); litter pickup before mowing; push-mower-only restriction at a historic cemetery because of fragile monuments (copied into footnote 4/)."
+      },
+      {
+        "url": "https://fergusoncity.com/DocumentCenter/View/6049/Park-Mowing-2023-RFP?bidId=",
+        "note": "City of Ferguson, MO park mowing RFP: community center plus twelve parks with a site-by-site acreage table; weekly cycles in spring, bi-weekly in summer; litter collected before mowing. Model for a Missouri municipal park mowing package and the 7-day / 14-day cycle split."
+      },
+      {
+        "url": "https://www.walterborosc.org/sites/default/files/uploads/city_of_walterboro_landscape_services_rfp_2027.pdf",
+        "note": "City of Walterboro, SC landscape maintenance RFP: base bid one complete service cycle every two weeks, alternate weekly; litter collected before mowing; landscaped medians scheduled by location."
+      },
+      {
+        "url": "https://www.moorparkca.gov/DocumentCenter/View/10542",
+        "note": "City of Moorpark, CA janitorial RFP: park restrooms cleaned seven days a week including holidays and \"cleaned and in operation no later than 8:00 a.m.\"; sanitizing door handles and light switches (wording used in Section 3.1-3.2 and the Service Window column)."
+      },
+      {
+        "url": "https://scottsvalley.gov/DocumentCenter/View/3227/Janitorial-RFP-Final?bidId=",
+        "note": "City of Scotts Valley, CA janitorial RFP: park restrooms 7 days/week in summer and fewer days (incl. two weekend days) in winter; model for the seasonal PB-4 schedule."
+      },
+      {
+        "url": "https://www.dovertownship.org/wp-content/uploads/2024/03/2024-Janitorial-RFP.pdf",
+        "note": "Dover Township, MI janitorial RFP: park restroom doors locked by dusk or no later than 9 p.m. (Section 3.4)."
+      },
+      {
+        "url": "https://wstx.us/DocumentCenter/View/4817",
+        "note": "City of White Settlement, TX parks mowing RFP: initial one-year term with up to four one-year renewals; model for initial term + renewals term language in Section 1.2."
+      },
+      {
+        "url": "https://www.paulding.gov/bids.aspx?bidid=455",
+        "note": "Paulding County, GA FY2026 right-of-way mowing: cycles on approx. acres of ROW with litter measured separately (median vs shoulder)."
+      },
+      {
+        "url": "https://www.sa.gov/Directory/Departments/PWD/Maintenance/Mowing",
+        "note": "City of San Antonio mowing schedule: medians and rights-of-way mowed on fixed cycles per year, separate from parks."
+      }
+    ],
+    "notes": "Layout, column set (site no., name/address, total vs mowable acres, service level, cycle, ballfields, beds, trees, litter frequency), the medians-in-LF-with-average-width convention, park restroom service wording and term/renewal language follow the real municipal solicitations cited. The City of Ashby Creek, every site and street name, address, acreage, LF, width, square footage, fixture count, the incumbent (Halvorsen Turf Management, LLC), contract number PR-2022-031 and the $612,480 amount are illustrative. No row is copied from a real document."
+  },
+  "inputs": [
+    {
+      "src": "rfp-2027-014-park-row-mowing.html",
+      "as": "pdf",
+      "out": "RFP 2027-014 Park Median ROW Mowing and Park Building Custodial.pdf"
+    }
+  ],
+  "expect": {
+    "facilities": [
+      {
+        "buildingNumber": "PB-1",
+        "name": "Harmon Park Community Center",
+        "grossSqft": 14860,
+        "cleanableSqft": 12415,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "community",
+        "restroomFixtures": 25
+      },
+      {
+        "buildingNumber": "PB-2",
+        "name": "Harmon Park Restroom / Concession Building",
+        "grossSqft": 1680,
+        "cleanableSqft": 1420,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "restroomFixtures": 13
+      },
+      {
+        "buildingNumber": "PB-3",
+        "name": "Sports Complex Restroom and Concession Building",
+        "grossSqft": 2420,
+        "cleanableSqft": 2130,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "restroomFixtures": 19
+      },
+      {
+        "buildingNumber": "PB-4",
+        "name": "Lakeshore Park Restroom Building",
+        "grossSqft": 860,
+        "cleanableSqft": 720,
+        "floors": 1,
+        "restroomFixtures": 8
+      }
+    ],
+    "facilitiesComplete": true,
+    "grounds": [
+      {
+        "kind": "improved_turf",
+        "quantity": 21.4,
+        "unit": "acres",
+        "name": "Site 1 Harmon Park",
+        "buildingNumbers": [
+          "PB-1",
+          "PB-2"
+        ]
+      },
+      {
+        "kind": "unimproved",
+        "quantity": 6.2,
+        "unit": "acres",
+        "name": "Site 1 Harmon Park (rough mow)",
+        "buildingNumbers": [
+          "PB-1",
+          "PB-2"
+        ]
+      },
+      {
+        "kind": "athletic_field",
+        "quantity": 7.8,
+        "unit": "acres",
+        "name": "Site 1 Harmon Park (4 ballfields)",
+        "buildingNumbers": [
+          "PB-1",
+          "PB-2"
+        ]
+      },
+      {
+        "kind": "shrub_bed",
+        "quantity": 6850,
+        "unit": "sqft",
+        "name": "Site 1 Harmon Park planting beds",
+        "buildingNumbers": [
+          "PB-1",
+          "PB-2"
+        ]
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 214,
+        "unit": "each",
+        "name": "Site 1 Harmon Park trees",
+        "buildingNumbers": [
+          "PB-1",
+          "PB-2"
+        ]
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 8.75,
+        "unit": "acres",
+        "name": "Site 2 Veterans Memorial Park"
+      },
+      {
+        "kind": "shrub_bed",
+        "quantity": 4200,
+        "unit": "sqft",
+        "name": "Site 2 Veterans Memorial Park planting beds"
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 96,
+        "unit": "each",
+        "name": "Site 2 Veterans Memorial Park trees"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 9.6,
+        "unit": "acres",
+        "name": "Site 3 Ashby Creek Sports Complex",
+        "buildingNumbers": [
+          "PB-3"
+        ]
+      },
+      {
+        "kind": "unimproved",
+        "quantity": 12.5,
+        "unit": "acres",
+        "name": "Site 3 Ashby Creek Sports Complex (rough mow)",
+        "buildingNumbers": [
+          "PB-3"
+        ]
+      },
+      {
+        "kind": "athletic_field",
+        "quantity": 18.4,
+        "unit": "acres",
+        "name": "Site 3 Ashby Creek Sports Complex (8 ballfields)",
+        "buildingNumbers": [
+          "PB-3"
+        ]
+      },
+      {
+        "kind": "shrub_bed",
+        "quantity": 2100,
+        "unit": "sqft",
+        "name": "Site 3 Ashby Creek Sports Complex planting beds",
+        "buildingNumbers": [
+          "PB-3"
+        ]
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 140,
+        "unit": "each",
+        "name": "Site 3 Ashby Creek Sports Complex trees",
+        "buildingNumbers": [
+          "PB-3"
+        ]
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 5.1,
+        "unit": "acres",
+        "name": "Site 4 Pioneer Park"
+      },
+      {
+        "kind": "shrub_bed",
+        "quantity": 640,
+        "unit": "sqft",
+        "name": "Site 4 Pioneer Park planting beds"
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 38,
+        "unit": "each",
+        "name": "Site 4 Pioneer Park trees"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 6.85,
+        "unit": "acres",
+        "name": "Site 5 Elm Grove Park"
+      },
+      {
+        "kind": "athletic_field",
+        "quantity": 1.6,
+        "unit": "acres",
+        "name": "Site 5 Elm Grove Park (1 ballfield)"
+      },
+      {
+        "kind": "shrub_bed",
+        "quantity": 300,
+        "unit": "sqft",
+        "name": "Site 5 Elm Grove Park planting beds"
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 52,
+        "unit": "each",
+        "name": "Site 5 Elm Grove Park trees"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 14.2,
+        "unit": "acres",
+        "name": "Site 6 Lakeshore Park",
+        "buildingNumbers": [
+          "PB-4"
+        ]
+      },
+      {
+        "kind": "unimproved",
+        "quantity": 3.8,
+        "unit": "acres",
+        "name": "Site 6 Lakeshore Park (rough mow)",
+        "buildingNumbers": [
+          "PB-4"
+        ]
+      },
+      {
+        "kind": "shrub_bed",
+        "quantity": 3400,
+        "unit": "sqft",
+        "name": "Site 6 Lakeshore Park planting beds",
+        "buildingNumbers": [
+          "PB-4"
+        ]
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 175,
+        "unit": "each",
+        "name": "Site 6 Lakeshore Park trees",
+        "buildingNumbers": [
+          "PB-4"
+        ]
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 0.32,
+        "unit": "acres",
+        "name": "Site 7 Delmar Court Pocket Park"
+      },
+      {
+        "kind": "shrub_bed",
+        "quantity": 450,
+        "unit": "sqft",
+        "name": "Site 7 Delmar Court Pocket Park planting beds"
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 6,
+        "unit": "each",
+        "name": "Site 7 Delmar Court Pocket Park trees"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 9.4,
+        "unit": "acres",
+        "name": "Site 8 Kingsridge Park"
+      },
+      {
+        "kind": "unimproved",
+        "quantity": 1.5,
+        "unit": "acres",
+        "name": "Site 8 Kingsridge Park (rough mow)"
+      },
+      {
+        "kind": "athletic_field",
+        "quantity": 3.2,
+        "unit": "acres",
+        "name": "Site 8 Kingsridge Park (2 ballfields)"
+      },
+      {
+        "kind": "shrub_bed",
+        "quantity": 900,
+        "unit": "sqft",
+        "name": "Site 8 Kingsridge Park planting beds"
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 64,
+        "unit": "each",
+        "name": "Site 8 Kingsridge Park trees"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 7.15,
+        "unit": "acres",
+        "name": "Site 9 Creekside Greenway"
+      },
+      {
+        "kind": "unimproved",
+        "quantity": 18.6,
+        "unit": "acres",
+        "name": "Site 9 Creekside Greenway (rough mow)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 0.62,
+        "unit": "acres",
+        "name": "Site 10 Founders Square"
+      },
+      {
+        "kind": "shrub_bed",
+        "quantity": 5600,
+        "unit": "sqft",
+        "name": "Site 10 Founders Square planting beds"
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 28,
+        "unit": "each",
+        "name": "Site 10 Founders Square trees"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 5.65,
+        "unit": "acres",
+        "name": "Site 11 Oakmont Park"
+      },
+      {
+        "kind": "athletic_field",
+        "quantity": 1.35,
+        "unit": "acres",
+        "name": "Site 11 Oakmont Park (1 ballfield)"
+      },
+      {
+        "kind": "shrub_bed",
+        "quantity": 220,
+        "unit": "sqft",
+        "name": "Site 11 Oakmont Park planting beds"
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 41,
+        "unit": "each",
+        "name": "Site 11 Oakmont Park trees"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 7.9,
+        "unit": "acres",
+        "name": "Site 12 Westfield Park"
+      },
+      {
+        "kind": "athletic_field",
+        "quantity": 3.1,
+        "unit": "acres",
+        "name": "Site 12 Westfield Park (2 ballfields)"
+      },
+      {
+        "kind": "shrub_bed",
+        "quantity": 480,
+        "unit": "sqft",
+        "name": "Site 12 Westfield Park planting beds"
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 70,
+        "unit": "each",
+        "name": "Site 12 Westfield Park trees"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 3.05,
+        "unit": "acres",
+        "name": "Site 13 Brentmoor Park"
+      },
+      {
+        "kind": "shrub_bed",
+        "quantity": 160,
+        "unit": "sqft",
+        "name": "Site 13 Brentmoor Park planting beds"
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 27,
+        "unit": "each",
+        "name": "Site 13 Brentmoor Park trees"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 1.2,
+        "unit": "acres",
+        "name": "Site 15 Cedar Hollow Nature Preserve"
+      },
+      {
+        "kind": "unimproved",
+        "quantity": 9.5,
+        "unit": "acres",
+        "name": "Site 15 Cedar Hollow Nature Preserve (rough mow)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 1.85,
+        "unit": "acres",
+        "name": "Site 16 Ashby Creek Aquatic Center Grounds"
+      },
+      {
+        "kind": "shrub_bed",
+        "quantity": 1250,
+        "unit": "sqft",
+        "name": "Site 16 Ashby Creek Aquatic Center Grounds planting beds"
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 22,
+        "unit": "each",
+        "name": "Site 16 Ashby Creek Aquatic Center Grounds trees"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 2.7,
+        "unit": "acres",
+        "name": "Site 17 City Hall Campus"
+      },
+      {
+        "kind": "shrub_bed",
+        "quantity": 7900,
+        "unit": "sqft",
+        "name": "Site 17 City Hall Campus planting beds"
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 61,
+        "unit": "each",
+        "name": "Site 17 City Hall Campus trees"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 1.4,
+        "unit": "acres",
+        "name": "Site 18 Public Safety Complex"
+      },
+      {
+        "kind": "shrub_bed",
+        "quantity": 2300,
+        "unit": "sqft",
+        "name": "Site 18 Public Safety Complex planting beds"
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 18,
+        "unit": "each",
+        "name": "Site 18 Public Safety Complex trees"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 0.55,
+        "unit": "acres",
+        "name": "Site 19 Fire Station No. 2"
+      },
+      {
+        "kind": "shrub_bed",
+        "quantity": 380,
+        "unit": "sqft",
+        "name": "Site 19 Fire Station No. 2 planting beds"
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 7,
+        "unit": "each",
+        "name": "Site 19 Fire Station No. 2 trees"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 1.15,
+        "unit": "acres",
+        "name": "Site 20 Ashby Creek Public Library Grounds"
+      },
+      {
+        "kind": "shrub_bed",
+        "quantity": 1800,
+        "unit": "sqft",
+        "name": "Site 20 Ashby Creek Public Library Grounds planting beds"
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 25,
+        "unit": "each",
+        "name": "Site 20 Ashby Creek Public Library Grounds trees"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 15.2,
+        "unit": "acres",
+        "name": "Site 21 Hillcrest Cemetery"
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 120,
+        "unit": "each",
+        "name": "Site 21 Hillcrest Cemetery trees"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 12.6,
+        "unit": "acres",
+        "name": "Site 22 Riverbend Park"
+      },
+      {
+        "kind": "unimproved",
+        "quantity": 4.2,
+        "unit": "acres",
+        "name": "Site 22 Riverbend Park (rough mow)"
+      },
+      {
+        "kind": "athletic_field",
+        "quantity": 5.4,
+        "unit": "acres",
+        "name": "Site 22 Riverbend Park (3 ballfields)"
+      },
+      {
+        "kind": "shrub_bed",
+        "quantity": 1100,
+        "unit": "sqft",
+        "name": "Site 22 Riverbend Park planting beds"
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 88,
+        "unit": "each",
+        "name": "Site 22 Riverbend Park trees"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 4.2,
+        "unit": "acres",
+        "name": "Site 23 Sunset Hills Park"
+      },
+      {
+        "kind": "shrub_bed",
+        "quantity": 150,
+        "unit": "sqft",
+        "name": "Site 23 Sunset Hills Park planting beds"
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 33,
+        "unit": "each",
+        "name": "Site 23 Sunset Hills Park trees"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 0.22,
+        "unit": "acres",
+        "name": "Site 24 Maple Street Tot Lot"
+      },
+      {
+        "kind": "shrub_bed",
+        "quantity": 180,
+        "unit": "sqft",
+        "name": "Site 24 Maple Street Tot Lot planting beds"
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 4,
+        "unit": "each",
+        "name": "Site 24 Maple Street Tot Lot trees"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 5.3,
+        "unit": "acres",
+        "name": "Site 25 Old Mill Park"
+      },
+      {
+        "kind": "shrub_bed",
+        "quantity": 950,
+        "unit": "sqft",
+        "name": "Site 25 Old Mill Park planting beds"
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 47,
+        "unit": "each",
+        "name": "Site 25 Old Mill Park trees"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 0.85,
+        "unit": "acres",
+        "name": "Site 26 Public Works Yard Frontage and Water Tower Lots"
+      },
+      {
+        "kind": "unimproved",
+        "quantity": 1.6,
+        "unit": "acres",
+        "name": "Site 26 Public Works Yard Frontage and Water Tower Lots (rough mow)"
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 12,
+        "unit": "each",
+        "name": "Site 26 Public Works Yard Frontage and Water Tower Lots trees"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 1.012,
+        "unit": "acres",
+        "name": "Table A-2 M-1 Ashby Creek Parkway, Main Street to Delmar Court (2,450 LF x 18 FT)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 1.576,
+        "unit": "acres",
+        "name": "Table A-2 M-2 Ashby Creek Parkway, Delmar Court to Pioneer Drive (3,120 LF x 22 FT)"
+      },
+      {
+        "kind": "tree_canopy",
+        "quantity": 34,
+        "unit": "each",
+        "name": "Table A-2 M-2 median street trees"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 0.38,
+        "unit": "acres",
+        "name": "Table A-2 M-3 Main Street, Elm Grove Avenue to N. Railroad Crossing (1,380 LF x 12 FT)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 0.72,
+        "unit": "acres",
+        "name": "Table A-2 M-4 Pioneer Drive, Ashby Creek Parkway to Kingsridge Road (1,960 LF x 16 FT)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 1.022,
+        "unit": "acres",
+        "name": "Table A-2 M-6 Kingsridge Road, Pioneer Drive to Westfield Boulevard (3,180 LF x 14 FT)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 0.201,
+        "unit": "acres",
+        "name": "Table A-2 M-7 Lakeshore Drive, Lakeshore Park entrance to Sunset Hills Drive (875 LF x 10 FT)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 3.636,
+        "unit": "acres",
+        "name": "Table A-2 R-1 County Line Road, Sports Complex entrance to east city limits (5,280 LF x 15 FT x 2 sides)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 3.182,
+        "unit": "acres",
+        "name": "Table A-2 R-2 Industrial Park Drive, Water Tower Road to Public Works Yard gate (3,465 LF x 20 FT x 2 sides)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 1.893,
+        "unit": "acres",
+        "name": "Table A-2 R-3 Creekside Trail shoulders, Pioneer Drive to Lakeshore Drive (6,870 LF x 6 FT x 2 sides)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 0.947,
+        "unit": "acres",
+        "name": "Table A-2 R-4 Water Tower Road, Industrial Park Drive to Water Tower Lot (east side only) (1,650 LF x 25 FT)"
+      }
+    ],
+    "site": {
+      "contractYears": 5,
+      "climateZone": "temperate",
+      "installationName": "Ashby Creek",
+      "solicitation": "2027-014"
+    },
+    "priorAward": {
+      "annualValue": 612480,
+      "incumbent": "Halvorsen Turf Management, LLC",
+      "contractNumber": "PR-2022-031",
+      "awardYear": 2022
+    }
+  },
+  "traps": [
+    "Single 9-page PDF with a text layer: portrait cover and Sections 1-3, then three LANDSCAPE pages (Table A-1 across two pages with its two-row header repeated, Table A-2 on one), a portrait Attachment C page and Addendum No. 1 bound at the end. Running header (city | RFP No. 2027-014 | title) and a \"City Page n\" footer repeat on every page; the renderer adds a second \"Page n of m\" footer.",
+    "Addendum No. 1 (last page) supersedes the tables: Site 14 Wexford Commons Pocket Park is DELETED (its 0.48 semi-improved acres, 320 SF beds and 9 trees are excluded from truth); Site 9 Creekside Greenway mowable turf 6.40 -> 7.15 ac; Segment M-6 Kingsridge Road 2,640 LF -> 3,180 LF; PB-3 gross 2,240 -> 2,420 SF, cleanable 1,960 -> 2,130 SF, fixtures 8/3/6/0 -> 9/3/7/0 (19). Truth carries only the post-addendum values.",
+    "Table A-1 has BOTH \"Total Site Acres\" (information only; includes paving, water, woods, ballfields) and \"Mowable Turf Acres\" (basis of payment). Turf truth uses Mowable Turf Acres only; Total Site Acres (e.g. Lakeshore Park \"approx. 31.5\" incl. an 11-acre lake, Cedar Hollow \"64±\") must not be read as turf. Ballfield acres and rough-mow acres are separate and not included in Mowable Turf Acres (Section 2.1, Addendum Q1), so they are not double counted.",
+    "Service Level column maps the turf: Svc Lvl 1 (7-day cycle, \"Improved Turf\") -> improved_turf; Svc Lvl 2 (14-day cycle, \"Semi-Improved Turf\") -> semi_improved; \"Rough Mow Acres (Svc Lvl 3)\" -> unimproved; Ballfield Acres -> athletic_field; Planting Beds (SF) -> shrub_bed sqft; Trees (EA) -> tree_canopy each. Post-addendum park totals: improved 62.22 ac (Lvl 1), semi-improved 84.99 ac (Lvl 2), unimproved 57.9 ac, athletic fields 40.85 ac, beds 41,310 SF.",
+    "Medians / ROW (Table A-2) give only Length (LF), Average Width (FT) and Sides - no acreage (note 1/, Addendum Q2). Truth converts each turf segment to improved-turf ACRES as LF x width x sides / 43,560: M-1 2,450 x 18 = 44,100 SF = 1.012 ac; M-2 3,120 x 22 = 68,640 SF = 1.576 ac; M-3 1,380 x 12 = 16,560 SF = 0.380 ac; M-4 1,960 x 16 = 31,360 SF = 0.720 ac; M-6 3,180 x 14 = 44,520 SF = 1.022 ac; M-7 875 x 10 = 8,750 SF = 0.201 ac; R-1 5,280 x 15 x 2 = 158,400 SF = 3.636 ac; R-2 3,465 x 20 x 2 = 138,600 SF = 3.182 ac; R-3 6,870 x 6 x 2 = 82,440 SF = 1.893 ac; R-4 1,650 x 25 = 41,250 SF = 0.947 ac. Total 634,620 SF = 14.569 ac improved turf (all segments are Svc Lvl 1). Reading LF as SF, ignoring the width, or ignoring Sides = 2 on R-1, R-2 and R-3 gives a wrong area.",
+    "Segment M-5 Florence Boulevard (1,050 LF x 8 FT) is stamped concrete / pavers with no turf (Svc Lvl and cycle \"—\", note 3/): it is excluded from turf truth. The Table A-2 TOTAL LENGTH row (30,740 LF, pre-addendum, includes M-5) is not an area.",
+    "The Table A-1 TOTAL row (374.63 total ac, 146.94 mowable ac, 41,630 SF beds, 1,397 trees) is pre-addendum (includes Site 14 and Site 9 at 6.40 ac) and must not be added as a site. Footnote 6/ says the individual entries govern.",
+    "Several acreages carry qualifiers: \"approx. 46\", \"approx. 31.5\", \"approx. 52\", \"approx. 2.7\" (Total Site Acres), \"approx. 9.40\" (Kingsridge mowable), \"approx. 15.20\" (Hillcrest Cemetery mowable) and \"64±\" (Cedar Hollow). The number is the quantity; Total Site Acres are not turf.",
+    "Footnote markers are superscripts glued to names (\"Creekside Greenway2/\", \"Cedar Hollow Nature Preserve3/\", \"Hillcrest Cemetery4/\") and to column headers (\"Class1/\", \"Total Site Acres5/\"); names wrap to a second line with an italic parenthetical description and a third line with the street address.",
+    "Segment M-2 surface \"Turf with street trees (34 EA)\" adds 34 trees maintained under Section 2.7 (tree_canopy, each). Creekside Greenway trees are \"not inventoried\" and Cedar Hollow shows \"—\": no tree quantity for those sites.",
+    "Facilities are only the park buildings in Table C-1 (facilitiesComplete): PB-1..PB-4. PB-5 Old Mill Park Restroom Building (640 SF) is CLOSED / scheduled for demolition (footnote 2/, Addendum Q3) and excluded. The TOTAL row (19,640 GSF, pre-addendum) is not a facility. Table C-2 picnic shelters (1,500 / 960 / 1,200 / 330 SF slabs) are open-air and explicitly not custodial buildings (Section 3.3).",
+    "Restroom fixtures are printed as \"WC / UR / LAV / SH\" (e.g. \"10 / 4 / 9 / 2\"); truth restroomFixtures is the sum (PB-1 25, PB-2 13, PB-3 19 post-addendum, PB-4 8).",
+    "Cleaning days map to service levels: \"Monday – Friday\" -> daily_5 (PB-1); \"Daily, 7 days / week, including holidays\" -> daily_7 (PB-2); \"Monday, Wednesday, Friday\" -> 3x_week (PB-3). PB-4 is seasonal (7 days Apr-Oct, Sat/Sun only Nov-Mar) and has no single matching level, so truth omits serviceLevel. Only PB-1 has an unambiguous category (community); the restroom/concession buildings carry none.",
+    "Contract term (Section 1.2, Addendum Q4): two-year initial term (Mar 1, 2027 - Feb 28, 2029) plus up to three one-year renewals -> contractYears 5. \"Pricing shall remain firm for the initial term\" and the 90-day CPI clause are not term lengths.",
+    "Prior award (Section 1.3): Contract No. PR-2022-031, Halvorsen Turf Management, LLC, awarded February 2022, CY 2025 expenditures $612,480 -> annualValue 612480, awardYear 2022. It covers mowing only (no custodial, not segments R-3/R-4 per Addendum A5), so a top-down cross-check understates the new scope. The $612,480 is not a contract total.",
+    "Climate: City of Ashby Creek, St. Louis County, Missouri (cover page) -> temperate (not stated in words; inferred from location). Mowing season March 15 - November 15 with an estimated 30 Svc Lvl 1 cycles and 17 Svc Lvl 2 cycles (Section 2.2 service level table)."
+  ]
+}
