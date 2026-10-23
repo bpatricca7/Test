@@ -40,6 +40,19 @@ test('facility estimate scales linearly with cleanable area', () => {
   assert.ok(small.lines.every((l) => FACTORS.some((f) => f.id === l.factorId)));
 });
 
+test('six-day service and a stated calendar scale the daily work', () => {
+  const base: Facility = { id: 'a', name: 'A', category: 'admin', grossSqft: 10000, cleanableSqft: 10000, floors: 1, restroomFixtures: 10, serviceLevel: 'daily_5', scope: ['custodial'], confidence: 1 };
+  const five = estimateFacility(base, DEFAULT_ASSUMPTIONS);
+  const six = estimateFacility({ ...base, serviceLevel: 'daily_6' }, DEFAULT_ASSUMPTIONS);
+  const school = estimateFacility({ ...base, serviceDaysPerYear: 200 }, DEFAULT_ASSUMPTIONS);
+  assert.equal(six.resolved.serviceDaysPerYear, 300);
+  assert.equal(school.resolved.serviceDaysPerYear, 200);
+  const daily = (e: typeof five) => e.lines.find((l) => l.factorId === 'cust_trash')!.annualHours;
+  assert.ok(Math.abs(daily(six) / daily(five) - 300 / 250) < 0.01);
+  assert.ok(Math.abs(daily(school) / daily(five) - 200 / 250) < 0.01);
+  assert.ok(six.totalHours > five.totalHours && school.totalHours < five.totalHours);
+});
+
 test('factor overrides change the hours', () => {
   const f: Facility = { id: 'a', name: 'A', category: 'admin', grossSqft: 10000, floors: 1, serviceLevel: 'daily_5', scope: ['custodial'], confidence: 1 };
   const a = estimateFacility(f, DEFAULT_ASSUMPTIONS);

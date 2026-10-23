@@ -30,10 +30,11 @@ export interface FloorMix {
   wood: number; // gym floors
 }
 
-export type ServiceLevel = 'daily_7' | 'daily_5' | '3x_week' | '2x_week' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly';
+export type ServiceLevel = 'daily_7' | 'daily_6' | 'daily_5' | '3x_week' | '2x_week' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly';
 
 export const SERVICE_LEVELS: { id: ServiceLevel; label: string; daysPerYear: number }[] = [
   { id: 'daily_7', label: 'Daily, 7 days/week', daysPerYear: 360 },
+  { id: 'daily_6', label: 'Daily, 6 days/week (Mon–Sat)', daysPerYear: 300 },
   { id: 'daily_5', label: 'Daily, 5 days/week', daysPerYear: 250 },
   { id: '3x_week', label: '3x per week', daysPerYear: 150 },
   { id: '2x_week', label: '2x per week', daysPerYear: 100 },
@@ -116,6 +117,8 @@ export interface Facility {
   originalArea?: { gross?: number; cleanable?: number; unit: AreaUnit };
   /** Frequency wording exactly as printed (e.g. "M–F", "2x/month", "Bi-weekly"). */
   serviceFrequencyText?: string;
+  /** Service days per year when the document defines a calendar the levels can't express (school days + summer, seasonal). Overrides the level's days. */
+  serviceDaysPerYear?: number;
   /** Workload table the row came from (for completeness checks against printed totals). */
   tableId?: string;
 }

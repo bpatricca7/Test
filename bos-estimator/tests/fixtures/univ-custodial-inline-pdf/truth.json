@@ -7,19 +7,19 @@
     "sources": [
       {
         "url": "https://www.polk.edu/wp-content/uploads/RFP-16-03-Custodial-Services-REVISED-11-4-2016-FINAL.pdf",
-        "note": "Polk State College RFP #16-03 Custodial Services, Scope of Work \"List of Buildings to be used for Billing Purposes\": rows copied verbatim (name + estimated gross SF): LTB – Technology Building 127,050; LAC – Academic Center 72,852; WRH – Rehabilitative Health 6,030; Seven (7) Modular Buildings – Winter Haven Campus 7,502; Chain of Lakes (COL) 14,540; CPS/ITB – Center for Public Safety Immersive Training Building 101,488; JD Alexander Center 16,143; Lake Wales Art(s) Center 12,422; four Lakeland modular buildings LMA/LMB/LMC/LMD 7,752. Also copied wording: \"Floor plans and a list of rooms and square footage of each room is available for review at the Purchasing Department\", per-SF monthly x 12 pricing by campus, payment reduced by SF taken out of service."
+        "note": "Polk State College RFP #16-03 Custodial Services, Scope of Work \"List of Buildings to be used for Billing Purposes\": rows copied verbatim (name + estimated gross SF): LTB \u2013 Technology Building 127,050; LAC \u2013 Academic Center 72,852; WRH \u2013 Rehabilitative Health 6,030; Seven (7) Modular Buildings \u2013 Winter Haven Campus 7,502; Chain of Lakes (COL) 14,540; CPS/ITB \u2013 Center for Public Safety Immersive Training Building 101,488; JD Alexander Center 16,143; Lake Wales Art(s) Center 12,422; four Lakeland modular buildings LMA/LMB/LMC/LMD 7,752. Also copied wording: \"Floor plans and a list of rooms and square footage of each room is available for review at the Purchasing Department\", per-SF monthly x 12 pricing by campus, payment reduced by SF taken out of service."
       },
       {
         "url": "https://www.polk.edu/wp-content/uploads/16-03-Custodial-Services-Contract-FINAL-.pdf",
-        "note": "Executed contract for RFP #16-03: rows copied verbatim: WAD – Administration 47,863 and WCH – Club House 2,000 (billing list, estimated gross square footage); contract wording on relieving the contractor of obligations for areas taken out of service."
+        "note": "Executed contract for RFP #16-03: rows copied verbatim: WAD \u2013 Administration 47,863 and WCH \u2013 Club House 2,000 (billing list, estimated gross square footage); contract wording on relieving the contractor of obligations for areas taken out of service."
       },
       {
         "url": "https://uafs.edu/about/offices-and-services/finance-and-administration/procurement/_documents/ax24003custodialandlandscaping.pdf",
-        "note": "UAFS AX-24-003 Appendix 1: per-building APPA custodial service level column (AP2/AP3) — format only."
+        "note": "UAFS AX-24-003 Appendix 1: per-building APPA custodial service level column (AP2/AP3) \u2014 format only."
       },
       {
         "url": "https://uca.edu/procurement/files/2023/01/RFP-UCA-23-033-Custodial-Services.pdf",
-        "note": "UCA RFP UCA-23-033: APPA Level 2 cleaning standard and building-by-building price-per-SF / monthly price form — format only."
+        "note": "UCA RFP UCA-23-033: APPA Level 2 cleaning standard and building-by-building price-per-SF / monthly price form \u2014 format only."
       }
     ],
     "notes": "11 of the 29 expected facility rows (WAD, WCH, WRH, Winter Haven modulars, COL, CPS/ITB, LTB, LAC, Lakeland modulars LMA-LMD, JD Alexander Center, Lake Wales Arts Center) carry names and gross SF copied from Polk State College RFP #16-03 and its contract, so the package is recognisably Polk-State-derived. The college name (Lakeridge State College) is a stand-in so that everything invented is not attributed to Polk State: the solicitation number, purchasing contact (555 telephone number), street addresses, the other 18 buildings and their SF (given generic names; the two invented centers no longer reuse real Polk State center names), floors, APPA levels, days of service, hours, Sections 3-4 (submission, evaluation points, insurance limits), and the current contract (Meridian Building Care, Inc., LSC-22-117, awarded April 2022, $2,186,400 per year). Floors are illustrative for every row. Sections 3-4 follow standard Florida College System RFP content (s. 287.133 public entity crimes, s. 448.095 E-Verify, s. 1012.465 Jessica Lunsford Act screening, s. 120.57(3) 72-hour protest window, Florida minimum wage $15.00 from September 30, 2026); the wording is written for this fixture."
@@ -44,7 +44,8 @@
         "name": "Club House (Restrooms Only)",
         "grossSqft": 2000,
         "floors": 1,
-        "buildingNumber": "WCH"
+        "buildingNumber": "WCH",
+        "serviceLevel": "daily_6"
       },
       {
         "name": "Health Sciences",
@@ -57,7 +58,8 @@
         "name": "Library and Learning Commons",
         "grossSqft": 38420,
         "floors": 2,
-        "buildingNumber": "WLL"
+        "buildingNumber": "WLL",
+        "serviceLevel": "daily_6"
       },
       {
         "name": "Rehabilitative Health",
@@ -119,7 +121,7 @@
         "category": "maintenance"
       },
       {
-        "name": "Seven (7) Modular Buildings – Winter Haven Campus",
+        "name": "Seven (7) Modular Buildings \u2013 Winter Haven Campus",
         "grossSqft": 7502,
         "floors": 1,
         "serviceLevel": "3x_week"
@@ -135,13 +137,15 @@
         "name": "Center for Public Safety Immersive Training Building",
         "grossSqft": 101488,
         "floors": 2,
-        "buildingNumber": "CPS/ITB"
+        "buildingNumber": "CPS/ITB",
+        "serviceLevel": "daily_6"
       },
       {
         "name": "Technology Building",
         "grossSqft": 127050,
         "floors": 3,
-        "buildingNumber": "LTB"
+        "buildingNumber": "LTB",
+        "serviceLevel": "daily_6"
       },
       {
         "name": "Academic Center",
@@ -161,7 +165,8 @@
         "name": "Library",
         "grossSqft": 24860,
         "floors": 2,
-        "buildingNumber": "LLB"
+        "buildingNumber": "LLB",
+        "serviceLevel": "daily_6"
       },
       {
         "name": "Student Services",
@@ -178,7 +183,7 @@
         "serviceLevel": "daily_5"
       },
       {
-        "name": "Four (4) Modular Buildings – LMA, LMB, LMC, LMD",
+        "name": "Four (4) Modular Buildings \u2013 LMA, LMB, LMC, LMD",
         "grossSqft": 7752,
         "floors": 1,
         "serviceLevel": "3x_week"
@@ -243,19 +248,20 @@
     }
   },
   "traps": [
-    "Campus subtotal rows (Winter Haven Campus Subtotal 440,633, Lakeland Campus Subtotal 336,849, Centers Subtotal 103,040) and the GRAND TOTAL – ALL LOCATIONS row (880,522) are not facilities.",
-    "Campus header rows (\"WINTER HAVEN CAMPUS – 4100 Lake Region Boulevard ...\") span the table and are not facilities.",
+    "Campus subtotal rows (Winter Haven Campus Subtotal 440,633, Lakeland Campus Subtotal 336,849, Centers Subtotal 103,040) and the GRAND TOTAL \u2013 ALL LOCATIONS row (880,522) are not facilities.",
+    "Campus header rows (\"WINTER HAVEN CAMPUS \u2013 4100 Lake Region Boulevard ...\") span the table and are not facilities.",
     "The Section 5 Price Proposal Form repeats the campus subtotals and grand total as square footages; they must not be extracted as buildings or double counted.",
-    "WSC – Science Center (Renovation) shows \"TBD – see Addendum\" instead of a square footage; it is excluded from expected facilities (no SF to bill, not in the subtotal, footnote 3 says it shall not be priced until the Addendum is issued). A reader that emits it with a guessed or zero SF is counted as an extra.",
-    "Building code is embedded in the name cell with an en dash (\"WAD – Administration\"), in parentheses (\"Chain of Lakes (COL)\"), or as a slash code (\"CPS/ITB – ...\"); centers and modular groups have no code at all.",
-    "\"CPS/ITB – Center for Public Safety Immersive Training Building\", \"WFO – Facilities Operations and Grounds Maintenance Shop\" and \"Flightline Aviation Center (Aerospace and Aviation Programs)\" wrap to two lines inside the Building cell.",
-    "Grouped rows: \"Seven (7) Modular Buildings – Winter Haven Campus\" (7,502) and \"Four (4) Modular Buildings – LMA, LMB, LMC, LMD\" (7,752) are each one billing line; Section 2.3.3 says each group is billed as one line and individual modules are not separately listed or priced, and gives per-module sizes (960–1,124 SF; 1,938 SF each) for information only. Splitting the Lakeland group into LMA/LMB/LMC/LMD rows produces 3 extras and an SF mismatch.",
+    "WSC \u2013 Science Center (Renovation) shows \"TBD \u2013 see Addendum\" instead of a square footage; it is excluded from expected facilities (no SF to bill, not in the subtotal, footnote 3 says it shall not be priced until the Addendum is issued). A reader that emits it with a guessed or zero SF is counted as an extra.",
+    "Building code is embedded in the name cell with an en dash (\"WAD \u2013 Administration\"), in parentheses (\"Chain of Lakes (COL)\"), or as a slash code (\"CPS/ITB \u2013 ...\"); centers and modular groups have no code at all.",
+    "\"CPS/ITB \u2013 Center for Public Safety Immersive Training Building\", \"WFO \u2013 Facilities Operations and Grounds Maintenance Shop\" and \"Flightline Aviation Center (Aerospace and Aviation Programs)\" wrap to two lines inside the Building cell.",
+    "Grouped rows: \"Seven (7) Modular Buildings \u2013 Winter Haven Campus\" (7,502) and \"Four (4) Modular Buildings \u2013 LMA, LMB, LMC, LMD\" (7,752) are each one billing line; Section 2.3.3 says each group is billed as one line and individual modules are not separately listed or priced, and gives per-module sizes (960\u20131,124 SF; 1,938 SF each) for information only. Splitting the Lakeland group into LMA/LMB/LMC/LMD rows produces 3 extras and an SF mismatch.",
     "Section 2.3.2 names facilities NOT included (WPE demolished June 2025, LCH cleaned by the school board, WEP central energy plant); none are expected.",
-    "Days of service codes map to service levels: M–F = daily_5, 7 days = daily_7, M/W/F = 3x_week, T/Th = 2x_week, 1x/wk = weekly. M–Sa (six days) has no exact service level, so truth omits serviceLevel for those rows.",
-    "Two-row table header (Cleaning spans APPA Level and Days of Service) and numeric APPA level column (1/2/3) sit next to the Floors column — a reader must not take the APPA level as floors.",
-    "Prior award is a narrative paragraph (Section 1.3): incumbent, contract number, award year (April 2022) and the current annual contract amount ($2,186,400, also given as $182,200 per month — the monthly figure is not the annual value). The contract period (July 1, 2022 – June 30, 2027) is stated but no total contract value is, so truth asserts annualValue only. The per-hour event-services rate and ~400 event hours are not part of it.",
+    "Days of service codes map to service levels: M\u2013F = daily_5, 7 days = daily_7, M/W/F = 3x_week, T/Th = 2x_week, 1x/wk = weekly. M\u2013Sa (six days) has no exact service level, so truth omits serviceLevel for those rows.",
+    "Two-row table header (Cleaning spans APPA Level and Days of Service) and numeric APPA level column (1/2/3) sit next to the Floors column \u2014 a reader must not take the APPA level as floors.",
+    "Prior award is a narrative paragraph (Section 1.3): incumbent, contract number, award year (April 2022) and the current annual contract amount ($2,186,400, also given as $182,200 per month \u2014 the monthly figure is not the annual value). The contract period (July 1, 2022 \u2013 June 30, 2027) is stated but no total contract value is, so truth asserts annualValue only. The per-hour event-services rate and ~400 event hours are not part of it.",
     "Distractor numbers in Sections 3-4 are not facilities or award values: evaluation points (25/20/15/5/35, total 100), insurance limits ($1,000,000 / $2,000,000 / $500,000 / $100,000), the $15.00 minimum wage, the 250,000 SF reference-account threshold and the 72-hour protest window.",
     "Contract term is three years plus two one-year options = 5 contract years (Section 1.2); the prior contract's identical 3+2 structure in Section 1.3 is history, not the new term.",
-    "The running header (\"Lakeridge State College – Purchasing Department | RFP #27-04 Custodial Services | Issued October 5, 2026\") repeats on every page. Footnote markers sit on the table header text: a plain text layer (pdftotext) glues them on (\"Footage1\", \"Level2\", \"Addendum3\"); the app's layout reader marks them as [^1], [^2], [^3]."
+    "The running header (\"Lakeridge State College \u2013 Purchasing Department | RFP #27-04 Custodial Services | Issued October 5, 2026\") repeats on every page. Footnote markers sit on the table header text: a plain text layer (pdftotext) glues them on (\"Footage1\", \"Level2\", \"Addendum3\"); the app's layout reader marks them as [^1], [^2], [^3].",
+    "Mon\u2013Sat (6-day) buildings are daily_6 (300 service days/yr), not daily_5 or daily_7."
   ]
 }

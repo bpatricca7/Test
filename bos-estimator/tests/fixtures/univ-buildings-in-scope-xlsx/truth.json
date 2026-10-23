@@ -7,11 +7,11 @@
     "sources": [
       {
         "url": "https://www.umsystem.edu/sites/default/files/2022-10/Custodial%20Services%20for%20Various%20Buildings%20RFP%20Final%2010-12-2022.pdf",
-        "note": "University of Missouri RFP #23027 \"Custodial Services for Various Buildings\": package structure copied (Exhibit A – Buildings in Scope, Exhibit B – Scope of Cleaning Services, Exhibit C – RFP Staffing Workbook, each an Excel spreadsheet)."
+        "note": "University of Missouri RFP #23027 \"Custodial Services for Various Buildings\": package structure copied (Exhibit A \u2013 Buildings in Scope, Exhibit B \u2013 Scope of Cleaning Services, Exhibit C \u2013 RFP Staffing Workbook, each an Excel spreadsheet)."
       },
       {
         "url": "https://uafs.edu/about/offices-and-services/finance-and-administration/procurement/_documents/ax24003custodialandlandscaping.pdf",
-        "note": "UAFS AX-24-003 Appendix 1 – UAFS Facilities: building names and gross SF copied: Baldor Technology Center 102,000; Boreham Library 68,331; Math Science 82,000; Advancement Center 9,008; 51st Annex 16,339; Pendergraft Health Sciences 72,230; Ballman Speer 12,466 (storage, no custodial service). Building numbers, cleanable SF, floors, fixtures and service days on these rows are illustrative."
+        "note": "UAFS AX-24-003 Appendix 1 \u2013 UAFS Facilities: building names and gross SF copied: Baldor Technology Center 102,000; Boreham Library 68,331; Math Science 82,000; Advancement Center 9,008; 51st Annex 16,339; Pendergraft Health Sciences 72,230; Ballman Speer 12,466 (storage, no custodial service). Building numbers, cleanable SF, floors, fixtures and service days on these rows are illustrative."
       },
       {
         "url": "https://www.pima.edu/administration/contracts-purchasing/docs/rfp-p24-10060l-custodial-services.pdf",
@@ -119,7 +119,8 @@
         "grossSqft": 24180,
         "cleanableSqft": 19830,
         "floors": 2,
-        "restroomFixtures": 12
+        "restroomFixtures": 12,
+        "serviceLevel": "daily_6"
       },
       {
         "buildingNumber": "0039",
@@ -190,7 +191,8 @@
         "grossSqft": 52100,
         "cleanableSqft": 31260,
         "floors": 1,
-        "restroomFixtures": 36
+        "restroomFixtures": 36,
+        "serviceLevel": "daily_6"
       },
       {
         "buildingNumber": "0063",
@@ -198,7 +200,8 @@
         "grossSqft": 28640,
         "cleanableSqft": 17180,
         "floors": 1,
-        "restroomFixtures": 22
+        "restroomFixtures": 22,
+        "serviceLevel": "daily_6"
       },
       {
         "buildingNumber": "0066",
@@ -359,7 +362,8 @@
         "grossSqft": 19640,
         "cleanableSqft": 16500,
         "floors": 2,
-        "restroomFixtures": 10
+        "restroomFixtures": 10,
+        "serviceLevel": "daily_6"
       },
       {
         "buildingNumber": "2216",
@@ -421,7 +425,8 @@
         "grossSqft": 44620,
         "cleanableSqft": 37930,
         "floors": 4,
-        "restroomFixtures": 24
+        "restroomFixtures": 24,
+        "serviceLevel": "daily_6"
       },
       {
         "buildingNumber": "3310",
@@ -515,18 +520,19 @@
     "Exhibit A sheet has a merged title row and a blank row above the real header row (row 3); the header must be found, not assumed to be row 1.",
     "TOTAL row (Gross 2,220,646, Cleanable 1,450,645, Fixtures 1176) is not a facility; per Addendum Q4 it also includes information-only rows and does not reflect the addendum changes.",
     "Building # mixes text with leading zeros (\"0012\", stored as text) and plain numbers (1102, stored as numeric cells).",
-    "Building 0030 Ballman Speer has 0 service days and Remarks \"Storage – no custodial service\" (RFP 4.2, Notes 6): excluded from expected facilities.",
-    "The addendum is a separate PDF issued after the RFP and the workbook (\"RFP 27031 Addendum No. 1.pdf\"); it supersedes Exhibit A. Its Part A changes table repeats each change with building numbers, and Part B Q&A repeats them again in prose — the same three changes must not be applied or counted twice.",
+    "Building 0030 Ballman Speer has 0 service days and Remarks \"Storage \u2013 no custodial service\" (RFP 4.2, Notes 6): excluded from expected facilities.",
+    "The addendum is a separate PDF issued after the RFP and the workbook (\"RFP 27031 Addendum No. 1.pdf\"); it supersedes Exhibit A. Its Part A changes table repeats each change with building numbers, and Part B Q&A repeats them again in prose \u2014 the same three changes must not be applied or counted twice.",
     "Building 0084 Hawthorne Hall is a normal-looking row in the workbook (5 days/week) but Addendum No. 1 (Part A item A-3, Q3) removes it from scope: excluded.",
     "Building 2210 Nursing and Allied Health shows 48,210 GSF in the workbook; Addendum No. 1 (A-2, Q2) corrects it to 42,810 (cleanable 36,400 unchanged). The A-2 row prints both numbers (\"changed from 48,210 to 42,810\"); truth uses 42,810.",
     "Building 1114 Ridgeview Commons exists only in the addendum (A-1, Q1): 11,000 GSF, 9,350 cleanable, 1 floor, 14 fixtures, 7 days/week. It must be added to the workbook buildings.",
-    "Cleanable SF is far below gross for residence halls (common areas only), warehouse/shops (office areas only) and the Aviation Technology Center (hangar bays excluded) — gross and cleanable must not be swapped or averaged.",
-    "Service Days/Week (Column H) is a number: 5 = daily_5, 7 = daily_7, 3 = 3x_week, 2 = 2x_week, 1 = weekly; 6 (Mon–Sat) has no exact service level so truth omits serviceLevel for those rows; 0 = not serviced. RFP 4.1 says Column H governs; RFP 4.3 and Notes 3 name the four residence halls (1102-1108) that need 7-day service and state that 1110 Maple Apartments (3 days) and 1120 Honors College House (5 days) are not residence halls.",
+    "Cleanable SF is far below gross for residence halls (common areas only), warehouse/shops (office areas only) and the Aviation Technology Center (hangar bays excluded) \u2014 gross and cleanable must not be swapped or averaged.",
+    "Service Days/Week (Column H) is a number: 5 = daily_5, 7 = daily_7, 3 = 3x_week, 2 = 2x_week, 1 = weekly; 6 (Mon\u2013Sat) has no exact service level so truth omits serviceLevel for those rows; 0 = not serviced. RFP 4.1 says Column H governs; RFP 4.3 and Notes 3 name the four residence halls (1102-1108) that need 7-day service and state that 1110 Maple Apartments (3 days) and 1120 Honors College House (5 days) are not residence halls.",
     "Remarks column carries free text (APPA Level 1 notes, exclusions) that must not leak into numbers; the Notes sheet is free text with numbered notes, not building rows.",
     "Sycamore Suites and Juniper/Cedar Hall have identical or large gross SF but different cleanable SF; Juniper and Cedar Hall are twin buildings with identical numbers (98,450 / 29,540) and must both be kept (different building numbers).",
     "Building names that start with numerals (\"51st Annex\", \"29th Street Coalition Center\") must not be read as numbers or merged into the Building # column.",
-    "Prior award: total contract value $26,480,000 over the five-year term July 1, 2022 – June 30, 2027 (60 months) with incumbent, contract number and award year in RFP Section 3.1. The Addendum Q5 staffing (~78 custodial FTEs and 7 supervisors) is staffing context, not contract value, and the Section 6.2 evaluation points (40/25/20/15, total 100) are not values either.",
+    "Prior award: total contract value $26,480,000 over the five-year term July 1, 2022 \u2013 June 30, 2027 (60 months) with incumbent, contract number and award year in RFP Section 3.1. The Addendum Q5 staffing (~78 custodial FTEs and 7 supervisors) is staffing context, not contract value, and the Section 6.2 evaluation points (40/25/20/15, total 100) are not values either.",
     "Contract term: one-year initial term plus four one-year renewals = 5 contract years (RFP Section 2.1); the prior contract's identical 1+4 structure in Section 3.1 is history.",
-    "Climate is not named; it follows from the location (Cape Bluff, southeast Missouri) and RFP 4.6 (five to six measurable snow or ice events per winter), which is the app's temperate zone (6 snow events), not cold (18)."
+    "Climate is not named; it follows from the location (Cape Bluff, southeast Missouri) and RFP 4.6 (five to six measurable snow or ice events per winter), which is the app's temperate zone (6 snow events), not cold (18).",
+    "Mon\u2013Sat (6-day) buildings are daily_6 (300 service days/yr), not daily_5 or daily_7."
   ]
 }

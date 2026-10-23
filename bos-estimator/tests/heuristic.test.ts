@@ -60,7 +60,7 @@ test('building numbers keep letters, hyphens and leading zeros; prefixes are dro
 
 test('frequency wording maps to service levels (monthly and 2x/month before weekly wording)', () => {
   const cases: [string, string | undefined][] = [
-    ['Daily (5 days)', 'daily_5'], ['Daily (M–F)', 'daily_5'], ['Monday – Friday', 'daily_5'], ['M-F (12 mo.)', 'daily_5'], ['5X/WK', 'daily_5'], ['5/7', 'daily_5'], ['Twice daily', 'daily_5'], ['M–Sa', 'daily_5'],
+    ['Daily (5 days)', 'daily_5'], ['Daily (M–F)', 'daily_5'], ['Monday – Friday', 'daily_5'], ['M-F (12 mo.)', 'daily_5'], ['5X/WK', 'daily_5'], ['5/7', 'daily_5'], ['Twice daily', 'daily_5'], ['M–Sa', 'daily_6'], ['Mon–Sat', 'daily_6'], ['6X/WK', 'daily_6'], ['6 days/week', 'daily_6'],
     ['Daily (7 Days)', 'daily_7'], ['7X/WK', 'daily_7'], ['7 days / week, including holidays', 'daily_7'], ['7/7', 'daily_7'],
     ['3x Weekly', '3x_week'], ['M/W/F', '3x_week'], ['Monday, Wednesday, Friday', '3x_week'],
     ['2X/WK', '2x_week'], ['T/Th', '2x_week'], ['Tuesday and Thursday', '2x_week'], ['2 v/sett.', '2x_week'], ['Two services per week', '2x_week'],

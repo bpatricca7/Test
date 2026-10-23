@@ -324,6 +324,7 @@ export function parseServiceFrequency(text?: string | null): ServiceLevel | unde
   if (/\bmonthly\b/.test(t)) return 'monthly';
   if (/bi-?weekly|every (?:two|2|other) weeks?|fortnight/.test(t)) return 'biweekly';
   if (/\b7 ?days?\b|seven days|\b7d\b|7 ?x ?(?:\/|per) ?w|\b365\b|sun(?:day)?\s*-\s*sat|mon(?:day)?\s*-\s*sun|\bdaily 7\b/.test(t)) return 'daily_7';
+  if (/\b6 ?days?\b|six days|\b6d\b|6 ?x ?(?:\/|per) ?w|\bm\s*-\s*sa(?:t)?\b|mon(?:day)?\s*-\s*sat/.test(t)) return 'daily_6';
   if (/\b5 ?days?\b|five days|\b5d\b|5 ?x ?(?:\/|per) ?w|\bm\s*-\s*f\b|mon(?:day)?\s*-\s*fri|weekdays|\bdaily\b/.test(t)) return 'daily_5';
   if (/\b(?:3|three)\s*(?:x|times)|\bmwf\b|m\/w\/f/.test(t)) return '3x_week';
   if (/\b(?:2|two)\s*(?:x|times)|twice|t\/th|tu\/th|tue\/thu/.test(t)) return '2x_week';
@@ -502,6 +503,7 @@ const FacilityRowIn = z.object({
   fixtures: z.object({ total: looseNum, water_closets: looseNum, urinals: looseNum, lavatories: looseNum, showers: looseNum }).partial().nullish(),
   occupancy: looseNum,
   service_level: z.string().nullish(),
+  service_days_per_year: z.coerce.number().nullish(),
   service_frequency_text: z.string().nullish(),
   scope: z.array(z.string()).nullish(),
   floor_mix: z.object({ carpet: looseNum, resilient: looseNum, hard_tile: looseNum, concrete: looseNum, wood: looseNum }).partial().nullish(),
@@ -680,6 +682,7 @@ function prepareFacility(st: ExtractionState, d: FacilityRow): { row?: PreparedR
     restroomFixtures: fixtures != null ? Math.round(fixtures) : undefined,
     occupancy: numOrUndef(d.occupancy),
     serviceLevel,
+    serviceDaysPerYear: (() => { const n = numOrUndef(d.service_days_per_year); return n != null && n >= 1 && n <= 366 ? Math.round(n) : undefined; })(),
     scope: scope.length ? [...new Set(scope)] : ['custodial', 'floor_care'],
     confidence: areaMissing ? Math.min(confidence0, 0.4) : confidence0,
     campus,
@@ -793,6 +796,7 @@ function mergeRows(old: Facility, om: FacMeta, row: Facility, rm: FacMeta): { f:
     campus: hi.campus ?? lo.campus,
     category: hm.categoryExplicit ? hi.category : lm.categoryExplicit ? lo.category : hi.category,
     serviceLevel: hm.levelExplicit ? hi.serviceLevel : lm.levelExplicit ? lo.serviceLevel : hi.serviceLevel,
+    serviceDaysPerYear: hm.levelExplicit ? hi.serviceDaysPerYear : lm.levelExplicit ? lo.serviceDaysPerYear : hi.serviceDaysPerYear ?? lo.serviceDaysPerYear,
     serviceFrequencyText: hm.levelExplicit ? hi.serviceFrequencyText ?? lo.serviceFrequencyText : lo.serviceFrequencyText ?? hi.serviceFrequencyText,
     grossSqft: A.grossSqft,
     // the other row's cleanable area only when it still fits in the kept gross (a revised, smaller gross makes it stale)
@@ -1481,7 +1485,8 @@ export function extractionTools(opts: { strict?: boolean } = {}): Anthropic.Beta
       required: ['total', 'water_closets', 'urinals', 'lavatories', 'showers'], additionalProperties: false,
     }),
     occupancy: nullable('integer'),
-    service_level: nullable('string', 'Routine cleaning frequency. Bi-weekly = every two weeks (biweekly) unless the document defines it as twice a week.', { enum: [...LEVEL_IDS, null] }),
+    service_level: nullable('string', 'Routine cleaning frequency. Mon–Sat / six days a week = daily_6. Bi-weekly = every two weeks (biweekly) unless the document defines it as twice a week.', { enum: [...LEVEL_IDS, null] }),
+    service_days_per_year: nullable('integer', 'Only when the document defines a service calendar the levels cannot express (e.g. 180 school days + 20 summer days = 200; 7 days Apr–Oct + weekends Nov–Mar): the stated number of service days per year. Otherwise null.'),
     service_frequency_text: nullable('string', 'The frequency exactly as printed (e.g. "M–F", "Daily (7 days)", "2x/month").'),
     scope: { type: 'array', items: { type: 'string', enum: [...SCOPES] }, description: 'Services that apply to this facility.' },
     floor_mix: nullable('object', 'Fractions of floor area by finish if the RFP gives them (sum ≈ 1).', {

@@ -119,6 +119,21 @@ test('service frequency wording', () => {
   assert.equal(parseServiceFrequency('Quarterly'), 'quarterly');
   assert.equal(parseServiceFrequency('3x/week'), '3x_week');
   assert.equal(parseServiceFrequency('N/A'), undefined);
+  for (const t of ['Mon–Sat', 'M-Sa', '6 days/week', 'Six days a week', '6x/wk']) assert.equal(parseServiceFrequency(t), 'daily_6', t);
+});
+
+test('a stated service calendar overrides the level\'s day count', () => {
+  const st = createState(DOCS);
+  applyToolCall(st, reg(
+    row({ building_number: '101', name: 'Elementary School', gross_area: 60000, service_level: 'daily_5', service_days_per_year: 200 }),
+    row({ building_number: '102', name: 'Admin', gross_area: 10000, service_level: 'daily_5', service_days_per_year: 9000 }),
+    row({ building_number: '103', name: 'Library', gross_area: 8000, service_frequency_text: 'Mon–Sat' }),
+  ));
+  const fs = finalize(st).inventory.facilities;
+  const by = (n: string) => fs.find((f) => f.buildingNumber === n)!;
+  assert.equal(by('101').serviceDaysPerYear, 200);
+  assert.equal(by('102').serviceDaysPerYear, undefined, 'an impossible day count is dropped');
+  assert.equal(by('103').serviceLevel, 'daily_6');
 });
 
 test('total rows are recognised without catching real names', () => {

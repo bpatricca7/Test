@@ -119,7 +119,7 @@ export function resolveFacility(f: Facility, a: Assumptions): ResolvedFacility {
   const footArea = gross / floors;
   const footprint = f.footprint ?? { length: Math.sqrt(footArea * d.aspect), width: Math.sqrt(footArea / d.aspect) };
   const level = SERVICE_LEVELS.find((s) => s.id === f.serviceLevel) ?? SERVICE_LEVELS.find((s) => s.id === d.serviceLevel)!;
-  return { ...f, floors, grossSqft: gross, cleanableSqft: cleanable, floorMix: mix, restroomFixtures: fixtures, occupancy, footprint, serviceDaysPerYear: level.daysPerYear, ...(f.dining ? { dining: resolveDining(f.dining) } : {}) };
+  return { ...f, floors, grossSqft: gross, cleanableSqft: cleanable, floorMix: mix, restroomFixtures: fixtures, occupancy, footprint, serviceDaysPerYear: f.serviceDaysPerYear && f.serviceDaysPerYear > 0 ? Math.min(366, f.serviceDaysPerYear) : level.daysPerYear, ...(f.dining ? { dining: resolveDining(f.dining) } : {}) };
 }
 
 /**

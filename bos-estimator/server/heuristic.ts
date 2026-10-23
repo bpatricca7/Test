@@ -130,7 +130,7 @@ export function normalizeBuildingNumber(raw: string | undefined): string | undef
 const bnKey = (bn: string) => bn.toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^0+(?=\d)/, '');
 const nameKey = (s: string) => clean(s).toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim();
 
-const LEVEL_ORDER: ServiceLevel[] = ['daily_7', 'daily_5', '3x_week', '2x_week', 'weekly', 'biweekly', 'monthly', 'quarterly'];
+const LEVEL_ORDER: ServiceLevel[] = ['daily_7', 'daily_6', 'daily_5', '3x_week', '2x_week', 'weekly', 'biweekly', 'monthly', 'quarterly'];
 const RATE_WORD: Record<string, number> = { once: 1, twice: 2, thrice: 3, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12 };
 /** Explicit rates per month / year / quarter ("3x/month", "Four times per month", "Twice monthly", "24x/yr", "52/yr",
  *  "Semi-annually", "Annually") as visits per week, with the text they were read from. */
@@ -148,7 +148,7 @@ function ratesPerWeek(t: string): { perWeek: number; text: string }[] {
   for (const m of t.matchAll(/(?<!semi-?|bi-?)\b(?:annual(?:ly)?|yearly|once (?:a|per|each) year)\b/g)) if (!/(?:semi-?|bi-?)$/.test(t.slice(0, m.index))) out.push({ perWeek: 1 / 52, text: m[0] });
   return out;
 }
-const levelFromRate = (w: number): ServiceLevel => (w >= 6.5 ? 'daily_7' : w >= 4.5 ? 'daily_5' : w >= 2.5 ? '3x_week' : w >= 1.5 ? '2x_week' : w >= 0.75 ? 'weekly' : w >= 0.35 ? 'biweekly' : w >= 0.15 ? 'monthly' : 'quarterly');
+const levelFromRate = (w: number): ServiceLevel => (w >= 6.5 ? 'daily_7' : w >= 5.5 ? 'daily_6' : w >= 4.5 ? 'daily_5' : w >= 2.5 ? '3x_week' : w >= 1.5 ? '2x_week' : w >= 0.75 ? 'weekly' : w >= 0.35 ? 'biweekly' : w >= 0.15 ? 'monthly' : 'quarterly');
 /** Visits per year when the text states a rate below quarterly ("2x/yr", "Annually"), for a note. */
 export function lessThanQuarterly(raw: string | undefined): number | undefined {
   if (!raw) return undefined;
@@ -182,7 +182,7 @@ function levelFromWords(t: string): ServiceLevel | undefined {
   if (/monthly|\b1x\/mo(?:nth)?\b|once (?:a|per|each) month|mensil|\b12x\/(?:yr|year)/.test(t)) return 'monthly';
   if (/bi-?weekly|bi-?wkly|every (?:two|2|other) weeks?|fortnight|quindicinal|alternate weeks|\b14-day/.test(t)) return 'biweekly';
   if (/\b7x|\b7\/7\b|\b7 ?days|seven days|daily \(7|24\/7|including weekends|every day|sun(?:day)?\s*(?:-|through|thru|to)\s*sat|mon(?:day)?\s*(?:-|through|thru|to)\s*sun|\b365 days|7 d\/w/.test(t)) return 'daily_7';
-  if (/\b6x|\b6\/7\b|\b6 ?days|six days|\bm-sa(?:t)?\b|mon(?:day)?\s*(?:-|through|thru|to)\s*sat/.test(t)) return 'daily_5';
+  if (/\b6x|\b6\/7\b|\b6 ?days|six days|\bm-sa(?:t)?\b|mon(?:day)?\s*(?:-|through|thru|to)\s*sat/.test(t)) return 'daily_6';
   if (/\b5x|\b5\/7\b|\b5 ?days|five days|\bm-f\b|mon(?:day)?\s*(?:-|through|thru|to)\s*fri|weekdays?|\bdaily\b|each workday|every workday|workdays/.test(t)) return 'daily_5';
   if (/\b4x\/(?:wk|week)|\b4\/7\b|four times|\b4 ?days|\bm-th\b/.test(t)) return '3x_week';
   if (/\b3x|\b3\/7\b|three times|\b3 times|\b3\/wk|\b3 ?days|\bm\/w\/f\b|mon(?:day)?,? wed(?:nesday)?,? (?:and )?fri|tri-?weekly|three (?:services|visits|days) (?:per|a) week/.test(t)) return '3x_week';
@@ -191,7 +191,7 @@ function levelFromWords(t: string): ServiceLevel | undefined {
   return undefined;
 }
 /** Service days per week (a numeric "Service Days/Week" column). */
-const levelFromDays = (n: number): ServiceLevel | undefined => (n >= 7 ? 'daily_7' : n >= 5 ? 'daily_5' : n >= 3 ? '3x_week' : n >= 2 ? '2x_week' : n >= 1 ? 'weekly' : undefined);
+const levelFromDays = (n: number): ServiceLevel | undefined => (n >= 7 ? 'daily_7' : n >= 6 ? 'daily_6' : n >= 5 ? 'daily_5' : n >= 3 ? '3x_week' : n >= 2 ? '2x_week' : n >= 1 ? 'weekly' : undefined);
 
 /** Whole-building status wording in a row (remarks, frequency, name or status cell). Partial exclusions ("server rooms
  *  excluded", "kitchens excluded") are not statuses. */
