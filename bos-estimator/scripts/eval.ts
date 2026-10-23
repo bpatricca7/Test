@@ -4,7 +4,7 @@
 //   npm run eval                                   # every fixture, rule-based parser
 //   npm run eval -- --provider claude              # every fixture, Claude (needs ANTHROPIC_API_KEY)
 //   npm run eval -- --provider claude ~/RFPs/W912QR-26-R-0042/*.pdf   # your own solicitation files
-//   npm run eval -- --provider replay tests/fixtures/<id>             # replay recorded tool calls (sim/*.calls.json)
+//   npm run eval -- --provider replay [--sim <name>] tests/fixtures/<id>   # replay recorded tool calls (sim/<name>.calls.json)
 //   npm run eval -- --provider claude --record run.calls.json tests/fixtures/<id>   # record the run's tool calls
 //
 // Options: --model <id> --effort <low|medium|high|xhigh|max> --ingest <auto|native_pdf|text> --json <out.json> --quiet
@@ -31,6 +31,7 @@ const argv = process.argv.slice(2);
 const opt = (k: string, d?: string) => { const i = argv.indexOf(`--${k}`); if (i >= 0) { const v = argv[i + 1]; argv.splice(i, 2); return v; } return d; };
 const flag = (k: string) => { const i = argv.indexOf(`--${k}`); if (i >= 0) { argv.splice(i, 1); return true; } return false; };
 const provider = opt('provider', 'heuristic') as 'heuristic' | 'claude' | 'replay';
+const simName = opt('sim'); // --sim <name> picks sim/<name>.calls.json (default: the first *.calls.json)
 const cfg: AiConfig = { model: opt('model', 'claude-opus-5-5')!, effort: (opt('effort', 'high') as AiConfig['effort']) };
 const ingest = opt('ingest', 'auto') as IngestMode;
 const jsonOut = opt('json');
@@ -90,7 +91,7 @@ for (const target of targets) {
     try {
       const docs = await loadDocs(files);
       const sim = path.join(target, 'sim');
-      const callsFile = provider === 'replay' && fs.existsSync(sim) ? fs.readdirSync(sim).filter((f) => f.endsWith('.calls.json')).sort().map((f) => path.join(sim, f))[0] : undefined;
+      const callsFile = provider === 'replay' && fs.existsSync(sim) ? fs.readdirSync(sim).filter((f) => (simName ? f === `${simName}.calls.json` : f.endsWith('.calls.json'))).sort().map((f) => path.join(sim, f))[0] : undefined;
       if (provider === 'replay' && !callsFile) { console.log(`  – ${truth.id}: no recorded calls (sim/*.calls.json), skipped`); continue; }
       const r = await run(docs, { callsFile, recordTo: recordPath(truth.id) });
       const rep = scoreInventory(truth, r.inventory, provider, r.priorAward);

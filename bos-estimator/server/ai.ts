@@ -591,3 +591,27 @@ export function topDownHeuristic(ctx: TopDownContext): TopDownEstimate {
 }
 
 export { DEFAULT_TOPDOWN };
+
+// ---------------------------------------------------------------------------------------------
+// Request preview for offline evaluation (scripts/sim-session.ts): exactly what the live loop sends the model on the
+// first turn of each pass — system prompt, tool definitions, document blocks (native PDF or text) and the pass intro.
+// ---------------------------------------------------------------------------------------------
+export interface RequestPreview {
+  system: string;
+  tools: Anthropic.Beta.BetaTool[];
+  passes: { names: string[]; intro: string; items: { title: string; doc: string; mode: 'native_pdf' | 'text'; pages?: number; text?: string }[] }[];
+}
+export function describeRequests(docs: DocInput[]): RequestPreview {
+  const st = createState(docs);
+  const ordered = docs.map((d, i) => ({ d, r: docRank(d, i) })).sort((a, b) => a.r - b.r).map((x) => x.d);
+  const passes = planPasses(planItems(ordered, new Map()));
+  return {
+    system: SYSTEM,
+    tools: extractionTools({ strict: true }),
+    passes: passes.map((pass, p) => ({
+      names: [...new Set(pass.map((i) => i.doc.name))],
+      intro: passIntro(docs, pass, p, passes.length, st),
+      items: pass.map((it) => ({ title: it.title, doc: it.doc.name, mode: it.doc.mode === 'native_pdf' && it.doc.pdfBase64 ? 'native_pdf' as const : 'text' as const, pages: it.doc.pages, text: it.text })),
+    })),
+  };
+}
