@@ -30,14 +30,15 @@ const close = (a: number | undefined, b: number | undefined, rel = 0.01, abs = 5
 /** Canonical quantity for a grounds kind: acres for turf, square feet for beds and paving, each for trees. */
 export function canonical(kind: string, g: { quantity: number; unit: GroundsArea['unit'] }): { qty: number; unit: string } {
   const area = { id: '', name: '', kind: kind as GroundsArea['kind'], quantity: g.quantity, unit: g.unit, confidence: 1 } as GroundsArea;
-  if (['improved_turf', 'semi_improved', 'unimproved', 'athletic_field'].includes(kind)) return { qty: g.unit === 'acres' ? g.quantity : groundsAcres(area), unit: 'acres' };
+  if (['improved_turf', 'semi_improved', 'unimproved', 'athletic_field'].includes(kind)) return { qty: g.unit === 'acres' ? g.quantity : g.unit === 'lf' ? 0 : groundsAcres(area), unit: 'acres' };
   if (kind === 'tree_canopy') return { qty: g.quantity, unit: 'each' };
   return { qty: groundsSqft(area), unit: 'sqft' };
 }
 
 export function scoreInventory(truth: FixtureTruth, inv: Inventory, provider: string, gotAward?: PriorAward): ScoreReport {
   const exp = truth.expect.facilities;
-  const got = [...inv.facilities];
+  // Rows the reader marked excluded / deleted / demolished / vacant are not in the inventory being estimated.
+  const got = inv.facilities.filter((f) => !f.status || f.status === 'in_scope');
   const used = new Set<number>();
   const matches: FacilityMatch[] = [];
   // pass 1: building number
@@ -64,7 +65,7 @@ export function scoreInventory(truth: FixtureTruth, inv: Inventory, provider: st
   }
   const matched = matches.filter((m) => m.got).length;
   const totalSfExpected = exp.reduce((s, f) => s + f.grossSqft, 0);
-  const totalSfGot = inv.facilities.reduce((s, f) => s + (f.grossSqft || 0), 0);
+  const totalSfGot = got.reduce((s, f) => s + (f.grossSqft || 0), 0);
 
   // grounds: compare totals per kind in canonical units
   const gExp = new Map<string, { qty: number; unit: string }>();

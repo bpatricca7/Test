@@ -30,7 +30,7 @@ export interface FloorMix {
   wood: number; // gym floors
 }
 
-export type ServiceLevel = 'daily_7' | 'daily_5' | '3x_week' | '2x_week' | 'weekly';
+export type ServiceLevel = 'daily_7' | 'daily_5' | '3x_week' | '2x_week' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly';
 
 export const SERVICE_LEVELS: { id: ServiceLevel; label: string; daysPerYear: number }[] = [
   { id: 'daily_7', label: 'Daily, 7 days/week', daysPerYear: 360 },
@@ -38,7 +38,26 @@ export const SERVICE_LEVELS: { id: ServiceLevel; label: string; daysPerYear: num
   { id: '3x_week', label: '3x per week', daysPerYear: 150 },
   { id: '2x_week', label: '2x per week', daysPerYear: 100 },
   { id: 'weekly', label: 'Weekly', daysPerYear: 50 },
+  { id: 'biweekly', label: 'Every two weeks', daysPerYear: 26 },
+  { id: 'monthly', label: 'Monthly', daysPerYear: 12 },
+  { id: 'quarterly', label: 'Quarterly', daysPerYear: 4 },
 ];
+
+/** Whether a facility counts in the estimate. Anything other than in_scope is shown but not estimated. */
+export type FacilityStatus = 'in_scope' | 'excluded' | 'deleted_by_amendment' | 'demolished' | 'vacant' | 'option_only';
+export const FACILITY_STATUSES: { id: FacilityStatus; label: string }[] = [
+  { id: 'in_scope', label: 'In scope' },
+  { id: 'excluded', label: 'Excluded' },
+  { id: 'deleted_by_amendment', label: 'Deleted by amendment' },
+  { id: 'demolished', label: 'Demolished' },
+  { id: 'vacant', label: 'Vacant / closed' },
+  { id: 'option_only', label: 'Option item only' },
+];
+export const isInScope = (f: { status?: FacilityStatus }) => !f.status || f.status === 'in_scope';
+
+/** Area units a document may print; values are always stored converted to square feet / acres. */
+export type AreaUnit = 'sf' | 'sm' | 'sy';
+export const SQFT_PER: Record<AreaUnit, number> = { sf: 1, sm: 10.7639, sy: 9 };
 
 export type ScopeItem = 'custodial' | 'floor_care' | 'dining' | 'grounds';
 
@@ -48,8 +67,16 @@ export interface SourceRef {
   excerpt?: string; // short quote from the RFP supporting the number
 }
 
+export interface MealPeriodHeadcount {
+  period: string; // Breakfast, Lunch, Dinner, Midnight, Brunch, Supper …
+  weekdayHeadcount?: number;
+  weekendHeadcount?: number;
+}
+
 export interface DiningProfile {
   seats?: number;
+  /** Per-period headcounts as printed; mealsPerDay is derived from them when present ((5 × weekday + 2 × weekend) / 7). */
+  mealPeriodsDetail?: MealPeriodHeadcount[];
   mealsPerDay: number; // headcount (all meal periods)
   mealPeriods: number; // e.g. 3 (B/L/D) or 4 (+ midnight)
   daysPerWeek: number; // 7 for most dining facilities
@@ -80,6 +107,17 @@ export interface Facility {
   notes?: string;
   /** Optional site position hint from the AI (0..1 normalized east/north). */
   siteHint?: { x: number; y: number };
+  /** Installation, campus or site when the package covers more than one (same number on two campuses = two buildings). */
+  campus?: string;
+  /** in_scope when absent. Other statuses stay visible in the inventory but are not estimated. */
+  status?: FacilityStatus;
+  statusReason?: string;
+  /** Area as printed when the document used another unit (grossSqft / cleanableSqft hold the converted values). */
+  originalArea?: { gross?: number; cleanable?: number; unit: AreaUnit };
+  /** Frequency wording exactly as printed (e.g. "M–F", "2x/month", "Bi-weekly"). */
+  serviceFrequencyText?: string;
+  /** Workload table the row came from (for completeness checks against printed totals). */
+  tableId?: string;
 }
 
 export type GroundsKind =
@@ -103,12 +141,15 @@ export const GROUNDS_KINDS: { id: GroundsKind; label: string; defaultUnit: Groun
   { id: 'tree_canopy', label: 'Trees', defaultUnit: 'each' },
 ];
 
-export type GroundsUnit = 'acres' | 'sqft' | 'sqyd' | 'lf' | 'each';
+export type GroundsUnit = 'acres' | 'hectares' | 'sqft' | 'sqm' | 'sqyd' | 'lf' | 'each';
 
 export interface GroundsArea {
   id: string;
   name: string;
   facilityId?: string; // when the RFP ties the area to a building
+  campus?: string;
+  /** The document's own label (e.g. "Type II", "Category B", "BASH area"). */
+  documentLabel?: string;
   kind: GroundsKind;
   quantity: number;
   unit: GroundsUnit;
@@ -195,6 +236,24 @@ export interface TopDownEstimate {
   generatedAt: string;
 }
 
+export type DocumentRole = 'solicitation' | 'pws' | 'attachment' | 'qa' | 'amendment' | 'other';
+
+export interface DocumentInfo {
+  name: string;
+  size: number;
+  pages?: number;
+  chars: number;
+  mode: 'native_pdf' | 'text';
+  /** spreadsheet / zip-member / docx etc. — what the reader actually parsed */
+  kind?: 'pdf' | 'docx' | 'xlsx' | 'csv' | 'text';
+  role?: DocumentRole;
+  /** Amendment number when role is amendment (orders precedence). */
+  amendment?: number;
+  /** Pages that are scanned images (no text layer). */
+  scannedPages?: number[];
+  warnings?: string[];
+}
+
 export interface ProjectMeta {
   id: string;
   name: string;
@@ -211,7 +270,7 @@ export interface Project extends ProjectMeta {
   topDown?: TopDownEstimate;
   topDownOverrides?: Partial<TopDownAssumptions>;
   ai: AiConfig;
-  documents: { name: string; size: number; pages?: number; chars: number; mode: 'native_pdf' | 'text' }[];
+  documents: DocumentInfo[];
   extraction?: { provider: 'claude' | 'heuristic'; model?: string; finishedAt: string; durationMs: number; usage?: { input: number; output: number } };
 }
 
@@ -232,7 +291,9 @@ export interface Assumptions {
 
 export type ExtractionEvent =
   | { type: 'status'; message: string; stage: 'reading' | 'ai' | 'merging' | 'done' }
-  | { type: 'document'; name: string; pages?: number; chars: number; mode: 'native_pdf' | 'text' }
+  | ({ type: 'document'; size?: number } & Omit<DocumentInfo, 'size'>)
+  | { type: 'warning'; message: string; file?: string }
+  | { type: 'progress'; registered: number; expected?: number; grounds?: number }
   | { type: 'ai_text'; text: string; kind?: 'text' | 'thinking' | 'tool' }
   | { type: 'facility'; facility: Facility }
   | { type: 'grounds'; area: GroundsArea }

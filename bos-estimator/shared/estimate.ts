@@ -4,7 +4,7 @@ import {
   CATEGORY_DEFAULTS, CREWS, FACTORS, GROWING_WEEKS_BY_CLIMATE, SNOW_EVENTS_BY_CLIMATE, crewMeta,
   type Crew, type Factor, type FrequencyRule,
 } from './factors';
-import { SERVICE_LEVELS, type Assumptions, type Facility, type FloorMix, type GroundsArea, type Inventory } from './types';
+import { SERVICE_LEVELS, isInScope, type Assumptions, type Facility, type FloorMix, type GroundsArea, type Inventory } from './types';
 
 export const DEFAULT_ASSUMPTIONS: Assumptions = {
   productiveHoursPerFte: 1776,
@@ -203,19 +203,26 @@ export function estimateFacility(f: Facility, a: Assumptions, overrides?: Record
   return { facilityId: f.id, resolved: r, lines, hoursByCrew, dailyHoursByCrew, totalHours: round(totalHours), fte: round(totalHours / a.productiveHoursPerFte, 2) };
 }
 
-export function groundsAcres(g: GroundsArea): number {
+export const ACRES_PER_HECTARE = 2.4710538;
+export const SQFT_PER_SQM = 10.7639;
+
+export function groundsAcres(g: Pick<GroundsArea, 'quantity' | 'unit'>): number {
   switch (g.unit) {
     case 'acres': return g.quantity;
+    case 'hectares': return g.quantity * ACRES_PER_HECTARE;
     case 'sqft': return g.quantity / 43560;
+    case 'sqm': return (g.quantity * SQFT_PER_SQM) / 43560;
     case 'sqyd': return (g.quantity * 9) / 43560;
     default: return 0;
   }
 }
 
-export function groundsSqft(g: GroundsArea): number {
+export function groundsSqft(g: Pick<GroundsArea, 'quantity' | 'unit'>): number {
   switch (g.unit) {
     case 'acres': return g.quantity * 43560;
+    case 'hectares': return g.quantity * ACRES_PER_HECTARE * 43560;
     case 'sqft': return g.quantity;
+    case 'sqm': return g.quantity * SQFT_PER_SQM;
     case 'sqyd': return g.quantity * 9;
     case 'lf': return g.quantity * 5; // assume 5-ft-wide walk when given in linear feet
     default: return 0;
@@ -262,8 +269,12 @@ export function estimateInventory(inv: Inventory, assumptionsIn: Partial<Assumpt
     contractYears: inv.site.contractYears ?? DEFAULT_ASSUMPTIONS.contractYears,
     ...assumptionsIn,
   };
-  const facilities = inv.facilities.map((f) => estimateFacility(f, a, overrides));
-  const grounds = inv.grounds.map((g) => estimateGrounds(g, a, overrides));
+  // Excluded / deleted / demolished / vacant facilities stay in the inventory for review but are not estimated.
+  const inScope = inv.facilities.filter(isInScope);
+  const inScopeIds = new Set(inScope.map((f) => f.id));
+  const facilities = inScope.map((f) => estimateFacility(f, a, overrides));
+  const groundsIn = inv.grounds.filter((g) => !g.facilityId || inScopeIds.has(g.facilityId) || !inv.facilities.some((f) => f.id === g.facilityId));
+  const grounds = groundsIn.map((g) => estimateGrounds(g, a, overrides));
 
   const hoursByCrew: Partial<Record<Crew, number>> = {};
   for (const e of [...facilities, ...grounds]) for (const [c, h] of Object.entries(e.hoursByCrew) as [Crew, number][]) hoursByCrew[c] = (hoursByCrew[c] ?? 0) + h;
@@ -303,14 +314,14 @@ export function estimateInventory(inv: Inventory, assumptionsIn: Partial<Assumpt
   }
 
   const metrics = {
-    grossSqft: inv.facilities.reduce((s, f) => s + (f.grossSqft || 0), 0),
+    grossSqft: inScope.reduce((s, f) => s + (f.grossSqft || 0), 0),
     cleanableSqft: facilities.reduce((s, e) => s + e.resolved.cleanableSqft, 0),
     acres: grounds.filter((g) => ['improved_turf', 'semi_improved', 'unimproved', 'athletic_field'].includes(g.area.kind)).reduce((s, g) => s + g.acres, 0),
-    pavedSqft: inv.grounds.filter((g) => g.kind === 'parking' || g.kind === 'sidewalk').reduce((s, g) => s + groundsSqft(g), 0),
-    bedSqft: inv.grounds.filter((g) => g.kind === 'shrub_bed').reduce((s, g) => s + groundsSqft(g), 0),
-    trees: inv.grounds.filter((g) => g.kind === 'tree_canopy').reduce((s, g) => s + g.quantity, 0),
-    mealsPerYear: inv.facilities.reduce((s, f) => s + (f.dining ? f.dining.mealsPerDay * (f.dining.daysPerWeek || 7) * 52 : 0), 0),
-    facilitiesCount: inv.facilities.length,
+    pavedSqft: groundsIn.filter((g) => g.kind === 'parking' || g.kind === 'sidewalk').reduce((s, g) => s + groundsSqft(g), 0),
+    bedSqft: groundsIn.filter((g) => g.kind === 'shrub_bed').reduce((s, g) => s + groundsSqft(g), 0),
+    trees: groundsIn.filter((g) => g.kind === 'tree_canopy').reduce((s, g) => s + g.quantity, 0),
+    mealsPerYear: inScope.reduce((s, f) => s + (f.dining && f.scope.includes('dining') ? f.dining.mealsPerDay * (f.dining.daysPerWeek || 7) * 52 : 0), 0),
+    facilitiesCount: inScope.length,
   };
 
   return { facilities, grounds, crews, directHours: round(directHours), directFte: round(directFte, 2), supervisionFte: round(supervisionFte, 2), supervisionHeadcount, totalFte: round(totalFte, 2), totalHeadcount, totalLaborCost, years, metrics };
