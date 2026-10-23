@@ -1,6 +1,6 @@
 {
   "id": "rfp-plus-addendum-revisions",
-  "title": "Army custodial PWS package: Attachment J-0001 TE-1 facility list (26 bldgs, zone subtotals, landscape PDF) + SF 30 Amendment 0002 (3 GSF corrections Was/Is, 2 buildings added, Bldg 118 deleted, revised totals) + Questions and Answers No. 1 (docx: incumbent, contract number, FY2025 obligations, Bldg 1207 floor-count correction)",
+  "title": "Army custodial PWS package: Attachment J-0001 PWS (Parts 1-7) with TE-1 facility list (26 bldgs, zone subtotals, landscape pages) + SF 30 Amendment 0002 (3 GSF corrections Was/Is, 2 buildings added, Bldg 118 deleted, revised totals) + Questions and Answers No. 1 (docx: incumbent, contract number, FY2025 obligations, Bldg 1207 floor-count correction)",
   "theme": "addenda-qa",
   "provenance": {
     "fidelity": "real-format",
@@ -46,7 +46,7 @@
         "note": "Fort Sill custodial solicitation Q&A of 75 contractor questions on the PWS and Technical Exhibits. Model for grouping questions by PWS / Technical Exhibit reference."
       }
     ],
-    "notes": "Layout and wording follow real SF 30 amendments and solicitation Q&A documents found in search excerpts (the documents themselves could not be downloaded). No facility rows are copied: Fort Calder, the solicitation and contract numbers, the incumbent, the contracting officer, every building, square footage, floor count, frequency and dollar value are illustrative. SF 30 block labels and the Block 11 acknowledgment paragraph follow the standard form (Rev. 11/2016)."
+    "notes": "Layout and wording follow real SF 30 amendments and solicitation Q&A documents found in search excerpts (the documents themselves could not be downloaded). The PWS follows the standard Army PWS part structure (Part 1 General Information, Part 2 Definitions and Acronyms, Part 3 Government-Furnished, Part 4 Contractor-Furnished, Part 5 Specific Tasks, Part 6 Applicable Publications, Part 7 Technical Exhibits). No facility rows are copied: Fort Calder, the solicitation and contract numbers, the incumbent, the contracting officer, every building, square footage, floor count, frequency and dollar value are illustrative. SF 30 block labels and the Block 11 acknowledgment paragraph follow the standard form (Rev. 11/2016). The issuing-office code W9124D could not be checked against the real DoDAAC list."
   },
   "inputs": [
     {
@@ -193,7 +193,7 @@
         "grossSqft": 11960,
         "floors": 2,
         "serviceLevel": "daily_5",
-        "category": "maintenance"
+        "category": "admin"
       },
       {
         "buildingNumber": "2101",
@@ -249,7 +249,7 @@
         "grossSqft": 8640,
         "floors": 1,
         "serviceLevel": "weekly",
-        "category": "warehouse"
+        "category": "admin"
       },
       {
         "buildingNumber": "2130",
@@ -292,8 +292,7 @@
       "solicitation": "W9124D-26-R-0019"
     },
     "priorAward": {
-      "spendToDate": 4812330,
-      "spendPeriodMonths": 12,
+      "annualValue": 4812330,
       "incumbent": "Ostrander Facility Group, LLC",
       "contractNumber": "W9124D-21-C-0007",
       "awardYear": 2021
@@ -301,19 +300,20 @@
   },
   "traps": [
     "Three documents must be merged in precedence order: base TE-1 (PDF) -> Amendment 0002 (SF 30 PDF) -> Questions and Answers No. 1 (DOCX). Truth is the post-amendment, post-Q&A list of 27 facilities totaling 627,675 GSF.",
-    "Amendment 0002 paragraph 3.1 prints both the old and the new GSF in Was / Is Changed To columns (multi-row header): Bldg 104 18,240 -> 19,860, Bldg 1210 31,640 -> 33,120, Bldg 2101 54,780 -> 52,980 (a decrease). Take the \"Is Changed To\" value; the base TE-1 values are superseded.",
+    "Amendment 0002 paragraph 3.1 prints both the old and the new GSF in Was / Is Changed To columns (multi-row header): Bldg 104 18,240 -> 19,860 (field-verified second-floor addition over the east wing), Bldg 1210 31,640 -> 33,120, Bldg 2101 54,780 -> 52,980 (a decrease: an 1,800 SF racquetball wing demolished in October 2025 was still in the real property record). Take the \"Is Changed To\" value; the base TE-1 values are superseded.",
     "Building 118 (7,920 GSF, Weekly) is in the base TE-1 table with full data but \"is deleted from the requirement in its entirety\" by Amendment 0002 paragraph 3.2 (Item 7 reserved, items not renumbered). It must be excluded; the Q&A (Question 5) repeats the deletion.",
-    "Two facilities exist only in the amendment (paragraph 3.3, TE-1 items 27 and 28): Bldg 1218 Battalion Headquarters, 3rd Battalion (2 floors, 23,700 GSF, Daily M-F) and Bldg 2145 Soldier Readiness Processing (SRP) Center (1 floor, 17,385 GSF, Daily M-F).",
+    "Two facilities exist only in the amendment (paragraph 3.3, TE-1 items 27 and 28): Bldg 1218 Battalion Headquarters, 3rd Battalion (2 floors, 23,700 GSF, Daily M-F; remarks \"New construction; beneficial occupancy date 1 August 2026\") and Bldg 2145 Soldier Readiness Processing (SRP) Center (1 floor, 17,385 GSF, Daily M-F).",
     "Floor count for Bldg 1207 is corrected only in the Q&A (Question 6): TE-1 says 1 floor, the response says \"corrected from 1 to 2\" and GSF 14,880 is unchanged. The question text itself restates the wrong value.",
-    "Q&A Question 4 quotes the superseded Bldg 2101 figure (54,780 GSF) in the question; the answer points to the amendment value 52,980. Q&A Question 10 and 11 restate unchanged GSF (11,960 and 44,300); they are not new facilities.",
+    "Q&A Question 4 quotes the superseded Bldg 2101 figure (54,780 GSF) in the question; the answer explains the demolished 1,800 SF racquetball wing and points to the amendment value 52,980. Q&A Question 10 and 11 restate unchanged GSF (11,960 and 44,300); they are not new facilities.",
     "Totals and subtotals are not facilities: base TE-1 has three \"Zone N Subtotal\" rows and a \"TOTAL - TE-1 (26 FACILITIES) 593,210\" row; Amendment 0002 paragraph 3.4 has a Was/Is totals table (191,140 / 184,840; 160,355 / 185,535; 241,715 / 257,300; 593,210 / 627,675) and paragraph 2 restates the PWS 1.3 total FROM 593,210 TO 627,675.",
-    "Distractor buildings that are not in scope: Bldg 131 (Vehicle Storage, 6,400 SF in Q&A Question 7) and Bldg 2150 (Thrift Shop, TE-1 note a). Bldg 1220 footnote 2 mentions maintenance bays of approximately 64,200 SF that are excluded; GSF stays 11,960.",
+    "Distractor buildings and areas that are not in scope: Bldg 131 (Vehicle Storage, 6,400 SF in Q&A Question 7), Bldg 2150 (Thrift Shop, TE-1 note a), and the ~600 SF Government-furnished contractor project office in Bldg 2124 Rooms 104-106 (PWS 3.2; not serviced, not a facility). Bldg 1220 footnote 2 mentions maintenance bays of approximately 64,200 SF that are excluded; GSF stays 11,960.",
+    "Partially serviced buildings: GSF for Bldg 1220 (11,960, \"administrative core only (offices, training room, break room and latrines)\", footnote 2) and Bldg 2124 (8,640, \"Office and restroom areas only. The warehouse floor is maintained by the Supply Support Activity\", footnote 5) is the serviced portion only (footnote 1 and PWS Part 2 define GSF that way). The in-scope space is office/latrine space, so the category is admin, not maintenance or warehouse; a maintenance (cleanable share 0.4) or warehouse (0.3) category would discount space that is already all office. Bldg 2120 CIF stays warehouse: its full 44,300 GSF, including the warehouse floor, is serviced (Q&A 11).",
     "Bldgs 1203 and 1205 have identical GSF (22,150) and nearly identical names; both are real line items, not duplicates. Bldg 1218 (3rd Battalion) is a third similar name added by amendment.",
     "Superscript footnote markers sit directly after building numbers in TE-1 (118³, 1220², 2101⁴, 2124⁵) and after the GSF column header; in the pdftotext layer they glue onto the number (\"1183\", \"21014\", \"21245\"; on the wrapped 1220 row the ² drops to its own line). The building numbers are 118, 1220, 2101 and 2124.",
-    "TE-1 spans two landscape pages with a repeated two-row grouped header (Facility / Workload / Service) and dark zone banner rows; pages 1-2 of the PWS are portrait text with a period-of-performance table and a frequency-definition table (not facilities).",
-    "Service frequency is spelled out per row: \"Daily (M-F)\" = daily_5, \"Daily (7 Days)\" = daily_7, \"3x Weekly\", \"2x Weekly\", \"Weekly\"; PWS 5.1 defines them in a table. Bldg 2101 service hours \"0400-0530 and 1300-1500\" and remarks such as \"Locker rooms 2x daily\" must not change the frequency.",
-    "Prior award comes only from the Q&A (Question 1): incumbent Ostrander Facility Group, LLC, contract W9124D-21-C-0007 awarded 24 September 2021, \"Total obligations for FY2025 were $4,812,330 (1 October 2024 through 30 September 2025)\" = spendToDate 4,812,330 over 12 months. No total contract value is given. Question 3 states $186,415 of over-and-above work orders that is already included in, not in addition to, the FY2025 obligations.",
+    "The PWS is 6 pages: pages 1-4 are portrait text (Parts 1-7, a period-of-performance table, a definitions table, a frequency-definition table and an applicable-publications table - none are facilities) and TE-1 spans landscape pages 5-6 with a repeated two-row grouped header (Facility / Workload / Service) and dark zone banner rows.",
+    "Service frequency is spelled out per row: \"Daily (M-F)\" = daily_5, \"Daily (7 Days)\" = daily_7, \"3x Weekly\", \"2x Weekly\", \"Weekly\"; PWS 5.1 defines them in a table. Bldg 2101 service hours \"0400-0530 and 1300-1500\" and remarks such as \"Locker rooms 2x daily\" must not change the frequency. Bldg 2140 is 2x_week: its remarks say \"Two services per week; Building Custodian may move a service day to follow a scheduled event (no added services)\" - events move the day, not the count.",
+    "Prior award comes only from the Q&A (Question 1): incumbent Ostrander Facility Group, LLC, contract W9124D-21-C-0007 awarded 24 September 2021, \"Total obligations for FY2025 were $4,812,330 (1 October 2024 through 30 September 2025)\". One fiscal year of obligations is a stated annual value (annualValue 4,812,330), not spend to date (the contract has run since 2021); this matches city-parks-mowing-pdf (\"annual cost ... for calendar year 2025\") and k12-district-custodial-pdf. No total contract value is given, so periodMonths is not expected even though the term (12-month base + four 12-month options) is stated - the same convention as univ-custodial-inline-pdf. Question 3 states $186,415 of over-and-above work orders that is already included in, not in addition to, the FY2025 obligations: the recurring firm-fixed-price baseline for a top-down cross-check is about $4,625,915 (3.9% lower). Truth records the stated $4,812,330; the PriorAward type has no field for the recurring baseline.",
     "Contract term: 12-month base + four 12-month options = 5 contract years; the FAR 52.217-8 six-month extension and the 30-day phase-in are not additional contract years.",
-    "Package also states other dates and numbers that are not workload: proposal due date extended from 30 June 2026 to 10 July 2026, requisition number 0011837245, FY2026 demolition program, beneficial occupancy date 1 August 2026."
+    "Package also states other dates and numbers that are not workload: proposal due date extended from 30 June 2026 to 10 July 2026, requisition number 0011837245, FY2026 demolition program, beneficial occupancy date 1 August 2026, the 28 May 2026 site visit and 2 June question deadline set by Amendment 0001 (not in the package; it did not change TE-1, as the Amendment 0002 \"Was\" totals equal the original TE-1)."
   ]
 }

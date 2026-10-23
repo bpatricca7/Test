@@ -30,7 +30,7 @@
         "note": "Real GSA building number AR0057ZZ (state code + 4 digits + ZZ) seen in search excerpt; used only as the pattern for the illustrative VA0xxxZZ numbers."
       }
     ],
-    "notes": "Layout and wording follow GSA PBS national custodial / consolidated services specifications (Exhibit J.1 Building Information Sheet prepared with the Custodial Square Footage Tool, one sheet per building, standard vs. above-standard services, once-a-year window washing, snow removal at entrances and walks). The J.1 form fields beyond Building Number / Name / Address were not visible in any search excerpt, so the sheet layout (sections A–F) is a reconstruction. Every building, building number, address, square footage, fixture count, grounds quantity, the solicitation number 47PC0326R0014, the incumbent (Caldera Ridge Facility Services, LLC), its contract 47PC0321C0042 and all dollar values are illustrative. No rows are copied from a real document."
+    "notes": "Layout and wording follow GSA PBS national custodial / consolidated services specifications (Exhibit J.1 Building Information Sheet prepared with the Custodial Square Footage Tool, one sheet per building, standard vs. above-standard services, once-a-year window washing, snow removal at entrances and walks). The J.1 form fields beyond Building Number / Name / Address were not visible in any search excerpt, so the sheet layout (sections A-F) is a reconstruction. Every building, building number, address, square footage, fixture count, grounds quantity, the solicitation number 47PC0326R0014, the incumbent (Caldera Ridge Facility Services, LLC), its contract 47PC0322C0042 (FY digits 22 because it was awarded in December 2021, i.e. FY2022), the wage determination numbers in Attachment J.2 and all dollar values are illustrative. The '47PC03' activity code and the '3PQ' office symbol follow the GSA PIID / office-symbol pattern but could not be verified (web search budget exhausted). Cities are real (Winchester, Harrisonburg, Staunton, VA); the fictional courthouse is placed in Harrisonburg, where the W.D. Va. holds court. No rows are copied from a real document."
   },
   "inputs": [
     {
@@ -87,7 +87,6 @@
         "cleanableSqft": 40670,
         "floors": 2,
         "restroomFixtures": 24,
-        "serviceLevel": "daily_5",
         "category": "warehouse"
       }
     ],
@@ -205,6 +204,7 @@
     "site": {
       "contractYears": 5,
       "climateZone": "temperate",
+      "installationName": "Shenandoah Valley Federal Buildings",
       "solicitation": "47PC0326R0014"
     },
     "priorAward": {
@@ -212,27 +212,31 @@
       "periodMonths": 60,
       "annualValue": 1146880,
       "incumbent": "Caldera Ridge Facility Services, LLC",
-      "contractNumber": "47PC0321C0042",
+      "contractNumber": "47PC0322C0042",
       "awardYear": 2021
     }
   },
   "traps": [
-    "Key/value layout, not a row table: each building is its own Exhibit J.1 form (one per page) with label | value | label | value cells, so building number, name, gross SF, floors and fixture counts must be gathered from different cells of one sheet and kept together per building.",
-    "Three building-size numbers per sheet: Gross Square Feet (truth grossSqft), Rentable Square Feet and ABOA SF (information only). Custodial (cleanable) SF is the Section C total, not gross or rentable.",
-    "Section B price schedule is the only row table and lists Custodial Sq. Ft. per building (88,900 / 52,060 / 22,860 / 15,360 / 40,670) with abbreviated names (\"Whitcomb FB-USCH, Winchester\"); a reader that takes those as gross SF gets every SF wrong. Its \"Total Custodial Square Feet – CLIN 0001\" row (219,850) is not a building.",
+    "Key/value layout, not a row table: each building is its own Exhibit J.1 form with label | value | label | value cells, so building number, name, gross SF, floors and fixture counts must be gathered from different cells of one sheet and kept together per building. In the DOCX the six sheets follow one another in the body with no page breaks; each sheet is five Word tables (Sections A-B, C, excluded space, D, E-F with remarks) plus caption paragraphs, and mammoth puts every cell on its own line.",
+    "Three building-size numbers per sheet: Gross Square Feet (truth grossSqft), Rentable Square Feet and ABOA SF (information only). Custodial (cleanable) SF is the Section C total, not gross, rentable or ABOA. ABOA can sit close to or below custodial SF (VA0402ZZ: ABOA 40,390, custodial 40,670) because custodial SF includes lobbies, restrooms and stairwells that ABOA excludes, and ABOA includes the tenant-cleaned evidence cage.",
+    "Section B price schedule is the only row table and lists Custodial Sq. Ft. per building (88,900 / 52,060 / 22,860 / 15,360 / 40,670) with abbreviated names (\"Whitcomb FB-USCH, Harrisonburg\", \"Halloran FB, Winchester\"); a reader that takes those as gross SF gets every SF wrong. Its \"Total Custodial Square Feet – CLIN 0001\" row (219,850) is not a building.",
     "Amendment 0001 deletes VA0355ZZ Federal Records Annex (22,480 GSF, 16,920 custodial SF, 14 fixtures). Its J.1 sheet is still in the conformed package under a \"DELETED BY AMENDMENT 0001 – RETAINED FOR REFERENCE ONLY\" banner and CLIN 0001AF reads DELETED; it is excluded from facilities and grounds.",
+    "Banner placement: in the DOCX body the \"DELETED BY AMENDMENT 0001 – RETAINED FOR REFERENCE ONLY. Building VA0355ZZ is not part of this solicitation\" paragraph comes after the \"Page J.1-6 of 6\" header line but BEFORE the \"EXHIBIT J.1 – BUILDING INFORMATION SHEET\" heading of the VA0355ZZ sheet. A reader that splits sheets at that heading attaches the banner to the end of the VA0402ZZ chunk and may drop VA0402ZZ (in scope) or keep VA0355ZZ (deleted). The banner names VA0355ZZ, which resolves it.",
     "Amendment 0001 revises VA0241ZZ custodial SF from 21,460 to 22,860 (Suite 210 added); the sheet shows \"22,860 (revised A0001; was 21,460)\" and the office line \"15,330 (revised A0001; was 13,930)\". Truth cleanableSqft = 22,860.",
-    "Each sheet lists \"Space not included in Custodial Square Feet\" (mechanical rooms, USMS cellblock, child care center, USPS space, secure storage) with square footage; these must not be added to cleanable SF and are not facilities.",
-    "Floors are split into \"Floors Above Grade\" and \"Floors Below Grade\"; Q1 in the amendment says total floors = the sum. VA0123ZZ = 4 + 1 basement = 5, VA0241ZZ = 2 + 1 basement = 3, VA0402ZZ = \"2 (incl. 6,100 SF office mezzanine)\" = 2.",
+    "Each sheet lists \"Space not included in Custodial Square Feet\" (mechanical rooms, USMS cellblock, child care center, USPS space, secure storage cage, inactive records vault) with square footage; these must not be added to cleanable SF and are not facilities.",
+    "Floors are split into \"Floors Above Grade\" and \"Floors Below Grade\". Amendment answer A1 says floors serviced = above + below grade (five at VA0123ZZ = 4 + 1 basement, three at VA0241ZZ = 2 + 1 basement) and that the VA0402ZZ mezzanine is its second floor; the sheet reads \"2 (incl. 6,100 SF office mezzanine)\" = 2.",
     "Restroom fixtures: truth = Section D TOTAL row (water closets + urinals + lavatories + showers). \"No. of Restrooms\" (26, 10, 5, 6, 6) sits next to it, and drinking fountains and service sinks are listed below the table \"not included in the restroom fixture total\".",
-    "Two-row fixture table header (\"Plumbing Fixtures\" spans Water Closets / Urinals / Lavatories / Showers).",
+    "Two-row fixture table header (\"Plumbing Fixtures\" spans Water Closets / Urinals / Lavatories / Showers). The DOCX has no vertical merge, so the second header row has empty cells under Restroom Type, No. of Restrooms and Fixtures.",
     "Glass square feet (exterior/interior, one side) are window-washing quantities, not floor area.",
     "Grounds per building: Landscaped / Improved Grounds -> improved_turf, Parking Areas -> parking, Sidewalks, Plazas and Steps -> sidewalk. VA0318ZZ gives landscaped area in square feet (9,600 SF, about 0.22 acre); other sheets in acres. Total Site Area (3.10 / 4.60 / 0.82 / 2.40 / 8.75 acres) is information only and is not a grounds quantity.",
     "VA0241ZZ grounds (0.30 acre, 14,200 SF parking, 3,900 SF walks) are \"Not in contract (maintained by USPS)\"; only snow removal at the federal entrance is in scope, so no grounds are expected for that building. CLIN 0002 confirms grounds at VA0123ZZ, VA0187ZZ, VA0318ZZ and VA0402ZZ only.",
     "VA0402ZZ remarks mention 4.2 acres of unmaintained wooded buffer and VA0187ZZ remarks a 0.18-acre playground maintained by the child care provider; neither is a contract grounds quantity.",
+    "VA0402ZZ mixed frequencies: the building is serviced Monday-Friday on a day shift, but Section C schedules 28,870 of its 40,670 custodial SF weekly (warehouse floor 22,400, shops 3,950, loading dock 2,100, stairwells 420) and only 11,800 SF daily (office 8,640, lobby 1,420, restrooms/locker rooms 1,180, break room 560). One facility-level service level cannot represent this (daily_5 bills 250 sweeps a year on the warehouse floor; weekly or 2x_week under-services the office and restrooms), so serviceLevel is deliberately omitted from the truth for VA0402ZZ and is not scored. An estimator should split the building or set the warehouse floor tasks to weekly. The other four buildings are daily_5: all their space is Daily except weekly stairwells/docks and monthly storage.",
     "Building numbers are alphanumeric GSA numbers (VA0123ZZ), not integers.",
     "Contract term: 12-month base + four 12-month options = 5 contract years; the FAR 52.217-8 six-month extension is not a contract year.",
-    "Prior award is in amendment Q&A A3: contract 47PC0321C0042, Caldera Ridge Facility Services, LLC, awarded December 2021, 60 months, total $5,612,350; current option year $1,146,880. The $75,000 NTE for Above Standard Services (CLIN 0003) is not a prior-award value.",
-    "Running header repeats the solicitation number and \"Section J, Exhibit J.1 – Page J.1-n of 6\" on every page; a CUI footer repeats on every page."
+    "Prior award is in amendment Q&A A3: contract 47PC0322C0042, Caldera Ridge Facility Services, LLC, awarded December 2021, 60 months, total $5,612,350; current option year $1,146,880. The $75,000 NTE for Above Standard Services (CLIN 0003) is not a prior-award value.",
+    "Prior-award scope differs from the new scope: A3 says the incumbent contract covers six buildings including VA0355ZZ (235,370 custodial SF in total), grounds at five buildings including VA0355ZZ (0.65 acre turf, 18,900 SF parking, 1,480 SF walks), and not VA0241ZZ Suite 210 (1,400 SF). The new custodial scope is 219,850 SF = 235,370 - 16,920 (VA0355ZZ) + 1,400 (Suite 210), i.e. 93.4% of the incumbent's (6.6% less), and improved turf drops from about 7.57 to 6.92 acres. A top-down cross-check from the $1,146,880 option-year value must be scaled down for this (custodial roughly x0.934) before it is compared with the bottom-up FTEs. priorAward truth records the values as stated, unscaled; 235,370 is neither a facility nor a CLIN total.",
+    "C.1.5 and the Section J list of attachments name the Service Contract Labor Standards wage determinations (Attachment J.2: two wage determinations covering Winchester / Frederick County and Harrisonburg, Rockingham County, Staunton / Augusta County) and give page counts and dates for attachments J.1-J.5; none of these numbers are building data.",
+    "The page-header line (\"Solicitation No. 47PC0326R0014 (Conformed through Amendment 0001) — Shenandoah Valley Federal Buildings … Section J, Exhibit J.1 – Page J.1-n of 6\") and the CUI line are ordinary body paragraphs repeated inline before and after each section and sheet. The DOCX has no Word header/footer parts and no page breaks, so they are noise text in the flow, not page furniture; the installation name in them is \"Shenandoah Valley Federal Buildings\"."
   ]
 }

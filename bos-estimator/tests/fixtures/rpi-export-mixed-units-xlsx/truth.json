@@ -1,6 +1,6 @@
 {
   "id": "rpi-export-mixed-units-xlsx",
-  "title": "Army real property inventory (GFEBS) export workbook with mixed units of measure (89 records: SF buildings, SY parking/roads, AC grounds, LF/EA/KW/GA/MB structures) plus a one-page scope memo PDF",
+  "title": "Army real property inventory (GFEBS) export workbook with mixed asset types and units of measure (89 records: SF buildings and an SF structure, SY parking/roads, AC grounds, LF/EA/KV/KW/GA/MB structures and utilities) plus a one-page scope memo PDF",
   "theme": "military-bos",
   "provenance": {
     "fidelity": "real-format",
@@ -30,7 +30,7 @@
         "note": "NG Pam 210-20: RPLANS compares real property assets identified in the RPI with calculated requirements (RPI extract as a planning data source)."
       }
     ],
-    "notes": "Column set and unit-of-measure codes follow DoD real property record fields (DD 1354 / DoDI 4165.14) and Army CATCODE conventions; the memo format follows Army office memoranda. The installation (Fort Tolland), solicitation number, every facility number, name, RPUID, CATCODE assignment (other than the confirmed 72111/72210/85210 titles), quantity, floor count and status are illustrative."
+    "notes": "Column set and unit-of-measure codes follow DoD real property record fields (DD 1354 / DoDI 4165.14) and Army CATCODE conventions; the memo format follows Army office memoranda (MEMORANDUM THRU the contracting officer FOR prospective offerors). The installation (Fort Tolland), solicitation number, every facility number, name, RPUID, RPA type assignment, CATCODE assignment (other than the confirmed 72111/72210/85210 titles), quantity, floor count, year built and status are illustrative. The RPA_TYPE values (BUILDING / STRUCTURE / LINEAR STRUCTURE / LAND) and the KV unit for the substation follow DoD real property asset-type and unit-of-measure conventions as recalled, not copied from a document found in this session."
   },
   "inputs": [
     {
@@ -111,8 +111,7 @@
         "buildingNumber": "00122",
         "name": "POST LIBRARY",
         "grossSqft": 9600,
-        "floors": 1,
-        "category": "community"
+        "floors": 1
       },
       {
         "buildingNumber": "00125",
@@ -138,8 +137,7 @@
         "buildingNumber": "00137",
         "name": "POST OFFICE",
         "grossSqft": 4300,
-        "floors": 1,
-        "category": "community"
+        "floors": 1
       },
       {
         "buildingNumber": "00140",
@@ -230,12 +228,6 @@
         "floors": 1
       },
       {
-        "buildingNumber": "02221",
-        "name": "COVERED STORAGE SHED (POLE BARN)",
-        "grossSqft": 6000,
-        "category": "warehouse"
-      },
-      {
         "buildingNumber": "03301",
         "name": "AIRCRAFT MAINTENANCE HANGAR",
         "grossSqft": 86200,
@@ -246,8 +238,7 @@
         "buildingNumber": "03303",
         "name": "AIRFIELD OPERATIONS",
         "grossSqft": 9450,
-        "floors": 2,
-        "category": "admin"
+        "floors": 2
       },
       {
         "buildingNumber": "03305",
@@ -260,8 +251,7 @@
         "buildingNumber": "03307",
         "name": "FLIGHT SIMULATOR BUILDING",
         "grossSqft": 8200,
-        "floors": 1,
-        "category": "education"
+        "floors": 1
       },
       {
         "buildingNumber": "03309",
@@ -289,84 +279,84 @@
         "category": "education"
       },
       {
-        "buildingNumber": "1101",
+        "buildingNumber": "01101",
         "name": "UEPH BARRACKS",
         "grossSqft": 58750,
         "floors": 3,
         "category": "barracks"
       },
       {
-        "buildingNumber": "1103",
+        "buildingNumber": "01103",
         "name": "UEPH BARRACKS",
         "grossSqft": 58750,
         "floors": 3,
         "category": "barracks"
       },
       {
-        "buildingNumber": "1105",
+        "buildingNumber": "01105",
         "name": "UEPH BARRACKS",
         "grossSqft": 58750,
         "floors": 3,
         "category": "barracks"
       },
       {
-        "buildingNumber": "1107",
+        "buildingNumber": "01107",
         "name": "DINING FACILITY",
         "grossSqft": 21800,
         "floors": 1,
         "category": "dining"
       },
       {
-        "buildingNumber": "1109",
+        "buildingNumber": "01109",
         "name": "BATTALION HEADQUARTERS",
         "grossSqft": 15300,
         "floors": 2,
         "category": "admin"
       },
       {
-        "buildingNumber": "1111",
+        "buildingNumber": "01111",
         "name": "COMPANY OPERATIONS FACILITY",
         "grossSqft": 22950,
         "floors": 1,
         "category": "admin"
       },
       {
-        "buildingNumber": "1113",
+        "buildingNumber": "01113",
         "name": "BRIGADE HEADQUARTERS",
         "grossSqft": 26400,
         "floors": 2,
         "category": "admin"
       },
       {
-        "buildingNumber": "1117",
+        "buildingNumber": "01117",
         "name": "GENERAL INSTRUCTION BUILDING",
         "grossSqft": 12750,
         "floors": 1,
         "category": "education"
       },
       {
-        "buildingNumber": "1119",
+        "buildingNumber": "01119",
         "name": "UNACCOMPANIED OFFICER QUARTERS",
         "grossSqft": 24600,
         "floors": 3,
         "category": "barracks"
       },
       {
-        "buildingNumber": "1121",
+        "buildingNumber": "01121",
         "name": "TROOP MEDICAL CLINIC",
         "grossSqft": 7400,
         "floors": 1,
         "category": "medical"
       },
       {
-        "buildingNumber": "1123",
+        "buildingNumber": "01123",
         "name": "COMMUNITY ACTIVITY CENTER",
         "grossSqft": 9100,
         "floors": 1,
         "category": "community"
       },
       {
-        "buildingNumber": "1125",
+        "buildingNumber": "01125",
         "name": "TROOP AREA FITNESS CENTER",
         "grossSqft": 38600,
         "floors": 2,
@@ -379,31 +369,31 @@
         "kind": "improved_turf",
         "quantity": 42.62,
         "unit": "acres",
-        "name": "GR001 IMPROVED GROUNDS - MAIN POST"
+        "name": "09301 IMPROVED GROUNDS - MAIN POST"
       },
       {
         "kind": "improved_turf",
         "quantity": 28.35,
         "unit": "acres",
-        "name": "GR002 IMPROVED GROUNDS - TROOP AREA"
+        "name": "09302 IMPROVED GROUNDS - TROOP AREA"
       },
       {
         "kind": "improved_turf",
         "quantity": 6.4,
         "unit": "acres",
-        "name": "GR003 IMPROVED GROUNDS - AIRFIELD"
+        "name": "09303 IMPROVED GROUNDS - AIRFIELD"
       },
       {
         "kind": "semi_improved",
         "quantity": 64.08,
         "unit": "acres",
-        "name": "GR010 SEMI-IMPROVED GROUNDS - CANTONMENT"
+        "name": "09310 SEMI-IMPROVED GROUNDS - CANTONMENT"
       },
       {
         "kind": "semi_improved",
         "quantity": 38.5,
         "unit": "acres",
-        "name": "GR011 SEMI-IMPROVED GROUNDS - AIRFIELD INFIELD"
+        "name": "09311 SEMI-IMPROVED GROUNDS - AIRFIELD INFIELD"
       },
       {
         "kind": "parking",
@@ -412,7 +402,7 @@
         "buildingNumbers": [
           "00101"
         ],
-        "name": "PK101 POV PARKING - BLDG 00101"
+        "name": "00191 POV PARKING - BLDG 00101"
       },
       {
         "kind": "parking",
@@ -421,19 +411,19 @@
         "buildingNumbers": [
           "00110"
         ],
-        "name": "PK110 POV PARKING - BLDG 00110"
+        "name": "00192 POV PARKING - BLDG 00110"
       },
       {
         "kind": "parking",
         "quantity": 9300,
         "unit": "sqyd",
-        "name": "PK1101 POV PARKING - BARRACKS LOT A"
+        "name": "01191 POV PARKING - BARRACKS LOT A"
       },
       {
         "kind": "parking",
         "quantity": 8760,
         "unit": "sqyd",
-        "name": "PK1102 POV PARKING - BARRACKS LOT B"
+        "name": "01192 POV PARKING - BARRACKS LOT B"
       },
       {
         "kind": "parking",
@@ -442,7 +432,7 @@
         "buildingNumbers": [
           "00118"
         ],
-        "name": "PK118 POV PARKING - BLDG 00118"
+        "name": "00193 POV PARKING - BLDG 00118"
       },
       {
         "kind": "parking",
@@ -451,7 +441,7 @@
         "buildingNumbers": [
           "02201"
         ],
-        "name": "PK201 MOTOR POOL HARDSTAND - BLDG 02201"
+        "name": "02291 MOTOR POOL HARDSTAND - BLDG 02201"
       },
       {
         "kind": "parking",
@@ -460,13 +450,13 @@
         "buildingNumbers": [
           "02203"
         ],
-        "name": "PK203 TEMF HARDSTAND - BLDG 02203"
+        "name": "02293 TEMF HARDSTAND - BLDG 02203"
       },
       {
         "kind": "parking",
         "quantity": 3150,
         "unit": "sqyd",
-        "name": "PK301 AIRFIELD POV PARKING"
+        "name": "03391 AIRFIELD POV PARKING"
       }
     ],
     "site": {
@@ -475,19 +465,22 @@
     }
   },
   "traps": [
-    "Single worksheet with 89 records of mixed units in one TOTAL_UM_QTY column (displayed with format #,##0.00): only PRIMARY_UM = SF rows with FAC_STATUS ACTIVE are facilities (48).",
+    "Single worksheet with 89 records and 11 columns (RPUID | FACILITY_NUMBER | FACILITY_NAME | RPA_TYPE | CATCODE | CATCODE_TITLE | PRIMARY_UM | TOTAL_UM_QTY | FLOORS | YEAR_BUILT | FAC_STATUS). Mixed units share one TOTAL_UM_QTY column (displayed with format #,##0.00): only RPA_TYPE = BUILDING rows with PRIMARY_UM = SF and FAC_STATUS ACTIVE are facilities (47, 940,200 SF).",
+    "02221 COVERED STORAGE SHED (POLE BARN) is recorded in SF (6,000) and is ACTIVE, but its RPA_TYPE is STRUCTURE (FLOORS blank). Memo para 3 puts structures recorded in SF out of scope (open-sided storage sheds get no custodial service), so a reader that keys on PRIMARY_UM = SF alone overstates by one facility and 6,000 SF.",
+    "08201 CENTRAL HEATING PLANT is RPA_TYPE BUILDING with FLOORS 1, but its primary unit is MB (24,500 thousand BTU/h) and utility plant buildings (CATCODE 81xxx–84xxx) are out of scope: not a facility, and 24,500 is not square feet.",
     "5 SF building rows are excluded by status: 00130 OLD POST HEADQUARTERS (VACANT) (CLOSED); 00132 BOWLING CENTER (DISPOSED); 02207 GENERAL PURPOSE WAREHOUSE (CLOSED); 1115 UEPH BARRACKS (ROLLING PIN) (DISPOSED); T0230 MODULAR ADMIN BUILDING (DISPOSED).",
-    "Parking rows (CATCODE 85210 organizational hardstands and 85215 POV lots) are in SY and go to grounds parking in sqyd: 8 active rows totalling 98,810 SY (= 889,290 SF). PK130 (CLOSED) is excluded. Parking rows whose name cites \"BLDG 0xxxx\" carry that building number.",
-    "Roads (85110/85120, 5 rows, 126,050 SY) and the vehicle wash platform (21470, 2,950 SY) are also SY but out of scope per memo para 3: neither parking nor facilities.",
-    "Improved grounds (93210, AC) → improved_turf and semi-improved grounds (93220, AC) → semi_improved are in scope; GR004 (DISPOSED, 11.2 AC) is excluded.",
-    "Unimproved grounds and training lands (93230: GR020 8,640 AC, GR021 1,215.75 AC) are listed in AC but are out of scope per the memo (Range Control / ITAM); a reader that adds every AC row would overstate grounds by 9,855.75 acres.",
-    "Fences in LF, utilities in EA / KW / LF / GA / MB (substation 7,500 KW, 500,000 GA water tank, 58,200 LF water mains, 142 EA hydrants) are excluded; their large quantities must not become square footage or grounds.",
+    "Parking rows (CATCODE 85210 organizational hardstands and 85215 POV lots, RPA_TYPE STRUCTURE) are in SY and go to grounds parking in sqyd: 8 active rows totalling 98,810 SY (= 889,290 SF). 00194 (CLOSED, 3,900 SY) is excluded. Parking rows whose name cites \"BLDG 0xxxx\" carry that building number.",
+    "Non-building records have ordinary numeric facility numbers (00191 parking, 02295 wash platform, 08101 substation, 08501 road, 08720 fence, 09301 grounds…) that look like building numbers; RPA_TYPE, CATCODE and PRIMARY_UM, not the facility number, decide what a record is.",
+    "Roads (85110/85120, LINEAR STRUCTURE, 5 rows, 126,050 SY) and the vehicle wash platform (21470, 02295, 2,950 SY) are also SY but out of scope per memo para 3: neither parking nor facilities.",
+    "Improved grounds (93210, AC) → improved_turf and semi-improved grounds (93220, AC) → semi_improved are in scope; 09304 (DISPOSED, 11.2 AC) is excluded.",
+    "Unimproved grounds and training lands (93230: 09320 8,640 AC, 09321 1,215.75 AC) are listed in AC but are out of scope per the memo (Range Control / ITAM); a reader that adds every AC row would overstate grounds by 9,855.75 acres.",
+    "Fences in LF, utilities in EA / KV / KW / LF / GA / MB (substation 7,500 KV, standby generator 500 KW, 500,000 GA water tank, 58,200 LF water mains, 142 EA hydrants) are excluded; their large quantities must not become square footage or grounds.",
     "Scope rules live only in the separate one-page cover memo PDF; the workbook itself has no scope column.",
-    "FACILITY_NUMBER mixes text cells with leading zeros (\"00101\", \"02201\", \"T0230\") and numeric cells that lost their zeros (1101..1125); the memo says 1101 is facility 01101. Truth uses the exported value (\"1101\").",
-    "RPUID (first column) is a 7-digit record key, not a quantity; CATCODE is a 5-digit numeric cell and must not be read as square feet.",
+    "FACILITY_NUMBER mixes text cells with leading zeros (\"00101\", \"02201\", \"T0230\") and numeric cells that lost them (1101..1125, 1191, 1192). Memo para 5 says 1101 through 1192 are facilities 01101 through 01192, so truth stores the canonical \"01101\" form (the scorer also accepts \"1101\").",
+    "RPUID (first column) is a 7-digit record key, CATCODE a 5-digit numeric cell and YEAR_BUILT a 4-digit year next to FLOORS; none of them is a quantity or square footage.",
     "Twin rows 1101/1103/1105 UEPH BARRACKS (58,750 SF each) and two \"GENERAL PURPOSE WAREHOUSE\" rows (02205 ACTIVE, 02207 CLOSED) share names; facility number decides.",
-    "02221 COVERED STORAGE SHED (POLE BARN) has a blank FLOORS cell (truth omits floors); 02219 FUEL POINT CONTROL BUILDING is only 640 SF but is a building in scope.",
+    "02219 FUEL POINT CONTROL BUILDING is only 640 SF but is a building in scope.",
     "Last row is a report trailer \"*** END OF REPORT - 89 RECORDS ***\", not a record.",
-    "Category is asserted only where the CATCODE title is unambiguous (UEPH/UOPH → barracks, DINING FACILITY → dining, ADMIN GEN PURPOSE / HQ / COF → admin, HANGAR → hangar, WAREHOUSE/STORAGE → warehouse, MAINT SHOP → maintenance, CLINIC → medical, PFC → fitness, CDC → child_care, INSTRUCTION/SIMULATION → education, chapel/library/ACS/post office/community center → community)."
+    "Category is asserted only where the CATCODE title maps to one category without judgement: ADMIN GEN PURPOSE and BATTALION / BRIGADE HQ BLDG and COMPANY OPERATIONS FACILITY → admin; UEPH / UOPH → barracks; DINING FACILITY → dining; HEALTH / DENTAL CLINIC → medical; PHYSICAL FITNESS CENTER → fitness; CHILD DEVELOPMENT CENTER → child_care; GENERAL INSTRUCTION BLDG → education; RELIGIOUS FACILITY, ARMY COMMUNITY SERVICE CENTER and COMMUNITY ACTIVITY CENTER → community; ACFT MAINTENANCE HANGAR → hangar; GEN PURPOSE WAREHOUSE / ORGANIZATIONAL STORAGE BLDG / HAZARDOUS MATERIAL STORAGE BLDG → warehouse; VEHICLE MAINTENANCE SHOP and INSTALLATION MAINT/REPAIR SHOP → maintenance. No category for AIRFIELD OPERATIONS BLDG (03303), TRAINING SIMULATION FACILITY (03307), LIBRARY (00122), POST OFFICE (00137), fire, MP, access control, range, youth center, bathhouse and fuel point codes."
   ]
 }

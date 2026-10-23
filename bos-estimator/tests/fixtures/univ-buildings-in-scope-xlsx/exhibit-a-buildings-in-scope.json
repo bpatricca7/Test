@@ -612,6 +612,17 @@
     "0",
     "0",
     null
+   ],
+   "colWidths": [
+    11,
+    44,
+    16,
+    13,
+    15,
+    9,
+    11,
+    12,
+    42
    ]
   },
   {
@@ -631,7 +642,7 @@
     ],
     [
      "3.",
-     "Residence halls (1100 series): Cleanable Sq Ft includes lobbies, lounges, corridors, laundry rooms and community restrooms only. Student rooms and suite bathrooms are cleaned by residents."
+     "Residence halls (Buildings 1102 Ozark Hall, 1104 Cedar Hall, 1106 Juniper Hall and 1108 Sycamore Suites): Cleanable Sq Ft includes lobbies, lounges, corridors, laundry rooms and community restrooms only. Student rooms and suite bathrooms are cleaned by residents. Buildings 1110 Maple Apartments and 1120 Honors College House are not residence halls and are serviced on the days shown in Column H."
     ],
     [
      "4.",
@@ -661,6 +672,10 @@
      "10.",
      "The TOTAL row is a simple sum of every row on the Exhibit A tab, including buildings listed for information only. Refer to the RFP document and any addenda for changes to this exhibit."
     ]
+   ],
+   "colWidths": [
+    6,
+    120
    ]
   }
  ]

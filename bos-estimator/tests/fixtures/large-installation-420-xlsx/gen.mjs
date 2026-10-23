@@ -34,8 +34,17 @@ const r2 = (n) => Math.round(n * 100) / 100;
 const FREQ = { '7X/WK': 'daily_7', '5X/WK': 'daily_5', '3X/WK': '3x_week', '2X/WK': '2x_week', '1X/WK': 'weekly', 'BI-WKLY': 'biweekly', '1X/MO': 'monthly', 'QTRLY': 'quarterly' };
 
 // ---------- facility types ----------
-// cc = CATCODE, cat = truth category (omitted where the title is ambiguous), sf = gross SF range, fl = floors range,
-// cl = cleanable share of gross, fx = restroom fixtures (fn of gross), fq = allowed custodial frequencies, rm = remark.
+// cc = CATCODE, cat = truth category, sf = gross SF range, fl = floors range, cl = cleanable share of gross,
+// fx = restroom fixtures (fn of gross), fq = allowed custodial frequencies, rm = remark.
+// Category rule: truth asserts a category only where the CATCODE family maps to exactly one app category
+// (72111 barracks, 14112/14114/14182/14183/14185/61050 admin, 17120/17150/17892 instruction -> education, 21410/21910 maintenance,
+// 21110 hangar, 442xx storage -> warehouse, 54010/55010 medical, 72210 dining, 73017 chapel -> community,
+// 74010/74044 community, 74028/74042 fitness, 74046 child_care). 'other' is asserted only for small unoccupied
+// structures that fit no specific category: 14113 gatehouses and booths, 12410 fuel point control buildings,
+// 17890 range control towers and 73046 latrines. Building types an estimator could file two ways get no category:
+// 73010 fire / crash rescue stations (serviced areas are admin and latrines), 73075 DES / MP station, 73070 post
+// office, 14171 air traffic control tower, 17891 range operations and storage buildings, the visitor control
+// center, the religious education center and the youth center.
 const per1000 = (lo, hi) => (g) => Math.max(2, Math.round((g / 1000) * rf(lo, hi)));
 const TYPES = {
   ueph: { cc: 72111, cat: 'barracks', names: ['UEPH BARRACKS', 'UEPH BARRACKS', 'UEPH BARRACKS (2+2 MODULE)', 'UEPH BARRACKS (1+1E MODULE)'], sf: [42000, 98000], fl: [3, 5], cl: [0.18, 0.26], fx: () => ri(6, 14), fq: ['5X/WK'], rm: 'COMMON AREAS ONLY (NOTE 2)' },
@@ -56,9 +65,11 @@ const TYPES = {
   hangar: { cc: 21110, cat: 'hangar', names: ['AIRCRAFT MAINTENANCE HANGAR'], sf: [42000, 96000], fl: [1, 2], cl: [0.15, 0.25], fx: () => ri(6, 14), fq: ['5X/WK'], rm: 'SHOP, ADMIN AND LATRINE AREAS ONLY - HANGAR BAY EXCLUDED' },
   admin: { cc: 61050, cat: 'admin', sf: [2400, 42000], fl: [1, 3], cl: [0.84, 0.92], fx: per1000(0.4, 0.7), fq: ['5X/WK'] },
   instr: { cc: 17120, cat: 'education', sf: [6800, 32000], fl: [1, 2], cl: [0.85, 0.92], fx: per1000(0.4, 0.6), fq: ['5X/WK'] },
-  fire: { cc: 73010, cat: 'other', sf: [8800, 16400], fl: [1, 2], cl: [0.6, 0.75], fx: per1000(0.6, 0.9), fq: ['3X/WK'], rm: 'ADMIN AND LATRINE AREAS; APPARATUS BAY AND QUARTERS BY FIRE DEPT' },
-  gate: { cc: 14113, cat: 'other', sf: [120, 640], fl: [1, 1], cl: [1, 1], fx: () => ri(0, 2), fq: ['7X/WK'] },
-  latrine: { cc: 73046, cat: 'other', sf: [120, 480], fl: [1, 1], cl: [1, 1], fx: () => ri(2, 8), fq: ['2X/WK', '1X/WK'] },
+  fire: { cc: 73010, sf: [8800, 16400], fl: [1, 2], cl: [0.6, 0.75], fx: per1000(0.6, 0.9), fq: ['3X/WK'], rm: 'ADMIN AND LATRINE AREAS; APPARATUS BAY AND QUARTERS BY FIRE DEPT' },
+  // gatehouses: an open booth under 200 SF has no restroom; a gatehouse has one or two
+  gate: { cc: 14113, cat: 'other', sf: [120, 640], fl: [1, 1], cl: [1, 1], fx: (g) => (g < 200 ? 0 : g < 500 ? 1 : 2), fq: ['7X/WK'] },
+  // range latrines: CMU comfort stations, roughly 55-80 SF of floor per fixture (WC, urinal, lavatory)
+  latrine: { cc: 73046, cat: 'other', sf: [180, 520], fl: [1, 1], cl: [1, 1], fx: (g) => Math.min(8, Math.max(2, Math.round(g / rf(55, 80)))), fq: ['2X/WK', '1X/WK'] },
   tower: { cc: 17890, cat: 'other', sf: [140, 360], fl: [2, 3], cl: [1, 1], fx: () => 0, fq: ['1X/WK', 'BI-WKLY'] },
   rangeops: { cc: 17891, sf: [800, 2400], fl: [1, 1], cl: [0.9, 1], fx: () => ri(2, 4), fq: ['1X/WK'] },
   rangeclass: { cc: 17892, cat: 'education', sf: [600, 1800], fl: [1, 1], cl: [0.95, 1], fx: () => 0, fq: ['1X/WK'] },
@@ -68,12 +79,13 @@ function make(type, over = {}) {
   const t = TYPES[type];
   const gross = over.gross ?? ri(t.sf[0], t.sf[1]);
   const floors = over.floors ?? ri(t.fl[0], t.fl[1]);
-  const share = rf(t.cl[0], t.cl[1]);
+  const cl = over.cl ?? t.cl;
+  const share = rf(cl[0], cl[1]);
   const cleanable = over.cleanable ?? (gross < 1000 ? gross : Math.round(gross * share));
   const fixtures = over.fixtures ?? t.fx(gross);
   const freq = over.freq ?? pick(t.fq);
   return {
-    num: over.num, name: over.name ?? pick(t.names), catcode: over.cc ?? t.cc, floors, gross, cleanable,
+    type, num: over.num, name: over.name ?? pick(t.names), catcode: over.cc ?? t.cc, floors, gross, cleanable,
     fixtures, freq, remark: over.remark ?? t.rm ?? '', category: over.category === null ? undefined : over.category ?? t.cat,
     excluded: !!over.excluded,
   };
@@ -98,8 +110,8 @@ const zone = (id, title) => { const z = { id, title, rows: [] }; zones.push(z); 
   const add = (type, over = {}) => z.rows.push(make(type, { num: String(N.next(over.gap)), ...over }));
   // access control points
   N.jump(10000);
-  for (const [nm, sf] of [['ACP 1 MAIN GATE GATEHOUSE', 640], ['ACP 1 MAIN GATE OVERWATCH BOOTH', 120], ['ACP 2 NORTH GATE GATEHOUSE', 480], ['ACP 3 EAST GATE GATEHOUSE', 420], ['ACP 4 WEST GATE GATEHOUSE', 396], ['ACP 5 COMMERCIAL VEHICLE INSPECTION GATEHOUSE', 612], ['ACP 5 SEARCH OFFICE', 288], ['ACP 6 RANGE ROAD GATEHOUSE', 224]]) add('gate', { name: nm, gross: sf, gap: [1, 2] });
-  add('gate', { name: 'VISITOR CONTROL CENTER', gross: 2410, cleanable: 2180, fixtures: 4, gap: [1, 3] });
+  for (const [nm, sf] of [['ACP 1 MAIN GATE GATEHOUSE', 640], ['ACP 1 MAIN GATE OVERWATCH BOOTH', 120], ['ACP 2 NORTH GATE GATEHOUSE', 480], ['ACP 3 EAST GATE GATEHOUSE', 420], ['ACP 4 WEST GATE GATEHOUSE', 396], ['ACP 5 COMMERCIAL VEHICLE INSPECTION GATEHOUSE', 612], ['ACP 5 SEARCH BOOTH', 288], ['ACP 6 RANGE ROAD GATEHOUSE', 224]]) add('gate', { name: nm, gross: sf, gap: [1, 2] });
+  add('gate', { name: 'VISITOR CONTROL CENTER', category: null, gross: 2410, cleanable: 2180, fixtures: 4, gap: [1, 3] });
   N.jump(10100);
   add('admin', { name: 'DIVISION HEADQUARTERS', gross: ri(128000, 148000), floors: 3, fixtures: ri(70, 90) });
   add('admin', { name: 'GARRISON HEADQUARTERS', gross: ri(38000, 52000), floors: 3 });
@@ -108,8 +120,22 @@ const zone = (id, title) => { const z = { id, title, rows: [] }; zones.push(z); 
   add('admin', { name: 'CRIMINAL INVESTIGATION DIVISION FIELD OFFICE', cc: 14114, gross: ri(6200, 9800), floors: 1 });
   for (const no of [1, 2, 3]) add('fire', { name: `FIRE STATION NO ${no}` });
   N.jump(10300);
-  const adminNames = ['IN/OUT PROCESSING CENTER', 'STAFF JUDGE ADVOCATE LEGAL CENTER', 'RESOURCE MANAGEMENT OFFICE', 'DIRECTORATE OF PLANS, TRAINING, MOBILIZATION AND SECURITY (DPTMS)', 'NETWORK ENTERPRISE CENTER (NEC)', 'MISSION AND INSTALLATION CONTRACTING COMMAND OFFICE', 'CIVILIAN PERSONNEL ADVISORY CENTER', 'INSTALLATION SAFETY OFFICE', 'PUBLIC AFFAIRS OFFICE', 'INSPECTOR GENERAL OFFICE', 'SOLDIER FOR LIFE - TRANSITION ASSISTANCE PROGRAM CENTER', 'RETENTION OFFICE', 'FAMILY AND MWR ADMINISTRATION', 'LOGISTICS READINESS CENTER ADMINISTRATION', 'ENVIRONMENTAL DIVISION OFFICE', 'HOUSING SERVICES OFFICE', 'INSTALLATION TRANSPORTATION OFFICE', 'ID CARD / DEERS OFFICE', 'AMERICAN RED CROSS OFFICE', 'SOLDIER SUPPORT CENTER', 'ADMIN GEN PURPOSE', 'ADMIN GEN PURPOSE', 'ADMIN GEN PURPOSE', 'ADMIN GEN PURPOSE', 'TENANT ADMIN BLDG', 'TENANT ADMIN BLDG'];
-  for (const nm of adminNames) add('admin', { name: nm });
+  // [name, gross SF range, floors]: staff offices are a few thousand SF; centers and general-purpose admin are larger
+  const adminBldgs = [
+    ['IN/OUT PROCESSING CENTER', [12000, 18000], 2], ['STAFF JUDGE ADVOCATE LEGAL CENTER', [14000, 22000], 2],
+    ['RESOURCE MANAGEMENT OFFICE', [8000, 13000], 2], ['DIRECTORATE OF PLANS, TRAINING, MOBILIZATION AND SECURITY (DPTMS)', [12000, 19000], 2],
+    ['NETWORK ENTERPRISE CENTER (NEC)', [18000, 28000], 2], ['MISSION AND INSTALLATION CONTRACTING COMMAND OFFICE', [9000, 15000], 2],
+    ['CIVILIAN PERSONNEL ADVISORY CENTER', [7000, 11000], 1], ['INSTALLATION SAFETY OFFICE', [2400, 4200], 1],
+    ['PUBLIC AFFAIRS OFFICE', [2800, 5200], 1], ['INSPECTOR GENERAL OFFICE', [3200, 6000], 1],
+    ['SOLDIER FOR LIFE - TRANSITION ASSISTANCE PROGRAM CENTER', [8000, 13000], 1], ['RETENTION OFFICE', [2400, 4000], 1],
+    ['FAMILY AND MWR ADMINISTRATION', [10000, 16000], 2], ['LOGISTICS READINESS CENTER ADMINISTRATION', [10000, 17000], 2],
+    ['ENVIRONMENTAL DIVISION OFFICE', [4000, 7000], 1], ['HOUSING SERVICES OFFICE', [4000, 7500], 1],
+    ['INSTALLATION TRANSPORTATION OFFICE', [5000, 9000], 1], ['ID CARD / DEERS OFFICE', [3600, 6000], 1],
+    ['AMERICAN RED CROSS OFFICE', [2400, 4000], 1], ['SOLDIER SUPPORT CENTER', [22000, 34000], 2],
+    ['ADMIN GEN PURPOSE', [6000, 14000], 1], ['ADMIN GEN PURPOSE', [12000, 24000], 2], ['ADMIN GEN PURPOSE', [16000, 32000], 3],
+    ['ADMIN GEN PURPOSE', [8000, 18000], 2], ['TENANT ADMIN BLDG', [8000, 16000], 2], ['TENANT ADMIN BLDG', [12000, 24000], 2],
+  ];
+  for (const [nm, sf, fl] of adminBldgs) add('admin', { name: nm, gross: ri(sf[0], sf[1]), floors: fl });
   N.jump(10500);
   add('tmc', { name: 'ARMY HEALTH CLINIC', gross: ri(58000, 68000), floors: 3, fixtures: ri(64, 80) });
   add('dental', { name: 'DENTAL CLINIC NO 1' });
@@ -120,9 +146,9 @@ const zone = (id, title) => { const z = { id, title, rows: [] }; zones.push(z); 
   add('pfc', { name: 'AQUATIC CENTER (INDOOR POOL)', cc: 74042, gross: ri(30000, 36000), floors: 1 });
   add('chapel', { name: 'MAIN POST CHAPEL', gross: ri(16000, 24000) });
   add('chapel', { name: 'MEMORIAL CHAPEL', gross: ri(6400, 9800) });
-  add('chapel', { name: 'RELIGIOUS EDUCATION CENTER', gross: ri(9000, 14000), floors: 2, freq: '3X/WK' });
+  add('chapel', { name: 'RELIGIOUS EDUCATION CENTER', category: null, gross: ri(9000, 14000), floors: 2, freq: '3X/WK' });
   for (const nm of ['CHILD DEVELOPMENT CENTER (MAIN POST)', 'CHILD DEVELOPMENT CENTER (HILLSIDE)', 'CHILD DEVELOPMENT CENTER (LAKEVIEW)', 'SCHOOL AGE CENTER']) add('cdc', { name: nm });
-  add('admin', { name: 'YOUTH CENTER', cc: 74047, category: 'community', gross: ri(16000, 21000), floors: 1, freq: '5X/WK' });
+  add('admin', { name: 'YOUTH CENTER', cc: 74047, category: null, gross: ri(16000, 21000), floors: 1, freq: '5X/WK' });
   add('admin', { name: 'POST LIBRARY', cc: 74044, category: 'community', gross: ri(9000, 13000), floors: 1 });
   add('admin', { name: 'ARMY COMMUNITY SERVICE CENTER', cc: 74010, category: 'community', gross: ri(8000, 12000), floors: 1 });
   add('admin', { name: 'SOLDIER AND FAMILY ASSISTANCE CENTER', cc: 74010, category: 'community', gross: ri(11000, 15500), floors: 2 });
@@ -207,7 +233,7 @@ function brigade(z, N, opts) {
   for (let i = 0; i < 22; i++) add('whse');
   add('whse', { name: 'GENERAL PURPOSE WAREHOUSE', gross: 22480, freq: 'N/A', remark: 'DEMOLISHED FY25 - NOT IN SCOPE', excluded: true });
   N.jump(40400);
-  for (const nm of ['DOL MAINTENANCE SHOP (WHEELED)', 'DOL MAINTENANCE SHOP (TRACKED)', 'DOL ALLIED TRADES SHOP']) add('shop', { name: nm, cc: 21410, gross: ri(42000, 72000), cleanable: undefined });
+  for (const nm of ['DOL MAINTENANCE SHOP (WHEELED)', 'DOL MAINTENANCE SHOP (TRACKED)', 'DOL ALLIED TRADES SHOP']) add('shop', { name: nm, cc: 21410, gross: ri(42000, 72000), cl: [0.12, 0.2] });
   for (const nm of ['DPW CARPENTRY SHOP', 'DPW ELECTRICAL SHOP', 'DPW HVAC SHOP', 'DPW PLUMBING SHOP', 'DPW ROADS AND GROUNDS SHOP', 'DPW PAINT SHOP']) add('shop', { name: nm });
   N.jump(40600);
   for (let i = 0; i < 6; i++) add('orgstor');
@@ -306,7 +332,7 @@ const facNotes = [
   '2. UEPH barracks: cleanable SF is common areas only (entries, corridors, stairwells, laundry rooms, dayrooms and common latrines). Living modules are cleaned by the occupants.',
   '3. TEMF: cleanable SF is the administrative, break and latrine areas. Maintenance bays, tool rooms and COMSEC/arms vaults are excluded.',
   '4. Facilities marked NOT IN SCOPE in the Remarks column are listed for reference only. They are excluded from all subtotals and totals and shall not be serviced.',
-  '5. Range latrines, towers and range buildings are serviced at the frequency shown during scheduled range use; Range Control issues the weekly range schedule.',
+  '5. Zone 6 range and training area latrines, range control towers and range buildings are serviced at the frequency shown year-round (52 weeks per year), whether or not the range is scheduled. The weekly range schedule issued by Range Control sets the day of service only.',
   '6. Building numbers ending in a letter are separate facilities (TEMF storage annexes); numbers beginning with T are relocatable buildings.',
 ];
 for (const n of facNotes) { fac.push([n]); merges.push(`A${fac.length}:J${fac.length}`); }
@@ -363,6 +389,7 @@ for (const n of [
   '2. A dash (-) means no acreage of that category in the area.',
   '3. Areas marked NOT IN SCOPE are shown for reference and are excluded from subtotals and the grand total.',
   '4. Grounds category definitions are on the Notes sheet.',
+  '5. Unimproved training-area acreage is in scope for brush control and firebreak maintenance at the unimproved frequency only.',
 ]) { grounds.push([n]); gMerges.push(`A${grounds.length}:G${grounds.length}`); }
 
 // ---------- notes sheet ----------
@@ -387,9 +414,9 @@ const notes = [
 ];
 const sheets = {
   sheets: [
-    { name: 'J-0302 Facility List', rows: fac, merges, numFmt: [null, null, null, null, null, '#,##0', '#,##0', null, null, null] },
-    { name: 'Grounds', rows: grounds, merges: gMerges, numFmt: [null, null, '#,##0.00', '#,##0.00', '#,##0.00', '#,##0.00', null] },
-    { name: 'Notes', rows: notes, merges: ['A1:C1'] },
+    { name: 'J-0302 Facility List', rows: fac, merges, numFmt: [null, null, null, null, null, '#,##0', '#,##0', null, null, null], colWidths: [7, 10, 66, 10, 9, 12, 12, 12, 13, 62] },
+    { name: 'Grounds', rows: grounds, merges: gMerges, numFmt: [null, null, '#,##0.00', '#,##0.00', '#,##0.00', '#,##0.00', null], colWidths: [10, 48, 13, 15, 13, 13, 52] },
+    { name: 'Notes', rows: notes, merges: ['A1:C1'], colWidths: [22, 110, 28] },
   ],
 };
 fs.writeFileSync(path.join(here, 'facility-list.json'), JSON.stringify(sheets, null, 1) + '\n');
@@ -402,10 +429,26 @@ const repeatCounts = Object.entries(nameCount).sort((a, b) => b[1] - a[1]).slice
 const repeatedRows = Object.values(nameCount).filter((c) => c > 1).reduce((s, c) => s + c, 0);
 const annexEx = truthFacilities.find((f) => /A$/.test(f.buildingNumber)).buildingNumber.slice(0, -1);
 const sfMin = Math.min(...truthFacilities.map((f) => f.grossSqft)), sfMax = Math.max(...truthFacilities.map((f) => f.grossSqft));
+const sfMinNames = truthFacilities.filter((f) => f.grossSqft === sfMin).map((f) => f.name).join(' and ');
+const sfMaxName = truthFacilities.find((f) => f.grossSqft === sfMax).name;
+// cleanable share ranges among in-scope rows, by building type, for the cleanable trap
+const inScopeRows = zones.flatMap((z) => z.rows.filter((r) => !r.excluded));
+const shareRange = (pred) => {
+  const v = inScopeRows.filter(pred).map((r) => (r.cleanable / r.gross) * 100);
+  return `${Math.floor(Math.min(...v))}-${Math.ceil(Math.max(...v))}%`;
+};
+const shares = {
+  ueph: shareRange((r) => r.type === 'ueph'), temf: shareRange((r) => r.type === 'temf'), hangar: shareRange((r) => r.type === 'hangar'),
+  whse: shareRange((r) => r.type === 'whse'), dolShop: shareRange((r) => r.type === 'shop' && /^DOL /.test(r.name)),
+  dpwShop: shareRange((r) => r.type === 'shop' && /^DPW /.test(r.name)), fire: shareRange((r) => r.type === 'fire'), dfac: shareRange((r) => r.type === 'dfac'),
+};
+const inScopeNameCount = (nm) => truthFacilities.filter((f) => f.name === nm).length;
+const listedNameCount = (nm) => zones.reduce((s, z) => s + z.rows.filter((r) => r.name === nm).length, 0);
+const categoryCount = truthFacilities.filter((f) => f.category).length;
 const truth = {
   id: 'large-installation-420-xlsx',
   title: `Large Army installation Attachment J-0302 facility list workbook: ${truthFacilities.length} in-scope facilities in six zones (UEPH, COF, BN/BDE HQ, TEMF, DFAC, chapels, PFCs, CDCs, clinics, warehouses, range latrines/towers, gatehouses) plus a Grounds sheet of improved / semi-improved / unimproved acres by cantonment zone and training area (scale test)`,
-  theme: 'large',
+  theme: 'military-bos',
   provenance: {
     fidelity: 'synthetic',
     sources: [
@@ -419,7 +462,7 @@ const truth = {
       { url: 'https://app.g2xchange.com/opportunities/sam/7c36ee60-7ed0-4dec-bdae-6eba76a41dce', note: 'Fort Benning grounds maintenance sources sought: about 184,000 acres of improved, semi-improved and unimproved grounds, excluding the golf course, cemetery, airfield and some MWR areas. Basis for the three-category acreage layout and the NOT IN SCOPE golf course row.' },
       { url: 'https://www.patrick.spaceforce.mil/Portals/14/AFD-150612-026.pdf', note: 'Improved grounds (intensive maintenance) and semi-improved grounds (mowed occasionally) definitions, paraphrased on the Notes sheet.' },
     ],
-    notes: 'Generated by gen.mjs (seeded mulberry32 PRNG, seed 4202027). The installation (Fort Brannock), solicitation number, every building number, name, area, floor count, fixture count, frequency and acreage are invented. CATCODEs 14114, 14182, 14183, 14185, 21410, 72111, 72210 and 74042 follow the USACE cost tables cited. All other CATCODE assignments (61050, 73017, 74028, 74046, 55010, 54010, 44220, 44224, 44260, 21110, 21910, 17120, 17150, 73010, 73046, 73070, 73075, 74010, 74021, 74044, 74047, 74055, 12410, 14112, 14113, 14171, 17890-17892) are plausible but not verified against DA Pam 415-28. No public Army facility-list exhibit was downloadable, so the column layout follows the other fixtures and common Technical Exhibit practice, not a specific document.',
+    notes: 'Generated by gen.mjs (seeded mulberry32 PRNG, seed 4202027). The installation (Fort Brannock), solicitation number, every building number, name, area, floor count, fixture count, frequency and acreage are invented. CATCODEs 14114, 14182, 14183, 14185, 21410, 72111, 72210 and 74042 follow the USACE cost tables cited. All other CATCODE assignments (61050, 73017, 74028, 74046, 55010, 54010, 44220, 44224, 44260, 21110, 21910, 17120, 17150, 73010, 73046, 73070, 73075, 74010, 74021, 74044, 74047, 74055, 12410, 14112, 14113, 14171, 17890-17892) are plausible but not verified against DA Pam 415-28. No public Army facility-list exhibit was downloadable, so the column layout follows the other fixtures and common Technical Exhibit practice, not a specific document. The workbook prints CATCODEs, not app categories: truth asserts a category only where the CATCODE family maps to exactly one app category, and none for building types an estimator could file two ways (README, Category rule). Each sheet carries a colWidths hint that scripts/render-fixtures.mjs does not apply yet.',
   },
   inputs: [{ src: 'facility-list.json', as: 'xlsx', out: OUT_XLSX }],
   expect: {
@@ -429,17 +472,19 @@ const truth = {
     site: { installationName: INSTALLATION, solicitation: SOLICITATION },
   },
   traps: [
-    `Scale: ${zones.reduce((s, z) => s + z.rows.length, 0)} listed facility rows, ${truthFacilities.length} in scope, ${totG.toLocaleString('en-US')} gross SF in total. Gross SF runs from ${sfMin.toLocaleString('en-US')} (RANGE 03 latrine, gatehouse booth) to ${sfMax.toLocaleString('en-US')} (installation warehouse). Readers and the 3D campus must handle 400+ buildings without truncation, paging limits or dropping rows.`,
-    `Names repeat: ${repeatCounts}. ${repeatedRows} in-scope rows share a name with at least one other row. Only the building number tells them apart, so de-duplicating by name collapses hundreds of buildings.`,
+    `Scale: ${zones.reduce((s, z) => s + z.rows.length, 0)} listed facility rows, ${truthFacilities.length} in scope, ${totG.toLocaleString('en-US')} gross SF in total. Gross SF runs from ${sfMin.toLocaleString('en-US')} (${sfMinNames}) to ${sfMax.toLocaleString('en-US')} (${sfMaxName}). Readers and the 3D campus must handle 400+ buildings without truncation, paging limits or dropping rows.`,
+    `Names repeat among the in-scope rows: ${repeatCounts}. (Rows listed including NOT IN SCOPE: ${listedNameCount('UEPH BARRACKS')} UEPH BARRACKS, ${listedNameCount('GENERAL PURPOSE WAREHOUSE')} GENERAL PURPOSE WAREHOUSE.) ${repeatedRows} in-scope rows share a name with at least one other in-scope row. Only the building number tells them apart, so de-duplicating by name collapses hundreds of buildings.`,
     'Two-row merged header: "AREA (SQUARE FEET)" is merged over GROSS and CLEANABLE. ITEM (1..N) is a row counter, not a building number. CATCODE is a 5-digit number cell (e.g. 72111) and must not be read as square feet. BLDG NO. is a number cell for plain 5-digit numbers and a text cell for suffixed or T-prefixed numbers.',
     `Zone section rows ("ZONE 2 - NORTH TROOP AREA", merged across) are headers, not facilities. Six "ZONE n SUBTOTAL - n FACILITIES IN SCOPE" rows and a "GRAND TOTAL - ${truthFacilities.length} FACILITIES IN SCOPE" row (${totG.toLocaleString('en-US')} SF) are not facilities.`,
     `${excludedRows.length} rows are listed with SF but marked NOT IN SCOPE in Remarks (frequency N/A) and are excluded from truth and from the printed subtotals: ${excludedRows.join('; ')}.`,
     `Building numbers with a letter suffix (TEMF storage annexes such as ${annexEx}A next to TEMF ${annexEx}) are separate facilities from the TEMF with the same digits. Relocatable buildings use T-prefixed numbers (T32001, T32003, T32004, T32007).`,
-    'Cleanable SF is far below gross for UEPH barracks (common areas only, about 18-26%), TEMFs (12-20%), hangars, shops and warehouses (office/latrine areas only), and DFACs (kitchen by the food service contractor). Do not default cleanable to gross.',
+    `Cleanable SF is far below gross for UEPH barracks (common areas only, ${shares.ueph} of gross), TEMFs (${shares.temf}), DOL maintenance shops (${shares.dolShop}), hangars (${shares.hangar}) and warehouses (office and latrine areas only, ${shares.whse}). It is a partial share for DPW shops (${shares.dpwShop}), fire and crash rescue stations (${shares.fire}, apparatus bay and quarters excluded) and DFACs (${shares.dfac}, kitchen by the food service contractor). Do not default cleanable to gross.`,
     'Custodial frequency is a code (7X/WK, 5X/WK, 3X/WK, 2X/WK, 1X/WK, BI-WKLY, 1X/MO, QTRLY) defined on the Notes sheet: 7X/WK -> daily_7, 5X/WK -> daily_5, BI-WKLY -> biweekly, 1X/MO -> monthly, QTRLY -> quarterly. The Notes sheet "SERVICES PER YEAR" numbers (365, 250, ...) are not facilities.',
-    'RESTROOM FIXTURES is blank for buildings without restrooms (towers, storage buildings, some gatehouses); truth leaves restroomFixtures out for those.',
+    'Facility List note 5: Zone 6 range and training-area latrines, range control towers and range buildings are serviced at the listed frequency year-round (52 weeks). The Range Control schedule sets only the day of service, so the frequency codes are not discounted for range use.',
+    'RESTROOM FIXTURES is blank for buildings without restrooms (range control towers, range classrooms, storage buildings, the open overwatch booth); truth leaves restroomFixtures out for those.',
     `Grounds sheet: two-row header with "ACRES BY GROUNDS CATEGORY" merged over IMPROVED / SEMI-IMPROVED / UNIMPROVED; a dash means zero. In-scope totals: improved ${gTot.improved_turf} AC, semi-improved ${gTot.semi_improved} AC, unimproved ${gTot.unimproved} AC. C-7 FAMILY HOUSING (RCI), C-8 GOLF COURSE (NAF) and IA-1 IMPACT AREA (DUDDED) are NOT IN SCOPE. The TOTAL ACRES column, the two SUBTOTAL rows and the GRAND TOTAL row must not be added again.`,
-    'Unimproved training-area acreage (tens of thousands of acres) is in scope here and dominates total acres. A reader that drops it, or that also adds the 17,000+ acre impact area, is far off on unimproved acres.',
+    'Unimproved training-area acreage (tens of thousands of acres, in scope for brush control and firebreaks per Grounds note 5) dominates total acres. A reader that drops it, or that also adds the 17,000+ acre impact area, is far off on unimproved acres.',
+    `Category is not printed; truth asserts it for ${categoryCount} of ${truthFacilities.length} facilities, only where the CATCODE family maps to one app category (see README). Fire and crash rescue stations, the DES / MP station, post office, air traffic control tower, range operations and storage buildings, the visitor control center, the religious education center and the youth center carry no category because an estimator could file them two ways.`,
     'No dining workload (meals/day) is given; DFAC rows are custodial only, so truth asserts no dining profile.',
   ],
 };

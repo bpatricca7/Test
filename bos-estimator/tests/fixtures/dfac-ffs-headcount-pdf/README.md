@@ -8,9 +8,9 @@ and custodial (facility sanitation) services for 16 buildings.
 | Page | Orientation | Content |
 |---|---|---|
 | 1 | portrait | Cover, exhibit list, 1.1 Purpose, 1.2 Scope (FFS vs DFA, AR 30-22 TDA/TOE rule) |
-| 2 | portrait | 1.3 Period of performance, **1.4 Current contract**, 1.5 basis of estimate (typical 5 + 2 week), 1.6 headcount, 1.7 maximum feeding capacity, 1.8 workload changes, abbreviations |
+| 2 | portrait | 1.3 Period of performance, **1.4 Current contract** (values as modified after the Bldg 2240 deletion), 1.5 basis of estimate (typical 5 + 2 week, 52 weeks a year), 1.6 headcount, 1.7 maximum feeding capacity, 1.8 workload changes, abbreviations |
 | 3 | landscape | **TE 5-1 DFAC workload**: Bldg, name, seats, max feeding capacity, FFS/DFA, Mon–Fri average headcount (Breakfast, Lunch, Dinner, Late/Midnight), Weekends & Holidays (Brunch, Supper), remarks, 7 footnotes |
-| 4 | landscape | TE 5-2 serving hours; TE 5-3 historical meals served (AFMIS), for information only |
+| 4 | landscape | TE 5-2 serving hours; TE 5-3 historical meals served (AFMIS) FY24 / FY25 / 9-month FY26, for information only |
 | 5 | portrait | **TE 6-1 custodial facility list**: Item, Bldg, name, floors, GSF, custodial service area, frequency, remarks |
 | 6 | portrait | TE 6-1 notes, facilities not included, building access |
 
@@ -63,6 +63,13 @@ serving time, historical meal count, square footage, frequency and dollar value.
 - **16 facilities** (`facilitiesComplete: true`), one per in-scope TE 6-1 row: 13 non-dining buildings plus the
   three in-scope DFACs (4120, 7031, 9215). Each DFAC carries both its TE 6-1 gross SF and its TE 5-1 dining
   profile. `cleanableSqft` is the TE 6-1 "Custodial Service Area (SF)" column.
+- **Category** is set only where the building's use is clear: admin (101, 115, 6205, 7040), education, dining,
+  fitness, child_care and community. It is deliberately left out for 1450 (TISA), 1462 (CIF) and 5102 (Troop
+  Medical Clinic). Their custodial service areas are offices, break rooms, restrooms, customer service and fitting
+  rooms, or "non-clinical areas only". In `shared/factors.ts`, `warehouse` (90% concrete, no break-room task) or
+  `medical` (exam-room disinfection) would misprice that space, and `admin` contradicts the building name, so
+  either answer is defensible. A debatable category is not scored. 3301 (SRP) and 9300 (Range Control) have no
+  category for the same reason.
 - **Dining** (`daysPerWeek` 7 for all):
 
 | Bldg | Type | Mon–Fri B / L / D / M | Wknd Brunch / Supper | (wkday×5 + wknd×2) ÷ 7 | mealsPerDay | mealPeriods |
@@ -77,14 +84,19 @@ serving time, historical meal count, square footage, frequency and dollar value.
   year), `hot_humid` (Georgia), installation "Fort Branford", solicitation "W9124J-27-R-0047".
 - **Prior award** (paragraph 1.4): Sandhill Garrison Services, LLC, Contract No. W9124J-21-C-0012, FFP,
   awarded 2021. Total value $71,284,960 over 60 months, and annual value $14,962,415 for the current option
-  period. Contract type FFP is stated but is not in the truth schema.
+  period. Contract type FFP is stated but is not in the truth schema. Paragraph 1.4 says both values are *as
+  modified*: Modification P00009 deleted the Bldg 2240 line items on 1 NOV 2024 and increased Bldg 4120 for the
+  reassigned diners. The Option Period 4 value therefore covers three operating DFACs, the TE 6-1 custodial list,
+  and Bldg 1475 through 30 JUN 2026, which is the scope the top-down cross-check compares against.
 - No grounds.
 
 ## Traps
 
 1. **Meals per day is derived, not stated.** TE 5-1 gives average headcount *per meal period* for a typical
    week (paragraph 1.5: five weekdays and two weekend days). Meals/day = (weekday sum × 5 + weekend sum × 2) ÷ 7,
-   rounded to the nearest whole meal. Using only the weekday sum, or adding all six columns, is wrong.
+   rounded to the nearest whole meal. Using only the weekday sum, or adding all six columns, is wrong. Paragraph
+   1.5 and Note 1/ say to price 52 typical weeks and not to price weekday holidays as extra weekend days. So
+   annualizing with about 250 weekdays and 115 weekend/holiday days (4120: 1,507/day, 2% low) is also wrong.
 2. **Meal periods vary:** 3 at 4120 and 9215 (Late/Midnight shown as "—" or N/S), and 4 at 7031 (midnight meal
    Mon–Fri, Note 5/). The two weekend periods are not the count.
 3. **Closed DFAC.** Bldg 2240 Dragon Warrior Restaurant appears in TE 5-1 ("CLOSED FOR RENOVATION THROUGH
@@ -96,8 +108,11 @@ serving time, historical meal count, square footage, frequency and dollar value.
    2,940 SF). Kitchen and dining-room sanitation fall under Part 5. TISA and CIF are mostly warehouse. These are
    `cleanableSqft`, not `grossSqft`.
 6. **Distractor numbers next to headcounts:** seating capacity, maximum feeding capacity (seats × 3), the TE 5-1
-   TOTAL row, TE 5-2 serving times, and TE 5-3 annual meals served. Dividing FY25 meals by 365 gives 1,513 for
-   4120, not 1,538, and paragraph 1.5 says to price TE 5-1.
+   TOTAL row, TE 5-2 serving times, and TE 5-3 annual meals served. The history mixes operating conditions.
+   Bldg 4120 FY24 (190,460) is before consolidation. FY25 (514,385, or 1,409 a day over 365 days) includes one
+   pre-consolidation month. FY26 (412,650, or 1,512 a day over 273 days) covers nine months. Bldg 9215 FY24
+   (131,640) is down 31% because of a brigade deployment. Paragraph 1.5 says to price TE 5-1 (1,538 / 1,179 /
+   532).
 7. **Deleted building.** Bldg 1475 is struck through and marked DELETED, with 9,640 GSF still printed. The
    TOTAL – FACILITIES IN SCOPE (16) row (461,290 / 299,950) is not a facility.
 8. **Facilities named in prose as not included** (6-1.1: 5100/5104, 4810, 8101–8104, Exchange).
@@ -107,3 +122,19 @@ serving time, historical meal count, square footage, frequency and dollar value.
     cells ("Ironhorse Warrior Restaurant", the Bldg 115 name). In the text layer, footnote markers are glued to
     words ("CAPACITY2/", "TOTAL – FACILITIES IN SCOPE (16)5/") or split onto their own line after a number
     (the 7031 midnight headcount "115" followed by "5/").
+
+## How the history fits together (TE 5-3)
+
+The historical meals are invented, but they agree with each other and with TE 5-1:
+
+| | Bldg 2240 | Bldg 4120 | 7031 | 9215 | Total |
+|---|---:|---:|---:|---:|---:|
+| FY24 (366 days) | 352,610 (963/day) | 190,460 (520/day, before consolidation) | 418,960 | 131,640 (deployment MAR–AUG) | 1,093,670 |
+| FY25 | 29,840 (OCT 2024 only, 963/day) | 514,385 (OCT at 520/day, then 1,492/day) | 427,145 | 191,035 | 1,162,405 |
+| FY26, 9 months (273 days) | Closed | 412,650 (1,512/day) | 318,220 (1,166/day) | 143,880 (527/day) | 874,750 |
+| TE 5-1 basis | – | 1,538/day | 1,179/day | 532/day | |
+
+Bldg 2240 (963/day) plus Bldg 4120 before consolidation (520/day) is 1,483/day. That is about what Bldg 4120 served
+after 1 NOV 2024 (1,492 rising to 1,512), so the diners really did move. The TE 5-1 basis is the 12-month AFMIS
+actual plus the IFPM's stated FY27 stationing adjustment of about 1% to 2% (paragraph 1.5). The installation total
+rises from FY24 to FY25 because the Bldg 9215 brigade came back from deployment, not because of the closure.

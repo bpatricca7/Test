@@ -1,6 +1,6 @@
 {
   "id": "city-parks-mowing-pdf",
-  "title": "City park, median and right-of-way mowing RFP (City of Ashby Creek, MO, RFP No. 2027-014): 26-site park schedule with mowable vs total acres, service levels, ballfields, beds and trees; medians in LF x average width; 5-row park building custodial table; Addendum No. 1 deletes a park and revises quantities",
+  "title": "City park, median and right-of-way mowing RFP (City of Ashby Creek, MO, RFP No. 2027-014): 26-site park schedule with mowable vs total acres, service levels, ballfields, beds and trees; medians in LF x average width; a paver median and shelter slabs as measured hardscape; 5-row park building custodial table; proposal forms; Addendum No. 1 deletes a park and revises quantities",
   "theme": "municipal-grounds",
   "provenance": {
     "fidelity": "real-format",
@@ -50,7 +50,7 @@
         "note": "City of San Antonio mowing schedule: medians and rights-of-way mowed on fixed cycles per year, separate from parks."
       }
     ],
-    "notes": "Layout, column set (site no., name/address, total vs mowable acres, service level, cycle, ballfields, beds, trees, litter frequency), the medians-in-LF-with-average-width convention, park restroom service wording and term/renewal language follow the real municipal solicitations cited. The City of Ashby Creek, every site and street name, address, acreage, LF, width, square footage, fixture count, the incumbent (Halvorsen Turf Management, LLC), contract number PR-2022-031 and the $612,480 amount are illustrative. No row is copied from a real document."
+    "notes": "Layout, column set (site no., name/address, total vs mowable acres, service level, cycle, ballfields, beds, trees, litter frequency), the medians-in-LF-with-average-width convention, park restroom service wording and term/renewal language follow the real municipal solicitations cited. The City of Ashby Creek, every site and street name, address, acreage, LF, width, square footage, fixture count, the incumbent (Halvorsen Turf Management, LLC), contract number PR-2022-031 and the $612,480 amount are illustrative. No row is copied from a real document. Sections 4-5 and Forms 1-3 (submission tabs, insurance limits, RSMo 285.530 E-Verify affidavit, RSMo 34.600 certification, non-collusion affidavit, references form) were written from the Missouri statutes and common municipal RFP boilerplate, not copied from a document found in search; they are noise for the reader."
   },
   "inputs": [
     {
@@ -682,6 +682,12 @@
         "name": "Table A-2 M-4 Pioneer Drive, Ashby Creek Parkway to Kingsridge Road (1,960 LF x 16 FT)"
       },
       {
+        "kind": "sidewalk",
+        "quantity": 8400,
+        "unit": "sqft",
+        "name": "Table A-2 M-5 Florence Boulevard paver median, Civic Center Drive to Main Street (1,050 LF x 8 FT; weekly litter and joint weed control, not mowed)"
+      },
+      {
         "kind": "improved_turf",
         "quantity": 1.022,
         "unit": "acres",
@@ -716,6 +722,30 @@
         "quantity": 0.947,
         "unit": "acres",
         "name": "Table A-2 R-4 Water Tower Road, Industrial Park Drive to Water Tower Lot (east side only) (1,650 LF x 25 FT)"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 1500,
+        "unit": "sqft",
+        "name": "Table C-2 Shelter A slab, Site 1 Harmon Park (30 ft x 50 ft)"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 960,
+        "unit": "sqft",
+        "name": "Table C-2 Shelter B slab, Site 6 Lakeshore Park (24 ft x 40 ft)"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 1200,
+        "unit": "sqft",
+        "name": "Table C-2 Shelter C slab, Site 22 Riverbend Park (30 ft x 40 ft)"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 330,
+        "unit": "sqft",
+        "name": "Table C-2 Gazebo slab, Site 10 Founders Square (20 ft octagon)"
       }
     ],
     "site": {
@@ -732,21 +762,24 @@
     }
   },
   "traps": [
-    "Single 9-page PDF with a text layer: portrait cover and Sections 1-3, then three LANDSCAPE pages (Table A-1 across two pages with its two-row header repeated, Table A-2 on one), a portrait Attachment C page and Addendum No. 1 bound at the end. Running header (city | RFP No. 2027-014 | title) and a \"City Page n\" footer repeat on every page; the renderer adds a second \"Page n of m\" footer.",
-    "Addendum No. 1 (last page) supersedes the tables: Site 14 Wexford Commons Pocket Park is DELETED (its 0.48 semi-improved acres, 320 SF beds and 9 trees are excluded from truth); Site 9 Creekside Greenway mowable turf 6.40 -> 7.15 ac; Segment M-6 Kingsridge Road 2,640 LF -> 3,180 LF; PB-3 gross 2,240 -> 2,420 SF, cleanable 1,960 -> 2,130 SF, fixtures 8/3/6/0 -> 9/3/7/0 (19). Truth carries only the post-addendum values.",
-    "Table A-1 has BOTH \"Total Site Acres\" (information only; includes paving, water, woods, ballfields) and \"Mowable Turf Acres\" (basis of payment). Turf truth uses Mowable Turf Acres only; Total Site Acres (e.g. Lakeshore Park \"approx. 31.5\" incl. an 11-acre lake, Cedar Hollow \"64±\") must not be read as turf. Ballfield acres and rough-mow acres are separate and not included in Mowable Turf Acres (Section 2.1, Addendum Q1), so they are not double counted.",
+    "Single 13-page PDF with a text layer: portrait cover (with a \"POSTED OCTOBER 19, 2026 / THIS FILE INCLUDES ADDENDUM NO. 1\" box) and Sections 1-5 on pages 1-5; three LANDSCAPE pages (Table A-1 across pages 6-7 with its two-row header repeated, Table A-2 on page 8); portrait Attachment C (page 9), Proposal Forms 1-3 (pages 10-11) and the two-page Addendum No. 1 bound at the end (pages 12-13). The running header repeats on every page; original pages carry an \"Issued October 5, 2026\" footer, the addendum pages \"Addendum No. 1 ... Page n of 2 / October 19, 2026\", and the renderer adds \"Page n of 13\".",
+    "Addendum No. 1 (pages 12-13) supersedes the tables: Site 14 Wexford Commons Pocket Park is DELETED (its 0.48 semi-improved acres, 320 SF beds and 9 trees are excluded from truth); Site 9 Creekside Greenway mowable turf 6.40 -> 7.15 ac; Segment M-6 Kingsridge Road 2,640 LF -> 3,180 LF; PB-3 gets a 180 gross SF family restroom addition, so gross 2,240 -> 2,420 SF, cleanable 1,960 -> 2,130 SF, fixtures 8/3/6/0 -> 9/3/7/0 (19). Truth carries only the post-addendum values.",
+    "Table A-1 has BOTH \"Total Site Acres\" (information only; includes paving, water, woods, ballfields) and \"Mowable Turf Acres\" (basis of payment). Turf truth uses Mowable Turf Acres only; Total Site Acres (e.g. Lakeshore Park \"approx. 31.5\" incl. an 11-acre lake, Cedar Hollow \"64±\") must not be read as turf. Ballfield acres and rough-mow acres are separate and not included in Mowable Turf Acres (Section 2.1(c) and (e), Addendum Q2), so they are not double counted.",
     "Service Level column maps the turf: Svc Lvl 1 (7-day cycle, \"Improved Turf\") -> improved_turf; Svc Lvl 2 (14-day cycle, \"Semi-Improved Turf\") -> semi_improved; \"Rough Mow Acres (Svc Lvl 3)\" -> unimproved; Ballfield Acres -> athletic_field; Planting Beds (SF) -> shrub_bed sqft; Trees (EA) -> tree_canopy each. Post-addendum park totals: improved 62.22 ac (Lvl 1), semi-improved 84.99 ac (Lvl 2), unimproved 57.9 ac, athletic fields 40.85 ac, beds 41,310 SF.",
-    "Medians / ROW (Table A-2) give only Length (LF), Average Width (FT) and Sides - no acreage (note 1/, Addendum Q2). Truth converts each turf segment to improved-turf ACRES as LF x width x sides / 43,560: M-1 2,450 x 18 = 44,100 SF = 1.012 ac; M-2 3,120 x 22 = 68,640 SF = 1.576 ac; M-3 1,380 x 12 = 16,560 SF = 0.380 ac; M-4 1,960 x 16 = 31,360 SF = 0.720 ac; M-6 3,180 x 14 = 44,520 SF = 1.022 ac; M-7 875 x 10 = 8,750 SF = 0.201 ac; R-1 5,280 x 15 x 2 = 158,400 SF = 3.636 ac; R-2 3,465 x 20 x 2 = 138,600 SF = 3.182 ac; R-3 6,870 x 6 x 2 = 82,440 SF = 1.893 ac; R-4 1,650 x 25 = 41,250 SF = 0.947 ac. Total 634,620 SF = 14.569 ac improved turf (all segments are Svc Lvl 1). Reading LF as SF, ignoring the width, or ignoring Sides = 2 on R-1, R-2 and R-3 gives a wrong area.",
-    "Segment M-5 Florence Boulevard (1,050 LF x 8 FT) is stamped concrete / pavers with no turf (Svc Lvl and cycle \"—\", note 3/): it is excluded from turf truth. The Table A-2 TOTAL LENGTH row (30,740 LF, pre-addendum, includes M-5) is not an area.",
-    "The Table A-1 TOTAL row (374.63 total ac, 146.94 mowable ac, 41,630 SF beds, 1,397 trees) is pre-addendum (includes Site 14 and Site 9 at 6.40 ac) and must not be added as a site. Footnote 6/ says the individual entries govern.",
+    "Medians / ROW (Table A-2) give only Length (LF), Average Width (FT) and Sides - no acreage (note 1/, Addendum Q3). Truth converts each turf segment to improved-turf ACRES as LF x width x sides / 43,560: M-1 2,450 x 18 = 44,100 SF = 1.012 ac; M-2 3,120 x 22 = 68,640 SF = 1.576 ac; M-3 1,380 x 12 = 16,560 SF = 0.380 ac; M-4 1,960 x 16 = 31,360 SF = 0.720 ac; M-6 3,180 x 14 = 44,520 SF = 1.022 ac; M-7 875 x 10 = 8,750 SF = 0.201 ac; R-1 5,280 x 15 x 2 = 158,400 SF = 3.636 ac; R-2 3,465 x 20 x 2 = 138,600 SF = 3.182 ac; R-3 6,870 x 6 x 2 = 82,440 SF = 1.893 ac; R-4 1,650 x 25 = 41,250 SF = 0.947 ac. Total 634,620 SF = 14.569 ac improved turf (all segments are Svc Lvl 1). Reading LF as SF, ignoring the width, or ignoring Sides = 2 on R-1, R-2 and R-3 gives a wrong area.",
+    "Segment M-5 Florence Boulevard (1,050 LF x 8 FT x 1 side) is stamped concrete / pavers with no turf (Svc Lvl and cycle \"—\", note 3/, Section 2.8): it is NOT turf, but it IS in scope for weekly litter removal and joint weed control priced per visit (Section 2.12(b), note 1/), so truth carries it as 8,400 SF of sidewalk (hardscape walks: blowing, litter, joint weeds; not a parking lot). The Table A-2 TOTAL LENGTH row (30,740 LF, pre-addendum, includes M-5) is not an area.",
+    "The Table A-1 TOTAL row (377.63 total ac, 146.94 mowable ac, 41,630 SF beds, 1,397 trees) is pre-addendum (includes Site 14 and Site 9 at 6.40 ac) and must not be added as a site. Footnote 6/ says the individual entries govern.",
     "Several acreages carry qualifiers: \"approx. 46\", \"approx. 31.5\", \"approx. 52\", \"approx. 2.7\" (Total Site Acres), \"approx. 9.40\" (Kingsridge mowable), \"approx. 15.20\" (Hillcrest Cemetery mowable) and \"64±\" (Cedar Hollow). The number is the quantity; Total Site Acres are not turf.",
     "Footnote markers are superscripts glued to names (\"Creekside Greenway2/\", \"Cedar Hollow Nature Preserve3/\", \"Hillcrest Cemetery4/\") and to column headers (\"Class1/\", \"Total Site Acres5/\"); names wrap to a second line with an italic parenthetical description and a third line with the street address.",
     "Segment M-2 surface \"Turf with street trees (34 EA)\" adds 34 trees maintained under Section 2.7 (tree_canopy, each). Creekside Greenway trees are \"not inventoried\" and Cedar Hollow shows \"—\": no tree quantity for those sites.",
-    "Facilities are only the park buildings in Table C-1 (facilitiesComplete): PB-1..PB-4. PB-5 Old Mill Park Restroom Building (640 SF) is CLOSED / scheduled for demolition (footnote 2/, Addendum Q3) and excluded. The TOTAL row (19,640 GSF, pre-addendum) is not a facility. Table C-2 picnic shelters (1,500 / 960 / 1,200 / 330 SF slabs) are open-air and explicitly not custodial buildings (Section 3.3).",
+    "Facilities are only the park buildings in Table C-1 (facilitiesComplete): PB-1..PB-4. PB-5 Old Mill Park Restroom Building (640 SF) is CLOSED / scheduled for demolition (footnote 2/, Addendum Q7) and excluded. The TOTAL row (19,640 GSF, pre-addendum) is not a facility. Table C-2 picnic shelters and the gazebo (1,500 / 960 / 1,200 / 330 SF slabs) are open-air and explicitly not custodial buildings (Section 3.3), so they are not facilities; their slabs are grounds hardscape (see the paved-areas trap).",
+    "Paved areas (Section 2.12): the only measured hardscape is Segment M-5 (1,050 LF x 8 FT = 8,400 SF of pavers) and the Table C-2 slabs blown off at each litter visit (Shelter A 1,500 + Shelter B 960 + Shelter C 1,200 + Gazebo 330 = 3,990 SF). Truth carries both as sidewalk (12,390 SF total). Walks, drives, parking lots and courts at the Table A-1 sites are \"not separately measured or priced\", so there is no parking quantity; do not derive paving from Total Site Acres minus turf. Snow removal is excluded.",
     "Restroom fixtures are printed as \"WC / UR / LAV / SH\" (e.g. \"10 / 4 / 9 / 2\"); truth restroomFixtures is the sum (PB-1 25, PB-2 13, PB-3 19 post-addendum, PB-4 8).",
-    "Cleaning days map to service levels: \"Monday – Friday\" -> daily_5 (PB-1); \"Daily, 7 days / week, including holidays\" -> daily_7 (PB-2); \"Monday, Wednesday, Friday\" -> 3x_week (PB-3). PB-4 is seasonal (7 days Apr-Oct, Sat/Sun only Nov-Mar) and has no single matching level, so truth omits serviceLevel. Only PB-1 has an unambiguous category (community); the restroom/concession buildings carry none.",
-    "Contract term (Section 1.2, Addendum Q4): two-year initial term (Mar 1, 2027 - Feb 28, 2029) plus up to three one-year renewals -> contractYears 5. \"Pricing shall remain firm for the initial term\" and the 90-day CPI clause are not term lengths.",
-    "Prior award (Section 1.3): Contract No. PR-2022-031, Halvorsen Turf Management, LLC, awarded February 2022, CY 2025 expenditures $612,480 -> annualValue 612480, awardYear 2022. It covers mowing only (no custodial, not segments R-3/R-4 per Addendum A5), so a top-down cross-check understates the new scope. The $612,480 is not a contract total.",
-    "Climate: City of Ashby Creek, St. Louis County, Missouri (cover page) -> temperate (not stated in words; inferred from location). Mowing season March 15 - November 15 with an estimated 30 Svc Lvl 1 cycles and 17 Svc Lvl 2 cycles (Section 2.2 service level table)."
+    "Cleaning days map to service levels: \"Monday – Friday\" -> daily_5 (PB-1); \"Daily, 7 days / week, including holidays\" -> daily_7 (PB-2); \"Monday, Wednesday, Friday\" -> 3x_week (PB-3). PB-4 is seasonal (7 days/week Apr 1 - Oct 31 = 214 days, plus Sat/Sun Nov 1 - Mar 31 = about 43 days, about 257 service days a year): no printed schedule matches a level, so truth omits serviceLevel. If one is assigned it should be daily_5 (250 days/yr) by annual frequency, not daily_7. Only PB-1 has an unambiguous category (community); the restroom/concession buildings carry none.",
+    "Contract term (Section 1.2, Addendum Q9): two-year initial term (Mar 1, 2027 - Feb 28, 2029) plus up to three one-year renewals -> contractYears 5. \"Pricing shall remain firm for the initial term\", the 90-day CPI clause and the 90-day proposal validity (Section 4.3) are not term lengths.",
+    "Prior award (Section 1.3, Addendum A5): Contract No. PR-2022-031, Halvorsen Turf Management, LLC, awarded February 2022; \"The City's annual cost under that contract for calendar year 2025 was $612,480\" -> annualValue 612480, awardYear 2022. It is a 12-month annual figure, so it is annualValue, not spendToDate (spend to date would be the cumulative total since 2022, which is not stated) and not totalValue. No start date or total value is printed, so periodMonths is omitted. It covers mowing only (no custodial, not segments R-3/R-4 per A5), so a top-down cross-check understates the new scope.",
+    "Climate: City of Ashby Creek, St. Louis County, Missouri (cover page) -> temperate (not stated in words; inferred from location). Mowing season March 15 - November 15 with an estimated 30 Svc Lvl 1 cycles and 17 Svc Lvl 2 cycles (Section 2.2 service level table).",
+    "Dollar amounts that are not contract values: Section 5.1 insurance limits ($1,000,000 each occurrence, $2,000,000 aggregate/umbrella, $500,000 employer's liability), the $5,000 E-Verify threshold (Section 5.3, RSMo 285.530) and the $100,000 threshold (Section 5.4, RSMo 34.600). Form 3's \"Annual Contract Value ($)\" column is a blank form field. None of these is the prior award.",
+    "Footnote markers are also glued to the end of text cells: Table A-2 \"Type4/\" and \"no turf3/\"; Table C-1 \"...Mar 313/\" (PB-4 winterization, note 3/) and \"NOT INCLUDED.2/\" (PB-5, note 2/). The \"313\" is \"Mar 31\" plus marker 3/, not a quantity."
   ]
 }

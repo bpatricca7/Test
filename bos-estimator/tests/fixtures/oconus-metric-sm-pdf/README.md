@@ -8,12 +8,14 @@ solicitation `W912PF-27-R-0012`.
 | page | content | orientation |
 |---|---|---|
 | 1 | Cover with the table list and nine General Notes: 1 base + 4 option periods, units, number format, area definitions, PT/S1 floor notation, frequency codes, exclusions, totals, access | portrait |
-| 2 | **Table 3-1 Caserma Carlo Ederle**: GFEBS extract in **SM**, U.S. number format (`2,148.6`). Two-row header, footnotes 1/–3/, subtotal | landscape |
+| 2 | **Table 3-1 Caserma Carlo Ederle**: DPW facility list in **SM** (gross area from the GFEBS real property extract, cleanable area from a DPW custodial space survey), U.S. number format (`2,148.6`). Two-row header, footnotes 1/–3/, subtotal | landscape |
 | 3 | **Table 3-2 Caserma Renato Del Din**: host-nation data in **m²**, Italian number format (`4.312,8 m²`), floors as `PT+3` / `S1+PT+2`, frequency as `5/7` | landscape |
-| 4 | **Table 3-3 Poggio Renatico**: host-nation data in **mq**, whole numbers with thousands periods (`3.460`), frequencies in Italian (`settimanale`), plus a prose summary of the facility count | landscape |
+| 4 | **Table 3-3 Poggio Renatico**: host-nation data in **mq**, whole numbers with thousands periods (`3.460`), frequencies in Italian (`settimanale`), no cleanable column. Below it, a DPW **site summary table** of gross and cleanable SM in scope (U.S. format) | landscape |
 | 5 | **Table 3-4 Grounds / Aree verdi**: hectares with decimal commas (`2,35 ha`), m² with thousands periods (`18.600 m²`), trees (`312 n.`), totals for each unit, and an information-only site area row | landscape |
 
 Source: `te3-facility-list.html` → `build/W912PF-27-R-0012 Att 0004 - TE-3 Facility List and Grounds Areas (SM).pdf`.
+Each page has a running header and a footer line (attachment, issue date); the page number is the print footer
+"Page n of 5" (the document footer does not repeat it).
 
 ```bash
 node scripts/render-fixtures.mjs tests/fixtures/oconus-metric-sm-pdf
@@ -64,7 +66,11 @@ Web search shaped the structure and wording. Almost every number is made up.
 
 - **30 facilities** (`facilitiesComplete: true`): 15 at Ederle, 12 at Del Din and 3 at Poggio Renatico.
   - `grossSqft` = m² × 10.7639, rounded to whole SF. Total: 866,311 SF.
-  - `cleanableSqft` is converted the same way where a cleanable area is given. Poggio Renatico has none.
+  - `cleanableSqft` is converted the same way where a cleanable area is given. Total: 453,135 SF.
+  - Poggio Renatico (Table 3-3) records no cleanable area. General Note 4 ("where no cleanable area is given, the
+    gross area applies"), the Table 3-3 caption and the summary table's note 2/ all say so, so truth sets
+    `cleanableSqft` = `grossSqft` for Bldgs 12, 14 and 15 (13,347 / 37,243 / 7,319 SF). Leaving it blank would make
+    the estimator apply a category cleanable share (admin 0.85, barracks 0.6, warehouse 0.3) and under-state them.
   - `floors` comes from the FLRS column or the PT/S1 notation.
   - `serviceLevel` comes from 7X/WK, 5/7, `2 v/sett.`, `settimanale`, `quindicinale` and the other codes.
   - `category` is set only where the use is clear.
@@ -86,8 +92,9 @@ Web search shaped the structure and wording. Almost every number is made up.
 
 ## Traps
 
-1. **Square meters everywhere.** SM, m² and mq are all used, and no SF appears anywhere. Reading 3,960.0 SM as SF
-   understates Bldg 47 (42,625 SF) by 90%.
+1. **Square meters everywhere.** SM, m² and mq are all used, and no SF appears anywhere. General Note 2 only says
+   offerors convert; the factor (1 SM = 10.7639 SF) is in the Table 3-1 source note and Table 3-4 note 4. Reading
+   3,960.0 SM as SF understates Bldg 47 (42,625 SF) by 90%.
 2. **Two number formats in one package.**
    - Table 3-1 uses U.S. format: `2,148.6`.
    - Tables 3-2 to 3-4 use Italian format: `4.312,8 m²` = 4,312.8.
@@ -98,12 +105,17 @@ Web search shaped the structure and wording. Almost every number is made up.
 5. **Excluded rows inside the table.**
    - `USO ITALIANO` (Italian Army use) and `DA DEMOLIRE FY27` are listed but not in scope.
    - The Ederle SUBTOTALE includes both, and says so.
-6. **Rows that are not facilities.** SUBTOTALE and TOTALE rows, plus a prose summary saying "total 30 facilities".
+6. **Rows that are not facilities.**
+   - SUBTOTALE and TOTALE rows in every table.
+   - The site summary table on page 4: three site rows and a TOTAL (80,482.8 SM gross, 42,097.4 SM cleanable in
+     scope). They are a cross-check, not facilities. Its Ederle row (35,285.7 SM) excludes Bldgs 71 and 222, unlike
+     the Table 3-1 SUBTOTALE (36,783.2 SM).
 7. **Twins.** 141/143, D-02/D-03 and D-05/D-06 have identical data and are separate facilities.
 8. **Bilingual names.** Long Italian–English names wrap inside cells. Footnote markers 1/ to 3/ are superscripts
    after names.
 9. **Cleanable area far below gross.** This applies to barracks (common areas only), CIF, COF, the vehicle shop and
-   auto skills.
+   auto skills. Poggio Renatico has no cleanable column at all: the gross area applies (General Note 4), so
+   cleanable = gross there.
 10. **Grounds units.**
     - Hectares use decimal commas: `2,35 ha` = 5.81 acres.
     - m² uses thousands periods: `18.600 m²` = 200,209 SF.

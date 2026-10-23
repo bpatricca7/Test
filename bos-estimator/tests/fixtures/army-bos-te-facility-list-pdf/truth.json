@@ -42,7 +42,7 @@
         "note": "DD Form 1354: facility number, CATCODE and primary unit-of-measure quantity as the real property record fields behind the GSF column."
       }
     ],
-    "notes": "Layout, column set, zone/subtotal structure, footnote convention (\"1/\"), CUI banner/designation block and grounds Type I/II/III definitions follow real Army/Air Force BOS and grounds PWS exhibits. Every installation name, solicitation number, facility number, facility name, CATCODE assignment (other than the 72111/72210 titles), year built, floor count, GSF, frequency, acreage and SY quantity is illustrative. Fort Kearsley is fictional."
+    "notes": "Layout, column set, zone/subtotal structure, footnote convention (\"1/\"), CUI banner/designation block and grounds Type I/II/III definitions follow real Army/Air Force BOS and grounds PWS exhibits. Every installation name, solicitation number, facility number, facility name, CATCODE assignment (other than the 72111/72210 titles), year built, floor count, GSF, frequency, acreage and SY quantity is illustrative. Fort Kearsley is fictional. The attachment is dated 15 OCT 2026 so that the FY27 solicitation number matches the fiscal year of issue."
   },
   "inputs": [
     {
@@ -74,8 +74,7 @@
         "name": "INSTALLATION EMERGENCY OPERATIONS CENTER",
         "grossSqft": 9860,
         "floors": 1,
-        "serviceLevel": "daily_7",
-        "category": "admin"
+        "serviceLevel": "daily_7"
       },
       {
         "buildingNumber": "P-106",
@@ -122,16 +121,14 @@
         "name": "RELIGIOUS EDUCATION CENTER",
         "grossSqft": 12470,
         "floors": 2,
-        "serviceLevel": "3x_week",
-        "category": "community"
+        "serviceLevel": "3x_week"
       },
       {
         "buildingNumber": "P-120",
         "name": "MAIN POST LIBRARY AND LEARNING CENTER",
         "grossSqft": 14825,
         "floors": 2,
-        "serviceLevel": "daily_5",
-        "category": "community"
+        "serviceLevel": "daily_5"
       },
       {
         "buildingNumber": "P-122",
@@ -223,8 +220,7 @@
         "name": "MAIN POST OFFICE",
         "grossSqft": 5480,
         "floors": 1,
-        "serviceLevel": "daily_5",
-        "category": "community"
+        "serviceLevel": "daily_5"
       },
       {
         "buildingNumber": "00244",
@@ -557,6 +553,7 @@
         "name": "ORGANIZATIONAL STORAGE (WWII WOOD)",
         "grossSqft": 2580,
         "floors": 1,
+        "serviceLevel": "monthly",
         "category": "warehouse"
       },
       {
@@ -588,6 +585,7 @@
         "name": "HAZARDOUS MATERIALS STORAGE BUILDING",
         "grossSqft": 3200,
         "floors": 1,
+        "serviceLevel": "monthly",
         "category": "warehouse"
       },
       {
@@ -674,16 +672,14 @@
         "name": "TRAINING SUPPORT CENTER (TSC) – TRAINING AIDS",
         "grossSqft": 23470,
         "floors": 1,
-        "serviceLevel": "2x_week",
-        "category": "education"
+        "serviceLevel": "2x_week"
       },
       {
         "buildingNumber": "02354",
         "name": "MISSION TRAINING COMPLEX – SIMULATIONS BUILDING",
         "grossSqft": 41860,
         "floors": 2,
-        "serviceLevel": "daily_5",
-        "category": "education"
+        "serviceLevel": "daily_5"
       },
       {
         "buildingNumber": "02356",
@@ -706,8 +702,7 @@
         "name": "AIRFIELD OPERATIONS BUILDING",
         "grossSqft": 16420,
         "floors": 2,
-        "serviceLevel": "daily_7",
-        "category": "admin"
+        "serviceLevel": "daily_7"
       },
       {
         "buildingNumber": "04003",
@@ -752,8 +747,7 @@
         "name": "FLIGHT SIMULATOR BUILDING",
         "grossSqft": 9440,
         "floors": 1,
-        "serviceLevel": "daily_5",
-        "category": "education"
+        "serviceLevel": "daily_5"
       },
       {
         "buildingNumber": "04015",
@@ -834,6 +828,7 @@
         "name": "FORWARD OPERATING BASE KILO – DINING SHELTER",
         "grossSqft": 4200,
         "floors": 1,
+        "serviceLevel": "monthly",
         "category": "dining"
       },
       {
@@ -841,13 +836,15 @@
         "name": "FORWARD OPERATING BASE KILO – BILLETING AND LATRINE",
         "grossSqft": 9600,
         "floors": 1,
+        "serviceLevel": "monthly",
         "category": "barracks"
       },
       {
         "buildingNumber": "R-5130",
         "name": "URBAN ASSAULT COURSE CONTROL BUILDING",
         "grossSqft": 1210,
-        "floors": 1
+        "floors": 1,
+        "serviceLevel": "monthly"
       }
     ],
     "facilitiesComplete": true,
@@ -1119,18 +1116,51 @@
         "kind": "improved_turf",
         "quantity": 1.9,
         "unit": "acres",
+        "buildingNumbers": [
+          "R-5101",
+          "R-5103",
+          "R-5110",
+          "R-5112",
+          "R-5115",
+          "R-5120",
+          "R-5125",
+          "R-5127",
+          "R-5130"
+        ],
         "name": "GD-2 Range control complex and range support buildings"
       },
       {
         "kind": "semi_improved",
         "quantity": 8.7,
         "unit": "acres",
+        "buildingNumbers": [
+          "R-5101",
+          "R-5103",
+          "R-5110",
+          "R-5112",
+          "R-5115",
+          "R-5120",
+          "R-5125",
+          "R-5127",
+          "R-5130"
+        ],
         "name": "GD-2 Range control complex and range support buildings"
       },
       {
         "kind": "unimproved",
         "quantity": 412.5,
         "unit": "acres",
+        "buildingNumbers": [
+          "R-5101",
+          "R-5103",
+          "R-5110",
+          "R-5112",
+          "R-5115",
+          "R-5120",
+          "R-5125",
+          "R-5127",
+          "R-5130"
+        ],
         "name": "GD-2 Range control complex and range support buildings"
       },
       {
@@ -1188,21 +1218,21 @@
     }
   },
   "traps": [
-    "TE 5 spans 5 LANDSCAPE pages after a portrait cover; the two-row column header (group header \"REAL PROPERTY DATA (GFEBS, AS OF 30 SEP 2026)\" over CATCODE..GSF) is repeated on every page and must not be read as data.",
-    "Running header (solicitation number, TE title), \"CUI\" banners top and bottom, and the footer \"Section J, Attachment 0003 | TE 5 – Page x of y | Issued 18 SEP 2026\" repeat on every page; the renderer adds a second overall \"Page n of m\" footer.",
+    "TE 5 spans 5 LANDSCAPE pages after a portrait cover; the two-row column header (group header \"REAL PROPERTY DATA (GFEBS, AS OF 30 SEP 2026)\" over CATCODE..GSF) is repeated on every page and must not be read as data. Pages are filled to the bottom margin, so rows run straight into the \"Continued on next page\" note, footer and CUI banner.",
+    "Running header (solicitation number, TE title), \"CUI\" banners top and bottom, and the footer \"Section J, Attachment 0003 | TE 5 – Page x of 5 | Issued 15 OCT 2026\" repeat on every page; the renderer adds a second overall \"Page n of 8\" footer.",
     "Zone grouping rows (e.g. \"CANTONMENT AREA A – MAIN POST AND GARRISON HEADQUARTERS\", plus \"(CONTINUED)\" rows at page tops) are not facilities.",
     "Four zone SUBTOTAL rows (CANTONMENT AREA A 484,331; CANTONMENT AREA B 919,655; CANTONMENT AREA C 565,502; KAAF AND RANGE CONTROL 357,770) and a GRAND TOTAL row (2,327,258 GSF, 104 facilities) are not facilities; per General Note 4 they include the two demolition rows.",
-    "T-2308 (ADMINISTRATIVE GENERAL PURPOSE (WWII WOOD), 4,712 GSF) and T-2314 (RESERVE COMPONENT TRAINING ROOM (WWII WOOD), 3,960 GSF) are marked \"DEMO FY27 – EXCLUDE\" in the CUSTODIAL FREQ column with footnote 2/ on the name: excluded, so truth has 102 facilities out of 104 listed rows.",
-    "Footnote markers are superscripts glued to numbers, so the text layer shows e.g. \"61,4501/\" for 00207 (61,4501/), 00238 (14,2103/), 01245 (46,8001/), 02322 (72,0001/), 02324 (54,6001/), 04005 (104,3003/), 04007 (118,6403/), 04011 (11,7603/): GSF is the number without the marker. Name markers (2/, 4/, 5/) follow facility names.",
-    "19 GSF values are printed without thousands separators (e.g. 7315, 3180, 9950) while the rest use commas; values under 1,000 (960, 860) are also present.",
+    "T-2308 (ADMINISTRATIVE GENERAL PURPOSE (WWII WOOD), 4,712 GSF) and T-2314 (RESERVE COMPONENT TRAINING ROOM (WWII WOOD), 3,960 GSF) are marked \"DEMO FY27 – EXCLUDE\" in the CUSTODIAL FREQ column with footnote 2/ on the name: excluded, so truth has 102 facilities out of 104 listed rows (2,318,586 GSF).",
+    "Footnote markers are superscripts glued to numbers, so the text layer shows e.g. \"61,4501/\" for 00207 (61,450 + 1/), 00238 (14,2103/), 01245 (46,8001/), 02322 (72,0001/), 02324 (54,6001/), and, in the KAAF block where there are no separators, \"1043003/\" for 04005 (104,300 + 3/), \"1186403/\" for 04007 (118,640 + 3/) and \"117603/\" for 04011 (11,760 + 3/). GSF is the number without the trailing marker digit and slash. Name markers (2/, 4/, 5/) follow facility names.",
+    "Number format changes by block: the 20 rows of the KEARSLEY ARMY AIRFIELD (KAAF) AND RANGE CONTROL zone print GSF without thousands separators (16420, 104300, 9600 …; 19 values of 1,000 or more plus 860), as if pasted from a separate airfield/range listing, while Areas A–C and every subtotal use commas. Values under 1,000 (960 in Area C, 860 in KAAF/Range) are real buildings.",
     "Facility numbers mix formats: \"P-114\" (permanent prefix), \"00205\" and its annex \"00205A\" (distinct records, both in scope), \"T-2310\" (temporary; in scope) next to demolition rows T-2308 and T-2314, \"S-2340\", and range facilities \"R-5101\".",
-    "Adjacent numeric columns YR BUILT | FLRS | GSF (e.g. \"1958 3 48,620\") must not be merged; the year is not square footage and FLRS is the floor count.",
-    "CUSTODIAL FREQ maps 7X/WK → daily_7, 5X/WK → daily_5, 3X/WK → 3x_week, 2X/WK → 2x_week, 1X/WK → weekly. 1X/MO has no matching service level, so truth omits serviceLevel for T-2312, 02326, R-5125, R-5127, R-5130 (still in scope).",
+    "Adjacent numeric columns YR BUILT | FLRS | GSF (e.g. \"1958 3 48,620\", or \"1993 2 16420\" in the KAAF block) must not be merged; the year is not square footage and FLRS is the floor count.",
+    "CUSTODIAL FREQ maps 7X/WK → daily_7, 5X/WK → daily_5, 3X/WK → 3x_week, 2X/WK → 2x_week, 1X/WK → weekly and 1X/MO → monthly (General Note 2: \"once per month\"). The five 1X/MO facilities T-2312, 02326, R-5125, R-5127 and R-5130 are in scope with serviceLevel monthly.",
     "Twin rows with identical data (01203/01204 battalion HQs, 01205/01206 COFs, 01210/01212/01214 and 01216/01218 UEPH barracks) are separate facilities and must all be kept.",
-    "Footnotes 3/ (fire stations, hangars: bays excluded), 4/ (dining: kitchen by food service contractor) and 5/ (barracks: common areas only) limit custodial area but give no cleanable SF, so truth carries gross SF only and no cleanableSqft.",
-    "Category is asserted only where the CATCODE description is unambiguous (e.g. 72111 → barracks, 72210 → dining, 21110 → hangar, 61050/1418x → admin); fire, MP, tower, terminal, bathhouse, fuel, range and youth-center codes carry no category.",
+    "Footnotes 3/ (fire stations, hangars: bays excluded), 4/ (dining: kitchen by food service contractor) and 5/ (barracks: common areas only) limit custodial area but give no cleanable SF, so truth carries gross SF only and no cleanableSqft. Footnote 1/ (loading docks) does not reduce the area.",
+    "Category is asserted only where the CATCODE description maps to one category without judgement: 61050 ADMINISTRATIVE GENERAL PURPOSE and 14182/14183/14185 headquarters and company operations → admin; 72111/72410 → barracks; 72210 → dining; 54010/55010 → medical; 44220/44260/44270 → warehouse; 21410/21910/21116 → maintenance; 21110 → hangar; 74028 → fitness; 74046 → child_care; 17120 GENERAL INSTRUCTION BUILDING → education; 73017 chapel, 74010 ACS and 74054 community activity center → community; 31010 → lab. No category for the EOC (14160), airfield operations, tower, weather station and terminal (1411x), training simulation (17140: 02352, 02354, 04013), library (74044), post office (73070), fire, MP, access control, range, bathhouse, fuel and youth/school-age codes, nor for P-118 RELIGIOUS EDUCATION CENTER, whose name and chapel CATCODE disagree.",
     "TE 6 Table 6-1 has a two-row header (IMPROVED (TYPE I) / SEMI-IMPROVED (TYPE II) / UNIMPROVED (TYPE III), each ACRES | MOWS/YR): acreage and mowing counts alternate (\"18.4 30 3.2 12 —\") and the MOWS/YR integers are not acres. \"—\" means none. Totals: Type I 126.6 AC, Type II 180.3 AC, Type III 611.0 AC; the TOTAL row is excluded.",
-    "Grounds areas list their FACILITIES SERVED by TE 5 facility number; truth carries those as buildingNumbers. GC-1 and GD-2 give a text description instead of numbers, and GC-2 / GX-1 show \"—\", so those have no buildingNumbers.",
+    "Grounds areas list their FACILITIES SERVED by TE 5 facility number; truth carries those as buildingNumbers. GD-2 gives a range, \"Range Control (R-5101 through R-5130)\", which expands to the nine R- facilities in TE 5 (R-5101, R-5103, R-5110, R-5112, R-5115, R-5120, R-5125, R-5127, R-5130). GC-1 says only \"Industrial area (all facilities)\" and GC-2 / GX-1 show \"—\", so those have no buildingNumbers.",
     "Table 6-2 playing fields (PF-1, 14.6 AC) are maintained to Type I standard but are explicitly not included in Table 6-1 Type I acreage: athletic_field, not improved_turf, and not double counted.",
     "Table 6-3 paved areas are in square yards (SY): parking 183,510 SY (= 1,651,590 SF) across PV-1..PV-4, sidewalks 27,600 SY (= 248,400 SF) in PV-5; the TOTAL PAVED AREA row (211,110 SY) is excluded. Truth keeps sqyd (the scorer converts)."
   ]

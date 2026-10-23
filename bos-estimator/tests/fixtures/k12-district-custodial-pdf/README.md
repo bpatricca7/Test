@@ -1,16 +1,19 @@
 # k12-district-custodial-pdf
 
 This is a K-12 school district custodial RFP (`RFP No. 27-02`, for "Cedar Prairie School District No. 427", a fictional
-King County, Washington district). It is one 9-page PDF with a text layer, and Addendum No. 1 is bound in at the end.
+King County, Washington district). It is one 10-page PDF with a text layer: the RFP as issued on October 26, 2026,
+followed by Addendum No. 1 (November 16, 2026), the way a proposer saves the RFP and its addendum into one file. The
+original RFP pages do not mention what the addendum changes.
 
 | Pages | Content |
 |---|---|
-| 1 | Cover with key dates and package contents |
+| 1 | Cover with key dates, named contact and RFP contents |
 | 2 | Section 1, General Information: term, current contract, district profile, insurance, background checks |
-| 3–4 | Section 2, Scope of Work: square footage and portables rule, school-year schedule, summer deep clean, gym wood floors, additions/deletions, exclusions |
-| 5–6 | **Exhibit A, Schedule of Facilities** (landscape, 13 columns, three-row header, split over two pages) |
-| 7 | Exhibit B, Price Proposal Form (Pricing Area per location, unit prices) |
-| 8–9 | **Addendum No. 1**: deletes a school, moves portables, corrects the district office SF, revises totals, Q&A |
+| 3–4 | Section 2, Scope of Work: square footage and portables rule, school-year schedule, summer deep clean, gym wood floors, additions/deletions, exclusions (including daytime custodians kept in-house) |
+| 5 | Section 3, Proposal Requirements and Contract Terms: proposal tabs, Forms 1–6, Washington qualifications, prevailing wages (RCW 39.12), payment, termination, public records |
+| 6–7 | **Exhibit A, Schedule of Facilities** (landscape, 13 columns, three-row header, split over two pages) |
+| 8 | Exhibit B, Price Proposal Form (Pricing Area per location, unit prices) |
+| 9–10 | **Addendum No. 1**: deletes a school, moves portables, corrects the district office SF, revises totals, Q&A |
 
 Render and score:
 
@@ -36,6 +39,31 @@ search:
 | [Monroe County School District RFP 2023001 Q&A](https://www.keysschools.com/cms/lib/FL02202360/Centricity/Domain/36/RFP%202023001_Notice_QA%20Response%20No.%201.pdf) | Covered walkways and courtyards not in the listed SF; SF taken from the state facility inventory (FISH; the fixture cites Washington's ICOS) |
 | [Ferndale Public Schools RFP](https://files-backend.assets.thrillshare.com/documents/asset/uploaded_file/4223/Ferndale_Ps/8dd6c69a-ce37-42ea-be9e-69751323a7b8/RFP_FACILITIES_MAINTENANCE_AND_CUSTODIAL_SERVI.pdf?disposition=inline), [Nashua wood floor RFQ](https://nashuanh.gov/DocumentCenter/View/31752/Wood-Floor-Refinishing-2025-2027?bidId=) | Custodian cleans the gym floor, a third party refinishes; summer screen-and-recoat (Section 2.6) |
 | [Oster Elementary portable classrooms notice](https://ceqanet.lci.ca.gov/2020050483/2) | 24 x 40 ft portables of about 960 SF each |
+| [RCW 39.12.020](https://app.leg.wa.gov/RCW/default.aspx?cite=39.12.020) (not fetched; see below) | Section 3.4: prevailing wages on "public building service maintenance contracts", the "Janitors" trade rate for King County, the Statement of Intent and Affidavit of Wages Paid (RCW 39.12.040) |
+
+### Washington setting: what is and is not verified
+
+The district is set in Washington on purpose. The ICOS facility inventory, fingerprint checks under RCW 28A.400.303,
+the Seattle-Tacoma-Bellevue CPI-U, the "Board of Directors", Open Doors re-engagement and the temperate climate in
+`site.climateZone` all depend on it. The format sources are districts in MI, IN, VA, TN, GA and FL, where contracting
+out custodial work is common. Washington districts more often use in-house classified custodians. To make the setting
+believable, the RFP:
+
+- bids only evening production cleaning (1.1, 2.4);
+- keeps daytime custodians as District classified staff (2.8(f));
+- requires state prevailing wages for the "Janitors" trade (3.4), with renewal escalation allowed for wage changes (1.2).
+
+The prevailing-wage wording comes from the author's knowledge of RCW 39.12. It was not checked against a real Washington
+district custodial RFP, because the WebSearch budget was used up during this revision. The fixture also does not cite
+RCW 28A.400.285 (contracting out classified services), because its conditions could not be confirmed. Neither point
+changes any expected value.
+
+Known remaining tells:
+
+- The e-mail domain is a reserved `.example.org` placeholder, on purpose.
+- The package is 10 pages; real ones run 30–80. Forms 1–6 are referenced but "posted as fillable files" rather than bound in.
+- Every figure reconciles exactly. Real schedules often carry small inconsistencies, but adding them on purpose would
+  make the ground truth ambiguous.
 
 ## How the portables are read (stated in the document)
 
@@ -66,6 +94,9 @@ plus its portables. For example, Alder Creek is 51,340 + 4 @ 960 = **55,180**, a
   - $12,904,115 over 48 months
   - Incumbent Sound & Summit Building Care, LLC
   - Contract CPSD-C-22-031, awarded 2022
+  - `periodMonths` and `totalValue` are left out on purpose. No total contract value is stated, and the incumbent's
+    60-month term (1 + four 1-year renewals, July 2022 – June 2027) is not paired with a total. In the schema,
+    `periodMonths` is the period that `totalValue` covers. The 48 months belong to the spend-to-date figure.
 
 ## Traps
 
@@ -91,9 +122,15 @@ plus its portables. For example, Alder Creek is 51,340 + 4 @ 960 = **55,180**, a
 8. **Three-row header.** The group row and the column-number row (1)…(13) are separate rows. Superscript note markers
    are glued to header words ("SF1", "Acres5"). The landscape table spans two pages and repeats its header.
 9. **Wrapped names and addresses.** Lincoln Center takes three lines in the name cell.
-10. **School-calendar schedule** (about 184 days) plus summer deep clean and summer school M–Th. None of these is a
-    separate service level.
+10. **School-calendar schedule** (about 184 days) plus summer deep clean and summer school M–Th (July 6–29, 2027).
+    None of these is a separate service level. Model limitation: `daily_5` is 250 days a year in `shared/types.ts`,
+    so routine school labor estimated from this fixture runs high until the app gets a school-calendar service level
+    or a day-count override.
 11. **Non-award dollar amounts** (insurance limits, bond, liquidated damages) sit near the prior-award paragraph.
+12. **Boilerplate numbers in Section 3**: RCW chapter and section numbers, Forms 1–6, Tabs 1–7, payment counts
+    (10 / 12) and day limits (30 / 60 / 10). None is a facility, an area or an award value.
+13. **Addendum only at the end.** The original pages say only that Old Mill is "under review for consolidation"
+    (2.7, Note 7). The deletion, the moved portables and the district office correction appear only in the addendum.
 
 ## Regenerating
 

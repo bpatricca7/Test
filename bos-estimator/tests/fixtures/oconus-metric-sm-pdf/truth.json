@@ -305,6 +305,7 @@
         "buildingNumber": "12",
         "name": "UFFICI PERSONALE USA – U.S. ADMINISTRATIVE OFFICES",
         "grossSqft": 13347,
+        "cleanableSqft": 13347,
         "floors": 2,
         "serviceLevel": "2x_week",
         "category": "admin"
@@ -313,6 +314,7 @@
         "buildingNumber": "14",
         "name": "ALLOGGI TEMPORANEI – TRANSIENT BILLETING",
         "grossSqft": 37243,
+        "cleanableSqft": 37243,
         "floors": 3,
         "serviceLevel": "weekly",
         "category": "barracks"
@@ -321,6 +323,7 @@
         "buildingNumber": "15",
         "name": "MAGAZZINO – STORAGE",
         "grossSqft": 7319,
+        "cleanableSqft": 7319,
         "floors": 1,
         "serviceLevel": "biweekly",
         "category": "warehouse"
@@ -458,16 +461,16 @@
     }
   },
   "traps": [
-    "Every area is metric: Table 3-1 in SM (GFEBS UM code), Table 3-2 in m², Table 3-3 in mq. Truth grossSqft / cleanableSqft = m² × 10.7639 rounded to whole SF (e.g. Bldg 47 3,960.0 SM = 42,625 SF). Reading the m² value as SF under-states the workload by 90%.",
+    "Every area is metric: Table 3-1 in SM (GFEBS UM code), Table 3-2 in m², Table 3-3 in mq; no area is given in SF and General Note 2 gives no conversion factor (1 SM = 10.7639 SF appears only in the Table 3-1 source note and Table 3-4 note 4). Truth grossSqft / cleanableSqft = m² × 10.7639 rounded to whole SF (e.g. Bldg 47 3,960.0 SM = 42,625 SF). Reading the m² value as SF under-states the workload by 90%.",
     "Two number conventions in one package: Table 3-1 uses the U.S. format (2,148.6); Tables 3-2 to 3-4 use the Italian format with a period for thousands and a comma for decimals (\"4.312,8 m²\" = 4,312.8 m²; \"96,4 m²\" = 96.4 m², not 964).",
     "Integer host-nation areas with a thousands period: Poggio Renatico \"1.240\" and \"3.460\" mq are 1,240 and 3,460 m² (13,347 and 37,243 SF), not 1.24 and 3.46.",
     "Floors use Italian notation: PT = ground floor, S1 = basement; \"PT+3\" = 4 floors, \"S1+PT+2\" = 4 floors, \"PT\" = 1 floor.",
     "Frequencies in mixed codes: 7X/WK, 5X/WK, 2X/WK, 1X/WK (Table 3-1); 7/7, 5/7, 3/7, 1/7 days per week (Table 3-2); \"2 v/sett.\" = 2x_week, \"settimanale\" = weekly, \"quindicinale\" = biweekly (Table 3-3).",
     "Two Caserma Ederle rows are listed but out of scope and excluded from truth: Bldg 71 DEPOSITO (USO ITALIANO, 842.0 SM) and Bldg 222 EX LAVANDERIA (DA DEMOLIRE FY27, 655.5 SM). The SUBTOTALE CASERMA EDERLE row includes both (General Note 7).",
-    "SUBTOTALE / TOTALE rows in every table are not facilities; the Table 3-3 page also carries a prose summary (\"total 30 facilities\").",
+    "SUBTOTALE / TOTALE rows in every table are not facilities. The Table 3-3 page also carries a site summary table in U.S. format (Caserma Ederle 35,285.7 / Del Din 39,817.1 / Poggio Renatico 5,380.0 SM gross in scope, TOTAL 80,482.8 SM gross and 42,097.4 SM cleanable): its site rows and TOTAL are not facilities, but they cross-check the in-scope sums (the Ederle summary row excludes Bldgs 71 and 222, unlike the Table 3-1 SUBTOTALE).",
     "Twin rows with identical data are separate facilities: Ederle 141/143, Del Din D-02/D-03 and D-05/D-06.",
     "Bilingual names (\"ALLOGGI TRUPPA – UNACCOMPANIED ENLISTED PERSONNEL HOUSING (UEPH)\", \"PALESTRA – FITNESS CENTER DEL DIN\") wrap inside narrow cells; footnote markers 1/, 2/, 3/ follow names (superscript).",
-    "Cleanable area is far below gross for barracks (common areas only), CIF, COF, vehicle shop and auto skills; Poggio Renatico has no cleanable area (gross applies, so truth has no cleanableSqft there).",
+    "Cleanable area is far below gross for barracks (common areas only), CIF, COF, vehicle shop and auto skills. Poggio Renatico (Table 3-3) records no cleanable area; General Note 4, the Table 3-3 caption and summary note 2/ all say the gross area applies, so truth cleanableSqft = grossSqft for Bldgs 12, 14 and 15 (13,347 / 37,243 / 7,319 SF). A reader that leaves it blank lets the estimator fall back to the category cleanable share (admin 0.85, barracks 0.6, warehouse 0.3) and under-states these buildings by 15–70%.",
     "Del Din numbering skips D-04, D-08 and D-13 (stated as excluded parking/utility buildings in a note, not rows).",
     "Grounds are in the document units: hectares with decimal commas (\"2,35 ha\" = 2.35 ha = 5.81 acres), m² with thousands periods (\"18.600 m²\" = 18,600 m² = 200,209 SF) and trees as \"n.\". Truth keeps hectares / sqm / each; the scorer converts (ha × 2.4710538, m² × 10.7639).",
     "Grounds TOTALE rows per unit and the information-only Caserma Ederle site area (613.260 m²) are not workload quantities. SFALCI/ANNO (mows per year: 26, 8, 30…) are cycle counts, not areas.",

@@ -1,13 +1,18 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><title>Attachment 3 – PWS Appendix B – Building Numbers and Estimated Square Footages (scanned)</title>
 <style>
-  @page { size: Letter portrait; }
+  /* Full-bleed pages: each .sheet is one scanned Letter page, so the scanner edge shadow sits at the paper edge. */
+  @page { size: Letter portrait; margin: 0; }
   body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #111; }
-  .sheet { position: relative; height: 9.55in; overflow: hidden; padding: 0 0.16in 0 0.2in; box-sizing: border-box; }
-  .scan { position: relative; transform: rotate(-0.5deg) translate(2px, 2px); transform-origin: 50% 40%; padding: 0 2pt; }
+  .sheet { position: relative; width: 8.5in; height: 10.98in; overflow: hidden; background: #fff; }
+  .sheet.p1 { page-break-after: always; }
+  .scan { position: absolute; top: 0.36in; left: 0.7in; right: 0.6in; bottom: 0.5in; transform: rotate(-0.5deg) translate(2px, 2px); transform-origin: 50% 40%; }
   .noise { position: absolute; inset: 0; pointer-events: none; opacity: 0.16; mix-blend-mode: multiply; }
-  .edge { position: absolute; top: 0; bottom: 0; left: 0; width: 0.14in; background: linear-gradient(90deg, rgba(0,0,0,0.38), rgba(0,0,0,0)); pointer-events: none; }
-  .staple { position: absolute; top: 0.04in; left: 0.05in; width: 0.55in; height: 3px; background: #444; transform: rotate(-38deg); }
+  .edge { position: absolute; top: 0; bottom: 0; left: 0; width: 0.16in; background: linear-gradient(90deg, rgba(0,0,0,0.42), rgba(0,0,0,0)); pointer-events: none; }
+  .edge.top { top: 0; left: 0; right: 0; bottom: auto; width: auto; height: 0.07in; background: linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0)); }
+  .staple { position: absolute; top: 0.2in; left: 0.24in; width: 0.55in; height: 3px; background: #444; transform: rotate(-38deg); }
+  .holes { position: absolute; top: 0.2in; left: 0.25in; width: 0.5in; height: 0.36in; transform: rotate(-38deg); }
+  .holes i { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #555; }
   .faxhdr { font-family: "Courier 10 Pitch", "Liberation Mono", monospace; font-size: 8.5pt; color: #333; margin: 0 0 8pt; letter-spacing: 0.3pt; }
   .hdr { text-align: center; font-family: "Times New Roman", "Liberation Serif", serif; }
   .hdr .l1 { font-size: 10.5pt; font-weight: bold; margin: 0; }
@@ -16,29 +21,25 @@
   p { font-family: "Times New Roman", "Liberation Serif", serif; font-size: 11pt; line-height: 1.28; margin: 0 0 6pt; text-align: justify; }
   table.bl { width: 100%; border-collapse: collapse; font-size: 9.8pt; margin-top: 6pt; }
   table.bl th { border: 1.2pt solid #111; background: #d4d4d4; padding: 3pt 3pt; font-size: 8.8pt; text-align: center; vertical-align: bottom; }
-  table.bl td { border: 1pt solid #111; padding: 3.2pt 4pt; vertical-align: middle; height: 15pt; }
-  td.c { text-align: center; } td.num { text-align: right; white-space: nowrap; position: relative; } td.rem { font-size: 8.4pt; }
+  table.bl td { border: 1pt solid #111; padding: 3.2pt 4pt; vertical-align: middle; height: 15pt; position: relative; }
+  td.c { text-align: center; } td.num { text-align: right; white-space: nowrap; } td.rem { font-size: 8.4pt; }
   tr.total td { font-weight: bold; background: #ececec; border-top: 2pt double #111; }
-  tr.struck td { color: #333; }
-  .pen { position: absolute; left: 3pt; width: 5.05in; top: 48%; height: 2.4pt; background: #13306e; transform: rotate(-0.8deg); border-radius: 2pt; opacity: 0.9; }
-  .hw { font-family: "DejaVu Serif", "FreeSerif", serif; font-style: italic; color: #13306e; font-weight: bold; }
-  .hw.del { display: inline-block; font-size: 9.6pt; transform: rotate(-3deg); line-height: 1.05; }
-  .hw.fix { display: block; font-size: 11.5pt; transform: rotate(-4deg); margin: -3pt 0 -1pt; }
-  .hw.note { font-size: 9.4pt; display: inline-block; transform: rotate(-2deg); }
-  .old { text-decoration: line-through; text-decoration-thickness: 2pt; text-decoration-color: #13306e; }
-  tr.added td { height: 18pt; }
-  tr.added .hw { font-size: 11pt; display: inline-block; transform: rotate(-1.5deg); }
   .stamp { position: absolute; right: 0.02in; top: 0.02in; border: 2.4pt solid #444; color: #444; padding: 3pt 8pt; transform: rotate(6deg); font-family: Arial, sans-serif; font-weight: bold; text-align: center; font-size: 9pt; line-height: 1.25; opacity: 0.8; }
   .stamp b { font-size: 12pt; letter-spacing: 1.5pt; }
   .notes { font-family: "Times New Roman", serif; font-size: 10pt; margin-top: 8pt; }
   .notes p { font-size: 10pt; margin: 0 0 3pt; }
-  .pgno { position: absolute; bottom: 0.05in; left: 0; right: 0; text-align: center; font-family: "Times New Roman", serif; font-size: 10pt; }
-  .amd { margin-top: 10pt; border: 1pt solid #111; padding: 5pt 7pt; }
-  .amd p { font-size: 9.6pt; margin: 0 0 2pt; }
-  .init { margin-top: 12pt; font-size: 9.5pt; font-family: "Times New Roman", serif; }
+  .pgno { position: absolute; bottom: 0; left: 0; right: 0; text-align: center; font-family: "Times New Roman", serif; font-size: 10pt; }
+  /* Pen-and-ink: hand-printed ballpoint strokes drawn by the script at the end of the page (no typeface). */
+  .hw { display: inline-block; line-height: 0; }
+  .ab { position: absolute; }
+  .strk { position: absolute; display: block; height: 0; }
+  .penblock { margin: 12pt 0 0 0.35in; }
+  .penblock .hw { display: block; }
 </style></head><body>
-<div class="sheet">
-<div class="edge"></div><div class="staple"></div><svg class="noise" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><filter id="nz"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="discrete" tableValues="0 0 0 0 0 1"/></feComponentTransfer></filter><rect width="100%" height="100%" filter="url(#nz)"/></svg>
+
+<div class="sheet p1">
+<div class="edge"></div><div class="edge top"></div><div class="staple"></div>
+<svg class="noise" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><filter id="nz1"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="discrete" tableValues="0 0 0 0 0 1"/></feComponentTransfer></filter><rect width="100%" height="100%" filter="url(#nz1)"/></svg>
 <div class="scan">
 <div class="faxhdr">FEB-03-2027 14:22 &nbsp;&nbsp;KESTREL ANGB MSC/CONTRACTING &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SCAN 0447 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;P.01/02</div>
 <div class="stamp"><b>CONFORMED COPY</b><br>AMENDMENT 0001<br>03 FEB 2027</div>
@@ -49,7 +50,7 @@
 </div>
 <p><b>B.1</b> The following list of buildings, estimated square footages and frequencies of service establishes the “cleaning area” for this contract. Square footages are estimates of the areas to be cleaned and are taken from base real property records and the floor plans furnished as Attachment 4. Modifications for a price increase or decrease to the contract shall only be made when the overall identified cleaning area square footage in this Appendix increases or decreases, or a frequency of cleaning service changes.</p>
 <p><b>B.2</b> Frequency codes: 5X/WK – Monday through Friday; 3X/WK – Monday, Wednesday, Friday; 2X/WK – Tuesday and Thursday; 1X/WK – once per week on a day set by the COR; UTA – once on each Unit Training Assembly (drill) weekend, normally one weekend per month.</p>
-<table class="bl"><thead><tr><th style="width:9%">FACILITY<br>NO.</th><th style="width:38%">ACTIVITY</th><th style="width:8%">FLOORS</th><th style="width:12%">EST. SQ FT<br>(CLEANING AREA)</th><th style="width:13%">FREQUENCY</th><th>REMARKS</th></tr></thead><tbody>
+<table class="bl"><thead><tr><th style="width:9%">FACILITY<br>NO.</th><th style="width:36%">ACTIVITY</th><th style="width:8%">FLOORS</th><th style="width:14%">EST. SQ FT<br>(CLEANING AREA)</th><th style="width:13%">FREQUENCY</th><th>REMARKS</th></tr></thead><tbody>
 <tr><td class="c">100</td><td>WING HEADQUARTERS</td><td class="c">2</td><td class="num">14,860</td><td class="c">5X/WK</td><td class="rem"></td></tr>
 <tr><td class="c">101</td><td>BASE CIVIL ENGINEER (CES) ADMIN</td><td class="c">1</td><td class="num">6,240</td><td class="c">2X/WK</td><td class="rem"></td></tr>
 <tr><td class="c">104</td><td>COMMUNICATIONS FLIGHT</td><td class="c">1</td><td class="num">5,315</td><td class="c">2X/WK</td><td class="rem">Excl. secure comm room</td></tr>
@@ -64,42 +65,167 @@
 <tr><td class="c">131</td><td>AEROSPACE GROUND EQUIPMENT (AGE) SHOP</td><td class="c">1</td><td class="num">2,410</td><td class="c">1X/WK</td><td class="rem"></td></tr>
 </tbody></table>
 <p style="text-align:right;font-size:9.5pt;margin-top:4pt"><i>(continued on page B-2)</i></p>
-</div>
 <div class="pgno">B-1</div>
 </div>
-<div style="page-break-after:always"></div>
-<div class="sheet">
-<div class="edge"></div><svg class="noise" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><filter id="nz"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="discrete" tableValues="0 0 0 0 0 1"/></feComponentTransfer></filter><rect width="100%" height="100%" filter="url(#nz)"/></svg>
+</div>
+
+<div class="sheet p2">
+<div class="edge"></div><div class="edge top"></div><div class="holes"><i style="left:0;top:0"></i><i style="left:0.5in;top:0"></i></div>
+<svg class="noise" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><filter id="nz2"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="11"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="discrete" tableValues="0 0 0 0 0 1"/></feComponentTransfer></filter><rect width="100%" height="100%" filter="url(#nz2)"/></svg>
 <div class="scan" style="transform: rotate(0.4deg) translate(-1px, 3px)">
 <div class="faxhdr">FEB-03-2027 14:22 &nbsp;&nbsp;KESTREL ANGB MSC/CONTRACTING &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SCAN 0447 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;P.02/02</div>
 <p style="text-align:center;font-weight:bold;margin-bottom:2pt">APPENDIX B – BUILDING NUMBERS AND ESTIMATED SQUARE FOOTAGES (CONTINUED)</p>
-<table class="bl"><thead><tr><th style="width:9%">FACILITY<br>NO.</th><th style="width:38%">ACTIVITY</th><th style="width:8%">FLOORS</th><th style="width:12%">EST. SQ FT<br>(CLEANING AREA)</th><th style="width:13%">FREQUENCY</th><th>REMARKS</th></tr></thead><tbody>
+<table class="bl"><thead><tr><th style="width:9%">FACILITY<br>NO.</th><th style="width:36%">ACTIVITY</th><th style="width:8%">FLOORS</th><th style="width:14%">EST. SQ FT<br>(CLEANING AREA)</th><th style="width:13%">FREQUENCY</th><th>REMARKS</th></tr></thead><tbody>
 <tr><td class="c">135</td><td>VEHICLE MAINTENANCE (LRS)</td><td class="c">1</td><td class="num">3,115</td><td class="c">1X/WK</td><td class="rem">Office &amp; latrines</td></tr>
 <tr><td class="c">140</td><td>SUPPLY WAREHOUSE (LRS)</td><td class="c">1</td><td class="num">4,960</td><td class="c">1X/WK</td><td class="rem">Office, issue counter</td></tr>
-<tr class="struck"><td class="c" style="position:relative">141<div class="pen"></div></td><td>FUELS MANAGEMENT OFFICE</td><td class="c">1</td><td class="num">1,240</td><td class="c">1X/WK</td><td class="rem"><span class="hw del">DELETED – DEMO'D<br>AMD 0001 &nbsp;jrk 2/3/27</span></td></tr>
+<tr><td class="c">141<span class="strk" data-w="540" data-dy="-4" data-seed="41" style="left:-2px;top:50%"></span></td><td>FUELS MANAGEMENT OFFICE</td><td class="c">1</td><td class="num">1,240</td><td class="c">1X/WK</td><td class="rem"><span class="hw ab" data-s="8.5" data-seed="5" style="left:3px;top:-2px;transform:rotate(-4deg)">DELETED – DEMO'D</span><span class="hw ab" data-s="8" data-seed="6" style="left:9px;top:12px;transform:rotate(-3deg)">AMD 0001 JRK 2/3/27</span></td></tr>
 <tr><td class="c">150</td><td>SECURITY FORCES (SFS)</td><td class="c">1</td><td class="num">6,780</td><td class="c">5X/WK</td><td class="rem"></td></tr>
 <tr><td class="c">155</td><td>FIRE STATION (ADMIN &amp; LATRINES ONLY)</td><td class="c">1</td><td class="num">2,325</td><td class="c">2X/WK</td><td class="rem">Dorm &amp; bays by FD</td></tr>
-<tr><td class="c">160</td><td>TRAINING / CLASSROOM BUILDING</td><td class="c">2</td><td class="num"><span class="hw fix">11,020</span><span class="old">10,350</span></td><td class="c">2X/WK</td><td class="rem"><span class="hw note">AMD 0001 &nbsp;jrk</span></td></tr>
+<tr><td class="c">160</td><td>TRAINING / CLASSROOM BUILDING</td><td class="c">2</td><td class="num">10,350<span class="strk" data-w="46" data-dy="-2" data-seed="16" style="right:1px;top:50%"></span><span class="hw ab" data-s="12" data-seed="17" style="left:5px;top:-4px;transform:rotate(-4deg)">11,020</span></td><td class="c">2X/WK</td><td class="rem"><span class="hw ab" data-s="8" data-seed="18" style="left:6px;top:4px;transform:rotate(-2deg)">AMD 0001 JRK</span></td></tr>
 <tr><td class="c">165</td><td>CHAPEL / AIRMAN &amp; FAMILY READINESS</td><td class="c">1</td><td class="num">2,960</td><td class="c">1X/WK</td><td class="rem"></td></tr>
 <tr><td class="c">170</td><td>RECRUITING &amp; RETENTION</td><td class="c">1</td><td class="num">1,150</td><td class="c">1X/WK</td><td class="rem"></td></tr>
 <tr><td class="c">175</td><td>MUNITIONS ADMIN</td><td class="c">1</td><td class="num">960</td><td class="c">1X/WK</td><td class="rem"></td></tr>
-<tr class="added"><td class="c"><span class="hw">185</span></td><td><span class="hw">Small Arms Range Classroom</span></td><td class="c"><span class="hw">1</span></td><td class="num"><span class="hw">1,320</span></td><td class="c"><span class="hw">1X/WK</span></td><td class="rem"><span class="hw note">ADDED AMD 0001 jrk</span></td></tr>
+<tr><td class="c"><span class="hw ab" data-s="11" data-seed="21" style="left:12px;top:1px;transform:rotate(-2deg)">185</span></td><td><span class="hw ab" data-s="10" data-seed="22" style="left:4px;top:2px;transform:rotate(-1.4deg)">SMALL ARMS RANGE CLASSROOM</span></td><td class="c"><span class="hw ab" data-s="11" data-seed="23" style="left:20px;top:0px;transform:rotate(3deg)">1</span></td><td class="num"><span class="hw ab" data-s="11" data-seed="24" style="left:22px;top:3px;transform:rotate(-2deg)">1,320</span></td><td class="c"><span class="hw ab" data-s="10.5" data-seed="25" style="left:16px;top:1px;transform:rotate(-1deg)">1X/WK</span></td><td class="rem"><span class="hw ab" data-s="8" data-seed="26" style="left:4px;top:4px;transform:rotate(-2.5deg)">ADDED AMD 0001 JRK</span></td></tr>
 <tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>
-<tr class="total"><td></td><td>TOTAL ESTIMATED CLEANING AREA</td><td></td><td class="num">129,545</td><td></td><td></td></tr>
+<tr class="total"><td></td><td>TOTAL ESTIMATED CLEANING AREA</td><td></td><td class="num">129,545<span class="strk" data-w="56" data-dy="2" data-seed="31" style="right:0px;top:50%"></span><span class="hw ab" data-s="12" data-seed="32" style="left:5px;top:-19px;transform:rotate(-3deg)">130,295</span></td><td></td><td class="rem"><span class="hw ab" data-s="8" data-seed="33" style="left:6px;top:4px;transform:rotate(-2deg)">AMD 0001 JRK</span></td></tr>
 </tbody></table>
 <div class="notes">
 <p>* Facility 125: office, latrine, break room and stairwell areas only. Hangar bay floor is not included.</p>
 <p>Square footages are estimates only. Floor plans showing service areas are provided separately as Attachment 4 (15 pages).</p>
 </div>
-<div class="amd">
-<p><b>AMENDMENT 0001 – PEN AND INK CHANGES TO APPENDIX B</b></p>
-<p>a. Facility 141, Fuels Management Office, is deleted (facility demolished).</p>
-<p>b. Facility 160, Training / Classroom Building: estimated square footage is revised to include the second-floor addition.</p>
-<p>c. Facility 185, Small Arms Range Classroom, is added.</p>
-<p>All other items remain unchanged.</p>
-</div>
-<div class="init">Changes initialed: <span class="hw" style="font-size:12pt">J.R. Kowalczyk</span> &nbsp;&nbsp;Contracting Officer &nbsp;&nbsp;&nbsp;Date: <span class="hw" style="font-size:11pt">3 Feb 27</span></div>
+<div class="penblock" style="transform:rotate(-1.2deg);transform-origin:0 0">
+<span class="hw" data-s="10.5" data-seed="51" style="margin:0 0 7px 0">PEN &amp; INK CHANGES PER AMD 0001 (SF 30 BLK 14):</span>
+<span class="hw" data-s="10" data-seed="52" style="margin:0 0 6px 14px">A. FAC 141 DELETED - DEMOLISHED</span>
+<span class="hw" data-s="10" data-seed="53" style="margin:0 0 6px 12px">B. FAC 160 SQ FT REVISED (2ND FLR ADDITION)</span>
+<span class="hw" data-s="10" data-seed="54" style="margin:0 0 6px 15px">C. FAC 185 SMALL ARMS RANGE CLASSRM ADDED</span>
+<span class="hw" data-s="10" data-seed="55" style="margin:0 0 10px 13px">D. TOTAL REVISED 129,545 TO 130,295</span>
+<span style="display:block;margin-left:1.6in;position:relative;height:44px"><span class="sig ab" data-seed="61" style="left:0;top:0"></span><span class="hw ab" data-s="10" data-seed="62" style="left:176px;top:18px;transform:rotate(-2deg)">CO 3 FEB 27</span></span>
 </div>
 <div class="pgno">B-2</div>
 </div>
+</div>
+
+<script>
+// Hand-printed ballpoint text: a single-stroke capital/digit alphabet (cap height 10, baseline y = 10),
+// drawn with per-glyph size, slant, rotation and baseline jitter and wobbly strokes, so the pen-and-ink
+// changes read as handwriting rather than as a typeface.
+(function () {
+  const S = (...p) => ({ s: 1, p }), L = (...p) => ({ s: 0, p });
+  const O = [S([3.2,0],[5.4,1.2],[6.4,5],[5.4,8.8],[3.2,10],[1,8.8],[0,5],[1,1.2],[3.4,0.1])];
+  const P = [L([0,10],[0,0]), S([0,0],[3.6,0],[5.2,0.9],[5.6,2.6],[5,4.4],[3.4,5.2],[0,5.2])];
+  const G = {
+    '0': [6, [S([3,0],[5.1,1.2],[6,5],[5.2,8.8],[3,10],[0.9,8.8],[0,5],[0.8,1.3],[3.2,0.1])]],
+    '1': [4.4, [L([1.2,2],[3,0],[3,10])]],
+    '2': [6, [S([0.4,2.4],[1.4,0.6],[3.1,0],[4.9,0.7],[5.5,2.5],[4.7,4.7],[2.4,7.4],[0.2,10]), L([0.2,10],[5.9,10])]],
+    '3': [6, [S([0.4,1.2],[2.4,0],[4.6,0.5],[5.3,2.3],[4.2,4.1],[2.2,4.7]), S([2.2,4.7],[4.5,5.2],[5.8,7],[5.2,9.1],[3.2,10],[1.2,9.7],[0,8.6])]],
+    '4': [6.2, [L([3.8,0],[0,6.8],[6,6.8]), L([4.7,2.8],[4.5,10])]],
+    '5': [6, [L([5.4,0],[1.1,0],[0.6,4.5]), S([0.6,4.5],[2.6,3.8],[4.6,4.3],[5.8,6.4],[5.4,8.8],[3.4,10],[1.3,9.7],[0.1,8.6])]],
+    '6': [6, [S([5,0.5],[3.2,0],[1.3,1.1],[0.2,4.2],[0.2,7.4],[1.2,9.5],[3.1,10],[5,9.3],[5.8,7.4],[5.1,5.4],[3.1,4.8],[1.2,5.5],[0.3,7])]],
+    '7': [6, [L([0,0.2],[6,0],[2.4,10])]],
+    '8': [6, [S([3,4.7],[1,3.7],[0.6,1.8],[1.6,0.3],[3,0],[4.5,0.4],[5.3,1.8],[4.9,3.7],[3,4.7],[0.9,5.9],[0.3,7.9],[1.3,9.6],[3,10],[4.9,9.6],[5.8,7.9],[5.2,5.9],[3,4.7])]],
+    '9': [6, [S([5.6,2.6],[4.8,4.4],[3,5],[1.1,4.4],[0.3,2.6],[1.1,0.7],[3,0],[4.9,0.7],[5.7,2.6],[5.5,6.4],[4.6,9.1],[2.8,10],[0.9,9.4])]],
+    'A': [6, [L([0,10],[3,0],[6,10]), L([1.3,6.3],[4.7,6.3])]],
+    'B': [6, [L([0,10],[0,0]), S([0,0],[3.4,0],[4.9,0.8],[5.2,2.4],[4.4,4.1],[2.6,4.8],[0,4.8]), S([2.6,4.8],[4.7,5.4],[5.8,7.2],[5.2,9.2],[3.4,10],[0,10])]],
+    'C': [6, [S([5.8,1.6],[4.4,0.2],[2.8,0],[1,1],[0,3.6],[0,6.4],[1,9],[2.8,10],[4.4,9.8],[5.8,8.4])]],
+    'D': [6.2, [L([0,0],[0,10]), S([0,0],[2.6,0.1],[4.8,1.3],[5.9,4],[5.9,6],[4.8,8.7],[2.6,9.9],[0,10])]],
+    'E': [5.8, [L([5.4,0],[0,0],[0,10],[5.6,10]), L([0,4.8],[4.2,4.8])]],
+    'F': [5.6, [L([5.4,0],[0,0],[0,10]), L([0,4.8],[4,4.8])]],
+    'G': [6.2, [S([5.8,1.6],[4.4,0.2],[2.8,0],[1,1],[0,3.6],[0,6.4],[1,9],[2.8,10],[4.6,9.6],[5.8,7.9]), L([5.8,7.9],[5.8,5.6],[3.4,5.6])]],
+    'H': [5.8, [L([0,0],[0,10]), L([5.6,0],[5.6,10]), L([0,4.9],[5.6,4.9])]],
+    'I': [2.4, [L([1,0],[1,10])]],
+    'J': [5.6, [S([5,0],[5,7.4],[4.3,9.4],[2.7,10],[1.1,9.4],[0.2,7.8])]],
+    'K': [5.8, [L([0,0],[0,10]), L([5.4,0],[0,6.2]), L([1.8,4.5],[5.8,10])]],
+    'L': [5.2, [L([0,0],[0,10],[5,10])]],
+    'M': [6.8, [L([0,10],[0.3,0],[3.3,6.6],[6.3,0],[6.6,10])]],
+    'N': [5.8, [L([0,10],[0,0],[5.6,10],[5.6,0])]],
+    'O': [6.4, O],
+    'P': [5.8, P],
+    'Q': [6.4, [...O, L([3.6,7.2],[6.4,10.4])]],
+    'R': [6, [...P, L([2.6,5.2],[5.8,10])]],
+    'S': [6, [S([5.4,1.4],[4,0.1],[2.2,0],[0.6,0.9],[0.4,2.8],[1.8,4.2],[4,5.2],[5.6,6.6],[5.6,8.8],[4,9.9],[2,10],[0.2,8.8])]],
+    'T': [6, [L([0,0],[6,0]), L([3,0],[3,10])]],
+    'U': [5.8, [S([0,0],[0,7.2],[0.9,9.3],[2.8,10],[4.7,9.3],[5.6,7.2],[5.6,0])]],
+    'V': [6, [L([0,0],[3,10],[6,0])]],
+    'W': [7.6, [L([0,0],[1.8,10],[3.8,2.8],[5.8,10],[7.6,0])]],
+    'X': [5.6, [L([0,0],[5.6,10]), L([5.6,0],[0,10])]],
+    'Y': [6, [L([0,0],[3,5]), L([6,0],[3,5],[3,10])]],
+    'Z': [6, [L([0,0],[5.8,0],[0,10],[6,10])]],
+    ',': [2, [L([1.1,9.2],[1.2,10.2],[0.3,12])]],
+    '.': [2, [L([0.9,9.5],[1.1,10])]],
+    ':': [2.2, [L([1,3.4],[1.1,3.9]), L([1,9.4],[1.1,9.9])]],
+    '-': [4.4, [L([0.4,5.4],[4,5.2])]],
+    '–': [6.2, [L([0.4,5.4],[5.8,5.2])]],
+    '/': [4.4, [L([4,0],[0,10])]],
+    "'": [2, [L([1.2,0],[0.8,2.8])]],
+    '(': [3, [S([2.6,-0.6],[1,1.8],[0.3,5],[1,8.2],[2.6,10.6])]],
+    ')': [3, [S([0.4,-0.6],[2,1.8],[2.7,5],[2,8.2],[0.4,10.6])]],
+    '&': [6.2, [S([5.8,10],[1.6,3.8],[1.4,1.4],[2.7,0],[4.1,0.7],[4,2.6],[0.8,6],[0.4,8.4],[1.8,9.9],[3.6,9.8],[5.6,6.2])]],
+  };
+  const INK = '#1f3c96';
+  const rng = (seed) => { let s = (seed * 2654435761) >>> 0 || 1; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; };
+  const gs = (r) => (r() + r() + r() - 1.5) / 1.5;
+  const f = (n) => n.toFixed(2);
+  const bow = (a, b, k) => { const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, nx = a[1] - b[1], ny = b[0] - a[0], L = Math.hypot(nx, ny) || 1; return `Q${f(mx + nx / L * k)},${f(my + ny / L * k)} ${f(b[0])},${f(b[1])}`; };
+  function strokePath(pts, smooth, r, u) {
+    let d = `M${f(pts[0][0])},${f(pts[0][1])}`;
+    if (!smooth) { for (let i = 1; i < pts.length; i++) d += ' ' + bow(pts[i - 1], pts[i], gs(r) * 0.3 * u); return d; }
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+      d += ` C${f(p1[0] + (p2[0] - p0[0]) / 6)},${f(p1[1] + (p2[1] - p0[1]) / 6)} ${f(p2[0] - (p3[0] - p1[0]) / 6)},${f(p2[1] - (p3[1] - p1[1]) / 6)} ${f(p2[0])},${f(p2[1])}`;
+    }
+    return d;
+  }
+  function hand(el) {
+    const text = (el.dataset.t || el.textContent).toUpperCase();
+    const cap = +el.dataset.s || 11, u = cap / 10, seed = +el.dataset.seed || 1, r = rng(seed);
+    const lean = 0.1 + r() * 0.08, slope = gs(r) * 0.012, sw = +(el.dataset.w || 1.75);
+    let x = 0.6; const ds = [];
+    for (const ch of text) {
+      if (ch === ' ') { x += 3.4 + r() * 1.4; continue; }
+      const g = G[ch]; if (!g) { x += 4; continue; }
+      const [w, strokes] = g; const sc = 0.92 + r() * 0.14, rot = gs(r) * 0.05, dy = gs(r) * 0.45 + x * slope;
+      for (const st of strokes) {
+        const pts = st.p.map(([px, py]) => {
+          let X = px * sc + gs(r) * 0.22, Y = 10 - (10 - py) * sc + gs(r) * 0.22;
+          const cx = w * sc / 2, cy = 5, dx = X - cx, dyy = Y - cy;
+          X = cx + dx * Math.cos(rot) - dyy * Math.sin(rot); Y = cy + dx * Math.sin(rot) + dyy * Math.cos(rot);
+          return [(x + X + lean * (10 - Y)) * u, (Y + dy + 2.5) * u];
+        });
+        ds.push(strokePath(pts, st.s, r, u));
+      }
+      x += w * sc + 1.45 + r() * 0.9;
+    }
+    const W = (x + 2 + lean * 10) * u, H = 16 * u;
+    el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${f(W)}" height="${f(H)}" style="overflow:visible;vertical-align:${f(-3.5 * u)}px">` +
+      ds.map((d, i) => `<path d="${d}" fill="none" stroke="${INK}" stroke-opacity="${(0.82 + ((i * 37) % 10) / 60).toFixed(2)}" stroke-width="${f(sw * (0.9 + ((i * 53) % 7) / 30))}" stroke-linecap="round" stroke-linejoin="round"/>`).join('') + '</svg>';
+  }
+  function strike(el) {
+    const w = +el.dataset.w, dy = +(el.dataset.dy || 0), r = rng(+el.dataset.seed || 3);
+    const y0 = gs(r) * 1.2, y1 = dy + gs(r) * 1.2, my = (y0 + y1) / 2 + gs(r) * 2.2;
+    el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="12" style="position:absolute;left:0;top:-6px;overflow:visible"><path d="M0,${f(6 + y0)} Q${f(w * (0.45 + r() * 0.1))},${f(6 + my)} ${w},${f(6 + y1)}" fill="none" stroke="${INK}" stroke-width="1.7" stroke-linecap="round" stroke-opacity="0.9"/></svg>`;
+    el.style.width = w + 'px';
+  }
+  function signature(el) {
+    // Loose cursive "J.R. Kowalczyk": legible initials, a run of connected loops for the surname.
+    const r = rng(+el.dataset.seed || 9), j = () => gs(r) * 0.8;
+    const p = (x, y) => `${f(x + j())},${f(y + j())}`;
+    let d = `M${p(10, 8)} C${p(20, 0)} ${p(30, 2)} ${p(24, 10)} C${p(20, 18)} ${p(16, 30)} ${p(14, 36)} C${p(10, 44)} ${p(0, 42)} ${p(4, 33)}`;
+    d += ` M${p(25, 34)} L${p(26, 35)}`;
+    d += ` M${p(36, 10)} L${p(31, 34)} M${p(36, 10)} C${p(48, 4)} ${p(50, 18)} ${p(35, 21)} C${p(40, 25)} ${p(44, 30)} ${p(48, 34)}`;
+    d += ` M${p(52, 34)} L${p(53, 35)}`;
+    d += ` M${p(64, 8)} L${p(58, 34)} M${p(70, 12)} C${p(66, 18)} ${p(62, 21)} ${p(60, 22)} C${p(64, 25)} ${p(67, 30)} ${p(70, 34)}`;
+    let x = 70, y = 31;
+    for (let k = 0; k < 9; k++) {
+      const h = 7 + r() * 9, wdt = 7 + r() * 5;
+      d += ` C${p(x + wdt * 0.3, y - h)} ${p(x + wdt * 0.9, y - h)} ${p(x + wdt * 0.6, y - 2)} C${p(x + wdt * 0.5, y + 2)} ${p(x + wdt * 0.9, y + 3)} ${p(x + wdt, y)}`;
+      x += wdt;
+    }
+    d += ` C${p(x + 8, y + 10)} ${p(x - 10, y + 16)} ${p(x - 34, y + 8)}`;
+    el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${f(x + 10)}" height="48" style="overflow:visible"><path d="${d}" fill="none" stroke="${INK}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.9"/></svg>`;
+  }
+  document.querySelectorAll('.hw').forEach(hand);
+  document.querySelectorAll('.strk').forEach(strike);
+  document.querySelectorAll('.sig').forEach(signature);
+})();
+</script>
 </body></html>

@@ -9,11 +9,11 @@ sheets:
 - a Notes sheet that defines the codes.
 
 The fixture checks that the readers, the estimate and the 3D campus still work at 400+ buildings. That means no row
-caps, no de-duplication by name, and no truncated tool output.
+caps, no de-duplication by name, and no truncated tool output. Theme: `military-bos`.
 
 | input | renders to | content |
 |---|---|---|
-| `facility-list.json` (written by `gen.mjs`) | `build/W9124Z-27-R-0420 Att J-0302 Facility List Fort Brannock.xlsx` | sheets `J-0302 Facility List` (456 rows × 10 columns), `Grounds` (50 × 7), `Notes` (17 × 3) |
+| `facility-list.json` (written by `gen.mjs`) | `build/W9124Z-27-R-0420 Att J-0302 Facility List Fort Brannock.xlsx` | sheets `J-0302 Facility List` (456 rows × 10 columns), `Grounds` (51 × 7), `Notes` (17 × 3) |
 
 ```bash
 cd bos-estimator
@@ -45,118 +45,204 @@ SCOPE` row and six numbered notes.
 
 | zone | rows listed | in scope | gross SF (in scope) | cleanable SF |
 |---|---:|---:|---:|---:|
-| ZONE 1 - MAIN CANTONMENT (10xxx) | 74 | 71 | 1,592,711 | 1,298,688 |
-| ZONE 2 - NORTH TROOP AREA (20xxx–21xxx, two BCTs) | 118 | 117 | 4,623,505 | 1,869,717 |
-| ZONE 3 - SOUTH TROOP AREA (30xxx–31xxx, sustainment bde, DIVARTY, MI bn, T-numbers) | 95 | 94 | 3,672,674 | 1,509,218 |
-| ZONE 4 - LOGISTICS AND INDUSTRIAL AREA (40xxx) | 47 | 46 | 1,924,695 | 269,744 |
-| ZONE 5 - ARMY AIRFIELD (50xxx) | 21 | 20 | 771,436 | 290,521 |
-| ZONE 6 - RANGES AND TRAINING AREAS (90xxx–97xxx) | 73 | 72 | 50,758 | 48,326 |
-| **total** | **428** | **420** | **12,635,779** | **5,286,214** |
+| ZONE 1 - MAIN CANTONMENT (10xxx) | 74 | 71 | 1,308,356 | 1,045,437 |
+| ZONE 2 - NORTH TROOP AREA (20xxx–21xxx, two BCTs) | 118 | 117 | 4,638,416 | 1,850,711 |
+| ZONE 3 - SOUTH TROOP AREA (30xxx–31xxx, sustainment bde, DIVARTY, MI bn, T-numbers) | 95 | 94 | 3,782,338 | 1,514,704 |
+| ZONE 4 - LOGISTICS AND INDUSTRIAL AREA (40xxx) | 47 | 46 | 1,907,813 | 231,420 |
+| ZONE 5 - ARMY AIRFIELD (50xxx) | 21 | 20 | 681,731 | 247,511 |
+| ZONE 6 - RANGES AND TRAINING AREAS (90xxx–97xxx) | 73 | 72 | 52,848 | 50,574 |
+| **total** | **428** | **420** | **12,371,502** | **4,940,357** |
+
+Facility List note 5 says the Zone 6 range and training-area latrines, range control towers and range buildings
+are serviced at the listed frequency **year-round (52 weeks)**, whether or not the range is scheduled. The Range
+Control schedule sets only the day of service. So the frequency codes need no range-use discount, and an estimator
+can turn every row into an annual service count.
 
 The 420 in-scope facilities break down as follows.
 
-By category:
+By category (truth only; the workbook prints no category, see "Category rule" below):
 
 | category | count |
 |---|---:|
 | admin | 136 |
-| other | 67 |
 | barracks | 65 |
+| other | 62 |
 | warehouse | 53 |
 | maintenance | 31 |
 | education | 15 |
-| community | 9 |
+| community | 7 |
 | medical | 7 |
 | hangar | 6 |
 | fitness | 5 |
 | child_care | 5 |
 | dining | 5 |
-| none asserted | 16 |
+| none asserted | 23 |
 
 By service level:
 
 | service level | count |
 |---|---:|
-| daily_5 | 248 |
-| weekly | 59 |
+| daily_5 | 249 |
+| weekly | 61 |
 | monthly | 25 |
-| biweekly | 25 |
 | daily_7 | 23 |
-| 2x_week | 21 |
-| 3x_week | 17 |
+| 2x_week | 22 |
+| biweekly | 20 |
+| 3x_week | 18 |
 | quarterly | 2 |
 
-Gross SF runs from **120** (the RANGE 03 KD LATRINE and the ACP 1 overwatch booth) to **250,000** (the installation
-general purpose warehouse). The restroom-fixture total is 3,736.
+Gross SF runs from **120** (the ACP 1 MAIN GATE OVERWATCH BOOTH and the RANGE 03 KD LATRINE) to **250,000** (the
+installation general purpose warehouse). The restroom-fixture total is 3,664, in 367 rows. The other 53 cells are
+blank: 27 storage buildings, 19 range control towers, 6 range classrooms and the open overwatch booth.
+
+Building sizes and fixture counts follow what is plausible at a real installation:
+
+- Staff offices (Public Affairs, Inspector General, Safety, Retention, Red Cross, ID card) are 2,400 to 6,000 SF on
+  one floor.
+- Directorates and centers (SJA, NEC, Soldier Support Center) are 10,000 to 34,000 SF.
+- Range latrines are CMU comfort stations with roughly 55 to 80 SF per fixture (2 to 8 fixtures). TA vault latrines
+  have 2.
+- An open booth under 200 SF has no restroom. Gatehouses have 1 or 2 fixtures.
 
 **Grounds.** The sheet has two title rows and a two-row header: `AREA NO. | GROUNDS AREA | ACRES BY GROUNDS CATEGORY:
 IMPROVED, SEMI-IMPROVED, UNIMPROVED | TOTAL ACRES | REMARKS`. Two sections follow:
 
-- **CANTONMENT ZONES:** C-1 to C-8. C-7 FAMILY HOUSING (RCI) and C-8 GOLF COURSE (NAF) are NOT IN SCOPE.
+- **CANTONMENT ZONES:** C-1 to C-8. C-7 FAMILY HOUSING AREAS (RCI) and C-8 GOLF COURSE (NAF) are NOT IN SCOPE.
 - **TRAINING AREAS:** TA 01 to TA 24, plus IA-1 IMPACT AREA (DUDDED), which is NOT IN SCOPE.
 
-Each section ends with a SUBTOTAL row, and the sheet ends with a `GRAND TOTAL (IN SCOPE)` row and notes. A dash `-`
-means zero. In-scope totals:
+Each section ends with a SUBTOTAL row, and the sheet ends with a `GRAND TOTAL (IN SCOPE)` row and five notes. A dash
+`-` means zero. Note 5 says the unimproved training-area acreage is in scope for brush control and firebreak
+maintenance only. That follows the Fort Benning grounds requirement cited below, which takes in unimproved acres.
+In-scope totals:
 
 | category | acres |
 |---|---:|
-| improved | 580.67 |
-| semi-improved | 3,741.26 |
-| unimproved | 117,197.10 |
+| improved | 557.17 |
+| semi-improved | 3,971.71 |
+| unimproved | 125,436.75 |
 
 These come from 78 truth grounds rows across 30 in-scope areas.
 
 **Notes.** This sheet defines the frequency codes (`7X/WK`, `5X/WK`, `3X/WK`, `2X/WK`, `1X/WK`, `BI-WKLY`, `1X/MO`,
-`QTRLY`, `N/A`) with nominal services per year, and gives the improved, semi-improved and unimproved definitions.
+`QTRLY`, `N/A`) with nominal services per year (365, 250, 150, 100, 52, 26, 12, 4, 0). It also gives the improved,
+semi-improved and unimproved definitions.
+
+The document's own counts differ from the app's `SERVICE_LEVELS` table in `shared/types.ts`, which uses 360 for
+daily_7 and 50 for weekly. Truth asserts only the level id, so scoring is unaffected. An estimate built from the
+app's table will still not match the workbook's nominal counts exactly.
+
+**Column widths.** Each sheet in `facility-list.json` carries a `colWidths` array with the intended Excel widths: a
+66-character FACILITY DESCRIPTION column, wide REMARKS columns, and a 110-character Notes definition column. This is
+the same convention as `univ-buildings-in-scope-xlsx`.
+
+`scripts/render-fixtures.mjs` does not read `colWidths` yet. It sets every column to width 16, with no wrap, bold,
+borders or freeze panes. Until it does, a person opening the workbook sees long names, the `RESTROOM FIXTURES (EA)` and
+`CUSTODIAL FREQUENCY` headers, and the Notes definitions clipped next to filled cells. The cell values are intact,
+so machine readers are unaffected.
+
+The renderer also writes blank RESTROOM FIXTURES cells as empty-string cells, not truly empty ones, because JSON
+sources cannot express an absent cell. Readers must treat `''` as blank.
 
 ## Expected answers (truth.json)
 
 - **420 facilities** (`facilitiesComplete: true`). Every facility has a building number, name, gross SF, cleanable
-  SF, floors and service level. A category is given where the CATCODE or name is unambiguous: 404 of 420. Restroom
-  fixtures are given where the cell is not blank. No dining profile is asserted, because the workbook has no
-  meals/day.
+  SF, floors and service level. Restroom fixtures are given where the cell is not blank. No dining profile is
+  asserted, because the workbook has no meals/day.
 - **Grounds:** each in-scope area row becomes one entry per non-zero category, in acres, named
   `<AREA NO.> <GROUNDS AREA>`.
-- **Site:** installationName `Fort Brannock`, solicitation `W9124Z-27-R-0420`. No prior award.
+- **Site:** installationName `Fort Brannock`, solicitation `W9124Z-27-R-0420`. The workbook has no contract term,
+  climate zone, incumbent or prior award, so none is asserted.
+
+### Category rule
+
+The workbook prints a CATCODE, not an app category. Truth asserts a category for **397 of 420** facilities, only
+where the CATCODE family maps to exactly one app category:
+
+| CATCODE family | category |
+|---|---|
+| 72111 UEPH | barracks |
+| 14182 / 14183 / 14185 / 61050 / 14112 / 14114 headquarters, COF, admin, airfield ops, CID | admin |
+| 17120 / 17150 / 17892 instruction, simulator, range classroom | education |
+| 21410 / 21910 TEMF and shops | maintenance |
+| 21110 hangar | hangar |
+| 44220 / 44224 / 44260 storage and warehouses (incl. aviation unit storage, hazmat storage, self service supply) | warehouse |
+| 54010 / 55010 dental and medical clinics | medical |
+| 72210 DFAC | dining |
+| 73017 chapels, 74010 ACS / SFAC, 74044 library | community |
+| 74028 / 74042 fitness center, indoor pool | fitness |
+| 74046 CDC, school age center | child_care |
+
+`other` is asserted only for small unoccupied structures that fit no specific category:
+
+- 14113 gatehouses and booths;
+- 12410 fuel point control buildings;
+- 17890 range control towers (2–3 level observation towers);
+- 73046 range and TA latrines.
+
+**No category** is asserted for building types an estimator could reasonably file two ways:
+
+- 73010 fire stations and the aircraft crash rescue station. The serviced areas are admin and latrines, so either
+  admin or other fits.
+- 73075 DES / MP station and 73070 post office (admin or other).
+- 14171 air traffic control tower. It is a six-floor occupied operations building, unlike the range towers, so admin
+  or other fits.
+- 17891 range operations and storage buildings and the range control ammunition breakdown building (warehouse or
+  other).
+- The visitor control center (admin or other).
+- The religious education center (community or education).
+- The youth center (community or child_care).
 
 ## Traps
 
 - **Scale.** There are 428 facility rows and 420 expected facilities. A reader that caps rows, pages tool output or
   stops after a few hundred rows loses recall.
-- **Repeated names.** 66 rows are named "COMPANY OPERATIONS FACILITY (COF)", 42 "UEPH BARRACKS", 23 "ORGANIZATIONAL
-  STORAGE BLDG", 22 "TACTICAL EQUIPMENT MAINT FACILITY (TEMF)" and 22 "GENERAL PURPOSE WAREHOUSE". In all, 262
-  rows share a name with another row, and only the building number tells them apart.
+- **Repeated names.** Among the in-scope rows, 66 are named "COMPANY OPERATIONS FACILITY (COF)", 34 "UEPH BARRACKS",
+  23 "ORGANIZATIONAL STORAGE BLDG", 22 "TACTICAL EQUIPMENT MAINT FACILITY (TEMF)" and 22 "GENERAL PURPOSE
+  WAREHOUSE". Including NOT IN SCOPE rows, 35 UEPH BARRACKS and 23 GENERAL PURPOSE WAREHOUSE rows are listed. In
+  all, 262 in-scope rows share a name with another in-scope row, and only the building number tells them apart.
 - **Rows that are not facilities.**
   - **ITEM** is a row counter.
   - **CATCODE** is a 5-digit number cell, such as 72111.
   - **Section and total rows:** zone section rows, 6 zone subtotals and the grand total.
   - **Notes sheet:** the "SERVICES PER YEAR" values (365, 250, ...).
 - **8 NOT IN SCOPE rows.** Each still prints its SF, with frequency `N/A`:
-  - 10804 WWII wood admin building (vacant)
-  - 10807 AAFES shoppette
-  - 10813 NAF bowling center
-  - 21917 rolling-pin barracks (demolished)
-  - 31839 UEPH barracks (under renovation)
-  - 40133 warehouse (demolished)
-  - 50042 hangar (transferred to ARNG)
+  - 10809 WWII wood admin building (vacant)
+  - 10814 AAFES shoppette
+  - 10816 NAF bowling center
+  - 21926 rolling-pin barracks (demolished)
+  - 31832 UEPH barracks (under renovation)
+  - 40141 warehouse (demolished)
+  - 50061 hangar (transferred to ARNG)
   - 93101 RANGE 31 latrine (range closed)
 
   Subtotals and totals already leave these out.
 - **Building number forms.**
-  - Suffixed storage annexes, such as `20150A` next to TEMF `20150`, are text cells.
+  - Suffixed storage annexes, such as `20146A` next to TEMF `20146`, are text cells.
   - Relocatable buildings use `T`-prefixed numbers, such as `T32001`.
   - All other building numbers are numeric cells.
-- **Cleanable well below gross.**
-  - UEPH barracks: common areas only (note 2).
-  - TEMFs: admin, break and latrine areas only (note 3).
-  - Hangars, shops and warehouses: office and latrine areas.
-  - DFACs: the kitchen is serviced by the food service contractor.
-  - Fire stations: the apparatus bay and quarters are excluded.
+- **Cleanable well below gross.** Do not default cleanable to gross.
+  - **Far below gross** (office, break and latrine areas only):
+
+    | building type | cleanable share of gross |
+    |---|---:|
+    | warehouses | 4–10% |
+    | TEMFs (note 3) | 12–20% |
+    | DOL maintenance shops | 12–16% |
+    | hangars | 15–25% |
+    | UEPH barracks, common areas only (note 2) | 18–26% |
+
+  - **Partial share:**
+
+    | building type | cleanable share of gross | why |
+    |---|---:|---|
+    | DPW shops | 33–44% | |
+    | DFACs | 63–69% | the kitchen is serviced by the food service contractor |
+    | fire and crash rescue stations | 66–70% | the apparatus bay and quarters are excluded |
 - **Frequency codes.** The codes must be mapped through the Notes sheet: `BI-WKLY` → biweekly, `1X/MO` → monthly,
-  `QTRLY` → quarterly.
+  `QTRLY` → quarterly. Note 5 makes the range codes year-round.
 - **Grounds.**
   - The merged category header must be read correctly, and a dash means zero.
-  - Three NOT IN SCOPE areas must be skipped. IA-1 alone is 18,884.92 AC unimproved.
+  - Three NOT IN SCOPE areas must be skipped. IA-1 alone is 17,589.12 AC unimproved.
   - The TOTAL ACRES column and the subtotal and grand total rows must not be counted twice.
   - Unimproved training land is in scope and makes up most of the acreage.
 
@@ -200,8 +286,8 @@ This fixture's 420 in-scope facilities sit just below that range.
 ### Grounds categories
 
 - The Fort Benning grounds maintenance sources sought covers about 184,000 acres of improved, semi-improved and
-  unimproved grounds. It excludes the golf course, cemetery, airfield and some MWR areas, which is the basis for the
-  NOT IN SCOPE golf course row:
+  unimproved grounds. It excludes the golf course, cemetery, airfield and some MWR areas. That is the basis for
+  keeping unimproved training land in scope and for the NOT IN SCOPE golf course row:
   https://app.g2xchange.com/opportunities/sam/7c36ee60-7ed0-4dec-bdae-6eba76a41dce
 - The improved and semi-improved definitions are paraphrased from
   https://www.patrick.spaceforce.mil/Portals/14/AFD-150612-026.pdf
@@ -213,4 +299,5 @@ This fixture's 420 in-scope facilities sit just below that range.
 - the zone and training-area layout.
 
 The column layout follows common Army Technical Exhibit practice and the other workbook fixtures here, not a specific
-public document.
+public document. The package is only the J attachment, with no PWS, Section B CLINs, period of performance or
+incumbent. That is deliberate for a scale test. Other fixtures exercise those parts.
