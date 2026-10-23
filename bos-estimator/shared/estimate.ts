@@ -4,7 +4,7 @@ import {
   CATEGORY_DEFAULTS, CREWS, FACTORS, GROWING_WEEKS_BY_CLIMATE, SNOW_EVENTS_BY_CLIMATE, crewMeta,
   type Crew, type Factor, type FrequencyRule,
 } from './factors';
-import { SERVICE_LEVELS, isInScope, type Assumptions, type Facility, type FloorMix, type GroundsArea, type Inventory } from './types';
+import { SERVICE_LEVELS, isInScope, type Assumptions, type Facility, type FloorMix, type GroundsArea, type Inventory, type MealPeriodHeadcount } from './types';
 
 export const DEFAULT_ASSUMPTIONS: Assumptions = {
   productiveHoursPerFte: 1776,
@@ -201,6 +201,16 @@ export function estimateFacility(f: Facility, a: Assumptions, overrides?: Record
     dailyHoursByCrew[crew] = hrs / days;
   }
   return { facilityId: f.id, resolved: r, lines, hoursByCrew, dailyHoursByCrew, totalHours: round(totalHours), fte: round(totalHours / a.productiveHoursPerFte, 2) };
+}
+
+/**
+ * Average meals per day from per-meal-period headcounts: (weekdays × weekday sum + weekend days × weekend sum) / 7,
+ * rounded to the nearest meal. A period with no weekend figure is assumed closed on weekends.
+ */
+export function mealsPerDayFromPeriods(periods: MealPeriodHeadcount[], weekdays = 5): number {
+  const wk = periods.reduce((s, p) => s + Math.max(0, p.weekdayHeadcount ?? 0), 0);
+  const we = periods.reduce((s, p) => s + Math.max(0, p.weekendHeadcount ?? 0), 0);
+  return Math.round((weekdays * wk + (7 - weekdays) * we) / 7);
 }
 
 export const ACRES_PER_HECTARE = 2.4710538;

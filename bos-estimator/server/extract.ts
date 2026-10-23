@@ -2,14 +2,27 @@
 import pdfParse from 'pdf-parse/lib/pdf-parse.js';
 import mammoth from 'mammoth';
 
+import type { DocumentRole } from '../shared/types';
+
 export interface DocInput {
   name: string;
   mode: 'native_pdf' | 'text';
-  text: string; // always populated (used by heuristic parser and as fallback)
+  /** Always populated. Layout-preserving: table rows as "cell | cell", "--- page N ---" markers, [^n] footnotes, ~~struck~~ text. */
+  text: string;
   pdfBase64?: string; // populated when mode === 'native_pdf'
   pages?: number;
   chars: number;
   bytes: number;
+  /** What was parsed: pdf, docx, xlsx (one doc per workbook, sheets marked "=== file :: sheet ==="), csv, text. */
+  kind?: 'pdf' | 'docx' | 'xlsx' | 'csv' | 'text';
+  /** Package role and amendment number; documents are ordered base → attachments → Q&A → amendments (ascending) before reading. */
+  role?: DocumentRole;
+  amendment?: number;
+  /** 1-based pages with no usable text layer (scanned images). */
+  scannedPages?: number[];
+  warnings?: string[];
+  /** Name of the zip the file came from, if any. */
+  container?: string;
 }
 
 export type IngestMode = 'auto' | 'native_pdf' | 'text';
