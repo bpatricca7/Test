@@ -4,6 +4,10 @@ import { api } from '../api';
 import { AI_MODEL_PRESETS } from '@shared/types';
 
 const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'] as const;
+/** File types the server can read (a .zip package is expanded on the server). */
+const ACCEPT = ['.pdf', '.docx', '.xlsx', '.xlsm', '.csv', '.tsv', '.txt', '.md', '.zip'];
+const isAccepted = (f: File) => ACCEPT.some((ext) => f.name.toLowerCase().endsWith(ext));
+const skipReason = (name: string) => (/\.(doc|xls|ppt|pptx|rtf|wpd)$/i.test(name) ? 'save as .docx / .xlsx / .pdf' : /\.(dwg|dxf|dgn|rvt)$/i.test(name) ? 'CAD drawing, print to PDF' : 'unsupported type');
 
 export function IngestPanel() {
   const project = useStore((s) => s.project);
@@ -15,6 +19,7 @@ export function IngestPanel() {
   const setPriorAward = useStore((s) => s.setPriorAward);
   const pa = project?.priorAward ?? {};
   const [files, setFiles] = useState<File[]>([]);
+  const [skipped, setSkipped] = useState<string | null>(null);
   const [drag, setDrag] = useState(false);
   const [provider, setProvider] = useState<'auto' | 'claude' | 'heuristic'>('auto');
   const [ingest, setIngest] = useState<'auto' | 'native_pdf' | 'text'>('auto');
@@ -26,7 +31,13 @@ export function IngestPanel() {
   useEffect(() => { if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight; }, [extraction.log.length]);
   useEffect(() => { if (project && !AI_MODEL_PRESETS.some((p) => p.id === project.ai.model)) setCustom(true); }, [project?.ai.model]);
 
-  const addFiles = (list: FileList | null) => { if (!list) return; const next = [...files]; for (const f of Array.from(list)) if (!next.some((x) => x.name === f.name && x.size === f.size)) next.push(f); setFiles(next); };
+  const addFiles = (list: FileList | null) => {
+    if (!list) return;
+    const all = Array.from(list);
+    const rejected = all.filter((f) => !isAccepted(f));
+    setSkipped(rejected.length ? `Skipped ${rejected.length} file${rejected.length > 1 ? 's' : ''} the reader can't open: ${rejected.slice(0, 6).map((f) => `${f.name || 'folder'} (${skipReason(f.name)})`).join(', ')}${rejected.length > 6 ? ` and ${rejected.length - 6} more` : ''}. Accepted: ${ACCEPT.join(' ')}` : null);
+    const next = [...files]; for (const f of all) if (isAccepted(f) && !next.some((x) => x.name === f.name && x.size === f.size)) next.push(f); setFiles(next);
+  };
   const run = async (sampleText?: string) => {
     if (!project) return;
     await start({ files: sampleText ? [] : files, text: sampleText, textName: sampleText ? 'sample-rfp-pws.txt (built-in sample)' : undefined, provider, ingest, mode });
@@ -38,13 +49,14 @@ export function IngestPanel() {
 
   return (
     <div className="panel-section">
-      <h3>1 · RFP documents <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>PDF · DOCX · TXT · CSV</span></h3>
+      <h3>1 · RFP documents <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>PDF · DOCX · XLSX · CSV · TXT · ZIP</span></h3>
       <div className={`dropzone ${drag ? 'active' : ''} ${extraction.running ? 'running' : ''}`} onClick={() => fileInput.current?.click()}
         onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)}
         onDrop={(e) => { e.preventDefault(); setDrag(false); addFiles(e.dataTransfer.files); }}>
         <span className="ico">{extraction.running ? '◉' : '⇪'}</span><strong>{extraction.running ? 'Reading the solicitation…' : 'Drop the solicitation here'}</strong><br />PWS, technical exhibits, workload tables, facility lists, drawings
-        <input ref={fileInput} type="file" multiple hidden accept=".pdf,.docx,.txt,.md,.csv,.tsv,.json" onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
+        <input ref={fileInput} type="file" multiple hidden accept={ACCEPT.join(',')} onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
       </div>
+      {skipped && <div className="note" style={{ marginTop: 6 }}>{skipped}</div>}
       {files.length > 0 && (
         <ul className="filelist">
           {files.map((f) => (

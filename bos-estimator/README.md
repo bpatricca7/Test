@@ -63,17 +63,51 @@ to plainer request parameters if an account or model rejects any of them.
 
 ## Estimating model
 
-* `shared/factors.ts` — the factor library (49 lines) in RSMeans Facilities Maintenance & Repair
+* `shared/factors.ts` — the factor library (51 lines) in RSMeans Facilities Maintenance & Repair
   format: task, reference family, crew, unit (MSF, fixture, acre, MSF bed/paved, tree, meal, day),
   labor-hours per unit and a frequency rule (per service day, N×/year, mowing cycles from the growing
   season, snow events, leaf season, dining days, meal periods, per meal). Category defaults (floor
   finish mix, cleanable share of gross, fixtures per 1,000 SF, typical stories) live in the same file.
+  Recalibrated, new and benchmark-validated lines carry a short `basis` citation, shown in the dialog.
 * `shared/estimate.ts` — deterministic engine: resolves each facility against the defaults, applies
   the factors, sums hours by crew, converts to FTE with productive hours per FTE (default 1,776),
   adds working supervision (default 1 per 12 FTE) and produces the per-year manning table with
-  workload growth and wage escalation.
+  workload growth and wage escalation. Only `in_scope` facilities are estimated. Service levels run
+  from daily (7 or 5 days) down to every two weeks, monthly and quarterly (26 / 12 / 4 visits a year),
+  and routine custodial tasks never recur more often than the building is visited. Grounds may be
+  given in acres, hectares, sq ft, m², sq yd or linear feet of walk. A dining facility with
+  per-meal-period headcounts but no meals-per-day or meal-period figure is priced with
+  `diningMealsPerDay`, the same rules the reader applies: a 7-day DFAC averages
+  (5 × weekday sum + 2 × weekend sum) / 7, a 6-day DFAC (5 × weekday + 1 × weekend) / 6, and a 5-day
+  DFAC uses the weekday sum. A 6–7-day DFAC that prints weekday figures only serves weekends like
+  weekdays (a weekend-only table the same way round). The meal-period count is the number of weekday
+  periods with a headcount, so weekend Brunch / Supper rows do not add periods; when no weekday period
+  has a figure it counts the weekend periods, then every listed period, then 3.
 * Every factor is editable in the **RS Means factors** dialog (or inline in a building's task table).
   Overrides are stored with the project and highlighted in yellow.
+* **Calibration.** The defaults target APPA Level 2 ("ordinary tidiness") for daily custodial service.
+  `tests/calibration.test.ts` keeps each composite inside its benchmark band:
+
+  | Check (engine case) | Band | Before → after | Basis / source |
+  |---|---|---|---|
+  | Office, 100k cleanable SF, daily 5 days | 15,000–21,000 SF per custodian shift | 9,014 → 17,815 | APPA Level 2 (office 16,900), NCES L2, FL DOE 19,000 |
+  | Barracks common areas, daily 7 days | 10,000–18,000 SF per shift | 7,073 → 11,847 | APPA Level 2, restroom-heavy |
+  | Clinic, daily 7 days | 10,000–15,000 SF per shift | 7,872 → 12,441 | APPA Level 1–2; hospital EVS ≈1,300 SF/h (HFM) |
+  | Warehouse, 2× per week | 40,000–90,000 SF per 5-day post | 40,181 → 63,341 | APPA Level 4–5 |
+  | Floor care, 100k SF VCT | 1,200–2,400 h/yr; spray buff 2,000–3,000 SF/h | 2,010 h (unchanged) | 17" high-speed spray-buff rates (janitorial production tables), CRI LCC strip rates |
+  | Floor care, 100k SF carpet | 400–900 h/yr; extraction 600–1,500 SF/h | 720 → 640 h | CMM / ISSA carpet rates, AICS time-motion study |
+  | Improved turf, 30-week season | 30–50 acres per grounds FTE | 38.1 → 42.2 | AS&U M&O studies, APPA grounds levels, Cornell / Exmark mowing rates |
+  | Athletic fields, 30-week season | 125–230 h per acre per year | 86.5 → 130.5 | Sports Field Managers Association: ≈250 h (native soil) to ≈415 h (heavy use) per 1.8–2-acre field-year |
+  | Athletic fields, each climate's default season (w weeks) | 125 × min(1, w ÷ 30) to 230 × max(1, w ÷ 30) h/acre/yr: cold 24 wk 100–230, arid 34 wk 125–261, hot-humid 40 wk 125–307 | cold 108.7, arid 145.1, hot-humid 166.9 | Same, prorated by season length |
+  | Snow, per event | 20–80 lh per 100k SF of walk; 5–20 lh per 10-acre lot | 45; 15.2 (unchanged) | Shovel / blower rates; SIMA plowing rates |
+  | DFAC full food service, 2,000 meals/day | 6–9 meals per labor-hour | 8.15 → 7.77 | Fort Hood, Fort Leonard Wood, Keesler / NAS Meridian contracts |
+  | DFAC attendants only | 12–22 meals per labor-hour | 16.89 (unchanged) | Derived (DFA ≈ 35–45 % of FFS labor) |
+  | Built-in sample | 105–135 total FTE; ±20 % of the incumbent-implied FTE | 145.7 → 120.7 FTE; +30.5 % → +9.0 % | Previous award (synthetic sample) |
+
+  APPA and NCES quote area per custodian on shift (8 h per service day). The engine's FTE is 1,776
+  productive hours, so SF per FTE = SF per shift × 0.888 for 5-day service and × 0.617 for 7-day
+  service. The sources are secondary summaries of paid publications (APPA *Operational Guidelines:
+  Custodial*, ISSA 612, PGMS, RSMeans); they give plausible bands, not licensed line values.
 * `shared/topdown.ts` — the should-cost arithmetic: `price = (loaded labor + ODC + subs) × (1 + G&A)
   × (1 + fee)`, solved for loaded labor and divided by the loaded cost per FTE. `server/ai.ts`
   (`topDownWithClaude`) asks the model for the assumptions and a written reconciliation;

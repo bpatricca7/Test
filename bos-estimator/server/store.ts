@@ -18,7 +18,7 @@ export function emptyProject(id = 'default', name = 'Untitled BOS estimate'): Pr
     inventory: { site: {}, facilities: [], grounds: [] },
     factorOverrides: {},
     assumptionOverrides: {},
-    ai: { model: 'claude-opus-5-5', effort: 'xhigh' },
+    ai: { model: 'claude-opus-5-5', effort: 'high' }, // extraction is transcription: high, not xhigh
     documents: [],
   };
 }

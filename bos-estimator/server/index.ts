@@ -2,16 +2,17 @@ import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readDocument, type DocInput, type IngestMode } from './extract';
+import { orderDocuments, readDocument, textDocument, type DocInput, type IngestMode } from './extract';
 import { heuristicExtract } from './heuristic';
 import { aiAvailable, extractWithClaude, mergeFacility, topDownHeuristic, topDownWithClaude } from './ai';
 import { heuristicPriorAward } from './heuristic';
 import { emptyProject, listProjects, loadProject, saveProject } from './store';
 import { CATEGORY_DEFAULTS, CREWS, FACTORS } from '../shared/factors';
 import { DEFAULT_ASSUMPTIONS, estimateInventory } from '../shared/estimate';
-import { AI_MODEL_PRESETS, type AiConfig, type ExtractionEvent, type Inventory, type PriorAward, type Project, type TopDownEstimate } from '../shared/types';
+import { AI_MODEL_PRESETS, type AiConfig, type DocumentInfo, type ExtractionEvent, type Inventory, type PriorAward, type Project, type TopDownEstimate } from '../shared/types';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 // Minimal .env loader (no dependency): KEY=value lines, '#' comments, existing env wins.
@@ -27,8 +28,6 @@ const PORT = Number(process.env.PORT || 8787);
 
 app.use(cors());
 app.use(express.json({ limit: '25mb' }));
-
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 60 * 1024 * 1024, files: 20 } });
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, aiAvailable: aiAvailable(), presets: AI_MODEL_PRESETS, defaultModel: 'claude-opus-5-5', defaultEffort: 'xhigh' });
@@ -107,20 +106,69 @@ app.get('/api/projects/:id/export.csv', async (req, res) => {
 });
 
 // ---------- extraction (SSE) ----------
-app.post('/api/projects/:id/extract', upload.array('files', 20), async (req, res) => {
+const MAX_UPLOAD_FILES = 150;
+const MAX_UPLOAD_BYTES = 600 * 1024 * 1024; // whole request; zip packages count at their compressed size
+const MAX_TEXT_FIELD_BYTES = 25 * 1024 * 1024; // pasted PWS text
+const UPLOAD_DIR = path.join(os.tmpdir(), 'bos-estimator-uploads');
+const upload = multer({
+  storage: multer.diskStorage({ destination: (_req, _file, cb) => { fs.mkdir(UPLOAD_DIR, { recursive: true }).then(() => cb(null, UPLOAD_DIR), (err: Error) => cb(err, UPLOAD_DIR)); } }),
+  limits: { fileSize: MAX_UPLOAD_BYTES, files: MAX_UPLOAD_FILES, fieldSize: MAX_TEXT_FIELD_BYTES, fields: 50 },
+  defParamCharset: 'utf8', // UTF-8 file names ("Amendment 0001 – Facility List.pdf"), busboy defaults to latin1
+});
+const fmtMb = (n: number) => `${Math.round(n / 1024 / 1024)} MB`;
+
+/** multer, with its failures answered as JSON (413 / 400) before the event stream starts - never an HTML stack trace. */
+const receiveUploads: express.RequestHandler = (req, res, next) => {
+  const declared = Number(req.headers['content-length'] || 0);
+  if (declared > MAX_UPLOAD_BYTES + MAX_TEXT_FIELD_BYTES) {
+    res.status(413).json({ error: `Upload is ${fmtMb(declared)}; the limit is ${fmtMb(MAX_UPLOAD_BYTES)} per run. Split the package into several Append runs.` });
+    req.resume();
+    return;
+  }
+  upload.array('files', MAX_UPLOAD_FILES)(req, res, (err: unknown) => {
+    if (!err) {
+      const files = (req.files as Express.Multer.File[] | undefined) ?? [];
+      const total = files.reduce((n, f) => n + f.size, 0);
+      if (total > MAX_UPLOAD_BYTES) {
+        void Promise.all(files.map((f) => fs.rm(f.path, { force: true })));
+        res.status(413).json({ error: `Files total ${fmtMb(total)}; the limit is ${fmtMb(MAX_UPLOAD_BYTES)} per run. Split the package into several Append runs.` });
+        return;
+      }
+      next();
+      return;
+    }
+    if (err instanceof multer.MulterError) {
+      const file = err.field === 'files' && (err as multer.MulterError & { filename?: string }).filename ? ` (${(err as multer.MulterError & { filename?: string }).filename})` : '';
+      const [status, message] = ({
+        LIMIT_FILE_SIZE: [413, `A file${file} is larger than ${fmtMb(MAX_UPLOAD_BYTES)}.`],
+        LIMIT_FILE_COUNT: [413, `Too many files: at most ${MAX_UPLOAD_FILES} per run. Upload the package as a .zip, or split it into several Append runs.`],
+        LIMIT_FIELD_VALUE: [413, `Pasted text is larger than ${fmtMb(MAX_TEXT_FIELD_BYTES)}. Upload it as a file instead.`],
+        LIMIT_PART_COUNT: [413, 'Too many form parts in the upload.'],
+        LIMIT_FIELD_COUNT: [400, 'Too many form fields in the upload.'],
+        LIMIT_UNEXPECTED_FILE: [400, `Unexpected file field "${err.field ?? ''}"; send documents in the "files" field.`],
+      } as Record<string, [number, string]>)[err.code] ?? [400, `Upload rejected: ${err.message}.`];
+      res.status(status).json({ error: message, code: err.code });
+      return;
+    }
+    res.status(400).json({ error: `Upload failed: ${(err as Error)?.message || String(err)}` });
+  });
+};
+
+app.post('/api/projects/:id/extract', receiveUploads, async (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders?.();
-  const send = (e: ExtractionEvent) => { res.write(`data: ${JSON.stringify(e)}\n\n`); };
-  const heartbeat = setInterval(() => res.write(': ping\n\n'), 15000);
+  const send = (e: ExtractionEvent) => { if (!res.writableEnded) res.write(`data: ${JSON.stringify(e)}\n\n`); };
+  const heartbeat = setInterval(() => { if (!res.writableEnded) res.write(': ping\n\n'); }, 15000);
   const abort = new AbortController();
-  req.on('close', () => abort.abort());
+  // the client went away (req 'close' fires as soon as the body is consumed, so watch the response instead)
+  res.on('close', () => { if (!res.writableFinished) abort.abort(); });
 
   const started = Date.now();
+  const files = (req.files as Express.Multer.File[] | undefined) ?? [];
   try {
-    const body = req.body as Record<string, string>;
-    const files = (req.files as Express.Multer.File[]) ?? [];
+    const body = (req.body ?? {}) as Record<string, string>;
     const ingest = (['auto', 'native_pdf', 'text'].includes(body.ingest) ? body.ingest : 'auto') as IngestMode;
     const provider = body.provider === 'heuristic' ? 'heuristic' : body.provider === 'claude' ? 'claude' : 'auto';
     const mode = body.mode === 'append' ? 'append' : 'replace';
@@ -128,17 +176,45 @@ app.post('/api/projects/:id/extract', upload.array('files', 20), async (req, res
 
     send({ type: 'status', stage: 'reading', message: `Reading ${files.length} file(s)${body.text ? ' + pasted text' : ''}…` });
     const docs: DocInput[] = [];
+    const announce = (d: DocInput) => {
+      send({ type: 'document', name: d.name, size: d.bytes, pages: d.pages, chars: d.chars, mode: d.mode, kind: d.kind, role: d.role, amendment: d.amendment, scannedPages: d.scannedPages?.length ? d.scannedPages : undefined, warnings: d.warnings });
+      for (const w of d.warnings ?? []) send({ type: 'warning', file: d.name, message: w });
+    };
     for (const f of files) {
-      const d = await readDocument(f.originalname, f.buffer, ingest);
-      docs.push(d);
-      send({ type: 'document', name: d.name, pages: d.pages, chars: d.chars, mode: d.mode });
+      if (abort.signal.aborted) throw new Error('Cancelled.');
+      try {
+        const buf = await fs.readFile(f.path);
+        for (const d of await readDocument(f.originalname, buf, ingest)) { docs.push(d); announce(d); }
+      } catch (err) {
+        const message = `could not be read (${(err as Error).message || String(err)}); skipped`;
+        const d: DocInput = { name: f.originalname, mode: 'text', text: '', chars: 0, bytes: f.size, warnings: [message] };
+        docs.push(d); announce(d);
+      } finally {
+        await fs.rm(f.path, { force: true }).catch(() => undefined);
+      }
     }
-    if (body.text && body.text.trim()) {
-      const d: DocInput = { name: body.textName || 'Pasted text', mode: 'text', text: body.text, chars: body.text.length, bytes: Buffer.byteLength(body.text) };
-      docs.push(d);
-      send({ type: 'document', name: d.name, chars: d.chars, mode: 'text' });
-    }
+    if (body.text && body.text.trim()) { const d = textDocument(body.textName || 'Pasted text', body.text); docs.push(d); announce(d); }
     if (!docs.length) throw new Error('No documents received.');
+    // precedence: base → attachments → Q&A → amendments (ascending), so later documents win in both readers
+    const readable = orderDocuments(docs.filter((d) => d.text.trim() || d.pdfBase64));
+    if (!readable.length) throw new Error('None of the uploaded files could be read (see the warnings above).');
+    if (readable.length > 1) send({ type: 'status', stage: 'reading', message: `Reading order (later documents supersede earlier ones): ${readable.map((d, i) => `${i + 1}. ${d.name}${d.role && d.role !== 'other' ? ` [${d.role === 'amendment' && d.amendment != null ? `amendment ${String(d.amendment).padStart(4, '0')}` : d.role}]` : ''}`).join(' · ')}` });
+
+    // live progress: distinct facilities / grounds registered so far
+    const seenFacilities = new Set<string>(); const seenGrounds = new Set<string>(); let expected: number | undefined;
+    const track = (e: ExtractionEvent) => {
+      if (e.type === 'progress') { expected = e.expected ?? expected; send(e); return; }
+      send(e);
+      if (e.type === 'facility' || e.type === 'grounds') {
+        if (e.type === 'facility') seenFacilities.add(e.facility.id); else seenGrounds.add(e.area.id);
+        send({ type: 'progress', registered: seenFacilities.size, expected, grounds: seenGrounds.size });
+      }
+    };
+    const streamHeuristic = (inv: Inventory) => {
+      for (const f of inv.facilities) track({ type: 'facility', facility: f });
+      for (const g of inv.grounds) track({ type: 'grounds', area: g });
+      send({ type: 'site', site: inv.site });
+    };
 
     let inventory: Inventory;
     let foundAward: PriorAward | undefined;
@@ -149,31 +225,39 @@ app.post('/api/projects/:id/extract', upload.array('files', 20), async (req, res
     if (wantAi) {
       if (!aiAvailable()) throw new Error('ANTHROPIC_API_KEY is not set on the server. Add it to .env (see .env.example) or choose the rule-based parser.');
       try {
-        const r = await extractWithClaude(docs, ai, send, abort.signal);
+        const r = await extractWithClaude(readable, ai, track, abort.signal);
         inventory = r.inventory; usage = r.usage; model = r.model; usedProvider = 'claude'; foundAward = r.priorAward;
       } catch (err) {
-        if (provider === 'claude') throw err;
+        if (provider === 'claude' || abort.signal.aborted) throw err;
         send({ type: 'status', stage: 'ai', message: `AI extraction failed (${(err as Error).message}). Falling back to the rule-based parser.` });
-        inventory = heuristicExtract(docs);
+        inventory = heuristicExtract(readable);
+        streamHeuristic(inventory);
       }
     } else {
       send({ type: 'status', stage: 'ai', message: aiAvailable() ? 'Using rule-based parser (as requested).' : 'No ANTHROPIC_API_KEY configured — using rule-based parser.' });
-      inventory = heuristicExtract(docs);
-      for (const f of inventory.facilities) send({ type: 'facility', facility: f });
-      for (const g of inventory.grounds) send({ type: 'grounds', area: g });
-      send({ type: 'site', site: inventory.site });
+      inventory = heuristicExtract(readable);
+      streamHeuristic(inventory);
     }
     if (!foundAward || !(foundAward.totalValue || foundAward.annualValue || foundAward.spendToDate)) {
-      const h = heuristicPriorAward(docs);
+      const h = heuristicPriorAward(readable);
       if (h && (h.totalValue || h.annualValue || h.spendToDate)) { foundAward = { ...(foundAward ?? {}), ...h }; send({ type: 'prior_award', award: foundAward }); }
     }
 
+    if (abort.signal.aborted) throw new Error('Cancelled before the results were saved.');
     send({ type: 'status', stage: 'merging', message: 'Merging into project…' });
     const project = await loadProject(String(req.params.id));
+    const docInfos: DocumentInfo[] = docs.map((d) => ({ name: d.name, size: d.bytes, pages: d.pages, chars: d.chars, mode: d.mode, kind: d.kind, role: d.role, amendment: d.amendment, scannedPages: d.scannedPages?.length ? d.scannedPages : undefined, warnings: d.warnings?.length ? d.warnings : undefined }));
+    let keptPrevious = false;
     if (mode === 'append') {
       const map = new Map(project.inventory.facilities.map((f) => [f.id, f]));
       for (const f of inventory.facilities) map.set(f.id, map.has(f.id) ? mergeFacility(map.get(f.id)!, f) : f);
       inventory = { site: { ...project.inventory.site, ...inventory.site }, facilities: [...map.values()], grounds: [...project.inventory.grounds, ...inventory.grounds] };
+    } else if (!inventory.facilities.length) {
+      if (project.inventory.facilities.length) {
+        keptPrevious = true;
+        send({ type: 'warning', message: `No facilities were found in this package, so the previous inventory (${project.inventory.facilities.length} facilities) was kept instead of being replaced. Check the warnings above, or use Append to add to it.` });
+        inventory = { ...project.inventory, site: { ...project.inventory.site, ...inventory.site }, grounds: project.inventory.grounds.length ? project.inventory.grounds : inventory.grounds };
+      } else send({ type: 'warning', message: 'No facilities were found in this package. Check the warnings above; a scanned exhibit needs the Claude reader, and workload tables must list a building and its square footage.' });
     }
     project.inventory = inventory;
     project.ai = ai;
@@ -198,7 +282,7 @@ app.post('/api/projects/:id/extract', upload.array('files', 20), async (req, res
       project.topDown = topDownHeuristic({ priorAward: project.priorAward, est, site: inventory.site, overrides: project.topDownOverrides });
       send({ type: 'topdown', topDown: project.topDown });
     }
-    project.documents = [...(mode === 'append' ? project.documents : []), ...docs.map((d) => ({ name: d.name, size: d.bytes, pages: d.pages, chars: d.chars, mode: d.mode }))];
+    project.documents = [...(mode === 'append' || keptPrevious ? project.documents : []), ...docInfos];
     project.extraction = { provider: usedProvider, model, finishedAt: new Date().toISOString(), durationMs: Date.now() - started, usage };
     if (!project.name || project.name === 'Untitled BOS estimate') project.name = inventory.site.installationName ? `${inventory.site.installationName} BOS` : project.name;
     await saveProject(project);
@@ -207,8 +291,19 @@ app.post('/api/projects/:id/extract', upload.array('files', 20), async (req, res
     send({ type: 'error', message: (err as Error).message || String(err) });
   } finally {
     clearInterval(heartbeat);
+    await Promise.all(files.map((f) => fs.rm(f.path, { force: true }).catch(() => undefined)));
     res.end();
   }
+});
+
+// API errors as JSON (malformed JSON bodies, oversized payloads, unexpected exceptions) - never an HTML stack trace.
+app.use('/api', (err: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (res.headersSent) { next(err); return; }
+  const e = err as { status?: number; statusCode?: number; type?: string; message?: string };
+  const status = Number(e.status ?? e.statusCode) || 500;
+  const message = e.type === 'entity.too.large' ? 'Request body is too large.' : status >= 500 ? `Server error: ${e.message ?? 'unexpected failure'}` : e.message ?? 'Bad request';
+  if (status >= 500) console.error(err);
+  res.status(status).json({ error: message });
 });
 
 // ---------- static client (production) ----------

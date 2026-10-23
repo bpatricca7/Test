@@ -4,7 +4,7 @@ import {
   CATEGORY_DEFAULTS, CREWS, FACTORS, GROWING_WEEKS_BY_CLIMATE, SNOW_EVENTS_BY_CLIMATE, crewMeta,
   type Crew, type Factor, type FrequencyRule,
 } from './factors';
-import { SERVICE_LEVELS, isInScope, type Assumptions, type Facility, type FloorMix, type GroundsArea, type Inventory, type MealPeriodHeadcount } from './types';
+import { SERVICE_LEVELS, isInScope, type Assumptions, type DiningProfile, type Facility, type FloorMix, type GroundsArea, type Inventory, type MealPeriodHeadcount } from './types';
 
 export const DEFAULT_ASSUMPTIONS: Assumptions = {
   productiveHoursPerFte: 1776,
@@ -119,7 +119,56 @@ export function resolveFacility(f: Facility, a: Assumptions): ResolvedFacility {
   const footArea = gross / floors;
   const footprint = f.footprint ?? { length: Math.sqrt(footArea * d.aspect), width: Math.sqrt(footArea / d.aspect) };
   const level = SERVICE_LEVELS.find((s) => s.id === f.serviceLevel) ?? SERVICE_LEVELS.find((s) => s.id === d.serviceLevel)!;
-  return { ...f, floors, grossSqft: gross, cleanableSqft: cleanable, floorMix: mix, restroomFixtures: fixtures, occupancy, footprint, serviceDaysPerYear: level.daysPerYear };
+  return { ...f, floors, grossSqft: gross, cleanableSqft: cleanable, floorMix: mix, restroomFixtures: fixtures, occupancy, footprint, serviceDaysPerYear: level.daysPerYear, ...(f.dining ? { dining: resolveDining(f.dining) } : {}) };
+}
+
+/**
+ * Meals per operating day and meal-period count from per-period headcounts — the one rule set shared by the
+ * reader (server/toolcalls.ts) and the engine:
+ * - a 6–7-day DFAC that prints no weekend figure anywhere serves weekends like weekdays (assumedWeekend);
+ *   a table with only weekend figures is read the same way round;
+ * - 7 days: (5 × weekday sum + 2 × weekend sum) / 7; 5 days or fewer: the weekday sum (meals per operating
+ *   day); 6 days: (5 × weekday + 1 × weekend) / 6;
+ * - mealPeriods counts the weekday periods with a headcount (TE 5-1 "Breakfast / Lunch / Dinner" = 3, even when
+ *   weekends serve Brunch / Supper in their own rows); weekend-served periods only when no weekday period has a
+ *   figure; then every listed period.
+ */
+export function diningMealsPerDay(periods: MealPeriodHeadcount[], daysPerWeek = 7): { mealsPerDay: number; mealPeriods: number; assumedWeekend: boolean } {
+  const anyWeekend = periods.some((p) => p.weekendHeadcount != null);
+  const anyWeekday = periods.some((p) => p.weekdayHeadcount != null);
+  let norm = periods; let assumedWeekend = false;
+  if (!anyWeekend && daysPerWeek > 5) { norm = periods.map((p) => ({ ...p, weekendHeadcount: p.weekdayHeadcount })); assumedWeekend = true; }
+  else if (!anyWeekday && anyWeekend) norm = periods.map((p) => ({ ...p, weekdayHeadcount: p.weekendHeadcount }));
+  let mealsPerDay: number;
+  if (daysPerWeek >= 7) mealsPerDay = mealsPerDayFromPeriods(norm, 5);
+  else if (daysPerWeek <= 5) mealsPerDay = mealsPerDayFromPeriods(norm, 7); // weekday-only operation: meals per operating day = weekday sum
+  else {
+    const wk = norm.reduce((s, p) => s + Math.max(0, p.weekdayHeadcount ?? 0), 0);
+    const we = norm.reduce((s, p) => s + Math.max(0, p.weekendHeadcount ?? 0), 0);
+    mealsPerDay = Math.round((5 * wk + (daysPerWeek - 5) * we) / daysPerWeek);
+  }
+  const weekdayPeriods = norm.filter((p) => (p.weekdayHeadcount ?? 0) > 0).length;
+  const weekendPeriods = norm.filter((p) => (p.weekendHeadcount ?? 0) > 0).length;
+  return { mealsPerDay, mealPeriods: weekdayPeriods || weekendPeriods || periods.length, assumedWeekend };
+}
+
+/** Meals per operating day for a dining profile: a stated mealsPerDay wins; when it is missing or zero, diningMealsPerDay. */
+export function resolveMealsPerDay(d: Pick<DiningProfile, 'mealsPerDay' | 'mealPeriodsDetail' | 'daysPerWeek'>): number {
+  if (d.mealsPerDay > 0) return d.mealsPerDay;
+  const periods = d.mealPeriodsDetail ?? [];
+  return periods.length ? diningMealsPerDay(periods, d.daysPerWeek || 7).mealsPerDay : 0;
+}
+
+/**
+ * The dining profile the engine prices: meals per day and meal periods filled in from mealPeriodsDetail when they
+ * are missing or zero (diningMealsPerDay — weekday periods, as the reader counts them), else 3 meal periods.
+ */
+export function resolveDining(d: DiningProfile): DiningProfile {
+  const periods = d.mealPeriodsDetail ?? [];
+  const derived = periods.length && !(d.mealsPerDay > 0 && d.mealPeriods > 0) ? diningMealsPerDay(periods, d.daysPerWeek || 7) : undefined;
+  const mealsPerDay = d.mealsPerDay > 0 ? d.mealsPerDay : derived?.mealsPerDay ?? 0;
+  const mealPeriods = d.mealPeriods > 0 ? d.mealPeriods : derived?.mealPeriods || 3;
+  return mealsPerDay === d.mealsPerDay && mealPeriods === d.mealPeriods ? d : { ...d, mealsPerDay, mealPeriods };
 }
 
 export function normalizeMix(m: Partial<FloorMix>): FloorMix {
@@ -186,7 +235,10 @@ export function estimateFacility(f: Facility, a: Assumptions, overrides?: Record
     } else continue;
 
     if (quantity <= 0) continue;
-    const { freq } = occurrences(factor.frequency, ctx);
+    let { freq } = occurrences(factor.frequency, ctx);
+    // A routine custodial task cannot recur more often than the building is visited: weekly dusting in a building
+    // serviced every two weeks, monthly or quarterly happens on each visit (26 / 12 / 4 times a year), not 50 times.
+    if (factor.crew === 'custodial' && factor.frequency.kind === 'per_year') freq = Math.min(freq, r.serviceDaysPerYear);
     if (freq <= 0) continue;
     const rate = lh(factor, overrides);
     const perOcc = quantity * rate;
@@ -197,7 +249,7 @@ export function estimateFacility(f: Facility, a: Assumptions, overrides?: Record
   const totalHours = lines.reduce((s, l) => s + l.annualHours, 0);
   const dailyHoursByCrew: Partial<Record<Crew, number>> = {};
   for (const [crew, hrs] of Object.entries(hoursByCrew) as [Crew, number][]) {
-    const days = crewMeta(crew).domain === 'dining' ? Math.max(1, diningDays) : r.serviceDaysPerYear;
+    const days = crewMeta(crew).domain === 'dining' ? Math.max(1, diningDays) : Math.max(1, r.serviceDaysPerYear);
     dailyHoursByCrew[crew] = hrs / days;
   }
   return { facilityId: f.id, resolved: r, lines, hoursByCrew, dailyHoursByCrew, totalHours: round(totalHours), fte: round(totalHours / a.productiveHoursPerFte, 2) };
@@ -329,8 +381,9 @@ export function estimateInventory(inv: Inventory, assumptionsIn: Partial<Assumpt
     acres: grounds.filter((g) => ['improved_turf', 'semi_improved', 'unimproved', 'athletic_field'].includes(g.area.kind)).reduce((s, g) => s + g.acres, 0),
     pavedSqft: groundsIn.filter((g) => g.kind === 'parking' || g.kind === 'sidewalk').reduce((s, g) => s + groundsSqft(g), 0),
     bedSqft: groundsIn.filter((g) => g.kind === 'shrub_bed').reduce((s, g) => s + groundsSqft(g), 0),
-    trees: groundsIn.filter((g) => g.kind === 'tree_canopy').reduce((s, g) => s + g.quantity, 0),
-    mealsPerYear: inScope.reduce((s, f) => s + (f.dining && f.scope.includes('dining') ? f.dining.mealsPerDay * (f.dining.daysPerWeek || 7) * 52 : 0), 0),
+    trees: groundsIn.filter((g) => g.kind === 'tree_canopy' && g.unit === 'each').reduce((s, g) => s + g.quantity, 0),
+    // resolved dining: meals per day derived from mealPeriodsDetail when the profile does not state it
+    mealsPerYear: facilities.reduce((s, e) => { const d = e.resolved.dining; return s + (d && e.resolved.scope?.includes('dining') ? d.mealsPerDay * (d.daysPerWeek || 7) * 52 : 0); }, 0),
     facilitiesCount: inScope.length,
   };
 

@@ -1,492 +1,455 @@
-// Claude-powered RFP reader. Streams the model's progress and registers facilities / grounds
-// through tool calls so the 3D scene can grow while the document is still being read.
-import Anthropic from '@anthropic-ai/sdk';
+// Claude-powered RFP reader. Streams the model's progress and registers facilities / grounds through tool calls so the
+// 3D scene can grow while the package is still being read. Tool calls are applied by server/toolcalls.ts, the same code
+// that replays recorded runs in tests and `npm run eval -- --provider replay`.
+import Anthropic, { toFile } from '@anthropic-ai/sdk';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { z } from 'zod';
-import type { AiConfig, ExtractionEvent, Facility, GroundsArea, Inventory, PriorAward, SiteInfo, TopDownAssumptions, TopDownEstimate } from '../shared/types';
+import type { AiConfig, ExtractionEvent, Facility, Inventory, PriorAward, SiteInfo, TopDownAssumptions, TopDownEstimate } from '../shared/types';
 import type { EstimateResult } from '../shared/estimate';
 import { DEFAULT_TOPDOWN, annualValueBasis, bottomUpLoadedCostPerFte, computeTopDown, heuristicAssumptions } from '../shared/topdown';
-import { FACILITY_CATEGORIES, GROUNDS_KINDS, SERVICE_LEVELS } from '../shared/types';
-import { categorize } from './heuristic';
 import type { DocInput } from './extract';
+import {
+  applyToolCall, beginPass, createState, docRank, extractionTools, facilityKey, finalize, mergeFacilities, noFinishWarning, precedenceList,
+  groundsSummary, registeredSummary, tablesSummary, type ExtractionState, type ToolCall,
+} from './toolcalls';
+
+export { replayToolCalls } from './toolcalls';
+export type { ToolCall as ReplayCall } from './toolcalls';
 
 type Emit = (e: ExtractionEvent) => void;
 
-const PASS_TEXT_LIMIT = 2_400_000; // chars of plain text per request (~600k tokens)
+/** Token usage, with cache reads and writes kept apart from uncached input (input / output keep their old meaning for the UI). */
+export interface AiUsage { input: number; output: number; cacheRead: number; cacheWrite: number }
+
+export interface ExtractOptions {
+  /** Write the run's tool calls as {model, passes, calls: [{name, input, pass, truncated?}]} JSON (replayable with replayToolCalls). */
+  recordCallsTo?: string;
+  /** Upload native PDFs once with the Files API and reference them by file_id (default true; BOS_FILES_API=0 disables). */
+  useFilesApi?: boolean;
+  /** Tool-loop turns per pass (default 80). */
+  maxTurns?: number;
+  /** Injected client (tests). */
+  client?: Anthropic;
+}
+
+const PASS_TEXT_LIMIT = 2_000_000; // chars of text per document block / request (~600k tokens)
 const PASS_PAGE_LIMIT = 500; // native PDF pages per request (API limit is 600)
-const MAX_TURNS = 60;
+const PASS_INLINE_BYTES = 24 * 1024 * 1024; // base64 PDF bytes sent inline per request (request limit is 32 MB)
+const PASS_TOKEN_BUDGET = 650_000; // estimated document tokens per request (1M context; leave room for the tool loop)
+const TOKENS_PER_NATIVE_PAGE = 2_500;
+const CHARS_PER_TOKEN = 3.3;
+const MAX_TURNS = 80;
+const MAX_OUTPUT_TOKENS = 64_000;
+/** Room a request needs beyond its input: one full turn of output plus the tool results sent with it. */
+const CONTEXT_HEADROOM = MAX_OUTPUT_TOKENS + 16_000;
+/** Fresh conversations per pass after the context window fills up. */
+const MAX_CONTINUATIONS = 3;
+const PROMPT_TOO_LONG = /prompt is too long|context (?:window|length)|maximum context|too many (?:input )?tokens/i;
+const contextWindowOf = (model: string) => (/claude-haiku-4|claude-3/.test(model) ? 200_000 : 1_000_000);
+const contextTokens = (u?: Anthropic.Beta.BetaUsage) => (u ? (u.input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0) + (u.output_tokens ?? 0) : 0);
+const EPHEMERAL = { type: 'ephemeral' } as const;
 
 const SYSTEM = `You are a senior estimator for base operations support (BOS) contracts: custodial services, periodic floor care, grounds maintenance, and dining facility (full food service) operations on military installations and federal campuses.
 
-You are reading a solicitation package (RFP / PWS / SOW, technical exhibits, workload data, facility lists, drawings, Q&A). Your job is to build a complete, accurate FACILITY AND GROUNDS INVENTORY for the estimate.
+You are reading a solicitation package (RFP / PWS / SOW, technical exhibits, workload data, facility lists, drawings, Q&A, amendments). Your job is to build a complete, accurate FACILITY AND GROUNDS INVENTORY for the estimate. The tools do the arithmetic: copy every number exactly as printed and let the tools convert units, sum fixtures, derive meals per day and reconcile totals.
+
+How the text is rendered (documents supplied as text; PDFs attached natively you read visually):
+- Table rows are "cell | cell | cell". Empty cells are kept in position, so column indexes stay stable down a table. A header row may join a group label and a sub-column ("Square Feet Gross | Square Feet Cleanable", "Restroom Fixtures WC | Restroom Fixtures UR").
+- "--- page N ---" starts page N; use it for source.page.
+- "[^1]" is a footnote marker attached to the text before it. It is never part of a number: "45,200[^1]" is 45,200.
+- "~~text~~" is struck-through text, which usually means deleted by an amendment.
+- Spreadsheets appear as "=== file :: sheet ===" sections followed by their rows.
 
 How to work:
-1. Read everything first. Workload tables are usually in technical exhibits or attachments ("TE-3 Custodial Workload", "Attachment J-4 Facility List", "Exhibit B Grounds"). Facility lists can be split across pages; column headers may only appear once.
-2. Register EVERY facility that requires custodial or floor care service, and the dining facility(ies) if food service is in scope. Use register_facilities in batches of up to 25. Do not stop until every row of every workload table is registered. If a list has 300 buildings, register all 300.
-3. Square footage is the most important number. Copy it exactly as printed (strip commas). If the exhibit shows both gross and cleanable/serviced area, record both. If a value is in square yards or square meters, convert to square feet and say so in notes. If a building's area is genuinely missing, estimate it from the building type and set confidence ≤ 0.4 with a note explaining the assumption.
-4. Capture service frequency (daily 5-day, daily 7-day, 3x/week, 2x/week, weekly), floors, restroom fixture counts, and floor finish mix when the document gives them. Leave fields null when the RFP is silent; the estimating engine applies category defaults.
-5. Register grounds areas with register_grounds: improved / semi-improved / unimproved acreage, athletic fields, planting beds, parking lots, sidewalks, trees. Keep the document's unit (acres, SF, SY, LF, each). Tie an area to a building number when the document does; if one quantity is shared by several named buildings, split it evenly and register one area per building (say so in notes). Areas not tied to a building are fine as site-wide entries.
-6. For a dining facility, fill the dining profile: average meals (headcount) per day, meal periods, days per week, seats, kitchen and dining room SF, and whether the requirement is full food service, dining facility attendant (DFA) only, or management only.
-7. Call set_site_info once you know the installation, location, solicitation number, climate / growing season, and contract period (base + options).
-8. Look hard for the PREVIOUS / INCUMBENT CONTRACT: incumbent name, contract number, award or ceiling value, period of performance, annual value, obligations or spend to date, award year. This often hides in the cover letter, sources-sought notice, Q&A, justification, or a "current contract" paragraph. Call set_previous_award with whatever you find (nulls for the rest) — the estimate backs into an FTE count from it. If nothing is stated, call it once with all values null and say so in notes.
-9. Give each item a short source excerpt (the row or sentence you took the number from) and a page number when you can see one.
-10. When everything is registered, call finish with a short summary and a list of anything unresolved (missing areas, ambiguous units, buildings mentioned in text but absent from the exhibit).
+1. Read everything first. Workload tables are usually in technical exhibits or attachments ("TE-3 Custodial Workload", "Attachment J-4 Facility List", "Exhibit B Grounds"). Facility lists can be split across pages; column headers may appear only once.
+2. Workload tables. Before registering rows, call declare_tables once for every workload table you find (facility lists, custodial workload, dining workload, grounds), with table_id, title, file, page range, the number of building rows, and the printed total gross area if there is one, in the table's unit. Tag every facility with its table_id. Never register subtotal, total, grand total or sum rows; their figures belong in declare_tables. finish is refused while the registered rows or square footage don't match a declared table; resolve the gap, or explain it in finish.unresolved naming the table_id.
+3. Register EVERY row of every workload table with register_facilities, in table order, in batches of up to 50 rows per call. Keep each call short enough to finish well within the output limit. If a call is reported as cut off, resend exactly those rows in smaller batches. Do not stop until every row is registered; if a list has 800 buildings, register all 800.
+4. Building identity. Copy building_number exactly as printed, including letters, hyphens and leading zeros (0012, T-2401, 3105-B, P-114). If the package covers more than one installation, campus or site, set campus on every facility: the same number on two campuses is two different buildings. A building that appears in several tables (custodial list and dining workload, base list and amendment) is one facility: register it each time with the same building_number and campus and the tool merges the rows.
+5. Areas. Copy every area exactly as printed, in the document's unit, and set area_unit (sf, sm or sy). Never convert units yourself; the tool converts. If the exhibit shows both gross and cleanable / serviced / custodial area, record both. If a building's area is not printed, set gross_area to null and area_missing to true, put your estimate in estimated_gross_area and its basis in notes. Rows with no gross_area and no area_missing flag are rejected, unless the building is already registered and the row only adds other data (frequency, fixtures, dining).
+6. Scope status. Rows marked excluded, not in scope, N/A, information only, no service, vacant, closed, disposed, to be demolished, or shown struck through get the matching status (excluded, deleted_by_amendment, demolished, vacant) and a status_reason quoting the document; buildings serviced only in an option period get option_only. Register these rows anyway; do not just omit them. Leave status null when a row says nothing about scope: a new building is then in scope, and a row that only updates a registered building keeps its status. Use in_scope only when a document explicitly puts a building (back) in scope, with a status_reason.
+7. Frequency, fixtures, floors. service_level is the routine cleaning frequency; also copy the frequency wording verbatim into service_frequency_text. Bi-weekly means every two weeks (biweekly) unless the document defines it as twice a week; monthly and quarterly have their own levels. When WC / UR / LAV / shower counts are separate columns, fill fixtures.water_closets, urinals, lavatories and showers separately; the tool sums them. Leave fields null when the RFP is silent; the estimating engine applies category defaults.
+8. Grounds: register_grounds for improved / semi-improved / unimproved acreage, athletic fields, planting beds, parking, sidewalks and trees, in the document's unit (acres, hectares, sqft, sqm, sqyd, lf or each). Type I = improved_turf; Type II = semi_improved; Type III and Type IV = unimproved. BASH, airfield infield and clear-zone areas are semi_improved or unimproved, per the mowing frequency. When the label and the stated mowing frequency disagree, follow the frequency. Put the document's own label in document_label and the mowing frequency in mowing_frequency_text. Tie areas to building numbers (and campus) when the document does; if one quantity is shared by several named buildings, split it evenly and register one area per building, each with the printed row as source.excerpt and "split from a shared quantity" in notes (the table still counts it as one row). Never register total rows; out-of-scope areas get a status.
+9. Dining. Register each dining facility separately with its own headcount; never sum headcount across facilities. If headcount is given per meal period, fill dining.meal_periods with {period, weekday_headcount, weekend_headcount} (weekday = Monday–Friday average per day, weekend = weekend / holiday average per day, null when the period is not served then) and leave meals_per_day null: the tool computes meals per day. Also fill seats, kitchen and dining room SF, days per week, and whether the requirement is full food service, dining facility attendant (DFA) only, or management only.
+10. Call set_site_info once you know the installation, location, solicitation number, climate / growing season, and contract period (base + options).
+11. Look hard for the PREVIOUS / INCUMBENT CONTRACT: incumbent name, contract number, award or ceiling value, period of performance, annual value, obligations or spend to date, award year. It often hides in the cover letter, sources-sought notice, Q&A, justification, or a "current contract" paragraph. Call set_previous_award with whatever you find (nulls for the rest); the estimate backs into an FTE count from it. If nothing is stated, call it once with all values null and say so in notes.
+12. Give each item a short source excerpt (the row or sentence you took the numbers from), the page number, and source.file exactly as the document is named in the package list.
+13. When everything is registered, call finish with a short summary and a list of anything unresolved (missing areas, ambiguous units, unreadable pages, buildings mentioned in text but absent from the exhibits).
 
 Never invent buildings that the documents do not mention. Prefer tool calls over prose; keep any narration to one or two short sentences.`;
 
-const CAT_ENUM = FACILITY_CATEGORIES;
-const LEVEL_ENUM = SERVICE_LEVELS.map((s) => s.id);
-const KIND_ENUM = GROUNDS_KINDS.map((k) => k.id);
+const PRECEDENCE_RULES = 'Later documents supersede earlier ones. When an amendment or Q&A changes a building, register it again with the new values and cite that document in source.file. When it deletes, excludes or demolishes a building, register the building with status deleted_by_amendment (or excluded, demolished, vacant) and a status_reason. Do not just omit it.';
 
-const tools: Anthropic.Beta.BetaTool[] = [
-  {
-    name: 'register_facilities',
-    description: 'Register one or more facilities (buildings) that the contractor must service. Call repeatedly in batches of up to 25 until every facility in the workload exhibits is registered.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        facilities: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              building_number: { type: ['string', 'null'], description: 'Building / facility number exactly as printed, e.g. "1201", "B-45", "P-114".' },
-              name: { type: 'string', description: 'Facility name as printed.' },
-              category: { type: 'string', enum: CAT_ENUM, description: 'Best-fit facility category.' },
-              gross_sqft: { type: 'number', description: 'Gross square feet. 0 only if truly unknown (then also set confidence ≤ 0.4).' },
-              cleanable_sqft: { type: ['number', 'null'], description: 'Cleanable / serviced square feet when the document distinguishes it.' },
-              floors: { type: 'integer', description: 'Number of stories; 0 if not stated.' },
-              restroom_fixtures: { type: ['integer', 'null'] },
-              occupancy: { type: ['integer', 'null'] },
-              service_level: { type: 'string', enum: LEVEL_ENUM, description: 'Routine cleaning frequency.' },
-              scope: { type: 'array', items: { type: 'string', enum: ['custodial', 'floor_care', 'dining', 'grounds'] }, description: 'Which services apply to this facility.' },
-              floor_mix: {
-                type: ['object', 'null'],
-                description: 'Fractions of floor area by finish if the RFP gives them (sum ≈ 1).',
-                properties: { carpet: { type: 'number' }, resilient: { type: 'number' }, hard_tile: { type: 'number' }, concrete: { type: 'number' }, wood: { type: 'number' } },
-              },
-              dining: {
-                type: ['object', 'null'],
-                properties: {
-                  seats: { type: ['integer', 'null'] },
-                  meals_per_day: { type: 'number', description: 'Average total meals (headcount) per day across all meal periods.' },
-                  meal_periods: { type: 'integer' },
-                  days_per_week: { type: 'integer' },
-                  kitchen_sqft: { type: ['number', 'null'] },
-                  dining_room_sqft: { type: ['number', 'null'] },
-                  service_style: { type: 'string', enum: ['full_food_service', 'dining_facility_attendant', 'management_only'] },
-                },
-                required: ['meals_per_day', 'meal_periods', 'days_per_week', 'service_style'],
-              },
-              source: {
-                type: 'object',
-                properties: { file: { type: ['string', 'null'] }, page: { type: ['integer', 'null'] }, excerpt: { type: 'string', description: 'The row or sentence the numbers came from (≤ 200 chars).' } },
-                required: ['excerpt'],
-              },
-              confidence: { type: 'number', description: '0–1 confidence that name and square footage are correct.' },
-              notes: { type: ['string', 'null'] },
-              site_hint: { type: ['object', 'null'], description: 'Optional relative position on the installation (0–1 east, 0–1 north) if a map or area grouping is given.', properties: { x: { type: 'number' }, y: { type: 'number' } } },
-            },
-            required: ['name', 'category', 'gross_sqft', 'floors', 'service_level', 'scope', 'source', 'confidence'],
-          },
-        },
-      },
-      required: ['facilities'],
-    },
-  },
-  {
-    name: 'register_grounds',
-    description: 'Register grounds maintenance areas (turf acreage, beds, parking, walks, trees).',
-    input_schema: {
-      type: 'object',
-      properties: {
-        areas: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              name: { type: 'string' },
-              facility_building_number: { type: ['string', 'null'], description: 'Building number this area belongs to, if the document associates it.' },
-              kind: { type: 'string', enum: KIND_ENUM },
-              quantity: { type: 'number' },
-              unit: { type: 'string', enum: ['acres', 'sqft', 'sqyd', 'lf', 'each'] },
-              source: { type: 'object', properties: { file: { type: ['string', 'null'] }, page: { type: ['integer', 'null'] }, excerpt: { type: 'string' } }, required: ['excerpt'] },
-              confidence: { type: 'number' },
-              notes: { type: ['string', 'null'] },
-            },
-            required: ['name', 'kind', 'quantity', 'unit', 'source', 'confidence'],
-          },
-        },
-      },
-      required: ['areas'],
-    },
-  },
-  {
-    name: 'set_site_info',
-    description: 'Record installation-level facts: name, location, solicitation, climate, growing season, contract period.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        installation_name: { type: ['string', 'null'] },
-        location: { type: ['string', 'null'] },
-        solicitation: { type: ['string', 'null'] },
-        contract_name: { type: ['string', 'null'] },
-        climate_zone: { type: ['string', 'null'], enum: ['cold', 'temperate', 'hot_humid', 'arid', null] },
-        growing_season_weeks: { type: ['integer', 'null'] },
-        contract_years: { type: ['integer', 'null'], description: 'Total years including base and all option periods.' },
-        notes: { type: ['string', 'null'] },
-      },
-    },
-  },
-  {
-    name: 'set_previous_award',
-    description: 'Record what the package says about the incumbent / previous contract and its value or spend.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        incumbent: { type: ['string', 'null'] },
-        contract_number: { type: ['string', 'null'] },
-        contract_type: { type: ['string', 'null'], description: 'FFP, IDIQ, cost-plus, etc.' },
-        total_value: { type: ['number', 'null'], description: 'Total award / ceiling value in dollars.' },
-        period_months: { type: ['integer', 'null'], description: 'Months of performance that total_value covers (base + options).' },
-        annual_value: { type: ['number', 'null'], description: 'Annual value in dollars if stated directly.' },
-        spend_to_date: { type: ['number', 'null'], description: 'Obligated / invoiced dollars to date.' },
-        spend_period_months: { type: ['integer', 'null'], description: 'Months covered by spend_to_date.' },
-        award_year: { type: ['integer', 'null'] },
-        source: { type: 'object', properties: { file: { type: ['string', 'null'] }, page: { type: ['integer', 'null'] }, excerpt: { type: 'string' } }, required: ['excerpt'] },
-        confidence: { type: 'number' },
-        notes: { type: ['string', 'null'] },
-      },
-      required: ['source', 'confidence'],
-    },
-  },
-  {
-    name: 'finish',
-    description: 'Call once when every facility and grounds area has been registered.',
-    input_schema: {
-      type: 'object',
-      properties: { summary: { type: 'string' }, unresolved: { type: 'array', items: { type: 'string' } } },
-      required: ['summary', 'unresolved'],
-    },
-  },
-];
-
-// ---------- validation of tool inputs (lenient: coerce, default, never throw on one bad row) ----------
-const nnum = z.coerce.number().nullish();
-const FacilityIn = z.object({
-  building_number: z.union([z.string(), z.number()]).nullish().transform((v) => (v == null ? undefined : String(v).trim())),
-  name: z.string().min(1),
-  category: z.string().default('other'),
-  gross_sqft: z.coerce.number().nonnegative().default(0),
-  cleanable_sqft: nnum,
-  floors: z.coerce.number().int().nonnegative().default(0),
-  restroom_fixtures: nnum,
-  occupancy: nnum,
-  service_level: z.string().default('daily_5'),
-  scope: z.array(z.string()).default(['custodial', 'floor_care']),
-  floor_mix: z.object({ carpet: nnum, resilient: nnum, hard_tile: nnum, concrete: nnum, wood: nnum }).nullish(),
-  dining: z.object({ seats: nnum, meals_per_day: z.coerce.number().default(0), meal_periods: z.coerce.number().int().default(3), days_per_week: z.coerce.number().int().default(7), kitchen_sqft: nnum, dining_room_sqft: nnum, service_style: z.string().default('full_food_service') }).nullish(),
-  source: z.object({ file: z.string().nullish(), page: nnum, excerpt: z.string().default('') }).default({ excerpt: '' }),
-  confidence: z.coerce.number().min(0).max(1).default(0.7),
-  notes: z.string().nullish(),
-  site_hint: z.object({ x: z.coerce.number(), y: z.coerce.number() }).nullish(),
-});
-const GroundsIn = z.object({
-  name: z.string().min(1),
-  facility_building_number: z.union([z.string(), z.number()]).nullish().transform((v) => (v == null ? undefined : String(v).trim())),
-  kind: z.string(),
-  quantity: z.coerce.number().nonnegative(),
-  unit: z.string().default('acres'),
-  source: z.object({ file: z.string().nullish(), page: nnum, excerpt: z.string().default('') }).default({ excerpt: '' }),
-  confidence: z.coerce.number().min(0).max(1).default(0.7),
-  notes: z.string().nullish(),
-});
-
-const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
-export const facilityId = (bn: string | undefined, name: string) => `b-${slug(bn && bn.length ? bn : name) || 'x'}`;
-
-function toFacility(raw: unknown, fallbackFile?: string): Facility | { error: string } {
-  const p = FacilityIn.safeParse(raw);
-  if (!p.success) return { error: p.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ') };
-  const d = p.data;
-  const category = (CAT_ENUM as string[]).includes(d.category) ? (d.category as Facility['category']) : categorize(d.name);
-  const serviceLevel = (LEVEL_ENUM as string[]).includes(d.service_level) ? (d.service_level as Facility['serviceLevel']) : 'daily_5';
-  const scope = d.scope.filter((s) => ['custodial', 'floor_care', 'dining', 'grounds'].includes(s)) as Facility['scope'];
-  const f: Facility = {
-    id: facilityId(d.building_number, d.name),
-    buildingNumber: d.building_number || undefined,
-    name: d.name.trim(),
-    category,
-    grossSqft: d.gross_sqft,
-    cleanableSqft: d.cleanable_sqft ?? undefined,
-    floors: d.floors,
-    restroomFixtures: d.restroom_fixtures ?? undefined,
-    occupancy: d.occupancy ?? undefined,
-    serviceLevel,
-    scope: scope.length ? scope : ['custodial', 'floor_care'],
-    confidence: d.confidence,
-    notes: d.notes ?? undefined,
-    source: { file: d.source.file ?? fallbackFile, page: d.source.page ?? undefined, excerpt: d.source.excerpt.slice(0, 240) },
-    siteHint: d.site_hint ?? undefined,
-  };
-  if (d.floor_mix) f.floorMix = { carpet: d.floor_mix.carpet ?? 0, resilient: d.floor_mix.resilient ?? 0, hardTile: d.floor_mix.hard_tile ?? 0, concrete: d.floor_mix.concrete ?? 0, wood: d.floor_mix.wood ?? 0 };
-  if (d.dining && d.dining.meals_per_day > 0) {
-    f.dining = { seats: d.dining.seats ?? undefined, mealsPerDay: d.dining.meals_per_day, mealPeriods: d.dining.meal_periods, daysPerWeek: d.dining.days_per_week, kitchenSqft: d.dining.kitchen_sqft ?? undefined, diningRoomSqft: d.dining.dining_room_sqft ?? undefined, serviceStyle: (['full_food_service', 'dining_facility_attendant', 'management_only'].includes(d.dining.service_style) ? d.dining.service_style : 'full_food_service') as NonNullable<Facility['dining']>['serviceStyle'] };
-    if (!f.scope.includes('dining')) f.scope.push('dining');
-  }
-  return f;
-}
-
-function toGrounds(raw: unknown, idx: number, fallbackFile?: string): GroundsArea | { error: string } {
-  const p = GroundsIn.safeParse(raw);
-  if (!p.success) return { error: p.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ') };
-  const d = p.data;
-  const kind = (KIND_ENUM as string[]).includes(d.kind) ? (d.kind as GroundsArea['kind']) : 'improved_turf';
-  const unit = (['acres', 'sqft', 'sqyd', 'lf', 'each'].includes(d.unit) ? d.unit : 'acres') as GroundsArea['unit'];
-  return {
-    id: `g-${idx}-${slug(d.name) || kind}`,
-    name: d.name.trim(),
-    facilityId: d.facility_building_number ? facilityId(d.facility_building_number, d.facility_building_number) : undefined,
-    kind, quantity: d.quantity, unit,
-    confidence: d.confidence, notes: d.notes ?? undefined,
-    source: { file: d.source.file ?? fallbackFile, page: d.source.page ?? undefined, excerpt: d.source.excerpt.slice(0, 240) },
-  };
-}
-
-export function mergeFacility(a: Facility, b: Facility): Facility {
-  const [hi, lo] = b.confidence >= a.confidence ? [b, a] : [a, b];
-  return {
-    ...lo, ...hi,
-    grossSqft: hi.grossSqft > 0 ? hi.grossSqft : lo.grossSqft,
-    cleanableSqft: hi.cleanableSqft ?? lo.cleanableSqft,
-    floors: hi.floors || lo.floors,
-    restroomFixtures: hi.restroomFixtures ?? lo.restroomFixtures,
-    occupancy: hi.occupancy ?? lo.occupancy,
-    floorMix: hi.floorMix ?? lo.floorMix,
-    dining: hi.dining ?? lo.dining,
-    scope: [...new Set([...a.scope, ...b.scope])] as Facility['scope'],
-    notes: [a.notes, b.notes].filter(Boolean).join(' | ') || undefined,
-    confidence: Math.max(a.confidence, b.confidence),
-  };
-}
+// ---------- compatibility exports ----------
+/** Facility id as the reader assigns it: the printed number as a slug (b-0012, b-t-2401), campus-prefixed only when a campus is set. */
+export const facilityId = (bn: string | undefined, name: string, campus?: string) => facilityKey(bn, name, campus);
+/** Merge an existing facility with a newer registration of the same building (append mode). */
+export const mergeFacility = (a: Facility, b: Facility): Facility => mergeFacilities(a, b);
 
 // ---------- request planning ----------
-function planPasses(docs: DocInput[]): DocInput[][] {
-  const passes: DocInput[][] = [];
-  let cur: DocInput[] = []; let chars = 0; let pages = 0;
+interface PassItem { doc: DocInput; title: string; text?: string; fileId?: string; tokens: number; inlineBytes: number; pages: number }
+
+function splitText(text: string, limit: number): string[] {
+  if (text.length <= limit) return [text];
+  const parts: string[] = []; let rest = text;
+  while (rest.length > limit) {
+    const window = rest.slice(0, limit);
+    let cut = window.lastIndexOf('\n--- page ');
+    if (cut < limit * 0.6) cut = window.lastIndexOf('\n');
+    if (cut < limit * 0.6) cut = limit;
+    parts.push(rest.slice(0, cut)); rest = rest.slice(cut);
+  }
+  if (rest) parts.push(rest);
+  return parts;
+}
+
+function planItems(docs: DocInput[], uploads: Map<DocInput, string>): PassItem[] {
+  const items: PassItem[] = [];
   for (const d of docs) {
-    const dChars = d.mode === 'text' ? d.text.length : 0;
-    const dPages = d.mode === 'native_pdf' ? d.pages ?? 1 : 0;
-    if (cur.length && (chars + dChars > PASS_TEXT_LIMIT || pages + dPages > PASS_PAGE_LIMIT)) { passes.push(cur); cur = []; chars = 0; pages = 0; }
-    cur.push(d); chars += dChars; pages += dPages;
+    if (d.mode === 'native_pdf' && d.pdfBase64) {
+      const fileId = uploads.get(d);
+      const pages = d.pages ?? 1;
+      items.push({ doc: d, title: d.name, fileId, pages, tokens: pages * TOKENS_PER_NATIVE_PAGE, inlineBytes: fileId ? 0 : d.pdfBase64.length });
+      continue;
+    }
+    const parts = splitText(d.text ?? '', PASS_TEXT_LIMIT);
+    parts.forEach((t, i) => items.push({ doc: d, title: parts.length > 1 ? `${d.name} (part ${i + 1}/${parts.length})` : d.name, text: t, pages: 0, tokens: Math.ceil(t.length / CHARS_PER_TOKEN), inlineBytes: t.length }));
+  }
+  return items;
+}
+
+function planPasses(items: PassItem[]): PassItem[][] {
+  const passes: PassItem[][] = [];
+  let cur: PassItem[] = []; let tokens = 0; let pages = 0; let bytes = 0;
+  for (const it of items) {
+    if (cur.length && (tokens + it.tokens > PASS_TOKEN_BUDGET || pages + it.pages > PASS_PAGE_LIMIT || bytes + it.inlineBytes > PASS_INLINE_BYTES)) { passes.push(cur); cur = []; tokens = 0; pages = 0; bytes = 0; }
+    cur.push(it); tokens += it.tokens; pages += it.pages; bytes += it.inlineBytes;
   }
   if (cur.length) passes.push(cur);
   return passes;
 }
 
-function docBlocks(docs: DocInput[]): Anthropic.Beta.BetaContentBlockParam[] {
-  const blocks: Anthropic.Beta.BetaContentBlockParam[] = [];
-  for (const d of docs) {
-    if (d.mode === 'native_pdf' && d.pdfBase64) {
-      blocks.push({ type: 'document', title: d.name, source: { type: 'base64', media_type: 'application/pdf', data: d.pdfBase64 } });
-    } else {
-      // Split very long text so no single block is unwieldy.
-      const parts = Math.max(1, Math.ceil(d.text.length / PASS_TEXT_LIMIT));
-      for (let i = 0; i < parts; i++) {
-        const slice = d.text.slice(i * PASS_TEXT_LIMIT, (i + 1) * PASS_TEXT_LIMIT);
-        blocks.push({ type: 'document', title: parts > 1 ? `${d.name} (part ${i + 1}/${parts})` : d.name, source: { type: 'text', media_type: 'text/plain', data: slice || '(empty document)' } });
-      }
+function docBlocks(items: PassItem[], useFiles: boolean): Anthropic.Beta.BetaContentBlockParam[] {
+  return items.map((it): Anthropic.Beta.BetaContentBlockParam => {
+    if (it.doc.mode === 'native_pdf' && it.doc.pdfBase64) {
+      return useFiles && it.fileId
+        ? { type: 'document', title: it.title, source: { type: 'file', file_id: it.fileId } }
+        : { type: 'document', title: it.title, source: { type: 'base64', media_type: 'application/pdf', data: it.doc.pdfBase64 } };
     }
-  }
-  return blocks;
+    return { type: 'document', title: it.title, source: { type: 'text', media_type: 'text/plain', data: it.text || '(empty document: no readable text)' } };
+  });
 }
 
-const isCurrentGen = (m: string) => /claude-(opus|sonnet)-5|fable|mythos|claude-opus-4-[678]|claude-sonnet-4-6/.test(m);
+const ranges = (pages: number[]) => {
+  const s = [...new Set(pages)].sort((a, b) => a - b); const out: string[] = [];
+  for (let i = 0; i < s.length; i++) { let j = i; while (j + 1 < s.length && s[j + 1] === s[j] + 1) j++; out.push(j > i ? `${s[i]}-${s[j]}` : `${s[i]}`); i = j; }
+  return out.join(', ');
+};
+
+/** How a conversation (and a pass) ended. */
+type PassEnd = 'finish' | 'end' | 'turns' | 'context' | 'refusal' | 'error';
+/** A fresh conversation over the same documents after the previous one filled the context window. */
+interface Continuation { n: number; carry?: string }
+
+function passIntro(allDocs: DocInput[], pass: PassItem[], p: number, nPasses: number, st: ExtractionState, cont?: Continuation): string {
+  const inPass = new Set(pass.map((i) => i.doc.name));
+  const prec = precedenceList(allDocs);
+  const lines: string[] = [];
+  lines.push(`Solicitation package: ${allDocs.length} document(s).${nPasses > 1 ? ` The package is too large for one request: this is request ${p + 1} of ${nPasses} and it contains ${[...inPass].join(', ')}.` : ''}`);
+  lines.push(`Documents in order of precedence:\n${prec.map((d, i) => `${i + 1}. ${d.name} (${d.label})${nPasses > 1 ? (inPass.has(d.name) ? ' [in this request]' : ' [another request]') : ''}`).join('\n')}\n${PRECEDENCE_RULES}`);
+  const notes: string[] = [];
+  for (const d of allDocs.filter((x) => inPass.has(x.name))) {
+    if (d.scannedPages?.length) {
+      notes.push(d.mode === 'native_pdf'
+        ? `${d.name} pages ${ranges(d.scannedPages)} are scanned images; read them visually. If a table there is unreadable, list it in unresolved.`
+        : `${d.name} pages ${ranges(d.scannedPages)} are scanned images with no text layer and could not be included; list any workload table on them in unresolved.`);
+    }
+    if (d.mode === 'text' && !d.text?.trim()) notes.push(`${d.name} has no readable text; list it in unresolved.`);
+    for (const w of (d.warnings ?? []).slice(0, 6)) notes.push(`${d.name}: ${w}`);
+  }
+  if (notes.length) lines.push(`Reader notes:\n${notes.slice(0, 30).map((n) => `- ${n}`).join('\n')}`);
+  if (cont) {
+    lines.push(`This request continues reading the same documents: the previous conversation about them filled the model's context window and was closed (continuation ${cont.n}). Everything registered so far is listed below and is kept. Do not re-register it; register only the rows that are still missing, then call finish.${cont.carry ? `\n\nResults of the last tool calls in the previous conversation:\n${cont.carry}` : ''}`);
+  }
+  if (p > 0 || cont) {
+    const where = cont ? 'so far' : 'in earlier requests';
+    if (st.facilities.size) lines.push(`Already registered ${where}, one per line as building number|campus|gross SF|status (do not re-register unless this request has corrected or later data):\n${registeredSummary(st)}`);
+    const tables = tablesSummary(st);
+    if (tables) lines.push(`Tables declared ${where}:\n${tables}`);
+    const grounds = cont ? groundsSummary(st) : '';
+    if (grounds) lines.push(`Grounds areas registered so far, one per line as name|kind|quantity|building:\n${grounds}`);
+  }
+  lines.push(cont
+    ? 'Continue with the tools: register the remaining facilities and grounds, set_site_info / set_previous_award if not done yet, and finish.'
+    : 'Build the complete facility and grounds inventory using the tools: set_site_info if the installation is identifiable, declare_tables, then register facilities table by table, then grounds, set_previous_award, and finish.');
+  return lines.join('\n\n');
+}
+
+// ---------- request parameters ----------
+const isCurrentGen = (m: string) => /claude-(opus|sonnet|haiku)-5|fable|mythos|claude-opus-4-[678]|claude-sonnet-4-6/.test(m);
 const supportsFallbacks = (m: string) => /claude-(opus|sonnet)-5|fable|mythos/.test(m);
 
-type Variant = 'full' | 'no_fallbacks' | 'bare';
+/** Request options that an account / model combination may reject; stepped down one at a time on a 400. */
+interface Flags { fallbacks: boolean; thinking: boolean; strict: boolean }
+const initialFlags = (model: string): Flags => ({ fallbacks: supportsFallbacks(model), thinking: isCurrentGen(model), strict: true });
+
+function stepDown(flags: Flags, err: Error, firstTurn: boolean): string | null {
+  const m = err.message ?? '';
+  // tool definitions only change before the conversation has history (changing them later would invalidate it)
+  if (firstTurn && flags.strict && /strict|schema|grammar|compil|additionalProperties|too complex/i.test(m)) { flags.strict = false; return 'non-strict tool schemas'; }
+  if (flags.fallbacks) { flags.fallbacks = false; return 'no server-side fallback'; }
+  if (firstTurn && flags.strict) { flags.strict = false; return 'non-strict tool schemas'; }
+  if (flags.thinking) { flags.thinking = false; return 'basic parameters'; }
+  return null;
+}
 
 type StreamParams = Parameters<Anthropic['beta']['messages']['stream']>[0];
 
-function buildParams(cfg: AiConfig, variant: Variant, messages: Anthropic.Beta.BetaMessageParam[]): StreamParams {
+function buildParams(cfg: AiConfig, flags: Flags, messages: Anthropic.Beta.BetaMessageParam[], o: { system: string; tools: Anthropic.Beta.BetaTool[]; maxTokens: number; cacheSystem?: boolean }): StreamParams {
   const base: StreamParams = {
     model: cfg.model,
-    max_tokens: 64000,
-    system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
-    tools,
+    max_tokens: o.maxTokens,
+    system: [{ type: 'text', text: o.system, ...(o.cacheSystem ? { cache_control: EPHEMERAL } : {}) }],
+    tools: o.tools,
     tool_choice: { type: 'auto' },
     messages,
   };
-  if (variant === 'bare' || !isCurrentGen(cfg.model)) return base;
+  if (!flags.thinking || !isCurrentGen(cfg.model)) return base;
   base.thinking = { type: 'adaptive', display: 'summarized' };
-  base.output_config = { effort: cfg.effort };
-  if (variant === 'full' && supportsFallbacks(cfg.model)) {
+  base.output_config = { effort: cfg.effort ?? 'high' };
+  if (flags.fallbacks && supportsFallbacks(cfg.model)) {
     base.betas = ['server-side-fallback-2026-07-01'];
     base.fallbacks = 'default';
   }
   return base;
 }
 
-export async function extractWithClaude(docs: DocInput[], cfg: AiConfig, emit: Emit, signal?: AbortSignal): Promise<{ inventory: Inventory; priorAward?: PriorAward; usage: { input: number; output: number }; model: string }> {
-  const client = new Anthropic({ maxRetries: 3, timeout: 30 * 60 * 1000 });
-  const facilities = new Map<string, Facility>();
-  const grounds: GroundsArea[] = [];
-  let site: SiteInfo = {};
-  let priorAward: PriorAward | undefined;
-  const usage = { input: 0, output: 0 };
-  let gIdx = 0;
-  let servedModel = cfg.model;
-
-  const passes = planPasses(docs);
-  for (let p = 0; p < passes.length; p++) {
-    const pass = passes[p];
-    emit({ type: 'status', stage: 'ai', message: passes.length > 1 ? `AI pass ${p + 1} of ${passes.length}: reading ${pass.map((d) => d.name).join(', ')}` : `Reading ${pass.map((d) => d.name).join(', ')} with ${cfg.model} (effort: ${cfg.effort})` });
-
-    const already = [...facilities.values()].map((f) => `${f.buildingNumber ?? ''} ${f.name}`.trim());
-    const intro = [
-      `Solicitation package, ${pass.length} document(s).`,
-      passes.length > 1 ? `This is pass ${p + 1} of ${passes.length}. ${already.length ? `Facilities already registered in earlier passes (do not re-register unless you find corrected data): ${already.slice(0, 400).join('; ')}` : ''}` : '',
-      'Build the complete facility and grounds inventory using the tools. Start with set_site_info if the installation is identifiable, then register facilities table by table, then grounds, then finish.',
-    ].filter(Boolean).join('\n\n');
-
-    const first: Anthropic.Beta.BetaContentBlockParam[] = [...docBlocks(pass), { type: 'text', text: intro, cache_control: { type: 'ephemeral' } }];
-    const messages: Anthropic.Beta.BetaMessageParam[] = [{ role: 'user', content: first }];
-
-    let variant: Variant = 'full';
-    for (let turn = 0; turn < MAX_TURNS; turn++) {
-      if (signal?.aborted) throw new Error('Extraction cancelled');
-      let msg: Anthropic.Beta.BetaMessage;
-      try {
-        const stream = client.beta.messages.stream(buildParams(cfg, variant, messages), { signal });
-        let textBuf = ''; let thinkBuf = ''; let lastFlush = Date.now();
-        const flush = () => {
-          if (thinkBuf.trim()) emit({ type: 'ai_text', text: thinkBuf, kind: 'thinking' });
-          if (textBuf.trim()) emit({ type: 'ai_text', text: textBuf, kind: 'text' });
-          textBuf = ''; thinkBuf = ''; lastFlush = Date.now();
-        };
-        for await (const ev of stream) {
-          if (ev.type === 'content_block_delta') {
-            if (ev.delta.type === 'text_delta') textBuf += ev.delta.text;
-            else if (ev.delta.type === 'thinking_delta' && ev.delta.thinking) thinkBuf += ev.delta.thinking;
-            if (Date.now() - lastFlush > 400) flush();
-          } else if (ev.type === 'content_block_stop') {
-            flush();
-          } else if (ev.type === 'content_block_start' && ev.content_block.type === 'tool_use') {
-            flush();
-            emit({ type: 'ai_text', text: `→ ${ev.content_block.name}`, kind: 'tool' });
-          }
-        }
-        flush();
-        msg = await stream.finalMessage();
-      } catch (err) {
-        if (err instanceof Anthropic.BadRequestError && variant !== 'bare') {
-          // Account / model combinations that reject fallbacks, effort or adaptive thinking: step down and retry.
-          const next: Variant = variant === 'full' ? 'no_fallbacks' : 'bare';
-          emit({ type: 'status', stage: 'ai', message: `Model rejected request options (${err.message.slice(0, 120)}). Retrying with ${next === 'bare' ? 'basic parameters' : 'no server-side fallback'}.` });
-          variant = next; turn -= 1; continue;
-        }
-        throw err;
-      }
-
-      servedModel = msg.model || servedModel;
-      usage.input += (msg.usage.input_tokens ?? 0) + (msg.usage.cache_read_input_tokens ?? 0) + (msg.usage.cache_creation_input_tokens ?? 0);
-      usage.output += msg.usage.output_tokens ?? 0;
-      messages.push({ role: 'assistant', content: msg.content });
-
-      if (msg.stop_reason === 'refusal') {
-        const d = msg.stop_details && 'category' in msg.stop_details ? ` (${msg.stop_details.category ?? 'unspecified'})` : '';
-        throw new Error(`The model declined to process this document${d}.`);
-      }
-
-      const toolUses = msg.content.filter((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === 'tool_use');
-      if (toolUses.length === 0) {
-        if (msg.stop_reason === 'max_tokens') { messages.push({ role: 'user', content: 'You hit the output limit. Continue registering the remaining facilities and grounds; do not repeat items already registered.' }); continue; }
-        if (msg.stop_reason === 'pause_turn') continue;
-        break; // end_turn without tools → done with this pass
-      }
-
-      let finished = false;
-      const results: Anthropic.Beta.BetaToolResultBlockParam[] = [];
-      for (const tu of toolUses) {
-        const input = (tu.input ?? {}) as Record<string, unknown>;
-        let text = '';
-        try {
-          if (tu.name === 'register_facilities') {
-            const rows = Array.isArray(input.facilities) ? input.facilities : [];
-            const ok: string[] = []; const bad: string[] = [];
-            for (const row of rows) {
-              const f = toFacility(row, pass[0]?.name);
-              if ('error' in f) { bad.push(f.error); continue; }
-              const merged = facilities.has(f.id) ? mergeFacility(facilities.get(f.id)!, f) : f;
-              facilities.set(f.id, merged);
-              emit({ type: 'facility', facility: merged });
-              ok.push(`${merged.buildingNumber ?? ''} ${merged.name} (${merged.grossSqft.toLocaleString()} SF)`.trim());
-            }
-            const zero = rows.length ? [...facilities.values()].filter((f) => f.grossSqft <= 0).map((f) => f.name) : [];
-            text = `Registered ${ok.length} facilities (total so far ${facilities.size}).${bad.length ? ` Rejected ${bad.length} rows: ${bad.slice(0, 3).join(' | ')}` : ''}${zero.length ? ` Facilities still missing square footage: ${zero.slice(0, 10).join(', ')} — estimate and flag if the document never states them.` : ''}`;
-          } else if (tu.name === 'register_grounds') {
-            const rows = Array.isArray(input.areas) ? input.areas : [];
-            let n = 0; const bad: string[] = [];
-            for (const row of rows) {
-              gIdx += 1;
-              const g = toGrounds(row, gIdx, pass[0]?.name);
-              if ('error' in g) { bad.push(g.error); continue; }
-              if (g.facilityId && !facilities.has(g.facilityId)) g.facilityId = undefined;
-              grounds.push(g); n += 1;
-              emit({ type: 'grounds', area: g });
-            }
-            text = `Registered ${n} grounds areas (total so far ${grounds.length}).${bad.length ? ` Rejected: ${bad.slice(0, 3).join(' | ')}` : ''}`;
-          } else if (tu.name === 'set_site_info') {
-            const s = input as Record<string, unknown>;
-            site = {
-              ...site,
-              installationName: str(s.installation_name) ?? site.installationName,
-              location: str(s.location) ?? site.location,
-              solicitation: str(s.solicitation) ?? site.solicitation,
-              contractName: str(s.contract_name) ?? site.contractName,
-              climateZone: (['cold', 'temperate', 'hot_humid', 'arid'].includes(String(s.climate_zone)) ? (s.climate_zone as SiteInfo['climateZone']) : site.climateZone),
-              growingSeasonWeeks: numOr(s.growing_season_weeks) ?? site.growingSeasonWeeks,
-              contractYears: numOr(s.contract_years) ?? site.contractYears,
-              notes: str(s.notes) ?? site.notes,
-            };
-            emit({ type: 'site', site });
-            text = 'Site info recorded.';
-          } else if (tu.name === 'set_previous_award') {
-            const a = input as Record<string, unknown>;
-            const src = (a.source ?? {}) as Record<string, unknown>;
-            const next: PriorAward = {
-              incumbent: str(a.incumbent), contractNumber: str(a.contract_number), contractType: str(a.contract_type),
-              totalValue: numOr(a.total_value), periodMonths: numOr(a.period_months), annualValue: numOr(a.annual_value),
-              spendToDate: numOr(a.spend_to_date), spendPeriodMonths: numOr(a.spend_period_months), awardYear: numOr(a.award_year),
-              source: { file: str(src.file) ?? pass[0]?.name, page: numOr(src.page), excerpt: (str(src.excerpt) ?? '').slice(0, 240) },
-              confidence: Math.max(0, Math.min(1, numOr(a.confidence) ?? 0.5)), notes: str(a.notes),
-            };
-            const hasValue = Boolean(next.totalValue || next.annualValue || next.spendToDate);
-            priorAward = priorAward && !hasValue ? { ...priorAward, notes: [priorAward.notes, next.notes].filter(Boolean).join(' | ') || undefined } : { ...(priorAward ?? {}), ...Object.fromEntries(Object.entries(next).filter(([, v]) => v !== undefined)) } as PriorAward;
-            emit({ type: 'prior_award', award: priorAward });
-            text = hasValue ? `Previous award recorded (${annualValueBasis(priorAward).basis} basis ≈ $${Math.round(annualValueBasis(priorAward).value).toLocaleString()}/yr).` : 'Noted: no award value in the package.';
-          } else if (tu.name === 'finish') {
-            finished = true;
-            const unresolved = Array.isArray(input.unresolved) ? (input.unresolved as unknown[]).map(String) : [];
-            emit({ type: 'ai_text', text: `Finished: ${String(input.summary ?? '')}${unresolved.length ? `\nUnresolved: ${unresolved.join('; ')}` : ''}`, kind: 'text' });
-            if (unresolved.length) site = { ...site, notes: [site.notes, `Unresolved: ${unresolved.join('; ')}`].filter(Boolean).join('\n') };
-            text = 'Acknowledged.';
-          } else text = `Unknown tool ${tu.name}`;
-        } catch (err) {
-          results.push({ type: 'tool_result', tool_use_id: tu.id, is_error: true, content: `Tool failed: ${(err as Error).message}` });
-          continue;
-        }
-        results.push({ type: 'tool_result', tool_use_id: tu.id, content: text });
-      }
-      messages.push({ role: 'user', content: results });
-      if (finished) break;
-    }
-  }
-
-  return { inventory: { site, facilities: [...facilities.values()], grounds }, priorAward, usage, model: servedModel };
+function addUsage(usage: AiUsage, u: Anthropic.Beta.BetaUsage | undefined) {
+  if (!u) return;
+  usage.input += u.input_tokens ?? 0;
+  usage.output += u.output_tokens ?? 0;
+  usage.cacheRead += u.cache_read_input_tokens ?? 0;
+  usage.cacheWrite += u.cache_creation_input_tokens ?? 0;
 }
 
-const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
-const numOr = (v: unknown) => (typeof v === 'number' && isFinite(v) ? v : typeof v === 'string' && v.trim() && isFinite(Number(v)) ? Number(v) : undefined);
+async function streamTurn(client: Anthropic, params: StreamParams, emit: Emit, signal?: AbortSignal): Promise<Anthropic.Beta.BetaMessage> {
+  const stream = client.beta.messages.stream(params, { signal });
+  let textBuf = ''; let thinkBuf = ''; let lastFlush = Date.now();
+  const flush = () => {
+    if (thinkBuf.trim()) emit({ type: 'ai_text', text: thinkBuf, kind: 'thinking' });
+    if (textBuf.trim()) emit({ type: 'ai_text', text: textBuf, kind: 'text' });
+    textBuf = ''; thinkBuf = ''; lastFlush = Date.now();
+  };
+  for await (const ev of stream) {
+    if (ev.type === 'content_block_delta') {
+      if (ev.delta.type === 'text_delta') textBuf += ev.delta.text;
+      else if (ev.delta.type === 'thinking_delta' && ev.delta.thinking) thinkBuf += ev.delta.thinking;
+      if (Date.now() - lastFlush > 400) flush();
+    } else if (ev.type === 'content_block_stop') {
+      flush();
+    } else if (ev.type === 'content_block_start' && ev.content_block.type === 'tool_use') {
+      flush();
+      emit({ type: 'ai_text', text: `→ ${ev.content_block.name}`, kind: 'tool' });
+    }
+  }
+  flush();
+  return stream.finalMessage();
+}
+
+// ---------- Files API ----------
+const safeFileName = (name: string) => { const base = (name.split(/[\\/]/).pop() ?? 'document').replace(/[<>:"|?*\\/\u0000-\u001f]/g, '_').slice(0, 200) || 'document'; return /\.pdf$/i.test(base) ? base : `${base}.pdf`; };
+
+async function uploadPdfs(client: Anthropic, docs: DocInput[], emit: Emit, signal?: AbortSignal): Promise<Map<DocInput, string>> {
+  const out = new Map<DocInput, string>();
+  for (const d of docs) {
+    if (d.mode !== 'native_pdf' || !d.pdfBase64) continue;
+    try {
+      const file = await toFile(Buffer.from(d.pdfBase64, 'base64'), safeFileName(d.name), { type: 'application/pdf' });
+      const meta = await client.files.upload({ file, expires_in_seconds: 24 * 3600 }, { signal });
+      out.set(d, meta.id);
+    } catch (err) {
+      if (signal?.aborted) throw err;
+      emit({ type: 'status', stage: 'ai', message: `Files API upload of ${d.name} failed (${(err as Error).message.slice(0, 120)}); sending the PDF inline instead.` });
+      if (err instanceof Anthropic.APIError && err.status != null && err.status < 500 && err.status !== 429) break; // account-level refusal: don't retry every file
+    }
+  }
+  return out;
+}
+
+const fileSourceError = (err: unknown) => (err instanceof Anthropic.BadRequestError || err instanceof Anthropic.NotFoundError || err instanceof Anthropic.PermissionDeniedError) && /file/i.test((err as Error).message);
+
+// ---------- extraction ----------
+export async function extractWithClaude(docs: DocInput[], cfg: AiConfig, emit: Emit, signal?: AbortSignal, opts: ExtractOptions = {}): Promise<{ inventory: Inventory; priorAward?: PriorAward; usage: AiUsage; model: string; warnings: string[] }> {
+  const client = opts.client ?? new Anthropic({ maxRetries: 3, timeout: 30 * 60 * 1000 });
+  const maxTurns = opts.maxTurns ?? MAX_TURNS;
+  const st = createState(docs);
+  const usage: AiUsage = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
+  const flags = initialFlags(cfg.model);
+  let servedModel = cfg.model;
+  const warned = new Set<string>();
+  const warn = (message: string) => { if (warned.has(message)) return; warned.add(message); emit({ type: 'warning', message }); };
+  const recorded: { model: string; passes: string[][]; calls: ToolCall[] } = { model: cfg.model, passes: [], calls: [] };
+
+  const wantFiles = (opts.useFilesApi ?? true) && process.env.BOS_FILES_API !== '0' && docs.some((d) => d.mode === 'native_pdf' && d.pdfBase64);
+  const uploads = wantFiles ? await uploadPdfs(client, docs, emit, signal) : new Map<DocInput, string>();
+  let useFiles = uploads.size > 0;
+  if (useFiles) emit({ type: 'status', stage: 'ai', message: `Uploaded ${uploads.size} PDF(s) once with the Files API.` });
+
+  try {
+    // documents go to the model base first, amendments last (ties keep package order)
+    const ordered = docs.map((d, i) => ({ d, r: docRank(d, i) })).sort((a, b) => a.r - b.r).map((x) => x.d);
+    const passes = planPasses(planItems(ordered, uploads));
+    const window = contextWindowOf(cfg.model);
+    // Refusals and terminal API errors end the pass, not the run: what was registered is kept. They are thrown only when
+    // nothing at all was registered (index.ts then falls back to the rule-based reader or reports the error).
+    const registered = () => st.facilities.size + st.grounds.length + st.excludedGrounds.length;
+    const failures: { err: Error; message: string; warned: boolean }[] = [];
+    const fail = (err: Error, message: string) => { const warned = registered() > 0; if (warned) warn(message); failures.push({ err, message, warned }); };
+    for (let p = 0; p < passes.length; p++) {
+      const pass = passes[p];
+      const names = [...new Set(pass.map((i) => i.doc.name))];
+      beginPass(st, names);
+      recorded.passes.push(names);
+      emit({ type: 'status', stage: 'ai', message: passes.length > 1 ? `AI pass ${p + 1} of ${passes.length}: reading ${names.join(', ')}` : `Reading ${names.join(', ')} with ${cfg.model} (effort: ${cfg.effort ?? 'high'})` });
+
+      let finished = false; let nudged = false; let turns = 0;
+      let cont: Continuation | undefined;
+      let ended = 'end' as PassEnd;
+      let stopRun = false;
+      // One conversation per pass, plus a fresh continuation conversation (same documents, everything registered so far
+      // summarised in the intro) whenever one fills the context window. Continuations stay in the same pass: replays match.
+      for (;;) {
+        const intro: Anthropic.Beta.BetaTextBlockParam = { type: 'text', text: passIntro(docs, pass, p, passes.length, st, cont), cache_control: EPHEMERAL };
+        const messages: Anthropic.Beta.BetaMessageParam[] = [{ role: 'user', content: [...docBlocks(pass, useFiles), intro] }];
+        // moving cache breakpoint: system + intro + the last block of the latest user turn = 3 of the 4 allowed
+        let marked: { cache_control?: Anthropic.Beta.BetaCacheControlEphemeral | null } | undefined;
+        const pushUser = (content: Anthropic.Beta.BetaContentBlockParam[]) => {
+          if (marked) delete marked.cache_control;
+          const last = content[content.length - 1] as { cache_control?: Anthropic.Beta.BetaCacheControlEphemeral | null };
+          last.cache_control = EPHEMERAL; marked = last;
+          messages.push({ role: 'user', content });
+        };
+
+        let convTurns = 0; let convApplied = 0; let carry: string | undefined; let full = 'filled';
+        let firstInput = 0; // tokens of the conversation's first request (documents + intro): what a fresh conversation costs
+        nudged = false;
+        let outcome = 'end' as PassEnd;
+        while (true) {
+          if (turns >= maxTurns) { outcome = 'turns'; break; }
+          if (signal?.aborted) throw new Error('Extraction cancelled');
+          const params = buildParams(cfg, flags, messages, { system: SYSTEM, tools: extractionTools({ strict: flags.strict }), maxTokens: MAX_OUTPUT_TOKENS, cacheSystem: true });
+          let msg: Anthropic.Beta.BetaMessage;
+          try {
+            msg = await streamTurn(client, params, emit, signal);
+          } catch (err) {
+            if (signal?.aborted) throw new Error('Extraction cancelled');
+            if (convTurns === 0 && useFiles && fileSourceError(err)) {
+              useFiles = false;
+              messages[0] = { role: 'user', content: [...docBlocks(pass, false), intro] };
+              emit({ type: 'status', stage: 'ai', message: `The API did not accept the uploaded file (${(err as Error).message.slice(0, 120)}); sending PDFs inline.` });
+              continue;
+            }
+            if (err instanceof Anthropic.BadRequestError && PROMPT_TOO_LONG.test(err.message)) {
+              // the tool history no longer fits: continue in a fresh conversation (other request options would not help)
+              if (convTurns > 0) { outcome = 'context'; break; }
+            } else if (err instanceof Anthropic.BadRequestError) {
+              const step = stepDown(flags, err, turns === 0);
+              if (step) { emit({ type: 'status', stage: 'ai', message: `Model rejected request options (${err.message.slice(0, 120)}). Retrying with ${step}.` }); continue; }
+            }
+            const e = err instanceof Error ? err : new Error(String(err));
+            // a 400 is about this request's content (another pass may still be read); anything else (5xx / 429 after the
+            // SDK's retries, auth, network) stops the run
+            stopRun = !(err instanceof Anthropic.BadRequestError);
+            fail(e, `AI pass ${p + 1} stopped after ${turns} turns because of an API error (${e.message.slice(0, 200)}); keeping what was registered so far - the inventory may be incomplete.`);
+            outcome = 'error';
+            break;
+          }
+          turns++; convTurns++;
+          if (convTurns === 1) firstInput = contextTokens(msg.usage) - (msg.usage?.output_tokens ?? 0);
+          servedModel = msg.model || servedModel;
+          addUsage(usage, msg.usage);
+          messages.push({ role: 'assistant', content: msg.content });
+
+          if (msg.stop_reason === 'refusal') {
+            const d = msg.stop_details && 'category' in msg.stop_details ? ` (${msg.stop_details.category ?? 'unspecified'})` : '';
+            fail(new Error(`The model declined to process this document${d}.`), `AI pass ${p + 1} stopped after ${turns - 1} turns because the model declined to continue${d}; keeping what was registered so far - the inventory may be incomplete.`);
+            outcome = 'refusal';
+            break;
+          }
+
+          // max_tokens and model_context_window_exceeded both cut the output off mid-block
+          const contextFull = msg.stop_reason === 'model_context_window_exceeded';
+          const cutOff = msg.stop_reason === 'max_tokens' || contextFull;
+          const toolUses = msg.content.filter((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === 'tool_use');
+          if (!toolUses.length) {
+            if (contextFull) { outcome = 'context'; break; }
+            if (cutOff) { pushUser([{ type: 'text', text: 'You hit the output limit. Continue registering the remaining facilities and grounds in smaller batches; do not repeat items already registered.' }]); continue; }
+            if (msg.stop_reason === 'pause_turn') { pushUser([{ type: 'text', text: 'Continue.' }]); continue; }
+            if (!finished && !nudged) { nudged = true; pushUser([{ type: 'text', text: 'You ended your turn without calling finish. If every workload row is registered, call finish now (listing anything unresolved); otherwise continue registering.' }]); continue; }
+            outcome = 'end';
+            break;
+          }
+
+          // A tool_use cut off by the output limit is the last content block; it is answered with an error and never applied.
+          const lastBlock = msg.content[msg.content.length - 1];
+          const results: Anthropic.Beta.BetaContentBlockParam[] = [];
+          const texts: string[] = [];
+          for (const tu of toolUses) {
+            const truncated = cutOff && tu === lastBlock;
+            const r = applyToolCall(st, { name: tu.name, input: tu.input }, { truncated });
+            recorded.calls.push({ name: tu.name, input: tu.input, pass: p, ...(truncated ? { truncated: true } : {}) });
+            for (const e of r.events) { if (e.type !== 'warning') emit(e); else if (!(truncated && contextFull)) warn(e.message); }
+            if (!r.isError) convApplied++;
+            results.push({ type: 'tool_result', tool_use_id: tu.id, content: r.resultText, ...(r.isError ? { is_error: true } : {}) });
+            texts.push(truncated && contextFull ? `${tu.name}: cut off when the context window filled up and NOT applied - resend those rows.` : `${tu.name}: ${r.resultText}`);
+            if (tu.name === 'finish' && !r.isError) finished = true;
+          }
+          if (finished) { outcome = 'finish'; break; }
+          carry = texts.join('\n').slice(0, 4000);
+          // no further turn in a conversation whose context is full (it cannot fit): continue in a fresh one
+          if (contextFull) { outcome = 'context'; break; }
+          if (msg.stop_reason === 'max_tokens' && lastBlock?.type !== 'tool_use') results.push({ type: 'text', text: 'You hit the output limit. Continue in smaller batches.' });
+          // the next request would not leave room for a full turn of output: continue in a fresh conversation instead,
+          // when that frees real room (if the documents alone nearly fill the window, a fresh conversation would not help)
+          const used = contextTokens(msg.usage);
+          if (used + CONTEXT_HEADROOM > window && used - firstInput > CONTEXT_HEADROOM) { outcome = 'context'; full = 'nearly filled'; break; }
+          pushUser(results);
+        }
+        if (outcome !== 'context') { ended = outcome; break; }
+        if (convApplied === 0 || (cont?.n ?? 0) >= MAX_CONTINUATIONS) {
+          warn(`AI pass ${p + 1} ${full} the model's context window after ${turns} turns ${convApplied === 0 ? 'without registering anything new' : `and ${MAX_CONTINUATIONS} continuations`}; stopped - the inventory may be incomplete.`);
+          ended = 'context';
+          break;
+        }
+        cont = { n: (cont?.n ?? 0) + 1, carry };
+        warn(`AI pass ${p + 1} ${full} the model's context window after ${turns} turns; continuing in a fresh request (continuation ${cont.n}) with the ${st.facilities.size} facilities registered so far.`);
+      }
+      if (ended === 'end') warn(noFinishWarning(p + 1));
+      else if (ended === 'turns') warn(`AI pass ${p + 1} stopped after ${maxTurns} turns without calling finish - the inventory may be incomplete.`);
+      if (stopRun) {
+        const unread = passes.slice(p + 1).flatMap((x) => x.map((i) => i.doc.name));
+        if (unread.length) fail(failures[failures.length - 1].err, `Not read by the AI because of the error above: ${[...new Set(unread)].join(', ')}.`);
+        break;
+      }
+    }
+    if (failures.length && registered() === 0) throw failures[0].err;
+    for (const f of failures) if (!f.warned) warn(f.message);
+
+    const fin = finalize(st);
+    // finalize repeats the per-pass "no finish" warning; keep the loop's more specific one (e.g. turn limit) instead
+    const passAlreadyWarned = (w: string) => { const m = w.match(/^AI pass (\d+) /); return Boolean(m && [...warned].some((x) => x.startsWith(`AI pass ${m[1]} `))); };
+    for (const w of fin.warnings) if (!passAlreadyWarned(w)) warn(w);
+    return { inventory: fin.inventory, priorAward: fin.priorAward, usage, model: servedModel, warnings: [...warned] };
+  } finally {
+    if (opts.recordCallsTo) {
+      try {
+        await fs.mkdir(path.dirname(path.resolve(opts.recordCallsTo)), { recursive: true });
+        await fs.writeFile(opts.recordCallsTo, JSON.stringify({ ...recorded, model: servedModel }, null, 1));
+      } catch (err) { emit({ type: 'warning', message: `Could not record tool calls to ${opts.recordCallsTo}: ${(err as Error).message}` }); }
+    }
+    for (const id of uploads.values()) client.files.delete(id).catch(() => { /* expires in 24 h anyway */ });
+  }
+}
 
 export const aiAvailable = () => Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
 
@@ -575,26 +538,21 @@ function describeContext(ctx: TopDownContext): string {
   ].filter(Boolean).join('\n\n');
 }
 
-export async function topDownWithClaude(ctx: TopDownContext, cfg: AiConfig, emit?: Emit, signal?: AbortSignal): Promise<{ topDown: TopDownEstimate; usage: { input: number; output: number } }> {
-  const client = new Anthropic({ maxRetries: 3, timeout: 10 * 60 * 1000 });
+export async function topDownWithClaude(ctx: TopDownContext, cfg: AiConfig, emit?: Emit, signal?: AbortSignal, opts: { client?: Anthropic } = {}): Promise<{ topDown: TopDownEstimate; usage: AiUsage }> {
+  const client = opts.client ?? new Anthropic({ maxRetries: 3, timeout: 10 * 60 * 1000 });
   const messages: Anthropic.Beta.BetaMessageParam[] = [{ role: 'user', content: `${describeContext(ctx)}\n\nPropose the top-down assumptions and reconciliation now via report_top_down.` }];
-  const usage = { input: 0, output: 0 };
-  let variant: Variant = 'full';
-  for (let attempt = 0; attempt < 3; attempt++) {
+  const usage: AiUsage = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
+  const flags = initialFlags(cfg.model); flags.strict = false;
+  for (let attempt = 0; attempt < 4; attempt++) {
     let msg: Anthropic.Beta.BetaMessage;
     try {
-      const params = buildParams(cfg, variant, messages);
-      params.system = [{ type: 'text', text: TOPDOWN_SYSTEM }];
-      params.tools = [topDownTool];
-      params.max_tokens = 16000;
-      const stream = client.beta.messages.stream(params, { signal });
-      msg = await stream.finalMessage();
+      const params = buildParams(cfg, flags, messages, { system: TOPDOWN_SYSTEM, tools: [topDownTool], maxTokens: 16000 });
+      msg = await client.beta.messages.stream(params, { signal }).finalMessage();
     } catch (err) {
-      if (err instanceof Anthropic.BadRequestError && variant !== 'bare') { variant = variant === 'full' ? 'no_fallbacks' : 'bare'; continue; }
+      if (err instanceof Anthropic.BadRequestError && stepDown(flags, err, false)) continue;
       throw err;
     }
-    usage.input += (msg.usage.input_tokens ?? 0) + (msg.usage.cache_read_input_tokens ?? 0) + (msg.usage.cache_creation_input_tokens ?? 0);
-    usage.output += msg.usage.output_tokens ?? 0;
+    addUsage(usage, msg.usage);
     if (msg.stop_reason === 'refusal') throw new Error('The model declined to produce the top-down estimate.');
     const tu = msg.content.find((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === 'tool_use' && b.name === 'report_top_down');
     if (!tu) {
@@ -603,9 +561,10 @@ export async function topDownWithClaude(ctx: TopDownContext, cfg: AiConfig, emit
       if (text && emit) emit({ type: 'ai_text', text, kind: 'text' });
       continue;
     }
-    const parsed = TopDownIn.safeParse(tu.input);
-    if (!parsed.success) {
-      messages.push({ role: 'assistant', content: msg.content }, { role: 'user', content: [{ type: 'tool_result', tool_use_id: tu.id, is_error: true, content: `Invalid fields: ${parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}. Call report_top_down again.` }] });
+    const parsed = msg.stop_reason === 'max_tokens' ? undefined : TopDownIn.safeParse(tu.input);
+    if (!parsed?.success) {
+      const why = parsed ? `Invalid fields: ${parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}` : 'The call was cut off by the output limit';
+      messages.push({ role: 'assistant', content: msg.content }, { role: 'user', content: [{ type: 'tool_result', tool_use_id: tu.id, is_error: true, content: `${why}. Call report_top_down again.` }] });
       continue;
     }
     const d = parsed.data;
