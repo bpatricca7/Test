@@ -19,6 +19,8 @@ import { clock } from './clock';
 import './labels.css';
 
 const POOL = 160;
+/** fallback offsets (px) for a pin whose own spot is taken: up, beside, further up, then down onto the roof */
+const PIN_TRIES: [number, number][] = [[0, 0], [0, -10], [-10, -4], [10, -4], [0, -20], [-14, -12], [14, -12], [-18, 0], [18, 0], [0, 12], [-22, -16], [22, -16]];
 const PACK_MS = 200;
 type Lod = 'chip' | 'full' | 'pin';
 interface Rect { x0: number; y0: number; x1: number; y1: number }
@@ -26,6 +28,8 @@ interface Cand {
   key: string; id: string; kind: 'facility' | 'grounds'; rank: number; lod: Lod; sel: boolean; hov: boolean;
   anchor: THREE.Vector3; ax: number; ay: number; text: string; html: string; cls: string; stripe: string; pc: string; w: number; h: number; isNew: boolean;
   chipText?: string; l1?: string; l2?: string; l3?: string;
+  /** set for priority items: a chip that finds no room falls back to this pin */
+  pinHtml?: string;
 }
 interface Placed { key: string; id: string; kind: 'facility' | 'grounds'; slot: Slot; anchor: THREE.Vector3; offX: number; offY: number; w: number; h: number; lod: Lod; text: string; isNew: boolean; x: number; y: number; visible: boolean; must?: boolean }
 interface Slot { el: HTMLDivElement; key: string | null; cls: string; html: string; style: string; tx: string; on: boolean }
@@ -260,10 +264,12 @@ export function LabelLayerDriver({ layer }: { layer: React.RefObject<HTMLDivElem
         const needs = meta?.review === 'needs';
         const isNew = recentRank.has(b.id);
         const match = filterIds != null && filterIds.size <= 150 && filterIds.has(b.id); // a short search result list: pin every hit
-        const priority = sel || hov || flagged || isNew || (needs && needsRelevant) || match;
+        // §9.8: in the confidence and review colour modes a low-confidence roof always carries a ▲ pin too
+        const lowConf = (colorBy === 'confidence' || colorBy === 'review') && confBand(f.confidence) === 'lo';
+        const priority = sel || hov || flagged || isNew || (needs && needsRelevant) || lowConf || match;
         let rank = ftePct.get(b.id) ?? 0;
         if (filterIds && filterIds.has(b.id)) rank = 300;
-        if (needs && needsRelevant) rank = 500;
+        if ((needs && needsRelevant) || lowConf) rank = lowConf ? 520 : 500;
         if (isNew) rank = 600 - (recentRank.get(b.id) ?? 0);
         if (flagged) rank = 700;
         if (hov) rank = 950;
@@ -290,10 +296,11 @@ export function LabelLayerDriver({ layer }: { layer: React.RefObject<HTMLDivElem
         const dots = crewAt && crewAt.size ? [...crewAt.entries()].sort((p, q) => q[1] - p[1]).slice(0, 4) : null;
         const l3 = dots ? dots.map(([c, nn]) => `● ${nn}`).join('  ') : '';
         const l3html = dots ? `<div class="l3">${dots.map(([c, nn]) => `<span style="color:${crewColor(c as Parameters<typeof crewColor>[0])}">●</span> ${nn}`).join('&nbsp;&nbsp;')}</div>` : '';
-        const cls = [sel ? 'lbl--sel' : '', hov && !sel ? 'lbl--hover' : '', isNew ? 'lbl--new' : '', flagged ? 'lbl--flag' : (needs && needsRelevant ? 'lbl--warn' : '')].filter(Boolean).join(' ');
+        const cls = [sel ? 'lbl--sel' : '', hov && !sel ? 'lbl--hover' : '', isNew ? 'lbl--new' : '', flagged ? 'lbl--flag' : ((needs && needsRelevant) || lowConf ? 'lbl--warn' : '')].filter(Boolean).join(' ');
+        const pinHtml = `<span class="pin__dot">${flagged ? '⚑' : CONF_GLYPH[band]}</span><span class="pin__stem"></span>`;
         cands.push({ key: `f:${b.id}`, id: b.id, kind: 'facility', rank, lod, sel, hov, anchor, ax: a.x, ay: a.y, text: lod === 'full' ? l1 : chipText,
-          html: lod === 'full' ? `<div class="l1">${num ? `<span class="n">${esc(num)}</span> · ${esc(name)}` : esc(name)}</div><div class="l2">${esc(l2)}</div>${l3html}` : lod === 'chip' ? esc(chipText) : `<span class="pin__dot">${flagged ? '⚑' : CONF_GLYPH[band]}</span><span class="pin__stem"></span>`,
-          cls, stripe, pc, w: 0, h: 0, isNew, chipText, l1, l2, l3 });
+          html: lod === 'full' ? `<div class="l1">${num ? `<span class="n">${esc(num)}</span> · ${esc(name)}` : esc(name)}</div><div class="l2">${esc(l2)}</div>${l3html}` : lod === 'chip' ? esc(chipText) : pinHtml,
+          cls, stripe, pc, w: 0, h: 0, isNew, chipText, l1, l2, l3, pinHtml: priority ? pinHtml : undefined });
       }
       // grounds chips
       for (const z of layout.zones) {
@@ -342,7 +349,8 @@ export function LabelLayerDriver({ layer }: { layer: React.RefObject<HTMLDivElem
       const toChip = () => { lod = 'chip'; if (c.chipText) { c.text = c.chipText; c.html = esc(c.chipText); } };
       if (lod === 'full' && !must && fullCount >= 12) toChip();
       const cost = lod === 'pin' ? 1 / 3 : 1;
-      if (!must && (units + cost > budget || count + 1 > budget)) { if (lod === 'pin') continue; else continue; }
+      // the budget is in chip units; a pin counts as a third of a chip (§9.7)
+      if (!must && units + cost > budget) continue;
       let r = rectFor(c, lod);
       if (must) {
         // never culled: clamp into the free rect, then try a few positions to stay clear of others
@@ -358,9 +366,17 @@ export function LabelLayerDriver({ layer }: { layer: React.RefObject<HTMLDivElem
         if (!best) continue;
         r = best;
       } else {
-        if (!inside(r) || onOcc(r) || hash.hit(r, 4)) {
-          if (lod === 'full') { toChip(); r = rectFor(c, 'chip'); if (!inside(r) || onOcc(r) || hash.hit(r, 4)) continue; }
-          else continue;
+        const free = (q: Rect, pad: number) => inside(q) && !onOcc(q) && !hash.hit(q, pad);
+        if (!free(r, lod === 'pin' ? 1 : 4)) {
+          if (lod === 'full') { toChip(); r = rectFor(c, 'chip'); }
+          if (lod === 'chip' && !free(r, 4) && c.pinHtml) { lod = 'pin'; c.html = c.pinHtml; r = rectFor(c, 'pin'); } // a priority item keeps at least its pin
+          if (lod === 'pin') {
+            // a pin may sit a little off its roof rather than drop out: the status must never rest on colour alone
+            let ok: Rect | null = null;
+            for (const [dx, dy] of PIN_TRIES) { const q: Rect = { x0: r.x0 + dx, y0: r.y0 + dy, x1: r.x1 + dx, y1: r.y1 + dy }; if (free(q, 1)) { ok = q; break; } }
+            if (!ok) continue;
+            r = ok;
+          } else if (!free(r, 4)) continue;
         }
       }
       hash.add(r); placedRects.push(r);
@@ -479,16 +495,18 @@ export function LabelLayerDriver({ layer }: { layer: React.RefObject<HTMLDivElem
   function updateCard(now: number) {
     const s = S.current; const card = s.card; if (!card) return;
     const id = useStore.getState().selectedAgentId;
-    const p = id ? rt.crew.find((c) => c.id === id) : undefined;
+    const p = id ? rt.crew.find((c) => c.id === id) ?? (rt.selAgent?.id === id ? rt.selAgent : undefined) : undefined;
     if (!p || useStore.getState().view === 'table') { if (card.classList.contains('is-on')) card.classList.remove('is-on'); return; }
     const sState = p.state; const agent = sState.agent; const meta = crewMeta(agent.crew);
     if (now - s.cardAt > 120 || !card.classList.contains('is-on')) {
       s.cardAt = now;
       const hhmm = (h: number) => fmtTime(h);
       let body = '';
-      if (sState.status === 'off') body = `<span class="c">Off shift (works ${hhmm(meta.shift.start)}–${hhmm(meta.shift.end)})</span>`;
-      else if (sState.status === 'travel' && sState.job) body = `<span class="c">Walking to ${esc(sState.job.targetName)}</span>`;
-      else if (sState.status === 'work' && sState.job) body = `<span>${esc(sState.job.task)}</span><br/><span class="c">${esc(sState.job.targetName)}${sState.job.floors > 1 ? ` · floor ${sState.floor + 1}` : ''} · ${Math.round(sState.progress * 100)}% · ${sState.job.hours.toFixed(1)} h/day</span>`;
+      // one block per line: the card is at most 320 px wide and lines wrap inside it (the task line is clamped
+      // to two lines), so no text ever runs past the card's backing
+      if (sState.status === 'off') body = `<div class="c">Off shift (works ${hhmm(meta.shift.start)}–${hhmm(meta.shift.end)})</div>`;
+      else if (sState.status === 'travel' && sState.job) body = `<div class="c">Walking to ${esc(sState.job.targetName)}</div>`;
+      else if (sState.status === 'work' && sState.job) body = `<div class="t">${esc(sState.job.task)}</div><div class="c">${esc(sState.job.targetName)}${sState.job.floors > 1 ? ` · floor ${sState.floor + 1}` : ''} · ${Math.round(sState.progress * 100)}% · ${sState.job.hours.toFixed(1)} h/day</div>`;
       const html = `<b>${esc(meta.label)}${agent.represents > 1 ? ` ×${agent.represents}` : ''} · #${agent.index + 1}</b>${body}`;
       if (html !== s.cardHtml) { card.innerHTML = html; s.cardHtml = html; card.style.setProperty('--crew', crewColor(agent.crew)); }
     }

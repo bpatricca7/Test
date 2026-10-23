@@ -17,15 +17,21 @@ export const rt = {
   labelRects: [] as { x0: number; y0: number; x1: number; y1: number }[],
   /** agents drawn this frame, world space (global roster + interior crew) */
   crew: [] as CrewPoint[],
+  /** the selected agent when it is not drawn (working inside a building at site distance): its card stays */
+  selAgent: null as CrewPoint | null,
   /** facility id → crew → heads working inside now (site roster); drives the labels' crew-dot row */
   crewAt: new Map<string, Map<string, number>>(),
   /** true at site distance, when interior crews are hidden and labels show crew dots */
   interiorHidden: true,
   shadowDirty: true,
+  /** a layout change asks for the shadow map in the frame after the next one (Lighting) */
+  shadowDeferred: false,
   /** free-rect scissor in CSS px (origin bottom-left), shared by the main render and the post chain */
   scissor: { on: false, x: 0, y: 0, w: 0, h: 0 },
   /** set by components that animate; Scene keeps rendering while any is true */
   animating: new Set<string>(),
+  /** High-tier frame-rate governor (perf.ts): 0 = full spec; 1 = no SMAA; 2 = + 0.75× DPR; 3 = + no Live glow */
+  perf: { level: 0, changedAt: 0, since: 0, last: 0, median: 0, noUpUntil: 0, samples: [] as number[] },
 };
 
 export const requestShadow = () => { rt.shadowDirty = true; };

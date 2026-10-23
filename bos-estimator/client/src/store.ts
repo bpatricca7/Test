@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import { api, runExtraction, type ExtractOptions, type Health } from './api';
 import type { Assumptions, ExtractionEvent, Facility, GroundsArea, Inventory, PriorAward, Project, TopDownAssumptions } from '@shared/types';
 import type { Crew } from '@shared/factors';
-import { changedFields, fieldValue, isManualRow, normBldg, normCampus, normName, revertPatch, withEditMarkers, type ReviewEntry, type ReviewMap, type ReviewStatus } from './components/lib/review';
+import { changedFields, isManualRow, revertPatch, withEditMarkers, type ReviewEntry, type ReviewMap, type ReviewStatus } from './components/lib/review';
+import { diffInventories, handEditedRows, mergeHandEdits, overlayHandEdits, restoreRows, withHandValues } from './components/lib/runMerge';
 import { ACCEPT, isAccepted, skipReason } from './components/lib/files';
 import type { ConfirmOptions } from './components/ui/Dialog';
 
@@ -21,7 +22,15 @@ export interface CamCmd { kind: 'fit-site' | 'frame-selection'; seq: number }
 /** Project as the client keeps it: the server PUT merges unknown top-level keys, so review marks persist without a server change. */
 export type ClientProject = Project & { review?: ReviewMap };
 export interface ExtractionDoc { name: string; pages?: number; chars: number; mode: string; kind?: string; role?: string; amendment?: number; scannedPages?: number[]; warnings?: string[] }
-export interface RunResult { added: number; removed: number; changed: number; unchanged: number; changedIds: string[] }
+export interface RunResult {
+  added: number; removed: number; changed: number; unchanged: number; changedIds: string[];
+  /** SHELL: rows whose hand edits were put back onto the re-read rows */
+  kept?: number;
+  /** SHELL: rows flagged because the re-read changed a field that was edited by hand */
+  conflicts?: number;
+  /** SHELL: verified rows the re-read changed, back to unreviewed (§6.3 P1) */
+  unverified?: number;
+}
 export interface ExtractionState {
   running: boolean;
   phase: RunPhase;
@@ -46,6 +55,9 @@ export interface ExtractionState {
   restorable?: boolean;
   /** SHELL-only: inventory size when the run started */
   startCount?: number;
+  /** SHELL-only: the `at` the done merge wrote on the review entries it changed, and those entries as they were */
+  mergeAt?: number;
+  mergeBefore?: Record<string, ReviewEntry | undefined>;
 }
 const emptyStaging = (): ExtractionState['staging'] => ({ active: false, seenIds: new Set(), incoming: [], incomingGrounds: [] });
 export const emptyExtraction = (): ExtractionState => ({
@@ -87,63 +99,6 @@ const innerH = () => (typeof window === 'undefined' ? 900 : window.innerHeight);
 // ---------------- run helpers ----------------
 const PHASE_ORDER: Record<RunPhase, number> = { idle: 0, uploading: 1, reading: 2, extracting: 3, merging: 4, crosscheck: 5, done: 6, failed: 7, cancelled: 7 };
 const terminal = (p: RunPhase) => p === 'done' || p === 'failed' || p === 'cancelled';
-
-function diffInventories(before: Inventory, after: Inventory): RunResult {
-  const used = new Set<string>();
-  const byId = new Map(before.facilities.map((f) => [f.id, f]));
-  const byNo = new Map<string, Facility>();
-  const byName = new Map<string, Facility | null>();
-  for (const f of before.facilities) {
-    const b = normBldg(f.buildingNumber); if (b) byNo.set(`${normCampus(f.campus)}|${b}`, f);
-    const n = normName(f.name); byName.set(n, byName.has(n) ? null : f); // ambiguous names never match
-  }
-  let added = 0, changed = 0, unchanged = 0; const changedIds: string[] = [];
-  for (const f of after.facilities) {
-    let prev = byId.get(f.id);
-    if (!prev || used.has(prev.id)) { const b = normBldg(f.buildingNumber); prev = b ? byNo.get(`${normCampus(f.campus)}|${b}`) : undefined; }
-    if (!prev || used.has(prev.id)) prev = byName.get(normName(f.name)) ?? undefined;
-    if (!prev || used.has(prev.id)) { added++; continue; }
-    used.add(prev.id);
-    const diff = prev.grossSqft !== f.grossSqft || (prev.cleanableSqft ?? null) !== (f.cleanableSqft ?? null) || prev.floors !== f.floors || prev.category !== f.category || prev.serviceLevel !== f.serviceLevel || (prev.status ?? 'in_scope') !== (f.status ?? 'in_scope');
-    if (diff) { changed++; changedIds.push(f.id); } else unchanged++;
-  }
-  const gUsed = new Set<string>();
-  const gById = new Map(before.grounds.map((g) => [g.id, g]));
-  const gByName = new Map(before.grounds.map((g) => [normName(g.name), g]));
-  for (const g of after.grounds) {
-    let prev = gById.get(g.id);
-    if (!prev || gUsed.has(prev.id)) prev = gByName.get(normName(g.name));
-    if (!prev || gUsed.has(prev.id)) { added++; continue; }
-    gUsed.add(prev.id);
-    if (prev.kind !== g.kind || prev.quantity !== g.quantity || prev.unit !== g.unit || (prev.facilityId ?? '') !== (g.facilityId ?? '')) { changed++; changedIds.push(g.id); } else unchanged++;
-  }
-  const removed = before.facilities.filter((f) => !used.has(f.id)).length + before.grounds.filter((g) => !gUsed.has(g.id)).length;
-  return { added, removed, changed, unchanged, changedIds };
-}
-
-/**
- * Copies the fields named in each entry's `edited` map from the `from` rows onto the `to` rows with the same id
- * (an edit made by hand during a run survives the run's inventory and the reload). Returns `to` when nothing applies.
- */
-function carryEdits(from: Inventory, to: Inventory, entries: ReviewMap): Inventory {
-  const ids = Object.keys(entries).filter((id) => Object.keys(entries[id].edited ?? {}).length);
-  if (!ids.length) return to;
-  const fromF = new Map(from.facilities.map((f) => [f.id, f]));
-  const fromG = new Map(from.grounds.map((g) => [g.id, g]));
-  const patchOf = (src: Facility | GroundsArea, dst: Facility | GroundsArea, paths: string[]) => {
-    const patch: Record<string, unknown> = {};
-    for (const path of paths) {
-      const v = fieldValue(src, path);
-      if (path === 'dining.mealsPerDay') { const d = (dst as Facility).dining ?? (src as Facility).dining; if (d) patch.dining = { ...d, mealsPerDay: typeof v === 'number' ? v : 0 }; }
-      else patch[path] = v;
-    }
-    return patch;
-  };
-  let changed = false;
-  const facilities = to.facilities.map((f) => { const src = fromF.get(f.id); const e = entries[f.id]; if (!src || !e?.edited) return f; const patch = patchOf(src, f, Object.keys(e.edited)); if (!changes(f, patch)) return f; changed = true; return { ...f, ...patch } as Facility; });
-  const grounds = to.grounds.map((g) => { const src = fromG.get(g.id); const e = entries[g.id]; if (!src || !e?.edited) return g; const patch = patchOf(src, g, Object.keys(e.edited)); if (!changes(g, patch)) return g; changed = true; return { ...g, ...patch } as GroundsArea; });
-  return changed ? { ...to, facilities, grounds } : to;
-}
 
 /** Whether a patch changes any field of the row (objects and arrays compared by value). */
 function changes(row: object, patch: object): boolean {
@@ -331,15 +286,34 @@ let savedVersion = 0;
 let toastSeq = 0;
 let confirmSeq = 0;
 let lastRun: StartOptions | null = null;
+/** the post-run reconcile (save of the merged rows, reload) is in flight; it saves any edit made meanwhile */
+let reconciling = false;
+/** updatedAt of the last server copy loaded or saved (the base of the unsaved-changes journal) */
+let serverStamp: string | null = null;
+
+// ---------------- unsaved-changes journal (A9): edits survive a reload or close that beats the debounced save ----------------
+// On pagehide / hidden / beforeunload the unsaved user fields go to localStorage synchronously (a keepalive PUT is
+// capped at 64 KB, far below a 400-row inventory); init() re-applies them when the server copy has not moved on since.
+const JOURNAL_KEYS = ['name', 'inventory', 'review', 'wages', 'factorOverrides', 'assumptionOverrides', 'priorAward', 'topDownOverrides', 'ai'] as const;
+type JournalKey = typeof JOURNAL_KEYS[number];
+interface Journal { v: 1; at: number; base: string | null; fields: Partial<Pick<ClientProject, JournalKey>> }
+const journalKey = (id: string) => `bos.unsaved.v1.${id}`;
+function readJournal(id: string): Journal | null {
+  try { const j = JSON.parse(localStorage.getItem(journalKey(id)) ?? 'null') as Journal | null; return j && j.v === 1 && j.fields && typeof j.at === 'number' ? j : null; } catch { return null; }
+}
+function clearJournal(id: string) { try { localStorage.removeItem(journalKey(id)); } catch { /* storage unavailable */ } }
+const sameJson = (a: unknown, b: unknown) => { if (a === b) return true; try { return JSON.stringify(a ?? null) === JSON.stringify(b ?? null); } catch { return false; } };
 
 export const useStore = create<State>((set, get) => {
-  const doSave = async (): Promise<boolean> => {
+  const doSave = async (opts: { keepalive?: boolean } = {}): Promise<boolean> => {
     const p = get().project; if (!p) return true;
     const v = editVersion;
     set({ saving: true });
     try {
-      await api.saveProject(p);
+      const saved = await api.saveProject(p, opts);
       savedVersion = Math.max(savedVersion, v);
+      serverStamp = saved.updatedAt ?? serverStamp;
+      if (editVersion <= savedVersion && !get().extraction.running && !reconciling) clearJournal(p.id);
       set({ saveError: null });
       return true;
     } catch (err) {
@@ -349,8 +323,42 @@ export const useStore = create<State>((set, get) => {
   };
   const scheduleSave = () => {
     if (saveTimer) clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => { saveTimer = null; if (get().extraction.running) return; void doSave(); }, 700);
+    // while a read runs (or its result is being reconciled) the run's end merges and saves local edits (§6.3)
+    saveTimer = setTimeout(() => { saveTimer = null; if (get().extraction.running || reconciling) return; void doSave(); }, 700);
   };
+  /** unsaved local changes, or a save still in flight */
+  const dirty = () => editVersion > savedVersion || get().saving || reconciling;
+  /** Writes the unsaved user fields to the journal; false when they could not be kept (storage full or blocked). */
+  const writeJournal = (): boolean => {
+    const s = get(); const p = s.project; if (!p) return true;
+    const x = s.extraction;
+    const fields: Journal['fields'] = {};
+    for (const k of JOURNAL_KEYS) (fields as Record<string, unknown>)[k] = p[k];
+    if (x.running) {
+      // a first read or Append streams into the inventory: those rows are not the user's, and the server keeps the
+      // pre-run inventory when a run dies, so only a staged run's inventory (old rows + hand edits) is journaled
+      if (!x.staging.active) { delete fields.inventory; }
+      // the run's events patch these; the server copy is the pre-run one
+      delete fields.priorAward; delete fields.name;
+    }
+    try { localStorage.setItem(journalKey(p.id), JSON.stringify({ v: 1, at: Date.now(), base: serverStamp, fields } satisfies Journal)); return true; } catch { return false; }
+  };
+  /** Page is going away or hidden: journal, then start the save at once (keepalive when the body is small enough). */
+  const flushOnLeave = (): boolean => {
+    if (!dirty()) return true;
+    const kept = writeJournal();
+    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+    if (editVersion > savedVersion && !get().saving && !get().extraction.running && !reconciling) void doSave({ keepalive: true });
+    return kept;
+  };
+  if (typeof window !== 'undefined') {
+    try {
+      window.addEventListener('pagehide', () => { flushOnLeave(); });
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushOnLeave(); });
+      // warn only when the changes could not be kept locally (the journal restores them otherwise)
+      window.addEventListener('beforeunload', (ev) => { if (dirty() && !flushOnLeave()) { ev.preventDefault(); ev.returnValue = ''; } });
+    } catch { /* no window events */ }
+  }
   const mutateProject = (fn: (p: ClientProject) => ClientProject) => {
     const p = get().project; if (!p) return;
     editVersion++;
@@ -423,17 +431,32 @@ export const useStore = create<State>((set, get) => {
       const projectId = params.get('project') || 'default';
       set({ projectId, loading: true, loadError: null });
       try {
-        const [health, project] = await Promise.all([api.health().catch(() => null), api.getProject(projectId)]);
+        const [health, loaded] = await Promise.all([api.health().catch(() => null), api.getProject(projectId)]);
+        // unsaved changes journaled when the page last went away: re-apply them unless the server copy moved on since
+        let project = loaded as ClientProject; let recovered = false;
+        const j = readJournal(projectId);
+        if (j) {
+          const stamp = Date.parse(loaded.updatedAt);
+          const fresh = j.base === loaded.updatedAt || !(stamp > j.at + 15_000);
+          const differs = fresh && JOURNAL_KEYS.some((k) => k in j.fields && !sameJson(j.fields[k], (loaded as ClientProject)[k]));
+          if (differs) { project = { ...project, ...j.fields }; recovered = true; } else clearJournal(projectId);
+        }
         const inv = project.inventory;
         const empty = inv.facilities.length + inv.grounds.length === 0;
         const ranBefore = Boolean(project.extraction) || project.documents.length > 0;
         set({
-          health, project: project as ClientProject, loading: false,
+          health, project, loading: false,
           leftOpen: true, leftTab: empty || !ranBefore ? 'documents' : 'inventory',
           rightOpen: !empty, rightTab: 'inspector',
           query: { ...get().query, tableTab: inv.facilities.length === 0 && inv.grounds.length > 0 ? 'grounds' : 'facilities' },
         });
         editVersion = savedVersion = 0;
+        serverStamp = loaded.updatedAt ?? null;
+        if (recovered) {
+          editVersion = 1;
+          void doSave();
+          get().pushToast({ text: 'Recovered changes that were not saved before the page closed', tone: 'ok' });
+        }
       } catch (err) {
         set({ loading: false, loadError: (err as Error).message });
       }
@@ -617,7 +640,11 @@ export const useStore = create<State>((set, get) => {
           let inF: Map<string, number> | null = null, inG: Map<string, number> | null = null;
           let projPatch: Partial<ClientProject> = {};
           let result = x0.result;
-          let toast: string | null = null;
+          let mergeAt = x0.mergeAt, mergeBefore = x0.mergeBefore;
+          const keepHand = <T extends Facility | GroundsArea>(next: T, prev: T): T => {
+            const marks = p0.review?.[next.id]?.edited;
+            return marks && Object.keys(marks).length ? withHandValues(next, prev, Object.keys(marks)) : next;
+          };
           const markFound = (id: string) => {
             if (!seen.ids) seen.ids = new Set(staged.seenIds);
             seen.ids.add(id);
@@ -647,7 +674,8 @@ export const useStore = create<State>((set, get) => {
                   const i = inF.get(f.id); if (i == null) { inF.set(f.id, incoming.length); incoming.push(f); } else incoming[i] = f;
                 } else {
                   if (!fIdx) { fIdx = new Map(facilities.map((x, i) => [x.id, i])); facilities = facilities.slice(); }
-                  const i = fIdx.get(f.id); if (i == null) { fIdx.set(f.id, facilities.length); facilities.push(f); } else facilities[i] = f;
+                  // a re-read row keeps the values the estimator edited by hand (the done merge settles conflicts)
+                  const i = fIdx.get(f.id); if (i == null) { fIdx.set(f.id, facilities.length); facilities.push(f); } else facilities[i] = keepHand(f, facilities[i]);
                 }
                 seenF.add(f.id); markFound(f.id);
                 progress = { ...progress, registered: Math.max(progress.registered, seenF.size) };
@@ -662,7 +690,7 @@ export const useStore = create<State>((set, get) => {
                   const i = inG.get(g.id); if (i == null) { inG.set(g.id, incomingG.length); incomingG.push(g); } else incomingG[i] = g;
                 } else {
                   if (!gIdx) { gIdx = new Map(grounds.map((x, i) => [x.id, i])); grounds = grounds.slice(); }
-                  const i = gIdx.get(g.id); if (i == null) { gIdx.set(g.id, grounds.length); grounds.push(g); } else grounds[i] = g;
+                  const i = gIdx.get(g.id); if (i == null) { gIdx.set(g.id, grounds.length); grounds.push(g); } else grounds[i] = keepHand(g, grounds[i]);
                 }
                 seenG.add(g.id); markFound(g.id);
                 progress = { ...progress, grounds: Math.max(progress.grounds, seenG.size) };
@@ -693,16 +721,39 @@ export const useStore = create<State>((set, get) => {
               case 'error':
                 phase = 'failed'; error = e.message;
                 pushLog({ kind: 'error', text: e.message, t: now });
-                toast = e.message;
                 break;
               case 'done': {
                 // §7.3: the run's inventory replaces the project's, staging clears, the diff is computed
                 const snap = x0.snapshot;
-                result = snap && (snap.inventory.facilities.length + snap.inventory.grounds.length) > 0 ? diffInventories(snap.inventory, e.inventory) : { added: e.inventory.facilities.length + e.inventory.grounds.length, removed: 0, changed: 0, unchanged: 0, changedIds: [] };
-                // edits made by hand during the run (review entries newer than its start) carry over to the new rows
-                const runEdits: ReviewMap = {};
-                for (const [rid, r] of Object.entries(p0.review ?? {})) if (r.at > startedAt && r.edited) runEdits[rid] = r;
-                inventory = carryEdits(p0.inventory, e.inventory, runEdits); facilities = inventory.facilities; grounds = inventory.grounds;
+                const local: Inventory = { ...inventory, facilities, grounds };
+                const review0 = (projPatch.review ?? p0.review) as ReviewMap | undefined;
+                // every hand edit (before or during the run) is put back where the re-read left the extracted value
+                // alone; where the re-read changed an edited field the hand value stays and the row is flagged
+                mergeAt = now;
+                const m = mergeHandEdits(local, review0, e.inventory, mergeAt);
+                let review = m.review; const before = { ...m.before };
+                let r: RunResult;
+                if (snap && snap.inventory.facilities.length + snap.inventory.grounds.length > 0) {
+                  // diff against what the user saw: the snapshot plus the edits made during the run
+                  const was = overlayHandEdits(snap.inventory, local, review0, (_, re) => re.at > startedAt);
+                  r = diffInventories(was, m.inventory);
+                  // a conflict is a change in the source even though the hand value stays on the row
+                  const extra = [...new Set(m.conflicts.map((c) => c.id))].filter((id) => !r.changedIds.includes(id));
+                  if (extra.length) r = { ...r, changed: r.changed + extra.length, unchanged: Math.max(0, r.unchanged - extra.length), changedIds: [...r.changedIds, ...extra] };
+                } else r = { added: e.inventory.facilities.length + e.inventory.grounds.length, removed: 0, changed: 0, unchanged: 0, changedIds: [] };
+                // §6.3 P1: a verified mark no longer vouches for numbers the re-read changed; the row goes back to review (its note stays)
+                let unverified = 0; let copied = false;
+                for (const id of r.changedIds) {
+                  const re = review[id]; if (re?.status !== 'verified') continue;
+                  if (!copied) { review = { ...review }; copied = true; }
+                  if (!(id in before)) before[id] = re;
+                  review[id] = { ...re, status: 'unreviewed', at: mergeAt };
+                  unverified++;
+                }
+                mergeBefore = before;
+                result = { ...r, kept: m.kept.length, conflicts: new Set(m.conflicts.map((c) => c.id)).size, unverified };
+                if (review !== review0) projPatch = { ...projPatch, review };
+                inventory = m.inventory; facilities = inventory.facilities; grounds = inventory.grounds;
                 staged = emptyStaging(); incoming = []; incomingG = []; seen.ids = null;
                 const name = p0.name === 'Untitled BOS estimate' && e.inventory.site.installationName ? `${e.inventory.site.installationName} BOS` : p0.name;
                 projPatch = { ...projPatch, name, extraction: { provider: e.provider, model: e.model, finishedAt: new Date().toISOString(), durationMs: e.durationMs, usage: e.usage } };
@@ -714,7 +765,6 @@ export const useStore = create<State>((set, get) => {
             }
           }
           if (log.length > 1200) log = log.slice(-1000);
-          if (toast) queueMicrotask(() => get().pushToast({ text: toast!, tone: 'error' }));
           const invChanged = facilities !== inventory.facilities || grounds !== inventory.grounds;
           if (invChanged) inventory = { ...inventory, facilities, grounds };
           const nextStaging = staged.active
@@ -723,7 +773,7 @@ export const useStore = create<State>((set, get) => {
           const project = inventory !== p0.inventory || Object.keys(projPatch).length ? { ...p0, ...projPatch, inventory } : p0;
           return {
             project,
-            extraction: { ...x0, phase, log, docs, warnings, progress, error, recent, recentIds, staging: nextStaging, result },
+            extraction: { ...x0, phase, log, docs, warnings, progress, error, recent, recentIds, staging: nextStaging, result, mergeAt, mergeBefore },
           };
         });
       };
@@ -750,25 +800,54 @@ export const useStore = create<State>((set, get) => {
           }
           return { extraction: { ...x, running: false, abort: undefined, endedAt: Date.now(), phase, error, log, staging: emptyStaging() } };
         });
-        if (thrown) get().pushToast({ text: thrown, tone: 'error' });
-        // reload the authoritative project (the server saved it on success), then merge review marks made during the run (§6.3)
+        // no toast for a failed run: the run strip shows the same error until it is dismissed
+        // Reconcile with the server (§6.3). On done the merged rows and review marks are the project: save them at once
+        // (the PUT merges top-level keys and returns the whole saved project, with the run's documents and cross-check).
+        // Otherwise reload the server copy (unchanged by a failed run) and carry over the marks and edits made meanwhile.
+        reconciling = true;
         try {
-          const server = await api.getProject(projectId) as ClientProject;
-          const localProject = get().project;
-          const local = localProject?.review ?? {};
-          const newer: ReviewMap = {};
-          for (const [id, r] of Object.entries(local)) if (r.at > startedAt) newer[id] = r;
-          let mergedProject: ClientProject = Object.keys(newer).length ? { ...server, review: { ...(server.review ?? {}), ...newer } } : server;
-          // fields edited by hand during the run (entries newer than its start) keep the local value on the reloaded row
-          // (`done` already carried them onto the run's rows, so the current local inventory holds them)
-          if (localProject) mergedProject = { ...mergedProject, inventory: carryEdits(localProject.inventory, mergedProject.inventory, newer) };
-          set({ project: mergedProject });
-          editVersion = savedVersion = 0;
-          if (Object.keys(newer).length) { editVersion = 1; await doSave(); }
           const x = get().extraction;
-          const restorable = x.snapshot ? (x.phase === 'done' ? populated : !sameInventory(server.inventory, x.snapshot.inventory)) : false;
+          const done = x.phase === 'done';
+          const sent = get().project;
+          let server: ClientProject;
+          if (done && sent) {
+            set({ saving: true });
+            try { server = await api.patchProject(projectId, { id: projectId, inventory: sent.inventory, review: sent.review ?? {} }) as ClientProject; }
+            finally { set({ saving: false }); }
+          } else server = await api.getProject(projectId) as ClientProject;
+          const local = get().project;
+          let merged: ClientProject = server;
+          if (local) {
+            if (done) merged = { ...server, inventory: local.inventory, review: local.review };
+            else {
+              const newer: ReviewMap = {};
+              for (const [id, r] of Object.entries(local.review ?? {})) if (r.at > startedAt) newer[id] = r;
+              if (Object.keys(newer).length) {
+                // fields edited by hand during the run keep the local value on the reloaded rows
+                merged = { ...server, review: { ...(server.review ?? {}), ...newer }, inventory: overlayHandEdits(server.inventory, local.inventory, newer, () => true) };
+              }
+            }
+            // settings changed by hand while the read ran (saves wait for the run's end) stay
+            for (const k of ['wages', 'factorOverrides', 'assumptionOverrides', 'topDownOverrides', 'ai'] as const) {
+              if (!sameJson(local[k], snapshot[k])) merged = { ...merged, [k]: local[k] };
+            }
+          }
+          const unsaved = merged !== server && (['inventory', 'review', 'wages', 'factorOverrides', 'assumptionOverrides', 'topDownOverrides', 'ai'] as const)
+            .some((k) => (done && sent && (k === 'inventory' || k === 'review') ? merged[k] !== sent[k] : !sameJson(merged[k], server[k])));
+          set({ project: merged });
+          serverStamp = server.updatedAt ?? serverStamp;
+          editVersion = savedVersion = 0;
+          reconciling = false;
+          if (unsaved) { editVersion = 1; await doSave(); } else clearJournal(projectId);
+          const x2 = get().extraction;
+          const restorable = x2.snapshot ? (x2.phase === 'done' ? populated : !sameInventory(server.inventory, x2.snapshot.inventory)) : false;
           set((s) => ({ extraction: { ...s.extraction, restorable } }));
-        } catch { /* keep local */ }
+        } catch (err) {
+          // keep the local copy; it is not saved yet, so let the normal save carry it
+          console.warn('[bos] post-run reconcile failed', err);
+          reconciling = false;
+          editVersion++; scheduleSave();
+        } finally { reconciling = false; }
         const end = get().extraction.phase;
         if (end === 'done') {
           // P1 (§7.3.5): a first read is packed by category once it is complete, not in arrival order
@@ -786,10 +865,15 @@ export const useStore = create<State>((set, get) => {
       let mode = s.reader.mode;
       const inv = s.project.inventory;
       if (mode === 'replace' && inv.facilities.length + inv.grounds.length > 0) {
-        const verified = Object.values(s.project.review ?? {}).filter((r) => r.status === 'verified').length;
+        const ids = new Set([...inv.facilities.map((f) => f.id), ...inv.grounds.map((g) => g.id)]);
+        const verified = Object.entries(s.project.review ?? {}).filter(([id, r]) => r.status === 'verified' && ids.has(id)).length;
+        const edited = handEditedRows(inv, s.project.review);
+        const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString()} ${n === 1 ? one : many}`;
         const choice = await get().confirm({
           title: 'Replace the inventory?',
-          body: `Replace ${inv.facilities.length.toLocaleString()} facilities and ${inv.grounds.length.toLocaleString()} grounds areas? The new read goes to a staging list; your current inventory stays until it finishes and can be restored.${verified ? ` ${verified.toLocaleString()} verified rows keep their marks by building id.` : ''}`,
+          body: `Replace ${inv.facilities.length.toLocaleString()} facilities and ${inv.grounds.length.toLocaleString()} grounds areas? The new read goes to a staging list; your current inventory stays until it finishes and can be restored.`
+            + (edited ? ` ${plural(edited, 'hand-edited row')} keep${edited === 1 ? 's' : ''} your values; where the new read changes one of those fields, the row is flagged for review.` : '')
+            + (verified ? ` ${plural(verified, 'verified row')} keep${verified === 1 ? 's' : ''} the mark unless the new read changes ${verified === 1 ? 'its' : 'their'} quantities, which sends ${verified === 1 ? 'it' : 'them'} back to review.` : ''),
           actions: [{ id: 'append', label: 'Append instead' }, { id: 'cancel', label: 'Cancel' }, { id: 'replace', label: 'Replace', variant: 'primary' }],
         });
         if (!choice) return;
@@ -806,6 +890,7 @@ export const useStore = create<State>((set, get) => {
       try {
         const p = await api.resetProject(get().projectId);
         editVersion = savedVersion = 0;
+        serverStamp = p.updatedAt ?? null; clearJournal(p.id);
         set({ project: p, selection: { kind: null }, focusMode: 'site', extraction: emptyExtraction(), leftOpen: true, leftTab: 'documents', rightOpen: false, rightUserCollapsed: false });
       } catch (err) { get().pushToast({ text: (err as Error).message, tone: 'error' }); }
     },
@@ -841,13 +926,25 @@ export const useStore = create<State>((set, get) => {
     },
     async restorePrevious() {
       const x = get().extraction; const snap = x.snapshot; if (!snap || x.running) return;
-      const cur = get().project;
-      const toSave: ClientProject = { ...snap, review: cur?.review ?? snap.review };
+      const cur = get().project; if (!cur) return;
+      // only what the run wrote goes back: the rows (with hand edits and marks made since the run started carried
+      // over), the documents list, the read record and the cross-check; wages, factor overrides, the award facts,
+      // assumptions and the project name stay as they are now
+      const rows = restoreRows(snap, cur, x.startedAt ?? 0, x.mergeAt, x.mergeBefore);
+      const toSave: ClientProject = { ...cur, inventory: rows.inventory, review: rows.review, documents: snap.documents, extraction: snap.extraction, topDown: snap.topDown };
       try {
         if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+        const v = ++editVersion;
         const saved = await api.saveProject(toSave);
-        editVersion = savedVersion = 0;
-        set((s) => ({ project: saved as ClientProject, extraction: { ...s.extraction, snapshot: undefined, result: undefined, restorable: false }, saveError: null }));
+        serverStamp = saved.updatedAt ?? serverStamp;
+        // edits made while the restore was in flight stay local and are saved by the next save
+        const now = get().project;
+        const project = now === cur ? (saved as ClientProject) : { ...(saved as ClientProject), ...Object.fromEntries((['wages', 'factorOverrides', 'assumptionOverrides', 'priorAward', 'topDownOverrides', 'name', 'ai'] as const).map((k) => [k, now?.[k]])) };
+        savedVersion = Math.max(savedVersion, v);
+        set((s) => ({ project, extraction: { ...s.extraction, snapshot: undefined, result: undefined, restorable: false, mergeAt: undefined, mergeBefore: undefined }, saveError: null }));
+        if (now !== cur) { editVersion++; scheduleSave(); } else if (editVersion <= savedVersion) clearJournal(cur.id);
+        const sel = get().selection;
+        if (sel.kind !== null && !(sel.kind === 'facility' ? rows.inventory.facilities : rows.inventory.grounds).some((r) => r.id === sel.id)) set({ selection: { kind: null }, focusMode: 'site', selectedAgentId: null });
         get().pushToast({ text: 'Restored the inventory from before this run', tone: 'ok' });
       } catch (err) {
         get().pushToast({ text: `Could not restore: ${(err as Error).message}`, tone: 'error' });

@@ -10,6 +10,17 @@ import { clock } from './clock';
 import { fieldUniforms, flatLight, groundColor, groundMaterial, groundUniforms } from './assets';
 import { rt } from './runtime';
 
+/**
+ * Directional shadows sample the shadow map once, with hardware 2×2 PCF (a sampler2DShadow with linear
+ * filtering), instead of three's five rotated taps: the edges stay soft at site scale and every lit pixel of
+ * the High tier does a quarter of the shadow work, which software rasterizers feel directly.
+ */
+(() => {
+  const chunk = THREE.ShaderChunk.shadowmap_pars_fragment;
+  const five = /shadow = \(\s*texture\( shadowMap, vec3\( shadowCoord\.xy \+ vogelDiskSample\( 0, 5, phi \) \* radius, shadowCoord\.z \) \)[\s\S]*?\) \* 0\.2;/;
+  if (five.test(chunk)) (THREE.ShaderChunk as Record<string, string>).shadowmap_pars_fragment = chunk.replace(five, 'shadow = texture( shadowMap, shadowCoord.xyz );');
+})();
+
 /** 0 at night → 1 at solar noon. */
 export const dayFactor = (t: number) => Math.max(0, Math.sin(((t - 6) / 12) * Math.PI));
 /** 0 by day → 1 deep night, with dusk/dawn ramps. */
@@ -33,7 +44,7 @@ export function Lighting() {
   const quality = useStore((s) => s.quality);
   const { layout } = useDerived();
   const live = lighting === 'live';
-  const { scene, gl, camera } = useThree();
+  const { scene, gl, camera, invalidate } = useThree();
   const sun = useRef<THREE.DirectionalLight>(null);
   const moon = useRef<THREE.DirectionalLight>(null);
   const hemi = useRef<THREE.HemisphereLight>(null);
@@ -56,7 +67,15 @@ export function Lighting() {
   }, [layout]);
 
   useEffect(() => { scene.fog = live ? fog : null; return () => { scene.fog = null; }; }, [live, fog, scene]);
-  useEffect(() => { gl.shadowMap.autoUpdate = false; rt.shadowDirty = true; }, [gl, layout, quality, live]);
+  // a new layout first shows with the previous shadow map; the shadow pass (a 2048² depth render of the whole
+  // site) runs in the frame after, so an edit reaches the screen without waiting for it
+  const firstLayout = useRef(true);
+  useEffect(() => { gl.shadowMap.autoUpdate = false; rt.shadowDirty = true; }, [gl, quality, live]);
+  useEffect(() => {
+    gl.shadowMap.autoUpdate = false;
+    if (firstLayout.current) { firstLayout.current = false; rt.shadowDirty = true; return; }
+    rt.shadowDeferred = true;
+  }, [gl, layout]);
 
   // shadow camera fitted to the site bounds + 10%
   useEffect(() => {
@@ -131,6 +150,7 @@ export function Lighting() {
     // shadow map: refresh on demand (layout, selection, lighting) and at ≤ 1 Hz while the Live sun moves (spec: ≤ 4 Hz)
     // the Live sun moves with the clock: refresh the shadow map when it has moved ≥ 6 sim-minutes, at most 1×/s
     if (live && quality === 'high' && Math.abs(t - lastShadowT.current) > 0.1 && performance.now() - lastShadowAt.current > 1000) { lastShadowT.current = t; rt.shadowDirty = true; }
+    if (rt.shadowDeferred) { rt.shadowDeferred = false; if (!rt.shadowDirty) { rt.shadowDirty = true; invalidate(); return; } }
     if (rt.shadowDirty) { gl.shadowMap.needsUpdate = true; rt.shadowDirty = false; lastShadowAt.current = performance.now(); }
   }, -2);
 

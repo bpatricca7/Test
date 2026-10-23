@@ -29,7 +29,14 @@ export const api = {
   sample: () => fetch('/api/sample').then(async (r) => { if (!r.ok) throw new Error(await errorMessage(r, 'Could not load the sample RFP')); return r.text(); }),
   getProject: (id: string) => json<Project>(fetch(`/api/projects/${id}`), 'Could not load the project'),
   /** Throws on failure (the shell shows "Not saved · Retry"). */
-  saveProject: (p: Project) => json<Project>(fetch(`/api/projects/${p.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(p) }), 'Save failed'),
+  saveProject: (p: Project, opts: { keepalive?: boolean } = {}) => {
+    const body = JSON.stringify(p);
+    // keepalive lets a save started while the page unloads finish; browsers cap keepalive bodies at 64 KB
+    return json<Project>(fetch(`/api/projects/${p.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body, keepalive: Boolean(opts.keepalive) && body.length < 60_000 }), 'Save failed');
+  },
+  /** PUT only some top-level keys (the server merges them into its copy) and get the whole saved project back. */
+  patchProject: (id: string, patch: Partial<Project> & Record<string, unknown>) =>
+    json<Project>(fetch(`/api/projects/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch) }), 'Save failed'),
   resetProject: (id: string) => json<Project>(fetch(`/api/projects/${id}`, { method: 'DELETE' }), 'Reset failed'),
   estimate: (id: string) => json<EstimateResult>(fetch(`/api/projects/${id}/estimate`, { method: 'POST' }), 'Estimate failed'),
   exportCsvUrl: (id: string) => `/api/projects/${id}/export.csv`,

@@ -10,7 +10,7 @@ import { rt } from './runtime';
 import { readOccluders } from './LabelLayer';
 
 export interface ThreeHooks {
-  info(): { calls: number; triangles: number; textures: number; geometries: number; frame: number; dpr: number };
+  info(): { calls: number; triangles: number; textures: number; geometries: number; frame: number; dpr: number; perfLevel: number };
   labels(): { id: string; text: string; lod: 'chip' | 'full' | 'pin'; x: number; y: number; w: number; h: number; isNew: boolean }[];
   project(id: string): { x: number; y: number; visible: boolean } | null;
   centers(): Record<string, [number, number]>;
@@ -50,7 +50,7 @@ export function useTestHooks() {
     };
     const inFree = (x: number, y: number) => { const fr = freeRect(sizeRef.current.width, sizeRef.current.height); return x >= fr.x0 && x <= fr.x1 && y >= fr.y0 && y <= fr.y1; };
     const hooks: ThreeHooks = {
-      info: () => ({ calls: rt.info.calls, triangles: rt.info.triangles, textures: gl.info.memory.textures, geometries: gl.info.memory.geometries, frame: rt.frame, dpr: gl.getPixelRatio() }),
+      info: () => ({ calls: rt.info.calls, triangles: rt.info.triangles, textures: gl.info.memory.textures, geometries: gl.info.memory.geometries, frame: rt.frame, dpr: gl.getPixelRatio(), perfLevel: rt.perf.level }),
       labels: () => rt.labels.map((l) => ({ ...l })),
       project: (id: string) => {
         const l = layoutRef.current; if (!l) return null;

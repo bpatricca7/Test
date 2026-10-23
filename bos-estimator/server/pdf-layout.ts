@@ -377,9 +377,11 @@ function regions(lines: Line[], pageW: number): Region[] {
     if (multi && (!cur || !gapOk)) { if (cur) out.push(cur); cur = { prose: false, lines: [L], x0: L.x0, x1: L.x1 }; continue; }
     const bodyFs = cur ? median(cur.lines.map((l) => l.fs)) : 0;
     // once the table has a data row, a wrapped fragment of a right-hand body cell (Remarks) may run past the right edge
-    // of the rows read so far: a short line that starts in the right half of the table is still inside it
+    // of the rows read so far: a short line that starts in the right half of the table, where the last column of its
+    // rows starts, is still inside it (a note set flush right under the table starts elsewhere and ends the table)
     const hasData = (R: Region) => R.lines.some((l) => l.segs.length >= 2 && l.segs.some((s) => NUMERIC.test(s.text)));
-    const inside = (R: Region) => L.x0 >= R.x0 - L.fs && (L.x1 <= R.x1 + L.fs || (L.x0 > R.x0 + 0.5 * (R.x1 - R.x0) && L.x1 - L.x0 < 0.35 * (R.x1 - R.x0) && hasData(R)));
+    const lastColAt = (R: Region) => R.lines.some((l) => l.segs.length >= 2 && Math.abs(l.segs[l.segs.length - 1].x0 - L.x0) <= L.fs);
+    const inside = (R: Region) => L.x0 >= R.x0 - L.fs && (L.x1 <= R.x1 + L.fs || (L.x0 > R.x0 + 0.5 * (R.x1 - R.x0) && L.x1 - L.x0 < 0.35 * (R.x1 - R.x0) && lastColAt(R) && hasData(R)));
     if (cur && gapOk && (multi || (!isProse(L) && Math.abs(L.fs - bodyFs) <= 0.12 * bodyFs && inside(cur)))) cur.lines.push(L);
     else { if (cur) out.push(cur); cur = null; out.push(proseRegion(L)); continue; }
     cur.x0 = Math.min(...cur.lines.map((l) => l.x0)); cur.x1 = Math.max(...cur.lines.map((l) => l.x1));

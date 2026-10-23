@@ -105,6 +105,11 @@ test('"Site 4" in an addendum revises site "4" of the summary table; a number pr
   const st3 = createState(DOCS);
   applyToolCall(st3, reg(row({ table_id: 'J-4', building_number: 'T-41', name: 'Latrine', gross_area: 400, source: { file: J4, excerpt: 'T-41 | Latrine | 400' } }), row({ table_id: 'J-4', building_number: '41', name: 'Latrine', gross_area: 600, source: { file: J4, excerpt: '41 | Latrine | 600' } })));
   assert.equal(st3.facilities.size, 2);
+  // only a "B" (building) prefix aliases: an amendment adding "T-12 Latrine" next to the listed "12 Latrine" adds a building
+  const st4 = createState(DOCS);
+  applyToolCall(st4, reg(row({ table_id: 'J-4', building_number: '12', name: 'Latrine', gross_area: 600, source: { file: J4, excerpt: '12 | Latrine | 600' } })));
+  applyToolCall(st4, reg(row({ building_number: 'T-12', name: 'Latrine', gross_area: 400, source: { file: AM2, excerpt: 'Add T-12 Latrine 400 SF' } })));
+  assert.deepEqual([...st4.facilities.values()].map((f) => [f.buildingNumber, f.grossSqft]), [['12', 600], ['T-12', 400]]);
 });
 
 test('distinct numbers that differ only by a separator stay distinct buildings', () => {
@@ -608,6 +613,46 @@ test('line items: rows sent with line_item from the start are separate lines; a 
   assert.match(w.resultText, /2000 is also registered without a line item \("Wing HQ" 24,755 SF\): if that row is the whole building and the line items are its parts, resend it with status excluded/);
 });
 
+test('lines split off by name are addressed by that name: a deletion sent with line_item applies to the line, never to a new empty one', () => {
+  const st = createState(DOCS);
+  applyToolCall(st, declare({ table_id: 'J-4', pages: '3', row_count: 2, printed_total_gross_area: 24755 }));
+  applyToolCall(st, reg(
+    row({ table_id: 'J-4', building_number: '2000', name: 'Wing HQ - Command Section', gross_area: 6215, source: { file: J4, page: 3, excerpt: '2000 | Wing HQ - Command Section | 6,215' } }),
+    row({ table_id: 'J-4', building_number: '2000', name: 'Wing HQ - Staff Agencies', gross_area: 18540, source: { file: J4, page: 3, excerpt: '2000 | Wing HQ - Staff Agencies | 18,540' } }),
+  ));
+  const del = (line: string) => row({ building_number: '2000', name: 'Wing HQ', line_item: line, gross_area: null, status: 'deleted_by_amendment', status_reason: 'Deleted by Amendment 0002', source: { file: AM2, page: 1, excerpt: `Delete 2000 ${line}` } });
+  const amb = applyToolCall(st, reg(row({ ...del(''), line_item: null })));
+  assert.match(amb.resultText, /registered as 2 separate line items \("Wing HQ - Command Section", "Wing HQ - Staff Agencies"\) - set line_item/);
+  // the names the error lists work as line_item (the first row and the row split from it)
+  applyToolCall(st, reg(del('Wing HQ - Staff Agencies'), del('wing hq – command section')));
+  const fs = [...st.facilities.values()];
+  assert.equal(fs.length, 2);
+  assert.deepEqual(fs.map((f) => [f.grossSqft, f.status]), [[6215, 'deleted_by_amendment'], [18540, 'deleted_by_amendment']]);
+});
+
+test('a row tagged with a table whose declared rows are all registered revises the building (no split); an unwanted split is undone by line_item', () => {
+  // a Word file holding the base table and its addendum (no page numbers): the addendum row is tagged with the base table
+  const DOC = 'Janitorial-RFP-with-Addendum-1.docx';
+  const r0 = (o: Record<string, unknown>) => row({ table_id: 'T1', source: { file: DOC, page: null, excerpt: `${o.building_number} | ${o.name} | ${o.gross_area}` }, ...o });
+  const base = [r0({ building_number: '1', name: 'Admin', gross_area: 5000 }), r0({ building_number: '2', name: 'Gym', gross_area: 8000 }), r0({ building_number: '3', name: 'Shop', gross_area: 3000 })];
+  const addendum = row({ table_id: 'T1', building_number: 'Site 2', name: 'Gymnasium (revised)', gross_area: 9000, source: { file: DOC, page: null, excerpt: 'Addendum 1 item 3: Site 2 Gymnasium revised to 9,000 SF' } });
+  const st = createState([{ name: DOC }]);
+  applyToolCall(st, { name: 'declare_tables', input: { tables: [{ table_id: 'T1', title: 'Facility Summary', kind: 'facilities', file: DOC, pages: null, row_count: 3, printed_total_gross_area: 16000, area_unit: 'sf' }] } });
+  applyToolCall(st, reg(...base));
+  const r = applyToolCall(st, reg(addendum));
+  assert.doesNotMatch(r.resultText, /separate line item/);
+  assert.deepEqual([...st.facilities.values()].map((f) => [f.buildingNumber, f.grossSqft]), [['1', 5000], ['2', 9000], ['3', 3000]]);
+  // without a declared row count the second row is split off; resending it with line_item set to the first row's name
+  // (as the note says) moves it back onto that building
+  const st2 = createState([{ name: DOC }]);
+  applyToolCall(st2, reg(...base));
+  const s = applyToolCall(st2, reg(addendum));
+  assert.match(s.resultText, /"Gymnasium \(revised\)" is registered as a separate line item .* if this row revises "Gym" instead, resend it with line_item set to that name/);
+  assert.equal(st2.facilities.size, 4);
+  applyToolCall(st2, reg({ ...addendum, line_item: 'Gym' }));
+  assert.deepEqual([...st2.facilities.values()].map((f) => [f.buildingNumber, f.grossSqft]), [['1', 5000], ['2', 9000], ['3', 3000]]);
+});
+
 test('grounds: Type I/II/III/IV and BASH mapping, frequency wins over label, links resolved at the end', () => {
   assert.equal(mapGroundsLabel('Type I'), 'improved_turf');
   assert.equal(mapGroundsLabel('Type II'), 'semi_improved');
@@ -820,7 +865,7 @@ test('season windows: months, dates, holidays and windows across the year end ar
 test('restroom rooms, cleaning standard and areas by class are kept with the facility (class areas checked against the cleanable area)', () => {
   const st = createState(DOCS);
   const r = applyToolCall(st, reg(
-    row({ building_number: '1', name: 'Main Hospital', gross_area: 486240, cleanable_area: 319615, restroom_rooms: 152, cleaning_standard: 'Code A', area_by_class: [{ label: 'High Risk', area: 58960 }, { label: 'Moderate Risk', area: 173885 }, { label: 'Low Risk', area: 86770 }] }),
+    row({ building_number: '1', name: 'Main Hospital', gross_area: 486240, cleanable_area: 319615, cleaning_detail: { restroom_rooms: 152, cleaning_standard: 'Code A', area_by_class: [{ label: 'High Risk', area: 58960 }, { label: 'Moderate Risk', area: 173885 }, { label: 'Low Risk', area: 86770 }] } }),
     row({ building_number: '2', name: 'Clinic', gross_area: 10000, cleanable_area: 9000, area_by_class: [{ label: 'High Risk', area: 1000 }, { label: 'Low Risk', area: 2000 }] }),
   ));
   assert.equal(r.isError, false);
@@ -1000,7 +1045,7 @@ test('score: cleanable and service level carry weight, attribute and site mismat
   assert.deepEqual(rep.misses, ['cleanable mismatch 12: expected 13347, got none', 'service level mismatch 14: expected weekly, got daily_5', 'site climateZone: expected temperate, got none']);
 });
 
-test('score: building numbers match by the reader\'s identity rule; line items pair by name; site names compare as an estimator reads them', () => {
+test('score: building numbers match by the reader\'s identity rule; line items pair by area, then name; site names compare as an estimator reads them', () => {
   assert.equal(normBn('Bldg. No. 0012'), normBn('12'));
   assert.equal(normBn('Facility 12'), normBn('12')); // not "ILITY12"
   assert.equal(normBn('Site 4'), normBn('4'));
@@ -1009,10 +1054,19 @@ test('score: building numbers match by the reader\'s identity rule; line items p
   assert.notEqual(normBn('1-10'), normBn('110'));
   const fac = (bn: string, name: string, grossSqft: number): Facility => ({ id: `${bn}-${name}`, buildingNumber: bn, name, category: 'admin', grossSqft, floors: 1, serviceLevel: 'daily_5', scope: ['custodial'], confidence: 1 });
   const truth = (facilities: FixtureTruth['expect']['facilities'], site?: FixtureTruth['expect']['site']): FixtureTruth => ({ id: 't', title: 't', theme: 't', provenance: { fidelity: 'synthetic', sources: [] }, inputs: [], traps: [], expect: { facilities, facilitiesComplete: true, site } });
-  // two line items with one number: each truth line pairs with the line of its name, whatever the order
+  // two line items with one number: each truth line pairs with the line whose area agrees, else the line of its name,
+  // whatever the order (a stray row with the number and the right name does not take the place of the right area)
   const lines = truth([{ buildingNumber: '2000', name: 'Wing HQ - Command Section', grossSqft: 6215 }, { buildingNumber: '2000', name: 'Wing HQ - Staff Agencies', grossSqft: 18540 }]);
   const rep = scoreInventory(lines, { site: {}, facilities: [fac('2000', 'Wing HQ - Staff Agencies', 18540), fac('2000', 'Wing HQ - Command Section', 6215)], grounds: [] }, 'test');
   assert.equal(rep.score, 100, JSON.stringify(rep.misses));
+  const off = scoreInventory(lines, { site: {}, facilities: [fac('2000', 'Wing HQ - Staff Agencies', 18000), fac('2000', 'Wing HQ - Command Section', 6000)], grounds: [] }, 'test');
+  assert.deepEqual(off.misses, ['SF mismatch 2000: expected 6215, got 6000', 'SF mismatch 2000: expected 18540, got 18000']);
+  const stray = scoreInventory(truth([{ buildingNumber: '012', name: 'Elmore Library', grossSqft: 49745 }]), { site: {}, facilities: [fac('012', 'LIB', 49745), fac('12', 'Elmore Library', 656)], grounds: [] }, 'test');
+  assert.deepEqual([stray.facilities.sfExact, stray.extras], [1, ['12 Elmore Library (656 SF)']]);
+  // two lines collapsed into one facility with the second line's area: that line is found, the first is missing (the
+  // first truth line does not take it and turn one miss into two)
+  const collapsed = scoreInventory(lines, { site: {}, facilities: [fac('2000', 'Wing HQ - Command Section', 18540)], grounds: [] }, 'test');
+  assert.deepEqual(collapsed.misses, ['2000 Wing HQ - Command Section (6215 SF)']);
   // a number printed with a letter prefix on one side counts as the same building only when the names agree
   const b41 = truth([{ buildingNumber: '41', name: 'Whole Health Center', grossSqft: 9600 }, { buildingNumber: '42', name: 'Boiler Plant', grossSqft: 5000 }]);
   const r41 = scoreInventory(b41, { site: {}, facilities: [fac('B-41', 'Whole Health and Telehealth Center', 9600), fac('T-42', 'Warehouse', 5000)], grounds: [] }, 'test');
@@ -1026,6 +1080,9 @@ test('score: building numbers match by the reader\'s identity rule; line items p
   assert.deepEqual(site('NSA Tarpon Sound'), [false, true]);
   assert.deepEqual(site('Naval Support Activity Panama City', 'N69450-26-R-0041'), [false, false]);
   assert.equal(siteFieldOk('installationName', 'USAG Italy', 'U.S. Army Garrison Italy (USAG Italy) – Vicenza'), true);
+  // every expected word, in another order, is a match; only some of them is not
+  assert.equal(siteFieldOk('installationName', 'Kessling County Government Center', 'Government Center, Kessling County'), true);
+  assert.equal(siteFieldOk('installationName', 'Kessling County Government Center', 'County Center'), false);
   assert.equal(siteFieldOk('solicitation', 'RFP No. 2026-041', 'RFP 2026-041'), false);
   assert.equal(siteFieldOk('climateZone', 'cold', 'cold'), true);
 });
@@ -1033,14 +1090,14 @@ test('score: building numbers match by the reader\'s identity rule; line items p
 test('request intro: a file ranked as an amendment whose name says it is a base document as amended gets the tagging note', () => {
   const doc = (name: string, amendment: number) => ({ name, mode: 'text' as const, text: '--- page 1 ---\nx', chars: 1, bytes: 1, role: 'amendment' as const, amendment });
   const intro = (name: string) => describeRequests([doc(name, 1)]).passes[0].intro;
-  for (const name of ['Attachment B - Facility Listing (w Amd 0001).pdf', 'Section J Annex 15 (Conformed Amd 0002).pdf', 'RFP-2026-041-Janitorial-Services-with-Addendum-1.docx', 'Atch 2 - Appendix B Est SF (Amd 0001).xlsx']) {
+  for (const name of ['Attachment J-4 Facility List (w Amd 0003).pdf', 'Section C PWS (Conformed Amd 0004).pdf', 'Custodial-RFP-with-Addendum-2.docx', 'Exhibit 5 - Workload Data (Amd 0002).xlsx']) {
     assert.match(intro(name), /is ranked as amendment 0001, but its name says it holds a base document or attachment with the amendment applied or appended: rows printed in its tables \(also rows marked as revised\) get the table's id/, name);
   }
   for (const name of ['Amendment 0002.pdf', 'RFP 27031 Addendum No. 1.pdf', 'SF30 Amendment 0001.pdf']) assert.doesNotMatch(intro(name), /is ranked as/, name);
   // the tagging rule itself is in every intro, and the line_item field is offered to the model
-  assert.match(intro('Amendment 0002.pdf'), /In a conformed or reissued table \(revised rows marked in place/);
+  assert.match(intro('Amendment 0002.pdf'), /A conformed or reissued table \(revised rows marked in place\) is a table like any other: tag every printed row with its id/);
   const facility = (describeRequests([doc('a.pdf', 1)]).tools.find((t) => t.name === 'register_facilities')!.input_schema as { properties: { facilities: { items: { properties: Record<string, unknown> } } } }).properties.facilities.items.properties;
-  for (const k of ['line_item', 'floor_areas', 'service_season', 'events_per_year', 'restroom_rooms', 'cleaning_standard', 'area_by_class']) assert.ok(facility[k], k);
+  for (const k of ['line_item', 'floor_areas', 'service_season', 'events_per_year', 'cleaning_detail']) assert.ok(facility[k], k);
 });
 
 // ------------------------------------------------------------------------------------------------

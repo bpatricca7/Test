@@ -180,7 +180,7 @@ export function reviewKey(entry: ReviewEntry | undefined, issues: readonly Issue
 
 // ---- edited markers (§6.3 P1): field → extracted value, captured on the first manual edit ----
 type AnyRow = Facility | GroundsArea;
-const sameValue = (a: unknown, b: unknown) => (a ?? null) === (b ?? null) || JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+export const sameValue = (a: unknown, b: unknown) => (a ?? null) === (b ?? null) || JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 /** Rows added by hand have no extracted values, so they never carry markers. */
 export const isManualRow = (id: string) => id.startsWith('b-manual-') || id.startsWith('g-manual-');
 

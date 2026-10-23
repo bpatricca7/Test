@@ -47,9 +47,10 @@
 .label-layer .tip3d .r.ok{color:var(--ok)}
 .label-layer .tip3d .h{color:var(--text-3);margin-top:6px;border-top:1px solid var(--border-1);padding-top:6px}
 
-.label-layer .worker-card{position:absolute;left:0;top:0;transform:none;box-sizing:border-box;max-width:320px;padding:7px 10px;background:var(--overlay-bg);
-  backdrop-filter:none;border:1px solid var(--border-2);border-left:3px solid var(--crew,var(--accent));border-radius:var(--r-3);
-  box-shadow:var(--sh-overlay);color:var(--text-1);font:400 var(--fs-xs)/16px var(--font-sans);white-space:nowrap;pointer-events:none;z-index:4;display:none}
+.label-layer .worker-card{position:absolute;left:0;top:0;transform:none;box-sizing:border-box;width:max-content;max-width:320px;padding:7px 10px;background:var(--overlay-bg);
+  backdrop-filter:none;border:1px solid var(--border-2);border-left:3px solid var(--crew,var(--accent));border-radius:var(--r-3);overflow:hidden;
+  box-shadow:var(--sh-overlay);color:var(--text-1);font:400 var(--fs-xs)/16px var(--font-sans);white-space:normal;overflow-wrap:anywhere;pointer-events:none;z-index:4;display:none}
 .label-layer .worker-card.is-on{display:block}
-.label-layer .worker-card b{display:block;font:600 var(--fs-sm)/18px var(--font-sans)}
+.label-layer .worker-card b{display:block;font:600 var(--fs-sm)/18px var(--font-sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.label-layer .worker-card .t{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
 .label-layer .worker-card .c{color:var(--text-2)}

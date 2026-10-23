@@ -103,7 +103,7 @@ const grow = (b: Box2, k: number): Box2 => {
   return { x: b.x, z: (n + sz) / 2, w: b.w * k, d: sz - n };
 };
 /** Headroom on the predicted campus of a streaming run (the prediction samples the lots seen so far). */
-const PRED_HEADROOM = 1.08;
+const PRED_HEADROOM = 1.15;
 /** Minimum time between two growth fits while streaming (spec §9.3). */
 const GROWTH_MS = 4000;
 
@@ -253,14 +253,19 @@ export function CameraRig() {
    */
   const growthCheck = (W: number, H: number) => {
     const s = st.current; const l = layoutRef.current;
-    if (!s.inRun || s.runUserMoved || s.inBuilding || anim.current || insetsSettling() || !s.fitted || !l || !l.buildings.length) return;
+    if (!s.inRun || s.runUserMoved || s.inBuilding || insetsSettling() || !s.fitted || !l || !l.buildings.length) return;
+    const a = anim.current;
+    if (a && a.kind !== 'fit' && a.kind !== 'refit' && a.kind !== 'grow') return;
     const now = performance.now();
     // the 4 s limit applies between growth fits; the first one may follow the run's opening fit at once
     // (that fit is often made before the run reports how many facilities to expect)
     if (now - s.lastGrowthCheck < 250 || now - s.lastGrowthAt < GROWTH_MS) return;
     s.lastGrowthCheck = now;
-    camera.updateMatrixWorld();
-    const pb = projectBox(camera, corners(l.bounds, l.maxHeight), W, H);
+    // test where the camera is going: the running fit's end pose, else the camera as it is
+    let cam: THREE.Camera = camera;
+    if (a) { const c = camera.clone(); c.position.copy(a.to.pos); c.lookAt(a.to.target); if (a.to.zoom != null && isOrtho(c)) { c.zoom = a.to.zoom; c.updateProjectionMatrix(); } cam = c; }
+    cam.updateMatrixWorld();
+    const pb = projectBox(cam, corners(l.bounds, l.maxHeight), W, H);
     const fr = freeRect(W, H);
     const tol = 2;
     if (pb.front && pb.x0 >= fr.x0 - tol && pb.x1 <= fr.x1 + tol && pb.y0 >= fr.y0 - tol && pb.y1 <= fr.y1 + tol) return;
@@ -295,6 +300,7 @@ export function CameraRig() {
     else if (sel.kind === 'grounds') { const z = l.zones.find((x) => x.id === sel.id); if (z) { box = z.box; lot = z.box; } }
     if (!box || !lot) { fitSite(); return; }
     if (st.current.inBuilding) return;
+    if (st.current.inRun) st.current.runUserMoved = true; // the user asked to look at a building: no growth fits now
     const target = new THREE.Vector3(box.x, 0, box.z);
     const offset = camera.position.clone().sub(c.target);
     if (isOrtho(camera)) {

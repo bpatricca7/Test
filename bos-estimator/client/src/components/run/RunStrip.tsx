@@ -12,6 +12,7 @@ import { Button, IconButton, Tooltip } from '../ui';
 import { startReview } from '../inventory/reviewLoop';
 import { roleLabel } from '../documents/reader';
 import '../../styles/run.css';
+import '../../styles/dialogs.css';
 
 const STAGES: { id: string; label: string }[] = [
   { id: 'upload', label: 'Upload' }, { id: 'read', label: 'Read' }, { id: 'extract', label: 'Extract' },
@@ -132,7 +133,16 @@ function useRestore(x: ExtractionState) {
     const n = x.snapshot ? x.snapshot.inventory.facilities.length + x.snapshot.inventory.grounds.length : 0;
     const choice = await useStore.getState().confirm({
       title: 'Restore the previous inventory?',
-      body: `This puts back the ${n.toLocaleString()} rows the project had before this run and discards what the run read. Review marks are kept by id.`,
+      body: (
+        <div className="confirm-body">
+          <p>This puts back what the run replaced and discards what it read:</p>
+          <ul className="confirm-list">
+            <li>the {n.toLocaleString()} rows the project had before this run, with their review marks</li>
+            <li>the document list, the read record and the cross-check rationale</li>
+          </ul>
+          <p>Marks and hand edits made since the run started stay on rows that still exist. Wages, factor overrides, the award facts, top-down and estimate assumptions stay as they are now.</p>
+        </div>
+      ),
       actions: [{ id: 'cancel', label: 'Cancel' }, { id: 'restore', label: 'Restore previous', variant: 'primary' }],
     });
     if (choice === 'restore') await restore();

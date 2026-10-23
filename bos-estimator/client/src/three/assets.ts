@@ -1,6 +1,8 @@
 // Shared GPU assets (UI spec §9.5): module-level, lazily created singletons, disposed only when the Canvas unmounts.
-// Nothing here is created per building: 3 facade styles × (diffuse + emissive), 8 grounds-kind patterns,
-// one AO blob, and materials shared by key.
+// Nothing here is created per building: 3 facade styles × (diffuse + emissive) in one array texture, the 8
+// grounds-kind patterns in another, one AO blob, and materials shared by key. Array textures (one GPU texture,
+// one layer per pattern, native repeat wrapping and mipmaps) keep the GPU texture count inside the §10 budget
+// of 24 with the High tier's Live post-processing chain.
 import * as THREE from 'three';
 import type { FacilityCategory, GroundsKind } from '@shared/types';
 
@@ -21,6 +23,22 @@ function canvasTex(c: HTMLCanvasElement, srgb = true): THREE.CanvasTexture {
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   if (srgb) t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = 1;
+  return track(t);
+}
+
+/** Copies canvases into the layers of one sRGB, mipmapped, repeat-wrapped array texture (rows flipped like a CanvasTexture). */
+function arrayTexture(canvases: HTMLCanvasElement[]): THREE.DataArrayTexture {
+  const w = canvases[0].width, h = canvases[0].height, layer = w * h * 4, stride = w * 4;
+  const data = new Uint8Array(layer * canvases.length);
+  canvases.forEach((c, i) => {
+    const px = c.getContext('2d')!.getImageData(0, 0, w, h).data;
+    for (let y = 0; y < h; y++) data.set(px.subarray((h - 1 - y) * stride, (h - y) * stride), i * layer + y * stride);
+  });
+  const t = new THREE.DataArrayTexture(data, w, h, canvases.length);
+  t.format = THREE.RGBAFormat; t.type = THREE.UnsignedByteType; t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipmapLinearFilter; t.generateMipmaps = true;
+  t.needsUpdate = true;
   return track(t);
 }
 
@@ -61,17 +79,18 @@ function makeFacade(style: FacadeStyle) {
       else glass(x + bw * 0.12, y + fh * 0.2, bw * 0.76, fh * 0.56);
     }
   }
-  return { map: canvasTex(diffuse), emis: canvasTex(emis) };
+  return { diffuse, emis };
 }
 
-let facades: Record<FacadeStyle, { map: THREE.Texture; emis: THREE.Texture }> | null = null;
-export function facadeTextures() {
-  if (!facades) facades = { office: makeFacade('office'), barracks: makeFacade('barracks'), industrial: makeFacade('industrial') };
+let facades: THREE.DataArrayTexture | null = null;
+/** One array texture: layers 0–2 are the office / barracks / industrial diffuse tiles, layers 3–5 their lit windows. */
+export function facadeTextures(): THREE.DataArrayTexture {
+  if (!facades) { const f = STYLES.map(makeFacade); facades = arrayTexture([...f.map((x) => x.diffuse), ...f.map((x) => x.emis)]); }
   return facades;
 }
 
 /** 128² white-based pattern per grounds kind; tinted by the material colour, tiled per zone via UV scale. */
-function patternTexture(kind: GroundsKind): THREE.CanvasTexture {
+function patternCanvas(kind: GroundsKind): HTMLCanvasElement {
   const c = document.createElement('canvas'); c.width = 128; c.height = 128;
   const ctx = c.getContext('2d')!;
   ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 128, 128);
@@ -93,13 +112,14 @@ function patternTexture(kind: GroundsKind): THREE.CanvasTexture {
   } else if (kind === 'sidewalk') {
     ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 2; for (let x = 0; x < 128; x += 32) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 128); ctx.stroke(); }
   }
-  return canvasTex(c);
+  return c;
 }
-const patterns = new Map<GroundsKind, THREE.Texture>();
-export function kindTexture(kind: GroundsKind): THREE.Texture {
-  let t = patterns.get(kind);
-  if (!t) { t = patternTexture(kind); patterns.set(kind, t); }
-  return t;
+export const PAD_KINDS: GroundsKind[] = ['improved_turf', 'semi_improved', 'unimproved', 'athletic_field', 'shrub_bed', 'parking', 'sidewalk', 'tree_canopy'];
+let patterns: THREE.DataArrayTexture | null = null;
+/** All grounds-kind patterns in one array texture; the layer of a kind is PAD_KINDS.indexOf(kind). */
+export function kindTextures(): THREE.DataArrayTexture {
+  if (!patterns) patterns = arrayTexture(PAD_KINDS.map(patternCanvas));
+  return patterns;
 }
 
 let aoBlob: THREE.Texture | null = null;
@@ -175,11 +195,12 @@ export const fieldUniforms = {
  */
 export function fieldMaterial(style: FacadeStyle): THREE.MeshLambertMaterial {
   return mat(`field-${style}`, () => {
-    const tex = facadeTextures()[style];
+    const tex = facadeTextures();
+    const layer = STYLES.indexOf(style);
     const { bayW, bays } = BAYS[style];
     const m = new THREE.MeshLambertMaterial({ color: '#ffffff' });
     m.onBeforeCompile = (sh) => {
-      Object.assign(sh.uniforms, fieldUniforms, { uFacade: { value: tex.map }, uFacadeEmis: { value: tex.emis }, uTileW: { value: bayW * bays } });
+      Object.assign(sh.uniforms, fieldUniforms, { uFacade: { value: tex }, uFacLayer: { value: layer }, uTileW: { value: bayW * bays } });
       sh.vertexShader = sh.vertexShader
         .replace('#include <common>', `#include <common>
           attribute vec3 aRoof; attribute vec3 aDims; attribute float aFloors; attribute float aState; attribute float aSeed; attribute float aBorn;
@@ -203,14 +224,14 @@ export function fieldMaterial(style: FacadeStyle): THREE.MeshLambertMaterial {
           }`);
       sh.fragmentShader = sh.fragmentShader
         .replace('#include <common>', `#include <common>
-          uniform sampler2D uFacade; uniform sampler2D uFacadeEmis; uniform float uNight; uniform float uTime;
+          uniform highp sampler2DArray uFacade; uniform float uFacLayer; uniform float uNight; uniform float uTime;
           uniform vec3 uGround; uniform vec3 uEdge; uniform vec3 uRecent; uniform vec3 uGhost; uniform vec3 uOk;
           varying vec3 vRoof; varying vec2 vFacUv; varying vec2 vFace; varying float vTop; varying float vState;
           float bayer4(vec2 p) { ivec2 i = ivec2(mod(p, 4.0)); int k = i.x + i.y * 4;
             float m[16] = float[16](0.,8.,2.,10.,12.,4.,14.,6.,3.,11.,1.,9.,15.,7.,13.,5.); return (m[k] + 0.5) / 16.0; }`)
         .replace('#include <map_fragment>', `
           if (vState > 3.5 && vState < 4.5 && bayer4(gl_FragCoord.xy) > 0.4) discard;
-          vec3 facade = texture2D(uFacade, vFacUv).rgb;`)
+          vec3 facade = texture(uFacade, vec3(vFacUv, uFacLayer)).rgb;`)
         .replace('#include <color_fragment>', `#include <color_fragment>
           if (vTop > 0.5) diffuseColor.rgb = vRoof; else diffuseColor.rgb *= facade;
           vec2 fw = max(fwidth(vFace), vec2(1e-5));
@@ -224,7 +245,7 @@ export function fieldMaterial(style: FacadeStyle): THREE.MeshLambertMaterial {
           else if (vState > 5.5) diffuseColor.rgb = mix(diffuseColor.rgb, uOk, edge * 0.95);`)
         .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
           {
-            vec3 win = texture2D(uFacadeEmis, vFacUv).rgb * (1.0 - vTop);
+            vec3 win = texture(uFacade, vec3(vFacUv, uFacLayer + 3.0)).rgb * (1.0 - vTop);
             float dimK = (vState > 2.5 && vState < 4.5) ? 0.2 : 1.0;
             totalEmissiveRadiance += win * uNight * 1.7 * dimK;
             if (vState > 4.5 && vState < 5.5) totalEmissiveRadiance += uRecent * edge * (0.75 + 0.25 * sin(uTime * 6.0)) * 1.4;
@@ -274,13 +295,16 @@ export function groundMaterial(fast: boolean): THREE.MeshBasicMaterial | THREE.M
 
 /** Grounds pad material per kind: shared pattern, per-instance UV scale and highlight state. */
 export function padMaterial(kind: GroundsKind, color: string, fast: boolean, border = color): THREE.MeshBasicMaterial | THREE.MeshLambertMaterial {
-  return surfaceMat(`pad-${kind}`, fast, { color, map: kindTexture(kind), polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }, (sh) => {
+  return surfaceMat(`pad-${kind}`, fast, { color, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }, (sh) => {
     sh.uniforms.uZone = { value: new THREE.Color(border) };
+    sh.uniforms.uPadTex = { value: kindTextures() };
+    sh.uniforms.uPadLayer = { value: Math.max(0, PAD_KINDS.indexOf(kind)) };
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute vec2 aUvScale; attribute float aPadState; varying float vPadState; varying vec2 vPadUv;')
-      .replace('#include <uv_vertex>', '#include <uv_vertex>\nvPadState = aPadState; vPadUv = uv;\n#ifdef USE_MAP\nvMapUv = uv * aUvScale;\n#endif');
+      .replace('#include <common>', '#include <common>\nattribute vec2 aUvScale; attribute float aPadState; varying float vPadState; varying vec2 vPadUv; varying vec2 vPadMapUv;')
+      .replace('#include <uv_vertex>', '#include <uv_vertex>\nvPadState = aPadState; vPadUv = uv; vPadMapUv = uv * aUvScale;');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform vec3 uZone; varying float vPadState; varying vec2 vPadUv;')
+      .replace('#include <common>', '#include <common>\nuniform vec3 uZone; uniform highp sampler2DArray uPadTex; uniform float uPadLayer; varying float vPadState; varying vec2 vPadUv; varying vec2 vPadMapUv;')
+      .replace('#include <map_fragment>', '#include <map_fragment>\ndiffuseColor *= texture(uPadTex, vec3(vPadMapUv, uPadLayer));')
       .replace('#include <color_fragment>', `#include <color_fragment>
         {
           vec2 fw = max(fwidth(vPadUv), vec2(1e-5));
@@ -302,5 +326,5 @@ export function disposeAssets() {
   mats.clear();
   for (const d of disposables) d.dispose();
   disposables.clear();
-  facades = null; patterns.clear(); aoBlob = null;
+  facades = null; patterns = null; aoBlob = null;
 }

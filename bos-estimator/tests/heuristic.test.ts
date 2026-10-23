@@ -848,6 +848,11 @@ test('the same building number on two lines of one list, each with its own name 
   // the same building in a second table with another layout is one building
   const two = read(lines('Bldg | Name | Gross SF', '520 | Clinic | 5,500', '', 'Bldg | Name | Floors | Frequency', '520 | Clinic Building | 2 | Daily'));
   assert.equal(two.facilities.length, 1);
+  // a room list continued after a page break (the same building on both sides of the break, the room named per row)
+  // is one building's rooms, not line items
+  const rooms = read(lines('Bldg | Room | Description | Net SF', '610 | 101 | Lobby | 900', '610 | 102 | Office | 150', '612 | 101 | Shop | 2,000',
+    '--- page 2 ---', 'Bldg | Room | Description | Net SF', '612 | 102 | Tool Room | 300', '614 | 101 | Office | 120', '--- page 3 ---', 'Bldg | Room | Description | Net SF', '614 | 102 | Storage | 400'));
+  assert.deepEqual(rooms.facilities.map((f) => f.buildingNumber), ['610', '612', '614']);
 });
 
 test('frequencies: "N x Week", days written out or abbreviated, alternate weekdays, "(5)" after a number word', () => {
@@ -999,6 +1004,99 @@ test('site: initial term plus extensions, Midwestern states, county and VA owner
   assert.equal(inv.site.installationName, 'Marlow County');
   assert.equal(read('Housekeeping at the Pine Ridge VA Medical Center and its clinics.').site.installationName, 'Pine Ridge VA');
   assert.equal(read('CUSTODIAL SERVICES, BRIARWOOD AIR FORCE BASE, NEBRASKA').site.installationName, 'Briarwood Air Force Base');
+});
+
+test('header titles: a "Campus Name" column is the campus and "Title" under a building group is the name', () => {
+  const inv = read(lines('Campus Name | Bldg No. | Building Name | GSF | Cleaning Frequency',
+    'Riverside Campus | 101 | Hamilton Hall | 54,200 | 5 nights per week',
+    'Hilltop Campus | 201 | Student Union | 61,900 | 7 days per week'));
+  assert.deepEqual(inv.facilities.map((f) => [f.buildingNumber, f.name, f.campus]), [['101', 'Hamilton Hall', 'Riverside Campus'], ['201', 'Student Union', 'Hilltop Campus']]);
+  // two header rows: "Building" spans "Number" and "Title"; "Building" over "ID" is the number
+  const two = read(lines('Site | Building |  | Square Footage |  | Days', 'Site | Number | Title | Offices | Total | Days', 'Salem | B-101 | Executive Building | 41,200 | 57,000 | 5'));
+  assert.deepEqual([fac(two, 'B-101').name, fac(two, 'B-101').campus], ['Executive Building', 'Salem']);
+  const id = read(lines('Building |  | Area', 'ID | Description | GSF', 'K-7 | Pump House | 900'));
+  assert.deepEqual([fac(id, 'K-7').name, fac(id, 'K-7').grossSqft], ['Pump House', 900]);
+  // a two-row header the document already printed on one line, its group label repeated over each column it spans
+  const flat = read(lines('FACILITY Bldg | FACILITY Description | AREA (SQ FT) Gross | AREA (SQ FT) Cleanable | Svc Days',
+    '4410 | Battalion Headquarters | 18,500 | 15,200 | M-F', '4414 | Company Operations Facility | 9,800 | 8,100 | M, W, F'));
+  assert.deepEqual(flat.facilities.map((f) => [f.buildingNumber, f.name, f.grossSqft, f.cleanableSqft, f.serviceLevel]),
+    [['4410', 'Battalion Headquarters', 18500, 15200, 'daily_5'], ['4414', 'Company Operations Facility', 9800, 8100, '3x_week']]);
+});
+
+test('a status banner covers the rows printed under it, not rows after a later caption', () => {
+  const inv = read(lines('Facility | Facility Title | GSF | Service',
+    'Option Period Facilities - Optional Line Item 0004',
+    'B-301 | New Hangar Offices | 9,000 | 5 days',
+    'Facilities marked * are not included in the base year',
+    'B-401 | Supply Office * | 4,000 | 3 days',
+    'B-402 | Ordnance Office | 2,200 | 3 days'));
+  assert.deepEqual(['B-301', 'B-401', 'B-402'].map((b) => inv.facilities.find((f) => f.name === b || f.buildingNumber === b)?.status), ['option_only', undefined, undefined]);
+});
+
+test('an outline list of tasks is not a schedule-code legend', () => {
+  const inv = read(lines('C.3 Task frequencies', 'A. Classrooms shall be cleaned once per week.', 'B. Gymnasium floors shall be dust mopped monthly.', '',
+    'Bldg No. | School | Square Feet | Service Code', 'S-1 | Adams Elementary | 48,000 | A', 'S-2 | Baker Middle | 96,000 | B'));
+  assert.deepEqual([fac(inv, 'S-1').serviceLevel, fac(inv, 'S-2').serviceLevel], ['daily_5', 'daily_5']);
+});
+
+test('area columns: a total of one kind of space is not the building area; a column titled cleanable beats a net total', () => {
+  const rr = read(lines('Bldg | Name | Office SF | Shop SF | Total Restroom SF', '40 | Fleet Shop | 2,000 | 6,000 | 300', '41 | Sign Shop | 1,000 | 3,000 | 150'));
+  assert.notEqual(fac(rr, '40').grossSqft, 300);
+  const net = read(lines('Bldg | Name | Gross SF | Net Assignable SF | Non-Assignable SF | Total Net SF | Cleanable SF', '50 | Hall A | 10,000 | 5,000 | 3,000 | 8,000 | 7,600', '51 | Hall B | 20,000 | 11,000 | 6,000 | 17,000 | 16,100'));
+  assert.deepEqual([fac(net, '50').grossSqft, fac(net, '50').cleanableSqft], [10000, 7600]);
+});
+
+test('two lines of one building in a single table, each with its own name and area, are two line items unless the table lists rooms', () => {
+  const inv = read(lines('Site | Bldg | Building Title | Gross SF | Days', 'Portland | B-201 | Portland State Office Bldg | 200,000 | 5', 'Portland | B-201 | Portland SOB - Annex Wing | 27,500 | 3'));
+  assert.deepEqual(inv.facilities.map((f) => [f.name, f.grossSqft]), [['Portland State Office Bldg', 200000], ['Portland SOB - Annex Wing', 27500]]);
+  const rooms = read(lines('Bldg | Room No. | Room Name | Net SF', '700 | 101 | Lobby | 900', '700 | 102 | Office | 150', '701 | 101 | Shop | 2,000'));
+  assert.deepEqual(rooms.facilities.map((f) => f.buildingNumber), ['700', '701']);
+});
+
+test('amendments: Previous / Revised logs beside a building column, "Insert new Building …", "Delete Building …"; date changes change nothing', () => {
+  const base = { name: 'TE 3 Facility List.pdf', role: 'attachment' as const, text: lines('Bldg No | Facility Name | GSF | Frequency', '210 | Range Control | 4,000 | 5 days per week', '310 | Battalion HQ | 22,000 | 5 days per week', '320 | Company Ops | 9,000 | 3 days per week', '330 | Supply Warehouse | 15,000 | 1 day per week') };
+  const amd = { name: 'Amendment 0002.pdf', role: 'amendment' as const, amendment: 2, text: lines('AMENDMENT 0002', 'Item | Bldg | Description | Previous | Revised',
+    '1 | 310 | Gross area re-measured | 22,000 GSF | 23,450 GSF', '2 | 320 | Service frequency | 3 days per week | 5 days per week', '3 | 330 | Proposal due date | 1 Oct 2027 | 15 Oct 2027',
+    'Item 5. Insert new Building 7720, Vehicle Wash Facility, 3,200 SF, serviced one day per week.', 'Item 6. Delete Building 210 in its entirety.') };
+  const inv = read(base, amd);
+  assert.equal(fac(inv, '310').grossSqft, 23450);
+  assert.equal(fac(inv, '320').serviceLevel, 'daily_5');
+  assert.deepEqual([fac(inv, '330').grossSqft, fac(inv, '330').serviceLevel, fac(inv, '330').status], [15000, 'weekly', undefined]);
+  assert.equal(fac(inv, '210').status, 'deleted_by_amendment');
+  assert.deepEqual([fac(inv, '7720').name, fac(inv, '7720').grossSqft, fac(inv, '7720').serviceLevel], ['Vehicle Wash Facility', 3200, 'weekly']);
+  const dates = read(base, { name: 'Amendment 0003.pdf', role: 'amendment', amendment: 3, text: lines('No. | Reference | From | To', '1 | Proposal due date | 1 October 2027 | 15 October 2027', '2 | Site visit, Building 310 | 9:00 a.m., 12 Sept | 1:00 p.m., 14 Sept') });
+  assert.deepEqual(dates.facilities.map((f) => [f.buildingNumber, f.grossSqft, f.serviceLevel, f.status]), read(base).facilities.map((f) => [f.buildingNumber, f.grossSqft, f.serviceLevel, f.status]));
+});
+
+test('narrative facilities: "sq ft" without periods, "single-story", and a parking lot heading adds nothing', () => {
+  const inv = read(lines('SECTION 4. BUILDING DESCRIPTIONS',
+    'Building 2: Public Safety Complex',
+    'Police and fire share this 26,000 sq ft facility on one floor; the apparatus bay (8,000 sq ft) is cleaned by fire personnel. Custodial service seven days per week.',
+    'Building 3: Senior Center',
+    'Single-story, 7,200 square feet. Service three (3) days per week, Monday, Wednesday and Friday.',
+    'Site 4 - Commuter Lot',
+    'The commuter parking lot of approximately 45,000 sq ft is swept monthly by the Public Works Department.'));
+  assert.deepEqual([fac(inv, '2').grossSqft, fac(inv, '2').serviceLevel], [26000, 'daily_7']);
+  assert.deepEqual([fac(inv, '3').grossSqft, fac(inv, '3').floors, fac(inv, '3').serviceLevel], [7200, 1, '3x_week']);
+  assert.ok(!inv.facilities.some((f) => f.buildingNumber === '4'));
+});
+
+test('grounds: a "not included" item at one place, or work done by the contractor, leaves the prose acreage in', () => {
+  const inv = read(lines('C.5 Grounds Maintenance. The contractor shall maintain 640 acres of improved grounds on the main cantonment.',
+    'C.6 Services Not Included: refuse collection at the Reserve Center, lawn care at the Army Reserve Center, and pest control.',
+    'C.7 Mowing of the drop zone is performed by the Contractor under CLIN 0004.'));
+  near(acres(inv.grounds, 'improved_turf'), 640);
+  // performed by anyone but the contractor takes grounds out
+  assert.equal(read(lines('Grounds maintenance is performed by the Directorate of Public Works.', 'The campus has 40 acres of improved turf.')).grounds.length, 0);
+  // the size of a site that is itself the maintained area counts
+  near(acres(read('Site 7 - Oakwood Cemetery. The site covers approximately 6 acres of improved turf, mowed weekly.').grounds, 'improved_turf'), 6);
+});
+
+test('site: "The County" and county facility names are not the owner', () => {
+  const inv = read(lines('JANITORIAL SERVICES - MARLOW COUNTY BOARD OF EDUCATION, GEORGIA',
+    'The County seeks bids. The County will furnish paper. The County may inspect. The County will pay monthly. The County intends to award one contract.',
+    'Marlow County Board of Education offices are located at 12 Court Square. North County Service Center and South County Service Center are included.'));
+  assert.equal(inv.site.installationName, 'Marlow County');
 });
 
 // ---------------------------------------------------------------------------------------------- fixtures

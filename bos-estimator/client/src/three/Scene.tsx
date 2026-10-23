@@ -4,7 +4,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Bloom, EffectComposer, SMAA, Vignette } from '@react-three/postprocessing';
-import { SMAAPreset, type EffectComposer as EffectComposerImpl, type SMAAEffect } from 'postprocessing';
+import { SMAAPreset, type BloomEffect as BloomEffectImpl, type EffectComposer as EffectComposerImpl, type SMAAEffect } from 'postprocessing';
 import * as THREE from 'three';
 import { useStore } from '../store';
 import { useDerived } from '../derived';
@@ -23,6 +23,7 @@ import { useTestHooks } from './testHooks';
 import { disposeAssets } from './assets';
 import { rt } from './runtime';
 import { freeRect, insets, insetsSettling } from './insets';
+import { PerfGovernor, usePerfLevel } from './perf';
 import type { Box2 } from './layout';
 
 export { dayFactor, nightFactor } from './Lighting';
@@ -176,35 +177,66 @@ function FreeRectScissor() {
 
 /**
  * High tier post-processing: SMAA always, Bloom (threshold 0.85, so only emissive values above 1 bloom) and
- * Vignette only in Live lighting. The composer's buffers and SMAA's edge / weight targets are scissored to the
- * free rect like the main render, which keeps the High tier usable on software rasterizers.
+ * Vignette only in Live lighting. Every render target in the chain (composer buffers, SMAA edges / weights, the
+ * bloom's luminance and mip chain) is scissored to the free rect like the main render, and the bloom's
+ * luminance pass and mip chain run at half resolution: on software rasterizers the full-size luminance pass
+ * and mip chain cost more than the scene itself.
  */
+type BloomInternals = {
+  luminancePass: { renderTarget: THREE.WebGLRenderTarget; resolution: { scale: number } };
+  mipmapBlurPass: { downsamplingMipmaps: THREE.WebGLRenderTarget[]; upsamplingMipmaps: THREE.WebGLRenderTarget[]; setSize(w: number, h: number): void; __half?: boolean };
+};
+const BLOOM_SCALE = 0.5;
 function Post() {
   const quality = useStore((s) => s.quality);
   const lighting = useStore((s) => s.lighting ?? 'review');
+  const live = lighting === 'live';
+  const level = usePerfLevel();
   const composer = useRef<EffectComposerImpl>(null);
   const smaa = useRef<SMAAEffect>(null);
+  const bloom = useRef<BloomEffectImpl>(null);
   const gl = useThree((s) => s.gl);
   useFrame(() => {
     const c = composer.current; if (!c) return;
     const dpr = gl.getPixelRatio();
     const sc = rt.scissor;
-    const targets: THREE.WebGLRenderTarget[] = [c.inputBuffer, c.outputBuffer];
-    const fx = smaa.current as unknown as { renderTargetEdges?: THREE.WebGLRenderTarget; renderTargetWeights?: THREE.WebGLRenderTarget } | null;
-    if (fx?.renderTargetEdges) targets.push(fx.renderTargetEdges);
-    if (fx?.renderTargetWeights) targets.push(fx.renderTargetWeights);
-    for (const t of targets) {
+    const cw = gl.domElement.width, ch = gl.domElement.height;
+    // scissor a target of any size to the free rect (+ a margin of `pad` target pixels for blur taps)
+    const clip = (t: THREE.WebGLRenderTarget, pad: number) => {
       t.scissorTest = sc.on;
-      if (sc.on) t.scissor.set(Math.floor(sc.x * dpr), Math.floor(sc.y * dpr), Math.ceil(sc.w * dpr), Math.ceil(sc.h * dpr));
+      if (!sc.on) return;
+      const kx = (t.width / cw) * dpr, ky = (t.height / ch) * dpr;
+      t.scissor.set(Math.max(0, Math.floor(sc.x * kx) - pad), Math.max(0, Math.floor(sc.y * ky) - pad), Math.ceil(sc.w * kx) + 2 * pad, Math.ceil(sc.h * ky) + 2 * pad);
+    };
+    clip(c.inputBuffer, 0); clip(c.outputBuffer, 0);
+    const fx = smaa.current as unknown as { renderTargetEdges?: THREE.WebGLRenderTarget; renderTargetWeights?: THREE.WebGLRenderTarget } | null;
+    if (fx?.renderTargetEdges) clip(fx.renderTargetEdges, 0);
+    if (fx?.renderTargetWeights) clip(fx.renderTargetWeights, 0);
+    const bl = bloom.current as unknown as BloomInternals | null;
+    if (bl) {
+      // the mip chain normally starts at half the canvas size: start it at half of the (already half-size) luminance
+      const mp = bl.mipmapBlurPass;
+      if (!mp.__half) {
+        const setSize = mp.setSize.bind(mp);
+        mp.setSize = (w, h) => setSize(Math.max(1, Math.round(w * BLOOM_SCALE)), Math.max(1, Math.round(h * BLOOM_SCALE)));
+        mp.__half = true;
+        mp.setSize(cw, ch);
+      }
+      if (bl.luminancePass.resolution.scale !== BLOOM_SCALE) bl.luminancePass.resolution.scale = BLOOM_SCALE;
+      clip(bl.luminancePass.renderTarget, 4);
+      for (const t of mp.downsamplingMipmaps) clip(t, 4);
+      for (const t of mp.upsamplingMipmaps) clip(t, 4);
     }
   }, 0);
-  if (quality !== 'high') return null;
-  const live = lighting === 'live';
+  // the frame-rate governor (perf.ts) sheds SMAA first, then (level 3) the Live glow, when High cannot hold 4 fps
+  const aa = level < 1;
+  const glow = live && level < 3;
+  if (quality !== 'high' || (!aa && !glow)) return null;
   return (
-    <EffectComposer ref={composer} multisampling={0} enableNormalPass={false} frameBufferType={live ? THREE.HalfFloatType : THREE.UnsignedByteType}>
-      {live ? <Bloom mipmapBlur levels={3} resolutionScale={0.5} intensity={0.6} luminanceThreshold={0.85} luminanceSmoothing={0.2} radius={0.6} /> : <></>}
-      {live ? <Vignette eskil={false} offset={0.2} darkness={0.5} /> : <></>}
-      <SMAA ref={smaa} preset={SMAAPreset.LOW} />
+    <EffectComposer ref={composer} multisampling={0} enableNormalPass={false} frameBufferType={glow ? THREE.HalfFloatType : THREE.UnsignedByteType}>
+      {glow ? <Bloom ref={bloom} mipmapBlur levels={3} resolutionScale={0.5} intensity={0.6} luminanceThreshold={0.85} luminanceSmoothing={0.2} radius={0.6} /> : <></>}
+      {glow ? <Vignette eskil={false} offset={0.2} darkness={0.5} /> : <></>}
+      {aa ? <SMAA ref={smaa} preset={SMAAPreset.LOW} /> : <></>}
     </EffectComposer>
   );
 }
@@ -234,16 +266,19 @@ function SceneContents({ layer }: { layer: React.RefObject<HTMLDivElement | null
       <LabelLayerDriver layer={layer} />
       <TestHooks />
       <FreeRectScissor />
+      <PerfGovernor />
       <Post />
       <Cleanup />
     </>
   );
 }
 
-const dprFor = (quality: 'high' | 'fast') => {
+/** §9.4 DPR; at governor level ≥ 2 the High tier renders 25% fewer pixels per axis (still ≥ 0.75). */
+const dprFor = (quality: 'high' | 'fast', level = 0) => {
   const W = Math.max(1, window.innerWidth), H = Math.max(1, window.innerHeight);
   const budget = quality === 'high' ? 3.7e6 : 2.1e6;
-  return Math.min(2, Math.max(0.75, Math.min(window.devicePixelRatio || 1, Math.sqrt(budget / (W * H)))));
+  const base = Math.min(2, Math.max(0.75, Math.min(window.devicePixelRatio || 1, Math.sqrt(budget / (W * H)))));
+  return quality === 'high' && level >= 2 ? Math.max(0.75, base * 0.75) : base;
 };
 
 export function Scene() {
@@ -253,13 +288,14 @@ export function Scene() {
   const running = useStore((s) => s.extraction.running);
   const { roster } = useDerived();
   const layer = useRef<HTMLDivElement>(null);
-  const [dpr, setDpr] = useState(() => dprFor(quality));
+  const level = usePerfLevel();
+  const [dpr, setDpr] = useState(() => dprFor(quality, level));
   useEffect(() => {
-    const on = () => setDpr(dprFor(quality));
+    const on = () => setDpr(dprFor(quality, level));
     on();
     window.addEventListener('resize', on);
     return () => window.removeEventListener('resize', on);
-  }, [quality]);
+  }, [quality, level]);
   useEffect(() => { clock.playing = playing; }, [playing]);
   const frameloop = view === 'table' ? 'never' : (playing && roster.length > 0) || running ? 'always' : 'demand';
   const gl = useMemo(() => ({ antialias: false, powerPreference: 'high-performance' as const, toneMapping: THREE.NeutralToneMapping, toneMappingExposure: 1.0, stencil: false }), []);

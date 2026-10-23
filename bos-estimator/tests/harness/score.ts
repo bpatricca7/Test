@@ -30,15 +30,14 @@ export interface ScoreReport {
  * dropped ("SP-01" = "SP1"), one between two digit runs kept ("1-10" ≠ "110").
  */
 export const normBn = (s?: string) => { const c = cleanBuildingNumber(s); return c ? buildingKey(c) : ''; };
-/** "B41" → "41": a number printed with a one-letter prefix in one place and without it in another. */
-const withoutLetter = (k: string) => k.match(/^[A-Z](\d.*)$/)?.[1];
 /** Text compared as an estimator reads it: case, punctuation and "&" ignored; a parenthetical (an abbreviation such as
  *  "(NSA)", or an aside) read both as part of the text and left out. */
 const normTexts = (s: string) => [...new Set([s, s.replace(/\([^)]*\)/g, ' ')].map((x) => x.toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim()))];
 /**
  * A site field matches when one value contains the other as whole words after normalising ("Naval Support Activity (NSA)
- * Tarpon Sound" = "Naval Support Activity Tarpon Sound"); for names, also when every word of one is in the other (a
- * name copied with its location appended).
+ * Tarpon Sound" = "Naval Support Activity Tarpon Sound"); for names, also when every expected word is in the value in
+ * another order (never when the value only has some of the expected words: "County Center" is not "Kessling County
+ * Government Center").
  */
 export function siteFieldOk(field: string, expected: unknown, got: unknown): boolean {
   if (typeof expected !== 'string' || typeof got !== 'string') return got === expected;
@@ -46,8 +45,8 @@ export function siteFieldOk(field: string, expected: unknown, got: unknown): boo
     if (!e || !g) return e === g;
     if (` ${g} `.includes(` ${e} `) || ` ${e} `.includes(` ${g} `)) return true;
     if (!/name$/i.test(field)) return false;
-    const E = e.split(' '); const G = g.split(' ');
-    return E.every((t) => G.includes(t)) || G.every((t) => E.includes(t));
+    const G = g.split(' ');
+    return e.split(' ').every((t) => G.includes(t));
   };
   return normTexts(expected).some((e) => normTexts(got).some((g) => ok(e, g)));
 }
@@ -73,22 +72,22 @@ export function scoreInventory(truth: FixtureTruth, inv: Inventory, provider: st
   const got = inv.facilities.filter((f) => !f.status || f.status === 'in_scope');
   const used = new Set<number>();
   const matches: FacilityMatch[] = [];
-  // pass 1: building number; when several facilities carry the number (line items of one building), the one with the
-  // most similar name, then the closest area
+  // pass 1: building number. When several facilities carry the number (line items of one building, or a stray row), a
+  // facility whose area agrees is paired first - over all truth lines, so a collapsed or stray line does not take the
+  // place of a line found with its area - then the rest by the most similar name, then the closest area
+  const gotKeys = got.map((g) => normBn(g.buildingNumber));
+  const numberCands = (t: TruthFacility) => { const k = normBn(t.buildingNumber); return k ? got.map((_, i) => i).filter((i) => !used.has(i) && gotKeys[i] === k) : []; };
+  const byNumber = new Map<TruthFacility, number>();
   for (const t of exp) {
-    const k = normBn(t.buildingNumber);
-    const cands = k ? got.map((_, i) => i).filter((i) => !used.has(i) && normBn(got[i].buildingNumber) === k) : [];
-    cands.sort((a, b) => nameSim(t.name, got[b].name) - nameSim(t.name, got[a].name) || Math.abs(got[a].grossSqft - t.grossSqft) - Math.abs(got[b].grossSqft - t.grossSqft));
-    const idx = cands[0] ?? -1;
-    if (idx >= 0) { used.add(idx); matches.push({ truth: t, got: got[idx], via: 'number' }); } else matches.push({ truth: t });
+    const idx = numberCands(t).filter((i) => close(got[i].grossSqft, t.grossSqft)).sort((a, b) => nameSim(t.name, got[b].name) - nameSim(t.name, got[a].name))[0];
+    if (idx != null) { used.add(idx); byNumber.set(t, idx); }
   }
-  // pass 1b: a number printed with a one-letter prefix on one side only ("B-41" / "41"), when the names agree too
-  for (const m of matches) {
-    if (m.got || !m.truth.buildingNumber) continue;
-    const k = normBn(m.truth.buildingNumber);
-    const idx = got.findIndex((g, i) => { if (used.has(i)) return false; const gk = normBn(g.buildingNumber); return Boolean(k && gk) && (withoutLetter(gk) === k || withoutLetter(k) === gk) && nameSim(m.truth.name, g.name) >= 0.5; });
-    if (idx >= 0) { used.add(idx); m.got = got[idx]; m.via = 'number'; }
+  for (const t of exp) {
+    if (byNumber.has(t)) continue;
+    const idx = numberCands(t).sort((a, b) => nameSim(t.name, got[b].name) - nameSim(t.name, got[a].name) || Math.abs(got[a].grossSqft - t.grossSqft) - Math.abs(got[b].grossSqft - t.grossSqft))[0];
+    if (idx != null) { used.add(idx); byNumber.set(t, idx); }
   }
+  for (const t of exp) { const idx = byNumber.get(t); matches.push(idx != null ? { truth: t, got: got[idx], via: 'number' } : { truth: t }); }
   // pass 2: names for the rest (best similarity ≥ 0.6)
   for (const m of matches) {
     if (m.got) continue;

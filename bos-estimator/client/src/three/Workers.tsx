@@ -33,6 +33,9 @@ const GEAR_COLOR: Record<GearKind, THREE.Color> = { mower: new THREE.Color('#d97
 
 const _c = new THREE.Vector3();
 const _d = new THREE.Vector3();
+/** how long (ms) an agent's past positions stay clickable, and how far (pick radii) from them a click may land */
+const HIST_MS = 700;
+const HIST_SLACK = 1.5;
 /**
  * Analytic pick test against the agents (instance translations). The pick radius is 0.9 units or `userData.k`
  * × distance (a few screen pixels), whichever is larger, so crew members stay clickable at site distance.
@@ -45,25 +48,29 @@ function proxyRaycast(this: THREE.InstancedMesh, raycaster: THREE.Raycaster, out
   const hist = this.userData.hist as Map<string, { x: number; y: number; z: number; t: number }[]> | undefined;
   const o = raycaster.ray.origin, dir = raycaster.ray.direction;
   const xray = this.userData.xray as Uint8Array | undefined;
-  // one hit: the agent closest to the pointer (in pick-radius units); overlapping figures resolve by proximity
-  let best = -1, bestPerp = Infinity, bestT = 0;
+  // one hit: the agent closest to the pointer (in pick-radius units); overlapping figures resolve by proximity.
+  // A position from the recent history (a moving agent, a click that lands a frame or two late) may be up to
+  // HIST_SLACK radii away, but an agent hit where it is now always wins over one matched only by its trail.
+  let best = -1, bestPerp = Infinity, bestT = 0, bestNow = false;
   for (let i = 0; i < this.count; i++) {
     this.getMatrixAt(i, m4);
     _c.setFromMatrixPosition(m4);
-    // where the agent is now, or was during the last few hundred ms (a moving agent stays clickable)
-    const test = (x: number, y: number, z: number) => {
+    const test = (x: number, y: number, z: number, now: boolean) => {
       _c.set(x, y, z);
       const t = _d.copy(_c).sub(o).dot(dir);
       if (t <= 0) return;
       const perp = _d.copy(o).addScaledVector(dir, t).distanceTo(_c) / Math.max(r0, k * t);
-      if (perp < bestPerp) { bestPerp = perp; bestT = t; best = i; }
+      if (now) { if (perp <= 1 && (!bestNow || perp < bestPerp)) { bestPerp = perp; bestT = t; best = i; bestNow = true; } }
+      else if (!bestNow && perp <= HIST_SLACK && perp < bestPerp) { bestPerp = perp; bestT = t; best = i; }
     };
-    test(_c.x, _c.y, _c.z);
+    test(_c.x, _c.y, _c.z, true);
     const h = ids && hist ? hist.get(ids[i]) : undefined;
-    if (h) for (const p of h) test(p.x, p.y, p.z);
+    if (h) for (const p of h) test(p.x, p.y, p.z, false);
   }
-  if (best < 0 || bestPerp > 1) return;
-  const distance = xray?.[best] === 1 ? 0 : Math.max(0, bestT - 0.9);
+  if (best < 0) return;
+  // an x-ray figure, a just-vanished agent, or a match on where the agent was drawn a moment ago wins over
+  // whatever is in front now: the user clicked a figure that was on screen
+  const distance = xray?.[best] === 1 || !bestNow ? 0 : Math.max(0, bestT - 0.9);
   if (distance < raycaster.near || distance > raycaster.far) return;
   out.push({ distance, point: o.clone().addScaledVector(dir, distance), object: this, instanceId: best } as THREE.Intersection);
 }
@@ -130,6 +137,8 @@ export function Workers() {
   const get = useThree((s) => s.get);
   const controlsRef = () => get().controls as unknown;
   const hist = useMemo(() => new Map<string, { x: number; y: number; z: number; t: number }[]>(), []);
+  const ghosts = useMemo(() => new Map<string, { x: number; y: number; z: number; t: number }>(), []);
+  const ghostState = useMemo(() => ({ prev: new Set<string>() }), []);
   useEffect(() => { meshes.proxy.userData.hist = hist; }, [meshes, hist]);
   useFrame(() => {
     // pick radius: 5 screen px at the agent's distance
@@ -161,8 +170,11 @@ export function Workers() {
       const at = new Map<string, Map<string, number>>();
       for (const s of states) if (s.status === 'work' && s.job?.kind === 'facility') { let m = at.get(s.job.targetId); if (!m) { m = new Map(); at.set(s.job.targetId, m); } m.set(s.agent.crew, (m.get(s.agent.crew) ?? 0) + s.agent.represents); }
       rt.crewAt = at; rt.interiorHidden = !close;
+      // the selected agent keeps its card while it works out of sight (inside a building at site distance)
+      const ss = selAgent && !list.some((x) => x.agent.id === selAgent) ? states.find((x) => x.agent.id === selAgent) : undefined;
+      rt.selAgent = ss ? { id: ss.agent.id, crew: ss.agent.crew, wx: ss.x, wy: ss.y + 0.6, wz: ss.z, state: ss } : null;
     }
-    if (interiorView) { rt.crewAt = new Map(); rt.interiorHidden = false; }
+    if (interiorView) { rt.crewAt = new Map(); rt.interiorHidden = false; rt.selAgent = null; }
     const t = performance.now() / 1000;
     const crew: CrewPoint[] = [];
     let g = 0;
@@ -219,16 +231,31 @@ export function Workers() {
       meshes.dotPos.needsUpdate = true; meshes.dotCol.needsUpdate = true;
     }
     for (const m of [meshes.body, meshes.head, meshes.ring, meshes.proxy, meshes.gear, meshes.xbody, meshes.xhead]) { m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
-    meshes.ids = crew.map((c) => c.id);
-    meshes.proxy.userData.ids = meshes.ids;
     // short position history for picking moving agents
     const now = performance.now();
+    // agents that just left the drawn set (walked into a building, went off shift) stay clickable where they
+    // were last drawn for HIST_MS: a click aimed a frame earlier still lands on them
+    const drawn = new Set<string>();
+    for (const c of crew) drawn.add(c.id);
+    for (const id of ghostState.prev) if (!drawn.has(id)) { const h = hist.get(id); const last = h?.[h.length - 1]; if (last) ghosts.set(id, { x: last.x, y: last.y, z: last.z, t: now }); }
+    for (const [id, gh] of ghosts) if (drawn.has(id) || now - gh.t > HIST_MS) ghosts.delete(id);
+    ghostState.prev = drawn;
+    const ids = crew.map((c) => c.id);
+    let pc = n;
+    for (const [id, gh] of ghosts) {
+      if (pc >= cap) break;
+      m4.compose(v0.set(gh.x, gh.y, gh.z), QI, s0.set(1, 1, 1)); meshes.proxy.setMatrixAt(pc, m4); meshes.xray[pc] = 1;
+      ids.push(id); pc++;
+    }
+    meshes.proxy.count = pc; meshes.proxy.instanceMatrix.needsUpdate = true;
+    meshes.ids = ids;
+    meshes.proxy.userData.ids = meshes.ids;
     for (const c of crew) {
       let h = hist.get(c.id); if (!h) { h = []; hist.set(c.id, h); }
       h.push({ x: c.wx, y: c.wy, z: c.wz, t: now });
-      while (h.length && now - h[0].t > 450) h.shift();
+      while (h.length && now - h[0].t > HIST_MS) h.shift();
     }
-    if (hist.size > crew.length * 2 + 64) for (const [id, h] of hist) if (!h.length || now - h[h.length - 1].t > 450) hist.delete(id);
+    if (hist.size > crew.length * 2 + 64) for (const [id, h] of hist) if (!h.length || now - h[h.length - 1].t > HIST_MS) hist.delete(id);
     rt.crew = crew;
   });
 

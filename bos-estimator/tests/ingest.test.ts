@@ -311,6 +311,22 @@ test('PDF layout: a wrapped Remarks line wider than the rows above it stays in t
   for (const [i, l] of ['1205 | Battalion HQ | 18,750 | None', '2101 | Dental Clinic | 9,800 | None', '2105 | Fitness Center | 31,000 | None'].entries()) assert.equal(lines[header + 2 + i], l, lines.join('\n'));
 });
 
+test('PDF layout: a short note set flush right under a table is not glued to the last row', async () => {
+  // a wrapped Remarks fragment starts where the Remarks column starts; a right-aligned note under the table does not
+  const C = { bn: 50, name: 100, gross: 250, rem: 320 };
+  const row = (y: number, cells: [number, string][]): PdfText[] => cells.map(([x, str]) => ({ x, y, size: 9, str }));
+  const pdf = makePdf([{ texts: [
+    { x: 50, y: 740, size: 12, str: 'BUILDING LIST' },
+    ...row(700, [[C.bn, 'Bldg'], [C.name, 'Facility Name'], [C.gross, 'Gross SF'], [C.rem, 'Remarks']]),
+    ...row(686, [[C.bn, '201'], [C.name, 'Clinic'], [C.gross, '8,000'], [C.rem, 'Patient areas']]),
+    ...row(672, [[C.bn, '202'], [C.name, 'Pharmacy'], [C.gross, '2,500'], [C.rem, 'None']]),
+    ...row(663, [[440, 'Total: 10,500 SF']]),
+  ] }]);
+  const lines = (await extractPdfLayout(pdf)).text.split('\n');
+  assert.ok(lines.includes('202 | Pharmacy | 2,500 | None'), lines.join('\n'));
+  assert.ok(lines.includes('Total: 10,500 SF'), lines.join('\n'));
+});
+
 test('superscripts: unit exponents and ordinals stay text, footnote markers become [^n] (PDF and DOCX)', async () => {
   // superscripts as Word / Chromium print them: a smaller run with text rise (Ts persists across BT/ET, so reset it)
   const p = makePdf([{ ops: [

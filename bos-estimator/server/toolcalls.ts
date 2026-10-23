@@ -574,6 +574,8 @@ const FacilityRowIn = z.object({
   line_item: z.union([z.string(), z.number()]).nullish(),
   service_season: z.object({ start: z.union([z.string(), z.number()]).nullish(), end: z.union([z.string(), z.number()]).nullish(), days_per_week: looseNum }).partial().nullish(),
   events_per_year: looseNum,
+  cleaning_detail: z.object({ restroom_rooms: looseNum, cleaning_standard: z.string().nullish(), area_by_class: z.array(z.object({ label: z.string().nullish(), area: looseNum })).nullish() }).partial().nullish(),
+  // the same fields flat (lenient input)
   restroom_rooms: looseNum,
   area_by_class: z.array(z.object({ label: z.string().nullish(), area: looseNum })).nullish(),
   cleaning_standard: z.string().nullish(),
@@ -770,9 +772,10 @@ function prepareFacility(st: ExtractionState, d: FacilityRow): { row?: PreparedR
     serviceDays ??= Math.min(366, Math.round(events));
     notes.push(`On call: ${fmtQty(events)} events per year (one service day per event)`);
   }
-  const roomCount = numOrUndef(d.restroom_rooms);
+  const detail = d.cleaning_detail ?? {};
+  const roomCount = numOrUndef(detail.restroom_rooms ?? d.restroom_rooms);
   if (roomCount != null && roomCount >= 0) notes.push(`Restroom rooms: ${fmtQty(roomCount)}`);
-  const classes = (d.area_by_class ?? []).map((c) => ({ label: str(c.label), area: numOrUndef(c.area) })).filter((c): c is { label: string; area: number } => Boolean(c.label) && c.area != null && c.area >= 0);
+  const classes = (detail.area_by_class ?? d.area_by_class ?? []).map((c) => ({ label: str(c.label), area: numOrUndef(c.area) })).filter((c): c is { label: string; area: number } => Boolean(c.label) && c.area != null && c.area >= 0);
   if (classes.length) {
     const sf = classes.map((c) => ({ label: c.label, sf: toSqft(c.area) }));
     const sum = sf.reduce((s, c) => s + c.sf, 0);
@@ -780,14 +783,14 @@ function prepareFacility(st: ExtractionState, d: FacilityRow): { row?: PreparedR
     const basis = cleanable ?? (gross > 0 ? gross : undefined);
     if (basis && Math.abs(sum - basis) > Math.max(5, 0.01 * basis)) resultNotes.push(`${label}: area_by_class sums to ${fmt(sum)} SF, not the ${cleanable != null ? 'cleanable' : 'gross'} area (${fmt(basis)} SF) - check the class columns`);
   }
-  const standard = str(d.cleaning_standard);
+  const standard = str(detail.cleaning_standard ?? d.cleaning_standard);
   if (standard) notes.push(`Cleaning standard: ${standard}`);
 
   const f: Facility = {
     id: '',
     buildingNumber: bn,
     // two lines of one building under the same printed name stay apart in lists
-    name: lineLabel && line && !(lineKey(name) ?? '').includes(line) ? `${name} – ${lineLabel}` : name,
+    name: lineLabel && line && !` ${lineKey(name) ?? ''} `.includes(` ${line} `) ? `${name} – ${lineLabel}` : name,
     category,
     grossSqft: gross,
     cleanableSqft: cleanable,
@@ -899,7 +902,7 @@ function lookupNumbered(st: ExtractionState, key: string, campusSlug: string | u
 
 /** Printed-row references of the rows registered for a facility (all, or only those that printed an area). */
 const refsOf = (st: ExtractionState, id: string, withArea = false) => new Set((st.contribs.get(id) ?? []).filter((c) => !withArea || (c.meta.hasArea && !c.meta.areaMissing)).map((c) => rowRefOf(c.f.source)).filter(Boolean));
-const namesOf = (st: ExtractionState, id: string, tableId?: string) => new Set((st.contribs.get(id) ?? []).filter((c) => !tableId || c.f.tableId === tableId).map((c) => c.meta.nameSlug));
+const namesOf = (st: ExtractionState, id: string) => new Set((st.contribs.get(id) ?? []).map((c) => c.meta.nameSlug));
 /** How a line item is named in messages: its line_item, else its name. */
 const lineName = (st: ExtractionState, id: string) => { const m = st.meta.get(id); return `"${m?.line ? m.lineLabel ?? m.line : st.facilities.get(id)?.name ?? id}"`; };
 
@@ -918,6 +921,10 @@ function splitsFrom(st: ExtractionState, row: PreparedRow, ids: string[]): boole
   const ref = rowRefOf(f.source);
   const t = st.tables.get(f.tableId);
   if (!ref || !t || outsideTable(st, t, f.source?.file, f.source?.page)) return false;
+  // a table whose declared rows are all registered prints no further row: this one revises a building (an amendment
+  // or correction tagged with the table's id, e.g. in a Word or Excel file without page numbers) - it merges, and the
+  // gate asks for line items if the rows really were separate
+  if (t.rowCount != null && printedRows(t).length >= t.rowCount) return false;
   let seen = false;
   for (const id of ids) {
     const rows = tableRowsOf(t, id);
@@ -931,19 +938,20 @@ function splitsFrom(st: ExtractionState, row: PreparedRow, ids: string[]): boole
 }
 
 /**
- * A number printed with a letter prefix in one place and without it in another ("Building 41 (B-41)" in an amendment,
- * "41" in the facility list): when the row's number is new, the one building whose number differs only by a one- or
- * two-letter prefix and that was registered under exactly this name is the same building - for a revision row (no
- * table) or a row from another document, never for a row of that building's own table (two printed rows of one table
- * are two buildings: T-41 is not 41).
+ * A number printed with a "B" (building) prefix in one place and without it in another ("Building 41 (B-41)" in an
+ * amendment, "41" in the facility list): when the row's number is new, the one building whose number differs only by
+ * that prefix and that was registered under exactly this name is the same building - for a revision row (no table) or a
+ * row from another document, never for a row of that building's own table. Other letter prefixes name other building
+ * series (T-41 temporary, P-41 permanent, S-41 ...), so they never alias: an amendment adding "T-12 Latrine" is not
+ * building "12 Latrine".
  */
 function prefixAlias(st: ExtractionState, row: PreparedRow): string | undefined {
   const { key, meta, f } = row;
   if (!key) return undefined;
   const keys = new Set<string>();
-  const m = key.match(/^[A-Z]{1,2}(\d.*)$/);
+  const m = key.match(/^B(\d.*)$/);
   if (m) keys.add(m[1]);
-  for (const k of st.byKey.keys()) { const mk = k.match(/^[A-Z]{1,2}(\d.*)$/); if (mk && mk[1] === key) keys.add(k); }
+  if (st.byKey.has(`B${key}`)) keys.add(`B${key}`);
   const ids = [...keys].flatMap((k) => campusCandidates(st, k, meta.campusSlug, '').ids).filter((id) => {
     const cs = st.contribs.get(id) ?? [];
     if (!cs.some((c) => c.meta.nameSlug === meta.nameSlug)) return false;
@@ -984,6 +992,10 @@ function resolveNumbered(st: ExtractionState, row: PreparedRow, label: string): 
   if (meta.line) {
     const exact = ids.find((id) => lineOf(id) === meta.line);
     if (exact) return { id: exact, adopt: c.adopt };
+    // a line registered without line_item (a second printed row split off by name, or the row it was split from) is
+    // addressed by its name - the name the "separate line items" error lists for it
+    const named = ids.filter((id) => !lineOf(id) && (st.contribs.get(id) ?? []).some((x) => lineKey(x.f.name) === meta.line));
+    if (named.length === 1) return { id: named[0], adopt: c.adopt };
     // the same printed row registered before without a line item: that facility is this line, when it holds no other
     // printed row with an area
     const holder = ref ? ids.find((id) => !lineOf(id) && refsOf(st, id).has(ref)) : undefined;
@@ -1196,12 +1208,14 @@ function commitRow(st: ExtractionState, row: PreparedRow, ctx: RegCtx): { id?: s
     if (r.line) {
       // a separate line item of a numbered building is its own facility (b-0012--level-2)
       lineBase = `${facilityKey(f.buildingNumber, f.name, f.campus)}${lineSuffix(r.line === 'line' ? row.lineLabel ?? meta.line! : meta.nameSlug)}`;
-      const others = campusCandidates(st, key, meta.campusSlug, label).ids;
-      if (r.line === 'split') ctx.notes.push(`${label} is printed again in ${f.tableId} under another name and with another area: "${f.name}" is registered as a separate line item of the building (re-sent rows and corrections under the same name still merge)`);
+      if (r.line === 'split') {
+        const first = campusCandidates(st, key, meta.campusSlug, label).ids.map((x) => st.facilities.get(x)?.name).filter(Boolean);
+        ctx.notes.push(`${label} is printed again in ${f.tableId} under another name and with another area: "${f.name}" is registered as a separate line item of the building (re-sent rows and corrections under the same name still merge; if this row revises ${first.map((n) => `"${n}"`).join(' / ')} instead, resend it with line_item set to that name)`);
+      }
       else if (row.areaGiven) {
         // the building is also registered as a whole from another table: the line items would count its area twice
-        const whole = others.filter((x) => !st.meta.get(x)?.line && st.meta.get(x)?.hasArea && !(st.contribs.get(x) ?? []).some((c) => c.f.tableId != null && c.f.tableId === f.tableId));
-        if (whole.length) ctx.info.push(`${label} is also registered without a line item (${whole.map((x) => `"${st.facilities.get(x)?.name}" ${fmt(st.facilities.get(x)?.grossSqft ?? 0)} SF`).join(', ')}): if that row is the whole building and the line items are its parts, resend it with status excluded and a status_reason naming the line items; if the line items only break the building down (floors, units), register them as notes instead`);
+        const whole = campusCandidates(st, key, meta.campusSlug, label).ids.filter((x) => !st.meta.get(x)?.line && st.meta.get(x)?.hasArea && !(st.contribs.get(x) ?? []).some((c) => c.f.tableId != null && c.f.tableId === f.tableId));
+        if (whole.length) ctx.info.push(`${label} is also registered without a line item (${whole.map((x) => `"${st.facilities.get(x)?.name}" ${fmt(st.facilities.get(x)?.grossSqft ?? 0)} SF`).join(', ')}): if that row is the whole building and the line items are its parts, resend it with status excluded and a status_reason naming the line items; if the line items only break the building down (floors, units), resend them with status excluded and a status_reason saying so`);
       }
     }
     // a printed row registered again as another line item leaves the facility it was registered with before
@@ -1772,7 +1786,7 @@ const sourceSchema = obj({
   page: nullable('integer', 'Page number ("--- page N ---" in text documents). Null for spreadsheets and Word files (name the sheet or section in the excerpt).'),
   excerpt: { type: 'string', description: 'The row or sentence the numbers came from (≤ 200 chars).' },
 }, ['file', 'page', 'excerpt']);
-const STATUS_KINDS = 'excluded (not in scope, N/A, information only, no service); deleted_by_amendment (struck through or deleted by an amendment / Q&A); demolished (demolished or scheduled for demolition, disposed); vacant (vacant, closed); option_only (only in an option period / optional CLIN). When several apply, the first in this order wins: deleted_by_amendment, demolished, vacant, excluded - all are out of the estimate';
+const STATUS_KINDS = 'excluded (not in scope, N/A, information only, no service); deleted_by_amendment (struck through or deleted by an amendment / Q&A); demolished (demolished or scheduled for demolition, disposed); vacant (vacant, closed); option_only (only in an option period / optional CLIN)';
 const STATUS_DESC = `in_scope (default); ${STATUS_KINDS}.`;
 const FACILITY_STATUS_DESC = `Scope status as the document states it. null when the row says nothing about scope: a new building is then in scope, and a row that only updates an already-registered building (frequency, fixtures, dining, a revised area) leaves its status unchanged. ${STATUS_KINDS}; in_scope only when a document explicitly puts the building in scope or back in scope (give status_reason).`;
 
@@ -1789,7 +1803,7 @@ export function extractionTools(opts: { strict?: boolean } = {}): Anthropic.Beta
     table_id: nullable('string', 'table_id from declare_tables for the table this row is printed in, including rows a conformed or reissued table marks as revised in place. A row from an amendment\'s own change list or a Q&A answer (Item / Was / Is) gets that document\'s own declared table_id, or null - never the base table\'s id.'),
     campus: nullable('string', 'Installation, campus or site, when the package covers more than one. Same number on two campuses = two buildings.'),
     building_number: nullable('string', 'Exactly as printed, including letters, hyphens and leading zeros (0012, T-2401, 3105-B, P-114). Null if the row has no number.'),
-    line_item: nullable('string', 'Only when one table prints this building on several rows that are separately priced parts of it (one row per cleaning level, wing, schedule or service class): what tells this row apart, as printed (e.g. "Level 2", "East Wing"). Each line item is its own inventory line; a later revision of one line uses the same line_item. Null otherwise - never for tables that break down a building listed elsewhere (by floor, unit or room).'),
+    line_item: nullable('string', 'Only when one table prints this building on several rows that are separately priced parts of it (one row per cleaning level, wing, schedule or service class): what tells this row apart, as printed. Each line item is its own inventory line; a later revision of one line uses the same line_item. Null otherwise - never for tables that break down a building listed elsewhere (by floor, unit or room).'),
     name: { type: 'string', description: 'Facility name as printed.' },
     status: nullable('string', FACILITY_STATUS_DESC, { enum: [...STATUS_IDS, null] }),
     status_reason: nullable('string', 'Why the row is (not) in scope, quoting the document (e.g. "DEMO FY27 – EXCLUDE", "Deleted by Amendment 0002").'),
@@ -1808,22 +1822,25 @@ export function extractionTools(opts: { strict?: boolean } = {}): Anthropic.Beta
       properties: { total: nullable('integer'), water_closets: nullable('integer'), urinals: nullable('integer'), lavatories: nullable('integer'), showers: nullable('integer') },
       required: ['total', 'water_closets', 'urinals', 'lavatories', 'showers'], additionalProperties: false,
     }),
-    restroom_rooms: nullable('integer', 'Number of restrooms (rooms) as printed, when the document counts rooms rather than fixtures.'),
-    cleaning_standard: nullable('string', 'Cleaning level / standard / service class as printed (e.g. "Level 1", "COL 3", "Service Class B", "Prestige").'),
-    area_by_class: nullable('array', 'Areas the document splits by cleaning class or infection-risk class (high / moderate / low risk, critical / general), as printed in area_unit.', {
-      items: obj({ label: { type: 'string' }, area: { type: 'number' } }),
+    cleaning_detail: nullable('object', 'Only when the document prints any of these for this facility; null otherwise.', {
+      properties: {
+        restroom_rooms: nullable('integer', 'Number of restrooms (rooms, not fixtures) as printed.'),
+        cleaning_standard: nullable('string', 'The cleaning level, standard or service class the document assigns to this facility, as printed.'),
+        area_by_class: nullable('array', 'Areas split by cleaning class or infection-risk class, each with the class as printed, in area_unit.', { items: obj({ label: { type: 'string' }, area: { type: 'number' } }) }),
+      },
+      required: ['restroom_rooms', 'cleaning_standard', 'area_by_class'], additionalProperties: false,
     }),
     occupancy: nullable('integer'),
     service_level: nullable('string', 'Routine cleaning frequency. Mon–Sat / six days a week = daily_6. Bi-weekly = every two weeks (biweekly) unless the document defines it as twice a week.', { enum: [...LEVEL_IDS, null] }),
     service_days_per_year: nullable('integer', 'Only when the document states a number of service days per year that the levels cannot express (e.g. 180 school days + 20 summer days = 200). Otherwise null; for a seasonal window use service_season.'),
-    service_season: nullable('object', 'Seasonal service printed as a window ("May 1 – Oct 15", "Memorial Day through Labor Day", "APR-OCT only"): start and end as printed and the days per week in season; the tool counts the service days. service_level stays the in-season pattern.', {
+    service_season: nullable('object', 'Service for part of the year only, printed as a window: start and end as printed (a date, a month or a holiday) and the days per week in season; the tool counts the service days. service_level stays the in-season pattern.', {
       properties: { start: { type: 'string' }, end: { type: 'string' }, days_per_week: nullable('number') },
       required: ['start', 'end', 'days_per_week'], additionalProperties: false,
     }),
-    events_per_year: nullable('integer', 'On-call or per-event cleaning (rentals, events, "as scheduled"): the number of events per year as printed; each is one service day.'),
+    events_per_year: nullable('integer', 'On-call or per-event cleaning: the number of events per year the document states; each is one service day.'),
     service_frequency_text: nullable('string', 'The frequency exactly as printed (e.g. "M–F", "Daily (7 days)", "2x/month").'),
     scope: { type: 'array', items: { type: 'string', enum: [...SCOPES] }, description: 'Services that apply to this facility.' },
-    floor_areas: nullable('object', 'Floor area by finish as printed, in area_unit (never converted or divided); the tool derives the floor mix and checks the sum. carpet; resilient (VCT, vinyl, linoleum, rubber; a mixed "hard floor" column unless the document says otherwise); hard_tile (ceramic, quarry, terrazzo, stone, a restroom-only column); concrete (sealed or bare concrete); wood; other (a finish the document does not name). 0 or null for finishes not printed.', {
+    floor_areas: nullable('object', 'Floor area by finish as printed, in area_unit (never converted or divided); the tool derives the floor mix and checks the sum. carpet; resilient (VCT, vinyl, linoleum, rubber; also a hard-floor figure that mixes finishes); hard_tile (ceramic, quarry, terrazzo, stone; also restroom floor area); concrete; wood; other (a finish the document does not name; spread over the others). 0 or null for finishes not printed.', {
       properties: { carpet: nullable('number'), resilient: nullable('number'), hard_tile: nullable('number'), concrete: nullable('number'), wood: nullable('number'), other: nullable('number') },
       required: ['carpet', 'resilient', 'hard_tile', 'concrete', 'wood', 'other'], additionalProperties: false,
     }),
@@ -1916,7 +1933,7 @@ export function extractionTools(opts: { strict?: boolean } = {}): Anthropic.Beta
       name: 'set_site_info',
       description: 'Record installation-level facts: name, location, solicitation, climate, growing season, contract period.',
       input_schema: obj({
-        installation_name: nullable('string', 'The main installation, campus or agency name as printed on the title block, without location, state, parenthetical abbreviations or the names of other sites (other sites go in facility campus and notes).'),
+        installation_name: nullable('string', 'The main installation, campus or agency name as printed on the title block, without location, state or the names of other sites (other sites go in facility campus and notes).'),
         location: nullable('string', 'City and state / country.'),
         solicitation: nullable('string'),
         contract_name: nullable('string'),
