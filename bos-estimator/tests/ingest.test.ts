@@ -1,13 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ExcelJS from 'exceljs';
-import { zipSync, strToU8 } from 'fflate';
-import { classifyDocument, csvToRows, orderDocuments, readDocument, sniffFormat, textDocument, type DocInput } from '../server/extract';
+import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun } from 'docx';
+import { unzipSync, zipSync, strToU8 } from 'fflate';
+import { classifyDocument, closeReaders, csvToRows, orderDocuments, readDocument, sniffFormat, textDocument, type DocInput } from '../server/extract';
 import { extractPdfLayout } from '../server/pdf-layout';
-import { expandZip } from '../server/zip-expand';
+import { extractXlsx, shrinkWorkbook } from '../server/xlsx-extract';
+import { expandZip, zipEntries } from '../server/zip-expand';
 import type { FixtureTruth } from './harness/truth';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -15,31 +18,40 @@ const FIXTURES = path.join(here, 'fixtures');
 
 // ---------- helpers ----------
 
-/** Minimal hand-written PDF (standard Helvetica, nothing embedded): text runs, filled rules, a full-page image, /Rotate. */
+/** Minimal hand-written PDF (standard Helvetica, nothing embedded): text runs, filled rules, a full-page image (raw or
+ *  JPEG), /Rotate, raw content operators; plus damage: a false /Count, a /Kids loop, an /Encrypt dictionary. */
 interface PdfText { x: number; y: number; size?: number; str: string }
-interface PdfPageSpec { texts?: PdfText[]; rects?: { x: number; y: number; w: number; h: number }[]; image?: boolean; rotate?: number }
-function makePdf(pages: PdfPageSpec[]): Buffer {
+interface PdfPageSpec { texts?: PdfText[]; rects?: { x: number; y: number; w: number; h: number }[]; image?: boolean; jpeg?: boolean; rotate?: number; ops?: string[] }
+interface PdfOptions { count?: number; circularKids?: boolean; encrypt?: boolean }
+/** A real 16 x 16 grayscale baseline JPEG (170 bytes). */
+const TINY_JPEG = Buffer.from('/9j/4AAQSkZJRgABAQAAAAAAAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/wAALCAAQABABAREA/8QAFgABAQEAAAAAAAAAAAAAAAAAAAUG/8QAFhAAAwAAAAAAAAAAAAAAAAAAABRh/9oACAEBAAA/AJSECENShAhD/9k=', 'base64');
+const pdfEsc = (s: string) => s.replace(/([()\\])/g, '\\$1');
+function makePdf(pages: PdfPageSpec[], opts: PdfOptions = {}): Buffer {
   const objs: (string | Buffer)[] = [];
   const add = (body: string | Buffer) => { objs.push(body); return objs.length; };
-  const esc = (s: string) => s.replace(/([()\\])/g, '\\$1');
   const catalog = add(''); const pagesObj = add('');
   const font = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
   const img = add(Buffer.concat([Buffer.from('<< /Type /XObject /Subtype /Image /Width 2 /Height 2 /ColorSpace /DeviceGray /BitsPerComponent 8 /Length 4 >>\nstream\n'), Buffer.from([0x80, 0xff, 0xff, 0x80]), Buffer.from('\nendstream')]));
+  const jpg = add(Buffer.concat([Buffer.from(`<< /Type /XObject /Subtype /Image /Width 16 /Height 16 /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /DCTDecode /Length ${TINY_JPEG.length} >>\nstream\n`), TINY_JPEG, Buffer.from('\nendstream')]));
   const kids: number[] = [];
   for (const p of pages) {
     const ops: string[] = [];
     if (p.image) ops.push('q 612 0 0 792 0 0 cm /Im1 Do Q');
+    if (p.jpeg) ops.push('q 612 0 0 792 0 0 cm /Im2 Do Q');
     for (const r of p.rects ?? []) ops.push(`${r.x} ${r.y} ${r.w} ${r.h} re f`);
-    for (const t of p.texts ?? []) ops.push(`BT /F1 ${t.size ?? 10} Tf 1 0 0 1 ${t.x} ${t.y} Tm (${esc(t.str)}) Tj ET`);
+    for (const t of p.texts ?? []) ops.push(`BT /F1 ${t.size ?? 10} Tf 1 0 0 1 ${t.x} ${t.y} Tm (${pdfEsc(t.str)}) Tj ET`);
+    ops.push(...(p.ops ?? []));
     const content = ops.join('\n');
     const c = add(`<< /Length ${Buffer.byteLength(content, 'latin1')} >>\nstream\n${content}\nendstream`);
-    kids.push(add(`<< /Type /Page /Parent ${pagesObj} 0 R /MediaBox [0 0 612 792]${p.rotate ? ` /Rotate ${p.rotate}` : ''} /Resources << /Font << /F1 ${font} 0 R >> /XObject << /Im1 ${img} 0 R >> >> /Contents ${c} 0 R >>`));
+    kids.push(add(`<< /Type /Page /Parent ${pagesObj} 0 R /MediaBox [0 0 612 792]${p.rotate ? ` /Rotate ${p.rotate}` : ''} /Resources << /Font << /F1 ${font} 0 R >> /XObject << /Im1 ${img} 0 R /Im2 ${jpg} 0 R >> >> /Contents ${c} 0 R >>`));
   }
+  const encrypt = opts.encrypt ? add(`<< /Filter /Standard /V 1 /R 2 /Length 40 /P -44 /O <${'5a'.repeat(32)}> /U <${'a5'.repeat(32)}> >>`) : 0;
   objs[catalog - 1] = `<< /Type /Catalog /Pages ${pagesObj} 0 R >>`;
-  objs[pagesObj - 1] = `<< /Type /Pages /Kids [${kids.map((k) => `${k} 0 R`).join(' ')}] /Count ${kids.length} >>`;
+  objs[pagesObj - 1] = `<< /Type /Pages /Kids [${opts.circularKids ? `${pagesObj} 0 R ` : ''}${kids.map((k) => `${k} 0 R`).join(' ')}] /Count ${opts.count ?? kids.length + (opts.circularKids ? 1 : 0)} >>`;
   const parts: Buffer[] = [Buffer.from('%PDF-1.4\n')]; const offsets: number[] = []; let len = parts[0].length;
   objs.forEach((o, i) => { const b = Buffer.concat([Buffer.from(`${i + 1} 0 obj\n`), Buffer.isBuffer(o) ? o : Buffer.from(o, 'latin1'), Buffer.from('\nendobj\n')]); offsets.push(len); parts.push(b); len += b.length; });
-  parts.push(Buffer.from(`xref\n0 ${objs.length + 1}\n0000000000 65535 f \n${offsets.map((o) => `${String(o).padStart(10, '0')} 00000 n \n`).join('')}trailer\n<< /Size ${objs.length + 1} /Root ${catalog} 0 R >>\nstartxref\n${len}\n%%EOF\n`));
+  const trailerExtra = encrypt ? ` /Encrypt ${encrypt} 0 R /ID [<00112233445566778899aabbccddeeff> <00112233445566778899aabbccddeeff>]` : '';
+  parts.push(Buffer.from(`xref\n0 ${objs.length + 1}\n0000000000 65535 f \n${offsets.map((o) => `${String(o).padStart(10, '0')} 00000 n \n`).join('')}trailer\n<< /Size ${objs.length + 1} /Root ${catalog} 0 R${trailerExtra} >>\nstartxref\n${len}\n%%EOF\n`));
   return Buffer.concat(parts);
 }
 
@@ -180,10 +192,222 @@ test('PDF routing: a scanned page goes native with a warning; text mode keeps th
   assert.equal(text.text, auto.text);
 });
 
-test('PDF: a damaged file is reported, not thrown', async () => {
+test('PDF: a damaged file is reported, not thrown, and never sent to Claude as a PDF', async () => {
   const d = await one('broken.pdf', Buffer.from('%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ngarbage'));
   assert.ok(d.warnings?.length, 'a warning explains the failure');
+  // the API rejects an invalid PDF together with every other document of the request
+  assert.equal(d.mode, 'text');
+  assert.equal(d.pdfBase64, undefined);
+  assert.equal(d.text, '');
+  const enc = await one('J-4 (protected).pdf', makePdf([{ texts: [{ x: 50, y: 700, str: 'Bldg 1201 Brigade Headquarters 45,200 SF' }] }], { encrypt: true }));
+  assert.equal(enc.mode, 'text');
+  assert.equal(enc.pdfBase64, undefined);
+  assert.ok(enc.warnings?.some((w) => /password-protected/.test(w)), JSON.stringify(enc.warnings));
 });
+
+test('PDF: a JPEG image (logo, seal, scan) neither crashes pdf.js in Node nor hides the page text', async () => {
+  // pdf.js's default hands JPEGs to `new Image()`, which Node lacks: an uncaught ReferenceError that killed the server.
+  // This runs in-process on purpose, so a regression fails the test run instead of hiding in the isolated reader.
+  const texts = [{ x: 50, y: 700, str: 'PERFORMANCE WORK STATEMENT' }, { x: 50, y: 680, str: 'Bldg' }, { x: 110, y: 680, str: 'Facility Name' }, { x: 330, y: 680, str: 'Gross SF' }, { x: 50, y: 664, str: '1201' }, { x: 110, y: 664, str: 'Brigade Headquarters' }, { x: 330, y: 664, str: '45,200' }, { x: 50, y: 648, str: '1205' }, { x: 110, y: 648, str: 'Battalion HQ' }, { x: 330, y: 648, str: '18,750' }];
+  const logo = makePdf([{ texts, ops: ['q 72 0 0 36 450 720 cm /Im2 Do Q'] }]);
+  const r = await extractPdfLayout(logo);
+  assert.equal(r.pages[0].images, 1, 'the JPEG is still counted');
+  assert.deepEqual(r.scannedPages, []);
+  assert.ok(r.text.split('\n').includes('1201 | Brigade Headquarters | 45,200'), r.text);
+  const scan = await extractPdfLayout(makePdf([{ jpeg: true, texts: [{ x: 40, y: 20, size: 7, str: 'CUI' }] }, { texts }]));
+  assert.deepEqual(scan.scannedPages, [1], 'a JPEG-scanned page is detected');
+  const d = await one('PWS with logo.pdf', logo);
+  assert.equal(d.mode, 'native_pdf');
+  assert.match(d.text, /1205 \| Battalion HQ \| 18,750/);
+});
+
+test('PDF: a small file read the way the server reads uploads (fs.promises.readFile, an exact Buffer) parses', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ingest-test-'));
+  try {
+    const file = path.join(dir, 'tiny.pdf');
+    fs.writeFileSync(file, makePdf([{ texts: [{ x: 50, y: 700, str: 'Bldg' }, { x: 110, y: 700, str: 'Facility Name' }, { x: 330, y: 700, str: 'Gross SF' }, { x: 50, y: 684, str: '1201' }, { x: 110, y: 684, str: 'Brigade Headquarters' }, { x: 330, y: 684, str: '45,200' }] }]));
+    const buf = await fs.promises.readFile(file);
+    assert.ok(buf.length < 4096, `${buf.length} bytes`);
+    const d = await one('tiny.pdf', buf);
+    assert.equal(d.warnings, undefined, JSON.stringify(d.warnings));
+    assert.match(d.text, /1201 \| Brigade Headquarters \| 45,200/);
+    const direct = await extractPdfLayout(buf);
+    assert.equal(direct.numpages, 1);
+    assert.match(direct.text, /1201 \| Brigade Headquarters \| 45,200/);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('PDF: a false page count and a looping page tree cost one file, not the process', async () => {
+  const page = { texts: [{ x: 50, y: 700, str: 'Bldg 1201 Brigade Headquarters 45,200 SF' }] };
+  // /Count 3,000,000 on a one-page file: stops after a run of unloadable pages, one warning instead of 3 million markers
+  const t0 = Date.now();
+  const lie = await one('count.pdf', makePdf([page], { count: 3_000_000 }));
+  assert.ok(Date.now() - t0 < 15000, `${Date.now() - t0} ms`);
+  assert.ok(lie.text.length < 2000, `${lie.text.length} chars`);
+  assert.match(lie.text, /Bldg 1201 Brigade Headquarters 45,200 SF/);
+  assert.ok(lie.warnings?.some((w) => /were not read/.test(w)), JSON.stringify(lie.warnings));
+  assert.equal(lie.mode, 'text', 'a damaged page tree is not sent to Claude as a PDF');
+  assert.equal(lie.pages, 1);
+  const direct = await extractPdfLayout(makePdf([page], { count: 3_000_000 }));
+  assert.ok(direct.pagesRead <= 25 && direct.stop?.kind === 'failures', JSON.stringify({ read: direct.pagesRead, stop: direct.stop }));
+  // a /Kids array that contains its own parent: pdf.js walks it until the heap or the array length gives out
+  // (only the isolated reader can stop that: with BOS_READER_WORKERS=0 parsing is in-process and unprotected)
+  if (process.env.BOS_READER_WORKERS === '0') return;
+  const prev = process.env.BOS_READER_PAGE_LOAD_MS;
+  process.env.BOS_READER_PAGE_LOAD_MS = '2000';
+  try {
+    const loop = await one('loop.pdf', makePdf([page], { circularKids: true }));
+    assert.equal(loop.text, '');
+    assert.equal(loop.pdfBase64, undefined);
+    assert.ok(loop.warnings?.some((w) => /could not be read/.test(w) && /page tree/.test(w)), JSON.stringify(loop.warnings));
+  } finally { if (prev == null) delete process.env.BOS_READER_PAGE_LOAD_MS; else process.env.BOS_READER_PAGE_LOAD_MS = prev; }
+  // and the reader still works afterwards
+  const ok = await one('J-4 Facility List.pdf', facilityListPdf());
+  assert.match(ok.text, /1201 \| Brigade Headquarters \| 45,200\[\^1\] \| Daily/);
+});
+
+/** A ruled table whose Campus cells are merged over each group of buildings and centred between rows. */
+function rowspanPdf(innerRules: boolean): Buffer {
+  const X = [50, 120, 180, 330, 400];
+  const rects: { x: number; y: number; w: number; h: number }[] = X.map((x) => ({ x: x - 0.4, y: 620, w: 0.8, h: 80 }));
+  for (const y of [700, 684, 652, 620]) rects.push({ x: 50, y: y - 0.4, w: 350, h: 0.8 });
+  if (innerRules) for (const y of [668, 636]) rects.push({ x: 120, y: y - 0.4, w: 280, h: 0.8 }); // stop at the merged Campus cell
+  const row = (y: number, cells: string[]) => cells.map((str, i) => ({ x: [124, 184, 334][i], y, str }));
+  return makePdf([{ rects, texts: [
+    { x: 54, y: 689, str: 'Campus' }, { x: 124, y: 689, str: 'Bldg' }, { x: 184, y: 689, str: 'Facility Name' }, { x: 334, y: 689, str: 'Gross SF' },
+    ...row(673, ['1201', 'Brigade Headquarters', '45,200']), ...row(657, ['1205', 'Battalion HQ', '18,750']), { x: 54, y: 665, str: 'Main Post' },
+    ...row(641, ['2101', 'Dental Clinic', '9,800']), ...row(625, ['2105', 'Fitness Center', '31,000']), { x: 54, y: 633, str: 'North Annex' },
+  ] }]);
+}
+
+test('PDF layout: a merged (rowspan) cell in a ruled table neither glues its rows together nor loses its label', async () => {
+  const lines = (await extractPdfLayout(rowspanPdf(true))).text.split('\n');
+  for (const l of ['Campus | Bldg | Facility Name | Gross SF', 'Main Post | 1201 | Brigade Headquarters | 45,200', 'Main Post | 1205 | Battalion HQ | 18,750', 'North Annex | 2101 | Dental Clinic | 9,800', 'North Annex | 2105 | Fitness Center | 31,000']) assert.ok(lines.includes(l), `${l}\n---\n${lines.join('\n')}`);
+  // rules only between the groups: each building still gets its own row
+  const rows = rowsOf((await extractPdfLayout(rowspanPdf(false))).text);
+  for (const [bn, name, sf] of [['1201', 'Brigade Headquarters', '45,200'], ['1205', 'Battalion HQ', '18,750'], ['2101', 'Dental Clinic', '9,800'], ['2105', 'Fitness Center', '31,000']]) {
+    assert.ok(rows.some((c) => c.includes(bn) && c.includes(name) && c.includes(sf) && c.length === 4), `${bn}: ${JSON.stringify(rows)}`);
+  }
+});
+
+test('superscripts: unit exponents and ordinals stay text, footnote markers become [^n] (PDF and DOCX)', async () => {
+  // superscripts as Word / Chromium print them: a smaller run with text rise (Ts persists across BT/ET, so reset it)
+  const p = makePdf([{ ops: [
+    'BT 0 Ts /F1 10 Tf 1 0 0 1 50 700 Tm (Gross Floor Area \\(m) Tj /F1 6 Tf 4 Ts (2) Tj /F1 10 Tf 0 Ts (\\)) Tj ET',
+    'BT 0 Ts /F1 10 Tf 1 0 0 1 50 680 Tm (4,200 m) Tj /F1 6 Tf 4 Ts (2) Tj ET',
+    'BT 0 Ts /F1 10 Tf 1 0 0 1 50 660 Tm (Restrooms on the 2) Tj /F1 6 Tf 4 Ts (nd) Tj /F1 10 Tf 0 Ts ( floor) Tj ET',
+    'BT 0 Ts /F1 10 Tf 1 0 0 1 50 640 Tm (Total 45,200) Tj /F1 6 Tf 4 Ts (1) Tj ET',
+    'BT 0 Ts /F1 10 Tf 1 0 0 1 50 620 Tm (Boiler Room) Tj /F1 6 Tf 4 Ts (2) Tj ET',
+  ] }]);
+  const t = (await extractPdfLayout(p)).text;
+  for (const want of ['Gross Floor Area (m²)', '4,200 m²', 'Restrooms on the 2nd floor', 'Total 45,200[^1]', 'Boiler Room[^2]']) assert.ok(t.includes(want), `${want}\n---\n${t}`);
+  const sup = (text: string) => new TextRun({ text, superScript: true });
+  const cell = (children: TextRun[]) => new TableCell({ children: [new Paragraph({ children })] });
+  const doc = new Document({ sections: [{ children: [
+    new Paragraph({ children: [new TextRun('TE-3 FACILITY LIST (areas in m'), sup('2'), new TextRun('; restrooms serviced 2'), sup('nd'), new TextRun(' shift)'), sup('1')] }),
+    new Table({ rows: [
+      new TableRow({ children: [cell([new TextRun('Bldg')]), cell([new TextRun('Gross Floor Area (m'), sup('2'), new TextRun(')')]), cell([new TextRun('Floors')])] }),
+      new TableRow({ children: [cell([new TextRun('1201')]), cell([new TextRun('4,200 m'), sup('2')]), cell([new TextRun('3'), sup('rd'), new TextRun(' floor and up')])] }),
+    ] }),
+  ] }] });
+  const d = await one('TE-3.docx', await Packer.toBuffer(doc));
+  const lines = d.text.split('\n');
+  assert.ok(lines.includes('TE-3 FACILITY LIST (areas in m²; restrooms serviced 2nd shift)[^1]'), d.text);
+  assert.ok(lines.includes('Bldg | Gross Floor Area (m²) | Floors'), d.text);
+  assert.ok(lines.includes('1201 | 4,200 m² | 3rd floor and up'), d.text);
+});
+
+// ---------- zip packages: sniffing, damage, precedence ----------
+
+async function smallDocx(text: string): Promise<Buffer> {
+  return Packer.toBuffer(new Document({ sections: [{ children: [new Paragraph({ children: [new TextRun(text)] })] }] }));
+}
+
+test('ZIP: a package that stores its entries uncompressed is a package, whatever its first entry is', async () => {
+  const pdf = facilityListPdf();
+  const qa = await smallDocx('QUESTIONS AND ANSWERS. Q1. Is Bldg 5100 in scope? A1. No.');
+  // Python's zipfile, `zip -0` and 7-Zip "store" put the inner files' bytes ("%PDF-", "word/document.xml") in the clear
+  for (const order of [['W912QR Att J-4 Facility List.pdf', 'W912QR Q&A No 1.docx'], ['A Q&A No 1.docx', 'B Att J-4 Facility List.pdf']]) {
+    const files = Object.fromEntries(order.map((n) => [n, [new Uint8Array(n.endsWith('.pdf') ? pdf : qa), { level: 0 }] as [Uint8Array, { level: 0 }]]));
+    const z = Buffer.from(zipSync(files));
+    assert.equal(sniffFormat('package.zip', z), 'zip', order.join(' + '));
+    const docs = await readDocument('package.zip', z);
+    const kinds = docs.filter((d) => d.text).map((d) => `${path.posix.basename(d.name)}:${d.kind}:${d.role}`).sort();
+    assert.deepEqual(kinds, order.map((n) => `${n}:${n.endsWith('.pdf') ? 'pdf' : 'docx'}:${n.endsWith('.pdf') ? 'attachment' : 'qa'}`).sort());
+  }
+  // a real docx / xlsx is still recognised from its own part names
+  assert.equal(sniffFormat('attachment.bin', qa), 'docx');
+});
+
+test('ZIP: a corrupt or password-protected entry is skipped on its own; the rest of the package is read', async () => {
+  const csv = (bn: string) => strToU8(`Bldg,Facility Name,Gross SF\n${bn},Brigade Headquarters,45200\n`);
+  const z = Buffer.from(zipSync({ 'J-4 Facility List.csv': csv('1201'), 'notes/readme.txt': strToU8('x'.repeat(5000)), 'J-5 Grounds.csv': csv('1205'), 'secret.txt': [strToU8('password inside'), { level: 0 }] }, { level: 6 }));
+  const entries = zipEntries(z);
+  const bad = entries.find((e) => e.name === 'notes/readme.txt')!;
+  z[bad.dataOffset] = 0xff; // deflate block type 3: invalid
+  const sec = entries.find((e) => e.name === 'secret.txt')!;
+  z.writeUInt16LE(z.readUInt16LE(sec.localOffset + 6) | 1, sec.localOffset + 6); // general-purpose flag bit 0: encrypted
+  const cd = z.indexOf(Buffer.from('secret.txt'), z.lastIndexOf(Buffer.from([0x50, 0x4b, 0x01, 0x02]))) - 46;
+  z.writeUInt16LE(z.readUInt16LE(cd + 8) | 1, cd + 8);
+  const docs = await readDocument('package.zip', z);
+  assert.deepEqual(docs.filter((d) => d.text).map((d) => d.name).sort(), ['package.zip/J-4 Facility List.csv', 'package.zip/J-5 Grounds.csv']);
+  const w = docs.find((d) => d.name === 'package.zip (skipped entries)')?.warnings ?? [];
+  assert.ok(w.some((x) => /notes\/readme\.txt: could not be extracted/.test(x)), w.join(' / '));
+  assert.ok(w.some((x) => /secret\.txt: password-protected/.test(x)), w.join(' / '));
+});
+
+test('classify: the zip a document came in names the package, not the document', async () => {
+  const files = {
+    'W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.txt': strToU8('TECHNICAL EXHIBIT 1\nBldg | Facility Name | Gross SF\n1201 | Brigade Headquarters | 45,200'),
+    'W9124D-26-R-0019 Questions and Answers No 1.txt': strToU8('QUESTIONS AND ANSWERS\nQ1. Is 1201 in scope? A1. Yes.'),
+    'W9124D-26-R-0019 Amendment 0002.txt': strToU8('AMENDMENT 0002\nBldg 1201 is revised to 47,900 SF.'),
+  };
+  const roles = (docs: DocInput[]) => docs.filter((d) => d.text).map((d) => `${path.posix.basename(d.name)}=${d.role}${d.amendment ?? ''}`).sort();
+  const want = ['W9124D-26-R-0019 Amendment 0002.txt=amendment2', 'W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.txt=attachment', 'W9124D-26-R-0019 Questions and Answers No 1.txt=qa'];
+  const thru = await readDocument('W9124D-26-R-0019 RFP thru Amendment 0002.zip', Buffer.from(zipSync(files)));
+  assert.deepEqual(roles(thru), want);
+  assert.deepEqual(orderDocuments(thru.filter((d) => d.text)).map((d) => path.posix.basename(d.name)), ['W9124D-26-R-0019 Att J-0001 PWS Custodial Services TE-1.txt', 'W9124D-26-R-0019 Questions and Answers No 1.txt', 'W9124D-26-R-0019 Amendment 0002.txt']);
+  // one folder wrapping every entry (zip -r) names the package too
+  const wrapped = await readDocument('package.zip', Buffer.from(zipSync(Object.fromEntries(Object.entries(files).map(([n, b]) => [`Amendment 0002 posting/${n}`, b])))));
+  assert.deepEqual(roles(wrapped), want);
+  // ... but a document with no cue of its own takes the package's amendment number, and a folder inside the package counts
+  const amd = await readDocument('Amendment 0003.zip', Buffer.from(zipSync({ 'Revised Facility List.csv': strToU8('Bldg,Gross SF\n1201,47900\n'), 'SF30.txt': strToU8('AMENDMENT OF SOLICITATION/MODIFICATION OF CONTRACT\n2. AMENDMENT/MODIFICATION NO. | 3. EFFECTIVE DATE\n0003 | 15 OCT 2026') })));
+  assert.deepEqual(roles(amd), ['Revised Facility List.csv=amendment3', 'SF30.txt=amendment3']);
+  const inner = await readDocument('package.zip', Buffer.from(zipSync({ 'Amendment 0004/J-4 Facility List.csv': strToU8('Bldg,Gross SF\n1201,47900\n'), 'PWS.txt': strToU8('PERFORMANCE WORK STATEMENT') })));
+  assert.deepEqual(roles(inner), ['J-4 Facility List.csv=amendment4', 'PWS.txt=pws']);
+  assert.deepEqual(classifyDocument({ name: 'pkg thru Amendment 0002.zip/Att J-0001 PWS.pdf', container: 'pkg thru Amendment 0002.zip' }), { role: 'attachment' });
+});
+
+test('XLSX: a worksheet too big to load whole is cut after the row limit before ExcelJS sees it', async () => {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('RPI Extract');
+  ws.addRow(['Campus', 'Facility No', 'Facility Name', 'Gross SF']);
+  for (let i = 0; i < 3000; i++) ws.addRow([i < 3 ? 'Main Post' : 'North', `B${1000 + i}`, `Unique Name ${i}`, 1000 + i]);
+  ws.mergeCells('A2:A4');
+  ws.getRow(3).hidden = true;
+  ws.getCell('C5').font = { strike: true };
+  wb.addWorksheet('Notes').addRow(['See', 'Unique Name 2500']);
+  const buf = Buffer.from(await wb.xlsx.writeBuffer({ useSharedStrings: true } as Partial<ExcelJS.XlsxWriteOptions>));
+  const limits = { maxRows: 100, sheetFullLoadBytes: 1000, sharedStringsPruneBytes: 1000 };
+  const shrunk = shrinkWorkbook(buf, limits);
+  assert.deepEqual(shrunk?.cuts, [{ sheet: 'RPI Extract', keptRows: 100, totalRows: 3001 }]);
+  const ss = Buffer.from(unzipSync(new Uint8Array(shrunk!.buf))['xl/sharedStrings.xml']).toString();
+  assert.ok(ss.includes('>Unique Name 50<') && ss.includes('>Unique Name 2500<') && !ss.includes('>Unique Name 2400<'), 'only the strings the kept rows (and the other sheets) use are kept');
+  const r = await extractXlsx(buf, 'rpi.xlsx', limits);
+  const lines = r.text.split('\n');
+  assert.ok(lines.includes('Campus | Facility No | Facility Name | Gross SF'));
+  assert.ok(lines.includes('Main Post | B1002 | Unique Name 2 | 1002'), 'merged campus repeated');
+  assert.ok(lines.includes('North | B1003 | ~~Unique Name 3~~ | 1003'));
+  assert.ok(!lines.some((l) => l.includes('Unique Name 1 |')), 'hidden row skipped');
+  assert.ok(lines.includes('North | B1098 | Unique Name 98 | 1098') && !r.text.includes('Unique Name 99 |'));
+  assert.ok(r.notes.some((n) => /RPI Extract \(3001 rows × 4 columns; read 100 × 4\)/.test(n)), r.notes.join(' / '));
+  assert.ok(r.notes.some((n) => /1 hidden rows skipped/.test(n)));
+  // a small workbook is loaded untouched
+  assert.equal(shrinkWorkbook(buf), null);
+});
+
+test.after(() => closeReaders());
+
 
 // ---------- spreadsheets / CSV / DOCX ----------
 

@@ -34,30 +34,120 @@ export interface PdfPage {
   getViewport(scale: number): PdfViewport;
   getTextContent(opts?: { normalizeWhitespace?: boolean; disableCombineTextItems?: boolean }): Promise<PdfTextContent>;
   getOperatorList(): Promise<PdfOperatorList>;
+  /** drops the page's decoded resources (images); pdf.js keeps them until the document is destroyed otherwise */
+  cleanup?(): void;
 }
-interface PdfJsSettings { disableFontFace?: boolean; isEvalSupported?: boolean; disableWorker?: boolean }
-interface PdfJsModule { PDFJS?: PdfJsSettings; OPS: Record<string, number> }
-export interface PdfParseResult { numpages: number; numrender: number; info: unknown; metadata: unknown; text: string; version: string }
-type PdfParse = (data: Uint8Array, options?: { max?: number; pagerender?: (page: PdfPage) => Promise<string> }) => Promise<PdfParseResult>;
+interface PdfDocument { numPages: number; getPage(n: number): Promise<PdfPage>; destroy(): unknown }
+interface PdfJsSettings { disableFontFace?: boolean; isEvalSupported?: boolean; disableWorker?: boolean; maxImageSize?: number; verbosity?: number }
+interface PdfJsModule {
+  PDFJS?: PdfJsSettings;
+  OPS: Record<string, number>;
+  getDocument(src: { data: Uint8Array; nativeImageDecoderSupport?: 'decode' | 'display' | 'none' }): PromiseLike<PdfDocument> & { destroy?(): unknown };
+}
 
-// The same CommonJS module instance pdf-parse itself requires (shared require cache), so the settings below apply to it.
+// pdf-parse's bundled pdf.js (the same module instance pdf-parse would use), driven directly so that this file
+// controls how documents are opened, how many pages are read and when page resources are released.
 const PDFJS = require('pdf-parse/lib/pdf.js/v1.10.100/build/pdf.js') as PdfJsModule;
-const pdfParseRaw = require('pdf-parse/lib/pdf-parse.js') as PdfParse;
-/** pdf.js reads the whole underlying ArrayBuffer: a Buffer that is a view into a larger one (Node's small-buffer pool,
- *  a zip entry) parses as garbage ("bad XRef entry"), so hand it an exact copy. */
-const exactBytes = (buf: Uint8Array): Uint8Array => (buf.byteOffset === 0 && buf.byteLength === buf.buffer.byteLength ? buf : new Uint8Array(buf));
-/** pdf-parse's default entry (plain text, used as the fallback). Importing it from here guarantees the hardening below ran first. */
-export const pdfParse: PdfParse = (data, options) => pdfParseRaw(exactBytes(data), options);
 
 function harden(s: PdfJsSettings | undefined): void {
   if (!s) return;
   s.isEvalSupported = false; // untrusted uploads: never compile font programs with new Function (CVE-2024-4367 class)
   s.disableFontFace = true; // getOperatorList() would otherwise call document.createElement('style') and crash Node
   s.disableWorker = true;
+  // a decoded image is held in memory (RGBA) while its page is open: images over 64 megapixels are not decoded
+  // (and so not counted as scans) instead of allocating gigabytes; a 600 dpi letter-size scan is 34 MP
+  s.maxImageSize = 64e6;
+  s.verbosity = 0; // errors only: "Warning: Indexing all PDF objects" is noise on a server console
 }
 harden(PDFJS.PDFJS);
 harden((globalThis as { PDFJS?: PdfJsSettings }).PDFJS);
 const OPS = PDFJS.OPS;
+
+/** pdf.js must get a plain Uint8Array that starts at offset 0 of its memory. Its loopback port clones the data with
+ *  `new value.constructor(value)`: for a Buffer that is a Buffer copy, which Node takes from its shared pool when small
+ *  (non-zero offset), and pdf.js then reads `bytes.buffer` from offset 0 ("bad XRef entry", "Invalid number"). An exact
+ *  view is passed as-is (no copy of a 200 MB scan); anything else is copied. */
+export const plainBytes = (buf: Uint8Array): Uint8Array => (buf.byteOffset === 0 && buf.byteLength === buf.buffer.byteLength && !(buf.buffer instanceof SharedArrayBuffer) ? new Uint8Array(buf.buffer) : new Uint8Array(buf));
+
+/** Open a PDF. JPEG images are decoded by pdf.js itself ('none'): the default hands them to `new Image()`, which does
+ *  not exist in Node, and the ReferenceError is thrown where nothing can catch it. */
+async function openPdf(buf: Uint8Array): Promise<PdfDocument> {
+  return await PDFJS.getDocument({ data: plainBytes(buf), nativeImageDecoderSupport: 'none' });
+}
+
+/** Hard cap on pages read from one document, whatever it claims. */
+export const MAX_PDF_PAGES = 5000;
+/** A page tree that fails this many pages in a row is broken (or lies about its page count): stop there. */
+const MAX_CONSECUTIVE_PAGE_FAILURES = 20;
+/** Pages worth trying: a page needs at least ~150 bytes (dictionary, content stream, xref entry), so a /Count far
+ *  beyond what the file size can hold is a lie and is not looped over. */
+export const plausiblePages = (numPages: number, bytes: number, maxPages = MAX_PDF_PAGES): number => Math.max(0, Math.min(numPages, maxPages, MAX_PDF_PAGES, Math.max(2000, Math.floor(bytes / 150))));
+
+/** Where the reader is on a page: loading it from the page tree, laying it out, or done with it. */
+export type PdfPhase = 'load' | 'render' | 'done';
+export interface PdfReadOptions {
+  maxPages?: number;
+  /** called as each page is loaded, laid out and finished (the isolated reader uses it as a heartbeat, and to tell a
+   *  broken page tree from a page whose layout failed) */
+  onPage?: (page: number, pages: number, phase: PdfPhase) => void;
+}
+/** Why reading stopped before the declared last page: the page cap, a run of unloadable pages, or a page count the file cannot hold. */
+export interface PdfStop { from: number; reason: string; kind: 'cap' | 'failures' | 'implausible' }
+interface PageLoop { numpages: number; read: number; stop?: PdfStop }
+
+/** Visit the pages of a PDF one at a time; a page that cannot be loaded is passed as an Error. */
+async function eachPage(buf: Uint8Array, opts: PdfReadOptions, visit: (n: number, page: PdfPage | Error) => Promise<void>): Promise<PageLoop> {
+  const doc = await openPdf(buf);
+  try {
+    const numpages = doc.numPages;
+    const cap = plausiblePages(numpages, buf.length, opts.maxPages);
+    let failed = 0; let n = 0;
+    for (n = 1; n <= cap; n++) {
+      let page: PdfPage | Error;
+      opts.onPage?.(n, numpages, 'load');
+      try { page = await doc.getPage(n); failed = 0; } catch (err) { page = err instanceof Error ? err : new Error(String(err)); failed++; }
+      opts.onPage?.(n, numpages, 'render');
+      try { await visit(n, page); }
+      finally { if (!(page instanceof Error)) { try { page.cleanup?.(); } catch { /* ignore */ } } }
+      opts.onPage?.(n, numpages, 'done');
+      if (failed >= MAX_CONSECUTIVE_PAGE_FAILURES && n < numpages) {
+        return { numpages, read: n, stop: { from: n + 1, kind: 'failures', reason: `${failed} pages in a row could not be loaded (damaged page tree, or a false page count)` } };
+      }
+    }
+    if (cap < numpages) return { numpages, read: cap, stop: cap >= MAX_PDF_PAGES || cap === opts.maxPages ? { from: cap + 1, kind: 'cap', reason: `only the first ${cap} pages are read` } : { from: cap + 1, kind: 'implausible', reason: `the file is too small to hold ${numpages} pages (false page count)` } };
+    return { numpages, read: cap };
+  } finally {
+    try { await doc.destroy(); } catch { /* ignore */ }
+  }
+}
+
+/** Plain text of a PDF (pdf-parse's line-joining rule), the fallback when the layout pass fails. */
+export interface PdfTextResult { text: string; numpages: number; pagesRead: number; loadFailures: number; stop?: PdfStop; warnings: string[] }
+export async function extractPdfText(buf: Uint8Array, opts: PdfReadOptions = {}): Promise<PdfTextResult> {
+  const parts: string[] = []; let loadFailures = 0;
+  const loop = await eachPage(buf, opts, async (n, page) => {
+    if (page instanceof Error) { loadFailures++; parts.push(`--- page ${n} --- (unreadable: page could not be loaded)`); return; }
+    const tc = await page.getTextContent({ normalizeWhitespace: false, disableCombineTextItems: false }).catch(() => ({ items: [] as PdfTextItem[] }));
+    let lastY: number | undefined; let text = '';
+    for (const item of tc.items) { if (lastY === item.transform[5] || lastY === undefined) text += item.str; else text += `\n${item.str}`; lastY = item.transform[5]; }
+    parts.push(`--- page ${n} ---\n${text}`);
+  });
+  const warnings: string[] = [];
+  if (loop.stop) { parts.push(`--- pages ${loop.stop.from}-${loop.numpages} --- (not read: ${loop.stop.reason})`); warnings.push(`pages ${loop.stop.from}-${loop.numpages} were not read: ${loop.stop.reason}`); }
+  return { text: collapseUnreadable(parts).join('\n\n'), numpages: loop.numpages, pagesRead: loop.read, loadFailures, stop: loop.stop, warnings };
+}
+
+/** Runs of "--- page N --- (unreadable: …)" markers with the same reason become one "--- pages N-M --- (…)" line. */
+function collapseUnreadable(parts: string[]): string[] {
+  const out: string[] = [];
+  const re = /^--- page (\d+) --- \((unreadable: [^)]*)\)$/;
+  for (const p of parts) {
+    const m = re.exec(p); const prev = out.length ? /^--- pages? (\d+)(?:-(\d+))? --- \((unreadable: [^)]*)\)$/.exec(out[out.length - 1]) : null;
+    if (m && prev && prev[3] === m[2] && Number(prev[2] ?? prev[1]) + 1 === Number(m[1])) { out[out.length - 1] = `--- pages ${prev[1]}-${m[1]} --- (${m[2]})`; continue; }
+    out.push(p);
+  }
+  return out;
+}
 
 // ---------- geometry ----------
 type Mat = [number, number, number, number, number, number];
@@ -188,8 +278,16 @@ function normalise(items: RawItem[]): { rotated: number; items: Item[] } {
   };
 }
 
-/** Footnote marker as "[^n]" (Army exhibits print them as "1/"). */
-const footnote = (m: string) => `[^${m.trim().replace(/\/$/, '')}]`;
+/** A raised run as text (same rule as docx-tables.ts supText): a 2 / 3 right after a unit is an exponent ("m²",
+ *  "ft³"), st / nd / rd / th right after a digit is an ordinal ("2nd"); anything else is a footnote marker "[^n]"
+ *  (Army exhibits print those as "1/"). `prev` is the text the run follows. */
+function supText(prev: string, sup: string): string {
+  const t = sup.trim().replace(/^\[(.+)\]$/, '$1');
+  if (!t) return sup;
+  if ((t === '2' || t === '3') && /(?:^|[^A-Za-z])(?:m|ft|yd|km|cm|mm|sq\.?\s?(?:ft|m|yd))$/i.test(prev)) return t === '2' ? '²' : '³';
+  if (/^(?:st|nd|rd|th)$/i.test(t) && /\d$/.test(prev)) return t;
+  return `[^${t.replace(/\/$/, '')}]`;
+}
 
 function buildLines(items: Item[]): Line[] {
   // dedupe fake-bold overprints
@@ -201,7 +299,7 @@ function buildLines(items: Item[]): Line[] {
     if (s.rot || s.fs > 0.85 * bodyFs || !/^\s*[\w*†‡§,()]{1,3}\/?\s*$/.test(s.str)) continue;
     const host = uniq.filter((h) => h !== s && !h.sup && !h.rot && h.fs >= s.fs / 0.85 && h.y - s.y > 0.12 * h.fs && h.y - s.y < 0.7 * h.fs && s.x - (h.x + h.w) > -1.5 && s.x - (h.x + h.w) < 0.4 * h.fs)
       .sort((a, b) => Math.abs(s.x - (a.x + a.w)) - Math.abs(s.x - (b.x + b.w)))[0];
-    if (host) { host.str = host.str.replace(/\s+$/, '') + footnote(s.str); host.w = Math.max(host.w, s.x + s.w - host.x); s.sup = true; }
+    if (host) { const prev = host.str.replace(/\s+$/, ''); host.str = prev + supText(prev, s.str); host.w = Math.max(host.w, s.x + s.w - host.x); s.sup = true; }
   }
   uniq = uniq.filter((x) => !x.sup);
   uniq.sort((a, b) => a.y - b.y || a.x - b.x);
@@ -231,7 +329,7 @@ function buildLines(items: Item[]): Line[] {
     for (const it of L.items) {
       const a = atoms[atoms.length - 1];
       const gap = a ? it.x - (a.x + a.w) : Infinity;
-      if (a && it.sup && gap < 0.4 * L.fs) { a.str += footnote(it.str); a.w = it.x + it.w - a.x; continue; }
+      if (a && it.sup && gap < 0.4 * L.fs) { const prev = a.str.replace(/\s+$/, ''); a.str = prev + supText(prev, it.str); a.w = it.x + it.w - a.x; continue; }
       if (a && gap < 0.15 * L.fs && !it.rot && !a.rot) { a.str += (gap > 0.1 * L.fs && !/\s$/.test(a.str) && !/^\s/.test(it.str) ? ' ' : '') + it.str; a.w = Math.max(a.w, it.x + it.w - a.x); continue; }
       atoms.push({ str: it.str, x: it.x, w: it.w, fs: it.fs, rot: it.rot });
     }
@@ -321,7 +419,26 @@ function sweep(basis: Line[], tol: number): Col[] {
   return cols;
 }
 
-function columnsFor(region: Region, prevCols: Col[] | undefined): Col[] {
+/** Ruled tables: a column whose text never sits on a numeric line (a Campus label merged over a group of rows and
+ *  centred on a wrapped-name line) is missing from the sweep, but the vertical rules around it still delimit it. */
+function ruledColumns(region: Region, cols: Col[], rules: Rule[]): Col[] {
+  const fs = median(region.lines.map((l) => l.fs));
+  const top = region.lines[0].y - fs, bottom = region.lines[region.lines.length - 1].y;
+  const h = Math.max(bottom - top, fs);
+  const vx = rules.filter(isV).filter((r) => Math.min(r.y1, bottom) - Math.max(r.y0, top) >= 0.5 * h && r.x >= region.x0 - 3 * fs && r.x <= region.x1 + 3 * fs).map((r) => r.x).sort((a, b) => a - b);
+  const xs: number[] = []; for (const x of vx) if (!xs.length || x - xs[xs.length - 1] > 1.5) xs.push(x);
+  if (xs.length < 3) return cols;
+  const out = [...cols];
+  for (let i = 0; i + 1 < xs.length; i++) {
+    const a = xs[i], b = xs[i + 1];
+    if (out.some(([c0, c1]) => Math.min(c1, b) - Math.max(c0, a) > 0)) continue;
+    const segs = region.lines.flatMap((L) => L.segs).filter((sg) => sg.x0 >= a - 1 && sg.x1 <= b + 1);
+    if (segs.length) out.push([Math.min(...segs.map((sg) => sg.x0)), Math.max(...segs.map((sg) => sg.x1))]);
+  }
+  return out.sort((p, q) => p[0] - q[0]);
+}
+
+function columnsFor(region: Region, prevCols: Col[] | undefined, rules: Rule[] = []): Col[] {
   const multi = region.lines.filter((l) => l.segs.length >= 2);
   const body = multi.filter((l) => l.segs.some((s) => /\d/.test(s.text)));
   const basis = body.length >= 3 ? body : multi;
@@ -349,7 +466,7 @@ function columnsFor(region: Region, prevCols: Col[] | undefined): Col[] {
     const fits = basis.every((l) => l.segs.every((s) => prevCols.some(([a, b]) => s.x0 >= a - 3 && s.x1 <= b + 3)));
     if (fits) return prevCols;
   }
-  return cols;
+  return ruledColumns(region, cols, rules);
 }
 
 const colOf = (cols: Col[], s: { x0: number; x1: number }): number => { let best = 0, bestOv = -Infinity; cols.forEach(([a, b], i) => { const ov = Math.min(b, s.x1) - Math.max(a, s.x0); if (ov > bestOv) { bestOv = ov; best = i; } }); return best; };
@@ -359,25 +476,12 @@ const fullLine = (cols: Col[], L: Line): boolean => new Set(L.segs.map((s) => co
 /** Vertical alignment of wrapped cells: where the one "full" line of a multi-line row sits. */
 type Align = 'top' | 'bottom' | 'unknown';
 
-/** `hint` is the alignment of the table this one continues (previous region / page), when known. */
-function rowsFor(region: Region, cols: Col[], rules: Rule[], hint: Align = 'unknown'): Line[][] {
-  const lines = region.lines;
-  const width = region.x1 - region.x0;
-  const hr = rules.filter(isH).filter((r) => r.x1 - r.x0 >= 0.8 * width && r.x0 <= region.x0 + 0.1 * width && r.x1 >= region.x1 - 0.1 * width).map((r) => r.y).sort((a, b) => a - b);
-  // distinct rule positions inside the region's vertical extent
-  const top = lines[0].y - lines[0].fs * 1.2, bottom = lines[lines.length - 1].y + lines[lines.length - 1].fs * 0.6;
-  const ys: number[] = []; for (const y of hr) if (y > top - 3 && y < bottom + 3 && (!ys.length || y - ys[ys.length - 1] > 1.5)) ys.push(y);
-  if (ys.length >= 3) {
-    // ruled table: bands between consecutive rules
-    const groups: { band: number; lines: Line[] }[] = [];
-    for (const L of lines) {
-      const mid = L.y - 0.35 * L.fs; let band = ys.findIndex((y) => y > mid); if (band < 0) band = ys.length;
-      const g = groups[groups.length - 1];
-      if (g && g.band === band) g.lines.push(L); else groups.push({ band, lines: [L] });
-    }
-    return groups.map((g) => g.lines);
-  }
-  // unruled: split on large vertical gaps, at most one full line per row
+/** A cell merged over several rows (rowspan): its text is repeated onto every row it covers. Indexes are row groups. */
+interface RowSpan { col: number; from: number; to: number }
+
+/** Unruled rows: split on large vertical gaps, at most one full line per row. `hint` is the alignment of the table
+ *  this one continues (previous region / page), when known. */
+function rowsByGaps(lines: Line[], cols: Col[], hint: Align): Line[][] {
   const gaps: number[] = []; for (let i = 1; i < lines.length; i++) gaps.push(lines[i].y - lines[i - 1].y);
   let thr = Infinity;
   if (gaps.length >= 2) {
@@ -402,6 +506,62 @@ function rowsFor(region: Region, cols: Col[], rules: Rule[], hint: Align = 'unkn
     if (k > 0 && first.lines[k].segs.some((s) => /\d{2,}/.test(s.text) && NUMERIC.test(s.text))) groups.splice(0, 1, { lines: first.lines.slice(0, k), full: false }, { lines: first.lines.slice(k), full: true });
   }
   return groups.map((x) => x.lines);
+}
+
+/** Full lines of a band that carry a number in the same column: more than one means the band holds several rows. */
+function numericRowsIn(lines: Line[], cols: Col[]): number {
+  const perCol = new Map<number, number>();
+  for (const L of lines) {
+    if (!fullLine(cols, L)) continue;
+    for (const c of new Set(L.segs.filter((s) => /\d{2,}/.test(s.text) && NUMERIC.test(s.text)).map((s) => colOf(cols, s)))) perCol.set(c, (perCol.get(c) ?? 0) + 1);
+  }
+  return Math.max(0, ...perCol.values());
+}
+
+/** Rows of a table region. Ruled tables: bands between horizontal rules. A rule that stops short of a column (the
+ *  inner borders of a group under a merged Campus or Service Frequency cell) still separates the other columns'
+ *  rows, and the column it leaves out is a merged cell whose text belongs to every row of the group. */
+function rowsFor(region: Region, cols: Col[], rules: Rule[], hint: Align = 'unknown'): { rows: Line[][]; spans: RowSpan[] } {
+  const lines = region.lines;
+  const width = region.x1 - region.x0;
+  const top = lines[0].y - lines[0].fs * 1.2, bottom = lines[lines.length - 1].y + lines[lines.length - 1].fs * 0.6;
+  // distinct rule heights inside the region's extent
+  const hs = rules.filter(isH).filter((r) => r.y > top - 3 && r.y < bottom + 3 && r.x1 > region.x0 - 2 && r.x0 < region.x1 + 2).sort((a, b) => a.y - b.y);
+  const levels: { y: number; rs: HRule[] }[] = [];
+  for (const r of hs) { const l = levels[levels.length - 1]; if (l && r.y - l.y <= 1.5) l.rs.push(r); else levels.push({ y: r.y, rs: [r] }); }
+  const covers = (rs: HRule[], [a, b]: Col) => rs.some((r) => Math.min(b, r.x1) - Math.max(a, r.x0) >= 0.5 * Math.max(b - a, 1));
+  // a rule through the text of a line is a strike-through, not a border
+  const struck = (y: number, rs: HRule[]) => lines.some((L) => y < L.y - 0.12 * L.fs && y > L.y - 0.5 * L.fs && L.segs.some((sg) => rs.some((r) => Math.min(r.x1, sg.x1) - Math.max(r.x0, sg.x0) > 0.7 * (sg.x1 - sg.x0))));
+  const seps: { y: number; merged: number[] }[] = [];
+  for (const l of levels) {
+    const full = l.rs.some((r) => r.x1 - r.x0 >= 0.8 * width && r.x0 <= region.x0 + 0.1 * width && r.x1 >= region.x1 - 0.1 * width);
+    if (full) { seps.push({ y: l.y, merged: [] }); continue; }
+    const covered = cols.map((c) => covers(l.rs, c));
+    if (cols.length >= 3 && covered.filter(Boolean).length >= Math.max(2, Math.ceil(0.5 * cols.length)) && !struck(l.y, l.rs)) seps.push({ y: l.y, merged: covered.flatMap((c, i) => (c ? [] : [i])) });
+  }
+  if (seps.length < 3) return { rows: rowsByGaps(lines, cols, hint), spans: [] };
+  // ruled table: bands between consecutive rules
+  const ys = seps.map((x) => x.y);
+  const bands: { band: number; lines: Line[] }[] = [];
+  for (const L of lines) {
+    const mid = L.y - 0.35 * L.fs; let band = ys.findIndex((y) => y > mid); if (band < 0) band = ys.length;
+    const g = bands[bands.length - 1];
+    if (g && g.band === band) g.lines.push(L); else bands.push({ band, lines: [L] });
+  }
+  // a band holding several numeric rows (rules only between groups of rows): split it like an unruled table
+  const groups: { band: number; lines: Line[] }[] = bands.flatMap((b) => (numericRowsIn(b.lines, cols) >= 2 ? rowsByGaps(b.lines, cols, 'unknown').map((ls) => ({ band: b.band, lines: ls })) : [b]));
+  // merged cells: a column left out of the separators between bands k..m is one cell over those bands
+  const spans: RowSpan[] = [];
+  for (let c = 0; c < cols.length; c++) {
+    for (let k = 0; k < seps.length; k++) {
+      if (!seps[k].merged.includes(c)) continue;
+      let m = k; while (m + 1 < seps.length && seps[m + 1].merged.includes(c)) m++;
+      const idx = groups.flatMap((g, i) => (g.band >= k && g.band <= m + 1 ? [i] : []));
+      if (idx.length >= 2) spans.push({ col: c, from: idx[0], to: idx[idx.length - 1] });
+      k = m;
+    }
+  }
+  return { rows: groups.map((g) => g.lines), spans };
 }
 function alignmentOf(rows: Line[][], cols: Col[]): Align {
   let top = 0, bottom = 0;
@@ -467,11 +627,12 @@ interface TableOut { titles?: string[]; header?: string[]; headerX0s?: X0s; rows
 const MAX_HEADER_ROWS = 3;
 const minX0 = (x0s: X0s, c: number, x: number) => { x0s[c] = x0s[c] == null ? x : Math.min(x0s[c]!, x); };
 
-function emitTable(region: Region, cols: Col[], rows: Line[][], rules: Rule[]): TableOut {
+function emitTable(region: Region, cols: Col[], rows: Line[][], rules: Rule[], rowSpans: RowSpan[] = []): TableOut {
   const out: TableOut = { rows: [] };
   let headerDone = false;
   const headerRows: { cells: string[][]; spans: { cols: number[]; text: string }[]; lines: Line[] }[] = [];
-  for (const rowLines of rows) {
+  const bodyRow: number[] = rows.map(() => -1); // row group -> index of its data row in out.rows
+  for (const [gi, rowLines] of rows.entries()) {
     const cells: string[][] = cols.map(() => []);
     const x0s: X0s = cols.map(() => undefined);
     const spans: { cols: number[]; text: string; x0: number }[] = [];
@@ -508,9 +669,19 @@ function emitTable(region: Region, cols: Col[], rows: Line[][], rules: Rule[]): 
         if (h.some((t) => t.length)) { out.header = h.map((t) => t.join(' ')); out.headerX0s = hx; }
       }
     }
+    bodyRow[gi] = out.rows.length;
     out.rows.push({ cells: cells.map(joinCell), data: true, x0s });
   }
   if (!headerDone && headerRows.length) for (const hr of headerRows) out.rows.push({ cells: [...hr.cells.map((c) => c.join(' ')), ...hr.spans.map((s) => s.text)], data: false });
+  // a merged (rowspan) cell's text belongs to every row it covers ("Main Post" for each building of the group)
+  for (const sp of rowSpans) {
+    const rs = bodyRow.slice(sp.from, sp.to + 1).filter((i) => i >= 0).map((i) => out.rows[i]);
+    if (rs.length < 2) continue;
+    const text = joinCell(rs.map((r) => r.cells[sp.col]).filter(Boolean));
+    if (!text) continue;
+    const x0 = Math.min(...rs.map((r) => r.x0s?.[sp.col] ?? Infinity));
+    for (const r of rs) { r.cells[sp.col] = text; if (r.x0s && Number.isFinite(x0)) r.x0s[sp.col] = x0; }
+  }
   return out;
 }
 
@@ -569,7 +740,7 @@ async function renderPage(page: PdfPage, prevCols: Col[] | undefined, prevAlign:
   // compute table columns first, so a glued header line just above a table can be recognised and pulled in
   regs.forEach((r, i) => {
     if (r.prose) return;
-    r.cols = columnsFor(r, cols); cols = r.cols;
+    r.cols = columnsFor(r, cols, rules); cols = r.cols;
     r.bounds = boundaries(r.cols, rules, r);
     for (let k = i - 1; k >= 0 && k >= i - 3; k--) {
       const p = regs[k]; if (!p.prose || p.used) break;
@@ -592,10 +763,10 @@ async function renderPage(page: PdfPage, prevCols: Col[] | undefined, prevAlign:
       entries.push({ kind: 'text', line: L, text: L.segs.map((x, j) => (j && x.x0 - L.segs[j - 1].x1 > 2 * L.fs ? ' | ' : j ? ' ' : '') + x.text).join('') });
     } else {
       for (const L of r.lines) splitAtBounds(L, r.bounds!);
-      const rows = rowsFor(r, r.cols!, rules, align);
+      const { rows, spans } = rowsFor(r, r.cols!, rules, align);
       const own = alignmentOf(rows, r.cols!);
       if (own !== 'unknown') align = own;
-      const table = emitTable(r, r.cols!, rows, rules);
+      const table = emitTable(r, r.cols!, rows, rules, spans);
       // bottom-aligned wraps of the table's first row sit above its first full line, outside the region: pull them in
       if (align === 'bottom' && !table.header && table.rows[0]?.data) {
         const frags: string[][] = [];
@@ -691,27 +862,36 @@ function pageText(p: RenderedPage): string {
 }
 
 export interface PdfPageInfo { page: number; chars: number; images: number; imageCover: number; rotated: number; error?: string }
-export interface PdfLayoutResult { text: string; numpages: number; pages: PdfPageInfo[]; scannedPages: number[] }
+export interface PdfLayoutResult {
+  text: string;
+  /** the page count the document declares */
+  numpages: number;
+  /** pages actually visited (fewer than numpages when the page tree is broken or the count is implausible) */
+  pagesRead: number;
+  /** one entry per visited page */
+  pages: PdfPageInfo[];
+  scannedPages: number[];
+  /** pages that pdf.js could not load at all (not the same as a page whose layout failed) */
+  loadFailures: number;
+  stop?: PdfStop;
+  warnings: string[];
+}
 
 /** Layout-preserving text of a PDF ("--- page N ---" markers, "cell | cell" table rows) plus per-page scan detection. */
-export async function extractPdfLayout(buf: Buffer, opts: { maxPages?: number } = {}): Promise<PdfLayoutResult> {
-  const rendered: (RenderedPage | { error: string })[] = [];
+export async function extractPdfLayout(buf: Uint8Array, opts: PdfReadOptions = {}): Promise<PdfLayoutResult> {
+  const rendered: (RenderedPage | { error: string; load?: boolean })[] = [];
   let prevCols: Col[] | undefined; let prevAlign: Align = 'unknown';
-  const parsed = await pdfParse(buf, {
-    max: opts.maxPages ?? 0,
-    pagerender: async (page) => {
-      const idx = (page.pageNumber ?? rendered.length + 1) - 1; // a page pdf.js cannot even load is skipped by pdf-parse
-      try {
-        const r = await renderPage(page, prevCols, prevAlign);
-        prevCols = r.prevCols; prevAlign = r.lastAlign;
-        rendered[idx] = r;
-      } catch (err) {
-        rendered[idx] = { error: (err as Error).message || String(err) };
-      }
-      return '';
-    },
+  const loop = await eachPage(buf, opts, async (n, page) => {
+    if (page instanceof Error) { rendered[n - 1] = { error: 'page could not be loaded', load: true }; return; }
+    try {
+      const r = await renderPage(page, prevCols, prevAlign);
+      prevCols = r.prevCols; prevAlign = r.lastAlign;
+      rendered[n - 1] = r;
+    } catch (err) {
+      rendered[n - 1] = { error: (err as Error).message || String(err) };
+    }
   });
-  for (let i = 0; i < Math.min(parsed.numrender || parsed.numpages, parsed.numpages); i++) rendered[i] ??= { error: 'page could not be loaded' };
+  for (let i = 0; i < loop.read; i++) rendered[i] ??= { error: 'page could not be loaded', load: true };
   for (let i = 1; i < rendered.length; i++) {
     const a = rendered[i - 1], b = rendered[i];
     if ('entries' in a && 'entries' in b) reattachAcrossPages(a, b);
@@ -725,8 +905,11 @@ export async function extractPdfLayout(buf: Buffer, opts: { maxPages?: number } 
     pages.push({ page: n, chars: text.replace(/\s+/g, '').length, images: r.images, imageCover: r.imageCover, rotated: r.rotated });
     parts.push(`--- page ${n} ---\n${text}`);
   });
+  const warnings: string[] = [];
+  if (loop.stop) { parts.push(`--- pages ${loop.stop.from}-${loop.numpages} --- (not read: ${loop.stop.reason})`); warnings.push(`pages ${loop.stop.from}-${loop.numpages} were not read: ${loop.stop.reason}`); }
   // pages with (almost) no text but an image paint are scans that need OCR / native-PDF reading
   // (a stamp, Bates number or CUI banner adds a few dozen characters to a scan, so use image coverage too)
-  const scannedPages = pages.filter((p) => (p.chars < 40 && p.images > 0) || (p.imageCover >= 0.5 && p.chars < 400)).map((p) => p.page);
-  return { text: parts.join('\n\n'), numpages: parsed.numpages, pages, scannedPages };
+  const scannedPages = pages.filter((p) => !p.error && ((p.chars < 40 && p.images > 0) || (p.imageCover >= 0.5 && p.chars < 400))).map((p) => p.page);
+  const loadFailures = rendered.filter((r) => 'error' in r && r.load).length;
+  return { text: collapseUnreadable(parts).join('\n\n'), numpages: loop.numpages, pagesRead: loop.read, pages, scannedPages, loadFailures, stop: loop.stop, warnings };
 }

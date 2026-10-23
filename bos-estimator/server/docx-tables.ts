@@ -11,6 +11,17 @@ const decode = (s: string): string => s.replace(/&(#x?[0-9a-f]+|\w+);/gi, (m, e:
 });
 const BLOCK = new Set(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'br']);
 
+/** A superscript run as text (same rule as pdf-layout.ts): a 2 / 3 right after a unit is an exponent ("m²", "ft³"),
+ *  st / nd / rd / th right after a digit is an ordinal ("2nd"); anything else is a footnote marker "[^n]"
+ *  (Word's own footnote references arrive as "[1]"). */
+export function supText(prev: string, sup: string): string {
+  const t = sup.trim().replace(/^\[(.+)\]$/, '$1');
+  if (!t) return sup;
+  if ((t === '2' || t === '3') && /(?:^|[^A-Za-z])(?:m|ft|yd|km|cm|mm|sq\.?\s?(?:ft|m|yd))$/i.test(prev)) return t === '2' ? '²' : '³';
+  if (/^(?:st|nd|rd|th)$/i.test(t) && /\d$/.test(prev)) return t;
+  return `[^${t.replace(/\/$/, '')}]`;
+}
+
 interface Cell { text: string; colspan: number; rowspan: number; th: boolean }
 interface Row { header: boolean; cells: Cell[] }
 interface OpenTable { nested: boolean; rows: Row[]; cell: Omit<Cell, 'text'> | null }
@@ -23,7 +34,7 @@ function parse(html: string): Block[] {
   let text = ''; let sup = 0;
   const flushText = () => { const t = text.replace(/\s+/g, ' ').trim(); if (t && !tables.length) blocks.push({ kind: 'text', text: t }); text = ''; };
   for (const tok of tokens) {
-    if (tok[0] !== '<') { let t = decode(tok); if (sup) t = `[^${t.trim()}]`; text += t; continue; }
+    if (tok[0] !== '<') { let t = decode(tok); if (sup) t = supText(text, t); text += t; continue; }
     const m = tok.match(/^<(\/?)([a-z0-9]+)([^>]*)>/i); if (!m) continue;
     const close = m[1] === '/'; const tag = m[2].toLowerCase(); const attrs = m[3];
     const T = tables[tables.length - 1];

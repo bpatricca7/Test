@@ -25,6 +25,9 @@ try {
 } catch { /* no .env */ }
 const app = express();
 const PORT = Number(process.env.PORT || 8787);
+// One request's stray promise rejection must not end every other run in flight (Node's default is to exit).
+// Document parsing itself runs in isolated workers (server/extract.ts), so a hostile upload cannot reach this.
+process.on('unhandledRejection', (reason) => { console.error('[server] unhandled rejection:', reason); });
 
 app.use(cors());
 app.use(express.json({ limit: '25mb' }));
@@ -180,11 +183,18 @@ app.post('/api/projects/:id/extract', receiveUploads, async (req, res) => {
       send({ type: 'document', name: d.name, size: d.bytes, pages: d.pages, chars: d.chars, mode: d.mode, kind: d.kind, role: d.role, amendment: d.amendment, scannedPages: d.scannedPages?.length ? d.scannedPages : undefined, warnings: d.warnings });
       for (const w of d.warnings ?? []) send({ type: 'warning', file: d.name, message: w });
     };
+    // long documents: a status line every few seconds while their pages are read
+    let lastProgress = 0;
+    const onProgress = (p: { name: string; page: number; pages: number }) => {
+      if (Date.now() - lastProgress < 3000 || p.pages < 20) return;
+      lastProgress = Date.now();
+      send({ type: 'status', stage: 'reading', message: `Reading ${p.name}: page ${p.page} of ${p.pages}…` });
+    };
     for (const f of files) {
       if (abort.signal.aborted) throw new Error('Cancelled.');
       try {
         const buf = await fs.readFile(f.path);
-        for (const d of await readDocument(f.originalname, buf, ingest)) { docs.push(d); announce(d); }
+        for (const d of await readDocument(f.originalname, buf, ingest, { onProgress })) { docs.push(d); announce(d); }
       } catch (err) {
         const message = `could not be read (${(err as Error).message || String(err)}); skipped`;
         const d: DocInput = { name: f.originalname, mode: 'text', text: '', chars: 0, bytes: f.size, warnings: [message] };
