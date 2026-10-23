@@ -290,6 +290,27 @@ test('PDF layout: a merged (rowspan) cell in a ruled table neither glues its row
   }
 });
 
+test('PDF layout: a wrapped Remarks line wider than the rows above it stays in the table, so the header keeps its rows', async () => {
+  // a remark that wraps under the first data row reaches further right than the header and that row: it is a fragment of
+  // the last column, not the end of the table (the rows below would otherwise lose their header)
+  const C = { bn: 50, name: 100, gross: 250, rem: 320 };
+  const row = (y: number, cells: [number, string][]): PdfText[] => cells.map(([x, str]) => ({ x, y, size: 9, str }));
+  const pdf = makePdf([{ texts: [
+    { x: 50, y: 740, size: 12, str: 'INVENTORY OF SERVICED STRUCTURES' },
+    ...row(700, [[C.bn, 'Bldg'], [C.name, 'Facility Name'], [C.gross, 'Gross SF'], [C.rem, 'Remarks']]),
+    ...row(686, [[C.bn, '1201'], [C.name, 'Brigade HQ'], [C.gross, '45,200'], [C.rem, 'Lobby only']]),
+    ...row(677, [[C.rem, '(2,140 SF) excluded']]),
+    ...row(663, [[C.bn, '1205'], [C.name, 'Battalion HQ'], [C.gross, '18,750'], [C.rem, 'None']]),
+    ...row(649, [[C.bn, '2101'], [C.name, 'Dental Clinic'], [C.gross, '9,800'], [C.rem, 'None']]),
+    ...row(635, [[C.bn, '2105'], [C.name, 'Fitness Center'], [C.gross, '31,000'], [C.rem, 'None']]),
+  ] }]);
+  const lines = (await extractPdfLayout(pdf)).text.split('\n');
+  const header = lines.indexOf('Bldg | Facility Name | Gross SF | Remarks');
+  assert.ok(header >= 0, lines.join('\n'));
+  assert.equal(lines[header + 1], '1201 | Brigade HQ | 45,200 | Lobby only (2,140 SF) excluded');
+  for (const [i, l] of ['1205 | Battalion HQ | 18,750 | None', '2101 | Dental Clinic | 9,800 | None', '2105 | Fitness Center | 31,000 | None'].entries()) assert.equal(lines[header + 2 + i], l, lines.join('\n'));
+});
+
 test('superscripts: unit exponents and ordinals stay text, footnote markers become [^n] (PDF and DOCX)', async () => {
   // superscripts as Word / Chromium print them: a smaller run with text rise (Ts persists across BT/ET, so reset it)
   const p = makePdf([{ ops: [

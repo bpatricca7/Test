@@ -9,7 +9,8 @@ export const rt = {
   frame: 0,
   /** gl.info numbers of the last complete frame */
   info: { calls: 0, triangles: 0 },
-  cam: { fits: 0, retargets: 0, moving: false, userMoved: false, fitError: 0, lastFitAt: 0 },
+  /** fits: counted fit triggers (spec §9.3); refits: re-framing the last fit in a new free rect (not a trigger) */
+  cam: { fits: 0, refits: 0, retargets: 0, moving: false, userMoved: false, fitError: 0, lastFitAt: 0 },
   /** visible labels (viewport px), written by the label layer on every pack / reprojection */
   labels: [] as LabelOut[],
   /** rects (viewport px) the labels and pins cover; used to report agents hidden under labels */

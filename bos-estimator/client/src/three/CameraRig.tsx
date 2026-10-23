@@ -9,8 +9,8 @@ import * as THREE from 'three';
 import { useStore } from '../store';
 import { useDerived } from '../derived';
 import type { Box2, SiteLayout } from './layout';
-import { UNIT_FT } from './layout';
-import { freeRect, insets } from './insets';
+import { UNIT_FT, predictBounds } from './layout';
+import { freeRect, insets, insetsSettling, onInsetsAnimating, onInsetsChange, rectKey } from './insets';
 import { bridge } from './bridge';
 import { rt } from './runtime';
 import { explodeGap } from './InteriorCrew';
@@ -23,7 +23,7 @@ const easeOutCubic = (x: number) => 1 - Math.pow(1 - x, 3);
 interface Pose { target: THREE.Vector3; pos: THREE.Vector3; zoom?: number }
 const isOrtho = (c: THREE.Camera): c is THREE.OrthographicCamera => (c as THREE.OrthographicCamera).isOrthographicCamera === true;
 const PLAN_HEIGHT = 1500;
-interface Anim { from: Pose; to: Pose; t0: number; dur: number; kind: 'fit' | 'frame' | 'enter' | 'leave' | 'refit'; fit?: FitSpec }
+interface Anim { from: Pose; to: Pose; t0: number; dur: number; kind: 'fit' | 'grow' | 'frame' | 'enter' | 'leave' | 'refit'; fit?: FitSpec }
 interface FitSpec { bounds: Box2; maxH: number; az: number; polar: number }
 
 const _v = new THREE.Vector3();
@@ -96,12 +96,16 @@ export function computeFit(camera: THREE.Camera, W: number, H: number, spec: Fit
   return { target, pos: target.clone().addScaledVector(dir, d), dist: d };
 }
 
-const grew = (fit: Box2 | null, b: Box2) => {
-  if (!fit) return true;
-  const ex = (Math.max(fit.x + fit.w / 2, b.x + b.w / 2) - Math.min(fit.x - fit.w / 2, b.x - b.w / 2)) / fit.w;
-  const ez = (Math.max(fit.z + fit.d / 2, b.z + b.d / 2) - Math.min(fit.z - fit.d / 2, b.z - b.d / 2)) / fit.d;
-  return Math.max(ex, ez) > 1.25;
+/** Grow a box by `k` around its centre in x and mostly to the south in z (streamed rows are appended south). */
+const grow = (b: Box2, k: number): Box2 => {
+  if (k === 1) return b;
+  const n = b.z - b.d / 2 - b.d * (k - 1) * 0.2, sz = b.z + b.d / 2 + b.d * (k - 1) * 0.8;
+  return { x: b.x, z: (n + sz) / 2, w: b.w * k, d: sz - n };
 };
+/** Headroom on the predicted campus of a streaming run (the prediction samples the lots seen so far). */
+const PRED_HEADROOM = 1.08;
+/** Minimum time between two growth fits while streaming (spec §9.3). */
+const GROWTH_MS = 4000;
 
 function unionBox(boxes: Box2[]): Box2 {
   let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
@@ -129,8 +133,8 @@ export function CameraRig() {
   const view = useRef({ W: 0, H: 0, version: -1 });
   const st = useRef({
     project: '', fitted: false, atFit: false, pendingFit: false, pendingExtract: false,
-    inRun: false, runFits: 0, runUserMoved: false, lastAutoAt: -1e9, lastGrowthAt: -1e9,
-    fitBounds: null as Box2 | null, lastSpec: null as FitSpec | null, lastInteract: performance.now(), lastChange: 0,
+    inRun: false, runFits: 0, runUserMoved: false, lastAutoAt: -1e9, lastGrowthAt: -1e9, lastGrowthCheck: 0,
+    fitBounds: null as Box2 | null, lastSpec: null as FitSpec | null, fitRect: '', lastInteract: performance.now(), lastChange: 0,
     preEnter: null as Pose | null, inBuilding: false, damping: true, camSeq: camCmd?.seq ?? 0, maxDist: 400,
     fitLayout: null as SiteLayout | null, lastCmdFitAt: -1e9,
   });
@@ -151,17 +155,19 @@ export function CameraRig() {
   const siteSpec = (l: SiteLayout | null, headroom = 1): FitSpec => {
     const empty = !l || (l.buildings.length === 0 && l.zones.length === 0);
     const b = empty ? { x: 0, z: 0, w: 320, d: 320 } : l.bounds; // empty project: a neutral patch of ground around the origin
-    let bounds = headroom === 1 ? b : { x: b.x, z: b.z, w: b.w * headroom, d: b.d * headroom };
+    let bounds = b;
     let n = l?.buildings.length ?? 0;
-    if (headroom !== 1 && l) {
-      // while streaming, frame the campus the run is heading for: new rows are appended south and widen with
-      // the lot area, so both sides grow with √(expected / registered); the north edge stays put
-      const exp = useStore.getState().extraction.progress?.expected;
-      if (exp && n > 0 && exp > n) {
-        const k = Math.min(4, Math.max(headroom, Math.sqrt(exp / n)));
-        const north = b.z - b.d / 2;
-        bounds = { x: b.x, z: north + (b.d * k) / 2, w: b.w * k, d: b.d * k };
-        n = exp;
+    if (headroom !== 1 && l && !empty) {
+      const x = useStore.getState().extraction;
+      if (x.staging?.active) {
+        // a staged re-read: the drawn campus does not change until the run is done
+      } else {
+        // while streaming, frame the campus the run is heading for: continue the incremental append with the
+        // lots seen so far until the expected count (layout.predictBounds); without a count, plain headroom
+        const exp = x.progress?.expected;
+        const remaining = exp ? Math.max(0, exp - (x.progress?.registered ?? 0)) : 0;
+        if (remaining > 0 && n > 0) { bounds = grow(predictBounds(l, n + remaining), PRED_HEADROOM); n += remaining; }
+        else bounds = grow(b, headroom);
       }
     }
     return { bounds, maxH: l?.maxHeight ?? 0, az: AZIMUTH, polar: defaultPolar(n) };
@@ -173,7 +179,9 @@ export function CameraRig() {
     startAnim(pose, opts.cut ? 0 : 600, opts.kind ?? 'fit', spec);
     const s = st.current;
     s.fitBounds = spec.bounds; s.lastSpec = spec; s.atFit = true; s.preEnter = null; s.fitLayout = l;
+    s.fitRect = rectKey(size.width, size.height);
     if (opts.count !== false) { rt.cam.fits++; rt.cam.userMoved = false; if (s.inRun) s.runFits++; }
+    if (opts.kind === 'grow') s.lastGrowthAt = performance.now();
     rt.cam.lastFitAt = performance.now();
   };
 
@@ -194,14 +202,14 @@ export function CameraRig() {
   // ---- run lifecycle and phase triggers
   useEffect(() => {
     const s = st.current;
-    if (running && !s.inRun) { s.inRun = true; s.runFits = 0; s.runUserMoved = false; }
+    if (running && !s.inRun) { s.inRun = true; s.runFits = 0; s.runUserMoved = false; s.lastGrowthAt = -1e9; }
   }, [running]);
   const prevPhase = useRef(phase);
   useEffect(() => {
     const s = st.current;
     const was = prevPhase.current; prevPhase.current = phase;
     if (phase === was) return;
-    if (phase === 'uploading' || phase === 'reading') { if (!s.inRun) { s.inRun = true; s.runFits = 0; s.runUserMoved = false; } }
+    if (phase === 'uploading' || phase === 'reading') { if (!s.inRun) { s.inRun = true; s.runFits = 0; s.runUserMoved = false; s.lastGrowthAt = -1e9; } }
     if (phase === 'extracting') {
       s.lastAutoAt = performance.now();
       if (s.runUserMoved) return;
@@ -234,10 +242,30 @@ export function CameraRig() {
       return;
     }
     if (s.pendingExtract && s.inRun && !s.runUserMoved) { s.pendingExtract = false; s.lastAutoAt = now; fitSite({ headroom: 1.15 }); return; }
-    if (s.inRun && !s.runUserMoved && s.runFits < 2 && now - s.lastGrowthAt > 4000 && !s.inBuilding && grew(s.fitBounds, l.bounds)) {
-      s.lastGrowthAt = now; fitSite({ headroom: 1.3 });
-    }
+    // growth while streaming is checked per frame (see growthCheck), so a throttled refit still happens when
+    // the stream pauses
+    if (s.inRun) invalidate();
   }, [layout]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /**
+   * Streaming growth fit (spec §9.3): when the campus no longer projects inside the free rect, re-frame the
+   * predicted campus, at most once every 4 s and never after the user touched the camera in this run.
+   */
+  const growthCheck = (W: number, H: number) => {
+    const s = st.current; const l = layoutRef.current;
+    if (!s.inRun || s.runUserMoved || s.inBuilding || anim.current || insetsSettling() || !s.fitted || !l || !l.buildings.length) return;
+    const now = performance.now();
+    // the 4 s limit applies between growth fits; the first one may follow the run's opening fit at once
+    // (that fit is often made before the run reports how many facilities to expect)
+    if (now - s.lastGrowthCheck < 250 || now - s.lastGrowthAt < GROWTH_MS) return;
+    s.lastGrowthCheck = now;
+    camera.updateMatrixWorld();
+    const pb = projectBox(camera, corners(l.bounds, l.maxHeight), W, H);
+    const fr = freeRect(W, H);
+    const tol = 2;
+    if (pb.front && pb.x0 >= fr.x0 - tol && pb.x1 <= fr.x1 + tol && pb.y0 >= fr.y0 - tol && pb.y1 <= fr.y1 + tol) return;
+    fitSite({ headroom: 1.3, kind: 'grow' });
+  };
 
   // ---- camera commands from the shell
   useEffect(() => {
@@ -319,6 +347,9 @@ export function CameraRig() {
     }
   }, [focusMode, buildingTab, selId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // a new free rect, or the end of a panel transition, needs a frame for the view offset and the refit check
+  useEffect(() => { const a = onInsetsChange(invalidate); const b = onInsetsAnimating(invalidate); return () => { a(); b(); }; }, [invalidate]);
+
   // ---- per-frame: view offset, insets-driven refit, animation, near/far, orbit, bridge
   const lastFrame = useRef(performance.now());
   useFrame(() => {
@@ -327,17 +358,22 @@ export function CameraRig() {
     const s = st.current;
     const v = view.current;
     if (v.W !== W || v.H !== H || v.version !== insets.version) {
-      const insetsChanged = v.version !== insets.version && v.version >= 0;
       v.W = W; v.H = H; v.version = insets.version;
       camera.setViewOffset(W, H, (insets.right - insets.left) / 2, (insets.bottom - insets.top) / 2, W, H);
       camera.updateProjectionMatrix();
-      if (insetsChanged && !insets.animating && s.atFit && !s.inBuilding && s.lastSpec && !rt.cam.userMoved) {
-        // re-fit into the new free rect (not counted as a fit trigger)
-        const spec = siteSpec(layoutRef.current);
-        startAnim(computeFit(camera, W, H, spec), 400, 'refit', spec);
-        s.lastSpec = spec; s.fitBounds = spec.bounds;
+    }
+    // the free rect settled somewhere other than where the last automatic fit framed the site: re-frame the
+    // same bounds there (not a fit trigger: it repeats the last fit's framing; counted in camera().refits).
+    // Events that repeat the same rect, or only flip `animating`, never move the camera.
+    if (s.atFit && s.fitRect && !s.inBuilding && s.lastSpec && !rt.cam.userMoved && !insetsSettling()) {
+      const key = rectKey(W, H);
+      if (key !== s.fitRect) {
+        s.fitRect = key;
+        startAnim(computeFit(camera, W, H, s.lastSpec), 400, 'refit', s.lastSpec);
+        rt.cam.refits++;
       }
     }
+    growthCheck(W, H);
     const a = anim.current;
     if (a && c) {
       const k = a.dur <= 0 ? 1 : Math.min(1, (performance.now() - a.t0) / a.dur);

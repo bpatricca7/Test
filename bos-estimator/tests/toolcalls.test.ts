@@ -8,11 +8,11 @@ import { fileURLToPath } from 'node:url';
 import Anthropic from '@anthropic-ai/sdk';
 import {
   applyToolCall, beginPass, buildingKey, cleanBuildingNumber, createState, diningMealsPerDay, docRank, extractionTools, facilityIdentity, finalize,
-  isTotalRow, mapGroundsLabel, parseNumber, parseServiceFrequency, replayToolCalls, type ToolCall,
+  isTotalRow, mapGroundsLabel, parseNumber, parseServiceFrequency, replayToolCalls, seasonDay, seasonServiceDays, type ToolCall,
 } from '../server/toolcalls';
 import { extractWithClaude, facilityId, mergeFacility, replayToolCalls as replayFromAi } from '../server/ai';
 import { estimateInventory } from '../shared/estimate';
-import { scoreInventory } from './harness/score';
+import { normBn, scoreInventory, siteFieldOk } from './harness/score';
 import type { FixtureTruth } from './harness/truth';
 import type { ExtractionEvent, Facility, PriorAward } from '../shared/types';
 
@@ -78,6 +78,33 @@ test('building numbers: printed form kept, key normalised', () => {
   assert.equal(buildingKey('P 114'), buildingKey('P-114'));
   for (const [a, b] of [['1-10', '110'], ['12-3', '123'], ['4-2120', '42120'], ['101-A', '10-1A']]) assert.notEqual(buildingKey(a), buildingKey(b), `${a} vs ${b}`);
   assert.equal(buildingKey('12-03'), buildingKey('12-3'));
+  // site / location numbering ("Site 4" in a narrative or addendum, "4" in the summary table)
+  for (const s of ['Site 4', 'Site No. 4', 'SITE-4', 'Location 4', 'Loc. 4', 'No. 4', 'No 4', 'Facility 4', 'Facility No. 4', '#4']) assert.equal(cleanBuildingNumber(s), '4', s);
+  // "No" only as a word: letters of real numbers are kept
+  for (const s of ['NOSC 1', 'NORTH 12', 'NOLF-3', 'Site A', 'Location TBD']) assert.equal(cleanBuildingNumber(s), s);
+  assert.equal(cleanBuildingNumber('Bldg NOSC 1'), 'NOSC 1');
+  assert.notEqual(buildingKey(cleanBuildingNumber('NOSC 1')!), buildingKey(cleanBuildingNumber('SC 1')!));
+});
+
+test('"Site 4" in an addendum revises site "4" of the summary table; a number printed with a letter prefix matches by name outside its table', () => {
+  const st = createState(DOCS);
+  applyToolCall(st, declare({ table_id: '3-1', row_count: 1, printed_total_gross_area: 41750 }));
+  applyToolCall(st, reg(row({ table_id: '3-1', building_number: '4', name: 'Human Services Building', gross_area: 41750, source: { file: J4, excerpt: '4 | Human Services Building | 41,750' } })));
+  const r = applyToolCall(st, reg(row({ building_number: 'Site 4', name: 'Human Services Building', gross_area: 46210, source: { file: AM2, excerpt: 'Site 4 – revised to 46,210 SF' } })));
+  assert.match(r.resultText, /1 update of already-registered buildings/);
+  assert.deepEqual([...st.facilities.values()].map((f) => [f.buildingNumber, f.grossSqft]), [['4', 46210]]);
+  assert.equal(applyToolCall(st, finishCall()).isError, false);
+  // "Building 41 (B-41)" added by an amendment, later revised as "41": the same building (same name, not from its table)
+  const st2 = createState(DOCS);
+  applyToolCall(st2, reg(row({ building_number: 'B-41', name: 'Whole Health Center', gross_area: 9600, source: { file: AM2, excerpt: 'Add Building 41 (B-41) Whole Health Center 9,600 GSF' } })));
+  const r2 = applyToolCall(st2, reg(row({ building_number: '41', name: 'Whole Health Center', gross_area: null, cleanable_area: 7960, source: { file: AM2, page: 2, excerpt: 'Bldg 41: 7,960 CSF' } })));
+  assert.match(r2.resultText, /41: matched to building B-41 \(same name; the number is printed with and without a letter prefix\)/);
+  assert.equal(st2.facilities.size, 1);
+  assert.equal([...st2.facilities.values()][0].cleanableSqft, 7960);
+  // two printed rows of one table are two buildings, even with the same name (T-41 is not 41)
+  const st3 = createState(DOCS);
+  applyToolCall(st3, reg(row({ table_id: 'J-4', building_number: 'T-41', name: 'Latrine', gross_area: 400, source: { file: J4, excerpt: 'T-41 | Latrine | 400' } }), row({ table_id: 'J-4', building_number: '41', name: 'Latrine', gross_area: 600, source: { file: J4, excerpt: '41 | Latrine | 600' } })));
+  assert.equal(st3.facilities.size, 2);
 });
 
 test('distinct numbers that differ only by a separator stay distinct buildings', () => {
@@ -491,7 +518,7 @@ test('completeness counts printed rows: out-of-scope grounds rows count, areas s
   assert.equal(fin.inventory.grounds.length, 6);
 });
 
-test('a building printed twice in one table with different areas counts twice and is reported; re-sends count once', () => {
+test('a building printed on two rows of one table under different names and areas is two line items; re-sends and revisions still merge', () => {
   const st = createState(DOCS);
   applyToolCall(st, { name: 'declare_tables', input: { tables: [{ table_id: 'J-4', title: 'J-4', kind: 'facilities', file: J4, pages: '3', row_count: 3, printed_total_gross_area: 50000, area_unit: 'sf' }] } });
   applyToolCall(st, reg(row({ table_id: 'J-4', building_number: '1201', name: 'HQ wing A', gross_area: 30000, source: { file: J4, page: 3, excerpt: '1201 | HQ wing A | 30,000' } })));
@@ -499,12 +526,86 @@ test('a building printed twice in one table with different areas counts twice an
   applyToolCall(st, reg(row({ table_id: 'J-4', building_number: '1201', name: 'HQ wing A', gross_area: 30000, source: { file: J4, page: 3, excerpt: '1201 | HQ wing A | 30,000' } })));
   applyToolCall(st, reg(row({ table_id: 'J-4', building_number: '1201', name: 'HQ wing A', gross_area: 30000, source: { file: J4, page: 3, excerpt: '1201 HQ wing A' } })));
   assert.equal(st.tables.get('J-4')!.rows.size, 1);
+  assert.equal(st.facilities.size, 1);
+  // another printed row of the table with the same number, its own name and its own area: a separate line item (the
+  // rule-based reader counts it the same way), so neither area is lost
   const r = applyToolCall(st, reg(row({ table_id: 'J-4', building_number: '1201', name: 'HQ wing B', gross_area: 12000, source: { file: J4, page: 3, excerpt: '1201 | HQ wing B | 12,000' } }), row({ table_id: 'J-4', building_number: '1202', name: 'Gym', gross_area: 8000, source: { file: J4, page: 3, excerpt: '1202 | Gym | 8,000' } })));
-  assert.match(r.resultText, /1201 is listed twice in J-4 with different areas/);
-  assert.equal(applyToolCall(st, { name: 'finish', input: { summary: 'done', unresolved: [] } }).isError, false);
+  assert.match(r.resultText, /1201 is printed again in J-4 under another name and with another area: "HQ wing B" is registered as a separate line item/);
+  assert.doesNotMatch(r.resultText, /listed twice/);
+  // a re-send of the second line goes to it, not to the first
+  applyToolCall(st, reg(row({ table_id: 'J-4', building_number: '1201', name: 'HQ wing B', gross_area: 12000, source: { file: J4, page: 3, excerpt: '1201 | HQ wing B | 12,000' } })));
+  assert.equal(applyToolCall(st, finishCall()).isError, false);
   const fin = finalize(st);
-  assert.equal(fin.inventory.facilities.length, 2);
-  assert.ok(fin.warnings.some((w) => /1201 is listed twice in J-4/.test(w)), JSON.stringify(fin.warnings));
+  assert.deepEqual(fin.warnings, []);
+  assert.deepEqual(fin.inventory.facilities.map((f) => [f.id, f.buildingNumber, f.name, f.grossSqft]), [['b-1201', '1201', 'HQ wing A', 30000], ['b-1201--hq-wing-b', '1201', 'HQ wing B', 12000], ['b-1202', '1202', 'Gym', 8000]]);
+  assert.equal(estimateInventory(fin.inventory).metrics.grossSqft, 50000);
+  // a revision from outside the table (another document) under another name merges into the building
+  const st2 = createState(DOCS);
+  applyToolCall(st2, declare({ table_id: 'J-4', pages: '3', row_count: 1, printed_total_gross_area: 30000 }));
+  applyToolCall(st2, reg(row({ table_id: 'J-4', building_number: '1201', name: 'HQ wing A', gross_area: 30000, source: { file: J4, page: 3, excerpt: '1201 | HQ wing A | 30,000' } })));
+  applyToolCall(st2, reg(row({ table_id: 'J-4', building_number: '1201', name: 'Headquarters', gross_area: 31000, source: { file: AM2, page: 1, excerpt: 'Bldg 1201 revised to 31,000 SF' } })));
+  assert.deepEqual([...st2.facilities.values()].map((f) => f.grossSqft), [31000]);
+  assert.equal(applyToolCall(st2, finishCall()).isError, false);
+});
+
+test('the same building printed twice in one table under the same name: finish asks for line items; rows resent with line_item become separate lines', () => {
+  const st = createState(DOCS);
+  applyToolCall(st, declare({ table_id: 'J-4', pages: '3', row_count: 3, printed_total_gross_area: 32755 }));
+  const l1 = { table_id: 'J-4', building_number: '2000', name: 'Wing HQ', gross_area: 6215, source: { file: J4, page: 3, excerpt: '2000 | Wing HQ | Level 1 | 6,215' } };
+  const l2 = { table_id: 'J-4', building_number: '2000', name: 'Wing HQ', gross_area: 18540, source: { file: J4, page: 3, excerpt: '2000 | Wing HQ | Level 2 | 18,540' } };
+  const gym = row({ table_id: 'J-4', building_number: '2001', name: 'Gym', gross_area: 8000, source: { file: J4, page: 3, excerpt: '2001 | Gym | 8,000' } });
+  const r = applyToolCall(st, reg(row(l1), row(l2), gym));
+  // the same name could be a correction: the tool cannot tell, so it asks
+  assert.match(r.resultText, /Check: 2000 is listed twice in J-4 with different areas \(6,215 and 18,540 SF\) and only one area is kept \(18,540 SF\) - if the rows are separately priced parts of the building .* resend both rows with line_item/);
+  const f1 = applyToolCall(st, finishCall());
+  assert.equal(f1.isError, true);
+  assert.match(f1.resultText, /J-4: 2000 is printed on 2 rows with different areas \(6,215 and 18,540 SF\) but the inventory keeps one building of 18,540 SF - .*resend each row with line_item/);
+  // a row that only adds data and names a line not registered yet is held until it is
+  const held = applyToolCall(st, reg(row({ building_number: '2000', name: 'Wing HQ', line_item: 'Level 1', gross_area: null, service_level: '3x_week', source: { file: J4, page: 5, excerpt: '2000 Level 1: 3x/week' } })));
+  assert.match(held.resultText, /Held 1 row/);
+  // resending both rows with line_item moves each printed row to its own line
+  const re = applyToolCall(st, reg(row({ ...l1, line_item: 'Level 1' }), row({ ...l2, line_item: 'Level 2' })));
+  assert.equal(re.isError, false, re.resultText);
+  assert.match(re.resultText, /Applied 1 held row to 2000/);
+  const lines = byBn([...st.facilities.values()], '2000').map((f) => [f.name, f.grossSqft, f.serviceLevel]).sort((a, b) => Number(a[1]) - Number(b[1]));
+  assert.deepEqual(lines, [['Wing HQ – Level 1', 6215, '3x_week'], ['Wing HQ – Level 2', 18540, 'daily_5']]);
+  assert.equal(st.tables.get('J-4')!.rows.size, 3);
+  const f2 = applyToolCall(st, finishCall());
+  assert.equal(f2.isError, false, f2.resultText);
+  // a later revision of one line targets it by line_item; a revision that does not say which line is refused
+  const am = applyToolCall(st, reg(row({ building_number: '2000', name: 'Wing HQ', line_item: 'level 2', gross_area: 19000, source: { file: AM2, page: 1, excerpt: 'Bldg 2000 Level 2 re-measured 19,000' } })));
+  assert.equal(am.isError, false, am.resultText);
+  assert.deepEqual(byBn([...st.facilities.values()], '2000').map((f) => f.grossSqft).sort((a, b) => a - b), [6215, 19000]);
+  const amb = applyToolCall(st, reg(row({ building_number: '2000', name: 'Wing Headquarters', gross_area: null, status: 'deleted_by_amendment', status_reason: 'Deleted by Amendment 0002', source: { file: AM2, page: 2, excerpt: 'Delete Bldg 2000' } })));
+  assert.equal(amb.isError, true);
+  assert.match(amb.resultText, /2000: this building is registered as 2 separate line items \("Level [12]", "Level [12]"\) - set line_item to the line this row belongs to, or send the row once for each line it applies to/);
+  const fin = finalize(st);
+  assert.deepEqual(fin.warnings, []);
+  assert.equal(new Set(fin.inventory.facilities.map((f) => f.id)).size, 3);
+  // ids carry the line item, so they do not depend on read order
+  assert.ok(fin.inventory.facilities.some((f) => f.id === 'b-2000--level-1'), JSON.stringify(fin.inventory.facilities.map((f) => f.id)));
+});
+
+test('line items: rows sent with line_item from the start are separate lines; a line item of a building also registered as a whole is flagged', () => {
+  const st = createState(DOCS);
+  applyToolCall(st, declare({ table_id: 'J-4', pages: '3', row_count: 2, printed_total_gross_area: 24755 }));
+  const r = applyToolCall(st, reg(
+    row({ table_id: 'J-4', building_number: '2000', name: 'Wing HQ', line_item: 'Level 1', gross_area: 6215, source: { file: J4, page: 3, excerpt: '2000 | Wing HQ | Level 1 | 6,215' } }),
+    row({ table_id: 'J-4', building_number: '2000', name: 'Wing HQ', line_item: 'Level 2', gross_area: 18540, source: { file: J4, page: 3, excerpt: '2000 | Wing HQ | Level 2 | 18,540' } }),
+  ));
+  assert.match(r.resultText, /Registered 2 of 2 rows \(2 facilities in total\)/);
+  assert.doesNotMatch(r.resultText, /Check:|Note:/);
+  assert.equal(applyToolCall(st, finishCall()).isError, false);
+  assert.deepEqual(finalize(st).inventory.facilities.map((f) => [f.id, f.name, f.grossSqft, f.notes]), [['b-2000--level-1', 'Wing HQ – Level 1', 6215, 'Line item: Level 1'], ['b-2000--level-2', 'Wing HQ – Level 2', 18540, 'Line item: Level 2']]);
+  // a name that already says what the line is stays as printed
+  const st2 = createState(DOCS);
+  applyToolCall(st2, reg(row({ building_number: '7', name: 'Clinic - East Wing', line_item: 'East Wing', gross_area: 100 })));
+  assert.equal([...st2.facilities.values()][0].name, 'Clinic - East Wing');
+  // the building registered whole from one table, then line items from another: the double count is pointed out
+  const st3 = createState(DOCS);
+  applyToolCall(st3, reg(row({ table_id: 'J-1', building_number: '2000', name: 'Wing HQ', gross_area: 24755, source: { file: J4, page: 1, excerpt: '2000 | Wing HQ | 24,755' } })));
+  const w = applyToolCall(st3, reg(row({ table_id: 'J-4', building_number: '2000', name: 'Wing HQ', line_item: 'Level 1', gross_area: 6215, source: { file: J4, page: 3, excerpt: '2000 | Level 1 | 6,215' } })));
+  assert.match(w.resultText, /2000 is also registered without a line item \("Wing HQ" 24,755 SF\): if that row is the whole building and the line items are its parts, resend it with status excluded/);
 });
 
 test('grounds: Type I/II/III/IV and BASH mapping, frequency wins over label, links resolved at the end', () => {
@@ -634,6 +735,100 @@ test('cleanable larger than gross is rejected for every affected row, with the r
   const gym = [...st2.facilities.values()][0];
   assert.equal(gym.grossSqft, 15000);
   assert.equal(gym.cleanableSqft, undefined);
+});
+
+test('cleanable is its own field group: a later row that prints only a corrected cleanable area wins over the base (any read order)', () => {
+  const AM3 = 'Amendment 0003.pdf';
+  const docs = [...DOCS, { name: AM3 }];
+  const base = reg(row({ table_id: 'J-4', building_number: '9', name: 'MH Clinic', gross_area: 31880, cleanable_area: 25150, source: { file: J4, page: 3, excerpt: '9 | MH Clinic | 31,880 | 25,150' } }));
+  const csfOnly = reg(row({ building_number: '9', name: 'MH Clinic', gross_area: null, cleanable_area: 26690, status: null, source: { file: AM2, page: 1, excerpt: 'Bldg 9 Total CSF 25,150 → 26,690; GSF unchanged' } }));
+  for (const order of [[base, csfOnly], [csfOnly, base]]) {
+    const st = createState(docs);
+    for (const c of order) assert.equal(applyToolCall(st, c).isError, false);
+    const f = [...st.facilities.values()][0];
+    assert.equal(f.grossSqft, 31880);
+    assert.equal(f.cleanableSqft, 26690, `${order[0] === csfOnly ? 'amendment first' : 'base first'}`);
+    assert.match(f.notes ?? '', /Superseded 25,150 cleanable SF from Attachment J-4 Facility List\.xlsx/);
+  }
+  // the same document, a later row (an amendment section of a combined file): the later row wins too
+  const st = createState(DOCS);
+  applyToolCall(st, base);
+  applyToolCall(st, reg(row({ building_number: '9', name: 'MH Clinic', gross_area: null, cleanable_area: 26690, status: null, source: { file: J4, page: 8, excerpt: 'Item 3: Total CSF 26,690' } })));
+  assert.equal([...st.facilities.values()][0].cleanableSqft, 26690);
+  // an estimated area (area_missing) never overrides a printed cleanable area
+  const st2 = createState(DOCS);
+  applyToolCall(st2, reg(row({ building_number: '5', name: 'Shop', gross_area: 2000, cleanable_area: 1000 })));
+  applyToolCall(st2, reg(row({ building_number: '5', name: 'Shop', gross_area: null, area_missing: true, estimated_gross_area: 2500, cleanable_equals_gross: true, source: { file: AM2, excerpt: 'Bldg 5 area TBD' } })));
+  assert.deepEqual([...st2.facilities.values()].map((f) => [f.grossSqft, f.cleanableSqft]), [[2000, 1000]]);
+  // a later row's cleanable area that no longer fits the kept gross (a higher-ranked document revised it down) is reported
+  const st3 = createState(docs);
+  applyToolCall(st3, reg(row({ building_number: '6', name: 'Gym', gross_area: 15000, source: { file: AM3, excerpt: 'Bldg 6 revised to 15,000 SF' } })));
+  const r = applyToolCall(st3, reg(row({ building_number: '6', name: 'Gym', gross_area: 20000, cleanable_area: 19000, source: { file: AM2, excerpt: 'Bldg 6 | 20,000 | 19,000' } })));
+  assert.match(r.resultText, /Check: 6: cleanable_area 19,000 SF was not applied - it is larger than the building's gross area \(15,000 SF\)/);
+  assert.deepEqual([...st3.facilities.values()].map((f) => [f.grossSqft, f.cleanableSqft]), [[15000, undefined]]);
+});
+
+test('printed square feet keep their decimals; floor areas by finish become the floor mix; seasonal and on-call service become days', () => {
+  const st = createState(DOCS);
+  applyToolCall(st, declare({ table_id: 'GSU', row_count: 2, printed_total_gross_area: 2643.42 }));
+  const r = applyToolCall(st, reg(
+    row({ table_id: 'GSU', building_number: '101', name: 'Ops', gross_area: '2,207.75', cleanable_area: 2207.75, source: { file: J4, excerpt: '101 | 2,207.75' },
+      floor_areas: { carpet: 1200, resilient: 700.75, hard_tile: 207, concrete: 0, wood: null, other: 100 } }),
+    row({ table_id: 'GSU', building_number: '104', name: 'Restroom', gross_area: 435.67, source: { file: J4, excerpt: '104 | 435.67' },
+      floor_areas: { hard_tile: 300 }, service_level: '3x_week', service_frequency_text: '3 x Week (APR-OCT only)', service_season: { start: 'APR', end: 'OCT', days_per_week: 3 } }),
+  ));
+  assert.equal(r.isError, false, r.resultText);
+  assert.match(r.resultText, /104: floor_areas sum to 300 SF, not the gross area \(436 SF\)/);
+  assert.doesNotMatch(r.resultText, /101: floor_areas/);
+  const by = (bn: string) => byBn([...st.facilities.values()], bn)[0];
+  assert.equal(by('101').grossSqft, 2207.75);
+  assert.equal(by('104').grossSqft, 435.67);
+  assert.deepEqual(by('101').floorMix, { carpet: 0.5693, resilient: 0.3325, hardTile: 0.0982, concrete: 0, wood: 0 }); // shares of the named finishes (2,107.75 SF)
+  assert.match(by('101').notes ?? '', /Floor mix from printed SF by finish: carpet 1,200, resilient 701, hard tile 207, other 100 \(spread over the named finishes\)/);
+  assert.equal(by('104').serviceDaysPerYear, 92); // Apr 1 – Oct 31 = 214 days × 3/7
+  assert.equal(by('104').serviceLevel, '3x_week');
+  assert.equal(applyToolCall(st, finishCall()).isError, false); // 2,643.42 printed
+  assert.deepEqual(finalize(st).warnings, []);
+  // a stated number of days wins over the counted season; on-call events are service days; an unreadable season is reported
+  const st2 = createState(DOCS);
+  const r2 = applyToolCall(st2, reg(
+    row({ building_number: '18', name: 'Beach House', gross_area: 1000, service_level: 'daily_7', service_season: { start: 'May 29', end: 'Sep 6', days_per_week: null } }),
+    row({ building_number: '19', name: 'Marina', gross_area: 1000, service_days_per_year: 160, service_season: { start: 'May 1', end: 'Oct 15', days_per_week: 7 } }),
+    row({ building_number: '21', name: 'Fairgrounds Hall', gross_area: 1000, events_per_year: 24 }),
+    row({ building_number: '22', name: 'Pavilion', gross_area: 1000, service_season: { start: 'summer', end: 'fall', days_per_week: 7 } }),
+  ));
+  assert.equal(byBn([...st2.facilities.values()], '18')[0].serviceDaysPerYear, 100); // 101 calendar days at the daily_7 level (360 days a year)
+  const m = byBn([...st2.facilities.values()], '19')[0];
+  assert.equal(m.serviceDaysPerYear, 160);
+  assert.match(m.notes ?? '', /Service season May 1 – Oct 15: 168 calendar days × 7 days\/week = 168 service days \(the document states 160\)/);
+  assert.equal(byBn([...st2.facilities.values()], '21')[0].serviceDaysPerYear, 24);
+  assert.equal(byBn([...st2.facilities.values()], '22')[0].serviceDaysPerYear, undefined);
+  assert.match(r2.resultText, /22: service_season "summer – fall" was not understood/);
+});
+
+test('season windows: months, dates, holidays and windows across the year end are counted in code', () => {
+  assert.deepEqual(seasonServiceDays('Memorial Day', 'Labor Day', 7), { calendarDays: 100, days: 100 });
+  assert.deepEqual(seasonServiceDays('May 29', 'Sep 6', 7), { calendarDays: 101, days: 101 });
+  assert.deepEqual(seasonServiceDays('May 1 – Oct 15', null, 7), { calendarDays: 168, days: 168 });
+  assert.deepEqual(seasonServiceDays('APR-OCT', null, 3), { calendarDays: 214, days: 92 });
+  assert.deepEqual(seasonServiceDays('November', 'March', 5), { calendarDays: 151, days: 108 });
+  assert.deepEqual(seasonServiceDays('5/1', '10/15', 7), { calendarDays: 168, days: 168 });
+  assert.equal(seasonDay('15 October', true), seasonDay('Oct 15th', true));
+  assert.equal(seasonServiceDays('spring', 'fall', 7), undefined);
+});
+
+test('restroom rooms, cleaning standard and areas by class are kept with the facility (class areas checked against the cleanable area)', () => {
+  const st = createState(DOCS);
+  const r = applyToolCall(st, reg(
+    row({ building_number: '1', name: 'Main Hospital', gross_area: 486240, cleanable_area: 319615, restroom_rooms: 152, cleaning_standard: 'Code A', area_by_class: [{ label: 'High Risk', area: 58960 }, { label: 'Moderate Risk', area: 173885 }, { label: 'Low Risk', area: 86770 }] }),
+    row({ building_number: '2', name: 'Clinic', gross_area: 10000, cleanable_area: 9000, area_by_class: [{ label: 'High Risk', area: 1000 }, { label: 'Low Risk', area: 2000 }] }),
+  ));
+  assert.equal(r.isError, false);
+  const f = byBn([...st.facilities.values()], '1')[0];
+  assert.match(f.notes ?? '', /Restroom rooms: 152; Area by class: High Risk 58,960 SF, Moderate Risk 173,885 SF, Low Risk 86,770 SF; Cleaning standard: Code A/);
+  assert.equal(f.restroomFixtures, undefined); // rooms are not fixtures
+  assert.match(r.resultText, /2: area_by_class sums to 3,000 SF, not the cleanable area \(9,000 SF\)/);
+  assert.doesNotMatch(r.resultText, /1: area_by_class/);
 });
 
 test('cleanable_equals_gross: the tool sets cleanable to the gross (converted, with added areas); a different printed cleanable is kept', () => {
@@ -803,6 +998,36 @@ test('score: cleanable and service level carry weight, attribute and site mismat
   const rep = scoreInventory(truth, { site: {}, facilities: [fac('12', { grossSqft: 13347, serviceLevel: '2x_week', floors: 2 }), fac('14', { grossSqft: 37243, cleanableSqft: 37243, serviceLevel: 'daily_5', floors: 3, category: 'barracks' })], grounds: [] }, 'test');
   assert.equal(rep.score, 95); // half the cleanable and half the service-level weight lost
   assert.deepEqual(rep.misses, ['cleanable mismatch 12: expected 13347, got none', 'service level mismatch 14: expected weekly, got daily_5', 'site climateZone: expected temperate, got none']);
+});
+
+test('score: building numbers match by the reader\'s identity rule; line items pair by name; site names compare as an estimator reads them', () => {
+  assert.equal(normBn('Bldg. No. 0012'), normBn('12'));
+  assert.equal(normBn('Facility 12'), normBn('12')); // not "ILITY12"
+  assert.equal(normBn('Site 4'), normBn('4'));
+  assert.equal(normBn('SP-01'), normBn('SP1'));
+  assert.notEqual(normBn('NOSC 1'), normBn('SC 1'));
+  assert.notEqual(normBn('1-10'), normBn('110'));
+  const fac = (bn: string, name: string, grossSqft: number): Facility => ({ id: `${bn}-${name}`, buildingNumber: bn, name, category: 'admin', grossSqft, floors: 1, serviceLevel: 'daily_5', scope: ['custodial'], confidence: 1 });
+  const truth = (facilities: FixtureTruth['expect']['facilities'], site?: FixtureTruth['expect']['site']): FixtureTruth => ({ id: 't', title: 't', theme: 't', provenance: { fidelity: 'synthetic', sources: [] }, inputs: [], traps: [], expect: { facilities, facilitiesComplete: true, site } });
+  // two line items with one number: each truth line pairs with the line of its name, whatever the order
+  const lines = truth([{ buildingNumber: '2000', name: 'Wing HQ - Command Section', grossSqft: 6215 }, { buildingNumber: '2000', name: 'Wing HQ - Staff Agencies', grossSqft: 18540 }]);
+  const rep = scoreInventory(lines, { site: {}, facilities: [fac('2000', 'Wing HQ - Staff Agencies', 18540), fac('2000', 'Wing HQ - Command Section', 6215)], grounds: [] }, 'test');
+  assert.equal(rep.score, 100, JSON.stringify(rep.misses));
+  // a number printed with a letter prefix on one side counts as the same building only when the names agree
+  const b41 = truth([{ buildingNumber: '41', name: 'Whole Health Center', grossSqft: 9600 }, { buildingNumber: '42', name: 'Boiler Plant', grossSqft: 5000 }]);
+  const r41 = scoreInventory(b41, { site: {}, facilities: [fac('B-41', 'Whole Health and Telehealth Center', 9600), fac('T-42', 'Warehouse', 5000)], grounds: [] }, 'test');
+  assert.equal(r41.facilities.matched, 1);
+  assert.deepEqual(r41.misses, ['42 Boiler Plant (5000 SF)']);
+  // site names: an abbreviation in parentheses and other sites appended do not make a faithful copy wrong; a different
+  // installation or solicitation still does
+  const site = (installationName: string, solicitation = 'N69450-26-R-0014') => scoreInventory(truth([], { installationName: 'Naval Support Activity Tarpon Sound', solicitation: 'N69450-26-R-0014' }), { site: { installationName, solicitation }, facilities: [], grounds: [] }, 'test').site.map((x) => x.ok);
+  assert.deepEqual(site('Naval Support Activity (NSA) Tarpon Sound'), [true, true]);
+  assert.deepEqual(site('Naval Support Activity (NSA) Tarpon Sound, Florida (with Saltmarsh Point Annex)'), [true, true]);
+  assert.deepEqual(site('NSA Tarpon Sound'), [false, true]);
+  assert.deepEqual(site('Naval Support Activity Panama City', 'N69450-26-R-0041'), [false, false]);
+  assert.equal(siteFieldOk('installationName', 'USAG Italy', 'U.S. Army Garrison Italy (USAG Italy) – Vicenza'), true);
+  assert.equal(siteFieldOk('solicitation', 'RFP No. 2026-041', 'RFP 2026-041'), false);
+  assert.equal(siteFieldOk('climateZone', 'cold', 'cold'), true);
 });
 
 // ------------------------------------------------------------------------------------------------

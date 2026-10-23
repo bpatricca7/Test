@@ -5,13 +5,15 @@
 //   top-centre RelayoutChip and OffShiftCallout (P1)
 //   bottom     LegendChip (left) and HintChip (centre; raised a row when the legend would collide)
 //   centre     EmptyCard (§8)
-import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type DragEvent, type KeyboardEvent as ReactKeyboardEvent, type RefObject } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent as ReactKeyboardEvent, type RefObject } from 'react';
 import { ArrowLeft, Clock3, CloudUpload, Ellipsis, FileArchive, FileSpreadsheet, FileText, FileType, Focus, Layers, LayoutGrid, Moon, Palette, Sun, Table2, Tag, X } from 'lucide-react';
 import { useStore, type ColorBy, type LabelMode } from '../../store';
 import { useDerived } from '../../derived';
 import { crewMeta } from '@shared/factors';
 import { isInScope } from '@shared/types';
 import { legendFor } from '../lib/theme';
+import { ZONE_COLORS, ZONE_LABELS } from '../../three/layout';
+import type { FacilityCategory, GroundsKind } from '@shared/types';
 import { useHotkey } from '../lib/keys';
 import { cx } from '../lib/cx';
 import { ACCEPT_LABELS } from '../lib/files';
@@ -48,6 +50,26 @@ function useFreeWidth(): number {
     return () => { window.removeEventListener('bos:insets', on); window.removeEventListener('resize', on); };
   }, []);
   return w;
+}
+
+/** The legend for the current colour mode, narrowed to the categories and grounds kinds this project has. */
+function useLegend() {
+  const colorBy = useStore((s) => s.colorBy);
+  const facilities = useStore((s) => s.project?.inventory.facilities);
+  const grounds = useStore((s) => s.project?.inventory.grounds);
+  const { fteBreaks } = useDerived();
+  const present = useMemo(() => {
+    if (colorBy !== 'category') return undefined;
+    const cat = new Map<FacilityCategory, number>();
+    for (const f of facilities ?? []) cat.set(f.category, (cat.get(f.category) ?? 0) + 1);
+    const kinds = new Map<GroundsKind, number>();
+    for (const g of grounds ?? []) kinds.set(g.kind, (kinds.get(g.kind) ?? 0) + 1);
+    return {
+      categories: [...cat.entries()].sort((a, b) => b[1] - a[1]).map(([c]) => c),
+      grounds: [...kinds.entries()].sort((a, b) => b[1] - a[1]).map(([k]) => ({ color: ZONE_COLORS[k] ?? '#4f7a45', label: ZONE_LABELS[k] ?? k })),
+    };
+  }, [colorBy, facilities, grounds]);
+  return useMemo(() => legendFor(colorBy, fteBreaks, present), [colorBy, fteBreaks, present]);
 }
 
 export const ViewportOverlays = memo(function ViewportOverlays() {
@@ -200,8 +222,7 @@ function ViewToolbar() {
 function LegendPopover({ open, anchor, onClose, placement = 'bottom-end' }: { open: boolean; anchor: RefObject<HTMLElement | null>; onClose: () => void; placement?: 'bottom-end' | 'top-start' }) {
   const colorBy = useStore((s) => s.colorBy);
   const setColorBy = useStore((s) => s.setColorBy);
-  const { fteBreaks } = useDerived();
-  const lg = legendFor(colorBy, fteBreaks);
+  const lg = useLegend();
   return (
     <Popover open={open} anchor={anchor} onClose={onClose} placement={placement} label="Legend" className="vo-legend-pop" initialFocus="none">
       <div className="vo-legend-pop__head">
@@ -252,10 +273,8 @@ function CenterChips() {
 
 // ------------------------------------------------------------------ bottom: legend chip + hint chip
 function BottomOverlays() {
-  const colorBy = useStore((s) => s.colorBy);
-  const { fteBreaks } = useDerived();
   const freeW = useFreeWidth();
-  const lg = legendFor(colorBy, fteBreaks);
+  const lg = useLegend();
   const max = freeW >= 1000 ? 6 : freeW >= 760 ? 4 : freeW >= 560 ? 3 : 2;
   const shown = lg.items.slice(0, max);
   const pop = usePopover<HTMLButtonElement>();
@@ -273,7 +292,7 @@ function BottomOverlays() {
     const hintLeft = hr.left + hr.width / 2 - hw / 2;
     setRaised(hintLeft < lr.right + 12 * zoomFactor());
   }, [legendRef]);
-  useLayoutEffect(() => { place(); }, [place, freeW, shown.length, colorBy, hintVisible]);
+  useLayoutEffect(() => { place(); }, [place, freeW, shown.length, lg, hintVisible]);
   return (
     <>
       <button ref={legendRef} type="button" className="vo-legend" data-occluder="" aria-label={`Legend: ${lg.title}`} aria-expanded={pop.open} onClick={pop.toggle}>

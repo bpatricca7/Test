@@ -22,19 +22,45 @@ import { LabelLayerDriver } from './LabelLayer';
 import { useTestHooks } from './testHooks';
 import { disposeAssets } from './assets';
 import { rt } from './runtime';
-import { freeRect, insets } from './insets';
+import { freeRect, insets, insetsSettling } from './insets';
 import type { Box2 } from './layout';
 
 export { dayFactor, nightFactor } from './Lighting';
 
+/**
+ * Advances the non-reactive clock every frame and mirrors it into the store for the shell's dock: once a second,
+ * and only every 5 s while a run streams (the shell's coalesced extraction flushes already use most of the
+ * ≤ 4 store writes/s budget then).
+ */
 function SimClock() {
   const simSet = useStore((s) => s.simSet);
   const last = useRef(0);
   useFrame((_, dt) => {
     if (clock.playing) clock.time = (clock.time + (Math.min(dt, 0.1) * clock.speed) / 60) % 24;
     last.current += dt;
-    if (last.current > 0.5) { last.current = 0; if (clock.playing) simSet({ time: clock.time }); }
+    const every = useStore.getState().extraction.running ? 5 : 1;
+    if (last.current > every) { last.current = 0; if (clock.playing) simSet({ time: clock.time }); }
   });
+  return null;
+}
+
+/**
+ * Follows sim changes made outside the render loop (the dock's clock slider, "Jump to hh:mm", the peak-hour
+ * default, tests calling simSet). The shell often writes `clock` directly before `simSet`, so every sim change
+ * counts: in the demand frameloop nothing else would render the new time (crews, Live sky and sun, agents()).
+ */
+function SimFollower() {
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => useStore.subscribe((s, p) => {
+    if (s.sim === p.sim) return;
+    const jumped = Math.abs(s.sim.time - p.sim.time) > 1e-6 || Math.abs(s.sim.time - clock.time) > 0.02;
+    if (Math.abs(s.sim.time - clock.time) > 0.02) clock.time = s.sim.time;
+    if (s.sim.speed !== clock.speed) clock.speed = s.sim.speed;
+    clock.playing = s.sim.playing;
+    // the Live sun follows the clock: a time jump needs a fresh shadow map at once, not at the next 1 Hz refresh
+    if (jumped && !s.sim.playing && (s.lighting ?? 'review') === 'live') rt.shadowDirty = true;
+    invalidate();
+  }), [invalidate]);
   return null;
 }
 
@@ -135,7 +161,7 @@ function FreeRectScissor() {
     if (insets.version !== lastVersion.current) { lastVersion.current = insets.version; until.current = now + 450; }
     const W = size.width, H = size.height;
     const fr = freeRect(W, H);
-    const full = insets.animating || now < until.current || (fr.w >= W - 1 && fr.h >= H - 1);
+    const full = insetsSettling() || now < until.current || (fr.w >= W - 1 && fr.h >= H - 1);
     if (full) { gl.setScissorTest(false); rt.scissor.on = false; if (now < until.current) rt.animating.add('scissor'); else rt.animating.delete('scissor'); return; }
     rt.animating.delete('scissor');
     const x = Math.max(0, Math.floor(fr.x0) - 2), y = Math.max(0, Math.floor(H - fr.y1) - 2);
@@ -203,6 +229,7 @@ function SceneContents({ layer }: { layer: React.RefObject<HTMLDivElement | null
       <PlanCamera />
       <CameraRig />
       <SimClock />
+      <SimFollower />
       <Animator />
       <LabelLayerDriver layer={layer} />
       <TestHooks />
@@ -234,14 +261,6 @@ export function Scene() {
     return () => window.removeEventListener('resize', on);
   }, [quality]);
   useEffect(() => { clock.playing = playing; }, [playing]);
-  // the shell may set the time or speed through the store (scrubber, peak-hour default, tests): follow it
-  useEffect(() => useStore.subscribe((s, p) => {
-    if (s.sim !== p.sim) {
-      if (Math.abs(s.sim.time - clock.time) > 0.02) clock.time = s.sim.time;
-      if (s.sim.speed !== clock.speed) clock.speed = s.sim.speed;
-      clock.playing = s.sim.playing;
-    }
-  }), []);
   const frameloop = view === 'table' ? 'never' : (playing && roster.length > 0) || running ? 'always' : 'demand';
   const gl = useMemo(() => ({ antialias: false, powerPreference: 'high-performance' as const, toneMapping: THREE.NeutralToneMapping, toneMappingExposure: 1.0, stencil: false }), []);
   return (

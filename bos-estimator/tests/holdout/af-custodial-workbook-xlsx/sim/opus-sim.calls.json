@@ -1,0 +1,2266 @@
+{
+  "model": "opus-sim",
+  "passes": [
+    [
+      "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx"
+    ]
+  ],
+  "calls": [
+    {
+      "name": "set_site_info",
+      "input": {
+        "installation_name": "Tallgrass Air Force Base",
+        "location": "Kansas (Cottonwood Annex GSU approx. 38 miles NW of main base)",
+        "solicitation": "FA4693-27-R-0007",
+        "contract_name": "Custodial Services, Tallgrass Air Force Base, Kansas",
+        "climate_zone": "temperate",
+        "growing_season_weeks": null,
+        "contract_years": null,
+        "notes": "Only Attachment 2 Appendix B (Est SF and Cleaning Level, revised by Amendment 0001, 12 Feb 2027) is in the package. Contract period (base + options) not stated; Base Yr CLINs 0001-0003 and Optional CLIN 0006 referenced. Climate inferred from Kansas location; no grounds scope."
+      },
+      "pass": 0
+    },
+    {
+      "name": "declare_tables",
+      "input": {
+        "tables": [
+          {
+            "table_id": "Z1",
+            "title": "Appendix B - Zone 1 - Flightline (Facility Nos. 1100-1199), Levels 1 and 2 (sheet \"Zone 1 - Flightline\")",
+            "kind": "facilities",
+            "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+            "pages": null,
+            "row_count": 16,
+            "printed_total_gross_area": 94985,
+            "area_unit": "sf",
+            "printed_totals": []
+          },
+          {
+            "table_id": "Z2",
+            "title": "Appendix B - Zone 2 - Cantonment / Mission Support (Facility Nos. 2000-2099), Levels 1 and 2 (sheet \"Zone 2 - Cantonment\")",
+            "kind": "facilities",
+            "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+            "pages": null,
+            "row_count": 19,
+            "printed_total_gross_area": 153759,
+            "area_unit": "sf",
+            "printed_totals": []
+          },
+          {
+            "table_id": "Z2-REF",
+            "title": "Zone 2 - Facilities listed for reference only - not on contract (sheet \"Zone 2 - Cantonment\", below zone total)",
+            "kind": "facilities",
+            "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+            "pages": null,
+            "row_count": 1,
+            "printed_total_gross_area": null,
+            "area_unit": "sf",
+            "printed_totals": []
+          },
+          {
+            "table_id": "Z3",
+            "title": "Appendix B - Zone 3 - Community Support / Quality of Life (Facility Nos. 3000-3099), Levels 1, 2 and 4 (sheet \"Zone 3 - Community Spt\")",
+            "kind": "facilities",
+            "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+            "pages": null,
+            "row_count": 12,
+            "printed_total_gross_area": 133705,
+            "area_unit": "sf",
+            "printed_totals": []
+          },
+          {
+            "table_id": "Z3-OPT",
+            "title": "Zone 3 - Optional facility - Optional CLIN 0006 (sheet \"Zone 3 - Community Spt\", below zone total)",
+            "kind": "facilities",
+            "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+            "pages": null,
+            "row_count": 1,
+            "printed_total_gross_area": null,
+            "area_unit": "sf",
+            "printed_totals": []
+          },
+          {
+            "table_id": "GSU",
+            "title": "Appendix B - Geographically Separated Unit - Cottonwood Annex, Level 2 (sheet \"GSU - Cottonwood Annex\")",
+            "kind": "facilities",
+            "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+            "pages": null,
+            "row_count": 2,
+            "printed_total_gross_area": 2643.42,
+            "area_unit": "sf",
+            "printed_totals": []
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "Z1",
+            "campus": "Tallgrass AFB",
+            "building_number": "1102",
+            "name": "Base Operations",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 6502,
+            "added_areas": null,
+            "cleanable_area": 6502,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "5 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.49,
+              "resilient": 0.447,
+              "hard_tile": 0.063,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "1 | 1102 | Base Operations | 726 OSS | 1 - Prestige | 5 x Week | 2 | 4 | 412 | 3186 | 2904 |  | 6502 |  | Airfield Management & Base Ops lobby"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 OSS. Cleaning Level 1 - Prestige. No. of RR (restroom rooms, not a fixture count): 4. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: Airfield Management & Base Ops lobby floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z1",
+            "campus": "Tallgrass AFB",
+            "building_number": "1110",
+            "name": "Passenger Terminal",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 10104,
+            "added_areas": null,
+            "cleanable_area": 10104,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_frequency_text": "7 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.121,
+              "resilient": 0.777,
+              "hard_tile": 0.103,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "1 | 1110 | Passenger Terminal | 726 LRS | 1 - Prestige | 7 x Week | 1 | 6 | 1038 | 1220 | 7846 |  | 10104 |  | Terminal lobby open 24 hrs during exercises/contingencies; see PWS 1.2"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 LRS. Cleaning Level 1 - Prestige. No. of RR (restroom rooms, not a fixture count): 6. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: Terminal lobby open 24 hrs during exercises/contingencies; see PWS 1.2 floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z1",
+            "campus": "Tallgrass AFB",
+            "building_number": "1114",
+            "name": "Air Traffic Control Tower",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 1096,
+            "added_areas": null,
+            "cleanable_area": 1096,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 6,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "5 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.536,
+              "resilient": 0.376,
+              "hard_tile": 0.088,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "1 | 1114 | Air Traffic Control Tower | 726 OSS | 2 - Basic | 5 x Week | 6 | 2 | 96 | 588 | 412 |  | 1096 |  | Cab level cleaned only with ATC escort"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 OSS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 2. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: Cab level cleaned only with ATC escort floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z1",
+            "campus": "Tallgrass AFB",
+            "building_number": "1120",
+            "name": "Squadron Operations / Life Support",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 17646,
+            "added_areas": null,
+            "cleanable_area": 17646,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "5 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.533,
+              "resilient": 0.394,
+              "hard_tile": 0.073,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "1 | 1120 | Squadron Operations / Life Support | 726 ARS | 2 - Basic | 5 x Week | 2 | 6 | 1284 | 9412 | 6950 |  | 17646"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 ARS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 6. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z1",
+            "campus": "Tallgrass AFB",
+            "building_number": "1124",
+            "name": "Squadron Operations",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 12310,
+            "added_areas": null,
+            "cleanable_area": 12310,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "5 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.595,
+              "resilient": 0.335,
+              "hard_tile": 0.07,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "1 | 1124 | Squadron Operations | 727 ARS | 2 - Basic | 5 x Week | 2 | 4 | 862 | 7330 | 4118 |  | 12310"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 727 ARS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 4. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z1",
+            "campus": "Tallgrass AFB",
+            "building_number": "1130",
+            "name": "Maintenance Hangar (Admin & Shop Areas Only)",
+            "status": null,
+            "status_reason": null,
+            "category": "hangar",
+            "gross_area": 10796,
+            "added_areas": null,
+            "cleanable_area": 10796,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_frequency_text": "3 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.122,
+              "resilient": 0.265,
+              "hard_tile": 0.069,
+              "concrete": 0.545,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "1 | 1130 | Maintenance Hangar (Admin & Shop Areas Only) | 726 AMXS | 2 - Basic | 3 x Week | 1 + Mezz | 4 | 744 | 1312 | 2860 | 5880 | 10796 |  | Hangar bay floor NOT included. Other SF = shop floors o"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 AMXS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 4. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: Hangar bay floor NOT included. Other SF = shop floors only No. Flrs printed \"1 + Mezz\". floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z1",
+            "campus": "Tallgrass AFB",
+            "building_number": "1132",
+            "name": "Fuel Cell Hangar (Admin Only)",
+            "status": null,
+            "status_reason": null,
+            "category": "hangar",
+            "gross_area": 1384,
+            "added_areas": null,
+            "cleanable_area": 1384,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_frequency_text": "2 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0,
+              "resilient": 0.828,
+              "hard_tile": 0.172,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "1 | 1132 | Fuel Cell Hangar (Admin Only) | 726 MXS | 2 - Basic | 2 x Week | 1 | 2 | 238 | 0 | 1146 |  | 1384 |  | Hangar bay NOT included"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 MXS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 2. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: Hangar bay NOT included floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z1",
+            "campus": "Tallgrass AFB",
+            "building_number": "1140",
+            "name": "Aircraft Maintenance Unit (AMU)",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 9403,
+            "added_areas": null,
+            "cleanable_area": 9403,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "5 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.518,
+              "resilient": 0.416,
+              "hard_tile": 0.066,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "1 | 1140 | Aircraft Maintenance Unit (AMU) | 726 AMXS | 2 - Basic | 5 x Week | 2 | 4 | 618 | 4870 | 3915 |  | 9403"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 AMXS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 4. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z1",
+            "campus": "Tallgrass AFB",
+            "building_number": "1146",
+            "name": "Aerospace Ground Equipment (AGE)",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 4427,
+            "added_areas": null,
+            "cleanable_area": 4427,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_frequency_text": "2 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0,
+              "resilient": 0.506,
+              "hard_tile": 0.07,
+              "concrete": 0.424,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "1 | 1146 | Aerospace Ground Equipment (AGE) | 726 MXS | 2 - Basic | 2 x Week | 1 | 2 | 312 | 0 | 2240 | 1875 | 4427"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 MXS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 2. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z1",
+            "campus": "Tallgrass AFB",
+            "building_number": "1150",
+            "name": "Fire Station / Crash Rescue",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 7550,
+            "added_areas": null,
+            "cleanable_area": 7550,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_frequency_text": "7 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.154,
+              "resilient": 0.727,
+              "hard_tile": 0.119,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "1 | 1150 | Fire Station / Crash Rescue | 726 CES | 2 - Basic | 7 x Week | 2 | 5 | 902 | 1160 | 5488 |  | 7550 |  | Apparatus bays and dormitory rooms cleaned by occupants"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 CES. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 5. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: Apparatus bays and dormitory rooms cleaned by occupants floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z1",
+            "campus": "Tallgrass AFB",
+            "building_number": "1158A",
+            "name": "Munitions Squadron Admin",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 3355,
+            "added_areas": null,
+            "cleanable_area": 3355,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "5 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.689,
+              "resilient": 0.25,
+              "hard_tile": 0.061,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "1 | 1158A | Munitions Squadron Admin | 726 MUNS | 2 - Basic | 5 x Week | 1 | 2 | 205 | 2310 | 840 |  | 3355"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 MUNS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 2. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z1",
+            "campus": "Tallgrass AFB",
+            "building_number": "1158B",
+            "name": "Munitions Inspection Bay (Break Room & Latrine Only)",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 444,
+            "added_areas": null,
+            "cleanable_area": 444,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_frequency_text": "2 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0,
+              "resilient": 0.667,
+              "hard_tile": 0.333,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "1 | 1158B | Munitions Inspection Bay (Break Room & Latrine Only) | 726 MUNS | 2 - Basic | 2 x Week | 1 | 1 | 148 | 0 | 296 |  | 444 |  | Escort required inside MSA"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 MUNS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 1. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: Escort required inside MSA floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z1",
+            "campus": "Tallgrass AFB",
+            "building_number": "1166",
+            "name": "Weather Flight",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 1254,
+            "added_areas": null,
+            "cleanable_area": 1254,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_frequency_text": "1 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.781,
+              "resilient": 0.167,
+              "hard_tile": 0.051,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "1 | 1166 | Weather Flight | 726 OSS | 2 - Basic | 1 x Week | 1 | 1 | 64 | 980 | 210 |  | 1254"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 OSS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 1. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z1",
+            "campus": "Tallgrass AFB",
+            "building_number": "1172",
+            "name": "Aircrew Flight Equipment (Parachute Shop)",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 3360,
+            "added_areas": null,
+            "cleanable_area": 3360,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "biweekly",
+            "service_days_per_year": null,
+            "service_frequency_text": "1x every two weeks",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0,
+              "resilient": 0.935,
+              "hard_tile": 0.065,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "1 | 1172 | Aircrew Flight Equipment (Parachute Shop) | 726 OSS | 2 - Basic | 1x every two weeks | 1 | 2 | 220 | 0 | 3140 |  | 3360"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 OSS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 2. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z1",
+            "campus": "Tallgrass AFB",
+            "building_number": "1176",
+            "name": "Flight Simulator Facility",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 5354,
+            "added_areas": null,
+            "cleanable_area": 5354,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "5 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.682,
+              "resilient": 0.265,
+              "hard_tile": 0.053,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "1 | 1176 | Flight Simulator Facility | 726 OSS | 2 - Basic | 5 x Week | 1 | 2 | 284 | 3650 | 1420 |  | 5354 |  | Simulator bays excluded"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 OSS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 2. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: Simulator bays excluded floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z1",
+            "campus": "Tallgrass AFB",
+            "building_number": "1180",
+            "name": "Squadron Operations (Old)",
+            "status": "deleted_by_amendment",
+            "status_reason": "DELETED per Amendment 0001 - vacated 15 Jan 2027, programmed for demolition. Was Level 2, 5 x Week, 4,868 SF",
+            "category": "admin",
+            "gross_area": 0,
+            "added_areas": null,
+            "cleanable_area": 0,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_frequency_text": "DELETED",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "1 | 1180 | Squadron Operations (Old) | 726 ARS | N/A | DELETED | 1 | 0 | 0 | 0 | 0 | 0 | 0 | A1 | DELETED per Amendment 0001 - vacated 15 Jan 2027, programmed for demolition. Was Level 2, 5 x Week, 4,"
+            },
+            "confidence": 0.9,
+            "notes": "Row prints 0 SF after deletion; before Amendment 0001 it was 4,868 SF, Level 2, 5 x Week. User/Agency 726 ARS."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "Z2",
+            "campus": "Tallgrass AFB",
+            "building_number": "2000",
+            "name": "Wing Headquarters - Command Section",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 6215,
+            "added_areas": null,
+            "cleanable_area": 6215,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "5 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.782,
+              "resilient": 0.168,
+              "hard_tile": 0.05,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "2 | 2000 | Wing Headquarters - Command Section | 726 ABW/CC | 1 - Prestige | 5 x Week | 2 | 2 | 310 | 4860 | 1045 |  | 6215 |  | Wing CC/CV/CCC suites, conference room & lobby. Remainder of bldg is Le"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 ABW/CC. Cleaning Level 1 - Prestige. No. of RR (restroom rooms, not a fixture count): 2. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: Wing CC/CV/CCC suites, conference room & lobby. Remainder of bldg is Level 2 (see below) Facility 2000 is listed once per cleaning level (Level 1 Command Section 6,215 SF and Level 2 Staff Agencies 18,540 SF); this row is one of the two lines. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z2",
+            "campus": "Tallgrass AFB",
+            "building_number": "2080",
+            "name": "Education Center & Base Library",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 13786,
+            "added_areas": null,
+            "cleanable_area": 13786,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_6",
+            "service_days_per_year": null,
+            "service_frequency_text": "6 x Week (Mon-Sat)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.717,
+              "resilient": 0.233,
+              "hard_tile": 0.05,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "2 | 2080 | Education Center & Base Library | 726 FSS | 1 - Prestige | 6 x Week (Mon-Sat) | 2 | 4 | 692 | 9880 | 3214 |  | 13786 |  | Library open Saturdays 1000-1600"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 FSS. Cleaning Level 1 - Prestige. No. of RR (restroom rooms, not a fixture count): 4. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: Library open Saturdays 1000-1600 floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z2",
+            "campus": "Tallgrass AFB",
+            "building_number": "2000",
+            "name": "Wing Headquarters - Staff Agencies",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 18540,
+            "added_areas": null,
+            "cleanable_area": 18540,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "5 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.726,
+              "resilient": 0.214,
+              "hard_tile": 0.06,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "2 | 2000 | Wing Headquarters - Staff Agencies | 726 ABW (JA/IG/PA/XP) | 2 - Basic | 5 x Week | 2 | 6 | 1120 | 13452 | 3968 |  | 18540 |  | Same facility as Level 1 line above"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 ABW (JA/IG/PA/XP). Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 6. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: Same facility as Level 1 line above Facility 2000 is listed once per cleaning level (Level 1 Command Section 6,215 SF and Level 2 Staff Agencies 18,540 SF); this row is one of the two lines. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z2",
+            "campus": "Tallgrass AFB",
+            "building_number": "2004",
+            "name": "Military Personnel Flight",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 7870,
+            "added_areas": null,
+            "cleanable_area": 7870,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "5 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.663,
+              "resilient": 0.276,
+              "hard_tile": 0.062,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "2 | 2004 | Military Personnel Flight | 726 FSS | 2 - Basic | 5 x Week | 1 | 4 | 486 | 5214 | 2170 |  | 7870"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 FSS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 4. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z2",
+            "campus": "Tallgrass AFB",
+            "building_number": "2010",
+            "name": "Comptroller / Finance",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 4830,
+            "added_areas": null,
+            "cleanable_area": 4830,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "5 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.819,
+              "resilient": 0.127,
+              "hard_tile": 0.054,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "2 | 2010 | Comptroller / Finance | 726 CPTS | 2 - Basic | 5 x Week | 1 | 2 | 260 | 3955 | 615 |  | 4830"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 CPTS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 2. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z2",
+            "campus": "Tallgrass AFB",
+            "building_number": "2016",
+            "name": "Mission Support Group HQ",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 9178,
+            "added_areas": null,
+            "cleanable_area": 9178,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "5 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.735,
+              "resilient": 0.207,
+              "hard_tile": 0.058,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "2 | 2016 | Mission Support Group HQ | 726 MSG | 2 - Basic | 5 x Week | 2 | 4 | 532 | 6744 | 1902 |  | 9178"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 MSG. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 4. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z2",
+            "campus": "Tallgrass AFB",
+            "building_number": "2022",
+            "name": "Civil Engineer Squadron Admin",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 10293,
+            "added_areas": null,
+            "cleanable_area": 10293,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "5 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.701,
+              "resilient": 0.242,
+              "hard_tile": 0.057,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "2 | 2022 | Civil Engineer Squadron Admin | 726 CES | 2 - Basic | 5 x Week | 2 | 4 | 590 | 7215 | 2488 |  | 10293"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 CES. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 4. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z2",
+            "campus": "Tallgrass AFB",
+            "building_number": "2024",
+            "name": "CE Operations Flight Shops (Admin & Break Areas)",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 7330,
+            "added_areas": null,
+            "cleanable_area": 7330,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_frequency_text": "3 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.087,
+              "resilient": 0.452,
+              "hard_tile": 0.057,
+              "concrete": 0.404,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "2 | 2024 | CE Operations Flight Shops (Admin & Break Areas) | 726 CES | 2 - Basic | 3 x Week | 1 | 3 | 418 | 640 | 3312 | 2960 | 7330 | A1 | Other SF re-measured, Amd 0001"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 CES. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 3. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: Other SF re-measured, Amd 0001 floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z2",
+            "campus": "Tallgrass AFB",
+            "building_number": "2030",
+            "name": "Base Supply Warehouse",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 18185,
+            "added_areas": null,
+            "cleanable_area": 18185,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_frequency_text": "2 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.069,
+              "resilient": 0.107,
+              "hard_tile": 0.021,
+              "concrete": 0.803,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "2 | 2030 | Base Supply Warehouse | 726 LRS | 2 - Basic | 2 x Week | 1 | 3 | 380 | 1260 | 1945 | 14600 | 18185 |  | Other SF = warehouse floor, dust mop only"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 LRS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 3. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: Other SF = warehouse floor, dust mop only floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z2",
+            "campus": "Tallgrass AFB",
+            "building_number": "2034",
+            "name": "Vehicle Maintenance",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 8925,
+            "added_areas": null,
+            "cleanable_area": 8925,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_frequency_text": "3 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0,
+              "resilient": 0.228,
+              "hard_tile": 0.046,
+              "concrete": 0.726,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "2 | 2034 | Vehicle Maintenance | 726 LRS | 2 - Basic | 3 x Week | 1 | 3 | 410 | 0 | 2035 | 6480 | 8925 |  | Service bays: sweep only"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 LRS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 3. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: Service bays: sweep only floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z2",
+            "campus": "Tallgrass AFB",
+            "building_number": "2040",
+            "name": "Communications Squadron",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 11239,
+            "added_areas": null,
+            "cleanable_area": 11239,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "5 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.722,
+              "resilient": 0.233,
+              "hard_tile": 0.045,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "2 | 2040 | Communications Squadron | 726 CS | 2 - Basic | 5 x Week | 2 | 4 | 504 | 8120 | 2615 |  | 11239"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 CS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 4. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z2",
+            "campus": "Tallgrass AFB",
+            "building_number": "2042",
+            "name": "Network Control Center",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 4040,
+            "added_areas": null,
+            "cleanable_area": 4040,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_frequency_text": "7 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0,
+              "resilient": 0.955,
+              "hard_tile": 0.045,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "2 | 2042 | Network Control Center | 726 CS | 2 - Basic | 7 x Week | 1 | 2 | 180 | N/A | 3860 |  | 4040 |  | Raised access floor; no wet mopping"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 CS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 2. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: Raised access floor; no wet mopping floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z2",
+            "campus": "Tallgrass AFB",
+            "building_number": "2048",
+            "name": "Security Forces Squadron / BDOC",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 12108,
+            "added_areas": null,
+            "cleanable_area": 12108,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_frequency_text": "7 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.363,
+              "resilient": 0.568,
+              "hard_tile": 0.07,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "2 | 2048 | Security Forces Squadron / BDOC | 726 SFS | 2 - Basic | 7 x Week | 2 | 6 | 846 | 4390 | 6872 |  | 12108 |  | BDOC manned 24/7; service between 0800-1600"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 SFS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 6. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: BDOC manned 24/7; service between 0800-1600 floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z2",
+            "campus": "Tallgrass AFB",
+            "building_number": "2052",
+            "name": "Visitor Control Center (Pass & ID)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 1455,
+            "added_areas": null,
+            "cleanable_area": 1455,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_6",
+            "service_days_per_year": null,
+            "service_frequency_text": "6 x Week (Mon-Sat)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0,
+              "resilient": 0.904,
+              "hard_tile": 0.096,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "2 | 2052 | Visitor Control Center (Pass & ID) | 726 SFS | 2 - Basic | 6 x Week (Mon-Sat) | 1 | 2 | 140 | 0 | 1315 |  | 1455"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 SFS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 2. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z2",
+            "campus": "Tallgrass AFB",
+            "building_number": "2060",
+            "name": "Contracting Squadron",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 5156,
+            "added_areas": null,
+            "cleanable_area": 5156,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "5 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.856,
+              "resilient": 0.099,
+              "hard_tile": 0.046,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "2 | 2060 | Contracting Squadron | 726 CONS | 2 - Basic | 5 x Week | 1 | 2 | 236 | 4412 | 508 |  | 5156"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 CONS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 2. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z2",
+            "campus": "Tallgrass AFB",
+            "building_number": "2066",
+            "name": "AFOSI Detachment",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 2452,
+            "added_areas": null,
+            "cleanable_area": 2452,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_frequency_text": "1 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.808,
+              "resilient": 0.14,
+              "hard_tile": 0.052,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "2 | 2066 | AFOSI Detachment | AFOSI | 2 - Basic | 1 x Week | 1 | 2 | 128 | 1980 | 344 |  | 2452 |  | Escort required"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: AFOSI. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 2. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: Escort required floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z2",
+            "campus": "Tallgrass AFB",
+            "building_number": "2070",
+            "name": "Bioenvironmental Engineering",
+            "status": null,
+            "status_reason": null,
+            "category": "medical",
+            "gross_area": 2138,
+            "added_areas": null,
+            "cleanable_area": 2138,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_frequency_text": "1 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.402,
+              "resilient": 0.564,
+              "hard_tile": 0.034,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "2 | 2070 | Bioenvironmental Engineering | 726 AMDS | 2 - Basic | 1 x Week | 1 | 1 | 72 | 860 | 1206 |  | 2138"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 AMDS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 1. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z2",
+            "campus": "Tallgrass AFB",
+            "building_number": "2076",
+            "name": "Airman Leadership School",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 5445,
+            "added_areas": null,
+            "cleanable_area": 5445,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "5 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0,
+              "resilient": 0.905,
+              "hard_tile": 0.095,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "2 | 2076 | Airman Leadership School | 726 FSS | 2 - Basic | 5 x Week | 1 | 4 | 515 | 0 | 4930 |  | 5445"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 FSS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 4. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z2",
+            "campus": "Tallgrass AFB",
+            "building_number": "2094",
+            "name": "USSF Space Operations Admin Annex",
+            "status": "in_scope",
+            "status_reason": "ADDED per Amendment 0001 (new occupancy)",
+            "category": "admin",
+            "gross_area": 4574,
+            "added_areas": null,
+            "cleanable_area": 4574,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "5 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.789,
+              "resilient": 0.157,
+              "hard_tile": 0.053,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "2 | 2094 | USSF Space Operations Admin Annex | USSF Det 2 | 2 - Basic | 5 x Week | 1 | 2 | 244 | 3610 | 720 |  | 4574 | A1 | ADDED per Amendment 0001 (new occupancy)"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: USSF Det 2. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 2. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: ADDED per Amendment 0001 (new occupancy) floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "Z2-REF",
+            "campus": "Tallgrass AFB",
+            "building_number": "2090",
+            "name": "Space Operations Facility (SCIF)",
+            "status": "excluded",
+            "status_reason": "FACILITIES LISTED FOR REFERENCE ONLY - NOT ON CONTRACT; Svc Freq \"Not on contract\"; \"Contractor services NOT required\"",
+            "category": "other",
+            "gross_area": 22430,
+            "added_areas": null,
+            "cleanable_area": 22430,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_frequency_text": "Not on contract",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.635,
+              "resilient": 0.338,
+              "hard_tile": 0.027,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "2 | 2090 | Space Operations Facility (SCIF) | USSF Det 2 | 2 - Basic | Not on contract | 2 | 4 | 610 | 14240 | 7580 |  | 22430 |  | Controlled area - custodial performed by cleared unit personnel. Con"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: USSF Det 2. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 4. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: Controlled area - custodial performed by cleared unit personnel. Contractor services NOT required floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "Z3",
+            "campus": "Tallgrass AFB",
+            "building_number": "3002",
+            "name": "Base Chapel",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 7940,
+            "added_areas": null,
+            "cleanable_area": 7940,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "5 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.607,
+              "resilient": 0.329,
+              "hard_tile": 0.064,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "3 | 3002 | Base Chapel | 726 ABW/HC | 1 - Prestige | 5 x Week | 1 | 4 | 508 | 4822 | 2610 |  | 7940 |  | Sanctuary set-up for Sunday services by Chapel staff"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 ABW/HC. Cleaning Level 1 - Prestige. No. of RR (restroom rooms, not a fixture count): 4. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: Sanctuary set-up for Sunday services by Chapel staff floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z3",
+            "campus": "Tallgrass AFB",
+            "building_number": "3006",
+            "name": "Community Activity Center",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 15360,
+            "added_areas": null,
+            "cleanable_area": 15360,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_frequency_text": "7 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.409,
+              "resilient": 0.517,
+              "hard_tile": 0.075,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "3 | 3006 | Community Activity Center | 726 FSS | 1 - Prestige | 7 x Week | 1 | 6 | 1145 | 6280 | 7935 |  | 15360"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 FSS. Cleaning Level 1 - Prestige. No. of RR (restroom rooms, not a fixture count): 6. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z3",
+            "campus": "Tallgrass AFB",
+            "building_number": "3010",
+            "name": "Airman & Family Readiness Center",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 4804,
+            "added_areas": null,
+            "cleanable_area": 4804,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "5 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.71,
+              "resilient": 0.235,
+              "hard_tile": 0.055,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "3 | 3010 | Airman & Family Readiness Center | 726 FSS | 1 - Prestige | 5 x Week | 1 | 2 | 266 | 3410 | 1128 |  | 4804"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 FSS. Cleaning Level 1 - Prestige. No. of RR (restroom rooms, not a fixture count): 2. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z3",
+            "campus": "Tallgrass AFB",
+            "building_number": "3014",
+            "name": "Bowling Center (Restrooms & Snack Bar Seating Only)",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 2180,
+            "added_areas": null,
+            "cleanable_area": 2180,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_frequency_text": "7 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0,
+              "resilient": 0.853,
+              "hard_tile": 0.147,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "3 | 3014 | Bowling Center (Restrooms & Snack Bar Seating Only) | 726 FSS | 2 - Basic | 7 x Week | 1 | 2 | 320 | 0 | 1860 |  | 2180 |  | Lanes and approaches maintained by NAF staff"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 FSS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 2. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: Lanes and approaches maintained by NAF staff floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z3",
+            "campus": "Tallgrass AFB",
+            "building_number": "3018",
+            "name": "Outdoor Recreation",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 4084,
+            "added_areas": null,
+            "cleanable_area": 4084,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "5 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0,
+              "resilient": 0.414,
+              "hard_tile": 0.038,
+              "concrete": 0.548,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "3 | 3018 | Outdoor Recreation | 726 FSS | 2 - Basic | 5 x Week | 1 | 2 | 154 | 0 | 1690 | 2240 | 4084"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 FSS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 2. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z3",
+            "campus": "Tallgrass AFB",
+            "building_number": "3020",
+            "name": "Arts & Crafts / Auto Skills Center",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 6255,
+            "added_areas": null,
+            "cleanable_area": 6255,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_frequency_text": "3 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0,
+              "resilient": 0.386,
+              "hard_tile": 0.034,
+              "concrete": 0.58,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "3 | 3020 | Arts & Crafts / Auto Skills Center | 726 FSS | 2 - Basic | 3 x Week | 1 | 2 | 210 | 0 | 2415 | 3630 | 6255 |  | Auto bays: sweep only"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 FSS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 2. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: Auto bays: sweep only floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z3",
+            "campus": "Tallgrass AFB",
+            "building_number": "3024",
+            "name": "Housing Management Office",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 2691,
+            "added_areas": null,
+            "cleanable_area": 2691,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "5 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.696,
+              "resilient": 0.243,
+              "hard_tile": 0.061,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "3 | 3024 | Housing Management Office | 726 CES | 2 - Basic | 5 x Week | 1 | 2 | 164 | 1872 | 655 |  | 2691"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 CES. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 2. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z3",
+            "campus": "Tallgrass AFB",
+            "building_number": "3028",
+            "name": "Dining Facility",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 6800,
+            "added_areas": null,
+            "cleanable_area": 6800,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_frequency_text": "7 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0,
+              "resilient": 0.913,
+              "hard_tile": 0.087,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "3 | 3028 | Dining Facility | 726 FSS | 2 - Basic | 7 x Week | 1 | 4 | 590 | 0 | 6210 |  | 6800 |  | Dining room, entry & restrooms only. Kitchen and serving line by food service contractor"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 FSS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 4. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: Dining room, entry & restrooms only. Kitchen and serving line by food service contractor floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z3",
+            "campus": "Tallgrass AFB",
+            "building_number": "3032",
+            "name": "Youth Sports Complex Restrooms",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 236,
+            "added_areas": null,
+            "cleanable_area": 236,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": 90,
+            "service_frequency_text": "3 x Week (APR-OCT only)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0,
+              "resilient": 0,
+              "hard_tile": 1,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "3 | 3032 | Youth Sports Complex Restrooms | 726 FSS | 2 - Basic | 3 x Week (APR-OCT only) | 1 | 2 | 236 | - | - |  | 236 |  | SEASONAL - restrooms winterized NOV-MAR"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 FSS. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 2. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: SEASONAL - restrooms winterized NOV-MAR Seasonal APR-OCT only; 90 annual service days per Notes & Instructions Note 6. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z3",
+            "campus": "Tallgrass AFB",
+            "building_number": "3040",
+            "name": "Fitness Center",
+            "status": null,
+            "status_reason": null,
+            "category": "fitness",
+            "gross_area": 47015,
+            "added_areas": null,
+            "cleanable_area": 47015,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_frequency_text": "7 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.06,
+              "resilient": 0.829,
+              "hard_tile": 0.111,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "3 | 3040 | Fitness Center | 726 FSS | 4 - Special Req | 7 x Week | 2 | 8 | 5240 | 2815 | 38960 |  | 47015 |  | Restroom SF includes locker/shower rooms. Hard floor includes wood courts"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 FSS. Cleaning Level 4 - Special Req. No. of RR (restroom rooms, not a fixture count): 8. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: Restroom SF includes locker/shower rooms. Hard floor includes wood courts floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z3",
+            "campus": "Tallgrass AFB",
+            "building_number": "3044",
+            "name": "Child Development Center",
+            "status": null,
+            "status_reason": null,
+            "category": "child_care",
+            "gross_area": 15735,
+            "added_areas": null,
+            "cleanable_area": 15735,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "5 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.503,
+              "resilient": 0.422,
+              "hard_tile": 0.075,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "3 | 3044 | Child Development Center | 726 FSS | 4 - Special Req | 5 x Week | 1 | 10 | 1180 | 7915 | 6640 |  | 15735"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 FSS. Cleaning Level 4 - Special Req. No. of RR (restroom rooms, not a fixture count): 10. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "Z3",
+            "campus": "Tallgrass AFB",
+            "building_number": "3048",
+            "name": "Youth Center / School Age Program",
+            "status": null,
+            "status_reason": null,
+            "category": "child_care",
+            "gross_area": 20605,
+            "added_areas": null,
+            "cleanable_area": 20605,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_6",
+            "service_days_per_year": null,
+            "service_frequency_text": "6 x Week (Mon-Sat)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.263,
+              "resilient": 0.691,
+              "hard_tile": 0.047,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "3 | 3048 | Youth Center / School Age Program | 726 FSS | 4 - Special Req | 6 x Week (Mon-Sat) | 1 | 6 | 965 | 5410 | 14230 |  | 20605 | A1 | Svc Freq changed by Amd 0001 (Saturday programs)"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 FSS. Cleaning Level 4 - Special Req. No. of RR (restroom rooms, not a fixture count): 6. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: Svc Freq changed by Amd 0001 (Saturday programs) floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "Z3-OPT",
+            "campus": "Tallgrass AFB",
+            "building_number": "3052",
+            "name": "Fitness Center Annex (New Construction)",
+            "status": "option_only",
+            "status_reason": "OPTIONAL FACILITY - OPTIONAL CLIN 0006 (not included in base totals); \"Exercised only by unilateral modification\"",
+            "category": "fitness",
+            "gross_area": 9850,
+            "added_areas": null,
+            "cleanable_area": 9850,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_frequency_text": "Option - CLIN 0006",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0,
+              "resilient": 0.911,
+              "hard_tile": 0.089,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "3 | 3052 | Fitness Center Annex (New Construction) | 726 FSS | 4 - Special Req | Option - CLIN 0006 | 1 | 4 | 880 | 0 | 8970 |  | 9850 |  | Est. beneficial occupancy Jun 2028. Exercised only by unilat"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: 726 FSS. Cleaning Level 4 - Special Req. No. of RR (restroom rooms, not a fixture count): 4. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. Remarks: Est. beneficial occupancy Jun 2028. Exercised only by unilateral modification floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "GSU",
+            "campus": "Cottonwood Annex",
+            "building_number": "101",
+            "name": "Det 1 Operations / Admin",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 2207.75,
+            "added_areas": null,
+            "cleanable_area": 2207.75,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_frequency_text": "2 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.639,
+              "resilient": 0.276,
+              "hard_tile": 0.084,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "GSU | 101 | Det 1 Operations / Admin | USSF Det 1 | 2 - Basic | 2 x Week | 1 | 2 | 186.25 | 1411.62 | 609.88 |  | 2207.75"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: USSF Det 1. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 2. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          },
+          {
+            "table_id": "GSU",
+            "campus": "Cottonwood Annex",
+            "building_number": "104",
+            "name": "Power Production Shop (Break Room & Latrine Only)",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 435.67,
+            "added_areas": null,
+            "cleanable_area": 435.67,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_frequency_text": "1 x Week",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0,
+              "resilient": 0.79,
+              "hard_tile": 0.21,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+              "page": null,
+              "excerpt": "GSU | 104 | Power Production Shop (Break Room & Latrine Only) | USSF Det 1 | 2 - Basic | 1 x Week | 1 | 1 | 91.5 | 0 | 344.17 |  | 435.67"
+            },
+            "confidence": 0.95,
+            "notes": "User/Agency: USSF Det 1. Cleaning Level 2 - Basic. No. of RR (restroom rooms, not a fixture count): 1. Appendix B SF are Government-estimated cleaning areas, not gross building area (Notes & Instructions Note 1); Total Cleaned SF used as gross and cleanable. floor_mix from Restroom SF (hard_tile), Carpet SF, Hard Floor SF VCT/Ceramic/Wood (resilient), Other SF sealed concrete (concrete)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "set_previous_award",
+      "input": {
+        "incumbent": null,
+        "contract_number": null,
+        "contract_type": null,
+        "total_value": null,
+        "period_months": null,
+        "annual_value": null,
+        "spend_to_date": null,
+        "spend_period_months": null,
+        "award_year": null,
+        "source": {
+          "file": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx",
+          "page": null,
+          "excerpt": "No incumbent or previous contract information appears in Attachment 2 Appendix B."
+        },
+        "confidence": 0.9,
+        "notes": "The package contains only Appendix B (estimated SF and cleaning level, Amd 0001); it states nothing about the incumbent, prior contract number, value or spend."
+      },
+      "pass": 0
+    },
+    {
+      "name": "finish",
+      "input": {
+        "summary": "Tallgrass AFB custodial services (FA4693-27-R-0007), Attachment 2 Appendix B as revised by Amendment 0001. Registered all 51 printed facility lines (50 facility numbers): Zone 1 Flightline 16 lines incl. 1180 deleted by Amd 0001; Zone 2 Cantonment 19 lines (Facility 2000 on a Level 1 and a Level 2 line) plus 2090 reference only/not on contract; Zone 3 Community Support 12 lines plus 3052 Optional CLIN 0006; Cottonwood Annex GSU 2 lines. Base workload per Appendix B totals 385,092.42 cleaned SF. Areas are Government-estimated cleaning areas (Note 1), recorded as both gross and cleanable. No grounds scope and no incumbent/previous award information in the package.",
+        "unresolved": [
+          "Z2: Facility 2000 (Wing Headquarters) is one building listed on two lines by cleaning level (Notes & Instructions Note 7; Zone 2 Note 2): Level 1 Command Section 6,215 SF and Level 2 Staff Agencies 18,540 SF. Both portions are serviced (Total Cleaned 24,755 SF; both lines are included in the Zone 2 total of 153,759 SF), but the tool kept only 18,540 SF for the building.",
+          "All Appendix B square footages are Government ESTIMATES of cleaning area, not gross building area (Note 1); no gross building areas are printed anywhere in the package.",
+          "Contract period (base + options), growing season and incumbent contract data are not stated in the package (only Appendix B was provided).",
+          "Facility 3032 Youth Sports Complex Restrooms is seasonal (3 x Week APR-OCT only, 90 service days per Note 6)."
+        ]
+      },
+      "pass": 0
+    }
+  ]
+}

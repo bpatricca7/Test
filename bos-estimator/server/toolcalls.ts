@@ -7,13 +7,17 @@
 //   const { inventory, priorAward, warnings } = finalize(st)
 //
 // What the code does instead of the model:
-//  * facility identity: campus + normalised building number ("Bldg 0012" == "12" == "0012", "T-2401" == "T2401", but
-//    "1-10" != "110"; 0012 on two campuses = two buildings); ids keep the printed form (b-0012, b-main-post--0012);
-//    unnumbered buildings get table/row-scoped ids
-//  * unit conversion (SM × 10.7639, SY × 9 → SF; ha × 2.4710538 → acres; m² → ft²), with the printed area kept
-//  * merge precedence by document rank (base < attachments < Q&A < amendment N), field group by field group, never by
-//    confidence: every row of a building is kept and re-folded in (rank, seq) order, so read order does not matter;
-//    a status only counts when stated (an update row's default in_scope never brings an excluded building back)
+//  * facility identity: campus + normalised building number ("Bldg 0012" == "Site 12" == "12" == "0012", "T-2401" ==
+//    "T2401", but "1-10" != "110"; 0012 on two campuses = two buildings) + line item: a building one table prints on
+//    several separately priced rows (one per cleaning level, wing, schedule) is one inventory line per row (line_item,
+//    or a second printed row of the same table under another name and with another area); ids keep the printed form
+//    (b-0012, b-main-post--0012, b-0012--level-2); unnumbered buildings get table/row-scoped ids
+//  * unit conversion (SM × 10.7639, SY × 9 → SF; ha × 2.4710538 → acres; m² → ft²), with the printed area kept; printed
+//    SF keep their decimals; floor finishes printed in SF become the floor mix; a seasonal service window becomes days
+//  * merge precedence by document rank (base < attachments < Q&A < amendment N), field group by field group (gross,
+//    cleanable, status, category, frequency), never by confidence: every row of a building is kept and re-folded in
+//    (rank, seq) order, so read order does not matter; a status only counts when stated (an update row's default
+//    in_scope never brings an excluded building back); a later cleanable-only correction wins over the base cleanable
 //  * status rows (excluded / deleted / demolished / vacant / option-only) kept visible but out of the estimate
 //  * rows without area rejected (unless area_missing), except rows that only add data to a numbered building: those are
 //    held until the building is registered; subtotal / total rows rejected, cut-off calls not applied
@@ -79,6 +83,14 @@ interface FacMeta {
   /** Rank and document of the row the kept area came from. */
   areaRank: number;
   areaFile?: string;
+  /** The kept cleanable area was printed (cleanable_area, or cleanable_equals_gross on a printed gross), not estimated. */
+  cleanPrinted: boolean;
+  /** Rank and document of the row the kept cleanable area came from. */
+  cleanRank: number;
+  cleanFile?: string;
+  /** Line item (normalised, and as printed): one of several separately priced rows of the same building. */
+  line?: string;
+  lineLabel?: string;
   /**
    * How firmly the kept status was stated: 0 = not stated (status null, or in_scope on a row with no area and no reason,
    * i.e. an update row), 1 = in_scope on a row that lists the building with its area, 2 = any other status, or in_scope with a reason.
@@ -145,8 +157,6 @@ export interface ExtractionState {
   /** Every row registered for a facility (merge input; the merged facility does not depend on read order). */
   contribs: Map<string, Contribution[]>;
   byKey: Map<string, Set<string>>;
-  /** Buildings printed twice in one table with different areas (only one area is kept). */
-  tableDupes: Map<string, { table: string; id: string; label: string; areas: [number, number] }>;
   grounds: GroundsArea[];
   groundsLinks: Map<string, GroundsLink>;
   groundsSeen: Set<string>;
@@ -203,11 +213,18 @@ export function parseNumber(v: unknown): number | null {
 }
 const numOrUndef = (v: unknown) => { const n = parseNumber(v); return n == null || Number.isNaN(n) ? undefined : n; };
 
-/** "Bldg. No. 0012" → "0012" (display form: prefix stripped, dashes unified, letters / zeros kept). */
+/**
+ * "Bldg. No. 0012" → "0012", "Site 4" → "4" (display form: prefix stripped, dashes unified, letters / zeros kept). "Site",
+ * "Location" and "Loc" are prefixes only before a number; "No" only as a word ("No. 12", "No 12"), so "NOSC 1",
+ * "NORTH 12" and "NOLF-3" keep their letters.
+ */
 export function cleanBuildingNumber(v: unknown): string | undefined {
   if (v == null) return undefined;
   let s = String(v).replace(DASHES, '-').replace(/\s+/g, ' ').trim();
-  s = s.replace(/^(?:building|bldg|bld|facility|fac)\.?(?=[\s#:\-\d]|$)\s*(?:no\.?|number|nbr\.?|#)?\s*[:#-]?\s*/i, '').replace(/^(?:no\.?|number|#)\s*/i, '').trim();
+  const no = String.raw`(?:no\.?(?![a-z])|number(?![a-z])|nbr\.?(?![a-z])|#)`;
+  s = s.replace(new RegExp(String.raw`^(?:building|bldg|bld|facility|fac)\.?(?=[\s#:\-\d]|$)\s*${no}?\s*[:#-]?\s*`, 'i'), '')
+    .replace(new RegExp(String.raw`^(?:site|location|loc)\.?\s*${no}?\s*[:#-]?\s*(?=\d)`, 'i'), '')
+    .replace(/^(?:no\.(?=\s*\d)|no(?=\s+\d)|number(?=\s*[:#]?\s*\d)|#)\s*[:#]?\s*/i, '').trim();
   if (!s || /^(n\/?a|none|tbd|-+)$/i.test(s)) return undefined;
   return s;
 }
@@ -227,6 +244,8 @@ export function buildingKey(bn: string): string {
 }
 /** Id slug in the form the rule-based reader and earlier versions of this reader use (b-0012, b-t-2401), so append-mode merges by id keep matching. */
 const idSlug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+/** Normalised line item ("Level 1 – North Wing" = "level 1 north wing"). */
+const lineKey = (s?: string) => (s ? s.toLowerCase().replace(DASHES, '-').replace(/[^a-z0-9]+/g, ' ').trim() || undefined : undefined);
 /**
  * Facility id: the printed building number (or name) as a slug, prefixed with the campus only when one is set
  * (b-0012, b-t-2401, b-main-post--0012). Identity is decided by facilityIdentity / buildingKey, not by the id string.
@@ -330,6 +349,50 @@ export function parseServiceFrequency(text?: string | null): ServiceLevel | unde
   if (/\b(?:2|two)\s*(?:x|times)|twice|t\/th|tu\/th|tue\/thu/.test(t)) return '2x_week';
   if (/weekly|\b(?:1|once|one)\s*(?:x|time)?\s*(?:\/|per|a)\s*w(?:ee)?k/.test(t)) return 'weekly';
   return undefined;
+}
+
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+const MONTH_DAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+/** Floating holidays at their typical date (the middle of the week they move within), fixed ones at their date. */
+const HOLIDAYS: [RegExp, number, number][] = [
+  [/memorial\s+day/, 5, 28], [/labou?r\s+day/, 9, 4], [/independence\s+day|fourth\s+of\s+july/, 7, 4], [/columbus\s+day|indigenous\s+peoples/, 10, 11],
+  [/veterans\s+day/, 11, 11], [/thanksgiving/, 11, 25], [/christmas/, 12, 25], [/new\s+year/, 1, 1],
+];
+const dayOfYear = (m: number, d: number) => MONTH_DAYS.slice(0, m - 1).reduce((a, b) => a + b, 0) + Math.min(d, MONTH_DAYS[m - 1]);
+
+/**
+ * A season boundary as printed ("May 29", "29 May", "5/29", "APR", "Memorial Day") → day of the year (1–365). A month
+ * without a day is its first day as a start and its last day as an end.
+ */
+export function seasonDay(v: unknown, end: boolean): number | undefined {
+  const s = String(v ?? '').toLowerCase().replace(DASHES, '-').replace(/\s+/g, ' ').trim();
+  if (!s) return undefined;
+  for (const [re, m, d] of HOLIDAYS) if (re.test(s)) return dayOfYear(m, d);
+  const iso = s.match(/^\d{4}-(\d{1,2})-(\d{1,2})$/);
+  const md = iso ?? s.match(/^(\d{1,2}) ?[/.-] ?(\d{1,2})(?: ?[/.-] ?\d{2,4})?$/);
+  if (md) { const m = Number(md[1]); const d = Number(md[2]); return m >= 1 && m <= 12 && d >= 1 && d <= 31 ? dayOfYear(m, d) : undefined; }
+  const mi = MONTHS.findIndex((m) => new RegExp(`\\b${m}`).test(s));
+  if (mi < 0) return undefined;
+  const day = s.replace(/\b\d{4}\b/g, '').match(/\b(\d{1,2})(?:st|nd|rd|th)?\b/);
+  const d = day ? Number(day[1]) : end ? MONTH_DAYS[mi] : 1;
+  return d >= 1 && d <= 31 ? dayOfYear(mi + 1, d) : undefined;
+}
+
+/**
+ * Service days in a season printed as a window ("May 1 – Oct 15", "Memorial Day through Labor Day", "APR-OCT"): the
+ * calendar days from start through end (inclusive; across the year end when the end comes first) × days per week / 7.
+ */
+export function seasonServiceDays(start: unknown, end: unknown, daysPerWeek: number): { days: number; calendarDays: number } | undefined {
+  let a: unknown = start; let b: unknown = end;
+  if ((b == null || b === '') && typeof a === 'string') {
+    // the whole window printed in one field
+    const parts = a.replace(DASHES, '-').split(/\s+(?:-|to|through|thru|until)\s+|\s*-\s*(?=[a-z])|(?<=[a-z])\s*-\s*/i);
+    if (parts.length === 2) [a, b] = parts;
+  }
+  const from = seasonDay(a, false); const to = seasonDay(b, true);
+  if (from == null || to == null || !(daysPerWeek > 0)) return undefined;
+  const calendarDays = to >= from ? to - from + 1 : 365 - from + 1 + to;
+  return { calendarDays, days: Math.max(1, Math.round((calendarDays * Math.min(7, daysPerWeek)) / 7)) };
 }
 
 /** Grounds terminology → kind. Type I = improved, II = semi-improved, III / IV = unimproved, BASH by mowing frequency. */
@@ -460,7 +523,7 @@ export function createState(docs: DocLike[]): ExtractionState {
   return {
     docs: docs.map((d, i) => { const inf = d.role ? { role: d.role, amendment: d.amendment } : inferRole(d.name); return { name: d.name, rank: docRank(d, i), role: inf.role, amendment: d.amendment ?? inf.amendment, order: i }; }),
     pass: 0, passDocs: docs.map((d) => d.name),
-    facilities: new Map(), meta: new Map(), contribs: new Map(), byKey: new Map(), tableDupes: new Map(),
+    facilities: new Map(), meta: new Map(), contribs: new Map(), byKey: new Map(),
     grounds: [], groundsLinks: new Map(), groundsSeen: new Set(), groundsTable: new Map(), excludedGrounds: [], pending: [],
     site: {}, tables: new Map(), seq: 0, gIdx: 0, finishAttempts: 0, shownGaps: new Set(), finishes: new Map(),
   };
@@ -507,6 +570,13 @@ const FacilityRowIn = z.object({
   service_frequency_text: z.string().nullish(),
   scope: z.array(z.string()).nullish(),
   floor_mix: z.object({ carpet: looseNum, resilient: looseNum, hard_tile: looseNum, concrete: looseNum, wood: looseNum }).partial().nullish(),
+  floor_areas: z.object({ carpet: looseNum, resilient: looseNum, hard_tile: looseNum, concrete: looseNum, wood: looseNum, other: looseNum }).partial().nullish(),
+  line_item: z.union([z.string(), z.number()]).nullish(),
+  service_season: z.object({ start: z.union([z.string(), z.number()]).nullish(), end: z.union([z.string(), z.number()]).nullish(), days_per_week: looseNum }).partial().nullish(),
+  events_per_year: looseNum,
+  restroom_rooms: looseNum,
+  area_by_class: z.array(z.object({ label: z.string().nullish(), area: looseNum })).nullish(),
+  cleaning_standard: z.string().nullish(),
   dining: z.object({
     seats: looseNum, meals_per_day: looseNum,
     meal_periods: z.union([z.array(loosePeriod), z.number(), z.string()]).nullish(),
@@ -581,6 +651,8 @@ interface PreparedRow {
   cleanableEqualsGross: boolean;
   fileUnresolved?: string;
   notesForResult: string[];
+  /** line_item as printed. */
+  lineLabel?: string;
 }
 
 /** Shown once per result when rows are rejected because cleanable exceeds gross. */
@@ -630,9 +702,14 @@ function prepareFacility(st: ExtractionState, d: FacilityRow): { row?: PreparedR
   const campus = str(d.campus);
   const key = bn ? buildingKey(bn) : undefined;
 
-  const printedSqft = areaGiven ? Math.round(grossRaw! * k) : 0;
+  // printed square feet keep their decimals (to the cent); converted SM / SY are rounded to whole square feet
+  const toSqft = (v: number) => (k === 1 ? Math.round(v * 100) / 100 : Math.round(v * k));
+  const printedSqft = areaGiven ? toSqft(grossRaw!) : 0;
   let gross = printedSqft;
   const notes: (string | undefined)[] = [];
+  const lineLabel = d.line_item != null ? str(String(d.line_item)) : undefined;
+  const line = lineKey(lineLabel);
+  if (lineLabel) notes.push(`Line item: ${lineLabel}`);
   if (areaGiven && unit && unit !== 'sf') notes.push(`Area converted from ${grossRaw!.toLocaleString('en-US')} ${unit.toUpperCase()}`);
   if (areaMissing) {
     const est = numOrUndef(d.estimated_gross_area);
@@ -640,21 +717,23 @@ function prepareFacility(st: ExtractionState, d: FacilityRow): { row?: PreparedR
   }
   if (added.parts.length) {
     const base = gross;
-    const addedSf = Math.round(added.parts.reduce((s, p) => s + p.count * p.unitArea, 0) * k);
-    gross += addedSf;
+    const addedSf = toSqft(added.parts.reduce((s, p) => s + p.count * p.unitArea, 0));
+    gross = Math.round((gross + addedSf) * 100) / 100;
     const u = unit && unit !== 'sf' ? ` ${unit.toUpperCase()}` : '';
     notes.push(`Gross = ${fmt(base)} SF ${areaGiven ? 'printed' : 'estimated'} + ${added.parts.map((p) => `${p.label} ${fmtQty(p.count)} @ ${fmtQty(p.unitArea)}${u}`).join(' + ')} (${fmt(addedSf)} SF) = ${fmt(gross)} SF`);
   }
-  const cleanPrinted = cleanRaw != null && !Number.isNaN(cleanRaw) && cleanRaw > 0 ? Math.round(cleanRaw * k) : undefined;
+  const cleanPrintedSf = cleanRaw != null && !Number.isNaN(cleanRaw) && cleanRaw > 0 ? toSqft(cleanRaw) : undefined;
   // cleanable_equals_gross: the gross (with added areas) is the cleaning basis; a cleanable_area that just repeats the
   // printed gross is replaced, a different printed cleanable area is kept
   const eqGross = d.cleanable_equals_gross === true;
-  let cleanable = cleanPrinted;
-  if (eqGross && gross > 0 && (cleanPrinted == null || Math.abs(cleanPrinted - printedSqft) <= 1 || Math.abs(cleanPrinted - gross) <= 1)) {
+  let cleanable = cleanPrintedSf;
+  if (eqGross && gross > 0 && (cleanPrintedSf == null || Math.abs(cleanPrintedSf - printedSqft) <= 1 || Math.abs(cleanPrintedSf - gross) <= 1)) {
     cleanable = gross;
     notes.push('Cleanable = gross (the document gives the gross area as the cleaning basis)');
   }
   if (cleanable != null && gross > 0 && (areaGiven || areaMissing) && cleanable > gross + 5) return { label, error: cleanableError(label, cleanable, gross), hint: 'cleanable' };
+  // a cleanable area the document prints (or states to be the printed gross) - not one derived from an estimate
+  const cleanIsPrinted = cleanable != null && ((cleanPrintedSf != null && cleanable === cleanPrintedSf) || (eqGross && areaGiven));
   const resultNotes: string[] = [];
 
   const fx = d.fixtures;
@@ -671,10 +750,44 @@ function prepareFacility(st: ExtractionState, d: FacilityRow): { row?: PreparedR
   const scope = (d.scope ?? []).map((s) => String(s).toLowerCase()).filter((s): s is Facility['scope'][number] => (SCOPES as readonly string[]).includes(s));
   const confidence0 = clamp01(d.confidence, 0.7);
 
+  // service calendar: a stated number of days wins; else a seasonal window (counted here), else events per year
+  const statedDays = (() => { const n = numOrUndef(d.service_days_per_year); return n != null && n >= 1 && n <= 366 ? Math.round(n) : undefined; })();
+  let serviceDays = statedDays;
+  const season = d.service_season;
+  if (season && (season.start != null || season.end != null)) {
+    const window = `${season.start ?? ''}${season.end != null ? ` – ${season.end}` : ''}`;
+    const dpwPrinted = numOrUndef(season.days_per_week);
+    const dpw = dpwPrinted && dpwPrinted > 0 ? Math.min(7, dpwPrinted) : (SERVICE_LEVELS.find((l) => l.id === serviceLevel)!.daysPerYear * 7) / 365;
+    const r = seasonServiceDays(season.start, season.end, dpw);
+    if (!r) resultNotes.push(`${label}: service_season "${window}" was not understood - give start and end as printed ("May 1", "Oct 15", "APR", "Memorial Day"), or set service_days_per_year`);
+    else {
+      serviceDays ??= Math.min(366, r.days);
+      notes.push(`Service season ${window}: ${r.calendarDays} calendar days × ${fmtQty(dpw)} days/week = ${r.days} service days${statedDays != null && Math.abs(statedDays - r.days) > 2 ? ` (the document states ${statedDays})` : ''}`);
+    }
+  }
+  const events = numOrUndef(d.events_per_year);
+  if (events != null && events > 0) {
+    serviceDays ??= Math.min(366, Math.round(events));
+    notes.push(`On call: ${fmtQty(events)} events per year (one service day per event)`);
+  }
+  const roomCount = numOrUndef(d.restroom_rooms);
+  if (roomCount != null && roomCount >= 0) notes.push(`Restroom rooms: ${fmtQty(roomCount)}`);
+  const classes = (d.area_by_class ?? []).map((c) => ({ label: str(c.label), area: numOrUndef(c.area) })).filter((c): c is { label: string; area: number } => Boolean(c.label) && c.area != null && c.area >= 0);
+  if (classes.length) {
+    const sf = classes.map((c) => ({ label: c.label, sf: toSqft(c.area) }));
+    const sum = sf.reduce((s, c) => s + c.sf, 0);
+    notes.push(`Area by class: ${sf.map((c) => `${c.label} ${fmt(c.sf)} SF`).join(', ')}`);
+    const basis = cleanable ?? (gross > 0 ? gross : undefined);
+    if (basis && Math.abs(sum - basis) > Math.max(5, 0.01 * basis)) resultNotes.push(`${label}: area_by_class sums to ${fmt(sum)} SF, not the ${cleanable != null ? 'cleanable' : 'gross'} area (${fmt(basis)} SF) - check the class columns`);
+  }
+  const standard = str(d.cleaning_standard);
+  if (standard) notes.push(`Cleaning standard: ${standard}`);
+
   const f: Facility = {
     id: '',
     buildingNumber: bn,
-    name,
+    // two lines of one building under the same printed name stay apart in lists
+    name: lineLabel && line && !(lineKey(name) ?? '').includes(line) ? `${name} – ${lineLabel}` : name,
     category,
     grossSqft: gross,
     cleanableSqft: cleanable,
@@ -682,19 +795,35 @@ function prepareFacility(st: ExtractionState, d: FacilityRow): { row?: PreparedR
     restroomFixtures: fixtures != null ? Math.round(fixtures) : undefined,
     occupancy: numOrUndef(d.occupancy),
     serviceLevel,
-    serviceDaysPerYear: (() => { const n = numOrUndef(d.service_days_per_year); return n != null && n >= 1 && n <= 366 ? Math.round(n) : undefined; })(),
+    serviceDaysPerYear: serviceDays,
     scope: scope.length ? [...new Set(scope)] : ['custodial', 'floor_care'],
     confidence: areaMissing ? Math.min(confidence0, 0.4) : confidence0,
     campus,
     status: st0,
     statusReason: st0 !== 'in_scope' ? str(d.status_reason) : undefined,
-    originalArea: areaGiven && unit && unit !== 'sf' ? { gross: grossRaw!, cleanable: cleanPrinted != null && cleanable === cleanPrinted ? cleanRaw! : undefined, unit } : undefined,
+    originalArea: unit && unit !== 'sf' && (areaGiven || cleanPrintedSf != null)
+      ? (areaGiven ? { gross: grossRaw!, cleanable: cleanPrintedSf != null && cleanable === cleanPrintedSf ? cleanRaw! : undefined, unit } : { cleanable: cleanRaw!, unit })
+      : undefined,
     serviceFrequencyText: str(d.service_frequency_text),
     tableId: str(d.table_id),
     source: { file, page: numOrUndef(d.source?.page), excerpt: (str(d.source?.excerpt) ?? '').slice(0, 240) },
     siteHint: d.site_hint ?? undefined,
   };
-  if (d.floor_mix) {
+  if (d.floor_areas) {
+    // square feet by finish as printed → shares of the named finishes (an unnamed "other" finish is spread over them)
+    const a = d.floor_areas; const v = (x: unknown) => Math.max(0, numOrUndef(x) ?? 0) * k;
+    const by = { carpet: v(a.carpet), resilient: v(a.resilient), hardTile: v(a.hard_tile), concrete: v(a.concrete), wood: v(a.wood) };
+    const other = v(a.other);
+    const named = Object.values(by).reduce((s, x) => s + x, 0);
+    if (named > 0) {
+      f.floorMix = Object.fromEntries(Object.entries(by).map(([kk, x]) => [kk, Math.round((x / named) * 10000) / 10000])) as typeof by;
+      const labels: Record<string, string> = { carpet: 'carpet', resilient: 'resilient', hardTile: 'hard tile', concrete: 'concrete', wood: 'wood' };
+      notes.push(`Floor mix from printed SF by finish: ${Object.entries(by).filter(([, x]) => x > 0).map(([kk, x]) => `${labels[kk]} ${fmt(x)}`).join(', ')}${other > 0 ? `, other ${fmt(other)} (spread over the named finishes)` : ''}`);
+      const basis = cleanable ?? (gross > 0 ? gross : undefined);
+      const total = named + other;
+      if (basis && Math.abs(total - basis) > Math.max(5, 0.01 * basis)) resultNotes.push(`${label}: floor_areas sum to ${fmt(total)} SF, not the ${cleanable != null ? 'cleanable' : 'gross'} area (${fmt(basis)} SF) - check the finish columns (the mix uses the printed shares)`);
+    } else if (other > 0) notes.push('Floor areas printed only for an unnamed finish; category floor mix used');
+  } else if (d.floor_mix) {
     const m = d.floor_mix;
     f.floorMix = { carpet: numOrUndef(m.carpet) ?? 0, resilient: numOrUndef(m.resilient) ?? 0, hardTile: numOrUndef(m.hard_tile) ?? 0, concrete: numOrUndef(m.concrete) ?? 0, wood: numOrUndef(m.wood) ?? 0 };
   }
@@ -733,28 +862,169 @@ function prepareFacility(st: ExtractionState, d: FacilityRow): { row?: PreparedR
   const meta: FacMeta = {
     rank, seq: ++st.seq, file, key, campusSlug: campus ? slug(campus) || undefined : undefined, nameSlug: idSlug(name) || 'x',
     hasArea: areaGiven || (areaMissing && gross > 0), areaMissing, areaRank: rank, areaFile: file,
+    cleanPrinted: cleanIsPrinted, cleanRank: rank, cleanFile: file,
     statusStrength, statusRank: rank, categoryExplicit, levelExplicit,
+    ...(line ? { line, lineLabel } : {}),
   };
-  return { row: { f, meta, key, tableId: f.tableId, areaGiven, printedSqft, cleanableEqualsGross: eqGross && !(areaGiven || areaMissing), fileUnresolved: d.source?.file && !doc ? d.source.file : undefined, notesForResult: resultNotes } };
+  return { row: { f, meta, key, tableId: f.tableId, areaGiven, printedSqft, cleanableEqualsGross: eqGross && !(areaGiven || areaMissing), fileUnresolved: d.source?.file && !doc ? d.source.file : undefined, notesForResult: resultNotes, lineLabel } };
 }
 
-/** Finds the facility a numbered row belongs to. */
-function lookupNumbered(st: ExtractionState, key: string, campusSlug: string | undefined, label: string): { id?: string; adopt?: boolean; error?: string } {
-  const ids = [...(st.byKey.get(key) ?? [])];
-  if (!ids.length) return {};
+/**
+ * The facilities a numbered row can belong to: same number on the row's campus (a campus-less building adopts the campus
+ * when it is the only one with the number). Several only when the building has separate line items.
+ */
+function campusCandidates(st: ExtractionState, key: string, campusSlug: string | undefined, label: string): { ids: string[]; adopt?: boolean; error?: string } {
+  const all = [...(st.byKey.get(key) ?? [])].filter((id) => st.facilities.has(id));
+  if (!all.length) return { ids: [] };
   const campusOf = (id: string) => st.meta.get(id)?.campusSlug;
   if (campusSlug) {
-    const exact = ids.find((id) => campusOf(id) === campusSlug);
-    if (exact) return { id: exact };
-    const bare = ids.filter((id) => !campusOf(id));
-    if (bare.length === 1 && ids.length === 1) return { id: bare[0], adopt: true };
-    return {};
+    const exact = all.filter((id) => campusOf(id) === campusSlug);
+    if (exact.length) return { ids: exact };
+    if (all.length === 1 && !campusOf(all[0])) return { ids: all, adopt: true };
+    return { ids: [] };
   }
-  const bare = ids.filter((id) => !campusOf(id));
-  if (bare.length) return { id: bare[0] };
-  if (ids.length === 1) return { id: ids[0] };
-  const campuses = ids.map((id) => st.facilities.get(id)?.campus).filter(Boolean).join(', ');
-  return { error: `${label}: building number exists on ${ids.length} campuses (${campuses}) - set campus` };
+  const bare = all.filter((id) => !campusOf(id));
+  if (bare.length) return { ids: bare };
+  const campuses = [...new Set(all.map(campusOf))];
+  if (campuses.length === 1) return { ids: all };
+  const names = [...new Set(all.map((id) => st.facilities.get(id)?.campus).filter(Boolean))].join(', ');
+  return { ids: [], error: `${label}: building number exists on ${campuses.length} campuses (${names}) - set campus` };
+}
+
+/** A facility with this number (the first line item when there are several): for links from grounds and held rows. */
+function lookupNumbered(st: ExtractionState, key: string, campusSlug: string | undefined, label: string): { id?: string; error?: string } {
+  const c = campusCandidates(st, key, campusSlug, label);
+  return { id: c.ids[0], error: c.error };
+}
+
+/** Printed-row references of the rows registered for a facility (all, or only those that printed an area). */
+const refsOf = (st: ExtractionState, id: string, withArea = false) => new Set((st.contribs.get(id) ?? []).filter((c) => !withArea || (c.meta.hasArea && !c.meta.areaMissing)).map((c) => rowRefOf(c.f.source)).filter(Boolean));
+const namesOf = (st: ExtractionState, id: string, tableId?: string) => new Set((st.contribs.get(id) ?? []).filter((c) => !tableId || c.f.tableId === tableId).map((c) => c.meta.nameSlug));
+/** How a line item is named in messages: its line_item, else its name. */
+const lineName = (st: ExtractionState, id: string) => { const m = st.meta.get(id); return `"${m?.line ? m.lineLabel ?? m.line : st.facilities.get(id)?.name ?? id}"`; };
+
+/** The table rows (printed rows) of a facility in one table: its own row and rows counted twice ("id#ref"). */
+const tableRowsOf = (t: DeclaredTable, id: string) => [...t.rows.entries()].filter(([k]) => k === id || k.startsWith(`${id}#`)).map(([, r]) => r);
+
+/**
+ * A row of a table that prints this building number again - another printed row of the same document, under another
+ * name and with another area - is a separate line item (a building listed once per cleaning level, wing or schedule),
+ * not a revision of the row before: the rule-based reader counts it the same way. A re-sent row (same printed row, same
+ * name or same area) and a revision from outside the table (another document or page) still merge.
+ */
+function splitsFrom(st: ExtractionState, row: PreparedRow, ids: string[]): boolean {
+  const { f, meta } = row;
+  if (!row.areaGiven || !f.tableId) return false;
+  const ref = rowRefOf(f.source);
+  const t = st.tables.get(f.tableId);
+  if (!ref || !t || outsideTable(st, t, f.source?.file, f.source?.page)) return false;
+  let seen = false;
+  for (const id of ids) {
+    const rows = tableRowsOf(t, id);
+    if (!rows.length) continue;
+    if (rows.some((r) => r.outside || r.areaMissing || !r.ref || r.ref === ref || Math.abs(r.sf - row.printedSqft) <= 1)) return false;
+    const inTable = (st.contribs.get(id) ?? []).filter((c) => c.f.tableId === f.tableId);
+    if (inTable.some((c) => c.meta.nameSlug === meta.nameSlug || (c.f.source?.file ?? '') !== (f.source?.file ?? ''))) return false;
+    seen = true;
+  }
+  return seen;
+}
+
+/**
+ * A number printed with a letter prefix in one place and without it in another ("Building 41 (B-41)" in an amendment,
+ * "41" in the facility list): when the row's number is new, the one building whose number differs only by a one- or
+ * two-letter prefix and that was registered under exactly this name is the same building - for a revision row (no
+ * table) or a row from another document, never for a row of that building's own table (two printed rows of one table
+ * are two buildings: T-41 is not 41).
+ */
+function prefixAlias(st: ExtractionState, row: PreparedRow): string | undefined {
+  const { key, meta, f } = row;
+  if (!key) return undefined;
+  const keys = new Set<string>();
+  const m = key.match(/^[A-Z]{1,2}(\d.*)$/);
+  if (m) keys.add(m[1]);
+  for (const k of st.byKey.keys()) { const mk = k.match(/^[A-Z]{1,2}(\d.*)$/); if (mk && mk[1] === key) keys.add(k); }
+  const ids = [...keys].flatMap((k) => campusCandidates(st, k, meta.campusSlug, '').ids).filter((id) => {
+    const cs = st.contribs.get(id) ?? [];
+    if (!cs.some((c) => c.meta.nameSlug === meta.nameSlug)) return false;
+    if (f.tableId && cs.some((c) => c.f.tableId === f.tableId)) return false;
+    return !f.tableId || !cs.some((c) => (c.f.source?.file ?? '') === (f.source?.file ?? ''));
+  });
+  return ids.length === 1 ? ids[0] : undefined;
+}
+
+interface Resolved {
+  id?: string;
+  /** Campus-less building adopting the row's campus. */
+  adopt?: boolean;
+  /** Register as a new facility: a new line item, or another printed row of the table (splitsFrom). */
+  line?: 'line' | 'split';
+  error?: string;
+  info?: string;
+}
+
+/**
+ * Identity of a numbered row: campus + number, then the line item. With line_item: that line, else the facility that
+ * holds the same printed row without a line item (it becomes this line), else a new line. Without: the only facility with
+ * the number (unless the row is another printed row of its table, see splitsFrom), else the line holding the same
+ * printed row or registered under the same name; when that is still ambiguous the row must say which line it belongs to.
+ */
+function resolveNumbered(st: ExtractionState, row: PreparedRow, label: string): Resolved {
+  const { f, meta, key } = row;
+  const c = campusCandidates(st, key!, meta.campusSlug, label);
+  if (c.error) return { error: c.error };
+  const ids = c.ids;
+  const ref = rowRefOf(f.source);
+  const lineOf = (id: string) => st.meta.get(id)?.line;
+  if (!ids.length) {
+    if (meta.line) return { line: 'line' };
+    const alias = prefixAlias(st, row);
+    return alias ? { id: alias, info: `${label}: matched to building ${st.facilities.get(alias)?.buildingNumber ?? alias} (same name; the number is printed with and without a letter prefix)` } : {};
+  }
+  if (meta.line) {
+    const exact = ids.find((id) => lineOf(id) === meta.line);
+    if (exact) return { id: exact, adopt: c.adopt };
+    // the same printed row registered before without a line item: that facility is this line, when it holds no other
+    // printed row with an area
+    const holder = ref ? ids.find((id) => !lineOf(id) && refsOf(st, id).has(ref)) : undefined;
+    if (holder && [...refsOf(st, holder, true)].every((r) => r === ref)) return { id: holder, adopt: c.adopt };
+    // a row that only adds data to a building registered once (from one printed row) applies to it
+    if (!row.areaGiven && !meta.areaMissing && ids.length === 1 && !lineOf(ids[0]) && refsOf(st, ids[0], true).size <= 1) return { id: ids[0], adopt: c.adopt };
+    return { line: 'line' };
+  }
+  if (ids.length === 1) return splitsFrom(st, row, ids) ? { line: 'split' } : { id: ids[0], adopt: c.adopt };
+  if (ref) { const byRef = ids.filter((id) => refsOf(st, id).has(ref)); if (byRef.length === 1) return { id: byRef[0] }; }
+  const byName = ids.filter((id) => namesOf(st, id).has(meta.nameSlug));
+  if (byName.length === 1) return { id: byName[0] };
+  if (splitsFrom(st, row, ids)) return { line: 'split' };
+  return { error: `${label}: this building is registered as ${ids.length} separate line items (${ids.map((id) => lineName(st, id)).join(', ')}) - set line_item to the line this row belongs to, or send the row once for each line it applies to` };
+}
+
+/**
+ * Takes one printed row (its reference) out of a facility: the row was registered again as another line item. The table
+ * keeps the facility's other printed rows; a facility left without rows is removed.
+ */
+function detachRow(st: ExtractionState, id: string, ref: string): void {
+  const list = st.contribs.get(id);
+  if (!list || !ref) return;
+  const keep = list.filter((c) => rowRefOf(c.f.source) !== ref);
+  if (keep.length === list.length) return;
+  for (const t of st.tables.values()) {
+    for (const [k, r] of [...t.rows]) if ((k === id || k.startsWith(`${id}#`)) && r.ref === ref) t.rows.delete(k);
+    if (!t.rows.has(id)) {
+      const dk = [...t.rows.keys()].find((k) => k.startsWith(`${id}#`));
+      if (dk && keep.length) { t.rows.set(id, t.rows.get(dk)!); t.rows.delete(dk); }
+    }
+  }
+  if (!keep.length) {
+    st.facilities.delete(id); st.meta.delete(id); st.contribs.delete(id);
+    for (const set of st.byKey.values()) set.delete(id);
+    for (const t of st.tables.values()) for (const k of [...t.rows.keys()]) if (k === id || k.startsWith(`${id}#`)) t.rows.delete(k);
+    return;
+  }
+  st.contribs.set(id, keep);
+  const { f, meta } = foldContributions(keep);
+  st.facilities.set(id, f); st.meta.set(id, meta);
 }
 
 function newId(st: ExtractionState, base: string): string {
@@ -787,7 +1057,24 @@ function mergeRows(old: Facility, om: FacMeta, row: Facility, rm: FacMeta): { f:
     if (hm.areaRank > lm.areaRank) notes.push(`Superseded ${fmt(lo.grossSqft)} SF from ${lm.areaFile ?? 'an earlier document'}`);
     else notes.push(`Re-registered: ${fmt(lo.grossSqft)} SF replaced`);
   }
-  if (areaFrom === 'hi' && printed(hm) && printed(lm) && hi.cleanableSqft && lo.cleanableSqft && hi.cleanableSqft !== lo.cleanableSqft && hm.areaRank > lm.areaRank) notes.push(`Superseded ${fmt(lo.cleanableSqft)} cleanable SF from ${lm.areaFile ?? 'an earlier document'}`);
+  // cleanable is its own field group: the higher-ranked (later) row's printed cleanable area wins when it fits the kept
+  // gross, also when that row prints no gross (a correction of the cleanable / serviced area only); the other row's only
+  // while it still fits (a revised, smaller gross makes it stale)
+  const fits = (c?: number) => c != null && (!A.grossSqft || c <= A.grossSqft + 5);
+  const cleanFrom = hm.cleanPrinted && fits(hi.cleanableSqft) ? 'hi' : lm.cleanPrinted && fits(lo.cleanableSqft) ? 'lo' : undefined;
+  const cleanableSqft = cleanFrom === 'hi' ? hi.cleanableSqft : cleanFrom === 'lo' ? lo.cleanableSqft : A.cleanableSqft ?? (fits(B.cleanableSqft) ? B.cleanableSqft : undefined);
+  const C = cleanFrom === 'hi' ? hi : cleanFrom === 'lo' ? lo : A; const Cm = cleanFrom === 'hi' ? hm : cleanFrom === 'lo' ? lm : Am;
+  // (not when the cleanable area just follows a replaced gross: the gross note says it)
+  if (cleanFrom === 'hi' && lm.cleanPrinted && lo.cleanableSqft != null && hi.cleanableSqft !== lo.cleanableSqft && !(lo.cleanableSqft === lo.grossSqft && cleanableSqft === A.grossSqft && A === hi)) {
+    notes.push(hm.cleanRank > lm.cleanRank ? `Superseded ${fmt(lo.cleanableSqft)} cleanable SF from ${lm.cleanFile ?? 'an earlier document'}` : `Re-registered: ${fmt(lo.cleanableSqft)} cleanable SF replaced`);
+  }
+  if (hm.cleanPrinted && hi.cleanableSqft != null && !fits(hi.cleanableSqft)) notes.push(`Cleanable ${fmt(hi.cleanableSqft)} SF from ${hm.cleanFile ?? 'a later row'} not applied: larger than the gross area (${fmt(A.grossSqft)} SF)`);
+  // the printed (metric) figures of the kept gross and cleanable areas
+  let originalArea = A.originalArea;
+  if (C !== A && cleanableSqft != null) {
+    const oc = C.originalArea?.cleanable != null && C.originalArea.unit === (A.originalArea?.unit ?? C.originalArea.unit) ? C.originalArea.cleanable : undefined;
+    originalArea = A.originalArea ? { ...A.originalArea, cleanable: oc } : oc != null ? { cleanable: oc, unit: C.originalArea!.unit } : undefined;
+  }
   const f: Facility = {
     ...lo, ...hi,
     id: old.id,
@@ -799,9 +1086,8 @@ function mergeRows(old: Facility, om: FacMeta, row: Facility, rm: FacMeta): { f:
     serviceDaysPerYear: hm.levelExplicit ? hi.serviceDaysPerYear : lm.levelExplicit ? lo.serviceDaysPerYear : hi.serviceDaysPerYear ?? lo.serviceDaysPerYear,
     serviceFrequencyText: hm.levelExplicit ? hi.serviceFrequencyText ?? lo.serviceFrequencyText : lo.serviceFrequencyText ?? hi.serviceFrequencyText,
     grossSqft: A.grossSqft,
-    // the other row's cleanable area only when it still fits in the kept gross (a revised, smaller gross makes it stale)
-    cleanableSqft: A.cleanableSqft ?? (B.cleanableSqft != null && (!A.grossSqft || B.cleanableSqft <= A.grossSqft + 5) ? B.cleanableSqft : undefined),
-    originalArea: A.originalArea,
+    cleanableSqft,
+    originalArea,
     floors: hi.floors || lo.floors,
     restroomFixtures: hi.restroomFixtures ?? lo.restroomFixtures,
     occupancy: hi.occupancy ?? lo.occupancy,
@@ -824,6 +1110,8 @@ function mergeRows(old: Facility, om: FacMeta, row: Facility, rm: FacMeta): { f:
     campusSlug: om.campusSlug ?? rm.campusSlug,
     hasArea: om.hasArea || rm.hasArea, areaMissing: !printed(om) && !printed(rm) && (om.areaMissing || rm.areaMissing),
     areaRank: Am.areaRank, areaFile: Am.areaFile,
+    cleanPrinted: cleanFrom != null, cleanRank: Cm.cleanRank, cleanFile: Cm.cleanFile,
+    line: om.line ?? rm.line, lineLabel: om.lineLabel ?? rm.lineLabel,
     statusStrength: S.statusStrength, statusRank: S.statusRank,
     categoryExplicit: om.categoryExplicit || rm.categoryExplicit, levelExplicit: om.levelExplicit || rm.levelExplicit,
   };
@@ -843,6 +1131,7 @@ function foldContributions(list: Contribution[]): Contribution {
 export function mergeFacilities(a: Facility, b: Facility): Facility {
   const m = (f: Facility, seq: number): FacMeta => ({
     rank: 0, seq, file: f.source?.file, nameSlug: idSlug(f.name), hasArea: f.grossSqft > 0, areaMissing: false, areaRank: 0, areaFile: f.source?.file,
+    cleanPrinted: f.cleanableSqft != null, cleanRank: 0, cleanFile: f.source?.file,
     statusStrength: f.status && f.status !== 'in_scope' ? 2 : f.grossSqft > 0 ? 1 : 0, statusRank: seq, categoryExplicit: true, levelExplicit: true,
   });
   return mergeRows(a, m(a, 0), b, m(b, 1)).f;
@@ -897,18 +1186,34 @@ function commitRow(st: ExtractionState, row: PreparedRow, ctx: RegCtx): { id?: s
   const label = f.buildingNumber ?? f.name;
 
   // identity
-  let id: string | undefined; let adopt = false;
+  let id: string | undefined; let adopt = false; let lineBase: string | undefined; let detachFrom: string[] = [];
+  const lineSuffix = (s: string) => `--${idSlug(s) || 'x'}`;
   if (key) {
-    const r = lookupNumbered(st, key, meta.campusSlug, label);
+    const r = resolveNumbered(st, row, label);
     if (r.error) return { error: r.error };
     id = r.id; adopt = Boolean(r.adopt);
+    if (r.info) ctx.notes.push(r.info);
+    if (r.line) {
+      // a separate line item of a numbered building is its own facility (b-0012--level-2)
+      lineBase = `${facilityKey(f.buildingNumber, f.name, f.campus)}${lineSuffix(r.line === 'line' ? row.lineLabel ?? meta.line! : meta.nameSlug)}`;
+      const others = campusCandidates(st, key, meta.campusSlug, label).ids;
+      if (r.line === 'split') ctx.notes.push(`${label} is printed again in ${f.tableId} under another name and with another area: "${f.name}" is registered as a separate line item of the building (re-sent rows and corrections under the same name still merge)`);
+      else if (row.areaGiven) {
+        // the building is also registered as a whole from another table: the line items would count its area twice
+        const whole = others.filter((x) => !st.meta.get(x)?.line && st.meta.get(x)?.hasArea && !(st.contribs.get(x) ?? []).some((c) => c.f.tableId != null && c.f.tableId === f.tableId));
+        if (whole.length) ctx.info.push(`${label} is also registered without a line item (${whole.map((x) => `"${st.facilities.get(x)?.name}" ${fmt(st.facilities.get(x)?.grossSqft ?? 0)} SF`).join(', ')}): if that row is the whole building and the line items are its parts, resend it with status excluded and a status_reason naming the line items; if the line items only break the building down (floors, units), register them as notes instead`);
+      }
+    }
+    // a printed row registered again as another line item leaves the facility it was registered with before
+    const ref = rowRefOf(f.source);
+    if (meta.line && ref) detachFrom = campusCandidates(st, key, meta.campusSlug, label).ids.filter((other) => other !== id && st.meta.get(other)?.line !== meta.line && refsOf(st, other).has(ref));
   } else {
     const excerpt = f.source?.excerpt ?? '';
     const scope = f.tableId ? `--${slug(f.tableId)}` : '';
     const rowRef = excerpt ? `-${fnv(`${f.source?.page ?? ''}|${excerpt}`)}` : '';
-    const base = `b-${meta.campusSlug ? `${meta.campusSlug}--` : ''}${meta.nameSlug}${scope}${rowRef}`;
+    const base = `b-${meta.campusSlug ? `${meta.campusSlug}--` : ''}${meta.nameSlug}${meta.line ? lineSuffix(row.lineLabel ?? meta.line) : ''}${scope}${rowRef}`;
     if (!scope && !rowRef) {
-      const same = [...st.meta.entries()].filter(([, m]) => !m.key && m.nameSlug === meta.nameSlug && m.campusSlug === meta.campusSlug).map(([k]) => k);
+      const same = [...st.meta.entries()].filter(([, m]) => !m.key && m.nameSlug === meta.nameSlug && m.campusSlug === meta.campusSlug && m.line === meta.line).map(([k]) => k);
       id = same.length === 1 ? same[0] : st.facilities.has(base) ? base : undefined;
     } else id = st.facilities.has(base) && !ctx.seenThisCall.has(base) ? base : undefined;
     if (!id) { id = newId(st, base); }
@@ -921,10 +1226,11 @@ function commitRow(st: ExtractionState, row: PreparedRow, ctx: RegCtx): { id?: s
     if (key) { st.pending.push({ row, key, label, pass: st.pass }); return { held: true }; }
     return { error: `${label}: gross_area missing - copy it from the row (in its printed unit, with area_unit), or set gross_area null and area_missing=true with your estimate in estimated_gross_area and the basis in notes` };
   }
+  for (const other of detachFrom) detachRow(st, other, rowRefOf(f.source));
   if (exists && !row.areaGiven && !meta.areaMissing) {
     // a row that adds data to a registered building: its cleanable area is checked against the building's gross
     const cur = st.facilities.get(id!)!;
-    if (row.cleanableEqualsGross && cur.grossSqft > 0) f.cleanableSqft = cur.grossSqft;
+    if (row.cleanableEqualsGross && cur.grossSqft > 0) { f.cleanableSqft = cur.grossSqft; meta.cleanPrinted = true; }
     else if (f.cleanableSqft && cur.grossSqft > 0 && f.cleanableSqft > cur.grossSqft + 5) return { error: cleanableError(label, f.cleanableSqft, cur.grossSqft), hint: 'cleanable' };
   }
   let merged: Facility; let mm: FacMeta;
@@ -936,8 +1242,11 @@ function commitRow(st: ExtractionState, row: PreparedRow, ctx: RegCtx): { id?: s
     // re-fold every row of this building in (rank, seq) order: the result does not depend on read order
     ({ f: merged, meta: mm } = foldContributions(list));
     ctx.updates++;
+    if (meta.cleanPrinted && f.cleanableSqft != null && merged.cleanableSqft !== f.cleanableSqft && merged.grossSqft > 0 && f.cleanableSqft > merged.grossSqft + 5) {
+      ctx.info.push(`${label}: cleanable_area ${fmt(f.cleanableSqft)} SF was not applied - it is larger than the building's gross area (${fmt(merged.grossSqft)} SF)`);
+    }
   } else {
-    id = id ?? newId(st, facilityKey(f.buildingNumber, f.name, f.campus));
+    id = id ?? newId(st, lineBase ?? facilityKey(f.buildingNumber, f.name, f.campus));
     merged = { ...f, id };
     for (const k of Object.keys(merged) as (keyof Facility)[]) if (merged[k] === undefined) delete merged[k];
     mm = meta;
@@ -961,13 +1270,13 @@ function commitRow(st: ExtractionState, row: PreparedRow, ctx: RegCtx): { id?: s
       t.rows.set(id!, { sf: row.areaGiven ? row.printedSqft : prev.sf, inScope: merged.status === 'in_scope' || !merged.status, areaMissing: !row.areaGiven && prev.areaMissing, name: label, ref });
     } else {
       // A table row is counted once per building; a re-sent row (same printed row or same area) updates it. A second,
-      // different printed row of the same building with a different area counts as its own table row, so the gate does
-      // not ask for rows that were registered - but only the later area is kept, which is reported.
+      // different printed row of the same building with a different area that is not a separate line item (same name,
+      // or another document) counts as its own table row, so the gate does not ask for rows that were registered - but
+      // the building keeps one area, so completeness reports it until the rows are resent as line items or explained.
       let rowKey = id!;
       if (prev && row.areaGiven && !prev.areaMissing && ref && prev.ref && prev.ref !== ref && Math.abs(prev.sf - row.printedSqft) > 1) {
         rowKey = `${id}#${ref}`;
-        if (!t.rows.has(rowKey)) ctx.info.push(`${label} is listed twice in ${f.tableId} with different areas (${fmt(prev.sf)} and ${fmt(row.printedSqft)} SF); only one area is kept for the building (${fmt(merged.grossSqft)} SF) - if the rows are separate buildings or wings, say so in finish.unresolved`);
-        st.tableDupes.set(`${f.tableId}|${id}|${ref}`, { table: f.tableId, id: id!, label, areas: [prev.sf, row.printedSqft] });
+        if (!t.rows.has(rowKey)) ctx.info.push(`${label} is listed twice in ${f.tableId} with different areas (${fmt(prev.sf)} and ${fmt(row.printedSqft)} SF) and only one area is kept (${fmt(merged.grossSqft)} SF) - if the rows are separately priced parts of the building (one line per cleaning level, wing or schedule), resend both rows with line_item set to what tells them apart; if one row corrects the other, name ${f.tableId} in finish.unresolved`);
       }
       // the area as printed in the table's column (added areas such as portables are not in the printed total)
       t.rows.set(rowKey, { sf: row.areaGiven ? row.printedSqft : prev?.sf ?? merged.grossSqft, inScope: merged.status === 'in_scope' || !merged.status, areaMissing: !row.areaGiven && (prev?.areaMissing ?? true), name: label, ref: rowKey === id ? prev?.ref ?? ref : ref, ...(outside && (!prev || prev.outside) ? { outside: true } : {}) });
@@ -980,7 +1289,8 @@ function commitRow(st: ExtractionState, row: PreparedRow, ctx: RegCtx): { id?: s
 /** Applies held update rows whose building (same number) is now registered. */
 function applyPending(st: ExtractionState, key: string, ctx: RegCtx): void {
   for (const p of st.pending.filter((x) => x.key === key)) {
-    const r = lookupNumbered(st, p.key, p.row.meta.campusSlug, p.label);
+    const r = resolveNumbered(st, p.row, p.label);
+    if (r.error) { st.pending.splice(st.pending.indexOf(p), 1); ctx.info.push(`held row ${r.error}`); continue; }
     if (!r.id) continue;
     st.pending.splice(st.pending.indexOf(p), 1);
     p.row.meta.seq = ++st.seq; // as if registered now, after its building
@@ -1165,9 +1475,11 @@ function declareTables(st: ExtractionState, input: Record<string, unknown>): App
       const areaTotal = totals.find((x) => (x.unit === 'sqft' || x.unit === 'sqm' || x.unit === 'sqyd') && !x.kinds.length);
       const fromTotals = printed == null && legacy == null && areaTotal ? { value: areaTotal.value, unit: ({ sqft: 'sf', sqm: 'sm', sqyd: 'sy' } as Record<string, AreaUnit>)[areaTotal.unit] } : undefined;
       if (printed != null && !unit) notes.push(`${id}: no area_unit given, so the printed total is read as SF - re-declare with area_unit if it is in SM or SY`);
-      if (printed != null) { t.totalPrinted = { value: printed, unit: unit ?? 'sf' }; t.totalGrossSqft = Math.round(printed * SQFT_PER[unit ?? 'sf']); }
-      else if (legacy != null) { t.totalPrinted = { value: legacy, unit: 'sf' }; t.totalGrossSqft = Math.round(legacy); }
-      else if (fromTotals) { t.totalPrinted = fromTotals; t.totalGrossSqft = Math.round(fromTotals.value * SQFT_PER[fromTotals.unit]); }
+      // printed square feet keep their decimals; converted totals are rounded like the rows
+      const totalSqft = (v: number, u: AreaUnit) => (u === 'sf' ? Math.round(v * 100) / 100 : Math.round(v * SQFT_PER[u]));
+      if (printed != null) { t.totalPrinted = { value: printed, unit: unit ?? 'sf' }; t.totalGrossSqft = totalSqft(printed, unit ?? 'sf'); }
+      else if (legacy != null) { t.totalPrinted = { value: legacy, unit: 'sf' }; t.totalGrossSqft = totalSqft(legacy, 'sf'); }
+      else if (fromTotals) { t.totalPrinted = fromTotals; t.totalGrossSqft = totalSqft(fromTotals.value, fromTotals.unit); }
       if (totals.length) t.totals = totals;
     }
     t.pass = st.pass; t.declared = true;
@@ -1205,13 +1517,20 @@ export function completeness(st: ExtractionState, onlyPass?: number): TableGap[]
     const rows = printedRows(t);
     const outCount = rows.filter((r) => !r.inScope).length;
     const label = t.title && t.title !== t.id ? `${t.id} (${t.title})` : t.id;
+    // facilities registered from several printed rows of this table with different areas: the inventory keeps one area
+    const doubledIds = [...new Set([...t.rows.keys()].filter((k) => k.includes('#')).map((k) => k.slice(0, k.indexOf('#'))))];
     if (t.rowCount != null) {
       if (rows.length < t.rowCount) out.push({ table: t.id, title: t.title, message: `${label}: ${rows.length} of ${t.rowCount} rows registered${outCount ? ` (${outCount} out of scope)` : ''}` });
       else if (rows.length > t.rowCount) {
-        const doubled = [...t.rows.entries()].filter(([k]) => k.includes('#')).map(([, r]) => r.name);
-        const why = doubled.length ? `; ${doubled.join(', ')} counted twice (registered from two rows with different areas - if one was a correction, say so in finish.unresolved)` : '';
+        const doubled = doubledIds.map((id) => t.rows.get(id)?.name ?? id);
+        const why = doubled.length ? `; ${doubled.join(', ')} counted on more than one row (printed twice with different areas)` : '';
         out.push({ table: t.id, title: t.title, message: `${label}: ${rows.length} rows registered but the table was declared with ${t.rowCount}${why} - re-declare it if row_count was wrong (a printed row with several quantities is one row); never register subtotal or total rows` });
       }
+    }
+    for (const id of doubledIds) {
+      const areas = tableRowsOf(t, id).map((r) => r.sf);
+      const kept = st.facilities.get(id)?.grossSqft ?? 0;
+      out.push({ table: t.id, title: t.title, message: `${label}: ${t.rows.get(id)?.name ?? id} is printed on ${areas.length} rows with different areas (${areas.map(fmt).join(' and ')} SF) but the inventory keeps one building of ${fmt(kept)} SF - if the rows are separately priced parts of it (one line per cleaning level, wing or schedule), resend each row with line_item set to what tells them apart; if one row corrects the other, name ${t.id} in unresolved` });
     }
     if (t.totalGrossSqft && t.kind !== 'grounds') {
       const inSf = rows.filter((r) => r.inScope && !r.areaMissing).reduce((s, r) => s + r.sf, 0);
@@ -1382,10 +1701,6 @@ export function finalize(st: ExtractionState): FinalizeResult {
     return id ? { ...g, facilityId: id } : { ...g };
   });
   for (const g of completeness(st)) warnings.push(`Completeness: ${g.message}`);
-  for (const d of st.tableDupes.values()) {
-    const kept = st.facilities.get(d.id)?.grossSqft ?? 0;
-    warnings.push(`${d.label} is listed twice in ${d.table} with different areas (${fmt(d.areas[0])} and ${fmt(d.areas[1])} SF); the inventory keeps one building of ${fmt(kept)} SF - check whether the rows are separate buildings.`);
-  }
   if (st.pending.length) {
     const labels = [...new Set(st.pending.map((p) => `${p.label}${p.row.tableId ? ` (${p.row.tableId})` : ''}`))];
     warnings.push(`${st.pending.length} ${st.pending.length === 1 ? 'row' : 'rows'} without an area that only add data were never matched to a registered building and were dropped: ${listLabels(labels)}.`);
@@ -1422,9 +1737,17 @@ export function replayToolCalls(calls: ToolCall[], docs: DocLike[], emit?: (e: E
   return { ...fin, results };
 }
 
-/** Compact "bn|campus|sf|status" lines of everything registered so far (for later AI passes). */
+/** Compact "bn [line item]|campus|sf|status" lines of everything registered so far (for later AI passes). */
 export function registeredSummary(st: ExtractionState): string {
-  return [...st.facilities.values()].map((f) => [f.buildingNumber ?? `"${f.name.slice(0, 40)}"`, f.campus ?? '', f.grossSqft, f.status && f.status !== 'in_scope' ? f.status : ''].join('|').replace(/\|+$/, '')).join('\n');
+  const perKey = new Map<string, number>();
+  for (const m of st.meta.values()) if (m.key) { const k = `${m.campusSlug ?? ''}|${m.key}`; perKey.set(k, (perKey.get(k) ?? 0) + 1); }
+  return [...st.facilities.values()].map((f) => {
+    const m = st.meta.get(f.id);
+    // separate line items of one building: say which line
+    const line = m?.line ? m.lineLabel ?? m.line : m?.key && (perKey.get(`${m.campusSlug ?? ''}|${m.key}`) ?? 0) > 1 ? `"${f.name.slice(0, 40)}"` : '';
+    const bn = f.buildingNumber ? `${f.buildingNumber}${line ? ` [${line}]` : ''}` : `"${f.name.slice(0, 40)}"`;
+    return [bn, f.campus ?? '', f.grossSqft, f.status && f.status !== 'in_scope' ? f.status : ''].join('|').replace(/\|+$/, '');
+  }).join('\n');
 }
 /** Compact "name|kind|quantity unit|building" lines of the grounds registered so far (for continuation requests). */
 export function groundsSummary(st: ExtractionState): string {
@@ -1446,10 +1769,10 @@ const nullable = (type: string | string[], description?: string, extra: Schema =
 const obj = (properties: Record<string, Schema>, required: string[] = Object.keys(properties), description?: string): Schema => ({ type: 'object', ...(description ? { description } : {}), properties, required, additionalProperties: false });
 const sourceSchema = obj({
   file: nullable('string', 'Document name exactly as listed in the package.'),
-  page: nullable('integer', 'Page number ("--- page N ---" in text documents).'),
+  page: nullable('integer', 'Page number ("--- page N ---" in text documents). Null for spreadsheets and Word files (name the sheet or section in the excerpt).'),
   excerpt: { type: 'string', description: 'The row or sentence the numbers came from (≤ 200 chars).' },
 }, ['file', 'page', 'excerpt']);
-const STATUS_KINDS = 'excluded (not in scope, N/A, information only, no service); deleted_by_amendment (struck through or deleted by an amendment / Q&A); demolished (demolished or scheduled for demolition, disposed); vacant (vacant, closed); option_only (only in an option period / optional CLIN)';
+const STATUS_KINDS = 'excluded (not in scope, N/A, information only, no service); deleted_by_amendment (struck through or deleted by an amendment / Q&A); demolished (demolished or scheduled for demolition, disposed); vacant (vacant, closed); option_only (only in an option period / optional CLIN). When several apply, the first in this order wins: deleted_by_amendment, demolished, vacant, excluded - all are out of the estimate';
 const STATUS_DESC = `in_scope (default); ${STATUS_KINDS}.`;
 const FACILITY_STATUS_DESC = `Scope status as the document states it. null when the row says nothing about scope: a new building is then in scope, and a row that only updates an already-registered building (frequency, fixtures, dining, a revised area) leaves its status unchanged. ${STATUS_KINDS}; in_scope only when a document explicitly puts the building in scope or back in scope (give status_reason).`;
 
@@ -1463,9 +1786,10 @@ export function extractionTools(opts: { strict?: boolean } = {}): Anthropic.Beta
   const strict = opts.strict ?? true;
   const s = (t: Anthropic.Beta.BetaTool): Anthropic.Beta.BetaTool => (strict ? { ...t, strict: true } : t);
   const facility = obj({
-    table_id: nullable('string', 'table_id from declare_tables for the table this row came from. A row from an amendment or Q&A gets that document\'s own declared table_id, or null - never the base table\'s id.'),
+    table_id: nullable('string', 'table_id from declare_tables for the table this row is printed in, including rows a conformed or reissued table marks as revised in place. A row from an amendment\'s own change list or a Q&A answer (Item / Was / Is) gets that document\'s own declared table_id, or null - never the base table\'s id.'),
     campus: nullable('string', 'Installation, campus or site, when the package covers more than one. Same number on two campuses = two buildings.'),
     building_number: nullable('string', 'Exactly as printed, including letters, hyphens and leading zeros (0012, T-2401, 3105-B, P-114). Null if the row has no number.'),
+    line_item: nullable('string', 'Only when one table prints this building on several rows that are separately priced parts of it (one row per cleaning level, wing, schedule or service class): what tells this row apart, as printed (e.g. "Level 2", "East Wing"). Each line item is its own inventory line; a later revision of one line uses the same line_item. Null otherwise - never for tables that break down a building listed elsewhere (by floor, unit or room).'),
     name: { type: 'string', description: 'Facility name as printed.' },
     status: nullable('string', FACILITY_STATUS_DESC, { enum: [...STATUS_IDS, null] }),
     status_reason: nullable('string', 'Why the row is (not) in scope, quoting the document (e.g. "DEMO FY27 – EXCLUDE", "Deleted by Amendment 0002").'),
@@ -1474,26 +1798,40 @@ export function extractionTools(opts: { strict?: boolean } = {}): Anthropic.Beta
     added_areas: nullable('array', 'Units printed outside the area column that the document counts as part of this facility (portables, modulars, annexes: "4 @ 960" = {label: "portable classrooms", count: 4, unit_area: 960}; one entry per unit size), in area_unit. The tool adds count × unit_area to the gross and reconciles the table against gross_area as printed.', {
       items: obj({ label: { type: 'string' }, count: { type: 'number', description: 'Number of units as printed (1 for a single annex).' }, unit_area: { type: 'number', description: 'Area of one unit as printed.' } }),
     }),
-    cleanable_area: nullable('number', 'Cleanable / serviced / custodial area as printed, in area_unit. Part of the gross and never larger: a larger "pricing" or "serviced" figure that includes extra structures is the gross (use added_areas). Null when the row prints none.'),
+    cleanable_area: nullable('number', 'Cleanable / serviced / custodial area as printed, in area_unit. Part of the gross and never larger: a larger "pricing" or "serviced" figure that includes extra structures is the gross (use added_areas). Null when the row prints none. A revision that changes only this area: gross_area null and cleanable_area the new figure.'),
     cleanable_equals_gross: nullable('boolean', 'true when the document says the gross area is the cleaning basis (no net / cleanable area surveyed, "gross area applies", "no deduction is made"); the tool sets the cleanable area to the gross, added_areas included. Leave null when the package says nothing about it.'),
     area_unit: { type: 'string', enum: ['sf', 'sm', 'sy'], description: 'Unit the areas are printed in: sf (square feet), sm (square meters), sy (square yards). The tool converts.' },
     area_missing: nullable('boolean', 'true when the document prints no area for this building anywhere. false (with gross_area null) for a row that only adds data to a building whose area another table prints.'),
     estimated_gross_area: nullable('number', 'Only with area_missing: your estimate in area_unit; give the basis in notes.'),
     floors: nullable('integer', 'Number of stories.'),
-    fixtures: nullable('object', 'Restroom fixtures. When WC / UR / LAV / shower are separate columns fill them separately; the tool sums them.', {
+    fixtures: nullable('object', 'Restroom fixtures (toilets, urinals, sinks, showers - not rooms). When WC / UR / LAV / shower are separate columns fill them separately; the tool sums them.', {
       properties: { total: nullable('integer'), water_closets: nullable('integer'), urinals: nullable('integer'), lavatories: nullable('integer'), showers: nullable('integer') },
       required: ['total', 'water_closets', 'urinals', 'lavatories', 'showers'], additionalProperties: false,
     }),
+    restroom_rooms: nullable('integer', 'Number of restrooms (rooms) as printed, when the document counts rooms rather than fixtures.'),
+    cleaning_standard: nullable('string', 'Cleaning level / standard / service class as printed (e.g. "Level 1", "COL 3", "Service Class B", "Prestige").'),
+    area_by_class: nullable('array', 'Areas the document splits by cleaning class or infection-risk class (high / moderate / low risk, critical / general), as printed in area_unit.', {
+      items: obj({ label: { type: 'string' }, area: { type: 'number' } }),
+    }),
     occupancy: nullable('integer'),
     service_level: nullable('string', 'Routine cleaning frequency. Mon–Sat / six days a week = daily_6. Bi-weekly = every two weeks (biweekly) unless the document defines it as twice a week.', { enum: [...LEVEL_IDS, null] }),
-    service_days_per_year: nullable('integer', 'Only when the document defines a service calendar the levels cannot express (e.g. 180 school days + 20 summer days = 200; 7 days Apr–Oct + weekends Nov–Mar): the stated number of service days per year. Otherwise null.'),
+    service_days_per_year: nullable('integer', 'Only when the document states a number of service days per year that the levels cannot express (e.g. 180 school days + 20 summer days = 200). Otherwise null; for a seasonal window use service_season.'),
+    service_season: nullable('object', 'Seasonal service printed as a window ("May 1 – Oct 15", "Memorial Day through Labor Day", "APR-OCT only"): start and end as printed and the days per week in season; the tool counts the service days. service_level stays the in-season pattern.', {
+      properties: { start: { type: 'string' }, end: { type: 'string' }, days_per_week: nullable('number') },
+      required: ['start', 'end', 'days_per_week'], additionalProperties: false,
+    }),
+    events_per_year: nullable('integer', 'On-call or per-event cleaning (rentals, events, "as scheduled"): the number of events per year as printed; each is one service day.'),
     service_frequency_text: nullable('string', 'The frequency exactly as printed (e.g. "M–F", "Daily (7 days)", "2x/month").'),
     scope: { type: 'array', items: { type: 'string', enum: [...SCOPES] }, description: 'Services that apply to this facility.' },
-    floor_mix: nullable('object', 'Fractions of floor area by finish if the RFP gives them (sum ≈ 1).', {
+    floor_areas: nullable('object', 'Floor area by finish as printed, in area_unit (never converted or divided); the tool derives the floor mix and checks the sum. carpet; resilient (VCT, vinyl, linoleum, rubber; a mixed "hard floor" column unless the document says otherwise); hard_tile (ceramic, quarry, terrazzo, stone, a restroom-only column); concrete (sealed or bare concrete); wood; other (a finish the document does not name). 0 or null for finishes not printed.', {
+      properties: { carpet: nullable('number'), resilient: nullable('number'), hard_tile: nullable('number'), concrete: nullable('number'), wood: nullable('number'), other: nullable('number') },
+      required: ['carpet', 'resilient', 'hard_tile', 'concrete', 'wood', 'other'], additionalProperties: false,
+    }),
+    floor_mix: nullable('object', 'Only when the document prints shares (percent or fractions) of floor area by finish (sum ≈ 1); when it prints square feet by finish use floor_areas.', {
       properties: { carpet: { type: 'number' }, resilient: { type: 'number' }, hard_tile: { type: 'number' }, concrete: { type: 'number' }, wood: { type: 'number' } },
       required: ['carpet', 'resilient', 'hard_tile', 'concrete', 'wood'], additionalProperties: false,
     }),
-    dining: nullable('object', 'Dining facility workload. Register each dining facility separately with its own headcount.', {
+    dining: nullable('object', 'Food-service workload (headcounts, meals) of a dining facility; register each dining facility separately with its own headcount. Null when only custodial cleaning of a dining building is in scope.', {
       properties: {
         meal_periods: nullable('array', 'Per meal period as printed: weekday = Monday–Friday average headcount per day, weekend = weekend / holiday average per day (null when the period is not served then). The tool computes meals per day.', {
           items: obj({ period: { type: 'string' }, weekday_headcount: nullable('number'), weekend_headcount: nullable('number') }),
@@ -1544,9 +1882,9 @@ export function extractionTools(opts: { strict?: boolean } = {}): Anthropic.Beta
               title: { type: 'string' },
               kind: { type: 'string', enum: ['facilities', 'dining', 'grounds', 'other'] },
               file: nullable('string', 'Document name exactly as listed.'),
-              pages: nullable('string', 'Page range, e.g. "12-19".'),
+              pages: nullable('string', 'Page range, e.g. "12-19". Null for spreadsheets and Word files (name the sheet or section in the title).'),
               row_count: nullable('integer', 'Number of printed building (or area) rows, excluding header, subtotal and total rows. A printed row with several quantities (areas by type, beds, trees) is one row.'),
-              printed_total_gross_area: nullable('number', 'Facility tables: the printed total / grand total of the gross area column, as printed (in area_unit). Grounds totals go in printed_totals.'),
+              printed_total_gross_area: nullable('number', 'Facility tables: the printed total / grand total of the gross area column, as printed (in area_unit), whether it covers all rows or only the in-scope rows (the check accepts either). Grounds totals go in printed_totals.'),
               area_unit: nullable('string', 'Unit of the facility areas and of printed_total_gross_area. Null for a grounds or dining table.', { enum: ['sf', 'sm', 'sy', null] }),
               printed_totals: {
                 type: 'array',
@@ -1566,7 +1904,7 @@ export function extractionTools(opts: { strict?: boolean } = {}): Anthropic.Beta
     }),
     {
       name: 'register_facilities',
-      description: 'Register facilities (buildings) in table order, in batches of up to 50 rows per call. Keep each call short enough to finish well within the output limit; if a call is reported as cut off, resend exactly those rows in smaller batches. Register every row, including excluded / deleted / demolished / vacant rows with their status. Never register subtotal or total rows. A building seen again (other table, amendment, Q&A) is merged by building number + campus; a row without an area for a numbered building not registered yet is held until that building is registered.',
+      description: 'Register facilities (buildings) in table order, in batches of up to 50 rows per call. Keep each call short enough to finish well within the output limit; if a call is reported as cut off, resend exactly those rows in smaller batches. Register every row, including excluded / deleted / demolished / vacant rows with their status. Never register subtotal or total rows. A building seen again (other table, amendment, Q&A) is merged by building number + campus (+ line_item when one table prints it on several separately priced rows); a row without an area for a numbered building not registered yet is held until that building is registered.',
       input_schema: { type: 'object', properties: { facilities: { type: 'array', items: facility } }, required: ['facilities'], additionalProperties: false },
     },
     {
@@ -1578,11 +1916,11 @@ export function extractionTools(opts: { strict?: boolean } = {}): Anthropic.Beta
       name: 'set_site_info',
       description: 'Record installation-level facts: name, location, solicitation, climate, growing season, contract period.',
       input_schema: obj({
-        installation_name: nullable('string'),
-        location: nullable('string'),
+        installation_name: nullable('string', 'The main installation, campus or agency name as printed on the title block, without location, state, parenthetical abbreviations or the names of other sites (other sites go in facility campus and notes).'),
+        location: nullable('string', 'City and state / country.'),
         solicitation: nullable('string'),
         contract_name: nullable('string'),
-        climate_zone: nullable('string', undefined, { enum: [...CLIMATES, null] }),
+        climate_zone: nullable('string', 'From the stated climate, else inferred from the stated state or region.', { enum: [...CLIMATES, null] }),
         growing_season_weeks: nullable('integer'),
         contract_years: nullable('number', 'Total years including base and all option periods.'),
         notes: nullable('string'),
@@ -1596,7 +1934,7 @@ export function extractionTools(opts: { strict?: boolean } = {}): Anthropic.Beta
         contract_number: nullable('string'),
         contract_type: nullable('string', 'FFP, IDIQ, cost-plus, etc.'),
         total_value: nullable('number', 'Total award / ceiling value in dollars.'),
-        period_months: nullable('integer', 'Months of performance that total_value covers (base + options).'),
+        period_months: nullable('integer', 'Only with total_value: the months of performance it covers (base + options). For a stated term without a total, put the term in notes.'),
         annual_value: nullable('number', 'Annual value in dollars if stated directly.'),
         spend_to_date: nullable('number', 'Obligated / invoiced dollars to date.'),
         spend_period_months: nullable('integer', 'Months covered by spend_to_date.'),

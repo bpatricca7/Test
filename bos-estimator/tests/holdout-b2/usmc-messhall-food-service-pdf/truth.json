@@ -1,0 +1,354 @@
+{
+  "id": "usmc-messhall-food-service-pdf",
+  "title": "USMC garrison food service (FFS + M&MA) PWS Technical Exhibits: 20-row landscape mess hall list split over two pages, per-meal-period weekday / weekend headcounts with Midrats, closed and option-only halls, Amendment 0001 deletes a hall and corrects SF (PDF)",
+  "theme": "dining",
+  "provenance": {
+    "fidelity": "real-format",
+    "sources": [
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID294263761115844501071154752929531886007/DRAFT%20PWS_CDRLS.pdf",
+        "note": "Schriever AFB Full Food Service draft PWS, FA255020R0010 Attachment 1 (7 May 2020). Downloaded and read. Appendix 1 'Hours of Operation' (Meal / Weekday Hours / Weekends, Holidays and Family Days; Breakfast, Lunch, Dinner, Midnight 2300 - 0100) and Appendix 2 'Workload Meal Estimates' ('Average daily meal count for normal workweek (week days only)' and a separate weekend/holiday count, per meal period including Midnight; 'Approximately 22,000 - 23,000 meals total served per month'); 1.3.4 headcount data to the COR weekly; 1.5 housekeeping (clean seating, serving, cashier and food preparation areas). Model for TE-2, the weekday vs weekend/holiday split of TE-3, the Midrats meal period and the convenience weekly total."
+      },
+      {
+        "url": "https://www.lejeune.marines.mil/Portals/27/Documents/G4/FSD/RGFSC-III-CLNC-MH-Hours-of-Operation.pdf",
+        "note": "MCB Camp Lejeune 'RGFSC III CLNC MH Hours of Operation' (seen through search excerpts only; host not reachable from this session): per-mess-hall weekday breakfast/lunch/dinner windows (e.g. 0600-0800, 1100-1300), separate weekend windows (0630-0800 / 1130-1300 / 1630-1800), holidays follow weekend hours, midnight ration window 2300-0100. Model for TE-2 and the 'Federal holidays follow the weekend schedule' rule."
+      },
+      {
+        "url": "https://www.lejeune.marines.mil/Portals/27/Documents/G4/FSD/COMMANDERS%20GUIDANCE%20FOR%20THE%20CONUS%20REGIONAL%20GARRISON%20-%20Final%203_10_2023.pdf?ver=DLdDNCV9hQ_bIONk1cb6Tg%3D%3D",
+        "note": "Commander's Guidance for the CONUS Regional Garrison Food Service contracts (search excerpt only): 28 East Coast and 20 West Coast garrison mess halls under M95494-18-C-0018 / -0016; mess halls are Full Food Service or Management and Mess Attendant; 'M&MA mess halls are designated to provide a training platform for Marine Food Service Specialists (MOS 3381)'. Paraphrased in paragraph 1.2 (FFS vs M&MA) and the TE-1 Service Type column."
+      },
+      {
+        "url": "https://sam.gov/opp/6f3123416ba44a2cbe8480ef3834c2e3/view",
+        "note": "Regional Garrison Food Services IV sources sought, MCICOM (search excerpt only): 27 East Coast and 20 West Coast garrison mess halls; 'year-round meal preparation, meal service, and facility management'. Model for the scope of a multi-mess-hall garrison food service requirement."
+      },
+      {
+        "url": "https://www.bidnetdirect.com/public/supplier/solicitations/statewide/2524880752/abstract",
+        "note": "MCB Hawaii Management and Mess Hall Attendant Services, M0031824R0003 (search excerpt only): service locations Anderson Hall and 'the Flight-Line satellite facility'; performance-based PWS with QASP. Model for the satellite facilities (AS-219 Flight Line Satellite) as separate in-scope locations."
+      },
+      {
+        "url": "https://www.marines.mil/News/Messages/Messages-Display/Article/4558339/fy26-major-general-william-pendleton-thompson-wpt-hill-memorial-awards-for-food/",
+        "note": "MARADMIN, FY26 MajGen W.P.T. Hill Memorial Awards for food service (search excerpt only): 'CONUS Garrison Mess Hall (Full Food Service)' and 'Management and Mess Attendant' categories. Terminology source for FFS / M&MA."
+      },
+      {
+        "url": "https://www.quantico.marines.mil/Portals/147/Offices_and_Staff/G4/Food_Services/Meal_Rates/CY 2025 Meal Rates (Message).pdf",
+        "note": "CY 2025 Meal Rates message (search excerpt only): mess halls report headcount on the NAVMC 565-1 headcount report. Source for the TE-3 data source line."
+      },
+      {
+        "url": "https://www.quantico.marines.mil/Portals/147/Offices_and_Staff/G4/Food_Services/Memos/BASE FOOD SERVICE MEMO 11-17.pdf",
+        "note": "MCB Quantico Base Food Service Memo 11-17 (search excerpt only): headcount recorded in the MCFMIS headcount tab; military cash customers counted as 'Cash Meal Regular'. Source for the paragraph 1.3 headcount definition."
+      },
+      {
+        "url": "https://www.pendleton.marines.mil/In-the-News/Press-Releases/Article/537679/mess-halls-to-offer-corps-birthday-meal",
+        "note": "MCB Camp Pendleton press release (2012, search excerpt only): mess halls identified by building number ('22 Temp Site', 1365, 14036, 210802, 2403, 33302, 413520, 43402). Model for identifying mess halls by building number."
+      },
+      {
+        "url": "https://www.restaurantji.com/nc/camp-lejeune/messhall-fc303-/",
+        "note": "Listing for Camp Lejeune 'messhall FC303' (search excerpt only): area-prefixed building number and 'Saturday - Closed, Sunday - Closed'. Model for the prefixed building numbers (TC-303 etc.) and the weekday-only mess halls."
+      },
+      {
+        "url": "https://www.themuse.com/jobs/sodexo/food-service-manager-2-9d4b54",
+        "note": "Sodexo Food Service Manager 2 posting, Camp Lejeune (search excerpt only): Mess Hall 227 'feeds approximately 9,000-12,000 meals per week' and is 'the only base mess hall with two separate service floors and two kitchens'. Model for the weekly-meals convention and the two-floor Mess Hall 227 whose area the amendment corrects (fictional figures)."
+      },
+      {
+        "url": "https://dvidshub.net/image/3466592/14-area-mess-hall",
+        "note": "DVIDS, Camp Pendleton 14 Area Mess Hall (2017, search excerpt only): reopened May 2017 after being closed since April 2015 for renovations; serves about 1,500 Marines a day. Precedent for the closed-for-renovation mess hall (TC-410) whose diners eat elsewhere."
+      },
+      {
+        "url": "https://www.waru.edu/sites/default/files/2024-01/Mess+Attendant+PWS+dtd+23+Feb+2023.pdf",
+        "note": "Whiteman AFB Mess Attendant PWS, 24 Feb 2023 (search excerpt only): 'estimated quantities of work are listed in Technical Exhibit 2, Workload Estimates'. Model for the paragraph 1.1 disclaimer."
+      },
+      {
+        "url": "https://www.marines.mil/Portals/1/Publications/MCO%2010110.14N.pdf",
+        "note": "MCO 10110.14N, Marine Corps Food Service and Subsistence Program (search excerpt only): policy for garrison mess halls. Cited for the garrison mess hall setting; no wording copied."
+      }
+    ],
+    "notes": "Everything is made up: MCB Camp Halloran, MCAS Pell River and their areas (Mainside, Tarrant Creek, Oyster Bay, Camp Whitlock, Camp Dunning, Shell Point), the solicitation M67443-27-R-0019, the incumbent (Longleaf Garrison Dining, LLC, M67443-22-C-0004), every building number, seat count, square footage, headcount, serving window, historical meal count and dollar value. No rows were copied, so fidelity is real-format. Layout and wording follow the cited documents: per-meal-period weekday and weekend/holiday counts including a midnight meal (Schriever AFB FFS PWS, the only source downloaded in full; the session's network allowed S3 only), Lejeune mess hall hours with holidays on the weekend schedule and a 2300-0100 midnight ration window, the FFS / M&MA split and MOS 3381 training-platform wording of the Regional Garrison Food Service program, a flight-line satellite facility (MCB Hawaii M&MA), area-prefixed building numbers and weekday-only halls (Camp Lejeune FC303), MCFMIS / NAVMC 565-1 headcount sources, and a two-floor Mess Hall 227 measured in meals per week. The Marine Corps sources other than Schriever were read only through search excerpts (marines.mil, sam.gov, gao.gov and bid sites were blocked by the session proxy). The HTML and expect.facilities are generated together by gen.mjs from one table, so TE-1, TE-3, TE-4, the amendment and the truth reconcile."
+  },
+  "inputs": [
+    {
+      "src": "m67443-27-r-0019-att-j2.html",
+      "as": "pdf"
+    }
+  ],
+  "expect": {
+    "facilities": [
+      {
+        "buildingNumber": "211",
+        "name": "Mess Hall 211",
+        "grossSqft": 31480,
+        "cleanableSqft": 27915,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "dining",
+        "dining": {
+          "mealsPerDay": 1282,
+          "mealPeriods": 3,
+          "daysPerWeek": 7
+        }
+      },
+      {
+        "buildingNumber": "227",
+        "name": "Mess Hall 227",
+        "grossSqft": 46920,
+        "cleanableSqft": 41380,
+        "floors": 2,
+        "serviceLevel": "daily_7",
+        "category": "dining",
+        "dining": {
+          "mealsPerDay": 2044,
+          "mealPeriods": 4,
+          "daysPerWeek": 7
+        }
+      },
+      {
+        "buildingNumber": "260",
+        "name": "Mess Hall 260 (Headquarters and Support Battalion)",
+        "grossSqft": 18250,
+        "cleanableSqft": 15970,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "dining",
+        "dining": {
+          "mealsPerDay": 625,
+          "mealPeriods": 3,
+          "daysPerWeek": 5
+        }
+      },
+      {
+        "buildingNumber": "408",
+        "name": "Mess Hall 408",
+        "grossSqft": 26940,
+        "cleanableSqft": 23780,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "dining",
+        "dining": {
+          "mealsPerDay": 1083,
+          "mealPeriods": 3,
+          "daysPerWeek": 7
+        }
+      },
+      {
+        "buildingNumber": "1104",
+        "name": "Wolf Creek Mess Hall",
+        "grossSqft": 38640,
+        "cleanableSqft": 34210,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "dining",
+        "dining": {
+          "mealsPerDay": 1640,
+          "mealPeriods": 3,
+          "daysPerWeek": 7
+        }
+      },
+      {
+        "buildingNumber": "TC-303",
+        "name": "Tarrant Creek Mess Hall 303",
+        "grossSqft": 24860,
+        "cleanableSqft": 21940,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "dining",
+        "dining": {
+          "mealsPerDay": 920,
+          "mealPeriods": 3,
+          "daysPerWeek": 5
+        }
+      },
+      {
+        "buildingNumber": "TC-575",
+        "name": "Tarrant Creek Mess Hall 575",
+        "grossSqft": 35410,
+        "cleanableSqft": 31265,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "dining",
+        "dining": {
+          "mealsPerDay": 1353,
+          "mealPeriods": 3,
+          "daysPerWeek": 7
+        }
+      },
+      {
+        "buildingNumber": "OB-160",
+        "name": "Oyster Bay Mess Hall",
+        "grossSqft": 21330,
+        "cleanableSqft": 18870,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "dining",
+        "dining": {
+          "mealsPerDay": 667,
+          "mealPeriods": 3,
+          "daysPerWeek": 7
+        }
+      },
+      {
+        "buildingNumber": "W-48",
+        "name": "Camp Whitlock Mess Hall 48",
+        "grossSqft": 22615,
+        "cleanableSqft": 19940,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "dining",
+        "dining": {
+          "mealsPerDay": 835,
+          "mealPeriods": 3,
+          "daysPerWeek": 7
+        }
+      },
+      {
+        "buildingNumber": "W-133",
+        "name": "Camp Whitlock Schools Mess Hall",
+        "grossSqft": 27560,
+        "cleanableSqft": 24410,
+        "floors": 1,
+        "serviceLevel": "daily_6",
+        "category": "dining",
+        "dining": {
+          "mealsPerDay": 1263,
+          "mealPeriods": 3,
+          "daysPerWeek": 6
+        }
+      },
+      {
+        "buildingNumber": "D-301",
+        "name": "Mess Hall 301 (Marine Combat Training Battalion)",
+        "grossSqft": 33180,
+        "cleanableSqft": 29350,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "dining",
+        "dining": {
+          "mealsPerDay": 1453,
+          "mealPeriods": 3,
+          "daysPerWeek": 7
+        }
+      },
+      {
+        "buildingNumber": "D-450",
+        "name": "Mess Hall 450 (Infantry Training Battalion)",
+        "grossSqft": 42180,
+        "cleanableSqft": 37250,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "dining",
+        "dining": {
+          "mealsPerDay": 2573,
+          "mealPeriods": 3,
+          "daysPerWeek": 7
+        }
+      },
+      {
+        "buildingNumber": "D-615",
+        "name": "Mess Hall 615",
+        "grossSqft": 19880,
+        "cleanableSqft": 17420,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "dining",
+        "dining": {
+          "mealsPerDay": 581,
+          "mealPeriods": 3,
+          "daysPerWeek": 7
+        }
+      },
+      {
+        "buildingNumber": "SP-24",
+        "name": "Shell Point Range Satellite",
+        "grossSqft": 4850,
+        "cleanableSqft": 4310,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "dining",
+        "dining": {
+          "mealsPerDay": 205,
+          "mealPeriods": 2,
+          "daysPerWeek": 5
+        }
+      },
+      {
+        "buildingNumber": "AS-4150",
+        "name": "Pell River Mess Hall",
+        "grossSqft": 33720,
+        "cleanableSqft": 29860,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "dining",
+        "dining": {
+          "mealsPerDay": 1445,
+          "mealPeriods": 4,
+          "daysPerWeek": 7
+        }
+      },
+      {
+        "buildingNumber": "AS-219",
+        "name": "Flight Line Satellite",
+        "grossSqft": 4260,
+        "cleanableSqft": 3790,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "dining",
+        "dining": {
+          "mealsPerDay": 325,
+          "mealPeriods": 2,
+          "daysPerWeek": 5
+        }
+      },
+      {
+        "buildingNumber": "AS-505",
+        "name": "Mess Hall AS-505",
+        "grossSqft": 20540,
+        "cleanableSqft": 18135,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "dining",
+        "dining": {
+          "mealsPerDay": 612,
+          "mealPeriods": 3,
+          "daysPerWeek": 7
+        }
+      }
+    ],
+    "facilitiesComplete": true,
+    "grounds": [],
+    "site": {
+      "contractYears": 5,
+      "installationName": "Camp Halloran",
+      "solicitation": "M67443-27-R-0019"
+    },
+    "priorAward": {
+      "totalValue": 298746215,
+      "periodMonths": 60,
+      "annualValue": 63215480,
+      "spendToDate": 233418605,
+      "spendPeriodMonths": 48,
+      "incumbent": "Longleaf Garrison Dining, LLC",
+      "contractNumber": "M67443-22-C-0004",
+      "awardYear": 2022
+    }
+  },
+  "traps": [
+    "Meals per day is never printed; it is derived from TE-3 per meal period and the days the hall is open (paragraph 2.2, TE-3 Note 4). Seven-day halls: (5 x Mon-Fri total + 2 x weekend total) / 7, e.g. Bldg 211 (5 x 1,555 + 2 x 600) / 7 = 8,975 / 7 = 1,282.1 -> 1,282. Monday-Friday halls (260, TC-303, SP-24, AS-219): the weekday total is the meals per operating day and daysPerWeek is 5 (260 = 625, not 625 x 5/7 = 446). Monday-Saturday hall W-133: (5 x 1,425 + 1 x 455) / 6 = 7,580 / 6 = 1,263.3 -> 1,263, daysPerWeek 6. The printed 'Est. Weekly Meals' column divided by 7 is right only for the seven-day halls.",
+    "Midrats are a separate meal period: Mess Hall 227 and Pell River Mess Hall (AS-4150) serve 4 periods Monday-Friday (B/L/D/Midrats) and Midrats on weekends too; the Flight Line Satellite (AS-219) serves only lunch and Midrats (2 periods, 325/day); the Shell Point Range Satellite (SP-24) serves only breakfast and dinner (2 periods, 205/day) - lunch is 'N/S' because units eat MREs, which are not contract meals.",
+    "Weekend columns differ by hall: most halls serve Brunch and Supper on Saturdays, Sundays and holidays; training-schedule halls D-301 and D-450 serve Breakfast, Lunch and Dinner every day (weekend values in the Brkfst / Lunch / Supper-Dinner columns). mealPeriods counts the weekday periods (3, or 4 with Midrats), not the 2 weekend periods.",
+    "Amendment 0001 (last two pages) controls and the original exhibit pages never mention it: Item 1 deletes Bldg D-512 Mess Hall 512 (23,940 GSF, 740 / 680 headcount) from TE-1, TE-2, TE-3 and TE-4 - not expected; Item 2 replaces the D-450 headcount (610/655/630 and 585/600/590, 1,861/day) with 845/905/870 and 810/830/815 -> (5 x 2,620 + 2 x 2,455) / 7 = 18,010 / 7 = 2,572.9 -> 2,573.",
+    "Amendment 0001 Item 3 corrects Mess Hall 227 (2 floors): Gross SF 23,460 -> 46,920 and Sanitation Area 20,690 -> 41,380 (the issued figures covered the first service floor only); TE-1 as issued still prints 23,460 / 20,690 and its totals include them.",
+    "Closed for renovation: Item 7 Bldg TC-410 Tarrant Creek Mess Hall 410 is printed in italics with parenthesized figures ((29,700) GSF, (9,150) dining SF, (500) seats), 'CLOSED' days, no sanitation area, 'CLOSED FOR RENOVATION - NO WORKLOAD' in TE-2/TE-3, and FY24-FY26 history in TE-4; excluded from the totals and from expect.facilities. Its diners are already in TC-575's headcount.",
+    "Option only: Item 16 Bldg D-1720 Camp Dunning Mess Hall (New), MILCON P-1312, has projected (48,500) GSF, (15,900) dining SF and (800) seats in TE-1 and a projected headcount in TE-3A (2,425 / 2,280, 16,685 weekly); it is an optional line item that may never be exercised and is not expected.",
+    "Gross vs sanitation area: TE-1 Column (8) Gross SF (iNFADS) is grossSqft; Column (9) Sanitation Area SF (excludes mechanical/electrical/telecom rooms, Government Food Service Office, covered loading docks) is cleanableSqft; Column (10) Dining Room SF is a subset of both (Note 3, Q3) and is neither the cleanable area nor an extra area.",
+    "Building numbers carry area prefixes and hyphens (TC-303, TC-575, OB-160, W-48, W-133, D-301, D-450, D-615, SP-24, AS-4150, AS-219, AS-505) next to plain numbers (211, 227, 260, 408, 1104); mess hall names repeat the number ('Mess Hall 211', 'Tarrant Creek Mess Hall 303', 'Mess Hall AS-505'); TE-1 Item numbers 1-20 are not building numbers.",
+    "Totals and subtotals are not facilities: TE-1 'Subtotal - MCB Camp Halloran (14 mess halls, 1 satellite; excludes Items 7 and 16)' 394,575 / 348,370 / 130,800 / 7,000; 'Subtotal - MCAS Pell River' 58,520; 'TOTAL - FACILITIES IN SCOPE (18 ...)' 453,095 / 400,155; TE-3 TOTAL (18) row (21,630 / 9,655 / 127,005); TE-4 TOTAL MEALS SERVED; Amendment Item 5 revised totals 394,095 / 58,520 / 452,615 (17) and TE-3 revised total 126,930. The revised TE-1 total 452,615 equals the sum of expect.facilities grossSqft.",
+    "Group header rows span the tables (MARINE CORPS BASE CAMP HALLORAN - MAINSIDE / TARRANT CREEK / OYSTER BAY / CAMP WHITLOCK / CAMP DUNNING / SHELL POINT RANGE COMPLEX; MARINE CORPS AIR STATION PELL RIVER) and are not facilities.",
+    "Satellite facilities (SP-24 Shell Point Range Satellite, AS-219 Flight Line Satellite) are separate buildings with their own area and headcount (TE-1 Note 7, TE-3 Note 5, Q1) and are in scope; the parent mess hall named in their remarks (D-301, AS-4150) is a different facility whose figures do not include them.",
+    "Facilities named in prose but not in scope (paragraph 1.4): MCCS Paradise Cove Club (Bldg 1210), Wolf Creek Food Court (Bldg 1108), Naval Hospital galley (Bldg H-1), Base Brig (Bldg 1041), field messes.",
+    "Distractor numbers next to the SF and headcounts: seats, year built / renovated wrapped over two lines ('1972 /' '2009'), floors, TE-2 serving windows ('0530-0800', '2300-0100'), the convenience 'Est. Weekly Meals', TE-4 fiscal-year meals served with anomalies (1104 FY24 deployment, SP-24 FY25 range closure, AS-219 opened Feb 2025, TC-575 receiving TC-410 diners mid-FY26, FY26 only 9 months), TE-3A projections, and the 15% / 90-day workload-change clause.",
+    "Landscape TE-1 is split across two pages with the three-row header repeated (group row 'FACILITY IDENTIFICATION / REAL PROPERTY DATA - iNFADS, 30 JUN 2026 / CONTRACT DATA', titles with superscript note markers glued in the text layer ('SF1', 'Area SF2', 'Room SF3', 'Opn4'), and a column-number row (1)...(13)); notes are only on page 2. TE-2 and TE-3 are separate landscape tables keyed by the same Item and Bldg No.",
+    "Service level follows TE-1 Column (12) Days of Opn, because TE-5 sanitation is performed on each day of operation: '7' = daily_7, 'M-F' = daily_5 (260, TC-303, SP-24, AS-219), 'M-Sa' = daily_6 (W-133, closed Sundays and holidays). Category is dining for every facility.",
+    "Prior award is narrative (paragraph 3.2, repeated in Q6): Longleaf Garrison Dining, LLC, Contract No. M67443-22-C-0004, awarded 15 September 2022, base + four 12-month options (60 months), total $298,746,215 as modified through P00011, Option Period 4 (current) $63,215,480, invoiced $233,418,605 over 48 months (1 Oct 2022 - 30 Sep 2026). Distractors in the same paragraphs: FAR 52.217-8 extension estimate $31,607,740, special-event BPA M67443-24-A-0007 ceiling $3,500,000, and FY2026 subsistence obligations of about $38.9 million.",
+    "Contract years: 12-month base + four 12-month option periods = 5; the 30-day phase-in and the FAR 52.217-8 six-month extension are not contract years.",
+    "No grounds: grounds maintenance is performed by the Government (TE-5 paragraph 5.2, Q8); the contractor only polices litter within 50 feet of each facility, which is not a grounds area. expect.grounds is empty, so a reader that emits turf or paving is penalized.",
+    "Climate: coastal North Carolina = hot_humid."
+  ]
+}

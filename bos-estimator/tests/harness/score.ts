@@ -1,6 +1,7 @@
 // Scores an extracted inventory against fixture ground truth.
 import type { Facility, GroundsArea, Inventory, PriorAward } from '../../shared/types';
 import { groundsAcres, groundsSqft } from '../../shared/estimate';
+import { buildingKey, cleanBuildingNumber } from '../../server/toolcalls';
 import type { FixtureTruth, TruthFacility } from './truth';
 
 export interface FacilityMatch { truth: TruthFacility; got?: Facility; via?: 'number' | 'name'; sfOk?: boolean; cleanOk?: boolean; floorsOk?: boolean; levelOk?: boolean; catOk?: boolean; sfGot?: number }
@@ -23,7 +24,33 @@ export interface ScoreReport {
   score: number;
 }
 
-export const normBn = (s?: string) => (s ?? '').toUpperCase().replace(/\b(BLDG|BUILDING|BLD|FAC|FACILITY|NO|#)\.?/g, '').replace(/[^A-Z0-9]/g, '').replace(/^0+(?=\d)/, '');
+/**
+ * Building-number identity, by the reader's own rule (server/toolcalls.ts): "Bldg", "Facility", "Site", "No." prefixes
+ * dropped ("NOSC 1" keeps its letters), leading zeros of each digit run dropped, a separator between letters and digits
+ * dropped ("SP-01" = "SP1"), one between two digit runs kept ("1-10" ≠ "110").
+ */
+export const normBn = (s?: string) => { const c = cleanBuildingNumber(s); return c ? buildingKey(c) : ''; };
+/** "B41" → "41": a number printed with a one-letter prefix in one place and without it in another. */
+const withoutLetter = (k: string) => k.match(/^[A-Z](\d.*)$/)?.[1];
+/** Text compared as an estimator reads it: case, punctuation and "&" ignored; a parenthetical (an abbreviation such as
+ *  "(NSA)", or an aside) read both as part of the text and left out. */
+const normTexts = (s: string) => [...new Set([s, s.replace(/\([^)]*\)/g, ' ')].map((x) => x.toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim()))];
+/**
+ * A site field matches when one value contains the other as whole words after normalising ("Naval Support Activity (NSA)
+ * Tarpon Sound" = "Naval Support Activity Tarpon Sound"); for names, also when every word of one is in the other (a
+ * name copied with its location appended).
+ */
+export function siteFieldOk(field: string, expected: unknown, got: unknown): boolean {
+  if (typeof expected !== 'string' || typeof got !== 'string') return got === expected;
+  const ok = (e: string, g: string) => {
+    if (!e || !g) return e === g;
+    if (` ${g} `.includes(` ${e} `) || ` ${e} `.includes(` ${g} `)) return true;
+    if (!/name$/i.test(field)) return false;
+    const E = e.split(' '); const G = g.split(' ');
+    return E.every((t) => G.includes(t)) || G.every((t) => E.includes(t));
+  };
+  return normTexts(expected).some((e) => normTexts(got).some((g) => ok(e, g)));
+}
 const tokens = (s: string) => new Set(s.toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9 ]+/g, ' ').split(/\s+/).filter((t) => t.length > 1 && !['the', 'and', 'of', 'bldg', 'building'].includes(t)));
 export function nameSim(a: string, b: string): number {
   const A = tokens(a), B = tokens(b); if (!A.size || !B.size) return 0;
@@ -46,11 +73,21 @@ export function scoreInventory(truth: FixtureTruth, inv: Inventory, provider: st
   const got = inv.facilities.filter((f) => !f.status || f.status === 'in_scope');
   const used = new Set<number>();
   const matches: FacilityMatch[] = [];
-  // pass 1: building number
+  // pass 1: building number; when several facilities carry the number (line items of one building), the one with the
+  // most similar name, then the closest area
   for (const t of exp) {
-    let idx = -1;
-    if (t.buildingNumber) idx = got.findIndex((g, i) => !used.has(i) && normBn(g.buildingNumber) === normBn(t.buildingNumber) && normBn(t.buildingNumber) !== '');
+    const k = normBn(t.buildingNumber);
+    const cands = k ? got.map((_, i) => i).filter((i) => !used.has(i) && normBn(got[i].buildingNumber) === k) : [];
+    cands.sort((a, b) => nameSim(t.name, got[b].name) - nameSim(t.name, got[a].name) || Math.abs(got[a].grossSqft - t.grossSqft) - Math.abs(got[b].grossSqft - t.grossSqft));
+    const idx = cands[0] ?? -1;
     if (idx >= 0) { used.add(idx); matches.push({ truth: t, got: got[idx], via: 'number' }); } else matches.push({ truth: t });
+  }
+  // pass 1b: a number printed with a one-letter prefix on one side only ("B-41" / "41"), when the names agree too
+  for (const m of matches) {
+    if (m.got || !m.truth.buildingNumber) continue;
+    const k = normBn(m.truth.buildingNumber);
+    const idx = got.findIndex((g, i) => { if (used.has(i)) return false; const gk = normBn(g.buildingNumber); return Boolean(k && gk) && (withoutLetter(gk) === k || withoutLetter(k) === gk) && nameSim(m.truth.name, g.name) >= 0.5; });
+    if (idx >= 0) { used.add(idx); m.got = got[idx]; m.via = 'number'; }
   }
   // pass 2: names for the rest (best similarity ≥ 0.6)
   for (const m of matches) {
@@ -97,8 +134,7 @@ export function scoreInventory(truth: FixtureTruth, inv: Inventory, provider: st
   const site: ScoreReport['site'] = [];
   for (const [k, v] of Object.entries(truth.expect.site ?? {})) {
     const gv = (inv.site as Record<string, unknown>)[k];
-    const ok = typeof v === 'string' && typeof gv === 'string' ? gv.toLowerCase().includes(v.toLowerCase()) || v.toLowerCase().includes(gv.toLowerCase()) : gv === v;
-    site.push({ field: k, expected: v, got: gv, ok });
+    site.push({ field: k, expected: v, got: gv, ok: siteFieldOk(k, v, gv) });
   }
 
   const recall = exp.length ? matched / exp.length : 1;

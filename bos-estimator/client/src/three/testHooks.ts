@@ -15,7 +15,7 @@ export interface ThreeHooks {
   project(id: string): { x: number; y: number; visible: boolean } | null;
   centers(): Record<string, [number, number]>;
   agents(): { id: string; crew: string; x: number; y: number; visible: boolean }[];
-  camera(): { fits: number; retargets: number; moving: boolean; userMoved: boolean };
+  camera(): { fits: number; refits: number; retargets: number; moving: boolean; userMoved: boolean };
   fitError(): number;
 }
 
@@ -98,7 +98,7 @@ export function useTestHooks() {
         }
         return out;
       },
-      camera: () => ({ fits: rt.cam.fits, retargets: rt.cam.retargets, moving: rt.cam.moving, userMoved: rt.cam.userMoved }),
+      camera: () => ({ fits: rt.cam.fits, refits: rt.cam.refits, retargets: rt.cam.retargets, moving: rt.cam.moving, userMoved: rt.cam.userMoved }),
       fitError: () => Math.round(rt.cam.fitError * 10) / 10,
     };
     const w = window as unknown as { __bos?: Record<string, unknown> };

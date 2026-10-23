@@ -1,0 +1,628 @@
+{
+  "id": "army-reserve-multisite-pdf",
+  "title": "Army Reserve multi-site custodial, grounds and snow PWS: 12 reserve centers in MN/ND/SD, Technical Exhibit 2 building workload (Gross vs Custodial SF, N/S buildings, optional site), Technical Exhibit 3 grounds and snow in Ac./SY/SF/LF, Amendment 0001 deletes a building and revises area, frequency and turf (PDF)",
+  "theme": "military-bos",
+  "provenance": {
+    "fidelity": "real-format",
+    "sources": [
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID208733132576233572635640274329101090190/PWS%20-%20Snow%20Danvers%20MA%20dated%203%20November%202020.pdf",
+        "note": "Fetched. 99th Readiness Division PWS, Snow and Ice Removal Services, 1LT John A. Fera USARC, Danvers MA (3 Nov 2020): non-personal services wording (PWS 1.1), RFOS/COR roles, arrive within TWO (2) hours of notification, plow to bare pavement with no trailing windrows, plow back four (4) feet from the curb line, sidewalks cleared at each four (4) inch snowfall interval, time-stamped before/after photographs required for invoice approval, $50.00 lost-key charge, holiday list, contractor manpower reporting, AT Level I. Wording paraphrased in PWS 1.1, 1.9-1.12, 5.6."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID45363605888517050669573297100202210448/SOLICITATION_W15QKN-20-Q-5112_GROUNDS_FORT_DRUM_NY112.pdf",
+        "note": "Fetched. ACC-NJ solicitation W15QKN-20-Q-5112, Grounds Maintenance Services for the 99th Readiness Division at the Fort Drum AFRC (FAC ID NY112): SF 1449 blocks, RFOS as site contact, PSC S208, FFP base + four option periods, and per-event CLINs per site (\"OY1 - Mowing - NY112\" 16 Each, \"Trimming\" 8 Each, \"Edging\" 2 Each). Model for the cover summary and Section B (16 / 8 / 2 events, CLINs per site)."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID27844027503540687246707627059792134406/MAP%20-%20PA041_GROUNDSMAINTENANCE_FEB2020.pdf",
+        "note": "Fetched. 99th RD Grounds Maintenance Map, \"GREENCASTLE USARC/ AMSA # 113\", SITE CODE 42735 / FAC ID PA041 / SITE UID, DPW-CAD/GIS/SI Branch: \"Grounds Maintained: Mowed 268,886 SF; Trimmed; Edged 8,949 LF\". Model for site naming (USARC/AMSA #nnn), FAC ID + five-digit site code, mowed area + edging LF in TE-3."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID108535287746971914821987983569269661259/PA168%20Cranberry%20PA%20Site%20Plan%20FY20.pdf",
+        "note": "Fetched. 99th RD site plan, Cranberry USARC (FAC ID PA168): Parking Area paved/unpaved, Road Area, Sidewalk Area and Slab Area given in both SF and SY; map labels USARC, VEH MAINT CENTER, STORAGE, MEP, POV. Model for TE-3 paved areas in SY, separate roads, walks/slabs, MEP vs POV."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID214969480013759314117254883035996687836/Attch%20001%20Site%20Plan%20Refuse%20Penn%20Yan%20NY%20dated%2010Feb20.pdf",
+        "note": "Fetched. 99th RD site plan, TEC 3 Olaf A. Frederiksen USARC, Penn Yan NY (FAC ID NY052): \"Parking Area -Paved 64,653 SQ FT 7,184 SQ YDS\"; USARC + VEH MAINT CENTER + STORAGE on one site. Model for the three-building site (training center, maintenance shop, storage)."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID312499471085589993415345730749368320641/Attachment%200001%20-%20Site%20Map%20Snow%20Removal%20Sept2019%20-%20WV046.pdf",
+        "note": "Fetched. 99th RD Snow Removal Map, PFC Reynolds USARC (WV046): \"Snow Removal: SF SY - Plowed 69,202 7,689 - Shoveled 4,199 467\", legend TO BE PLOWED / NOT TO BE PLOWED / TO BE SHOVELED with MEP not plowed. Model for TE-3 Plow Area and Shovel/Blow columns and the MEP exclusion."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID317675974346998636165337084876955678353/Attachment_0001_-_Site_Map_(PA003).pdf",
+        "note": "Fetched. Snow Removal Map, CPL Harry R. Harr USARC, Altoona PA (PA003): \"SNOW REMOVAL DETAILS SQ FT SQ YDS PARKING 21,292 (2,366) ROADS SIDEWALK AREA\", title block \"99th REGIONAL SUPPORT COMMAND DPW - CAD/GIS BRANCH\" (2014) in a later Readiness Division package. Model for the legacy RSC / RD source line on TE-3."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID126998343683552168225688958127218385479/001_Site_Map_-_Londonderry_NH014.pdf",
+        "note": "Fetched. Snow Removal Map, LONDONDERRY AFRC/ AMSA #160 (NH014): AFRC + AMSA site naming and parking / roads / sidewalk / slab areas."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID87169707134461761846770593062156594283/PA062_FP_OCT2019.pdf",
+        "note": "Fetched. Floor plans, Crawford County Mem USARC (PA062): \"USARC - MAIN FLOOR PLAN ... BLDG TOTAL: 12,129 GSF\" and \"OMS - FLOOR PLAN ... BLDG TOTAL: 2,649 GSF\". Model for a GSF figure per building (training center and OMS) at one site."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID54085907355448807878298158865095195436/MAP%20CUST%20NJ050%20Blackwood%2014APR21.pdf",
+        "note": "Fetched. 99th RD CUSTODIAL SERVICE PLAN, Gloucester Township AFRC (NJ050), rooms tagged AR or NG. Model for the ARNG tenant area excluded from Custodial SF at the AFRCs."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID42724764694378381637641466712085539787/DRAFT%20Site%20List%20LA%20Muni%20FY22.pdf",
+        "note": "Fetched. FY22 LA MUNI SITE LIST: columns \"FACID | USARC NAME AND ADDRESS\", upper-case \"NAME - STREET, CITY, ST ZIP+4\" rows, a separate \"OPTIONAL SITES\" block (incl. \"FORT POLK USARC/ECS 17 - BLDG 8603\"), exhibit number \"J-0200000-08\". Model for TE-1 and for the optional site."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID31544869489761803466574390107441771546/Attachment_A_-_Custodial_Performance_Work_Statement.pdf",
+        "note": "Fetched. Army custodial PWS, Fort Wainwright (v.4, Jan 2019): workload data in Technical Exhibits (TE-A1...), frequency definitions, additions/deletions priced on SF added or deleted, acronym list with \"USARC U.S. Army Reserve Command\". Model for the Technical Exhibit structure, PWS 5.7 and the USARC double meaning."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID297162707687379821580624672536441025401/Attachment%201%20-%20Custodial%20PWS.pdf",
+        "note": "Fetched. Dyess AFB custodial PWS (Aug 2021) Appendix B \"Estimated Square Footages and Cleaning Level\": per-facility rows with facility no., user, restroom / carpet / hard-floor SF, total cleaned SF per facility and \"Total # Facilities\" rows. Model for the per-building workload table with totals rows."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID192537321191818757700041718476319285269/20-Q-0036%20%20MRPO%20PWS%20Grounds%20Maintenance.pdf",
+        "note": "Fetched. USACE Missouri River Project grounds PWS: mowing areas \"Approximately 7 acres\" scaled from maps and aerial photographs, grass height 2-4 inches, secondary areas mowed three times per mowing year, clippings removed from sidewalks/curbs/parking. Model for PWS 5.5 and the approximate-acreage caveat."
+      },
+      {
+        "url": "https://console.sweetspotgov.com/federal-contracts/6e1734b3-c918-5f2e-9d4d-b41da240c7bd",
+        "note": "Seen only through web-search summaries (host blocked from this session). W15QKN26QA063, custodial services at Indiana PA (PA050) and Washington PA (PA096) Army Reserve Centers: the USARC listing gives a custodial area per floor next to the total building area, and a separate OMS building. Basis for printing Gross SF and Custodial SF side by side."
+      },
+      {
+        "url": "https://console.sweetspotgov.com/federal-contracts/669e160e-3129-5dbe-bb20-d5aa3a5d0d4d",
+        "note": "Seen only through web-search summaries (host blocked). W15QKN-26-Q-A068, custodial services at Brookville, Clearfield and Saint Marys PA reserve centers (99th RD), FFP base + four 12-month options: per-floor SF with commodes, urinals, sinks, showers and dispensers; one building \"does not require custodial service for any area or fixtures\". Basis for the latrine fixture columns and the N/S buildings."
+      },
+      {
+        "url": "https://www.korteco.com/construction-projects/army-reserve-center-rockford-illinois/",
+        "note": "Seen only through a web-search summary. Army Reserve Center projects pair a training center, an Organizational Maintenance Shop (OMS) and an unheated storage building with POV and MEP parking (same search: Fort A.P. Hill 32,917 SF training center + 7,433 SF OMS + 1,065 SF unheated storage). Basis for the building mix and relative sizes."
+      }
+    ],
+    "notes": "Every site, address, FAC ID, site code, building, area, fixture count, acreage, wage determination number, person, the unit (89th Readiness Division), the contracting office (ACO-RS Northern Plains Branch), the solicitation (W91XPN-27-R-0007) and the incumbent contract (Red River Prairie Facility Services, LLC, W91XPN-22-C-0009) are illustrative; there is no 89th Readiness Division. Real towns in Minnesota, North Dakota and South Dakota are used for climate realism with invented street addresses. Layout and wording follow the cited 99th RD / ACC-NJ attachments (site maps, snow PWS, grounds solicitation, custodial service plan, FACID site list with OPTIONAL SITES) and Army / Air Force custodial PWS technical exhibits. No rows were copied, so fidelity is real-format. The HTML and the expected facilities and grounds were generated together from one data table, and a text-layer check (pdftotext -layout) re-derived every expected value from the rendered PDF."
+  },
+  "inputs": [
+    {
+      "src": "w91xpn-27-r-0007-te.html",
+      "as": "pdf"
+    }
+  ],
+  "expect": {
+    "facilities": [
+      {
+        "buildingNumber": "MN012-01",
+        "name": "Willmar USARC/OMS - Training Center",
+        "grossSqft": 28640,
+        "cleanableSqft": 24310,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "restroomFixtures": 27
+      },
+      {
+        "buildingNumber": "MN012-02",
+        "name": "Willmar USARC/OMS - Organizational Maintenance Shop",
+        "grossSqft": 6212,
+        "cleanableSqft": 1148,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "category": "maintenance",
+        "restroomFixtures": 6
+      },
+      {
+        "buildingNumber": "MN027-01",
+        "name": "St. Cloud AFRC/AMSA #81 - Armed Forces Reserve Center (training bldg)",
+        "grossSqft": 61580,
+        "cleanableSqft": 52214,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "restroomFixtures": 64
+      },
+      {
+        "buildingNumber": "MN027-02",
+        "name": "St. Cloud AFRC/AMSA #81 - Area Maintenance Support Activity #81",
+        "grossSqft": 18420,
+        "cleanableSqft": 3260,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "maintenance",
+        "restroomFixtures": 12
+      },
+      {
+        "buildingNumber": "MN027-03",
+        "name": "St. Cloud AFRC/AMSA #81 - Unheated Storage",
+        "grossSqft": 4800,
+        "cleanableSqft": 4800,
+        "floors": 1,
+        "serviceLevel": "quarterly",
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "MN041-01",
+        "name": "Rochester USARC - Training Center",
+        "grossSqft": 17950,
+        "cleanableSqft": 15620,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "restroomFixtures": 17
+      },
+      {
+        "buildingNumber": "MN041-02",
+        "name": "Rochester USARC - Organizational Maintenance Shop",
+        "grossSqft": 3940,
+        "cleanableSqft": 720,
+        "floors": 1,
+        "serviceLevel": "biweekly",
+        "category": "maintenance",
+        "restroomFixtures": 3
+      },
+      {
+        "buildingNumber": "MN050-01",
+        "name": "Duluth USARC - Training Center",
+        "grossSqft": 38955,
+        "cleanableSqft": 34250,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "restroomFixtures": 34
+      },
+      {
+        "buildingNumber": "MN050-02",
+        "name": "Duluth USARC - Organizational Maintenance Shop",
+        "grossSqft": 7280,
+        "cleanableSqft": 1410,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "category": "maintenance",
+        "restroomFixtures": 6
+      },
+      {
+        "buildingNumber": "MN066-01",
+        "name": "Fergus Falls USARC - Training Center",
+        "grossSqft": 15440,
+        "cleanableSqft": 13385,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "restroomFixtures": 15
+      },
+      {
+        "buildingNumber": "MN073-01",
+        "name": "Eagan USARC - Training Center (Bldg 1)",
+        "grossSqft": 72310,
+        "cleanableSqft": 58940,
+        "floors": 3,
+        "serviceLevel": "daily_5",
+        "restroomFixtures": 72
+      },
+      {
+        "buildingNumber": "MN073-02",
+        "name": "Eagan USARC - Training Annex (Bldg 2)",
+        "grossSqft": 9860,
+        "cleanableSqft": 8720,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "restroomFixtures": 7
+      },
+      {
+        "buildingNumber": "MN073-03",
+        "name": "Eagan USARC - Organizational Maintenance Shop",
+        "grossSqft": 9440,
+        "cleanableSqft": 1720,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "maintenance",
+        "restroomFixtures": 8
+      },
+      {
+        "buildingNumber": "ND008-01",
+        "name": "Bismarck AFRC/AMSA #92 - Armed Forces Reserve Center (training bldg)",
+        "grossSqft": 48760,
+        "cleanableSqft": 40115,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "restroomFixtures": 49
+      },
+      {
+        "buildingNumber": "ND008-02",
+        "name": "Bismarck AFRC/AMSA #92 - Area Maintenance Support Activity #92",
+        "grossSqft": 14960,
+        "cleanableSqft": 2880,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "maintenance",
+        "restroomFixtures": 10
+      },
+      {
+        "buildingNumber": "ND008-03",
+        "name": "Bismarck AFRC/AMSA #92 - Unheated Storage",
+        "grossSqft": 3600,
+        "cleanableSqft": 3600,
+        "floors": 1,
+        "serviceLevel": "quarterly",
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "ND021-01",
+        "name": "Fargo USARC - Training Center",
+        "grossSqft": 22480,
+        "cleanableSqft": 19045,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "restroomFixtures": 24
+      },
+      {
+        "buildingNumber": "ND021-02",
+        "name": "Fargo USARC - Organizational Maintenance Shop",
+        "grossSqft": 5120,
+        "cleanableSqft": 980,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "category": "maintenance",
+        "restroomFixtures": 6
+      },
+      {
+        "buildingNumber": "ND035-01",
+        "name": "Minot USARC - Training Center",
+        "grossSqft": 14236,
+        "cleanableSqft": 12410,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "restroomFixtures": 14
+      },
+      {
+        "buildingNumber": "ND035-02",
+        "name": "Minot USARC - Organizational Maintenance Shop",
+        "grossSqft": 3180,
+        "cleanableSqft": 650,
+        "floors": 1,
+        "serviceLevel": "biweekly",
+        "category": "maintenance",
+        "restroomFixtures": 4
+      },
+      {
+        "buildingNumber": "SD004-01",
+        "name": "Sioux Falls USARC/AMSA #94 - Training Center",
+        "grossSqft": 41325,
+        "cleanableSqft": 35640,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "restroomFixtures": 41
+      },
+      {
+        "buildingNumber": "SD004-02",
+        "name": "Sioux Falls USARC/AMSA #94 - Area Maintenance Support Activity #94",
+        "grossSqft": 16840,
+        "cleanableSqft": 3120,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "maintenance",
+        "restroomFixtures": 12
+      },
+      {
+        "buildingNumber": "SD004-03",
+        "name": "Sioux Falls USARC/AMSA #94 - Unheated Storage",
+        "grossSqft": 4000,
+        "cleanableSqft": 4000,
+        "floors": 1,
+        "serviceLevel": "quarterly",
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "SD011-01",
+        "name": "Rapid City USARC - Training Center",
+        "grossSqft": 19870,
+        "cleanableSqft": 17240,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "restroomFixtures": 18
+      },
+      {
+        "buildingNumber": "SD011-02",
+        "name": "Rapid City USARC - Organizational Maintenance Shop",
+        "grossSqft": 4460,
+        "cleanableSqft": 860,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "category": "maintenance",
+        "restroomFixtures": 5
+      },
+      {
+        "buildingNumber": "SD026-01",
+        "name": "Aberdeen USARC - Training Center",
+        "grossSqft": 11860,
+        "cleanableSqft": 10215,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "restroomFixtures": 12
+      },
+      {
+        "buildingNumber": "SD026-02",
+        "name": "Aberdeen USARC - Organizational Maintenance Shop",
+        "grossSqft": 2712,
+        "cleanableSqft": 540,
+        "floors": 1,
+        "serviceLevel": "monthly",
+        "category": "maintenance",
+        "restroomFixtures": 2
+      }
+    ],
+    "facilitiesComplete": true,
+    "grounds": [
+      {
+        "kind": "improved_turf",
+        "quantity": 4.2,
+        "unit": "acres",
+        "name": "MN012 Willmar USARC/OMS - improved grounds (mow & trim)"
+      },
+      {
+        "kind": "parking",
+        "quantity": 3912,
+        "unit": "sqyd",
+        "name": "MN012 Willmar USARC/OMS - POV parking (paved)"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 2860,
+        "unit": "sqft",
+        "name": "MN012 Willmar USARC/OMS - walks, ramps, slabs (shovel / blow)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 7.85,
+        "unit": "acres",
+        "name": "MN027 St. Cloud AFRC/AMSA #81 - improved grounds (mow & trim)"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 3.4,
+        "unit": "acres",
+        "name": "MN027 St. Cloud AFRC/AMSA #81 - semi-improved grounds"
+      },
+      {
+        "kind": "parking",
+        "quantity": 9615,
+        "unit": "sqyd",
+        "name": "MN027 St. Cloud AFRC/AMSA #81 - POV parking (paved)"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 6425,
+        "unit": "sqft",
+        "name": "MN027 St. Cloud AFRC/AMSA #81 - walks, ramps, slabs (shovel / blow)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 3.1,
+        "unit": "acres",
+        "name": "MN041 Rochester USARC - improved grounds (mow & trim)"
+      },
+      {
+        "kind": "parking",
+        "quantity": 2840,
+        "unit": "sqyd",
+        "name": "MN041 Rochester USARC - POV parking (paved)"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 1945,
+        "unit": "sqft",
+        "name": "MN041 Rochester USARC - walks, ramps, slabs (shovel / blow)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 2.65,
+        "unit": "acres",
+        "name": "MN050 Duluth USARC - improved grounds (mow & trim)"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 1.8,
+        "unit": "acres",
+        "name": "MN050 Duluth USARC - semi-improved grounds"
+      },
+      {
+        "kind": "parking",
+        "quantity": 4105,
+        "unit": "sqyd",
+        "name": "MN050 Duluth USARC - POV parking (paved)"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 3120,
+        "unit": "sqft",
+        "name": "MN050 Duluth USARC - walks, ramps, slabs (shovel / blow)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 3.75,
+        "unit": "acres",
+        "name": "MN066 Fergus Falls USARC - improved grounds (mow & trim)"
+      },
+      {
+        "kind": "parking",
+        "quantity": 2215,
+        "unit": "sqyd",
+        "name": "MN066 Fergus Falls USARC - POV parking (paved)"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 1480,
+        "unit": "sqft",
+        "name": "MN066 Fergus Falls USARC - walks, ramps, slabs (shovel / blow)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 5.85,
+        "unit": "acres",
+        "name": "MN073 Eagan USARC - improved grounds (mow & trim)"
+      },
+      {
+        "kind": "parking",
+        "quantity": 10480,
+        "unit": "sqyd",
+        "name": "MN073 Eagan USARC - POV parking (paved)"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 7890,
+        "unit": "sqft",
+        "name": "MN073 Eagan USARC - walks, ramps, slabs (shovel / blow)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 8.4,
+        "unit": "acres",
+        "name": "ND008 Bismarck AFRC/AMSA #92 - improved grounds (mow & trim)"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 5.25,
+        "unit": "acres",
+        "name": "ND008 Bismarck AFRC/AMSA #92 - semi-improved grounds"
+      },
+      {
+        "kind": "parking",
+        "quantity": 8730,
+        "unit": "sqyd",
+        "name": "ND008 Bismarck AFRC/AMSA #92 - POV parking (paved)"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 5740,
+        "unit": "sqft",
+        "name": "ND008 Bismarck AFRC/AMSA #92 - walks, ramps, slabs (shovel / blow)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 4.55,
+        "unit": "acres",
+        "name": "ND021 Fargo USARC - improved grounds (mow & trim)"
+      },
+      {
+        "kind": "parking",
+        "quantity": 4380,
+        "unit": "sqyd",
+        "name": "ND021 Fargo USARC - POV parking (paved)"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 2615,
+        "unit": "sqft",
+        "name": "ND021 Fargo USARC - walks, ramps, slabs (shovel / blow)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 3.2,
+        "unit": "acres",
+        "name": "ND035 Minot USARC - improved grounds (mow & trim)"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 2.1,
+        "unit": "acres",
+        "name": "ND035 Minot USARC - semi-improved grounds"
+      },
+      {
+        "kind": "parking",
+        "quantity": 2560,
+        "unit": "sqyd",
+        "name": "ND035 Minot USARC - POV parking (paved)"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 1730,
+        "unit": "sqft",
+        "name": "ND035 Minot USARC - walks, ramps, slabs (shovel / blow)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 6.9,
+        "unit": "acres",
+        "name": "SD004 Sioux Falls USARC/AMSA #94 - improved grounds (mow & trim)"
+      },
+      {
+        "kind": "parking",
+        "quantity": 8240,
+        "unit": "sqyd",
+        "name": "SD004 Sioux Falls USARC/AMSA #94 - POV parking (paved)"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 5360,
+        "unit": "sqft",
+        "name": "SD004 Sioux Falls USARC/AMSA #94 - walks, ramps, slabs (shovel / blow)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 3.85,
+        "unit": "acres",
+        "name": "SD011 Rapid City USARC - improved grounds (mow & trim)"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 4.6,
+        "unit": "acres",
+        "name": "SD011 Rapid City USARC - semi-improved grounds"
+      },
+      {
+        "kind": "parking",
+        "quantity": 3150,
+        "unit": "sqyd",
+        "name": "SD011 Rapid City USARC - POV parking (paved)"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 2080,
+        "unit": "sqft",
+        "name": "SD011 Rapid City USARC - walks, ramps, slabs (shovel / blow)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 2.45,
+        "unit": "acres",
+        "name": "SD026 Aberdeen USARC - improved grounds (mow & trim)"
+      },
+      {
+        "kind": "parking",
+        "quantity": 1870,
+        "unit": "sqyd",
+        "name": "SD026 Aberdeen USARC - POV parking (paved)"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 1240,
+        "unit": "sqft",
+        "name": "SD026 Aberdeen USARC - walks, ramps, slabs (shovel / blow)"
+      }
+    ],
+    "site": {
+      "contractYears": 5,
+      "climateZone": "cold",
+      "solicitation": "W91XPN-27-R-0007"
+    },
+    "priorAward": {
+      "totalValue": 5912400,
+      "periodMonths": 60,
+      "annualValue": 1214880,
+      "incumbent": "Red River Prairie Facility Services, LLC",
+      "contractNumber": "W91XPN-22-C-0009",
+      "awardYear": 2022
+    }
+  },
+  "traps": [
+    "Multi-site workload table: 12 reserve centers in three states in one landscape Technical Exhibit 2 split over two pages with the two-row grouped header repeated. Each site is a shaded group row carrying FAC ID, site name, street address and five-digit Site Code; the building rows under it carry only the Bldg ID, a use code and a generic description (\"Training Center\", \"Organizational Maintenance Shop\") that repeats at nearly every site, so names alone do not identify a building. Building numbers are the Bldg ID column (FAC ID + sequence, e.g. MN012-01).",
+    "Identifier distractors near the Bldg ID: FAC ID (MN012), Site Code (27341), ZIP+4 (56201-2734), AMSA numbers (#81, #92, #94), \"(Bldg 1)\" / \"(Bldg 2)\" inside the Eagan descriptions, Section B line numbers 1-12 and CLINs 0001-0091, TE-1 line numbers, SCA wage determination numbers (WD 2015-5341 Rev. 26) and purchase request 0011829406.",
+    "Seven base-site buildings are listed with a Gross SF but Custodial SF \"—\" and routine frequency \"N/S\" (unheated storage at MN012, MN050, MN073, ND035, SD026; MN073-05 fire pump house; ND008-04 hazardous material storage). PWS 1.6, 5.1, 5.2, TE-2 header note and Amendment Q2 say they receive no custodial service; they are not expected facilities. Three other unheated storage buildings (MN027-03, ND008-03, SD004-03) are swept quarterly (\"Q\") over their full floor area and ARE expected (quarterly, warehouse).",
+    "Optional site: Watertown USARC (SD033) appears in TE-1 under \"OPTIONAL SITES\", in an optional block below the TE-2 grand total (TC 13,480 GSF and OMS 3,060 GSF), as an optional row below the TE-3 total and as Section B line O-1. It is option-only (PWS 1.6, Amendment Q4): its two buildings and its grounds are not expected.",
+    "Amendment 0001 (last two pages, dated 24 Nov 2026) controls; the original pages do not mention its changes. Item 1 deletes MN066-02 Fergus Falls Vehicle Maintenance Shop (4,980 GSF / 910 Custodial SF), which is not expected.",
+    "Amendment 0001 Item 2 revises MN050-01 Duluth Training Center from 34,215 to 38,955 Gross SF and 29,880 to 34,250 Custodial SF (classroom addition accepted). TE-2 Note 7 and the Remarks cell had said the addition was not included. Expected: 38,955 / 34,250.",
+    "Amendment 0001 Item 3 revises ND035-01 Minot Training Center routine frequency from 3/W to 5/W. Expected serviceLevel daily_5, not 3x_week.",
+    "Amendment 0001 Item 4 revises TE-3 MN073 Eagan improved grounds from 6.30 to 5.85 acres. Expected improved turf total 56.75 acres (not the printed TE-3 total 57.20).",
+    "Gross SF vs Custodial SF: every serviced building has both. OMS / VMS / AMSA Custodial SF is only the office, latrine, locker and break areas (e.g. MN027-02 AMSA 18,420 GSF vs 3,260 Custodial SF). The two AFRCs exclude the ARNG tenant area (MN027-01 61,580 vs 52,214; ND008-01 48,760 vs 40,115). Expected grossSqft = Gross SF and cleanableSqft = Custodial SF.",
+    "Totals are not facilities: 13 italic \"Site total - <FAC ID> (n bldgs)\" rows (Gross SF totals include N/S buildings), \"TOTAL - BASE SITES (12 sites, 35 buildings, 28 serviced)\" 522,290 / 368,332, Amendment Item 5 revised totals (34 buildings, 27 serviced, 522,050 Gross SF, 371,792 Custodial SF, revised MN066 and MN050 site totals), the TE-3 \"TOTAL - BASE SITES (12)\" row and the Section B total line. The revised Custodial SF total 371,792 equals the sum of the 27 expected cleanableSqft values; the revised Gross SF total 522,050 equals the 27 expected grossSqft (508,230) plus the seven N/S buildings (13,820).",
+    "Numeric distractor columns between the description and the frequency: Year Built (with a \"1964 / 2026\" pair at Duluth), Floors (1-3), and four latrine-fixture columns WC / UR / LAV / SH. Superscript note markers are glued to header words in the text layer (\"SF3\", \"Fixtures4\", \"Freq.5\", \"Wknd6\", \"Acres1\", \"(Ac.)3\", \"(SY)4\") and the \"1\" and \"2\" markers float on a line of their own above the header.",
+    "Frequency codes are defined in PWS 5.2: 5/W -> daily_5, 3/W -> 3x_week, 2/W -> 2x_week, 1/W -> weekly, BW (every other week, 26/yr) -> biweekly, M -> monthly, Q -> quarterly, N/S -> no service. The \"BA Wknd\" Y/N column is an additional Sunday service on each monthly Battle Assembly weekend (about 12 per year, PWS 5.3, Amendment Q6); it does not turn 5/W into daily_6 or daily_7.",
+    "Restroom fixtures: expected restroomFixtures = WC + UR + LAV + SH for each serviced building that prints counts (e.g. MN073-01 24 + 12 + 22 + 14 = 72). Quarterly unheated storage prints \"—\" and carries no restroomFixtures.",
+    "Grounds units are mixed and some columns are information only: improved Mow & Trim and semi-improved in acres; POV parking, MEP and roads in square yards (SY); walks / ramps / slabs to shovel in square feet; edging in linear feet. Expected grounds per base site: improved_turf (acres), semi_improved (acres, five sites), parking = POV Parking SY only, sidewalk = Shovel / Blow SF. Not expected: Site Acres (whole parcel, Note 1, total 138.3), MEP (info only, not maintained, Note 4 and Amendment Q3), Roads & Drives, Edging LF, and the Plow Area column, which is POV + Roads (Note 6) and would double-count parking.",
+    "Grounds totals expected: improved_turf 56.75 acres (after Amendment Item 4), semi_improved 17.15 acres, parking 62,097 SY (558,873 SF), sidewalk 42,485 SF. The optional site SD033 row (2.90 ac, 2,060 SY, 1,390 SF) is excluded.",
+    "Event counts and quantities that are not areas: 16 mowing, 8 trimming, 2 edging and 3 semi-improved mowing events per season, 18 plow and 24 sidewalk / salt events, 12 MO custodial, about 12 BA weekends per year, four (4) inch snowfall interval, four (4) feet plow-back, two (2) hour response.",
+    "Prior award is narrative (PWS 1.4, repeated in Amendment Q5): Red River Prairie Facility Services, LLC, Contract No. W91XPN-22-C-0009, awarded 18 March 2022; total value $5,912,400 for sixty (60) months; Option Period 4 (1 Apr 2026 - 31 Mar 2027) exercised at $1,214,880 = annualValue. Other dollar amounts are not award values: $50.00 lost-key charge, $22.0 million NAICS size standard.",
+    "Contract term: twelve-month base (1 Apr 2027 - 31 Mar 2028) plus four twelve-month option periods = 5 contract years. The FAR 52.217-8 six-month extension is explicitly \"not an option period\" and is not counted; it appears again in the Section B evaluation note.",
+    "Acronym traps: \"USARC\" means U.S. Army Reserve Center in site names and U.S. Army Reserve Command in cover block 15, Deliver To (both defined in Part 2). TE-3 cites \"89th RSC / 89th RD\" site maps, the legacy Regional Support Command name next to the current Readiness Division.",
+    "Category is expected only where the use code states it: OMS, AMSA and VMS -> maintenance; UHS -> warehouse. Training centers, the AFRC training buildings and the Eagan annex carry no expected category, because the document does not say whether a reserve training center is admin, education or community space.",
+    "Climate: all sites are in Minnesota, North Dakota and South Dakota with a 15 October - 30 April snow season = cold. installationName is intentionally absent: the package covers twelve separate sites and names no single installation (the requiring activity is the 89th Readiness Division; the cluster is \"Northern Plains\")."
+  ]
+}

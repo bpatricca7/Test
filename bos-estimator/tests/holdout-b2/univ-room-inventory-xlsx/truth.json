@@ -1,0 +1,269 @@
+{
+  "id": "univ-room-inventory-xlsx",
+  "title": "University custodial RFP Attachment C space inventory workbook: building summary (Gross / Net Assignable / Non-Assignable / Room Total / Cleanable Sq Ft) plus a 587-room SMS report export with repeated page headers, building group headers and footers, excluded auxiliary/athletics/vacant/option buildings, and Addendum No. 1 revisions (XLSX)",
+  "theme": "higher-ed",
+  "provenance": {
+    "fidelity": "real-format",
+    "sources": [
+      {
+        "url": "https://procurement.umbc.edu/wp-content/uploads/sites/145/2020/02/BC-21175-E-Janitorial-Services-RFP.pdf",
+        "note": "UMBC RFP BC-21175-E Janitorial Services (Feb 2020): attachments \"A - Cleanable Space Profiles\" (room-level breakdown, posted as a separate linked file) and \"D - Summary of Cleanable Spaces\". Model for splitting the space attachment into a room-level cleanable space profile (C-2) and a building summary of cleanable space (C-1)."
+      },
+      {
+        "url": "https://procurement.umbc.edu/wp-content/uploads/sites/145/2020/11/South-Campus-Janitorial-Services-SBR-RFP-BC-21211-E-Final.pdf",
+        "note": "UMBC South Campus RFP BC-21211-E: Cleanable Space Profiles give building type, number of buildings and routine cleanable square footage (\"Academic 3 144,769\"). Model for pricing on routine cleanable SF rather than gross (C-1 col K, Notes 4)."
+      },
+      {
+        "url": "https://procurement.umbc.edu/files/2020/03/Janitorial-Services-BC-21175-E-Addendum-2-4March20.pdf",
+        "note": "UMBC BC-21175-E Addendum 2: revises the square-footage chart totals (space inadvertently left out). Model for an addendum that revises the space attachment (C-1 Rev. \"A1\", Notes 7)."
+      },
+      {
+        "url": "https://jsums.edu/businessfinance/files/2025/01/RFP-25-07-Custodial-and-Maintenance-Addendum-4-1.21.25.pdf",
+        "note": "Jackson State University RFP 25-07 Addendum 4: building chart with columns \"Bldg. No., Building Name, Type of Building, Number of Floors, Gross Sq Ft, Net Assignable Sq Ft, Category, Include/Excluded, Site\"; the addendum adds a net assignable (cleanable) column, adds one building and removes another, and excluded buildings stay on the chart with gross and net figures. Source of the C-1 column headers and the Include/Excluded convention."
+      },
+      {
+        "url": "https://www.polk.edu/wp-content/uploads/RFP-16-03-Custodial-Services-REVISED-11-4-2016-FINAL.pdf",
+        "note": "Polk State College RFP 16-03: building list headed \"Estimated Gross Square Footage\"; \"Floor plans and a list of rooms and square footage of each room is available for review at the Purchasing Department.\" Model for Notes 3 and for keeping gross SF next to the room list."
+      },
+      {
+        "url": "https://www.polk.edu/wp-content/uploads/16-03-Custodial-Services-Contract-FINAL-.pdf",
+        "note": "Polk State College custodial contract: payment adjusted for square footage taken out of service. Model for the Bergstrom Hall renovation rooms (code 060, Cust Svc = N, added back by contract modification)."
+      },
+      {
+        "url": "https://www.fpm.iastate.edu/maps/buildings/rooms.asp?building=CURTISS",
+        "note": "Iowa State University FP&M building room list: rooms grouped by floor with Room, Room Type, SqFt, Cost Centers, Capacity and an alternate name. Model for the C-2 columns (Room, Room Name, Use Code/Description, Org, Stations, Net Area)."
+      },
+      {
+        "url": "https://nces.ed.gov/pubs2006/2006160.pdf",
+        "note": "Postsecondary Education Facilities Inventory and Classification Manual (FICM), 2006 edition: room use codes (110 Classroom ... 750 Central Service) and the nonassignable categories. Source of every use code and description in C-2 and the Notes legend."
+      },
+      {
+        "url": "https://space.uconn.edu/resources/glossary/ficm-codes",
+        "note": "UConn FICM code glossary: WWW Circulation Area, XXX Building Service Area (custodial supply closets, janitor rooms, public restrooms, trash rooms), YYY Mechanical Area. Basis for the W/X/Y non-assignable codes; X01-X04 sub-codes follow a university FICM code list surfaced by search (exact document not confirmed); W01-W05 and Y01-Y03 sub-codes are the fixture's own."
+      },
+      {
+        "url": "https://fpm.oregonstate.edu/space/space-tools/space-data-codes/facility-type-codes",
+        "note": "Oregon State University facility type codes aligned to FICM: 050 Inactive Area, 060 Alteration or Conversion Area, 070 Unfinished Area. Source of the 050/060 unclassified rows (Cat U) in C-2."
+      },
+      {
+        "url": "https://files.bakersfieldcollege.edu/accreditation-archives/2012Accreditation/Evidence/Standards/IIIB/III.B.79.pdf",
+        "note": "Bakersfield College Custodial Services Review and Plan (Nov 2010): campus inventory is in assignable SF while cleaning uses cleanable SF; restrooms are not assignable but are cleaned, mechanical and storage rooms are excluded; APPA levels with Level 2 'ordinary tidiness'. Basis for the Cust Svc rules (Notes 6) and the APPA Level column."
+      },
+      {
+        "url": "https://www.nocccd.edu/documents/space-inventory-report-2024",
+        "note": "North Orange County CCD FUSION Space Inventory 'Report 17 - Room Use Detail' (with the California Community Colleges Space Inventory Handbook): inventory organized by site, building and room with a required room use code, printed as a numbered report. Model for the C-2 report header block (report number, run date, census date) and page numbering."
+      },
+      {
+        "url": "https://www.ohiobids.com/government-agencies/portage/kent-state-university---procurement-78637/12950463-ksu-ashtabula-custodial-services-rfp.html",
+        "note": "Kent State University at Ashtabula custodial services RFP listing: scope stated per building as 'Building Net Cleanable Space' (Main Hall approx. 85,000 SF, Library approx. 22,000 SF, Bookstore approx. 2,500 SF). Model for a building-level cleanable figure distinct from gross."
+      },
+      {
+        "url": "https://vrapp.vendorregistry.com/Bids/View/Bid/859216d5-777f-40a4-83fa-7a1212537cd2",
+        "note": "University of Alabama in Huntsville sealed janitorial solicitation: defines GSF and NASF; Q&A answers 'Please use GSF' and says no cleanable SF is available. Shows why an attachment must state its pricing basis (Notes 4) and why NASF is a distractor."
+      },
+      {
+        "url": "https://www.lincolnu.edu/about-lincoln/purchasing/bid-information/rfp-b24-1228-facilities-management-services.pdf",
+        "note": "Lincoln University (MO) RFP B24-1228: Attachment A Campus Buildings and Square Footage, with residence halls and athletic facilities handled separately from the academic buildings. Model for listing housing and athletics as not in contract (C-1 Part B)."
+      },
+      {
+        "url": "https://fits.osu.edu/kb/building-area-definitions",
+        "note": "Ohio State building area definitions: gross area vs net (assignable + non-assignable) area; cleanable square feet excludes mechanical, structural and custodial areas. Basis for Notes 2 and 6 and C-1 footnotes (2)-(5)."
+      },
+      {
+        "url": "https://pur.doas.ga.gov/gpr/downloadAttachment?attachmentId=54085599&sourceSystemType=gpr20",
+        "note": "Georgia comprehensive custodial services RFP: building-by-building reconciliation of cleanable vs excluded square footage, vacant space and renovations; room counts by type including restrooms and custodial closets. Model for the per-building remarks on excluded spaces."
+      },
+      {
+        "url": "https://www.copley.oh.us/DocumentCenter/View/8676/2025-Cleaning-Bid-Specs",
+        "note": "Copley Township (OH) cleaning bid specifications: room-by-room square footage with the floor material per room and totals by floor type (e.g. VCT, carpet). Model for the C-2 Floor Cvrg column and the C-3 covering pivot."
+      }
+    ],
+    "notes": "All names, numbers, rooms and areas are illustrative: Tamarack State University (Pine Falls, Minnesota), RFP No. TSU-27-014, the 24 buildings, the 587 rooms and every square foot are invented; no rows were copied, so fidelity is real-format. The layout follows the real attachments cited: a building summary with Bldg. No. / Type of Building / Number of Floors / Gross Sq Ft / Net Assignable Sq Ft / Include-Excluded / Site (Jackson State RFP 25-07 Addendum 4), a cleanable space summary plus room-level cleanable space profile (UMBC BC-21175-E / BC-21211-E), FICM 2006 room use codes, an SMS room report organized by building and floor (Iowa State FP&M, California FUSION Report 17), and cleanable vs assignable rules from Bakersfield College and Ohio State. Research limits: this session's egress policy refused WebFetch and direct downloads of every source host (DNS failure / proxy 403), so each source was read only through web-search result excerpts, not opened in full; column headers and phrases quoted in these notes are the ones the excerpts showed. The workbook and truth facilities are produced together by gen.mjs (seeded), so C-1, C-2, C-3 and truth.json reconcile exactly."
+  },
+  "inputs": [
+    {
+      "src": "attachment-c-space-inventory.json",
+      "as": "xlsx",
+      "out": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx"
+    }
+  ],
+  "expect": {
+    "facilities": [
+      {
+        "buildingNumber": "010",
+        "name": "Founders Hall",
+        "grossSqft": 10315,
+        "cleanableSqft": 8202,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "012",
+        "name": "Elmore Library",
+        "grossSqft": 49745,
+        "cleanableSqft": 41051,
+        "floors": 4,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "014",
+        "name": "Lindqvist Science Hall",
+        "grossSqft": 32739,
+        "cleanableSqft": 27936,
+        "floors": 3,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "016",
+        "name": "Bergstrom Hall",
+        "grossSqft": 20659,
+        "cleanableSqft": 17136,
+        "floors": 3,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "018",
+        "name": "Kittredge Hall",
+        "grossSqft": 14304,
+        "cleanableSqft": 11763,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "019",
+        "name": "Thorsen Hall",
+        "grossSqft": 15269,
+        "cleanableSqft": 11639,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "021",
+        "name": "Child Development Center",
+        "grossSqft": 10910,
+        "cleanableSqft": 8939,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "child_care"
+      },
+      {
+        "buildingNumber": "022",
+        "name": "Fine Arts Center",
+        "grossSqft": 38768,
+        "cleanableSqft": 29611,
+        "floors": 3,
+        "serviceLevel": "daily_6",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "024",
+        "name": "Allied Health & Nursing Building",
+        "grossSqft": 24651,
+        "cleanableSqft": 17760,
+        "floors": 3,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "026",
+        "name": "Technology & Engineering Center",
+        "grossSqft": 20894,
+        "cleanableSqft": 14642,
+        "floors": 1,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "028",
+        "name": "Campus Union",
+        "grossSqft": 41910,
+        "cleanableSqft": 22238,
+        "floors": 3,
+        "serviceLevel": "daily_7",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "030",
+        "name": "Ostrander Hall",
+        "grossSqft": 35094,
+        "cleanableSqft": 29664,
+        "floors": 2,
+        "serviceLevel": "daily_6",
+        "category": "fitness"
+      },
+      {
+        "buildingNumber": "032",
+        "name": "Student Services Center",
+        "grossSqft": 7733,
+        "cleanableSqft": 5997,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "035",
+        "name": "Wellness Center",
+        "grossSqft": 3467,
+        "cleanableSqft": 2635,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "040",
+        "name": "Physical Plant",
+        "grossSqft": 22558,
+        "cleanableSqft": 5320,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "041",
+        "name": "Grounds & Fleet Garage",
+        "grossSqft": 10586,
+        "cleanableSqft": 2787,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "050",
+        "name": "Continuing Education & Workforce Center",
+        "grossSqft": 12472,
+        "cleanableSqft": 10110,
+        "floors": 1,
+        "serviceLevel": "daily_6",
+        "category": "education"
+      }
+    ],
+    "facilitiesComplete": true,
+    "grounds": [],
+    "site": {
+      "installationName": "Tamarack State University",
+      "solicitation": "TSU-27-014",
+      "climateZone": "cold"
+    }
+  },
+  "traps": [
+    "Five area figures per building on C-1: Gross Sq Ft (col G), Net Assignable Sq Ft (H), Non-Assignable Sq Ft (I), Room Total Net Sq Ft (J) and Cleanable Sq Ft (K). Truth grossSqft = col G (Facilities Inventory gross, larger than the sum of rooms); cleanableSqft = col K, defined in footnote (5) and Notes 4 as the sum of rooms with Cust Svc = Y. Net Assignable is NOT cleanable: it excludes cleaned corridors/restrooms and includes uncleaned shops/storage/auxiliary space. Example Campus Union (028): gross 41,910 / NASF 27,281 / non-assignable 9,480 / room total 36,761 / cleanable 22,238.",
+    "C-2 is a 587-room Space Management System report export (SPC-210) laid out as 13 printed pages inside one sheet: a 7-row report header on page 1, then on every page a blank row, a repeated title line, \"Page k of 13\" and the repeated column header row; building group-header lines (\"BLDG 010  FOUNDERS HALL (ADM)  -  Gross Area 10,315 SF  -  2 floors  -  Main Campus\") and \"(continued)\" group headers after page breaks; two footer lines per building (\"Total Bldg 010 (all rooms)\" 8,815 and \"Total Bldg 010 (Cust Svc = Y)\" 8,202); REPORT TOTAL lines 330,248 / 271,301 (these include deleted Bldg 045). Room rows, headers and footers are not facilities.",
+    "Addendum No. 1 (Notes 7; C-1 Rev. = \"A1\") is applied in C-1 and C-3 only; C-2 was not re-run and still carries the pre-addendum data. (a) Bldg 045 Environmental Field Station is DELETED: it stays in C-1 Part A with Include/Excluded = \"DELETED (Add. 1)\" and full area figures, and all 14 of its rooms plus its group header and footers remain in C-2; it is NOT expected. (b) Bldg 019 Thorsen Hall gross is corrected from 14,549 to 15,269; the C-2 group header still prints \"Gross Area 14,549 SF\"; truth = 15,269. (c) Bldg 012 Elmore Library frequency changes from 6/wk (M-Sa) to 7/wk (Sun-Sat); the old wording survives in the C-1 remarks; truth = daily_7.",
+    "Buildings not in the contract are listed with gross, assignable and floors on C-1 Part B: 025 Hagen Hall (vacant, demolition 2027), 027 STEM Innovation Annex (\"OPTION 1\", design gross 38,500, TBD areas), 060 Nordahl and 061 Sorensen Residence Halls (Auxiliary - Housing), 062 Lakeside Commons (Auxiliary - Dining), 070 Wolf Arena (Athletics, separate contract). None is expected; a reader that keeps them over-counts 385,530 gross SF.",
+    "Totals are not facilities: C-1 \"Total - Buildings Included (17; excludes 045)\" 372,074 / 234,899 / 90,665 / 325,564 / 267,430; \"Total - Buildings Not in Contract (6)\" 385,530; \"TOTAL - ALL BUILDINGS LISTED (24)\" 762,917 (includes 045 and the option's design area); C-3 TOTAL row 267,430; C-2 per-building footers and report totals.",
+    "Partial-scope buildings: cleanable is far below net where spaces are cleaned by others or not at all - Campus Union bookstore (660/665) and food court/kitchen (630/635) are auxiliary-operated; Allied Health & Nursing 3rd floor is leased to the PFRMC residency program (tenant cleans, every 3rd-floor room Cust Svc = N); Physical Plant (cleanable 5,320 of 22,558 gross) and Grounds & Fleet Garage (2,787 of 10,586) exclude shops, warehouse, receiving and vehicle bays; TEC excludes the dept. shop, storage, loading dock and server room; Bergstrom Hall 060 renovation rooms and Thorsen Hall 050 inactive room are N.",
+    "Building numbers are three-digit text with leading zeros (\"010\", \"012\" ... \"050\"); room numbers mix numeric cells (101, 206) with text (105A, 1C01, 1V01, 1S02, B04, M101); floor codes are text (\"01\", \"02\", \"B\", \"M1\").",
+    "Floors: C-1 \"No. of Floors (1)\" counts basements and excludes mezzanines (footnote 1). Fine Arts Center has C-2 levels B, 01, 02 and M1 but 3 floors; Elmore Library has B-03 = 4 floors; Kittredge, TEC, Student Services and all other one-level buildings = 1.",
+    "Names differ between tabs: C-2 prints SMS short uppercase names (\"CONT ED & WORKFORCE CTR\", \"OSTRANDER HALL (HPE)\", \"CHILD DEVELOPMENT CTR\", \"ALLIED HEALTH & NURSING BLDG\", \"TECHNOLOGY & ENGINEERING CTR\"); truth uses the C-1 Building Name (\"Continuing Education & Workforce Center\", \"Ostrander Hall\" ...).",
+    "Service frequency is printed as nights per week with days in parentheses (Notes 9): \"5/wk (M-F)\" = daily_5, \"6/wk (M-Sa)\" = daily_6 (Fine Arts, Ostrander, Continuing Ed), \"7/wk (Sun-Sat)\" = daily_7 (Library, Campus Union), \"3/wk (M/W/F)\" = 3x_week (Physical Plant), \"1/wk (Wed)\" = weekly (Grounds & Fleet Garage). \"2/wk (T/Th)\" belongs only to deleted Bldg 045. \"11 University holidays\" and \"year-round\" are not service levels.",
+    "Numeric distractor columns sit next to the areas: Year Built, APPA Level (2/3), C-2 Use Code (three-digit numbers such as 310, 610, 730), Stations (seat counts), and the No. of Floors column; the Rev. column (\"A1\") is text beside them. C-2 Net Area is room net area, not building area.",
+    "C-1 has a stacked two-row header: merged group cells BUILDING (A-F), AREA (SQ FT) (G-K) and CONTRACT (L-P) above the column titles, which carry footnote markers \"(1)\"-\"(6)\"; four merged title rows sit above; section rows \"A. BUILDINGS IN RFP SCOPE\" and \"B. BUILDINGS NOT IN CONTRACT ...\" span the table; footnotes follow the totals.",
+    "C-3 (Cleanable Sq Ft by floor covering) repeats every included building a third time with covering codes as column headers (CPT, CPT-T, VCT, LVT, SV, CT, TZ, WD, RB, SC, EP) and a row total equal to the C-1 cleanable figure; these are the same 17 buildings, not more facilities.",
+    "Bldg 050 Continuing Education & Workforce Center is a leased building at a different site (\"Downtown (leased)\", 418 Front Street) with gross \"per lease exhibit\"; it is in scope.",
+    "Category is asserted only where C-1 \"Type of Building\" maps to one app category: Administration / Administration - Student Services = admin; Instruction, Instruction - Fine & Performing Arts, Instruction (Leased) = education; Child Care (Lab School) = child_care; Student Center = community; Physical Education & Recreation = fitness; Student Health Clinic & Counseling = medical; Physical Plant / Shops and Vehicle Maintenance Garage = maintenance. Library, Instruction - Science Labs and Instruction - Labs & Shops carry no category in truth.",
+    "No grounds: the attachment is custodial space only (expected grounds = []). Site: Tamarack State University, solicitation TSU-27-014 (printed both as \"RFP No. TSU-27-014\" on Notes/C-1/C-3 and as \"RFP TSU-27-014\" in the C-2 page titles, so truth keeps only the number), Pine Falls, Minnesota (climate cold). No prior award or contract term is stated in the attachment."
+  ]
+}

@@ -1,0 +1,612 @@
+{
+  "id": "full-bos-pws-long-pdf",
+  "title": "Army BOS PWS, one 27-page Section J attachment (USAG Fort Brannock, WI): 19 pages of narrative before the workload; TE 5 custodial facility list at the back (47 serviced, 1 vacant row, 2 optional), TE 6 grounds, refuse / snow / pest / historical exhibits full of non-facility numbers (PDF)",
+  "theme": "military-bos",
+  "provenance": {
+    "fidelity": "real-format",
+    "sources": [
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID191905819147280301890827662064261035974/Attach%201%20%20Performance%20Work%20Statement%20PWS%2009%20Dec%202021.pdf",
+        "note": "FA300222R0002 Attachment 1, Base Operating Support Services, Laughlin AFB, TX (PWS, 9 Dec 2021, 546 pp.). Downloaded and read with pdftotext -layout. Model for the whole-document shape: one PWS with a section per service, each followed by its workload data, and the workload in tables at the back. Taken: workload tables with 'ESTIMATED QUANTITIES - QUANTITY / UNIT' and 'ESTIMATED WORKLOAD (# TIMES ANNUALLY)' columns and PWS paragraph references in the rows (TE 6 Tables 6-1 to 6-3, TE 9 Table 9-2); edge and trim quantities in linear feet listed among the turf acres (TE 6 Table 6-3 item 4); 'The workload data provided below is for historical purpose only' (TE 10); entomology 'Treat Facilities ... Total: 1,939,817 SF / 5% Annual' (TE 9 installation-wide structural area); the Government Furnished Facilities table with building number and total square feet (Part 3 Table 3-1). No rows copied."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID86897817599961419693497399046367681594/Annex%20A-Overarching%20PWS%20-%2018%20Feb%2022.pdf",
+        "note": "Annex A, Overarching PWS, Base Operations and Maintenance Contract, Fort Wainwright, Fairbanks, Alaska (15 March 2021; posted 18 Feb 2022). Downloaded and read. Army BOS model for: the non-personal-services opening, the installation background with acreage / building counts / population (1.2), the 'Climatic Conditions' paragraph with snowfall, growing season and temperature extremes (1.7), hours of operation, the Federal holiday list with Juneteenth, phase-in / phase-out, ECMRA wording, the GFP initial inventory on DA Form 2062 per DA PAM 710-2-1, and the Common Levels of Support table (CLS 404 Maintenance - Grounds, 408 Snow, Ice and Sand Removal, 420 Facility Maintenance, 510 Pest Management, with an attachment per CLS) used for Table 1-1. Its Technical Exhibit index (TE 13 Refuse Collection, TE 14 Dumpster Tips Workload, TE 18 Pest Control Facilities List, TE 50/51 snow removal maps, TE 52 DMO Workload Data) is the model for TEs 7-10. No rows copied."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID31544869489761803466574390107441771546/Attachment_A_-_Custodial_Performance_Work_Statement.pdf",
+        "note": "Fort Wainwright, Alaska Custodial Services PWS (08 January 2019 v.4). Downloaded and read. Taken: Capability I - Enhanced Service (Child Care and Youth and School Services facilities), Capability II - Standard Service (Physical Fitness facilities), Capability III - Basic Service (Administrative/Warehouse/Other) as the TE 5 groups; workload TEs (TE-A1..A4), standards-and-frequencies TEs (TE-B) and a historical-data TE (TE-G); the frequency definitions '5W ... Monday through Friday, 6W ... Monday through Saturday, 7W ... Monday through Sunday', 'Twice weekly (2W)', 'Weekly (W) ... 52 times ... intervals of six to eight calendar days', 'Monthly (M) ... 12 times ... 28 to 31 calendar days' and the quarterly / semiannual / annual intervals (PWS 2.1.9-2.1.10); the change computation 'Total Square Footage of the area added, deleted or suspended, multiplied by the Square Footage Rate' (1.14); lost-key reporting and re-keying deductions (1.11)."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID297162707687379821580624672536441025401/Attachment%201%20-%20Custodial%20PWS.pdf",
+        "note": "Dyess AFB Custodial Services PWS (13 August 2021), Appendix B 'Estimated Square Footage and Cleaning Level'. Downloaded and read. Model for the TE 5 column set: Facility No. / Description / User-Agency / Restroom SF / Carpet SF / Hard Floor SF / Total Cleaned SF per Facility, grouped by cleaning level with a 'Total # Facilities' subtotal row per level and an 'All Level Totals' row; alphanumeric facility numbers (6030A/B/C, 7316A/B), the model for 2104A/2104B. Appendix A (AFCOLS task frequencies such as '1X daily', '1X weekly', '2X yearly') is the model for TE 4."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID239120740891441165113625913503342013529/Atch_02_Custodial_Services_-_PWS.pdf",
+        "note": "Sheppard AFB / Frederick Auxiliary Airfield Custodial Services PWS, Appendix B 'Estimated Square Footage and Cleaning Category'. Downloaded and read. A second real example of a facility list keyed by building number with square feet split by floor type (carpet / vinyl / ceramic / concrete / hardwood) and summed to a total, with category subtotals ('Total Cat 1/1E 19 ...'). Supports the floor-type breakdown columns and the subtotal rows in TE 5."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID96837023427233783650986366557395196797/W911S720R0001%20ATTACHMENT%201%20%20PWS%20CDTF%2012-20-2019.pdf",
+        "note": "W911S7-20-R-0001 Attachment 1, PWS, Operation and Maintenance, Chemical Defense Training Facility, Fort Leonard Wood (20 Dec 2019). Downloaded and read. Army PWS 'PART 1 GENERAL INFORMATION' structure and 'Section J, Technical Exhibit x.x' cross-references, including a custodial 'Task and Frequency Chart' carried as a Technical Exhibit (the model for TE 4 sitting in front of the facility list)."
+      },
+      {
+        "url": "https://govtribe.com/file/government-file/25r5001-tech-exhibit-0302-snow-and-ice-removal-plan-dot-docx",
+        "note": "Fort Hamilton BASOPS solicitation W15QKN-25-R-5001, Tech Exhibit 0302 Snow and Ice Removal Plan, and Tech Exhibit 0201 Grass Areas for Grounds Maintenance (same solicitation). Search summary only: GovTribe was blocked from the authoring session. Taken from the summary: a BASOPS package that carries grounds areas and the snow plan as separate technical exhibits, with snow priorities defined by forecast accumulation and 'passable' defined for streets, sidewalks and parking lots (TE 8, PWS 5.4)."
+      },
+      {
+        "url": "https://home.army.mil/meade/8616/9030/9129/Catalog_of_Services_-_FMMD_FY24_Signed.pdf",
+        "note": "IMCOM / USAG Fort Meade Catalog of Services FY24. Search summary only: home.army.mil was blocked from the authoring session. Taken from the summary: the IMCOM service numbers Service 402 Custodial Services, 403 Refuse Removal, 404 Maintenance - Grounds and 408 Snow, Sand and Ice Removal, and grounds maintained to 'Improved, Semi Improved, or Unimproved' standards. These give the CLS numbers 402 and 403 that the Fort Wainwright table does not list."
+      }
+    ],
+    "notes": "Everything in the document is made up: the installation (U.S. Army Garrison Fort Brannock, Langlade County, Wisconsin; no such installation exists, but the real county sets a real cold climate), the solicitation W9131B-27-R-0006, the contracting office, every facility number, name, CATCD assignment (in the style of DA Pam 415-28), year, floor count, GSF, CSF and floor-type split, the grounds, refuse, snow, pest and historical quantities, and the current contract (Northwoods Integrated Services, LLC, W9131B-22-C-0003, $38,947,260). No rows were copied, so fidelity is real-format. The section structure (Parts 1-7 followed by Technical Exhibits, CLS table, workload exhibits at the back) mirrors the Fort Wainwright overarching BOS PWS and the Laughlin AFB BOS PWS; the custodial facility list mirrors the Dyess AFB and Sheppard AFB Appendix B lists with the Fort Wainwright capability levels and frequency codes. The HTML source and the facility and grounds parts of this file are produced together by gen.mjs from one table, so the TE 5 rows, capability subtotals, Part A total, TE 3 summary, prose totals (5.1.1, 5.1.2, 5.1.7, 5.2.1, 5.3.1) and expect.facilities / expect.grounds agree. Every printed total equals the sum of its rows."
+  },
+  "inputs": [
+    {
+      "src": "att-0001-bos-pws.html",
+      "as": "pdf",
+      "out": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf"
+    }
+  ],
+  "expect": {
+    "facilities": [
+      {
+        "buildingNumber": "3101",
+        "name": "Child Development Center I",
+        "grossSqft": 28640,
+        "cleanableSqft": 25230,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "child_care"
+      },
+      {
+        "buildingNumber": "3104",
+        "name": "Child Development Center II",
+        "grossSqft": 32180,
+        "cleanableSqft": 28320,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "child_care"
+      },
+      {
+        "buildingNumber": "3108",
+        "name": "School Age Center",
+        "grossSqft": 18450,
+        "cleanableSqft": 15870,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "child_care"
+      },
+      {
+        "buildingNumber": "3110",
+        "name": "Youth Center",
+        "grossSqft": 21760,
+        "cleanableSqft": 18600,
+        "floors": 1,
+        "serviceLevel": "daily_6"
+      },
+      {
+        "buildingNumber": "3112",
+        "name": "CYS Parent Central Services",
+        "grossSqft": 4820,
+        "cleanableSqft": 4250,
+        "floors": 1,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "1520",
+        "name": "Physical Fitness Center (Bergstrom)",
+        "grossSqft": 46300,
+        "cleanableSqft": 37620,
+        "floors": 2,
+        "serviceLevel": "daily_7",
+        "category": "fitness"
+      },
+      {
+        "buildingNumber": "1524",
+        "name": "Physical Fitness Center (North)",
+        "grossSqft": 38900,
+        "cleanableSqft": 33130,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "fitness"
+      },
+      {
+        "buildingNumber": "1530",
+        "name": "Indoor Pool",
+        "grossSqft": 24600,
+        "cleanableSqft": 10430,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "fitness"
+      },
+      {
+        "buildingNumber": "1532",
+        "name": "Outdoor Pool Bathhouse",
+        "grossSqft": 2940,
+        "cleanableSqft": 2420,
+        "floors": 1,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "1540",
+        "name": "Bowling Center",
+        "grossSqft": 19800,
+        "cleanableSqft": 9040,
+        "floors": 1,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "1544",
+        "name": "Outdoor Recreation Center",
+        "grossSqft": 7460,
+        "cleanableSqft": 3730,
+        "floors": 1,
+        "serviceLevel": "3x_week"
+      },
+      {
+        "buildingNumber": "1001",
+        "name": "Garrison Headquarters",
+        "grossSqft": 52880,
+        "cleanableSqft": 38680,
+        "floors": 3,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "1002",
+        "name": "DPW Administration",
+        "grossSqft": 18240,
+        "cleanableSqft": 14740,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "1004",
+        "name": "Military Personnel Division / DHR",
+        "grossSqft": 21600,
+        "cleanableSqft": 17810,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "1006",
+        "name": "Installation Transportation Office",
+        "grossSqft": 9350,
+        "cleanableSqft": 8040,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "1010",
+        "name": "Main Post Chapel",
+        "grossSqft": 11420,
+        "cleanableSqft": 8840,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "1012",
+        "name": "Religious Education Center",
+        "grossSqft": 13280,
+        "cleanableSqft": 10970,
+        "floors": 2,
+        "serviceLevel": "2x_week"
+      },
+      {
+        "buildingNumber": "1020",
+        "name": "Army Community Service",
+        "grossSqft": 12640,
+        "cleanableSqft": 10750,
+        "floors": 1,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "1022",
+        "name": "Education Center",
+        "grossSqft": 24180,
+        "cleanableSqft": 19710,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "1024",
+        "name": "Post Library",
+        "grossSqft": 14960,
+        "cleanableSqft": 12040,
+        "floors": 1,
+        "serviceLevel": "daily_6"
+      },
+      {
+        "buildingNumber": "1026",
+        "name": "Transition Assistance Center (SFL-TAP)",
+        "grossSqft": 7840,
+        "cleanableSqft": 6480,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "1030",
+        "name": "Military Police Station",
+        "grossSqft": 16720,
+        "cleanableSqft": 14370,
+        "floors": 2,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "1032",
+        "name": "Fire Station No. 1",
+        "grossSqft": 13860,
+        "cleanableSqft": 6120,
+        "floors": 1,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "1034",
+        "name": "Visitor Control Center",
+        "grossSqft": 3180,
+        "cleanableSqft": 2560,
+        "floors": 1,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "1040",
+        "name": "Logistics Readiness Center Headquarters",
+        "grossSqft": 17960,
+        "cleanableSqft": 13720,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "1044",
+        "name": "Network Enterprise Center",
+        "grossSqft": 12480,
+        "cleanableSqft": 8250,
+        "floors": 1,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "1050",
+        "name": "Fort Brannock Museum",
+        "grossSqft": 9720,
+        "cleanableSqft": 7400,
+        "floors": 2,
+        "serviceLevel": "2x_week"
+      },
+      {
+        "buildingNumber": "1402",
+        "name": "UPH Barracks",
+        "grossSqft": 46800,
+        "cleanableSqft": 9320,
+        "floors": 3,
+        "serviceLevel": "daily_5",
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "1403",
+        "name": "UPH Barracks",
+        "grossSqft": 46800,
+        "cleanableSqft": 9320,
+        "floors": 3,
+        "serviceLevel": "daily_5",
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "1404",
+        "name": "UPH Barracks",
+        "grossSqft": 61240,
+        "cleanableSqft": 11680,
+        "floors": 4,
+        "serviceLevel": "daily_5",
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "1405",
+        "name": "Battalion Headquarters / Company Operations",
+        "grossSqft": 28450,
+        "cleanableSqft": 21580,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "2104A",
+        "name": "NCO Academy Classroom Building",
+        "grossSqft": 22940,
+        "cleanableSqft": 19010,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "2104B",
+        "name": "NCO Academy Classroom Annex",
+        "grossSqft": 9860,
+        "cleanableSqft": 8440,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "2110",
+        "name": "Simulation Training Center",
+        "grossSqft": 26780,
+        "cleanableSqft": 18860,
+        "floors": 1,
+        "serviceLevel": "3x_week"
+      },
+      {
+        "buildingNumber": "2120",
+        "name": "Range Control",
+        "grossSqft": 8640,
+        "cleanableSqft": 6910,
+        "floors": 2,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "2302",
+        "name": "Tactical Equipment Maintenance Facility (TEMF)",
+        "grossSqft": 64300,
+        "cleanableSqft": 7720,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "2306",
+        "name": "Vehicle Maintenance Shop (Motor Pool B)",
+        "grossSqft": 21450,
+        "cleanableSqft": 2820,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "2310",
+        "name": "DPW Shops and Yard Office",
+        "grossSqft": 33600,
+        "cleanableSqft": 3680,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "2402",
+        "name": "Central Issue Facility",
+        "grossSqft": 42800,
+        "cleanableSqft": 12960,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "2404",
+        "name": "General Purpose Warehouse",
+        "grossSqft": 56400,
+        "cleanableSqft": 7600,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "2406",
+        "name": "Self-Service Supply Center",
+        "grossSqft": 6720,
+        "cleanableSqft": 5000,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "2408",
+        "name": "Records Holding Area",
+        "grossSqft": 8400,
+        "cleanableSqft": 1200,
+        "floors": 1,
+        "serviceLevel": "monthly",
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "2602",
+        "name": "Airfield Operations Building",
+        "grossSqft": 15320,
+        "cleanableSqft": 11340,
+        "floors": 2,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "2604",
+        "name": "Aircraft Maintenance Hangar",
+        "grossSqft": 48600,
+        "cleanableSqft": 6960,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "hangar"
+      },
+      {
+        "buildingNumber": "2702",
+        "name": "ASP Office and Break Facility",
+        "grossSqft": 2860,
+        "cleanableSqft": 1960,
+        "floors": 1,
+        "serviceLevel": "weekly"
+      },
+      {
+        "buildingNumber": "2812",
+        "name": "Range 12 Control Tower and Classroom",
+        "grossSqft": 1840,
+        "cleanableSqft": 1420,
+        "floors": 2,
+        "serviceLevel": "weekly"
+      },
+      {
+        "buildingNumber": "2818",
+        "name": "Range 18 Ammunition Breakdown / Latrine Building",
+        "grossSqft": 960,
+        "cleanableSqft": 660,
+        "floors": 1,
+        "serviceLevel": "weekly"
+      }
+    ],
+    "facilitiesComplete": true,
+    "grounds": [
+      {
+        "kind": "improved_turf",
+        "quantity": 21.6,
+        "unit": "acres",
+        "name": "G-01 Cantonment core – Garrison HQ, chapel, community and administrative facilities (Bldgs 1001–1050)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 17.3,
+        "unit": "acres",
+        "name": "G-02 Barracks and battalion area (Bldgs 1402–1410)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 8.9,
+        "unit": "acres",
+        "name": "G-03 Child, Youth and School Services campus (Bldgs 3101–3116)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 12.4,
+        "unit": "acres",
+        "name": "G-04 Fitness and recreation complex (Bldgs 1520–1544), excluding athletic fields"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 19.8,
+        "unit": "acres",
+        "name": "G-05 Main Gate and North Gate, Brannock Boulevard medians, road rights-of-way to 30 ft"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 3.1,
+        "unit": "acres",
+        "name": "G-06 Post cemetery (hand trim at headstones)"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 41.7,
+        "unit": "acres",
+        "name": "G-07 Industrial area, motor pools and DPW yard (Bldgs 2302–2416)"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 86.4,
+        "unit": "acres",
+        "name": "G-08 Brannock AAF – airfield infield, clear zones and runway shoulders (BASH height, Note 3)"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 18.2,
+        "unit": "acres",
+        "name": "G-09 Ammunition Supply Point – inside fence (Bldg 2702) (Note 4)"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 27.6,
+        "unit": "acres",
+        "name": "G-10 Range complex – Range Control, Ranges 12 and 18, range road shoulders"
+      },
+      {
+        "kind": "unimproved",
+        "quantity": 264,
+        "unit": "acres",
+        "name": "G-11 Firebreaks and perimeter fence lines"
+      },
+      {
+        "kind": "unimproved",
+        "quantity": 38.5,
+        "unit": "acres",
+        "name": "G-12 Stormwater ponds, drainage channels and retention basins"
+      },
+      {
+        "kind": "athletic_field",
+        "quantity": 2.3,
+        "unit": "acres",
+        "name": "F-1 Softball Field 1 (east of Bldg 1524)"
+      },
+      {
+        "kind": "athletic_field",
+        "quantity": 2.3,
+        "unit": "acres",
+        "name": "F-2 Softball Field 2 (east of Bldg 1524)"
+      },
+      {
+        "kind": "athletic_field",
+        "quantity": 2.9,
+        "unit": "acres",
+        "name": "F-3 Brannock Stadium – football / soccer (natural turf)"
+      },
+      {
+        "kind": "athletic_field",
+        "quantity": 4.1,
+        "unit": "acres",
+        "name": "F-4 Multi-purpose / PT field (south of Bldg 1405)"
+      },
+      {
+        "kind": "shrub_bed",
+        "quantity": 58400,
+        "unit": "sqft",
+        "name": "Shrub and planting beds (mulched)"
+      },
+      {
+        "kind": "parking",
+        "quantity": 131800,
+        "unit": "sqyd",
+        "name": "Parking lots – policing and sweeping"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 196300,
+        "unit": "sqft",
+        "name": "Sidewalks, walkways and building entrances"
+      }
+    ],
+    "site": {
+      "contractYears": 5,
+      "climateZone": "cold",
+      "installationName": "Fort Brannock",
+      "solicitation": "W9131B-27-R-0006"
+    },
+    "priorAward": {
+      "totalValue": 38947260,
+      "periodMonths": 60,
+      "incumbent": "Northwoods Integrated Services, LLC",
+      "contractNumber": "W9131B-22-C-0003",
+      "awardYear": 2022
+    }
+  },
+  "traps": [
+    "Workload buried at the back: pages 1-19 are the cover, TOC, Parts 1-7 and TE 1-4; the custodial facility list (TE 5) is on pages 20-21 (landscape). The narrative names many buildings by number with no SF or with SF that are not facility areas (1001, 1100, 1106, 1310, 1402-1404, 1407, 1410, 1520/1524 wood floors, 1532, 1550, 1600, 2410-2416, 3116).",
+    "Government-furnished facilities with square feet (Part 3, Table 3-1): Bldg 2410 BOS Contractor Administration Building 7,200 GSF, 2412 Shops and Storage 12,800, 2414 Covered Vehicle and Equipment Storage 4,000, 2416 Salt and Sand Storage Dome 6,360. They are contractor-occupied, 'not included in TE 5' (3.2.1), and are not expected.",
+    "Facilities named as not serviced under CLS 402 (1.2.1, 5.1.13): Dining Facility 1310, Army Health Clinic 1100, Veterinary Treatment Facility 1106, Commissary 1600, Brannock Club 1550, family housing. They reappear by building number in TE 7 (refuse containers), TE 8 (snow priorities) and TE 9 (17 scheduled pest-service buildings); none is a facility in expect.facilities.",
+    "GSF vs CSF: TE 5 column 8 GSF is 'for information only' (Note 1), column 12 Total CSF is the basis of payment (Note 2). Truth grossSqft = GSF, cleanableSqft = Total CSF for every row. Partial-service buildings: TEMF 2302 64,300 / 7,720; Aircraft Maintenance Hangar 2604 48,600 / 6,960; DPW Shops 2310 33,600 / 3,680; Motor Pool B 2306 21,450 / 2,820; Fire Station 1032 13,860 / 6,120 (Note 8); UPH barracks 1402/1403 46,800 / 9,320 and 1404 61,240 / 11,680 (common areas only, Note 5).",
+    "Floor-type component columns (Dyess AFB Appendix B format): Restroom SF, Carpet SF and Hard Floor SF (columns 9-11) sit between GSF and Total CSF and are components of CSF, not facility areas. Note 10 and PWS 5.1.9 also print the wood gym floor areas (Bldg 1520: 14,200 SF; Bldg 1524: 11,600 SF), and 5.1.7 prints 177,650 SF of Capability III carpet.",
+    "Vacant row inside Part A: line 32, Bldg 1407 'UPH Barracks - VACANT, NO SERVICE', GSF 38,200, CSF and floor-type cells '-', FREQ '-', Note 4 (vacated 30 SEP 2026, programmed for demolition). It is excluded from every total and is not expected.",
+    "Part B optional facilities (Optional CLIN 0010 / x010, Note 12, PWS 5.1.12): B-1 Bldg 1410 UPH Barracks (under construction) 72,600 GSF / 13,440 CSF and B-2 Bldg 3116 Child Development Center III (programmed) 30,400 / 26,720. Not in the base requirement; not expected.",
+    "Totals are not facilities: Capability I / II / III totals (5 / 6 / 36 facilities; 105,850 / 140,000 / 815,070 GSF; 92,270 / 96,370 / 368,920 CSF), 'TOTAL - PART A' (47 facilities, 1,060,920 GSF, 557,560 CSF), Part B total (2 facilities, 103,000 / 40,160), prose totals in 5.1.1 ('48 facility lines; 47 facilities ... 557,560 CSF (1,060,920 GSF)') and 5.1.2, and the TE 3 summary rows (47 EA; 557,560 CSF; 2 EA / 40,160 CSF). Every printed total equals the sum of its rows.",
+    "Identical standard-design barracks: lines 28 and 29 (Bldgs 1402 and 1403) have the same name 'UPH Barracks', org, CATCD, year (1987), floors (3), GSF (46,800) and every CSF figure (9,320). Both are facilities; a reader that de-duplicates identical rows loses one. Bldg 1404 has the same name with different figures.",
+    "Alphanumeric facility numbers 2104A (NCO Academy Classroom Building) and 2104B (NCO Academy Classroom Annex) are separate facilities (PWS 2.1.8).",
+    "Numeric distractor columns next to FAC NO: LINE (1-48, then B-1 / B-2), CATCD five-digit category codes (61050, 72111, 74028, 44220 ...), YR BLT (including '2028 est.' / '2029 est.'), FLRS; a column-number row (1)...(14); superscript note markers glued to header words in the text layer ('GSF1', '(CSF)2').",
+    "Frequency codes are defined only in Part 2 (2.1.9 table, page 7), 13 pages before TE 5: 7W -> daily_7 (Bldgs 1520, 1524, 1530, 1532, 1540, 1030, 1032, 1034, 2602), 6W -> daily_6 (Youth Center 3110, Post Library 1024), 5W -> daily_5, 3W -> 3x_week (1544, 2110, 2306, 2310), 2W -> 2x_week (1010, 1012, 1050, 2406), W -> weekly (2404, 2702, 2812, 2818), M -> monthly (Records Holding Area 2408). TE 4 task frequencies ('1X daily', '2X daily', '1X weekly', '2X yearly') are task-level, not facility service levels.",
+    "Seasonal 7W: Outdoor Pool Bathhouse 1532 is serviced 7W only from Memorial Day weekend through Labor Day (about 15 weeks, Note 6). Expected serviceLevel is daily_7. Model limitation: daily_7 is 360 days per year in shared/types.ts, so the labor estimate for this one facility runs high.",
+    "TE 5 is a landscape table split over two pages with a three-row header repeated on the second page (group header 'CLEANABLE SQUARE FEET (CSF)2', column titles, column-number row). 'PART A' / 'PART B' banner rows and capability group rows span all 14 columns.",
+    "Grounds (TE 6): expected improved_turf 83.1 AC (G-01 to G-06), semi_improved 173.9 AC (G-07 to G-10), unimproved 302.5 AC (G-11, G-12), athletic_field 11.6 AC (Table 6-2, 'not included in Table 6-1'), shrub_bed 58,400 SF, parking 131,800 SY and sidewalk 196,300 SF (Table 6-3). Not grounds: row G-13 family housing 146.0 AC ('NOT IN CONTRACT', Note 5), edging 54,600 LF ('workload only; not an area'), the subtotals and 'TOTAL - CONTRACT GROUNDS' 559.5 AC, and the TE 3 summary rows that restate the same quantities.",
+    "The snow exhibit (TE 8) restates subsets of the TE 6 paved areas by priority: parking 21,600 / 54,300 / 39,700 SY (115,600 of 131,800 SY) and sidewalks 38,200 / 81,400 / 52,900 SF (172,500 of 196,300 SF). The 16,200 SY of hardstands and the 23,800 SF of seasonal walks are not cleared. Roads are in lane-miles (16.4 / 22.8 / 11.6 = 50.8 LM). None of these adds grounds.",
+    "Pest-control acres are not mowing acres (TE 9, Table 9-2): broadleaf weed control 94.7 AC (= improved 83.1 + athletic 11.6), pre-emergent 11.6 AC, fertilization 42.1 AC, larviciding 22.0 AC (part of G-12), fence-line 41,800 LF, 186 bait stations, 38 termite-inspection buildings, 12 traps, plus an installation-wide structural area of 2,846,300 SF. The note says these overlap TE 6 and are not more grounds.",
+    "Other numbers that are not facility SF or grounds: installation 14,860 acres, 1,240 cantonment acres, 418 buildings, 3.1 million SF, population 4,300 / 6,500 (1.2); CLINs 0001-0010 and option CLINs 1001-4010; DMO limits of 16 labor hours and $2,500; PRS remedies of $40-$1,000; 14 fixed-price snow events, a 64-inch normal snowfall and a 1,200-ton salt dome; refuse with 43 containers, 99 lifts per week, 64 roll-off pulls and 1,844 tons; DMO history of 4,562 / 4,730 / 4,696; GFE quantities.",
+    "Historical custodial workload (TE 10, Table 10-4) reports 46 / 46 / 47 facilities and 538,215 / 541,880 / 546,680 CSF for FY23-FY25. These are history, not the current 47 facilities / 557,560 CSF. The floor care areas (179,600-192,800 SF stripped; 238,400-249,800 SF of carpet extracted) are not facilities.",
+    "The prior award is on the last pages (TE 10, Table 10-1): Contract W9131B-22-C-0003, Northwoods Integrated Services, LLC, awarded 27 June 2022, performance 1 July 2022 - 30 June 2027 (12-month base + four 12-month options; 60 months), total value $38,947,260 for the base and all options. Distractors: the separate pest contract W9131B-23-P-0118 and the solicitation number. annualValue and spendToDate are not stated and are left out.",
+    "Contract term: a 30-day phase-in (CLIN 0001), a 12-month base and four 12-month options, which the document states as 'five (5) years, excluding phase-in' (1.4). contractYears = 5.",
+    "Climate: Langlade County, north-central Wisconsin; 64 in. normal snowfall; January mean 12 F with extremes to -35 F; snow season 15 October - 30 April. climateZone = cold."
+  ]
+}

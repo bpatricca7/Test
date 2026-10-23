@@ -5,5 +5,1860 @@
       "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf"
     ]
   ],
-  "calls": []
+  "calls": [
+    {
+      "name": "set_site_info",
+      "input": {
+        "installation_name": "Naval Support Activity (NSA) Tarpon Sound (with Saltmarsh Point Annex and NOSC Cypress Landing)",
+        "location": "Tarpon Sound, Florida; Saltmarsh Point Annex approx. 14 miles south of Main Base; NOSC Cypress Landing, Florida, approx. 118 miles northeast",
+        "solicitation": "N69450-26-R-0014",
+        "contract_name": "Base Operating Support Services - Section J Annex 15 Facilities Support (Sub-Annex 1503010 Custodial, Sub-Annex 1503050 Grounds Maintenance and Landscaping)",
+        "climate_zone": "hot_humid",
+        "growing_season_weeks": null,
+        "contract_years": null,
+        "notes": "Extract conformed through Amendment 0002 (14 September 2026). Three sites: NSA Tarpon Sound - Main Base, Saltmarsh Point Annex, NOSC Cypress Landing. Climate zone inferred from Florida location; growing season and contract period (base + options) are not stated in this extract."
+      },
+      "pass": 0
+    },
+    {
+      "name": "declare_tables",
+      "input": {
+        "tables": [
+          {
+            "table_id": "J-1503010-09",
+            "title": "Attachment J-1503010-09 Custodial Inventory (Revised, Amendment 0002)",
+            "kind": "facilities",
+            "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+            "pages": "7-9",
+            "row_count": 39,
+            "printed_total_gross_area": 726250,
+            "area_unit": "sf",
+            "printed_totals": []
+          },
+          {
+            "table_id": "J-1503050-04",
+            "title": "Attachment J-1503050-04 Area Maps / Total Acreage Summary",
+            "kind": "grounds",
+            "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+            "pages": "10",
+            "row_count": 10,
+            "printed_total_gross_area": null,
+            "area_unit": null,
+            "printed_totals": [
+              {
+                "value": 502.5,
+                "unit": "acres",
+                "kinds": []
+              }
+            ]
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "100",
+            "name": "NSA Headquarters (Commanding Officer)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 31480,
+            "added_areas": null,
+            "cleanable_area": 27490,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.597,
+              "resilient": 0.286,
+              "hard_tile": 0.117,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 7,
+              "excerpt": "100 | NSA Headquarters (Commanding Officer) | 610-10 | ADMINISTRATIVE OFFICE | 2 | 31,480 | 16,420 | 7,860 | 3,210 | 0 | 0 | 27,490 | 8 | COL 3 | M–F | CO suite, quarterdeck and Command Conference ..."
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class COL 3; 8 restrooms. Custodial SF by floor type: carpet 16,420; resilient 7,860; ceramic/quarry/terrazzo 3,210; wood 0; sealed concrete 0. 2,140 SF (CO suite, quarterdeck, Command Conference Rm) at COL 2 Prestige; remainder COL 3."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "102",
+            "name": "Public Works Department / FEAD Office",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 18760,
+            "added_areas": null,
+            "cleanable_area": 15875,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.563,
+              "resilient": 0.354,
+              "hard_tile": 0.083,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 7,
+              "excerpt": "102 | Public Works Department / FEAD Office | 610-10 | ADMINISTRATIVE OFFICE | 2 | 18,760 | 8,940 | 5,615 | 1,320 | 0 | 0 | 15,875 | 4 | COL 3 | M–F"
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class COL 3; 4 restrooms. Custodial SF by floor type: carpet 8,940; resilient 5,615; ceramic/quarry/terrazzo 1,320; wood 0; sealed concrete 0."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "104",
+            "name": "Personnel Support Detachment / ID Card and Pass Office",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 9840,
+            "added_areas": null,
+            "cleanable_area": 8730,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.356,
+              "resilient": 0.548,
+              "hard_tile": 0.096,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 7,
+              "excerpt": "104 | Personnel Support Detachment / ID Card and Pass Office | 610-10 | ADMINISTRATIVE OFFICE | 1 | 9,840 | 3,110 | 4,780 | 840 | 0 | 0 | 8,730 | 2 | COL 3 | M–F | Pass office lobby open 0600–1800...."
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class COL 3; 2 restrooms. Custodial SF by floor type: carpet 3,110; resilient 4,780; ceramic/quarry/terrazzo 840; wood 0; sealed concrete 0. Amendment 0002: Resilient SF corrected from 4,010 to 4,780 (pass office lobby omitted); Total Custodial SF corrected from 7,960 to 8,730."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "110",
+            "name": "Littoral Systems Test Laboratory (tenant)",
+            "status": null,
+            "status_reason": null,
+            "category": "lab",
+            "gross_area": 44320,
+            "added_areas": null,
+            "cleanable_area": 30290,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.227,
+              "resilient": 0.708,
+              "hard_tile": 0.065,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 7,
+              "excerpt": "110 | Littoral Systems Test Laboratory (tenant) | 310-10 | RDT&E LABORATORY | 2 | 44,320 | 6,880 | 21,450 | 1,960 | 0 | 0 | 30,290 | 6 | B | M–F | Dust-free spaces Rms 118–131; escort required (Not..."
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class B; 6 restrooms. Custodial SF by floor type: carpet 6,880; resilient 21,450; ceramic/quarry/terrazzo 1,960; wood 0; sealed concrete 0. Service Class B (tenant command, J-1503010-04). Note 7: dust-free spaces; contractor personnel escorted, HEPA-filtered vacuums only."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "112",
+            "name": "Navy College Office / Learning Resource Center",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 12350,
+            "added_areas": null,
+            "cleanable_area": 11520,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.628,
+              "resilient": 0.318,
+              "hard_tile": 0.054,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 7,
+              "excerpt": "112 | Navy College Office / Learning Resource Center | 171-10 | ACADEMIC INSTRUCTION BLDG | 1 | 12,350 | 7,240 | 3,660 | 620 | 0 | 0 | 11,520 | 2 | COL 3 | M–F"
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class COL 3; 2 restrooms. Custodial SF by floor type: carpet 7,240; resilient 3,660; ceramic/quarry/terrazzo 620; wood 0; sealed concrete 0."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "115",
+            "name": "Fleet and Family Support Center",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 10920,
+            "added_areas": null,
+            "cleanable_area": 10240,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.604,
+              "resilient": 0.327,
+              "hard_tile": 0.069,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 7,
+              "excerpt": "115 | Fleet and Family Support Center | 740-60 | FAMILY SERVICE CENTER | 1 | 10,920 | 6,180 | 3,350 | 710 | 0 | 0 | 10,240 | 3 | COL 3 | M–F"
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class COL 3; 3 restrooms. Custodial SF by floor type: carpet 6,180; resilient 3,350; ceramic/quarry/terrazzo 710; wood 0; sealed concrete 0."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "120",
+            "name": "Fire Station No. 1",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 11250,
+            "added_areas": null,
+            "cleanable_area": 3980,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_frequency_text": "M–Su",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0,
+              "resilient": 0.618,
+              "hard_tile": 0.382,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 7,
+              "excerpt": "120 | Fire Station No. 1 | 730-10 | FIRE STATION | 1 | 11,250 | 0 | 2,460 | 1,520 | 0 | 0 | 3,980 | 2 | COL 3 | M–Su | Admin office, day room and restrooms only; apparatus bay and bunk rooms by occ..."
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class COL 3; 2 restrooms. Custodial SF by floor type: carpet 0; resilient 2,460; ceramic/quarry/terrazzo 1,520; wood 0; sealed concrete 0. Custodial limited to admin office, day room and restrooms; apparatus bay and bunk rooms cleaned by occupant. M–Su facilities are serviced on holidays (Note 4)."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "122",
+            "name": "Security Department / Police Station",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 14620,
+            "added_areas": null,
+            "cleanable_area": 12500,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_frequency_text": "M–Su",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.348,
+              "resilient": 0.555,
+              "hard_tile": 0.097,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 7,
+              "excerpt": "122 | Security Department / Police Station | 730-15 | POLICE STATION | 2 | 14,620 | 4,350 | 6,940 | 1,210 | 0 | 0 | 12,500 | 4 | COL 3 | M–Su | 24-hr facility; service 0600–1400; holding cells excl..."
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class COL 3; 4 restrooms. Custodial SF by floor type: carpet 4,350; resilient 6,940; ceramic/quarry/terrazzo 1,210; wood 0; sealed concrete 0. 24-hr facility; service window 0600–1400; holding cells excluded. Serviced on holidays (Note 4)."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "130",
+            "name": "Branch Health Clinic Tarpon Sound",
+            "status": null,
+            "status_reason": null,
+            "category": "medical",
+            "gross_area": 38900,
+            "added_areas": null,
+            "cleanable_area": 33450,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_6",
+            "service_days_per_year": null,
+            "service_frequency_text": "M–Sa",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.102,
+              "resilient": 0.74,
+              "hard_tile": 0.158,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 7,
+              "excerpt": "130 | Branch Health Clinic Tarpon Sound | 550-10 | DISPENSARY AND DENTAL CLINIC | 2 | 38,900 | 3,420 | 24,760 | 5,270 | 0 | 0 | 33,450 | 14 | MTF | M–Sa | Sanitize floors; Saturday sick call 0730–1200"
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class MTF; 14 restrooms. Custodial SF by floor type: carpet 3,420; resilient 24,760; ceramic/quarry/terrazzo 5,270; wood 0; sealed concrete 0. MTF: mandated service classes per J-1503010-05 (administrative spaces COL 3). Saturday sick call 0730–1200. Serviced on holidays (Note 4)."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "140",
+            "name": "Gulf Breeze Galley",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 21300,
+            "added_areas": null,
+            "cleanable_area": 8640,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_frequency_text": "M–Su",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0,
+              "resilient": 0.169,
+              "hard_tile": 0.831,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 7,
+              "excerpt": "140 | Gulf Breeze Galley | 722-10 | ENLISTED DINING FACILITY | 1 | 21,300 | 0 | 1,460 | 7,180 | 0 | 0 | 8,640 | 4 | COL 3 | M–Su | Dining room, entries and restrooms only; sanitize floors. Kitchen,..."
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class COL 3; 4 restrooms. Custodial SF by floor type: carpet 0; resilient 1,460; ceramic/quarry/terrazzo 7,180; wood 0; sealed concrete 0. Custodial scope only (dining room, entries, restrooms). Kitchen, serving line and scullery by food service contractor under Annex 13 (not in this package); no dining headcount given."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "150",
+            "name": "Unaccompanied Housing Bldg 150",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 52860,
+            "added_areas": null,
+            "cleanable_area": 10420,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.177,
+              "resilient": 0.664,
+              "hard_tile": 0.159,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 7,
+              "excerpt": "150 | Unaccompanied Housing Bldg 150 | 721-11 | UNACCOMPANIED ENLISTED HOUSING | 3 | 52,860 | 1,840 | 6,920 | 1,660 | 0 | 0 | 10,420 | 6 | COL 3 | M–F | Common areas only (Note 8)"
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class COL 3; 6 restrooms. Custodial SF by floor type: carpet 1,840; resilient 6,920; ceramic/quarry/terrazzo 1,660; wood 0; sealed concrete 0. Note 8: lobbies, corridors, stairs, laundry rooms, lounges and common restrooms only; resident rooms/suites cleaned by occupants and not in Total Custodial SF."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "151",
+            "name": "Unaccompanied Housing Bldg 151",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 52860,
+            "added_areas": null,
+            "cleanable_area": 10420,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.177,
+              "resilient": 0.664,
+              "hard_tile": 0.159,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 7,
+              "excerpt": "151 | Unaccompanied Housing Bldg 151 | 721-11 | UNACCOMPANIED ENLISTED HOUSING | 3 | 52,860 | 1,840 | 6,920 | 1,660 | 0 | 0 | 10,420 | 6 | COL 3 | M–F | Common areas only (Note 8)"
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class COL 3; 6 restrooms. Custodial SF by floor type: carpet 1,840; resilient 6,920; ceramic/quarry/terrazzo 1,660; wood 0; sealed concrete 0. Note 8: common areas only; resident rooms/suites cleaned by occupants and not in Total Custodial SF."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "152",
+            "name": "Unaccompanied Housing Bldg 152",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 68400,
+            "added_areas": null,
+            "cleanable_area": 13950,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 4,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.169,
+              "resilient": 0.679,
+              "hard_tile": 0.152,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 7,
+              "excerpt": "152 | Unaccompanied Housing Bldg 152 | 721-11 | UNACCOMPANIED ENLISTED HOUSING | 4 | 68,400 | 2,360 | 9,470 | 2,120 | 0 | 0 | 13,950 | 8 | COL 3 | M–F | Common areas only (Note 8). A0002"
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class COL 3; 8 restrooms. Custodial SF by floor type: carpet 2,360; resilient 9,470; ceramic/quarry/terrazzo 2,120; wood 0; sealed concrete 0. Amendment 0002: Facility Total SF corrected from 64,800 to 68,400 to agree with iNFADS; custodial areas unchanged. Note 8: common areas only."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "160",
+            "name": "Fitness Center",
+            "status": null,
+            "status_reason": null,
+            "category": "fitness",
+            "gross_area": 29750,
+            "added_areas": null,
+            "cleanable_area": 26880,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_frequency_text": "M–Su",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0,
+              "resilient": 0.47,
+              "hard_tile": 0.161,
+              "concrete": 0,
+              "wood": 0.369
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 8,
+              "excerpt": "160 | Fitness Center | 740-43 | PHYSICAL FITNESS CENTER | 1 | 29,750 | 0 | 12,640 | 4,320 | 9,920 | 0 | 26,880 | 6 | COL 3 | M–Su | After hours, 2100–0500. Group shower/locker rooms (2) (Note 5)"
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class COL 3; 6 restrooms. Custodial SF by floor type: carpet 0; resilient 12,640; ceramic/quarry/terrazzo 4,320; wood 9,920; sealed concrete 0. After-hours service window 2100–0500 (Note 5). Group shower/locker rooms (2). Serviced on holidays (Note 4)."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "162",
+            "name": "Outdoor Pool Bathhouse",
+            "status": null,
+            "status_reason": null,
+            "category": "fitness",
+            "gross_area": 3640,
+            "added_areas": null,
+            "cleanable_area": 2980,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": 99,
+            "service_frequency_text": "M–Su; Seasonal (Note 6): Memorial Day through Labor Day, inclusive",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0,
+              "resilient": 0,
+              "hard_tile": 1,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 8,
+              "excerpt": "162 | Outdoor Pool Bathhouse | 740-44 | BATHHOUSE | 1 | 3,640 | 0 | 0 | 2,980 | 0 | 0 | 2,980 | 2 | COL 3 | M–Su | Seasonal (Note 6)"
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class COL 3; 2 restrooms. Custodial SF by floor type: carpet 0; resilient 0; ceramic/quarry/terrazzo 2,980; wood 0; sealed concrete 0. Note 6: Seasonal. Serviced only from Memorial Day through Labor Day, inclusive; not serviced the remainder of the year. service_days_per_year estimated at 99 (Memorial Day to Labor Day inclusive, 7 days/week; e.g. 31 May–6 Sep 2027); number of days not stated."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "170",
+            "name": "Child Development Center",
+            "status": null,
+            "status_reason": null,
+            "category": "child_care",
+            "gross_area": 24600,
+            "added_areas": null,
+            "cleanable_area": 22310,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.364,
+              "resilient": 0.532,
+              "hard_tile": 0.104,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 8,
+              "excerpt": "170 | Child Development Center | 740-74 | CHILD DEVELOPMENT CENTER | 1 | 24,600 | 8,120 | 11,860 | 2,330 | 0 | 0 | 22,310 | 12 | CYP | M–F | After hours, 1830–2300 (Note 5)"
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class CYP; 12 restrooms. Custodial SF by floor type: carpet 8,120; resilient 11,860; ceramic/quarry/terrazzo 2,330; wood 0; sealed concrete 0. CYP mandated frequencies (J-1503010-06). After-hours window 1830–2300 (Note 5)."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "172",
+            "name": "Youth Center / School Age Care",
+            "status": null,
+            "status_reason": null,
+            "category": "child_care",
+            "gross_area": 12880,
+            "added_areas": null,
+            "cleanable_area": 11640,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.254,
+              "resilient": 0.442,
+              "hard_tile": 0.084,
+              "concrete": 0,
+              "wood": 0.22
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 8,
+              "excerpt": "172 | Youth Center / School Age Care | 740-76 | YOUTH CENTER | 1 | 12,880 | 2,960 | 5,140 | 980 | 2,560 | 0 | 11,640 | 4 | CYP | M–F | After hours, 1900–2300 (Note 5)"
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class CYP; 4 restrooms. Custodial SF by floor type: carpet 2,960; resilient 5,140; ceramic/quarry/terrazzo 980; wood 2,560; sealed concrete 0. CYP mandated frequencies (J-1503010-06). After-hours window 1900–2300 (Note 5)."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "175",
+            "name": "Child Development Center Expansion",
+            "status": "option_only",
+            "status_reason": "Under construction; option (Note 12): beneficial occupancy est. June 2028; services added by modification after BOD, not included in the base period; excluded from subtotals and totals.",
+            "category": "child_care",
+            "gross_area": 9600,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_frequency_text": null,
+            "scope": [],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 8,
+              "excerpt": "175 | Child Development Center Expansion | 740-74 | CHILD DEVELOPMENT CENTER | 1 | 9,600 | — | — | — | — | — | — | — | — | — | Under construction; option (Note 12)"
+            },
+            "confidence": 0.9,
+            "notes": "Italic row; no custodial area or service data printed."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "180",
+            "name": "Religious Ministry Facility (Chapel)",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 8950,
+            "added_areas": null,
+            "cleanable_area": 7420,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_frequency_text": "M/W/F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.655,
+              "resilient": 0.261,
+              "hard_tile": 0.084,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 8,
+              "excerpt": "180 | Religious Ministry Facility (Chapel) | 730-30 | RELIGIOUS MINISTRY FACILITY | 1 | 8,950 | 4,860 | 1,940 | 620 | 0 | 0 | 7,420 | 2 | COL 3 | M/W/F | Sanctuary, offices and fellowship hall"
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class COL 3; 2 restrooms. Custodial SF by floor type: carpet 4,860; resilient 1,940; ceramic/quarry/terrazzo 620; wood 0; sealed concrete 0."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "190",
+            "name": "Navy Exchange Main Store",
+            "status": "excluded",
+            "status_reason": "Not in contract (NAF) (Note 11): custodial services provided by the NAF activity; listed for information only; excluded from subtotals and totals.",
+            "category": "other",
+            "gross_area": 58200,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_frequency_text": null,
+            "scope": [],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 8,
+              "excerpt": "190 | Navy Exchange Main Store | 740-53 | EXCHANGE RETAIL STORE | 1 | 58,200 | — | — | — | — | — | — | — | — | — | Not in contract (NAF) (Note 11)"
+            },
+            "confidence": 0.9,
+            "notes": null
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "192",
+            "name": "Navy Gateway Inns and Suites",
+            "status": "excluded",
+            "status_reason": "Not in contract (NAF) (Note 11): custodial services provided by the NAF activity; listed for information only; excluded from subtotals and totals.",
+            "category": "other",
+            "gross_area": 41600,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_frequency_text": null,
+            "scope": [],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 8,
+              "excerpt": "192 | Navy Gateway Inns and Suites | 724-30 | TRANSIENT LODGING | 3 | 41,600 | — | — | — | — | — | — | — | — | — | Not in contract (NAF) (Note 11)"
+            },
+            "confidence": 0.9,
+            "notes": null
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "200",
+            "name": "Logistics Support Center Warehouse",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 46200,
+            "added_areas": null,
+            "cleanable_area": 4860,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.251,
+              "resilient": 0.449,
+              "hard_tile": 0.095,
+              "concrete": 0.206,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 8,
+              "excerpt": "200 | Logistics Support Center Warehouse | 441-10 | GENERAL WAREHOUSE NAVY | 1 | 46,200 | 1,220 | 2,180 | 460 | 0 | 1,000 | 4,860 | 3 | COL 3 | M–F | Office, receiving office, break room and restro..."
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class COL 3; 3 restrooms. Custodial SF by floor type: carpet 1,220; resilient 2,180; ceramic/quarry/terrazzo 460; wood 0; sealed concrete 1,000. Warehouse floor excluded from custodial."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "210",
+            "name": "Public Works Maintenance Shops",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 22480,
+            "added_areas": null,
+            "cleanable_area": 5310,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.121,
+              "resilient": 0.544,
+              "hard_tile": 0.222,
+              "concrete": 0.113,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 8,
+              "excerpt": "210 | Public Works Maintenance Shops | 219-10 | PUBLIC WORKS SHOP | 1 | 22,480 | 640 | 2,890 | 1,180 | 0 | 600 | 5,310 | 3 | COL 3 | M–F | Offices, break room and locker rooms only"
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class COL 3; 3 restrooms. Custodial SF by floor type: carpet 640; resilient 2,890; ceramic/quarry/terrazzo 1,180; wood 0; sealed concrete 600."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "212",
+            "name": "Transportation / Vehicle Maintenance Shop",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 18900,
+            "added_areas": null,
+            "cleanable_area": 3240,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_frequency_text": "M/W/F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0,
+              "resilient": 0.605,
+              "hard_tile": 0.191,
+              "concrete": 0.204,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 8,
+              "excerpt": "212 | Transportation / Vehicle Maintenance Shop | 214-10 | VEHICLE MAINTENANCE SHOP | 1 | 18,900 | 0 | 1,960 | 620 | 0 | 660 | 3,240 | 2 | COL 3 | M/W/F | Dispatch office, break room and restrooms ..."
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class COL 3; 2 restrooms. Custodial SF by floor type: carpet 0; resilient 1,960; ceramic/quarry/terrazzo 620; wood 0; sealed concrete 660."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "220",
+            "name": "Expeditionary Dive Training Facility (tenant)",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 34100,
+            "added_areas": null,
+            "cleanable_area": 28650,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.344,
+              "resilient": 0.434,
+              "hard_tile": 0.138,
+              "concrete": 0.085,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 8,
+              "excerpt": "220 | Expeditionary Dive Training Facility (tenant) | 171-20 | APPLIED INSTRUCTION BLDG | 2 | 34,100 | 9,860 | 12,420 | 3,940 | 0 | 2,430 | 28,650 | 8 | B | M–F | Training tank deck and dive locker..."
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class B; 8 restrooms. Custodial SF by floor type: carpet 9,860; resilient 12,420; ceramic/quarry/terrazzo 3,940; wood 0; sealed concrete 2,430. Service Class B (tenant command, J-1503010-04). Training tank deck and dive locker excluded."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "225",
+            "name": "Littoral Warfare Training Center Detachment (tenant)",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 15420,
+            "added_areas": null,
+            "cleanable_area": 13980,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_frequency_text": "T/Th",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.697,
+              "resilient": 0.252,
+              "hard_tile": 0.052,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 8,
+              "excerpt": "225 | Littoral Warfare Training Center Detachment (tenant) | 171-10 | ACADEMIC INSTRUCTION BLDG | 1 | 15,420 | 9,740 | 3,520 | 720 | 0 | 0 | 13,980 | 4 | C | T/Th"
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class C; 4 restrooms. Custodial SF by floor type: carpet 9,740; resilient 3,520; ceramic/quarry/terrazzo 720; wood 0; sealed concrete 0. Service Class C (tenant command, J-1503010-04)."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "230",
+            "name": "Helicopter Maintenance Hangar (tenant)",
+            "status": null,
+            "status_reason": null,
+            "category": "hangar",
+            "gross_area": 38400,
+            "added_areas": null,
+            "cleanable_area": 6120,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.242,
+              "resilient": 0.513,
+              "hard_tile": 0.245,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 8,
+              "excerpt": "230 | Helicopter Maintenance Hangar (tenant) | 211-05 | ACFT MAINTENANCE HANGAR | 1 | 38,400 | 1,480 | 3,140 | 1,500 | 0 | 0 | 6,120 | 4 | C | M–F | Shop offices, ready room and restrooms only; han..."
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class C; 4 restrooms. Custodial SF by floor type: carpet 1,480; resilient 3,140; ceramic/quarry/terrazzo 1,500; wood 0; sealed concrete 0. Service Class C (tenant command, J-1503010-04). Hangar bay excluded."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "240",
+            "name": "Former Administration Building",
+            "status": "deleted_by_amendment",
+            "status_reason": "Amendment 0002: Recurring Work deleted (formerly COL 3, M–F, 14,380 custodial SF); vacated 31 August 2026; demolition programmed for FY28. Remarks: \"Vacant; demolition programmed FY28 (Note 9). A0002\"",
+            "category": "admin",
+            "gross_area": 16240,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_frequency_text": null,
+            "scope": [],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 8,
+              "excerpt": "240 | Former Administration Building | 610-10 | ADMINISTRATIVE OFFICE | 2 | 16,240 | — | — | — | — | — | — | — | — | — | Vacant; demolition programmed FY28 (Note 9). A0002"
+            },
+            "confidence": 0.9,
+            "notes": "Not serviced; listed for information only and excluded from subtotals and totals (Note 9)."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "245",
+            "name": "Small Arms Range Office",
+            "status": "deleted_by_amendment",
+            "status_reason": "Amendment 0002: Recurring Work deleted (formerly COL 3, Wed, 1,860 custodial SF); services ordered as Custodial Service Orders under Spec Item 3.2 only. Remarks: \"On-call only (Note 10). A0002\"",
+            "category": "other",
+            "gross_area": 2180,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_frequency_text": null,
+            "scope": [],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 8,
+              "excerpt": "245 | Small Arms Range Office | 179-45 | SMALL ARMS RANGE BLDG | 1 | 2,180 | — | — | — | — | — | — | — | — | — | On-call only (Note 10). A0002"
+            },
+            "confidence": 0.9,
+            "notes": "On-call only (Note 10): not part of Recurring Work; priced under Non-Recurring Work ELINs; excluded from subtotals and totals."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "250",
+            "name": "Liberty Center",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 7860,
+            "added_areas": null,
+            "cleanable_area": 7120,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_frequency_text": "M–Su",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.517,
+              "resilient": 0.315,
+              "hard_tile": 0.169,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 8,
+              "excerpt": "250 | Liberty Center | 740-80 | RECREATION CENTER | 1 | 7,860 | 3,680 | 2,240 | 1,200 | 0 | 0 | 7,120 | 2 | COL 3 | M–Su | Service 0600–1000, before opening"
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class COL 3; 2 restrooms. Custodial SF by floor type: carpet 3,680; resilient 2,240; ceramic/quarry/terrazzo 1,200; wood 0; sealed concrete 0. Service window 0600–1000 before opening. Serviced on holidays (Note 4)."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "building_number": "255",
+            "name": "Auto Skills Center",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 9200,
+            "added_areas": null,
+            "cleanable_area": 1450,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_frequency_text": "Wed",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0,
+              "resilient": 0.593,
+              "hard_tile": 0.407,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 8,
+              "excerpt": "255 | Auto Skills Center | 740-14 | AUTO HOBBY SHOP | 1 | 9,200 | 0 | 860 | 590 | 0 | 0 | 1,450 | 2 | COL 3 | Wed | Customer lounge, office and restrooms only"
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class COL 3; 2 restrooms. Custodial SF by floor type: carpet 0; resilient 860; ceramic/quarry/terrazzo 590; wood 0; sealed concrete 0."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "J-1503010-09",
+            "campus": "Saltmarsh Point Annex",
+            "building_number": "SP-01",
+            "name": "Annex Operations Building",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 12340,
+            "added_areas": null,
+            "cleanable_area": 10880,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.425,
+              "resilient": 0.476,
+              "hard_tile": 0.099,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 9,
+              "excerpt": "SP-01 | Annex Operations Building | 610-10 | ADMINISTRATIVE OFFICE | 2 | 12,340 | 4,620 | 5,180 | 1,080 | 0 | 0 | 10,880 | 4 | COL 3 | M–F"
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class COL 3; 4 restrooms. Custodial SF by floor type: carpet 4,620; resilient 5,180; ceramic/quarry/terrazzo 1,080; wood 0; sealed concrete 0."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "Saltmarsh Point Annex",
+            "building_number": "SP-04",
+            "name": "Small Craft Maintenance Shop",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 16800,
+            "added_areas": null,
+            "cleanable_area": 2240,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_frequency_text": "T/Th",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0,
+              "resilient": 0.616,
+              "hard_tile": 0.214,
+              "concrete": 0.17,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 9,
+              "excerpt": "SP-04 | Small Craft Maintenance Shop | 213-50 | SMALL CRAFT REPAIR SHOP | 1 | 16,800 | 0 | 1,380 | 480 | 0 | 380 | 2,240 | 2 | D | T/Th | Office, break room and restrooms only"
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class D; 2 restrooms. Custodial SF by floor type: carpet 0; resilient 1,380; ceramic/quarry/terrazzo 480; wood 0; sealed concrete 380. Service Class D (tenant command, J-1503010-04)."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "Saltmarsh Point Annex",
+            "building_number": "SP-07",
+            "name": "Range Control Tower",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 2450,
+            "added_areas": null,
+            "cleanable_area": 1980,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_frequency_text": "Wed",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.313,
+              "resilient": 0.545,
+              "hard_tile": 0.141,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 9,
+              "excerpt": "SP-07 | Range Control Tower | 179-55 | RANGE CONTROL BLDG | 3 | 2,450 | 620 | 1,080 | 280 | 0 | 0 | 1,980 | 1 | D | Wed"
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class D; 1 restrooms. Custodial SF by floor type: carpet 620; resilient 1,080; ceramic/quarry/terrazzo 280; wood 0; sealed concrete 0. Service Class D (tenant command, J-1503010-04)."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "Saltmarsh Point Annex",
+            "building_number": "SP-10",
+            "name": "Waterfront Operations / Boat House",
+            "status": "excluded",
+            "status_reason": "On-call only (Note 10): not part of Recurring Work; Custodial Service Orders under Spec Item 3.2 if required; excluded from subtotals and totals.",
+            "category": "other",
+            "gross_area": 5400,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_frequency_text": null,
+            "scope": [],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 9,
+              "excerpt": "SP-10 | Waterfront Operations / Boat House | 159-20 | WATERFRONT OPERATIONS BLDG | 1 | 5,400 | — | — | — | — | — | — | — | — | — | On-call only (Note 10)"
+            },
+            "confidence": 0.9,
+            "notes": null
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "Saltmarsh Point Annex",
+            "building_number": "SP-12",
+            "name": "Annex Locker and Shower Building",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 2880,
+            "added_areas": null,
+            "cleanable_area": 2610,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0,
+              "resilient": 0,
+              "hard_tile": 1,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 9,
+              "excerpt": "SP-12 | Annex Locker and Shower Building | 740-44 | BATHHOUSE | 1 | 2,880 | 0 | 0 | 2,610 | 0 | 0 | 2,610 | 2 | COL 3 | M–F | New facility, BOD Aug 2026. Group shower/locker rooms (2). A0002"
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class COL 3; 2 restrooms. Custodial SF by floor type: carpet 0; resilient 0; ceramic/quarry/terrazzo 2,610; wood 0; sealed concrete 0. Added by Amendment 0002: new facility at Saltmarsh Point Annex, beneficial occupancy August 2026; 2,880 SF; 2,610 custodial SF; COL 3; M–F. Group shower/locker rooms (2)."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NOSC Cypress Landing",
+            "building_number": "1",
+            "name": "Navy Operational Support Center Cypress Landing",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 26740,
+            "added_areas": null,
+            "cleanable_area": 23180,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_frequency_text": "M–F; plus restroom servicing Sat and Sun of monthly drill weekend (Note 13)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0.426,
+              "resilient": 0.451,
+              "hard_tile": 0.123,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 9,
+              "excerpt": "1 | Navy Operational Support Center Cypress Landing | 171-35 | RESERVE TRAINING BLDG | 2 | 26,740 | 9,880 | 10,460 | 2,840 | 0 | 0 | 23,180 | 8 | COL 3 | M–F | Drill weekend restroom servicing (Not..."
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class COL 3; 8 restrooms. Custodial SF by floor type: carpet 9,880; resilient 10,460; ceramic/quarry/terrazzo 2,840; wood 0; sealed concrete 0. Note 13: in addition to M–F, restroom servicing on the Saturday and Sunday of the monthly drill weekend (once per month; schedule provided by the NOSC)."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NOSC Cypress Landing",
+            "building_number": "2",
+            "name": "NOSC Vehicle Maintenance / Storage Building",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 4800,
+            "added_areas": null,
+            "cleanable_area": 620,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_frequency_text": "Wed",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_mix": {
+              "carpet": 0,
+              "resilient": 0.677,
+              "hard_tile": 0.323,
+              "concrete": 0,
+              "wood": 0
+            },
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 9,
+              "excerpt": "2 | NOSC Vehicle Maintenance / Storage Building | 214-20 | VEHICLE MAINTENANCE SHOP | 1 | 4,800 | 0 | 420 | 200 | 0 | 0 | 620 | 1 | COL 3 | Wed | Office and restroom only"
+            },
+            "confidence": 0.95,
+            "notes": "COL/Class COL 3; 1 restrooms. Custodial SF by floor type: carpet 0; resilient 420; ceramic/quarry/terrazzo 200; wood 0; sealed concrete 0."
+          },
+          {
+            "table_id": "J-1503010-09",
+            "campus": "NOSC Cypress Landing",
+            "building_number": "3",
+            "name": "NOSC Storage Shed",
+            "status": "excluded",
+            "status_reason": "Unoccupied storage; no service (Note 9): not serviced; facility vacant or unoccupied; listed for information only; excluded from subtotals and totals.",
+            "category": "warehouse",
+            "gross_area": 1200,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_frequency_text": null,
+            "scope": [],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 9,
+              "excerpt": "3 | NOSC Storage Shed | 442-20 | GENERAL STORAGE SHED | 1 | 1,200 | — | — | — | — | — | — | — | — | — | Unoccupied storage; no service (Note 9)"
+            },
+            "confidence": 0.9,
+            "notes": null
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_grounds",
+      "input": {
+        "areas": [
+          {
+            "name": "NAVY Prestige (NSA TS)",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "facility_building_number": null,
+            "table_id": "J-1503050-04",
+            "kind": "improved_turf",
+            "document_label": "NAVY Prestige (Spec. Item 3.1)",
+            "mowing_frequency_text": "Prestige improved grounds maintained at COL 2 (Note 2)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 6.84,
+            "unit": "acres",
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 10,
+              "excerpt": "NAVY Prestige | 3.1 | NSA TS | 6.84"
+            },
+            "confidence": 0.95,
+            "notes": "Prestige areas are improved grounds maintained at COL 2 (Note 2)."
+          },
+          {
+            "name": "NAVY Improved (NSA TS)",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "facility_building_number": null,
+            "table_id": "J-1503050-04",
+            "kind": "improved_turf",
+            "document_label": "NAVY Improved (Spec. Item 3.1)",
+            "mowing_frequency_text": "COL 3 (Note 2)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 128.47,
+            "unit": "acres",
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 10,
+              "excerpt": "NAVY Improved | 3.1 | NSA TS | 128.47"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "MWR Improved (NSA TS)",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "facility_building_number": null,
+            "table_id": "J-1503050-04",
+            "kind": "improved_turf",
+            "document_label": "MWR Improved (Spec. Item 3.1)",
+            "mowing_frequency_text": "COL 3 (Note 2)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 21.3,
+            "unit": "acres",
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 10,
+              "excerpt": "MWR Improved | 3.1 | NSA TS | 21.30"
+            },
+            "confidence": 0.95,
+            "notes": "Note 6: MWR acreage is funded by the tenant activity and is included in the Recurring Work."
+          },
+          {
+            "name": "CYP Improved (NSA TS)",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "facility_building_number": null,
+            "table_id": "J-1503050-04",
+            "kind": "improved_turf",
+            "document_label": "CYP Improved (Spec. Item 3.1)",
+            "mowing_frequency_text": "COL 3 (Note 2)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 3.15,
+            "unit": "acres",
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 10,
+              "excerpt": "CYP Improved | 3.1 | NSA TS | 3.15"
+            },
+            "confidence": 0.95,
+            "notes": "Note 6: CYP acreage is funded by the tenant activity and is included in the Recurring Work."
+          },
+          {
+            "name": "NAVY Semi-Improved (NSA TS)",
+            "campus": "NSA Tarpon Sound – Main Base",
+            "facility_building_number": null,
+            "table_id": "J-1503050-04",
+            "kind": "semi_improved",
+            "document_label": "NAVY Semi-Improved (Spec. Item 3.2)",
+            "mowing_frequency_text": null,
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 84.65,
+            "unit": "acres",
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 10,
+              "excerpt": "NAVY Semi-Improved | 3.2 | NSA TS | 84.65"
+            },
+            "confidence": 0.95,
+            "notes": "Semi-improved grounds (Spec Item 3.2) include fence lines and drainage swales (Note 3); mowing frequency not stated in this extract."
+          },
+          {
+            "name": "FENCE LINE Semi-Improved (NSA TS/SPA)",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "J-1503050-04",
+            "kind": "semi_improved",
+            "document_label": "FENCE LINE Semi-Improved (Spec. Item 3.2)",
+            "mowing_frequency_text": null,
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 12.18,
+            "unit": "acres",
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 10,
+              "excerpt": "FENCE LINE Semi-Improved | 3.2 | NSA TS/SPA | 12.18"
+            },
+            "confidence": 0.85,
+            "notes": "Installation NSA TS/SPA: combined area at Main Base and Saltmarsh Point Annex; split between sites not stated, so registered as one area with campus null. Mowing frequency not stated."
+          },
+          {
+            "name": "NAVY Unimproved (NSA TS/SPA)",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "J-1503050-04",
+            "kind": "unimproved",
+            "document_label": "NAVY Unimproved (Spec. Item 3.3)",
+            "mowing_frequency_text": "Vegetation control only (Note 4)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 236.9,
+            "unit": "acres",
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 10,
+              "excerpt": "NAVY Unimproved | 3.3 | NSA TS/SPA | 236.90"
+            },
+            "confidence": 0.85,
+            "notes": "Installation NSA TS/SPA: combined area at Main Base and Saltmarsh Point Annex; split between sites not stated, so registered as one area with campus null."
+          },
+          {
+            "name": "SPA Improved (SPA)",
+            "campus": "Saltmarsh Point Annex",
+            "facility_building_number": null,
+            "table_id": "J-1503050-04",
+            "kind": "improved_turf",
+            "document_label": "SPA Improved (Spec. Item 3.1)",
+            "mowing_frequency_text": "COL 3 (Note 2)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 4.75,
+            "unit": "acres",
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 10,
+              "excerpt": "SPA Improved | 3.1 | SPA | 4.75"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "NOSC Improved (NOSC CL)",
+            "campus": "NOSC Cypress Landing",
+            "facility_building_number": null,
+            "table_id": "J-1503050-04",
+            "kind": "improved_turf",
+            "document_label": "NOSC Improved (Spec. Item 3.1)",
+            "mowing_frequency_text": "COL 3 (Note 2)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2.86,
+            "unit": "acres",
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 10,
+              "excerpt": "NOSC Improved | 3.1 | NOSC CL | 2.86"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "NOSC Semi-Improved (NOSC CL)",
+            "campus": "NOSC Cypress Landing",
+            "facility_building_number": null,
+            "table_id": "J-1503050-04",
+            "kind": "semi_improved",
+            "document_label": "NOSC Semi-Improved (Spec. Item 3.2)",
+            "mowing_frequency_text": null,
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 1.4,
+            "unit": "acres",
+            "source": {
+              "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+              "page": 10,
+              "excerpt": "NOSC Semi-Improved | 3.2 | NOSC CL | 1.40"
+            },
+            "confidence": 0.95,
+            "notes": "Mowing frequency not stated in this extract."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "set_previous_award",
+      "input": {
+        "incumbent": null,
+        "contract_number": null,
+        "contract_type": null,
+        "total_value": null,
+        "period_months": null,
+        "annual_value": null,
+        "spend_to_date": null,
+        "spend_period_months": null,
+        "award_year": null,
+        "source": {
+          "file": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf",
+          "page": null,
+          "excerpt": "No incumbent, previous contract, award value or spend information appears in this Section J Annex 15 extract."
+        },
+        "confidence": 0.9,
+        "notes": "Nothing stated about the previous / incumbent contract in this package (Section J Annex 15 attachments only, conformed through Amendment 0002). All values null."
+      },
+      "pass": 0
+    },
+    {
+      "name": "finish",
+      "input": {
+        "summary": "Registered all 39 printed rows of J-1503010-09 Custodial Inventory (conformed through Amendment 0002) across three sites: NSA Tarpon Sound – Main Base (31 rows, 26 serviced), Saltmarsh Point Annex (5 rows, 4 serviced) and NOSC Cypress Landing (3 rows, 2 serviced). 32 facilities are in Recurring Work (726,250 SF gross / 380,975 custodial SF); 7 rows are out of scope: 175 option (under construction, Note 12), 190 and 192 NAF not in contract (Note 11), 240 and 245 Recurring Work deleted by Amendment 0002, SP-10 on-call only (Note 10), NOSC 3 unoccupied storage, no service (Note 9). Registered 10 grounds rows from J-1503050-04 (502.50 acres). Site info recorded; no previous/incumbent contract information in the package.",
+        "unresolved": [
+          "Bldg 162 Outdoor Pool Bathhouse is seasonal (Memorial Day through Labor Day, inclusive, M–Su); the number of service days is not stated, estimated at 99 days/year.",
+          "Bldg 140 Gulf Breeze Galley: custodial scope only (dining room, entries, restrooms); kitchen, serving line and scullery are under Annex 13 (food service), which is not in this package; no dining headcount given.",
+          "J-1503050-04 FENCE LINE Semi-Improved (12.18 ac) and NAVY Unimproved (236.90 ac) are combined NSA TS/SPA acreage; the split between Main Base and Saltmarsh Point Annex is not given, registered without a campus.",
+          "Restroom counts per building are printed (Rest-rooms column) but fixture counts (WC/UR/LAV) are not; fixtures left null and restroom counts recorded in notes.",
+          "Contract period (base + options), growing season and incumbent contract data are not in this extract (Attachments J-1503010-07 Maps and -08 Floor Plans are provided upon award)."
+        ]
+      },
+      "pass": 0
+    }
+  ]
 }

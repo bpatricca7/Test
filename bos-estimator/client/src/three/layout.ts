@@ -328,6 +328,43 @@ function incremental(prev: SiteLayout, facilities: ResolvedFacility[], grounds: 
   return { buildings, zones, roads, bounds, depot: prev.depot, stale, maxHeight, pack: { x0: cx - rowWidth / 2, rowWidth, append, slots } };
 }
 
+/**
+ * Where a streaming run is heading: the site bounds once `expected` facilities have arrived, found by continuing
+ * the incremental append (same row widths, gaps and roads as `incremental`) with lots the size of the ones seen
+ * so far, taken in a fixed pseudo-random order (arrival order is not sorted by size, so rows fill unevenly).
+ * The camera frames this while a run streams, so the campus does not grow out of the free rect.
+ */
+export function predictBounds(l: SiteLayout, expected: number): Box2 {
+  const n = l.buildings.length;
+  if (!(expected > n) || n === 0 || !l.pack) return l.bounds;
+  const sizes = l.buildings.map((b) => ({ w: b.lot.w, d: b.lot.d, k: fnv(b.id, 2166136261) })).sort((a, b) => a.k - b.k);
+  const b0 = l.bounds;
+  let minX = b0.x - b0.w / 2, maxX = b0.x + b0.w / 2, maxZ = b0.z + b0.d / 2;
+  const minZ = b0.z - b0.d / 2;
+  let lotArea = 0;
+  for (const b of l.buildings) lotArea += b.lot.w * b.lot.d;
+  let rowWidth = l.pack.rowWidth;
+  const cx = l.pack.x0 + rowWidth / 2;
+  let append = l.pack.append ? { ...l.pack.append } : null;
+  let contentMax = maxZ - 5;
+  const openRow = (top: number) => {
+    const w = Math.max(rowWidth, Math.sqrt(lotArea) * 1.35);
+    rowWidth = w;
+    minX = Math.min(minX, cx - w / 2 - ROAD - 5); maxX = Math.max(maxX, cx + w / 2 + ROAD + 5);
+    return { top, x0: cx - w / 2, w, x: cx - w / 2, h: 0 };
+  };
+  for (let i = 0; i < expected - n; i++) {
+    const s = sizes[i % n];
+    lotArea += s.w * s.d;
+    if (!append) append = openRow(contentMax + ROAD);
+    if (append.x > append.x0 && append.x + s.w > append.x0 + append.w) append = openRow(append.top + append.h + ROAD);
+    append.x += s.w + GAP; append.h = Math.max(append.h, s.d);
+    contentMax = Math.max(contentMax, append.top + append.h);
+  }
+  maxZ = Math.max(maxZ, contentMax + 5);
+  return { x: (minX + maxX) / 2, z: (minZ + maxZ) / 2, w: maxX - minX, d: maxZ - minZ };
+}
+
 export const ZONE_COLORS: Record<GroundsKind, string> = {
   improved_turf: '#3f8f3a',
   semi_improved: '#6f8f3a',

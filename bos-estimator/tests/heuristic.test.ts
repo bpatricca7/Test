@@ -772,6 +772,235 @@ test('prose meals per day: no phantom DFAC in a custodial PWS; a DFAC named in t
   assert.equal(ffs.facilities[0]?.dining?.mealsPerDay, 2650);
 });
 
+// ---------------------------------------------------------------------------------------------- generalization rules
+// Each rule below was found on a held-out solicitation the reader had never seen; the tests use different wording.
+
+test('a total column whose figures are the sum of part columns is the facility area; the parts never are', () => {
+  // three space-type columns add up to a "Total SF" column: the total is the building area, not the first part
+  const sum = read(lines('Bldg | Building Name | Office SF | Shop SF | Storage SF | Total SF | Days',
+    '410 | Motor Transport Operations | 2,000 | 5,500 | 1,200 | 8,700 | 5',
+    '412 | Supply Annex | 900 | 0 | 4,100 | 5,000 | 3'));
+  assert.deepEqual([fac(sum, '410').grossSqft, fac(sum, '412').grossSqft], [8700, 5000]);
+  // cleanable area split by infection-risk class beside a gross column: the gross stays gross, the total is the cleanable
+  const risk = read(lines('Facility No. | Facility | Gross Area SF | Critical CSF | Patient Care CSF | Admin CSF | Total CSF',
+    'H-1 | Surgical Pavilion | 120,000 | 20,000 | 50,000 | 15,000 | 85,000',
+    'H-2 | Outpatient Clinic | 40,000 | — | 22,000 | 8,000 | 30,000',
+    'H-3 | Rehab Center | 30,000 | 1,000 | 16,000 | 5,500 | 22,500'));
+  assert.deepEqual([fac(risk, 'H-1').grossSqft, fac(risk, 'H-1').cleanableSqft], [120000, 85000]);
+  assert.equal(fac(risk, 'H-2').cleanableSqft, 30000);
+  // too few figures to add up: a single column titled "Total" right after untitled part columns is still the total
+  const titled = read(lines('Bldg | Name | Restrooms (SF) | Offices (SF) | Corridors (SF) | Total Area (SF)', '31 | Gatehouse | 120 | — | — | 120'));
+  assert.equal(fac(titled, '31').grossSqft, 120);
+  // a table whose only area columns are cleaned parts and a "Total Cleaned" column: that total is gross and cleanable
+  const cleaned = read(lines('Bldg | Name | Restroom SF | Carpet SF | Tile SF | Total Cleaned SF', '7 | Chapel | 300 | 2,500 | 1,200 | 4,000', '9 | Library | 500 | 6,000 | 1,500 | 8,000'));
+  assert.deepEqual([fac(cleaned, '7').grossSqft, fac(cleaned, '7').cleanableSqft], [4000, 4000]);
+  // gross = cleanable + non-cleanable is the usual gross / cleanable pair, not a split of the gross into parts
+  const pair = read(lines('Bldg | Name | Gross SF | Cleanable SF | Non-Cleanable SF', '5 | Gym | 10,000 | 8,000 | 2,000', '6 | Pool | 6,000 | 4,500 | 1,500'));
+  assert.deepEqual([fac(pair, '5').grossSqft, fac(pair, '5').cleanableSqft], [10000, 8000]);
+});
+
+test('subtotal and total rows are not facilities wherever "Total" sits in the label or whatever column holds it', () => {
+  const inv = read(lines('Zone | Facility # | Facility | Sq Ft | Frequency',
+    'North | 101 | Admin Building | 5,000 | M–F',
+    'North | 102 | Fire Station | 4,000 | 7 days',
+    ' | 2 | North Zone Total – Facilities | 9,000',
+    'South | 201 | Warehouse | 3,000 | 1 x Week',
+    ' | 3 | ALL ZONES TOTAL (3 bldgs) | 12,000',
+    ' |  | Campus Total: | 12,000'));
+  assert.deepEqual(inv.facilities.map((f) => f.buildingNumber), ['101', '102', '201']);
+  // "Total" inside a name is not a total label
+  assert.equal(read(lines('Bldg | Facility Name | Gross SF', '55 | Joint Total Force Training Center | 12,000')).facilities.length, 1);
+});
+
+test('rows under a banner that puts them outside the contract, and "option CLIN" / "not on contract" cells, carry that status', () => {
+  const inv = read(lines('Bldg | Building | Gross SF | Frequency',
+    '100 | Headquarters | 5,000 | Daily',
+    '',
+    'STRUCTURES SHOWN FOR REFERENCE ONLY (NOT INCLUDED IN THE PRICED WORKLOAD)',
+    'Bldg | Building | Gross SF | Frequency',
+    '900 | Post Museum | 7,000 | Weekly',
+    '',
+    'ANNEX BUILDINGS',
+    'Bldg | Building | Gross SF | Frequency',
+    '950 | Future Clinic | 3,000 | Option – CLIN 0010',
+    '960 | Tenant Annex | 2,000 | Not on contract'));
+  assert.equal(fac(inv, '100').status, undefined);
+  assert.equal(fac(inv, '900').status, 'excluded');
+  assert.equal(fac(inv, '950').status, 'option_only');
+  assert.equal(fac(inv, '960').status, 'excluded');
+  assert.match(fac(inv, '900').statusReason ?? '', /REFERENCE ONLY/);
+  // a caption about some of the rows is not a banner over all of them
+  const caption = read(lines('Buildings marked * are not included in the base period', 'Bldg | Building | Gross SF | Frequency', '100 | Headquarters | 5,000 | Daily', '101* | Annex | 2,000 | Daily'));
+  assert.equal(fac(caption, '100').status, undefined);
+  assert.equal(statusFromText('Optional line item – priced separately')?.status, 'option_only');
+});
+
+test('the same building number on two lines of one list, each with its own name and area, is two line items', () => {
+  const inv = read(lines('Level A',
+    'Fac | Description | Svc | Sq Ft',
+    '520 | Clinic – Exam Wing | 5 x Week | 4,000',
+    '530 | Pharmacy | 5 x Week | 2,000',
+    'Level B',
+    'Fac | Description | Svc | Sq Ft',
+    '520 | Clinic – Admin Offices | 2 x Week | 1,500'));
+  const lines520 = inv.facilities.filter((f) => f.buildingNumber === '520');
+  assert.deepEqual(lines520.map((f) => [f.name, f.grossSqft, f.serviceLevel]), [['Clinic – Exam Wing', 4000, 'daily_5'], ['Clinic – Admin Offices', 1500, '2x_week']]);
+  // the same building in a second table with another layout is one building
+  const two = read(lines('Bldg | Name | Gross SF', '520 | Clinic | 5,500', '', 'Bldg | Name | Floors | Frequency', '520 | Clinic Building | 2 | Daily'));
+  assert.equal(two.facilities.length, 1);
+});
+
+test('frequencies: "N x Week", days written out or abbreviated, alternate weekdays, "(5)" after a number word', () => {
+  const cases: [string, string | undefined][] = [
+    ['4 x Week', '3x_week'], ['2 x Mo', 'biweekly'], ['Sa–Su', '2x_week'], ['Thurs', 'weekly'], ['Mo/We/Fr', '3x_week'],
+    ['Mon, Tue, Wed, Thu', '3x_week'], ['M–Su', 'daily_7'], ['Tu, F', '2x_week'], ['alternate Thursdays', 'biweekly'], ['Alt. Tue.', 'biweekly'],
+    ['Mon & Thu mornings', '2x_week'], ['seven (7) nights per week', 'daily_7'], ['three (3) visits per week', '3x_week'],
+    ['M', undefined], ['W', undefined], ['On call', undefined],
+  ];
+  for (const [t, want] of cases) assert.equal(serviceLevelFromText(t), want, t);
+  // "we" and "th" are words in a sentence, not days
+  assert.equal(serviceLevelFromText('we will clean the th floor lobby'), undefined);
+});
+
+test('schedule codes resolve through a legend anywhere in the package, on separate lines or on one line', () => {
+  const lined = read(lines('Cleaning Schedule Codes', 'X1  Seven days per week, including holidays', 'X2  Monday through Friday', 'X3  Tuesday and Thursday only', '',
+    'Bldg | Building | Gross SF | Schedule', '55 | Barracks | 20,000 | X1', '56 | Admin | 8,000 | X2', '57 | Warehouse | 9,000 | X3'));
+  assert.deepEqual(['55', '56', '57'].map((b) => fac(lined, b).serviceLevel), ['daily_7', 'daily_5', '2x_week']);
+  const inline = read({ text: 'Frequency codes: A = daily (Monday–Friday); B = twice weekly; C = once a week.', name: 'PWS.docx', role: 'pws' },
+    { text: lines('Bldg | Building | Gross SF | Svc Code', '61 | Shop | 4,000 | B', '62 | Office | 5,000 | A', '63 | Shed | 900 | C'), name: 'Attachment 1.xlsx', role: 'attachment' });
+  assert.deepEqual(['61', '62', '63'].map((b) => fac(inline, b).serviceLevel), ['2x_week', 'daily_5', 'weekly']);
+  // an untitled column reads as the frequency when its cells are schedules, not when they are single weekdays (pickup days)
+  const svc = read(lines('Bldg | Building | Gross SF | Svc', '81 | Depot | 3,000 | 3 x Week', '82 | Office | 2,000 | M–F'));
+  assert.deepEqual([fac(svc, '81').serviceLevel, fac(svc, '82').serviceLevel], ['3x_week', 'daily_5']);
+  const pickup = read(lines('Bldg | Building | Gross SF | Pickup', '91 | Depot | 3,000 | Monday', '92 | Clinic | 2,000 | Thursday'));
+  assert.deepEqual([fac(pickup, '91').serviceFrequencyText, fac(pickup, '92').serviceLevel], [undefined, 'daily_7']);
+  // a lone letter with no legend is not read as a weekday
+  assert.equal(fac(read(lines('Bldg | Building | Gross SF | Frequency', '70 | Depot | 3,000 | F')), '70').serviceLevel, 'daily_5');
+});
+
+test('two-row headers: the sub-title names the column; the group label only qualifies a measure', () => {
+  const inv = read(lines('FACILITY RECORD |  |  | FLOOR AREA | ',
+    'Seq. | Fac. No. | Facility Name | Gross | Net',
+    '1 | 300 | Records Center | 12,000 | 10,500',
+    '2 | 310 | Print Plant | 8,000 | 6,000'));
+  assert.deepEqual([fac(inv, '300').name, fac(inv, '300').grossSqft, fac(inv, '300').cleanableSqft], ['Records Center', 12000, 10500]);
+  assert.equal(fac(inv, '310').name, 'Print Plant');
+  // a title merged down over both header rows is printed in each: it is one title, not "Bldg Bldg"
+  const merged = read(lines('Bldg | Facility | AREA (SQ FT) | ', 'Bldg | Facility | Gross | Cleanable', '44 | Armory | 15,000 | 12,000'));
+  assert.deepEqual([fac(merged, '44').grossSqft, fac(merged, '44').cleanableSqft], [15000, 12000]);
+  // group labels repeated across the columns they span (a full top row), and a top row shorter than the titles below it
+  // (its last spans were empty and trimmed)
+  const repeated = read(lines('SITE RECORD | SITE RECORD | SITE RECORD | AREA (SQ FT) | AREA (SQ FT) | Remarks', 'Ln | Bldg No. | Facility Name | Gross | Cleanable', '1 | 610 | Supply Office | 5,000 | 4,100 | Daily'));
+  assert.deepEqual([fac(repeated, '610').name, fac(repeated, '610').grossSqft, fac(repeated, '610').cleanableSqft], ['Supply Office', 5000, 4100]);
+  const short = read(lines('FACILITY |  | AREA (SF) |  | SERVICE', 'No. | Name | Gross | Net | Days | Hours | Remarks', '12 | Motor Pool | 9,000 | 2,000 | M–F | 1800–2200 |'));
+  assert.deepEqual([fac(short, '12').name, fac(short, '12').grossSqft, fac(short, '12').cleanableSqft, fac(short, '12').serviceLevel], ['Motor Pool', 9000, 2000, 'daily_5']);
+});
+
+test('a building table with no number or name column takes its names from the first text column; a room breakdown is not a facility list', () => {
+  const inv = read(lines('Branch | Street Address | Stories | Gross Sq Ft | Days',
+    'Eastside Branch Library | 12 Oak St | 1 | 8,400 | Tu, Th, Sa',
+    'Northgate Branch Library | 400 Pine Ave | 2 | 15,100 | M–Sa'));
+  assert.deepEqual(inv.facilities.map((f) => [f.name, f.grossSqft, f.serviceLevel]), [['Eastside Branch Library', 8400, '3x_week'], ['Northgate Branch Library', 15100, 'daily_6']]);
+  const rooms = read(lines('Room Type | Sq Ft | Frequency | Remarks', 'Restrooms | 1,200 | Daily |', 'Offices | 9,800 | Weekly |'));
+  assert.equal(rooms.facilities.length, 0);
+});
+
+test('a "Site" or "Location" column of short identifiers next to a name column is the facility number', () => {
+  const inv = read(
+    { text: lines('Location | Facility | Sq. Ft. | Service', '1 | City Hall | 40,000 | M–F', '2 | Police Headquarters | 22,000 | 7 days'), name: 'RFP.docx', role: 'solicitation' },
+    { text: 'Addendum No. 2. The square footage for Location 2 is revised from 22,000 to 24,500.', name: 'Addendum 2.docx', role: 'amendment', amendment: 2 });
+  assert.deepEqual(inv.facilities.map((f) => [f.buildingNumber, f.grossSqft]), [['1', 40000], ['2', 24500]]);
+  // a deleted site is a deleted facility when the sites are buildings (and a grounds area when they are grounds areas)
+  const del = read({ text: lines('Site | Facility | Sq. Ft.', '1 | Library | 9,000', '2 | Senior Center | 6,000'), name: 'RFP.docx', role: 'solicitation' },
+    { text: 'Addendum No. 1. Site 2, Senior Center, is deleted from the requirement.', name: 'Addendum 1.docx', role: 'amendment', amendment: 1 });
+  assert.deepEqual(del.facilities.map((f) => [f.buildingNumber, f.status]), [['1', undefined], ['2', 'deleted_by_amendment']]);
+  // a "Site #" key over building areas (no acreage) numbers facilities, not grounds areas
+  const keyed = read(lines('Site # | Facility | Address | Sq Ft | Cleaning Days', '1 | Eastside Pool House | 12 Oak St | 2,400 | Sa, Su', '2 | Senior Center | 400 Pine Ave | 9,100 | M–F'));
+  assert.deepEqual(keyed.facilities.map((f) => [f.buildingNumber, f.grossSqft, f.serviceLevel]), [['1', 2400, '2x_week'], ['2', 9100, 'daily_5']]);
+  // a campus column of names stays a campus
+  assert.equal(fac(read(lines('Site | Bldg | Facility | Gross SF', 'North Campus | 12 | Gym | 9,000')), '12').campus, 'North Campus');
+});
+
+test('facilities described in headed paragraphs: area, cleaning area, stories and service days from the prose', () => {
+  const inv = read(lines('4.2 Building Descriptions',
+    'Building 12 – Public Works Garage',
+    '1800 Industrial Way',
+    "A one-story pre-engineered building of 8,400 square feet. Truck bays (about 6,000 sq. ft.) are swept by city crews and are excluded; the contractor's cleaning area is approximately 2,100 sq. ft. Service is required twice per week (Tuesday and Thursday).",
+    'Building 14: Westside Branch Library. The branch has 12,600 gross square feet on two floors. Custodial service five nights a week, Monday through Friday.',
+    '4.3 Exclusions',
+    'Building 16 – Old Armory. The armory was demolished in 2019.'));
+  const g = fac(inv, '12');
+  assert.deepEqual([g.name, g.grossSqft, g.cleanableSqft, g.floors, g.serviceLevel], ['Public Works Garage', 8400, 2100, 1, '2x_week']);
+  const l = fac(inv, '14');
+  assert.deepEqual([l.name, l.grossSqft, l.floors, l.serviceLevel], ['Westside Branch Library', 12600, 2, 'daily_5']);
+  assert.ok(!inv.facilities.some((f) => f.buildingNumber === '16'), 'a heading with no stated area adds nothing');
+  // an outdoor area stated before the building's own is not the building area
+  const lot = read(lines('Site 3 – Westside Pool House', 'A 40-space parking lot of 12,000 sq. ft. serves the one-story pool house of 2,600 square feet. Service: Saturday and Sunday mornings.'));
+  assert.deepEqual([fac(lot, '3').grossSqft, fac(lot, '3').serviceLevel], [2600, '2x_week']);
+  // a building a table already gave keeps the table's area and takes the cleaning area the table left out
+  const both = read(lines('Bldg | Facility | Gross SF | Frequency', '12 | Public Works Garage | 9,000 | 2 x Week', '',
+    'Building 12 – Public Works Garage', 'A one-story building of 8,400 square feet; the cleaning area is approximately 2,100 sq. ft.'));
+  assert.deepEqual([fac(both, '12').grossSqft, fac(both, '12').cleanableSqft, both.facilities.length], [9000, 2100, 1]);
+  // a heading that states a change is an amendment statement, not a new description
+  const amd = read(lines('Bldg | Facility | Gross SF', '12 | Garage | 9,000'), { text: 'Building 12 – Garage: the gross area is revised from 9,000 to 9,600 square feet.', name: 'Amendment 1.docx', role: 'amendment', amendment: 1 });
+  assert.equal(fac(amd, '12').grossSqft, 9600);
+});
+
+test('a list of exclusions after a colon excludes the buildings it names, not the buildings that only locate an excluded part', () => {
+  const inv = read(lines('Bldg | Facility | Gross SF', '7 | Hospital | 90,000', '9 | Old Gym | 12,000', '11 | Warehouse | 30,000', '',
+    'Note 4. The following are not part of this contract: sterile storage areas in Building 7; Building 9, Old Gym; and the loading dock at Building 11.'));
+  assert.deepEqual(['7', '9', '11'].map((b) => fac(inv, b).status), [undefined, 'excluded', undefined]);
+});
+
+test('change logs without a building-number column: deletions and additions in the text, Was / Is figures and schedules', () => {
+  const base = { name: 'Attachment 3.pdf', role: 'attachment' as const, text: lines('Bldg | Name | Gross SF | Net SF | Frequency', '330 | Records Center | 12,000 | 9,800 | 5 x Week', '331 | Motor Pool Office | 3,000 | 2,500 | 3 x Week', '332 | Tool Crib | 1,000 | 800 | 1 x Week') };
+  const amd = { name: 'Amendment 0003.pdf', role: 'amendment' as const, amendment: 3, text: lines('No. | Reference | Description | Previous | Revised',
+    '1 | Bldg 330 | Net area corrected after re-measurement of the second floor | Gross SF 12,000; Net SF 9,800 | Gross SF 12,000; Net SF 10,250',
+    '2 | Bldg 331 | Cleaning schedule changed for the new dispatch shift | 3 x Week | 5 x Week',
+    '3 | Attachment 3, Bldg 332 | Building 332, Tool Crib, is deleted from the requirement. | 1,000 SF | Deleted',
+    '4 | Attachment 3 (new line) | Add Building 340, Fuel Point Office, a relocated modular office; one floor; 5 days per week. | Not listed | 1,600 GSF; 1,400 CSF') };
+  const inv = read(base, amd);
+  assert.equal(fac(inv, '330').cleanableSqft, 10250);
+  assert.equal(fac(inv, '330').grossSqft, 12000);
+  assert.equal(fac(inv, '331').serviceLevel, 'daily_5');
+  assert.equal(fac(inv, '332').status, 'deleted_by_amendment');
+  const n = fac(inv, '340');
+  assert.deepEqual([n.name, n.grossSqft, n.cleanableSqft, n.floors, n.serviceLevel], ['Fuel Point Office', 1600, 1400, 1, 'daily_5']);
+  // a Was / Is change log is an amendment's text even in a file named as an attachment
+  const att = read(base, { ...amd, name: 'Attachment 3 revised.pdf', role: 'attachment' as const, amendment: undefined });
+  assert.equal(fac(att, '340').grossSqft, 1600);
+});
+
+test('grounds: a summary keyed by its type column; acreage in prose is ignored when grounds maintenance is not in the contract', () => {
+  const sum = read(lines('Category | Site | Acres', 'Improved | Main Campus | 40.5', 'Semi-Improved | Main Campus | 22.0', 'Unimproved | Range Area | 110.0', 'Total |  | 172.5'));
+  near(acres(sum.grounds, 'improved_turf'), 40.5);
+  near(acres(sum.grounds, 'semi_improved'), 22);
+  near(acres(sum.grounds, 'unimproved'), 110);
+  const out = read(lines('1.4 Landscaping and snow removal are performed by the City and are not part of this contract.', '', 'Mowed lawn at the civic center: 12 acres.'));
+  assert.equal(out.grounds.length, 0);
+  const inScope = read('Mowed lawn at the civic center: 12 acres.');
+  near(acres(inScope.grounds, 'improved_turf'), 12);
+  // the size of a park is not a maintained area; the mowed part stated after it is
+  const park = read('Riverside Park is approximately 60 acres, including about 9 acres of mowed turf.');
+  near(acres(park.grounds, 'improved_turf'), 9);
+});
+
+test('prior award: a monthly figure beside the annual one is not the annual value', () => {
+  const a = heuristicPriorAward([doc('The incumbent, Acme Facility Services, LLC, is paid $42,500 per month ($510,000 per year) under Contract No. AB-21-0099.')]);
+  assert.equal(a?.annualValue, 510000);
+  const b = heuristicPriorAward([doc('The current contract is held by Acme Facility Services, LLC. The current monthly billing is $42,500, or $510,000 annually.')]);
+  assert.equal(b?.annualValue, 510000);
+});
+
+test('site: initial term plus extensions, Midwestern states, county and VA owners', () => {
+  const inv = read(lines('MARLOW COUNTY, MICHIGAN', 'Janitorial services for Marlow County buildings.', 'The initial term shall be two (2) years with the option of three (3) additional one-year extensions.'));
+  assert.equal(inv.site.contractYears, 5);
+  assert.equal(inv.site.climateZone, 'cold');
+  assert.equal(inv.site.installationName, 'Marlow County');
+  assert.equal(read('Housekeeping at the Pine Ridge VA Medical Center and its clinics.').site.installationName, 'Pine Ridge VA');
+  assert.equal(read('CUSTODIAL SERVICES, BRIARWOOD AIR FORCE BASE, NEBRASKA').site.installationName, 'Briarwood Air Force Base');
+});
+
 // ---------------------------------------------------------------------------------------------- fixtures
 
 // Score floors a little below what the reader achieves (see the eval: npx tsx scripts/eval.ts --provider heuristic).

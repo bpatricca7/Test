@@ -15,7 +15,13 @@
 //  - areas are converted from SM / m² / mq / SY to square feet (originalArea keeps the printed value), decimal commas
 //    ("1.234,5") are read when the table or its caption uses them;
 //  - a building's gross area is never overwritten except by a later-ranked document;
-//  - excluded / not in scope / vacant / closed / demolished / struck rows stay in the inventory with a status.
+//  - excluded / not in scope / vacant / closed / demolished / struck rows stay in the inventory with a status;
+//  - the building area is the column the others add up to (restroom + carpet + hard floor SF = total cleaned SF), never a
+//    part of it; under a two-row header the sub-title names the column and the group label only qualifies a measure;
+//  - a header repeated over later blocks of a list keeps the list's column roles; the same number on two lines of one list
+//    with two names and areas is two line items; rows under a "reference only" / "optional" banner carry that status;
+//  - service days are read as written ("5 x Week", "M–Su", "Tu, Th", "alt. Wed.") or through a code legend anywhere in
+//    the package; change logs (Was / Is columns, "Add Building …") and facilities described in headed paragraphs are read.
 import type { AreaUnit, DiningProfile, Facility, FacilityCategory, FacilityStatus, FloorMix, GroundsArea, GroundsKind, GroundsUnit, Inventory, MealPeriodHeadcount, PriorAward, ServiceLevel, SiteInfo, SourceRef } from '../shared/types';
 import { SQFT_PER } from '../shared/types';
 import { mealsPerDayFromPeriods } from '../shared/estimate';
@@ -139,9 +145,10 @@ function ratesPerWeek(t: string): { perWeek: number; text: string }[] {
   const N = '(\\d+(?:\\.\\d+)?|once|twice|thrice|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)';
   const per = (u: string) => (/^(?:mo|mos|mon|month|months|monthly)$/.test(u) ? 1 / 4.33 : /^(?:yr|yrs|year|years|annum|annually|yearly|annual|a)$/.test(u) ? 1 / 52 : /^(?:qtr|quarter|quarterly|q)$/.test(u) ? 1 / 13 : /^(?:wk|wks|week|weeks|weekly)$/.test(u) ? 1 : NaN);
   const num = (s: string) => (/^\d/.test(s) ? Number(s) : RATE_WORD[s]);
-  const re = new RegExp(`(?:^|[^\\d.,/])${N}\\s*(?:x|×|times?|visits?|services?|cleanings?|cycles?|days?)?\\s*(?:\\/|per\\s+|a\\s+|each\\s+|every\\s+|an?\\s+)\\s*(mos?|mon|months?|yrs?|years?|annum|qtr|quarter|wks?|weeks?)\\b|(?:^|[^\\d.,/])${N}\\s*(?:x|×|times)?\\s+(monthly|yearly|annually|quarterly|weekly)\\b`, 'g');
+  // "5 x Week", "3x Month": a multiplier sign directly before the period needs no "per"
+  const re = new RegExp(`(?:^|[^\\d.,/])${N}\\s*(?:x|×|times?|visits?|services?|cleanings?|cycles?|days?|nights?|evenings?|mornings?|shifts?)?\\s*(?:\\/|per\\s+|a\\s+|each\\s+|every\\s+|an?\\s+)\\s*(mos?|mon|months?|yrs?|years?|annum|qtr|quarter|wks?|weeks?)\\b|(?:^|[^\\d.,/])${N}\\s*(?:x|×|times)?\\s+(monthly|yearly|annually|quarterly|weekly)\\b|(?:^|[^\\d.,/])${N}\\s*(?:x|×)\\s*(mos?|months?|yrs?|years?|qtrs?|quarters?|wks?|weeks?)\\b`, 'g');
   for (const m of t.matchAll(re)) {
-    const n = num(m[1] ?? m[3]), f = per(m[2] ?? m[4]);
+    const n = num(m[1] ?? m[3] ?? m[5]), f = per((m[2] ?? m[4] ?? m[6]).replace(/^(qtr|quarter)s$/, '$1'));
     if (n != null && isFinite(f) && n > 0) out.push({ perWeek: n * f, text: m[0] });
   }
   for (const m of t.matchAll(/\bsemi-?annual(?:ly)?\b|\bbi-?annual(?:ly)?\b|\btwice (?:a|per|each) year\b/g)) out.push({ perWeek: 2 / 52, text: m[0] });
@@ -163,7 +170,8 @@ export function lessThanQuarterly(raw: string | undefined): number | undefined {
  *  frequencies in one cell the most frequent wins. */
 export function serviceLevelFromText(raw: string | undefined): ServiceLevel | undefined {
   if (!raw) return undefined;
-  let t = ` ${dash(clean(raw)).toLowerCase().replace(/\s*\/\s*/g, '/')} `;
+  // "five (5) nights per week", "three (3) times per week": the figure in parentheses repeats the word
+  let t = ` ${dash(clean(raw)).toLowerCase().replace(/\b([a-z]+(?:-[a-z]+)?)\s*\((\d{1,3})\)/g, (m, w: string, d: string) => (WORD_NUM[w] === Number(d) || RATE_WORD[w] === Number(d) ? d : m)).replace(/\s*\/\s*/g, '/')} `;
   if (!/[a-z0-9]/.test(t)) return undefined;
   const rates = ratesPerWeek(t);
   for (const r of rates) t = t.replace(r.text, (x) => ' '.repeat(x.length));
@@ -171,7 +179,39 @@ export function serviceLevelFromText(raw: string | undefined): ServiceLevel | un
   const fromRates = rates.length ? levelFromRate(Math.max(...rates.map((r) => r.perWeek))) : undefined;
   const fromWords = levelFromWords(t);
   if (fromRates && fromWords) return LEVEL_ORDER.indexOf(fromRates) <= LEVEL_ORDER.indexOf(fromWords) ? fromRates : fromWords;
-  return fromRates ?? fromWords;
+  return fromRates ?? fromWords ?? levelFromWeekdays(t);
+}
+
+/** Service days written as the days themselves: "M–Su", "Tu, F", "Wed", "Mon, Wed & Fri", "Tuesday and Friday evenings",
+ *  "Friday, Saturday and Sunday mornings"; every other / alternate weekday is every two weeks. One-letter days ("M, W, F")
+ *  count only when the text is nothing but days. */
+const DAY_WORDS: [RegExp, number][] = [[/^mon(?:day)?s?$/, 1], [/^tue(?:s(?:day)?)?s?$/, 2], [/^wed(?:nesday)?s?$/, 3], [/^thu(?:r(?:s(?:day)?)?)?s?$/, 4], [/^fri(?:day)?s?$/, 5], [/^sat(?:urday)?s?$/, 6], [/^sun(?:day)?s?$/, 7]];
+/** one- and two-letter days, read only in a cell that holds nothing but days ("we", "th" are words in prose) */
+const DAY_SHORT: Record<string, number> = { m: 1, mo: 1, t: 2, tu: 2, w: 3, we: 3, th: 4, f: 5, fr: 5, sa: 6, su: 7 };
+const DAY_FILLER = /^(?:evenings?|mornings?|nights?|afternoons?|days?|only|service[sd]?|cleaning|each|every|other|alt|alternate|alternating|week|weekly|per|excluding|except|including|federal|holidays?|and|or|the|of|on|a|after|before|closing|plus)$/;
+function levelFromWeekdays(t: string): ServiceLevel | undefined {
+  const words = t.replace(/\([^)]*\)/g, ' ').match(/[a-z]+|[-–—,&/]|\d+/g) ?? [];
+  const compact = words.every((w) => /^[-–—,&/]$/.test(w) || DAY_WORDS.some(([re]) => re.test(w)) || w in DAY_SHORT || DAY_FILLER.test(w) || /^(?:through|thru|to)$/.test(w));
+  const dayOf = (w: string): number | undefined => DAY_WORDS.find(([re]) => re.test(w))?.[1] ?? (compact ? DAY_SHORT[w] : undefined);
+  const days = new Set<number>();
+  let prev: number | undefined; let range = false; let any = 0; let longest = 0;
+  for (const w of words) {
+    const d = dayOf(w);
+    if (d != null) {
+      longest = Math.max(longest, w.length);
+      if (range && prev != null) { for (let k = prev; ; k = (k % 7) + 1) { days.add(k); if (k === d) break; } }
+      else days.add(d);
+      prev = d; range = false; any++;
+      continue;
+    }
+    if (/^[-–—]$|^(?:through|thru|to)$/.test(w)) { range = prev != null; continue; }
+    if (!/^[,&/]$|^(?:and|or)$/.test(w)) prev = undefined;
+    range = false;
+  }
+  // a lone letter ("M", "F", "W") is as likely a code (Monthly, a legend letter) as a day
+  if (!any || (!compact && !/[a-z]{3,}day/.test(t)) || (any === 1 && longest < 2)) return undefined;
+  if (days.size === 1 && /\b(?:every other|alternate|alternating|alt\.?)\s+[a-z]*day|\balt\.?\s+(?:mon|tue|wed|thu|fri|sat|sun)/.test(t)) return 'biweekly';
+  return levelFromDays(days.size);
 }
 function levelFromWords(t: string): ServiceLevel | undefined {
   if (!/[a-z0-9]/.test(t)) return undefined;
@@ -214,11 +254,11 @@ export function statusFromText(raw: string | undefined, opts: { frequencyCell?: 
   if (whole(/\bvacant\b|(?<!(?:to|will) be )\bvacated\b|\bclosed\b(?!-)(?!\s*(?:(?:on|in|from|at|between|after|before|during|for|over|each|every|all)\s+)?(?:the\s+)?(?:(?:federal|public|national|legal|school|university|district)\s+)?(?:weekends?|holidays?|saturdays?|sundays?|sat\b|sun\b|mondays?|tuesdays?|wednesdays?|thursdays?|fridays?|nights?|evenings?|overnight|lunch|noon|midnight|\d{1,2}(?::\d{2})?\s*(?:a\.?m\b|p\.?m\b)|\d{3,4}\s*(?:hrs?|hours|h)\b|\d{3,4}\s*-\s*\d{3,4}\b|\d{1,2}:\d{2}|(?:summer|winter|spring|fall|autumn|off[- ]season|christmas|school breaks?|breaks?|recess|intersession)\b))|warm[- ]closure|mothball|\bunoccupied\b/)) return { status: 'vacant', reason };
   if (future && !EXCLUDED_RE.test(l)) return undefined;
   if (whole(EXCLUDED_RE)) return { status: future ? 'demolished' : 'excluded', reason };
-  if (whole(/option(?:al)? (?:item|clin)s? only|option period only|\boption only\b/)) return { status: 'option_only', reason };
+  if (whole(/option(?:al)? (?:item|clin)s? only|option period only|\boption only\b|\boption(?:al)?\s*[-:]?\s*(?:clin|line item)\b/)) return { status: 'option_only', reason };
   if (opts.frequencyCell && /^(?:n\/?a\b.*|not serviced|0)$/.test(l)) return { status: 'excluded', reason: `Frequency "${t}"` };
   return undefined;
 }
-const EXCLUDED_RE = /not in scope|out of scope|not included|not part of (?:this|the)|do not price|shall not be priced|not to be priced|\bnot priced\b|no custodial service|not serviced|no routine service|no workload|uso italiano|^\s*exclude[ds]?\b|-\s*exclude[ds]?\b|\b(?:facility|building|bldg) (?:is )?excluded|for information only|information only|for reference only|not in contract|removed from scope/;
+const EXCLUDED_RE = /not in scope|out of scope|not included|not part of (?:this|the)|do not price|shall not be priced|not to be priced|\bnot priced\b|no custodial service|not serviced|no routine service|no workload|uso italiano|^\s*exclude[ds]?\b|-\s*exclude[ds]?\b|\b(?:facility|building|bldg) (?:is )?excluded|for information only|information only|for reference only|not (?:in|on) (?:the )?contract|removed from scope/;
 /** "To be demolished FY29", "scheduled for demolition", "programmed for demolition in FY27": demolition still to come. */
 function futureDemolition(l: string): boolean {
   return /\bto be (?:demolished|razed|disposed)\b|\b(?:scheduled|programmed|planned|slated|proposed|identified|approved)\s+(?:for\s+)?(?:demolition|disposal)\b|\bdemolition\s+(?:is\s+)?(?:scheduled|planned|programmed)\b|\bwill be (?:demolished|razed|disposed)\b/.test(l)
@@ -305,7 +345,9 @@ function kindFromCycle(raw: string | undefined): GroundsKind | undefined {
   return d <= 10 ? 'improved_turf' : d <= 31 ? 'semi_improved' : 'unimproved';
 }
 
-const TOTAL_RE = /^(?:grand\s+)?(?:sub-?\s*)?totale?s?\b|\bsub-?\s*totale?s?\b|\bgrand\s+totals?\b|\btotals?\s*$|^sum\b|^\s*in all\b/i;
+// "Level 2 Total - # Facilities", "ZONE 1 TOTAL – 15 facilities", "Building 1 Total (agrees with …)": "Total" followed by
+// a dash, colon, count or parenthesis labels a total row wherever the word sits ("Joint Total Force Center" is a name)
+const TOTAL_RE = /^(?:grand\s+)?(?:sub-?\s*)?totale?s?\b|\bsub-?\s*totale?s?\b|\bgrand\s+totals?\b|\btotals?\s*$|\btotals?\s*(?:[-–—:=(#]|\d|(?:of|for|all)\b)|^sum\b|^\s*in all\b/i;
 const isTotalRow = (cells: string[]) => cells.map(clean).filter(Boolean).slice(0, 3).some((c) => TOTAL_RE.test(c));
 
 export function categorize(name: string): FacilityCategory {
@@ -320,7 +362,7 @@ function categorizeText(name: string): FacilityCategory {
   if (/administrative (?:areas?|core|offices?|space) only|office (?:and restroom |and latrine )?areas? only|offices? only/.test(n)) return 'admin';
   if (/dining|dfac|mess hall|galley|cafeteria|food service|restaurant|mensa\b/.test(n)) return 'dining';
   if (/barracks|dormitor|\bdorm\b|bachelor|\bquarters\b|billet|lodging|\buph\b|\bueph\b|\buoph\b|\bbeq\b|\bboq\b|unaccompanied|residence hall|alloggi/.test(n)) return 'barracks';
-  if (/clinic|medical|dental|hospital|\bhealth\b|pharmacy|ambulatorio/.test(n)) return 'medical';
+  if (/clinic|medical|dental|hospital|\bhealth\b|pharmacy|ambulatorio|\b(?:in|out)patient|\bpatient care|dialysis|imaging|radiology|surgery|surgical|dispensary|infirmary|\bcboc\b|hospice/.test(n)) return 'medical';
   if (/hangar/.test(n)) return 'hangar';
   if (/gatehouse|guard ?house|overwatch|\bacp\b|access control point/.test(n)) return 'other';
   // offices of a directorate or division are admin, even when the directorate runs shops, training or supply
@@ -332,7 +374,7 @@ function categorizeText(name: string): FacilityCategory {
   if (/chapel|religious|spiritual|community|\bmwr\b|\bclub\b|recreation|theater|bowling|exchange|commissary|museum|arts and crafts|cappella|readiness center|library|youth|conference|family (?:assistance|support|readiness)/.test(n)) return 'community';
   if (/school|education|training|classroom|academy|learning|instruction|istruzione/.test(n)) return 'education';
   if (/\blab\b|laborator|research|simulat|range control|test facility/.test(n)) return 'lab';
-  if (/command|brigade|battalion|center|annex|operations|\bops\b|finance|personnel|legal|\bjag\b|post office|police|fire station|security|visitor|service center|federal building|courthouse|comando|uffici|\bdivision\b/.test(n)) return 'admin';
+  if (/command|brigade|battalion|squadron|detachment|center|annex|operations|\bops\b|finance|personnel|legal|\bjag\b|post office|police|fire station|security|visitor|service center|federal building|courthouse|comando|uffici|\bdivision\b/.test(n)) return 'admin';
   return 'other';
 }
 
@@ -442,7 +484,7 @@ function roleOf(cell: string): Omit<Col, 'i' | 'text'> | null {
   }
   if (/^(?:u\.?\s*m\.?|um|uom|unit|units|unit of measure|primary um|measure|unita)\b/.test(h) || (/\bu\.m\./.test(h) && h.length < 16)) return { role: 'unit' };
   if (/days open|operating days|days of operation/.test(h)) return { role: 'daysOpen' };
-  if (/frequen|\bfreq\b|days of service|cleaning days|service days|days\s*\/\s*week|days per week|gg\s*\/\s*sett|schedule|custodial freq|times per week|visits per/.test(h) && !/hours|window|\btime\b|serving/.test(h)) return { role: 'freq', days: /days/.test(h) };
+  if (/frequen|\bfreq\b|days of service|cleaning days|service days|days\s*\/\s*week|days per week|gg\s*\/\s*sett|schedule|\bsched\b|\b(?:service|svc) code\b|custodial freq|times per week|visits per/.test(h) && !/hours|window|\btime\b|serving/.test(h)) return { role: 'freq', days: /days/.test(h) };
   if (/\bfloors?\b|\bstor(?:e)?ys?\b|stories|\bflrs?\b|piani|no\.? of levels|number of levels|^levels$/.test(h)) return { role: 'floors' };
   if (/fac status|^status$|facility status|building status|^condition|\bstato\b|record status/.test(h)) return { role: 'status' };
   if (/remark|\bnotes?\b|comment|osservaz|basis for change|explanation/.test(h)) return { role: 'remarks' };
@@ -452,25 +494,86 @@ function roleOf(cell: string): Omit<Col, 'i' | 'text'> | null {
   if (/service type|type of service|service style|food service type/.test(h)) return { role: 'svcType' };
   if (/rpa type|asset type|record type|property type|real property type/.test(h)) return { role: 'rpaType' };
   if (/catcode (?:description|title|desc)|category (?:code )?(?:description|title)|cat code desc|ccn title/.test(h)) return { role: 'use' };
+  // "Facility Name CCN" (a name column whose title ran into the next one) is still the name column
+  if (/\bname\b/.test(h) && !/(?:cat\s*code|category(?: code)?|ccn|rpa|asset|property type)\s+name/.test(h)) return { role: 'name' };
   if (/catcode|cat code|category code|\bccn\b|fac code/.test(h)) return { role: 'catcode' };
   if (/\btipo\b|grounds type|grounds category|^type\b|^class\b|category$|\btype$/.test(h)) return { role: 'typeish' };
   if (/^(?:campus|installation|caserma|base|post|site|location|sede|garrison)$|\bcampus\b/.test(h)) return { role: 'campus' };
   if (/^(?:te-?\d+ )?zone$|^district$|^sector$|^region$/.test(h)) return { role: 'zone' };
+  if (/\baddress\b/.test(h) && !/\bname\b/.test(h)) return { role: 'address' };
   if (/\bname\b|description|descrizione|denominazione|destinazione|^(?:facility|building|school|park|dining facility|shelter|street|structure|grounds area)\b|\/\s*(?:facility|building|description)\b|\b(?:facility|building|school)$/.test(h)) return { role: 'name' };
   if (/address|indirizzo|^limits\b/.test(h)) return { role: 'address' };
   if (/^(?:use|function|occupancy|primary use|building use|facility use|usage)\b/.test(h)) return { role: 'use' };
   return null;
 }
 
+/** Old-value and new-value columns of a change log ("Was | Is", "From | To", "Previous | Revised"). */
+const WAS_HEAD = /^(?:was|old|from|previous(?:ly)?|prior|original(?:ly)?|existing|before|formerly|current(?:ly)?)\b/;
+const IS_HEAD = /^(?:is|new|to|now|revised|change[sd]? to|corrected|amended|becomes|after|proposed)\b/;
 const ANCHORS = new Set<Role>(['number', 'numberWeak', 'name', 'gross', 'cleanable', 'area', 'qty', 'gQty', 'meal', 'length', 'rowKey', 'fixtures', 'fixWC', 'change', 'freq']);
 
 interface TableMap {
   id: string; cols: Col[]; n: number; sig: string; kind: 'facility' | 'grounds' | 'change' | 'meals' | 'other';
   eu: boolean; unit?: QUnit; gross?: Col; grossOld?: Col; cleanable?: Col; codeRows: number; caption: string;
+  /** the header cells as printed (flattened), for columns no role was given to ("Was" / "Is") */
+  heads?: string[];
   get(r: Role): Col | undefined; all(r: Role): Col[];
 }
 
-function buildMap(cells: string[], id: string, caption: string, above: string[][], body: string[]): TableMap | null {
+/** Role of a column under a two-row header (group label over sub-title). The sub-title names the column ("BUILDING DATA"
+ *  over "Line No." is a line number, not a building name); the group label only qualifies a measure ("GROSS AREA" over
+ *  "SF", "CLEANABLE SQUARE FEET" over "High Risk") and never makes a column an identity column on its own. */
+const MEASURE_ROLES = new Set<Role>(['area', 'gross', 'cleanable', 'mix', 'gQty', 'qty', 'unit']);
+const IDENTITY_ROLES = new Set<Role>(['item', 'number', 'numberWeak', 'name', 'use', 'typeish', 'campus', 'zone', 'address', 'rowKey', 'catcode', 'rpaType']);
+function stackedRole(full: string, sub: string | undefined): ReturnType<typeof roleOf> {
+  const fr = roleOf(full);
+  const s = clean(sub);
+  if (!s || s === clean(full)) return fr;
+  const sr = roleOf(s);
+  if (sr && !MEASURE_ROLES.has(sr.role)) return sr;
+  if (sr) return fr && MEASURE_ROLES.has(fr.role) ? fr : sr;
+  return fr && IDENTITY_ROLES.has(fr.role) ? null : fr;
+}
+
+/** Building-area columns that are parts of another column of the same row ("Restroom SF + Carpet SF + Hard Floor SF =
+ *  Total Cleaned SF", "High + Moderate + Low Risk = Total CSF"): the total is the facility's area, the parts never are.
+ *  The figures decide (the total equals the sum of the parts on most rows); without enough figures, a single column
+ *  titled "Total" right after two or more untitled area columns of its kind is the total of those. */
+function areaTotal(cols: Col[], body: string[], eu: boolean): { total?: Col; parts: Col[] } {
+  const areaLike = cols.filter((c) => c.role === 'area' || c.role === 'gross' || c.role === 'cleanable' || c.role === 'mix');
+  const titledTotal = (c: Col) => /\btotal\b/.test(normHeader(c.text));
+  if (areaLike.length < 3) return { parts: [] };
+  const rows = body.map(splitPipe).filter((cs) => !isTotalRow(cs)).map((cs) => new Map(areaLike.map((c) => [c.i, isBlankish(cs[c.i]) ? 0 : parseNumberCell(cs[c.i], eu) ?? 0])));
+  const sumMatches = (T: Col, parts: Col[]) => {
+    let ok = 0, bad = 0;
+    for (const v of rows) {
+      const t = v.get(T.i) ?? 0, ps = parts.map((c) => v.get(c.i) ?? 0);
+      if (!(t > 0) || ps.filter((x) => x > 0).length < 2) continue;
+      if (Math.abs(ps.reduce((a, b) => a + b, 0) - t) <= Math.max(1, t * 0.002)) ok++; else bad++;
+    }
+    return ok >= 2 && ok >= 3 * bad;
+  };
+  // a gross or plain area total is split into plain area parts; a cleanable total may also be split into cleanable parts
+  // (gross = cleanable + non-cleanable is the gross / cleanable pair, not a split)
+  const partOf = (T: Col, c: Col) => c !== T && c.role !== 'gross' && !titledTotal(c) && (T.role === 'cleanable' || c.role !== 'cleanable');
+  for (const T of areaLike) {
+    const others = areaLike.filter((c) => partOf(T, c));
+    // all the other untitled area columns, or the run of area columns just left of the total
+    const run: Col[] = [];
+    for (let k = areaLike.indexOf(T) - 1; k >= 0 && partOf(T, areaLike[k]); k--) run.unshift(areaLike[k]);
+    for (const parts of [others, run]) if (parts.length >= 2 && sumMatches(T, parts)) return { total: T, parts };
+  }
+  const tt = areaLike.filter(titledTotal);
+  if (tt.length === 1) {
+    const T = tt[0];
+    const run: Col[] = [];
+    for (let k = areaLike.indexOf(T) - 1; k >= 0 && areaLike[k].role !== 'gross' && (T.role === 'cleanable' || areaLike[k].role !== 'cleanable'); k--) run.unshift(areaLike[k]);
+    if (run.length >= 2) return { total: T, parts: run };
+  }
+  return { parts: [] };
+}
+
+function buildMap(cells: string[], id: string, caption: string, above: string[][], body: string[], subs?: string[]): TableMap | null {
   // headcount by meal period in rows ("Meal Period | Weekday Avg Headcount | Weekend Avg Headcount", or one column per DFAC)
   if (/^(?:meals?(?: periods?)?|periods?|service periods?|pasto|meal service)$/.test(normHeader(cells[0] ?? '')) && cells.length >= 2 && body.some((l) => MEAL_RE.test(normHeader(splitPipe(l)[0] ?? '')))) {
     const mcols: Col[] = cells.map((c, i) => ({ i, role: 'info' as Role, text: clean(c) }));
@@ -479,7 +582,50 @@ function buildMap(cells: string[], id: string, caption: string, above: string[][
   }
   const cols: Col[] = [];
   const seen = new Set<Role>();
-  const roles = cells.map((c) => roleOf(c));
+  const roles = cells.map((c, i) => stackedRole(c, subs?.[i]));
+  const colText = (i: number) => body.slice(0, 80).map((l) => clean(splitPipe(l)[i])).filter((v) => v && !isBlankish(v));
+  // a "Site" / "Location" column of short identifiers ("1", "14", "B-2") next to a name column is the site number, not a
+  // campus, when the table has no building-number column
+  if (!roles.some((r) => r?.role === 'number' || r?.role === 'numberWeak') && roles.some((r) => r?.role === 'name')) {
+    roles.forEach((r, i) => {
+      if (r?.role !== 'campus' || !/^(?:site|location|loc|sites?\s*#)$/.test(normHeader(cells[i]))) return;
+      const vs = colText(i);
+      if (vs.length >= 2 && vs.filter((v) => /\d/.test(v) && v.length <= 8 && !!normalizeBuildingNumber(v)).length >= 0.8 * vs.length) roles[i] = { role: 'number' };
+    });
+  }
+  // a "Site No." / "Location #" key over a building list (a building area column, no acreage) is the facility number; over
+  // acreage it keys grounds areas
+  if (!roles.some((r) => r?.role === 'number' || r?.role === 'numberWeak') && !roles.some((r) => r?.role === 'gQty') && roles.some((r) => r && ['gross', 'cleanable', 'area'].includes(r.role))) {
+    roles.forEach((r, i) => {
+      if (r?.role !== 'rowKey' || !/^(?:site|location|loc|facility|building)\b/.test(normHeader(cells[i]))) return;
+      const vs = colText(i);
+      if (vs.length >= 1 && vs.every((v) => v.length <= 10 && !!normalizeBuildingNumber(v))) roles[i] = { role: 'number' };
+    });
+  }
+  // a building-area table with neither a number nor a name column ("Clinic | Address | … | Gross SF"), whose area column
+  // holds figures: its first text column under a plain title holds the facility names
+  // (a room / space / task breakdown inside one building is not a facility list: its rows are parts of a building, and it
+  // carries no building-level column such as an address, floors or a service schedule)
+  const figuresIn = (i: number) => { const vs = colText(i); return vs.length >= 2 && vs.filter((v) => isNumericCell(v)).length >= 0.6 * vs.length; };
+  const PART_TITLE = /^(?:spaces?|rooms?|areas?|space type|room type|area type|zones?|floors?|levels?|wings?|units?|tasks?|work items?|items?|components?|elements?|finish(?:es)?|surfaces?|types?|description|categor(?:y|ies)|classification|function)\b/;
+  if (!roles.some((r) => r && ['number', 'numberWeak', 'name'].includes(r.role)) && roles.some((r, i) => r && ['gross', 'cleanable', 'area'].includes(r.role) && figuresIn(i))
+    && roles.some((r) => r && ['address', 'floors', 'year', 'campus'].includes(r.role))) {
+    for (let i = 0; i < Math.min(cells.length, 4); i++) {
+      if (roles[i] || !clean(cells[i]) || /\d/.test(clean(cells[i])) || clean(cells[i]).length > 30 || PART_TITLE.test(normHeader(cells[i]))) continue;
+      const vs = colText(i);
+      if (vs.length >= 2 && vs.filter((v) => /[a-z]{3}/i.test(v) && !isNumericCell(v)).length >= 0.8 * vs.length) { roles[i] = { role: 'name' }; break; }
+    }
+  }
+  // a column under a title the reader does not know ("Svc", "Sched.") whose cells read as service frequencies ("5 x Week",
+  // "M–F", "Tu, Th") is the frequency column
+  if (!roles.some((r) => r?.role === 'freq' || r?.role === 'svcLvl')) {
+    for (let i = 0; i < cells.length; i++) {
+      if (roles[i] || !clean(cells[i])) continue;
+      const vs = colText(i);
+      // (a lone weekday, "Monday", is a pickup or delivery day as often as a cleaning schedule)
+      if (vs.length >= 2 && vs.filter((v) => serviceLevelFromText(v) && !/^\W*(?:mon|tue|wed|thu|fri|sat|sun)[a-z]*\.?\W*$/i.test(v)).length >= 0.7 * vs.length) { roles[i] = { role: 'freq' }; break; }
+    }
+  }
   // a bare "Area" column names grounds areas ("Area | Quantity"), but next to a facility name column, or over figures
   // ("Fac No. | Facility Name | Area | UM"), it is the building area
   roles.forEach((r, i) => {
@@ -515,13 +661,27 @@ function buildMap(cells: string[], id: string, caption: string, above: string[][
     const hasWeekdayCore = meals.some((m) => m.weekend !== true && /Breakfast|Lunch|Dinner/.test(m.meal ?? ''));
     for (const m of meals) if (m.weekend == null) m.weekend = hasWeekdayCore && /Brunch|Supper/.test(m.meal ?? '');
   }
+  const capL = caption.toLowerCase();
+  let eu = /italian (?:number )?format|formato numerico italiano|european (?:number )?format|decimal comma|comma (?:separates|as the) decimal|virgola/.test(capL) && !/u\.s\. number format|us number format/.test(capL);
+  // otherwise the figures in the area and quantity columns vote; notes, numbers and remarks ("1,2" footnote refs) never do
+  if (!eu && !/u\.s\. number format|us number format/.test(capL)) {
+    const qcols = new Set([...all('area'), ...all('gross'), ...all('cleanable'), ...all('gQty'), ...all('qty'), ...all('mix'), ...all('length'), ...all('width')].map((c) => c.i));
+    let us = 0, euN = 0;
+    for (const l of body) { const cs = splitPipe(l); for (const i of qcols) { const s = numberStyle(cs[i]); if (s === 'us') us++; else if (s === 'eu') euN++; } }
+    eu = euN > 0 && euN >= 2 * us;
+  }
+  // parts of a total area column (restroom / carpet / hard-floor SF, risk-class CSF) are never the facility's area
+  const split = areaTotal(cols, body, eu);
+  const isPart = (c: Col) => split.parts.includes(c);
   // gross: the newest gross column (Was / Is Changed To tables), else a generic area column
-  const grossCands = all('gross');
-  const areaCands = all('area');
+  const grossCands = all('gross').filter((c) => !isPart(c));
+  const areaCands = all('area').filter((c) => !isPart(c));
   const pickNew = (cs: Col[]) => cs.find((c) => c.newer) ?? cs.find((c) => !c.old) ?? undefined;
-  const gross = pickNew(grossCands) ?? pickNew(areaCands);
+  let gross = pickNew(grossCands) ?? pickNew(areaCands);
   const grossOld = [...grossCands, ...areaCands].find((c) => c.old && c !== gross);
-  const cleanable = pickNew(all('cleanable'));
+  let cleanable = pickNew(all('cleanable').filter((c) => !isPart(c)));
+  if (split.total?.role === 'cleanable') cleanable = split.total;
+  else if (split.total && (!gross || gross.role !== 'gross')) gross = split.total;
   const roleCount = cols.filter((c) => c.role !== 'info').length + cols.filter((c) => c.role === 'info').length;
   const nonEmpty = cells.filter((c) => clean(c)).length;
   if (nonEmpty < 2 || roleCount < 2 || roleCount / nonEmpty < 0.6 || !cols.some((c) => ANCHORS.has(c.role))) return null;
@@ -535,22 +695,15 @@ function buildMap(cells: string[], id: string, caption: string, above: string[][
   else if (has('number') && has('qty') && has('unit')) kind = 'facility';
   else if (/meal|period|pasto|service/.test(normHeader(cells[0] ?? '')) && cells.length >= 2 && !identity) kind = 'meals';
   else if ((identity || has('rowKey')) && (has('gQty') || has('qty') || (has('length') && has('width')))) kind = 'grounds';
+  // a grounds summary keyed by its type column ("Type | Spec. Item | Installation | Acreage")
+  else if (has('typeish') && has('gQty') && !bldgAreas) kind = 'grounds';
   // in a building table a "Service Level" column is the cleaning frequency, not a grounds service level
   if (kind === 'facility' && !has('freq')) { const sl = get('svcLvl'); if (sl) sl.role = 'freq'; }
-  const capL = caption.toLowerCase();
-  let eu = /italian (?:number )?format|formato numerico italiano|european (?:number )?format|decimal comma|comma (?:separates|as the) decimal|virgola/.test(capL) && !/u\.s\. number format|us number format/.test(capL);
-  // otherwise the figures in the area and quantity columns vote; notes, numbers and remarks ("1,2" footnote refs) never do
-  if (!eu && !/u\.s\. number format|us number format/.test(capL)) {
-    const qcols = new Set([gross, cleanable, grossOld, ...areaCands, ...grossCands, ...all('cleanable'), ...all('gQty'), ...all('qty'), ...all('mix'), ...all('length'), ...all('width')].filter((c): c is Col => !!c).map((c) => c.i));
-    let us = 0, euN = 0;
-    for (const l of body) { const cs = splitPipe(l); for (const i of qcols) { const s = numberStyle(cs[i]); if (s === 'us') us++; else if (s === 'eu') euN++; } }
-    eu = euN > 0 && euN >= 2 * us;
-  }
   let unit: QUnit | undefined;
   if (/(?:areas?|superfici\w*)[^.]{0,40}\b(?:in square met|in metri quadrati|in m²|\(sm\)|in sm\b)|square met(?:er|re)s \(sm\)|metri quadrati/.test(capL)) unit = 'sm';
   else if (/areas? (?:are )?(?:stated |shown |given )?in square (?:feet|yards)/.test(capL)) unit = /yards/.test(capL) ? 'sy' : 'sf';
   const sig = cols.map((c) => `${c.i}:${c.role}`).join(',');
-  return { id, cols, n: cells.length, sig, kind, eu, unit, gross, grossOld, cleanable, codeRows: 0, caption, get, all };
+  return { id, cols, n: cells.length, sig, kind, eu, unit, gross, grossOld, cleanable, codeRows: 0, caption, get, all, heads: cells.map(clean) };
 }
 
 // =====================================================================================================================
@@ -569,6 +722,9 @@ interface RowData {
   /** the grouping row (banner) above the row, campus word or not */
   group?: string;
   floorMix?: Facility['floorMix'];
+  /** the facility list the row belongs to: its document with its column titles, and with its column layout (a list
+   *  continued under repeated headers) */
+  listing?: string[];
 }
 interface FacRec {
   bn?: string; key?: string; nameKey: string; name: string; strongName: boolean; campus?: string; use: string;
@@ -578,10 +734,13 @@ interface FacRec {
   dining?: DiningAcc; diningRank: number; portableSf?: number; source: SourceRef; tableId: string; tables: Set<string>; notes: string[]; confidence: number;
   floorMix?: Facility['floorMix'];
   grossGeneric?: boolean; grossService?: boolean; group?: string;
+  listings: Set<string>;
 }
 /** dims: a median or right-of-way as printed (length, width, sides) with feet per printed unit (lFt / wFt: 1, or 3.28084 for meters). */
 interface GRec { g: GroundsArea; rank: number; doc: string; tableId?: string; rowKey?: string; served: string[]; dims?: { lf: number; width: number; sides: number; hard: boolean; lFt?: number; wFt?: number }; label: string }
 const FT_PER_M = 3.28084;
+/** The area a row or record carries: its gross, else its cleanable area. */
+const areaOf = (x: { gross?: number; cleanable?: number }) => ((x.gross ?? 0) > 0 ? x.gross! : x.cleanable ?? 0);
 
 interface Ctx { doc: DocInput; rank: number; amendLike: boolean; page?: number; inAmend: boolean }
 interface Para { text: string; line: number; page?: number; subjects?: string[]; cell?: boolean; inAmend: boolean; context?: string }
@@ -734,10 +893,20 @@ class Reader {
   exCat: RegExp[] = [];
   inCat: RegExp[] = [];
   tableSeq = 0;
+  /** rows read under each header so far (by document and column titles): a header repeated over a later block of the
+   *  same list is mapped with the rows of every block, so a block of one or two rows reads like the rest of its list */
+  bodiesByHeader = new Map<string, string[]>();
   mealTables: { periodsByTarget: Map<string, MealPeriodHeadcount[]>; hint?: string; source: SourceRef; rank: number }[] = [];
   proseGroundsPending: Parameters<Reader['pushGrounds']>[0][] = [];
+  /** coded service schedules defined in a legend anywhere in the package ("A  24 hours a day, 7 days a week", "D  Monday
+   *  through Friday"): code → level */
+  codeLevels = new Map<string, { level: ServiceLevel; text: string }>();
+  /** change-log rows with Was / Is columns, applied after the document's statements */
+  changeRows: { cells: string[]; wasI: number; isI: number; subjects: string[]; source: SourceRef }[] = [];
   /** the package asks for food service (DFAC operation, full food service, dining facility attendants) */
   diningScope = false;
+  /** the package says grounds maintenance is not part of the work: acreage in its prose is context, not workload */
+  groundsOut = false;
 
   knownKey = (k: string) => this.byBn.has(k) || this.grounds.some((g) => g.rowKey && bnKey(g.rowKey) === k);
 
@@ -752,9 +921,15 @@ class Reader {
       // a row with no campus that could be either record goes to the one with its name ("0012 | Annex Ops" → North Annex)
       if (!rec) { const cands = list.filter((r) => !r.campus || !row.campus); rec = (cands.length > 1 && row.name ? cands.find((r) => r.nameKey === nameKey(row.name!)) : undefined) ?? cands[0]; }
       if (!rec && list.length === 1 && !list[0].tables.has(row.tableId)) rec = list[0];
+      // the same number on two lines of one facility list, each with its own name and area, is two line items (a building
+      // listed once per cleaning level or zone, "Wing HQ – Command Section" and "Wing HQ – Staff Agencies"): each is priced
+      if (rec && row.listing?.some((l) => rec!.listings.has(l)) && !rec.tables.has(row.tableId) && areaOf(rec) > 0 && areaOf(row) > 0 && Math.abs(areaOf(rec) - areaOf(row)) > 0.5 && row.name && nameKey(row.name) !== rec.nameKey && !rec.status && !row.status) {
+        rec = list.find((r) => r !== rec && !r.tables.has(row.tableId) && r.nameKey === nameKey(row.name!));
+        if (!rec) { rec = this.newRec(row); this.byBn.set(k, [...list, rec]); rec.bn = row.bn; rec.key = k; }
+      }
       // the same number twice in one table, both with an area, is two buildings (two sites under group rows such as
       // "CASTLE ROCK" / "PINE BLUFF"); the group label tells them apart
-      if (rec && rec.tables.has(row.tableId) && !/:(?:lines|dining|meals|added:.*)$/.test(row.tableId) && rec.gross > 0 && (row.gross ?? 0) > 0 && Math.abs(rec.gross - row.gross!) > 0.5 && !same(rec.campus)) {
+      if (rec && rec.tables.has(row.tableId) && !/:(?:lines|dining|meals|added:.*)$/.test(row.tableId) && areaOf(rec) > 0 && areaOf(row) > 0 && Math.abs(areaOf(rec) - areaOf(row)) > 0.5 && !same(rec.campus)) {
         if (!rec.campus && rec.group && rec.group !== row.group) rec.campus = rec.group;
         rec = undefined;
         if (!row.campus && row.group) row = { ...row, campus: row.group };
@@ -770,12 +945,13 @@ class Reader {
     return rec;
   }
   newRec(row: RowData): FacRec {
-    const r: FacRec = { nameKey: nameKey(row.name ?? ''), name: '', strongName: false, use: '', gross: 0, grossRank: -1, cleanRank: -1, floorsRank: -1, fixRank: -1, levelRank: -1, statusRank: -1, diningRank: -1, source: row.source, tableId: row.tableId, tables: new Set(), notes: [], confidence: row.confidence ?? 0.75, group: row.group };
+    const r: FacRec = { nameKey: nameKey(row.name ?? ''), name: '', strongName: false, use: '', gross: 0, grossRank: -1, cleanRank: -1, floorsRank: -1, fixRank: -1, levelRank: -1, statusRank: -1, diningRank: -1, source: row.source, tableId: row.tableId, tables: new Set(), notes: [], confidence: row.confidence ?? 0.75, group: row.group, listings: new Set() };
     this.recs.push(r);
     return r;
   }
   merge(rec: FacRec, row: RowData, rank: number) {
     rec.tables.add(row.tableId);
+    for (const l of row.listing ?? []) rec.listings.add(l);
     const nm = clean(row.name);
     if (nm && (!rec.name || /^Building\b/.test(rec.name) || (row.strongName && !rec.strongName))) { rec.name = nm.slice(0, 120); rec.strongName = !!row.strongName; }
     if (!rec.campus && row.campus) rec.campus = row.campus;
@@ -873,6 +1049,8 @@ class Reader {
     let lastSig = '';
     let recentPlain: string[] = [];
     let lastPlain: { t: string; i: number } | undefined;
+    // column titles of a table no column map could be built for (a change log "No. | Reference | Description | Was | Is")
+    let looseHeads: string[] | undefined;
     let kv: KvRec | null = null;
     const paras: Para[] = [];
     let para: string[] = [];
@@ -889,7 +1067,8 @@ class Reader {
       const pg = t.match(/^--- page (\d+) ---$/);
       if (pg) { ctx.page = Number(pg[1]); endPara(); if (map) suspended = true; recentPlain = []; continue; }
       if (/^===\s.*\s===$/.test(t)) { endPara(); flushKv(); map = null; group = undefined; recentPlain = []; continue; }
-      if (t.length < 90 && /^(?:addendum|amendment)\s*(?:no\.?|number|#)?\s*\d{1,4}\b/i.test(t) && !/\|/.test(t)) ctx.inAmend = true;
+      // an amendment heading, or the Standard Form 30 title ("AMENDMENT OF SOLICITATION/MODIFICATION OF CONTRACT")
+      if (t.length < 90 && /^(?:addendum|amendment)\s*(?:no\.?|number|#)?\s*\d{1,4}\b|^amendment of solicitation\b/i.test(t) && !/\|/.test(t)) ctx.inAmend = true;
       const isPipe = t.includes('|');
       const cells = isPipe ? splitPipe(t) : splitLoose(t);
 
@@ -910,7 +1089,7 @@ class Reader {
         for (let k = i - 1, n = 0; k >= 0 && n < 5; k--) { const l = lines[k].trim(); if (!l) continue; n++; if (l.includes('|')) above.push(splitPipe(l)); }
         // inside a running table only a row with no figures at all can start a new header
         const live: boolean = !!map && !suspended;
-        const hdr: { map: TableMap; extra: number } | null = live && (cells.some((c) => /\d/.test(clean(c).replace(/\(\d+\)/g, ''))) || cells.some((c) => clean(c).length > 50)) ? null : this.tryHeader(lines, i, cells, recentPlain.join(' '), above);
+        const hdr: { map: TableMap; extra: number } | null = live && (cells.some((c) => /\d/.test(clean(c).replace(/\(\d+\)/g, ''))) || cells.some((c) => clean(c).length > 50)) ? null : this.tryHeader(lines, i, cells, recentPlain.join(' '), above, doc.name);
         if (hdr) {
           endPara();
           if (hdr.map.kind !== 'other') flushKv();
@@ -919,9 +1098,10 @@ class Reader {
           if (hdr.map.sig !== lastSig) group = prev;
           else if (prev) group = prev;
           lastSig = hdr.map.sig;
-          map = hdr.map; suspended = false; i += hdr.extra; recentPlain = [];
+          map = hdr.map; suspended = false; i += hdr.extra; recentPlain = []; looseHeads = undefined;
           continue;
         }
+        if (isPipe && cells.every((c) => !/\d/.test(clean(c))) && cells.filter((c) => clean(c)).length >= 2) looseHeads = cells.map(clean);
       }
 
       if (map) {
@@ -934,6 +1114,7 @@ class Reader {
             const g = groupLabel(cells);
             if (g && !isTotalRow(cells)) { group = g; continue; }
             this.row(cells, map, ctx, src(t), group, kv);
+            if (map.kind === 'other') this.tableProse(cells, i, ctx, paras, src(t), map.heads);
             recentPlain = [];
             continue;
           }
@@ -945,12 +1126,12 @@ class Reader {
 
       if (isPipe) {
         // an unmapped table row: long text cells (Q&A responses, change descriptions) are read as prose
-        const subjects = cells.filter((c) => c.length < 40).flatMap((c) => refsIn(c, this.knownKey).map((r) => r.id));
-        for (const c of cells) if (clean(c).length >= 30 && /\s/.test(c)) paras.push({ text: clean(c), line: i, page: ctx.page, subjects, cell: true, inAmend: ctx.inAmend });
+        this.tableProse(cells, i, ctx, paras, src(t), looseHeads && Math.abs(looseHeads.length - cells.length) <= 1 ? looseHeads : undefined);
         linesPending.push({ cells, t, source: src(t) });
         continue;
       }
       if (furniture(t)) continue;
+      looseHeads = undefined;
       // a table / exhibit title closes the running table
       if (/^(?:table|tabella|exhibit|attachment|appendix|technical exhibit|te[- ]?\d+[.:]|section\s+[a-z0-9])\b/i.test(t) && t.length < 160) { map = null; group = undefined; }
       lastPlain = { t, i };
@@ -965,30 +1146,113 @@ class Reader {
     flushKv();
     // facility lines with no table header: only buildings no table or sheet of this or a later-ranked document gave
     for (const l of linesPending) this.fallbackFacility(l.cells, l.t, ctx, l.source);
+    // facilities described in headed paragraphs ("Site 18 – Lakeview Beach House … approximately 1,840 sq. ft. …")
+    this.narrativeFacilities(lines, ctx);
     // "Where no cleanable area is given, the gross area applies" (host-nation and GSA notes)
     if (/(?:where|if|when) no (?:cleanable|net|custodial) area is (?:given|shown|stated|recorded|listed)[^.]{0,40}gross area (?:applies|shall apply|is used)|gross area applies/i.test(doc.text.replace(/\s+/g, ' '))) {
       for (const r of this.recs) if (r.cleanable == null && r.gross > 0 && [...r.tables].some((t) => t.startsWith(`${doc.name}:`))) { r.cleanable = r.gross; r.cleanRank = ctx.rank; r.notes.push('No cleanable area listed; the document says the gross area applies.'); }
     }
     // grounds stated in sentences count only for kinds the document's tables and sheets did not give
     const tableKinds = new Set(this.grounds.filter((g) => g.doc === doc.name).map((g) => g.g.kind));
-    for (const g of this.proseGroundsPending) if (!tableKinds.has(g.kind)) this.pushGrounds(g);
+    for (const g of this.proseGroundsPending) if (!tableKinds.has(g.kind) && !this.groundsOut) this.pushGrounds(g);
     this.proseGroundsPending = [];
-    // statements after the document's own tables
+    // statements after the document's own tables, then the Was / Is values of its change logs
     paras.sort((a, b) => a.line - b.line);
     for (let p = 0; p < paras.length; p++) this.statements(paras[p], ctx, paras);
+    for (const c of this.changeRows) this.changeLogRow(c, ctx);
+    this.changeRows = [];
     for (let p = 0; p < paras.length; p++) if (!paras[p].cell) this.proseDining(paras, p, ctx);
   }
 
-  tryHeader(lines: string[], i: number, cells: string[], caption: string, above: string[][]): { map: TableMap; extra: number } | null {
+  /** Long text cells of a table row that is not a facility or grounds row (Q&A answers, change descriptions) are read as
+   *  prose, with the buildings its short cells name as subjects; a row under "Was" and "Is" columns is a change log. */
+  tableProse(cells: string[], line: number, ctx: Ctx, paras: Para[], source: SourceRef, heads?: string[]) {
+    const subjects = cells.filter((c) => c.length < 40).flatMap((c) => refsIn(c, this.knownKey).map((r) => r.id));
+    const context = cells.join(' | ');
+    const wasI = heads?.findIndex((h) => WAS_HEAD.test(normHeader(h))) ?? -1, isI = heads?.findIndex((h) => IS_HEAD.test(normHeader(h))) ?? -1;
+    // a row of a change log (Was / Is columns) is an amendment's text, whatever the file is called
+    const changeLog = wasI >= 0 && isI >= 0 && wasI !== isI;
+    for (const c of cells) if (clean(c).length >= 30 && /\s/.test(c)) paras.push({ text: clean(c), line, page: ctx.page, subjects, cell: true, inAmend: ctx.inAmend || changeLog, context });
+    if (changeLog) this.changeRows.push({ cells, wasI, isI, subjects, source });
+  }
+
+  /** Service level of a schedule cell: a legend code ("D", "Code F (Tuesday and Thursday)") or the wording itself. */
+  scheduleLevel(raw: string | undefined): ServiceLevel | undefined {
+    const t = clean(raw);
+    if (!t) return undefined;
+    const code = t.match(/^(?:(?:[Ss]ervice\s+)?(?:[Ss]chedule\s+)?(?:[Cc]ode|CODE)\s+)?([A-Z]{1,2}\d?)(?:\s*\(|$)/)?.[1] ?? t.match(/\b(?:[Cc]ode|CODE)\s+([A-Z]{1,2}\d?)\b/)?.[1];
+    if (code && this.codeLevels.has(code)) return this.codeLevels.get(code)!.level;
+    return serviceLevelFromText(t.replace(/\b(?:[Cc]ode|CODE)\s+[A-Z]{1,2}\d?\b/g, ' '));
+  }
+
+  /** Legend of service schedule codes: two or more consecutive lines "<code> <wording>" or "<code> | <wording>" whose
+   *  wording reads as a frequency. */
+  scanCodes(text: string) {
+    let run: [string, ServiceLevel, string][] = [];
+    const flush = () => { if (run.length >= 2) for (const [c, l, d] of run) if (!this.codeLevels.has(c)) this.codeLevels.set(c, { level: l, text: d }); run = []; };
+    for (const raw of normalizeRows(text)) {
+      const t = raw.trim();
+      if (!t) continue;
+      const cells = t.includes('|') ? splitPipe(t).map(clean).filter(Boolean) : [clean(t)];
+      let code: string | undefined, desc: string | undefined;
+      if (cells.length >= 2 && /^(?:(?:[Cc]ode|CODE)\s+)?[A-Z]{1,2}\d?$/.test(cells[0])) { code = cells[0].replace(/^code\s+/i, ''); desc = cells.slice(1).join(' '); }
+      else if (cells.length === 1) { const m = cells[0].match(/^(?:(?:[Cc]ode|CODE)\s+)?([A-Z]{1,2}\d?)\s*(?:[-–—=:.)]\s*|\s+)(\S.{3,200})$/); if (m) { code = m[1]; desc = m[2]; } }
+      const level = desc && desc.length <= 200 ? serviceLevelFromText(desc) : undefined;
+      if (code && level) { run.push([code, level, desc!]); continue; }
+      flush();
+      // a legend on one line: "A = 7 days per week; B = Monday through Friday; C = three times per week"
+      const inline = [...t.matchAll(/(?:^|[;,(]\s*|:\s+)([A-Z]{1,2}\d?)\s*[=:]\s*([^;=|]{3,80}?)(?=\s*(?:;|$|\||,\s*[A-Z]{1,2}\d?\s*[=:]))/g)].map((m) => [m[1], serviceLevelFromText(m[2]), m[2]] as const);
+      if (inline.length >= 2 && inline.every(([, l]) => l)) for (const [c, l, d] of inline) if (!this.codeLevels.has(c)) this.codeLevels.set(c, { level: l!, text: d });
+    }
+    flush();
+  }
+
+  /** A change-log row: labelled figures in the Was and Is cells ("Low Risk 6,910; Total CSF 25,150" → "Low Risk 8,450;
+   *  Total CSF 26,690") revise the field each label names; a new schedule ("Code G (once per week)" → "Code F (Tuesday and
+   *  Thursday)") revises the service level. The row must name one building. */
+  changeLogRow(c: { cells: string[]; wasI: number; isI: number; subjects: string[]; source: SourceRef }, ctx: Ctx) {
+    const was = clean(c.cells[c.wasI]), is = clean(c.cells[c.isI]);
+    if (!is || isBlankish(is) || /^(?:deleted|removed|excluded|not listed)\b/i.test(is)) return;
+    const rest = c.cells.filter((_, k) => k !== c.wasI && k !== c.isI).join(' | ');
+    const ids = [...c.subjects, ...refsIn(rest, this.knownKey).filter((r) => !r.site).map((r) => r.id)];
+    const keys = [...new Set(ids.map(bnKey))];
+    if (keys.length !== 1 || this.findRecs(keys[0]).length !== 1) return;
+    const ref: Ref = { id: ids[0], key: keys[0], at: 0, end: 0, site: false };
+    const figures = (s: string) => new Map(s.split(/\s*;\s*/).flatMap((seg) => {
+      const m = seg.match(/^(.*?)(\d[\d,]*(?:\.\d+)?)\s*([A-Za-z]{2,5}\b)?/);
+      if (!m) return [];
+      const label = clean(m[1]).replace(/[:=]$/, '').trim() || clean(m[3]);
+      return label ? [[nameKey(label), { label, v: m[2], unit: m[1].trim() ? m[3] ?? '' : '' }] as const] : [];
+    }));
+    const before = figures(was), after = figures(is);
+    for (const [k, a] of after) {
+      const b = before.get(k);
+      if (b && parseNumberCell(b.v) !== parseNumberCell(a.v)) this.revision(`${a.label} revised from ${b.v} to ${a.v}${a.unit ? ` ${a.unit}` : ''}`, [ref], [ref], undefined, [], ctx, true);
+    }
+    const lvIs = this.scheduleLevel(is), lvWas = this.scheduleLevel(was);
+    if (lvIs && lvIs !== lvWas && (lvWas || /schedul|frequen|\bcode\b|service days|\bsvc\b/i.test(`${rest} ${is}`))) {
+      const r = this.findRecs(keys[0])[0];
+      r.notes.push(`Service schedule revised to "${is}" (${ctx.doc.name}).`);
+      r.level = lvIs; r.freqText = is; r.levelRank = Math.max(r.levelRank, ctx.rank);
+    }
+  }
+
+  tryHeader(lines: string[], i: number, cells: string[], caption: string, above: string[][], docName = ''): { map: TableMap; extra: number } | null {
     if (cells.some((c) => clean(c).length > 90)) return null;
     let hcells = cells;
+    let subs: string[] | undefined;
     let extra = 0;
     const next = lines[i + 1]?.trim();
     if (next && next.includes('|')) {
       const nc = splitPipe(next);
+      // a group-label row over sub-titles: a sub-title under an empty cell of the row above, or a label repeated across the
+      // columns it spans ("BUILDING DATA | BUILDING DATA | …"); the label row may be shorter when its last spans were empty
+      const spans = cells.some((c, k) => k > 0 && clean(c) && clean(c) === clean(cells[k - 1]));
+      const under = nc.some((c, k) => clean(c) && !clean(cells[k]));
+      const widthOk = Math.abs(nc.length - cells.length) <= 1 || (nc.length > cells.length && (spans || cells.some((c) => !clean(c))));
       if (nc.every((c) => !clean(c) || /^\(\d+\)$/.test(clean(c)))) extra = 1;
-      else if (Math.abs(nc.length - cells.length) <= 1 && !isNumericRow(nc) && !nc.some((c) => isNumericCell(c)) && nc.every((c) => clean(c).length <= 60) && nc.some((c, k) => clean(c) && !clean(cells[k]))) {
-        hcells = mergeHeader(cells, nc); extra = 1;
+      else if (widthOk && !isNumericRow(nc) && !nc.some((c) => isNumericCell(c)) && nc.every((c) => clean(c).length <= 60) && (under || spans)) {
+        hcells = mergeHeader(cells, nc); subs = nc; extra = 1;
         const nn = lines[i + 2]?.trim();
         if (nn && nn.includes('|') && splitPipe(nn).every((c) => !clean(c) || /^\(\d+\)$/.test(clean(c)))) extra = 2;
       }
@@ -998,7 +1262,10 @@ class Reader {
     if (hcells.some((c) => /^[~±≈]?\s*(?:approx\.?\s*)?\d[\d,.]*\s*(?:acres?|ac|sf|gsf|sq\.?\s*ft|sy|ha|m²|trees|fixtures|floors?)\b/i.test(clean(c)))) return null;
     const body: string[] = [];
     for (let k = i + 1 + extra; k < lines.length && body.length < 300; k++) { const l = lines[k]; if (!l.includes('|')) { if (l.trim() && !/^--- page/.test(l.trim()) && body.length > 3) break; continue; } body.push(l); }
-    const map = buildMap(hcells, `t${++this.tableSeq}`, caption, above, body);
+    const key = `${docName}\u0000${hcells.map(normHeader).join('|')}`;
+    const seen = this.bodiesByHeader.get(key) ?? [];
+    const map = buildMap(hcells, `t${++this.tableSeq}`, caption, above, seen.length ? [...body, ...seen].slice(0, 600) : body, subs);
+    if (map) this.bodiesByHeader.set(key, [...seen, ...body].slice(-300));
     return map ? { map, extra } : null;
   }
 
@@ -1100,11 +1367,15 @@ class Reader {
     if (demoNote) notes.push(demoNote);
     const STATUS_ORDER: FacilityStatus[] = ['deleted_by_amendment', 'demolished', 'vacant', 'excluded', 'option_only'];
     let status: RowData['status'] = found.sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status))[0];
+    // a banner over the rows ("Facilities listed for reference only – not on contract", "Optional CLIN 0006 (not in the
+    // base totals)") puts every row under it in that status, unless the row says otherwise
+    // (a caption about some of the rows, "Buildings marked * are not included", is not such a banner)
+    if (!status && !active && group && !/\b(?:marked|shaded|highlighted|asterisk|flagged|noted|indicated|denoted|where|if|unless|except)\b|[*†]/i.test(group)) { const g = statusFromText(group); if (g) status = { status: g.status, reason: `Listed under "${clean(group).slice(0, 120)}"` }; }
     // frequency
     let level: ServiceLevel | undefined;
     if (fTxt) {
       if (freqCol?.days && /^\d$/.test(fTxt)) { const d = Number(fTxt); level = levelFromDays(d); if (d === 0 && !status) status = { status: 'excluded', reason: '0 service days per week' }; }
-      else level = serviceLevelFromText(fTxt);
+      else level = this.scheduleLevel(fTxt);
     }
     // catcode scope rules
     const cat = clean(cell(map.get('catcode')));
@@ -1151,7 +1422,7 @@ class Reader {
     if (mix.length >= 2 && mixSum > 0) { floorMix = {}; for (const m of mix) floorMix[m.k] = round((floorMix[m.k] ?? 0) + m.v / mixSum, 3); }
     this.register({
       bn, name: name || (bn ? `Building ${bn}` : undefined), campus: campus || undefined, gross, cleanable, unit: AREA_U[gUnit], grossPrinted: gUnit !== 'sf' ? grossPrinted : undefined, cleanPrinted: cUnit !== 'sf' ? cleanPrinted : undefined,
-      wasGross, floors, fixtures, level, freqText: fTxt || undefined, status, active, use, dining, portableSf, floorMix, source, tableId: `${ctx.doc.name}:${map.id}`, notes, confidence: codeFromName ? 0.7 : 0.8, grossGeneric: !!gCol && gCol.role !== 'gross', grossService: !!gCol && gCol.role !== 'gross' && !!gCol.serviceArea, group,
+      wasGross, floors, fixtures, level, freqText: fTxt || undefined, status, active, use, dining, portableSf, floorMix, source, tableId: `${ctx.doc.name}:${map.id}`, listing: [`${ctx.doc.name}:s:${map.sig}`, `${ctx.doc.name}:t:${(map.heads ?? []).map(normHeader).join('|')}`], notes, confidence: codeFromName ? 0.7 : 0.8, grossGeneric: !!gCol && gCol.role !== 'gross', grossService: !!gCol && gCol.role !== 'gross' && !!gCol.serviceArea, group,
     }, ctx.rank);
     return true;
   }
@@ -1167,7 +1438,7 @@ class Reader {
   groundsRow(cells: string[], map: TableMap, ctx: Ctx, source: SourceRef, group: string | undefined) {
     if (isTotalRow(cells)) return;
     const cell = (c?: Col) => (c ? cells[c.i] ?? '' : '');
-    const label = clean(cell(map.get('name')) || cell(map.get('use')));
+    const label = clean(cell(map.get('name')) || cell(map.get('use')) || (map.get('name') || map.get('number') || map.get('rowKey') ? '' : cell(map.get('typeish'))));
     const rowKeyRaw = clean(cell(map.get('rowKey')));
     const numRaw = map.get('number') ? normalizeBuildingNumber(cell(map.get('number'))) : undefined;
     const rowKey = rowKeyRaw && !isBlankish(rowKeyRaw) ? rowKeyRaw : undefined;
@@ -1271,7 +1542,10 @@ class Reader {
     const revised = clean(cells[map.get('revised')?.i ?? -1]);
     const text = [change, revised].filter(Boolean).join('. ');
     const para: Para = { text, line: 0, page: ctx.page, subjects: [bn], cell: true, inAmend: true, context: cells.join(' ') };
-    if (/\badd(?:ed|ition)?\b/i.test(change)) this.addFacility(bn, name, revised, ctx, source);
+    const wasI = map.heads?.findIndex((h) => WAS_HEAD.test(normHeader(h))) ?? -1, isI = map.heads?.findIndex((h) => IS_HEAD.test(normHeader(h))) ?? -1;
+    const isTxt = isI >= 0 && wasI >= 0 && isI !== wasI ? clean(cells[isI]) : '';
+    if (isTxt) this.changeRows.push({ cells, wasI, isI, subjects: [bn], source });
+    if (/\badd(?:ed|ition)?\b/i.test(change)) this.addFacility(bn, name, [revised, isTxt].filter(Boolean).join('. '), ctx, source);
     else if (/remov|delet|exclud|not in scope|withdrawn/i.test(change)) this.setStatus(bn, { status: ctx.amendLike ? 'deleted_by_amendment' : 'excluded', reason: `${change}${revised ? `: ${revised}` : ''}`.slice(0, 160) }, ctx, cells.join(' '));
     this.statements(para, ctx, [para]);
   }
@@ -1399,12 +1673,95 @@ class Reader {
     this.register({ bn, name: name || `Building ${bn}`, gross, cleanable: others.length ? Math.max(...others) : undefined, floors: fl ? Number(fl[1]) : undefined, fixtures: fx ? Number(fx[1]) : undefined, level: serviceLevelFromText(t.replace(/\d[\d,]*\s*(?:gsf|sf|sq\.?\s*ft\.?)/gi, '')), source, tableId: `${ctx.doc.name}:lines`, confidence: 0.55 }, ctx.rank);
   }
 
+  // ---------------------------------------------------------------- facilities described in prose
+  /** A facility described under its own heading or run-in label, "Site 18 – Lakeview County Park, Beach House, …" or
+   *  "Building 1201: Brigade HQ", followed by prose that states its area, cleaning area, stories and service days. The
+   *  section runs to the next such heading, a numbered section, a table or an Item / Q&A entry. A facility a table or
+   *  sheet already gave only takes the attributes the table left out (cleaning area, floors, schedule); one no table gave
+   *  is added when its section states a building area. Change statements ("revised from … to …") are left to the
+   *  amendment reader. */
+  narrativeFacilities(lines: string[], ctx: Ctx) {
+    const HEAD = /^(?:\d{1,2}(?:\.\d{1,2})*\.?\s+)?(?:site|building|bldg\.?|facility|location|loc\.|property|structure)\s*(?:no\.?|number|#)?\s*([A-Z]{0,3}-?\d{1,6}[A-Z]?)\s*(?:[–—:]|-\s)\s*(\S.*)$/i;
+    const BOUNDARY = /^(?:section\s+\d|\d{1,2}(?:\.\d{1,2})+\.?\s+[A-Z]|\d{1,2}\.\s+[A-Z]|item\s*\d+\s*[.:\-–—]|(?:q|a)\s*\d+\s*[.:)]\s|(?:attachment|appendix|exhibit|annex|table)\s+[A-Z0-9][\w.-]*\b|end of\b)/i;
+    const allCaps = (t: string) => t.length >= 6 && t.split(/\s+/).length >= 2 && !/[a-z]/.test(t) && /[A-Z]{3}/.test(t);
+    type Block = { id: string; rest: string; body: string[]; source: SourceRef };
+    let page: number | undefined;
+    let cur: Block | null = null;
+    const blocks: Block[] = [];
+    const close = () => { if (cur) blocks.push(cur); cur = null; };
+    for (const raw of lines) {
+      const t = raw.trim();
+      const pg = t.match(/^--- page (\d+) ---$/);
+      if (pg) { page = Number(pg[1]); continue; }
+      if (!t) continue;
+      if (t.includes('|') || /^===\s/.test(t)) { close(); continue; }
+      const m = t.match(HEAD);
+      if (m && normalizeBuildingNumber(m[1])) { close(); cur = { id: normalizeBuildingNumber(m[1])!, rest: m[2], body: [], source: { file: ctx.doc.name, page, excerpt: clean(t).slice(0, 200) } }; continue; }
+      const open = cur as Block | null;
+      if (!open) continue;
+      if (BOUNDARY.test(t) || allCaps(t) || open.body.length >= 25) { close(); continue; }
+      open.body.push(t);
+    }
+    close();
+    for (const b of blocks) this.narrativeBlock(b, ctx);
+  }
+
+  narrativeBlock(b: { id: string; rest: string; body: string[]; source: SourceRef }, ctx: Ctx) {
+    const text = dash([b.rest, ...b.body].join(' ').replace(/\s+/g, ' '));
+    if (/\b(?:is|are|was|were|has been|have been|hereby)\s+(?:hereby\s+)?(?:revised|changed|corrected|deleted|removed|added|increased|decreased)\b|\bfrom\s+[\d,.]+\s*(?:[a-z.]+\s+){0,3}to\s+[\d,.]+/i.test(text)) return;
+    // abbreviations lose their periods so that sentences and clauses can be told apart
+    const norm = text.replace(/\bsq\.\s*ft\.?/gi, 'sqft').replace(/\bs\.f\./gi, 'sf').replace(/\b(approx|est|no|bldg|ft|sq|st|ave|rd|blvd|dr)\./gi, '$1');
+    const clauses = norm.split(/(?<=[.;!?])\s+/);
+    const AREA_AFTER = /(\d{1,3}(?:,\d{3})+|\d{3,7})(?:\.\d+)?\s*(?:\+\/-\s*|±\s*)?(?:sqft|square\s+feet|sf\b|gsf\b|gross square feet)/gi;
+    const AREA_LABEL = /(?:square\s+footage|square\s+feet|sqft|\barea)\s*(?:is|of|:)\s*(?:approximately|approx|about)?\s*(\d{1,3}(?:,\d{3})+|\d{3,7})\b/gi;
+    const CLEAN_CL = /cleaning area|cleanable|area to be cleaned|custodial (?:area|sqft|sf|square)|serviced area|area serviced|\blimited to\b/i;
+    const EXCL_CL = /not included|not part of|\bexclude[ds]?\b|not cleaned|\bcleaned by\b(?! the contractor)|maintained by|operated by|\bseparate\b|volunteers|\bby\s+(?:the\s+)?[a-z’'& ]{0,30}\bstaff\b/i;
+    // parts of the building, finishes, and outdoor areas ("a 40-space parking lot of 12,000 sq. ft.") are not its area
+    const PART_BEFORE = /\b(?:floor|level|basement|mezzanine|wing|addition|carpet|vct|tile|ceramic|terrazzo|resident rooms?|rooms?|suite|units?|parking|lots?|yard|site|grounds|lawn|land|parcel|paved|pavement|exterior|outdoor|deck|patio|porch|canopy|shed)\b[^,;]{0,25}$/i;
+    let gross: number | undefined, cleanable: number | undefined;
+    for (const cl of clauses) {
+      const hits = [...cl.matchAll(AREA_AFTER), ...cl.matchAll(AREA_LABEL)].sort((a, c) => (a.index ?? 0) - (c.index ?? 0));
+      for (const h of hits) {
+        const v = Number(h[1].replace(/,/g, ''));
+        if (!(v >= 50)) continue;
+        const before = cl.slice(Math.max(0, (h.index ?? 0) - 60), h.index ?? 0);
+        const after = cl.slice((h.index ?? 0) + h[0].length, (h.index ?? 0) + h[0].length + 30);
+        if (CLEAN_CL.test(cl)) { cleanable ??= v; continue; }
+        if (EXCL_CL.test(cl) || PART_BEFORE.test(before) || /^\s*(?:of|in)\s+(?:carpet|vct|tile|ceramic|resilient|hard|wood|the building is)/i.test(after)) continue;
+        gross ??= v;
+      }
+    }
+    const fl = norm.match(/\b(one|two|three|four|five|six|seven|eight|nine|ten|\d{1,2})[- ](?:story|stories|storey|storeys)\b/i) ?? norm.match(/\b(?:on|over|of)\s+(one|two|three|four|five|six|seven|eight|nine|ten|\d{1,2})\s+(?:floors|levels|stories)\b/i);
+    const floors = fl ? wordOrNum(fl[1].toLowerCase()) : undefined;
+    // schedule: a fragment after a dash or colon in the lines under the heading, else the first sentence about service
+    // or cleaning that is not about work done by others
+    const frags = [b.rest, b.body[0] ?? ''].flatMap((l) => dash(l).split(/\s+-\s+|:\s+/).slice(1));
+    const OTHERS = /\bby\s+(?:the\s+)?(?!contractor)[a-z’'& ]{0,30}(?:staff|volunteers|personnel|workers|occupants|residents|others)\b|\bexcluded\b|not included|not part/i;
+    let level: ServiceLevel | undefined, freqText: string | undefined;
+    for (const f of [...frags, ...clauses.filter((c) => /\b(?:service[sd]?|cleaning|cleaned|clean)\b/i.test(c) && !OTHERS.test(c))]) {
+      const l = this.scheduleLevel(f);
+      if (l) { level = l; freqText = clean(f).slice(0, 120); break; }
+    }
+    // a status in the heading itself ("Site 5 – Former Town Hall (vacant)"); statements further down the section usually
+    // concern a part of the building or a neighbouring one
+    const status = statusFromText(b.rest.split(/\.\s/)[0], { nameCell: true });
+    const name = clean(b.rest.split(/\s+[–—]\s+|\s+-\s+|,\s*(?=\d)|\.\s|\s*\(?(?:approximately|approx\.?|estimated)\b/i)[0]).replace(/[,.:;]+$/, '');
+    const key = bnKey(b.id);
+    const known = this.findRecs(key).some((r) => r.grossRank >= ctx.rank && [...r.tables].some((id) => !/:(?:narrative|lines|added:.*)$/.test(id)));
+    if (!known && !(gross && gross > 0)) return;
+    this.register({ bn: b.id, name: name.length > 2 && name.length < 120 ? name : undefined, gross: known ? undefined : gross, cleanable, floors, level, freqText, status, active: !known && !status, source: b.source, tableId: `${ctx.doc.name}:narrative`, notes: known ? undefined : ['Read from the facility description in the text.'], confidence: 0.6 }, ctx.rank);
+  }
+
   // ---------------------------------------------------------------- grounds sentences ("Type II (semi-improved) 30 acres")
   proseGrounds(line: string, ctx: Ctx, source: SourceRef) {
     const t = clean(line);
     if (!/\d/.test(t) || !/acre|\bac\b|hectare|\bha\b|\bsf\b|square (?:feet|yards)|\bsy\b|trees/i.test(t)) return;
     if (/\b(?:means|defined|definition|minimum|maximum|height|inches|per (?:acre|sf)|\$)/i.test(t)) return;
-    for (const clause of t.split(/;\s*|\.\s+(?=[A-Z])/)) {
+    for (let clause of t.split(/;\s*|\.\s+(?=[A-Z])/)) {
+      // the size of a park, campus or site ("Lakeview Park is approximately 46 acres, including about 14 acres of mowed
+      // turf") is not a maintained area; what the clause says after it may be
+      const size = clause.match(SITE_SIZE);
+      if (size) clause = clause.slice((size.index ?? 0) + size[0].length);
       // summaries ("a total of …", "total improved acreage …", "in all") would double count listed areas
       if (/\b(?:grand |sub)?total\s+(?:of\s+)?(?:all\s+)?(?:improved|semi|unimproved|grounds|acre|area|site|turf|mowed|maintained)|\btotals?\s*[:=]|\bin all\b|\baltogether\b|\bcombined\b|site area|total site|\ba total of\b/i.test(clause)) continue;
       if (/not (?:maintained|included|in scope|part)|exclud|by others|maintained by (?!the contractor)|information only|not mowed/i.test(clause)) continue;
@@ -1426,14 +1783,16 @@ class Reader {
   // ---------------------------------------------------------------- amendment / Q&A / prose statements
   statements(p: Para, ctx: Ctx, all: Para[]) {
     const text = p.text;
-    if (!/delet|remov|exclud|not part of|not in scope|revis|chang|correct|amend|added|addition|increas|decreas|shall not be priced|no longer|is now/i.test(text)) return;
+    if (!/delet|remov|exclud|not part of|not in scope|revis|chang|correct|amend|\badd\b|added|addition|increas|decreas|shall not be priced|no longer|is now/i.test(text)) return;
     const known = this.knownKey;
     const paraRefs = refsIn(text, known);
     const paraKeys = [...new Set(paraRefs.map((r) => r.key))];
     const paraSubject = paraKeys.length === 1 ? paraRefs[0] : undefined;
     const subjectRefs: Ref[] = (p.subjects ?? []).map((id) => ({ id, key: bnKey(id), at: 0, end: 0, site: false }));
     const amend = ctx.amendLike || p.inAmend || /amendment|addendum/i.test(text);
-    for (const s of splitSentences(text)) {
+    const sentences = splitSentences(text);
+    for (let si = 0; si < sentences.length; si++) {
+      const s = sentences[si];
       const refs = refsIn(s, known);
       // deletions / exclusions
       const del = s.match(/\b(?:is|are|was|were|has been|have been|hereby|will be|shall be)\s+(?:hereby\s+)?(?:deleted|removed|excluded|eliminated|withdrawn)\b|\b(?:is|are)\s+not\s+(?:a\s+)?part\s+of\s+(?:this|the)\s+(?:solicitation|contract|requirement|scope|rfp|work)|\bremoved\s+from\s+(?:the\s+)?scope\b|\bno\s+longer\s+(?:in\s+scope|required|part\s+of)\b|\bis\s+DELETED\b/i);
@@ -1450,12 +1809,20 @@ class Reader {
         const scoped = !/\b(?:removed|excluded)\b/i.test(del[0]) || /removed\s+from|not\s+(?:a\s+)?part|no\s+longer/i.test(del[0]) || DELETION_SCOPE.test(after);
         let targets = scoped ? refs.filter((r) => r.at >= segStart && r.at < vi) : [];
         if (targets.length && !deletionSubject(s, segStart, targets, vi)) targets = [];
-        if (!targets.length && scoped && /^[^.]*:/.test(after)) targets = refsIn(after.slice(after.indexOf(':')), known);
+        if (!targets.length && scoped && /^[^.]*:/.test(after)) {
+          // a list after the colon: a building named as the item ("Building 20, Parking Garage") is excluded whole; one that
+          // only locates the excluded part ("sterile storage areas in Building 1") is not
+          // (items separated by semicolons run on into the following "sentences")
+          let list = after.slice(after.indexOf(':'));
+          for (let k = si + 1; k < sentences.length && /;\s*$/.test(sentences[k - 1]); k++) list += ` ${sentences[k]}`;
+          targets = refsIn(list, known).filter((r) => !/\b(?:in|at|of|within|inside|from)\s+(?:the\s+)?$/i.test(list.slice(Math.max(0, list.lastIndexOf(';', r.at), list.lastIndexOf(':', r.at)), r.at)));
+        }
         if (!targets.length && scoped && p.cell && subjectRefs.length === 1 && !refs.length && /^\s*(?:(?:yes|no)[.,]?\s*)?(?:(?:it|they|this|that|these|those|the)(?:\s+(?:building|facility|location|site|structure|buildings|facilities))?)?\s*$/i.test(s.slice(segStart, vi))) targets = subjectRefs;
         for (const r of targets) {
           const reason = s.slice(0, 160);
           let campus: string | null | undefined;
-          if (!r.site) campus = this.setStatus(r.id, { status: amend && (/delet|remov|withdraw|eliminat/i.test(del[0]) || /deleted by (?:amendment|addendum)/i.test(text)) ? 'deleted_by_amendment' : 'excluded', reason }, ctx, `${s} ${text} ${p.context ?? ''}`);
+          // a numbered site is a facility when the package lists facilities, not grounds areas, under that number
+          if (!r.site || (this.findRecs(r.key).length && !this.grounds.some((g) => g.rowKey && bnKey(g.rowKey) === r.key))) campus = this.setStatus(r.id, { status: amend && (/delet|remov|withdraw|eliminat/i.test(del[0]) || /deleted by (?:amendment|addendum)/i.test(text)) ? 'deleted_by_amendment' : 'excluded', reason }, ctx, `${s} ${text} ${p.context ?? ''}`);
           if (campus !== null) this.deleteGrounds(r.key, ctx, `${s} ${text} ${p.context ?? ''}`);
         }
       }
@@ -1466,6 +1833,16 @@ class Reader {
         if (targets.length === 1) {
           const nm = s.slice(0, add.index).replace(/^.*?\b(?:bldg|building|facility|location)\.?\s*#?\s*[A-Z0-9-]+\s*,?\s*/i, '').replace(/,\s*$/, '').trim();
           this.addFacility(targets[0].id, nm.length > 3 && nm.length < 100 && !/\d{2,}/.test(nm) ? nm : undefined, s.slice(add.index), ctx, { file: ctx.doc.name, page: p.page, excerpt: s.slice(0, 200) });
+        }
+      }
+      // an instruction to add a building ("Add Building 41 (B-41), Whole Health Center, a new modular building …"), with
+      // its figures in the sentence or in the rest of the change-log row
+      const addCmd = amend ? s.match(/^\s*(?:(?:item\s+)?\d{1,3}[.):]?\s+)?(?:please\s+)?add(?:\s+the\s+following)?\s*:?\s+(?=(?:new\s+)?(?:bldgs?|buildings?|facilit(?:y|ies)|sites?|locations?|structures?)\b)/i) : null;
+      if (addCmd) {
+        const target = refs.find((r) => r.at >= addCmd[0].length - 1 && !r.site) ?? refs.find((r) => r.at >= addCmd[0].length - 1);
+        if (target) {
+          const nm = s.slice(target.end).replace(/^\s*\([^)]*\)/, '').replace(/^\s*[,:–—-]\s*/, '').split(/\s*(?:[,;.(]|\s[–—-]\s)/)[0].trim();
+          this.addFacility(target.id, nm.length > 3 && nm.length < 100 && !/\d{2,}/.test(nm) && /[A-Z]/.test(nm[0] ?? '') ? nm : undefined, `${s.slice(addCmd[0].length)} ${p.context ?? ''}`, ctx, { file: ctx.doc.name, page: p.page, excerpt: s.slice(0, 200) });
         }
       }
       // revisions ("Gross SF is REVISED from 2,240 to 2,420", "Amendment 0002 revises Building 2101 to 52,980 GSF")
@@ -1493,7 +1870,7 @@ class Reader {
       if (!/sf|gsf|square|sq|acre|lf|sy|sm|m²|floor|fixture/i.test(unitTxt + c.slice(0, at + to[0].length))) return;
     }
     const before = c.slice(0, at).toLowerCase();
-    const seg = before.split(/[:.]\s+/).slice(-1)[0] ?? before;
+    const seg = before.split(/:\s+|\.\s+(?=[a-z]{4,}\s+(?:is|are|was|were|has|have)\b)/).slice(-1)[0] ?? before;
     let field: 'gross' | 'cleanable' | 'floors' | 'fixtures' | 'length' | 'width' | 'acres' | 'portable' | 'area' | undefined;
     if (/@/.test(oldTxt ?? '') || /@/.test(newTxt ?? '')) field = 'portable';
     else if (/cleanable|custodial (?:\(cleanable\) )?(?:square|sq|sf|area)|\bcsf\b|net area|service area/.test(seg)) field = 'cleanable';
@@ -1596,15 +1973,18 @@ class Reader {
     const t = dash(clean(text));
     const num = (re: RegExp) => { const m = t.match(re); return m ? parseNumberCell(m[1]) : undefined; };
     const gross = num(/gross\s+(?:sq\.?\s*ft\.?|square\s+f(?:ee|oo)t(?:age)?|sf|area)\s*(?:of|is|:)?\s*([\d,]+)/i) ?? num(/([\d,]{3,})\s*(?:gross\s+(?:square\s+feet|sq\.?\s*ft\.?|sf)|gsf)\b/i);
-    const cleanable = num(/(?:cleanable|custodial)\s+(?:sq\.?\s*ft\.?|square\s+f(?:ee|oo)t|sf|area)\s*(?:of|is|:)?\s*([\d,]+)/i) ?? num(/([\d,]{3,})\s*(?:cleanable|custodial)\s+(?:square\s+feet|sq\.?\s*ft\.?|sf)/i);
-    const fl = t.match(/\b(\d{1,2}|one|two|three|four|five|six)\s*(?:\(\d+\)\s*)?floors?\b/i);
+    const cleanable = num(/(?:cleanable|custodial)\s+(?:sq\.?\s*ft\.?|square\s+f(?:ee|oo)t|sf|area)\s*(?:of|is|:)?\s*([\d,]+)/i) ?? num(/([\d,]{3,})\s*(?:(?:cleanable|custodial)\s+(?:square\s+feet|sq\.?\s*ft\.?|sf)|csf\b)/i);
+    const fl = t.match(/\b(\d{1,2}|one|two|three|four|five|six)\s*(?:\(\d+\)\s*)?floors?\b/i) ?? t.match(/\bfloors?\s*:?\s*(\d{1,2})(?![\d-])/i);
     const fx = t.match(/(\d{1,4})\s*(?:restroom\s+|plumbing\s+)?fixtures/i);
     const dy = t.match(/\b(\d|one|two|three|four|five|six|seven)\s*(?:\(\d\)\s*)?(?:service\s+)?days?\s*(?:per|a|\/)\s*week/i);
     const days = wordOrNum(dy?.[1]);
-    const freqText = dy?.[0];
+    // a schedule code from the package's legend ("Service Schedule Code D")
+    const code = t.match(/\b(?:[Ss]chedule\s+|[Ss]ervice\s+)?(?:[Cc]ode|CODE)\s+([A-Z]{1,2}\d?)\b/);
+    const codeLevel = code ? this.codeLevels.get(code[1].toUpperCase())?.level : undefined;
+    const freqText = dy?.[0] ?? (codeLevel ? code![0] : undefined);
     const campus = t.match(/\bcampus:\s*([A-Za-z][A-Za-z .'-]{1,40})/i)?.[1]?.trim().replace(/\.$/, '');
     if (!gross && !this.findRecs(bnKey(id)).length) return;
-    this.register({ bn: normalizeBuildingNumber(id) ?? id, name: name || `Building ${id}`, campus, gross, cleanable, floors: wordOrNum(fl?.[1]), fixtures: fx ? Number(fx[1]) : undefined, level: days != null ? levelFromDays(days) : undefined, freqText, active: true, source, tableId: `${ctx.doc.name}:added:${id}`, notes: [`Added by ${ctx.doc.name}.`], confidence: 0.7 }, ctx.rank + 0.0001);
+    this.register({ bn: normalizeBuildingNumber(id) ?? id, name: name || `Building ${id}`, campus, gross, cleanable, floors: wordOrNum(fl?.[1]), fixtures: fx ? Number(fx[1]) : undefined, level: days != null ? levelFromDays(days) : codeLevel, freqText, active: true, source, tableId: `${ctx.doc.name}:added:${id}`, notes: [`Added by ${ctx.doc.name}.`], confidence: 0.7 }, ctx.rank + 0.0001);
   }
 
   // ---------------------------------------------------------------- dining workload in prose ("2,650 meals per day across four meal periods")
@@ -1801,7 +2181,8 @@ function mergeHeader(top: string[], sub: string[]): string[] {
     const a = clean(top[i]), b = clean(sub[i]);
     if (a) span = b ? a : '';
     const head = a || (b && span ? span : '');
-    out.push([head, b].filter(Boolean).join(' '));
+    // a title merged down over both header rows is printed in each ("Zone" over "Zone"): once
+    out.push(head && head === b ? b : [head, b].filter(Boolean).join(' '));
   }
   return out;
 }
@@ -1855,8 +2236,8 @@ function nameSimilarity(a: string, b: string): number {
 const STATE_CLIMATE: [RegExp, RegExp, NonNullable<SiteInfo['climateZone']>][] = [
   [/\b(?:florida|georgia|louisiana|mississippi|alabama|south carolina|hawaii|guam|puerto rico|okinawa)\b/i, /,\s*(?:FL|GA|LA|MS|AL|SC|HI)\b/, 'hot_humid'],
   [/\b(?:arizona|nevada|new mexico|utah|el paso|kuwait|qatar|bahrain|djibouti|iraq)\b/i, /,\s*(?:AZ|NV|NM|UT)\b/, 'arid'],
-  [/\b(?:alaska|minnesota|north dakota|south dakota|montana|wisconsin|maine|vermont|new hampshire|wyoming)\b/i, /,\s*(?:AK|MN|ND|SD|MT|WI|ME|VT|NH|WY)\b/, 'cold'],
-  [/\b(?:kentucky|missouri|kansas|virginia|washington|oregon|tennessee|north carolina|maryland|pennsylvania|ohio|indiana|illinois|new york|new jersey|california|oklahoma|arkansas|colorado|italy|germany|korea|japan)\b/i, /,\s*(?:KY|MO|KS|VA|WA|OR|TN|NC|MD|PA|OH|IN|IL|NY|NJ|CA|OK|AR|CO)\b/, 'temperate'],
+  [/\b(?:alaska|minnesota|north dakota|south dakota|montana|wisconsin|michigan|iowa|idaho|nebraska|maine|vermont|new hampshire|wyoming)\b/i, /,\s*(?:AK|MN|ND|SD|MT|WI|MI|IA|ID|NE|ME|VT|NH|WY)\b/, 'cold'],
+  [/\b(?:kentucky|missouri|kansas|virginia|west virginia|washington|oregon|tennessee|north carolina|maryland|delaware|pennsylvania|ohio|indiana|illinois|new york|new jersey|massachusetts|connecticut|rhode island|district of columbia|california|oklahoma|arkansas|colorado|italy|germany|korea|japan)\b/i, /,\s*(?:KY|MO|KS|VA|WV|WA|OR|TN|NC|MD|DE|PA|OH|IN|IL|NY|NJ|MA|CT|RI|DC|CA|OK|AR|CO)\b/, 'temperate'],
 ];
 function extractSite(ordered: { doc: DocInput }[]): SiteInfo {
   const site: SiteInfo = {};
@@ -1870,7 +2251,11 @@ function extractSite(ordered: { doc: DocInput }[]): SiteInfo {
   const cands = new Map<string, number>();
   const bump = (s: string, w = 1) => { const k = s.replace(/\s+/g, ' ').trim(); cands.set(k, (cands.get(k) ?? 0) + w); };
   for (const m of all.matchAll(/\b(?:Fort|Ft\.|Camp|Joint Base|Naval (?:Air )?Station|Naval Support Activity|Marine Corps (?:Base|Air Station)|USAG|U\.S\. Army Garrison|Caserma)\s+[A-Z][A-Za-z'-]+(?:[ -][A-Z][a-z][A-Za-z'-]+)?/g)) bump(m[0].replace(/^Ft\./, 'Fort').replace(/\s+(?:Kentucky|Georgia|Kansas|Texas|Virginia|Italy)$/i, (x) => (/italy/i.test(x) ? x : '')));
-  for (const m of all.matchAll(/\b[A-Z][a-z]+(?: [A-Z][a-z]+)? Air Force Base\b/g)) bump(m[0]);
+  const title = (x: string) => x.toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase());
+  for (const m of all.matchAll(/\b([A-Z][a-z]+(?: [A-Z][a-z]+)?|[A-Z]{3,}(?: [A-Z]{3,})?) (?:Air Force Base|AIR FORCE BASE)\b/g)) bump(`${/[a-z]/.test(m[1]) ? m[1] : title(m[1])} Air Force Base`);
+  // county and VA health care owners ("Kessling County", "Elk Prairie VA Medical Center")
+  for (const m of all.matchAll(/\b([A-Z][a-z]+(?: [A-Z][a-z]+)?) County\b(?!\s+(?:Road|Rd|Park|Fair|Line|Highway|Hwy|Route)\b)/g)) bump(`${m[1]} County`, 0.6);
+  for (const m of all.matchAll(/\b([A-Z][a-z]+(?: [A-Z][a-z]+)?) VA (?:Medical Center|Health ?Care System|Healthcare System)\b/g)) bump(`${m[1]} VA`, 1);
   for (const m of all.matchAll(/\b(?:USAG|U\.S\. ARMY GARRISON)\s+([A-Z]{3,}(?: [A-Z]{3,})?)\b/g)) bump(`USAG ${m[1].charAt(0)}${m[1].slice(1).toLowerCase()}`, 2);
   for (const m of all.matchAll(/\bCity of ([A-Z][a-z]+(?: [A-Z][a-z]+){0,2})\b/g)) bump(m[1], 0.5);
   for (const m of all.matchAll(/\b([A-Z][a-z]+(?: [A-Z][a-z]+){0,2} (?:School District|Public Schools|State University|University|State College|Community College|College))\b/g)) bump(m[1], 0.7);
@@ -1884,7 +2269,7 @@ function extractSite(ordered: { doc: DocInput }[]): SiteInfo {
     if (/incumbent|current(?:ly)? (?:contract|performed|provided)|presently|existing contract|previous contract|prior contract/i.test(s)) continue;
     const tot = s.match(/\b(?:maximum|total)(?: total)?(?: potential)? (?:term|period(?: of performance)?|contract term|length)?[^.]{0,40}?(?:of|is|to)\s+(\w+)\s*(?:\((\d+)\))?\s*years?\b/i) ?? s.match(/\bfor a total of (\w+)\s*(?:\((\d+)\))?\s*years?\b/i);
     if (tot) { const n = Number(tot[2] ?? NaN) || wordOrNum(tot[1]); if (n && n >= 1 && n <= 15) { site.contractYears = n; break; } }
-    const bo = s.match(/\b(?:base|initial)\s+(?:period|term|year)\b[^.]{0,160}?\b(\w+)\s*(?:\((\d+)\))?\s*(?:additional\s+)?(?:(?:one|1|twelve|12)[- ](?:year|month)\s+|\(\d+\)\s*(?:one|1)?[- ]?(?:year\s+)?)?(?:option|renewal)/i)
+    const bo = s.match(/\b(?:base|initial)\s+(?:period|term|year)\b[^.]{0,160}?\b(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten)\s*(?:\((\d+)\))?\s*(?:additional\s+)?(?:(?:one|1|twelve|12)[- ](?:year|month)\s+|\(\d+\)\s*(?:one|1)?[- ]?(?:year\s+)?)?(?:option|renewal|extension)/i)
       ?? s.match(/\b(?:initial term|base period)[^.]{0,120}?(?:renew(?:ed|als?)?|option)[^.]{0,40}?\b(?:up to\s+)?(\w+)\s*(?:\((\d+)\))?\s*(?:additional\s+)?(?:one[- ]year|1-year|twelve-month|12-month)?/i);
     if (bo && !site.contractYears) {
       const opts = Number(bo[2] ?? NaN) || wordOrNum(bo[1]);
@@ -1912,13 +2297,22 @@ function extractSite(ordered: { doc: DocInput }[]): SiteInfo {
 // Public API
 // =====================================================================================================================
 
+/** "The park is approximately 46 acres", "the campus covers 186 acres": the size of a property. */
+const SITE_SIZE = /\b(?:park|campus|site|property|installation|base|post|fairgrounds?|complex|reservation|preserve|compound|parcel|grounds)\s+(?:is|covers|comprises|encompasses|totals|occupies|sits on|consists of|spans)\s+(?:approximately\s+|approx\.?\s+|about\s+|roughly\s+|some\s+|over\s+|nearly\s+|almost\s+)?\d[\d,.]*\s*(?:acres?|ac\b|hectares?|ha\b)/i;
+/** Grounds maintenance stated to be outside the contract ("grounds maintenance and snow removal are performed by County
+ *  staff and are not part of this RFP", "Work Not Included: … grounds maintenance, lawn care …"). */
+const GROUNDS_OUT = [
+  /\b(?:grounds?\s+(?:maintenance|care|keeping)|groundskeeping|landscap(?:e|ing)(?:\s+maintenance)?|lawn\s+(?:care|mowing|maintenance)|mowing)\b(?:(?!\b(?:at|for|of|in)\s)[^.;]){0,160}?\b(?:(?:is|are)\s+not\s+(?:part\s+of|included\s+in|within)\s+(?:this|the)\s+(?:rfp|rfq|ifb|itb|contract|solicitation|scope|requirement|pws|sow|bid|procurement)|(?:is|are)\s+(?:performed|provided|done)\s+by\s+(?:the\s+)?(?:county|city|town|government|installation|district|university|college|owner|agency|state|parks|engineering|others|facilit(?:y|ies)\s+(?:management|staff))\b)/i,
+  /\b(?:work|services?|items?)\s+not\s+included\b[^.]{0,250}?\b(?:grounds\s+maintenance|lawn\s+care|mowing)\b/i,
+];
 const DINING_SCOPE = /\b(?:food services?|full food service|\bffs\b|dining facility (?:operations?|attendants?|services?|management)|dfac (?:operations?|services?|attendants?)|\bdfa\b|mess attendants?|food preparation|meal preparation|subsistence|serving line|galley operations?)/i;
 
 export function heuristicExtract(docs: DocInput[]): Inventory {
   const r = new Reader();
   const ordered = orderDocs(docs);
-  for (const o of ordered) r.scanScope(o.doc.text);
+  for (const o of ordered) { r.scanScope(o.doc.text); r.scanCodes(o.doc.text); }
   r.diningScope = ordered.some((o) => DINING_SCOPE.test(o.doc.text));
+  r.groundsOut = ordered.some((o) => { const t = o.doc.text.replace(/\s+/g, ' '); return GROUNDS_OUT.some((re) => re.test(t)); });
   for (const o of ordered) r.readDoc(o.doc, o.rank, o.amendLike);
   r.site = extractSite(ordered);
   return r.finish();
@@ -2006,9 +2400,12 @@ export function heuristicPriorAward(docs: DocInput[]): PriorAward | undefined {
           }
         }
         if (!pa.awardYear) { const y = s.match(/\bawarded\b[^.]{0,90}?\b((?:19|20)\d{2})\b/i) ?? s.match(/\b(?:since|in)\s+((?:19|20)\d{2})\b.*\bawarded/i); if (y) { pa.awardYear = Number(y[1]); touched = true; } }
-        const amounts = moneyAll(s).filter((a) => !/^\s*(?:\)|,)?\s*(?:per|\/)\s*(?:month|mo\b|hour|hr|sf|square|day)|^\s*monthly/i.test(a.tail));
+        // a figure stated per month ("$91,240 per month", "the monthly contract amount is $91,240") is not the year's value;
+        // one stated per year ("$1,094,880 annually") is
+        const amounts = moneyAll(s).filter((a) => !/^\s*(?:\)|,)?\s*(?:per|\/|a|each)\s*(?:month|mo\b|hour|hr|sf|square|day)|^\s*monthly/i.test(a.tail) && !/\bmonthly\b[^$.;]{0,40}$/i.test(s.slice(Math.max(0, a.at - 50), a.at)));
         if (!amounts.length) continue;
-        const amt = amounts[0].v;
+        const yearly = amounts.find((a) => /^\s*(?:\)|,)?\s*(?:(?:per|\/|a|each)\s*(?:year|yr|annum)\b|annually\b|yearly\b)/i.test(a.tail) || /\b(?:annual(?:ly)?|yearly|per year)\b[^$.;]{0,30}$/i.test(s.slice(Math.max(0, a.at - 40), a.at)));
+        const amt = (yearly ?? amounts[0]).v;
         const singleYear = /\bfor (?:fy|fiscal year|calendar year|cy|the)?\s*(?:fy)?\s*'?\d{2,4}(?:\s*-\s*\d{2,4})?\b(?! through)|\bfor (?:the )?\d{4}\s*-\s*\d{2,4} (?:school|fiscal) year|\b(?:school|fiscal|calendar) year\b(?!s)|\bannual|per (?:year|annum)|\ba year\b|\/yr\b|yearly|current option (?:period|year)|option (?:year|period) \d|value of the current option|for (?:20\d\d)\b/i.test(s);
         const spend = /obligat\w*|payments?|\bpaid\b|invoiced|expended|spent|billed/i.test(s) && /to date|through|thru|cumulative|since|\(\d+ months\)|\b(?:first|second|third|fourth|fifth|sixth)\b/i.test(s);
         const total = /total (?:contract |awarded |award )?value|total value|including all (?:options|renewals|option periods)|inclusive of all option|total of all|over (?:its|the|a) [^.]{0,30}(?:term|period)/i.test(s);

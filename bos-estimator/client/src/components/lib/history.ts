@@ -42,7 +42,10 @@ function inferLabel(a: Doc, b: Doc): string {
   if (df > 0 || dg > 0) return 'add';
   if (df < 0 || dg < 0) return 'removal';
   if (a.inventory === b.inventory) return 'review change';
-  return 'edit';
+  // rows are replaced, never mutated: the changed ones are the new objects (Inspector edits name no step themselves)
+  const changed = [...b.inventory.facilities.filter((f, i) => a.inventory.facilities[i] !== f), ...b.inventory.grounds.filter((g, i) => a.inventory.grounds[i] !== g)];
+  if (changed.length === 1) { const r = changed[0]; const name = 'buildingNumber' in r && r.buildingNumber ? r.buildingNumber : r.name.length > 28 ? `${r.name.slice(0, 27)}…` : r.name; return `edit of ${name}`; }
+  return changed.length > 1 ? `edit of ${changed.length} rows` : 'edit';
 }
 
 function push(step: Step) {

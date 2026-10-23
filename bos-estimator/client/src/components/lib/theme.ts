@@ -47,7 +47,11 @@ export function buildingTint(mode: ColorBy, x: { category: FacilityCategory; con
 
 const fmtFte = (v: number) => (v >= 10 ? v.toFixed(0) : v.toFixed(1));
 
-export function legendFor(mode: ColorBy, fteBreaks: readonly number[] = []): { title: string; items: { color: string; glyph?: string; label: string }[] } {
+/**
+ * Legend for a colour mode. `present` (optional) narrows the category legend to the categories the project has, in
+ * that order (most buildings first), and appends the grounds kinds shown as pads.
+ */
+export function legendFor(mode: ColorBy, fteBreaks: readonly number[] = [], present?: { categories: readonly FacilityCategory[]; grounds?: readonly { color: string; label: string }[] }): { title: string; items: { color: string; glyph?: string; label: string }[] } {
   switch (mode) {
     case 'confidence': return { title: 'Extraction confidence', items: [
       { color: NEUTRAL_ROOF, glyph: CONF_GLYPH.hi, label: `High (≥ ${Math.round(CONF.hi * 100)}%)` },
@@ -61,6 +65,10 @@ export function legendFor(mode: ColorBy, fteBreaks: readonly number[] = []): { t
       const edges = [0, ...b];
       return { title: 'FTE per building', items: FTE_RAMP.map((c, i) => ({ color: c, label: i < 4 ? `${fmtFte(edges[i])}–${fmtFte(edges[i + 1])}` : `> ${fmtFte(edges[4])}` })) };
     }
-    default: return { title: 'Facility type', items: (Object.keys(CATEGORY_DEFAULTS) as FacilityCategory[]).map((c) => ({ color: categoryColor(c), label: CATEGORY_DEFAULTS[c].label })) };
+    default: {
+      const cats = present ? present.categories : (Object.keys(CATEGORY_DEFAULTS) as FacilityCategory[]);
+      const items = cats.map((c) => ({ color: categoryColor(c), label: CATEGORY_DEFAULTS[c]?.label ?? c }));
+      return { title: present?.grounds?.length && !cats.length ? 'Grounds areas' : 'Facility type', items: [...items, ...(present?.grounds ?? [])] };
+    }
   }
 }
