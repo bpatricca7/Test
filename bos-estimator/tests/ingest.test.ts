@@ -417,6 +417,23 @@ test('PDF layout: under column titles, a row that opens with an identifier is a 
   assert.ok(lines.includes('E.1 | Building data sheets | 6 | 1'), lines.join('\n'));
 });
 
+test('PDF layout: a notes row inside the ruled frame stays text (its sentences are prose), a banner row stays in the table', async () => {
+  const c = (text: string, from: number, align: 'l' | 'r' | 'c' = 'l', to?: number): GridCell => ({ text, from, to, align });
+  const note1 = 'Notes: 1. Areas are from the 2026 inventory. 2. Bldg 702 is cleaned weekly.';
+  const note2 = 'Gross SF is from the real property inventory. Building 703 is cleaned by the tenant agency.';
+  const g = gridPage([40, 90, 300, 360, 420], 700, [
+    [c('Bldg', 0, 'c'), c('Facility', 1, 'c'), c('Gross SF', 2, 'c'), c('Net SF', 3, 'c')],
+    [c('EAST POST', 0, 'l', 3)],
+    [c('701', 0), c('Operations Building', 1), c('12,000', 2, 'r'), c('10,500', 3, 'r')], [c('702', 0), c('Garage', 1), c('4,500', 2, 'r'), c('900', 3, 'r')],
+    [c('703', 0), c('Records Storage', 1), c('2,000', 2, 'r'), c('1,800', 3, 'r')],
+    [c(note1, 0, 'l', 3)], [c(note2, 0, 'l', 3)],
+  ]);
+  const lines = (await extractPdfLayout(makePdf([{ texts: g.texts, rects: g.rects }]))).text.split('\n');
+  assert.ok(lines.includes('EAST POST |  |  |'), lines.join('\n'));
+  assert.ok(lines.includes('703 | Records Storage | 2,000 | 1,800'), lines.join('\n'));
+  assert.ok(lines.includes(note1) && lines.includes(note2), lines.join('\n'));
+});
+
 test('superscripts: unit exponents and ordinals stay text, footnote markers become [^n] (PDF and DOCX)', async () => {
   // superscripts as Word / Chromium print them: a smaller run with text rise (Ts persists across BT/ET, so reset it)
   const p = makePdf([{ ops: [
