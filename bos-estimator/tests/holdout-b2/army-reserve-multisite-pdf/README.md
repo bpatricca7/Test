@@ -86,9 +86,14 @@ Known remaining tells:
 - Grounds, per base site; the scorer sums each kind:
   - `improved_turf`: 56.75 acres. TE-3 prints 57.20; Amendment Item 4 cuts Eagan from 6.30 to 5.85.
   - `semi_improved`: 17.15 acres, at five sites.
-  - `parking`: 62,097 SY. This is POV parking only: MEP, roads and the Plow Area column are excluded.
+  - `parking`: 80,653 SY (725,877 SF), the paved area the contract plows: POV Parking 62,097 + Roads & Drives 18,556.
+    PWS 5.6 orders "POV parking lots, roads and drives" plowed to bare pavement, and TE-3 Notes 5–6 make the Plow
+    Area (= POV + Roads, MEP excluded) the area cleared at each event. `parking` is the only grounds kind priced for
+    plowing, so the roads belong there. The Plow Area column registered alone gives the same quantity; registered on
+    top of POV + Roads it double-counts.
   - `sidewalk`: 42,485 SF, the Shovel / Blow column.
-  - Site Acres, MEP, Roads & Drives, Edging LF and the optional site are not expected.
+  - Site Acres, MEP, Edging LF (a length, not an area; edging is priced with the improved turf) and the optional site
+    are not expected.
 - Site: 5 contract years (12-month base + four 12-month options; the FAR 52.217-8 extension is not counted), `cold`
   (MN / ND / SD, snow season 15 Oct – 30 Apr), solicitation `W91XPN-27-R-0007`. `installationName` is left out on
   purpose: twelve separate sites, no single installation named.
@@ -132,7 +137,8 @@ Known remaining tells:
 9. **Frequency codes.** 5/W, 3/W, 2/W, 1/W, BW, M, Q and N/S are defined in PWS 5.2. "BA Wknd" is a separate
    add-on column.
 10. **Mixed grounds units.** Acres, SY, SF and LF all appear. Some columns are information only (Site Acres, MEP).
-    Plow Area = POV + Roads, so using it double-counts parking.
+    Plow Area = POV + Roads, so registering it on top of POV and Roads double-counts parking. Edging LF is a length,
+    not walk area.
 11. **Event counts are not areas:** 16 / 8 / 2 / 3 mowing, trimming and edging events, 18 / 24 snow events,
     12 MO, about 12 BA weekends, 4-inch snow interval, 4 ft plow-back, 2-hour response.
 12. **Non-award dollar amounts** sit near the prior-award text: the $50.00 key charge and the $22.0 million size

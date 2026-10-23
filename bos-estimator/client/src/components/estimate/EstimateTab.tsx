@@ -9,7 +9,7 @@ import { useDerived, useTopDownLive, type TopDownLive } from '../../derived';
 import { crewMeta, CREWS } from '@shared/factors';
 import { DEFAULT_ASSUMPTIONS, type EstimateResult } from '@shared/estimate';
 import type { ClimateZone, PriorAward, TopDownAssumptions, TopDownEstimate } from '@shared/types';
-import { compact, n0, n1, n2, signedPct, usdCompact } from '../../fmt';
+import { compact, fitNum, n0, n1, n2, signedPct, usdCompact } from '../../fmt';
 import { CREW_ORDER, crewColor, deltaTone } from '../lib/theme';
 import { cx } from '../lib/cx';
 import { Button, Field, Fields, IconButton, MoneyInput, NumField, Select, TextField, Tooltip } from '../ui';
@@ -90,12 +90,12 @@ function BottomLine({ est, live }: { est: EstimateResult | null; live: TopDownLi
       <div className="est__cards">
         <div className="est__card">
           <span className="l">Bottom-up</span>
-          <span className="v"><span className="est-bottomup-v">{est ? n1(live.bottomUpFte) : '—'}</span><small> FTE</small></span>
-          <span className="s">{est ? `${n0(live.heads)} heads · ${usdCompact(est.totalLaborCost)} base-yr labor` : 'No facilities yet'}</span>
+          <span className="v" title={est ? `${n1(live.bottomUpFte)} FTE` : undefined}><span className="est-bottomup-v">{est ? fitNum(live.bottomUpFte, 7, n1) : '—'}</span><small> FTE</small></span>
+          <span className="s">{est ? `${fitNum(live.heads, 7)} heads · ${usdCompact(est.totalLaborCost)} base-yr labor` : 'No facilities yet'}</span>
         </div>
         <div className="est__card est__card--implied">
           <span className="l">Implied (previous award)</span>
-          <span className="v"><span className="est-implied-v">{has ? n1(live.impliedBase) : '—'}</span><small> FTE</small></span>
+          <span className="v" title={has ? `${n1(live.impliedBase)} FTE` : undefined}><span className="est-implied-v">{has ? fitNum(live.impliedBase, 7, n1) : '—'}</span><small> FTE</small></span>
           <span className="s">{has ? `${n1(bLo)}–${n1(bHi)} · ${usdCompact(live.annualValue)}/yr · ${td ? BASIS_LABEL[td.basis] : ''}` : 'Needs an award or spend value'}</span>
         </div>
         <div className="est__card est__card--gap">
@@ -154,16 +154,16 @@ function CrewsTable({ est }: { est: EstimateResult }) {
             const on = wages?.[c.crew] != null;
             return (
               <tr key={c.crew}>
-                <td><Tooltip content={`${meta.label} · ${n0(c.hours)} hrs/yr · shift ${meta.shift.start}:00`}><span className="est__crew" tabIndex={0}><span className="dot" style={{ background: crewColor(c.crew) }} aria-hidden /><Icon size={14} strokeWidth={1.75} aria-hidden /><span className="nm">{meta.short}</span></span></Tooltip></td>
+                <td><Tooltip content={`${meta.label} · ${n0(c.hours)} hrs/yr · shift ${meta.shift.start}:00`}><span className="est__crew" tabIndex={0} style={{ ['--crew' as string]: crewColor(c.crew) }}><Icon size={14} strokeWidth={2} aria-hidden /><span className="nm">{meta.short}</span></span></Tooltip></td>
                 {wide && <td className="r mono">{compact(c.hours)}</td>}
-                <td className="r mono">{n1(c.fte)}</td>
-                <td className="r mono">{c.headcount}</td>
+                <td className="r mono" title={`${n1(c.fte)} FTE`}>{fitNum(c.fte, 7, n1)}</td>
+                <td className="r mono" title={`${c.headcount.toLocaleString()} heads`}>{fitNum(c.headcount, 5)}</td>
                 <td className="r"><NumField size="sm" value={c.wage} decimals={2} rule={{ min: 0 }} overridden={on} placeholder={String(meta.defaultWage)} aria-label={`${meta.short} wage per hour`} onCommit={(v) => setWage(c.crew, v ?? null)} wrapClassName="wage" /></td>
                 <td className="r mono">{usdCompact(c.annualCost)}</td>
               </tr>
             );
           })}
-          <tr className="total"><td>Total</td>{wide && <td className="r mono">{compact(est.directHours)}</td>}<td className="r mono">{n1(est.totalFte)}</td><td className="r mono">{est.totalHeadcount}</td><td /><td className="r mono">{usdCompact(est.totalLaborCost)}</td></tr>
+          <tr className="total"><td>Total</td>{wide && <td className="r mono">{compact(est.directHours)}</td>}<td className="r mono" title={`${n1(est.totalFte)} FTE`}>{fitNum(est.totalFte, 7, n1)}</td><td className="r mono" title={`${est.totalHeadcount.toLocaleString()} heads`}>{fitNum(est.totalHeadcount, 5)}</td><td /><td className="r mono">{usdCompact(est.totalLaborCost)}</td></tr>
         </tbody>
       </table>
       {wages && Object.keys(wages).length > 0 && <p className="est__note">{Object.keys(wages).length} custom wage{Object.keys(wages).length > 1 ? 's' : ''} (violet border). Defaults: {CREWS.filter((c) => wages[c.id] != null).map((c) => `${c.short} $${c.defaultWage}`).join(', ')}.</p>}
@@ -195,11 +195,11 @@ function CrossCheck({ est, live }: { est: EstimateResult | null; live: TopDownLi
   return (
     <section className="est__sec est__xc" id="est-crosscheck" aria-label="Top-down cross-check">
       <div className="est__sticky" role="group" aria-label="Cross-check result">
-        <span>Bottom-up <b className="mono">{est ? n1(live.bottomUpFte) : '—'}</b></span>
+        <span className="est__sticky-item"><span className="lbl">Bottom-up</span><b className="mono">{est ? fitNum(live.bottomUpFte, 7, n1) : '—'}</b></span>
         <span className="sep" aria-hidden>│</span>
-        <span>Implied <b className="mono implied">{has ? n1(live.impliedBase) : '—'}</b></span>
+        <span className="est__sticky-item"><span className="lbl">Implied</span><b className="mono implied">{has ? fitNum(live.impliedBase, 7, n1) : '—'}</b></span>
         <span className="sep" aria-hidden>│</span>
-        <span>Δ {has ? <span className={`delta-chip delta-chip--${deltaTone(live.deltaPct!)}`}>{signedPct(live.deltaPct!)}</span> : <b>—</b>}</span>
+        <span className="est__sticky-delta">Δ {has ? <span className={`delta-chip delta-chip--${deltaTone(live.deltaPct!)}`}>{signedPct(live.deltaPct!)}</span> : <b>—</b>}</span>
         {live.stale && <Tooltip content="Numbers are live; the rationale was written for earlier inputs"><span className="est__stale-dot" tabIndex={0} aria-label="The rationale was written for earlier inputs"><History size={14} aria-hidden /></span></Tooltip>}
       </div>
 
@@ -289,8 +289,8 @@ function Manning({ est }: { est: EstimateResult }) {
           <tr key={y.year}>
             <td title={y.label}>{y.label}</td>
             <td className="r mono">{compact(y.hours)}</td>
-            <td className="r mono est__fte-cell"><span className="bar" style={{ width: `${(y.fte / max) * 100}%` }} aria-hidden /><span>{n2(y.fte)}</span></td>
-            <td className="r mono">{y.headcount}</td>
+            <td className="r mono est__fte-cell" title={`${n2(y.fte)} FTE`}><span className="bar" style={{ width: `${(y.fte / max) * 100}%` }} aria-hidden /><span>{fitNum(y.fte, 8, n2)}</span></td>
+            <td className="r mono" title={`${y.headcount.toLocaleString()} heads`}>{fitNum(y.headcount, 5)}</td>
             <td className="r mono">{usdCompact(y.laborCost)}</td>
           </tr>
         ))}</tbody>

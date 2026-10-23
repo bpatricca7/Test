@@ -125,6 +125,12 @@
 .boot{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);color:var(--text-2)}
 .boot__card{display:flex;flex-direction:column;align-items:center;gap:12px;font-size:var(--fs-md)}
 .boot__logo{display:grid;place-items:center;width:48px;height:48px;border-radius:12px;background:var(--brand);color:var(--accent-ink);font:700 14px/1 var(--font-sans)}
+.boot__error{display:flex;flex-direction:column;align-items:flex-start;gap:12px;width:min(520px,calc(100vw - 32px));padding:24px;border-radius:12px;background:var(--surface-1);border:1px solid var(--border-1);box-shadow:var(--sh-pop)}
+.boot__title{margin:4px 0 0;font:600 20px/26px var(--font-sans);color:var(--text-1)}
+.boot__text{margin:0;font-size:var(--fs-md);line-height:var(--lh-md);color:var(--text-2)}
+.boot__text b{color:var(--text-1);font-weight:600}
+.boot__detail{width:100%;margin:0;padding:10px 12px;border-radius:var(--r-2);background:var(--well);border:1px solid var(--border-1);color:var(--bad-text);font:400 12px/18px var(--font-mono);white-space:pre-wrap;overflow-wrap:anywhere;user-select:text;max-height:160px;overflow:auto}
+.boot__actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
 
 /* ---------- shortcuts sheet ---------- */
 .shortcuts{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px 24px}

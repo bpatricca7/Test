@@ -1,0 +1,2622 @@
+{
+  "model": "opus-sim",
+  "passes": [
+    [
+      "m67443-27-r-0019-att-j2.pdf"
+    ]
+  ],
+  "calls": [
+    {
+      "name": "set_site_info",
+      "input": {
+        "installation_name": "Marine Corps Base Camp Halloran",
+        "location": "North Carolina, USA",
+        "solicitation": "M67443-27-R-0019",
+        "contract_name": "Garrison Food Service (Full Food Service and Management and Mess Attendant Services)",
+        "climate_zone": "temperate",
+        "growing_season_weeks": null,
+        "contract_years": 5,
+        "notes": "Two installations: MCB Camp Halloran (Mainside, Tarrant Creek, Oyster Bay, Camp Whitlock, Camp Dunning, Shell Point Range Complex) and MCAS Pell River, North Carolina. Phase-in 1-30 Sep 2027 (30 days, not separately priced); base 1 Oct 2027-30 Sep 2028 (12 months) plus four 12-month option periods through 30 Sep 2032; possible extension up to 6 months under FAR 52.217-8 (not an option period). Subsistence is Government-furnished (DLA prime vendor), not in the contract price. Grounds maintenance is performed by the Government (TE-5 5.2, Q&A A8). Climate not stated; inferred from North Carolina."
+      },
+      "pass": 0
+    },
+    {
+      "name": "declare_tables",
+      "input": {
+        "tables": [
+          {
+            "table_id": "TE-1",
+            "title": "Technical Exhibit 1 (TE-1) - Mess Hall Facility Data",
+            "kind": "facilities",
+            "file": "m67443-27-r-0019-att-j2.pdf",
+            "pages": "3-4",
+            "row_count": 20,
+            "printed_total_gross_area": 453095,
+            "area_unit": "sf",
+            "printed_totals": []
+          },
+          {
+            "table_id": "TE-3",
+            "title": "Technical Exhibit 3 (TE-3) - Estimated Workload: Average Headcount per Meal Period",
+            "kind": "dining",
+            "file": "m67443-27-r-0019-att-j2.pdf",
+            "pages": "6",
+            "row_count": 19,
+            "printed_total_gross_area": null,
+            "area_unit": null,
+            "printed_totals": []
+          },
+          {
+            "table_id": "TE-3A",
+            "title": "Technical Exhibit 3A (TE-3A) - Optional Line Item: Projected Headcount, Bldg D-1720",
+            "kind": "dining",
+            "file": "m67443-27-r-0019-att-j2.pdf",
+            "pages": "7",
+            "row_count": 1,
+            "printed_total_gross_area": null,
+            "area_unit": null,
+            "printed_totals": []
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "TE-1",
+            "campus": "MCB Camp Halloran",
+            "building_number": "211",
+            "line_item": null,
+            "name": "Mess Hall 211",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 31480,
+            "added_areas": null,
+            "cleanable_area": 27915,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7 (seven days a week including Federal holidays)",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": null,
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 520,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 9860,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 3,
+              "excerpt": "1 | 211 | Mess Hall 211 | Mainside | FFS | 1972 / 2009 | 1 | 31,480 | 27,915 | 9,860 | 520 | 7"
+            },
+            "confidence": 0.95,
+            "notes": "Area: Mainside. Service type FFS; built/renovated 1972 / 2009. Sanitation Area (TE-1 col 9) is the area cleaned (Q&A A3)."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": "MCB Camp Halloran",
+            "building_number": "227",
+            "line_item": null,
+            "name": "Mess Hall 227",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 23460,
+            "added_areas": null,
+            "cleanable_area": 20690,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7 (seven days a week including Federal holidays)",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": null,
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 860,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 15240,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 3,
+              "excerpt": "2 | 227 | Mess Hall 227 | Mainside | FFS | 1984 / 2016 | 2 | 23,460 | 20,690 | 15,240 | 860 | 7 | Two service floors, two kitchens. Midrats 7 days."
+            },
+            "confidence": 0.95,
+            "notes": "Area: Mainside. Service type FFS; built/renovated 1984 / 2016. Sanitation Area (TE-1 col 9) is the area cleaned (Q&A A3). Remarks: Two service floors, two kitchens. Midrats 7 days."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": "MCB Camp Halloran",
+            "building_number": "260",
+            "line_item": null,
+            "name": "Mess Hall 260 (Headquarters and Support Battalion)",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 18250,
+            "added_areas": null,
+            "cleanable_area": 15970,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: M–F",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": null,
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 5,
+              "seats": 280,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 5420,
+              "service_style": "dining_facility_attendant"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 3,
+              "excerpt": "3 | 260 | Mess Hall 260 (Headquarters and Support Battalion) | Mainside | M&MA | 1966 / 2011 | 1 | 18,250 | 15,970 | 5,420 | 280 | M–F | Closed weekends and holidays."
+            },
+            "confidence": 0.95,
+            "notes": "Area: Mainside. Service type M&MA; built/renovated 1966 / 2011. Sanitation Area (TE-1 col 9) is the area cleaned (Q&A A3). Remarks: Closed weekends and holidays. M&MA: Marines cook; contractor provides management, mess attendants, cashiers and all sanitation."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": "MCB Camp Halloran",
+            "building_number": "408",
+            "line_item": null,
+            "name": "Mess Hall 408",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 26940,
+            "added_areas": null,
+            "cleanable_area": 23780,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7 (seven days a week including Federal holidays)",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": null,
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 450,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 8350,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 3,
+              "excerpt": "4 | 408 | Mess Hall 408 | Mainside | FFS | 1979 / 2014 | 1 | 26,940 | 23,780 | 8,350 | 450 | 7"
+            },
+            "confidence": 0.95,
+            "notes": "Area: Mainside. Service type FFS; built/renovated 1979 / 2014. Sanitation Area (TE-1 col 9) is the area cleaned (Q&A A3)."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": "MCB Camp Halloran",
+            "building_number": "1104",
+            "line_item": null,
+            "name": "Wolf Creek Mess Hall",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 38640,
+            "added_areas": null,
+            "cleanable_area": 34210,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7 (seven days a week including Federal holidays)",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": null,
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 650,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 12100,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 3,
+              "excerpt": "5 | 1104 | Wolf Creek Mess Hall | Mainside (Wolf Creek barracks complex) | FFS | 2010 | 1 | 38,640 | 34,210 | 12,100 | 650 | 7"
+            },
+            "confidence": 0.95,
+            "notes": "Area: Mainside (Wolf Creek barracks complex). Service type FFS; built/renovated 2010. Sanitation Area (TE-1 col 9) is the area cleaned (Q&A A3)."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": "MCB Camp Halloran",
+            "building_number": "TC-303",
+            "line_item": null,
+            "name": "Tarrant Creek Mess Hall 303",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 24860,
+            "added_areas": null,
+            "cleanable_area": 21940,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: M–F",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": null,
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 5,
+              "seats": 410,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 7780,
+              "service_style": "dining_facility_attendant"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 3,
+              "excerpt": "6 | TC-303 | Tarrant Creek Mess Hall 303 | Tarrant Creek | M&MA | 1968 / 2006 | 1 | 24,860 | 21,940 | 7,780 | 410 | M–F | Closed weekends and holidays."
+            },
+            "confidence": 0.95,
+            "notes": "Area: Tarrant Creek. Service type M&MA; built/renovated 1968 / 2006. Sanitation Area (TE-1 col 9) is the area cleaned (Q&A A3). Remarks: Closed weekends and holidays. M&MA: Marines cook; contractor provides management, mess attendants, cashiers and all sanitation."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": "MCB Camp Halloran",
+            "building_number": "TC-410",
+            "line_item": null,
+            "name": "Tarrant Creek Mess Hall 410",
+            "status": "vacant",
+            "status_reason": "CLOSED (TE-1 Note 5): Closed for renovation since 5 Jan 2026. No workload. Not included in totals. Reopening is not scheduled.",
+            "category": "dining",
+            "gross_area": 29700,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "CLOSED",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": null,
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": null,
+              "seats": 500,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 9150,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 3,
+              "excerpt": "7 | TC-410 | Tarrant Creek Mess Hall 410 | Tarrant Creek | (FFS) | 1987 | 1 | (29,700) | — | (9,150) | (500) | CLOSED5 | Closed for renovation since 5 Jan 2026. No workload. Not included in totals."
+            },
+            "confidence": 0.9,
+            "notes": "Area: Tarrant Creek. Figures in parentheses are information only (TE-1 Note 5); diners fed at TC-575. Q&A A2: do not price TC-410."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": "MCB Camp Halloran",
+            "building_number": "TC-575",
+            "line_item": null,
+            "name": "Tarrant Creek Mess Hall 575",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 35410,
+            "added_areas": null,
+            "cleanable_area": 31265,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7 (seven days a week including Federal holidays)",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": null,
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 600,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 11050,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 3,
+              "excerpt": "8 | TC-575 | Tarrant Creek Mess Hall 575 | Tarrant Creek | FFS | 2012 | 1 | 35,410 | 31,265 | 11,050 | 600 | 7 | Feeds TC-410 diners since 5 Jan 2026."
+            },
+            "confidence": 0.95,
+            "notes": "Area: Tarrant Creek. Service type FFS; built/renovated 2012. Sanitation Area (TE-1 col 9) is the area cleaned (Q&A A3). Remarks: Feeds TC-410 diners since 5 Jan 2026."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": "MCB Camp Halloran",
+            "building_number": "OB-160",
+            "line_item": null,
+            "name": "Oyster Bay Mess Hall",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 21330,
+            "added_areas": null,
+            "cleanable_area": 18870,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7 (seven days a week including Federal holidays)",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": null,
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 330,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 6480,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 3,
+              "excerpt": "9 | OB-160 | Oyster Bay Mess Hall | Oyster Bay | FFS | 1979 / 2015 | 1 | 21,330 | 18,870 | 6,480 | 330 | 7"
+            },
+            "confidence": 0.95,
+            "notes": "Area: Oyster Bay. Service type FFS; built/renovated 1979 / 2015. Sanitation Area (TE-1 col 9) is the area cleaned (Q&A A3)."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": "MCB Camp Halloran",
+            "building_number": "W-48",
+            "line_item": null,
+            "name": "Camp Whitlock Mess Hall 48",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 22615,
+            "added_areas": null,
+            "cleanable_area": 19940,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7 (seven days a week including Federal holidays)",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": null,
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 380,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 7060,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 3,
+              "excerpt": "10 | W-48 | Camp Whitlock Mess Hall 48 | Camp Whitlock | FFS | 1992 | 1 | 22,615 | 19,940 | 7,060 | 380 | 7"
+            },
+            "confidence": 0.95,
+            "notes": "Area: Camp Whitlock. Service type FFS; built/renovated 1992. Sanitation Area (TE-1 col 9) is the area cleaned (Q&A A3)."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": "MCB Camp Halloran",
+            "building_number": "W-133",
+            "line_item": null,
+            "name": "Camp Whitlock Schools Mess Hall",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 27560,
+            "added_areas": null,
+            "cleanable_area": 24410,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_6",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: M–Sa",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": null,
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 6,
+              "seats": 450,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 8920,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 3,
+              "excerpt": "11 | W-133 | Camp Whitlock Schools Mess Hall | Camp Whitlock (Combat Service Support Schools) | FFS | 1990 / 2018 | 1 | 27,560 | 24,410 | 8,920 | 450 | M–Sa | Saturday brunch and supper only; close..."
+            },
+            "confidence": 0.95,
+            "notes": "Area: Camp Whitlock (Combat Service Support Schools). Service type FFS; built/renovated 1990 / 2018. Sanitation Area (TE-1 col 9) is the area cleaned (Q&A A3). Remarks: Saturday brunch and supper only; closed Sundays and holidays."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": "MCB Camp Halloran",
+            "building_number": "D-301",
+            "line_item": null,
+            "name": "Mess Hall 301 (Marine Combat Training Battalion)",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 33180,
+            "added_areas": null,
+            "cleanable_area": 29350,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7 (seven days a week including Federal holidays)",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": null,
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 560,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 10240,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 4,
+              "excerpt": "12 | D-301 | Mess Hall 301 (Marine Combat Training Battalion) | Camp Dunning | FFS | 2001 | 1 | 33,180 | 29,350 | 10,240 | 560 | 7 | Training schedule: breakfast, lunch and dinner 7 days."
+            },
+            "confidence": 0.95,
+            "notes": "Area: Camp Dunning. Service type FFS; built/renovated 2001. Sanitation Area (TE-1 col 9) is the area cleaned (Q&A A3). Remarks: Training schedule: breakfast, lunch and dinner 7 days."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": "MCB Camp Halloran",
+            "building_number": "D-450",
+            "line_item": null,
+            "name": "Mess Hall 450 (Infantry Training Battalion)",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 42180,
+            "added_areas": null,
+            "cleanable_area": 37250,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7 (seven days a week including Federal holidays)",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": null,
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 720,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 13600,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 4,
+              "excerpt": "13 | D-450 | Mess Hall 450 (Infantry Training Battalion) | Camp Dunning | FFS | 2005 | 1 | 42,180 | 37,250 | 13,600 | 720 | 7 | Training schedule: breakfast, lunch and dinner 7 days."
+            },
+            "confidence": 0.95,
+            "notes": "Area: Camp Dunning. Service type FFS; built/renovated 2005. Sanitation Area (TE-1 col 9) is the area cleaned (Q&A A3). Remarks: Training schedule: breakfast, lunch and dinner 7 days."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": "MCB Camp Halloran",
+            "building_number": "D-512",
+            "line_item": null,
+            "name": "Mess Hall 512",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 23940,
+            "added_areas": null,
+            "cleanable_area": 21050,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7 (seven days a week including Federal holidays)",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": null,
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 400,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 7320,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 4,
+              "excerpt": "14 | D-512 | Mess Hall 512 | Camp Dunning | FFS | 1974 / 2003 | 1 | 23,940 | 21,050 | 7,320 | 400 | 7 | Training schedule: breakfast, lunch and dinner 7 days."
+            },
+            "confidence": 0.95,
+            "notes": "Area: Camp Dunning. Service type FFS; built/renovated 1974 / 2003. Sanitation Area (TE-1 col 9) is the area cleaned (Q&A A3). Remarks: Training schedule: breakfast, lunch and dinner 7 days."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": "MCB Camp Halloran",
+            "building_number": "D-615",
+            "line_item": null,
+            "name": "Mess Hall 615",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 19880,
+            "added_areas": null,
+            "cleanable_area": 17420,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7 (seven days a week including Federal holidays)",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": null,
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 300,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 5760,
+              "service_style": "dining_facility_attendant"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 4,
+              "excerpt": "15 | D-615 | Mess Hall 615 | Camp Dunning | M&MA | 1983 / 2012 | 1 | 19,880 | 17,420 | 5,760 | 300 | 7"
+            },
+            "confidence": 0.95,
+            "notes": "Area: Camp Dunning. Service type M&MA; built/renovated 1983 / 2012. Sanitation Area (TE-1 col 9) is the area cleaned (Q&A A3). M&MA: Marines cook; contractor provides management, mess attendants, cashiers and all sanitation."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": "MCB Camp Halloran",
+            "building_number": "D-1720",
+            "line_item": null,
+            "name": "Camp Dunning Mess Hall (New), MILCON P-1312",
+            "status": "option_only",
+            "status_reason": "OPTION (TE-1 Note 6): Optional line item only. BOD est. 2d Qtr FY 2029. Not included in totals; added only if the Government exercises the optional line item (Section B).",
+            "category": "dining",
+            "gross_area": 48500,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "OPTION (training schedule: breakfast, lunch and dinner seven days a week per TE-3A)",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": null,
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 800,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 15900,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 4,
+              "excerpt": "16 | D-1720 | Camp Dunning Mess Hall (New), MILCON P-1312 | Camp Dunning | (FFS) | (2029) | 1 | (48,500) | — | (15,900) | (800) | OPTION6 | Optional line item only. BOD est. 2d Qtr FY 2029. Not inc..."
+            },
+            "confidence": 0.85,
+            "notes": "Area: Camp Dunning. New construction (MILCON P-1312); figures in parentheses are projected. No sanitation area printed. Projected headcount in TE-3A."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": "MCB Camp Halloran",
+            "building_number": "SP-24",
+            "line_item": null,
+            "name": "Shell Point Range Satellite",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 4850,
+            "added_areas": null,
+            "cleanable_area": 4310,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: M–F",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": null,
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 5,
+              "seats": 90,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 1620,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 4,
+              "excerpt": "17 | SP-24 | Shell Point Range Satellite | Shell Point Range Complex | SAT | 1996 | 1 | 4,850 | 4,310 | 1,620 | 90 | M–F | Parent mess hall D-301. Closed weekends and holidays."
+            },
+            "confidence": 0.95,
+            "notes": "Area: Shell Point Range Complex. Service type SAT; built/renovated 1996. Sanitation Area (TE-1 col 9) is the area cleaned (Q&A A3). Remarks: Parent mess hall D-301. Closed weekends and holidays. Satellite: hot meals prepared by the Contractor at the parent FFS mess hall and served here; separate building and headcount (TE-1 Note 7)."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": "MCAS Pell River",
+            "building_number": "AS-4150",
+            "line_item": null,
+            "name": "Pell River Mess Hall",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 33720,
+            "added_areas": null,
+            "cleanable_area": 29860,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7 (seven days a week including Federal holidays)",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": null,
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 560,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 10480,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 4,
+              "excerpt": "18 | AS-4150 | Pell River Mess Hall | MCAS Pell River | FFS | 1998 / 2019 | 1 | 33,720 | 29,860 | 10,480 | 560 | 7 | Midrats 7 days (flight line night shifts)."
+            },
+            "confidence": 0.95,
+            "notes": "Area: MCAS Pell River. Service type FFS; built/renovated 1998 / 2019. Sanitation Area (TE-1 col 9) is the area cleaned (Q&A A3). Remarks: Midrats 7 days (flight line night shifts)."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": "MCAS Pell River",
+            "building_number": "AS-219",
+            "line_item": null,
+            "name": "Flight Line Satellite",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 4260,
+            "added_areas": null,
+            "cleanable_area": 3790,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: M–F",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": null,
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 5,
+              "seats": 72,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 1380,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 4,
+              "excerpt": "19 | AS-219 | Flight Line Satellite | MCAS Pell River (Hangar Row) | SAT | 1987 / 2024 | 1 | 4,260 | 3,790 | 1,380 | 72 | M–F | Parent mess hall AS-4150. Lunch and Midrats only."
+            },
+            "confidence": 0.95,
+            "notes": "Area: MCAS Pell River (Hangar Row). Service type SAT; built/renovated 1987 / 2024. Sanitation Area (TE-1 col 9) is the area cleaned (Q&A A3). Remarks: Parent mess hall AS-4150. Lunch and Midrats only. Satellite: hot meals prepared by the Contractor at the parent FFS mess hall and served here; separate building and headcount (TE-1 Note 7)."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": "MCAS Pell River",
+            "building_number": "AS-505",
+            "line_item": null,
+            "name": "Mess Hall AS-505",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 20540,
+            "added_areas": null,
+            "cleanable_area": 18135,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7 (seven days a week including Federal holidays)",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": null,
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 340,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 6150,
+              "service_style": "dining_facility_attendant"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 4,
+              "excerpt": "20 | AS-505 | Mess Hall AS-505 | MCAS Pell River | M&MA | 1985 / 2013 | 1 | 20,540 | 18,135 | 6,150 | 340 | 7"
+            },
+            "confidence": 0.95,
+            "notes": "Area: MCAS Pell River. Service type M&MA; built/renovated 1985 / 2013. Sanitation Area (TE-1 col 9) is the area cleaned (Q&A A3). M&MA: Marines cook; contractor provides management, mess attendants, cashiers and all sanitation."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "TE-3",
+            "campus": "MCB Camp Halloran",
+            "building_number": "211",
+            "line_item": null,
+            "name": "Mess Hall 211",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": [
+                {
+                  "period": "Breakfast",
+                  "weekday_headcount": 385,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Brunch",
+                  "weekday_headcount": null,
+                  "weekend_headcount": 330
+                },
+                {
+                  "period": "Lunch",
+                  "weekday_headcount": 760,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Dinner / Supper",
+                  "weekday_headcount": 410,
+                  "weekend_headcount": 270
+                }
+              ],
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 520,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 9860,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 6,
+              "excerpt": "1 | 211 | Mess Hall 211 | 7 | 385 | 760 | 410 | — | 1,555 | — | 330 | — | 270 | — | 600 | 8,975"
+            },
+            "confidence": 0.95,
+            "notes": "TE-3 average headcount per meal period (MCFMIS 1 Jul 2025-30 Jun 2026, adjusted); M-F total 1,555, weekend/holiday total 600; est. weekly meals 8,975."
+          },
+          {
+            "table_id": "TE-3",
+            "campus": "MCB Camp Halloran",
+            "building_number": "227",
+            "line_item": null,
+            "name": "Mess Hall 227",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": [
+                {
+                  "period": "Breakfast",
+                  "weekday_headcount": 540,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Brunch",
+                  "weekday_headcount": null,
+                  "weekend_headcount": 470
+                },
+                {
+                  "period": "Lunch",
+                  "weekday_headcount": 1180,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Dinner / Supper",
+                  "weekday_headcount": 610,
+                  "weekend_headcount": 390
+                },
+                {
+                  "period": "Midrats",
+                  "weekday_headcount": 150,
+                  "weekend_headcount": 95
+                }
+              ],
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 860,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 15240,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 6,
+              "excerpt": "2 | 227 | Mess Hall 227 | 7 | 540 | 1,180 | 610 | 150 | 2,480 | — | 470 | — | 390 | 95 | 955 | 14,310 | Midrats 7 days."
+            },
+            "confidence": 0.95,
+            "notes": "TE-3 average headcount per meal period (MCFMIS 1 Jul 2025-30 Jun 2026, adjusted); M-F total 2,480, weekend/holiday total 955; est. weekly meals 14,310."
+          },
+          {
+            "table_id": "TE-3",
+            "campus": "MCB Camp Halloran",
+            "building_number": "260",
+            "line_item": null,
+            "name": "Mess Hall 260 (Headquarters and Support Battalion)",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: M–F",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": [
+                {
+                  "period": "Breakfast",
+                  "weekday_headcount": 140,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Lunch",
+                  "weekday_headcount": 365,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Dinner / Supper",
+                  "weekday_headcount": 120,
+                  "weekend_headcount": null
+                }
+              ],
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 5,
+              "seats": 280,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 5420,
+              "service_style": "dining_facility_attendant"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 6,
+              "excerpt": "3 | 260 | Mess Hall 260 (Headquarters and Support Battalion) | M–F | 140 | 365 | 120 | — | 625 | CLOSED SAT, SUN AND HOLIDAYS | 3,125 | M&MA."
+            },
+            "confidence": 0.95,
+            "notes": "TE-3 average headcount per meal period (MCFMIS 1 Jul 2025-30 Jun 2026, adjusted); M-F total 625; est. weekly meals 3,125. M&MA (Marines cook; contractor provides management, mess attendants, cashiers and sanitation)."
+          },
+          {
+            "table_id": "TE-3",
+            "campus": "MCB Camp Halloran",
+            "building_number": "408",
+            "line_item": null,
+            "name": "Mess Hall 408",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": [
+                {
+                  "period": "Breakfast",
+                  "weekday_headcount": 310,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Brunch",
+                  "weekday_headcount": null,
+                  "weekend_headcount": 285
+                },
+                {
+                  "period": "Lunch",
+                  "weekday_headcount": 645,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Dinner / Supper",
+                  "weekday_headcount": 355,
+                  "weekend_headcount": 230
+                }
+              ],
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 450,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 8350,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 6,
+              "excerpt": "4 | 408 | Mess Hall 408 | 7 | 310 | 645 | 355 | — | 1,310 | — | 285 | — | 230 | — | 515 | 7,580"
+            },
+            "confidence": 0.95,
+            "notes": "TE-3 average headcount per meal period (MCFMIS 1 Jul 2025-30 Jun 2026, adjusted); M-F total 1,310, weekend/holiday total 515; est. weekly meals 7,580."
+          },
+          {
+            "table_id": "TE-3",
+            "campus": "MCB Camp Halloran",
+            "building_number": "1104",
+            "line_item": null,
+            "name": "Wolf Creek Mess Hall",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": [
+                {
+                  "period": "Breakfast",
+                  "weekday_headcount": 470,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Brunch",
+                  "weekday_headcount": null,
+                  "weekend_headcount": 420
+                },
+                {
+                  "period": "Lunch",
+                  "weekday_headcount": 980,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Dinner / Supper",
+                  "weekday_headcount": 540,
+                  "weekend_headcount": 345
+                }
+              ],
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 650,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 12100,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 6,
+              "excerpt": "5 | 1104 | Wolf Creek Mess Hall | 7 | 470 | 980 | 540 | — | 1,990 | — | 420 | — | 345 | — | 765 | 11,480"
+            },
+            "confidence": 0.95,
+            "notes": "TE-3 average headcount per meal period (MCFMIS 1 Jul 2025-30 Jun 2026, adjusted); M-F total 1,990, weekend/holiday total 765; est. weekly meals 11,480."
+          },
+          {
+            "table_id": "TE-3",
+            "campus": "MCB Camp Halloran",
+            "building_number": "TC-303",
+            "line_item": null,
+            "name": "Tarrant Creek Mess Hall 303",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: M–F",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": [
+                {
+                  "period": "Breakfast",
+                  "weekday_headcount": 210,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Lunch",
+                  "weekday_headcount": 520,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Dinner / Supper",
+                  "weekday_headcount": 190,
+                  "weekend_headcount": null
+                }
+              ],
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 5,
+              "seats": 410,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 7780,
+              "service_style": "dining_facility_attendant"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 6,
+              "excerpt": "6 | TC-303 | Tarrant Creek Mess Hall 303 | M–F | 210 | 520 | 190 | — | 920 | CLOSED SAT, SUN AND HOLIDAYS | 4,600 | M&MA."
+            },
+            "confidence": 0.95,
+            "notes": "TE-3 average headcount per meal period (MCFMIS 1 Jul 2025-30 Jun 2026, adjusted); M-F total 920; est. weekly meals 4,600. M&MA (Marines cook; contractor provides management, mess attendants, cashiers and sanitation)."
+          },
+          {
+            "table_id": "TE-3",
+            "campus": "MCB Camp Halloran",
+            "building_number": "TC-410",
+            "line_item": null,
+            "name": "Tarrant Creek Mess Hall 410",
+            "status": "vacant",
+            "status_reason": "N/A - CLOSED FOR RENOVATION - NO WORKLOAD (diners reassigned to TC-575; see TE-1 Note 5)",
+            "category": "dining",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "N/A",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 6,
+              "excerpt": "7 | TC-410 | Tarrant Creek Mess Hall 410 | N/A | CLOSED FOR RENOVATION – NO WORKLOAD (diners reassigned to TC-575; see TE-1 Note 5) | —"
+            },
+            "confidence": 0.9,
+            "notes": "No headcount; adds no data beyond closure."
+          },
+          {
+            "table_id": "TE-3",
+            "campus": "MCB Camp Halloran",
+            "building_number": "TC-575",
+            "line_item": null,
+            "name": "Tarrant Creek Mess Hall 575",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": [
+                {
+                  "period": "Breakfast",
+                  "weekday_headcount": 365,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Brunch",
+                  "weekday_headcount": null,
+                  "weekend_headcount": 350
+                },
+                {
+                  "period": "Lunch",
+                  "weekday_headcount": 830,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Dinner / Supper",
+                  "weekday_headcount": 445,
+                  "weekend_headcount": 285
+                }
+              ],
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 600,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 11050,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 6,
+              "excerpt": "8 | TC-575 | Tarrant Creek Mess Hall 575 | 7 | 365 | 830 | 445 | — | 1,640 | — | 350 | — | 285 | — | 635 | 9,470 | Includes former TC-410 diners."
+            },
+            "confidence": 0.95,
+            "notes": "TE-3 average headcount per meal period (MCFMIS 1 Jul 2025-30 Jun 2026, adjusted); M-F total 1,640, weekend/holiday total 635; est. weekly meals 9,470."
+          },
+          {
+            "table_id": "TE-3",
+            "campus": "MCB Camp Halloran",
+            "building_number": "OB-160",
+            "line_item": null,
+            "name": "Oyster Bay Mess Hall",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": [
+                {
+                  "period": "Breakfast",
+                  "weekday_headcount": 190,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Brunch",
+                  "weekday_headcount": null,
+                  "weekend_headcount": 160
+                },
+                {
+                  "period": "Lunch",
+                  "weekday_headcount": 415,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Dinner / Supper",
+                  "weekday_headcount": 215,
+                  "weekend_headcount": 125
+                }
+              ],
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 330,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 6480,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 6,
+              "excerpt": "9 | OB-160 | Oyster Bay Mess Hall | 7 | 190 | 415 | 215 | — | 820 | — | 160 | — | 125 | — | 285 | 4,670"
+            },
+            "confidence": 0.95,
+            "notes": "TE-3 average headcount per meal period (MCFMIS 1 Jul 2025-30 Jun 2026, adjusted); M-F total 820, weekend/holiday total 285; est. weekly meals 4,670."
+          },
+          {
+            "table_id": "TE-3",
+            "campus": "MCB Camp Halloran",
+            "building_number": "W-48",
+            "line_item": null,
+            "name": "Camp Whitlock Mess Hall 48",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": [
+                {
+                  "period": "Breakfast",
+                  "weekday_headcount": 255,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Brunch",
+                  "weekday_headcount": null,
+                  "weekend_headcount": 230
+                },
+                {
+                  "period": "Lunch",
+                  "weekday_headcount": 470,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Dinner / Supper",
+                  "weekday_headcount": 280,
+                  "weekend_headcount": 180
+                }
+              ],
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 380,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 7060,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 6,
+              "excerpt": "10 | W-48 | Camp Whitlock Mess Hall 48 | 7 | 255 | 470 | 280 | — | 1,005 | — | 230 | — | 180 | — | 410 | 5,845"
+            },
+            "confidence": 0.95,
+            "notes": "TE-3 average headcount per meal period (MCFMIS 1 Jul 2025-30 Jun 2026, adjusted); M-F total 1,005, weekend/holiday total 410; est. weekly meals 5,845."
+          },
+          {
+            "table_id": "TE-3",
+            "campus": "MCB Camp Halloran",
+            "building_number": "W-133",
+            "line_item": null,
+            "name": "Camp Whitlock Schools Mess Hall",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_6",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: M–Sa",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": [
+                {
+                  "period": "Breakfast",
+                  "weekday_headcount": 340,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Brunch",
+                  "weekday_headcount": null,
+                  "weekend_headcount": 260
+                },
+                {
+                  "period": "Lunch",
+                  "weekday_headcount": 690,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Dinner / Supper",
+                  "weekday_headcount": 395,
+                  "weekend_headcount": 195
+                }
+              ],
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 6,
+              "seats": 450,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 8920,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 6,
+              "excerpt": "11 | W-133 | Camp Whitlock Schools Mess Hall | M–Sa | 340 | 690 | 395 | — | 1,425 | — | 260 | — | 195 | — | 455 | 7,580 | Saturday only (closed Sun and holidays)."
+            },
+            "confidence": 0.95,
+            "notes": "TE-3 average headcount per meal period (MCFMIS 1 Jul 2025-30 Jun 2026, adjusted); M-F total 1,425, weekend/holiday total 455; est. weekly meals 7,580. Weekend columns are Saturday averages and apply to one day per week (TE-3 Note 3, Q&A A5); closed Sundays and Federal holidays."
+          },
+          {
+            "table_id": "TE-3",
+            "campus": "MCB Camp Halloran",
+            "building_number": "D-301",
+            "line_item": null,
+            "name": "Mess Hall 301 (Marine Combat Training Battalion)",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": [
+                {
+                  "period": "Breakfast",
+                  "weekday_headcount": 480,
+                  "weekend_headcount": 455
+                },
+                {
+                  "period": "Lunch",
+                  "weekday_headcount": 505,
+                  "weekend_headcount": 470
+                },
+                {
+                  "period": "Dinner / Supper",
+                  "weekday_headcount": 495,
+                  "weekend_headcount": 460
+                }
+              ],
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 560,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 10240,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 6,
+              "excerpt": "12 | D-301 | Mess Hall 301 (Marine Combat Training Battalion) | 7 | 480 | 505 | 495 | — | 1,480 | 455 | — | 470 | 460 | — | 1,385 | 10,170 | Training schedule."
+            },
+            "confidence": 0.95,
+            "notes": "TE-3 average headcount per meal period (MCFMIS 1 Jul 2025-30 Jun 2026, adjusted); M-F total 1,480, weekend/holiday total 1,385; est. weekly meals 10,170."
+          },
+          {
+            "table_id": "TE-3",
+            "campus": "MCB Camp Halloran",
+            "building_number": "D-450",
+            "line_item": null,
+            "name": "Mess Hall 450 (Infantry Training Battalion)",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": [
+                {
+                  "period": "Breakfast",
+                  "weekday_headcount": 610,
+                  "weekend_headcount": 585
+                },
+                {
+                  "period": "Lunch",
+                  "weekday_headcount": 655,
+                  "weekend_headcount": 600
+                },
+                {
+                  "period": "Dinner / Supper",
+                  "weekday_headcount": 630,
+                  "weekend_headcount": 590
+                }
+              ],
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 720,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 13600,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 6,
+              "excerpt": "13 | D-450 | Mess Hall 450 (Infantry Training Battalion) | 7 | 610 | 655 | 630 | — | 1,895 | 585 | — | 600 | 590 | — | 1,775 | 13,025 | Training schedule."
+            },
+            "confidence": 0.95,
+            "notes": "TE-3 average headcount per meal period (MCFMIS 1 Jul 2025-30 Jun 2026, adjusted); M-F total 1,895, weekend/holiday total 1,775; est. weekly meals 13,025."
+          },
+          {
+            "table_id": "TE-3",
+            "campus": "MCB Camp Halloran",
+            "building_number": "D-512",
+            "line_item": null,
+            "name": "Mess Hall 512",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": [
+                {
+                  "period": "Breakfast",
+                  "weekday_headcount": 240,
+                  "weekend_headcount": 225
+                },
+                {
+                  "period": "Lunch",
+                  "weekday_headcount": 255,
+                  "weekend_headcount": 230
+                },
+                {
+                  "period": "Dinner / Supper",
+                  "weekday_headcount": 245,
+                  "weekend_headcount": 225
+                }
+              ],
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 400,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 7320,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 6,
+              "excerpt": "14 | D-512 | Mess Hall 512 | 7 | 240 | 255 | 245 | — | 740 | 225 | — | 230 | 225 | — | 680 | 5,060 | Training schedule."
+            },
+            "confidence": 0.95,
+            "notes": "TE-3 average headcount per meal period (MCFMIS 1 Jul 2025-30 Jun 2026, adjusted); M-F total 740, weekend/holiday total 680; est. weekly meals 5,060."
+          },
+          {
+            "table_id": "TE-3",
+            "campus": "MCB Camp Halloran",
+            "building_number": "D-615",
+            "line_item": null,
+            "name": "Mess Hall 615",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": [
+                {
+                  "period": "Breakfast",
+                  "weekday_headcount": 175,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Brunch",
+                  "weekday_headcount": null,
+                  "weekend_headcount": 150
+                },
+                {
+                  "period": "Lunch",
+                  "weekday_headcount": 340,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Dinner / Supper",
+                  "weekday_headcount": 190,
+                  "weekend_headcount": 120
+                }
+              ],
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 300,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 5760,
+              "service_style": "dining_facility_attendant"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 6,
+              "excerpt": "15 | D-615 | Mess Hall 615 | 7 | 175 | 340 | 190 | — | 705 | — | 150 | — | 120 | — | 270 | 4,065 | M&MA."
+            },
+            "confidence": 0.95,
+            "notes": "TE-3 average headcount per meal period (MCFMIS 1 Jul 2025-30 Jun 2026, adjusted); M-F total 705, weekend/holiday total 270; est. weekly meals 4,065. M&MA (Marines cook; contractor provides management, mess attendants, cashiers and sanitation)."
+          },
+          {
+            "table_id": "TE-3",
+            "campus": "MCB Camp Halloran",
+            "building_number": "SP-24",
+            "line_item": null,
+            "name": "Shell Point Range Satellite",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: M–F",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": [
+                {
+                  "period": "Breakfast",
+                  "weekday_headcount": 95,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Dinner / Supper",
+                  "weekday_headcount": 110,
+                  "weekend_headcount": null
+                }
+              ],
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 5,
+              "seats": 90,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 1620,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 6,
+              "excerpt": "17 | SP-24 | Shell Point Range Satellite | M–F | 95 | N/S | 110 | — | 205 | CLOSED SAT, SUN AND HOLIDAYS | 1,025 | Satellite of D-301."
+            },
+            "confidence": 0.95,
+            "notes": "TE-3 average headcount per meal period (MCFMIS 1 Jul 2025-30 Jun 2026, adjusted); M-F total 205; est. weekly meals 1,025. Lunch not served (N/S; MREs not counted, TE-3 Note 6). Satellite of D-301; headcount recorded at the satellite."
+          },
+          {
+            "table_id": "TE-3",
+            "campus": "MCAS Pell River",
+            "building_number": "AS-4150",
+            "line_item": null,
+            "name": "Pell River Mess Hall",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": [
+                {
+                  "period": "Breakfast",
+                  "weekday_headcount": 330,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Brunch",
+                  "weekday_headcount": null,
+                  "weekend_headcount": 290
+                },
+                {
+                  "period": "Lunch",
+                  "weekday_headcount": 815,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Dinner / Supper",
+                  "weekday_headcount": 400,
+                  "weekend_headcount": 240
+                },
+                {
+                  "period": "Midrats",
+                  "weekday_headcount": 210,
+                  "weekend_headcount": 140
+                }
+              ],
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 560,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 10480,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 6,
+              "excerpt": "18 | AS-4150 | Pell River Mess Hall | 7 | 330 | 815 | 400 | 210 | 1,755 | — | 290 | — | 240 | 140 | 670 | 10,115 | Midrats 7 days."
+            },
+            "confidence": 0.95,
+            "notes": "TE-3 average headcount per meal period (MCFMIS 1 Jul 2025-30 Jun 2026, adjusted); M-F total 1,755, weekend/holiday total 670; est. weekly meals 10,115."
+          },
+          {
+            "table_id": "TE-3",
+            "campus": "MCAS Pell River",
+            "building_number": "AS-219",
+            "line_item": null,
+            "name": "Flight Line Satellite",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: M–F",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": [
+                {
+                  "period": "Lunch",
+                  "weekday_headcount": 240,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Midrats",
+                  "weekday_headcount": 85,
+                  "weekend_headcount": null
+                }
+              ],
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 5,
+              "seats": 72,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 1380,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 6,
+              "excerpt": "19 | AS-219 | Flight Line Satellite | M–F | — | 240 | — | 85 | 325 | CLOSED SAT, SUN AND HOLIDAYS | 1,625 | Satellite of AS-4150."
+            },
+            "confidence": 0.95,
+            "notes": "TE-3 average headcount per meal period (MCFMIS 1 Jul 2025-30 Jun 2026, adjusted); M-F total 325; est. weekly meals 1,625. Lunch and Midrats (2330-0100) only, Monday-Friday. Satellite of AS-4150."
+          },
+          {
+            "table_id": "TE-3",
+            "campus": "MCAS Pell River",
+            "building_number": "AS-505",
+            "line_item": null,
+            "name": "Mess Hall AS-505",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": [
+                {
+                  "period": "Breakfast",
+                  "weekday_headcount": 160,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Brunch",
+                  "weekday_headcount": null,
+                  "weekend_headcount": 140
+                },
+                {
+                  "period": "Lunch",
+                  "weekday_headcount": 390,
+                  "weekend_headcount": null
+                },
+                {
+                  "period": "Dinner / Supper",
+                  "weekday_headcount": 205,
+                  "weekend_headcount": 115
+                }
+              ],
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 340,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 6150,
+              "service_style": "dining_facility_attendant"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 6,
+              "excerpt": "20 | AS-505 | Mess Hall AS-505 | 7 | 160 | 390 | 205 | — | 755 | — | 140 | — | 115 | — | 255 | 4,285 | M&MA."
+            },
+            "confidence": 0.95,
+            "notes": "TE-3 average headcount per meal period (MCFMIS 1 Jul 2025-30 Jun 2026, adjusted); M-F total 755, weekend/holiday total 255; est. weekly meals 4,285. M&MA (Marines cook; contractor provides management, mess attendants, cashiers and sanitation)."
+          },
+          {
+            "table_id": "TE-3A",
+            "campus": "MCB Camp Halloran",
+            "building_number": "D-1720",
+            "line_item": null,
+            "name": "Camp Dunning Mess Hall (New), MILCON P-1312",
+            "status": "option_only",
+            "status_reason": "TE-3A: Optional line item only (Section B). Not part of the base requirement. Projected for the new Camp Dunning mess hall (MILCON P-1312), BOD est. 2d Qtr FY 2029.",
+            "category": "dining",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Training schedule (breakfast, lunch and dinner seven days a week)",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": [
+                {
+                  "period": "Breakfast",
+                  "weekday_headcount": 780,
+                  "weekend_headcount": 750
+                },
+                {
+                  "period": "Lunch",
+                  "weekday_headcount": 840,
+                  "weekend_headcount": 770
+                },
+                {
+                  "period": "Dinner",
+                  "weekday_headcount": 805,
+                  "weekend_headcount": 760
+                }
+              ],
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 800,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 15900,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 7,
+              "excerpt": "D-1720 | Camp Dunning Mess Hall (New), MILCON P-1312 | 780 | 840 | 805 | 2,425 | 750 | 770 | 760 | 2,280 | 16,685"
+            },
+            "confidence": 0.9,
+            "notes": "Projected headcount for pricing the optional line item only (Q&A A9). Est. weekly meals 16,685."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": null,
+            "campus": "MCB Camp Halloran",
+            "building_number": "D-512",
+            "line_item": null,
+            "name": "Mess Hall 512",
+            "status": "deleted_by_amendment",
+            "status_reason": "Amendment 0001 Item 1: TE-1 Item 14, TE-2 Item 14, TE-3 Item 14 and TE-4 Item 14, Bldg D-512, Mess Hall 512, Camp Dunning, are DELETED in their entirety. Do not price Bldg D-512.",
+            "category": "dining",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": null,
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 9,
+              "excerpt": "Item 1 – Bldg D-512 deleted. ... Bldg D-512, Mess Hall 512, Camp Dunning, are DELETED in their entirety. ... Do not price Bldg D-512."
+            },
+            "confidence": 0.95,
+            "notes": "Infantry Training Battalion consolidates into Bldg D-450 by 30 Sep 2027; Mess Hall 512 closes then and is turned over to the Facilities Department for disposal."
+          },
+          {
+            "table_id": null,
+            "campus": "MCB Camp Halloran",
+            "building_number": "D-450",
+            "line_item": null,
+            "name": "Mess Hall 450 (Infantry Training Battalion)",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Days of Opn: 7",
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": {
+              "meal_periods": [
+                {
+                  "period": "Breakfast",
+                  "weekday_headcount": 845,
+                  "weekend_headcount": 810
+                },
+                {
+                  "period": "Lunch",
+                  "weekday_headcount": 905,
+                  "weekend_headcount": 830
+                },
+                {
+                  "period": "Dinner / Supper",
+                  "weekday_headcount": 870,
+                  "weekend_headcount": 815
+                }
+              ],
+              "meals_per_day": null,
+              "meal_period_count": null,
+              "days_per_week": 7,
+              "seats": 720,
+              "kitchen_sqft": null,
+              "dining_room_sqft": 13600,
+              "service_style": "full_food_service"
+            },
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 9,
+              "excerpt": "Item 2 – D-450 (revised) | 845 | 905 | 870 | 2,620 | 810 | 830 | 815 | 2,455 | 18,010"
+            },
+            "confidence": 0.95,
+            "notes": "Amendment 0001 Item 2 revises TE-3 Item 13 (was 610/655/630 = 1,895 M-F; 585/600/590 = 1,775 weekend; 13,025 weekly). TE-1 Item 13 (Gross SF, Sanitation Area, seats) and TE-2 hours unchanged. Absorbs D-512 diners."
+          },
+          {
+            "table_id": null,
+            "campus": "MCB Camp Halloran",
+            "building_number": "227",
+            "line_item": null,
+            "name": "Mess Hall 227",
+            "status": null,
+            "status_reason": null,
+            "category": "dining",
+            "gross_area": 46920,
+            "added_areas": null,
+            "cleanable_area": 41380,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": null,
+            "scope": [
+              "dining",
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "m67443-27-r-0019-att-j2.pdf",
+              "page": 9,
+              "excerpt": "Item 3 – Bldg 227 area corrected. Column (8), Gross SF, is revised from “23,460” to read “46,920”, and Column (9), Sanitation Area SF, is revised from “20,690” to read “41,380”."
+            },
+            "confidence": 0.95,
+            "notes": "Amendment 0001 Item 3: figures as issued reflected the first service floor only. Dining Room SF 15,240 and seats 860 already covered both floors and are unchanged."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "set_previous_award",
+      "input": {
+        "incumbent": "Longleaf Garrison Dining, LLC",
+        "contract_number": "M67443-22-C-0004",
+        "contract_type": "FFP",
+        "total_value": 298746215,
+        "period_months": 60,
+        "annual_value": 63215480,
+        "spend_to_date": 233418605,
+        "spend_period_months": 48,
+        "award_year": 2022,
+        "source": {
+          "file": "m67443-27-r-0019-att-j2.pdf",
+          "page": 2,
+          "excerpt": "Longleaf Garrison Dining, LLC under firm-fixed-price Contract No. M67443-22-C-0004, awarded 15 September 2022 ... total contract value ... through Modification P00011, is $298,746,215."
+        },
+        "confidence": 0.95,
+        "notes": "Part 3.2 and Q&A A6: 12-month base plus four 12-month options, 1 Oct 2022 - 30 Sep 2027. Total value $298,746,215 includes all options as modified through P00011 (P00011 deleted Bldg TC-410 line items effective 5 Jan 2026 and increased TC-575). Option Period 4 (1 Oct 2026 - 30 Sep 2027, current period) = $63,215,480 (used as annual value). Total invoiced 1 Oct 2022 - 30 Sep 2026 (48 months) = $233,418,605 (A6). Not included: FAR 52.217-8 extension estimate $31,607,740 (6 months); banquet/special-event BPA M67443-24-A-0007 (ceiling $3,500,000); Government-furnished subsistence (FY2026 obligations approx. $38.9 million)."
+      },
+      "pass": 0
+    },
+    {
+      "name": "finish",
+      "input": {
+        "summary": "Garrison food service, MCB Camp Halloran and MCAS Pell River, NC (M67443-27-R-0019). TE-1 (20 rows) registered with Gross SF, Sanitation Area SF, dining room SF, seats and days of operation; TE-3 (19 rows) per-meal-period weekday and weekend/holiday headcounts; TE-3A projected headcount for optional Bldg D-1720 (option_only). TC-410 is closed for renovation (vacant, no workload). Amendment 0001 applied: D-512 deleted, D-450 headcount revised (2,620 M-F / 2,455 weekend), Bldg 227 corrected to 46,920 gross / 41,380 sanitation SF. In scope after the amendment: 15 mess halls and 2 satellites. Grounds maintenance is performed by the Government (TE-5 5.2, A8), so no grounds were registered. Incumbent: Longleaf Garrison Dining, LLC, FFP M67443-22-C-0004, $298,746,215 total value, Option Period 4 $63,215,480, $233,418,605 invoiced over 48 months.",
+        "unresolved": [
+          "TE-1 printed total gross 453,095 SF is the table as issued; Amendment 0001 Item 5 revises it to 452,615 SF (17 facilities) after deleting D-512 (-23,940) and correcting Bldg 227 (+23,460). TE-3 total is revised to 21,615 M-F / 9,655 weekend / 126,930 weekly.",
+          "M&MA mess halls (260, TC-303, D-615, AS-505) were recorded as dining_facility_attendant: Marines cook, the contractor provides management, mess attendants, cashiers and all sanitation; no service style exactly matches management plus mess attendant.",
+          "Satellites SP-24 and AS-219 were recorded as full_food_service because their meals are prepared by the contractor at the parent FFS mess halls (D-301, AS-4150) and their headcount is not in the parent's TE-3 figures.",
+          "Kitchen SF is not printed; TE-2 serving hours and TE-4 historical meals (information only) were not registered as workload tables."
+        ]
+      },
+      "pass": 0
+    }
+  ]
+}

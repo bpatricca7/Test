@@ -1,6 +1,6 @@
 /* Left panel › Inventory tab (UI spec §5.3). Owned by the inventory feature.
    Fixed chrome: toolbar 40 + chips 32 + column header 28 + footer 32 (+ the panel's 40 px tabs) = 172 px. */
-.inv{display:grid;grid-template-rows:var(--toolbar-h) 32px minmax(0,1fr) var(--foot-h);flex:1;min-height:0;min-width:0}
+.inv{display:grid;grid-template-rows:var(--toolbar-h) 32px minmax(0,1fr) var(--foot-h);flex:1;min-height:0;min-width:0;container:inv/inline-size}
 .inv__listwrap{display:grid;grid-template-rows:28px minmax(0,1fr);min-height:0;min-width:0}
 
 /* ---------- toolbar ---------- */
@@ -25,11 +25,16 @@
 .qchip.is-quiet{--chip-bg:var(--surface-2);--chip-bd:var(--border-1)}
 .qchip.is-quiet.chip--neutral{--chip-fg:var(--text-2)}
 .qchip__campus{max-width:140px;overflow:hidden;text-overflow:ellipsis}
+.qchip__campus-n{margin-left:4px}
+.qchip__campus.is-idle + .qchip__campus-n{margin-left:5px}
 .qchips__sep{width:1px;height:16px;background:var(--border-2);flex-shrink:0}
 .inv__chips{padding:0 16px 0 8px}
+/* short chip labels while the rail is narrow (spec wireframe: "Needs 32 · Flag 3 · Out 8"); full names in the tooltips */
+.qchip__short{display:none}
+@container inv (max-width:419px){.inv__chips .qchip__long{display:none}.inv__chips .qchip__short{display:inline}.inv__chips .qchip__campus.is-idle{display:none}}
 
 /* ---------- column header (28, sortable) ---------- */
-.inv__head{display:grid;grid-template-columns:60px minmax(0,1fr) 76px 20px;align-items:stretch;gap:8px;padding:0 8px 0 11px;border-bottom:1px solid var(--border-1);
+.inv__head{display:grid;grid-template-columns:var(--inv-no-w,48px) minmax(0,1fr) 72px;align-items:stretch;gap:8px;padding:0 8px 0 11px;border-bottom:1px solid var(--border-1);
   font:500 var(--fs-xs)/1 var(--font-sans);color:var(--text-3);min-width:0}
 .inv__th,.inv__th-part{all:unset;display:inline-flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;min-width:0;color:var(--text-3)}
 .inv__th:hover,.inv__th-part:hover{color:var(--text-1)}
@@ -39,7 +44,9 @@
 .inv__th--name{gap:4px}
 .inv__th-sec{font-weight:600;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;min-width:0}
 .inv__th-count{font-weight:500;color:var(--text-3)}
-.inv__th-by{color:var(--text-3);font-weight:400;white-space:nowrap;flex-shrink:0}
+.inv__th-by{display:inline-flex;align-items:center;color:var(--text-3);font-weight:400;white-space:nowrap;flex-shrink:0}
+/* narrow rail: the sort shows as the arrow alone (its name is in the tooltip) */
+@container inv (max-width:339px){.inv__th-by-label{display:none}}
 
 /* ---------- list ---------- */
 .inv__list{position:relative;overflow-y:auto;overflow-x:hidden;contain:strict;min-height:0;overscroll-behavior:contain;outline:none}
@@ -62,8 +69,9 @@
 .inv__foot{display:flex;align-items:center;gap:8px;padding:0 10px;border-top:1px solid var(--border-1);font-size:var(--fs-xs);color:var(--text-2);white-space:nowrap;min-width:0;overflow:hidden}
 .inv__foot-fte{margin-left:auto;font-family:var(--font-mono);font-size:var(--fs-sm);color:var(--accent)}
 
-/* ---------- row (40, two lines): [3px stripe][# 60][name flex][metrics 76][state 20] ---------- */
-.inv-row{position:relative;display:grid;grid-template-columns:60px minmax(0,1fr) 76px 20px;align-items:center;gap:8px;height:100%;padding:0 8px 0 11px;cursor:pointer;
+/* ---------- row (40, two lines): [3px stripe][# fits the numbers, 40–64][name flex][metrics 72]; the review icon
+   sits after the name (no column reserved for the few rows that show one) ---------- */
+.inv-row{position:relative;display:grid;grid-template-columns:var(--inv-no-w,48px) minmax(0,1fr) 72px;align-items:center;gap:8px;height:100%;padding:0 8px 0 11px;cursor:pointer;
   border-bottom:1px solid rgba(38,48,67,.6);transition:background-color var(--dur-1);user-select:none}
 .inv-row::before{content:"";position:absolute;left:0;top:4px;bottom:4px;width:3px;border-radius:0 2px 2px 0;background:var(--cat)}
 .inv-row::after{content:"";position:absolute;left:11px;bottom:0;height:2px;width:var(--fte);max-width:calc(100% - 19px);background:rgba(90,169,245,.45);pointer-events:none}
@@ -85,6 +93,7 @@
 
 .inv-row__no{display:flex;flex-direction:column;gap:2px;min-width:0}
 .inv-row__num{font:500 var(--fs-sm)/16px var(--font-mono);color:var(--text-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inv-row__num.is-name,.inv-row__kind{font:500 var(--fs-xs)/16px var(--font-sans);color:var(--text-2)}
 .inv-row__conf{display:inline-flex;align-items:center;gap:3px;font:500 var(--fs-xs)/14px var(--font-sans);white-space:nowrap}
 .inv-row__conf.is-verified{color:var(--ok-text)}
 .inv-row__name{display:flex;flex-direction:column;gap:2px;min-width:0}
@@ -95,7 +104,7 @@
 .inv-status{display:inline-block;max-width:100%;height:16px;padding:0 5px;border-radius:var(--r-1);background:var(--surface-3);color:var(--text-2);font:500 11.5px/16px var(--font-sans);font-style:normal;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:top}
 .inv-row__reason{color:var(--text-3)}
-.inv-row__metrics{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font:400 var(--fs-sm)/16px var(--font-mono);color:var(--text-2);min-width:0;white-space:nowrap}
+.inv-row__metrics{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font:400 var(--fs-sm)/16px var(--font-mono);color:var(--text-2);min-width:0;white-space:nowrap;overflow:hidden}
+.inv-row__metrics > span{max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .inv-row__fte{color:var(--accent)}
-.inv-row__state{display:grid;place-items:center}
-.inv-row__icon{display:inline-grid;place-items:center}
+.inv-row__icon{display:inline-grid;place-items:center;flex-shrink:0}

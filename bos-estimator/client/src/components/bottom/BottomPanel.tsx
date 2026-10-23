@@ -13,6 +13,7 @@ import { useHotkey } from '../lib/keys';
 import { cx } from '../lib/cx';
 import { Chip, IconButton, Select, Tabs } from '../ui';
 import { CREW_ICON, shiftLabel } from './crewIcons';
+import { fitNum } from '../../fmt';
 import '../../styles/bottom.css';
 
 const SPEEDS = [1, 4, 12, 30, 90, 240];
@@ -113,9 +114,9 @@ function CollapsedCrews({ onPlay, onSpeed }: { onPlay: () => void; onSpeed: (v: 
       <ClockControls onPlay={onPlay} onSpeed={onSpeed} compact />
       <div className="bp__mini-crews">
         {now.map((c) => (
-          <Chip key={c.crew} className="bp__mini-chip" dot={crewColor(c.crew)} selected={crewFilter === c.crew} onClick={() => setCrewFilter(crewFilter === c.crew ? null : c.crew)}
-            tooltip={`${crewMeta(c.crew).label}: ${c.onShift} of ${c.heads} on shift`} count={`${c.onShift}/${c.heads}`}>
-            {crewMeta(c.crew).short}
+          <Chip key={c.crew} className="bp__mini-chip" dot={crewColor(c.crew)} icon={CREW_ICON[c.crew]} selected={crewFilter === c.crew} onClick={() => setCrewFilter(crewFilter === c.crew ? null : c.crew)}
+            tooltip={`${crewMeta(c.crew).label}: ${c.onShift.toLocaleString()} of ${c.heads.toLocaleString()} on shift`} count={`${fitNum(c.onShift, 4)}/${fitNum(c.heads, 4)}`}>
+            <span className="bp__mini-name">{crewMeta(c.crew).short}</span>
           </Chip>
         ))}
       </div>
@@ -171,10 +172,10 @@ function CrewsBody({ onPlay, onSpeed }: { onPlay: () => void; onSpeed: (v: numbe
               <div key={c.crew} className={cx('bp__card', on && 'is-on', off && 'is-off')} style={{ ['--crew' as string]: crewColor(c.crew), ['--p' as string]: c.heads ? (c.working / c.heads) * 100 : 0 }}>
                 <button type="button" className="bp__card-main" aria-pressed={on} onClick={() => setCrewFilter(on ? null : c.crew)}
                   title={`${meta.label}: ${c.onShift} of ${c.heads} on shift, ${c.working} working${on ? ' · showing only this crew; click to show all' : ' · click to show only this crew in the 3D view'}`}>
-                  <span className="ring" aria-hidden><span>{c.working}</span></span>
+                  <span className="ring" aria-hidden><span>{ringNum(c.working)}</span></span>
                   <span className="txt">
                     <span className="name"><Icon size={13} strokeWidth={1.75} aria-hidden /><span className="nm">{meta.short}</span></span>
-                    <span className="cnt mono">{off ? `Off · ${shiftLabel(meta.shift)}` : `${c.onShift}/${c.heads} on`}</span>
+                    <span className="cnt mono">{off ? `Off · ${shiftLabel(meta.shift)}` : `${fitNum(c.onShift, 5)}/${fitNum(c.heads, 5)} on`}</span>
                     {!off && <span className="now">{nowText}</span>}
                   </span>
                 </button>
@@ -190,6 +191,9 @@ function CrewsBody({ onPlay, onSpeed }: { onPlay: () => void; onSpeed: (v: numbe
     </div>
   );
 }
+
+/** The 24 px ring shows at most three characters: 68562 → 69K. */
+const ringNum = (v: number) => (v < 1000 ? String(v) : v < 999_500 ? `${Math.round(v / 1000)}K` : `${Math.max(1, Math.round(v / 1e6))}M`);
 
 function LastLogLine() {
   const line = useStore((s) => { const l = s.extraction.log; for (let i = l.length - 1; i >= 0; i--) if (l[i].kind !== 'thinking') return l[i].text; return ''; });
@@ -212,6 +216,14 @@ function LogBody() {
   const docWarnings = useMemo(() => (docs ?? []).flatMap((d) => (d.warnings ?? []).map((w) => `${d.name}: ${w}`)), [docs]);
   const showDocWarnings = (filter === 'warnings' || (filter === 'all' && log.length === 0)) && counts.warnings === 0 && docWarnings.length > 0;
   useLayoutEffect(() => { const el = ref.current; if (el && atBottom.current) el.scrollTop = el.scrollHeight; }, [rows]);
+  // the pane grows (dock transition, wrapped lines settling): keep the newest line fully in view while following the end
+  useLayoutEffect(() => {
+    const el = ref.current; if (!el) return;
+    const stick = () => { if (atBottom.current) el.scrollTop = el.scrollHeight; };
+    const ro = new ResizeObserver(stick); ro.observe(el);
+    const raf = requestAnimationFrame(stick);
+    return () => { ro.disconnect(); cancelAnimationFrame(raf); };
+  }, []);
   const copy = () => { void navigator.clipboard?.writeText(log.map((l) => `${new Date(l.t).toISOString()} ${l.kind}: ${l.text}`).join('\n')).then(() => useStore.getState().pushToast({ text: `Copied ${log.length} log lines`, tone: 'ok', ttl: 2000 })).catch(() => {}); };
   return (
     <div className="bp__log">

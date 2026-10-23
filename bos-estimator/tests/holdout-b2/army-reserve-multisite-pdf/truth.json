@@ -349,9 +349,9 @@
       },
       {
         "kind": "parking",
-        "quantity": 3912,
+        "quantity": 5118,
         "unit": "sqyd",
-        "name": "MN012 Willmar USARC/OMS - POV parking (paved)"
+        "name": "MN012 Willmar USARC/OMS - plowed paved area (POV parking + roads & drives)"
       },
       {
         "kind": "sidewalk",
@@ -373,9 +373,9 @@
       },
       {
         "kind": "parking",
-        "quantity": 9615,
+        "quantity": 12485,
         "unit": "sqyd",
-        "name": "MN027 St. Cloud AFRC/AMSA #81 - POV parking (paved)"
+        "name": "MN027 St. Cloud AFRC/AMSA #81 - plowed paved area (POV parking + roads & drives)"
       },
       {
         "kind": "sidewalk",
@@ -391,9 +391,9 @@
       },
       {
         "kind": "parking",
-        "quantity": 2840,
+        "quantity": 3700,
         "unit": "sqyd",
-        "name": "MN041 Rochester USARC - POV parking (paved)"
+        "name": "MN041 Rochester USARC - plowed paved area (POV parking + roads & drives)"
       },
       {
         "kind": "sidewalk",
@@ -415,9 +415,9 @@
       },
       {
         "kind": "parking",
-        "quantity": 4105,
+        "quantity": 5520,
         "unit": "sqyd",
-        "name": "MN050 Duluth USARC - POV parking (paved)"
+        "name": "MN050 Duluth USARC - plowed paved area (POV parking + roads & drives)"
       },
       {
         "kind": "sidewalk",
@@ -433,9 +433,9 @@
       },
       {
         "kind": "parking",
-        "quantity": 2215,
+        "quantity": 2855,
         "unit": "sqyd",
-        "name": "MN066 Fergus Falls USARC - POV parking (paved)"
+        "name": "MN066 Fergus Falls USARC - plowed paved area (POV parking + roads & drives)"
       },
       {
         "kind": "sidewalk",
@@ -451,9 +451,9 @@
       },
       {
         "kind": "parking",
-        "quantity": 10480,
+        "quantity": 13720,
         "unit": "sqyd",
-        "name": "MN073 Eagan USARC - POV parking (paved)"
+        "name": "MN073 Eagan USARC - plowed paved area (POV parking + roads & drives)"
       },
       {
         "kind": "sidewalk",
@@ -475,9 +475,9 @@
       },
       {
         "kind": "parking",
-        "quantity": 8730,
+        "quantity": 11340,
         "unit": "sqyd",
-        "name": "ND008 Bismarck AFRC/AMSA #92 - POV parking (paved)"
+        "name": "ND008 Bismarck AFRC/AMSA #92 - plowed paved area (POV parking + roads & drives)"
       },
       {
         "kind": "sidewalk",
@@ -493,9 +493,9 @@
       },
       {
         "kind": "parking",
-        "quantity": 4380,
+        "quantity": 5500,
         "unit": "sqyd",
-        "name": "ND021 Fargo USARC - POV parking (paved)"
+        "name": "ND021 Fargo USARC - plowed paved area (POV parking + roads & drives)"
       },
       {
         "kind": "sidewalk",
@@ -517,9 +517,9 @@
       },
       {
         "kind": "parking",
-        "quantity": 2560,
+        "quantity": 3350,
         "unit": "sqyd",
-        "name": "ND035 Minot USARC - POV parking (paved)"
+        "name": "ND035 Minot USARC - plowed paved area (POV parking + roads & drives)"
       },
       {
         "kind": "sidewalk",
@@ -535,9 +535,9 @@
       },
       {
         "kind": "parking",
-        "quantity": 8240,
+        "quantity": 10545,
         "unit": "sqyd",
-        "name": "SD004 Sioux Falls USARC/AMSA #94 - POV parking (paved)"
+        "name": "SD004 Sioux Falls USARC/AMSA #94 - plowed paved area (POV parking + roads & drives)"
       },
       {
         "kind": "sidewalk",
@@ -559,9 +559,9 @@
       },
       {
         "kind": "parking",
-        "quantity": 3150,
+        "quantity": 4130,
         "unit": "sqyd",
-        "name": "SD011 Rapid City USARC - POV parking (paved)"
+        "name": "SD011 Rapid City USARC - plowed paved area (POV parking + roads & drives)"
       },
       {
         "kind": "sidewalk",
@@ -577,9 +577,9 @@
       },
       {
         "kind": "parking",
-        "quantity": 1870,
+        "quantity": 2390,
         "unit": "sqyd",
-        "name": "SD026 Aberdeen USARC - POV parking (paved)"
+        "name": "SD026 Aberdeen USARC - plowed paved area (POV parking + roads & drives)"
       },
       {
         "kind": "sidewalk",
@@ -616,8 +616,8 @@
     "Numeric distractor columns between the description and the frequency: Year Built (with a \"1964 / 2026\" pair at Duluth), Floors (1-3), and four latrine-fixture columns WC / UR / LAV / SH. Superscript note markers are glued to header words in the text layer (\"SF3\", \"Fixtures4\", \"Freq.5\", \"Wknd6\", \"Acres1\", \"(Ac.)3\", \"(SY)4\") and the \"1\" and \"2\" markers float on a line of their own above the header.",
     "Frequency codes are defined in PWS 5.2: 5/W -> daily_5, 3/W -> 3x_week, 2/W -> 2x_week, 1/W -> weekly, BW (every other week, 26/yr) -> biweekly, M -> monthly, Q -> quarterly, N/S -> no service. The \"BA Wknd\" Y/N column is an additional Sunday service on each monthly Battle Assembly weekend (about 12 per year, PWS 5.3, Amendment Q6); it does not turn 5/W into daily_6 or daily_7.",
     "Restroom fixtures: expected restroomFixtures = WC + UR + LAV + SH for each serviced building that prints counts (e.g. MN073-01 24 + 12 + 22 + 14 = 72). Quarterly unheated storage prints \"—\" and carries no restroomFixtures.",
-    "Grounds units are mixed and some columns are information only: improved Mow & Trim and semi-improved in acres; POV parking, MEP and roads in square yards (SY); walks / ramps / slabs to shovel in square feet; edging in linear feet. Expected grounds per base site: improved_turf (acres), semi_improved (acres, five sites), parking = POV Parking SY only, sidewalk = Shovel / Blow SF. Not expected: Site Acres (whole parcel, Note 1, total 138.3), MEP (info only, not maintained, Note 4 and Amendment Q3), Roads & Drives, Edging LF, and the Plow Area column, which is POV + Roads (Note 6) and would double-count parking.",
-    "Grounds totals expected: improved_turf 56.75 acres (after Amendment Item 4), semi_improved 17.15 acres, parking 62,097 SY (558,873 SF), sidewalk 42,485 SF. The optional site SD033 row (2.90 ac, 2,060 SY, 1,390 SF) is excluded.",
+    "Grounds units are mixed and some columns are information only: improved Mow & Trim and semi-improved in acres; POV parking, MEP and roads in square yards (SY); walks / ramps / slabs to shovel in square feet; edging in linear feet. Expected grounds per base site: improved_turf (acres), semi_improved (acres, five sites), parking = the paved area the contract plows, POV Parking + Roads & Drives SY (PWS 5.6: \"POV parking lots, roads and drives shall be plowed\"; TE-3 Notes 5-6: Plow Area = POV + Roads, the area cleared at each event), sidewalk = Shovel / Blow SF. Not expected: Site Acres (whole parcel, Note 1, total 138.3), MEP (info only, not maintained, Note 4 and Amendment Q3), Edging LF (a length, not an area; edging is priced with the improved turf), and the Plow Area column registered on top of POV + Roads (it is their sum, Note 6, and would double-count them; the Plow Area alone in place of the two is the same quantity).",
+    "Grounds totals expected: improved_turf 56.75 acres (after Amendment Item 4), semi_improved 17.15 acres, parking 80,653 SY (725,877 SF) = POV 62,097 + Roads & Drives 18,556 (the printed Plow Area total), sidewalk 42,485 SF. The optional site SD033 row (2.90 ac, 1,280 LF, 2,060 + 610 SY, 1,390 SF) is excluded.",
     "Event counts and quantities that are not areas: 16 mowing, 8 trimming, 2 edging and 3 semi-improved mowing events per season, 18 plow and 24 sidewalk / salt events, 12 MO custodial, about 12 BA weekends per year, four (4) inch snowfall interval, four (4) feet plow-back, two (2) hour response.",
     "Prior award is narrative (PWS 1.4, repeated in Amendment Q5): Red River Prairie Facility Services, LLC, Contract No. W91XPN-22-C-0009, awarded 18 March 2022; total value $5,912,400 for sixty (60) months; Option Period 4 (1 Apr 2026 - 31 Mar 2027) exercised at $1,214,880 = annualValue. Other dollar amounts are not award values: $50.00 lost-key charge, $22.0 million NAICS size standard.",
     "Contract term: twelve-month base (1 Apr 2027 - 31 Mar 2028) plus four twelve-month option periods = 5 contract years. The FAR 52.217-8 six-month extension is explicitly \"not an option period\" and is not counted; it appears again in the Section B evaluation note.",

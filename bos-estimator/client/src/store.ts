@@ -55,6 +55,8 @@ export interface ExtractionState {
   restorable?: boolean;
   /** SHELL-only: inventory size when the run started */
   startCount?: number;
+  /** SHELL-only: distinct facility and grounds rows this run's reader streamed (0: the read found nothing) */
+  found?: number;
   /** SHELL-only: the `at` the done merge wrote on the review entries it changed, and those entries as they were */
   mergeAt?: number;
   mergeBefore?: Record<string, ReviewEntry | undefined>;
@@ -296,7 +298,7 @@ let serverStamp: string | null = null;
 // capped at 64 KB, far below a 400-row inventory); init() re-applies them when the server copy has not moved on since.
 const JOURNAL_KEYS = ['name', 'inventory', 'review', 'wages', 'factorOverrides', 'assumptionOverrides', 'priorAward', 'topDownOverrides', 'ai'] as const;
 type JournalKey = typeof JOURNAL_KEYS[number];
-interface Journal { v: 1; at: number; base: string | null; fields: Partial<Pick<ClientProject, JournalKey>> }
+interface Journal { v: 1; at: number; base: string | null; created?: string; fields: Partial<Pick<ClientProject, JournalKey>> }
 const journalKey = (id: string) => `bos.unsaved.v1.${id}`;
 function readJournal(id: string): Journal | null {
   try { const j = JSON.parse(localStorage.getItem(journalKey(id)) ?? 'null') as Journal | null; return j && j.v === 1 && j.fields && typeof j.at === 'number' ? j : null; } catch { return null; }
@@ -310,7 +312,11 @@ export const useStore = create<State>((set, get) => {
     const v = editVersion;
     set({ saving: true });
     try {
-      const saved = await api.saveProject(p, opts);
+      // only the fields this client edits: documents, the read record and the cross-check belong to the server
+      // (a run or Re-run writes them), so a save can never put back a stale copy of them
+      const body: Record<string, unknown> = { id: p.id };
+      for (const k of JOURNAL_KEYS) if (p[k] !== undefined) body[k] = p[k];
+      const saved = await api.patchProject(p.id, body, opts);
       savedVersion = Math.max(savedVersion, v);
       serverStamp = saved.updatedAt ?? serverStamp;
       if (editVersion <= savedVersion && !get().extraction.running && !reconciling) clearJournal(p.id);
@@ -341,7 +347,7 @@ export const useStore = create<State>((set, get) => {
       // the run's events patch these; the server copy is the pre-run one
       delete fields.priorAward; delete fields.name;
     }
-    try { localStorage.setItem(journalKey(p.id), JSON.stringify({ v: 1, at: Date.now(), base: serverStamp, fields } satisfies Journal)); return true; } catch { return false; }
+    try { localStorage.setItem(journalKey(p.id), JSON.stringify({ v: 1, at: Date.now(), base: serverStamp, created: p.createdAt, fields } satisfies Journal)); return true; } catch { return false; }
   };
   /** Page is going away or hidden: journal, then start the save at once (keepalive when the body is small enough). */
   const flushOnLeave = (): boolean => {
@@ -437,7 +443,9 @@ export const useStore = create<State>((set, get) => {
         const j = readJournal(projectId);
         if (j) {
           const stamp = Date.parse(loaded.updatedAt);
-          const fresh = j.base === loaded.updatedAt || !(stamp > j.at + 15_000);
+          // the same project (a reset or re-seed makes a new one) whose server copy has not moved on since
+          const same = !j.created || j.created === loaded.createdAt;
+          const fresh = same && (j.base === loaded.updatedAt || !(stamp > j.at + 15_000));
           const differs = fresh && JOURNAL_KEYS.some((k) => k in j.fields && !sameJson(j.fields[k], (loaded as ClientProject)[k]));
           if (differs) { project = { ...project, ...j.fields }; recovered = true; } else clearJournal(projectId);
         }
@@ -640,7 +648,7 @@ export const useStore = create<State>((set, get) => {
           let inF: Map<string, number> | null = null, inG: Map<string, number> | null = null;
           let projPatch: Partial<ClientProject> = {};
           let result = x0.result;
-          let mergeAt = x0.mergeAt, mergeBefore = x0.mergeBefore;
+          let mergeAt = x0.mergeAt, mergeBefore = x0.mergeBefore, found = x0.found;
           const keepHand = <T extends Facility | GroundsArea>(next: T, prev: T): T => {
             const marks = p0.review?.[next.id]?.edited;
             return marks && Object.keys(marks).length ? withHandValues(next, prev, Object.keys(marks)) : next;
@@ -758,6 +766,7 @@ export const useStore = create<State>((set, get) => {
                 const name = p0.name === 'Untitled BOS estimate' && e.inventory.site.installationName ? `${e.inventory.site.installationName} BOS` : p0.name;
                 projPatch = { ...projPatch, name, extraction: { provider: e.provider, model: e.model, finishedAt: new Date().toISOString(), durationMs: e.durationMs, usage: e.usage } };
                 phase = 'done';
+                found = seenF.size + seenG.size;
                 progress = { ...progress, registered: e.inventory.facilities.length, grounds: e.inventory.grounds.length };
                 pushLog({ kind: 'status', text: `Done in ${(e.durationMs / 1000).toFixed(1)}s via ${e.provider === 'claude' ? e.model : 'rule-based parser'}: ${e.inventory.facilities.length} facilities, ${e.inventory.grounds.length} grounds areas${e.usage ? ` · ${e.usage.input.toLocaleString()} in / ${e.usage.output.toLocaleString()} out tokens` : ''}`, t: now });
                 break;
@@ -773,7 +782,7 @@ export const useStore = create<State>((set, get) => {
           const project = inventory !== p0.inventory || Object.keys(projPatch).length ? { ...p0, ...projPatch, inventory } : p0;
           return {
             project,
-            extraction: { ...x0, phase, log, docs, warnings, progress, error, recent, recentIds, staging: nextStaging, result, mergeAt, mergeBefore },
+            extraction: { ...x0, phase, log, docs, warnings, progress, error, recent, recentIds, staging: nextStaging, result, mergeAt, mergeBefore, found },
           };
         });
       };

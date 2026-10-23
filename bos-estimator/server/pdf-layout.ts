@@ -371,7 +371,14 @@ function insideFrame(L: Line, R: Region, rules: Rule[]): boolean {
   const fs = Math.max(L.fs, prev.fs);
   const crossing = rules.filter(isV).filter((v) => v.y0 <= yTop + 0.5 && v.y1 >= yBot - 0.5);
   const left = Math.min(L.x0, R.x0), right = Math.max(L.x1, R.x1);
-  return crossing.some((v) => v.x <= left + 1 && v.x >= left - 4 * fs) && crossing.some((v) => v.x >= right - 1);
+  const lv = crossing.filter((v) => v.x <= left + 1 && v.x >= left - 4 * fs), rv = crossing.filter((v) => v.x >= right - 1);
+  if (!lv.length || !rv.length) return false;
+  // …and the frame is a table's grid, not a page border or a boxed section: a row border runs across it somewhere between
+  // its top and bottom edges
+  return lv.some((a) => rv.some((b) => {
+    const y0 = Math.max(a.y0, b.y0), y1 = Math.min(a.y1, b.y1);
+    return rules.filter(isH).some((h) => h.x0 <= a.x + 2 && h.x1 >= b.x - 2 && h.y > y0 + 1.5 * fs && h.y < y1 - 1.5 * fs);
+  }));
 }
 
 /** Group lines into table regions. */
@@ -550,7 +557,11 @@ function rowsByGaps(lines: Line[], cols: Col[], hint: Align): Line[][] {
     const close = g != null && L.y - g.lines[g.lines.length - 1].y < thr;
     // uniform spacing (no gap classes): a partial line with nothing in the first column continues the row above
     const continuation = g != null && !Number.isFinite(thr) && !full && L.y - g.lines[g.lines.length - 1].y <= 1.45 * L.fs && !L.segs.some((s) => colOf(cols, s) === 0) && !L.segs.some((s) => NUMERIC.test(s.text));
-    if (g && (close || continuation) && !(full && g.full)) { g.lines.push(L); g.full = g.full || full; }
+    // a line with a figure in a column where the row already has one is the next row (a sparse subtotal line), never the
+    // wrapped rest of a cell: one cell does not hold two figures on two lines
+    const figCols = (ls: Line[]) => new Set(ls.flatMap((x) => x.segs.filter((s) => /\d/.test(s.text) && NUMERIC.test(s.text)).map((s) => colOf(cols, s))));
+    const clash = g != null && [...figCols([L])].some((c) => figCols(g!.lines).has(c));
+    if (g && (close || continuation) && !(full && g.full) && !clash) { g.lines.push(L); g.full = g.full || full; }
     else { g = { lines: [L], full }; groups.push(g); }
   }
   // top-aligned table continued from the previous page: partial lines above the first full data line are the tail
@@ -691,7 +702,11 @@ function emitTable(region: Region, cols: Col[], rows: Line[][], rules: Rule[], r
     const cells: string[][] = cols.map(() => []);
     const x0s: X0s = cols.map(() => undefined);
     const spans: { cols: number[]; text: string; x0: number }[] = [];
-    const numeric = rowLines.some((L) => L.segs.some((s) => /\d{2,}/.test(s.text) && NUMERIC.test(s.text)));
+    // (under column titles, a row that opens with an identifier in the first column, "J.1", "B-2", "101", is a data row
+    // even when none of its figures has two digits)
+    const first = rowLines.flatMap((L) => L.segs).filter((s) => colOf(cols, s) === 0).sort((a, b) => a.x0 - b.x0)[0];
+    const keyed = headerRows.some((hr) => hr.lines.some((L) => L.segs.length >= 2)) && !!first && /^[A-Z]{0,4}[-.]?\d{1,6}[A-Z]?(?:[-.]\d{1,4})?$/.test(first.text.trim());
+    const numeric = keyed || rowLines.some((L) => L.segs.some((s) => /\d{2,}/.test(s.text) && NUMERIC.test(s.text)));
     const body = headerDone || numeric;
     for (const L of rowLines) for (const s of L.segs) {
       const sp = colsSpanned(cols, s);
@@ -797,11 +812,18 @@ async function renderPage(page: PdfPage, prevCols: Col[] | undefined, prevAlign:
   const pageW = rotated % 180 ? vp.height : vp.width;
   const regs = regions(lines, pageW, rules);
   let cols = prevCols;
+  // a vertical rule that runs well above and well below a table is a page or section border, not one of its column
+  // borders (it would make every column title look like a title spanning the whole table)
+  const ownRules = (r: Region): Rule[] => {
+    const fs = median(r.lines.map((l) => l.fs));
+    const top = r.lines[0].y - 3 * fs, bottom = r.lines[r.lines.length - 1].y + 3 * fs;
+    return rules.filter((x) => !(isV(x) && x.y0 < top - 2 * fs && x.y1 > bottom + 2 * fs));
+  };
   // compute table columns first, so a glued header line just above a table can be recognised and pulled in
   regs.forEach((r, i) => {
     if (r.prose) return;
-    r.cols = columnsFor(r, cols, rules); cols = r.cols;
-    r.bounds = boundaries(r.cols, rules, r);
+    r.cols = columnsFor(r, cols, ownRules(r)); cols = r.cols;
+    r.bounds = boundaries(r.cols, ownRules(r), r);
     for (let k = i - 1; k >= 0 && k >= i - 3; k--) {
       const p = regs[k]; if (!p.prose || p.used) break;
       const L = p.lines[0], first = r.lines[0];
@@ -823,10 +845,11 @@ async function renderPage(page: PdfPage, prevCols: Col[] | undefined, prevAlign:
       entries.push({ kind: 'text', line: L, text: L.segs.map((x, j) => (j && x.x0 - L.segs[j - 1].x1 > 2 * L.fs ? ' | ' : j ? ' ' : '') + x.text).join('') });
     } else {
       for (const L of r.lines) splitAtBounds(L, r.bounds!);
-      const { rows, spans } = rowsFor(r, r.cols!, rules, align);
+      const tr = ownRules(r);
+      const { rows, spans } = rowsFor(r, r.cols!, tr, align);
       const own = alignmentOf(rows, r.cols!);
       if (own !== 'unknown') align = own;
-      const table = emitTable(r, r.cols!, rows, rules, spans);
+      const table = emitTable(r, r.cols!, rows, tr, spans);
       // bottom-aligned wraps of the table's first row sit above its first full line, outside the region: pull them in
       if (align === 'bottom' && !table.header && table.rows[0]?.data) {
         const frags: string[][] = [];

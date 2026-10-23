@@ -10,7 +10,7 @@ import { cx } from '../lib/cx';
 import { SORTS, sortLabel, sortPatch } from '../lib/query';
 import { Chip, IconButton, Menu, usePopover, type ChipTone, type MenuItem } from '../ui';
 
-export const SEARCH_HELP = 'Search # or name  ·  cat: conf< sf> is:';
+export const SEARCH_HELP = 'Search # or name';
 export const SEARCH_SYNTAX = [
   'Search the inventory',
   '5995 or #59* — building number (prefix, or * wildcard)',
@@ -71,28 +71,29 @@ export const QueryChips = memo(function QueryChips({ className }: { className?: 
   }, [facilities]);
   const activeCampus = campusOf(text);
   const incomingCount = staging.incoming.length + staging.incomingGrounds.length;
-  const chips: { id: QueryChip; label: string; count: number; tone: ChipTone; show: boolean; tip?: string }[] = [
-    { id: 'all', label: 'All', count: counts.total, tone: 'accent', show: true },
-    { id: 'needs', label: 'Needs review', count: counts.needs, tone: 'warn', show: true, tip: 'Rows with an issue that counts: low confidence, SF not in the source, duplicate number, converted unit, exclusion…\nSorted by impact (FTE × (1 − confidence)). J / K walk them.' },
-    { id: 'flagged', label: 'Flagged', count: counts.flagged, tone: 'flag', show: true },
-    { id: 'out', label: 'Out of scope', count: counts.outOfScope, tone: 'neutral', show: true, tip: 'Excluded, deleted by amendment, demolished, vacant or option-only: shown, not estimated' },
-    { id: 'incoming', label: 'Incoming', count: incomingCount, tone: 'new', show: staging.active || chip === 'incoming', tip: 'Rows the running Replace read has found so far (read-only until it finishes)' },
-    { id: 'edited', label: 'Edited', count: counts.edited, tone: 'edit', show: counts.edited > 0 || chip === 'edited' },
-    { id: 'changed', label: 'Changed by re-run', count: changedCount, tone: 'new', show: changedCount > 0 || chip === 'changed' },
+  // `short` labels show when the chip row is narrow (the rail below ~400 px; spec wireframe "Needs 32 · Flag 3 · Out 8")
+  const chips: { id: QueryChip; label: string; short: string; count: number; tone: ChipTone; show: boolean; tip?: string }[] = [
+    { id: 'all', label: 'All', short: 'All', count: counts.total, tone: 'accent', show: true },
+    { id: 'needs', label: 'Needs review', short: 'Needs', count: counts.needs, tone: 'warn', show: true, tip: 'Needs review: rows with an issue that counts: low confidence, SF not in the source, duplicate number, converted unit, exclusion…\nSorted by impact (FTE × (1 − confidence)). J / K walk them.' },
+    { id: 'flagged', label: 'Flagged', short: 'Flag', count: counts.flagged, tone: 'flag', show: true, tip: 'Flagged' },
+    { id: 'out', label: 'Out of scope', short: 'Out', count: counts.outOfScope, tone: 'neutral', show: true, tip: 'Out of scope: excluded, deleted by amendment, demolished, vacant or option-only: shown, not estimated' },
+    { id: 'incoming', label: 'Incoming', short: 'New', count: incomingCount, tone: 'new', show: staging.active || chip === 'incoming', tip: 'Incoming: rows the running Replace read has found so far (read-only until it finishes)' },
+    { id: 'edited', label: 'Edited', short: 'Edited', count: counts.edited, tone: 'edit', show: counts.edited > 0 || chip === 'edited', tip: 'Edited by hand' },
+    { id: 'changed', label: 'Changed by re-run', short: 'Changed', count: changedCount, tone: 'new', show: changedCount > 0 || chip === 'changed', tip: 'Changed by the last re-run' },
   ];
   const choose = (c: QueryChip) => setQuery(c === 'needs' && chip !== 'needs' ? { chip: c, ...sortPatch('impact') } : { chip: c });
   return (
     <div className={cx('qchips', className)} role="toolbar" aria-label="Filter rows">
       {chips.filter((c) => c.show).map((c) => (
         <Chip key={c.id} tone={c.id === chip ? c.tone : c.tone === 'accent' ? 'neutral' : c.tone} className={cx('qchip', c.id !== chip && 'is-quiet')}
-          selected={chip === c.id} count={c.count.toLocaleString()} tooltip={c.tip} onClick={() => choose(c.id)}>{c.label}</Chip>
+          selected={chip === c.id} count={c.count.toLocaleString()} tooltip={c.tip} onClick={() => choose(c.id)}>{c.short !== c.label ? <><span className="qchip__long">{c.label}</span><span className="qchip__short">{c.short}</span></> : c.label}</Chip>
       ))}
       {campuses.length > 1 && (
         <>
           <span className="qchips__sep" aria-hidden />
           <Chip ref={campusPop.anchorRef} icon={MapPinned} tone={activeCampus ? 'accent' : 'neutral'} selected={Boolean(activeCampus)} className={cx('qchip', !activeCampus && 'is-quiet')}
-            tooltip="Filter by campus (adds campus: to the search)" onClick={campusPop.toggle}>
-            <span className="qchip__campus">{activeCampus ?? 'Campus'}</span><ChevronDown size={12} aria-hidden />
+            tooltip={`Filter by campus (${campuses.length} campuses; adds campus: to the search)`} onClick={campusPop.toggle}>
+            <span className={cx('qchip__campus', !activeCampus && 'is-idle')}>{activeCampus ?? 'Campus'}</span>{!activeCampus && <span className="chip__count qchip__campus-n">{campuses.length}</span>}<ChevronDown size={12} aria-hidden />
           </Chip>
           <Menu open={campusPop.open} anchor={campusPop.anchorRef} onClose={campusPop.close} label="Campus" placement="bottom-start" items={[
             { id: '_all', label: 'All campuses', checked: !activeCampus, onSelect: () => setQuery({ text: withCampusToken(text, null) }) },

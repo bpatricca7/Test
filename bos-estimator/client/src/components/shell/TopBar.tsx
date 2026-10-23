@@ -101,18 +101,22 @@ interface Metric { id: string; value: number | null; fmt: (v: number) => string;
 
 /** Priority metric strip: a ResizeObserver hides metrics from the lowest priority up; hidden ones go in a +N popover. */
 function MetricStrip() {
-  const { est, counts } = useDerived();
+  const { est, counts, facById, groundsById } = useDerived();
   const empty = !est || counts.total === 0;
   const m = est?.metrics;
   const reviewedPct = counts.total ? Math.round((counts.verified / counts.total) * 100) : 0;
-  const metrics: Metric[] = [
-    { id: 'fac', value: empty ? null : nonNeg(m?.facilitiesCount ?? 0), fmt: (v) => `${n0(v)} fac`, label: empty ? 'Facilities' : `${reviewedPct}% reviewed${counts.outOfScope ? ` (+${counts.outOfScope} excl.)` : ''}`, title: 'Facilities in scope' },
+  const reviewed = `${reviewedPct}% reviewed${counts.outOfScope ? ` (+${counts.outOfScope} excl.)` : ''}`;
+  // a grounds-only package (mowing, parks): Acres leads and the building metrics, all zero, drop out
+  const groundsOnly = !empty && facById.size === 0 && groundsById.size > 0;
+  const all: Metric[] = [
+    { id: 'fac', value: empty ? null : nonNeg(m?.facilitiesCount ?? 0), fmt: (v) => `${n0(v)} fac`, label: empty ? 'Facilities' : reviewed, title: 'Facilities in scope' },
     { id: 'gsf', value: empty ? null : nonNeg(m?.grossSqft ?? 0), fmt: compact, label: 'Gross SF', title: 'Gross SF' },
     { id: 'csf', value: empty ? null : nonNeg(m?.cleanableSqft ?? 0), fmt: compact, label: 'Cleanable SF', title: 'Cleanable SF' },
-    { id: 'ac', value: empty ? null : nonNeg(m?.acres ?? 0), fmt: (v) => (v >= 1000 ? compact(v) : n1(v)), label: 'Acres', title: 'Acres' },
+    { id: 'ac', value: empty ? null : nonNeg(m?.acres ?? 0), fmt: (v) => (v >= 1000 ? compact(v) : n1(v)), label: groundsOnly ? `Acres · ${reviewed}` : 'Acres', title: 'Acres' },
     { id: 'meals', value: empty ? null : nonNeg(m?.mealsPerYear ?? 0), fmt: compact, label: 'Meals/yr', title: 'Meals per year' },
     { id: 'hrs', value: empty ? null : nonNeg(est?.directHours ?? 0), fmt: compact, label: 'Direct hrs', title: 'Direct labor hours per year' },
   ];
+  const metrics = groundsOnly ? ['ac', 'hrs', 'meals'].map((id) => all.find((x) => x.id === id)!).filter((x) => x.id !== 'meals' || (x.value ?? 0) > 0) : all;
   const strip = useRef<HTMLDivElement>(null);
   const measure = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(metrics.length);

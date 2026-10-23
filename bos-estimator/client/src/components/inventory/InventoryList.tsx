@@ -32,7 +32,26 @@ const optId = (id: string) => `inv-opt-${id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
 export const SERVICE_SHORT: Record<string, string> = { daily_7: 'Daily 7d', daily_6: 'Daily 6d', daily_5: 'Daily 5d', '3x_week': '3×/wk', '2x_week': '2×/wk', weekly: 'Weekly', biweekly: 'Biweekly', monthly: 'Monthly', quarterly: 'Quarterly' };
 const catShort = (f: Facility) => CATEGORY_DEFAULTS[f.category]?.label.split(' /')[0] ?? f.category;
 const statusText = (f: Facility) => FACILITY_STATUSES.find((s) => s.id === f.status)?.label ?? 'Not in scope';
-const groundsQty = (g: GroundsArea) => (g.unit === 'acres' || g.unit === 'hectares' ? `${n1(g.quantity)} ${g.unit === 'acres' ? 'ac' : 'ha'}` : `${n0(g.quantity)} ${g.unit === 'each' ? 'ea' : g.unit === 'sqyd' ? 'SY' : g.unit === 'lf' ? 'LF' : g.unit === 'sqm' ? 'm²' : 'SF'}`);
+const UNIT_SHORT: Record<string, string> = { acres: 'ac', hectares: 'ha', each: 'ea', sqyd: 'SY', lf: 'LF', sqm: 'm²', sqft: 'SF' };
+/** The rail's 72 px metrics column: full digits while they fit (≤ 7 characters), then 1.42M / 68.5K. */
+export const railNum = (v: number, decimals = 0, max = 7) => {
+  const full = decimals ? n1(v) : n0(v);
+  if (full.length <= max) return full;
+  const a = Math.abs(v);
+  return a >= 1e9 ? `${(v / 1e9).toFixed(2)}B` : a >= 1e6 ? `${(v / 1e6).toFixed(a >= 1e8 ? 0 : 2)}M` : `${(v / 1e3).toFixed(a >= 1e5 ? 0 : 1)}K`;
+};
+/** quantity and unit within the column's 9 characters ("6,850 SF", "310.0K SF", "1.42M SF", "42.5 ac") */
+const groundsQty = (g: GroundsArea) => { const u = UNIT_SHORT[g.unit] ?? g.unit; return `${railNum(g.quantity, g.unit === 'acres' || g.unit === 'hectares' ? 1 : 0, 8 - u.length)} ${u}`; };
+/** Short kind label for the # column of a grounds row (never cut in code). */
+export const KIND_SHORT: Record<GroundsArea['kind'], string> = { improved_turf: 'Turf', semi_improved: 'Semi', unimproved: 'Rough', athletic_field: 'Field', shrub_bed: 'Beds', parking: 'Lots', sidewalk: 'Walks', tree_canopy: 'Trees' };
+
+/** The list set hoverId for this row (so an unmounting row clears only its own hover, not one the 3D view set). */
+let listHover: string | null = null;
+const hoverFromList = (id: string | null) => { listHover = id; useStore.getState().setHover(id); };
+/** A hovered row filtered away (typing, a chip) unmounts without mouseleave: drop its hover with it. */
+function useHoverCleanup(id: string) {
+  useEffect(() => () => { const s = useStore.getState(); if (listHover === id && s.hoverId === id) { listHover = null; s.setHover(null); } }, [id]);
+}
 
 export interface InventoryListHandle { scrollToId(id: string, align?: 'nearest' | 'center'): void; focus(): void; element: HTMLDivElement | null }
 
@@ -124,7 +143,7 @@ export const InventoryList = memo(forwardRef<InventoryListHandle, Props>(functio
     const id = itemId(it);
     setCursor(id);
     scrollToIndex(i);
-    useStore.getState().setHover(id);
+    hoverFromList(id);
   };
   const step = (from: number, dir: 1 | -1, n = 1) => {
     let i = from; let moved = 0;
@@ -198,7 +217,7 @@ export const InventoryList = memo(forwardRef<InventoryListHandle, Props>(functio
       onScroll={measure} onKeyDown={onKeyDown}
       onMouseDown={() => setKbd(false)}
       onFocus={() => { if (!cursor && selectedId) setCursor(selectedId); }}
-      onBlur={() => { if (kbd && cursor && useStore.getState().hoverId === cursor) useStore.getState().setHover(null); }}>
+      onBlur={() => { if (kbd && cursor && useStore.getState().hoverId === cursor) hoverFromList(null); }}>
       {n === 0 ? empty : (
         <>
           <div className="inv__inner" style={{ height: total }}>{rows}</div>
@@ -232,8 +251,8 @@ function issuesTitle(meta: RowMeta | undefined, row: Facility | GroundsArea): st
 }
 
 function StateIcon({ meta, row }: { meta?: RowMeta; row: Facility | GroundsArea }) {
-  if (meta?.review === 'flagged') return <span title="Flagged" className="inv-row__icon"><Flag size={14} color="var(--flag)" aria-label="Flagged" /></span>;
-  if (meta?.review === 'needs') return <span title={`Needs review\n${issuesTitle(meta, row)}`} className="inv-row__icon"><CircleAlert size={14} color="var(--warn)" aria-label="Needs review" /></span>;
+  if (meta?.review === 'flagged') return <span title="Flagged" className="inv-row__icon"><Flag size={13} color="var(--flag)" aria-label="Flagged" /></span>;
+  if (meta?.review === 'needs') return <span title={`Needs review\n${issuesTitle(meta, row)}`} className="inv-row__icon"><CircleAlert size={13} color="var(--warn)" aria-label="Needs review" /></span>;
   return null;
 }
 
@@ -249,27 +268,27 @@ const FacilityRow = memo(function FacilityRow({ f, meta, fte, maxFte, incoming, 
   const out = meta ? !meta.inScope : Boolean(f.status && f.status !== 'in_scope');
   const sub = out ? null : `${catShort(f)} · ${f.serviceFrequencyText || SERVICE_SHORT[f.serviceLevel] || f.serviceLevel}${f.dining?.mealsPerDay ? ` · ${n0(f.dining.mealsPerDay)} meals/d` : ''}`;
   const s = useStore.getState;
+  useHoverCleanup(f.id);
   return (
     <div id={optId(f.id)} role="option" aria-selected={selected} aria-disabled={incoming || undefined}
       className={cx('inv-row', selected && 'is-sel', hovered && 'is-hover', isNew && 'is-new', out && 'is-out', incoming && 'is-incoming', flash && 'is-flash', cursor && 'is-cursor')}
       style={{ ['--cat' as string]: categoryColor(f.category), ['--fte' as string]: `${fte && !out ? Math.min(100, (fte / maxFte) * 100) : 0}%` }}
       onClick={incoming ? undefined : () => selectRow(f.id, { local: true })}
       onDoubleClick={incoming ? undefined : () => { selectRow(f.id, { local: true, frame: false }); if (!out) s().setFocusMode('building'); }}
-      onMouseEnter={() => s().setHover(f.id)} onMouseLeave={() => { if (s().hoverId === f.id) s().setHover(null); }}>
+      onMouseEnter={() => hoverFromList(f.id)} onMouseLeave={() => { if (s().hoverId === f.id) hoverFromList(null); }}>
       <div className="inv-row__no">
-        <span className="inv-row__num">{f.buildingNumber || f.name.slice(0, 6)}</span>
+        <span className={cx('inv-row__num', !f.buildingNumber && 'is-name')} title={f.buildingNumber || f.name}>{f.buildingNumber || f.name}</span>
         <ConfLine meta={meta} conf={f.confidence} />
       </div>
       <div className="inv-row__name">
-        <span className="inv-row__title" title={f.name}><span className="inv-row__title-text">{f.name}</span>{meta?.edited && <i className="inv-row__edited" title="Edited by you" aria-label="Edited" />}</span>
+        <span className="inv-row__title" title={f.name}><span className="inv-row__title-text">{f.name}</span>{meta?.edited && <i className="inv-row__edited" title="Edited by you" aria-label="Edited" />}{!incoming && <StateIcon meta={meta} row={f} />}</span>
         {sub != null ? <span className="inv-row__sub" title={f.serviceFrequencyText ? `Frequency as printed: ${f.serviceFrequencyText}` : undefined}>{sub}</span>
           : <span className="inv-row__sub"><span className="inv-status" title={f.statusReason}>{statusText(f)}</span>{f.statusReason ? <span className="inv-row__reason"> · {f.statusReason}</span> : null}</span>}
       </div>
       <div className="inv-row__metrics">
-        <span>{f.grossSqft > 0 ? n0(f.grossSqft) : '—'}</span>
-        <span className="inv-row__fte">{out ? '—' : fte != null ? n2(fte) : ''}</span>
+        <span title={f.grossSqft > 0 ? `${n0(f.grossSqft)} SF gross` : undefined}>{f.grossSqft > 0 ? railNum(f.grossSqft) : '—'}</span>
+        <span className="inv-row__fte" title={fte != null && !out ? `${n2(fte)} FTE` : undefined}>{out ? '—' : fte != null ? (fte >= 1e4 ? railNum(fte) : n2(fte)) : ''}</span>
       </div>
-      <div className="inv-row__state">{!incoming && <StateIcon meta={meta} row={f} />}</div>
     </div>
   );
 });
@@ -277,26 +296,27 @@ const FacilityRow = memo(function FacilityRow({ f, meta, fte, maxFte, incoming, 
 const GroundsRow = memo(function GroundsRow({ g, meta, fte, maxFte, host, incoming, flash, cursor }: { g: GroundsArea; meta?: RowMeta; fte?: number; maxFte: number; host?: string; incoming?: boolean; flash: boolean; cursor: boolean }) {
   const { selected, hovered, isNew } = useRowState(g.id, incoming);
   const s = useStore.getState;
+  useHoverCleanup(g.id);
   const sub = [ZONE_LABELS[g.kind], host ? `at ${host}` : null, g.campus].filter(Boolean).join(' · ');
+  const tip = [g.name, g.documentLabel ? `As printed: ${g.documentLabel}` : null].filter(Boolean).join('\n');
   return (
     <div id={optId(g.id)} role="option" aria-selected={selected} aria-disabled={incoming || undefined}
       className={cx('inv-row', 'inv-row--grounds', selected && 'is-sel', hovered && 'is-hover', isNew && 'is-new', incoming && 'is-incoming', flash && 'is-flash', cursor && 'is-cursor')}
       style={{ ['--cat' as string]: ZONE_COLORS[g.kind] ?? '#3f8f3a', ['--fte' as string]: `${fte ? Math.min(100, (fte / maxFte) * 100) : 0}%` }}
       onClick={incoming ? undefined : () => selectRow(g.id, { local: true })}
-      onMouseEnter={() => s().setHover(g.id)} onMouseLeave={() => { if (s().hoverId === g.id) s().setHover(null); }}>
+      onMouseEnter={() => hoverFromList(g.id)} onMouseLeave={() => { if (s().hoverId === g.id) hoverFromList(null); }}>
       <div className="inv-row__no">
-        <span className="inv-row__num" title={g.documentLabel}>{g.documentLabel ? g.documentLabel.slice(0, 7) : 'Site'}</span>
+        <span className="inv-row__num inv-row__kind" title={ZONE_LABELS[g.kind]}>{KIND_SHORT[g.kind] ?? 'Site'}</span>
         <ConfLine meta={meta} conf={g.confidence} />
       </div>
-      <div className="inv-row__name">
-        <span className="inv-row__title" title={g.name}><span className="inv-row__title-text">{g.name}</span>{meta?.edited && <i className="inv-row__edited" title="Edited by you" aria-label="Edited" />}</span>
+      <div className="inv-row__name" title={tip}>
+        <span className="inv-row__title"><span className="inv-row__title-text">{g.name}</span>{meta?.edited && <i className="inv-row__edited" title="Edited by you" aria-label="Edited" />}{!incoming && <StateIcon meta={meta} row={g} />}</span>
         <span className="inv-row__sub">{sub}</span>
       </div>
       <div className="inv-row__metrics">
-        <span>{groundsQty(g)}</span>
-        <span className="inv-row__fte">{fte != null ? n2(fte) : ''}</span>
+        <span title={`${n1(g.quantity)} ${g.unit}`}>{groundsQty(g)}</span>
+        <span className="inv-row__fte">{fte != null ? (fte >= 1e4 ? railNum(fte) : n2(fte)) : ''}</span>
       </div>
-      <div className="inv-row__state">{!incoming && <StateIcon meta={meta} row={g} />}</div>
     </div>
   );
 });

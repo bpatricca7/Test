@@ -98,7 +98,7 @@
 .ui-tooltip--error{background:#3a1519;color:var(--bad-text);box-shadow:0 4px 16px rgba(0,0,0,.45),0 0 0 1px var(--bad)}
 
 /* ---------- popover / menu ---------- */
-.ui-pop{position:fixed;z-index:var(--z-pop);min-width:180px;max-width:min(420px,calc(100vw - 16px));max-height:calc(100vh - 16px);overflow:auto;background:var(--surface-2);
+.ui-pop{position:fixed;z-index:var(--z-pop);min-width:180px;max-width:min(420px,calc(100vw - 16px));max-height:calc(100vh - 16px);overflow-x:hidden;overflow-y:auto;background:var(--surface-2);
   border-radius:var(--r-3);box-shadow:var(--sh-pop);color:var(--text-1);pointer-events:auto;outline:none;animation:ui-pop-in var(--dur-2) var(--ease)}
 @keyframes ui-pop-in{from{opacity:0}to{opacity:1}}
 .ui-menu{min-width:200px;padding:4px}

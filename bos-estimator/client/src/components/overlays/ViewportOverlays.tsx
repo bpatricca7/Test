@@ -6,7 +6,7 @@
 //   bottom     LegendChip (left) and HintChip (centre; raised a row when the legend would collide)
 //   centre     EmptyCard (§8)
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent as ReactKeyboardEvent, type RefObject } from 'react';
-import { ArrowLeft, Clock3, CloudUpload, Ellipsis, FileArchive, FileSpreadsheet, FileText, FileType, Focus, Layers, LayoutGrid, Moon, Palette, Sun, Table2, Tag, X } from 'lucide-react';
+import { ArrowLeft, Clock3, CloudUpload, Ellipsis, FileArchive, FileSpreadsheet, FileText, FileType, Focus, Layers, LayoutGrid, Moon, Palette, Sun, Table2, Tag, TriangleAlert, X } from 'lucide-react';
 import { useStore, type ColorBy, type LabelMode } from '../../store';
 import { useDerived } from '../../derived';
 import { crewMeta } from '@shared/factors';
@@ -344,11 +344,30 @@ function EmptyCard() {
   const rule = usesRuleBased();
   const noKey = useStore((s) => s.health != null && !s.health.aiAvailable);
   const line = readerLine().replace(/^with /, '');
+  // a read already ran on this project and found nothing: say so, and why, instead of the first-run invitation
+  const nothing = useStore((s) => (s.extraction.phase === 'done' && s.extraction.found === 0) || (!s.extraction.running && s.extraction.phase === 'idle' && (s.project?.documents.length ?? 0) > 0));
+  const reason = useStore((s) => {
+    const end = (t: string) => (/[.!?]$/.test(t.trim()) ? t.trim() : `${t.trim()}.`);
+    const w = s.extraction.warnings[0]; if (w) return end(w.message);
+    for (const d of s.project?.documents ?? []) if (d.warnings?.length) return end(d.warnings[0]);
+    return null;
+  });
+  const docCount = useStore((s) => Math.max(s.project?.documents.length ?? 0, s.extraction.docs.length));
   return (
-    <div className="vo-empty" data-occluder="" role="region" aria-label="New solicitation">
-      <div className="vo-empty__eyebrow">New solicitation</div>
-      <h2 className="vo-empty__title">Drop the solicitation package to build the estimate</h2>
-      <p className="vo-empty__body">PWS / SOW, technical exhibits (facility lists, grounds maps), workload tables. PDF, DOCX, XLSX, CSV, TSV, TXT, MD or a ZIP package.</p>
+    <div className={cx('vo-empty', nothing && 'is-nothing')} data-occluder="" role="region" aria-label={nothing ? 'The last read found nothing' : 'New solicitation'}>
+      {nothing ? (
+        <>
+          <div className="vo-empty__eyebrow vo-empty__eyebrow--warn"><TriangleAlert size={13} aria-hidden /> The last read found nothing</div>
+          <h2 className="vo-empty__title">No facilities or grounds in {docCount === 1 ? 'that document' : docCount > 1 ? `those ${docCount} documents` : 'that read'}</h2>
+          <p className="vo-empty__body">{reason ? <><span className="vo-empty__why">{reason}</span> </> : null}Add a text-layer PDF, an XLSX or CSV facility list, or {rule && noKey ? 'set up the Claude reader (scanned pages and drawings need it)' : 'try a different reader setting'}, then read again. The <button type="button" className="link" onClick={() => useStore.getState().openLeft('documents')}>Documents tab</button> lists what each file gave.</p>
+        </>
+      ) : (
+        <>
+          <div className="vo-empty__eyebrow">New solicitation</div>
+          <h2 className="vo-empty__title">Drop the solicitation package to build the estimate</h2>
+          <p className="vo-empty__body">PWS / SOW, technical exhibits (facility lists, grounds maps), workload tables. PDF, DOCX, XLSX, CSV, TSV, TXT, MD or a ZIP package.</p>
+        </>
+      )}
       <div className={cx('vo-empty__drop', drag && 'is-drag', pending.length > 0 && 'has-files')}
         onDragEnter={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setDrag(true); } }}
         onDragOver={(e) => { if (!e.dataTransfer.types.includes('Files')) return; e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; setDrag(true); }}

@@ -61,7 +61,13 @@ function FactorsBody({ onClose }: { onClose: () => void }) {
   const [sort, setSort] = useState<SortMode>(() => (hours.has ? 'hours' : 'crew'));
   const overridden = Object.keys(overrides).length;
   const match = (f: Factor) => (!q || `${f.name} ${f.ref} ${f.id} ${crewMeta(f.crew).short}`.toLowerCase().includes(q.toLowerCase())) && (!onlyOverridden || overrides[f.id] != null);
-  const flat = useMemo(() => FACTORS.filter(match).sort((a, b) => (hours.byId.get(b.id) ?? 0) - (hours.byId.get(a.id) ?? 0) || CREW_ORDER.indexOf(a.crew) - CREW_ORDER.indexOf(b.crew)), [q, onlyOverridden, overrides, hours]); // eslint-disable-line react-hooks/exhaustive-deps
+  const live = useMemo(() => FACTORS.filter(match).sort((a, b) => (hours.byId.get(b.id) ?? 0) - (hours.byId.get(a.id) ?? 0) || CREW_ORDER.indexOf(a.crew) - CREW_ORDER.indexOf(b.crew)), [q, onlyOverridden, overrides, hours]); // eslint-disable-line react-hooks/exhaustive-deps
+  // The "By hours driven" order is frozen while you edit: an override re-weights the hours, but the row you just
+  // changed stays under the cursor. It re-sorts when the filter or the order changes, or on [Re-sort].
+  const [resortSeq, setResortSeq] = useState(0);
+  const frozen = useMemo(() => live, [q, onlyOverridden, sort, resortSeq]); // eslint-disable-line react-hooks/exhaustive-deps
+  const flat = frozen;
+  const outOfOrder = sort === 'hours' && (frozen.length !== live.length || frozen.some((f, i) => f !== live[i]));
   const groups = useMemo(() => CREW_ORDER.map((crew) => ({ crew, factors: FACTORS.filter((f) => f.crew === crew && match(f)) })).filter((g) => g.factors.length), [q, onlyOverridden, overrides]); // eslint-disable-line react-hooks/exhaustive-deps
   const shown = sort === 'hours' ? flat.length : groups.reduce((s, g) => s + g.factors.length, 0);
   const resetAll = async () => {
@@ -86,6 +92,7 @@ function FactorsBody({ onClose }: { onClose: () => void }) {
           <div className="factors__bar">
             <Segmented size="sm" label="Order" value={sort} onChange={setSort} options={[{ value: 'hours', label: 'By hours driven', disabled: !hours.has, tooltip: hours.has ? undefined : 'Needs an estimate' }, { value: 'crew', label: 'By crew' }]} />
             <Toggle size="sm" checked={onlyOverridden} onChange={setOnlyOverridden} label={`Overridden only${overridden ? ` (${overridden})` : ''}`} disabled={!overridden && !onlyOverridden} />
+            {outOfOrder && <Button size="sm" variant="ghost" onClick={() => setResortSeq((n) => n + 1)} tooltip="Hours changed with your overrides; the order is kept while you edit">Re-sort</Button>}
             <span className="factors__count">{shown} of {FACTORS.length}</span>
           </div>
           <table className="factors__table">

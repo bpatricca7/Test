@@ -3,7 +3,7 @@
 // styles.css is imported first so tokens, primitives and the shell come before every feature stylesheet in the
 // bundle (feature CSS can then override primitives at equal specificity).
 import './styles.css';
-import { lazy, memo, Suspense, useEffect, useRef } from 'react';
+import { lazy, memo, Suspense, useEffect, useRef, useState } from 'react';
 import { useStore } from './store';
 import { DerivedContext, useComputeDerived } from './derived';
 import { Scene } from './three/Scene';
@@ -18,7 +18,7 @@ import { RunStrip } from './components/run/RunStrip';
 import { TableView } from './components/table/TableView';
 import { BottomPanel } from './components/bottom/BottomPanel';
 import { ViewportOverlays } from './components/overlays/ViewportOverlays';
-import { ConfirmHost, ToastHost } from './components/ui';
+import { Button, ConfirmHost, ToastHost } from './components/ui';
 import { registerHotkey, pushEscape } from './components/lib/keys';
 import { analyzeNow } from './components/documents/reader';
 // Module-level key bindings: undo/redo (lib/history) and the review loop J/K/V/X/U and / (inventory/reviewLoop)
@@ -40,10 +40,11 @@ export default function App() {
   useEffect(() => { (window as BosWindow).__bos = Object.assign((window as BosWindow).__bos ?? {}, { store: useStore }); }, []);
   const derived = useComputeDerived();
 
-  if (loading || loadError) {
+  if (loadError) return <LoadError message={loadError} onRetry={() => void init()} />;
+  if (loading) {
     return (
       <div className="boot" role="status">
-        <div className="boot__card"><div className="boot__logo">BOS</div><p>{loadError ? `Could not load the project: ${loadError}` : 'Loading estimate…'}</p></div>
+        <div className="boot__card"><div className="boot__logo">BOS</div><p>Loading estimate…</p></div>
       </div>
     );
   }
@@ -51,6 +52,30 @@ export default function App() {
     <DerivedContext.Provider value={derived}>
       <Shell />
     </DerivedContext.Provider>
+  );
+}
+
+/** The project could not be loaded: what failed, the server's message (copyable), Retry and a way out. */
+function LoadError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  const projectId = useStore((s) => s.projectId);
+  const [copied, setCopied] = useState(false);
+  const detail = `Project: ${projectId}\nError: ${message}\nWhen: ${new Date().toISOString()}`;
+  const copy = () => { void navigator.clipboard?.writeText(detail).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }).catch(() => {}); };
+  const fresh = () => { const u = new URL(location.href); u.searchParams.set('project', `project-${Date.now().toString(36)}`); location.assign(u.toString()); };
+  return (
+    <div className="boot" role="alert">
+      <div className="boot__error">
+        <div className="boot__logo">BOS</div>
+        <h1 className="boot__title">The project could not be loaded</h1>
+        <p className="boot__text">The server did not return <b>{projectId}</b>. Nothing was changed. Retry, or start a new project and come back to this one later.</p>
+        <pre className="boot__detail" tabIndex={0} aria-label="Error details">{message}</pre>
+        <div className="boot__actions">
+          <Button variant="primary" autoFocus onClick={onRetry}>Retry</Button>
+          <Button variant="secondary" onClick={fresh}>Start a new project</Button>
+          <Button variant="ghost" onClick={copy}>{copied ? 'Copied' : 'Copy details'}</Button>
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -35,8 +35,10 @@ export const api = {
     return json<Project>(fetch(`/api/projects/${p.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body, keepalive: Boolean(opts.keepalive) && body.length < 60_000 }), 'Save failed');
   },
   /** PUT only some top-level keys (the server merges them into its copy) and get the whole saved project back. */
-  patchProject: (id: string, patch: Partial<Project> & Record<string, unknown>) =>
-    json<Project>(fetch(`/api/projects/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch) }), 'Save failed'),
+  patchProject: (id: string, patch: Partial<Project> & Record<string, unknown>, opts: { keepalive?: boolean } = {}) => {
+    const body = JSON.stringify(patch);
+    return json<Project>(fetch(`/api/projects/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body, keepalive: Boolean(opts.keepalive) && body.length < 60_000 }), 'Save failed');
+  },
   resetProject: (id: string) => json<Project>(fetch(`/api/projects/${id}`, { method: 'DELETE' }), 'Reset failed'),
   estimate: (id: string) => json<EstimateResult>(fetch(`/api/projects/${id}/estimate`, { method: 'POST' }), 'Estimate failed'),
   exportCsvUrl: (id: string) => `/api/projects/${id}/export.csv`,

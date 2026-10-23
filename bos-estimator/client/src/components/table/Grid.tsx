@@ -52,6 +52,8 @@ interface Props<R extends Row> {
   onPaste: (text: string, focus: CellRef | null) => void;
   onRevert: (id: string, path: string | null) => boolean;
   incoming: boolean;
+  /** the Campus column is hidden for width: Name cells show the campus */
+  campusInName?: boolean;
   gridRef: React.Ref<GridHandle>;
   empty: ReactNode;
 }
@@ -120,7 +122,7 @@ function GridImpl<R extends Row>(p: Props<R>) {
     if (typeof h === 'function') h(api); else if (h) (h as { current: GridHandle | null }).current = api;
   });
 
-  const base = useMemo(() => ({ maxFte: p.maxFte, hostLabel: p.hostLabel, readOnly }), [p.maxFte, p.hostLabel, readOnly]);
+  const base = useMemo(() => ({ maxFte: p.maxFte, hostLabel: p.hostLabel, readOnly, campusInName: p.campusInName }), [p.maxFte, p.hostLabel, readOnly, p.campusInName]);
 
   // ---- focus / selection ----
   const moveTo = useCallback((id: string, col: string, select = true) => {
@@ -353,7 +355,7 @@ function HeadCell<R extends Row>({ c, sticky, sortCol, onSort, onResize, width, 
 // ---------------------------------------------------------------- row
 interface RowProps<R extends Row> {
   tab: TableTab; r: R; i: number; cols: ColDef<R>[]; template: string; rowH: number; stickyLeft: Record<string, number>;
-  meta?: RowMeta; est?: FacilityEstimate; gest?: GroundsEstimate; entry?: ReviewEntry; base: Pick<CellCtx, 'maxFte' | 'hostLabel' | 'readOnly'>;
+  meta?: RowMeta; est?: FacilityEstimate; gest?: GroundsEstimate; entry?: ReviewEntry; base: Pick<CellCtx, 'maxFte' | 'hostLabel' | 'readOnly' | 'campusInName'>;
   focusCol: string | null; showFocus: boolean; checked: boolean; incoming: boolean;
   editing: { id: string; col: string; draft: string; error?: string; replace: boolean } | null;
   onFinish: (draft: string, move: Move, viaBlur: boolean) => boolean; onCancel: () => void;

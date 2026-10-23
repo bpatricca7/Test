@@ -1099,6 +1099,198 @@ test('site: "The County" and county facility names are not the owner', () => {
   assert.equal(inv.site.installationName, 'Marlow County');
 });
 
+// ---------------------------------------------------------------------------------------------- generalization rules, round 2
+
+test('schedule legends: codes with digits or slashes ("D5", "3/W", "6X", "1M"), and codes for no service', () => {
+  const inv = read(lines('3.4 Service Frequency Codes', 'D7 - Seven days per week, including holidays', 'D5 - Monday through Friday', '3/W - Three times per week (Mon, Wed, Fri)',
+    'W - Once per week', 'NS - No service required; listed for reference', '',
+    'Bldg | Facility | Gross SF | Frequency Code', '101 | Administration Building | 10,000 | D5', '102 | Gymnasium | 20,000 | D7', '103 | Maintenance Shop | 5,000 | 3/W', '104 | Cold Storage | 3,000 | W', '105 | Pump House | 400 | NS'));
+  assert.deepEqual(['101', '102', '103', '104'].map((b) => fac(inv, b).serviceLevel), ['daily_5', 'daily_7', '3x_week', 'weekly']);
+  assert.equal(fac(inv, '105').status, 'excluded');
+  const t = read(lines('Table 2. Cleaning frequency key', 'Key | Meaning', '6X | Six days a week (Monday - Saturday)', '2X | Two days per week', '1M | Once per month', 'NSR | Not serviced', '',
+    'Building | Name | Square Feet | Svc Freq', 'A-1 | Library | 12,500 | 6X', 'A-2 | Archive | 4,000 | 1M', 'A-3 | Visitor Kiosk | 300 | NSR', 'A-4 | Chapel | 6,000 | 2X'));
+  // ("Building" holding identifiers next to a "Name" column is the building number)
+  assert.deepEqual(['A-1', 'A-2', 'A-4'].map((b) => [fac(t, b).name, fac(t, b).serviceLevel]), [['Library', 'daily_6'], ['Archive', 'monthly'], ['Chapel', '2x_week']]);
+  assert.equal(fac(t, 'A-3').status, 'excluded');
+  // "N/S" in a frequency column is no service
+  assert.equal(fac(read(lines(H, '7 | Pump Station | Utility | 1 | 300 | 300 | N/S')), '7').status, 'excluded');
+});
+
+const SITE_GROUNDS = lines('EXHIBIT G - SITE GROUNDS DATA',
+  'Site No. | Location | Lot Area (AC)[^1] | Mowed Turf (AC) | Semi- Improved (AC) | Asphalt Parking (SY) | Tactical Vehicle Parking (SY)[^2] | Plowing Area (SY)[^3] | Access Roads (SY) | Walks & Steps (SF)',
+  'RC-1 | North Reserve Center | 12.0 | 5.50 | 2.00 | 4,000 | 6,000 | 5,500 | 1,500 | 3,100',
+  'RC-2 | South Reserve Center | 9.5 | 3.25 | — | 2,500 | 3,000 | 3,400 | 900 | 1,900',
+  'Site totals |  | 21.5 | 8.75 | 2.00 | 6,500 | 9,000 | 8,900 | 2,400 | 5,000',
+  'OPTIONAL LOCATION – NOT INCLUDED IN THE BASE TOTALS |  |  |  |  |  |  |  |  |',
+  'RC-9 | East Reserve Center (option) | 7.0 | 2.10 | — | 1,800 | 1,000 | 2,000 | 400 | 900', '',
+  'Notes:', '1. Lot Area is the parcel size from the real property record, shown for information only.',
+  '2. Tactical vehicle parking is shown for information only and is not maintained under this contract.', '3. Plowing Area = asphalt parking plus access roads.');
+
+test('site grounds tables: footnoted information-only and sum columns, snow areas, paved-area kinds, optional-site banner', () => {
+  const inv = read(SITE_GROUNDS);
+  assert.equal(inScope(inv).length, 0, 'no building from a grounds table');
+  near(acres(inv.grounds, 'improved_turf'), 8.75);
+  near(acres(inv.grounds, 'semi_improved'), 2);
+  // asphalt parking and access roads are the paved vehicle areas; the plowing area adds them up again; tactical parking is
+  // information only (its footnote)
+  near(sqft(inv.grounds, 'parking'), (6500 + 2400) * 9);
+  near(sqft(inv.grounds, 'sidewalk'), 5000);
+});
+
+test('a banner about totals is not a total row; a subtotal that says what it leaves out still is', () => {
+  const inv = read(lines(H, '1 | HQ | Admin | 2 | 10,000 | 9,000 | Daily', 'OPTION FACILITIES – PRICED SEPARATELY, NOT INCLUDED IN BASE TOTALS', '2 | New Annex | Admin | 1 | 5,000 | 4,500 | Daily',
+    'Subtotal – option facilities (not included in grand total) |  |  |  | 5,000 | 4,500 |'));
+  assert.notEqual(fac(inv, '2').status, undefined);
+  assert.equal(inv.facilities.length, 2);
+});
+
+test('a status banner directly above a site label covers that site\'s rows; the next site label after rows ends it', () => {
+  const inv = read(lines(H, 'NORTH DISTRICT', '11 | North HQ | Admin | 2 | 10,000 | 9,000 | Daily', 'ALTERNATE SITE – OPTIONAL LINE ITEM ONLY', 'WEST DEPOT – 12 Mill Road', '21 | Depot Office | Admin | 1 | 3,000 | 2,700 | Daily',
+    '22 | Depot Shop | Shop | 1 | 6,000 | 900 | Weekly', 'EAST DISTRICT', '31 | East HQ | Admin | 2 | 8,000 | 7,200 | Daily'));
+  assert.deepEqual(['11', '21', '22', '31'].map((b) => fac(inv, b).status), [undefined, 'option_only', 'option_only', undefined]);
+});
+
+test('grounds tables: id keys under a feature title, descriptions in a location column, the table title kind, treatments and edging lengths', () => {
+  const inv = read(lines('Table 3. Mowing Areas', 'Zone | Description | Class | Acres | Cuts per Year',
+    'Z-1 | Headquarters lawns, not including the softball diamonds | Improved | 10.0 | 26', 'Z-2 | Training area road shoulders | Semi-Improved | 20.0 | 6', 'Z-3 | Range firebreaks | Unimproved | 50.0 | 1', '',
+    'Table 4. Sports Fields', 'Field | Location | Quantity | Unit | Mowings per Year', 'SF-1 | Diamond west of Building 210 | 2.5 | AC | 40', 'SF-2 | Pitch at the youth center | 3.0 | AC | 40', ' | Total sports fields | 5.5 | AC |', '',
+    'Table 5. Hardscape and Beds', 'No. | Item | Quantity | Unit', '1 | Mulched planting beds | 12,000 | SF', '2 | Curb and walk edging (length of edge) | 8,000 | LF', '3 | Parking areas - policing | 20,000 | SY', '',
+    'Table 6. Integrated Pest Management - Turf Treatments', 'Description | Quantity | Unit | Applications per Year', 'Herbicide application - improved areas and sports fields | 15.5 | AC | 2',
+    'Fertilizer application - sports fields | 5.5 | AC | 3', 'Fire ant treatment - Zone Z-1 | 10.0 | AC | 2'));
+  for (const [k, v] of [['improved_turf', 10], ['semi_improved', 20], ['unimproved', 50], ['athletic_field', 5.5]] as const) near(acres(inv.grounds, k), v);
+  near(sqft(inv.grounds, 'shrub_bed'), 12000);
+  near(sqft(inv.grounds, 'parking'), 180000);
+  assert.ok(!inv.grounds.some((g) => g.unit === 'lf'), 'an edging length is not an area');
+  assert.equal(inScope(inv).length, 0);
+  // an acreage column holds turf whatever its label says ("North lot and lawns"); a row's service level beats a turf title
+  const t = read(lines('Site No. | Location | Mowed Turf (AC) | Parking (SY)', 'RC-1 | North lot and lawns | 5.50 | 4,000'));
+  near(acres(t.grounds, 'improved_turf'), 5.5);
+  const lv = read(lines('Park No. | Park | Mowable Turf Acres | Svc Lvl', 'P-1 | Lakeside | 4.0 | 1', 'P-2 | Meadow | 6.0 | 2'));
+  assert.deepEqual([acres(lv.grounds, 'improved_turf'), acres(lv.grounds, 'semi_improved')], [4, 6]);
+});
+
+const BASE_AMEND = lines('Exhibit B - Facility Workload', 'Facility No. | Facility | Gross SF | Cleanable SF | Frequency', 'NC-14 | Storage Barn | 2,100 | 300 | 1X', '5512 | Fitness Annex | 10,000 | 8,000 | 5X',
+  '5520 | Records Center | 6,000 | 5,000 | 2X', '5530 | Chapel | 4,000 | 3,600 | 2X', '', 'Frequency key: 5X = five days per week; 2X = two days per week; 1X = once per week.', '',
+  'Exhibit G - Grounds', 'Site No. | Location | Mowed Turf (AC) | Parking (SY)', 'RC-1 | North lot and lawns | 5.50 | 4,000', 'RC-2 | South lot and lawns | 3.25 | 2,500');
+
+test('amendment items: locators and place names before the building, "Bldg ID", semicolons in parentheses, "to read", schedule changes, site keys', () => {
+  const inv = read(BASE_AMEND, { name: 'Amendment 0003.txt', role: 'amendment', amendment: 3, text: lines('AMENDMENT 0003 TO SOLICITATION W912AB-27-R-0101',
+    '1. Exhibit B, North Campus, Facility No. NC-14, Storage Barn (2,100 GSF; 300 CSF), is hereby deleted from the requirement.',
+    '2. Exhibit B line 2, Bldg 5512, Fitness Annex: gross area is revised from 10,000 to read 12,400 SF; cleanable area is revised from 8,000 to read 9,900 SF.',
+    '3. Bldg 5520, Records Center: the cleaning frequency is changed from 2X to 5X (Monday through Friday).',
+    '4. Exhibit G, South Reserve Center (RC-2): Mowed Turf is revised from 3.25 acres to 2.75 acres.') });
+  assert.equal(fac(inv, 'NC-14').status, 'deleted_by_amendment');
+  assert.deepEqual([fac(inv, '5512').grossSqft, fac(inv, '5512').cleanableSqft], [12400, 9900]);
+  assert.equal(fac(inv, '5520').serviceLevel, 'daily_5');
+  near(acres(inv.grounds, 'improved_turf'), 8.25);
+  // the same changes worded differently, in an addendum bound into the same document
+  const one = read(lines(BASE_AMEND, '', 'ADDENDUM NO. 2',
+    'Change 1 - Table B rows 3 and 4, Bldg ID 5530, Chapel, Main Post, are DELETED in their entirety. The chaplain\'s staff will clean the chapel.',
+    'Change 2 - Facility No. 5520 (Records Center): service frequency is revised from two days per week to three days per week.',
+    'Change 3 - Area correction. Table B, Bldg ID 5512: Column 3, Gross SF, is revised from "10,000" to read "11,000".'));
+  assert.equal(fac(one, '5530').status, 'deleted_by_amendment');
+  assert.equal(fac(one, '5520').serviceLevel, '3x_week');
+  assert.equal(fac(one, '5512').grossSqft, 11000);
+  assert.equal(inScope(one).length, 3);
+  // a building's own name set off by commas may hold any noun ("Vehicle Wash Building")
+  const v = read(lines(H, 'W-7 | Vehicle Wash Building | Shop | 1 | 2,000 | 400 | Weekly'), { role: 'amendment', amendment: 1, text: 'Item 2. Table 1, Bldg W-7, Vehicle Wash Building (2,000 SF), is deleted.' });
+  assert.equal(fac(v, 'W-7').status, 'deleted_by_amendment');
+});
+
+test('column titles: "No. of Floors" / "Number of Stories" count floors; an abbreviation column under the group label is not the name', () => {
+  const inv = read(lines('Bldg. No. | Abbrev. | Building Name | No. of Floors | Gross Sq Ft | Cleanable Sq Ft', '101 | HSC | Health Sciences Center | 3 | 40,000 | 33,000'));
+  assert.deepEqual([fac(inv, '101').name, fac(inv, '101').floors], ['Health Sciences Center', 3]);
+  const g = read(lines('FACILITY Number | FACILITY Code | FACILITY Facility Name | FACILITY Number of Stories | SPACE Gross SF | SPACE Cleanable SF | SERVICE Frequency', 'A-12 | DRM | Dormitory East | 5 | 48,000 | 20,000 | 7/wk'));
+  assert.deepEqual([fac(g, 'A-12').name, fac(g, 'A-12').floors, fac(g, 'A-12').serviceLevel], ['Dormitory East', 5, 'daily_7']);
+  const a = read(lines('BUILDING No. | BUILDING Abbr. | BUILDING Building Name | AREA Gross SF', '07 | MUS | Music Hall | 9,000'));
+  assert.equal(fac(a, '07').name, 'Music Hall');
+});
+
+test('remarks about a part of the building ("Tenant suite 2,400 SF … - excluded", "Gallery set-ups not included") are not its status', () => {
+  const inv = read(lines('Bldg | Building | Gross SF | Remarks', '101 | Health Sciences | 40,000 | Tenant suite 2,400 SF cleaned by the hospital - excluded', '102 | Art Building | 20,000 | Gallery set-ups not included',
+    '103 | Field House | 50,000 | Not included in contract'));
+  assert.deepEqual(['101', '102', '103'].map((b) => fac(inv, b).status), [undefined, undefined, 'excluded']);
+});
+
+test('facilities the Government furnishes to the Contractor for its own use are not the workload', () => {
+  const list = lines('Exhibit 5 - Facilities to be Cleaned', 'Bldg | Facility Name | Gross SF | Frequency', '300 | Headquarters | 30,000 | Daily', '302 | Clinic | 12,000 | Daily');
+  const before = read(lines('2.6 The Government will make the following buildings available to the Contractor for offices and equipment storage.', 'Table 2-1. Contractor-Occupied Government Facilities',
+    'Bldg | Facility | GSF | Purpose', '9001 | Contractor Office Trailer | 1,440 | Project office', '9002 | Equipment Shed | 2,000 | Mower storage', '', list));
+  assert.deepEqual(inScope(before).map((f) => f.buildingNumber), ['300', '302']);
+  const after = read(lines(list, '', 'Exhibit 6 - Government-Furnished Space for Contractor Operations', 'Building | Description | Square Feet', 'B-77 | Custodial supply warehouse | 3,200', 'B-78 | Break room trailer | 600'));
+  assert.deepEqual(inScope(after).map((f) => f.buildingNumber), ['300', '302']);
+});
+
+const DFAC_TABLE = lines('The Contractor shall provide full food service at the dining facilities below.', 'Exhibit D-2. Average Headcount per Meal Period',
+  'Bldg | Dining Facility | Operating Days | WEEKDAYS (MON-FRI, NOT INCLUDING HOLIDAYS) Bkfst | WEEKDAYS (MON-FRI, NOT INCLUDING HOLIDAYS) Lunch | WEEKDAYS (MON-FRI, NOT INCLUDING HOLIDAYS) Dinner | WEEKDAYS (MON-FRI, NOT INCLUDING HOLIDAYS) Mid Rats | WEEKENDS AND HOLIDAYS Brunch | WEEKENDS AND HOLIDAYS Supper',
+  '1250 | Thunder Inn | 7 days | 300 | 600 | 350 | 50 | 400 | 300', '1260 | Lightning Cafe | Mon-Fri | 150 | 300 | 100 | — | — | —', '1270 | Schoolhouse Galley | Mon-Sat | 200 | 400 | 250 | — | 300 | 200');
+
+test('dining headcounts: abbreviated meal titles, weekday titles that exclude holidays, and the days each facility operates', () => {
+  const inv = read(DFAC_TABLE);
+  // 7 days: (5 × 1,300 + 2 × 700) / 7; Monday–Friday: the weekday sum; Monday–Saturday: (5 × 850 + 500) / 6
+  assert.deepEqual(['1250', '1260', '1270'].map((b) => fac(inv, b).dining?.mealsPerDay), [1129, 550, 792]);
+  assert.deepEqual(['1250', '1260', '1270'].map((b) => [fac(inv, b).dining?.daysPerWeek, fac(inv, b).serviceLevel]), [[7, 'daily_7'], [5, 'daily_5'], [6, 'daily_6']]);
+  assert.equal(fac(inv, '1250').dining?.mealPeriods, 4);
+  // a revision table repeats the building with its old and its new figures
+  const rev = read(DFAC_TABLE, { role: 'amendment', amendment: 2, text: lines('AMENDMENT 0002', 'Item 4. Exhibit D-2, Bldg 1250, is revised to read as follows:',
+    'Bldg | Weekday Bkfst | Weekday Lunch | Weekday Dinner | Weekday Mid Rats | Weekend Brunch | Weekend Supper', '1250 (as issued) | 300 | 600 | 350 | 50 | 400 | 300', '1250 (revised) | 330 | 650 | 360 | 60 | 420 | 310') });
+  assert.equal(fac(rev, '1250').dining?.mealsPerDay, 1209);
+});
+
+test('area columns: an area column of words is a location; a footnote defining the area cleaned makes it the cleanable area', () => {
+  const inv = read(lines('Bldg | Dining Facility | Area | Gross SF[^1] | Scullery and Dining SF[^2] | Seats', 'G-1 | North Galley | Waterfront | 20,000 | 16,500 | 300', 'G-2 | South Galley | Airfield | 14,000 | 11,200 | 200', '',
+    'NOTES', '1. Gross SF includes mechanical rooms.', '2. The area in which the Contractor performs sanitation and cleaning.'));
+  assert.deepEqual(['G-1', 'G-2'].map((b) => [fac(inv, b).grossSqft, fac(inv, b).cleanableSqft, fac(inv, b).campus]), [[20000, 16500, 'Waterfront'], [14000, 11200, 'Airfield']]);
+  const s = read(lines('Bldg | Name | Gross SF | Sanitation Area SF', '5 | Mess Hall 5 | 30,000 | 26,000'));
+  assert.equal(fac(s, '5').cleanableSqft, 26000);
+  // a name column under a title the reader does not know, right after the number ("Bldg | Galley | Area | …")
+  const g = read(lines('Bldg | Galley | Area | Gross SF | Seats', 'G-1 | North Galley | Waterfront | 20,000 | 300', 'G-2 | South Galley | Airfield | 14,000 | 200'));
+  assert.deepEqual(['G-1', 'G-2'].map((b) => [fac(g, b).name, fac(g, b).campus]), [['North Galley', 'Waterfront'], ['South Galley', 'Airfield']]);
+});
+
+test('prior award in a label / value table of the current contract', () => {
+  const pa = heuristicPriorAward([doc(lines('TECHNICAL EXHIBIT 9 - HISTORICAL DATA', 'Table 9-1. Current Contract', 'Item | Information', 'Contract number | W912XY-21-C-0042', 'Contractor | Prairie Facility Services, Inc.',
+    'Date of award | 15 June 2021', 'Period of performance | 1 July 2021 – 30 June 2026 (base year and four option years; 60 months)', 'Total contract value, all periods | $12,345,678'))]);
+  assert.deepEqual([pa?.contractNumber, pa?.incumbent, pa?.awardYear, pa?.totalValue, pa?.periodMonths], ['W912XY-21-C-0042', 'Prairie Facility Services, Inc.', 2021, 12345678, 60]);
+  const pb = heuristicPriorAward([doc(lines('SECTION 8 - INCUMBENT CONTRACT INFORMATION', 'Incumbent: | Blue Heron Services LLC', 'Contract No.: | 47PB0020C0012', 'Awarded: | March 3, 2020',
+    'Estimated total value (5 years): | $4,500,000', 'Current annual value: | $905,000'))]);
+  assert.deepEqual([pb?.contractNumber, pb?.incumbent, pb?.awardYear, pb?.totalValue, pb?.annualValue, pb?.periodMonths], ['47PB0020C0012', 'Blue Heron Services LLC', 2020, 4500000, 905000, 60]);
+  // a blank form field is not an award
+  assert.equal(heuristicPriorAward([doc(lines('Offeror Information', 'Contractor | ______________', 'Contract No. | (to be assigned at award)'))]), undefined);
+});
+
+test('change tables with "As Issued / As Amended" columns: bare figures take the item label, "Deleted" deletes, codes revise the schedule', () => {
+  const inv = read(lines('Exhibit 2 - Facility List', 'Bldg | Facility | Gross SF | Cleanable SF | Frequency', '40 | Admin | 10,000 | 9,000 | 5X', '41 | Shop | 8,000 | 1,200 | 2X', '42 | Store | 3,000 | 2,500 | 2X', '',
+    '5X = five days per week; 2X = two days per week; 1X = one day per week.'),
+  { role: 'amendment', amendment: 1, text: lines('AMENDMENT 0001', 'The following entries of Exhibit 2 are revised:', 'Bldg | Item | As Issued | As Amended', '40 | Gross SF | 10,000 | 10,600', '41 | Frequency | 2X | 1X', '42 | Status | In scope | Deleted') });
+  assert.equal(fac(inv, '40').grossSqft, 10600);
+  assert.equal(fac(inv, '41').serviceLevel, 'weekly');
+  assert.equal(fac(inv, '42').status, 'deleted_by_amendment');
+});
+
+test('multi-site lists: a "Site / Bldg" key column, site rows and site subtotals, "N/W" codes defined inline with a no-service code', () => {
+  const inv = read(lines('TECHNICAL EXHIBIT A - SITE AND BUILDING DATA', 'Site / Bldg | Building | Gross SF | Custodial SF | Freq',
+    'SITE 1 - LAKEVIEW RESERVE CENTER, 100 Shore Rd |  |  |  |', 'L-01 | Training Building | 20,000 | 17,000 | 5/W', 'L-02 | Maintenance Shop | 6,000 | 900 | 1/W', ' | Site 1 subtotal | 26,000 | 17,900 |',
+    'SITE 2 - HILLTOP RESERVE CENTER, 9 Ridge Ave |  |  |  |', 'H-01 | Training Building | 15,000 | 13,000 | 3/W', 'H-02 | Storage | 2,000 | — | N/S', ' | Site 2 subtotal | 17,000 | 13,000 |', ' | GRAND TOTAL | 43,000 | 30,900 |', '',
+    'Frequency: 5/W = five days a week; 3/W = three days a week; 1/W = once a week; N/S = no service.'));
+  assert.deepEqual(['L-01', 'L-02', 'H-01'].map((b) => [fac(inv, b).grossSqft, fac(inv, b).serviceLevel]), [[20000, 'daily_5'], [6000, 'weekly'], [15000, '3x_week']]);
+  assert.equal(fac(inv, 'H-02').status, 'excluded');
+  assert.equal(inScope(inv).length, 3);
+  assert.deepEqual(['2/w', '1/M'].map(serviceLevelFromText), ['2x_week', 'monthly']);
+});
+
+test('prior award prose: "the current contract (…) with <company> expires …" and "$8.2 million"', () => {
+  const pa = heuristicPriorAward([doc('1.3 Background. The current contract (W912DY-20-D-0044) with Apex Facility Solutions, Inc. expires 30 September 2027. It was awarded in 2020 and its total value including all options is $8.2 million over 60 months.')]);
+  assert.deepEqual([pa?.contractNumber, pa?.incumbent, pa?.awardYear, pa?.totalValue, pa?.periodMonths], ['W912DY-20-D-0044', 'Apex Facility Solutions, Inc.', 2020, 8200000, 60]);
+});
+
+test('banner rows: an optional block ("SOUTH CAMPUS (OPTION)") and one not in the base contract put their rows out of the base inventory', () => {
+  const inv = read(lines('Bldg | Name | Gross SF | Cleanable SF', 'NORTH CAMPUS', '101 | Admin Building | 10,000 | 9,000', 'SOUTH CAMPUS (OPTION)', '201 | Gym | 30,000 | 26,000',
+    'ANNEX – NOT IN BASE CONTRACT', '301 | Annex Office | 5,000 | 4,500'));
+  assert.deepEqual(['101', '201', '301'].map((b) => fac(inv, b).status), [undefined, 'option_only', 'excluded']);
+  assert.equal(fac(inv, '101').campus, 'NORTH CAMPUS');
+});
+
 // ---------------------------------------------------------------------------------------------- fixtures
 
 // Score floors a little below what the reader achieves (see the eval: npx tsx scripts/eval.ts --provider heuristic).

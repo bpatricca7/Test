@@ -4,7 +4,7 @@
 // review footer. The query lives in store.query and is shared with the Table view (lib/query.ts).
 
 import { memo, useCallback, useMemo, useRef } from 'react';
-import { ArrowDown, ArrowUp, Building2, Plus, Trees } from 'lucide-react';
+import { ArrowDown, ArrowDownWideNarrow, ArrowUp, ArrowUpNarrowWide, Building2, Plus, Trees } from 'lucide-react';
 import { useStore, type SortKey } from '../../store';
 import { useDerived } from '../../derived';
 import { n1 } from '../../fmt';
@@ -23,6 +23,7 @@ export const InventoryTab = memo(function InventoryTab() {
   const desc = useStore((s) => s.query.desc);
   const setQuery = useStore((s) => s.setQuery);
   const running = useStore((s) => s.extraction.running);
+  const lastFoundNothing = useStore((s) => (s.extraction.phase === 'done' && s.extraction.found === 0) || (s.extraction.phase === 'idle' && (s.project?.documents.length ?? 0) > 0));
   const incomingTotal = useStore((s) => s.extraction.staging.incoming.length + s.extraction.staging.incomingGrounds.length);
   const { rowMeta, counts, est, estById, gestById, facById } = useDerived();
   const view = useInventoryView();
@@ -57,13 +58,20 @@ export const InventoryTab = memo(function InventoryTab() {
   const Arrow = desc ? ArrowDown : ArrowUp;
   const arrow = (k: SortKey) => (sort === k ? <Arrow size={11} aria-hidden /> : null);
 
-  const byHint = sort !== 'source' && !['bldg', 'name', 'gross', 'fte'].includes(sort) ? `${sortLabel(sort)} ${desc ? '↓' : '↑'}` : null;
+  const byHint = sort !== 'source' && !['bldg', 'name', 'gross', 'fte'].includes(sort) ? sortLabel(sort) : null;
+  // the # column fits the longest building number (mono 12.5: 7.5 px a character), 40–64 px
+  const noW = useMemo(() => {
+    let len = 0, without = 0;
+    for (const f of view.facilities) { const n = f.buildingNumber?.length ?? 0; if (n) len = Math.max(len, n); else without++; }
+    if (!len && without) return 56;
+    return Math.max(40, Math.min(64, Math.ceil(len * 7.5) + 2));
+  }, [view.facilities]);
   const renderHeader = (section: { label: string; count: number } | null, sections: number) => (
     <div className="inv__head" role="row">
       <button type="button" role="columnheader" className={cx('inv__th', sort === 'bldg' && 'is-on')} aria-sort={ariaSort('bldg')} onClick={() => headerSort('bldg')} title="Sort by building number">#{arrow('bldg')}</button>
       <button type="button" role="columnheader" className={cx('inv__th', 'inv__th--name', sort === 'name' && 'is-on')} aria-sort={ariaSort('name')} onClick={() => headerSort('name')} title={`Sort by name${byHint ? ` (now: ${byHint})` : ''}`}>
         <span className="inv__th-sec">{section && !(byHint && sections < 2) ? <>{section.label}{byHint ? null : <span className="inv__th-count"> {section.count.toLocaleString()}</span>}</> : 'Name'}</span>{arrow('name')}
-        {byHint && <span className="inv__th-by">· {byHint}</span>}
+        {byHint && <span className="inv__th-by" title={`Sorted by ${byHint}${desc ? ', descending' : ', ascending'}`}><span className="inv__th-by-label">· {byHint} </span>{desc ? <ArrowDownWideNarrow size={12} aria-label={`Sorted by ${byHint}, descending`} /> : <ArrowUpNarrowWide size={12} aria-label={`Sorted by ${byHint}, ascending`} />}</span>}
       </button>
       <span className="inv__th inv__th--r" role="columnheader">
         <button type="button" className={cx('inv__th-part', sort === 'gross' && 'is-on')} aria-sort={ariaSort('gross')} onClick={() => headerSort('gross')} title="Sort by gross SF">SF{arrow('gross')}</button>
@@ -74,7 +82,7 @@ export const InventoryTab = memo(function InventoryTab() {
   );
 
   return (
-    <div className="inv">
+    <div className="inv" style={{ ['--inv-no-w' as string]: `${noW}px` }}>
       <div className="inv__toolbar">
         <QuerySearch className="inv__search" count={count} onEnter={() => { const id = firstMatchNow((x) => estById.get(x)?.fte ?? gestById.get(x)?.fte ?? 0); if (id) selectRow(id); }} onArrowDown={() => listRef.current?.focus()} />
         <SortMenuButton />
@@ -90,7 +98,8 @@ export const InventoryTab = memo(function InventoryTab() {
           chip === 'incoming' ? 'The read has not found any rows yet.'
             : running && !total ? 'Waiting for the reader to find buildings…'
               : total ? <>No rows match{text ? <> “{text}”</> : null}{chip !== 'all' ? <> under this filter</> : null}. <button type="button" className="link-btn" onClick={() => setQuery({ text: '', chip: 'all' })}>Clear filters</button></>
-                : 'No buildings yet. Drop the solicitation in Documents or try the sample.'
+                : lastFoundNothing ? <>The last read found no buildings. <button type="button" className="link-btn" onClick={() => useStore.getState().openLog('warnings')}>See why</button> or open <button type="button" className="link-btn" onClick={() => useStore.getState().openLeft('documents')}>Documents</button>.</>
+                  : 'No buildings yet. Drop the solicitation in Documents or try the sample.'
         }</div>} />
       <div className="inv__foot">
         <span title={`${counts.verified} verified · ${counts.needs} need review · ${counts.flagged} flagged`}>Reviewed {counts.verified.toLocaleString()}/{counts.total.toLocaleString()}</span>

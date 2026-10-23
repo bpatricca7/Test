@@ -2,7 +2,7 @@
 // and after done / failed / cancelled until dismissed or the next run. Stepper Upload → Read → Extract → Merge →
 // Cross-check → Done, live counters, ticker, Log and Cancel; end states with Review N / Restore previous / Retry.
 // The state machine is in store.ts (§7). Screen readers get one polite announcement at most every 5 s.
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Check, CircleAlert, CircleCheck, CircleSlash, LoaderCircle, ScrollText, TriangleAlert, X } from 'lucide-react';
 import { useStore, type ExtractionDoc, type ExtractionState, type RunPhase } from '../../store';
 import { useDerived } from '../../derived';
@@ -11,6 +11,7 @@ import { cx } from '../lib/cx';
 import { Button, IconButton, Tooltip } from '../ui';
 import { startReview } from '../inventory/reviewLoop';
 import { roleLabel } from '../documents/reader';
+import { editsSince } from '../lib/runMerge';
 import '../../styles/run.css';
 import '../../styles/dialogs.css';
 
@@ -65,9 +66,9 @@ export const RunStrip = memo(function RunStrip() {
     if (x.phase === 'idle') return '';
     if (x.phase === 'failed') return `Read failed: ${x.error ?? 'unknown error'}`;
     if (x.phase === 'cancelled') return 'Read cancelled.';
-    if (x.phase === 'done') return `Read complete: ${x.progress.registered} facilities, ${x.progress.grounds} grounds areas, ${counts.needs} need review.`;
+    if (x.phase === 'done') return x.found === 0 ? `The read found nothing. ${x.warnings[0]?.message ?? ''}` : `Read complete: ${x.progress.registered} facilities, ${x.progress.grounds} grounds areas, ${counts.needs} need review${x.result?.unverified ? `; ${x.result.unverified} verified rows changed and are back in review` : ''}.`;
     return `Reading: ${STAGES[Math.max(0, ORDER[x.phase])]?.label ?? ''}. ${x.progress.registered} facilities found${x.progress.expected ? ` of about ${x.progress.expected}` : ''}.`;
-  }, [x.phase, x.error, x.progress, counts.needs]);
+  }, [x.phase, x.error, x.progress, x.found, x.warnings, x.result, counts.needs]);
   const said = useThrottledAnnouncement(summary);
   if (x.phase === 'idle') return null;
   return (
@@ -131,6 +132,7 @@ function useRestore(x: ExtractionState) {
   const restore = useStore((s) => s.restorePrevious);
   return async () => {
     const n = x.snapshot ? x.snapshot.inventory.facilities.length + x.snapshot.inventory.grounds.length : 0;
+    const edits = editsSince(useStore.getState().project?.review, x.snapshot?.review, x.mergeAt, x.mergeBefore);
     const choice = await useStore.getState().confirm({
       title: 'Restore the previous inventory?',
       body: (
@@ -140,7 +142,7 @@ function useRestore(x: ExtractionState) {
             <li>the {n.toLocaleString()} rows the project had before this run, with their review marks</li>
             <li>the document list, the read record and the cross-check rationale</li>
           </ul>
-          <p>Marks and hand edits made since the run started stay on rows that still exist. Wages, factor overrides, the award facts, top-down and estimate assumptions stay as they are now.</p>
+          <p>Review marks and notes set since the run started stay.{edits ? ` Hand edits made since the run started (${edits.toLocaleString()} row${edits === 1 ? '' : 's'}) go with the run's rows.` : ''} Wages, factor overrides, the award facts, top-down and estimate assumptions stay as they are now.</p>
         </div>
       ),
       actions: [{ id: 'cancel', label: 'Cancel' }, { id: 'restore', label: 'Restore previous', variant: 'primary' }],
@@ -149,23 +151,103 @@ function useRestore(x: ExtractionState) {
   };
 }
 
+interface Seg { key: string; text: string; tone?: 'warn'; onClick?: () => void; label?: string }
+
+/**
+ * One line of summary segments in priority order. Segments that do not fit wrap onto a hidden second line and are
+ * counted into a "+N" whose tooltip lists them (the same idea as the top-bar metric strip): no phrase is ever split.
+ */
+function SegLine({ segs }: { segs: Seg[] }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [shown, setShown] = useState(segs.length);
+  const sig = segs.map((x) => x.text).join('|');
+  useLayoutEffect(() => {
+    const el = box.current; if (!el) return;
+    const fit = () => {
+      const kids = [...el.children] as HTMLElement[];
+      const top = kids[0]?.offsetTop ?? 0;
+      let n = kids.length;
+      for (let i = 0; i < kids.length; i++) if (kids[i].offsetTop > top + 2) { n = i; break; }
+      setShown(n);
+    };
+    fit();
+    const ro = new ResizeObserver(fit); ro.observe(el);
+    return () => ro.disconnect();
+  }, [sig]);
+  const hidden = segs.slice(shown);
+  return (
+    <>
+      <div ref={box} className="rs-segs">
+        {segs.map((x, i) => (
+          <span key={x.key} className={cx('rs-seg', x.tone === 'warn' && 'is-warn')} aria-hidden={i >= shown || undefined}>
+            {x.onClick ? <button type="button" className="rs-seg__btn" tabIndex={i >= shown ? -1 : undefined} aria-label={x.label} onClick={x.onClick}>{x.text}</button> : <span title={x.label}>{x.text}</span>}
+          </span>
+        ))}
+      </div>
+      {hidden.length > 0 && (
+        <Tooltip content={<div className="rs-more-tip">{hidden.map((x) => <div key={x.key}>{x.text}</div>)}</div>} placement="bottom">
+          <span className="rs-more" tabIndex={0} aria-label={`${hidden.length} more: ${hidden.map((x) => x.text).join(', ')}`}>+{hidden.length}</span>
+        </Tooltip>
+      )}
+    </>
+  );
+}
+
+const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString()} ${n === 1 ? one : many}`;
+
 function Done({ x, elapsed }: { x: ExtractionState; elapsed: number }) {
   const dismiss = useStore((s) => s.dismissRun);
+  const openLog = useStore((s) => s.openLog);
   const { counts, estById, gestById } = useDerived();
   const askRestore = useRestore(x);
   const r = x.result;
-  const delta = r && (x.startCount ?? 0) > 0 ? ` (+${r.added} new · ${r.changed} changed · ${r.removed} missing)` : '';
   const took = x.endedAt && x.startedAt ? x.endedAt - x.startedAt : elapsed;
-  const full = `Read complete in ${duration(took)} · ${x.progress.registered.toLocaleString()} facilities · ${x.progress.grounds.toLocaleString()} grounds · ${counts.needs.toLocaleString()} need review · ${x.warnings.length} warning${x.warnings.length === 1 ? '' : 's'}${delta}`;
   // [Review N]: the Needs review chip sorted by Impact, and its first row selected (§5.5)
   const review = () => { startReview((id) => estById.get(id)?.fte ?? gestById.get(id)?.fte ?? 0, { needsChip: true }); };
+  if (x.found === 0) return <EmptyRead x={x} took={took} />;
+  const rerun = r && (x.startCount ?? 0) > 0;
+  // priority order (what the estimator must act on first); the tail folds into +N when the strip is narrow
+  const segs: Seg[] = [
+    { key: 'took', text: `Done in ${duration(took)}` },
+    { key: 'needs', text: `${counts.needs.toLocaleString()} need review` },
+    ...(r?.unverified ? [{ key: 'unver', tone: 'warn' as const, text: `${plural(r.unverified, 'verified row')} back in review`, label: `${plural(r.unverified, 'verified row')} changed in the re-read and went back to review` }] : []),
+    ...(r?.conflicts ? [{ key: 'conf', tone: 'warn' as const, text: `${plural(r.conflicts, 'edit conflict')} flagged`, label: `${plural(r.conflicts, 'row')} where the re-read changed a value you edited: your value is kept and the row is flagged` }] : []),
+    ...(x.warnings.length ? [{ key: 'warn', tone: 'warn' as const, text: `⚠ ${plural(x.warnings.length, 'warning')}`, label: `${plural(x.warnings.length, 'warning')}, open the log`, onClick: () => openLog('warnings') }] : []),
+    { key: 'fac', text: plural(x.progress.registered, 'facility', 'facilities') },
+    ...(rerun ? [{ key: 'delta', text: `+${r!.added.toLocaleString()} new · ${r!.changed.toLocaleString()} changed · ${r!.removed.toLocaleString()} missing` }] : []),
+    ...(r?.kept ? [{ key: 'kept', text: `${plural(r.kept, 'hand-edited row')} kept` }] : []),
+    ...(x.progress.grounds ? [{ key: 'grounds', text: plural(x.progress.grounds, 'grounds area') }] : []),
+  ];
+  const full = `Read complete · ${segs.map((s) => s.text).join(' · ')}`;
   return (
-    <div className="runstrip runstrip--done" aria-label="Read complete">
+    <div className="runstrip runstrip--done" aria-label="Read complete" title={full}>
       <CircleCheck size={16} className="runstrip__icon" aria-hidden />
-      <span className="runstrip__msg rs-long" title={full}>{full}</span>
-      <span className="runstrip__msg rs-short" title={full}>Done in {duration(took)} · {x.progress.registered.toLocaleString()} facilities · {counts.needs.toLocaleString()} need review{x.warnings.length ? ` · ⚠ ${x.warnings.length}` : ''}{r && (x.startCount ?? 0) > 0 ? ` · +${r.added} new · ${r.changed} changed · ${r.removed} missing` : ''}</span>
+      <SegLine segs={segs} />
       <div className="runstrip__actions">
         {counts.needs > 0 && <Button size="sm" variant="secondary" onClick={review}>Review {counts.needs.toLocaleString()}</Button>}
+        {x.restorable && <Button size="sm" variant="ghost" onClick={() => void askRestore()}>Restore previous</Button>}
+        <IconButton icon={X} size="sm" label="Dismiss" tooltip="Dismiss" onClick={dismiss} />
+      </div>
+    </div>
+  );
+}
+
+/** The read finished but found no rows: warning tone, the reason, and where to look (log, documents). */
+function EmptyRead({ x, took }: { x: ExtractionState; took: number }) {
+  const dismiss = useStore((s) => s.dismissRun);
+  const openLog = useStore((s) => s.openLog);
+  const openLeft = useStore((s) => s.openLeft);
+  const askRestore = useRestore(x);
+  const first = x.warnings[0];
+  const why = first ? first.message : 'No facilities or grounds were found in these documents.';
+  const all = x.warnings.map((w) => `${w.file ? `${w.file}: ` : ''}${w.message}`).join('\n');
+  return (
+    <div className="runstrip runstrip--warn" role="status" aria-label="Read found nothing">
+      <TriangleAlert size={16} className="runstrip__icon" aria-hidden />
+      <span className="runstrip__msg" title={all || why}><b>The read found nothing</b> ({duration(took)}): {why}</span>
+      <div className="runstrip__actions">
+        {x.warnings.length > 0 && <Button size="sm" variant="secondary" icon={TriangleAlert} onClick={() => openLog('warnings')}>{x.warnings.length > 1 ? `Open log (${x.warnings.length})` : 'Open log'}</Button>}
+        <Button size="sm" variant="ghost" onClick={() => openLeft('documents')}>Documents</Button>
         {x.restorable && <Button size="sm" variant="ghost" onClick={() => void askRestore()}>Restore previous</Button>}
         <IconButton icon={X} size="sm" label="Dismiss" tooltip="Dismiss" onClick={dismiss} />
       </div>

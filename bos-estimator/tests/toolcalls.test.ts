@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import Anthropic from '@anthropic-ai/sdk';
 import {
   applyToolCall, beginPass, buildingKey, cleanBuildingNumber, createState, diningMealsPerDay, docRank, extractionTools, facilityIdentity, finalize,
-  isTotalRow, mapGroundsLabel, parseNumber, parseServiceFrequency, replayToolCalls, seasonDay, seasonServiceDays, type ToolCall,
+  finishClass, isTotalRow, mapGroundsLabel, parseNumber, parseServiceFrequency, replayToolCalls, seasonDay, seasonServiceDays, type ToolCall,
 } from '../server/toolcalls';
 import { describeRequests, extractWithClaude, facilityId, mergeFacility, replayToolCalls as replayFromAi } from '../server/ai';
 import { estimateInventory } from '../shared/estimate';
@@ -1023,6 +1023,205 @@ test('finish: a named gap is waived only after a refusal showed it; the counts r
   const u = applyToolCall(st2, reg(row({ building_number: '1', name: 'A', gross_area: 120, source: { file: AM2, excerpt: 'a' } }), row({ building_number: '2', name: 'B', gross_area: null, service_level: 'weekly' })));
   assert.match(u.resultText, /2 updates of already-registered buildings/);
   assert.match(applyToolCall(st2, reg(row({ building_number: '1', name: 'A', gross_area: 120 }))).resultText, /1 update of already-registered buildings/);
+});
+
+// ------------------------------------------------------------------------------------------------
+// grounds lengths, option-only grounds, grounds revisions, total bases, added service days, floor finishes, snow
+// ------------------------------------------------------------------------------------------------
+
+const RFP = 'RFP.pdf';
+const gArea = (name: string, kind: string, qty: number, unit: string, excerpt: string, o: Record<string, unknown> = {}) => ({ name, table_id: 'G-1', campus: null, facility_building_number: null, kind, document_label: null, status: 'in_scope', status_reason: null, quantity: qty, unit, source: { file: RFP, page: 4, excerpt }, confidence: 0.9, ...o });
+const regG = (...areas: Record<string, unknown>[]): ToolCall => ({ name: 'register_grounds', input: { areas } });
+
+test('grounds: lengths (lf) are recorded as lengths, never areas; they count toward table rows and LF totals', () => {
+  const st = createState([{ name: RFP, role: 'solicitation' as const }]);
+  applyToolCall(st, declare({ table_id: 'G-1', kind: 'grounds', file: RFP, pages: '4', row_count: 2, area_unit: null, printed_totals: [{ value: 2400, unit: 'sqft', kinds: ['sidewalk'] }, { value: 1500, unit: 'lf', kinds: ['sidewalk'] }] }));
+  const r = applyToolCall(st, regG(
+    gArea('North site – walks', 'sidewalk', 1000, 'sqft', 'North | 1,000 | 600'), gArea('North site – edging', 'sidewalk', 600, 'lf', 'North | 1,000 | 600'),
+    // a length's kind only says what it runs along: an LF total naming another kind still covers it
+    gArea('South site – walks', 'sidewalk', 1400, 'sqft', 'South | 1,400 | 900'), gArea('South site – edging', 'improved_turf', 900, 'lf', 'South | 1,400 | 900'),
+  ));
+  assert.equal(r.isError, false);
+  assert.match(r.resultText, /Registered 2 grounds areas in scope/);
+  assert.match(r.resultText, /Recorded as lengths, not areas: "North site – edging" 600 LF, "South site – edging" 900 LF\. A length is never added to sidewalk, parking or any other area/);
+  assert.match(r.resultText, /Progress: G-1: 2 of 2 rows/);
+  const f = applyToolCall(st, finishCall());
+  assert.equal(f.isError, false, f.resultText);
+  assert.match(f.resultText, /2 grounds areas in scope \+ 0 out of scope; 2 lengths \(LF\) recorded, not areas/);
+  const fin = finalize(st);
+  assert.deepEqual(fin.warnings, []);
+  assert.deepEqual(fin.inventory.grounds.map((g) => [g.kind, g.quantity, g.unit]), [['sidewalk', 1000, 'sqft'], ['sidewalk', 1400, 'sqft']]);
+  assert.match(fin.inventory.site.notes ?? '', /Lengths \(LF, not priced as areas\): North site – edging 600 LF; South site – edging 900 LF/);
+  assert.equal(estimateInventory(fin.inventory).metrics.pavedSqft, 2400); // never 2,400 + 1,500 LF × an assumed width
+  // a length alone is a valid call; a wrong LF total is a gap in LF
+  const st2 = createState([{ name: RFP, role: 'solicitation' as const }]);
+  applyToolCall(st2, declare({ table_id: 'G-1', kind: 'grounds', file: RFP, pages: '4', row_count: 1, area_unit: null, printed_totals: [{ value: 700, unit: 'lf', kinds: [] }] }));
+  assert.equal(applyToolCall(st2, regG(gArea('Fence line', 'unimproved', 600, 'lf', 'Fence | 600'))).isError, false);
+  assert.match(applyToolCall(st2, finishCall()).resultText, /G-1: registered 600 LF vs printed total 700 LF/);
+});
+
+test('grounds: option-only areas (an optional site) are out of the estimate; a base total without them reconciles', () => {
+  const st = createState([{ name: RFP, role: 'solicitation' as const }]);
+  applyToolCall(st, declare({ table_id: 'G-1', kind: 'grounds', file: RFP, pages: '4', row_count: 3, area_unit: null, printed_totals: [{ value: 10, unit: 'acres', kinds: ['improved_turf'] }, { value: 3000, unit: 'sqyd', kinds: ['parking'] }] }));
+  const r = applyToolCall(st, regG(
+    gArea('Site A – turf', 'improved_turf', 6, 'acres', 'A | 6.0 | 2,000'), gArea('Site A – lot', 'parking', 2000, 'sqyd', 'A | 6.0 | 2,000'),
+    gArea('Site B – turf', 'improved_turf', 4, 'acres', 'B | 4.0 | 1,000'), gArea('Site B – lot', 'parking', 1000, 'sqyd', 'B | 4.0 | 1,000'),
+    gArea('Site C – turf', 'improved_turf', 2.5, 'acres', 'C | 2.5 | 800', { status: 'option_only', status_reason: 'OPTIONAL SITE – NOT INCLUDED IN BASE TOTALS' }),
+    gArea('Site C – lot', 'parking', 800, 'sqyd', 'C | 2.5 | 800', { status: 'option_only', status_reason: 'OPTIONAL SITE – NOT INCLUDED IN BASE TOTALS' }),
+  ));
+  assert.match(r.resultText, /Registered 4 grounds areas in scope and 2 out of scope \(4 in scope \+ 2 out of scope in total\)/);
+  const f = applyToolCall(st, finishCall());
+  assert.equal(f.isError, false, f.resultText);
+  const inv = finalize(st).inventory;
+  assert.deepEqual(inv.grounds.map((g) => g.name), ['Site A – turf', 'Site A – lot', 'Site B – turf', 'Site B – lot']);
+  assert.match(inv.site.notes ?? '', /Out-of-scope grounds: Site C – turf 2\.5 acres \(option_only: OPTIONAL SITE/);
+  assert.equal(Math.round(estimateInventory(inv).metrics.acres * 100) / 100, 10);
+});
+
+test('grounds revisions: an amendment replaces the area\'s quantity, the table keeps its printed figure; a deletion takes it out', () => {
+  const docs = [{ name: RFP, role: 'solicitation' as const }, { name: AM2, role: 'amendment' as const, amendment: 2 }];
+  const st = createState(docs);
+  applyToolCall(st, declare({ table_id: 'G-1', kind: 'grounds', file: RFP, pages: '4', row_count: 2, area_unit: null, printed_totals: [{ value: 10, unit: 'acres', kinds: ['improved_turf'] }, { value: 3000, unit: 'sqyd', kinds: ['parking'] }] }));
+  applyToolCall(st, regG(
+    gArea('Site A – turf', 'improved_turf', 6, 'acres', 'A | 6.0 | 1,200 | 800'), gArea('Site A – POV parking', 'parking', 1200, 'sqyd', 'A | 6.0 | 1,200 | 800'),
+    gArea('Site A – roads and drives', 'parking', 800, 'sqyd', 'A | 6.0 | 1,200 | 800'),
+    gArea('Site B – turf', 'improved_turf', 4, 'acres', 'B | 4.0 | 1,000'), gArea('Site B – lot', 'parking', 1000, 'sqyd', 'B | 4.0 | 1,000'),
+  ));
+  const amend = (o: Record<string, unknown>) => ({ table_id: null, source: { file: AM2, page: 1, excerpt: 'Item 3. Site A turf revised from 6.0 to 5.5 acres' }, ...o });
+  const r = applyToolCall(st, regG(gArea('Site A – turf', 'improved_turf', 5.5, 'acres', '', amend({}))));
+  assert.equal(r.isError, false);
+  assert.match(r.resultText, /Applied 1 revision of registered areas\. Note: "Site A – turf" revised from 6 acres to 5\.5 acres per Amendment 0002\.pdf p\. 1; G-1 keeps the printed figure/);
+  // the base row sent again as superseded leaves the revision in scope
+  const again = applyToolCall(st, regG(gArea('Site A – turf', 'improved_turf', 6, 'acres', 'A | 6.0 | 1,200 | 800', { status: 'deleted_by_amendment', status_reason: 'Amendment 0002 Item 3' })));
+  assert.match(again.resultText, /already superseded by the revision from Amendment 0002\.pdf p\. 1, which stays in scope/);
+  // a revision named only by its site is matched when the site has one area of the kind (Site B); with two (POV parking,
+  // roads and drives at Site A) it is ambiguous - and "POV parking" never matches "roads and drives"
+  applyToolCall(st, regG(gArea('Site B', 'parking', 1100, 'sqyd', '', amend({ source: { file: AM2, page: 1, excerpt: 'Item 4. Site B lot 1,100 SY' } }))));
+  const amb = applyToolCall(st, regG(gArea('Site A', 'parking', 1300, 'sqyd', '', amend({ source: { file: AM2, page: 2, excerpt: 'Item 5. Site A parking 1,300 SY' } }))));
+  assert.match(amb.resultText, /may revise 2 registered areas \("Site A – POV parking", "Site A – roads and drives"\); it is registered as a separate area/);
+  const pov = applyToolCall(st, regG(gArea('Site A – POV parking (revised)', 'parking', 1300, 'sqyd', '', amend({ source: { file: AM2, page: 2, excerpt: 'Item 5. Site A POV parking 1,300 SY' } }))));
+  assert.match(pov.resultText, /"Site A – POV parking" revised from 1,200 SY to 1,300 SY per Amendment 0002\.pdf p\. 2/);
+  // the extra area from the ambiguous row is removed the way the model would: sent again out of scope
+  applyToolCall(st, regG(gArea('Site A', 'parking', 1300, 'sqyd', '', amend({ status: 'excluded', status_reason: 'sent twice', source: { file: AM2, page: 2, excerpt: 'Item 5. Site A parking 1,300 SY' } }))));
+  const f = applyToolCall(st, finishCall());
+  assert.equal(f.isError, false, f.resultText); // G-1 still reconciles against 10 acres and 3,000 SY as printed
+  const qty = () => Object.fromEntries(finalize(st).inventory.grounds.map((g) => [g.name, g.quantity]));
+  assert.deepEqual(qty(), { 'Site A – turf': 5.5, 'Site A – POV parking': 1300, 'Site A – roads and drives': 800, 'Site B – turf': 4, 'Site B – lot': 1100 });
+  assert.match(finalize(st).inventory.grounds[0].notes ?? '', /Revised by Amendment 0002\.pdf p\. 1: was 6 acres/);
+  // a later deletion takes the area out of the estimate
+  const del = applyToolCall(st, regG(gArea('Site B – turf', 'improved_turf', 4, 'acres', '', amend({ status: 'deleted_by_amendment', status_reason: 'Item 6: Site B grounds deleted', source: { file: AM2, page: 2, excerpt: 'Item 6. Site B grounds deleted' } }))));
+  assert.match(del.resultText, /"Site B – turf" is now deleted_by_amendment per Amendment 0002\.pdf p\. 2 \(was 4 acres in scope\)/);
+  assert.equal(qty()['Site B – turf'], undefined);
+  assert.equal(applyToolCall(st, finishCall()).isError, false); // 10 acres = in scope + out of scope as printed
+});
+
+test('grounds revisions: base and amendment in one file (revision after the table, table_id null), in either read order', () => {
+  const docs = [{ name: RFP, role: 'solicitation' as const }];
+  const base = gArea('Site A – turf', 'improved_turf', 6.3, 'acres', 'A | 6.30 | 2,000');
+  const other = gArea('Site B – turf', 'improved_turf', 3.7, 'acres', 'B | 3.70 | 900');
+  const revision = gArea('Site A – turf', 'improved_turf', 5.85, 'acres', '', { table_id: null, source: { file: RFP, page: 11, excerpt: 'Item 4. Site A turf revised from 6.30 to 5.85 acres' } });
+  for (const order of [[base, other, revision], [revision, base, other]]) {
+    const st = createState(docs);
+    applyToolCall(st, declare({ table_id: 'G-1', kind: 'grounds', file: RFP, pages: '4', row_count: 2, area_unit: null, printed_totals: [{ value: 10, unit: 'acres', kinds: ['improved_turf'] }] }));
+    const results = order.map((a) => applyToolCall(st, regG(a)));
+    if (order[0] === revision) assert.match(results[1].resultText, /"Site A – turf" 6\.3 acres \(RFP\.pdf p\. 4\) is superseded by the revision from RFP\.pdf p\. 11 registered earlier; G-1 keeps the printed figure/);
+    const f = applyToolCall(st, finishCall());
+    assert.equal(f.isError, false, f.resultText);
+    assert.deepEqual(finalize(st).inventory.grounds.map((g) => [g.name, g.quantity]).sort(), [['Site A – turf', 5.85], ['Site B – turf', 3.7]]);
+  }
+  // a row printed in the base part before the table (narrative) or in another table of the base documents is not a revision
+  const st = createState([{ name: RFP, role: 'solicitation' as const }, { name: J4 }]);
+  applyToolCall(st, declare({ table_id: 'G-1', kind: 'grounds', file: RFP, pages: '4', row_count: 1, area_unit: null }, { table_id: 'J-6', kind: 'grounds', file: J4, pages: '2', row_count: 1, area_unit: null }));
+  applyToolCall(st, regG(base));
+  applyToolCall(st, regG(gArea('Site A – turf', 'improved_turf', 6, 'acres', 'Site A turf about 6 acres', { table_id: null, source: { file: RFP, page: 2, excerpt: 'Site A turf about 6 acres' } })));
+  applyToolCall(st, regG(gArea('Site A – turf', 'improved_turf', 2, 'acres', 'A | 2.0', { table_id: 'J-6', source: { file: J4, page: 2, excerpt: 'A | 2.0' } })));
+  assert.equal(finalize(st).inventory.grounds.length, 3);
+});
+
+test('printed totals: a base total that leaves out option-only rows reconciles; gaps split out-of-scope and option-only SF', () => {
+  const st = createState(DOCS);
+  applyToolCall(st, declare({ table_id: 'TE-2', row_count: 4, printed_total_gross_area: 13000 }));
+  applyToolCall(st, reg(
+    row({ table_id: 'TE-2', building_number: '1', name: 'Center', gross_area: 10000, source: { file: J4, page: 3, excerpt: '1 | 10,000' } }),
+    row({ table_id: 'TE-2', building_number: '2', name: 'Storage', gross_area: 3000, status: 'excluded', status_reason: 'N/S', source: { file: J4, page: 3, excerpt: '2 | 3,000' } }),
+    row({ table_id: 'TE-2', building_number: '3', name: 'Option center', gross_area: 5000, status: 'option_only', status_reason: 'OPTIONAL SITE', source: { file: J4, page: 3, excerpt: '3 | 5,000' } }),
+    row({ table_id: 'TE-2', building_number: '4', name: 'Option shop', gross_area: 1000, status: 'option_only', status_reason: 'OPTIONAL SITE', source: { file: J4, page: 3, excerpt: '4 | 1,000' } }),
+  ));
+  const f = applyToolCall(st, finishCall());
+  assert.equal(f.isError, false, f.resultText);
+  assert.match(f.resultText, /Reconciled: TE-2 total 13,000 SF = its in-scope and out-of-scope rows without the option-only rows/);
+  // a total that matches no basis shows both kinds of out-of-scope rows
+  const st2 = createState(DOCS);
+  applyToolCall(st2, declare({ table_id: 'TE-2', row_count: 3, printed_total_gross_area: 20000 }));
+  applyToolCall(st2, reg(
+    row({ table_id: 'TE-2', building_number: '1', name: 'Center', gross_area: 10000, source: { file: J4, page: 3, excerpt: '1 | 10,000' } }),
+    row({ table_id: 'TE-2', building_number: '2', name: 'Storage', gross_area: 3000, status: 'excluded', status_reason: 'N/S', source: { file: J4, page: 3, excerpt: '2 | 3,000' } }),
+    row({ table_id: 'TE-2', building_number: '3', name: 'Option center', gross_area: 5000, status: 'option_only', status_reason: 'OPTIONAL SITE', source: { file: J4, page: 3, excerpt: '3 | 5,000' } }),
+  ));
+  assert.match(applyToolCall(st2, finishCall()).resultText, /TE-2: registered 10,000 SF \(\+3,000 SF out of scope, \+5,000 SF option-only\) vs printed total 20,000 SF/);
+});
+
+test('additional service days are added to the routine days, also after a frequency revision; events_per_year with a routine level is flagged', () => {
+  const st = createState(DOCS);
+  const r = applyToolCall(st, reg(
+    row({ building_number: '1', name: 'Training center', gross_area: 20000, service_level: '3x_week', additional_service_days: { days_per_year: 12, label: 'Sunday service on drill weekends' } }),
+    row({ building_number: '2', name: 'Shop', gross_area: 5000, service_level: 'daily_5', events_per_year: 12 }),
+  ));
+  assert.match(r.resultText, /2: events_per_year \(12\) replaces the daily_5 calendar \(250 days a year\) - if the events come on top of the routine service, send them in additional_service_days instead/);
+  const tc = () => byBn([...st.facilities.values()], '1')[0];
+  assert.equal(tc().serviceDaysPerYear, 162); // 150 (3x_week) + 12
+  assert.match(tc().notes ?? '', /Service days: 150 routine \+ 12 additional \(Sunday service on drill weekends\) = 162/);
+  // an amendment raises the frequency: the added days stay, counted once
+  applyToolCall(st, reg(row({ building_number: '1', name: 'Training center', gross_area: null, service_level: 'daily_5', source: { file: AM2, excerpt: 'Item 3: frequency 5/W' } })));
+  assert.equal(tc().serviceLevel, 'daily_5');
+  assert.equal(tc().serviceDaysPerYear, 262);
+  assert.equal(byBn([...st.facilities.values()], '2')[0].serviceDaysPerYear, 12);
+});
+
+test('floor areas by printed finish: codes mapped to classes and summed in code, an included figure taken out of its host', () => {
+  assert.equal(finishClass('CPT-T'), 'carpet');
+  assert.equal(finishClass('Carpet tile'), 'carpet');
+  assert.equal(finishClass('VCT'), 'resilient');
+  assert.equal(finishClass('Rubber tile'), 'resilient');
+  assert.equal(finishClass('Hard floor SF'), 'resilient');
+  assert.equal(finishClass('TZ'), 'hardTile');
+  assert.equal(finishClass('Quarry tile'), 'hardTile');
+  assert.equal(finishClass('Restroom SF'), 'hardTile');
+  assert.equal(finishClass('Epoxy'), 'concrete');
+  assert.equal(finishClass('SC'), 'concrete');
+  assert.equal(finishClass('Wood gym floor'), 'wood');
+  assert.equal(finishClass('Astroturf'), undefined);
+  const st = createState(DOCS);
+  const r = applyToolCall(st, reg(
+    row({ building_number: '24', name: 'Science hall', gross_area: 20000, cleanable_area: 17760, floor_areas: [
+      { finish: 'CPT', area: 2000 }, { finish: 'CPT-T', area: 1345 }, { finish: 'VCT', area: 9000 }, { finish: 'LVT', area: 2000 }, { finish: 'SV', area: 1070 }, { finish: 'RB', area: 500 },
+      { finish: 'CT', area: 1200 }, { finish: 'TZ', area: 519 }, { finish: 'SC', area: 100 }, { finish: 'EP', area: 26 },
+    ] }),
+    row({ building_number: '25', name: 'Gym', gross_area: 30000, cleanable_area: 25000, floor_areas: [
+      { finish: 'Carpet', area: 5000 }, { finish: 'Hard floor', area: 20000 }, { finish: 'Wood gym floor', area: 8000, included_in: 'Hard floor' },
+    ] }),
+  ));
+  assert.equal(r.isError, false);
+  assert.doesNotMatch(r.resultText, /floor_areas/); // both sum to the cleanable area
+  const by = (bn: string) => byBn([...st.facilities.values()], bn)[0];
+  assert.deepEqual(by('24').floorMix, { carpet: 0.1883, resilient: 0.7078, hardTile: 0.0968, concrete: 0.0071, wood: 0 });
+  assert.match(by('24').notes ?? '', /Floor mix from printed SF by finish: carpet 3,345, resilient 12,570, hard tile 1,719, concrete 126 \(CPT 2,000 → carpet, CPT-T 1,345 → carpet, VCT 9,000 → resilient/);
+  assert.deepEqual(by('25').floorMix, { carpet: 0.2, resilient: 0.48, hardTile: 0, concrete: 0, wood: 0.32 });
+  assert.match(by('25').notes ?? '', /Wood gym floor taken out of Hard floor/);
+  // an unknown finish is spread over the named ones and reported; an included_in naming nothing is reported
+  const r2 = applyToolCall(st, reg(row({ building_number: '26', name: 'Annex', gross_area: 1000, floor_areas: [{ finish: 'VCT', area: 800 }, { finish: 'Astroturf', area: 200 }, { finish: 'WD', area: 50, included_in: 'Stage' }] })));
+  assert.match(r2.resultText, /26: floor_areas: "Astroturf" is not a finish the tool knows/);
+  assert.match(r2.resultText, /26: floor_areas: "WD" is included_in "Stage", which is not a finish of this row/);
+});
+
+test('set_site_info: stated snow and walk-clearing events are kept in the site notes, replaced when restated', () => {
+  const st = createState(DOCS);
+  applyToolCall(st, { name: 'set_site_info', input: { installation_name: 'Northern sites', climate_zone: 'cold', notes: 'Twelve sites', snow_events_per_year: 18, walk_clearing_events_per_year: 24 } });
+  assert.equal(st.site.notes, 'Twelve sites; Snow and ice events per season as stated: 18 plowing, 24 walk clearing');
+  applyToolCall(st, { name: 'set_site_info', input: { snow_events_per_year: 14 } });
+  assert.equal(st.site.notes, 'Twelve sites; Snow and ice events per season as stated: 14 plowing');
+  applyToolCall(st, { name: 'set_site_info', input: { notes: 'Revised notes' } });
+  assert.equal(st.site.notes, 'Revised notes');
 });
 
 test('score: cleanable and service level carry weight, attribute and site mismatches are listed after facility misses', () => {

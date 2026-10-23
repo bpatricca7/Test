@@ -99,7 +99,13 @@ export function NumField({ value, onCommit, required, rule, kind = 'number', for
           const t = e.currentTarget; requestAnimationFrame(() => { if (document.activeElement === t) t.select(); });
           onFocus?.(e);
         }}
-        onBlur={(e) => { focused.current = false; if (dirty.current || error) commit(false); else setDraft(toText(value, false)); onBlur?.(e); }}
+        onBlur={(e) => {
+          focused.current = false;
+          // leaving with an invalid draft puts the saved value back (the field never shows a number that is not stored)
+          if (dirty.current || error) { if (!commit(false)) { dirty.current = false; setError(null); setDraft(toText(value, false)); } }
+          else setDraft(toText(value, false));
+          onBlur?.(e);
+        }}
         onKeyDown={(e) => {
           if (e.key === 'Enter') { e.preventDefault(); commit(true); }
           else if (e.key === 'Escape') {
@@ -116,13 +122,22 @@ export function NumField({ value, onCommit, required, rule, kind = 'number', for
   );
 }
 
+/** The error under the field: shown while the field has focus (the draft is reverted on blur), and kept on the field as it scrolls. */
 function ErrorBubble({ anchor, message }: { anchor: RefObject<HTMLElement | null>; message: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   useLayoutEffect(() => {
-    const a = anchor.current, el = ref.current; if (!a || !el) return;
-    const r = el.getBoundingClientRect();
-    setPos(placeFloating(a.getBoundingClientRect(), { w: r.width, h: r.height }, 'bottom-start', 4));
+    const place = () => {
+      const a = anchor.current, el = ref.current; if (!a || !el) return;
+      const ar = a.getBoundingClientRect();
+      if (ar.bottom < 0 || ar.top > innerHeight || ar.width === 0) { setPos(null); return; }
+      const r = el.getBoundingClientRect();
+      setPos(placeFloating(ar, { w: r.width, h: r.height }, 'bottom-start', 4));
+    };
+    place();
+    window.addEventListener('scroll', place, true);
+    window.addEventListener('resize', place);
+    return () => { window.removeEventListener('scroll', place, true); window.removeEventListener('resize', place); };
   }, [anchor, message]);
   return <Portal><div ref={ref} role="alert" className="ui-tooltip ui-tooltip--error" style={{ left: pos?.left ?? -9999, top: pos?.top ?? -9999 }}>{message}</div></Portal>;
 }

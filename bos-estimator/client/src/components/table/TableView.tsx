@@ -22,7 +22,7 @@ import { Button, Chip, IconButton, Menu, Meter, Tabs, usePopover, type MenuItem 
 import { QueryChips, QuerySearch, SortMenuButton } from '../inventory/QueryControls';
 import { selectRow } from '../inventory/reviewLoop';
 import { commitFacilitiesBulk, commitFacility, commitGrounds, commitPatches, removeRows, revertEdits } from '../inventory/edits';
-import { autoShown, facilityColumns, gridTemplate, groundsColumns, parseSelect, SERVICE_SHORT, visibleColumns, type ColDef, type ColPref, type Row, type TableTab } from './columns';
+import { autoShown, contentWidths, facilityColumns, gridTemplate, groundsColumns, parseSelect, SERVICE_SHORT, visibleColumns, type ColDef, type ColPref, type Row, type TableTab } from './columns';
 import { Grid, type CellRef, type GridHandle } from './Grid';
 import '../../styles/inventory.css';
 import '../../styles/table.css';
@@ -90,10 +90,14 @@ export const TableView = memo(function TableView() {
   useEffect(() => { setChecked(new Set()); }, [tab]);
 
   // ---- columns ----
-  const widths = liveWidths ?? prefs.widths[tab];
+  const userWidths = liveWidths ?? prefs.widths[tab];
   const shown = useMemo(() => autoShown(tab, { facilities: facilitiesAll, grounds: groundsAll }), [tab, facilitiesAll, groundsAll]);
+  // content-based defaults (a long campus gets room on wide sheets); a width the user dragged wins
+  const fit = useMemo(() => contentWidths(tab, { facilities: facilitiesAll, grounds: groundsAll }), [tab, facilitiesAll, groundsAll]);
+  const widths = useMemo(() => ({ ...fit, ...userWidths }), [fit, userWidths]);
   const cols = useMemo(() => visibleColumns(all, avail, shown, prefs.cols[tab], widths), [all, avail, shown, prefs.cols, tab, widths]);
-  const { template, minWidth } = useMemo(() => gridTemplate(cols, widths), [cols, widths]);
+  const { template, minWidth } = useMemo(() => gridTemplate(cols, widths, avail), [cols, widths, avail]);
+  const campusInName = shown.has('campus') && prefs.cols[tab]?.campus !== 'hide' && !cols.some((c) => c.key === 'campus');
   const onResize = useCallback((key: string, w: number | null, done: boolean) => {
     const next = { ...(liveWidthsRef.current ?? prefsRef.current.widths[tabRef.current]) };
     if (w == null) delete next[key]; else next[key] = w;
@@ -332,7 +336,7 @@ export const TableView = memo(function TableView() {
       <Grid<Row> gridRef={gridRef} tab={tab} rows={rows} cols={cols} template={template} minWidth={minWidth} rowH={prefs.density} rowMeta={rowMeta} estById={estById} gestById={gestById}
         review={review} maxFte={maxFte} hostLabel={hostLabel} facilities={facilitiesAll} readOnly={running} checked={checked} onCheck={onCheck} onCheckAll={onCheckAll}
         sortCol={sortCol} onSort={onSort} widths={widths} onResize={onResize} onWidth={setAvail} commit={commit} onCopy={onCopy} onPaste={onPaste} onRevert={onRevert}
-        incoming={incoming}
+        incoming={incoming} campusInName={campusInName}
         empty={incoming ? 'The read has not found any rows yet.' : tabTotal ? <>No rows match this filter. <button type="button" className="link-btn" onClick={() => setQuery({ text: '', chip: 'all' })}>Clear filters</button></> : tab === 'facilities' ? 'No buildings yet.' : 'No grounds areas yet.'} />
       <div className="tv__foot">
         <span className="tv__totals">{rows.length.toLocaleString()} of {tabTotal.toLocaleString()}{tab === 'facilities' ? ` · ${compact(totals.sf)} SF` : ''} · {n1(totals.fte)} FTE{checkedIds.length ? <b> · {checkedIds.length} selected</b> : null}</span>

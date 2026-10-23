@@ -69,7 +69,7 @@ function parse(html: string): Block[] {
   return blocks;
 }
 
-interface GridRow { header: boolean; cells: string[] }
+interface GridRow { header: boolean; cells: string[]; /** one cell spanning several columns: a title or banner row */ single?: boolean }
 /** Expand colspan/rowspan into a rectangular grid. Spanned positions are left empty, except a rowspan label is
  *  repeated downwards so every row says which group/building it belongs to, and a header colspan label is marked
  *  ("\0label") in each spanned position so it can be prefixed onto every sub-column. */
@@ -86,7 +86,7 @@ function grid(rows: Row[]): GridRow[] {
       col += c.colspan;
     }
     take();
-    out.push({ header: r.header, cells: Array.from(cells, (x) => x ?? '') });
+    out.push({ header: r.header, cells: Array.from(cells, (x) => x ?? ''), single: r.cells.length === 1 && r.cells[0].colspan > 1 });
   }
   return out;
 }
@@ -107,7 +107,10 @@ function tableLines(rows: Row[]): string[] {
   // (a generator that marks every row <th> says nothing about which rows are the header)
   const thInfo = !g.every((r) => r.header);
   let h = 0;
-  while (h < g.length && ((thInfo && g[h].header) || (!g[h].cells.some(hasNumber) && g.slice(h + 1).some((r) => r.cells.some(hasNumber))))) h++;
+  // (a row of one cell across the table under the column titles is a banner over the rows below, "NORTH CAMPUS": the
+  // header ends above it)
+  const banner = (k: number) => g[k].single && g.slice(0, k).some((r) => r.cells.filter((c) => c && !c.startsWith('\u0000')).length >= 2);
+  while (h < g.length && !banner(h) && ((thInfo && g[h].header) || (!g[h].cells.some(hasNumber) && g.slice(h + 1).some((r) => r.cells.some(hasNumber))))) h++;
   if (h >= g.length || h > MAX_HEADER_ROWS) h = 0;
   if (h) {
     const head: string[][] = Array.from({ length: width }, () => []);

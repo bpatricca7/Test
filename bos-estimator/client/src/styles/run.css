@@ -6,9 +6,23 @@
 .runstrip--failed .runstrip__icon{color:var(--bad)}
 .runstrip--done .runstrip__icon{color:var(--ok)}
 .runstrip--cancelled{color:var(--text-2)}
+.runstrip--warn{background:rgba(245,158,11,.10);border-bottom-color:rgba(245,158,11,.55);color:var(--text-1)}
+.runstrip--warn .runstrip__icon{color:var(--warn-text)}
+.runstrip--warn .runstrip__msg b{color:var(--warn-text);font-weight:600}
 .runstrip--cancelled .runstrip__icon{color:var(--text-3)}
 .runstrip__icon{flex-shrink:0}
-.runstrip__msg{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:16px;font-size:var(--fs-sm)}
+.runstrip__msg{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:16px;font-size:var(--fs-sm)}
+/* done summary: one line of segments; segments that do not fit wrap onto a hidden second line and count into +N */
+.rs-segs{display:flex;flex-wrap:wrap;align-items:center;flex:1 1 0;min-width:0;height:24px;overflow:hidden;line-height:24px;font-size:var(--fs-sm)}
+.rs-seg{white-space:nowrap;flex-shrink:0}
+.rs-seg + .rs-seg::before{content:"·";margin:0 6px;color:var(--text-3)}
+.rs-seg.is-warn{color:var(--warn-text)}
+.rs-seg__btn{all:unset;cursor:pointer;border-radius:var(--r-1);padding:0 4px;margin:0 -4px;color:var(--warn-text)}
+.rs-seg__btn:hover{background:rgba(245,158,11,.16)}
+.rs-seg__btn:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.rs-more{flex-shrink:0;height:20px;padding:0 6px;border-radius:var(--r-pill);background:var(--surface-3);color:var(--text-2);font:600 var(--fs-xs)/20px var(--font-sans);cursor:default}
+.rs-more:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.rs-more-tip{display:flex;flex-direction:column;gap:2px}
 
 /* stepper: 16 px dots, 1 px connectors; done dots get a check, the active one spins */
 .runstrip__steps{display:flex;align-items:center;gap:4px;margin:0;padding:0;list-style:none;flex-shrink:0}
@@ -53,6 +67,4 @@
 @container runstrip (max-width:759px){.rs-grounds{display:none}}
 @container runstrip (max-width:679px){.rs-log .btn__label{display:none}.rs-log{width:var(--ctl-h-sm);padding:0}.runstrip__counters{gap:8px}.runstrip__step + .runstrip__step::before{width:6px}}
 @container runstrip (max-width:539px){.rs-fac .k{display:none}.rs-staged{display:none}.runstrip__step:not(.is-active):not(.is-done) .dot{width:10px;height:10px}}
-/* done: a shorter summary when the strip is narrow (the full text stays in the title) */
-.rs-short{display:none}
-@container runstrip (max-width:759px){.runstrip--done .rs-long{display:none}.runstrip--done .rs-short{display:-webkit-box}}
+

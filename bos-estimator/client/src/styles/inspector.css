@@ -4,9 +4,9 @@
 /* ---------- header (fixed) ---------- */
 .insp__head{display:flex;flex-direction:column;gap:6px;padding:10px var(--pad) 10px;border-bottom:1px solid var(--border-1);flex-shrink:0;background:var(--surface-1)}
 .insp__row1{display:flex;align-items:flex-start;gap:8px;min-width:0}
-.insp__no{position:relative;width:76px;flex-shrink:0;margin-top:1px}
+.insp__no{position:relative;width:clamp(64px,calc(var(--no-ch,6) * 8px + 26px),120px);flex-shrink:0;margin-top:1px}
 .insp__no::before{content:"";position:absolute;left:1px;top:4px;bottom:4px;width:3px;border-radius:2px;background:var(--cat);z-index:1}
-.insp__no .input{font:600 13px/1 var(--font-mono);padding-left:9px;height:28px}
+.insp__no .input{font:600 13px/1 var(--font-mono);padding-left:9px;height:28px;text-overflow:ellipsis}
 .insp__swatch{width:10px;height:10px;border-radius:2px;margin-top:9px;flex-shrink:0}
 .insp__name{flex:1;min-width:0;display:block;padding:1px 4px;margin:0;border:1px solid transparent;border-radius:var(--r-2);background:transparent;color:var(--text-1);text-align:left;cursor:text}
 .insp__name:hover{border-color:var(--border-1);background:var(--surface-2)}
@@ -21,6 +21,7 @@
 .insp__flag.is-flagged{color:var(--flag);border-color:rgba(244,114,182,.55);background:rgba(244,114,182,.12)}
 .insp__nav{display:inline-flex;align-items:center;gap:2px;margin-left:auto}
 .insp__nav-pos{min-width:44px;text-align:center;font-size:var(--fs-xs);color:var(--text-2);white-space:nowrap;border-radius:var(--r-1)}
+.insp__nav-pos.is-out{color:var(--text-3);font-family:var(--font-sans)}
 @container insp (max-width:439px){.insp__row3 .btn .kbd{display:none}.insp__row3{gap:4px}}
 @container insp (max-width:359px){.insp__inside .btn__label{display:none}.insp__inside{width:var(--ctl-h-sm);padding:0}.insp__nav-pos{min-width:38px}}
 

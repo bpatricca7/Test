@@ -156,45 +156,41 @@ export function overlayHandEdits(base: Inventory, local: Inventory, review: Revi
 }
 
 /**
- * Restore previous (§7.5): the snapshot's rows and review entries, except that marks and hand edits made since the
- * run started (not the ones the run's own merge wrote) are carried onto the rows that still exist.
- * `mergeAt` / `mergeBefore` identify the entries the merge rewrote and what they were.
+ * Restore previous (§7.5, A9): the snapshot's rows exactly (deep-equal to the inventory before the run). Review marks
+ * and notes set since the run started stay (the run's own rewrites are swapped back for what they replaced); edited
+ * markers follow the restored rows, so they are the snapshot's. `mergeAt` / `mergeBefore` identify the merge's rewrites.
  */
 export function restoreRows(snapshot: { inventory: Inventory; review?: ReviewMap }, current: { inventory: Inventory; review?: ReviewMap }, startedAt: number, mergeAt: number | undefined, mergeBefore: Record<string, ReviewEntry | undefined> | undefined): { inventory: Inventory; review: ReviewMap } {
   const cur = current.review ?? {};
   const snapReview = snapshot.review ?? {};
-  // the user's own entries since the run started (the merge's rewrites are swapped for what they replaced)
   const userEntry = (id: string): ReviewEntry | undefined => {
     let e: ReviewEntry | undefined = cur[id];
     if (e && mergeAt != null && e.at === mergeAt && mergeBefore && id in mergeBefore) e = mergeBefore[id];
     return e && e.at > startedAt ? e : undefined;
   };
   const review: ReviewMap = { ...cur };
-  const curF = new Map(current.inventory.facilities.map((f) => [f.id, f]));
-  const curG = new Map(current.inventory.grounds.map((g) => [g.id, g]));
-  const one = <T extends Row>(row: T, src: Row | undefined): T => {
+  for (const row of [...snapshot.inventory.facilities, ...snapshot.inventory.grounds]) {
+    const was = snapReview[row.id];
     const u = userEntry(row.id);
-    if (!u) { const was = snapReview[row.id]; if (was) review[row.id] = was; else delete review[row.id]; return row; }
-    // status and note as the user left them; hand edits re-applied over the snapshot row, markers against its extracted values
-    const snapMarks = snapReview[row.id]?.edited ?? {};
-    const edited: Record<string, unknown> = { ...snapMarks };
-    let next = row;
-    if (src && u.edited) {
-      for (const path of Object.keys(u.edited)) {
-        const extracted = path in snapMarks ? snapMarks[path] : fieldValue(row, path);
-        const hand = fieldValue(src, path);
-        if (sameValue(hand, extracted)) delete edited[path];
-        else { edited[path] = extracted ?? null; next = withHandValues(next, src, [path]); }
-      }
-    }
+    if (!u) { if (was) review[row.id] = was; else delete review[row.id]; continue; }
     const entry: ReviewEntry = { ...u };
-    if (Object.keys(edited).length) entry.edited = edited; else delete entry.edited;
+    if (was?.edited && Object.keys(was.edited).length) entry.edited = was.edited; else delete entry.edited;
     review[row.id] = entry;
-    return next;
-  };
-  const facilities = snapshot.inventory.facilities.map((f) => one(f, curF.get(f.id)));
-  const grounds = snapshot.inventory.grounds.map((g) => one(g, curG.get(g.id)));
-  return { inventory: { ...snapshot.inventory, facilities, grounds }, review };
+  }
+  return { inventory: snapshot.inventory, review };
+}
+
+/** Rows whose hand edits made since the run started the restore discards (their markers differ from the snapshot's). */
+export function editsSince(review: ReviewMap | undefined, snapReview: ReviewMap | undefined, mergeAt?: number, mergeBefore?: Record<string, ReviewEntry | undefined>): number {
+  let n = 0;
+  for (const [id, e0] of Object.entries(review ?? {})) {
+    let e: ReviewEntry | undefined = e0;
+    if (mergeAt != null && e.at === mergeAt && mergeBefore && id in mergeBefore) e = mergeBefore[id];
+    const now = e?.edited && Object.keys(e.edited).length ? e.edited : null;
+    const was = snapReview?.[id]?.edited && Object.keys(snapReview[id].edited!).length ? snapReview[id].edited! : null;
+    if (now && !sameValue(now, was)) n++;
+  }
+  return n;
 }
 
 /** Rows of `inv` that carry hand-edit markers. */

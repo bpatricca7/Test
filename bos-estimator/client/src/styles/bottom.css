@@ -16,8 +16,11 @@
 .bp__mini .bp__speed{width:84px}
 .bp__mini-crews{display:flex;gap:4px;min-width:0;flex:1;overflow-x:auto;scrollbar-width:none;mask-image:linear-gradient(90deg,#000 calc(100% - 16px),transparent)}
 .bp__mini-crews::-webkit-scrollbar{display:none}
-.bp__mini-chip,.bp__mini-crews .chip{width:110px;justify-content:flex-start}
-.bp__mini-crews .chip__count{margin-left:auto;flex-shrink:0;font:500 var(--fs-xs)/1 var(--font-mono)}
+.bp__mini-chip,.bp__mini-crews .chip{flex-shrink:0;justify-content:flex-start}
+.bp__mini-crews .chip__count{flex-shrink:0;font:500 var(--fs-xs)/1 var(--font-mono)}
+/* collapsed dock: icon + count chips (the crew name is in the tooltip and read by screen readers) */
+.bp__mini-name{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.bp__mini-crews .chip__label{display:contents}
 .bp__mini-crews .chip__main{width:100%;min-width:0}
 .bp__lastlog{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text-3)}
 
@@ -37,15 +40,19 @@
 .bp__cards-wrap.fade-r .bp__cards{mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent)}
 .bp__cards-wrap.fade-l.fade-r .bp__cards{mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent)}
 .bp__pg{position:absolute;top:50%;transform:translateY(-50%);z-index:2;box-shadow:var(--sh-overlay)}
-.bp__pg--l{left:-4px}
-.bp__pg--r{right:-4px}
+.bp__pg--l{left:4px}
+.bp__pg--r{right:4px}
+/* a 40 px gutter behind the paging arrows, so the arrow never sits on a card's text */
+.bp__cards-wrap.fade-r::after,.bp__cards-wrap.fade-l::before{content:"";position:absolute;top:0;bottom:0;width:44px;z-index:1;pointer-events:none}
+.bp__cards-wrap.fade-r::after{right:0;background:linear-gradient(90deg,rgba(18,24,36,0),var(--surface-1) 45%)}
+.bp__cards-wrap.fade-l::before{left:0;background:linear-gradient(270deg,rgba(18,24,36,0),var(--surface-1) 45%)}
 .bp__card{position:relative;flex:1 0 176px;min-width:176px;max-width:240px;border:1px solid var(--border-1);border-radius:var(--r-3);background:var(--surface-2);overflow:hidden}
 .bp__card:hover{border-color:var(--border-2)}
 .bp__card.is-on{border:2px solid var(--crew)}
 .bp__card-main{display:grid;grid-template-columns:32px minmax(0,1fr);align-items:center;gap:8px;width:100%;height:100%;padding:5px 8px;border:0;background:transparent;color:var(--text-1);text-align:left;cursor:pointer}
 .bp__card.is-on .bp__card-main{padding:4px 7px}
 .bp__card .ring{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:conic-gradient(var(--crew) calc(var(--p) * 1%),var(--surface-3) 0)}
-.bp__card .ring span{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--surface-2);font:500 var(--fs-xs)/1 var(--font-mono)}
+.bp__card .ring span{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--surface-2);font:500 var(--fs-xs)/1 var(--font-mono);letter-spacing:-.04em;overflow:hidden}
 .bp__card .txt{display:flex;flex-direction:column;gap:1px;min-width:0}
 .bp__card .name{display:flex;align-items:center;gap:5px;font:600 var(--fs-sm)/var(--lh-sm) var(--font-sans);min-width:0}
 .bp__card .name svg{color:var(--crew);flex-shrink:0}

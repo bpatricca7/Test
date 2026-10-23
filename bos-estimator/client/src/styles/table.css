@@ -1,6 +1,6 @@
 /* Table view sheet (UI spec §5.6). Owned by the table feature.
    Chrome: toolbar 40 + header 34 (sticky, inside the scroller) + footer 32 = 106 px; rows 32 (compact 28). */
-.tv{position:absolute;inset:0;z-index:var(--z-sheet);display:grid;grid-template-rows:var(--toolbar-h) minmax(0,1fr) var(--foot-h);background:var(--surface-1);pointer-events:auto;min-width:0}
+.tv{position:absolute;inset:0;z-index:var(--z-sheet);display:grid;grid-template-rows:var(--toolbar-h) minmax(0,1fr) var(--foot-h);background:var(--surface-1);pointer-events:auto;min-width:0;container:tv/inline-size}
 
 /* ---------- toolbar ---------- */
 .tv__toolbar{display:flex;align-items:center;gap:10px;padding:0 6px 0 4px;border-bottom:1px solid var(--border-1);min-width:0}
@@ -8,6 +8,8 @@
 .tv__tabs .tabs__tab{padding:0 8px}
 .tv__chips{flex:0 1 auto;padding-right:16px}
 .tv-search{flex:1 1 180px;max-width:320px;min-width:150px}
+/* a narrow sheet (1280): short chip labels, the idle Campus chip as an icon with its campus count */
+@container tv (max-width:1099px){.tv__chips .qchip__long{display:none}.tv__chips .qchip__short{display:inline}.tv__chips .qchip__campus.is-idle{display:none}}
 .tv__tools{display:flex;align-items:center;gap:2px;flex-shrink:0;margin-left:auto}
 .tv__toolbar.is-bulk{background:var(--accent-soft);padding-left:12px}
 .tv__bulk{display:flex;align-items:center;gap:6px;min-width:0;overflow-x:auto;scrollbar-width:none}

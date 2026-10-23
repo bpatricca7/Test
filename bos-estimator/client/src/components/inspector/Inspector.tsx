@@ -41,7 +41,7 @@ function QueueNav({ id }: { id: string }) {
     <div className="insp__nav" role="group" aria-label="Needs-review queue" data-row={id}>
       <IconButton size="sm" icon={ChevronLeft} label="Previous row that needs review" tooltip="Previous needs-review row (K)" disabled={!total || only} onClick={() => nextNeeds(-1)} />
       <Tooltip content={total ? `${pos.index ? `Row ${pos.index} of ${total}` : 'This row is not'} in the needs-review queue (current sort and filter)` : 'Nothing needs review in the current filter'}>
-        <span className="insp__nav-pos mono" tabIndex={0}>{pos.index || '–'} / {total}</span>
+        <span className={cx('insp__nav-pos', pos.index ? 'mono' : 'is-out')} tabIndex={0}>{pos.index ? `${pos.index} / ${total}` : total ? `${total.toLocaleString()} to review` : 'None to review'}</span>
       </Tooltip>
       <IconButton size="sm" icon={ChevronRight} label="Next row that needs review" tooltip="Next needs-review row (J)" disabled={!total || only} onClick={() => nextNeeds(1)} />
     </div>
@@ -129,8 +129,8 @@ function FacilityInspector({ f }: { f: Facility }) {
     <div className="insp">
       <header className="insp__head">
         <div className="insp__row1">
-          <span className="insp__no" style={{ ['--cat' as string]: categoryColor(f.category) }}>
-            <TextField size="sm" value={f.buildingNumber ?? ''} placeholder="#" aria-label="Building number" onCommit={(v) => update(f.id, { buildingNumber: v.trim() || undefined })} />
+          <span className="insp__no" style={{ ['--cat' as string]: categoryColor(f.category), ['--no-ch' as string]: Math.max(4, Math.min(14, (f.buildingNumber ?? '').length)) }}>
+            <TextField size="sm" value={f.buildingNumber ?? ''} placeholder="#" aria-label="Building number" title={f.buildingNumber} onCommit={(v) => update(f.id, { buildingNumber: v.trim() || undefined })} />
           </span>
           <EditableName value={f.name} label="Facility name" onCommit={(v) => update(f.id, { name: v })} />
           <IconButton icon={X} size="sm" label="Clear selection" tooltip="Clear selection (Esc)" onClick={() => s().select({ kind: null })} />
@@ -242,7 +242,7 @@ function SourceBlock({ f, rowValues }: { f: Facility; rowValues: number[] }) {
     case 'ok':
       line = <p className="insp__check is-ok"><CircleCheck size={14} aria-hidden />{
         chk.match === 'gross' ? `Gross SF ${n0(f.grossSqft)} appears in the excerpt`
-          : chk.match === 'original' ? `Gross ${n0(f.originalArea!.gross!)} ${unit} (as printed) appears in the excerpt`
+          : chk.match === 'original' ? `Gross ${f.originalArea!.gross!.toLocaleString(undefined, { maximumFractionDigits: 1 })} ${unit} (as printed) appears in the excerpt`
             : chk.match === 'sum' ? `Gross SF ${n0(f.grossSqft)} = ${chk.sumText} in the excerpt`
               : `Cleanable SF ${n0(f.cleanableSqft ?? f.originalArea?.cleanable ?? 0)} appears in the excerpt; gross is not printed`}</p>;
       break;
@@ -395,6 +395,8 @@ function ReviewRing({ value, max }: { value: number; max: number }) {
 
 function ProjectSummary() {
   const { counts, est, estById, gestById } = useDerived();
+  // during a read the project's document list is the previous one; count the documents being read instead
+  const runDocs = useStore((s) => (s.extraction.running ? s.extraction.docs.length : null));
   const live = useTopDownLive();
   const project = useStore((s) => s.project);
   const warnings = useStore((s) => s.extraction.warnings);
@@ -468,7 +470,7 @@ function ProjectSummary() {
           {site.contractName && <><dt>Contract</dt><dd>{site.contractName}</dd></>}
           <dt>Inventory</dt><dd>{project.inventory.facilities.length.toLocaleString()} buildings · {project.inventory.grounds.length.toLocaleString()} grounds areas</dd>
           {est && <><dt>Area</dt><dd>{n0(est.metrics.grossSqft)} SF gross · {n1(est.metrics.acres)} ac</dd></>}
-          <dt>Documents</dt><dd>{project.documents.length}</dd>
+          <dt>Documents</dt><dd>{runDocs != null ? `${runDocs.toLocaleString()} (reading)` : project.documents.length}</dd>
         </dl>
       </section>
       <p className="muted insp__hint">Select a building or grounds area in the list or the map to inspect it.</p>

@@ -5,5 +5,1210 @@
       "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx"
     ]
   ],
-  "calls": []
+  "calls": [
+    {
+      "name": "set_site_info",
+      "input": {
+        "installation_name": "Tamarack State University",
+        "location": "Pine Falls, Minnesota",
+        "solicitation": "RFP No. TSU-27-014",
+        "contract_name": "Custodial Services, Academic & Administrative Buildings",
+        "climate_zone": "cold",
+        "growing_season_weeks": null,
+        "contract_years": null,
+        "notes": "Attachment C (Space Inventory) issued 09/18/2026, revised 10/02/2026 per Addendum No. 1. Sites: Main campus, Lake Annex (Bldg 045, deleted), Downtown leased building (Bldg 050, 418 Front Street). Contract period not stated in this attachment; Option 1 may add the STEM Innovation Annex (027). Climate inferred from Minnesota. Routine cleaning year-round, no service on 11 University holidays. Price on Cleanable Sq Ft (C-1 col K)."
+      },
+      "pass": 0
+    },
+    {
+      "name": "declare_tables",
+      "input": {
+        "tables": [
+          {
+            "table_id": "C-1",
+            "title": "Attachment C-1 Building Summary of Cleanable Space (sheet \"C-1 Bldg Summary\", Part A in scope + Part B not in contract; revised per Addendum No. 1)",
+            "kind": "facilities",
+            "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+            "pages": null,
+            "row_count": 24,
+            "printed_total_gross_area": 762917,
+            "area_unit": "sf",
+            "printed_totals": []
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "C-1",
+            "campus": "Main",
+            "building_number": "010",
+            "line_item": null,
+            "name": "Founders Hall",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 10315,
+            "added_areas": null,
+            "cleanable_area": 8202,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 3,
+              "cleaning_standard": "APPA Level 2 (Ordinary Tidiness)",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5/wk (M-F)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": {
+              "carpet": 5337,
+              "resilient": 1515,
+              "hard_tile": 1350,
+              "concrete": 0,
+              "wood": 0,
+              "other": 0
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+              "page": null,
+              "excerpt": "C-1 Part A: 010 | ADM | Founders Hall | Administration | 2 | Gross 10315 | Cleanable 8202 | INCLUDE | 5/wk (M-F) | APPA 2 | Main"
+            },
+            "confidence": 0.95,
+            "notes": "Floor areas from C-3 (CPT+CPT-T=carpet; VCT+LVT+SV+RB=resilient; CT+TZ=hard_tile; SC+EP=concrete; WD=wood). restroom_rooms = count of X03 public rest rooms with Cust Svc = Y in C-2. Year-round; no service on the 11 University holidays (RFP 4.6)."
+          },
+          {
+            "table_id": "C-1",
+            "campus": "Main",
+            "building_number": "012",
+            "line_item": null,
+            "name": "Elmore Library",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 49745,
+            "added_areas": null,
+            "cleanable_area": 41051,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 4,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 8,
+              "cleaning_standard": "APPA Level 2 (Ordinary Tidiness)",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "7/wk (Sun-Sat)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": {
+              "carpet": 27126,
+              "resilient": 10526,
+              "hard_tile": 3309,
+              "concrete": 90,
+              "wood": 0,
+              "other": 0
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+              "page": null,
+              "excerpt": "C-1 Part A: 012 | LIB | Elmore Library | Library | 4 | Gross 49745 | Cleanable 41051 | INCLUDE | 7/wk (Sun-Sat) | APPA 2 | Main"
+            },
+            "confidence": 0.95,
+            "notes": "Service Frequency revised by Addendum No. 1 (was 6/wk (M-Sa)). Floor areas from C-3 (CPT+CPT-T=carpet; VCT+LVT+SV+RB=resilient; CT+TZ=hard_tile; SC+EP=concrete; WD=wood). restroom_rooms = count of X03 public rest rooms with Cust Svc = Y in C-2. Year-round; no service on the 11 University holidays (RFP 4.6)."
+          },
+          {
+            "table_id": "C-1",
+            "campus": "Main",
+            "building_number": "014",
+            "line_item": null,
+            "name": "Lindqvist Science Hall",
+            "status": null,
+            "status_reason": null,
+            "category": "lab",
+            "gross_area": 32739,
+            "added_areas": null,
+            "cleanable_area": 27936,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 6,
+              "cleaning_standard": "APPA Level 2 (Ordinary Tidiness)",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5/wk (M-F)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": {
+              "carpet": 4361,
+              "resilient": 13229,
+              "hard_tile": 4463,
+              "concrete": 5883,
+              "wood": 0,
+              "other": 0
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+              "page": null,
+              "excerpt": "C-1 Part A: 014 | SCI | Lindqvist Science Hall | Instruction - Science Labs | 3 | Gross 32739 | Cleanable 27936 | INCLUDE | 5/wk (M-F) | APPA 2 | Main"
+            },
+            "confidence": 0.95,
+            "notes": "Lab benches and fume hoods cleaned by Dept.; contractor cleans floors, sinks (exterior) and trash per RFP 4.8. Floor areas from C-3 (CPT+CPT-T=carpet; VCT+LVT+SV+RB=resilient; CT+TZ=hard_tile; SC+EP=concrete; WD=wood). restroom_rooms = count of X03 public rest rooms with Cust Svc = Y in C-2. Year-round; no service on the 11 University holidays (RFP 4.6)."
+          },
+          {
+            "table_id": "C-1",
+            "campus": "Main",
+            "building_number": "016",
+            "line_item": null,
+            "name": "Bergstrom Hall",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 20659,
+            "added_areas": null,
+            "cleanable_area": 17136,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 6,
+              "cleaning_standard": "APPA Level 2 (Ordinary Tidiness)",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5/wk (M-F)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": {
+              "carpet": 8304,
+              "resilient": 6380,
+              "hard_tile": 2452,
+              "concrete": 0,
+              "wood": 0,
+              "other": 0
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+              "page": null,
+              "excerpt": "C-1 Part A: 016 | BRG | Bergstrom Hall | Instruction | 3 | Gross 20659 | Cleanable 17136 | INCLUDE | 5/wk (M-F) | APPA 2 | Main"
+            },
+            "confidence": 0.95,
+            "notes": "2nd floor rooms coded 060 offline for renovation until 01/2027 (Cust Svc = N); to be added by contract modification when returned to service (C-2 rooms 208-210: 183+349+252 SF). Floor areas from C-3 (CPT+CPT-T=carpet; VCT+LVT+SV+RB=resilient; CT+TZ=hard_tile; SC+EP=concrete; WD=wood). restroom_rooms = count of X03 public rest rooms with Cust Svc = Y in C-2. Year-round; no service on the 11 University holidays (RFP 4.6)."
+          },
+          {
+            "table_id": "C-1",
+            "campus": "Main",
+            "building_number": "018",
+            "line_item": null,
+            "name": "Kittredge Hall",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 14304,
+            "added_areas": null,
+            "cleanable_area": 11763,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 2,
+              "cleaning_standard": "APPA Level 2 (Ordinary Tidiness)",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5/wk (M-F)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": {
+              "carpet": 3178,
+              "resilient": 6769,
+              "hard_tile": 1732,
+              "concrete": 84,
+              "wood": 0,
+              "other": 0
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+              "page": null,
+              "excerpt": "C-1 Part A: 018 | KIT | Kittredge Hall | Instruction | 1 | Gross 14304 | Cleanable 11763 | INCLUDE | 5/wk (M-F) | APPA 2 | Main"
+            },
+            "confidence": 0.95,
+            "notes": "Floor areas from C-3 (CPT+CPT-T=carpet; VCT+LVT+SV+RB=resilient; CT+TZ=hard_tile; SC+EP=concrete; WD=wood). restroom_rooms = count of X03 public rest rooms with Cust Svc = Y in C-2. Year-round; no service on the 11 University holidays (RFP 4.6)."
+          },
+          {
+            "table_id": "C-1",
+            "campus": "Main",
+            "building_number": "019",
+            "line_item": null,
+            "name": "Thorsen Hall",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 15269,
+            "added_areas": null,
+            "cleanable_area": 11639,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 4,
+              "cleaning_standard": "APPA Level 3 (Casual Inattention)",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5/wk (M-F)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": {
+              "carpet": 8162,
+              "resilient": 1520,
+              "hard_tile": 1957,
+              "concrete": 0,
+              "wood": 0,
+              "other": 0
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+              "page": null,
+              "excerpt": "C-1 Part A: 019 | THO | Thorsen Hall | Instruction | 2 | Gross 15269 | Cleanable 11639 | INCLUDE | 5/wk (M-F) | APPA 3 | Main"
+            },
+            "confidence": 0.95,
+            "notes": "Gross Sq Ft corrected by Addendum No. 1 (was 14,549; C-2 header still shows 14,549, C-1 governs); room data unchanged. Floor areas from C-3 (CPT+CPT-T=carpet; VCT+LVT+SV+RB=resilient; CT+TZ=hard_tile; SC+EP=concrete; WD=wood). restroom_rooms = count of X03 public rest rooms with Cust Svc = Y in C-2. Year-round; no service on the 11 University holidays (RFP 4.6)."
+          },
+          {
+            "table_id": "C-1",
+            "campus": "Main",
+            "building_number": "021",
+            "line_item": null,
+            "name": "Child Development Center",
+            "status": null,
+            "status_reason": null,
+            "category": "child_care",
+            "gross_area": 10910,
+            "added_areas": null,
+            "cleanable_area": 8939,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 2,
+              "cleaning_standard": "APPA Level 2 (Ordinary Tidiness)",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5/wk (M-F)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": {
+              "carpet": 736,
+              "resilient": 5997,
+              "hard_tile": 2074,
+              "concrete": 132,
+              "wood": 0,
+              "other": 0
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+              "page": null,
+              "excerpt": "C-1 Part A: 021 | CDC | Child Development Center | Child Care (Lab School) | 1 | Gross 10910 | Cleanable 8939 | INCLUDE | 5/wk (M-F) | APPA 2 | Main"
+            },
+            "confidence": 0.95,
+            "notes": "Lab school. Background checks required for contractor staff (RFP 5.3). Floor areas from C-3 (CPT+CPT-T=carpet; VCT+LVT+SV+RB=resilient; CT+TZ=hard_tile; SC+EP=concrete; WD=wood). restroom_rooms = count of X03 public rest rooms with Cust Svc = Y in C-2. Year-round; no service on the 11 University holidays (RFP 4.6)."
+          },
+          {
+            "table_id": "C-1",
+            "campus": "Main",
+            "building_number": "022",
+            "line_item": null,
+            "name": "Fine Arts Center",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 38768,
+            "added_areas": null,
+            "cleanable_area": 29611,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 6,
+              "cleaning_standard": "APPA Level 2 (Ordinary Tidiness)",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_6",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "6/wk (M-Sa)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": {
+              "carpet": 7655,
+              "resilient": 4597,
+              "hard_tile": 4639,
+              "concrete": 6544,
+              "wood": 6176,
+              "other": 0
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+              "page": null,
+              "excerpt": "C-1 Part A: 022 | FAC | Fine Arts Center | Instruction - Fine & Performing Arts | 3 | Gross 38768 | Cleanable 29611 | INCLUDE | 6/wk (M-Sa) | APPA 2 | Main"
+            },
+            "confidence": 0.95,
+            "notes": "Mezzanine (M1) booths not counted as a floor. Scene shop maintained by Theatre Dept. (Cust Svc = N). 412-seat theatre. Floor areas from C-3 (CPT+CPT-T=carpet; VCT+LVT+SV+RB=resilient; CT+TZ=hard_tile; SC+EP=concrete; WD=wood). restroom_rooms = count of X03 public rest rooms with Cust Svc = Y in C-2. Year-round; no service on the 11 University holidays (RFP 4.6)."
+          },
+          {
+            "table_id": "C-1",
+            "campus": "Main",
+            "building_number": "024",
+            "line_item": null,
+            "name": "Allied Health & Nursing Building",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 24651,
+            "added_areas": null,
+            "cleanable_area": 17760,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 4,
+              "cleaning_standard": "APPA Level 2 (Ordinary Tidiness)",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5/wk (M-F)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": {
+              "carpet": 3345,
+              "resilient": 12570,
+              "hard_tile": 1719,
+              "concrete": 126,
+              "wood": 0,
+              "other": 0
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+              "page": null,
+              "excerpt": "C-1 Part A: 024 | AHN | Allied Health & Nursing Building | Instruction | 3 | Gross 24651 | Cleanable 17760 | INCLUDE | 5/wk (M-F) | APPA 2 | Main"
+            },
+            "confidence": 0.95,
+            "notes": "3rd floor leased to PFRMC residency program; tenant cleans (3rd floor rooms Cust Svc = N). Floor areas from C-3 (CPT+CPT-T=carpet; VCT+LVT+SV+RB=resilient; CT+TZ=hard_tile; SC+EP=concrete; WD=wood). restroom_rooms = count of X03 public rest rooms with Cust Svc = Y in C-2. Year-round; no service on the 11 University holidays (RFP 4.6)."
+          },
+          {
+            "table_id": "C-1",
+            "campus": "Main",
+            "building_number": "026",
+            "line_item": null,
+            "name": "Technology & Engineering Center",
+            "status": null,
+            "status_reason": null,
+            "category": "lab",
+            "gross_area": 20894,
+            "added_areas": null,
+            "cleanable_area": 14642,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 2,
+              "cleaning_standard": "APPA Level 3 (Casual Inattention)",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5/wk (M-F)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": {
+              "carpet": 1487,
+              "resilient": 5981,
+              "hard_tile": 1270,
+              "concrete": 5904,
+              "wood": 0,
+              "other": 0
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+              "page": null,
+              "excerpt": "C-1 Part A: 026 | TEC | Technology & Engineering Center | Instruction - Labs & Shops | 1 | Gross 20894 | Cleanable 14642 | INCLUDE | 5/wk (M-F) | APPA 3 | Main"
+            },
+            "confidence": 0.95,
+            "notes": "Instructional labs/shops (code 210) are cleaned; Dept. shop (720), storage and server room are not. Floor areas from C-3 (CPT+CPT-T=carpet; VCT+LVT+SV+RB=resilient; CT+TZ=hard_tile; SC+EP=concrete; WD=wood). restroom_rooms = count of X03 public rest rooms with Cust Svc = Y in C-2. Year-round; no service on the 11 University holidays (RFP 4.6)."
+          },
+          {
+            "table_id": "C-1",
+            "campus": "Main",
+            "building_number": "028",
+            "line_item": null,
+            "name": "Campus Union",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 41910,
+            "added_areas": null,
+            "cleanable_area": 22238,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 6,
+              "cleaning_standard": "APPA Level 2 (Ordinary Tidiness)",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "7/wk (Sun-Sat)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": {
+              "carpet": 11462,
+              "resilient": 5516,
+              "hard_tile": 4708,
+              "concrete": 128,
+              "wood": 424,
+              "other": 0
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+              "page": null,
+              "excerpt": "C-1 Part A: 028 | UNI | Campus Union | Student Center | 3 | Gross 41910 | Cleanable 22238 | INCLUDE | 7/wk (Sun-Sat) | APPA 2 | Main"
+            },
+            "confidence": 0.95,
+            "notes": "Bookstore and Food Court are auxiliary-operated and cleaned by the operators (Cust Svc = N). Ballroom set-ups not included. Floor areas from C-3 (CPT+CPT-T=carpet; VCT+LVT+SV+RB=resilient; CT+TZ=hard_tile; SC+EP=concrete; WD=wood). restroom_rooms = count of X03 public rest rooms with Cust Svc = Y in C-2. Year-round; no service on the 11 University holidays (RFP 4.6)."
+          },
+          {
+            "table_id": "C-1",
+            "campus": "Main",
+            "building_number": "030",
+            "line_item": null,
+            "name": "Ostrander Hall",
+            "status": null,
+            "status_reason": null,
+            "category": "fitness",
+            "gross_area": 35094,
+            "added_areas": null,
+            "cleanable_area": 29664,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 4,
+              "cleaning_standard": "APPA Level 2 (Ordinary Tidiness)",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_6",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "6/wk (M-Sa)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": {
+              "carpet": 660,
+              "resilient": 9176,
+              "hard_tile": 6212,
+              "concrete": 86,
+              "wood": 13530,
+              "other": 0
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+              "page": null,
+              "excerpt": "C-1 Part A: 030 | OST | Ostrander Hall | Physical Education & Recreation | 2 | Gross 35094 | Cleanable 29664 | INCLUDE | 6/wk (M-Sa) | APPA 2 | Main"
+            },
+            "confidence": 0.95,
+            "notes": "Gym wood floor: dust mop nightly, no wet mopping; refinishing by others. Floor areas from C-3 (CPT+CPT-T=carpet; VCT+LVT+SV+RB=resilient; CT+TZ=hard_tile; SC+EP=concrete; WD=wood). restroom_rooms = count of X03 public rest rooms with Cust Svc = Y in C-2. Year-round; no service on the 11 University holidays (RFP 4.6)."
+          },
+          {
+            "table_id": "C-1",
+            "campus": "Main",
+            "building_number": "032",
+            "line_item": null,
+            "name": "Student Services Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 7733,
+            "added_areas": null,
+            "cleanable_area": 5997,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 2,
+              "cleaning_standard": "APPA Level 2 (Ordinary Tidiness)",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5/wk (M-F)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": {
+              "carpet": 4283,
+              "resilient": 140,
+              "hard_tile": 1574,
+              "concrete": 0,
+              "wood": 0,
+              "other": 0
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+              "page": null,
+              "excerpt": "C-1 Part A: 032 | SSC | Student Services Center | Administration - Student Services | 1 | Gross 7733 | Cleanable 5997 | INCLUDE | 5/wk (M-F) | APPA 2 | Main"
+            },
+            "confidence": 0.95,
+            "notes": "Floor areas from C-3 (CPT+CPT-T=carpet; VCT+LVT+SV+RB=resilient; CT+TZ=hard_tile; SC+EP=concrete; WD=wood). restroom_rooms = count of X03 public rest rooms with Cust Svc = Y in C-2. Year-round; no service on the 11 University holidays (RFP 4.6)."
+          },
+          {
+            "table_id": "C-1",
+            "campus": "Main",
+            "building_number": "035",
+            "line_item": null,
+            "name": "Wellness Center",
+            "status": null,
+            "status_reason": null,
+            "category": "medical",
+            "gross_area": 3467,
+            "added_areas": null,
+            "cleanable_area": 2635,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 1,
+              "cleaning_standard": "APPA Level 2 (Ordinary Tidiness)",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5/wk (M-F)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": {
+              "carpet": 1158,
+              "resilient": 1257,
+              "hard_tile": 220,
+              "concrete": 0,
+              "wood": 0,
+              "other": 0
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+              "page": null,
+              "excerpt": "C-1 Part A: 035 | WEL | Wellness Center | Student Health Clinic & Counseling | 1 | Gross 3467 | Cleanable 2635 | INCLUDE | 5/wk (M-F) | APPA 2 | Main"
+            },
+            "confidence": 0.95,
+            "notes": "Clinic exam rooms: bloodborne pathogen protocol per RFP 4.9. Floor areas from C-3 (CPT+CPT-T=carpet; VCT+LVT+SV+RB=resilient; CT+TZ=hard_tile; SC+EP=concrete; WD=wood). restroom_rooms = count of X03 public rest rooms with Cust Svc = Y in C-2. Year-round; no service on the 11 University holidays (RFP 4.6)."
+          },
+          {
+            "table_id": "C-1",
+            "campus": "Main",
+            "building_number": "040",
+            "line_item": null,
+            "name": "Physical Plant",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 22558,
+            "added_areas": null,
+            "cleanable_area": 5320,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 2,
+              "cleaning_standard": "APPA Level 3 (Casual Inattention)",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "3/wk (M/W/F)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": {
+              "carpet": 378,
+              "resilient": 495,
+              "hard_tile": 4347,
+              "concrete": 100,
+              "wood": 0,
+              "other": 0
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+              "page": null,
+              "excerpt": "C-1 Part A: 040 | PPL | Physical Plant | Physical Plant / Shops | 1 | Gross 22558 | Cleanable 5320 | INCLUDE | 3/wk (M/W/F) | APPA 3 | Main"
+            },
+            "confidence": 0.95,
+            "notes": "Shops, storage and receiving are not cleaned (Cust Svc = N); offices, break room, locker room and rest rooms only. Floor areas from C-3 (CPT+CPT-T=carpet; VCT+LVT+SV+RB=resilient; CT+TZ=hard_tile; SC+EP=concrete; WD=wood). restroom_rooms = count of X03 public rest rooms with Cust Svc = Y in C-2. Year-round; no service on the 11 University holidays (RFP 4.6)."
+          },
+          {
+            "table_id": "C-1",
+            "campus": "Main",
+            "building_number": "041",
+            "line_item": null,
+            "name": "Grounds & Fleet Garage",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 10586,
+            "added_areas": null,
+            "cleanable_area": 2787,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 2,
+              "cleaning_standard": "APPA Level 3 (Casual Inattention)",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "1/wk (Wed)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": {
+              "carpet": 264,
+              "resilient": 1100,
+              "hard_tile": 1297,
+              "concrete": 126,
+              "wood": 0,
+              "other": 0
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+              "page": null,
+              "excerpt": "C-1 Part A: 041 | GFG | Grounds & Fleet Garage | Vehicle Maintenance Garage | 1 | Gross 10586 | Cleanable 2787 | INCLUDE | 1/wk (Wed) | APPA 3 | Main"
+            },
+            "confidence": 0.95,
+            "notes": "Vehicle bays and shop not cleaned; office, rest room and locker room only. Floor areas from C-3 (CPT+CPT-T=carpet; VCT+LVT+SV+RB=resilient; CT+TZ=hard_tile; SC+EP=concrete; WD=wood). restroom_rooms = count of X03 public rest rooms with Cust Svc = Y in C-2. Year-round; no service on the 11 University holidays (RFP 4.6)."
+          },
+          {
+            "table_id": "C-1",
+            "campus": "Lake Annex",
+            "building_number": "045",
+            "line_item": null,
+            "name": "Environmental Field Station",
+            "status": "deleted_by_amendment",
+            "status_reason": "DELETED (Add. 1) - \"DELETED by Addendum No. 1 - Biology Dept. will clean.\"",
+            "category": "education",
+            "gross_area": 5313,
+            "added_areas": null,
+            "cleanable_area": 3871,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 2,
+              "cleaning_standard": "APPA Level 3 (Casual Inattention)",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "2/wk (T/Th)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+              "page": null,
+              "excerpt": "C-1 Part A: 045 | EFS | Environmental Field Station | Instruction - Field Station | 1 | Gross 5313 | Cleanable 3871 | DELETED (Add. 1) | 2/wk (T/Th) | APPA 3 | Lake Annex"
+            },
+            "confidence": 0.95,
+            "notes": "Rooms remain in C-2 (report not re-run). Excluded from the 17-building included total. restroom_rooms = count of X03 public rest rooms with Cust Svc = Y in C-2. Year-round; no service on the 11 University holidays (RFP 4.6)."
+          },
+          {
+            "table_id": "C-1",
+            "campus": "Downtown (leased)",
+            "building_number": "050",
+            "line_item": null,
+            "name": "Continuing Education & Workforce Center",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 12472,
+            "added_areas": null,
+            "cleanable_area": 10110,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 2,
+              "cleaning_standard": "APPA Level 2 (Ordinary Tidiness)",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_6",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "6/wk (M-Sa)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": {
+              "carpet": 4597,
+              "resilient": 4571,
+              "hard_tile": 846,
+              "concrete": 96,
+              "wood": 0,
+              "other": 0
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+              "page": null,
+              "excerpt": "C-1 Part A: 050 | CEW | Continuing Education & Workforce Center | Instruction (Leased) | 1 | Gross 12472 | Cleanable 10110 | INCLUDE | 6/wk (M-Sa) | APPA 2 | Downtown (leased)"
+            },
+            "confidence": 0.95,
+            "notes": "Leased building, 418 Front Street, Pine Falls. Gross Sq Ft per lease exhibit. Saturday classes. Floor areas from C-3 (CPT+CPT-T=carpet; VCT+LVT+SV+RB=resilient; CT+TZ=hard_tile; SC+EP=concrete; WD=wood). restroom_rooms = count of X03 public rest rooms with Cust Svc = Y in C-2. Year-round; no service on the 11 University holidays (RFP 4.6)."
+          },
+          {
+            "table_id": "C-1",
+            "campus": "Main",
+            "building_number": "025",
+            "line_item": null,
+            "name": "Hagen Hall",
+            "status": "demolished",
+            "status_reason": "EXCLUDED - \"Vacant; scheduled for demolition summer 2027. Not cleaned.\"",
+            "category": "other",
+            "gross_area": 27880,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+              "page": null,
+              "excerpt": "C-1 Part B: 025 | HAG | Hagen Hall | Vacant (closed 05/2026) | 3 | Gross 27880 | Cleanable n/a | EXCLUDED | - | Main"
+            },
+            "confidence": 0.95,
+            "notes": "C-1 Part B, information only; vacant (closed 05/2026). No room data in C-2."
+          },
+          {
+            "table_id": "C-1",
+            "campus": "Main",
+            "building_number": "027",
+            "line_item": null,
+            "name": "STEM Innovation Annex",
+            "status": "option_only",
+            "status_reason": "OPTION 1 - \"Under construction; substantial completion est. 12/2027. May be added by Option 1 at the proposed Cleanable Sq Ft unit price.\"",
+            "category": "lab",
+            "gross_area": 38500,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+              "page": null,
+              "excerpt": "C-1 Part B: 027 | STM | STEM Innovation Annex | Instruction - Labs (under construction) | 2 | Gross 38500 | Cleanable n/a | OPTION 1 | - | Main"
+            },
+            "confidence": 0.95,
+            "notes": "Gross Sq Ft is design area; rooms not yet in SMS, net/cleanable TBD. Year built 2027 (est.)."
+          },
+          {
+            "table_id": "C-1",
+            "campus": "Main",
+            "building_number": "060",
+            "line_item": null,
+            "name": "Nordahl Residence Hall",
+            "status": "excluded",
+            "status_reason": "EXCLUDED - \"Auxiliary - Housing. Cleaned by Residence Life custodial staff.\"",
+            "category": "barracks",
+            "gross_area": 88640,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 5,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+              "page": null,
+              "excerpt": "C-1 Part B: 060 | NRH | Nordahl Residence Hall | Residence Hall | 5 | Gross 88640 | Cleanable n/a | EXCLUDED | - | Main"
+            },
+            "confidence": 0.95,
+            "notes": "C-1 Part B, listed for information only."
+          },
+          {
+            "table_id": "C-1",
+            "campus": "Main",
+            "building_number": "061",
+            "line_item": null,
+            "name": "Sorensen Residence Hall",
+            "status": "excluded",
+            "status_reason": "EXCLUDED - \"Auxiliary - Housing. Cleaned by Residence Life custodial staff.\"",
+            "category": "barracks",
+            "gross_area": 102300,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 4,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+              "page": null,
+              "excerpt": "C-1 Part B: 061 | SRH | Sorensen Residence Hall | Residence Hall | 4 | Gross 102300 | Cleanable n/a | EXCLUDED | - | Main"
+            },
+            "confidence": 0.95,
+            "notes": "C-1 Part B, listed for information only."
+          },
+          {
+            "table_id": "C-1",
+            "campus": "Main",
+            "building_number": "062",
+            "line_item": null,
+            "name": "Lakeside Commons",
+            "status": "excluded",
+            "status_reason": "EXCLUDED - \"Auxiliary - Dining. Cleaned by the food service contractor.\"",
+            "category": "dining",
+            "gross_area": 31760,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+              "page": null,
+              "excerpt": "C-1 Part B: 062 | LSC | Lakeside Commons | Dining Hall | 2 | Gross 31760 | Cleanable n/a | EXCLUDED | - | Main"
+            },
+            "confidence": 0.95,
+            "notes": "C-1 Part B, listed for information only. No food service in this RFP."
+          },
+          {
+            "table_id": "C-1",
+            "campus": "Main",
+            "building_number": "070",
+            "line_item": null,
+            "name": "Wolf Arena",
+            "status": "excluded",
+            "status_reason": "EXCLUDED - \"Athletics. Daily and event cleaning under separate contract (RFP TSU-26-031).\"",
+            "category": "fitness",
+            "gross_area": 96450,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+              "page": null,
+              "excerpt": "C-1 Part B: 070 | WAR | Wolf Arena | Athletics - Arena/Fieldhouse | 2 | Gross 96450 | Cleanable n/a | EXCLUDED | - | Main"
+            },
+            "confidence": 0.95,
+            "notes": "C-1 Part B, listed for information only."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "set_previous_award",
+      "input": {
+        "incumbent": null,
+        "contract_number": null,
+        "contract_type": null,
+        "total_value": null,
+        "period_months": null,
+        "annual_value": null,
+        "spend_to_date": null,
+        "spend_period_months": null,
+        "award_year": null,
+        "source": {
+          "file": "TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx",
+          "page": null,
+          "excerpt": "No incumbent or previous-contract information in Attachment C (Notes, C-1, C-2, C-3 sheets)."
+        },
+        "confidence": 0.9,
+        "notes": "The package (Attachment C only) states no incumbent, prior contract number, value or spend for this custodial scope. The only other contract named is RFP TSU-26-031 (separate Wolf Arena cleaning contract), which is not this scope."
+      },
+      "pass": 0
+    },
+    {
+      "name": "finish",
+      "input": {
+        "summary": "Tamarack State University RFP TSU-27-014 Custodial Services, Attachment C (Rev 1 per Addendum No. 1). Registered all 24 rows of C-1 Building Summary: 17 included buildings (372,074 gross SF; 267,430 cleanable SF, the pricing basis), Bldg 045 Environmental Field Station deleted by Addendum No. 1, and 6 Part B buildings (025 Hagen Hall vacant/scheduled for demolition; 027 STEM Innovation Annex Option 1; 060, 061, 062, 070 excluded). Addendum changes applied: 019 gross 15,269 (was 14,549), 012 frequency 7/wk (was 6/wk). Floor covering areas from C-3 and APPA levels recorded per building. C-2 room data used only for rest-room counts (breakdown of C-1 buildings, not a separate workload table). No grounds, dining or prior-award data in the package.",
+        "unresolved": [
+          "Contract period (base + options) is not stated in Attachment C; only Option 1 (STEM Innovation Annex 027, est. completion 12/2027) is mentioned.",
+          "027 STEM Innovation Annex: cleanable area TBD (only 38,500 SF design gross); priced at the Cleanable Sq Ft unit price if Option 1 is exercised.",
+          "016 Bergstrom Hall: 2nd-floor rooms coded 060 (784 SF net) offline until 01/2027, to be added by contract modification; not in the 17,136 cleanable SF.",
+          "Floor finish groupings are mine: C-3 CPT+CPT-T=carpet, VCT+LVT+SV+RB=resilient, CT+TZ=hard tile, SC+EP=concrete, WD=wood.",
+          "RFP sections referenced (4.6 holidays, 4.8, 4.9, 5.3) and Attachment D price schedule are not in the package."
+        ]
+      },
+      "pass": 0
+    }
+  ]
 }

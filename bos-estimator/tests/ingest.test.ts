@@ -327,6 +327,83 @@ test('PDF layout: a short note set flush right under a table is not glued to the
   assert.ok(lines.includes('Total: 10,500 SF'), lines.join('\n'));
 });
 
+/** A ruled grid as Chromium prints an HTML table: a rule under every row, column borders drawn row by row and left out
+ *  where a cell spans them. cols: x of each border; a cell spans columns from..to. */
+interface GridCell { text: string; from: number; to?: number; align?: 'l' | 'r' | 'c' }
+function gridPage(cols: number[], top: number, rows: GridCell[][], size = 7) {
+  const rects: { x: number; y: number; w: number; h: number }[] = [{ x: cols[0], y: top - 0.25, w: cols[cols.length - 1] - cols[0], h: 0.5 }];
+  const texts: PdfText[] = [];
+  let y = top;
+  for (const r of rows) {
+    const yb = y - 10;
+    rects.push({ x: cols[0], y: yb - 0.25, w: cols[cols.length - 1] - cols[0], h: 0.5 });
+    cols.forEach((x, k) => { if (k > 0 && k < cols.length - 1 && r.some((c) => c.from < k && (c.to ?? c.from) >= k)) return; rects.push({ x: x - 0.25, y: yb, w: 0.5, h: 10 }); });
+    for (const c of r) {
+      const a = cols[c.from], b = cols[(c.to ?? c.from) + 1], w = c.text.length * 0.5 * size;
+      texts.push({ x: c.align === 'r' ? b - 3 - w : c.align === 'c' ? (a + b) / 2 - w / 2 : a + 3, y: yb + 3, size, str: c.text });
+    }
+    y = yb;
+  }
+  return { rects, texts };
+}
+
+test('PDF layout: banner rows inside a ruled table stay in it, the header ends above the first banner, and a column merged only by spanning labels is split at its border', async () => {
+  const c = (text: string, from: number, align: 'l' | 'r' | 'c' = 'l', to?: number): GridCell => ({ text, from, to, align });
+  const row = (bn: string, ty: string, d: string, g: string, n: string, f: string) => [c(bn, 0), c(ty, 1, 'c'), c(d, 2), c(g, 3, 'r'), c(n, 4, 'r'), c(f, 5, 'c')];
+  // centred column titles start right of the banner text, which sits at the cell's left padding
+  const g = gridPage([40, 92, 118, 250, 310, 370, 420], 700, [
+    [c('Facility', 0, 'c'), c('Type', 1, 'c'), c('Description', 2, 'c'), c('Gross SF', 3, 'c'), c('Net SF', 4, 'c'), c('Sched.', 5, 'c')],
+    [c('EAST ANNEX', 0, 'l', 5)], row('EA-101', 'ADM', 'Annex Office Building', '18,400', '15,900', 'D5'), row('EA-102', 'WH', 'Supply Warehouse', '22,000', '3,100', 'W1'),
+    [c('Annex total (2)', 1, 'l', 2), c('40,400', 3, 'r'), c('19,000', 4, 'r')],
+    [c('WEST ANNEX', 0, 'l', 5)], row('WA-201', 'TRN', 'Classroom Building', '31,250', '27,400', 'D5'), [c('Annex total (1)', 1, 'l', 2), c('31,250', 3, 'r'), c('27,400', 4, 'r')],
+  ]);
+  const lines = (await extractPdfLayout(makePdf([{ texts: [{ x: 40, y: 740, size: 11, str: 'EXHIBIT C - CUSTODIAL WORKLOAD' }, ...g.texts], rects: g.rects }]))).text.split('\n');
+  const h = lines.indexOf('Facility | Type | Description | Gross SF | Net SF | Sched.');
+  assert.ok(h >= 0, lines.join('\n'));
+  assert.deepEqual(lines.slice(h + 1, h + 5), ['EAST ANNEX |  |  |  |  |', 'EA-101 | ADM | Annex Office Building | 18,400 | 15,900 | D5', 'EA-102 | WH | Supply Warehouse | 22,000 | 3,100 | W1', ' | Annex total (2) |  | 40,400 | 19,000 |']);
+  assert.ok(lines.includes('WA-201 | TRN | Classroom Building | 31,250 | 27,400 | D5'), lines.join('\n'));
+  // a two-row grouped header with footnote markers on its titles, a banner, and a "closed" note spanning the measure columns
+  const t2 = gridPage([36, 80, 112, 260, 310, 360, 400], 700, [
+    [c('Bldg', 0, 'c'), c('BUILDING', 1, 'c', 2), c('AREA (SQ FT)', 3, 'c', 4), c('Days', 5, 'c')],
+    [c('Code', 1, 'c'), c('Name', 2, 'c'), c('Gross', 3, 'c'), c('Semi-', 4, 'c')],
+    [c('ZONE 1 - OPERATIONS', 0, 'l', 5)], [c('310', 0), c('OPS', 1, 'c'), c('Operations Center', 2), c('40,100', 3, 'r'), c('35,600', 4, 'r'), c('7', 5, 'c')],
+    [c('314', 0), c('STO', 1, 'c'), c('Old Storage Shed', 2), c('CLOSED - NO SERVICE', 3, 'c', 5)], [c('312', 0), c('HQ', 1, 'c'), c('Wing Headquarters', 2), c('28,900', 3, 'r'), c('25,050', 4, 'r'), c('5', 5, 'c')],
+    [c('316', 0), c('FIT', 1, 'c'), c('Fitness Center', 2), c('33,000', 3, 'r'), c('29,500', 4, 'r'), c('7', 5, 'c')], [c('318', 0), c('CDC', 1, 'c'), c('Child Development Center', 2), c('12,400', 3, 'r'), c('10,900', 4, 'r'), c('5', 5, 'c')],
+  ]);
+  t2.texts.push({ x: 296, y: 685.5, size: 4.5, str: '1' }); // a raised marker after "Gross"
+  const l2 = (await extractPdfLayout(makePdf([{ texts: t2.texts, rects: t2.rects }]))).text.split('\n');
+  assert.ok(l2.includes('Bldg | BUILDING Code | BUILDING Name | AREA (SQ FT) Gross[^1] | AREA (SQ FT) Semi- | Days'), l2.join('\n'));
+  assert.ok(l2.includes('ZONE 1 - OPERATIONS |  |  |  |  |'), l2.join('\n'));
+  assert.ok(l2.includes('310 | OPS | Operations Center | 40,100 | 35,600 | 7') && l2.includes('312 | HQ | Wing Headquarters | 28,900 | 25,050 | 5'), l2.join('\n'));
+});
+
+test('PDF layout: a sparse subtotal line under an unruled list is the next row, not the wrapped rest of the row above', async () => {
+  const X = [40, 100, 140, 300, 370, 440];
+  const texts: PdfText[] = [];
+  let y = 700;
+  const put = (cells: [number, string, boolean?][]) => { for (const [k, s, right] of cells) texts.push({ x: right ? X[k + 1] - 6 - s.length * 3.5 : X[k], y, size: 7, str: s }); y -= 11; };
+  put([[0, 'Bldg'], [1, 'Type'], [2, 'Building Name'], [3, 'Gross SF'], [4, 'Net SF']]);
+  put([[0, 'M-10'], [1, 'ADM'], [2, 'Post Headquarters'], [3, '24,000', true], [4, '20,100', true]]);
+  put([[0, 'M-12'], [1, 'TRN'], [2, 'Learning Center'], [3, '9,800', true], [4, '8,700', true]]);
+  put([[0, 'M-13'], [1, 'GYM'], [2, 'Fitness Center'], [3, '21,000', true], [4, '18,000', true]]);
+  put([[0, 'M-14'], [1, 'WH'], [2, 'Supply Warehouse'], [3, '30,000', true], [4, '2,500', true]]);
+  put([[1, 'Main Post subtotal'], [3, '84,800', true], [4, '49,300', true]]);
+  const rows = rowsOf((await extractPdfLayout(makePdf([{ texts }]))).text);
+  assert.ok(rows.some((r) => r[0] === 'M-14' && r.includes('30,000') && r.includes('2,500') && !r.some((x) => /subtotal|84,800/.test(x))), JSON.stringify(rows));
+  assert.ok(rows.some((r) => r.some((x) => x === 'Main Post subtotal') && r.includes('84,800') && r.includes('49,300')), JSON.stringify(rows));
+});
+
+test('PDF layout: a page border is not a table frame (column titles stay one row, notes under the table stay text)', async () => {
+  const texts: PdfText[] = [{ x: 50, y: 740, size: 11, str: 'EXHIBIT 7 - FACILITIES' }];
+  let y = 700;
+  for (const r of [['Bldg', 'Facility', 'Gross SF'], ['701', 'Operations Building', '12,000'], ['702', 'Garage', '4,500'], ['703', 'Storage', '2,000']]) { texts.push({ x: 50, y, str: r[0] }, { x: 100, y, str: r[1] }, { x: 300, y, str: r[2] }); y -= 11; }
+  texts.push({ x: 50, y: y - 20, str: 'Note: Building 702 is cleaned weekly; all others daily.' });
+  const rects = [{ x: 30, y: 30, w: 552, h: 0.6 }, { x: 30, y: 760, w: 552, h: 0.6 }, { x: 30, y: 30, w: 0.6, h: 730 }, { x: 581.4, y: 30, w: 0.6, h: 730 }];
+  const lines = (await extractPdfLayout(makePdf([{ texts, rects }]))).text.split('\n');
+  assert.ok(lines.includes('Bldg | Facility | Gross SF'), lines.join('\n'));
+  assert.ok(lines.includes('Note: Building 702 is cleaned weekly; all others daily.'), lines.join('\n'));
+});
+
 test('superscripts: unit exponents and ordinals stay text, footnote markers become [^n] (PDF and DOCX)', async () => {
   // superscripts as Word / Chromium print them: a smaller run with text rise (Ts persists across BT/ET, so reset it)
   const p = makePdf([{ ops: [
@@ -352,6 +429,19 @@ test('superscripts: unit exponents and ordinals stay text, footnote markers beco
   assert.ok(lines.includes('TE-3 FACILITY LIST (areas in m²; restrooms serviced 2nd shift)[^1]'), d.text);
   assert.ok(lines.includes('Bldg | Gross Floor Area (m²) | Floors'), d.text);
   assert.ok(lines.includes('1201 | 4,200 m² | 3rd floor and up'), d.text);
+});
+
+test('DOCX: a row of one cell across the table under the column titles is a banner, not part of the header', async () => {
+  const c = (t: string, span = 1) => new TableCell({ columnSpan: span, children: [new Paragraph({ children: [new TextRun(t)] })] });
+  const r = (...cs: TableCell[]) => new TableRow({ children: cs });
+  const doc = new Document({ sections: [{ children: [new Paragraph('Exhibit 3 - Buildings by Site'), new Table({ rows: [
+    r(c('Bldg'), c('Name'), c('Gross SF'), c('Cleanable SF')), r(c('NORTH CAMPUS', 4)), r(c('101'), c('Admin Building'), c('10,000'), c('9,000')),
+    r(c('SOUTH CAMPUS (OPTION)', 4)), r(c('201'), c('Gym'), c('30,000'), c('26,000')),
+  ] })] }] });
+  const lines = (await one('exhibit-3.docx', await Packer.toBuffer(doc))).text.split('\n');
+  const h = lines.indexOf('Bldg | Name | Gross SF | Cleanable SF');
+  assert.ok(h >= 0, lines.join('\n'));
+  assert.deepEqual(lines.slice(h + 1, h + 5), ['NORTH CAMPUS', '101 | Admin Building | 10,000 | 9,000', 'SOUTH CAMPUS (OPTION)', '201 | Gym | 30,000 | 26,000']);
 });
 
 // ---------- zip packages: sniffing, damage, precedence ----------
