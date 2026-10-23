@@ -1,0 +1,92 @@
+{
+  "id": "dfac-ffs-headcount-pdf",
+  "title": "Army garrison FFS / DFA food service and facility sanitation PWS technical exhibits: DFAC average headcount by meal period (weekday B/L/D/Midnight, weekend brunch/supper), closed DFAC, DFAC buildings repeated in the custodial facility list, current contract paragraph (PDF)",
+  "theme": "dining",
+  "provenance": {
+    "fidelity": "real-format",
+    "sources": [
+      {
+        "url": "https://home.army.mil/stewart/my-fort/soldiers/DFACs",
+        "note": "Fort Stewart Warrior Restaurants page: \"Mon- Fri: Breakfast: 0800-0930 / Lunch: 1200-1330 / Dinner: 1700-1830 Weekends & Holidays Brunch: 0930-1300 / Supper: 1700-1830\" (Rocky II, Bldg 3003). Copied the weekday B/L/D vs Weekends & Holidays brunch/supper split, the \"Warrior Restaurant\" naming and the brunch 0930-1300 / supper 1700-1830 windows into TE 5-2."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID294263761115844501071154752929531886007/DRAFT%20PWS_CDRLS.pdf",
+        "note": "Schriever AFB Full Food Service draft PWS (FA255020R0010 Att 1): weekday average daily meal counts by meal period including a Midnight meal (Breakfast 0600-0800, Lunch 1030-1300, Dinner 1600-1830, Midnight 2300-0100) with a separate Weekends, Holidays and Family Days table; contractor provides headcount data to the COR weekly. Format model for TE 5-1 columns and paragraph 1.6; values not copied."
+      },
+      {
+        "url": "https://www.gao.gov/products/b-402434,b-402434.2",
+        "note": "GAO B-402434 (Najlaa): DFAC PWS defined maximum feeding capacity per meal as seating capacity times a multiplier, \"infrequently required\" and for \"planning, storage, workforce, and equipment purposes\"; RFP included historical meal headcounts. Model for paragraph 1.7 / TE 5-1 max feeding column and the TE 5-3 historical data (multiplier changed to 3)."
+      },
+      {
+        "url": "https://www.kansastag.gov/DocumentCenter/View/711/AR-30-22-Army-Food-Program-dated-17-July-2019-PDF",
+        "note": "AR 30-22 Army Food Program: \"DFAC operations in support of TDA organizations are authorized to contract for FFS contracts. Dining facility operations in support of TOE organizations are authorized to contract for DFA services only\" — paraphrased in paragraph 1.2.b for the DFA-only DFAC."
+      },
+      {
+        "url": "https://govtribe.com/opportunity/federal-contract-opportunity/full-food-services-fort-knox-ky-w9124j19r0018",
+        "note": "Fort Knox Full Food Services W9124J-19-R-0018 (MICC for Army Sustainment Command): draft PWS with \"Technical Exhibits with workload data\", Historical Headcount Summaries from AFMIS FY16-FY18 as attachments. Model for the issuing office, the W9124J solicitation prefix, AFMIS sourcing and TE 5-3."
+      },
+      {
+        "url": "https://www.waru.edu/sites/default/files/2024-01/Mess+Attendant+PWS+dtd+23+Feb+2023.pdf",
+        "note": "Whiteman AFB Mess Attendant PWS: \"estimated quantities of work are listed in Technical Exhibit 2, Workload Estimates\" — model for the workload-estimate disclaimer in paragraph 1.1."
+      }
+    ],
+    "notes": "Layout, terminology and wording follow real Army/Air Force food service PWS documents (weekday vs weekend & holiday meal periods, Warrior Restaurant naming, AFMIS headcount, DD Form 1544, TDA/TOE FFS vs DFA rule, maximum feeding capacity, historical meals served for information only). Every value is illustrative: Fort Branford, the solicitation and contract numbers, the incumbent (Sandhill Garrison Services, LLC), DFAC names, seats, headcounts, building numbers, square footage and dollar values are invented."
+  },
+  "inputs": [
+    { "src": "j-0502-food-service-custodial-workload.html", "as": "pdf", "out": "W9124J-27-R-0047 Attachment J-0502 PWS Technical Exhibits.pdf" }
+  ],
+  "expect": {
+    "facilities": [
+      { "buildingNumber": "101", "name": "Garrison Headquarters (Patterson Hall)", "grossSqft": 46850, "cleanableSqft": 41200, "floors": 2, "serviceLevel": "daily_5", "category": "admin" },
+      { "buildingNumber": "115", "name": "Directorate of Human Resources / Soldier Service Center (ID Cards, In- and Out-Processing, Finance)", "grossSqft": 38925, "cleanableSqft": 33410, "floors": 3, "serviceLevel": "daily_5", "category": "admin" },
+      { "buildingNumber": "1450", "name": "Troop Issue Subsistence Activity (TISA) and Installation Food Program Office", "grossSqft": 31600, "cleanableSqft": 4280, "floors": 1, "serviceLevel": "3x_week", "category": "warehouse" },
+      { "buildingNumber": "1462", "name": "Central Issue Facility (CIF)", "grossSqft": 42300, "cleanableSqft": 6140, "floors": 1, "serviceLevel": "2x_week", "category": "warehouse" },
+      { "buildingNumber": "3301", "name": "Soldier Readiness Processing (SRP) Center", "grossSqft": 18450, "cleanableSqft": 16020, "floors": 1, "serviceLevel": "daily_5" },
+      { "buildingNumber": "3315", "name": "Army Education Center and Learning Resource Center", "grossSqft": 24780, "cleanableSqft": 21650, "floors": 2, "serviceLevel": "daily_5", "category": "education" },
+      { "buildingNumber": "4120", "name": "Patriot Warrior Restaurant (DFAC)", "grossSqft": 28460, "cleanableSqft": 4860, "floors": 1, "serviceLevel": "daily_7", "category": "dining", "dining": { "mealsPerDay": 1538, "mealPeriods": 3, "daysPerWeek": 7 } },
+      { "buildingNumber": "4800", "name": "Hooper Physical Fitness Center", "grossSqft": 61240, "cleanableSqft": 52880, "floors": 1, "serviceLevel": "daily_7", "category": "fitness" },
+      { "buildingNumber": "5102", "name": "Troop Medical Clinic No. 2", "grossSqft": 19860, "cleanableSqft": 17450, "floors": 1, "serviceLevel": "daily_5", "category": "medical" },
+      { "buildingNumber": "5500", "name": "Child Development Center (Ages 6 Weeks – 5 Years)", "grossSqft": 21300, "cleanableSqft": 18700, "floors": 1, "serviceLevel": "daily_5", "category": "child_care" },
+      { "buildingNumber": "6010", "name": "Main Post Chapel and Religious Education Annex", "grossSqft": 12480, "cleanableSqft": 10930, "floors": 1, "serviceLevel": "2x_week", "category": "community" },
+      { "buildingNumber": "6205", "name": "3rd Brigade Headquarters", "grossSqft": 33650, "cleanableSqft": 29020, "floors": 2, "serviceLevel": "daily_5", "category": "admin" },
+      { "buildingNumber": "7031", "name": "Ironhorse Warrior Restaurant (DFAC)", "grossSqft": 22740, "cleanableSqft": 3720, "floors": 1, "serviceLevel": "daily_7", "category": "dining", "dining": { "mealsPerDay": 1179, "mealPeriods": 4, "daysPerWeek": 7 } },
+      { "buildingNumber": "7040", "name": "Aviation Battalion Headquarters and Flight Operations Center", "grossSqft": 27315, "cleanableSqft": 23880, "floors": 2, "serviceLevel": "daily_7", "category": "admin" },
+      { "buildingNumber": "9215", "name": "Sentinel Warrior Restaurant (DFAC)", "grossSqft": 16380, "cleanableSqft": 2940, "floors": 1, "serviceLevel": "daily_7", "category": "dining", "dining": { "mealsPerDay": 532, "mealPeriods": 3, "daysPerWeek": 7 } },
+      { "buildingNumber": "9300", "name": "Range Control and Training Support Center", "grossSqft": 14960, "cleanableSqft": 12870, "floors": 1, "serviceLevel": "3x_week" }
+    ],
+    "facilitiesComplete": true,
+    "site": {
+      "contractYears": 5,
+      "climateZone": "hot_humid",
+      "installationName": "Fort Branford",
+      "solicitation": "W9124J-27-R-0047"
+    },
+    "priorAward": {
+      "totalValue": 71284960,
+      "periodMonths": 60,
+      "annualValue": 14962415,
+      "incumbent": "Sandhill Garrison Services, LLC",
+      "contractNumber": "W9124J-21-C-0012",
+      "awardYear": 2021
+    }
+  },
+  "traps": [
+    "Meals per day is not stated anywhere; it must be derived from TE 5-1 average headcount per meal period for a typical week: mealsPerDay = (sum of Monday–Friday meal-period averages × 5 + sum of Weekends & Holidays meal-period averages × 2) ÷ 7, rounded to the nearest whole meal. Bldg 4120: (410+905+520) = 1,835 × 5 = 9,175; (465+330) = 795 × 2 = 1,590; 10,765 ÷ 7 = 1,537.86 → 1,538. Bldg 7031: (285+640+390+115) = 1,430 × 5 = 7,150; (310+240) = 550 × 2 = 1,100; 8,250 ÷ 7 = 1,178.57 → 1,179. Bldg 9215: (140+315+188) = 643 × 5 = 3,215; (150+105) = 255 × 2 = 510; 3,725 ÷ 7 = 532.14 → 532. The formula ignores the weekday training/Federal holidays that run on the weekend schedule (paragraph 1.5 defines the averages per typical 5+2 week).",
+    "Taking only the weekday sum (1,835 / 1,430 / 643) or summing all six columns (2,630 / 1,980 / 898) as meals per day is wrong.",
+    "mealPeriods is the number of weekday meal periods served: 3 at Bldgs 4120 and 9215 (Late/Midnight shown as '—' / N/S), 4 at Bldg 7031 (Midnight meal Monday–Friday, Note 5/). Weekend brunch/supper (2 periods) is not the meal-period count. daysPerWeek is 7 for all three (TE 5-2 'Days Open' = 7).",
+    "Bldg 2240 Dragon Warrior Restaurant is 'CLOSED FOR RENOVATION THROUGH FY27 – NO WORKLOAD' in TE 5-1, closed in TE 5-2, carries FY24/FY25 history in TE 5-3, and is listed in TE 6-1 with 25,120 GSF but frequency N/A and no custodial area; it is excluded entirely (no facility, no dining profile).",
+    "Each in-scope DFAC appears twice (TE 5-1 food service workload and TE 6-1 custodial list) under the same building number; truth has ONE facility per building carrying both the TE 6-1 gross SF and the TE 5-1 dining profile. Emitting a second, SF-less 'dining' facility for 4120/7031/9215 is counted as an extra.",
+    "DFAC custodial service area (4,860 / 3,720 / 2,940 SF) is only restrooms, entries and admin (kitchen and dining room sanitation is under PWS Part 5); it is cleanableSqft, not grossSqft (28,460 / 22,740 / 16,380). Likewise TISA (31,600 GSF vs 4,280) and CIF (42,300 GSF vs 6,140).",
+    "Bldg 9215 Sentinel Warrior Restaurant is DFA only (Government 92G cooks, TOE units): still in scope with a dining profile, serviceStyle dining_facility_attendant (not representable in truth.json; Bldgs 4120 and 7031 are full_food_service).",
+    "Maximum Feeding Capacity per Meal (seats × 3: 1,800 / 1,350 / 900, total 4,050) sits next to the headcount columns and is not the workload; seating capacity (600 / 450 / 300) is not meals per day.",
+    "TE 5-1 TOTAL row (835 / 1,860 / 1,098 / 115 / 925 / 675) is a sum across DFACs, not a facility and not a daily headcount.",
+    "TE 5-3 historical meals served per fiscal year (e.g. 552,310 for 4120 in FY25; 9-month FY26 not annualized) are for information only; dividing them by 365 gives different numbers (1,513) than the TE 5-1 basis that paragraph 1.5 says to price.",
+    "TE 5-2 serving windows ('0930 – 1300', '2330 – 0100') are times, not headcounts or SF.",
+    "TE 6-1 Bldg 1475 Self-Service Supply Center is struck through and marked DELETED (vacated 30 JUN 2026) with 9,640 GSF still printed; excluded. The TOTAL – FACILITIES IN SCOPE (16) row (461,290 GSF / 299,950 SF) is not a facility.",
+    "Section 6-1.1 names facilities not included (Bldgs 5100/5104 health clinic, 4810 pool, 8101–8104 unaccompanied housing, Exchange); none are expected.",
+    "Frequency codes map to service levels: 7X/WK = daily_7, 5X/WK = daily_5, 3X/WK = 3x_week, 2X/WK = 2x_week.",
+    "Prior award is a narrative paragraph (1.4): incumbent Sandhill Garrison Services, LLC, Contract No. W9124J-21-C-0012, FFP, awarded 24 September 2021, total value $71,284,960 for a 12-month base plus four 12-month options (60 months), current option period annual value $14,962,415. The FAR 52.217-8 extension amount ($7,481,208, six months) and the separate field feeding IDIQ ceiling ($4,950,000, W9124J-24-D-0019) are distractors, not the prior award.",
+    "Contract years: new requirement is a 12-month base plus four 12-month options = 5; the potential six-month FAR 52.217-8 extension is not a contract year.",
+    "Mixed orientation: TE 5-1 and TE 5-2/5-3 are landscape pages; TE 6-1 is portrait and wraps long facility names (Bldg 115) to two or three lines. Running header and footer with solicitation number and page repeat on every page."
+  ]
+}
