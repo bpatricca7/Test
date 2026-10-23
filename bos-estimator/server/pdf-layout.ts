@@ -381,6 +381,17 @@ function insideFrame(L: Line, R: Region, rules: Rule[]): boolean {
   }));
 }
 
+/** A one-cell line that reads as notes or running text, not as a banner label: "NOTES: 1. …", "(1) …", "Note:", or a long
+ *  line with a sentence break ("… not part of this solicitation. 2. Cleanable SF is …"). */
+function noteLike(L: Line): boolean {
+  const t = L.segs.map((s) => s.text).join(' ').trim();
+  if (/^(?:notes?|footnotes?|sources?|legend|remarks?)\b|^\(?\d{1,2}[.)]\s|^[*†]/i.test(t)) return true;
+  // (a period after an abbreviation or an initial, "St. Cloud", "Bldg. 12", is no sentence break)
+  const breaks = [...t.matchAll(/([A-Za-z0-9)]+)\.\s+(?=\(?\d{1,2}[.)]\s|[A-Z][a-z])/g)].filter((m) => m[1].length > 1 && !ABBREV_DOT.test(m[1]));
+  return t.length > 90 && breaks.length > 0;
+}
+const ABBREV_DOT = /^(?:st|ave|rd|dr|ln|ct|no|nos|bldg|bldgs|mt|ft|co|corp|inc|jr|sr|blvd|hwy|ste|apt|sec|para|fig|approx|ref|est|vs|dept|div|gen|lt|col|maj|capt|sgt|hq|mr|mrs|ms)$/i;
+
 /** Group lines into table regions. */
 function regions(lines: Line[], pageW: number, rules: Rule[] = []): Region[] {
   const out: Region[] = []; let cur: Region | null = null;
@@ -395,8 +406,9 @@ function regions(lines: Line[], pageW: number, rules: Rule[] = []): Region[] {
     const gapOk = cur != null && L.y - cur.lines[cur.lines.length - 1].y <= 3.2 * L.fs;
     if (L.pageHeader) { out.push(proseRegion(L)); continue; }
     if (multi && (!cur || !gapOk)) { if (cur) out.push(cur); cur = { prose: false, lines: [L], x0: L.x0, x1: L.x1 }; continue; }
-    // a banner row inside the ruled frame of the table is a row of that table, however it is spaced or indented
-    if (cur && gapOk && !multi && rules.length && !L.segs[0].rot && Math.abs(L.fs - median(cur.lines.map((l) => l.fs))) <= 0.15 * L.fs && insideFrame(L, cur, rules)) {
+    // a banner row inside the ruled frame of the table is a row of that table, however it is spaced or indented (a notes
+    // row in the frame, "NOTES: 1. Gross SF is … 2. …", stays text: its sentences are read as prose)
+    if (cur && gapOk && !multi && rules.length && !L.segs[0].rot && !noteLike(L) && Math.abs(L.fs - median(cur.lines.map((l) => l.fs))) <= 0.15 * L.fs && insideFrame(L, cur, rules)) {
       L.title = false;
       cur.lines.push(L);
       cur.x0 = Math.min(cur.x0, L.x0); cur.x1 = Math.max(cur.x1, L.x1);

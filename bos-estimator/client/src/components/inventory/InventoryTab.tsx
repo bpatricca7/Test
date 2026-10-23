@@ -62,10 +62,10 @@ export const InventoryTab = memo(function InventoryTab() {
   // the # column fits the longest building number (mono 12.5: 7.5 px a character), 40–64 px
   const noW = useMemo(() => {
     let len = 0, without = 0;
-    for (const f of view.facilities) { const n = f.buildingNumber?.length ?? 0; if (n) len = Math.max(len, n); else without++; }
+    for (const f of facById.values()) { const n = f.buildingNumber?.length ?? 0; if (n) len = Math.max(len, n); else without++; }
     if (!len && without) return 56;
     return Math.max(40, Math.min(64, Math.ceil(len * 7.5) + 2));
-  }, [view.facilities]);
+  }, [facById]);
   const renderHeader = (section: { label: string; count: number } | null, sections: number) => (
     <div className="inv__head" role="row">
       <button type="button" role="columnheader" className={cx('inv__th', sort === 'bldg' && 'is-on')} aria-sort={ariaSort('bldg')} onClick={() => headerSort('bldg')} title="Sort by building number">#{arrow('bldg')}</button>

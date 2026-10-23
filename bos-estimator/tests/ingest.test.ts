@@ -410,6 +410,7 @@ test('PDF layout: under column titles, a row that opens with an identifier is a 
     [c('Exhibit', 0, 'c'), c('Title', 1, 'c'), c('Pages', 2, 'c'), c('Copies', 3, 'c')],
     [c('E.1', 0), c('Building data sheets', 1), c('6', 2, 'c'), c('1', 3, 'c')],
     [c('E.2', 0), c('Wage determination', 1), c('22', 2, 'c'), c('1', 3, 'c')],
+    [c('E.3', 0), c('Quality assurance plan', 1), c('9', 2, 'c'), c('2', 3, 'c')],
   ]);
   const lines = (await extractPdfLayout(makePdf([{ texts: g.texts, rects: g.rects }]))).text.split('\n');
   assert.ok(lines.includes('Exhibit | Title | Pages | Copies'), lines.join('\n'));

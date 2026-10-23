@@ -20,8 +20,15 @@
 //    part of it; under a two-row header the sub-title names the column and the group label only qualifies a measure;
 //  - a header repeated over later blocks of a list keeps the list's column roles; the same number on two lines of one list
 //    with two names and areas is two line items; rows under a "reference only" / "optional" banner carry that status;
-//  - service days are read as written ("5 x Week", "M–Su", "Tu, Th", "alt. Wed.") or through a code legend anywhere in
-//    the package; change logs (Was / Is columns, "Add Building …") and facilities described in headed paragraphs are read.
+//  - service days are read as written ("5 x Week", "M–Su", "Tu, Th", "alt. Wed.", "3/W") or through a code legend anywhere
+//    in the package ("5/W", "7W", "D5", and codes for no service such as "N/S"); change logs (Was / Is or As Issued / As
+//    Amended columns, "Add Building …") and facilities described in headed paragraphs are read;
+//  - a column title's footnote is read from the notes under the table ("for information only", "= A + B", "the area the
+//    Contractor cleans"); a status banner over a block of rows (optional site, not in the base contract) covers a site
+//    label right under it; facilities furnished to the Contractor for its own use are not the workload;
+//  - grounds: acreage columns hold turf, paved columns lots / roads / walks, snow-work areas and treatment acres (herbicide,
+//    fertilizer) are neither, an edging length is not an area, a table's title names the kind of its rows;
+//  - dining: meals per operating day from the headcount by meal period and the days the facility operates.
 import type { AreaUnit, DiningProfile, Facility, FacilityCategory, FacilityStatus, FloorMix, GroundsArea, GroundsKind, GroundsUnit, Inventory, MealPeriodHeadcount, PriorAward, ServiceLevel, SiteInfo, SourceRef } from '../shared/types';
 import { SQFT_PER } from '../shared/types';
 import { diningMealsPerDay } from '../shared/estimate';
@@ -152,7 +159,7 @@ function ratesPerWeek(t: string): { perWeek: number; text: string }[] {
     if (n != null && isFinite(f) && n > 0) out.push({ perWeek: n * f, text: m[0] });
   }
   // "3/W", "5/w", "1/M": times per week / month in a frequency code
-  for (const m of t.matchAll(/(?:^|[^\d.,/])(\d{1,2})\s*\/\s*(w|m)(?![a-z])/g)) { const n = Number(m[1]); if (n > 0) out.push({ perWeek: m[2] === 'w' ? n : n / 4.33, text: m[0] }); }
+  for (const m of t.matchAll(/(?:^|[^\d.,/])(\d{1,2})\s*\/\s*(w|m)(?![a-z0-9²³])/g)) { const n = Number(m[1]); if (n > 0) out.push({ perWeek: m[2] === 'w' ? n : n / 4.33, text: m[0] }); }
   for (const m of t.matchAll(/\bsemi-?annual(?:ly)?\b|\bbi-?annual(?:ly)?\b|\btwice (?:a|per|each) year\b/g)) out.push({ perWeek: 2 / 52, text: m[0] });
   for (const m of t.matchAll(/(?<!semi-?|bi-?)\b(?:annual(?:ly)?|yearly|once (?:a|per|each) year)\b/g)) if (!/(?:semi-?|bi-?)$/.test(t.slice(0, m.index))) out.push({ perWeek: 1 / 52, text: m[0] });
   return out;
@@ -292,19 +299,48 @@ export function futureDemolitionNote(raw: string | undefined): string | undefine
 const DELETION_SCOPE = /^\s*(?:(?:(?:from|in)\s+(?:the\s+|this\s+|its\s+|their\s+|all\s+)?(?:scope|requirements?|contract|solicitation|rfp|rfq|ifb|pws|sow|list|facility list|inventory|te[- ]?\d|technical exhibit|exhibit|attachment|appendix|table|section|entirety|clin|schedule|work|custodial|services?|pricing)\b)|(?:by|per|under|pursuant to)\s+(?:amendment|addendum|modification|change order)|(?:effective|as of|upon)\b|and\s+(?:will|shall)\s+not\b|$|[.;,(])/i;
 /** The building references open the clause (after "Item 1.", "a.", "No.", "Per Amendment 0002,") and are followed only by a
  *  name, address or campus ("Building 0012 at North Annex", "Site 14, Wexford Commons Pocket Park,") before the verb. */
+/** An identifier after a locator word: it has a digit ("TE-2", "J-3", "Item 14") or is one letter ("Exhibit B"); "Part of"
+ *  is no locator. */
+const LOC_ID = '(?:(?=[\\w.-]{0,9}\\d)[A-Z0-9][\\w.-]{0,8}|[A-Z](?![A-Z0-9]))';
+/** Pieces that may open the clause of a deletion before the building reference, each tried at the current position:
+ *  numbering, "Per Amendment 0002,", where the building is listed ("TE-1 Item 14, TE-2 Item 14 and TE-4 Item 14,", "Exhibit
+ *  B,") and where it is ("North Campus,", "Fergus Falls USARC,"). A place name is capitalised: it is matched with case. */
+const OPENER_PARTS: RegExp[] = [
+  /(?:amendment|addendum|modification)\s*(?:no\.?|number|#)?\s*\d{1,4}\s*[.:)\-–]?\s*/iy,
+  /(?:item|line|para(?:graph)?|no\.?|change|question|answer|response|q|a)\s*\d[\w.-]{0,6}[.:)\-–]?\s+/iy,
+  /[a-z0-9]{1,3}[.)]\s*/iy, /\d{1,2}\/\s*/iy, /\(\w{1,3}\)\s*/iy, /\d+(?:\.\d+)*[.)]?\s+/iy, /[-–—:]\s*/iy,
+  new RegExp(`(?:te|table|tab\\.?|exhibit|attachment|att\\.?|appendix|annex|schedule|section|part|items?|lines?|rows?|columns?|col\\.?|page|para(?:graph)?|clin)\\s*[-#.]?\\s*${LOC_ID}(?:\\s*\\([\\w ]{1,12}\\))?(?:\\s+(?:and|&|through|to)\\s+${LOC_ID})*\\s*(?:,\\s*|and\\s+|&\\s+)?`, 'iy'),
+  /[A-Z][\w.'’&/#-]*(?:\s+(?:[A-Z#(][\w.'’&/#()-]*|of|and|the|de|la|at))*\s*,\s*/y,
+  /(?:yes|no)[.,]?\s+/iy, /(?:the|also,?|further(?:more)?,?|in addition,?|additionally,?|accordingly,?|therefore,?)\s+/iy,
+  /(?:per|under|by|with|pursuant to|in accordance with|effective|as of|upon)\s+[^,]{1,60},\s*/iy,
+];
+/** The text before a building reference holds only opener pieces. */
+function openerOnly(pre: string): boolean {
+  const failed = new Set<number>();
+  const from = (p: number): boolean => {
+    while (p < pre.length && /\s/.test(pre[p])) p++;
+    if (p >= pre.length) return true;
+    if (failed.has(p)) return false;
+    for (const re of OPENER_PARTS) { re.lastIndex = p; const m = re.exec(pre); if (m && m[0].length && from(p + m[0].length)) return true; }
+    failed.add(p);
+    return false;
+  };
+  return from(0);
+}
+const NON_BUILDING = /\b(?:trash|refuse|garbage|debris|litter|carpets?|furniture|equipment|snow|ice|waste|recycl\w*|graffiti|tiles?|flooring|fixtures?|materials?|furnishings|boxes|items|signs?|vehicles?|occupants|personnel|staff|contents)\b/i;
+/** A service or task named before the building ("Window Washing, Building 103, is deleted"): the task is deleted. */
+const TASK_NOUN = /\b(?:washing|cleaning|extraction|stripping|waxing|refinishing|burnishing|shampoo\w*|mowing|trimming|pick-?ups?|collection|removal|policing|sweeping|dusting)\b/i;
+/** Services and periodic tasks with frequencies of their own (refuse pickup, grounds, snow, pest, carpet extraction, floor
+ *  refinishing, window washing, meal serving). */
+const FREQ_OTHER = /\b(?:trash|refuse|garbage|recycl\w*|pick-?ups?|collections?|mow\w*|grass|turf|grounds|landscap\w*|snow|pest\w*|window\w*|carpets?|extraction|strip\w*|wax\w*|refinish\w*|burnish\w*|shampoo\w*|high dust\w*|dusting|lining|irrigation|policing|sweeping|periodic|deep clean\w*|pressure wash\w*|power wash\w*|meals?|serving|feeding)\b/i;
 function deletionSubject(s: string, segStart: number, targets: Ref[], vi: number): boolean {
   const pre = s.slice(segStart, Math.min(...targets.map((r) => r.at)));
   const mid = s.slice(Math.max(...targets.map((r) => r.end)), vi);
-  // (where the building is listed and where it is: "TE-1 Item 14, TE-2 Item 14 and TE-4 Item 14, Bldg D-512 …", "Exhibit B,
-  // North Campus, Facility No. NC-14 …", "TE-2, Fergus Falls USARC, Bldg ID MN066-02 …")
-  const LOCATOR = '(?:te|table|tab\\.?|exhibit|attachment|att\\.?|appendix|annex|schedule|section|part|items?|lines?|rows?|columns?|col\\.?|page|para(?:graph)?|clin|tab)\\s*[-#.]?\\s*[A-Z0-9][\\w.-]{0,8}(?:\\s*\\([\\w ]{1,12}\\))?(?:\\s+(?:and|&|through|to)\\s+[A-Z0-9][\\w.-]{0,8})*\\s*(?:,\\s*|and\\s+|&\\s+)?';
-  const PLACE = "[A-Z][\\w.'’&/#-]*(?:\\s+(?:[A-Z#(][\\w.'’&/#()-]*|of|and|the|de|la|at))*\\s*,\\s*";
-  const OPENER = new RegExp(`^\\s*(?:(?:amendment|addendum|modification)\\s*(?:no\\.?|number|#)?\\s*\\d{1,4}\\s*[.:)\\-–]?\\s*|(?:item|line|para(?:graph)?|no\\.?|change|question|answer|response|q|a)\\s*\\d[\\w.-]{0,6}[.:)\\-–]?\\s+|[a-z0-9]{1,3}[.)]\\s*|\\d{1,2}\\/\\s*|\\(\\w{1,3}\\)\\s*|\\d+(?:\\.\\d+)*[.)]?\\s+|[-–—:]\\s*|${LOCATOR}|${PLACE}|(?:yes|no)[.,]?\\s+|the\\s+|also,?\\s+|further(?:more)?,?\\s+|in addition,?\\s+|additionally,?\\s+|accordingly,?\\s+|therefore,?\\s+|(?:per|under|by|with|pursuant to|in accordance with|effective|as of|upon)\\s+[^,]{1,60},\\s*)*$`, 'i');
-  if (pre.length > 160 || !OPENER.test(pre)) return false;
-  const NON_BUILDING = /\b(?:trash|refuse|garbage|debris|litter|carpets?|furniture|equipment|snow|ice|waste|recycl\w*|graffiti|tiles?|flooring|fixtures?|materials?|furnishings|boxes|items|signs?|vehicles?|occupants|personnel|staff|contents)\b/i;
-  // (a name set off by commas after the reference, ", Vehicle Maintenance Shop (4,980 GSF),", is the building's own name)
-  const appositive = /^\s*,[^;:]{0,150}?,\s*$/.test(mid.replace(/\s*\([^)]*\)\s*/g, ' '));
-  if (mid.length > 170 || NON_BUILDING.test(pre) || (!appositive && NON_BUILDING.test(mid.replace(/\([^)]*\)/g, ' ')))) return false;
+  if (pre.length > 160 || NON_BUILDING.test(pre) || TASK_NOUN.test(pre) || !openerOnly(pre)) return false;
+  // (a capitalised name set off by commas after the reference, ", Vehicle Maintenance Shop (4,980 GSF),", is the
+  // building's own name, whatever nouns it holds)
+  const appositive = /^\s*,\s*[A-Z0-9][^;:]{0,149}?,\s*$/.test(mid.replace(/\s*\([^)]*\)\s*/g, ' '));
+  if (mid.length > 170 || (!appositive && NON_BUILDING.test(mid.replace(/\([^)]*\)/g, ' ')))) return false;
   if (/\b(?:shall|will|was|were|has|have|had|must|should)\b/i.test(mid.replace(/\([^)]*\)/g, ' '))) return false;
   // (a parenthesis after the name, "(4,980 GSF; 910 Custodial SF)", only describes it)
   return /^\s*(?:,[^;:]{0,150}?,\s*|,\s*|\s*[-–—]\s*[^;:]{1,80}?\s*[-–—]\s*|\s+(?:at|on|in|located (?:at|on|in))\s+(?:the\s+)?[^,;:]{1,60}?\s*(?:,[^;:]{0,100}?,\s*)?)?(?:(?:is|are)\s+[^,;:]{1,80}?\s+and\s+)?$/i.test(mid.replace(/\s*\([^)]*\)\s*/g, ' '));
@@ -314,7 +350,8 @@ const mentions = (text: string, campus: string) => { const k = nameKey(campus); 
 const PART_NOUN = /\b(?:wings?|[a-z]*rooms?|set-?ups?|events?|courts?|additions?|portions?|parts?|sections?|bays?|suites?|floors?|space|spaces|areas?|canopy|canopies|sheds?|porch(?:es)?|decks?|kitchens?|lobby|lobbies|mezzanines?|stair(?:well)?s?|elevators?|restrooms?|closets?|basements?|attics?|windows?|window washing|glass|carpets?|refinishing|stripping|waxing|burnishing|shampooing|servers?|mechanical|electrical|telecom|hvac|classrooms?|locker rooms?|showers?|exterior|roofs?|loading docks?|vaults?|serving line)\b/g;
 function partSubject(l: string, at: number, nameCell: boolean): boolean {
   // (a thousands separator, "2,400 SF", does not end a clause)
-  const pre = l.slice(Math.max(0, at - 40), at).replace(/(\d),(?=\d{3})/g, '$1');
+  // (and the part may be named a few words before: "Lab suite 1,800 SF cleaned by the lab contractor – excluded")
+  const pre = l.slice(Math.max(0, at - 80), at).replace(/(\d),(?=\d{3})/g, '$1');
   // in a name cell the name itself is the building ("Motor Pool (DEMOLISHED FY26)", "Restroom – CLOSED"); only a part
   // named inside the parenthesis or after the dash is a part ("Brigade HQ (annex wing demolished)")
   const cut = nameCell ? Math.max(pre.lastIndexOf('('), pre.lastIndexOf(' - '), pre.lastIndexOf('/')) : -1;
@@ -378,12 +415,14 @@ const TOTAL_RE = /^(?:grand\s+)?(?:sub-?\s*)?totale?s?\b|\bsub-?\s*totale?s?\b|\
 const NOT_TOTAL = /\b(?:in|into|from|toward|towards|to)\s+(?:the\s+|any\s+)?(?:[a-z]+\s+){0,2}totals?\b/i;
 const isTotal = (c: string) => TOTAL_RE.test(c.replace(new RegExp(NOT_TOTAL.source, 'gi'), ' '));
 const isTotalRow = (cells: string[]) => cells.map(clean).filter(Boolean).slice(0, 3).some(isTotal);
+/** A status banner over a block of several sites or buildings ("OPTIONAL SITES", "FACILITIES NOT IN THE BASE CONTRACT"). */
+const BLOCK_BANNER = /\b(?:sites|facilities|buildings|bldgs|locations|centers|centres|installations|campuses|properties|stations|areas)\b/i;
 /** A group label that puts the rows under it in a status ("Optional site – not included in base totals", "Reference only –
  *  not on contract"); a caption about some of the rows ("Buildings marked * are not included") is not one. */
 const bannerStatus = (g: string | undefined): ReturnType<typeof statusFromText> => {
   if (!g || /\b(?:marked|shaded|highlighted|asterisk|flagged|noted|indicated|denoted|where|if|unless|except)\b|[*†]/i.test(g)) return undefined;
   // (a banner over an optional site or block: "SOUTH CAMPUS (OPTION)", "OPTIONAL FACILITIES")
-  return statusFromText(g) ?? (/\b(?:optional|option)\b/i.test(g) && !/\boption(?:al)?\s+(?:periods?|years?|to)\b/i.test(g) ? { status: 'option_only', reason: clean(g).slice(0, 160) } : undefined);
+  return statusFromText(g) ?? (/\b(?:optional|option)\b/i.test(g) && !/\boption(?:al)?\s+(?:periods?|years?|to)\b|\bexercised\b/i.test(g) ? { status: 'option_only', reason: clean(g).slice(0, 160) } : undefined);
 };
 
 export function categorize(name: string): FacilityCategory {
@@ -422,7 +461,7 @@ type Role = 'item' | 'number' | 'numberWeak' | 'name' | 'use' | 'typeish' | 'cat
   | 'portable' | 'fixtures' | 'fixWC' | 'fixUR' | 'fixLAV' | 'fixSH' | 'freq' | 'daysOpen' | 'status' | 'remarks' | 'campus' | 'zone' | 'address' | 'year'
   | 'meal' | 'seats' | 'svcType' | 'gQty' | 'mows' | 'cycle' | 'svcLvl' | 'length' | 'width' | 'sides' | 'surface' | 'served' | 'rowKey' | 'change' | 'revised' | 'mix' | 'info';
 interface Col {
-  i: number; role: Role; text: string; unit?: QUnit; kind?: GroundsKind; weakKind?: GroundsKind; meal?: string; weekend?: boolean; old?: boolean; newer?: boolean; slash?: boolean; days?: boolean; mix?: keyof FloorMix;
+  i: number; role: Role; text: string; unit?: QUnit; kind?: GroundsKind; weakKind?: GroundsKind; snow?: boolean; meal?: string; weekend?: boolean; old?: boolean; newer?: boolean; slash?: boolean; days?: boolean; mix?: keyof FloorMix;
   /** length / width columns: printed in meters or feet */
   len?: 'm' | 'ft';
   /** a bare "Area" title: the grounds area name, or the building area when another name column exists or the values are figures */
@@ -449,6 +488,8 @@ function mealName(m: string): string {
 }
 const normHeader = (c: string) => dash(clean(c)).toLowerCase().replace(/_/g, ' ').replace(/[’']/g, "'").replace(/\s+/g, ' ').trim();
 
+/** Snow and ice work: an area named for it ("Plow Area", "Snow Removal Area") is the paving it clears. */
+const SNOW_WORK = /\b(?:plow|plowing|plowed|snow|de-?ic\w*)\b/;
 /** Role of one header cell. Order matters: specific roles are tested before generic ones. */
 function roleOf(cell: string): Omit<Col, 'i' | 'text'> | null {
   const h = normHeader(cell);
@@ -475,7 +516,9 @@ function roleOf(cell: string): Omit<Col, 'i' | 'text'> | null {
   if (/lavator|\blavs?\b|\bsinks?\b/.test(h) && !/service sink|janitor/.test(h)) return { role: 'fixLAV' };
   if (/\bshowers?\b/.test(h)) return { role: 'fixSH' };
   if (/fixture/.test(h)) return { role: 'fixtures' };
-  if (/total (?:site )?(?:acres|area)|site (?:acres|area)|gross site|site size|total acres|(?<!parking )lot (?:size|area)|land area|parcel (?:area|size|acres)|property (?:area|acres)/.test(h)) return { role: 'info' };
+  // (a lot's size in acres is the parcel; "Lot Area (SY)" in a paving table is the parking lot)
+  if (/total (?:site )?(?:acres|area)|site (?:acres|area)|gross site|site size|total acres|land area|parcel (?:area|size|acres)|property (?:area|acres)/.test(h)
+    || (/(?<!parking )\blot (?:size|area)\b/.test(h) && u !== 'sf' && u !== 'sy' && u !== 'sm')) return { role: 'info' };
   if (/seat/.test(h)) return { role: 'seats' };
   // floor finish areas ("Carpet SF", "VCT SF", "Ceramic SF", "Gym Wood Floor SF")
   if (!/gross|cleanable|total/.test(h) && (u === 'sf' || u === 'sm' || /\barea\b|\bsf\b/.test(h))) {
@@ -489,11 +532,14 @@ function roleOf(cell: string): Omit<Col, 'i' | 'text'> | null {
   // (SY)" are paved vehicle areas, "Shovel / Blow Walks, Ramps, Slabs" is walks); an area named for the snow work itself
   // ("Plow Area", "Snow Removal Area": the lots and roads it clears, which the paved columns already give) is neither a
   // grounds kind nor a building's area
-  const pavedArea = u === 'sf' || u === 'sm' || u === 'sy' || /\barea\b/.test(h);
-  const SNOW_WORK = /\b(?:plow|plowing|plowed|snow|de-?ic\w*)\b/;
-  if (pavedArea && /parking|\bpov\b|\blots?\b|hardstand|\broads?\b|\bdrives?\b|driveway|streets?/.test(h) && !SNOW_WORK.test(h)) return { role: 'gQty', kind: 'parking', unit: u && u !== 'other' ? u : 'sf' };
-  if (/slab|hardscape|\bpaved\b|pavement area|sidewalks?|walkways?|\bwalks?\b|\bramps?\b|\bsteps\b/.test(h) && pavedArea) return { role: 'gQty', kind: 'sidewalk', unit: u && u !== 'other' ? u : 'sf' };
-  if (pavedArea && SNOW_WORK.test(h)) return { role: 'info' };
+  // (an area in acres, or one of mowed road shoulders and medians, is turf, not paving)
+  const pavedArea = (u === 'sf' || u === 'sm' || u === 'sy' || (/\barea\b/.test(h) && u !== 'ac' && u !== 'ha')) && !/\b(?:mow\w*|turf|grass|lawns?|shoulders?|medians?)\b/.test(h);
+  // (a paved area under a snow-work title, "Snow Removal – Parking Lots (SY)", is marked: it gives way to the same kind of
+  // paved column of its own in the table, which it repeats)
+  const snow = SNOW_WORK.test(h) || undefined;
+  if (pavedArea && /parking|\bpov\b|\blots?\b|hardstand|\broads?\b|\bdrives?\b|driveway|streets?/.test(h)) return { role: 'gQty', kind: 'parking', unit: u && u !== 'other' ? u : 'sf', snow };
+  if (/slab|hardscape|\bpaved\b|pavement area|sidewalks?|walkways?|\bwalks?\b|\bramps?\b|\bsteps\b/.test(h) && pavedArea) return { role: 'gQty', kind: 'sidewalk', unit: u && u !== 'other' ? u : 'sf', snow };
+  if (pavedArea && snow) return { role: 'info' };
   if (/planting|shrub|\bbeds?\b|mulch/.test(h)) return { role: 'gQty', kind: 'shrub_bed', unit: u === 'sm' || u === 'sy' ? u : 'sf' };
   if (/\btrees?\b|alberat/.test(h) && !/height|canopy height/.test(h)) return { role: 'gQty', kind: 'tree_canopy', unit: 'ea' };
   if (u === 'ac' || u === 'ha' || /\bacres?\b|hectares?|acreage/.test(h)) {
@@ -679,12 +725,21 @@ function groupedSubs(cells: string[]): string[] | undefined {
 /** Facilities the Government furnishes to the Contractor for its own use ("Table 3-1. Government-Furnished Facilities",
  *  "Contractor-Occupied Government Facilities"): the Contractor's offices, shops and yards, not the workload. */
 const CONTRACTOR_SPACE = /\bgovernment[- ]furnished\s+(?:facilit\w*|buildings?|(?:office\s+|work\s*)?space|offices?)\b|\bcontractor[- ](?:occupied|used|use)\s+(?:\w+\s+)?(?:facilit\w*|buildings?|space)\b|\b(?:facilities|buildings|space)\s+(?:provided|furnished|made available)\s+(?:to|for)\s+(?:the\s+)?contractor\b/i;
-/** The title of a table: from the last "Table … / Exhibit …" in the lines above it (none: no title). */
+/** The title of a table: from the last "Table … / Exhibit …" in the lines above it to where a sentence starts ("Exhibit 2.
+ *  Facilities to be cleaned The Contractor shall clean …": "Exhibit 2. Facilities to be cleaned"); none: no title. */
 function tableTitle(caption: string): string {
   const t = clean(caption);
   const all = [...t.matchAll(/\b(?:table|exhibit|attachment|appendix|annex|schedule)\s+[A-Z0-9][\w.-]{0,8}/gi)];
-  return all.length ? t.slice(all[all.length - 1].index ?? 0, (all[all.length - 1].index ?? 0) + 160) : '';
+  if (!all.length) return '';
+  const s = t.slice(all[all.length - 1].index ?? 0, (all[all.length - 1].index ?? 0) + 160);
+  const verb = s.search(/\b(?:shall|will|must|may|is|are|was|were|has|have|should|can|includes?|lists?|shows?)\b/i);
+  return verb > 0 ? s.slice(0, verb).trim() : s;
 }
+/** The table holds the Contractor's own space: its title says so, and does not call the rows a workload. */
+const contractorSpaceTitle = (caption: string): boolean => {
+  const title = tableTitle(caption);
+  return CONTRACTOR_SPACE.test(title) && !/\b(?:to be (?:cleaned|serviced|maintained)|custodial|janitorial|workload|cleaning|serviced)\b/i.test(title);
+};
 /** Numbered notes printed under a table ("NOTES: 1. … 2. …", "(1) …", a number on its own line then its text): note
  *  number → text. The notes are the first numbered block after the table's rows (rows continued on later pages under a
  *  repeated header included); another exhibit's title before them means the table has none. */
@@ -725,10 +780,34 @@ const INFO_NOTE = /\b(?:for\s+)?(?:information(?:al)?|reference)(?:\s+purposes)?
 /** …and for a grounds quantity, a note that the area is not worked under the contract ("MEP is not swept, plowed or
  *  otherwise maintained under this contract"). */
 const NOT_WORKED_NOTE = /\bnot\s+(?:\w+,?\s+){0,4}?(?:maintained|mowed|swept|plowed|serviced)\b[^.;]{0,40}\b(?:under|in|by)\s+(?:this|the)\s+(?:contract|requirement|pws|sow)\b|\bnot\s+part\s+of\s+(?:this|the)\s+(?:contract|requirement|work)\b/i;
-/** A column note that defines the column as the sum of others ("Plow Area = POV Parking + Roads and Drives"). */
-const SUM_NOTE = /=\s*[^=.;]{2,80}?\+/;
 /** A column note that defines the area as the area cleaned ("the interior area in which the Contractor performs … sanitation"). */
 const CLEAN_NOTE = /\b(?:area|space|square feet|sq\.? ?ft)\b[^.;]{0,60}?\b(?:to be (?:cleaned|serviced)|in which the contractor (?:performs|provides|cleans)|that (?:receives?|gets) (?:custodial|cleaning|janitorial)|(?:cleaned|serviced) by the contractor)\b/i;
+/** The note says it of the column itself, in one of its sentences: nothing before it says the sentence is about what the
+ *  column leaves out or holds ("Improved turf excludes ball diamonds, which are listed for information only" is about the
+ *  diamonds; "Building area includes space not cleaned by the Contractor" does not define the area cleaned). */
+function noteSays(note: string, re: RegExp): boolean {
+  for (const s of note.split(/(?<=[.;])\s+/)) {
+    const m = s.match(re);
+    if (!m) continue;
+    if (/\b(?:exclud\w*|except|other than|which|that|who|includ\w*|plus|but|without|less)\b/i.test(s.slice(0, m.index))) continue;
+    if (re === CLEAN_NOTE && /\b(?:not|no|never|except|exclud\w*|other than)\b/i.test(m[0])) continue;
+    return true;
+  }
+  return false;
+}
+/** A column note that defines the column as the sum of other columns of the table ("Plow Area = POV Parking + Roads and
+ *  Drives", "Column 12 = column 9 + column 10 + column 11", "C = A + B"); a definition by things the table does not list
+ *  ("Improved = lawns + cemetery") is not one. */
+function sumOfColumns(note: string, cells: string[], i: number): boolean {
+  const words = (s: string) => nameKey(s.replace(/\([^)]*\)/g, ' ')).split(' ').filter((w) => w.length >= 2 && !/^(?:and|the|of|for|all|plus|sf|sy|ac|lf|sq|ft)$/.test(w));
+  const others = cells.map((c, k) => (k === i ? [] : words(c)));
+  const isCol = (t: string) => /^(?:col(?:umn)?\.?\s*)?\(?\d{1,2}\)?$|^[A-Z]$/i.test(t.trim()) || (words(t).length > 0 && others.some((o) => o.length > 0 && words(t).every((w) => o.includes(w))));
+  for (const m of note.matchAll(/=\s*([^=.;]{2,160})/g)) {
+    const terms = m[1].split(/\s*(?:\+|\bplus\b)\s*/i).map((t) => t.replace(/\([^)]*\)?/g, ' ').trim()).filter(Boolean);
+    if (terms.length >= 2 && terms.filter(isCol).length >= 2) return true;
+  }
+  return false;
+}
 
 function buildMap(cells: string[], id: string, caption: string, above: string[][], body: string[], subs?: string[], notes?: Map<string, string>): TableMap | null {
   // headcount by meal period in rows ("Meal Period | Weekday Avg Headcount | Weekend Avg Headcount", or one column per DFAC)
@@ -787,7 +866,8 @@ function buildMap(cells: string[], id: string, caption: string, above: string[][
     if (ni >= 0 && !roles.some((r) => r?.role === 'name' && !r.bareArea) && k < cells.length && !roles[k] && clean(cells[k]) && !/\d/.test(clean(cells[k])) && clean(cells[k]).length <= 30 && !PART_TITLE.test(normHeader(cells[k]))
       && roles.some((r, i) => r && ['gross', 'cleanable', 'area', 'meal'].includes(r.role) && (r.role === 'meal' || figuresIn(i)))) {
       const vs = colText(k);
-      if (vs.length >= 2 && new Set(vs).size >= 0.8 * vs.length && vs.filter((v) => /[a-z]{3}/i.test(v) && !isNumericCell(v)).length >= 0.8 * vs.length) roles[k] = { role: 'name' };
+      // (names, not codes: "Wolf Creek Mess Hall", not an organisation code "DPW" / "MWR")
+      if (vs.length >= 2 && new Set(vs).size >= 0.8 * vs.length && vs.filter((v) => /[a-z]{3}/i.test(v) && !isNumericCell(v)).length >= 0.8 * vs.length && vs.filter((v) => /\s/.test(v) || v.length >= 8).length >= 0.5 * vs.length) roles[k] = { role: 'name' };
     }
   }
   // a column under a title the reader does not know ("Svc", "Sched.") whose cells read as service frequencies ("5 x Week",
@@ -812,11 +892,16 @@ function buildMap(cells: string[], id: string, caption: string, above: string[][
       if (!r || !['gQty', 'area'].includes(r.role)) return;
       const note = noteMarks(cells[i]).map((n) => notes.get(n) ?? '').join(' ');
       if (!note) return;
-      if (r.role === 'gQty' && (INFO_NOTE.test(note) || NOT_WORKED_NOTE.test(note) || SUM_NOTE.test(note))) roles[i] = { role: 'info' };
-      else if (r.role === 'area' && CLEAN_NOTE.test(note)) roles[i] = { ...r, role: 'cleanable' };
-      else if (r.role === 'area' && (INFO_NOTE.test(note) || SUM_NOTE.test(note)) && areaCols() > 1) roles[i] = { role: 'info' };
+      if (r.role === 'gQty' && (noteSays(note, INFO_NOTE) || noteSays(note, NOT_WORKED_NOTE) || sumOfColumns(note, cells, i))) roles[i] = { role: 'info' };
+      else if (r.role === 'area' && noteSays(note, CLEAN_NOTE)) roles[i] = { ...r, role: 'cleanable' };
+      else if (r.role === 'area' && (noteSays(note, INFO_NOTE) || sumOfColumns(note, cells, i)) && areaCols() > 1) roles[i] = { role: 'info' };
     });
   }
+  // a paved area under a snow-work title repeats the table's own paved column of that kind ("Paved Areas – POV Parking"
+  // and "Snow Removal – Parking Lots"); with no such column it is the only figure for that paving and stays
+  roles.forEach((r, i) => {
+    if (r?.role === 'gQty' && r.snow && roles.some((o, k) => k !== i && o?.role === 'gQty' && !o.snow && o.kind === r.kind)) roles[i] = { role: 'info' };
+  });
   // a bare "Area" column names grounds areas ("Area | Quantity"), but next to a facility name column, or over figures
   // ("Fac No. | Facility Name | Area | UM"), it is the building area
   roles.forEach((r, i) => {
@@ -927,7 +1012,7 @@ function buildMap(cells: string[], id: string, caption: string, above: string[][
   else if (/areas? (?:are )?(?:stated |shown |given )?in square (?:feet|yards)/.test(capL)) unit = /yards/.test(capL) ? 'sy' : 'sf';
   const sig = cols.map((c) => `${c.i}:${c.role}`).join(',');
   const partsTable = cells.some((c) => /^(?:rm|rooms?|spaces?|suites?)\b|\b(?:room|space|suite)\s*(?:no\.?|number|#|name|id|description)\b|^(?:floor|flr)\.?\s*(?:no\.?|#)?$/.test(normHeader(c)));
-  return { id, cols, n: cells.length, sig, kind, eu, unit, gross, grossOld, cleanable, codeRows: 0, caption, get, all, heads: cells.map(clean), headKey: cells.map(normHeader).join('|'), partsTable, contractorSpace: CONTRACTOR_SPACE.test(tableTitle(caption)) };
+  return { id, cols, n: cells.length, sig, kind, eu, unit, gross, grossOld, cleanable, codeRows: 0, caption, get, all, heads: cells.map(clean), headKey: cells.map(normHeader).join('|'), partsTable, contractorSpace: contractorSpaceTitle(caption) };
 }
 
 // =====================================================================================================================
@@ -1300,11 +1385,15 @@ class Reader {
     // the group label still heads the rows read now (no caption, note or prose line has come between them)
     let groupFresh = false;
     // a status banner ("OPTIONAL SITE – NOT INCLUDED IN BASE TOTALS") and the rows read under it so far: a group label
-    // right under it (the site it introduces) is nested in it, a group label after rows of its own ends it
-    let held: { text: string; rows: number } | undefined;
+    // right under it (the site it introduces) is nested in it, a group label after rows of its own ends it; a banner over
+    // several sites ("OPTIONAL SITES", "FACILITIES NOT ON THE BASE CONTRACT") covers each site label after it, until another
+    // banner, a label of base sites or the end of the table
+    let held: { text: string; rows: number; block: boolean } | undefined;
+    const holdBanner = (g: string | undefined) => (g && bannerStatus(g) ? { text: g, rows: 0, block: BLOCK_BANNER.test(g) } : undefined);
     const setGroup = (g: string) => {
-      if (held && held.rows > 0) held = undefined;
-      if (bannerStatus(g)) held = { text: g, rows: 0 };
+      const next = holdBanner(g);
+      if (held && (next || (held.rows > 0 && (!held.block || /\bbase\b/i.test(g))))) held = undefined;
+      if (next) held = next;
       group = g; groupFresh = true;
     };
     let lastSig = '';
@@ -1328,8 +1417,9 @@ class Reader {
       const pg = t.match(/^--- page (\d+) ---$/);
       if (pg) { ctx.page = Number(pg[1]); endPara(); if (map) suspended = true; recentPlain = []; continue; }
       if (/^===\s.*\s===$/.test(t)) { endPara(); flushKv(); map = null; group = undefined; held = undefined; recentPlain = []; continue; }
-      // an amendment heading, or the Standard Form 30 title ("AMENDMENT OF SOLICITATION/MODIFICATION OF CONTRACT")
-      if (((t.length < 90 && /^(?:addendum|amendment)\s*(?:no\.?|number|#)?\s*\d{1,4}\b/i.test(t)) || (t.length < 240 && /^amendment of solicitation\b/i.test(t))) && !/\|/.test(t)) ctx.inAmend = true;
+      // an amendment heading, or the Standard Form 30 title ("AMENDMENT OF SOLICITATION/MODIFICATION OF CONTRACT", in capitals or
+      // with the amendment number; a sentence that starts with the words is not one)
+      if (((t.length < 90 && /^(?:addendum|amendment)\s*(?:no\.?|number|#)?\s*\d{1,4}\b/i.test(t)) || (t.length < 240 && /^amendment of solicitation\b/i.test(t) && (/^AMENDMENT OF SOLICITATION/.test(t) || /\b(?:amendment|modification)\s*(?:no\.?|number|#)\s*\d/i.test(t)))) && !/\|/.test(t)) ctx.inAmend = true;
       const isPipe = t.includes('|');
       const cells = isPipe ? splitPipe(t) : splitLoose(t);
 
@@ -1356,7 +1446,7 @@ class Reader {
           if (hdr.map.kind !== 'other') flushKv();
           // a group label on the line just above the header belongs to this table
           const prev = lastPlain && lastPlain.i >= i - 3 ? groupText(lastPlain.t) : undefined;
-          if (hdr.map.sig !== lastSig) { group = prev; groupFresh = !!prev; held = prev && bannerStatus(prev) ? { text: prev, rows: 0 } : undefined; }
+          if (hdr.map.sig !== lastSig) { group = prev; groupFresh = !!prev; held = holdBanner(prev); }
           else if (prev) setGroup(prev);
           lastSig = hdr.map.sig;
           map = hdr.map; suspended = false; i += hdr.extra; recentPlain = []; looseHeads = undefined;
@@ -1369,12 +1459,6 @@ class Reader {
         if (suspended) {
           if (isPipe && fits(cells, map)) suspended = false;
           else if (isPipe && groupLabel(cells)) { setGroup(groupLabel(cells)!); continue; }
-          // a label line set apart by blank lines ("MAIN POST") right above rows that continue the list heads them
-          else if (!isPipe && t.length <= 80 && !/[a-z]{4,}\s+[a-z]{4,}/.test(t) && groupText(t)) {
-            let k = i + 1; while (k < lines.length && (!lines[k].trim() || /^--- page \d+ ---$/.test(lines[k].trim()))) k++;
-            const nx = lines[k]?.trim() ?? '';
-            if (nx.includes('|') && fits(splitPipe(nx), map) && !isTotalRow(splitPipe(nx))) { setGroup(groupText(t)!); continue; }
-          }
         }
         if (!suspended) {
           if (isPipe || cells.length >= 2) {
@@ -1477,25 +1561,33 @@ class Reader {
       if (run.length >= 2 && run.some(([, l]) => l)) for (const [c, l, d] of run) { if (l && !this.codeLevels.has(c)) this.codeLevels.set(c, { level: l, text: d }); else if (!l && !this.codeNone.has(c)) this.codeNone.set(c, d); }
       run = [];
     };
+    const cellCode = new RegExp(`^(?:(?:[Cc]ode|CODE)\\s+)?${CODE_SRC}$`);
+    const lineCode = new RegExp(`^(?:(?:[Cc]ode|CODE)\\s+)?(${CODE_SRC})\\s*(?:[-–—=:]\\s*|\\s+)(\\S.{3,200})$`);
+    const inlineCode = new RegExp(`(?:^|[;,(]\\s*|:\\s+)(${CODE_SRC})\\s*[=:]\\s*([^;=|]{3,80}?)(?=\\s*(?:;|$|\\||,\\s*${CODE_SRC}\\s*[=:]))`, 'g');
+    // (an entry for no service, "N/S = no service", belongs to the legend too)
+    const noneOf = (d: string) => NO_SERVICE.test(clean(d).replace(/^[-–—=:\s]+/, ''));
     for (const raw of normalizeRows(text)) {
       const t = raw.trim();
       if (!t) continue;
+      // a legend on one line: "A = 7 days per week; B = Monday through Friday; C = three times per week", "2W = twice
+      // weekly; 4W = four times per week; NS = not serviced" (read as one legend, not as code "2W" meaning the whole line)
+      const inline = !/[=:]/.test(t) ? [] : [...t.matchAll(inlineCode)].map((m) => [m[1], /\b(?:shall|must|will|should)\b/i.test(m[2]) ? undefined : serviceLevelFromText(m[2]), m[2]] as const);
+      if (inline.length >= 2) {
+        flush();
+        if (inline.some(([, l]) => l) && inline.every(([, l, d]) => l || noneOf(d))) for (const [c, l, d] of inline) { if (l && !this.codeLevels.has(c)) this.codeLevels.set(c, { level: l, text: d }); else if (!l && !this.codeNone.has(c)) this.codeNone.set(c, d); }
+        continue;
+      }
       const cells = t.includes('|') ? splitPipe(t).map(clean).filter(Boolean) : [clean(t)];
       let code: string | undefined, desc: string | undefined;
-      if (cells.length >= 2 && new RegExp(`^(?:(?:[Cc]ode|CODE)\\s+)?${CODE_SRC}$`).test(cells[0])) { code = cells[0].replace(/^code\s+/i, ''); desc = cells.slice(1).join(' '); }
+      if (cells.length >= 2 && cellCode.test(cells[0])) { code = cells[0].replace(/^code\s+/i, ''); desc = cells.slice(1).join(' '); }
       // (an outline list, "A. Restrooms shall be cleaned daily." / "B) …", is a list of tasks, not a legend)
-      else if (cells.length === 1) { const m = cells[0].match(new RegExp(`^(?:(?:[Cc]ode|CODE)\\s+)?(${CODE_SRC})\\s*(?:[-–—=:]\\s*|\\s+)(\\S.{3,200})$`)); if (m) { code = m[1]; desc = m[2]; } }
+      else if (cells.length === 1) { const m = cells[0].match(lineCode); if (m) { code = m[1]; desc = m[2]; } }
       const plain = !!desc && desc.length <= 200 && !/\b(?:shall|must|will|should)\b/i.test(desc);
       const level = plain ? serviceLevelFromText(desc) : undefined;
       // a code for no routine service ("N/S | No service", "NSR – Not serviced")
-      const none = plain && !level && NO_SERVICE.test(desc!.replace(/^[-–—=:\s]+/, ''));
+      const none = plain && !level && noneOf(desc!);
       if (code && (level || none)) { run.push([code, level, desc!]); continue; }
       flush();
-      // a legend on one line: "A = 7 days per week; B = Monday through Friday; C = three times per week"
-      const inline = !/[=:]/.test(t) ? [] : [...t.matchAll(new RegExp(`(?:^|[;,(]\\s*|:\\s+)(${CODE_SRC})\\s*[=:]\\s*([^;=|]{3,80}?)(?=\\s*(?:;|$|\\||,\\s*${CODE_SRC}\\s*[=:]))`, 'g'))].map((m) => [m[1], /\b(?:shall|must|will|should)\b/i.test(m[2]) ? undefined : serviceLevelFromText(m[2]), m[2]] as const);
-      // (an entry for no service, "N/S = no service", belongs to the legend too)
-      const noneOf = (d: string) => NO_SERVICE.test(clean(d));
-      if (inline.length >= 2 && inline.some(([, l]) => l) && inline.every(([, l, d]) => l || noneOf(d))) for (const [c, l, d] of inline) { if (l && !this.codeLevels.has(c)) this.codeLevels.set(c, { level: l, text: d }); else if (!l && !this.codeNone.has(c)) this.codeNone.set(c, d); }
     }
     flush();
   }
@@ -1511,10 +1603,17 @@ class Reader {
     const keys = [...new Set(ids.map(bnKey))];
     if (keys.length !== 1 || this.findRecs(keys[0]).length !== 1) return;
     const ref: Ref = { id: ids[0], key: keys[0], at: 0, end: 0, site: false };
-    // a building whose new entry reads "Deleted" / "Removed" is out of the requirement
-    if (/^(?:deleted|removed|delete|excluded|not listed|withdrawn)\b/i.test(is)) { this.setStatus(ids[0], { status: ctx.amendLike || ctx.inAmend ? 'deleted_by_amendment' : 'excluded', reason: `${clean(rest).slice(0, 80)}: ${was ? `${was} → ` : ''}${is}`.slice(0, 160) }, ctx, rest); return; }
+    // what the row changes: its cells other than the building's number and name ("Gross SF", "Frequency", "Window cleaning")
+    const rec = this.findRecs(keys[0])[0];
+    const item = clean(c.cells.filter((_, k) => k !== c.wasI && k !== c.isI).filter((x) => !keys.includes(bnKey(normalizeBuildingNumber(x) ?? '\u0000')) && (!rec.nameKey || nameKey(x) !== rec.nameKey)).join(' '));
+    // a building whose new entry reads "Deleted" / "Removed" is out of the requirement; a task or a part of it that is
+    // deleted ("Window cleaning | Quarterly | Deleted") leaves the building in
+    if (/^(?:deleted|removed|delete|excluded|not listed|withdrawn)\b/i.test(is)) {
+      if (!item || /\b(?:status|scope|building|bldg|facility|structure|listing|entire|entirety|requirement|in contract|on contract)\b/i.test(item) || (!TASK_NOUN.test(item) && !FREQ_OTHER.test(item) && !partSubject(item.toLowerCase(), item.length, false) && !roleOf(item)))
+        this.setStatus(ids[0], { status: ctx.amendLike || ctx.inAmend ? 'deleted_by_amendment' : 'excluded', reason: `${clean(rest).slice(0, 80)}: ${was ? `${was} → ` : ''}${is}`.slice(0, 160) }, ctx, rest);
+      return;
+    }
     // bare figures ("10,000" → "10,600") take their label from the row's item cell ("Gross SF")
-    const item = clean(c.cells.filter((_, k) => k !== c.wasI && k !== c.isI).filter((x) => !keys.includes(bnKey(normalizeBuildingNumber(x) ?? '\u0000'))).join(' '));
     if (item && /^\D{0,3}\d[\d,]*(?:\.\d+)?\s*[A-Za-z]{0,5}$/.test(was) && /^\D{0,3}\d[\d,]*(?:\.\d+)?\s*[A-Za-z]{0,5}$/.test(is) && parseNumberCell(was) !== parseNumberCell(is)) {
       this.revision(`${item} revised from ${was} to ${is}`, [ref], [ref], undefined, [], ctx, true);
     }
@@ -1596,9 +1695,10 @@ class Reader {
     const numCol = map.get('number');
     const nameCol = map.get('name');
     let rawBn = cell(numCol);
-    // a revision table repeats the building with the old and the new figures: "D-450 (was)" / "D-450 (revised)"
+    // a revision table repeats the building with the old and the new figures: "D-450 (was)" / "D-450 (revised)"; in the
+    // base documents "1201 (New)" / "T-100 (Old)" only describe the building
     const qual = clean(rawBn).match(/^(.+?)\s*[([]\s*(was|old|previous(?:ly)?|prior|original(?:ly)?|as issued|existing|before|is|new|revised|corrected|amended|now|after)\s*[)\]]$/i);
-    if (qual) { if (/^(?:was|old|previous|prior|original|as issued|existing|before)/i.test(qual[2])) return true; rawBn = qual[1]; }
+    if (qual) { if ((ctx.amendLike || ctx.inAmend) && /^(?:was|old|previous|prior|original|as issued|existing|before)/i.test(qual[2])) return true; rawBn = qual[1]; }
     let bn = normalizeBuildingNumber(rawBn);
     if (numCol && clean(rawBn) && !bn) return true; // a text row (sub-header, grouping) in the number column
     let name = clean(cell(nameCol));
@@ -1685,8 +1785,9 @@ class Reader {
     if (!status && map.contractorSpace) status = { status: 'excluded', reason: `Furnished to the Contractor for its own use ("${tableTitle(map.caption).slice(0, 100)}"); not part of the workload` };
     // frequency
     let level: ServiceLevel | undefined;
-    // with no service frequency, a building is serviced on each day it operates ("Days of Opn: 7 / M–F / M–Sa")
-    if (!fTxt && map.get('daysOpen')) level = levelFromDays(daysOpenOf(cell(map.get('daysOpen'))) ?? 0);
+    // with no service frequency, a food-service facility is cleaned on each day it serves ("Days of Opn: 7 / M–F / M–Sa"); the
+    // days other buildings are open are not their cleaning days (a hospital open 7 days, its central plant cleaned weekly)
+    if (!fTxt && map.get('daysOpen') && (map.get('seats') || map.get('svcType') || map.all('meal').length)) level = levelFromDays(daysOpenOf(cell(map.get('daysOpen'))) ?? 0);
     if (fTxt) {
       if (freqCol?.days && /^\d$/.test(fTxt)) { const d = Number(fTxt); level = levelFromDays(d); if (d === 0 && !status) status = { status: 'excluded', reason: '0 service days per week' }; }
       else level = this.scheduleLevel(fTxt);
@@ -2205,7 +2306,10 @@ class Reader {
       // the sentence (or its paragraph) names
       if (amend) {
         const fq = s.match(/\b(?:frequency|frequencies|schedule|service level|service days|cleaning days|days of service|level of service)\b[^.;]{0,40}?\b(?:is|are|has been|have been|shall be|will be)?\s*(?:hereby\s+)?(?:revised|changed|corrected|amended|increased|decreased|reduced)\s+(?:from\s+["“]?(.{1,60}?)["”]?\s+)?to\s+(?:read\s+(?:as\s+)?)?["“]?(.{1,80}?)["”]?\s*(?=[.;]\s|[.;]?$|\s+(?:because|due|as a result|effective|beginning|starting|for the|to accommodate|in order)\b)/i);
-        if (fq) {
+        // (the frequency of another service or of a periodic task, "trash pickup frequency", "carpet extraction frequency",
+        // is not the building's custodial schedule)
+        const head = fq ? s.slice(0, fq.index) + fq[0].slice(0, fq[0].search(/\b(?:revised|changed|corrected|amended|increased|decreased|reduced)\b/i)) : '';
+        if (fq && !FREQ_OTHER.test(head)) {
           const lvNew = this.scheduleLevel(fq[2]);
           const before = refs.filter((r) => r.at < (fq.index ?? 0));
           const tg = before.length ? before : refs.length ? refs : paraSubject ? [paraSubject] : subjectRefs.length === 1 ? subjectRefs : [];
@@ -2830,8 +2934,9 @@ export function heuristicPriorAward(docs: DocInput[]): PriorAward | undefined {
             new RegExp(`(?:performed|provided|operated|serviced)\\s+by\\s+${COMPANY.source}(?=\\s+(?:under|pursuant|through|since|as)\\b|,|\\.|\\s*\\()`),
             new RegExp(`incumbent(?:\\s+contractor)?(?:\\s+is|:|,)?\\s+${COMPANY.source}(?=,|\\.|\\s+(?:under|performing|which|who|holds|has)\\b|\\s*\\()`),
             new RegExp(`award(?:ed)?\\b[^.]{0,80}?\\bto\\s+${COMPANY.source}(?=,|\\.|$|\\s+(?:for|under|which|with|on|in|as)\\b)`),
-            // "The current contract (W912DY-20-D-0044) with Apex Facility Solutions, Inc. expires …"
-            new RegExp(`\\bcontract\\b[^.]{0,80}?\\bwith\\s+${COMPANY.source}(?=\\s+(?:expires|ends|runs|which|that|is|was|has|will|for|under)\\b|,|\\.|\\s*\\()`),
+            // "The current contract (W912DY-20-D-0044) with Apex Facility Solutions, Inc. expires …" (the current contract only:
+            // "the County's contract with Waste Haulers, Inc. for refuse collection" is another contract)
+            new RegExp(`\\b(?:[Cc]urrent|[Ee]xisting|[Ii]ncumbent|[Pp]resent)\\s+(?:[A-Za-z-]+\\s+){0,2}[Cc]ontract\\b[^.]{0,80}?\\bwith\\s+${COMPANY.source}(?=\\s+(?:expires|ends|runs|which|that|is|was|has|will|for|under)\\b|,|\\.|\\s*\\()`),
             new RegExp(`^(?:A\\d+\\.\\s*(?:See [^.]+\\.\\s*)?)?${COMPANY.source}(?=,?\\s+(?:under|\\(contract))`),
           ];
           for (const re of pats) {
@@ -2871,6 +2976,8 @@ export function heuristicPriorAward(docs: DocInput[]): PriorAward | undefined {
     const t = awardTables(doc.text, doc.name);
     if (!t) continue;
     if (!out) { out = t; continue; }
+    // (a table of another contract, another number or another contractor, fills nothing)
+    if ((out.contractNumber && t.contractNumber && out.contractNumber !== t.contractNumber) || (out.incumbent && t.incumbent && nameKey(out.incumbent) !== nameKey(t.incumbent))) continue;
     for (const k of ['contractNumber', 'incumbent', 'awardYear', 'totalValue', 'annualValue', 'periodMonths'] as const) if (out[k] == null && t[k] != null) (out as unknown as Record<string, unknown>)[k] = t[k];
   }
   if (out && out.spendToDate && !out.spendPeriodMonths && out.awardYear) out.spendPeriodMonths = Math.max(12, Math.min(out.periodMonths ?? 60, (new Date().getFullYear() - out.awardYear) * 12));

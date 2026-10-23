@@ -1291,6 +1291,89 @@ test('banner rows: an optional block ("SOUTH CAMPUS (OPTION)") and one not in th
   assert.equal(fac(inv, '101').campus, 'NORTH CAMPUS');
 });
 
+// ---------------------------------------------------------------------------------------------- round 2 review: where the rules must not fire
+
+const COURTS = lines('C.3 FACILITIES', 'Exhibit 2. Facilities to be cleaned',
+  'The Contractor shall clean the facilities below. Government-furnished office space for the Contractor\'s site manager is in Bldg 104 and is not listed.',
+  'Facility # | Facility | Rentable SF | Cleanable SF | Service Days', '101 | Federal Office Building | 120,000 | 98,000 | 5 days per week', '102 | Courthouse Annex | 45,000 | 38,500 | 5 days per week',
+  '103 | Child Care Center | 9,800 | 8,700 | 5 days per week', '105 | Parking Garage Office | 2,400 | 2,000 | 1 day per week');
+
+test('a sentence under a table title that mentions the Contractor\'s space does not make the listed facilities the Contractor\'s', () => {
+  const inv = read(COURTS);
+  assert.deepEqual(inScope(inv).map((f) => f.buildingNumber), ['101', '102', '103', '105']);
+});
+
+test('amendment items: a part, a service or another service\'s schedule named with the building, and date-only changes, leave the building as listed', () => {
+  const inv = read(COURTS, { name: 'Amendment 0002.txt', role: 'amendment', amendment: 2, text: lines('AMENDMENT 0002 TO SOLICITATION 47PF0026R0031',
+    '1. The proposal due date is changed from 10 January 2027 to 24 January 2027.',
+    '2. Part of Building 102 (the third-floor jury assembly suite) is deleted from the requirement.',
+    '3. Window Washing, Building 103, is deleted. The tenant will contract for window washing directly.',
+    '4. The frequency of trash pickup at Building 105 is increased to 3 times per week.',
+    '5. The carpet extraction frequency for Building 101 is changed from annually to semi-annually.',
+    '6. The period of performance start for Building 103 is revised from 1 October 2027 to 1 November 2027.') });
+  assert.deepEqual(['101', '102', '103', '105'].map((b) => [fac(inv, b).status, fac(inv, b).serviceLevel]), [[undefined, 'daily_5'], [undefined, 'daily_5'], [undefined, 'daily_5'], [undefined, 'weekly']]);
+  // the same kinds of items worded as real deletions and schedule changes still apply
+  const del = read(COURTS, { name: 'Amendment 0003.txt', role: 'amendment', amendment: 3, text: lines('AMENDMENT 0003',
+    'a. Exhibit 2, Line 3, Building 103 (Child Care Center) is hereby deleted.', 'b. Exhibit 2, Riverside Campus, Building 102 is deleted in its entirety.',
+    'c. Facility # 105 service frequency is changed from one day per week to three days per week.') });
+  assert.deepEqual(['102', '103'].map((b) => fac(del, b).status), ['deleted_by_amendment', 'deleted_by_amendment']);
+  assert.equal(fac(del, '105').serviceLevel, '3x_week');
+});
+
+test('change tables: a task or part marked "Deleted" leaves the building in; "(New)" / "(Old)" in a base list only describe the building', () => {
+  const inv = read(lines('Bldg | Clinic | Gross SF | Net Cleanable SF | Frequency', 'CL-1 | Eastside Clinic | 18,000 | 15,200 | 5X', 'CL-3 (New) | Northside Clinic | 9,000 | 7,600 | 5X',
+    'CL-4 (Old) | Southside Clinic | 6,000 | 5,100 | 3X', '', '5X = five days per week; 3X = three days per week.'),
+  { role: 'amendment', amendment: 1, text: lines('AMENDMENT NO. 1', 'Bldg | Item | As Issued | As Amended', 'CL-1 | Window cleaning | Quarterly | Deleted', 'CL-3 | Floor stripping frequency | Quarterly | Semi-annually',
+    'CL-4 | Clinic | Southside Clinic | Deleted') });
+  assert.deepEqual(['CL-1', 'CL-3', 'CL-4'].map((b) => fac(inv, b).status), [undefined, undefined, 'deleted_by_amendment']);
+  assert.equal(fac(inv, 'CL-3').serviceLevel, 'daily_5');
+  assert.equal(fac(inv, 'CL-4').grossSqft, 6000);
+});
+
+test('column notes: a note about what the column leaves out, a sum of things the table does not list, or "space not cleaned" leave the column as titled', () => {
+  const parks = read(lines('ATTACHMENT B - PARKS GROUNDS INVENTORY', 'Park ID | Park Name | Improved Turf (AC)[^1] | Rough Mow (AC)[^2] | Total Mowed (AC)[^3]',
+    'P-01 | Riverside Park | 12.5 | 4.0 | 16.5', 'P-02 | Elm Street Commons | 3.2 | — | 3.2', '', 'Notes:',
+    '1. Improved turf excludes ball diamonds, which are listed for information only in Attachment C.', '2. Rough mow excludes wetland buffers not mowed under this contract.',
+    '3. Total Mowed = Improved Turf + Rough Mow.'));
+  near(acres(parks.grounds, 'improved_turf'), 15.7);
+  near(acres(parks.grounds, 'unimproved'), 4);
+  const turf = read(lines('Park No. | Park | Improved (AC)[^1]', 'P-1 | Lakeside | 4.0', 'P-2 | Meadow | 6.0', '', 'NOTES', '1. Improved = lawns + cemetery grounds.'));
+  near(acres(turf.grounds, 'improved_turf'), 10);
+  const schools = read(lines('Site Code | School | Building Area (SF)[^1] | Cleanable Area (SF)[^2]', 'ES-01 | Alder Elementary | 52,000 | 46,000', 'ES-02 | Birch Elementary | 48,500 | 43,000', '',
+    'NOTES', '1. Building area includes space not cleaned by the Contractor (kitchens operated by Food Services).', '2. Cleanable area is the area to be cleaned nightly.'));
+  assert.deepEqual([fac(schools, 'ES-01').grossSqft, fac(schools, 'ES-01').cleanableSqft], [52000, 46000]);
+});
+
+test('one-line legends with digit codes are one legend; days open are cleaning days only where food is served', () => {
+  const inv = read(lines('3.1 Frequency Legend', '1A Restrooms and break rooms - cleaned daily', '1B Offices - cleaned three times per week', '2W = twice weekly; 4W = four times per week; NS = not serviced', '',
+    'Bldg No. | Building Name | Gross SF | Frequency', 'B-10 | Operations Center | 30,000 | 2W', 'B-12 | Paint Shop | 6,000 | NS'));
+  assert.equal(fac(inv, 'B-10').serviceLevel, '2x_week');
+  assert.equal(fac(inv, 'B-12').status, 'excluded');
+  const hosp = read(lines('Bldg | Building Name | Gross SF | Cleanable SF | Days Open', 'H1 | Main Hospital | 220,000 | 180,000 | 7', 'H3 | Central Plant | 18,000 | 1,200 | 7'));
+  assert.equal(fac(hosp, 'H3').serviceLevel, 'daily_5');
+});
+
+test('a status banner over several sites covers each site under it; a banner over one site ends at the next site', () => {
+  const inv = read(lines('Facility Number | Facility Title | Gross Area SF | Janitorial Area SF | Cleaning Days', 'NOSC JACKSONVILLE |  |  |  |', 'J-100 | Drill Hall | 40,000 | 33,000 | 5',
+    'SITES NOT ON THE BASE CONTRACT – REFERENCE ONLY |  |  |  |', 'NOSC TAMPA |  |  |  |', 'T-400 | Training Building | 25,000 | 21,000 | 5', 'NOSC MIAMI |  |  |  |', 'X-500 | Training Building | 27,000 | 23,000 | 5'));
+  assert.deepEqual(['J-100', 'T-400', 'X-500'].map((b) => fac(inv, b).status), [undefined, 'excluded', 'excluded']);
+});
+
+test('paved and snow columns: mowed road shoulders in acres are turf, a parking "Lot Area" in SY is parking, a snow column gives way only to its own paved column', () => {
+  const g = read(lines('Zone | Location | Road Shoulder Mowing Area (AC) | Lot Area (SY) | Snow Removal Walks (SF)', 'Z-1 | North gate | 6.0 | 3,000 | 1,200', 'Z-2 | South gate | 4.0 | 2,000 | 800'));
+  near(acres(g.grounds, 'improved_turf'), 10);
+  near(sqft(g.grounds, 'parking'), 45000);
+  near(sqft(g.grounds, 'sidewalk'), 2000);
+  const both = read(lines('Site | Location | Parking Lots (SY) | Snow Removal – Parking Lots (SY)', 'S-1 | Depot | 1,000 | 1,000', 'S-2 | Annex | 500 | 500'));
+  near(sqft(both.grounds, 'parking'), 13500);
+});
+
+test('prior award: a label / value table of another contract (another number, another contractor) adds nothing to the current one', () => {
+  const pa = heuristicPriorAward([doc('1.2 The current contract (47PL0021C0007) with Cascade Building Services Inc. expires 30 September 2027.'),
+    doc(lines('Previous Contract (Grounds)', 'Contractor | Evergreen Landscape Group LLC', 'Contract No. | 47PL0018C0003', 'Total contract value | $2,900,000', 'Award date | 2018'), 1)]);
+  assert.deepEqual([pa?.incumbent, pa?.contractNumber, pa?.totalValue, pa?.awardYear], ['Cascade Building Services Inc.', '47PL0021C0007', undefined, undefined]);
+});
+
 // ---------------------------------------------------------------------------------------------- fixtures
 
 // Score floors a little below what the reader achieves (see the eval: npx tsx scripts/eval.ts --provider heuristic).

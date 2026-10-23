@@ -165,7 +165,7 @@ export function facilityColumns(): ColDef<Facility>[] {
       text: (f) => f.buildingNumber, title: (f, c) => (c.meta?.issues.includes('dup_bldg') ? issueDetail('dup_bldg', f) : undefined),
     },
     {
-      key: 'name', label: 'Name', w: 200, min: 200, squeezeMin: 140, flex: true, sort: 'name',
+      key: 'name', label: 'Name', w: 200, min: 200, squeezeMin: 172, flex: true, sort: 'name',
       edit: { kind: 'text', what: 'Name', path: 'name', get: (f) => f.name, parse: (raw) => (raw.trim() ? ok({ name: raw.trim() }) : bad('A name is required')) },
       render: (f, c) => (c.campusInName && f.campus ? <>{f.name}<span className="tv-muted"> · {f.campus}</span></> : f.name), text: (f) => f.name, title: (f) => (f.campus ? `${f.name}\nCampus: ${f.campus}` : f.name),
     },
@@ -280,7 +280,7 @@ export function groundsColumns(): ColDef<GroundsArea>[] {
   return [
     selCol(), reviewCol(), confCol(),
     {
-      key: 'name', label: 'Name', w: 220, min: 200, squeezeMin: 140, flex: true, sort: 'name',
+      key: 'name', label: 'Name', w: 220, min: 200, squeezeMin: 172, flex: true, sort: 'name',
       edit: { kind: 'text', what: 'Name', path: 'name', get: (g) => g.name, parse: (raw) => (raw.trim() ? ok({ name: raw.trim() }) : bad('A name is required')) },
       render: (g, c) => <>{g.name}{c.campusInName && g.campus ? <span className="tv-muted"> · {g.campus}</span> : null}{g.documentLabel ? <span className="tv-muted"> · {g.documentLabel}</span> : null}</>, text: (g) => g.name, title: (g) => `${g.name}${g.documentLabel ? `\nDocument label: ${g.documentLabel}` : ''}`,
     },
@@ -332,9 +332,14 @@ export function autoShown(tab: TableTab, rows: { facilities: readonly Facility[]
 /** Default widths from the content (the longest campus), so wide sheets give the space to the column that truncates.
  *  Campus is fixed at that width: it shows whole or hides (its value then follows the name), never as "ZONE …". */
 export function contentWidths(tab: TableTab, rows: { facilities: readonly Facility[]; grounds: readonly GroundsArea[] }): Record<string, number> {
-  let len = 0;
+  let len = 0, no = 0;
   for (const r of tab === 'facilities' ? rows.facilities : rows.grounds) len = Math.max(len, r.campus?.length ?? 0);
-  return len ? { campus: Math.max(104, Math.min(280, Math.ceil(len * 6.8) + 18)) } : {};
+  if (tab === 'facilities') for (const f of rows.facilities) no = Math.max(no, f.buildingNumber?.length ?? 0);
+  const out: Record<string, number> = {};
+  if (len) out.campus = Math.max(104, Math.min(280, Math.ceil(len * 6.8) + 18));
+  // Bldg # fits the longest number (mono 12.5: 7.5 px a character, plus padding), 56–96 px
+  if (no) out.bldg = Math.max(56, Math.min(96, Math.ceil(no * 7.5) + 22));
+  return out;
 }
 
 export type ColPref = 'show' | 'hide';
@@ -347,19 +352,19 @@ export function visibleColumns<R extends Row>(all: ColDef<R>[], avail: number, s
   let cols = all.filter((c) => (prefs[c.key] === 'hide' ? false : prefs[c.key] === 'show' ? true : c.autoShow ? shown.has(c.key) : true));
   const minW = (c: ColDef<R>) => (c.flex ? Math.max(c.min, widths[c.key] ?? c.min) : c.shrink ? Math.min(c.min, widths[c.key] ?? c.w) : c.fit ? Math.min(c.fit.min, widths[c.key] ?? c.w) : widths[c.key] ?? c.w);
   const need = (cs: ColDef<R>[]) => cs.reduce((s, c) => s + minW(c), 0);
-  // a content-sized column whose values are short (North / South) fits at its minimum and hides last; long values
-  // ("ZONE 4 - LOGISTICS AND INDUSTRIAL AREA") give way early and move into the Name cell
-  const rank = (c: ColDef<R>) => (c.fit && (widths[c.key] ?? c.w) <= c.fit.min ? 8 : c.hideRank!);
-  const ranked = cols.filter((c) => c.hideRank != null && prefs[c.key] !== 'show').sort((a, b) => rank(a) - rank(b));
+  // a content-sized column whose values are short (North / South) never auto-hides (spec: Campus hides only when
+  // empty); long values ("ZONE 4 - LOGISTICS AND INDUSTRIAL AREA") give way early and move into the Name cell
+  const rank = (c: ColDef<R>) => (c.fit && (widths[c.key] ?? c.w) <= c.fit.min ? Infinity : c.hideRank!);
+  const ranked = cols.filter((c) => c.hideRank != null && prefs[c.key] !== 'show' && rank(c) !== Infinity).sort((a, b) => rank(a) - rank(b));
   // ranks 1-2 hide at the preferred Name width; from rank 3 on, Name is first allowed down to its squeeze minimum
   const squeeze = (cs: ColDef<R>[]) => cs.map((x) => (x.flex && x.squeezeMin != null && widths[x.key] == null ? { ...x, min: x.squeezeMin } : x));
   for (const c of ranked) {
     if (need(rank(c) >= 3 ? squeeze(cols) : cols) <= avail) break;
     cols = cols.filter((x) => x.key !== c.key);
   }
-  // then Name gives up only what the sheet lacks
+  // then Name gives up only what the sheet lacks (down to 140 px as a last resort, before the sheet scrolls sideways)
   const over = need(cols) - avail;
-  if (over > 0) cols = cols.map((x) => (x.flex && x.squeezeMin != null && widths[x.key] == null ? { ...x, min: Math.max(x.squeezeMin, x.min - over) } : x));
+  if (over > 0) cols = cols.map((x) => (x.flex && x.squeezeMin != null && widths[x.key] == null ? { ...x, min: Math.max(Math.min(x.squeezeMin, 140), x.min - over) } : x));
   return cols;
 }
 

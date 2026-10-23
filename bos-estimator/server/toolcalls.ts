@@ -201,6 +201,8 @@ export interface ExtractionState {
   excludedGrounds: OtherGrounds[];
   /** Lengths (lf: edging, curbs, fences): recorded and reconciled, never estimated as an area. */
   lengths: OtherGrounds[];
+  /** Snow plowing / walk-clearing events per season as stated (set_site_info); kept in the site notes. */
+  snowEvents?: { lots?: number; walks?: number };
   /** Rows that only add data to a numbered building that is not registered yet; applied when it is. */
   pending: PendingRow[];
   site: SiteInfo;
@@ -1491,16 +1493,26 @@ const DESCRIPTOR_STOP = new Set(['and', 'the', 'for', 'with', 'per', 'area', 'ar
 /** The words of a grounds name after its site ("Eagan USARC – Improved Mow & Trim" → improved, mow, trim). */
 const descriptorOf = (nameKey: string, site: string) => (nameKey.startsWith(site) ? nameKey.slice(site.length) : nameKey).split(' ').filter((w) => w.length >= 3 && /[a-z]/.test(w) && !DESCRIPTOR_STOP.has(w));
 
+/** A walk or path by name (normalised with lineKey), and a linear feature (edging, curbs, fences ...) that is never a walk. */
+const WALK_NAME = /\b(?:side)?walks?\b|\bwalkways?\b|\bpath(?:way)?s?\b|\btrails?\b/;
+const LINEAR_FEATURE = /edg|curb|gutter|fenc|ditch|swale|channel|trim|border|rail|strip|hedge|shoulder/;
+
+/** Words that name an area added beside a registered one ("Site 4 – additional turf", "Bldg 100 – new lawn"). */
+const ADDED_AREA = /\b(?:new|adds?|added|addition|additional|expansion|expanded|extension)\b/;
+
 /**
  * The same grounds area: same kind and canonical unit, same campus (when both give one), and the same building number
  * (when both give one), else the same name, or the same site (groundsStem: "Eagan USARC – Improved" = "Eagan USARC")
- * unless both names go on to say different things ("Site 4 – POV parking" is not "Site 4 – roads and drives").
+ * unless both names go on to say different things ("Site 4 – POV parking" is not "Site 4 – roads and drives"). A name
+ * that says the area is new or added, where the other's does not, is another area (an addition, never a revision).
  */
 function sameGroundsArea(x: GroundsMeta, y: GroundsMeta): boolean {
   if (x.kind !== y.kind || x.canonUnit !== y.canonUnit) return false;
   if (x.campusSlug && y.campusSlug && x.campusSlug !== y.campusSlug) return false;
-  if (x.key && y.key) return x.key === y.key;
+  if (x.key && y.key && x.key !== y.key) return false;
   if (x.nameKey === y.nameKey) return true;
+  if (ADDED_AREA.test(x.nameKey) !== ADDED_AREA.test(y.nameKey)) return false;
+  if (x.key && y.key) return true;
   if (!x.site || x.site !== y.site) return false;
   return !x.desc.length || !y.desc.length || x.desc.some((w) => y.desc.includes(w));
 }
@@ -1555,7 +1567,7 @@ function registerGrounds(st: ExtractionState, input: Record<string, unknown>): A
   const rows = Array.isArray(input.areas) ? input.areas : [];
   if (!rows.length) return { resultText: 'No areas in the call - pass them in "areas": [...].', isError: true, events };
   let n = 0; let dup = 0; let out = 0; let revised = 0; let retired = 0;
-  const bad: string[] = []; const notes: string[] = []; const tablesTouched = new Set<string>(); const lengths: string[] = [];
+  const bad: string[] = []; const notes: string[] = []; const tablesTouched = new Set<string>(); const lengths: string[] = []; const walks: string[] = [];
   rows.forEach((raw, i) => {
     const p = GroundsRowIn.safeParse(raw);
     if (!p.success) { bad.push(`area ${i + 1}: ${zIssues(p.error)}`); return; }
@@ -1584,7 +1596,8 @@ function registerGrounds(st: ExtractionState, input: Record<string, unknown>): A
     const rank = doc ? doc.rank : fallbackRank(st);
     const tbl = tableId ? tableFor(st, tableId) : undefined;
     const meta: GroundsMeta = {
-      rank, file: doc?.name, page, table: tableId, inTable: Boolean(tbl) && !outsideTable(st, tbl!, doc?.name, page),
+      // a row tagged with a table that was never declared is outside every declared table
+      rank, file: doc?.name, page, table: tableId, inTable: Boolean(tbl?.declared) && !outsideTable(st, tbl!, doc?.name, page),
       campusSlug: campus ? slug(campus) || undefined : undefined, key: bn ? buildingKey(bn) : undefined,
       site: groundsStem(name), nameKey: lineKey(name) ?? '', desc: [], kind, canonUnit: canon.unit, where, qtyRank: rank, qtyPage: page,
     };
@@ -1638,8 +1651,11 @@ function registerGrounds(st: ExtractionState, input: Record<string, unknown>): A
       return;
     }
 
-    // 2. a length (edging, curbs, fence lines): recorded and reconciled, never an area of any kind
-    if (u.unit === 'lf') {
+    // 2. a length (edging, curbs, fence lines): recorded and reconciled, never an area of any kind. A walk printed only as
+    //    a length (no width) stays a sidewalk area in LF, which the estimate prices at an assumed width.
+    const walkLength = u.unit === 'lf' && kind === 'sidewalk' && WALK_NAME.test(meta.nameKey) && !LINEAR_FEATURE.test(meta.nameKey);
+    if (walkLength) walks.push(`"${name}" ${fmt(qty)} LF`);
+    if (u.unit === 'lf' && !walkLength) {
       const id = `len-${st.lengths.length + 1}-${slug(name) || kind}`;
       st.lengths.push({ id, name, status: statusEff, reason, quantity: qty, unit: 'lf', table: tableId, kind, canon });
       st.groundsStatus.set(id, statusEff);
@@ -1721,7 +1737,7 @@ function registerGrounds(st: ExtractionState, input: Record<string, unknown>): A
       campus,
       documentLabel: str(d.document_label),
       confidence: clamp01(d.confidence, 0.7),
-      notes: joinNotes(printedUnit ? `Converted from ${qty.toLocaleString('en-US')} ${printedUnit}` : '', d.mowing_frequency_text ? `Mowing as printed: ${d.mowing_frequency_text}` : '', str(d.notes)),
+      notes: joinNotes(printedUnit ? `Converted from ${qty.toLocaleString('en-US')} ${printedUnit}` : '', walkLength ? 'Printed only as a length; the estimate assumes a 5-ft width' : '', d.mowing_frequency_text ? `Mowing as printed: ${d.mowing_frequency_text}` : '', str(d.notes)),
       source,
     };
     for (const k of Object.keys(g) as (keyof GroundsArea)[]) if (g[k] === undefined) delete g[k];
@@ -1747,6 +1763,7 @@ function registerGrounds(st: ExtractionState, input: Record<string, unknown>): A
     `Registered ${n} grounds areas in scope${out ? ` and ${out} out of scope` : ''} (${st.grounds.length} in scope + ${st.excludedGrounds.length} out of scope in total)${dup ? `; ${dup} duplicates of already-registered areas skipped` : ''}.`,
     revised || retired ? `Applied ${revised ? `${revised} ${revised === 1 ? 'revision' : 'revisions'} of registered areas` : ''}${revised && retired ? ' and ' : ''}${retired ? `${retired} status ${retired === 1 ? 'change' : 'changes'}` : ''}.` : '',
     lengths.length ? `Recorded as ${lengths.length === 1 ? 'a length' : 'lengths'}, not areas: ${listLabels(lengths, 3)}. A length is never added to sidewalk, parking or any other area (edging and trimming are priced with the turf they border); its LF still counts toward the table's rows and LF totals.` : '',
+    walks.length ? `${listLabels(walks, 3)} ${walks.length === 1 ? 'is a walk' : 'are walks'} printed only as a length: kept as a sidewalk area (the estimate assumes a 5-ft width).` : '',
     progress.length ? `Progress: ${progress.join('; ')}.` : '',
     bad.length ? `Rejected ${bad.length}: ${bad.slice(0, 6).join(' | ')}${bad.length > 6 ? ` | … ${bad.length - 6} more` : ''}.` : '',
     notes.length ? `Note: ${notes.slice(0, 4).join(' | ')}${notes.length > 4 ? ` | … ${notes.length - 4} more` : ''}.` : '',
@@ -1971,9 +1988,12 @@ function setSite(st: ExtractionState, input: Record<string, unknown>): ApplyResu
   const s = p.data; const climate = String(s.climate_zone ?? '').toLowerCase();
   const years = numOrUndef(s.contract_years); const weeks = numOrUndef(s.growing_season_weeks);
   // stated snow / ice event counts (plowing, walk clearing) are kept in the site notes; the estimate's snow factors use
-  // the climate default until the site record carries them
+  // the climate default until the site record carries them. A count left null keeps the one stated earlier, and
+  // restated notes keep the counts.
   const lots = numOrUndef(s.snow_events_per_year); const walks = numOrUndef(s.walk_clearing_events_per_year);
-  const snow = lots != null || walks != null ? `${SNOW_NOTE}: ${[lots != null ? `${fmtQty(lots)} plowing` : '', walks != null ? `${fmtQty(walks)} walk clearing` : ''].filter(Boolean).join(', ')}` : undefined;
+  if (lots != null || walks != null) st.snowEvents = { lots: lots ?? st.snowEvents?.lots, walks: walks ?? st.snowEvents?.walks };
+  const ev = st.snowEvents;
+  const snow = ev ? `${SNOW_NOTE}: ${[ev.lots != null ? `${fmtQty(ev.lots)} plowing` : '', ev.walks != null ? `${fmtQty(ev.walks)} walk clearing` : ''].filter(Boolean).join(', ')}` : undefined;
   const keptNotes = (str(s.notes) ?? st.site.notes)?.split('; ').filter((x) => !x.startsWith(SNOW_NOTE)).join('; ');
   st.site = {
     ...st.site,
@@ -1984,7 +2004,7 @@ function setSite(st: ExtractionState, input: Record<string, unknown>): ApplyResu
     climateZone: ((CLIMATES as readonly string[]).includes(climate) ? climate : st.site.climateZone) as SiteInfo['climateZone'],
     growingSeasonWeeks: weeks != null ? Math.round(weeks) : st.site.growingSeasonWeeks,
     contractYears: years != null ? years : st.site.contractYears,
-    notes: snow ? joinNotes(keptNotes, snow) : str(s.notes) ?? st.site.notes,
+    notes: snow ? [keptNotes, snow].filter(Boolean).join('; ') : str(s.notes) ?? st.site.notes,
   };
   for (const k of Object.keys(st.site) as (keyof SiteInfo)[]) if (st.site[k] === undefined) delete st.site[k];
   return { resultText: 'Site info recorded.', isError: false, events: [{ type: 'site', site: st.site }] };
@@ -2202,7 +2222,7 @@ export function extractionTools(opts: { strict?: boolean } = {}): Anthropic.Beta
         seats: nullable('integer'),
         kitchen_sqft: nullable('number'),
         dining_room_sqft: nullable('number'),
-        service_style: { type: 'string', enum: [...SERVICE_STYLES], description: 'full_food_service = the contractor cooks and serves (also satellite halls served from a contractor-run kitchen); dining_facility_attendant = the contractor provides attendants and sanitation, with or without management (DFA, M&MA), and the Government cooks; management_only = the contractor manages only.' },
+        service_style: { type: 'string', enum: [...SERVICE_STYLES], description: 'full_food_service = the contractor cooks and serves (also satellite lines fed from a contractor-run kitchen); dining_facility_attendant = the contractor provides attendants and sanitation, with or without management, and Government staff cook; management_only = the contractor manages only.' },
       },
       required: ['meal_periods', 'meals_per_day', 'meal_period_count', 'days_per_week', 'seats', 'kitchen_sqft', 'dining_room_sqft', 'service_style'], additionalProperties: false,
     }),
@@ -2216,13 +2236,13 @@ export function extractionTools(opts: { strict?: boolean } = {}): Anthropic.Beta
     campus: nullable('string'),
     facility_building_number: nullable('string', 'Building number this area belongs to, if the document ties it to one.'),
     table_id: nullable('string', 'table_id of the table this area was printed in. A revision (an amendment change list, a Q&A answer): null, or that document\'s own table_id - never the base table\'s id; the tool matches it to the registered area by campus, name (or site / building) and kind.'),
-    kind: { type: 'string', enum: KIND_IDS, description: 'Type I = improved_turf; Type II = semi_improved; Type III / IV = unimproved; BASH, airfield infield and clear zones are semi_improved or unimproved per the mowing frequency. Paved areas: parking lots, and the roads, drives and other paved areas the contract plows or sweeps = parking; walks, ramps, steps and slabs = sidewalk. For a length (unit lf): the kind of area it runs along (it stays a length).' },
+    kind: { type: 'string', enum: KIND_IDS, description: 'Type I = improved_turf; Type II = semi_improved; Type III / IV = unimproved; BASH, airfield infield and clear zones are semi_improved or unimproved per the mowing frequency. Paved areas the contract plows or sweeps: lots, roads and drives = parking; walks, ramps, steps and slabs = sidewalk. For a length (unit lf): the kind of area it runs along.' },
     document_label: nullable('string', 'The document\'s own label ("Type II", "Category B", "BASH area").'),
     mowing_frequency_text: nullable('string', 'Mowing / service frequency as printed.'),
     status: { type: 'string', enum: STATUS_IDS, description: STATUS_DESC },
     status_reason: nullable('string'),
     quantity: { type: 'number', description: 'As printed, in unit.' },
-    unit: { type: 'string', enum: ['acres', 'hectares', 'sqft', 'sqm', 'sqyd', 'lf', 'each'], description: 'Unit as printed; the tool converts hectares and sqm. lf is a length (edging, curbs, fence lines, ditches): the tool records it as a length and never adds it to an area of any kind.' },
+    unit: { type: 'string', enum: ['acres', 'hectares', 'sqft', 'sqm', 'sqyd', 'lf', 'each'], description: 'Unit as printed; the tool converts hectares and sqm. lf is a length (edging, curbs, fence lines): recorded as a length, never added to an area (a walk printed in LF alone stays a sidewalk area).' },
     source: sourceSchema,
     confidence: { type: 'number' },
     notes: nullable('string'),
@@ -2244,11 +2264,11 @@ export function extractionTools(opts: { strict?: boolean } = {}): Anthropic.Beta
               file: nullable('string', 'Document name exactly as listed.'),
               pages: nullable('string', 'Page range, e.g. "12-19". Null for spreadsheets and Word files (name the sheet or section in the title).'),
               row_count: nullable('integer', 'Number of printed building (or area) rows, excluding header, subtotal and total rows. A printed row with several quantities (areas by type, beds, trees) is one row.'),
-              printed_total_gross_area: nullable('number', 'Facility tables: the printed total / grand total of the gross area column, as printed (in area_unit): the total of all rows, of the in-scope rows, or of the base rows without option-only rows (the check accepts each). A block printed with its own total (Part B, optional sites) may be declared as its own table. Grounds totals go in printed_totals.'),
+              printed_total_gross_area: nullable('number', 'Facility tables: the printed total / grand total of the gross area column, as printed (in area_unit): the total of all rows, of the in-scope rows, or of the base rows without option-only rows (the check accepts each). A block with its own total (optional facilities or sites) may be declared as its own table. Grounds totals go in printed_totals.'),
               area_unit: nullable('string', 'Unit of the facility areas and of printed_total_gross_area. Null for a grounds or dining table.', { enum: ['sf', 'sm', 'sy', null] }),
               printed_totals: {
                 type: 'array',
-                description: 'Grounds tables: each printed total of a quantity you register from the table, as printed, with its unit, and the grounds kinds it covers when it is a column total for some kinds only (a Type I column, beds, trees; [] = every area of the table in that unit). Length totals (edging LF) are given with unit lf. Leave out totals that are information only, in a unit you do not register (site or parcel acres, lane-miles), or that add other columns up (a plow-area or total-paved column). [] when there are none.',
+                description: 'Grounds tables: each printed total of a quantity you register from the table, as printed, with its unit, and the grounds kinds it covers when it is a column total for some kinds only (a Type I column, beds, trees; [] = every area of the table in that unit). Length totals (edging LF) are given with unit lf. Leave out totals that are information only, in a unit you do not register (site or parcel acres, lane-miles), or of a column that sums other columns. [] when there are none.',
                 items: obj({
                   value: { type: 'number' },
                   unit: { type: 'string', enum: ['acres', 'hectares', 'sqft', 'sqm', 'sqyd', 'lf', 'each'] },
@@ -2269,7 +2289,7 @@ export function extractionTools(opts: { strict?: boolean } = {}): Anthropic.Beta
     },
     {
       name: 'register_grounds',
-      description: 'Register grounds maintenance areas (turf acreage by type, athletic fields, beds, paved areas, walks, trees) as printed. A printed row with several quantities is registered as several areas that all carry that row as source.excerpt; the table counts it as one row. Never register total rows. Lengths (unit lf) are recorded as lengths, never as areas. A later row for a registered area (an amendment or Q&A) replaces its quantity: send it with the same name, campus and kind and the new quantity; to remove the area, send it with status deleted_by_amendment.',
+      description: 'Register grounds maintenance areas (turf acreage by type, athletic fields, beds, paved areas, walks, trees) as printed. A printed row with several quantities is registered as several areas that all carry that row as source.excerpt; the table counts it as one row. Never register total rows. Lengths (unit lf: edging, curbs, fences) are recorded as lengths, never as areas. A later row for a registered area (an amendment or Q&A) replaces its quantity: send it with the same name, campus and kind and the new quantity; to remove the area, send it with status deleted_by_amendment.',
       input_schema: { type: 'object', properties: { areas: { type: 'array', items: area } }, required: ['areas'], additionalProperties: false },
     },
     s({

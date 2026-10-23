@@ -1214,14 +1214,67 @@ test('floor areas by printed finish: codes mapped to classes and summed in code,
   assert.match(r2.resultText, /26: floor_areas: "WD" is included_in "Stage", which is not a finish of this row/);
 });
 
-test('set_site_info: stated snow and walk-clearing events are kept in the site notes, replaced when restated', () => {
+test('set_site_info: stated snow and walk-clearing events are kept in the site notes; a restated count replaces only itself', () => {
   const st = createState(DOCS);
   applyToolCall(st, { name: 'set_site_info', input: { installation_name: 'Northern sites', climate_zone: 'cold', notes: 'Twelve sites', snow_events_per_year: 18, walk_clearing_events_per_year: 24 } });
   assert.equal(st.site.notes, 'Twelve sites; Snow and ice events per season as stated: 18 plowing, 24 walk clearing');
-  applyToolCall(st, { name: 'set_site_info', input: { snow_events_per_year: 14 } });
-  assert.equal(st.site.notes, 'Twelve sites; Snow and ice events per season as stated: 14 plowing');
-  applyToolCall(st, { name: 'set_site_info', input: { notes: 'Revised notes' } });
-  assert.equal(st.site.notes, 'Revised notes');
+  applyToolCall(st, { name: 'set_site_info', input: { snow_events_per_year: 14, walk_clearing_events_per_year: null } });
+  assert.equal(st.site.notes, 'Twelve sites; Snow and ice events per season as stated: 14 plowing, 24 walk clearing');
+  // a later call that only restates the notes (strict calls send the counts as null) keeps the stated counts
+  applyToolCall(st, { name: 'set_site_info', input: { notes: 'Revised notes', snow_events_per_year: null, walk_clearing_events_per_year: null } });
+  assert.equal(st.site.notes, 'Revised notes; Snow and ice events per season as stated: 14 plowing, 24 walk clearing');
+  applyToolCall(st, { name: 'set_site_info', input: { notes: null, contract_years: 5 } });
+  assert.equal(st.site.notes, 'Revised notes; Snow and ice events per season as stated: 14 plowing, 24 walk clearing');
+});
+
+test('grounds revisions: an amendment row that adds an area at a registered site or building is a new area, not a revision', () => {
+  const st = createState([{ name: RFP, role: 'solicitation' as const }, { name: AM2, role: 'amendment' as const, amendment: 2 }]);
+  applyToolCall(st, declare({ table_id: 'G-1', kind: 'grounds', file: RFP, pages: '4', row_count: 3, area_unit: null, printed_totals: [{ value: 58, unit: 'acres', kinds: ['improved_turf'] }] }));
+  applyToolCall(st, regG(
+    gArea('Type I improved', 'improved_turf', 50, 'acres', 'Type I | 50.0'),
+    gArea('Site A – turf', 'improved_turf', 6, 'acres', 'A | 6.0'),
+    gArea('Bldg 100 lawn', 'improved_turf', 2, 'acres', '100 | 2.0', { facility_building_number: '100' }),
+  ));
+  const amend = (name: string, qty: number, excerpt: string, o: Record<string, unknown> = {}) => gArea(name, 'improved_turf', qty, 'acres', excerpt, { table_id: null, source: { file: AM2, page: 1, excerpt }, ...o });
+  // additions: a new area named after a registered one, at the same site or building
+  applyToolCall(st, regG(
+    amend('Type I improved – new CDC lawn', 3, 'Item 2. New CDC lawn, 3.0 acres Type I, added'),
+    amend('Site A – additional turf at the new barracks', 1.5, 'Item 3. Site A: 1.5 acres added'),
+    amend('Bldg 100 – new addition lawn', 0.5, 'Item 4. Bldg 100 addition lawn 0.5 acre added', { facility_building_number: '100' }),
+  ));
+  // a revision under the area's own name still replaces it
+  const rev = applyToolCall(st, regG(amend('Type I improved', 48, 'Item 5. Type I revised from 50.0 to 48.0 acres')));
+  assert.match(rev.resultText, /"Type I improved" revised from 50 acres to 48 acres/);
+  const qty = Object.fromEntries(finalize(st).inventory.grounds.map((g) => [g.name, g.quantity]));
+  assert.deepEqual(qty, { 'Type I improved': 48, 'Site A – turf': 6, 'Bldg 100 lawn': 2, 'Type I improved – new CDC lawn': 3, 'Site A – additional turf at the new barracks': 1.5, 'Bldg 100 – new addition lawn': 0.5 });
+  assert.equal(applyToolCall(st, finishCall()).isError, false); // G-1 reconciles against its printed 58 acres
+});
+
+test('grounds revisions: in a combined file, a revision tagged with a table that was never declared still revises', () => {
+  const st = createState([{ name: RFP, role: 'solicitation' as const }]);
+  applyToolCall(st, declare({ table_id: 'G-1', kind: 'grounds', file: RFP, pages: '4', row_count: 2, area_unit: null, printed_totals: [{ value: 10, unit: 'acres', kinds: ['improved_turf'] }] }));
+  applyToolCall(st, regG(gArea('Site A – turf', 'improved_turf', 6.3, 'acres', 'A | 6.30'), gArea('Site B – turf', 'improved_turf', 3.7, 'acres', 'B | 3.70')));
+  const r = applyToolCall(st, regG(gArea('Site A – turf', 'improved_turf', 5.85, 'acres', '', { table_id: 'Amendment 0001 Item 4', source: { file: RFP, page: 11, excerpt: 'Item 4. Site A turf revised from 6.30 to 5.85 acres' } })));
+  assert.match(r.resultText, /"Site A – turf" revised from 6\.3 acres to 5\.85 acres per RFP\.pdf p\. 11/);
+  assert.deepEqual(finalize(st).inventory.grounds.map((g) => [g.name, g.quantity]), [['Site A – turf', 5.85], ['Site B – turf', 3.7]]);
+  assert.equal(applyToolCall(st, finishCall()).isError, false);
+});
+
+test('grounds: a walk printed only as a length stays a walk area (5-ft width assumed); edging, curbs and fences are lengths', () => {
+  const st = createState([{ name: RFP, role: 'solicitation' as const }]);
+  applyToolCall(st, declare({ table_id: 'G-1', kind: 'grounds', file: RFP, pages: '4', row_count: 4, area_unit: null, printed_totals: [] }));
+  const r = applyToolCall(st, regG(
+    gArea('Sidewalks – snow removal', 'sidewalk', 12000, 'lf', 'Sidewalks | 12,000 LF'),
+    gArea('Sidewalk edging', 'sidewalk', 3000, 'lf', 'Edging | 3,000 LF'),
+    gArea('Curb and gutter', 'parking', 2000, 'lf', 'Curb | 2,000 LF'),
+    gArea('Perimeter fence line', 'unimproved', 5000, 'lf', 'Fence | 5,000 LF'),
+  ));
+  assert.match(r.resultText, /Registered 1 grounds areas in scope/);
+  assert.match(r.resultText, /"Sidewalks – snow removal" 12,000 LF is a walk printed only as a length: kept as a sidewalk area \(the estimate assumes a 5-ft width\)/);
+  assert.match(r.resultText, /Recorded as lengths, not areas: "Sidewalk edging" 3,000 LF, "Curb and gutter" 2,000 LF, "Perimeter fence line" 5,000 LF/);
+  const inv = finalize(st).inventory;
+  assert.deepEqual(inv.grounds.map((g) => [g.name, g.kind, g.quantity, g.unit]), [['Sidewalks – snow removal', 'sidewalk', 12000, 'lf']]);
+  assert.equal(estimateInventory(inv).metrics.pavedSqft, 60000);
 });
 
 test('score: cleanable and service level carry weight, attribute and site mismatches are listed after facility misses', () => {
